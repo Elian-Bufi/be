@@ -1,0 +1,43 @@
+// BE — schema físico derivado de BE-LEG-06 v0.1.1.
+//
+// Reglas que gobiernan este archivo (WP-01):
+//  1. Los nombres salen del 06. Modelo = término del 06 sin sufijos de implementación (CONV-06-01).
+//  2. Los estados son enums con transiciones declaradas (CONV-06-02/03), nunca booleanos.
+//     La lista blanca vive en @be/domain y se verifica contra este enum en test/integration.
+//  3. Toda entidad que registre un hecho lleva el par momentoDeOcurrencia / momentoDeRegistro
+//     (T-06-24, REG-06-18). Ocurrencia desconocida = NULL; nunca se copia el registro.
+//
+// Alcance WP-01: solo Identidad BE. Cada módulo posterior agrega lo suyo por migración aditiva.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// T-06-02 — Estado operativo de cuenta (06 §5.7.2). Conjunto cerrado.
+/// Inicial: OPERATIVA. Terminal: CERRADA. Transiciones: 06 §5.7.4 (@be/domain).
+enum EstadoOperativoDeCuenta {
+  OPERATIVA
+  SUSPENDIDA
+  CERRADA
+}
+
+/// T-06-01 — Identidad BE (06 §5.4). Entidad longitudinal estable.
+/// Pendiente de M-01 (ver docs/DEUDA_LEGAJO.md DL-003): Perfil propio, métodos de acceso,
+/// autoría de creación y procedencia (06 §5.4.2).
+model Identidad {
+  /// Identificador de dominio: estable, único, no reutilizable y no autonumérico (06 §5.4.2, T-06-N04).
+  id                      String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// 06 §5.4.2 — exactamente un estado de la máquina T-06-02.
+  estadoOperativoDeCuenta EstadoOperativoDeCuenta @default(OPERATIVA) @map("estado_operativo_de_cuenta")
+  /// T-06-24 — cuándo se confirmó el alta. NULL si es desconocido (REG-06-18).
+  momentoDeOcurrencia     DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  /// T-06-24 — cuándo BE registró el alta.
+  momentoDeRegistro       DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  @@map("identidad")
+}

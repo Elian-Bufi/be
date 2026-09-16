@@ -1,0 +1,82 @@
+# BE — ambiente `test` en Render (07 §26, §31 Q-008 Render-first, §36).
+# Solo datos sintéticos (08 §33). Ningún dato real hasta cerrar G-Q008-1, G-Q008-2 y el gate 08 §42.
+# Este Blueprint NO es la única definición del runtime (07 §61): la API se define por apps/api/Dockerfile
+# y el procedimiento completo está en docs/DESPLIEGUE.md.
+
+databases:
+  - name: be-db-test
+    region: frankfurt
+    plan: free # expira a los 30 días (07 §31; ver DECISIONES_TECNICAS.md)
+    postgresMajorVersion: "16" # alineado con el harness postgres:16-alpine (07 §21, §35)
+    databaseName: be_test
+    user: be_test
+    ipAllowList: [] # sin acceso externo: solo red privada de Render (07 §29)
+
+services:
+  - type: web
+    name: be-api
+    runtime: docker
+    region: frankfurt
+    plan: free
+    branch: main
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/ready # readiness gate del deploy (07 §30, §36)
+    autoDeployTrigger: checksPass # test ← auto-deploy "After CI Checks Pass" (07 §36)
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/domain/**
+        - prisma/**
+        - package.json
+        - package-lock.json
+    envVars:
+      - key: APP_ENV
+        value: test
+      - key: DATABASE_URL
+        fromDatabase:
+          name: be-db-test
+          property: connectionString
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false # allowlist por ambiente, se carga en el dashboard (07 §27)
+
+  - type: web
+    name: be-web
+    runtime: static
+    branch: main
+    buildCommand: npm ci -w @be/web --include-workspace-root && npm run build -w @be/web
+    staticPublishPath: ./apps/web/out
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - apps/web/**
+        - package.json
+        - package-lock.json
+    envVars:
+      - key: NODE_VERSION
+        value: 22.23.2
+    # 07 CAND-07-J opción C: same-origin, el borde rutea /api/* a la API.
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://be-api.onrender.com/api/*
+    # 07 §29: HSTS/CSP en el web.
+    headers:
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"

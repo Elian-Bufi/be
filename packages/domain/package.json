@@ -1,0 +1,20 @@
+{
+  "name": "@be/domain",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tipos y enums derivados de BE-LEG-06, compartidos por api, web y mobile",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test dist/**/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.3",
+    "typescript": "5.9.3"
+  }
+}

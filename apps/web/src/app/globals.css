@@ -1,0 +1,54 @@
+:root {
+  --azul: #1f5bc4;
+  --texto: #111827;
+  --tenue: #6b7280;
+  --fondo: #ffffff;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: Inter, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+.pantalla {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+  max-width: 48rem;
+  margin: 0 auto;
+  border-top: 6px solid var(--azul);
+}
+
+.wordmark {
+  width: 9rem;
+  height: auto;
+}
+
+h1 {
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  margin: 1rem 0 0.5rem;
+}
+
+.bajada {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 1.05rem;
+}
+
+.identidad {
+  margin-top: 3rem;
+  font-size: 0.8rem;
+  color: var(--tenue);
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}

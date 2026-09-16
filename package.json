@@ -1,0 +1,38 @@
+{
+  "name": "be",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BE — Plataforma integrada de inteligencia en salud",
+  "workspaces": [
+    "packages/domain",
+    "apps/api",
+    "apps/web",
+    "apps/mobile"
+  ],
+  "engines": {
+    "node": ">=22.12.0 <23",
+    "npm": ">=10.9.0"
+  },
+  "packageManager": "npm@10.9.8",
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "overrides": {
+    "multer": "2.4.0",
+    "deepmerge-ts": "8.0.2",
+    "next": {
+      "postcss": "8.5.28"
+    }
+  },
+  "scripts": {
+    "prisma:generate": "prisma generate",
+    "build:domain": "npm run build -w @be/domain",
+    "build:api": "npm run build:domain && npm run build -w @be/api",
+    "build:web": "npm run build -w @be/web",
+    "typecheck": "npm run build:domain && npm run typecheck --workspaces --if-present",
+    "test": "npm run build:domain && npm run test -w @be/domain && npm run test -w @be/api",
+    "test:integration": "npm run build:domain && npm run test:integration -w @be/api",
+    "legajo:verificar": "cd docs && sha256sum -c --quiet MANIFEST.sha256",
+    "audit:prod": "npm audit --omit=dev --audit-level=high -w @be/api && npm audit --omit=dev --audit-level=high -w @be/web && npm audit --omit=dev --audit-level=high -w @be/mobile"
+  }
+}

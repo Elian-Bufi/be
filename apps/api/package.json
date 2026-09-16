@@ -1,0 +1,38 @@
+{
+  "name": "@be/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API BE — NestJS, monolito modular",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js",
+    "test": "jest --config jest.config.js",
+    "test:integration": "jest --config jest.integration.config.js --runInBand"
+  },
+  "dependencies": {
+    "@be/domain": "0.1.0",
+    "@nestjs/common": "11.2.5",
+    "@nestjs/core": "11.2.5",
+    "@nestjs/platform-express": "11.2.5",
+    "@prisma/client": "6.19.3",
+    "helmet": "8.3.0",
+    "prisma": "6.19.3",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "11.2.5",
+    "@testcontainers/postgresql": "12.1.0",
+    "@types/express": "5.0.6",
+    "@types/jest": "30.0.0",
+    "@types/node": "22.20.3",
+    "@types/supertest": "7.2.1",
+    "jest": "30.5.1",
+    "supertest": "7.2.2",
+    "testcontainers": "12.1.0",
+    "ts-jest": "29.4.12",
+    "typescript": "5.9.3"
+  }
+}
