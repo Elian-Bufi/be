@@ -1,0 +1,26 @@
+# Entrega original de Dirección: se publica verificada en /docs, no se versiona el origen.
+_docs_origen/
+
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# Expo / EAS
+apps/mobile/.expo/
+apps/mobile/android/
+apps/mobile/ios/
+*.apk
+*.aab
+
+# Entorno y secretos: nunca en el repositorio (08 §32)
+.env
+.env.*
+!.env.example
+
+.DS_Store
+Thumbs.db
+*.log

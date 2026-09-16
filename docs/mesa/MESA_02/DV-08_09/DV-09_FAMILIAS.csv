@@ -1,0 +1,16 @@
+familia_API_09,operaciones_P0,componente_DV-09,área_dominio_06
+ACC,6,Identidad y acceso,M-01
+PRO,13,Verificación · Habilitación,M-02 · M-05
+REL,9,Vínculos y consentimiento,M-03
+CON,8,Vínculos y consentimiento,M-03
+NUT,21,Nutrición,M-07
+INT-NUT,3,Nutrición — adaptador,M-07
+TRN,24,Entrenamiento,M-08
+INT-TRN,3,Entrenamiento — adaptador,M-08
+ANT,12,Antropometría,M-09
+DSH,5,Proyecciones,M-11
+PRJ,3,Proyecciones,M-11
+CRD,1,Proyecciones — coordinación,M-11
+MTH,2,Motores de cálculo,M-11
+CAL,4,Motores de cálculo,M-11
+FRM,8,Vínculos y consentimiento,M-03

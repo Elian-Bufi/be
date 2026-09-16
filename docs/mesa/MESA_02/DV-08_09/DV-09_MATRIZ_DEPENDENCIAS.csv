@@ -1,0 +1,23 @@
+origen,destino,estado,fundamento
+Antropometría,Emisión,PERMITIDA,declarada en BE-LEG-07 §18
+Antropometría,Motores,PERMITIDA,declarada en BE-LEG-07 §18
+Auditoría,PostgreSQL,PERMITIDA,declarada en BE-LEG-07 §18
+Borde HTTP,PDP,PERMITIDA,declarada en BE-LEG-07 §18
+Capacidad,Temporal,PERMITIDA,declarada en BE-LEG-07 §18
+Emisión,PostgreSQL,PERMITIDA,declarada en BE-LEG-07 §18
+Entrenamiento,Adaptadores,PERMITIDA,declarada en BE-LEG-07 §18
+Entrenamiento,Emisión,PERMITIDA,declarada en BE-LEG-07 §18
+Entrenamiento,Motores,PERMITIDA,declarada en BE-LEG-07 §18
+Nutrición,Adaptadores,PERMITIDA,declarada en BE-LEG-07 §18
+Nutrición,Emisión,PERMITIDA,declarada en BE-LEG-07 §18
+Nutrición,Motores,PERMITIDA,declarada en BE-LEG-07 §18
+PDP,PostgreSQL,PERMITIDA,declarada en BE-LEG-07 §18
+Procesos,Emisión,PERMITIDA,declarada en BE-LEG-07 §18
+Proyecciones,PostgreSQL,PERMITIDA,declarada en BE-LEG-07 §18
+Revisión,Emisión,PERMITIDA,declarada en BE-LEG-07 §18
+Nutrición,Entrenamiento,PROHIBIDA,dominios verticales no se conocen entre sí
+Entrenamiento,Antropometría,PROHIBIDA,dominios verticales no se conocen entre sí
+Proyecciones,Nutrición,PROHIBIDA,"las proyecciones leen de la base, no invocan dominios"
+Adaptadores,Nutrición,PROHIBIDA,"los adaptadores son invocados, nunca invocan dominio"
+Motores,PostgreSQL,PROHIBIDA,los motores son puros y sin estado: no acceden a persistencia
+PDP,Nutrición,PROHIBIDA,el PDP decide; no ejecuta lógica de dominio

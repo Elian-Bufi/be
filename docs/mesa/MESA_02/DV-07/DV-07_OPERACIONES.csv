@@ -1,0 +1,36 @@
+figura,clase,operación,guarda_en_la_clase,transición_del_06,sección_lista_blanca,coincidencia
+DV-07_C1_IDENTIDAD,Identidad BE,suspenderCuenta(),existe fundamento válido según política posterior,SuspenderCuenta,§5.7.4,SÍ (literal)
+DV-07_C1_IDENTIDAD,Identidad BE,restablecerCuenta(),cesó o fue resuelta la condición de suspensión según política,RestablecerCuenta,§5.7.4,SÍ (literal)
+DV-07_C1_IDENTIDAD,Identidad BE,cerrarCuenta(),"sesión/autorización aplicables, consecuencias presentadas y confirmación explícita",CerrarCuenta,§5.7.4,SÍ (literal)
+DV-07_C1_IDENTIDAD,Método de acceso,asociar(),no crea identidad paralela,—,—,derivada de regla citada
+DV-07_C1_IDENTIDAD,Incidencia administrativa,resolver(),existe evidencia suficiente de resolución,ResolverIncidencia,§5.10.4,SÍ (literal)
+DV-07_C2_VINCULO,Solicitud de vínculo,aceptar(),confirmación explícita + reevaluación,AceptarSolicitud,§7.3.2,SÍ (literal)
+DV-07_C2_VINCULO,Solicitud de vínculo,rechazar(),confirmación explícita,RechazarSolicitud,§7.3.2,SÍ (literal)
+DV-07_C2_VINCULO,Solicitud de vínculo,caducar(),condición temporal,CaducarSolicitud,§7.3.2,SÍ (literal)
+DV-07_C2_VINCULO,Solicitud de vínculo,invalidar(),elegibilidad o contenido ya incompatibles,InvalidarSolicitud,§7.3.2,SÍ (literal)
+DV-07_C2_VINCULO,Vínculo — componente de alcance,pausar(),decisión + motivo,PausarAlcance,§7.5.2,SÍ (literal)
+DV-07_C2_VINCULO,Vínculo — componente de alcance,reanudar(),decisión explícita,ReanudarAlcance,§7.5.2,SÍ (literal)
+DV-07_C2_VINCULO,Vínculo — componente de alcance,finalizar(),decisión explícita,FinalizarAlcance,§7.5.2,SÍ (literal)
+DV-07_C2_VINCULO,Consentimiento vigente,aceptarNuevaVersión(),Versión sucesora explícita,AceptarNuevaVersion,§7.7.5,SÍ (literal)
+DV-07_C2_VINCULO,Consentimiento vigente,revocar(),Versión + evento de revocación,RevocarConsentimiento,§7.7.5,SÍ (literal)
+DV-07_C2_VINCULO,Autorización contextual,evaluar(),"RF-021: siete dimensiones, por operación",—,—,derivada de regla citada
+DV-07_C3_VERIFICACION,Verificación profesional,registrarObservación(),versión exacta revisada + fundamento,RegistrarObservacion,§6.8.2,SÍ (literal)
+DV-07_C3_VERIFICACION,Verificación profesional,presentarSubsanación(),subsanación admitida,PresentarSubsanacion,§6.8.2,SÍ (literal)
+DV-07_C3_VERIFICACION,Verificación profesional,verificar(),resolución favorable,VerificarAlcance,§6.8.2,SÍ (literal)
+DV-07_C3_VERIFICACION,Verificación profesional,rechazar(),resolución desfavorable,RechazarAlcance,§6.8.2,SÍ (literal)
+DV-07_C3_VERIFICACION,Verificación profesional,suspender(),resolución explícita + motivo,SuspenderAlcance,§6.8.2,SÍ (literal)
+DV-07_C3_VERIFICACION,Verificación profesional,rehabilitar(),resolución explícita,RehabilitarAlcance,§6.8.2,SÍ (literal)
+DV-07_C4_VERSIONADO,Versión,suceder(),mismo ámbito ∧ máx. una predecesora,—,—,derivada de regla citada
+DV-07_C4_VERSIONADO,Corrección trazable,corregir(),no reasigna autoría del original,—,—,derivada de regla citada
+DV-07_C5_ANTROPOMETRIA,Evaluación antropométrica,guardarBorrador(),cambios válidos como borrador,—,—,derivada de regla citada
+DV-07_C5_ANTROPOMETRIA,Evaluación antropométrica,registrar(),validaciones aplicables,—,—,derivada de regla citada
+DV-07_C5_ANTROPOMETRIA,Evaluación antropométrica,retomar(),profesional autorizado,—,—,derivada de regla citada
+DV-07_C5_ANTROPOMETRIA,Medición directa,corregir(),"UC-I12: corrección trazable, original preservado",—,—,derivada de regla citada
+DV-07_C5_ANTROPOMETRIA,Medición directa,anular(),"§20.6: medición VIGENTE, actor autorizado, motivo obligatorio",—,—,derivada de regla citada
+DV-07_C5_ANTROPOMETRIA,Cálculo derivado,ejecutar(),REG-06-204: inputs presentes y admisibles,—,—,derivada de regla citada
+DV-07_C5_ANTROPOMETRIA,Cálculo derivado,recalcular(),"nueva corrida, sin overwrite",—,—,derivada de regla citada
+DV-07_C6_NUTRICION,Plan nutricional,activarVersión(),§§8–9,ActivarVersion,§10.7,SÍ (literal)
+DV-07_C6_NUTRICION,Ingesta registrada,estructurar(),profesional autorizado · UC-I12,—,—,derivada de regla citada
+DV-07_C7_ENTRENAMIENTO,Ejecución real,confirmar(),referencia y contenido mínimo coherentes,ConfirmarEjecucion,§11.9,SÍ (literal)
+DV-07_C8_REVISION,Revisión profesional válida,registrar(),evidencia ∧ dominio ∧ período,—,—,derivada de regla citada
+DV-07_C8_REVISION,Próxima acción,aplicar(),consecuencia aplicable,—,—,derivada de regla citada

@@ -1,0 +1,15 @@
+# Código: LF normalizado en el repositorio, independiente de core.autocrlf local.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+
+# Legajo y documentación de Dirección: bytes exactos, sin conversión de fin de línea.
+# Los SHA-256 de docs/MANIFEST.sha256 tienen que verificar en cualquier clon.
+docs/** -text -diff
+docs/**/*.md diff
+docs/**/*.csv diff
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.xlsx binary
+*.apk binary

@@ -1,0 +1,298 @@
+área_origen,área_destino,card_origen,card_destino,tipo,regla_fuente,texto_de_la_regla,ID,interpretacion
+M-03,M-01,,,inter-área,"06 §7.3, L3010–L3041","### 7.3. Solicitud de vínculo
+
+Una Solicitud conserva identificador, profesional, asesorado o referencia de invitación pendiente, exactamente un Alcance, finalidad, actor iniciador, doble temporalidad, procedencia, estado y antecedente si se reitera.
+
+La solicitud es atómica por Alcance; un Vínculo puede agrupar varios Alcances, manteniendo decisiones independientes.
+
+#### 7.3.1. Estados
+
+```text
+PENDIENTE
+ACEPTADA
+RECHAZADA
+CADUCADA
+INVALIDADA
+```
+
+Los cuatro últimos son terminales para esa Solicitud concreta.
+
+#### 7.3.2. Lista blanca
+
+| Transición | Origen → destino | Actor | Condición | Efecto |
+|---|---|---|---|---|
+| `CrearSolicitud` | inicio → `PENDIENTE` | profesional o asesorado | Alcance/finalidad + elegibilidad estructural | no acceso; no capacidad |
+| `AceptarSolicitud` | `PENDIENTE → ACEPTADA` | asesorado | confirmación explícita + reevaluación | crea/incorpora Alcance de Vínculo |
+| `RechazarSolicitud` | `PENDIENTE → RECHAZADA` | asesorado | confirmación explícita | conserva antecedente |
+| `CaducarSolicitud` | `PENDIENTE → CADUCADA` | sistema bajo política 08 | condición temporal | plazo no fijado aquí |
+| `InvalidarSolicitud` | `PENDIENTE → INVALIDADA` | sistema/actor propietario | elegibilidad o contenido ya incompatibles | requiere nueva Solicitud |
+
+**`REG-06-44` — Solicitud equivalente pendiente única.** Coinciden profesional, destinatario resoluble, Alcance y finalidad; solo una puede estar `PENDIENTE`.
+
+**`REG-06-45` — Caducidad sin plazo en M-03.** B-03 define la transición, no la duración. Reiterar crea nueva Solicitud relacionada.",IA01,Solicitud/vínculo conserva identidades de los participantes.
+M-02,M-01,,,inter-área,"06 §6.4, L2764–L2769","### 6.4. Perfil profesional
+
+Una `Identidad BE` posee `0..1 Perfil profesional`. Puede estar incompleto y no concede Especialidad, Verificación, Habilitación ni acceso.
+
+**`REG-06-31` — Perfil profesional versionado.** Los cambios confirmados que deban conservar antecedente emiten nueva `Versión` conforme a B-06. La anterior permanece inmutable.",IA02,Perfil profesional pertenece a una Identidad BE.
+M-05,M-02,,,inter-área,"06 §9.4, L3705–L3731","### 9.4. Habilitación configurada
+
+#### 9.4.1. Estado efectivo
+
+Para profesional + Alcance:
+
+```text
+HABILITADA
+NO_HABILITADA
+```
+
+**`REG-06-79` — Habilitación requiere concesión explícita.**
+
+Ausencia de concesión efectiva no se interpreta como Habilitación. Esto no equivale a Verificación ni Autorización.
+
+#### 9.4.2. Versionado
+
+**`REG-06-80` — Habilitación administrativa versionada.**
+
+Cada cambio confirmado emite nueva Versión B-06, conserva la anterior, profesional, Alcance, actor, motivo/procedencia y doble temporalidad.
+
+No existe cambio por pago real en el MVP académico.
+
+#### 9.4.3. Efecto sobre procesos
+
+Retirar Habilitación vuelve no vigente el Proceso según B-04, pero no lo cierra, borra ni libera capacidad por inferencia.",IA03,Habilitación referencia profesional y alcance; no es generada automáticamente por verificación ni por capacidad.
+M-03,M-02,,,inter-área,"06 §6.5, L2770–L2779","### 6.5. Especialidad, capacidad y Alcance
+
+Las Especialidades iniciales son exclusivamente Nutrición y Entrenamiento. Una Identidad puede declarar cero, una o ambas.
+
+La `Capacidad antropométrica transversal` es independiente, puede existir con cero Especialidades y nunca se representa como tercera Especialidad.
+
+**`REG-06-32` — Alcance disjunto.** Un `Alcance` referencia exactamente una Especialidad **o** la Capacidad antropométrica transversal, nunca ambas.
+
+Cada Alcance se administra, evidencia, verifica, suspende y rehabilita por separado.",IA04,Alcance corresponde a especialidad o capacidad antropométrica.
+M-04,M-03,,,inter-área,"06 §8.4, L3360–L3410","### 8.4. Proceso operativo
+
+#### 8.4.1. Identidad
+
+Un Proceso operativo conserva profesional, asesorado, Alcance funcional, acto de apertura, versión/plan de apertura cuando aplique, actor/autoría, ocurrencia, registro, procedencia y estado.
+
+Una operación antropométrica aislada no crea por sí sola un Proceso de seguimiento de Nutrición/Entrenamiento.
+
+#### 8.4.2. Proceso nuevo
+
+**`REG-06-64` — Proceso nuevo como candidato.**
+
+Una operación es `NUEVO` cuando pretende crear un identificador de Proceso para profesional + asesorado + Alcance y no existe un Proceso `ABIERTO` equivalente.
+
+`NUEVO` no es estado persistido. Exige evaluación B-05 antes de crear el Proceso.
+
+Una nueva versión de plan dentro de un Proceso abierto es continuidad.
+
+#### 8.4.3. Proceso abierto
+
+**`REG-06-65` — Apertura posterior a admisión.**
+
+Un Proceso nuevo abre solo si:
+
+1. profesional, asesorado y Alcance son identificables;
+2. la vertical puede emitir/activar la versión inicial;
+3. B-05 admite la apertura por capacidad;
+4. los demás gates estructurales son compatibles;
+5. apertura y activación no se declaran exitosas parcialmente.
+
+B-07/B-08 definirán la máquina concreta del Plan.
+
+#### 8.4.4. Proceso vigente
+
+**`REG-06-66` — Vigencia estructural sin estado paralelo.**
+
+Un Proceso `ABIERTO` es estructuralmente `VIGENTE` cuando:
+
+- la cuenta no introduce bloqueo operativo;
+- Verificación profesional = `VERIFICADO`;
+- existe Habilitación efectiva;
+- Vínculo por Alcance = `ACEPTADO`;
+- Consentimiento = `VIGENTE`;
+- el Proceso no está cerrado.
+
+`VIGENTE` no equivale a Autorización contextual; 08 sigue evaluando cada operación.
+
+#### 8.4.5. Proceso cerrado
+
+`CERRADO` es terminal. Impide nueva ejecución/continuidad de ese identificador y conserva evidencia, versiones, revisiones y eventos. Una relación futura equivalente crea un Proceso nuevo.",IA05,"Proceso conserva profesional, asesorado y alcance; vigencia requiere vínculo compatible."
+M-04,M-05,,,inter-área,"06 §8.4.3, L3378–L3391","#### 8.4.3. Proceso abierto
+
+**`REG-06-65` — Apertura posterior a admisión.**
+
+Un Proceso nuevo abre solo si:
+
+1. profesional, asesorado y Alcance son identificables;
+2. la vertical puede emitir/activar la versión inicial;
+3. B-05 admite la apertura por capacidad;
+4. los demás gates estructurales son compatibles;
+5. apertura y activación no se declaran exitosas parcialmente.
+
+B-07/B-08 definirán la máquina concreta del Plan.",IA06,Apertura exige admisión por capacidad; continuidad no crea proceso nuevo.
+M-07,M-04,,,inter-área,"06 §10.8, L4324–L4363","### 10.8. Activación con B-06, B-05 y B-04
+
+**`REG-06-104` — Activación vertical atómica.**
+
+`ActivarVersion` reutiliza, sin redefinir:
+
+1. validación funcional de la vertical;
+2. B-06 para Versionar y preservar Instantánea reproducible;
+3. B-05 cuando B-04 clasifica la operación como Proceso `NUEVO`;
+4. B-04 `AbrirProceso` cuando la activación efectivamente inicia un Proceso nuevo.
+
+La activación solo se declara exitosa cuando:
+
+- la Versión validada coincide con la confirmada;
+- puede preservarse la Instantánea reproducible;
+- la admisión por capacidad fue favorable cuando corresponde;
+- la nueva Versión puede quedar como única Versión efectiva sin contradicción;
+- el evento completo es trazable.
+
+Si cualquiera falla, la vigencia previa permanece.
+
+#### 10.8.1. Snapshot
+
+**`REG-06-105` — La consulta y ejecución se anclan a lo emitido.**
+
+La Instantánea reproducible de la Versión activada permite reconstruir exactamente lo indicado al asesorado en ese momento.
+
+La consulta del asesorado y la ejecución posterior referencian la Versión activada/Instantánea correspondiente, no el catálogo ni borrador actuales.
+
+#### 10.8.2. Sustitución
+
+Activar una sucesora:
+
+- conserva la Versión activada anterior;
+- conserva su snapshot;
+- actualiza de forma explícita la relación de Versión efectiva;
+- no crea un Proceso nuevo si B-04 determina continuidad del Proceso ya abierto.
+
+---",IA07,Activación vertical se coordina con apertura o continuidad de proceso.
+M-08,M-04,,,inter-área,"06 §11.4, L5062–L5078","### 11.4. Mapeo exacto al patrón B-07
+
+| Estructura Entrenamiento | Regla común reutilizada | Diferencia |
+|---|---|---|
+| Evaluación de entrenamiento | `REG-06-97` | contenido de dominio distinto; no se fija |
+| Objetivo de entrenamiento | `REG-06-98` | RF-064; contenido profesional distinto |
+| Catálogo de ejercicios | `REG-06-99…101` | proveedor wger en importación |
+| Plan de entrenamiento | `REG-06-102/103` | contiene bloques/sesiones/prescripciones y, desde v0.1.1, Microciclo opcional |
+| Versión de plan | máquina B-07 §7 | mismos estados y transiciones |
+| Activación | `REG-06-104/105` | snapshot de planificación de entrenamiento |
+| Ejecución | `REG-06-106/107` | ejecución real tiene borrador y corrección |
+| Continuidad | `REG-06-108` | progresión especializa AJUSTAR/SUSTITUIR |
+
+B-08 no crea sinónimos ni estados paralelos. Las adiciones v0.1.1 especializan la estructura interna de Entrenamiento sin duplicar reglas comunes.
+
+---",IA08,Entrenamiento reutiliza reglas de activación y proceso de B-07/B-04.
+M-09,M-01,,,inter-área,"06 §13.5, L6206–L6224","### 13.5. Evaluación antropométrica
+
+**`REG-06-151` — Evaluación antropométrica reconstruible.**
+
+Toda Evaluación antropométrica conserva, como mínimo conceptual:
+
+- asesorado;
+- profesional/actor responsable;
+- fecha o momento de evaluación;
+- Protocolo identificado y su referencia/versionado aplicable;
+- conjunto de Mediciones antropométricas directas y Cálculos antropométricos derivados, discriminados;
+- unidades de origen;
+- autoría, ocurrencia, registro y procedencia conforme a B-06;
+- referencias a correcciones cuando existan.
+
+Una Evaluación no se convierte en Plan ni Revisión profesional de especialidad y Antropometría no adquiere ciclo de plan propio.
+
+---",IA09,Evaluación antropométrica conserva asesorado y profesional identificables.
+M-10,M-04,,,inter-área,"06 §8.7.4, L3500–L3523","#### 8.7.4. Resolución de Q-007
+
+**`REG-06-75` — Evento técnico exacto de continuidad o cierre.**
+
+`Q-007` queda **RESUELTA EN M-04**, coordinada con M-10, mediante:
+
+```text
+ContinuidadOCierreAplicado
+```
+
+Se emite solo después de aplicar exitosamente UC-I06 y conserva:
+
+- Proceso;
+- Revisión válida origen;
+- Resultado semántico;
+- Próxima acción o cierre;
+- `CONTINUIDAD` o `CIERRE_PROCESO`;
+- estado antes/después;
+- referencias de versiones cuando correspondan;
+- actor/autoría;
+- ocurrencia;
+- registro;
+- procedencia.",IA10,UC-I06 aplicado conserva revisión y proceso en evento explícito; registrar revisión por sí solo no basta.
+M-12,M-10,,,inter-área,"06 §15.6, L7077–L7091","### 15.6. Componentes de numerador y denominador
+
+**`REG-06-192` — Candidato a denominador trazable.**  
+El componente candidato a denominador se construye a partir de ciclos cuya evaluación los identifica como integrantes bajo la especificación referenciada. Conserva el conjunto de ciclos fuente; B-12 no define la regla analítica que los vuelve elegibles.
+
+**`REG-06-193` — Candidato a numerador trazable.**  
+El componente candidato a numerador se construye como subconjunto trazable de ciclos evaluados conforme a la especificación y con los hechos requeridos por ella. Conserva cada ciclo fuente y el criterio aplicado.
+
+**`REG-06-194` — Par inseparable para presentación analítica.**  
+Cuando B-12 materializa componentes TVCC-30, numerador y denominador se conservan y consultan como par bajo la misma especificación, período y zona. B-12 no autoriza presentar un numerador aislado como si fuera la métrica.
+
+Esta regla no define la operación matemática que Documento 12 aplique sobre el par.
+
+---",IA11,Analítica conserva ciclos fuente y especificación; no inventa decisiones profesionales.
+M-11,M-09,,,inter-área,"06 §14.7.7, L6799–L6805","#### 14.7.7. Evolución antropométrica longitudinal
+
+**`REG-06-184` — Evolución antropométrica honesta.**  
+La proyección consume la Serie longitudinal antropométrica de B-10. Solo compara puntos cuya compatibilidad haya sido demostrada por `REG-06-162…164`. Conserva protocolo, método/versión, unidad y clase del dato cuando corresponda. `SIN_DATO` permanece ausencia: no se transforma en cero, no se interpola, no se imputa y no se arrastra el último valor.
+
+Los segmentos no comparables permanecen visibles como registros históricos, pero no se convierten en una tendencia cuantitativa homogénea.",IA12,Proyección de evolución consume serie antropométrica y conserva compatibilidad de fuentes.
+M-06,M-07,,,inter-área,"06 §10.7.1, L4270–L4285","#### 10.7.1. Relación estructural
+
+**`REG-06-102` — Plan relacionado con evaluación y objetivo.**
+
+El Plan profesional conserva:
+
+- asesorado;
+- profesional;
+- Alcance;
+- Evaluación de referencia;
+- Versión de Objetivo aplicable;
+- conjunto de Versiones de plan;
+- relación explícita a la Versión activada efectiva cuando exista.
+
+El contenido prescriptivo concreto queda fuera del modelo conceptual de 06.",IA13,Plan nutricional conserva versiones; patrón común B-06.
+M-06,M-08,,,inter-área,"06 §11.4, L5062–L5078","### 11.4. Mapeo exacto al patrón B-07
+
+| Estructura Entrenamiento | Regla común reutilizada | Diferencia |
+|---|---|---|
+| Evaluación de entrenamiento | `REG-06-97` | contenido de dominio distinto; no se fija |
+| Objetivo de entrenamiento | `REG-06-98` | RF-064; contenido profesional distinto |
+| Catálogo de ejercicios | `REG-06-99…101` | proveedor wger en importación |
+| Plan de entrenamiento | `REG-06-102/103` | contiene bloques/sesiones/prescripciones y, desde v0.1.1, Microciclo opcional |
+| Versión de plan | máquina B-07 §7 | mismos estados y transiciones |
+| Activación | `REG-06-104/105` | snapshot de planificación de entrenamiento |
+| Ejecución | `REG-06-106/107` | ejecución real tiene borrador y corrección |
+| Continuidad | `REG-06-108` | progresión especializa AJUSTAR/SUSTITUIR |
+
+B-08 no crea sinónimos ni estados paralelos. Las adiciones v0.1.1 especializan la estructura interna de Entrenamiento sin duplicar reglas comunes.
+
+---",IA14,Entrenamiento instancia versionado común por referencia.
+M-06,M-09,,,inter-área,"06 §13.8.1, L6275–L6291","#### 13.8.1. Estructura
+
+**`REG-06-156` — Resultado derivado reproducible.**
+
+Un Cálculo antropométrico derivado conserva:
+
+- métrica/resultado identificado;
+- Método de cálculo identificado y su versión;
+- Fórmula/regla de dominio aplicable identificada y versionada;
+- conjunto exacto de entradas efectivas y sus unidades;
+- resultado y unidad;
+- precisión y regla de redondeo aplicadas;
+- momento de cálculo, autoría/procedencia del método y procedencia del resultado;
+- relación de sucesión cuando un recálculo produce una versión posterior.
+
+`UC-I09` puede reconstruir qué método, versión y entradas produjeron el resultado. B-10 no fija aquí una fórmula profesional concreta.",IA15,Cálculo conserva versión exacta y sucesión; corrección preserva historia.

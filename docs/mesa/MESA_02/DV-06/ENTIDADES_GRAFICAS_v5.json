@@ -1,0 +1,2240 @@
+[
+  {
+    "figura": "DV-06_01",
+    "name": "Identidad BE",
+    "tid": "T-06-01",
+    "attrs": [
+      "ᴾᴷ identidadId (identificador de dominio)",
+      "ᶠᵏ perfilPropioRef (ref Perfil propio)",
+      "estadoCuenta (token: OPERATIVA|SUSPENDIDA|CERRADA)",
+      "ᶠᵏ autoríaCreación (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen funcional)"
+    ],
+    "x": 420.0,
+    "y": 340.0,
+    "w": 366.79999999999995,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Identidad BE"
+    ],
+    "wrapped": [
+      "PK identidadId (identificador de dominio)",
+      "FK perfilPropioRef (ref Perfil propio)",
+      "estadoCuenta (token: OPERATIVA | SUSPENDIDA | CERRADA)",
+      "FK autoríaCreación (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen funcional)"
+    ],
+    "h": 169
+  },
+  {
+    "figura": "DV-06_01",
+    "name": "Perfil propio",
+    "tid": "T-06-04",
+    "attrs": [
+      "ᴾᴷ perfilId (identificador)",
+      "ᶠᵏ identidadRef (ref Identidad BE)",
+      "ᶠᵏ versiónEfectivaRef (ref Versión)",
+      "historiaVersiones (0..N refs Versión)",
+      "procedencia (origen)"
+    ],
+    "x": 979.9999999999999,
+    "y": 265.6,
+    "w": 350.0,
+    "kind": "#9FBFEA",
+    "titlelines": [
+      "Perfil propio"
+    ],
+    "wrapped": [
+      "PK perfilId (identificador)",
+      "FK identidadRef (ref Identidad BE)",
+      "FK versiónEfectivaRef (ref Versión)",
+      "historiaVersiones (0..N refs Versión)",
+      "procedencia (origen)"
+    ],
+    "h": 139
+  },
+  {
+    "figura": "DV-06_01",
+    "name": "Método de acceso",
+    "tid": "T-06-03",
+    "attrs": [
+      "ᴾᴷ métodoId (identificador)",
+      "ᶠᵏ identidadRef (ref Identidad BE)",
+      "tipo (token: local|federado)",
+      "proveedorRef (referencia externa)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "x": 979.9999999999999,
+    "y": 506.40000000000003,
+    "w": 350.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Método de acceso"
+    ],
+    "wrapped": [
+      "PK métodoId (identificador)",
+      "FK identidadRef (ref Identidad BE)",
+      "tipo (token: local | federado)",
+      "proveedorRef (referencia externa)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "h": 169
+  },
+  {
+    "figura": "DV-06_01",
+    "name": "Incidencia administrativa",
+    "tid": "T-06-06",
+    "attrs": [
+      "ᴾᴷ incidenciaId (identificador)",
+      "ᶠᵏ reportanteRef (ref Identidad BE)",
+      "categoría (descriptor libre)",
+      "estado (token: ABIERTA|EN_SEGUIMIENTO|RESUELTA)",
+      "resolución (texto)",
+      "ᶠᵏ autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)"
+    ],
+    "x": 1512.0,
+    "y": 266.0,
+    "w": 347.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Incidencia administrativa"
+    ],
+    "wrapped": [
+      "PK incidenciaId (identificador)",
+      "FK reportanteRef (ref Identidad BE)",
+      "categoría (descriptor libre)",
+      "estado (token: ABIERTA | EN_SEGUIMIENTO | RESUELTA)",
+      "resolución (texto)",
+      "FK autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)"
+    ],
+    "h": 184
+  },
+  {
+    "figura": "DV-06_01",
+    "name": "Novedad interna",
+    "tid": "T-06-07",
+    "attrs": [
+      "ᴾᴷ novedadId (identificador)",
+      "audiencia (referencia estructural de visibilidad)",
+      "contenidoAutorizado (texto no sensible)",
+      "ᶠᵏ fuente (ref autoría)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)"
+    ],
+    "x": 1512.0,
+    "y": 506.0,
+    "w": 347.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Novedad interna"
+    ],
+    "wrapped": [
+      "PK novedadId (identificador)",
+      "audiencia (referencia estructural de visibilidad)",
+      "contenidoAutorizado (texto no sensible)",
+      "FK fuente (ref autoría)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)"
+    ],
+    "h": 154
+  },
+  {
+    "figura": "DV-06_01",
+    "name": "Notificación push",
+    "tid": "T-06-08",
+    "attrs": [
+      "ᴾᴷ pushId (identificador)",
+      "ᶠᵏ novedadRef (ref Novedad interna)",
+      "contenido (no sensible)"
+    ],
+    "x": 1987.9999999999998,
+    "y": 506.40000000000003,
+    "w": 294.0,
+    "kind": "#9FBFEA",
+    "titlelines": [
+      "Notificación push"
+    ],
+    "wrapped": [
+      "PK pushId (identificador)",
+      "FK novedadRef (ref Novedad interna)",
+      "contenido (no sensible)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_01",
+    "name": "Cierre de cuenta",
+    "tid": "T-06-05",
+    "attrs": [
+      "ᴾᴷ cierreId (identificador)",
+      "ᶠᵏ identidadRef (ref Identidad BE)",
+      "confirmación (acto explícito del titular)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)"
+    ],
+    "x": 420.0,
+    "y": 577.6,
+    "w": 366.79999999999995,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Cierre de cuenta"
+    ],
+    "wrapped": [
+      "PK cierreId (identificador)",
+      "FK identidadRef (ref Identidad BE)",
+      "confirmación (acto explícito del titular)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)"
+    ],
+    "h": 139
+  },
+  {
+    "figura": "DV-06_02",
+    "name": "Perfil profesional",
+    "tid": "T-06-04",
+    "attrs": [
+      "ᴾᴷ perfilProId (identificador)",
+      "ᶠᵏ identidadRef (ref Identidad BE)",
+      "ᶠᵏ versiónEfectivaRef (ref Versión)",
+      "historiaVersiones (0..N refs Versión)",
+      "procedencia (origen)"
+    ],
+    "x": 390,
+    "y": 225,
+    "w": 350.0,
+    "kind": "#9FBFEA",
+    "titlelines": [
+      "Perfil profesional"
+    ],
+    "wrapped": [
+      "PK perfilProId (identificador)",
+      "FK identidadRef (ref Identidad BE)",
+      "FK versiónEfectivaRef (ref Versión)",
+      "historiaVersiones (0..N refs Versión)",
+      "procedencia (origen)"
+    ],
+    "h": 139
+  },
+  {
+    "figura": "DV-06_02",
+    "name": "Especialidad",
+    "tid": "T-06-09",
+    "attrs": [
+      "ᴾᴷ especialidadId (identificador)",
+      "ᶠᵏ identidadRef (ref Identidad BE profesional)",
+      "ᶠᵏ alcance (ref Alcance)",
+      "denominación (nutrición|entrenamiento)"
+    ],
+    "x": 883,
+    "y": 225,
+    "w": 315.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Especialidad"
+    ],
+    "wrapped": [
+      "PK especialidadId (identificador)",
+      "FK identidadRef (ref Identidad BE profesional)",
+      "FK alcance (ref Alcance)",
+      "denominación (nutrición | entrenamiento)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_02",
+    "name": "Capacidad antropométrica",
+    "tid": "T-06-10",
+    "attrs": [
+      "ᴾᴷ capacidadId (identificador)",
+      "ᶠᵏ identidadRef (ref Identidad BE profesional)",
+      "ᶠᵏ alcance (ref Alcance)"
+    ],
+    "x": 883,
+    "y": 480,
+    "w": 315.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Capacidad antropométrica"
+    ],
+    "wrapped": [
+      "PK capacidadId (identificador)",
+      "FK identidadRef (ref Identidad BE profesional)",
+      "FK alcance (ref Alcance)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_02",
+    "name": "Verificación profesional",
+    "tid": "T-06-11",
+    "attrs": [
+      "ᴾᴷ verificaciónId (identificador)",
+      "ᶠᵏ alcanceRef (ref Alcance)",
+      "estado (token: PENDIENTE|VERIFICADO|RECHAZADO|SUSPENDIDO)",
+      "ᶠᵏ evidenciaRef (ref Evidencia versionada)",
+      "ᶠᵏ autoríaResolución (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "identidadRef (ref profesional)",
+      "presentaciónRef (ciclo y evidencia exacta)"
+    ],
+    "x": 1413,
+    "y": 255,
+    "w": 357.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Verificación profesional"
+    ],
+    "wrapped": [
+      "PK verificaciónId (identificador)",
+      "FK alcanceRef (ref Alcance)",
+      "estado (token: PENDIENTE | VERIFICADO | RECHAZADO |",
+      "SUSPENDIDO)",
+      "FK evidenciaRef (ref Evidencia versionada)",
+      "FK autoríaResolución (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "identidadRef (ref profesional)",
+      "presentaciónRef (ciclo y evidencia exacta)"
+    ],
+    "h": 214
+  },
+  {
+    "figura": "DV-06_02",
+    "name": "Observación / subsanación",
+    "tid": "T-06-12",
+    "attrs": [
+      "ᴾᴷ observaciónId (identificador)",
+      "ᶠᵏ verificaciónRef (ref Verificación)",
+      "motivo (texto)",
+      "subsanadaEn (fecha-hora, opcional)"
+    ],
+    "x": 1413,
+    "y": 550,
+    "w": 357.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Observación / subsanación"
+    ],
+    "wrapped": [
+      "PK observaciónId (identificador)",
+      "FK verificaciónRef (ref Verificación)",
+      "motivo (texto)",
+      "subsanadaEn (fecha-hora, opcional)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_02",
+    "name": "Habilitación",
+    "tid": "T-06-13",
+    "attrs": [
+      "ᴾᴷ habilitaciónId (identificador)",
+      "ᶠᵏ alcanceRef (ref Alcance)",
+      "vigente (booleano conceptual)"
+    ],
+    "x": 1959,
+    "y": 245,
+    "w": 301.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Habilitación"
+    ],
+    "wrapped": [
+      "PK habilitaciónId (identificador)",
+      "FK alcanceRef (ref Alcance)",
+      "vigente (booleano conceptual)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_02",
+    "name": "Capacidad configurada",
+    "tid": "T-06-14",
+    "attrs": [
+      "ᴾᴷ configuraciónId (identificador)",
+      "ᶠᵏ identidadRef (ref Identidad BE profesional)",
+      "banda (cantidad, opcional)",
+      "modoEfectivo (token: LIMITADO|SIN_LIMITE)"
+    ],
+    "x": 1959,
+    "y": 550,
+    "w": 301.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Capacidad configurada"
+    ],
+    "wrapped": [
+      "PK configuraciónId (identificador)",
+      "FK identidadRef (ref Identidad BE profesional)",
+      "banda (cantidad, opcional)",
+      "modoEfectivo (token: LIMITADO | SIN_LIMITE)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_02",
+    "name": "Identidad BE",
+    "x": 390,
+    "y": 490,
+    "w": 340,
+    "attrs": [
+      "PK identidadId (identificador)",
+      "estadoCuenta (token)",
+      "perfilProfesionalRef (opcional)"
+    ],
+    "tid": "referencia 06",
+    "kind": "#C98F2C",
+    "titlelines": [
+      "Identidad BE"
+    ],
+    "wrapped": [
+      "PK identidadId (identificador)",
+      "estadoCuenta (token)",
+      "perfilProfesionalRef (opcional)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_02",
+    "name": "Alcance profesional",
+    "x": 883,
+    "y": 698,
+    "w": 340,
+    "attrs": [
+      "identidadRef (ref profesional)",
+      "clase (Especialidad o Capacidad antropométrica)",
+      "alcanceRef (exactamente uno)"
+    ],
+    "tid": "referencia 06",
+    "kind": "#C98F2C",
+    "titlelines": [
+      "Alcance profesional"
+    ],
+    "wrapped": [
+      "identidadRef (ref profesional)",
+      "clase (Especialidad o Capacidad antropométrica)",
+      "alcanceRef (exactamente uno)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_03",
+    "name": "Solicitud de vínculo",
+    "tid": "T-06-16",
+    "attrs": [
+      "ᴾᴷ solicitudId (identificador)",
+      "ᶠᵏ profesionalRef (ref Identidad BE)",
+      "ᶠᵏ destinatarioRef (ref Identidad o invitación)",
+      "ᶠᵏ alcance (exactamente uno)",
+      "finalidad (token)",
+      "ᶠᵏ actorIniciador (ref actor)",
+      "estado (token: PENDIENTE|ACEPTADA|RECHAZADA|CADUCADA|INVALIDADA)",
+      "ᶠᵏ antecedenteRef (ref Solicitud previa, opcional)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "x": 391.29999999999995,
+    "y": 314.4,
+    "w": 357.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Solicitud de vínculo"
+    ],
+    "wrapped": [
+      "PK solicitudId (identificador)",
+      "FK profesionalRef (ref Identidad BE)",
+      "FK destinatarioRef (ref Identidad o invitación)",
+      "FK alcance (exactamente uno)",
+      "finalidad (token)",
+      "FK actorIniciador (ref actor)",
+      "estado (token: PENDIENTE | ACEPTADA | RECHAZADA | CADUCADA |",
+      "INVALIDADA)",
+      "FK antecedenteRef (ref Solicitud previa, opcional)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "h": 244
+  },
+  {
+    "figura": "DV-06_03",
+    "name": "Vínculo — componente de alcance",
+    "tid": "T-06-15",
+    "attrs": [
+      "ᴾᴷ vínculoId (identificador)",
+      "ᶠᵏ alcance (ref Alcance)",
+      "finalidad (token)",
+      "ᶠᵏ solicitudOrigenRef (ref Solicitud)",
+      "estado (token: ACEPTADO|PAUSADO|FINALIZADO)",
+      "ᶠᵏ autoría (ref actor)",
+      "motivo (texto, opcional)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)"
+    ],
+    "x": 980.6999999999999,
+    "y": 313.6,
+    "w": 343.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Vínculo — componente de alcance"
+    ],
+    "wrapped": [
+      "PK vínculoId (identificador)",
+      "FK alcance (ref Alcance)",
+      "finalidad (token)",
+      "FK solicitudOrigenRef (ref Solicitud)",
+      "estado (token: ACEPTADO | PAUSADO | FINALIZADO)",
+      "FK autoría (ref actor)",
+      "motivo (texto, opcional)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)"
+    ],
+    "h": 199
+  },
+  {
+    "figura": "DV-06_03",
+    "name": "Consentimiento vigente",
+    "tid": "T-06-17",
+    "attrs": [
+      "ᴾᴷ consentimientoId (identificador)",
+      "ᶠᵏ vínculoRef (ref Vínculo)",
+      "ᶠᵏ alcance (ref Alcance)",
+      "finalidad (token)",
+      "ᶠᵏ versiónRef (ref Versión)",
+      "otorgadoEn (fecha-hora)",
+      "registro (fecha-hora)",
+      "estado (VIGENTE | REVOCADO por versión)"
+    ],
+    "x": 980.6999999999999,
+    "y": 578.4000000000001,
+    "w": 343.0,
+    "kind": "#9FBFEA",
+    "titlelines": [
+      "Consentimiento vigente"
+    ],
+    "wrapped": [
+      "PK consentimientoId (identificador)",
+      "FK vínculoRef (ref Vínculo)",
+      "FK alcance (ref Alcance)",
+      "finalidad (token)",
+      "FK versiónRef (ref Versión)",
+      "otorgadoEn (fecha-hora)",
+      "registro (fecha-hora)",
+      "estado (VIGENTE  |  REVOCADO por versión)"
+    ],
+    "h": 184
+  },
+  {
+    "figura": "DV-06_03",
+    "name": "Revocación",
+    "tid": "T-06-18",
+    "attrs": [
+      "ᴾᴷ revocaciónId (identificador)",
+      "ᶠᵏ consentimientoRef (ref Consentimiento)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "x": 1511.3,
+    "y": 577.6,
+    "w": 329.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Revocación"
+    ],
+    "wrapped": [
+      "PK revocaciónId (identificador)",
+      "FK consentimientoRef (ref Consentimiento)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "h": 139
+  },
+  {
+    "figura": "DV-06_03",
+    "name": "Alcance",
+    "tid": "T-06-45",
+    "attrs": [
+      "ᴾᴷ alcanceId (identificador)",
+      "ᶠᵏ especialidadRef (ref Especialidad, opcional)",
+      "ᶠᵏ capacidadRef (ref Capacidad, opcional)"
+    ],
+    "x": 1511.3,
+    "y": 250.4,
+    "w": 301.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Alcance"
+    ],
+    "wrapped": [
+      "PK alcanceId (identificador)",
+      "FK especialidadRef (ref Especialidad, opcional)",
+      "FK capacidadRef (ref Capacidad, opcional)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_03",
+    "name": "Autorización contextual",
+    "tid": "T-06-19",
+    "attrs": [
+      "identidad (insumo)",
+      "verificación (insumo)",
+      "habilitación (insumo)",
+      "vínculo (insumo)",
+      "consentimiento (insumo)",
+      "alcance (insumo)",
+      "finalidad (insumo)"
+    ],
+    "x": 2016.6999999999998,
+    "y": 402.40000000000003,
+    "w": 343.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Autorización contextual"
+    ],
+    "wrapped": [
+      "identidad (insumo)",
+      "verificación (insumo)",
+      "habilitación (insumo)",
+      "vínculo (insumo)",
+      "consentimiento (insumo)",
+      "alcance (insumo)",
+      "finalidad (insumo)"
+    ],
+    "h": 169
+  },
+  {
+    "figura": "DV-06_04",
+    "name": "Versión",
+    "tid": "T-06-20",
+    "attrs": [
+      "ᴾᴷ versiónId (identificador estable)",
+      "ᶠᵏ objetoVersionadoRef (ref entidad versionada)",
+      "ámbito (delimita sucesión válida)",
+      "ᶠᵏ predecesoraRef (ref Versión, 0..1)",
+      "ᶠᵏ autoría (ref actor responsable)",
+      "ᶠᵏ actorOperación (ref actor ejecutor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen del contenido)",
+      "contenidoEmitido (representación inmutable)",
+      "referenciasContexto (0..N refs)"
+    ],
+    "x": 461.99999999999994,
+    "y": 370.4,
+    "w": 389.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Versión"
+    ],
+    "wrapped": [
+      "PK versiónId (identificador estable)",
+      "FK objetoVersionadoRef (ref entidad versionada)",
+      "ámbito (delimita sucesión válida)",
+      "FK predecesoraRef (ref Versión, 0..1)",
+      "FK autoría (ref actor responsable)",
+      "FK actorOperación (ref actor ejecutor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen del contenido)",
+      "contenidoEmitido (representación inmutable)",
+      "referenciasContexto (0..N refs)"
+    ],
+    "h": 229
+  },
+  {
+    "figura": "DV-06_04",
+    "name": "Instantánea reproducible",
+    "tid": "T-06-21",
+    "attrs": [
+      "ᴾᴷ instantáneaId (identificador)",
+      "ᶠᵏ versiónRef (ref Versión, exactamente una)",
+      "contenidoCongelado (representación reconstruible)",
+      "ᶠᵏ autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "x": 1063.3,
+    "y": 274.4,
+    "w": 357.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Instantánea reproducible"
+    ],
+    "wrapped": [
+      "PK instantáneaId (identificador)",
+      "FK versiónRef (ref Versión, exactamente una)",
+      "contenidoCongelado (representación reconstruible)",
+      "FK autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "h": 169
+  },
+  {
+    "figura": "DV-06_04",
+    "name": "Corrección trazable",
+    "tid": "T-06-22",
+    "attrs": [
+      "ᴾᴷ correcciónId (identificador)",
+      "ᶠᵏ originalRef (ref registro raíz)",
+      "ᶠᵏ correcciónPreviaRef (ref Corrección, opcional)",
+      "contenidoCorregido (nueva afirmación o valor)",
+      "ᶠᵏ actor (ref actor ejecutor)",
+      "ᶠᵏ autoría (no reasigna la del original)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "motivo (texto cuando la política lo exige)",
+      "procedencia (fuente de la rectificación)"
+    ],
+    "x": 1063.3,
+    "y": 514.0,
+    "w": 357.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Corrección trazable"
+    ],
+    "wrapped": [
+      "PK correcciónId (identificador)",
+      "FK originalRef (ref registro raíz)",
+      "FK correcciónPreviaRef (ref Corrección, opcional)",
+      "contenidoCorregido (nueva afirmación o valor)",
+      "FK actor (ref actor ejecutor)",
+      "FK autoría (no reasigna la del original)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "motivo (texto cuando la política lo exige)",
+      "procedencia (fuente de la rectificación)"
+    ],
+    "h": 214
+  },
+  {
+    "figura": "DV-06_04",
+    "name": "Procedencia",
+    "tid": "T-06-23",
+    "attrs": [
+      "ᶠᵏ actor (ref)",
+      "fuente (origen)",
+      "proveedor (referencia externa, opcional)",
+      "contexto (descriptor)"
+    ],
+    "x": 1651.3,
+    "y": 274.0,
+    "w": 329.0,
+    "kind": "#9FBFEA",
+    "titlelines": [
+      "Procedencia"
+    ],
+    "wrapped": [
+      "FK actor (ref)",
+      "fuente (origen)",
+      "proveedor (referencia externa, opcional)",
+      "contexto (descriptor)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_04",
+    "name": "Doble temporalidad",
+    "tid": "T-06-24",
+    "attrs": [
+      "ocurrencia (cuándo pasó el hecho)",
+      "registro (cuándo BE lo registró)"
+    ],
+    "x": 1651.3,
+    "y": 514.0,
+    "w": 329.0,
+    "kind": "#9FBFEA",
+    "titlelines": [
+      "Doble temporalidad"
+    ],
+    "wrapped": [
+      "ocurrencia (cuándo pasó el hecho)",
+      "registro (cuándo BE lo registró)"
+    ],
+    "h": 94
+  },
+  {
+    "figura": "DV-06_05",
+    "name": "Proceso operativo",
+    "tid": "T-06-25",
+    "attrs": [
+      "ᴾᴷ procesoId (identificador)",
+      "ᶠᵏ profesionalRef (ref Identidad BE)",
+      "ᶠᵏ asesoradoRef (ref Identidad BE)",
+      "ᶠᵏ alcanceFuncional (ref Alcance)",
+      "actoApertura (ref acto)",
+      "ᶠᵏ versiónAperturaRef (ref Versión, cuando aplique)",
+      "estado (token: ABIERTO|CERRADO)",
+      "ᶠᵏ autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "x": 448.0,
+    "y": 354.4,
+    "w": 375.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Proceso operativo"
+    ],
+    "wrapped": [
+      "PK procesoId (identificador)",
+      "FK profesionalRef (ref Identidad BE)",
+      "FK asesoradoRef (ref Identidad BE)",
+      "FK alcanceFuncional (ref Alcance)",
+      "actoApertura (ref acto)",
+      "FK versiónAperturaRef (ref Versión, cuando aplique)",
+      "estado (token: ABIERTO | CERRADO)",
+      "FK autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "h": 229
+  },
+  {
+    "figura": "DV-06_05",
+    "name": "Activación de plan",
+    "tid": "T-06-26",
+    "attrs": [
+      "ᴾᴷ activaciónId (identificador)",
+      "ᶠᵏ procesoRef (ref Proceso)",
+      "ᶠᵏ versiónPlanRef (ref Versión de plan)",
+      "ᶠᵏ instantáneaRef (ref Instantánea)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "x": 1022.6999999999999,
+    "y": 266.4,
+    "w": 343.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Activación de plan"
+    ],
+    "wrapped": [
+      "PK activaciónId (identificador)",
+      "FK procesoRef (ref Proceso)",
+      "FK versiónPlanRef (ref Versión de plan)",
+      "FK instantáneaRef (ref Instantánea)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "h": 169
+  },
+  {
+    "figura": "DV-06_05",
+    "name": "ContinuidadOCierreAplicado",
+    "tid": "T-06-40",
+    "attrs": [
+      "ᴾᴷ eventoId (identificador)",
+      "ᶠᵏ procesoRef (ref Proceso)",
+      "ᶠᵏ revisiónOrigenRef (ref Revisión válida)",
+      "resultadoSemántico (token de taxonomía)",
+      "discriminador (token: CONTINUIDAD|CIERRE_PROCESO)",
+      "estadoAnterior (token)",
+      "estadoPosterior (token)",
+      "ᶠᵏ autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "x": 1022.6999999999999,
+    "y": 506.40000000000003,
+    "w": 343.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "ContinuidadOCierreAplicado"
+    ],
+    "wrapped": [
+      "PK eventoId (identificador)",
+      "FK procesoRef (ref Proceso)",
+      "FK revisiónOrigenRef (ref Revisión válida)",
+      "resultadoSemántico (token de taxonomía)",
+      "discriminador (token: CONTINUIDAD | CIERRE_PROCESO)",
+      "estadoAnterior (token)",
+      "estadoPosterior (token)",
+      "FK autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "h": 229
+  },
+  {
+    "figura": "DV-06_05",
+    "name": "Capacidad configurada",
+    "tid": "T-06-14",
+    "attrs": [
+      "modoEfectivo (token)",
+      "banda (cantidad, opcional)"
+    ],
+    "x": 1582.6999999999998,
+    "y": 266.0,
+    "w": 315.0,
+    "kind": "#C98F2C",
+    "titlelines": [
+      "Capacidad configurada"
+    ],
+    "wrapped": [
+      "modoEfectivo (token)",
+      "banda (cantidad, opcional)"
+    ],
+    "h": 94
+  },
+  {
+    "figura": "DV-06_05",
+    "name": "Ciclo cerrado trazable",
+    "tid": "T-06-40",
+    "attrs": [
+      "condición (observable)",
+      "propietario (M-10)"
+    ],
+    "x": 1582.6999999999998,
+    "y": 506.0,
+    "w": 315.0,
+    "kind": "#C98F2C",
+    "titlelines": [
+      "Ciclo cerrado trazable"
+    ],
+    "wrapped": [
+      "condición (observable)",
+      "propietario (M-10)"
+    ],
+    "h": 94
+  },
+  {
+    "figura": "DV-06_06",
+    "name": "Objetivo nutricional",
+    "tid": "T-06-27",
+    "attrs": [
+      "ᴾᴷ objetivoId (identificador)",
+      "ᶠᵏ procesoRef (ref Proceso)",
+      "requerimientoEnergético (cantidad estimada)",
+      "distribuciónMacros (estructura)",
+      "fundamento (texto profesional)",
+      "ᶠᵏ versiónRef (ref Versión)"
+    ],
+    "x": 392.0,
+    "y": 290.0,
+    "w": 324.79999999999995,
+    "kind": "#9FBFEA",
+    "titlelines": [
+      "Objetivo nutricional"
+    ],
+    "wrapped": [
+      "PK objetivoId (identificador)",
+      "FK procesoRef (ref Proceso)",
+      "requerimientoEnergético (cantidad estimada)",
+      "distribuciónMacros (estructura)",
+      "fundamento (texto profesional)",
+      "FK versiónRef (ref Versión)"
+    ],
+    "h": 154
+  },
+  {
+    "figura": "DV-06_06",
+    "name": "Plan nutricional",
+    "tid": "T-06-28",
+    "attrs": [
+      "ᴾᴷ planId (identificador)",
+      "ᶠᵏ objetivoVersiónRef (ref Versión de Objetivo)",
+      "ᶠᵏ versiónActivadaRef (ref Versión)",
+      "ᶠᵏ instantáneaRef (ref Instantánea)"
+    ],
+    "x": 392.0,
+    "y": 546.0,
+    "w": 324.79999999999995,
+    "kind": "#9FBFEA",
+    "titlelines": [
+      "Plan nutricional"
+    ],
+    "wrapped": [
+      "PK planId (identificador)",
+      "FK objetivoVersiónRef (ref Versión de Objetivo)",
+      "FK versiónActivadaRef (ref Versión)",
+      "FK instantáneaRef (ref Instantánea)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_06",
+    "name": "Día tipo",
+    "tid": "T-06-47",
+    "attrs": [
+      "ᴾᴷ díaTipoId (identificador)",
+      "ᶠᵏ versiónPlanRef (ref Versión)",
+      "denominación (texto)"
+    ],
+    "x": 854.0,
+    "y": 546.4000000000001,
+    "w": 280.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Día tipo"
+    ],
+    "wrapped": [
+      "PK díaTipoId (identificador)",
+      "FK versiónPlanRef (ref Versión)",
+      "denominación (texto)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_06",
+    "name": "Comida",
+    "tid": "T-06-48",
+    "attrs": [
+      "ᴾᴷ comidaId (identificador)",
+      "ᶠᵏ díaTipoRef (ref Día tipo)",
+      "momento (descriptor)"
+    ],
+    "x": 1232.0,
+    "y": 546.4000000000001,
+    "w": 280.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Comida"
+    ],
+    "wrapped": [
+      "PK comidaId (identificador)",
+      "FK díaTipoRef (ref Día tipo)",
+      "momento (descriptor)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_06",
+    "name": "Opción de comida",
+    "tid": "T-06-49",
+    "attrs": [
+      "ᴾᴷ opciónId (identificador)",
+      "ᶠᵏ comidaRef (ref Comida)",
+      "orden (entero)"
+    ],
+    "x": 1610.0,
+    "y": 546.4000000000001,
+    "w": 280.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Opción de comida"
+    ],
+    "wrapped": [
+      "PK opciónId (identificador)",
+      "FK comidaRef (ref Comida)",
+      "orden (entero)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_06",
+    "name": "Ítem prescripto",
+    "tid": "T-06-50",
+    "attrs": [
+      "ᴾᴷ ítemId (identificador)",
+      "ᶠᵏ opciónRef (ref Opción)",
+      "ᶠᵏ alimentoRef (ref Catálogo, opcional)",
+      "ᶠᵏ grupoIntercambioRef (ref Grupo, opcional)",
+      "cantidad (valor)",
+      "unidad (token)",
+      "estadoPreparación (token: crudo|cocido|adquirido)"
+    ],
+    "x": 2001.3,
+    "y": 546.4000000000001,
+    "w": 301.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Ítem prescripto"
+    ],
+    "wrapped": [
+      "PK ítemId (identificador)",
+      "FK opciónRef (ref Opción)",
+      "FK alimentoRef (ref Catálogo, opcional)",
+      "FK grupoIntercambioRef (ref Grupo, opcional)",
+      "cantidad (valor)",
+      "unidad (token)",
+      "estadoPreparación (token: crudo | cocido |",
+      "adquirido)"
+    ],
+    "h": 184
+  },
+  {
+    "figura": "DV-06_06",
+    "name": "Elemento de catálogo",
+    "tid": "T-06-31",
+    "attrs": [
+      "ᴾᴷ elementoId (identificador)",
+      "denominación (texto)",
+      "ᶠᵏ composiciónRef (ref tabla con versión)",
+      "procedencia (origen del dato)",
+      "atributosExtendidos (0..N, opcional)"
+    ],
+    "x": 1232.0,
+    "y": 289.6,
+    "w": 324.79999999999995,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Elemento de catálogo"
+    ],
+    "wrapped": [
+      "PK elementoId (identificador)",
+      "denominación (texto)",
+      "FK composiciónRef (ref tabla con versión)",
+      "procedencia (origen del dato)",
+      "atributosExtendidos (0..N, opcional)"
+    ],
+    "h": 139
+  },
+  {
+    "figura": "DV-06_06",
+    "name": "Ingesta registrada",
+    "tid": "T-06-30",
+    "attrs": [
+      "ᴾᴷ ingestaId (identificador)",
+      "ᶠᵏ versiónActivadaRef (ref Versión)",
+      "modalidad (token: opción|ítems|libre)",
+      "textoDescriptivo (texto, si libre)",
+      "ᶠᵏ evidenciaVisualRef (ref adjunto, opcional)",
+      "ᶠᵏ autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "x": 1819.9999999999998,
+    "y": 289.6,
+    "w": 324.79999999999995,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Ingesta registrada"
+    ],
+    "wrapped": [
+      "PK ingestaId (identificador)",
+      "FK versiónActivadaRef (ref Versión)",
+      "modalidad (token: opción | ítems | libre)",
+      "textoDescriptivo (texto, si libre)",
+      "FK evidenciaVisualRef (ref adjunto, opcional)",
+      "FK autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "h": 199
+  },
+  {
+    "figura": "DV-06_07",
+    "name": "Objetivo de entrenamiento",
+    "tid": "T-06-27",
+    "attrs": [
+      "ᴾᴷ objetivoId (identificador)",
+      "ᶠᵏ procesoRef (ref Proceso)",
+      "fundamento (texto profesional)",
+      "ᶠᵏ versiónRef (ref Versión)"
+    ],
+    "x": 392.0,
+    "y": 290.0,
+    "w": 324.79999999999995,
+    "kind": "#9FBFEA",
+    "titlelines": [
+      "Objetivo de entrenamiento"
+    ],
+    "wrapped": [
+      "PK objetivoId (identificador)",
+      "FK procesoRef (ref Proceso)",
+      "fundamento (texto profesional)",
+      "FK versiónRef (ref Versión)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_07",
+    "name": "Plan de entrenamiento",
+    "tid": "T-06-28",
+    "attrs": [
+      "ᴾᴷ planId (identificador)",
+      "ᶠᵏ objetivoVersiónRef (ref Versión de Objetivo)",
+      "ᶠᵏ versiónActivadaRef (ref Versión)"
+    ],
+    "x": 392.0,
+    "y": 546.4000000000001,
+    "w": 324.79999999999995,
+    "kind": "#9FBFEA",
+    "titlelines": [
+      "Plan de entrenamiento"
+    ],
+    "wrapped": [
+      "PK planId (identificador)",
+      "FK objetivoVersiónRef (ref Versión de Objetivo)",
+      "FK versiónActivadaRef (ref Versión)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_07",
+    "name": "Bloque",
+    "tid": "T-06-57",
+    "attrs": [
+      "ᴾᴷ bloqueId (identificador)",
+      "ᶠᵏ versiónPlanRef (ref Versión)",
+      "propósito (texto libre)"
+    ],
+    "x": 840.0,
+    "y": 546.4000000000001,
+    "w": 268.79999999999995,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Bloque"
+    ],
+    "wrapped": [
+      "PK bloqueId (identificador)",
+      "FK versiónPlanRef (ref Versión)",
+      "propósito (texto libre)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_07",
+    "name": "Microciclo",
+    "tid": "T-06-57",
+    "attrs": [
+      "ᴾᴷ microcicloId (identificador)",
+      "ᶠᵏ bloqueRef (ref Bloque)",
+      "propósito (texto libre)"
+    ],
+    "x": 1197.0,
+    "y": 546.4000000000001,
+    "w": 268.79999999999995,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Microciclo"
+    ],
+    "wrapped": [
+      "PK microcicloId (identificador)",
+      "FK bloqueRef (ref Bloque)",
+      "propósito (texto libre)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_07",
+    "name": "Sesión",
+    "tid": "T-06-61",
+    "attrs": [
+      "ᴾᴷ sesiónId (identificador)",
+      "ᶠᵏ contenedorRef (ref Bloque o Microciclo)",
+      "posición (entero)"
+    ],
+    "x": 1554.0,
+    "y": 546.4000000000001,
+    "w": 268.79999999999995,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Sesión"
+    ],
+    "wrapped": [
+      "PK sesiónId (identificador)",
+      "FK contenedorRef (ref Bloque o Microciclo)",
+      "posición (entero)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_07",
+    "name": "Prescripción de ejercicio",
+    "tid": "T-06-29",
+    "attrs": [
+      "ᴾᴷ prescripciónId (identificador)",
+      "ᶠᵏ sesiónRef (ref Sesión)",
+      "ᶠᵏ ejercicioRef (ref Catálogo)",
+      "series (entero)",
+      "repeticiones (entero o rango)",
+      "criterioIntensidad (token: PORCENTAJE_RM|RIR)",
+      "valorIntensidad (cantidad)",
+      "descanso (duración)"
+    ],
+    "x": 1959.9999999999998,
+    "y": 546.0,
+    "w": 310.79999999999995,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Prescripción de ejercicio"
+    ],
+    "wrapped": [
+      "PK prescripciónId (identificador)",
+      "FK sesiónRef (ref Sesión)",
+      "FK ejercicioRef (ref Catálogo)",
+      "series (entero)",
+      "repeticiones (entero o rango)",
+      "criterioIntensidad (token: PORCENTAJE_RM | RIR)",
+      "valorIntensidad (cantidad)",
+      "descanso (duración)"
+    ],
+    "h": 184
+  },
+  {
+    "figura": "DV-06_07",
+    "name": "Ejecución real",
+    "tid": "T-06-32",
+    "attrs": [
+      "ᴾᴷ ejecuciónId (identificador)",
+      "ᶠᵏ prescripciónRef (ref Prescripción)",
+      "ᶠᵏ ejercicioRealizadoRef (puede diferir del prescripto)",
+      "cargaUtilizada (cantidad con unidad)",
+      "repeticionesCompletadas (entero)",
+      "esfuerzoPercibido (RIR, opcional)",
+      "granularidad (token: serie|ejercicio|sesión)",
+      "condición (token: REALIZADA|REALIZADA_CON_DESVIO|NO_REALIZADA)"
+    ],
+    "x": 1959.9999999999998,
+    "y": 290.0,
+    "w": 310.79999999999995,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Ejecución real"
+    ],
+    "wrapped": [
+      "PK ejecuciónId (identificador)",
+      "FK prescripciónRef (ref Prescripción)",
+      "FK ejercicioRealizadoRef (puede diferir del",
+      "prescripto)",
+      "cargaUtilizada (cantidad con unidad)",
+      "repeticionesCompletadas (entero)",
+      "esfuerzoPercibido (RIR, opcional)",
+      "granularidad (token: serie | ejercicio | sesión)",
+      "condición (token: REALIZADA | REALIZADA_CON_DESVIO |",
+      "NO_REALIZADA)"
+    ],
+    "h": 214
+  },
+  {
+    "figura": "DV-06_07",
+    "name": "Zona muscular",
+    "tid": "T-06-67",
+    "attrs": [
+      "ᴾᴷ zonaId (identificador estable)",
+      "denominación (texto)",
+      "vistaAnatómica (anterior|posterior|ambas (T-06-68))"
+    ],
+    "x": 1540.0,
+    "y": 290.4,
+    "w": 280.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Zona muscular"
+    ],
+    "wrapped": [
+      "PK zonaId (identificador estable)",
+      "denominación (texto)",
+      "vistaAnatómica (anterior | posterior | ambas",
+      "(T-06-68))"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_07",
+    "name": "Relación Ejercicio–Zona",
+    "tid": "T-06-69",
+    "attrs": [
+      "ᴾᴷ relaciónId (identificador)",
+      "ᶠᵏ ejercicioRef (ref Catálogo)",
+      "ᶠᵏ zonaRef (ref Zona muscular)",
+      "rol (PRINCIPAL|SECUNDARIO (T-06-70))",
+      "ᶠᵏ versión (ref Versión)",
+      "procedencia (origen)"
+    ],
+    "x": 1203.3,
+    "y": 290.0,
+    "w": 301.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Relación Ejercicio–Zona"
+    ],
+    "wrapped": [
+      "PK relaciónId (identificador)",
+      "FK ejercicioRef (ref Catálogo)",
+      "FK zonaRef (ref Zona muscular)",
+      "rol (PRINCIPAL | SECUNDARIO (T-06-70))",
+      "FK versión (ref Versión)",
+      "procedencia (origen)"
+    ],
+    "h": 154
+  },
+  {
+    "figura": "DV-06_07",
+    "name": "Catálogo de ejercicios",
+    "tid": "T-06-31",
+    "attrs": [
+      "ᴾᴷ ejercicioId (identificador)",
+      "denominación (texto)",
+      "recursoDidáctico (opcional con licencia)"
+    ],
+    "x": 840.0,
+    "y": 290.4,
+    "w": 268.79999999999995,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Catálogo de ejercicios"
+    ],
+    "wrapped": [
+      "PK ejercicioId (identificador)",
+      "denominación (texto)",
+      "recursoDidáctico (opcional con licencia)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_08",
+    "name": "Evaluación antropométrica",
+    "tid": "T-06-33",
+    "attrs": [
+      "ᴾᴷ evaluaciónId (identificador)",
+      "ᶠᵏ asesoradoRef (ref Identidad BE)",
+      "ᶠᵏ profesionalRef (ref Identidad BE)",
+      "ᶠᵏ protocoloRef (protocolo identificado)",
+      "estado (token: EN_PREPARACION|REGISTRADA)",
+      "ᶠᵏ autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "x": 420.0,
+    "y": 345.6,
+    "w": 347.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Evaluación antropométrica"
+    ],
+    "wrapped": [
+      "PK evaluaciónId (identificador)",
+      "FK asesoradoRef (ref Identidad BE)",
+      "FK profesionalRef (ref Identidad BE)",
+      "FK protocoloRef (protocolo identificado)",
+      "estado (token: EN_PREPARACION | REGISTRADA)",
+      "FK autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "h": 199
+  },
+  {
+    "figura": "DV-06_08",
+    "name": "Medición directa",
+    "tid": "T-06-33",
+    "attrs": [
+      "ᴾᴷ mediciónId (identificador)",
+      "ᶠᵏ evaluaciónRef (ref Evaluación)",
+      "magnitud (denominación)",
+      "valor (cantidad)",
+      "unidadOriginal (token)",
+      "estadoPreparación (protocolo aplicado)",
+      "condición (token: VIGENTE|ANULADA)",
+      "motivoAnulación (texto, si ANULADA)"
+    ],
+    "x": 979.9999999999999,
+    "y": 258.0,
+    "w": 336.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Medición directa"
+    ],
+    "wrapped": [
+      "PK mediciónId (identificador)",
+      "FK evaluaciónRef (ref Evaluación)",
+      "magnitud (denominación)",
+      "valor (cantidad)",
+      "unidadOriginal (token)",
+      "estadoPreparación (protocolo aplicado)",
+      "condición (token: VIGENTE | ANULADA)",
+      "motivoAnulación (texto, si ANULADA)"
+    ],
+    "h": 184
+  },
+  {
+    "figura": "DV-06_08",
+    "name": "Cálculo derivado",
+    "tid": "T-06-34",
+    "attrs": [
+      "ᴾᴷ cálculoId (identificador)",
+      "ᶠᵏ evaluaciónRef (ref Evaluación)",
+      "ᶠᵏ métodoVersiónRef (ref Método, versión)",
+      "inputsSnapshot (refs por versión)",
+      "resultado (cantidad con unidad)",
+      "contexto (token: PREPARACION|REGISTRADA)"
+    ],
+    "x": 979.9999999999999,
+    "y": 514.0,
+    "w": 336.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Cálculo derivado"
+    ],
+    "wrapped": [
+      "PK cálculoId (identificador)",
+      "FK evaluaciónRef (ref Evaluación)",
+      "FK métodoVersiónRef (ref Método, versión)",
+      "inputsSnapshot (refs por versión)",
+      "resultado (cantidad con unidad)",
+      "contexto (token: PREPARACION | REGISTRADA)"
+    ],
+    "h": 154
+  },
+  {
+    "figura": "DV-06_08",
+    "name": "Método profesional versionado",
+    "tid": "T-06-72",
+    "attrs": [
+      "ᴾᴷ métodoId (identificador)",
+      "versión (inmutable)",
+      "inputsRequeridos (especificación)",
+      "admisibilidad (criterio)"
+    ],
+    "x": 1526.6999999999998,
+    "y": 514.0,
+    "w": 315.0,
+    "kind": "#C98F2C",
+    "titlelines": [
+      "Método profesional versionado"
+    ],
+    "wrapped": [
+      "PK métodoId (identificador)",
+      "versión (inmutable)",
+      "inputsRequeridos (especificación)",
+      "admisibilidad (criterio)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_08",
+    "name": "Evolución",
+    "tid": "T-06-35",
+    "attrs": [
+      "ᴾᴷ serieId (identificador)",
+      "magnitud (denominación)",
+      "comparabilidad (token: COMPARABLE|PARCIAL|NO_COMPARABLE)",
+      "huecos (SIN_DATO explícito)"
+    ],
+    "x": 1526.6999999999998,
+    "y": 258.0,
+    "w": 315.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Evolución"
+    ],
+    "wrapped": [
+      "PK serieId (identificador)",
+      "magnitud (denominación)",
+      "comparabilidad (token: COMPARABLE | PARCIAL |",
+      "NO_COMPARABLE)",
+      "huecos (SIN_DATO explícito)"
+    ],
+    "h": 139
+  },
+  {
+    "figura": "DV-06_08",
+    "name": "Servicio antropométrico publicado",
+    "tid": "T-06-36",
+    "attrs": [
+      "ᴾᴷ publicaciónId (identificador)",
+      "ᶠᵏ profesionalRef (ref Identidad BE)",
+      "ubicaciónUtilizable (descriptor)",
+      "visibilidad (limitada)"
+    ],
+    "x": 420.0,
+    "y": 594.0,
+    "w": 347.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Servicio antropométrico publicado"
+    ],
+    "wrapped": [
+      "PK publicaciónId (identificador)",
+      "FK profesionalRef (ref Identidad BE)",
+      "ubicaciónUtilizable (descriptor)",
+      "visibilidad (limitada)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_09",
+    "name": "Revisión profesional válida",
+    "tid": "T-06-37",
+    "attrs": [
+      "ᴾᴷ revisiónId (identificador)",
+      "ᶠᵏ procesoRef (ref Proceso)",
+      "evidenciaConsiderada (refs)",
+      "períodoEvaluado (rango temporal)",
+      "fundamento (texto profesional)",
+      "resultadoSemántico (token de taxonomía cerrada)",
+      "ᶠᵏ autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "x": 420.0,
+    "y": 338.0,
+    "w": 352.79999999999995,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Revisión profesional válida"
+    ],
+    "wrapped": [
+      "PK revisiónId (identificador)",
+      "FK procesoRef (ref Proceso)",
+      "evidenciaConsiderada (refs)",
+      "períodoEvaluado (rango temporal)",
+      "fundamento (texto profesional)",
+      "resultadoSemántico (token de taxonomía cerrada)",
+      "FK autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "h": 214
+  },
+  {
+    "figura": "DV-06_09",
+    "name": "Resultado semántico",
+    "tid": "T-06-38",
+    "attrs": [
+      "token (MANTENER | AJUSTAR)",
+      " (SUSTITUIR | FINALIZAR)",
+      " (REPROGRAMAR_REVISION)",
+      " (CAMBIAR_OBJETIVO)"
+    ],
+    "x": 965.9999999999999,
+    "y": 258.0,
+    "w": 308.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Resultado semántico"
+    ],
+    "wrapped": [
+      "token (MANTENER  |  AJUSTAR)",
+      " (SUSTITUIR  |  FINALIZAR)",
+      " (REPROGRAMAR_REVISION)",
+      " (CAMBIAR_OBJETIVO)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_09",
+    "name": "Próxima acción",
+    "tid": "T-06-39",
+    "attrs": [
+      "ᴾᴷ acciónId (identificador)",
+      "ᶠᵏ revisiónRef (ref Revisión)",
+      "fundamento (texto)",
+      "aplicadaEn (fecha-hora, opcional)"
+    ],
+    "x": 965.9999999999999,
+    "y": 474.0,
+    "w": 308.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Próxima acción"
+    ],
+    "wrapped": [
+      "PK acciónId (identificador)",
+      "FK revisiónRef (ref Revisión)",
+      "fundamento (texto)",
+      "aplicadaEn (fecha-hora, opcional)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_09",
+    "name": "Revisión pendiente",
+    "tid": "T-06-41",
+    "attrs": [
+      "ᴾᴷ pendienteId (identificador)",
+      "ᶠᵏ procesoRef (ref Proceso)",
+      "derivación (estructural)"
+    ],
+    "x": 420.0,
+    "y": 586.4000000000001,
+    "w": 352.79999999999995,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Revisión pendiente"
+    ],
+    "wrapped": [
+      "PK pendienteId (identificador)",
+      "FK procesoRef (ref Proceso)",
+      "derivación (estructural)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_09",
+    "name": "Proyección",
+    "tid": "T-06-42",
+    "attrs": [
+      "ᴾᴷ proyecciónId (identificador)",
+      "fuentesDeclaradas (refs)",
+      "ventana (rango temporal)",
+      "estadoDato (token: AVAILABLE|NO_DATA|NOT_COMPARABLE)"
+    ],
+    "x": 1483.3,
+    "y": 258.0,
+    "w": 329.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Proyección"
+    ],
+    "wrapped": [
+      "PK proyecciónId (identificador)",
+      "fuentesDeclaradas (refs)",
+      "ventana (rango temporal)",
+      "estadoDato (token: AVAILABLE | NO_DATA | NOT_COMPARABLE)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_09",
+    "name": "Ciclo cerrado trazable",
+    "tid": "T-06-40",
+    "attrs": [
+      "ᴾᴷ cicloId (identificador)",
+      "ᶠᵏ procesoRef (ref Proceso)",
+      "ᶠᵏ eventoAplicadoRef (ref evento)",
+      "condición (observable)"
+    ],
+    "x": 1483.3,
+    "y": 474.0,
+    "w": 329.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Ciclo cerrado trazable"
+    ],
+    "wrapped": [
+      "PK cicloId (identificador)",
+      "FK procesoRef (ref Proceso)",
+      "FK eventoAplicadoRef (ref evento)",
+      "condición (observable)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_09",
+    "name": "TVCC-30",
+    "tid": "T-06-44",
+    "attrs": [
+      "N (ciclos con continuidad aplicada)",
+      "D (universo evaluable)",
+      "ventana (30 fechas locales)",
+      "exclusiones (con motivo)"
+    ],
+    "x": 1987.9999999999998,
+    "y": 474.0,
+    "w": 294.0,
+    "kind": "#C98F2C",
+    "titlelines": [
+      "TVCC-30"
+    ],
+    "wrapped": [
+      "N (ciclos con continuidad aplicada)",
+      "D (universo evaluable)",
+      "ventana (30 fechas locales)",
+      "exclusiones (con motivo)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_10",
+    "name": "Método profesional versionado",
+    "tid": "T-06-72",
+    "attrs": [
+      "ᴾᴷ métodoId (identificador estable)",
+      "denominación (texto)",
+      "versión (inmutable)",
+      "inputsRequeridos (especificación)",
+      "procedenciasAdmisibles (criterio)",
+      "estado (token: VIGENTE|HISTÓRICO)"
+    ],
+    "x": 419.29999999999995,
+    "y": 298.0,
+    "w": 357.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Método profesional versionado"
+    ],
+    "wrapped": [
+      "PK métodoId (identificador estable)",
+      "denominación (texto)",
+      "versión (inmutable)",
+      "inputsRequeridos (especificación)",
+      "procedenciasAdmisibles (criterio)",
+      "estado (token: VIGENTE | HISTÓRICO)"
+    ],
+    "h": 154
+  },
+  {
+    "figura": "DV-06_10",
+    "name": "Ejecución de cálculo",
+    "tid": "T-06-73",
+    "attrs": [
+      "ᴾᴷ ejecuciónId (identificador)",
+      "ᶠᵏ métodoVersiónRef (ref Método)",
+      "ᶠᵏ inputsSnapshot (refs por versión)",
+      "resultado (valor con unidad)",
+      "finalidad (token)",
+      "ᶠᵏ autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)"
+    ],
+    "x": 952.6999999999999,
+    "y": 298.0,
+    "w": 343.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Ejecución de cálculo"
+    ],
+    "wrapped": [
+      "PK ejecuciónId (identificador)",
+      "FK métodoVersiónRef (ref Método)",
+      "FK inputsSnapshot (refs por versión)",
+      "resultado (valor con unidad)",
+      "finalidad (token)",
+      "FK autoría (ref actor)",
+      "ocurrencia (fecha-hora)",
+      "registro (fecha-hora)"
+    ],
+    "h": 184
+  },
+  {
+    "figura": "DV-06_10",
+    "name": "Referencia profesional adoptada",
+    "tid": "T-06-74",
+    "attrs": [
+      "ᴾᴷ referenciaId (identificador)",
+      "ᶠᵏ ejecuciónRef (ref Ejecución)",
+      "adoptadaEn (fecha-hora)",
+      "ᶠᵏ sucesoraDeRef (ref Referencia, opcional)"
+    ],
+    "x": 1470.6999999999998,
+    "y": 298.0,
+    "w": 343.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Referencia profesional adoptada"
+    ],
+    "wrapped": [
+      "PK referenciaId (identificador)",
+      "FK ejecuciónRef (ref Ejecución)",
+      "adoptadaEn (fecha-hora)",
+      "FK sucesoraDeRef (ref Referencia, opcional)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_10",
+    "name": "Plantilla BE de solicitud",
+    "tid": "T-06-75",
+    "attrs": [
+      "ᴾᴷ plantillaId (identificador)",
+      "versión (inmutable)",
+      "campos (estructura interna)",
+      "estado (token: VIGENTE|HISTÓRICA)"
+    ],
+    "x": 419.29999999999995,
+    "y": 546.0,
+    "w": 357.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Plantilla BE de solicitud"
+    ],
+    "wrapped": [
+      "PK plantillaId (identificador)",
+      "versión (inmutable)",
+      "campos (estructura interna)",
+      "estado (token: VIGENTE | HISTÓRICA)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_10",
+    "name": "Solicitud estructurada",
+    "tid": "T-06-76",
+    "attrs": [
+      "ᴾᴷ solicitudId (identificador)",
+      "ᶠᵏ plantillaVersiónRef (ref Plantilla)",
+      "ᶠᵏ profesionalRef (ref Identidad BE)",
+      "ᶠᵏ asesoradoRef (ref Identidad BE)",
+      "finalidad (token)",
+      "ᶠᵏ alcance (ref Alcance)",
+      "estado (token: PENDIENTE|RESPONDIDA)"
+    ],
+    "x": 952.6999999999999,
+    "y": 546.4000000000001,
+    "w": 343.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Solicitud estructurada"
+    ],
+    "wrapped": [
+      "PK solicitudId (identificador)",
+      "FK plantillaVersiónRef (ref Plantilla)",
+      "FK profesionalRef (ref Identidad BE)",
+      "FK asesoradoRef (ref Identidad BE)",
+      "finalidad (token)",
+      "FK alcance (ref Alcance)",
+      "estado (token: PENDIENTE | RESPONDIDA)"
+    ],
+    "h": 169
+  },
+  {
+    "figura": "DV-06_10",
+    "name": "Respuesta autoinformada",
+    "tid": "T-06-77",
+    "attrs": [
+      "ᴾᴷ respuestaId (identificador)",
+      "ᶠᵏ solicitudRef (ref Solicitud)",
+      "contenido (respuestas por campo)",
+      "procedencia (SELF_REPORTED)",
+      "ᶠᵏ correcciónRef (ref Corrección, opcional)"
+    ],
+    "x": 1470.6999999999998,
+    "y": 545.6,
+    "w": 343.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Respuesta autoinformada"
+    ],
+    "wrapped": [
+      "PK respuestaId (identificador)",
+      "FK solicitudRef (ref Solicitud)",
+      "contenido (respuestas por campo)",
+      "procedencia (SELF_REPORTED)",
+      "FK correcciónRef (ref Corrección, opcional)"
+    ],
+    "h": 139
+  },
+  {
+    "figura": "DV-06_10",
+    "name": "Evaluación en preparación",
+    "tid": "T-06-78",
+    "attrs": [
+      "ᴾᴷ evaluaciónId (mismo id que la registrada)",
+      "estado (EN_PREPARACION)",
+      "retomablePor (profesional autorizado)"
+    ],
+    "x": 1959.3,
+    "y": 298.4,
+    "w": 329.0,
+    "kind": "#9FBFEA",
+    "titlelines": [
+      "Evaluación en preparación"
+    ],
+    "wrapped": [
+      "PK evaluaciónId (mismo id que la registrada)",
+      "estado (EN_PREPARACION)",
+      "retomablePor (profesional autorizado)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_10",
+    "name": "Anulación antropométrica",
+    "tid": "T-06-79",
+    "attrs": [
+      "ᴾᴷ anulaciónId (identificador)",
+      "ᶠᵏ mediciónRef (ref Medición directa)",
+      "motivo (texto obligatorio)",
+      "condiciónAnterior (token)",
+      "ᶠᵏ autoría (ref actor)",
+      "ocurrencia (fecha-hora)"
+    ],
+    "x": 1959.3,
+    "y": 546.0,
+    "w": 329.0,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Anulación antropométrica"
+    ],
+    "wrapped": [
+      "PK anulaciónId (identificador)",
+      "FK mediciónRef (ref Medición directa)",
+      "motivo (texto obligatorio)",
+      "condiciónAnterior (token)",
+      "FK autoría (ref actor)",
+      "ocurrencia (fecha-hora)"
+    ],
+    "h": 154
+  },
+  {
+    "figura": "DV-06_11",
+    "name": "Grupo de intercambio",
+    "tid": "T-06-51",
+    "attrs": [
+      "ᴾᴷ grupoId (identificador)",
+      "denominación (texto)",
+      "ᶠᵏ versión (ref Versión)",
+      "ᶠᵏ nutrienteCríticoRef (ref Nutriente crítico)"
+    ],
+    "x": 448.0,
+    "y": 314.0,
+    "w": 361.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Grupo de intercambio"
+    ],
+    "wrapped": [
+      "PK grupoId (identificador)",
+      "denominación (texto)",
+      "FK versión (ref Versión)",
+      "FK nutrienteCríticoRef (ref Nutriente crítico)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_11",
+    "name": "Nutriente crítico",
+    "tid": "T-06-52",
+    "attrs": [
+      "ᴾᴷ nutrienteId (identificador)",
+      "denominación (texto)",
+      "ᶠᵏ declaradoPor (ref Grupo de intercambio)"
+    ],
+    "x": 979.9999999999999,
+    "y": 314.4,
+    "w": 333.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Nutriente crítico"
+    ],
+    "wrapped": [
+      "PK nutrienteId (identificador)",
+      "denominación (texto)",
+      "FK declaradoPor (ref Grupo de intercambio)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_11",
+    "name": "Ítem prescripto",
+    "tid": "T-06-50",
+    "attrs": [
+      "ᴾᴷ ítemId (identificador)",
+      "modalidad (token: A|B|C)",
+      "ᶠᵏ grupoIntercambioRef (ref Grupo, si modalidad B)",
+      "estadoPreparación (token)"
+    ],
+    "x": 448.0,
+    "y": 530.0,
+    "w": 361.2,
+    "kind": "#C98F2C",
+    "titlelines": [
+      "Ítem prescripto"
+    ],
+    "wrapped": [
+      "PK ítemId (identificador)",
+      "modalidad (token: A | B | C)",
+      "FK grupoIntercambioRef (ref Grupo, si modalidad B)",
+      "estadoPreparación (token)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_11",
+    "name": "Atlas de referencia de porciones",
+    "tid": "T-06-66",
+    "attrs": [
+      "ᴾᴷ atlasId (identificador)",
+      "versión (curada por BE)",
+      "referenciasVisuales (conjunto acotado)",
+      "licencia (obligatoria)"
+    ],
+    "x": 1512.0,
+    "y": 314.0,
+    "w": 361.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Atlas de referencia de porciones"
+    ],
+    "wrapped": [
+      "PK atlasId (identificador)",
+      "versión (curada por BE)",
+      "referenciasVisuales (conjunto acotado)",
+      "licencia (obligatoria)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_11",
+    "name": "Recurso didáctico de catálogo",
+    "tid": "T-06-64",
+    "attrs": [
+      "ᴾᴷ recursoId (identificador)",
+      "ᶠᵏ elementoRef (ref Catálogo)",
+      "versión (inmutable)",
+      "procedencia (origen)",
+      "ᶠᵏ autoría (ref)",
+      "licencia (obligatoria)"
+    ],
+    "x": 1512.0,
+    "y": 530.0,
+    "w": 361.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Recurso didáctico de catálogo"
+    ],
+    "wrapped": [
+      "PK recursoId (identificador)",
+      "FK elementoRef (ref Catálogo)",
+      "versión (inmutable)",
+      "procedencia (origen)",
+      "FK autoría (ref)",
+      "licencia (obligatoria)"
+    ],
+    "h": 154
+  },
+  {
+    "figura": "DV-06_11",
+    "name": "Evidencia visual de ingesta",
+    "tid": "T-06-65",
+    "attrs": [
+      "ᴾᴷ evidenciaId (identificador)",
+      "ᶠᵏ ingestaRef (ref Ingesta registrada)",
+      "adjunto (referencia)",
+      "ᶠᵏ autoría (ref actor)",
+      "momento (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "x": 979.9999999999999,
+    "y": 530.0,
+    "w": 333.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Evidencia visual de ingesta"
+    ],
+    "wrapped": [
+      "PK evidenciaId (identificador)",
+      "FK ingestaRef (ref Ingesta registrada)",
+      "adjunto (referencia)",
+      "FK autoría (ref actor)",
+      "momento (fecha-hora)",
+      "procedencia (origen)"
+    ],
+    "h": 154
+  },
+  {
+    "figura": "DV-06_11",
+    "name": "Nota de coordinación autorizada",
+    "tid": "T-06-43",
+    "attrs": [
+      "ᴾᴷ notaId (identificador)",
+      "ᶠᵏ autorRef (ref Identidad BE)",
+      "ᶠᵏ destinatarioRef (ref Identidad BE)",
+      "ᶠᵏ alcance (ref Alcance)",
+      "pertinencia (declarada)",
+      "contenido (texto)"
+    ],
+    "x": 2043.9999999999998,
+    "y": 314.0,
+    "w": 333.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Nota de coordinación autorizada"
+    ],
+    "wrapped": [
+      "PK notaId (identificador)",
+      "FK autorRef (ref Identidad BE)",
+      "FK destinatarioRef (ref Identidad BE)",
+      "FK alcance (ref Alcance)",
+      "pertinencia (declarada)",
+      "contenido (texto)"
+    ],
+    "h": 154
+  },
+  {
+    "figura": "DV-06_11",
+    "name": "Progresión de entrenamiento",
+    "tid": "T-06-46",
+    "attrs": [
+      "ᴾᴷ progresiónId (identificador)",
+      "ᶠᵏ próximaAcciónRef (ref Próxima acción)",
+      "resultadoMapeado (token: AJUSTAR|SUSTITUIR)",
+      "conservaEstructura (booleano conceptual)"
+    ],
+    "x": 2043.9999999999998,
+    "y": 530.0,
+    "w": 333.2,
+    "kind": "#1F5FBF",
+    "titlelines": [
+      "Progresión de entrenamiento"
+    ],
+    "wrapped": [
+      "PK progresiónId (identificador)",
+      "FK próximaAcciónRef (ref Próxima acción)",
+      "resultadoMapeado (token: AJUSTAR | SUSTITUIR)",
+      "conservaEstructura (booleano conceptual)"
+    ],
+    "h": 124
+  },
+  {
+    "figura": "DV-06_11",
+    "name": "Catálogo global BE",
+    "x": 450,
+    "y": 700,
+    "w": 340,
+    "attrs": [
+      "ámbito (global BE)",
+      "contenido (catálogo curado)",
+      "procedencia (conservada)"
+    ],
+    "tid": "referencia 06",
+    "kind": "#C98F2C",
+    "titlelines": [
+      "Catálogo global BE"
+    ],
+    "wrapped": [
+      "ámbito (global BE)",
+      "contenido (catálogo curado)",
+      "procedencia (conservada)"
+    ],
+    "h": 109
+  },
+  {
+    "figura": "DV-06_11",
+    "name": "Elemento de catálogo",
+    "x": 1512,
+    "y": 700,
+    "w": 340,
+    "attrs": [
+      "PK elementoId (identificador)",
+      "versiónRef (versión aplicable)",
+      "recursoVisualVigente (máximo 1, si global)"
+    ],
+    "tid": "referencia 06",
+    "kind": "#C98F2C",
+    "titlelines": [
+      "Elemento de catálogo"
+    ],
+    "wrapped": [
+      "PK elementoId (identificador)",
+      "versiónRef (versión aplicable)",
+      "recursoVisualVigente (máximo 1, si global)"
+    ],
+    "h": 109
+  }
+]

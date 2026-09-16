@@ -1,0 +1,127 @@
+{
+  "TEST-RF-001": {
+    "pre": "Base sintética sin identidad para alta.demo@example.invalid; usuario no autenticado; registro local disponible. No se simula aceptación de A3 ni verificación profesional.",
+    "datos": "Alta A: alias DEMO-A01, adulto sintético, email alta.demo@example.invalid y credencial generada solo para test conforme al validador vigente. Alta B: mismo email normalizado y otro alias DEMO-A02. Sin identidades de terceros vinculadas.",
+    "pasos": "1. Contar identidades asociadas al email: 0. 2. Completar el alta A y observar identificador propio y estado de cuenta. 3. Repetir el alta B con el mismo email. 4. Consultar el conteo: permanece 1, sin segunda identidad. 5. Comprobar que ninguna alta verificó especialidades, otorgó A3/B2 ni habilitó datos de terceros. Registrar respuesta neutra según 09, sin fijar un mensaje de duplicado que enumere cuentas."
+  },
+  "TEST-RF-006": {
+    "pre": "Tres identidades demo existentes, autenticables y con estados distintos. No usar como precondición la ausencia de identidad del registro inicial.",
+    "datos": "DEMO-P0: perfil profesional incompleto, sin alcance verificado ni habilitación. DEMO-P1: Nutrición verificada, sin concesión de habilitación. DEMO-P2: Nutrición verificada/habilitada, sin vínculo con DEMO-A01. Mantener iguales las demás condiciones de acceso propio.",
+    "pasos": "1. Entrar por separado con P0, P1 y P2. 2. Consultar estado de cuenta y perfil. 3. Registrar por dimensión perfil, verificación, habilitación y vínculo. 4. Verificar que P0 muestra pendientes, P1 no se muestra habilitado y P2 no muestra autorización sobre A01. 5. Intentar abrir el recurso protegido de A01 con cada identidad: no hay acceso por el solo estado del perfil."
+  },
+  "TEST-RF-007": {
+    "pre": "Website y APK de test disponibles tras gate; identidades demo de administrador, profesional y asesorado. Solo recursos sintéticos.",
+    "datos": "DEMO-ADM con facultad administrativa; DEMO-PN con alcance Nutrición; DEMO-A01 con cuenta propia y A3. Sesiones independientes y una ruta administrativa del contrato disponible únicamente al rol pertinente.",
+    "pasos": "1. Desde la entrada pública del Website iniciar sesión como ADM y como PN y navegar mediante menús a sus funciones. 2. En APK iniciar sesión como A01 y llegar a Hoy sin escribir rutas. 3. Intentar desde A01 el request administrativo directo identificado por 09, aunque no exista botón. 4. Verificar navegación prevista para cada actor y denegación server-side al rol indebido. No equiparar ocultar un menú con autorizar una operación."
+  },
+  "TEST-RF-010": {
+    "pre": "DEMO-PN autenticado, perfil existente, Nutrición declarada y sin verificación. Evidencia sintética claramente marcada como no válida para acreditación real.",
+    "datos": "Presentación N1: alcance Nutrición con conjunto mínimo de evidencia exigido por su política completo, ordinal 1; presentación N0: copia sin un requisito obligatorio. Entrenamiento no declarado. Documento sintético EVID-DEMO-N1 y reloj controlado T0.",
+    "pasos": "1. Intentar presentar N0: no genera una presentación completa ni habilita el alcance. 2. Completar el requisito faltante y presentar N1. 3. Consultar identificador, versión de evidencia, fecha y estado PENDIENTE de esa presentación. 4. Intentar una operación profesional del alcance antes de resolución: denegada. 5. Comprobar que Entrenamiento no recibió verificación ni se alteró por presentar Nutrición."
+  },
+  "TEST-RF-012": {
+    "pre": "DEMO-ADM tiene sesión con facultad administrativa y autenticación reforzada aplicable; DEMO-PN tiene dos expedientes independientes.",
+    "datos": "N1: Nutrición PENDIENTE, evidencia v1; T1: Entrenamiento PENDIENTE, evidencia v1. Tres ramas aisladas del fixture N1 para aprobar, rechazar y aprobar luego suspender. Motivos DEMO-RESOLUCION y DEMO-SUSPENSION; fecha T0; historial sintético previo consultable bajo autorización propia.",
+    "pasos": "1. En rama A aprobar N1 y verificar VERIFICADO solo en Nutrición, con administrador/fecha/versión/fundamento. 2. En rama B rechazar N1 y verificar RECHAZADO con expediente preservado. 3. En rama C aprobar y después suspender explícitamente Nutrición con motivo; verificar SUSPENDIDO y denegación de nuevas operaciones del alcance. 4. En las tres ramas comprobar T1 sin cambios y que no se presenta la resolución BE como certificación oficial."
+  },
+  "TEST-RF-070": {
+    "pre": "DEMO-PN autorizado para finalidad de cálculo y fuentes de DEMO-A01. Método técnico MET-DEMO v1 disponible exclusivamente en test según FICHA_FIXTURES.md; no es una fórmula clínica ni un catálogo productivo.",
+    "datos": "MET-DEMO v1 requiere BODY_WEIGHT con origen directo admisible; M1=72.5 kg revelable, M2=73.0 kg revelable y MX perteneciente a DEMO-A02 no revelable. Dos Idempotency-Key distintas para dos corridas; objetivo/plan iniciales capturados para comparación.",
+    "pasos": "1. Inspeccionar versión y entradas exigidas. 2. Ejecutar v1 con M1 y luego M2; conservar ambos identificadores y snapshots, sin promedio. 3. Omitir BODY_WEIGHT: rechazar por inputs insuficientes. 4. Enviar MX: denegar sin revelar su contenido. 5. Adoptar explícitamente una corrida como referencia. 6. Comparar objetivo, evaluación, prescripción y plan antes/después: siguen sin cambio automático; sugerencia, ejecución, referencia y decisión profesional son objetos/actos distinguibles."
+  },
+  "TEST-RF-071": {
+    "pre": "DEMO-PN con vínculo y B2 vigente para NUTRITION_EVALUATION; DEMO-A01 con A3. Plantilla BE controlada FT-DEMO v1, no builder libre.",
+    "datos": "Plantilla con FIELD_N autorizado y FIELD_X no autorizado para este contexto. Request válido solicita solo FIELD_N. Request inválido solicita ambos con clave distinta. A01 tiene un valor previo autoinformado de FIELD_N; posterior corrección cambia su texto de DEMO-VALOR-1 a DEMO-VALOR-2.",
+    "pasos": "1. Enviar request válido por API-FRM-03 e inspeccionar solicitante, finalidad, alcance, versión y campos obligatorios/opcionales. 2. Enviar request mixto: rechazar con FORM_REQUEST_NOT_ALLOWED, sin crear solicitud recortada. 3. A01 responde al request válido confirmando el valor previo y su procedencia. 4. Rectificar la respuesta. 5. Verificar SELF_REPORTED y vínculo request/template exactos, original preservado y sin nueva medición profesional, consentimiento, vínculo ni acceso ampliado."
+  },
+  "TEST-RF-020": {
+    "pre": "DEMO-A01 con A3 vigente; DEMO-PN verificado y habilitado; solicitud aceptada para Nutrición. No existe B2 para ese contexto ni alcance de Entrenamiento.",
+    "datos": "Relación REL-N1; texto B2 versión C1 seleccionable; finalidad nutricional aplicable; instante T0. C2 es una versión posterior que todavía no fue aceptada por A01.",
+    "pasos": "1. Antes del otorgamiento, intentar lectura protegida con PN: denegada. 2. A01 lee y otorga expresamente C1 para REL-N1 y finalidad nutricional. 3. Verificar actor, fecha, texto/versión, alcance y contexto conservados. 4. Repetir lectura nutricional con todos los demás gates válidos. 5. Intentar lectura de Entrenamiento: denegada. 6. Publicar C2 como fixture y verificar que no aparece automáticamente aceptada."
+  },
+  "TEST-RF-021": {
+    "pre": "Contexto positivo PN/A01 que satisface los siete insumos de RF-021. Cada variante negativa parte de una restauración independiente de esa base.",
+    "datos": "REL-N1 y recurso nutricional RN1; variantes V1 rol inadecuado, V2 alcance profesional no verificado, V3 situación/habilitación no operativa, V4 vínculo PAUSADO, V5 B2 REVOCADO, V6 finalidad ajena y V7 alcance solicitado Entrenamiento. Conservar los otros seis insumos válidos en cada variante.",
+    "pasos": "1. Ejecutar la operación protegida válida y registrar evidencia. 2. Ejecutar V1 a V7 por API directa, una alteración por corrida. 3. Confirmar que cada variante impide la operación y no produce mutación protegida. 4. Repetir por Website y APK donde el caso lo permita. 5. Alterar capabilities almacenadas en cliente: no cambia la decisión del servidor. No revelar datos internos del PDP en el error al usuario."
+  },
+  "TEST-RF-022": {
+    "pre": "PN/A01 autorizado en Nutrición; segunda relación PT/A01 autorizada en Entrenamiento; sesiones profesionales activas y recursos históricos sintéticos.",
+    "datos": "B2-N1 vigente, B2-T1 vigente, recurso RN1 y RT1. T0 anterior a revocación; T1 confirmación de revocación por A01. Dos requests nuevos de lectura/escritura iniciados después de confirmarse T1.",
+    "pasos": "1. PN consulta RN1 antes de T1. 2. A01 revoca B2-N1 y espera la confirmación del acto. 3. PN con su sesión previa intenta nuevas lecturas y escrituras de RN1: ambas denegadas. 4. Verificar que vínculo e historia no fueron borrados y que el acto quedó auditado. 5. Comprobar que B2-T1 no fue revocado por cascada y que PT conserva únicamente su acceso autorizado."
+  },
+  "TEST-RF-023": {
+    "pre": "A01, A02, PN y PT con relaciones sintéticas distintas; consulta propia de vínculos disponible.",
+    "datos": "REL-N1 PN/A01 Nutrición con B2 vigente; REL-T1 PT/A01 Entrenamiento con B2 revocado; REL-N2 PN/A02 Nutrición vigente. Fechas y versiones de consentimiento identificables.",
+    "pasos": "1. Consultar desde A01 la lista y detalle: PN/Nutrición autorizado, PT/Entrenamiento revocado, sin relación de A02. 2. Consultar desde PN: solo relaciones propias N1/N2, no T1. 3. Contrastar cada estado con una lectura protegida correspondiente. 4. Verificar que la pantalla no informa acceso vigente cuando el servidor lo deniega por el consentimiento revocado."
+  },
+  "TEST-RF-024": {
+    "pre": "Dos copias aisladas de REL-N1 ACEPTADO, con B2 vigente y PN habilitado. Recurso histórico RN1 revelable antes de la transición.",
+    "datos": "Rama A: pausa con motivo DEMO-PAUSA en T1. Rama B: finalización explícita con motivo DEMO-FIN en T1. El estado histórico de RN1 y el consentimiento se capturan antes.",
+    "pasos": "1. Pausar el alcance en A y finalizarlo en B mediante actor autorizado. 2. Verificar PAUSADO/FINALIZADO y actor, fecha y motivo. 3. Intentar nuevas operaciones incompatibles: denegadas. 4. Intentar lectura profesional residual: no concederla por autoría, según 08 y TEST-AUTH-007/008. 5. Verificar historia conservada y ausencia de revocación implícita de B2. El titular mantiene solo la consulta propia admitida por su política."
+  },
+  "TEST-RF-026": {
+    "pre": "PN autorizado para evaluación nutricional de A01; A3/B2, vínculo y finalidad vigentes. A02 no tiene relación con PN.",
+    "datos": "Evaluación EN1 de A01: dato autoinformado texto DEMO-HABITO, observación profesional DEMO-OBS y referencia a corrida CAL1 técnica sintética claramente diferenciada. Fecha T0; relación REL-N1. Variante cambia adviseeId por A02.",
+    "pasos": "1. Registrar EN1 con fuentes y clases de dato identificadas. 2. Consultar la evaluación en la historia autorizada de A01. 3. Verificar A01/REL-N1, autoría y distinción entre informado, observado y calculado. 4. Ejecutar variante A02: denegación sin crear evaluación para el tercero. 5. Confirmar que el cálculo referenciado no se rotuló como medición profesional."
+  },
+  "TEST-RF-031": {
+    "pre": "PN/A01 autorizado; evaluación EN1 y objetivo ON1 identificables; plan nutricional PN1 con borrador válido modalidad A. Capacidad profesional configurada sintéticamente.",
+    "datos": "PN1-v1 contiene Día tipo D1, Comida C1, Opción O1 e Ítem I1 del catálogo demo con cantidad 100 g. Borrador v2 cambia cantidad a 120 g. Rama positiva con capacidad disponible; rama negativa con límite 1 ya ocupado por otro asesorado y nuevo proceso para A01.",
+    "pasos": "1. Validar y activar v1; consultar desde A01 la misma versión y contenido. 2. Preparar v2, activarla según continuidad autorizada y comprobar relación de sucesión, única vigencia y v1 inmutable. 3. En rama de capacidad agotada intentar activar un proceso nuevo para A01: rechazo; los procesos ya vigentes permanecen. 4. Capturar respuestas y comparación del snapshot antes/después, sin atribuir ejecución a esta ficha documental."
+  },
+  "TEST-RF-032": {
+    "pre": "APK de test; A01 con A3 y plan nutricional activado, A02 con A3 y sin plan; sesiones propias independientes.",
+    "datos": "PN1-v1 activada con D1/C1/O1/I1; PN1-v2 BORRADOR con cantidad distinta; día de test T0. A02 no tiene plan activo ni relación con PN1.",
+    "pasos": "1. Entrar a Hoy desde el menú con A01 y abrir Nutrición. 2. Verificar que muestra PN1-v1, no el borrador v2. 3. Entrar con A02: estado explícito sin plan, no error ambiguo ni plan ajeno. 4. Inspeccionar respuesta/captura: sin evidencia de verificación profesional, gestión de capacidad u otros datos administrativos no autorizados."
+  },
+  "TEST-RF-034": {
+    "pre": "PN autorizado para revisar Nutrición de A01; plan y ejecuciones sintéticos para período T0 a T0+2 días.",
+    "datos": "Día 1: prescripción I1 100 g y registro 80 g; día 2: registro descriptivo DEMO-INGESTA; día 3: ningún registro. Cero revisiones válidas iniciales para el período.",
+    "pasos": "1. Abrir y filtrar evidencia del período. 2. Contrastar prescrito y registrado, manteniendo día 3 como SIN_DATO y día 2 como descriptivo. 3. Consultar el conteo de revisiones: sigue 0 después de solo visualizar. 4. Navegar al registro común de revisión conservando período y referencias de evidencia; no confirmar en esta variante. 5. Verificar ausencia de score o evaluación automática de adherencia."
+  },
+  "TEST-RF-036": {
+    "pre": "PT autorizado para evaluación de Entrenamiento de A01; PN sin ese alcance. Todos los datos son fixtures.",
+    "datos": "ET1 con antecedente autoinformado DEMO-EXPERIENCIA y observación DEMO-OBS-T, fecha T0. No hay sesiones ejecutadas. PT y PN usan sesiones separadas.",
+    "pasos": "1. PT registra ET1 con contexto, autoría y procedencias. 2. Consultar ET1 en la historia autorizada y verificar que sigue siendo evaluación, no ejecución. 3. Confirmar conteo de ejecuciones sin incremento. 4. PN intenta consultar ET1 sin alcance Entrenamiento: denegado sin exposición de contenido."
+  },
+  "TEST-RF-041": {
+    "pre": "PT/A01 autorizado; ET1 y objetivo OT1; borrador de plan válido. Capacidad configurada en rama separada para el caso de rechazo.",
+    "datos": "PT1-v1: Bloque B1, Sesión S1, Ejercicio EX1, 3 series de 8 repeticiones, criterio RIR=2. PT1-v2 cambia repeticiones a 10; no añade criterio de intensidad. Rama negativa: límite 1 ocupado por A02, nuevo proceso A01.",
+    "pasos": "1. Activar v1 y verificar la versión consultada por A01. 2. Sustituir mediante el recorrido permitido por v2 y comprobar sucesión explícita, única vigencia y snapshot v1 preservado. 3. En rama con capacidad agotada activar un proceso nuevo: rechazo sin interrumpir el de A02. 4. Inspeccionar relaciones versión/objetivo/evaluación y evidencia de rechazo sin persistencia parcial."
+  },
+  "TEST-RF-042": {
+    "pre": "APK de test y A01 con plan de Entrenamiento vigente; reloj de test controlado.",
+    "datos": "Día D0 sin sesión; D1 con S1 planificada sin registro; D2 con S2 y ejecución REGISTRADA, condición REALIZADA. Borrador futuro v2 con contenido distinto al activo.",
+    "pasos": "1. Desde Hoy consultar D0: ausencia explícita de sesión. 2. Consultar D1: sesión pendiente de registro, no NO_REALIZADA inferida. 3. Consultar D2: ejecución registrada distinguible de lo planificado. 4. Verificar que no se muestra v2 como activa ni se requiere escribir una ruta interna."
+  },
+  "TEST-RF-047": {
+    "pre": "PA con capacidad antropométrica verificada y habilitada; A01 con A3, vínculo y B2 antropométrico; protocolo técnico de fixture identificado.",
+    "datos": "Evaluación EA1 con masa M1=72.5 kg, talla M2=175 cm y cálculo derivado CD1 separado, fecha T0, procedencia DIRECT_MEASUREMENT para M1/M2. Ramas negativas: capacidad suspendida y B2 revocado por separado.",
+    "pasos": "1. Registrar EA1 por el recorrido canónico y consultarla en la historia. 2. Verificar que M1/M2 son directas y CD1 es derivado, con unidad y procedencia. 3. En cada rama negativa intentar registrar una evaluación nueva: rechazo sin incorporar evaluación efectiva parcial. 4. Confirmar que la operación no abre un plan nutricional o de entrenamiento."
+  },
+  "TEST-RF-048": {
+    "pre": "PA autorizado; EA1 y medición directa M1 revelable; MET-DEMO v1 disponible solo como método técnico de test.",
+    "datos": "M1=72.5 kg y MET-DEMO v1 con resultado esperado técnico 72.5 kg. V2 del mismo método de fixture produce un resultado deliberadamente distinto; V1 no cambia. Snapshots con autor, entrada, precisión y versión.",
+    "pasos": "1. Ejecutar v1 sobre M1 y guardar identificador, entradas, método y resultado. 2. Hacer seleccionable v2 en el fixture sin alterar v1. 3. Reproducir la corrida histórica usando exactamente v1 y sus entradas: mismo resultado. 4. Verificar que no se recalculó el pasado con v2 y que salida/UI identifican método y profesional, sin diagnóstico ni atribución causal."
+  },
+  "TEST-RF-049": {
+    "pre": "PA/A01 autorizado; tres evaluaciones registradas y una métrica de masa compatible por protocolo/unidad.",
+    "datos": "EA1/T0: masa 72.5 kg; EA2/T0+7d: masa 73.0 kg mismo protocolo; EA3/T0+14d: resultado de otra métrica o método sin compatibilidad demostrada. Una cuarta fecha carece de medición.",
+    "pasos": "1. Consultar evolución para EA1 y EA2: identificar diferencia descriptiva 0.5 kg y fuentes. 2. Incluir EA3: explicitar incompatibilidad o separar series, nunca fabricar una equivalencia. 3. Incluir fecha sin registro: SIN_DATO, no 0 kg. 4. Intentar el mismo request con actor no autorizado: denegar. 5. Verificar que la vista no produce score global de salud."
+  },
+  "TEST-RF-050": {
+    "pre": "PA autorizado para corregir EA1; M1 registrada y CD1 dependiente identificable. Cadena histórica inicialmente sin correcciones.",
+    "datos": "M1 original=72.5 kg en T0; corrección a 73.0 kg en T1 con motivo DEMO-ERROR-CARGA; CD1 fue calculado con M1. Segunda variante intenta corregir usando una versión de referencia obsoleta.",
+    "pasos": "1. Capturar M1/CD1 originales. 2. Confirmar corrección por UC-I12 con actor, fecha y motivo. 3. Verificar nuevo eslabón relacionado con original, sin overwrite. 4. Inspeccionar los derivados afectados según 06/09: referencia al input efectivo y conservación de CD1 histórico; no asumir recálculo invisible. 5. En variante obsoleta verificar conflicto/denegación conforme al contrato y que no se pisa la corrección válida."
+  },
+  "TEST-RF-054": {
+    "pre": "A01 tiene eventos sintéticos en tres dominios; PN autorizado solo en Nutrición; titular habilitado para su propia consulta.",
+    "datos": "Evento N1 de activación nutricional, N2 de ingesta posterior, T1 de sesión ejecutada y A1 de medición antropométrica. N2 occurredAt=T0 y recordedAt=T0+1h para distinguir temporalidades; cada evento conserva autor y fuente.",
+    "pasos": "1. A01 consulta la línea temporal y abre origen de cada evento autorizado. 2. Distinguir N1 planificado/activado de N2 registrado, conservando dominio, autor, fecha y procedencia. 3. PN consulta la misma ventana: no recibe T1/A1 fuera de su autorización. 4. Verificar que el orden temporal usa la regla declarada y que recordedAt no reemplaza silenciosamente occurredAt."
+  },
+  "TEST-RF-059": {
+    "pre": "Ambiente de test aislado con adaptadores controlables y catálogo propio mínimo. Credenciales locales disponibles; no cortar proveedores reales ni infraestructura compartida.",
+    "datos": "Cinco variantes independientes: timeout de Google, Open Food Facts, wger, Maps y Push. Catálogo BE: alimento AL-DEMO y ejercicio EX-DEMO. Usuario con acceso local y novedad interna NOV-DEMO. Ningún proveedor devuelve un éxito ficticio.",
+    "pasos": "1. En variante Google verificar acceso local. 2. En OFF preparar plan nutricional con catálogo propio/carga manual y continuar consulta, registro y revisión del núcleo. 3. En wger repetir continuidad del núcleo de Entrenamiento con EX-DEMO. 4. En Maps, para el recorrido de descubrimiento cuando esté incluido, conservar lista/ubicación textual sin inventar mapa operativo. 5. En Push verificar centro de novedades y núcleo operativos. 6. En cada variante mostrar degradación/fallback y registrar evidencia diferenciada del éxito del proveedor."
+  }
+}
