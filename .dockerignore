@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+**/.next
+**/out
+**/.expo
+.git
+_docs_origen
+docs
+DEFENSA
+EVIDENCIA
+apps/web/src
+apps/mobile/assets
+**/*.log
+.env
+.env.*

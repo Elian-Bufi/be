@@ -1,0 +1,98 @@
+# CI — verifica cada push y PR (07 §35).
+# Render despliega `test` solo cuando TODOS estos checks pasan en main (autoDeployTrigger: checksPass, 07 §36).
+name: ci
+
+on:
+  push:
+    branches: [main, "wp-*"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  legajo:
+    name: legajo · hashes SHA-256
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verificar docs/MANIFEST.sha256 (208 archivos)
+        working-directory: docs
+        run: |
+          sha256sum -c --quiet MANIFEST.sha256
+          echo "legajo íntegro - $(wc -l < MANIFEST.sha256) archivos verificados"
+
+  verificar:
+    name: verificar · typecheck · unit · build · audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Typecheck (domain, api, web, mobile)
+        run: npm run typecheck
+      - name: Pruebas unitarias (domain, api)
+        run: npm test
+      - name: Build API
+        run: npm run build:api
+      - name: Build web (export estático)
+        run: npm run build:web
+      - name: npm audit --omit=dev — falla con altos o críticos (WP-01 §2)
+        run: npm run audit:prod
+
+  integracion:
+    name: integración · PostgreSQL 16 (Testcontainers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Schema vs 06 · readiness · migración fallida aborta
+        run: npm run test:integration
+
+  imagen-api:
+    name: imagen API · migrate deploy + readiness (ASR-09)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build de la imagen OCI
+        run: docker build -f apps/api/Dockerfile --build-arg RENDER_GIT_COMMIT=${{ github.sha }} -t be-api:${{ github.sha }} .
+      - name: PostgreSQL 16 efímero
+        run: |
+          docker network create be
+          docker run -d --name pg --network be \
+            -e POSTGRES_USER=be_test -e POSTGRES_PASSWORD=be_test_sintetico -e POSTGRES_DB=be_test \
+            postgres:16-alpine
+          for i in $(seq 1 30); do docker exec pg pg_isready -U be_test -d be_test && break; sleep 2; done
+      - name: Arranque del artefacto (migraciones como fase del deploy)
+        run: |
+          docker run -d --name api --network be -p 3000:3000 \
+            -e APP_ENV=test \
+            -e DATABASE_URL=postgresql://be_test:be_test_sintetico@pg:5432/be_test \
+            be-api:${{ github.sha }}
+      - name: Smoke — /health/ready 200 con el SHA esperado (07 §37)
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/health/ready -o ready.json; then break; fi
+            sleep 2
+          done
+          docker logs api
+          cat ready.json
+          test "$(jq -r .data.estado ready.json)" = "OK"
+          test "$(jq -r .data.dependencias.migraciones ready.json)" = "OK"
+          test "$(jq -r .data.version.commit ready.json)" = "${{ github.sha }}"
+          curl -fsS http://localhost:3000/health/live
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/v1/no-existe)" = "404"

@@ -1,0 +1,35 @@
+# APK por EAS — "por tag/manual" (07 §35). Distribución directa, fuera de stores.
+# Requiere el secreto de repositorio EXPO_TOKEN (07 §28: GitHub Actions Secrets).
+name: apk
+
+on:
+  workflow_dispatch:
+    inputs:
+      perfil:
+        description: Perfil EAS
+        required: true
+        default: test
+        type: choice
+        options: [test, production]
+  push:
+    tags: ["apk-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: EAS build Android (${{ inputs.perfil || 'test' }})
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: EAS build (la URL del artefacto queda en el log y en expo.dev)
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli@24.6.0 build --platform android --profile ${{ inputs.perfil || 'test' }} --non-interactive --wait

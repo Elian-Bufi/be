@@ -1,0 +1,22 @@
+{
+  "name": "@be/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Website BE — Next.js (export estático, 07 CAND-07-J opción C)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "15.5.25",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "typescript": "5.9.3"
+  }
+}
