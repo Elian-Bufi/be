@@ -23,7 +23,9 @@ jobs:
       - uses: actions/checkout@v7
       - name: Verificar docs/MANIFEST.sha256 (208 archivos)
         working-directory: docs
-        run: sha256sum -c --quiet MANIFEST.sha256 && echo "legajo íntegro: $(wc -l < MANIFEST.sha256) archivos"
+        run: |
+          sha256sum -c --quiet MANIFEST.sha256
+          echo "legajo íntegro - $(wc -l < MANIFEST.sha256) archivos verificados"
 
   verificar:
     name: verificar · typecheck · unit · build · audit
