@@ -10,6 +10,7 @@ const VERSION = '0.1.0';
 const config: ExpoConfig = {
   name: 'BE',
   slug: 'be',
+  owner: 'elianbufi',
   version: VERSION,
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -28,7 +29,8 @@ const config: ExpoConfig = {
     apiBaseUrl: process.env.API_BASE_URL ?? null,
     commit: process.env.EAS_BUILD_GIT_COMMIT_HASH ?? null,
     construidoEn: new Date().toISOString(),
-    ...(process.env.EAS_PROJECT_ID ? { eas: { projectId: process.env.EAS_PROJECT_ID } } : {}),
+    // Identificador público del proyecto en EAS (no es un secreto).
+    eas: { projectId: '8ef1d1f5-76e3-4d2b-b305-b07146e97f77' },
   },
 };
 
