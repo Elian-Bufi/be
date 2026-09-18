@@ -13,3 +13,6 @@ docs/**/*.csv diff
 *.pdf binary
 *.xlsx binary
 *.apk binary
+
+# Lista de exclusiones del manifiesto: se lee por máquina, siempre LF.
+docs/MANIFEST_NO_PUBLICADOS.txt text eol=lf

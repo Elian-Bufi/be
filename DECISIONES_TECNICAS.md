@@ -7,7 +7,7 @@
 
 | Componente | Elegida | Vigente al 2026-09-16 | Motivo |
 |---|---|---|---|
-| Node | **22.23.2** (LTS «Jod») | línea 22: 22.23.2 · existe 24 | WP-01 fija 22 LTS. Declarado en `engines` (`>=22.12.0 <23`), `.nvmrc`, imagen `node:22.23.2-bookworm-slim`, `NODE_VERSION` del sitio estático y `node` de `eas.json`. `engine-strict=true` hace fallar la instalación con otro Node. 07 §34 dice Node 20 → DL-002. |
+| Node | **22.23.2** (LTS «Jod») | línea 22: 22.23.2 · existe 24 | WP-01 fija 22 LTS. Declarado en `engines` (`>=22.12.0 <23`), `.nvmrc`, imagen `node:22.23.2-bookworm-slim`, `NODE_VERSION: "22"` del sitio estático (Render resuelve la última 22.x) y `node` de `eas.json`. `engine-strict=true` hace fallar la instalación con otro Node. 07 §34 dice Node 20 → DL-002. |
 | npm | 10.9.8 | incluido con Node 22.23.2 | `packageManager` declarado; un solo lockfile (workspaces). |
 | NestJS | **11.2.5** | línea 11: 11.2.5 · existe 12.0.3 | Última estable de la línea 11, como pide WP-01. `@nestjs/core`, `common`, `platform-express`, `testing` en la misma versión. |
 | Prisma | **6.19.3** | línea 6: 6.19.3 · existe 7.x | Última estable de la línea 6. CLI y cliente en la misma versión exacta; la CLI va como dependencia de producción porque el contenedor ejecuta `migrate deploy`. |
@@ -76,3 +76,39 @@ CI falla si aparece un alto o crítico (`npm run audit:prod`, `--audit-level=hig
 
 - **Docker Desktop no arranca en la máquina de desarrollo** («Docker Desktop is unable to start»). Por eso las pruebas de integración (Testcontainers) y el smoke de la imagen corren en GitHub Actions, que es donde tienen que pasar para que Render despliegue.
 - El plan gratuito de Render apaga la API después de 15 minutos sin tráfico: la primera respuesta puede tardar alrededor de un minuto. Antes de una demo, hay que abrir `/health/ready` unos minutos antes.
+
+## 7. Publicación del repositorio (2026-09-18)
+
+**Exposición previa.** El repositorio estuvo público entre las **05:09 y las 05:29 UTC del 2026-09-18** (unos 20 minutos) antes de la auditoría. Se volvió a privado apenas se detectaron los hallazgos.
+
+**Auditoría del historial completo** (9 commits, 297 versiones de archivo, todas las ramas, tags y refs de PR, metadatos de binarios, APK publicado, PRs, release y logs de Actions):
+
+| Categoría | Resultado |
+|---|---|
+| Credenciales y secretos | **Ninguno real.** Solo `be_test_sintetico`, la clave del PostgreSQL efímero de la CI (existe solo dentro del runner). En los logs, GitHub enmascara las credenciales de URL (`***`). |
+| Email personal del autor | En los 9 commits (autor y committer) → **reemplazado** |
+| Datos de terceros | Solo en `docs/fuente_escolar/Entregables.pdf`: nombre del redactor en los metadatos y un email institucional en el texto → **retirado** |
+| Resto de `docs/` (legajo, actas, mesa) | Revisado buscando nombres, emails, teléfonos, DNI/CUIL, IPs, perfiles, firmas y testimonios: solo datos sintéticos (`*.demo@be.test`, «Juan Pérez» como ejemplo de copy, alias `DEMO-*`), roles («aprobado por Dirección») y el autor del proyecto |
+| Menores, que se mantienen | El usuario de Windows del autor en dos rutas de `docs/intake/INTAKE_01.md` (archivo del manifiesto; dato propio). `i@izs.me` en los logs de CI: dirección pública del mantenedor de `glob`, que aparece dentro del aviso de deprecación que imprime npm. |
+
+**Qué se hizo:**
+
+1. **Historial reescrito** (`git filter-branch`): el email personal pasó a `190213429+Elian-Bufi@users.noreply.github.com` y `Entregables.pdf` salió de todos los commits. Contenido, fechas y mensajes quedaron idénticos. Cambiaron todos los SHA:
+
+   | Antes | Después | Commit |
+   |---|---|---|
+   | `67dfac3` | `747fe11` | docs: publica el legajo BE verificado por SHA-256 |
+   | `c495c27` | `7155542` | feat(wp-01): monorepo desplegable |
+   | `51f981c` | `4661dee` | fix(ci): YAML del paso del legajo |
+   | `1651720` | `1658271` | merge WP-01 (#1) |
+   | `dd26062` | `3ecc8e0` | chore(mobile): projectId de EAS |
+   | `4c4c9c7` | `84e86cd` | fix(deploy): URLs reales de Render |
+   | `6de82e1` | `5d29a4e` | merge URLs reales (#2) |
+   | `2c0db67` | `cd29e52` | docs(wp-01): cierre |
+   | `6feaa1e` | `50ce789` | merge cierre (#3) |
+
+2. **Repositorio nuevo.** Un force-push no alcanzaba: GitHub conserva los commits originales en los PR #1–#3, que no se pueden reescribir. El repositorio original se **renombró a `be-archivo-wp01`, quedó privado y archivado**, y conserva los PR, los logs de Actions y el primer release. **No se publica nunca.** `Elian-Bufi/be` se recreó con el historial limpio.
+3. **Manifiesto.** `docs/MANIFEST.sha256` no se modifica, porque es la entrega de Dirección. `scripts/verificar-legajo.sh` verifica las 207 entradas publicadas y excluye solo las rutas de `docs/MANIFEST_NO_PUBLICADOS.txt`. Falla si alguna de ellas vuelve a aparecer versionada.
+4. **Commits futuros.** El repositorio local usa `user.email` noreply. `docs/fuente_escolar/*.pdf` está en `.gitignore`.
+
+**Riesgo residual.** Durante los 20 minutos de exposición, cualquiera pudo clonar el repositorio o leer el email desde la API. Eso no se puede deshacer. La probabilidad es baja (el repositorio era nuevo y sin tráfico) y el dato expuesto es el email del propio autor.

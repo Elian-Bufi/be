@@ -1,0 +1,4 @@
+# Entradas de docs/MANIFEST.sha256 que no se publican en el repositorio.
+# Una ruta por línea, tal como figura en el manifiesto. El motivo está en el LEEME de su carpeta.
+# scripts/verificar-legajo.sh verifica todo el resto del manifiesto y falla si alguna de estas rutas está versionada.
+./fuente_escolar/Entregables.pdf

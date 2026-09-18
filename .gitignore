@@ -27,3 +27,6 @@ Thumbs.db
 
 # Evidencia de paquetes: los logs de CI se versionan.
 !EVIDENCIA/**/*.log
+
+# Documento de la escuela: no se versiona (docs/fuente_escolar/LEEME.md).
+docs/fuente_escolar/*.pdf

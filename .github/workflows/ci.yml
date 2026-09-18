@@ -21,11 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Verificar docs/MANIFEST.sha256 (208 archivos)
-        working-directory: docs
-        run: |
-          sha256sum -c --quiet MANIFEST.sha256
-          echo "legajo íntegro - $(wc -l < MANIFEST.sha256) archivos verificados"
+      - name: Verificar docs/MANIFEST.sha256 (salvo lo no publicado por Dirección)
+        run: bash scripts/verificar-legajo.sh
 
   verificar:
     name: verificar · typecheck · unit · build · audit
