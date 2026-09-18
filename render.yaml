@@ -38,7 +38,7 @@ services:
           name: be-db-test
           property: connectionString
       - key: CORS_ALLOWED_ORIGINS
-        sync: false # allowlist por ambiente, se carga en el dashboard (07 §27)
+        value: https://be-web-izpg.onrender.com # allowlist del ambiente test (07 §27); no es secreto
 
   - type: web
     name: be-web
@@ -56,10 +56,11 @@ services:
       - key: NODE_VERSION
         value: 22.23.2
     # 07 CAND-07-J opción C: same-origin, el borde rutea /api/* a la API.
+    # Los subdominios onrender.com son globales: el nombre real lo asigna Render (be-api-hndp).
     routes:
       - type: rewrite
         source: /api/*
-        destination: https://be-api.onrender.com/api/*
+        destination: https://be-api-hndp.onrender.com/api/*
     # 07 §29: HSTS/CSP en el web.
     headers:
       - path: /*
