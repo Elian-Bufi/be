@@ -1,16 +1,15 @@
-# WP-01 — verificación de las URLs vivas
-# Fecha UTC: 2026-09-18T04:49:00Z · origen: esta computadora (curl 7.87.0)
-# Verificación desde red externa: WebFetch (servidores de Anthropic), mismas respuestas — ver DEFENSA/WP-01.md
+# WP-01 — verificación final de las tres URLs (cierre)
+# Fecha UTC: 2026-09-18T17:29:05Z · main = eaf785c
+# Red externa: WebFetch (servidores de Anthropic) obtuvo las mismas respuestas de API y website a las ~17:30 UTC.
+# Esta salida es curl desde la máquina de desarrollo; la instalación del APK en un Android físico es la verificación restante.
 
 $ curl -i https://be-api-hndp.onrender.com/health/ready
 HTTP/2 200 
 content-type: application/json; charset=utf-8
 cache-control: no-store
-cf-cache-status: DYNAMIC
 content-security-policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
 cross-origin-opener-policy: same-origin
 cross-origin-resource-policy: same-origin
-etag: W/"e0-qcP/iIfMxg46KcM8jAu3Wtr2sFg"
 origin-agent-cluster: ?1
 referrer-policy: no-referrer
 server: cloudflare
@@ -21,10 +20,10 @@ x-download-options: noopen
 x-frame-options: SAMEORIGIN
 x-permitted-cross-domain-policies: none
 x-render-origin-server: Render
-x-request-id: 3e09752c-fd94-4ef9-8d70-2168e307d035
+x-request-id: adc63077-b286-427e-be89-ecc9e4201d88
 x-xss-protection: 0
 
-{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"6de82e1be16870d51040a4d2cc131373ebe5e53d","construidoEn":"2026-09-18T04:41:46.285Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"eaf785c95d67e3208e1d3265d30a158859748e0f","construidoEn":"2026-09-18T17:25:44.579Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
 
 
 $ curl -i https://be-api-hndp.onrender.com/health/live
@@ -34,7 +33,6 @@ cache-control: no-store
 content-security-policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
 cross-origin-opener-policy: same-origin
 cross-origin-resource-policy: same-origin
-etag: W/"a9-1AZEFTFgBmsx14KnV0BDco8kJwg"
 origin-agent-cluster: ?1
 referrer-policy: no-referrer
 server: cloudflare
@@ -45,22 +43,19 @@ x-download-options: noopen
 x-frame-options: SAMEORIGIN
 x-permitted-cross-domain-policies: none
 x-render-origin-server: Render
-x-request-id: 61cebec6-d7db-44a4-9280-97de31e0cd0e
+x-request-id: a0aecc0a-9ed2-4e84-99c9-3baedda867b7
 x-xss-protection: 0
-cf-cache-status: DYNAMIC
 
-{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"6de82e1be16870d51040a4d2cc131373ebe5e53d","construidoEn":"2026-09-18T04:41:46.285Z"}}}
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"eaf785c95d67e3208e1d3265d30a158859748e0f","construidoEn":"2026-09-18T17:25:44.579Z"}}}
 
 
 $ curl -i https://be-api-hndp.onrender.com/health
 HTTP/2 200 
 content-type: application/json; charset=utf-8
 cache-control: no-store
-cf-cache-status: DYNAMIC
 content-security-policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
 cross-origin-opener-policy: same-origin
 cross-origin-resource-policy: same-origin
-etag: W/"e0-qcP/iIfMxg46KcM8jAu3Wtr2sFg"
 origin-agent-cluster: ?1
 referrer-policy: no-referrer
 server: cloudflare
@@ -71,10 +66,10 @@ x-download-options: noopen
 x-frame-options: SAMEORIGIN
 x-permitted-cross-domain-policies: none
 x-render-origin-server: Render
-x-request-id: 807625c1-1980-44d6-928d-7cfe065325e8
+x-request-id: c26525fe-e9f1-4e6d-b6f2-bcaad56dddf1
 x-xss-protection: 0
 
-{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"6de82e1be16870d51040a4d2cc131373ebe5e53d","construidoEn":"2026-09-18T04:41:46.285Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"eaf785c95d67e3208e1d3265d30a158859748e0f","construidoEn":"2026-09-18T17:25:44.579Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
 
 
 $ curl -i https://be-api-hndp.onrender.com/api/v1/no-existe
@@ -83,7 +78,6 @@ content-type: application/json; charset=utf-8
 content-security-policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
 cross-origin-opener-policy: same-origin
 cross-origin-resource-policy: same-origin
-etag: W/"4a-qd/Xsd7UtmP6jU7ekD01MiLpnyQ"
 origin-agent-cluster: ?1
 referrer-policy: no-referrer
 server: cloudflare
@@ -94,23 +88,20 @@ x-download-options: noopen
 x-frame-options: SAMEORIGIN
 x-permitted-cross-domain-policies: none
 x-render-origin-server: Render
-x-request-id: d910b083-57d6-4b00-b2a2-c2e4b94308f2
+x-request-id: 622531a6-b2d4-4b65-9d6f-0df095e0f539
 x-xss-protection: 0
-cf-cache-status: DYNAMIC
 
 {"error":{"code":"RESOURCE_NOT_FOUND","message":"Recurso no encontrado."}}
 
 
-$ curl -i https://be-web-izpg.onrender.com/api/v1/no-existe
+$ curl -i https://be-web-1ngj.onrender.com/api/v1/no-existe
 HTTP/2 404 
 content-type: application/json; charset=utf-8
 cache-control: max-age=0
-cf-cache-status: BYPASS
 x-xss-protection: 0
 content-security-policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
 cross-origin-opener-policy: same-origin
 cross-origin-resource-policy: same-origin
-etag: W/"4a-qd/Xsd7UtmP6jU7ekD01MiLpnyQ"
 origin-agent-cluster: ?1
 referrer-policy: no-referrer
 server: cloudflare
@@ -121,32 +112,34 @@ x-download-options: noopen
 x-frame-options: SAMEORIGIN
 x-permitted-cross-domain-policies: none
 x-render-origin-server: Render
-x-request-id: 89959e53-2fed-460b-b560-2c041a250ded
+x-request-id: 9ebd1523-e68d-44e6-8c96-0b1c1615ee0e
 
 {"error":{"code":"RESOURCE_NOT_FOUND","message":"Recurso no encontrado."}}
 
 
-$ curl -I https://be-web-izpg.onrender.com/
+$ curl -I https://be-web-1ngj.onrender.com/
 HTTP/2 200 
 content-type: text/html; charset=utf-8
 cache-control: public, max-age=0, s-maxage=300
 content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
-cf-cache-status: HIT
 permissions-policy: camera=(), microphone=(), geolocation=()
 referrer-policy: no-referrer
 server: cloudflare
 strict-transport-security: max-age=315360000; includeSubdomains; preload
-vary: Accept-Encoding
-vary: Accept-Encoding
 x-content-type-options: nosniff
 x-frame-options: DENY
 
-$ curl -s https://be-web-izpg.onrender.com/ | (texto visible)
+$ curl -s https://be-web-1ngj.onrender.com/ | (texto visible)
 <h1>BE — en construcción</h1>
-<p class="identidad" aria-label="Identidad del build">web 0.1.0 · commit 1651720 · build 2026-09-17T23:59:47.752Z</p>
+<p class="identidad" aria-label="Identidad del build">web 0.1.0 · commit 960d1d2 · build 2026-09-18T17:14:35.589Z</p>
 
-$ CORS preflight desde el origen del website
+$ CORS preflight desde el website (debe devolver Access-Control-Allow-Origin)
 HTTP/2 204 
-access-control-allow-origin: https://be-web-izpg.onrender.com
-$ CORS preflight desde un origen ajeno (no debe devolver Access-Control-Allow-Origin)
+access-control-allow-origin: https://be-web-1ngj.onrender.com
+$ CORS preflight desde un origen ajeno (sin Access-Control-Allow-Origin)
 HTTP/2 204 
+
+$ curl -L -o be.apk https://expo.dev/artifacts/eas/MUpAi1kp7t1qmxuqY_XWFd8nEC3xd5JlK0V6JbcW1gw.apk
+HTTP 200 � 68286906 bytes � application/octet-stream
+SHA-256 bac929a35319d5d6073435ef3355f7bb0a4cb66bdb470c0517f76e68c54ce361
+embebido: version 0.1.0 · com.elianbufi.be · appEnv test · apiBaseUrl https://be-api-hndp.onrender.com · commit 4c4c9c7 (= 84e86cd tras la reescritura; DECISIONES_TECNICAS §7)
