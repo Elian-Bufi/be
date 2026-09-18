@@ -24,3 +24,6 @@ apps/mobile/ios/
 .DS_Store
 Thumbs.db
 *.log
+
+# Evidencia de paquetes: los logs de CI se versionan.
+!EVIDENCIA/**/*.log
