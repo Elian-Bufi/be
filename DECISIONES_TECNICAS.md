@@ -7,7 +7,7 @@
 
 | Componente | Elegida | Vigente al 2026-09-16 | Motivo |
 |---|---|---|---|
-| Node | **22.23.2** (LTS «Jod») | línea 22: 22.23.2 · existe 24 | WP-01 fija 22 LTS. Declarado en `engines` (`>=22.12.0 <23`), `.nvmrc`, imagen `node:22.23.2-bookworm-slim`, `NODE_VERSION` del sitio estático y `node` de `eas.json`. `engine-strict=true` hace fallar la instalación con otro Node. 07 §34 dice Node 20 → DL-002. |
+| Node | **22.23.2** (LTS «Jod») | línea 22: 22.23.2 · existe 24 | WP-01 fija 22 LTS. Declarado en `engines` (`>=22.12.0 <23`), `.nvmrc`, imagen `node:22.23.2-bookworm-slim`, `NODE_VERSION: "22"` del sitio estático (Render resuelve la última 22.x) y `node` de `eas.json`. `engine-strict=true` hace fallar la instalación con otro Node. 07 §34 dice Node 20 → DL-002. |
 | npm | 10.9.8 | incluido con Node 22.23.2 | `packageManager` declarado; un solo lockfile (workspaces). |
 | NestJS | **11.2.5** | línea 11: 11.2.5 · existe 12.0.3 | Última estable de la línea 11, como pide WP-01. `@nestjs/core`, `common`, `platform-express`, `testing` en la misma versión. |
 | Prisma | **6.19.3** | línea 6: 6.19.3 · existe 7.x | Última estable de la línea 6. CLI y cliente en la misma versión exacta; la CLI va como dependencia de producción porque el contenedor ejecuta `migrate deploy`. |
