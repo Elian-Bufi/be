@@ -46,6 +46,8 @@ COPY --chown=node:node package.json ./
 COPY --chown=node:node prisma ./prisma
 COPY --from=build --chown=node:node /app/packages/domain/package.json ./packages/domain/package.json
 COPY --from=build --chown=node:node /app/packages/domain/dist ./packages/domain/dist
+# zod 4 del dominio vive anidado (la raíz tiene zod 3 de otra dependencia): sin esto, @be/domain resolvería el equivocado.
+COPY --from=deps --chown=node:node /app/packages/domain/node_modules ./packages/domain/node_modules
 COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
 COPY --chown=node:node apps/api/scripts/iniciar.sh ./apps/api/scripts/iniciar.sh

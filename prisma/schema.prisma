@@ -1,13 +1,16 @@
 // BE — schema físico derivado de BE-LEG-06 v0.1.1.
 //
-// Reglas que gobiernan este archivo (WP-01):
-//  1. Los nombres salen del 06. Modelo = término del 06 sin sufijos de implementación (CONV-06-01).
-//  2. Los estados son enums con transiciones declaradas (CONV-06-02/03), nunca booleanos.
-//     La lista blanca vive en @be/domain y se verifica contra este enum en test/integration.
-//  3. Toda entidad que registre un hecho lleva el par momentoDeOcurrencia / momentoDeRegistro
-//     (T-06-24, REG-06-18). Ocurrencia desconocida = NULL; nunca se copia el registro.
+// Reglas que gobiernan este archivo:
+//  1. Los nombres salen del 06 (y del 08 cuando el 06 no modela el concepto). Modelo = término sin sufijos de
+//     implementación (CONV-06-01). Transliteración ASCII de tildes (TEN-40).
+//  2. Los estados son enums con transiciones declaradas (CONV-06-02/03), nunca booleanos. La lista blanca vive en
+//     @be/domain y además la base la exige con triggers (migración 20260918200000_identidad_y_sesiones).
+//  3. Toda entidad que registre un hecho lleva el par momentoDeOcurrencia / momentoDeRegistro (T-06-24, REG-06-18).
+//     Ocurrencia desconocida = NULL; nunca se copia el registro.
+//  4. Historia por adición: las tablas de hechos son append-only (triggers). Sin ON DELETE CASCADE (08 §17).
 //
-// Alcance WP-01: solo Identidad BE. Cada módulo posterior agrega lo suyo por migración aditiva.
+// WP-01: Identidad. WP-02: perfil propio, método de acceso, credencial, sesiones, actos A1/A2/A3, eventos,
+// auditoría, idempotencia, cierre y supresión (docs/paquetes/WP-02.md).
 
 generator client {
   provider = "prisma-client-js"
@@ -18,26 +21,329 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Enums ──────────────────────────────────────────────────────────────────────────────────────
+
 /// T-06-02 — Estado operativo de cuenta (06 §5.7.2). Conjunto cerrado.
-/// Inicial: OPERATIVA. Terminal: CERRADA. Transiciones: 06 §5.7.4 (@be/domain).
+/// Inicial: OPERATIVA. Terminal: CERRADA. Transiciones: 06 §5.7.4 (@be/domain + trigger).
 enum EstadoOperativoDeCuenta {
   OPERATIVA
   SUSPENDIDA
   CERRADA
 }
 
+/// T-06-03 — tipo de método de acceso. WP-02 solo implementa LOCAL (RF-003 federado fuera de alcance).
+enum TipoDeMetodoDeAcceso {
+  LOCAL
+}
+
+/// Estado de sesión — infraestructura (06:1839 no la define). Lista blanca: ACTIVA → FINALIZADA | REVOCADA.
+enum EstadoDeSesion {
+  ACTIVA
+  FINALIZADA
+  REVOCADA
+}
+
+/// 08 §26.3 — eventos que revocan sesiones.
+enum MotivoDeRevocacionDeSesion {
+  REVOCACION_POR_TITULAR
+  CIERRE_DE_CUENTA
+  SUSPENSION_DE_CUENTA
+}
+
+/// 08 §12.2 «canal/superficie», declarado por el cliente (DEUDA_LEGAJO DL-022).
+enum Superficie {
+  WEB
+  APK
+}
+
+/// Tipo de versión de texto mostrado al titular (08 §12.2: versión mostrada = versión aceptada).
+enum TipoDeTexto {
+  TERMINOS
+  PRIVACIDAD_INFO
+  DATOS_SALUD_BE
+  CONSECUENCIAS_DE_CIERRE
+}
+
+/// 08 §12.4 — actos registrables tipificados de la Relación A (A1, A2, A3).
+enum TipoDeActoRegistrable {
+  TERMINOS
+  PRIVACIDAD_INFO
+  DATOS_SALUD_BE
+}
+
+/// 08 §12.2 «estado (VIGENTE/REVOCADO)». Única transición: VIGENTE → REVOCADO, solo para tipos revocables.
+enum EstadoDeActoRegistrable {
+  VIGENTE
+  REVOCADO
+}
+
+/// T-06-N08 — eventos de dominio de M-01 (06 §5.13) y revocación de actos. Hechos consumados (CONV-06-05).
+enum TipoDeEventoDeDominio {
+  IdentidadCreada
+  MetodoDeAccesoAsociado
+  CuentaSuspendida
+  CuentaRestablecida
+  CuentaCerrada
+  ActoRevocado
+}
+
+/// Resultado registrado en auditoría (08 §29).
+enum ResultadoDeOperacion {
+  EXITO
+  RECHAZO
+}
+
+// ─── M-01 · Identidad (06 §5) ───────────────────────────────────────────────────────────────────
+
 /// T-06-01 — Identidad BE (06 §5.4). Entidad longitudinal estable.
-/// Pendiente de M-01 (ver docs/DEUDA_LEGAJO.md DL-003): Perfil propio, métodos de acceso,
-/// autoría de creación y procedencia (06 §5.4.2).
 model Identidad {
   /// Identificador de dominio: estable, único, no reutilizable y no autonumérico (06 §5.4.2, T-06-N04).
   id                      String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// 06 §5.4.2 — exactamente un estado de la máquina T-06-02.
   estadoOperativoDeCuenta EstadoOperativoDeCuenta @default(OPERATIVA) @map("estado_operativo_de_cuenta")
+  /// 06 §5.4.2 «autoría de creación: quién confirmó/produjo el alta». En autorregistro, la propia identidad.
+  autoriaDeCreacionId     String                  @map("autoria_de_creacion_id") @db.Uuid
+  /// T-06-23 / 06 §5.4.2 «procedencia: origen funcional del alta».
+  procedencia             Json
   /// T-06-24 — cuándo se confirmó el alta. NULL si es desconocido (REG-06-18).
   momentoDeOcurrencia     DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
   /// T-06-24 — cuándo BE registró el alta.
   momentoDeRegistro       DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
+  perfilPropio              PerfilPropio?
+  metodosDeAcceso           MetodoDeAcceso[]
+  sesiones                  Sesion[]
+  controlDeSesion           ControlDeSesion?
+  actos                     ActoRegistrable[]
+  eventos                   EventoDeDominio[]
+  solicitudDeCierreDeCuenta SolicitudDeCierreDeCuenta?
+
   @@map("identidad")
+}
+
+/// T-06-04 — Perfil propio (06 §5.5). Exactamente uno por Identidad tras el alta (INV-06-22).
+/// Sin contenido ni versiones mientras 04/05 no aprueben campos (DEUDA_LEGAJO DL-009).
+model PerfilPropio {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId         String    @unique @map("identidad_id") @db.Uuid
+  /// 06 §5.5.2 «referencia a Versión efectiva de perfil: exactamente una cuando existe contenido confirmado». NULL: sin contenido.
+  versionEfectivaId   String?   @map("version_efectiva_id") @db.Uuid
+  momentoDeOcurrencia DateTime? @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+
+  @@map("perfil_propio")
+}
+
+/// T-06-03 — Método de acceso (06 §5.6). Identidad 1 : 0..N; un método vigente → como máximo 1 Identidad (INV-06-24).
+/// La unicidad (tipo, referencia) es global e incluye cuentas cerradas (DEUDA_LEGAJO DL-011).
+model MetodoDeAcceso {
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId         String               @map("identidad_id") @db.Uuid
+  tipo                TipoDeMetodoDeAcceso
+  /// Identificador local normalizado (correo en minúsculas). Dato C3 (08 §4).
+  referencia          String
+  procedencia         Json
+  momentoDeOcurrencia DateTime?            @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime             @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad        Identidad        @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  credencialLocal  CredencialLocal?
+
+  /// D3 de WP-02: dos registros concurrentes con el mismo correo no crean dos identidades.
+  @@unique([tipo, referencia])
+  @@index([identidadId])
+  @@map("metodo_de_acceso")
+}
+
+/// Credencial del método LOCAL (08 §24.2: hash adaptativo, nunca en claro). Dato C5.
+/// Se suprime al cierre (08 R-02), con registro en RegistroDeSupresion (DEUDA_LEGAJO DL-019).
+model CredencialLocal {
+  metodoDeAccesoId  String   @id @map("metodo_de_acceso_id") @db.Uuid
+  hash              String
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  metodoDeAcceso MetodoDeAcceso @relation(fields: [metodoDeAccesoId], references: [id], onDelete: Restrict)
+
+  @@map("credencial_local")
+}
+
+// ─── Sesiones (07 §43-bis opción A+B; 08 §26) ──────────────────────────────────────────────────
+
+/// Sesión revocable server-side (08 §26.1). El token nunca se persiste: solo su id (`sid`).
+model Sesion {
+  id                    String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId           String                      @map("identidad_id") @db.Uuid
+  estado                EstadoDeSesion              @default(ACTIVA)
+  superficie            Superficie?
+  /// Momento de autenticación (ocurrencia). Base del step-up por sesión reciente (DL-017).
+  momentoDeOcurrencia   DateTime                    @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro     DateTime                    @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  expiraEn              DateTime                    @map("expira_en") @db.Timestamptz(3)
+  /// `ControlDeSesion.version` vigente al emitir; si cambia, la sesión deja de autenticar (tokenVersion, 07:1795).
+  versionDeControl      Int                         @map("version_de_control")
+  momentoDeFinalizacion DateTime?                   @map("momento_de_finalizacion") @db.Timestamptz(3)
+  motivoDeRevocacion    MotivoDeRevocacionDeSesion? @map("motivo_de_revocacion")
+
+  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+
+  @@index([identidadId, estado])
+  @@map("sesion")
+}
+
+/// tokenVersion por cuenta (07:1795 «refuerzo barato»). Separado de Identidad para no agregarle campos ajenos al 06.
+model ControlDeSesion {
+  identidadId String @id @map("identidad_id") @db.Uuid
+  version     Int    @default(0)
+
+  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+
+  @@map("control_de_sesion")
+}
+
+// ─── Relación A: actos A1/A2/A3 (08 §12) ───────────────────────────────────────────────────────
+
+/// Versión de texto mostrada al titular. Catálogo inmutable sembrado por migración desde @be/domain (DL-028).
+model VersionDeTexto {
+  id                String      @id
+  tipo              TipoDeTexto
+  titulo            String
+  finalidad         String
+  texto             String
+  /// SHA-256 hex del texto UTF-8 (08 §12.2).
+  hash              String
+  vigenteDesde      DateTime    @map("vigente_desde") @db.Timestamptz(3)
+  momentoDeRegistro DateTime    @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  actos       ActoRegistrable[]
+  solicitudes SolicitudDeCierreDeCuenta[]
+
+  @@map("version_de_texto")
+}
+
+/// Acto registrable con la evidencia mínima del 08 §12.2. Inmutable salvo VIGENTE → REVOCADO (trigger).
+model ActoRegistrable {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Titular (08 §12.2 «quién»).
+  identidadId         String                  @map("identidad_id") @db.Uuid
+  tipo                TipoDeActoRegistrable
+  estado              EstadoDeActoRegistrable @default(VIGENTE)
+  /// Versión mostrada = versión aceptada (08 §12.2), con su hash copiado como evidencia.
+  versionDeTextoId    String                  @map("version_de_texto_id")
+  hashDelTexto        String                  @map("hash_del_texto")
+  finalidad           String
+  superficie          Superficie?
+  /// Evidencia técnica del acto (08 §12.2), datos C3 con retención R-06.
+  direccionIp         String?                 @map("direccion_ip")
+  agenteDeUsuario     String?                 @map("agente_de_usuario")
+  /// REG-06-17: actor ≠ autoría ≠ procedencia.
+  actorId             String                  @map("actor_id") @db.Uuid
+  autoriaId           String                  @map("autoria_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime                @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeRevocacion DateTime?               @map("momento_de_revocacion") @db.Timestamptz(3)
+
+  identidad      Identidad      @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  versionDeTexto VersionDeTexto @relation(fields: [versionDeTextoId], references: [id], onDelete: Restrict)
+
+  @@index([identidadId, tipo, estado])
+  @@map("acto_registrable")
+}
+
+// ─── Historia: eventos, cierre, supresión, auditoría, idempotencia ─────────────────────────────
+
+/// T-06-N08 — Evento de dominio: hecho ocurrido y registrado, inmutable, con ocurrencia, registro, autoría y procedencia.
+model EventoDeDominio {
+  id                  String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo                TipoDeEventoDeDominio
+  /// Identidad sujeto del hecho.
+  identidadId         String                   @map("identidad_id") @db.Uuid
+  /// Actor que ejecutó (identidad) o servicio interno (DL-020). Exactamente uno (CHECK en la migración).
+  actorId             String?                  @map("actor_id") @db.Uuid
+  actorServicio       String?                  @map("actor_servicio")
+  autoriaId           String?                  @map("autoria_id") @db.Uuid
+  procedencia         Json
+  /// 06 §5.7.5: estado anterior y resultante en las transiciones de cuenta.
+  estadoAnterior      EstadoOperativoDeCuenta? @map("estado_anterior")
+  estadoResultante    EstadoOperativoDeCuenta? @map("estado_resultante")
+  datos               Json?
+  momentoDeOcurrencia DateTime?                @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                 @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+
+  @@index([identidadId, tipo])
+  @@map("evento_de_dominio")
+}
+
+/// RF-069 «La solicitud identifica actor y fecha» (04:158). Una por identidad: CERRADA es terminal.
+model SolicitudDeCierreDeCuenta {
+  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId               String   @unique @map("identidad_id") @db.Uuid
+  actorId                   String   @map("actor_id") @db.Uuid
+  /// «consecuencias presentadas» (06 §5.7.4): versión del texto mostrado.
+  versionDeConsecuenciasId  String   @map("version_de_consecuencias_id")
+  procedencia               Json
+  momentoDeOcurrencia       DateTime @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro         DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad              Identidad      @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  versionDeConsecuencias VersionDeTexto @relation(fields: [versionDeConsecuenciasId], references: [id], onDelete: Restrict)
+
+  @@map("solicitud_de_cierre_de_cuenta")
+}
+
+/// 08 §18 «registro de supresiones (deletion ledger)»: categoría, sujeto, fundamento y ejecutor. Append-only.
+model RegistroDeSupresion {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoria           String
+  sujetoId            String   @map("sujeto_id") @db.Uuid
+  fundamento          String
+  ejecutor            String
+  momentoDeOcurrencia DateTime @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  @@index([sujetoId])
+  @@map("registro_de_supresion")
+}
+
+/// 08 §29 — auditoría probatoria en la base, separada de los logs, append-only. Sin IP, user-agent ni identificadores en claro.
+model RegistroDeAuditoria {
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Operación del 09 (p. ej. API-ACC-02).
+  operacion           String
+  resultado           ResultadoDeOperacion
+  /// Código interno del resultado (p. ej. INVALID_CREDENTIALS, IDENTIDAD_INEXISTENTE). Nunca se expone.
+  motivo              String?
+  actorId             String?              @map("actor_id") @db.Uuid
+  /// Identidad afectada, si existe.
+  sujetoId            String?              @map("sujeto_id") @db.Uuid
+  recursoTipo         String?              @map("recurso_tipo")
+  recursoId           String?              @map("recurso_id")
+  superficie          Superficie?
+  requestId           String?              @map("request_id")
+  momentoDeOcurrencia DateTime?            @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime             @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  @@index([sujetoId])
+  @@index([operacion, momentoDeRegistro])
+  @@map("registro_de_auditoria")
+}
+
+/// Idempotency-Key (09v7 T07). La huella excluye la credencial (DEUDA_LEGAJO DL-026). Append-only.
+model RegistroDeIdempotencia {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operacion         String
+  /// Actor autenticado o «PUBLICO» (namespace, DL-026).
+  ambito            String
+  clave             String
+  huella            String
+  estadoHttp        Int      @map("estado_http")
+  cuerpo            Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  @@unique([operacion, ambito, clave])
+  @@map("registro_de_idempotencia")
 }

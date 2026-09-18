@@ -3,10 +3,14 @@ import { APP_FILTER } from '@nestjs/core';
 import type { Entorno } from './config/entorno';
 import { ENTORNO, VERSION } from './config/tokens';
 import type { VersionDesplegada } from './config/version';
+import { ConsentimientoModule } from './consentimiento/consentimiento.module';
 import { DIRECTORIO_MIGRACIONES } from './health/health.service';
 import { HealthModule } from './health/health.module';
-import { RecursoNoEncontradoFilter } from './http/recurso-no-encontrado.filter';
+import { FiltroDeErrores } from './http/filtro-de-errores';
+import { IdentidadModule } from './identidad/identidad.module';
+import { PlataformaModule } from './plataforma/plataforma.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SesionModule } from './sesion/sesion.module';
 
 export interface OpcionesApp {
   readonly entorno: Entorno;
@@ -30,14 +34,23 @@ class ConfiguracionModule {
   }
 }
 
-/** Monolito modular (07 CAND-07-A). WP-01: solo salud; los módulos de dominio llegan por paquete. */
+/** Monolito modular (07 CAND-07-A). WP-01: salud. WP-02: identidad, sesiones y requisito A3 (solo lectura). */
 @Module({})
 export class AppModule {
   static con(opciones: OpcionesApp): DynamicModule {
     return {
       module: AppModule,
-      imports: [ConfiguracionModule.con(opciones), PrismaModule, HealthModule],
-      providers: [{ provide: APP_FILTER, useClass: RecursoNoEncontradoFilter }],
+      imports: [
+        ConfiguracionModule.con(opciones),
+        PrismaModule,
+        PlataformaModule,
+        HealthModule,
+        SesionModule,
+        IdentidadModule,
+        ConsentimientoModule,
+      ],
+      // 09v7 T16: todo error sale como ErrorEnvelope, sin detalle interno (DL-005).
+      providers: [{ provide: APP_FILTER, useClass: FiltroDeErrores }],
     };
   }
 }

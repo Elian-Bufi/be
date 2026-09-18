@@ -7,7 +7,16 @@ import { crearApp } from '../bootstrap';
 import { PrismaService } from '../prisma/prisma.service';
 
 const VERSION = { aplicacion: '0.1.0', commit: 'abc1234', construidoEn: '2026-09-16T00:00:00Z' };
-const ENTORNO = { appEnv: 'test' as const, port: 0, databaseUrl: 'postgresql://sintetico@localhost/x', corsAllowedOrigins: [] };
+const ENTORNO = {
+  appEnv: 'test' as const,
+  port: 0,
+  databaseUrl: 'postgresql://sintetico@localhost/x',
+  corsAllowedOrigins: [],
+  jwtSecret: 'secreto-sintetico-de-prueba-de-32-caracteres-o-mas',
+  costoBcrypt: 10,
+  limites: { login: { maximo: 5, ventanaMs: 900000 }, registro: { maximo: 10, ventanaMs: 3600000 } },
+  saltosDeProxy: 1,
+};
 
 function directorioCon(migraciones: string[]): string {
   const dir = mkdtempSync(join(tmpdir(), 'be-migr-'));

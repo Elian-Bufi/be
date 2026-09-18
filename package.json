@@ -33,6 +33,8 @@
     "test": "npm run build:domain && npm run test -w @be/domain && npm run test -w @be/api",
     "test:integration": "npm run build:domain && npm run test:integration -w @be/api",
     "legajo:verificar": "bash scripts/verificar-legajo.sh",
-    "audit:prod": "npm audit --omit=dev --audit-level=high -w @be/api && npm audit --omit=dev --audit-level=high -w @be/web && npm audit --omit=dev --audit-level=high -w @be/mobile"
+    "audit:prod": "npm audit --omit=dev --audit-level=high -w @be/api && npm audit --omit=dev --audit-level=high -w @be/web && npm audit --omit=dev --audit-level=high -w @be/mobile",
+    "openapi": "npm run build:domain && node scripts/generar-openapi.cjs",
+    "openapi:verificar": "npm run build:domain && node scripts/generar-openapi.cjs --verificar"
   }
 }

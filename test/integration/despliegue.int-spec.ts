@@ -10,13 +10,14 @@ import { join } from 'node:path';
 import request from 'supertest';
 import { crearApp } from '../../apps/api/src/bootstrap';
 import { migrarDeploy, RAIZ, urlConSchema } from './soporte';
+import { entornoDePrueba } from './soporte-api';
 
 const VERSION = { aplicacion: '0.1.0', commit: 'integracion', construidoEn: null };
 const MIGRACIONES = join(RAIZ, 'prisma', 'migrations');
 
 async function appContra(directorioMigraciones: string): Promise<INestApplication> {
   const app = await crearApp({
-    entorno: { appEnv: 'test', port: 0, databaseUrl: process.env.DATABASE_URL as string, corsAllowedOrigins: [] },
+    entorno: entornoDePrueba(),
     version: VERSION,
     directorioMigraciones,
   });
