@@ -20,13 +20,15 @@ El informe MESA-01 clasificaba `DV-11`…`DV-14` en «D. Solo puede cerrarse con
 
 | Recurso | URL | Notas |
 |---|---|---|
-| APK (EAS) | `https://expo.dev/artifacts/eas/MUpAi1kp7t1qmxuqY_XWFd8nEC3xd5JlK0V6JbcW1gw.apk` | archivo `be-0.1.0-4c4c9c7.apk`, build `f87fc552-237e-4793-9c86-3573ed4ff2b0`, perfil `test`, 68 MB, SHA-256 `bac929a35319d5d6073435ef3355f7bb0a4cb66bdb470c0517f76e68c54ce361`. **Expira 2026-10-02 04:39 UTC.** |
-| APK (copia durable) | pendiente | el release `be-apk-0.1.0` quedó en el repositorio archivado `be-archivo-wp01` (privado); se publica en el repositorio público junto con la decisión de publicación (`DEFENSA/WP-01.md` §4) |
-| Código fuente (APK y Website) | `https://github.com/Elian-Bufi/be` | **repositorio privado hoy**: el tribunal no puede abrirlo |
+| **APK (para la lámina 12)** | `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.1.0/be-0.1.0-fd3ed53.apk` | release `be-apk-0.1.0` del repositorio público; **no expira**. Archivo `be-0.1.0-fd3ed53.apk`, 68 MB, SHA-256 `a0d5daa451b757db14b431745f6b10cc05c312eda287d8ccd18ed0f88c997229`; muestra `app 0.1.0 · test · commit fd3ed53` |
+| APK (EAS, mismo archivo) | `https://expo.dev/artifacts/eas/vT70Js23NejC6YFJkDiRrC7at1UHJtfx2DEKYyf91V4.apk` | build `70c97eed-11c1-48ea-bb1e-6cc9a302ae54`; **expira 2026-10-02 17:43 UTC**: no usar en la lámina |
+| Código fuente (APK y Website) | `https://github.com/Elian-Bufi/be` | **público** desde el 2026-09-18; monorepo (`apps/mobile`, `apps/web`) |
 | Website | `https://be-web-1ngj.onrender.com` | «BE — en construcción» + identidad del build; cabeceras HSTS, CSP, X-Frame-Options, nosniff |
 | API | `https://be-api-hndp.onrender.com/health` | 200 con ambiente, versión, commit y estado de base y migraciones |
 
-## Dos cosas que hay que decidir antes de la entrega
+## Decisiones tomadas (2026-09-18)
 
-1. **Visibilidad del repositorio.** Los puntos 12 y 13 piden la URL del código fuente. Con el repositorio privado, esas dos URLs no son verificables por el tribunal. Opciones: hacerlo público, o dar acceso de lectura a los evaluadores.
-2. **Vigencia del APK.** El artefacto de EAS expira el 2026-10-02, un día después de la entrega. O se publica la copia durable (depende del punto 1), o se vuelve a construir el APK cerca de la fecha de defensa.
+1. **Visibilidad del repositorio:** público. Las URLs de código de los puntos 12 y 13 son verificables por el tribunal.
+2. **Vigencia del APK:** la URL de la lámina 12 es la del release del repositorio, que no expira. El artefacto de EAS queda como copia secundaria.
+
+Pendiente para la lámina 12: la foto del APK instalado y abierto en un Android físico.

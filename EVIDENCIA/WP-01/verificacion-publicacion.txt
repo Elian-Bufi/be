@@ -1,0 +1,24 @@
+# WP-01 — verificación de la publicación del repositorio (acceso anónimo, sin token)
+# Fecha UTC: 2026-09-18T17:59:49Z · repositorio público desde 2026-09-18T17:59:34Z
+
+$ curl -s -o /dev/null -w '%{http_code}' https://github.com/Elian-Bufi/be
+200
+$ curl -s https://api.github.com/repos/Elian-Bufi/be  (visibility)
+"visibility": "public"
+
+$ curl -sL -o be.apk https://github.com/Elian-Bufi/be/releases/download/be-apk-0.1.0/be-0.1.0-fd3ed53.apk
+HTTP 200 � 68286906 bytes � application/vnd.android.package-archive
+SHA-256 a0d5daa451b757db14b431745f6b10cc05c312eda287d8ccd18ed0f88c997229  (esperado a0d5daa451b757db14b431745f6b10cc05c312eda287d8ccd18ed0f88c997229)
+
+$ curl -s https://github.com/Elian-Bufi/be/commit/fd3ed53.patch | head  (commit que muestra el APK)
+From <sha> (encabezado mbox)
+From: Elian-Bufi <190213429+Elian-Bufi@users.noreply.github.com>
+Date: Fri, 18 Sep 2026 14:32:52 -0300
+
+$ clon anónimo + verificación del legajo
+fd3ed53 WP-01 — cierre final: verificación, DL-008 y defensa (#3)
+legajo íntegro - 207 de 208 entradas verificadas byte a byte; 1 no publicada(s) por decisión de Dirección
+
+$ identidades de autor en el historial público (git log --all en el clon anónimo)
+     15 190213429+Elian-Bufi@users.noreply.github.com
+      1 <email personal del autor — merge 960d1d2, publicado por decisión de Dirección>
