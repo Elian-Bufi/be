@@ -5,7 +5,7 @@
 
 | ID | Abierta en | Documento | Tema | Estado |
 |---|---|---|---|---|
-| DL-001 | WP-01 · 2026-09-16 | 07 §0.2 · ACTA-DIR-034 (borrador) | Autorización de implementación no formalizada | ABIERTA |
+| DL-001 | WP-01 · 2026-09-16 | 07 §0.2 · ACTA-DIR-034 (borrador) | Autorización de implementación no formalizada | **CERRADA** 2026-09-18 · ACTA-DIR-034 v1.0 |
 | DL-002 | WP-01 · 2026-09-16 | 07 §13, §15, §34 | Versiones de runtime y frameworks del 07 vs WP-01 | ABIERTA |
 | DL-003 | WP-01 · 2026-09-16 | 06 §5.4.2 · INV-06-22 | Estructura mínima de Identidad BE vs schema mínimo de WP-01 | ABIERTA |
 | DL-004 | WP-01 · 2026-09-16 | 09 §3.1 vs 07 §13.2/§30 | `/health` fuera del prefijo obligatorio `/api/v1` | ABIERTA |
@@ -29,6 +29,13 @@
 - **B.** Emitir un acta acotada a infraestructura sin datos reales (WP-01) y reservar el gate 034 para el primer paquete con lógica de negocio.
 
 **Provisorio en código.** Ninguno. WP-01 no contiene lógica de negocio ni datos.
+
+**Resolución — CERRADA el 2026-09-18.** Dirección firmó `actas/ACTA_DIR_034_v1.0_GATE_IMPLEMENTACION_FIRMADA_2026-09-18.md`, una variante de la opción A:
+- autoriza la implementación en el alcance WP-01 a WP-07, cada paquete con sus IDs fijados antes del primer commit;
+- **ratifica** WP-01, que se ejecutó antes de la firma por orden directa de Dirección;
+- el borrador v0.1.1 se conserva sin cambios porque integra el manifiesto.
+
+La observación sobre las actas 001–020 no incluidas en la entrega queda como nota de inventario (ACTA-DIR-034 §14, Nota 3) y no bloquea.
 
 ---
 

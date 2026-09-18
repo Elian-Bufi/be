@@ -58,6 +58,8 @@ La primera respuesta puede tardar alrededor de 30 segundos: el plan gratuito apa
 - **Aplicación:** Render → `be-api` → Events → deploy anterior → **Rollback**. No se revierte el schema: las migraciones son aditivas (expand→contract), y `/health/ready` acepta una base con migraciones más nuevas que el artefacto.
 - **Migración fallida:** el contenedor nuevo termina antes de escuchar, no pasa `/health/ready` y Render cancela el deploy. La versión anterior sigue sirviendo, y la migración queda registrada como fallida en `_prisma_migrations`. Se corrige con una migración nueva; nunca `migrate reset` ni `db push` fuera de development (07 §38).
 - **Website:** Render → `be-web` → Events → Rollback.
+- **Merge defectuoso** (ACTA-DIR-034 §12): `git revert -m 1 <sha-del-merge>` en una rama nueva → PR → CI verde → merge. El revert se despliega como cualquier cambio. Nunca `push --force`, `reset --hard` ni `commit --amend` sobre historia publicada.
+- **Ensayo de rollback:** planificado en `test`, después del primer merge de WP-02 y antes de cerrarlo (ACTA-DIR-034 §12). Evidencia en `EVIDENCIA/ENSAYO-ROLLBACK/`.
 
 ## Límites del plan gratuito
 
