@@ -2,7 +2,7 @@
 
 > Nota de actualización del ejecutor técnico. **No modifica** `BE_MESA_01_MATRIZ_COBERTURA_DA_VINCI_14x14_2026-09-10.xlsx` ni el informe del 2026-09-10: esos archivos están en `docs/MANIFEST.sha256` y cualquier edición rompería la verificación de hashes de la entrega de Dirección (y el job `legajo` de la CI). Cuando Dirección quiera consolidarlo en la matriz, reemplaza el archivo y reemite el manifiesto.
 
-**Fecha:** 2026-09-18 · **Paquete:** WP-01 · **Fuente de exigencia:** `docs/fuente_escolar/Entregables.pdf`, puntos 12 y 13.
+**Fecha:** 2026-09-18 · **Paquete:** WP-01 · **Fuente de exigencia:** `Entregables.pdf` de la escuela, puntos 12 y 13 (no versionado: ver `docs/fuente_escolar/LEEME.md`).
 
 ## Cambio de estado
 
