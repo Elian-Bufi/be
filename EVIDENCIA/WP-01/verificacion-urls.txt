@@ -1,0 +1,152 @@
+# WP-01 — verificación de las URLs vivas
+# Fecha UTC: 2026-09-18T04:49:00Z · origen: esta computadora (curl 7.87.0)
+# Verificación desde red externa: WebFetch (servidores de Anthropic), mismas respuestas — ver DEFENSA/WP-01.md
+
+$ curl -i https://be-api-hndp.onrender.com/health/ready
+HTTP/2 200 
+content-type: application/json; charset=utf-8
+cache-control: no-store
+cf-cache-status: DYNAMIC
+content-security-policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+etag: W/"e0-qcP/iIfMxg46KcM8jAu3Wtr2sFg"
+origin-agent-cluster: ?1
+referrer-policy: no-referrer
+server: cloudflare
+strict-transport-security: max-age=31536000; includeSubDomains
+x-content-type-options: nosniff
+x-dns-prefetch-control: off
+x-download-options: noopen
+x-frame-options: SAMEORIGIN
+x-permitted-cross-domain-policies: none
+x-render-origin-server: Render
+x-request-id: 3e09752c-fd94-4ef9-8d70-2168e307d035
+x-xss-protection: 0
+
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"6de82e1be16870d51040a4d2cc131373ebe5e53d","construidoEn":"2026-09-18T04:41:46.285Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+
+
+$ curl -i https://be-api-hndp.onrender.com/health/live
+HTTP/2 200 
+content-type: application/json; charset=utf-8
+cache-control: no-store
+content-security-policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+etag: W/"a9-1AZEFTFgBmsx14KnV0BDco8kJwg"
+origin-agent-cluster: ?1
+referrer-policy: no-referrer
+server: cloudflare
+strict-transport-security: max-age=31536000; includeSubDomains
+x-content-type-options: nosniff
+x-dns-prefetch-control: off
+x-download-options: noopen
+x-frame-options: SAMEORIGIN
+x-permitted-cross-domain-policies: none
+x-render-origin-server: Render
+x-request-id: 61cebec6-d7db-44a4-9280-97de31e0cd0e
+x-xss-protection: 0
+cf-cache-status: DYNAMIC
+
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"6de82e1be16870d51040a4d2cc131373ebe5e53d","construidoEn":"2026-09-18T04:41:46.285Z"}}}
+
+
+$ curl -i https://be-api-hndp.onrender.com/health
+HTTP/2 200 
+content-type: application/json; charset=utf-8
+cache-control: no-store
+cf-cache-status: DYNAMIC
+content-security-policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+etag: W/"e0-qcP/iIfMxg46KcM8jAu3Wtr2sFg"
+origin-agent-cluster: ?1
+referrer-policy: no-referrer
+server: cloudflare
+strict-transport-security: max-age=31536000; includeSubDomains
+x-content-type-options: nosniff
+x-dns-prefetch-control: off
+x-download-options: noopen
+x-frame-options: SAMEORIGIN
+x-permitted-cross-domain-policies: none
+x-render-origin-server: Render
+x-request-id: 807625c1-1980-44d6-928d-7cfe065325e8
+x-xss-protection: 0
+
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"6de82e1be16870d51040a4d2cc131373ebe5e53d","construidoEn":"2026-09-18T04:41:46.285Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+
+
+$ curl -i https://be-api-hndp.onrender.com/api/v1/no-existe
+HTTP/2 404 
+content-type: application/json; charset=utf-8
+content-security-policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+etag: W/"4a-qd/Xsd7UtmP6jU7ekD01MiLpnyQ"
+origin-agent-cluster: ?1
+referrer-policy: no-referrer
+server: cloudflare
+strict-transport-security: max-age=31536000; includeSubDomains
+x-content-type-options: nosniff
+x-dns-prefetch-control: off
+x-download-options: noopen
+x-frame-options: SAMEORIGIN
+x-permitted-cross-domain-policies: none
+x-render-origin-server: Render
+x-request-id: d910b083-57d6-4b00-b2a2-c2e4b94308f2
+x-xss-protection: 0
+cf-cache-status: DYNAMIC
+
+{"error":{"code":"RESOURCE_NOT_FOUND","message":"Recurso no encontrado."}}
+
+
+$ curl -i https://be-web-izpg.onrender.com/api/v1/no-existe
+HTTP/2 404 
+content-type: application/json; charset=utf-8
+cache-control: max-age=0
+cf-cache-status: BYPASS
+x-xss-protection: 0
+content-security-policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+etag: W/"4a-qd/Xsd7UtmP6jU7ekD01MiLpnyQ"
+origin-agent-cluster: ?1
+referrer-policy: no-referrer
+server: cloudflare
+strict-transport-security: max-age=31536000; includeSubDomains
+x-content-type-options: nosniff
+x-dns-prefetch-control: off
+x-download-options: noopen
+x-frame-options: SAMEORIGIN
+x-permitted-cross-domain-policies: none
+x-render-origin-server: Render
+x-request-id: 89959e53-2fed-460b-b560-2c041a250ded
+
+{"error":{"code":"RESOURCE_NOT_FOUND","message":"Recurso no encontrado."}}
+
+
+$ curl -I https://be-web-izpg.onrender.com/
+HTTP/2 200 
+content-type: text/html; charset=utf-8
+cache-control: public, max-age=0, s-maxage=300
+content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+cf-cache-status: HIT
+permissions-policy: camera=(), microphone=(), geolocation=()
+referrer-policy: no-referrer
+server: cloudflare
+strict-transport-security: max-age=315360000; includeSubdomains; preload
+vary: Accept-Encoding
+vary: Accept-Encoding
+x-content-type-options: nosniff
+x-frame-options: DENY
+
+$ curl -s https://be-web-izpg.onrender.com/ | (texto visible)
+<h1>BE — en construcción</h1>
+<p class="identidad" aria-label="Identidad del build">web 0.1.0 · commit 1651720 · build 2026-09-17T23:59:47.752Z</p>
+
+$ CORS preflight desde el origen del website
+HTTP/2 204 
+access-control-allow-origin: https://be-web-izpg.onrender.com
+$ CORS preflight desde un origen ajeno (no debe devolver Access-Control-Allow-Origin)
+HTTP/2 204 
