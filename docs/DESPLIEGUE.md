@@ -17,20 +17,32 @@ merge a main + checks OK ─► Render (autoDeployTrigger: checksPass)
 tag apk-v* o manual ─► apk.yml ─► EAS build perfil test ─► URL del APK
 ```
 
+## URLs del ambiente `test`
+
+| Servicio | URL |
+|---|---|
+| API | `https://be-api-hndp.onrender.com` (`/health`, `/health/live`, `/health/ready`) |
+| Website | `https://be-web-izpg.onrender.com` |
+| APK | release `be-apk-0.1.0` del repositorio (ver `DEFENSA/WP-01.md`) |
+
+Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían a terceros, y Render agregó los sufijos `-hndp` e `-izpg`. Esas URLs están fijadas en `render.yaml` (rewrite y CORS) y en `apps/mobile/eas.json` (`API_BASE_URL`). Si se recrea un servicio y cambia el sufijo, hay que actualizar los tres lugares.
+
 ## Alta inicial (una sola vez)
 
 1. En Render: **New → Blueprint**, conectar el repositorio y elegir la rama `main`. Render lee `render.yaml` y crea `be-db-test` (Postgres 16, Frankfurt), `be-api` (Docker, Frankfurt) y `be-web` (sitio estático).
-2. En `be-api` → Environment, cargar `CORS_ALLOWED_ORIGINS` con la URL de `be-web`.
-3. Si Render asignó a la API un subdominio distinto de `be-api.onrender.com`, actualizar el `destination` del rewrite en `render.yaml` y el `API_BASE_URL` del perfil `test` en `apps/mobile/eas.json`.
-4. En GitHub → Settings → Secrets → Actions: `EXPO_TOKEN` (token de expo.dev) para `apk.yml`.
+2. Si el sufijo de algún subdominio cambió, actualizar las URLs de la tabla anterior en `render.yaml` y `eas.json`.
+3. En GitHub → Settings → Secrets → Actions: `EXPO_TOKEN` (token de expo.dev) para `apk.yml`.
 
 ## Verificación posterior al deploy (07 §37)
 
 ```bash
-curl -s https://<be-api>/health/ready   # 200, data.version.commit == SHA del merge
-curl -s https://<be-api>/health/live    # 200
-curl -sI https://<be-web>/              # 200 + cabeceras HSTS/CSP
+curl -s https://be-api-hndp.onrender.com/health/ready   # 200, data.version.commit == SHA del merge
+curl -s https://be-api-hndp.onrender.com/health/live    # 200
+curl -sI https://be-web-izpg.onrender.com/              # 200 + cabeceras HSTS/CSP
+curl -s https://be-web-izpg.onrender.com/api/v1/x       # 404 RESOURCE_NOT_FOUND desde la API (rewrite same-origin)
 ```
+
+La primera respuesta puede tardar alrededor de 30 segundos: el plan gratuito apaga la API después de 15 minutos sin tráfico. En el primer despliegue se midieron 23 s en frío y 0,5 s en caliente.
 
 ## Rollback (07 §39)
 
