@@ -22,10 +22,17 @@ tag apk-v* o manual ─► apk.yml ─► EAS build perfil test ─► URL del A
 | Servicio | URL |
 |---|---|
 | API | `https://be-api-hndp.onrender.com` (`/health`, `/health/live`, `/health/ready`) |
-| Website | `https://be-web-izpg.onrender.com` |
+| Website | `https://be-web-1ngj.onrender.com` |
 | APK | release `be-apk-0.1.0` del repositorio (ver `DEFENSA/WP-01.md`) |
 
-Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían a terceros, y Render agregó los sufijos `-hndp` e `-izpg`. Esas URLs están fijadas en `render.yaml` (rewrite y CORS) y en `apps/mobile/eas.json` (`API_BASE_URL`). Si se recrea un servicio y cambia el sufijo, hay que actualizar los tres lugares.
+Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían a terceros, así que Render agrega sufijos. Qué depende de cada URL:
+
+| Si cambia la URL de… | Hay que actualizar |
+|---|---|
+| la **API** (`be-api-hndp`) | el `destination` del rewrite `/api/*` en `render.yaml` y el `API_BASE_URL` de `apps/mobile/eas.json` (con rebuild del APK) |
+| el **website** (`be-web-1ngj`) | solo `CORS_ALLOWED_ORIGINS` de `be-api` en `render.yaml` |
+
+**Historia del Blueprint (2026-09-18).** El Blueprint original quedó conectado al repositorio renombrado `be-archivo-wp01` y se desconectó. Dirección creó uno nuevo sobre `Elian-Bufi/be`, que **adoptó** `be-api` y `be-db-test` sin recrearlos (URL de la API y base intactas) y **creó** un `be-web` nuevo: `be-web-izpg` pasó a `be-web-1ngj`. Desde entonces `render.yaml` vuelve a sincronizarse solo con cada push a `main`.
 
 ## Alta inicial (una sola vez)
 
@@ -38,8 +45,10 @@ Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían
 ```bash
 curl -s https://be-api-hndp.onrender.com/health/ready   # 200, data.version.commit == SHA del merge
 curl -s https://be-api-hndp.onrender.com/health/live    # 200
-curl -sI https://be-web-izpg.onrender.com/              # 200 + cabeceras HSTS/CSP
-curl -s https://be-web-izpg.onrender.com/api/v1/x       # 404 RESOURCE_NOT_FOUND desde la API (rewrite same-origin)
+curl -sI https://be-web-1ngj.onrender.com/              # 200 + cabeceras HSTS/CSP
+curl -s https://be-web-1ngj.onrender.com/api/v1/x       # 404 RESOURCE_NOT_FOUND desde la API (rewrite same-origin)
+curl -si -X OPTIONS -H "Origin: https://be-web-1ngj.onrender.com" -H "Access-Control-Request-Method: GET" \
+  https://be-api-hndp.onrender.com/health/ready         # Access-Control-Allow-Origin: el website; con otro origen, ausente
 ```
 
 La primera respuesta puede tardar alrededor de 30 segundos: el plan gratuito apaga la API después de 15 minutos sin tráfico. En el primer despliegue se midieron 23 s en frío y 0,5 s en caliente.

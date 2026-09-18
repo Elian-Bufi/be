@@ -23,7 +23,7 @@ El informe MESA-01 clasificaba `DV-11`…`DV-14` en «D. Solo puede cerrarse con
 | APK (EAS) | `https://expo.dev/artifacts/eas/MUpAi1kp7t1qmxuqY_XWFd8nEC3xd5JlK0V6JbcW1gw.apk` | archivo `be-0.1.0-4c4c9c7.apk`, build `f87fc552-237e-4793-9c86-3573ed4ff2b0`, perfil `test`, 68 MB, SHA-256 `bac929a35319d5d6073435ef3355f7bb0a4cb66bdb470c0517f76e68c54ce361`. **Expira 2026-10-02 04:39 UTC.** |
 | APK (copia durable) | `https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.1.0` | mismo archivo; requiere que el repositorio sea público para descargarse sin sesión |
 | Código fuente (APK y Website) | `https://github.com/Elian-Bufi/be` | **repositorio privado hoy**: el tribunal no puede abrirlo |
-| Website | `https://be-web-izpg.onrender.com` | «BE — en construcción» + identidad del build; cabeceras HSTS, CSP, X-Frame-Options, nosniff |
+| Website | `https://be-web-1ngj.onrender.com` | «BE — en construcción» + identidad del build; cabeceras HSTS, CSP, X-Frame-Options, nosniff |
 | API | `https://be-api-hndp.onrender.com/health` | 200 con ambiente, versión, commit y estado de base y migraciones |
 
 ## Dos cosas que hay que decidir antes de la entrega
