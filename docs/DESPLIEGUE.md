@@ -23,7 +23,7 @@ tag apk-v* o manual ─► apk.yml ─► EAS build perfil test ─► URL del A
 |---|---|
 | API | `https://be-api-hndp.onrender.com` (`/health`, `/health/live`, `/health/ready`) |
 | Website | `https://be-web-1ngj.onrender.com` |
-| APK | `https://expo.dev/artifacts/eas/MUpAi1kp7t1qmxuqY_XWFd8nEC3xd5JlK0V6JbcW1gw.apk` (expira 2026-10-02); copia durable pendiente de publicar (ver `DEFENSA/WP-01.md` §4) |
+| APK | `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.1.0/be-0.1.0-fd3ed53.apk` (release permanente) · EAS: `https://expo.dev/artifacts/eas/vT70Js23NejC6YFJkDiRrC7at1UHJtfx2DEKYyf91V4.apk` (expira 2026-10-02) |
 
 Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían a terceros, así que Render agrega sufijos. Qué depende de cada URL:
 
