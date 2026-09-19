@@ -16,3 +16,4 @@ export * from './consentimiento-profesional';
 export * from './autorizacion';
 export * from './contratos-vinculo';
 export * from './copy-vinculo';
+export * from './versionado';
