@@ -15,6 +15,7 @@ import {
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
+import { ErrorDeApi } from '../http/errores';
 import { conReintento } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -79,6 +80,19 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * Ningún controlador ni servicio de dominio decide autorización por su cuenta: la invocan el guard `PdpGuard`, para
  * operaciones protegidas, y `evaluarSinRegistrar`, para el modo de acceso que muestran las listas (RF-023).
  */
+/**
+ * Denegación del PDP dentro de una transacción de escritura (WP-04). Sale como el mismo 404 que un recurso
+ * inexistente (09:207, 09:226) y lleva la decisión denegada: la transacción se revierte entera, así que quien la
+ * atrapa la registra aparte, con los mismos hechos y la misma hora (`registrarDenegacion`).
+ */
+export class DenegacionDelPdp extends ErrorDeApi {
+  constructor(readonly decision: Prisma.DecisionDeAccesoCreateManyInput) {
+    super(404, 'RESOURCE_NOT_FOUND', 'Recurso no encontrado.');
+  }
+}
+
+const errorInterno = (): Error => new Error('PDP: la lectura de hechos no devolvió filas');
+
 @Injectable()
 export class PdpService {
   constructor(private readonly prisma: PrismaService) {}
@@ -123,6 +137,100 @@ export class PdpService {
           porAlcance: porAlcance.map(({ alcance, finalidad, decision, hechos }) => ({ alcance, finalidad, decision, hechos })),
           algunaPermitida: porAlcance.some((d) => d.decision.permitida),
         };
+      }),
+    );
+  }
+
+  /**
+   * WP-04 — Decide UN alcance dentro de una transacción ajena: la de la escritura o lectura de datos de salud. Así la
+   * decisión y el efecto quedan del mismo lado de cualquier corte. Los bloqueos compartidos se mantienen hasta el
+   * commit, así que ningún corte (revocar, pausar, finalizar, cerrar) puede quedar entre la decisión y la escritura.
+   *
+   * - `actorDeLaDecision` es quien opera: el profesional en sus operaciones, o el asesorado titular en las propias.
+   * - Los hechos son siempre los del par (profesional, titular). Para el titular, eso responde si su Proceso con ese
+   *   profesional sigue vigente (REG-06-66) con su A3 vigente (08:406); UC-P12 E06: revocado el consentimiento,
+   *   «UC-I02 deniega la operación futura».
+   * - Permitida: registra la decisión en la misma transacción y la devuelve.
+   * - Denegada: lanza `DenegacionDelPdp` (404). La transacción se revierte, y quien la atrapa registra la decisión.
+   */
+  async decidirEnTransaccion(
+    tx: Prisma.TransactionClient,
+    p: {
+      readonly operacion: string;
+      readonly actorDeLaDecision: string;
+      readonly profesionalId: string;
+      readonly titularId: string | null;
+      readonly alcance: Alcance;
+      /** Recurso concreto al que se accede (08:634). */
+      readonly recurso: { readonly tipo: string; readonly id: string } | null;
+    },
+    ctx: ContextoDeSolicitud,
+  ): Promise<DecisionPorAlcance & { readonly decision: Extract<DecisionDeAutorizacion, { permitida: true }> }> {
+    const titularId = p.titularId && UUID.test(p.titularId) ? p.titularId.toLowerCase() : null;
+    if (titularId) await this.bloquearLoQueCorta(tx, p.profesionalId, titularId);
+    const [fila] = await this.leerFilas(tx, p.profesionalId, titularId, p.alcance);
+    if (!fila) throw errorInterno();
+    const hechos = aHechos(p.profesionalId, fila);
+    const decision = evaluarAutorizacion(hechos);
+    const registro: Prisma.DecisionDeAccesoCreateManyInput = {
+      operacion: p.operacion,
+      resultado: decision.permitida ? 'PERMITIDA' : 'DENEGADA',
+      actorId: p.actorDeLaDecision,
+      sujetoId: hechos.titular?.identidadId ?? null,
+      alcance: p.alcance,
+      finalidad: hechos.operacion.finalidad,
+      dimensionesDesfavorables: [...decision.dimensionesDesfavorables],
+      alcanceDeVinculoId: decision.permitida ? decision.alcanceDeVinculoId : (hechos.alcanceDeVinculo?.id ?? null),
+      consentimientoId: decision.permitida ? decision.consentimientoId : (hechos.consentimiento?.id ?? null),
+      versionDeConsentimientoId: decision.permitida ? decision.versionDeConsentimientoId : fila.version_cabeza_id,
+      // 08:307: sin matriz de pertinencia (DL-039, simplificación declarada).
+      versionDeMatriz: null,
+      recursoTipo: p.recurso?.tipo ?? null,
+      recursoId: p.recurso?.id ?? null,
+      superficie: ctx.superficie,
+      requestId: ctx.requestId,
+      momentoDeOcurrencia: fila.momento,
+    };
+    if (!decision.permitida) throw new DenegacionDelPdp(registro);
+    await tx.decisionDeAcceso.create({ data: registro });
+    return { alcance: p.alcance, finalidad: hechos.operacion.finalidad, decision, hechos };
+  }
+
+  /**
+   * Registra una decisión denegada fuera de la transacción revertida (ver `DenegacionDelPdp`). Si el registro falla, la
+   * respuesta sigue siendo el 404: denegar no depende de poder auditar (UC-I02 E06 exige lo inverso).
+   */
+  async registrarDenegacion(e: DenegacionDelPdp): Promise<void> {
+    try {
+      await this.prisma.decisionDeAcceso.create({ data: e.decision });
+    } catch {
+      // El 404 se responde igual.
+    }
+  }
+
+  /**
+   * Registra la denegación de una operación sobre un recurso que no existe o no es de este actor. Queda como una
+   * decisión DENEGADA con el titular nulo, igual que un identificador inventado en API-DSH-03: no deja huella de
+   * existencia (08 §29).
+   */
+  async registrarRecursoNoRevelable(
+    p: { readonly operacion: string; readonly actorId: string; readonly alcance: Alcance; readonly recurso: { readonly tipo: string; readonly id: string } | null },
+    ctx: ContextoDeSolicitud,
+  ): Promise<void> {
+    await this.registrarDenegacion(
+      new DenegacionDelPdp({
+        operacion: p.operacion,
+        resultado: 'DENEGADA',
+        actorId: p.actorId,
+        sujetoId: null,
+        alcance: p.alcance,
+        finalidad: FINALIDAD_DE_ALCANCE[p.alcance],
+        dimensionesDesfavorables: ['ROL'],
+        recursoTipo: p.recurso?.tipo ?? null,
+        recursoId: p.recurso?.id ?? null,
+        superficie: ctx.superficie,
+        requestId: ctx.requestId,
+        momentoDeOcurrencia: new Date(),
       }),
     );
   }

@@ -5,7 +5,8 @@ import { errores } from '../http/errores';
  * Concurrencia en la base (WP-03, hallazgos de la revisión adversarial):
  *
  * Orden único de bloqueos. Toda transacción que escribe toma sus filas en este orden:
- *   identidad → verificación/habilitación → solicitud → alcance de vínculo → consentimiento → acto A3.
+ *   identidad → verificación/habilitación → solicitud → alcance de vínculo → consentimiento → acto A3
+ *   → (WP-04) plan nutricional → versión de plan → cerrojo de capacidad → Proceso → objetivo → ingesta.
  * Y con `FOR NO KEY UPDATE`, no `FOR UPDATE`: ninguna transacción cambia claves, y así no choca con el `FOR KEY SHARE`
  * que toman las claves foráneas al insertar hechos y decisiones. El PDP toma `FOR SHARE` en el mismo orden
  * (pdp.service.ts), lo que da un orden total entre cada decisión y cada corte (revocar, pausar, finalizar, cerrar).

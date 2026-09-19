@@ -484,3 +484,129 @@ details summary {
   background: #fff;
   color: var(--texto);
 }
+
+/* ─── WP-04 · Nutrición (B10-05) ──────────────────────────────────────────────────────────────── */
+.contenido--ancho {
+  max-width: 64rem;
+}
+.pestanas ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  border-bottom: 1px solid var(--borde, #d0d5dd);
+}
+.pestanas a {
+  display: inline-block;
+  padding: 0.5rem 0;
+  text-decoration: none;
+  color: inherit;
+}
+.pestanas a[aria-current='page'] {
+  font-weight: 600;
+  border-bottom: 3px solid var(--acento, #2f5bbf);
+}
+.campo textarea,
+.campo select {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid var(--borde, #98a2b3);
+  border-radius: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.grupo {
+  border: 1px solid var(--borde, #d0d5dd);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 1rem;
+}
+.grupo legend {
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+.fila-de-dato {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+.fila-de-dato .campo {
+  flex: 1 1 9rem;
+}
+.jerarquia {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.nodo {
+  border: 1px solid var(--borde, #d0d5dd);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 0.75rem;
+}
+.nodo--comida {
+  border-left: 4px solid var(--acento, #2f5bbf);
+}
+.nodo--opcion {
+  background: var(--fondo-suave, #f5f7fb);
+}
+.nodo legend,
+.nodo h3,
+.nodo h4 {
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+.items {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+}
+.fila-de-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: flex-end;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--borde, #d0d5dd);
+}
+.fila-de-item strong {
+  flex: 1 1 100%;
+}
+.fila-de-item .campo {
+  flex: 1 1 8rem;
+  margin: 0;
+}
+.buscador {
+  border: 1px dashed var(--borde, #98a2b3);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+}
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0 1rem;
+}
+.tabla th,
+.tabla td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--borde, #d0d5dd);
+  vertical-align: top;
+}
+.diferencia {
+  display: block;
+}
+@media (max-width: 40rem) {
+  .tabla thead {
+    display: none;
+  }
+  .tabla tr,
+  .tabla th,
+  .tabla td {
+    display: block;
+  }
+}

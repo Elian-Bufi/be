@@ -61,6 +61,7 @@
 | DL-054 | WP-04 · 2026-09-19 | 05:7117, 7075-7094 · 06:5967-5982 · brief WP-04 | Pendiente de revisión y timeline sin Cartera | ABIERTA |
 | DL-055 | WP-04 · 2026-09-19 | 09v9:158, 175-179, 601-644, 671, 804-806, 862 · CONS:655 | Contratos NUT con forma no definida en el 09 | ABIERTA |
 | DL-056 | WP-04 · 2026-09-19 | 04:378-385 (RF-028) · 05:5777, 5921 · brief WP-04 | RF-028 (Open Food Facts), P0 de compromiso académico, sin paquete asignado | **DECIDIDA** 2026-09-19 · opción A: paquete de integraciones posterior a WP-04 |
+| DL-057 | WP-04 · 2026-09-20 | 08:145, 08:197-198, 08:215 · 06:4274-4282 (REG-06-102) · 04:463 (RF-025) | Datos nutricionales de otro profesional del mismo alcance | ABIERTA |
 
 ---
 
@@ -1187,7 +1188,16 @@ WP-04 habilita el **8** (editar un plan activado) y el **7** en su variante nutr
   El OpenAPI generado lo publica y el contract test lo verifica.
 - **B.** Esperar la próxima versión del 09.
 
-**Provisorio en código.** A.
+**Provisorio en código.** A. Además, para cumplir el 10 y el 06 sin inventar reglas:
+- `GET /me/nutrition/executions`: la lista de registros propios del asesorado, que pide la pantalla «Registros» del APK (B10-05 NUT-11; 10-B01:351-357) y el 09 no declara;
+- `dayTypeId` como parámetro de «Hoy» (API-NUT-14), para que el asesorado elija el día tipo sin que BE lo elija en silencio (DL-049);
+- `planState: NOT_AVAILABLE` en «Hoy», cuando hay plan pero el acceso está suspendido (UC-P12 E06);
+- `nextReviewAt` en el borrador del plan y en `nextAction`, porque la próxima revisión la fija una versión de plan o una revisión (REG-06-145);
+- `objectiveVersionId` en API-NUT-10, para pasar un borrador al objetivo vigente después de CAMBIAR_OBJETIVO;
+- el cuerpo de éxito de API-NUT-20 (`{ reviewId, application }`);
+- `NUTRITION_SCOPE_NOT_OPERATIONAL` no se emite: la precedencia del 09 (09:213-233) lo vuelve el mismo 404 que el PDP.
+
+El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Condición de cierre.** El 09 fija esas formas.
 
@@ -1209,3 +1219,20 @@ WP-04 habilita el **8** (editar un plan activado) y el **7** en su variante nutr
 **Resolución — DECIDIDA el 2026-09-19.** Dirección eligió A: RF-028, UC-I07, UC-I08 y API-INT-NUT-02 y 03 van a un paquete de integraciones posterior a WP-04, antes de la entrega.
 
 **Condición de cierre.** RF-028 queda asignado a un paquete o se declara fuera de la entrega con fundamento.
+
+## DL-057 — Datos nutricionales de otro profesional del mismo alcance
+
+**Prioridad:** media · **Documento:** 08:145, 08:197-198, 08:215 · 06:4274-4282 (REG-06-102) · 04:463 (RF-025) · **Estado:** ABIERTA (hallada al implementar)
+
+**Qué dice el legajo.**
+- El nutricionista accede a los datos «de su Alcance, con el detalle que su práctica requiere» (08:145). La matriz marca Nutrición Ⓐ para evaluación, objetivo, plan e ingesta (08:197-198) y agrega: «en caso dudoso, deny» (08:215).
+- El Plan se relaciona con el profesional que lo emitió (REG-06-102), y un profesional nuevo no hereda acceso (RF-025).
+- Nada dice qué ve un segundo nutricionista con su propio vínculo, B2 y A3 vigentes con el mismo asesorado: si la evaluación, el plan y la ingesta del primero son «de su Alcance».
+
+**Opciones.**
+- **A.** Cada profesional ve solo lo propio: sus evaluaciones, objetivos, planes, las ingestas registradas contra sus planes y sus revisiones. Lo del otro profesional responde el mismo 404 que un recurso inexistente. La decisión queda auditada con el titular, para que el asesorado pueda saber quién lo intentó (08:491). Además, dos nutricionistas no pueden tener planes vigentes a la vez con el mismo asesorado (409 ACTIVE_PLAN_CONFLICT; RF-031: sin vigencias contradictorias).
+- **B.** Todo profesional con B2 vigente en Nutrición ve todo lo nutricional del asesorado, también lo del otro profesional.
+
+**Provisorio en código.** A: es el lado que no viola una garantía (08:215).
+
+**Condición de cierre.** El 08 define si los datos de un alcance se comparten entre profesionales del mismo alcance.

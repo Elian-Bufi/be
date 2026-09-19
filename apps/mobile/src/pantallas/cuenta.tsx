@@ -74,7 +74,8 @@ export function PantallaDeCuenta({ token, salir, ir }: { token: string; salir: (
   return (
     <>
       <Titulo>Cuenta</Titulo>
-      <Boton texto="Vínculos" onPress={() => ir({ nombre: 'vinculos' })} />
+      <Boton texto="Nutrición: Hoy" onPress={() => ir({ nombre: 'hoy' })} />
+      <Boton texto="Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
 
       <Seccion titulo="Estado de la cuenta">
         {cuenta.tipo === 'cargando' ? <Cargando /> : null}

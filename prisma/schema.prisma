@@ -139,6 +139,18 @@ model Identidad {
   decisionesComoActor        DecisionDeAcceso[]        @relation("DecisionDelActor")
   decisionesComoSujeto       DecisionDeAcceso[]        @relation("DecisionSobreElSujeto")
 
+  // WP-04
+  capacidades                 CapacidadProfesional[]
+  procesosComoProfesional     ProcesoOperativo[]      @relation("ProcesoDelProfesional")
+  procesosComoAsesorado       ProcesoOperativo[]      @relation("ProcesoDelAsesorado")
+  evaluacionesComoProfesional EvaluacionNutricional[] @relation("EvaluacionDelProfesional")
+  evaluacionesComoAsesorado   EvaluacionNutricional[] @relation("EvaluacionDelAsesorado")
+  objetivosComoProfesional    ObjetivoNutricional[]   @relation("ObjetivoDelProfesional")
+  objetivosComoAsesorado      ObjetivoNutricional[]   @relation("ObjetivoDelAsesorado")
+  planesComoProfesional       PlanNutricional[]       @relation("PlanDelProfesional")
+  planesComoAsesorado         PlanNutricional[]       @relation("PlanDelAsesorado")
+  ingestas                    IngestaNutricional[]    @relation("IngestaDelAsesorado")
+
   @@map("identidad")
 }
 
@@ -686,6 +698,9 @@ model DecisionDeAcceso {
   consentimientoId          String?                   @map("consentimiento_id") @db.Uuid
   versionDeConsentimientoId String?                   @map("version_de_consentimiento_id") @db.Uuid
   versionDeMatriz           String?                   @map("version_de_matriz")
+  /// WP-04: recurso concreto al que se accede (08:634, «recurso/categoría»). NULL en API-DSH-03, que es por titular.
+  recursoTipo               String?                   @map("recurso_tipo")
+  recursoId                 String?                   @map("recurso_id") @db.Uuid
   superficie                Superficie?
   requestId                 String?                   @map("request_id")
   momentoDeOcurrencia       DateTime                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
@@ -795,4 +810,480 @@ model RegistroDeIdempotencia {
 
   @@unique([operacion, ambito, clave])
   @@map("registro_de_idempotencia")
+}
+
+// ─── WP-04 · Proceso operativo (06 §8, B-04) y capacidad (06 §9, B-05) ────────────────────────────
+
+enum ModoDeCapacidad {
+  LIMITADA
+  SIN_LIMITE
+}
+
+/// 06:3413-3418: dos estados. NUEVO y VIGENTE son predicados (INV-06-71, 72).
+enum EstadoDeProceso {
+  ABIERTO
+  CERRADO
+}
+
+enum MotivoDeCierreDeProceso {
+  REVISION_FINALIZAR
+  FINALIZACION_DE_VINCULO
+  CIERRE_DE_CUENTA
+}
+
+/// 06:3563-3570.
+enum TipoDeEventoDeProceso {
+  ProcesoOperativoAbierto
+  ContinuidadOCierreAplicado
+  ProcesoOperativoCerrado
+}
+
+/// REG-06-75: tipo del evento ContinuidadOCierreAplicado.
+enum TipoDeAplicacion {
+  CONTINUIDAD
+  CIERRE_PROCESO
+}
+
+enum FuenteDeProximaRevision {
+  VERSION_DE_PLAN
+  REVISION
+}
+
+/// B-05 (REG-06-81, 83): capacidad por identidad profesional, versionada por adición. Sin versión → SIN_LIMITE
+/// (REG-06-82). La vigente es la terminal de la cadena. Quién la configura: DEUDA_LEGAJO DL-051.
+model CapacidadProfesional {
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId         String          @map("identidad_id") @db.Uuid
+  predecesoraId       String?         @unique @map("predecesora_id") @db.Uuid
+  modo                ModoDeCapacidad
+  limite              Int?
+  actorServicio       String          @map("actor_servicio")
+  procedencia         Json
+  momentoDeOcurrencia DateTime?       @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime        @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad   Identidad             @relation(fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora CapacidadProfesional? @relation("CadenaDeCapacidad", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora    CapacidadProfesional? @relation("CadenaDeCapacidad")
+
+  @@index([identidadId])
+  @@map("capacidad_profesional")
+}
+
+/// T-06-25 — Proceso operativo. Como máximo uno ABIERTO por (profesional, asesorado, alcance): índice parcial en la
+/// migración (INV-06-74). CERRADO es terminal (INV-06-86).
+model ProcesoOperativo {
+  id                  String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId       String                   @map("profesional_id") @db.Uuid
+  asesoradoId         String                   @map("asesorado_id") @db.Uuid
+  alcance             Alcance
+  estado              EstadoDeProceso          @default(ABIERTO)
+  version             Int                      @default(1)
+  motivoDeCierre      MotivoDeCierreDeProceso? @map("motivo_de_cierre")
+  /// «acto de apertura y versión/plan de apertura» (06:3364).
+  versionDeAperturaId String                   @unique @map("version_de_apertura_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime?                @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                 @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeCierre     DateTime?                @map("momento_de_cierre") @db.Timestamptz(3)
+
+  profesional        Identidad                @relation("ProcesoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado          Identidad                @relation("ProcesoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeApertura  VersionDePlanNutricional @relation("AperturaDeProceso", fields: [versionDeAperturaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  eventos            EventoDeProceso[]
+  revisiones         RevisionNutricional[]
+  proximasRevisiones ProximaRevision[]
+
+  @@index([profesionalId, asesoradoId, alcance])
+  @@map("proceso_operativo")
+}
+
+/// Hechos de M-04 (06:3563-3570). Append-only. ContinuidadOCierreAplicado se emite solo con la consecuencia aplicada
+/// (REG-06-75, 77).
+model EventoDeProceso {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  secuencia           BigInt                @unique @default(autoincrement())
+  tipo                TipoDeEventoDeProceso
+  procesoId           String                @map("proceso_id") @db.Uuid
+  tipoDeAplicacion    TipoDeAplicacion?     @map("tipo_de_aplicacion")
+  revisionId          String?               @map("revision_id") @db.Uuid
+  estadoPrevio        EstadoDeProceso?      @map("estado_previo")
+  estadoPosterior     EstadoDeProceso       @map("estado_posterior")
+  /// Referencias de versiones cuando correspondan (REG-06-75).
+  datos               Json?
+  actorId             String?               @map("actor_id") @db.Uuid
+  actorServicio       String?               @map("actor_servicio")
+  procedencia         Json
+  momentoDeOcurrencia DateTime?             @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  proceso    ProcesoOperativo      @relation(fields: [procesoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revision   RevisionNutricional?  @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  aplicacion AplicacionDeRevision?
+
+  @@index([procesoId])
+  @@map("evento_de_proceso")
+}
+
+/// REG-06-145/146: expectativa de revisión. Reprogramar crea una nueva y la anterior queda histórica (cadena lineal).
+model ProximaRevision {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  procesoId           String                  @map("proceso_id") @db.Uuid
+  predecesoraId       String?                 @unique @map("predecesora_id") @db.Uuid
+  /// NULL = sin fecha: pendiente desde que se registró (REG-06-150).
+  fechaObjetivo       DateTime?               @map("fecha_objetivo") @db.Date
+  fuente              FuenteDeProximaRevision
+  versionDePlanId     String?                 @map("version_de_plan_id") @db.Uuid
+  revisionId          String?                 @map("revision_id") @db.Uuid
+  actorId             String                  @map("actor_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  proceso       ProcesoOperativo          @relation(fields: [procesoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora   ProximaRevision?          @relation("CadenaDeProximaRevision", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora      ProximaRevision?          @relation("CadenaDeProximaRevision")
+  versionDePlan VersionDePlanNutricional? @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revision      RevisionNutricional?      @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([procesoId])
+  @@map("proxima_revision")
+}
+
+// ─── WP-04 · Circuito nutricional (06 §10, B-07) ──────────────────────────────────────────────────
+
+/// Condición de disponibilidad para nuevas planificaciones (REG-06-99; 06:4235). Estado, nunca booleano (WP-02).
+enum DisponibilidadDeElemento {
+  DISPONIBLE
+  RETIRADO
+}
+
+enum ProcedenciaDeCatalogo {
+  BE_SYNTHETIC_SEED
+  PROFESSIONAL_MANUAL
+}
+
+/// 06 §10.7: BORRADOR y ACTIVADA. No hay salida desde ACTIVADA (06:4307; trigger en la migración).
+enum EstadoDeVersionDePlan {
+  BORRADOR
+  ACTIVADA
+}
+
+enum OrigenDeIngesta {
+  PRESCRIPTA
+  FUERA_DE_PRESCRIPCION
+}
+
+enum ModoDeRegistroDeIngesta {
+  OPCIONES_DE_PLATO
+  DESCRIPCION_LIBRE
+}
+
+/// REG-06-144.
+enum ResultadoDeRevision {
+  MANTENER
+  AJUSTAR
+  SUSTITUIR
+  REPROGRAMAR_REVISION
+  CAMBIAR_OBJETIVO
+  FINALIZAR
+}
+
+/// Hechos del circuito nutricional. El §10 no publica nombres de eventos: son derivados (como DL-033).
+enum TipoDeEventoDeNutricion {
+  ElementoDeCatalogoCreado
+  EvaluacionNutricionalRegistrada
+  VersionDeObjetivoEmitida
+  BorradorDePlanCreado
+  BorradorDePlanGuardado
+  VersionDePlanActivada
+  IngestaRegistrada
+  CorreccionDeIngestaRegistrada
+  RevisionRegistrada
+}
+
+/// T-06-31 — Elemento de catálogo: identificador BE estable (REG-06-99). Inmutable; el contenido vive en sus versiones.
+model ElementoDeCatalogoNutricional {
+  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  procedencia       ProcedenciaDeCatalogo
+  /// Profesional que lo cargó (PROFESSIONAL_MANUAL); NULL en el catálogo sembrado.
+  creadoPorId       String?               @map("creado_por_id") @db.Uuid
+  momentoDeRegistro DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  versiones VersionDeElementoNutricional[]
+
+  @@map("elemento_de_catalogo_nutricional")
+}
+
+/// Versión de un elemento de catálogo. Append-only: retirar un elemento emite una versión no disponible, y ninguna
+/// versión reescribe una instantánea (REG-06-101; INV-06-115). La vigente es la terminal de la cadena.
+model VersionDeElementoNutricional {
+  id                String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  elementoId        String                   @map("elemento_id") @db.Uuid
+  predecesoraId     String?                  @unique @map("predecesora_id") @db.Uuid
+  nombre            String
+  composicion       Json
+  disponibilidad    DisponibilidadDeElemento
+  procedencia       Json
+  momentoDeRegistro DateTime                 @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento    ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora VersionDeElementoNutricional? @relation("CadenaDeElemento", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora    VersionDeElementoNutricional? @relation("CadenaDeElemento")
+
+  @@index([elementoId])
+  @@map("version_de_elemento_nutricional")
+}
+
+/// REG-06-97 — Evaluación nutricional: hecho identificable; una posterior no sobrescribe la anterior. Append-only.
+model EvaluacionNutricional {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId       String   @map("profesional_id") @db.Uuid
+  asesoradoId         String   @map("asesorado_id") @db.Uuid
+  contexto            String?
+  /// Datos con su fuente: informado, observado o calculado (REG-06-109; DL-048).
+  valoracion          Json
+  referencias         Json
+  notas               String?
+  procedencia         Json
+  momentoDeOcurrencia DateTime @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional Identidad                      @relation("EvaluacionDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado   Identidad                      @relation("EvaluacionDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  objetivos   VersionDeObjetivoNutricional[]
+
+  @@index([asesoradoId, profesionalId, momentoDeRegistro])
+  @@map("evaluacion_nutricional")
+}
+
+/// T-06-27 — Objetivo: uno por (profesional, asesorado); sus versiones forman una sucesión lineal y la efectiva es la
+/// terminal (REG-06-98; INV-06-107). Inmutable.
+model ObjetivoNutricional {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId     String   @map("profesional_id") @db.Uuid
+  asesoradoId       String   @map("asesorado_id") @db.Uuid
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional Identidad                      @relation("ObjetivoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado   Identidad                      @relation("ObjetivoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones   VersionDeObjetivoNutricional[]
+
+  @@unique([profesionalId, asesoradoId])
+  @@map("objetivo_nutricional")
+}
+
+/// Versión de objetivo: decisión profesional con fundamento obligatorio; BE no la calcula (REG-06-123; INV-06-133).
+/// Append-only.
+model VersionDeObjetivoNutricional {
+  id                            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  objetivoId                    String    @map("objetivo_id") @db.Uuid
+  predecesoraId                 String?   @unique @map("predecesora_id") @db.Uuid
+  evaluacionId                  String    @map("evaluacion_id") @db.Uuid
+  vigenteDesde                  DateTime  @map("vigente_desde") @db.Timestamptz(3)
+  vigenteHasta                  DateTime? @map("vigente_hasta") @db.Timestamptz(3)
+  requerimientoEnergetico       Json      @map("requerimiento_energetico")
+  distribucionDeMacronutrientes Json      @map("distribucion_de_macronutrientes")
+  distribucionPorComida         String?   @map("distribucion_por_comida")
+  fundamento                    String
+  declaracionDeMetodo           String?   @map("declaracion_de_metodo")
+  /// Revisión CAMBIAR_OBJETIVO que la emitió, si la hay (REG-06-147).
+  revisionDeOrigenId            String?   @map("revision_de_origen_id") @db.Uuid
+  autorId                       String    @map("autor_id") @db.Uuid
+  procedencia                   Json
+  momentoDeRegistro             DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  objetivo         ObjetivoNutricional           @relation(fields: [objetivoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora      VersionDeObjetivoNutricional? @relation("CadenaDeObjetivo", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora         VersionDeObjetivoNutricional? @relation("CadenaDeObjetivo")
+  evaluacion       EvaluacionNutricional         @relation(fields: [evaluacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revisionDeOrigen RevisionNutricional?          @relation("ObjetivoDeRevision", fields: [revisionDeOrigenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionesDePlan  VersionDePlanNutricional[]
+
+  @@index([objetivoId])
+  @@map("version_de_objetivo_nutricional")
+}
+
+/// T-06-28 — Plan: uno por (profesional, asesorado). `versionEfectivaId` es la relación explícita a la versión efectiva
+/// (INV-06-110): solo avanza a la sucesora activada de la anterior (trigger).
+model PlanNutricional {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId     String   @map("profesional_id") @db.Uuid
+  asesoradoId       String   @map("asesorado_id") @db.Uuid
+  versionEfectivaId String?  @unique @map("version_efectiva_id") @db.Uuid
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional     Identidad                  @relation("PlanDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado       Identidad                  @relation("PlanDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionEfectiva VersionDePlanNutricional?  @relation("VersionEfectiva", fields: [versionEfectivaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones       VersionDePlanNutricional[] @relation("VersionesDelPlan")
+
+  @@unique([profesionalId, asesoradoId])
+  @@map("plan_nutricional")
+}
+
+/// T-06-29 — Versión de plan (06 §10.7). El contenido es la jerarquía validada por @be/domain (WP-04 T3). Un solo
+/// BORRADOR por plan y una sola sucesora por versión (REG-06-12). ACTIVADA es inmutable (INV-06-109; trigger).
+model VersionDePlanNutricional {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  planId              String                @map("plan_id") @db.Uuid
+  predecesoraId       String?               @unique @map("predecesora_id") @db.Uuid
+  estado              EstadoDeVersionDePlan @default(BORRADOR)
+  version             Int                   @default(1)
+  versionDeObjetivoId String                @map("version_de_objetivo_id") @db.Uuid
+  contenido           Json
+  /// Próxima revisión que fija la versión (REG-06-145); al activar, nace la expectativa del Proceso.
+  proximaRevision     DateTime?             @map("proxima_revision") @db.Date
+  /// Revisión AJUSTAR o SUSTITUIR que la creó, si la hay (DL-052).
+  revisionDeOrigenId  String?               @map("revision_de_origen_id") @db.Uuid
+  autorId             String                @map("autor_id") @db.Uuid
+  procedencia         Json
+  momentoDeRegistro   DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActivacion DateTime?             @map("momento_de_activacion") @db.Timestamptz(3)
+
+  plan               PlanNutricional               @relation("VersionesDelPlan", fields: [planId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora        VersionDePlanNutricional?     @relation("CadenaDePlan", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora           VersionDePlanNutricional?     @relation("CadenaDePlan")
+  versionDeObjetivo  VersionDeObjetivoNutricional  @relation(fields: [versionDeObjetivoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revisionDeOrigen   RevisionNutricional?          @relation("PlanDeRevision", fields: [revisionDeOrigenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  instantanea        InstantaneaDePlanNutricional?
+  efectivaDe         PlanNutricional?              @relation("VersionEfectiva")
+  procesoAbierto     ProcesoOperativo?             @relation("AperturaDeProceso")
+  ingestas           IngestaNutricional[]
+  proximasRevisiones ProximaRevision[]
+
+  @@index([planId])
+  @@map("version_de_plan_nutricional")
+}
+
+/// T-06-21 — Instantánea reproducible: lo emitido con el catálogo resuelto al activar, y su huella SHA-256 (REG-06-13,
+/// 105). Una por versión activada. Append-only.
+model InstantaneaDePlanNutricional {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionDePlanId   String   @unique @map("version_de_plan_id") @db.Uuid
+  contenido         Json
+  huella            String
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  versionDePlan VersionDePlanNutricional @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("instantanea_de_plan_nutricional")
+}
+
+/// T-06-54 — Ingesta registrada: hecho confirmado contra una versión ACTIVADA; nunca modifica la prescripción
+/// (REG-06-106). La prescripta es única por (versión, fecha, comida) (DL-049). Append-only.
+model IngestaNutricional {
+  id                   String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionDePlanId      String                  @map("version_de_plan_id") @db.Uuid
+  asesoradoId          String                  @map("asesorado_id") @db.Uuid
+  origen               OrigenDeIngesta
+  modo                 ModoDeRegistroDeIngesta
+  fechaLocal           DateTime                @map("fecha_local") @db.Date
+  zonaHoraria          String                  @map("zona_horaria")
+  diaTipoId            String?                 @map("dia_tipo_id")
+  comidaId             String?                 @map("comida_id")
+  opcionId             String?                 @map("opcion_id")
+  itemsConsumidos      Json                    @default("[]") @map("items_consumidos")
+  observacion          String?
+  /// Modalidad C: el texto original se conserva siempre (INV-06-131).
+  descripcion          String?
+  descripcionDePorcion String?                 @map("descripcion_de_porcion")
+  procedencia          Json
+  momentoDeOcurrencia  DateTime                @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro    DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  versionDePlan VersionDePlanNutricional @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado     Identidad                @relation("IngestaDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  correcciones  CorreccionDeIngesta[]
+
+  @@index([asesoradoId, fechaLocal])
+  @@index([versionDePlanId])
+  @@map("ingesta_nutricional")
+}
+
+/// T-06-22 — Corrección trazable de una ingesta libre (API-NUT-21): estimación profesional, nunca medición. Cadena
+/// lineal hacia el original raíz (REG-06-15): una raíz por ingesta y una sucesora por corrección. Append-only.
+model CorreccionDeIngesta {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ingestaId          String   @map("ingesta_id") @db.Uuid
+  correccionPreviaId String?  @unique @map("correccion_previa_id") @db.Uuid
+  estimacion         Json
+  declaracion        String
+  autorId            String   @map("autor_id") @db.Uuid
+  procedencia        Json
+  momentoDeRegistro  DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ingesta          IngestaNutricional   @relation(fields: [ingestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  correccionPrevia CorreccionDeIngesta? @relation("CadenaDeCorreccion", fields: [correccionPreviaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  siguiente        CorreccionDeIngesta? @relation("CadenaDeCorreccion")
+
+  @@index([ingestaId])
+  @@map("correccion_de_ingesta")
+}
+
+/// REG-06-141 — Revisión profesional válida: acto explícito, sin máquina de estados, con todos sus componentes.
+/// Append-only. Su aplicación (UC-I06) es otro hecho (`AplicacionDeRevision`).
+model RevisionNutricional {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  procesoId           String              @map("proceso_id") @db.Uuid
+  periodoInicio       DateTime            @map("periodo_inicio") @db.Date
+  periodoFin          DateTime            @map("periodo_fin") @db.Date
+  zonaHoraria         String              @map("zona_horaria")
+  evidencias          Json
+  interpretacion      String
+  resultado           ResultadoDeRevision
+  fundamento          String
+  proximaAccion       Json                @map("proxima_accion")
+  autorId             String              @map("autor_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime?           @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime            @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  proceso            ProcesoOperativo               @relation(fields: [procesoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  aplicacion         AplicacionDeRevision?
+  eventos            EventoDeProceso[]
+  planesCreados      VersionDePlanNutricional[]     @relation("PlanDeRevision")
+  objetivosCreados   VersionDeObjetivoNutricional[] @relation("ObjetivoDeRevision")
+  proximasRevisiones ProximaRevision[]
+
+  @@index([procesoId])
+  @@map("revision_nutricional")
+}
+
+/// UC-I06 aplicado: una aplicación por revisión, enlazada al evento ContinuidadOCierreAplicado (REG-06-75). Append-only.
+model AplicacionDeRevision {
+  id                        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  revisionId                String           @unique @map("revision_id") @db.Uuid
+  eventoId                  String           @unique @map("evento_id") @db.Uuid
+  tipo                      TipoDeAplicacion
+  estadoDeProcesoPosterior  EstadoDeProceso  @map("estado_de_proceso_posterior")
+  versionDePlanCreadaId     String?          @map("version_de_plan_creada_id") @db.Uuid
+  versionDeObjetivoCreadaId String?          @map("version_de_objetivo_creada_id") @db.Uuid
+  momentoDeRegistro         DateTime         @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  revision RevisionNutricional @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  evento   EventoDeProceso     @relation(fields: [eventoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("aplicacion_de_revision")
+}
+
+/// Hechos del circuito nutricional, para reconstruir la historia y alimentar el futuro timeline (DL-054). Append-only.
+model EventoDeNutricion {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  secuencia           BigInt                  @unique @default(autoincrement())
+  tipo                TipoDeEventoDeNutricion
+  profesionalId       String?                 @map("profesional_id") @db.Uuid
+  asesoradoId         String?                 @map("asesorado_id") @db.Uuid
+  recursoTipo         String                  @map("recurso_tipo")
+  recursoId           String                  @map("recurso_id") @db.Uuid
+  estadoPrevio        String?                 @map("estado_previo")
+  estadoPosterior     String?                 @map("estado_posterior")
+  actorId             String                  @map("actor_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  @@index([asesoradoId, momentoDeRegistro])
+  @@index([recursoId])
+  @@map("evento_de_nutricion")
 }

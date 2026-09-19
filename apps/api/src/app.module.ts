@@ -15,6 +15,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ProfesionalModule } from './profesional/profesional.module';
 import { SesionModule } from './sesion/sesion.module';
 import { VinculoModule } from './vinculo/vinculo.module';
+import { NutricionModule } from './nutricion/nutricion.module';
+import { ProcesoModule } from './proceso/proceso.module';
 
 export interface OpcionesApp {
   readonly entorno: Entorno;
@@ -43,6 +45,7 @@ class ConfiguracionModule {
  * - WP-01: salud.
  * - WP-02: identidad, sesiones y requisito A3.
  * - WP-03: autorización contextual (PDP único), M-02 mínimo, vínculos, consentimientos A3 y B2, y DSH-03 mínimo.
+ * - WP-04: circuito nutricional (evaluación, objetivo, plan versionado, ingesta, revisión), Proceso y capacidad.
  */
 @Module({})
 export class AppModule {
@@ -61,6 +64,8 @@ export class AppModule {
         VinculoModule,
         ConsentimientoModule,
         DashboardModule,
+        ProcesoModule,
+        NutricionModule,
       ],
       // 09v7 T16: todo error sale como ErrorEnvelope, sin detalle interno (DL-005).
       providers: [{ provide: APP_FILTER, useClass: FiltroDeErrores }],

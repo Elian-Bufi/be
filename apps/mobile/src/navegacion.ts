@@ -14,7 +14,11 @@ export type Ruta =
   | { readonly nombre: 'vinculos' }
   | { readonly nombre: 'vinculo'; readonly id: string }
   | { readonly nombre: 'consentimiento'; readonly vinculoId: string }
-  | { readonly nombre: 'privacidad' };
+  | { readonly nombre: 'privacidad' }
+  | { readonly nombre: 'hoy' }
+  | { readonly nombre: 'plan-actual' }
+  | { readonly nombre: 'registros-nutricionales' }
+  | { readonly nombre: 'registro-nutricional'; readonly id: string };
 
 /** Por qué termina la sesión en el APK; cada motivo tiene su aviso en App.tsx. */
 export type Salida = 'sesion-cerrada' | 'sesiones-cerradas' | 'sesion-no-valida' | 'reautenticar' | 'cierre-registrado';
@@ -32,7 +36,13 @@ export function anterior(ruta: Ruta): Ruta | null {
       return { nombre: 'bienvenida' };
     case 'vinculos':
     case 'privacidad':
+    case 'hoy':
       return { nombre: 'cuenta' };
+    case 'plan-actual':
+    case 'registros-nutricionales':
+      return { nombre: 'hoy' };
+    case 'registro-nutricional':
+      return { nombre: 'registros-nutricionales' };
     case 'vinculo':
       return { nombre: 'vinculos' };
     case 'consentimiento':
@@ -51,6 +61,10 @@ export function textoDeVolverA(destino: Ruta): string {
       return 'Volver a Vínculos';
     case 'vinculo':
       return 'Volver al vínculo';
+    case 'hoy':
+      return 'Volver a Hoy';
+    case 'registros-nutricionales':
+      return 'Volver a Registros';
     default:
       return 'Volver';
   }
