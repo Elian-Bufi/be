@@ -1,0 +1,28 @@
+# Verificación negativa del rewrite /api/* en el website (DL-030) — 2026-09-19T04:40:45Z
+# Dirección borró la regla en be-web → Redirects/Rewrites.
+
+== GET https://be-web-1ngj.onrender.com/api/v1/x
+HTTP/2 404 
+content-type: text/html; charset=utf-8
+  cabeceras/cuerpos de la API encontrados: 0
+== GET https://be-web-1ngj.onrender.com/api/v1/me
+HTTP/2 404 
+content-type: text/html; charset=utf-8
+  cabeceras/cuerpos de la API encontrados: 0
+== GET https://be-web-1ngj.onrender.com/api/v1/registrations
+HTTP/2 404 
+content-type: text/html; charset=utf-8
+  cabeceras/cuerpos de la API encontrados: 0
+== POST https://be-web-1ngj.onrender.com/api/v1/auth/sessions
+HTTP/2 200 
+
+== Control: el website sigue funcionando y llama a la API directo
+GET /login → 200
+URL de la API en el JS de /login → 1 coincidencia(s)
+API directa /health/ready → "estado":"OK" "commit":"9b1aeb1 
+
+== Lectura del POST
+El sitio estático de Render responde 200 con cuerpo vacío (content-length 0) a cualquier POST, incluso a una ruta inventada (POST /cualquier-cosa → 200).
+No hay X-Request-Id ni ErrorEnvelope: la request no llegó a la API.
+
+Conclusión: /api/* en el website ya no llega a la API. Condición 2 de DL-030 cumplida.
