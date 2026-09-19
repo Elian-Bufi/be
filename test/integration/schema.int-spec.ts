@@ -16,7 +16,10 @@ import {
   SituacionDeConsentimiento,
 } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { join } from 'node:path';
+import { RAIZ } from './soporte';
 
 const prisma = new PrismaClient();
 afterAll(() => prisma.$disconnect());
@@ -34,6 +37,29 @@ async function sinPersistir(fn: (tx: Tx) => Promise<void>): Promise<void> {
     }),
   ).rejects.toBe(REVERTIR);
 }
+
+describe('Deriva — schema.prisma y las migraciones describen la misma base', () => {
+  // Las claves foráneas, índices y enums de la migración también están en schema.prisma. Si no, el próximo
+  // `migrate diff` los borraría sin avisar (revisión de máquinas y base, hallazgo 5). La sombra es una base propia:
+  // una sombra acotada a un schema se compara contra `public` y da una diferencia falsa.
+  it('migrate diff desde las migraciones hasta schema.prisma es vacío (--exit-code 0)', async () => {
+    const base = new URL(process.env.DATABASE_URL as string);
+    const nombre = `${base.pathname.slice(1)}_sombra_diff`.replace(/[^a-z0-9_]/gi, '_');
+    await prisma.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${nombre}"`);
+    await prisma.$executeRawUnsafe(`CREATE DATABASE "${nombre}"`);
+    try {
+      const sombra = new URL(base.toString());
+      sombra.pathname = `/${nombre}`;
+      sombra.searchParams.delete('schema');
+      const cli = join(RAIZ, 'node_modules', 'prisma', 'build', 'index.js');
+      const argumentos = ['migrate', 'diff', '--from-migrations', join(RAIZ, 'prisma', 'migrations'), '--to-schema-datamodel', join(RAIZ, 'prisma', 'schema.prisma')];
+      // Con diferencias, --exit-code sale con 2 y execFileSync lanza con el diff en la salida.
+      execFileSync(process.execPath, [cli, ...argumentos, '--shadow-database-url', sombra.toString(), '--exit-code'], { env: { ...process.env }, stdio: ['ignore', 'pipe', 'pipe'] });
+    } finally {
+      await prisma.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${nombre}"`);
+    }
+  });
+});
 
 describe('Schema vs 06 — TEST-RUN-003 migration deploy', () => {
   it('TEST-RUN-003: las migraciones de WP-01, WP-02 y WP-03 quedaron aplicadas por migrate deploy', async () => {

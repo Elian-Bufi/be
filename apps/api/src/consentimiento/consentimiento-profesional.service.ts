@@ -25,7 +25,9 @@ import { ErrorDeApi, errores } from '../http/errores';
 import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '../http/paginacion';
 import { validarCuerpo } from '../http/validacion';
 import { AuditoriaService } from '../plataforma/auditoria.service';
+import { LimitadorService } from '../plataforma/limitador.service';
 import { IdempotenciaService, type ResultadoIdempotente } from '../plataforma/idempotencia.service';
+import { conReintento, momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { nombreDeProfesional, registrarEventoDeVinculo, resumenDeAlcance, resumenDeCadena } from '../vinculo/lectura';
@@ -57,11 +59,20 @@ export class ConsentimientoProfesionalService {
     private readonly pdp: PdpService,
     private readonly idempotencia: IdempotenciaService,
     private readonly auditoria: AuditoriaService,
+    private readonly limitador: LimitadorService,
   ) {}
 
   // ─── API-CON-01 ────────────────────────────────────────────────────────────────────────────
-  async requisitos(actor: ActorAutenticado, vinculoId: string): Promise<RequisitosDeConsentimientoResponse> {
-    const c = await this.componenteDelTitular(this.prisma as unknown as Prisma.TransactionClient, actor.identidadId, vinculoId, false);
+  async requisitos(actor: ActorAutenticado, vinculoId: string, ctx: ContextoDeSolicitud): Promise<RequisitosDeConsentimientoResponse> {
+    this.limitador.consumir('consultaProtegida', null, actor.identidadId);
+    let c: ComponenteDelTitular;
+    try {
+      c = await this.componenteDelTitular(this.prisma as unknown as Prisma.TransactionClient, actor.identidadId, vinculoId, false);
+    } catch (e) {
+      // El 404 deja rastro con actor y recurso intentado: permite reconstruir un intento de enumeración.
+      await this.auditarRechazo(e, 'API-CON-01', actor.identidadId, ctx, { tipo: 'AlcanceDeVinculo', id: vinculoId });
+      throw e;
+    }
     const perfil = await this.prisma.perfilProfesional.findUnique({ where: { identidadId: c.profesionalId } });
     if (!perfil) throw errores.recursoNoEncontrado();
     const version = await this.versionAplicable(this.prisma as unknown as Prisma.TransactionClient, perfil.tipo);
@@ -110,6 +121,7 @@ export class ConsentimientoProfesionalService {
 
         if (transicion === 'SIN_CAMBIO' && existente && cadena) {
           // Ya vigente con esta versión: se devuelve el existente (09v8:1621 «200 en replay idempotente»).
+          await this.auditar(tx, operacion, actor.identidadId, existente.id, ctx);
           return this.respuestaDeOtorgamiento(200, existente.id, c, pedido.consentVersionId, cadena.ultimaAceptacion.momentoDeOcurrencia);
         }
         const t = transicion as TransicionDeConsentimiento;
@@ -169,7 +181,7 @@ export class ConsentimientoProfesionalService {
         return this.respuestaDeOtorgamiento(t === 'OtorgarConsentimiento' ? 201 : 200, consentimientoId, c, aplicable.id, ctx.momentoDeRecepcion);
       });
     } catch (e) {
-      await this.auditarRechazo(e, operacion, actor.identidadId, ctx);
+      await this.auditarRechazo(e, operacion, actor.identidadId, ctx, { tipo: 'AlcanceDeVinculo', id: vinculoId });
       throw e;
     }
   }
@@ -221,30 +233,45 @@ export class ConsentimientoProfesionalService {
   }
 
   // ─── API-CON-04 ────────────────────────────────────────────────────────────────────────────
-  /** Idempotente por semántica, sin Idempotency-Key (09v8:1758): revocar dos veces no crea una segunda revocación. */
+  /**
+   * Idempotente por semántica, sin Idempotency-Key (09v8:1758): revocar dos veces no crea una segunda revocación.
+   * Bloquea el componente y después el consentimiento (orden único, prisma/concurrencia.ts): el PDP toma los mismos
+   * en modo compartido, así que toda decisión queda antes o después de la revocación, nunca en el medio. La hora de
+   * la revocación es la de la base, tomada con los bloqueos ya adquiridos (T-PDP-4).
+   */
   async revocar(actor: ActorAutenticado, consentimientoId: string, cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<ConsentimientoRevocadoResponse> {
     const operacion = 'API-CON-04';
     validarCuerpo(CuerpoVacioSchema, cuerpo);
     const procedencia = procedenciaDe(ctx, 'UC-P08', operacion);
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      return await conReintento(() => this.prisma.$transaction(async (tx) => {
         if (!UUID.test(consentimientoId)) throw errores.recursoNoEncontrado();
+        // Solo el titular (INV-06-62). A cualquier otro, 404 idéntico (09:226).
+        const [componente] = await tx.$queryRaw<{ id: string }[]>`
+          SELECT av."id"::text AS "id"
+            FROM "alcance_de_vinculo" av
+            JOIN "consentimiento" c ON c."alcance_de_vinculo_id" = av."id"
+            JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
+           WHERE c."id" = ${consentimientoId}::uuid AND vi."asesorado_id" = ${actor.identidadId}::uuid
+             FOR NO KEY UPDATE OF av`;
+        if (!componente) throw errores.recursoNoEncontrado();
         const [fila] = await tx.$queryRaw<{ id: string; situacion: 'VIGENTE' | 'REVOCADO'; version: number; alcance_de_vinculo_id: string; profesional_id: string; asesorado_id: string }[]>`
           SELECT c."id"::text, c."situacion"::text AS "situacion", c."version", c."alcance_de_vinculo_id"::text,
                  vi."profesional_id"::text, vi."asesorado_id"::text
             FROM "consentimiento" c
             JOIN "alcance_de_vinculo" av ON av."id" = c."alcance_de_vinculo_id"
             JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
-           WHERE c."id" = ${consentimientoId}::uuid AND vi."asesorado_id" = ${actor.identidadId}::uuid
-             FOR UPDATE OF c`;
-        // Solo el titular (INV-06-62). A cualquier otro, 404 idéntico (09:226).
+           WHERE c."id" = ${consentimientoId}::uuid AND av."id" = ${componente.id}::uuid
+             FOR NO KEY UPDATE OF c`;
         if (!fila) throw errores.recursoNoEncontrado();
         const versiones = await tx.versionDeConsentimiento.findMany({ where: { consentimientoId: fila.id } });
         const cadena = resumenDeCadena(versiones);
         if (fila.situacion === 'REVOCADO') {
-          // Replay: REVOKED → REVOKED, con la misma fecha (09v8:1713-1727).
+          // Replay: REVOKED → REVOKED, con la misma fecha (09v8:1713-1727). También se audita: es una respuesta exitosa.
+          await this.auditar(tx, operacion, actor.identidadId, fila.id, ctx);
           return { data: { consentId: fila.id, state: 'REVOKED', revokedAt: (cadena.revocadoEn ?? cadena.cabeza.momentoDeOcurrencia).toISOString() } };
         }
+        const ahora = await momentoDeLaBase(tx);
         const evaluacion = evaluarTransicionDeConsentimiento('VIGENTE', { transicion: 'RevocarConsentimiento', actorEsTitular: true, decisionExplicita: true });
         if (!evaluacion.permitida) throw errores.estadoNoPermite();
         const [av] = await tx.$queryRaw<{ alcance: Alcance; finalidad: Finalidad }[]>`
@@ -265,7 +292,7 @@ export class ConsentimientoProfesionalService {
             actorId: actor.identidadId,
             autoriaId: actor.identidadId,
             procedencia: procedencia as unknown as Prisma.InputJsonValue,
-            momentoDeOcurrencia: ctx.momentoDeRecepcion,
+            momentoDeOcurrencia: ahora,
           },
         });
         await registrarEventoDeVinculo(tx, {
@@ -279,13 +306,13 @@ export class ConsentimientoProfesionalService {
           estadoPosterior: 'REVOCADO',
           actor: { identidadId: actor.identidadId },
           procedencia,
-          momento: ctx.momentoDeRecepcion,
+          momento: ahora,
         });
         await this.auditar(tx, operacion, actor.identidadId, fila.id, ctx);
-        return { data: { consentId: fila.id, state: 'REVOKED', revokedAt: ctx.momentoDeRecepcion.toISOString() } };
-      });
+        return { data: { consentId: fila.id, state: 'REVOKED', revokedAt: ahora.toISOString() } };
+      }));
     } catch (e) {
-      await this.auditarRechazo(e, operacion, actor.identidadId, ctx);
+      await this.auditarRechazo(e, operacion, actor.identidadId, ctx, { tipo: 'Consentimiento', id: consentimientoId });
       throw e;
     }
   }
@@ -310,7 +337,7 @@ export class ConsentimientoProfesionalService {
           SELECT av."id"::text AS "id", av."estado"::text AS "estado", av."alcance"::text AS "alcance", av."finalidad"::text AS "finalidad",
                  vi."profesional_id"::text AS "profesionalId", vi."asesorado_id"::text AS "asesoradoId"
             FROM "alcance_de_vinculo" av JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
-           WHERE av."id" = ${vinculoId}::uuid AND vi."asesorado_id" = ${asesoradoId}::uuid FOR UPDATE OF av`
+           WHERE av."id" = ${vinculoId}::uuid AND vi."asesorado_id" = ${asesoradoId}::uuid FOR NO KEY UPDATE OF av`
       : await tx.$queryRaw<ComponenteDelTitular[]>`
           SELECT av."id"::text AS "id", av."estado"::text AS "estado", av."alcance"::text AS "alcance", av."finalidad"::text AS "finalidad",
                  vi."profesional_id"::text AS "profesionalId", vi."asesorado_id"::text AS "asesoradoId"
@@ -353,13 +380,21 @@ export class ConsentimientoProfesionalService {
     );
   }
 
-  private async auditarRechazo(e: unknown, operacion: string, actorId: string, ctx: ContextoDeSolicitud): Promise<void> {
+  private async auditarRechazo(
+    e: unknown,
+    operacion: string,
+    actorId: string,
+    ctx: ContextoDeSolicitud,
+    recurso?: { tipo: string; id: string },
+  ): Promise<void> {
     if (!(e instanceof ErrorDeApi)) return;
     await this.auditoria.registrar({
       operacion,
       resultado: 'RECHAZO',
       motivo: e.code,
       actorId,
+      recursoTipo: recurso && UUID.test(recurso.id) ? recurso.tipo : null,
+      recursoId: recurso && UUID.test(recurso.id) ? recurso.id.toLowerCase() : null,
       superficie: ctx.superficie,
       requestId: ctx.requestId,
       momentoDeOcurrencia: ctx.momentoDeRecepcion,

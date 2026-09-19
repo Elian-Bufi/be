@@ -30,7 +30,7 @@ export class ConsentimientosController {
     @Req() req: Solicitud,
   ): Promise<RequisitosDeConsentimientoResponse> {
     sinParametrosDeQuery(query);
-    return this.b2.requisitos(actorDe(req), relationshipId);
+    return this.b2.requisitos(actorDe(req), relationshipId, contextoDe(req));
   }
 
   /** API-CON-02 — Idempotency-Key requerida. */

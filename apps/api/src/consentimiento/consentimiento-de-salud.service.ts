@@ -14,6 +14,7 @@ import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '
 import { validarCuerpo } from '../http/validacion';
 import { AuditoriaService } from '../plataforma/auditoria.service';
 import { IdempotenciaService, type ResultadoIdempotente } from '../plataforma/idempotencia.service';
+import { conReintento, momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 
@@ -55,7 +56,8 @@ export class ConsentimientoDeSaludService {
           throw otra?.tipo === 'DATOS_SALUD_BE' ? errores.versionDeConsentimientoVieja() : errores.consentimientoDeSaludNoDisponible();
         }
         // Serializa los otorgamientos del mismo titular; el índice parcial lo garantiza igual ante cualquier carrera.
-        await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" = ${actor.identidadId}::uuid FOR UPDATE`;
+        // NO KEY UPDATE: no choca con las claves foráneas de hechos y decisiones (prisma/concurrencia.ts).
+        await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" = ${actor.identidadId}::uuid FOR NO KEY UPDATE`;
         const activo = await tx.actoRegistrable.findFirst({ where: { identidadId: actor.identidadId, tipo: 'DATOS_SALUD_BE', estado: 'VIGENTE' }, select: { id: true } });
         if (activo) throw errores.consentimientoYaVigente();
         const acto = await tx.actoRegistrable.create({
@@ -122,23 +124,30 @@ export class ConsentimientoDeSaludService {
   }
 
   // ─── API-CON-08 ────────────────────────────────────────────────────────────────────────────
-  /** Idempotente por semántica (09:2582-2594). AuthN `SESSION` con datos sintéticos (09:2566). */
+  /**
+   * Idempotente por semántica (09:2582-2594). AuthN `SESSION` con datos sintéticos (09:2566).
+   * La hora de la revocación es la de la base con el acto bloqueado: el PDP lo lee en modo compartido, así que toda
+   * decisión queda antes o después del corte (T-PDP-4).
+   */
   async revocar(actor: ActorAutenticado, actoId: string, cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<ConsentimientoRevocadoResponse> {
     const operacion = 'API-CON-08';
     validarCuerpo(CuerpoVacioSchema, cuerpo);
     const procedencia = procedenciaDe(ctx, 'UC-P25', operacion);
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      return await conReintento(() => this.prisma.$transaction(async (tx) => {
         if (!UUID.test(actoId)) throw errores.recursoNoEncontrado();
         const [acto] = await tx.$queryRaw<{ id: string; estado: 'VIGENTE' | 'REVOCADO'; momento_de_revocacion: Date | null }[]>`
           SELECT "id"::text, "estado"::text AS "estado", "momento_de_revocacion" FROM "acto_registrable"
-           WHERE "id" = ${actoId}::uuid AND "identidad_id" = ${actor.identidadId}::uuid AND "tipo" = 'DATOS_SALUD_BE' FOR UPDATE`;
+           WHERE "id" = ${actoId}::uuid AND "identidad_id" = ${actor.identidadId}::uuid AND "tipo" = 'DATOS_SALUD_BE' FOR NO KEY UPDATE`;
         // «El consentimiento debe pertenecer al titular. Recurso inexistente/no revelable: 404» (09:2568-2576).
         if (!acto) throw errores.recursoNoEncontrado();
         if (acto.estado === 'REVOCADO') {
+          // Replay: la misma revocación, con su fecha. Es una respuesta exitosa: también se audita.
+          await this.auditar(tx, operacion, actor.identidadId, acto.id, ctx);
           return { data: { consentId: acto.id, state: 'REVOKED', revokedAt: (acto.momento_de_revocacion as Date).toISOString() } };
         }
-        await tx.actoRegistrable.update({ where: { id: acto.id }, data: { estado: 'REVOCADO', momentoDeRevocacion: ctx.momentoDeRecepcion } });
+        const ahora = await momentoDeLaBase(tx);
+        await tx.actoRegistrable.update({ where: { id: acto.id }, data: { estado: 'REVOCADO', momentoDeRevocacion: ahora } });
         await tx.eventoDeDominio.create({
           data: {
             tipo: 'ActoRevocado',
@@ -146,15 +155,15 @@ export class ConsentimientoDeSaludService {
             actorId: actor.identidadId,
             autoriaId: actor.identidadId,
             procedencia: procedencia as unknown as Prisma.InputJsonValue,
-            momentoDeOcurrencia: ctx.momentoDeRecepcion,
+            momentoDeOcurrencia: ahora,
             datos: { actoId: acto.id, tipo: 'DATOS_SALUD_BE', fundamento: '08 §12.4: DATOS_SALUD_BE revocable por el titular' },
           },
         });
         await this.auditar(tx, operacion, actor.identidadId, acto.id, ctx);
-        return { data: { consentId: acto.id, state: 'REVOKED', revokedAt: ctx.momentoDeRecepcion.toISOString() } };
-      });
+        return { data: { consentId: acto.id, state: 'REVOKED', revokedAt: ahora.toISOString() } };
+      }));
     } catch (e) {
-      await this.auditarRechazo(e, operacion, actor.identidadId, ctx);
+      await this.auditarRechazo(e, operacion, actor.identidadId, ctx, actoId);
       throw e;
     }
   }
@@ -176,13 +185,16 @@ export class ConsentimientoDeSaludService {
     );
   }
 
-  private async auditarRechazo(e: unknown, operacion: string, actorId: string, ctx: ContextoDeSolicitud): Promise<void> {
+  private async auditarRechazo(e: unknown, operacion: string, actorId: string, ctx: ContextoDeSolicitud, actoId?: string): Promise<void> {
     if (!(e instanceof ErrorDeApi)) return;
     await this.auditoria.registrar({
       operacion,
       resultado: 'RECHAZO',
       motivo: e.code,
       actorId,
+      // El recurso intentado, solo si tiene forma de identificador.
+      recursoTipo: actoId && UUID.test(actoId) ? 'ActoRegistrable' : null,
+      recursoId: actoId && UUID.test(actoId) ? actoId.toLowerCase() : null,
       superficie: ctx.superficie,
       requestId: ctx.requestId,
       momentoDeOcurrencia: ctx.momentoDeRecepcion,

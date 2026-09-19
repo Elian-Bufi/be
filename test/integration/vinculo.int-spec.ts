@@ -285,7 +285,7 @@ describe('TEST-RF-025 — un profesional nuevo no hereda acceso', () => {
     await dashboard(app, pn2, a01.id).expect(404);
     const segundo = await vinculoCompleto(app, pn2, a01, 'NUTRICION', { b2: false });
     await dashboard(app, pn2, a01.id).expect(404);
-    await conSesion(app, a01.token).post(`/api/v1/relationships/${segundo.vinculoId}/consents`).send({ consentVersionId: 'b2-sanitario-2026-09-demo' }).expect(201);
+    await conSesion(app, a01.token).post(`/api/v1/relationships/${segundo.vinculoId}/consents`).send({ consentVersionId: 'acceso-profesional-sanitario-2026-09-demo' }).expect(201);
     await dashboard(app, pn2, a01.id).expect(200);
     await dashboard(app, pn, a01.id).expect(404);
     // La historia del primer vínculo sigue ahí, con su autoría.

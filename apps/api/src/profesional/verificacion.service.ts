@@ -30,7 +30,7 @@ const PROCEDENCIA_INTERNA = (motivo: string): Procedencia => ({
  * queda fuera de WP-03.
  *
  * Mismo patrón que la suspensión de cuenta (DL-020):
- * - `FOR UPDATE`;
+ * - `FOR NO KEY UPDATE` (orden único de bloqueos: prisma/concurrencia.ts);
  * - la lista blanca del dominio;
  * - el hecho con estado previo y posterior;
  * - la base rechaza cualquier transición no declarada (triggers).
@@ -64,7 +64,7 @@ export class VerificacionService {
   ): Promise<EstadoDeVerificacionProfesional> {
     const [fila] = await tx.$queryRaw<{ estado: EstadoDeVerificacionProfesional; version: number }[]>`
       SELECT "estado"::text AS "estado", "version" FROM "verificacion_profesional"
-       WHERE "identidad_id" = ${identidadId}::uuid AND "alcance" = ${alcance}::"Alcance" FOR UPDATE`;
+       WHERE "identidad_id" = ${identidadId}::uuid AND "alcance" = ${alcance}::"Alcance" FOR NO KEY UPDATE`;
     const evaluacion = evaluarTransicionDeVerificacion(fila?.estado ?? null, transicion, fundamento);
     if (!evaluacion.permitida) throw errores.estadoNoPermite();
     const destino = evaluacion.transicion.destino;
@@ -94,7 +94,7 @@ export class VerificacionService {
   ): Promise<EstadoDeHabilitacion> {
     const [fila] = await tx.$queryRaw<{ estado: EstadoDeHabilitacion; version: number }[]>`
       SELECT "estado"::text AS "estado", "version" FROM "habilitacion"
-       WHERE "identidad_id" = ${identidadId}::uuid AND "alcance" = ${alcance}::"Alcance" FOR UPDATE`;
+       WHERE "identidad_id" = ${identidadId}::uuid AND "alcance" = ${alcance}::"Alcance" FOR NO KEY UPDATE`;
     const evaluacion = evaluarTransicionDeHabilitacion(fila?.estado ?? null, transicion, fundamento);
     if (!evaluacion.permitida) throw errores.estadoNoPermite();
     const procedencia = PROCEDENCIA_INTERNA(transicion);

@@ -4,6 +4,7 @@
  * directo, dentro de una transacción que siempre se revierte.
  */
 import type { INestApplication } from '@nestjs/common';
+import { CATALOGO_DE_TEXTOS } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba } from './soporte-api';
@@ -128,7 +129,7 @@ describe('06 §7.5.2 — Vínculo por Alcance: FINALIZADO es terminal y la pausa
     await pausar(app, pn.token, vinculoId, await versionDeVinculo(app, pn.token, vinculoId), 'OTRO').expect(200);
     expect(
       await errorDeLaBase(`UPDATE alcance_de_vinculo SET estado = 'FINALIZADO', pausado_por = 'ASESORADO', motivo_de_ultima_transicion = 'OTRO', version = 3 WHERE id = '${vinculoId}'`),
-    ).toMatch(/preserva la pausa previa/);
+    ).toMatch(/conserva quién pausó/);
   });
 });
 
@@ -167,7 +168,7 @@ describe('06 §7.7.5 — Consentimiento: lista blanca, cadena de versiones y sol
     expect(
       await errorDeLaBase(
         `INSERT INTO version_de_consentimiento (consentimiento_id, predecesora_id, decision, situacion_resultante, version_de_texto_id, hash_del_texto, alcance, finalidad, actor_id, autoria_id, procedencia, momento_de_ocurrencia)
-         VALUES ('${consentId}', '${cabeza.id}', 'REOTORGAMIENTO', 'VIGENTE', 'b2-sanitario-2026-09-demo', '${cabeza.hashDelTexto}', 'NUTRICION', 'ACOMPANAMIENTO_NUTRICIONAL', '${a01.id}', '${a01.id}', '{}', now())`,
+         VALUES ('${consentId}', '${cabeza.id}', 'REOTORGAMIENTO', 'VIGENTE', 'acceso-profesional-sanitario-2026-09-demo', '${cabeza.hashDelTexto}', 'NUTRICION', 'ACOMPANAMIENTO_NUTRICIONAL', '${a01.id}', '${a01.id}', '{}', now())`,
       ),
     ).toMatch(/TRANSICION_NO_DECLARADA/);
   });
@@ -230,6 +231,123 @@ describe('Historia por adición (08 §29): hechos y decisiones son append-only',
       await errorDeLaBase(
         `INSERT INTO decision_de_acceso (operacion, resultado, actor_id, alcance, finalidad, dimensiones_desfavorables, momento_de_ocurrencia)
          VALUES ('API-DSH-03', 'DENEGADA', '${pn.id}', 'NUTRICION', 'ACOMPANAMIENTO_NUTRICIONAL', '{}', now())`,
+      ),
+    ).toMatch(/decision_de_acceso_coherente/);
+  });
+});
+
+describe('Revisión adversarial — garantías que la base exige al confirmar', () => {
+  const texto = (id: string) => {
+    const v = CATALOGO_DE_TEXTOS.find((t) => t.id === id);
+    if (!v) throw new Error(`sin texto ${id}`);
+    return v;
+  };
+  const SANITARIO = 'acceso-profesional-sanitario-2026-09-demo';
+  const NO_SANITARIO = 'acceso-profesional-no-sanitario-2026-09-demo';
+
+  it('REG-06-50: una versión agregada sin cambiar el consentimiento no confirma; insertar y revocar en una sola transacción sí, si el final es coherente', async () => {
+    const pn = await prepararProfesional(app, 'rev-cadena', ['NUTRICION']);
+    const a01 = await prepararAsesorado(app, 'rev-cadena', { a3: true });
+    const { consentId } = await vinculoCompleto(app, pn, a01, 'NUTRICION');
+    const cabeza = await prisma.versionDeConsentimiento.findFirstOrThrow({ where: { consentimientoId: consentId as string } });
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO version_de_consentimiento (consentimiento_id, predecesora_id, decision, situacion_resultante, alcance, finalidad, actor_id, autoria_id, procedencia, momento_de_ocurrencia)
+         VALUES ('${consentId}', '${cabeza.id}', 'REVOCACION', 'REVOCADO', 'NUTRICION', 'ACOMPANAMIENTO_NUTRICIONAL', '${a01.id}', '${a01.id}', '{}', now())`,
+      ),
+    ).rejects.toThrow(/no coincide con su cadena de versiones/);
+
+    // Insertar y actualizar el mismo consentimiento en una transacción: vale el estado final (la fila se relee).
+    const a02 = await prepararAsesorado(app, 'rev-cadena-2', { a3: true });
+    const { vinculoId } = await vinculoCompleto(app, pn, a02, 'NUTRICION', { b2: false });
+    const hash = texto(SANITARIO).hash;
+    const nuevo = await prisma.$transaction(async (tx) => {
+      const [c] = await tx.$queryRawUnsafe<{ id: string }[]>(
+        `INSERT INTO consentimiento (alcance_de_vinculo_id, finalidad) VALUES ('${vinculoId}', 'ACOMPANAMIENTO_NUTRICIONAL') RETURNING id::text`,
+      );
+      const [v1] = await tx.$queryRawUnsafe<{ id: string }[]>(
+        `INSERT INTO version_de_consentimiento (consentimiento_id, decision, situacion_resultante, version_de_texto_id, hash_del_texto, alcance, finalidad, actor_id, autoria_id, procedencia, momento_de_ocurrencia)
+         VALUES ('${c.id}', 'OTORGAMIENTO', 'VIGENTE', '${SANITARIO}', '${hash}', 'NUTRICION', 'ACOMPANAMIENTO_NUTRICIONAL', '${a02.id}', '${a02.id}', '{}', now()) RETURNING id::text`,
+      );
+      await tx.$executeRawUnsafe(
+        `INSERT INTO evento_de_vinculo (tipo, profesional_id, asesorado_id, alcance_de_vinculo_id, consentimiento_id, version_de_consentimiento_id, estado_posterior, actor_id, procedencia)
+         VALUES ('ConsentimientoOtorgado', '${pn.id}', '${a02.id}', '${vinculoId}', '${c.id}', '${v1.id}', 'VIGENTE', '${a02.id}', '{}')`,
+      );
+      await tx.$executeRawUnsafe(`UPDATE consentimiento SET situacion = 'REVOCADO', version = 2 WHERE id = '${c.id}'`);
+      const [v2] = await tx.$queryRawUnsafe<{ id: string }[]>(
+        `INSERT INTO version_de_consentimiento (consentimiento_id, predecesora_id, decision, situacion_resultante, alcance, finalidad, actor_id, autoria_id, procedencia, momento_de_ocurrencia)
+         VALUES ('${c.id}', '${v1.id}', 'REVOCACION', 'REVOCADO', 'NUTRICION', 'ACOMPANAMIENTO_NUTRICIONAL', '${a02.id}', '${a02.id}', '{}', now()) RETURNING id::text`,
+      );
+      await tx.$executeRawUnsafe(
+        `INSERT INTO evento_de_vinculo (tipo, profesional_id, asesorado_id, alcance_de_vinculo_id, consentimiento_id, version_de_consentimiento_id, estado_previo, estado_posterior, actor_id, procedencia)
+         VALUES ('ConsentimientoRevocado', '${pn.id}', '${a02.id}', '${vinculoId}', '${c.id}', '${v2.id}', 'VIGENTE', 'REVOCADO', '${a02.id}', '{}')`,
+      );
+      return c.id;
+    });
+    const final = await prisma.consentimiento.findUniqueOrThrow({ where: { id: nuevo }, include: { versiones: true } });
+    expect(final.situacion).toBe('REVOCADO');
+    expect(final.versiones).toHaveLength(2);
+  });
+
+  it('08 §17: una transición sin su hecho no confirma; con el hecho en la misma transacción, sí', async () => {
+    const pn = await prepararProfesional(app, 'con-hecho', ['NUTRICION']);
+    const a01 = await prepararAsesorado(app, 'con-hecho', { a3: true });
+    const { vinculoId } = await vinculoCompleto(app, pn, a01, 'NUTRICION', { b2: false });
+    const pausa = `UPDATE alcance_de_vinculo SET estado = 'PAUSADO', pausado_por = 'ASESORADO', motivo_de_ultima_transicion = 'OTRO', version = 2 WHERE id = '${vinculoId}'`;
+    await expect(prisma.$executeRawUnsafe(pausa)).rejects.toThrow(/no registró su hecho/);
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(pausa);
+      await tx.$executeRawUnsafe(
+        `INSERT INTO evento_de_vinculo (tipo, profesional_id, asesorado_id, alcance_de_vinculo_id, estado_previo, estado_posterior, motivo, actor_id, procedencia)
+         VALUES ('AlcanceDeVinculoPausado', '${pn.id}', '${a01.id}', '${vinculoId}', 'ACEPTADO', 'PAUSADO', 'OTRO', '${a01.id}', '{}')`,
+      );
+    });
+    expect((await prisma.alcanceDeVinculo.findUniqueOrThrow({ where: { id: vinculoId } })).estado).toBe('PAUSADO');
+
+    const a02 = await prepararAsesorado(app, 'con-hecho-2');
+    const solicitudId = (await solicitar(app, pn, a02.id, 'NUTRICION').expect(201)).body.data.relationshipRequestId as string;
+    await expect(
+      prisma.$executeRawUnsafe(`UPDATE solicitud_de_vinculo SET estado = 'RECHAZADA', version = 2, momento_de_resolucion = now() WHERE id = '${solicitudId}'`),
+    ).rejects.toThrow(/no registró su hecho/);
+    await expect(prisma.$executeRawUnsafe(`UPDATE verificacion_profesional SET estado = 'SUSPENDIDO', version = version + 1 WHERE identidad_id = '${pn.id}'`)).rejects.toThrow(
+      /no registró su hecho/,
+    );
+  });
+
+  it('A3: como máximo uno vigente por titular; A1 y A2 no chocan con una versión nueva', async () => {
+    const a01 = await prepararAsesorado(app, 'actos', { a3: true });
+    const copiar = (tipo: string) =>
+      `INSERT INTO acto_registrable (identidad_id, tipo, estado, version_de_texto_id, hash_del_texto, finalidad, actor_id, autoria_id, procedencia, momento_de_ocurrencia)
+       SELECT identidad_id, tipo, estado, version_de_texto_id, hash_del_texto, finalidad, actor_id, autoria_id, procedencia, now()
+         FROM acto_registrable WHERE identidad_id = '${a01.id}' AND tipo = '${tipo}' AND estado = 'VIGENTE'`;
+    expect(await errorDeLaBase(copiar('PRIVACIDAD_INFO'))).toBe('SIN ERROR');
+    expect(await errorDeLaBase(copiar('DATOS_SALUD_BE'))).toMatch(/23505|acto_registrable_un_a3_vigente/);
+  });
+
+  it('08 §12.3 y 06 §7.7.5: el texto del otro perfil, y una «versión nueva» que no sucede a la vigente, se rechazan', async () => {
+    const pn = await prepararProfesional(app, 'texto-perfil', ['NUTRICION']);
+    const a01 = await prepararAsesorado(app, 'texto-perfil', { a3: true });
+    const { consentId } = await vinculoCompleto(app, pn, a01, 'NUTRICION');
+    const cabeza = await prisma.versionDeConsentimiento.findFirstOrThrow({ where: { consentimientoId: consentId as string } });
+    const version = (id: string) =>
+      `INSERT INTO version_de_consentimiento (consentimiento_id, predecesora_id, decision, situacion_resultante, version_de_texto_id, hash_del_texto, alcance, finalidad, actor_id, autoria_id, procedencia, momento_de_ocurrencia)
+       VALUES ('${consentId}', '${cabeza.id}', 'NUEVA_VERSION', 'VIGENTE', '${id}', '${texto(id).hash}', 'NUTRICION', 'ACOMPANAMIENTO_NUTRICIONAL', '${a01.id}', '${a01.id}', '{}', now())`;
+    const subir = `UPDATE consentimiento SET version = 2 WHERE id = '${consentId}'`;
+    expect(await errorDeLaBase(subir, version(NO_SANITARIO))).toMatch(/perfil del profesional/);
+    expect(await errorDeLaBase(subir, version(SANITARIO))).toMatch(/texto sucesor/);
+  });
+
+  it('finalizar desde ACEPTADO no inventa quién pausó; una denegación con una dimensión NULL no se registra', async () => {
+    const pn = await prepararProfesional(app, 'fin-y-null', ['NUTRICION']);
+    const a01 = await prepararAsesorado(app, 'fin-y-null', { a3: true });
+    const { vinculoId } = await vinculoCompleto(app, pn, a01, 'NUTRICION', { b2: false });
+    expect(
+      await errorDeLaBase(`UPDATE alcance_de_vinculo SET estado = 'FINALIZADO', pausado_por = 'PROFESIONAL', motivo_de_ultima_transicion = 'OTRO', version = 2 WHERE id = '${vinculoId}'`),
+    ).toMatch(/conserva quién pausó/);
+    expect(
+      await errorDeLaBase(
+        `INSERT INTO decision_de_acceso (operacion, resultado, actor_id, alcance, finalidad, dimensiones_desfavorables, momento_de_ocurrencia)
+         VALUES ('API-DSH-03', 'DENEGADA', '${pn.id}', 'NUTRICION', 'ACOMPANAMIENTO_NUTRICIONAL', ARRAY[NULL]::"DimensionDeAutorizacion"[], now())`,
       ),
     ).toMatch(/decision_de_acceso_coherente/);
   });

@@ -82,7 +82,7 @@ const ESCRITURA_REVELABLE: Errores = {
   404: ['RESOURCE_NOT_FOUND'],
 };
 
-export const OPERACIONES: readonly Operacion[] = [
+const DEFINIDAS: readonly Operacion[] = [
   // ─── WP-02 ────────────────────────────────────────────────────────────────────────────────────
   {
     id: 'API-ACC-01',
@@ -410,6 +410,28 @@ export const OPERACIONES: readonly Operacion[] = [
     fuente: '09v11:895-950 · 08:581, 09:715 (SESSION con datos sintéticos) · DEUDA_LEGAJO DL-031',
   },
 ];
+
+/**
+ * Códigos que salen del manejo de concurrencia y de carga, comunes a varias operaciones (revisión adversarial de WP-03):
+ * - toda escritura corre en una transacción que se repite ante deadlock o falla de serialización; si persiste, responde
+ *   409 RESOURCE_CONFLICT («conflicto concurrente», 09 §3);
+ * - las lecturas de un recurso protegido comparten un límite por actor: 429 RATE_LIMITED.
+ */
+const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set(['API-DSH-03', 'API-REL-06', 'API-CON-01']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-CON-04', 'API-CON-08']);
+
+function conCodigosComunes(op: Operacion): Operacion {
+  const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };
+  const sumar = (status: 409 | 429, codigo: Codigo) => {
+    const actuales = errores[status] ?? [];
+    if (!actuales.includes(codigo)) errores[status] = [...actuales, codigo];
+  };
+  if (op.idempotencia || ESCRITURAS_SIN_CLAVE.has(op.id)) sumar(409, 'RESOURCE_CONFLICT');
+  if (LECTURAS_PROTEGIDAS.has(op.id)) sumar(429, 'RATE_LIMITED');
+  return { ...op, errores };
+}
+
+export const OPERACIONES: readonly Operacion[] = DEFINIDAS.map(conCodigosComunes);
 
 const aJson = (schema: z.ZodType) => z.toJSONSchema(schema, { target: 'draft-2020-12', io: 'input' });
 

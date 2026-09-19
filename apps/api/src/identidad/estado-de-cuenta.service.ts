@@ -21,7 +21,7 @@ const MOTIVO_DE_REVOCACION: Partial<Record<ContextoDeTransicionDeCuenta['transic
 
 /**
  * T-06-02 — aplica la máquina de estado de cuenta (06 §5.7). Único camino para cambiar el estado:
- * 1. bloquea la fila (FOR UPDATE) y lee el estado actual;
+ * 1. bloquea la fila (FOR NO KEY UPDATE: no choca con las claves foráneas de hechos y decisiones) y lee el estado;
  * 2. `evaluarTransicionDeCuenta` (@be/domain) decide lista blanca + guardas;
  * 3. aplica el destino y los efectos declarados, y emite el evento con estado anterior y resultante (06 §5.7.5).
  * La base rechaza además toda transición no declarada (trigger `identidad_guardar`).
@@ -40,7 +40,7 @@ export class EstadoDeCuentaService {
     momentoDeOcurrencia: Date,
   ): Promise<EvaluacionDeTransicionDeCuenta> {
     const [fila] = await tx.$queryRaw<{ estado: EstadoOperativoDeCuenta }[]>`
-      SELECT "estado_operativo_de_cuenta" AS "estado" FROM "identidad" WHERE "id" = ${identidadId}::uuid FOR UPDATE`;
+      SELECT "estado_operativo_de_cuenta" AS "estado" FROM "identidad" WHERE "id" = ${identidadId}::uuid FOR NO KEY UPDATE`;
     if (!fila) throw errores.recursoNoEncontrado();
 
     const evaluacion = evaluarTransicionDeCuenta(fila.estado, contexto);

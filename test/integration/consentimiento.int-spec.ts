@@ -47,24 +47,24 @@ describe('TEST-RF-020 / UC-P07 — B2 específico, versionado y con evidencia', 
       purpose: 'ACOMPANAMIENTO_NUTRICIONAL',
       pertinentCategories: [],
       professionalProfileDisclosure: { profileType: 'HEALTH_PROFESSIONAL' },
-      consentVersion: { id: 'b2-sanitario-2026-09-demo' },
+      consentVersion: { id: 'acceso-profesional-sanitario-2026-09-demo' },
     });
     const requisitosT = await conSesion(app, a01.token).get(`/api/v1/relationships/${t1.vinculoId}/consent-requirements`).expect(200);
     expect(requisitosT.body.data.professionalProfileDisclosure.profileType).toBe('NON_HEALTH_PROFESSIONAL');
-    expect(requisitosT.body.data.consentVersion.id).toBe('b2-no-sanitario-2026-09-demo');
+    expect(requisitosT.body.data.consentVersion.id).toBe('acceso-profesional-no-sanitario-2026-09-demo');
     expect(createHash('sha256').update(requisitosT.body.data.consentVersion.text, 'utf8').digest('hex')).toBe(requisitosT.body.data.consentVersion.textHash);
 
     const otorgado = await conSesion(app, a01.token)
       .post(`/api/v1/relationships/${n1.vinculoId}/consents`)
       .set('X-BE-Surface', 'APK')
-      .send({ consentVersionId: 'b2-sanitario-2026-09-demo' })
+      .send({ consentVersionId: 'acceso-profesional-sanitario-2026-09-demo' })
       .expect(201);
-    expect(otorgado.body.data).toMatchObject({ state: 'ACTIVE', consentVersionId: 'b2-sanitario-2026-09-demo', relationshipId: n1.vinculoId });
+    expect(otorgado.body.data).toMatchObject({ state: 'ACTIVE', consentVersionId: 'acceso-profesional-sanitario-2026-09-demo', relationshipId: n1.vinculoId });
     const [version] = await prisma.versionDeConsentimiento.findMany({ where: { consentimientoId: otorgado.body.data.consentId } });
     expect(version).toMatchObject({
       decision: 'OTORGAMIENTO',
       situacionResultante: 'VIGENTE',
-      versionDeTextoId: 'b2-sanitario-2026-09-demo',
+      versionDeTextoId: 'acceso-profesional-sanitario-2026-09-demo',
       hashDelTexto: requisitosN.body.data.consentVersion.textHash,
       alcance: 'NUTRICION',
       finalidad: 'ACOMPANAMIENTO_NUTRICIONAL',
@@ -84,8 +84,8 @@ describe('TEST-RF-020 / UC-P07 — B2 específico, versionado y con evidencia', 
     const pn = await prepararProfesional(app, 'inv062', ['NUTRICION']);
     const a01 = await prepararAsesorado(app, 'inv062', { a3: true });
     const { vinculoId } = await vinculoCompleto(app, pn, a01, 'NUTRICION', { b2: false });
-    await conSesion(app, pn.token).post(`/api/v1/relationships/${vinculoId}/consents`).send({ consentVersionId: 'b2-sanitario-2026-09-demo' }).expect(404);
-    const vieja = await conSesion(app, a01.token).post(`/api/v1/relationships/${vinculoId}/consents`).send({ consentVersionId: 'b2-no-sanitario-2026-09-demo' }).expect(409);
+    await conSesion(app, pn.token).post(`/api/v1/relationships/${vinculoId}/consents`).send({ consentVersionId: 'acceso-profesional-sanitario-2026-09-demo' }).expect(404);
+    const vieja = await conSesion(app, a01.token).post(`/api/v1/relationships/${vinculoId}/consents`).send({ consentVersionId: 'acceso-profesional-no-sanitario-2026-09-demo' }).expect(409);
     expect(vieja.body.error.code).toBe('CONSENT_VERSION_STALE');
   });
 });
@@ -107,7 +107,7 @@ describe('TEST-RF-022 / UC-P08 — revocar corta el acceso futuro, sin cascada y
 
     const cadena = await prisma.versionDeConsentimiento.findMany({ where: { consentimientoId: t1.consentId as string }, orderBy: { momentoDeRegistro: 'asc' } });
     expect(cadena.map((v) => [v.decision, v.situacionResultante, v.versionDeTextoId])).toEqual([
-      ['OTORGAMIENTO', 'VIGENTE', 'b2-no-sanitario-2026-09-demo'],
+      ['OTORGAMIENTO', 'VIGENTE', 'acceso-profesional-no-sanitario-2026-09-demo'],
       ['REVOCACION', 'REVOCADO', null],
     ]);
     expect(cadena[1].predecesoraId).toBe(cadena[0].id);
@@ -150,10 +150,10 @@ describe('Asimetría 7.5-05 — revocar no finaliza; finalizar no revoca ni borr
     const { vinculoId, consentId } = await vinculoCompleto(app, pn, a01, 'NUTRICION');
     await revocarB2(app, a01, consentId as string).expect(200);
     await pausar(app, a01.token, vinculoId, await versionDeVinculo(app, a01.token, vinculoId)).expect(200);
-    const noListo = await conSesion(app, a01.token).post(`/api/v1/relationships/${vinculoId}/consents`).send({ consentVersionId: 'b2-sanitario-2026-09-demo' }).expect(422);
+    const noListo = await conSesion(app, a01.token).post(`/api/v1/relationships/${vinculoId}/consents`).send({ consentVersionId: 'acceso-profesional-sanitario-2026-09-demo' }).expect(422);
     expect(noListo.body.error.code).toBe('RELATIONSHIP_NOT_READY_FOR_CONSENT');
     await conSesion(app, a01.token).post(`/api/v1/relationships/${vinculoId}/resume`).send({ expectedVersion: await versionDeVinculo(app, a01.token, vinculoId) }).expect(200);
-    const re = await conSesion(app, a01.token).post(`/api/v1/relationships/${vinculoId}/consents`).send({ consentVersionId: 'b2-sanitario-2026-09-demo' }).expect(200);
+    const re = await conSesion(app, a01.token).post(`/api/v1/relationships/${vinculoId}/consents`).send({ consentVersionId: 'acceso-profesional-sanitario-2026-09-demo' }).expect(200);
     expect(re.body.data.consentId).toBe(consentId);
     const cadena = await prisma.versionDeConsentimiento.findMany({ where: { consentimientoId: consentId as string }, orderBy: { momentoDeRegistro: 'asc' } });
     expect(cadena.map((v) => v.decision)).toEqual(['OTORGAMIENTO', 'REVOCACION', 'REOTORGAMIENTO']);
@@ -199,27 +199,27 @@ describe('AceptarNuevaVersion — C2 publicada no se acepta sola (DV-05 TEST-RF-
         texto: c2,
         hash: createHash('sha256').update(c2, 'utf8').digest('hex'),
         vigenteDesde: new Date(),
-        reemplazaAId: 'b2-sanitario-2026-09-demo',
+        reemplazaAId: 'acceso-profesional-sanitario-2026-09-demo',
       },
     });
     // La versión nueva no está aceptada por publicarse: el B2 sigue vigente en C1 y el acceso continúa.
     const detalle = await conSesion(aislada, a01.token).get(`/api/v1/relationships/${vinculoId}`).expect(200);
-    expect(detalle.body.data.consent).toMatchObject({ state: 'ACTIVE', consentVersionId: 'b2-sanitario-2026-09-demo' });
+    expect(detalle.body.data.consent).toMatchObject({ state: 'ACTIVE', consentVersionId: 'acceso-profesional-sanitario-2026-09-demo' });
     await dashboard(aislada, pn, a01.id).expect(200);
     const requisitos = await conSesion(aislada, a01.token).get(`/api/v1/relationships/${vinculoId}/consent-requirements`).expect(200);
     expect(requisitos.body.data.consentVersion.id).toBe('b2-sanitario-c2-prueba');
-    await conSesion(aislada, a01.token).post(`/api/v1/relationships/${vinculoId}/consents`).send({ consentVersionId: 'b2-sanitario-2026-09-demo' }).expect(409);
+    await conSesion(aislada, a01.token).post(`/api/v1/relationships/${vinculoId}/consents`).send({ consentVersionId: 'acceso-profesional-sanitario-2026-09-demo' }).expect(409);
     const aceptada = await conSesion(aislada, a01.token).post(`/api/v1/relationships/${vinculoId}/consents`).send({ consentVersionId: 'b2-sanitario-c2-prueba' }).expect(200);
     expect(aceptada.body.data).toMatchObject({ consentId, consentVersionId: 'b2-sanitario-c2-prueba', state: 'ACTIVE' });
     const cadena = await bd.versionDeConsentimiento.findMany({ where: { consentimientoId: consentId as string }, orderBy: { momentoDeRegistro: 'asc' } });
     expect(cadena.map((v) => [v.decision, v.versionDeTextoId])).toEqual([
-      ['OTORGAMIENTO', 'b2-sanitario-2026-09-demo'],
+      ['OTORGAMIENTO', 'acceso-profesional-sanitario-2026-09-demo'],
       ['NUEVA_VERSION', 'b2-sanitario-c2-prueba'],
     ]);
     // Una segunda sucesora de C1 rompería la cadena lineal: la base la rechaza (REG-06-12).
     await expect(
       bd.versionDeTexto.create({
-        data: { id: 'b2-rama', tipo: 'CONSENTIMIENTO_PROFESIONAL_SANITARIO', titulo: 'x', finalidad: 'x', texto: 'x', hash: 'x', vigenteDesde: new Date(), reemplazaAId: 'b2-sanitario-2026-09-demo' },
+        data: { id: 'b2-rama', tipo: 'CONSENTIMIENTO_PROFESIONAL_SANITARIO', titulo: 'x', finalidad: 'x', texto: 'x', hash: 'x', vigenteDesde: new Date(), reemplazaAId: 'acceso-profesional-sanitario-2026-09-demo' },
       }),
     ).rejects.toMatchObject({ code: 'P2002' });
   });

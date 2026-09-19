@@ -205,8 +205,10 @@ describe('TEST-AUTH-009 — lo que el cliente declara no reemplaza al PDP (adver
     const me = await conSesion(app, pn.token).get('/api/v1/me').expect(200);
     expect(me.body.data.actorCapabilities).toEqual(['PROFESSIONAL_WORKSPACE']);
     await dashboard(app, pn, a01.id).expect(404);
-    // La query tampoco eleva nada: parámetros desconocidos se rechazan después del PDP, sobre un recurso revelable.
-    await conSesion(app, pn.token).get(`/api/v1/advisees/${a01.id}/dashboard?professionalId=${otro.id}`).expect(404);
+    // La query tampoco eleva nada: un parámetro desconocido es 400 antes del PDP (09:221, schema y payload primero). El
+    // 400 no depende del titular, así que no revela nada, y no deja decisiones registradas.
+    const r = await conSesion(app, pn.token).get(`/api/v1/advisees/${a01.id}/dashboard?professionalId=${otro.id}`).expect(400);
+    expect(r.body.error.code).toBe('INVALID_REQUEST');
   });
 });
 

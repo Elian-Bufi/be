@@ -291,6 +291,9 @@ CREATE UNIQUE INDEX "evento_de_vinculo_secuencia_key" ON "evento_de_vinculo"("se
 CREATE INDEX "evento_de_vinculo_asesorado_id_momento_de_registro_idx" ON "evento_de_vinculo"("asesorado_id", "momento_de_registro");
 
 -- CreateIndex
+CREATE INDEX "evento_de_vinculo_solicitud_de_vinculo_id_idx" ON "evento_de_vinculo"("solicitud_de_vinculo_id");
+
+-- CreateIndex
 CREATE INDEX "evento_de_vinculo_alcance_de_vinculo_id_idx" ON "evento_de_vinculo"("alcance_de_vinculo_id");
 
 -- CreateIndex
@@ -380,10 +383,12 @@ CREATE FUNCTION "be_finalidad_de_alcance"("a" "Alcance") RETURNS "Finalidad" LAN
     WHEN 'ANTROPOMETRIA' THEN 'EVALUACION_ANTROPOMETRICA'::"Finalidad"
   END
 $$;
-ALTER TABLE "solicitud_de_vinculo" ADD CONSTRAINT "solicitud_de_vinculo_finalidad_del_alcance" CHECK ("finalidad" = "be_finalidad_de_alcance"("alcance"));
-ALTER TABLE "alcance_de_vinculo" ADD CONSTRAINT "alcance_de_vinculo_finalidad_del_alcance" CHECK ("finalidad" = "be_finalidad_de_alcance"("alcance"));
-ALTER TABLE "version_de_consentimiento" ADD CONSTRAINT "version_de_consentimiento_finalidad_del_alcance" CHECK ("finalidad" = "be_finalidad_de_alcance"("alcance"));
-ALTER TABLE "decision_de_acceso" ADD CONSTRAINT "decision_de_acceso_finalidad_del_alcance" CHECK ("finalidad" = "be_finalidad_de_alcance"("alcance"));
+-- «IS TRUE»: un alcance que la función no conozca (un valor nuevo del enum sin su finalidad) da NULL, y un CHECK con
+-- NULL pasaría. Así, falla.
+ALTER TABLE "solicitud_de_vinculo" ADD CONSTRAINT "solicitud_de_vinculo_finalidad_del_alcance" CHECK (("finalidad" = "be_finalidad_de_alcance"("alcance")) IS TRUE);
+ALTER TABLE "alcance_de_vinculo" ADD CONSTRAINT "alcance_de_vinculo_finalidad_del_alcance" CHECK (("finalidad" = "be_finalidad_de_alcance"("alcance")) IS TRUE);
+ALTER TABLE "version_de_consentimiento" ADD CONSTRAINT "version_de_consentimiento_finalidad_del_alcance" CHECK (("finalidad" = "be_finalidad_de_alcance"("alcance")) IS TRUE);
+ALTER TABLE "decision_de_acceso" ADD CONSTRAINT "decision_de_acceso_finalidad_del_alcance" CHECK (("finalidad" = "be_finalidad_de_alcance"("alcance")) IS TRUE);
 
 -- Partes distintas: nadie se vincula consigo mismo.
 ALTER TABLE "solicitud_de_vinculo" ADD CONSTRAINT "solicitud_de_vinculo_partes_distintas" CHECK ("profesional_id" <> "asesorado_id");
@@ -412,9 +417,10 @@ ALTER TABLE "version_de_consentimiento" ADD CONSTRAINT "version_de_consentimient
 -- REG-06-12: cadena lineal — una raíz por consentimiento (y, por el índice único de predecesora_id, una sucesora por versión).
 CREATE UNIQUE INDEX "version_de_consentimiento_una_raiz" ON "version_de_consentimiento" ("consentimiento_id") WHERE "predecesora_id" IS NULL;
 
--- Actos A1/A2/A3: como máximo uno VIGENTE por tipo y por identidad. Protege el otorgamiento de A3 (API-CON-06) ante
--- requests concurrentes: el reotorgamiento es un acto nuevo solo después de revocar el anterior (09:2508, 09:2607).
-CREATE UNIQUE INDEX "acto_registrable_uno_vigente_por_tipo" ON "acto_registrable" ("identidad_id", "tipo") WHERE "estado" = 'VIGENTE';
+-- A3: como máximo uno VIGENTE por identidad. Protege el otorgamiento (API-CON-06) ante requests concurrentes: el
+-- reotorgamiento es un acto nuevo solo después de revocar el anterior (09:2508, 09:2607). Solo A3: A1 y A2 no se
+-- revocan por API, y una versión nueva de términos o de privacidad es otro acto vigente que no debe chocar con el previo.
+CREATE UNIQUE INDEX "acto_registrable_un_a3_vigente" ON "acto_registrable" ("identidad_id") WHERE "estado" = 'VIGENTE' AND "tipo" = 'DATOS_SALUD_BE';
 
 -- Versiones de texto: una raíz por tipo; la cadena es lineal por el índice único de reemplaza_a_id (REG-06-12).
 CREATE UNIQUE INDEX "version_de_texto_una_raiz_por_tipo" ON "version_de_texto" ("tipo") WHERE "reemplaza_a_id" IS NULL;
@@ -429,7 +435,7 @@ ALTER TABLE "decision_de_acceso" ALTER COLUMN "dimensiones_desfavorables" SET NO
 ALTER TABLE "decision_de_acceso" ADD CONSTRAINT "decision_de_acceso_coherente" CHECK (
   ("resultado" = 'PERMITIDA' AND cardinality("dimensiones_desfavorables") = 0
     AND "alcance_de_vinculo_id" IS NOT NULL AND "consentimiento_id" IS NOT NULL AND "version_de_consentimiento_id" IS NOT NULL)
-  OR ("resultado" = 'DENEGADA' AND cardinality("dimensiones_desfavorables") > 0)
+  OR ("resultado" = 'DENEGADA' AND cardinality("dimensiones_desfavorables") > 0 AND array_position("dimensiones_desfavorables", NULL) IS NULL)
 );
 
 -- ─── Historia por adición: tablas append-only y sin TRUNCATE ────────────────────────────────────
@@ -604,8 +610,10 @@ BEGIN
   IF NEW."estado" = 'FINALIZADO' AND (NEW."motivo_de_ultima_transicion" IS NULL OR NEW."motivo_de_ultima_transicion" = 'DISPONIBILIDAD') THEN
     RAISE EXCEPTION 'BE: finalizar exige un motivo de finalización (04:345; DL-033)' USING ERRCODE = 'check_violation';
   END IF;
-  IF OLD."estado" = 'PAUSADO' AND NEW."estado" = 'FINALIZADO' AND NEW."pausado_por" IS DISTINCT FROM OLD."pausado_por" THEN
-    RAISE EXCEPTION 'BE: finalizar desde PAUSADO preserva la pausa previa (06:3111)' USING ERRCODE = 'check_violation';
+  -- Finalizar conserva quién pausó tal como estaba: la pausa previa si venía de PAUSADO (06:3111), ninguna si venía
+  -- de ACEPTADO.
+  IF NEW."estado" = 'FINALIZADO' AND NEW."pausado_por" IS DISTINCT FROM OLD."pausado_por" THEN
+    RAISE EXCEPTION 'BE: finalizar conserva quién pausó tal como estaba (06:3111)' USING ERRCODE = 'check_violation';
   END IF;
   RETURN NEW;
 END $$;
@@ -660,6 +668,7 @@ DECLARE
   v_vinculo "vinculo"%ROWTYPE;
   v_predecesora "version_de_consentimiento"%ROWTYPE;
   v_texto "version_de_texto"%ROWTYPE;
+  v_tipo_de_perfil "TipoDePerfilProfesional";
 BEGIN
   SELECT * INTO v_consentimiento FROM "consentimiento" WHERE "id" = NEW."consentimiento_id";
   SELECT * INTO v_alcance FROM "alcance_de_vinculo" WHERE "id" = v_consentimiento."alcance_de_vinculo_id";
@@ -674,8 +683,14 @@ BEGIN
   END IF;
   IF NEW."version_de_texto_id" IS NOT NULL THEN
     SELECT * INTO v_texto FROM "version_de_texto" WHERE "id" = NEW."version_de_texto_id";
-    IF v_texto."tipo" NOT IN ('CONSENTIMIENTO_PROFESIONAL_SANITARIO', 'CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO') OR v_texto."hash" <> NEW."hash_del_texto" THEN
-      RAISE EXCEPTION 'BE: la versión aceptada es un texto de B2 y copia su hash (08 §12.2)' USING ERRCODE = 'check_violation';
+    -- 08 §12.3: el texto es el del perfil del profesional (sanitario o no sanitario), y la evidencia copia su hash.
+    SELECT "tipo" INTO v_tipo_de_perfil FROM "perfil_profesional" WHERE "identidad_id" = v_vinculo."profesional_id";
+    IF v_texto."tipo" IS DISTINCT FROM (CASE v_tipo_de_perfil
+                                          WHEN 'SANITARIO' THEN 'CONSENTIMIENTO_PROFESIONAL_SANITARIO'
+                                          WHEN 'NO_SANITARIO' THEN 'CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO'
+                                        END)::"TipoDeTexto"
+       OR v_texto."hash" IS DISTINCT FROM NEW."hash_del_texto" THEN
+      RAISE EXCEPTION 'BE: la versión aceptada es el texto de B2 del perfil del profesional y copia su hash (08 §12.2, §12.3)' USING ERRCODE = 'check_violation';
     END IF;
   END IF;
   -- Cadena lineal (REG-06-12) y decisión coherente con la situación previa (06 §7.7.5).
@@ -696,6 +711,18 @@ BEGIN
       RAISE EXCEPTION 'BE: TRANSICION_NO_DECLARADA en la cadena de consentimiento (% tras %)', NEW."decision", v_predecesora."situacion_resultante"
         USING ERRCODE = 'check_violation';
     END IF;
+    -- AceptarNuevaVersion [versión sucesora] (06 §7.7.5): el texto nuevo reemplaza, directa o transitivamente, al que
+    -- estaba vigente. Aceptar el mismo texto otra vez, o uno que no lo sucede, no es una versión nueva.
+    IF NEW."decision" = 'NUEVA_VERSION' AND NOT EXISTS (
+      WITH RECURSIVE "anteriores" AS (
+        SELECT t."id", t."reemplaza_a_id" FROM "version_de_texto" t WHERE t."id" = NEW."version_de_texto_id"
+        UNION ALL
+        SELECT t."id", t."reemplaza_a_id" FROM "version_de_texto" t JOIN "anteriores" a ON t."id" = a."reemplaza_a_id"
+      )
+      SELECT 1 FROM "anteriores" WHERE "reemplaza_a_id" = v_predecesora."version_de_texto_id"
+    ) THEN
+      RAISE EXCEPTION 'BE: una versión nueva acepta un texto sucesor del vigente (06 §7.7.5 AceptarNuevaVersion)' USING ERRCODE = 'check_violation';
+    END IF;
   END IF;
   RETURN NEW;
 END $$;
@@ -703,25 +730,96 @@ CREATE TRIGGER "version_de_consentimiento_insertar" BEFORE INSERT ON "version_de
 
 -- Al confirmar la transacción: la situación del consentimiento es la de la cabeza de su cadena, y hay exactamente una
 -- versión por decisión (REG-06-50: cada decisión expresa emite una Versión; INV-06-60: VIGENTE referencia versión).
+-- Se verifica cuando cambia el consentimiento y también cuando se agrega una versión: una versión sin su cambio de
+-- situación, o un cambio sin su versión, no llegan a confirmarse. La fila se relee al confirmar: NEW es la del
+-- evento, y la misma transacción pudo cambiarla después.
 CREATE FUNCTION "be_consentimiento_coherente"() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
+  v_id uuid;
+  v_consentimiento "consentimiento"%ROWTYPE;
   v_cantidad integer;
   v_cabeza "SituacionDeConsentimiento";
 BEGIN
-  SELECT count(*) INTO v_cantidad FROM "version_de_consentimiento" WHERE "consentimiento_id" = NEW."id";
+  IF TG_TABLE_NAME = 'consentimiento' THEN
+    v_id := NEW."id";
+  ELSE
+    v_id := NEW."consentimiento_id";
+  END IF;
+  SELECT * INTO v_consentimiento FROM "consentimiento" WHERE "id" = v_id;
+  SELECT count(*) INTO v_cantidad FROM "version_de_consentimiento" WHERE "consentimiento_id" = v_id;
   SELECT v."situacion_resultante" INTO v_cabeza FROM "version_de_consentimiento" v
-   WHERE v."consentimiento_id" = NEW."id"
+   WHERE v."consentimiento_id" = v_id
      AND NOT EXISTS (SELECT 1 FROM "version_de_consentimiento" s WHERE s."predecesora_id" = v."id");
-  IF v_cantidad <> NEW."version" OR v_cabeza IS DISTINCT FROM NEW."situacion" THEN
-    RAISE EXCEPTION 'BE: el consentimiento % no coincide con su cadena de versiones (REG-06-50, INV-06-60)', NEW."id" USING ERRCODE = 'check_violation';
+  IF v_cantidad IS DISTINCT FROM v_consentimiento."version" OR v_cabeza IS DISTINCT FROM v_consentimiento."situacion" THEN
+    RAISE EXCEPTION 'BE: el consentimiento % no coincide con su cadena de versiones (REG-06-50, INV-06-60)', v_id USING ERRCODE = 'check_violation';
   END IF;
   RETURN NULL;
 END $$;
 CREATE CONSTRAINT TRIGGER "consentimiento_coherente" AFTER INSERT OR UPDATE ON "consentimiento"
   DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "be_consentimiento_coherente"();
+CREATE CONSTRAINT TRIGGER "version_de_consentimiento_coherente" AFTER INSERT ON "version_de_consentimiento"
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "be_consentimiento_coherente"();
+
+-- ─── Ninguna transición sin su hecho (08 §17: historia por adición; «sin borrado silencioso») ───────────
+-- Al confirmar, cada fila que nació o cambió de versión en la transacción tiene, registrado en esa misma transacción,
+-- el hecho que lleva a su estado actual. `xmin = pg_current_xact_id()::xid` identifica las filas de esta transacción
+-- (el código no usa savepoints). Se relee la fila: si la transacción hizo varias transiciones, vale la última.
+CREATE FUNCTION "be_transicion_con_hecho"() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  v_con_hecho boolean;
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    IF NEW."version" = OLD."version" THEN
+      RETURN NULL;
+    END IF;
+  END IF;
+  IF TG_TABLE_NAME = 'solicitud_de_vinculo' THEN
+    SELECT EXISTS (
+      SELECT 1 FROM "solicitud_de_vinculo" f JOIN "evento_de_vinculo" e ON e."solicitud_de_vinculo_id" = f."id"
+       WHERE f."id" = NEW."id" AND e."tipo"::text LIKE 'SolicitudDeVinculo%'
+         AND e."estado_posterior" = f."estado"::text AND e."xmin" = pg_current_xact_id()::xid) INTO v_con_hecho;
+  ELSIF TG_TABLE_NAME = 'alcance_de_vinculo' THEN
+    SELECT EXISTS (
+      SELECT 1 FROM "alcance_de_vinculo" f JOIN "evento_de_vinculo" e ON e."alcance_de_vinculo_id" = f."id"
+       WHERE f."id" = NEW."id" AND e."tipo"::text LIKE 'AlcanceDeVinculo%'
+         AND e."estado_posterior" = f."estado"::text AND e."xmin" = pg_current_xact_id()::xid) INTO v_con_hecho;
+  ELSIF TG_TABLE_NAME = 'consentimiento' THEN
+    SELECT EXISTS (
+      SELECT 1 FROM "consentimiento" f JOIN "evento_de_vinculo" e ON e."consentimiento_id" = f."id"
+       WHERE f."id" = NEW."id"
+         AND e."tipo" IN ('ConsentimientoOtorgado', 'NuevaVersionDeConsentimientoAceptada', 'ConsentimientoRevocado', 'ConsentimientoOtorgadoNuevamente')
+         AND e."estado_posterior" = f."situacion"::text AND e."xmin" = pg_current_xact_id()::xid) INTO v_con_hecho;
+  ELSIF TG_TABLE_NAME = 'verificacion_profesional' THEN
+    SELECT EXISTS (
+      SELECT 1 FROM "verificacion_profesional" f JOIN "evento_de_verificacion" e ON e."identidad_id" = f."identidad_id" AND e."alcance" = f."alcance"
+       WHERE f."id" = NEW."id" AND e."tipo"::text NOT LIKE 'Habilitacion%'
+         AND e."estado_posterior" = f."estado"::text AND e."xmin" = pg_current_xact_id()::xid) INTO v_con_hecho;
+  ELSIF TG_TABLE_NAME = 'habilitacion' THEN
+    SELECT EXISTS (
+      SELECT 1 FROM "habilitacion" f JOIN "evento_de_verificacion" e ON e."identidad_id" = f."identidad_id" AND e."alcance" = f."alcance"
+       WHERE f."id" = NEW."id" AND e."tipo"::text LIKE 'Habilitacion%'
+         AND e."estado_posterior" = f."estado"::text AND e."xmin" = pg_current_xact_id()::xid) INTO v_con_hecho;
+  ELSE
+    RAISE EXCEPTION 'BE: be_transicion_con_hecho no contempla la tabla %', TG_TABLE_NAME;
+  END IF;
+  IF NOT v_con_hecho THEN
+    RAISE EXCEPTION 'BE: la transición de % % no registró su hecho en la misma transacción (08 §17)', TG_TABLE_NAME, NEW."id" USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER "solicitud_de_vinculo_con_hecho" AFTER INSERT OR UPDATE ON "solicitud_de_vinculo"
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "be_transicion_con_hecho"();
+CREATE CONSTRAINT TRIGGER "alcance_de_vinculo_con_hecho" AFTER INSERT OR UPDATE ON "alcance_de_vinculo"
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "be_transicion_con_hecho"();
+CREATE CONSTRAINT TRIGGER "consentimiento_con_hecho" AFTER INSERT OR UPDATE ON "consentimiento"
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "be_transicion_con_hecho"();
+CREATE CONSTRAINT TRIGGER "verificacion_profesional_con_hecho" AFTER INSERT OR UPDATE ON "verificacion_profesional"
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "be_transicion_con_hecho"();
+CREATE CONSTRAINT TRIGGER "habilitacion_con_hecho" AFTER INSERT OR UPDATE ON "habilitacion"
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "be_transicion_con_hecho"();
 
 -- Catálogo de textos versionados (08 §12.2; DEUDA_LEGAJO DL-028). Generado desde @be/domain.
-INSERT INTO "version_de_texto" ("id", "tipo", "titulo", "finalidad", "texto", "hash", "vigente_desde") VALUES ('b2-sanitario-2026-09-demo', 'CONSENTIMIENTO_PROFESIONAL_SANITARIO', $be_texto$Autorizar acceso a un profesional de la salud$be_texto$, 'AUTORIZACION_DE_ACCESO_PROFESIONAL', $be_texto$Autorización de acceso a un profesional de la salud — versión de demostración 2026-09
+INSERT INTO "version_de_texto" ("id", "tipo", "titulo", "finalidad", "texto", "hash", "vigente_desde") VALUES ('acceso-profesional-sanitario-2026-09-demo', 'CONSENTIMIENTO_PROFESIONAL_SANITARIO', $be_texto$Autorizar acceso a un profesional de la salud$be_texto$, 'AUTORIZACION_DE_ACCESO_PROFESIONAL', $be_texto$Autorización de acceso a un profesional de la salud — versión de demostración 2026-09
 
 Texto de demostración para el trabajo final BE. No es un texto legal ni se aplica a datos reales.
 
@@ -734,7 +832,7 @@ Este consentimiento vale solo para este profesional, este alcance y esta finalid
 Podés revocarlo cuando quieras. La revocación corta el acceso hacia adelante, no finaliza el vínculo y no borra en silencio tu historia.
 
 Aceptar esta versión no acepta versiones futuras.$be_texto$, '913b8a9be1a387617e6fedbc9b1d24e1237c0bf2f785e209cc9d56c027ca8f17', '2026-09-19T00:00:00.000Z');
-INSERT INTO "version_de_texto" ("id", "tipo", "titulo", "finalidad", "texto", "hash", "vigente_desde") VALUES ('b2-no-sanitario-2026-09-demo', 'CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO', $be_texto$Autorizar acceso a un profesional que no es de la salud$be_texto$, 'AUTORIZACION_DE_ACCESO_PROFESIONAL', $be_texto$Autorización de acceso a un profesional que no es de la salud — versión de demostración 2026-09
+INSERT INTO "version_de_texto" ("id", "tipo", "titulo", "finalidad", "texto", "hash", "vigente_desde") VALUES ('acceso-profesional-no-sanitario-2026-09-demo', 'CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO', $be_texto$Autorizar acceso a un profesional que no es de la salud$be_texto$, 'AUTORIZACION_DE_ACCESO_PROFESIONAL', $be_texto$Autorización de acceso a un profesional que no es de la salud — versión de demostración 2026-09
 
 Texto de demostración para el trabajo final BE. No es un texto legal ni se aplica a datos reales.
 

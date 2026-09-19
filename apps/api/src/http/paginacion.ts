@@ -63,7 +63,8 @@ function leerCursor(texto: string): Cursor {
     const valor: unknown = JSON.parse(Buffer.from(texto, 'base64url').toString('utf8'));
     if (Array.isArray(valor) && valor.length === 2 && typeof valor[0] === 'string' && typeof valor[1] === 'string') {
       const momento = new Date(valor[0]);
-      if (!Number.isNaN(momento.getTime()) && /^[0-9a-f-]{36}$/.test(valor[1])) return { momento, id: valor[1] };
+      // UUID completo: un id de 36 guiones o con otra forma llegaría a la base como un error 500 (P2023).
+      if (!Number.isNaN(momento.getTime()) && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(valor[1])) return { momento, id: valor[1] };
     }
   } catch {
     // cae al error neutral

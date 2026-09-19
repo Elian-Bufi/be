@@ -134,6 +134,10 @@ model Identidad {
   solicitudesComoAsesorado   SolicitudDeVinculo[]      @relation("SolicitudAlAsesorado")
   vinculosComoProfesional    Vinculo[]                 @relation("VinculoDelProfesional")
   vinculosComoAsesorado      Vinculo[]                 @relation("VinculoDelAsesorado")
+  eventosComoProfesional     EventoDeVinculo[]         @relation("EventoDelProfesional")
+  eventosComoAsesorado       EventoDeVinculo[]         @relation("EventoDelAsesorado")
+  decisionesComoActor        DecisionDeAcceso[]        @relation("DecisionDelActor")
+  decisionesComoSujeto       DecisionDeAcceso[]        @relation("DecisionSobreElSujeto")
 
   @@map("identidad")
 }
@@ -514,6 +518,7 @@ model SolicitudDeVinculo {
   antecedente      SolicitudDeVinculo?  @relation("Reiteracion", fields: [antecedenteId], references: [id], onDelete: Restrict)
   reiteraciones    SolicitudDeVinculo[] @relation("Reiteracion")
   alcanceDeVinculo AlcanceDeVinculo?
+  eventos          EventoDeVinculo[]
 
   @@index([profesionalId, estado])
   @@index([asesoradoId, estado])
@@ -558,6 +563,8 @@ model AlcanceDeVinculo {
   vinculo           Vinculo            @relation(fields: [vinculoId], references: [id], onDelete: Restrict)
   solicitudDeOrigen SolicitudDeVinculo @relation(fields: [solicitudDeOrigenId], references: [id], onDelete: Restrict)
   consentimientos   Consentimiento[]
+  eventos           EventoDeVinculo[]
+  decisiones        DecisionDeAcceso[]
 
   @@index([vinculoId, alcance])
   @@map("alcance_de_vinculo")
@@ -577,6 +584,8 @@ model Consentimiento {
 
   alcanceDeVinculo AlcanceDeVinculo          @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict)
   versiones        VersionDeConsentimiento[]
+  eventos          EventoDeVinculo[]
+  decisiones       DecisionDeAcceso[]
 
   @@unique([alcanceDeVinculoId, finalidad])
   @@map("consentimiento")
@@ -612,6 +621,8 @@ model VersionDeConsentimiento {
   predecesora    VersionDeConsentimiento? @relation("CadenaDeConsentimiento", fields: [predecesoraId], references: [id], onDelete: Restrict)
   sucesora       VersionDeConsentimiento? @relation("CadenaDeConsentimiento")
   versionDeTexto VersionDeTexto?          @relation(fields: [versionDeTextoId], references: [id], onDelete: Restrict)
+  eventos        EventoDeVinculo[]
+  decisiones     DecisionDeAcceso[]
 
   @@index([consentimientoId])
   @@map("version_de_consentimiento")
@@ -639,7 +650,16 @@ model EventoDeVinculo {
   momentoDeOcurrencia       DateTime?                    @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro         DateTime                     @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
+  // Sin CASCADE: la historia es por adición (08 §17).
+  profesional             Identidad                @relation("EventoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado               Identidad                @relation("EventoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  solicitudDeVinculo      SolicitudDeVinculo?      @relation(fields: [solicitudDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  alcanceDeVinculo        AlcanceDeVinculo?        @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  consentimiento          Consentimiento?          @relation(fields: [consentimientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeConsentimiento VersionDeConsentimiento? @relation(fields: [versionDeConsentimientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
   @@index([asesoradoId, momentoDeRegistro])
+  @@index([solicitudDeVinculoId])
   @@index([alcanceDeVinculoId])
   @@index([consentimientoId])
   @@map("evento_de_vinculo")
@@ -670,6 +690,12 @@ model DecisionDeAcceso {
   requestId                 String?                   @map("request_id")
   momentoDeOcurrencia       DateTime                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro         DateTime                  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  actor                   Identidad                @relation("DecisionDelActor", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sujeto                  Identidad?               @relation("DecisionSobreElSujeto", fields: [sujetoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  alcanceDeVinculo        AlcanceDeVinculo?        @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  consentimiento          Consentimiento?          @relation(fields: [consentimientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeConsentimiento VersionDeConsentimiento? @relation(fields: [versionDeConsentimientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([actorId, sujetoId, alcance, momentoDeRegistro])
   @@map("decision_de_acceso")

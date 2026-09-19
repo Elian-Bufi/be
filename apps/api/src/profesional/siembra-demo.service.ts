@@ -1,18 +1,18 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { normalizarIdentificadorLocal } from '@be/domain';
 import type { Entorno } from '../config/entorno';
 import { ENTORNO } from '../config/tokens';
 import { PrismaService } from '../prisma/prisma.service';
 import { VerificacionService } from './verificacion.service';
 
 /**
- * Siembra de profesionales de demostración (DEUDA_LEGAJO DL-036). Solo con `APP_ENV` test o development y solo para
- * correos `example.invalid` declarados en `BE_DEMO_PROFESIONALES` (lo valida la configuración).
+ * Siembra de profesionales de demostración (DEUDA_LEGAJO DL-036). Solo con `APP_ENV` test o development, para las
+ * identidades declaradas en `BE_DEMO_PROFESIONALES` (lo valida la configuración).
  *
  * Las cuentas no las crea este servicio: se registran por la API pública, igual que cualquier persona, y su contraseña
- * queda solo en `.env.cuentas-demo`. Al arrancar, a cada cuenta ya registrada le aplica el servicio interno de
- * verificación: perfil profesional, alcance VERIFICADO y habilitación CONCEDIDA. Es idempotente.
- * El log solo dice cuántas preparó: nunca correos (08 §30).
+ * queda solo en `.env.cuentas-demo`. Después se declaran por su identidad. Al arrancar, a cada una le aplica el
+ * servicio interno de verificación: perfil profesional, alcance VERIFICADO y habilitación CONCEDIDA. Es idempotente.
+ * Solo prepara cuentas operativas y sintéticas (correo @example.invalid): una identidad real nunca queda verificada.
+ * El log solo dice cuántas preparó: nunca identificadores ni correos (08 §30).
  */
 @Injectable()
 export class SiembraDemoService implements OnApplicationBootstrap {
@@ -29,11 +29,11 @@ export class SiembraDemoService implements OnApplicationBootstrap {
     if (this.entorno.appEnv !== 'test' && this.entorno.appEnv !== 'development') return;
     let preparadas = 0;
     for (const p of this.entorno.demoProfesionales) {
-      const metodo = await this.prisma.metodoDeAcceso.findUnique({
-        where: { tipo_referencia: { tipo: 'LOCAL', referencia: normalizarIdentificadorLocal(p.correo) } },
-        select: { identidadId: true, identidad: { select: { estadoOperativoDeCuenta: true } } },
+      const metodo = await this.prisma.metodoDeAcceso.findFirst({
+        where: { identidadId: p.identidadId, tipo: 'LOCAL' },
+        select: { identidadId: true, referencia: true, identidad: { select: { estadoOperativoDeCuenta: true } } },
       });
-      if (!metodo || metodo.identidad.estadoOperativoDeCuenta !== 'OPERATIVA') continue;
+      if (!metodo || metodo.identidad.estadoOperativoDeCuenta !== 'OPERATIVA' || !metodo.referencia.endsWith('@example.invalid')) continue;
       await this.prisma.$transaction((tx) =>
         this.verificacion.prepararProfesional(tx, metodo.identidadId, { alcance: p.alcance, tipo: p.tipo, nombreVisible: p.nombreVisible }, new Date()),
       );

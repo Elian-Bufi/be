@@ -20,6 +20,11 @@ export async function crearApp(opciones: OpcionesApp): Promise<INestApplication>
   // vería ese 400 como un error de red y la respuesta saldría sin X-Request-Id.
   app.use(requestId());
   app.use(helmet());
+  // Respuestas con datos de la persona o de su sesión: ningún intermediario ni el navegador las guarda (08 §30).
+  app.use((_req: unknown, res: { setHeader: (n: string, v: string) => void }, next: () => void) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
   if (opciones.entorno.corsAllowedOrigins.length > 0) {
     app.enableCors({
       origin: [...opciones.entorno.corsAllowedOrigins],

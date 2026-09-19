@@ -80,11 +80,12 @@ export class CierreService {
           );
           if (!evaluacion.permitida) throw errorDeRechazo(evaluacion.motivo);
 
-          // REG-06-24 inc. 5 y 08 §14.1: el cierre finaliza los vínculos por eventos, en esta misma transacción
-          // (FinalizarAlcance con actor sistema y motivo CIERRE_DE_CUENTA), e invalida las solicitudes pendientes. Los
+          // REG-06-24 inc. 5 y 08 §14.1: en esta misma transacción, el cierre invalida las solicitudes pendientes y
+          // finaliza los vínculos por eventos (FinalizarAlcance con actor sistema y motivo CIERRE_DE_CUENTA). Primero las
+          // solicitudes: una aceptación concurrente espera ese bloqueo y después ya no encuentra nada que aceptar. Los
           // consentimientos quedan como evidencia (REG-06-52). Cierra DEUDA_LEGAJO DL-018 (TEST-AUTH-013 a).
-          await this.vinculos.finalizarPorCierre(tx, actor.identidadId, procedencia, ctx.momentoDeRecepcion);
           await this.solicitudes.invalidarPorCierre(tx, actor.identidadId, procedencia, ctx.momentoDeRecepcion);
+          await this.vinculos.finalizarPorCierre(tx, actor.identidadId, procedencia);
 
           const registrada = await tx.solicitudDeCierreDeCuenta.create({
             data: {

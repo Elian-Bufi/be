@@ -73,7 +73,7 @@ export class VinculoController {
   @Get('relationships/:relationshipId')
   detalle(@Param('relationshipId') relationshipId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<DetalleDeVinculoResponse> {
     sinParametrosDeQuery(query);
-    return this.vinculos.detalle(actorDe(req), relationshipId);
+    return this.vinculos.detalle(actorDe(req), relationshipId, contextoDe(req));
   }
 
   /** API-REL-07. */

@@ -22,7 +22,9 @@ import { ErrorDeApi, errores } from '../http/errores';
 import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '../http/paginacion';
 import { validarCuerpo } from '../http/validacion';
 import { AuditoriaService } from '../plataforma/auditoria.service';
+import { LimitadorService } from '../plataforma/limitador.service';
 import { IdempotenciaService, type ResultadoIdempotente } from '../plataforma/idempotencia.service';
+import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { INCLUIR_PARTES_DE_COMPONENTE, esToken, itemDeVinculo, registrarEventoDeVinculo, resumenDeCadena } from './lectura';
@@ -54,6 +56,7 @@ export class VinculosService {
     private readonly pdp: PdpService,
     private readonly idempotencia: IdempotenciaService,
     private readonly auditoria: AuditoriaService,
+    private readonly limitador: LimitadorService,
   ) {}
 
   // ─── API-REL-05 ────────────────────────────────────────────────────────────────────────────
@@ -79,15 +82,29 @@ export class VinculosService {
   }
 
   // ─── API-REL-06 ────────────────────────────────────────────────────────────────────────────
-  async detalle(actor: ActorAutenticado, vinculoId: string): Promise<DetalleDeVinculoResponse> {
+  async detalle(actor: ActorAutenticado, vinculoId: string, ctx: ContextoDeSolicitud): Promise<DetalleDeVinculoResponse> {
+    this.limitador.consumir('consultaProtegida', null, actor.identidadId);
     const c = UUID.test(vinculoId)
       ? await this.prisma.alcanceDeVinculo.findFirst({
           where: { id: vinculoId, vinculo: { OR: [{ profesionalId: actor.identidadId }, { asesoradoId: actor.identidadId }] } },
           include: INCLUIR_PARTES_DE_COMPONENTE,
         })
       : null;
-    // «No participante/no visible → 404» (09v8:1385).
-    if (!c) throw errores.recursoNoEncontrado();
+    // «No participante/no visible → 404» (09v8:1385). Con rastro: quién pidió qué (recurso intentado, si es un id).
+    if (!c) {
+      await this.auditoria.registrar({
+        operacion: 'API-REL-06',
+        resultado: 'RECHAZO',
+        motivo: 'RESOURCE_NOT_FOUND',
+        actorId: actor.identidadId,
+        recursoTipo: UUID.test(vinculoId) ? 'AlcanceDeVinculo' : null,
+        recursoId: UUID.test(vinculoId) ? vinculoId.toLowerCase() : null,
+        superficie: ctx.superficie,
+        requestId: ctx.requestId,
+        momentoDeOcurrencia: ctx.momentoDeRecepcion,
+      });
+      throw errores.recursoNoEncontrado();
+    }
     const item = await itemDeVinculo(this.prisma as unknown as Prisma.TransactionClient, this.pdp, c);
 
     const consentimiento = c.consentimientos.find((x) => x.finalidad === c.finalidad) ?? null;
@@ -159,14 +176,16 @@ export class VinculosService {
    * Cierre de cuenta (T13; REG-06-24 inc. 5; 08 §14.1). En la transacción del cierre: FinalizarAlcance con actor sistema
    * y motivo CIERRE_DE_CUENTA para cada componente ACEPTADO o PAUSADO donde la identidad es parte. Los consentimientos
    * no se tocan: quedan como evidencia (REG-06-52, INV-06-64). Cierra DL-018.
+   * La hora del corte es la de la base, con los componentes ya bloqueados (orden total con el PDP).
    */
-  async finalizarPorCierre(tx: Prisma.TransactionClient, identidadId: string, procedencia: Procedencia, momento: Date): Promise<number> {
+  async finalizarPorCierre(tx: Prisma.TransactionClient, identidadId: string, procedencia: Procedencia): Promise<number> {
     const activos = await tx.$queryRaw<ComponenteBloqueado[]>`
       SELECT av."id"::text AS "id", av."version", av."estado"::text AS "estado", av."pausado_por"::text AS "pausadoPor",
              vi."profesional_id"::text AS "profesionalId", vi."asesorado_id"::text AS "asesoradoId"
         FROM "alcance_de_vinculo" av JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
        WHERE av."estado" IN ('ACEPTADO', 'PAUSADO') AND (vi."profesional_id" = ${identidadId}::uuid OR vi."asesorado_id" = ${identidadId}::uuid)
-       ORDER BY av."id" FOR UPDATE OF av`;
+       ORDER BY av."id" FOR NO KEY UPDATE OF av`;
+    const momento = await momentoDeLaBase(tx);
     for (const c of activos) {
       const evaluacion = evaluarTransicionDeAlcance(c.estado, { transicion: 'FinalizarAlcance', actor: 'SISTEMA', decisionExplicita: true, motivo: 'CIERRE_DE_CUENTA' });
       if (!evaluacion.permitida) throw errores.estadoNoPermite();
@@ -201,6 +220,8 @@ export class VinculosService {
           throw evaluacion.motivo === 'SOLO_REANUDA_QUIEN_PAUSO' ? errores.accionNoPermitida() : errores.estadoNoPermite();
         }
         if (!esToken(pedido.expectedVersion, c.version)) throw errores.conflictoDeVersion();
+        // Pausar y finalizar cortan el acceso: su hora es la de la base con el componente bloqueado (T-PDP-4).
+        const momento = await momentoDeLaBase(tx);
         await this.aplicar(
           tx,
           c,
@@ -210,7 +231,7 @@ export class VinculosService {
           rol === 'PROFESIONAL' ? 'PROFESIONAL' : 'ASESORADO',
           { identidadId: actor.identidadId },
           procedencia,
-          ctx.momentoDeRecepcion,
+          momento,
         );
         await this.auditoria.registrar(
           {
@@ -237,6 +258,9 @@ export class VinculosService {
           resultado: 'RECHAZO',
           motivo: e.code,
           actorId: actor.identidadId,
+          // El recurso intentado, solo si tiene forma de identificador: permite reconstruir un intento de enumeración.
+          recursoTipo: UUID.test(vinculoId) ? 'AlcanceDeVinculo' : null,
+          recursoId: UUID.test(vinculoId) ? vinculoId.toLowerCase() : null,
           superficie: ctx.superficie,
           requestId: ctx.requestId,
           momentoDeOcurrencia: ctx.momentoDeRecepcion,
@@ -286,7 +310,7 @@ export class VinculosService {
              vi."profesional_id"::text AS "profesionalId", vi."asesorado_id"::text AS "asesoradoId"
         FROM "alcance_de_vinculo" av JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
        WHERE av."id" = ${vinculoId}::uuid AND (vi."profesional_id" = ${actorId}::uuid OR vi."asesorado_id" = ${actorId}::uuid)
-         FOR UPDATE OF av`;
+         FOR NO KEY UPDATE OF av`;
     if (!c) throw errores.recursoNoEncontrado();
     return c;
   }

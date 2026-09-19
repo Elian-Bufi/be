@@ -5,7 +5,7 @@ import { ENTORNO } from '../config/tokens';
 import type { Entorno } from '../config/entorno';
 import { errores } from '../http/errores';
 
-export type LimiteNombrado = 'login' | 'loginPorIp' | 'loginPorIdentificador' | 'registro';
+export type LimiteNombrado = 'login' | 'loginPorIp' | 'loginPorIdentificador' | 'registro' | 'consultaProtegida';
 
 /**
  * Rate limiting (08 §24.5; 09v12: «429 RATE_LIMITED con respuestas neutras»).

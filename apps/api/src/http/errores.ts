@@ -54,6 +54,9 @@ export const errores = {
   accionNoPermitida: () => new ErrorDeApi(403, CodigoDeError.ACTION_FORBIDDEN, 'Esta acción no está disponible para vos.'),
   cursorInvalido: () => new ErrorDeApi(400, CodigoDeError.INVALID_CURSOR, 'La solicitud no es válida.'),
   conflictoDeRecurso: () => new ErrorDeApi(409, CodigoDeError.RESOURCE_CONFLICT, 'Ya existe un vínculo vigente para este alcance.'),
+  /** 09 §3 «409 para conflicto concurrente»: otra transacción tomó el recurso y los reintentos se agotaron. */
+  conflictoConcurrente: () =>
+    new ErrorDeApi(409, CodigoDeError.RESOURCE_CONFLICT, 'Otra operación cambió este recurso al mismo tiempo. Actualizá la vista y volvé a intentar.'),
   /** Transición no declarada o guarda desfavorable sobre un recurso revelable (06 CONV-06-03). */
   estadoNoPermite: () =>
     new ErrorDeApi(422, CodigoDeError.INVALID_STATE_TRANSITION, 'La operación no es válida para el estado actual.'),

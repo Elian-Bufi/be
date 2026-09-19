@@ -25,6 +25,7 @@ import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '
 import { validarCuerpo } from '../http/validacion';
 import { AuditoriaService } from '../plataforma/auditoria.service';
 import { IdempotenciaService, type ResultadoIdempotente } from '../plataforma/idempotencia.service';
+import { conReintento } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import {
@@ -77,24 +78,30 @@ export class SolicitudesService {
 
     try {
       return await this.idempotencia.ejecutar({ operacion, ambito: actor.identidadId, clave: clave as string, huella }, async (tx) => {
-        // 1) Revelabilidad de la contraparte (09:213-233): inexistente, no operativa o no elegible → 404 idéntico.
-        const destino = solicitud.target.identityId;
-        if (!UUID.test(destino)) throw errores.recursoNoEncontrado();
-        if (destino.toLowerCase() === actor.identidadId) throw errores.contraparteNoElegible();
-        const contraparte = await tx.identidad.findUnique({ where: { id: destino }, select: { estadoOperativoDeCuenta: true } });
-        if (!contraparte || contraparte.estadoOperativoDeCuenta !== 'OPERATIVA') throw errores.recursoNoEncontrado();
-
-        // 2) Semántica del pedido: alcance del catálogo y su finalidad (REG-06-61; DL-039).
+        // Primero, todo lo que no depende de la contraparte: la respuesta a un pedido que falla por eso no puede
+        // variar según exista o no el destino (09:213-233; 09v8:1188, «revelar la contraparte cuando ya es legítimo»).
+        // 1) Semántica del pedido: alcance del catálogo y su finalidad (REG-06-61; DL-039).
         if (!esAlcance(solicitud.scope.code)) throw errores.alcanceNoDisponible();
         const alcance: Alcance = solicitud.scope.code;
         if (solicitud.purpose.trim() === '') throw errores.finalidadRequerida();
         if (solicitud.purpose !== FINALIDAD_DE_ALCANCE[alcance]) {
           throw errores.validacionFallida([{ code: 'PURPOSE_NOT_AVAILABLE', path: 'purpose' }]);
         }
+        const destino = solicitud.target.identityId.toLowerCase();
+        if (!UUID.test(destino)) throw errores.recursoNoEncontrado();
+        if (destino === actor.identidadId) throw errores.contraparteNoElegible();
+        const profesionalId = actorEsProfesional ? actor.identidadId : destino;
+        const asesoradoId = actorEsProfesional ? destino : actor.identidadId;
+        // 2) Elegibilidad propia del profesional que solicita → 422: es su propio estado y no depende del destino.
+        if (actorEsProfesional && !(await this.profesionalHabilitado(tx, actor.identidadId, alcance))) throw errores.alcanceNoDisponible();
 
-        // 3) Elegibilidad estructural: del actor → 422 (es su propio estado); de la contraparte → 404 (no revelable).
-        const profesionalId = actorEsProfesional ? actor.identidadId : destino.toLowerCase();
-        const asesoradoId = actorEsProfesional ? destino.toLowerCase() : actor.identidadId;
+        // 3) Las dos cuentas, con bloqueo compartido y en orden de id: el cierre y la suspensión (FOR NO KEY UPDATE)
+        //    quedan antes o después de esta solicitud, nunca en el medio (T13; D8). Contraparte no operativa → 404.
+        const cuentas = await this.bloquearCuentas(tx, profesionalId, asesoradoId);
+        if (cuentas.get(destino) !== 'OPERATIVA') throw errores.recursoNoEncontrado();
+        if (cuentas.get(actor.identidadId) !== 'OPERATIVA') throw errores.estadoNoPermite();
+
+        // 4) Elegibilidad estructural completa: de la contraparte → 404 (no revelable).
         const eleg = await this.elegibilidad(tx, profesionalId, asesoradoId, alcance);
         const profesionalElegible = eleg.perfilProfesional && eleg.verificado && eleg.habilitado;
         if (!profesionalElegible) throw actorEsProfesional ? errores.alcanceNoDisponible() : errores.recursoNoEncontrado();
@@ -119,7 +126,11 @@ export class SolicitudesService {
 
         // 5) REG-06-44: si hay una equivalente PENDIENTE, se devuelve esa (09v8:1165-1176; CAND-09-S03, DL-037).
         const pendiente = await tx.solicitudDeVinculo.findFirst({ where: { ...equivalente, estado: 'PENDIENTE' }, select: { id: true } });
-        if (pendiente) return deduplicada(pendiente.id);
+        if (pendiente) {
+          // Respuesta exitosa: se audita como cualquier otra (REQUIRED_SAME_TX).
+          await this.auditar(tx, operacion, 'EXITO', actor.identidadId, asesoradoId, pendiente.id, ctx);
+          return deduplicada(pendiente.id);
+        }
 
         // «Reiterar crea nueva Solicitud relacionada» (REG-06-45).
         const antecedente = await tx.solicitudDeVinculo.findFirst({ where: equivalente, orderBy: ORDEN_DE_LISTA, select: { id: true } });
@@ -162,7 +173,19 @@ export class SolicitudesService {
           },
           select: { id: true },
         });
-        if (existente) return deduplicada(existente.id);
+        if (existente) {
+          await this.auditoria.registrar({
+            operacion,
+            resultado: 'EXITO',
+            actorId: actor.identidadId,
+            recursoTipo: 'SolicitudDeVinculo',
+            recursoId: existente.id,
+            superficie: ctx.superficie,
+            requestId: ctx.requestId,
+            momentoDeOcurrencia: ctx.momentoDeRecepcion,
+          });
+          return deduplicada(existente.id);
+        }
       }
       await this.auditarRechazo(e, operacion, actor.identidadId, ctx);
       throw e;
@@ -174,7 +197,7 @@ export class SolicitudesService {
     const consulta = leerConsultaDeLista(query, { state: ESTADOS });
     const propias = { OR: [{ profesionalId: actor.identidadId }, { asesoradoId: actor.identidadId }] };
     // Caducidad perezosa antes de mostrar: el estado listado es el vigente (DL-037).
-    await this.prisma.$transaction((tx) => this.caducarVencidas(tx, propias, new Date()));
+    await conReintento(() => this.prisma.$transaction((tx) => this.caducarVencidas(tx, propias, new Date())));
     const filas = await this.prisma.solicitudDeVinculo.findMany({
       where: {
         AND: [propias, consulta.filtros.state ? { estado: consulta.filtros.state as EstadoDeSolicitudDeVinculo } : {}, despuesDelCursor(consulta.cursor)],
@@ -198,8 +221,11 @@ export class SolicitudesService {
       // REG-06-49, en su propia transacción: si al aceptar la elegibilidad ya no es compatible, la solicitud queda
       // INVALIDADA aunque esta request falle. Solo para el asesorado titular: a un tercero no se le revela ni se
       // modifica nada.
-      await this.prisma.$transaction((tx) => this.reevaluarAntesDeDecidir(tx, actor.identidadId, solicitudId, ctx.momentoDeRecepcion));
+      await conReintento(() => this.prisma.$transaction((tx) => this.reevaluarAntesDeDecidir(tx, actor.identidadId, solicitudId, ctx)));
       return await this.idempotencia.ejecutar({ operacion, ambito: actor.identidadId, clave: clave as string, huella }, async (tx) => {
+        // Orden único de bloqueos: las dos cuentas (compartido) y después la solicitud. Un cierre concurrente queda
+        // antes (y la solicitud ya está INVALIDADA) o después (y finaliza el vínculo que se crea acá).
+        await this.bloquearCuentasDeLaSolicitud(tx, actor.identidadId, solicitudId);
         const s = await this.bloquearDelTitular(tx, actor.identidadId, solicitudId);
         const eleg = await this.elegibilidad(tx, s.profesionalId, s.asesoradoId, s.alcance);
         const vigente = await tx.alcanceDeVinculo.findFirst({
@@ -280,7 +306,7 @@ export class SolicitudesService {
         return { estadoHttp: 200, cuerpo: respuesta as unknown as Prisma.InputJsonValue };
       });
     } catch (e) {
-      await this.auditarRechazo(e, operacion, actor.identidadId, ctx);
+      await this.auditarRechazo(e, operacion, actor.identidadId, ctx, solicitudId);
       throw e;
     }
   }
@@ -320,17 +346,22 @@ export class SolicitudesService {
         return { estadoHttp: 200, cuerpo: respuesta as unknown as Prisma.InputJsonValue };
       });
     } catch (e) {
-      await this.auditarRechazo(e, operacion, actor.identidadId, ctx);
+      await this.auditarRechazo(e, operacion, actor.identidadId, ctx, solicitudId);
       throw e;
     }
   }
 
   // ─── Transiciones del sistema ──────────────────────────────────────────────────────────────
 
-  /** CaducarSolicitud (06:3035) para las PENDIENTE vencidas del filtro. Actor: sistema (DL-037). */
+  /**
+   * CaducarSolicitud (06:3035) para las PENDIENTE vencidas del filtro. Actor: sistema (DL-037). Lee sin bloquear: si
+   * dos requests llegan juntas, la transición condicional deja pasar a una y la otra sigue sin error.
+   */
   async caducarVencidas(tx: Prisma.TransactionClient, filtro: Prisma.SolicitudDeVinculoWhereInput, momento: Date): Promise<void> {
     const vencidas = await tx.solicitudDeVinculo.findMany({
       where: { AND: [filtro, { estado: 'PENDIENTE', venceEn: { lte: momento } }] },
+      // En orden de id, como el cierre: dos transacciones que caducan las mismas solicitudes no se bloquean cruzadas.
+      orderBy: { id: 'asc' },
       select: { id: true, version: true, profesionalId: true, asesoradoId: true, estado: true, venceEn: true },
     });
     for (const s of vencidas) await this.caducarSiVencio(tx, s, momento);
@@ -341,23 +372,30 @@ export class SolicitudesService {
     const pendientes = await tx.$queryRaw<{ id: string; version: number; profesional_id: string; asesorado_id: string }[]>`
       SELECT "id"::text, "version", "profesional_id"::text, "asesorado_id"::text FROM "solicitud_de_vinculo"
        WHERE "estado" = 'PENDIENTE' AND ("profesional_id" = ${identidadId}::uuid OR "asesorado_id" = ${identidadId}::uuid)
-       ORDER BY "id" FOR UPDATE`;
+       ORDER BY "id" FOR NO KEY UPDATE`;
+    let invalidadas = 0;
     for (const s of pendientes) {
-      await this.transicionDelSistema(tx, 'InvalidarSolicitud', { id: s.id, version: s.version, profesionalId: s.profesional_id, asesoradoId: s.asesorado_id }, procedencia, momento);
+      if (await this.transicionDelSistema(tx, 'InvalidarSolicitud', { id: s.id, version: s.version, profesionalId: s.profesional_id, asesoradoId: s.asesorado_id }, procedencia, momento)) {
+        invalidadas++;
+      }
     }
-    return pendientes.length;
+    return invalidadas;
   }
 
-  /** REG-06-49: antes de aceptar, si la solicitud del titular ya no es compatible, el sistema la invalida. */
-  private async reevaluarAntesDeDecidir(tx: Prisma.TransactionClient, asesoradoId: string, solicitudId: string, momento: Date): Promise<void> {
+  /**
+   * REG-06-49: antes de aceptar, si la solicitud del titular ya no es compatible, el sistema la invalida. Queda con el
+   * request que la disparó (procedencia) y auditada, aunque ese request termine después en 409 o 422.
+   */
+  private async reevaluarAntesDeDecidir(tx: Prisma.TransactionClient, asesoradoId: string, solicitudId: string, ctx: ContextoDeSolicitud): Promise<void> {
     if (!UUID.test(solicitudId)) return;
+    const momento = ctx.momentoDeRecepcion;
     const [s] = await tx.$queryRaw<{ id: string; version: number; estado: EstadoDeSolicitudDeVinculo; profesional_id: string; asesorado_id: string; alcance: Alcance; vence_en: Date }[]>`
       SELECT "id"::text, "version", "estado"::text AS "estado", "profesional_id"::text, "asesorado_id"::text, "alcance"::text AS "alcance", "vence_en"
-        FROM "solicitud_de_vinculo" WHERE "id" = ${solicitudId}::uuid AND "asesorado_id" = ${asesoradoId}::uuid FOR UPDATE`;
+        FROM "solicitud_de_vinculo" WHERE "id" = ${solicitudId}::uuid AND "asesorado_id" = ${asesoradoId}::uuid FOR NO KEY UPDATE`;
     if (!s || s.estado !== 'PENDIENTE') return;
     const fila = { id: s.id, version: s.version, profesionalId: s.profesional_id, asesoradoId: s.asesorado_id, estado: s.estado, venceEn: s.vence_en };
     if (s.vence_en.getTime() <= momento.getTime()) {
-      await this.caducarSiVencio(tx, fila, momento);
+      if (await this.caducarSiVencio(tx, fila, momento, ctx.requestId)) await this.auditarSistema(tx, 'SolicitudDeVinculoCaducada', fila, ctx);
       return;
     }
     const eleg = await this.elegibilidad(tx, s.profesional_id, s.asesorado_id, s.alcance);
@@ -366,7 +404,9 @@ export class SolicitudesService {
       select: { id: true },
     });
     if (!esCompatible(eleg) || vigente) {
-      await this.transicionDelSistema(tx, 'InvalidarSolicitud', fila, procedenciaDelSistema('REG-06-49'), momento);
+      if (await this.transicionDelSistema(tx, 'InvalidarSolicitud', fila, procedenciaDelSistema('REG-06-49', ctx.requestId), momento)) {
+        await this.auditarSistema(tx, 'SolicitudDeVinculoInvalidada', fila, ctx);
+      }
     }
   }
 
@@ -374,9 +414,10 @@ export class SolicitudesService {
     tx: Prisma.TransactionClient,
     s: { id: string; version: number; profesionalId: string; asesoradoId: string; estado: EstadoDeSolicitudDeVinculo; venceEn: Date },
     momento: Date,
-  ): Promise<void> {
-    if (s.estado !== 'PENDIENTE' || s.venceEn.getTime() > momento.getTime()) return;
-    await this.transicionDelSistema(tx, 'CaducarSolicitud', s, procedenciaDelSistema('DL-037'), momento);
+    requestId: string | null = null,
+  ): Promise<boolean> {
+    if (s.estado !== 'PENDIENTE' || s.venceEn.getTime() > momento.getTime()) return false;
+    return this.transicionDelSistema(tx, 'CaducarSolicitud', s, procedenciaDelSistema('DL-037', requestId), momento);
   }
 
   private async transicionDelSistema(
@@ -385,14 +426,20 @@ export class SolicitudesService {
     s: { id: string; version: number; profesionalId: string; asesoradoId: string },
     procedencia: Procedencia,
     momento: Date,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const evaluacion = evaluarTransicionDeSolicitud(
       'PENDIENTE',
       transicion === 'CaducarSolicitud' ? { transicion, actor: 'SISTEMA', vencida: true } : { transicion, actor: 'SISTEMA', incompatible: true },
     );
     if (!evaluacion.permitida) throw errores.estadoNoPermite();
     const destino = evaluacion.transicion.destino;
-    await tx.solicitudDeVinculo.update({ where: { id: s.id }, data: { estado: destino, version: s.version + 1, momentoDeResolucion: momento } });
+    // Condicional: si otra transacción ya la resolvió (dos listados simultáneos, o la caducidad contra una decisión),
+    // no hay nada que hacer y no es un error.
+    const { count } = await tx.solicitudDeVinculo.updateMany({
+      where: { id: s.id, estado: 'PENDIENTE', version: s.version },
+      data: { estado: destino, version: s.version + 1, momentoDeResolucion: momento },
+    });
+    if (count === 0) return false;
     await registrarEventoDeVinculo(tx, {
       tipo: evaluacion.transicion.evento as TipoDeEventoDeVinculo,
       profesionalId: s.profesionalId,
@@ -404,6 +451,53 @@ export class SolicitudesService {
       procedencia,
       momento,
     });
+    return true;
+  }
+
+  /** Bloqueo compartido de las dos cuentas, en orden de id (orden único: prisma/concurrencia.ts). Devuelve su estado. */
+  private async bloquearCuentas(tx: Prisma.TransactionClient, a: string, b: string): Promise<Map<string, string>> {
+    const filas = await tx.$queryRaw<{ id: string; estado: string }[]>`
+      SELECT "id"::text AS "id", "estado_operativo_de_cuenta"::text AS "estado" FROM "identidad"
+       WHERE "id" IN (${a}::uuid, ${b}::uuid) ORDER BY "id" FOR SHARE`;
+    return new Map(filas.map((f) => [f.id, f.estado]));
+  }
+
+  /** Las cuentas de una solicitud del titular, antes de bloquear la solicitud. Si no es suya, no bloquea nada. */
+  private async bloquearCuentasDeLaSolicitud(tx: Prisma.TransactionClient, asesoradoId: string, solicitudId: string): Promise<void> {
+    if (!UUID.test(solicitudId)) return;
+    const [partes] = await tx.$queryRaw<{ profesional_id: string }[]>`
+      SELECT "profesional_id"::text FROM "solicitud_de_vinculo" WHERE "id" = ${solicitudId}::uuid AND "asesorado_id" = ${asesoradoId}::uuid`;
+    if (partes) await this.bloquearCuentas(tx, partes.profesional_id, asesoradoId);
+  }
+
+  /** Perfil, verificación y habilitación del profesional para el alcance (06 §6.8; REG-06-79). */
+  private async profesionalHabilitado(tx: Prisma.TransactionClient, profesionalId: string, alcance: Alcance): Promise<boolean> {
+    const e = await this.elegibilidad(tx, profesionalId, profesionalId, alcance);
+    return e.perfilProfesional && e.verificado && e.habilitado;
+  }
+
+  /** Transición del sistema disparada por un request: queda auditada con ese request, sin actor humano. */
+  private async auditarSistema(
+    tx: Prisma.TransactionClient,
+    hecho: 'SolicitudDeVinculoInvalidada' | 'SolicitudDeVinculoCaducada',
+    s: { id: string; asesoradoId: string },
+    ctx: ContextoDeSolicitud,
+  ): Promise<void> {
+    await this.auditoria.registrar(
+      {
+        operacion: 'API-REL-03',
+        resultado: 'EXITO',
+        motivo: hecho,
+        actorId: null,
+        sujetoId: s.asesoradoId,
+        recursoTipo: 'SolicitudDeVinculo',
+        recursoId: s.id,
+        superficie: ctx.superficie,
+        requestId: ctx.requestId,
+        momentoDeOcurrencia: ctx.momentoDeRecepcion,
+      },
+      tx,
+    );
   }
 
   /** La solicitud, bloqueada, solo si el actor es su asesorado titular. Si no, 404 idéntico (09:226). */
@@ -414,7 +508,7 @@ export class SolicitudesService {
     >`
       SELECT "id"::text, "version", "estado"::text AS "estado", "profesional_id"::text AS "profesionalId", "asesorado_id"::text AS "asesoradoId",
              "alcance"::text AS "alcance", "finalidad"::text AS "finalidad", "vence_en" AS "venceEn"
-        FROM "solicitud_de_vinculo" WHERE "id" = ${solicitudId}::uuid AND "asesorado_id" = ${asesoradoId}::uuid FOR UPDATE`;
+        FROM "solicitud_de_vinculo" WHERE "id" = ${solicitudId}::uuid AND "asesorado_id" = ${asesoradoId}::uuid FOR NO KEY UPDATE`;
     if (!s) throw errores.recursoNoEncontrado();
     return { ...s, finalidad: FINALIDAD_DE_ALCANCE[s.alcance] };
   }
@@ -465,14 +559,19 @@ export class SolicitudesService {
     );
   }
 
-  /** Rechazo auditado fuera de la transacción revertida (patrón de WP-02). Sin sujeto: no se revela a quién apuntaba. */
-  private async auditarRechazo(e: unknown, operacion: string, actorId: string, ctx: ContextoDeSolicitud): Promise<void> {
+  /**
+   * Rechazo auditado fuera de la transacción revertida (patrón de WP-02). Sin sujeto: no se revela a quién apuntaba.
+   * Con la solicitud intentada, si tiene forma de identificador: permite reconstruir un intento de enumeración.
+   */
+  private async auditarRechazo(e: unknown, operacion: string, actorId: string, ctx: ContextoDeSolicitud, solicitudId?: string): Promise<void> {
     if (!(e instanceof ErrorDeApi)) return;
     await this.auditoria.registrar({
       operacion,
       resultado: 'RECHAZO',
       motivo: e.code,
       actorId,
+      recursoTipo: solicitudId && UUID.test(solicitudId) ? 'SolicitudDeVinculo' : null,
+      recursoId: solicitudId && UUID.test(solicitudId) ? solicitudId.toLowerCase() : null,
       superficie: ctx.superficie,
       requestId: ctx.requestId,
       momentoDeOcurrencia: ctx.momentoDeRecepcion,
@@ -495,6 +594,6 @@ function esCompatible(e: Elegibilidad): boolean {
   return e.profesionalOperativo && e.asesoradoOperativo && e.perfilProfesional && e.verificado && e.habilitado;
 }
 
-function procedenciaDelSistema(fundamento: string): Procedencia {
-  return { fuente: 'PROPIA', casoDeUso: 'SISTEMA', operacion: fundamento, superficie: null, requestId: null };
+function procedenciaDelSistema(fundamento: string, requestId: string | null = null): Procedencia {
+  return { fuente: 'PROPIA', casoDeUso: 'SISTEMA', operacion: fundamento, superficie: null, requestId };
 }

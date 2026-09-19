@@ -159,7 +159,7 @@ export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
     reemplazaA: null,
   },
   {
-    id: 'b2-sanitario-2026-09-demo',
+    id: 'acceso-profesional-sanitario-2026-09-demo',
     tipo: 'CONSENTIMIENTO_PROFESIONAL_SANITARIO',
     titulo: 'Autorizar acceso a un profesional de la salud',
     finalidad: 'AUTORIZACION_DE_ACCESO_PROFESIONAL',
@@ -169,7 +169,7 @@ export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
     reemplazaA: null,
   },
   {
-    id: 'b2-no-sanitario-2026-09-demo',
+    id: 'acceso-profesional-no-sanitario-2026-09-demo',
     tipo: 'CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO',
     titulo: 'Autorizar acceso a un profesional que no es de la salud',
     finalidad: 'AUTORIZACION_DE_ACCESO_PROFESIONAL',

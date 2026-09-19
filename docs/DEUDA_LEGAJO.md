@@ -48,6 +48,8 @@
 | DL-041 | WP-03 · 2026-09-19 | 10-B01:645-663, 1019-1031, 1310-1319 · brief WP-03 | El profesional sin Cartera | ABIERTA |
 | DL-042 | WP-03 · 2026-09-19 | DV-05 (DV05.md:1116-1133) · brief WP-03 | Casos adversariales de DV-05 que dependen de dominios | **ASIGNADA a WP-04** por Dirección (2026-09-19) |
 | DL-043 | WP-03 · 2026-09-19 | 09v8:1161-1163, 1208-1220, 1309-1311, 1389, 1447-1490, 1764-1778 | Contratos de REL con forma no definida en el 09 | ABIERTA |
+| DL-044 | WP-03 · 2026-09-19 | 08 §13 · 08 §14.1 · 09v8:1385-1391 | Qué ve el profesional de un vínculo finalizado | ABIERTA |
+| DL-045 | WP-03 · 2026-09-19 | 05:2840-2845 (UC-P04 V02) · 06 §7.3.2 · INV-06-52 | Solicitud iniciada por el asesorado: el profesional no acepta | ABIERTA |
 
 ---
 
@@ -878,7 +880,7 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 **Opciones.**
 - **A.** Lista mínima y workspace por query:
   - `/pro` muestra una lista mínima de vínculos (REL-05) y de solicitudes enviadas (REL-02);
-  - el workspace del asesorado vive en `/pro/asesorado?id=…`, con el encabezado del vínculo y el Resumen (DSH-03);
+  - el workspace del asesorado vive en `/pro/advisees?id=…`, la forma más cercana a `/pro/advisees/:adviseeId` (10-B01:746) que admite un export estático, con el encabezado del vínculo y el Resumen (DSH-03);
   - no hay Cartera.
 - **B.** Implementar DSH-01 mínimo.
 
@@ -931,3 +933,40 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 **Provisorio en código.** A. El OpenAPI generado (`docs/api/openapi.json`) publica esas formas y el contract test las verifica.
 
 **Condición de cierre.** El 09 fija las formas de REL-01 (201), REL-04, REL-06, REL-08 y REL-09, y la clase de auditoría de las lecturas REL.
+
+## DL-044 — Qué ve el profesional de un vínculo finalizado
+
+**Prioridad:** media · **Documento:** 08 §13 · 08 §14.1 · 09v8:1385-1391 · **Estado:** ABIERTA (hallada en la revisión adversarial de WP-03)
+
+**Qué dice el legajo.**
+- Después de FINALIZADO, el profesional no tiene «ningún acceso posterior, ni lectura histórica» a los datos del asesorado (08 §14.1).
+- La revocación «no notifica contenido al profesional más allá de la pérdida de acceso» (08 §13).
+- REL-06 muestra a las dos partes el estado relacional, el consentimiento y un historial mínimo (09v8:1385-1391). No distingue qué ve cada parte después de finalizar.
+
+**Qué pasa hoy.** El vínculo finalizado sigue visible para el profesional en REL-05 y REL-06. Si después de finalizar el asesorado revoca el consentimiento, el profesional ve esa revocación y su fecha. No accede a ningún dato del asesorado: el PDP deniega todo.
+
+**Opciones.**
+- **A.** Congelar la vista del profesional al finalizar: historial y estado del consentimiento hasta el hecho de finalización. Lo que el asesorado decide después no le llega.
+- **B.** Mantener la vista actual: las dos partes ven el estado vigente del vínculo y del consentimiento.
+
+**Provisorio en código.** B. No es acceso a datos del asesorado, y A requiere decidir qué es «notificar» para metadatos del vínculo.
+
+**Condición de cierre.** Dirección decide si los metadatos del vínculo posteriores a la finalización son «contenido» en el sentido del 08 §13 y §14.1.
+
+## DL-045 — Solicitud iniciada por el asesorado: el profesional no acepta
+
+**Prioridad:** media · **Documento:** 05:2840-2845 (UC-P04 V02) · 06 §7.3.2 · INV-06-52 · **Estado:** ABIERTA (hallada en la revisión adversarial de WP-03)
+
+**Qué dice el legajo.**
+- En V02 el asesorado propone el vínculo, y la solicitud queda pendiente de la decisión expresa del asesorado (05:2840-2845).
+- Solo el asesorado acepta o rechaza una solicitud (06 §7.3.2; INV-06-52).
+
+**Qué pasa hoy.** Implementado literal: si el asesorado inicia la solicitud y la acepta, y después otorga B2 y A3, el profesional queda con acceso sin haber aceptado el vínculo. En WP-03, V02 existe solo en la API: ninguna pantalla lo ofrece (DL-035).
+
+**Opciones.**
+- **A.** Literal. El profesional puede pausar o finalizar el vínculo en cualquier momento.
+- **B.** El profesional acepta las solicitudes que inicia el asesorado. Cambia la máquina del 06: `AceptarSolicitud` tendría como actor a la contraparte de quien inició.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 05 y el 06 definen quién acepta una solicitud iniciada por el asesorado.

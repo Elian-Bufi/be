@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { CLAVE_DE_DOMINIO, type DashboardResponse } from '@be/domain';
 import { decisionesDe, OperacionProtegida, PdpGuard, type SolicitudAutorizada } from '../autorizacion/pdp.guard';
 import { errores } from '../http/errores';
@@ -19,10 +19,10 @@ type EntradaDeDominio = DashboardResponse['data']['domains']['nutrition'];
 export class DashboardController {
   @Get('advisees/:adviseeId/dashboard')
   @UseGuards(SesionGuard, PdpGuard)
-  @OperacionProtegida({ operacion: 'API-DSH-03', parametroDelTitular: 'adviseeId' })
-  consultar(@Param('adviseeId') _adviseeId: string, @Query() query: Record<string, unknown>, @Req() req: SolicitudAutorizada): DashboardResponse {
-    // Después del PDP (09:213-233): la query solo se valida sobre un recurso ya revelable.
-    const periodo = leerPeriodo(query);
+  @OperacionProtegida({ operacion: 'API-DSH-03', parametroDelTitular: 'adviseeId', validarConsulta: leerPeriodo })
+  consultar(@Param('adviseeId') _adviseeId: string, @Req() req: SolicitudAutorizada): DashboardResponse {
+    // La query ya se validó en el guard, antes del PDP (09 §3: schema y payload primero).
+    const periodo = req.consultaValidada as ReturnType<typeof leerPeriodo>;
     const decisiones = decisionesDe(req);
     const titularId = decisiones.titularId as string;
     const dominios = Object.fromEntries(

@@ -225,7 +225,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: REGISTRATION_NOT_AVAILABLE | IDEMPOTENCY_KEY_REUSED",
+            "description": "ErrorEnvelope: REGISTRATION_NOT_AVAILABLE | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -900,7 +900,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED",
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -1914,7 +1914,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED",
+            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -2091,7 +2091,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED",
+            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -2732,6 +2732,16 @@
               }
             }
           },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "ErrorEnvelope: INTERNAL_ERROR",
             "content": {
@@ -3008,7 +3018,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED",
+            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -3304,7 +3314,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED",
+            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -3600,7 +3610,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED",
+            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -3850,6 +3860,16 @@
           },
           "404": {
             "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
             "content": {
               "application/json": {
                 "schema": {
@@ -4188,7 +4208,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: CONSENT_VERSION_STALE | IDEMPOTENCY_KEY_REUSED",
+            "description": "ErrorEnvelope: CONSENT_VERSION_STALE | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -4613,6 +4633,16 @@
               }
             }
           },
+          "409": {
+            "description": "ErrorEnvelope: RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "ErrorEnvelope: INTERNAL_ERROR",
             "content": {
@@ -4764,7 +4794,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: CONSENT_VERSION_STALE | CONSENT_ALREADY_ACTIVE | IDEMPOTENCY_KEY_REUSED",
+            "description": "ErrorEnvelope: CONSENT_VERSION_STALE | CONSENT_ALREADY_ACTIVE | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -5086,6 +5116,16 @@
           },
           "404": {
             "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -5419,6 +5459,16 @@
           },
           "404": {
             "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
             "content": {
               "application/json": {
                 "schema": {

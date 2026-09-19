@@ -27,12 +27,15 @@ export interface Entorno {
    * 08 §38 PROPUESTA BE (DEUDA_LEGAJO DL-015): login 5 / 15 min por red + identificador; login global 100 / 15 min por
    * red («global por IP: generoso», 08:786); login 20 / 15 min por identificador desde cualquier red (defensa en
    * profundidad ante pools de direcciones, DL-030); registro 10 / h por red. Red = IPv4 o prefijo /64 de IPv6.
+   * WP-03: consultas protegidas por el PDP, 120 / min por actor. Cada una registra sus decisiones, que no se borran:
+   * sin límite, una sola cuenta podría llenar la base (revisión adversarial del PDP, hallazgo 11).
    */
   readonly limites: {
     readonly login: Limite;
     readonly loginPorIp: Limite;
     readonly loginPorIdentificador: Limite;
     readonly registro: Limite;
+    readonly consultaProtegida: Limite;
   };
   /** Saltos de proxy confiables para `req.ip` (Express `trust proxy`). Render: 1. */
   readonly saltosDeProxy: number;
@@ -40,13 +43,14 @@ export interface Entorno {
   readonly caducidadDeSolicitudMs: number;
   /**
    * WP-03 · profesionales de demostración que el servicio interno verifica y habilita al arrancar (DEUDA_LEGAJO DL-036).
-   * Solo en `test` y `development`, y solo con correos `example.invalid`. Vacío por defecto.
+   * Solo en `test` y `development`, identificados por su identidad ya registrada. Vacío por defecto.
    */
   readonly demoProfesionales: readonly ProfesionalDeDemostracion[];
 }
 
 export interface ProfesionalDeDemostracion {
-  readonly correo: string;
+  /** Identidad ya registrada por la API pública: el identificador BE de la cuenta demo. */
+  readonly identidadId: string;
   readonly alcance: Alcance;
   readonly tipo: TipoDePerfilProfesional;
   readonly nombreVisible: string;
@@ -96,6 +100,14 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
       errores,
     ),
     registro: limite(env.RATE_LIMIT_REGISTRO_MAX, env.RATE_LIMIT_REGISTRO_WINDOW_MS, 10, 60 * 60 * 1000, 'RATE_LIMIT_REGISTRO', errores),
+    consultaProtegida: limite(
+      env.RATE_LIMIT_CONSULTA_PROTEGIDA_MAX,
+      env.RATE_LIMIT_CONSULTA_PROTEGIDA_WINDOW_MS,
+      120,
+      60 * 1000,
+      'RATE_LIMIT_CONSULTA_PROTEGIDA',
+      errores,
+    ),
   };
 
   const saltosDeProxy = entero(env.TRUST_PROXY_HOPS, 1);
@@ -127,9 +139,11 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
 }
 
 /**
- * `BE_DEMO_PROFESIONALES` = entradas separadas por «;», cada una `correo|ALCANCE|TIPO|Nombre visible`.
- * Ejemplo: `demo.pn@example.invalid|NUTRICION|SANITARIO|Lic. Demo Nutrición`. No es un secreto: solo lista cuentas
- * sintéticas. Con `APP_ENV=production` se rechaza (el servicio interno no verifica cuentas reales, DL-036).
+ * `BE_DEMO_PROFESIONALES` = entradas separadas por «;», cada una `identidadId|ALCANCE|TIPO|Nombre visible`.
+ * Ejemplo: `2f8fa677-663e-43bb-b043-19a1057d8873|NUTRICION|SANITARIO|Lic. Demo Nutrición`. No es un secreto.
+ * Por identidad y no por correo: la cuenta se registra primero y después se declara, así que nadie puede anticiparse
+ * registrando el correo publicado. La siembra además exige que la cuenta sea sintética (correo @example.invalid).
+ * Con `APP_ENV=production` se rechaza (el servicio interno no verifica cuentas reales, DL-036).
  */
 function leerDemoProfesionales(valor: string | undefined, appEnv: string | undefined, errores: string[]): ProfesionalDeDemostracion[] {
   if (valor === undefined || valor.trim() === '') return [];
@@ -139,14 +153,14 @@ function leerDemoProfesionales(valor: string | undefined, appEnv: string | undef
   }
   const lista: ProfesionalDeDemostracion[] = [];
   for (const entrada of valor.split(';').map((e) => e.trim()).filter((e) => e.length > 0)) {
-    const [correo, alcance, tipo, nombreVisible] = entrada.split('|').map((p) => p.trim());
-    const correoValido = typeof correo === 'string' && /^[^\s@|;]+@example\.invalid$/.test(correo.toLowerCase());
+    const [identidadId, alcance, tipo, nombreVisible] = entrada.split('|').map((p) => p.trim());
+    const identidadValida = typeof identidadId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identidadId);
     const tipoValido = tipo === TipoDePerfilProfesional.SANITARIO || tipo === TipoDePerfilProfesional.NO_SANITARIO;
-    if (!correoValido || !esAlcance(alcance) || !tipoValido || !nombreVisible) {
-      errores.push('BE_DEMO_PROFESIONALES tiene una entrada inválida (correo@example.invalid|ALCANCE|TIPO|Nombre)');
+    if (!identidadValida || !esAlcance(alcance) || !tipoValido || !nombreVisible) {
+      errores.push('BE_DEMO_PROFESIONALES tiene una entrada inválida (identidadId|ALCANCE|TIPO|Nombre)');
       return [];
     }
-    lista.push({ correo: correo.toLowerCase(), alcance, tipo, nombreVisible });
+    lista.push({ identidadId: identidadId.toLowerCase(), alcance, tipo, nombreVisible });
   }
   return lista;
 }
