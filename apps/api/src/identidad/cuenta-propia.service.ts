@@ -24,6 +24,9 @@ export class CuentaPropiaService {
       select: { datos: true },
     });
     const intencion = RegistrationIntentSchema.parse((alta?.datos as { registrationIntent?: unknown } | null)?.registrationIntent);
+    // «actorCapabilities sirve para encauzar superficies first-party, pero no es PDP» (09v8:493-497; TEST-AUTH-009).
+    // Solo abre la navegación del área profesional: el acceso a datos de un asesorado lo decide el PDP en cada operación.
+    const perfilProfesional = await this.prisma.perfilProfesional.findUnique({ where: { identidadId: actor.identidadId }, select: { id: true } });
 
     return {
       data: {
@@ -31,7 +34,7 @@ export class CuentaPropiaService {
         accountOperationalState: identidad.estadoOperativoDeCuenta,
         registrationIntent: intencion,
         profile: {},
-        actorCapabilities: [],
+        actorCapabilities: perfilProfesional ? ['PROFESSIONAL_WORKSPACE'] : [],
         session: { id: actor.sesionId, expiresAt: actor.expiraEn.toISOString() },
       },
     };

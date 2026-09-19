@@ -1,6 +1,7 @@
 /**
  * WP-02 · Cierre de cuenta (API-ACC-P1-03, UC-P27, RF-069) contra PostgreSQL real.
  * TEST-AUTH-011 · TEST-AUTH-012 · TEST-AUTH-013 (b) · TEST-UC-P27 · TEST-RF-069 · TEST-CT-P1-ACC-P1-03 · E2E-08
+ * WP-03 · TEST-AUTH-013 (a): el cierre finaliza los vínculos por eventos (cierra DEUDA_LEGAJO DL-018).
  */
 import type { INestApplication } from '@nestjs/common';
 import { SolicitarCierreResponseSchema, VERSION_VIGENTE } from '@be/domain';
@@ -17,6 +18,7 @@ import {
   registrarOk,
   tokenDe,
 } from './soporte-api';
+import { dashboard, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -216,5 +218,50 @@ describe('TEST-UC-P27 / TEST-CT-P1-ACC-P1-03 — cierre de cuenta', () => {
       })
       .expect(409);
     expect(res.body.error.code).toBe('REGISTRATION_NOT_AVAILABLE');
+  });
+});
+
+describe('TEST-AUTH-013 (a) — el cierre finaliza los vínculos por eventos, sin borrado silencioso (DL-018)', () => {
+  it('TEST-AUTH-013 (a): dos vínculos activos (uno pausado) y una solicitud pendiente; el cierre finaliza, invalida y conserva la evidencia', async () => {
+    const pn = await prepararProfesional(app, 'auth013a-n', ['NUTRICION']);
+    const pt = await prepararProfesional(app, 'auth013a-t', ['ENTRENAMIENTO']);
+    const pa = await prepararProfesional(app, 'auth013a-a', ['ANTROPOMETRIA']);
+    const a01 = await prepararAsesorado(app, 'auth013a', { a3: true });
+    const n1 = await vinculoCompleto(app, pn, a01, 'NUTRICION');
+    const t1 = await vinculoCompleto(app, pt, a01, 'ENTRENAMIENTO');
+    await pausar(app, a01.token, t1.vinculoId, await versionDeVinculo(app, a01.token, t1.vinculoId)).expect(200);
+    const pendiente = (await solicitar(app, pa, a01.id, 'ANTROPOMETRIA').expect(201)).body.data.relationshipRequestId as string;
+    await dashboard(app, pn, a01.id).expect(200);
+
+    await conSesion(app, await tokenDe(app, a01.correo)).post(CIERRE).send(cuerpoDeCierre()).expect(201);
+
+    for (const id of [n1.vinculoId, t1.vinculoId]) {
+      expect(await prisma.alcanceDeVinculo.findUniqueOrThrow({ where: { id } })).toMatchObject({ estado: 'FINALIZADO', motivoDeUltimaTransicion: 'CIERRE_DE_CUENTA' });
+      const hecho = await prisma.eventoDeVinculo.findFirstOrThrow({ where: { alcanceDeVinculoId: id, tipo: 'AlcanceDeVinculoFinalizado' } });
+      expect(hecho).toMatchObject({ actorServicio: 'SISTEMA', actorId: null, motivo: 'CIERRE_DE_CUENTA', estadoPosterior: 'FINALIZADO' });
+    }
+    // «preserva pausa previa» (06:3111).
+    expect((await prisma.alcanceDeVinculo.findUniqueOrThrow({ where: { id: t1.vinculoId } })).pausadoPor).toBe('ASESORADO');
+    const invalidada = await prisma.solicitudDeVinculo.findUniqueOrThrow({ where: { id: pendiente } });
+    expect(invalidada.estado).toBe('INVALIDADA');
+    expect(await prisma.eventoDeVinculo.count({ where: { solicitudDeVinculoId: pendiente, tipo: 'SolicitudDeVinculoInvalidada', actorServicio: 'SISTEMA' } })).toBe(1);
+    // Sin borrado silencioso: los consentimientos y su cadena quedan como evidencia (REG-06-52, INV-06-64).
+    for (const consentId of [n1.consentId, t1.consentId] as string[]) {
+      const c = await prisma.consentimiento.findUniqueOrThrow({ where: { id: consentId }, include: { versiones: true } });
+      expect(c.situacion).toBe('VIGENTE');
+      expect(c.versiones).toHaveLength(1);
+    }
+    // Y el acceso profesional se cortó (08 §14.1: «Cierre de cuenta del asesorado | Corta todos los accesos profesionales»).
+    await dashboard(app, pn, a01.id).expect(404);
+    await dashboard(app, pt, a01.id).expect(404);
+  });
+
+  it('TEST-AUTH-013 (a): el cierre de la cuenta del profesional también finaliza sus vínculos por eventos', async () => {
+    const pn = await prepararProfesional(app, 'auth013a-pro', ['NUTRICION']);
+    const a01 = await prepararAsesorado(app, 'auth013a-pro', { a3: true });
+    const { vinculoId } = await vinculoCompleto(app, pn, a01, 'NUTRICION');
+    await conSesion(app, await tokenDe(app, pn.correo)).post(CIERRE).send(cuerpoDeCierre()).expect(201);
+    const lista = await conSesion(app, a01.token).get('/api/v1/me/relationships').expect(200);
+    expect(lista.body.data.find((v: { relationshipId: string }) => v.relationshipId === vinculoId)).toMatchObject({ relationshipState: 'FINALIZADO', accessMode: 'BLOCKED' });
   });
 });

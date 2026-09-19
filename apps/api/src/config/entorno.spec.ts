@@ -23,7 +23,28 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
         registro: { maximo: 10, ventanaMs: 3600000 },
       },
       saltosDeProxy: 1,
+      caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
+      demoProfesionales: [],
     });
+  });
+
+  it('WP-03 · plazo de caducidad de solicitudes parametrizado (DL-037): entero de 1 a 365 días', () => {
+    expect(leerEntorno({ ...BASE, SOLICITUD_DE_VINCULO_CADUCIDAD_DIAS: '7' }).caducidadDeSolicitudMs).toBe(7 * 24 * 60 * 60 * 1000);
+    for (const malo of ['0', '366', '1.5', 'x']) {
+      expect(() => leerEntorno({ ...BASE, SOLICITUD_DE_VINCULO_CADUCIDAD_DIAS: malo })).toThrow(/SOLICITUD_DE_VINCULO_CADUCIDAD_DIAS/);
+    }
+  });
+
+  it('WP-03 · profesionales demo (DL-036): solo example.invalid y nunca en production', () => {
+    const valor = 'Demo.PN@example.invalid|NUTRICION|SANITARIO|Lic. Demo;demo.pt@example.invalid|ENTRENAMIENTO|NO_SANITARIO|Prof. Demo';
+    expect(leerEntorno({ ...BASE, BE_DEMO_PROFESIONALES: valor }).demoProfesionales).toEqual([
+      { correo: 'demo.pn@example.invalid', alcance: 'NUTRICION', tipo: 'SANITARIO', nombreVisible: 'Lic. Demo' },
+      { correo: 'demo.pt@example.invalid', alcance: 'ENTRENAMIENTO', tipo: 'NO_SANITARIO', nombreVisible: 'Prof. Demo' },
+    ]);
+    expect(() => leerEntorno({ ...BASE, APP_ENV: 'production', BE_DEMO_PROFESIONALES: valor })).toThrow(/BE_DEMO_PROFESIONALES/);
+    for (const malo of ['persona@gmail.com|NUTRICION|SANITARIO|X', 'a@example.invalid|PSICOLOGIA|SANITARIO|X', 'a@example.invalid|NUTRICION|OTRO|X', 'a@example.invalid|NUTRICION|SANITARIO|']) {
+      expect(() => leerEntorno({ ...BASE, BE_DEMO_PROFESIONALES: malo })).toThrow(/BE_DEMO_PROFESIONALES/);
+    }
   });
 
   it.each(['staging', 'prod', '', undefined])('rechaza APP_ENV=%p (07 §26: sin staging)', (APP_ENV) => {

@@ -47,6 +47,7 @@
 | DL-040 | WP-03 · 2026-09-19 | 09v8:161-170, 1523-1526 · 11A:196 · DL-009 | Nombre visible de las partes sin campos de perfil aprobados | ABIERTA |
 | DL-041 | WP-03 · 2026-09-19 | 10-B01:645-663, 1019-1031, 1310-1319 · brief WP-03 | El profesional sin Cartera | ABIERTA |
 | DL-042 | WP-03 · 2026-09-19 | DV-05 (DV05.md:1116-1133) · brief WP-03 | Casos adversariales de DV-05 que dependen de dominios | **ASIGNADA a WP-04** por Dirección (2026-09-19) |
+| DL-043 | WP-03 · 2026-09-19 | 09v8:1161-1163, 1208-1220, 1309-1311, 1389, 1447-1490, 1764-1778 | Contratos de REL con forma no definida en el 09 | ABIERTA |
 
 ---
 
@@ -905,3 +906,28 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 **Resolución — ASIGNADA el 2026-09-19.** Dirección eligió A. Los casos 6, 7, 8 y 10 quedan asignados a WP-04.
 
 **Condición de cierre.** WP-04 deja ejecutables los casos 6, 7, 8 y 10.
+
+## DL-043 — Contratos de REL con forma no definida en el 09
+
+**Prioridad:** media · **Documento:** 09v8:1161-1163 · 09v8:1208-1220 · 09v8:1309-1311 · 09v8:1389 · 09v8:1447-1490 · 09v8:1764-1778 · **Estado:** ABIERTA (hallada al implementar)
+
+**Qué dice el legajo.**
+- REL-01: el `201` no tiene body definido; solo el caso deduplicado tiene forma (09v8:1161-1176).
+- REL-04 no define la respuesta de éxito ni los errores (09v8:1309-1321). REL-08 y REL-09 no definen request, éxito ni errores (09v8:1447-1490).
+- REL-06 describe su contenido («estado relacional, alcance, finalidad, contraparte y resumen de B2/efectividad», 09v8:1389) sin forma JSON.
+- El ítem de solicitud no dice quién la inició (09v8:1208-1220). El 10 necesita separar «recibidas» de «enviadas» (10-B04:216-225).
+- Las lecturas REL-02, 05 y 06 no declaran clase de auditoría (09v8:1764-1778), aunque 09v7 T18 exige que cada operación la indique.
+
+**Opciones.**
+- **A.** Definirlas en `@be/domain` (`contratos-vinculo.ts`), con la forma mínima coherente con el resto del 09:
+  - el `201` de REL-01 es un ítem de REL-02;
+  - REL-04 devuelve `{ relationshipRequestId, state, version }`;
+  - REL-07, 08 y 09 devuelven el ítem de vínculo actualizado;
+  - REL-06 es el ítem más `consent` y un historial mínimo;
+  - la solicitud agrega `initiatedBy`;
+  - las lecturas REL se auditan como `BEST_EFFORT_TECHNICAL` (línea de log técnico), como las lecturas CON.
+- **B.** Esperar la próxima versión del 09 y dejar esas operaciones fuera del paquete.
+
+**Provisorio en código.** A. El OpenAPI generado (`docs/api/openapi.json`) publica esas formas y el contract test las verifica.
+
+**Condición de cierre.** El 09 fija las formas de REL-01 (201), REL-04, REL-06, REL-08 y REL-09, y la clase de auditoría de las lecturas REL.

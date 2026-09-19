@@ -4,6 +4,8 @@
  * falla y la plataforma conserva la versión anterior (07 §36).
  * Nunca se imprimen valores: solo nombres de variables (08 §32).
  */
+import { esAlcance, TipoDePerfilProfesional, type Alcance } from '@be/domain';
+
 export const AMBIENTES = ['development', 'test', 'production'] as const;
 export type Ambiente = (typeof AMBIENTES)[number];
 
@@ -34,6 +36,20 @@ export interface Entorno {
   };
   /** Saltos de proxy confiables para `req.ip` (Express `trust proxy`). Render: 1. */
   readonly saltosDeProxy: number;
+  /** WP-03 · plazo de caducidad de una solicitud de vínculo (DEUDA_LEGAJO DL-037). 30 días por defecto. */
+  readonly caducidadDeSolicitudMs: number;
+  /**
+   * WP-03 · profesionales de demostración que el servicio interno verifica y habilita al arrancar (DEUDA_LEGAJO DL-036).
+   * Solo en `test` y `development`, y solo con correos `example.invalid`. Vacío por defecto.
+   */
+  readonly demoProfesionales: readonly ProfesionalDeDemostracion[];
+}
+
+export interface ProfesionalDeDemostracion {
+  readonly correo: string;
+  readonly alcance: Alcance;
+  readonly tipo: TipoDePerfilProfesional;
+  readonly nombreVisible: string;
 }
 
 const COSTO_BCRYPT_MINIMO = 10;
@@ -85,6 +101,13 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
   const saltosDeProxy = entero(env.TRUST_PROXY_HOPS, 1);
   if (saltosDeProxy === null || saltosDeProxy < 0 || saltosDeProxy > 5) errores.push('TRUST_PROXY_HOPS debe ser un entero entre 0 y 5');
 
+  const diasDeCaducidad = entero(env.SOLICITUD_DE_VINCULO_CADUCIDAD_DIAS, 30);
+  if (diasDeCaducidad === null || diasDeCaducidad < 1 || diasDeCaducidad > 365) {
+    errores.push('SOLICITUD_DE_VINCULO_CADUCIDAD_DIAS debe ser un entero entre 1 y 365');
+  }
+
+  const demoProfesionales = leerDemoProfesionales(env.BE_DEMO_PROFESIONALES, appEnv, errores);
+
   if (errores.length > 0) {
     throw new Error(`Configuración inválida: ${errores.join('; ')}`);
   }
@@ -98,7 +121,34 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     costoBcrypt: costoBcrypt as number,
     limites,
     saltosDeProxy: saltosDeProxy as number,
+    caducidadDeSolicitudMs: (diasDeCaducidad ?? 30) * 24 * 60 * 60 * 1000,
+    demoProfesionales,
   };
+}
+
+/**
+ * `BE_DEMO_PROFESIONALES` = entradas separadas por «;», cada una `correo|ALCANCE|TIPO|Nombre visible`.
+ * Ejemplo: `demo.pn@example.invalid|NUTRICION|SANITARIO|Lic. Demo Nutrición`. No es un secreto: solo lista cuentas
+ * sintéticas. Con `APP_ENV=production` se rechaza (el servicio interno no verifica cuentas reales, DL-036).
+ */
+function leerDemoProfesionales(valor: string | undefined, appEnv: string | undefined, errores: string[]): ProfesionalDeDemostracion[] {
+  if (valor === undefined || valor.trim() === '') return [];
+  if (appEnv !== 'test' && appEnv !== 'development') {
+    errores.push('BE_DEMO_PROFESIONALES solo se admite con APP_ENV test o development');
+    return [];
+  }
+  const lista: ProfesionalDeDemostracion[] = [];
+  for (const entrada of valor.split(';').map((e) => e.trim()).filter((e) => e.length > 0)) {
+    const [correo, alcance, tipo, nombreVisible] = entrada.split('|').map((p) => p.trim());
+    const correoValido = typeof correo === 'string' && /^[^\s@|;]+@example\.invalid$/.test(correo.toLowerCase());
+    const tipoValido = tipo === TipoDePerfilProfesional.SANITARIO || tipo === TipoDePerfilProfesional.NO_SANITARIO;
+    if (!correoValido || !esAlcance(alcance) || !tipoValido || !nombreVisible) {
+      errores.push('BE_DEMO_PROFESIONALES tiene una entrada inválida (correo@example.invalid|ALCANCE|TIPO|Nombre)');
+      return [];
+    }
+    lista.push({ correo: correo.toLowerCase(), alcance, tipo, nombreVisible });
+  }
+  return lista;
 }
 
 function entero(valor: string | undefined, porDefecto: number): number | null {

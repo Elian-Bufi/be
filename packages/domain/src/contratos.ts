@@ -35,6 +35,18 @@ export const CodigoDeError = {
   TERMS_VERSION_NOT_ACCEPTABLE: 'TERMS_VERSION_NOT_ACCEPTABLE',
   PRIVACY_VERSION_NOT_ACCEPTABLE: 'PRIVACY_VERSION_NOT_ACCEPTABLE',
   INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+  // Transversales que aparecen con WP-03 (09v7 §4)
+  VERSION_CONFLICT: 'VERSION_CONFLICT',
+  ACTION_FORBIDDEN: 'ACTION_FORBIDDEN',
+  INVALID_CURSOR: 'INVALID_CURSOR',
+  // REL y CON (09v8:1807-1826; 09:2513-2516)
+  PURPOSE_REQUIRED: 'PURPOSE_REQUIRED',
+  SCOPE_NOT_AVAILABLE: 'SCOPE_NOT_AVAILABLE',
+  COUNTERPART_NOT_ELIGIBLE: 'COUNTERPART_NOT_ELIGIBLE',
+  CONSENT_VERSION_STALE: 'CONSENT_VERSION_STALE',
+  RELATIONSHIP_NOT_READY_FOR_CONSENT: 'RELATIONSHIP_NOT_READY_FOR_CONSENT',
+  CONSENT_ALREADY_ACTIVE: 'CONSENT_ALREADY_ACTIVE',
+  HEALTH_DATA_CONSENT_NOT_AVAILABLE: 'HEALTH_DATA_CONSENT_NOT_AVAILABLE',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 
@@ -59,8 +71,8 @@ export type RegistrationIntent = z.infer<typeof RegistrationIntentSchema>;
 export const AccountOperationalStateSchema = z.enum(['OPERATIVA', 'SUSPENDIDA', 'CERRADA']);
 
 /** 09v7 T13 — instante RFC 3339 con offset, transporte en UTC. */
-const Instante = z.iso.datetime({ offset: true });
-const IdOpaco = z.string().min(1);
+export const Instante = z.iso.datetime({ offset: true });
+export const IdOpaco = z.string().min(1);
 
 // ─── API-ACC-01 — Registrar identidad ───────────────────────────────────────────────────────────
 export const RegistrarIdentidadRequestSchema = z.strictObject({

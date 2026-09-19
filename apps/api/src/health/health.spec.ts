@@ -21,6 +21,8 @@ const ENTORNO = {
     registro: { maximo: 10, ventanaMs: 3600000 },
   },
   saltosDeProxy: 1,
+  caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
+  demoProfesionales: [],
 };
 
 function directorioCon(migraciones: string[]): string {

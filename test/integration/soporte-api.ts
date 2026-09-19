@@ -34,6 +34,8 @@ export function entornoDePrueba(cambios: Partial<Entorno> = {}): Entorno {
       registro: { maximo: 10_000, ventanaMs: 60_000 },
     },
     saltosDeProxy: 0,
+    caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
+    demoProfesionales: [],
     ...cambios,
   };
 }

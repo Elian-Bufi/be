@@ -15,6 +15,8 @@ import { AuditoriaService } from '../plataforma/auditoria.service';
 import { IdempotenciaService, type ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { extraerBearer, TokensService } from '../sesion/tokens.service';
+import { SolicitudesService } from '../vinculo/solicitudes.service';
+import { VinculosService } from '../vinculo/vinculos.service';
 import { EstadoDeCuentaService } from './estado-de-cuenta.service';
 
 const OPERACION = 'API-ACC-P1-03';
@@ -32,6 +34,8 @@ export class CierreService {
     private readonly idempotencia: IdempotenciaService,
     private readonly auditoria: AuditoriaService,
     private readonly estadoDeCuenta: EstadoDeCuentaService,
+    private readonly vinculos: VinculosService,
+    private readonly solicitudes: SolicitudesService,
   ) {}
 
   async solicitar(
@@ -75,6 +79,12 @@ export class CierreService {
             ctx.momentoDeRecepcion,
           );
           if (!evaluacion.permitida) throw errorDeRechazo(evaluacion.motivo);
+
+          // REG-06-24 inc. 5 y 08 §14.1: el cierre finaliza los vínculos por eventos, en esta misma transacción
+          // (FinalizarAlcance con actor sistema y motivo CIERRE_DE_CUENTA), e invalida las solicitudes pendientes. Los
+          // consentimientos quedan como evidencia (REG-06-52). Cierra DEUDA_LEGAJO DL-018 (TEST-AUTH-013 a).
+          await this.vinculos.finalizarPorCierre(tx, actor.identidadId, procedencia, ctx.momentoDeRecepcion);
+          await this.solicitudes.invalidarPorCierre(tx, actor.identidadId, procedencia, ctx.momentoDeRecepcion);
 
           const registrada = await tx.solicitudDeCierreDeCuenta.create({
             data: {
