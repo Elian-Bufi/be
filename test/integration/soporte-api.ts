@@ -50,6 +50,9 @@ export async function appDePrueba(cambios: Partial<Entorno> = {}, antesDeIniciar
   });
   antesDeIniciar?.(app);
   await app.init();
+  // Escucha en un puerto propio. Sin esto, supertest abre y cierra el servidor en cada request, y con requests
+  // concurrentes las que siguen en vuelo reciben ECONNRESET: la prueba mediría el harness, no la API.
+  await app.listen(0);
   return app;
 }
 

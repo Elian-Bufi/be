@@ -31,15 +31,8 @@ import {
 const prisma = new PrismaClient();
 let app: INestApplication;
 
-/**
- * App que ya escucha en un puerto propio. Con requests concurrentes, supertest sobre un servidor que no escucha lo abre
- * y lo cierra en cada request, y las que siguen en vuelo reciben ECONNRESET: eso mediría el harness, no la API.
- */
-async function appEscuchando(...args: Parameters<typeof appDePrueba>): Promise<INestApplication> {
-  const a = await appDePrueba(...args);
-  await a.listen(0);
-  return a;
-}
+/** `appDePrueba` ya escucha en un puerto propio: con requests concurrentes, supertest no abre ni cierra servidores. */
+const appEscuchando = appDePrueba;
 
 beforeAll(async () => {
   app = await appEscuchando();
