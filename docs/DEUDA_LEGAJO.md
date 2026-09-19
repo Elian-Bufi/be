@@ -46,10 +46,21 @@
 | DL-039 | WP-03 · 2026-09-19 | 06:251, 06:262 · 09v8:1518-1562, 1962 · 08:307, 08:368, 08:374 | Finalidad y categorías pertinentes sin catálogo | **SIMPLIFICACIÓN DECLARADA** 2026-09-19 · consentimiento por alcance y finalidad; categorías especificadas y no implementadas |
 | DL-040 | WP-03 · 2026-09-19 | 09v8:161-170, 1523-1526 · 11A:196 · DL-009 | Nombre visible de las partes sin campos de perfil aprobados | ABIERTA |
 | DL-041 | WP-03 · 2026-09-19 | 10-B01:645-663, 1019-1031, 1310-1319 · brief WP-03 | El profesional sin Cartera | ABIERTA |
-| DL-042 | WP-03 · 2026-09-19 | DV-05 (DV05.md:1116-1133) · brief WP-03 | Casos adversariales de DV-05 que dependen de dominios | **ASIGNADA a WP-04** por Dirección (2026-09-19) |
+| DL-042 | WP-03 · 2026-09-19 | DV-05 (DV05.md:1116-1133) · brief WP-03 | Casos adversariales de DV-05 que dependen de dominios | **ASIGNADA**: 8 y 7 (variante nutricional) en WP-04; 6 y 10 en WP-05, antropometría (Dirección, 2026-09-19) |
 | DL-043 | WP-03 · 2026-09-19 | 09v8:1161-1163, 1208-1220, 1309-1311, 1389, 1447-1490, 1764-1778 | Contratos de REL con forma no definida en el 09 | ABIERTA |
 | DL-044 | WP-03 · 2026-09-19 | 08 §13 · 08 §14.1 · 09v8:1385-1391 | Qué ve el profesional de un vínculo finalizado | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción B) |
 | DL-045 | WP-03 · 2026-09-19 | 05:2840-2845 (UC-P04 V02) · 06 §7.3.2 · INV-06-52 | Solicitud iniciada por el asesorado: el profesional no acepta | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A) |
+| DL-046 | WP-04 · 2026-09-19 | 09v9:201-205, 513-562 · 06:4136-4137 (T-06-28/29) | `planId` del 09: Plan o Versión de plan | ABIERTA |
+| DL-047 | WP-04 · 2026-09-19 | 05:5869-5873 (UC-P10 V07) · B05:1325-1339 (CAND-NUT-D) · 09v9:476-499 | Versión sucesora fuera de una revisión sin operación en el 09 | ABIERTA |
+| DL-048 | WP-04 · 2026-09-19 | 04:360-367 · 06:4183-4201, 4421-4429 · 09v9:158, 345 · B05:229 | Contenido de la evaluación nutricional sin campos definidos | ABIERTA |
+| DL-049 | WP-04 · 2026-09-19 | 06:4368-4394, 4447, 4566 · CONS:564-628 · 09v9:680, 1135 · B05:768-782 | Ingesta prescripta: ocurrencia planificada, clave de unicidad y día tipo en «Hoy» | ABIERTA |
+| DL-050 | WP-04 · 2026-09-19 | 09v9:762 · CONS:641-672 · 05:719 (UC-E02) | Corregir una ingesta prescripta: sin operación ni UC | ABIERTA |
+| DL-051 | WP-04 · 2026-09-19 | 06:3667, 3751-3769, 3961 · 04:681-686 (RF-066 P1) · 05:6053 | Capacidad sin actor que la configure | ABIERTA |
+| DL-052 | WP-04 · 2026-09-19 | 06:4405-4411, 5940-5949 · 05:7556, 7564, 7595 · 09v9:925, 938 | Efectos de aplicar AJUSTAR, SUSTITUIR y CAMBIAR_OBJETIVO | ABIERTA |
+| DL-053 | WP-04 · 2026-09-19 | 04:446, 04:1141 · 11A:213 · 06:3504, 3612-3619, 7714 | Q-007: abierta en el 04 y el 11A, resuelta en el 06 | ABIERTA |
+| DL-054 | WP-04 · 2026-09-19 | 05:7117, 7075-7094 · 06:5967-5982 · brief WP-04 | Pendiente de revisión y timeline sin Cartera | ABIERTA |
+| DL-055 | WP-04 · 2026-09-19 | 09v9:158, 175-179, 601-644, 671, 804-806, 862 · CONS:655 | Contratos NUT con forma no definida en el 09 | ABIERTA |
+| DL-056 | WP-04 · 2026-09-19 | 04:378-385 (RF-028) · 05:5777, 5921 · brief WP-04 | RF-028 (Open Food Facts), P0 de compromiso académico, sin paquete asignado | **DECIDIDA** 2026-09-19 · opción A: paquete de integraciones posterior a WP-04 |
 
 ---
 
@@ -926,7 +937,13 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 
 **Resolución — ASIGNADA el 2026-09-19.** Dirección eligió A. Los casos 6, 7, 8 y 10 quedan asignados a WP-04.
 
-**Condición de cierre.** WP-04 deja ejecutables los casos 6, 7, 8 y 10.
+**Reasignación — 2026-09-19.** Al leer las fuentes de WP-04 se vio que dos casos no son de nutrición:
+- el **6** (anular dos veces una medición) es TEST-ANT-006 (11A:581);
+- el **10** (borrador de evaluación de otro profesional) usa el estado `EN_PREPARACION` de la evaluación antropométrica (06:8593-8630; 08 §56.5).
+
+WP-04 habilita el **8** (editar un plan activado) y el **7** en su variante nutricional: un día sin registro se muestra «sin registro», nunca cero (INV-06-135). Dirección dejó el orden de los dominios a criterio del ejecutor: **WP-05 es antropometría**, y ahí van el 6, el 10 y el 7 en su variante de evolución de mediciones (INV-06-176).
+
+**Condición de cierre.** WP-04 deja ejecutables el 8 y el 7 nutricional; WP-05, el 6, el 10 y el 7 de mediciones.
 
 ## DL-043 — Contratos de REL con forma no definida en el 09
 
@@ -993,3 +1010,202 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 **Resolución — DECIDIDA el 2026-09-19.** Dirección aceptó el provisorio: opción A. El código no cambia.
 
 **Condición de cierre.** El 05 y el 06 definen quién acepta una solicitud iniciada por el asesorado.
+
+## DL-046 — `planId` del 09: Plan o Versión de plan
+
+**Prioridad:** media · **Documento:** 09v9:201-205, 09v9:513-562 · 06:224, 06:4136-4137 (T-06-28, T-06-29) · 06:4274-4282 (REG-06-102) · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- El 06 distingue el Plan profesional (T-06-28), que agrupa versiones, de la Versión de plan (T-06-29), que tiene el estado `BORRADOR`/`ACTIVADA` (06:4288).
+- El 09 tiene una sola ruta, `/nutrition/plans/{planId}`, y el recurso trae `state` y `version` (09v9:201-205). No dice si una versión sucesora es un `planId` nuevo o una versión nueva del mismo.
+
+**Opciones.**
+- **A.** El `planId` de las rutas designa una **Versión de plan**, porque tiene estado. La respuesta agrega `nutritionPlanId`, que identifica el Plan que agrupa las versiones. Una sucesora es un `planId` nuevo del mismo `nutritionPlanId`.
+- **B.** El `planId` designa el Plan, y la versión viaja como parámetro o en el cuerpo. Cambia las rutas del 09.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 09 aclara qué designa `planId`.
+
+## DL-047 — Versión sucesora fuera de una revisión, sin operación en el 09
+
+**Prioridad:** alta · **Documento:** 05:5869-5873 (UC-P10 V07) · B05:1301-1339 (CAND-NUT-D) · 06:4305-4309 · 09v9:476-499, 914-961 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- UC-P10 V07: editar después de activar crea un borrador nuevo (05:5869-5873). B10-05 muestra la versión activada en solo lectura con «Crear nueva versión a partir de esta» «si se habilita» (B05:1325-1339).
+- El 06: «una continuidad crea otra Versión» (06:4307-4309).
+- El 09 no tiene operación para crear una sucesora desde la versión activa. La única vía es aplicar una revisión con ADJUST o REPLACE, que «crea versiones necesarias» (09v9:938).
+
+**Opciones.**
+- **A.** API-NUT-07 acepta un `basedOnPlanId` opcional, que es la versión efectiva. Crea un borrador sucesor con la misma estructura y con `predecessorPlanId`, sin tocar la activada. Aplicar AJUSTAR o SUSTITUIR usa el mismo mecanismo (DL-052).
+- **B.** Solo la revisión crea sucesoras. Corregir un error en un plan activado exige registrar y aplicar una revisión.
+
+**Provisorio en código.** A. Es el camino que el 05 y el 10 describen para un error del profesional, y no saltea ninguna garantía: la activación de la sucesora sigue pasando por `ActivarVersion`.
+
+**Condición de cierre.** El 09 define la operación, o decide que la sucesora solo nace de una revisión.
+
+## DL-048 — Contenido de la evaluación nutricional sin campos definidos
+
+**Prioridad:** media · **Documento:** 04:360-367 (RF-026) · 06:4183-4201 (REG-06-97), 06:4421-4429 (REG-06-109) · 09v9:158, 09v9:345 (`assessment:{}`) · B05:229 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- La evaluación tiene autoría, ocurrencia, registro, contexto y fuentes. Cada dato marca si es informado, observado o calculado (04:364-366; 06:4425-4427).
+- El 09 deja `assessment` como objeto opaco (09v9:345). El 10 pide solo «campos respaldados por dominio» (B05:229). El 05 no fija el contenido mínimo (05:6773-6777).
+
+**Opciones.**
+- **A.** La evaluación es una lista de datos. Cada dato tiene `concepto` (texto), `valor`, `unidad` opcional y `fuente` (`INFORMADO`, `OBSERVADO` o `CALCULADO`). Se suman el contexto, las notas profesionales separadas y las referencias de evidencia. Un dato `CALCULADO` exige declarar el método en texto, porque BE no calcula.
+- **B.** Un conjunto cerrado de campos nutricionales (antecedentes, hábitos, recordatorio de 24 h, etc.), definido por el ejecutor.
+
+**Provisorio en código.** A. No inventa contenido clínico que el legajo no aprobó (REG-06-110).
+
+**Condición de cierre.** El 06 o el 09 fijan el contenido mínimo de la evaluación.
+
+## DL-049 — Ingesta prescripta: ocurrencia planificada, clave de unicidad y día tipo en «Hoy»
+
+**Prioridad:** alta · **Documento:** 06:4368-4394 (REG-06-106, 107), 06:4447, 06:4566 · CONS:564-628 · 09v9:680, 09v9:1135 · B05:768-782 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- La ingesta referencia la Versión activada y «la parte u ocurrencia planificada cuando corresponda». La vertical declara una clave lógica de unicidad (06:4376, 06:4388).
+- El Día tipo «no se agenda en fechas» (06:4566). Para `PRESCRIBED`, el CONS exige una «ocurrencia planificada canónica» sin nombrar el campo (CONS:620).
+- «Hoy» no elige un día tipo sin regla canónica: expone la decisión pendiente (09v9:680; B05:768-782).
+
+**Opciones.**
+- **A.** Una ingesta `PRESCRIBED` referencia versión, `dayTypeId`, `mealId` y `optionId` de la instantánea, y `localDate` en la zona horaria del asesorado. La clave es (asesorado, versión, `localDate`, `mealId`). Si el plan tiene un solo día tipo, «Hoy» lo muestra; si tiene varios, el asesorado elige con un selector explícito, sin que BE elija en silencio.
+- **B.** El profesional asigna un día tipo por día de la semana y «Hoy» lo resuelve solo. Agrega una regla que el legajo no tiene.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 09 nombra el campo de la ocurrencia planificada y la clave.
+
+## DL-050 — Corregir una ingesta prescripta: sin operación ni UC
+
+**Prioridad:** media · **Documento:** 09v9:762 · CONS:641-672 · 05:719 (UC-E02, solo entrenamiento) · 06:4468 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- No hay operación para editar una ingesta (09v9:762). API-NUT-21 corrige solo las libres (`OUTSIDE_PRESCRIPTION` + `FREE_DESCRIPTION`), como estimación profesional (CONS:641-672).
+- El único UC de corrección de ejecución es de entrenamiento (UC-E02, 05:719). La ingesta usa la Corrección trazable de B-06 (06:4468), pero ningún contrato la expone para `PRESCRIBED`.
+
+**Opciones.**
+- **A.** En WP-04, una ingesta prescripta no se corrige. Un segundo registro incompatible para la misma comida y fecha devuelve `409 EXECUTION_ALREADY_REGISTERED_INCOMPATIBLY`. Si el asesorado se equivocó, lo cuenta con una ingesta fuera del plan, que queda como hecho aparte.
+- **B.** Agregar una corrección de la ingesta prescripta por el asesorado con el patrón de B-06. Es una operación que el 09 no tiene.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 05 y el 09 definen la corrección de la ingesta prescripta.
+
+## DL-051 — Capacidad sin actor que la configure
+
+**Prioridad:** media · **Documento:** 06:3667, 06:3751-3769 (REG-06-82, 83), 06:3961 · 04:681-686 (RF-066, P1) · 05:6053 (UC-P11 → UC-I10) · DV-05 TEST-RF-031 paso 3 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- Activar un Proceso nuevo consulta la capacidad (REG-06-104; UC-P11). Sin banda configurada, el modo efectivo es `SIN_LIMITE` (REG-06-82).
+- Ningún documento define quién configura la capacidad ni con qué operación: el 06 remite a UC-I10 y a una «configuración académica» (06:3667, 06:3961). RF-066 es P1.
+- TEST-RF-031, paso 3, prueba el rechazo con un límite de 1 ya ocupado.
+
+**Opciones.**
+- **A.** Capacidad versionada por profesional, con `SIN_LIMITE` por defecto y la regla REG-06-91 completa. La configura un servicio interno. En `test` se declara por identidad demo, como la verificación de WP-03 (DL-036), para demostrar el rechazo.
+- **B.** No evaluar la capacidad hasta que exista RF-066 completo. TEST-RF-031 paso 3 queda sin ejecutar.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 05 o el 09 definen quién configura la capacidad y con qué operación.
+
+## DL-052 — Efectos de aplicar AJUSTAR, SUSTITUIR y CAMBIAR_OBJETIVO
+
+**Prioridad:** alta · **Documento:** 06:4405-4411 (REG-06-108), 06:5940-5949 (REG-06-147) · 05:7556, 05:7564, 05:7595 (UC-I06) · 09v9:925, 09v9:938 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- REG-06-108 dice que AJUSTAR y SUSTITUIR «preparan» continuidad. REG-06-147 dice que «crea/sucede versión». UC-I06 V02 «inicia el recorrido de nueva versión» y V04 «inicia» el cambio de objetivo.
+- El 06 dice que CAMBIAR_OBJETIVO «emite nueva Versión de objetivo» (06:4408, 5948).
+- `apply` solo recibe `expectedVersion` y «crea versiones necesarias» (09v9:925, 938). No dice cuáles ni a qué recurso pertenece la versión esperada.
+
+**Opciones.**
+- **A.** Al aplicar, en una sola transacción con el evento:
+  - AJUSTAR y SUSTITUIR crean un **borrador sucesor** de la versión efectiva, con la misma estructura, y referencian la revisión;
+  - CAMBIAR_OBJETIVO emite la nueva versión de objetivo con el contenido que trae `nextAction.objective` de la revisión;
+  - MANTENER y REPROGRAMAR_REVISION registran la próxima acción y la próxima revisión;
+  - FINALIZAR cierra el Proceso;
+  - `expectedVersion` es la versión de la revisión.
+- **B.** Aplicar solo registra la intención y el evento. El profesional crea después el borrador o el objetivo con las operaciones de siempre.
+
+**Provisorio en código.** A. Con B, el evento declararía aplicada una consecuencia que todavía no existe, lo que va contra REG-06-75 y REG-06-77.
+
+**Condición de cierre.** El 09 detalla los efectos de `apply` por resultado.
+
+## DL-053 — Q-007: abierta en el 04 y el 11A, resuelta en el 06
+
+**Prioridad:** baja · **Documento:** 04:446, 04:1141 · 11A:213 · 06:3504, 06:3612-3619, 06:7714 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- El 04 marca Q-007 como ABIERTA, y RF-035 y TEST-RF-035 dicen que el cierre cumple lo que resuelva Q-007 (04:446, 04:1141; 11A:213).
+- El 06 la da por **RESUELTA en M-04**, con el evento `ContinuidadOCierreAplicado` (06:3504, 06:3612-3619, 06:7714).
+
+**Opciones.**
+- **A.** Implementar la resolución del 06, el documento de dominio y el más reciente en esto. El oráculo de TEST-RF-035 usa REG-06-74 a 77.
+- **B.** Tratar Q-007 como abierta y dejar el cierre sin evento.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 04 y el 11A actualizan el estado de Q-007.
+
+## DL-054 — Pendiente de revisión y timeline sin Cartera
+
+**Prioridad:** media · **Documento:** 05:7117 (UC-P13 paso 1), 05:7075-7094 (postcondiciones 7 a 10) · 06:5967-5982 (REG-06-150) · 06:237 (T-06-41, M-11) · brief WP-04 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- UC-P13 empieza en los «ciclos nutricionales pendientes de revisión» (UC-P23, Cartera). Termina actualizando el timeline, resolviendo el pendiente y dejando el evento para UC-S01.
+- El brief excluye la Cartera, el dashboard y TVCC-30.
+
+**Opciones.**
+- **A.** El predicado REG-06-150 se calcula y se muestra en el Resumen de la pestaña Nutrición («Revisión pendiente desde…»). La revisión se inicia desde ahí. Los eventos (`ProcesoOperativoAbierto`, `ContinuidadOCierreAplicado`, `ProcesoOperativoCerrado`) quedan persistidos y consultables como fuente del futuro timeline y de UC-S01. Sin Cartera.
+- **B.** Adelantar API-DSH-01 (Cartera) y el timeline.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El paquete de Cartera y timeline consume los eventos persistidos.
+
+## DL-055 — Contratos NUT con forma no definida en el 09
+
+**Prioridad:** media · **Documento:** 09v9:158, 175-179, 308, 601-644, 671, 804-806, 862 · CONS:655 · 09v9:1028 · **Estado:** ABIERTA (mismo patrón que DL-043)
+
+**Qué dice el legajo.**
+- Estas operaciones no declaran la respuesta de éxito: NUT-04, 07, 10, 12, 15, 18, 20 y 21.
+- Estas otras son solo una ruta, sin errores ni schema: NUT-02, 05, 06, 08 y 13.
+- Hay objetos opacos: `assessment`, `macronutrientDistribution`, `activePlan`, `descriptiveContrast`, `nextAction`, `structuredEstimate.items` y `composition`.
+- Del contrato de NUT-10 falta la semántica de `changes`, y de NUT-11, los códigos de `issues` (hay un solo ejemplo).
+- `OBJECTIVE_NOT_EFFECTIVE_OR_COMPATIBLE` está en el registro de errores, pero ninguna operación lo declara.
+- Ningún contrato NUT lista el efecto de A3, aunque la precedencia es obligatoria (CONS:2625-2640).
+
+**Opciones.**
+- **A.** Definirlos en `@be/domain` (`contratos-nutricion.ts`) con la forma mínima coherente con el resto del 09:
+  - las escrituras devuelven el recurso creado o actualizado;
+  - `changes` reemplaza la jerarquía entera;
+  - los `issues` usan un catálogo de códigos con su `path`;
+  - `OBJECTIVE_NOT_EFFECTIVE_OR_COMPATIBLE` corresponde a NUT-07;
+  - A3 ausente produce el mismo 404 que el PDP.
+
+  El OpenAPI generado lo publica y el contract test lo verifica.
+- **B.** Esperar la próxima versión del 09.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 09 fija esas formas.
+
+## DL-056 — RF-028 (Open Food Facts), P0 de compromiso académico, sin paquete asignado
+
+**Prioridad:** alta · **Documento:** 04:378-385 (RF-028) · 05:5777, 05:5921 · 11A:206 · 12 (fila RF-028) · brief WP-04 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- RF-028 es P0, «Compromiso académico de integración»: consulta e importación controlada desde Open Food Facts, con fallback a catálogo propio y carga manual.
+- El 05 lo hace opcional en cada operación (05:5777), pero lo mantiene como compromiso (05:5921).
+- El brief de WP-04 excluye la integración con catálogos externos.
+
+**Opciones.**
+- **A.** Asignar RF-028, UC-I07, UC-I08 y API-INT-NUT-02 y 03 a un paquete posterior, antes de la entrega.
+- **B.** Incluirlo en WP-04.
+
+**Provisorio en código.** Ninguno: WP-04 deja el catálogo propio y la carga manual, que son el fallback que el mismo RF exige.
+
+**Resolución — DECIDIDA el 2026-09-19.** Dirección eligió A: RF-028, UC-I07, UC-I08 y API-INT-NUT-02 y 03 van a un paquete de integraciones posterior a WP-04, antes de la entrega.
+
+**Condición de cierre.** RF-028 queda asignado a un paquete o se declara fuera de la entrega con fundamento.
