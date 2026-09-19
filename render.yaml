@@ -64,6 +64,11 @@ services:
       # servicios creados desde 2026-09-17 usan el default 24.21.0 y npm ci falla con EBADENGINE.
       - key: NODE_VERSION
         value: "22"
+      # DL-030 (decisión de Dirección, 2026-09-19): el website llama a la API directo, con CORS, para que la API vea
+      # la IP real (08 §12.2, evidencia de A1/A2). Se inyecta en el build; no es secreto. Si cambia la URL de la API,
+      # cambiar también connect-src de la CSP y API_BASE_URL de apps/mobile/eas.json.
+      - key: BE_API_BASE_URL
+        value: https://be-api-hndp.onrender.com
     # 07 CAND-07-J opción C: same-origin, el borde rutea /api/* a la API.
     # Destino = la API (be-api-hndp), no el website: no depende de la URL del sitio estático.
     # Los subdominios onrender.com son globales: el nombre real lo asigna Render.
@@ -90,4 +95,4 @@ services:
         value: camera=(), microphone=(), geolocation=()
       - path: /*
         name: Content-Security-Policy
-        value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://be-api-hndp.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
