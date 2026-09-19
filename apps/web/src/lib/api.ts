@@ -2,7 +2,8 @@
  * Cliente de la API para el website, superficie WEB. La definición del cliente es única y vive en @be/domain
  * (cliente-http.ts).
  * DL-030: en el build desplegado, BE_API_BASE_URL es el origen de la API y las llamadas van directo, con CORS, para que la
- * API vea la IP real (08 §12.2). Vacía solo en `next dev`, donde /api/* se reescribe a la API local.
+ * API vea la IP real (08 §12.2). Fuera del build de Render (next dev, CI, build local) puede quedar vacía: en `next dev`
+ * /api/* se reescribe a la API local.
  */
 import { crearClienteBe } from '@be/domain';
 

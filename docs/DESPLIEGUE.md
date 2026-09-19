@@ -1,6 +1,6 @@
 # DESPLIEGUE — ambiente `test`
 
-> Runbook de WP-01, actualizado en WP-02. Arquitectura: 07 §26–§39. Decisiones: `DECISIONES_TECNICAS.md` §3. Desvíos: `DEUDA_LEGAJO.md` DL-006, DL-007.
+> Runbook de WP-01, actualizado en WP-02. Arquitectura: 07 §26–§39. Decisiones: `DECISIONES_TECNICAS.md` §3. Desvíos: `DEUDA_LEGAJO.md` DL-006, DL-007, DL-008 y DL-030.
 > **Solo datos sintéticos.** Render no recibe datos reales mientras G-Q008-1, G-Q008-2 y el gate 08 §42 estén abiertos.
 
 ## Flujo
@@ -31,7 +31,7 @@ Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían
 
 | Si cambia la URL de… | Hay que actualizar |
 |---|---|
-| la **API** (`be-api-hndp`) | en `render.yaml`, `BE_API_BASE_URL` y `connect-src` de la CSP de `be-web`; y `API_BASE_URL` de `apps/mobile/eas.json` (con rebuild del APK) |
+| la **API** (`be-api-hndp`) | en `render.yaml`, `BE_API_BASE_URL` y `connect-src` de la CSP de `be-web` (y el `destination` del rewrite `/api/*` mientras exista, DL-030); `API_BASE_URL` de `apps/mobile/eas.json` (con rebuild del APK) |
 | el **website** (`be-web-1ngj`) | solo `CORS_ALLOWED_ORIGINS` de `be-api` en `render.yaml` |
 
 **Historia del Blueprint (2026-09-18).** El Blueprint original quedó conectado al repositorio renombrado `be-archivo-wp01` y se desconectó. Dirección creó uno nuevo sobre `Elian-Bufi/be`, que **adoptó** `be-api` y `be-db-test` sin recrearlos (URL de la API y base intactas) y **creó** un `be-web` nuevo: `be-web-izpg` pasó a `be-web-1ngj`. Desde entonces `render.yaml` vuelve a sincronizarse solo con cada push a `main`.
@@ -59,7 +59,11 @@ Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían
 curl -s https://be-api-hndp.onrender.com/health/ready   # 200, data.version.commit == SHA del merge
 curl -s https://be-api-hndp.onrender.com/health/live    # 200
 curl -sI https://be-web-1ngj.onrender.com/              # 200 + cabeceras HSTS/CSP
-curl -s https://be-web-1ngj.onrender.com/ | grep -c be-api-hndp   # el build del website apunta a la API (DL-030)
+# DL-030: el build del website apunta a la API. La URL está en el JS de /login, no en el HTML.
+c=$(curl -s https://be-web-1ngj.onrender.com/login | grep -o '/_next/static/chunks/app/login/page-[^"]*\.js' | head -1)
+curl -s "https://be-web-1ngj.onrender.com$c" | grep -c 'be-api-hndp.onrender.com'   # ≥ 1
+# DL-030, después de retirar el rewrite: /api/* en el website ya NO llega a la API (sin ErrorEnvelope ni X-Request-Id)
+curl -si https://be-web-1ngj.onrender.com/api/v1/x | grep -ci 'x-request-id\|RESOURCE_NOT_FOUND'   # 0
 curl -si -X OPTIONS -H "Origin: https://be-web-1ngj.onrender.com" -H "Access-Control-Request-Method: GET" \
   https://be-api-hndp.onrender.com/health/ready         # Access-Control-Allow-Origin: el website; con otro origen, ausente
 ```
@@ -72,9 +76,9 @@ La primera respuesta puede tardar alrededor de 30 segundos: el plan gratuito apa
 
 - **Aplicación:** Render → `be-api` → Events → deploy anterior → **Rollback**. No se revierte el schema: las migraciones son aditivas (expand→contract), y `/health/ready` acepta una base con migraciones más nuevas que el artefacto.
 - **Migración fallida:** el contenedor nuevo termina antes de escuchar, no pasa `/health/ready` y Render cancela el deploy. La versión anterior sigue sirviendo, y la migración queda registrada como fallida en `_prisma_migrations`. Se corrige con una migración nueva; nunca `migrate reset` ni `db push` fuera de development (07 §38).
-- **Website:** Render → `be-web` → Events → Rollback.
+- **Website:** Render → `be-web` → Events → Rollback. **Desde DL-030**, un build anterior al PR #13 llama a `/api/v1` relativo y depende del rewrite. Las rutas del sitio estático son configuración del servicio, no del deploy, así que volver a un build así exige recrear primero el rewrite. Si no, conviene volver solo a builds posteriores al PR #13.
 - **Merge defectuoso** (ACTA-DIR-034 §12): `git revert -m 1 <sha-del-merge>` en una rama nueva → PR → CI verde → merge. El revert se despliega como cualquier cambio. Nunca `push --force`, `reset --hard` ni `commit --amend` sobre historia publicada.
-- **Ensayo de rollback** (ACTA-DIR-034 §12): la parte 1, `git revert -m 1` de un merge publicado, se ejecutó el 2026-09-19 (PR #9 y #10). La parte 2, el rollback de la aplicación en el dashboard de Render, está a cargo de Dirección. Evidencia en `EVIDENCIA/ENSAYO-ROLLBACK/`.
+- **Ensayo de rollback** (ACTA-DIR-034 §12): la parte 1, `git revert -m 1` de un merge publicado, se ejecutó el 2026-09-19 (PR #9 y #10). La parte 2, el rollback de la aplicación en el dashboard de Render (Dirección), también se ejecutó: `be-api` volvió a `4776fc5` sin reconstruir la imagen, y después Manual Deploy la llevó a `c94a320` (el último commit de `main`, mismo código que `23c9997`). Evidencia en `EVIDENCIA/ENSAYO-ROLLBACK/`.
 
 ## Límites del plan gratuito
 

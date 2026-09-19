@@ -145,7 +145,7 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 **Provisorio en código.** Opción C: Render Static Site con rewrite `/api/*` hacia la API.
 
-**Nota (2026-09-19).** El export estático se mantiene. El rewrite `/api/*` se retira por decisión de Dirección en DL-030: el website llama a la API directo, con CORS, para que la API vea la IP real (08 §12.2).
+**Nota (2026-09-19).** El export estático se mantiene, pero la topología pasa de la opción C a la **B de CAND-07-J** («export estático + CORS») por decisión de Dirección (DL-030): el website llama a la API directo para que la API vea la IP real (08 §12.2). Con eso, la opción A de esta entrada queda así: actualizar 07 §34 para reflejar la opción B, sin imagen del web y con CORS.
 
 ---
 
@@ -584,17 +584,23 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 
 **Decisión de Dirección (2026-09-19): opción B.** Es un **desvío fundamentado** de 07 CAND-07-J C, no una excepción: **BE se aparta de CAND-07-J C (website same-origin por rewrite, sin CORS) para poder cumplir 08 §12.2. La evidencia de A1/A2 necesita la IP real de la persona**, y detrás del rewrite la API solo ve direcciones del proxy. De las dos reglas en conflicto prevalece la del 08, porque es la que protege al titular: evidencia del acto y límites contra abuso. La del 07 es una preferencia de topología.
 
+**Dentro del propio 07.** La topología resultante es la **opción B de CAND-07-J** («B. Export estático + CORS», 07:817-829), que el 07 deja disponible con la cláusula «B se descarta **salvo necesidad**». La necesidad es 08 §12.2. La opción A (runtime Next como proxy), que el 07 pone como fallback antes que la B, no resuelve el problema: al ser un proxy, también le ocultaría la IP a la API, y además agrega el segundo runtime que CAND-07-J busca evitar. El 07 ya prevé la allowlist de CORS «por ambiente de todos modos» (07:704-707), y está configurada desde WP-01.
+
 **Cómo queda.**
 - El website se sigue sirviendo como export estático (CAND-07-J, DL-007). Sus llamadas van directo al origen de la API, con CORS restringido al origen del website (`CORS_ALLOWED_ORIGINS`) y sin cookies (Bearer en memoria).
 - `BE_API_BASE_URL` se inyecta en el build de be-web. El build en Render falla si falta, así nunca se publica un website roto.
 - La CSP de be-web permite `connect-src` hacia la API.
-- El rewrite `/api/*` se retira: dejarlo sería un segundo camino que oculta la IP.
+- El rewrite `/api/*` se retira: dejarlo sería un segundo camino que oculta la IP. La especificación del Blueprint de Render preserva las reglas de ruteo que se omiten del archivo, así que sacarlo de `render.yaml` no alcanza: además hay que **borrar la regla en el dashboard** (be-web → Redirects/Rewrites). Después se verifica en negativo que `/api/*` en el website ya no llega a la API.
+- Efecto de la llamada cross-origin, corregido: los errores del body parser (JSON inválido, cuerpo > 16 kB) salían antes del middleware de CORS, y el navegador los habría leído como error de red. En `bootstrap.ts`, CORS y `X-Request-Id` quedan antes del parser, con prueba en `cors.int-spec.ts`.
 - El cupo por identificador de la opción A se mantiene como defensa en profundidad.
 
 **Secuencia (regla de DL-008).**
 1. PR solo de configuración: CSP y `BE_API_BASE_URL`.
 2. PR del website.
-3. PR solo de configuración que retira el rewrite.
-4. Medición de nuevo en `test`.
+3. PR solo de configuración que retira el rewrite de `render.yaml`, y borrado de la regla en el dashboard de Render (Dirección).
+4. Medición de nuevo en `test` y verificación negativa del rewrite.
 
-**Condición de cierre.** La medición en `test` muestra que los intentos por el website ya se agrupan en la red del cliente, y la próxima revisión del 07 incorpora el desvío en CAND-07-J.
+**Condición de cierre.** Se cumplen tres cosas:
+1. la medición en `test` muestra que los intentos por el website se agrupan en la red del cliente;
+2. `/api/*` en el website ya no responde con la API;
+3. la próxima revisión del 07 incorpora el paso a la opción B en CAND-07-J (y en §34, DL-007).

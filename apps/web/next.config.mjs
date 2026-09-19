@@ -1,12 +1,13 @@
 /**
- * Export estático servido por Render Static Site (07 CAND-07-J, export estático; DL-007).
+ * Export estático servido por Render Static Site: 07 CAND-07-J opción B, «export estático + CORS» (DL-007, DL-030).
  * Cabeceras de seguridad (HSTS, CSP) en render.yaml: el host estático las aplica.
  * Sin variables NEXT_PUBLIC_* (07 §27): la identidad de build y la URL pública de la API se inyectan en tiempo de build
  * y no son secretas.
  *
  * DL-030 (decisión de Dirección, 2026-09-19): el website llama a la API **directo**, con CORS, y no por un rewrite
  * same-origin. Detrás del rewrite, la API veía un pool de IPs del proxy de Render y no la de la persona, y la
- * evidencia de A1/A2 necesita la IP real (08 §12.2). Es un desvío fundamentado de 07 CAND-07-J C.
+ * evidencia de A1/A2 necesita la IP real (08 §12.2). Se pasa de la opción C a la B de CAND-07-J, invocando su «salvo
+ * necesidad».
  * - Build en Render: BE_API_BASE_URL es obligatoria y https; sin ella el build falla (no se publica un website roto).
  * - `next dev` (solo local): sin BE_API_BASE_URL, /api/* se reescribe a BE_API_LOCAL (por defecto http://localhost:3001).
  * @type {import('next').NextConfig}
