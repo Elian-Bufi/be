@@ -1,16 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 
-const REQUEST_ID_ACEPTABLE = /^[A-Za-z0-9._-]{8,128}$/;
-
 /**
- * X-Request-Id en toda respuesta (09 CAND-09-T17) y una línea de log JSON por request (07 §41).
- * Se registra la ruta parametrizada, nunca la URL concreta, ni cuerpos, IP o user-agent (08 §30).
+ * X-Request-Id en toda respuesta (09v7 T17: «Toda request recibe ID server-side»). El valor del cliente se ignora.
+ * Una línea de log JSON por request (07 §41): ruta parametrizada, nunca la URL concreta, ni cuerpos, IP o
+ * user-agent (08 §30). Sin query string: podría llevar datos.
  */
 export function requestId(log: (linea: string) => void = (l) => process.stdout.write(`${l}\n`)) {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    const entrante = req.header('x-request-id');
-    const id = entrante && REQUEST_ID_ACEPTABLE.test(entrante) ? entrante : randomUUID();
+  return (req: Request & { requestId?: string; momentoDeRecepcion?: Date }, res: Response, next: NextFunction): void => {
+    const id = randomUUID();
+    req.requestId = id;
+    req.momentoDeRecepcion = new Date();
     res.setHeader('X-Request-Id', id);
     const inicio = process.hrtime.bigint();
 

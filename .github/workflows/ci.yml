@@ -37,6 +37,8 @@ jobs:
       - run: npx prisma generate
       - name: Typecheck (domain, api, web, mobile)
         run: npm run typecheck
+      - name: OpenAPI generado desde @be/domain sin drift (09v7 T21)
+        run: node scripts/generar-openapi.cjs --verificar
       - name: Pruebas unitarias (domain, api)
         run: npm test
       - name: Build API
@@ -57,8 +59,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
-      - name: Schema vs 06 · readiness · migración fallida aborta
-        run: npm run test:integration
+      - name: Schema vs 06 · identidad y sesiones (TEST-AUTH-*) · readiness · migración fallida aborta
+        run: npm run build:domain && npm run test:integration -w @be/api -- --verbose --json --outputFile=${{ github.workspace }}/resultados-integracion.json
+      - name: Resultados por ID de prueba (evidencia)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-integracion
+          path: resultados-integracion.json
+          if-no-files-found: error
 
   imagen-api:
     name: imagen API · migrate deploy + readiness (ASR-09)
@@ -76,9 +85,11 @@ jobs:
           for i in $(seq 1 30); do docker exec pg pg_isready -U be_test -d be_test && break; sleep 2; done
       - name: Arranque del artefacto (migraciones como fase del deploy)
         run: |
+          # Secreto efímero generado en el runner: nunca en el repositorio ni en el log (08 §32).
           docker run -d --name api --network be -p 3000:3000 \
             -e APP_ENV=test \
             -e DATABASE_URL=postgresql://be_test:be_test_sintetico@pg:5432/be_test \
+            -e JWT_SECRET="$(openssl rand -hex 32)" \
             be-api:${{ github.sha }}
       - name: Smoke — /health/ready 200 con el SHA esperado (07 §37)
         run: |
@@ -93,3 +104,18 @@ jobs:
           test "$(jq -r .data.version.commit ready.json)" = "${{ github.sha }}"
           curl -fsS http://localhost:3000/health/live
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/v1/no-existe)" = "404"
+      - name: Smoke e2e del artefacto — registro A1+A2 → login → /me → A3 no otorgado → logout (WP-02)
+        run: |
+          B=http://localhost:3000/api/v1
+          CORREO="persona-ci-${{ github.run_id }}@example.invalid"
+          jq -n --arg c "$CORREO" '{registrationIntent:"ADVISEE",identity:{localIdentifier:$c,localCredential:"clave-sintetica-de-ci-01"},termsAcceptance:{versionId:"terminos-2026-09-demo"},privacyAcknowledgement:{versionId:"privacidad-2026-09-demo"}}' > alta.json
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -H "Idempotency-Key: ci-${{ github.run_id }}" -d @alta.json $B/registrations)" = "201"
+          jq -n --arg c "$CORREO" '{method:"LOCAL",identifier:$c,credential:"clave-sintetica-de-ci-01"}' > login.json
+          TOKEN=$(curl -fsS -H 'Content-Type: application/json' -d @login.json $B/auth/sessions | jq -r .data.session.accessToken)
+          echo "::add-mask::$TOKEN"
+          test "$(curl -fsS -H "Authorization: Bearer $TOKEN" $B/me | jq -r .data.accountOperationalState)" = "OPERATIVA"
+          test "$(curl -fsS -H "Authorization: Bearer $TOKEN" $B/me/health-data-consent-requirement | jq -c .data.currentConsent)" = "null"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "Authorization: Bearer $TOKEN" $B/auth/sessions/current)" = "204"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" $B/me)" = "401"
+          # El log del contenedor no contiene la credencial ni el correo.
+          ! docker logs api 2>&1 | grep -q -e "clave-sintetica-de-ci-01" -e "$CORREO"

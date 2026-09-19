@@ -30,3 +30,7 @@ Thumbs.db
 
 # Documento de la escuela: no se versiona (docs/fuente_escolar/LEEME.md).
 docs/fuente_escolar/*.pdf
+
+# Configuración local de herramientas (rutas de esta máquina).
+.claude/
+apps/web/next-env.d.ts

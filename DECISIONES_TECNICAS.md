@@ -21,6 +21,11 @@
 | Testcontainers | 12.1.0 | vigente | Mismo enfoque que el harness de `be-health`, con teardown explícito del contenedor. |
 | helmet | 8.3.0 | vigente | Cabeceras de seguridad de la API (07 §29, 08 G-10). |
 | GitHub Actions | `checkout@v7`, `setup-node@v7` | v7.0.1 / v7.0.0 | Últimas mayores publicadas. |
+| zod (WP-02) | **4.6.5** | `latest` 4.6.5 | Contratos HTTP como schemas compartidos por API, website y APK, y OpenAPI 3.1 generado con `z.toJSONSchema` (09v7 T21). Vive como dependencia de `@be/domain`, anidada: la raíz ya tiene zod 3 por otra dependencia. Por eso el Dockerfile copia `packages/domain/node_modules` y el bundle del APK se verificó con `expo export` + sourcemap. |
+| @node-rs/bcrypt (WP-02) | **1.10.9** | `latest` 1.10.9 | 08 §24.2: «bcrypt costo 10, se conserva como mínimo». Binario nativo precompilado (`linux-x64-gnu` en la imagen Debian), sin toolchain en el build. Verificación contra un hash señuelo cuando no hay credencial, para que el tiempo del login no revele si la cuenta existe (TEST-AUTH-001). |
+| jsonwebtoken (WP-02) | **9.0.3** | `latest` 9.0.3 | Token corto HS256 con `sid`/`sub`/`tv`, algoritmo fijo en la verificación. El token solo identifica la fila de sesión: la verdad está en la base (08 §26.1; DL-012). |
+| expo-crypto (WP-02) | **57.0.3** | la que fija Expo SDK 57 | Hermes no trae `crypto.randomUUID`: las Idempotency-Key del APK salen de un generador criptográfico nativo. |
+| Actions: upload-artifact (WP-02) | `v4` | vigente | Publica los resultados de integración por ID de prueba como artefacto de cada run (evidencia de WP-02). |
 
 ## 2. Seguridad de dependencias — `npm audit --omit=dev`
 
@@ -58,6 +63,8 @@ CI falla si aparece un alto o crítico (`npm run audit:prod`, `--audit-level=hig
 
 ## 4. Schema inicial
 
+> **WP-02 (2026-09-18)** completó la estructura de Identidad BE (DL-003) con la migración aditiva `20260918200000_identidad_y_sesiones`: Perfil propio 1:1, método de acceso con índice único `(tipo, referencia)`, credencial, sesión, control de sesión, actos A1/A2/A3, eventos, solicitud de cierre, supresiones, auditoría e idempotencia. Los triggers de la base rechazan toda transición no declarada y todo UPDATE/DELETE/TRUNCATE sobre la historia. Detalle en `docs/paquetes/WP-02.md` y `DEFENSA/WP-02.md`. Lo que sigue describe WP-01.
+
 - **Modelos:** solo `Identidad` (T-06-01), con `estadoOperativoDeCuenta` (enum `EstadoOperativoDeCuenta` = `OPERATIVA | SUSPENDIDA | CERRADA`, T-06-02) y el par `momentoDeOcurrencia` (anulable) / `momentoDeRegistro` (obligatorio), T-06-24.
 - **Nombres del 06:** el modelo en Prisma usa camelCase y la base snake_case (`@map`), con el término del 06 completo en ambos lados.
 - **Identificador:** UUID generado por la base (`gen_random_uuid()`). Estable y no autonumérico (T-06-N04).
@@ -74,7 +81,7 @@ CI falla si aparece un alto o crítico (`npm run audit:prod`, `--audit-level=hig
 
 ## 6. Limitaciones conocidas del entorno local
 
-- **Docker Desktop no arranca en la máquina de desarrollo** («Docker Desktop is unable to start»). Por eso las pruebas de integración (Testcontainers) y el smoke de la imagen corren en GitHub Actions, que es donde tienen que pasar para que Render despliegue.
+- **Docker Desktop no arranca en la máquina de desarrollo** («Docker Desktop is unable to start»). Por eso el smoke de la imagen corre en GitHub Actions, que es donde tiene que pasar para que Render despliegue. Desde WP-02, las pruebas de integración también corren en local contra un PostgreSQL 16 real sin Docker: `TEST_DATABASE_URL` apunta a una instancia local (el setup la rechaza si no es `localhost`) y se le aplica `migrate deploy`, igual que en CI. En CI siguen con Testcontainers.
 - El plan gratuito de Render apaga la API después de 15 minutos sin tráfico: la primera respuesta puede tardar alrededor de un minuto. Antes de una demo, hay que abrir `/health/ready` unos minutos antes.
 
 ## 7. Publicación del repositorio (2026-09-18)

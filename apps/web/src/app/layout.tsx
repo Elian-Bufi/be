@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { ProveedorDeSesion } from '../lib/sesion';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'BE — en construcción',
+  title: 'BE',
   description: 'BE — Plataforma integrada de inteligencia en salud.',
   robots: { index: false, follow: false },
 };
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es-AR">
-      <body>{children}</body>
+      <body>
+        <ProveedorDeSesion>{children}</ProveedorDeSesion>
+      </body>
     </html>
   );
 }
