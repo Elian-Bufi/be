@@ -123,3 +123,20 @@ CI falla si aparece un alto o crítico (`npm run audit:prod`, `--audit-level=hig
 **Regresión y decisión final (2026-09-18).** En el repositorio recreado, el merge del PR #1 (`960d1d2`) se hizo con `gh pr merge`. GitHub firma los merges web con el email de la cuenta, así que ese commit volvió a tener el email personal del autor, y el PR lo referencia de forma permanente. Se evaluaron tres salidas: repositorio espejo privado para Render, repositorio y Blueprint nuevos, o publicar tal cual. **Dirección decidió publicar tal cual**: el email del autor queda visible solo en ese merge commit. Antes de publicar se repitió la auditoría sobre los 16 commits y los 323 blobs del repositorio: sin credenciales, sin el PDF y sin datos de terceros. Medida para que no se repita: todos los merges se hicieron en local con el email noreply (`eaf785c`, `fd3ed53`). **Cierre (2026-09-19):**
 - Dirección activó «Keep my email addresses private» y la protección de `main` (ACTA-DIR-034 §5): PR obligatorio sin aprobaciones requeridas, los cuatro checks de CI, rama al día y sin excepción para administradores.
 - Desde entonces los PR se integran desde GitHub, con autor noreply (verificado en el merge #15).
+
+## 8. Autorización y concurrencia (WP-03, 2026-09-19)
+
+Detalle y ubicación de cada garantía en `DEFENSA/WP-03.md`.
+
+- **Un solo PDP, sin caché:** `PdpService.decidirPorAlcance`, invocado por `PdpGuard` en toda operación protegida. Las siete dimensiones de RF-021 se evalúan con una función pura de `@be/domain` sobre hechos leídos en una sola sentencia, y cada decisión se registra en la misma transacción. Denegar es un 404 idéntico al de un recurso inexistente.
+- **Orden único de bloqueos** (`apps/api/src/prisma/concurrencia.ts`): identidad → verificación y habilitación → solicitud → componente → consentimiento → A3.
+  - Las escrituras usan `FOR NO KEY UPDATE`, que no choca con el `FOR KEY SHARE` de las claves foráneas.
+  - El PDP toma las mismas filas en modo compartido, así que cada decisión queda antes o después de cada corte.
+  - El corte y la decisión llevan la hora de la base (`clock_timestamp` o `statement_timestamp`), no la de llegada del request.
+  - Un deadlock o una falla de serialización se reintentan hasta tres veces; si persisten, responden 409 de conflicto concurrente.
+- **Máquinas en tres capas:** dominio, servicio con bloqueo y triggers. Además, un constraint trigger diferido exige que toda transición confirme con su hecho en la misma transacción. Identifica esas filas con `xmin = pg_current_xact_id()::xid`, porque el código no usa savepoints.
+- **Sin deriva de Prisma:** las garantías que Prisma no modela (índices parciales, CHECK y triggers) viven en la migración, y las claves foráneas, también en `schema.prisma`. Una prueba de integración corre `migrate diff --exit-code` contra una base sombra propia. Una sombra acotada a un schema da diferencias falsas.
+- **Siembra demo por identidad** (DL-036): `BE_DEMO_PROFESIONALES` lista identidades ya registradas, no correos, y la siembra solo prepara cuentas `@example.invalid`.
+- **Límite de lecturas protegidas:** 120 por minuto por actor. Cada lectura registra decisiones que no se borran, y sin límite una cuenta podría llenar la base gratuita.
+- **`Cache-Control: no-store`** en todas las respuestas de la API.
+- **Build del APK:** `apk.yml` necesita `EXPO_TOKEN`; sin él, avisa y no construye. Un fallo ahí quedaría como check fallido en `main` y bloquearía el auto-deploy de Render, como pasó con `08cdd08` (PR #20). Mientras falte el secreto, el APK se construye con la CLI de EAS desde la máquina de Dirección.

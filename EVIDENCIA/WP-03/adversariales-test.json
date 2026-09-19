@@ -1,0 +1,81 @@
+{
+  "api": "https://be-api-hndp.onrender.com",
+  "momento": "2026-09-19T13:18:19.837Z",
+  "profesional": "DEMO-PN",
+  "casos": [
+    {
+      "caso": "3",
+      "titulo": "vínculo aceptado y B2 otorgado, pero sin A3: el profesional no accede",
+      "resultado": "PASA",
+      "observado": {
+        "dashboard": 404,
+        "codigo": "RESOURCE_NOT_FOUND"
+      }
+    },
+    {
+      "caso": "1",
+      "titulo": "asesorado ajeno e identificador inventado: 404 idéntico, sin diferencia de tiempo útil",
+      "resultado": "PASA",
+      "observado": {
+        "ajeno": 404,
+        "inexistente": 404,
+        "cuerpo": {
+          "error": {
+            "code": "RESOURCE_NOT_FOUND",
+            "message": "Recurso no encontrado."
+          }
+        },
+        "medianaAjenoMs": 235,
+        "medianaInexistenteMs": 227
+      }
+    },
+    {
+      "caso": "4",
+      "titulo": "campos y parámetros autoritativos del cliente se rechazan; la capacidad de /me no abre nada",
+      "resultado": "PASA",
+      "observado": {
+        "campos": "400 UNKNOWN_FIELD",
+        "query": "400 INVALID_REQUEST",
+        "capacidadesEnMe": [
+          "PROFESSIONAL_WORKSPACE"
+        ],
+        "dashboardSinVinculo": 404
+      }
+    },
+    {
+      "caso": "5",
+      "titulo": "llamar la API directo (declarando WEB o APK) no saltea al PDP: mismo 404",
+      "resultado": "PASA",
+      "observado": {
+        "web": 404,
+        "apk": 404
+      }
+    },
+    {
+      "caso": "9",
+      "titulo": "pausado: el profesional recibe 404; el asesorado ve su vínculo con el acceso bloqueado; al reanudar vuelve",
+      "resultado": "PASA",
+      "observado": {
+        "pausa": 200,
+        "dashboardEnPausa": 404,
+        "vistaDelAsesorado": "PAUSADO · BLOCKED",
+        "reanudacion": 200,
+        "dashboardAlReanudar": 200
+      }
+    },
+    {
+      "caso": "2",
+      "titulo": "revocar B2: la request siguiente del profesional ya es 404; el vínculo sigue ACEPTADO",
+      "resultado": "PASA",
+      "observado": {
+        "antes": 200,
+        "revocacion": 200,
+        "revocadoEn": "2026-09-19T13:18:19.726Z",
+        "siguiente": 404,
+        "msHastaLaDenegacion": 233,
+        "vinculoDespues": "ACEPTADO"
+      }
+    }
+  ],
+  "todos": true
+}

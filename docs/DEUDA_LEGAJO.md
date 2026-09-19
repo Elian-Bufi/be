@@ -22,7 +22,7 @@
 | DL-015 | WP-02 · 2026-09-18 | 08 §24.5, §38 · 09v12 | Rate limiting con umbrales provisionales | ABIERTA |
 | DL-016 | WP-02 · 2026-09-18 | 09v12 ACC-P1-03/04 · 06 §5.7.4 | Cierre síncrono; ACC-P1-04; forma del contrato de cierre | ABIERTA |
 | DL-017 | WP-02 · 2026-09-18 | 09v12 · 09v7 T14 · 08:487 | Step-up del cierre sin MFA | ABIERTA |
-| DL-018 | WP-02 · 2026-09-18 | 11A TEST-AUTH-013 | «El cierre finaliza vínculos» no es demostrable sin vínculos | ABIERTA |
+| DL-018 | WP-02 · 2026-09-18 | 11A TEST-AUTH-013 | «El cierre finaliza vínculos» no es demostrable sin vínculos | **CERRADA** (WP-03, CI de main `08cdd08`) |
 | DL-019 | WP-02 · 2026-09-18 | 08 R-01/R-02/R-03, §17-18 · 06 REG-06-24 | Supresión del hash al cierre y retención posterior | ABIERTA |
 | DL-020 | WP-02 · 2026-09-18 | 06 §5.7.4 · 05 · 09 | Suspensión y restablecimiento sin UC ni operación | ABIERTA |
 | DL-021 | WP-02 · 2026-09-18 | 08 §12.2/§12.4 · 06 §5.4.2 | Actos A1/A2 y datos del alta fuera del modelo del 06 | ABIERTA |
@@ -357,7 +357,7 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 ## DL-018 — TEST-AUTH-013 (a): «el cierre finaliza vínculos por eventos» no es demostrable sin vínculos
 
-**Prioridad:** alta · **Documento:** 11A:534 · 06:2191 · 05:14513 · **Estado:** ABIERTA
+**Prioridad:** alta · **Documento:** 11A:534 · 06:2191 · 05:14513 · **Estado:** CERRADA (2026-09-19)
 
 **Qué dice el legajo.**
 - TEST-AUTH-013 afirma «cierre finaliza vínculos por eventos, no delete silencioso» (11A:534).
@@ -375,6 +375,12 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 **Condición de cierre.** El paquete de vínculos ejecuta la parte (a) completa.
 
 **WP-03 (2026-09-19).** WP-03 es el paquete de vínculos. Ejecuta la parte (a) completa, con dos alcances activos (Nutrición y Entrenamiento) antes del cierre: el cierre finaliza cada alcance con `FinalizarAlcance`, actor sistema y motivo `CIERRE_DE_CUENTA`, e invalida las solicitudes pendientes, en la misma transacción (T13 de `docs/paquetes/WP-03.md`). La deuda se cierra cuando esa prueba pase en CI.
+
+**Cierre (2026-09-19).** TEST-AUTH-013 (a) pasa en la CI de `main` `08cdd08` (corrida 35443841420). Lo prueban:
+- `cierre.int-spec.ts`, con dos casos: el cierre del asesorado, con dos alcances vivos (uno pausado) y una solicitud pendiente, y el cierre del profesional;
+- `concurrencia-wp03.int-spec.ts`, con el cierre concurrente contra REL-01, REL-03 y pausas en bucle: sin deadlocks ni solicitudes pendientes hacia la cuenta cerrada.
+
+La parte (b) sigue en PASS. Evidencia: `EVIDENCIA/WP-03/resultados-integracion-main-08cdd08.md`.
 
 ## DL-019 — Supresión del hash al cierre y retención posterior
 

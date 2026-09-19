@@ -1,6 +1,6 @@
 # DESPLIEGUE — ambiente `test`
 
-> Runbook de WP-01, actualizado en WP-02. Arquitectura: 07 §26–§39. Decisiones: `DECISIONES_TECNICAS.md` §3. Desvíos: `DEUDA_LEGAJO.md` DL-006, DL-007, DL-008 y DL-030.
+> Runbook de WP-01, actualizado en WP-02 y WP-03. Arquitectura: 07 §26–§39. Decisiones: `DECISIONES_TECNICAS.md` §3. Desvíos: `DEUDA_LEGAJO.md` DL-006, DL-007, DL-008 y DL-030.
 > **Solo datos sintéticos.** Render no recibe datos reales mientras G-Q008-1, G-Q008-2 y el gate 08 §42 estén abiertos.
 
 ## Flujo
@@ -16,7 +16,8 @@ push / PR ─► GitHub Actions (ci.yml)
 merge a main + checks OK ─► Render (autoDeployTrigger: checksPass)
                ├─ be-api   build imagen ─► arranque: prisma migrate deploy ─► node ─► readiness /health/ready ─► switch
                └─ be-web   npm ci + next build (export) ─► CDN
-tag apk-v* o manual ─► apk.yml ─► EAS build perfil test ─► URL del APK
+tag apk-v* o manual ─► apk.yml ─► EAS build perfil test ─► URL del APK   (requiere el secreto EXPO_TOKEN)
+local, con sesión de EAS ─► npx eas-cli build --platform android --profile test ─► URL del APK ─► release be-apk-x.y.z
 ```
 
 ## URLs del ambiente `test`
@@ -25,7 +26,7 @@ tag apk-v* o manual ─► apk.yml ─► EAS build perfil test ─► URL del A
 |---|---|
 | API | `https://be-api-hndp.onrender.com` (`/health`, `/health/live`, `/health/ready`) |
 | Website | `https://be-web-1ngj.onrender.com` |
-| APK | **vigente:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.2.0/be-0.2.0-8256951.apk` (WP-02, release permanente; EAS `05509aaf…` expira 2026-10-03) · anterior: `be-apk-0.1.0/be-0.1.0-fd3ed53.apk` (WP-01) |
+| APK | **vigente:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.3.0/be-0.3.0-08cdd08.apk` (WP-03, release permanente; EAS `339436c0…` expira 2026-10-03) · anteriores: `be-apk-0.2.0/be-0.2.0-8256951.apk` (WP-02) y `be-apk-0.1.0/be-0.1.0-fd3ed53.apk` (WP-01) |
 
 Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían a terceros, así que Render agrega sufijos. Qué depende de cada URL:
 
@@ -50,6 +51,33 @@ Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían
 | `BCRYPT_COST` | opcional (por defecto 10) | 10 a 15. El hash señuelo toma el costo de los hashes guardados (DL-014) |
 | `RATE_LIMIT_LOGIN_*`, `RATE_LIMIT_LOGIN_IP_*`, `RATE_LIMIT_LOGIN_ID_*`, `RATE_LIMIT_REGISTRO_*` | opcionales | `_MAX` y `_WINDOW_MS`. Por defecto: 5/15 min por red + identificador, 100/15 min por red, 20/15 min por identificador y 10/h de registro por red (DL-015, DL-030) |
 | `TRUST_PROXY_HOPS` | opcional (por defecto 1) | Saltos de proxy confiables (el borde de Render). Website y APK llaman directo, así la IP que llega es la del cliente (DL-030) |
+
+### Desde WP-03
+
+| Variable | Origen | Nota |
+|---|---|---|
+| `BE_DEMO_PROFESIONALES` | `render.yaml` (no es secreto) | Profesionales demo que el servicio interno verifica y habilita al arrancar (DL-036). Formato `identidadId|ALCANCE|TIPO|Nombre visible`, separados por `;`. Solo con `APP_ENV` test o development, y solo prepara cuentas sintéticas (`@example.invalid`) |
+| `SOLICITUD_DE_VINCULO_CADUCIDAD_DIAS` | opcional (por defecto 30) | 1 a 365. Caducidad perezosa de las solicitudes pendientes (DL-037) |
+| `RATE_LIMIT_CONSULTA_PROTEGIDA_MAX` / `_WINDOW_MS` | opcionales (por defecto 120 por minuto) | Límite por actor de las lecturas protegidas (DSH-03, REL-06, CON-01). Cada una registra decisiones que no se borran |
+
+### Cuentas profesionales demo (MESA-01 punto 14)
+
+1. Registrar la cuenta por la API pública, como cualquier persona, con un correo `@example.invalid`. La contraseña va solo a `.env.cuentas-demo`, que git ignora.
+2. Tomar su identificador BE (`GET /api/v1/me`).
+3. Declararla en `BE_DEMO_PROFESIONALES` con un PR **solo de configuración** (DL-008).
+4. La siembra corre al arrancar la API (`OnApplicationBootstrap`): después del deploy siguiente, o del próximo arranque en frío. Es idempotente.
+
+Van por identidad y no por correo. Si se publicara un correo antes de registrarlo, alguien podría registrarlo y quedar verificado. Las dos cuentas actuales son DEMO-PN y DEMO-PT (`docs/mesa/MESA_01/ESTADO_PUNTOS_5_14_WP-03.md`).
+
+### APK
+
+`apk.yml` necesita el secreto `EXPO_TOKEN` en GitHub (alta inicial, paso 3). Sin él, el build falla al autenticarse; pasó el 2026-09-19. Mientras tanto, el APK se construye con la CLI de EAS desde la máquina de Dirección, con su sesión:
+
+```bash
+cd apps/mobile && npx eas-cli@24.6.0 build --platform android --profile test --non-interactive
+```
+
+El artefacto de EAS expira a los 14 días. Por eso el APK de cada paquete se publica como release permanente de GitHub (`be-apk-x.y.z`), con su SHA-256 en la evidencia.
 
 **Pruebas de integración en local sin Docker:** `TEST_DATABASE_URL=postgresql://…@localhost:…/base npm run test:integration`. La base tiene que ser local (el setup lo verifica) y se le aplica `migrate deploy`, igual que en CI.
 
