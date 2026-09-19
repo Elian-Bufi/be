@@ -46,7 +46,7 @@
 | DL-039 | WP-03 · 2026-09-19 | 06:251, 06:262 · 09v8:1518-1562, 1962 · 08:307, 08:368, 08:374 | Finalidad y categorías pertinentes sin catálogo | **SIMPLIFICACIÓN DECLARADA** 2026-09-19 · consentimiento por alcance y finalidad; categorías especificadas y no implementadas |
 | DL-040 | WP-03 · 2026-09-19 | 09v8:161-170, 1523-1526 · 11A:196 · DL-009 | Nombre visible de las partes sin campos de perfil aprobados | ABIERTA |
 | DL-041 | WP-03 · 2026-09-19 | 10-B01:645-663, 1019-1031, 1310-1319 · brief WP-03 | El profesional sin Cartera | ABIERTA |
-| DL-042 | WP-03 · 2026-09-19 | DV-05 (DV05.md:1116-1133) · brief WP-03 | Casos adversariales de DV-05 que dependen de dominios | **ASIGNADA a WP-04** por Dirección (2026-09-19) |
+| DL-042 | WP-03 · 2026-09-19 | DV-05 (DV05.md:1116-1133) · brief WP-03 | Casos adversariales de DV-05 que dependen de dominios | **ASIGNADA**: 8 y 7 (variante nutricional) en WP-04; 6 y 10 en WP-05, antropometría (Dirección, 2026-09-19) |
 | DL-043 | WP-03 · 2026-09-19 | 09v8:1161-1163, 1208-1220, 1309-1311, 1389, 1447-1490, 1764-1778 | Contratos de REL con forma no definida en el 09 | ABIERTA |
 | DL-044 | WP-03 · 2026-09-19 | 08 §13 · 08 §14.1 · 09v8:1385-1391 | Qué ve el profesional de un vínculo finalizado | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción B) |
 | DL-045 | WP-03 · 2026-09-19 | 05:2840-2845 (UC-P04 V02) · 06 §7.3.2 · INV-06-52 | Solicitud iniciada por el asesorado: el profesional no acepta | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A) |
@@ -60,7 +60,7 @@
 | DL-053 | WP-04 · 2026-09-19 | 04:446, 04:1141 · 11A:213 · 06:3504, 3612-3619, 7714 | Q-007: abierta en el 04 y el 11A, resuelta en el 06 | ABIERTA |
 | DL-054 | WP-04 · 2026-09-19 | 05:7117, 7075-7094 · 06:5967-5982 · brief WP-04 | Pendiente de revisión y timeline sin Cartera | ABIERTA |
 | DL-055 | WP-04 · 2026-09-19 | 09v9:158, 175-179, 601-644, 671, 804-806, 862 · CONS:655 | Contratos NUT con forma no definida en el 09 | ABIERTA |
-| DL-056 | WP-04 · 2026-09-19 | 04:378-385 (RF-028) · 05:5777, 5921 · brief WP-04 | RF-028 (Open Food Facts), P0 de compromiso académico, sin paquete asignado | ABIERTA |
+| DL-056 | WP-04 · 2026-09-19 | 04:378-385 (RF-028) · 05:5777, 5921 · brief WP-04 | RF-028 (Open Food Facts), P0 de compromiso académico, sin paquete asignado | **DECIDIDA** 2026-09-19 · opción A: paquete de integraciones posterior a WP-04 |
 
 ---
 
@@ -937,7 +937,13 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 
 **Resolución — ASIGNADA el 2026-09-19.** Dirección eligió A. Los casos 6, 7, 8 y 10 quedan asignados a WP-04.
 
-**Condición de cierre.** WP-04 deja ejecutables los casos 6, 7, 8 y 10.
+**Reasignación — 2026-09-19.** Al leer las fuentes de WP-04 se vio que dos casos no son de nutrición:
+- el **6** (anular dos veces una medición) es TEST-ANT-006 (11A:581);
+- el **10** (borrador de evaluación de otro profesional) usa el estado `EN_PREPARACION` de la evaluación antropométrica (06:8593-8630; 08 §56.5).
+
+WP-04 habilita el **8** (editar un plan activado) y el **7** en su variante nutricional: un día sin registro se muestra «sin registro», nunca cero (INV-06-135). Dirección dejó el orden de los dominios a criterio del ejecutor: **WP-05 es antropometría**, y ahí van el 6, el 10 y el 7 en su variante de evolución de mediciones (INV-06-176).
+
+**Condición de cierre.** WP-04 deja ejecutables el 8 y el 7 nutricional; WP-05, el 6, el 10 y el 7 de mediciones.
 
 ## DL-043 — Contratos de REL con forma no definida en el 09
 
@@ -1198,6 +1204,8 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 - **A.** Asignar RF-028, UC-I07, UC-I08 y API-INT-NUT-02 y 03 a un paquete posterior, antes de la entrega.
 - **B.** Incluirlo en WP-04.
 
-**Provisorio en código.** Ninguno: WP-04 deja el catálogo propio y la carga manual, que son el fallback que el mismo RF exige. Decide Dirección.
+**Provisorio en código.** Ninguno: WP-04 deja el catálogo propio y la carga manual, que son el fallback que el mismo RF exige.
+
+**Resolución — DECIDIDA el 2026-09-19.** Dirección eligió A: RF-028, UC-I07, UC-I08 y API-INT-NUT-02 y 03 van a un paquete de integraciones posterior a WP-04, antes de la entrega.
 
 **Condición de cierre.** RF-028 queda asignado a un paquete o se declara fuera de la entrega con fundamento.
