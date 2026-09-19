@@ -74,8 +74,8 @@ export const OPERACIONES_WP02: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     exito: { status: 204 },
-    errores: { 400: ['UNKNOWN_FIELD'] },
-    fuente: '09v8:397-427',
+    errores: { 400: ['INVALID_REQUEST'], 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID'] },
+    fuente: '09v8:397-427 · DEUDA_LEGAJO DL-029 (idempotente: sesión ya no activa → 204)',
   },
   {
     id: 'API-ACC-04',
@@ -85,7 +85,7 @@ export const OPERACIONES_WP02: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     exito: { status: 204 },
-    errores: { ...SESION, 400: ['UNKNOWN_FIELD'] },
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
     fuente: '09v8:431-457',
   },
   {
@@ -96,7 +96,7 @@ export const OPERACIONES_WP02: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     exito: { status: 200, schema: MeResponseSchema },
-    errores: { ...SESION, 400: ['UNKNOWN_FIELD'] },
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
     fuente: '09v8:461-505',
   },
   {
@@ -125,7 +125,7 @@ export const OPERACIONES_WP02: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     exito: { status: 200, schema: RequisitoDeConsentimientoDeSaludResponseSchema },
-    errores: { ...SESION, 400: ['UNKNOWN_FIELD'] },
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
     fuente: '09:2379-2433',
   },
 ];
@@ -194,4 +194,11 @@ export function documentoOpenApi(): Record<string, unknown> {
     },
     paths,
   };
+}
+
+/** Códigos de error declarados para una operación (los propios más los comunes), por status. Lo usa el contract test. */
+export function erroresDeclarados(id: string): Readonly<Record<string, readonly string[]>> {
+  const op = OPERACIONES_WP02.find((o) => o.id === id);
+  if (!op) throw new Error(`Operación no declarada: ${id}`);
+  return { ...op.errores, ...COMUNES };
 }

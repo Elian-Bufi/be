@@ -34,11 +34,17 @@ export const Campo = forwardRef<HTMLInputElement, PropsDeCampo>(function Campo({
   );
 });
 
-export function ResumenDeErrores({ titulo, errores }: { titulo: string; errores: readonly { id: string; texto: string }[] }) {
+/**
+ * El foco va al resumen solo cuando un envío produce errores (`intento` cambia), nunca en cada render: si no, cada
+ * tecla que el usuario escribe para corregir un campo le devolvería el foco al resumen (10-B10 §6-§7).
+ */
+export function ResumenDeErrores({ titulo, errores, intento }: { titulo: string; errores: readonly { id: string; texto: string }[]; intento: number }) {
   const ref = useRef<HTMLDivElement>(null);
+  const hayErrores = errores.length > 0;
   useEffect(() => {
-    if (errores.length > 0) ref.current?.focus();
-  }, [errores]);
+    if (hayErrores) ref.current?.focus();
+    // A propósito depende solo del envío (intento), no de la lista.
+  }, [intento]);
   if (errores.length === 0) return null;
   return (
     <div ref={ref} className="aviso aviso--error" role="alert" tabIndex={-1}>

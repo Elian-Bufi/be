@@ -20,7 +20,11 @@ import { Aviso, Boton, Campo, Casilla, Parrafo, Titulo, estilos as ui } from '..
 type Errores = Partial<Record<'correo' | 'contrasena' | 'a1' | 'a2', string>>;
 type Estado = 'editando' | 'enviando' | 'creada' | 'no-disponible' | 'incierto' | { error: string };
 
-export function PantallaDeRegistro({ irALogin }: { irALogin: () => void }) {
+/**
+ * `mostrarAviso` lleva la pantalla al principio, donde están el resumen de errores y el resultado: el botón «Crear
+ * cuenta» queda al final de un formulario largo y, sin esto, el resultado aparecería fuera de la vista.
+ */
+export function PantallaDeRegistro({ irALogin, mostrarAviso }: { irALogin: () => void; mostrarAviso: () => void }) {
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [a1, setA1] = useState(false);
@@ -43,10 +47,11 @@ export function PantallaDeRegistro({ irALogin }: { irALogin: () => void }) {
     if (!a1) encontrados.a1 = MENSAJE_DE_CAMPO.A1_REQUERIDO;
     if (!a2) encontrados.a2 = MENSAJE_DE_CAMPO.A2_REQUERIDO;
     setErrores(encontrados);
-    if (Object.keys(encontrados).length > 0) return;
+    if (Object.keys(encontrados).length > 0) return mostrarAviso();
 
     setEstado('enviando');
     const r = await api.registrar({ correo, contrasena }, clave.current);
+    mostrarAviso();
     if (r.ok) {
       setContrasena('');
       return setEstado('creada');
@@ -65,7 +70,7 @@ export function PantallaDeRegistro({ irALogin }: { irALogin: () => void }) {
       setErrores(deLaApi);
       return setEstado('editando');
     }
-    if (r.codigo === 'TERMS_VERSION_NOT_ACCEPTABLE' || r.codigo === 'PRIVACY_VERSION_NOT_ACCEPTABLE') return setEstado({ error: COPY.versionDesactualizada });
+    if (r.codigo === 'TERMS_VERSION_NOT_ACCEPTABLE' || r.codigo === 'PRIVACY_VERSION_NOT_ACCEPTABLE') return setEstado({ error: COPY.versionDesactualizadaApk });
     if (r.codigo === 'RATE_LIMITED') return setEstado({ error: COPY.demasiadosIntentos });
     return setEstado({ error: COPY.noDisponible });
   }

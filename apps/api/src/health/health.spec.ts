@@ -14,7 +14,11 @@ const ENTORNO = {
   corsAllowedOrigins: [],
   jwtSecret: 'secreto-sintetico-de-prueba-de-32-caracteres-o-mas',
   costoBcrypt: 10,
-  limites: { login: { maximo: 5, ventanaMs: 900000 }, registro: { maximo: 10, ventanaMs: 3600000 } },
+  limites: {
+    login: { maximo: 5, ventanaMs: 900000 },
+    loginPorIp: { maximo: 100, ventanaMs: 900000 },
+    registro: { maximo: 10, ventanaMs: 3600000 },
+  },
   saltosDeProxy: 1,
 };
 
@@ -52,6 +56,8 @@ describe('Health — 07 §30 · TEST-RUN-001/002', () => {
   it('GET /health/live responde 200 con ambiente y versión, sin consultar la base', async () => {
     const prisma = prismaCon([], true);
     app = await appCon(prisma, ['20260916000000_identidad']);
+    // El arranque consulta una vez la base (costo del hash señuelo); lo que importa es que /live no la consulte.
+    (prisma.$queryRaw as jest.Mock).mockClear();
     const res = await request(app.getHttpServer()).get('/health/live').expect(200);
     expect(res.body).toEqual({ data: { estado: 'OK', ambiente: 'test', version: VERSION } });
     expect(prisma.$queryRaw).not.toHaveBeenCalled();

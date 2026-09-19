@@ -136,10 +136,40 @@ describe('08 §29 — historia por adición', () => {
     ).rejects.toThrow(/append-only/);
   });
 
-  it.each(['evento_de_dominio', 'registro_de_auditoria', 'registro_de_supresion', 'solicitud_de_cierre_de_cuenta', 'acto_registrable', 'identidad', 'version_de_texto'])(
+  it.each([
+    'evento_de_dominio',
+    'registro_de_auditoria',
+    'registro_de_supresion',
+    'solicitud_de_cierre_de_cuenta',
+    'acto_registrable',
+    'identidad',
+    'version_de_texto',
+    'perfil_propio',
+    'metodo_de_acceso',
+    'credencial_local',
+    'sesion',
+    'control_de_sesion',
+    'registro_de_idempotencia',
+  ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {
       await expect(prisma.$executeRawUnsafe(`TRUNCATE ${tabla} CASCADE`)).rejects.toThrow(/append-only/);
     },
   );
+});
+
+describe('T-06-24 — una sesión no termina antes de empezar', () => {
+  it('CHECK sesion_cierre_coherente: la base rechaza una finalización anterior al inicio', async () => {
+    await expect(
+      prisma.$transaction(async (tx) => {
+        const identidad = await tx.identidad.create({ data: { autoriaDeCreacionId: '00000000-0000-4000-8000-000000000000', procedencia: PROCEDENCIA } });
+        await tx.perfilPropio.create({ data: { identidadId: identidad.id } });
+        const inicio = new Date('2026-09-18T12:00:00Z');
+        const sesion = await tx.sesion.create({
+          data: { identidadId: identidad.id, momentoDeOcurrencia: inicio, expiraEn: new Date('2026-09-19T00:00:00Z'), versionDeControl: 0 },
+        });
+        await tx.$executeRaw`UPDATE "sesion" SET "estado" = 'FINALIZADA', "momento_de_finalizacion" = ${new Date('2026-09-18T11:59:59Z')} WHERE "id" = ${sesion.id}::uuid`;
+      }),
+    ).rejects.toThrow(/sesion_cierre_coherente/);
+  });
 });

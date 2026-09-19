@@ -6,6 +6,7 @@ import type { INestApplication } from '@nestjs/common';
 import { IniciarSesionResponseSchema, MeResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import { CredencialesService } from '../../apps/api/src/plataforma/credenciales.service';
 import request from 'supertest';
 import {
   appDePrueba,
@@ -78,6 +79,16 @@ describe('TEST-AUTH-001 — login inválido neutral', () => {
     const r = await login(app, identificador, credencial).expect(401);
     const fila = await prisma.registroDeAuditoria.findFirst({ where: { requestId: r.headers['x-request-id'] } });
     expect(fila).toMatchObject({ operacion: 'API-ACC-02', resultado: 'RECHAZO', motivo: 'CUENTA_SUSPENDIDA' });
+  });
+
+  it('TEST-AUTH-001: el hash señuelo usa el costo de los hashes guardados aunque BCRYPT_COST cambie (DL-014)', async () => {
+    await registrarOk(app, correoSintetico('costo')); // garantiza al menos un hash de costo 10 en la base
+    const otra = await appDePrueba({ costoBcrypt: 12 });
+    try {
+      expect(otra.get(CredencialesService).costoDelSenuelo()).toBe(10);
+    } finally {
+      await otra.close();
+    }
   });
 
   it('TEST-AUTH-001: tiempo indistinguible — medianas dentro de max(50 ms, 35 %) (DEUDA_LEGAJO DL-014)', async () => {
@@ -173,7 +184,13 @@ describe('TEST-RF-002 / TEST-UC-P26 / TEST-CT-ACC-02…05 — sesión local', ()
     const token = res.body.data.session.accessToken as string;
     await conSesion(app, token).delete('/api/v1/auth/sessions/current').expect(204);
     expect((await conSesion(app, token).get('/api/v1/me').expect(401)).body.error.code).toBe('SESSION_REVOKED');
-    await conSesion(app, token).delete('/api/v1/auth/sessions/current').expect(204);
+    const repetido = await conSesion(app, token).delete('/api/v1/auth/sessions/current').expect(204);
+    // DL-029: el 204 idempotente de una sesión que ya no estaba activa no se audita como éxito.
+    expect(await prisma.registroDeAuditoria.findFirst({ where: { requestId: repetido.headers['x-request-id'] } })).toMatchObject({
+      operacion: 'API-ACC-03',
+      resultado: 'RECHAZO',
+      motivo: 'SESION_YA_NO_ACTIVA',
+    });
     const sesion = await prisma.sesion.findUniqueOrThrow({ where: { id: res.body.data.session.id } });
     expect(sesion.estado).toBe('FINALIZADA');
     expect(sesion.momentoDeFinalizacion).toBeInstanceOf(Date);
@@ -197,12 +214,12 @@ describe('TEST-RF-002 / TEST-UC-P26 / TEST-CT-ACC-02…05 — sesión local', ()
     await conSesion(app, nueva).get('/api/v1/me').expect(200);
   });
 
-  it('TEST-RF-002: parámetros de query no declarados en /me → 400 (09v7 T12)', async () => {
+  it('TEST-RF-002: parámetros de query no declarados en /me → 400 INVALID_REQUEST (09 §3.1)', async () => {
     const correo = correoSintetico('query');
     await registrarOk(app, correo);
     const token = await tokenDe(app, correo);
     const res = await conSesion(app, token).get('/api/v1/me?identityId=otra').expect(400);
-    expect(['UNKNOWN_FIELD', 'INVALID_REQUEST']).toContain(res.body.error.code);
+    expect(res.body.error.code).toBe('INVALID_REQUEST');
   });
 });
 
@@ -232,7 +249,7 @@ describe('TEST-RNF-SEC-003 — límite de intentos neutral', () => {
   let limitada: INestApplication;
   beforeAll(async () => {
     limitada = await appDePrueba({
-      limites: { login: { maximo: 3, ventanaMs: 60_000 }, registro: { maximo: 2, ventanaMs: 60_000 } },
+      limites: { login: { maximo: 3, ventanaMs: 60_000 }, loginPorIp: { maximo: 12, ventanaMs: 60_000 }, registro: { maximo: 2, ventanaMs: 60_000 } },
     });
   });
   afterAll(() => limitada.close());
@@ -253,6 +270,19 @@ describe('TEST-RNF-SEC-003 — límite de intentos neutral', () => {
     const otra = correoSintetico('limite-otra');
     await registrarOk(app, otra);
     await login(limitada, otra).expect(201);
+  });
+
+  it('TEST-RNF-SEC-003: login — cupo global por red (08:786): identificadores distintos desde la misma red también se frenan', async () => {
+    const global = await appDePrueba({
+      limites: { login: { maximo: 100, ventanaMs: 60_000 }, loginPorIp: { maximo: 4, ventanaMs: 60_000 }, registro: { maximo: 100, ventanaMs: 60_000 } },
+    });
+    try {
+      for (let i = 0; i < 4; i++) await login(global, correoSintetico(`spray-${i}`), OTRA_CREDENCIAL_SINTETICA).expect(401);
+      const r = await login(global, correoSintetico('spray-5'), OTRA_CREDENCIAL_SINTETICA).expect(429);
+      expect(r.body.error.code).toBe('RATE_LIMITED');
+    } finally {
+      await global.close();
+    }
   });
 
   it('TEST-RNF-SEC-003: registro — 429 al superar el límite por IP, sin crear identidad', async () => {

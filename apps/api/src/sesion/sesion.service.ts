@@ -43,6 +43,8 @@ export class SesionService {
   async iniciar(cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<IniciarSesionResponse> {
     const solicitud = validarCuerpo(IniciarSesionRequestSchema, cuerpo);
     const identificador = normalizarIdentificadorLocal(solicitud.identifier);
+    // Dos cupos neutrales (no dependen de que la cuenta exista): global por red y por red + identificador (DL-015).
+    this.limitador.consumir('loginPorIp', ctx.direccionIp);
     this.limitador.consumir('login', ctx.direccionIp, identificador);
 
     const metodo = await this.prisma.metodoDeAcceso.findUnique({
@@ -77,11 +79,16 @@ export class SesionService {
 
     const identidadId = metodo.identidadId;
     const expiraEn = new Date(ctx.momentoDeRecepcion.getTime() + DURACION_DE_SESION_MS);
-    const { sesionId, version } = await this.prisma.$transaction(async (tx) => {
-      // Relectura con bloqueo compartido: serializa con CerrarCuenta/SuspenderCuenta (FOR UPDATE).
+    let estadoEnCarrera: EstadoOperativoDeCuenta | 'INEXISTENTE' | null = null;
+    const emitida = await this.prisma.$transaction(async (tx) => {
+      // Relectura con bloqueo compartido: serializa con CerrarCuenta/SuspenderCuenta (FOR UPDATE). Si la cuenta dejó
+      // de ser operativa entre la verificación y este punto, no se crea sesión.
       const [cuenta] = await tx.$queryRaw<{ estado: EstadoOperativoDeCuenta }[]>`
         SELECT "estado_operativo_de_cuenta" AS "estado" FROM "identidad" WHERE "id" = ${identidadId}::uuid FOR SHARE`;
-      if (!cuenta || !cuentaPermiteOperar(cuenta.estado)) throw errores.credencialesInvalidas();
+      if (!cuenta || !cuentaPermiteOperar(cuenta.estado)) {
+        estadoEnCarrera = cuenta?.estado ?? 'INEXISTENTE';
+        return null;
+      }
       const control = await tx.controlDeSesion.findUniqueOrThrow({ where: { identidadId } });
       const sesion = await tx.sesion.create({
         data: {
@@ -108,6 +115,20 @@ export class SesionService {
       );
       return { sesionId: sesion.id, version: control.version };
     });
+    if (!emitida) {
+      // El intento fallido también se audita (09v8 ACC-02: «failed attempts: REQUIRED»), igual que la rama principal.
+      await this.auditoria.registrar({
+        operacion: 'API-ACC-02',
+        resultado: 'RECHAZO',
+        motivo: `CUENTA_${estadoEnCarrera}`,
+        sujetoId: identidadId,
+        superficie: ctx.superficie,
+        requestId: ctx.requestId,
+        momentoDeOcurrencia: ctx.momentoDeRecepcion,
+      });
+      throw errores.credencialesInvalidas();
+    }
+    const { sesionId, version } = emitida;
 
     return {
       data: {
@@ -125,7 +146,8 @@ export class SesionService {
 
   /**
    * API-ACC-03 — «sesión actual queda inutilizable»; «repetir después de una pérdida de respuesta es semánticamente
-   * idempotente» (09v8): una sesión reconocible pero ya finalizada, revocada o vencida responde igual 204 (TEN-27).
+   * idempotente» (09v8): una sesión reconocible pero ya finalizada, revocada o vencida responde igual 204
+   * (DEUDA_LEGAJO DL-029). Ese no-op NO se audita como éxito: queda RECHAZO con motivo SESION_YA_NO_ACTIVA.
    */
   async finalizarActual(encabezadoAuthorization: string | undefined, ctx: ContextoDeSolicitud): Promise<void> {
     const token = extraerBearer(encabezadoAuthorization);
@@ -134,15 +156,16 @@ export class SesionService {
     await this.prisma.$transaction(async (tx) => {
       const sesion = await tx.sesion.findUnique({ where: { id: reclamos.sid }, select: { identidadId: true, estado: true } });
       if (!sesion || sesion.identidadId !== reclamos.sub) throw errores.sesionInvalida();
-      const finalizadas = await tx.sesion.updateMany({
-        where: { id: reclamos.sid, estado: 'ACTIVA' },
-        data: { estado: 'FINALIZADA', momentoDeFinalizacion: ctx.momentoDeRecepcion },
-      });
+      // La finalización nunca queda antes del inicio de la sesión (T-06-24; CHECK sesion_cierre_coherente).
+      const finalizadas = await tx.$executeRaw`
+        UPDATE "sesion" SET "estado" = 'FINALIZADA',
+               "momento_de_finalizacion" = GREATEST(${ctx.momentoDeRecepcion}::timestamptz, "momento_de_ocurrencia")
+         WHERE "id" = ${reclamos.sid}::uuid AND "estado" = 'ACTIVA'`;
       await this.auditoria.registrar(
         {
           operacion: 'API-ACC-03',
-          resultado: 'EXITO',
-          motivo: finalizadas.count === 0 ? 'SESION_YA_NO_ACTIVA' : null,
+          resultado: finalizadas > 0 ? 'EXITO' : 'RECHAZO',
+          motivo: finalizadas > 0 ? null : 'SESION_YA_NO_ACTIVA',
           actorId: sesion.identidadId,
           sujetoId: sesion.identidadId,
           recursoTipo: 'Sesion',
@@ -180,6 +203,8 @@ export class SesionService {
 /**
  * Revocación server-side (08 §26.3): todas las sesiones ACTIVAS pasan a REVOCADA y el tokenVersion avanza, así
  * ningún token emitido antes vuelve a autenticar aunque no haya expirado (07 §43-bis A+B). Devuelve cuántas revocó.
+ * La finalización es el mayor entre el momento de la revocación y el inicio de cada sesión: una sesión emitida mientras
+ * la revocación esperaba el bloqueo no queda «finalizada antes de empezar» (T-06-24).
  */
 export async function revocarSesiones(
   tx: Prisma.TransactionClient,
@@ -187,10 +212,11 @@ export async function revocarSesiones(
   motivo: MotivoDeRevocacionDeSesion,
   momento: Date,
 ): Promise<number> {
-  const r = await tx.sesion.updateMany({
-    where: { identidadId, estado: 'ACTIVA' },
-    data: { estado: 'REVOCADA', motivoDeRevocacion: motivo, momentoDeFinalizacion: momento },
-  });
+  const revocadas = await tx.$executeRaw`
+    UPDATE "sesion" SET "estado" = 'REVOCADA',
+           "motivo_de_revocacion" = ${motivo}::"MotivoDeRevocacionDeSesion",
+           "momento_de_finalizacion" = GREATEST(${momento}::timestamptz, "momento_de_ocurrencia")
+     WHERE "identidad_id" = ${identidadId}::uuid AND "estado" = 'ACTIVA'`;
   await tx.controlDeSesion.update({ where: { identidadId }, data: { version: { increment: 1 } } });
-  return r.count;
+  return revocadas;
 }

@@ -96,7 +96,9 @@ export default function App() {
           </View>
         ) : null}
 
-        {ruta.nombre === 'registro' ? <PantallaDeRegistro irALogin={() => ir({ nombre: 'login' })} /> : null}
+        {ruta.nombre === 'registro' ? (
+          <PantallaDeRegistro irALogin={() => ir({ nombre: 'login' })} mostrarAviso={() => desplazamiento.current?.scrollTo({ y: 0, animated: true })} />
+        ) : null}
 
         {ruta.nombre === 'login' ? (
           <PantallaDeLogin

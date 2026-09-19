@@ -9,6 +9,7 @@ import {
 } from '@be/domain';
 import type { Prisma, TipoDeEventoDeDominio } from '@prisma/client';
 import { errores } from '../http/errores';
+import { AuditoriaService } from '../plataforma/auditoria.service';
 import { revocarSesiones } from '../sesion/sesion.service';
 
 export type ActorDeTransicion = { readonly identidadId: string } | { readonly servicio: 'SERVICIO_INTERNO' };
@@ -28,6 +29,8 @@ const MOTIVO_DE_REVOCACION: Partial<Record<ContextoDeTransicionDeCuenta['transic
  */
 @Injectable()
 export class EstadoDeCuentaService {
+  constructor(private readonly auditoria: AuditoriaService) {}
+
   async transicionar(
     tx: Prisma.TransactionClient,
     identidadId: string,
@@ -66,6 +69,23 @@ export class EstadoDeCuentaService {
           },
         });
         await tx.credencialLocal.deleteMany({ where: { metodoDeAccesoId: { in: credenciales.map((c) => c.metodoDeAccesoId) } } });
+        // 08 §29: «Supresiones ejecutadas — categoría, fundamento, ejecutor» es evento auditable, aparte del registro de
+        // supresiones (DL-019 A: «…y auditarlo»). En la misma transacción: sin auditoría no hay supresión.
+        await this.auditoria.registrar(
+          {
+            operacion: 'SUPRESION',
+            resultado: 'EXITO',
+            motivo: `CREDENCIAL_LOCAL · 08 R-02 · ${transicion.transicion}`,
+            actorId: 'identidadId' in actor ? actor.identidadId : null,
+            sujetoId: identidadId,
+            recursoTipo: 'CredencialLocal',
+            recursoId: credenciales.map((c) => c.metodoDeAccesoId).join(','),
+            superficie: procedencia.superficie,
+            requestId: procedencia.requestId,
+            momentoDeOcurrencia,
+          },
+          tx,
+        );
       }
     }
 

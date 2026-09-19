@@ -274,11 +274,12 @@ ALTER TABLE "solicitud_de_cierre_de_cuenta" ADD CONSTRAINT "solicitud_de_cierre_
 ALTER TABLE "evento_de_dominio" ADD CONSTRAINT "evento_de_dominio_un_actor"
   CHECK (("actor_id" IS NOT NULL) <> ("actor_servicio" IS NOT NULL));
 
--- Sesión revocada ⇒ motivo; finalizada o revocada ⇒ momento de finalización.
+-- Sesión revocada ⇒ motivo; finalizada o revocada ⇒ momento de finalización, nunca anterior a su inicio (T-06-24).
 ALTER TABLE "sesion" ADD CONSTRAINT "sesion_cierre_coherente" CHECK (
-  ("estado" = 'ACTIVA' AND "momento_de_finalizacion" IS NULL AND "motivo_de_revocacion" IS NULL)
-  OR ("estado" = 'FINALIZADA' AND "momento_de_finalizacion" IS NOT NULL AND "motivo_de_revocacion" IS NULL)
-  OR ("estado" = 'REVOCADA' AND "momento_de_finalizacion" IS NOT NULL AND "motivo_de_revocacion" IS NOT NULL)
+  (("estado" = 'ACTIVA' AND "momento_de_finalizacion" IS NULL AND "motivo_de_revocacion" IS NULL)
+   OR ("estado" = 'FINALIZADA' AND "momento_de_finalizacion" IS NOT NULL AND "motivo_de_revocacion" IS NULL)
+   OR ("estado" = 'REVOCADA' AND "momento_de_finalizacion" IS NOT NULL AND "motivo_de_revocacion" IS NOT NULL))
+  AND ("momento_de_finalizacion" IS NULL OR "momento_de_finalizacion" >= "momento_de_ocurrencia")
 );
 
 -- ─── Historia por adición: tablas append-only (08 §29 «sin UPDATE/DELETE»; 07:845) ─────────────
@@ -304,6 +305,12 @@ CREATE TRIGGER "solicitud_de_cierre_de_cuenta_sin_truncate" BEFORE TRUNCATE ON "
 CREATE TRIGGER "version_de_texto_sin_truncate" BEFORE TRUNCATE ON "version_de_texto" FOR EACH STATEMENT EXECUTE FUNCTION "be_solo_agregar"();
 CREATE TRIGGER "acto_registrable_sin_truncate" BEFORE TRUNCATE ON "acto_registrable" FOR EACH STATEMENT EXECUTE FUNCTION "be_solo_agregar"();
 CREATE TRIGGER "identidad_sin_truncate" BEFORE TRUNCATE ON "identidad" FOR EACH STATEMENT EXECUTE FUNCTION "be_solo_agregar"();
+CREATE TRIGGER "perfil_propio_sin_truncate" BEFORE TRUNCATE ON "perfil_propio" FOR EACH STATEMENT EXECUTE FUNCTION "be_solo_agregar"();
+CREATE TRIGGER "metodo_de_acceso_sin_truncate" BEFORE TRUNCATE ON "metodo_de_acceso" FOR EACH STATEMENT EXECUTE FUNCTION "be_solo_agregar"();
+CREATE TRIGGER "credencial_local_sin_truncate" BEFORE TRUNCATE ON "credencial_local" FOR EACH STATEMENT EXECUTE FUNCTION "be_solo_agregar"();
+CREATE TRIGGER "sesion_sin_truncate" BEFORE TRUNCATE ON "sesion" FOR EACH STATEMENT EXECUTE FUNCTION "be_solo_agregar"();
+CREATE TRIGGER "control_de_sesion_sin_truncate" BEFORE TRUNCATE ON "control_de_sesion" FOR EACH STATEMENT EXECUTE FUNCTION "be_solo_agregar"();
+CREATE TRIGGER "registro_de_idempotencia_sin_truncate" BEFORE TRUNCATE ON "registro_de_idempotencia" FOR EACH STATEMENT EXECUTE FUNCTION "be_solo_agregar"();
 
 -- ─── T-06-02: lista blanca de la máquina de estado de cuenta (06 §5.7) ─────────────────────────
 CREATE FUNCTION "be_identidad_guardar"() RETURNS trigger LANGUAGE plpgsql AS $$

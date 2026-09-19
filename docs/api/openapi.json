@@ -491,7 +491,7 @@
             "description": "Éxito, sin cuerpo"
           },
           "400": {
-            "description": "ErrorEnvelope: UNKNOWN_FIELD",
+            "description": "ErrorEnvelope: INVALID_REQUEST",
             "content": {
               "application/json": {
                 "schema": {
@@ -537,7 +537,7 @@
       "delete": {
         "operationId": "API-ACC-03",
         "summary": "Finalizar la sesión actual. Idempotente: repetir responde 204.",
-        "description": "Fuente: 09v8:397-427. AuthN: SESSION.",
+        "description": "Fuente: 09v8:397-427 · DEUDA_LEGAJO DL-029 (idempotente: sesión ya no activa → 204). AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -563,7 +563,17 @@
             "description": "Éxito, sin cuerpo"
           },
           "400": {
-            "description": "ErrorEnvelope: UNKNOWN_FIELD",
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID",
             "content": {
               "application/json": {
                 "schema": {
@@ -702,7 +712,7 @@
             }
           },
           "400": {
-            "description": "ErrorEnvelope: UNKNOWN_FIELD",
+            "description": "ErrorEnvelope: INVALID_REQUEST",
             "content": {
               "application/json": {
                 "schema": {
@@ -1075,7 +1085,7 @@
             }
           },
           "400": {
-            "description": "ErrorEnvelope: UNKNOWN_FIELD",
+            "description": "ErrorEnvelope: INVALID_REQUEST",
             "content": {
               "application/json": {
                 "schema": {

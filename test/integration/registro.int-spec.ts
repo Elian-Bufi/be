@@ -170,9 +170,9 @@ describe('TEST-UC-P25 / TEST-CT-ACC-01 — registro', () => {
   });
 
   it.each([
-    ['sin Idempotency-Key', undefined, 400, 'INVALID_REQUEST'],
-    ['Idempotency-Key inválida', 'corta', 400, 'INVALID_REQUEST'],
-  ])('TEST-CT-ACC-01: %s → %s %s', async (_caso, clave, status, code) => {
+    ['sin Idempotency-Key', 400, 'INVALID_REQUEST', undefined],
+    ['Idempotency-Key inválida', 400, 'INVALID_REQUEST', 'corta'],
+  ])('TEST-CT-ACC-01: %s → %i %s', async (_caso, status, code, clave) => {
     const req = request(app.getHttpServer()).post('/api/v1/registrations');
     if (clave) req.set('Idempotency-Key', clave);
     const res = await req.send(cuerpoDeRegistro(correoSintetico('sin-key'))).expect(status);

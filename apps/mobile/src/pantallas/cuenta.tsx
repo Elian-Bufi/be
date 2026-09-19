@@ -150,16 +150,24 @@ function ErrorConReintento({ mensaje = COPY.errorDeVista, sinConexion, onReinten
   );
 }
 
-/** Cierre síncrono (DL-016): la versión de consecuencias mostrada es la que se envía; reintentos con la misma key. */
+/**
+ * Cierre síncrono (DL-016): la versión de consecuencias mostrada es la que se envía. Resultado incierto: la key se
+ * conserva, «Cancelar» deja de ofrecerse y el aviso queda en la sección aunque se cierre el modal; «Reintentar» usa la
+ * MISMA key (10-B10:430-438), así el servidor devuelve el resultado original aunque la sesión ya esté revocada.
+ */
 function CierreDeCuenta({ token, salir, sesionPerdida }: { token: string; salir: (m: Salida) => void; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
   const [estado, setEstado] = useState<'cerrado' | 'abierto' | 'enviando' | 'incierto' | 'step-up' | { error: string }>('cerrado');
   const clave = useRef<string | null>(null);
   const consecuencias = VERSION_VIGENTE.CONSECUENCIAS_DE_CIERRE;
   const parrafos = consecuencias.texto.split('\n\n').slice(1);
 
+  const [visible, setVisible] = useState(false);
+  const incierto = estado === 'incierto';
+
   function abrir() {
-    clave.current = nuevaClaveDeIdempotencia();
-    setEstado('abierto');
+    if (!incierto || !clave.current) clave.current = nuevaClaveDeIdempotencia();
+    if (!incierto) setEstado('abierto');
+    setVisible(true);
   }
 
   async function confirmar() {
@@ -167,22 +175,27 @@ function CierreDeCuenta({ token, salir, sesionPerdida }: { token: string; salir:
     setEstado('enviando');
     const r = await api.solicitarCierre(token, clave.current);
     if (r.ok) return salir('cierre-registrado');
-    if (r.tipo === 'RED') return setEstado('incierto');
+    if (r.tipo === 'RED' || r.codigo === 'RESPUESTA_NO_RECONOCIDA') return setEstado('incierto');
     if (r.codigo === 'STEP_UP_REQUIRED') return setEstado('step-up');
     if (sesionPerdida(r)) return;
-    setEstado({ error: r.codigo === 'VALIDATION_FAILED' ? COPY.versionDesactualizada : COPY.noDisponible });
+    const consecuenciasViejas = r.codigo === 'VALIDATION_FAILED' && r.issues.some((i) => i.code === 'CONSEQUENCES_NOT_PRESENTED');
+    setEstado({ error: consecuenciasViejas ? COPY.versionDesactualizadaApk : COPY.noDisponible });
   }
 
+  /** Cierra el modal. Si el resultado es incierto, el estado y la key se conservan y el aviso queda en la sección. */
   const cerrar = () => {
-    if (estado !== 'enviando') setEstado('cerrado');
+    if (estado === 'enviando') return;
+    setVisible(false);
+    if (!incierto) setEstado('cerrado');
   };
 
   return (
     <Seccion titulo={COPY.cerrarMiCuenta} peligro>
       <Parrafo>Si cerrás tu cuenta, no vas a poder volver a iniciar sesión con ella. Antes de confirmar vas a ver las consecuencias.</Parrafo>
-      <Boton texto={COPY.cerrarMiCuenta} tipo="peligroSecundario" onPress={abrir} />
+      {incierto && !visible ? <Aviso tipo="error" titulo={COPY.cierreSinConfirmar} /> : null}
+      <Boton texto={incierto ? COPY.reintentar : COPY.cerrarMiCuenta} tipo="peligroSecundario" onPress={abrir} />
 
-      <Modal visible={estado !== 'cerrado'} transparent animationType="fade" onRequestClose={cerrar}>
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={cerrar}>
         <View style={estilos.fondoModal}>
           <ScrollView contentContainerStyle={estilos.dialogo} accessibilityViewIsModal>
             <Text style={ui.tituloDeSeccion} accessibilityRole="header">
@@ -203,7 +216,7 @@ function CierreDeCuenta({ token, salir, sesionPerdida }: { token: string; salir:
               </Aviso>
             ) : null}
             {typeof estado === 'object' ? <Aviso tipo="error" titulo={estado.error} /> : null}
-            <Boton texto={COPY.cancelar} tipo="secundario" onPress={cerrar} deshabilitado={estado === 'enviando'} />
+            <Boton texto={incierto ? 'Volver a la cuenta' : COPY.cancelar} tipo="secundario" onPress={cerrar} deshabilitado={estado === 'enviando'} />
             {estado !== 'step-up' ? (
               <Boton
                 texto={estado === 'enviando' ? 'Cerrando cuenta…' : estado === 'incierto' ? COPY.reintentar : COPY.confirmarCierre}

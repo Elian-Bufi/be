@@ -7,7 +7,7 @@
 |---|---|---|---|---|
 | DL-001 | WP-01 · 2026-09-16 | 07 §0.2 · ACTA-DIR-034 (borrador) | Autorización de implementación no formalizada | **CERRADA** 2026-09-18 · ACTA-DIR-034 v1.0 |
 | DL-002 | WP-01 · 2026-09-16 | 07 §13, §15, §34 | Versiones de runtime y frameworks del 07 vs WP-01 | ABIERTA |
-| DL-003 | WP-01 · 2026-09-16 | 06 §5.4.2 · INV-06-22 | Estructura mínima de Identidad BE vs schema mínimo de WP-01 | EN CURSO — se cierra con WP-02 |
+| DL-003 | WP-01 · 2026-09-16 | 06 §5.4.2 · INV-06-22 | Estructura mínima de Identidad BE vs schema mínimo de WP-01 | **CERRADA** 2026-09-19 · WP-02, migración `20260918200000_identidad_y_sesiones` |
 | DL-004 | WP-01 · 2026-09-16 | 09 §3.1 vs 07 §13.2/§30 | `/health` fuera del prefijo obligatorio `/api/v1` | ABIERTA |
 | DL-005 | WP-01 · 2026-09-16 | 09 §3.2 · 09v7 · 09v8 | Código de error para falla interna inesperada | ABIERTA (hallazgo WP-02) |
 | DL-006 | WP-01 · 2026-09-16 | 07 §36 | Pre-deploy `prisma migrate deploy` no disponible en plan gratuito de Render | ABIERTA |
@@ -33,6 +33,7 @@
 | DL-026 | WP-02 · 2026-09-18 | 09:253-262 · 09v7 T07 · 09v8 | Idempotencia y códigos no definidos | ABIERTA |
 | DL-027 | WP-02 · 2026-09-18 | 11A · 12 · 05:14230 | Oráculos de prueba ausentes en 11A y traza de UC-P26 | ABIERTA |
 | DL-028 | WP-02 · 2026-09-18 | 08 R-08-05, §42-1 | Textos A1, A2, A3 y consecuencias del cierre: sintéticos | ABIERTA |
+| DL-029 | WP-02 · 2026-09-19 | 09v8 ACC-03 · 09v7 T14 | Logout idempotente frente a AuthN SESSION | ABIERTA |
 
 ---
 
@@ -86,6 +87,8 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 - **B.** Ampliar WP-01 con `PerfilPropio` y una estructura mínima de `Procedencia`, para que el seed sintético pueda crear identidades completas.
 
 **Provisorio en código.** Opción A: schema mínimo, **sin seed de Identidad**. La base no está vacía: contiene `_prisma_migrations`.
+
+**Cierre (2026-09-19, WP-02).** La migración aditiva `20260918200000_identidad_y_sesiones` completa la estructura del 06 §5.4.2: Perfil propio (1:1, con INV-06-22 verificado por un constraint trigger diferido), métodos de acceso, autoría de creación y procedencia. La única forma de crear una Identidad es el registro (UC-P25), que crea todo en una transacción. Pruebas: `schema.int-spec.ts` (INV-06-22) y `registro.int-spec.ts` (TEST-UC-P25).
 
 ---
 
@@ -269,7 +272,7 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 - **A.** Todas las ramas ejecutan exactamente una comparación bcrypt (con un hash señuelo si no hay credencial) y una escritura de auditoría, y responden `401 INVALID_CREDENTIALS` con el mismo cuerpo. Esto incluye las cuentas SUSPENDIDA y CERRADA. La prueba compara medianas con una tolerancia declarada: el máximo entre 50 ms y un 35 % de la mediana.
 - **B.** Aserción bloqueante solo sobre código y cuerpo, y el tiempo como medición informativa.
 
-**Provisorio en código.** A. La causa real queda solo en la auditoría interna (09v7 T16).
+**Provisorio en código.** A. La causa real queda solo en la auditoría interna (09v7 T16). El hash señuelo toma el costo **más frecuente entre los hashes guardados**, no el configurado: si `BCRYPT_COST` sube (el 08 lo declara «parámetro revisable»), los hashes existentes conservan su costo, y un señuelo más caro haría que el tiempo delatara qué cuentas existen (hallazgo de la revisión adversarial, 2026-09-19; prueba en `sesiones.int-spec.ts`).
 
 **Condición de cierre.** 11A fija la tolerancia y el 09 decide si una cuenta no operativa tiene código propio.
 
@@ -286,7 +289,14 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 - **A.** Throttler con la clave IP + identificador normalizado, independiente de la existencia de la cuenta, y 429 idéntico. Contadores en la memoria de la instancia única, sin lockout progresivo.
 - **B.** Contadores persistentes en PostgreSQL con lockout progresivo.
 
-**Provisorio en código.** A, configurable por entorno: login 5 cada 15 min y registro 10 por hora.
+**Provisorio en código.** A, configurable por entorno:
+- login: 5 cada 15 min por red + identificador;
+- login: además, **100 cada 15 min por red**, sin importar el identificador (08:786, «global por IP: generoso»). Frena el *password spraying* desde una sola red;
+- registro: 10 por hora por red.
+
+«Red» es la dirección IPv4, o el prefijo /64 si es IPv6: quien controla un /64 no obtiene un cupo por dirección. Estos dos puntos (el cupo global y la agregación IPv6) surgieron de la revisión adversarial del 2026-09-19.
+
+**Pendiente de medición.** El website llama a la API a través del rewrite `/api/*` del sitio estático. Si ese salto no preserva la IP del cliente, todos los usuarios web comparten la red del proxy, y con ella los cupos y la IP guardada como evidencia de A1/A2. Se mide en `test` después del deploy de WP-02; el resultado queda en `EVIDENCIA/WP-02/`.
 
 **Condición de cierre.** 11A calibra los umbrales, o se escala a más de una instancia (lo que obliga a B).
 
@@ -360,7 +370,7 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 - **A.** En la transacción del cierre: suprimir el hash, asentarlo en un registro de supresiones mínimo (categoría, sujeto, fundamento R-02, ejecutor, momento) y auditarlo. Todo lo demás se preserva y queda fuera de toda superficie. La anonimización de R-01/R-03 se difiere hasta que la VJR fije los plazos.
 - **B.** Anonimizar además el identificador local en el mismo acto.
 
-**Provisorio en código.** A. Las filas de sesión revocadas se conservan sin el token (el token nunca se persiste), y su purga por R-02 se difiere.
+**Provisorio en código.** A, completa: el registro de supresiones y la auditoría (`SUPRESION`, recurso `CredencialLocal`, fundamento R-02) se escriben en la misma transacción del cierre. La auditoría se agregó por un hallazgo de la revisión adversarial del 2026-09-19. Las filas de sesión revocadas se conservan sin el token (el token nunca se persiste), y su purga por R-02 se difiere.
 
 **Condición de cierre.** Los plazos VJR de R-01, R-03 y R-06 y la coordinación 06↔08.
 
@@ -521,3 +531,21 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 **Provisorio en código.** A. La API rechaza cualquier versión distinta de la vigente con `422 TERMS_VERSION_NOT_ACCEPTABLE` o `422 PRIVACY_VERSION_NOT_ACCEPTABLE`.
 
 **Condición de cierre.** Textos legales aprobados (VJR).
+
+## DL-029 — Logout idempotente frente a AuthN SESSION
+
+**Prioridad:** baja · **Documento:** 09v8:397-427 (ACC-03) · 09v7 T14 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- API-ACC-03 declara AuthN `SESSION` (09v8:397-427). 09v7 T14 define `SESSION` como «Sesión activa y cuenta operativa».
+- La misma ficha dice que «repetir después de una pérdida de respuesta es semánticamente idempotente».
+
+**Por qué no se puede tal cual.** Si ACC-03 exigiera una sesión activa, el reintento de un logout que ya se aplicó (se perdió la respuesta) respondería 401. El cliente no sabría si su sesión quedó cerrada, y la idempotencia que pide la misma ficha no se cumpliría.
+
+**Opciones.**
+- **A.** ACC-03 reconoce el token (firma válida, sesión existente del mismo titular, aunque esté vencido) y responde 204 aunque la sesión ya no esté activa. Sin token o con uno irreconocible, 401. El no-op no se audita como éxito.
+- **B.** AuthN `SESSION` estricta: 401 si la sesión no está activa, y el cliente trata ese 401 como «sesión ya cerrada».
+
+**Provisorio en código.** A (`SesionService.finalizarActual`). El 204 de una sesión que ya no estaba activa queda en la auditoría como `RECHAZO` con motivo `SESION_YA_NO_ACTIVA`, nunca como éxito (hallazgo de la revisión adversarial, 2026-09-19). El OpenAPI declara los 401 reales de la operación.
+
+**Condición de cierre.** El 09 define el AuthN del logout idempotente.

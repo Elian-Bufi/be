@@ -23,6 +23,7 @@ export function FormularioDeLogin() {
   const [contrasena, setContrasena] = useState('');
   const [errores, setErrores] = useState<{ correo?: string; contrasena?: string }>({});
   const [estado, setEstado] = useState<Estado>({ tipo: 'editando' });
+  const [intento, setIntento] = useState(0);
 
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
@@ -31,6 +32,7 @@ export function FormularioDeLogin() {
     if (!correo.trim()) encontrados.correo = 'Ingresá tu correo electrónico.';
     if (!contrasena) encontrados.contrasena = 'Ingresá tu contraseña.';
     setErrores(encontrados);
+    setIntento((n) => n + 1);
     if (Object.keys(encontrados).length > 0) return;
 
     setEstado({ tipo: 'enviando' });
@@ -58,7 +60,7 @@ export function FormularioDeLogin() {
           <p>{aviso}</p>
         </Aviso>
       ) : null}
-      <ResumenDeErrores titulo={COPY.resumenDeErrores(lista.length)} errores={lista} />
+      <ResumenDeErrores titulo={COPY.resumenDeErrores(lista.length)} errores={lista} intento={intento} />
       {estado.tipo === 'error' ? (
         <Aviso tipo="error" enfocar>
           <p>{estado.mensaje}</p>

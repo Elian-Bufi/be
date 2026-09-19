@@ -100,6 +100,12 @@ describe('TEST-AUTH-013 — sin borrado silencioso', () => {
     const supresiones = await prisma.registroDeSupresion.findMany({ where: { sujetoId: id } });
     expect(supresiones).toHaveLength(1);
     expect(supresiones[0]).toMatchObject({ categoria: 'CREDENCIAL_LOCAL', ejecutor: 'CerrarCuenta' });
+    // 08 §29: la supresión ejecutada también queda en la auditoría (DL-019 A), en la misma transacción.
+    expect(await prisma.registroDeAuditoria.findFirst({ where: { operacion: 'SUPRESION', sujetoId: id } })).toMatchObject({
+      resultado: 'EXITO',
+      recursoTipo: 'CredencialLocal',
+      actorId: id,
+    });
   });
 
   it('TEST-AUTH-013 (b): la historia no se puede borrar después del cierre — la base rechaza DELETE de identidad, actos y eventos', async () => {
@@ -125,6 +131,9 @@ describe('TEST-UC-P27 / TEST-CT-P1-ACC-P1-03 — cierre de cuenta', () => {
     const replay = await conSesion(app, ejecutora).post(CIERRE, clave).send(cuerpoDeCierre()).expect(201);
     expect(replay.body).toEqual(res.body);
     expect(await prisma.eventoDeDominio.count({ where: { identidadId: id, tipo: 'CuentaCerrada' } })).toBe(1);
+    // Misma key con otro cuerpo, aun con la sesión ya revocada: 409, nunca el resultado guardado.
+    const otroCuerpo = await conSesion(app, ejecutora).post(CIERRE, clave).send(cuerpoDeCierre({ confirmed: false })).expect(409);
+    expect(otroCuerpo.body.error.code).toBe('IDEMPOTENCY_KEY_REUSED');
     // Con otra key la sesión revocada no sirve para nada más.
     const otra = await conSesion(app, ejecutora).post(CIERRE).send(cuerpoDeCierre()).expect(401);
     expect(otra.body.error.code).toBe('SESSION_REVOKED');

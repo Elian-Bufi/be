@@ -27,18 +27,24 @@ export function entornoDePrueba(cambios: Partial<Entorno> = {}): Entorno {
     jwtSecret: 'secreto-sintetico-de-integracion-de-32-caracteres',
     costoBcrypt: 10,
     // Límites altos: las pruebas de límite usan su propia app con límites bajos.
-    limites: { login: { maximo: 10_000, ventanaMs: 60_000 }, registro: { maximo: 10_000, ventanaMs: 60_000 } },
+    limites: {
+      login: { maximo: 10_000, ventanaMs: 60_000 },
+      loginPorIp: { maximo: 10_000, ventanaMs: 60_000 },
+      registro: { maximo: 10_000, ventanaMs: 60_000 },
+    },
     saltosDeProxy: 0,
     ...cambios,
   };
 }
 
-export async function appDePrueba(cambios: Partial<Entorno> = {}): Promise<INestApplication> {
+/** `antesDeIniciar` permite montar middleware de observación (p. ej. el contract test) antes de las rutas. */
+export async function appDePrueba(cambios: Partial<Entorno> = {}, antesDeIniciar?: (app: INestApplication) => void): Promise<INestApplication> {
   const app = await crearApp({
     entorno: entornoDePrueba(cambios),
     version: { aplicacion: '0.1.0', commit: 'integracion', construidoEn: null },
     directorioMigraciones: join(RAIZ, 'prisma', 'migrations'),
   });
+  antesDeIniciar?.(app);
   await app.init();
   return app;
 }

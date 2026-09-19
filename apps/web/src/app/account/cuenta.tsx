@@ -181,10 +181,13 @@ function ErrorConReintento({ mensaje = COPY.errorDeVista, onReintentar }: { mens
   );
 }
 
+
 /**
  * Cierre síncrono (DL-016). El diálogo muestra el texto de consecuencias de la versión que se envía; «Confirmar cierre»
- * es la confirmación explícita. Cancelar no crea solicitud ni cambia el estado (10-ADD:55-73). Los reintentos por
- * incertidumbre de red usan la misma Idempotency-Key.
+ * es la confirmación explícita. Cancelar ANTES de confirmar no crea solicitud ni cambia el estado (10-ADD:55-73).
+ * Resultado incierto (sin respuesta o respuesta no reconocible): la Idempotency-Key se conserva, «Cancelar» deja de
+ * ofrecerse y el aviso queda visible aunque se cierre el diálogo; «Reintentar» usa la MISMA key (10-B10:430-438), así
+ * el servidor devuelve el resultado original aunque la sesión ya se haya revocado por el cierre.
  */
 function CierreDeCuenta({
   token,
@@ -200,21 +203,24 @@ function CierreDeCuenta({
   const dialogo = useRef<HTMLDialogElement>(null);
   const clave = useRef<string | null>(null);
   const [estado, setEstado] = useState<
-    { tipo: 'cerrado' } | { tipo: 'abierto' } | { tipo: 'enviando' } | { tipo: 'incierto' } | { tipo: 'step-up' } | { tipo: 'error'; mensaje: string }
-  >({ tipo: 'cerrado' });
+    { tipo: 'inactivo' } | { tipo: 'abierto' } | { tipo: 'enviando' } | { tipo: 'incierto' } | { tipo: 'step-up' } | { tipo: 'error'; mensaje: string }
+  >({ tipo: 'inactivo' });
   const consecuencias = VERSION_VIGENTE.CONSECUENCIAS_DE_CIERRE;
   const parrafos = consecuencias.texto.split('\n\n').slice(1); // el primero es el título
+  const incierto = estado.tipo === 'incierto';
 
   function abrir() {
-    clave.current = nuevaClaveDeIdempotencia();
-    setEstado({ tipo: 'abierto' });
+    // Una key nueva solo si no hay un intento anterior sin confirmar.
+    if (!incierto || !clave.current) clave.current = nuevaClaveDeIdempotencia();
+    if (!incierto) setEstado({ tipo: 'abierto' });
     dialogo.current?.showModal(); // modal nativo: retiene el foco y lo devuelve al disparador al cerrar
   }
 
-  function cancelar() {
+  /** Cierra el diálogo. Si el resultado es incierto, el estado (y la key) se conservan y el aviso queda en la sección. */
+  function salirDelDialogo() {
     if (estado.tipo === 'enviando') return;
     dialogo.current?.close();
-    setEstado({ tipo: 'cerrado' });
+    if (!incierto) setEstado({ tipo: 'inactivo' });
   }
 
   async function confirmar() {
@@ -226,21 +232,37 @@ function CierreDeCuenta({
       alTerminar();
       return;
     }
-    if (r.tipo === 'RED') return setEstado({ tipo: 'incierto' });
+    if (r.tipo === 'RED' || r.codigo === 'RESPUESTA_NO_RECONOCIDA') return setEstado({ tipo: 'incierto' });
+    // Respuesta definitiva: el próximo intento es otro intento lógico (key nueva al reabrir).
     if (r.codigo === 'STEP_UP_REQUIRED') return setEstado({ tipo: 'step-up' });
     if (alPerderSesion(r)) return;
-    setEstado({ tipo: 'error', mensaje: r.codigo === 'VALIDATION_FAILED' ? COPY.versionDesactualizada : COPY.noDisponible });
+    const consecuenciasViejas = r.codigo === 'VALIDATION_FAILED' && r.issues.some((i) => i.code === 'CONSEQUENCES_NOT_PRESENTED');
+    setEstado({ tipo: 'error', mensaje: consecuenciasViejas ? COPY.consecuenciasDesactualizadasWeb : COPY.noDisponible });
   }
 
   return (
     <section className="seccion seccion--cierre" aria-labelledby="titulo-cierre">
       <h2 id="titulo-cierre">{COPY.cerrarMiCuenta}</h2>
       <p>Si cerrás tu cuenta, no vas a poder volver a iniciar sesión con ella. Antes de confirmar vas a ver las consecuencias.</p>
+      {incierto ? (
+        <Aviso tipo="error">
+          <p>{COPY.cierreSinConfirmar}</p>
+        </Aviso>
+      ) : null}
       <button type="button" className="boton boton--peligro-secundario" onClick={abrir}>
-        {COPY.cerrarMiCuenta}
+        {incierto ? COPY.reintentar : COPY.cerrarMiCuenta}
       </button>
 
-      <dialog ref={dialogo} className="dialogo" aria-labelledby="dialogo-titulo" aria-describedby="dialogo-texto" onCancel={(e) => { e.preventDefault(); cancelar(); }}>
+      <dialog
+        ref={dialogo}
+        className="dialogo"
+        aria-labelledby="dialogo-titulo"
+        aria-describedby="dialogo-texto"
+        onCancel={(e) => {
+          e.preventDefault();
+          salirDelDialogo();
+        }}
+      >
         <h2 id="dialogo-titulo">{COPY.cerrarMiCuenta}</h2>
         <div id="dialogo-texto">
           {parrafos.map((p, i) => (
@@ -250,7 +272,7 @@ function CierreDeCuenta({
         <p className="acto__version">
           Texto de consecuencias · versión <code>{consecuencias.id}</code>
         </p>
-        {estado.tipo === 'incierto' ? (
+        {incierto ? (
           <Aviso tipo="error" enfocar>
             <p>{COPY.verificando}</p>
             <p>{COPY.resultadoIncierto}</p>
@@ -272,12 +294,18 @@ function CierreDeCuenta({
           </Aviso>
         ) : null}
         <div className="acciones">
-          <button type="button" className="boton boton--secundario" onClick={cancelar} disabled={estado.tipo === 'enviando'} autoFocus>
-            {COPY.cancelar}
+          <button type="button" className="boton boton--secundario" onClick={salirDelDialogo} disabled={estado.tipo === 'enviando'} autoFocus>
+            {incierto ? 'Volver a la cuenta' : COPY.cancelar}
           </button>
           {estado.tipo !== 'step-up' ? (
-            <button type="button" className="boton boton--peligro" onClick={confirmar} disabled={estado.tipo === 'enviando'} aria-busy={estado.tipo === 'enviando'}>
-              {estado.tipo === 'enviando' ? 'Cerrando cuenta…' : estado.tipo === 'incierto' ? COPY.reintentar : COPY.confirmarCierre}
+            <button
+              type="button"
+              className="boton boton--peligro"
+              onClick={confirmar}
+              disabled={estado.tipo === 'enviando'}
+              aria-busy={estado.tipo === 'enviando'}
+            >
+              {estado.tipo === 'enviando' ? 'Cerrando cuenta…' : incierto ? COPY.reintentar : COPY.confirmarCierre}
             </button>
           ) : null}
         </div>

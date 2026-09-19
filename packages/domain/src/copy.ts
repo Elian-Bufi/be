@@ -42,7 +42,14 @@ export const COPY = {
   /** Sin copy en el 10 (D-23): mensajes neutrales, sin códigos técnicos. */
   demasiadosIntentos: 'Demasiados intentos. Probá de nuevo más tarde.',
   noDisponible: 'El servicio no está disponible en este momento. Probá de nuevo más tarde.',
+  /** Web: la versión vigente llega con la página, así que recargar la trae. */
   versionDesactualizada: 'Los textos cambiaron mientras completabas el formulario. Recargá la página y revisalos de nuevo.',
+  /** APK: la versión viaja dentro del build; la única salida es actualizar la app (10-B11:51: copy propio si cambia la interacción). */
+  versionDesactualizadaApk: 'Los textos cambiaron. Actualizá la app para continuar.',
+  /** Cierre en la web: recargar descarta la sesión en memoria, así que se dice. */
+  consecuenciasDesactualizadasWeb: 'El texto de consecuencias cambió. Recargá la página e iniciá sesión de nuevo para revisarlo.',
+  /** Resultado incierto del cierre, visible aunque se cierre el diálogo (10-B10:430-438). */
+  cierreSinConfirmar: 'No pudimos confirmar si tu cuenta se cerró. Reintentá para conocer el resultado.',
   stepUp: 'Por seguridad, volvé a iniciar sesión para confirmar esta acción.',
 } as const;
 

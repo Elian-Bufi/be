@@ -45,6 +45,7 @@ export function FormularioDeRegistro() {
   const [a2, setA2] = useState(false);
   const [errores, setErrores] = useState<Errores>({});
   const [estado, setEstado] = useState<Estado>({ tipo: 'editando' });
+  const [intento, setIntento] = useState(0);
   // Una key por intento lógico: se conserva en los reintentos y se renueva si cambian los datos (10-B10:430-438).
   const clave = useRef<string>(nuevaClaveDeIdempotencia());
   const renovarClave = () => {
@@ -56,6 +57,7 @@ export function FormularioDeRegistro() {
     if (estado.tipo === 'enviando') return; // sin doble envío (10-B04:1071-1113)
     const encontrados = validar(correo, contrasena, a1, a2);
     setErrores(encontrados);
+    setIntento((n) => n + 1);
     if (Object.keys(encontrados).length > 0) return;
 
     setEstado({ tipo: 'enviando' });
@@ -78,6 +80,7 @@ export function FormularioDeRegistro() {
         }
         renovarClave();
         setErrores(deLaApi);
+        setIntento((n) => n + 1);
         return setEstado({ tipo: 'editando' });
       }
       case 'TERMS_VERSION_NOT_ACCEPTABLE':
@@ -113,7 +116,7 @@ export function FormularioDeRegistro() {
 
   return (
     <form className="formulario" onSubmit={enviar} noValidate aria-describedby="registro-aviso">
-      <ResumenDeErrores titulo={COPY.resumenDeErrores(listaDeErrores.length)} errores={listaDeErrores} />
+      <ResumenDeErrores titulo={COPY.resumenDeErrores(listaDeErrores.length)} errores={listaDeErrores} intento={intento} />
 
       {estado.tipo === 'no-disponible' ? (
         <Aviso tipo="error" enfocar>

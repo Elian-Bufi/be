@@ -21,8 +21,11 @@ export interface Entorno {
   readonly jwtSecret: string;
   /** 08 §24.2: bcrypt costo 10 como mínimo. */
   readonly costoBcrypt: number;
-  /** 08 §38 PROPUESTA BE (DEUDA_LEGAJO DL-015): login 5 / 15 min por IP + identificador; registro 10 / h por IP. */
-  readonly limites: { readonly login: Limite; readonly registro: Limite };
+  /**
+   * 08 §38 PROPUESTA BE (DEUDA_LEGAJO DL-015): login 5 / 15 min por red + identificador; login global 100 / 15 min por
+   * red («global por IP: generoso», 08:786); registro 10 / h por red. Red = IPv4 o prefijo /64 de IPv6.
+   */
+  readonly limites: { readonly login: Limite; readonly loginPorIp: Limite; readonly registro: Limite };
   /** Saltos de proxy confiables para `req.ip` (Express `trust proxy`). Render: 1. */
   readonly saltosDeProxy: number;
 }
@@ -61,6 +64,7 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
 
   const limites = {
     login: limite(env.RATE_LIMIT_LOGIN_MAX, env.RATE_LIMIT_LOGIN_WINDOW_MS, 5, 15 * 60 * 1000, 'RATE_LIMIT_LOGIN', errores),
+    loginPorIp: limite(env.RATE_LIMIT_LOGIN_IP_MAX, env.RATE_LIMIT_LOGIN_IP_WINDOW_MS, 100, 15 * 60 * 1000, 'RATE_LIMIT_LOGIN_IP', errores),
     registro: limite(env.RATE_LIMIT_REGISTRO_MAX, env.RATE_LIMIT_REGISTRO_WINDOW_MS, 10, 60 * 60 * 1000, 'RATE_LIMIT_REGISTRO', errores),
   };
 

@@ -44,11 +44,14 @@ export class CierreService {
       throw errores.solicitudInvalida([{ code: 'IDEMPOTENCY_KEY_REQUIRED', path: 'Idempotency-Key' }], { header: 'Idempotency-Key' });
     }
     const autenticacion = await this.autenticar(encabezadoAuthorization, claveDeIdempotencia);
-    if (autenticacion.tipo === 'replay') return autenticacion.resultado;
-    const actor = autenticacion.actor;
-
     const solicitud = validarCuerpo(SolicitarCierreRequestSchema, cuerpo);
     const huella = IdempotenciaService.huella(solicitud);
+    if (autenticacion.tipo === 'replay') {
+      // Mismo contrato que IdempotenciaService: misma key con otro request lógico → 409, nunca el resultado guardado.
+      if (autenticacion.huella !== huella) throw errores.claveDeIdempotenciaReutilizada();
+      return autenticacion.resultado;
+    }
+    const actor = autenticacion.actor;
     const procedencia = procedenciaDe(ctx, 'UC-P27', OPERACION);
 
     try {
@@ -132,7 +135,7 @@ export class CierreService {
   private async autenticar(
     encabezado: string | undefined,
     clave: string,
-  ): Promise<{ tipo: 'actor'; actor: ActorAutenticado } | { tipo: 'replay'; resultado: ResultadoIdempotente }> {
+  ): Promise<{ tipo: 'actor'; actor: ActorAutenticado } | { tipo: 'replay'; huella: string; resultado: ResultadoIdempotente }> {
     const token = extraerBearer(encabezado);
     if (!token) throw errores.autenticacionRequerida();
     const reclamos = this.tokens.verificar(token);
@@ -154,7 +157,9 @@ export class CierreService {
       const previo = await this.prisma.registroDeIdempotencia.findUnique({
         where: { operacion_ambito_clave: { operacion: OPERACION, ambito: sesion.identidadId, clave } },
       });
-      if (previo) return { tipo: 'replay', resultado: { estadoHttp: previo.estadoHttp, cuerpo: previo.cuerpo as Prisma.InputJsonValue } };
+      if (previo) {
+        return { tipo: 'replay', huella: previo.huella, resultado: { estadoHttp: previo.estadoHttp, cuerpo: previo.cuerpo as Prisma.InputJsonValue } };
+      }
       throw errores.sesionRevocada();
     }
     if (sesion.estado !== 'ACTIVA') throw errores.sesionRevocada();

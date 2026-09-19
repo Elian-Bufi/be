@@ -16,7 +16,11 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
       corsAllowedOrigins: [],
       jwtSecret: BASE.JWT_SECRET,
       costoBcrypt: 10,
-      limites: { login: { maximo: 5, ventanaMs: 900000 }, registro: { maximo: 10, ventanaMs: 3600000 } },
+      limites: {
+        login: { maximo: 5, ventanaMs: 900000 },
+        loginPorIp: { maximo: 100, ventanaMs: 900000 },
+        registro: { maximo: 10, ventanaMs: 3600000 },
+      },
       saltosDeProxy: 1,
     });
   });
