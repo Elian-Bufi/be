@@ -1,0 +1,23 @@
+2026-09-19T01:29:05Z ESTADO INICIAL: {"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"c09bfa046ccbdc9bdab018fe9005b00e0f5e6819","construidoEn":"2026-09-19T01:27:40.637Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+2026-09-19T01:29:05Z main antes del ensayo: c09bfa046ccbdc9bdab018fe9005b00e0f5e6819
+2026-09-19T01:29:06Z PR #9 checks verdes
+2026-09-19T01:29:12Z merge inocuo publicado en main: 4776fc5a88b9ead3af781c3577eca4159a580da8 (apps/api/src/main.ts )
+2026-09-19T01:30:59Z CI main 35412796928 verde para 4776fc5
+  verificar · typecheck · unit · build · audit: success 2026-09-19T01:30:37Z
+  imagen API · migrate deploy + readiness (ASR-09): success 2026-09-19T01:30:12Z
+  integración · PostgreSQL 16 (Testcontainers): success 2026-09-19T01:30:44Z
+  legajo · hashes SHA-256: success 2026-09-19T01:29:22Z
+2026-09-19T01:32:25Z deploy observado: {"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"4776fc5a88b9ead3af781c3577eca4159a580da8","construidoEn":"2026-09-19T01:31:29.649Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+2026-09-19T01:32:30Z revert creado: 96baac2935448d9f4b2d96161d34abdecf206112 (git revert -m 1 4776fc5a88b9ead3af781c3577eca4159a580da8)
+2026-09-19T01:32:32Z PR del revert: https://github.com/Elian-Bufi/be/pull/10
+2026-09-19T01:34:16Z PR del revert: checks verdes
+2026-09-19T01:34:21Z merge del revert publicado en main: 23c9997cba6a50c6ce84b1a9f501d66b10522803
+2026-09-19T01:36:09Z CI main 35413068748 verde para 23c9997
+  verificar · typecheck · unit · build · audit: success 2026-09-19T01:36:03Z
+  integración · PostgreSQL 16 (Testcontainers): success 2026-09-19T01:35:53Z
+  imagen API · migrate deploy + readiness (ASR-09): success 2026-09-19T01:35:21Z
+  legajo · hashes SHA-256: success 2026-09-19T01:34:33Z
+2026-09-19T01:37:14Z deploy observado: {"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"23c9997cba6a50c6ce84b1a9f501d66b10522803","construidoEn":"2026-09-19T01:36:32.631Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+2026-09-19T01:37:15Z diferencia de código entre c09bfa046ccbdc9bdab018fe9005b00e0f5e6819 (antes) y 23c9997cba6a50c6ce84b1a9f501d66b10522803 (después): 0 líneas de diff
+2026-09-19T01:37:15Z ESTADO FINAL: {"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"23c9997cba6a50c6ce84b1a9f501d66b10522803","construidoEn":"2026-09-19T01:36:32.631Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+2026-09-19T01:37:15Z ENSAYO GIT COMPLETO

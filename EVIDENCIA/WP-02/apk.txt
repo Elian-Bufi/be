@@ -1,0 +1,13 @@
+# APK de WP-02
+archivo:        be-0.2.0-8256951.apk
+tamaño:         68921750 bytes
+sha256:         52b566a49ab5d73f6e27d281c30a1b87c85177a0220dee912c53c0fd7cbe024a
+build EAS:      05509aaf-2273-437c-b449-508fd0f7b3be (perfil test; artefacto EAS expira 2026-10-03T01:16:47Z)
+commit:         8256951ce875c3ecf1a0d57e8a60f68feee5deaa (main, merge de WP-02 PR #6)
+release:        https://github.com/Elian-Bufi/be/releases/download/be-apk-0.2.0/be-0.2.0-8256951.apk (no expira)
+verificación:   descarga anónima del release con el mismo sha256 (2026-09-19)
+
+# app.config embebido (assets/app.config dentro del APK):
+{"name":"BE","slug":"be","owner":"elianbufi","version":"0.2.0","orientation":"portrait","icon":"./assets/icon.png","userInterfaceStyle":"light","android":{"package":"com.elianbufi.be","versionCode":2,"adaptiveIcon":{"foregroundImage":"./assets/android-icon-foreground.png","backgroundColor":"#ffffff"},"predictiveBackGestureEnabled":false},"extra":{"appEnv":"test","apiBaseUrl":"https://be-api-hndp.onrender.com","commit":"8256951ce875c3ecf1a0d57e8a60f68feee5deaa","construidoEn":"2026-09-19T01:19:15.745Z","eas":{"projectId":"8ef1d1f5-76e3-4d2b-b305-b07146e97f77"}},"description":"App BE — Expo / React Native (APK por EAS, distribución directa)","sdkVersion":"57.0.0","platforms":["ios","android","web"]}
+
+# Sin credenciales: el APK no contiene .env, secretos ni tokens; la API se autentica por sesión del usuario.

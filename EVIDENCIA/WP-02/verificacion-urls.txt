@@ -1,0 +1,26 @@
+# Verificación de las tres superficies — WP-02 — 2026-09-19T01:37:49Z — main = 23c9997
+
+## API
+GET /health/ready → {"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"23c9997cba6a50c6ce84b1a9f501d66b10522803","construidoEn":"2026-09-19T01:36:32.631Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+GET /health/live  → 200
+GET /api/v1/me sin sesión → {"error":{"code":"AUTHENTICATION_REQUIRED","message":"Iniciá sesión para continuar."}} [401]
+GET /api/v1/no-existe → {"error":{"code":"RESOURCE_NOT_FOUND","message":"Recurso no encontrado."}} [404]
+POST /api/v1/auth/sessions (inexistente) → {"error":{"code":"INVALID_CREDENTIALS","message":"No pudimos verificar los datos de acceso."}} [401]
+CORS preflight desde el website → access-control-allow-headers: authorization,content-type,idempotency-key,x-be-surface access-control-allow-origin: https://be-web-1ngj.onrender.com 
+CORS preflight desde otro origen → 0 cabeceras Allow-Origin
+
+## Website
+GET / → 200
+GET /register → 200
+GET /login → 200
+GET /account → 200
+GET /legal/terminos → 200
+GET /legal/privacidad → 200
+commit en la portada → commit <!-- -->8256951
+cabeceras → content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline'; |referrer-policy: no-referrer|strict-transport-security: max-age=315360000; includeSubdomains; preload|x-content-type-options: nosniff|x-frame-options: DENY|
+rewrite GET /api/v1/me sin sesión → {"error":{"code":"AUTHENTICATION_REQUIRED","message":"Iniciá sesión para continuar."}} [401]
+
+## APK
+release → 200 68921750 bytes application/vnd.android.package-archive
+sha256 (descarga anónima) → 52b566a49ab5d73f6e27d281c30a1b87c85177a0220dee912c53c0fd7cbe024a
+repositorio público → 200
