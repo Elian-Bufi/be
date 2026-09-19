@@ -35,6 +35,18 @@
 | DL-028 | WP-02 · 2026-09-18 | 08 R-08-05, §42-1 | Textos A1, A2, A3 y consecuencias del cierre: sintéticos | ABIERTA |
 | DL-029 | WP-02 · 2026-09-19 | 09v8 ACC-03 · 09v7 T14 | Logout idempotente frente a AuthN SESSION | ABIERTA |
 | DL-030 | WP-02 · 2026-09-19 | 07 CAND-07-J C · 08 §12.2, §38 | Detrás del rewrite del website, la API no ve la IP del cliente | **DECIDIDA E IMPLEMENTADA** 2026-09-19 · opción B, desvío fundamentado de 07 CAND-07-J C · verificada en `test` · solo falta que el 07 la incorpore |
+| DL-031 | WP-03 · 2026-09-19 | 09v11 §15 · 09:2654-2668 · brief WP-03 | Recurso protegido para demostrar el acceso sin dominios de salud | **DECIDIDA** 2026-09-19 · opción A (API-DSH-03 mínimo) |
+| DL-032 | WP-03 · 2026-09-19 | 04:317 · 06:3183-3191 · 08:601, 08:406 · 09:2625-2639 | Las siete dimensiones del PDP y el lugar de A3 | ABIERTA · nombres aprobados por Dirección |
+| DL-033 | WP-03 · 2026-09-19 | 06:3105-3111 · 04:342, 04:345 · 05:3644 · 09v8:1395-1494 · CONV-06-03 | Máquinas del §7: actor habilitado, motivo y eventos | ABIERTA |
+| DL-034 | WP-03 · 2026-09-19 | 06:3014, 06:3091-3093 · 09v8:1267-1270, 1398 | `relationshipId` del 09 frente al Vínculo multialcance del 06 | ABIERTA |
+| DL-035 | WP-03 · 2026-09-19 | 09v8:1127-1130 · 10-B04:188 · RF-051 | Cómo identifica el profesional al asesorado | ABIERTA |
+| DL-036 | WP-03 · 2026-09-19 | 06 §6.8 · REG-06-33 · 09v8 PRO-09…13 · 08:887 | Verificación y habilitación mínimas sin operación viable | ABIERTA |
+| DL-037 | WP-03 · 2026-09-19 | 06:3035-3040 · REG-06-49 · 09v8:1165-1176, 1960 · 09:853 | Solicitud: caducidad sin plazo, invalidación y respuesta al duplicado | ABIERTA |
+| DL-038 | WP-03 · 2026-09-19 | 06:3170-3175 · REG-06-50 · 09v8:1570-1660 · 09:2437-2519 | B2: nueva versión y reotorgamiento sin contrato | ABIERTA |
+| DL-039 | WP-03 · 2026-09-19 | 06:251, 06:262 · 09v8:1518-1562, 1962 · 08:307, 08:368, 08:374 | Finalidad y categorías pertinentes sin catálogo | ABIERTA |
+| DL-040 | WP-03 · 2026-09-19 | 09v8:161-170, 1523-1526 · 11A:196 · DL-009 | Nombre visible de las partes sin campos de perfil aprobados | ABIERTA |
+| DL-041 | WP-03 · 2026-09-19 | 10-B01:645-663, 1019-1031, 1310-1319 · brief WP-03 | El profesional sin Cartera | ABIERTA |
+| DL-042 | WP-03 · 2026-09-19 | DV-05 (DV05.md:1116-1133) · brief WP-03 | Casos adversariales de DV-05 que dependen de dominios | **ASIGNADA a WP-04** por Dirección (2026-09-19) |
 
 ---
 
@@ -359,6 +371,8 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 **Condición de cierre.** El paquete de vínculos ejecuta la parte (a) completa.
 
+**WP-03 (2026-09-19).** WP-03 es el paquete de vínculos. Ejecuta la parte (a) completa, con dos alcances activos (Nutrición y Entrenamiento) antes del cierre: el cierre finaliza cada alcance con `FinalizarAlcance`, actor sistema y motivo `CIERRE_DE_CUENTA`, e invalida las solicitudes pendientes, en la misma transacción (T13 de `docs/paquetes/WP-03.md`). La deuda se cierra cuando esa prueba pase en CI.
+
 ## DL-019 — Supresión del hash al cierre y retención posterior
 
 **Prioridad:** alta · **Documento:** 08 R-01, R-02, R-03, §17, §18 · 06 REG-06-24, INV-06-29, 06:1578 · **Estado:** ABIERTA
@@ -412,6 +426,11 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 **Condición de cierre.** El 06 reconcilia su modelo con el 08 §12.4.
 
+**WP-03 (2026-09-19).** A3 pasa a otorgarse, consultarse y revocarse (API-CON-06, 07 y 08). Sigue siendo un acto registrable, no una entidad del 06.
+- El reotorgamiento es un acto nuevo que preserva el revocado, como lo modela el 09 (09:2508, 09:2607). B2 sigue otra semántica (DL-038).
+- Del flujo único de revocación de A3 (08:406), WP-03 cumple el paso 1: la suspensión inmediata de toda operación sensible del titular, incluido el acceso profesional.
+- Quedan pendientes el paso 2 (re-otorgar, exportar o cerrar la cuenta, con plazo de 30 días) y el paso 3 (procesamiento por defecto del §17): no hay exportación ni datos de salud.
+
 ## DL-022 — Canal o superficie sin campo contractual
 
 **Prioridad:** baja · **Documento:** 08 §12.2 · 05:14247 · 05:15920 · 09v7 T12 · **Estado:** ABIERTA
@@ -461,6 +480,11 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 **Condición de cierre.** Existen las capacidades (recuperación y A3) o se corrige el 10.
 
+**WP-03 (2026-09-19).**
+- A3 pasa a tener CTA («Autorizar tratamiento de mis datos de salud», 10-B02:274-280). Se cierra la mitad A3 del desvío «Cuenta sin A3: copy literal, sin CTA».
+- El 10 no tiene copy para reotorgar un B2 ni para aceptar una versión nueva de B2 (DL-038). Se usa copy neutral, derivado del de A3 («Autorizar nuevamente», 10-B02:429).
+- El 10 no tiene copy para `422 RELATIONSHIP_NOT_READY_FOR_CONSENT` ni para los 422 de REL-01. Se usan mensajes neutrales, sin códigos técnicos, como en WP-02.
+
 ## DL-025 — Superficie web del asesorado
 
 **Prioridad:** baja · **Documento:** 05:1021 · 10-B01:82-96, 722-771 · 04:148-149 · **Estado:** ABIERTA
@@ -477,6 +501,8 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 **Provisorio en código.** A.
 
 **Condición de cierre.** El 10 define la jerarquía web de identidad.
+
+**WP-03 (2026-09-19).** Se suman rutas neutrales del asesorado para vínculos, consentimientos y A3, siempre bajo `/account` y nunca bajo `/pro` (10-B01, criterio 11A n.º 1: «asesorado nunca entra al shell profesional»). El APK sigue siendo la superficie primaria del asesorado.
 
 ## DL-026 — Idempotencia y códigos no definidos
 
@@ -501,6 +527,8 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 **Condición de cierre.** El 09 fija esos códigos y el TTL de retención.
 
+**WP-03 (2026-09-19).** Las escrituras REL-01, 03, 04, 07, 08 y 09, CON-02 y CON-06 exigen `Idempotency-Key`, con el mismo servicio y el mismo ámbito (el actor autenticado). CON-04 y CON-08 son idempotentes por semántica y no llevan key (09v8:1758; 09:2582-2594).
+
 ## DL-027 — Oráculos de prueba ausentes en 11A y traza de UC-P26
 
 **Prioridad:** baja · **Documento:** 11A:257-294, 519-535 · 12:227 · 05:14230 · **Estado:** ABIERTA
@@ -518,6 +546,11 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 **Condición de cierre.** 11A incorpora los oráculos.
 
+**WP-03 (2026-09-19).**
+- Los oráculos de TEST-AUTH-003 a 008 y 013 (a) se derivan del texto normativo que cita cada prueba y se declaran en `DEFENSA/WP-03.md`.
+- El legajo no fija umbral para el corte. Se reporta el conteo de operaciones permitidas después de revocar (tope del 08 §13: ≤ 1) y los milisegundos hasta la primera denegación.
+- ReanudarAlcance, CaducarSolicitud, InvalidarSolicitud, AceptarNuevaVersion y OtorgarNuevamente no tienen prueba en ninguna fuente. Se prueban con oráculo derivado del 06.
+
 ## DL-028 — Textos A1, A2, A3 y consecuencias del cierre: sintéticos
 
 **Prioridad:** alta (antes de datos reales) · **Documento:** 08 R-08-05, §42-1, §12.1 · **Estado:** ABIERTA
@@ -534,6 +567,8 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 **Provisorio en código.** A. La API rechaza cualquier versión distinta de la vigente con `422 TERMS_VERSION_NOT_ACCEPTABLE` o `422 PRIVACY_VERSION_NOT_ACCEPTABLE`.
 
 **Condición de cierre.** Textos legales aprobados (VJR).
+
+**WP-03 (2026-09-19).** Se suman los textos sintéticos de B2, uno por perfil profesional (sanitario y no sanitario, 08 §12.3), con id, hash y la misma marca «texto de demostración». El alcance y la finalidad no van dentro del texto: quedan como evidencia propia del consentimiento (08:374).
 
 ## DL-029 — Logout idempotente frente a AuthN SESSION
 
@@ -604,3 +639,269 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 1. ✅ (2026-09-19 04:19Z) la medición en `test` muestra que los intentos por el website se agrupan en la red del cliente: 401 ×5 y 429 al 6.º; antes eran seis 401 (`EVIDENCIA/WP-02/medicion-ip-proxy.txt` §3);
 2. ✅ (2026-09-19 04:40Z) `/api/*` en el website ya no responde con la API. Dirección borró la regla en el dashboard, y la verificación negativa da 404 del sitio estático sin ninguna cabecera ni cuerpo de la API (`EVIDENCIA/WP-02/dl-030/verificacion-negativa-rewrite.txt`);
 3. la próxima revisión del 07 incorpora el paso a la opción B en CAND-07-J (y en §34, DL-007).
+
+## DL-031 — Recurso protegido para demostrar el acceso sin dominios de salud
+
+**Prioridad:** alta · **Documento:** 09v11 §15 (09v11:895-950) · 09:2654-2668 · 11A:526-529 · brief WP-03 · **Estado:** DECIDIDA 2026-09-19 · opción A
+
+**Qué dice el legajo.**
+- El PDP evalúa cada operación protegida (04 RF-021; 05 UC-I02). TEST-AUTH-005 a 008 presuponen que el profesional lee algo del asesorado (11A:526-529; DV-05).
+- El 09 no tiene ninguna lectura por alcance fuera de los dominios. API-REL-06 la ve cualquier participante, incluso con el vínculo pausado (09v8:1362-1369), y no evalúa B2 ni A3.
+- El inventario P0 está cerrado en 122 operaciones (09:2654-2668); una familia contractual nueva es no conformidad (09:2717-2719).
+- El brief de WP-03 excluye los dominios de salud.
+
+**Por qué no tal cual.** Sin un recurso protegido, las pruebas del PDP serían verdaderas en vacío, que es lo que DL-018 prohibió reportar como PASS.
+
+**Opciones.**
+- **A.** API-DSH-03 (dashboard interdisciplinario) sin datos de dominio.
+  - Por cada alcance autorizado muestra el estado del vínculo y del consentimiento, y el dominio «sin datos todavía» (RF-053: «los faltantes se muestran como tales»).
+  - Si el PDP no autoriza ningún alcance, responde 404, igual que para un asesorado inexistente.
+  - Es una operación del inventario. Suma RF-053 y UC-P24 como parciales.
+  - Con datos sintéticos alcanza `SESSION` (08:581; 09:715).
+- **B.** Sonda fuera del contrato: una ruta solo en `test`, fuera de `/api/v1` y del OpenAPI, que se retira con el primer dominio.
+
+**Resolución — DECIDIDA el 2026-09-19.** Dirección eligió A.
+
+**Condición de cierre.** El paquete de dominio (WP-04) agrega los resúmenes por dominio de DSH-03 y sus operaciones protegidas propias.
+
+## DL-032 — Las siete dimensiones del PDP y el lugar de A3
+
+**Prioridad:** alta · **Documento:** 04:317 · 04:231 · 06:3183-3191 · 05:4783-4795 · 08:601, 08:305, 08:406 · 09:2603, 09:2625-2639 · **Estado:** ABIERTA · nombres aprobados por Dirección el 2026-09-19
+
+**Qué dice el legajo.**
+- RF-021 nombra siete dimensiones: «rol, especialidad, estado, vínculo, consentimiento, finalidad y alcance» (04:317). El 06 §7.8 y el 05 UC-I02 repiten la lista con «situación aplicable» en lugar de «estado» (06:3183-3191; 05:4783-4795). El 06 no define «situación aplicable».
+- RF-015 enumera otras seis condiciones: «identidad, especialidad verificada, habilitación comercial o académica, vínculo, consentimiento y autorización de datos» (04:231).
+- El 08 §27.3 lista «identidad, rol, estado profesional/verificación, Alcance habilitado, Vínculo vigente, consentimiento vigente, finalidad/recurso», con la pertinencia como filtro posterior (08:601, 08:305).
+- Ninguna lista nombra A3. El efecto de A3 sobre el acceso profesional sale del 08 §13, «suspensión inmediata de toda operación sensible del servicio para ese titular (registro y acceso profesional incluidos)» (08:406), y del 09: los B2 «quedan sin capacidad efectiva mientras A3 no satisfaga el PDP» (09:2603; precedencia en 09:2625-2639).
+
+**Opciones.**
+- **A.** Siete dimensiones con los nombres de RF-021.
+  - «Situación» abarca: la cuenta del actor y la del titular, la verificación y la habilitación del alcance, y el A3 del titular.
+  - La pertinencia se evalúa después, como filtro.
+  - La auditoría registra la dimensión desfavorable.
+- **B.** Una lista propia de nueve condiciones, sin agrupar: la unión de RF-015, RF-021 y el 08 §27.3, más A3.
+
+**Provisorio en código.** A. Dirección aprobó los nombres el 2026-09-19.
+
+**Condición de cierre.** El 08 §27.3 incorpora A3 y el 06 define «situación aplicable».
+
+## DL-033 — Máquinas del §7: actor habilitado, motivo y eventos
+
+**Prioridad:** media · **Documento:** 06:3105-3111 · 06:3272 · 06:367 (CONV-06-03) · 06:2191 · 04:342, 04:345 · 05:3316, 05:3440, 05:3644 · 08:412-424 · 09v8:1395-1494 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- Actor:
+  - `PausarAlcance`, `ReanudarAlcance` y `FinalizarAlcance` los ejecuta el «actor habilitado por 08» (06:3108-3111), y el §7.15 manda «actores habilitados → 08» (06:3272).
+  - El 08 §14 fija los efectos, no los actores (08:412-424).
+  - RF-024: «Profesional o asesorado según política» (04:342); el 05: «Quién puede pausar o finalizar en cada situación: DERIVAR 08» (05:3644).
+- Motivo:
+  - El 06 lo exige al pausar: «decisión + motivo» (06:3108).
+  - El 04 y el 05 lo exigen también al finalizar (04:345; 05:3440).
+  - El request de REL-07 es solo `{ expectedVersion }` (09v8:1408-1412), y REL-08 y REL-09 no tienen request definido.
+- Eventos: CONV-06-03 exige que toda máquina declare sus eventos (06:367), pero el §7 no los nombra.
+- Cierre de cuenta: REG-06-24 inciso 5 exige finalizar los vínculos activos (06:2191), y el 08 §14.1 dice que el cierre «corta todos los accesos profesionales» (08:419). El §7.5.2 no nombra al sistema como actor.
+
+**Opciones.**
+- **A.** Actores, motivo y eventos provisorios:
+  - pausar y finalizar: cualquiera de los dos participantes;
+  - reanudar: solo quien pausó;
+  - el sistema finaliza por cierre de cuenta;
+  - campo `reason` obligatorio al pausar y al finalizar, de una lista cerrada y sin texto libre (08:646: la auditoría no copia contenido):
+    - para pausar: `DECISION_PERSONAL`, `DISPONIBILIDAD`, `OTRO`;
+    - para finalizar: `DECISION_PERSONAL`, `OBJETIVO_CUMPLIDO`, `CAMBIO_DE_PROFESIONAL`, `OTRO`;
+    - `CIERRE_DE_CUENTA` queda reservado al sistema;
+  - eventos con nombres derivados, en participio: `SolicitudDeVinculoCreada`, `AlcanceDeVinculoPausado`, `ConsentimientoRevocado` y los demás.
+- **B.** Solo el asesorado pausa, reanuda y finaliza, y el profesional solo puede finalizar. Motivo opcional, en texto libre.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 08 fija los actores habilitados y el 09 agrega el campo de motivo.
+
+## DL-034 — `relationshipId` del 09 frente al Vínculo multialcance del 06
+
+**Prioridad:** media · **Documento:** 06:3014 · 06:3091-3093 · 06:3115 (REG-06-47) · 06:427 (REG-06-05) · 06:3230 (INV-06-58) · 09v8:1267-1270, 1338-1344, 1398 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- El 06: la solicitud es «atómica por Alcance» (06:3014), el «Vínculo agrupa 1..N componentes de Alcance» y la máquina «opera por Alcance» (06:3091-3093).
+- El 09: un `relationshipId` con un solo `scope`, y pausa, reanudación y finalización por `relationshipId` (09v8:1267-1270, 1338-1344, 1398).
+- El 06 no declara unicidad del Vínculo ni del componente, y REG-06-05 prohíbe inventarla (06:427). INV-06-58 prohíbe reabrir un componente finalizado (06:3230).
+
+**Opciones.**
+- **A.** El `relationshipId` del 09 es el componente de Vínculo por Alcance.
+  - El Vínculo agrupa por (profesional, asesorado) y se crea con el primer alcance aceptado.
+  - Un índice parcial admite un solo componente no FINALIZADO por (vínculo, alcance).
+  - Volver a operar un alcance finalizado exige una solicitud nueva y un componente nuevo.
+- **B.** El `relationshipId` es el Vínculo agregador y el alcance pasa a ser parámetro de las operaciones. Cambia las rutas del 09.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 09 aclara que `relationshipId` designa un componente por alcance.
+
+## DL-035 — Cómo identifica el profesional al asesorado
+
+**Prioridad:** media · **Documento:** 09v8:1127-1130 · 06:3012, 06:3044 · 09:325 (RF-051) · 10-B04:188 · 09v7:589-624 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- REL-01 exige el `target.identityId` de la contraparte (09v8:1127-1130).
+- No hay descubrimiento en P0 (RF-051 es P1, 09:325), ni invitación por token (DL-023), ni búsqueda por correo.
+- El 10 menciona «Buscar asesorado permitido» sin definirlo (10-B04:188).
+- Buscar por correo permitiría enumerar cuentas (09v7:589-624).
+
+**Opciones.**
+- **A.** El asesorado ve su identificador BE en Cuenta y se lo pasa al profesional por fuera de BE. El identificador es un UUID aleatorio: no se puede adivinar ni enumerar.
+- **B.** Búsqueda por correo exacto, con respuesta neutral y límite de intentos.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 09 o el 10 definen el mecanismo: invitación o descubrimiento.
+
+## DL-036 — Verificación y habilitación mínimas sin operación viable
+
+**Prioridad:** alta · **Documento:** 06:207 · 06:2782-2788 · 06:2802 (REG-06-33) · 06:2829-2840 · 09v8:987-1098 (PRO-11…13) · 08:580 · 08:887 (G-12) · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- La verificación es por (identidad, alcance), con los estados «como mínimo PENDIENTE, VERIFICADO, RECHAZADO, SUSPENDIDO» (06:207; máquina en 06:2829-2840).
+- La habilitación es una dimensión separada, que requiere concesión explícita (06:2782-2788; REG-06-33).
+- La resolución (PRO-11), la suspensión (PRO-12) y la rehabilitación (PRO-13) son operaciones administrativas con `SESSION_MFA` (09v8:987-1098). No hay operación P0 para conceder la habilitación (RF-066 es P1).
+- El 08 declara como gap una verificación booleana (08:887).
+
+**Opciones.**
+- **A.** Servicio interno, sin endpoint (el patrón de DL-020).
+  - Aplica `VerificarAlcance`, `SuspenderAlcance` y `RehabilitarAlcance` con los estados del 06, y concede o retira la habilitación por (identidad, alcance).
+  - El perfil profesional mínimo (tipo sanitario o no sanitario y nombre visible) también lo carga ese servicio.
+  - En local y en CI lo invocan las pruebas.
+  - En `test`, lo invoca la API al arrancar para una lista de correos `example.invalid` declarada en `render.yaml`. Se niega a correr si `APP_ENV` no es `test` o `development`.
+- **B.** Adelantar PRO-09 a 13, con rol administrador y MFA.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** Existen el caso de uso administrativo de verificación (UC-P01 a P03) y su operación.
+
+## DL-037 — Solicitud: caducidad sin plazo, invalidación y respuesta al duplicado
+
+**Prioridad:** media · **Documento:** 06:3035-3040 (REG-06-45) · 06:3121 (REG-06-49) · 09v8:1165-1176, 1222, 1281-1286, 1960 · 09:853 (CAND-09-S03) · 07:3060 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- Caducidad: `CaducarSolicitud` existe (06:3035), pero «B-03 define la transición, no la duración» (06:3040), y el 09 deja abierta la «caducidad exacta de solicitudes» (09v8:1960).
+- Invalidación: `InvalidarSolicitud` la ejecuta el «sistema/actor propietario» (06:3036) cuando falla la reevaluación al aceptar (REG-06-49, 06:3121). REL-03 no tiene código propio para ese caso (09v8:1281-1286).
+- Duplicado: ante una solicitud equivalente pendiente, el 09 devuelve la existente con `200 deduplicated: true` (09v8:1165-1176). Esa conducta es CAND-09-S03, «PENDIENTE DE RATIFICACIÓN INTEGRAL» (09:853).
+
+**Opciones.**
+- **A.** Evaluación perezosa y dedup del 09:
+  - Plazo parametrizado: `BE_CADUCIDAD_DE_SOLICITUD_DIAS`, 30 días por defecto.
+  - La solicitud vencida pasa a CADUCADA, con actor sistema, en la primera operación que la toca.
+  - El sistema invalida al aceptar, si la reevaluación falla, y al cerrar la cuenta.
+  - El duplicado responde `200 deduplicated: true`.
+- **B.** Job periódico de caducidad; el duplicado responde `409`.
+
+**Provisorio en código.** A. Aceptar o rechazar una solicitud caducada o invalidada responde `422 INVALID_STATE_TRANSITION`.
+
+**Condición de cierre.** El 08 fija el plazo y el 09 ratifica CAND-09-S03.
+
+## DL-038 — B2: nueva versión y reotorgamiento sin contrato
+
+**Prioridad:** media · **Documento:** 06:3170-3175 · 06:3159 (REG-06-50) · 06:1286-1288 · 09v8:1570-1660 · 09:2437-2519, 2607 · 08:404 · 05:4253 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- El 06 tiene `AceptarNuevaVersion` (VIGENTE → VIGENTE) y `OtorgarNuevamente` (REVOCADO → VIGENTE) (06:3173-3175). Cada decisión emite una Versión nueva del mismo Consentimiento (REG-06-50), y la vigencia se resuelve por referencia explícita, no por fecha (06:1286-1288).
+- CON-02 no dice qué pasa con un B2 activo al aceptar una versión sucesora, ni con el reotorgamiento después de CON-04. Tampoco tiene `CONSENT_ALREADY_ACTIVE` (09v8:1649-1654).
+- Para A3, el 09 modela el reotorgamiento como un acto nuevo que preserva el revocado (09:2508, 09:2607), con `409 CONSENT_ALREADY_ACTIVE` (09:2514). El 06 no modela A3 (DL-021).
+- El 05 pide distinguir «vigente, revocado o reemplazado» (05:4253).
+- El 08: «La revocación es siempre re-otorgable (OtorgarNuevamente) por decisión del titular» (08:404).
+
+**Opciones.**
+- **A.** B2 sigue al 06 y A3 sigue al 09:
+  - hay un solo Consentimiento por (alcance de vínculo, finalidad), con una cadena lineal de versiones;
+  - CON-02 aplica `OtorgarConsentimiento`, `AceptarNuevaVersion` u `OtorgarNuevamente` según el estado, y la versión anterior queda «reemplazada»;
+  - si ya está vigente con la misma versión, CON-02 responde 200 con el consentimiento existente;
+  - la versión de texto aplicable es la cabeza de una cadena explícita de sucesión (cada versión declara a cuál reemplaza);
+  - en A3, cada otorgamiento es un acto nuevo.
+- **B.** B2 igual que A3: cada otorgamiento es un Consentimiento nuevo.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 09 define CON-02 para la versión sucesora y el reotorgamiento.
+
+## DL-039 — Finalidad y categorías pertinentes sin catálogo
+
+**Prioridad:** media · **Documento:** 06:251, 06:262 (Q-003 → 08) · 09v8:1518-1562, 1962 · 08:307, 08:368, 08:374 · 07 R-07-19 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- La finalidad es un atributo estructural, y su catálogo pertenece al 08 (Q-003) (06:251, 06:262). El 09 deja abierto el «catálogo exacto de `purpose`» (09v8:1962).
+- CON-01 devuelve `pertinentCategories` derivadas de la matriz de pertinencia vigente, con «ausencia de regla = deny» (09v8:1558).
+- La evidencia de B2 incluye la versión de la matriz y las categorías autorizadas (08:374), y la decisión de acceso registra la versión de la matriz (08:307).
+- Sin dominios no hay categorías ni matriz.
+
+**Opciones.**
+- **A.** Una finalidad sintética por alcance, con su etiqueta legible:
+  - `ACOMPANAMIENTO_NUTRICIONAL`;
+  - `PLANIFICACION_DEL_ENTRENAMIENTO`;
+  - `EVALUACION_ANTROPOMETRICA`.
+
+  `pertinentCategories` queda vacío. Los campos de la versión de matriz existen en la evidencia y en la decisión, en nulo.
+- **B.** Finalidad en texto libre y categorías sintéticas por alcance.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 08 publica el catálogo de finalidades y la matriz de pertinencia, con el primer dominio (WP-04).
+
+## DL-040 — Nombre visible de las partes sin campos de perfil aprobados
+
+**Prioridad:** media · **Documento:** 09v8:161-170 (ActorSummary) · 09v8:1523-1526 · 11A:196 · DL-009 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- Los modelos de lectura de REL y CON muestran la contraparte como `ActorSummary { identityId, displayName }` (09v8:161-170), y CON-01 muestra `professional.displayName` (09v8:1523-1526).
+- TEST-RF-018: «el destinatario conoce quién solicita y para qué» (11A:196).
+- No hay campos de perfil aprobados, ni para el perfil propio ni para el profesional (DL-009).
+
+**Opciones.**
+- **A.** Nombre visible y referencia neutral:
+  - El perfil profesional mínimo tiene un nombre visible. Lo carga el servicio interno de DL-036 y es sintético en las cuentas demo.
+  - El profesional ve al asesorado con una referencia neutral derivada del identificador («Asesorado · a1b2c3»), sin el correo.
+- **B.** Mostrar el correo de cada parte.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El 04 y el 05 aprueban los campos del perfil propio y del perfil profesional (DL-009).
+
+## DL-041 — El profesional sin Cartera
+
+**Prioridad:** media · **Documento:** 10-B01:645-663 · 10-B01:742-755 · 10-B01:1019-1031 · 10-B01:1310-1319 (CAND-10-NAV-E) · 10-B04:153-177 · brief WP-03 · **Estado:** ABIERTA
+
+**Qué dice el legajo.**
+- El profesional entra al asesorado «siempre por Cartera o Revisiones» (10-B01:645-663). La Cartera es API-DSH-01 (RF-052), que el paquete excluye.
+- El 10 no tiene una pantalla «mis vínculos» del profesional fuera de la Cartera, y admite «una representación mínima del vínculo en Cartera/estado» (10-B01:1025).
+- CAND-10-NAV-E prohíbe una ruta profesional distinta por vínculo o alcance (10-B01:1310-1319). La ruta del workspace es `/pro/advisees/:adviseeId` (10-B01:746).
+- El website es un export estático: no puede prerenderizar `/pro/advisees/:adviseeId` para identificadores arbitrarios.
+
+**Opciones.**
+- **A.** Lista mínima y workspace por query:
+  - `/pro` muestra una lista mínima de vínculos (REL-05) y de solicitudes enviadas (REL-02);
+  - el workspace del asesorado vive en `/pro/asesorado?id=…`, con el encabezado del vínculo y el Resumen (DSH-03);
+  - no hay Cartera.
+- **B.** Implementar DSH-01 mínimo.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** El paquete de Cartera (DSH-01) reemplaza la lista mínima, y el website define cómo resolver rutas dinámicas.
+
+## DL-042 — Casos adversariales de DV-05 que dependen de dominios
+
+**Prioridad:** alta · **Documento:** DV-05 (DV05.md:1116-1133) · brief WP-03 · **Estado:** ASIGNADA a WP-04 por Dirección (2026-09-19)
+
+**Qué dice el legajo.**
+- DV-05 propone diez casos adversariales para ejecutar en vivo ante el tribunal (DV05.md:1116-1133).
+- Cuatro necesitan antropometría, planes o evaluaciones (DV05.md:1127-1131):
+  - 6: anular dos veces una medición;
+  - 7: evolución con un hueco de datos;
+  - 8: editar un plan activado;
+  - 10: borrador de evaluación de otro profesional.
+- El brief de WP-03 excluye los dominios de salud.
+
+**Opciones.**
+- **A.** WP-03 habilita seis: 1, 2, 3 (variante profesional), 4, 5 y 9. Los otros cuatro pasan al criterio de cierre del primer paquete de dominio.
+- **B.** Adelantar en WP-03 lo mínimo de antropometría y planes para ejecutarlos.
+
+**Resolución — ASIGNADA el 2026-09-19.** Dirección eligió A. Los casos 6, 7, 8 y 10 quedan asignados a WP-04.
+
+**Condición de cierre.** WP-04 deja ejecutables los casos 6, 7, 8 y 10.
