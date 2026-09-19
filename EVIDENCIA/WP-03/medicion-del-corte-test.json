@@ -1,0 +1,83 @@
+{
+  "prueba": "medicion-del-corte-en-ambiente",
+  "api": "https://be-api-hndp.onrender.com",
+  "momento": "2026-09-19T13:19:08.896Z",
+  "ciclos": 10,
+  "accesoAntesDeRevocar": 10,
+  "permitidasDespuesDeRevocar": 0,
+  "medianaMs": 223.1,
+  "p95Ms": 266.6,
+  "maximoMs": 266.6,
+  "muestras": [
+    {
+      "ciclo": 1,
+      "antes": 200,
+      "revocacion": 200,
+      "siguiente": 404,
+      "ms": 216.3
+    },
+    {
+      "ciclo": 2,
+      "antes": 200,
+      "revocacion": 200,
+      "siguiente": 404,
+      "ms": 224.5
+    },
+    {
+      "ciclo": 3,
+      "antes": 200,
+      "revocacion": 200,
+      "siguiente": 404,
+      "ms": 219.6
+    },
+    {
+      "ciclo": 4,
+      "antes": 200,
+      "revocacion": 200,
+      "siguiente": 404,
+      "ms": 221
+    },
+    {
+      "ciclo": 5,
+      "antes": 200,
+      "revocacion": 200,
+      "siguiente": 404,
+      "ms": 228
+    },
+    {
+      "ciclo": 6,
+      "antes": 200,
+      "revocacion": 200,
+      "siguiente": 404,
+      "ms": 225.8
+    },
+    {
+      "ciclo": 7,
+      "antes": 200,
+      "revocacion": 200,
+      "siguiente": 404,
+      "ms": 233.1
+    },
+    {
+      "ciclo": 8,
+      "antes": 200,
+      "revocacion": 200,
+      "siguiente": 404,
+      "ms": 221.7
+    },
+    {
+      "ciclo": 9,
+      "antes": 200,
+      "revocacion": 200,
+      "siguiente": 404,
+      "ms": 221.2
+    },
+    {
+      "ciclo": 10,
+      "antes": 200,
+      "revocacion": 200,
+      "siguiente": 404,
+      "ms": 266.6
+    }
+  ]
+}

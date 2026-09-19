@@ -1,0 +1,15 @@
+# APK de WP-03
+archivo:        be-0.3.0-08cdd08.apk
+tamaño:         69003778 bytes
+sha256:         b40fea608de3a4a661834ae3c2753d77642c52bddfb6cb6026dea7083bb72ced
+build EAS:      339436c0-f53b-4832-bc62-28cb88a50b5d (perfil test; artefacto EAS expira 2026-10-03T12:54:30Z)
+commit:         08cdd084516a99cd1d6657f8f1485c1e9494523a (main, merge de WP-03, PR #19)
+release:        https://github.com/Elian-Bufi/be/releases/download/be-apk-0.3.0/be-0.3.0-08cdd08.apk (no expira)
+verificación:   descarga anónima del release: 200, 69003778 bytes, mismo sha256 (2026-09-19)
+construido con: npx eas-cli@24.6.0 build --platform android --profile test, desde la máquina de Dirección con su sesión de EAS.
+                apk.yml no pudo: falta el secreto EXPO_TOKEN (ver PR #20 y docs/DESPLIEGUE.md → APK).
+
+# app.config embebido (assets/app.config dentro del APK):
+{"name":"BE","slug":"be","owner":"elianbufi","version":"0.3.0","orientation":"portrait","icon":"./assets/icon.png","userInterfaceStyle":"light","android":{"package":"com.elianbufi.be","versionCode":3,"adaptiveIcon":{"foregroundImage":"./assets/android-icon-foreground.png","backgroundColor":"#ffffff"},"predictiveBackGestureEnabled":false},"extra":{"appEnv":"test","apiBaseUrl":"https://be-api-hndp.onrender.com","commit":"08cdd084516a99cd1d6657f8f1485c1e9494523a","construidoEn":"2026-09-19T12:57:13.817Z","eas":{"projectId":"8ef1d1f5-76e3-4d2b-b305-b07146e97f77"}},"description":"App BE — Expo / React Native (APK por EAS, distribución directa)","sdkVersion":"57.0.0","platforms":["ios","android","web"]}
+
+# Sin credenciales: el APK no contiene .env, secretos ni tokens (búsqueda en el bundle: 0 coincidencias de EXPO_TOKEN, JWT_SECRET, claves privadas o contraseñas demo). La API se autentica por la sesión de la persona.

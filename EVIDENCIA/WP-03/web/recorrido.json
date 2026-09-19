@@ -1,0 +1,630 @@
+{
+  "web": "https://be-web-1ngj.onrender.com",
+  "api": "https://be-api-hndp.onrender.com",
+  "alcance": "NUTRICION",
+  "asesoradaCorreo": "asesorada-wp03-1789824012421@example.invalid",
+  "revocadoEn": "2026-09-19T13:20:41.824Z",
+  "cortadoEn": "2026-09-19T13:20:42.663Z",
+  "pasos": [
+    {
+      "paso": "web-01-pro-espacio-profesional",
+      "url": "/pro",
+      "momento": "2026-09-19T13:20:21.117Z"
+    },
+    {
+      "paso": "web-02-asesorada-cuenta-identificador",
+      "url": "/account",
+      "momento": "2026-09-19T13:20:25.197Z"
+    },
+    {
+      "paso": "web-03-pro-solicitar-vinculo",
+      "url": "/pro",
+      "momento": "2026-09-19T13:20:26.696Z"
+    },
+    {
+      "paso": "web-04-pro-solicitud-enviada",
+      "url": "/pro",
+      "momento": "2026-09-19T13:20:27.867Z"
+    },
+    {
+      "paso": "web-05-asesorada-solicitudes-recibidas",
+      "url": "/account/relationships",
+      "momento": "2026-09-19T13:20:29.277Z"
+    },
+    {
+      "paso": "web-06-asesorada-detalle-de-solicitud",
+      "url": "/account/relationships",
+      "momento": "2026-09-19T13:20:29.579Z"
+    },
+    {
+      "paso": "web-07-asesorada-vinculo-aceptado",
+      "url": "/account/relationships",
+      "momento": "2026-09-19T13:20:30.440Z"
+    },
+    {
+      "paso": "web-08-pro-vinculo-activo-acceso-pendiente",
+      "url": "/pro",
+      "momento": "2026-09-19T13:20:31.606Z"
+    },
+    {
+      "paso": "web-09-pro-workspace-sin-consentimiento",
+      "url": "/pro/advisees?id=aab97f7b-1565-4404-9b5a-a086ae2c7d8f",
+      "momento": "2026-09-19T13:20:33.281Z"
+    },
+    {
+      "paso": "web-10-asesorada-pantalla-previa-b2",
+      "url": "/account/relationships/consent?id=7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "momento": "2026-09-19T13:20:34.412Z"
+    },
+    {
+      "paso": "web-11-asesorada-detalle-completo-b2",
+      "url": "/account/relationships/consent?id=7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "momento": "2026-09-19T13:20:34.632Z"
+    },
+    {
+      "paso": "web-12-asesorada-acceso-autorizado",
+      "url": "/account/relationships/consent?id=7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "momento": "2026-09-19T13:20:35.262Z"
+    },
+    {
+      "paso": "web-13-pro-b2-sin-a3-sin-acceso",
+      "url": "/pro/advisees?id=aab97f7b-1565-4404-9b5a-a086ae2c7d8f",
+      "momento": "2026-09-19T13:20:36.040Z"
+    },
+    {
+      "paso": "web-14-asesorada-privacidad-a3-no-otorgado",
+      "url": "/account/privacy",
+      "momento": "2026-09-19T13:20:36.677Z"
+    },
+    {
+      "paso": "web-15-asesorada-a3-otorgado",
+      "url": "/account/privacy",
+      "momento": "2026-09-19T13:20:37.774Z"
+    },
+    {
+      "paso": "web-16-pro-acceso-contextual",
+      "url": "/pro/advisees?id=aab97f7b-1565-4404-9b5a-a086ae2c7d8f",
+      "momento": "2026-09-19T13:20:38.455Z"
+    },
+    {
+      "paso": "web-17-asesorada-detalle-de-vinculo",
+      "url": "/account/relationships/detail?id=7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "momento": "2026-09-19T13:20:40.495Z"
+    },
+    {
+      "paso": "web-18-asesorada-confirmar-revocacion",
+      "url": "/account/relationships/detail?id=7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "momento": "2026-09-19T13:20:40.776Z"
+    },
+    {
+      "paso": "web-19-asesorada-acceso-revocado",
+      "url": "/account/relationships/detail?id=7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "momento": "2026-09-19T13:20:41.967Z"
+    },
+    {
+      "paso": "web-20-pro-acceso-cortado",
+      "url": "/pro/advisees?id=aab97f7b-1565-4404-9b5a-a086ae2c7d8f",
+      "momento": "2026-09-19T13:20:42.770Z"
+    },
+    {
+      "paso": "web-21-asesorada-confirmar-pausa",
+      "url": "/account/relationships/detail?id=7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "momento": "2026-09-19T13:20:45.806Z"
+    },
+    {
+      "paso": "web-22-asesorada-vinculo-pausado",
+      "url": "/account/relationships/detail?id=7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "momento": "2026-09-19T13:20:46.841Z"
+    },
+    {
+      "paso": "web-23-pro-vinculo-pausado",
+      "url": "/pro/advisees?id=aab97f7b-1565-4404-9b5a-a086ae2c7d8f",
+      "momento": "2026-09-19T13:20:47.552Z"
+    },
+    {
+      "paso": "web-24-pro-acceso-tras-reanudar",
+      "url": "/pro/advisees?id=aab97f7b-1565-4404-9b5a-a086ae2c7d8f",
+      "momento": "2026-09-19T13:20:49.547Z"
+    },
+    {
+      "paso": "web-25-asesorada-confirmar-finalizacion",
+      "url": "/account/relationships/detail?id=7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "momento": "2026-09-19T13:20:49.854Z"
+    },
+    {
+      "paso": "web-26-asesorada-vinculo-finalizado",
+      "url": "/account/relationships/detail?id=7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "momento": "2026-09-19T13:20:50.902Z"
+    },
+    {
+      "paso": "web-27-pro-vinculo-finalizado",
+      "url": "/pro/advisees?id=aab97f7b-1565-4404-9b5a-a086ae2c7d8f",
+      "momento": "2026-09-19T13:20:51.663Z"
+    }
+  ],
+  "red": [
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:19.565Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/auth/sessions",
+      "status": 201
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:20.156Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:20.158Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/health-data-consent-requirement",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:20.798Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:21.781Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationship-requests",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:21.840Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:24.328Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/auth/sessions",
+      "status": 201
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:24.890Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:24.941Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/health-data-consent-requirement",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:27.290Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/relationship-requests",
+      "status": 201
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:27.865Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationship-requests",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:28.603Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:29.051Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:29.069Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationship-requests",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:29.086Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationship-requests",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:30.122Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/relationship-requests/10f7d3c1-f92a-4b8a-a075-bbb9ebd37040/accept",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:30.733Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationship-requests",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:30.736Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationship-requests",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:30.752Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:30.987Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:32.497Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:33.130Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/aab97f7b-1565-4404-9b5a-a086ae2c7d8f/dashboard",
+      "status": 404
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:33.142Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:34.191Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a/consent-requirements",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:34.249Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:35.130Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a/consents",
+      "status": 201
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:35.873Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/aab97f7b-1565-4404-9b5a-a086ae2c7d8f/dashboard",
+      "status": 404
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:35.921Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:36.508Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/health-data-consents",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:36.525Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/consents",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:36.561Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/health-data-consent-requirement",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:37.224Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/me/health-data-consents",
+      "status": 201
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:37.648Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/health-data-consent-requirement",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:37.820Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/health-data-consents",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:38.323Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:38.332Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/aab97f7b-1565-4404-9b5a-a086ae2c7d8f/dashboard",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:39.082Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:39.490Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationship-requests",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:39.502Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:39.505Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationship-requests",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:40.228Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:40.349Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:41.270Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/me/consents/52d37329-c123-4ba5-8c94-b5373c1046eb/revoke",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:41.782Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:41.808Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:42.470Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/aab97f7b-1565-4404-9b5a-a086ae2c7d8f/dashboard",
+      "status": 404
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:42.635Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:43.552Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a/consent-requirements",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:43.630Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:44.064Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a/consents",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:44.530Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/aab97f7b-1565-4404-9b5a-a086ae2c7d8f/dashboard",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:44.536Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:45.342Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:45.612Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:46.251Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a/pause",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:46.666Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:46.672Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:47.433Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:47.437Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/aab97f7b-1565-4404-9b5a-a086ae2c7d8f/dashboard",
+      "status": 404
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:48.230Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a/resume",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:48.647Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:48.871Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:49.419Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:49.422Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/aab97f7b-1565-4404-9b5a-a086ae2c7d8f/dashboard",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:50.288Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a/finalize",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:50.717Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/relationships/7d32c148-f6b3-4319-b260-e1408c733a3a",
+      "status": 200
+    },
+    {
+      "quien": "asesorada",
+      "momento": "2026-09-19T13:20:50.759Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:51.414Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/aab97f7b-1565-4404-9b5a-a086ae2c7d8f/dashboard",
+      "status": 404
+    },
+    {
+      "quien": "profesional",
+      "momento": "2026-09-19T13:20:51.538Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    }
+  ]
+}

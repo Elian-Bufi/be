@@ -1,0 +1,5 @@
+{"prueba":"REG-06-44-concurrencia","pedidos":8,"creadas":1,"deduplicadas":7}
+{"prueba":"TEST-AUTH-001","medianasMs":{"identificador inexistente":62.4,"contraseña incorrecta":62.7,"cuenta SUSPENDIDA con contraseña correcta":62.9,"cuenta CERRADA con contraseña correcta":62.9},"toleranciaMs":50}
+{"prueba":"adversarial-1","medianaAjenoMs":7.4328089999999065,"medianaInexistenteMs":7.364463500000056}
+{"prueba":"medicion-del-corte","repeticiones":30,"operacionesPermitidasDespues":0,"medianaMs":7.640364999999292,"p95Ms":10.278902999998536,"maximoMs":10.661153000000922}
+{"prueba":"medicion-del-corte-concurrente","rondas":8,"lecturasPorRonda":16,"respuestas200":62,"respuestas404":66,"permitidasConHoraPosterior":0}

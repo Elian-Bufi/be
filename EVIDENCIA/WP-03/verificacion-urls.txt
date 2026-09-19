@@ -1,0 +1,25 @@
+# Verificación de las superficies — WP-03 — 2026-09-19T13:17:46.276Z — main = 6410487
+
+## API
+GET /health/ready → {"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.3.0","commit":"64104875eed0d6383eadaaa8bc7f409b0156dfd3","construidoEn":"2026-09-19T13:07:31.833Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+GET /health/live → 200
+GET /api/v1/advisees/{id}/dashboard sin sesión → {"error":{"code":"AUTHENTICATION_REQUIRED","message":"Iniciá sesión para continuar."}} [401] cache-control: no-store
+GET /api/v1/me/relationships sin sesión → [401] AUTHENTICATION_REQUIRED
+CORS preflight desde el website (POST /relationship-requests) → 204 allow-origin: https://be-web-1ngj.onrender.com allow-headers: authorization,content-type,idempotency-key,x-be-surface
+CORS preflight desde otro origen → allow-origin: (ninguno)
+contrato publicado (docs/api/openapi.json en 6410487) → BE API — WP-02 Identidad y sesiones · WP-03 Vínculo, consentimiento y PDP · versión 0.3.0 · 24 operaciones
+
+## Website
+GET / → 200
+GET /login → 200
+GET /register → 200
+GET /account → 200
+GET /account/relationships → 200
+GET /account/relationships/detail → 200
+GET /account/relationships/consent → 200
+GET /account/privacy → 200
+GET /pro → 200
+GET /pro/advisees → 200
+commit en la portada → 6410487
+JS de /pro (11 scripts) → con «Solicitar vínculo»: 1 · con la ruta /relationship-requests: 1
+CSP connect-src → connect-src 'self' https://be-api-hndp.onrender.com
