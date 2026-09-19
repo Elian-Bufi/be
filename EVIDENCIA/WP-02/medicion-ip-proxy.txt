@@ -32,3 +32,10 @@ B) 6 logins por el rewrite para el identificador W: 401 401 401 401 401 401   �
    1 login directo para W: 401
 
 Conclusión: detrás del rewrite, req.ip es una dirección del pool del proxy de Render, no la del cliente.
+
+## 3. Después de DL-030 (opción B: el website llama a la API directo, con CORS) — 2026-09-19T04:19Z
+6 logins fallidos desde el website real (Edge headless contra https://be-web-1ngj.onrender.com), mismo identificador:
+  destino de las requests: https://be-api-hndp.onrender.com (sin rewrite)
+  statuses: 401 401 401 401 401 429   → la API ve la red del navegador; el cupo por red + identificador se aplica desde el website
+  CSP del website: connect-src 'self' https://be-api-hndp.onrender.com
+Detalle: dl-030/medicion-ip-web-directo.json. Antes del cambio, por el rewrite, el mismo experimento daba seis 401 (§2 B).

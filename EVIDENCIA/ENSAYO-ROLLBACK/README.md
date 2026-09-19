@@ -17,7 +17,7 @@ Simula un merge que hay que deshacer. Se usó un cambio inocuo en `apps/api/src/
 - Cada deploy ocurrió **después** de que la CI de ese commit estuvo en verde (`autoDeployTrigger: checksPass`). Ninguno de estos merges tocó `render.yaml` (DL-008).
 - Registro completo, con hora UTC y respuesta de `/health/ready` en cada paso: `ensayo-git-revert.log`. Script: `ensayo-git-revert.sh`.
 
-## Parte 2 — Rollback de aplicación en Render (pendiente de Dirección)
+## Parte 2 — Rollback de aplicación en Render (ejecutada por Dirección, 2026-09-19)
 
 Render no expone el rollback desde el repositorio: se hace en el dashboard. Pasos:
 
@@ -26,4 +26,13 @@ Render no expone el rollback desde el repositorio: se hace en el dashboard. Paso
 3. Volver: Render → `be-api` → **Manual Deploy → Deploy latest commit**. Si Render desactivó el auto-deploy al hacer el rollback, reactivarlo en **Settings → Auto-Deploy → After CI Checks Pass**.
 4. Verificar: `/health/ready` vuelve a `23c9997…` (o al último commit de `main`).
 
-Resultado: *(se completa con las horas y respuestas observadas)*.
+**Resultado** (`ensayo-render-rollback.txt`):
+
+| Paso | Observado desde afuera |
+|---|---|
+| Antes: último deploy automático | `23c9997` · construido 01:36:32 · base y migraciones OK |
+| Rollback en el dashboard al deploy anterior | 02:47Z: `/health/ready` 200 con `4776fc5` · **`construidoEn` 01:31:29**: Render volvió a servir la imagen anterior sin reconstruirla · base y migraciones OK · el login sigue respondiendo el 401 neutral |
+| Vuelta: Manual Deploy → Deploy latest commit | 03:11Z: `/health/ready` 200 con `c94a320` (último commit de `main`, el merge solo de documentación #11: mismo código que `23c9997`) · construido 03:04:44 |
+| Auto-deploy después de la vuelta | Dirección lo dejó activo. Verificado: el merge `9b1aeb1` (#13) se desplegó solo, después de su CI (CI 04:16:04 → construido 04:16:27) |
+
+**Conclusión.** El rollback de aplicación funciona sin tocar la base: el artefacto anterior acepta el schema con las migraciones de WP-02 (expand→contract, 07 §39), y la vuelta recupera el último `main`. Con la parte 1, el ensayo exigido por ACTA-DIR-034 §12 queda completo.

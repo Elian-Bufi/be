@@ -1,0 +1,20 @@
+# Ensayo de rollback — parte 2 (Render, dashboard) — verificación
+# Dirección ejecutó Rollback de be-api al deploy anterior (4776fc5) y avisó el 2026-09-19.
+
+## Antes del rollback (último deploy automático, merge del revert #10)
+2026-09-19T01:37:15Z ESTADO FINAL: {"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"23c9997cba6a50c6ce84b1a9f501d66b10522803","construidoEn":"2026-09-19T01:36:32.631Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+
+## Después del rollback (verificado desde afuera)
+2026-09-19T02:47:01Z GET /health/ready → {"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"4776fc5a88b9ead3af781c3577eca4159a580da8","construidoEn":"2026-09-19T01:31:29.649Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+2026-09-19T02:47:13Z GET /health/ready → idem (3 lecturas consecutivas)
+GET /health/live → 200
+POST /api/v1/auth/sessions (identificador inexistente) → 401 INVALID_CREDENTIALS (la API sigue operando)
+
+Lectura: Render volvió a servir el artefacto anterior sin reconstruirlo (construidoEn 01:31:29 = el del deploy de 4776fc5).
+La base conserva las migraciones de WP-02 y el artefacto anterior la acepta (migraciones: OK; expand→contract, 07 §39).
+
+## Vuelta (recovery)
+Dirección: Manual Deploy → Deploy latest commit, y Auto-Deploy activo.
+2026-09-19T03:11:07Z GET /health/ready → commit c94a32026186384a01a538b1b55aefc1df783f8c, construidoEn 2026-09-19T03:04:44.516Z, base y migraciones OK
+c94a320 es el último commit de main en ese momento (merge solo de documentación, #11): mismo código que 23c9997.
+Auto-deploy verificado después: el merge 9b1aeb1 (#13) se desplegó solo, tras su CI (CI 04:16:04 → construido 04:16:27).
