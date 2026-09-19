@@ -23,8 +23,8 @@ export interface Entorno {
   readonly costoBcrypt: number;
   /**
    * 08 §38 PROPUESTA BE (DEUDA_LEGAJO DL-015): login 5 / 15 min por red + identificador; login global 100 / 15 min por
-   * red («global por IP: generoso», 08:786); login 20 / 15 min por identificador desde cualquier red (DL-030: detrás del
-   * rewrite del website la API ve un pool de IPs del proxy); registro 10 / h por red. Red = IPv4 o prefijo /64 de IPv6.
+   * red («global por IP: generoso», 08:786); login 20 / 15 min por identificador desde cualquier red (defensa en
+   * profundidad ante pools de direcciones, DL-030); registro 10 / h por red. Red = IPv4 o prefijo /64 de IPv6.
    */
   readonly limites: {
     readonly login: Limite;

@@ -2,7 +2,7 @@
   "name": "@be/web",
   "version": "0.2.0",
   "private": true,
-  "description": "Website BE — Next.js (export estático, 07 CAND-07-J opción C)",
+  "description": "Website BE — Next.js (export estático + CORS, 07 CAND-07-J opción B; DL-030)",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

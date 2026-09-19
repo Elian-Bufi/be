@@ -1,7 +1,7 @@
 /**
  * Cliente HTTP de los contratos de WP-02, compartido por el website y el APK (09v7 T21: una sola definición).
  * Cada superficie lo instancia con su base y su superficie declarada:
- * - website: base same-origin `/api/v1` (el borde reescribe /api/* hacia la API, 07 CAND-07-J C);
+ * - website: origen de la API inyectado en el build (`BE_API_BASE_URL`), llamada directa con CORS (DL-030);
  * - APK: base absoluta `API_BASE_URL/api/v1` del perfil de build (07:645, sin CORS).
  * El Bearer lo guarda quien llama, solo en memoria (DL-012, T5). Toda respuesta exitosa se valida contra su schema:
  * si la API devolviera otra forma, la UI no la interpreta. Sin cookies.

@@ -45,7 +45,7 @@ export class SesionService {
     const identificador = normalizarIdentificadorLocal(solicitud.identifier);
     // Cupos neutrales (no dependen de que la cuenta exista, DL-015): global por red, por red + identificador, y por
     // identificador desde cualquier red. El último acota el ataque a una cuenta cuando las requests llegan desde un pool
-    // de direcciones, como las del proxy del rewrite del website (DL-030).
+    // de direcciones (por ejemplo, el de un proxy; DL-030). Es defensa en profundidad.
     this.limitador.consumir('loginPorIp', ctx.direccionIp);
     this.limitador.consumir('login', ctx.direccionIp, identificador);
     this.limitador.consumir('loginPorIdentificador', null, identificador);
