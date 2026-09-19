@@ -1,0 +1,85 @@
+{
+  "api": "https://be-api-hndp.onrender.com",
+  "momento": "2026-09-19T19:43:29.031Z",
+  "profesionales": [
+    "DEMO-PN",
+    "DEMO-PT"
+  ],
+  "casos": [
+    {
+      "caso": "8",
+      "titulo": "editar, validar o reactivar una versión activada falla; la corrección es una sucesora y la anterior queda intacta",
+      "resultado": "PASA",
+      "observado": {
+        "editar": "422 PLAN_NOT_EDITABLE",
+        "validar": "422 PLAN_NOT_EDITABLE",
+        "reactivar": "422 OPERATION_NOT_READY",
+        "contenidoIntacto": true,
+        "huellaDeLaAnterior": "74184efd5981d853e7d2f62a9cb17bc181e17e9d65b2ea780d4533dd04945013",
+        "huellaAlActivar": "74184efd5981d853e7d2f62a9cb17bc181e17e9d65b2ea780d4533dd04945013",
+        "sucesoraActivada": "200 · reemplaza a la anterior",
+        "arrozEnHoy": "150 g",
+        "registroPrevioSigueApuntandoALaAnterior": true
+      }
+    },
+    {
+      "caso": "7-nutricion",
+      "titulo": "los días sin registro y la cena sin registrar aparecen como «sin dato», sin ceros ni incumplimiento",
+      "resultado": "PASA",
+      "observado": {
+        "diasDelPeriodo": 7,
+        "diasSinDato": 6,
+        "estadoDeUnDiaSinRegistro": {
+          "fecha": "2026-09-13",
+          "dataState": "NO_DATA",
+          "comidas": []
+        },
+        "hoy": [
+          "Almuerzo: REGISTERED (Arroz blanco -20 g)",
+          "Cena: NO_DATA"
+        ]
+      }
+    },
+    {
+      "caso": "D9",
+      "titulo": "Entrenamiento con vínculo, B2 y A3 vigentes: las 18 operaciones de nutrición dan el mismo 404 que lo inexistente, y nada cambia",
+      "resultado": "PASA",
+      "observado": {
+        "pares": [
+          "POST /advisees/{asesorado}/nutrition/evaluations: 404 vs 404 idénticos",
+          "GET /advisees/{asesorado}/nutrition/evaluations: 404 vs 404 idénticos",
+          "GET /nutrition/evaluations/{id}: 404 vs 404 idénticos",
+          "POST /advisees/{asesorado}/nutrition/objectives: 404 vs 404 idénticos",
+          "GET /advisees/{asesorado}/nutrition/objectives/effective: 404 vs 404 idénticos",
+          "GET /advisees/{asesorado}/nutrition/objectives: 404 vs 404 idénticos",
+          "POST /advisees/{asesorado}/nutrition/plans: 404 vs 404 idénticos",
+          "GET /advisees/{asesorado}/nutrition/plans: 404 vs 404 idénticos",
+          "GET /nutrition/plans/{id}: 404 vs 404 idénticos",
+          "PATCH /nutrition/plans/{id}: 404 vs 404 idénticos",
+          "POST /nutrition/plans/{id}/validate: 404 vs 404 idénticos",
+          "POST /nutrition/plans/{id}/activate: 404 vs 404 idénticos",
+          "GET /nutrition/executions/{id}: 404 vs 404 idénticos",
+          "POST /nutrition/executions/{id}/corrections: 404 vs 404 idénticos",
+          "GET /advisees/{asesorado}/nutrition/review-context: 404 vs 404 idénticos",
+          "POST /advisees/{asesorado}/nutrition/reviews: 404 vs 404 idénticos",
+          "GET /nutrition/reviews/{id}: 404 vs 404 idénticos",
+          "POST /nutrition/reviews/{id}/apply: 404 vs 404 idénticos"
+        ],
+        "tableroDelVinculoPropio": 200,
+        "catalogoNutricional": "buscar 403 · cargar 403",
+        "huellaDelPlanIntacta": true,
+        "revisionSinAplicar": true
+      }
+    },
+    {
+      "caso": "cero-puntaje",
+      "titulo": "ninguna respuesta de la corrida tiene claves de adherencia, cumplimiento, puntaje o porcentaje",
+      "resultado": "PASA",
+      "observado": {
+        "respuestasRevisadas": 83,
+        "hallazgos": []
+      }
+    }
+  ],
+  "todos": true
+}

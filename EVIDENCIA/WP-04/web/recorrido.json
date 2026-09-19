@@ -1,0 +1,588 @@
+{
+  "pasos": [
+    {
+      "paso": "web-01-workspace-abrir-nutricion",
+      "url": "/pro/advisees?id=7ecd3147-f119-455e-aee3-42441a327bbb",
+      "momento": "2026-09-19T20:00:58.544Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-02-resumen-vacio",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb",
+      "momento": "2026-09-19T20:01:00.900Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-03-evaluacion-formulario",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb",
+      "momento": "2026-09-19T20:01:03.653Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-04-evaluacion-registrada",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb",
+      "momento": "2026-09-19T20:01:05.428Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-05-objetivo-formulario",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb",
+      "momento": "2026-09-19T20:01:07.477Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-06-resumen-con-objetivo",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb",
+      "momento": "2026-09-19T20:01:09.190Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-07-validar-con-problemas",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb&vista=plan",
+      "momento": "2026-09-19T20:01:14.360Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-08-editor-jerarquia",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb&vista=plan",
+      "momento": "2026-09-19T20:01:18.548Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-09-plan-valido",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb&vista=plan",
+      "momento": "2026-09-19T20:01:20.289Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-10-confirmar-activacion",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb&vista=plan",
+      "momento": "2026-09-19T20:01:20.907Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-11-plan-activo-solo-lectura",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb&vista=plan",
+      "momento": "2026-09-19T20:01:23.531Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-12-registros-contraste",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb&vista=registros",
+      "momento": "2026-09-19T20:01:27.038Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-13-estimacion-profesional",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb&vista=registros",
+      "momento": "2026-09-19T20:01:28.751Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-14-revision-formulario",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb&vista=revisiones",
+      "momento": "2026-09-19T20:01:31.813Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-15-revision-registrada",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb&vista=revisiones",
+      "momento": "2026-09-19T20:01:33.457Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-16-continuidad-aplicada",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb&vista=revisiones",
+      "momento": "2026-09-19T20:01:35.204Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-17-sucesora-borrador-y-activa",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb&vista=plan",
+      "momento": "2026-09-19T20:01:37.992Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-18-sucesora-activada-historial",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb&vista=plan",
+      "momento": "2026-09-19T20:01:40.184Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-19-otro-alcance-no-disponible",
+      "url": "/pro/advisees/nutrition?id=7ecd3147-f119-455e-aee3-42441a327bbb",
+      "momento": "2026-09-19T20:01:49.358Z",
+      "terminosProhibidos": []
+    }
+  ],
+  "red": [
+    {
+      "momento": "2026-09-19T20:00:52.613Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/auth/sessions",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-19T20:00:53.706Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/health-data-consent-requirement",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:00:53.765Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:00:55.117Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:00:55.821Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationship-requests",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:00:55.979Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:00:57.136Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:00:57.633Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/dashboard",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:00:58.080Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:00:59.281Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:00:59.885Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/objectives",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:00.103Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:00.284Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:00.397Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:04.230Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/evaluations",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-19T20:01:04.663Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:04.754Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/objectives",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:04.873Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:04.935Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:08.042Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/objectives",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-19T20:01:08.513Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:08.614Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:08.636Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/objectives",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:08.719Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:09.972Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:10.120Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:10.720Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/plans",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-19T20:01:11.165Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:11.420Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:12.046Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/nutrition/plans/b64d9b94-aada-4d27-8170-2d08bba8af9a",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:12.300Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:13.310Z",
+      "metodo": "PATCH",
+      "ruta": "/api/v1/nutrition/plans/b64d9b94-aada-4d27-8170-2d08bba8af9a",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:13.766Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/nutrition/plans/b64d9b94-aada-4d27-8170-2d08bba8af9a/validate",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:15.217Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/nutrition/catalog-items",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:16.075Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/nutrition/catalog-items",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:17.053Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/nutrition/catalog-items",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:17.777Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/nutrition/catalog-items",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:19.131Z",
+      "metodo": "PATCH",
+      "ruta": "/api/v1/nutrition/plans/b64d9b94-aada-4d27-8170-2d08bba8af9a",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:19.667Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/nutrition/plans/b64d9b94-aada-4d27-8170-2d08bba8af9a/validate",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:21.815Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/nutrition/plans/b64d9b94-aada-4d27-8170-2d08bba8af9a/activate",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:22.262Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:22.351Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:23.010Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/nutrition/plans/b64d9b94-aada-4d27-8170-2d08bba8af9a",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:26.445Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:27.761Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/nutrition/executions/eab935ae-2fd4-4255-8bce-63114ab850a6/corrections",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-19T20:01:28.223Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:29.702Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:29.725Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:32.394Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/reviews",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-19T20:01:32.824Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:32.993Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:34.045Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/nutrition/reviews/bf17d947-9905-4b90-ba7f-04d197491124/apply",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:34.626Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:34.720Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:35.673Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:35.823Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:36.279Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/nutrition/plans/b64d9b94-aada-4d27-8170-2d08bba8af9a",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:36.794Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:36.800Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/nutrition/plans/e92c4361-6ebd-49d8-9741-b21204a60ce6",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:37.359Z",
+      "metodo": "PATCH",
+      "ruta": "/api/v1/nutrition/plans/e92c4361-6ebd-49d8-9741-b21204a60ce6",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:38.622Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/nutrition/plans/e92c4361-6ebd-49d8-9741-b21204a60ce6/activate",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:39.137Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:39.202Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:39.666Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/nutrition/plans/e92c4361-6ebd-49d8-9741-b21204a60ce6",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:44.510Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/auth/sessions",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-19T20:01:45.015Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:45.027Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/health-data-consent-requirement",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:45.730Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:46.287Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:46.369Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationship-requests",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:46.938Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:47.386Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:47.396Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/dashboard",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:47.578Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-19T20:01:48.582Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/evaluations",
+      "status": 404
+    },
+    {
+      "momento": "2026-09-19T20:01:48.585Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/plans",
+      "status": 404
+    },
+    {
+      "momento": "2026-09-19T20:01:48.883Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/objectives",
+      "status": 404
+    },
+    {
+      "momento": "2026-09-19T20:01:48.912Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/7ecd3147-f119-455e-aee3-42441a327bbb/nutrition/review-context",
+      "status": 404
+    }
+  ]
+}

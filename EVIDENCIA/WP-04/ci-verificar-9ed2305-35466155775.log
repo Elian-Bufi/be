@@ -1,0 +1,1250 @@
+﻿2026-09-19T20:02:43.0783399Z Current runner version: '2.337.0'
+2026-09-19T20:02:43.0810427Z ##[group]Runner Image Provisioner
+2026-09-19T20:02:43.0811438Z Hosted Compute Agent
+2026-09-19T20:02:43.0812040Z Version: 20260828.587
+2026-09-19T20:02:43.0812782Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-09-19T20:02:43.0813567Z Build Date: 2026-08-28T16:44:25Z
+2026-09-19T20:02:43.0814302Z Worker ID: {31610738-9b61-4d04-b293-50837d56d452}
+2026-09-19T20:02:43.0815107Z Azure Region: westus2
+2026-09-19T20:02:43.0815687Z ##[endgroup]
+2026-09-19T20:02:43.0817730Z ##[group]Operating System
+2026-09-19T20:02:43.0818431Z Ubuntu
+2026-09-19T20:02:43.0819037Z 24.04.5
+2026-09-19T20:02:43.0819623Z LTS
+2026-09-19T20:02:43.0820149Z ##[endgroup]
+2026-09-19T20:02:43.0820772Z ##[group]Runner Image
+2026-09-19T20:02:43.0821394Z Image: ubuntu-24.04
+2026-09-19T20:02:43.0821953Z Version: 20260907.300.1
+2026-09-19T20:02:43.0823156Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260907.300/images/ubuntu/Ubuntu2404-Readme.md
+2026-09-19T20:02:43.0824941Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260907.300
+2026-09-19T20:02:43.0825925Z ##[endgroup]
+2026-09-19T20:02:43.0827983Z ##[group]GITHUB_TOKEN Permissions
+2026-09-19T20:02:43.0830204Z Contents: read
+2026-09-19T20:02:43.0830924Z Metadata: read
+2026-09-19T20:02:43.0831526Z ##[endgroup]
+2026-09-19T20:02:43.0833635Z Secret source: Actions
+2026-09-19T20:02:43.0834748Z Cache mode: write
+2026-09-19T20:02:43.0835510Z Prepare workflow directory
+2026-09-19T20:02:43.1181419Z Prepare all required actions
+2026-09-19T20:02:43.1232920Z Getting action download info
+2026-09-19T20:02:43.4657073Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+2026-09-19T20:02:43.5823584Z Download action repository 'actions/setup-node@v7' (SHA:820762786026740c76f36085b0efc47a31fe5020)
+2026-09-19T20:02:43.7656676Z Complete job name: verificar · typecheck · unit · build · audit
+﻿2026-09-19T20:02:43.8454023Z ##[group]Run actions/checkout@v7
+2026-09-19T20:02:43.8454958Z with:
+2026-09-19T20:02:43.8455431Z   repository: Elian-Bufi/be
+2026-09-19T20:02:43.8459688Z   token: ***
+2026-09-19T20:02:43.8460138Z   ssh-strict: true
+2026-09-19T20:02:43.8460593Z   ssh-user: git
+2026-09-19T20:02:43.8461057Z   persist-credentials: true
+2026-09-19T20:02:43.8461575Z   clean: true
+2026-09-19T20:02:43.8462041Z   sparse-checkout-cone-mode: true
+2026-09-19T20:02:43.8462583Z   fetch-depth: 1
+2026-09-19T20:02:43.8463023Z   fetch-tags: false
+2026-09-19T20:02:43.8463486Z   show-progress: true
+2026-09-19T20:02:43.8463954Z   lfs: false
+2026-09-19T20:02:43.8464379Z   submodules: false
+2026-09-19T20:02:43.8464852Z   set-safe-directory: true
+2026-09-19T20:02:43.8465377Z   allow-unsafe-pr-checkout: false
+2026-09-19T20:02:43.8466178Z ##[endgroup]
+2026-09-19T20:02:43.9488536Z Syncing repository: Elian-Bufi/be
+2026-09-19T20:02:43.9490382Z ##[group]Getting Git version info
+2026-09-19T20:02:43.9491116Z Working directory is '/home/runner/work/be/be'
+2026-09-19T20:02:43.9492392Z [command]/usr/bin/git version
+2026-09-19T20:02:43.9611197Z git version 2.55.0
+2026-09-19T20:02:43.9635355Z ##[endgroup]
+2026-09-19T20:02:43.9646367Z Temporarily overriding HOME='/home/runner/work/_temp/d18f1774-f250-4a2f-b81b-8ffc6635a251' before making global git config changes
+2026-09-19T20:02:43.9649148Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-19T20:02:43.9653728Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/be/be
+2026-09-19T20:02:43.9710721Z Deleting the contents of '/home/runner/work/be/be'
+2026-09-19T20:02:43.9714372Z ##[group]Determining repository object format
+2026-09-19T20:02:43.9715976Z ##[endgroup]
+2026-09-19T20:02:43.9717665Z ##[group]Initializing the repository
+2026-09-19T20:02:43.9720202Z [command]/usr/bin/git init /home/runner/work/be/be
+2026-09-19T20:02:43.9855583Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-09-19T20:02:43.9857928Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-09-19T20:02:43.9860078Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-09-19T20:02:43.9861566Z hint: call:
+2026-09-19T20:02:43.9862539Z hint:
+2026-09-19T20:02:43.9863652Z hint: 	git config --global init.defaultBranch <name>
+2026-09-19T20:02:43.9864850Z hint:
+2026-09-19T20:02:43.9865940Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-09-19T20:02:43.9867976Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-09-19T20:02:43.9869442Z hint:
+2026-09-19T20:02:43.9870268Z hint: 	git branch -m <name>
+2026-09-19T20:02:43.9871189Z hint:
+2026-09-19T20:02:43.9872349Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-09-19T20:02:43.9873972Z Initialized empty Git repository in /home/runner/work/be/be/.git/
+2026-09-19T20:02:43.9877524Z [command]/usr/bin/git remote add origin https://github.com/Elian-Bufi/be
+2026-09-19T20:02:43.9924277Z ##[endgroup]
+2026-09-19T20:02:43.9925697Z ##[group]Disabling automatic garbage collection
+2026-09-19T20:02:43.9930205Z [command]/usr/bin/git config --local gc.auto 0
+2026-09-19T20:02:43.9964916Z ##[endgroup]
+2026-09-19T20:02:43.9966949Z ##[group]Setting up auth
+2026-09-19T20:02:43.9967934Z Removing SSH command configuration
+2026-09-19T20:02:43.9972734Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-19T20:02:44.0009448Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-19T20:02:44.0408113Z Removing HTTP extra header
+2026-09-19T20:02:44.0414328Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-19T20:02:44.0454907Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-19T20:02:44.0697129Z Removing includeIf entries pointing to credentials config files
+2026-09-19T20:02:44.0703195Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-19T20:02:44.0741329Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-19T20:02:44.0970247Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-43cec2ab-a70c-42dc-b52f-3ef3f3ccacda.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-09-19T20:02:44.1011909Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/be/be/.git.path /home/runner/work/_temp/git-credentials-43cec2ab-a70c-42dc-b52f-3ef3f3ccacda.config
+2026-09-19T20:02:44.1044444Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/be/be/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-43cec2ab-a70c-42dc-b52f-3ef3f3ccacda.config
+2026-09-19T20:02:44.1083535Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-43cec2ab-a70c-42dc-b52f-3ef3f3ccacda.config
+2026-09-19T20:02:44.1117988Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-43cec2ab-a70c-42dc-b52f-3ef3f3ccacda.config
+2026-09-19T20:02:44.1148187Z ##[endgroup]
+2026-09-19T20:02:44.1148990Z ##[group]Fetching the repository
+2026-09-19T20:02:44.1154190Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +9ed230568146181609c01ab370f1fda603f58ae6:refs/remotes/origin/wp-04-evidencia
+2026-09-19T20:02:45.1936330Z From https://github.com/Elian-Bufi/be
+2026-09-19T20:02:45.1938944Z  * [new ref]         9ed230568146181609c01ab370f1fda603f58ae6 -> origin/wp-04-evidencia
+2026-09-19T20:02:45.1988483Z [command]/usr/bin/git branch --list --remote origin/wp-04-evidencia
+2026-09-19T20:02:45.1989763Z   origin/wp-04-evidencia
+2026-09-19T20:02:45.1991090Z [command]/usr/bin/git rev-parse refs/remotes/origin/wp-04-evidencia
+2026-09-19T20:02:45.2017499Z 9ed230568146181609c01ab370f1fda603f58ae6
+2026-09-19T20:02:45.2027083Z ##[endgroup]
+2026-09-19T20:02:45.2027964Z ##[group]Determining the checkout info
+2026-09-19T20:02:45.2028969Z ##[endgroup]
+2026-09-19T20:02:45.2040757Z [command]/usr/bin/git sparse-checkout disable
+2026-09-19T20:02:45.2094038Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-09-19T20:02:45.2133063Z ##[group]Checking out the ref
+2026-09-19T20:02:45.2138924Z [command]/usr/bin/git checkout --progress --force -B wp-04-evidencia refs/remotes/origin/wp-04-evidencia
+2026-09-19T20:02:45.3654022Z Switched to a new branch 'wp-04-evidencia'
+2026-09-19T20:02:45.3659510Z branch 'wp-04-evidencia' set up to track 'origin/wp-04-evidencia'.
+2026-09-19T20:02:45.3673274Z ##[endgroup]
+2026-09-19T20:02:45.3722623Z [command]/usr/bin/git log -1 --format=%H
+2026-09-19T20:02:45.3753280Z 9ed230568146181609c01ab370f1fda603f58ae6
+﻿2026-09-19T20:02:45.4090870Z ##[group]Run actions/setup-node@v7
+2026-09-19T20:02:45.4091629Z with:
+2026-09-19T20:02:45.4092094Z   node-version-file: .nvmrc
+2026-09-19T20:02:45.4092677Z   cache: npm
+2026-09-19T20:02:45.4093136Z   check-latest: false
+2026-09-19T20:02:45.4102172Z   token: ***
+2026-09-19T20:02:45.4102696Z   package-manager-cache: true
+2026-09-19T20:02:45.4103312Z ##[endgroup]
+2026-09-19T20:02:45.5361021Z Node version file is not JSON file
+2026-09-19T20:02:45.5362482Z Resolved .nvmrc as 22.23.2
+2026-09-19T20:02:45.5386152Z Found in cache @ /opt/hostedtoolcache/node/22.23.2/x64
+2026-09-19T20:02:45.5389513Z ##[group]Environment details
+2026-09-19T20:02:45.9900317Z node: v22.23.2
+2026-09-19T20:02:45.9901154Z npm: 10.9.8
+2026-09-19T20:02:45.9901614Z yarn: 1.22.22
+2026-09-19T20:02:45.9902409Z ##[endgroup]
+2026-09-19T20:02:45.9921520Z [command]/opt/hostedtoolcache/node/22.23.2/x64/bin/npm config get cache
+2026-09-19T20:02:46.1076100Z /home/runner/.npm
+2026-09-19T20:02:46.4301748Z Cache hit for: node-cache-Linux-x64-npm-446a5c95ed38e5e39db37dea5b26e13c84e3bffbfecebd38a2d15c9869244ba0
+2026-09-19T20:02:47.7393640Z Received 0 of 334993403 (0.0%), 0.0 MBs/sec
+2026-09-19T20:02:48.7418088Z Received 125829120 of 334993403 (37.6%), 60.0 MBs/sec
+2026-09-19T20:02:49.7437120Z Received 276824064 of 334993403 (82.6%), 87.9 MBs/sec
+2026-09-19T20:02:50.0656780Z Received 334993403 of 334993403 (100.0%), 96.1 MBs/sec
+2026-09-19T20:02:50.0657695Z Cache Size: ~319 MB (334993403 B)
+2026-09-19T20:02:50.0694803Z [command]/usr/bin/tar -xf /home/runner/work/_temp/0d4aa124-4a46-405f-ad56-d84773273fc2/cache.tzst -P -C /home/runner/work/be/be --use-compress-program unzstd
+2026-09-19T20:02:50.6478674Z Cache restored successfully
+2026-09-19T20:02:50.6629322Z Cache restored from key: node-cache-Linux-x64-npm-446a5c95ed38e5e39db37dea5b26e13c84e3bffbfecebd38a2d15c9869244ba0
+﻿2026-09-19T20:02:50.6834015Z ##[group]Run npm ci
+2026-09-19T20:02:50.6834364Z ^[[36;1mnpm ci^[[0m
+2026-09-19T20:02:50.6885360Z shell: /usr/bin/bash -e {0}
+2026-09-19T20:02:50.6885674Z ##[endgroup]
+2026-09-19T20:02:58.4170901Z npm warn deprecated uuid@7.0.3: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+2026-09-19T20:02:59.0854545Z npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+2026-09-19T20:02:59.0867247Z npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+2026-09-19T20:03:18.5456996Z 
+2026-09-19T20:03:18.5458384Z added 978 packages, and audited 983 packages in 28s
+2026-09-19T20:03:18.6393179Z 
+2026-09-19T20:03:18.6393842Z 10 moderate severity vulnerabilities
+2026-09-19T20:03:18.6394137Z 
+2026-09-19T20:03:18.6394422Z To address issues that do not require attention, run:
+2026-09-19T20:03:18.6394845Z   npm audit fix
+2026-09-19T20:03:18.6395004Z 
+2026-09-19T20:03:18.6395303Z To address all issues (including breaking changes), run:
+2026-09-19T20:03:18.6395733Z   npm audit fix --force
+2026-09-19T20:03:18.6395915Z 
+2026-09-19T20:03:18.6396069Z Run `npm audit` for details.
+﻿2026-09-19T20:03:18.7795801Z ##[group]Run npx prisma generate
+2026-09-19T20:03:18.7796190Z ^[[36;1mnpx prisma generate^[[0m
+2026-09-19T20:03:18.7835714Z shell: /usr/bin/bash -e {0}
+2026-09-19T20:03:18.7835996Z ##[endgroup]
+2026-09-19T20:03:19.7691181Z warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+2026-09-19T20:03:19.9373414Z For more information, see: https://pris.ly/prisma-config
+2026-09-19T20:03:19.9373836Z 
+2026-09-19T20:03:19.9374153Z Prisma schema loaded from prisma/schema.prisma
+2026-09-19T20:03:20.5850518Z ┌─────────────────────────────────────────────────────────┐
+2026-09-19T20:03:20.5851849Z │  Update available 6.19.3 -> 8.0.0-rc.15                 │
+2026-09-19T20:03:20.5852956Z │                                                         │
+2026-09-19T20:03:20.5854039Z │  This is a major update - please follow the guide at    │
+2026-09-19T20:03:20.5855292Z │  https://pris.ly/d/major-version-upgrade                │
+2026-09-19T20:03:20.5856935Z │                                                         │
+2026-09-19T20:03:20.5858020Z │  Run the following to update                            │
+2026-09-19T20:03:20.5859024Z │    npm i --save-dev prisma@latest                       │
+2026-09-19T20:03:20.5860195Z │    npm i @prisma/client@latest                          │
+2026-09-19T20:03:20.5861440Z └─────────────────────────────────────────────────────────┘
+2026-09-19T20:03:20.5862074Z 
+2026-09-19T20:03:20.5862976Z ✔ Generated Prisma Client (v6.19.3) to ./node_modules/@prisma/client in 307ms
+2026-09-19T20:03:20.5863659Z 
+2026-09-19T20:03:20.5864529Z Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+2026-09-19T20:03:20.5865363Z 
+2026-09-19T20:03:20.5866131Z Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+2026-09-19T20:03:20.5866997Z 
+﻿2026-09-19T20:03:20.6207101Z ##[group]Run npm run typecheck
+2026-09-19T20:03:20.6207453Z ^[[36;1mnpm run typecheck^[[0m
+2026-09-19T20:03:20.6243300Z shell: /usr/bin/bash -e {0}
+2026-09-19T20:03:20.6243576Z ##[endgroup]
+2026-09-19T20:03:20.7254911Z 
+2026-09-19T20:03:20.7255306Z > be@0.1.0 typecheck
+2026-09-19T20:03:20.7256070Z > npm run build:domain && npm run typecheck --workspaces --if-present
+2026-09-19T20:03:20.7256595Z 
+2026-09-19T20:03:20.8211701Z 
+2026-09-19T20:03:20.8212530Z > be@0.1.0 build:domain
+2026-09-19T20:03:20.8213145Z > npm run build -w @be/domain
+2026-09-19T20:03:20.8213518Z 
+2026-09-19T20:03:20.9410137Z 
+2026-09-19T20:03:20.9411018Z > @be/domain@0.1.0 build
+2026-09-19T20:03:20.9411613Z > tsc -p tsconfig.json
+2026-09-19T20:03:20.9411889Z 
+2026-09-19T20:03:24.3722488Z 
+2026-09-19T20:03:24.3723104Z > @be/domain@0.1.0 typecheck
+2026-09-19T20:03:24.3723779Z > tsc -p tsconfig.json --noEmit
+2026-09-19T20:03:24.3724098Z 
+2026-09-19T20:03:27.2455086Z 
+2026-09-19T20:03:27.2455713Z > @be/api@0.4.0 typecheck
+2026-09-19T20:03:27.2456298Z > tsc -p tsconfig.json --noEmit
+2026-09-19T20:03:27.2456800Z 
+2026-09-19T20:03:31.1123586Z 
+2026-09-19T20:03:31.1124176Z > @be/web@0.4.0 typecheck
+2026-09-19T20:03:31.1124527Z > tsc --noEmit
+2026-09-19T20:03:31.1124677Z 
+2026-09-19T20:03:35.4493233Z 
+2026-09-19T20:03:35.4493858Z > @be/mobile@0.4.0 typecheck
+2026-09-19T20:03:35.4494220Z > tsc --noEmit
+2026-09-19T20:03:35.4494356Z 
+﻿2026-09-19T20:03:37.6902159Z ##[group]Run node scripts/generar-openapi.cjs --verificar
+2026-09-19T20:03:37.6902645Z ^[[36;1mnode scripts/generar-openapi.cjs --verificar^[[0m
+2026-09-19T20:03:37.6940336Z shell: /usr/bin/bash -e {0}
+2026-09-19T20:03:37.6940604Z ##[endgroup]
+2026-09-19T20:03:37.8373512Z OpenAPI al día con @be/domain.
+﻿2026-09-19T20:03:37.8524188Z ##[group]Run npm test
+2026-09-19T20:03:37.8524480Z ^[[36;1mnpm test^[[0m
+2026-09-19T20:03:37.8561295Z shell: /usr/bin/bash -e {0}
+2026-09-19T20:03:37.8561562Z ##[endgroup]
+2026-09-19T20:03:37.9651416Z 
+2026-09-19T20:03:37.9652039Z > be@0.1.0 test
+2026-09-19T20:03:37.9653388Z > npm run build:domain && npm run test -w @be/domain && node --test scripts/copy-nutricion.test.cjs && npm run test -w @be/api
+2026-09-19T20:03:37.9654319Z 
+2026-09-19T20:03:38.0608013Z 
+2026-09-19T20:03:38.0608631Z > be@0.1.0 build:domain
+2026-09-19T20:03:38.0609154Z > npm run build -w @be/domain
+2026-09-19T20:03:38.0609383Z 
+2026-09-19T20:03:38.1773477Z 
+2026-09-19T20:03:38.1774125Z > @be/domain@0.1.0 build
+2026-09-19T20:03:38.1774552Z > tsc -p tsconfig.json
+2026-09-19T20:03:38.1774768Z 
+2026-09-19T20:03:41.5753410Z 
+2026-09-19T20:03:41.5754039Z > @be/domain@0.1.0 test
+2026-09-19T20:03:41.5754604Z > node --test dist/**/*.test.js
+2026-09-19T20:03:41.5754837Z 
+2026-09-19T20:03:41.6296014Z TAP version 13
+2026-09-19T20:03:41.8379629Z # Subtest: cliente: el registro envía A1 y A2 con la versión vigente, superficie e Idempotency-Key; nunca A3
+2026-09-19T20:03:41.8418508Z ok 1 - cliente: el registro envía A1 y A2 con la versión vigente, superficie e Idempotency-Key; nunca A3
+2026-09-19T20:03:41.8423236Z   ---
+2026-09-19T20:03:41.8437215Z   duration_ms: 39.244176
+2026-09-19T20:03:41.8437795Z   type: 'test'
+2026-09-19T20:03:41.8438399Z   ...
+2026-09-19T20:03:41.8439713Z # Subtest: cliente: una respuesta 2xx con otra forma no se interpreta (validación de contrato)
+2026-09-19T20:03:41.8441452Z ok 2 - cliente: una respuesta 2xx con otra forma no se interpreta (validación de contrato)
+2026-09-19T20:03:41.8442551Z   ---
+2026-09-19T20:03:41.8443240Z   duration_ms: 0.958565
+2026-09-19T20:03:41.8443854Z   type: 'test'
+2026-09-19T20:03:41.8444513Z   ...
+2026-09-19T20:03:41.8445897Z # Subtest: cliente: un ErrorEnvelope se traduce a su código e issues, sin exponer el mensaje del servidor
+2026-09-19T20:03:41.8448064Z ok 3 - cliente: un ErrorEnvelope se traduce a su código e issues, sin exponer el mensaje del servidor
+2026-09-19T20:03:41.8449148Z   ---
+2026-09-19T20:03:41.8449685Z   duration_ms: 2.048594
+2026-09-19T20:03:41.8450220Z   type: 'test'
+2026-09-19T20:03:41.8450760Z   ...
+2026-09-19T20:03:41.8451836Z # Subtest: cliente: sin respuesta de red el resultado es RED (incierto), nunca éxito
+2026-09-19T20:03:41.8453400Z ok 4 - cliente: sin respuesta de red el resultado es RED (incierto), nunca éxito
+2026-09-19T20:03:41.8454356Z   ---
+2026-09-19T20:03:41.8454915Z   duration_ms: 0.300288
+2026-09-19T20:03:41.8455500Z   type: 'test'
+2026-09-19T20:03:41.8456128Z   ...
+2026-09-19T20:03:41.8457794Z # Subtest: cliente: el cierre envía la versión de consecuencias mostrada y confirmación explícita, con Bearer
+2026-09-19T20:03:41.8459746Z ok 5 - cliente: el cierre envía la versión de consecuencias mostrada y confirmación explícita, con Bearer
+2026-09-19T20:03:41.8473828Z   ---
+2026-09-19T20:03:41.8485661Z   duration_ms: 1.582345
+2026-09-19T20:03:41.8486267Z   type: 'test'
+2026-09-19T20:03:41.8487045Z   ...
+2026-09-19T20:03:41.8489172Z # Subtest: copy: sin frases prohibidas por el 10 (10-B02, 10-ADD, 10-B10)
+2026-09-19T20:03:41.8490357Z ok 6 - copy: sin frases prohibidas por el 10 (10-B02, 10-ADD, 10-B10)
+2026-09-19T20:03:41.8511383Z   ---
+2026-09-19T20:03:41.8511898Z   duration_ms: 0.234156
+2026-09-19T20:03:41.8512654Z   type: 'test'
+2026-09-19T20:03:41.8514445Z   ...
+2026-09-19T20:03:41.8584537Z # Subtest: 08 §12.2 — cada versión de texto guarda el SHA-256 real de su contenido
+2026-09-19T20:03:41.8607670Z ok 7 - 08 §12.2 — cada versión de texto guarda el SHA-256 real de su contenido
+2026-09-19T20:03:41.8631788Z   ---
+2026-09-19T20:03:41.8632495Z   duration_ms: 2.269795
+2026-09-19T20:03:41.8633170Z   type: 'test'
+2026-09-19T20:03:41.8633753Z   ...
+2026-09-19T20:03:41.8635512Z # Subtest: Catálogo de textos: ids únicos, una versión vigente por tipo y marcados como demostración (DL-028)
+2026-09-19T20:03:41.8640207Z ok 8 - Catálogo de textos: ids únicos, una versión vigente por tipo y marcados como demostración (DL-028)
+2026-09-19T20:03:41.8641739Z   ---
+2026-09-19T20:03:41.8642270Z   duration_ms: 0.549353
+2026-09-19T20:03:41.8642850Z   type: 'test'
+2026-09-19T20:03:41.8643356Z   ...
+2026-09-19T20:03:41.8644603Z # Subtest: A2 contiene los contenidos mínimos del 08 §12.1 y aclara que no es consentimiento de salud
+2026-09-19T20:03:41.8646282Z ok 9 - A2 contiene los contenidos mínimos del 08 §12.1 y aclara que no es consentimiento de salud
+2026-09-19T20:03:41.8677154Z   ---
+2026-09-19T20:03:41.8677543Z   duration_ms: 0.328581
+2026-09-19T20:03:41.8677937Z   type: 'test'
+2026-09-19T20:03:41.8678235Z   ...
+2026-09-19T20:03:41.8679020Z # Subtest: Consecuencias del cierre: copy de 10-ADD + irreversibilidad (DL-024), sin prometer borrado
+2026-09-19T20:03:41.8680273Z ok 10 - Consecuencias del cierre: copy de 10-ADD + irreversibilidad (DL-024), sin prometer borrado
+2026-09-19T20:03:41.8681050Z   ---
+2026-09-19T20:03:41.8681378Z   duration_ms: 0.442464
+2026-09-19T20:03:41.8681783Z   type: 'test'
+2026-09-19T20:03:41.8682152Z   ...
+2026-09-19T20:03:41.8683231Z # Subtest: 08 §12.4 — el registro crea A1 y A2, nunca A3; solo TERMINOS y DATOS_SALUD_BE son revocables
+2026-09-19T20:03:41.8684693Z ok 11 - 08 §12.4 — el registro crea A1 y A2, nunca A3; solo TERMINOS y DATOS_SALUD_BE son revocables
+2026-09-19T20:03:41.8685486Z   ---
+2026-09-19T20:03:41.8685857Z   duration_ms: 1.085291
+2026-09-19T20:03:41.8686272Z   type: 'test'
+2026-09-19T20:03:41.8686944Z   ...
+2026-09-19T20:03:41.8688014Z # Subtest: Sesión: estados como enum con lista blanca; TTL ≤ 24 h (08 §26.2)
+2026-09-19T20:03:41.8689179Z ok 12 - Sesión: estados como enum con lista blanca; TTL ≤ 24 h (08 §26.2)
+2026-09-19T20:03:41.8689824Z   ---
+2026-09-19T20:03:41.8690165Z   duration_ms: 0.344641
+2026-09-19T20:03:41.8690555Z   type: 'test'
+2026-09-19T20:03:41.8690900Z   ...
+2026-09-19T20:03:41.8691722Z # Subtest: Identificador local: normalización y validación sintáctica
+2026-09-19T20:03:41.8692771Z ok 13 - Identificador local: normalización y validación sintáctica
+2026-09-19T20:03:41.8693370Z   ---
+2026-09-19T20:03:41.8693708Z   duration_ms: 0.481987
+2026-09-19T20:03:41.8694103Z   type: 'test'
+2026-09-19T20:03:41.8694435Z   ...
+2026-09-19T20:03:41.8695143Z # Subtest: Credencial: mínimo 12 caracteres, máximo 72 bytes (DL-013)
+2026-09-19T20:03:41.8696132Z ok 14 - Credencial: mínimo 12 caracteres, máximo 72 bytes (DL-013)
+2026-09-19T20:03:41.8757631Z   ---
+2026-09-19T20:03:41.8758047Z   duration_ms: 0.340103
+2026-09-19T20:03:41.8758472Z   type: 'test'
+2026-09-19T20:03:41.8758842Z   ...
+2026-09-19T20:03:41.8759823Z # Subtest: Superficie: solo WEB o APK; cualquier otro valor queda no declarado (null), nunca inventado
+2026-09-19T20:03:41.8761296Z ok 15 - Superficie: solo WEB o APK; cualquier otro valor queda no declarado (null), nunca inventado
+2026-09-19T20:03:41.8762144Z   ---
+2026-09-19T20:03:41.8762556Z   duration_ms: 0.676869
+2026-09-19T20:03:41.8762992Z   type: 'test'
+2026-09-19T20:03:41.8763394Z   ...
+2026-09-19T20:03:41.8815490Z # Subtest: 09v7 T12 — contratos estrictos: un campo no declarado se rechaza (UNKNOWN_FIELD)
+2026-09-19T20:03:41.8817212Z ok 16 - 09v7 T12 — contratos estrictos: un campo no declarado se rechaza (UNKNOWN_FIELD)
+2026-09-19T20:03:41.8818031Z   ---
+2026-09-19T20:03:41.8818413Z   duration_ms: 7.592574
+2026-09-19T20:03:41.8818845Z   type: 'test'
+2026-09-19T20:03:41.8819221Z   ...
+2026-09-19T20:03:41.8820122Z # Subtest: API-CON-05 — la forma «A3 no otorgado» es currentConsent: null
+2026-09-19T20:03:41.8821333Z ok 17 - API-CON-05 — la forma «A3 no otorgado» es currentConsent: null
+2026-09-19T20:03:41.8822022Z   ---
+2026-09-19T20:03:41.8822390Z   duration_ms: 2.432799
+2026-09-19T20:03:41.8822808Z   type: 'test'
+2026-09-19T20:03:41.8823176Z   ...
+2026-09-19T20:03:41.8824397Z # Subtest: T-06-45 — tres alcances; Especialidad XOR Capacidad (REG-06-32); una finalidad por alcance (DL-039)
+2026-09-19T20:03:41.8845807Z ok 18 - T-06-45 — tres alcances; Especialidad XOR Capacidad (REG-06-32); una finalidad por alcance (DL-039)
+2026-09-19T20:03:41.8897177Z   ---
+2026-09-19T20:03:41.8924387Z   duration_ms: 2.256751
+2026-09-19T20:03:41.8947184Z   type: 'test'
+2026-09-19T20:03:41.8994053Z   ...
+2026-09-19T20:03:41.9017998Z # Subtest: 06 §6.8.2 — la lista blanca de la verificación es la literal del 06
+2026-09-19T20:03:41.9019616Z ok 19 - 06 §6.8.2 — la lista blanca de la verificación es la literal del 06
+2026-09-19T20:03:41.9021050Z   ---
+2026-09-19T20:03:41.9021542Z   duration_ms: 0.24726
+2026-09-19T20:03:41.9022127Z   type: 'test'
+2026-09-19T20:03:41.9022645Z   ...
+2026-09-19T20:03:41.9024323Z # Subtest: 06 §6.8.2 — cada transición declarada procede; toda otra combinación se rechaza (TEST-RNF-DAT-001)
+2026-09-19T20:03:41.9026051Z ok 20 - 06 §6.8.2 — cada transición declarada procede; toda otra combinación se rechaza (TEST-RNF-DAT-001)
+2026-09-19T20:03:41.9027327Z   ---
+2026-09-19T20:03:41.9027706Z   duration_ms: 0.746159
+2026-09-19T20:03:41.9028092Z   type: 'test'
+2026-09-19T20:03:41.9028411Z   ...
+2026-09-19T20:03:41.9029401Z # Subtest: Habilitación mínima (DL-036): concesión explícita, retiro y nueva concesión; nada más
+2026-09-19T20:03:41.9030829Z ok 21 - Habilitación mínima (DL-036): concesión explícita, retiro y nueva concesión; nada más
+2026-09-19T20:03:41.9031557Z   ---
+2026-09-19T20:03:41.9031875Z   duration_ms: 0.251318
+2026-09-19T20:03:41.9032249Z   type: 'test'
+2026-09-19T20:03:41.9032578Z   ...
+2026-09-19T20:03:41.9033326Z # Subtest: 06 §7.3.2 — la lista blanca de la solicitud es la literal del 06
+2026-09-19T20:03:41.9034334Z ok 22 - 06 §7.3.2 — la lista blanca de la solicitud es la literal del 06
+2026-09-19T20:03:41.9034931Z   ---
+2026-09-19T20:03:41.9035257Z   duration_ms: 0.181107
+2026-09-19T20:03:41.9035642Z   type: 'test'
+2026-09-19T20:03:41.9035974Z   ...
+2026-09-19T20:03:41.9037340Z # Subtest: 06 §7.3.2 — cada transición declarada procede; toda otra combinación se rechaza; los terminales no tienen salida
+2026-09-19T20:03:41.9039121Z ok 23 - 06 §7.3.2 — cada transición declarada procede; toda otra combinación se rechaza; los terminales no tienen salida
+2026-09-19T20:03:41.9040084Z   ---
+2026-09-19T20:03:41.9040441Z   duration_ms: 0.67156
+2026-09-19T20:03:41.9040844Z   type: 'test'
+2026-09-19T20:03:41.9041192Z   ...
+2026-09-19T20:03:41.9042280Z # Subtest: 06 §7.3.2 — guardas: actor, confirmación, reevaluación (REG-06-49), vencimiento e incompatibilidad
+2026-09-19T20:03:41.9043889Z ok 24 - 06 §7.3.2 — guardas: actor, confirmación, reevaluación (REG-06-49), vencimiento e incompatibilidad
+2026-09-19T20:03:41.9044763Z   ---
+2026-09-19T20:03:41.9045106Z   duration_ms: 0.485554
+2026-09-19T20:03:41.9045490Z   type: 'test'
+2026-09-19T20:03:41.9045828Z   ...
+2026-09-19T20:03:41.9047260Z # Subtest: 06 §7.5.2 — la lista blanca del vínculo por alcance es la literal del 06 (FinalizarAlcance desde ACEPTADO y PAUSADO)
+2026-09-19T20:03:41.9049105Z ok 25 - 06 §7.5.2 — la lista blanca del vínculo por alcance es la literal del 06 (FinalizarAlcance desde ACEPTADO y PAUSADO)
+2026-09-19T20:03:41.9050099Z   ---
+2026-09-19T20:03:41.9050523Z   duration_ms: 0.264062
+2026-09-19T20:03:41.9051129Z   type: 'test'
+2026-09-19T20:03:41.9051550Z   ...
+2026-09-19T20:03:41.9052786Z # Subtest: 06 §7.5.2 — cada transición declarada procede; toda otra se rechaza; FINALIZADO no tiene salida (INV-06-58)
+2026-09-19T20:03:41.9054572Z ok 26 - 06 §7.5.2 — cada transición declarada procede; toda otra se rechaza; FINALIZADO no tiene salida (INV-06-58)
+2026-09-19T20:03:41.9055499Z   ---
+2026-09-19T20:03:41.9055852Z   duration_ms: 0.962892
+2026-09-19T20:03:41.9056312Z   type: 'test'
+2026-09-19T20:03:41.9056950Z   ...
+2026-09-19T20:03:41.9058235Z # Subtest: DL-033 — motivo obligatorio y de lista cerrada; reanuda quien pausó; el sistema solo finaliza por cierre de cuenta
+2026-09-19T20:03:41.9060102Z ok 27 - DL-033 — motivo obligatorio y de lista cerrada; reanuda quien pausó; el sistema solo finaliza por cierre de cuenta
+2026-09-19T20:03:41.9061401Z   ---
+2026-09-19T20:03:41.9061734Z   duration_ms: 0.889145
+2026-09-19T20:03:41.9062125Z   type: 'test'
+2026-09-19T20:03:41.9062450Z   ...
+2026-09-19T20:03:41.9063497Z # Subtest: 06 §7.7.5 — la lista blanca del consentimiento es la literal del 06
+2026-09-19T20:03:41.9064607Z ok 28 - 06 §7.7.5 — la lista blanca del consentimiento es la literal del 06
+2026-09-19T20:03:41.9065226Z   ---
+2026-09-19T20:03:41.9065556Z   duration_ms: 0.362475
+2026-09-19T20:03:41.9065943Z   type: 'test'
+2026-09-19T20:03:41.9066271Z   ...
+2026-09-19T20:03:41.9067581Z # Subtest: 06 §7.7.5 — cada transición declarada procede; toda otra se rechaza (p. ej. REVOCADO → REVOCADO)
+2026-09-19T20:03:41.9069155Z ok 29 - 06 §7.7.5 — cada transición declarada procede; toda otra se rechaza (p. ej. REVOCADO → REVOCADO)
+2026-09-19T20:03:41.9069960Z   ---
+2026-09-19T20:03:41.9070288Z   duration_ms: 0.557578
+2026-09-19T20:03:41.9070664Z   type: 'test'
+2026-09-19T20:03:41.9071002Z   ...
+2026-09-19T20:03:41.9072176Z # Subtest: INV-06-62, INV-06-60, REG-06-50 — solo el titular; versión aplicable; aceptar una versión no acepta futuras
+2026-09-19T20:03:41.9073878Z ok 30 - INV-06-62, INV-06-60, REG-06-50 — solo el titular; versión aplicable; aceptar una versión no acepta futuras
+2026-09-19T20:03:41.9074754Z   ---
+2026-09-19T20:03:41.9075077Z   duration_ms: 0.30631
+2026-09-19T20:03:41.9075450Z   type: 'test'
+2026-09-19T20:03:41.9075782Z   ...
+2026-09-19T20:03:41.9076867Z # Subtest: DL-038 — CON-02 elige la transición según la situación actual
+2026-09-19T20:03:41.9077962Z ok 31 - DL-038 — CON-02 elige la transición según la situación actual
+2026-09-19T20:03:41.9078639Z   ---
+2026-09-19T20:03:41.9079036Z   duration_ms: 0.208478
+2026-09-19T20:03:41.9079487Z   type: 'test'
+2026-09-19T20:03:41.9079916Z   ...
+2026-09-19T20:03:41.9081195Z # Subtest: PDP — contexto positivo: las siete dimensiones favorables permiten y registran componente y versión (REG-06-50)
+2026-09-19T20:03:41.9083020Z ok 32 - PDP — contexto positivo: las siete dimensiones favorables permiten y registran componente y versión (REG-06-50)
+2026-09-19T20:03:41.9084004Z   ---
+2026-09-19T20:03:41.9084334Z   duration_ms: 0.353378
+2026-09-19T20:03:41.9084726Z   type: 'test'
+2026-09-19T20:03:41.9085053Z   ...
+2026-09-19T20:03:41.9085972Z # Subtest: PDP — V1 rol inadecuado: sin perfil profesional: se deniega y la auditoría atribuye ROL
+2026-09-19T20:03:41.9087658Z ok 33 - PDP — V1 rol inadecuado: sin perfil profesional: se deniega y la auditoría atribuye ROL
+2026-09-19T20:03:41.9088456Z   ---
+2026-09-19T20:03:41.9088805Z   duration_ms: 0.23075
+2026-09-19T20:03:41.9089196Z   type: 'test'
+2026-09-19T20:03:41.9089541Z   ...
+2026-09-19T20:03:41.9090640Z # Subtest: PDP — V1 rol inadecuado: el titular pide su propio dashboard: se deniega y la auditoría atribuye ROL
+2026-09-19T20:03:41.9092264Z ok 34 - PDP — V1 rol inadecuado: el titular pide su propio dashboard: se deniega y la auditoría atribuye ROL
+2026-09-19T20:03:41.9093108Z   ---
+2026-09-19T20:03:41.9093441Z   duration_ms: 0.124302
+2026-09-19T20:03:41.9093842Z   type: 'test'
+2026-09-19T20:03:41.9094187Z   ...
+2026-09-19T20:03:41.9095326Z # Subtest: PDP — V2 alcance no verificado (PENDIENTE): se deniega y la auditoría atribuye ESPECIALIDAD_O_CAPACIDAD
+2026-09-19T20:03:41.9097235Z ok 35 - PDP — V2 alcance no verificado (PENDIENTE): se deniega y la auditoría atribuye ESPECIALIDAD_O_CAPACIDAD
+2026-09-19T20:03:41.9098070Z   ---
+2026-09-19T20:03:41.9098393Z   duration_ms: 0.125102
+2026-09-19T20:03:41.9098751Z   type: 'test'
+2026-09-19T20:03:41.9099062Z   ...
+2026-09-19T20:03:41.9100013Z # Subtest: PDP — V2 alcance rechazado: se deniega y la auditoría atribuye ESPECIALIDAD_O_CAPACIDAD
+2026-09-19T20:03:41.9101487Z ok 36 - PDP — V2 alcance rechazado: se deniega y la auditoría atribuye ESPECIALIDAD_O_CAPACIDAD
+2026-09-19T20:03:41.9102250Z   ---
+2026-09-19T20:03:41.9102576Z   duration_ms: 0.145321
+2026-09-19T20:03:41.9102957Z   type: 'test'
+2026-09-19T20:03:41.9103267Z   ...
+2026-09-19T20:03:41.9104356Z # Subtest: PDP — V2 sin trayectoria de verificación: se deniega y la auditoría atribuye ESPECIALIDAD_O_CAPACIDAD
+2026-09-19T20:03:41.9106230Z ok 37 - PDP — V2 sin trayectoria de verificación: se deniega y la auditoría atribuye ESPECIALIDAD_O_CAPACIDAD
+2026-09-19T20:03:41.9107526Z   ---
+2026-09-19T20:03:41.9107849Z   duration_ms: 0.138377
+2026-09-19T20:03:41.9108222Z   type: 'test'
+2026-09-19T20:03:41.9108525Z   ...
+2026-09-19T20:03:41.9109352Z # Subtest: PDP — V3 alcance suspendido: se deniega y la auditoría atribuye SITUACION
+2026-09-19T20:03:41.9110479Z ok 38 - PDP — V3 alcance suspendido: se deniega y la auditoría atribuye SITUACION
+2026-09-19T20:03:41.9111133Z   ---
+2026-09-19T20:03:41.9111453Z   duration_ms: 0.138848
+2026-09-19T20:03:41.9111819Z   type: 'test'
+2026-09-19T20:03:41.9112137Z   ...
+2026-09-19T20:03:41.9113002Z # Subtest: PDP — V3 habilitación retirada: se deniega y la auditoría atribuye SITUACION
+2026-09-19T20:03:41.9114247Z ok 39 - PDP — V3 habilitación retirada: se deniega y la auditoría atribuye SITUACION
+2026-09-19T20:03:41.9114971Z   ---
+2026-09-19T20:03:41.9115345Z   duration_ms: 0.132767
+2026-09-19T20:03:41.9115737Z   type: 'test'
+2026-09-19T20:03:41.9116078Z   ...
+2026-09-19T20:03:41.9117404Z # Subtest: PDP — V3 sin habilitación (INV-06-87): se deniega y la auditoría atribuye SITUACION
+2026-09-19T20:03:41.9118780Z ok 40 - PDP — V3 sin habilitación (INV-06-87): se deniega y la auditoría atribuye SITUACION
+2026-09-19T20:03:41.9119504Z   ---
+2026-09-19T20:03:41.9119845Z   duration_ms: 0.175808
+2026-09-19T20:03:41.9120230Z   type: 'test'
+2026-09-19T20:03:41.9120554Z   ...
+2026-09-19T20:03:41.9121607Z # Subtest: PDP — V3 A3 del titular no vigente (TEST-AUTH-005): se deniega y la auditoría atribuye SITUACION
+2026-09-19T20:03:41.9123135Z ok 41 - PDP — V3 A3 del titular no vigente (TEST-AUTH-005): se deniega y la auditoría atribuye SITUACION
+2026-09-19T20:03:41.9123936Z   ---
+2026-09-19T20:03:41.9124271Z   duration_ms: 0.154808
+2026-09-19T20:03:41.9124655Z   type: 'test'
+2026-09-19T20:03:41.9124977Z   ...
+2026-09-19T20:03:41.9126024Z # Subtest: PDP — V3 cuenta del titular no operativa: se deniega y la auditoría atribuye SITUACION
+2026-09-19T20:03:41.9127683Z ok 42 - PDP — V3 cuenta del titular no operativa: se deniega y la auditoría atribuye SITUACION
+2026-09-19T20:03:41.9128443Z   ---
+2026-09-19T20:03:41.9128769Z   duration_ms: 0.154588
+2026-09-19T20:03:41.9129152Z   type: 'test'
+2026-09-19T20:03:41.9129478Z   ...
+2026-09-19T20:03:41.9130415Z # Subtest: PDP — V3 cuenta del actor no operativa: se deniega y la auditoría atribuye SITUACION
+2026-09-19T20:03:41.9131763Z ok 43 - PDP — V3 cuenta del actor no operativa: se deniega y la auditoría atribuye SITUACION
+2026-09-19T20:03:41.9132499Z   ---
+2026-09-19T20:03:41.9132825Z   duration_ms: 0.11825
+2026-09-19T20:03:41.9133221Z   type: 'test'
+2026-09-19T20:03:41.9133548Z   ...
+2026-09-19T20:03:41.9134504Z # Subtest: PDP — V4 vínculo PAUSADO (TEST-AUTH-007): se deniega y la auditoría atribuye VINCULO
+2026-09-19T20:03:41.9135870Z ok 44 - PDP — V4 vínculo PAUSADO (TEST-AUTH-007): se deniega y la auditoría atribuye VINCULO
+2026-09-19T20:03:41.9136831Z   ---
+2026-09-19T20:03:41.9137167Z   duration_ms: 0.16117
+2026-09-19T20:03:41.9137546Z   type: 'test'
+2026-09-19T20:03:41.9137877Z   ...
+2026-09-19T20:03:41.9138867Z # Subtest: PDP — V4 vínculo FINALIZADO (TEST-AUTH-008): se deniega y la auditoría atribuye VINCULO
+2026-09-19T20:03:41.9140277Z ok 45 - PDP — V4 vínculo FINALIZADO (TEST-AUTH-008): se deniega y la auditoría atribuye VINCULO
+2026-09-19T20:03:41.9141036Z   ---
+2026-09-19T20:03:41.9141362Z   duration_ms: 0.126646
+2026-09-19T20:03:41.9141744Z   type: 'test'
+2026-09-19T20:03:41.9142074Z   ...
+2026-09-19T20:03:41.9143022Z # Subtest: PDP — V5 B2 REVOCADO (TEST-RF-022): se deniega y la auditoría atribuye CONSENTIMIENTO
+2026-09-19T20:03:41.9144380Z ok 46 - PDP — V5 B2 REVOCADO (TEST-RF-022): se deniega y la auditoría atribuye CONSENTIMIENTO
+2026-09-19T20:03:41.9145116Z   ---
+2026-09-19T20:03:41.9145452Z   duration_ms: 0.078315
+2026-09-19T20:03:41.9145824Z   type: 'test'
+2026-09-19T20:03:41.9146153Z   ...
+2026-09-19T20:03:41.9147669Z # Subtest: PDP — V5 sin B2 (TEST-AUTH-006): se deniega y la auditoría atribuye CONSENTIMIENTO
+2026-09-19T20:03:41.9148992Z ok 47 - PDP — V5 sin B2 (TEST-AUTH-006): se deniega y la auditoría atribuye CONSENTIMIENTO
+2026-09-19T20:03:41.9149930Z   ---
+2026-09-19T20:03:41.9150267Z   duration_ms: 0.068607
+2026-09-19T20:03:41.9150641Z   type: 'test'
+2026-09-19T20:03:41.9150964Z   ...
+2026-09-19T20:03:41.9152058Z # Subtest: PDP — V5 B2 sin versión identificable (INV-06-60): se deniega y la auditoría atribuye CONSENTIMIENTO
+2026-09-19T20:03:41.9153632Z ok 48 - PDP — V5 B2 sin versión identificable (INV-06-60): se deniega y la auditoría atribuye CONSENTIMIENTO
+2026-09-19T20:03:41.9154440Z   ---
+2026-09-19T20:03:41.9154783Z   duration_ms: 0.063979
+2026-09-19T20:03:41.9155171Z   type: 'test'
+2026-09-19T20:03:41.9155497Z   ...
+2026-09-19T20:03:41.9156608Z # Subtest: PDP — V6 finalidad ajena: se deniega y la auditoría atribuye FINALIDAD
+2026-09-19T20:03:41.9157836Z ok 49 - PDP — V6 finalidad ajena: se deniega y la auditoría atribuye FINALIDAD
+2026-09-19T20:03:41.9158524Z   ---
+2026-09-19T20:03:41.9158850Z   duration_ms: 1.897806
+2026-09-19T20:03:41.9159231Z   type: 'test'
+2026-09-19T20:03:41.9159567Z   ...
+2026-09-19T20:03:41.9160708Z # Subtest: PDP — V7 alcance pedido Entrenamiento con vínculo de Nutrición: se deniega y la auditoría atribuye ALCANCE
+2026-09-19T20:03:41.9162377Z ok 50 - PDP — V7 alcance pedido Entrenamiento con vínculo de Nutrición: se deniega y la auditoría atribuye ALCANCE
+2026-09-19T20:03:41.9163235Z   ---
+2026-09-19T20:03:41.9163560Z   duration_ms: 0.073327
+2026-09-19T20:03:41.9163942Z   type: 'test'
+2026-09-19T20:03:41.9164264Z   ...
+2026-09-19T20:03:41.9165319Z # Subtest: PDP — titular inexistente o no revelable: deniega igual (UC-I02 E05), sin distinguirlo en la decisión
+2026-09-19T20:03:41.9167131Z ok 51 - PDP — titular inexistente o no revelable: deniega igual (UC-I02 E05), sin distinguirlo en la decisión
+2026-09-19T20:03:41.9167971Z   ---
+2026-09-19T20:03:41.9168322Z   duration_ms: 0.102611
+2026-09-19T20:03:41.9168740Z   type: 'test'
+2026-09-19T20:03:41.9169069Z   ...
+2026-09-19T20:03:41.9170254Z # Subtest: REG-06-53 — ninguna dimensión aislada autoriza: con todo lo demás ausente, cada hecho favorable solo no alcanza
+2026-09-19T20:03:41.9172456Z ok 52 - REG-06-53 — ninguna dimensión aislada autoriza: con todo lo demás ausente, cada hecho favorable solo no alcanza
+2026-09-19T20:03:41.9173341Z   ---
+2026-09-19T20:03:41.9173652Z   duration_ms: 0.284108
+2026-09-19T20:03:41.9174006Z   type: 'test'
+2026-09-19T20:03:41.9174337Z   ...
+2026-09-19T20:03:41.9175770Z # Subtest: TEST-AUTH-009 — campos autoritativos del cliente se rechazan por schema estricto (409 → 400 UNKNOWN_FIELD en la API)
+2026-09-19T20:03:41.9178114Z ok 53 - TEST-AUTH-009 — campos autoritativos del cliente se rechazan por schema estricto (409 → 400 UNKNOWN_FIELD en la API)
+2026-09-19T20:03:41.9179133Z   ---
+2026-09-19T20:03:41.9179481Z   duration_ms: 4.080807
+2026-09-19T20:03:41.9179852Z   type: 'test'
+2026-09-19T20:03:41.9180213Z   ...
+2026-09-19T20:03:41.9181384Z # Subtest: 08 §12.3 — textos B2 diferenciados por perfil, versionados, con hash real y sin aceptar versiones futuras
+2026-09-19T20:03:41.9183134Z ok 54 - 08 §12.3 — textos B2 diferenciados por perfil, versionados, con hash real y sin aceptar versiones futuras
+2026-09-19T20:03:41.9184080Z   ---
+2026-09-19T20:03:41.9184431Z   duration_ms: 0.621888
+2026-09-19T20:03:41.9184846Z   type: 'test'
+2026-09-19T20:03:41.9185201Z   ...
+2026-09-19T20:03:41.9186189Z # Subtest: 10-B04 §44-§46 — el copy de WP-03 no usa términos prohibidos ni códigos internos
+2026-09-19T20:03:41.9187782Z ok 55 - 10-B04 §44-§46 — el copy de WP-03 no usa términos prohibidos ni códigos internos
+2026-09-19T20:03:41.9188520Z   ---
+2026-09-19T20:03:41.9188905Z   duration_ms: 0.514678
+2026-09-19T20:03:41.9189324Z   type: 'test'
+2026-09-19T20:03:41.9189679Z   ...
+2026-09-19T20:03:41.9190935Z # Subtest: 10-B04:627-638 — cada evento de las tres máquinas tiene etiqueta humana; uno desconocido no se muestra crudo
+2026-09-19T20:03:41.9193011Z ok 56 - 10-B04:627-638 — cada evento de las tres máquinas tiene etiqueta humana; uno desconocido no se muestra crudo
+2026-09-19T20:03:41.9193944Z   ---
+2026-09-19T20:03:41.9194522Z   duration_ms: 0.329774
+2026-09-19T20:03:41.9194935Z   type: 'test'
+2026-09-19T20:03:41.9195291Z   ...
+2026-09-19T20:03:41.9196366Z # Subtest: 10-B04 §28-§29 y H10-04-04 — el profesional ve el estado mínimo, nunca la razón del bloqueo
+2026-09-19T20:03:41.9198172Z ok 57 - 10-B04 §28-§29 y H10-04-04 — el profesional ve el estado mínimo, nunca la razón del bloqueo
+2026-09-19T20:03:41.9198939Z   ---
+2026-09-19T20:03:41.9199273Z   duration_ms: 0.243183
+2026-09-19T20:03:41.9199649Z   type: 'test'
+2026-09-19T20:03:41.9199982Z   ...
+2026-09-19T20:03:41.9201168Z # Subtest: 10-B04:538-553 — el asesorado ve «No efectivo» cuando su consentimiento activo hoy no habilita el acceso
+2026-09-19T20:03:41.9202887Z ok 58 - 10-B04:538-553 — el asesorado ve «No efectivo» cuando su consentimiento activo hoy no habilita el acceso
+2026-09-19T20:03:41.9203804Z   ---
+2026-09-19T20:03:41.9204186Z   duration_ms: 0.451791
+2026-09-19T20:03:41.9204614Z   type: 'test'
+2026-09-19T20:03:41.9204974Z   ...
+2026-09-19T20:03:42.0738753Z # Subtest: 06 §10.7 · CrearBorrador, GuardarBorrador y ActivarVersion están declaradas y con guardas favorables se permiten
+2026-09-19T20:03:42.0741081Z ok 59 - 06 §10.7 · CrearBorrador, GuardarBorrador y ActivarVersion están declaradas y con guardas favorables se permiten
+2026-09-19T20:03:42.0767295Z   ---
+2026-09-19T20:03:42.0797286Z   duration_ms: 1.292436
+2026-09-19T20:03:42.0816686Z   type: 'test'
+2026-09-19T20:03:42.0817128Z   ...
+2026-09-19T20:03:42.0818541Z # Subtest: INV-06-109 · no hay ninguna transición que salga de ACTIVADA: reabrir, editar o reactivar falla
+2026-09-19T20:03:42.0820032Z ok 60 - INV-06-109 · no hay ninguna transición que salga de ACTIVADA: reabrir, editar o reactivar falla
+2026-09-19T20:03:42.0820549Z   ---
+2026-09-19T20:03:42.0820760Z   duration_ms: 0.86488
+2026-09-19T20:03:42.0820989Z   type: 'test'
+2026-09-19T20:03:42.0821233Z   ...
+2026-09-19T20:03:42.0821683Z # Subtest: 06 §10.7 · un borrador no se vuelve a crear sobre sí mismo
+2026-09-19T20:03:42.0822262Z ok 61 - 06 §10.7 · un borrador no se vuelve a crear sobre sí mismo
+2026-09-19T20:03:42.0822617Z   ---
+2026-09-19T20:03:42.0822822Z   duration_ms: 0.1556
+2026-09-19T20:03:42.0823048Z   type: 'test'
+2026-09-19T20:03:42.0823293Z   ...
+2026-09-19T20:03:42.0823780Z # Subtest: REG-06-104 · cada guarda de ActivarVersion desfavorable impide activar
+2026-09-19T20:03:42.0824457Z ok 62 - REG-06-104 · cada guarda de ActivarVersion desfavorable impide activar
+2026-09-19T20:03:42.0824858Z   ---
+2026-09-19T20:03:42.0825058Z   duration_ms: 0.317972
+2026-09-19T20:03:42.0825289Z   type: 'test'
+2026-09-19T20:03:42.0825488Z   ...
+2026-09-19T20:03:42.0825997Z # Subtest: 06 §8 · las cinco transiciones del Proceso con guardas favorables se permiten
+2026-09-19T20:03:42.0827034Z ok 63 - 06 §8 · las cinco transiciones del Proceso con guardas favorables se permiten
+2026-09-19T20:03:42.0827458Z   ---
+2026-09-19T20:03:42.0827663Z   duration_ms: 0.223325
+2026-09-19T20:03:42.0827907Z   type: 'test'
+2026-09-19T20:03:42.0828105Z   ...
+2026-09-19T20:03:42.0828586Z # Subtest: INV-06-86 · CERRADO es terminal: ninguna transición sale de CERRADO
+2026-09-19T20:03:42.0829226Z ok 64 - INV-06-86 · CERRADO es terminal: ninguna transición sale de CERRADO
+2026-09-19T20:03:42.0829587Z   ---
+2026-09-19T20:03:42.0829785Z   duration_ms: 0.292164
+2026-09-19T20:03:42.0830002Z   type: 'test'
+2026-09-19T20:03:42.0830194Z   ...
+2026-09-19T20:03:42.0830796Z # Subtest: INV-06-74 · AbrirProceso solo desde inicio; los cierres del sistema no los ejecuta el profesional
+2026-09-19T20:03:42.0831670Z ok 65 - INV-06-74 · AbrirProceso solo desde inicio; los cierres del sistema no los ejecuta el profesional
+2026-09-19T20:03:42.0832136Z   ---
+2026-09-19T20:03:42.0832330Z   duration_ms: 0.148697
+2026-09-19T20:03:42.0832549Z   type: 'test'
+2026-09-19T20:03:42.0832740Z   ...
+2026-09-19T20:03:42.0833308Z # Subtest: INV-06-75, 85 · abrir exige capacidad; continuar o cerrar por revisión exige revisión válida
+2026-09-19T20:03:42.0834523Z ok 66 - INV-06-75, 85 · abrir exige capacidad; continuar o cerrar por revisión exige revisión válida
+2026-09-19T20:03:42.0835609Z   ---
+2026-09-19T20:03:42.0835923Z   duration_ms: 0.140361
+2026-09-19T20:03:42.0836290Z   type: 'test'
+2026-09-19T20:03:42.0836898Z   ...
+2026-09-19T20:03:42.0837829Z # Subtest: REG-06-64/78 · con un Proceso abierto, la activación es continuidad; sin él, es NUEVO
+2026-09-19T20:03:42.0838906Z ok 67 - REG-06-64/78 · con un Proceso abierto, la activación es continuidad; sin él, es NUEVO
+2026-09-19T20:03:42.0839340Z   ---
+2026-09-19T20:03:42.0839540Z   duration_ms: 0.380127
+2026-09-19T20:03:42.0839774Z   type: 'test'
+2026-09-19T20:03:42.0839969Z   ...
+2026-09-19T20:03:42.0840687Z # Subtest: REG-06-66 · el Proceso vigente exige todas las condiciones; revocar el consentimiento lo vuelve no vigente sin cerrarlo
+2026-09-19T20:03:42.0841753Z ok 68 - REG-06-66 · el Proceso vigente exige todas las condiciones; revocar el consentimiento lo vuelve no vigente sin cerrarlo
+2026-09-19T20:03:42.0842322Z   ---
+2026-09-19T20:03:42.0842519Z   duration_ms: 0.444878
+2026-09-19T20:03:42.0842751Z   type: 'test'
+2026-09-19T20:03:42.0842949Z   ...
+2026-09-19T20:03:42.0843363Z # Subtest: REG-06-82 · sin configuración, SIN_LIMITE: nunca rechaza
+2026-09-19T20:03:42.0843928Z ok 69 - REG-06-82 · sin configuración, SIN_LIMITE: nunca rechaza
+2026-09-19T20:03:42.0844266Z   ---
+2026-09-19T20:03:42.0844461Z   duration_ms: 0.261056
+2026-09-19T20:03:42.0844682Z   type: 'test'
+2026-09-19T20:03:42.0844881Z   ...
+2026-09-19T20:03:42.0845368Z # Subtest: REG-06-91 · LIMITADA admite si la ocupación proyectada no supera el límite
+2026-09-19T20:03:42.0846063Z ok 70 - REG-06-91 · LIMITADA admite si la ocupación proyectada no supera el límite
+2026-09-19T20:03:42.0866923Z   ---
+2026-09-19T20:03:42.0867185Z   duration_ms: 0.157022
+2026-09-19T20:03:42.0867564Z   type: 'test'
+2026-09-19T20:03:42.0867915Z   ...
+2026-09-19T20:03:42.0869089Z # Subtest: REG-06-91 · un asesorado que ya cuenta no suma ni se rechaza; la sobreocupación rechaza todo nuevo
+2026-09-19T20:03:42.0870379Z ok 71 - REG-06-91 · un asesorado que ya cuenta no suma ni se rechaza; la sobreocupación rechaza todo nuevo
+2026-09-19T20:03:42.0870982Z   ---
+2026-09-19T20:03:42.0871360Z   duration_ms: 0.132126
+2026-09-19T20:03:42.0871779Z   type: 'test'
+2026-09-19T20:03:42.0872133Z   ...
+2026-09-19T20:03:42.0873192Z # Subtest: REG-06-144 · la taxonomía tiene exactamente seis resultados y la API mapea uno a uno
+2026-09-19T20:03:42.0874750Z ok 72 - REG-06-144 · la taxonomía tiene exactamente seis resultados y la API mapea uno a uno
+2026-09-19T20:03:42.0875528Z   ---
+2026-09-19T20:03:42.0875892Z   duration_ms: 0.130854
+2026-09-19T20:03:42.0876284Z   type: 'test'
+2026-09-19T20:03:42.0876864Z   ...
+2026-09-19T20:03:42.0877678Z # Subtest: REG-06-147 · solo FINALIZAR cierra el Proceso (INV-06-82, 83)
+2026-09-19T20:03:42.0878794Z ok 73 - REG-06-147 · solo FINALIZAR cierra el Proceso (INV-06-82, 83)
+2026-09-19T20:03:42.0879443Z   ---
+2026-09-19T20:03:42.0879785Z   duration_ms: 0.114744
+2026-09-19T20:03:42.0880265Z   type: 'test'
+2026-09-19T20:03:42.0880629Z   ...
+2026-09-19T20:03:42.0881982Z # Subtest: TEST-NUT-006 · la revisión válida exige evidencia, interpretación, resultado, fundamento y próxima acción o cierre
+2026-09-19T20:03:42.0884087Z ok 74 - TEST-NUT-006 · la revisión válida exige evidencia, interpretación, resultado, fundamento y próxima acción o cierre
+2026-09-19T20:03:42.0885067Z   ---
+2026-09-19T20:03:42.0906655Z   duration_ms: 0.206174
+2026-09-19T20:03:42.0907119Z   type: 'test'
+2026-09-19T20:03:42.0907434Z   ...
+2026-09-19T20:03:42.0908317Z # Subtest: UC-P13 E05 · un resultado fuera de la taxonomía no es una revisión válida
+2026-09-19T20:03:42.0909488Z ok 75 - UC-P13 E05 · un resultado fuera de la taxonomía no es una revisión válida
+2026-09-19T20:03:42.0910109Z   ---
+2026-09-19T20:03:42.0910425Z   duration_ms: 0.146493
+2026-09-19T20:03:42.0910779Z   type: 'test'
+2026-09-19T20:03:42.0911583Z   ...
+2026-09-19T20:03:42.0912419Z # Subtest: REG-06-146 · REPROGRAMAR_REVISION exige la fecha de la próxima revisión
+2026-09-19T20:03:42.0913554Z ok 76 - REG-06-146 · REPROGRAMAR_REVISION exige la fecha de la próxima revisión
+2026-09-19T20:03:42.0914389Z   ---
+2026-09-19T20:03:42.0914702Z   duration_ms: 0.134751
+2026-09-19T20:03:42.0915064Z   type: 'test'
+2026-09-19T20:03:42.0915383Z   ...
+2026-09-19T20:03:42.0916712Z # Subtest: REG-06-150 · el pendiente nace de una expectativa explícita y se resuelve solo con una revisión aplicada
+2026-09-19T20:03:42.0918341Z ok 77 - REG-06-150 · el pendiente nace de una expectativa explícita y se resuelve solo con una revisión aplicada
+2026-09-19T20:03:42.0919159Z   ---
+2026-09-19T20:03:42.0919466Z   duration_ms: 0.184934
+2026-09-19T20:03:42.0919832Z   type: 'test'
+2026-09-19T20:03:42.0920139Z   ...
+2026-09-19T20:03:42.0921004Z # Subtest: DL-049 · normalizar asigna identificadores faltantes y conserva los que vienen
+2026-09-19T20:03:42.0922237Z ok 78 - DL-049 · normalizar asigna identificadores faltantes y conserva los que vienen
+2026-09-19T20:03:42.0922919Z   ---
+2026-09-19T20:03:42.0923237Z   duration_ms: 0.296852
+2026-09-19T20:03:42.0923608Z   type: 'test'
+2026-09-19T20:03:42.0923979Z   ...
+2026-09-19T20:03:42.0925099Z # Subtest: RF-030 · un borrador incompleto se puede guardar; validar informa lo que falta, con la ruta (09v9:589)
+2026-09-19T20:03:42.0926836Z ok 79 - RF-030 · un borrador incompleto se puede guardar; validar informa lo que falta, con la ruta (09v9:589)
+2026-09-19T20:03:42.0927646Z   ---
+2026-09-19T20:03:42.0927966Z   duration_ms: 0.543802
+2026-09-19T20:03:42.0928315Z   type: 'test'
+2026-09-19T20:03:42.0928639Z   ...
+2026-09-19T20:03:42.0929280Z # Subtest: REG-06-122 · con cantidad, el estado de preparación es obligatorio; sin cantidad, no
+2026-09-19T20:03:42.0930096Z ok 80 - REG-06-122 · con cantidad, el estado de preparación es obligatorio; sin cantidad, no
+2026-09-19T20:03:42.0930526Z   ---
+2026-09-19T20:03:42.0930730Z   duration_ms: 0.28977
+2026-09-19T20:03:42.0931135Z   type: 'test'
+2026-09-19T20:03:42.0931523Z   ...
+2026-09-19T20:03:42.0932777Z # Subtest: 09v9 PATCH · modalidad B no habilitada, referencia de catálogo inválida e identificador repetido impiden guardar
+2026-09-19T20:03:42.0934261Z ok 81 - 09v9 PATCH · modalidad B no habilitada, referencia de catálogo inválida e identificador repetido impiden guardar
+2026-09-19T20:03:42.0934787Z   ---
+2026-09-19T20:03:42.0934989Z   duration_ms: 0.167782
+2026-09-19T20:03:42.0935227Z   type: 'test'
+2026-09-19T20:03:42.0935431Z   ...
+2026-09-19T20:03:42.0935941Z # Subtest: REG-06-105 · la instantánea resuelve nombre y versión del catálogo al activar
+2026-09-19T20:03:42.0936967Z ok 82 - REG-06-105 · la instantánea resuelve nombre y versión del catálogo al activar
+2026-09-19T20:03:42.0937425Z   ---
+2026-09-19T20:03:42.0937627Z   duration_ms: 0.392791
+2026-09-19T20:03:42.0937856Z   type: 'test'
+2026-09-19T20:03:42.0938062Z   ...
+2026-09-19T20:03:42.0938557Z # Subtest: 06:1391 · si un ítem no se resuelve, la instantánea no se puede preservar
+2026-09-19T20:03:42.0939337Z ok 83 - 06:1391 · si un ítem no se resuelve, la instantánea no se puede preservar
+2026-09-19T20:03:42.0939983Z   ---
+2026-09-19T20:03:42.0940292Z   duration_ms: 0.134701
+2026-09-19T20:03:42.0940650Z   type: 'test'
+2026-09-19T20:03:42.0940958Z   ...
+2026-09-19T20:03:42.0941997Z # Subtest: REG-06-101 · cambiar el catálogo después de activar no cambia la instantánea (INV-06-115)
+2026-09-19T20:03:42.0943448Z ok 84 - REG-06-101 · cambiar el catálogo después de activar no cambia la instantánea (INV-06-115)
+2026-09-19T20:03:42.0944225Z   ---
+2026-09-19T20:03:42.0944550Z   duration_ms: 0.400565
+2026-09-19T20:03:42.0944928Z   type: 'test'
+2026-09-19T20:03:42.0945260Z   ...
+2026-09-19T20:03:42.0946257Z # Subtest: REG-06-106 · la ingesta prescripta referencia día tipo, comida y opción de la instantánea
+2026-09-19T20:03:42.0947903Z ok 85 - REG-06-106 · la ingesta prescripta referencia día tipo, comida y opción de la instantánea
+2026-09-19T20:03:42.0948937Z   ---
+2026-09-19T20:03:42.0949260Z   duration_ms: 0.362675
+2026-09-19T20:03:42.0949652Z   type: 'test'
+2026-09-19T20:03:42.0949940Z   ...
+2026-09-19T20:03:42.0950899Z # Subtest: TEST-NUT-002/005 · contraste: prescripto ≠ registrado, sin registro = NO_DATA, y la diferencia es de cantidad (DV-05 TEST-RF-034)
+2026-09-19T20:03:42.0952050Z ok 86 - TEST-NUT-002/005 · contraste: prescripto ≠ registrado, sin registro = NO_DATA, y la diferencia es de cantidad (DV-05 TEST-RF-034)
+2026-09-19T20:03:42.0952620Z   ---
+2026-09-19T20:03:42.0952812Z   duration_ms: 0.926886
+2026-09-19T20:03:42.0953039Z   type: 'test'
+2026-09-19T20:03:42.0953234Z   ...
+2026-09-19T20:03:42.0953811Z # Subtest: INV-06-13 · lo registrado contra una versión no se pierde si ese día se activa una sucesora
+2026-09-19T20:03:42.0954638Z ok 87 - INV-06-13 · lo registrado contra una versión no se pierde si ese día se activa una sucesora
+2026-09-19T20:03:42.0955073Z   ---
+2026-09-19T20:03:42.0955273Z   duration_ms: 0.317381
+2026-09-19T20:03:42.0955503Z   type: 'test'
+2026-09-19T20:03:42.0955697Z   ...
+2026-09-19T20:03:42.0956168Z # Subtest: fechasDelPeriodo · incluye los extremos y respeta los cambios de mes
+2026-09-19T20:03:42.0957046Z ok 88 - fechasDelPeriodo · incluye los extremos y respeta los cambios de mes
+2026-09-19T20:03:42.0957429Z   ---
+2026-09-19T20:03:42.0957626Z   duration_ms: 0.134781
+2026-09-19T20:03:42.0957844Z   type: 'test'
+2026-09-19T20:03:42.0958036Z   ...
+2026-09-19T20:03:42.0958646Z # Subtest: TEST-PRJ-009 · ningún schema de nutrición tiene puntaje, porcentaje de cumplimiento ni calificación
+2026-09-19T20:03:42.0959552Z ok 89 - TEST-PRJ-009 · ningún schema de nutrición tiene puntaje, porcentaje de cumplimiento ni calificación
+2026-09-19T20:03:42.0960047Z   ---
+2026-09-19T20:03:42.0960241Z   duration_ms: 46.579673
+2026-09-19T20:03:42.0960476Z   type: 'test'
+2026-09-19T20:03:42.0960666Z   ...
+2026-09-19T20:03:42.0961307Z # Subtest: TEST-PRJ-009 · el OpenAPI generado tampoco expone puntaje de adherencia en ninguna operación de nutrición
+2026-09-19T20:03:42.0962277Z ok 90 - TEST-PRJ-009 · el OpenAPI generado tampoco expone puntaje de adherencia en ninguna operación de nutrición
+2026-09-19T20:03:42.0963209Z   ---
+2026-09-19T20:03:42.0963573Z   duration_ms: 22.52896
+2026-09-19T20:03:42.0963984Z   type: 'test'
+2026-09-19T20:03:42.0964330Z   ...
+2026-09-19T20:03:42.0965289Z # Subtest: T13 · el copy de nutrición no usa ningún término prohibido (B10-05; REG-06-125)
+2026-09-19T20:03:42.0966660Z ok 91 - T13 · el copy de nutrición no usa ningún término prohibido (B10-05; REG-06-125)
+2026-09-19T20:03:42.0967276Z   ---
+2026-09-19T20:03:42.0967484Z   duration_ms: 1.226854
+2026-09-19T20:03:42.0967712Z   type: 'test'
+2026-09-19T20:03:42.0967913Z   ...
+2026-09-19T20:03:42.1071163Z # Subtest: 06 §5.7.2 — conjunto cerrado de tres estados, tokens CONV-06-02
+2026-09-19T20:03:42.1072025Z ok 92 - 06 §5.7.2 — conjunto cerrado de tres estados, tokens CONV-06-02
+2026-09-19T20:03:42.1072510Z   ---
+2026-09-19T20:03:42.1072826Z   duration_ms: 2.527736
+2026-09-19T20:03:42.1073090Z   type: 'test'
+2026-09-19T20:03:42.1073398Z   ...
+2026-09-19T20:03:42.1074228Z # Subtest: 06 §5.7.2 — inicial OPERATIVA, terminal CERRADA; solo OPERATIVA permite operar (INV-06-28)
+2026-09-19T20:03:42.1075412Z ok 93 - 06 §5.7.2 — inicial OPERATIVA, terminal CERRADA; solo OPERATIVA permite operar (INV-06-28)
+2026-09-19T20:03:42.1075975Z   ---
+2026-09-19T20:03:42.1076206Z   duration_ms: 0.34388
+2026-09-19T20:03:42.1076935Z   type: 'test'
+2026-09-19T20:03:42.1077155Z   ...
+2026-09-19T20:03:42.1077593Z # Subtest: 06 §5.7.4 — lista blanca exacta
+2026-09-19T20:03:42.1078159Z ok 94 - 06 §5.7.4 — lista blanca exacta
+2026-09-19T20:03:42.1078622Z   ---
+2026-09-19T20:03:42.1078959Z   duration_ms: 1.621298
+2026-09-19T20:03:42.1079345Z   type: 'test'
+2026-09-19T20:03:42.1079673Z   ...
+2026-09-19T20:03:42.1080483Z # Subtest: 06 §5.7.4 — toda transición no declarada está prohibida (matriz 3×3)
+2026-09-19T20:03:42.1081381Z ok 95 - 06 §5.7.4 — toda transición no declarada está prohibida (matriz 3×3)
+2026-09-19T20:03:42.1082255Z   ---
+2026-09-19T20:03:42.1082477Z   duration_ms: 0.436342
+2026-09-19T20:03:42.1082854Z   type: 'test'
+2026-09-19T20:03:42.1083119Z   ...
+2026-09-19T20:03:42.1084103Z # Subtest: SuspenderCuenta OPERATIVA → SUSPENDIDA: permitida con fundamento; revoca sesiones
+2026-09-19T20:03:42.1085147Z ok 96 - SuspenderCuenta OPERATIVA → SUSPENDIDA: permitida con fundamento; revoca sesiones
+2026-09-19T20:03:42.1085798Z   ---
+2026-09-19T20:03:42.1086007Z   duration_ms: 0.351995
+2026-09-19T20:03:42.1086334Z   type: 'test'
+2026-09-19T20:03:42.1086911Z   ...
+2026-09-19T20:03:42.1087546Z # Subtest: SuspenderCuenta: la guarda rechaza un fundamento vacío
+2026-09-19T20:03:42.1088282Z ok 97 - SuspenderCuenta: la guarda rechaza un fundamento vacío
+2026-09-19T20:03:42.1088792Z   ---
+2026-09-19T20:03:42.1089002Z   duration_ms: 0.210812
+2026-09-19T20:03:42.1089225Z   type: 'test'
+2026-09-19T20:03:42.1089417Z   ...
+2026-09-19T20:03:42.1089994Z # Subtest: RestablecerCuenta SUSPENDIDA → OPERATIVA: permitida con resolución; no concede nada más
+2026-09-19T20:03:42.1090856Z ok 98 - RestablecerCuenta SUSPENDIDA → OPERATIVA: permitida con resolución; no concede nada más
+2026-09-19T20:03:42.1091556Z   ---
+2026-09-19T20:03:42.1091823Z   duration_ms: 0.347547
+2026-09-19T20:03:42.1092157Z   type: 'test'
+2026-09-19T20:03:42.1092348Z   ...
+2026-09-19T20:03:42.1092955Z # Subtest: RestablecerCuenta: la guarda rechaza una resolución vacía
+2026-09-19T20:03:42.1093865Z ok 99 - RestablecerCuenta: la guarda rechaza una resolución vacía
+2026-09-19T20:03:42.1094313Z   ---
+2026-09-19T20:03:42.1094604Z   duration_ms: 0.215481
+2026-09-19T20:03:42.1094931Z   type: 'test'
+2026-09-19T20:03:42.1095139Z   ...
+2026-09-19T20:03:42.1095930Z # Subtest: CerrarCuenta OPERATIVA → CERRADA: permitida con las cuatro guardas; efectos del §5.8 y 08
+2026-09-19T20:03:42.1097355Z ok 100 - CerrarCuenta OPERATIVA → CERRADA: permitida con las cuatro guardas; efectos del §5.8 y 08
+2026-09-19T20:03:42.1097944Z   ---
+2026-09-19T20:03:42.1098248Z   duration_ms: 0.653196
+2026-09-19T20:03:42.1098507Z   type: 'test'
+2026-09-19T20:03:42.1098806Z   ...
+2026-09-19T20:03:42.1099448Z # Subtest: CerrarCuenta: cada guarda se evalúa como condición explícita
+2026-09-19T20:03:42.1100229Z ok 101 - CerrarCuenta: cada guarda se evalúa como condición explícita
+2026-09-19T20:03:42.1100761Z   ---
+2026-09-19T20:03:42.1100987Z   duration_ms: 0.715412
+2026-09-19T20:03:42.1101256Z   type: 'test'
+2026-09-19T20:03:42.1101728Z   ...
+2026-09-19T20:03:42.1102554Z # Subtest: SUSPENDIDA → CERRADA FALLA aunque todas las guardas del cierre se cumplan (06 §5.7.4)
+2026-09-19T20:03:42.1104055Z ok 102 - SUSPENDIDA → CERRADA FALLA aunque todas las guardas del cierre se cumplan (06 §5.7.4)
+2026-09-19T20:03:42.1104882Z   ---
+2026-09-19T20:03:42.1105252Z   duration_ms: 0.28978
+2026-09-19T20:03:42.1105659Z   type: 'test'
+2026-09-19T20:03:42.1106066Z   ...
+2026-09-19T20:03:42.1107350Z # Subtest: CERRADA no tiene salida: ninguna transición se evalúa como permitida desde CERRADA
+2026-09-19T20:03:42.1108466Z ok 103 - CERRADA no tiene salida: ninguna transición se evalúa como permitida desde CERRADA
+2026-09-19T20:03:42.1109144Z   ---
+2026-09-19T20:03:42.1109398Z   duration_ms: 0.220149
+2026-09-19T20:03:42.1109704Z   type: 'test'
+2026-09-19T20:03:42.1110007Z   ...
+2026-09-19T20:03:42.1110782Z # Subtest: Transiciones con origen equivocado se rechazan (Restablecer desde OPERATIVA, Suspender desde SUSPENDIDA)
+2026-09-19T20:03:42.1111921Z ok 104 - Transiciones con origen equivocado se rechazan (Restablecer desde OPERATIVA, Suspender desde SUSPENDIDA)
+2026-09-19T20:03:42.1112657Z   ---
+2026-09-19T20:03:42.1112957Z   duration_ms: 0.199461
+2026-09-19T20:03:42.1113191Z   type: 'test'
+2026-09-19T20:03:42.1113478Z   ...
+2026-09-19T20:03:42.1113954Z # Subtest: REG-06-15 · una cadena vacía no tiene terminal
+2026-09-19T20:03:42.1114609Z ok 105 - REG-06-15 · una cadena vacía no tiene terminal
+2026-09-19T20:03:42.1115024Z   ---
+2026-09-19T20:03:42.1115271Z   duration_ms: 2.473655
+2026-09-19T20:03:42.1115631Z   type: 'test'
+2026-09-19T20:03:42.1116064Z   ...
+2026-09-19T20:03:42.1117408Z # Subtest: REG-06-15 · la cadena se recorre del primer eslabón a la terminal, sin importar el orden del arreglo
+2026-09-19T20:03:42.1119097Z ok 106 - REG-06-15 · la cadena se recorre del primer eslabón a la terminal, sin importar el orden del arreglo
+2026-09-19T20:03:42.1119934Z   ---
+2026-09-19T20:03:42.1120250Z   duration_ms: 0.229347
+2026-09-19T20:03:42.1120559Z   type: 'test'
+2026-09-19T20:03:42.1120836Z   ...
+2026-09-19T20:03:42.1121763Z # Subtest: REG-06-16 inc. 3 · dos eslabones con el mismo previo son una ramificación
+2026-09-19T20:03:42.1123118Z ok 107 - REG-06-16 inc. 3 · dos eslabones con el mismo previo son una ramificación
+2026-09-19T20:03:42.1123843Z   ---
+2026-09-19T20:03:42.1124198Z   duration_ms: 0.161731
+2026-09-19T20:03:42.1124635Z   type: 'test'
+2026-09-19T20:03:42.1125004Z   ...
+2026-09-19T20:03:42.1125887Z # Subtest: REG-06-16 inc. 3 · dos primeros eslabones son una ramificación
+2026-09-19T20:03:42.1127366Z ok 108 - REG-06-16 inc. 3 · dos primeros eslabones son una ramificación
+2026-09-19T20:03:42.1128078Z   ---
+2026-09-19T20:03:42.1128440Z   duration_ms: 0.211894
+2026-09-19T20:03:42.1128847Z   type: 'test'
+2026-09-19T20:03:42.1129220Z   ...
+2026-09-19T20:03:42.1130008Z # Subtest: REG-06-15 · sin ciclos: un ciclo cerrado es no resoluble
+2026-09-19T20:03:42.1131076Z ok 109 - REG-06-15 · sin ciclos: un ciclo cerrado es no resoluble
+2026-09-19T20:03:42.1131713Z   ---
+2026-09-19T20:03:42.1132074Z   duration_ms: 0.317311
+2026-09-19T20:03:42.1132482Z   type: 'test'
+2026-09-19T20:03:42.1132836Z   ...
+2026-09-19T20:03:42.1133786Z # Subtest: REG-06-15 · un ciclo aparte, no alcanzable desde el primero, es no resoluble
+2026-09-19T20:03:42.1135138Z ok 110 - REG-06-15 · un ciclo aparte, no alcanzable desde el primero, es no resoluble
+2026-09-19T20:03:42.1135887Z   ---
+2026-09-19T20:03:42.1136247Z   duration_ms: 0.163134
+2026-09-19T20:03:42.1136937Z   type: 'test'
+2026-09-19T20:03:42.1137364Z   ...
+2026-09-19T20:03:42.1138280Z # Subtest: REG-06-16 inc. 3 · un previo que no existe es una relación incompleta
+2026-09-19T20:03:42.1139535Z ok 111 - REG-06-16 inc. 3 · un previo que no existe es una relación incompleta
+2026-09-19T20:03:42.1140221Z   ---
+2026-09-19T20:03:42.1140576Z   duration_ms: 0.199411
+2026-09-19T20:03:42.1140986Z   type: 'test'
+2026-09-19T20:03:42.1141334Z   ...
+2026-09-19T20:03:42.1141989Z # Subtest: un id repetido es una relación incompleta
+2026-09-19T20:03:42.1142843Z ok 112 - un id repetido es una relación incompleta
+2026-09-19T20:03:42.1143350Z   ---
+2026-09-19T20:03:42.1143680Z   duration_ms: 0.202547
+2026-09-19T20:03:42.1144068Z   type: 'test'
+2026-09-19T20:03:42.1144389Z   ...
+2026-09-19T20:03:42.1145062Z # Subtest: REG-06-16 inc. 1 · sin corrección, rige el original
+2026-09-19T20:03:42.1145989Z ok 113 - REG-06-16 inc. 1 · sin corrección, rige el original
+2026-09-19T20:03:42.1146861Z   ---
+2026-09-19T20:03:42.1147234Z   duration_ms: 0.368225
+2026-09-19T20:03:42.1147654Z   type: 'test'
+2026-09-19T20:03:42.1148015Z   ...
+2026-09-19T20:03:42.1149195Z # Subtest: REG-06-16 inc. 2 · con cadena válida rige la terminal, y la cadena conserva todo (TEST-DOM-002)
+2026-09-19T20:03:42.1150804Z ok 114 - REG-06-16 inc. 2 · con cadena válida rige la terminal, y la cadena conserva todo (TEST-DOM-002)
+2026-09-19T20:03:42.1151667Z   ---
+2026-09-19T20:03:42.1152035Z   duration_ms: 0.69812
+2026-09-19T20:03:42.1152537Z   type: 'test'
+2026-09-19T20:03:42.1153093Z   ...
+2026-09-19T20:03:42.1154720Z # Subtest: REG-06-16 · la vista no depende del orden de registro: una corrección «más nueva» por posición no gana
+2026-09-19T20:03:42.1157019Z ok 115 - REG-06-16 · la vista no depende del orden de registro: una corrección «más nueva» por posición no gana
+2026-09-19T20:03:42.1158145Z   ---
+2026-09-19T20:03:42.1158797Z   duration_ms: 0.27435
+2026-09-19T20:03:42.1159313Z   type: 'test'
+2026-09-19T20:03:42.1159877Z   ...
+2026-09-19T20:03:42.1160917Z # Subtest: REG-06-15 · todas las correcciones apuntan al mismo original raíz
+2026-09-19T20:03:42.1162235Z ok 116 - REG-06-15 · todas las correcciones apuntan al mismo original raíz
+2026-09-19T20:03:42.1163355Z   ---
+2026-09-19T20:03:42.1177127Z   duration_ms: 0.159106
+2026-09-19T20:03:42.1177599Z   type: 'test'
+2026-09-19T20:03:42.1178220Z   ...
+2026-09-19T20:03:42.1179200Z # Subtest: REG-06-16 inc. 3 · con ramas, nadie elige por fecha: la vista es no resoluble
+2026-09-19T20:03:42.1180477Z ok 117 - REG-06-16 inc. 3 · con ramas, nadie elige por fecha: la vista es no resoluble
+2026-09-19T20:03:42.1181178Z   ---
+2026-09-19T20:03:42.1181523Z   duration_ms: 0.133068
+2026-09-19T20:03:42.1181909Z   type: 'test'
+2026-09-19T20:03:42.1182243Z   ...
+2026-09-19T20:03:42.1183137Z # Subtest: REG-06-14/15 · la primera corrección apunta al original y no tiene previa
+2026-09-19T20:03:42.1184394Z ok 118 - REG-06-14/15 · la primera corrección apunta al original y no tiene previa
+2026-09-19T20:03:42.1185085Z   ---
+2026-09-19T20:03:42.1185440Z   duration_ms: 0.164717
+2026-09-19T20:03:42.1185831Z   type: 'test'
+2026-09-19T20:03:42.1186168Z   ...
+2026-09-19T20:03:42.1187692Z # Subtest: REG-06-15 · cada corrección sucesiva apunta a la inmediata anterior; si otra entró en el medio, se rechaza
+2026-09-19T20:03:42.1189500Z ok 119 - REG-06-15 · cada corrección sucesiva apunta a la inmediata anterior; si otra entró en el medio, se rechaza
+2026-09-19T20:03:42.1190445Z   ---
+2026-09-19T20:03:42.1190799Z   duration_ms: 0.140411
+2026-09-19T20:03:42.1191201Z   type: 'test'
+2026-09-19T20:03:42.1191544Z   ...
+2026-09-19T20:03:42.1192444Z # Subtest: REG-06-14 · no se corrige otro original ni sobre una historia no resoluble
+2026-09-19T20:03:42.1193699Z ok 120 - REG-06-14 · no se corrige otro original ni sobre una historia no resoluble
+2026-09-19T20:03:42.1194399Z   ---
+2026-09-19T20:03:42.1194750Z   duration_ms: 0.132536
+2026-09-19T20:03:42.1195148Z   type: 'test'
+2026-09-19T20:03:42.1195489Z   ...
+2026-09-19T20:03:42.1196900Z # Subtest: REG-06-12 · la primera versión no tiene predecesora; si ya hay versiones, la nueva tiene que declararla
+2026-09-19T20:03:42.1198637Z ok 121 - REG-06-12 · la primera versión no tiene predecesora; si ya hay versiones, la nueva tiene que declararla
+2026-09-19T20:03:42.1199507Z   ---
+2026-09-19T20:03:42.1199852Z   duration_ms: 0.196266
+2026-09-19T20:03:42.1200255Z   type: 'test'
+2026-09-19T20:03:42.1200592Z   ...
+2026-09-19T20:03:42.1201445Z # Subtest: TEST-DOM-009 · la nueva versión sucede a la anterior sin modificarla
+2026-09-19T20:03:42.1202627Z ok 122 - TEST-DOM-009 · la nueva versión sucede a la anterior sin modificarla
+2026-09-19T20:03:42.1203297Z   ---
+2026-09-19T20:03:42.1203653Z   duration_ms: 0.252981
+2026-09-19T20:03:42.1204039Z   type: 'test'
+2026-09-19T20:03:42.1204372Z   ...
+2026-09-19T20:03:42.1205416Z # Subtest: REG-06-12 · misma entidad: una predecesora de otro objeto, o inexistente, no se admite
+2026-09-19T20:03:42.1206670Z ok 123 - REG-06-12 · misma entidad: una predecesora de otro objeto, o inexistente, no se admite
+2026-09-19T20:03:42.1207305Z   ---
+2026-09-19T20:03:42.1207629Z   duration_ms: 0.133639
+2026-09-19T20:03:42.1208045Z   type: 'test'
+2026-09-19T20:03:42.1208298Z   ...
+2026-09-19T20:03:42.1208892Z # Subtest: REG-06-12 · sin regla de ramas, una segunda sucesora de la misma versión es bifurcación
+2026-09-19T20:03:42.1209715Z ok 124 - REG-06-12 · sin regla de ramas, una segunda sucesora de la misma versión es bifurcación
+2026-09-19T20:03:42.1210142Z   ---
+2026-09-19T20:03:42.1210340Z   duration_ms: 1.321249
+2026-09-19T20:03:42.1210574Z   type: 'test'
+2026-09-19T20:03:42.1210767Z   ...
+2026-09-19T20:03:42.1211296Z # Subtest: INV-06-107 · la versión terminal sale de la sucesión, no del orden ni de la fecha
+2026-09-19T20:03:42.1212047Z ok 125 - INV-06-107 · la versión terminal sale de la sucesión, no del orden ni de la fecha
+2026-09-19T20:03:42.1212455Z   ---
+2026-09-19T20:03:42.1212644Z   duration_ms: 0.167402
+2026-09-19T20:03:42.1212893Z   type: 'test'
+2026-09-19T20:03:42.1213097Z   ...
+2026-09-19T20:03:42.1213621Z # Subtest: INV-06-13 · la serialización canónica no depende del orden de las claves
+2026-09-19T20:03:42.1214665Z ok 126 - INV-06-13 · la serialización canónica no depende del orden de las claves
+2026-09-19T20:03:42.1215089Z   ---
+2026-09-19T20:03:42.1215302Z   duration_ms: 0.332419
+2026-09-19T20:03:42.1215679Z   type: 'test'
+2026-09-19T20:03:42.1215877Z   ...
+2026-09-19T20:03:42.1216656Z # Subtest: INV-06-13 · el orden de los arreglos sí es contenido: cambiarlo cambia la serialización
+2026-09-19T20:03:42.1217522Z ok 127 - INV-06-13 · el orden de los arreglos sí es contenido: cambiarlo cambia la serialización
+2026-09-19T20:03:42.1217987Z   ---
+2026-09-19T20:03:42.1218204Z   duration_ms: 0.154739
+2026-09-19T20:03:42.1218430Z   type: 'test'
+2026-09-19T20:03:42.1218652Z   ...
+2026-09-19T20:03:42.1219266Z # Subtest: la serialización canónica rechaza lo que no es JSON reproducible, en vez de perderlo
+2026-09-19T20:03:42.1220121Z ok 128 - la serialización canónica rechaza lo que no es JSON reproducible, en vez de perderlo
+2026-09-19T20:03:42.1220597Z   ---
+2026-09-19T20:03:42.1220795Z   duration_ms: 0.475315
+2026-09-19T20:03:42.1221045Z   type: 'test'
+2026-09-19T20:03:42.1221258Z   ...
+2026-09-19T20:03:42.1221462Z 1..128
+2026-09-19T20:03:42.1221663Z # tests 128
+2026-09-19T20:03:42.1221853Z # suites 0
+2026-09-19T20:03:42.1222071Z # pass 128
+2026-09-19T20:03:42.1222281Z # fail 0
+2026-09-19T20:03:42.1222470Z # cancelled 0
+2026-09-19T20:03:42.1222681Z # skipped 0
+2026-09-19T20:03:42.1222872Z # todo 0
+2026-09-19T20:03:42.1223102Z # duration_ms 500.410506
+2026-09-19T20:03:42.1705163Z TAP version 13
+2026-09-19T20:03:42.6023663Z # Subtest: T13 · el copy de las pantallas de nutrición (website y APK) no tiene puntajes, porcentajes ni juicios
+2026-09-19T20:03:42.6032379Z ok 1 - T13 · el copy de las pantallas de nutrición (website y APK) no tiene puntajes, porcentajes ni juicios
+2026-09-19T20:03:42.6033080Z   ---
+2026-09-19T20:03:42.6033433Z   duration_ms: 143.787317
+2026-09-19T20:03:42.6033795Z   type: 'test'
+2026-09-19T20:03:42.6034128Z   ...
+2026-09-19T20:03:42.6067718Z # Subtest: T13 · el extractor encuentra un término prohibido en el copy e ignora los estilos
+2026-09-19T20:03:42.6069136Z ok 2 - T13 · el extractor encuentra un término prohibido en el copy e ignora los estilos
+2026-09-19T20:03:42.6096920Z   ---
+2026-09-19T20:03:42.6097572Z   duration_ms: 0.648277
+2026-09-19T20:03:42.6098126Z   type: 'test'
+2026-09-19T20:03:42.6098558Z   ...
+2026-09-19T20:03:42.6330671Z 1..2
+2026-09-19T20:03:42.6331397Z # tests 2
+2026-09-19T20:03:42.6331905Z # suites 0
+2026-09-19T20:03:42.6332786Z # pass 2
+2026-09-19T20:03:42.6333547Z # fail 0
+2026-09-19T20:03:42.6337294Z # cancelled 0
+2026-09-19T20:03:42.6337720Z # skipped 0
+2026-09-19T20:03:42.6338048Z # todo 0
+2026-09-19T20:03:42.6338433Z # duration_ms 474.229531
+2026-09-19T20:03:42.7505116Z 
+2026-09-19T20:03:42.7505738Z > @be/api@0.4.0 test
+2026-09-19T20:03:42.7506708Z > jest --config jest.config.js
+2026-09-19T20:03:42.7506985Z 
+2026-09-19T20:03:49.0517649Z PASS src/config/entorno.spec.ts (5.408 s)
+2026-09-19T20:03:49.1987716Z PASS src/plataforma/limitador.spec.ts (5.561 s)
+2026-09-19T20:03:51.9508628Z {"nivel":"info","requestId":"491ecd9f-a013-447d-a307-9c15edb60b87","metodo":"GET","ruta":"/health/live","status":200,"duracionMs":4}
+2026-09-19T20:03:52.0690931Z {"nivel":"info","requestId":"de97007c-5c52-4b8a-8f56-cae7d1e15fc5","metodo":"GET","ruta":"/health","status":200,"duracionMs":1}
+2026-09-19T20:03:52.0692539Z {"nivel":"info","requestId":"eb671de6-2358-458f-b4ff-f08f91c08dc4","metodo":"GET","ruta":"/health/ready","status":200,"duracionMs":0}
+2026-09-19T20:03:52.2655422Z {"nivel":"info","requestId":"727dc31a-4a5a-4f93-98f5-900a05453d93","metodo":"GET","ruta":"/health/ready","status":503,"duracionMs":0}
+2026-09-19T20:03:52.2657580Z {"nivel":"info","requestId":"f8e7c093-1504-4e04-9fda-4a7159888b6e","metodo":"GET","ruta":"/health","status":503,"duracionMs":1}
+2026-09-19T20:03:52.4600344Z {"nivel":"info","requestId":"e1c6e337-3b4b-4e64-a295-d1b6a8ce9943","metodo":"GET","ruta":"/health/ready","status":503,"duracionMs":0}
+2026-09-19T20:03:52.4602232Z {"nivel":"info","requestId":"9e876126-96ef-446e-820e-5307eb7feb9a","metodo":"GET","ruta":"/health/ready","status":200,"duracionMs":0}
+2026-09-19T20:03:52.6559926Z {"nivel":"info","requestId":"7f47ef33-21e0-40a2-8a70-627e1c2273fd","metodo":"GET","ruta":"SIN_RUTA","status":404,"duracionMs":2}
+2026-09-19T20:03:52.6633799Z PASS src/health/health.spec.ts (9.122 s)
+2026-09-19T20:03:52.7550021Z 
+2026-09-19T20:03:52.7554294Z Test Suites: 3 passed, 3 total
+2026-09-19T20:03:52.7554847Z Tests:       31 passed, 31 total
+2026-09-19T20:03:52.7555136Z Snapshots:   0 total
+2026-09-19T20:03:52.7583951Z Time:        9.746 s
+2026-09-19T20:03:52.7584370Z Ran all test suites.
+2026-09-19T20:03:52.7585206Z {"nivel":"info","requestId":"25169d07-f577-49c0-ba05-238d2575fafe","metodo":"GET","ruta":"SIN_RUTA","status":404,"duracionMs":1}
+﻿2026-09-19T20:03:52.7826042Z ##[group]Run npm run build:api
+2026-09-19T20:03:52.7826373Z ^[[36;1mnpm run build:api^[[0m
+2026-09-19T20:03:52.7862780Z shell: /usr/bin/bash -e {0}
+2026-09-19T20:03:52.7863054Z ##[endgroup]
+2026-09-19T20:03:52.8871112Z 
+2026-09-19T20:03:52.8871666Z > be@0.1.0 build:api
+2026-09-19T20:03:52.8872287Z > npm run build:domain && npm run build -w @be/api
+2026-09-19T20:03:52.8872579Z 
+2026-09-19T20:03:52.9844052Z 
+2026-09-19T20:03:52.9844630Z > be@0.1.0 build:domain
+2026-09-19T20:03:52.9845018Z > npm run build -w @be/domain
+2026-09-19T20:03:52.9845243Z 
+2026-09-19T20:03:53.1038521Z 
+2026-09-19T20:03:53.1039244Z > @be/domain@0.1.0 build
+2026-09-19T20:03:53.1039903Z > tsc -p tsconfig.json
+2026-09-19T20:03:53.1040231Z 
+2026-09-19T20:03:56.4922831Z 
+2026-09-19T20:03:56.4923428Z > @be/api@0.4.0 build
+2026-09-19T20:03:56.4924066Z > tsc -p tsconfig.build.json
+2026-09-19T20:03:56.4924303Z 
+﻿2026-09-19T20:04:00.6269946Z ##[group]Run npm run build:web
+2026-09-19T20:04:00.6270294Z ^[[36;1mnpm run build:web^[[0m
+2026-09-19T20:04:00.6305972Z shell: /usr/bin/bash -e {0}
+2026-09-19T20:04:00.6306236Z ##[endgroup]
+2026-09-19T20:04:00.7289015Z 
+2026-09-19T20:04:00.7290159Z > be@0.1.0 build:web
+2026-09-19T20:04:00.7300832Z > npm run build:domain && npm run build -w @be/web
+2026-09-19T20:04:00.7301346Z 
+2026-09-19T20:04:00.8260346Z 
+2026-09-19T20:04:00.8260891Z > be@0.1.0 build:domain
+2026-09-19T20:04:00.8261318Z > npm run build -w @be/domain
+2026-09-19T20:04:00.8261555Z 
+2026-09-19T20:04:00.9464664Z 
+2026-09-19T20:04:00.9465335Z > @be/domain@0.1.0 build
+2026-09-19T20:04:00.9466001Z > tsc -p tsconfig.json
+2026-09-19T20:04:00.9466319Z 
+2026-09-19T20:04:04.3784558Z 
+2026-09-19T20:04:04.3785372Z > @be/web@0.4.0 build
+2026-09-19T20:04:04.3785924Z > next build
+2026-09-19T20:04:04.3786191Z 
+2026-09-19T20:04:04.8916689Z ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+2026-09-19T20:04:04.8967721Z Attention: Next.js now collects completely anonymous telemetry regarding usage.
+2026-09-19T20:04:04.8968990Z This information is used to shape Next.js' roadmap and prioritize features.
+2026-09-19T20:04:04.8970625Z You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+2026-09-19T20:04:04.8971860Z https://nextjs.org/telemetry
+2026-09-19T20:04:04.8972204Z 
+2026-09-19T20:04:04.9933188Z    ▲ Next.js 15.5.25
+2026-09-19T20:04:04.9933524Z 
+2026-09-19T20:04:05.0474968Z    Creating an optimized production build ...
+2026-09-19T20:04:15.3101023Z  ✓ Compiled successfully in 7.9s
+2026-09-19T20:04:15.3144521Z    Linting and checking validity of types ...
+2026-09-19T20:04:19.9433702Z    Collecting page data ...
+2026-09-19T20:04:22.1419054Z    Generating static pages (0/16) ...
+2026-09-19T20:04:22.9293147Z    Generating static pages (4/16) 
+2026-09-19T20:04:22.9293846Z    Generating static pages (8/16) 
+2026-09-19T20:04:23.1553061Z    Generating static pages (12/16) 
+2026-09-19T20:04:23.1554077Z  ✓ Generating static pages (16/16)
+2026-09-19T20:04:23.5840016Z    Finalizing page optimization ...
+2026-09-19T20:04:23.5840665Z    Collecting build traces ...
+2026-09-19T20:04:28.8847388Z    Exporting (0/2) ...
+2026-09-19T20:04:29.1203379Z  ✓ Exporting (2/2)
+2026-09-19T20:04:29.1348363Z 
+2026-09-19T20:04:29.1382314Z Route (app)                                 Size  First Load JS
+2026-09-19T20:04:29.1383500Z ┌ ○ /                                      896 B         234 kB
+2026-09-19T20:04:29.1384464Z ├ ○ /_not-found                            990 B         103 kB
+2026-09-19T20:04:29.1385420Z ├ ○ /account                             4.39 kB         238 kB
+2026-09-19T20:04:29.1386613Z ├ ○ /account/privacy                     5.01 kB         238 kB
+2026-09-19T20:04:29.1387584Z ├ ○ /account/relationships               4.13 kB         237 kB
+2026-09-19T20:04:29.1388613Z ├ ○ /account/relationships/consent       3.72 kB         237 kB
+2026-09-19T20:04:29.1389713Z ├ ○ /account/relationships/detail        5.05 kB         238 kB
+2026-09-19T20:04:29.1390644Z ├ ○ /legal/privacidad                      164 B         106 kB
+2026-09-19T20:04:29.1394712Z ├ ○ /legal/terminos                        164 B         106 kB
+2026-09-19T20:04:29.1395568Z ├ ○ /login                               2.14 kB         235 kB
+2026-09-19T20:04:29.1396381Z ├ ○ /pro                                   183 B         238 kB
+2026-09-19T20:04:29.1399137Z ├ ○ /pro/advisees                        1.65 kB         239 kB
+2026-09-19T20:04:29.1400177Z ├ ○ /pro/advisees/nutrition              13.9 kB         252 kB
+2026-09-19T20:04:29.1401518Z └ ○ /register                            2.85 kB         236 kB
+2026-09-19T20:04:29.1402748Z + First Load JS shared by all             102 kB
+2026-09-19T20:04:29.1413129Z   ├ chunks/18-322c3a0465595f76.js        46.4 kB
+2026-09-19T20:04:29.1413891Z   ├ chunks/87c73c54-0375ba195de27293.js  54.2 kB
+2026-09-19T20:04:29.1414865Z   └ other shared chunks (total)          1.87 kB
+2026-09-19T20:04:29.1415584Z 
+2026-09-19T20:04:29.1415834Z 
+2026-09-19T20:04:29.1416359Z ○  (Static)  prerendered as static content
+2026-09-19T20:04:29.1417086Z 
+﻿2026-09-19T20:04:29.1964320Z ##[group]Run npm run audit:prod
+2026-09-19T20:04:29.1964681Z ^[[36;1mnpm run audit:prod^[[0m
+2026-09-19T20:04:29.2000788Z shell: /usr/bin/bash -e {0}
+2026-09-19T20:04:29.2001055Z ##[endgroup]
+2026-09-19T20:04:29.3008315Z 
+2026-09-19T20:04:29.3008893Z > be@0.1.0 audit:prod
+2026-09-19T20:04:29.3010500Z > npm audit --omit=dev --audit-level=high -w @be/api && npm audit --omit=dev --audit-level=high -w @be/web && npm audit --omit=dev --audit-level=high -w @be/mobile
+2026-09-19T20:04:29.3011600Z 
+2026-09-19T20:04:29.8982638Z found 0 vulnerabilities
+2026-09-19T20:04:30.4719656Z found 0 vulnerabilities
+2026-09-19T20:04:31.3513212Z # npm audit report
+2026-09-19T20:04:31.3513565Z 
+2026-09-19T20:04:31.3513730Z uuid  <11.1.1
+2026-09-19T20:04:31.3514148Z Severity: moderate
+2026-09-19T20:04:31.3515265Z uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided - https://github.com/advisories/GHSA-w5hq-g745-h8pq
+2026-09-19T20:04:31.3515909Z fix available via `npm audit fix --force`
+2026-09-19T20:04:31.3516323Z Will install expo@46.0.21, which is a breaking change
+2026-09-19T20:04:31.3517025Z node_modules/uuid
+2026-09-19T20:04:31.3517611Z   xcode  >=0.9.2
+2026-09-19T20:04:31.3517880Z   Depends on vulnerable versions of uuid
+2026-09-19T20:04:31.3518163Z   node_modules/xcode
+2026-09-19T20:04:31.3518400Z     @expo/config-plugins  *
+2026-09-19T20:04:31.3518701Z     Depends on vulnerable versions of xcode
+2026-09-19T20:04:31.3519034Z     node_modules/@expo/config-plugins
+2026-09-19T20:04:31.3519487Z       @expo/cli  <=0.0.0-canary-20231123-1b19f96-4 || >=0.0.1-canary-20231125-d600e44
+2026-09-19T20:04:31.3519982Z       Depends on vulnerable versions of @expo/config
+2026-09-19T20:04:31.3520389Z       Depends on vulnerable versions of @expo/config-plugins
+2026-09-19T20:04:31.3520811Z       Depends on vulnerable versions of @expo/inline-modules
+2026-09-19T20:04:31.3521227Z       Depends on vulnerable versions of @expo/metro-config
+2026-09-19T20:04:31.3521650Z       Depends on vulnerable versions of @expo/prebuild-config
+2026-09-19T20:04:31.3522004Z       node_modules/@expo/cli
+2026-09-19T20:04:31.3522349Z         expo  40.0.0-alpha.0 - 40.0.0-beta.5 || >=41.0.0-alpha.0
+2026-09-19T20:04:31.3522748Z         Depends on vulnerable versions of @expo/cli
+2026-09-19T20:04:31.3523123Z         Depends on vulnerable versions of @expo/config
+2026-09-19T20:04:31.3523533Z         Depends on vulnerable versions of @expo/config-plugins
+2026-09-19T20:04:31.3524002Z         Depends on vulnerable versions of @expo/local-build-cache-provider
+2026-09-19T20:04:31.3524461Z         Depends on vulnerable versions of @expo/metro-config
+2026-09-19T20:04:31.3524789Z         node_modules/expo
+2026-09-19T20:04:31.3525139Z       @expo/config  <=0.0.1-canary-20240418-8d74597 || >=3.3.23-alpha.0
+2026-09-19T20:04:31.3525580Z       Depends on vulnerable versions of @expo/config-plugins
+2026-09-19T20:04:31.3525931Z       node_modules/@expo/config
+2026-09-19T20:04:31.3526228Z         @expo/local-build-cache-provider  *
+2026-09-19T20:04:31.3526762Z         Depends on vulnerable versions of @expo/config
+2026-09-19T20:04:31.3527149Z         node_modules/@expo/local-build-cache-provider
+2026-09-19T20:04:31.3527602Z         @expo/metro-config  <=0.0.1-canary-20240418-8d74597 || >=0.1.49-alpha.0
+2026-09-19T20:04:31.3528045Z         Depends on vulnerable versions of @expo/config
+2026-09-19T20:04:31.3528393Z         node_modules/@expo/metro-config
+2026-09-19T20:04:31.3528857Z       @expo/inline-modules  >=0.0.2-canary-20260409-6fc2991
+2026-09-19T20:04:31.3529528Z       Depends on vulnerable versions of @expo/config-plugins
+2026-09-19T20:04:31.3529916Z       node_modules/@expo/inline-modules
+2026-09-19T20:04:31.3530233Z       @expo/prebuild-config  *
+2026-09-19T20:04:31.3530558Z       Depends on vulnerable versions of @expo/config
+2026-09-19T20:04:31.3530967Z       Depends on vulnerable versions of @expo/config-plugins
+2026-09-19T20:04:31.3531339Z       node_modules/@expo/prebuild-config
+2026-09-19T20:04:31.3531532Z 
+2026-09-19T20:04:31.3531679Z 10 moderate severity vulnerabilities
+2026-09-19T20:04:31.3532128Z 
+2026-09-19T20:04:31.3532329Z To address issues that do not require attention, run:
+2026-09-19T20:04:31.3532649Z   npm audit fix
+2026-09-19T20:04:31.3532774Z 
+2026-09-19T20:04:31.3532983Z To address all issues (including breaking changes), run:
+2026-09-19T20:04:31.3533313Z   npm audit fix --force
+﻿2026-09-19T20:04:31.3841152Z Post job cleanup.
+2026-09-19T20:04:31.4965027Z Cache hit occurred on the primary key node-cache-Linux-x64-npm-446a5c95ed38e5e39db37dea5b26e13c84e3bffbfecebd38a2d15c9869244ba0, not saving cache.
+﻿2026-09-19T20:04:31.5122030Z Post job cleanup.
+2026-09-19T20:04:31.5987285Z [command]/usr/bin/git version
+2026-09-19T20:04:31.6022033Z git version 2.55.0
+2026-09-19T20:04:31.6069332Z Temporarily overriding HOME='/home/runner/work/_temp/7b047c82-ce16-4e31-b84a-c90cf8796e88' before making global git config changes
+2026-09-19T20:04:31.6071216Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-19T20:04:31.6075372Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/be/be
+2026-09-19T20:04:31.6110232Z Removing SSH command configuration
+2026-09-19T20:04:31.6116328Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-19T20:04:31.6155858Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-19T20:04:31.6403923Z Removing HTTP extra header
+2026-09-19T20:04:31.6411181Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-19T20:04:31.6459386Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-19T20:04:31.6715504Z Removing includeIf entries pointing to credentials config files
+2026-09-19T20:04:31.6723480Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-19T20:04:31.6755618Z includeif.gitdir:/home/runner/work/be/be/.git.path
+2026-09-19T20:04:31.6757201Z includeif.gitdir:/home/runner/work/be/be/.git/worktrees/*.path
+2026-09-19T20:04:31.6758461Z includeif.gitdir:/github/workspace/.git.path
+2026-09-19T20:04:31.6759552Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-09-19T20:04:31.6769465Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/be/be/.git.path
+2026-09-19T20:04:31.6799989Z /home/runner/work/_temp/git-credentials-43cec2ab-a70c-42dc-b52f-3ef3f3ccacda.config
+2026-09-19T20:04:31.6812400Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/be/be/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-43cec2ab\-a70c\-42dc\-b52f\-3ef3f3ccacda\.config
+2026-09-19T20:04:31.6882750Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/be/be/.git/worktrees/*.path
+2026-09-19T20:04:31.6913545Z /home/runner/work/_temp/git-credentials-43cec2ab-a70c-42dc-b52f-3ef3f3ccacda.config
+2026-09-19T20:04:31.6929168Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/be/be/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-43cec2ab\-a70c\-42dc\-b52f\-3ef3f3ccacda\.config
+2026-09-19T20:04:31.6976280Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-09-19T20:04:31.7005526Z /github/runner_temp/git-credentials-43cec2ab-a70c-42dc-b52f-3ef3f3ccacda.config
+2026-09-19T20:04:31.7024763Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-43cec2ab\-a70c\-42dc\-b52f\-3ef3f3ccacda\.config
+2026-09-19T20:04:31.7056279Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-09-19T20:04:31.7084213Z /github/runner_temp/git-credentials-43cec2ab-a70c-42dc-b52f-3ef3f3ccacda.config
+2026-09-19T20:04:31.7092381Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-43cec2ab\-a70c\-42dc\-b52f\-3ef3f3ccacda\.config
+2026-09-19T20:04:31.7133396Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-19T20:04:31.7378282Z Removing credentials config '/home/runner/work/_temp/git-credentials-43cec2ab-a70c-42dc-b52f-3ef3f3ccacda.config'
+﻿2026-09-19T20:04:31.7532271Z Cleaning up orphan processes

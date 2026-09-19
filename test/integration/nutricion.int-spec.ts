@@ -243,37 +243,61 @@ describe('D4 · cambiar el catálogo no reescribe un plan activado (REG-06-101; 
 });
 
 describe('D9 · el PDP custodia datos de salud (TEST-RNF-SEC-006)', () => {
-  it('un profesional de Entrenamiento con vínculo y B2 vigentes con el mismo asesorado recibe el mismo 404 que ante lo inexistente', async () => {
+  it('un profesional de Entrenamiento con vínculo y B2 vigentes con el mismo asesorado recibe el mismo 404 que ante lo inexistente, en las 18 operaciones sobre un asesorado', async () => {
     const c = await circuitoConPlanActivo(app, 'cruzado');
     const reg = await registrarComida(app, c.ase, c.planId, c.dia).expect(201);
+    const libre = await registrarLibre(app, c.ase, c.planId, 'Una empanada.').expect(201);
+    const revision = await conSesion(app, c.pro.token)
+      .post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`)
+      .send(cuerpoDeRevision([{ type: 'EXECUTION', id: reg.body.data.executionId as string }], 'MAINTAIN'))
+      .expect(201);
     const pt = await prepararProfesional(app, 'pt-cruzado', ['ENTRENAMIENTO']);
     await vinculoCompleto(app, pt, c.ase, 'ENTRENAMIENTO');
-    const inexistente = randomUUID();
-    const pares: [string, string, 'get' | 'post'][] = [
-      [`/api/v1/advisees/${c.ase.id}/nutrition/evaluations`, `/api/v1/advisees/${inexistente}/nutrition/evaluations`, 'get'],
-      [`/api/v1/nutrition/evaluations/${c.evaluationId}`, `/api/v1/nutrition/evaluations/${inexistente}`, 'get'],
-      [`/api/v1/advisees/${c.ase.id}/nutrition/objectives`, `/api/v1/advisees/${inexistente}/nutrition/objectives`, 'get'],
-      [`/api/v1/advisees/${c.ase.id}/nutrition/objectives/effective`, `/api/v1/advisees/${inexistente}/nutrition/objectives/effective`, 'get'],
-      [`/api/v1/advisees/${c.ase.id}/nutrition/plans`, `/api/v1/advisees/${inexistente}/nutrition/plans`, 'get'],
-      [`/api/v1/nutrition/plans/${c.planId}`, `/api/v1/nutrition/plans/${inexistente}`, 'get'],
-      [`/api/v1/nutrition/executions/${reg.body.data.executionId}`, `/api/v1/nutrition/executions/${inexistente}`, 'get'],
-      [`/api/v1/advisees/${c.ase.id}/nutrition/review-context`, `/api/v1/advisees/${inexistente}/nutrition/review-context`, 'get'],
-      [`/api/v1/advisees/${c.ase.id}/nutrition/evaluations`, `/api/v1/advisees/${inexistente}/nutrition/evaluations`, 'post'],
-      [`/api/v1/nutrition/plans/${c.planId}/activate`, `/api/v1/nutrition/plans/${inexistente}/activate`, 'post'],
+    const x = randomUUID();
+    const a = c.ase.id;
+    const correccion = { reason: 'STRUCTURE_FREE_DESCRIPTION', structuredEstimate: { items: [{ catalogItemId: c.pollo, description: 'Empanada', quantity: { value: 90, unit: 'g' } }] }, estimationStatement: 'Estimación.' };
+    // [método, ruta real, ruta con un identificador inexistente, cuerpo válido]: las 18 operaciones NUT del profesional
+    // sobre un asesorado. Las del catálogo no son de un asesorado (403 por especialidad, abajo) y las /me son del titular.
+    const pares: ['get' | 'post' | 'patch', string, string, Record<string, unknown>?][] = [
+      ['post', `/api/v1/advisees/${a}/nutrition/evaluations`, `/api/v1/advisees/${x}/nutrition/evaluations`, cuerpoDeEvaluacion()],
+      ['get', `/api/v1/advisees/${a}/nutrition/evaluations`, `/api/v1/advisees/${x}/nutrition/evaluations`],
+      ['get', `/api/v1/nutrition/evaluations/${c.evaluationId}`, `/api/v1/nutrition/evaluations/${x}`],
+      ['post', `/api/v1/advisees/${a}/nutrition/objectives`, `/api/v1/advisees/${x}/nutrition/objectives`, cuerpoDeObjetivo(c.evaluationId)],
+      ['get', `/api/v1/advisees/${a}/nutrition/objectives/effective`, `/api/v1/advisees/${x}/nutrition/objectives/effective`],
+      ['get', `/api/v1/advisees/${a}/nutrition/objectives`, `/api/v1/advisees/${x}/nutrition/objectives`],
+      ['post', `/api/v1/advisees/${a}/nutrition/plans`, `/api/v1/advisees/${x}/nutrition/plans`, { objectiveVersionId: c.objectiveVersionId, basedOnPlanId: c.planId }],
+      ['get', `/api/v1/advisees/${a}/nutrition/plans`, `/api/v1/advisees/${x}/nutrition/plans`],
+      ['get', `/api/v1/nutrition/plans/${c.planId}`, `/api/v1/nutrition/plans/${x}`],
+      ['patch', `/api/v1/nutrition/plans/${c.planId}`, `/api/v1/nutrition/plans/${x}`, { expectedVersion: 'v2', changes: estructura(c.arroz, c.pollo) }],
+      ['post', `/api/v1/nutrition/plans/${c.planId}/validate`, `/api/v1/nutrition/plans/${x}/validate`, { expectedVersion: 'v2' }],
+      ['post', `/api/v1/nutrition/plans/${c.planId}/activate`, `/api/v1/nutrition/plans/${x}/activate`, { expectedVersion: 'v2' }],
+      ['get', `/api/v1/nutrition/executions/${reg.body.data.executionId}`, `/api/v1/nutrition/executions/${x}`],
+      ['post', `/api/v1/nutrition/executions/${libre.body.data.executionId}/corrections`, `/api/v1/nutrition/executions/${x}/corrections`, correccion],
+      ['get', `/api/v1/advisees/${a}/nutrition/review-context`, `/api/v1/advisees/${x}/nutrition/review-context`],
+      ['post', `/api/v1/advisees/${a}/nutrition/reviews`, `/api/v1/advisees/${x}/nutrition/reviews`, cuerpoDeRevision([], 'MAINTAIN')],
+      ['get', `/api/v1/nutrition/reviews/${revision.body.data.reviewId}`, `/api/v1/nutrition/reviews/${x}`],
+      ['post', `/api/v1/nutrition/reviews/${revision.body.data.reviewId}/apply`, `/api/v1/nutrition/reviews/${x}/apply`, { expectedVersion: 'v1' }],
     ];
-    for (const [real, falso, metodo] of pares) {
-      const cuerpo = metodo === 'post' ? (real.endsWith('/activate') ? { expectedVersion: 'v2' } : cuerpoDeEvaluacion()) : undefined;
-      const a = metodo === 'get' ? await conSesion(app, pt.token).get(real) : await conSesion(app, pt.token).post(real).send(cuerpo);
-      const b = metodo === 'get' ? await conSesion(app, pt.token).get(falso) : await conSesion(app, pt.token).post(falso).send(cuerpo);
-      expect({ ruta: real, status: a.status, body: a.body }).toEqual({ ruta: real, status: 404, body: b.body });
+    const pedir = (metodo: 'get' | 'post' | 'patch', ruta: string, cuerpo?: Record<string, unknown>) =>
+      metodo === 'get' ? conSesion(app, pt.token).get(ruta) : metodo === 'patch' ? patchConSesion(app, pt.token, ruta).send(cuerpo) : conSesion(app, pt.token).post(ruta).send(cuerpo);
+    for (const [metodo, real, falso, cuerpo] of pares) {
+      const r = await pedir(metodo, real, cuerpo);
+      const f = await pedir(metodo, falso, cuerpo);
+      expect({ ruta: real, status: r.status, body: r.body }).toEqual({ ruta: real, status: 404, body: f.body });
     }
+    // Nada cambió del lado del asesorado ni del profesional de Nutrición.
+    const plan = await conSesion(app, c.pro.token).get(`/api/v1/nutrition/plans/${c.planId}`).expect(200);
+    expect(plan.body.data.snapshotDigest).toBe(c.activacion.snapshotDigest);
+    const rev = await conSesion(app, c.pro.token).get(`/api/v1/nutrition/reviews/${revision.body.data.reviewId}`).expect(200);
+    expect(rev.body.data.application).toBeNull();
     // Las denegaciones quedan auditadas con la dimensión desfavorable, que nunca sale en la respuesta.
     const denegadas = await prisma.decisionDeAcceso.findMany({ where: { actorId: pt.id, sujetoId: c.ase.id, resultado: 'DENEGADA' } });
     // Todas las rutas reales dejan su decisión con el titular, también las de un recurso por id (08:491).
     expect(denegadas.length).toBe(pares.length);
     expect(denegadas.every((d) => d.dimensionesDesfavorables.includes('ALCANCE') || d.dimensionesDesfavorables.includes('VINCULO'))).toBe(true);
-    // El catálogo nutricional no es de su especialidad.
+    // El catálogo nutricional (buscar y cargar, API-NUT-13 e INT-NUT-01) no es de su especialidad.
     await conSesion(app, pt.token).get('/api/v1/nutrition/catalog-items').expect(403);
+    await conSesion(app, pt.token).post('/api/v1/nutrition/catalog-items').send({ name: 'Alimento sintético', itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: 100, proteinG: 1, carbohydrateG: 1, fatG: 1 } }).expect(403);
   });
 
   it('otro nutricionista con vínculo propio con el mismo asesorado no ve el plan, la evaluación ni la ingesta del primero (DL-057)', async () => {
@@ -415,6 +439,32 @@ describe('D10 · un reintento no duplica (REG-06-107; TEST-RNF-REC-002)', () => 
     // Misma clave con otro cuerpo: 409 IDEMPOTENCY_KEY_REUSED.
     const reusada = await registrarComida(app, c.ase, c.planId, c.dia, { gramos: 70, clave, ocurrencia }).expect(409);
     expect(reusada.body.error.code).toBe('IDEMPOTENCY_KEY_REUSED');
+  });
+
+  it('activar y aplicar con la misma clave devuelven el mismo resultado sin repetir el efecto', async () => {
+    const c = await circuitoListoParaPlanificar(app, 'reintento-activar');
+    const borrador = await crearBorrador(app, c);
+    const claveDeActivacion = claveDeIdempotencia();
+    const a1 = await activar(app, c.pro, borrador.planId, borrador.version, claveDeActivacion).expect(200);
+    const a2 = await activar(app, c.pro, borrador.planId, borrador.version, claveDeActivacion).expect(200);
+    expect(a2.body).toEqual(a1.body);
+    expect(await prisma.procesoOperativo.count({ where: { asesoradoId: c.ase.id } })).toBe(1);
+    expect(await prisma.eventoDeProceso.count({ where: { procesoId: a1.body.data.processId } })).toBe(1);
+
+    const hoy = await conSesion(app, c.ase.token).get('/api/v1/me/nutrition/today').expect(200);
+    const reg = await registrarComida(app, c.ase, borrador.planId, hoy.body.data.activePlan.dayTypes[0]).expect(201);
+    const revision = await conSesion(app, c.pro.token)
+      .post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`)
+      .send(cuerpoDeRevision([{ type: 'EXECUTION', id: reg.body.data.executionId as string }], 'ADJUST'))
+      .expect(201);
+    const claveDeAplicacion = claveDeIdempotencia();
+    const ruta = `/api/v1/nutrition/reviews/${revision.body.data.reviewId}/apply`;
+    const p1 = await conSesion(app, c.pro.token).post(ruta, claveDeAplicacion).send({ expectedVersion: 'v1' }).expect(200);
+    const p2 = await conSesion(app, c.pro.token).post(ruta, claveDeAplicacion).send({ expectedVersion: 'v1' }).expect(200);
+    expect(p2.body).toEqual(p1.body);
+    // Un solo borrador sucesor y un solo evento de aplicación.
+    expect(await prisma.versionDePlanNutricional.count({ where: { plan: { asesoradoId: c.ase.id }, estado: 'BORRADOR' } })).toBe(1);
+    expect(await prisma.eventoDeProceso.count({ where: { revisionId: revision.body.data.reviewId, tipo: 'ContinuidadOCierreAplicado' } })).toBe(1);
   });
 
   it('REG-06-12: diez borradores simultáneos del mismo plan dejan uno solo', async () => {

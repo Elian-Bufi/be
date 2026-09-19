@@ -290,34 +290,71 @@ if (reg.status !== 201) throw new Error(`registro: ${reg.status} ${reg.cuerpo?.e
 {
   const vinculoPT = await vinculoConConsentimiento(pt, ase, 'ENTRENAMIENTO', 'PLANIFICACION_DEL_ENTRENAMIENTO');
   const falso = randomUUID();
+  const libre = await pedir('POST', '/me/nutrition/executions', {
+    token: ase.token,
+    clave: clave(),
+    superficie: 'APK',
+    cuerpo: { activePlanId: (await pedir('GET', '/me/nutrition/today', { token: ase.token, superficie: 'APK' })).cuerpo.data.activePlan.planId, occurredAt: new Date().toISOString(), recording: { origin: 'OUTSIDE_PRESCRIPTION', mode: 'FREE_DESCRIPTION', description: 'Una empanada.' } },
+  });
+  const periodo = { start: hoyLocal(), end: hoyLocal(), timeZone: ZONA };
+  const cuerpoDeRevision = (evidencia) => ({ period: periodo, evidenceReferences: evidencia, interpretation: 'Interpretación sintética.', result: 'MAINTAIN', rationale: 'Fundamento sintético.', nextAction: { description: 'Seguir igual.' } });
+  const revision = await pedir('POST', `/advisees/${ase.id}/nutrition/reviews`, { token: pn.token, clave: clave(), cuerpo: cuerpoDeRevision([{ type: 'EXECUTION', id: reg.cuerpo.data.executionId }]) });
+  const a = ase.id;
+  // Las 18 operaciones NUT del profesional sobre un asesorado, con cuerpos válidos.
   const pares = [
-    ['GET', `/advisees/${ase.id}/nutrition/evaluations`, `/advisees/${falso}/nutrition/evaluations`],
+    ['POST', `/advisees/${a}/nutrition/evaluations`, `/advisees/${falso}/nutrition/evaluations`, { occurredAt: new Date().toISOString(), context: 'x', assessment: { entries: [{ concept: 'Comidas por día', value: 4, unit: 'comidas', source: 'REPORTED' }] }, evidenceReferences: [], professionalNotes: null }],
+    ['GET', `/advisees/${a}/nutrition/evaluations`, `/advisees/${falso}/nutrition/evaluations`],
     ['GET', `/nutrition/evaluations/${ev.cuerpo.data.evaluationId}`, `/nutrition/evaluations/${falso}`],
-    ['GET', `/advisees/${ase.id}/nutrition/objectives/effective`, `/advisees/${falso}/nutrition/objectives/effective`],
-    ['GET', `/advisees/${ase.id}/nutrition/plans`, `/advisees/${falso}/nutrition/plans`],
+    ['POST', `/advisees/${a}/nutrition/objectives`, `/advisees/${falso}/nutrition/objectives`, { evaluationId: ev.cuerpo.data.evaluationId, effectiveFrom: new Date().toISOString(), effectiveUntil: null, estimatedEnergyRequirement: { value: 2000, unit: 'kcal/day' }, macronutrientDistribution: { protein: { value: 100, unit: 'g/day' }, carbohydrate: { value: 250, unit: 'g/day' }, fat: { value: 60, unit: 'g/day' } }, mealDistribution: null, rationale: 'x', methodStatement: null }],
+    ['GET', `/advisees/${a}/nutrition/objectives/effective`, `/advisees/${falso}/nutrition/objectives/effective`],
+    ['GET', `/advisees/${a}/nutrition/objectives`, `/advisees/${falso}/nutrition/objectives`],
+    ['POST', `/advisees/${a}/nutrition/plans`, `/advisees/${falso}/nutrition/plans`, { objectiveVersionId: objetivo, basedOnPlanId: planId }],
+    ['GET', `/advisees/${a}/nutrition/plans`, `/advisees/${falso}/nutrition/plans`],
     ['GET', `/nutrition/plans/${planId}`, `/nutrition/plans/${falso}`],
+    ['PATCH', `/nutrition/plans/${planId}`, `/nutrition/plans/${falso}`, { expectedVersion: 'v2', changes: estructura(arroz, pollo) }],
+    ['POST', `/nutrition/plans/${planId}/validate`, `/nutrition/plans/${falso}/validate`, { expectedVersion: 'v2' }],
+    ['POST', `/nutrition/plans/${planId}/activate`, `/nutrition/plans/${falso}/activate`, { expectedVersion: 'v2' }],
     ['GET', `/nutrition/executions/${reg.cuerpo.data.executionId}`, `/nutrition/executions/${falso}`],
-    ['GET', `/advisees/${ase.id}/nutrition/review-context`, `/advisees/${falso}/nutrition/review-context`],
-    ['POST', `/nutrition/plans/${planId}/activate`, `/nutrition/plans/${falso}/activate`],
+    ['POST', `/nutrition/executions/${libre.cuerpo.data.executionId}/corrections`, `/nutrition/executions/${falso}/corrections`, { reason: 'STRUCTURE_FREE_DESCRIPTION', structuredEstimate: { items: [{ catalogItemId: pollo, description: 'Empanada', quantity: { value: 90, unit: 'g' } }] }, estimationStatement: 'Estimación.' }],
+    ['GET', `/advisees/${a}/nutrition/review-context`, `/advisees/${falso}/nutrition/review-context`],
+    ['POST', `/advisees/${a}/nutrition/reviews`, `/advisees/${falso}/nutrition/reviews`, cuerpoDeRevision([])],
+    ['GET', `/nutrition/reviews/${revision.cuerpo.data.reviewId}`, `/nutrition/reviews/${falso}`],
+    ['POST', `/nutrition/reviews/${revision.cuerpo.data.reviewId}/apply`, `/nutrition/reviews/${falso}/apply`, { expectedVersion: 'v1' }],
   ];
   const observado = [];
   let todos = true;
-  for (const [metodo, real, inexistente] of pares) {
-    const cuerpo = metodo === 'POST' ? { expectedVersion: 'v2' } : undefined;
-    const a = await pedir(metodo, real, { token: pt.token, cuerpo, clave: metodo === 'POST' ? clave() : undefined });
-    const b = await pedir(metodo, inexistente, { token: pt.token, cuerpo, clave: metodo === 'POST' ? clave() : undefined });
-    const igual = a.status === 404 && b.status === 404 && JSON.stringify(a.cuerpo) === JSON.stringify(b.cuerpo);
+  for (const [metodo, real, inexistente, cuerpo] of pares) {
+    const r = await pedir(metodo, real, { token: pt.token, cuerpo, clave: metodo === 'GET' ? undefined : clave() });
+    const b = await pedir(metodo, inexistente, { token: pt.token, cuerpo, clave: metodo === 'GET' ? undefined : clave() });
+    const igual = r.status === 404 && b.status === 404 && JSON.stringify(r.cuerpo) === JSON.stringify(b.cuerpo);
     todos &&= igual;
-    observado.push(`${metodo} ${real.replace(ase.id, '{asesorado}').replace(/[0-9a-f-]{36}/g, '{id}')}: ${a.status} vs ${b.status}${igual ? ' idénticos' : ' DISTINTOS'}`);
+    observado.push(`${metodo} ${real.replace(ase.id, '{asesorado}').replace(/[0-9a-f-]{36}/g, '{id}')}: ${r.status} vs ${b.status}${igual ? ' idénticos' : ' DISTINTOS'}`);
   }
   // Control positivo: el mismo profesional sí ve el tablero del vínculo que le corresponde (no es una cuenta rota).
   const tablero = await pedir('GET', `/advisees/${ase.id}/dashboard`, { token: pt.token });
   const catalogo = await pedir('GET', '/nutrition/catalog-items', { token: pt.token });
-  registrar('D9', 'Entrenamiento con vínculo, B2 y A3 vigentes: todo lo de nutrición da el mismo 404 que lo inexistente', todos && tablero.status === 200 && catalogo.status === 403, {
-    pares: observado,
-    tableroDelVinculoPropio: tablero.status,
-    catalogoNutricional: catalogo.status,
-  });
+  const cargaDeCatalogo = await pedir('POST', '/nutrition/catalog-items', { token: pt.token, clave: clave(), cuerpo: { name: 'Alimento sintético', itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: 100, proteinG: 1, carbohydrateG: 1, fatG: 1 } } });
+  // Nada cambió: la versión activada conserva su huella y la revisión sigue sin aplicar.
+  const planDespues = await pedir('GET', `/nutrition/plans/${planId}`, { token: pn.token });
+  const revisionDespues = await pedir('GET', `/nutrition/reviews/${revision.cuerpo.data.reviewId}`, { token: pn.token });
+  registrar(
+    'D9',
+    'Entrenamiento con vínculo, B2 y A3 vigentes: las 18 operaciones de nutrición dan el mismo 404 que lo inexistente, y nada cambia',
+    todos &&
+      pares.length === 18 &&
+      tablero.status === 200 &&
+      catalogo.status === 403 &&
+      cargaDeCatalogo.status === 403 &&
+      planDespues.cuerpo.data.snapshotDigest === activacion.cuerpo.data.snapshotDigest &&
+      revisionDespues.cuerpo.data.application === null,
+    {
+      pares: observado,
+      tableroDelVinculoPropio: tablero.status,
+      catalogoNutricional: `buscar ${catalogo.status} · cargar ${cargaDeCatalogo.status}`,
+      huellaDelPlanIntacta: planDespues.cuerpo.data.snapshotDigest === activacion.cuerpo.data.snapshotDigest,
+      revisionSinAplicar: revisionDespues.cuerpo.data.application === null,
+    },
+  );
   await finalizar(ase, vinculoPT);
 }
 

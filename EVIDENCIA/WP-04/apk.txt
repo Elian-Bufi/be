@@ -1,0 +1,20 @@
+# APK de WP-04
+archivo:        be-0.4.0-7b21cc7.apk
+tamaño:         69068214 bytes
+sha256:         446a60c72a9f2c972ef8203b9988e19a2dcb2edf9b25f11993d8ce30e020a99b
+build EAS:      707a9373-00c6-4841-b222-32f55732b3d7 (perfil test; artefacto EAS expira 2026-10-03T19:23:06Z)
+commit:         7b21cc71395cb21bcb15aaa14337d27d92b4714c (rama wp-04, integrada en main por el PR #24, 13d577d)
+release:        https://github.com/Elian-Bufi/be/releases/download/be-apk-0.4.0/be-0.4.0-7b21cc7.apk (no expira)
+verificación:   descarga anónima del release: 200, 69068214 bytes, mismo sha256 (2026-09-19, verificacion-urls.txt)
+construido con: npx eas-cli@24.6.0 build --platform android --profile test, desde la máquina de Dirección con su sesión de EAS.
+                apk.yml sigue sin construir: falta el secreto EXPO_TOKEN.
+
+# app.config embebido (assets/app.config dentro del APK):
+{"name":"BE","slug":"be","owner":"elianbufi","version":"0.4.0","orientation":"portrait","icon":"./assets/icon.png","userInterfaceStyle":"light","android":{"package":"com.elianbufi.be","versionCode":4,"adaptiveIcon":{"foregroundImage":"./assets/android-icon-foreground.png","backgroundColor":"#ffffff"},"predictiveBackGestureEnabled":false},"extra":{"appEnv":"test","apiBaseUrl":"https://be-api-hndp.onrender.com","commit":"7b21cc71395cb21bcb15aaa14337d27d92b4714c","construidoEn":"2026-09-19T19:26:09.326Z","eas":{"projectId":"8ef1d1f5-76e3-4d2b-b305-b07146e97f77"}},"description":"App BE — Expo / React Native (APK por EAS, distribución directa)","sdkVersion":"57.0.0","platforms":["ios","android","web"]}
+
+# Contiene las pantallas de WP-04. Búsqueda de texto ASCII en assets/index.android.bundle (bytecode Hermes 98; las
+# cadenas con tildes se guardan en UTF-16 y no aparecen en esta búsqueda): «Tu plan de hoy», «Agregar comida fuera
+# del plan», «Volver a Hoy» y la ruta «registro-nutricional».
+
+# Sin credenciales: 0 coincidencias de EXPO_TOKEN, JWT_SECRET, claves privadas, la contraseña de la base local ni
+# ninguna de las contraseñas demo. La API se autentica por la sesión de la persona.
