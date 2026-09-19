@@ -28,7 +28,7 @@
     "prisma:generate": "prisma generate",
     "build:domain": "npm run build -w @be/domain",
     "build:api": "npm run build:domain && npm run build -w @be/api",
-    "build:web": "npm run build -w @be/web",
+    "build:web": "npm run build:domain && npm run build -w @be/web",
     "typecheck": "npm run build:domain && npm run typecheck --workspaces --if-present",
     "test": "npm run build:domain && npm run test -w @be/domain && npm run test -w @be/api",
     "test:integration": "npm run build:domain && npm run test:integration -w @be/api",

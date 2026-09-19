@@ -48,12 +48,14 @@ services:
     name: be-web
     runtime: static
     branch: main
-    buildCommand: npm ci -w @be/web --include-workspace-root && npm run build -w @be/web
+    # El website compila contra los contratos de @be/domain (09v7 T21): se construye primero el dominio.
+    buildCommand: npm ci -w @be/web -w @be/domain --include-workspace-root && npm run build -w @be/domain && npm run build -w @be/web
     staticPublishPath: ./apps/web/out
     autoDeployTrigger: checksPass
     buildFilter:
       paths:
         - apps/web/**
+        - packages/domain/**
         - package.json
         - package-lock.json
     envVars:

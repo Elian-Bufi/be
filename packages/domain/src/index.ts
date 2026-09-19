@@ -6,3 +6,5 @@ export * from './acto-registrable';
 export * from './identificador';
 export * from './procedencia';
 export * from './contratos';
+export * from './cliente-http';
+export * from './copy';

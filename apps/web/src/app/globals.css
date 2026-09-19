@@ -1,8 +1,16 @@
 :root {
   --azul: #1f5bc4;
+  --azul-oscuro: #17459a;
   --texto: #111827;
-  --tenue: #6b7280;
+  --tenue: #4b5563;
+  --borde: #d1d5db;
   --fondo: #ffffff;
+  --fondo-suave: #f3f6fb;
+  --error: #b42318;
+  --error-fondo: #fef3f2;
+  --exito: #067647;
+  --exito-fondo: #ecfdf3;
+  --foco: #f59e0b;
   color-scheme: light;
 }
 
@@ -16,8 +24,26 @@ body {
   background: var(--fondo);
   color: var(--texto);
   font-family: Inter, 'Segoe UI', Roboto, Arial, sans-serif;
+  line-height: 1.5;
 }
 
+a {
+  color: var(--azul-oscuro);
+}
+
+:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+code {
+  font-size: 0.9em;
+  background: var(--fondo-suave);
+  padding: 0 0.25em;
+  border-radius: 4px;
+}
+
+/* ─── Inicio ──────────────────────────────────────────────────────────── */
 .pantalla {
   min-height: 100dvh;
   display: flex;
@@ -51,4 +77,319 @@ h1 {
   color: var(--tenue);
   font-variant-numeric: tabular-nums;
   word-break: break-all;
+}
+
+/* ─── Estructura ──────────────────────────────────────────────────────── */
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 6px solid var(--azul);
+  border-bottom: 1px solid var(--borde);
+}
+
+.encabezado__marca {
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: var(--azul);
+  text-decoration: none;
+}
+
+.encabezado__ambiente {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--tenue);
+}
+
+.contenido {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 3rem;
+}
+
+.nota {
+  color: var(--tenue);
+  font-size: 0.9rem;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+/* ─── Botones: jerarquía por texto y forma, no solo por color (10-B04:1218-1233) ─── */
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.boton:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.boton--primario {
+  background: var(--azul);
+  color: #fff;
+}
+
+.boton--primario:hover:not(:disabled) {
+  background: var(--azul-oscuro);
+}
+
+.boton--secundario {
+  background: #fff;
+  color: var(--azul-oscuro);
+  border-color: var(--azul);
+}
+
+.boton--peligro {
+  background: var(--error);
+  color: #fff;
+}
+
+.boton--peligro-secundario {
+  background: #fff;
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.boton--enlace {
+  min-height: auto;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--azul-oscuro);
+  text-decoration: underline;
+}
+
+/* ─── Formularios (10-B10 §6-§8) ─────────────────────────────────────── */
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.campo label {
+  font-weight: 600;
+}
+
+.campo input {
+  font: inherit;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  max-width: 100%;
+}
+
+.campo--error input,
+.acto.campo--error {
+  border-color: var(--error);
+  border-width: 2px;
+}
+
+.campo__ayuda {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--tenue);
+}
+
+.campo__error {
+  margin: 0.25rem 0 0;
+  color: var(--error);
+  font-weight: 600;
+}
+
+.actos {
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.actos legend {
+  font-weight: 700;
+  padding: 0 0.25rem;
+}
+
+.acto {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--fondo-suave);
+}
+
+.acto input[type='checkbox'] {
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-top: 0.15rem;
+}
+
+.acto__version,
+.acto .campo__error {
+  grid-column: 2;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* ─── Avisos ─────────────────────────────────────────────────────────── */
+.aviso {
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  border-left: 6px solid var(--azul);
+  background: var(--fondo-suave);
+  margin: 0.5rem 0;
+}
+
+.aviso p {
+  margin: 0.25rem 0;
+}
+
+.aviso ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.aviso--error {
+  border-left-color: var(--error);
+  background: var(--error-fondo);
+}
+
+.aviso--exito {
+  border-left-color: var(--exito);
+  background: var(--exito-fondo);
+}
+
+.aviso__titulo {
+  font-weight: 700;
+}
+
+/* ─── Cuenta ─────────────────────────────────────────────────────────── */
+.secciones {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.seccion {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+}
+
+.seccion h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.seccion h3 {
+  margin: 0.5rem 0;
+  font-size: 1.05rem;
+}
+
+.seccion--cierre {
+  border-color: var(--error);
+}
+
+.datos {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.datos div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.datos dt {
+  font-weight: 600;
+  min-width: 10rem;
+}
+
+.datos dd {
+  margin: 0;
+}
+
+.datos--compactos {
+  font-size: 0.9rem;
+  color: var(--tenue);
+}
+
+.huella {
+  word-break: break-all;
+}
+
+.insignia {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+  border: 2px solid currentColor;
+}
+
+.insignia--no {
+  color: var(--tenue);
+}
+
+.insignia--si {
+  color: var(--exito);
+}
+
+details summary {
+  cursor: pointer;
+  color: var(--azul-oscuro);
+}
+
+.texto-legal p {
+  white-space: pre-line;
+}
+
+.dialogo {
+  max-width: min(36rem, calc(100vw - 2rem));
+  border: none;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 20px 50px rgb(0 0 0 / 30%);
+}
+
+.dialogo::backdrop {
+  background: rgb(17 24 39 / 55%);
+}
+
+.dialogo h2 {
+  margin-top: 0;
+}
+
+@media (max-width: 30rem) {
+  .acciones .boton {
+    width: 100%;
+  }
 }
