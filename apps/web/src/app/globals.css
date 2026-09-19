@@ -245,13 +245,15 @@ h1 {
   background: var(--fondo-suave);
 }
 
-.acto input[type='checkbox'] {
+.acto input[type='checkbox'],
+.acto input[type='radio'] {
   width: 1.4rem;
   height: 1.4rem;
   margin-top: 0.15rem;
 }
 
 .acto__version,
+.acto .campo__ayuda,
 .acto .campo__error {
   grid-column: 2;
   margin: 0;
