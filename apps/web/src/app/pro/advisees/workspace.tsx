@@ -4,8 +4,8 @@
  * Website `/pro/advisees?id=…` — workspace del asesorado (10-B01:746 como query por el export estático; DL-041):
  * - Encabezado con cada vínculo por alcance y su estado mínimo (10-B04 §28-§29; H10-04-04). El profesional ve
  *   «Acceso no disponible» sin la causa: nunca `B2=true` ni `PDP=DENY`.
- * - «Resumen» (API-DSH-03 mínimo, DL-031): cada lectura pasa por el PDP, sin caché (T-PDP-1). Sin datos de dominio
- *   todavía (RF-053: los faltantes se muestran como tales). Los dominios no disponibles no se listan: se avisa la
+ * - «Resumen» (API-DSH-03 mínimo, DL-031): cada lectura pasa por el PDP, sin caché (T-PDP-1). Desde WP-04, Nutrición
+ *   abre su pestaña (B10-05); los demás dominios siguen sin datos (RF-053: los faltantes se muestran como tales). Los dominios no disponibles no se listan: se avisa la
  *   vista parcial, sin «Datos ocultos: …» (10-B04 §41).
  * - 404 = no hay nada que mostrar: el mismo texto neutral para inexistente, ajeno, revocado o finalizado
  *   (UC-I02 E05; 10-B10:407). Es el estado que se ve cuando el asesorado revoca: el corte no espera a la sesión.
@@ -105,7 +105,13 @@ export function Workspace() {
               {ALCANCES.filter((a) => resumen.datos.domains[CLAVE_DE_DOMINIO[a]].available).map((a) => (
                 <div key={a}>
                   <dt>{ETIQUETA_DE_ALCANCE[a]}</dt>
-                  <dd>{COPY_VINCULO.sinDatosTodavia}</dd>
+                  <dd>
+                    {a === 'NUTRICION' ? (
+                      <Link href={`/pro/advisees/nutrition?id=${encodeURIComponent(id)}`}>Abrir Nutrición</Link>
+                    ) : (
+                      COPY_VINCULO.sinDatosTodavia
+                    )}
+                  </dd>
                 </div>
               ))}
             </dl>
