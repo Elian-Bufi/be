@@ -62,7 +62,7 @@ Con WP-03, **8 de los 10 adversariales de DV-05** son ejecutables en vivo: 1, 2,
 
 ### Casos del catálogo que WP-04 ejecuta
 
-CI del PR #26: integración en PostgreSQL 16 real. El detalle por ID está en `EVIDENCIA/WP-04/resultados-integracion-*.md`, que agrupa cada prueba por el primer ID de su título. Los TEST-RF y TEST-NUT se verifican como pasos de E2E-04: cada paso está marcado con su ID en `test/integration/nutricion.int-spec.ts`.
+CI del PR #26 (`9ed2305`): integración **240/240** en PostgreSQL 16 real. El detalle por ID está en `EVIDENCIA/WP-04/resultados-integracion-*.md`, que agrupa cada prueba por el primer ID de su título. Los TEST-RF y TEST-NUT se verifican como pasos de E2E-04: cada paso está marcado con su ID en `test/integration/nutricion.int-spec.ts`.
 
 | Caso | Oráculo | Estado |
 |---|---|---|
