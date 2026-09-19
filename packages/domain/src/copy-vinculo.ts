@@ -76,6 +76,12 @@ export const COPY_VINCULO = {
   /** 10-B04:728. */
   explicacionDeReanudacion:
     'Reanudar el vínculo no restaura automáticamente permisos anteriores. BE volverá a comprobar el consentimiento y las condiciones vigentes cuando se intente acceder.',
+  /** 10-B04 §24, «en lenguaje más simple para el usuario». */
+  reanudacionSimple: 'Al reanudar, el acceso dependerá de que las autorizaciones necesarias sigan vigentes.',
+  /** Éxito de la reanudación: el 10 no lo diseña (DL-024). */
+  vinculoReanudado: 'Vínculo reanudado',
+  /** CON-02 sobre un consentimiento vigente con la misma versión: nada que decidir (DL-024). */
+  yaAutorizado: 'Ya autorizaste este acceso con la versión vigente.',
   /** Solo reanuda quien pausó (DL-033). Sin copy en el 10. */
   soloReanudaQuienPauso: 'Este vínculo lo pausó la otra parte. Solo quien lo pausó puede reanudarlo.',
   /** 10-B04:753-758. */
@@ -102,6 +108,10 @@ export const COPY_VINCULO = {
     'Las funciones que requieren tratamiento de datos de salud quedaron bloqueadas. Podés revisar tus opciones de privacidad y, cuando corresponda, volver a autorizar mediante un nuevo acto.',
   /** 10-B02:539. */
   historialA3Vacio: 'Todavía no hay actos registrados de autorización de datos de salud.',
+  /** 10-B02 §11: reotorgar es un acto nuevo; la historia anterior permanece. */
+  autorizarA3Nuevamente: 'Autorizar nuevamente',
+  /** Éxito de CON-06: el 10-B02 no lo diseña (DL-024). */
+  a3Otorgada: 'Autorización registrada.',
 
   // ─── Estados (10-B04 §28-§29, §38; H10-04-04) ───────────────────────────────────────────────
   /** 10-B04:654-668, estados de vínculo en la UI. */
@@ -150,3 +160,75 @@ export const COPY_VINCULO = {
   enviando: 'Enviando…',
   procesando: 'Procesando…',
 } as const;
+
+// ─── Historial mínimo (10-B04:627-638) ────────────────────────────────────────────────────────
+/**
+ * Cada hecho del historial con una etiqueta humana: la UI nunca muestra el nombre técnico del evento. Las claves son
+ * los eventos de las tres máquinas del 06 (§7.3.2, §7.5.2, §7.7.5); una prueba verifica que no falte ninguno.
+ */
+export const ETIQUETA_DE_EVENTO_DE_VINCULO: Readonly<Record<string, string>> = {
+  SolicitudDeVinculoCreada: 'Solicitud enviada',
+  SolicitudDeVinculoAceptada: 'Solicitud aceptada',
+  SolicitudDeVinculoRechazada: 'Solicitud rechazada',
+  SolicitudDeVinculoCaducada: 'Solicitud caducada',
+  SolicitudDeVinculoInvalidada: 'Solicitud sin efecto',
+  AlcanceDeVinculoAceptado: 'Vínculo iniciado',
+  AlcanceDeVinculoPausado: 'Vínculo pausado',
+  AlcanceDeVinculoReanudado: 'Vínculo reanudado',
+  AlcanceDeVinculoFinalizado: 'Vínculo finalizado',
+  ConsentimientoOtorgado: 'Acceso autorizado',
+  NuevaVersionDeConsentimientoAceptada: 'Nueva versión del consentimiento aceptada',
+  ConsentimientoRevocado: 'Acceso revocado',
+  ConsentimientoOtorgadoNuevamente: 'Acceso autorizado nuevamente',
+};
+
+/** Un evento que esta versión de la UI no conoce se muestra sin su nombre técnico. */
+export function etiquetaDeEvento(evento: string): string {
+  return Object.hasOwn(ETIQUETA_DE_EVENTO_DE_VINCULO, evento) ? (ETIQUETA_DE_EVENTO_DE_VINCULO[evento] as string) : 'Cambio registrado';
+}
+
+export type ParteQueMira = 'PROFESSIONAL' | 'ADVISEE';
+
+/** Quién hizo cada cambio, dicho desde la parte que mira. `SYSTEM` es BE (vencimiento, cierre de cuenta). */
+export function etiquetaDeActor(actor: 'PROFESSIONAL' | 'ADVISEE' | 'SYSTEM', quienMira: ParteQueMira): string {
+  if (actor === 'SYSTEM') return 'BE';
+  if (actor === quienMira) return 'Vos';
+  return actor === 'PROFESSIONAL' ? 'El profesional' : 'El asesorado';
+}
+
+// ─── Estado de acceso para mostrar (10-B04 §28-§29, §15; H10-04-04) ─────────────────────────
+export interface EstadoParaMostrar {
+  readonly estado: string;
+  readonly detalle: string | null;
+}
+
+interface EstadoDeUnVinculo {
+  readonly relationshipState: 'ACEPTADO' | 'PAUSADO' | 'FINALIZADO';
+  readonly consentState: 'REQUIRED' | 'ACTIVE' | 'REVOKED';
+  readonly accessMode: 'BLOCKED' | 'CONTEXTUAL';
+}
+
+/**
+ * «Header → estado de vínculo → estado mínimo de autorización» (10-B04 §28), igual en el website y en el APK.
+ * - Profesional: los estados de H10-04-04. «Acceso no disponible» no dice por qué: una suspensión, la A3 revocada o
+ *   una habilitación retirada se ven igual (UC-I02 E05). Nunca `B2=true` ni `PDP=DENY`.
+ * - Asesorado: el estado del vínculo y el de su consentimiento. «No efectivo» es un consentimiento activo que hoy no
+ *   habilita el acceso, sin sugerir que fue revocado (10-B04:538-553).
+ */
+export function estadoParaMostrar(v: EstadoDeUnVinculo, quienMira: ParteQueMira): EstadoParaMostrar {
+  if (quienMira === 'PROFESSIONAL') {
+    if (v.relationshipState === 'FINALIZADO') return { estado: COPY_VINCULO.estadoDeVinculo.FINALIZADO, detalle: null };
+    if (v.relationshipState === 'PAUSADO') return { estado: COPY_VINCULO.pausadoSinAcceso, detalle: null };
+    if (v.consentState === 'REQUIRED') return { estado: COPY_VINCULO.vinculoActivoAccesoPendiente, detalle: COPY_VINCULO.accesoPendienteDelAsesorado };
+    if (v.consentState === 'REVOKED') return { estado: 'Consentimiento revocado', detalle: COPY_VINCULO.accesoNoDisponible };
+    if (v.accessMode === 'CONTEXTUAL') return { estado: COPY_VINCULO.accesoContextual, detalle: null };
+    return { estado: COPY_VINCULO.vinculoActivoAccesoPendiente, detalle: COPY_VINCULO.accesoNoDisponible };
+  }
+  return { estado: COPY_VINCULO.estadoDeVinculo[v.relationshipState], detalle: `Consentimiento: ${etiquetaDeConsentimiento(v.consentState, v.accessMode).toLowerCase()}` };
+}
+
+/** Estado del consentimiento en la pantalla del asesorado (10-B04:538-553). */
+export function etiquetaDeConsentimiento(estado: 'REQUIRED' | 'ACTIVE' | 'REVOKED', accessMode: 'BLOCKED' | 'CONTEXTUAL'): string {
+  if (estado === 'ACTIVE') return accessMode === 'CONTEXTUAL' ? COPY_VINCULO.estadoDeConsentimiento.ACTIVE : COPY_VINCULO.estadoDeConsentimiento.NO_EFECTIVO;
+  return COPY_VINCULO.estadoDeConsentimiento[estado];
+}

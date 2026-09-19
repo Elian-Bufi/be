@@ -1,16 +1,22 @@
 'use client';
 
 /**
- * Website `/account` (DL-025 A): Estado · Privacidad · Seguridad · Cerrar mi cuenta.
+ * Website `/account` (DL-025 A): Estado · Tu identificador BE · Privacidad · Seguridad · Cerrar mi cuenta.
  * - Estado: solo el estado operativo (TEST-RF-006: nunca «habilitado»).
- * - Privacidad: A3 desde CON-05; `currentConsent: null` = no otorgado. Sin CTA de otorgamiento (DL-024).
+ * - Tu identificador BE (DL-035): lo que el asesorado comparte con el profesional para recibir una solicitud. Por sí
+ *   solo no da acceso a nada: el acceso exige vínculo aceptado y consentimiento (RF-021).
+ * - Privacidad: resumen de A3 desde CON-05 (`currentConsent: null` = no otorgado). La gestión de A3 y de los
+ *   consentimientos a profesionales vive en /account/privacy (WP-03; PROTO-10-ACC-03/04 cierran la mitad A3 de DL-024).
+ * - Espacio profesional: el enlace aparece solo si la API informa la capacidad, y no autoriza nada (09v8 ACC-05).
  * - Seguridad: cerrar sesión / cerrar todas, separado de «Cerrar mi cuenta» (10-B02:436-458; 10-B10:297-339).
  * - Cierre (PROTO-10-ACC-06, 10-ADD): explicación → diálogo con consecuencias versionadas → confirmación explícita.
  * Carga con estructura real y sin datos ficticios; error con «Reintentar» (10-B10:343-378).
  */
-import { CODIGOS_DE_SESION_NO_VALIDA, VERSION_VIGENTE, type MeResponse, type RequisitoDeConsentimientoDeSaludResponse } from '@be/domain';
+import { CODIGOS_DE_SESION_NO_VALIDA, COPY_VINCULO, VERSION_VIGENTE, type MeResponse, type RequisitoDeConsentimientoDeSaludResponse } from '@be/domain';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ErrorConReintento } from '../../components/estados';
 import { Aviso } from '../../components/formulario';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../lib/api';
 import { COPY } from '../../lib/copy';
@@ -115,7 +121,16 @@ export function Cuenta() {
           </dl>
         ) : null}
         <p className="nota">El estado operativo indica si podés usar tu cuenta. No es una habilitación profesional ni una autorización sobre datos.</p>
+        {cuenta.tipo === 'listo' && cuenta.datos.actorCapabilities.includes('PROFESSIONAL_WORKSPACE') ? (
+          <p>
+            <Link className="boton boton--secundario" href="/pro">
+              Ir al espacio profesional
+            </Link>
+          </p>
+        ) : null}
       </section>
+
+      {cuenta.tipo === 'listo' ? <TuIdentificador identityId={cuenta.datos.identityId} /> : null}
 
       <section className="seccion" aria-labelledby="titulo-privacidad">
         <h2 id="titulo-privacidad">Privacidad</h2>
@@ -123,6 +138,9 @@ export function Cuenta() {
         {a3.tipo === 'cargando' ? <p aria-busy="true">Cargando…</p> : null}
         {a3.tipo === 'error' ? <ErrorConReintento mensaje={COPY.errorA3} onReintentar={cargarA3} /> : null}
         {a3.tipo === 'listo' ? <EstadoA3 datos={a3.datos} /> : null}
+        <p>
+          <Link href="/account/privacy">Gestionar privacidad y consentimientos</Link>
+        </p>
       </section>
 
       <section className="seccion" aria-labelledby="titulo-seguridad">
@@ -168,16 +186,39 @@ function EstadoA3({ datos }: { datos: RequisitoDeConsentimientoDeSaludResponse['
   );
 }
 
-function ErrorConReintento({ mensaje = COPY.errorDeVista, onReintentar }: { mensaje?: string; onReintentar: () => void }) {
+/**
+ * «Tu identificador BE» (DL-035): se comparte con el profesional para que pueda enviar la solicitud. Copiar es una
+ * comodidad; si el portapapeles no está disponible, el texto queda seleccionable.
+ */
+function TuIdentificador({ identityId }: { identityId: string }) {
+  const [copiado, setCopiado] = useState<'no' | 'si' | 'error'>('no');
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(identityId);
+      setCopiado('si');
+    } catch {
+      setCopiado('error');
+    }
+  }
   return (
-    <Aviso tipo="error">
+    <section className="seccion" aria-labelledby="titulo-identificador">
+      <h2 id="titulo-identificador">{COPY_VINCULO.tuIdentificador}</h2>
       <p>
-        {mensaje}{' '}
-        <button type="button" className="boton boton--enlace" onClick={onReintentar}>
-          {COPY.reintentar}
-        </button>
+        <code className="identificador">{identityId}</code>
       </p>
-    </Aviso>
+      <p className="nota">{COPY_VINCULO.ayudaTuIdentificador}</p>
+      <div className="acciones">
+        <button type="button" className="boton boton--secundario" onClick={copiar}>
+          Copiar identificador
+        </button>
+        <Link className="boton boton--secundario" href="/account/relationships">
+          Ver vínculos
+        </Link>
+      </div>
+      <p role="status" className="nota">
+        {copiado === 'si' ? 'Identificador copiado.' : copiado === 'error' ? 'No pudimos copiarlo: seleccionalo y copialo a mano.' : ''}
+      </p>
+    </section>
   );
 }
 

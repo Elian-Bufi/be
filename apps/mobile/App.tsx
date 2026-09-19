@@ -1,7 +1,12 @@
 /**
- * APK BE — WP-02: Bienvenida · Crear cuenta · Iniciar sesión · Cuenta (docs/paquetes/WP-02.md §5).
- * La sesión (Bearer) vive solo en memoria (DL-012, T5): cerrar la app exige volver a iniciar sesión. Nunca se guarda un
- * «rol autorizado» en el cliente: la API verifica la sesión en cada request.
+ * APK BE — WP-02 · WP-03.
+ * - WP-02 (docs/paquetes/WP-02.md §5): Bienvenida · Crear cuenta · Iniciar sesión · Cuenta.
+ * - WP-03 (docs/paquetes/WP-03.md §5): Cuenta → Vínculos (solicitudes recibidas, detalle de vínculo, pausa, reanudación
+ *   y finalización) → Consentimiento; Cuenta → Privacidad (A3 y consentimientos a profesionales); Cuenta → «Tu
+ *   identificador BE».
+ * La sesión (Bearer) y el identificador de la identidad viven solo en memoria (DL-012, T5): cerrar la app exige volver a
+ * iniciar sesión. Nunca se guarda un «rol autorizado» en el cliente: la API verifica la sesión y decide cada acceso en
+ * cada request; ocultar un botón no concede ni quita nada.
  * Identidad del build visible en Bienvenida (07 §34, TEST-APK-008).
  */
 import Constants from 'expo-constants';
@@ -9,12 +14,15 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { apiConfigurada, extra } from './src/api';
-import { PantallaDeCuenta, type Salida } from './src/pantallas/cuenta';
+import { anterior, requiereSesion, textoDeVolverA, type Ruta, type Salida } from './src/navegacion';
+import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
+import { PantallaDeCuenta } from './src/pantallas/cuenta';
 import { PantallaDeLogin } from './src/pantallas/login';
+import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRegistro } from './src/pantallas/registro';
+import { PantallaDeVinculo } from './src/pantallas/vinculo';
+import { PantallaDeVinculos } from './src/pantallas/vinculos';
 import { Aviso, Boton, COLOR, Parrafo } from './src/ui';
-
-type Ruta = { nombre: 'bienvenida'; aviso?: string } | { nombre: 'registro' } | { nombre: 'login'; aviso?: string } | { nombre: 'cuenta' };
 
 const AVISOS: Record<Salida, string> = {
   'sesion-cerrada': 'Cerraste la sesión.',
@@ -27,14 +35,25 @@ const AVISOS: Record<Salida, string> = {
 const version = Constants.expoConfig?.version ?? 'no declarada';
 const commit = extra.commit ? extra.commit.slice(0, 7) : 'no declarado';
 
+interface Sesion {
+  readonly token: string;
+  readonly expiraEn: number;
+  readonly identidadId: string;
+}
+
 export default function App() {
   const [ruta, setRuta] = useState<Ruta>({ nombre: 'bienvenida' });
-  const [sesion, setSesion] = useState<{ token: string; expiraEn: number } | null>(null);
+  const [sesion, setSesion] = useState<Sesion | null>(null);
   const desplazamiento = useRef<ScrollView>(null);
 
   const ir = useCallback((r: Ruta) => {
     setRuta(r);
     desplazamiento.current?.scrollTo({ y: 0, animated: false });
+  }, []);
+
+  /** Lleva la pantalla al principio, donde cada pantalla deja el resultado de una acción. */
+  const subir = useCallback(() => {
+    desplazamiento.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
   // Al vencer, el token se descarta (la API lo rechazaría igual).
@@ -47,14 +66,14 @@ export default function App() {
     return () => clearTimeout(t);
   }, [sesion, ir]);
 
-  // Botón «atrás» de Android: vuelve a Bienvenida desde las pantallas públicas; en Cuenta no cierra la sesión.
+  // Botón «atrás» de Android: vuelve a la pantalla lógica anterior (src/navegacion.ts) y nunca cierra la sesión. En
+  // Bienvenida y en Cuenta no hay anterior y decide el sistema.
   useEffect(() => {
     const suscripcion = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (ruta.nombre === 'registro' || ruta.nombre === 'login') {
-        ir({ nombre: 'bienvenida' });
-        return true;
-      }
-      return false;
+      const destino = anterior(ruta);
+      if (!destino) return false;
+      ir(destino);
+      return true;
     });
     return () => suscripcion.remove();
   }, [ruta, ir]);
@@ -66,6 +85,11 @@ export default function App() {
     },
     [ir],
   );
+
+  const destinoAnterior = anterior(ruta);
+  const volver = () => {
+    if (destinoAnterior) ir(destinoAnterior);
+  };
 
   return (
     <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -96,23 +120,35 @@ export default function App() {
           </View>
         ) : null}
 
-        {ruta.nombre === 'registro' ? (
-          <PantallaDeRegistro irALogin={() => ir({ nombre: 'login' })} mostrarAviso={() => desplazamiento.current?.scrollTo({ y: 0, animated: true })} />
-        ) : null}
+        {ruta.nombre === 'registro' ? <PantallaDeRegistro irALogin={() => ir({ nombre: 'login' })} mostrarAviso={subir} /> : null}
 
         {ruta.nombre === 'login' ? (
           <PantallaDeLogin
             aviso={ruta.aviso}
             irARegistro={() => ir({ nombre: 'registro' })}
-            alIniciar={(token, expiresAt) => {
-              setSesion({ token, expiraEn: new Date(expiresAt).getTime() });
+            alIniciar={(token, expiresAt, identidadId) => {
+              setSesion({ token, expiraEn: new Date(expiresAt).getTime(), identidadId });
               ir({ nombre: 'cuenta' });
             }}
           />
         ) : null}
 
-        {ruta.nombre === 'cuenta' && sesion ? <PantallaDeCuenta token={sesion.token} salir={salir} /> : null}
-        {ruta.nombre === 'cuenta' && !sesion ? (
+        {requiereSesion(ruta) && sesion ? (
+          <>
+            {/* Volver sin depender del botón ni de un gesto del sistema (10-B10 §9). */}
+            {destinoAnterior ? <Boton texto={textoDeVolverA(destinoAnterior)} tipo="enlace" onPress={volver} /> : null}
+            {ruta.nombre === 'cuenta' ? <PantallaDeCuenta token={sesion.token} salir={salir} ir={ir} /> : null}
+            {ruta.nombre === 'vinculos' ? <PantallaDeVinculos token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} subir={subir} /> : null}
+            {ruta.nombre === 'vinculo' ? (
+              <PantallaDeVinculo key={ruta.id} token={sesion.token} identidadId={sesion.identidadId} id={ruta.id} salir={salir} ir={ir} volver={volver} subir={subir} />
+            ) : null}
+            {ruta.nombre === 'consentimiento' ? (
+              <PantallaDeConsentimiento key={ruta.vinculoId} token={sesion.token} vinculoId={ruta.vinculoId} salir={salir} ir={ir} volver={volver} subir={subir} />
+            ) : null}
+            {ruta.nombre === 'privacidad' ? <PantallaDePrivacidad token={sesion.token} salir={salir} ir={ir} volver={volver} /> : null}
+          </>
+        ) : null}
+        {requiereSesion(ruta) && !sesion ? (
           <Aviso tipo="info" titulo={AVISOS['sesion-no-valida']}>
             <Boton texto="Iniciar sesión" onPress={() => ir({ nombre: 'login' })} />
           </Aviso>

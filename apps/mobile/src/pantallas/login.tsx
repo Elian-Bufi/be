@@ -12,7 +12,8 @@ export function PantallaDeLogin({
   irARegistro,
 }: {
   aviso?: string;
-  alIniciar: (token: string, expiresAt: string) => void;
+  /** El identificador de la identidad solo sirve para mostrar lo propio (por ejemplo, los vínculos donde es asesorado). */
+  alIniciar: (token: string, expiresAt: string, identidadId: string) => void;
   irARegistro: () => void;
 }) {
   const [correo, setCorreo] = useState('');
@@ -29,7 +30,7 @@ export function PantallaDeLogin({
     setEnviando(false);
     if (r.ok) {
       setContrasena('');
-      return alIniciar(r.datos.data.session.accessToken, r.datos.data.session.expiresAt);
+      return alIniciar(r.datos.data.session.accessToken, r.datos.data.session.expiresAt, r.datos.data.actor.identityId);
     }
     if (r.tipo === 'RED') return setError(COPY.resultadoIncierto);
     if (r.codigo === 'RATE_LIMITED') return setError(COPY.demasiadosIntentos);

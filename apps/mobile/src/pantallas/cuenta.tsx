@@ -1,22 +1,30 @@
 /**
- * APK · Cuenta: Estado · Privacidad · Seguridad · Cerrar mi cuenta (docs/paquetes/WP-02.md §5).
+ * APK · Cuenta: Vínculos · Estado · Tu identificador BE · Privacidad · Seguridad · Cerrar mi cuenta
+ * (docs/paquetes/WP-02.md §5; docs/paquetes/WP-03.md §5).
  * - Estado: solo el estado operativo, nunca «habilitado» (TEST-RF-006).
- * - Privacidad: A3 desde CON-05; `currentConsent: null` = no otorgado; sin CTA de otorgamiento (DL-024).
+ * - Tu identificador BE: el que el profesional necesita para solicitar un vínculo (DL-035). Por sí solo no da acceso a
+ *   nada; se muestra seleccionable y se comparte con el menú del sistema.
+ * - Privacidad: resumen de A3 desde CON-05 (`currentConsent: null` = no otorgado) y el acceso a «Privacidad y
+ *   consentimientos», donde A3 ya tiene su CTA de otorgamiento y de revocación (PROTO-10-ACC-03/04 cierran la mitad A3
+ *   de DL-024).
  * - Seguridad: cerrar sesión / cerrar todas, separado del cierre de cuenta (10-B02:436-458).
  * - Cierre (PROTO-10-ACC-06): explicación → modal con consecuencias versionadas → «Confirmar cierre».
  */
 import {
-  CODIGOS_DE_SESION_NO_VALIDA,
   COPY,
+  COPY_VINCULO,
   VERSION_VIGENTE,
   type MeResponse,
   type RequisitoDeConsentimientoDeSaludResponse,
   type Resultado,
 } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { api, nuevaClaveDeIdempotencia } from '../api';
-import { Aviso, Boton, COLOR, Parrafo, Seccion, Titulo, estilos as ui } from '../ui';
+import { Cargando, ErrorConReintento } from '../estados';
+import { fecha } from '../formato';
+import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
+import { Aviso, Boton, COLOR, Dato, Insignia, Parrafo, Seccion, Titulo, estilos as ui } from '../ui';
 
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'error'; sinConexion: boolean };
 
@@ -26,25 +34,12 @@ const ESTADO_OPERATIVO: Record<MeResponse['data']['accountOperationalState'], st
   CERRADA: 'Cerrada',
 };
 
-const fecha = (iso: string) => new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
-
-export type Salida = 'sesion-cerrada' | 'sesiones-cerradas' | 'sesion-no-valida' | 'reautenticar' | 'cierre-registrado';
-
-export function PantallaDeCuenta({ token, salir }: { token: string; salir: (motivo: Salida) => void }) {
+export function PantallaDeCuenta({ token, salir, ir }: { token: string; salir: (motivo: Salida) => void; ir: (r: Ruta) => void }) {
   const [cuenta, setCuenta] = useState<Carga<MeResponse['data']>>({ tipo: 'cargando' });
   const [a3, setA3] = useState<Carga<RequisitoDeConsentimientoDeSaludResponse['data']>>({ tipo: 'cargando' });
   const [accion, setAccion] = useState<'libre' | 'una' | 'todas' | { error: string }>('libre');
 
-  const sesionPerdida = useCallback(
-    (r: Resultado<unknown>) => {
-      if (!r.ok && r.tipo === 'API' && CODIGOS_DE_SESION_NO_VALIDA.has(r.codigo)) {
-        salir('sesion-no-valida');
-        return true;
-      }
-      return false;
-    },
-    [salir],
-  );
+  const sesionPerdida = useSesionPerdida(salir);
 
   const cargarCuenta = useCallback(async () => {
     setCuenta({ tipo: 'cargando' });
@@ -79,9 +74,10 @@ export function PantallaDeCuenta({ token, salir }: { token: string; salir: (moti
   return (
     <>
       <Titulo>Cuenta</Titulo>
+      <Boton texto="Vínculos" onPress={() => ir({ nombre: 'vinculos' })} />
 
       <Seccion titulo="Estado de la cuenta">
-        {cuenta.tipo === 'cargando' ? <Parrafo tenue>Cargando…</Parrafo> : null}
+        {cuenta.tipo === 'cargando' ? <Cargando /> : null}
         {cuenta.tipo === 'error' ? <ErrorConReintento sinConexion={cuenta.sinConexion} onReintentar={cargarCuenta} /> : null}
         {cuenta.tipo === 'listo' ? (
           <>
@@ -92,11 +88,18 @@ export function PantallaDeCuenta({ token, salir }: { token: string; salir: (moti
         <Parrafo tenue>El estado operativo indica si podés usar tu cuenta. No es una habilitación profesional ni una autorización sobre datos.</Parrafo>
       </Seccion>
 
+      <Seccion titulo={COPY_VINCULO.tuIdentificador}>
+        {cuenta.tipo === 'cargando' ? <Cargando /> : null}
+        {cuenta.tipo === 'error' ? <ErrorConReintento sinConexion={cuenta.sinConexion} onReintentar={cargarCuenta} /> : null}
+        {cuenta.tipo === 'listo' ? <TuIdentificador id={cuenta.datos.identityId} /> : null}
+      </Seccion>
+
       <Seccion titulo="Privacidad">
         <Text style={ui.etiqueta}>Tratamiento de datos de salud</Text>
-        {a3.tipo === 'cargando' ? <Parrafo tenue>Cargando…</Parrafo> : null}
+        {a3.tipo === 'cargando' ? <Cargando /> : null}
         {a3.tipo === 'error' ? <ErrorConReintento mensaje={COPY.errorA3} sinConexion={a3.sinConexion} onReintentar={cargarA3} /> : null}
         {a3.tipo === 'listo' ? <EstadoA3 datos={a3.datos} /> : null}
+        <Boton texto="Privacidad y consentimientos" tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
       </Seccion>
 
       <Seccion titulo="Seguridad">
@@ -111,12 +114,23 @@ export function PantallaDeCuenta({ token, salir }: { token: string; salir: (moti
   );
 }
 
-function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
+/** DL-035: el profesional solicita el vínculo con este identificador. Compartirlo es decisión de la persona. */
+function TuIdentificador({ id }: { id: string }) {
+  async function compartir() {
+    try {
+      await Share.share({ message: id });
+    } catch {
+      // Sin menú de compartir disponible: el identificador sigue a la vista y se puede seleccionar y copiar.
+    }
+  }
   return (
-    <View style={estilos.dato} accessible accessibilityLabel={`${etiqueta}: ${valor}`}>
-      <Text style={ui.negrita}>{etiqueta}</Text>
-      <Text style={ui.parrafo}>{valor}</Text>
-    </View>
+    <>
+      <Text selectable style={estilos.identificador} accessibilityLabel={`${COPY_VINCULO.tuIdentificador}: ${id}`}>
+        {id}
+      </Text>
+      <Parrafo tenue>{COPY_VINCULO.ayudaTuIdentificador}</Parrafo>
+      <Boton texto="Compartir" tipo="secundario" onPress={() => void compartir()} />
+    </>
   );
 }
 
@@ -125,9 +139,7 @@ function EstadoA3({ datos }: { datos: RequisitoDeConsentimientoDeSaludResponse['
   const otorgado = datos.currentConsent?.state === 'ACTIVE';
   return (
     <>
-      <View style={[estilos.insignia, otorgado ? estilos.insigniaSi : null]} accessible accessibilityLabel={`Tratamiento de datos de salud: ${otorgado ? 'otorgado' : 'no otorgado'}`}>
-        <Text style={[estilos.textoInsignia, otorgado ? { color: COLOR.exito } : null]}>{otorgado ? 'Otorgado' : 'No otorgado'}</Text>
-      </View>
+      <Insignia texto={otorgado ? 'Otorgado' : 'No otorgado'} positiva={otorgado} etiqueta="Tratamiento de datos de salud" />
       {!otorgado ? <Parrafo>{COPY.cuentaSinA3}</Parrafo> : null}
       <Boton texto={verTexto ? 'Ocultar el texto' : `Ver el texto (versión ${datos.consentVersion.id})`} tipo="enlace" onPress={() => setVerTexto(!verTexto)} />
       {verTexto
@@ -138,15 +150,6 @@ function EstadoA3({ datos }: { datos: RequisitoDeConsentimientoDeSaludResponse['
           ))
         : null}
     </>
-  );
-}
-
-function ErrorConReintento({ mensaje = COPY.errorDeVista, sinConexion, onReintentar }: { mensaje?: string; sinConexion: boolean; onReintentar: () => void }) {
-  // 10-B10:68-82: offline en el APK = «Sin conexión / Reintentar».
-  return (
-    <Aviso tipo="error" titulo={sinConexion ? 'Sin conexión' : mensaje}>
-      <Boton texto={COPY.reintentar} tipo="secundario" onPress={onReintentar} />
-    </Aviso>
   );
 }
 
@@ -233,10 +236,15 @@ function CierreDeCuenta({ token, salir, sesionPerdida }: { token: string; salir:
 }
 
 const estilos = StyleSheet.create({
-  dato: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginVertical: 4 },
-  insignia: { alignSelf: 'flex-start', borderWidth: 2, borderColor: COLOR.tenue, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginVertical: 6 },
-  insigniaSi: { borderColor: COLOR.exito },
-  textoInsignia: { fontWeight: '700', color: COLOR.tenue, fontSize: 15 },
+  identificador: {
+    fontFamily: Platform.select({ android: 'monospace', ios: 'Menlo', default: undefined }),
+    fontSize: 16,
+    color: COLOR.texto,
+    backgroundColor: COLOR.fondoSuave,
+    borderRadius: 6,
+    padding: 10,
+    marginVertical: 6,
+  },
   fondoModal: { flex: 1, backgroundColor: 'rgba(17,24,39,0.55)', justifyContent: 'center', padding: 16 },
   dialogo: { backgroundColor: '#fff', borderRadius: 12, padding: 20 },
 });

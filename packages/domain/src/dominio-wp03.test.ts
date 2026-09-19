@@ -34,7 +34,7 @@ import {
   PausarVinculoRequestSchema,
   TokenDeVersionSchema,
 } from './contratos-vinculo';
-import { COPY_VINCULO } from './copy-vinculo';
+import { COPY_VINCULO, ETIQUETA_DE_EVENTO_DE_VINCULO, estadoParaMostrar, etiquetaDeActor, etiquetaDeConsentimiento, etiquetaDeEvento } from './copy-vinculo';
 import { CATALOGO_DE_TEXTOS, TIPO_DE_TEXTO_DE_B2, VERSION_VIGENTE } from './textos';
 import {
   EstadoDeVerificacionProfesional,
@@ -507,4 +507,59 @@ test('10-B04 §44-§46 — el copy de WP-03 no usa términos prohibidos ni códi
   }
   assert.equal(COPY_VINCULO.aclaracionDeConsentimiento, 'Solo podrá acceder a la información autorizada mientras el vínculo y este consentimiento sigan vigentes.');
   assert.equal(COPY_VINCULO.autorizarAcceso, 'Autorizar acceso');
+});
+
+// ─── Estados y historial para mostrar (10-B04 §15, §20, §28-§29; H10-04-04) ────────────────────
+
+test('10-B04:627-638 — cada evento de las tres máquinas tiene etiqueta humana; uno desconocido no se muestra crudo', () => {
+  const eventos = new Set([
+    ...TRANSICIONES_DE_SOLICITUD_DE_VINCULO.map((t) => t.evento),
+    ...TRANSICIONES_DE_ALCANCE_DE_VINCULO.map((t) => t.evento),
+    ...TRANSICIONES_DE_CONSENTIMIENTO.map((t) => t.evento),
+  ]);
+  assert.deepEqual([...eventos].sort(), Object.keys(ETIQUETA_DE_EVENTO_DE_VINCULO).sort());
+  for (const e of eventos) assert.notEqual(etiquetaDeEvento(e), e);
+  assert.equal(etiquetaDeEvento('EventoFuturo'), 'Cambio registrado');
+  assert.equal(etiquetaDeEvento('toString'), 'Cambio registrado');
+  assert.equal(etiquetaDeActor('SYSTEM', 'ADVISEE'), 'BE');
+  assert.equal(etiquetaDeActor('ADVISEE', 'ADVISEE'), 'Vos');
+  assert.equal(etiquetaDeActor('ADVISEE', 'PROFESSIONAL'), 'El asesorado');
+  assert.equal(etiquetaDeActor('PROFESSIONAL', 'ADVISEE'), 'El profesional');
+});
+
+test('10-B04 §28-§29 y H10-04-04 — el profesional ve el estado mínimo, nunca la razón del bloqueo', () => {
+  const pro = (relationshipState: 'ACEPTADO' | 'PAUSADO' | 'FINALIZADO', consentState: 'REQUIRED' | 'ACTIVE' | 'REVOKED', accessMode: 'BLOCKED' | 'CONTEXTUAL') =>
+    estadoParaMostrar({ relationshipState, consentState, accessMode }, 'PROFESSIONAL');
+  assert.deepEqual(pro('ACEPTADO', 'ACTIVE', 'CONTEXTUAL'), { estado: 'Activo · acceso contextual', detalle: null });
+  assert.deepEqual(pro('ACEPTADO', 'REQUIRED', 'BLOCKED'), { estado: 'Vínculo activo', detalle: 'Acceso pendiente de autorización del asesorado' });
+  assert.deepEqual(pro('ACEPTADO', 'REVOKED', 'BLOCKED'), { estado: 'Consentimiento revocado', detalle: 'Acceso no disponible' });
+  // A3 revocada, cuenta suspendida o habilitación retirada: lo mismo, sin distinguir la causa (UC-I02 E05).
+  assert.deepEqual(pro('ACEPTADO', 'ACTIVE', 'BLOCKED'), { estado: 'Vínculo activo', detalle: 'Acceso no disponible' });
+  assert.deepEqual(pro('PAUSADO', 'ACTIVE', 'BLOCKED'), { estado: 'Pausado · sin acceso', detalle: null });
+  assert.deepEqual(pro('FINALIZADO', 'REVOKED', 'BLOCKED'), { estado: 'Finalizado', detalle: null });
+});
+
+test('10-B04:538-553 — el asesorado ve «No efectivo» cuando su consentimiento activo hoy no habilita el acceso', () => {
+  assert.equal(etiquetaDeConsentimiento('ACTIVE', 'CONTEXTUAL'), 'Activo');
+  assert.equal(etiquetaDeConsentimiento('ACTIVE', 'BLOCKED'), 'No efectivo');
+  assert.equal(etiquetaDeConsentimiento('REVOKED', 'BLOCKED'), 'Revocado');
+  assert.equal(etiquetaDeConsentimiento('REQUIRED', 'BLOCKED'), 'Pendiente de tu decisión');
+  assert.deepEqual(estadoParaMostrar({ relationshipState: 'PAUSADO', consentState: 'ACTIVE', accessMode: 'BLOCKED' }, 'ADVISEE'), {
+    estado: 'Pausado',
+    detalle: 'Consentimiento: no efectivo',
+  });
+  const todo = [
+    ...Object.values(ETIQUETA_DE_EVENTO_DE_VINCULO),
+    ...(['ACEPTADO', 'PAUSADO', 'FINALIZADO'] as const).flatMap((r) =>
+      (['REQUIRED', 'ACTIVE', 'REVOKED'] as const).flatMap((c) =>
+        (['BLOCKED', 'CONTEXTUAL'] as const).flatMap((m) =>
+          (['PROFESSIONAL', 'ADVISEE'] as const).flatMap((p) => {
+            const e = estadoParaMostrar({ relationshipState: r, consentState: c, accessMode: m }, p);
+            return [e.estado, e.detalle ?? ''];
+          }),
+        ),
+      ),
+    ),
+  ].join('\n');
+  assert.doesNotMatch(todo, /PDP|B2|DENY|BLOCKED|CONTEXTUAL|REQUIRED|ACTIVE|REVOKED|paciente/);
 });
