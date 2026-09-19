@@ -3,6 +3,7 @@ import { crearApp } from './bootstrap';
 import { leerEntorno } from './config/entorno';
 import { leerVersion } from './config/version';
 
+// Ensayo de rollback (ACTA-DIR-034 §12): cambio inocuo de prueba; se revierte con git revert -m 1.
 async function main(): Promise<void> {
   const entorno = leerEntorno();
   const version = leerVersion();
