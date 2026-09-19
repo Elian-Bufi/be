@@ -34,7 +34,7 @@
 | DL-027 | WP-02 · 2026-09-18 | 11A · 12 · 05:14230 | Oráculos de prueba ausentes en 11A y traza de UC-P26 | ABIERTA |
 | DL-028 | WP-02 · 2026-09-18 | 08 R-08-05, §42-1 | Textos A1, A2, A3 y consecuencias del cierre: sintéticos | ABIERTA |
 | DL-029 | WP-02 · 2026-09-19 | 09v8 ACC-03 · 09v7 T14 | Logout idempotente frente a AuthN SESSION | ABIERTA |
-| DL-030 | WP-02 · 2026-09-19 | 07 CAND-07-J C · 08 §12.2, §38 | Detrás del rewrite del website, la API no ve la IP del cliente | ABIERTA — **para Dirección** |
+| DL-030 | WP-02 · 2026-09-19 | 07 CAND-07-J C · 08 §12.2, §38 | Detrás del rewrite del website, la API no ve la IP del cliente | **DECIDIDA** 2026-09-19 · opción B, desvío fundamentado de 07 CAND-07-J C |
 
 ---
 
@@ -144,6 +144,8 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 - **B.** Volver a la opción A (runtime Next en contenedor) cuando aparezca una necesidad de SSR.
 
 **Provisorio en código.** Opción C: Render Static Site con rewrite `/api/*` hacia la API.
+
+**Nota (2026-09-19).** El export estático se mantiene. El rewrite `/api/*` se retira por decisión de Dirección en DL-030: el website llama a la API directo, con CORS, para que la API vea la IP real (08 §12.2).
 
 ---
 
@@ -553,7 +555,7 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 ## DL-030 — Detrás del rewrite del website, la API no ve la IP del cliente
 
-**Prioridad:** media · **Documento:** 07 CAND-07-J opción C (07:704-705) · 08 §12.2 (evidencia del acto: IP y user-agent) · 08 §38 (límites por IP) · **Estado:** ABIERTA — decisión de Dirección
+**Prioridad:** media · **Documento:** 07 CAND-07-J opción C (07:704-705) · 08 §12.2 (evidencia del acto: IP y user-agent) · 08 §38 (límites por IP) · **Estado:** DECIDIDA por Dirección el 2026-09-19 — opción B
 
 **Qué dice el legajo.**
 - El website entra a la API «por el proxy del Web BE (same-origin, sin CORS)». En WP-01, con el export estático (DL-007), ese proxy es el rewrite `/api/*` del sitio estático de Render.
@@ -580,6 +582,19 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
   - Cambios necesarios: `connect-src` de la CSP y la URL de la API en el build del website.
   - Se aparta de «same-origin, sin CORS» de CAND-07-J C.
 
-**Provisorio en código.** A: `loginPorIdentificador` en `SesionService.iniciar`, con prueba en `sesiones.int-spec.ts` que simula un pool con `X-Forwarded-For`. No cambia la arquitectura del 07; B queda como recomendación para Dirección.
+**Decisión de Dirección (2026-09-19): opción B.** Es un **desvío fundamentado** de 07 CAND-07-J C, no una excepción: **BE se aparta de CAND-07-J C (website same-origin por rewrite, sin CORS) para poder cumplir 08 §12.2. La evidencia de A1/A2 necesita la IP real de la persona**, y detrás del rewrite la API solo ve direcciones del proxy. De las dos reglas en conflicto prevalece la del 08, porque es la que protege al titular: evidencia del acto y límites contra abuso. La del 07 es una preferencia de topología.
 
-**Condición de cierre.** Dirección elige A o B. Si elige B, el 07 registra el desvío de CAND-07-J C.
+**Cómo queda.**
+- El website se sigue sirviendo como export estático (CAND-07-J, DL-007). Sus llamadas van directo al origen de la API, con CORS restringido al origen del website (`CORS_ALLOWED_ORIGINS`) y sin cookies (Bearer en memoria).
+- `BE_API_BASE_URL` se inyecta en el build de be-web. El build en Render falla si falta, así nunca se publica un website roto.
+- La CSP de be-web permite `connect-src` hacia la API.
+- El rewrite `/api/*` se retira: dejarlo sería un segundo camino que oculta la IP.
+- El cupo por identificador de la opción A se mantiene como defensa en profundidad.
+
+**Secuencia (regla de DL-008).**
+1. PR solo de configuración: CSP y `BE_API_BASE_URL`.
+2. PR del website.
+3. PR solo de configuración que retira el rewrite.
+4. Medición de nuevo en `test`.
+
+**Condición de cierre.** La medición en `test` muestra que los intentos por el website ya se agrupan en la red del cliente, y la próxima revisión del 07 incorpora el desvío en CAND-07-J.

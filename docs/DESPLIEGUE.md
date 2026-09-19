@@ -31,7 +31,7 @@ Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían
 
 | Si cambia la URL de… | Hay que actualizar |
 |---|---|
-| la **API** (`be-api-hndp`) | el `destination` del rewrite `/api/*` en `render.yaml` y el `API_BASE_URL` de `apps/mobile/eas.json` (con rebuild del APK) |
+| la **API** (`be-api-hndp`) | en `render.yaml`, `BE_API_BASE_URL` y `connect-src` de la CSP de `be-web`; y `API_BASE_URL` de `apps/mobile/eas.json` (con rebuild del APK) |
 | el **website** (`be-web-1ngj`) | solo `CORS_ALLOWED_ORIGINS` de `be-api` en `render.yaml` |
 
 **Historia del Blueprint (2026-09-18).** El Blueprint original quedó conectado al repositorio renombrado `be-archivo-wp01` y se desconectó. Dirección creó uno nuevo sobre `Elian-Bufi/be`, que **adoptó** `be-api` y `be-db-test` sin recrearlos (URL de la API y base intactas) y **creó** un `be-web` nuevo: `be-web-izpg` pasó a `be-web-1ngj`. Desde entonces `render.yaml` vuelve a sincronizarse solo con cada push a `main`.
@@ -49,7 +49,7 @@ Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían
 | `JWT_SECRET` | `render.yaml` → `generateValue: true` | Firma de sesión (≥ 32 caracteres). **Nunca se versiona.** Rotarlo invalida todas las sesiones. Sin ella, la API no arranca y el readiness gate cancela el deploy |
 | `BCRYPT_COST` | opcional (por defecto 10) | 10 a 15. El hash señuelo toma el costo de los hashes guardados (DL-014) |
 | `RATE_LIMIT_LOGIN_*`, `RATE_LIMIT_LOGIN_IP_*`, `RATE_LIMIT_LOGIN_ID_*`, `RATE_LIMIT_REGISTRO_*` | opcionales | `_MAX` y `_WINDOW_MS`. Por defecto: 5/15 min por red + identificador, 100/15 min por red, 20/15 min por identificador y 10/h de registro por red (DL-015, DL-030) |
-| `TRUST_PROXY_HOPS` | opcional (por defecto 1) | Saltos de proxy confiables. Detrás del rewrite del website la IP que llega es la del proxy (DL-030) |
+| `TRUST_PROXY_HOPS` | opcional (por defecto 1) | Saltos de proxy confiables (el borde de Render). Website y APK llaman directo, así la IP que llega es la del cliente (DL-030) |
 
 **Pruebas de integración en local sin Docker:** `TEST_DATABASE_URL=postgresql://…@localhost:…/base npm run test:integration`. La base tiene que ser local (el setup lo verifica) y se le aplica `migrate deploy`, igual que en CI.
 
@@ -59,7 +59,7 @@ Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían
 curl -s https://be-api-hndp.onrender.com/health/ready   # 200, data.version.commit == SHA del merge
 curl -s https://be-api-hndp.onrender.com/health/live    # 200
 curl -sI https://be-web-1ngj.onrender.com/              # 200 + cabeceras HSTS/CSP
-curl -s https://be-web-1ngj.onrender.com/api/v1/x       # 404 RESOURCE_NOT_FOUND desde la API (rewrite same-origin)
+curl -s https://be-web-1ngj.onrender.com/ | grep -c be-api-hndp   # el build del website apunta a la API (DL-030)
 curl -si -X OPTIONS -H "Origin: https://be-web-1ngj.onrender.com" -H "Access-Control-Request-Method: GET" \
   https://be-api-hndp.onrender.com/health/ready         # Access-Control-Allow-Origin: el website; con otro origen, ausente
 ```
