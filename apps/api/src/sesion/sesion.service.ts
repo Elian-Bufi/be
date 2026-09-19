@@ -43,9 +43,12 @@ export class SesionService {
   async iniciar(cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<IniciarSesionResponse> {
     const solicitud = validarCuerpo(IniciarSesionRequestSchema, cuerpo);
     const identificador = normalizarIdentificadorLocal(solicitud.identifier);
-    // Dos cupos neutrales (no dependen de que la cuenta exista): global por red y por red + identificador (DL-015).
+    // Cupos neutrales (no dependen de que la cuenta exista, DL-015): global por red, por red + identificador, y por
+    // identificador desde cualquier red. El último acota el ataque a una cuenta cuando las requests llegan desde un pool
+    // de direcciones, como las del proxy del rewrite del website (DL-030).
     this.limitador.consumir('loginPorIp', ctx.direccionIp);
     this.limitador.consumir('login', ctx.direccionIp, identificador);
+    this.limitador.consumir('loginPorIdentificador', null, identificador);
 
     const metodo = await this.prisma.metodoDeAcceso.findUnique({
       where: { tipo_referencia: { tipo: 'LOCAL', referencia: identificador } },

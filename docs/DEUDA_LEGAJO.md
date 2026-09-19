@@ -34,6 +34,7 @@
 | DL-027 | WP-02 · 2026-09-18 | 11A · 12 · 05:14230 | Oráculos de prueba ausentes en 11A y traza de UC-P26 | ABIERTA |
 | DL-028 | WP-02 · 2026-09-18 | 08 R-08-05, §42-1 | Textos A1, A2, A3 y consecuencias del cierre: sintéticos | ABIERTA |
 | DL-029 | WP-02 · 2026-09-19 | 09v8 ACC-03 · 09v7 T14 | Logout idempotente frente a AuthN SESSION | ABIERTA |
+| DL-030 | WP-02 · 2026-09-19 | 07 CAND-07-J C · 08 §12.2, §38 | Detrás del rewrite del website, la API no ve la IP del cliente | ABIERTA — **para Dirección** |
 
 ---
 
@@ -296,7 +297,7 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 «Red» es la dirección IPv4, o el prefijo /64 si es IPv6: quien controla un /64 no obtiene un cupo por dirección. Estos dos puntos (el cupo global y la agregación IPv6) surgieron de la revisión adversarial del 2026-09-19.
 
-**Pendiente de medición.** El website llama a la API a través del rewrite `/api/*` del sitio estático. Si ese salto no preserva la IP del cliente, todos los usuarios web comparten la red del proxy, y con ella los cupos y la IP guardada como evidencia de A1/A2. Se mide en `test` después del deploy de WP-02; el resultado queda en `EVIDENCIA/WP-02/`.
+**Medido (2026-09-19):** detrás del rewrite `/api/*` del website, la API no ve la IP del cliente. Ver DL-030.
 
 **Condición de cierre.** 11A calibra los umbrales, o se escala a más de una instancia (lo que obliga a B).
 
@@ -549,3 +550,36 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 **Provisorio en código.** A (`SesionService.finalizarActual`). El 204 de una sesión que ya no estaba activa queda en la auditoría como `RECHAZO` con motivo `SESION_YA_NO_ACTIVA`, nunca como éxito (hallazgo de la revisión adversarial, 2026-09-19). El OpenAPI declara los 401 reales de la operación.
 
 **Condición de cierre.** El 09 define el AuthN del logout idempotente.
+
+## DL-030 — Detrás del rewrite del website, la API no ve la IP del cliente
+
+**Prioridad:** media · **Documento:** 07 CAND-07-J opción C (07:704-705) · 08 §12.2 (evidencia del acto: IP y user-agent) · 08 §38 (límites por IP) · **Estado:** ABIERTA — decisión de Dirección
+
+**Qué dice el legajo.**
+- El website entra a la API «por el proxy del Web BE (same-origin, sin CORS)». En WP-01, con el export estático (DL-007), ese proxy es el rewrite `/api/*` del sitio estático de Render.
+- La evidencia de cada acto registra IP y user-agent (08 §12.2).
+- Los límites de intentos son por IP, y por cuenta + IP (08 §38).
+
+**Qué se midió (2026-09-19, ambiente `test`, IPv4 forzado).** Evidencia en `EVIDENCIA/WP-02/medicion-ip-proxy.txt`.
+- **A. Directo:** 5 logins fallidos contra un identificador inexistente dan 401 y el 6.º, 429. Un 7.º intento por el rewrite, con el mismo identificador, da **401**: la API lo ve desde otra red.
+- **B. Por el rewrite:** 6 logins fallidos contra otro identificador dan **seis 401** y ningún 429. Las requests llegan desde **varias** direcciones del proxy (un pool), no desde una sola.
+- **Registro:** después de agotar el cupo directo (429), un registro por el rewrite dio 201.
+
+**Por qué no se puede tal cual.** Con el rewrite, lo que la API ve como IP del cliente es la del proxy:
+- la IP que queda como evidencia de A1/A2 en los registros web es del proxy, no de la persona;
+- los cupos «por IP» y «por cuenta + IP» se diluyen en el tamaño del pool.
+
+Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tráfico directo (el APK), y ahí el cliente podría falsificar esa cabecera.
+
+**Opciones.**
+- **A.** Mantener el rewrite (07 CAND-07-J C) y compensar:
+  - un cupo por identificador que no depende de la red (20 cada 15 min, neutral: también para identificadores inexistentes). Acota el ataque a una cuenta desde el pool;
+  - declarar que la IP de la evidencia de los actos web es la del proxy.
+  - Costo: el *password spraying* contra muchas cuentas por el website queda limitado solo por el pool, y la evidencia web no identifica la red de la persona.
+- **B.** El website llama a la API directo (CORS). La API ya admite ese origen (`CORS_ALLOWED_ORIGINS`, WP-01), así que la API vuelve a ver la IP real y los cupos quedan iguales para las dos superficies.
+  - Cambios necesarios: `connect-src` de la CSP y la URL de la API en el build del website.
+  - Se aparta de «same-origin, sin CORS» de CAND-07-J C.
+
+**Provisorio en código.** A: `loginPorIdentificador` en `SesionService.iniciar`, con prueba en `sesiones.int-spec.ts` que simula un pool con `X-Forwarded-For`. No cambia la arquitectura del 07; B queda como recomendación para Dirección.
+
+**Condición de cierre.** Dirección elige A o B. Si elige B, el 07 registra el desvío de CAND-07-J C.
