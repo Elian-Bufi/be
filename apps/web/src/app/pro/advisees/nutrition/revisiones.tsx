@@ -219,7 +219,7 @@ function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contex
         {RESULTADOS.map((res) => (
           <label key={res} className="acto">
             <input type="radio" name="resultado" value={res} checked={resultado === res} onChange={() => setResultado(res)} /> <strong>{ETIQUETA_DE_RESULTADO[res]}</strong>
-            <span className="campo__ayuda"> {EFECTO_VISIBLE_DE_RESULTADO[res]}</span>
+            <span className="campo__ayuda">{EFECTO_VISIBLE_DE_RESULTADO[res]}</span>
           </label>
         ))}
       </fieldset>
