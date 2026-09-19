@@ -17,3 +17,8 @@ export * from './autorizacion';
 export * from './contratos-vinculo';
 export * from './copy-vinculo';
 export * from './versionado';
+export * from './proceso';
+export * from './capacidad';
+export * from './revision';
+export * from './contratos-nutricion';
+export * from './nutricion';
