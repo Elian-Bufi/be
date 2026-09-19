@@ -1,6 +1,6 @@
 # DESPLIEGUE — ambiente `test`
 
-> Runbook de WP-01. Arquitectura: 07 §26–§39. Decisiones: `DECISIONES_TECNICAS.md` §3. Desvíos: `DEUDA_LEGAJO.md` DL-006, DL-007.
+> Runbook de WP-01, actualizado en WP-02. Arquitectura: 07 §26–§39. Decisiones: `DECISIONES_TECNICAS.md` §3. Desvíos: `DEUDA_LEGAJO.md` DL-006, DL-007.
 > **Solo datos sintéticos.** Render no recibe datos reales mientras G-Q008-1, G-Q008-2 y el gate 08 §42 estén abiertos.
 
 ## Flujo
@@ -9,8 +9,10 @@
 push / PR ─► GitHub Actions (ci.yml)
                ├─ legajo       sha256sum -c docs/MANIFEST.sha256
                ├─ verificar    typecheck · unit · build api/web · npm audit (altos/críticos = falla)
-               ├─ integracion  PostgreSQL 16 real: schema vs 06 · readiness · migración fallida aborta
-               └─ imagen-api   docker build · migrate deploy · /health/ready 200 con el SHA del commit
+               ├─ integracion  PostgreSQL 16 real: schema vs 06 · identidad y sesiones (TEST-AUTH-*) · concurrencia ·
+               │               contrato · readiness · migración fallida aborta → artefacto resultados-integracion.json
+               └─ imagen-api   docker build · migrate deploy · /health/ready 200 con el SHA del commit ·
+                               smoke e2e: registro A1+A2 → login → /me → A3 null → logout (JWT_SECRET efímero)
 merge a main + checks OK ─► Render (autoDeployTrigger: checksPass)
                ├─ be-api   build imagen ─► arranque: prisma migrate deploy ─► node ─► readiness /health/ready ─► switch
                └─ be-web   npm ci + next build (export) ─► CDN
@@ -23,7 +25,7 @@ tag apk-v* o manual ─► apk.yml ─► EAS build perfil test ─► URL del A
 |---|---|
 | API | `https://be-api-hndp.onrender.com` (`/health`, `/health/live`, `/health/ready`) |
 | Website | `https://be-web-1ngj.onrender.com` |
-| APK | `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.1.0/be-0.1.0-fd3ed53.apk` (release permanente) · EAS: `https://expo.dev/artifacts/eas/vT70Js23NejC6YFJkDiRrC7at1UHJtfx2DEKYyf91V4.apk` (expira 2026-10-02) |
+| APK | **vigente:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.2.0/be-0.2.0-8256951.apk` (WP-02, release permanente; EAS `05509aaf…` expira 2026-10-03) · anterior: `be-apk-0.1.0/be-0.1.0-fd3ed53.apk` (WP-01) |
 
 Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían a terceros, así que Render agrega sufijos. Qué depende de cada URL:
 
@@ -40,6 +42,17 @@ Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían
 2. Si el sufijo de algún subdominio cambió, actualizar las URLs de la tabla anterior en `render.yaml` y `eas.json`.
 3. En GitHub → Settings → Secrets → Actions: `EXPO_TOKEN` (token de expo.dev) para `apk.yml`.
 
+## Variables de entorno de `be-api` (desde WP-02)
+
+| Variable | Origen | Nota |
+|---|---|---|
+| `JWT_SECRET` | `render.yaml` → `generateValue: true` | Firma de sesión (≥ 32 caracteres). **Nunca se versiona.** Rotarlo invalida todas las sesiones. Sin ella, la API no arranca y el readiness gate cancela el deploy |
+| `BCRYPT_COST` | opcional (por defecto 10) | 10 a 15. El hash señuelo toma el costo de los hashes guardados (DL-014) |
+| `RATE_LIMIT_LOGIN_*`, `RATE_LIMIT_LOGIN_IP_*`, `RATE_LIMIT_LOGIN_ID_*`, `RATE_LIMIT_REGISTRO_*` | opcionales | `_MAX` y `_WINDOW_MS`. Por defecto: 5/15 min por red + identificador, 100/15 min por red, 20/15 min por identificador y 10/h de registro por red (DL-015, DL-030) |
+| `TRUST_PROXY_HOPS` | opcional (por defecto 1) | Saltos de proxy confiables. Detrás del rewrite del website la IP que llega es la del proxy (DL-030) |
+
+**Pruebas de integración en local sin Docker:** `TEST_DATABASE_URL=postgresql://…@localhost:…/base npm run test:integration`. La base tiene que ser local (el setup lo verifica) y se le aplica `migrate deploy`, igual que en CI.
+
 ## Verificación posterior al deploy (07 §37)
 
 ```bash
@@ -51,6 +64,8 @@ curl -si -X OPTIONS -H "Origin: https://be-web-1ngj.onrender.com" -H "Access-Con
   https://be-api-hndp.onrender.com/health/ready         # Access-Control-Allow-Origin: el website; con otro origen, ausente
 ```
 
+Recorrido funcional de WP-02 contra el ambiente desplegado, con cuenta sintética: `scratchpad/capturas/capturas-wp02.mjs` (puppeteer-core con Edge). Captura cada paso (registro con A1/A2, login neutral, Cuenta con A3 no otorgado y cierre) y registra requests y status. Salida en `EVIDENCIA/WP-02/`.
+
 La primera respuesta puede tardar alrededor de 30 segundos: el plan gratuito apaga la API después de 15 minutos sin tráfico. En el primer despliegue se midieron 23 s en frío y 0,5 s en caliente.
 
 ## Rollback (07 §39)
@@ -59,7 +74,7 @@ La primera respuesta puede tardar alrededor de 30 segundos: el plan gratuito apa
 - **Migración fallida:** el contenedor nuevo termina antes de escuchar, no pasa `/health/ready` y Render cancela el deploy. La versión anterior sigue sirviendo, y la migración queda registrada como fallida en `_prisma_migrations`. Se corrige con una migración nueva; nunca `migrate reset` ni `db push` fuera de development (07 §38).
 - **Website:** Render → `be-web` → Events → Rollback.
 - **Merge defectuoso** (ACTA-DIR-034 §12): `git revert -m 1 <sha-del-merge>` en una rama nueva → PR → CI verde → merge. El revert se despliega como cualquier cambio. Nunca `push --force`, `reset --hard` ni `commit --amend` sobre historia publicada.
-- **Ensayo de rollback:** planificado en `test`, después del primer merge de WP-02 y antes de cerrarlo (ACTA-DIR-034 §12). Evidencia en `EVIDENCIA/ENSAYO-ROLLBACK/`.
+- **Ensayo de rollback** (ACTA-DIR-034 §12): la parte 1, `git revert -m 1` de un merge publicado, se ejecutó el 2026-09-19 (PR #9 y #10). La parte 2, el rollback de la aplicación en el dashboard de Render, está a cargo de Dirección. Evidencia en `EVIDENCIA/ENSAYO-ROLLBACK/`.
 
 ## Límites del plan gratuito
 

@@ -1,0 +1,12 @@
+# npm audit --omit=dev — 2026-09-19
+## @be/api
+found 0 vulnerabilities
+## @be/web
+found 0 vulnerabilities
+## @be/mobile
+10 moderate severity vulnerabilities (sin altos ni críticos; audit-level=high pasa, igual que en WP-01)
+
+
+
+## @be/domain
+found 0 vulnerabilities

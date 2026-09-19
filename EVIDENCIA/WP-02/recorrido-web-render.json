@@ -1,0 +1,65 @@
+{
+  "base": "https://be-web-1ngj.onrender.com",
+  "correo": "persona-evidencia-web-1789780634192@example.invalid",
+  "pasos": [
+    {
+      "paso": "web-01-inicio",
+      "url": "https://be-web-1ngj.onrender.com/",
+      "momento": "2026-09-19T01:17:19.137Z"
+    },
+    {
+      "paso": "web-02-registro-a1-a2-separados",
+      "url": "https://be-web-1ngj.onrender.com/register",
+      "momento": "2026-09-19T01:17:21.805Z"
+    },
+    {
+      "paso": "web-03-registro-a1-a2-marcados",
+      "url": "https://be-web-1ngj.onrender.com/register",
+      "momento": "2026-09-19T01:17:22.007Z"
+    },
+    {
+      "paso": "web-04-cuenta-creada-sin-auto-login",
+      "url": "https://be-web-1ngj.onrender.com/register",
+      "momento": "2026-09-19T01:17:23.314Z"
+    },
+    {
+      "paso": "web-05-login-fallido-neutral",
+      "url": "https://be-web-1ngj.onrender.com/login",
+      "momento": "2026-09-19T01:17:26.698Z"
+    },
+    {
+      "paso": "web-06-cuenta-a3-no-otorgado",
+      "url": "https://be-web-1ngj.onrender.com/account",
+      "momento": "2026-09-19T01:17:29.077Z"
+    },
+    {
+      "paso": "web-07-cierre-consecuencias",
+      "url": "https://be-web-1ngj.onrender.com/account",
+      "momento": "2026-09-19T01:17:29.283Z"
+    },
+    {
+      "paso": "web-08-cierre-registrado",
+      "url": "https://be-web-1ngj.onrender.com/?aviso=cierre-registrado",
+      "momento": "2026-09-19T01:17:30.204Z"
+    },
+    {
+      "paso": "web-09-login-tras-cierre-neutral",
+      "url": "https://be-web-1ngj.onrender.com/login",
+      "momento": "2026-09-19T01:17:32.960Z"
+    },
+    {
+      "paso": "web-10-registro-movil",
+      "url": "https://be-web-1ngj.onrender.com/register",
+      "momento": "2026-09-19T01:17:34.085Z"
+    }
+  ],
+  "red": [
+    "POST /api/v1/registrations → 201",
+    "POST /api/v1/auth/sessions → 401",
+    "POST /api/v1/auth/sessions → 201",
+    "GET /api/v1/me → 200",
+    "GET /api/v1/me/health-data-consent-requirement → 200",
+    "POST /api/v1/me/account-closure-requests → 201",
+    "POST /api/v1/auth/sessions → 401"
+  ]
+}

@@ -1,0 +1,12 @@
+*   23c9997 Ensayo de rollback — git revert -m 1 del merge inocuo (#10)
+|\  
+| * 96baac2 revert(ensayo-rollback): git revert -m 1 del merge 4776fc5
+|/  
+*   4776fc5 Ensayo de rollback — cambio inocuo a revertir (#9)
+|\  
+| * 76bedc8 test(ensayo-rollback): cambio inocuo en apps/api para ensayar el revert de un merge
+|/  
+*   c09bfa0 WP-02 — cupo de login por identificador, DL-030 (#8)
+|\  
+| * eb8df9c fix(wp-02): cupo de login por identificador — el rewrite del website oculta la IP del cliente (DL-030)
+|/  

@@ -1,0 +1,28 @@
+# Cuentas demo de WP-02 (MESA-01 punto 14) — ambiente test, 2026-09-19
+# Datos sintéticos. Las contraseñas NO están en el repositorio: las tiene Dirección en .env.cuentas-demo (ignorado por git).
+# Creadas con scratchpad/cuentas-demo.mjs: alta, login, /me, CON-05 y logout contra el ambiente desplegado.
+
+[
+  {
+    "alias": "A01",
+    "correo": "asesorado.demo.a01@example.invalid",
+    "entrada": "website (rewrite /api/*)",
+    "superficie": "WEB",
+    "alta": "201 identityId 547d703d-254f-4472-aa7b-d380f7c36743",
+    "login": 201,
+    "estado": "OPERATIVA",
+    "a3": "no otorgado (currentConsent null)",
+    "logout": 204
+  },
+  {
+    "alias": "A02",
+    "correo": "asesorado.demo.a02@example.invalid",
+    "entrada": "API directa",
+    "superficie": "APK",
+    "alta": "201 identityId 063f3921-1157-427f-9730-322af48c3f6a",
+    "login": 201,
+    "estado": "OPERATIVA",
+    "a3": "no otorgado (currentConsent null)",
+    "logout": 204
+  }
+]
