@@ -1,0 +1,19 @@
+Verificación de URLs vivas de WP-04 · 2026-09-19T19:52:05Z
+
+## API
+GET https://be-api-hndp.onrender.com/health/live → 200
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.4.0","commit":"6e8efc4e1147afda1f0b3012f53daf536490c7a9","construidoEn":"2026-09-19T19:40:20.389Z"}}}
+GET https://be-api-hndp.onrender.com/health/ready → 200
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.4.0","commit":"6e8efc4e1147afda1f0b3012f53daf536490c7a9","construidoEn":"2026-09-19T19:40:20.389Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+GET /api/v1/me/nutrition/today sin sesión → 401 {"error":{"code":"AUTHENTICATION_REQUIRED","message":"Iniciá sesión para continuar."}}
+
+## Website
+GET https://be-web-1ngj.onrender.com/ → 200
+GET https://be-web-1ngj.onrender.com/login → 200
+GET https://be-web-1ngj.onrender.com/pro → 200
+GET https://be-web-1ngj.onrender.com/pro/advisees → 200
+GET https://be-web-1ngj.onrender.com/pro/advisees/nutrition → 200
+
+## APK (release permanente, descarga anónima)
+GET https://github.com/Elian-Bufi/be/releases/download/be-apk-0.4.0/be-0.4.0-7b21cc7.apk → 200 � 69068214 bytes
+SHA-256 446a60c72a9f2c972ef8203b9988e19a2dcb2edf9b25f11993d8ce30e020a99b

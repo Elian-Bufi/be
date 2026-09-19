@@ -441,6 +441,32 @@ describe('D10 · un reintento no duplica (REG-06-107; TEST-RNF-REC-002)', () => 
     expect(reusada.body.error.code).toBe('IDEMPOTENCY_KEY_REUSED');
   });
 
+  it('activar y aplicar con la misma clave devuelven el mismo resultado sin repetir el efecto', async () => {
+    const c = await circuitoListoParaPlanificar(app, 'reintento-activar');
+    const borrador = await crearBorrador(app, c);
+    const claveDeActivacion = claveDeIdempotencia();
+    const a1 = await activar(app, c.pro, borrador.planId, borrador.version, claveDeActivacion).expect(200);
+    const a2 = await activar(app, c.pro, borrador.planId, borrador.version, claveDeActivacion).expect(200);
+    expect(a2.body).toEqual(a1.body);
+    expect(await prisma.procesoOperativo.count({ where: { asesoradoId: c.ase.id } })).toBe(1);
+    expect(await prisma.eventoDeProceso.count({ where: { procesoId: a1.body.data.processId } })).toBe(1);
+
+    const hoy = await conSesion(app, c.ase.token).get('/api/v1/me/nutrition/today').expect(200);
+    const reg = await registrarComida(app, c.ase, borrador.planId, hoy.body.data.activePlan.dayTypes[0]).expect(201);
+    const revision = await conSesion(app, c.pro.token)
+      .post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`)
+      .send(cuerpoDeRevision([{ type: 'EXECUTION', id: reg.body.data.executionId as string }], 'ADJUST'))
+      .expect(201);
+    const claveDeAplicacion = claveDeIdempotencia();
+    const ruta = `/api/v1/nutrition/reviews/${revision.body.data.reviewId}/apply`;
+    const p1 = await conSesion(app, c.pro.token).post(ruta, claveDeAplicacion).send({ expectedVersion: 'v1' }).expect(200);
+    const p2 = await conSesion(app, c.pro.token).post(ruta, claveDeAplicacion).send({ expectedVersion: 'v1' }).expect(200);
+    expect(p2.body).toEqual(p1.body);
+    // Un solo borrador sucesor y un solo evento de aplicación.
+    expect(await prisma.versionDePlanNutricional.count({ where: { plan: { asesoradoId: c.ase.id }, estado: 'BORRADOR' } })).toBe(1);
+    expect(await prisma.eventoDeProceso.count({ where: { revisionId: revision.body.data.reviewId, tipo: 'ContinuidadOCierreAplicado' } })).toBe(1);
+  });
+
   it('REG-06-12: diez borradores simultáneos del mismo plan dejan uno solo', async () => {
     const c = await circuitoListoParaPlanificar(app, 'borradores-concurrentes');
     const r = await Promise.all(
