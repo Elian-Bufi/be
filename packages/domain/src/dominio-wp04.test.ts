@@ -390,6 +390,49 @@ test('TEST-NUT-002/005 · contraste: prescripto ≠ registrado, sin registro = N
   assert.equal(d3?.meals[0]?.state, 'NO_DATA');
 });
 
+test('INV-06-13 · lo registrado contra una versión no se pierde si ese día se activa una sucesora', () => {
+  // v1 y v2 con nodos distintos: la sucesora se reescribió entera (sin conservar identificadores).
+  const v1 = construirInstantanea(planDeEjemplo(), RESUELTO)!;
+  const v2 = construirInstantanea(planDeEjemplo(), RESUELTO)!;
+  const almuerzo1 = v1.dayTypes[0]!.meals[0]!;
+  const arroz1 = almuerzo1.options[0]!.items[0]!;
+  const versiones = [
+    { planId: 'v1', desde: '2026-09-01', hasta: '2026-09-02', instantanea: v1 },
+    { planId: 'v2', desde: '2026-09-02', hasta: null, instantanea: v2 },
+  ];
+  const registro = {
+    executionId: 'e1',
+    planId: 'v1',
+    localDate: '2026-09-02',
+    origin: 'PRESCRIBED' as const,
+    dayTypeId: v1.dayTypes[0]!.dayTypeId,
+    mealId: almuerzo1.mealId,
+    optionId: almuerzo1.options[0]!.optionId,
+    consumedItems: [{ itemId: arroz1.itemId, quantity: { value: 80, unit: 'g' as const } }],
+    description: null,
+  };
+  const [d2] = construirContraste(['2026-09-02'], versiones, [registro]).days;
+  // El día se lee contra la versión que referencia el registro, con su diferencia de cantidad.
+  assert.equal(d2?.planId, 'v1');
+  assert.equal(d2?.meals[0]?.state, 'REGISTERED');
+  assert.equal(d2?.meals[0]?.quantityDifferences[0]?.difference, -20);
+
+  // Si ese día también hay un registro contra la sucesora, el día es de la sucesora y el anterior se agrega con su
+  // etiqueta: nada registrado aparece como «sin dato».
+  const almuerzo2 = v2.dayTypes[0]!.meals[0]!;
+  const otro = { ...registro, executionId: 'e2', planId: 'v2', dayTypeId: v2.dayTypes[0]!.dayTypeId, mealId: almuerzo2.mealId, optionId: almuerzo2.options[0]!.optionId, consumedItems: [] };
+  const [ambos] = construirContraste(['2026-09-02'], versiones, [registro, otro]).days;
+  assert.equal(ambos?.planId, 'v2');
+  assert.deepEqual(
+    ambos?.meals.map((m) => [m.executionId, m.state]),
+    [
+      ['e2', 'REGISTERED'],
+      ['e1', 'REGISTERED'],
+    ],
+  );
+  assert.equal(ambos?.meals[1]?.quantityDifferences[0]?.difference, -20);
+});
+
 test('fechasDelPeriodo · incluye los extremos y respeta los cambios de mes', () => {
   assert.deepEqual(fechasDelPeriodo('2026-09-29', '2026-10-02'), ['2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02']);
   assert.deepEqual(fechasDelPeriodo('2026-09-02', '2026-09-01'), []);
