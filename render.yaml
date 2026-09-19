@@ -37,6 +37,10 @@ services:
         fromDatabase:
           name: be-db-test
           property: connectionString
+      # Firma de sesión (WP-02, 07 §27/§28): Render genera el valor y nunca se versiona.
+      # Rotarlo invalida todas las sesiones (08 §26.3, 07:1051).
+      - key: JWT_SECRET
+        generateValue: true
       - key: CORS_ALLOWED_ORIGINS
         value: https://be-web-1ngj.onrender.com # allowlist del ambiente test (07 §27): origen del website; no es secreto
 
@@ -44,12 +48,14 @@ services:
     name: be-web
     runtime: static
     branch: main
-    buildCommand: npm ci -w @be/web --include-workspace-root && npm run build -w @be/web
+    # El website compila contra los contratos de @be/domain (09v7 T21): se construye primero el dominio.
+    buildCommand: npm ci -w @be/web -w @be/domain --include-workspace-root && npm run build -w @be/domain && npm run build -w @be/web
     staticPublishPath: ./apps/web/out
     autoDeployTrigger: checksPass
     buildFilter:
       paths:
         - apps/web/**
+        - packages/domain/**
         - package.json
         - package-lock.json
     envVars:
