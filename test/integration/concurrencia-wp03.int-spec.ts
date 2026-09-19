@@ -31,8 +31,18 @@ import {
 const prisma = new PrismaClient();
 let app: INestApplication;
 
+/**
+ * App que ya escucha en un puerto propio. Con requests concurrentes, supertest sobre un servidor que no escucha lo abre
+ * y lo cierra en cada request, y las que siguen en vuelo reciben ECONNRESET: eso mediría el harness, no la API.
+ */
+async function appEscuchando(...args: Parameters<typeof appDePrueba>): Promise<INestApplication> {
+  const a = await appDePrueba(...args);
+  await a.listen(0);
+  return a;
+}
+
 beforeAll(async () => {
-  app = await appDePrueba();
+  app = await appEscuchando();
 });
 afterAll(async () => {
   await app.close();
@@ -137,7 +147,7 @@ describe('T13 / D8 — el cierre de cuenta contra operaciones concurrentes de la
 
 describe('DL-037 — caducidad perezosa con listados simultáneos', () => {
   it('veinte listados a la vez sobre una solicitud vencida: todos 200 y un solo hecho de caducidad', async () => {
-    const corta = await appDePrueba({ caducidadDeSolicitudMs: 200 });
+    const corta = await appEscuchando({ caducidadDeSolicitudMs: 200 });
     try {
       const pn = await prepararProfesional(corta, 'caduca-conc', ['NUTRICION']);
       const a01 = await prepararAsesorado(corta, 'caduca-conc');
@@ -168,7 +178,7 @@ describe('CON-02 contra CON-04 — el mismo orden de bloqueos, sin deadlock', ()
     migrarDeploy(url, join(RAIZ, 'prisma', 'schema.prisma'));
     process.env.DATABASE_URL = url;
     try {
-      aislada = await appDePrueba();
+      aislada = await appEscuchando();
     } finally {
       process.env.DATABASE_URL = previa;
     }
@@ -252,7 +262,7 @@ describe('DSH-03 — query antes del PDP, límite por actor y sin caché', () =>
   });
 
   it('más consultas protegidas que el límite del actor: 429, y la que excede no deja decisiones', async () => {
-    const limitada = await appDePrueba({
+    const limitada = await appEscuchando({
       limites: {
         login: { maximo: 10_000, ventanaMs: 60_000 },
         loginPorIp: { maximo: 10_000, ventanaMs: 60_000 },
