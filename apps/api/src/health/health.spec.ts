@@ -17,6 +17,7 @@ const ENTORNO = {
   limites: {
     login: { maximo: 5, ventanaMs: 900000 },
     loginPorIp: { maximo: 100, ventanaMs: 900000 },
+    loginPorIdentificador: { maximo: 20, ventanaMs: 900000 },
     registro: { maximo: 10, ventanaMs: 3600000 },
   },
   saltosDeProxy: 1,

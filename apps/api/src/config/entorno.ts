@@ -23,9 +23,15 @@ export interface Entorno {
   readonly costoBcrypt: number;
   /**
    * 08 §38 PROPUESTA BE (DEUDA_LEGAJO DL-015): login 5 / 15 min por red + identificador; login global 100 / 15 min por
-   * red («global por IP: generoso», 08:786); registro 10 / h por red. Red = IPv4 o prefijo /64 de IPv6.
+   * red («global por IP: generoso», 08:786); login 20 / 15 min por identificador desde cualquier red (DL-030: detrás del
+   * rewrite del website la API ve un pool de IPs del proxy); registro 10 / h por red. Red = IPv4 o prefijo /64 de IPv6.
    */
-  readonly limites: { readonly login: Limite; readonly loginPorIp: Limite; readonly registro: Limite };
+  readonly limites: {
+    readonly login: Limite;
+    readonly loginPorIp: Limite;
+    readonly loginPorIdentificador: Limite;
+    readonly registro: Limite;
+  };
   /** Saltos de proxy confiables para `req.ip` (Express `trust proxy`). Render: 1. */
   readonly saltosDeProxy: number;
 }
@@ -65,6 +71,14 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
   const limites = {
     login: limite(env.RATE_LIMIT_LOGIN_MAX, env.RATE_LIMIT_LOGIN_WINDOW_MS, 5, 15 * 60 * 1000, 'RATE_LIMIT_LOGIN', errores),
     loginPorIp: limite(env.RATE_LIMIT_LOGIN_IP_MAX, env.RATE_LIMIT_LOGIN_IP_WINDOW_MS, 100, 15 * 60 * 1000, 'RATE_LIMIT_LOGIN_IP', errores),
+    loginPorIdentificador: limite(
+      env.RATE_LIMIT_LOGIN_ID_MAX,
+      env.RATE_LIMIT_LOGIN_ID_WINDOW_MS,
+      20,
+      15 * 60 * 1000,
+      'RATE_LIMIT_LOGIN_ID',
+      errores,
+    ),
     registro: limite(env.RATE_LIMIT_REGISTRO_MAX, env.RATE_LIMIT_REGISTRO_WINDOW_MS, 10, 60 * 60 * 1000, 'RATE_LIMIT_REGISTRO', errores),
   };
 

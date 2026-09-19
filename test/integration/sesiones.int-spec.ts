@@ -249,7 +249,12 @@ describe('TEST-RNF-SEC-003 — límite de intentos neutral', () => {
   let limitada: INestApplication;
   beforeAll(async () => {
     limitada = await appDePrueba({
-      limites: { login: { maximo: 3, ventanaMs: 60_000 }, loginPorIp: { maximo: 12, ventanaMs: 60_000 }, registro: { maximo: 2, ventanaMs: 60_000 } },
+      limites: {
+        login: { maximo: 3, ventanaMs: 60_000 },
+        loginPorIp: { maximo: 12, ventanaMs: 60_000 },
+        loginPorIdentificador: { maximo: 100, ventanaMs: 60_000 },
+        registro: { maximo: 2, ventanaMs: 60_000 },
+      },
     });
   });
   afterAll(() => limitada.close());
@@ -274,7 +279,12 @@ describe('TEST-RNF-SEC-003 — límite de intentos neutral', () => {
 
   it('TEST-RNF-SEC-003: login — cupo global por red (08:786): identificadores distintos desde la misma red también se frenan', async () => {
     const global = await appDePrueba({
-      limites: { login: { maximo: 100, ventanaMs: 60_000 }, loginPorIp: { maximo: 4, ventanaMs: 60_000 }, registro: { maximo: 100, ventanaMs: 60_000 } },
+      limites: {
+        login: { maximo: 100, ventanaMs: 60_000 },
+        loginPorIp: { maximo: 4, ventanaMs: 60_000 },
+        loginPorIdentificador: { maximo: 100, ventanaMs: 60_000 },
+        registro: { maximo: 100, ventanaMs: 60_000 },
+      },
     });
     try {
       for (let i = 0; i < 4; i++) await login(global, correoSintetico(`spray-${i}`), OTRA_CREDENCIAL_SINTETICA).expect(401);
@@ -282,6 +292,34 @@ describe('TEST-RNF-SEC-003 — límite de intentos neutral', () => {
       expect(r.body.error.code).toBe('RATE_LIMITED');
     } finally {
       await global.close();
+    }
+  });
+
+  it('TEST-RNF-SEC-003: login — cupo por identificador desde cualquier red (DL-030): un pool de IPs no multiplica los intentos contra una cuenta', async () => {
+    const pool = await appDePrueba(
+      {
+        saltosDeProxy: 1,
+        limites: {
+          login: { maximo: 100, ventanaMs: 60_000 },
+          loginPorIp: { maximo: 100, ventanaMs: 60_000 },
+          loginPorIdentificador: { maximo: 3, ventanaMs: 60_000 },
+          registro: { maximo: 100, ventanaMs: 60_000 },
+        },
+      },
+    );
+    try {
+      const correo = correoSintetico('pool');
+      await registrarOk(app, correo);
+      // Cada intento llega desde otra dirección del «proxy» (X-Forwarded-For confiable a un salto).
+      for (let i = 1; i <= 3; i++) await login(pool, correo, OTRA_CREDENCIAL_SINTETICA).set('X-Forwarded-For', `203.0.113.${i}`).expect(401);
+      const r = await login(pool, correo, CREDENCIAL_SINTETICA).set('X-Forwarded-For', '203.0.113.99').expect(429);
+      expect(r.body.error.code).toBe('RATE_LIMITED');
+      // Neutral: un identificador inexistente se frena igual.
+      const nadie = correoSintetico('pool-nadie');
+      for (let i = 1; i <= 3; i++) await login(pool, nadie, OTRA_CREDENCIAL_SINTETICA).set('X-Forwarded-For', `198.51.100.${i}`).expect(401);
+      await login(pool, nadie, OTRA_CREDENCIAL_SINTETICA).set('X-Forwarded-For', '198.51.100.99').expect(429);
+    } finally {
+      await pool.close();
     }
   });
 

@@ -1,0 +1,34 @@
+# Medición: IP vista por la API detrás del rewrite /api/* del website (DL-030)
+# Ambiente test (Render), 2026-09-19. Solo identificadores sintéticos @example.invalid.
+
+## 1. Cupo de registro (10/h por red): registros directos hasta 429, después uno por el rewrite
+{
+  "momento": "2026-09-19T01:18:12.277Z",
+  "directos": [
+    201,
+    201,
+    201,
+    201,
+    201,
+    201,
+    201,
+    201,
+    201,
+    201,
+    201,
+    429
+  ],
+  "porRewrite": {
+    "status": 201,
+    "codigo": null
+  },
+  "veredicto": "La API ve OTRA red por el rewrite: los usuarios web comparten la red del proxy"
+}
+
+## 2. Cupo de login (5/15 min por red + identificador), IPv4 forzado con curl -4, 2026-09-19T01:18Z
+A) 6 logins directos para el identificador Z: 401 401 401 401 401 429
+   1 login por el rewrite para Z: 401   → la API ve otra red por el rewrite
+B) 6 logins por el rewrite para el identificador W: 401 401 401 401 401 401   → sin 429: el rewrite llega desde un pool de direcciones
+   1 login directo para W: 401
+
+Conclusión: detrás del rewrite, req.ip es una dirección del pool del proxy de Render, no la del cliente.
