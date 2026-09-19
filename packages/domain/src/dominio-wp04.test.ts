@@ -428,3 +428,24 @@ test('TEST-PRJ-009 · ningún schema de nutrición tiene puntaje, porcentaje de 
   assert.ok(revisados > 30, `se revisaron ${revisados} schemas`);
   assert.deepEqual(hallazgos, []);
 });
+
+test('TEST-PRJ-009 · el OpenAPI generado tampoco expone puntaje de adherencia en ninguna operación de nutrición', async () => {
+  const { documentoOpenApi } = await import('./openapi');
+  const doc = documentoOpenApi() as { paths: Record<string, unknown> };
+  const hallazgos: string[] = [];
+  for (const [ruta, metodos] of Object.entries(doc.paths)) if (ruta.includes('nutrition')) recorrer(metodos, ruta, hallazgos);
+  const operaciones = Object.entries(doc.paths).filter(([r]) => r.includes('nutrition')).reduce((n, [, m]) => n + Object.keys(m as object).length, 0);
+  assert.equal(operaciones, 23, 'las 21 NUT, INT-NUT-01 y la lista propia de ingestas');
+  assert.deepEqual(hallazgos, []);
+});
+
+test('T13 · el copy de nutrición no usa ningún término prohibido (B10-05; REG-06-125)', async () => {
+  const { COPY_NUTRICION, EFECTO_VISIBLE_DE_RESULTADO, ETIQUETA_DE_RESULTADO, ETIQUETA_DE_FUENTE, ETIQUETA_DE_PREPARACION, terminosProhibidosEn } = await import('./copy-nutricion');
+  const textos = [COPY_NUTRICION, EFECTO_VISIBLE_DE_RESULTADO, ETIQUETA_DE_RESULTADO, ETIQUETA_DE_FUENTE, ETIQUETA_DE_PREPARACION].flatMap((o) => Object.values(o));
+  const hallazgos = textos.flatMap((t) => terminosProhibidosEn(t).map((p) => `${p} en «${t}»`));
+  assert.deepEqual(hallazgos, []);
+  // El detector funciona: estos sí se detectan.
+  assert.deepEqual(terminosProhibidosEn('82 % adherencia'), ['adherencia', '%']);
+  assert.deepEqual(terminosProhibidosEn('Comida trampa'), ['comida trampa']);
+  assert.deepEqual(terminosProhibidosEn('Almuerzo normal'), []);
+});

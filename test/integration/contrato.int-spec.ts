@@ -2,6 +2,7 @@
  * TEST-CT — el runtime no emite nada que el contrato no declare.
  * - WP-02: TEST-CT-ACC-01…05 · TEST-CT-P1-ACC-P1-03 · CON-05.
  * - WP-03: TEST-CT-REL-01…09 · TEST-CT-CON-01…04, 06…08 · TEST-CT-DSH-03 (parcial).
+ * - WP-04: TEST-CT-NUT-01…21 · TEST-CT-INT-NUT-01 · la lista propia de ingestas (DL-055).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -28,6 +29,19 @@ import {
   tokenDe,
 } from './soporte-api';
 import { aceptar, dashboard, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo } from './soporte-vinculo';
+import { randomUUID } from 'node:crypto';
+import {
+  activar,
+  circuitoListoParaPlanificar,
+  crearBorrador,
+  cuerpoDeEvaluacion,
+  cuerpoDeObjetivo,
+  cuerpoDeRevision,
+  estructura,
+  patchConSesion,
+  registrarComida,
+  registrarLibre,
+} from './soporte-nutricion';
 
 interface Observada {
   metodo: string;
@@ -239,6 +253,111 @@ it('TEST-CT (WP-03): se ejercitan éxitos y errores de REL, CON y DSH-03', async
   await conSesion(app, a01.token).post(`/api/v1/me/health-data-consents/${a3.body.data.consentId}/revoke`).send({}).expect(404);
   await conSesion(app, a02.token).post(`/api/v1/me/health-data-consents/${a3.body.data.consentId}/revoke`).send({}).expect(200);
   await conSesion(app, a02.token).post(`/api/v1/me/health-data-consents/${a3.body.data.consentId}/revoke`).send({}).expect(200);
+});
+
+it('TEST-CT (WP-04): se ejercitan éxitos y errores de NUT e INT-NUT-01', async () => {
+  const c = await circuitoListoParaPlanificar(app, 'contrato');
+  const pro = conSesion(app, c.pro.token);
+  const ase = conSesion(app, c.ase.token);
+  const ajeno = randomUUID();
+  // NUT-01 a 06
+  const evClave = claveDeIdempotencia();
+  const ev = await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/evaluations`, evClave).send(cuerpoDeEvaluacion()).expect(201);
+  await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/evaluations`, evClave).send({ ...cuerpoDeEvaluacion(), context: 'otro' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/evaluations`).send({ ...cuerpoDeEvaluacion(), occurredAt: new Date(Date.now() + 86_400_000).toISOString() }).expect(422);
+  await pro.post(`/api/v1/advisees/${ajeno}/nutrition/evaluations`).send(cuerpoDeEvaluacion()).expect(404);
+  await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/evaluations`).send({ ...cuerpoDeEvaluacion(), extra: 1 }).expect(400);
+  await pro.get(`/api/v1/advisees/${c.ase.id}/nutrition/evaluations`).expect(200);
+  await pro.get(`/api/v1/advisees/${c.ase.id}/nutrition/evaluations?cursor=xx`).expect(400);
+  await pro.get(`/api/v1/advisees/${ajeno}/nutrition/evaluations`).expect(404);
+  await pro.get(`/api/v1/nutrition/evaluations/${ev.body.data.evaluationId}`).expect(200);
+  await pro.get(`/api/v1/nutrition/evaluations/${ajeno}`).expect(404);
+  await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/objectives`).send(cuerpoDeObjetivo(ajeno)).expect(422); // EVALUATION_NOT_COMPATIBLE
+  await pro.post(`/api/v1/advisees/${ajeno}/nutrition/objectives`).send(cuerpoDeObjetivo(c.evaluationId)).expect(404);
+  await pro.get(`/api/v1/advisees/${c.ase.id}/nutrition/objectives`).expect(200);
+  await pro.get(`/api/v1/advisees/${ajeno}/nutrition/objectives`).expect(404);
+  await pro.get(`/api/v1/advisees/${c.ase.id}/nutrition/objectives/effective`).expect(200);
+  await pro.get(`/api/v1/advisees/${ajeno}/nutrition/objectives/effective`).expect(404);
+  // NUT-13 e INT-NUT-01
+  await pro.get('/api/v1/nutrition/catalog-items?q=arroz').expect(200);
+  await pro.get('/api/v1/nutrition/catalog-items?type=OTRO').expect(400);
+  await ase.get('/api/v1/nutrition/catalog-items').expect(403);
+  const nuevo = { name: 'Galleta sintética', itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: 420, proteinG: 8, carbohydrateG: 70, fatG: 12 } };
+  await pro.post('/api/v1/nutrition/catalog-items').send(nuevo).expect(201);
+  await ase.post('/api/v1/nutrition/catalog-items').send(nuevo).expect(403);
+  // NUT-07 a 12
+  await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: ajeno }).expect(422); // OBJECTIVE_NOT_EFFECTIVE_OR_COMPATIBLE
+  await pro.post(`/api/v1/advisees/${ajeno}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId }).expect(404);
+  const b = await crearBorrador(app, c);
+  await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId }).expect(409); // RESOURCE_CONFLICT: ya hay un borrador
+  await pro.get(`/api/v1/advisees/${c.ase.id}/nutrition/plans?state=DRAFT`).expect(200);
+  await pro.get(`/api/v1/advisees/${c.ase.id}/nutrition/plans?state=OTRO`).expect(400);
+  await pro.get(`/api/v1/advisees/${ajeno}/nutrition/plans`).expect(404);
+  await pro.get(`/api/v1/nutrition/plans/${b.planId}`).expect(200);
+  await pro.get(`/api/v1/nutrition/plans/${ajeno}`).expect(404);
+  await patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${b.planId}`).send({ expectedVersion: 'v9', changes: { dayTypes: [] } }).expect(409);
+  await patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${b.planId}`).send({ expectedVersion: b.version, changes: { dayTypes: [{ label: 'D', meals: [{ label: 'M', prescriptionMode: 'EXCHANGE_PORTIONS', options: [] }] }] } }).expect(422);
+  await patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${ajeno}`).send({ expectedVersion: 'v1', changes: { dayTypes: [] } }).expect(404);
+  const guardado = await patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${b.planId}`).send({ expectedVersion: b.version, changes: estructura(c.arroz, c.pollo) }).expect(200);
+  await pro.post(`/api/v1/nutrition/plans/${b.planId}/validate`).send({ expectedVersion: 'v1' }).expect(409);
+  await pro.post(`/api/v1/nutrition/plans/${ajeno}/validate`).send({ expectedVersion: 'v1' }).expect(404);
+  await pro.post(`/api/v1/nutrition/plans/${b.planId}/validate`).send({ expectedVersion: guardado.body.data.version }).expect(200);
+  await activar(app, c.pro, b.planId, 'v1').expect(409);
+  await activar(app, c.pro, ajeno, 'v1').expect(404);
+  const act = await activar(app, c.pro, b.planId, guardado.body.data.version).expect(200);
+  await patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${b.planId}`).send({ expectedVersion: act.body.data.version, changes: { dayTypes: [] } }).expect(422); // PLAN_NOT_EDITABLE
+  await pro.post(`/api/v1/nutrition/plans/${b.planId}/validate`).send({ expectedVersion: act.body.data.version }).expect(422); // PLAN_NOT_EDITABLE
+  await activar(app, c.pro, b.planId, act.body.data.version).expect(422); // OPERATION_NOT_READY
+  // NUT-14 a 16, lista propia y NUT-21
+  const hoy = await ase.get('/api/v1/me/nutrition/today').expect(200);
+  await ase.get('/api/v1/me/nutrition/today?otro=1').expect(400);
+  const dia = hoy.body.data.activePlan.dayTypes[0];
+  const reg = await registrarComida(app, c.ase, b.planId, dia, { gramos: 80 }).expect(201);
+  await registrarComida(app, c.ase, b.planId, dia, { gramos: 80 }).expect(200);
+  await registrarComida(app, c.ase, b.planId, dia, { gramos: 10 }).expect(409);
+  await registrarComida(app, c.ase, ajeno, dia).expect(404);
+  const invalida = await ase.post('/api/v1/me/nutrition/executions').send({
+    activePlanId: b.planId,
+    dayTypeId: dia.dayTypeId,
+    occurredAt: new Date().toISOString(),
+    recording: { origin: 'PRESCRIBED', mode: 'DISH_OPTIONS', mealId: dia.meals[0].mealId, optionId: randomUUID() },
+  });
+  expect(invalida.status).toBe(422);
+  const libre = await registrarLibre(app, c.ase, b.planId, 'Texto libre para el contrato.').expect(201);
+  await ase.get('/api/v1/me/nutrition/executions').expect(200);
+  await ase.get('/api/v1/me/nutrition/executions?cursor=zz').expect(400);
+  await ase.get(`/api/v1/nutrition/executions/${reg.body.data.executionId}`).expect(200);
+  await ase.get(`/api/v1/nutrition/executions/${ajeno}`).expect(404);
+  const estimacion = { reason: 'STRUCTURE_FREE_DESCRIPTION', structuredEstimate: { items: [{ catalogItemId: null, description: 'Texto', quantity: null }] }, estimationStatement: 'Estimación.' };
+  await pro.post(`/api/v1/nutrition/executions/${libre.body.data.executionId}/corrections`).send(estimacion).expect(201);
+  await pro.post(`/api/v1/nutrition/executions/${reg.body.data.executionId}/corrections`).send(estimacion).expect(422);
+  await pro.post(`/api/v1/nutrition/executions/${libre.body.data.executionId}/corrections`).send({ ...estimacion, structuredEstimate: { items: [{ catalogItemId: ajeno, description: 'x', quantity: null }] } }).expect(422);
+  await pro.post(`/api/v1/nutrition/executions/${ajeno}/corrections`).send(estimacion).expect(404);
+  // NUT-17 a 20
+  await pro.get(`/api/v1/advisees/${c.ase.id}/nutrition/review-context`).expect(200);
+  await pro.get(`/api/v1/advisees/${c.ase.id}/nutrition/review-context?periodStart=mal`).expect(400);
+  await pro.get(`/api/v1/advisees/${ajeno}/nutrition/review-context`).expect(404);
+  const evidencia = [{ type: 'EXECUTION', id: reg.body.data.executionId as string }];
+  await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send(cuerpoDeRevision(evidencia, 'OTRO')).expect(422);
+  await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send({ ...cuerpoDeRevision(evidencia, 'MAINTAIN'), rationale: '' }).expect(422);
+  await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send(cuerpoDeRevision([{ type: 'EXECUTION', id: ajeno }], 'MAINTAIN')).expect(422);
+  await pro.post(`/api/v1/advisees/${ajeno}/nutrition/reviews`).send(cuerpoDeRevision(evidencia, 'MAINTAIN')).expect(404);
+  const rev = await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send(cuerpoDeRevision(evidencia, 'MAINTAIN', { nextReviewAt: '2030-01-01' })).expect(201);
+  await pro.get(`/api/v1/nutrition/reviews/${rev.body.data.reviewId}`).expect(200);
+  await pro.get(`/api/v1/nutrition/reviews/${ajeno}`).expect(404);
+  await pro.post(`/api/v1/nutrition/reviews/${rev.body.data.reviewId}/apply`).send({ expectedVersion: 'v2' }).expect(409);
+  await pro.post(`/api/v1/nutrition/reviews/${rev.body.data.reviewId}/apply`).send({ expectedVersion: 'v1' }).expect(200);
+  await pro.post(`/api/v1/nutrition/reviews/${rev.body.data.reviewId}/apply`).send({ expectedVersion: 'v1' }).expect(409);
+  await pro.post(`/api/v1/nutrition/reviews/${ajeno}/apply`).send({ expectedVersion: 'v1' }).expect(404);
+  // AJUSTAR con un borrador ya abierto: la continuidad no se puede aplicar (UC-I06 E02).
+  await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: b.planId }).expect(201);
+  const ajuste = await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send(cuerpoDeRevision(evidencia, 'ADJUST')).expect(201);
+  await pro.post(`/api/v1/nutrition/reviews/${ajuste.body.data.reviewId}/apply`).send({ expectedVersion: 'v1' }).expect(422);
+  // Revisar sin seguimiento abierto: REVIEW_NOT_ALLOWED.
+  const cierre = await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send(cuerpoDeRevision(evidencia, 'FINALIZE')).expect(201);
+  await pro.post(`/api/v1/nutrition/reviews/${cierre.body.data.reviewId}/apply`).send({ expectedVersion: 'v1' }).expect(200);
+  await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send(cuerpoDeRevision(evidencia, 'MAINTAIN')).expect(422);
+  await registrarLibre(app, c.ase, b.planId, 'Después del cierre.').expect(422); // ACTIVE_PLAN_REQUIRED
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

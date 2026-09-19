@@ -192,6 +192,8 @@ export const CrearPlanRequestSchema = z.strictObject({
   initialStructure: EstructuraDePlanEntradaSchema.optional(),
   /** DL-047: borrador sucesor de la versión efectiva («Crear nueva versión a partir de esta», UC-P10 V07). */
   basedOnPlanId: IdOpaco.optional(),
+  /** Próxima revisión que fija esta versión (REG-06-145); al activar nace la expectativa del Proceso (DL-055). */
+  nextReviewAt: FechaLocalSchema.nullable().optional(),
 });
 export type CrearPlanRequest = z.infer<typeof CrearPlanRequestSchema>;
 
@@ -211,6 +213,7 @@ export const VersionDePlanSchema = z.strictObject({
   activatedAt: Instante.nullable(),
   /** SHA-256 de la instantánea; `null` en un borrador (REG-06-105). */
   snapshotDigest: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
+  nextReviewAt: FechaLocalSchema.nullable(),
   dayTypes: z.array(DiaTipoSchema),
 });
 export type VersionDePlan = z.infer<typeof VersionDePlanSchema>;
@@ -219,7 +222,13 @@ export const PlanResponseSchema = z.strictObject({ data: VersionDePlanSchema });
 export const ResumenDeVersionDePlanSchema = VersionDePlanSchema.omit({ dayTypes: true });
 export const ListaDePlanesResponseSchema = z.strictObject({ data: z.array(ResumenDeVersionDePlanSchema), page: PaginaSchema });
 
-export const EditarBorradorRequestSchema = z.strictObject({ expectedVersion: TokenDeVersionSchema, changes: EstructuraDePlanEntradaSchema });
+export const EditarBorradorRequestSchema = z.strictObject({
+  expectedVersion: TokenDeVersionSchema,
+  changes: EstructuraDePlanEntradaSchema,
+  /** Pasar el borrador al objetivo efectivo, por ejemplo después de CAMBIAR_OBJETIVO (DL-055). */
+  objectiveVersionId: IdOpaco.optional(),
+  nextReviewAt: FechaLocalSchema.nullable().optional(),
+});
 export type EditarBorradorRequest = z.infer<typeof EditarBorradorRequestSchema>;
 
 export const VersionEsperadaRequestSchema = z.strictObject({ expectedVersion: TokenDeVersionSchema });
@@ -374,7 +383,11 @@ export const HoyResponseSchema = z.strictObject({
   data: z.strictObject({
     date: FechaLocalSchema,
     timeZone: ZonaHorariaSchema,
-    planState: z.enum(['AVAILABLE', 'NO_ACTIVE_PLAN']),
+    /**
+     * AVAILABLE: hay un plan vigente. NO_ACTIVE_PLAN: no hay plan activado o el seguimiento se cerró. NOT_AVAILABLE: hay
+     * plan, pero el acceso está suspendido (consentimiento o A3 revocados, vínculo pausado): UC-P12 E06.
+     */
+    planState: z.enum(['AVAILABLE', 'NO_ACTIVE_PLAN', 'NOT_AVAILABLE']),
     activePlan: z
       .strictObject({
         planId: IdOpaco,
@@ -476,6 +489,9 @@ export const RevisionSchema = z.strictObject({
   application: AplicacionDeRevisionSchema.nullable(),
 });
 export type Revision = z.infer<typeof RevisionSchema>;
+/** API-NUT-20: la aplicación de la revisión (DL-055). */
+export const AplicarRevisionResponseSchema = z.strictObject({ data: z.strictObject({ reviewId: IdOpaco, application: AplicacionDeRevisionSchema }) });
+export type AplicarRevisionResponse = z.infer<typeof AplicarRevisionResponseSchema>;
 export const RevisionResponseSchema = z.strictObject({ data: RevisionSchema });
 
 export const ContextoDeRevisionResponseSchema = z.strictObject({

@@ -3,7 +3,8 @@
  * equivalente»). `scripts/generar-openapi.cjs` lo escribe en `docs/api/openapi.json` y la CI falla si difiere.
  * Alcance:
  * - las operaciones autorizadas de WP-02 (docs/paquetes/WP-02.md §4);
- * - las de WP-03 (docs/paquetes/WP-03.md §4).
+ * - las de WP-03 (docs/paquetes/WP-03.md §4);
+ * - las de WP-04 (docs/paquetes/WP-04.md §4).
  */
 import { z } from 'zod';
 import {
@@ -42,6 +43,35 @@ import {
   SolicitudDeduplicadaResponseSchema,
   VinculoResponseSchema,
 } from './contratos-vinculo';
+import {
+  ActivacionDePlanResponseSchema,
+  AplicarRevisionResponseSchema,
+  ContextoDeRevisionResponseSchema,
+  CorregirIngestaRequestSchema,
+  CrearElementoDeCatalogoRequestSchema,
+  CrearEvaluacionRequestSchema,
+  CrearEvaluacionResponseSchema,
+  CrearObjetivoRequestSchema,
+  CrearPlanRequestSchema,
+  EditarBorradorRequestSchema,
+  ElementoDeCatalogoResponseSchema,
+  EvaluacionResponseSchema,
+  HoyResponseSchema,
+  IngestaResponseSchema,
+  ListaDeCatalogoResponseSchema,
+  ListaDeEvaluacionesResponseSchema,
+  ListaDeIngestasResponseSchema,
+  ListaDeObjetivosResponseSchema,
+  ListaDePlanesResponseSchema,
+  ObjetivoEfectivoResponseSchema,
+  ObjetivoResponseSchema,
+  PlanResponseSchema,
+  RegistrarIngestaRequestSchema,
+  RegistrarRevisionRequestSchema,
+  RevisionResponseSchema,
+  ValidacionDePlanResponseSchema,
+  VersionEsperadaRequestSchema,
+} from './contratos-nutricion';
 
 type Codigo = keyof typeof CodigoDeError;
 type Errores = Partial<Record<400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503, readonly Codigo[]>>;
@@ -54,7 +84,7 @@ interface ParametroDeQuery {
 
 export interface Operacion {
   readonly id: string;
-  readonly metodo: 'get' | 'post' | 'delete';
+  readonly metodo: 'get' | 'post' | 'patch' | 'delete';
   /** Relativa a `/api/v1`. Los parámetros de ruta van entre llaves: `/relationships/{relationshipId}`. */
   readonly ruta: string;
   readonly resumen: string;
@@ -409,6 +439,316 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: '09v11:895-950 · 08:581, 09:715 (SESSION con datos sintéticos) · DEUDA_LEGAJO DL-031',
   },
+  // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 (09v12) ─────────────────────────────────────
+  {
+    id: 'API-NUT-01',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/nutrition/evaluations',
+    resumen: 'Registrar una evaluación nutricional. Cada dato declara su fuente (informado, observado o calculado). No sobrescribe evaluaciones anteriores.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearEvaluacionRequestSchema,
+    exitos: [{ status: 201, schema: CrearEvaluacionResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['NUTRITION_EVALUATION_INVALID'] },
+    fuente: '09v9:325-377 · DEUDA_LEGAJO DL-048, DL-055',
+  },
+  {
+    id: 'API-NUT-02',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/nutrition/evaluations',
+    resumen: 'Evaluaciones propias del profesional sobre el asesorado, paginadas.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeEvaluacionesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v9:381-387 · DEUDA_LEGAJO DL-055, DL-057',
+  },
+  {
+    id: 'API-NUT-03',
+    metodo: 'get',
+    ruta: '/nutrition/evaluations/{evaluationId}',
+    resumen: 'Una evaluación. Inexistente, ajena o no autorizada → el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: EvaluacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v9:391-401',
+  },
+  {
+    id: 'API-NUT-04',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/nutrition/objectives',
+    resumen: 'Emitir una nueva versión de objetivo: decisión profesional con fundamento obligatorio. BE no calcula el requerimiento. La anterior se conserva.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearObjetivoRequestSchema,
+    exitos: [{ status: 201, schema: ObjetivoResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['NUTRITION_OBJECTIVE_INVALID', 'EVALUATION_NOT_COMPATIBLE'] },
+    fuente: '09v9:405-444 · REG-06-123 · INV-06-133',
+  },
+  {
+    id: 'API-NUT-05',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/nutrition/objectives',
+    resumen: 'Historia de versiones de objetivo, con la efectiva marcada por relación de sucesión.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeObjetivosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v9:448-452',
+  },
+  {
+    id: 'API-NUT-06',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/nutrition/objectives/effective',
+    resumen: 'Objetivo efectivo: la versión terminal de la sucesión, nunca «la última por fecha». `objective: null` si no hay.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ObjetivoEfectivoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v9:456-472 · INV-06-107',
+  },
+  {
+    id: 'API-NUT-07',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/nutrition/plans',
+    resumen:
+      'Crear un borrador de plan: no vigente, no abre proceso ni ocupa capacidad. Con `basedOnPlanId`, borrador sucesor de la versión efectiva, sin tocarla (DL-047). Un solo borrador por plan.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearPlanRequestSchema,
+    exitos: [{ status: 201, schema: PlanResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'],
+      422: ['OBJECTIVE_NOT_EFFECTIVE_OR_COMPATIBLE', 'NUTRITION_PLAN_STRUCTURE_INVALID', 'CATALOG_REFERENCE_INVALID', 'EXCHANGE_MODE_NOT_AVAILABLE', 'VALIDATION_FAILED'],
+    },
+    fuente: '09v9:476-499 · UC-P10 V07 · DEUDA_LEGAJO DL-046, DL-047, DL-055',
+  },
+  {
+    id: 'API-NUT-08',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/nutrition/plans',
+    resumen: 'Versiones del plan del profesional para el asesorado, sin la jerarquía.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, { nombre: 'state', descripcion: 'DRAFT o ACTIVATED.', schema: { type: 'string', enum: ['DRAFT', 'ACTIVATED'] } }],
+    exitos: [{ status: 200, schema: ListaDePlanesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v9:503-509',
+  },
+  {
+    id: 'API-NUT-09',
+    metodo: 'get',
+    ruta: '/nutrition/plans/{planId}',
+    resumen: 'Una versión de plan. Activada: se reconstruye desde la instantánea, nunca desde el catálogo vivo. El asesorado ve solo versiones activadas.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PlanResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v9:513-519 · REG-06-105',
+  },
+  {
+    id: 'API-NUT-10',
+    metodo: 'patch',
+    ruta: '/nutrition/plans/{planId}',
+    resumen: 'Guardar un borrador (reemplaza la jerarquía). Una versión activada no se edita: 422 PLAN_NOT_EDITABLE (INV-06-109).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: EditarBorradorRequestSchema,
+    exitos: [{ status: 200, schema: PlanResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['VERSION_CONFLICT'],
+      422: ['PLAN_NOT_EDITABLE', 'NUTRITION_PLAN_STRUCTURE_INVALID', 'CATALOG_REFERENCE_INVALID', 'EXCHANGE_MODE_NOT_AVAILABLE', 'OBJECTIVE_NOT_EFFECTIVE_OR_COMPATIBLE'],
+    },
+    fuente: '09v9:523-562 · 06:4307',
+  },
+  {
+    id: 'API-NUT-11',
+    metodo: 'post',
+    ruta: '/nutrition/plans/{planId}/validate',
+    resumen: 'Validar un borrador sin activarlo. Responde 200 aunque haya problemas, con cada problema anclado a su ruta.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: VersionEsperadaRequestSchema,
+    exitos: [{ status: 200, schema: ValidacionDePlanResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['VERSION_CONFLICT'], 422: ['PLAN_NOT_EDITABLE'] },
+    fuente: '09v9:566-597 · UC-I04',
+  },
+  {
+    id: 'API-NUT-12',
+    metodo: 'post',
+    ruta: '/nutrition/plans/{planId}/activate',
+    resumen:
+      'Activar: en una transacción, PDP, validación, instantánea antes de la vigencia, vigencia única y Proceso nuevo (con capacidad) o continuidad. Si algo falla, no cambia nada.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionEsperadaRequestSchema,
+    exitos: [{ status: 200, schema: ActivacionDePlanResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['VERSION_CONFLICT', 'ACTIVE_PLAN_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'],
+      422: ['OPERATION_NOT_READY', 'CAPACITY_NOT_AVAILABLE'],
+    },
+    fuente: '09v9:601-644 · REG-06-104 · REG-06-91 · DEUDA_LEGAJO DL-051, DL-055 (NUTRITION_SCOPE_NOT_OPERATIONAL: 404)',
+  },
+  {
+    id: 'API-NUT-13',
+    metodo: 'get',
+    ruta: '/nutrition/catalog-items',
+    resumen: 'Catálogo nutricional BE: el sembrado (global) y el propio del profesional. Solo profesionales de Nutrición.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, { nombre: 'q', descripcion: 'Texto a buscar en el nombre.', schema: { type: 'string' } }, { nombre: 'type', descripcion: 'FOOD.', schema: { type: 'string', enum: ['FOOD'] } }],
+    exitos: [{ status: 200, schema: ListaDeCatalogoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: '09v9:648-654 · REG-06-99, 135',
+  },
+  {
+    id: 'API-INT-NUT-01',
+    metodo: 'post',
+    ruta: '/nutrition/catalog-items',
+    resumen: 'Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027).',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearElementoDeCatalogoRequestSchema,
+    exitos: [{ status: 201, schema: ElementoDeCatalogoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: '09v12:111-160 · RF-027',
+  },
+  {
+    id: 'API-NUT-14',
+    metodo: 'get',
+    ruta: '/me/nutrition/today',
+    resumen: '«Hoy» del asesorado: la instantánea vigente y sus registros del día. Sin registros → NO_DATA, nunca 0 %. No elige un día tipo en silencio.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [{ nombre: 'dayTypeId', descripcion: 'Día tipo elegido por el asesorado (DL-049).', schema: { type: 'string' } }],
+    exitos: [{ status: 200, schema: HoyResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: '09v9:658-680 · UC-P12 E06 · DEUDA_LEGAJO DL-049',
+  },
+  {
+    id: 'API-NUT-15',
+    metodo: 'post',
+    ruta: '/me/nutrition/executions',
+    resumen:
+      'Registrar una ingesta: prescripta (comida y opción de la instantánea vigente, cantidades opcionales) o fuera del plan (texto libre). No modifica el plan. Un reintento no duplica.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RegistrarIngestaRequestSchema,
+    exitos: [
+      { status: 201, schema: IngestaResponseSchema },
+      { status: 200, schema: IngestaResponseSchema },
+    ],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED', 'EXECUTION_ALREADY_REGISTERED_INCOMPATIBLY'],
+      422: ['ACTIVE_PLAN_REQUIRED', 'NUTRITION_EXECUTION_INVALID'],
+    },
+    fuente: '09v9:684-746 · CONS:564-628 · DEUDA_LEGAJO DL-049, DL-050',
+  },
+  {
+    id: 'API-NUT-16-LISTA',
+    metodo: 'get',
+    ruta: '/me/nutrition/executions',
+    resumen: 'Registros propios del asesorado (B10-05 NUT-11). Exige A3 vigente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeIngestasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'B10-05 NUT-11 · 10-B01:351-357 · 08:406 · DEUDA_LEGAJO DL-055',
+  },
+  {
+    id: 'API-NUT-16',
+    metodo: 'get',
+    ruta: '/nutrition/executions/{executionId}',
+    resumen: 'Una ingesta con su original, sus correcciones y la vista efectiva por relación de corrección.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: IngestaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v9:750-756 · REG-06-16',
+  },
+  {
+    id: 'API-NUT-17',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/nutrition/review-context',
+    resumen: 'Contexto de revisión: objetivo, versiones del período, ingestas, contraste descriptivo, días sin dato y revisiones previas. Ver no es revisar.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'periodStart', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' } },
+      { nombre: 'periodEnd', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' } },
+    ],
+    exitos: [{ status: 200, schema: ContextoDeRevisionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v9:793-837 · REG-06-125 · INV-06-135',
+  },
+  {
+    id: 'API-NUT-18',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/nutrition/reviews',
+    resumen: 'Registrar una revisión válida: evidencia reconstruible, interpretación, uno de los seis resultados, fundamento y próxima acción o cierre. No aplica nada.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RegistrarRevisionRequestSchema,
+    exitos: [{ status: 201, schema: RevisionResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['REVIEW_EVIDENCE_NOT_RECONSTRUCTIBLE', 'REVIEW_COMPONENT_REQUIRED', 'REVIEW_RESULT_INVALID', 'REVIEW_NOT_ALLOWED'],
+    },
+    fuente: '09v9:842-900 · REG-06-141, 144 · UC-I05',
+  },
+  {
+    id: 'API-NUT-19',
+    metodo: 'get',
+    ruta: '/nutrition/reviews/{reviewId}',
+    resumen: 'Una revisión y, si se aplicó, el evento ContinuidadOCierreAplicado.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: RevisionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v9:904-910',
+  },
+  {
+    id: 'API-NUT-20',
+    metodo: 'post',
+    ruta: '/nutrition/reviews/{reviewId}/apply',
+    resumen:
+      'Aplicar la continuidad o el cierre (UC-I06): primero la consecuencia (borrador sucesor, objetivo nuevo, próxima revisión o cierre) y después el evento. Sin consecuencia aplicada no hay evento.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionEsperadaRequestSchema,
+    exitos: [{ status: 200, schema: AplicarRevisionResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['VERSION_CONFLICT', 'REVIEW_ALREADY_APPLIED', 'IDEMPOTENCY_KEY_REUSED'],
+      422: ['CONTINUITY_ACTION_NOT_APPLICABLE', 'REVIEW_NOT_VALID_FOR_APPLICATION'],
+    },
+    fuente: '09v9:914-961 · REG-06-75, 77 · DEUDA_LEGAJO DL-052',
+  },
+  {
+    id: 'API-NUT-21',
+    metodo: 'post',
+    ruta: '/nutrition/executions/{executionId}/corrections',
+    resumen: 'Estructurar una ingesta libre como estimación profesional: Corrección trazable, el original queda intacto y la vista efectiva se resuelve por relación.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CorregirIngestaRequestSchema,
+    exitos: [{ status: 201, schema: IngestaResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['NUTRITION_FREE_DESCRIPTION_REQUIRED', 'STRUCTURED_ESTIMATE_INVALID', 'CORRECTION_NOT_ALLOWED'],
+    },
+    fuente: 'CONS:632-685 · REG-06-14, 15, 16, 121',
+  },
 ];
 
 /**
@@ -417,8 +757,21 @@ const DEFINIDAS: readonly Operacion[] = [
  *   409 RESOURCE_CONFLICT («conflicto concurrente», 09 §3);
  * - las lecturas de un recurso protegido comparten un límite por actor: 429 RATE_LIMITED.
  */
-const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set(['API-DSH-03', 'API-REL-06', 'API-CON-01']);
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-CON-04', 'API-CON-08']);
+const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
+  'API-DSH-03',
+  'API-REL-06',
+  'API-CON-01',
+  'API-NUT-02',
+  'API-NUT-03',
+  'API-NUT-05',
+  'API-NUT-06',
+  'API-NUT-08',
+  'API-NUT-09',
+  'API-NUT-16',
+  'API-NUT-17',
+  'API-NUT-19',
+]);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-CON-04', 'API-CON-08', 'API-NUT-10', 'API-NUT-11']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };
@@ -490,9 +843,9 @@ export function documentoOpenApi(): Record<string, unknown> {
   return {
     openapi: '3.1.0',
     info: {
-      title: 'BE API — WP-02 Identidad y sesiones · WP-03 Vínculo, consentimiento y PDP',
-      version: '0.3.0',
-      description: 'Generado desde @be/domain (contratos.ts y contratos-vinculo.ts). No editar a mano.',
+      title: 'BE API — WP-02 Identidad y sesiones · WP-03 Vínculo, consentimiento y PDP · WP-04 Circuito nutricional',
+      version: '0.4.0',
+      description: 'Generado desde @be/domain (contratos.ts, contratos-vinculo.ts y contratos-nutricion.ts). No editar a mano.',
     },
     servers: [{ url: '/api/v1' }],
     components: {

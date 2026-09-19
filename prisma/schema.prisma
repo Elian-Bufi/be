@@ -698,6 +698,9 @@ model DecisionDeAcceso {
   consentimientoId          String?                   @map("consentimiento_id") @db.Uuid
   versionDeConsentimientoId String?                   @map("version_de_consentimiento_id") @db.Uuid
   versionDeMatriz           String?                   @map("version_de_matriz")
+  /// WP-04: recurso concreto al que se accede (08:634, «recurso/categoría»). NULL en API-DSH-03, que es por titular.
+  recursoTipo               String?                   @map("recurso_tipo")
+  recursoId                 String?                   @map("recurso_id") @db.Uuid
   superficie                Superficie?
   requestId                 String?                   @map("request_id")
   momentoDeOcurrencia       DateTime                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
@@ -949,6 +952,12 @@ model ProximaRevision {
 
 // ─── WP-04 · Circuito nutricional (06 §10, B-07) ──────────────────────────────────────────────────
 
+/// Condición de disponibilidad para nuevas planificaciones (REG-06-99; 06:4235). Estado, nunca booleano (WP-02).
+enum DisponibilidadDeElemento {
+  DISPONIBLE
+  RETIRADO
+}
+
 enum ProcedenciaDeCatalogo {
   BE_SYNTHETIC_SEED
   PROFESSIONAL_MANUAL
@@ -1009,14 +1018,14 @@ model ElementoDeCatalogoNutricional {
 /// Versión de un elemento de catálogo. Append-only: retirar un elemento emite una versión no disponible, y ninguna
 /// versión reescribe una instantánea (REG-06-101; INV-06-115). La vigente es la terminal de la cadena.
 model VersionDeElementoNutricional {
-  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  elementoId        String   @map("elemento_id") @db.Uuid
-  predecesoraId     String?  @unique @map("predecesora_id") @db.Uuid
+  id                String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  elementoId        String                   @map("elemento_id") @db.Uuid
+  predecesoraId     String?                  @unique @map("predecesora_id") @db.Uuid
   nombre            String
   composicion       Json
-  disponible        Boolean
+  disponibilidad    DisponibilidadDeElemento
   procedencia       Json
-  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeRegistro DateTime                 @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
   elemento    ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   predecesora VersionDeElementoNutricional? @relation("CadenaDeElemento", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)

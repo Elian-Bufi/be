@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  type Alcance,
   ALCANCES,
   FinalizarVinculoRequestSchema,
   PausarVinculoRequestSchema,
@@ -26,6 +27,7 @@ import { LimitadorService } from '../plataforma/limitador.service';
 import { IdempotenciaService, type ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProcesoService } from '../proceso/proceso.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { INCLUIR_PARTES_DE_COMPONENTE, esToken, itemDeVinculo, registrarEventoDeVinculo, resumenDeCadena } from './lectura';
 
@@ -39,6 +41,7 @@ interface ComponenteBloqueado {
   readonly pausadoPor: RolEnVinculo | null;
   readonly profesionalId: string;
   readonly asesoradoId: string;
+  readonly alcance: Alcance;
 }
 
 /**
@@ -57,6 +60,7 @@ export class VinculosService {
     private readonly idempotencia: IdempotenciaService,
     private readonly auditoria: AuditoriaService,
     private readonly limitador: LimitadorService,
+    private readonly procesos: ProcesoService,
   ) {}
 
   // ─── API-REL-05 ────────────────────────────────────────────────────────────────────────────
@@ -180,7 +184,7 @@ export class VinculosService {
    */
   async finalizarPorCierre(tx: Prisma.TransactionClient, identidadId: string, procedencia: Procedencia): Promise<number> {
     const activos = await tx.$queryRaw<ComponenteBloqueado[]>`
-      SELECT av."id"::text AS "id", av."version", av."estado"::text AS "estado", av."pausado_por"::text AS "pausadoPor",
+      SELECT av."id"::text AS "id", av."version", av."estado"::text AS "estado", av."pausado_por"::text AS "pausadoPor", av."alcance"::text AS "alcance",
              vi."profesional_id"::text AS "profesionalId", vi."asesorado_id"::text AS "asesoradoId"
         FROM "alcance_de_vinculo" av JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
        WHERE av."estado" IN ('ACEPTADO', 'PAUSADO') AND (vi."profesional_id" = ${identidadId}::uuid OR vi."asesorado_id" = ${identidadId}::uuid)
@@ -300,13 +304,25 @@ export class VinculosService {
       procedencia,
       momento,
     });
+    // WP-04: finalizar el alcance cierra el Proceso abierto de la misma terna (REG-06-70; INV-06-80); el cierre de
+    // cuenta, con su propio motivo (REG-06-67; INV-06-81). En esta misma transacción, después del alcance (orden de bloqueos).
+    if (destino === 'FINALIZADO') {
+      await this.procesos.cerrarPorFinalizacionDeVinculo(tx, {
+        profesionalId: c.profesionalId,
+        asesoradoId: c.asesoradoId,
+        alcance: c.alcance,
+        motivo: motivo === 'CIERRE_DE_CUENTA' ? 'CIERRE_DE_CUENTA' : 'FINALIZACION_DE_VINCULO',
+        procedencia,
+        momento,
+      });
+    }
   }
 
   /** El componente, bloqueado, solo si el actor es parte. Si no, 404 idéntico (09v8:1385; 09:226). */
   private async bloquearDeParticipante(tx: Prisma.TransactionClient, actorId: string, vinculoId: string): Promise<ComponenteBloqueado> {
     if (!UUID.test(vinculoId)) throw errores.recursoNoEncontrado();
     const [c] = await tx.$queryRaw<ComponenteBloqueado[]>`
-      SELECT av."id"::text AS "id", av."version", av."estado"::text AS "estado", av."pausado_por"::text AS "pausadoPor",
+      SELECT av."id"::text AS "id", av."version", av."estado"::text AS "estado", av."pausado_por"::text AS "pausadoPor", av."alcance"::text AS "alcance",
              vi."profesional_id"::text AS "profesionalId", vi."asesorado_id"::text AS "asesoradoId"
         FROM "alcance_de_vinculo" av JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
        WHERE av."id" = ${vinculoId}::uuid AND (vi."profesional_id" = ${actorId}::uuid OR vi."asesorado_id" = ${actorId}::uuid)

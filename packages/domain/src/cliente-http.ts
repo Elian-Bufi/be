@@ -1,5 +1,5 @@
 /**
- * Cliente HTTP de los contratos de WP-02 y WP-03, compartido por el website y el APK (09v7 T21: una sola definición).
+ * Cliente HTTP de los contratos de WP-02, WP-03 y WP-04, compartido por el website y el APK (09v7 T21: una sola definición).
  * Cada superficie lo instancia con su base y su superficie declarada:
  * - website: origen de la API inyectado en el build (`BE_API_BASE_URL`), llamada directa con CORS (DL-030);
  * - APK: base absoluta `API_BASE_URL/api/v1` del perfil de build (07:645, sin CORS).
@@ -54,6 +54,33 @@ import {
   type RespuestaDeCrearSolicitud,
   type VinculoResponse,
 } from './contratos-vinculo';
+import {
+  ActivacionDePlanResponseSchema,
+  AplicarRevisionResponseSchema,
+  ContextoDeRevisionResponseSchema,
+  CrearEvaluacionResponseSchema,
+  ElementoDeCatalogoResponseSchema,
+  HoyResponseSchema,
+  IngestaResponseSchema,
+  ListaDeCatalogoResponseSchema,
+  ListaDeEvaluacionesResponseSchema,
+  ListaDeIngestasResponseSchema,
+  ListaDeObjetivosResponseSchema,
+  ListaDePlanesResponseSchema,
+  ObjetivoEfectivoResponseSchema,
+  ObjetivoResponseSchema,
+  PlanResponseSchema,
+  RevisionResponseSchema,
+  ValidacionDePlanResponseSchema,
+  type CorregirIngestaRequest,
+  type CrearElementoDeCatalogoRequest,
+  type CrearEvaluacionRequest,
+  type CrearObjetivoRequest,
+  type CrearPlanRequest,
+  type EditarBorradorRequest,
+  type RegistrarIngestaRequest,
+  type RegistrarRevisionRequest,
+} from './contratos-nutricion';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import type { Superficie } from './procedencia';
 import { VERSION_VIGENTE } from './textos';
@@ -85,7 +112,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
   const hacerFetch = opciones.fetch ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
 
   async function llamar<S extends EsquemaDeContrato | null>(
-    metodo: 'GET' | 'POST' | 'DELETE',
+    metodo: 'GET' | 'POST' | 'PATCH' | 'DELETE',
     ruta: string,
     extra: { token?: string; cuerpo?: unknown; claveDeIdempotencia?: string; esquema: S },
   ): Promise<Resultado<S extends EsquemaDeContrato ? SalidaDe<S> : null>> {
@@ -310,6 +337,101 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-DSH-03. 404 = no hay acceso que mostrar: la UI no distingue por qué (UC-I02 E05). */
     consultarDashboard(token: string, asesoradoId: string): Promise<Resultado<DashboardResponse>> {
       return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/dashboard`, { token, esquema: DashboardResponseSchema });
+    },
+
+    // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 ────────────────────────────────────────────
+    /** API-NUT-01. */
+    crearEvaluacion(token: string, asesoradoId: string, cuerpo: CrearEvaluacionRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/evaluations`, { token, claveDeIdempotencia, esquema: CrearEvaluacionResponseSchema, cuerpo });
+    },
+    /** API-NUT-02. */
+    listarEvaluaciones(token: string, asesoradoId: string, filtro: { cursor?: string } = {}) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/evaluations${query(filtro)}`, { token, esquema: ListaDeEvaluacionesResponseSchema });
+    },
+    /** API-NUT-04. Una versión nueva: la anterior se conserva. */
+    crearObjetivo(token: string, asesoradoId: string, cuerpo: CrearObjetivoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/objectives`, { token, claveDeIdempotencia, esquema: ObjetivoResponseSchema, cuerpo });
+    },
+    /** API-NUT-05. */
+    listarObjetivos(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/objectives`, { token, esquema: ListaDeObjetivosResponseSchema });
+    },
+    /** API-NUT-06. */
+    objetivoEfectivo(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/objectives/effective`, { token, esquema: ObjetivoEfectivoResponseSchema });
+    },
+    /** API-NUT-07. Con `basedOnPlanId`, la versión sucesora de la efectiva (DL-047). */
+    crearBorradorDePlan(token: string, asesoradoId: string, cuerpo: CrearPlanRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/plans`, { token, claveDeIdempotencia, esquema: PlanResponseSchema, cuerpo });
+    },
+    /** API-NUT-08. */
+    listarPlanes(token: string, asesoradoId: string, filtro: { state?: 'DRAFT' | 'ACTIVATED'; cursor?: string } = {}) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/plans${query(filtro)}`, { token, esquema: ListaDePlanesResponseSchema });
+    },
+    /** API-NUT-09. Una versión activada llega desde su instantánea. */
+    consultarPlan(token: string, planId: string) {
+      return llamar('GET', `/nutrition/plans/${encodeURIComponent(planId)}`, { token, esquema: PlanResponseSchema });
+    },
+    /** API-NUT-10. Sin Idempotency-Key: concurrencia por la versión que la pantalla mostró. */
+    guardarBorrador(token: string, planId: string, cuerpo: EditarBorradorRequest) {
+      return llamar('PATCH', `/nutrition/plans/${encodeURIComponent(planId)}`, { token, esquema: PlanResponseSchema, cuerpo });
+    },
+    /** API-NUT-11. Validar no activa. */
+    validarPlan(token: string, planId: string, versionMostrada: string) {
+      return llamar('POST', `/nutrition/plans/${encodeURIComponent(planId)}/validate`, { token, esquema: ValidacionDePlanResponseSchema, cuerpo: { expectedVersion: versionMostrada } });
+    },
+    /** API-NUT-12. */
+    activarPlan(token: string, planId: string, versionMostrada: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/plans/${encodeURIComponent(planId)}/activate`, {
+        token,
+        claveDeIdempotencia,
+        esquema: ActivacionDePlanResponseSchema,
+        cuerpo: { expectedVersion: versionMostrada },
+      });
+    },
+    /** API-NUT-13. */
+    buscarEnCatalogo(token: string, texto: string) {
+      return llamar('GET', `/nutrition/catalog-items${query({ q: texto, limit: '20' })}`, { token, esquema: ListaDeCatalogoResponseSchema });
+    },
+    /** API-INT-NUT-01. */
+    crearElementoDeCatalogo(token: string, cuerpo: CrearElementoDeCatalogoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/nutrition/catalog-items', { token, claveDeIdempotencia, esquema: ElementoDeCatalogoResponseSchema, cuerpo });
+    },
+    /** API-NUT-14. El servidor fija la fecha; el día tipo lo elige el asesorado si hay más de uno (DL-049). */
+    hoyNutricional(token: string, diaTipoId?: string) {
+      return llamar('GET', `/me/nutrition/today${query({ dayTypeId: diaTipoId })}`, { token, esquema: HoyResponseSchema });
+    },
+    /** API-NUT-15. */
+    registrarIngesta(token: string, cuerpo: RegistrarIngestaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/nutrition/executions', { token, claveDeIdempotencia, esquema: IngestaResponseSchema, cuerpo });
+    },
+    /** Registros propios (DL-055). */
+    listarMisIngestas(token: string, filtro: { cursor?: string } = {}) {
+      return llamar('GET', `/me/nutrition/executions${query(filtro)}`, { token, esquema: ListaDeIngestasResponseSchema });
+    },
+    /** API-NUT-16. */
+    consultarIngesta(token: string, ingestaId: string) {
+      return llamar('GET', `/nutrition/executions/${encodeURIComponent(ingestaId)}`, { token, esquema: IngestaResponseSchema });
+    },
+    /** API-NUT-21. */
+    corregirIngesta(token: string, ingestaId: string, cuerpo: CorregirIngestaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/executions/${encodeURIComponent(ingestaId)}/corrections`, { token, claveDeIdempotencia, esquema: IngestaResponseSchema, cuerpo });
+    },
+    /** API-NUT-17. Ver no es revisar. */
+    contextoDeRevision(token: string, asesoradoId: string, periodo: { periodStart?: string; periodEnd?: string } = {}) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/review-context${query(periodo)}`, { token, esquema: ContextoDeRevisionResponseSchema });
+    },
+    /** API-NUT-18. */
+    registrarRevision(token: string, asesoradoId: string, cuerpo: RegistrarRevisionRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/reviews`, { token, claveDeIdempotencia, esquema: RevisionResponseSchema, cuerpo });
+    },
+    /** API-NUT-19. */
+    consultarRevision(token: string, revisionId: string) {
+      return llamar('GET', `/nutrition/reviews/${encodeURIComponent(revisionId)}`, { token, esquema: RevisionResponseSchema });
+    },
+    /** API-NUT-20. Aplica la próxima acción que la revisión ya declaró. */
+    aplicarRevision(token: string, revisionId: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/reviews/${encodeURIComponent(revisionId)}/apply`, { token, claveDeIdempotencia, esquema: AplicarRevisionResponseSchema, cuerpo: { expectedVersion: 'v1' } });
     },
   };
 }
