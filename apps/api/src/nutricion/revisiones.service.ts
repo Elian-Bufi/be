@@ -98,7 +98,8 @@ export class RevisionesService {
             hasta: sucesora?.momentoDeActivacion ? fechaLocalEn(sucesora.momentoDeActivacion, zona) : null,
           };
         });
-        const enPeriodo = conVigencia.filter((v) => v.desde <= fin && (v.hasta === null || v.hasta > inicio));
+        // `hasta >= inicio`: una versión reemplazada el primer día del período todavía tiene registros de ese día.
+        const enPeriodo = conVigencia.filter((v) => v.desde <= fin && (v.hasta === null || v.hasta >= inicio));
 
         const ingestas = await tx.ingestaNutricional.findMany({
           where: {

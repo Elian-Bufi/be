@@ -362,47 +362,74 @@ export interface IngestaParaContraste {
  * si el asesorado informó cantidades, la diferencia con lo prescripto para el mismo ítem y unidad. No hay porcentajes,
  * puntajes, sumas evaluativas ni juicios: describe, no califica (REG-06-125).
  *
+ * Cada registro se lee contra la versión que referencia, nunca contra la que rige hoy (REG-06-105; INV-06-13): lo
+ * registrado no se pierde porque el profesional haya activado una sucesora ese mismo día.
+ * - La versión del día es la del último registro del plan de esa fecha; sin registros, la que regía al terminar el día.
+ * - Una comida de la versión del día toma el registro con su mismo nodo (la sucesora conserva los identificadores).
+ * - Un registro cuya comida no está en la versión del día se agrega con la etiqueta de su propia versión.
+ *
  * El día tipo de una fecha es el que usó el asesorado al registrar; si el plan tiene uno solo, ese. Si tiene varios y
  * ese día no hay registros, no se elige ninguno (09v9:680).
  */
 export function construirContraste(fechas: readonly string[], versiones: readonly VersionEnPeriodo[], ingestas: readonly IngestaParaContraste[]): ContrasteDescriptivo {
+  const porId = new Map(versiones.map((v) => [v.planId, v]));
+  const comidaDe = (i: IngestaParaContraste) => {
+    for (const d of porId.get(i.planId)?.instantanea.dayTypes ?? []) {
+      const m = d.meals.find((x) => x.mealId === i.mealId);
+      if (m) return m;
+    }
+    return null;
+  };
+  const entrada = (mealId: string, label: string, registro: IngestaParaContraste | null) => {
+    const opcion = registro ? comidaDe(registro)?.options.find((o) => o.optionId === registro.optionId) : undefined;
+    const quantityDifferences = (registro?.consumedItems ?? []).flatMap((c) => {
+      const item = opcion?.items.find((i) => i.itemId === c.itemId);
+      if (!item?.quantity || item.quantity.unit !== c.quantity.unit) return [];
+      return [
+        {
+          itemId: item.itemId,
+          name: item.name,
+          prescribed: item.quantity,
+          registered: c.quantity,
+          difference: Math.round((c.quantity.value - item.quantity.value) * 100) / 100,
+          unit: item.quantity.unit,
+        },
+      ];
+    });
+    return {
+      mealId,
+      label,
+      state: registro ? ('REGISTERED' as const) : ('NO_DATA' as const),
+      registeredOptionId: registro?.optionId ?? null,
+      executionId: registro?.executionId ?? null,
+      quantityDifferences,
+    };
+  };
+
   return {
     days: fechas.map((fecha) => {
-      const version = versiones.find((v) => v.desde <= fecha && (v.hasta === null || fecha < v.hasta)) ?? null;
       const delDia = ingestas.filter((i) => i.localDate === fecha);
       const libres = delDia.filter((i) => i.origin === 'OUTSIDE_PRESCRIPTION').map((i) => ({ executionId: i.executionId, description: i.description ?? '' }));
-      const prescriptas = delDia.filter((i) => i.origin === 'PRESCRIBED' && version !== null && i.planId === version.planId);
+      const prescriptas = delDia.filter((i) => i.origin === 'PRESCRIBED' && porId.has(i.planId));
       const dataState = delDia.length > 0 ? ('HAS_DATA' as const) : ('NO_DATA' as const);
+      const referenciada = prescriptas.length > 0 ? porId.get(prescriptas[prescriptas.length - 1]!.planId)! : null;
+      const version = referenciada ?? versiones.find((v) => v.desde <= fecha && (v.hasta === null || fecha < v.hasta)) ?? null;
       if (!version) return { date: fecha, planId: null, dayTypeId: null, dataState, meals: [], outsidePrescription: libres };
 
-      const dayTypeId = prescriptas.find((i) => i.dayTypeId)?.dayTypeId ?? (version.instantanea.dayTypes.length === 1 ? version.instantanea.dayTypes[0]!.dayTypeId : null);
+      const propias = prescriptas.filter((i) => i.planId === version.planId);
+      const dayTypeId = propias.find((i) => i.dayTypeId)?.dayTypeId ?? (version.instantanea.dayTypes.length === 1 ? version.instantanea.dayTypes[0]!.dayTypeId : null);
       const dia = version.instantanea.dayTypes.find((d) => d.dayTypeId === dayTypeId);
+      const usadas = new Set<string>();
       const meals = (dia?.meals ?? []).map((m) => {
-        const registro = prescriptas.find((i) => i.mealId === m.mealId) ?? null;
-        const opcion = registro ? m.options.find((o) => o.optionId === registro.optionId) : undefined;
-        const quantityDifferences = (registro?.consumedItems ?? []).flatMap((c) => {
-          const item = opcion?.items.find((i) => i.itemId === c.itemId);
-          if (!item?.quantity || item.quantity.unit !== c.quantity.unit) return [];
-          return [
-            {
-              itemId: item.itemId,
-              name: item.name,
-              prescribed: item.quantity,
-              registered: c.quantity,
-              difference: Math.round((c.quantity.value - item.quantity.value) * 100) / 100,
-              unit: item.quantity.unit,
-            },
-          ];
-        });
-        return {
-          mealId: m.mealId,
-          label: m.label,
-          state: registro ? ('REGISTERED' as const) : ('NO_DATA' as const),
-          registeredOptionId: registro?.optionId ?? null,
-          executionId: registro?.executionId ?? null,
-          quantityDifferences,
-        };
+        const registro = propias.find((i) => i.mealId === m.mealId) ?? prescriptas.find((i) => i.mealId === m.mealId && !usadas.has(i.executionId)) ?? null;
+        if (registro) usadas.add(registro.executionId);
+        return entrada(m.mealId, m.label, registro);
       });
+      for (const i of prescriptas) {
+        if (usadas.has(i.executionId)) continue;
+        const m = comidaDe(i);
+        if (i.mealId && m) meals.push(entrada(i.mealId, m.label, i));
+      }
       return { date: fecha, planId: version.planId, dayTypeId: dia?.dayTypeId ?? null, dataState, meals, outsidePrescription: libres };
     }),
   };

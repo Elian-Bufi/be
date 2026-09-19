@@ -201,6 +201,27 @@ describe('D2 · corregir un plan activado emite una sucesora (DL-047; UC-P10 V07
   });
 });
 
+describe('INV-06-13 · el contraste lee cada registro contra la versión que referencia (adversarial 7)', () => {
+  it('una sucesora activada el mismo día, con la estructura reescrita, no convierte lo registrado en «sin dato»', async () => {
+    const c = await circuitoConPlanActivo(app, 'contraste-sucesora');
+    const reg = await registrarComida(app, c.ase, c.planId, c.dia, { gramos: 80 }).expect(201);
+    const sucesora = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: c.planId }).expect(201);
+    // El profesional reescribe la estructura entera: los nodos nuevos no conservan los identificadores anteriores.
+    const reescrita = await patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${sucesora.body.data.planId}`)
+      .send({ expectedVersion: sucesora.body.data.version, changes: estructura(c.arroz, c.pollo) })
+      .expect(200);
+    expect(reescrita.body.data.dayTypes[0].meals[0].mealId).not.toBe(c.dia.meals[0].mealId);
+    await activar(app, c.pro, reescrita.body.data.planId, reescrita.body.data.version).expect(200);
+
+    const ctx = await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/nutrition/review-context`).expect(200);
+    const deHoy = (ctx.body.data.descriptiveContrast.days as { date: string; planId: string; meals: { executionId: string | null; state: string; quantityDifferences: { difference: number }[] }[] }[]).find((d) => d.date === hoyLocal())!;
+    expect(deHoy.planId).toBe(c.planId);
+    const almuerzo = deHoy.meals.find((m) => m.executionId === reg.body.data.executionId);
+    expect(almuerzo).toMatchObject({ state: 'REGISTERED' });
+    expect(almuerzo!.quantityDifferences[0]!.difference).toBe(-20);
+  });
+});
+
 describe('D4 · cambiar el catálogo no reescribe un plan activado (REG-06-101; TEST-RF-027)', () => {
   it('una versión nueva de un alimento no toca la instantánea; un borrador nuevo sí la usa', async () => {
     const c = await circuitoConPlanActivo(app, 'catalogo');
