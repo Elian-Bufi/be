@@ -1,5 +1,7 @@
 # APK por EAS — "por tag/manual" (07 §35). Distribución directa, fuera de stores.
 # Requiere el secreto de repositorio EXPO_TOKEN (07 §28: GitHub Actions Secrets).
+# Sin el secreto, el job termina con un aviso y sin construir: un fallo acá quedaría como check fallido en el commit
+# de main y bloquearía el auto-deploy de Render («After CI Checks Pass»). Pasó el 2026-09-19 (DESPLIEGUE.md → APK).
 name: apk
 
 on:
@@ -21,15 +23,22 @@ jobs:
   build:
     name: EAS build Android (${{ inputs.perfil || 'test' }})
     runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
+      - name: Sin EXPO_TOKEN no hay build
+        if: ${{ env.EXPO_TOKEN == '' }}
+        run: echo "::warning::EXPO_TOKEN no está configurado en los secretos del repositorio. No se construyó el APK. Ver docs/DESPLIEGUE.md → APK."
       - uses: actions/checkout@v7
+        if: ${{ env.EXPO_TOKEN != '' }}
       - uses: actions/setup-node@v7
+        if: ${{ env.EXPO_TOKEN != '' }}
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+        if: ${{ env.EXPO_TOKEN != '' }}
       - name: EAS build (la URL del artefacto queda en el log y en expo.dev)
+        if: ${{ env.EXPO_TOKEN != '' }}
         working-directory: apps/mobile
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: npx eas-cli@24.6.0 build --platform android --profile ${{ inputs.perfil || 'test' }} --non-interactive --wait
