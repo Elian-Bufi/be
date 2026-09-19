@@ -4,6 +4,8 @@
  * - WP-03 (docs/paquetes/WP-03.md §5): Cuenta → Vínculos (solicitudes recibidas, detalle de vínculo, pausa, reanudación
  *   y finalización) → Consentimiento; Cuenta → Privacidad (A3 y consentimientos a profesionales); Cuenta → «Tu
  *   identificador BE».
+ * - WP-04 (docs/paquetes/WP-04.md §5): Cuenta → Nutrición: Hoy (registrar comidas del plan y fuera del plan) → Plan
+ *   actual · Registros → Detalle de registro.
  * La sesión (Bearer) y el identificador de la identidad viven solo en memoria (DL-012, T5): cerrar la app exige volver a
  * iniciar sesión. Nunca se guarda un «rol autorizado» en el cliente: la API verifica la sesión y decide cada acceso en
  * cada request; ocultar un botón no concede ni quita nada.
@@ -18,6 +20,7 @@ import { anterior, requiereSesion, textoDeVolverA, type Ruta, type Salida } from
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
 import { PantallaDeCuenta } from './src/pantallas/cuenta';
 import { PantallaDeLogin } from './src/pantallas/login';
+import { PantallaDeHoy, PantallaDePlanActual, PantallaDeRegistroNutricional, PantallaDeRegistros } from './src/pantallas/nutricion';
 import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRegistro } from './src/pantallas/registro';
 import { PantallaDeVinculo } from './src/pantallas/vinculo';
@@ -145,6 +148,10 @@ export default function App() {
             {ruta.nombre === 'consentimiento' ? (
               <PantallaDeConsentimiento key={ruta.vinculoId} token={sesion.token} vinculoId={ruta.vinculoId} salir={salir} ir={ir} volver={volver} subir={subir} />
             ) : null}
+            {ruta.nombre === 'hoy' ? <PantallaDeHoy token={sesion.token} salir={salir} ir={ir} subir={subir} /> : null}
+            {ruta.nombre === 'plan-actual' ? <PantallaDePlanActual token={sesion.token} salir={salir} /> : null}
+            {ruta.nombre === 'registros-nutricionales' ? <PantallaDeRegistros token={sesion.token} salir={salir} ir={ir} /> : null}
+            {ruta.nombre === 'registro-nutricional' ? <PantallaDeRegistroNutricional key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
             {ruta.nombre === 'privacidad' ? <PantallaDePrivacidad token={sesion.token} salir={salir} ir={ir} volver={volver} /> : null}
           </>
         ) : null}
