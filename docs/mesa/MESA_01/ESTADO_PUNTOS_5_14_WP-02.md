@@ -9,7 +9,7 @@
 El catálogo DV-05 (`DV-05_CASOS_DE_PRUEBA.csv`, 59 casos) tenía todos los casos en `NOT_EXECUTED`. WP-02 ejecuta los que caen dentro de su alcance, con su oráculo y contra PostgreSQL 16 real. Hay tres ejecuciones:
 - **CI:** integración por Testcontainers en GitHub Actions;
 - **ambiente `test`:** recorrido del website desplegado en Render;
-- **APK:** en el teléfono de Dirección.
+- **APK:** en el Android de Dirección, con APK 0.2.0 (`apk-01` a `apk-07`).
 
 | Caso DV-05 | Oráculo verificado | Estado | Evidencia |
 |---|---|---|---|
@@ -21,7 +21,7 @@ El catálogo DV-05 (`DV-05_CASOS_DE_PRUEBA.csv`, 59 casos) tenía todos los caso
 | **TEST-AUTH-013** | (b) Sin borrado silencioso: identidad, perfil, método, A1/A2 y eventos siguen presentes; la base rechaza el DELETE | **PASS (b)** | `cierre.int-spec.ts` (3 pruebas) |
 | **TEST-AUTH-013** | (a) «Finaliza vínculos por eventos» | **BLOCKED** | no hay modelo de vínculos (DEUDA_LEGAJO DL-018) |
 | TEST-AUTH-009 (parcial) | Campos autoritativos del cliente (rol, estado, capacidades) → `400 UNKNOWN_FIELD` | **PASS (parcial)** | `registro.int-spec.ts` |
-| TEST-RF-006 / TEST-RF-007 | Solo parte del alcance: estado operativo visible (nunca «habilitado») y recorrido en website y APK | **Parcial** | capturas `web-06` · capturas del APK (§3) |
+| TEST-RF-006 / TEST-RF-007 | Solo parte del alcance: estado operativo visible (nunca «habilitado») y recorrido en website y APK | **Parcial** | capturas `web-06` · capturas `apk-01` a `apk-07` del Android de Dirección |
 
 Además de los casos del catálogo DV-05, WP-02 ejecuta pruebas del 11A que la mesa todavía no transcribió:
 - TEST-UC-P25/P26/P27;
@@ -31,11 +31,11 @@ Además de los casos del catálogo DV-05, WP-02 ejecuta pruebas del 11A que la m
 - TEST-RUN-003 y 009;
 - TEST-DOM-008 y E2E-08.
 
-Totales de la CI de `main` en `c09bfa0`:
-- integración: **102 de 102**;
+Totales de la CI de `main` en `9b1aeb1` (último merge de WP-02, con DL-030):
+- integración: **108 de 108**;
 - unitarias: 29 de 29 en la API y 30 de 30 en el dominio.
 
-Detalle por ID en `EVIDENCIA/WP-02/resultados-integracion-main-c09bfa0.md`.
+Detalle por ID en `EVIDENCIA/WP-02/resultados-integracion-main-9b1aeb1.md`. La corrida anterior, en `c09bfa0` (102/102), queda en la evidencia.
 
 ## Punto 14 — Usuarios creados: primeras dos cuentas demo
 
@@ -43,7 +43,7 @@ Existen en el ambiente `test` y se verificaron el 2026-09-19 con alta, login, `/
 
 | Alias | Correo (sintético) | Rol | Creada por | Estado | A3 |
 |---|---|---|---|---|---|
-| **DEMO-A01** | `asesorado.demo.a01@example.invalid` | Asesorado (`registrationIntent: ADVISEE`) | Website (rewrite `/api/*`, superficie WEB) | OPERATIVA | no otorgado |
+| **DEMO-A01** | `asesorado.demo.a01@example.invalid` | Asesorado (`registrationIntent: ADVISEE`) | Website (superficie WEB; creada antes de DL-030, por el rewrite) | OPERATIVA | no otorgado |
 | **DEMO-A02** | `asesorado.demo.a02@example.invalid` | Asesorado (`registrationIntent: ADVISEE`) | API directa, como el APK (superficie APK) | OPERATIVA | no otorgado |
 
 - **Contraseñas:** no están en el repositorio ni en ningún log. Están en `.env.cuentas-demo`, en la raíz del clon local de Dirección, y git ignora ese archivo (`.env.*`).

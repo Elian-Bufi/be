@@ -1,0 +1,17 @@
+{
+  "momento": "2026-09-19T04:19:20.940Z",
+  "identificador": "persona-medicion-web-b-1789791538093@example.invalid",
+  "destinos": [
+    "https://be-api-hndp.onrender.com"
+  ],
+  "statuses": [
+    401,
+    401,
+    401,
+    401,
+    401,
+    429
+  ],
+  "cspConnectSrc": "connect-src 'self' https://be-api-hndp.onrender.com",
+  "veredicto": "La API ve la red del navegador: el cupo por red + identificador se aplica desde el website"
+}

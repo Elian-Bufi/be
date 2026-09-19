@@ -1,11 +1,11 @@
-# Verificación de las tres superficies — WP-02 — 2026-09-19T01:37:49Z — main = 23c9997
+# Verificación de las tres superficies — WP-02 — 2026-09-19T04:21:01Z — main = 9b1aeb1 (después de DL-030, #13)
 
 ## API
-GET /health/ready → {"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"23c9997cba6a50c6ce84b1a9f501d66b10522803","construidoEn":"2026-09-19T01:36:32.631Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+GET /health/ready → {"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.1.0","commit":"9b1aeb1fd7774bf96a0bb6dc313b10141ee9256c","construidoEn":"2026-09-19T04:16:27.020Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
 GET /health/live  → 200
 GET /api/v1/me sin sesión → {"error":{"code":"AUTHENTICATION_REQUIRED","message":"Iniciá sesión para continuar."}} [401]
-GET /api/v1/no-existe → {"error":{"code":"RESOURCE_NOT_FOUND","message":"Recurso no encontrado."}} [404]
 POST /api/v1/auth/sessions (inexistente) → {"error":{"code":"INVALID_CREDENTIALS","message":"No pudimos verificar los datos de acceso."}} [401]
+JSON inválido desde el website (CORS antes del parser) → HTTP/2 400  access-control-allow-origin: https://be-web-1ngj.onrender.com x-request-id: 6d4b52f8-7bab-4540-ae7a-ac86d4732818 
 CORS preflight desde el website → access-control-allow-headers: authorization,content-type,idempotency-key,x-be-surface access-control-allow-origin: https://be-web-1ngj.onrender.com 
 CORS preflight desde otro origen → 0 cabeceras Allow-Origin
 
@@ -16,9 +16,10 @@ GET /login → 200
 GET /account → 200
 GET /legal/terminos → 200
 GET /legal/privacidad → 200
-commit en la portada → commit <!-- -->8256951
-cabeceras → content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline'; |referrer-policy: no-referrer|strict-transport-security: max-age=315360000; includeSubdomains; preload|x-content-type-options: nosniff|x-frame-options: DENY|
-rewrite GET /api/v1/me sin sesión → {"error":{"code":"AUTHENTICATION_REQUIRED","message":"Iniciá sesión para continuar."}} [401]
+commit en la portada → commit <!-- -->9b1aeb1
+URL de la API en el JS de /login (/_next/static/chunks/app/login/page-48896a3264d5c918.js) → 1 coincidencia(s)
+CSP connect-src → connect-src 'self' https://be-api-hndp.onrender.com
+rewrite /api/* (se retira: render.yaml en el PR final + borrado en el dashboard) → hoy responde la API: 2 cabecera X-Request-Id
 
 ## APK
 release → 200 68921750 bytes application/vnd.android.package-archive

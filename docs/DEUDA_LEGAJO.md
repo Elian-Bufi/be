@@ -34,7 +34,7 @@
 | DL-027 | WP-02 · 2026-09-18 | 11A · 12 · 05:14230 | Oráculos de prueba ausentes en 11A y traza de UC-P26 | ABIERTA |
 | DL-028 | WP-02 · 2026-09-18 | 08 R-08-05, §42-1 | Textos A1, A2, A3 y consecuencias del cierre: sintéticos | ABIERTA |
 | DL-029 | WP-02 · 2026-09-19 | 09v8 ACC-03 · 09v7 T14 | Logout idempotente frente a AuthN SESSION | ABIERTA |
-| DL-030 | WP-02 · 2026-09-19 | 07 CAND-07-J C · 08 §12.2, §38 | Detrás del rewrite del website, la API no ve la IP del cliente | **DECIDIDA** 2026-09-19 · opción B, desvío fundamentado de 07 CAND-07-J C |
+| DL-030 | WP-02 · 2026-09-19 | 07 CAND-07-J C · 08 §12.2, §38 | Detrás del rewrite del website, la API no ve la IP del cliente | **DECIDIDA E IMPLEMENTADA** 2026-09-19 · opción B, desvío fundamentado de 07 CAND-07-J C · falta borrar el rewrite en el dashboard y la revisión del 07 |
 
 ---
 
@@ -601,6 +601,6 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 4. Medición de nuevo en `test` y verificación negativa del rewrite.
 
 **Condición de cierre.** Se cumplen tres cosas:
-1. la medición en `test` muestra que los intentos por el website se agrupan en la red del cliente;
-2. `/api/*` en el website ya no responde con la API;
+1. ✅ (2026-09-19 04:19Z) la medición en `test` muestra que los intentos por el website se agrupan en la red del cliente: 401 ×5 y 429 al 6.º; antes eran seis 401 (`EVIDENCIA/WP-02/medicion-ip-proxy.txt` §3);
+2. `/api/*` en el website ya no responde con la API. Pendiente: borrar la regla en el dashboard y hacer la verificación negativa;
 3. la próxima revisión del 07 incorpora el paso a la opción B en CAND-07-J (y en §34, DL-007).

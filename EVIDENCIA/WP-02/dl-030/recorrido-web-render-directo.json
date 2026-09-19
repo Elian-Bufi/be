@@ -1,0 +1,72 @@
+{
+  "base": "https://be-web-1ngj.onrender.com",
+  "correo": "persona-evidencia-web-1789791503481@example.invalid",
+  "pasos": [
+    {
+      "paso": "web-01-inicio",
+      "url": "https://be-web-1ngj.onrender.com/",
+      "momento": "2026-09-19T04:18:28.955Z"
+    },
+    {
+      "paso": "web-02-registro-a1-a2-separados",
+      "url": "https://be-web-1ngj.onrender.com/register",
+      "momento": "2026-09-19T04:18:31.781Z"
+    },
+    {
+      "paso": "web-03-registro-a1-a2-marcados",
+      "url": "https://be-web-1ngj.onrender.com/register",
+      "momento": "2026-09-19T04:18:32.059Z"
+    },
+    {
+      "paso": "web-04-cuenta-creada-sin-auto-login",
+      "url": "https://be-web-1ngj.onrender.com/register",
+      "momento": "2026-09-19T04:18:33.486Z"
+    },
+    {
+      "paso": "web-05-login-fallido-neutral",
+      "url": "https://be-web-1ngj.onrender.com/login",
+      "momento": "2026-09-19T04:18:38.112Z"
+    },
+    {
+      "paso": "web-06-cuenta-a3-no-otorgado",
+      "url": "https://be-web-1ngj.onrender.com/account",
+      "momento": "2026-09-19T04:18:40.639Z"
+    },
+    {
+      "paso": "web-07-cierre-consecuencias",
+      "url": "https://be-web-1ngj.onrender.com/account",
+      "momento": "2026-09-19T04:18:40.828Z"
+    },
+    {
+      "paso": "web-08-cierre-registrado",
+      "url": "https://be-web-1ngj.onrender.com/?aviso=cierre-registrado",
+      "momento": "2026-09-19T04:18:41.876Z"
+    },
+    {
+      "paso": "web-09-login-tras-cierre-neutral",
+      "url": "https://be-web-1ngj.onrender.com/login",
+      "momento": "2026-09-19T04:18:46.072Z"
+    },
+    {
+      "paso": "web-10-registro-movil",
+      "url": "https://be-web-1ngj.onrender.com/register",
+      "momento": "2026-09-19T04:18:47.473Z"
+    }
+  ],
+  "red": [
+    "OPTIONS https://be-api-hndp.onrender.com/api/v1/registrations → 204",
+    "POST https://be-api-hndp.onrender.com/api/v1/registrations → 201",
+    "OPTIONS https://be-api-hndp.onrender.com/api/v1/auth/sessions → 204",
+    "POST https://be-api-hndp.onrender.com/api/v1/auth/sessions → 401",
+    "OPTIONS https://be-api-hndp.onrender.com/api/v1/auth/sessions → 204",
+    "POST https://be-api-hndp.onrender.com/api/v1/auth/sessions → 201",
+    "OPTIONS https://be-api-hndp.onrender.com/api/v1/me → 204",
+    "OPTIONS https://be-api-hndp.onrender.com/api/v1/me/health-data-consent-requirement → 204",
+    "GET https://be-api-hndp.onrender.com/api/v1/me/health-data-consent-requirement → 200",
+    "GET https://be-api-hndp.onrender.com/api/v1/me → 200",
+    "OPTIONS https://be-api-hndp.onrender.com/api/v1/me/account-closure-requests → 204",
+    "POST https://be-api-hndp.onrender.com/api/v1/me/account-closure-requests → 201",
+    "OPTIONS https://be-api-hndp.onrender.com/api/v1/auth/sessions → 204",
+    "POST https://be-api-hndp.onrender.com/api/v1/auth/sessions → 401"
+  ]
+}

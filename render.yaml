@@ -69,13 +69,10 @@ services:
       # cambiar también connect-src de la CSP y API_BASE_URL de apps/mobile/eas.json.
       - key: BE_API_BASE_URL
         value: https://be-api-hndp.onrender.com
-    # 07 CAND-07-J opción C: same-origin, el borde rutea /api/* a la API.
-    # Destino = la API (be-api-hndp), no el website: no depende de la URL del sitio estático.
-    # Los subdominios onrender.com son globales: el nombre real lo asigna Render.
-    routes:
-      - type: rewrite
-        source: /api/*
-        destination: https://be-api-hndp.onrender.com/api/*
+    # Sin rewrite /api/* (DL-030, decisión de Dirección del 2026-09-19): el website llama a la API directo, con CORS
+    # (07 CAND-07-J opción B), para que la API vea la IP real (08 §12.2). Detrás del rewrite veía un pool de IPs del
+    # proxy. El Blueprint conserva las reglas de ruteo que se omiten del archivo: la regla vieja se borra también en el
+    # dashboard (be-web → Redirects/Rewrites), y DESPLIEGUE verifica en negativo que /api/* ya no llega a la API.
     # 07 §29: HSTS/CSP en el web.
     headers:
       - path: /*
