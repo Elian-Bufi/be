@@ -36,20 +36,20 @@
 | DL-029 | WP-02 · 2026-09-19 | 09v8 ACC-03 · 09v7 T14 | Logout idempotente frente a AuthN SESSION | ABIERTA |
 | DL-030 | WP-02 · 2026-09-19 | 07 CAND-07-J C · 08 §12.2, §38 | Detrás del rewrite del website, la API no ve la IP del cliente | **DECIDIDA E IMPLEMENTADA** 2026-09-19 · opción B, desvío fundamentado de 07 CAND-07-J C · verificada en `test` · solo falta que el 07 la incorpore |
 | DL-031 | WP-03 · 2026-09-19 | 09v11 §15 · 09:2654-2668 · brief WP-03 | Recurso protegido para demostrar el acceso sin dominios de salud | **DECIDIDA** 2026-09-19 · opción A (API-DSH-03 mínimo) |
-| DL-032 | WP-03 · 2026-09-19 | 04:317 · 06:3183-3191 · 08:601, 08:406 · 09:2625-2639 | Las siete dimensiones del PDP y el lugar de A3 | ABIERTA · nombres aprobados por Dirección |
-| DL-033 | WP-03 · 2026-09-19 | 06:3105-3111 · 04:342, 04:345 · 05:3644 · 09v8:1395-1494 · CONV-06-03 | Máquinas del §7: actor habilitado, motivo y eventos | ABIERTA |
-| DL-034 | WP-03 · 2026-09-19 | 06:3014, 06:3091-3093 · 09v8:1267-1270, 1398 | `relationshipId` del 09 frente al Vínculo multialcance del 06 | ABIERTA |
+| DL-032 | WP-03 · 2026-09-19 | 04:317 · 06:3183-3191 · 08:601, 08:406 · 09:2625-2639 | Las siete dimensiones del PDP y el lugar de A3 | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A) |
+| DL-033 | WP-03 · 2026-09-19 | 06:3105-3111 · 04:342, 04:345 · 05:3644 · 09v8:1395-1494 · CONV-06-03 | Máquinas del §7: actor habilitado, motivo y eventos | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A) |
+| DL-034 | WP-03 · 2026-09-19 | 06:3014, 06:3091-3093 · 09v8:1267-1270, 1398 | `relationshipId` del 09 frente al Vínculo multialcance del 06 | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A) |
 | DL-035 | WP-03 · 2026-09-19 | 09v8:1127-1130 · 10-B04:188 · RF-051 | Cómo identifica el profesional al asesorado | ABIERTA |
 | DL-036 | WP-03 · 2026-09-19 | 06 §6.8 · REG-06-33 · 09v8 PRO-09…13 · 08:887 | Verificación y habilitación mínimas sin operación viable | ABIERTA |
 | DL-037 | WP-03 · 2026-09-19 | 06:3035-3040 · REG-06-49 · 09v8:1165-1176, 1960 · 09:853 | Solicitud: caducidad sin plazo, invalidación y respuesta al duplicado | ABIERTA |
 | DL-038 | WP-03 · 2026-09-19 | 06:3170-3175 · REG-06-50 · 09v8:1570-1660 · 09:2437-2519 | B2: nueva versión y reotorgamiento sin contrato | ABIERTA |
-| DL-039 | WP-03 · 2026-09-19 | 06:251, 06:262 · 09v8:1518-1562, 1962 · 08:307, 08:368, 08:374 | Finalidad y categorías pertinentes sin catálogo | ABIERTA |
+| DL-039 | WP-03 · 2026-09-19 | 06:251, 06:262 · 09v8:1518-1562, 1962 · 08:307, 08:368, 08:374 | Finalidad y categorías pertinentes sin catálogo | **SIMPLIFICACIÓN DECLARADA** 2026-09-19 · consentimiento por alcance y finalidad; categorías especificadas y no implementadas |
 | DL-040 | WP-03 · 2026-09-19 | 09v8:161-170, 1523-1526 · 11A:196 · DL-009 | Nombre visible de las partes sin campos de perfil aprobados | ABIERTA |
 | DL-041 | WP-03 · 2026-09-19 | 10-B01:645-663, 1019-1031, 1310-1319 · brief WP-03 | El profesional sin Cartera | ABIERTA |
 | DL-042 | WP-03 · 2026-09-19 | DV-05 (DV05.md:1116-1133) · brief WP-03 | Casos adversariales de DV-05 que dependen de dominios | **ASIGNADA a WP-04** por Dirección (2026-09-19) |
 | DL-043 | WP-03 · 2026-09-19 | 09v8:1161-1163, 1208-1220, 1309-1311, 1389, 1447-1490, 1764-1778 | Contratos de REL con forma no definida en el 09 | ABIERTA |
-| DL-044 | WP-03 · 2026-09-19 | 08 §13 · 08 §14.1 · 09v8:1385-1391 | Qué ve el profesional de un vínculo finalizado | ABIERTA |
-| DL-045 | WP-03 · 2026-09-19 | 05:2840-2845 (UC-P04 V02) · 06 §7.3.2 · INV-06-52 | Solicitud iniciada por el asesorado: el profesional no acepta | ABIERTA |
+| DL-044 | WP-03 · 2026-09-19 | 08 §13 · 08 §14.1 · 09v8:1385-1391 | Qué ve el profesional de un vínculo finalizado | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción B) |
+| DL-045 | WP-03 · 2026-09-19 | 05:2840-2845 (UC-P04 V02) · 06 §7.3.2 · INV-06-52 | Solicitud iniciada por el asesorado: el profesional no acepta | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A) |
 
 ---
 
@@ -675,7 +675,7 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 
 ## DL-032 — Las siete dimensiones del PDP y el lugar de A3
 
-**Prioridad:** alta · **Documento:** 04:317 · 04:231 · 06:3183-3191 · 05:4783-4795 · 08:601, 08:305, 08:406 · 09:2603, 09:2625-2639 · **Estado:** ABIERTA · nombres aprobados por Dirección el 2026-09-19
+**Prioridad:** alta · **Documento:** 04:317 · 04:231 · 06:3183-3191 · 05:4783-4795 · 08:601, 08:305, 08:406 · 09:2603, 09:2625-2639 · **Estado:** DECIDIDA 2026-09-19 · opción A
 
 **Qué dice el legajo.**
 - RF-021 nombra siete dimensiones: «rol, especialidad, estado, vínculo, consentimiento, finalidad y alcance» (04:317). El 06 §7.8 y el 05 UC-I02 repiten la lista con «situación aplicable» en lugar de «estado» (06:3183-3191; 05:4783-4795). El 06 no define «situación aplicable».
@@ -692,11 +692,13 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 
 **Provisorio en código.** A. Dirección aprobó los nombres el 2026-09-19.
 
+**Resolución — DECIDIDA el 2026-09-19.** Dirección aceptó el provisorio: opción A. El código no cambia.
+
 **Condición de cierre.** El 08 §27.3 incorpora A3 y el 06 define «situación aplicable».
 
 ## DL-033 — Máquinas del §7: actor habilitado, motivo y eventos
 
-**Prioridad:** media · **Documento:** 06:3105-3111 · 06:3272 · 06:367 (CONV-06-03) · 06:2191 · 04:342, 04:345 · 05:3316, 05:3440, 05:3644 · 08:412-424 · 09v8:1395-1494 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 06:3105-3111 · 06:3272 · 06:367 (CONV-06-03) · 06:2191 · 04:342, 04:345 · 05:3316, 05:3440, 05:3644 · 08:412-424 · 09v8:1395-1494 · **Estado:** DECIDIDA 2026-09-19 · opción A
 
 **Qué dice el legajo.**
 - Actor:
@@ -724,11 +726,13 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 
 **Provisorio en código.** A.
 
+**Resolución — DECIDIDA el 2026-09-19.** Dirección aceptó el provisorio: opción A. El código no cambia.
+
 **Condición de cierre.** El 08 fija los actores habilitados y el 09 agrega el campo de motivo.
 
 ## DL-034 — `relationshipId` del 09 frente al Vínculo multialcance del 06
 
-**Prioridad:** media · **Documento:** 06:3014 · 06:3091-3093 · 06:3115 (REG-06-47) · 06:427 (REG-06-05) · 06:3230 (INV-06-58) · 09v8:1267-1270, 1338-1344, 1398 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 06:3014 · 06:3091-3093 · 06:3115 (REG-06-47) · 06:427 (REG-06-05) · 06:3230 (INV-06-58) · 09v8:1267-1270, 1338-1344, 1398 · **Estado:** DECIDIDA 2026-09-19 · opción A
 
 **Qué dice el legajo.**
 - El 06: la solicitud es «atómica por Alcance» (06:3014), el «Vínculo agrupa 1..N componentes de Alcance» y la máquina «opera por Alcance» (06:3091-3093).
@@ -743,6 +747,8 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 - **B.** El `relationshipId` es el Vínculo agregador y el alcance pasa a ser parámetro de las operaciones. Cambia las rutas del 09.
 
 **Provisorio en código.** A.
+
+**Resolución — DECIDIDA el 2026-09-19.** Dirección aceptó el provisorio: opción A. El código no cambia.
 
 **Condición de cierre.** El 09 aclara que `relationshipId` designa un componente por alcance.
 
@@ -833,7 +839,7 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 
 ## DL-039 — Finalidad y categorías pertinentes sin catálogo
 
-**Prioridad:** media · **Documento:** 06:251, 06:262 (Q-003 → 08) · 09v8:1518-1562, 1962 · 08:307, 08:368, 08:374 · 07 R-07-19 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 06:251, 06:262 (Q-003 → 08) · 09v8:1518-1562, 1962 · 08:307, 08:368, 08:374 · 07 R-07-19 · **Estado:** SIMPLIFICACIÓN DECLARADA del alcance implementado (Dirección, 2026-09-19)
 
 **Qué dice el legajo.**
 - La finalidad es un atributo estructural, y su catálogo pertenece al 08 (Q-003) (06:251, 06:262). El 09 deja abierto el «catálogo exacto de `purpose`» (09v8:1962).
@@ -852,7 +858,14 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 
 **Provisorio en código.** A.
 
-**Condición de cierre.** El 08 publica el catálogo de finalidades y la matriz de pertinencia, con el primer dominio (WP-04).
+**Resolución — SIMPLIFICACIÓN DECLARADA el 2026-09-19.** Dirección confirmó una finalidad por alcance, sin categorías de información, y pidió registrarlo como simplificación del alcance implementado, no como deuda pendiente.
+
+- **Qué se construyó:** el consentimiento es por alcance y finalidad. Cada alcance tiene su finalidad, y cada vínculo por alcance tiene su propio consentimiento B2.
+- **Qué quedó especificado y no construido:** la granularidad por categoría de información dentro de un mismo alcance. Requiere la matriz de pertinencia (08 §27.3; 09v8:1558), que el legajo no desarrolla. `pertinentCategories` viaja vacío y los campos de versión de matriz quedan en nulo.
+- **Por qué alcanza para el caso que importa:** una profesional de nutrición con capacidad antropométrica opera con dos alcances distintos, cada uno con su consentimiento (DEC-044: el 05 §4.11.3.1, condición 6, exige un «consentimiento específico cuyo alcance sea la capacidad antropométrica»). El asesorado puede autorizar uno y no el otro. Lo que queda fuera es subdividir dentro de un mismo alcance.
+- **Dónde se declara:** `DEFENSA/WP-03.md` §4.1 y `docs/mesa/MESA_01/ESTADO_PUNTOS_5_14_WP-03.md`.
+
+**Condición para retomarla.** El 08 publica la matriz de pertinencia. No es condición de cierre de ningún paquete.
 
 ## DL-040 — Nombre visible de las partes sin campos de perfil aprobados
 
@@ -942,7 +955,7 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 
 ## DL-044 — Qué ve el profesional de un vínculo finalizado
 
-**Prioridad:** media · **Documento:** 08 §13 · 08 §14.1 · 09v8:1385-1391 · **Estado:** ABIERTA (hallada en la revisión adversarial de WP-03)
+**Prioridad:** media · **Documento:** 08 §13 · 08 §14.1 · 09v8:1385-1391 · **Estado:** DECIDIDA 2026-09-19 · opción B
 
 **Qué dice el legajo.**
 - Después de FINALIZADO, el profesional no tiene «ningún acceso posterior, ni lectura histórica» a los datos del asesorado (08 §14.1).
@@ -957,11 +970,13 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 
 **Provisorio en código.** B. No es acceso a datos del asesorado, y A requiere decidir qué es «notificar» para metadatos del vínculo.
 
+**Resolución — DECIDIDA el 2026-09-19.** Dirección aceptó el provisorio: opción B. El código no cambia.
+
 **Condición de cierre.** Dirección decide si los metadatos del vínculo posteriores a la finalización son «contenido» en el sentido del 08 §13 y §14.1.
 
 ## DL-045 — Solicitud iniciada por el asesorado: el profesional no acepta
 
-**Prioridad:** media · **Documento:** 05:2840-2845 (UC-P04 V02) · 06 §7.3.2 · INV-06-52 · **Estado:** ABIERTA (hallada en la revisión adversarial de WP-03)
+**Prioridad:** media · **Documento:** 05:2840-2845 (UC-P04 V02) · 06 §7.3.2 · INV-06-52 · **Estado:** DECIDIDA 2026-09-19 · opción A
 
 **Qué dice el legajo.**
 - En V02 el asesorado propone el vínculo, y la solicitud queda pendiente de la decisión expresa del asesorado (05:2840-2845).
@@ -974,5 +989,7 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 - **B.** El profesional acepta las solicitudes que inicia el asesorado. Cambia la máquina del 06: `AceptarSolicitud` tendría como actor a la contraparte de quien inició.
 
 **Provisorio en código.** A.
+
+**Resolución — DECIDIDA el 2026-09-19.** Dirección aceptó el provisorio: opción A. El código no cambia.
 
 **Condición de cierre.** El 05 y el 06 definen quién acepta una solicitud iniciada por el asesorado.

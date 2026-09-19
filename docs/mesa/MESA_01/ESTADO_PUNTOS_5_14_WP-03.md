@@ -58,6 +58,15 @@ Existen en el ambiente `test`. Las contraseñas no están en el repositorio ni e
 - **Verificación en `test`:** el 2026-09-19, DEMO-PN inició sesión, `/me` informó `PROFESSIONAL_WORKSPACE`, y recorrió el flujo completo como profesional en el website (`EVIDENCIA/WP-03/web/`) y en los casos adversariales. DEMO-PT también inicia sesión y `/me` le informa `PROFESSIONAL_WORKSPACE` (verificado el mismo día).
 - **Pendiente:** el rol administrador llega con su paquete.
 
+## Diferencia entre lo especificado y lo construido: consentimiento por alcance y finalidad
+
+Es una simplificación declarada del alcance implementado. La decidió Dirección el 2026-09-19 (DL-039) y no es una deuda pendiente.
+
+- **Implementado:** consentimiento por **alcance y finalidad**. Una finalidad por alcance, y un consentimiento B2 por cada vínculo por alcance. Una profesional de nutrición con capacidad antropométrica opera con dos alcances, cada uno con su consentimiento (DEC-044).
+- **Especificado y no implementado:** la granularidad por **categoría de información dentro de un mismo alcance**. Requiere la matriz de pertinencia del 08, que no está desarrollada. `pertinentCategories` viaja vacío.
+- **Casos de prueba afectados:** ninguno de los que están en PASS depende de categorías. TEST-RF-018 («el destinatario conoce quién solicita y para qué») pasa con alcance y finalidad.
+- **Detalle y respuesta al tribunal:** `DEFENSA/WP-03.md` §4.1.
+
 ## Estado de DV-05 y DV-14
 
 | Punto | Estado tras WP-02 | Estado ahora |
