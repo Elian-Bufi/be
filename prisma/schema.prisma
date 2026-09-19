@@ -11,6 +11,8 @@
 //
 // WP-01: Identidad. WP-02: perfil propio, método de acceso, credencial, sesiones, actos A1/A2/A3, eventos,
 // auditoría, idempotencia, cierre y supresión (docs/paquetes/WP-02.md).
+// WP-03: perfil profesional, verificación y habilitación mínimas; solicitud, vínculo por alcance, consentimiento B2
+// versionado; eventos de M-02 y M-03; decisiones de acceso del PDP (docs/paquetes/WP-03.md).
 
 generator client {
   provider = "prisma-client-js"
@@ -62,6 +64,9 @@ enum TipoDeTexto {
   PRIVACIDAD_INFO
   DATOS_SALUD_BE
   CONSECUENCIAS_DE_CIERRE
+  /// B2 por perfil profesional (08 §12.3). WP-03.
+  CONSENTIMIENTO_PROFESIONAL_SANITARIO
+  CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO
 }
 
 /// 08 §12.4 — actos registrables tipificados de la Relación A (A1, A2, A3).
@@ -85,6 +90,8 @@ enum TipoDeEventoDeDominio {
   CuentaRestablecida
   CuentaCerrada
   ActoRevocado
+  /// WP-03: otorgamiento o reotorgamiento de A3 (API-CON-06).
+  ActoOtorgado
 }
 
 /// Resultado registrado en auditoría (08 §29).
@@ -118,6 +125,20 @@ model Identidad {
   eventos                   EventoDeDominio[]
   solicitudDeCierreDeCuenta SolicitudDeCierreDeCuenta?
 
+  // WP-03
+  perfilProfesional          PerfilProfesional?
+  verificaciones             VerificacionProfesional[]
+  habilitaciones             Habilitacion[]
+  eventosDeVerificacion      EventoDeVerificacion[]
+  solicitudesComoProfesional SolicitudDeVinculo[]      @relation("SolicitudDelProfesional")
+  solicitudesComoAsesorado   SolicitudDeVinculo[]      @relation("SolicitudAlAsesorado")
+  vinculosComoProfesional    Vinculo[]                 @relation("VinculoDelProfesional")
+  vinculosComoAsesorado      Vinculo[]                 @relation("VinculoDelAsesorado")
+  eventosComoProfesional     EventoDeVinculo[]         @relation("EventoDelProfesional")
+  eventosComoAsesorado       EventoDeVinculo[]         @relation("EventoDelAsesorado")
+  decisionesComoActor        DecisionDeAcceso[]        @relation("DecisionDelActor")
+  decisionesComoSujeto       DecisionDeAcceso[]        @relation("DecisionSobreElSujeto")
+
   @@map("identidad")
 }
 
@@ -148,8 +169,8 @@ model MetodoDeAcceso {
   momentoDeOcurrencia DateTime?            @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro   DateTime             @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  identidad        Identidad        @relation(fields: [identidadId], references: [id], onDelete: Restrict)
-  credencialLocal  CredencialLocal?
+  identidad       Identidad        @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  credencialLocal CredencialLocal?
 
   /// D3 de WP-02: dos registros concurrentes con el mismo correo no crean dos identidades.
   @@unique([tipo, referencia])
@@ -215,9 +236,15 @@ model VersionDeTexto {
   hash              String
   vigenteDesde      DateTime    @map("vigente_desde") @db.Timestamptz(3)
   momentoDeRegistro DateTime    @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  /// WP-03 · sucesión explícita: la versión a la que esta reemplaza. Como máximo una sucesora por versión (REG-06-12).
+  /// La versión aplicable de B2 es la cabeza de la cadena de su tipo, no la más reciente por fecha (06:1286-1288; DL-038).
+  reemplazaAId      String?     @unique @map("reemplaza_a_id")
 
-  actos       ActoRegistrable[]
-  solicitudes SolicitudDeCierreDeCuenta[]
+  reemplazaA                VersionDeTexto?             @relation("SucesionDeTexto", fields: [reemplazaAId], references: [id], onDelete: Restrict)
+  sucesora                  VersionDeTexto?             @relation("SucesionDeTexto")
+  actos                     ActoRegistrable[]
+  solicitudes               SolicitudDeCierreDeCuenta[]
+  versionesDeConsentimiento VersionDeConsentimiento[]
 
   @@map("version_de_texto")
 }
@@ -252,6 +279,428 @@ model ActoRegistrable {
   @@map("acto_registrable")
 }
 
+// ─── WP-03 · Enums de M-02 mínimo, M-03 y el PDP ─────────────────────────────────────────────────
+
+/// T-06-45 — Alcance: Especialidad (Nutrición, Entrenamiento) XOR Capacidad antropométrica transversal (REG-06-32).
+enum Alcance {
+  NUTRICION
+  ENTRENAMIENTO
+  ANTROPOMETRIA
+}
+
+/// Finalidad sintética, una por alcance (06:251 REFERENCIADO; el catálogo es del 08; DEUDA_LEGAJO DL-039).
+enum Finalidad {
+  ACOMPANAMIENTO_NUTRICIONAL
+  PLANIFICACION_DEL_ENTRENAMIENTO
+  EVALUACION_ANTROPOMETRICA
+}
+
+/// 08 §12.3 — perfil del profesional, para diferenciar el texto de B2.
+enum TipoDePerfilProfesional {
+  SANITARIO
+  NO_SANITARIO
+}
+
+/// T-06-11 — Verificación profesional por Alcance (06 §6.8.1). Lista blanca: @be/domain + trigger.
+enum EstadoDeVerificacionProfesional {
+  PENDIENTE
+  VERIFICADO
+  RECHAZADO
+  SUSPENDIDO
+}
+
+/// T-06-13 — Habilitación mínima: concesión explícita y retiro (REG-06-79; 06 §8.6.6; DL-036).
+enum EstadoDeHabilitacion {
+  CONCEDIDA
+  RETIRADA
+}
+
+/// T-06-16 — Solicitud de vínculo (06 §7.3.1). Inicial PENDIENTE; los otros cuatro son terminales.
+enum EstadoDeSolicitudDeVinculo {
+  PENDIENTE
+  ACEPTADA
+  RECHAZADA
+  CADUCADA
+  INVALIDADA
+}
+
+/// T-06-15 — Vínculo por Alcance (06 §7.5.1). FINALIZADO es terminal (INV-06-58).
+enum EstadoDeAlcanceDeVinculo {
+  ACEPTADO
+  PAUSADO
+  FINALIZADO
+}
+
+/// T-06-17 — situación del Consentimiento (06 §7.7.4).
+enum SituacionDeConsentimiento {
+  VIGENTE
+  REVOCADO
+}
+
+/// REG-06-50 — decisión expresa que emite cada Versión de consentimiento.
+enum DecisionDeConsentimiento {
+  OTORGAMIENTO
+  NUEVA_VERSION
+  REVOCACION
+  REOTORGAMIENTO
+}
+
+/// Rol de cada parte en la solicitud y en el vínculo.
+enum RolEnVinculo {
+  PROFESIONAL
+  ASESORADO
+}
+
+/// DL-033 — motivos de pausa y de finalización. Lista cerrada, sin texto libre; CIERRE_DE_CUENTA solo el sistema.
+enum MotivoDeTransicionDeVinculo {
+  DECISION_PERSONAL
+  DISPONIBILIDAD
+  OBJETIVO_CUMPLIDO
+  CAMBIO_DE_PROFESIONAL
+  OTRO
+  CIERRE_DE_CUENTA
+}
+
+/// Hechos de M-03 (06 §7). El §7 no los nombra: nombres derivados (DL-033).
+enum TipoDeEventoDeVinculo {
+  SolicitudDeVinculoCreada
+  SolicitudDeVinculoAceptada
+  SolicitudDeVinculoRechazada
+  SolicitudDeVinculoCaducada
+  SolicitudDeVinculoInvalidada
+  AlcanceDeVinculoAceptado
+  AlcanceDeVinculoPausado
+  AlcanceDeVinculoReanudado
+  AlcanceDeVinculoFinalizado
+  ConsentimientoOtorgado
+  NuevaVersionDeConsentimientoAceptada
+  ConsentimientoRevocado
+  ConsentimientoOtorgadoNuevamente
+}
+
+/// Hechos de M-02 mínimo (DL-036). Nombres derivados.
+enum TipoDeEventoDeVerificacion {
+  PerfilProfesionalCreado
+  AlcancePresentado
+  ObservacionRegistrada
+  SubsanacionPresentada
+  AlcanceVerificado
+  AlcanceRechazado
+  AlcancePresentadoNuevamente
+  AlcanceSuspendido
+  AlcanceRehabilitado
+  HabilitacionConcedida
+  HabilitacionRetirada
+}
+
+/// 08 §29 — resultado de una decisión de acceso del PDP.
+enum ResultadoDeDecision {
+  PERMITIDA
+  DENEGADA
+}
+
+/// RF-021 (04:317) y 06 §7.8: las siete dimensiones (DL-032).
+enum DimensionDeAutorizacion {
+  ROL
+  ESPECIALIDAD_O_CAPACIDAD
+  SITUACION
+  VINCULO
+  CONSENTIMIENTO
+  FINALIDAD
+  ALCANCE
+}
+
+// ─── WP-03 · M-02 mínimo: perfil profesional, verificación y habilitación (06 §6; DL-036) ───────
+
+/// «Una Identidad BE posee 0..1 Perfil profesional. Puede estar incompleto y no concede Especialidad, Verificación,
+/// Habilitación ni acceso» (06:2766). Lo carga el servicio interno (DL-036); nombre visible sintético (DL-040).
+model PerfilProfesional {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId         String                  @unique @map("identidad_id") @db.Uuid
+  tipo                TipoDePerfilProfesional
+  nombreVisible       String                  @map("nombre_visible")
+  procedencia         Json
+  momentoDeOcurrencia DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+
+  @@map("perfil_profesional")
+}
+
+/// T-06-11 — «Identidad BE + Alcance — Verificación profesional | una situación efectiva» (06:2870).
+/// La historia de la trayectoria vive en EventoDeVerificacion.
+model VerificacionProfesional {
+  id                        String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId               String                          @map("identidad_id") @db.Uuid
+  alcance                   Alcance
+  estado                    EstadoDeVerificacionProfesional @default(PENDIENTE)
+  /// Concurrencia optimista: avanza de a uno en cada transición (trigger).
+  version                   Int                             @default(1)
+  procedencia               Json
+  momentoDeOcurrencia       DateTime?                       @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro         DateTime                        @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeUltimaTransicion DateTime?                       @map("momento_de_ultima_transicion") @db.Timestamptz(3)
+
+  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+
+  @@unique([identidadId, alcance])
+  @@map("verificacion_profesional")
+}
+
+/// T-06-13 — Habilitación por (Identidad, Alcance), separada de la verificación (06:2782-2788; INV-06-88).
+model Habilitacion {
+  id                        String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId               String               @map("identidad_id") @db.Uuid
+  alcance                   Alcance
+  estado                    EstadoDeHabilitacion @default(CONCEDIDA)
+  version                   Int                  @default(1)
+  procedencia               Json
+  momentoDeOcurrencia       DateTime?            @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro         DateTime             @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeUltimaTransicion DateTime?            @map("momento_de_ultima_transicion") @db.Timestamptz(3)
+
+  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+
+  @@unique([identidadId, alcance])
+  @@map("habilitacion")
+}
+
+/// T-06-N08 — hechos de M-02 mínimo. Append-only. El actor es siempre el servicio interno (DL-036).
+model EventoDeVerificacion {
+  id                  String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Orden total de los hechos (ver EventoDeVinculo).
+  secuencia           BigInt                     @unique @default(autoincrement())
+  tipo                TipoDeEventoDeVerificacion
+  identidadId         String                     @map("identidad_id") @db.Uuid
+  alcance             Alcance?
+  estadoPrevio        String?                    @map("estado_previo")
+  estadoPosterior     String?                    @map("estado_posterior")
+  fundamento          String?
+  actorServicio       String                     @map("actor_servicio")
+  procedencia         Json
+  momentoDeOcurrencia DateTime?                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                   @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+
+  @@index([identidadId, alcance])
+  @@map("evento_de_verificacion")
+}
+
+// ─── WP-03 · M-03: solicitud, vínculo por alcance y consentimiento (06 §7) ─────────────────────
+
+/// T-06-16 — «identificador, profesional, asesorado …, exactamente un Alcance, finalidad, actor iniciador, doble
+/// temporalidad, procedencia, estado y antecedente si se reitera» (06:3012). Invitación a personas sin cuenta: fuera
+/// de WP-03 (DL-023). REG-06-44: una sola equivalente PENDIENTE, con índice único parcial (en la migración).
+model SolicitudDeVinculo {
+  id                  String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId       String                     @map("profesional_id") @db.Uuid
+  asesoradoId         String                     @map("asesorado_id") @db.Uuid
+  alcance             Alcance
+  finalidad           Finalidad
+  /// «actor iniciador» (06:3012).
+  iniciador           RolEnVinculo
+  estado              EstadoDeSolicitudDeVinculo @default(PENDIENTE)
+  version             Int                        @default(1)
+  /// «Reiterar crea nueva Solicitud relacionada» (REG-06-45).
+  antecedenteId       String?                    @map("antecedente_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime?                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                   @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  /// Caducidad parametrizada (DL-037): el 06 fija la transición, no la duración.
+  venceEn             DateTime                   @map("vence_en") @db.Timestamptz(3)
+  /// Cuándo salió de PENDIENTE.
+  momentoDeResolucion DateTime?                  @map("momento_de_resolucion") @db.Timestamptz(3)
+
+  profesional      Identidad            @relation("SolicitudDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict)
+  asesorado        Identidad            @relation("SolicitudAlAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict)
+  antecedente      SolicitudDeVinculo?  @relation("Reiteracion", fields: [antecedenteId], references: [id], onDelete: Restrict)
+  reiteraciones    SolicitudDeVinculo[] @relation("Reiteracion")
+  alcanceDeVinculo AlcanceDeVinculo?
+  eventos          EventoDeVinculo[]
+
+  @@index([profesionalId, estado])
+  @@index([asesoradoId, estado])
+  @@map("solicitud_de_vinculo")
+}
+
+/// T-06-15 — «Vínculo agrupa 1..N componentes de Alcance» (06:3091). No tiene estado propio: el estado vive en cada
+/// componente (06:3093). Uno por (profesional, asesorado): unicidad derivada (DL-034). Inmutable.
+model Vinculo {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId       String    @map("profesional_id") @db.Uuid
+  asesoradoId         String    @map("asesorado_id") @db.Uuid
+  momentoDeOcurrencia DateTime? @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional Identidad          @relation("VinculoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict)
+  asesorado   Identidad          @relation("VinculoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict)
+  alcances    AlcanceDeVinculo[]
+
+  @@unique([profesionalId, asesoradoId])
+  @@map("vinculo")
+}
+
+/// Componente de Vínculo por Alcance = `relationshipId` del 09 (DL-034). «Cada componente conserva Alcance, finalidad,
+/// Solicitud de origen, estado, actor/autoría, ocurrencia/registro, procedencia y motivo cuando aplique» (06:3091).
+/// Un solo componente no FINALIZADO por (vínculo, alcance): índice parcial (en la migración; INV-06-58).
+model AlcanceDeVinculo {
+  id                       String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vinculoId                String                       @map("vinculo_id") @db.Uuid
+  alcance                  Alcance
+  finalidad                Finalidad
+  solicitudDeOrigenId      String                       @unique @map("solicitud_de_origen_id") @db.Uuid
+  estado                   EstadoDeAlcanceDeVinculo     @default(ACEPTADO)
+  version                  Int                          @default(1)
+  /// Mientras está PAUSADO: quién pausó (solo esa parte reanuda, DL-033). Se conserva al finalizar desde PAUSADO.
+  pausadoPor               RolEnVinculo?                @map("pausado_por")
+  motivoDeUltimaTransicion MotivoDeTransicionDeVinculo? @map("motivo_de_ultima_transicion")
+  procedencia              Json
+  momentoDeOcurrencia      DateTime?                    @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro        DateTime                     @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  vinculo           Vinculo            @relation(fields: [vinculoId], references: [id], onDelete: Restrict)
+  solicitudDeOrigen SolicitudDeVinculo @relation(fields: [solicitudDeOrigenId], references: [id], onDelete: Restrict)
+  consentimientos   Consentimiento[]
+  eventos           EventoDeVinculo[]
+  decisiones        DecisionDeAcceso[]
+
+  @@index([vinculoId, alcance])
+  @@map("alcance_de_vinculo")
+}
+
+/// T-06-17 — B2. «Se identifica longitudinalmente por asesorado + profesional + Alcance de Vínculo + finalidad»
+/// (06:3127): uno por (alcance de vínculo, finalidad). La situación cambia solo por transición (06 §7.7.5) y cada
+/// decisión emite una VersionDeConsentimiento (REG-06-50). No hay FK a la versión vigente: es la cabeza de la cadena.
+model Consentimiento {
+  id                  String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  alcanceDeVinculoId  String                    @map("alcance_de_vinculo_id") @db.Uuid
+  finalidad           Finalidad
+  situacion           SituacionDeConsentimiento @default(VIGENTE)
+  version             Int                       @default(1)
+  momentoDeOcurrencia DateTime?                 @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  alcanceDeVinculo AlcanceDeVinculo          @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict)
+  versiones        VersionDeConsentimiento[]
+  eventos          EventoDeVinculo[]
+  decisiones       DecisionDeAcceso[]
+
+  @@unique([alcanceDeVinculoId, finalidad])
+  @@map("consentimiento")
+}
+
+/// REG-06-50 / 08 §12.2 — cada decisión expresa: evidencia inmutable. Cadena lineal: una raíz por consentimiento y como
+/// máximo una sucesora por versión (REG-06-12). Revocar emite una versión sin texto («Versión + evento de revocación»).
+model VersionDeConsentimiento {
+  id                  String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consentimientoId    String                    @map("consentimiento_id") @db.Uuid
+  predecesoraId       String?                   @unique @map("predecesora_id") @db.Uuid
+  decision            DecisionDeConsentimiento
+  situacionResultante SituacionDeConsentimiento @map("situacion_resultante")
+  /// Versión del texto mostrado = aceptado (08 §12.2), con su hash copiado. NULL solo en REVOCACION.
+  versionDeTextoId    String?                   @map("version_de_texto_id")
+  hashDelTexto        String?                   @map("hash_del_texto")
+  alcance             Alcance
+  finalidad           Finalidad
+  /// 08:374 «versión/perfil de matriz de pertinencia y categorías»: sin matriz todavía (DL-039).
+  categorias          Json                      @default("[]")
+  versionDeMatriz     String?                   @map("version_de_matriz")
+  superficie          Superficie?
+  direccionIp         String?                   @map("direccion_ip")
+  agenteDeUsuario     String?                   @map("agente_de_usuario")
+  /// Solo el asesorado titular decide (INV-06-62).
+  actorId             String                    @map("actor_id") @db.Uuid
+  autoriaId           String                    @map("autoria_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  consentimiento Consentimiento           @relation(fields: [consentimientoId], references: [id], onDelete: Restrict)
+  predecesora    VersionDeConsentimiento? @relation("CadenaDeConsentimiento", fields: [predecesoraId], references: [id], onDelete: Restrict)
+  sucesora       VersionDeConsentimiento? @relation("CadenaDeConsentimiento")
+  versionDeTexto VersionDeTexto?          @relation(fields: [versionDeTextoId], references: [id], onDelete: Restrict)
+  eventos        EventoDeVinculo[]
+  decisiones     DecisionDeAcceso[]
+
+  @@index([consentimientoId])
+  @@map("version_de_consentimiento")
+}
+
+/// T-06-N08 — hechos de M-03. Append-only, con estado previo y posterior (patrón 06 §5.7.5).
+model EventoDeVinculo {
+  id                        String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Orden total de los hechos: los de una misma transacción comparten momento de registro (hora de la transacción).
+  secuencia                 BigInt                       @unique @default(autoincrement())
+  tipo                      TipoDeEventoDeVinculo
+  profesionalId             String                       @map("profesional_id") @db.Uuid
+  asesoradoId               String                       @map("asesorado_id") @db.Uuid
+  solicitudDeVinculoId      String?                      @map("solicitud_de_vinculo_id") @db.Uuid
+  alcanceDeVinculoId        String?                      @map("alcance_de_vinculo_id") @db.Uuid
+  consentimientoId          String?                      @map("consentimiento_id") @db.Uuid
+  versionDeConsentimientoId String?                      @map("version_de_consentimiento_id") @db.Uuid
+  estadoPrevio              String?                      @map("estado_previo")
+  estadoPosterior           String                       @map("estado_posterior")
+  motivo                    MotivoDeTransicionDeVinculo?
+  /// Actor: una identidad o el sistema. Exactamente uno (CHECK en la migración).
+  actorId                   String?                      @map("actor_id") @db.Uuid
+  actorServicio             String?                      @map("actor_servicio")
+  procedencia               Json
+  momentoDeOcurrencia       DateTime?                    @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro         DateTime                     @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  // Sin CASCADE: la historia es por adición (08 §17).
+  profesional             Identidad                @relation("EventoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado               Identidad                @relation("EventoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  solicitudDeVinculo      SolicitudDeVinculo?      @relation(fields: [solicitudDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  alcanceDeVinculo        AlcanceDeVinculo?        @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  consentimiento          Consentimiento?          @relation(fields: [consentimientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeConsentimiento VersionDeConsentimiento? @relation(fields: [versionDeConsentimientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([asesoradoId, momentoDeRegistro])
+  @@index([solicitudDeVinculoId])
+  @@index([alcanceDeVinculoId])
+  @@index([consentimientoId])
+  @@map("evento_de_vinculo")
+}
+
+// ─── WP-03 · PDP: decisiones de acceso (08 §29; REG-06-50) ──────────────────────────────────────
+
+/// Cada decisión del PDP sobre una operación protegida, permitida o denegada, en la misma transacción (08 §29, 08:650).
+/// Registra la versión de consentimiento que la resolvió y la de la matriz, hoy nula (08:307; DL-039). La dimensión
+/// desfavorable queda acá y nunca en la respuesta (UC-I02 E05). Append-only.
+model DecisionDeAcceso {
+  id                        String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Orden total de las decisiones: permite ubicar la «primera denegación posterior» a una revocación (08:404).
+  secuencia                 BigInt                    @unique @default(autoincrement())
+  operacion                 String
+  resultado                 ResultadoDeDecision
+  actorId                   String                    @map("actor_id") @db.Uuid
+  /// Titular intentado; NULL si no existe o el identificador no es válido (08 §29 «sujeto intentado»).
+  sujetoId                  String?                   @map("sujeto_id") @db.Uuid
+  alcance                   Alcance
+  finalidad                 Finalidad
+  dimensionesDesfavorables  DimensionDeAutorizacion[] @map("dimensiones_desfavorables")
+  alcanceDeVinculoId        String?                   @map("alcance_de_vinculo_id") @db.Uuid
+  consentimientoId          String?                   @map("consentimiento_id") @db.Uuid
+  versionDeConsentimientoId String?                   @map("version_de_consentimiento_id") @db.Uuid
+  versionDeMatriz           String?                   @map("version_de_matriz")
+  superficie                Superficie?
+  requestId                 String?                   @map("request_id")
+  momentoDeOcurrencia       DateTime                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro         DateTime                  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  actor                   Identidad                @relation("DecisionDelActor", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sujeto                  Identidad?               @relation("DecisionSobreElSujeto", fields: [sujetoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  alcanceDeVinculo        AlcanceDeVinculo?        @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  consentimiento          Consentimiento?          @relation(fields: [consentimientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeConsentimiento VersionDeConsentimiento? @relation(fields: [versionDeConsentimientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([actorId, sujetoId, alcance, momentoDeRegistro])
+  @@map("decision_de_acceso")
+}
+
 // ─── Historia: eventos, cierre, supresión, auditoría, idempotencia ─────────────────────────────
 
 /// T-06-N08 — Evento de dominio: hecho ocurrido y registrado, inmutable, con ocurrencia, registro, autoría y procedencia.
@@ -280,14 +729,14 @@ model EventoDeDominio {
 
 /// RF-069 «La solicitud identifica actor y fecha» (04:158). Una por identidad: CERRADA es terminal.
 model SolicitudDeCierreDeCuenta {
-  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  identidadId               String   @unique @map("identidad_id") @db.Uuid
-  actorId                   String   @map("actor_id") @db.Uuid
+  id                       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId              String   @unique @map("identidad_id") @db.Uuid
+  actorId                  String   @map("actor_id") @db.Uuid
   /// «consecuencias presentadas» (06 §5.7.4): versión del texto mostrado.
-  versionDeConsecuenciasId  String   @map("version_de_consecuencias_id")
-  procedencia               Json
-  momentoDeOcurrencia       DateTime @map("momento_de_ocurrencia") @db.Timestamptz(3)
-  momentoDeRegistro         DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  versionDeConsecuenciasId String   @map("version_de_consecuencias_id")
+  procedencia              Json
+  momentoDeOcurrencia      DateTime @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro        DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
   identidad              Identidad      @relation(fields: [identidadId], references: [id], onDelete: Restrict)
   versionDeConsecuencias VersionDeTexto @relation(fields: [versionDeConsecuenciasId], references: [id], onDelete: Restrict)

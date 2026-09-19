@@ -4,6 +4,8 @@
  * falla y la plataforma conserva la versión anterior (07 §36).
  * Nunca se imprimen valores: solo nombres de variables (08 §32).
  */
+import { esAlcance, TipoDePerfilProfesional, type Alcance } from '@be/domain';
+
 export const AMBIENTES = ['development', 'test', 'production'] as const;
 export type Ambiente = (typeof AMBIENTES)[number];
 
@@ -25,15 +27,33 @@ export interface Entorno {
    * 08 §38 PROPUESTA BE (DEUDA_LEGAJO DL-015): login 5 / 15 min por red + identificador; login global 100 / 15 min por
    * red («global por IP: generoso», 08:786); login 20 / 15 min por identificador desde cualquier red (defensa en
    * profundidad ante pools de direcciones, DL-030); registro 10 / h por red. Red = IPv4 o prefijo /64 de IPv6.
+   * WP-03: consultas protegidas por el PDP, 120 / min por actor. Cada una registra sus decisiones, que no se borran:
+   * sin límite, una sola cuenta podría llenar la base (revisión adversarial del PDP, hallazgo 11).
    */
   readonly limites: {
     readonly login: Limite;
     readonly loginPorIp: Limite;
     readonly loginPorIdentificador: Limite;
     readonly registro: Limite;
+    readonly consultaProtegida: Limite;
   };
   /** Saltos de proxy confiables para `req.ip` (Express `trust proxy`). Render: 1. */
   readonly saltosDeProxy: number;
+  /** WP-03 · plazo de caducidad de una solicitud de vínculo (DEUDA_LEGAJO DL-037). 30 días por defecto. */
+  readonly caducidadDeSolicitudMs: number;
+  /**
+   * WP-03 · profesionales de demostración que el servicio interno verifica y habilita al arrancar (DEUDA_LEGAJO DL-036).
+   * Solo en `test` y `development`, identificados por su identidad ya registrada. Vacío por defecto.
+   */
+  readonly demoProfesionales: readonly ProfesionalDeDemostracion[];
+}
+
+export interface ProfesionalDeDemostracion {
+  /** Identidad ya registrada por la API pública: el identificador BE de la cuenta demo. */
+  readonly identidadId: string;
+  readonly alcance: Alcance;
+  readonly tipo: TipoDePerfilProfesional;
+  readonly nombreVisible: string;
 }
 
 const COSTO_BCRYPT_MINIMO = 10;
@@ -80,10 +100,25 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
       errores,
     ),
     registro: limite(env.RATE_LIMIT_REGISTRO_MAX, env.RATE_LIMIT_REGISTRO_WINDOW_MS, 10, 60 * 60 * 1000, 'RATE_LIMIT_REGISTRO', errores),
+    consultaProtegida: limite(
+      env.RATE_LIMIT_CONSULTA_PROTEGIDA_MAX,
+      env.RATE_LIMIT_CONSULTA_PROTEGIDA_WINDOW_MS,
+      120,
+      60 * 1000,
+      'RATE_LIMIT_CONSULTA_PROTEGIDA',
+      errores,
+    ),
   };
 
   const saltosDeProxy = entero(env.TRUST_PROXY_HOPS, 1);
   if (saltosDeProxy === null || saltosDeProxy < 0 || saltosDeProxy > 5) errores.push('TRUST_PROXY_HOPS debe ser un entero entre 0 y 5');
+
+  const diasDeCaducidad = entero(env.SOLICITUD_DE_VINCULO_CADUCIDAD_DIAS, 30);
+  if (diasDeCaducidad === null || diasDeCaducidad < 1 || diasDeCaducidad > 365) {
+    errores.push('SOLICITUD_DE_VINCULO_CADUCIDAD_DIAS debe ser un entero entre 1 y 365');
+  }
+
+  const demoProfesionales = leerDemoProfesionales(env.BE_DEMO_PROFESIONALES, appEnv, errores);
 
   if (errores.length > 0) {
     throw new Error(`Configuración inválida: ${errores.join('; ')}`);
@@ -98,7 +133,36 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     costoBcrypt: costoBcrypt as number,
     limites,
     saltosDeProxy: saltosDeProxy as number,
+    caducidadDeSolicitudMs: (diasDeCaducidad ?? 30) * 24 * 60 * 60 * 1000,
+    demoProfesionales,
   };
+}
+
+/**
+ * `BE_DEMO_PROFESIONALES` = entradas separadas por «;», cada una `identidadId|ALCANCE|TIPO|Nombre visible`.
+ * Ejemplo: `2f8fa677-663e-43bb-b043-19a1057d8873|NUTRICION|SANITARIO|Lic. Demo Nutrición`. No es un secreto.
+ * Por identidad y no por correo: la cuenta se registra primero y después se declara, así que nadie puede anticiparse
+ * registrando el correo publicado. La siembra además exige que la cuenta sea sintética (correo @example.invalid).
+ * Con `APP_ENV=production` se rechaza (el servicio interno no verifica cuentas reales, DL-036).
+ */
+function leerDemoProfesionales(valor: string | undefined, appEnv: string | undefined, errores: string[]): ProfesionalDeDemostracion[] {
+  if (valor === undefined || valor.trim() === '') return [];
+  if (appEnv !== 'test' && appEnv !== 'development') {
+    errores.push('BE_DEMO_PROFESIONALES solo se admite con APP_ENV test o development');
+    return [];
+  }
+  const lista: ProfesionalDeDemostracion[] = [];
+  for (const entrada of valor.split(';').map((e) => e.trim()).filter((e) => e.length > 0)) {
+    const [identidadId, alcance, tipo, nombreVisible] = entrada.split('|').map((p) => p.trim());
+    const identidadValida = typeof identidadId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identidadId);
+    const tipoValido = tipo === TipoDePerfilProfesional.SANITARIO || tipo === TipoDePerfilProfesional.NO_SANITARIO;
+    if (!identidadValida || !esAlcance(alcance) || !tipoValido || !nombreVisible) {
+      errores.push('BE_DEMO_PROFESIONALES tiene una entrada inválida (identidadId|ALCANCE|TIPO|Nombre)');
+      return [];
+    }
+    lista.push({ identidadId: identidadId.toLowerCase(), alcance, tipo, nombreVisible });
+  }
+  return lista;
 }
 
 function entero(valor: string | undefined, porDefecto: number): number | null {

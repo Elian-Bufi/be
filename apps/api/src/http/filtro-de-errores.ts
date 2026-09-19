@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Request, Response } from 'express';
+import { esConflictoTransitorio } from '../prisma/concurrencia';
 import { ErrorDeApi, errores } from './errores';
 
 /** Códigos de Prisma que significan «base no disponible» (09v7 §4.6: 503 DB_UNAVAILABLE). */
@@ -10,7 +11,8 @@ const PRISMA_SIN_BASE = new Set(['P1001', 'P1002', 'P1008', 'P1017', 'P2024']);
  * Filtro global: toda respuesta de error es un ErrorEnvelope (09 §3.2).
  * - ruta inexistente → 404 RESOURCE_NOT_FOUND sin eco de la ruta (09v7 T16);
  * - JSON mal formado o body demasiado grande → 400 INVALID_REQUEST;
- * - base caída → 503 DB_UNAVAILABLE;
+ * - base caída o transacción que no se pudo abrir a tiempo → 503 DB_UNAVAILABLE;
+ * - deadlock o falla de serialización → 409 RESOURCE_CONFLICT, «conflicto concurrente» (09 §3);
  * - cualquier otra cosa → 500 INTERNAL_ERROR sin detalles (DL-005).
  * El log técnico registra solo el tipo y el requestId: nunca el mensaje, que puede incluir datos (08 §30).
  */
@@ -49,6 +51,10 @@ export class FiltroDeErrores implements ExceptionFilter {
     ) {
       return errores.baseNoDisponible();
     }
+    // Deadlock o serialización que no pasó por conReintento: conflicto concurrente, no error interno (09 §3).
+    if (esConflictoTransitorio(excepcion)) return errores.conflictoConcurrente();
+    // P2028: no se pudo abrir o completar la transacción a tiempo (pool agotado): la base no está disponible ahora.
+    if (excepcion instanceof Prisma.PrismaClientKnownRequestError && excepcion.code === 'P2028') return errores.baseNoDisponible();
     const tipo = excepcion instanceof Error ? excepcion.constructor.name : typeof excepcion;
     const codigo = excepcion instanceof Prisma.PrismaClientKnownRequestError ? excepcion.code : undefined;
     this.log(JSON.stringify({ nivel: 'error', evento: 'error_no_clasificado', tipo, codigo, requestId: requestId ?? null }));

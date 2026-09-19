@@ -2,9 +2,24 @@
  * El schema desplegado coincide con el 06 y sostiene sus garantías aunque el código se equivoque.
  * T-06-01 Identidad BE · T-06-02 Estado operativo · T-06-24 / REG-06-18 par temporal · INV-06-22 · 08 §12.2 · 08 §29
  */
-import { CATALOGO_DE_TEXTOS, EstadoOperativoDeCuenta, ESTADO_INICIAL_DE_CUENTA } from '@be/domain';
+import {
+  ALCANCES,
+  CATALOGO_DE_TEXTOS,
+  DIMENSIONES_DE_AUTORIZACION,
+  EstadoDeAlcanceDeVinculo,
+  EstadoDeHabilitacion,
+  EstadoDeSolicitudDeVinculo,
+  EstadoDeVerificacionProfesional,
+  EstadoOperativoDeCuenta,
+  ESTADO_INICIAL_DE_CUENTA,
+  Finalidad,
+  SituacionDeConsentimiento,
+} from '@be/domain';
 import { PrismaClient } from '@prisma/client';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { join } from 'node:path';
+import { RAIZ } from './soporte';
 
 const prisma = new PrismaClient();
 afterAll(() => prisma.$disconnect());
@@ -23,12 +38,40 @@ async function sinPersistir(fn: (tx: Tx) => Promise<void>): Promise<void> {
   ).rejects.toBe(REVERTIR);
 }
 
+describe('Deriva — schema.prisma y las migraciones describen la misma base', () => {
+  // Las claves foráneas, índices y enums de la migración también están en schema.prisma. Si no, el próximo
+  // `migrate diff` los borraría sin avisar (revisión de máquinas y base, hallazgo 5). La sombra es una base propia:
+  // una sombra acotada a un schema se compara contra `public` y da una diferencia falsa.
+  it('migrate diff desde las migraciones hasta schema.prisma es vacío (--exit-code 0)', async () => {
+    const base = new URL(process.env.DATABASE_URL as string);
+    const nombre = `${base.pathname.slice(1)}_sombra_diff`.replace(/[^a-z0-9_]/gi, '_');
+    await prisma.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${nombre}"`);
+    await prisma.$executeRawUnsafe(`CREATE DATABASE "${nombre}"`);
+    try {
+      const sombra = new URL(base.toString());
+      sombra.pathname = `/${nombre}`;
+      sombra.searchParams.delete('schema');
+      const cli = join(RAIZ, 'node_modules', 'prisma', 'build', 'index.js');
+      const argumentos = ['migrate', 'diff', '--from-migrations', join(RAIZ, 'prisma', 'migrations'), '--to-schema-datamodel', join(RAIZ, 'prisma', 'schema.prisma')];
+      // Con diferencias, --exit-code sale con 2 y execFileSync lanza con el diff en la salida.
+      execFileSync(process.execPath, [cli, ...argumentos, '--shadow-database-url', sombra.toString(), '--exit-code'], { env: { ...process.env }, stdio: ['ignore', 'pipe', 'pipe'] });
+    } finally {
+      await prisma.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${nombre}"`);
+    }
+  });
+});
+
 describe('Schema vs 06 — TEST-RUN-003 migration deploy', () => {
-  it('TEST-RUN-003: las migraciones de WP-01 y WP-02 quedaron aplicadas por migrate deploy', async () => {
+  it('TEST-RUN-003: las migraciones de WP-01, WP-02 y WP-03 quedaron aplicadas por migrate deploy', async () => {
     const filas = await prisma.$queryRaw<{ migration_name: string }[]>`
       SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL`;
     expect(filas.map((f) => f.migration_name)).toEqual(
-      expect.arrayContaining(['20260916180000_identidad', '20260918200000_identidad_y_sesiones']),
+      expect.arrayContaining([
+        '20260916180000_identidad',
+        '20260918200000_identidad_y_sesiones',
+        '20260919200000_wp03_valores_de_enum',
+        '20260919200100_vinculo_consentimiento_y_pdp',
+      ]),
     );
   });
 
@@ -37,6 +80,22 @@ describe('Schema vs 06 — TEST-RUN-003 migration deploy', () => {
       SELECT e.enumlabel AS valor FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
       WHERE t.typname = 'EstadoOperativoDeCuenta' ORDER BY e.enumsortorder`;
     expect(filas.map((f) => f.valor)).toEqual(Object.values(EstadoOperativoDeCuenta));
+  });
+
+  it.each([
+    ['Alcance', [...ALCANCES]],
+    ['Finalidad', Object.values(Finalidad)],
+    ['EstadoDeVerificacionProfesional', Object.values(EstadoDeVerificacionProfesional)],
+    ['EstadoDeHabilitacion', Object.values(EstadoDeHabilitacion)],
+    ['EstadoDeSolicitudDeVinculo', Object.values(EstadoDeSolicitudDeVinculo)],
+    ['EstadoDeAlcanceDeVinculo', Object.values(EstadoDeAlcanceDeVinculo)],
+    ['SituacionDeConsentimiento', Object.values(SituacionDeConsentimiento)],
+    ['DimensionDeAutorizacion', [...DIMENSIONES_DE_AUTORIZACION]],
+  ])('WP-03 · el enum %s de la base es exactamente el conjunto de @be/domain (06 §6.8, §7; RF-021)', async (tipo, valores) => {
+    const filas = await prisma.$queryRaw<{ valor: string }[]>`
+      SELECT e.enumlabel AS valor FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+      WHERE t.typname = ${tipo} ORDER BY e.enumsortorder`;
+    expect(filas.map((f) => f.valor)).toEqual(valores);
   });
 
   it('T-06-01/T-06-02/T-06-24: columnas de identidad del 06 §5.4.2 con nulabilidad y defaults', async () => {
@@ -150,6 +209,18 @@ describe('08 §29 — historia por adición', () => {
     'sesion',
     'control_de_sesion',
     'registro_de_idempotencia',
+    // WP-03
+    'perfil_profesional',
+    'verificacion_profesional',
+    'habilitacion',
+    'evento_de_verificacion',
+    'solicitud_de_vinculo',
+    'vinculo',
+    'alcance_de_vinculo',
+    'consentimiento',
+    'version_de_consentimiento',
+    'evento_de_vinculo',
+    'decision_de_acceso',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {

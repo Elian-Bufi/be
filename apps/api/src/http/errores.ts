@@ -45,6 +45,31 @@ export const errores = {
     new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'Falta información necesaria para continuar.', { issues }),
   limiteDeIntentos: () => new ErrorDeApi(429, CodigoDeError.RATE_LIMITED, 'Demasiados intentos. Probá de nuevo más tarde.'),
   baseNoDisponible: () => new ErrorDeApi(503, CodigoDeError.DB_UNAVAILABLE, 'El servicio no está disponible. Probá de nuevo más tarde.'),
+
+  // ─── WP-03 (09v7 §4; 09v8:1807-1826; 09:2513-2516) ─────────────────────────────────────────────
+  /** 09:255-257: la versión mostrada ya no es la vigente. «El cliente no hace blind retry». */
+  conflictoDeVersion: () =>
+    new ErrorDeApi(409, CodigoDeError.VERSION_CONFLICT, 'Este contenido cambió desde que lo abriste. Actualizá la vista antes de volver a intentar.'),
+  /** 403 solo cuando revelar la prohibición no filtra existencia (09v7:151-157): el actor ya es participante. */
+  accionNoPermitida: () => new ErrorDeApi(403, CodigoDeError.ACTION_FORBIDDEN, 'Esta acción no está disponible para vos.'),
+  cursorInvalido: () => new ErrorDeApi(400, CodigoDeError.INVALID_CURSOR, 'La solicitud no es válida.'),
+  conflictoDeRecurso: () => new ErrorDeApi(409, CodigoDeError.RESOURCE_CONFLICT, 'Ya existe un vínculo vigente para este alcance.'),
+  /** 09 §3 «409 para conflicto concurrente»: otra transacción tomó el recurso y los reintentos se agotaron. */
+  conflictoConcurrente: () =>
+    new ErrorDeApi(409, CodigoDeError.RESOURCE_CONFLICT, 'Otra operación cambió este recurso al mismo tiempo. Actualizá la vista y volvé a intentar.'),
+  /** Transición no declarada o guarda desfavorable sobre un recurso revelable (06 CONV-06-03). */
+  estadoNoPermite: () =>
+    new ErrorDeApi(422, CodigoDeError.INVALID_STATE_TRANSITION, 'La operación no es válida para el estado actual.'),
+  finalidadRequerida: () => new ErrorDeApi(422, CodigoDeError.PURPOSE_REQUIRED, 'Falta la finalidad.'),
+  alcanceNoDisponible: () => new ErrorDeApi(422, CodigoDeError.SCOPE_NOT_AVAILABLE, 'El alcance no está disponible.'),
+  contraparteNoElegible: () => new ErrorDeApi(422, CodigoDeError.COUNTERPART_NOT_ELIGIBLE, 'La contraparte no es elegible.'),
+  versionDeConsentimientoVieja: () =>
+    new ErrorDeApi(409, CodigoDeError.CONSENT_VERSION_STALE, 'El texto del consentimiento cambió. Revisá la versión vigente.'),
+  vinculoNoListoParaConsentir: () =>
+    new ErrorDeApi(422, CodigoDeError.RELATIONSHIP_NOT_READY_FOR_CONSENT, 'El vínculo no admite consentimiento en su estado actual.'),
+  consentimientoYaVigente: () => new ErrorDeApi(409, CodigoDeError.CONSENT_ALREADY_ACTIVE, 'Ya hay una autorización vigente.'),
+  consentimientoDeSaludNoDisponible: () =>
+    new ErrorDeApi(422, CodigoDeError.HEALTH_DATA_CONSENT_NOT_AVAILABLE, 'La versión indicada no corresponde a esta autorización.'),
   /** 09v7:185 — falla no clasificada (DEUDA_LEGAJO DL-005). */
   interno: () => new ErrorDeApi(500, CodigoDeError.INTERNAL_ERROR, 'Ocurrió un error inesperado.'),
 };

@@ -84,7 +84,7 @@ export class SesionService {
     const expiraEn = new Date(ctx.momentoDeRecepcion.getTime() + DURACION_DE_SESION_MS);
     let estadoEnCarrera: EstadoOperativoDeCuenta | 'INEXISTENTE' | null = null;
     const emitida = await this.prisma.$transaction(async (tx) => {
-      // Relectura con bloqueo compartido: serializa con CerrarCuenta/SuspenderCuenta (FOR UPDATE). Si la cuenta dejó
+      // Relectura con bloqueo compartido: serializa con CerrarCuenta/SuspenderCuenta (FOR NO KEY UPDATE). Si la cuenta dejó
       // de ser operativa entre la verificación y este punto, no se crea sesión.
       const [cuenta] = await tx.$queryRaw<{ estado: EstadoOperativoDeCuenta }[]>`
         SELECT "estado_operativo_de_cuenta" AS "estado" FROM "identidad" WHERE "id" = ${identidadId}::uuid FOR SHARE`;

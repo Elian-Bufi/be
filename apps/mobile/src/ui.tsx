@@ -136,6 +136,39 @@ export function Seccion({ titulo, children, peligro = false }: { titulo: string;
   );
 }
 
+/** Encabezado de una parte dentro de una sección. */
+export function Subtitulo({ children }: { children: ReactNode }) {
+  return (
+    <Text style={estilos.subtitulo} accessibilityRole="header">
+      {children}
+    </Text>
+  );
+}
+
+/** Un ítem de lista o un bloque autocontenido dentro de una sección. */
+export function Tarjeta({ children }: { children: ReactNode }) {
+  return <View style={estilos.tarjeta}>{children}</View>;
+}
+
+/** Par etiqueta/valor, leído como una sola frase por el lector de pantalla. */
+export function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
+  return (
+    <View style={estilos.dato} accessible accessibilityLabel={`${etiqueta}: ${valor}`}>
+      <Text style={estilos.negrita}>{etiqueta}</Text>
+      <Text style={estilos.parrafo}>{valor}</Text>
+    </View>
+  );
+}
+
+/** Estado en forma de insignia: el texto dice el estado; el color solo acompaña (10-B10 §7). */
+export function Insignia({ texto, positiva = false, etiqueta }: { texto: string; positiva?: boolean; etiqueta?: string }) {
+  return (
+    <View style={[estilos.insignia, positiva && estilos.insigniaPositiva]} accessible accessibilityLabel={etiqueta ? `${etiqueta}: ${texto}` : texto}>
+      <Text style={[estilos.textoInsignia, positiva && estilos.textoInsigniaPositiva]}>{texto}</Text>
+    </View>
+  );
+}
+
 export const estilos = StyleSheet.create({
   titulo: { fontSize: 28, fontWeight: '700', color: COLOR.texto, marginBottom: 12 },
   parrafo: { fontSize: 16, color: COLOR.texto, lineHeight: 23, marginVertical: 4 },
@@ -174,4 +207,11 @@ export const estilos = StyleSheet.create({
   seccion: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 10, padding: 16, marginVertical: 8 },
   seccionPeligro: { borderColor: COLOR.error },
   tituloDeSeccion: { fontSize: 20, fontWeight: '700', color: COLOR.texto, marginBottom: 6 },
+  subtitulo: { fontSize: 17, fontWeight: '700', color: COLOR.texto, marginTop: 12, marginBottom: 4 },
+  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 8, padding: 12, marginVertical: 6, backgroundColor: '#fff' },
+  dato: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginVertical: 4 },
+  insignia: { alignSelf: 'flex-start', borderWidth: 2, borderColor: COLOR.tenue, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginVertical: 6 },
+  insigniaPositiva: { borderColor: COLOR.exito },
+  textoInsignia: { fontWeight: '700', color: COLOR.tenue, fontSize: 15 },
+  textoInsigniaPositiva: { color: COLOR.exito },
 });

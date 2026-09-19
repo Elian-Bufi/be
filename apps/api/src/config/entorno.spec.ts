@@ -21,9 +21,34 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
         loginPorIp: { maximo: 100, ventanaMs: 900000 },
         loginPorIdentificador: { maximo: 20, ventanaMs: 900000 },
         registro: { maximo: 10, ventanaMs: 3600000 },
+        consultaProtegida: { maximo: 120, ventanaMs: 60000 },
       },
       saltosDeProxy: 1,
+      caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
+      demoProfesionales: [],
     });
+  });
+
+  it('WP-03 · plazo de caducidad de solicitudes parametrizado (DL-037): entero de 1 a 365 días', () => {
+    expect(leerEntorno({ ...BASE, SOLICITUD_DE_VINCULO_CADUCIDAD_DIAS: '7' }).caducidadDeSolicitudMs).toBe(7 * 24 * 60 * 60 * 1000);
+    for (const malo of ['0', '366', '1.5', 'x']) {
+      expect(() => leerEntorno({ ...BASE, SOLICITUD_DE_VINCULO_CADUCIDAD_DIAS: malo })).toThrow(/SOLICITUD_DE_VINCULO_CADUCIDAD_DIAS/);
+    }
+  });
+
+  it('WP-03 · profesionales demo (DL-036): por identidad registrada y nunca en production', () => {
+    const pn = '2F8FA677-663E-43BB-B043-19A1057D8873';
+    const pt = '3113dacf-e61b-45a0-9106-596bdbc21444';
+    const valor = `${pn}|NUTRICION|SANITARIO|Lic. Demo;${pt}|ENTRENAMIENTO|NO_SANITARIO|Prof. Demo`;
+    expect(leerEntorno({ ...BASE, BE_DEMO_PROFESIONALES: valor }).demoProfesionales).toEqual([
+      { identidadId: pn.toLowerCase(), alcance: 'NUTRICION', tipo: 'SANITARIO', nombreVisible: 'Lic. Demo' },
+      { identidadId: pt, alcance: 'ENTRENAMIENTO', tipo: 'NO_SANITARIO', nombreVisible: 'Prof. Demo' },
+    ]);
+    expect(() => leerEntorno({ ...BASE, APP_ENV: 'production', BE_DEMO_PROFESIONALES: valor })).toThrow(/BE_DEMO_PROFESIONALES/);
+    // Un correo ya no identifica: cualquiera podría registrarlo primero.
+    for (const malo of ['demo.pn@example.invalid|NUTRICION|SANITARIO|X', `${pt}|PSICOLOGIA|SANITARIO|X`, `${pt}|NUTRICION|OTRO|X`, `${pt}|NUTRICION|SANITARIO|`]) {
+      expect(() => leerEntorno({ ...BASE, BE_DEMO_PROFESIONALES: malo })).toThrow(/BE_DEMO_PROFESIONALES/);
+    }
   });
 
   it.each(['staging', 'prod', '', undefined])('rechaza APP_ENV=%p (07 §26: sin staging)', (APP_ENV) => {

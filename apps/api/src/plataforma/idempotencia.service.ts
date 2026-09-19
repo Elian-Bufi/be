@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { errores } from '../http/errores';
+import { conReintento } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface ResultadoIdempotente {
@@ -20,6 +21,8 @@ export const AMBITO_PUBLICO = 'PUBLICO';
  * Requests concurrentes con la misma key se serializan con un advisory lock transaccional: la segunda espera a
  * que la primera confirme y hace replay (DL-026). Solo se guardan resultados exitosos: un error no se «congela».
  * «La key no sustituye: unique constraint; transacción» (09v7): la unicidad de negocio sigue en la base.
+ * Un deadlock o una falla de serialización revierten la transacción entera: se repite (conReintento) y, si persiste,
+ * sale como 409 de conflicto concurrente.
  */
 @Injectable()
 export class IdempotenciaService {
@@ -38,7 +41,7 @@ export class IdempotenciaService {
     params: { operacion: string; ambito: string; clave: string; huella: string },
     efecto: (tx: Prisma.TransactionClient) => Promise<ResultadoIdempotente>,
   ): Promise<ResultadoIdempotente> {
-    return this.prisma.$transaction(async (tx) => {
+    return conReintento(() => this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`${params.operacion}|${params.ambito}|${params.clave}`}, 0))`;
       const previo = await tx.registroDeIdempotencia.findUnique({
         where: { operacion_ambito_clave: { operacion: params.operacion, ambito: params.ambito, clave: params.clave } },
@@ -52,7 +55,7 @@ export class IdempotenciaService {
         data: { ...params, estadoHttp: resultado.estadoHttp, cuerpo: resultado.cuerpo },
       });
       return resultado;
-    });
+    }));
   }
 }
 

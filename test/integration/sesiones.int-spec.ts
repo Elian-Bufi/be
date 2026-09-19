@@ -254,6 +254,7 @@ describe('TEST-RNF-SEC-003 — límite de intentos neutral', () => {
         loginPorIp: { maximo: 12, ventanaMs: 60_000 },
         loginPorIdentificador: { maximo: 100, ventanaMs: 60_000 },
         registro: { maximo: 2, ventanaMs: 60_000 },
+        consultaProtegida: { maximo: 10_000, ventanaMs: 60_000 },
       },
     });
   });
@@ -284,6 +285,7 @@ describe('TEST-RNF-SEC-003 — límite de intentos neutral', () => {
         loginPorIp: { maximo: 4, ventanaMs: 60_000 },
         loginPorIdentificador: { maximo: 100, ventanaMs: 60_000 },
         registro: { maximo: 100, ventanaMs: 60_000 },
+        consultaProtegida: { maximo: 10_000, ventanaMs: 60_000 },
       },
     });
     try {
@@ -304,6 +306,7 @@ describe('TEST-RNF-SEC-003 — límite de intentos neutral', () => {
           loginPorIp: { maximo: 100, ventanaMs: 60_000 },
           loginPorIdentificador: { maximo: 3, ventanaMs: 60_000 },
           registro: { maximo: 100, ventanaMs: 60_000 },
+          consultaProtegida: { maximo: 10_000, ventanaMs: 60_000 },
         },
       },
     );
