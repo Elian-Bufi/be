@@ -72,6 +72,19 @@ import {
   ValidacionDePlanResponseSchema,
   VersionEsperadaRequestSchema,
 } from './contratos-nutricion';
+import {
+  AnularMedicionRequestSchema,
+  AnularMedicionResponseSchema,
+  CorregirMedicionRequestSchema,
+  CrearBorradorRequestSchema,
+  EvaluacionAntropometricaResponseSchema,
+  EvolucionResponseSchema,
+  GuardarBorradorRequestSchema,
+  ListaDeEspecificacionesResponseSchema,
+  ListaDeEvaluacionesAntropometricasResponseSchema,
+  MedicionSchema,
+  RegistrarEvaluacionRequestSchema,
+} from './contratos-antropometria';
 
 type Codigo = keyof typeof CodigoDeError;
 type Errores = Partial<Record<400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503, readonly Codigo[]>>;
@@ -749,6 +762,166 @@ const DEFINIDAS: readonly Operacion[] = [
     },
     fuente: 'CONS:632-685 · REG-06-14, 15, 16, 121',
   },
+  // ─── ANT · antropometría (09v11; consolidado v0.16 §23 y §24) ─────────────────────────────────
+  {
+    id: 'API-ANT-01',
+    metodo: 'get',
+    ruta: '/anthropometry/specifications',
+    resumen:
+      'Especificaciones admitidas: protocolos y métodos con su versión vigente. Evita hardcodear contenido técnico en las superficies. El contenido es sintético de demostración y está rotulado como tal.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, { nombre: 'kind', descripcion: 'PROTOCOL o METHOD.', schema: { type: 'string', enum: ['PROTOCOL', 'METHOD'] } }],
+    exitos: [{ status: 200, schema: ListaDeEspecificacionesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: '09v11:336-366 · REG-06-157 · WP-05 §0 D-C',
+  },
+  {
+    id: 'API-ANT-07',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/anthropometry/evaluations',
+    resumen:
+      'Crear la evaluación antropométrica EN PREPARACIÓN. El borrador no es historia: no alimenta la serie ni figura como última evaluación registrada.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearBorradorRequestSchema,
+    exitos: [{ status: 201, schema: EvaluacionAntropometricaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['ANTHROPOMETRY_EVALUATION_INVALID', 'SPECIFICATION_REFERENCE_INVALID'] },
+    fuente: '09v16 §23.2 · REG-06-214/215',
+  },
+  {
+    id: 'API-ANT-08',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/anthropometry/evaluations/drafts',
+    resumen: 'Borradores retomables del profesional para ese asesorado. Un borrador de otro profesional no aparece.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeEvaluacionesAntropometricasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v16 §23.3 · 08 §56.5',
+  },
+  {
+    id: 'API-ANT-09',
+    metodo: 'get',
+    ruta: '/anthropometry/evaluations/{evaluationId}',
+    resumen:
+      'Consultar una evaluación propia, registrada o en preparación. Una ajena, exista o no, devuelve el mismo 404: el borrador de otro profesional no aparece ni como bloqueado ni como existente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: EvaluacionAntropometricaResponseSchema }],
+    errores: { ...SESION, 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v16 §23.4 · 08 §56.5 · DV-05 caso 10',
+  },
+  {
+    id: 'API-ANT-10',
+    metodo: 'patch',
+    ruta: '/anthropometry/evaluations/{evaluationId}',
+    resumen:
+      'Guardar el borrador. Reemplaza el contenido declarado y avanza el token de trabajo: el contenido de preparación no adquiere autoridad histórica por persistirse.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: GuardarBorradorRequestSchema,
+    exitos: [{ status: 200, schema: EvaluacionAntropometricaResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['VERSION_CONFLICT'],
+      422: ['ANTHROPOMETRY_EVALUATION_NOT_EDITABLE', 'SPECIFICATION_REFERENCE_INVALID'],
+    },
+    fuente: '09v16 §23.5 · REG-06-215/216',
+  },
+  {
+    id: 'API-ANT-11',
+    metodo: 'post',
+    ruta: '/anthropometry/evaluations/{evaluationId}/register',
+    resumen:
+      'Registrar la evaluación: el acto explícito que la vuelve historia. Exige contenido registrable. REGISTRADA es terminal: los cambios posteriores usan corrección o anulación.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RegistrarEvaluacionRequestSchema,
+    exitos: [{ status: 200, schema: EvaluacionAntropometricaResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'],
+      422: ['ANTHROPOMETRY_EVALUATION_INVALID', 'ANTHROPOMETRY_EVALUATION_NOT_EDITABLE'],
+    },
+    fuente: '09v16 §23.6 · REG-06-214 incisos 4 y 5',
+  },
+  {
+    id: 'API-ANT-03',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/anthropometry/evaluations',
+    resumen: 'Listar las evaluaciones REGISTRADAS del asesorado. Los borradores no aparecen acá: no son historia.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeEvaluacionesAntropometricasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v16 §23.1 · REG-06-215',
+  },
+  {
+    id: 'API-ANT-05',
+    metodo: 'post',
+    ruta: '/anthropometry/measurements/{measurementId}/corrections',
+    resumen:
+      'Corregir una medición con trazabilidad: el original y la cadena se conservan, y la vista efectiva se resuelve por relación, nunca por la fecha más reciente. Los derivados afectados se reemiten sin sobrescribir los anteriores.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CorregirMedicionRequestSchema,
+    exitos: [{ status: 201, schema: z.strictObject({ data: MedicionSchema.loose() }) }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'RESOURCE_CONFLICT'], 422: ['CORRECTION_NOT_ALLOWED', 'METHOD_INPUTS_NOT_AVAILABLE'] },
+    fuente: '09v11:579-657 · REG-06-160/161/219 · UC-I12',
+  },
+  {
+    id: 'API-ANT-12',
+    metodo: 'post',
+    ruta: '/anthropometry/measurements/{measurementId}/annulment',
+    resumen:
+      'Anular una medición: evento aditivo y terminal, que no borra el original. Una segunda anulación de la misma medición responde 200 con la anulación existente y alreadyAnnulled: no produce un segundo efecto ni un error nuevo. No existe reversión.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AnularMedicionRequestSchema,
+    exitos: [
+      { status: 201, schema: AnularMedicionResponseSchema },
+      { status: 200, schema: AnularMedicionResponseSchema },
+    ],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['ANTHROPOMETRY_ANNULMENT_NOT_ALLOWED'] },
+    fuente: '09v16 §24.1 · REG-06-217/218/219/220 · DV-05 caso 6 · DEUDA_LEGAJO DL-059',
+  },
+  {
+    id: 'API-ANT-06',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/anthropometry/progress',
+    resumen:
+      'Evolución antropométrica del asesorado. Un checkpoint sin medición vigente es NO_DATA y no lleva valor: no se interpola, no se imputa y no se arrastra. Un cero medido sigue siendo un punto disponible.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'from', descripcion: 'Primer día del período (fecha local).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'to', descripcion: 'Último día del período (fecha local).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'metrics', descripcion: 'Métricas separadas por coma. Sin esto, todas las que tengan dato.', schema: { type: 'string' } },
+    ],
+    exitos: [{ status: 200, schema: EvolucionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v11:710-760 · REG-06-165/166/167 · INV-06-176/177 · DV-05 caso 7',
+  },
+  {
+    id: 'API-ANT-06-PROPIA',
+    metodo: 'get',
+    ruta: '/me/anthropometry/progress',
+    resumen: 'La misma evolución, del lado del asesorado, que RF-049 nombra como actor. La consume la APK.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'from', descripcion: 'Primer día del período (fecha local).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'to', descripcion: 'Último día del período (fecha local).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'metrics', descripcion: 'Métricas separadas por coma. Sin esto, todas las que tengan dato.', schema: { type: 'string' } },
+    ],
+    exitos: [{ status: 200, schema: EvolucionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: '04:583 (RF-049) · UC-P31 V03 · 04:1093',
+  },
+
 ];
 
 /**
@@ -759,6 +932,11 @@ const DEFINIDAS: readonly Operacion[] = [
  */
 const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-DSH-03',
+  'API-ANT-03',
+  'API-ANT-06',
+  'API-ANT-06-PROPIA',
+  'API-ANT-08',
+  'API-ANT-09',
   'API-REL-06',
   'API-CON-01',
   'API-NUT-02',
@@ -771,7 +949,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-NUT-17',
   'API-NUT-19',
 ]);
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-CON-04', 'API-CON-08', 'API-NUT-10', 'API-NUT-11']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-CON-04', 'API-CON-08', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };

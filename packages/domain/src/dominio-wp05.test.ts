@@ -262,3 +262,61 @@ test('TEST-PRJ-009 · ningún schema de antropometría tiene puntaje, porcentaje
   }
   assert.deepEqual(hallazgos, []);
 });
+
+// ─── Contrato publicado y copy ──────────────────────────────────────────────────────────────────
+
+test('WP-05 §4 · el OpenAPI publica las once operaciones ANT, con su idempotencia y su 404 no revelable', async () => {
+  const { OPERACIONES } = await import('./openapi');
+  const ant = OPERACIONES.filter((o) => o.id.startsWith('API-ANT-'));
+  assert.equal(ant.length, 11);
+
+  // Las escrituras llevan Idempotency-Key, salvo el PATCH del borrador, que usa expectedVersion (09v9:1051-1068).
+  const conClave = ant.filter((o) => o.idempotencia).map((o) => o.id).sort();
+  assert.deepEqual(conClave, ['API-ANT-05', 'API-ANT-07', 'API-ANT-11', 'API-ANT-12']);
+  assert.equal(ant.find((o) => o.id === 'API-ANT-10')?.metodo, 'patch');
+
+  // Consultar una evaluación ajena no revela nada: su único error de recurso es el 404 (09:213-233).
+  const consulta = ant.find((o) => o.id === 'API-ANT-09');
+  assert.deepEqual(consulta?.errores[404], ['RESOURCE_NOT_FOUND']);
+  assert.equal(consulta?.errores[403], undefined);
+
+  // La anulación declara los dos éxitos: 201 la primera, 200 cuando ya estaba anulada (adversarial 6; DL-059).
+  const anular = ant.find((o) => o.id === 'API-ANT-12');
+  assert.deepEqual(anular?.exitos.map((e) => e.status).sort(), [200, 201]);
+});
+
+test('T13 · el copy de antropometría no dice diagnóstico, ni completa huecos, ni califica el cuerpo', async () => {
+  const { COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, ETIQUETA_DE_ORIGEN, terminosProhibidosDeAntropometriaEn } = await import('./copy-antropometria');
+  const textos = [
+    ...Object.values(COPY_ANTROPOMETRIA).flatMap((v) => (typeof v === 'string' ? [v] : Object.values(v))),
+    ...Object.values(ETIQUETA_DE_CLASE_DE_DATO),
+    ...Object.values(ETIQUETA_DE_CONDICION),
+    ...Object.values(ETIQUETA_DE_ORIGEN),
+  ];
+  const hallazgos = textos.flatMap((t) => terminosProhibidosDeAntropometriaEn(t).map((p) => `${p} en «${t}»`));
+  assert.deepEqual(hallazgos, []);
+
+  // El detector encuentra lo que tiene que encontrar.
+  assert.deepEqual(terminosProhibidosDeAntropometriaEn('Diagnóstico: sobrepeso'), ['diagnóstico', 'sobrepeso']);
+  assert.deepEqual(terminosProhibidosDeAntropometriaEn('El hueco se completó con el último valor'), ['se completó']);
+  assert.deepEqual(terminosProhibidosDeAntropometriaEn('Eliminar medición'), ['eliminar medición']);
+  assert.deepEqual(terminosProhibidosDeAntropometriaEn('Medición registrada con su protocolo'), []);
+});
+
+test('08 §56.12 · el copy de anular explicita que preserva la historia y no habla de borrar', async () => {
+  const { COPY_ANTROPOMETRIA } = await import('./copy-antropometria');
+  assert.match(COPY_ANTROPOMETRIA.explicacionDeAnulacion, /no borra nada/i);
+  assert.match(COPY_ANTROPOMETRIA.explicacionDeAnulacion, /se conservan/i);
+  assert.match(COPY_ANTROPOMETRIA.sinReversion, /no se reactiva/i);
+  // INV-06-176/177 dicho en la pantalla, no solo en el contrato.
+  assert.match(COPY_ANTROPOMETRIA.explicacionDeSinDato, /no se completan con cero/i);
+});
+
+test('RF-048 · decir que algo NO es un diagnóstico no es lo mismo que presentarlo como tal', async () => {
+  const { terminosProhibidosDeAntropometriaEn } = await import('./copy-antropometria');
+  // La negación explícita es lo que el legajo pide que se diga (04:575).
+  assert.deepEqual(terminosProhibidosDeAntropometriaEn('Un resultado calculado no es un diagnóstico.'), []);
+  // La afirmación sigue prohibida.
+  assert.deepEqual(terminosProhibidosDeAntropometriaEn('Diagnóstico del paciente'), ['diagnóstico']);
+  assert.deepEqual(terminosProhibidosDeAntropometriaEn('El resultado es un diagnóstico'), ['diagnóstico']);
+});

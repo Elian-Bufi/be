@@ -81,6 +81,19 @@ import {
   type RegistrarIngestaRequest,
   type RegistrarRevisionRequest,
 } from './contratos-nutricion';
+import {
+  AnularMedicionResponseSchema,
+  EvaluacionAntropometricaResponseSchema,
+  EvolucionResponseSchema,
+  ListaDeEspecificacionesResponseSchema,
+  ListaDeEvaluacionesAntropometricasResponseSchema,
+  MedicionSchema,
+  type AnularMedicionRequestSchema,
+  type CorregirMedicionRequestSchema,
+  type CrearBorradorRequestSchema,
+  type GuardarBorradorRequestSchema,
+} from './contratos-antropometria';
+import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import type { Superficie } from './procedencia';
 import { VERSION_VIGENTE } from './textos';
@@ -432,6 +445,78 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-NUT-20. Aplica la próxima acción que la revisión ya declaró. */
     aplicarRevision(token: string, revisionId: string, claveDeIdempotencia: string) {
       return llamar('POST', `/nutrition/reviews/${encodeURIComponent(revisionId)}/apply`, { token, claveDeIdempotencia, esquema: AplicarRevisionResponseSchema, cuerpo: { expectedVersion: 'v1' } });
+    },
+
+    // ─── ANT · antropometría (WP-05) ──────────────────────────────────────────────────────────
+    /** API-ANT-01: protocolos y métodos admitidos, con su versión vigente. */
+    listarEspecificaciones(token: string, filtro: { kind?: 'PROTOCOL' | 'METHOD'; cursor?: string } = {}) {
+      return llamar('GET', `/anthropometry/specifications${query(filtro)}`, { token, esquema: ListaDeEspecificacionesResponseSchema });
+    },
+    /** API-ANT-07: crear la evaluación EN PREPARACIÓN. */
+    crearBorradorAntropometrico(token: string, asesoradoId: string, cuerpo: z.input<typeof CrearBorradorRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${asesoradoId}/anthropometry/evaluations`, {
+        token,
+        claveDeIdempotencia,
+        esquema: EvaluacionAntropometricaResponseSchema,
+        cuerpo,
+      });
+    },
+    /** API-ANT-08: borradores retomables. */
+    listarBorradoresAntropometricos(token: string, asesoradoId: string, filtro: { cursor?: string } = {}) {
+      return llamar('GET', `/advisees/${asesoradoId}/anthropometry/evaluations/drafts${query(filtro)}`, {
+        token,
+        esquema: ListaDeEvaluacionesAntropometricasResponseSchema,
+      });
+    },
+    /** API-ANT-03: las registradas, que son las que forman historia. */
+    listarEvaluacionesAntropometricas(token: string, asesoradoId: string, filtro: { cursor?: string } = {}) {
+      return llamar('GET', `/advisees/${asesoradoId}/anthropometry/evaluations${query(filtro)}`, {
+        token,
+        esquema: ListaDeEvaluacionesAntropometricasResponseSchema,
+      });
+    },
+    /** API-ANT-04 y 09. */
+    consultarEvaluacionAntropometrica(token: string, evaluacionId: string) {
+      return llamar('GET', `/anthropometry/evaluations/${evaluacionId}`, { token, esquema: EvaluacionAntropometricaResponseSchema });
+    },
+    /** API-ANT-10: guardar el borrador con su token de trabajo. */
+    guardarBorradorAntropometrico(token: string, evaluacionId: string, cuerpo: z.input<typeof GuardarBorradorRequestSchema>) {
+      return llamar('PATCH', `/anthropometry/evaluations/${evaluacionId}`, { token, esquema: EvaluacionAntropometricaResponseSchema, cuerpo });
+    },
+    /** API-ANT-11: el acto explícito de registro. */
+    registrarEvaluacionAntropometrica(token: string, evaluacionId: string, versionEsperada: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/anthropometry/evaluations/${evaluacionId}/register`, {
+        token,
+        claveDeIdempotencia,
+        esquema: EvaluacionAntropometricaResponseSchema,
+        cuerpo: { expectedVersion: versionEsperada },
+      });
+    },
+    /** API-ANT-05: corregir, conservando el original. */
+    corregirMedicion(token: string, medicionId: string, cuerpo: z.input<typeof CorregirMedicionRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/anthropometry/measurements/${medicionId}/corrections`, {
+        token,
+        claveDeIdempotencia,
+        esquema: z.strictObject({ data: MedicionSchema.loose() }),
+        cuerpo,
+      });
+    },
+    /** API-ANT-12: anular. Una segunda anulación responde 200 con la existente, no un error (DL-059). */
+    anularMedicion(token: string, medicionId: string, cuerpo: z.input<typeof AnularMedicionRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/anthropometry/measurements/${medicionId}/annulment`, {
+        token,
+        claveDeIdempotencia,
+        esquema: AnularMedicionResponseSchema,
+        cuerpo,
+      });
+    },
+    /** API-ANT-06, del lado del profesional. */
+    evolucionAntropometrica(token: string, asesoradoId: string, filtro: { from?: string; to?: string; metrics?: string } = {}) {
+      return llamar('GET', `/advisees/${asesoradoId}/anthropometry/progress${query(filtro)}`, { token, esquema: EvolucionResponseSchema });
+    },
+    /** API-ANT-06, del lado del asesorado: lo consume la APK (RF-049, RF-065). */
+    miEvolucionAntropometrica(token: string, filtro: { from?: string; to?: string; metrics?: string } = {}) {
+      return llamar('GET', `/me/anthropometry/progress${query(filtro)}`, { token, esquema: EvolucionResponseSchema });
     },
   };
 }
