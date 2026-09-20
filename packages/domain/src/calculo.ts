@@ -110,7 +110,12 @@ export interface DatoPropuesto {
   readonly codigo: string;
   readonly medicionId: string;
   readonly metrica: string;
-  readonly magnitud: Magnitud;
+  /**
+   * El valor que **rige** (REG-06-16), no el que se tomó primero: una corrección cambia la vista efectiva, y un
+   * cálculo sobre el valor superado sería un derivado de algo que ya no vale. `null` cuando la cadena no se resuelve:
+   * entonces no hay valor vigente y la entrada es inadmisible, que es distinto de caer en el original.
+   */
+  readonly magnitud: Magnitud | null;
   readonly origen: OrigenDeMedicion;
   /** REG-06-217: una medición anulada dejó de contar, también como entrada de un cálculo. */
   readonly vigente: boolean;
@@ -123,7 +128,9 @@ export type MotivoDeInadmisibilidad =
   | { readonly motivo: 'METRICA_NO_CORRESPONDE'; readonly codigo: string }
   | { readonly motivo: 'UNIDAD_NO_ADMITIDA'; readonly codigo: string }
   | { readonly motivo: 'PROCEDENCIA_NO_ADMITIDA'; readonly codigo: string }
-  | { readonly motivo: 'ENTRADA_NO_VIGENTE'; readonly codigo: string };
+  | { readonly motivo: 'ENTRADA_NO_VIGENTE'; readonly codigo: string }
+  /** REG-06-16: la cadena de correcciones no se resuelve, así que no hay un valor que rija. No se usa el original. */
+  | { readonly motivo: 'VALOR_VIGENTE_NO_RESOLUBLE'; readonly codigo: string };
 
 export type EvaluacionDeAdmisibilidad =
   | { readonly admisible: true; readonly entradas: readonly EntradaDeCalculo[] }
@@ -151,6 +158,11 @@ export function evaluarAdmisibilidad(metodo: EspecificacionDeMetodo, propuestos:
     }
     if (!dato.vigente) problemas.push({ motivo: 'ENTRADA_NO_VIGENTE', codigo: requerida.codigo });
     if (dato.metrica !== requerida.metrica) problemas.push({ motivo: 'METRICA_NO_CORRESPONDE', codigo: requerida.codigo });
+    if (!dato.magnitud) {
+      // Sin valor vigente no se evalúa unidad ni se arma una entrada: no hay con qué calcular, y el original no sirve.
+      problemas.push({ motivo: 'VALOR_VIGENTE_NO_RESOLUBLE', codigo: requerida.codigo });
+      continue;
+    }
     if (!requerida.unidadesAdmitidas.includes(dato.magnitud.unidad)) problemas.push({ motivo: 'UNIDAD_NO_ADMITIDA', codigo: requerida.codigo });
     if (!requerida.procedenciasAdmitidas.includes(dato.origen)) problemas.push({ motivo: 'PROCEDENCIA_NO_ADMITIDA', codigo: requerida.codigo });
     entradas.push({ medicionId: dato.medicionId, metrica: dato.metrica, magnitud: dato.magnitud });

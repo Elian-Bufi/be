@@ -85,3 +85,28 @@ test('T13 · en antropometría, un juicio afirmativo se detecta y su negación e
   assert.deepEqual(terminosProhibidosDeAntropometriaEn('Este resultado es un diagnóstico'), ['diagnóstico']);
   assert.deepEqual(terminosProhibidosDeAntropometriaEn('Un resultado calculado no es un diagnóstico'), []);
 });
+
+/**
+ * Guardia estructural (REG-06-16; 09v11:650-657). La API publica dos magnitudes: `magnitude`, el valor tal como se
+ * tomó, y `effectiveMagnitude`, el que rige después de resolver la cadena de correcciones por relación. El titular
+ * de la tarjeta tiene que mostrar el que rige: mostrar el original ahí lo dejaba contradiciendo al cálculo derivado
+ * que ya usaba el corregido, con la insignia «Vigente» al lado. Que el campo exista en el contrato no alcanza; esta
+ * prueba fija que la pantalla lo use, porque el error fue de lectura, no de contrato.
+ */
+test('T13 · el titular de la medición muestra el valor vigente, no el original', () => {
+  const archivo = join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry/evaluaciones.tsx');
+  const fuente = ts.createSourceFile(archivo, readFileSync(archivo, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let titular = null;
+  const visitar = (n) => {
+    if (ts.isJsxElement(n) && n.openingElement.tagName.getText() === 'h4' && /medicion\.metric/.test(n.getText())) titular = n.getText();
+    ts.forEachChild(n, visitar);
+  };
+  visitar(fuente);
+  assert.ok(titular, 'se esperaba el encabezado de la medición');
+  assert.match(titular, /effectiveMagnitude/, 'el titular tiene que leer effectiveMagnitude');
+  assert.doesNotMatch(
+    titular.replace(/effectiveMagnitude\s*\?\?\s*medicion\.magnitude/g, ''),
+    /medicion\.magnitude\b/,
+    'el original solo entra como respaldo de la cadena no resoluble, nunca como titular propio',
+  );
+});

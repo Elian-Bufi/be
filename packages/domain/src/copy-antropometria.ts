@@ -103,6 +103,7 @@ export const COPY_ANTROPOMETRIA = {
   correccionHecha: 'Corrección registrada. El valor original se conserva.',
   historialDeCorrecciones: 'Correcciones',
   cadenaNoResoluble: 'La historia de correcciones de esta medición no se puede resolver. No se muestra un valor vigente hasta que se revise.',
+  sinValorVigente: 'Sin valor vigente',
 
   // ─── Anular (08 §56.12) ───────────────────────────────────────────────────────────────────────
   anularMedicion: 'Anular medición',

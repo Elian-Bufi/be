@@ -153,10 +153,25 @@ function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; on
 
   return (
     <div className="nodo nodo--comida">
+      {/*
+        El titular es el valor que RIGE, no el que se tomó primero: una corrección cambia la vista efectiva
+        (REG-06-16), y mostrar el original acá lo dejaba contradiciendo al cálculo derivado que ya usa el
+        corregido. El original no se pierde: queda rotulado como tal dentro de «Correcciones», que es lo que
+        REG-06-154 exige conservar. Si la cadena no se puede resolver, no se inventa un titular.
+      */}
       <h4>
-        {medicion.metric}: {medicion.magnitude.value} {medicion.magnitude.unit}{' '}
+        {medicion.metric}: {(medicion.effectiveMagnitude ?? medicion.magnitude).value}{' '}
+        {(medicion.effectiveMagnitude ?? medicion.magnitude).unit}{' '}
         <span className="insignia">{ETIQUETA_DE_CLASE_DE_DATO[medicion.dataClass]}</span>{' '}
         <span className="insignia">{ETIQUETA_DE_CONDICION[medicion.condition]}</span>
+        {medicion.corrections.length > 0 ? (
+          <>
+            {' '}
+            <span className="insignia">
+              {medicion.effectiveMagnitude ? COPY_ANTROPOMETRIA.corregida : COPY_ANTROPOMETRIA.sinValorVigente}
+            </span>
+          </>
+        ) : null}
       </h4>
       <p className="nota">
         {COPY_ANTROPOMETRIA.protocolo}: {medicion.protocol.protocolName} · {fecha(medicion.occurredAt)}

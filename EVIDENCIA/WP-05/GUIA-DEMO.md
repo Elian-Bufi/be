@@ -12,8 +12,10 @@ Duración: unos 20 minutos. La parte del teléfono, sola, son 5.
 | Qué | Dónde |
 |---|---|
 | Website | `https://be-web-1ngj.onrender.com` |
-| API (despertarla un minuto antes) | `https://be-api-hndp.onrender.com/health/ready` → tiene que responder `200` con `"aplicacion":"0.5.0"` |
-| APK 0.5.0 | `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.5.0/be-0.5.0-921063a.apk` · SHA-256 `2fae50ad8b86b1802e669298af85baa1166b103c8496e7ea8bf60f17a20ea59e`. Se instala encima de la 0.4.0 |
+| API (despertarla un minuto antes) | `https://be-api-hndp.onrender.com/health/ready` → tiene que responder `200` con `"aplicacion":"0.5.1"` |
+| **APK 0.5.1** | `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.5.1/be-0.5.1-0193a3d.apk` · SHA-256 `482170b86014dec9ade11ca2d4277a58df29937ba87cf38135c3c0f211ce386b`. Se instala encima de la 0.4.0 o de la 0.5.0 |
+
+> **Ojo: tiene que ser la 0.5.1, no la 0.5.0.** La respuesta de la evolución cambió de forma para alinearse con el 09, y el cliente del APK valida el contrato con objetos estrictos: una 0.5.0 instalada rechaza la respuesta entera y «Mi evolución» no carga. Si ya tenés la 0.5.0 en el teléfono, instalar la 0.5.1 encima alcanza.
 
 **Cuentas.** Las contraseñas están en `.env.cuentas-demo`, en el clon local de Dirección; no están en el repositorio.
 
@@ -31,7 +33,7 @@ Sin vínculo aceptado, B2 y A3, el profesional no ve nada. Es la garantía de WP
 
 | # | Cuenta · superficie | Qué hacer | Qué tiene que verse |
 |---|---|---|---|
-| 0.1 | DEMO-A01 · APK | Abrir la app | Bienvenida con `app 0.5.0 · test · commit 921063a` (`apk-01-bienvenida-0.5.0`) |
+| 0.1 | DEMO-A01 · APK | Abrir la app | Bienvenida con `app 0.5.1 · test · commit 0193a3d` (`apk-01-bienvenida-0.5.1`) |
 | 0.2 | DEMO-A01 · APK | Iniciar sesión → Cuenta | Entre los botones de arriba está **«Antropometría: Mi evolución»** (`apk-02-cuenta`) |
 | 0.3 | DEMO-PA · website | Iniciar sesión → «Ir al espacio profesional» → «Solicitar vínculo», con el identificador de DEMO-A01 y alcance **Antropometría** | «Solicitud enviada» |
 | 0.4 | DEMO-A01 · APK | Cuenta → «Vínculos» → la solicitud → «Aceptar vínculo» → «Revisar consentimiento» → «Autorizar acceso» | «Acceso autorizado» |

@@ -77,6 +77,7 @@
 | DL-070 | WP-05 · 2026-09-20 | 09v11:713-757 · 04:583 | La evolución devuelve un bloque por métrica y el 09 declara una métrica por respuesta | ABIERTA |
 | DL-071 | WP-05 · 2026-09-20 | 09v11:592-605, 664 | ANT-05 no acepta el lote de correcciones ni los metadatos reconstruibles que el 09 admite | ABIERTA |
 | DL-072 | WP-05 · 2026-09-20 | 09v11:336-339 | ANT-01 filtra por `kind` y el 09 declara `status` | ABIERTA |
+| DL-073 | WP-05 · 2026-09-20 | 10-B10-07 · `direccion/UI-ANTROPOMETRIA.md` | El 10 declara la carga en formulario y Dirección pide la carga sobre la figura | ABIERTA |
 
 ---
 
@@ -1475,3 +1476,19 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Reemplazar `kind` por `status` y separar protocolos de métodos por otra vía.
 
 **Provisorio en código.** A pendiente: hoy está solo `kind`. El costo de sumarlo es bajo, y la decisión de qué significa `status` para una especificación versionada conviene tomarla junto con DL-064.
+
+## DL-073 — El 10 declara la carga en formulario y Dirección pide la carga sobre la figura
+
+**Prioridad:** media · **Documento:** 10-B10-07 · `docs/direccion/UI-ANTROPOMETRIA.md` · **Estado:** ABIERTA
+
+**Qué dice el legajo.** El B10-07 declara la toma antropométrica como un formulario: una lista de métricas con su valor y su unidad, con el protocolo y el momento a nivel de la evaluación. Es lo que WP-05 implementó y lo que prueban las capturas `web-04` a `web-08`.
+
+**Qué pide Dirección.** Una silueta con los puntos de toma marcados, donde el valor se escribe en el punto mismo o en un campo pegado a él, con tema claro y azul (`#2E8FFF`). La referencia es `docs/direccion/BE-VIS-Compositor_v13.3.html`, recibida el 2026-09-20, después del cierre funcional de WP-05.
+
+**Por qué es una tensión y no solo un cambio de pantalla.** La figura introduce una superficie donde cada punto del cuerpo puede recibir estado visual, y el paso de «acá va el pliegue subescapular» a «este pliegue está alto» es de un color. RF-048 y INV-06-06 prohíben esa lectura. Cualquier implementación de esta instrucción tiene que dejar la figura como **ubicación**, nunca como **calificación**.
+
+**Opciones.**
+- **A.** Implementarla en un paquete de refinamiento de UI posterior al circuito funcional, reutilizando intactos los contratos ANT de WP-05: la figura cambia cómo se escribe el valor, no qué se manda ni qué se garantiza. La prueba de cero juicio se extiende al color y a las etiquetas de la figura.
+- **B.** Implementarla ahora, reabriendo las pantallas de WP-05 antes de seguir con las verticales que faltan.
+
+**Provisorio en código.** Ninguno: WP-05 quedó con el formulario del 10, que cumple la garantía. La instrucción queda registrada con su referencia versionada para que el paquete de UI la tome completa. Recomendación del ejecutor: **A**, porque el circuito funcional todavía tiene verticales sin cubrir y la figura no agrega ninguna garantía que el formulario no dé; agrega ergonomía, que rinde más cuando ya están todas las pantallas que la van a usar.

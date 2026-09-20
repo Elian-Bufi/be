@@ -1,12 +1,16 @@
-APK 0.5.0 — identidad y control de secretos (07 §34, RNF-PORT-001, TEST-APK-008; 08 §32)
+APK 0.5.1 — identidad y control de secretos (07 §34, RNF-PORT-001, TEST-APK-008; 08 §32)
 
-Build EAS: e9d04ddb-3d83-4531-bd72-d0ae928582f2 (perfil test)
-Commit:    921063a2d501471a93e10b39bd51c6151bd33939
-Versión:   0.5.0 · versionCode 5
-Artefacto: be-0.5.0-921063a.apk
-SHA-256:   2fae50ad8b86b1802e669298af85baa1166b103c8496e7ea8bf60f17a20ea59e
-Tamaño:    69106310 bytes
+Build EAS: e0b9fd33-7fd3-45e3-85f8-4fe23f6c0975 (perfil test)
+Commit:    0193a3ddfce537113d34f0c5467ad094298a5851
+Versión:   0.5.1 · versionCode 6
+Artefacto: be-0.5.1-0193a3d.apk
+SHA-256:   482170b86014dec9ade11ca2d4277a58df29937ba87cf38135c3c0f211ce386b
+Tamaño:    69109866 bytes
 API:       https://be-api-hndp.onrender.com (API_BASE_URL del perfil test en eas.json)
+
+Por qué hay una 0.5.1 y no solo 0.5.0: la respuesta de la evolución (API-ANT-06) se realineó con la forma que
+declara el 09 (series/gaps/comparability.groups/partialView). El cliente valida el contrato con objetos
+estrictos, así que el APK 0.5.0 ya instalado rechazaba la respuesta entera. La 0.5.1 es la única vigente.
 
 Búsqueda de secretos en el bundle (cantidad de coincidencias, se espera 0 en todas):
   JWT_SECRET          0

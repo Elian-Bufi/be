@@ -439,6 +439,33 @@ describe('API-CAL-04 — adoptar una referencia es una relación (REG-06-207)', 
 });
 
 describe('REG-06-161 — recálculo con la versión registrada en la corrida', () => {
+  /**
+   * REG-06-16 + REG-06-161. Una corrección cambia el valor que rige. El recálculo automático ya usa el corregido;
+   * una corrida **nueva** sobre la misma medición tiene que usar el mismo. Si usara el valor tal como se tomó, dos
+   * corridas del mismo método sobre la misma medición darían resultados distintos según por qué camino nacieron, y
+   * la más nueva sería la que quedó atrás.
+   */
+  it('REG-06-16 · una corrida nueva sobre una medición corregida usa el valor vigente, no el original', async () => {
+    const { evaluationId, porMetrica } = await evaluacionRegistrada([medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
+
+    await pro
+      .post(`/api/v1/anthropometry/evaluations/${evaluationId}/corrections`, claveDeIdempotencia())
+      .send({ targetId: porMetrica.peso, reason: 'Se leyó mal la balanza.', magnitude: { value: 73.1, unit: 'kg' } })
+      .expect(201);
+
+    const nueva = (
+      await pro
+        .post(`/api/v1/advisees/${c.ase.id}/calculations`)
+        .send({ purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: CATALOGO_DEMO.metodo.v2, inputBindings: bindings(porMetrica) })
+        .expect(201)
+    ).body.data;
+
+    // 73.1 / 1.75² = 23.869, con la precisión declarada de tres decimales. Con el original daría 23.673.
+    expect(nueva.result.magnitude.value).toBeCloseTo(23.869, 3);
+    const peso = (nueva.inputProvenance as { metric: string; magnitude: { value: number } }[]).find((x) => x.metric === 'peso');
+    expect(peso!.magnitude.value).toBe(73.1);
+  });
+
   it('anular una entrada reemite la corrida con el mismo método y conserva la histórica', async () => {
     const { evaluationId, porMetrica } = await evaluacionRegistrada([medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
     const original = (
