@@ -68,6 +68,13 @@ export const EspecificacionSchema = z.strictObject({
   effectiveSince: Instante,
 });
 export type Especificacion = z.infer<typeof EspecificacionSchema>;
+export type MagnitudApi = z.infer<typeof MagnitudSchema>;
+export type FichaDeComparabilidadApi = z.infer<typeof FichaDeComparabilidadSchema>;
+export type CorreccionDeMedicionApi = z.infer<typeof CorreccionDeMedicionSchema>;
+export type AnulacionApi = z.infer<typeof AnulacionSchema>;
+export type ResumenDeEvaluacionApi = z.infer<typeof ResumenDeEvaluacionSchema>;
+export type SerieApi = z.infer<typeof SerieSchema>;
+
 export const ListaDeEspecificacionesResponseSchema = z.strictObject({ data: z.array(EspecificacionSchema), page: PaginaSchema });
 
 // ─── Medición ───────────────────────────────────────────────────────────────────────────────────

@@ -107,6 +107,8 @@ export function conSesion(app: INestApplication, token: string) {
     delete: (ruta: string) => request(servidor).delete(ruta).set('Authorization', `Bearer ${token}`),
     post: (ruta: string, clave = claveDeIdempotencia()) =>
       request(servidor).post(ruta).set('Authorization', `Bearer ${token}`).set('Idempotency-Key', clave),
+    /** PATCH con `expectedVersion`, sin Idempotency-Key (09v9:1051-1068). */
+    patch: (ruta: string) => request(servidor).patch(ruta).set('Authorization', `Bearer ${token}`),
   };
 }
 
