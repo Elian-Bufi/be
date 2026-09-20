@@ -146,6 +146,8 @@ model Identidad {
   medicionesCorregidas                       CorreccionDeMedicion[]     @relation("CorreccionDeMedicionDelAutor")
   medicionesAnuladas                         AnulacionDeMedicion[]      @relation("AnulacionDeMedicionDelAutor")
   ejecucionesDeCalculo                       EjecucionDeCalculo[]       @relation("EjecucionDeCalculoDelAutor")
+  referenciasDeCalculoComoAsesorado          ReferenciaDeCalculo[]      @relation("ReferenciaDeCalculoDelAsesorado")
+  referenciasDeCalculoComoProfesional        ReferenciaDeCalculo[]      @relation("ReferenciaDeCalculoDelProfesional")
   procesosComoProfesional                    ProcesoOperativo[]         @relation("ProcesoDelProfesional")
   procesosComoAsesorado                      ProcesoOperativo[]         @relation("ProcesoDelAsesorado")
   evaluacionesComoProfesional                EvaluacionNutricional[]    @relation("EvaluacionDelProfesional")
@@ -1324,11 +1326,18 @@ enum ModoDeRedondeo {
   ARRIBA
 }
 
+/// REG-06-205 — para qué se ejecutó un método. Una versión es seleccionable para las finalidades que declara.
+enum FinalidadDeCalculo {
+  SOPORTE_ANTROPOMETRICO
+  SOPORTE_DE_OBJETIVO_NUTRICIONAL
+}
+
 enum TipoDeEventoDeAntropometria {
   EvaluacionAntropometricaRegistrada
   MedicionCorregida
   MedicionAnulada
   CalculoEjecutado
+  ReferenciaDeCalculoAdoptada
 }
 
 /// REG-06-157 — la fórmula/protocolo es una especificación versionada: el bloque «define la estructura para
@@ -1468,18 +1477,22 @@ model AnulacionDeMedicion {
 /// REG-06-205: varias corridas coexisten, sin promedio ni ganador automático. REG-06-161: el recálculo se relaciona
 /// con el anterior y no lo sobrescribe.
 model EjecucionDeCalculo {
-  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  evaluacionId      String         @map("evaluacion_id") @db.Uuid
-  metodoVersionId   String         @map("metodo_version_id") @db.Uuid
-  autorId           String         @map("autor_id") @db.Uuid
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  evaluacionId      String             @map("evaluacion_id") @db.Uuid
+  metodoVersionId   String             @map("metodo_version_id") @db.Uuid
+  autorId           String             @map("autor_id") @db.Uuid
   metrica           String
-  valor             Decimal        @db.Decimal(12, 4)
+  valor             Decimal            @db.Decimal(12, 4)
   unidad            String
   decimales         Int
-  modoDeRedondeo    ModoDeRedondeo @map("modo_de_redondeo")
-  reemplazaAId      String?        @unique @map("reemplaza_a_id") @db.Uuid
+  modoDeRedondeo    ModoDeRedondeo     @map("modo_de_redondeo")
+  /// REG-06-205 — la finalidad es parte de la identidad de la corrida, no una etiqueta posterior.
+  finalidad         FinalidadDeCalculo
+  /// REG-06-156 — la regla de dominio aplicable, identificada y versionada: sin esto no se reconstruye.
+  regla             String
+  reemplazaAId      String?            @unique @map("reemplaza_a_id") @db.Uuid
   procedencia       Json
-  momentoDeRegistro DateTime       @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeRegistro DateTime           @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
   evaluacion     EvaluacionAntropometrica              @relation(fields: [evaluacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   metodoVersion  VersionDeEspecificacionAntropometrica @relation(fields: [metodoVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -1487,9 +1500,37 @@ model EjecucionDeCalculo {
   reemplazaA     EjecucionDeCalculo?                   @relation("SucesionDeEjecucion", fields: [reemplazaAId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   reemplazadaPor EjecucionDeCalculo?                   @relation("SucesionDeEjecucion")
   entradas       EntradaDeCalculo[]
+  referencias    ReferenciaDeCalculo[]
 
   @@index([evaluacionId])
   @@map("ejecucion_de_calculo")
+}
+
+/// T-06-74 — la referencia profesional adoptada (REG-06-207). Adoptar es una RELACIÓN: no modifica la corrida, no
+/// borra las otras y no crea objetivo ni prescripción. Cambiar de referencia sucede a la anterior y deja historia.
+model ReferenciaDeCalculo {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  asesoradoId         String             @map("asesorado_id") @db.Uuid
+  profesionalId       String             @map("profesional_id") @db.Uuid
+  finalidad           FinalidadDeCalculo
+  ejecucionId         String             @map("ejecucion_id") @db.Uuid
+  predecesoraId       String?            @unique @map("predecesora_id") @db.Uuid
+  /// Token de concurrencia de la referencia vigente (REG-06-207: sucede, no pisa).
+  version             Int                @default(1)
+  fundamento          String?
+  procedencia         Json
+  momentoDeOcurrencia DateTime           @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime           @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  asesorado   Identidad            @relation("ReferenciaDeCalculoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  profesional Identidad            @relation("ReferenciaDeCalculoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ejecucion   EjecucionDeCalculo   @relation(fields: [ejecucionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  predecesora ReferenciaDeCalculo? @relation("SucesionDeReferencia", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sucesora    ReferenciaDeCalculo? @relation("SucesionDeReferencia")
+
+  @@index([asesoradoId, profesionalId, finalidad])
+  @@index([ejecucionId])
+  @@map("referencia_de_calculo")
 }
 
 /// REG-06-159 e INV-06-170 — la dependencia es EXPLÍCITA: una fila por entrada efectiva. Nunca se infiere por

@@ -20,6 +20,21 @@ export interface CircuitoAntropometrico {
 }
 
 /**
+ * El catálogo sintético lo siembra la migración con identificadores deterministas (WP-05 T15), igual que el de
+ * alimentos de WP-04. Acá se nombran para que las pruebas puedan citar la versión histórica y la vigente.
+ */
+export const CATALOGO_DEMO = {
+  protocolo: { especificacionId: '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a1f01', v1: '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a2f01' },
+  metodo: {
+    especificacionId: '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a1f02',
+    /** Histórica: admitía el peso informado por la persona y declaraba dos decimales. */
+    v1: '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a2f02',
+    /** Vigente: solo medición directa, finalidad antropométrica y tres decimales. */
+    v2: '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a2f03',
+  },
+} as const;
+
+/**
  * Catálogo sintético y rotulado, como el de alimentos de WP-04: el legajo prohíbe fijar un catálogo científico desde
  * acá, porque «define la estructura para representarlas y reconstruirlas, no selecciona una como universal»
  * (REG-06-157, 06:6304).

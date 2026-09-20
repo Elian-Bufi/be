@@ -16,6 +16,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
+import { BloqueDeCalculos } from './calculos';
 
 type Resumen = { evaluationId: string; state: string; occurredAt: string; registeredAt: string | null; summary: { metrics: string[]; measurementCount: number; annulledCount: number } };
 
@@ -71,6 +72,7 @@ export function VistaDeEvaluaciones() {
           {r.datos.abierta ? (
             <Detalle
               evaluacion={r.datos.abierta}
+              onAviso={setAviso}
               onHecho={(texto) => {
                 setAviso({ tipo: 'exito', texto });
                 void cargar();
@@ -84,7 +86,17 @@ export function VistaDeEvaluaciones() {
   );
 }
 
-function Detalle({ evaluacion, onHecho, onError }: { evaluacion: EvaluacionAntropometricaApi; onHecho: (t: string) => void; onError: (t: string) => void }) {
+function Detalle({
+  evaluacion,
+  onAviso,
+  onHecho,
+  onError,
+}: {
+  evaluacion: EvaluacionAntropometricaApi;
+  onAviso: (a: { tipo: 'exito' | 'error'; texto: string }) => void;
+  onHecho: (t: string) => void;
+  onError: (t: string) => void;
+}) {
   return (
     <section className="seccion" aria-labelledby="titulo-detalle">
       <h2 id="titulo-detalle">
@@ -97,24 +109,7 @@ function Detalle({ evaluacion, onHecho, onError }: { evaluacion: EvaluacionAntro
         <FilaDeMedicion key={m.measurementId} medicion={m} onHecho={onHecho} onError={onError} />
       ))}
 
-      {evaluacion.derivedResults.length > 0 ? (
-        <>
-          <h3>{COPY_ANTROPOMETRIA.resultadosDerivados}</h3>
-          <p className="nota">{COPY_ANTROPOMETRIA.noEsDiagnostico}</p>
-          <ul>
-            {evaluacion.derivedResults.map((d) => (
-              <li key={d.runId}>
-                <strong>{d.metric}</strong>: {d.magnitude.value} {d.magnitude.unit} · <span className="insignia">{ETIQUETA_DE_CLASE_DE_DATO.DERIVED}</span>
-                <br />
-                <span className="nota">
-                  {COPY_ANTROPOMETRIA.metodoYVersion}: {d.methodName} v{d.methodVersionId.slice(0, 8)} · {COPY_ANTROPOMETRIA.precisionDeclarada}: {d.precision.decimals} decimales
-                  {d.supersedesRunId ? ` · ${COPY_ANTROPOMETRIA.corridaReemplazada}` : ''}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : null}
+      <BloqueDeCalculos evaluacion={evaluacion} onAviso={onAviso} />
     </section>
   );
 }

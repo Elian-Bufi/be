@@ -1327,6 +1327,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A, porque hace reproducible el resultado sin que el cliente invente identificadores.
 
+**Materializado en WP-05.** La versión de método publica su regla de dominio con identificador versionado (`ruleId`, en API-MTH-01 y API-MTH-02), y la corrida la guarda tal como se aplicó (`ejecucion_de_calculo.regla`). El cliente no inventa nada y no la envía: la elige eligiendo la versión del método. Con eso, REG-06-156 queda satisfecho —«Fórmula/regla de dominio aplicable identificada y versionada»— sin crear un identificador `frmv_` que el legajo no define en ninguna operación. La deuda sigue abierta porque el nombre del campo en el 09v11 es otro; lo que está resuelto es la garantía.
+
 ## DL-062 — `preparationReference` obligatorio en la importación, sin entidad ni API
 
 **Prioridad:** baja · **Documento:** 09v11:309-332 · 09v16:1980-2000 · 06:6507 · **Estado:** ABIERTA

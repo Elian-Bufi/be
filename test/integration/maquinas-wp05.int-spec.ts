@@ -196,8 +196,8 @@ describe('Coherencia del dato antropométrico', () => {
     const medDeOtra = await medicionSembrada(prisma, c, otra);
     const ejecucion = randomUUID();
     const e = await errorDeLaBase(
-      `INSERT INTO "ejecucion_de_calculo" ("id","evaluacion_id","metodo_version_id","autor_id","metrica","valor","unidad","decimales","modo_de_redondeo","procedencia")
-       VALUES ('${ejecucion}','${ev}','${c.metodoVersionId}','${c.pro.id}','indice-demo',23.67,'kg/m2',2,'MEDIO_ARRIBA','{}')`,
+      `INSERT INTO "ejecucion_de_calculo" ("id","evaluacion_id","metodo_version_id","autor_id","metrica","valor","unidad","decimales","modo_de_redondeo","finalidad","regla","procedencia")
+       VALUES ('${ejecucion}','${ev}','${c.metodoVersionId}','${c.pro.id}','indice-demo',23.67,'kg/m2',2,'MEDIO_ARRIBA','SOPORTE_ANTROPOMETRICO','demo/peso-sobre-talla-cuadrado@1','{}')`,
       `INSERT INTO "entrada_de_calculo" ("ejecucion_id","medicion_id","metrica","valor","unidad")
        VALUES ('${ejecucion}','${medDeOtra}','peso',72.5,'kg')`,
     );
@@ -208,8 +208,8 @@ describe('Coherencia del dato antropométrico', () => {
     const ev = await borradorSembrado(prisma, c);
     const id = randomUUID();
     const e = await errorDeLaBase(
-      `INSERT INTO "ejecucion_de_calculo" ("id","evaluacion_id","metodo_version_id","autor_id","metrica","valor","unidad","decimales","modo_de_redondeo","reemplaza_a_id","procedencia")
-       VALUES ('${id}','${ev}','${c.metodoVersionId}','${c.pro.id}','indice-demo',23.67,'kg/m2',2,'MEDIO_ARRIBA','${id}','{}')`,
+      `INSERT INTO "ejecucion_de_calculo" ("id","evaluacion_id","metodo_version_id","autor_id","metrica","valor","unidad","decimales","modo_de_redondeo","finalidad","regla","reemplaza_a_id","procedencia")
+       VALUES ('${id}','${ev}','${c.metodoVersionId}','${c.pro.id}','indice-demo',23.67,'kg/m2',2,'MEDIO_ARRIBA','SOPORTE_ANTROPOMETRICO','demo/peso-sobre-talla-cuadrado@1','${id}','{}')`,
     );
     expect(e).toContain('no_se_reemplaza_a_si_misma');
   });

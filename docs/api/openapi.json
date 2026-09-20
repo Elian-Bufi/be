@@ -22057,6 +22057,2055 @@
           }
         }
       }
+    },
+    "/professional-methods": {
+      "get": {
+        "operationId": "API-MTH-01",
+        "summary": "Métodos profesionales seleccionables, con su versión vigente, entradas requeridas, procedencias admisibles, unidad de salida y precisión declarada. Son metadatos: no acepta adviseeId y no implica compatibilidad con los datos de ninguna persona.",
+        "description": "Fuente: 09v16 §21.1 · REG-06-203 · REG-06-204. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Tamaño de página (1 a 50; 20 por defecto).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Cursor opaco de la página siguiente.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "purpose",
+            "in": "query",
+            "required": false,
+            "description": "Finalidad declarada del cálculo.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ANTHROPOMETRIC_SUPPORT",
+                "NUTRITION_OBJECTIVE_SUPPORT"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "methodId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "methodVersionId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "purposes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "ANTHROPOMETRIC_SUPPORT",
+                                "NUTRITION_OBJECTIVE_SUPPORT"
+                              ]
+                            }
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "SELECTABLE",
+                              "HISTORICAL_NOT_SELECTABLE"
+                            ]
+                          },
+                          "requiredInputs": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "inputCode": {
+                                  "type": "string"
+                                },
+                                "metric": {
+                                  "type": "string"
+                                },
+                                "acceptedUnits": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "acceptedProvenances": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "DIRECT_CAPTURE",
+                                      "SELF_REPORTED",
+                                      "CONTROLLED_IMPORT"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "inputCode",
+                                "metric",
+                                "acceptedUnits",
+                                "acceptedProvenances"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "output": {
+                            "type": "object",
+                            "properties": {
+                              "metric": {
+                                "type": "string"
+                              },
+                              "unit": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "metric",
+                              "unit"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "precisionPolicy": {
+                            "type": "object",
+                            "properties": {
+                              "decimals": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 6
+                              },
+                              "rounding": {
+                                "type": "string",
+                                "enum": [
+                                  "HALF_UP",
+                                  "DOWN",
+                                  "UP"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "decimals",
+                              "rounding"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "ruleId": {
+                            "type": "string"
+                          },
+                          "provenanceNote": {
+                            "type": "string"
+                          },
+                          "supersededByVersionId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "effectiveSince": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "methodId",
+                          "methodVersionId",
+                          "key",
+                          "name",
+                          "version",
+                          "purposes",
+                          "status",
+                          "requiredInputs",
+                          "output",
+                          "precisionPolicy",
+                          "ruleId",
+                          "provenanceNote",
+                          "supersededByVersionId",
+                          "effectiveSince"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor",
+                        "hasMore"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | INVALID_CURSOR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/professional-methods/{methodId}/versions/{versionId}": {
+      "get": {
+        "operationId": "API-MTH-02",
+        "summary": "La versión exacta de un método, seleccionable o histórica. Una versión histórica se consulta —las corridas la citan y tienen que poder explicarse— pero no se presenta como seleccionable. No devuelve datos de ningún asesorado.",
+        "description": "Fuente: 09v16 §21.2 · REG-06-203. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "methodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "methodId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "methodVersionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "purposes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "ANTHROPOMETRIC_SUPPORT",
+                              "NUTRITION_OBJECTIVE_SUPPORT"
+                            ]
+                          }
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "SELECTABLE",
+                            "HISTORICAL_NOT_SELECTABLE"
+                          ]
+                        },
+                        "requiredInputs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "inputCode": {
+                                "type": "string"
+                              },
+                              "metric": {
+                                "type": "string"
+                              },
+                              "acceptedUnits": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "acceptedProvenances": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "DIRECT_CAPTURE",
+                                    "SELF_REPORTED",
+                                    "CONTROLLED_IMPORT"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "inputCode",
+                              "metric",
+                              "acceptedUnits",
+                              "acceptedProvenances"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "output": {
+                          "type": "object",
+                          "properties": {
+                            "metric": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "metric",
+                            "unit"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "precisionPolicy": {
+                          "type": "object",
+                          "properties": {
+                            "decimals": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 6
+                            },
+                            "rounding": {
+                              "type": "string",
+                              "enum": [
+                                "HALF_UP",
+                                "DOWN",
+                                "UP"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "decimals",
+                            "rounding"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "ruleId": {
+                          "type": "string"
+                        },
+                        "provenanceNote": {
+                          "type": "string"
+                        },
+                        "supersededByVersionId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "effectiveSince": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "methodId",
+                        "methodVersionId",
+                        "key",
+                        "name",
+                        "version",
+                        "purposes",
+                        "status",
+                        "requiredInputs",
+                        "output",
+                        "precisionPolicy",
+                        "ruleId",
+                        "provenanceNote",
+                        "supersededByVersionId",
+                        "effectiveSince"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/advisees/{adviseeId}/calculations": {
+      "post": {
+        "operationId": "API-CAL-01",
+        "summary": "Ejecutar un método sobre entradas efectivas declaradas una por una. Disponible no es admisible: la versión declara qué entradas necesita, en qué unidades y de qué procedencias. La respuesta no afirma que se haya creado un objetivo, una prescripción ni un plan: no los crea.",
+        "description": "Fuente: 09v16 §21.3 · REG-06-204/205 · TEST-CAL-002/003/007. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "adviseeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "ANTHROPOMETRIC_SUPPORT",
+                      "NUTRITION_OBJECTIVE_SUPPORT"
+                    ]
+                  },
+                  "methodVersionId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "inputBindings": {
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "inputCode": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "sourceRef": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "inputCode",
+                        "sourceRef"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "purpose",
+                  "methodVersionId",
+                  "inputBindings"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "calculationRunId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "adviseeId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "evaluationId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "ANTHROPOMETRIC_SUPPORT",
+                            "NUTRITION_OBJECTIVE_SUPPORT"
+                          ]
+                        },
+                        "methodId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "methodVersionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "methodName": {
+                          "type": "string"
+                        },
+                        "methodVersion": {
+                          "type": "string"
+                        },
+                        "ruleId": {
+                          "type": "string"
+                        },
+                        "result": {
+                          "type": "object",
+                          "properties": {
+                            "metric": {
+                              "type": "string"
+                            },
+                            "magnitude": {
+                              "type": "object",
+                              "properties": {
+                                "value": {
+                                  "type": "number"
+                                },
+                                "unit": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 24
+                                }
+                              },
+                              "required": [
+                                "value",
+                                "unit"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "metric",
+                            "magnitude"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "precision": {
+                          "type": "object",
+                          "properties": {
+                            "decimals": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 6
+                            },
+                            "rounding": {
+                              "type": "string",
+                              "enum": [
+                                "HALF_UP",
+                                "DOWN",
+                                "UP"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "decimals",
+                            "rounding"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "inputProvenance": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "inputCode": {
+                                "type": "string"
+                              },
+                              "sourceRef": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "metric": {
+                                "type": "string"
+                              },
+                              "magnitude": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "number"
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 24
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "provenanceType": {
+                                "type": "string",
+                                "enum": [
+                                  "DIRECT_CAPTURE",
+                                  "SELF_REPORTED",
+                                  "CONTROLLED_IMPORT"
+                                ]
+                              },
+                              "sourceOccurredAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "inputCode",
+                              "sourceRef",
+                              "metric",
+                              "magnitude",
+                              "provenanceType",
+                              "sourceOccurredAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "supersedesRunId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "referenceForPurpose": {
+                          "type": "boolean"
+                        },
+                        "author": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "displayName": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "recordedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "calculationRunId",
+                        "adviseeId",
+                        "evaluationId",
+                        "purpose",
+                        "methodId",
+                        "methodVersionId",
+                        "methodName",
+                        "methodVersion",
+                        "ruleId",
+                        "result",
+                        "precision",
+                        "inputProvenance",
+                        "supersedesRunId",
+                        "referenceForPurpose",
+                        "author",
+                        "recordedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: METHOD_VERSION_NOT_SELECTABLE | CALCULATION_INPUTS_INSUFFICIENT | CALCULATION_NOT_REPRODUCIBLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "API-CAL-02",
+        "summary": "Las corridas revelables del asesorado. Coexisten: no se promedian, no se ordenan por «mejor» y ninguna se marca ganadora. La que el profesional adoptó viene con referenceForPurpose.",
+        "description": "Fuente: 09v16 §21.4 · REG-06-205 · TEST-CAL-004/005. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "adviseeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Tamaño de página (1 a 50; 20 por defecto).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Cursor opaco de la página siguiente.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "purpose",
+            "in": "query",
+            "required": false,
+            "description": "Finalidad declarada del cálculo.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ANTHROPOMETRIC_SUPPORT",
+                "NUTRITION_OBJECTIVE_SUPPORT"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "calculationRunId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "adviseeId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "evaluationId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "purpose": {
+                            "type": "string",
+                            "enum": [
+                              "ANTHROPOMETRIC_SUPPORT",
+                              "NUTRITION_OBJECTIVE_SUPPORT"
+                            ]
+                          },
+                          "methodId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "methodVersionId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "methodName": {
+                            "type": "string"
+                          },
+                          "methodVersion": {
+                            "type": "string"
+                          },
+                          "ruleId": {
+                            "type": "string"
+                          },
+                          "result": {
+                            "type": "object",
+                            "properties": {
+                              "metric": {
+                                "type": "string"
+                              },
+                              "magnitude": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "number"
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 24
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "unit"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "metric",
+                              "magnitude"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "precision": {
+                            "type": "object",
+                            "properties": {
+                              "decimals": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 6
+                              },
+                              "rounding": {
+                                "type": "string",
+                                "enum": [
+                                  "HALF_UP",
+                                  "DOWN",
+                                  "UP"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "decimals",
+                              "rounding"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "inputProvenance": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "inputCode": {
+                                  "type": "string"
+                                },
+                                "sourceRef": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "metric": {
+                                  "type": "string"
+                                },
+                                "magnitude": {
+                                  "type": "object",
+                                  "properties": {
+                                    "value": {
+                                      "type": "number"
+                                    },
+                                    "unit": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 24
+                                    }
+                                  },
+                                  "required": [
+                                    "value",
+                                    "unit"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "provenanceType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "DIRECT_CAPTURE",
+                                    "SELF_REPORTED",
+                                    "CONTROLLED_IMPORT"
+                                  ]
+                                },
+                                "sourceOccurredAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "inputCode",
+                                "sourceRef",
+                                "metric",
+                                "magnitude",
+                                "provenanceType",
+                                "sourceOccurredAt"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "supersedesRunId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "referenceForPurpose": {
+                            "type": "boolean"
+                          },
+                          "author": {
+                            "type": "object",
+                            "properties": {
+                              "identityId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "displayName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "identityId",
+                              "displayName"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "recordedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "calculationRunId",
+                          "adviseeId",
+                          "evaluationId",
+                          "purpose",
+                          "methodId",
+                          "methodVersionId",
+                          "methodName",
+                          "methodVersion",
+                          "ruleId",
+                          "result",
+                          "precision",
+                          "inputProvenance",
+                          "supersedesRunId",
+                          "referenceForPurpose",
+                          "author",
+                          "recordedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor",
+                        "hasMore"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | INVALID_CURSOR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calculations/{runId}": {
+      "get": {
+        "operationId": "API-CAL-03",
+        "summary": "Una corrida, con la versión exacta del método que se usó, la regla aplicada, la precisión declarada y la procedencia de cada entrada. Una corrida no revelable devuelve el mismo 404 que una inexistente.",
+        "description": "Fuente: 09v16 §21.5 · REG-06-156 · REG-06-203 · TEST-CAL-001. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "calculationRunId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "adviseeId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "evaluationId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "ANTHROPOMETRIC_SUPPORT",
+                            "NUTRITION_OBJECTIVE_SUPPORT"
+                          ]
+                        },
+                        "methodId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "methodVersionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "methodName": {
+                          "type": "string"
+                        },
+                        "methodVersion": {
+                          "type": "string"
+                        },
+                        "ruleId": {
+                          "type": "string"
+                        },
+                        "result": {
+                          "type": "object",
+                          "properties": {
+                            "metric": {
+                              "type": "string"
+                            },
+                            "magnitude": {
+                              "type": "object",
+                              "properties": {
+                                "value": {
+                                  "type": "number"
+                                },
+                                "unit": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 24
+                                }
+                              },
+                              "required": [
+                                "value",
+                                "unit"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "metric",
+                            "magnitude"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "precision": {
+                          "type": "object",
+                          "properties": {
+                            "decimals": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 6
+                            },
+                            "rounding": {
+                              "type": "string",
+                              "enum": [
+                                "HALF_UP",
+                                "DOWN",
+                                "UP"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "decimals",
+                            "rounding"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "inputProvenance": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "inputCode": {
+                                "type": "string"
+                              },
+                              "sourceRef": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "metric": {
+                                "type": "string"
+                              },
+                              "magnitude": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "number"
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 24
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "provenanceType": {
+                                "type": "string",
+                                "enum": [
+                                  "DIRECT_CAPTURE",
+                                  "SELF_REPORTED",
+                                  "CONTROLLED_IMPORT"
+                                ]
+                              },
+                              "sourceOccurredAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "inputCode",
+                              "sourceRef",
+                              "metric",
+                              "magnitude",
+                              "provenanceType",
+                              "sourceOccurredAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "supersedesRunId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "referenceForPurpose": {
+                          "type": "boolean"
+                        },
+                        "author": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "displayName": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "recordedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "calculationRunId",
+                        "adviseeId",
+                        "evaluationId",
+                        "purpose",
+                        "methodId",
+                        "methodVersionId",
+                        "methodName",
+                        "methodVersion",
+                        "ruleId",
+                        "result",
+                        "precision",
+                        "inputProvenance",
+                        "supersedesRunId",
+                        "referenceForPurpose",
+                        "author",
+                        "recordedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/advisees/{adviseeId}/calculation-references/{purpose}": {
+      "put": {
+        "operationId": "API-CAL-04",
+        "summary": "Adoptar una corrida como referencia profesional para una finalidad. Es una relación, no una mutación: no modifica la corrida, no borra las otras y no crea objetivo ni prescripción. Reemplazarla crea historia; adoptar la que ya es referencia responde 200 sin crear una relación nueva.",
+        "description": "Fuente: 09v16 §21.6 · REG-06-207 · TEST-CAL-006. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "adviseeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "purpose",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "calculationRunId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expectedVersion": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^v[1-9]\\d*$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "rationale": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 1000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "calculationRunId",
+                  "expectedVersion"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "referenceId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "adviseeId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "ANTHROPOMETRIC_SUPPORT",
+                            "NUTRITION_OBJECTIVE_SUPPORT"
+                          ]
+                        },
+                        "calculationRunId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "supersedesReferenceId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "rationale": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "version": {
+                          "type": "string",
+                          "pattern": "^v[1-9]\\d*$"
+                        },
+                        "author": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "displayName": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "adoptedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "referenceId",
+                        "adviseeId",
+                        "purpose",
+                        "calculationRunId",
+                        "supersedesReferenceId",
+                        "rationale",
+                        "version",
+                        "author",
+                        "adoptedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "referenceId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "adviseeId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "ANTHROPOMETRIC_SUPPORT",
+                            "NUTRITION_OBJECTIVE_SUPPORT"
+                          ]
+                        },
+                        "calculationRunId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "supersedesReferenceId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "rationale": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "version": {
+                          "type": "string",
+                          "pattern": "^v[1-9]\\d*$"
+                        },
+                        "author": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "displayName": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "adoptedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "referenceId",
+                        "adviseeId",
+                        "purpose",
+                        "calculationRunId",
+                        "supersedesReferenceId",
+                        "rationale",
+                        "version",
+                        "author",
+                        "adoptedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | VERSION_CONFLICT | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: CALCULATION_REFERENCE_NOT_COMPATIBLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

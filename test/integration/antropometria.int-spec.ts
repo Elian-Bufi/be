@@ -57,7 +57,7 @@ describe('E2E-06 · del borrador a la evolución (UC-P19, UC-P20)', () => {
 
     // API-ANT-01: el catálogo publica el protocolo y el método, rotulados como demostración (REG-06-157).
     const catalogo = await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications').expect(200);
-    expect(catalogo.body.data.map((e: { key: string }) => e.key).sort()).toEqual(['MET-DEMO', 'PROTO-LAB']);
+    expect(catalogo.body.data.map((e: { key: string }) => e.key)).toEqual(expect.arrayContaining(['MET-DEMO', 'PROTO-LAB']));
     expect(catalogo.body.data[0].provenanceNote).toContain('demostración');
 
     // API-ANT-07: nace EN_PREPARACION.

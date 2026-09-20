@@ -3,7 +3,7 @@
  * - WP-02: TEST-CT-ACC-01…05 · TEST-CT-P1-ACC-P1-03 · CON-05.
  * - WP-03: TEST-CT-REL-01…09 · TEST-CT-CON-01…04, 06…08 · TEST-CT-DSH-03 (parcial).
  * - WP-04: TEST-CT-NUT-01…21 · TEST-CT-INT-NUT-01 · la lista propia de ingestas (DL-055).
- * - WP-05: TEST-CT-ANT-01, 03, 05 a 12 y la evolución propia.
+ * - WP-05: TEST-CT-ANT-01, 03, 05 a 12, la evolución propia, y MTH-01/02 con CAL-01 a 04.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -30,7 +30,7 @@ import {
   tokenDe,
 } from './soporte-api';
 import { aceptar, dashboard, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo } from './soporte-vinculo';
-import { circuitoAntropometrico } from './soporte-antropometria';
+import { CATALOGO_DEMO, circuitoAntropometrico } from './soporte-antropometria';
 import { randomUUID } from 'node:crypto';
 import {
   activar,
@@ -452,6 +452,83 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de las once operaciones ANT'
   await pro.get(`/api/v1/advisees/${ajeno}/anthropometry/progress`).expect(404);
   await ase.get('/api/v1/me/anthropometry/progress').expect(200);
   await ase.get('/api/v1/me/anthropometry/progress?to=nunca').expect(400);
+});
+
+it('TEST-CT (WP-05): se ejercitan éxitos y errores de MTH y CAL', async () => {
+  const c = await circuitoAntropometrico(app, prisma, 'contrato-cal');
+  const pro = conSesion(app, c.pro.token);
+  const ase = conSesion(app, c.ase.token);
+  const ajeno = randomUUID();
+  const ayer = new Date(Date.now() - 86_400_000).toISOString();
+
+  // MTH-01 y MTH-02: metadatos de la capacidad; el asesorado no los consulta.
+  await pro.get('/api/v1/professional-methods').expect(200);
+  await pro.get('/api/v1/professional-methods?purpose=OTRA').expect(400); // INVALID_REQUEST
+  await pro.get('/api/v1/professional-methods?cursor=xx').expect(400); // INVALID_CURSOR
+  await ase.get('/api/v1/professional-methods').expect(403); // ACTION_FORBIDDEN
+  await pro.get(`/api/v1/professional-methods/${CATALOGO_DEMO.metodo.especificacionId}/versions/${CATALOGO_DEMO.metodo.v1}`).expect(200);
+  await pro.get(`/api/v1/professional-methods/${CATALOGO_DEMO.metodo.especificacionId}/versions/${CATALOGO_DEMO.metodo.v1}?x=1`).expect(400);
+  await pro.get(`/api/v1/professional-methods/${ajeno}/versions/${ajeno}`).expect(404);
+  await ase.get(`/api/v1/professional-methods/${CATALOGO_DEMO.metodo.especificacionId}/versions/${CATALOGO_DEMO.metodo.v2}`).expect(403);
+
+  // Una evaluación registrada con peso y talla, que es lo que un cálculo necesita.
+  const medicion = (metric: string, value: number, unit: string, origin = 'DIRECT_CAPTURE') => ({
+    metric,
+    magnitude: { value, unit },
+    protocolVersionId: c.protocoloVersionId,
+    origin,
+    occurredAt: ayer,
+  });
+  const creada = await pro
+    .post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluations`)
+    .send({ occurredAt: ayer, measurements: [medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')] })
+    .expect(201);
+  const registrada = await pro
+    .post(`/api/v1/anthropometry/evaluations/${creada.body.data.evaluationId}/register`)
+    .send({ expectedVersion: creada.body.data.version })
+    .expect(200);
+  const porMetrica: Record<string, string> = {};
+  for (const m of registrada.body.data.measurements as { metric: string; measurementId: string }[]) porMetrica[m.metric] = m.measurementId;
+  const entradas = [
+    { inputCode: 'PESO', sourceRef: porMetrica.peso as string },
+    { inputCode: 'TALLA', sourceRef: porMetrica.talla as string },
+  ];
+  const calculos = `/api/v1/advisees/${c.ase.id}/calculations`;
+  const ejecucion = (cambios: Record<string, unknown> = {}) => ({ purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: CATALOGO_DEMO.metodo.v2, inputBindings: entradas, ...cambios });
+
+  // CAL-01
+  const claveDeCalculo = claveDeIdempotencia();
+  const corrida = await pro.post(calculos, claveDeCalculo).send(ejecucion()).expect(201);
+  await pro.post(calculos, claveDeCalculo).send(ejecucion({ purpose: 'NUTRITION_OBJECTIVE_SUPPORT' })).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post(calculos).send(ejecucion({ methodVersionId: CATALOGO_DEMO.metodo.v1 })).expect(422); // METHOD_VERSION_NOT_SELECTABLE
+  await pro.post(calculos).send(ejecucion({ inputBindings: [entradas[0]] })).expect(422); // CALCULATION_INPUTS_INSUFFICIENT
+  await pro.post(calculos).send(ejecucion({ inputBindings: [{ inputCode: 'PESO', sourceRef: porMetrica.peso as string }, { inputCode: 'TALLA', sourceRef: porMetrica.peso as string }] })).expect(422);
+  await pro.post(calculos).send(ejecucion({ extra: 1 })).expect(400); // UNKNOWN_FIELD
+  await pro.post(calculos).send({ purpose: 'OTRA', methodVersionId: CATALOGO_DEMO.metodo.v2, inputBindings: entradas }).expect(400); // INVALID_REQUEST
+  await pro.post(`/api/v1/advisees/${ajeno}/calculations`).send(ejecucion()).expect(404);
+
+  // CAL-02 y CAL-03
+  await pro.get(calculos).expect(200);
+  await pro.get(`${calculos}?purpose=OTRA`).expect(400);
+  await pro.get(`${calculos}?cursor=xx`).expect(400);
+  await pro.get(`/api/v1/advisees/${ajeno}/calculations`).expect(404);
+  await pro.get(`/api/v1/calculations/${corrida.body.data.calculationRunId}`).expect(200);
+  await pro.get(`/api/v1/calculations/${corrida.body.data.calculationRunId}?x=1`).expect(400);
+  await pro.get(`/api/v1/calculations/${ajeno}`).expect(404);
+
+  // CAL-04: adoptar es una relación con historia.
+  const referencia = `/api/v1/advisees/${c.ase.id}/calculation-references/ANTHROPOMETRIC_SUPPORT`;
+  const claveDeAdopcion = claveDeIdempotencia();
+  await pro.put(referencia, claveDeAdopcion).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: null }).expect(201);
+  await pro.put(referencia, claveDeAdopcion).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: 'v9' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.put(referencia).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: 'v1' }).expect(200); // ya es la referencia
+  await pro.put(referencia).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: null }).expect(409); // VERSION_CONFLICT
+  await pro
+    .put(`/api/v1/advisees/${c.ase.id}/calculation-references/NUTRITION_OBJECTIVE_SUPPORT`)
+    .send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: null })
+    .expect(422); // CALCULATION_REFERENCE_NOT_COMPATIBLE
+  await pro.put(referencia).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: 'v1', extra: 1 }).expect(400);
+  await pro.put(`/api/v1/advisees/${ajeno}/calculation-references/ANTHROPOMETRIC_SUPPORT`).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: null }).expect(404);
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
