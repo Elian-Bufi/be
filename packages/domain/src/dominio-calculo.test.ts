@@ -50,8 +50,11 @@ const dato = (p: Partial<DatoPropuesto> & Pick<DatoPropuesto, 'codigo' | 'metric
   ...p,
 });
 
-const PESO = dato({ codigo: 'PESO', metrica: 'peso', magnitud: { valor: 72.5, unidad: 'kg' } });
-const TALLA = dato({ codigo: 'TALLA', metrica: 'talla', magnitud: { valor: 1.75, unidad: 'm' } });
+/** `DatoPropuesto.magnitud` es anulable (cadena de correcciones no resoluble); acá las fijas son siempre valores. */
+const MAG_PESO = { valor: 72.5, unidad: 'kg' } as const;
+const MAG_TALLA = { valor: 1.75, unidad: 'm' } as const;
+const PESO = dato({ codigo: 'PESO', metrica: 'peso', magnitud: MAG_PESO });
+const TALLA = dato({ codigo: 'TALLA', metrica: 'talla', magnitud: MAG_TALLA });
 
 // ─── TEST-CAL-001 · versión exacta de método ────────────────────────────────────────────────────
 
@@ -62,12 +65,12 @@ test('TEST-CAL-001 · REG-06-203: publicar una versión nueva no vuelve seleccio
 
   // La corrida hecha con v1 conserva el resultado de v1, aunque v2 ya exista y dé otro número.
   const conV1 = ejecutar(V1, [
-    { medicionId: 'm1', metrica: 'peso', magnitud: PESO.magnitud },
-    { medicionId: 'm2', metrica: 'talla', magnitud: TALLA.magnitud },
+    { medicionId: 'm1', metrica: 'peso', magnitud: MAG_PESO },
+    { medicionId: 'm2', metrica: 'talla', magnitud: MAG_TALLA },
   ]);
   const conV2 = ejecutar(V2, [
-    { medicionId: 'm1', metrica: 'peso', magnitud: PESO.magnitud },
-    { medicionId: 'm2', metrica: 'talla', magnitud: TALLA.magnitud },
+    { medicionId: 'm1', metrica: 'peso', magnitud: MAG_PESO },
+    { medicionId: 'm2', metrica: 'talla', magnitud: MAG_TALLA },
   ]);
   assert.ok(conV1.ok && conV2.ok);
   assert.equal(conV1.magnitud.valor, 23.67);
@@ -107,6 +110,19 @@ test('REG-06-204 · falta de entrada, unidad ajena, métrica cruzada y entrada a
   // REG-06-217: una medición anulada dejó de contar, también como entrada de un cálculo.
   const anulada = evaluarAdmisibilidad(V2, [{ ...PESO, vigente: false }, TALLA]);
   assert.deepEqual(anulada.admisible === false ? anulada.problemas : [], [{ motivo: 'ENTRADA_NO_VIGENTE', codigo: 'PESO' }]);
+});
+
+/**
+ * REG-06-16. El cálculo usa el valor que rige, no el que se tomó primero. Cuando la cadena de correcciones no se
+ * resuelve —una rama, un ciclo, un eslabón que falta— no hay valor vigente, y eso es una inadmisibilidad: caer en el
+ * original produciría un derivado de un valor que el profesional ya corrigió, con la firma de un cálculo reproducible.
+ */
+test('REG-06-16 · sin valor vigente resoluble no se calcula, y no se cae en el original', () => {
+  const sinVigente = evaluarAdmisibilidad(V2, [{ ...PESO, magnitud: null }, TALLA]);
+  assert.deepEqual(sinVigente.admisible === false ? sinVigente.problemas : [], [{ motivo: 'VALOR_VIGENTE_NO_RESOLUBLE', codigo: 'PESO' }]);
+
+  // No se arma ninguna entrada con esa medición: no hay con qué ejecutar, y no se completa con nada.
+  assert.equal(sinVigente.admisible, false);
 });
 
 test('REG-06-203 · una versión no se usa para una finalidad que no declara', () => {
@@ -166,8 +182,8 @@ test('TEST-CAL-007 · INV-06-05: el resultado de adoptar es una relación, no un
   // Lo que devuelve la adopción es a quién sucede. No hay ningún campo por donde salga una decisión clínica.
   assert.deepEqual(Object.keys(r).sort(), ['adopta', 'sucedeA']);
   const ejecucion = ejecutar(V1, [
-    { medicionId: 'm1', metrica: 'peso', magnitud: PESO.magnitud },
-    { medicionId: 'm2', metrica: 'talla', magnitud: TALLA.magnitud },
+    { medicionId: 'm1', metrica: 'peso', magnitud: MAG_PESO },
+    { medicionId: 'm2', metrica: 'talla', magnitud: MAG_TALLA },
   ]);
   assert.ok(ejecucion.ok);
   assert.deepEqual(Object.keys(ejecucion).sort(), ['magnitud', 'ok', 'precision', 'regla']);
@@ -177,13 +193,13 @@ test('TEST-CAL-007 · INV-06-05: el resultado de adoptar es una relación, no un
 
 test('REG-06-156 · una regla que no está en el catálogo no ejecuta nada, y un resultado imposible tampoco', () => {
   const inventada = ejecutar({ ...V1, regla: 'otra/cosa@1' }, [
-    { medicionId: 'm1', metrica: 'peso', magnitud: PESO.magnitud },
-    { medicionId: 'm2', metrica: 'talla', magnitud: TALLA.magnitud },
+    { medicionId: 'm1', metrica: 'peso', magnitud: MAG_PESO },
+    { medicionId: 'm2', metrica: 'talla', magnitud: MAG_TALLA },
   ]);
   assert.deepEqual(inventada, { ok: false, motivo: 'NO_REPRODUCIBLE', detalle: 'la regla otra/cosa@1 no está en el catálogo' });
 
   const talla0 = ejecutar(V1, [
-    { medicionId: 'm1', metrica: 'peso', magnitud: PESO.magnitud },
+    { medicionId: 'm1', metrica: 'peso', magnitud: MAG_PESO },
     { medicionId: 'm2', metrica: 'talla', magnitud: { valor: 0, unidad: 'm' } },
   ]);
   assert.ok(!talla0.ok && talla0.motivo === 'NO_REPRODUCIBLE');

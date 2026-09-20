@@ -20,7 +20,7 @@ import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { exigirCapacidadAntropometrica } from './capacidad';
 import { EjecutorAntropometrico, esUuid } from './ejecutor';
 import { registrarEventoDeAntropometria } from './eventos';
-import { nombreVisibleDe } from './lectura-antropometria';
+import { magnitudEfectiva, nombreVisibleDe } from './lectura-antropometria';
 import { corridaApi, FINALIDAD_DESDE_API, leerEspecificacionDeMetodo, referenciaApi } from './lectura-calculo';
 
 type Tx = Prisma.TransactionClient;
@@ -98,11 +98,16 @@ export class CalculosService {
         const { mediciones, evaluacionId } = await this.entradasVisibles(tx, actor, titular, pedido.inputBindings, ctx);
         const propuestos: DatoPropuesto[] = pedido.inputBindings.map((b) => {
           const m = mediciones.get(b.sourceRef)!;
+          // REG-06-16: se calcula con el valor que RIGE, no con el que se tomó primero. El recálculo automático de
+          // REG-06-161 ya usaba el corregido; si una corrida nueva usara el original, dos corridas del mismo método
+          // sobre la misma medición darían resultados distintos según por qué camino nacieron, y la más nueva sería
+          // la que quedó atrás. Cadena no resoluble ⇒ sin magnitud: la admisibilidad lo rechaza en vez de inventar.
+          const efectiva = magnitudEfectiva(m);
           return {
             codigo: b.inputCode,
             medicionId: m.id,
             metrica: m.metrica,
-            magnitud: { valor: Number(m.valor), unidad: m.unidadDeOrigen },
+            magnitud: efectiva ? { valor: efectiva.value, unidad: efectiva.unit } : null,
             origen: m.origen,
             vigente: m.anulacion === null,
           };
@@ -323,7 +328,8 @@ export class CalculosService {
     const filas = ids.every(esUuid)
       ? await tx.medicionAntropometrica.findMany({
           where: { id: { in: ids } },
-          include: { anulacion: true, evaluacion: { select: { id: true, asesoradoId: true, profesionalId: true } } },
+          // Las correcciones entran porque el cálculo usa el valor que rige (REG-06-16), no el que se tomó primero.
+          include: { anulacion: true, correcciones: true, evaluacion: { select: { id: true, asesoradoId: true, profesionalId: true } } },
         })
       : [];
     if (filas.length !== ids.length || filas.some((m) => m.evaluacion.asesoradoId !== titular || m.evaluacion.profesionalId !== actor.identidadId)) {

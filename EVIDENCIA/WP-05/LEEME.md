@@ -9,7 +9,7 @@ Qué prueba cada archivo. La lectura razonada está en `DEFENSA/WP-05.md`.
 | `web/recorrido.json` | Los pasos (URL, hora y términos prohibidos en el texto visible: 0 en los 19) y las 55 llamadas a la API con su status. Ningún 5xx |
 | `adversariales-test.json` | La corrida en vivo de `node scripts/adversariales-wp05.mjs` contra `test` (API 0.5.1, `0193a3d`): los seis casos que DL-042 asigna al paquete — doble anulación, serie con huecos, medición anulada, borrador de otro profesional, cálculo (admisibilidad, versión exacta, coexistencia, referencia) y cero juicio sobre 51 respuestas |
 | `resultados-integracion-02c252f.md` y `.json` | La integración de la CI (PostgreSQL 16 real) sobre el commit final del paquete, por ID de prueba: 293/293, 20 suites, 0 fallos |
-| `ci-verificar-02c252f.log` | El job de verificación de la misma CI: typecheck, dominio (168 pruebas), copy de las pantallas (2 dominios), API unitaria, build y auditoría de dependencias |
+| `ci-verificar-02c252f.log` | El job de verificación de la misma CI: typecheck, dominio **168/168**, copy de las pantallas **4/4** (los dos dominios), API unitaria **33/33**, build y auditoría de dependencias |
 | `verificacion-urls.txt` | API, website y descarga anónima del APK 0.5.1, con su SHA-256, verificados en vivo sobre el commit final |
 | `apk.txt` | Identidad del APK 0.5.1: build EAS, commit, tamaño y la búsqueda de secretos en el bundle (0 en las cuatro). Explica por qué reemplaza a la 0.5.0 |
 | `apk/` | Capturas del APK 0.5.1 en un Android real (Parte 0 y Parte 5 de la guía), con DEMO-A01 contra `test`. Las toma Dirección; quedan pendientes al momento de este commit |

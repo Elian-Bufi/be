@@ -104,7 +104,7 @@ export function fichaDe(m: FilaDeMedicion): FichaDeComparabilidad {
  * REG-06-16: la vista efectiva sale de la relación. `resolverVistaEfectiva` devuelve `NO_RESOLUBLE` ante una rama, un
  * ciclo o un eslabón que falta, y entonces no se muestra ningún valor efectivo en vez de inventar uno.
  */
-export function magnitudEfectiva(m: FilaDeMedicion): MagnitudApi | null {
+export function magnitudEfectiva(m: Pick<FilaDeMedicion, 'id' | 'valor' | 'unidadDeOrigen' | 'correcciones'>): MagnitudApi | null {
   if (m.correcciones.length === 0) return magnitud(m.valor, m.unidadDeOrigen);
   const vista = resolverVistaEfectiva(
     m.id,

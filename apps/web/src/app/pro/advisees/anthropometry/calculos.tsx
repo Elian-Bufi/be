@@ -244,9 +244,16 @@ function NuevoCalculo({
           </label>
           <select id={`cal-entrada-${e.inputCode}`} value={entradas[e.inputCode] ?? ''} onChange={(ev) => setEntradas((x) => ({ ...x, [e.inputCode]: ev.target.value }))}>
             <option value="">{COPY_ANTROPOMETRIA.elegirEntrada}</option>
+            {/*
+              El desplegable ofrece el valor con el que se va a calcular, que es el que rige (REG-06-16). Mostrar el
+              que se tomó primero hacía que el profesional eligiera un número y recibiera un resultado derivado de
+              otro. Con la cadena sin resolver no se ofrece un valor: la admisibilidad va a rechazar esa entrada.
+            */}
             {disponibles.map((m) => (
               <option key={m.measurementId} value={m.measurementId}>
-                {m.metric}: {m.magnitude.value} {m.magnitude.unit} · {ETIQUETA_DE_CLASE_DE_DATO[m.dataClass]}
+                {m.metric}: {m.effectiveMagnitude ? `${m.effectiveMagnitude.value} ${m.effectiveMagnitude.unit}` : COPY_ANTROPOMETRIA.sinValorVigente} ·{' '}
+                {ETIQUETA_DE_CLASE_DE_DATO[m.dataClass]}
+                {m.corrections.length > 0 ? ` · ${COPY_ANTROPOMETRIA.corregida}` : ''}
               </option>
             ))}
           </select>
