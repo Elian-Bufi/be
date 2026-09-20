@@ -84,6 +84,11 @@ export async function nombreVisibleDe(cliente: Cliente, identidadId: string): Pr
   return nombreDeProfesional(perfil);
 }
 
+/**
+ * La ficha que decide comparabilidad (REG-06-162). La unidad es la **efectiva**: si una corrección cambió la unidad,
+ * comparar contra la de origen afirmaría una compatibilidad que no existe. La unidad de origen no se pierde: viaja
+ * en la magnitud de la medición, como exige REG-06-154.
+ */
 export function fichaDe(m: FilaDeMedicion): FichaDeComparabilidad {
   return {
     protocolId: m.protocoloVersion.especificacionId,
@@ -91,7 +96,7 @@ export function fichaDe(m: FilaDeMedicion): FichaDeComparabilidad {
     protocolName: m.protocoloVersion.nombre,
     methodId: null,
     methodVersionId: null,
-    unit: m.unidadDeOrigen,
+    unit: magnitudEfectiva(m)?.unit ?? m.unidadDeOrigen,
   };
 }
 

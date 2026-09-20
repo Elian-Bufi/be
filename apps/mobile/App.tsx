@@ -1,11 +1,13 @@
 /**
- * APK BE — WP-02 · WP-03.
+ * APK BE — WP-02 · WP-03 · WP-04 · WP-05.
  * - WP-02 (docs/paquetes/WP-02.md §5): Bienvenida · Crear cuenta · Iniciar sesión · Cuenta.
  * - WP-03 (docs/paquetes/WP-03.md §5): Cuenta → Vínculos (solicitudes recibidas, detalle de vínculo, pausa, reanudación
  *   y finalización) → Consentimiento; Cuenta → Privacidad (A3 y consentimientos a profesionales); Cuenta → «Tu
  *   identificador BE».
  * - WP-04 (docs/paquetes/WP-04.md §5): Cuenta → Nutrición: Hoy (registrar comidas del plan y fuera del plan) → Plan
  *   actual · Registros → Detalle de registro.
+ * - WP-05 (docs/paquetes/WP-05.md §5): Cuenta → Antropometría: Mi evolución (RF-049, RF-065), de solo lectura y con
+ *   los días sin medición vigente a la vista como «Sin dato».
  * La sesión (Bearer) y el identificador de la identidad viven solo en memoria (DL-012, T5): cerrar la app exige volver a
  * iniciar sesión. Nunca se guarda un «rol autorizado» en el cliente: la API verifica la sesión y decide cada acceso en
  * cada request; ocultar un botón no concede ni quita nada.

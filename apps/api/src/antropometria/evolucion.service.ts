@@ -5,7 +5,7 @@ import { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
-import { ZONA_POR_DEFECTO, fechaLocalEn } from '../nutricion/zona';
+import { ZONA_POR_DEFECTO, fechaLocalEn, finDelDiaLocal, inicioDelDiaLocal } from '../nutricion/zona';
 import { EjecutorAntropometrico } from './ejecutor';
 import { fichaDe, INCLUIR_MEDICION, magnitudEfectiva } from './lectura-antropometria';
 
@@ -103,25 +103,32 @@ export class EvolucionService {
     const filas = await tx.medicionAntropometrica.findMany({
       where: {
         evaluacion: { asesoradoId: titular, estado: 'REGISTRADA' },
-        momentoDeOcurrencia: { gte: new Date(`${desde}T00:00:00.000Z`), lt: new Date(`${hasta}T23:59:59.999Z`) },
+        // La ventana se recorta en la **misma zona** en la que después se ubica cada punto. Mezclar UTC acá y hora
+        // local allá deja afuera las mediciones de la tarde del último día, que saldrían como «sin dato» (INV-06-177).
+        momentoDeOcurrencia: { gte: inicioDelDiaLocal(desde, ZONA_POR_DEFECTO), lt: finDelDiaLocal(hasta, ZONA_POR_DEFECTO) },
       },
       include: INCLUIR_MEDICION,
       orderBy: { momentoDeOcurrencia: 'asc' },
     });
     const fichasPorMedicion = new Map(filas.map((m) => [m.id, fichaDe(m)]));
-    const observaciones = filas.map((m) => {
-      // La magnitud efectiva sale de la cadena de correcciones, resuelta por relación (REG-06-16).
+    const observaciones = filas.flatMap((m) => {
+      // La magnitud efectiva sale de la cadena de correcciones, resuelta por relación (REG-06-16). Si la cadena no
+      // se puede resolver —rama o ciclo—, no hay valor vigente: la observación **no aporta punto**, y el día se ve
+      // como lo que es, sin dato. Mostrar el original como si fuera el efectivo sería afirmar algo que no se sabe.
       const efectiva = magnitudEfectiva(m);
-      return {
-        fechaLocal: fechaLocalEn(m.momentoDeOcurrencia, ZONA_POR_DEFECTO),
-        metrica: m.metrica,
-        magnitud: { valor: efectiva ? efectiva.value : Number(m.valor), unidad: efectiva ? efectiva.unit : m.unidadDeOrigen },
-        clase: m.clase,
-        // 06:8670: sin evento de anulación, vigente. Una anulada no aporta punto (REG-06-221).
-        condicion: m.anulacion ? ('ANULADA' as const) : ('VIGENTE' as const),
-        ficha: fichaDeDominio(fichaDe(m)),
-        origenId: m.id,
-      };
+      if (!efectiva) return [];
+      return [
+        {
+          fechaLocal: fechaLocalEn(m.momentoDeOcurrencia, ZONA_POR_DEFECTO),
+          metrica: m.metrica,
+          magnitud: { valor: efectiva.value, unidad: efectiva.unit },
+          clase: m.clase,
+          // 06:8670: sin evento de anulación, vigente. Una anulada no aporta punto (REG-06-221).
+          condicion: m.anulacion ? ('ANULADA' as const) : ('VIGENTE' as const),
+          ficha: fichaDeDominio(fichaDe(m)),
+          origenId: m.id,
+        },
+      ];
     });
     return { observaciones, fichasPorMedicion };
   }

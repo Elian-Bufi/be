@@ -21,7 +21,7 @@ type Borrador = {
   evaluationId: string;
   version: string;
   context: string | null;
-  measurements: { measurementId: string; metric: string; magnitude: { value: number; unit: string }; dataClass: string; origin: string }[];
+  measurements: { measurementId: string; metric: string; magnitude: { value: number; unit: string }; dataClass: string; origin: string; occurredAt: string; protocol: { protocolVersionId: string } }[];
 };
 
 interface FilaEnEdicion {
@@ -31,7 +31,20 @@ interface FilaEnEdicion {
   unit: string;
   protocolVersionId: string;
   origin: 'DIRECT_CAPTURE' | 'SELF_REPORTED';
+  /**
+   * Cuándo se tomó la medición, en el formato local del campo `datetime-local`. Es de la toma, no del guardado: si
+   * cada «Guardar» lo reescribiera, la serie se correría sola y la evolución mostraría un día que no fue
+   * (REG-06-152: la observación conserva su momento).
+   */
+  occurredAt: string;
 }
+
+/** ISO → `YYYY-MM-DDTHH:mm` en hora local, que es lo que entiende `datetime-local`. */
+const paraElCampo = (iso: string): string => {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
 
 const filaNueva = (protocolo: string): FilaEnEdicion => ({
   clave: `m-${Math.random().toString(36).slice(2, 9)}`,
@@ -40,6 +53,7 @@ const filaNueva = (protocolo: string): FilaEnEdicion => ({
   unit: '',
   protocolVersionId: protocolo,
   origin: 'DIRECT_CAPTURE',
+  occurredAt: paraElCampo(new Date().toISOString()),
 });
 
 export function VistaDePreparacion() {
@@ -119,24 +133,30 @@ function Preparacion({
         metric: m.metric,
         value: String(m.magnitude.value),
         unit: m.magnitude.unit,
-        protocolVersionId: protocoloPorDefecto,
+        protocolVersionId: m.protocol?.protocolVersionId ?? protocoloPorDefecto,
         origin: m.origin === 'SELF_REPORTED' ? 'SELF_REPORTED' : 'DIRECT_CAPTURE',
+        // El momento de la toma vuelve del borrador: guardar de nuevo no lo mueve.
+        occurredAt: paraElCampo(m.occurredAt),
       })),
     );
   }, [borrador, protocoloPorDefecto]);
 
+  /** Las filas que todavía no están completas: guardar con una a medias las perdería en silencio. */
+  const incompletas = () => filas.filter((f) => !(f.metric.trim() && f.value.trim() && f.unit.trim() && f.occurredAt));
+
   const mediciones = () =>
     filas
-      .filter((f) => f.metric.trim() && f.value.trim() && f.unit.trim())
+      .filter((f) => f.metric.trim() && f.value.trim() && f.unit.trim() && f.occurredAt)
       .map((f) => ({
         metric: f.metric.trim(),
         magnitude: { value: Number(f.value.replace(',', '.')), unit: f.unit.trim() },
         protocolVersionId: f.protocolVersionId,
         origin: f.origin,
-        occurredAt: new Date().toISOString(),
+        occurredAt: new Date(f.occurredAt).toISOString(),
       }));
 
   async function crear() {
+    if (incompletas().length > 0) return onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.medicionIncompleta });
     setEnviando(true);
     onAviso(null);
     const res = await api.crearBorradorAntropometrico(token, asesoradoId, { occurredAt: new Date().toISOString(), context: contexto.trim() || null, measurements: mediciones() }, intento.actual());
@@ -149,6 +169,7 @@ function Preparacion({
   }
 
   async function guardar() {
+    if (incompletas().length > 0) return onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.medicionIncompleta });
     if (!borrador) return crear();
     setEnviando(true);
     onAviso(null);
@@ -198,6 +219,13 @@ function Preparacion({
             <Campo id={`ant-metrica-${i}`} etiqueta={COPY_ANTROPOMETRIA.metrica} value={f.metric} onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, metric: e.target.value } : x)))} maxLength={60} />
             <Campo id={`ant-valor-${i}`} etiqueta={COPY_ANTROPOMETRIA.valor} inputMode="decimal" value={f.value} onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, value: e.target.value } : x)))} maxLength={12} />
             <Campo id={`ant-unidad-${i}`} etiqueta={COPY_ANTROPOMETRIA.unidad} value={f.unit} onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, unit: e.target.value } : x)))} maxLength={24} />
+            <Campo
+              id={`ant-momento-${i}`}
+              etiqueta={COPY_ANTROPOMETRIA.momentoDeLaToma}
+              type="datetime-local"
+              value={f.occurredAt}
+              onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, occurredAt: e.target.value } : x)))}
+            />
             <div className="campo">
               <label htmlFor={`ant-origen-${i}`}>{COPY_ANTROPOMETRIA.origenDelDato}</label>
               <select

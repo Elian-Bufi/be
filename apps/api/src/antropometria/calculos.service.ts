@@ -17,6 +17,7 @@ import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
+import { exigirCapacidadAntropometrica } from './capacidad';
 import { EjecutorAntropometrico, esUuid } from './ejecutor';
 import { registrarEventoDeAntropometria } from './eventos';
 import { nombreVisibleDe } from './lectura-antropometria';
@@ -25,9 +26,12 @@ import { corridaApi, FINALIDAD_DESDE_API, leerEspecificacionDeMetodo, referencia
 type Tx = Prisma.TransactionClient;
 
 const INCLUIR_CORRIDA = {
-  entradas: { include: { medicion: true } },
+  // La condición de cada entrada se deriva de la existencia de su evento de anulación, igual que la de la medición
+  // (06:8670). Sin esto, una corrida apoyada en una medición anulada se leería como si nada hubiera pasado.
+  entradas: { include: { medicion: { include: { anulacion: { select: { id: true } } } } } },
   metodoVersion: { include: { especificacion: true, sucesora: { select: { id: true } } } },
-  evaluacion: { select: { asesoradoId: true } },
+  evaluacion: { select: { asesoradoId: true, profesionalId: true, estado: true } },
+  reemplazadaPor: { select: { id: true } },
 } as const;
 
 /**
@@ -42,6 +46,12 @@ const INCLUIR_CORRIDA = {
  *   más nueva (REG-06-203; INV-06-172);
  * - **no decide:** adoptar una referencia es una relación con historia, que no modifica la corrida, no borra las
  *   otras y no crea objetivo ni prescripción (REG-06-207; INV-06-05).
+ *
+ * Y, como toda operación sobre datos de salud, **ninguna de las cuatro decide por su cuenta**: el PDP se consulta
+ * dentro de la transacción y antes de cualquier validación de contrato, porque «Sesión ≠ autorización» y el acceso se
+ * recalcula server-side con el estado actual (09 §3.3, §20.2.2). Una corrida de otro profesional no es revelable:
+ * mismo 404 que lo inexistente (DL-057), también por el camino del cálculo. Sin ese corte, el cálculo sería una
+ * puerta trasera para leer las mediciones que API-ANT-04 no muestra.
  */
 @Injectable()
 export class CalculosService {
@@ -61,6 +71,11 @@ export class CalculosService {
       cuerpo,
       huellaExtra: { adviseeId },
       efecto: async (tx, pedido, procedencia) => {
+        // Primero la autorización, antes de cualquier 422: así un rechazo de contrato no le confirma a alguien no
+        // autorizado que el recurso existe (09 §3.2.1, precedencia).
+        const titular = await this.decidir(tx, 'API-CAL-01', actor, adviseeId, recurso, ctx);
+        await exigirCapacidadAntropometrica(tx, actor.identidadId);
+
         const version = esUuid(pedido.methodVersionId)
           ? await tx.versionDeEspecificacionAntropometrica.findFirst({
               where: { id: pedido.methodVersionId, especificacion: { tipo: 'METODO' } },
@@ -80,7 +95,7 @@ export class CalculosService {
           throw new ErrorDeApi(422, CodigoDeError.METHOD_VERSION_NOT_SELECTABLE, 'Esa versión del método no está declarada para esta finalidad.');
         }
 
-        const { mediciones, evaluacionId } = await this.entradasVisibles(tx, actor, adviseeId, pedido.inputBindings, ctx);
+        const { mediciones, evaluacionId } = await this.entradasVisibles(tx, actor, titular, pedido.inputBindings, ctx);
         const propuestos: DatoPropuesto[] = pedido.inputBindings.map((b) => {
           const m = mediciones.get(b.sourceRef)!;
           return {
@@ -128,13 +143,13 @@ export class CalculosService {
 
         const nombre = await nombreVisibleDe(tx, actor.identidadId);
         // Recién ejecutada: ninguna corrida nace adoptada. No existe referencia automática (REG-06-207).
-        return { estadoHttp: 201, cuerpo: { data: corridaApi(corrida, () => nombre, false) }, sujetoId: adviseeId, recurso };
+        return { estadoHttp: 201, cuerpo: { data: corridaApi(corrida, () => nombre, null) }, sujetoId: titular, recurso };
       },
     });
   }
 
   // ─── API-CAL-02 · listar las corridas revelables ───────────────────────────────────────────
-  /** Se listan como están: sin promedio, sin ranking y sin ganadora marcada (REG-06-205). */
+  /** Se listan como están: sin promedio, sin ranking y sin ganadora marcada (REG-06-205), y solo las propias. */
   listar(actor: ActorAutenticado, adviseeId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<unknown> {
     const consulta = leerConsultaDeLista(query, { purpose: ['ANTHROPOMETRIC_SUPPORT', 'NUTRITION_OBJECTIVE_SUPPORT'] });
     return this.ejecutor.leer({
@@ -145,9 +160,10 @@ export class CalculosService {
       recursoIntentado: { tipo: 'Asesorado', id: adviseeId },
       lectura: async (tx) => {
         const titular = await this.decidir(tx, 'API-CAL-02', actor, adviseeId, { tipo: 'Asesorado', id: adviseeId }, ctx);
+        await exigirCapacidadAntropometrica(tx, actor.identidadId);
         const filas = await tx.ejecucionDeCalculo.findMany({
           where: {
-            evaluacion: { asesoradoId: titular },
+            evaluacion: { asesoradoId: titular, profesionalId: actor.identidadId },
             ...(consulta.filtros.purpose ? { finalidad: FINALIDAD_DESDE_API[consulta.filtros.purpose as 'ANTHROPOMETRIC_SUPPORT'] } : {}),
             ...despuesDelCursor(consulta.cursor),
           },
@@ -156,9 +172,9 @@ export class CalculosService {
           take: consulta.limit + 1,
         });
         const { pagina, page } = paginar(filas, consulta.limit);
-        const adoptadas = await this.adoptadas(tx, titular, actor.identidadId);
+        const referencias = await this.referencias(tx, titular, actor.identidadId);
         const nombres = await this.nombres(tx, pagina.map((c) => c.autorId));
-        return { data: pagina.map((c) => corridaApi(c, (id) => nombres.get(id) ?? 'Profesional', adoptadas.has(c.id))), page };
+        return { data: pagina.map((c) => corridaApi(c, (id) => nombres.get(id) ?? 'Profesional', referencias.get(c.finalidad) ?? null)), page };
       },
     });
   }
@@ -175,21 +191,15 @@ export class CalculosService {
       lectura: async (tx) => {
         const c = esUuid(runId) ? await tx.ejecucionDeCalculo.findUnique({ where: { id: runId }, include: INCLUIR_CORRIDA }) : null;
         if (!c) throw this.ejecutor.noRevelable({ operacion: 'API-CAL-03', actorId: actor.identidadId, recurso }, ctx);
-        await this.pdp.decidirEnTransaccion(
-          tx,
-          {
-            operacion: 'API-CAL-03',
-            actorDeLaDecision: actor.identidadId,
-            profesionalId: actor.identidadId,
-            titularId: c.evaluacion.asesoradoId,
-            alcance: 'ANTROPOMETRIA',
-            recurso,
-          },
-          ctx,
-        );
-        const adoptadas = await this.adoptadas(tx, c.evaluacion.asesoradoId, actor.identidadId);
+        await this.decidir(tx, 'API-CAL-03', actor, c.evaluacion.asesoradoId, recurso, ctx);
+        await exigirCapacidadAntropometrica(tx, actor.identidadId);
+        // El PDP decide sobre el titular; la propiedad se compara después, con el mismo 404 (DL-057).
+        if (c.evaluacion.profesionalId !== actor.identidadId) {
+          throw this.ejecutor.noRevelable({ operacion: 'API-CAL-03', actorId: actor.identidadId, recurso, sujetoId: c.evaluacion.asesoradoId }, ctx);
+        }
+        const referencias = await this.referencias(tx, c.evaluacion.asesoradoId, actor.identidadId);
         const nombre = await nombreVisibleDe(tx, c.autorId);
-        return { data: corridaApi(c, () => nombre, adoptadas.has(c.id)) };
+        return { data: corridaApi(c, () => nombre, referencias.get(c.finalidad) ?? null) };
       },
     });
   }
@@ -198,6 +208,9 @@ export class CalculosService {
   /**
    * «Reemplazar referencia crea historia; no muta la Ejecución» (09 §21.6). La referencia anterior se conserva
    * encadenada, y con un token desactualizado la respuesta es 409: nadie pisa la decisión de otro momento.
+   *
+   * Solo se adopta una corrida de una evaluación **registrada**: el contenido de preparación no adquiere autoridad
+   * histórica por persistirse (REG-06-215), y una referencia profesional es autoridad histórica.
    */
   adoptar(actor: ActorAutenticado, adviseeId: string, purpose: string, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
     const recurso = { tipo: 'ReferenciaDeCalculo', id: `${adviseeId}:${purpose}` };
@@ -214,21 +227,31 @@ export class CalculosService {
       huellaExtra: { adviseeId, purpose },
       efecto: async (tx, pedido, procedencia) => {
         if (!finalidad) throw errores.recursoNoEncontrado();
+        const titular = await this.decidir(tx, 'API-CAL-04', actor, adviseeId, { tipo: 'Asesorado', id: adviseeId }, ctx);
+        await exigirCapacidadAntropometrica(tx, actor.identidadId);
+
         const corrida = esUuid(pedido.calculationRunId)
           ? await tx.ejecucionDeCalculo.findUnique({ where: { id: pedido.calculationRunId }, include: INCLUIR_CORRIDA })
           : null;
-        // Una corrida de otro asesorado no es revelable: el campo no sirve como oráculo de existencia.
-        if (!corrida || corrida.evaluacion.asesoradoId !== adviseeId) {
+        // Una corrida de otro asesorado, o de otro profesional, no es revelable: el campo no sirve como oráculo.
+        if (!corrida || corrida.evaluacion.asesoradoId !== titular || corrida.evaluacion.profesionalId !== actor.identidadId) {
           throw this.ejecutor.noRevelable({ operacion: 'API-CAL-04', actorId: actor.identidadId, recurso }, ctx);
+        }
+        if (corrida.evaluacion.estado !== 'REGISTRADA') {
+          throw new ErrorDeApi(
+            422,
+            CodigoDeError.CALCULATION_REFERENCE_NOT_COMPATIBLE,
+            'Ese cálculo es de una evaluación en preparación. Para dejarlo como referencia, registrá antes la evaluación.',
+          );
         }
 
         const actual = await tx.referenciaDeCalculo.findFirst({
-          where: { asesoradoId: adviseeId, profesionalId: actor.identidadId, finalidad, sucesora: null },
+          where: { asesoradoId: titular, profesionalId: actor.identidadId, finalidad, sucesora: null },
         });
         const evaluacion = evaluarAdopcion(
           { ejecucionId: corrida.id, asesoradoId: corrida.evaluacion.asesoradoId, finalidad: corrida.finalidad },
           {
-            asesoradoId: adviseeId,
+            asesoradoId: titular,
             finalidad,
             actual: actual ? { referenciaId: actual.id, ejecucionId: actual.ejecucionId, finalidad: actual.finalidad, version: `v${actual.version}` } : null,
             expectedVersion: pedido.expectedVersion ?? null,
@@ -240,7 +263,7 @@ export class CalculosService {
           }
           if (evaluacion.motivo === 'YA_ES_LA_REFERENCIA') {
             const nombreActual = await nombreVisibleDe(tx, actor.identidadId);
-            return { estadoHttp: 200, cuerpo: { data: referenciaApi(actual!, () => nombreActual) }, sujetoId: adviseeId, recurso };
+            return { estadoHttp: 200, cuerpo: { data: referenciaApi(actual!, () => nombreActual) }, sujetoId: titular, recurso };
           }
           throw new ErrorDeApi(422, CodigoDeError.CALCULATION_REFERENCE_NOT_COMPATIBLE, 'Esa corrida no corresponde a esta finalidad.');
         }
@@ -248,7 +271,7 @@ export class CalculosService {
         const momento = await momentoDeLaBase(tx);
         const referencia = await tx.referenciaDeCalculo.create({
           data: {
-            asesoradoId: adviseeId,
+            asesoradoId: titular,
             profesionalId: actor.identidadId,
             finalidad,
             ejecucionId: corrida.id,
@@ -269,7 +292,7 @@ export class CalculosService {
         });
 
         const nombre = await nombreVisibleDe(tx, actor.identidadId);
-        return { estadoHttp: 201, cuerpo: { data: referenciaApi(referencia, () => nombre) }, sujetoId: adviseeId, recurso };
+        return { estadoHttp: 201, cuerpo: { data: referenciaApi(referencia, () => nombre) }, sujetoId: titular, recurso };
       },
     });
   }
@@ -284,23 +307,26 @@ export class CalculosService {
   }
 
   /**
-   * Las mediciones referidas, todas del mismo asesorado y de una misma evaluación. Una que no sea revelable para el
-   * actor devuelve el mismo 404 que una inexistente: el `sourceRef` no funciona como oráculo (09 §20.2.1;
-   * TEST-CAL-003).
+   * Las mediciones referidas: del mismo asesorado, de una misma evaluación y **del propio profesional**. Una que no
+   * sea revelable para el actor devuelve el mismo 404 que una inexistente, así que el `sourceRef` no funciona como
+   * oráculo de existencia (09 §20.2.1; TEST-CAL-003).
    */
   private async entradasVisibles(
     tx: Tx,
     actor: ActorAutenticado,
-    adviseeId: string,
+    titular: string,
     vinculos: readonly { inputCode: string; sourceRef: string }[],
     ctx: ContextoDeSolicitud,
   ) {
-    const recurso = { tipo: 'Asesorado', id: adviseeId };
+    const recurso = { tipo: 'Asesorado', id: titular };
     const ids = [...new Set(vinculos.map((v) => v.sourceRef))];
     const filas = ids.every(esUuid)
-      ? await tx.medicionAntropometrica.findMany({ where: { id: { in: ids } }, include: { anulacion: true, evaluacion: { select: { id: true, asesoradoId: true } } } })
+      ? await tx.medicionAntropometrica.findMany({
+          where: { id: { in: ids } },
+          include: { anulacion: true, evaluacion: { select: { id: true, asesoradoId: true, profesionalId: true } } },
+        })
       : [];
-    if (filas.length !== ids.length || filas.some((m) => m.evaluacion.asesoradoId !== adviseeId)) {
+    if (filas.length !== ids.length || filas.some((m) => m.evaluacion.asesoradoId !== titular || m.evaluacion.profesionalId !== actor.identidadId)) {
       throw this.ejecutor.noRevelable({ operacion: 'API-CAL-01', actorId: actor.identidadId, recurso }, ctx);
     }
     const evaluaciones = new Set(filas.map((m) => m.evaluacionId));
@@ -310,10 +336,17 @@ export class CalculosService {
     return { mediciones: new Map(filas.map((m) => [m.id, m])), evaluacionId: [...evaluaciones][0]! };
   }
 
-  /** Las corridas que este profesional adoptó como referencia. Es la punta de cada cadena, no un flag de la corrida. */
-  private async adoptadas(tx: Tx, adviseeId: string, profesionalId: string): Promise<Set<string>> {
-    const filas = await tx.referenciaDeCalculo.findMany({ where: { asesoradoId: adviseeId, profesionalId, sucesora: null }, select: { ejecucionId: true } });
-    return new Set(filas.map((f) => f.ejecucionId));
+  /**
+   * Las corridas que este profesional adoptó como referencia, con el token de la referencia vigente. Es la punta de
+   * la cadena, no un flag de la corrida: adoptar no toca la corrida (REG-06-207). El token viaja en la lectura
+   * porque, sin él, la pantalla no puede reemplazar una referencia sin pisar la decisión anterior.
+   */
+  private async referencias(tx: Tx, adviseeId: string, profesionalId: string): Promise<Map<string, { ejecucionId: string; version: string }>> {
+    const filas = await tx.referenciaDeCalculo.findMany({
+      where: { asesoradoId: adviseeId, profesionalId, sucesora: null },
+      select: { ejecucionId: true, version: true, finalidad: true },
+    });
+    return new Map(filas.map((f) => [f.finalidad, { ejecucionId: f.ejecucionId, version: `v${f.version}` }]));
   }
 
   private async nombres(tx: Tx, ids: readonly string[]): Promise<Map<string, string>> {
@@ -321,4 +354,3 @@ export class CalculosService {
     return new Map(perfiles.map((p) => [p.identidadId, p.nombreVisible ?? 'Profesional']));
   }
 }
-

@@ -232,7 +232,7 @@ function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; on
             <button type="button" className="boton boton--secundario" onClick={() => setAccion(null)} disabled={enviando}>
               Cancelar
             </button>
-            <button type="button" className="boton boton--peligro-secundario" onClick={() => void anular()} disabled={enviando || !motivo.trim()}>
+            <button type="button" className="boton boton--secundario" onClick={() => void anular()} disabled={enviando || !motivo.trim()}>
               {COPY_ANTROPOMETRIA.confirmarAnulacion}
             </button>
           </div>

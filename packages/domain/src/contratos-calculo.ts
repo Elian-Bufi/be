@@ -12,7 +12,7 @@
  */
 import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';
-import { MagnitudSchema } from './contratos-antropometria';
+import { CondicionDeMedicionSchema, EstadoDeEvaluacionSchema, MagnitudSchema } from './contratos-antropometria';
 import { PaginaSchema, ResumenDeActorSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
 const Texto = (max: number) => z.string().trim().min(1).max(max);
@@ -73,13 +73,19 @@ export const EjecutarCalculoRequestSchema = z.strictObject({
   inputBindings: z.array(VinculoDeEntradaSchema).min(1).max(20),
 });
 
-/** REG-06-205: procedencia de cada entrada, sin reintroducir valores de fuentes que el actor ya no puede consultar. */
+/**
+ * REG-06-205: la procedencia de cada entrada. El valor es **opcional**: viaja solo cuando el actor puede consultar la
+ * medición de origen, porque una corrida no reintroduce valores de fuentes que ya no le son revelables (09 §21.5).
+ * `condition` se deriva del evento de anulación de la medición, igual que en la medición misma (06:8670): una
+ * entrada que quedó anulada tiene que verse anulada también desde la corrida que la usó.
+ */
 export const ProcedenciaDeEntradaSchema = z.strictObject({
   inputCode: z.string(),
   sourceRef: IdOpaco,
   metric: z.string(),
-  magnitude: MagnitudSchema,
+  magnitude: MagnitudSchema.optional(),
   provenanceType: ProcedenciaAdmitidaSchema,
+  condition: CondicionDeMedicionSchema,
   sourceOccurredAt: Instante,
 });
 
@@ -87,6 +93,11 @@ export const CorridaDeCalculoSchema = z.strictObject({
   calculationRunId: IdOpaco,
   adviseeId: IdOpaco,
   evaluationId: IdOpaco,
+  /**
+   * Si la corrida es de una evaluación en preparación o de una registrada. Lo de preparación no adquiere autoridad
+   * histórica por persistirse (REG-06-215): se muestra, pero se muestra como lo que es.
+   */
+  evaluationContext: EstadoDeEvaluacionSchema,
   purpose: FinalidadDeCalculoSchema,
   methodId: IdOpaco,
   methodVersionId: IdOpaco,
@@ -101,6 +112,18 @@ export const CorridaDeCalculoSchema = z.strictObject({
   supersedesRunId: IdOpaco.nullable(),
   /** `true` solo si el profesional la adoptó con un acto explícito. No existe referencia automática (REG-06-207). */
   referenceForPurpose: z.boolean(),
+  /**
+   * Token de la referencia vigente del profesional para esa finalidad, o `null` si todavía no adoptó ninguna. Viaja
+   * en la lectura para que reemplazarla sea posible sin pisar la decisión anterior (09 §21.6).
+   */
+  referenceVersion: TokenDeVersionSchema.nullable(),
+  /**
+   * `false` cuando alguna entrada quedó anulada o cuando otra corrida la reemplazó: el resultado histórico se
+   * conserva, pero deja de presentarse como vigente (REG-06-220 incisos 2 y 4).
+   */
+  effective: z.boolean(),
+  /** La corrida que reemplazó a esta, si la hubo. Mira hacia adelante; `supersedesRunId` mira hacia atrás. */
+  supersededByRunId: IdOpaco.nullable(),
   author: ResumenDeActorSchema,
   recordedAt: Instante,
 });
