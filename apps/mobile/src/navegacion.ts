@@ -18,7 +18,8 @@ export type Ruta =
   | { readonly nombre: 'hoy' }
   | { readonly nombre: 'plan-actual' }
   | { readonly nombre: 'registros-nutricionales' }
-  | { readonly nombre: 'registro-nutricional'; readonly id: string };
+  | { readonly nombre: 'registro-nutricional'; readonly id: string }
+  | { readonly nombre: 'mi-evolucion' };
 
 /** Por qué termina la sesión en el APK; cada motivo tiene su aviso en App.tsx. */
 export type Salida = 'sesion-cerrada' | 'sesiones-cerradas' | 'sesion-no-valida' | 'reautenticar' | 'cierre-registrado';
@@ -37,6 +38,7 @@ export function anterior(ruta: Ruta): Ruta | null {
     case 'vinculos':
     case 'privacidad':
     case 'hoy':
+    case 'mi-evolucion':
       return { nombre: 'cuenta' };
     case 'plan-actual':
     case 'registros-nutricionales':

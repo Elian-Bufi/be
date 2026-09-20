@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { apiConfigurada, extra } from './src/api';
 import { anterior, requiereSesion, textoDeVolverA, type Ruta, type Salida } from './src/navegacion';
+import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
 import { PantallaDeCuenta } from './src/pantallas/cuenta';
 import { PantallaDeLogin } from './src/pantallas/login';
@@ -152,6 +153,7 @@ export default function App() {
             {ruta.nombre === 'plan-actual' ? <PantallaDePlanActual token={sesion.token} salir={salir} /> : null}
             {ruta.nombre === 'registros-nutricionales' ? <PantallaDeRegistros token={sesion.token} salir={salir} ir={ir} /> : null}
             {ruta.nombre === 'registro-nutricional' ? <PantallaDeRegistroNutricional key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
+            {ruta.nombre === 'mi-evolucion' ? <PantallaDeMiEvolucion token={sesion.token} salir={salir} /> : null}
             {ruta.nombre === 'privacidad' ? <PantallaDePrivacidad token={sesion.token} salir={salir} ir={ir} volver={volver} /> : null}
           </>
         ) : null}
