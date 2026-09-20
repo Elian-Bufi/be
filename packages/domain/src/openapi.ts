@@ -1121,9 +1121,9 @@ export function documentoOpenApi(): Record<string, unknown> {
   return {
     openapi: '3.1.0',
     info: {
-      title: 'BE API — WP-02 Identidad y sesiones · WP-03 Vínculo, consentimiento y PDP · WP-04 Circuito nutricional',
-      version: '0.4.0',
-      description: 'Generado desde @be/domain (contratos.ts, contratos-vinculo.ts y contratos-nutricion.ts). No editar a mano.',
+      title: 'BE API — WP-02 Identidad y sesiones · WP-03 Vínculo, consentimiento y PDP · WP-04 Circuito nutricional · WP-05 Antropometría, métodos y cálculos',
+      version: '0.5.0',
+      description: 'Generado desde @be/domain (contratos.ts, contratos-vinculo.ts, contratos-nutricion.ts, contratos-antropometria.ts y contratos-calculo.ts). No editar a mano.',
     },
     servers: [{ url: '/api/v1' }],
     components: {
