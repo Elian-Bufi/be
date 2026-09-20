@@ -17,6 +17,7 @@
  * representarlas y reconstruirlas, no selecciona una como universal» (REG-06-157, 06:6304). La única fórmula que
  * aparece es la del catálogo sintético de demostración, y está rotulada como tal.
  */
+import { z } from 'zod';
 import { aplicarPrecision, type EntradaDeCalculo, type Magnitud, type ModoDeRedondeo, type OrigenDeMedicion, type PrecisionDeclarada } from './antropometria';
 
 // ─── Finalidad (REG-06-205: «finalidad/contexto») ───────────────────────────────────────────────
@@ -60,6 +61,34 @@ export interface EspecificacionDeMetodo {
   readonly precision: PrecisionDeclarada;
   /** Identificador de la regla de dominio aplicada, versionada junto con la especificación (REG-06-156). */
   readonly regla: string;
+}
+
+/**
+ * La forma que tiene que tener el contenido versionado de un método (REG-06-203). Se valida al leerlo: una
+ * especificación que no la cumple no ejecuta nada, en vez de ejecutarse a medias. Vive en el dominio porque es
+ * conocimiento del dominio, no del transporte: la API la lee de la base con esta misma función.
+ */
+const EspecificacionDeMetodoSchema = z.strictObject({
+  finalidades: z.array(z.enum(['SOPORTE_ANTROPOMETRICO', 'SOPORTE_DE_OBJETIVO_NUTRICIONAL'])).min(1),
+  entradas: z
+    .array(
+      z.strictObject({
+        codigo: z.string().min(1),
+        metrica: z.string().min(1),
+        unidadesAdmitidas: z.array(z.string().min(1)).min(1),
+        procedenciasAdmitidas: z.array(z.enum(['CAPTURA_DIRECTA', 'AUTORREPORTE', 'IMPORTACION_CONTROLADA'])).min(1),
+      }),
+    )
+    .min(1),
+  salida: z.strictObject({ metrica: z.string().min(1), unidad: z.string().min(1) }),
+  precision: z.strictObject({ decimales: z.number().int().min(0).max(6), modo: z.enum(['MEDIO_ARRIBA', 'ABAJO', 'ARRIBA']) }),
+  regla: z.string().min(1),
+});
+
+/** Devuelve la especificación si el contenido cumple la forma declarada, o `null` si no se puede usar. */
+export function leerEspecificacionDeMetodo(contenido: unknown): EspecificacionDeMetodo | null {
+  const r = EspecificacionDeMetodoSchema.safeParse(contenido);
+  return r.success ? r.data : null;
 }
 
 /**

@@ -9,7 +9,7 @@
  * - `referenceForPurpose` sale de la punta de la cadena de referencias, no de un flag guardado en la corrida: la
  *   corrida no se toca al adoptarla (REG-06-207).
  */
-import { FINALIDAD_DE_CALCULO_API, type EspecificacionDeMetodo } from '@be/domain';
+import { FINALIDAD_DE_CALCULO_API, leerEspecificacionDeMetodo, type EspecificacionDeMetodo } from '@be/domain';
 import type {
   EjecucionDeCalculo,
   EntradaDeCalculo,
@@ -18,7 +18,6 @@ import type {
   ReferenciaDeCalculo,
   VersionDeEspecificacionAntropometrica,
 } from '@prisma/client';
-import { z } from 'zod';
 import { ORIGEN_API, REDONDEO_API, token } from './lectura-antropometria';
 import type { CorridaDeCalculoApi, MetodoApi, ReferenciaApi } from './tipos';
 
@@ -28,32 +27,6 @@ type FilaDeCorrida = EjecucionDeCalculo & {
   metodoVersion: VersionConEspecificacion;
   evaluacion: { asesoradoId: string };
 };
-
-/**
- * La forma que tiene que tener el contenido de una versión de método (REG-06-203). Se valida al leerlo: una
- * especificación mal formada no ejecuta nada.
- */
-const EspecificacionDeMetodoSchema = z.strictObject({
-  finalidades: z.array(z.enum(['SOPORTE_ANTROPOMETRICO', 'SOPORTE_DE_OBJETIVO_NUTRICIONAL'])).min(1),
-  entradas: z
-    .array(
-      z.strictObject({
-        codigo: z.string().min(1),
-        metrica: z.string().min(1),
-        unidadesAdmitidas: z.array(z.string().min(1)).min(1),
-        procedenciasAdmitidas: z.array(z.enum(['CAPTURA_DIRECTA', 'AUTORREPORTE', 'IMPORTACION_CONTROLADA'])).min(1),
-      }),
-    )
-    .min(1),
-  salida: z.strictObject({ metrica: z.string().min(1), unidad: z.string().min(1) }),
-  precision: z.strictObject({ decimales: z.number().int().min(0).max(6), modo: z.enum(['MEDIO_ARRIBA', 'ABAJO', 'ARRIBA']) }),
-  regla: z.string().min(1),
-});
-
-export function leerEspecificacionDeMetodo(contenido: unknown): EspecificacionDeMetodo | null {
-  const r = EspecificacionDeMetodoSchema.safeParse(contenido);
-  return r.success ? r.data : null;
-}
 
 export const FINALIDAD_DESDE_API: Readonly<Record<'ANTHROPOMETRIC_SUPPORT' | 'NUTRITION_OBJECTIVE_SUPPORT', FinalidadPrisma>> = {
   ANTHROPOMETRIC_SUPPORT: 'SOPORTE_ANTROPOMETRICO',
@@ -132,4 +105,5 @@ export function referenciaApi(r: ReferenciaDeCalculo, nombreDelAutor: (id: strin
   };
 }
 
+export { leerEspecificacionDeMetodo };
 export type { FilaDeCorrida };
