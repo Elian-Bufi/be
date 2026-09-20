@@ -48,7 +48,7 @@ El dominio de entrenamiento (WP-06) va a sumar la tercera parte. La guía está 
 
 WP-04 dejó tres casos del catálogo asignados a este paquete. Los tres pasan, en CI y en vivo:
 
-| # | Caso | Estado en CI | Estado en `test` (2026-09-20, API 0.5.1 `0193a3d`) |
+| # | Caso | Estado en CI | Estado en `test` (2026-09-20, API 0.5.1 `4e5503f`) |
 |---|---|---|---|
 | 6 | Anular dos veces la misma medición: la segunda no crea un segundo efecto ni un error nuevo | PASS (TEST-ANT-006, en `antropometria.int-spec.ts` y `maquinas-wp05.int-spec.ts`) | **PASA** |
 | 7 | (variante de mediciones) Evolución con un hueco: el checkpoint sin medición es «sin dato» y no lleva valor; un cero **medido** sí es un punto | PASS (TEST-ANT-009) | **PASA** |
@@ -58,7 +58,7 @@ Con esto, **los 10 adversariales de DV-05 son ejecutables en vivo**. Era el obje
 
 ### Casos del catálogo que WP-05 ejecuta
 
-CI sobre el commit final (`02c252f`): integración **293/293** en PostgreSQL 16 real, 20 suites, 0 fallos. El detalle por ID está en `EVIDENCIA/WP-05/resultados-integracion-02c252f.md`.
+CI sobre el commit final (`4e5503f`): integración **294/294** en PostgreSQL 16 real, 20 suites, 0 fallos. El detalle por ID está en `EVIDENCIA/WP-05/resultados-integracion-4e5503f.md`.
 
 | Caso | Oráculo | Estado |
 |---|---|---|
@@ -76,6 +76,7 @@ CI sobre el commit final (`02c252f`): integración **293/293** en PostgreSQL 16 
 | **TEST-PRJ-009** | Cero juicio: schemas, OpenAPI, copy de las pantallas y 51 respuestas en vivo | PASS |
 | **TEST-AUTH-001 a 013** | La capacidad antropométrica se declara, se verifica y se resuelve; sin resolución habilitante no se registran evaluaciones | PASS |
 | **REG-06-161** | Corregir una medición recalcula los derivados; si las entradas dejan de ser admisibles, no se inventa un sucesor | PASS |
+| **REG-06-16** | Un cálculo **nuevo** sobre una medición corregida usa el valor que rige, no el que se tomó primero. Esta prueba se escribió antes del arreglo y falló como correspondía: esperaba 23.869, recibió 23.673 | PASS |
 | **REG-06-214/215** | La frontera de inmutabilidad es el registro, no el nacimiento del dato | PASS |
 | **REG-06-15/16** | La cadena de correcciones no se puede bifurcar: la base rechaza la segunda raíz y el segundo sucesor | PASS |
 
