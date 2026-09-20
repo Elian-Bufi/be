@@ -12,6 +12,6 @@ Qué prueba cada archivo. La lectura razonada está en `DEFENSA/WP-04.md` §8.
 | `ci-verificar-*.log` | El job de verificación de la misma CI: typecheck, dominio, copy de las pantallas, API unitaria, build y auditoría |
 | `verificacion-urls.txt` | API, website y descarga anónima del APK, con su SHA-256 |
 | `apk.txt` | Identidad del APK 0.4.0: build EAS, commit, `app.config` embebido y la búsqueda de credenciales en el bundle (0) |
-| `apk/` | Capturas del APK en el teléfono de Dirección (partes 0, 2 y 4 de la guía). **Pendiente** |
+| `apk/` | Capturas del APK 0.4.0 en un Android real (partes 0, 2 y 4 de la guía), con DEMO-A01 contra `test`. Índice y lectura en `apk/LEEME.md` |
 
 Todos los datos son sintéticos. No hay contraseñas, tokens ni datos de personas reales en ningún archivo.
