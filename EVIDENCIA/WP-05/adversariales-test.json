@@ -1,6 +1,6 @@
 {
   "api": "https://be-api-hndp.onrender.com",
-  "momento": "2026-09-20T15:57:40.392Z",
+  "momento": "2026-09-20T21:16:44.203Z",
   "profesionales": [
     "DEMO-PA",
     "DEMO-PN"
@@ -25,15 +25,19 @@
       "observado": {
         "periodo": "2026-09-15 → 2026-09-19",
         "puntos": [
-          "2026-09-15: sin dato",
           "2026-09-16: 82 cm",
-          "2026-09-17: sin dato",
-          "2026-09-18: 0.81 m",
-          "2026-09-19: sin dato"
+          "2026-09-18: 0.81 m"
         ],
-        "clavesDeUnPuntoSinDato": [
-          "date",
-          "availability"
+        "huecos": [
+          "2026-09-15 → 2026-09-15: 1 sin dato",
+          "2026-09-17 → 2026-09-17: 1 sin dato",
+          "2026-09-19 → 2026-09-19: 1 sin dato"
+        ],
+        "clavesDeUnHueco": [
+          "from",
+          "to",
+          "state",
+          "days"
         ],
         "noComparable": "2026-09-18: UNIT",
         "honestidad": {
@@ -75,7 +79,7 @@
       "resultado": "PASA",
       "observado": {
         "corrida": "23.673 kg/m2 · método v2 · regla demo/peso-sobre-talla-cuadrado@1 · 3 decimales",
-        "pesoInformado": "422 CALCULATION_INPUTS_INSUFFICIENT · [{\"code\":\"PROCEDENCIA_NO_ADMITIDA\",\"path\":\"inputBindings.PESO\"}]",
+        "pesoInformado": "422 CALCULATION_INPUTS_INSUFFICIENT · [{\"code\":\"PROCEDENCIA_NO_ADMITIDA\",\"path\":\"inputBindings.PESO\"},{\"code\":\"PROCEDENCIA_NO_ADMITIDA\",\"path\":\"inputBindings.TALLA\"}]",
         "corridasListadas": 2,
         "clavesDeLaLista": [
           "data",
@@ -92,7 +96,7 @@
       "titulo": "ninguna respuesta trae claves de diagnóstico, puntaje, promedio o ganadora, ni una bandera de honestidad en verdadero",
       "resultado": "PASA",
       "observado": {
-        "respuestasRevisadas": 57,
+        "respuestasRevisadas": 51,
         "hallazgos": []
       }
     }

@@ -94,3 +94,54 @@ test('copy: sin frases prohibidas por el 10 (10-B02, 10-ADD, 10-B10)', () => {
   assert.equal(COPY.loginFallido, 'No pudimos verificar los datos de acceso.');
   assert.notEqual(COPY.a1Texto, COPY.a2Texto);
 });
+
+/**
+ * Las dos colecciones de la familia ANT viven en rutas distintas y el legajo no las intercambia: la de las
+ * registradas «no es una vía residual para leer un draft» (09v16:1718). Una pantalla que pida el borrador por la ruta
+ * equivocada recibe un 404 y se ve como si no hubiera nada, que es justo lo que pasó una vez. Esta prueba fija a qué
+ * ruta va cada método del cliente, que es donde ese error se cuela.
+ */
+test('cliente ANT: cada operación va a la ruta que declara el 09, y las dos colecciones no se cruzan', async () => {
+  const rutas: string[] = [];
+  const registrar = (): typeof fetch =>
+    (async (url: string) => {
+      rutas.push(new URL(url).pathname + new URL(url).search);
+      // La forma de la respuesta no importa acá: lo que se verifica es a dónde fue la llamada.
+      return new Response('{}', { status: 500 });
+    }) as unknown as typeof fetch;
+  const cliente = crearClienteBe({ baseUrl: 'https://api.example.invalid/api/v1', superficie: 'WEB', fetch: registrar() });
+  const ase = '6f1c1a4e-0000-4000-8000-000000000001';
+  const eval1 = '6f1c1a4e-0000-4000-8000-000000000002';
+  const med = '6f1c1a4e-0000-4000-8000-000000000003';
+
+  await cliente.crearEvaluacionAntropometrica(
+    't',
+    ase,
+    { occurredAt: '2026-09-18T12:00:00.000Z', specificationVersionId: eval1, source: { type: 'DIRECT_CAPTURE' }, directMeasurements: [{ metricCode: 'peso', value: 1, unit: 'kg' }] },
+    'k',
+  );
+  await cliente.crearBorradorAntropometrico('t', ase, {}, 'k');
+  await cliente.listarBorradoresAntropometricos('t', ase);
+  await cliente.listarEvaluacionesAntropometricas('t', ase);
+  await cliente.consultarEvaluacionAntropometrica('t', eval1);
+  await cliente.consultarBorradorAntropometrico('t', eval1);
+  await cliente.guardarBorradorAntropometrico('t', eval1, { expectedVersion: 'v1', directMeasurements: [] });
+  await cliente.registrarEvaluacionAntropometrica('t', eval1, 'v1', 'k');
+  await cliente.corregirMedicion('t', eval1, { targetId: med, reason: 'x', magnitude: { value: 1, unit: 'kg' } }, 'k');
+  await cliente.anularMedicion('t', med, { reason: 'x' }, 'k');
+  await cliente.evolucionAntropometrica('t', ase, { metric: 'peso', periodStart: '2026-09-01', periodEnd: '2026-09-18' });
+
+  assert.deepEqual(rutas, [
+    `/api/v1/advisees/${ase}/anthropometry/evaluations`,
+    `/api/v1/advisees/${ase}/anthropometry/evaluation-drafts`,
+    `/api/v1/advisees/${ase}/anthropometry/evaluation-drafts`,
+    `/api/v1/advisees/${ase}/anthropometry/evaluations`,
+    `/api/v1/anthropometry/evaluations/${eval1}`,
+    `/api/v1/anthropometry/evaluation-drafts/${eval1}`,
+    `/api/v1/anthropometry/evaluation-drafts/${eval1}`,
+    `/api/v1/anthropometry/evaluation-drafts/${eval1}/register`,
+    `/api/v1/anthropometry/evaluations/${eval1}/corrections`,
+    `/api/v1/anthropometry/measurements/${med}/annulments`,
+    `/api/v1/advisees/${ase}/anthropometry/progress?metric=peso&periodStart=2026-09-01&periodEnd=2026-09-18`,
+  ]);
+});

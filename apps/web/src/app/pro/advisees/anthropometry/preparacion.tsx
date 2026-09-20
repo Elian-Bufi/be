@@ -56,7 +56,8 @@ export function VistaDePreparacion() {
     if (!especificaciones.ok) return setR(especificaciones as Resultado<never>);
     const resumen = borradores.datos.data[0];
     if (!resumen) return setR({ ok: true, datos: { borrador: null, especificaciones: especificaciones.datos.data } });
-    const completo = await api.consultarEvaluacionAntropometrica(token, resumen.evaluationId);
+    // El borrador se lee en su propia colección (API-ANT-09): la de las registradas no lo devuelve (09v16:1718).
+    const completo = await api.consultarBorradorAntropometrico(token, resumen.evaluationId);
     if (sesionPerdida(completo)) return;
     if (!completo.ok) return setR(completo as Resultado<never>);
     setR({ ok: true, datos: { borrador: completo.datos.data as Borrador, especificaciones: especificaciones.datos.data } });
