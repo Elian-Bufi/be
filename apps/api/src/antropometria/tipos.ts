@@ -2,7 +2,10 @@
 export type {
   AnulacionApi,
   CorreccionDeMedicionApi,
+  CorridaDeCalculoApi,
   EjecucionDeCalculoApi,
+  MetodoApi,
+  ReferenciaApi,
   Especificacion as EspecificacionAntropometricaApi,
   EvaluacionAntropometricaApi,
   FichaDeComparabilidadApi as FichaDeComparabilidad,

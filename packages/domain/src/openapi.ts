@@ -4,7 +4,8 @@
  * Alcance:
  * - las operaciones autorizadas de WP-02 (docs/paquetes/WP-02.md §4);
  * - las de WP-03 (docs/paquetes/WP-03.md §4);
- * - las de WP-04 (docs/paquetes/WP-04.md §4).
+ * - las de WP-04 (docs/paquetes/WP-04.md §4);
+ * - las de WP-05: la familia ANT y el patrón transversal MTH/CAL (docs/paquetes/WP-05.md §4).
  */
 import { z } from 'zod';
 import {
@@ -85,6 +86,15 @@ import {
   MedicionSchema,
   RegistrarEvaluacionRequestSchema,
 } from './contratos-antropometria';
+import {
+  AdoptarReferenciaRequestSchema,
+  CorridaResponseSchema,
+  EjecutarCalculoRequestSchema,
+  ListaDeCorridasResponseSchema,
+  ListaDeMetodosResponseSchema,
+  MetodoResponseSchema,
+  ReferenciaResponseSchema,
+} from './contratos-calculo';
 
 type Codigo = keyof typeof CodigoDeError;
 type Errores = Partial<Record<400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503, readonly Codigo[]>>;
@@ -97,7 +107,7 @@ interface ParametroDeQuery {
 
 export interface Operacion {
   readonly id: string;
-  readonly metodo: 'get' | 'post' | 'patch' | 'delete';
+  readonly metodo: 'get' | 'post' | 'patch' | 'put' | 'delete';
   /** Relativa a `/api/v1`. Los parámetros de ruta van entre llaves: `/relationships/{relationshipId}`. */
   readonly ruta: string;
   readonly resumen: string;
@@ -921,6 +931,94 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST'] },
     fuente: '04:583 (RF-049) · UC-P31 V03 · 04:1093',
   },
+  // ─── MTH y CAL · el patrón transversal de cálculo reproducible (09v16 §21; T-06-N12) ─────────
+  {
+    id: 'API-MTH-01',
+    metodo: 'get',
+    ruta: '/professional-methods',
+    resumen:
+      'Métodos profesionales seleccionables, con su versión vigente, entradas requeridas, procedencias admisibles, unidad de salida y precisión declarada. Son metadatos: no acepta adviseeId y no implica compatibilidad con los datos de ninguna persona.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, { nombre: 'purpose', descripcion: 'Finalidad declarada del cálculo.', schema: { type: 'string', enum: ['ANTHROPOMETRIC_SUPPORT', 'NUTRITION_OBJECTIVE_SUPPORT'] } }],
+    exitos: [{ status: 200, schema: ListaDeMetodosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: '09v16 §21.1 · REG-06-203 · REG-06-204',
+  },
+  {
+    id: 'API-MTH-02',
+    metodo: 'get',
+    ruta: '/professional-methods/{methodId}/versions/{versionId}',
+    resumen:
+      'La versión exacta de un método, seleccionable o histórica. Una versión histórica se consulta —las corridas la citan y tienen que poder explicarse— pero no se presenta como seleccionable. No devuelve datos de ningún asesorado.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: MetodoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v16 §21.2 · REG-06-203',
+  },
+  {
+    id: 'API-CAL-01',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/calculations',
+    resumen:
+      'Ejecutar un método sobre entradas efectivas declaradas una por una. Disponible no es admisible: la versión declara qué entradas necesita, en qué unidades y de qué procedencias. La respuesta no afirma que se haya creado un objetivo, una prescripción ni un plan: no los crea.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: EjecutarCalculoRequestSchema,
+    exitos: [{ status: 201, schema: CorridaResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['METHOD_VERSION_NOT_SELECTABLE', 'CALCULATION_INPUTS_INSUFFICIENT', 'CALCULATION_NOT_REPRODUCIBLE'],
+    },
+    fuente: '09v16 §21.3 · REG-06-204/205 · TEST-CAL-002/003/007',
+  },
+  {
+    id: 'API-CAL-02',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/calculations',
+    resumen:
+      'Las corridas revelables del asesorado. Coexisten: no se promedian, no se ordenan por «mejor» y ninguna se marca ganadora. La que el profesional adoptó viene con referenceForPurpose.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, { nombre: 'purpose', descripcion: 'Finalidad declarada del cálculo.', schema: { type: 'string', enum: ['ANTHROPOMETRIC_SUPPORT', 'NUTRITION_OBJECTIVE_SUPPORT'] } }],
+    exitos: [{ status: 200, schema: ListaDeCorridasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v16 §21.4 · REG-06-205 · TEST-CAL-004/005',
+  },
+  {
+    id: 'API-CAL-03',
+    metodo: 'get',
+    ruta: '/calculations/{runId}',
+    resumen:
+      'Una corrida, con la versión exacta del método que se usó, la regla aplicada, la precisión declarada y la procedencia de cada entrada. Una corrida no revelable devuelve el mismo 404 que una inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: CorridaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v16 §21.5 · REG-06-156 · REG-06-203 · TEST-CAL-001',
+  },
+  {
+    id: 'API-CAL-04',
+    metodo: 'put',
+    ruta: '/advisees/{adviseeId}/calculation-references/{purpose}',
+    resumen:
+      'Adoptar una corrida como referencia profesional para una finalidad. Es una relación, no una mutación: no modifica la corrida, no borra las otras y no crea objetivo ni prescripción. Reemplazarla crea historia; adoptar la que ya es referencia responde 200 sin crear una relación nueva.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AdoptarReferenciaRequestSchema,
+    exitos: [
+      { status: 201, schema: ReferenciaResponseSchema },
+      { status: 200, schema: ReferenciaResponseSchema },
+    ],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'],
+      422: ['CALCULATION_REFERENCE_NOT_COMPATIBLE'],
+    },
+    fuente: '09v16 §21.6 · REG-06-207 · TEST-CAL-006',
+  },
 
 ];
 
@@ -937,6 +1035,8 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-ANT-06-PROPIA',
   'API-ANT-08',
   'API-ANT-09',
+  'API-CAL-02',
+  'API-CAL-03',
   'API-REL-06',
   'API-CON-01',
   'API-NUT-02',

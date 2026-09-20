@@ -2,10 +2,12 @@ import { Module } from '@nestjs/common';
 import { SesionModule } from '../sesion/sesion.module';
 import { AntropometriaController } from './antropometria.controller';
 import { EjecutorAntropometrico } from './ejecutor';
+import { CalculosService } from './calculos.service';
 import { EspecificacionesService } from './especificaciones.service';
 import { EvaluacionesAntropometricasService } from './evaluaciones.service';
 import { EvolucionService } from './evolucion.service';
 import { MedicionesService } from './mediciones.service';
+import { MetodosService } from './metodos.service';
 
 /**
  * B-10 — antropometría (06 §13 y §20). Reutiliza el esqueleto de `EjecutorDeDominio` con el Alcance ANTROPOMETRIA y
@@ -14,6 +16,6 @@ import { MedicionesService } from './mediciones.service';
 @Module({
   imports: [SesionModule],
   controllers: [AntropometriaController],
-  providers: [EjecutorAntropometrico, EspecificacionesService, EvaluacionesAntropometricasService, MedicionesService, EvolucionService],
+  providers: [EjecutorAntropometrico, EspecificacionesService, EvaluacionesAntropometricasService, MedicionesService, EvolucionService, MetodosService, CalculosService],
 })
 export class AntropometriaModule {}

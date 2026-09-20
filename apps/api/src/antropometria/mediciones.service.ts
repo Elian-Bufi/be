@@ -4,8 +4,8 @@ import {
   CodigoDeError,
   CorregirMedicionRequestSchema,
   admiteCorreccion,
-  aplicarPrecision,
   consecuenciasDeRecalculo,
+  ejecutar,
   evaluarAnulacion,
   evaluarNuevaCorreccion,
   type EjecucionDeCalculo,
@@ -21,6 +21,7 @@ import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { EjecutorAntropometrico, esUuid } from './ejecutor';
 import { registrarEventoDeAntropometria } from './eventos';
 import { INCLUIR_MEDICION, medicionApi, nombreVisibleDe, REDONDEO_DESDE_API } from './lectura-antropometria';
+import { leerEspecificacionDeMetodo } from './lectura-calculo';
 
 type Tx = Prisma.TransactionClient;
 
@@ -212,17 +213,27 @@ export class MedicionesService {
         withoutSuccessor.push({ runId: original.id, metric: original.metrica, missingInputs: [...consecuencia.faltantes] });
         continue;
       }
-      const valor = this.calcular(consecuencia.entradasVigentes, { decimales: original.decimales, modo: original.modoDeRedondeo });
+      // REG-06-161: se recalcula con la versión de método **registrada en la corrida**, nunca con una más nueva.
+      const metodo = leerEspecificacionDeMetodo(original.metodoVersion.contenido);
+      const resultado = metodo ? ejecutar(metodo, consecuencia.entradasVigentes) : null;
+      if (!resultado?.ok) {
+        // Sin resultado reproducible no se inventa un sucesor: la ausencia se representa como ausencia (REG-06-220
+        // inciso 6), igual que cuando falta una entrada obligatoria.
+        withoutSuccessor.push({ runId: original.id, metric: original.metrica, missingInputs: [] });
+        continue;
+      }
       const nueva = await tx.ejecucionDeCalculo.create({
         data: {
           evaluacionId,
           metodoVersionId: original.metodoVersionId,
           autorId,
           metrica: original.metrica,
-          valor,
+          valor: resultado.magnitud.valor,
           unidad: original.unidad,
           decimales: original.decimales,
           modoDeRedondeo: original.modoDeRedondeo,
+          finalidad: original.finalidad,
+          regla: original.regla,
           reemplazaAId: original.id,
           procedencia: procedencia as Prisma.InputJsonValue,
           entradas: {
@@ -235,19 +246,6 @@ export class MedicionesService {
     return { recalculated, withoutSuccessor };
   }
 
-  /**
-   * El método sintético MET-DEMO: peso sobre talla al cuadrado, con la precisión declarada por la corrida
-   * (REG-06-158). El legajo prohíbe fijar un catálogo científico desde acá (REG-06-157), así que la fórmula es de
-   * demostración y está rotulada como tal en el catálogo.
-   */
-  private calcular(entradas: readonly EntradaDeCalculo[], precision: { decimales: number; modo: 'MEDIO_ARRIBA' | 'ABAJO' | 'ARRIBA' }): number {
-    const peso = entradas.find((e) => e.metrica === 'peso')?.magnitud.valor;
-    const talla = entradas.find((e) => e.metrica === 'talla')?.magnitud.valor;
-    if (peso === undefined || talla === undefined || talla === 0) {
-      throw new ErrorDeApi(422, CodigoDeError.METHOD_INPUTS_NOT_AVAILABLE, 'El método declarado necesita peso y talla para poder ejecutarse.');
-    }
-    return aplicarPrecision(peso / (talla * talla), precision);
-  }
 
   private async leerMedicion(tx: Tx, id: string) {
     return tx.medicionAntropometrica.findUniqueOrThrow({ where: { id }, include: { ...INCLUIR_MEDICION, evaluacion: true } });

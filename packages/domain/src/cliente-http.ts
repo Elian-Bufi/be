@@ -93,6 +93,15 @@ import {
   type CrearBorradorRequestSchema,
   type GuardarBorradorRequestSchema,
 } from './contratos-antropometria';
+import {
+  AdoptarReferenciaRequestSchema,
+  CorridaResponseSchema,
+  EjecutarCalculoRequestSchema,
+  ListaDeCorridasResponseSchema,
+  ListaDeMetodosResponseSchema,
+  MetodoResponseSchema,
+  ReferenciaResponseSchema,
+} from './contratos-calculo';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import type { Superficie } from './procedencia';
@@ -125,7 +134,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
   const hacerFetch = opciones.fetch ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
 
   async function llamar<S extends EsquemaDeContrato | null>(
-    metodo: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    metodo: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
     ruta: string,
     extra: { token?: string; cuerpo?: unknown; claveDeIdempotencia?: string; esquema: S },
   ): Promise<Resultado<S extends EsquemaDeContrato ? SalidaDe<S> : null>> {
@@ -517,6 +526,37 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-ANT-06, del lado del asesorado: lo consume la APK (RF-049, RF-065). */
     miEvolucionAntropometrica(token: string, filtro: { from?: string; to?: string; metrics?: string } = {}) {
       return llamar('GET', `/me/anthropometry/progress${query(filtro)}`, { token, esquema: EvolucionResponseSchema });
+    },
+
+    // ─── MTH y CAL · cálculo profesional reproducible (09v16 §21) ────────────────────────────
+    /** API-MTH-01: los métodos seleccionables. Son metadatos: no lleva asesorado. */
+    listarMetodos(token: string, filtro: { purpose?: string; cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/professional-methods${query(filtro)}`, { token, esquema: ListaDeMetodosResponseSchema });
+    },
+    /** API-MTH-02: la versión exacta, seleccionable o histórica. */
+    consultarMetodo(token: string, metodoId: string, versionId: string) {
+      return llamar('GET', `/professional-methods/${encodeURIComponent(metodoId)}/versions/${encodeURIComponent(versionId)}`, { token, esquema: MetodoResponseSchema });
+    },
+    /** API-CAL-01: ejecutar. No crea objetivo ni prescripción, y la respuesta no dice que lo haya hecho. */
+    ejecutarCalculo(token: string, asesoradoId: string, cuerpo: z.input<typeof EjecutarCalculoRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${asesoradoId}/calculations`, { token, claveDeIdempotencia, esquema: CorridaResponseSchema, cuerpo });
+    },
+    /** API-CAL-02: las corridas, tal como coexisten. */
+    listarCalculos(token: string, asesoradoId: string, filtro: { purpose?: string; cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/advisees/${asesoradoId}/calculations${query(filtro)}`, { token, esquema: ListaDeCorridasResponseSchema });
+    },
+    /** API-CAL-03: una corrida, con su método, su versión y su regla. */
+    consultarCalculo(token: string, corridaId: string) {
+      return llamar('GET', `/calculations/${encodeURIComponent(corridaId)}`, { token, esquema: CorridaResponseSchema });
+    },
+    /** API-CAL-04: adoptar una corrida como referencia. Es una relación, no una decisión automática. */
+    adoptarReferenciaDeCalculo(token: string, asesoradoId: string, finalidad: string, cuerpo: z.input<typeof AdoptarReferenciaRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('PUT', `/advisees/${asesoradoId}/calculation-references/${encodeURIComponent(finalidad)}`, {
+        token,
+        claveDeIdempotencia,
+        esquema: ReferenciaResponseSchema,
+        cuerpo,
+      });
     },
   };
 }

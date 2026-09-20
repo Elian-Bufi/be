@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Patch, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { HEADER_IDEMPOTENCY_KEY } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
@@ -6,10 +6,12 @@ import { sinParametrosDeQuery } from '../http/validacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { LimitadorService } from '../plataforma/limitador.service';
 import { actorDe, SesionGuard, type SolicitudAutenticada } from '../sesion/sesion.guard';
+import { CalculosService } from './calculos.service';
 import { EspecificacionesService } from './especificaciones.service';
 import { EvaluacionesAntropometricasService } from './evaluaciones.service';
 import { EvolucionService } from './evolucion.service';
 import { MedicionesService } from './mediciones.service';
+import { MetodosService } from './metodos.service';
 
 type Solicitud = SolicitudAutenticada & SolicitudConContexto;
 
@@ -29,6 +31,8 @@ export class AntropometriaController {
     private readonly evaluaciones: EvaluacionesAntropometricasService,
     private readonly mediciones: MedicionesService,
     private readonly evolucion: EvolucionService,
+    private readonly metodos: MetodosService,
+    private readonly calculos: CalculosService,
     private readonly limitador: LimitadorService,
   ) {}
 
@@ -144,6 +148,70 @@ export class AntropometriaController {
   miEvolucion(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
     this.limitar(req);
     return this.evolucion.consultar(actorDe(req), 'me', query, contextoDe(req));
+  }
+
+  // ─── Métodos profesionales (UC-I09; 09v16 §21.1 y §21.2) ───────────────────────────────────
+  /**
+   * API-MTH-01. Metadatos de la capacidad: no acepta `adviseeId` y no usa datos personales para decidir qué listar
+   * (09 §21.1). Por eso no consume el límite de consultas protegidas: no hay titular que proteger.
+   */
+  @Get('professional-methods')
+  listarMetodos(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    return this.metodos.listar(actorDe(req), query, contextoDe(req));
+  }
+
+  /** API-MTH-02. La versión exacta, seleccionable o histórica: una corrida que la cita tiene que poder explicarse. */
+  @Get('professional-methods/:methodId/versions/:versionId')
+  consultarMetodo(@Param('methodId') methodId: string, @Param('versionId') versionId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return this.metodos.consultar(actorDe(req), methodId, versionId, contextoDe(req));
+  }
+
+  // ─── Cálculos (UC-I09; 09v16 §21.3 a §21.6) ────────────────────────────────────────────────
+  /** API-CAL-01. */
+  @Post('advisees/:adviseeId/calculations')
+  ejecutarCalculo(
+    @Param('adviseeId') adviseeId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return this.calculos
+      .ejecutarCalculo(actorDe(req), adviseeId, cuerpo, clave, contextoDe(req))
+      .then((r) => responder(res, r));
+  }
+
+  /** API-CAL-02. Las corridas se listan como están: sin promedio y sin ganadora (REG-06-205). */
+  @Get('advisees/:adviseeId/calculations')
+  listarCalculos(@Param('adviseeId') adviseeId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.calculos.listar(actorDe(req), adviseeId, query, contextoDe(req));
+  }
+
+  /** API-CAL-03. */
+  @Get('calculations/:runId')
+  consultarCalculo(@Param('runId') runId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    sinParametrosDeQuery(query);
+    return this.calculos.consultar(actorDe(req), runId, contextoDe(req));
+  }
+
+  /** API-CAL-04. Adoptar es una relación con historia, no una mutación de la corrida (REG-06-207). */
+  @Put('advisees/:adviseeId/calculation-references/:purpose')
+  adoptarReferencia(
+    @Param('adviseeId') adviseeId: string,
+    @Param('purpose') purpose: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return this.calculos.adoptar(actorDe(req), adviseeId, purpose, cuerpo, clave, contextoDe(req)).then((r) => responder(res, r));
   }
 
   /** Límite de consultas protegidas por actor, desde cualquier red (como API-DSH-03). */
