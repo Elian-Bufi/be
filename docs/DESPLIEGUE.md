@@ -67,7 +67,9 @@ Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían
 3. Declararla en `BE_DEMO_PROFESIONALES` con un PR **solo de configuración** (DL-008).
 4. La siembra corre al arrancar la API (`OnApplicationBootstrap`): después del deploy siguiente, o del próximo arranque en frío. Es idempotente.
 
-Van por identidad y no por correo. Si se publicara un correo antes de registrarlo, alguien podría registrarlo y quedar verificado. Las dos cuentas actuales son DEMO-PN y DEMO-PT (`docs/mesa/MESA_01/ESTADO_PUNTOS_5_14_WP-03.md`).
+Van por identidad y no por correo. Si se publicara un correo antes de registrarlo, alguien podría registrarlo y quedar verificado. Las cuentas actuales son DEMO-PN, DEMO-PT (`docs/mesa/MESA_01/ESTADO_PUNTOS_5_14_WP-03.md`) y, desde WP-05, DEMO-PA.
+
+Una identidad puede declararse más de una vez, una por alcance. WP-05 lo usa para la capacidad antropométrica, que el 06 modela como transversal y «nunca tercera Especialidad» (06:2774): DEMO-PN la suma a su Especialidad Nutrición, y DEMO-PA la tiene sin ninguna Especialidad, que es la identidad válida de 06 §8.10. El tipo de perfil es de la identidad y no del alcance: la segunda declaración de una misma identidad no lo cambia.
 
 ### APK
 
