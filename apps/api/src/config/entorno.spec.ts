@@ -45,6 +45,10 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
       { identidadId: pt, alcance: 'ENTRENAMIENTO', tipo: 'NO_SANITARIO', nombreVisible: 'Prof. Demo' },
     ]);
     expect(() => leerEntorno({ ...BASE, APP_ENV: 'production', BE_DEMO_PROFESIONALES: valor })).toThrow(/BE_DEMO_PROFESIONALES/);
+    // WP-05: la capacidad antropométrica es transversal y «nunca tercera Especialidad» (06:2774). Una misma identidad
+    // se declara una vez por alcance: suma la capacidad a su Especialidad, no la reemplaza.
+    const transversal = `${pt}|ENTRENAMIENTO|NO_SANITARIO|Prof. Demo;${pt}|ANTROPOMETRIA|NO_SANITARIO|Prof. Demo`;
+    expect(leerEntorno({ ...BASE, BE_DEMO_PROFESIONALES: transversal }).demoProfesionales.map((p) => p.alcance)).toEqual(['ENTRENAMIENTO', 'ANTROPOMETRIA']);
     // Un correo ya no identifica: cualquiera podría registrarlo primero.
     for (const malo of ['demo.pn@example.invalid|NUTRICION|SANITARIO|X', `${pt}|PSICOLOGIA|SANITARIO|X`, `${pt}|NUTRICION|OTRO|X`, `${pt}|NUTRICION|SANITARIO|`]) {
       expect(() => leerEntorno({ ...BASE, BE_DEMO_PROFESIONALES: malo })).toThrow(/BE_DEMO_PROFESIONALES/);
