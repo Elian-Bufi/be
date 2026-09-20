@@ -1,6 +1,6 @@
 {
   "name": "@be/api",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "description": "API BE — NestJS, monolito modular",
   "main": "dist/main.js",
