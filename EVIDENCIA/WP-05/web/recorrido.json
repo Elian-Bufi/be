@@ -1,7 +1,7 @@
 {
   "web": "https://be-web-1ngj.onrender.com",
   "api": "https://be-api-hndp.onrender.com",
-  "momento": "2026-09-20T21:52:21.121Z",
+  "momento": "2026-09-20T22:51:13.390Z",
   "profesionales": [
     "DEMO-PA (capacidad antropométrica, cero Especialidades)",
     "DEMO-PN"
@@ -10,448 +10,448 @@
     {
       "paso": "web-01-espacio-profesional",
       "url": "/pro",
-      "momento": "2026-09-20T21:51:46.037Z",
+      "momento": "2026-09-20T22:50:42.247Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-02-workspace",
-      "url": "/pro/advisees?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73",
-      "momento": "2026-09-20T21:51:48.109Z",
+      "url": "/pro/advisees?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa",
+      "momento": "2026-09-20T22:50:45.108Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-03-evaluaciones-lista",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73",
-      "momento": "2026-09-20T21:51:50.896Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa",
+      "momento": "2026-09-20T22:50:47.372Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-04-preparacion-vacia",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=preparacion",
-      "momento": "2026-09-20T21:51:52.336Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=preparacion",
+      "momento": "2026-09-20T22:50:48.711Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-05-borrador-con-mediciones",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=preparacion",
-      "momento": "2026-09-20T21:51:53.895Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=preparacion",
+      "momento": "2026-09-20T22:50:49.873Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-06-borrador-guardado",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=preparacion",
-      "momento": "2026-09-20T21:51:55.773Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=preparacion",
+      "momento": "2026-09-20T22:50:51.761Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-07-confirmar-registro",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=preparacion",
-      "momento": "2026-09-20T21:51:56.344Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=preparacion",
+      "momento": "2026-09-20T22:50:52.328Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-08-registrada",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=evaluaciones",
-      "momento": "2026-09-20T21:51:57.334Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=evaluaciones",
+      "momento": "2026-09-20T22:50:53.276Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-09-detalle-solo-lectura",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=evaluaciones",
-      "momento": "2026-09-20T21:51:58.586Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=evaluaciones",
+      "momento": "2026-09-20T22:50:54.579Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-10-calculo-entradas",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=evaluaciones",
-      "momento": "2026-09-20T21:51:59.191Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=evaluaciones",
+      "momento": "2026-09-20T22:50:55.166Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-11-calculo-hecho",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=evaluaciones",
-      "momento": "2026-09-20T21:52:00.271Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=evaluaciones",
+      "momento": "2026-09-20T22:50:56.281Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-12-adoptar-referencia",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=evaluaciones",
-      "momento": "2026-09-20T21:52:00.842Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=evaluaciones",
+      "momento": "2026-09-20T22:50:56.894Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-13-referencia-adoptada",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=evaluaciones",
-      "momento": "2026-09-20T21:52:01.843Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=evaluaciones",
+      "momento": "2026-09-20T22:50:57.909Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-14-corregir",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=evaluaciones",
-      "momento": "2026-09-20T21:52:02.691Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=evaluaciones",
+      "momento": "2026-09-20T22:50:58.698Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-15-correccion-hecha",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=evaluaciones",
-      "momento": "2026-09-20T21:52:05.127Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=evaluaciones",
+      "momento": "2026-09-20T22:51:00.668Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-16-anular",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=evaluaciones",
-      "momento": "2026-09-20T21:52:05.890Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=evaluaciones",
+      "momento": "2026-09-20T22:51:01.442Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-17-anulacion-hecha",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=evaluaciones",
-      "momento": "2026-09-20T21:52:08.140Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=evaluaciones",
+      "momento": "2026-09-20T22:51:03.336Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-18-evolucion",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=evolucion",
-      "momento": "2026-09-20T21:52:09.510Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=evolucion",
+      "momento": "2026-09-20T22:51:04.723Z",
       "terminosProhibidos": []
     },
     {
       "paso": "web-19-borrador-ajeno-no-existe",
-      "url": "/pro/advisees/anthropometry?id=3280b8e2-ce5d-469d-ad5b-1290e7ecbd73&vista=preparacion",
-      "momento": "2026-09-20T21:52:21.121Z",
+      "url": "/pro/advisees/anthropometry?id=efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa&vista=preparacion",
+      "momento": "2026-09-20T22:51:13.390Z",
       "terminosProhibidos": []
     }
   ],
   "terminosProhibidosEnTotal": 0,
   "llamadas": [
     {
-      "momento": "2026-09-20T21:51:44.363Z",
+      "momento": "2026-09-20T22:50:39.369Z",
       "metodo": "POST",
       "ruta": "/api/v1/auth/sessions",
       "status": 201
     },
     {
-      "momento": "2026-09-20T21:51:44.912Z",
-      "metodo": "GET",
-      "ruta": "/api/v1/me",
-      "status": 200
-    },
-    {
-      "momento": "2026-09-20T21:51:44.963Z",
+      "momento": "2026-09-20T22:50:40.462Z",
       "metodo": "GET",
       "ruta": "/api/v1/me/health-data-consent-requirement",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:45.477Z",
+      "momento": "2026-09-20T22:50:40.560Z",
       "metodo": "GET",
       "ruta": "/api/v1/me",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:45.920Z",
+      "momento": "2026-09-20T22:50:41.706Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-20T22:50:42.363Z",
       "metodo": "GET",
       "ruta": "/api/v1/me/relationship-requests",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:45.981Z",
+      "momento": "2026-09-20T22:50:42.660Z",
       "metodo": "GET",
       "ruta": "/api/v1/me/relationships",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:47.163Z",
+      "momento": "2026-09-20T22:50:43.903Z",
       "metodo": "GET",
       "ruta": "/api/v1/me",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:47.585Z",
+      "momento": "2026-09-20T22:50:44.459Z",
       "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/dashboard",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/dashboard",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:47.598Z",
+      "momento": "2026-09-20T22:50:44.559Z",
       "metodo": "GET",
       "ruta": "/api/v1/me/relationships",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:48.884Z",
+      "momento": "2026-09-20T22:50:45.854Z",
       "metodo": "GET",
       "ruta": "/api/v1/me",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:49.398Z",
+      "momento": "2026-09-20T22:50:46.382Z",
       "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/anthropometry/evaluations",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/anthropometry/evaluations",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:50.330Z",
+      "momento": "2026-09-20T22:50:46.820Z",
       "metodo": "GET",
-      "ruta": "/api/v1/anthropometry/evaluations/e0439f52-b7d9-4c44-a706-a0f1d4a20fef",
+      "ruta": "/api/v1/anthropometry/evaluations/4dbbf9d1-12a0-4b4a-890f-28732e789790",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:50.757Z",
+      "momento": "2026-09-20T22:50:47.264Z",
       "metodo": "GET",
       "ruta": "/api/v1/professional-methods",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:50.772Z",
+      "momento": "2026-09-20T22:50:47.274Z",
       "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/calculations",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/calculations",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:51.628Z",
-      "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/anthropometry/evaluation-drafts",
-      "status": 200
-    },
-    {
-      "momento": "2026-09-20T21:51:51.728Z",
+      "momento": "2026-09-20T22:50:48.120Z",
       "metodo": "GET",
       "ruta": "/api/v1/anthropometry/specifications",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:54.337Z",
-      "metodo": "POST",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/anthropometry/evaluation-drafts",
-      "status": 201
-    },
-    {
-      "momento": "2026-09-20T21:51:54.777Z",
+      "momento": "2026-09-20T22:50:48.159Z",
       "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/anthropometry/evaluation-drafts",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/anthropometry/evaluation-drafts",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:54.798Z",
+      "momento": "2026-09-20T22:50:50.327Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/anthropometry/evaluation-drafts",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-20T22:50:50.742Z",
       "metodo": "GET",
       "ruta": "/api/v1/anthropometry/specifications",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:55.227Z",
+      "momento": "2026-09-20T22:50:50.745Z",
       "metodo": "GET",
-      "ruta": "/api/v1/anthropometry/evaluation-drafts/7b9aecfc-c9a1-4dfc-a6d0-06a616657b67",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/anthropometry/evaluation-drafts",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:56.803Z",
+      "momento": "2026-09-20T22:50:51.201Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/anthropometry/evaluation-drafts/197d570b-030f-4d2f-9d58-2ec4c82166b0",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-20T22:50:52.774Z",
       "metodo": "POST",
-      "ruta": "/api/v1/anthropometry/evaluation-drafts/7b9aecfc-c9a1-4dfc-a6d0-06a616657b67/register",
+      "ruta": "/api/v1/anthropometry/evaluation-drafts/197d570b-030f-4d2f-9d58-2ec4c82166b0/register",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:57.565Z",
+      "momento": "2026-09-20T22:50:53.540Z",
       "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/anthropometry/evaluations",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/anthropometry/evaluations",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:58.028Z",
+      "momento": "2026-09-20T22:50:54.020Z",
       "metodo": "GET",
-      "ruta": "/api/v1/anthropometry/evaluations/7b9aecfc-c9a1-4dfc-a6d0-06a616657b67",
+      "ruta": "/api/v1/anthropometry/evaluations/197d570b-030f-4d2f-9d58-2ec4c82166b0",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:58.471Z",
-      "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/calculations",
-      "status": 200
-    },
-    {
-      "momento": "2026-09-20T21:51:58.490Z",
+      "momento": "2026-09-20T22:50:54.441Z",
       "metodo": "GET",
       "ruta": "/api/v1/professional-methods",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:51:59.667Z",
+      "momento": "2026-09-20T22:50:54.516Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/calculations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-20T22:50:55.675Z",
       "metodo": "POST",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/calculations",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/calculations",
       "status": 201
     },
     {
-      "momento": "2026-09-20T21:52:00.096Z",
+      "momento": "2026-09-20T22:50:56.156Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/calculations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-20T22:50:56.157Z",
       "metodo": "GET",
       "ruta": "/api/v1/professional-methods",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:00.128Z",
-      "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/calculations",
-      "status": 200
-    },
-    {
-      "momento": "2026-09-20T21:52:01.304Z",
+      "momento": "2026-09-20T22:50:57.340Z",
       "metodo": "PUT",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/calculation-references/ANTHROPOMETRIC_SUPPORT",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/calculation-references/ANTHROPOMETRIC_SUPPORT",
       "status": 201
     },
     {
-      "momento": "2026-09-20T21:52:01.724Z",
+      "momento": "2026-09-20T22:50:57.767Z",
       "metodo": "GET",
       "ruta": "/api/v1/professional-methods",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:01.840Z",
+      "momento": "2026-09-20T22:50:57.907Z",
       "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/calculations",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/calculations",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:03.185Z",
+      "momento": "2026-09-20T22:50:59.162Z",
       "metodo": "POST",
-      "ruta": "/api/v1/anthropometry/evaluations/7b9aecfc-c9a1-4dfc-a6d0-06a616657b67/corrections",
+      "ruta": "/api/v1/anthropometry/evaluations/197d570b-030f-4d2f-9d58-2ec4c82166b0/corrections",
       "status": 201
     },
     {
-      "momento": "2026-09-20T21:52:03.784Z",
+      "momento": "2026-09-20T22:50:59.595Z",
       "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/anthropometry/evaluations",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/anthropometry/evaluations",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:04.569Z",
+      "momento": "2026-09-20T22:51:00.089Z",
       "metodo": "GET",
-      "ruta": "/api/v1/anthropometry/evaluations/7b9aecfc-c9a1-4dfc-a6d0-06a616657b67",
+      "ruta": "/api/v1/anthropometry/evaluations/197d570b-030f-4d2f-9d58-2ec4c82166b0",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:05.011Z",
+      "momento": "2026-09-20T22:51:00.537Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/calculations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-20T22:51:00.566Z",
       "metodo": "GET",
       "ruta": "/api/v1/professional-methods",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:05.021Z",
-      "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/calculations",
-      "status": 200
-    },
-    {
-      "momento": "2026-09-20T21:52:06.378Z",
+      "momento": "2026-09-20T22:51:01.892Z",
       "metodo": "POST",
-      "ruta": "/api/v1/anthropometry/measurements/fb3205b8-0fd4-4e5f-aa19-f001dbac97b6/annulments",
+      "ruta": "/api/v1/anthropometry/measurements/0acb7bf7-e3d4-4f02-ac6f-7a5fd237963f/annulments",
       "status": 201
     },
     {
-      "momento": "2026-09-20T21:52:06.810Z",
+      "momento": "2026-09-20T22:51:02.327Z",
       "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/anthropometry/evaluations",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/anthropometry/evaluations",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:07.576Z",
+      "momento": "2026-09-20T22:51:02.775Z",
       "metodo": "GET",
-      "ruta": "/api/v1/anthropometry/evaluations/7b9aecfc-c9a1-4dfc-a6d0-06a616657b67",
+      "ruta": "/api/v1/anthropometry/evaluations/197d570b-030f-4d2f-9d58-2ec4c82166b0",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:08.015Z",
+      "momento": "2026-09-20T22:51:03.212Z",
       "metodo": "GET",
       "ruta": "/api/v1/professional-methods",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:08.136Z",
+      "momento": "2026-09-20T22:51:03.223Z",
       "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/calculations",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/calculations",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:08.960Z",
+      "momento": "2026-09-20T22:51:04.140Z",
       "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/anthropometry/progress",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/anthropometry/progress",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:14.982Z",
+      "momento": "2026-09-20T22:51:08.971Z",
       "metodo": "POST",
       "ruta": "/api/v1/auth/sessions",
       "status": 201
     },
     {
-      "momento": "2026-09-20T21:52:16.055Z",
-      "metodo": "GET",
-      "ruta": "/api/v1/me",
-      "status": 200
-    },
-    {
-      "momento": "2026-09-20T21:52:16.107Z",
+      "momento": "2026-09-20T22:51:09.469Z",
       "metodo": "GET",
       "ruta": "/api/v1/me/health-data-consent-requirement",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:17.164Z",
+      "momento": "2026-09-20T22:51:09.508Z",
       "metodo": "GET",
       "ruta": "/api/v1/me",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:17.596Z",
+      "momento": "2026-09-20T22:51:10.052Z",
       "metodo": "GET",
-      "ruta": "/api/v1/me/relationships",
+      "ruta": "/api/v1/me",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:17.604Z",
+      "momento": "2026-09-20T22:51:10.477Z",
       "metodo": "GET",
       "ruta": "/api/v1/me/relationship-requests",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:18.415Z",
-      "metodo": "GET",
-      "ruta": "/api/v1/me",
-      "status": 200
-    },
-    {
-      "momento": "2026-09-20T21:52:18.857Z",
+      "momento": "2026-09-20T22:51:10.487Z",
       "metodo": "GET",
       "ruta": "/api/v1/me/relationships",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:18.861Z",
-      "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/dashboard",
-      "status": 200
-    },
-    {
-      "momento": "2026-09-20T21:52:19.654Z",
+      "momento": "2026-09-20T22:51:10.998Z",
       "metodo": "GET",
       "ruta": "/api/v1/me",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:20.103Z",
+      "momento": "2026-09-20T22:51:11.422Z",
       "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/anthropometry/evaluations",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/dashboard",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:20.595Z",
+      "momento": "2026-09-20T22:51:11.474Z",
       "metodo": "GET",
-      "ruta": "/api/v1/advisees/3280b8e2-ce5d-469d-ad5b-1290e7ecbd73/anthropometry/evaluation-drafts",
+      "ruta": "/api/v1/me/relationships",
       "status": 200
     },
     {
-      "momento": "2026-09-20T21:52:20.600Z",
+      "momento": "2026-09-20T22:51:11.976Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-20T22:51:12.402Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/anthropometry/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-20T22:51:12.868Z",
       "metodo": "GET",
       "ruta": "/api/v1/anthropometry/specifications",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-20T22:51:12.873Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/efdcdd9a-32e8-4fe0-a7b3-66c38fc96efa/anthropometry/evaluation-drafts",
       "status": 200
     }
   ],

@@ -1,11 +1,11 @@
 Verificación posterior al deploy — WP-05 (07 §37)
-Momento: 2026-09-20T21:54:39Z
+Momento: 2026-09-20T22:54:59Z
 
 $ curl -s https://be-api-hndp.onrender.com/health/ready
-{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.5.1","commit":"02c252f79382f96aa35b80f66ac1a6bc43967e45","construidoEn":"2026-09-20T21:32:15.946Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.5.1","commit":"4e5503f838b20e424be4154943c755879d55c3ef","construidoEn":"2026-09-20T22:48:16.463Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
 
 $ curl -s https://be-api-hndp.onrender.com/health/live
-{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.5.1","commit":"02c252f79382f96aa35b80f66ac1a6bc43967e45","construidoEn":"2026-09-20T21:32:15.946Z"}}}
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.5.1","commit":"4e5503f838b20e424be4154943c755879d55c3ef","construidoEn":"2026-09-20T22:48:16.463Z"}}}
 
 $ curl -sI https://be-web-1ngj.onrender.com/  (líneas de seguridad)
 HTTP/2 200 
@@ -24,3 +24,7 @@ APK 0.5.1 — descarga anónima del release permanente
 https://github.com/Elian-Bufi/be/releases/download/be-apk-0.5.1/be-0.5.1-0193a3d.apk
 SHA-256 esperado: 482170b86014dec9ade11ca2d4277a58df29937ba87cf38135c3c0f211ce386b
 SHA-256 descargado: 482170b86014dec9ade11ca2d4277a58df29937ba87cf38135c3c0f211ce386b (coincide)
+
+Nota: el APK 0.5.1 se construyó en 0193a3d. La API/website están en 4e5503f, que corrige el valor que usa
+un cálculo nuevo sobre una medición corregida (API-CAL-01). Ese arreglo es de servidor y de pantalla del
+profesional: no cambia el contrato que consume la app del asesorado, así que el APK 0.5.1 sigue vigente.
