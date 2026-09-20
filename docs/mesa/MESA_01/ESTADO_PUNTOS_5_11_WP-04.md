@@ -16,7 +16,7 @@ La matriz lista seis elementos para cerrar DV-11:
 | Usuarios demo | ✅ DEMO-PN (Nutrición), DEMO-PT (Entrenamiento), DEMO-A01 y DEMO-A02 (asesorados). Contraseñas fuera del repositorio | `ESTADO_PUNTOS_5_14_WP-03.md` |
 | Datos sintéticos | ✅ Correos `@example.invalid`. Catálogo de 40 alimentos con valores sintéticos de demostración, rotulados así en pantalla | migración `20260920100000_circuito_nutricional` |
 | Guion | ✅ `EVIDENCIA/WP-04/GUIA-DEMO.md`: seis partes, con la cuenta, los datos a cargar y lo que tiene que verse en cada paso | — |
-| Grabación | **No se hizo**, por instrucción de Dirección para WP-04. En su lugar: capturas del estado final de cada paso (19 del website, automatizadas contra `test`) y las del APK en el teléfono de Dirección | `EVIDENCIA/WP-04/web/` |
+| Grabación | **No se hizo**, por instrucción de Dirección para WP-04. En su lugar, capturas del estado final de cada paso: 19 del website, automatizadas contra `test`, y 11 del APK en un Android real | `EVIDENCIA/WP-04/web/` · `apk/` |
 | Hosting del video o link | La demo se muestra en vivo sobre las URLs de `test`, siguiendo la guía. No hay link a un video | — |
 
 ### URLs de la demo
