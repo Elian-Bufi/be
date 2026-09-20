@@ -36,6 +36,7 @@ export const COPY_ANTROPOMETRIA = {
   guardarBorrador: 'Guardar',
   guardado: 'Guardado',
   cambiosSinGuardar: 'Cambios sin guardar',
+  medicionIncompleta: 'Hay una medición sin completar. Cada medición necesita qué se midió, el valor, la unidad y cuándo se tomó. Completala o quitala antes de guardar.',
 
   // ─── Registrar ────────────────────────────────────────────────────────────────────────────────
   registrarEvaluacion: 'Registrar evaluación',
@@ -88,6 +89,11 @@ export const COPY_ANTROPOMETRIA = {
   explicacionDeReferencia:
     'Dejar un cálculo como referencia no cambia el cálculo ni borra los otros, y no crea un objetivo ni una prescripción. La decisión sigue siendo tuya y queda registrada con su fecha.',
   referenciaReemplazada: 'Reemplaza a la referencia anterior, que se conserva.',
+  calculoEnPreparacion: 'De una evaluación en preparación',
+  calculoNoVigente: 'Sin efecto',
+  explicacionDeCalculoNoVigente:
+    'Este cálculo dejó de tener efecto: alguna de sus entradas se anuló, o lo reemplazó un cálculo posterior. Se conserva porque es parte de la historia.',
+  valorNoConsultable: 'Valor no disponible para vos',
 
   // ─── Corregir ─────────────────────────────────────────────────────────────────────────────────
   corregirMedicion: 'Corregir medición',

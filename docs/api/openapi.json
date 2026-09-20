@@ -20811,7 +20811,7 @@
             }
           },
           "422": {
-            "description": "ErrorEnvelope: CORRECTION_NOT_ALLOWED | METHOD_INPUTS_NOT_AVAILABLE",
+            "description": "ErrorEnvelope: CORRECTION_NOT_ALLOWED | UNIT_NOT_COMPATIBLE",
             "content": {
               "application/json": {
                 "schema": {
@@ -22768,6 +22768,13 @@
                           "type": "string",
                           "minLength": 1
                         },
+                        "evaluationContext": {
+                          "type": "string",
+                          "enum": [
+                            "IN_PREPARATION",
+                            "REGISTERED"
+                          ]
+                        },
                         "purpose": {
                           "type": "string",
                           "enum": [
@@ -22887,6 +22894,13 @@
                                   "CONTROLLED_IMPORT"
                                 ]
                               },
+                              "condition": {
+                                "type": "string",
+                                "enum": [
+                                  "EFFECTIVE",
+                                  "ANNULLED"
+                                ]
+                              },
                               "sourceOccurredAt": {
                                 "type": "string",
                                 "format": "date-time",
@@ -22897,8 +22911,8 @@
                               "inputCode",
                               "sourceRef",
                               "metric",
-                              "magnitude",
                               "provenanceType",
+                              "condition",
                               "sourceOccurredAt"
                             ],
                             "additionalProperties": false
@@ -22917,6 +22931,31 @@
                         },
                         "referenceForPurpose": {
                           "type": "boolean"
+                        },
+                        "referenceVersion": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^v[1-9]\\d*$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "effective": {
+                          "type": "boolean"
+                        },
+                        "supersededByRunId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "author": {
                           "type": "object",
@@ -22945,6 +22984,7 @@
                         "calculationRunId",
                         "adviseeId",
                         "evaluationId",
+                        "evaluationContext",
                         "purpose",
                         "methodId",
                         "methodVersionId",
@@ -22956,6 +22996,9 @@
                         "inputProvenance",
                         "supersedesRunId",
                         "referenceForPurpose",
+                        "referenceVersion",
+                        "effective",
+                        "supersededByRunId",
                         "author",
                         "recordedAt"
                       ],
@@ -23133,6 +23176,13 @@
                             "type": "string",
                             "minLength": 1
                           },
+                          "evaluationContext": {
+                            "type": "string",
+                            "enum": [
+                              "IN_PREPARATION",
+                              "REGISTERED"
+                            ]
+                          },
                           "purpose": {
                             "type": "string",
                             "enum": [
@@ -23252,6 +23302,13 @@
                                     "CONTROLLED_IMPORT"
                                   ]
                                 },
+                                "condition": {
+                                  "type": "string",
+                                  "enum": [
+                                    "EFFECTIVE",
+                                    "ANNULLED"
+                                  ]
+                                },
                                 "sourceOccurredAt": {
                                   "type": "string",
                                   "format": "date-time",
@@ -23262,8 +23319,8 @@
                                 "inputCode",
                                 "sourceRef",
                                 "metric",
-                                "magnitude",
                                 "provenanceType",
+                                "condition",
                                 "sourceOccurredAt"
                               ],
                               "additionalProperties": false
@@ -23282,6 +23339,31 @@
                           },
                           "referenceForPurpose": {
                             "type": "boolean"
+                          },
+                          "referenceVersion": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^v[1-9]\\d*$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "effective": {
+                            "type": "boolean"
+                          },
+                          "supersededByRunId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "author": {
                             "type": "object",
@@ -23310,6 +23392,7 @@
                           "calculationRunId",
                           "adviseeId",
                           "evaluationId",
+                          "evaluationContext",
                           "purpose",
                           "methodId",
                           "methodVersionId",
@@ -23321,6 +23404,9 @@
                           "inputProvenance",
                           "supersedesRunId",
                           "referenceForPurpose",
+                          "referenceVersion",
+                          "effective",
+                          "supersededByRunId",
                           "author",
                           "recordedAt"
                         ],
@@ -23482,6 +23568,13 @@
                           "type": "string",
                           "minLength": 1
                         },
+                        "evaluationContext": {
+                          "type": "string",
+                          "enum": [
+                            "IN_PREPARATION",
+                            "REGISTERED"
+                          ]
+                        },
                         "purpose": {
                           "type": "string",
                           "enum": [
@@ -23601,6 +23694,13 @@
                                   "CONTROLLED_IMPORT"
                                 ]
                               },
+                              "condition": {
+                                "type": "string",
+                                "enum": [
+                                  "EFFECTIVE",
+                                  "ANNULLED"
+                                ]
+                              },
                               "sourceOccurredAt": {
                                 "type": "string",
                                 "format": "date-time",
@@ -23611,8 +23711,8 @@
                               "inputCode",
                               "sourceRef",
                               "metric",
-                              "magnitude",
                               "provenanceType",
+                              "condition",
                               "sourceOccurredAt"
                             ],
                             "additionalProperties": false
@@ -23631,6 +23731,31 @@
                         },
                         "referenceForPurpose": {
                           "type": "boolean"
+                        },
+                        "referenceVersion": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^v[1-9]\\d*$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "effective": {
+                          "type": "boolean"
+                        },
+                        "supersededByRunId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "author": {
                           "type": "object",
@@ -23659,6 +23784,7 @@
                         "calculationRunId",
                         "adviseeId",
                         "evaluationId",
+                        "evaluationContext",
                         "purpose",
                         "methodId",
                         "methodVersionId",
@@ -23670,6 +23796,9 @@
                         "inputProvenance",
                         "supersedesRunId",
                         "referenceForPurpose",
+                        "referenceVersion",
+                        "effective",
+                        "supersededByRunId",
                         "author",
                         "recordedAt"
                       ],

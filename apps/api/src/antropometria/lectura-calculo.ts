@@ -22,10 +22,12 @@ import { ORIGEN_API, REDONDEO_API, token } from './lectura-antropometria';
 import type { CorridaDeCalculoApi, MetodoApi, ReferenciaApi } from './tipos';
 
 type VersionConEspecificacion = VersionDeEspecificacionAntropometrica & { especificacion: { id: string; clave: string; tipo: string }; sucesora?: { id: string } | null };
+type MedicionDeEntrada = MedicionAntropometrica & { anulacion?: { id: string } | null };
 type FilaDeCorrida = EjecucionDeCalculo & {
-  entradas: (EntradaDeCalculo & { medicion?: MedicionAntropometrica | null })[];
+  entradas: (EntradaDeCalculo & { medicion?: MedicionDeEntrada | null })[];
   metodoVersion: VersionConEspecificacion;
-  evaluacion: { asesoradoId: string };
+  evaluacion: { asesoradoId: string; profesionalId: string; estado: 'EN_PREPARACION' | 'REGISTRADA' };
+  reemplazadaPor?: { id: string } | null;
 };
 
 export const FINALIDAD_DESDE_API: Readonly<Record<'ANTHROPOMETRIC_SUPPORT' | 'NUTRITION_OBJECTIVE_SUPPORT', FinalidadPrisma>> = {
@@ -57,12 +59,24 @@ export function metodoApi(v: VersionConEspecificacion, especificacion: Especific
   };
 }
 
-export function corridaApi(c: FilaDeCorrida, nombreDelAutor: (id: string) => string, esReferencia: boolean): CorridaDeCalculoApi {
+/**
+ * `referenciaVigente` es el token de la referencia del profesional para esa finalidad, o `null` si no adoptó
+ * ninguna; la corrida está adoptada cuando ese token le corresponde a ella. El valor de cada entrada viaja solo si el
+ * actor puede consultar la medición de origen, que acá siempre es así porque la lectura ya filtró por profesional
+ * (09 §21.5); `mostrarValores` deja la puerta preparada para cuando eso cambie.
+ */
+export function corridaApi(
+  c: FilaDeCorrida,
+  nombreDelAutor: (id: string) => string,
+  referencia: { readonly ejecucionId: string; readonly version: string } | null,
+  mostrarValores = true,
+): CorridaDeCalculoApi {
   const especificacion = leerEspecificacionDeMetodo(c.metodoVersion.contenido);
   return {
     calculationRunId: c.id,
     adviseeId: c.evaluacion.asesoradoId,
     evaluationId: c.evaluacionId,
+    evaluationContext: c.evaluacion.estado === 'REGISTRADA' ? 'REGISTERED' : 'IN_PREPARATION',
     purpose: FINALIDAD_DE_CALCULO_API[c.finalidad],
     methodId: c.metodoVersion.especificacionId,
     methodVersionId: c.metodoVersionId,
@@ -75,12 +89,18 @@ export function corridaApi(c: FilaDeCorrida, nombreDelAutor: (id: string) => str
       inputCode: codigoDeEntrada(especificacion, i.metrica),
       sourceRef: i.medicionId,
       metric: i.metrica,
-      magnitude: { value: Number(i.valor), unit: i.unidad },
+      ...(mostrarValores ? { magnitude: { value: Number(i.valor), unit: i.unidad } } : {}),
       provenanceType: ORIGEN_API[i.medicion?.origen ?? 'CAPTURA_DIRECTA'],
+      condition: i.medicion?.anulacion ? ('ANNULLED' as const) : ('EFFECTIVE' as const),
       sourceOccurredAt: (i.medicion?.momentoDeOcurrencia ?? c.momentoDeRegistro).toISOString(),
     })),
     supersedesRunId: c.reemplazaAId,
-    referenceForPurpose: esReferencia,
+    supersededByRunId: c.reemplazadaPor?.id ?? null,
+    // Una corrida deja de ser vigente si la reemplazaron o si alguna de sus entradas quedó anulada: el resultado se
+    // conserva, pero no se presenta como si nada hubiera pasado (REG-06-220 incisos 2 y 4).
+    effective: !c.reemplazadaPor && c.entradas.every((i) => !i.medicion?.anulacion),
+    referenceForPurpose: referencia?.ejecucionId === c.id,
+    referenceVersion: referencia?.version ?? null,
     author: { identityId: c.autorId, displayName: nombreDelAutor(c.autorId) },
     recordedAt: c.momentoDeRegistro.toISOString(),
   };

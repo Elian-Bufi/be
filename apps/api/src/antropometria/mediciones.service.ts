@@ -6,6 +6,7 @@ import {
   admiteCorreccion,
   consecuenciasDeRecalculo,
   ejecutar,
+  evaluarAdmisibilidad,
   evaluarAnulacion,
   evaluarNuevaCorreccion,
   type EjecucionDeCalculo,
@@ -59,6 +60,18 @@ export class MedicionesService {
         // REG-06-219: una medición anulada no admite una corrección destinada a volverla efectiva.
         if (!admiteCorreccion(m.anulacion ? 'ANULADA' : 'VIGENTE')) {
           throw new ErrorDeApi(422, CodigoDeError.CORRECTION_NOT_ALLOWED, 'Esta medición está anulada. Si hay una observación nueva, registrala como una medición nueva.');
+        }
+
+        // REG-06-154/155: la unidad viaja con el valor y no se normaliza en silencio. Una corrección que cambia de
+        // unidad sería una conversión encubierta, y la conversión es un acto explícito y reproducible: se rechaza.
+        // Sin esto, la ficha de comparabilidad y la magnitud efectiva de la serie hablarían de unidades distintas.
+        if (pedido.magnitude.unit !== m.unidadDeOrigen) {
+          throw new ErrorDeApi(
+            422,
+            CodigoDeError.UNIT_NOT_COMPATIBLE,
+            `Esta medición está en ${m.unidadDeOrigen}. Una corrección conserva la unidad: si hay que cambiarla, registrá una medición nueva.`,
+            { issues: [{ code: 'UNIT_MUST_MATCH_MEASUREMENT', path: 'magnitude.unit' }] },
+          );
         }
 
         // REG-06-15/16 con el patrón de B-06: la nueva corrección parte de la terminal de la cadena.
@@ -192,8 +205,9 @@ export class MedicionesService {
   ): Promise<{ recalculated: { runId: string; supersedesRunId: string; metric: string; magnitude: { value: number; unit: string } }[]; withoutSuccessor: { runId: string; metric: string; missingInputs: string[] }[] }> {
     const filas = await tx.ejecucionDeCalculo.findMany({
       where: { evaluacionId, reemplazadaPor: null },
-      include: { entradas: true, metodoVersion: true },
+      include: { entradas: { include: { medicion: { include: { anulacion: { select: { id: true } } } } } }, metodoVersion: true },
     });
+    const medicionesPorId = new Map(filas.flatMap((f) => f.entradas.map((i) => [i.medicionId, i.medicion])));
     const ejecuciones: EjecucionDeCalculo[] = filas.map((f) => ({
       ejecucionId: f.id,
       metodoId: f.metodoVersionId,
@@ -215,11 +229,33 @@ export class MedicionesService {
       }
       // REG-06-161: se recalcula con la versión de método **registrada en la corrida**, nunca con una más nueva.
       const metodo = leerEspecificacionDeMetodo(original.metodoVersion.contenido);
-      const resultado = metodo ? ejecutar(metodo, consecuencia.entradasVigentes) : null;
+      // REG-06-204 otra vez: el recálculo no puede saltearse la admisibilidad. Si la entrada nueva ya no la cumple
+      // —otra procedencia, otra unidad—, no hay corrida sucesora; hay una ausencia, y se dice.
+      const admisibles =
+        metodo &&
+        evaluarAdmisibilidad(
+          metodo,
+          consecuencia.entradasVigentes.map((e) => {
+            const m = medicionesPorId.get(e.medicionId);
+            return {
+              codigo: metodo.entradas.find((x) => x.metrica === e.metrica)?.codigo ?? e.metrica,
+              medicionId: e.medicionId,
+              metrica: e.metrica,
+              magnitud: e.magnitud,
+              origen: m?.origen ?? 'CAPTURA_DIRECTA',
+              vigente: !m?.anulacion,
+            };
+          }),
+        );
+      const resultado = metodo && admisibles?.admisible ? ejecutar(metodo, admisibles.entradas) : null;
       if (!resultado?.ok) {
         // Sin resultado reproducible no se inventa un sucesor: la ausencia se representa como ausencia (REG-06-220
         // inciso 6), igual que cuando falta una entrada obligatoria.
-        withoutSuccessor.push({ runId: original.id, metric: original.metrica, missingInputs: [] });
+        withoutSuccessor.push({
+          runId: original.id,
+          metric: original.metrica,
+          missingInputs: admisibles && !admisibles.admisible ? admisibles.problemas.map((x) => x.codigo) : [],
+        });
         continue;
       }
       const nueva = await tx.ejecucionDeCalculo.create({

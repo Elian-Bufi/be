@@ -247,20 +247,63 @@ test('DL-062 · una referencia de preparación sin importación controlada se re
   assert.equal(MedicionEntradaSchema.safeParse({ ...base, origin: 'CONTROLLED_IMPORT', preparationReference: 'prep_1' }).success, true);
 });
 
-test('TEST-PRJ-009 · ningún schema de antropometría tiene puntaje, porcentaje ni calificación', async () => {
-  const contratos = await import('./contratos-antropometria');
+test('TEST-PRJ-009 · ningún schema de antropometría ni de cálculo tiene puntaje, porcentaje ni calificación', async () => {
+  const antropometria = await import('./contratos-antropometria');
+  const calculo = await import('./contratos-calculo');
   const { z } = await import('zod');
-  const PROHIBIDO = /adherence|compliance|score|grade|percent|cumplid|adherencia|interpolat|imputed/i;
+  const PROHIBIDO = /adherence|compliance|score|grade|percent|cumplid|adherencia|interpolat|imputed|carriedforward|average|promedio|winner|ganador/i;
+  /**
+   * Las tres banderas de honestidad existen a propósito y están declaradas en falso literal: eso es lo que las hace
+   * una promesa y no un campo. Se admiten **solo** con esa forma; cualquier otra aparición es un hallazgo. La versión
+   * anterior de esta prueba apagaba el control entero para el schema que las contenía, que es justo el de la
+   * evolución: el único donde un término prohibido tendría dónde esconderse.
+   */
+  const declaradaEnFalso = (esquema: unknown): boolean => !!esquema && typeof esquema === 'object' && (esquema as { const?: unknown }).const === false;
+  const HONESTIDAD = new Set(['interpolated', 'imputed', 'carriedForward']);
+
   const hallazgos: string[] = [];
-  for (const [nombre, valor] of Object.entries(contratos)) {
-    if (!valor || typeof valor !== 'object' || !('safeParse' in valor)) continue;
-    const json = JSON.stringify(z.toJSONSchema(valor as never, { io: 'output', unrepresentable: 'any' }));
-    for (const clave of json.matchAll(/"([A-Za-z_][A-Za-z0-9_]*)"\s*:/g)) {
-      // `interpolated`, `imputed` y `carriedForward` existen a propósito en `honesty`, declarados en falso.
-      if (PROHIBIDO.test(clave[1] as string) && !json.includes('"honesty"')) hallazgos.push(`${nombre}.${clave[1]}`);
+  const recorrer = (nodo: unknown, ruta: string): void => {
+    if (Array.isArray(nodo)) return nodo.forEach((n, i) => recorrer(n, `${ruta}[${i}]`));
+    if (!nodo || typeof nodo !== 'object') return;
+    for (const [clave, valor] of Object.entries(nodo as Record<string, unknown>)) {
+      if (clave === 'properties' && valor && typeof valor === 'object') {
+        for (const [nombre, sub] of Object.entries(valor as Record<string, unknown>)) {
+          if (!PROHIBIDO.test(nombre)) continue;
+          if (HONESTIDAD.has(nombre) && declaradaEnFalso(sub)) continue;
+          hallazgos.push(`${ruta}.${nombre}`);
+        }
+      }
+      if (clave === 'enum' && Array.isArray(valor)) for (const v of valor) if (typeof v === 'string' && PROHIBIDO.test(v)) hallazgos.push(`${ruta}=${v}`);
+      recorrer(valor, `${ruta}.${clave}`);
+    }
+  };
+
+  let revisados = 0;
+  for (const modulo of [antropometria, calculo]) {
+    for (const [nombre, valor] of Object.entries(modulo)) {
+      if (!valor || typeof valor !== 'object' || !('safeParse' in valor)) continue;
+      revisados++;
+      recorrer(z.toJSONSchema(valor as never, { io: 'output', unrepresentable: 'any' }), nombre);
+      recorrer(z.toJSONSchema(valor as never, { io: 'input', unrepresentable: 'any' }), nombre);
     }
   }
+  assert.ok(revisados > 20, `se revisaron ${revisados} schemas`);
   assert.deepEqual(hallazgos, []);
+});
+
+test('TEST-PRJ-009 · el control de cero juicio detecta un campo prohibido, también dentro del schema de la evolución', async () => {
+  // Prueba del control: una bandera de honestidad que no esté declarada en falso tiene que salir como hallazgo, y la
+  // regla vale también en el schema que legítimamente las contiene.
+  const { z } = await import('zod');
+  const PROHIBIDO = /interpolat|imputed|carriedforward/i;
+  const HONESTIDAD = new Set(['interpolated', 'imputed', 'carriedForward']);
+  const declaradaEnFalso = (e: unknown): boolean => !!e && typeof e === 'object' && (e as { const?: unknown }).const === false;
+  const mentiroso = z.strictObject({ honesty: z.strictObject({ interpolated: z.boolean(), imputed: z.literal(false), carriedForward: z.literal(false) }) });
+  const json = z.toJSONSchema(mentiroso, { io: 'output', unrepresentable: 'any' }) as unknown as { properties: { honesty: { properties: Record<string, unknown> } } };
+  const hallazgos = Object.entries(json.properties.honesty.properties)
+    .filter(([n, sub]) => PROHIBIDO.test(n) && !(HONESTIDAD.has(n) && declaradaEnFalso(sub)))
+    .map(([n]) => n);
+  assert.deepEqual(hallazgos, ['interpolated']);
 });
 
 // ─── Contrato publicado y copy ──────────────────────────────────────────────────────────────────

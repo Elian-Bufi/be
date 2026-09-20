@@ -192,6 +192,21 @@ describe('TEST-ANT-004/006/007 · corregir y anular son actos distintos (UC-E03;
     expect(await prisma.eventoDeAntropometria.count({ where: { medicionId: peso.measurementId, tipo: 'MedicionAnulada' } })).toBe(1);
   });
 
+  it('REG-06-154/155 · una corrección no cambia la unidad: eso sería una conversión en silencio', async () => {
+    const c = await circuitoAntropometrico(app, prisma, 'unidad');
+    const e = await evaluacionRegistrada(c);
+    const talla = e.measurements.find((m) => m.metric === 'talla')!;
+    const r = await conSesion(app, c.pro.token)
+      .post(`/api/v1/anthropometry/measurements/${talla.measurementId}/corrections`, claveDeIdempotencia())
+      .send({ reason: 'Estaba en metros y quiero centímetros.', magnitude: { value: 175, unit: 'cm' } })
+      .expect(422);
+    expect(r.body.error.code).toBe('UNIT_NOT_COMPATIBLE');
+    // Y la ficha de comparabilidad sigue hablando de la unidad efectiva, que es la única que hay.
+    const serie = await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/anthropometry/progress?metrics=talla`).expect(200);
+    const punto = (serie.body.data.series[0]?.points ?? []).find((p: { availability: string }) => p.availability === 'AVAILABLE');
+    expect(punto.comparability.unit).toBe(punto.magnitude.unit);
+  });
+
   it('TEST-ANT-007 · no hay reversión: una medición anulada no admite corrección', async () => {
     const c = await circuitoAntropometrico(app, prisma, 'sin-reversion');
     const e = await evaluacionRegistrada(c);
@@ -219,6 +234,66 @@ describe('TEST-ANT-009 · adversarial 7: la serie no miente (REG-06-165/166; INV
     for (const h of huecos) expect(Object.keys(h).sort()).toEqual(['availability', 'date']);
     expect(peso.missingData).toEqual(huecos.map((h: { date: string }) => h.date));
     expect(serie.body.data.honesty).toEqual({ interpolated: false, imputed: false, carriedForward: false });
+  });
+
+  it('INV-06-177 · una medición de la tarde del último día del período aparece, no sale «sin dato»', async () => {
+    // El período llega en fechas locales y los puntos se ubican en fechas locales: si la ventana se recortara en UTC,
+    // las horas de la tarde del último día quedarían afuera y el día se vería como un hueco que no existe.
+    const c = await circuitoAntropometrico(app, prisma, 'zona');
+    // Ayer a las 22:00 locales: un momento pasado (la evaluación no admite fechas futuras) y de la franja que un
+    // recorte en UTC dejaría afuera.
+    const ayerLocal = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    const alasDiez = new Date(`${ayerLocal}T22:00:00-03:00`).toISOString();
+    const borrador = await conSesion(app, c.pro.token)
+      .post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluations`, claveDeIdempotencia())
+      .send({ occurredAt: alasDiez, measurements: [medicion(c, 'peso', 70.4, 'kg', { occurredAt: alasDiez })] })
+      .expect(201);
+    await conSesion(app, c.pro.token)
+      .post(`/api/v1/anthropometry/evaluations/${borrador.body.data.evaluationId}/register`, claveDeIdempotencia())
+      .send({ expectedVersion: borrador.body.data.version })
+      .expect(200);
+
+    const serie = await conSesion(app, c.pro.token)
+      .get(`/api/v1/advisees/${c.ase.id}/anthropometry/progress?from=${ayerLocal}&to=${ayerLocal}&metrics=peso`)
+      .expect(200);
+    const puntos = serie.body.data.series[0].points as { date: string; availability: string; magnitude?: { value: number } }[];
+    expect(puntos).toHaveLength(1);
+    expect(puntos[0]!.availability).toBe('AVAILABLE');
+    expect(puntos[0]!.magnitude!.value).toBe(70.4);
+  });
+
+  it('REG-06-15/16 · la cadena de correcciones no se puede bifurcar: la base rechaza la segunda raíz y el segundo sucesor', async () => {
+    // Una cadena bifurcada no tendría vista efectiva resoluble, y entonces habría que elegir por fecha, que es
+    // justo lo que REG-06-16 prohíbe. La base cierra la puerta antes: no hay forma de crear la bifurcación.
+    const c = await circuitoAntropometrico(app, prisma, 'cadena');
+    const e = await evaluacionRegistrada(c, 68.3);
+    const peso = e.measurements.find((m) => m.metric === 'peso')!;
+    const primera = await conSesion(app, c.pro.token)
+      .post(`/api/v1/anthropometry/measurements/${peso.measurementId}/corrections`, claveDeIdempotencia())
+      .send({ reason: 'Se leyó mal la balanza.', magnitude: { value: 69, unit: 'kg' } })
+      .expect(201);
+
+    const segundaRaiz = prisma.$executeRawUnsafe(
+      `INSERT INTO "correccion_de_medicion" ("id","medicion_id","correccion_previa_id","autor_id","motivo","valor","unidad_de_origen","procedencia")
+       VALUES ('${randomUUID()}','${peso.measurementId}',NULL,'${c.pro.id}','rama sintética',70,'kg','{"prueba":"wp05"}')`,
+    );
+    await expect(segundaRaiz).rejects.toThrow(/23505|una_raiz|duplicate key|llave duplicada/i);
+
+    const segundoSucesor = prisma.$executeRawUnsafe(
+      `INSERT INTO "correccion_de_medicion" ("id","medicion_id","correccion_previa_id","autor_id","motivo","valor","unidad_de_origen","procedencia")
+       VALUES ('${randomUUID()}','${peso.measurementId}','${primera.body.data.correctionId}','${c.pro.id}','rama sintética',71,'kg','{"prueba":"wp05"}')`,
+    );
+    await expect(segundoSucesor).resolves.toBeDefined();
+    const tercero = prisma.$executeRawUnsafe(
+      `INSERT INTO "correccion_de_medicion" ("id","medicion_id","correccion_previa_id","autor_id","motivo","valor","unidad_de_origen","procedencia")
+       VALUES ('${randomUUID()}','${peso.measurementId}','${primera.body.data.correctionId}','${c.pro.id}','otra rama',72,'kg','{"prueba":"wp05"}')`,
+    );
+    await expect(tercero).rejects.toThrow(/23505|correccion_previa_id|duplicate key|llave duplicada/i);
+
+    // Y la vista efectiva sale de la terminal de la cadena, resuelta por relación y no por la fecha más reciente.
+    const serie = await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/anthropometry/progress?metrics=peso`).expect(200);
+    const punto = (serie.body.data.series[0]?.points ?? []).find((x: { availability: string }) => x.availability === 'AVAILABLE');
+    expect(punto.magnitude.value).toBe(71);
   });
 
   it('una medición anulada deja de aportar punto, y el checkpoint queda SIN_DATO (REG-06-221)', async () => {

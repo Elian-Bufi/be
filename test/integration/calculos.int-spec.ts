@@ -15,6 +15,7 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { CATALOGO_DEMO, circuitoAntropometrico, type CircuitoAntropometrico } from './soporte-antropometria';
+import { prepararProfesional, vinculoCompleto } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -229,7 +230,7 @@ describe('API-CAL-02/03 — las corridas coexisten (REG-06-205)', () => {
     const v2 = randomUUID();
     const contenido = (decimales: number) =>
       `{"finalidades":["SOPORTE_ANTROPOMETRICO"],"entradas":[{"codigo":"PESO","metrica":"peso","unidadesAdmitidas":["kg"],"procedenciasAdmitidas":["CAPTURA_DIRECTA"]},{"codigo":"TALLA","metrica":"talla","unidadesAdmitidas":["m"],"procedenciasAdmitidas":["CAPTURA_DIRECTA"]}],"salida":{"metrica":"indice-demo","unidad":"kg/m2"},"precision":{"decimales":${decimales},"modo":"MEDIO_ARRIBA"},"regla":"demo/peso-sobre-talla-cuadrado@1"}`;
-    await prisma.$executeRawUnsafe(`INSERT INTO "especificacion_antropometrica" ("id","clave","tipo") VALUES ('${metodoId}','MET-SUCESION','METODO')`);
+    await prisma.$executeRawUnsafe(`INSERT INTO "especificacion_antropometrica" ("id","clave","tipo") VALUES ('${metodoId}','MET-SUCESION-'||left('${metodoId}',8),'METODO')`);
     await prisma.$executeRawUnsafe(
       `INSERT INTO "version_de_especificacion_antropometrica" ("id","especificacion_id","predecesora_id","version","nombre","contenido","procedencia")
        VALUES ('${v1}','${metodoId}',NULL,'1','Método con sucesión (demostración)','${contenido(3)}','{"rotulo":"Método sintético de demostración."}')`,
@@ -267,11 +268,96 @@ describe('API-CAL-02/03 — las corridas coexisten (REG-06-205)', () => {
     expect(rechazada.body.error.code).toBe('METHOD_VERSION_NOT_SELECTABLE');
   });
 
-  it('una corrida ajena responde el mismo 404 que una inexistente', async () => {
-    const otro = await circuitoAntropometrico(app, prisma, 'calculos-404');
-    const ajena = await pro.get(`/api/v1/calculations/${randomUUID()}`).expect(404);
-    const inexistente = await conSesion(app, otro.pro.token).get(`/api/v1/calculations/${randomUUID()}`).expect(404);
-    expect(ajena.body.error.code).toBe(inexistente.body.error.code);
+  it('la corrida de otro profesional sobre el mismo asesorado responde el mismo 404 que una inexistente, y no se lista', async () => {
+    // Un segundo profesional con capacidad antropométrica y vínculo activo con el MISMO asesorado: el cálculo no
+    // puede ser la puerta trasera que API-ANT-04 cierra (DL-057; 08 §56.5).
+    const segundo = await prepararProfesional(app, `cal-vecino-${Date.now()}`, ['ANTROPOMETRIA']);
+    await vinculoCompleto(app, segundo, c.ase, 'ANTROPOMETRIA');
+    const vecino = conSesion(app, segundo.token);
+
+    const { porMetrica } = await evaluacionRegistrada([medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
+    const mia = (
+      await pro
+        .post(`/api/v1/advisees/${c.ase.id}/calculations`)
+        .send({ purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: CATALOGO_DEMO.metodo.v2, inputBindings: bindings(porMetrica) })
+        .expect(201)
+    ).body.data;
+
+    const ajena = await vecino.get(`/api/v1/calculations/${mia.calculationRunId}`).expect(404);
+    const inexistente = await vecino.get(`/api/v1/calculations/${randomUUID()}`).expect(404);
+    expect(ajena.body).toEqual(inexistente.body);
+
+    const lista = await vecino.get(`/api/v1/advisees/${c.ase.id}/calculations`).expect(200);
+    expect((lista.body.data as { calculationRunId: string }[]).map((x) => x.calculationRunId)).not.toContain(mia.calculationRunId);
+
+    // Y tampoco la puede adoptar como referencia propia.
+    await vecino
+      .put(`/api/v1/advisees/${c.ase.id}/calculation-references/ANTHROPOMETRIC_SUPPORT`)
+      .send({ calculationRunId: mia.calculationRunId, expectedVersion: null })
+      .expect(404);
+  });
+
+  it('09 §3.3 · sin vínculo con el asesorado, ejecutar y adoptar dan el mismo 404 que un asesorado inventado', async () => {
+    // Sesión válida, capacidad antropométrica habilitada, y ningún vínculo con esta persona: el PDP decide.
+    const extrano = conSesion(app, (await prepararProfesional(app, `cal-extrano-${Date.now()}`, ['ANTROPOMETRIA'])).token);
+    const { porMetrica } = await evaluacionRegistrada([medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
+    const cuerpo = { purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: CATALOGO_DEMO.metodo.v2, inputBindings: bindings(porMetrica) };
+
+    const conocido = await extrano.post(`/api/v1/advisees/${c.ase.id}/calculations`).send(cuerpo).expect(404);
+    const inventado = await extrano.post(`/api/v1/advisees/${randomUUID()}/calculations`).send(cuerpo).expect(404);
+    expect(conocido.body).toEqual(inventado.body);
+
+    await extrano.get(`/api/v1/advisees/${c.ase.id}/calculations`).expect(404);
+    await extrano
+      .put(`/api/v1/advisees/${c.ase.id}/calculation-references/ANTHROPOMETRIC_SUPPORT`)
+      .send({ calculationRunId: randomUUID(), expectedVersion: null })
+      .expect(404);
+  });
+
+  it('REG-06-215 · una corrida de un borrador se ve como de preparación y no se puede adoptar como referencia', async () => {
+    const borrador = await pro
+      .post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluations`)
+      .send({ occurredAt: AYER, measurements: [medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')] })
+      .expect(201);
+    const porMetrica: Record<string, string> = {};
+    for (const m of borrador.body.data.measurements as { metric: string; measurementId: string }[]) porMetrica[m.metric] = m.measurementId;
+
+    const corrida = (
+      await pro
+        .post(`/api/v1/advisees/${c.ase.id}/calculations`)
+        .send({ purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: CATALOGO_DEMO.metodo.v2, inputBindings: bindings(porMetrica) })
+        .expect(201)
+    ).body.data;
+    expect(corrida.evaluationContext).toBe('IN_PREPARATION');
+
+    const rechazo = await pro
+      .put(`/api/v1/advisees/${c.ase.id}/calculation-references/ANTHROPOMETRIC_SUPPORT`)
+      .send({ calculationRunId: corrida.calculationRunId, expectedVersion: null })
+      .expect(422);
+    expect(rechazo.body.error.code).toBe('CALCULATION_REFERENCE_NOT_COMPATIBLE');
+  });
+
+  it('REG-06-220 · una corrida cuya entrada quedó anulada deja de presentarse como vigente, sin borrarse', async () => {
+    const { porMetrica } = await evaluacionRegistrada([medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
+    const corrida = (
+      await pro
+        .post(`/api/v1/advisees/${c.ase.id}/calculations`)
+        .send({ purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: CATALOGO_DEMO.metodo.v2, inputBindings: bindings(porMetrica) })
+        .expect(201)
+    ).body.data;
+    expect(corrida.effective).toBe(true);
+    expect((corrida.inputProvenance as { condition: string }[]).every((i) => i.condition === 'EFFECTIVE')).toBe(true);
+
+    await pro
+      .post(`/api/v1/anthropometry/measurements/${porMetrica.talla}/annulment`, claveDeIdempotencia())
+      .send({ reason: 'Se midió con el calzado puesto.' })
+      .expect(201);
+
+    const despues = await pro.get(`/api/v1/calculations/${corrida.calculationRunId}`).expect(200);
+    expect(despues.body.data.effective).toBe(false);
+    expect((despues.body.data.inputProvenance as { metric: string; condition: string }[]).find((i) => i.metric === 'talla')!.condition).toBe('ANNULLED');
+    // El resultado histórico no cambió: dejó de ser vigente, no dejó de existir.
+    expect(despues.body.data.result).toEqual(corrida.result);
   });
 });
 

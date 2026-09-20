@@ -879,7 +879,7 @@ const DEFINIDAS: readonly Operacion[] = [
     idempotencia: true,
     request: CorregirMedicionRequestSchema,
     exitos: [{ status: 201, schema: z.strictObject({ data: MedicionSchema.loose() }) }],
-    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'RESOURCE_CONFLICT'], 422: ['CORRECTION_NOT_ALLOWED', 'METHOD_INPUTS_NOT_AVAILABLE'] },
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'RESOURCE_CONFLICT'], 422: ['CORRECTION_NOT_ALLOWED', 'UNIT_NOT_COMPATIBLE'] },
     fuente: '09v11:579-657 · REG-06-160/161/219 · UC-I12',
   },
   {

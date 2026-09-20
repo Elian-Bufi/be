@@ -1,0 +1,26 @@
+Verificación posterior al deploy — WP-05 (07 §37)
+Momento: 2026-09-20T16:55:55Z
+
+$ curl -s https://be-api-hndp.onrender.com/health/ready
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.5.0","commit":"921063a2d501471a93e10b39bd51c6151bd33939","construidoEn":"2026-09-20T16:15:23.972Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+
+$ curl -s https://be-api-hndp.onrender.com/health/live
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.5.0","commit":"921063a2d501471a93e10b39bd51c6151bd33939","construidoEn":"2026-09-20T16:15:23.972Z"}}}
+
+$ curl -sI https://be-web-1ngj.onrender.com/  (líneas de seguridad)
+HTTP/2 200 
+content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://be-api-hndp.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+strict-transport-security: max-age=315360000; includeSubdomains; preload
+x-content-type-options: nosniff
+x-frame-options: DENY
+
+$ el website apunta a la API en su bundle (DL-030): ocurrencias de be-api-hndp en el chunk de /login
+1
+
+$ /api/* en el website ya NO llega a la API (DL-030): 0 esperado
+0
+
+APK 0.5.0 — descarga anónima del release permanente
+https://github.com/Elian-Bufi/be/releases/download/be-apk-0.5.0/be-0.5.0-921063a.apk
+SHA-256 esperado: 2fae50ad8b86b1802e669298af85baa1166b103c8496e7ea8bf60f17a20ea59e
+SHA-256 descargado: 2fae50ad8b86b1802e669298af85baa1166b103c8496e7ea8bf60f17a20ea59e (coincide)

@@ -14,7 +14,7 @@
  * - cada corrida muestra **método, versión, regla y precisión declarada**, que es lo que la vuelve reproducible
  *   (REG-06-156/158).
  */
-import { COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
+import { COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
@@ -100,6 +100,7 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
   const [fundamento, setFundamento] = useState('');
   const [enviando, setEnviando] = useState(false);
 
+  /** El token de la referencia vigente viaja en la corrida: sin él, reemplazarla pisaría la decisión anterior. */
   async function adoptar(expectedVersion: string | null) {
     setEnviando(true);
     const res = await api.adoptarReferenciaDeCalculo(
@@ -122,8 +123,11 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
       <h4>
         {corrida.result.metric}: {corrida.result.magnitude.value} {corrida.result.magnitude.unit}{' '}
         <span className="insignia">{ETIQUETA_DE_CLASE_DE_DATO.DERIVED}</span>
+        {corrida.evaluationContext === 'IN_PREPARATION' ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoEnPreparacion}</span></> : null}
+        {!corrida.effective ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoNoVigente}</span></> : null}
         {corrida.referenceForPurpose ? <> <span className="insignia">{COPY_ANTROPOMETRIA.referenciaAdoptada}</span></> : null}
       </h4>
+      {!corrida.effective ? <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeCalculoNoVigente}</p> : null}
       <p className="nota">
         {COPY_ANTROPOMETRIA.metodo}: {corrida.methodName} · {COPY_ANTROPOMETRIA.versionDelMetodo} {corrida.methodVersion} · {COPY_ANTROPOMETRIA.reglaAplicada}: {corrida.ruleId} ·{' '}
         {COPY_ANTROPOMETRIA.precisionDeclarada}: {corrida.precision.decimals} decimales · {fecha(corrida.recordedAt)}
@@ -134,14 +138,14 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
         <ul>
           {corrida.inputProvenance.map((i) => (
             <li key={i.sourceRef}>
-              {i.inputCode} · {i.metric}: {i.magnitude.value} {i.magnitude.unit} · {ETIQUETA_DE_CLASE_DE_DATO[i.provenanceType === 'SELF_REPORTED' ? 'REPORTED' : 'MEASURED']} ·{' '}
-              {fecha(i.sourceOccurredAt)}
+              {i.inputCode} · {i.metric}: {i.magnitude ? `${i.magnitude.value} ${i.magnitude.unit}` : COPY_ANTROPOMETRIA.valorNoConsultable} ·{' '}
+              {ETIQUETA_DE_CLASE_DE_DATO[i.provenanceType === 'SELF_REPORTED' ? 'REPORTED' : 'MEASURED']} · {ETIQUETA_DE_CONDICION[i.condition]} · {fecha(i.sourceOccurredAt)}
             </li>
           ))}
         </ul>
       </details>
 
-      {!corrida.referenceForPurpose && !adoptando ? (
+      {!corrida.referenceForPurpose && !adoptando && corrida.evaluationContext === 'REGISTERED' && corrida.effective ? (
         <div className="acciones">
           <button type="button" className="boton boton--secundario" onClick={() => setAdoptando(true)}>
             {COPY_ANTROPOMETRIA.adoptarReferencia}
@@ -165,7 +169,7 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
             <button type="button" className="boton boton--secundario" onClick={() => setAdoptando(false)} disabled={enviando}>
               Cancelar
             </button>
-            <button type="button" className="boton boton--primario" onClick={() => void adoptar(null)} disabled={enviando}>
+            <button type="button" className="boton boton--primario" onClick={() => void adoptar(corrida.referenceVersion)} disabled={enviando}>
               {COPY_ANTROPOMETRIA.adoptarReferencia}
             </button>
           </div>

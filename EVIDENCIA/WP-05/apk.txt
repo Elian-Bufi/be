@@ -1,0 +1,17 @@
+APK 0.5.0 — identidad y control de secretos (07 §34, RNF-PORT-001, TEST-APK-008; 08 §32)
+
+Build EAS: e9d04ddb-3d83-4531-bd72-d0ae928582f2 (perfil test)
+Commit:    921063a2d501471a93e10b39bd51c6151bd33939
+Versión:   0.5.0 · versionCode 5
+Artefacto: be-0.5.0-921063a.apk
+SHA-256:   2fae50ad8b86b1802e669298af85baa1166b103c8496e7ea8bf60f17a20ea59e
+Tamaño:    69106310 bytes
+API:       https://be-api-hndp.onrender.com (API_BASE_URL del perfil test en eas.json)
+
+Búsqueda de secretos en el bundle (cantidad de coincidencias, se espera 0 en todas):
+  JWT_SECRET          0
+  contraseña literal  0
+  token bearer        0
+  correo demo         0
+
+La app muestra su identidad en pantalla: versión, commit y ambiente (Cuenta → pie de Bienvenida).

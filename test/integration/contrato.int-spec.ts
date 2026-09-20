@@ -431,6 +431,7 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de las once operaciones ANT'
   const claveDeCorreccion = claveDeIdempotencia();
   await pro.post(correcciones(peso!.measurementId), claveDeCorreccion).send({ reason: 'Se leyó mal la balanza.', magnitude: { value: 73.1, unit: 'kg' } }).expect(201);
   await pro.post(correcciones(peso!.measurementId), claveDeCorreccion).send({ reason: 'Otro motivo.', magnitude: { value: 73.2, unit: 'kg' } }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post(correcciones(peso!.measurementId)).send({ reason: 'Otra unidad.', magnitude: { value: 73100, unit: 'g' } }).expect(422); // UNIT_NOT_COMPATIBLE
   await pro.post(correcciones(ajeno)).send({ reason: 'x', magnitude: { value: 1, unit: 'kg' } }).expect(404);
   await pro.post(correcciones(peso!.measurementId)).send({ reason: 'x', magnitude: { value: 1, unit: 'kg' }, extra: 1 }).expect(400);
 
@@ -507,6 +508,10 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de MTH y CAL', async () => {
   await pro.post(calculos).send({ purpose: 'OTRA', methodVersionId: CATALOGO_DEMO.metodo.v2, inputBindings: entradas }).expect(400); // INVALID_REQUEST
   await pro.post(`/api/v1/advisees/${ajeno}/calculations`).send(ejecucion()).expect(404);
 
+  // El asesorado no es profesional de este vínculo: el PDP decide primero y responde el 404 no revelador, no un 403.
+  await ase.post(calculos).send(ejecucion()).expect(404);
+  await ase.get(calculos).expect(404);
+
   // CAL-02 y CAL-03
   await pro.get(calculos).expect(200);
   await pro.get(`${calculos}?purpose=OTRA`).expect(400);
@@ -514,6 +519,7 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de MTH y CAL', async () => {
   await pro.get(`/api/v1/advisees/${ajeno}/calculations`).expect(404);
   await pro.get(`/api/v1/calculations/${corrida.body.data.calculationRunId}`).expect(200);
   await pro.get(`/api/v1/calculations/${corrida.body.data.calculationRunId}?x=1`).expect(400);
+  await ase.get(`/api/v1/calculations/${corrida.body.data.calculationRunId}`).expect(404);
   await pro.get(`/api/v1/calculations/${ajeno}`).expect(404);
 
   // CAL-04: adoptar es una relación con historia.
@@ -528,6 +534,7 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de MTH y CAL', async () => {
     .send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: null })
     .expect(422); // CALCULATION_REFERENCE_NOT_COMPATIBLE
   await pro.put(referencia).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: 'v1', extra: 1 }).expect(400);
+  await ase.put(referencia).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: null }).expect(404);
   await pro.put(`/api/v1/advisees/${ajeno}/calculation-references/ANTHROPOMETRIC_SUPPORT`).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: null }).expect(404);
 });
 
