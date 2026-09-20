@@ -108,6 +108,8 @@ export function Workspace() {
                   <dd>
                     {a === 'NUTRICION' ? (
                       <Link href={`/pro/advisees/nutrition?id=${encodeURIComponent(id)}`}>Abrir Nutrición</Link>
+                    ) : a === 'ANTROPOMETRIA' ? (
+                      <Link href={`/pro/advisees/anthropometry?id=${encodeURIComponent(id)}`}>Abrir Antropometría</Link>
                     ) : (
                       COPY_VINCULO.sinDatosTodavia
                     )}
