@@ -74,6 +74,9 @@
 | DL-067 | WP-05 · 2026-09-20 | DV-05:1128 · 11A:540, 584, 625 · 06:6388-6398 | El adversarial 7 de mediciones no tiene ID de test asignado | ABIERTA |
 | DL-068 | WP-05 · 2026-09-20 | 08:200, 08:1332, 08:1385, 08:1525 · 09v11:388-400 | Nadie define quién autoriza **crear** y **registrar** la evaluación | ABIERTA |
 | DL-069 | WP-05 · 2026-09-20 | 09v11:534-538, 563-569, 726-748 | Objetos `{}` vacíos en los contratos de lectura de ANT-03, ANT-04 y ANT-06 | ABIERTA |
+| DL-070 | WP-05 · 2026-09-20 | 09v11:713-757 · 04:583 | La evolución devuelve un bloque por métrica y el 09 declara una métrica por respuesta | ABIERTA |
+| DL-071 | WP-05 · 2026-09-20 | 09v11:592-605, 664 | ANT-05 no acepta el lote de correcciones ni los metadatos reconstruibles que el 09 admite | ABIERTA |
+| DL-072 | WP-05 · 2026-09-20 | 09v11:336-339 | ANT-01 filtra por `kind` y el 09 declara `status` | ABIERTA |
 
 ---
 
@@ -1428,3 +1431,47 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Devolver los objetos vacíos tal cual.
 
 **Provisorio en código.** A, con la forma declarada en esta definición.
+
+## DL-070 — La evolución devuelve un bloque por métrica y el 09 declara una por respuesta
+
+**Prioridad:** media · **Documento:** 09v11:713-757 · 04:583 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** API-ANT-06 se declara `GET …/progress?metric=&periodStart=&periodEnd=` y su respuesta lleva `metricCode` en la raíz, con una sola serie: una métrica por llamada (09v11:713, 726-748).
+
+**Qué hace BE.** Devuelve `metrics`, un array con un bloque por métrica, cada uno con la forma que el 09 declara para una: `metricCode`, `series`, `gaps` y `comparability.groups`.
+
+**Por qué importa.** No es un capricho: **el asesorado no tiene ninguna operación para descubrir sus métricas**. RF-049 lo nombra como actor de su propia evolución y la APK consume la lectura propia, que es una extensión de BE (04:583) y no está en el inventario del 09. Con una métrica obligatoria por llamada, la app no sabría qué pedir. El profesional sí podría descubrirlas por ANT-03, que publica `summary.metrics`.
+
+**Opciones.**
+- **A.** Mantener `metrics[]` en las dos lecturas, como está, y registrar la diferencia.
+- **B.** Exigir `metric` en API-ANT-06 y sumar una operación de descubrimiento de métricas para el asesorado, que el 09 no declara.
+
+**Provisorio en código.** A. La forma de cada bloque es exactamente la del 09, así que la diferencia es de cardinalidad, no de modelo: un cliente que pida una métrica recibe un array de uno.
+
+## DL-071 — ANT-05 no acepta el lote de correcciones ni los metadatos reconstruibles
+
+**Prioridad:** media · **Documento:** 09v11:592-605, 664 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** El request de API-ANT-05 lleva un array `corrections`, cada una con su `targetType` y su `targetId`, y admite corregir «metadatos reconstruibles cuando el patrón canónico lo permita» (09v11:605). Declara además un `422 CORRECTION_CHAIN_NOT_RESOLVABLE` (09v11:664).
+
+**Qué hace BE.** La ruta es la del legajo —sobre la evaluación— y el cuerpo lleva un solo `targetId`, siempre una medición directa. La cadena no resoluble no se emite porque la base impide construirla: no hay forma de bifurcar una cadena de correcciones (índices `una_raiz` y `correccion_previa_id` únicos).
+
+**Opciones.**
+- **A.** Sumar el lote y `targetType` en un paquete posterior, cuando exista más de un tipo de objetivo corregible.
+- **B.** Implementarlo ahora, con un solo `targetType` posible, que sería una lista de un elemento con un campo constante.
+
+**Provisorio en código.** A: hoy el único objetivo corregible es la medición directa, y un lote de un solo tipo no agrega garantía. El día que haya metadatos corregibles, el cuerpo cambia a la forma del 09.
+
+## DL-072 — ANT-01 filtra por `kind` y el 09 declara `status`
+
+**Prioridad:** baja · **Documento:** 09v11:336-339 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** `GET /anthropometry/specifications?limit=&cursor=&status=`.
+
+**Qué hace BE.** Publica `kind` con enum `PROTOCOL|METHOD`, que es lo que la pantalla necesita para separar protocolos de métodos, y no publica `status`, porque la vigencia se deriva de la cadena de versiones: el catálogo lista solo las terminales.
+
+**Opciones.**
+- **A.** Sumar `status` como filtro y conservar `kind`.
+- **B.** Reemplazar `kind` por `status` y separar protocolos de métodos por otra vía.
+
+**Provisorio en código.** A pendiente: hoy está solo `kind`. El costo de sumarlo es bajo, y la decisión de qué significa `status` para una especificación versionada conviene tomarla junto con DL-064.

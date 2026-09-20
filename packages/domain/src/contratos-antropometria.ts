@@ -73,7 +73,6 @@ export type FichaDeComparabilidadApi = z.infer<typeof FichaDeComparabilidadSchem
 export type CorreccionDeMedicionApi = z.infer<typeof CorreccionDeMedicionSchema>;
 export type AnulacionApi = z.infer<typeof AnulacionSchema>;
 export type ResumenDeEvaluacionApi = z.infer<typeof ResumenDeEvaluacionSchema>;
-export type SerieApi = z.infer<typeof SerieSchema>;
 
 export const ListaDeEspecificacionesResponseSchema = z.strictObject({ data: z.array(EspecificacionSchema), page: PaginaSchema });
 
@@ -179,33 +178,66 @@ export const ResumenDeEvaluacionSchema = z.strictObject({
   registeredAt: Instante.nullable(),
 });
 
-/** Una medición que se carga en el borrador. La clase se deriva del origen: el cliente no la elige (04:1090). */
-export const MedicionEntradaSchema = z
+/**
+ * Una medición directa tal como la declara el 09: métrica, valor y unidad (09v11 §6). El protocolo y la procedencia
+ * son de la **evaluación**, no de cada fila: una evaluación es una toma, con su especificación y su origen.
+ * La clase del dato se deriva de la procedencia declarada: el cliente no la elige (04:1090).
+ */
+export const MedicionDirectaSchema = z.strictObject({
+  metricCode: Texto(60),
+  value: z.number().finite(),
+  unit: Texto(24),
+});
+
+/** El origen de la toma (REG-06-153). `preparationReference` es una referencia opaca y solo aplica a la importación. */
+export const OrigenDeLaTomaSchema = z
   .strictObject({
-    metric: Texto(60),
-    magnitude: MagnitudSchema,
-    protocolVersionId: IdOpaco,
-    origin: OrigenDeMedicionSchema,
+    type: OrigenDeMedicionSchema,
     preparationReference: z.string().trim().max(200).nullable().optional(),
-    occurredAt: Instante,
   })
-  .refine((m) => m.origin === 'CONTROLLED_IMPORT' || !m.preparationReference, {
+  .refine((o) => o.type === 'CONTROLLED_IMPORT' || !o.preparationReference, {
     message: 'preparationReference solo corresponde a CONTROLLED_IMPORT',
     path: ['preparationReference'],
   });
 
-/** API-ANT-07: crear la evaluación en preparación. */
-export const CrearBorradorRequestSchema = z.strictObject({
-  context: TextoOpcional(2000).optional(),
+/** Un método que la evaluación pide ejecutar en el mismo acto (09v11 §6, paso 7 de la frontera transaccional). */
+export const MetodoSolicitadoSchema = z.strictObject({ methodVersionId: IdOpaco });
+
+/**
+ * API-ANT-02: crear la evaluación **ya registrada**, de una sola vez y de forma atómica. Es la vía directa que el
+ * consolidado ratifica como P0 y distinta del borrador: «API-ANT-02 ≠ draft» (09v16:1709-1713).
+ */
+export const CrearEvaluacionAntropometricaRequestSchema = z.strictObject({
   occurredAt: Instante,
-  measurements: z.array(MedicionEntradaSchema).max(200).optional(),
+  specificationVersionId: IdOpaco,
+  source: OrigenDeLaTomaSchema,
+  directMeasurements: z.array(MedicionDirectaSchema).min(1).max(200),
+  requestedDerivedMethods: z.array(MetodoSolicitadoSchema).max(10).optional(),
+  professionalNotes: TextoOpcional(2000).optional(),
 });
 
-/** API-ANT-10: guardar el borrador. Reemplaza el contenido declarado; el token de trabajo evita pisar (REG-06-216). */
+/** API-ANT-07: crear la evaluación en preparación. El request puede ser parcial (09v16 §23.2). */
+export const CrearBorradorRequestSchema = z.strictObject({
+  occurredAt: Instante.nullable().optional(),
+  specificationVersionId: IdOpaco.nullable().optional(),
+  source: OrigenDeLaTomaSchema.optional(),
+  directMeasurements: z.array(MedicionDirectaSchema).max(200).optional(),
+  requestedDerivedMethods: z.array(MetodoSolicitadoSchema).max(10).optional(),
+  professionalNotes: TextoOpcional(2000).optional(),
+});
+
+/**
+ * API-ANT-10: guardar el borrador. **Reemplaza la versión de trabajo**, no la historia registrada (09v16 §23.5), y
+ * por eso el verbo es PUT. El token de trabajo evita pisar el trabajo de otro momento (REG-06-216).
+ */
 export const GuardarBorradorRequestSchema = z.strictObject({
   expectedVersion: TokenDeVersionSchema,
-  context: TextoOpcional(2000).optional(),
-  measurements: z.array(MedicionEntradaSchema).max(200),
+  occurredAt: Instante.nullable().optional(),
+  specificationVersionId: IdOpaco.nullable().optional(),
+  source: OrigenDeLaTomaSchema.optional(),
+  directMeasurements: z.array(MedicionDirectaSchema).max(200),
+  requestedDerivedMethods: z.array(MetodoSolicitadoSchema).max(10).optional(),
+  professionalNotes: TextoOpcional(2000).optional(),
 });
 
 /** API-ANT-11: el acto explícito de registro (REG-06-214 inciso 4). */
@@ -220,6 +252,8 @@ export const ValidacionDeEvaluacionResponseSchema = z.strictObject({
 // ─── API-ANT-05 · corrección ────────────────────────────────────────────────────────────────────
 
 export const CorregirMedicionRequestSchema = z.strictObject({
+  /** Qué se corrige dentro de la evaluación: el identificador de la medición (09v11:596-599). */
+  targetId: IdOpaco,
   reason: Texto(1000),
   magnitude: MagnitudSchema,
 });
@@ -227,6 +261,8 @@ export const CorregirMedicionRequestSchema = z.strictObject({
 // ─── API-ANT-12 · anulación ─────────────────────────────────────────────────────────────────────
 
 export const AnularMedicionRequestSchema = z.strictObject({
+  /** El token de la evaluación que contiene la medición: anular sobre una foto vieja es 409 (09v16 §24.1, paso 2). */
+  expectedVersion: TokenDeVersionSchema.optional(),
   reason: Texto(1000),
   occurredAt: Instante.optional(),
 });
@@ -252,37 +288,70 @@ export const AnularMedicionResponseSchema = z.strictObject({
 // ─── API-ANT-06 · evolución ─────────────────────────────────────────────────────────────────────
 
 /**
- * Un punto de la serie. `NO_DATA` **no tiene** campo de valor: no hay dónde poner un cero ni un valor arrastrado
- * (INV-06-176/177). Es una unión discriminada, no un valor opcional, justamente para que no se pueda.
+ * Un punto de la serie: una observación vigente, con su momento, su valor, su unidad y de qué evaluación salió
+ * (09v11 §11). Los días sin observación **no están acá**: están en `gaps`, que es un rango sin valor. No hay campo
+ * donde poner un cero, un valor interpolado ni uno arrastrado, y esa es la garantía (INV-06-176/177).
  */
-export const PuntoDeSerieSchema = z.discriminatedUnion('availability', [
-  z.strictObject({
-    date: FechaLocalSchema,
-    availability: z.literal('AVAILABLE'),
-    magnitude: MagnitudSchema,
-    dataClass: ClaseDeDatoSchema,
-    sourceId: IdOpaco,
-    comparability: FichaDeComparabilidadSchema,
-    /** Vacío si es comparable con el punto disponible anterior; si no, por qué no (REG-06-164). */
-    incomparableWithPrevious: z.array(MotivoDeIncomparabilidadSchema),
-  }),
-  z.strictObject({ date: FechaLocalSchema, availability: z.literal('NO_DATA') }),
-]);
+export const PuntoDeSerieSchema = z.strictObject({
+  occurredAt: Instante,
+  recordedAt: Instante,
+  value: z.number().finite(),
+  unit: z.string(),
+  sourceEvaluationId: IdOpaco,
+  sourceId: IdOpaco,
+  dataClass: ClaseDeDatoSchema,
+  /** Agrupa los puntos que sí se pueden comparar entre sí: mismo protocolo, mismo método y misma unidad (REG-06-162). */
+  comparabilityGroup: z.string(),
+  /** Si el valor vigente viene del original o de una corrección de la cadena (REG-06-16). */
+  correctionState: z.enum(['EFFECTIVE', 'CORRECTED']),
+  /** Vacío si es comparable con el punto anterior; si no, por qué no (REG-06-164). */
+  incomparableWithPrevious: z.array(MotivoDeIncomparabilidadSchema),
+});
 export type PuntoDeSerieApi = z.infer<typeof PuntoDeSerieSchema>;
 
-export const SerieSchema = z.strictObject({
-  metric: z.string(),
-  points: z.array(PuntoDeSerieSchema),
-  /** Las fechas sin dato, nombradas como tales (REG-06-165). */
-  missingData: z.array(FechaLocalSchema),
+/** Un tramo sin observación vigente, nombrado como tal (REG-06-165): un rango, no una fila con un valor vacío. */
+export const HuecoDeSerieSchema = z.strictObject({
+  from: FechaLocalSchema,
+  to: FechaLocalSchema,
+  state: z.literal('NO_DATA'),
+  days: z.number().int().positive(),
 });
 
-/** Define el `period{}` y el `comparability{}` que 09v11 dejó vacíos (DL-069). */
+/** Un grupo de comparabilidad: qué hace comparables entre sí a los puntos que lo comparten (REG-06-162). */
+export const GrupoDeComparabilidadSchema = z.strictObject({
+  comparabilityGroup: z.string(),
+  protocolVersionId: IdOpaco,
+  protocolName: z.string(),
+  methodVersionId: IdOpaco.nullable(),
+  unit: z.string(),
+});
+
+export const SerieSchema = z.strictObject({
+  metricCode: z.string(),
+  series: z.array(PuntoDeSerieSchema),
+  gaps: z.array(HuecoDeSerieSchema),
+  comparability: z.strictObject({ groups: z.array(GrupoDeComparabilidadSchema) }),
+});
+export type SerieApi = z.infer<typeof SerieSchema>;
+
+/**
+ * Define el `period{}` y el `comparability{}` que 09v11 dejó vacíos (DL-069).
+ *
+ * `partialView` es del 09 y significa exactamente lo que el 09 dice: «la proyección fue construida correctamente
+ * usando únicamente el subconjunto de fuentes que el actor está autorizado a consultar», y **no** «error incompleto»
+ * (09v11:786-796). Acá es `true` cuando el asesorado tiene evaluaciones registradas en el período que son de otro
+ * profesional: existen, no se muestran, y la respuesta lo dice en vez de presentar la serie como completa.
+ *
+ * `metrics` es un bloque por métrica. El 09 declara una métrica por respuesta (`metricCode` en la raíz); BE devuelve
+ * varias con la misma forma, porque el asesorado no tiene ninguna operación para descubrir sus métricas. La
+ * diferencia está declarada en DEUDA_LEGAJO.
+ */
 export const EvolucionResponseSchema = z.strictObject({
   data: z.strictObject({
     adviseeId: IdOpaco,
     period: z.strictObject({ start: FechaLocalSchema, end: FechaLocalSchema, timeZone: ZonaHorariaSchema }),
-    series: z.array(SerieSchema),
+    metrics: z.array(SerieSchema),
+    partialView: z.boolean(),
     /** Lo que el legajo prohíbe hacer con esta serie, dicho en el propio contrato (REG-06-166; RF-049). */
     honesty: z.strictObject({
       interpolated: z.literal(false),

@@ -34,22 +34,28 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-const medicion = (metric: string, value: number, unit: string, origin: 'DIRECT_CAPTURE' | 'SELF_REPORTED' = 'DIRECT_CAPTURE') => ({
-  metric,
-  magnitude: { value, unit },
-  protocolVersionId: c.protocoloVersionId,
-  origin,
+/** Una medición directa, en la forma del 09: métrica, valor y unidad. El protocolo y el origen son de la toma. */
+const medicion = (metric: string, value: number, unit: string) => ({ metricCode: metric, value, unit });
+
+/** El contenido de una toma: momento, especificación, origen y mediciones directas (09v11 §6). */
+const toma = (mediciones: ReturnType<typeof medicion>[], origen: 'DIRECT_CAPTURE' | 'SELF_REPORTED' = 'DIRECT_CAPTURE', circuito = c) => ({
   occurredAt: AYER,
+  specificationVersionId: circuito.protocoloVersionId,
+  source: { type: origen },
+  directMeasurements: mediciones,
 });
 
 /** Una evaluación registrada con las mediciones pedidas; devuelve sus identificadores por métrica. */
-async function evaluacionRegistrada(mediciones: ReturnType<typeof medicion>[]): Promise<{ evaluationId: string; porMetrica: Record<string, string> }> {
+async function evaluacionRegistrada(
+  mediciones: ReturnType<typeof medicion>[],
+  origen: 'DIRECT_CAPTURE' | 'SELF_REPORTED' = 'DIRECT_CAPTURE',
+): Promise<{ evaluationId: string; porMetrica: Record<string, string> }> {
   const creada = await pro
-    .post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluations`)
-    .send({ occurredAt: AYER, measurements: mediciones })
+    .post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluation-drafts`)
+    .send(toma(mediciones, origen))
     .expect(201);
   const registrada = await pro
-    .post(`/api/v1/anthropometry/evaluations/${creada.body.data.evaluationId}/register`)
+    .post(`/api/v1/anthropometry/evaluation-drafts/${creada.body.data.evaluationId}/register`)
     .send({ expectedVersion: creada.body.data.version })
     .expect(200);
   const porMetrica: Record<string, string> = {};
@@ -112,13 +118,17 @@ describe('API-CAL-01 — ejecutar (REG-06-204/205)', () => {
   });
 
   it('TEST-CAL-002 · REG-06-204: el mismo dato es admisible para una versión y no para otra', async () => {
-    const { porMetrica } = await evaluacionRegistrada([medicion('peso', 70, 'kg', 'SELF_REPORTED'), medicion('talla', 1.75, 'm')]);
+    const { porMetrica } = await evaluacionRegistrada([medicion('peso', 70, 'kg'), medicion('talla', 1.75, 'm')], 'SELF_REPORTED');
     const rechazada = await pro
       .post(`/api/v1/advisees/${c.ase.id}/calculations`)
       .send({ purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: CATALOGO_DEMO.metodo.v2, inputBindings: bindings(porMetrica) })
       .expect(422);
     expect(rechazada.body.error.code).toBe('CALCULATION_INPUTS_INSUFFICIENT');
-    expect(rechazada.body.error.details.issues).toEqual([{ code: 'PROCEDENCIA_NO_ADMITIDA', path: 'inputBindings.PESO' }]);
+    // La procedencia es de la toma entera (09v11 §6), así que el rechazo nombra las dos entradas, no una.
+    expect(rechazada.body.error.details.issues).toEqual([
+      { code: 'PROCEDENCIA_NO_ADMITIDA', path: 'inputBindings.PESO' },
+      { code: 'PROCEDENCIA_NO_ADMITIDA', path: 'inputBindings.TALLA' },
+    ]);
 
     // La v1 sí lo admitía, pero es histórica: no se puede elegir para una corrida nueva (REG-06-203).
     const historica = await pro
@@ -147,8 +157,8 @@ describe('API-CAL-01 — ejecutar (REG-06-204/205)', () => {
   it('TEST-CAL-003 · 09 §20.2.1: un sourceRef ajeno responde igual que uno inexistente', async () => {
     const otro = await circuitoAntropometrico(app, prisma, 'calculos-otro');
     const ajena = await conSesion(app, otro.pro.token)
-      .post(`/api/v1/advisees/${otro.ase.id}/anthropometry/evaluations`)
-      .send({ occurredAt: AYER, measurements: [{ ...medicion('peso', 80, 'kg'), protocolVersionId: otro.protocoloVersionId }] })
+      .post(`/api/v1/advisees/${otro.ase.id}/anthropometry/evaluation-drafts`)
+      .send(toma([medicion('peso', 80, 'kg')], 'DIRECT_CAPTURE', otro))
       .expect(201);
     const medicionAjena = ajena.body.data.measurements[0].measurementId as string;
 
@@ -184,17 +194,11 @@ describe('API-CAL-02/03 — las corridas coexisten (REG-06-205)', () => {
     const suyo = conSesion(app, propio.pro.token);
     const hacerEvaluacion = async (peso: number) => {
       const creada = await suyo
-        .post(`/api/v1/advisees/${propio.ase.id}/anthropometry/evaluations`)
-        .send({
-          occurredAt: AYER,
-          measurements: [
-            { metric: 'peso', magnitude: { value: peso, unit: 'kg' }, protocolVersionId: propio.protocoloVersionId, origin: 'DIRECT_CAPTURE', occurredAt: AYER },
-            { metric: 'talla', magnitude: { value: 1.75, unit: 'm' }, protocolVersionId: propio.protocoloVersionId, origin: 'DIRECT_CAPTURE', occurredAt: AYER },
-          ],
-        })
+        .post(`/api/v1/advisees/${propio.ase.id}/anthropometry/evaluation-drafts`)
+        .send(toma([medicion('peso', peso, 'kg'), medicion('talla', 1.75, 'm')], 'DIRECT_CAPTURE', propio))
         .expect(201);
       const registrada = await suyo
-        .post(`/api/v1/anthropometry/evaluations/${creada.body.data.evaluationId}/register`)
+        .post(`/api/v1/anthropometry/evaluation-drafts/${creada.body.data.evaluationId}/register`)
         .send({ expectedVersion: creada.body.data.version })
         .expect(200);
       const porMetrica: Record<string, string> = {};
@@ -316,8 +320,8 @@ describe('API-CAL-02/03 — las corridas coexisten (REG-06-205)', () => {
 
   it('REG-06-215 · una corrida de un borrador se ve como de preparación y no se puede adoptar como referencia', async () => {
     const borrador = await pro
-      .post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluations`)
-      .send({ occurredAt: AYER, measurements: [medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')] })
+      .post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluation-drafts`)
+      .send(toma([medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]))
       .expect(201);
     const porMetrica: Record<string, string> = {};
     for (const m of borrador.body.data.measurements as { metric: string; measurementId: string }[]) porMetrica[m.metric] = m.measurementId;
@@ -349,7 +353,7 @@ describe('API-CAL-02/03 — las corridas coexisten (REG-06-205)', () => {
     expect((corrida.inputProvenance as { condition: string }[]).every((i) => i.condition === 'EFFECTIVE')).toBe(true);
 
     await pro
-      .post(`/api/v1/anthropometry/measurements/${porMetrica.talla}/annulment`, claveDeIdempotencia())
+      .post(`/api/v1/anthropometry/measurements/${porMetrica.talla}/annulments`, claveDeIdempotencia())
       .send({ reason: 'Se midió con el calzado puesto.' })
       .expect(201);
 
@@ -367,17 +371,11 @@ describe('API-CAL-04 — adoptar una referencia es una relación (REG-06-207)', 
     const suyo = conSesion(app, propio.pro.token);
     const corridaCon = async (peso: number) => {
       const creada = await suyo
-        .post(`/api/v1/advisees/${propio.ase.id}/anthropometry/evaluations`)
-        .send({
-          occurredAt: AYER,
-          measurements: [
-            { metric: 'peso', magnitude: { value: peso, unit: 'kg' }, protocolVersionId: propio.protocoloVersionId, origin: 'DIRECT_CAPTURE', occurredAt: AYER },
-            { metric: 'talla', magnitude: { value: 1.75, unit: 'm' }, protocolVersionId: propio.protocoloVersionId, origin: 'DIRECT_CAPTURE', occurredAt: AYER },
-          ],
-        })
+        .post(`/api/v1/advisees/${propio.ase.id}/anthropometry/evaluation-drafts`)
+        .send(toma([medicion('peso', peso, 'kg'), medicion('talla', 1.75, 'm')], 'DIRECT_CAPTURE', propio))
         .expect(201);
       const registrada = await suyo
-        .post(`/api/v1/anthropometry/evaluations/${creada.body.data.evaluationId}/register`)
+        .post(`/api/v1/anthropometry/evaluation-drafts/${creada.body.data.evaluationId}/register`)
         .send({ expectedVersion: creada.body.data.version })
         .expect(200);
       const porMetrica: Record<string, string> = {};
@@ -442,7 +440,7 @@ describe('API-CAL-04 — adoptar una referencia es una relación (REG-06-207)', 
 
 describe('REG-06-161 — recálculo con la versión registrada en la corrida', () => {
   it('anular una entrada reemite la corrida con el mismo método y conserva la histórica', async () => {
-    const { porMetrica } = await evaluacionRegistrada([medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
+    const { evaluationId, porMetrica } = await evaluacionRegistrada([medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
     const original = (
       await pro
         .post(`/api/v1/advisees/${c.ase.id}/calculations`)
@@ -452,8 +450,8 @@ describe('REG-06-161 — recálculo con la versión registrada en la corrida', (
 
     // Se corrige el peso: la corrida se reemite, relacionada con la anterior, que queda intacta.
     await pro
-      .post(`/api/v1/anthropometry/measurements/${porMetrica.peso}/corrections`, claveDeIdempotencia())
-      .send({ reason: 'Se leyó mal la balanza.', magnitude: { value: 74, unit: 'kg' } })
+      .post(`/api/v1/anthropometry/evaluations/${evaluationId}/corrections`, claveDeIdempotencia())
+      .send({ targetId: porMetrica.peso, reason: 'Se leyó mal la balanza.', magnitude: { value: 74, unit: 'kg' } })
       .expect(201);
 
     const vieja = await pro.get(`/api/v1/calculations/${original.calculationRunId}`).expect(200);
@@ -470,7 +468,7 @@ describe('REG-06-161 — recálculo con la versión registrada en la corrida', (
 
     // Anular la talla deja la corrida sin sucesor posible: no se inventa un cero (REG-06-220 inciso 6).
     const anulada = await pro
-      .post(`/api/v1/anthropometry/measurements/${porMetrica.talla}/annulment`, claveDeIdempotencia())
+      .post(`/api/v1/anthropometry/measurements/${porMetrica.talla}/annulments`, claveDeIdempotencia())
       .send({ reason: 'Se midió con el calzado puesto.' })
       .expect(201);
     expect(anulada.body.data.dependencyImpact.withoutSuccessor.length).toBeGreaterThan(0);

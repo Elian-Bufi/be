@@ -16992,6 +16992,1049 @@
     },
     "/advisees/{adviseeId}/anthropometry/evaluations": {
       "post": {
+        "operationId": "API-ANT-02",
+        "summary": "Crear la evaluación antropométrica ya REGISTRADA, en un solo acto atómico: mediciones directas, cálculos pedidos, evento y registro en la misma transacción. Es la vía directa, distinta del borrador.",
+        "description": "Fuente: 09v11 §6 · 09v16:1704, 1709-1713 · REG-06-214. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "adviseeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "occurredAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "specificationVersionId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "source": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "DIRECT_CAPTURE",
+                          "SELF_REPORTED",
+                          "CONTROLLED_IMPORT"
+                        ]
+                      },
+                      "preparationReference": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "directMeasurements": {
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "metricCode": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "value": {
+                          "type": "number"
+                        },
+                        "unit": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 24
+                        }
+                      },
+                      "required": [
+                        "metricCode",
+                        "value",
+                        "unit"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "requestedDerivedMethods": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "methodVersionId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "methodVersionId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "professionalNotes": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "occurredAt",
+                  "specificationVersionId",
+                  "source",
+                  "directMeasurements"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "evaluationId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "adviseeId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "author": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "displayName": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "IN_PREPARATION",
+                            "REGISTERED"
+                          ]
+                        },
+                        "context": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "version": {
+                          "type": "string",
+                          "pattern": "^v[1-9]\\d*$"
+                        },
+                        "measurements": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "measurementId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "evaluationId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "metric": {
+                                "type": "string"
+                              },
+                              "magnitude": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "number"
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 24
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "origin": {
+                                "type": "string",
+                                "enum": [
+                                  "DIRECT_CAPTURE",
+                                  "SELF_REPORTED",
+                                  "CONTROLLED_IMPORT"
+                                ]
+                              },
+                              "dataClass": {
+                                "type": "string",
+                                "enum": [
+                                  "MEASURED",
+                                  "REPORTED",
+                                  "DERIVED"
+                                ]
+                              },
+                              "protocol": {
+                                "type": "object",
+                                "properties": {
+                                  "protocolId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "protocolVersionId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "protocolName": {
+                                    "type": "string"
+                                  },
+                                  "methodId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "methodVersionId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "unit": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "protocolId",
+                                  "protocolVersionId",
+                                  "protocolName",
+                                  "methodId",
+                                  "methodVersionId",
+                                  "unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "preparationReference": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "condition": {
+                                "type": "string",
+                                "enum": [
+                                  "EFFECTIVE",
+                                  "ANNULLED"
+                                ]
+                              },
+                              "annulment": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "annulmentId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "reason": {
+                                        "type": "string"
+                                      },
+                                      "author": {
+                                        "type": "object",
+                                        "properties": {
+                                          "identityId": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          "displayName": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "identityId",
+                                          "displayName"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "occurredAt": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      "recordedAt": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      }
+                                    },
+                                    "required": [
+                                      "annulmentId",
+                                      "reason",
+                                      "author",
+                                      "occurredAt",
+                                      "recordedAt"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "corrections": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "correctionId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "previousCorrectionId": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "reason": {
+                                      "type": "string"
+                                    },
+                                    "magnitude": {
+                                      "type": "object",
+                                      "properties": {
+                                        "value": {
+                                          "type": "number"
+                                        },
+                                        "unit": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 24
+                                        }
+                                      },
+                                      "required": [
+                                        "value",
+                                        "unit"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "author": {
+                                      "type": "object",
+                                      "properties": {
+                                        "identityId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "displayName": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "identityId",
+                                        "displayName"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "recordedAt": {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    }
+                                  },
+                                  "required": [
+                                    "correctionId",
+                                    "previousCorrectionId",
+                                    "reason",
+                                    "magnitude",
+                                    "author",
+                                    "recordedAt"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "effectiveMagnitude": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "value": {
+                                        "type": "number"
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 24
+                                      }
+                                    },
+                                    "required": [
+                                      "value",
+                                      "unit"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "occurredAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "recordedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "measurementId",
+                              "evaluationId",
+                              "metric",
+                              "magnitude",
+                              "origin",
+                              "dataClass",
+                              "protocol",
+                              "preparationReference",
+                              "condition",
+                              "annulment",
+                              "corrections",
+                              "effectiveMagnitude",
+                              "occurredAt",
+                              "recordedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "derivedResults": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "runId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "evaluationId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "methodId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "methodVersionId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "methodName": {
+                                "type": "string"
+                              },
+                              "metric": {
+                                "type": "string"
+                              },
+                              "magnitude": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "number"
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 24
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "precision": {
+                                "type": "object",
+                                "properties": {
+                                  "decimals": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 6
+                                  },
+                                  "rounding": {
+                                    "type": "string",
+                                    "enum": [
+                                      "HALF_UP",
+                                      "DOWN",
+                                      "UP"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "decimals",
+                                  "rounding"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "inputs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "measurementId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "metric": {
+                                      "type": "string"
+                                    },
+                                    "magnitude": {
+                                      "type": "object",
+                                      "properties": {
+                                        "value": {
+                                          "type": "number"
+                                        },
+                                        "unit": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 24
+                                        }
+                                      },
+                                      "required": [
+                                        "value",
+                                        "unit"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "measurementId",
+                                    "metric",
+                                    "magnitude"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "supersedesRunId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "author": {
+                                "type": "object",
+                                "properties": {
+                                  "identityId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "displayName": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "identityId",
+                                  "displayName"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "recordedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "runId",
+                              "evaluationId",
+                              "methodId",
+                              "methodVersionId",
+                              "methodName",
+                              "metric",
+                              "magnitude",
+                              "precision",
+                              "inputs",
+                              "supersedesRunId",
+                              "author",
+                              "recordedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "occurredAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "recordedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "registeredAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "evaluationId",
+                        "adviseeId",
+                        "author",
+                        "state",
+                        "context",
+                        "version",
+                        "measurements",
+                        "derivedResults",
+                        "occurredAt",
+                        "recordedAt",
+                        "registeredAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: ANTHROPOMETRY_EVALUATION_INVALID | SPECIFICATION_REFERENCE_INVALID | METHOD_VERSION_NOT_SELECTABLE | CALCULATION_INPUTS_INSUFFICIENT | CALCULATION_NOT_REPRODUCIBLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "API-ANT-03",
+        "summary": "Listar las evaluaciones REGISTRADAS del asesorado. Los borradores no aparecen acá: no son historia.",
+        "description": "Fuente: 09v16 §23.1 · REG-06-215. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "adviseeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Tamaño de página (1 a 50; 20 por defecto).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Cursor opaco de la página siguiente.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "evaluationId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "adviseeId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "author": {
+                            "type": "object",
+                            "properties": {
+                              "identityId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "displayName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "identityId",
+                              "displayName"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "IN_PREPARATION",
+                              "REGISTERED"
+                            ]
+                          },
+                          "summary": {
+                            "type": "object",
+                            "properties": {
+                              "measurementCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "derivedResultCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "metrics": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "annulledCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "measurementCount",
+                              "derivedResultCount",
+                              "metrics",
+                              "annulledCount"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "occurredAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "registeredAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "evaluationId",
+                          "adviseeId",
+                          "author",
+                          "state",
+                          "summary",
+                          "occurredAt",
+                          "registeredAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor",
+                        "hasMore"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | INVALID_CURSOR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/advisees/{adviseeId}/anthropometry/evaluation-drafts": {
+      "post": {
         "operationId": "API-ANT-07",
         "summary": "Crear la evaluación antropométrica EN PREPARACIÓN. El borrador no es historia: no alimenta la serie ni figura como última evaluación registrada.",
         "description": "Fuente: 09v16 §23.2 · REG-06-214/215. AuthN: SESSION.",
@@ -17040,7 +18083,103 @@
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "type": "object",
                 "properties": {
-                  "context": {
+                  "occurredAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "specificationVersionId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "source": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "DIRECT_CAPTURE",
+                          "SELF_REPORTED",
+                          "CONTROLLED_IMPORT"
+                        ]
+                      },
+                      "preparationReference": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "directMeasurements": {
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "metricCode": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "value": {
+                          "type": "number"
+                        },
+                        "unit": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 24
+                        }
+                      },
+                      "required": [
+                        "metricCode",
+                        "value",
+                        "unit"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "requestedDerivedMethods": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "methodVersionId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "methodVersionId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "professionalNotes": {
                     "anyOf": [
                       {
                         "type": "string",
@@ -17050,84 +18189,8 @@
                         "type": "null"
                       }
                     ]
-                  },
-                  "occurredAt": {
-                    "type": "string",
-                    "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                  },
-                  "measurements": {
-                    "maxItems": 200,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "metric": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 60
-                        },
-                        "magnitude": {
-                          "type": "object",
-                          "properties": {
-                            "value": {
-                              "type": "number"
-                            },
-                            "unit": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 24
-                            }
-                          },
-                          "required": [
-                            "value",
-                            "unit"
-                          ],
-                          "additionalProperties": false
-                        },
-                        "protocolVersionId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "origin": {
-                          "type": "string",
-                          "enum": [
-                            "DIRECT_CAPTURE",
-                            "SELF_REPORTED",
-                            "CONTROLLED_IMPORT"
-                          ]
-                        },
-                        "preparationReference": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "maxLength": 200
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "occurredAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                        }
-                      },
-                      "required": [
-                        "metric",
-                        "magnitude",
-                        "protocolVersionId",
-                        "origin",
-                        "occurredAt"
-                      ],
-                      "additionalProperties": false
-                    }
                   }
                 },
-                "required": [
-                  "occurredAt"
-                ],
                 "additionalProperties": false
               }
             }
@@ -17762,266 +18825,6 @@
         }
       },
       "get": {
-        "operationId": "API-ANT-03",
-        "summary": "Listar las evaluaciones REGISTRADAS del asesorado. Los borradores no aparecen acá: no son historia.",
-        "description": "Fuente: 09v16 §23.1 · REG-06-215. AuthN: SESSION.",
-        "security": [
-          {
-            "sesion": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "adviseeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "description": "Tamaño de página (1 a 50; 20 por defecto).",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "description": "Cursor opaco de la página siguiente.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-BE-Surface",
-            "in": "header",
-            "required": false,
-            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "WEB",
-                "APK"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Éxito",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "evaluationId": {
-                            "type": "string",
-                            "minLength": 1
-                          },
-                          "adviseeId": {
-                            "type": "string",
-                            "minLength": 1
-                          },
-                          "author": {
-                            "type": "object",
-                            "properties": {
-                              "identityId": {
-                                "type": "string",
-                                "minLength": 1
-                              },
-                              "displayName": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "identityId",
-                              "displayName"
-                            ],
-                            "additionalProperties": false
-                          },
-                          "state": {
-                            "type": "string",
-                            "enum": [
-                              "IN_PREPARATION",
-                              "REGISTERED"
-                            ]
-                          },
-                          "summary": {
-                            "type": "object",
-                            "properties": {
-                              "measurementCount": {
-                                "type": "integer",
-                                "minimum": 0,
-                                "maximum": 9007199254740991
-                              },
-                              "derivedResultCount": {
-                                "type": "integer",
-                                "minimum": 0,
-                                "maximum": 9007199254740991
-                              },
-                              "metrics": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "annulledCount": {
-                                "type": "integer",
-                                "minimum": 0,
-                                "maximum": 9007199254740991
-                              }
-                            },
-                            "required": [
-                              "measurementCount",
-                              "derivedResultCount",
-                              "metrics",
-                              "annulledCount"
-                            ],
-                            "additionalProperties": false
-                          },
-                          "occurredAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                          },
-                          "registeredAt": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "format": "date-time",
-                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        },
-                        "required": [
-                          "evaluationId",
-                          "adviseeId",
-                          "author",
-                          "state",
-                          "summary",
-                          "occurredAt",
-                          "registeredAt"
-                        ],
-                        "additionalProperties": false
-                      }
-                    },
-                    "page": {
-                      "type": "object",
-                      "properties": {
-                        "limit": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0,
-                          "maximum": 9007199254740991
-                        },
-                        "nextCursor": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "hasMore": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [
-                        "limit",
-                        "nextCursor",
-                        "hasMore"
-                      ],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": [
-                    "data",
-                    "page"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "ErrorEnvelope: INVALID_REQUEST | INVALID_CURSOR",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "ErrorEnvelope: RATE_LIMITED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "ErrorEnvelope: INTERNAL_ERROR",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ErrorEnvelope: DB_UNAVAILABLE",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/advisees/{adviseeId}/anthropometry/evaluations/drafts": {
-      "get": {
         "operationId": "API-ANT-08",
         "summary": "Borradores retomables del profesional para ese asesorado. Un borrador de otro profesional no aparece.",
         "description": "Fuente: 09v16 §23.3 · 08 §56.5. AuthN: SESSION.",
@@ -18282,8 +19085,650 @@
     },
     "/anthropometry/evaluations/{evaluationId}": {
       "get": {
+        "operationId": "API-ANT-04",
+        "summary": "Consultar una evaluación REGISTRADA propia. No es una vía residual para leer un borrador: un borrador por esta ruta devuelve el mismo 404 que lo inexistente, igual que una evaluación ajena.",
+        "description": "Fuente: 09v11 §8 · 09v16:1718, 2235 · 08 §56.5. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "evaluationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "evaluationId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "adviseeId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "author": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "displayName": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "IN_PREPARATION",
+                            "REGISTERED"
+                          ]
+                        },
+                        "context": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "version": {
+                          "type": "string",
+                          "pattern": "^v[1-9]\\d*$"
+                        },
+                        "measurements": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "measurementId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "evaluationId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "metric": {
+                                "type": "string"
+                              },
+                              "magnitude": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "number"
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 24
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "origin": {
+                                "type": "string",
+                                "enum": [
+                                  "DIRECT_CAPTURE",
+                                  "SELF_REPORTED",
+                                  "CONTROLLED_IMPORT"
+                                ]
+                              },
+                              "dataClass": {
+                                "type": "string",
+                                "enum": [
+                                  "MEASURED",
+                                  "REPORTED",
+                                  "DERIVED"
+                                ]
+                              },
+                              "protocol": {
+                                "type": "object",
+                                "properties": {
+                                  "protocolId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "protocolVersionId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "protocolName": {
+                                    "type": "string"
+                                  },
+                                  "methodId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "methodVersionId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "unit": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "protocolId",
+                                  "protocolVersionId",
+                                  "protocolName",
+                                  "methodId",
+                                  "methodVersionId",
+                                  "unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "preparationReference": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "condition": {
+                                "type": "string",
+                                "enum": [
+                                  "EFFECTIVE",
+                                  "ANNULLED"
+                                ]
+                              },
+                              "annulment": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "annulmentId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "reason": {
+                                        "type": "string"
+                                      },
+                                      "author": {
+                                        "type": "object",
+                                        "properties": {
+                                          "identityId": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          "displayName": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "identityId",
+                                          "displayName"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "occurredAt": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      "recordedAt": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      }
+                                    },
+                                    "required": [
+                                      "annulmentId",
+                                      "reason",
+                                      "author",
+                                      "occurredAt",
+                                      "recordedAt"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "corrections": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "correctionId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "previousCorrectionId": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "reason": {
+                                      "type": "string"
+                                    },
+                                    "magnitude": {
+                                      "type": "object",
+                                      "properties": {
+                                        "value": {
+                                          "type": "number"
+                                        },
+                                        "unit": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 24
+                                        }
+                                      },
+                                      "required": [
+                                        "value",
+                                        "unit"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "author": {
+                                      "type": "object",
+                                      "properties": {
+                                        "identityId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "displayName": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "identityId",
+                                        "displayName"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "recordedAt": {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    }
+                                  },
+                                  "required": [
+                                    "correctionId",
+                                    "previousCorrectionId",
+                                    "reason",
+                                    "magnitude",
+                                    "author",
+                                    "recordedAt"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "effectiveMagnitude": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "value": {
+                                        "type": "number"
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 24
+                                      }
+                                    },
+                                    "required": [
+                                      "value",
+                                      "unit"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "occurredAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "recordedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "measurementId",
+                              "evaluationId",
+                              "metric",
+                              "magnitude",
+                              "origin",
+                              "dataClass",
+                              "protocol",
+                              "preparationReference",
+                              "condition",
+                              "annulment",
+                              "corrections",
+                              "effectiveMagnitude",
+                              "occurredAt",
+                              "recordedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "derivedResults": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "runId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "evaluationId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "methodId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "methodVersionId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "methodName": {
+                                "type": "string"
+                              },
+                              "metric": {
+                                "type": "string"
+                              },
+                              "magnitude": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "number"
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 24
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "precision": {
+                                "type": "object",
+                                "properties": {
+                                  "decimals": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 6
+                                  },
+                                  "rounding": {
+                                    "type": "string",
+                                    "enum": [
+                                      "HALF_UP",
+                                      "DOWN",
+                                      "UP"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "decimals",
+                                  "rounding"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "inputs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "measurementId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "metric": {
+                                      "type": "string"
+                                    },
+                                    "magnitude": {
+                                      "type": "object",
+                                      "properties": {
+                                        "value": {
+                                          "type": "number"
+                                        },
+                                        "unit": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 24
+                                        }
+                                      },
+                                      "required": [
+                                        "value",
+                                        "unit"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "measurementId",
+                                    "metric",
+                                    "magnitude"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "supersedesRunId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "author": {
+                                "type": "object",
+                                "properties": {
+                                  "identityId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "displayName": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "identityId",
+                                  "displayName"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "recordedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "runId",
+                              "evaluationId",
+                              "methodId",
+                              "methodVersionId",
+                              "methodName",
+                              "metric",
+                              "magnitude",
+                              "precision",
+                              "inputs",
+                              "supersedesRunId",
+                              "author",
+                              "recordedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "occurredAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "recordedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "registeredAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "evaluationId",
+                        "adviseeId",
+                        "author",
+                        "state",
+                        "context",
+                        "version",
+                        "measurements",
+                        "derivedResults",
+                        "occurredAt",
+                        "recordedAt",
+                        "registeredAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anthropometry/evaluation-drafts/{evaluationId}": {
+      "get": {
         "operationId": "API-ANT-09",
-        "summary": "Consultar una evaluación propia, registrada o en preparación. Una ajena, exista o no, devuelve el mismo 404: el borrador de otro profesional no aparece ni como bloqueado ni como existente.",
+        "summary": "Consultar el borrador propio, en la colección del borrador. Uno ajeno, exista o no, devuelve el mismo 404: no aparece ni como bloqueado ni como existente.",
         "description": "Fuente: 09v16 §23.4 · 08 §56.5 · DV-05 caso 10. AuthN: SESSION.",
         "security": [
           {
@@ -18869,6 +20314,16 @@
               }
             }
           },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "401": {
             "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
             "content": {
@@ -18921,7 +20376,7 @@
           }
         }
       },
-      "patch": {
+      "put": {
         "operationId": "API-ANT-10",
         "summary": "Guardar el borrador. Reemplaza el contenido declarado y avanza el token de trabajo: el contenido de preparación no adquiere autoridad histórica por persistirse.",
         "description": "Fuente: 09v16 §23.5 · REG-06-215/216. AuthN: SESSION.",
@@ -18965,7 +20420,103 @@
                     "type": "string",
                     "pattern": "^v[1-9]\\d*$"
                   },
-                  "context": {
+                  "occurredAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "specificationVersionId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "source": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "DIRECT_CAPTURE",
+                          "SELF_REPORTED",
+                          "CONTROLLED_IMPORT"
+                        ]
+                      },
+                      "preparationReference": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "directMeasurements": {
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "metricCode": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "value": {
+                          "type": "number"
+                        },
+                        "unit": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 24
+                        }
+                      },
+                      "required": [
+                        "metricCode",
+                        "value",
+                        "unit"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "requestedDerivedMethods": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "methodVersionId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "methodVersionId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "professionalNotes": {
                     "anyOf": [
                       {
                         "type": "string",
@@ -18975,79 +20526,11 @@
                         "type": "null"
                       }
                     ]
-                  },
-                  "measurements": {
-                    "maxItems": 200,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "metric": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 60
-                        },
-                        "magnitude": {
-                          "type": "object",
-                          "properties": {
-                            "value": {
-                              "type": "number"
-                            },
-                            "unit": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 24
-                            }
-                          },
-                          "required": [
-                            "value",
-                            "unit"
-                          ],
-                          "additionalProperties": false
-                        },
-                        "protocolVersionId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "origin": {
-                          "type": "string",
-                          "enum": [
-                            "DIRECT_CAPTURE",
-                            "SELF_REPORTED",
-                            "CONTROLLED_IMPORT"
-                          ]
-                        },
-                        "preparationReference": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "maxLength": 200
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "occurredAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                        }
-                      },
-                      "required": [
-                        "metric",
-                        "magnitude",
-                        "protocolVersionId",
-                        "origin",
-                        "occurredAt"
-                      ],
-                      "additionalProperties": false
-                    }
                   }
                 },
                 "required": [
                   "expectedVersion",
-                  "measurements"
+                  "directMeasurements"
                 ],
                 "additionalProperties": false
               }
@@ -19683,7 +21166,7 @@
         }
       }
     },
-    "/anthropometry/evaluations/{evaluationId}/register": {
+    "/anthropometry/evaluation-drafts/{evaluationId}/register": {
       "post": {
         "operationId": "API-ANT-11",
         "summary": "Registrar la evaluación: el acto explícito que la vuelve historia. Exige contenido registrable. REGISTRADA es terminal: los cambios posteriores usan corrección o anulación.",
@@ -20375,7 +21858,7 @@
         }
       }
     },
-    "/anthropometry/measurements/{measurementId}/corrections": {
+    "/anthropometry/evaluations/{evaluationId}/corrections": {
       "post": {
         "operationId": "API-ANT-05",
         "summary": "Corregir una medición con trazabilidad: el original y la cadena se conservan, y la vista efectiva se resuelve por relación, nunca por la fecha más reciente. Los derivados afectados se reemiten sin sobrescribir los anteriores.",
@@ -20387,7 +21870,7 @@
         ],
         "parameters": [
           {
-            "name": "measurementId",
+            "name": "evaluationId",
             "in": "path",
             "required": true,
             "schema": {
@@ -20425,6 +21908,10 @@
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "type": "object",
                 "properties": {
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
                   "reason": {
                     "type": "string",
                     "minLength": 1,
@@ -20450,6 +21937,7 @@
                   }
                 },
                 "required": [
+                  "targetId",
                   "reason",
                   "magnitude"
                 ],
@@ -20843,7 +22331,7 @@
         }
       }
     },
-    "/anthropometry/measurements/{measurementId}/annulment": {
+    "/anthropometry/measurements/{measurementId}/annulments": {
       "post": {
         "operationId": "API-ANT-12",
         "summary": "Anular una medición: evento aditivo y terminal, que no borra el original. Una segunda anulación de la misma medición responde 200 con la anulación existente y alreadyAnnulled: no produce un segundo efecto ni un error nuevo. No existe reversión.",
@@ -20893,6 +22381,10 @@
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "type": "object",
                 "properties": {
+                  "expectedVersion": {
+                    "type": "string",
+                    "pattern": "^v[1-9]\\d*$"
+                  },
                   "reason": {
                     "type": "string",
                     "minLength": 1,
@@ -21288,7 +22780,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | VERSION_CONFLICT | RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -21350,7 +22842,7 @@
             }
           },
           {
-            "name": "from",
+            "name": "periodStart",
             "in": "query",
             "required": false,
             "description": "Primer día del período (fecha local).",
@@ -21360,7 +22852,7 @@
             }
           },
           {
-            "name": "to",
+            "name": "periodEnd",
             "in": "query",
             "required": false,
             "description": "Último día del período (fecha local).",
@@ -21370,7 +22862,7 @@
             }
           },
           {
-            "name": "metrics",
+            "name": "metric",
             "in": "query",
             "required": false,
             "description": "Métricas separadas por coma. Sin esto, todas las que tengan dato.",
@@ -21433,171 +22925,183 @@
                           ],
                           "additionalProperties": false
                         },
-                        "series": {
+                        "metrics": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
-                              "metric": {
+                              "metricCode": {
                                 "type": "string"
                               },
-                              "points": {
+                              "series": {
                                 "type": "array",
                                 "items": {
-                                  "oneOf": [
-                                    {
+                                  "type": "object",
+                                  "properties": {
+                                    "occurredAt": {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    },
+                                    "recordedAt": {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    },
+                                    "value": {
+                                      "type": "number"
+                                    },
+                                    "unit": {
+                                      "type": "string"
+                                    },
+                                    "sourceEvaluationId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "sourceId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "dataClass": {
+                                      "type": "string",
+                                      "enum": [
+                                        "MEASURED",
+                                        "REPORTED",
+                                        "DERIVED"
+                                      ]
+                                    },
+                                    "comparabilityGroup": {
+                                      "type": "string"
+                                    },
+                                    "correctionState": {
+                                      "type": "string",
+                                      "enum": [
+                                        "EFFECTIVE",
+                                        "CORRECTED"
+                                      ]
+                                    },
+                                    "incomparableWithPrevious": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "enum": [
+                                          "PROTOCOL",
+                                          "METHOD",
+                                          "UNIT"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "occurredAt",
+                                    "recordedAt",
+                                    "value",
+                                    "unit",
+                                    "sourceEvaluationId",
+                                    "sourceId",
+                                    "dataClass",
+                                    "comparabilityGroup",
+                                    "correctionState",
+                                    "incomparableWithPrevious"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "gaps": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "from": {
+                                      "type": "string",
+                                      "format": "date",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                    },
+                                    "to": {
+                                      "type": "string",
+                                      "format": "date",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                    },
+                                    "state": {
+                                      "type": "string",
+                                      "const": "NO_DATA"
+                                    },
+                                    "days": {
+                                      "type": "integer",
+                                      "exclusiveMinimum": 0,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "from",
+                                    "to",
+                                    "state",
+                                    "days"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "comparability": {
+                                "type": "object",
+                                "properties": {
+                                  "groups": {
+                                    "type": "array",
+                                    "items": {
                                       "type": "object",
                                       "properties": {
-                                        "date": {
-                                          "type": "string",
-                                          "format": "date",
-                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                        "comparabilityGroup": {
+                                          "type": "string"
                                         },
-                                        "availability": {
-                                          "type": "string",
-                                          "const": "AVAILABLE"
-                                        },
-                                        "magnitude": {
-                                          "type": "object",
-                                          "properties": {
-                                            "value": {
-                                              "type": "number"
-                                            },
-                                            "unit": {
-                                              "type": "string",
-                                              "minLength": 1,
-                                              "maxLength": 24
-                                            }
-                                          },
-                                          "required": [
-                                            "value",
-                                            "unit"
-                                          ],
-                                          "additionalProperties": false
-                                        },
-                                        "dataClass": {
-                                          "type": "string",
-                                          "enum": [
-                                            "MEASURED",
-                                            "REPORTED",
-                                            "DERIVED"
-                                          ]
-                                        },
-                                        "sourceId": {
+                                        "protocolVersionId": {
                                           "type": "string",
                                           "minLength": 1
                                         },
-                                        "comparability": {
-                                          "type": "object",
-                                          "properties": {
-                                            "protocolId": {
+                                        "protocolName": {
+                                          "type": "string"
+                                        },
+                                        "methodVersionId": {
+                                          "anyOf": [
+                                            {
                                               "type": "string",
                                               "minLength": 1
                                             },
-                                            "protocolVersionId": {
-                                              "type": "string",
-                                              "minLength": 1
-                                            },
-                                            "protocolName": {
-                                              "type": "string"
-                                            },
-                                            "methodId": {
-                                              "anyOf": [
-                                                {
-                                                  "type": "string",
-                                                  "minLength": 1
-                                                },
-                                                {
-                                                  "type": "null"
-                                                }
-                                              ]
-                                            },
-                                            "methodVersionId": {
-                                              "anyOf": [
-                                                {
-                                                  "type": "string",
-                                                  "minLength": 1
-                                                },
-                                                {
-                                                  "type": "null"
-                                                }
-                                              ]
-                                            },
-                                            "unit": {
-                                              "type": "string"
+                                            {
+                                              "type": "null"
                                             }
-                                          },
-                                          "required": [
-                                            "protocolId",
-                                            "protocolVersionId",
-                                            "protocolName",
-                                            "methodId",
-                                            "methodVersionId",
-                                            "unit"
-                                          ],
-                                          "additionalProperties": false
+                                          ]
                                         },
-                                        "incomparableWithPrevious": {
-                                          "type": "array",
-                                          "items": {
-                                            "type": "string",
-                                            "enum": [
-                                              "PROTOCOL",
-                                              "METHOD",
-                                              "UNIT"
-                                            ]
-                                          }
+                                        "unit": {
+                                          "type": "string"
                                         }
                                       },
                                       "required": [
-                                        "date",
-                                        "availability",
-                                        "magnitude",
-                                        "dataClass",
-                                        "sourceId",
-                                        "comparability",
-                                        "incomparableWithPrevious"
-                                      ],
-                                      "additionalProperties": false
-                                    },
-                                    {
-                                      "type": "object",
-                                      "properties": {
-                                        "date": {
-                                          "type": "string",
-                                          "format": "date",
-                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                                        },
-                                        "availability": {
-                                          "type": "string",
-                                          "const": "NO_DATA"
-                                        }
-                                      },
-                                      "required": [
-                                        "date",
-                                        "availability"
+                                        "comparabilityGroup",
+                                        "protocolVersionId",
+                                        "protocolName",
+                                        "methodVersionId",
+                                        "unit"
                                       ],
                                       "additionalProperties": false
                                     }
-                                  ]
-                                }
-                              },
-                              "missingData": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string",
-                                  "format": "date",
-                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                                }
+                                  }
+                                },
+                                "required": [
+                                  "groups"
+                                ],
+                                "additionalProperties": false
                               }
                             },
                             "required": [
-                              "metric",
-                              "points",
-                              "missingData"
+                              "metricCode",
+                              "series",
+                              "gaps",
+                              "comparability"
                             ],
                             "additionalProperties": false
                           }
+                        },
+                        "partialView": {
+                          "type": "boolean"
                         },
                         "honesty": {
                           "type": "object",
@@ -21626,7 +23130,8 @@
                       "required": [
                         "adviseeId",
                         "period",
-                        "series",
+                        "metrics",
+                        "partialView",
                         "honesty"
                       ],
                       "additionalProperties": false
@@ -21715,7 +23220,7 @@
         ],
         "parameters": [
           {
-            "name": "from",
+            "name": "periodStart",
             "in": "query",
             "required": false,
             "description": "Primer día del período (fecha local).",
@@ -21725,7 +23230,7 @@
             }
           },
           {
-            "name": "to",
+            "name": "periodEnd",
             "in": "query",
             "required": false,
             "description": "Último día del período (fecha local).",
@@ -21735,7 +23240,7 @@
             }
           },
           {
-            "name": "metrics",
+            "name": "metric",
             "in": "query",
             "required": false,
             "description": "Métricas separadas por coma. Sin esto, todas las que tengan dato.",
@@ -21798,171 +23303,183 @@
                           ],
                           "additionalProperties": false
                         },
-                        "series": {
+                        "metrics": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
-                              "metric": {
+                              "metricCode": {
                                 "type": "string"
                               },
-                              "points": {
+                              "series": {
                                 "type": "array",
                                 "items": {
-                                  "oneOf": [
-                                    {
+                                  "type": "object",
+                                  "properties": {
+                                    "occurredAt": {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    },
+                                    "recordedAt": {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    },
+                                    "value": {
+                                      "type": "number"
+                                    },
+                                    "unit": {
+                                      "type": "string"
+                                    },
+                                    "sourceEvaluationId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "sourceId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "dataClass": {
+                                      "type": "string",
+                                      "enum": [
+                                        "MEASURED",
+                                        "REPORTED",
+                                        "DERIVED"
+                                      ]
+                                    },
+                                    "comparabilityGroup": {
+                                      "type": "string"
+                                    },
+                                    "correctionState": {
+                                      "type": "string",
+                                      "enum": [
+                                        "EFFECTIVE",
+                                        "CORRECTED"
+                                      ]
+                                    },
+                                    "incomparableWithPrevious": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "enum": [
+                                          "PROTOCOL",
+                                          "METHOD",
+                                          "UNIT"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "occurredAt",
+                                    "recordedAt",
+                                    "value",
+                                    "unit",
+                                    "sourceEvaluationId",
+                                    "sourceId",
+                                    "dataClass",
+                                    "comparabilityGroup",
+                                    "correctionState",
+                                    "incomparableWithPrevious"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "gaps": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "from": {
+                                      "type": "string",
+                                      "format": "date",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                    },
+                                    "to": {
+                                      "type": "string",
+                                      "format": "date",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                    },
+                                    "state": {
+                                      "type": "string",
+                                      "const": "NO_DATA"
+                                    },
+                                    "days": {
+                                      "type": "integer",
+                                      "exclusiveMinimum": 0,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "from",
+                                    "to",
+                                    "state",
+                                    "days"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "comparability": {
+                                "type": "object",
+                                "properties": {
+                                  "groups": {
+                                    "type": "array",
+                                    "items": {
                                       "type": "object",
                                       "properties": {
-                                        "date": {
-                                          "type": "string",
-                                          "format": "date",
-                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                        "comparabilityGroup": {
+                                          "type": "string"
                                         },
-                                        "availability": {
-                                          "type": "string",
-                                          "const": "AVAILABLE"
-                                        },
-                                        "magnitude": {
-                                          "type": "object",
-                                          "properties": {
-                                            "value": {
-                                              "type": "number"
-                                            },
-                                            "unit": {
-                                              "type": "string",
-                                              "minLength": 1,
-                                              "maxLength": 24
-                                            }
-                                          },
-                                          "required": [
-                                            "value",
-                                            "unit"
-                                          ],
-                                          "additionalProperties": false
-                                        },
-                                        "dataClass": {
-                                          "type": "string",
-                                          "enum": [
-                                            "MEASURED",
-                                            "REPORTED",
-                                            "DERIVED"
-                                          ]
-                                        },
-                                        "sourceId": {
+                                        "protocolVersionId": {
                                           "type": "string",
                                           "minLength": 1
                                         },
-                                        "comparability": {
-                                          "type": "object",
-                                          "properties": {
-                                            "protocolId": {
+                                        "protocolName": {
+                                          "type": "string"
+                                        },
+                                        "methodVersionId": {
+                                          "anyOf": [
+                                            {
                                               "type": "string",
                                               "minLength": 1
                                             },
-                                            "protocolVersionId": {
-                                              "type": "string",
-                                              "minLength": 1
-                                            },
-                                            "protocolName": {
-                                              "type": "string"
-                                            },
-                                            "methodId": {
-                                              "anyOf": [
-                                                {
-                                                  "type": "string",
-                                                  "minLength": 1
-                                                },
-                                                {
-                                                  "type": "null"
-                                                }
-                                              ]
-                                            },
-                                            "methodVersionId": {
-                                              "anyOf": [
-                                                {
-                                                  "type": "string",
-                                                  "minLength": 1
-                                                },
-                                                {
-                                                  "type": "null"
-                                                }
-                                              ]
-                                            },
-                                            "unit": {
-                                              "type": "string"
+                                            {
+                                              "type": "null"
                                             }
-                                          },
-                                          "required": [
-                                            "protocolId",
-                                            "protocolVersionId",
-                                            "protocolName",
-                                            "methodId",
-                                            "methodVersionId",
-                                            "unit"
-                                          ],
-                                          "additionalProperties": false
+                                          ]
                                         },
-                                        "incomparableWithPrevious": {
-                                          "type": "array",
-                                          "items": {
-                                            "type": "string",
-                                            "enum": [
-                                              "PROTOCOL",
-                                              "METHOD",
-                                              "UNIT"
-                                            ]
-                                          }
+                                        "unit": {
+                                          "type": "string"
                                         }
                                       },
                                       "required": [
-                                        "date",
-                                        "availability",
-                                        "magnitude",
-                                        "dataClass",
-                                        "sourceId",
-                                        "comparability",
-                                        "incomparableWithPrevious"
-                                      ],
-                                      "additionalProperties": false
-                                    },
-                                    {
-                                      "type": "object",
-                                      "properties": {
-                                        "date": {
-                                          "type": "string",
-                                          "format": "date",
-                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                                        },
-                                        "availability": {
-                                          "type": "string",
-                                          "const": "NO_DATA"
-                                        }
-                                      },
-                                      "required": [
-                                        "date",
-                                        "availability"
+                                        "comparabilityGroup",
+                                        "protocolVersionId",
+                                        "protocolName",
+                                        "methodVersionId",
+                                        "unit"
                                       ],
                                       "additionalProperties": false
                                     }
-                                  ]
-                                }
-                              },
-                              "missingData": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string",
-                                  "format": "date",
-                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                                }
+                                  }
+                                },
+                                "required": [
+                                  "groups"
+                                ],
+                                "additionalProperties": false
                               }
                             },
                             "required": [
-                              "metric",
-                              "points",
-                              "missingData"
+                              "metricCode",
+                              "series",
+                              "gaps",
+                              "comparability"
                             ],
                             "additionalProperties": false
                           }
+                        },
+                        "partialView": {
+                          "type": "boolean"
                         },
                         "honesty": {
                           "type": "object",
@@ -21991,7 +23508,8 @@
                       "required": [
                         "adviseeId",
                         "period",
-                        "series",
+                        "metrics",
+                        "partialView",
                         "honesty"
                       ],
                       "additionalProperties": false

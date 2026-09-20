@@ -41,34 +41,64 @@ export class EvolucionService {
       recursoIntentado: { tipo: 'Asesorado', id: adviseeId },
       lectura: async (tx) => {
         const titular = await this.titularAutorizado(tx, actor, adviseeId, ctx);
-        const { observaciones, fichasPorMedicion } = await this.observaciones(tx, titular, desde, hasta);
+        const { observaciones, fichasPorMedicion, porMedicion, partialView } = await this.observaciones(tx, titular, actor.identidadId, desde, hasta);
         const fechas = fechasDelPeriodo(desde, hasta);
         const pedidas = metricas ?? [...new Set(observaciones.map((o) => o.metrica))].sort();
+
+        const gruposPorFicha = new Map<string, { comparabilityGroup: string; protocolVersionId: string; protocolName: string; methodVersionId: string | null; unit: string }>();
+        const grupoDe = (f: ReturnType<typeof fichaDe>): string => {
+          const clave = `${f.protocolVersionId}|${f.methodVersionId ?? ''}|${f.unit}`;
+          if (!gruposPorFicha.has(clave)) {
+            gruposPorFicha.set(clave, {
+              comparabilityGroup: `cmp-${gruposPorFicha.size + 1}`,
+              protocolVersionId: f.protocolVersionId,
+              protocolName: f.protocolName,
+              methodVersionId: f.methodVersionId,
+              unit: f.unit,
+            });
+          }
+          return gruposPorFicha.get(clave)!.comparabilityGroup;
+        };
 
         return {
           data: {
             adviseeId: titular,
             period: { start: desde, end: hasta, timeZone: ZONA_POR_DEFECTO },
-            series: pedidas.map((metrica) => {
+            metrics: pedidas.map((metrica) => {
               const serie = construirSerie(metrica, fechas, observaciones);
+              const grupos = new Map<string, ReturnType<typeof grupoDe>>();
+              const puntos = serie.puntos
+                .filter((p) => p.disponibilidad === 'REGISTRADO')
+                .map((p) => {
+                  const fuente = porMedicion.get(p.origenId)!;
+                  const grupo = grupoDe(fichasPorMedicion.get(p.origenId)!);
+                  grupos.set(grupo, grupo);
+                  return {
+                    occurredAt: fuente.momentoDeOcurrencia.toISOString(),
+                    recordedAt: fuente.momentoDeRegistro.toISOString(),
+                    value: p.magnitud.valor,
+                    unit: p.magnitud.unidad,
+                    sourceEvaluationId: fuente.evaluacionId,
+                    sourceId: p.origenId,
+                    dataClass: CLASE_DE_DATO_API[p.clase],
+                    comparabilityGroup: grupo,
+                    // La vista efectiva viene de la cadena de correcciones o del original (REG-06-16): se dice cuál.
+                    correctionState: fuente.correcciones.length > 0 ? ('CORRECTED' as const) : ('EFFECTIVE' as const),
+                    incomparableWithPrevious: p.incomparableConElAnterior.map((m) => MOTIVO_API[m]),
+                  };
+                });
               return {
-                metric: metrica,
-                points: serie.puntos.map((p) =>
-                  p.disponibilidad === 'SIN_DATO'
-                    ? { date: p.fechaLocal, availability: 'NO_DATA' as const }
-                    : {
-                        date: p.fechaLocal,
-                        availability: 'AVAILABLE' as const,
-                        magnitude: { value: p.magnitud.valor, unit: p.magnitud.unidad },
-                        dataClass: CLASE_DE_DATO_API[p.clase],
-                        sourceId: p.origenId,
-                        comparability: fichasPorMedicion.get(p.origenId)!,
-                        incomparableWithPrevious: p.incomparableConElAnterior.map((m) => MOTIVO_API[m]),
-                      },
-                ),
-                missingData: serie.puntos.filter((p) => p.disponibilidad === 'SIN_DATO').map((p) => p.fechaLocal),
+                metricCode: metrica,
+                series: puntos,
+                // Los días sin observación vigente, como rangos: un hueco no es una fila con un valor vacío.
+                gaps: huecosDe(serie.puntos.filter((p) => p.disponibilidad === 'SIN_DATO').map((p) => p.fechaLocal)),
+                comparability: { groups: [...gruposPorFicha.values()].filter((g) => grupos.has(g.comparabilityGroup)) },
               };
             }),
+            // 09v11:786-796: la vista es parcial cuando el actor ve solo el subconjunto de fuentes que puede
+            // consultar. Acá pasa cuando el asesorado tiene evaluaciones registradas de otro profesional en el
+            // período: existen, no se muestran, y la respuesta lo dice en vez de parecer completa.
+            partialView,
             // Lo que el legajo prohíbe hacer con esta serie, dicho en la propia respuesta (REG-06-166).
             honesty: { interpolated: false as const, imputed: false as const, carriedForward: false as const },
           },
@@ -99,13 +129,33 @@ export class EvolucionService {
   }
 
   /** Las mediciones de evaluaciones REGISTRADAS del período, con su condición y su ficha de comparabilidad. */
-  private async observaciones(tx: Tx, titular: string, desde: string, hasta: string): Promise<{ observaciones: ObservacionDeSerie[]; fichasPorMedicion: Map<string, ReturnType<typeof fichaDe>> }> {
+  private async observaciones(
+    tx: Tx,
+    titular: string,
+    actorId: string,
+    desde: string,
+    hasta: string,
+  ): Promise<{
+    observaciones: ObservacionDeSerie[];
+    fichasPorMedicion: Map<string, ReturnType<typeof fichaDe>>;
+    porMedicion: Map<string, { evaluacionId: string; momentoDeOcurrencia: Date; momentoDeRegistro: Date; correcciones: { id: string }[] }>;
+    partialView: boolean;
+  }> {
+    const ventana = { gte: inicioDelDiaLocal(desde, ZONA_POR_DEFECTO), lt: finDelDiaLocal(hasta, ZONA_POR_DEFECTO) };
+    // Lo que el actor **no** puede ver: evaluaciones registradas del mismo asesorado, en el mismo período, de otro
+    // profesional. Si las hay, la vista es parcial y la respuesta lo declara (09v11:786-796).
+    const ajenas =
+      titular === actorId
+        ? 0
+        : await tx.medicionAntropometrica.count({
+            where: { evaluacion: { asesoradoId: titular, estado: 'REGISTRADA', profesionalId: { not: actorId } }, momentoDeOcurrencia: ventana },
+          });
     const filas = await tx.medicionAntropometrica.findMany({
       where: {
-        evaluacion: { asesoradoId: titular, estado: 'REGISTRADA' },
+        evaluacion: { asesoradoId: titular, estado: 'REGISTRADA', ...(titular === actorId ? {} : { profesionalId: actorId }) },
         // La ventana se recorta en la **misma zona** en la que después se ubica cada punto. Mezclar UTC acá y hora
         // local allá deja afuera las mediciones de la tarde del último día, que saldrían como «sin dato» (INV-06-177).
-        momentoDeOcurrencia: { gte: inicioDelDiaLocal(desde, ZONA_POR_DEFECTO), lt: finDelDiaLocal(hasta, ZONA_POR_DEFECTO) },
+        momentoDeOcurrencia: ventana,
       },
       include: INCLUIR_MEDICION,
       orderBy: { momentoDeOcurrencia: 'asc' },
@@ -130,11 +180,14 @@ export class EvolucionService {
         },
       ];
     });
-    return { observaciones, fichasPorMedicion };
+    const porMedicion = new Map(
+      filas.map((m) => [m.id, { evaluacionId: m.evaluacionId, momentoDeOcurrencia: m.momentoDeOcurrencia, momentoDeRegistro: m.momentoDeRegistro, correcciones: m.correcciones }]),
+    );
+    return { observaciones, fichasPorMedicion, porMedicion, partialView: ajenas > 0 };
   }
 
   private leerConsulta(query: Record<string, unknown>): { desde: string; hasta: string; metricas: string[] | null } {
-    const permitidos = new Set(['from', 'to', 'metrics']);
+    const permitidos = new Set(['metric', 'periodStart', 'periodEnd']);
     for (const clave of Object.keys(query)) {
       if (!permitidos.has(clave)) throw errores.solicitudInvalida([{ code: 'UNKNOWN_QUERY_PARAM', path: clave }]);
     }
@@ -144,18 +197,34 @@ export class EvolucionService {
       if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) throw errores.solicitudInvalida([{ code: 'INVALID_DATE', path }]);
       return valor;
     };
-    const hasta = fecha(query.to, hoy, 'to');
+    const hasta = fecha(query.periodEnd, hoy, 'periodEnd');
     const inicioPorDefecto = new Date(`${hasta}T12:00:00Z`);
     inicioPorDefecto.setUTCDate(inicioPorDefecto.getUTCDate() - 89);
-    const desde = fecha(query.from, inicioPorDefecto.toISOString().slice(0, 10), 'from');
-    if (desde > hasta) throw errores.solicitudInvalida([{ code: 'INVALID_PERIOD', path: 'from' }]);
+    const desde = fecha(query.periodStart, inicioPorDefecto.toISOString().slice(0, 10), 'periodStart');
+    if (desde > hasta) throw errores.solicitudInvalida([{ code: 'INVALID_PERIOD', path: 'periodStart' }]);
     const metricas =
-      query.metrics === undefined
+      query.metric === undefined
         ? null
-        : String(query.metrics)
+        : String(query.metric)
             .split(',')
             .map((m) => m.trim())
             .filter(Boolean);
     return { desde, hasta, metricas: metricas && metricas.length > 0 ? metricas : null };
   }
+}
+
+/** Los días sin dato, agrupados en rangos consecutivos. Se dicen todos; lo que cambia es que se dicen una sola vez. */
+function huecosDe(fechas: readonly string[]): { from: string; to: string; state: 'NO_DATA'; days: number }[] {
+  const rangos: { from: string; to: string; state: 'NO_DATA'; days: number }[] = [];
+  for (const fecha of fechas) {
+    const ultimo = rangos[rangos.length - 1];
+    const siguiente = ultimo ? new Date(`${ultimo.to}T12:00:00Z`) : null;
+    if (siguiente) siguiente.setUTCDate(siguiente.getUTCDate() + 1);
+    if (ultimo && siguiente && siguiente.toISOString().slice(0, 10) === fecha) {
+      rangos[rangos.length - 1] = { ...ultimo, to: fecha, days: ultimo.days + 1 };
+    } else {
+      rangos.push({ from: fecha, to: fecha, state: 'NO_DATA', days: 1 });
+    }
+  }
+  return rangos;
 }

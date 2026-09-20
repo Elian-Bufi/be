@@ -116,21 +116,16 @@ async function finalizar(ase, vinculoId) {
 }
 
 /** Una evaluación registrada con las mediciones dadas. Devuelve el id y las mediciones por métrica. */
-async function evaluacionRegistrada(pro, aseId, momento, mediciones) {
+/** Una evaluación registrada por la vía directa (API-ANT-02): nace registrada, en un solo acto atómico. */
+async function evaluacionRegistrada(pro, aseId, momento, mediciones, origin = 'DIRECT_CAPTURE') {
   const creada = await pedir('POST', `/advisees/${aseId}/anthropometry/evaluations`, {
     token: pro.token,
     clave: clave(),
-    cuerpo: { occurredAt: momento.toISOString(), measurements: mediciones },
+    cuerpo: toma(momento, mediciones, origin),
   });
   if (creada.status !== 201) throw new Error(`evaluación: ${creada.status} ${creada.cuerpo?.error?.code}`);
-  const registrada = await pedir('POST', `/anthropometry/evaluations/${creada.cuerpo.data.evaluationId}/register`, {
-    token: pro.token,
-    clave: clave(),
-    cuerpo: { expectedVersion: creada.cuerpo.data.version },
-  });
-  if (registrada.status !== 200) throw new Error(`registro: ${registrada.status} ${registrada.cuerpo?.error?.code}`);
-  const porMetrica = Object.fromEntries(registrada.cuerpo.data.measurements.map((m) => [m.metric, m.measurementId]));
-  return { evaluationId: registrada.cuerpo.data.evaluationId, porMetrica };
+  const porMetrica = Object.fromEntries(creada.cuerpo.data.measurements.map((m) => [m.metric, m.measurementId]));
+  return { evaluationId: creada.cuerpo.data.evaluationId, porMetrica };
 }
 
 // ─── Despertar la API (el plan gratuito duerme después de 15 minutos) ────────────────────────────
@@ -158,19 +153,23 @@ const vinculoPN = await vinculoConConsentimiento(pn, ase, 'ANTROPOMETRIA', 'EVAL
 const catalogo = await pedir('GET', '/anthropometry/specifications?kind=PROTOCOL', { token: pa.token });
 const protocolo = catalogo.cuerpo.data.find((e) => e.key === 'PROTO-LAB');
 if (!protocolo) throw new Error('el catálogo sintético no está sembrado en este ambiente');
-const medicion = (metric, value, unit, momento, origin = 'DIRECT_CAPTURE') => ({
-  metric,
-  magnitude: { value, unit },
-  protocolVersionId: protocolo.versionId,
-  origin,
+/** Una medición directa, en la forma del 09: métrica, valor y unidad. El protocolo y el origen son de la toma. */
+const medicion = (metric, value, unit) => ({ metricCode: metric, value, unit });
+
+/** El contenido de una toma: momento, especificación, origen y sus mediciones directas (09v11 §6). */
+const toma = (momento, mediciones, origin = 'DIRECT_CAPTURE') => ({
   occurredAt: momento.toISOString(),
+  specificationVersionId: protocolo.versionId,
+  source: { type: origin },
+  directMeasurements: mediciones,
+  professionalNotes: 'Datos sintéticos de la corrida adversarial.',
 });
 
 // ─── 6: doble anulación ─────────────────────────────────────────────────────────────────────────
 {
   const dia = haceDias(6);
-  const { evaluationId, porMetrica } = await evaluacionRegistrada(pa, ase.id, dia, [medicion('peso', 72.5, 'kg', dia), medicion('talla', 1.75, 'm', dia)]);
-  const ruta = `/anthropometry/measurements/${porMetrica.peso}/annulment`;
+  const { evaluationId, porMetrica } = await evaluacionRegistrada(pa, ase.id, dia, [medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
+  const ruta = `/anthropometry/measurements/${porMetrica.peso}/annulments`;
   const primera = await pedir('POST', ruta, { token: pa.token, clave: clave(), cuerpo: { reason: 'La balanza estaba descalibrada.' } });
   // Con una clave nueva, no con la misma: el caso adversarial es el segundo intento genuino, no el reintento.
   const segundaVez = await pedir('POST', ruta, { token: pa.token, clave: clave(), cuerpo: { reason: 'Otro motivo distinto.' } });
@@ -202,65 +201,65 @@ const medicion = (metric, value, unit, momento, origin = 'DIRECT_CAPTURE') => ({
 {
   const d4 = haceDias(4);
   const d2 = haceDias(2);
-  await evaluacionRegistrada(pa, ase.id, d4, [medicion('perimetro-cintura', 82, 'cm', d4)]);
+  await evaluacionRegistrada(pa, ase.id, d4, [medicion('perimetro-cintura', 82, 'cm')]);
   // Dos días después, la misma métrica en otra unidad: comparable no es lo mismo que mostrable (REG-06-164).
-  const segunda = await evaluacionRegistrada(pa, ase.id, d2, [medicion('perimetro-cintura', 0.81, 'm', d2)]);
+  const segunda = await evaluacionRegistrada(pa, ase.id, d2, [medicion('perimetro-cintura', 0.81, 'm')]);
 
   const desde = diaLocal(haceDias(5));
   const hasta = diaLocal(haceDias(1));
-  const evolucion = await pedir('GET', `/advisees/${ase.id}/anthropometry/progress?from=${desde}&to=${hasta}&metrics=perimetro-cintura`, { token: pa.token });
-  const serie = evolucion.cuerpo?.data?.series?.[0];
-  const puntos = serie?.points ?? [];
-  const sinDato = puntos.filter((p) => p.availability === 'NO_DATA');
-  const conDato = puntos.filter((p) => p.availability === 'AVAILABLE');
+  const evolucion = await pedir('GET', `/advisees/${ase.id}/anthropometry/progress?periodStart=${desde}&periodEnd=${hasta}&metric=perimetro-cintura`, { token: pa.token });
+  const serie = evolucion.cuerpo?.data?.metrics?.[0];
+  const conDato = serie?.series ?? [];
+  const huecos = serie?.gaps ?? [];
+  const diasSinDato = huecos.reduce((n, h) => n + h.days, 0);
   const noComparable = conDato.find((p) => p.incomparableWithPrevious.length > 0);
 
   registrar(
     '7-mediciones',
     'los días sin medición vigente son «sin dato» y no llevan valor; el tramo en otra unidad se señala como no comparable',
     evolucion.status === 200 &&
-      puntos.length === 5 &&
-      sinDato.length === 3 &&
-      // El punto sin dato no tiene dónde poner un cero: el contrato no le da campo de valor (INV-06-176/177).
-      sinDato.every((p) => !('magnitude' in p) && !('dataClass' in p)) &&
+      conDato.length + diasSinDato === 5 &&
+      diasSinDato === 3 &&
+      // El hueco no tiene dónde poner un cero: es un rango con su estado, y nada más (INV-06-176/177).
+      huecos.every((h) => Object.keys(h).sort().join(',') === 'days,from,state,to' && h.state === 'NO_DATA') &&
       conDato.length === 2 &&
-      serie.missingData.length === 3 &&
       noComparable?.incomparableWithPrevious?.includes('UNIT') &&
       evolucion.cuerpo.data.honesty.interpolated === false &&
       evolucion.cuerpo.data.honesty.imputed === false &&
       evolucion.cuerpo.data.honesty.carriedForward === false,
     {
       periodo: `${desde} → ${hasta}`,
-      puntos: puntos.map((p) => (p.availability === 'NO_DATA' ? `${p.date}: sin dato` : `${p.date}: ${p.magnitude.value} ${p.magnitude.unit}`)),
-      clavesDeUnPuntoSinDato: sinDato[0] ? Object.keys(sinDato[0]) : null,
-      noComparable: noComparable ? `${noComparable.date}: ${noComparable.incomparableWithPrevious.join(', ')}` : null,
+      puntos: conDato.map((p) => `${p.occurredAt.slice(0, 10)}: ${p.value} ${p.unit}`),
+      huecos: huecos.map((h) => `${h.from} → ${h.to}: ${h.days} sin dato`),
+      clavesDeUnHueco: huecos[0] ? Object.keys(huecos[0]) : null,
+      noComparable: noComparable ? `${noComparable.occurredAt.slice(0, 10)}: ${noComparable.incomparableWithPrevious.join(', ')}` : null,
       honestidad: evolucion.cuerpo?.data?.honesty,
     },
   );
 
   // Anular la segunda medición la saca de la serie sin borrarla: el día vuelve a ser «sin dato» (REG-06-221).
-  await pedir('POST', `/anthropometry/measurements/${segunda.porMetrica['perimetro-cintura']}/annulment`, {
+  await pedir('POST', `/anthropometry/measurements/${segunda.porMetrica['perimetro-cintura']}/annulments`, {
     token: pa.token,
     clave: clave(),
     cuerpo: { reason: 'Se tomó sobre la ropa.' },
   });
-  const despues = await pedir('GET', `/advisees/${ase.id}/anthropometry/progress?from=${desde}&to=${hasta}&metrics=perimetro-cintura`, { token: pa.token });
-  const serieDespues = despues.cuerpo?.data?.series?.[0];
-  const delDia = serieDespues?.points?.find((p) => p.date === diaLocal(d2));
+  const despues = await pedir('GET', `/advisees/${ase.id}/anthropometry/progress?periodStart=${desde}&periodEnd=${hasta}&metric=perimetro-cintura`, { token: pa.token });
+  const serieDespues = despues.cuerpo?.data?.metrics?.[0];
+  const delDia = (serieDespues?.gaps ?? []).find((h) => h.from <= diaLocal(d2) && diaLocal(d2) <= h.to);
   const detalle = await pedir('GET', `/anthropometry/evaluations/${segunda.evaluationId}`, { token: pa.token });
 
   registrar(
     '7-anulada',
     'una medición anulada deja de aportar punto a la serie y su valor original se conserva en la historia',
     despues.status === 200 &&
-      delDia?.availability === 'NO_DATA' &&
-      !('magnitude' in (delDia ?? {})) &&
-      serieDespues.missingData.includes(diaLocal(d2)) &&
+      delDia?.state === 'NO_DATA' &&
+      !('value' in (delDia ?? {})) &&
+      (serieDespues?.series ?? []).every((p) => p.occurredAt.slice(0, 10) !== diaLocal(d2)) &&
       detalle.cuerpo.data.measurements[0].condition === 'ANNULLED' &&
       detalle.cuerpo.data.measurements[0].magnitude.value === 0.81,
     {
-      diaDeLaAnulada: `${diaLocal(d2)}: ${delDia?.availability}`,
-      diasSinDato: serieDespues?.missingData?.length,
+      diaDeLaAnulada: `${diaLocal(d2)}: ${delDia?.state ?? 'no está en ningún hueco'}`,
+      diasSinDato: (serieDespues?.gaps ?? []).reduce((n, h) => n + h.days, 0),
       enLaHistoria: `${detalle.cuerpo?.data?.measurements?.[0]?.magnitude?.value} ${detalle.cuerpo?.data?.measurements?.[0]?.magnitude?.unit} · ${detalle.cuerpo?.data?.measurements?.[0]?.condition}`,
     },
   );
@@ -269,25 +268,25 @@ const medicion = (metric, value, unit, momento, origin = 'DIRECT_CAPTURE') => ({
 // ─── 10: el borrador de otro profesional no existe ──────────────────────────────────────────────
 {
   const hoy = haceDias(0);
-  const borrador = await pedir('POST', `/advisees/${ase.id}/anthropometry/evaluations`, {
+  const borrador = await pedir('POST', `/advisees/${ase.id}/anthropometry/evaluation-drafts`, {
     token: pa.token,
     clave: clave(),
-    cuerpo: { occurredAt: hoy.toISOString(), context: 'Borrador de DEMO-PA.', measurements: [medicion('peso', 73, 'kg', hoy)] },
+    cuerpo: toma(hoy, [medicion('peso', 73, 'kg')]),
   });
   const suyo = borrador.cuerpo.data.evaluationId;
   const inventado = randomUUID();
 
-  const propio = await pedir('GET', `/anthropometry/evaluations/${suyo}`, { token: pa.token });
-  const ajeno = await pedir('GET', `/anthropometry/evaluations/${suyo}`, { token: pn.token });
-  const inexistente = await pedir('GET', `/anthropometry/evaluations/${inventado}`, { token: pn.token });
-  const listaDelOtro = await pedir('GET', `/advisees/${ase.id}/anthropometry/evaluations/drafts`, { token: pn.token });
-  const listaPropia = await pedir('GET', `/advisees/${ase.id}/anthropometry/evaluations/drafts`, { token: pa.token });
+  const propio = await pedir('GET', `/anthropometry/evaluation-drafts/${suyo}`, { token: pa.token });
+  const ajeno = await pedir('GET', `/anthropometry/evaluation-drafts/${suyo}`, { token: pn.token });
+  const inexistente = await pedir('GET', `/anthropometry/evaluation-drafts/${inventado}`, { token: pn.token });
+  const listaDelOtro = await pedir('GET', `/advisees/${ase.id}/anthropometry/evaluation-drafts`, { token: pn.token });
+  const listaPropia = await pedir('GET', `/advisees/${ase.id}/anthropometry/evaluation-drafts`, { token: pa.token });
   // Tampoco se puede escribir sobre él: guardar y registrar dan el mismo 404.
-  const guardar = await pedir('PATCH', `/anthropometry/evaluations/${suyo}`, { token: pn.token, cuerpo: { expectedVersion: 'v1', measurements: [] } });
-  const registrarAjeno = await pedir('POST', `/anthropometry/evaluations/${suyo}/register`, { token: pn.token, clave: clave(), cuerpo: { expectedVersion: 'v1' } });
+  const guardar = await pedir('PUT', `/anthropometry/evaluation-drafts/${suyo}`, { token: pn.token, cuerpo: { expectedVersion: 'v1', ...toma(hoy, []) } });
+  const registrarAjeno = await pedir('POST', `/anthropometry/evaluation-drafts/${suyo}/register`, { token: pn.token, clave: clave(), cuerpo: { expectedVersion: 'v1' } });
   // Control positivo: el otro profesional sí ve el tablero del vínculo que le corresponde.
   const tablero = await pedir('GET', `/advisees/${ase.id}/dashboard`, { token: pn.token });
-  const sigueIntacto = await pedir('GET', `/anthropometry/evaluations/${suyo}`, { token: pa.token });
+  const sigueIntacto = await pedir('GET', `/anthropometry/evaluation-drafts/${suyo}`, { token: pa.token });
 
   registrar(
     '10',
@@ -321,9 +320,9 @@ const medicion = (metric, value, unit, momento, origin = 'DIRECT_CAPTURE') => ({
 // ─── Cálculo: versión exacta, admisibilidad, coexistencia y referencia ──────────────────────────
 {
   const dia = haceDias(3);
-  const { porMetrica } = await evaluacionRegistrada(pa, ase.id, dia, [medicion('peso', 72.5, 'kg', dia), medicion('talla', 1.75, 'm', dia)]);
-  // El mismo peso, pero informado por la persona, en su propia evaluación: existe, es visible y no es admisible.
-  const conInformado = await evaluacionRegistrada(pa, ase.id, dia, [medicion('peso', 70, 'kg', dia, 'SELF_REPORTED'), medicion('talla', 1.75, 'm', dia)]);
+  const { porMetrica } = await evaluacionRegistrada(pa, ase.id, dia, [medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
+  // La misma toma, pero informada por la persona: existe, es visible y no es admisible para la versión vigente.
+  const conInformado = await evaluacionRegistrada(pa, ase.id, dia, [medicion('peso', 70, 'kg'), medicion('talla', 1.75, 'm')], 'SELF_REPORTED');
   const metodos = await pedir('GET', '/professional-methods', { token: pa.token });
   const vigente = metodos.cuerpo.data.find((m) => m.key === 'MET-DEMO');
   const historica = await pedir('GET', `/professional-methods/${vigente.methodId}/versions/${vigente.methodVersionId}`, { token: pa.token });
@@ -353,7 +352,7 @@ const medicion = (metric, value, unit, momento, origin = 'DIRECT_CAPTURE') => ({
 
   // Otra evaluación, otra corrida: las dos conviven.
   const otroDia = haceDias(3);
-  const otra = await evaluacionRegistrada(pa, ase.id, otroDia, [medicion('peso', 75, 'kg', otroDia), medicion('talla', 1.75, 'm', otroDia)]);
+  const otra = await evaluacionRegistrada(pa, ase.id, otroDia, [medicion('peso', 75, 'kg'), medicion('talla', 1.75, 'm')]);
   const segunda = await pedir('POST', `/advisees/${ase.id}/calculations`, {
     token: pa.token,
     clave: clave(),

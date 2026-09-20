@@ -15,10 +15,11 @@ import {
 import type { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
-import { ErrorDeApi } from '../http/errores';
+import { ErrorDeApi, errores } from '../http/errores';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
+import { esToken } from '../vinculo/lectura';
 import { EjecutorAntropometrico, esUuid } from './ejecutor';
 import { registrarEventoDeAntropometria } from './eventos';
 import { INCLUIR_MEDICION, medicionApi, nombreVisibleDe, REDONDEO_DESDE_API } from './lectura-antropometria';
@@ -42,8 +43,8 @@ export class MedicionesService {
   constructor(private readonly ejecutor: EjecutorAntropometrico, private readonly pdp: PdpService) {}
 
   // ─── API-ANT-05 · corregir ─────────────────────────────────────────────────────────────────
-  corregir(actor: ActorAutenticado, measurementId: string, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
-    const recurso = { tipo: 'MedicionAntropometrica', id: measurementId };
+  corregir(actor: ActorAutenticado, evaluationId: string, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
+    const recurso = { tipo: 'EvaluacionAntropometrica', id: evaluationId };
     return this.ejecutor.escribirIdempotente({
       operacion: 'API-ANT-05',
       casoDeUso: 'UC-E03',
@@ -53,9 +54,13 @@ export class MedicionesService {
       clave,
       esquema: CorregirMedicionRequestSchema,
       cuerpo,
-      huellaExtra: { measurementId },
+      huellaExtra: { evaluationId },
       efecto: async (tx, pedido, procedencia) => {
-        const m = await this.propiaBloqueada(tx, 'API-ANT-05', actor, measurementId, ctx);
+        const m = await this.propiaBloqueada(tx, 'API-ANT-05', actor, pedido.targetId, ctx);
+        // El target pertenece a la evaluación de la ruta: si no, no es revelable por acá (09v11 §9).
+        if (m.evaluacionId !== evaluationId) {
+          throw this.ejecutor.noRevelable({ operacion: 'API-ANT-05', actorId: actor.identidadId, recurso }, ctx);
+        }
 
         // REG-06-219: una medición anulada no admite una corrección destinada a volverla efectiva.
         if (!admiteCorreccion(m.anulacion ? 'ANULADA' : 'VIGENTE')) {
@@ -105,7 +110,8 @@ export class MedicionesService {
         const nombre = await nombreVisibleDe(tx, actor.identidadId);
         return {
           estadoHttp: 201,
-          cuerpo: { data: { ...medicionApi(completa, () => nombre), correctionId: correccion.id, dependencyImpact: impacto } },
+          // El 09 devuelve el par correctionId + evaluationId (09v11:637-640): la corrección es de la evaluación.
+          cuerpo: { data: { ...medicionApi(completa, () => nombre), correctionId: correccion.id, evaluationId: completa.evaluacionId, dependencyImpact: impacto } },
           sujetoId: completa.evaluacion.asesoradoId,
           recurso,
         };
@@ -133,6 +139,9 @@ export class MedicionesService {
       huellaExtra: { measurementId },
       efecto: async (tx, pedido, procedencia) => {
         const m = await this.propiaBloqueada(tx, 'API-ANT-12', actor, measurementId, ctx);
+        // 09v16 §24.1, paso 2: anular sobre una foto vieja de la evaluación es 409, no un pisotón. El token es
+        // opcional porque el legajo no lo exige para la conducta idempotente del adversarial 6.
+        if (pedido.expectedVersion !== undefined && !esToken(pedido.expectedVersion, m.evaluacion.version)) throw errores.conflictoDeVersion();
         const nombre = await nombreVisibleDe(tx, actor.identidadId);
         const anulacionApi = (a: { id: string; motivo: string; autorId: string; momentoDeOcurrencia: Date; momentoDeRegistro: Date }) => ({
           annulmentId: a.id,

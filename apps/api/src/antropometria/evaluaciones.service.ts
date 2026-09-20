@@ -2,9 +2,14 @@ import { Injectable } from '@nestjs/common';
 import {
   CodigoDeError,
   CrearBorradorRequestSchema,
+  CrearEvaluacionAntropometricaRequestSchema,
   GuardarBorradorRequestSchema,
   RegistrarEvaluacionRequestSchema,
+  ejecutar,
+  evaluarAdmisibilidad,
   evaluarTransicionDeEvaluacion,
+  leerEspecificacionDeMetodo,
+  type DatoPropuesto,
   type Procedencia,
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
@@ -41,6 +46,61 @@ export class EvaluacionesAntropometricasService {
   constructor(private readonly ejecutor: EjecutorAntropometrico, private readonly pdp: PdpService) {}
 
   // ─── API-ANT-07 · crear la evaluación en preparación ───────────────────────────────────────
+  /**
+   * API-ANT-02 — la evaluación nace **registrada**, en un solo acto atómico: mediciones directas, cálculos pedidos,
+   * evento y registro, todo en la misma transacción (09v11 §6). No pasa por EN_PREPARACION: es la otra vía, la que
+   * el consolidado ratifica como distinta del borrador (09v16:1709-1713).
+   */
+  crearRegistrada(actor: ActorAutenticado, adviseeId: string, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
+    return this.ejecutor.escribirIdempotente({
+      operacion: 'API-ANT-02',
+      casoDeUso: 'UC-P19',
+      actor,
+      ctx,
+      recursoIntentado: { tipo: 'Asesorado', id: adviseeId },
+      clave,
+      esquema: CrearEvaluacionAntropometricaRequestSchema,
+      cuerpo,
+      huellaExtra: { adviseeId },
+      efecto: async (tx, pedido, procedencia) => {
+        const titular = await this.decidir(tx, 'API-ANT-02', actor, adviseeId, { tipo: 'Asesorado', id: adviseeId }, ctx);
+        await this.exigirOcurrenciaNoFutura(tx, pedido.occurredAt);
+
+        const momento = await momentoDeLaBase(tx);
+        const evaluacion = await tx.evaluacionAntropometrica.create({
+          data: {
+            profesionalId: actor.identidadId,
+            asesoradoId: titular,
+            contexto: pedido.professionalNotes ?? null,
+            momentoDeOcurrencia: new Date(pedido.occurredAt),
+            procedencia: procedencia as unknown as Prisma.InputJsonValue,
+          },
+        });
+        await this.escribirMediciones(tx, evaluacion.id, pedido, procedencia);
+        // El registro va **antes** de los cálculos: un derivado de una evaluación registrada es historia desde que
+        // nace, y así lo lee la corrida (REG-06-215).
+        await tx.evaluacionAntropometrica.update({ where: { id: evaluacion.id }, data: { estado: 'REGISTRADA', momentoDeRegistroDeEvaluacion: momento } });
+        await registrarEventoDeAntropometria(tx, {
+          tipo: 'EvaluacionAntropometricaRegistrada',
+          evaluacionId: evaluacion.id,
+          medicionId: null,
+          actorId: actor.identidadId,
+          procedencia,
+          momento,
+        });
+        await this.ejecutarMetodosPedidos(tx, evaluacion.id, pedido.requestedDerivedMethods ?? [], actor.identidadId, procedencia, momento);
+
+        const completa = await this.leerEvaluacion(tx, evaluacion.id);
+        return {
+          estadoHttp: 201,
+          cuerpo: { data: await this.aApi(tx, completa) },
+          sujetoId: titular,
+          recurso: { tipo: 'EvaluacionAntropometrica', id: evaluacion.id },
+        };
+      },
+    });
+  }
+
   crearBorrador(actor: ActorAutenticado, adviseeId: string, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
     return this.ejecutor.escribirIdempotente({
       operacion: 'API-ANT-07',
@@ -54,18 +114,20 @@ export class EvaluacionesAntropometricasService {
       huellaExtra: { adviseeId },
       efecto: async (tx, pedido, procedencia) => {
         const titular = await this.decidir(tx, 'API-ANT-07', actor, adviseeId, { tipo: 'Asesorado', id: adviseeId }, ctx);
-        await this.exigirOcurrenciaNoFutura(tx, pedido.occurredAt);
+        if (pedido.occurredAt) await this.exigirOcurrenciaNoFutura(tx, pedido.occurredAt);
 
         const evaluacion = await tx.evaluacionAntropometrica.create({
           data: {
             profesionalId: actor.identidadId,
             asesoradoId: titular,
-            contexto: pedido.context ?? null,
-            momentoDeOcurrencia: new Date(pedido.occurredAt),
+            contexto: pedido.professionalNotes ?? null,
+            // Un borrador puede no tener todavía el momento de la toma: se registra el de la apertura y se corrige
+            // al guardar. Lo que no puede es quedar sin momento (REG-06-152).
+            momentoDeOcurrencia: pedido.occurredAt ? new Date(pedido.occurredAt) : await momentoDeLaBase(tx),
             procedencia: procedencia as unknown as Prisma.InputJsonValue,
           },
         });
-        await this.escribirMediciones(tx, evaluacion.id, pedido.measurements ?? [], procedencia);
+        await this.escribirMediciones(tx, evaluacion.id, pedido, procedencia);
 
         const completa = await this.leerEvaluacion(tx, evaluacion.id);
         return {
@@ -98,11 +160,19 @@ export class EvaluacionesAntropometricasService {
         await tx.entradaDeCalculo.deleteMany({ where: { ejecucion: { evaluacionId: e.id } } });
         await tx.ejecucionDeCalculo.deleteMany({ where: { evaluacionId: e.id } });
         await tx.medicionAntropometrica.deleteMany({ where: { evaluacionId: e.id } });
-        await this.escribirMediciones(tx, e.id, pedido.measurements, procedencia);
+        await this.escribirMediciones(tx, e.id, pedido, procedencia);
+        if (pedido.occurredAt) await this.exigirOcurrenciaNoFutura(tx, pedido.occurredAt);
         await tx.evaluacionAntropometrica.update({
           where: { id: e.id },
-          data: { version: e.version + 1, contexto: pedido.context === undefined ? e.contexto : pedido.context },
+          data: {
+            version: e.version + 1,
+            contexto: pedido.professionalNotes === undefined ? e.contexto : pedido.professionalNotes,
+            // El momento de la toma es el declarado; si el pedido no lo trae, se conserva el que ya tenía. Nunca se
+            // reescribe con «ahora» al guardar: eso correría la serie sola (REG-06-152).
+            ...(pedido.occurredAt ? { momentoDeOcurrencia: new Date(pedido.occurredAt) } : {}),
+          },
         });
+        await this.ejecutarMetodosPedidos(tx, e.id, pedido.requestedDerivedMethods ?? [], actor.identidadId, procedencia, await momentoDeLaBase(tx));
 
         const completa = await this.leerEvaluacion(tx, e.id);
         return { estadoHttp: 200, cuerpo: { data: await this.aApi(tx, completa) }, sujetoId: e.asesoradoId, recurso };
@@ -215,25 +285,36 @@ export class EvaluacionesAntropometricasService {
 
   // ─── API-ANT-04 y API-ANT-09 · consultar ───────────────────────────────────────────────────
   /**
-   * Una evaluación de otro profesional no es revelable, y **un borrador ajeno tampoco existe**: mismo 404 que ante un
-   * identificador inventado (08 §56.5; adversarial 10). El PDP se decide primero contra el titular real, y recién
-   * después se compara la propiedad (DL-057).
+   * Dos lecturas en dos colecciones, como las separa el legajo: API-ANT-04 lee una evaluación **registrada** y
+   * API-ANT-09, un borrador propio. «API-ANT-04 consulta una evaluación registrada; no es una vía residual para leer
+   * un draft» (09v16:1718), y el DoD lo pone como condición de conformidad (09v16:2235).
+   *
+   * Lo que no corresponde a la colección pedida responde el mismo 404 que lo inexistente: un borrador por la ruta de
+   * las registradas no existe, igual que una evaluación de otro profesional (08 §56.5; adversarial 10; DL-057). El
+   * PDP se decide primero contra el titular real, y recién después se compara la propiedad.
    */
-  consultar(actor: ActorAutenticado, evaluationId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<unknown> {
+  consultar(
+    actor: ActorAutenticado,
+    evaluationId: string,
+    query: Record<string, unknown>,
+    ctx: ContextoDeSolicitud,
+    estado: 'EN_PREPARACION' | 'REGISTRADA',
+  ): Promise<unknown> {
     sinParametrosDeQuery(query);
+    const operacion = estado === 'REGISTRADA' ? 'API-ANT-04' : 'API-ANT-09';
     const recurso = { tipo: 'EvaluacionAntropometrica', id: evaluationId };
     return this.ejecutor.leer({
-      operacion: 'API-ANT-04',
+      operacion,
       casoDeUso: 'UC-P19',
       actor,
       ctx,
       recursoIntentado: recurso,
       lectura: async (tx) => {
         const e = esUuid(evaluationId) ? await tx.evaluacionAntropometrica.findUnique({ where: { id: evaluationId }, include: INCLUIR_EVALUACION }) : null;
-        if (!e) throw this.ejecutor.noRevelable({ operacion: 'API-ANT-04', actorId: actor.identidadId, recurso }, ctx);
-        await this.decidir(tx, 'API-ANT-04', actor, e.asesoradoId, recurso, ctx);
-        if (e.profesionalId !== actor.identidadId) {
-          throw this.ejecutor.noRevelable({ operacion: 'API-ANT-04', actorId: actor.identidadId, recurso, sujetoId: e.asesoradoId }, ctx);
+        if (!e) throw this.ejecutor.noRevelable({ operacion, actorId: actor.identidadId, recurso }, ctx);
+        await this.decidir(tx, operacion, actor, e.asesoradoId, recurso, ctx);
+        if (e.profesionalId !== actor.identidadId || e.estado !== estado) {
+          throw this.ejecutor.noRevelable({ operacion, actorId: actor.identidadId, recurso, sujetoId: e.asesoradoId }, ctx);
         }
         return { data: await this.aApi(tx, e) };
       },
@@ -249,47 +330,136 @@ export class EvaluacionesAntropometricasService {
     }
   }
 
+  /**
+   * Las mediciones directas de una evaluación. El protocolo y la procedencia son **de la evaluación** (09v11 §6): una
+   * evaluación es una toma, con su especificación y su origen, y cada fila declara qué se midió, cuánto y en qué
+   * unidad. El momento es el de la evaluación: las mediciones de una misma toma no ocurren en momentos distintos
+   * (REG-06-152).
+   */
   private async escribirMediciones(
     tx: Tx,
     evaluacionId: string,
-    mediciones: readonly {
-      metric: string;
-      magnitude: { value: number; unit: string };
-      protocolVersionId: string;
-      origin: 'DIRECT_CAPTURE' | 'SELF_REPORTED' | 'CONTROLLED_IMPORT';
-      preparationReference?: string | null;
-      occurredAt: string;
-    }[],
+    pedido: {
+      occurredAt?: string | null;
+      specificationVersionId?: string | null;
+      source?: { type: 'DIRECT_CAPTURE' | 'SELF_REPORTED' | 'CONTROLLED_IMPORT'; preparationReference?: string | null };
+      directMeasurements?: readonly { metricCode: string; value: number; unit: string }[];
+    },
     procedencia: Procedencia,
   ): Promise<void> {
+    const mediciones = pedido.directMeasurements ?? [];
     if (mediciones.length === 0) return;
-    const versiones = await tx.versionDeEspecificacionAntropometrica.findMany({
-      where: { id: { in: [...new Set(mediciones.map((m) => m.protocolVersionId))] } },
-      select: { id: true },
-    });
-    const conocidas = new Set(versiones.map((v) => v.id));
-    for (const [i, m] of mediciones.entries()) {
-      if (!conocidas.has(m.protocolVersionId)) {
-        throw new ErrorDeApi(422, CodigoDeError.SPECIFICATION_REFERENCE_INVALID, 'El protocolo declarado no existe en el catálogo.', {
-          issues: [{ code: 'UNKNOWN_SPECIFICATION_VERSION', path: `measurements[${i}].protocolVersionId` }],
-        });
-      }
+    if (!pedido.specificationVersionId) {
+      throw new ErrorDeApi(422, CodigoDeError.SPECIFICATION_REFERENCE_INVALID, 'Una medición necesita la especificación con la que se tomó.', {
+        issues: [{ code: 'SPECIFICATION_REQUIRED', path: 'specificationVersionId' }],
+      });
     }
+    const version = await tx.versionDeEspecificacionAntropometrica.findUnique({ where: { id: pedido.specificationVersionId }, select: { id: true } });
+    if (!version) {
+      throw new ErrorDeApi(422, CodigoDeError.SPECIFICATION_REFERENCE_INVALID, 'El protocolo declarado no existe en el catálogo.', {
+        issues: [{ code: 'UNKNOWN_SPECIFICATION_VERSION', path: 'specificationVersionId' }],
+      });
+    }
+    const origen = ORIGEN_DESDE_API[pedido.source?.type ?? 'DIRECT_CAPTURE'];
+    const momento = pedido.occurredAt ? new Date(pedido.occurredAt) : await momentoDeLaBase(tx);
     await tx.medicionAntropometrica.createMany({
       data: mediciones.map((m) => ({
         evaluacionId,
-        metrica: m.metric,
-        valor: m.magnitude.value,
-        unidadDeOrigen: m.magnitude.unit,
-        protocoloVersionId: m.protocolVersionId,
-        origen: ORIGEN_DESDE_API[m.origin],
+        metrica: m.metricCode,
+        valor: m.value,
+        unidadDeOrigen: m.unit,
+        protocoloVersionId: pedido.specificationVersionId as string,
+        origen,
         // La clase se deriva del origen: el cliente no la elige (04:1090). La base lo vuelve a exigir.
-        clase: CLASE_DESDE_ORIGEN[ORIGEN_DESDE_API[m.origin]],
-        referenciaDePreparacion: m.preparationReference ?? null,
-        momentoDeOcurrencia: new Date(m.occurredAt),
+        clase: CLASE_DESDE_ORIGEN[origen],
+        referenciaDePreparacion: pedido.source?.preparationReference ?? null,
+        momentoDeOcurrencia: momento,
         procedencia: procedencia as unknown as Prisma.InputJsonValue,
       })),
     });
+  }
+
+  /**
+   * Los métodos que la evaluación pidió ejecutar en el mismo acto (09v11 §6, paso 7). Lo que no se puede calcular con
+   * las entradas disponibles **no se calcula ni se inventa**: se omite, y el resultado ausente se ve como ausencia
+   * (REG-06-204; REG-06-220 inciso 6).
+   */
+  private async ejecutarMetodosPedidos(
+    tx: Tx,
+    evaluacionId: string,
+    pedidos: readonly { methodVersionId: string }[],
+    autorId: string,
+    procedencia: Procedencia,
+    momento: Date,
+  ): Promise<void> {
+    if (pedidos.length === 0) return;
+    const mediciones = await tx.medicionAntropometrica.findMany({ where: { evaluacionId }, include: { anulacion: { select: { id: true } } } });
+    for (const { methodVersionId } of pedidos) {
+      const version = esUuid(methodVersionId)
+        ? await tx.versionDeEspecificacionAntropometrica.findFirst({
+            where: { id: methodVersionId, especificacion: { tipo: 'METODO' } },
+            include: { sucesora: { select: { id: true } } },
+          })
+        : null;
+      const metodo = version ? leerEspecificacionDeMetodo(version.contenido) : null;
+      if (!version || !metodo) {
+        throw new ErrorDeApi(422, CodigoDeError.METHOD_VERSION_NOT_SELECTABLE, 'El método declarado no existe en el catálogo.', {
+          issues: [{ code: 'UNKNOWN_METHOD_VERSION', path: 'requestedDerivedMethods' }],
+        });
+      }
+      if (version.sucesora) {
+        throw new ErrorDeApi(422, CodigoDeError.METHOD_VERSION_NOT_SELECTABLE, 'Esa versión del método es histórica. Para ejecutar, elegí la versión vigente.');
+      }
+      const propuestos: DatoPropuesto[] = metodo.entradas.flatMap((entrada) => {
+        const m = mediciones.find((x) => x.metrica === entrada.metrica);
+        return m
+          ? [
+              {
+                codigo: entrada.codigo,
+                medicionId: m.id,
+                metrica: m.metrica,
+                magnitud: { valor: Number(m.valor), unidad: m.unidadDeOrigen },
+                origen: m.origen,
+                vigente: m.anulacion === null,
+              },
+            ]
+          : [];
+      });
+      const admisibilidad = evaluarAdmisibilidad(metodo, propuestos);
+      if (!admisibilidad.admisible) {
+        throw new ErrorDeApi(422, CodigoDeError.CALCULATION_INPUTS_INSUFFICIENT, 'Las mediciones de esta evaluación no alcanzan para el método pedido.', {
+          issues: admisibilidad.problemas.map((x: { motivo: string; codigo: string }) => ({ code: x.motivo, path: `requestedDerivedMethods.${x.codigo}` })),
+        });
+      }
+      const resultado = ejecutar(metodo, admisibilidad.entradas);
+      if (!resultado.ok) {
+        throw new ErrorDeApi(422, CodigoDeError.CALCULATION_NOT_REPRODUCIBLE, `No se puede reproducir el cálculo: ${resultado.detalle}.`);
+      }
+      await tx.ejecucionDeCalculo.create({
+        data: {
+          evaluacionId,
+          metodoVersionId: version.id,
+          autorId,
+          metrica: metodo.salida.metrica,
+          valor: resultado.magnitud.valor,
+          unidad: resultado.magnitud.unidad,
+          decimales: metodo.precision.decimales,
+          modoDeRedondeo: metodo.precision.modo,
+          finalidad: 'SOPORTE_ANTROPOMETRICO',
+          regla: resultado.regla,
+          procedencia: procedencia as unknown as Prisma.InputJsonValue,
+          entradas: {
+            create: admisibilidad.entradas.map((e: { medicionId: string; metrica: string; magnitud: { valor: number; unidad: string } }) => ({
+              medicionId: e.medicionId,
+              metrica: e.metrica,
+              valor: e.magnitud.valor,
+              unidad: e.magnitud.unidad,
+            })),
+          },
+        },
+      });
+      await registrarEventoDeAntropometria(tx, { tipo: 'CalculoEjecutado', evaluacionId, medicionId: null, actorId: autorId, procedencia, momento });
+    }
   }
 
   private async exigirOcurrenciaNoFutura(tx: Tx, occurredAt: string): Promise<void> {

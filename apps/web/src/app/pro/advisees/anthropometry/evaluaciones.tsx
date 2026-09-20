@@ -125,7 +125,13 @@ function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; on
 
   async function corregir() {
     setEnviando(true);
-    const res = await api.corregirMedicion(token, medicion.measurementId, { reason: motivo.trim(), magnitude: { value: Number(valor.replace(',', '.')), unit: medicion.magnitude.unit } }, intento.actual());
+    // La corrección es de la evaluación, y la medición es el objetivo declarado en el cuerpo (09v11 §9).
+    const res = await api.corregirMedicion(
+      token,
+      medicion.evaluationId,
+      { targetId: medicion.measurementId, reason: motivo.trim(), magnitude: { value: Number(valor.replace(',', '.')), unit: medicion.magnitude.unit } },
+      intento.actual(),
+    );
     intento.registrar(res);
     setEnviando(false);
     if (sesionPerdida(res)) return;
