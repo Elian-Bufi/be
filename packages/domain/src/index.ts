@@ -25,3 +25,4 @@ export * from './nutricion';
 export * from './copy-nutricion';
 export * from './contratos-antropometria';
 export * from './antropometria';
+export * from './copy-antropometria';

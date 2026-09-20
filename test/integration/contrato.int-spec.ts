@@ -3,6 +3,7 @@
  * - WP-02: TEST-CT-ACC-01…05 · TEST-CT-P1-ACC-P1-03 · CON-05.
  * - WP-03: TEST-CT-REL-01…09 · TEST-CT-CON-01…04, 06…08 · TEST-CT-DSH-03 (parcial).
  * - WP-04: TEST-CT-NUT-01…21 · TEST-CT-INT-NUT-01 · la lista propia de ingestas (DL-055).
+ * - WP-05: TEST-CT-ANT-01, 03, 05 a 12 y la evolución propia.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -29,6 +30,7 @@ import {
   tokenDe,
 } from './soporte-api';
 import { aceptar, dashboard, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo } from './soporte-vinculo';
+import { circuitoAntropometrico } from './soporte-antropometria';
 import { randomUUID } from 'node:crypto';
 import {
   activar,
@@ -358,6 +360,98 @@ it('TEST-CT (WP-04): se ejercitan éxitos y errores de NUT e INT-NUT-01', async 
   await pro.post(`/api/v1/nutrition/reviews/${cierre.body.data.reviewId}/apply`).send({ expectedVersion: 'v1' }).expect(200);
   await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send(cuerpoDeRevision(evidencia, 'MAINTAIN')).expect(422);
   await registrarLibre(app, c.ase, b.planId, 'Después del cierre.').expect(422); // ACTIVE_PLAN_REQUIRED
+});
+
+it('TEST-CT (WP-05): se ejercitan éxitos y errores de las once operaciones ANT', async () => {
+  const c = await circuitoAntropometrico(app, prisma, 'contrato');
+  const pro = conSesion(app, c.pro.token);
+  const ase = conSesion(app, c.ase.token);
+  const ajeno = randomUUID();
+  const ayer = new Date(Date.now() - 86_400_000).toISOString();
+  const medicion = (metric: string, value: number, unit: string, protocolVersionId = c.protocoloVersionId) => ({
+    metric,
+    magnitude: { value, unit },
+    protocolVersionId,
+    origin: 'DIRECT_CAPTURE' as const,
+    occurredAt: ayer,
+  });
+  const evaluaciones = `/api/v1/advisees/${c.ase.id}/anthropometry/evaluations`;
+
+  // ANT-01: el catálogo es de la capacidad antropométrica; el asesorado no lo consulta.
+  await pro.get('/api/v1/anthropometry/specifications?kind=PROTOCOL').expect(200);
+  await pro.get('/api/v1/anthropometry/specifications?kind=OTRO').expect(400); // INVALID_REQUEST
+  await pro.get('/api/v1/anthropometry/specifications?cursor=xx').expect(400); // INVALID_CURSOR
+  await ase.get('/api/v1/anthropometry/specifications').expect(403); // ACTION_FORBIDDEN
+
+  // ANT-07: crear el borrador.
+  const claveDeCreacion = claveDeIdempotencia();
+  const creado = await pro.post(evaluaciones, claveDeCreacion).send({ occurredAt: ayer, measurements: [medicion('peso', 72.5, 'kg')] }).expect(201);
+  const evaluationId = creado.body.data.evaluationId as string;
+  await pro.post(evaluaciones, claveDeCreacion).send({ occurredAt: new Date().toISOString() }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post(evaluaciones).send({ occurredAt: new Date(Date.now() + 86_400_000).toISOString() }).expect(422); // ANTHROPOMETRY_EVALUATION_INVALID
+  await pro.post(evaluaciones).send({ occurredAt: ayer, measurements: [medicion('peso', 70, 'kg', ajeno)] }).expect(422); // SPECIFICATION_REFERENCE_INVALID
+  await pro.post(evaluaciones).send({ occurredAt: ayer, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await pro.post(`/api/v1/advisees/${ajeno}/anthropometry/evaluations`).send({ occurredAt: ayer }).expect(404);
+
+  // ANT-08 y ANT-09: los borradores propios se listan y se consultan; lo ajeno no existe.
+  await pro.get(`${evaluaciones}/drafts`).expect(200);
+  await pro.get(`${evaluaciones}/drafts?cursor=xx`).expect(400);
+  await pro.get(`/api/v1/advisees/${ajeno}/anthropometry/evaluations/drafts`).expect(404);
+  await pro.get(`/api/v1/anthropometry/evaluations/${evaluationId}`).expect(200);
+  await pro.get(`/api/v1/anthropometry/evaluations/${ajeno}`).expect(404);
+
+  // ANT-10: guardar reemplaza el contenido declarado y avanza el token de trabajo.
+  const guardar = (cuerpo: object, id = evaluationId) => patchConSesion(app, c.pro.token, `/api/v1/anthropometry/evaluations/${id}`).send(cuerpo);
+  const guardado = await guardar({ expectedVersion: creado.body.data.version, measurements: [medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')] }).expect(200);
+  await guardar({ expectedVersion: 'v9', measurements: [] }).expect(409); // VERSION_CONFLICT
+  await guardar({ expectedVersion: guardado.body.data.version, measurements: [medicion('peso', 70, 'kg', ajeno)] }).expect(422); // SPECIFICATION_REFERENCE_INVALID
+  await guardar({ expectedVersion: guardado.body.data.version, measurements: [], extra: 1 }).expect(400);
+  await guardar({ expectedVersion: 'v1', measurements: [] }, ajeno).expect(404);
+
+  // ANT-11: el acto explícito de registro. Sin contenido registrable no procede, y REGISTRADA es terminal.
+  const vacio = await pro.post(evaluaciones).send({ occurredAt: ayer }).expect(201);
+  await pro.post(`/api/v1/anthropometry/evaluations/${vacio.body.data.evaluationId}/register`).send({ expectedVersion: vacio.body.data.version }).expect(422); // ANTHROPOMETRY_EVALUATION_INVALID
+  await pro.post(`/api/v1/anthropometry/evaluations/${evaluationId}/register`).send({ expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  const claveDeRegistro = claveDeIdempotencia();
+  const registrada = await pro.post(`/api/v1/anthropometry/evaluations/${evaluationId}/register`, claveDeRegistro).send({ expectedVersion: guardado.body.data.version }).expect(200);
+  await pro.post(`/api/v1/anthropometry/evaluations/${evaluationId}/register`, claveDeRegistro).send({ expectedVersion: 'v9' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post(`/api/v1/anthropometry/evaluations/${evaluationId}/register`).send({ expectedVersion: registrada.body.data.version }).expect(422); // ANTHROPOMETRY_EVALUATION_NOT_EDITABLE
+  await guardar({ expectedVersion: registrada.body.data.version, measurements: [] }).expect(422); // ANTHROPOMETRY_EVALUATION_NOT_EDITABLE
+  await pro.post(`/api/v1/anthropometry/evaluations/${ajeno}/register`).send({ expectedVersion: 'v1' }).expect(404);
+  await pro.post(`/api/v1/anthropometry/evaluations/${evaluationId}/register`).send({ expectedVersion: 'v1', extra: 1 }).expect(400);
+
+  // ANT-03: la lista de historia. El borrador vacío no aparece acá.
+  await pro.get(evaluaciones).expect(200);
+  await pro.get(`${evaluaciones}?cursor=xx`).expect(400);
+  await pro.get(`/api/v1/advisees/${ajeno}/anthropometry/evaluations`).expect(404);
+
+  // ANT-05: corregir conserva el original; ANT-12: anular es aditivo, terminal y sin segundo efecto.
+  const [peso, talla] = registrada.body.data.measurements as { measurementId: string }[];
+  const correcciones = (id: string) => `/api/v1/anthropometry/measurements/${id}/corrections`;
+  const claveDeCorreccion = claveDeIdempotencia();
+  await pro.post(correcciones(peso!.measurementId), claveDeCorreccion).send({ reason: 'Se leyó mal la balanza.', magnitude: { value: 73.1, unit: 'kg' } }).expect(201);
+  await pro.post(correcciones(peso!.measurementId), claveDeCorreccion).send({ reason: 'Otro motivo.', magnitude: { value: 73.2, unit: 'kg' } }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post(correcciones(ajeno)).send({ reason: 'x', magnitude: { value: 1, unit: 'kg' } }).expect(404);
+  await pro.post(correcciones(peso!.measurementId)).send({ reason: 'x', magnitude: { value: 1, unit: 'kg' }, extra: 1 }).expect(400);
+
+  const anulacion = (id: string) => `/api/v1/anthropometry/measurements/${id}/annulment`;
+  const claveDeAnulacion = claveDeIdempotencia();
+  await pro.post(anulacion(talla!.measurementId), claveDeAnulacion).send({ reason: 'Se midió con el calzado puesto.' }).expect(201);
+  await pro.post(anulacion(talla!.measurementId), claveDeAnulacion).send({ reason: 'Otro motivo.' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  // Clave nueva sobre una medición ya anulada: 200 con la anulación que ya existe (WP-05 §0, opción A; DL-059).
+  await pro.post(anulacion(talla!.measurementId), claveDeIdempotencia()).send({ reason: 'Otra vez.' }).expect(200);
+  // Corregir lo anulado no procede: la corrección cambia la vista del valor, no resucita la medición (REG-06-219).
+  await pro.post(correcciones(talla!.measurementId)).send({ reason: 'x', magnitude: { value: 1.8, unit: 'm' } }).expect(422); // CORRECTION_NOT_ALLOWED
+  await pro.post(anulacion(ajeno)).send({ reason: 'x' }).expect(404);
+  await pro.post(anulacion(peso!.measurementId)).send({ reason: 'x', extra: 1 }).expect(400);
+
+  // ANT-06 y su variante propia: la evolución, del lado del profesional y del lado del asesorado.
+  const progreso = `/api/v1/advisees/${c.ase.id}/anthropometry/progress`;
+  await pro.get(progreso).expect(200);
+  await pro.get(`${progreso}?from=ayer`).expect(400); // INVALID_REQUEST
+  await pro.get(`/api/v1/advisees/${ajeno}/anthropometry/progress`).expect(404);
+  await ase.get('/api/v1/me/anthropometry/progress').expect(200);
+  await ase.get('/api/v1/me/anthropometry/progress?to=nunca').expect(400);
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
