@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { HEADER_IDEMPOTENCY_KEY } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
@@ -43,9 +43,27 @@ export class AntropometriaController {
     return this.especificaciones.listar(actorDe(req), query, contextoDe(req));
   }
 
-  // ─── Evaluación en preparación (UC-P19) ────────────────────────────────────────────────────
-  /** API-ANT-07. */
+  // ─── Evaluación registrada de una sola vez (UC-P19) ────────────────────────────────────────
+  /**
+   * API-ANT-02: crear la evaluación **ya registrada**, en un solo acto atómico. Es la vía directa del 09v11 §6, que
+   * el consolidado ratifica como P0 viva y distinta del borrador: «API-ANT-02 ≠ draft» (09v16:1709-1713).
+   */
   @Post('advisees/:adviseeId/anthropometry/evaluations')
+  async crearEvaluacion(
+    @Param('adviseeId') adviseeId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.evaluaciones.crearRegistrada(actorDe(req), adviseeId, cuerpo, clave, contextoDe(req)));
+  }
+
+  // ─── Evaluación en preparación (UC-P19) ────────────────────────────────────────────────────
+  /** API-ANT-07: el borrador vive en su propia colección, que el legajo mantiene separada (09v16 §23.2). */
+  @Post('advisees/:adviseeId/anthropometry/evaluation-drafts')
   async crearBorrador(
     @Param('adviseeId') adviseeId: string,
     @Body() cuerpo: unknown,
@@ -59,7 +77,7 @@ export class AntropometriaController {
   }
 
   /** API-ANT-08: los borradores retomables del profesional. */
-  @Get('advisees/:adviseeId/anthropometry/evaluations/drafts')
+  @Get('advisees/:adviseeId/anthropometry/evaluation-drafts')
   listarBorradores(@Param('adviseeId') adviseeId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
     this.limitar(req);
     return this.evaluaciones.listarBorradores(actorDe(req), adviseeId, query, contextoDe(req));
@@ -72,15 +90,25 @@ export class AntropometriaController {
     return this.evaluaciones.listarRegistradas(actorDe(req), adviseeId, query, contextoDe(req));
   }
 
-  /** API-ANT-04 y API-ANT-09: la misma lectura para una registrada y para un borrador propio. */
+  /**
+   * API-ANT-04: la lectura de una evaluación **registrada**. El legajo es explícito en que no es «una vía residual
+   * para leer un draft» (09v16:1718): un borrador por esta ruta devuelve el mismo 404 que lo inexistente.
+   */
   @Get('anthropometry/evaluations/:evaluationId')
   consultarEvaluacion(@Param('evaluationId') evaluationId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
     this.limitar(req);
-    return this.evaluaciones.consultar(actorDe(req), evaluationId, query, contextoDe(req));
+    return this.evaluaciones.consultar(actorDe(req), evaluationId, query, contextoDe(req), 'REGISTRADA');
   }
 
-  /** API-ANT-10. */
-  @Patch('anthropometry/evaluations/:evaluationId')
+  /** API-ANT-09: la lectura del borrador propio, en la colección del borrador (09v16 §23.4). */
+  @Get('anthropometry/evaluation-drafts/:evaluationId')
+  consultarBorrador(@Param('evaluationId') evaluationId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.evaluaciones.consultar(actorDe(req), evaluationId, query, contextoDe(req), 'EN_PREPARACION');
+  }
+
+  /** API-ANT-10: «reemplaza la versión de trabajo» (09v16 §23.5), y por eso el verbo es PUT y no PATCH. */
+  @Put('anthropometry/evaluation-drafts/:evaluationId')
   async guardarBorrador(
     @Param('evaluationId') evaluationId: string,
     @Body() cuerpo: unknown,
@@ -93,7 +121,7 @@ export class AntropometriaController {
   }
 
   /** API-ANT-11: el acto explícito de registro (REG-06-214 inciso 4). */
-  @Post('anthropometry/evaluations/:evaluationId/register')
+  @Post('anthropometry/evaluation-drafts/:evaluationId/register')
   async registrar(
     @Param('evaluationId') evaluationId: string,
     @Body() cuerpo: unknown,
@@ -107,10 +135,13 @@ export class AntropometriaController {
   }
 
   // ─── Corregir y anular (UC-E03) ────────────────────────────────────────────────────────────
-  /** API-ANT-05. */
-  @Post('anthropometry/measurements/:measurementId/corrections')
+  /**
+   * API-ANT-05: la corrección va sobre la **evaluación**, y la medición es el `targetId` del cuerpo (09v11 §9). La
+   * unidad de idempotencia es el acto de corrección, no la medición.
+   */
+  @Post('anthropometry/evaluations/:evaluationId/corrections')
   async corregir(
-    @Param('measurementId') measurementId: string,
+    @Param('evaluationId') evaluationId: string,
     @Body() cuerpo: unknown,
     @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
     @Query() query: Record<string, unknown>,
@@ -118,11 +149,11 @@ export class AntropometriaController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<unknown> {
     sinParametrosDeQuery(query);
-    return responder(res, await this.mediciones.corregir(actorDe(req), measurementId, cuerpo, clave, contextoDe(req)));
+    return responder(res, await this.mediciones.corregir(actorDe(req), evaluationId, cuerpo, clave, contextoDe(req)));
   }
 
   /** API-ANT-12: anular. La segunda anulación no es un error (adversarial 6; DL-059). */
-  @Post('anthropometry/measurements/:measurementId/annulment')
+  @Post('anthropometry/measurements/:measurementId/annulments')
   async anular(
     @Param('measurementId') measurementId: string,
     @Body() cuerpo: unknown,

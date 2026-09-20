@@ -123,6 +123,10 @@ export const COPY_ANTROPOMETRIA = {
   sinDato: 'Sin dato',
   explicacionDeSinDato: 'Los días sin medición aparecen como «Sin dato». No se completan con cero ni se unen con una línea.',
   sinMediciones: 'Todavía no hay mediciones registradas en este período.',
+  comparableConElAnterior: 'Comparable con el punto anterior',
+  corregida: 'Corregida',
+  vistaParcial:
+    'Esta evolución se armó con lo que vos podés consultar. El asesorado tiene evaluaciones de otro profesional en este período: existen, y no se muestran acá.',
   noComparable: 'No comparable con el punto anterior',
   motivoNoComparable: {
     PROTOCOL: 'Se tomó con otro protocolo',

@@ -78,6 +78,7 @@ import {
   AnularMedicionResponseSchema,
   CorregirMedicionRequestSchema,
   CrearBorradorRequestSchema,
+  CrearEvaluacionAntropometricaRequestSchema,
   EvaluacionAntropometricaResponseSchema,
   EvolucionResponseSchema,
   GuardarBorradorRequestSchema,
@@ -787,9 +788,26 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: '09v11:336-366 · REG-06-157 · WP-05 §0 D-C',
   },
   {
-    id: 'API-ANT-07',
+    id: 'API-ANT-02',
     metodo: 'post',
     ruta: '/advisees/{adviseeId}/anthropometry/evaluations',
+    resumen:
+      'Crear la evaluación antropométrica ya REGISTRADA, en un solo acto atómico: mediciones directas, cálculos pedidos, evento y registro en la misma transacción. Es la vía directa, distinta del borrador.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearEvaluacionAntropometricaRequestSchema,
+    exitos: [{ status: 201, schema: EvaluacionAntropometricaResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['ANTHROPOMETRY_EVALUATION_INVALID', 'SPECIFICATION_REFERENCE_INVALID', 'METHOD_VERSION_NOT_SELECTABLE', 'CALCULATION_INPUTS_INSUFFICIENT', 'CALCULATION_NOT_REPRODUCIBLE'],
+    },
+    fuente: '09v11 §6 · 09v16:1704, 1709-1713 · REG-06-214',
+  },
+  {
+    id: 'API-ANT-07',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/anthropometry/evaluation-drafts',
     resumen:
       'Crear la evaluación antropométrica EN PREPARACIÓN. El borrador no es historia: no alimenta la serie ni figura como última evaluación registrada.',
     autenticacion: 'SESSION',
@@ -802,7 +820,7 @@ const DEFINIDAS: readonly Operacion[] = [
   {
     id: 'API-ANT-08',
     metodo: 'get',
-    ruta: '/advisees/{adviseeId}/anthropometry/evaluations/drafts',
+    ruta: '/advisees/{adviseeId}/anthropometry/evaluation-drafts',
     resumen: 'Borradores retomables del profesional para ese asesorado. Un borrador de otro profesional no aparece.',
     autenticacion: 'SESSION',
     idempotencia: false,
@@ -812,21 +830,33 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: '09v16 §23.3 · 08 §56.5',
   },
   {
-    id: 'API-ANT-09',
+    id: 'API-ANT-04',
     metodo: 'get',
     ruta: '/anthropometry/evaluations/{evaluationId}',
     resumen:
-      'Consultar una evaluación propia, registrada o en preparación. Una ajena, exista o no, devuelve el mismo 404: el borrador de otro profesional no aparece ni como bloqueado ni como existente.',
+      'Consultar una evaluación REGISTRADA propia. No es una vía residual para leer un borrador: un borrador por esta ruta devuelve el mismo 404 que lo inexistente, igual que una evaluación ajena.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: EvaluacionAntropometricaResponseSchema }],
-    errores: { ...SESION, 404: ['RESOURCE_NOT_FOUND'] },
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v11 §8 · 09v16:1718, 2235 · 08 §56.5',
+  },
+  {
+    id: 'API-ANT-09',
+    metodo: 'get',
+    ruta: '/anthropometry/evaluation-drafts/{evaluationId}',
+    resumen:
+      'Consultar el borrador propio, en la colección del borrador. Uno ajeno, exista o no, devuelve el mismo 404: no aparece ni como bloqueado ni como existente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: EvaluacionAntropometricaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: '09v16 §23.4 · 08 §56.5 · DV-05 caso 10',
   },
   {
     id: 'API-ANT-10',
-    metodo: 'patch',
-    ruta: '/anthropometry/evaluations/{evaluationId}',
+    metodo: 'put',
+    ruta: '/anthropometry/evaluation-drafts/{evaluationId}',
     resumen:
       'Guardar el borrador. Reemplaza el contenido declarado y avanza el token de trabajo: el contenido de preparación no adquiere autoridad histórica por persistirse.',
     autenticacion: 'SESSION',
@@ -843,7 +873,7 @@ const DEFINIDAS: readonly Operacion[] = [
   {
     id: 'API-ANT-11',
     metodo: 'post',
-    ruta: '/anthropometry/evaluations/{evaluationId}/register',
+    ruta: '/anthropometry/evaluation-drafts/{evaluationId}/register',
     resumen:
       'Registrar la evaluación: el acto explícito que la vuelve historia. Exige contenido registrable. REGISTRADA es terminal: los cambios posteriores usan corrección o anulación.',
     autenticacion: 'SESSION',
@@ -872,7 +902,7 @@ const DEFINIDAS: readonly Operacion[] = [
   {
     id: 'API-ANT-05',
     metodo: 'post',
-    ruta: '/anthropometry/measurements/{measurementId}/corrections',
+    ruta: '/anthropometry/evaluations/{evaluationId}/corrections',
     resumen:
       'Corregir una medición con trazabilidad: el original y la cadena se conservan, y la vista efectiva se resuelve por relación, nunca por la fecha más reciente. Los derivados afectados se reemiten sin sobrescribir los anteriores.',
     autenticacion: 'SESSION',
@@ -885,7 +915,7 @@ const DEFINIDAS: readonly Operacion[] = [
   {
     id: 'API-ANT-12',
     metodo: 'post',
-    ruta: '/anthropometry/measurements/{measurementId}/annulment',
+    ruta: '/anthropometry/measurements/{measurementId}/annulments',
     resumen:
       'Anular una medición: evento aditivo y terminal, que no borra el original. Una segunda anulación de la misma medición responde 200 con la anulación existente y alreadyAnnulled: no produce un segundo efecto ni un error nuevo. No existe reversión.',
     autenticacion: 'SESSION',
@@ -895,7 +925,7 @@ const DEFINIDAS: readonly Operacion[] = [
       { status: 201, schema: AnularMedicionResponseSchema },
       { status: 200, schema: AnularMedicionResponseSchema },
     ],
-    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['ANTHROPOMETRY_ANNULMENT_NOT_ALLOWED'] },
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['ANTHROPOMETRY_ANNULMENT_NOT_ALLOWED'] },
     fuente: '09v16 §24.1 · REG-06-217/218/219/220 · DV-05 caso 6 · DEUDA_LEGAJO DL-059',
   },
   {
@@ -907,9 +937,9 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
-      { nombre: 'from', descripcion: 'Primer día del período (fecha local).', schema: { type: 'string', format: 'date' } },
-      { nombre: 'to', descripcion: 'Último día del período (fecha local).', schema: { type: 'string', format: 'date' } },
-      { nombre: 'metrics', descripcion: 'Métricas separadas por coma. Sin esto, todas las que tengan dato.', schema: { type: 'string' } },
+      { nombre: 'periodStart', descripcion: 'Primer día del período (fecha local).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'periodEnd', descripcion: 'Último día del período (fecha local).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'metric', descripcion: 'Métricas separadas por coma. Sin esto, todas las que tengan dato.', schema: { type: 'string' } },
     ],
     exitos: [{ status: 200, schema: EvolucionResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
@@ -923,9 +953,9 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
-      { nombre: 'from', descripcion: 'Primer día del período (fecha local).', schema: { type: 'string', format: 'date' } },
-      { nombre: 'to', descripcion: 'Último día del período (fecha local).', schema: { type: 'string', format: 'date' } },
-      { nombre: 'metrics', descripcion: 'Métricas separadas por coma. Sin esto, todas las que tengan dato.', schema: { type: 'string' } },
+      { nombre: 'periodStart', descripcion: 'Primer día del período (fecha local).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'periodEnd', descripcion: 'Último día del período (fecha local).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'metric', descripcion: 'Métricas separadas por coma. Sin esto, todas las que tengan dato.', schema: { type: 'string' } },
     ],
     exitos: [{ status: 200, schema: EvolucionResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'] },

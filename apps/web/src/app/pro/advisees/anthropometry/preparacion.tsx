@@ -29,14 +29,6 @@ interface FilaEnEdicion {
   metric: string;
   value: string;
   unit: string;
-  protocolVersionId: string;
-  origin: 'DIRECT_CAPTURE' | 'SELF_REPORTED';
-  /**
-   * Cuándo se tomó la medición, en el formato local del campo `datetime-local`. Es de la toma, no del guardado: si
-   * cada «Guardar» lo reescribiera, la serie se correría sola y la evolución mostraría un día que no fue
-   * (REG-06-152: la observación conserva su momento).
-   */
-  occurredAt: string;
 }
 
 /** ISO → `YYYY-MM-DDTHH:mm` en hora local, que es lo que entiende `datetime-local`. */
@@ -46,15 +38,7 @@ const paraElCampo = (iso: string): string => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
-const filaNueva = (protocolo: string): FilaEnEdicion => ({
-  clave: `m-${Math.random().toString(36).slice(2, 9)}`,
-  metric: '',
-  value: '',
-  unit: '',
-  protocolVersionId: protocolo,
-  origin: 'DIRECT_CAPTURE',
-  occurredAt: paraElCampo(new Date().toISOString()),
-});
+const filaNueva = (): FilaEnEdicion => ({ clave: `m-${Math.random().toString(36).slice(2, 9)}`, metric: '', value: '', unit: '' });
 
 export function VistaDePreparacion() {
   const { token, asesoradoId, sesionPerdida, irA } = useAntropometria();
@@ -121,45 +105,48 @@ function Preparacion({
   const protocoloPorDefecto = especificaciones[0]?.versionId ?? '';
   const [filas, setFilas] = useState<FilaEnEdicion[]>([]);
   const [contexto, setContexto] = useState('');
+  /**
+   * El momento de la toma y la especificación son de la **evaluación**: una evaluación es una toma, con su protocolo
+   * y su origen (09v11 §6). Son de la toma, no del guardado: si cada «Guardar» los reescribiera, la serie se correría
+   * sola y la evolución mostraría un día que no fue (REG-06-152).
+   */
+  const [momento, setMomento] = useState(paraElCampo(new Date().toISOString()));
+  const [protocolo, setProtocolo] = useState('');
+  const [origen, setOrigen] = useState<'DIRECT_CAPTURE' | 'SELF_REPORTED'>('DIRECT_CAPTURE');
   const [enviando, setEnviando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
 
   useEffect(() => {
+    setProtocolo((p) => p || protocoloPorDefecto);
     if (!borrador) return setFilas([]);
     setContexto(borrador.context ?? '');
-    setFilas(
-      borrador.measurements.map((m) => ({
-        clave: m.measurementId,
-        metric: m.metric,
-        value: String(m.magnitude.value),
-        unit: m.magnitude.unit,
-        protocolVersionId: m.protocol?.protocolVersionId ?? protocoloPorDefecto,
-        origin: m.origin === 'SELF_REPORTED' ? 'SELF_REPORTED' : 'DIRECT_CAPTURE',
-        // El momento de la toma vuelve del borrador: guardar de nuevo no lo mueve.
-        occurredAt: paraElCampo(m.occurredAt),
-      })),
-    );
+    const primera = borrador.measurements[0];
+    if (primera) {
+      setMomento(paraElCampo(primera.occurredAt));
+      setProtocolo(primera.protocol?.protocolVersionId ?? protocoloPorDefecto);
+      setOrigen(primera.origin === 'SELF_REPORTED' ? 'SELF_REPORTED' : 'DIRECT_CAPTURE');
+    }
+    setFilas(borrador.measurements.map((m) => ({ clave: m.measurementId, metric: m.metric, value: String(m.magnitude.value), unit: m.magnitude.unit })));
   }, [borrador, protocoloPorDefecto]);
 
   /** Las filas que todavía no están completas: guardar con una a medias las perdería en silencio. */
-  const incompletas = () => filas.filter((f) => !(f.metric.trim() && f.value.trim() && f.unit.trim() && f.occurredAt));
+  const incompletas = () => filas.filter((f) => !(f.metric.trim() && f.value.trim() && f.unit.trim()));
 
-  const mediciones = () =>
-    filas
-      .filter((f) => f.metric.trim() && f.value.trim() && f.unit.trim() && f.occurredAt)
-      .map((f) => ({
-        metric: f.metric.trim(),
-        magnitude: { value: Number(f.value.replace(',', '.')), unit: f.unit.trim() },
-        protocolVersionId: f.protocolVersionId,
-        origin: f.origin,
-        occurredAt: new Date(f.occurredAt).toISOString(),
-      }));
+  const contenido = () => ({
+    occurredAt: new Date(momento).toISOString(),
+    specificationVersionId: protocolo,
+    source: { type: origen },
+    directMeasurements: filas
+      .filter((f) => f.metric.trim() && f.value.trim() && f.unit.trim())
+      .map((f) => ({ metricCode: f.metric.trim(), value: Number(f.value.replace(',', '.')), unit: f.unit.trim() })),
+    professionalNotes: contexto.trim() || null,
+  });
 
   async function crear() {
     if (incompletas().length > 0) return onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.medicionIncompleta });
     setEnviando(true);
     onAviso(null);
-    const res = await api.crearBorradorAntropometrico(token, asesoradoId, { occurredAt: new Date().toISOString(), context: contexto.trim() || null, measurements: mediciones() }, intento.actual());
+    const res = await api.crearBorradorAntropometrico(token, asesoradoId, contenido(), intento.actual());
     intento.registrar(res);
     setEnviando(false);
     if (sesionPerdida(res)) return;
@@ -173,11 +160,7 @@ function Preparacion({
     if (!borrador) return crear();
     setEnviando(true);
     onAviso(null);
-    const res = await api.guardarBorradorAntropometrico(token, borrador.evaluationId, {
-      expectedVersion: borrador.version,
-      context: contexto.trim() || null,
-      measurements: mediciones(),
-    });
+    const res = await api.guardarBorradorAntropometrico(token, borrador.evaluationId, { expectedVersion: borrador.version, ...contenido() });
     setEnviando(false);
     if (sesionPerdida(res)) return;
     if (!res.ok) return onAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
@@ -212,6 +195,27 @@ function Preparacion({
 
         <Campo id="ant-contexto" etiqueta="Contexto (opcional)" value={contexto} onChange={(e) => setContexto(e.target.value)} maxLength={2000} />
 
+        {/* El momento, el protocolo y el origen son de la toma entera: una evaluación es una toma (09v11 §6). */}
+        <Campo id="ant-momento" etiqueta={COPY_ANTROPOMETRIA.momentoDeLaToma} type="datetime-local" value={momento} onChange={(e) => setMomento(e.target.value)} />
+        <div className="campo">
+          <label htmlFor="ant-protocolo">{COPY_ANTROPOMETRIA.protocolo}</label>
+          <select id="ant-protocolo" value={protocolo} onChange={(e) => setProtocolo(e.target.value)}>
+            {especificaciones.map((e) => (
+              <option key={e.versionId} value={e.versionId}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="campo">
+          <label htmlFor="ant-origen">{COPY_ANTROPOMETRIA.origenDelDato}</label>
+          <select id="ant-origen" value={origen} onChange={(e) => setOrigen(e.target.value as 'DIRECT_CAPTURE' | 'SELF_REPORTED')}>
+            <option value="DIRECT_CAPTURE">{ETIQUETA_DE_ORIGEN.DIRECT_CAPTURE}</option>
+            <option value="SELF_REPORTED">{ETIQUETA_DE_ORIGEN.SELF_REPORTED}</option>
+          </select>
+          <p className="campo__ayuda">{COPY_ANTROPOMETRIA.explicacionDeClases}</p>
+        </div>
+
         <h3>Mediciones</h3>
         {filas.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinBorrador}</p> : null}
         {filas.map((f, i) => (
@@ -219,46 +223,13 @@ function Preparacion({
             <Campo id={`ant-metrica-${i}`} etiqueta={COPY_ANTROPOMETRIA.metrica} value={f.metric} onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, metric: e.target.value } : x)))} maxLength={60} />
             <Campo id={`ant-valor-${i}`} etiqueta={COPY_ANTROPOMETRIA.valor} inputMode="decimal" value={f.value} onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, value: e.target.value } : x)))} maxLength={12} />
             <Campo id={`ant-unidad-${i}`} etiqueta={COPY_ANTROPOMETRIA.unidad} value={f.unit} onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, unit: e.target.value } : x)))} maxLength={24} />
-            <Campo
-              id={`ant-momento-${i}`}
-              etiqueta={COPY_ANTROPOMETRIA.momentoDeLaToma}
-              type="datetime-local"
-              value={f.occurredAt}
-              onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, occurredAt: e.target.value } : x)))}
-            />
-            <div className="campo">
-              <label htmlFor={`ant-origen-${i}`}>{COPY_ANTROPOMETRIA.origenDelDato}</label>
-              <select
-                id={`ant-origen-${i}`}
-                value={f.origin}
-                onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, origin: e.target.value as FilaEnEdicion['origin'] } : x)))}
-              >
-                <option value="DIRECT_CAPTURE">{ETIQUETA_DE_ORIGEN.DIRECT_CAPTURE}</option>
-                <option value="SELF_REPORTED">{ETIQUETA_DE_ORIGEN.SELF_REPORTED}</option>
-              </select>
-              <p className="campo__ayuda">{COPY_ANTROPOMETRIA.explicacionDeClases}</p>
-            </div>
-            <div className="campo">
-              <label htmlFor={`ant-protocolo-${i}`}>{COPY_ANTROPOMETRIA.protocolo}</label>
-              <select
-                id={`ant-protocolo-${i}`}
-                value={f.protocolVersionId}
-                onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, protocolVersionId: e.target.value } : x)))}
-              >
-                {especificaciones.map((e) => (
-                  <option key={e.versionId} value={e.versionId}>
-                    {e.name}
-                  </option>
-                ))}
-              </select>
-            </div>
             <button type="button" className="boton boton--enlace" onClick={() => setFilas((xs) => xs.filter((x) => x.clave !== f.clave))}>
               {COPY_ANTROPOMETRIA.quitarMedicion}
             </button>
           </div>
         ))}
         <div className="acciones">
-          <button type="button" className="boton boton--secundario" onClick={() => setFilas((xs) => [...xs, filaNueva(protocoloPorDefecto)])} disabled={!protocoloPorDefecto}>
+          <button type="button" className="boton boton--secundario" onClick={() => setFilas((xs) => [...xs, filaNueva()])} disabled={!protocolo}>
             {COPY_ANTROPOMETRIA.agregarMedicion}
           </button>
           <button type="button" className="boton boton--secundario" onClick={() => void guardar()} disabled={enviando}>

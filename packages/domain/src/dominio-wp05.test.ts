@@ -216,35 +216,41 @@ test('REG-06-167 · la serie filtra por métrica: otra métrica no contamina el 
 
 // ─── El contrato impide mentir ──────────────────────────────────────────────────────────────────
 
-test('INV-06-177 · un punto SIN_DATO no tiene dónde poner un valor: el contrato lo rechaza', async () => {
-  const { PuntoDeSerieSchema } = await import('./contratos-antropometria');
-  // Un hueco honesto entra.
-  assert.equal(PuntoDeSerieSchema.safeParse({ date: '2026-09-08', availability: 'NO_DATA' }).success, true);
-  // Un hueco con un cero disfrazado, no: no hay campo donde ponerlo.
-  const conCero = PuntoDeSerieSchema.safeParse({ date: '2026-09-08', availability: 'NO_DATA', magnitude: { value: 0, unit: 'kg' } });
-  assert.equal(conCero.success, false, 'NO_DATA con valor tiene que ser rechazado por el contrato, no solo por el servicio');
+test('INV-06-177 · un hueco de la serie no tiene dónde poner un valor: el contrato lo rechaza', async () => {
+  const { HuecoDeSerieSchema } = await import('./contratos-antropometria');
+  // Un hueco honesto entra: un rango de días, con su cantidad, y nada más.
+  assert.equal(HuecoDeSerieSchema.safeParse({ from: '2026-09-08', to: '2026-09-10', state: 'NO_DATA', days: 3 }).success, true);
+  // Un hueco con un cero disfrazado, no: el objeto es estricto y no hay campo donde ponerlo.
+  const conCero = HuecoDeSerieSchema.safeParse({ from: '2026-09-08', to: '2026-09-08', state: 'NO_DATA', days: 1, value: 0, unit: 'kg' });
+  assert.equal(conCero.success, false, 'un hueco con valor tiene que ser rechazado por el contrato, no solo por el servicio');
+  // Y tampoco puede decir otra cosa que «sin dato»: el estado es un literal.
+  assert.equal(HuecoDeSerieSchema.safeParse({ from: '2026-09-08', to: '2026-09-08', state: 'ESTIMATED', days: 1 }).success, false);
 });
 
-test('INV-06-176 · un cero medido sí viaja, como punto disponible', async () => {
+test('INV-06-176 · un cero medido sí viaja, como punto de la serie', async () => {
   const { PuntoDeSerieSchema } = await import('./contratos-antropometria');
   const r = PuntoDeSerieSchema.safeParse({
-    date: '2026-09-08',
-    availability: 'AVAILABLE',
-    magnitude: { value: 0, unit: 'kg' },
+    occurredAt: '2026-09-08T12:00:00.000Z',
+    recordedAt: '2026-09-08T12:00:00.000Z',
+    value: 0,
+    unit: 'kg',
+    sourceEvaluationId: '11111111-1111-4111-8111-111111111111',
+    sourceId: '22222222-2222-4222-8222-222222222222',
     dataClass: 'MEASURED',
-    sourceId: '11111111-1111-4111-8111-111111111111',
-    comparability: { protocolId: '11111111-1111-4111-8111-111111111111', protocolVersionId: '22222222-2222-4222-8222-222222222222', protocolName: 'Demo', methodId: null, methodVersionId: null, unit: 'kg' },
+    comparabilityGroup: 'cmp-1',
+    correctionState: 'EFFECTIVE',
     incomparableWithPrevious: [],
   });
-  assert.equal(r.success, true);
+  assert.equal(r.success, true, 'un cero medido es un dato, no un hueco');
 });
 
-test('DL-062 · una referencia de preparación sin importación controlada se rechaza en el contrato', async () => {
-  const { MedicionEntradaSchema } = await import('./contratos-antropometria');
-  const base = { metric: 'peso', magnitude: { value: 72.5, unit: 'kg' }, protocolVersionId: '11111111-1111-4111-8111-111111111111', occurredAt: new Date().toISOString() };
-  assert.equal(MedicionEntradaSchema.safeParse({ ...base, origin: 'DIRECT_CAPTURE' }).success, true);
-  assert.equal(MedicionEntradaSchema.safeParse({ ...base, origin: 'DIRECT_CAPTURE', preparationReference: 'prep_1' }).success, false);
-  assert.equal(MedicionEntradaSchema.safeParse({ ...base, origin: 'CONTROLLED_IMPORT', preparationReference: 'prep_1' }).success, true);
+test('DL-062 · INV-06-167: la referencia de preparación solo corresponde a la importación controlada, y es opaca', async () => {
+  const { OrigenDeLaTomaSchema } = await import('./contratos-antropometria');
+  assert.equal(OrigenDeLaTomaSchema.safeParse({ type: 'DIRECT_CAPTURE' }).success, true);
+  assert.equal(OrigenDeLaTomaSchema.safeParse({ type: 'DIRECT_CAPTURE', preparationReference: 'prep_1' }).success, false);
+  assert.equal(OrigenDeLaTomaSchema.safeParse({ type: 'CONTROLLED_IMPORT', preparationReference: 'prep_1' }).success, true);
+  // El legajo prohíbe exigirle formato o proveedor: cualquier cadena vale como referencia.
+  assert.equal(OrigenDeLaTomaSchema.safeParse({ type: 'CONTROLLED_IMPORT', preparationReference: 'lo-que-sea' }).success, true);
 });
 
 test('TEST-PRJ-009 · ningún schema de antropometría ni de cálculo tiene puntaje, porcentaje ni calificación', async () => {
@@ -308,20 +314,32 @@ test('TEST-PRJ-009 · el control de cero juicio detecta un campo prohibido, tamb
 
 // ─── Contrato publicado y copy ──────────────────────────────────────────────────────────────────
 
-test('WP-05 §4 · el OpenAPI publica las once operaciones ANT, con su idempotencia y su 404 no revelable', async () => {
+test('WP-05 §4 · el OpenAPI publica las doce operaciones ANT en las rutas que declara el 09', async () => {
   const { OPERACIONES } = await import('./openapi');
-  const ant = OPERACIONES.filter((o) => o.id.startsWith('API-ANT-'));
-  assert.equal(ant.length, 11);
+  const ant = OPERACIONES.filter((o) => o.id.startsWith('API-ANT-') && o.id !== 'API-ANT-06-PROPIA');
+  assert.equal(ant.length, 12, 'el inventario declara doce operaciones ANT en P0');
 
-  // Las escrituras llevan Idempotency-Key, salvo el PATCH del borrador, que usa expectedVersion (09v9:1051-1068).
+  // Las dos colecciones que el legajo mantiene separadas: la evaluación y el borrador (09v16 §23).
+  const ruta = (id: string) => ant.find((o) => o.id === id);
+  assert.equal(ruta('API-ANT-02')?.ruta, '/advisees/{adviseeId}/anthropometry/evaluations');
+  assert.equal(ruta('API-ANT-07')?.ruta, '/advisees/{adviseeId}/anthropometry/evaluation-drafts');
+  assert.equal(ruta('API-ANT-04')?.ruta, '/anthropometry/evaluations/{evaluationId}');
+  assert.equal(ruta('API-ANT-09')?.ruta, '/anthropometry/evaluation-drafts/{evaluationId}');
+  // «Reemplaza la versión de trabajo» (09v16 §23.5): el verbo es PUT, no PATCH.
+  assert.equal(ruta('API-ANT-10')?.metodo, 'put');
+  // La corrección va sobre la evaluación (09v11 §9) y la anulación, sobre la medición, en plural (09v16 §24.1).
+  assert.equal(ruta('API-ANT-05')?.ruta, '/anthropometry/evaluations/{evaluationId}/corrections');
+  assert.equal(ruta('API-ANT-12')?.ruta, '/anthropometry/measurements/{measurementId}/annulments');
+
+  // Las escrituras llevan Idempotency-Key, salvo el guardado del borrador, que usa expectedVersion (09v9:1051-1068).
   const conClave = ant.filter((o) => o.idempotencia).map((o) => o.id).sort();
-  assert.deepEqual(conClave, ['API-ANT-05', 'API-ANT-07', 'API-ANT-11', 'API-ANT-12']);
-  assert.equal(ant.find((o) => o.id === 'API-ANT-10')?.metodo, 'patch');
+  assert.deepEqual(conClave, ['API-ANT-02', 'API-ANT-05', 'API-ANT-07', 'API-ANT-11', 'API-ANT-12']);
 
-  // Consultar una evaluación ajena no revela nada: su único error de recurso es el 404 (09:213-233).
-  const consulta = ant.find((o) => o.id === 'API-ANT-09');
-  assert.deepEqual(consulta?.errores[404], ['RESOURCE_NOT_FOUND']);
-  assert.equal(consulta?.errores[403], undefined);
+  // Consultar algo ajeno no revela nada: su único error de recurso es el 404 (09:213-233).
+  for (const id of ['API-ANT-04', 'API-ANT-09']) {
+    assert.deepEqual(ruta(id)?.errores[404], ['RESOURCE_NOT_FOUND'], id);
+    assert.equal(ruta(id)?.errores[403], undefined, id);
+  }
 
   // La anulación declara los dos éxitos: 201 la primera, 200 cuando ya estaba anulada (adversarial 6; DL-059).
   const anular = ant.find((o) => o.id === 'API-ANT-12');
