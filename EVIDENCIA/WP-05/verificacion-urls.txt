@@ -1,11 +1,11 @@
 Verificación posterior al deploy — WP-05 (07 §37)
-Momento: 2026-09-20T16:55:55Z
+Momento: 2026-09-20T21:54:39Z
 
 $ curl -s https://be-api-hndp.onrender.com/health/ready
-{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.5.0","commit":"921063a2d501471a93e10b39bd51c6151bd33939","construidoEn":"2026-09-20T16:15:23.972Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.5.1","commit":"02c252f79382f96aa35b80f66ac1a6bc43967e45","construidoEn":"2026-09-20T21:32:15.946Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
 
 $ curl -s https://be-api-hndp.onrender.com/health/live
-{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.5.0","commit":"921063a2d501471a93e10b39bd51c6151bd33939","construidoEn":"2026-09-20T16:15:23.972Z"}}}
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.5.1","commit":"02c252f79382f96aa35b80f66ac1a6bc43967e45","construidoEn":"2026-09-20T21:32:15.946Z"}}}
 
 $ curl -sI https://be-web-1ngj.onrender.com/  (líneas de seguridad)
 HTTP/2 200 
@@ -20,7 +20,7 @@ $ el website apunta a la API en su bundle (DL-030): ocurrencias de be-api-hndp e
 $ /api/* en el website ya NO llega a la API (DL-030): 0 esperado
 0
 
-APK 0.5.0 — descarga anónima del release permanente
-https://github.com/Elian-Bufi/be/releases/download/be-apk-0.5.0/be-0.5.0-921063a.apk
-SHA-256 esperado: 2fae50ad8b86b1802e669298af85baa1166b103c8496e7ea8bf60f17a20ea59e
-SHA-256 descargado: 2fae50ad8b86b1802e669298af85baa1166b103c8496e7ea8bf60f17a20ea59e (coincide)
+APK 0.5.1 — descarga anónima del release permanente
+https://github.com/Elian-Bufi/be/releases/download/be-apk-0.5.1/be-0.5.1-0193a3d.apk
+SHA-256 esperado: 482170b86014dec9ade11ca2d4277a58df29937ba87cf38135c3c0f211ce386b
+SHA-256 descargado: 482170b86014dec9ade11ca2d4277a58df29937ba87cf38135c3c0f211ce386b (coincide)
