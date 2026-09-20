@@ -12,6 +12,7 @@ export interface CircuitoAntropometrico {
   readonly pro: Parte;
   readonly ase: Parte;
   readonly vinculoId: string;
+  readonly consentId: string;
   /** Versión vigente del protocolo de laboratorio sintético. */
   readonly protocoloVersionId: string;
   /** Versión vigente del método de cálculo sintético. */
@@ -61,9 +62,9 @@ export async function sembrarEspecificaciones(prisma: PrismaClient): Promise<{ p
 export async function circuitoAntropometrico(app: INestApplication, prisma: PrismaClient, etiqueta: string): Promise<CircuitoAntropometrico> {
   const pro = await prepararProfesional(app, `ant-${etiqueta}`, ['ANTROPOMETRIA']);
   const ase = await prepararAsesorado(app, `ant-${etiqueta}`, { a3: true });
-  const { vinculoId } = await vinculoCompleto(app, pro, ase, 'ANTROPOMETRIA');
+  const { vinculoId, consentId } = await vinculoCompleto(app, pro, ase, 'ANTROPOMETRIA');
   const { protocoloVersionId, metodoVersionId } = await sembrarEspecificaciones(prisma);
-  return { pro, ase, vinculoId, protocoloVersionId, metodoVersionId };
+  return { pro, ase, vinculoId, consentId: consentId as string, protocoloVersionId, metodoVersionId };
 }
 
 /** Evaluación en preparación, sembrada por SQL: devuelve su identificador. */

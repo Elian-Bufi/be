@@ -62,9 +62,9 @@
 | DL-055 | WP-04 · 2026-09-19 | 09v9:158, 175-179, 601-644, 671, 804-806, 862 · CONS:655 | Contratos NUT con forma no definida en el 09 | ABIERTA |
 | DL-056 | WP-04 · 2026-09-19 | 04:378-385 (RF-028) · 05:5777, 5921 · brief WP-04 | RF-028 (Open Food Facts), P0 de compromiso académico, sin paquete asignado | **DECIDIDA** 2026-09-19 · opción A: paquete de integraciones posterior a WP-04 |
 | DL-057 | WP-04 · 2026-09-20 | 08:145, 08:197-198, 08:215 · 06:4274-4282 (REG-06-102) · 04:463 (RF-025) | Datos nutricionales de otro profesional del mismo alcance | ABIERTA |
-| DL-058 | WP-05 · 2026-09-20 | 06:8941-8986 · 04:6, 04:17 · 08:1703-1706 · 10-B10-07:10-12 | El núcleo operable de antropometría vive en material declarado «NO APROBADO» | ABIERTA |
-| DL-059 | WP-05 · 2026-09-20 | DV-05:1127 · 05:10879-10881 · 09v16:1959-1974 · 11A:581 | Qué responde la segunda anulación de la misma medición | ABIERTA |
-| DL-060 | WP-05 · 2026-09-20 | 08:200 · 08:304 · 08:603 · 08:1335 | Sin fila de pertinencia para antropometría, y «ausencia de fila: Deny» | ABIERTA |
+| DL-058 | WP-05 · 2026-09-20 | 06:8941-8986 · 04:6, 04:17 · 08:1703-1706 · 10-B10-07:10-12 | El núcleo operable de antropometría vive en material declarado «NO APROBADO» | **DECIDIDA** 2026-09-20 · opción A, por delegación de Dirección en el ejecutor |
+| DL-059 | WP-05 · 2026-09-20 | DV-05:1127 · 05:10879-10881 · 09v16:1959-1974 · 11A:581 | Qué responde la segunda anulación de la misma medición | **DECIDIDA** 2026-09-20 · opción A, por delegación de Dirección en el ejecutor |
+| DL-060 | WP-05 · 2026-09-20 | 08:200 · 08:304 · 08:603 · 08:1335 | Sin fila de pertinencia para antropometría, y «ausencia de fila: Deny» | **DECIDIDA** 2026-09-20 · opción A, por delegación de Dirección en el ejecutor |
 | DL-061 | WP-05 · 2026-09-20 | 09v11:272 · 09v11:202-216 · 09v16 (grep `frmv_`: 0) | `formulaVersionId` obligatorio en el derivado y sin operación que lo descubra | ABIERTA |
 | DL-062 | WP-05 · 2026-09-20 | 09v11:309-332 · 09v16:1980-2000 · 06:6507 | `preparationReference` obligatorio en la importación, sin entidad ni API | ABIERTA |
 | DL-063 | WP-05 · 2026-09-20 | 08:1368, 08:1374, 08:1482, 08:1497 (R-18) | El borrador antropométrico no tiene plazo de expiración declarado | ABIERTA |
@@ -1253,7 +1253,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-058 — El núcleo operable de antropometría vive en material declarado «NO APROBADO»
 
-**Prioridad:** alta · **Documento:** 06 §20 · 04 v0.4.2.1 · 08 §56 · 10 B10-07 · **Estado:** ABIERTA
+**Prioridad:** alta · **Documento:** 06 §20 · 04 v0.4.2.1 · 08 §56 · 10 B10-07 · **Estado:** DECIDIDA 2026-09-20 (opción A)
 
 **Qué dice el legajo.**
 - Las dos máquinas que hacen operable el dominio —`EN_PREPARACION → REGISTRADA` (REG-06-214) y `VIGENTE → ANULADA` (REG-06-217/218)— viven íntegras en el parche §20 del 06, que cierra con «BORRADOR DE PARCHE TRANSVERSAL — NO APROBADO» e «IMPLEMENTACIÓN: NO AUTORIZADA» (06:8941-8986).
@@ -1267,11 +1267,13 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **A.** Dirección declara por acta del paquete que WP-05 implementa el §20 del 06 y el §56 del 08 como material vigente para implementación, con la cita de cada REG e INV usado. Es el mismo criterio con el que WP-03 y WP-04 usaron el 10, no canónico, aprobado por hash en ACTA-DIR-026.
 - **B.** Implementar solo la baseline aprobada: evaluación sin borrador y medición sin anulación. No cierra DL-042 y contradice E2E-06.
 
+**Resolución — 2026-09-20.** Dirección delegó la elección en el ejecutor. Se tomó la **opción A**: WP-05 implementa el §20 del 06 (ANT-DRAFT y ANT-VOID) y el §56 del 08 como material vigente para implementación, con la cita de cada REG e INV en el código y en las pruebas. Es el mismo criterio con el que WP-03 y WP-04 usaron el 10, no canónico. Si Dirección prefiriera la opción B, el cambio es acotado: se quitan las operaciones de borrador y la de anulación, y DL-042 queda sin cerrar.
+
 **Condición de cierre.** El acta del paquete, o la canonización del parche §20.
 
 ## DL-059 — Qué responde la segunda anulación de la misma medición
 
-**Prioridad:** alta · **Documento:** DV-05:1127 · 05:10879-10881 · 09v16:1959-1974 · **Estado:** ABIERTA
+**Prioridad:** alta · **Documento:** DV-05:1127 · 05:10879-10881 · 09v16:1959-1974 · **Estado:** DECIDIDA 2026-09-20 (opción A)
 
 **Qué dice el legajo.**
 - DV-05 garantiza, y es uno de los casos que se ejecutan **en vivo ante el tribunal**: «La segunda no produce un segundo efecto ni un error nuevo» (DV-05:1127).
@@ -1286,11 +1288,13 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A: es la única lectura que satisface los tres textos a la vez.
 
+**Resolución — 2026-09-20.** Dirección delegó la elección en el ejecutor. Se tomó la **opción A**: idempotencia en dos capas. Con la misma `Idempotency-Key` se replica la respuesta original; con una clave nueva sobre una medición ya anulada se responde `200` con la anulación existente y `alreadyAnnulled: true`, sin segundo evento ni segundo recálculo. El código tipificado del 09 queda reservado para los rechazos reales. Es la única lectura que satisface a la vez a DV-05, al 05 y al 09.
+
 **Condición de cierre.** Dirección elige, o el 09 reconcilia su código de error con DV-05.
 
 ## DL-060 — Sin fila de pertinencia para antropometría, y «ausencia de fila: Deny»
 
-**Prioridad:** alta · **Documento:** 08:200 · 08:304 · **Estado:** ABIERTA
+**Prioridad:** alta · **Documento:** 08:200 · 08:304 · **Estado:** DECIDIDA 2026-09-20 (opción A)
 
 **Qué dice el legajo.**
 - La matriz de acceso del §11 otorga a Prof. Nutrición y a Prof. Entrenamiento «Ⓐ si su Alcance lo habilita» sobre «Mediciones/cálculos antropométricos» (08:200).
@@ -1304,6 +1308,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Habilitar la lectura por el alcance propio (Nutrición o Entrenamiento), publicando la fila de pertinencia por acta.
 
 **Provisorio en código.** A: es el default que pide el propio 08 y no concede un acceso que nadie escribió.
+
+**Resolución — 2026-09-20.** Dirección delegó la elección en el ejecutor. Se tomó la **opción A**: safe default. Registrar, corregir, anular **y leer** exigen capacidad antropométrica habilitada sobre ese asesorado, con vínculo, B2 del alcance ANTROPOMETRIA y A3 vigentes. Un profesional de Nutrición o Entrenamiento sin la capacidad recibe el mismo 404 que ante lo inexistente. Si Dirección publica la fila de pertinencia habilitando la lectura por alcance propio, el cambio es una condición más en el PDP.
 
 **Condición de cierre.** Dirección publica la fila de pertinencia de antropometría, o ratifica el safe default.
 

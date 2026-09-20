@@ -104,6 +104,7 @@ describe('ANT-VOID · la anulación es terminal y no se confunde con la correcci
   it('TEST-ANT-006 · adversarial 6: una segunda anulación no crea una segunda fila', async () => {
     const ev = await borradorSembrado(prisma, c);
     const med = await medicionSembrada(prisma, c, ev);
+    await registrarBorrador(prisma, ev);
     const anular = (motivo: string) =>
       `INSERT INTO "anulacion_de_medicion" ("id","medicion_id","autor_id","motivo","procedencia","momento_de_ocurrencia")
        VALUES ('${randomUUID()}','${med}','${c.pro.id}','${motivo}','{}', now())`;
@@ -114,6 +115,7 @@ describe('ANT-VOID · la anulación es terminal y no se confunde con la correcci
   it('TEST-ANT-007 · una medición ANULADA no admite corrección que la vuelva efectiva', async () => {
     const ev = await borradorSembrado(prisma, c);
     const med = await medicionSembrada(prisma, c, ev);
+    await registrarBorrador(prisma, ev);
     const e = await errorDeLaBase(
       `INSERT INTO "anulacion_de_medicion" ("id","medicion_id","autor_id","motivo","procedencia","momento_de_ocurrencia")
        VALUES ('${randomUUID()}','${med}','${c.pro.id}','Cinta mal calibrada.','{}', now())`,
@@ -126,6 +128,7 @@ describe('ANT-VOID · la anulación es terminal y no se confunde con la correcci
   it('anular y corregir exigen motivo', async () => {
     const ev = await borradorSembrado(prisma, c);
     const med = await medicionSembrada(prisma, c, ev);
+    await registrarBorrador(prisma, ev);
     const sinMotivoAnulacion = await errorDeLaBase(
       `INSERT INTO "anulacion_de_medicion" ("id","medicion_id","autor_id","motivo","procedencia","momento_de_ocurrencia")
        VALUES ('${randomUUID()}','${med}','${c.pro.id}','   ','{}', now())`,
@@ -142,6 +145,7 @@ describe('ANT-VOID · la anulación es terminal y no se confunde con la correcci
     const ev = await borradorSembrado(prisma, c);
     const a = await medicionSembrada(prisma, c, ev);
     const b = await medicionSembrada(prisma, c, ev, { metrica: 'talla', valor: 1.75, unidad: 'm' });
+    await registrarBorrador(prisma, ev);
     const raizDeA = randomUUID();
     const insertar = (id: string, medicionId: string, previa: string | null) =>
       `INSERT INTO "correccion_de_medicion" ("id","medicion_id","correccion_previa_id","autor_id","motivo","valor","unidad_de_origen","procedencia")
@@ -157,6 +161,7 @@ describe('ANT-VOID · la anulación es terminal y no se confunde con la correcci
   it('una medición y una anulación no se modifican ni se borran', async () => {
     const ev = await borradorSembrado(prisma, c);
     const med = await medicionSembrada(prisma, c, ev);
+    await registrarBorrador(prisma, ev);
     expect(await errorDeLaBase(`UPDATE "medicion_antropometrica" SET "valor" = 99 WHERE "id" = '${med}'`)).toContain('append-only');
     expect(await errorDeLaBase(`DELETE FROM "medicion_antropometrica" WHERE "id" = '${med}'`)).toContain('append-only');
     const anulacion = `INSERT INTO "anulacion_de_medicion" ("id","medicion_id","autor_id","motivo","procedencia","momento_de_ocurrencia")
@@ -224,5 +229,38 @@ describe('Coherencia del dato antropométrico', () => {
        VALUES ('${randomUUID()}','${otra}','${c.protocoloVersionId}','2','Mezcla inválida','{}','{}')`,
     );
     expect(mezcla).toContain('del mismo objeto');
+  });
+});
+
+describe('REG-06-215 · el borrador es trabajo en curso; lo registrado es historia', () => {
+  it('en preparación el contenido se edita y se reemplaza: no adquiere autoridad histórica por persistirse', async () => {
+    const ev = await borradorSembrado(prisma, c);
+    const med = await medicionSembrada(prisma, c, ev);
+    // Mientras está EN_PREPARACION, la medición se corrige en el lugar y se borra: es contenido de trabajo.
+    expect(await errorDeLaBase(`UPDATE "medicion_antropometrica" SET "valor" = 71 WHERE "id" = '${med}'`)).toBe('SIN ERROR');
+    expect(await errorDeLaBase(`DELETE FROM "medicion_antropometrica" WHERE "id" = '${med}'`)).toBe('SIN ERROR');
+  });
+
+  it('una vez registrada, su contenido es inmutable y los cambios usan corrección o anulación (inciso 5)', async () => {
+    const ev = await borradorSembrado(prisma, c);
+    const med = await medicionSembrada(prisma, c, ev);
+    await registrarBorrador(prisma, ev);
+    expect(await errorDeLaBase(`UPDATE "medicion_antropometrica" SET "valor" = 99 WHERE "id" = '${med}'`)).toContain('append-only');
+    expect(await errorDeLaBase(`DELETE FROM "medicion_antropometrica" WHERE "id" = '${med}'`)).toContain('append-only');
+  });
+
+  it('corregir o anular sobre un borrador se rechaza: ese camino es el de después del registro', async () => {
+    const ev = await borradorSembrado(prisma, c);
+    const med = await medicionSembrada(prisma, c, ev);
+    const anulacion = await errorDeLaBase(
+      `INSERT INTO "anulacion_de_medicion" ("id","medicion_id","autor_id","motivo","procedencia","momento_de_ocurrencia")
+       VALUES ('${randomUUID()}','${med}','${c.pro.id}','Motivo.','{}', now())`,
+    );
+    expect(anulacion).toContain('posterior al registro');
+    const correccion = await errorDeLaBase(
+      `INSERT INTO "correccion_de_medicion" ("id","medicion_id","autor_id","motivo","valor","unidad_de_origen","procedencia")
+       VALUES ('${randomUUID()}','${med}','${c.pro.id}','Motivo.',73,'kg','{}')`,
+    );
+    expect(correccion).toContain('posterior al registro');
   });
 });
