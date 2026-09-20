@@ -23,3 +23,4 @@ export * from './revision';
 export * from './contratos-nutricion';
 export * from './nutricion';
 export * from './copy-nutricion';
+export * from './antropometria';
