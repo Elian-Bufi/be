@@ -213,3 +213,52 @@ test('REG-06-167 · la serie filtra por métrica: otra métrica no contamina el 
   const serie = construirSerie('peso', ['2026-09-01'], [observacion('2026-09-01', 1.75, { metrica: 'talla' })]);
   assert.equal(serie.puntos[0]?.disponibilidad, 'SIN_DATO');
 });
+
+// ─── El contrato impide mentir ──────────────────────────────────────────────────────────────────
+
+test('INV-06-177 · un punto SIN_DATO no tiene dónde poner un valor: el contrato lo rechaza', async () => {
+  const { PuntoDeSerieSchema } = await import('./contratos-antropometria');
+  // Un hueco honesto entra.
+  assert.equal(PuntoDeSerieSchema.safeParse({ date: '2026-09-08', availability: 'NO_DATA' }).success, true);
+  // Un hueco con un cero disfrazado, no: no hay campo donde ponerlo.
+  const conCero = PuntoDeSerieSchema.safeParse({ date: '2026-09-08', availability: 'NO_DATA', magnitude: { value: 0, unit: 'kg' } });
+  assert.equal(conCero.success, false, 'NO_DATA con valor tiene que ser rechazado por el contrato, no solo por el servicio');
+});
+
+test('INV-06-176 · un cero medido sí viaja, como punto disponible', async () => {
+  const { PuntoDeSerieSchema } = await import('./contratos-antropometria');
+  const r = PuntoDeSerieSchema.safeParse({
+    date: '2026-09-08',
+    availability: 'AVAILABLE',
+    magnitude: { value: 0, unit: 'kg' },
+    dataClass: 'MEASURED',
+    sourceId: '11111111-1111-4111-8111-111111111111',
+    comparability: { protocolId: '11111111-1111-4111-8111-111111111111', protocolVersionId: '22222222-2222-4222-8222-222222222222', protocolName: 'Demo', methodId: null, methodVersionId: null, unit: 'kg' },
+    incomparableWithPrevious: [],
+  });
+  assert.equal(r.success, true);
+});
+
+test('DL-062 · una referencia de preparación sin importación controlada se rechaza en el contrato', async () => {
+  const { MedicionEntradaSchema } = await import('./contratos-antropometria');
+  const base = { metric: 'peso', magnitude: { value: 72.5, unit: 'kg' }, protocolVersionId: '11111111-1111-4111-8111-111111111111', occurredAt: new Date().toISOString() };
+  assert.equal(MedicionEntradaSchema.safeParse({ ...base, origin: 'DIRECT_CAPTURE' }).success, true);
+  assert.equal(MedicionEntradaSchema.safeParse({ ...base, origin: 'DIRECT_CAPTURE', preparationReference: 'prep_1' }).success, false);
+  assert.equal(MedicionEntradaSchema.safeParse({ ...base, origin: 'CONTROLLED_IMPORT', preparationReference: 'prep_1' }).success, true);
+});
+
+test('TEST-PRJ-009 · ningún schema de antropometría tiene puntaje, porcentaje ni calificación', async () => {
+  const contratos = await import('./contratos-antropometria');
+  const { z } = await import('zod');
+  const PROHIBIDO = /adherence|compliance|score|grade|percent|cumplid|adherencia|interpolat|imputed/i;
+  const hallazgos: string[] = [];
+  for (const [nombre, valor] of Object.entries(contratos)) {
+    if (!valor || typeof valor !== 'object' || !('safeParse' in valor)) continue;
+    const json = JSON.stringify(z.toJSONSchema(valor as never, { io: 'output', unrepresentable: 'any' }));
+    for (const clave of json.matchAll(/"([A-Za-z_][A-Za-z0-9_]*)"\s*:/g)) {
+      // `interpolated`, `imputed` y `carriedForward` existen a propósito en `honesty`, declarados en falso.
+      if (PROHIBIDO.test(clave[1] as string) && !json.includes('"honesty"')) hallazgos.push(`${nombre}.${clave[1]}`);
+    }
+  }
+  assert.deepEqual(hallazgos, []);
+});
