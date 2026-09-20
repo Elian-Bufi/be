@@ -12,6 +12,7 @@
  */
 import {
   COPY,
+  COPY_ANTROPOMETRIA,
   COPY_VINCULO,
   VERSION_VIGENTE,
   type MeResponse,
@@ -75,6 +76,7 @@ export function PantallaDeCuenta({ token, salir, ir }: { token: string; salir: (
     <>
       <Titulo>Cuenta</Titulo>
       <Boton texto="Nutrición: Hoy" onPress={() => ir({ nombre: 'hoy' })} />
+      <Boton texto={`Antropometría: ${COPY_ANTROPOMETRIA.miEvolucion}`} tipo="secundario" onPress={() => ir({ nombre: 'mi-evolucion' })} />
       <Boton texto="Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
 
       <Seccion titulo="Estado de la cuenta">

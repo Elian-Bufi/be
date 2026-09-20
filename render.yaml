@@ -46,8 +46,16 @@ services:
       # WP-03 (DEUDA_LEGAJO DL-036): cuentas profesionales demo que el servicio interno verifica y habilita al arrancar.
       # Solo con APP_ENV test. Van por identidad ya registrada, no por correo: nadie puede anticiparse registrando el
       # correo publicado, y la siembra solo prepara cuentas sintéticas (@example.invalid). No es un secreto.
+      #
+      # WP-05 suma la capacidad antropométrica, que el 06 modela como transversal y «nunca tercera Especialidad»
+      # (06:2774). Por eso se declara de dos formas, y las dos son válidas:
+      # - sobre DEMO-PN, que ya tiene la Especialidad Nutrición: la capacidad se agrega, no la reemplaza ni la duplica;
+      # - sobre DEMO-PA, que no tiene ninguna Especialidad: «cero Especialidades, Capacidad antropométrica verificada y
+      #   Habilitación antropométrica efectiva» es una identidad válida (06 §8.10).
+      # El tipo de perfil (SANITARIO / NO_SANITARIO) es de la identidad, no del alcance: la segunda declaración de una
+      # misma identidad no lo cambia.
       - key: BE_DEMO_PROFESIONALES
-        value: "9172fae6-13b8-4d34-8139-711b89d460c4|NUTRICION|SANITARIO|Lic. Demo Nutrición;81e11918-19f7-4f56-ac5c-1420a3da77bb|ENTRENAMIENTO|NO_SANITARIO|Prof. Demo Entrenamiento"
+        value: "9172fae6-13b8-4d34-8139-711b89d460c4|NUTRICION|SANITARIO|Lic. Demo Nutrición;81e11918-19f7-4f56-ac5c-1420a3da77bb|ENTRENAMIENTO|NO_SANITARIO|Prof. Demo Entrenamiento;9172fae6-13b8-4d34-8139-711b89d460c4|ANTROPOMETRIA|SANITARIO|Lic. Demo Nutrición;c837438d-b72f-413c-a433-9ab9ae010e4c|ANTROPOMETRIA|NO_SANITARIO|Prof. Demo Antropometría"
 
   - type: web
     name: be-web
