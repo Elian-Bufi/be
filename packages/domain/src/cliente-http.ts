@@ -91,6 +91,7 @@ import {
   type AnularMedicionRequestSchema,
   type CorregirMedicionRequestSchema,
   type CrearBorradorRequestSchema,
+  type CrearEvaluacionAntropometricaRequestSchema,
   type GuardarBorradorRequestSchema,
 } from './contratos-antropometria';
 import {
@@ -460,6 +461,15 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-ANT-01: protocolos y métodos admitidos, con su versión vigente. */
     listarEspecificaciones(token: string, filtro: { kind?: 'PROTOCOL' | 'METHOD'; cursor?: string } = {}) {
       return llamar('GET', `/anthropometry/specifications${query(filtro)}`, { token, esquema: ListaDeEspecificacionesResponseSchema });
+    },
+    /** API-ANT-02: la evaluación nace REGISTRADA, en un solo acto atómico (09v11 §6). */
+    crearEvaluacionAntropometrica(token: string, asesoradoId: string, cuerpo: z.input<typeof CrearEvaluacionAntropometricaRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${asesoradoId}/anthropometry/evaluations`, {
+        token,
+        claveDeIdempotencia,
+        esquema: EvaluacionAntropometricaResponseSchema,
+        cuerpo,
+      });
     },
     /** API-ANT-07: crear la evaluación EN PREPARACIÓN. */
     crearBorradorAntropometrico(token: string, asesoradoId: string, cuerpo: z.input<typeof CrearBorradorRequestSchema>, claveDeIdempotencia: string) {
