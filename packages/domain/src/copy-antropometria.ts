@@ -61,6 +61,34 @@ export const COPY_ANTROPOMETRIA = {
   corridaReemplazada: 'Reemplaza a un cálculo anterior, que se conserva.',
   sinSucesor: 'No se pudo recalcular: falta una medición vigente. No se reemplaza por cero.',
 
+  // ─── Métodos y cálculos (06 §20.3) ────────────────────────────────────────────────────────────
+  calculos: 'Cálculos',
+  nuevoCalculo: 'Calcular con un método',
+  metodo: 'Método',
+  versionDelMetodo: 'Versión',
+  reglaAplicada: 'Regla aplicada',
+  entradasDelMetodo: 'Qué necesita este método',
+  elegirEntrada: 'Con qué medición',
+  finalidadDelCalculo: 'Para qué se calcula',
+  ejecutarCalculo: 'Calcular',
+  calculoHecho: 'Cálculo registrado. Queda con su método, su versión y sus entradas a la vista.',
+  sinCalculos: 'Todavía no hay cálculos para esta evaluación.',
+  sinMetodosSeleccionables: 'No hay métodos seleccionables en el catálogo.',
+  metodoHistorico: 'Versión anterior del método. Se conserva para poder explicar los cálculos que la usaron.',
+  explicacionDeCoexistencia:
+    'Los cálculos conviven: BE no los promedia, no los ordena por mejor y no elige uno. Si querés dejar uno como referencia, lo elegís vos y queda registrado.',
+  explicacionDeAdmisibilidad:
+    'Que una medición exista no alcanza: cada versión del método declara qué necesita, en qué unidad y obtenida de qué manera. Si algo no corresponde, el cálculo no se hace.',
+  entradaNoAdmisible: 'Esta medición no corresponde a lo que el método declara.',
+  referenciaAdoptada: 'Referencia',
+  adoptarReferencia: 'Dejar como referencia',
+  fundamentoDeLaReferencia: 'Por qué esta',
+  referenciaHecha: 'Referencia registrada. Los demás cálculos se conservan.',
+  yaEsReferencia: 'Este cálculo ya era la referencia.',
+  explicacionDeReferencia:
+    'Dejar un cálculo como referencia no cambia el cálculo ni borra los otros, y no crea un objetivo ni una prescripción. La decisión sigue siendo tuya y queda registrada con su fecha.',
+  referenciaReemplazada: 'Reemplaza a la referencia anterior, que se conserva.',
+
   // ─── Corregir ─────────────────────────────────────────────────────────────────────────────────
   corregirMedicion: 'Corregir medición',
   motivoDeCorreccion: 'Por qué se corrige',
