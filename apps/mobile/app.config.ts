@@ -5,7 +5,7 @@ import type { ExpoConfig } from 'expo/config';
  * EAS_BUILD_GIT_COMMIT_HASH lo provee EAS durante el build; APP_ENV y API_BASE_URL vienen del perfil de eas.json.
  * Ningún secreto se embebe en el APK (08 §32).
  */
-const VERSION = '0.5.1';
+const VERSION = '0.6.0';
 
 const config: ExpoConfig = {
   name: 'BE',
@@ -17,7 +17,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'light',
   android: {
     package: 'com.elianbufi.be',
-    versionCode: 6,
+    versionCode: 7,
     adaptiveIcon: {
       foregroundImage: './assets/android-icon-foreground.png',
       backgroundColor: '#ffffff',

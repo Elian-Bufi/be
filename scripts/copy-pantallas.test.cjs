@@ -14,7 +14,7 @@ const { readdirSync, readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const test = require('node:test');
 const ts = require('typescript');
-const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn } = require('../packages/domain/dist/index.js');
+const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeEntrenamientoEn } = require('../packages/domain/dist/index.js');
 
 const RAIZ = join(__dirname, '..');
 const tsx = (dir) => readdirSync(dir).filter((f) => f.endsWith('.tsx')).map((f) => join(dir, f));
@@ -32,6 +32,12 @@ const DOMINIOS = [
     archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry')), join(RAIZ, 'apps/mobile/src/pantallas/antropometria.tsx')],
     prohibidos: terminosProhibidosDeAntropometriaEn,
     minimo: 5,
+  },
+  {
+    nombre: 'entrenamiento',
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx')],
+    prohibidos: terminosProhibidosDeEntrenamientoEn,
+    minimo: 7,
   },
 ];
 
@@ -109,4 +115,34 @@ test('T13 · el titular de la medición muestra el valor vigente, no el original
     /medicion\.magnitude\b/,
     'el original solo entra como respaldo de la cadena no resoluble, nunca como titular propio',
   );
+});
+
+/**
+ * WP-06 §9.2 · la guardia estructural de entrenamiento. «No realizada» es copy legítimo cuando el asesorado lo
+ * registró y prohibido cuando se deriva de la ausencia (B10-06:794-796): la misma cadena, las dos cosas. Una lista
+ * negra no las distingue. Esta prueba fija, sobre el código de las pantallas, que:
+ * - ninguna pantalla escribe «No realizada» por su cuenta: el texto vive solo en el dominio;
+ * - el estado de una ocurrencia se muestra solo a través de `vistaDeOcurrencia`, que llega a la condición únicamente
+ *   por una ejecución registrada;
+ * - ninguna pantalla lee `execution.sessionCondition` directamente, que es la puerta para saltearse esa función.
+ */
+test('WP-06 §9.2 · ninguna pantalla de entrenamiento deriva «No realizada» de la ausencia de registro', () => {
+  const archivos = [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx')];
+  assert.ok(archivos.length >= 7, `se esperaban las pantallas de entrenamiento, hay ${archivos.length}`);
+  const hallazgos = [];
+  for (const a of archivos) {
+    const contenido = readFileSync(a, 'utf8');
+    for (const { texto, linea } of textosDe(a, contenido)) if (/no realizad/i.test(texto)) hallazgos.push(`${a.slice(RAIZ.length + 1)}:${linea} escribe ${JSON.stringify(texto)}`);
+    if (/execution\.sessionCondition/.test(contenido)) hallazgos.push(`${a.slice(RAIZ.length + 1)} lee execution.sessionCondition sin pasar por vistaDeOcurrencia`);
+  }
+  assert.deepEqual(hallazgos, []);
+  // La pantalla que lista ocurrencias usa la función: si alguien la saca, esta línea lo dice.
+  assert.match(readFileSync(join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), 'utf8'), /vistaDeOcurrencia\(/);
+});
+
+test('WP-06 §9.2 · la guardia detecta una pantalla que escribe «No realizada» o lee la condición suelta', () => {
+  const contenido = "export const X = ({ o }) => <p>{o.execution.sessionCondition ? 'Registrada' : 'No realizada'}</p>;";
+  const textos = textosDe('fixture.tsx', contenido).map((t) => t.texto);
+  assert.ok(textos.some((t) => /no realizad/i.test(t)));
+  assert.match(contenido, /execution\.sessionCondition/);
 });

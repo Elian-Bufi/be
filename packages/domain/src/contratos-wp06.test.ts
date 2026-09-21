@@ -420,3 +420,8 @@ test('B10-10:134 · el copy de entrenamiento no tiene puntajes ni juicios; «% R
   assert.deepEqual(terminosProhibidosDeEntrenamientoEn('Fallaste la sesión'), ['fallaste']);
   assert.deepEqual(terminosProhibidosDeEntrenamientoEn('Una progresión que conserva la estructura'), []);
 });
+
+test('copy · la cantidad de series concuerda en número: «1 serie», «3 series»', async () => {
+  const { cantidadDeSeries } = await import('./copy-entrenamiento');
+  assert.deepEqual([0, 1, 3].map(cantidadDeSeries), ['0 series', '1 serie', '3 series']);
+});

@@ -3,7 +3,7 @@
  * «Atrás» (botón de Android o enlace visible) va a la pantalla lógica anterior, no a la historia cronológica, y nunca
  * cierra la sesión. La sesión vive solo en memoria (DL-012): perderla lleva a Iniciar sesión.
  */
-import { CODIGOS_DE_SESION_NO_VALIDA, type Resultado } from '@be/domain';
+import { CODIGOS_DE_SESION_NO_VALIDA, type Resultado, type SesionDeOcurrencia } from '@be/domain';
 import { useCallback } from 'react';
 
 export type Ruta =
@@ -19,7 +19,10 @@ export type Ruta =
   | { readonly nombre: 'plan-actual' }
   | { readonly nombre: 'registros-nutricionales' }
   | { readonly nombre: 'registro-nutricional'; readonly id: string }
-  | { readonly nombre: 'mi-evolucion' };
+  | { readonly nombre: 'mi-evolucion' }
+  | { readonly nombre: 'entrenamiento' }
+  | { readonly nombre: 'sesion-de-entrenamiento'; readonly draftId: string; readonly sesion: SesionDeOcurrencia; readonly fecha: string }
+  | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string };
 
 /** Por qué termina la sesión en el APK; cada motivo tiene su aviso en App.tsx. */
 export type Salida = 'sesion-cerrada' | 'sesiones-cerradas' | 'sesion-no-valida' | 'reautenticar' | 'cierre-registrado';
@@ -39,7 +42,11 @@ export function anterior(ruta: Ruta): Ruta | null {
     case 'privacidad':
     case 'hoy':
     case 'mi-evolucion':
+    case 'entrenamiento':
       return { nombre: 'cuenta' };
+    case 'sesion-de-entrenamiento':
+    case 'ejecucion-de-entrenamiento':
+      return { nombre: 'entrenamiento' };
     case 'plan-actual':
     case 'registros-nutricionales':
       return { nombre: 'hoy' };
@@ -65,6 +72,8 @@ export function textoDeVolverA(destino: Ruta): string {
       return 'Volver al vínculo';
     case 'hoy':
       return 'Volver a Hoy';
+    case 'entrenamiento':
+      return 'Volver a Entrenamiento de hoy';
     case 'registros-nutricionales':
       return 'Volver a Registros';
     default:
