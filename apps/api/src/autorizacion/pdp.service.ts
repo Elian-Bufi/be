@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import {
   ALCANCES,
   FINALIDAD_DE_ALCANCE,
@@ -20,6 +21,16 @@ import { conReintento } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 
 type Cliente = Prisma.TransactionClient | PrismaService;
+
+/** Lo que el PDP necesita para decidir de nuevo: la operación, el actor, el par y el recurso. Nada de la respuesta. */
+export interface SolicitudDeDecision {
+  readonly operacion: string;
+  readonly actorDeLaDecision: string;
+  readonly profesionalId: string;
+  readonly titularId: string | null;
+  readonly alcance: Alcance;
+  readonly recurso: { readonly tipo: string; readonly id: string } | null;
+}
 
 /** Resultado de una evaluación por alcance: la decisión pura más lo que la resolvió. */
 export interface DecisionPorAlcance {
@@ -96,6 +107,30 @@ const errorInterno = (): Error => new Error('PDP: la lectura de hechos no devolv
 @Injectable()
 export class PdpService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Las decisiones permitidas durante un efecto idempotente, para poder volver a tomarlas en un reintento. */
+  private readonly captura = new AsyncLocalStorage<SolicitudDeDecision[]>();
+
+  /**
+   * Ejecuta `fn` y devuelve, además de su resultado, cada decisión que el PDP permitió mientras corría. La usa la
+   * idempotencia: el registro guarda qué se decidió para poder decidirlo otra vez en el reintento (08:601).
+   */
+  async capturarDecisiones<T>(fn: () => Promise<T>): Promise<{ readonly resultado: T; readonly decisiones: readonly SolicitudDeDecision[] }> {
+    const decisiones: SolicitudDeDecision[] = [];
+    const resultado = await this.captura.run(decisiones, fn);
+    return { resultado, decisiones };
+  }
+
+  /**
+   * Un reintento con la misma Idempotency-Key no devuelve la respuesta guardada sin volver a decidir: si desde el
+   * primer pedido se revocó el consentimiento o se finalizó el vínculo, la decisión de ahora deniega y el reintento
+   * recibe el mismo 404 que cualquier otro pedido (09 v0.16.1:220-221 pone la idempotencia después de la
+   * revelabilidad; 08:601 prohíbe reutilizar una decisión previa que no refleje una revocación reciente). Cada
+   * re-decisión queda registrada, con el requestId del reintento.
+   */
+  async reautorizar(tx: Prisma.TransactionClient, decisiones: readonly SolicitudDeDecision[], ctx: ContextoDeSolicitud): Promise<void> {
+    for (const d of decisiones) await this.decidirEnTransaccion(tx, d, ctx);
+  }
 
   /**
    * Decide para cada alcance del catálogo y registra las decisiones. Las usa API-DSH-03, que muestra por alcance lo que
@@ -193,6 +228,7 @@ export class PdpService {
     };
     if (!decision.permitida) throw new DenegacionDelPdp(registro);
     await tx.decisionDeAcceso.create({ data: registro });
+    this.captura.getStore()?.push({ operacion: p.operacion, actorDeLaDecision: p.actorDeLaDecision, profesionalId: p.profesionalId, titularId: p.titularId, alcance: p.alcance, recurso: p.recurso });
     return { alcance: p.alcance, finalidad: hechos.operacion.finalidad, decision, hechos };
   }
 

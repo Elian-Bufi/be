@@ -41,6 +41,7 @@ export function evaluacionApi(e: FilaDeEvaluacion, nombreProfesional: string): E
     assessment: e.valoracion as EvaluacionDeEntrenamiento['assessment'],
     evidenceReferences: e.referencias as string[],
     professionalNotes: e.notas,
+    context: e.contexto,
   };
 }
 
@@ -176,8 +177,21 @@ export function bloquesApi(contenido: ContenidoDePlanDeEntrenamiento, resolver: 
 /**
  * Una versión de plan. La activada se reconstruye **desde su instantánea**, no desde el borrador ni desde el catálogo
  * actual (09v10:706; REG-06-112): si el catálogo cambió después, esto no cambia.
+ *
+ * `isEffective` es «la que ve el asesorado» (contrato): la versión efectiva de un seguimiento **abierto**. Después de
+ * FINALIZAR la versión sigue ACTIVADA —la historia no se reescribe— pero ya no rige (06:4297).
  */
-export function versionDePlanApi(v: VersionConPlan, nombreProfesional: string, catalogoDeBorrador: ReadonlyMap<string, EjercicioCitable>): VersionDePlanDeEntrenamiento {
+/** Si el profesional y el asesorado tienen un seguimiento de entrenamiento ABIERTO. */
+export async function seguimientoAbierto(tx: Prisma.TransactionClient, profesionalId: string, asesoradoId: string): Promise<boolean> {
+  return (await tx.procesoOperativo.count({ where: { profesionalId, asesoradoId, alcance: 'ENTRENAMIENTO', estado: 'ABIERTO' } })) > 0;
+}
+
+export function versionDePlanApi(
+  v: VersionConPlan,
+  nombreProfesional: string,
+  catalogoDeBorrador: ReadonlyMap<string, EjercicioCitable>,
+  seguimientoAbierto: boolean,
+): VersionDePlanDeEntrenamiento {
   const instantanea = v.estado === 'ACTIVADA' && v.instantanea ? (v.instantanea.contenido as unknown as InstantaneaDeEntrenamiento) : null;
   const contenido = instantanea ? instantanea.contenido : (v.contenido as unknown as ContenidoDePlanDeEntrenamiento);
   const resolver = instantanea ? resolverDeInstantanea(instantanea) : resolverDeCatalogo(catalogoDeBorrador);
@@ -190,7 +204,7 @@ export function versionDePlanApi(v: VersionConPlan, nombreProfesional: string, c
     professional: { identityId: v.plan.profesionalId, displayName: nombreProfesional },
     objectiveVersionId: v.versionDeObjetivoId,
     predecessorPlanId: v.predecesoraId,
-    isEffective: v.plan.versionEfectivaId === v.id,
+    isEffective: seguimientoAbierto && v.plan.versionEfectivaId === v.id,
     createdAt: v.momentoDeRegistro.toISOString(),
     activatedAt: v.momentoDeActivacion?.toISOString() ?? null,
     snapshotDigest: v.instantanea?.huella ?? null,

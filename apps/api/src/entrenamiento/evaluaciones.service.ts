@@ -66,6 +66,7 @@ export class EvaluacionesDeEntrenamientoService {
             valoracion: pedido.assessment as Prisma.InputJsonValue,
             referencias: pedido.evidenceReferences,
             notas: pedido.professionalNotes,
+            contexto: pedido.context ?? null,
             procedencia: procedencia as unknown as Prisma.InputJsonValue,
             momentoDeOcurrencia: ocurrencia,
           },

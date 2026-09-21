@@ -133,6 +133,8 @@ interface ParametroDeQuery {
   readonly nombre: string;
   readonly descripcion: string;
   readonly schema: Record<string, unknown>;
+  /** Casi toda query es un filtro opcional; la que el servidor exige lo declara (sin ella responde 400). */
+  readonly obligatorio?: boolean;
 }
 
 export interface Operacion {
@@ -144,6 +146,8 @@ export interface Operacion {
   readonly autenticacion: 'PUBLIC' | 'SESSION' | 'SESSION_STEP_UP';
   readonly idempotencia: boolean;
   readonly request?: z.ZodType;
+  /** Un cuerpo que el servidor también acepta ausente (API-TRN-15: el 09 no le declara cuerpo). */
+  readonly requestOpcional?: boolean;
   readonly query?: readonly ParametroDeQuery[];
   /** El primero es el éxito principal. REL-01 y CON-02 también responden 200 (deduplicado o replay). */
   readonly exitos: readonly { readonly status: 200 | 201 | 204; readonly schema?: z.ZodType }[];
@@ -1288,8 +1292,8 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
-      { nombre: 'periodStart', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' } },
-      { nombre: 'periodEnd', descripcion: 'Fecha local YYYY-MM-DD, no posterior a hoy.', schema: { type: 'string', format: 'date' } },
+      { nombre: 'periodStart', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' }, obligatorio: true },
+      { nombre: 'periodEnd', descripcion: 'Fecha local YYYY-MM-DD, no posterior a hoy. Hasta 31 días desde periodStart: es el tope de la lectura, que por eso no pagina (DL-078).', schema: { type: 'string', format: 'date' }, obligatorio: true },
     ],
     exitos: [{ status: 200, schema: OcurrenciasDelPeriodoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'] },
@@ -1303,6 +1307,7 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     request: AbrirBorradorDeEjecucionRequestSchema,
+    requestOpcional: true,
     exitos: [
       { status: 201, schema: BorradorDeEjecucionResponseSchema },
       { status: 200, schema: BorradorDeEjecucionResponseSchema },
@@ -1511,7 +1516,7 @@ export function documentoOpenApi(): Record<string, unknown> {
       });
     }
     for (const q of op.query ?? []) {
-      parametros.push({ name: q.nombre, in: 'query', required: false, description: q.descripcion, schema: q.schema });
+      parametros.push({ name: q.nombre, in: 'query', required: q.obligatorio === true, description: q.descripcion, schema: q.schema });
     }
     parametros.push({
       name: 'X-BE-Surface',
@@ -1541,7 +1546,7 @@ export function documentoOpenApi(): Record<string, unknown> {
         security: op.autenticacion === 'PUBLIC' ? [] : [{ sesion: [] }],
         parameters: parametros,
         ...(op.request
-          ? { requestBody: { required: true, content: { 'application/json': { schema: aJson(op.request) } } } }
+          ? { requestBody: { required: op.requestOpcional !== true, content: { 'application/json': { schema: aJson(op.request) } } } }
           : {}),
         responses: respuestas,
       },

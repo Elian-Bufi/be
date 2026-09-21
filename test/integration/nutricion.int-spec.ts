@@ -560,3 +560,29 @@ function sinSalida(m: { mealId: string; label: string; prescriptionMode: string;
     })),
   };
 }
+
+// ─── Cierre de WP-06 · el mismo patrón de revisión, arreglado también en nutrición ───────────────
+describe('Cierre de WP-06 · lo que la auditoría de entrenamiento encontró también en la revisión nutricional', () => {
+  it('REG-06-142 · una versión de plan citada como evidencia es una ACTIVADA, no un borrador que después cambia', async () => {
+    const c = await circuitoConPlanActivo(app, `evid-nut-${randomUUID().slice(0, 8)}`);
+    const borrador = await conSesion(app, c.pro.token)
+      .post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`)
+      .send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: c.planId })
+      .expect(201);
+    const conBorrador = await conSesion(app, c.pro.token)
+      .post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`)
+      .send(cuerpoDeRevision([{ type: 'PLAN_VERSION', id: borrador.body.data.planId }], 'MAINTAIN'))
+      .expect(422);
+    expect(conBorrador.body.error.code).toBe('REVIEW_EVIDENCE_NOT_RECONSTRUCTIBLE');
+    await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send(cuerpoDeRevision([{ type: 'PLAN_VERSION', id: c.planId }], 'MAINTAIN')).expect(201);
+  });
+
+  it('CAMBIAR OBJETIVO con una evaluación ajena se rechaza al registrar la revisión, con la ruta exacta', async () => {
+    const c = await circuitoConPlanActivo(app, `cobj-nut-${randomUUID().slice(0, 8)}`);
+    const r = await conSesion(app, c.pro.token)
+      .post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`)
+      .send(cuerpoDeRevision([{ type: 'PLAN_VERSION', id: c.planId }], 'CHANGE_OBJECTIVE', { objective: cuerpoDeObjetivo(randomUUID()) }))
+      .expect(422);
+    expect(r.body.error).toMatchObject({ code: 'REVIEW_COMPONENT_REQUIRED', details: { issues: [{ code: 'EVALUATION_NOT_COMPATIBLE', path: 'nextAction.objective.evaluationId' }] } });
+  });
+});

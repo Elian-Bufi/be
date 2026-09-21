@@ -384,7 +384,13 @@ export interface OcurrenciaPlanificada {
 
 const ALFABETO = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 const PREFIJO = 'occ_';
-const FORMA = /^[0-9a-f-]{36}\.[A-Za-z0-9_-]{1,64}\.\d{4}-\d{2}-\d{2}$/;
+// La versión es un UUID de verdad y la fecha existe en el calendario: lo que no, no es una ocurrencia que este servidor
+// haya emitido, y no llega a la base (un 404, nunca un 500).
+const FORMA = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[A-Za-z0-9_-]{1,64}\.\d{4}-\d{2}-\d{2}$/;
+const esFechaReal = (f: string): boolean => {
+  const d = new Date(`${f}T00:00:00.000Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === f;
+};
 
 function aBase64Url(ascii: string): string {
   let salida = '';
@@ -437,6 +443,7 @@ export function decodificarOcurrencia(id: string): OcurrenciaPlanificada | null 
   const texto = deBase64Url(id.slice(PREFIJO.length));
   if (texto === null || !FORMA.test(texto)) return null;
   const [versionDePlanId, sesionPlanificadaId, fechaLocal] = texto.split('.') as [string, string, string];
+  if (!esFechaReal(fechaLocal)) return null;
   const o = { versionDePlanId, sesionPlanificadaId, fechaLocal };
   // Una sola escritura por ocurrencia: dos cadenas que decodifican igual no pueden ser las dos válidas.
   return codificarOcurrencia(o) === id ? o : null;

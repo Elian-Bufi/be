@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { FINALIDAD_DE_ALCANCE, type Alcance, type EsquemaDeContrato, type Procedencia, type SalidaDe } from '@be/domain';
 import type { Prisma } from '@prisma/client';
-import { DenegacionDelPdp, PdpService } from '../autorizacion/pdp.service';
+import { DenegacionDelPdp, PdpService, type SolicitudDeDecision } from '../autorizacion/pdp.service';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { validarCuerpo } from '../http/validacion';
@@ -44,7 +44,8 @@ export const esUuid = (s: string): boolean => UUID.test(s);
  * 1. el cuerpo se valida contra su schema (400); no depende del recurso, así que no es un oráculo;
  * 2. Idempotency-Key, cuando el 09 la exige (09v9:1051-1068);
  * 3. en UNA transacción: el efecto, que decide el PDP con `PdpService.decidirEnTransaccion` antes de escribir, la
- *    auditoría de éxito y el registro de idempotencia;
+ *    auditoría de éxito y el registro de idempotencia, que guarda qué decidió el PDP. Un reintento con la misma clave
+ *    vuelve a decidir antes de devolver la respuesta guardada: si ya no se permite, es el mismo 404;
  * 4. si el PDP denegó, la transacción se revirtió: se registra la decisión denegada y se responde el 404;
  * 5. todo rechazo de contrato queda auditado como RECHAZO, con el recurso intentado.
  *
@@ -86,6 +87,9 @@ export abstract class EjecutorDeDominio {
         const r = await p.efecto(tx, pedido, procedencia);
         await this.exito(tx, p, r);
         return { estadoHttp: r.estadoHttp, cuerpo: r.cuerpo as Prisma.InputJsonValue };
+      }, {
+        capturar: (fn) => this.pdp.capturarDecisiones(fn),
+        reautorizar: (tx, decisiones) => this.pdp.reautorizar(tx, decisiones as readonly SolicitudDeDecision[], p.ctx),
       }),
     );
   }
