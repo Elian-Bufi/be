@@ -22,7 +22,19 @@ export interface ProcesoBloqueado {
   readonly version: number;
   readonly profesionalId: string;
   readonly asesoradoId: string;
+  /** De qué dominio es: decide en qué columna se enlaza la revisión que lo continúa o lo cierra. */
+  readonly alcance: Alcance;
 }
+
+/**
+ * REG-06-145: la próxima revisión la fija una versión de plan o una revisión válida. Las de nutrición conservan su
+ * forma; las de entrenamiento se nombran distinto para que ningún llamador pueda pasar un id al dominio equivocado.
+ */
+export type FuenteDeProximaRevisionDeProceso =
+  | { versionDePlanId: string }
+  | { revisionId: string }
+  | { versionDePlanDeEntrenamientoId: string }
+  | { revisionDeEntrenamientoId: string };
 
 export interface Apertura {
   readonly procesoId: string;
@@ -38,6 +50,19 @@ export interface Apertura {
  * orden, el plan, la versión de plan, el cerrojo de capacidad del profesional y el Proceso. La activación y la
  * aplicación de una revisión los toman en ese orden, así no se cruzan.
  */
+/**
+ * El Proceso es transversal (B-04), pero la versión que lo abre vive en la tabla de su dominio. Antropometría no abre
+ * Proceso (06 §8.9): pedirlo es un error de programación, no una situación del producto, y se dice así.
+ */
+function columnaDeApertura(
+  alcance: Alcance,
+  versionId: string,
+): { versionDeAperturaId: string } | { versionDeAperturaEntrenamientoId: string } {
+  if (alcance === 'NUTRICION') return { versionDeAperturaId: versionId };
+  if (alcance === 'ENTRENAMIENTO') return { versionDeAperturaEntrenamientoId: versionId };
+  throw new Error(`BE: el alcance ${alcance} no abre Proceso operativo (06 §8.9)`);
+}
+
 @Injectable()
 export class ProcesoService {
   /**
@@ -75,7 +100,9 @@ export class ProcesoService {
         profesionalId: p.profesionalId,
         asesoradoId: p.asesoradoId,
         alcance: p.alcance,
-        versionDeAperturaId: p.versionDeAperturaId,
+        // La apertura va a la columna de su dominio: cada una tiene su clave foránea real, y el CHECK
+        // `proceso_operativo_apertura_segun_alcance` exige exactamente la que corresponde (migración 20260921110000).
+        ...columnaDeApertura(p.alcance, p.versionDeAperturaId),
         procedencia: p.procedencia as unknown as Prisma.InputJsonValue,
         momentoDeOcurrencia: p.momento,
       },
@@ -96,7 +123,7 @@ export class ProcesoService {
   /** Proceso ABIERTO de la terna, bloqueado para escribir. */
   async procesoAbierto(tx: Tx, profesionalId: string, asesoradoId: string, alcance: Alcance): Promise<ProcesoBloqueado | null> {
     const [fila] = await tx.$queryRaw<ProcesoBloqueado[]>`
-      SELECT "id"::text AS "id", "estado", "version", "profesional_id"::text AS "profesionalId", "asesorado_id"::text AS "asesoradoId"
+      SELECT "id"::text AS "id", "estado", "version", "profesional_id"::text AS "profesionalId", "asesorado_id"::text AS "asesoradoId", "alcance"
         FROM "proceso_operativo"
        WHERE "profesional_id" = ${profesionalId}::uuid AND "asesorado_id" = ${asesoradoId}::uuid AND "alcance" = ${alcance}::"Alcance" AND "estado" = 'ABIERTO'
          FOR NO KEY UPDATE`;
@@ -106,7 +133,7 @@ export class ProcesoService {
   /** Un Proceso por id, bloqueado para escribir. */
   async bloquear(tx: Tx, procesoId: string): Promise<ProcesoBloqueado | null> {
     const [fila] = await tx.$queryRaw<ProcesoBloqueado[]>`
-      SELECT "id"::text AS "id", "estado", "version", "profesional_id"::text AS "profesionalId", "asesorado_id"::text AS "asesoradoId"
+      SELECT "id"::text AS "id", "estado", "version", "profesional_id"::text AS "profesionalId", "asesorado_id"::text AS "asesoradoId", "alcance"
         FROM "proceso_operativo" WHERE "id" = ${procesoId}::uuid FOR NO KEY UPDATE`;
     return fila ?? null;
   }
@@ -148,7 +175,8 @@ export class ProcesoService {
       tipo: 'ContinuidadOCierreAplicado',
       procesoId: p.proceso.id,
       tipoDeAplicacion: efecto.tipoDeEvento,
-      revisionId: p.revisionId,
+      // La revisión se enlaza en la columna de su dominio; cada una tiene su clave foránea (REG-06-75).
+      ...(p.proceso.alcance === 'ENTRENAMIENTO' ? { revisionDeEntrenamientoId: p.revisionId } : { revisionId: p.revisionId }),
       estadoPrevio: p.proceso.estado,
       estadoPosterior: efecto.procesoDespues,
       datos: p.datos,
@@ -210,17 +238,21 @@ export class ProcesoService {
    */
   async fijarProximaRevision(
     tx: Tx,
-    p: { procesoId: string; fecha: string | null; fuente: { versionDePlanId: string } | { revisionId: string }; actorId: string; procedencia: Procedencia; momento: Date },
+    p: { procesoId: string; fecha: string | null; fuente: FuenteDeProximaRevisionDeProceso; actorId: string; procedencia: Procedencia; momento: Date },
   ): Promise<void> {
     const vigente = await this.proximaRevisionVigente(tx, p.procesoId);
+    const f = p.fuente;
     await tx.proximaRevision.create({
       data: {
         procesoId: p.procesoId,
         predecesoraId: vigente?.id ?? null,
         fechaObjetivo: p.fecha ? new Date(`${p.fecha}T00:00:00.000Z`) : null,
-        fuente: 'versionDePlanId' in p.fuente ? 'VERSION_DE_PLAN' : 'REVISION',
-        versionDePlanId: 'versionDePlanId' in p.fuente ? p.fuente.versionDePlanId : null,
-        revisionId: 'revisionId' in p.fuente ? p.fuente.revisionId : null,
+        fuente: 'versionDePlanId' in f || 'versionDePlanDeEntrenamientoId' in f ? 'VERSION_DE_PLAN' : 'REVISION',
+        // Cada fuente en la columna de su dominio. El CHECK `proxima_revision_fuente_coherente` exige exactamente una.
+        versionDePlanId: 'versionDePlanId' in f ? f.versionDePlanId : null,
+        versionDePlanDeEntrenamientoId: 'versionDePlanDeEntrenamientoId' in f ? f.versionDePlanDeEntrenamientoId : null,
+        revisionId: 'revisionId' in f ? f.revisionId : null,
+        revisionDeEntrenamientoId: 'revisionDeEntrenamientoId' in f ? f.revisionDeEntrenamientoId : null,
         actorId: p.actorId,
         procedencia: p.procedencia as unknown as Prisma.InputJsonValue,
         momentoDeOcurrencia: p.momento,
@@ -299,6 +331,7 @@ export class ProcesoService {
       procesoId: string;
       tipoDeAplicacion?: TipoDeAplicacion;
       revisionId?: string | null;
+      revisionDeEntrenamientoId?: string | null;
       estadoPrevio: EstadoDeProceso | null;
       estadoPosterior: EstadoDeProceso;
       datos: Prisma.InputJsonValue;
@@ -313,6 +346,7 @@ export class ProcesoService {
         procesoId: e.procesoId,
         tipoDeAplicacion: e.tipoDeAplicacion ?? null,
         revisionId: e.revisionId ?? null,
+        revisionDeEntrenamientoId: e.revisionDeEntrenamientoId ?? null,
         estadoPrevio: e.estadoPrevio,
         estadoPosterior: e.estadoPosterior,
         datos: e.datos,

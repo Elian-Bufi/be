@@ -1607,6 +1607,10 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A para P0. B es más fiel a un plan con calendario, pero el 06 no fija que la sesión planificada tenga fecha concreta —el 10 advierte justamente que no se confunda sesión con fecha (B10-06:364-375)—, así que B exigiría inventar una estructura que el modelo no declara.
 
+**Es la misma regla que ya rige en nutrición (DL-049).** Allá la ocurrencia de una ingesta prescripta es (asesorado, versión, fecha local, comida), y «Hoy» no elige en silencio cuando hay más de un día tipo: el asesorado elige con un selector explícito. Entrenamiento hace exactamente lo mismo: la ocurrencia es (asesorado, versión activada, sesión planificada, fecha local), y si el plan tiene varias sesiones, «Hoy» las muestra y el asesorado elige cuál hace — BE no decide por él. Dos dominios, una sola regla: es REG-06-07 aplicado.
+
+**Implementado en la base** (migración `20260921100000`): la unicidad por ocurrencia está **dos veces**, como índice único sobre el borrador de ejecución y otro sobre la ejecución registrada, y además la ejecución es única por borrador. Hay una prueba para cada red en `maquinas-wp06.int-spec.ts`.
+
 ## DL-078 — No hay operación para llegar a una ocurrencia que no sea la de hoy
 
 **Prioridad:** alta · **Documento:** 09v10:924 · 09v10:886 · 09v10:188-189, 915 · **Estado:** **DECIDIDA** 2026-09-21 · opción A · se suma la operación
