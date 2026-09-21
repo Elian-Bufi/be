@@ -563,6 +563,18 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de MTH y CAL', async () => {
   await pro.put(`/api/v1/advisees/${ajeno}/calculation-references/ANTHROPOMETRIC_SUPPORT`).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: null }).expect(404);
 });
 
+/**
+ * WP-06 se implementa por tramos, con el contrato entero publicado primero (docs/paquetes/WP-06.md §9.6). Las
+ * operaciones declaradas que todavía no tienen servicio figuran acá, **a la vista**, en vez de relajar la exigencia
+ * de cobertura. La lista solo puede achicarse: si una operación de acá ya se ejercita, la prueba falla hasta que se
+ * la saque. **Para cerrar WP-06 tiene que quedar vacía.**
+ */
+const EN_CONSTRUCCION: ReadonlySet<string> = new Set([
+  ...Array.from({ length: 24 }, (_, i) => `API-TRN-${String(i + 1).padStart(2, '0')}`),
+  'API-TRN-14-PERIODO',
+  'API-INT-TRN-01',
+]);
+
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
   const noDeclaradas: string[] = [];
   const porOperacion = new Map<string, Set<string>>();
@@ -584,5 +596,6 @@ it('TEST-CT: todo (status, código) observado está declarado para su operación
   }
   process.stdout.write(`${JSON.stringify({ prueba: 'TEST-CT', observadas: Object.fromEntries([...porOperacion].map(([k, v]) => [k, [...v].sort()])) })}\n`);
   expect(noDeclaradas).toEqual([]);
-  expect([...porOperacion.keys()].sort()).toEqual(OPERACIONES.map((o) => o.id).sort());
+  expect([...porOperacion.keys()].filter((id) => EN_CONSTRUCCION.has(id))).toEqual([]);
+  expect([...porOperacion.keys()].sort()).toEqual(OPERACIONES.map((o) => o.id).filter((id) => !EN_CONSTRUCCION.has(id)).sort());
 });
