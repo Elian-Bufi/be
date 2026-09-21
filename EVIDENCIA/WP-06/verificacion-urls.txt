@@ -1,0 +1,32 @@
+Verificación posterior al deploy — WP-06 (07 §37)
+Momento: 2026-09-21T18:56:01Z
+
+$ curl -s https://be-api-hndp.onrender.com/health/ready
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.6.0","commit":"c50fdd905abcaea19b2cc2456145f3740d3c9f34","construidoEn":"2026-09-21T18:52:08.721Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+
+$ curl -s https://be-api-hndp.onrender.com/health/live
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.6.0","commit":"c50fdd905abcaea19b2cc2456145f3740d3c9f34","construidoEn":"2026-09-21T18:52:08.721Z"}}}
+
+$ curl -sI https://be-web-1ngj.onrender.com/  (líneas de seguridad)
+HTTP/2 200 
+content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://be-api-hndp.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+strict-transport-security: max-age=315360000; includeSubdomains; preload
+x-content-type-options: nosniff
+x-frame-options: DENY
+
+$ la pestaña Entrenamiento del website está en la versión desplegada: el chunk de /pro/advisees/training trae «carga no registrada», un texto que suma el cierre de WP-06 (PR #55)
+/_next/static/chunks/app/pro/advisees/training/page-0e5ac751208102ff.js
+      1 carga no registrada
+
+$ el website apunta a la API en su bundle (DL-030): ocurrencias de be-api-hndp en el chunk de /login
+1
+
+$ /api/* en el website ya NO llega a la API (DL-030): 0 esperado
+0
+
+APK 0.6.0 — descarga anónima del release permanente
+https://github.com/Elian-Bufi/be/releases/download/be-apk-0.6.0/be-0.6.0-c50fdd9.apk
+SHA-256 esperado:   6df67cac5a23181a7d078bdeb9805127e166af184909a8542b132d3568427b9c
+SHA-256 descargado: 6df67cac5a23181a7d078bdeb9805127e166af184909a8542b132d3568427b9c (coincide)
+
+El APK 0.6.0, la API y el website están en el mismo commit: c50fdd9.

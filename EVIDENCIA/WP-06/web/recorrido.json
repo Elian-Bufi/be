@@ -1,0 +1,530 @@
+{
+  "web": "https://be-web-1ngj.onrender.com",
+  "api": "https://be-api-hndp.onrender.com",
+  "momento": "2026-09-21T18:54:54.767Z",
+  "profesionales": [
+    "DEMO-PT (Entrenamiento)"
+  ],
+  "pasos": [
+    {
+      "paso": "web-01-workspace",
+      "url": "/pro/advisees?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a",
+      "momento": "2026-09-21T18:54:12.962Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-02-resumen-vacio",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a",
+      "momento": "2026-09-21T18:54:15.537Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-03-evaluacion-con-fuentes",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a",
+      "momento": "2026-09-21T18:54:18.076Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-04-evaluacion-registrada",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a",
+      "momento": "2026-09-21T18:54:20.181Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-05-objetivo",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a",
+      "momento": "2026-09-21T18:54:21.664Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-06-objetivo-emitido",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a",
+      "momento": "2026-09-21T18:54:23.593Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-07-plan-sin-plan",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=plan",
+      "momento": "2026-09-21T18:54:25.045Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-08-borrador-creado",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=plan",
+      "momento": "2026-09-21T18:54:27.305Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-09-validar-con-problemas",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=plan",
+      "momento": "2026-09-21T18:54:28.380Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-10-buscar-en-el-catalogo",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=plan",
+      "momento": "2026-09-21T18:54:29.981Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-11-borrador-completo",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=plan",
+      "momento": "2026-09-21T18:54:32.879Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-12-lo-que-no-se-entiende-no-se-guarda",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=plan",
+      "momento": "2026-09-21T18:54:34.126Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-13-validado-sin-problemas",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=plan",
+      "momento": "2026-09-21T18:54:36.042Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-14-confirmar-activacion",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=plan",
+      "momento": "2026-09-21T18:54:36.751Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-15-plan-activado",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=plan",
+      "momento": "2026-09-21T18:54:38.944Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-16-ejecuciones",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=ejecuciones",
+      "momento": "2026-09-21T18:54:43.029Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-17-revisiones-contexto",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=revisiones",
+      "momento": "2026-09-21T18:54:44.602Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-18-revision-formulario",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=revisiones",
+      "momento": "2026-09-21T18:54:46.374Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-19-revision-registrada",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=revisiones",
+      "momento": "2026-09-21T18:54:48.103Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-20-revision-aplicada",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=revisiones",
+      "momento": "2026-09-21T18:54:50.718Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-21-borrador-sucesor",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=plan",
+      "momento": "2026-09-21T18:54:53.024Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-22-resumen-final",
+      "url": "/pro/advisees/training?id=6f1b2cbb-7a41-4136-82f3-e46f0267f75a&vista=resumen",
+      "momento": "2026-09-21T18:54:54.766Z",
+      "terminosProhibidos": []
+    }
+  ],
+  "terminosProhibidosEnTotal": 0,
+  "llamadas": [
+    {
+      "momento": "2026-09-21T18:54:07.854Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/auth/sessions",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-21T18:54:09.056Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:09.649Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/health-data-consent-requirement",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:10.205Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:10.673Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationship-requests",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:10.760Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:11.836Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:12.295Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:12.384Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/dashboard",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:13.752Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:14.448Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:14.544Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:14.876Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:14.988Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:14.993Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:18.523Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/evaluations",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-21T18:54:19.084Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:19.100Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:19.506Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:19.585Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:19.632Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:22.188Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-21T18:54:22.778Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:22.888Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:22.982Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:23.000Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:23.043Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:24.385Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:24.480Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:25.571Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/plans",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-21T18:54:26.181Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:26.183Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:26.718Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/training/plans/5c0fec1f-d01f-4437-89f5-bcfe5a036dc9",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:26.721Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:27.815Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/training/plans/5c0fec1f-d01f-4437-89f5-bcfe5a036dc9/validate",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:29.367Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/training/exercises",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:30.915Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/training/exercises",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:32.117Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/training/exercises",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-21T18:54:33.411Z",
+      "metodo": "PATCH",
+      "ruta": "/api/v1/training/plans/5c0fec1f-d01f-4437-89f5-bcfe5a036dc9",
+      "status": 400
+    },
+    {
+      "momento": "2026-09-21T18:54:34.824Z",
+      "metodo": "PATCH",
+      "ruta": "/api/v1/training/plans/5c0fec1f-d01f-4437-89f5-bcfe5a036dc9",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:35.380Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/training/plans/5c0fec1f-d01f-4437-89f5-bcfe5a036dc9/validate",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:37.393Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/training/plans/5c0fec1f-d01f-4437-89f5-bcfe5a036dc9/activate",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:37.881Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:37.881Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:38.382Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/training/plans/5c0fec1f-d01f-4437-89f5-bcfe5a036dc9",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:42.388Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:43.897Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:44.100Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:46.995Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/reviews",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-21T18:54:47.433Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:47.579Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:49.577Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/training/reviews/beb79ba7-3add-47bd-b5f5-0a72662cd6d4/apply",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:50.075Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:50.185Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/review-context",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:51.302Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:51.304Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:51.755Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/training/plans/5c0fec1f-d01f-4437-89f5-bcfe5a036dc9",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:52.293Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/training/plans/0a1ebc42-c970-4cf9-a14a-4309aeee0cb8",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:52.329Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:54.079Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:54.080Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/plans",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:54.156Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/evaluations",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:54.156Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/objectives/effective",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-21T18:54:54.218Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/6f1b2cbb-7a41-4136-82f3-e46f0267f75a/training/review-context",
+      "status": 200
+    }
+  ],
+  "status5xx": 0
+}
