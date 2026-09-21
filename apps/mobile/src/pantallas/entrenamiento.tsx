@@ -11,6 +11,7 @@
  * - Un resultado incierto ofrece reintentar con la misma Idempotency-Key: no duplica.
  */
 import {
+  cantidadDeSeries,
   COPY,
   COPY_ENTRENAMIENTO,
   ETIQUETA_DE_CRITERIO,
@@ -505,7 +506,7 @@ function ResumenDeRegistro({ registro: b }: { registro: BorradorDeEjecucion }) {
         <Dato
           key={e.prescriptionId}
           etiqueta={e.substituted ? `${e.prescribedExerciseName} → ${e.performedExerciseName}` : e.performedExerciseName}
-          valor={e.sets ? `${e.sets.length} ${COPY_ENTRENAMIENTO.series.toLowerCase()}` : (e.executionSummary?.description ?? '')}
+          valor={e.sets ? cantidadDeSeries(e.sets.length) : (e.executionSummary?.description ?? '')}
         />
       ))}
     </View>

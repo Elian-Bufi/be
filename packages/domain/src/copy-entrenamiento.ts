@@ -34,6 +34,9 @@ export function etiquetaDeCondicionRegistrada(ejecucion: { readonly sessionCondi
 }
 
 export const ETIQUETA_DE_CRITERIO: Readonly<Record<'PERCENT_RM' | 'RIR', string>> = { PERCENT_RM: '% RM', RIR: 'RIR' };
+
+/** «1 serie», «3 series». Lo usan el website y la APK: la concordancia no se resuelve en cada pantalla. */
+export const cantidadDeSeries = (n: number): string => `${n} ${n === 1 ? 'serie' : 'series'}`;
 export const ETIQUETA_DE_GRANULARIDAD: Readonly<Record<'SET' | 'EXERCISE_OR_SESSION', string>> = {
   SET: 'Por serie',
   EXERCISE_OR_SESSION: 'Por ejercicio o sesión',

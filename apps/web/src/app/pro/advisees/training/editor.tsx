@@ -20,7 +20,7 @@ import {
   type ValidationIssue,
   type VersionDePlanDeEntrenamiento,
 } from '@be/domain';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type ComponentProps, type FormEvent } from 'react';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
@@ -71,7 +71,9 @@ function nombresDe(v: VersionDePlanDeEntrenamiento): Record<string, string> {
 
 /** Ubicación de un problema sin rutas técnicas: «Bloque 1 → Semana 1 → Sesión A → Ejercicio 2» (B10-06:571-577). */
 function ubicacion(path: string, b: Bloques): string {
-  const m = path.match(/^blocks\[(\d+)\](?:\.microcycles\[(\d+)\])?(?:\.sessions\[(\d+)\])?(?:\.prescriptions\[(\d+)\])?/);
+  // Un 400 de forma trae la ruta con puntos (changes.blocks.0.sessions.1…): se lee igual que la del dominio.
+  const normalizada = path.replace(/^changes\./, '').replace(/\.(\d+)/g, '[$1]');
+  const m = normalizada.match(/^blocks\[(\d+)\](?:\.microcycles\[(\d+)\])?(?:\.sessions\[(\d+)\])?(?:\.prescriptions\[(\d+)\])?/);
   if (!m) return 'Plan';
   const bloque = b[Number(m[1])];
   const partes = [bloque?.label || `Bloque ${Number(m[1]) + 1}`];
@@ -97,6 +99,12 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   EXERCISE_NOT_AVAILABLE: 'el ejercicio ya no está disponible',
   OBJECTIVE_NOT_EFFECTIVE: 'el borrador usa un objetivo que ya no es el vigente',
   SNAPSHOT_NOT_PRESERVABLE: 'no se pudo preservar la versión para el asesorado',
+  // Fallas de forma del pedido (400): un número que falta o que no se entiende.
+  INVALID_TYPE: 'falta un número o no se entiende lo escrito',
+  INVALID_UNION: 'falta un número o no se entiende lo escrito',
+  TOO_SMALL: 'el número es demasiado chico',
+  TOO_BIG: 'el número es demasiado grande',
+  NOT_MULTIPLE_OF: 'el número no es entero',
 };
 
 const sesionVacia = (n: number): SesionE => ({ label: `Sesión ${String.fromCharCode(64 + Math.min(n, 26))}`, instructions: null, prescriptions: [] });
@@ -373,16 +381,58 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
   );
 }
 
+/**
+ * Un campo cuyo texto se interpreta (un número, un rango): guarda el texto tal como se escribe y propaga lo
+ * interpretado. Si el campo mostrara siempre el valor interpretado, «6-» o «62.» se borrarían a mitad de camino y no se
+ * podría escribir un rango ni una carga con decimales. Lo que no se entiende se propaga como NaN: el guardado falla y
+ * señala el ejercicio, en vez de guardar otra cosa en silencio. Si el valor cambia desde afuera (al guardar, al quitar
+ * un ejercicio), el texto se resincroniza.
+ */
+function CampoInterpretado<T>({
+  valor,
+  formatear,
+  interpretar,
+  onCambiar,
+  ...campo
+}: Omit<ComponentProps<typeof Campo>, 'value' | 'onChange'> & { valor: T; formatear: (v: T) => string; interpretar: (s: string) => T; onCambiar: (v: T) => void }) {
+  const externo = formatear(valor);
+  const [texto, setTexto] = useState(externo);
+  useEffect(() => {
+    // Solo importa el valor de afuera: formatear e interpretar son funciones puras.
+    setTexto((t) => (formatear(interpretar(t)) === externo ? t : externo));
+  }, [externo]);
+  return (
+    <Campo
+      {...campo}
+      value={texto}
+      onChange={(e) => {
+        setTexto(e.target.value);
+        onCambiar(interpretar(e.target.value));
+      }}
+    />
+  );
+}
+
+/** Un número con coma o punto decimal. Vacío → null; lo que no es un número → NaN. */
+function leerNumero(s: string): number | null {
+  if (s.trim() === '') return null;
+  const n = Number(s.trim().replace(',', '.'));
+  return Number.isFinite(n) ? n : Number.NaN;
+}
+const escribirNumero = (n: number | null): string => (n === null || Number.isNaN(n) ? '' : String(n));
+
 /** Una prescripción: series y repeticiones, criterio de intensidad explícito, carga sugerida aparte, parámetros. */
 function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar }: { id: string; prescripcion: PrescripcionE; nombre: string; onCambiar: (c: Partial<PrescripcionE>) => void; onQuitar: () => void }) {
   const criterio = (p.intensity?.criterion as Criterio | undefined) ?? '';
-  const numero = (s: string) => (s.trim() === '' ? null : Number(s.replace(',', '.')));
-  const reps = (r: PrescripcionE['sets'][number]['repetitions']) => (!r ? '' : 'value' in r ? String(r.value) : `${r.min}-${r.max}`);
-  const leerReps = (s: string): PrescripcionE['sets'][number]['repetitions'] => {
+  type Repeticiones = PrescripcionE['sets'][number]['repetitions'];
+  const reps = (r: Repeticiones) => (!r ? '' : 'value' in r ? (Number.isNaN(r.value) ? '' : String(r.value)) : `${r.min}-${r.max}`);
+  // Vacío: sin repeticiones fijadas. Un número o un rango «8-12». Otra cosa no se guarda como si no hubiera nada.
+  const leerReps = (s: string): Repeticiones => {
+    if (s.trim() === '') return null;
     const rango = s.match(/^\s*(\d+)\s*-\s*(\d+)\s*$/);
     if (rango) return { min: Number(rango[1]), max: Number(rango[2]) };
     const n = Number(s.trim());
-    return s.trim() && Number.isInteger(n) && n > 0 ? { value: n } : null;
+    return { value: Number.isInteger(n) && n > 0 ? n : Number.NaN };
   };
   const parametros = p.professionalParameters ?? [];
   return (
@@ -393,12 +443,14 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
           {COPY_ENTRENAMIENTO.series} y {COPY_ENTRENAMIENTO.repeticiones.toLowerCase()}
         </legend>
         {p.sets.map((s, i) => (
-          <Campo
+          <CampoInterpretado
             key={i}
             id={`${id}-serie-${i}`}
             etiqueta={`${COPY_ENTRENAMIENTO.serie} ${i + 1}: repeticiones (un número o un rango, 8-12)`}
-            value={reps(s.repetitions)}
-            onChange={(e) => onCambiar({ sets: p.sets.map((x, j) => (j === i ? { ...x, repetitions: leerReps(e.target.value) } : x)) })}
+            valor={s.repetitions}
+            formatear={reps}
+            interpretar={leerReps}
+            onCambiar={(r) => onCambiar({ sets: p.sets.map((x, j) => (j === i ? { ...x, repetitions: r } : x)) })}
           />
         ))}
         <div className="acciones">
@@ -435,12 +487,15 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
         </div>
         {p.intensity ? (
           <>
-            <Campo
+            <CampoInterpretado
               id={`${id}-objetivo`}
               etiqueta={`${COPY_ENTRENAMIENTO.objetivoDeIntensidad} (${ETIQUETA_DE_CRITERIO[criterio as Criterio]})`}
               inputMode="decimal"
-              value={String(p.intensity.target.value)}
-              onChange={(e) => onCambiar({ intensity: { ...p.intensity!, target: { ...p.intensity!.target, value: numero(e.target.value) ?? 0 } } })}
+              valor={p.intensity.target.value}
+              formatear={escribirNumero}
+              // Con un criterio elegido, el objetivo es obligatorio: vacío no es cero.
+              interpretar={(t) => leerNumero(t) ?? Number.NaN}
+              onCambiar={(v) => onCambiar({ intensity: { ...p.intensity!, target: { ...p.intensity!.target, value: v } } })}
             />
             {criterio === 'PERCENT_RM' ? (
               <Campo
@@ -459,15 +514,14 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
         <legend>{COPY_ENTRENAMIENTO.cargaSugerida} (opcional)</legend>
         <p className="campo__ayuda">{COPY_ENTRENAMIENTO.cargaNoEsIntensidad}</p>
         <div className="fila-de-dato">
-          <Campo
+          <CampoInterpretado
             id={`${id}-carga`}
             etiqueta={COPY_ENTRENAMIENTO.carga}
             inputMode="decimal"
-            value={p.suggestedLoad ? String(p.suggestedLoad.value) : ''}
-            onChange={(e) => {
-              const v = numero(e.target.value);
-              onCambiar({ suggestedLoad: v === null ? null : { value: v, unit: p.suggestedLoad?.unit ?? 'kg' } });
-            }}
+            valor={p.suggestedLoad ? p.suggestedLoad.value : null}
+            formatear={escribirNumero}
+            interpretar={leerNumero}
+            onCambiar={(v) => onCambiar({ suggestedLoad: v === null ? null : { value: v, unit: p.suggestedLoad?.unit ?? 'kg' } })}
           />
           <div className="campo">
             <label htmlFor={`${id}-unidad`}>Unidad</label>

@@ -10,6 +10,7 @@
  * - Sin «disciplinado», «mal rendimiento» ni porcentajes (B10-06:963-966).
  */
 import {
+  cantidadDeSeries,
   COPY_ENTRENAMIENTO,
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
@@ -137,7 +138,7 @@ function DetalleDeEjecucion({ ejecucion: x }: { ejecucion: EjecucionDeEntrenamie
         <ul>
           {x.plannedSession.prescriptions.map((p) => (
             <li key={p.prescriptionId}>
-              {p.exerciseName} · {p.sets.length} {COPY_ENTRENAMIENTO.series.toLowerCase()}
+              {p.exerciseName} · {cantidadDeSeries(p.sets.length)}
             </li>
           ))}
         </ul>
