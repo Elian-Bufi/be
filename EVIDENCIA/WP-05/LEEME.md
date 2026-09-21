@@ -12,7 +12,7 @@ Qué prueba cada archivo. La lectura razonada está en `DEFENSA/WP-05.md`.
 | `ci-verificar-4e5503f.log` | El job de verificación de la misma CI: typecheck, dominio **169/169**, copy de las pantallas **5/5** (los dos dominios), API unitaria **33/33**, build y auditoría de dependencias |
 | `verificacion-urls.txt` | API, website y descarga anónima del APK 0.5.1, con su SHA-256, verificados en vivo sobre el commit final |
 | `apk.txt` | Identidad del APK 0.5.1: build EAS, commit, tamaño y la búsqueda de secretos en el bundle (0 en las cuatro). Explica por qué reemplaza a la 0.5.0 |
-| `apk/` | Capturas del APK 0.5.1 en un Android real (Parte 0 y Parte 5 de la guía), con DEMO-A01 contra `test`. Las toma Dirección; quedan pendientes al momento de este commit |
+| `apk/` | 5 capturas del APK 0.5.1 en un Android real, tomadas por Dirección: identidad del build, el vínculo ya activo, y las dos que prueban el ciclo nuevo — la talla anulada sin punto y el peso corregido con la etiqueta a la vista. Índice y detalle en `apk/LEEME.md`. Sin EXIF |
 
 ## Lo que las capturas del website demuestran, en una frase cada una
 
@@ -22,5 +22,12 @@ Qué prueba cada archivo. La lectura razonada está en `DEFENSA/WP-05.md`.
 - **`web-16` y `web-17`** — anular no es destructivo: la medición queda «Anulada» con su motivo y su historia a la vista, nunca borrada.
 - **`web-18`** — la evolución agrupa los días sin dato en tramos (`84 días sin dato`, no 84 filas vacías), la medición corregida se marca «Corregida», y la medición anulada **desaparece de la serie sin convertirse en cero**.
 - **`web-19`** — el borrador de DEMO-PA no existe para DEMO-PN, aunque los dos tengan capacidad antropométrica y vínculo activo con el mismo asesorado.
+
+## Lo que las capturas del APK demuestran
+
+- **`apk-04-talla-sin-punto-hoy`** — anular no deja rastro numérico: ni cero, ni el valor anulado, solo «sin dato».
+- **`apk-05-peso-corregido-hoy`** — la corrección llega intacta a la vista del asesorado, con «Corregida» a la vista.
+
+El detalle completo, incluida la razón por la que la primera captura de esta parte no muestra la pantalla vacía que preveía la guía, está en `apk/LEEME.md`.
 
 Todos los datos son sintéticos. No hay contraseñas, tokens ni datos de personas reales en ningún archivo.
