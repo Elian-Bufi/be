@@ -123,10 +123,18 @@ export class RevisionesDeEntrenamientoService {
           include: INCLUIR_PLAN_DE_ENTRENAMIENTO,
           orderBy: [{ momentoDeActivacion: 'asc' }, { id: 'asc' }],
         });
+        // Una versión rige hasta que se activa su sucesora o hasta que se cierra su seguimiento (06:4297): después de
+        // FINALIZAR no aparece como plan activo de un período posterior.
+        const cierres = (await tx.procesoOperativo.findMany({ where: { profesionalId: actor.identidadId, asesoradoId, alcance: 'ENTRENAMIENTO', estado: 'CERRADO' }, select: { momentoDeCierre: true } }))
+          .flatMap((p) => (p.momentoDeCierre ? [p.momentoDeCierre] : []))
+          .sort((a, b) => a.getTime() - b.getTime());
         const enPeriodo = activadas.filter((v) => {
-          const sucesora = activadas.find((s) => s.predecesoraId === v.id);
-          const desde = fechaLocalEn(v.momentoDeActivacion as Date, zona);
-          const hasta = sucesora?.momentoDeActivacion ? fechaLocalEn(sucesora.momentoDeActivacion, zona) : null;
+          const activacion = v.momentoDeActivacion as Date;
+          const sucesora = activadas.find((s) => s.predecesoraId === v.id)?.momentoDeActivacion ?? null;
+          const cierre = cierres.find((c) => c > activacion) ?? null;
+          const corte = [sucesora, cierre].filter((m): m is Date => m !== null).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
+          const desde = fechaLocalEn(activacion, zona);
+          const hasta = corte ? fechaLocalEn(corte, zona) : null;
           return desde <= fin && (hasta === null || hasta >= inicio);
         });
 
@@ -161,7 +169,7 @@ export class RevisionesDeEntrenamientoService {
             period: { start: inicio, end: fin, timeZone: zona },
             objective: objetivoEfectivo && objetivoFila ? versionDeObjetivoApi(objetivoEfectivo, objetivoFila, true, nombre) : null,
             activePlanVersions: enPeriodo.map((v) => {
-              const { blocks: _b, ...resumen } = versionDePlanApi(v, nombre, new Map());
+              const { blocks: _b, ...resumen } = versionDePlanApi(v, nombre, new Map(), procesos.some((p) => p.estado === 'ABIERTO'));
               return resumen;
             }),
             registeredExecutions: registradas,
@@ -207,6 +215,13 @@ export class RevisionesDeEntrenamientoService {
         });
         if (!evaluacion.valida) throw componenteRequerido(evaluacion.faltantes.map((f) => ({ code: `REVIEW_${f}_REQUIRED`, path: RUTA_DE_FALTANTE[f] ?? 'nextAction' })));
         if (resultado === 'CAMBIAR_OBJETIVO' && !pedido.nextAction.objective) throw componenteRequerido([{ code: 'REVIEW_NEW_OBJECTIVE_REQUIRED', path: 'nextAction.objective' }]);
+        // La revisión es inmutable: si el objetivo nuevo cita una evaluación ajena o inexistente, nunca se podría aplicar.
+        // Se rechaza al registrarla, con la ruta exacta.
+        if (resultado === 'CAMBIAR_OBJETIVO' && pedido.nextAction.objective) {
+          const refId = pedido.nextAction.objective.evaluationId;
+          const ref = esUuid(refId) ? await tx.evaluacionDeEntrenamiento.findUnique({ where: { id: refId }, select: { profesionalId: true, asesoradoId: true } }) : null;
+          if (!ref || ref.profesionalId !== actor.identidadId || ref.asesoradoId !== asesoradoId) throw componenteRequerido([{ code: 'EVALUATION_NOT_COMPATIBLE', path: 'nextAction.objective.evaluationId' }]);
+        }
         // UC-P18: hay un seguimiento de entrenamiento abierto que revisar.
         const proceso = await tx.procesoOperativo.findFirst({ where: { profesionalId: actor.identidadId, asesoradoId, alcance: 'ENTRENAMIENTO', estado: 'ABIERTO' } });
         if (!proceso) throw new ErrorDeApi(422, CodigoDeError.REVIEW_NOT_ALLOWED, 'No hay un seguimiento de entrenamiento abierto para revisar.');
@@ -290,7 +305,10 @@ export class RevisionesDeEntrenamientoService {
         await this.decidir(tx, 'API-TRN-24', actor, asesoradoId, recurso, ctx);
         if (r.proceso.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-24', actorId: actor.identidadId, recurso, sujetoId: asesoradoId }, ctx);
         if (!esToken(pedido.expectedVersion, 1)) throw errores.conflictoDeVersion();
-        if (r.aplicacion) throw new ErrorDeApi(409, CodigoDeError.REVIEW_ALREADY_APPLIED, 'Esta revisión ya se aplicó.');
+        // Dos aplicaciones a la vez con claves distintas: la fila de la revisión las serializa, y la segunda ve la
+        // aplicación de la primera en vez de chocar con el índice único (09 v0.16.1:208).
+        await tx.$queryRaw`SELECT 1 FROM "revision_de_entrenamiento" WHERE "id" = ${r.id}::uuid FOR UPDATE`;
+        if (r.aplicacion || (await tx.aplicacionDeRevisionDeEntrenamiento.count({ where: { revisionId: r.id } })) > 0) throw new ErrorDeApi(409, CodigoDeError.REVIEW_ALREADY_APPLIED, 'Esta revisión ya se aplicó.');
         if (r.proceso.estado !== 'ABIERTO') throw new ErrorDeApi(422, CodigoDeError.CONTINUITY_ACTION_NOT_APPLICABLE, 'El seguimiento ya está cerrado: la revisión no se puede aplicar.');
         const momento = await momentoDeLaBase(tx);
         const accion = r.proximaAccion as { description: string; nextReviewAt?: string | null; objective?: CrearObjetivoDeEntrenamientoRequest };
@@ -326,7 +344,11 @@ export class RevisionesDeEntrenamientoService {
           }
         } else if (efecto.vertical === 'NUEVA_VERSION_DE_OBJETIVO') {
           if (!accion.objective) throw new ErrorDeApi(422, CodigoDeError.REVIEW_NOT_VALID_FOR_APPLICATION, 'La revisión no trae el objetivo nuevo.');
-          const v = await this.evaluaciones.emitirVersionDeObjetivo(tx, { profesionalId: actor.identidadId, asesoradoId, contenido: accion.objective, revisionDeOrigenId: r.id, procedencia });
+          // Si el objetivo ya no se puede emitir, la revisión no es aplicable tal como quedó (09v10:1441).
+          const v = await this.evaluaciones.emitirVersionDeObjetivo(tx, { profesionalId: actor.identidadId, asesoradoId, contenido: accion.objective, revisionDeOrigenId: r.id, procedencia }).catch((e: unknown) => {
+            if (e instanceof ErrorDeApi && e.status === 422) throw new ErrorDeApi(422, CodigoDeError.REVIEW_NOT_VALID_FOR_APPLICATION, 'El objetivo que trae la revisión ya no se puede emitir.', e.details);
+            throw e;
+          });
           versionDeObjetivoCreadaId = v.id;
         }
 
@@ -391,7 +413,7 @@ export class RevisionesDeEntrenamientoService {
   private async pendiente(tx: Tx, procesoId: string, abierto: boolean, hoy: string): Promise<{ pending: boolean; since: string | null }> {
     const expectativa = await this.procesos.proximaRevisionVigente(tx, procesoId);
     const aplicadaPosterior = expectativa
-      ? (await tx.aplicacionDeRevisionDeEntrenamiento.count({ where: { revision: { procesoId }, momentoDeRegistro: { gt: expectativa.momentoDeRegistro } } })) > 0
+      ? (await tx.aplicacionDeRevisionDeEntrenamiento.count({ where: { revision: { procesoId, momentoDeRegistro: { gt: expectativa.momentoDeRegistro } } } })) > 0
       : false;
     const r = revisionPendiente({
       procesoAbierto: abierto,
@@ -420,7 +442,7 @@ export class RevisionesDeEntrenamientoService {
         // Una ejecución registrada, no un borrador: el borrador no es evidencia (09v10:980).
         return (await tx.ejecucionDeEntrenamiento.count({ where: { id: ref.id, asesoradoId, versionDePlan: { plan: { profesionalId } } } })) > 0;
       case 'PLAN_VERSION':
-        return (await tx.versionDePlanDeEntrenamiento.count({ where: { id: ref.id, plan: { profesionalId, asesoradoId } } })) > 0;
+        return (await tx.versionDePlanDeEntrenamiento.count({ where: { id: ref.id, estado: 'ACTIVADA', plan: { profesionalId, asesoradoId } } })) > 0;
       case 'OBJECTIVE_VERSION':
         return (await tx.versionDeObjetivoDeEntrenamiento.count({ where: { id: ref.id, objetivoDeLaSerie: { profesionalId, asesoradoId } } })) > 0;
       case 'EVALUATION':

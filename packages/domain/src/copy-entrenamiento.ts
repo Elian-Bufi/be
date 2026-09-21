@@ -13,10 +13,21 @@
  * «No realizada» por su cuenta ni lea la etiqueta de la condición sin pasar por acá (docs/paquetes/WP-06.md §9.2).
  * Lo mismo con `%`: es legítimo en `% RM` (B10-06:418-423) y prohibido como cumplimiento.
  */
-import type { CondicionDeSesionApiSchema, Ocurrencia } from './contratos-entrenamiento';
+import type { CondicionDeSesionApiSchema, EjecucionDeEntrenamiento, Ocurrencia, RegistroDeEjecucion } from './contratos-entrenamiento';
 import type { z } from 'zod';
 
 type CondicionApi = z.infer<typeof CondicionDeSesionApiSchema>;
+
+/**
+ * Lo que hoy rige de una ejecución: la corrección vigente, o el original si no hay (06:5253). Toda pantalla que muestra
+ * la condición o las series de una ejecución en una lista la lee de acá: si no, una sesión corregida seguiría
+ * mostrando lo que se corrigió (auditoría del cierre de WP-06).
+ */
+export function registroVigente(x: Pick<EjecucionDeEntrenamiento, 'original' | 'corrections' | 'effectiveView'>): RegistroDeEjecucion {
+  const vista = x.effectiveView;
+  if (vista.kind !== 'CORRECTED') return x.original;
+  return x.corrections.find((c) => c.correctionId === vista.correctionId)?.correction ?? x.original;
+}
 
 /** REG-06-131 con las palabras del B10-06:786-792. Solo se muestran para una sesión **registrada** así. */
 const ETIQUETA_DE_CONDICION: Readonly<Record<CondicionApi, string>> = {

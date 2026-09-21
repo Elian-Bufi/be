@@ -25921,6 +25921,17 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "context": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 1000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -26242,6 +26253,12 @@
                               "string",
                               "null"
                             ]
+                          },
+                          "context": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
@@ -26253,7 +26270,8 @@
                           "recordedAt",
                           "assessment",
                           "evidenceReferences",
-                          "professionalNotes"
+                          "professionalNotes",
+                          "context"
                         ],
                         "additionalProperties": false
                       }
@@ -26523,6 +26541,12 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "context": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
@@ -26534,7 +26558,8 @@
                         "recordedAt",
                         "assessment",
                         "evidenceReferences",
-                        "professionalNotes"
+                        "professionalNotes",
+                        "context"
                       ],
                       "additionalProperties": false
                     }
@@ -33108,7 +33133,7 @@
           {
             "name": "periodStart",
             "in": "query",
-            "required": false,
+            "required": true,
             "description": "Fecha local YYYY-MM-DD.",
             "schema": {
               "type": "string",
@@ -33118,8 +33143,8 @@
           {
             "name": "periodEnd",
             "in": "query",
-            "required": false,
-            "description": "Fecha local YYYY-MM-DD, no posterior a hoy.",
+            "required": true,
+            "description": "Fecha local YYYY-MM-DD, no posterior a hoy. Hasta 31 días desde periodStart: es el tope de la lectura, que por eso no pagina (DL-078).",
             "schema": {
               "type": "string",
               "format": "date"
@@ -33665,7 +33690,7 @@
           }
         ],
         "requestBody": {
-          "required": true,
+          "required": false,
           "content": {
             "application/json": {
               "schema": {

@@ -1613,6 +1613,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Implementado en la base** (migración `20260921100000`): la unicidad por ocurrencia está **dos veces**, como índice único sobre el borrador de ejecución y otro sobre la ejecución registrada, y además la ejecución es única por borrador. Hay una prueba para cada red en `maquinas-wp06.int-spec.ts`.
 
+**Ampliado al cierre** (migración `20260921210000`): la auditoría del paquete encontró que la unicidad por versión dejaba un hueco el día en que se activa una sucesora. La sucesora conserva los identificadores de sesión, así que ese día la misma sesión existía en las dos versiones y se podía registrar dos veces (06:5233: «un reintento no duplica la sesión»). Ahora, para la persona, la ocurrencia es (asesorado, plan, sesión, fecha local):
+- «Hoy» y la lectura por período muestran cada sesión **una vez**: la de la versión donde ya se empezó o se registró, y si no, la de la versión más nueva que regía ese día;
+- abrir la de la otra versión es `422 OCCURRENCE_NOT_EXECUTABLE` (`SESSION_STARTED_IN_OTHER_VERSION`), y la base lo vuelve a exigir con un trigger y un cerrojo que serializa dos inserciones simultáneas;
+- el horario declarado tiene que caer mientras la versión regía, desde su activación hasta la de su sucesora (06:4351): si no, `OCCURRED_AT_OUTSIDE_PLAN_VERSION`.
+
 ## DL-078 — No hay operación para llegar a una ocurrencia que no sea la de hoy
 
 **Prioridad:** alta · **Documento:** 09v10:924 · 09v10:886 · 09v10:188-189, 915 · **Estado:** **DECIDIDA** 2026-09-21 · opción A · se suma la operación
@@ -1629,6 +1634,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 **Decisión de Dirección (2026-09-21): opción A.** C cambia la semántica de una operación que se llama «today», y B convierte una limitación técnica en un hecho sobre la persona. La operación nueva es aditiva y no toca ninguna ruta declarada.
 
 **Implementado** como `GET /me/training/occurrences?periodStart=&periodEnd=` (`API-TRN-14-PERIODO` en el OpenAPI): hasta 31 días, nunca después de hoy, con el mismo `planState` que «Hoy» para que una lista vacía por acceso suspendido no se confunda con un período sin sesiones. Solo lista los días en que el plan regía. La APK lo usa en «Registrar otro día».
+
+**Al cierre:** la lectura no pagina. El tope de 31 días hace de límite, y el OpenAPI lo dice junto a `periodEnd`, que ahora figura como obligatorio igual que `periodStart` (el servidor ya respondía `400 PERIOD_REQUIRED` sin ellos).
 
 ## DL-079 — `prescriptionId` es obligatorio al registrar ejecución y no se puede descubrir
 
@@ -1787,3 +1794,60 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Revisarlas una por una antes de exponer las operaciones.
 
 **Provisorio en código.** A. Ninguna agrega una ruta ni cambia una declarada; todas completan formas que el 09 dejó abiertas, y cada una cita la regla que la sostiene. Las que más pesan para la defensa son la 2, la 6 y la 7, porque son las que impiden que BE invente un hecho.
+
+**Sumadas al cierre, después de la auditoría del paquete contra el 09** (cuatro revisores independientes, `DEFENSA/WP-06.md` §5). Son desvíos que el código ya tenía y que solo estaban en comentarios; ahora quedan declarados.
+
+14. **Nombres de campo.** La evaluación devuelve `professional: {identityId, displayName}` en lugar de `professionalId`, y `evidenceReferences` en lugar de `evidence`; el `authoredBy` del objetivo es un objeto con el nombre visible. Es la forma que ya usan nutrición y antropometría para cualquier actor: un identificador suelto obligaría a cada pantalla a pedir el nombre aparte.
+15. **Unidades y rangos son forma, no dominio.** Una carga sin unidad, un RIR de 25 o un parámetro numérico sin unidad son `400 INVALID_REQUEST` con la ruta exacta —la validación de forma que el consolidado ubica antes del PDP (09 v0.16.1:231)—, no el `422` del dominio. La decisión 12 es distinta: allá el 09 nombra un código propio para cada taxonomía. Y `order` no se acepta en la entrada: el orden es la posición en el arreglo, y aceptar los dos permitiría que se contradigan.
+16. **Aplicar AJUSTAR o SUSTITUIR con un borrador ya abierto no se aplica** (`422 CONTINUITY_ACTION_NOT_APPLICABLE`). El 09 dice «crea/actualiza draft sucesor» (09v10:1409-1411), pero el 05 lo declara excepción: «combinación incompatible» (UC-I06 E02), sin transición parcial ni evento. Se adopta la lectura estrecha del 05 porque «actualizar» un borrador que el profesional está editando pisaría su trabajo sin avisarle. El camino es activar ese borrador o seguir sobre él.
+17. **`SESSION_MFA` se sirve con sesión simple, y `TRAINING_SCOPE_NOT_OPERATIONAL` es el 404 no revelador.** Lo primero, porque el 08 §25 deja el segundo factor opcional en la demo sintética (el mismo criterio que WP-04, WP-05 y DL-055). Lo segundo, porque un 422 que diga «tu Especialidad de Entrenamiento está suspendida» sobre un asesorado ajeno revelaría que el recurso existe (09 v0.16.1 §3.2.1).
+18. **`isEffective` es la versión efectiva de un seguimiento abierto.** Después de FINALIZAR la versión sigue ACTIVADA —la historia no se reescribe—, pero ya no rige (06:4297), y el contrato define `isEffective` como «la que ve el asesorado». El contexto de revisión tampoco la lista como plan activo de un período posterior al cierre.
+19. **TRN-08 tiene la vista del asesorado** (09v10:696, «proyección según actor»): el titular lista solo las versiones ACTIVADAS de los planes cuyo profesional conserva el acceso, nunca un borrador.
+20. **Un reintento con la misma Idempotency-Key vuelve a pasar por el PDP.** No es una forma sino una regla de orden (09 v0.16.1:220-221), y el cambio es transversal: vale para nutrición y antropometría. Revocado el consentimiento, el reintento recibe el mismo 404 que cualquier otro pedido, y con otro cuerpo tampoco hay un 409 que confirme nada.
+
+## DL-089 — Revocado el consentimiento, el asesorado deja de ver su propia historia de entrenamiento
+
+**Prioridad:** media · **Documento:** 08:199 · 08:58 · 05:8944 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** Dos cosas que tiran para lados distintos. La matriz de acceso del 08 le da al titular acceso pleno a «Plan entrenamiento + ejecución» (08:199), y el fin del vínculo corta al profesional «sin destruir la historia del asesorado» (08:58). Pero UC-P17 pide, para ejecutar, «vínculo y consentimiento vigentes» (05:8944).
+
+**Qué pasa hoy.** Las lecturas del titular —su ejecución registrada (TRN-19) y su plan activado (TRN-09)— pasan por el PDP evaluado sobre su profesional. Si revoca B2 o pausa el vínculo, recibe 404 sobre lo que él mismo registró, y «Hoy» pasa a `NOT_AVAILABLE`. Nutrición y antropometría lo resolvieron distinto: su lectura propia exige solo el consentimiento A3 (`nutricion/ingestas.service.ts`, `antropometria/evolucion.service.ts`).
+
+**Opciones.**
+- **A.** Las lecturas del historial registrado del titular (TRN-19, y TRN-09 sobre versiones ACTIVADAS) exigen solo A3, como en los otros dos dominios. Lo que opera sobre el plan vigente —«Hoy», abrir un borrador, confirmar, corregir— sigue bajo el PDP de su profesional (UC-P17 E03).
+- **B.** Mantenerlo: toda lectura de entrenamiento pasa por el PDP del profesional, y la historia vuelve a verse al reotorgar B2.
+
+**Provisorio en código.** B, que es lo que ya hace y lo más restrictivo. **Recomendación: A**, por coherencia con los otros dos dominios y porque el derecho de acceso del titular a sus propios datos no debería depender de mantener abierto un acceso de terceros. La encontró la auditoría de seguridad del cierre de WP-06.
+
+## DL-090 — RF-071, «Solicitar y completar información profesional pertinente», es P0 y ningún paquete lo tiene
+
+**Prioridad:** alta · **Documento:** 04:266-275 · B10-06:149-177 · adenda B10 v0.5:1290-1310 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** RF-071 es **P0 — Núcleo no recortable** (04:269): el profesional le pide al asesorado información estructurada para una finalidad, y el asesorado la completa conservando solicitante, finalidad, versión de la estructura, estado y procedencia. El B10-06 le dedica una pantalla dentro de entrenamiento («Solicitar datos», B10-06:149-177), y la adenda de formularios lo desarrolla (v0.5:1290-1310). El propio 04 lo incorporó como candidato «sujeto a contrarrevisión y aprobación de Dirección» (04:1176).
+
+**Qué pasa hoy.** Ningún paquete lo implementa ni lo declara pendiente. WP-05 lo dejó fuera en su tabla de alcance («CAP-DAT y formularios», `docs/paquetes/WP-05.md:193`) sin abrir una deuda, y WP-06 tampoco lo menciona en su §8. La auditoría de UX del cierre de WP-06 lo encontró al recorrer el B10-06 sección por sección. Hoy la evaluación de entrenamiento registra lo informado por el asesorado como un dato con fuente «Informado por el asesorado», cargado por el profesional: la frontera de procedencia está, pero el acto de pedir y completar no.
+
+**Opciones.**
+- **A.** Un paquete propio, transversal (plantillas versionadas, solicitud, respuesta, historia, PDP), antes del cierre de la entrega: es P0 y atraviesa nutrición, entrenamiento y antropometría.
+- **B.** Sumarlo a WP-07 junto con el enriquecimiento del catálogo.
+- **C.** Declararlo fuera de la entrega de 2026-10-01 con Dirección, apoyándose en que el 04 lo marca como candidato sujeto a aprobación.
+
+**Provisorio en código.** Ninguno: no hay nada implementado. **Recomendación: A**, con la decisión de Dirección sobre si entra en la entrega; B mezclaría una capacidad transversal con un enriquecimiento de dominio.
+
+## DL-091 — Cuatro patrones de pantalla que el cierre de WP-06 corrigió en entrenamiento siguen iguales en nutrición
+
+**Prioridad:** media · **Documento:** B10-06:1145-1148 · B10-10:36, 164-165, 376 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** Una operación denegada limpia el contenido en la interacción siguiente (B10-06:1145-1148); un error se asocia a su campo (B10-10:164-165); un error de lectura ofrece la alternativa segura, no un reintento que repite lo mismo (B10-10:376).
+
+**Qué pasa hoy.** La auditoría de UX del cierre encontró en entrenamiento cuatro patrones que se corrigieron ahí y que nutrición comparte, porque las pantallas se escribieron sobre el mismo molde:
+1. una **escritura** denegada (404) muestra un aviso pero deja el contenido en pantalla;
+2. el período de la revisión no se elige: son los últimos 7 días;
+3. los formularios tienen resumen de errores, pero no marcan el campo (`aria-invalid`, error asociado);
+4. los números con decimales se muestran con punto («72.5 kg») en todas las pantallas del proyecto, no con la coma del español rioplatense.
+
+**Opciones.**
+- **A.** Un PR transversal que lleve los cuatro arreglos a nutrición y antropometría, con el formateo de números en un solo lugar del dominio.
+- **B.** Dejarlo para cuando cada dominio vuelva a tocarse.
+
+**Provisorio en código.** Entrenamiento ya tiene 1 y 2, y 3 en el filtro de período. **Recomendación: A**, inmediatamente después de WP-06: son arreglos chicos y conocidos, y dejarlos haría que el mismo producto se comporte distinto según la pestaña.

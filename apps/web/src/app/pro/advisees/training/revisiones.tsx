@@ -7,12 +7,14 @@
  *   «Sustituir» según su efecto sobre el plan, y la decide el profesional (B10-06:1053-1073; REG-06-117).
  * - El contexto no muestra volumen, marcas, mapa ni puntaje: esas proyecciones no existen en P0 (09v10 §40).
  * - Aplicar es un paso aparte: la revisión queda registrada aunque todavía no se aplique (B10-06:1077-1093).
+ * - El período se elige (B10-06:1027-1036): al cerrar un bloque de cuatro semanas, la evidencia es de cuatro semanas.
  */
 import {
   COPY_ENTRENAMIENTO,
   EFECTO_VISIBLE_DE_RESULTADO_DE_ENTRENAMIENTO,
   ETIQUETA_DE_RESULTADO,
   etiquetaDeCondicionRegistrada,
+  registroVigente,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EvaluacionDeEntrenamiento,
   type RevisionDeEntrenamiento,
@@ -23,6 +25,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
+import { FiltroDePeriodo, type Periodo } from './periodo';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
 type ResultadoApi = keyof typeof ETIQUETA_DE_RESULTADO;
@@ -32,21 +35,24 @@ export function VistaDeRevisiones() {
   const { token, asesoradoId, sesionPerdida, irA } = useEntrenamiento();
   const [r, setR] = useState<Resultado<{ contexto: Contexto; evaluaciones: EvaluacionDeEntrenamiento[] }> | null>(null);
   const [aviso, setAviso] = useState<{ texto: string; alPlan?: boolean } | null>(null);
+  const [periodo, setPeriodo] = useState<Periodo>({});
 
   const cargar = useCallback(async () => {
     setR(null);
-    const [cx, ev] = await Promise.all([api.contextoDeRevisionDeEntrenamiento(token, asesoradoId), api.listarEvaluacionesDeEntrenamiento(token, asesoradoId)]);
+    const [cx, ev] = await Promise.all([api.contextoDeRevisionDeEntrenamiento(token, asesoradoId, periodo), api.listarEvaluacionesDeEntrenamiento(token, asesoradoId)]);
     if (sesionPerdida(cx) || sesionPerdida(ev)) return;
     if (!cx.ok) return setR(cx as Resultado<never>);
     if (!ev.ok) return setR(ev as Resultado<never>);
     setR({ ok: true, datos: { contexto: cx.datos.data, evaluaciones: ev.datos.data } });
-  }, [token, asesoradoId, sesionPerdida]);
+  }, [token, asesoradoId, periodo, sesionPerdida]);
 
   useEffect(() => {
     void cargar();
   }, [cargar]);
 
   return (
+    <div className="secciones">
+    <FiltroDePeriodo id="trn-revision-periodo" onAplicar={setPeriodo} />
     <EstadoDeLectura r={r} onReintentar={cargar}>
       {r?.ok ? (
         <div className="secciones">
@@ -101,11 +107,12 @@ export function VistaDeRevisiones() {
         </div>
       ) : null}
     </EstadoDeLectura>
+    </div>
   );
 }
 
 function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contexto: Contexto; evaluaciones: readonly EvaluacionDeEntrenamiento[]; onRegistrada: () => void }) {
-  const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
   const [abierto, setAbierto] = useState(false);
   const [evidencia, setEvidencia] = useState<Set<string>>(new Set());
@@ -125,7 +132,7 @@ function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contex
     ...contexto.registeredExecutions.map((x) => ({
       tipo: 'EXECUTION' as const,
       id: x.executionId,
-      texto: `${x.plannedSession.label} · ${dia(`${x.date}T12:00:00Z`)} · ${etiquetaDeCondicionRegistrada(x.original)}`,
+      texto: `${x.plannedSession.label} · ${dia(`${x.date}T12:00:00Z`)} · ${etiquetaDeCondicionRegistrada(registroVigente(x))}`,
     })),
     ...contexto.activePlanVersions.map((v) => ({ tipo: 'PLAN_VERSION' as const, id: v.planId, texto: `Plan activado el ${fecha(v.activatedAt as string)}` })),
     ...(contexto.objective ? [{ tipo: 'OBJECTIVE_VERSION' as const, id: contexto.objective.versionId, texto: 'Objetivo vigente' }] : []),
@@ -177,7 +184,7 @@ function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contex
     );
     intento.registrar(r);
     setEnviando(false);
-    if (sesionPerdida(r)) return;
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     setAbierto(false);
     onRegistrada();
@@ -283,7 +290,7 @@ function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contex
 }
 
 function ItemDeRevision({ revision, onAplicada }: { revision: RevisionDeEntrenamiento; onAplicada: (texto: string, alPlan: boolean) => void }) {
-  const { token, sesionPerdida } = useEntrenamiento();
+  const { token, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
   const [aplicando, setAplicando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
@@ -294,7 +301,7 @@ function ItemDeRevision({ revision, onAplicada }: { revision: RevisionDeEntrenam
     const r = await api.aplicarRevisionDeEntrenamiento(token, revision.reviewId, intento.actual());
     intento.registrar(r);
     setAplicando(false);
-    if (sesionPerdida(r)) return;
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) {
       if (r.tipo === 'API' && r.codigo === 'CONTINUITY_ACTION_NOT_APPLICABLE') return setFallo('No se puede aplicar ahora: revisá si ya hay un borrador del plan o si el seguimiento cambió.');
       return setFallo(mensajeDeFallo(r));

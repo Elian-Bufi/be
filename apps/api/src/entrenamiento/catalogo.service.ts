@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CrearEjercicioRequestSchema, type EjercicioDeCatalogo, type ValidationIssue } from '@be/domain';
 import type { Prisma } from '@prisma/client';
+import { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
 import { escribirCursor, leerConsultaDeLista } from '../http/paginacion';
@@ -25,12 +26,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  *   336), y la instantánea congela su nombre al activar: un cambio de catálogo no la reescribe (REG-06-112).
  * - Ámbitos, como en nutrición (REG-06-135): lo sembrado es global; lo que carga un profesional es suyo.
  * - **El asesorado también lo consulta**, a diferencia del nutricional: para sustituir un ejercicio tiene que poder
- *   buscar el que realmente hizo (B10-06:762-768). Ve lo sembrado y lo que cargaron los profesionales de sus planes.
+ *   buscar el que realmente hizo (B10-06:762-768). Ve lo sembrado y lo que cargaron los profesionales de sus planes
+ *   **activados** con los que el acceso sigue vigente: un borrador no le existe (09v10:683) y, revocado el
+ *   consentimiento, lo de ese profesional deja de verse (08:979).
  * - El catálogo **no calcula**: sin porcentaje de músculo trabajado ni volumen (09v10:854).
  */
 @Injectable()
 export class CatalogoDeEjerciciosService {
-  constructor(private readonly prisma: PrismaService, private readonly ejecutor: EjecutorDeEntrenamiento) {}
+  constructor(private readonly prisma: PrismaService, private readonly ejecutor: EjecutorDeEntrenamiento, private readonly pdp: PdpService) {}
 
   // ─── API-TRN-13 ────────────────────────────────────────────────────────────────────────────
   async listar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: EjercicioDeCatalogo[]; page: unknown }> {
@@ -121,11 +124,13 @@ export class CatalogoDeEjerciciosService {
    * Las versiones de ejercicio que un actor puede citar, por identificador de versión: para prescribir (el
    * profesional: lo sembrado y lo propio) o para declarar lo que realmente hizo (el asesorado: lo sembrado y lo de
    * sus profesionales). Una versión fuera de su ámbito no existe para él.
+   * - Al registrar o corregir una ejecución, el asesorado cita lo sembrado y lo del profesional **de ese plan**: el
+   *   catálogo manual de otro profesional no entra en un registro que después lee un tercero.
    */
-  async citables(cliente: Cliente, actorId: string, ambito: Ambito, versionIds: readonly string[]): Promise<Map<string, FilaDeEjercicio>> {
+  async citables(cliente: Cliente, actorId: string, ambito: Ambito, versionIds: readonly string[], profesionalDelPlan?: string): Promise<Map<string, FilaDeEjercicio>> {
     const validos = [...new Set(versionIds)].filter((id) => UUID.test(id)).map((id) => id.toLowerCase());
     if (validos.length === 0) return new Map();
-    const creadores = await this.creadoresVisibles(cliente, actorId, ambito);
+    const creadores = ambito === 'ASESORADO' && profesionalDelPlan ? [profesionalDelPlan] : await this.creadoresVisibles(cliente, actorId, ambito);
     const filas = await cliente.$queryRaw<FilaDeEjercicio[]>`
       SELECT e."id"::text AS "ejercicioId", v."id"::text AS "versionId", v."nombre", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
              e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro"
@@ -155,9 +160,12 @@ export class CatalogoDeEjerciciosService {
     if (ambito !== 'ASESORADO' && (await this.esProfesionalDeEntrenamiento(cliente, actorId))) creadores.add(actorId);
     let esAsesorado = false;
     if (ambito !== 'PROFESIONAL') {
-      const planes = await cliente.planDeEntrenamiento.findMany({ where: { asesoradoId: actorId }, select: { profesionalId: true } });
+      // Un plan que alguna vez se activó: un borrador solo no le da al asesorado acceso al catálogo (09v10:683).
+      const planes = await cliente.planDeEntrenamiento.findMany({ where: { asesoradoId: actorId, versionEfectivaId: { not: null } }, select: { profesionalId: true } });
       esAsesorado = planes.length > 0;
-      for (const p of planes) creadores.add(p.profesionalId);
+      for (const p of planes) {
+        if ((await this.pdp.evaluarSinRegistrar(cliente, p.profesionalId, actorId, 'ENTRENAMIENTO')).permitida) creadores.add(p.profesionalId);
+      }
     }
     if (!creadores.has(actorId) && !esAsesorado) throw errores.accionNoPermitida();
     return [...creadores];

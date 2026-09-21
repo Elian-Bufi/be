@@ -12,6 +12,7 @@ import {
   ETIQUETA_DE_FUENTE,
   ETIQUETA_DE_RESULTADO,
   etiquetaDeCondicionRegistrada,
+  registroVigente,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EvaluacionDeEntrenamiento,
   type ResumenDeVersionDePlanDeEntrenamiento,
@@ -125,11 +126,12 @@ export function VistaDeResumen() {
                         <dt>{d.concept}</dt>
                         <dd>
                           {String(d.value)}
-                          {d.unit ? ` ${d.unit}` : ''} <span className="nota">· {ETIQUETA_DE_FUENTE[d.source]}</span>
+                          {d.unit ? ` ${d.unit}` : ''} <span className="nota">· {ETIQUETA_DE_FUENTE[d.source]}{d.methodStatement ? ` · Método: ${d.methodStatement}` : ''}</span>
                         </dd>
                       </div>
                     ))}
                   </dl>
+                  {e.context ? <p className="nota">Contexto: {e.context}</p> : null}
                   {e.professionalNotes ? <p className="nota">{e.professionalNotes}</p> : null}
                 </li>
               ))}
@@ -183,7 +185,7 @@ function Estado({ datos, onIrA }: { datos: Datos; onIrA: (v: 'plan' | 'ejecucion
         <div>
           <dt>Última sesión registrada (últimos 7 días)</dt>
           <dd>
-            {ultima ? `${ultima.plannedSession.label} · ${dia(`${ultima.date}T12:00:00Z`)} · ${etiquetaDeCondicionRegistrada(ultima.original)}` : COPY_ENTRENAMIENTO.sinEjecuciones}{' '}
+            {ultima ? `${ultima.plannedSession.label} · ${dia(`${ultima.date}T12:00:00Z`)} · ${etiquetaDeCondicionRegistrada(registroVigente(ultima))}` : COPY_ENTRENAMIENTO.sinEjecuciones}{' '}
             <button type="button" className="boton boton--enlace" onClick={() => onIrA('ejecuciones')}>
               Ver ejecuciones
             </button>
@@ -225,10 +227,11 @@ const ahoraLocal = (): string => {
 
 /** Evaluación: datos previos con su fuente (B10-06 §3). Un dato calculado declara su método: BE no calcula. */
 function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: () => void; onCancelar: () => void }) {
-  const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
   const [datos, setDatos] = useState<Dato[]>([datoVacio()]);
   const [notas, setNotas] = useState('');
+  const [contexto, setContexto] = useState('');
   const [ocurrencia, setOcurrencia] = useState(ahoraLocal());
   const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
   const [envios, setEnvios] = useState(0);
@@ -239,6 +242,8 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
   async function enviar(e: FormEvent) {
     e.preventDefault();
     const problemas: { id: string; texto: string }[] = [];
+    // Una fecha vacía o a medio escribir se avisa acá: si no, `new Date('')` rompía el envío sin ningún mensaje.
+    if (!ocurrencia || Number.isNaN(new Date(ocurrencia).getTime())) problemas.push({ id: 'trn-evaluacion-ocurrencia', texto: 'Falta la fecha y hora de la evaluación.' });
     datos.forEach((d, i) => {
       if (!d.concepto.trim()) problemas.push({ id: `trn-dato-${i}-concepto`, texto: `Dato ${i + 1}: falta el concepto.` });
       if (!d.valor.trim()) problemas.push({ id: `trn-dato-${i}-valor`, texto: `Dato ${i + 1}: falta el valor.` });
@@ -265,12 +270,13 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
         },
         evidenceReferences: [],
         professionalNotes: notas.trim() || null,
+        context: contexto.trim() || null,
       },
       intento.actual(),
     );
     intento.registrar(r);
     setEnviando(false);
-    if (sesionPerdida(r)) return;
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     onRegistrada();
   }
@@ -311,6 +317,11 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
         </button>
       </fieldset>
       <div className="campo">
+        <label htmlFor="trn-evaluacion-contexto">Contexto (opcional)</label>
+        <p className="campo__ayuda">En qué situación se hizo la evaluación: consulta inicial, cambio de bloque, vuelta de una lesión.</p>
+        <textarea id="trn-evaluacion-contexto" rows={2} value={contexto} onChange={(e) => setContexto(e.target.value)} maxLength={1000} />
+      </div>
+      <div className="campo">
         <label htmlFor="trn-evaluacion-notas">Notas del profesional (opcional)</label>
         <textarea id="trn-evaluacion-notas" rows={2} value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={4000} />
       </div>
@@ -333,7 +344,7 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
 
 /** Objetivo: un enunciado con fundamento, fundado en una evaluación. El 09 no fija su contenido (09v10:228). */
 function FormularioDeObjetivo({ evaluaciones, onEmitido, onCancelar }: { evaluaciones: readonly EvaluacionDeEntrenamiento[]; onEmitido: () => void; onCancelar: () => void }) {
-  const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
   const [evaluacion, setEvaluacion] = useState(evaluaciones[0]?.evaluationId ?? '');
   const [enunciado, setEnunciado] = useState('');
@@ -349,6 +360,7 @@ function FormularioDeObjetivo({ evaluaciones, onEmitido, onCancelar }: { evaluac
     const problemas: { id: string; texto: string }[] = [];
     if (!enunciado.trim()) problemas.push({ id: 'trn-objetivo-enunciado', texto: 'Falta el objetivo.' });
     if (!fundamento.trim()) problemas.push({ id: 'trn-objetivo-fundamento', texto: 'Falta el fundamento.' });
+    if (!desde || Number.isNaN(new Date(desde).getTime())) problemas.push({ id: 'trn-objetivo-desde', texto: 'Falta desde cuándo rige el objetivo.' });
     setErrores(problemas);
     setEnvios((n) => n + 1);
     if (problemas.length > 0) return;
@@ -362,7 +374,7 @@ function FormularioDeObjetivo({ evaluaciones, onEmitido, onCancelar }: { evaluac
     );
     intento.registrar(r);
     setEnviando(false);
-    if (sesionPerdida(r)) return;
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     onEmitido();
   }

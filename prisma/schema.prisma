@@ -823,6 +823,8 @@ model RegistroDeIdempotencia {
   huella            String
   estadoHttp        Int      @map("estado_http")
   cuerpo            Json
+  /// Las decisiones que el PDP permitió en el pedido original: el reintento las vuelve a tomar (08:601).
+  decisiones        Json?
   momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
   @@unique([operacion, ambito, clave])
@@ -1659,6 +1661,8 @@ model EvaluacionDeEntrenamiento {
   valoracion          Json
   referencias         Json
   notas               String?
+  /// RF-036: el contexto de la evaluación (04:456; 09v10:190).
+  contexto            String?
   procedencia         Json
   momentoDeOcurrencia DateTime @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro   DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)

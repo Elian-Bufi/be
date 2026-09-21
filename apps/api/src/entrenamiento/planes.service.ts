@@ -21,7 +21,7 @@ import {
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { createHash, randomUUID } from 'node:crypto';
-import { PdpService } from '../autorizacion/pdp.service';
+import { DenegacionDelPdp, PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '../http/paginacion';
@@ -35,7 +35,7 @@ import { CatalogoDeEjerciciosService } from './catalogo.service';
 import { EjecutorDeEntrenamiento, esUuid } from './ejecutor';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
 import { registrarEventoDeEntrenamiento } from './eventos';
-import { INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, versionDePlanApi, type VersionConPlan } from './lectura-entrenamiento';
+import { INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, seguimientoAbierto, versionDePlanApi, type VersionConPlan } from './lectura-entrenamiento';
 
 type Tx = Prisma.TransactionClient;
 
@@ -199,6 +199,9 @@ export class PlanesDeEntrenamientoService {
       ctx,
       recursoIntentado: { tipo: 'Asesorado', id: adviseeId },
       lectura: async (tx) => {
+        // «Proyección profesional/asesorado según actor» (09v10:696). El asesorado titular ve solo lo ACTIVADO de cada
+        // plan cuyo profesional conserva el acceso: un borrador no existe para él (09v10:683), igual que en TRN-09.
+        if (adviseeId === actor.identidadId) return this.listarComoTitular(tx, actor, consulta, ctx);
         const asesoradoId = await this.decidir(tx, 'API-TRN-08', actor, actor.identidadId, adviseeId, null, ctx);
         const estado = consulta.filtros.state === 'DRAFT' ? 'BORRADOR' : consulta.filtros.state === 'ACTIVATED' ? 'ACTIVADA' : undefined;
         const filas = await tx.versionDePlanDeEntrenamiento.findMany({
@@ -209,9 +212,10 @@ export class PlanesDeEntrenamientoService {
         });
         const { pagina, page } = paginar(filas, consulta.limit);
         const nombre = await nombreVisibleDe(tx, actor.identidadId);
+        const abierto = await seguimientoAbierto(tx, actor.identidadId, asesoradoId);
         return {
           data: pagina.map((v) => {
-            const { blocks: _b, ...resumen } = versionDePlanApi(v, nombre, new Map());
+            const { blocks: _b, ...resumen } = versionDePlanApi(v, nombre, new Map(), abierto);
             return resumen;
           }),
           page,
@@ -421,7 +425,50 @@ export class PlanesDeEntrenamientoService {
       v.estado === 'BORRADOR'
         ? await this.catalogo.citables(tx, v.plan.profesionalId, 'PROFESIONAL', referenciasDeEjercicio(v.contenido as unknown as ContenidoDePlanDeEntrenamiento))
         : new Map();
-    return versionDePlanApi(v, await nombreVisibleDe(tx, v.plan.profesionalId), aCitables(catalogo));
+    return versionDePlanApi(v, await nombreVisibleDe(tx, v.plan.profesionalId), aCitables(catalogo), await seguimientoAbierto(tx, v.plan.profesionalId, v.plan.asesoradoId));
+  }
+
+  /** TRN-08 para el titular: las versiones ACTIVADAS de los planes cuyo profesional conserva el acceso, sin borradores. */
+  private async listarComoTitular(
+    tx: Tx,
+    actor: ActorAutenticado,
+    consulta: ReturnType<typeof leerConsultaDeLista>,
+    ctx: ContextoDeSolicitud,
+  ): Promise<{ data: Omit<VersionDePlanDeEntrenamiento, 'blocks'>[]; page: unknown }> {
+    const planes = await tx.planDeEntrenamiento.findMany({ where: { asesoradoId: actor.identidadId }, select: { id: true, profesionalId: true } });
+    const visibles: { id: string; profesionalId: string }[] = [];
+    for (const p of planes) {
+      try {
+        await this.decidir(tx, 'API-TRN-08', actor, p.profesionalId, actor.identidadId, { tipo: 'PlanDeEntrenamiento', id: p.id }, ctx);
+        visibles.push(p);
+      } catch (e) {
+        // Un profesional sin acceso vigente: sus planes no se listan, y la decisión denegada queda registrada.
+        if (!(e instanceof DenegacionDelPdp)) throw e;
+        await this.pdp.registrarDenegacion(e);
+      }
+    }
+    const filas = consulta.filtros.state === 'DRAFT' || visibles.length === 0
+      ? []
+      : await tx.versionDePlanDeEntrenamiento.findMany({
+          where: { planId: { in: visibles.map((p) => p.id) }, estado: 'ACTIVADA', ...despuesDelCursor(consulta.cursor) },
+          include: INCLUIR_PLAN_DE_ENTRENAMIENTO,
+          orderBy: ORDEN_DE_LISTA,
+          take: consulta.limit + 1,
+        });
+    const { pagina, page } = paginar(filas, consulta.limit);
+    const nombres = new Map<string, string>();
+    const abiertos = new Map<string, boolean>();
+    for (const p of visibles) {
+      nombres.set(p.profesionalId, await nombreVisibleDe(tx, p.profesionalId));
+      abiertos.set(p.profesionalId, await seguimientoAbierto(tx, p.profesionalId, actor.identidadId));
+    }
+    return {
+      data: pagina.map((v) => {
+        const { blocks: _b, ...resumen } = versionDePlanApi(v, nombres.get(v.plan.profesionalId) ?? '', new Map(), abiertos.get(v.plan.profesionalId) ?? false);
+        return resumen;
+      }),
+      page,
+    };
   }
 
   /**

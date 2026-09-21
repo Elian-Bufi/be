@@ -190,6 +190,13 @@ export class RevisionesService {
         if (resultado === 'CAMBIAR_OBJETIVO' && !pedido.nextAction.objective) {
           throw componenteRequerido([{ code: 'REVIEW_NEW_OBJECTIVE_REQUIRED', path: 'nextAction.objective' }]);
         }
+        // La revisión es inmutable: si el objetivo nuevo cita una evaluación ajena o inexistente, nunca se podría aplicar.
+        // Se rechaza al registrarla, con la ruta exacta.
+        if (resultado === 'CAMBIAR_OBJETIVO' && pedido.nextAction.objective) {
+          const refId = pedido.nextAction.objective.evaluationId;
+          const ref = esUuid(refId) ? await tx.evaluacionNutricional.findUnique({ where: { id: refId }, select: { profesionalId: true, asesoradoId: true } }) : null;
+          if (!ref || ref.profesionalId !== actor.identidadId || ref.asesoradoId !== asesoradoId) throw componenteRequerido([{ code: 'EVALUATION_NOT_COMPATIBLE', path: 'nextAction.objective.evaluationId' }]);
+        }
         // UC-P13 precondición: hay un seguimiento abierto que revisar.
         const proceso = await tx.procesoOperativo.findFirst({ where: { profesionalId: actor.identidadId, asesoradoId, alcance: 'NUTRICION', estado: 'ABIERTO' } });
         if (!proceso) {
@@ -276,7 +283,10 @@ export class RevisionesService {
         await this.decidir(tx, 'API-NUT-20', actor, asesoradoId, recurso, ctx);
         if (r.proceso.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-20', actorId: actor.identidadId, recurso, sujetoId: asesoradoId }, ctx);
         if (!esToken(pedido.expectedVersion, 1)) throw errores.conflictoDeVersion();
-        if (r.aplicacion) throw new ErrorDeApi(409, CodigoDeError.REVIEW_ALREADY_APPLIED, 'Esta revisión ya se aplicó.');
+        // Dos aplicaciones a la vez con claves distintas: la fila de la revisión las serializa, y la segunda ve la
+        // aplicación de la primera en vez de chocar con el índice único (09 v0.16.1:208).
+        await tx.$queryRaw`SELECT 1 FROM "revision_nutricional" WHERE "id" = ${r.id}::uuid FOR UPDATE`;
+        if (r.aplicacion || (await tx.aplicacionDeRevision.count({ where: { revisionId: r.id } })) > 0) throw new ErrorDeApi(409, CodigoDeError.REVIEW_ALREADY_APPLIED, 'Esta revisión ya se aplicó.');
         if (r.proceso.estado !== 'ABIERTO') {
           throw new ErrorDeApi(422, CodigoDeError.CONTINUITY_ACTION_NOT_APPLICABLE, 'El seguimiento ya está cerrado: la revisión no se puede aplicar.');
         }
@@ -314,7 +324,11 @@ export class RevisionesService {
           }
         } else if (efecto.vertical === 'NUEVA_VERSION_DE_OBJETIVO') {
           if (!accion.objective) throw new ErrorDeApi(422, CodigoDeError.REVIEW_NOT_VALID_FOR_APPLICATION, 'La revisión no trae el objetivo nuevo.');
-          const v = await this.evaluaciones.emitirVersionDeObjetivo(tx, { profesionalId: actor.identidadId, asesoradoId, contenido: accion.objective, revisionDeOrigenId: r.id, procedencia });
+          // Si el objetivo ya no se puede emitir, la revisión no es aplicable tal como quedó (09v10:1441).
+          const v = await this.evaluaciones.emitirVersionDeObjetivo(tx, { profesionalId: actor.identidadId, asesoradoId, contenido: accion.objective, revisionDeOrigenId: r.id, procedencia }).catch((e: unknown) => {
+            if (e instanceof ErrorDeApi && e.status === 422) throw new ErrorDeApi(422, CodigoDeError.REVIEW_NOT_VALID_FOR_APPLICATION, 'El objetivo que trae la revisión ya no se puede emitir.', e.details);
+            throw e;
+          });
           versionDeObjetivoCreadaId = v.id;
         }
 
@@ -373,7 +387,7 @@ export class RevisionesService {
   async pendiente(tx: Tx, procesoId: string, abierto: boolean, hoy: string): Promise<{ pending: boolean; since: string | null }> {
     const expectativa = await this.procesos.proximaRevisionVigente(tx, procesoId);
     const aplicadaPosterior = expectativa
-      ? (await tx.aplicacionDeRevision.count({ where: { revision: { procesoId }, momentoDeRegistro: { gt: expectativa.momentoDeRegistro } } })) > 0
+      ? (await tx.aplicacionDeRevision.count({ where: { revision: { procesoId, momentoDeRegistro: { gt: expectativa.momentoDeRegistro } } } })) > 0
       : false;
     const r = revisionPendiente({
       procesoAbierto: abierto,
@@ -403,7 +417,7 @@ export class RevisionesService {
       case 'EXECUTION':
         return (await tx.ingestaNutricional.count({ where: { id: ref.id, asesoradoId, versionDePlan: { plan: { profesionalId } } } })) > 0;
       case 'PLAN_VERSION':
-        return (await tx.versionDePlanNutricional.count({ where: { id: ref.id, plan: { profesionalId, asesoradoId } } })) > 0;
+        return (await tx.versionDePlanNutricional.count({ where: { id: ref.id, estado: 'ACTIVADA', plan: { profesionalId, asesoradoId } } })) > 0;
       case 'OBJECTIVE_VERSION':
         return (await tx.versionDeObjetivoNutricional.count({ where: { id: ref.id, objetivo: { profesionalId, asesoradoId } } })) > 0;
       case 'EVALUATION':

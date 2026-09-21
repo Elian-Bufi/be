@@ -5,6 +5,15 @@ import { errores } from '../http/errores';
 import { conReintento } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 
+/**
+ * Autorización que acompaña a un efecto idempotente: cómo capturar las decisiones que tomó y cómo volver a tomarlas.
+ * Las operaciones sin PDP (cuenta, vínculo) no la pasan y su reintento se sirve como siempre.
+ */
+export interface AutorizacionIdempotente {
+  readonly capturar: <T>(fn: () => Promise<T>) => Promise<{ readonly resultado: T; readonly decisiones: readonly unknown[] }>;
+  readonly reautorizar: (tx: Prisma.TransactionClient, decisiones: readonly unknown[]) => Promise<void>;
+}
+
 export interface ResultadoIdempotente {
   readonly estadoHttp: number;
   readonly cuerpo: Prisma.InputJsonValue;
@@ -21,6 +30,8 @@ export const AMBITO_PUBLICO = 'PUBLICO';
  * Requests concurrentes con la misma key se serializan con un advisory lock transaccional: la segunda espera a
  * que la primera confirme y hace replay (DL-026). Solo se guardan resultados exitosos: un error no se «congela».
  * «La key no sustituye: unique constraint; transacción» (09v7): la unicidad de negocio sigue en la base.
+ * El reintento de una operación con PDP vuelve a decidir antes de responder, y antes de comparar la huella: un recurso
+ * que dejó de ser revelable da 404 también en el reintento, y el 409 de clave reutilizada no revela nada sobre él.
  * Un deadlock o una falla de serialización revierten la transacción entera: se repite (conReintento) y, si persiste,
  * sale como 409 de conflicto concurrente.
  */
@@ -40,6 +51,7 @@ export class IdempotenciaService {
   async ejecutar(
     params: { operacion: string; ambito: string; clave: string; huella: string },
     efecto: (tx: Prisma.TransactionClient) => Promise<ResultadoIdempotente>,
+    autorizacion?: AutorizacionIdempotente,
   ): Promise<ResultadoIdempotente> {
     return conReintento(() => this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`${params.operacion}|${params.ambito}|${params.clave}`}, 0))`;
@@ -47,12 +59,13 @@ export class IdempotenciaService {
         where: { operacion_ambito_clave: { operacion: params.operacion, ambito: params.ambito, clave: params.clave } },
       });
       if (previo) {
+        if (autorizacion && Array.isArray(previo.decisiones)) await autorizacion.reautorizar(tx, previo.decisiones);
         if (previo.huella !== params.huella) throw errores.claveDeIdempotenciaReutilizada();
         return { estadoHttp: previo.estadoHttp, cuerpo: previo.cuerpo as Prisma.InputJsonValue };
       }
-      const resultado = await efecto(tx);
+      const { resultado, decisiones } = autorizacion ? await autorizacion.capturar(() => efecto(tx)) : { resultado: await efecto(tx), decisiones: null };
       await tx.registroDeIdempotencia.create({
-        data: { ...params, estadoHttp: resultado.estadoHttp, cuerpo: resultado.cuerpo },
+        data: { ...params, estadoHttp: resultado.estadoHttp, cuerpo: resultado.cuerpo, ...(decisiones ? { decisiones: decisiones as Prisma.InputJsonValue } : {}) },
       });
       return resultado;
     }));

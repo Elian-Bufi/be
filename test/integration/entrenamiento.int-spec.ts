@@ -7,13 +7,16 @@
  * ejecución, con su corrección (UC-P17, UC-E02; API-TRN-14 a 20). Tramo 4: revisión y continuidad (UC-P18; API-TRN-21 a 24).
  */
 import type { INestApplication } from '@nestjs/common';
+import { codificarOcurrencia } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { prepararAsesorado, prepararProfesional, revocarB2, vinculoCompleto } from './soporte-vinculo';
+import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { ProcesoService } from '../../apps/api/src/proceso/proceso.service';
 import {
   activarPlanDeEntrenamiento,
+  borradorDeEjecucion,
   CATALOGO_DE_EJERCICIOS,
   circuitoConPlanDeEntrenamientoActivo,
   circuitoDeEntrenamiento,
@@ -985,5 +988,214 @@ describe('E2E-05 · entrenamiento: plan → ejecución en la APK → revisión (
     expect(hoy2.activePlan.planId).toBe(sucesor.planId);
     const registradaAntes = await apk.get(`/api/v1/training/executions/${regA.body.data.executionId}`).expect(200);
     expect(registradaAntes.body.data.planId).toBe(b.body.data.planId);
+  });
+});
+
+// ─── Cierre de WP-06 · lo que encontró la auditoría del paquete contra el legajo ─────────────────
+// Cuatro revisores independientes (seguridad, contrato, dominio, UX) auditaron el paquete antes de cerrarlo. Cada prueba
+// fija un hallazgo que resistió el intento de refutarlo; el detalle está en DEFENSA/WP-06.md §5.
+
+describe('Cierre de WP-06 · seguridad', () => {
+  it('09 v0.16.1:220-221 · un reintento con la misma Idempotency-Key vuelve a pasar por el PDP: revocado B2, es el mismo 404', async () => {
+    const c = await circuitoDeEntrenamiento(app, `reintento-${++contador}`);
+    const p = conSesion(app, c.pro.token);
+    const clave = claveDeIdempotencia();
+    const cuerpo = cuerpoDeEvaluacionDeEntrenamiento();
+    const primera = await p.post(evaluaciones(c.ase.id), clave).send(cuerpo).expect(201);
+    // Mientras nada cambió, el reintento se sirve igual, y la re-decisión queda registrada.
+    const decisiones = () => prisma.decisionDeAcceso.count({ where: { actorId: c.pro.id, operacion: 'API-TRN-01', resultado: 'PERMITIDA' } });
+    const antes = await decisiones();
+    const reintento = await p.post(evaluaciones(c.ase.id), clave).send(cuerpo).expect(201);
+    expect(reintento.body).toEqual(primera.body);
+    expect(await decisiones()).toBe(antes + 1);
+    expect(await prisma.evaluacionDeEntrenamiento.count({ where: { asesoradoId: c.ase.id } })).toBe(1);
+    // Revocado el consentimiento, el reintento ya no devuelve la respuesta guardada: es el 404 de cualquier otro pedido.
+    await revocarB2(app, c.ase, c.consentId).expect(200);
+    const trasRevocar = await p.post(evaluaciones(c.ase.id), clave).send(cuerpo).expect(404);
+    expect(trasRevocar.body.error.code).toBe('RESOURCE_NOT_FOUND');
+    // Con otro cuerpo y la misma clave tampoco hay 409: un recurso no revelable no confirma nada (09:227).
+    await p.post(evaluaciones(c.ase.id), clave).send({ ...cuerpo, professionalNotes: 'Otra nota.' }).expect(404);
+  });
+
+  it('09:207 · un occurrenceId con forma de UUID que no lo es, o con una fecha que no existe, es 404 y nunca 500', async () => {
+    const c = await circuitoConPlanDeEntrenamientoActivo(app, `occ-${++contador}`);
+    const crudo = (texto: string) => `occ_${Buffer.from(texto, 'latin1').toString('base64url')}`;
+    await borradorDe(c.ase.token, crudo('------------------------------------.ses-a.2026-09-20')).expect(404);
+    await borradorDe(c.ase.token, codificarOcurrencia({ versionDePlanId: c.planId, sesionPlanificadaId: 'ses-a', fechaLocal: '2026-02-30' })).expect(404);
+    await borradorDe(c.ase.token, codificarOcurrencia({ versionDePlanId: c.planId, sesionPlanificadaId: 'ses-a', fechaLocal: '2026-00-00' })).expect(404);
+  });
+
+  it('09v10:683 · el catálogo manual del profesional no se le abre al asesorado por un borrador, y deja de verse al revocar', async () => {
+    const c = await circuitoListoParaPlanificarEntrenamiento(app, `cat-${++contador}`);
+    const nombre = `Remo sintético ${contador}`;
+    await conSesion(app, c.pro.token).post('/api/v1/training/exercises').send({ name: nombre, muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } }).expect(201);
+    const b = await crearBorradorDeEntrenamiento(app, c);
+    // Con un borrador que no ve, el catálogo sigue sin ser para él.
+    await conSesion(app, c.ase.token).get('/api/v1/training/exercises').expect(403);
+    await activarPlanDeEntrenamiento(app, c.pro, b.planId, b.version).expect(200);
+    const buscar = async () => (await conSesion(app, c.ase.token).get(`/api/v1/training/exercises?q=${encodeURIComponent(nombre)}`).expect(200)).body.data.map((e: { name: string }) => e.name);
+    expect(await buscar()).toEqual([nombre]);
+    await revocarB2(app, c.ase, c.consentId).expect(200);
+    expect(await buscar()).toEqual([]);
+  });
+});
+
+describe('Cierre de WP-06 · contrato y dominio', () => {
+  async function unaRegistrada(etiqueta: string) {
+    const c = await circuitoConPlanDeEntrenamientoActivo(app, `${etiqueta}-${++contador}`);
+    const hoy = (await hoyDe(c.ase.token).expect(200)).body.data;
+    const b = (await borradorDe(c.ase.token, hoy.occurrences[0].occurrenceId).expect(201)).body.data;
+    const v = (
+      await guardar(c.ase.token, b.draftId, b.version, {
+        granularity: 'SET',
+        sessionCondition: 'COMPLETED',
+        exercises: [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets: [serie(1, 70)] }],
+      }).expect(200)
+    ).body.data;
+    const conf = await confirmar(c.ase.token, b.draftId, v.version).expect(201);
+    return { ...c, fecha: hoy.date as string, executionId: conf.body.data.executionId as string };
+  }
+
+  it('B10-06:879-884 · una corrección igual a lo que rige no es una corrección: EXECUTION_VALUE_INVALID', async () => {
+    const x = await unaRegistrada('sincambio');
+    const igual = {
+      reason: 'Reviso el registro.',
+      correction: {
+        granularity: 'SET',
+        sessionCondition: 'COMPLETED',
+        reason: null,
+        exercises: [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets: [serie(1, 70)] }],
+        sessionSummary: null,
+      },
+    };
+    const r = await conSesion(app, x.ase.token).post(`/api/v1/training/executions/${x.executionId}/corrections`).send(igual).expect(422);
+    expect(r.body.error).toMatchObject({ code: 'EXECUTION_VALUE_INVALID', details: { issues: [{ code: 'CORRECTION_WITHOUT_CHANGES', path: 'correction' }] } });
+    expect(await prisma.correccionDeEjecucionDeEntrenamiento.count({ where: { ejecucionId: x.executionId } })).toBe(0);
+  });
+
+  it('06:5253 · «Hoy» muestra la condición que rige después de corregir, no la del original', async () => {
+    const c = await circuitoConPlanDeEntrenamientoActivo(app, `vigente-${++contador}`);
+    const [a] = (await hoyDe(c.ase.token).expect(200)).body.data.occurrences;
+    const b = (await borradorDe(c.ase.token, a.occurrenceId).expect(201)).body.data;
+    const v = (await guardar(c.ase.token, b.draftId, b.version, { sessionCondition: 'NOT_COMPLETED' }).expect(200)).body.data;
+    const conf = await confirmar(c.ase.token, b.draftId, v.version).expect(201);
+    // Apretó «No pude realizarla» por error: la corrige a realizada, con un resumen de la sesión.
+    await conSesion(app, c.ase.token)
+      .post(`/api/v1/training/executions/${conf.body.data.executionId}/corrections`)
+      .send({ reason: 'Sí la hice.', correction: { granularity: 'EXERCISE_OR_SESSION', sessionCondition: 'COMPLETED', reason: null, exercises: [], sessionSummary: { description: 'La hice completa.' } } })
+      .expect(201);
+    const despues = (await hoyDe(c.ase.token).expect(200)).body.data.occurrences.find((o: { occurrenceId: string }) => o.occurrenceId === a.occurrenceId);
+    expect(despues.execution).toMatchObject({ state: 'REGISTERED', sessionCondition: 'COMPLETED' });
+  });
+
+  it('06:5233 · el día que se activa una sucesora, cada sesión aparece una vez y la ya registrada no se registra de nuevo', async () => {
+    const x = await unaRegistrada('cambio');
+    const p = conSesion(app, x.pro.token);
+    const sucesora = (await p.post(`/api/v1/advisees/${x.ase.id}/training/plans`).send({ objectiveVersionId: x.objectiveVersionId, basedOnPlanId: x.planId }).expect(201)).body.data;
+    await activarPlanDeEntrenamiento(app, x.pro, sucesora.planId, sucesora.version).expect(200);
+    const hoy = (await hoyDe(x.ase.token).expect(200)).body.data.occurrences as { occurrenceId: string; planId: string; plannedSession: { sessionId: string }; execution: { state: string } }[];
+    expect(hoy.map((o) => o.plannedSession.sessionId).sort()).toEqual(['ses-a', 'ses-b']);
+    expect(hoy.find((o) => o.plannedSession.sessionId === 'ses-a')).toMatchObject({ planId: x.planId, execution: { state: 'REGISTERED' } });
+    expect(hoy.find((o) => o.plannedSession.sessionId === 'ses-b')).toMatchObject({ planId: sucesora.planId, execution: { state: 'NOT_STARTED' } });
+    // La de la sucesora, pedida a mano, no se abre.
+    const otra = codificarOcurrencia({ versionDePlanId: sucesora.planId, sesionPlanificadaId: 'ses-a', fechaLocal: x.fecha });
+    const r = await borradorDe(x.ase.token, otra).expect(422);
+    expect(r.body.error).toMatchObject({ code: 'OCCURRENCE_NOT_EXECUTABLE', details: { issues: [{ code: 'SESSION_STARTED_IN_OTHER_VERSION' }] } });
+    // Y la base tampoco lo deja, aunque el servicio se equivocara.
+    const sembrado = borradorDeEjecucion(x, sucesora.planId, { sesion: 'ses-a', fecha: x.fecha });
+    await expect(prisma.$executeRawUnsafe(sembrado.sql)).rejects.toThrow(/una sola vez por día/);
+  });
+
+  it('06:4351 · el horario declarado cae mientras la versión regía: antes de activarla es OCCURRED_AT_OUTSIDE_PLAN_VERSION', async () => {
+    const c = await circuitoConPlanDeEntrenamientoActivo(app, `vigencia-${++contador}`);
+    const hoy = (await hoyDe(c.ase.token).expect(200)).body.data;
+    const activada = new Date(c.activacion.activatedAt as string);
+    const antes = new Date(activada.getTime() - 60_000);
+    // Si la activación fue en el primer minuto del día local, un minuto antes es otro día y la regla que falla es otra.
+    const mismoDia = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(antes) === hoy.date;
+    const b = (await borradorDe(c.ase.token, hoy.occurrences[0].occurrenceId).expect(201)).body.data;
+    const r = await guardar(c.ase.token, b.draftId, b.version, { occurredAt: antes.toISOString() }).expect(422);
+    expect(r.body.error.details.issues[0].code).toBe(mismoDia ? 'OCCURRED_AT_OUTSIDE_PLAN_VERSION' : 'OCCURRED_AT_OUTSIDE_OCCURRENCE_DATE');
+  });
+
+  it('06:4297 · después de FINALIZAR, ninguna versión se presenta como vigente', async () => {
+    const x = await unaRegistrada('fin');
+    const rev = await revisar(x, cuerpoDeRevisionDeEntrenamiento(x.fecha, [{ type: 'EXECUTION', id: x.executionId }], 'FINALIZE')).expect(201);
+    await aplicar(x.pro.token, rev.body.data.reviewId).expect(200);
+    const lista = (await conSesion(app, x.pro.token).get(`/api/v1/advisees/${x.ase.id}/training/plans`).expect(200)).body.data;
+    expect(lista.map((v: { isEffective: boolean }) => v.isEffective)).toEqual([false]);
+    expect((await conSesion(app, x.pro.token).get(`/api/v1/training/plans/${x.planId}`).expect(200)).body.data).toMatchObject({ state: 'ACTIVATED', isEffective: false });
+  });
+
+  it('REG-06-142 · una versión de plan que se cita como evidencia es una versión ACTIVADA, no un borrador que después cambia', async () => {
+    const x = await unaRegistrada('evid');
+    const borrador = (await conSesion(app, x.pro.token).post(`/api/v1/advisees/${x.ase.id}/training/plans`).send({ objectiveVersionId: x.objectiveVersionId, basedOnPlanId: x.planId }).expect(201)).body.data;
+    const r = await revisar(x, cuerpoDeRevisionDeEntrenamiento(x.fecha, [{ type: 'PLAN_VERSION', id: borrador.planId }], 'MAINTAIN')).expect(422);
+    expect(r.body.error.code).toBe('REVIEW_EVIDENCE_NOT_RECONSTRUCTIBLE');
+    await revisar(x, cuerpoDeRevisionDeEntrenamiento(x.fecha, [{ type: 'PLAN_VERSION', id: x.planId }], 'MAINTAIN')).expect(201);
+  });
+
+  it('06:5972 · una revisión vieja aplicada tarde no resuelve una expectativa que nació después de ella', async () => {
+    const x = await unaRegistrada('pend');
+    const vieja = (await revisar(x, cuerpoDeRevisionDeEntrenamiento(x.fecha, [{ type: 'EXECUTION', id: x.executionId }], 'MAINTAIN')).expect(201)).body.data;
+    // Después de registrar la vieja, se fija una próxima revisión para ayer: queda pendiente.
+    const proceso = await prisma.procesoOperativo.findFirstOrThrow({ where: { profesionalId: x.pro.id, asesoradoId: x.ase.id, alcance: 'ENTRENAMIENTO', estado: 'ABIERTO' } });
+    const ayer = new Date(new Date(`${x.fecha}T12:00:00Z`).getTime() - 86_400_000).toISOString().slice(0, 10);
+    await app.get(PrismaService).$transaction((tx) =>
+      app.get(ProcesoService).fijarProximaRevision(tx, {
+        procesoId: proceso.id,
+        fecha: ayer,
+        fuente: { versionDePlanDeEntrenamientoId: x.planId },
+        actorId: x.pro.id,
+        procedencia: { fuente: 'PROPIA', casoDeUso: 'PRUEBA', operacion: 'SIEMBRA', superficie: null, requestId: null },
+        momento: new Date(),
+      }),
+    );
+    const pendiente = async () => (await contextoDe(x).expect(200)).body.data.pendingReview.pending;
+    expect(await pendiente()).toBe(true);
+    await aplicar(x.pro.token, vieja.reviewId).expect(200);
+    expect(await pendiente()).toBe(true);
+    const nueva = (await revisar(x, cuerpoDeRevisionDeEntrenamiento(x.fecha, [{ type: 'EXECUTION', id: x.executionId }], 'MAINTAIN')).expect(201)).body.data;
+    await aplicar(x.pro.token, nueva.reviewId).expect(200);
+    expect(await pendiente()).toBe(false);
+  });
+
+  it('09v10:1438 · dos aplicaciones simultáneas de la misma revisión: una aplica, la otra es REVIEW_ALREADY_APPLIED, nunca 500', async () => {
+    const x = await unaRegistrada('doble');
+    const rev = (await revisar(x, cuerpoDeRevisionDeEntrenamiento(x.fecha, [{ type: 'EXECUTION', id: x.executionId }], 'MAINTAIN')).expect(201)).body.data;
+    const r = await Promise.all([aplicar(x.pro.token, rev.reviewId), aplicar(x.pro.token, rev.reviewId)]);
+    expect(r.map((y) => y.status).sort()).toEqual([200, 409]);
+    expect(r.find((y) => y.status === 409)?.body.error.code).toBe('REVIEW_ALREADY_APPLIED');
+    expect(await prisma.aplicacionDeRevisionDeEntrenamiento.count({ where: { revisionId: rev.reviewId } })).toBe(1);
+  });
+
+  it('09v10:1441 · CAMBIAR OBJETIVO con una evaluación ajena se rechaza al registrar la revisión, no recién al aplicarla', async () => {
+    const x = await unaRegistrada('cobj');
+    const r = await revisar(
+      x,
+      cuerpoDeRevisionDeEntrenamiento(x.fecha, [{ type: 'EXECUTION', id: x.executionId }], 'CHANGE_OBJECTIVE', { objective: cuerpoDeObjetivoDeEntrenamiento(randomUUID()) }),
+    ).expect(422);
+    expect(r.body.error).toMatchObject({ code: 'REVIEW_COMPONENT_REQUIRED', details: { issues: [{ code: 'EVALUATION_NOT_COMPATIBLE', path: 'nextAction.objective.evaluationId' }] } });
+    expect(await prisma.revisionDeEntrenamiento.count({ where: { proceso: { asesoradoId: x.ase.id } } })).toBe(0);
+  });
+
+  it('09v10:696 · TRN-08 tiene la vista del asesorado: solo lo activado, nunca el borrador', async () => {
+    const x = await unaRegistrada('trn08');
+    await conSesion(app, x.pro.token).post(`/api/v1/advisees/${x.ase.id}/training/plans`).send({ objectiveVersionId: x.objectiveVersionId, basedOnPlanId: x.planId }).expect(201);
+    const propias = (await conSesion(app, x.ase.token).get(`/api/v1/advisees/${x.ase.id}/training/plans`).expect(200)).body.data;
+    expect(propias.map((v: { planId: string; state: string; isEffective: boolean }) => [v.planId, v.state, v.isEffective])).toEqual([[x.planId, 'ACTIVATED', true]]);
+    expect((await conSesion(app, x.ase.token).get(`/api/v1/advisees/${x.ase.id}/training/plans?state=DRAFT`).expect(200)).body.data).toEqual([]);
+    // Otro asesorado no lista los planes de este.
+    const otro = await prepararAsesorado(app, `trn08-otro-${contador}`, { a3: true });
+    await conSesion(app, otro.token).get(`/api/v1/advisees/${x.ase.id}/training/plans`).expect(404);
+  });
+
+  it('RF-036 · la evaluación guarda su contexto (04:456; 09v10:190), y sin contexto es null', async () => {
+    const c = await fresco();
+    const con = await conSesion(app, c.pro.token).post(evaluaciones(c.ase.id)).send({ ...cuerpoDeEvaluacionDeEntrenamiento(), context: 'Consulta inicial, previa al bloque.' }).expect(201);
+    const leer = (id: string) => conSesion(app, c.pro.token).get(`/api/v1/training/evaluations/${id}`).expect(200);
+    expect((await leer(con.body.data.evaluationId)).body.data.context).toBe('Consulta inicial, previa al bloque.');
+    const sin = await conSesion(app, c.pro.token).post(evaluaciones(c.ase.id)).send(cuerpoDeEvaluacionDeEntrenamiento()).expect(201);
+    expect((await leer(sin.body.data.evaluationId)).body.data.context).toBeNull();
   });
 });

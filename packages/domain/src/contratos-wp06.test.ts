@@ -317,6 +317,10 @@ test('DL-077 · un identificador que el servidor no pudo emitir no decodifica: n
   assert.equal(decodificarOcurrencia('occ_' + 'A'.repeat(400)), null);
   // Una sesión con un separador adentro no puede colarse: la forma decodificada se valida entera.
   assert.equal(decodificarOcurrencia(codificarOcurrencia({ ...OCURRENCIA, sesionPlanificadaId: 'a.b' })), null);
+  // La versión es un UUID de verdad y la fecha existe: si no, llegaría a la base y sería un 500 (auditoría del cierre).
+  assert.equal(decodificarOcurrencia(codificarOcurrencia({ ...OCURRENCIA, versionDePlanId: '-'.repeat(36) })), null);
+  assert.equal(decodificarOcurrencia(codificarOcurrencia({ ...OCURRENCIA, fechaLocal: '2026-02-30' })), null);
+  assert.equal(decodificarOcurrencia(codificarOcurrencia({ ...OCURRENCIA, fechaLocal: '2026-00-00' })), null);
 });
 
 test('H-09-TRN-01 · la ocurrencia no tiene un estado «no realizada»: sin borrador es NOT_STARTED', () => {
@@ -424,4 +428,14 @@ test('B10-10:134 · el copy de entrenamiento no tiene puntajes ni juicios; «% R
 test('copy · la cantidad de series concuerda en número: «1 serie», «3 series»', async () => {
   const { cantidadDeSeries } = await import('./copy-entrenamiento');
   assert.deepEqual([0, 1, 3].map(cantidadDeSeries), ['0 series', '1 serie', '3 series']);
+});
+
+test('06:5253 · lo que rige de una ejecución es la corrección vigente, o el original si no hay', async () => {
+  const { registroVigente } = await import('./copy-entrenamiento');
+  const registro = (sessionCondition: 'COMPLETED' | 'NOT_COMPLETED') => ({ granularity: null, sessionCondition, reason: null, exercises: [], sessionSummary: null });
+  const original = registro('NOT_COMPLETED');
+  const corregida = registro('COMPLETED');
+  const correccion = { correctionId: 'c1', correction: corregida } as never;
+  assert.equal(registroVigente({ original, corrections: [], effectiveView: { kind: 'ORIGINAL' } } as never), original);
+  assert.equal(registroVigente({ original, corrections: [correccion], effectiveView: { kind: 'CORRECTED', correctionId: 'c1' } } as never), corregida);
 });

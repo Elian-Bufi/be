@@ -75,6 +75,9 @@ export const CrearEvaluacionDeEntrenamientoRequestSchema = z.strictObject({
   assessment: ValoracionSchema,
   evidenceReferences: z.array(Texto(200)).max(20),
   professionalNotes: TextoOpcional(4000),
+  /** RF-036: la evaluación se registra «con autoría, fecha, contexto y fuentes» (04:456; 09v10:190). Opcional para no
+   *  romper a los clientes que ya la crean; ausente es lo mismo que `null`. */
+  context: TextoOpcional(1000).optional(),
 });
 export type CrearEvaluacionDeEntrenamientoRequest = z.infer<typeof CrearEvaluacionDeEntrenamientoRequestSchema>;
 
@@ -88,6 +91,7 @@ export const EvaluacionDeEntrenamientoSchema = z.strictObject({
   assessment: ValoracionSchema,
   evidenceReferences: z.array(z.string()),
   professionalNotes: z.string().nullable(),
+  context: z.string().nullable(),
 });
 export type EvaluacionDeEntrenamiento = z.infer<typeof EvaluacionDeEntrenamientoSchema>;
 export const EvaluacionDeEntrenamientoResponseSchema = z.strictObject({ data: EvaluacionDeEntrenamientoSchema });

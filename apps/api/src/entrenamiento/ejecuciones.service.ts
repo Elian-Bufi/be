@@ -14,6 +14,7 @@ import {
   problemasDeCoherencia,
   problemasParaConfirmar,
   resolverVistaEfectiva,
+  serializacionCanonica,
   sesionesDelPlan,
   type BorradorDeEjecucion,
   type CondicionDeSesion,
@@ -27,7 +28,7 @@ import {
   type SesionDeOcurrencia,
   type ValidationIssue,
 } from '@be/domain';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { DenegacionDelPdp, PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
@@ -109,7 +110,8 @@ const comoFecha = (f: string): Date => new Date(`${f}T00:00:00.000Z`);
  * - registrar contra un borrador de plan: solo contra una versión ACTIVADA del plan del propio asesorado (INV-06-121);
  * - dos ejecuciones para la misma ocurrencia, aunque lleguen dos confirmaciones a la vez (REG-06-115);
  * - volver a editar un borrador confirmado, o editar una ejecución registrada (06:5221; INV-06-124);
- * - registrar un instante que no cae en la fecha de su ocurrencia.
+ * - registrar un instante que no cae en la fecha de su ocurrencia;
+ * - registrar dos veces la misma sesión del plan el mismo día, aunque ese día se haya activado otra versión (DL-077).
  *
  * Y lo que decide acá, con el código de error que declara el 09:
  * - **`NOT_STARTED` no es «no realizada»**: la ausencia de registro nunca se convierte en una condición (H-09-TRN-01);
@@ -217,7 +219,7 @@ export class EjecucionesDeEntrenamientoService {
         const instantanea = version.instantanea.contenido as unknown as InstantaneaDeEntrenamiento;
         const sesion = sesionDeOcurrenciaApi(instantanea, o.sesionPlanificadaId);
         if (!sesion) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-15', actorId: actor.identidadId, recurso, sujetoId: actor.identidadId }, ctx);
-        const plan = await this.planConProcesoAbierto(tx, actor.identidadId);
+        const plan = await this.planConProcesoAbierto(tx, actor.identidadId, true);
         if (!plan || plan.planId !== version.planId) {
           throw new ErrorDeApi(422, CodigoDeError.ACTIVE_PLAN_REQUIRED, 'No hay un plan de entrenamiento vigente para registrar esta sesión.');
         }
@@ -226,8 +228,9 @@ export class EjecucionesDeEntrenamientoService {
         if (o.fechaLocal > hoy || !this.versionesPertinentes(plan.versiones, o.fechaLocal, zona).some((v) => v.id === version.id)) {
           throw new ErrorDeApi(422, CodigoDeError.OCCURRENCE_NOT_EXECUTABLE, 'Esa sesión no se puede registrar para esa fecha.');
         }
-        // Dos «Comenzar» simultáneos no crean dos borradores: la base lo impide y este cerrojo evita el choque.
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`borrador-trn|${actor.identidadId}|${o.versionDePlanId}|${o.sesionPlanificadaId}|${o.fechaLocal}`}, 0))`;
+        // Dos «Comenzar» simultáneos no crean dos borradores: la base lo impide y este cerrojo evita el choque. La clave
+        // no lleva la versión: el día que se activa una sucesora, la misma sesión tampoco se abre dos veces (DL-077).
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`borrador-trn|${actor.identidadId}|${o.sesionPlanificadaId}|${o.fechaLocal}`}, 0))`;
         const existente = await tx.borradorDeEjecucionDeEntrenamiento.findUnique({
           where: {
             asesoradoId_versionDePlanId_sesionPlanificadaId_fechaLocal: {
@@ -240,6 +243,17 @@ export class EjecucionesDeEntrenamientoService {
           include: { ejecucion: { select: { id: true } } },
         });
         if (existente) return { estadoHttp: 200, cuerpo: { data: await this.borradorApi(tx, existente, sesion) }, sujetoId: actor.identidadId, recurso: { tipo: 'BorradorDeEjecucion', id: existente.id } };
+        // La misma sesión del plan, el mismo día, ya empezada o registrada en otra versión: es la misma ocurrencia para
+        // la persona, y registrarla otra vez la duplicaría (06:5233). La base lo vuelve a exigir.
+        const enOtraVersion = await tx.borradorDeEjecucionDeEntrenamiento.findFirst({
+          where: { asesoradoId: actor.identidadId, sesionPlanificadaId: o.sesionPlanificadaId, fechaLocal: comoFecha(o.fechaLocal), versionDePlan: { planId: version.planId }, NOT: { versionDePlanId: o.versionDePlanId } },
+          select: { id: true },
+        });
+        if (enOtraVersion) {
+          throw new ErrorDeApi(422, CodigoDeError.OCCURRENCE_NOT_EXECUTABLE, 'Esa sesión ya se empezó a registrar ese día con la versión anterior del plan.', {
+            issues: [{ code: 'SESSION_STARTED_IN_OTHER_VERSION', path: 'occurrenceId' }],
+          });
+        }
         const t = evaluarTransicionDeEjecucion(null, { transicion: 'CrearBorradorEjecucion', sesionYVersionIdentificables: true });
         if (!t.permitida) throw errores.estadoNoPermite();
         const creado = await tx.borradorDeEjecucionDeEntrenamiento.create({
@@ -311,8 +325,8 @@ export class EjecucionesDeEntrenamientoService {
           sessionSummary: c.sessionSummary === undefined ? previo.sessionSummary : c.sessionSummary,
         };
         const ocurrencia = c.occurredAt === undefined ? borrador.momentoDeOcurrencia : c.occurredAt ? new Date(c.occurredAt) : null;
-        await this.verificarRegistro(tx, actor, 'ASESORADO', { granularidad, condicion, contenido }, sesion, 'changes.');
-        if (ocurrencia) await this.verificarInstante(tx, ocurrencia, fechaDe(borrador.fechaLocal), borrador.zonaHoraria, 'changes.occurredAt');
+        await this.verificarRegistro(tx, actor, 'ASESORADO', { granularidad, condicion, contenido }, sesion, 'changes.', profesionalId);
+        if (ocurrencia) await this.verificarInstante(tx, ocurrencia, fechaDe(borrador.fechaLocal), borrador.zonaHoraria, 'changes.occurredAt', await this.vigenciaDe(tx, borrador.versionDePlanId));
         const t = evaluarTransicionDeEjecucion('BORRADOR', { transicion: 'GuardarBorradorEjecucion' });
         if (!t.permitida) throw errores.transicionNoPermitida();
         const momento = await momentoDeLaBase(tx);
@@ -361,7 +375,7 @@ export class EjecucionesDeEntrenamientoService {
       efecto: async (tx, pedido, procedencia) => {
         // 1-3. Recargar el borrador, PDP, y que la ocurrencia siga siendo del plan vigente (09v10:1158-1160).
         const { borrador, profesionalId } = await this.borradorDelTitular(tx, 'API-TRN-18', actor, draftId, ctx, true);
-        const plan = await this.planConProcesoAbierto(tx, actor.identidadId);
+        const plan = await this.planConProcesoAbierto(tx, actor.identidadId, true);
         if (!plan || !plan.versiones.some((v) => v.id === borrador.versionDePlanId)) {
           throw new ErrorDeApi(422, CodigoDeError.ACTIVE_PLAN_REQUIRED, 'No hay un plan de entrenamiento vigente para registrar esta sesión.');
         }
@@ -377,8 +391,14 @@ export class EjecucionesDeEntrenamientoService {
           resumenDeSesion: contenido.sessionSummary,
         });
         const fecha = fechaDe(borrador.fechaLocal);
-        const ocurrencia = borrador.momentoDeOcurrencia ?? (fechaLocalEn(borrador.momentoDeRegistro, borrador.zonaHoraria) === fecha ? borrador.momentoDeRegistro : null);
+        // El instante tiene que caer mientras la versión regía: si el profesional activó otra después de guardarlo, el
+        // declarado ya no alcanza, y el comienzo del borrador tampoco sirve si quedó afuera (06:4351).
+        const vigencia = await this.vigenciaDe(tx, borrador.versionDePlanId);
+        const dentro = (m: Date) => m >= vigencia.desde && (!vigencia.hasta || m < vigencia.hasta);
+        const porDefecto = fechaLocalEn(borrador.momentoDeRegistro, borrador.zonaHoraria) === fecha && dentro(borrador.momentoDeRegistro) ? borrador.momentoDeRegistro : null;
+        const ocurrencia = borrador.momentoDeOcurrencia ?? porDefecto;
         if (!ocurrencia) issues.push({ code: 'OCCURRED_AT_REQUIRED', path: 'occurredAt' });
+        else if (!dentro(ocurrencia)) issues.push({ code: 'OCCURRED_AT_OUTSIDE_PLAN_VERSION', path: 'occurredAt' });
         if (issues.length > 0 || !borrador.condicion) {
           throw new ErrorDeApi(422, CodigoDeError.EXECUTION_DRAFT_NOT_READY, 'Hay datos de la sesión por completar antes de confirmar.', { issues });
         }
@@ -467,7 +487,7 @@ export class EjecucionesDeEntrenamientoService {
         const condicion = interpretarCondicion(r.sessionCondition, 'correction.sessionCondition') as CondicionDeSesion;
         const contenido: ContenidoDeRegistro = { exercises: r.exercises, sessionSummary: r.sessionSummary };
         const sesion = sesionDeOcurrenciaApi(x.instantanea, x.sesionPlanificadaId);
-        await this.verificarRegistro(tx, actor, x.asesoradoId === actor.identidadId ? 'ASESORADO' : 'PROFESIONAL', { granularidad, condicion, contenido }, sesion, 'correction.');
+        await this.verificarRegistro(tx, actor, x.asesoradoId === actor.identidadId ? 'ASESORADO' : 'PROFESIONAL', { granularidad, condicion, contenido }, sesion, 'correction.', x.profesionalId);
         // La corrección es un registro completo: cumple lo mismo que una confirmación.
         const minimos = problemasParaConfirmar({ condicion, granularidad, ejercicios: contenido.exercises, resumenDeSesion: contenido.sessionSummary });
         if (minimos.length > 0) {
@@ -483,6 +503,11 @@ export class EjecucionesDeEntrenamientoService {
         const ev = evaluarNuevaCorreccion(x.id, relaciones, { originalId: x.id, correccionPreviaId: terminal });
         if (!ev.valida) throw new ErrorDeApi(422, CodigoDeError.CORRECTION_NOT_ALLOWED, 'La historia de correcciones de este registro no se puede continuar.');
         const guardado: ContenidoDeCorreccion = { granularidad, condicion, motivo: r.reason, ...contenido };
+        // Corregir exige un cambio (B10-06:879-884): una corrección igual a lo que hoy rige no rectifica nada, y dejaría
+        // una «Corrección vigente» idéntica al registro que dice corregir.
+        if (serializacionCanonica(guardado) === serializacionCanonica(await this.contenidoVigente(tx, x.id, terminal))) {
+          throw new ErrorDeApi(422, CodigoDeError.EXECUTION_VALUE_INVALID, 'La corrección no cambia nada del registro.', { issues: [{ code: 'CORRECTION_WITHOUT_CHANGES', path: 'correction' }] });
+        }
         const correccion = await tx.correccionDeEjecucionDeEntrenamiento.create({
           data: {
             ejecucionId: x.id,
@@ -515,14 +540,17 @@ export class EjecucionesDeEntrenamientoService {
    * El plan del asesorado con su Proceso de entrenamiento ABIERTO, y sus versiones activadas desde la que abrió ese
    * Proceso. Como máximo hay uno: activar con otro profesional abierto es ACTIVE_PLAN_CONFLICT (RF-041).
    */
-  async planConProcesoAbierto(tx: Tx, asesoradoId: string): Promise<PlanDelAsesorado | null> {
+  async planConProcesoAbierto(tx: Tx, asesoradoId: string, bloquear = false): Promise<PlanDelAsesorado | null> {
+    // Al escribir, el Proceso se toma FOR SHARE: FINALIZAR lo bloquea FOR NO KEY UPDATE, así que o espera a que se
+    // registre, o este SELECT espera al cierre y, al volver a evaluar la fila, ya no la encuentra ABIERTA (UC-I06 V05).
     const [p] = await tx.$queryRaw<{ planId: string; profesionalId: string; efectivaId: string; aperturaId: string | null }[]>`
       SELECT p."id"::text AS "planId", p."profesional_id"::text AS "profesionalId", p."version_efectiva_id"::text AS "efectivaId",
              pr."version_de_apertura_entrenamiento_id"::text AS "aperturaId"
         FROM "plan_de_entrenamiento" p
         JOIN "proceso_operativo" pr ON pr."profesional_id" = p."profesional_id" AND pr."asesorado_id" = p."asesorado_id"
                                     AND pr."alcance" = 'ENTRENAMIENTO' AND pr."estado" = 'ABIERTO'
-       WHERE p."asesorado_id" = ${asesoradoId}::uuid AND p."version_efectiva_id" IS NOT NULL`;
+       WHERE p."asesorado_id" = ${asesoradoId}::uuid AND p."version_efectiva_id" IS NOT NULL
+       ${bloquear ? Prisma.sql`FOR SHARE OF pr` : Prisma.empty}`;
     if (!p) return null;
     const filas = await tx.versionDePlanDeEntrenamiento.findMany({
       where: { planId: p.planId, estado: 'ACTIVADA' },
@@ -549,19 +577,38 @@ export class EjecucionesDeEntrenamientoService {
     });
   }
 
-  /** Las ocurrencias de cada fecha, con el estado de su registro. Sin borrador es NOT_STARTED, nunca «no realizada». */
+  /**
+   * Las ocurrencias de cada fecha, con el estado de su registro. Sin borrador es NOT_STARTED, nunca «no realizada».
+   * - El día que se activa una sucesora, cada sesión aparece **una vez**: la de la versión donde ya se empezó o se
+   *   registró, y si no, la de la versión más nueva que regía ese día (06:5233; DL-077).
+   * - La condición es la que rige después de las correcciones, no la del original (06:5253).
+   */
   private async ocurrencias(tx: Tx, asesoradoId: string, fechas: readonly { fecha: string; versiones: readonly VersionActivada[] }[]): Promise<Ocurrencia[]> {
     const todas = fechas.map((f) => f.fecha);
     if (todas.length === 0) return [];
     const borradores = await tx.borradorDeEjecucionDeEntrenamiento.findMany({
       where: { asesoradoId, fechaLocal: { gte: comoFecha(todas[0] as string), lte: comoFecha(todas[todas.length - 1] as string) } },
-      include: { ejecucion: { select: { id: true, condicion: true } } },
+      include: { ejecucion: { select: { id: true, condicion: true, correcciones: { select: { id: true, correccionPreviaId: true, contenido: true } } } } },
     });
     const porClave = new Map(borradores.map((b) => [`${b.versionDePlanId}|${b.sesionPlanificadaId}|${fechaDe(b.fechaLocal)}`, b]));
+    const condicionVigente = (x: NonNullable<(typeof borradores)[number]['ejecucion']>): CondicionDeSesion => {
+      const vista = resolverVistaEfectiva(x.id, x.correcciones.map((c) => ({ id: c.id, originalId: x.id, correccionPreviaId: c.correccionPreviaId })));
+      const corregida = vista.tipo === 'CORREGIDA' ? x.correcciones.find((c) => c.id === vista.id) : undefined;
+      return corregida ? (corregida.contenido as unknown as ContenidoDeCorreccion).condicion : x.condicion;
+    };
     const r: Ocurrencia[] = [];
     for (const { fecha, versiones } of fechas) {
+      // Por sesión: la versión donde ya hay borrador, o la más nueva de las que rigieron ese día.
+      const elegida = new Map<string, VersionActivada>();
       for (const v of versiones) {
         for (const { sesion } of sesionesDelPlan(v.instantanea.contenido)) {
+          const previa = elegida.get(sesion.sessionId);
+          if (!previa || !porClave.has(`${previa.id}|${sesion.sessionId}|${fecha}`)) elegida.set(sesion.sessionId, v);
+        }
+      }
+      for (const v of versiones) {
+        for (const { sesion } of sesionesDelPlan(v.instantanea.contenido)) {
+          if (elegida.get(sesion.sessionId) !== v) continue;
           const plannedSession = sesionDeOcurrenciaApi(v.instantanea, sesion.sessionId) as SesionDeOcurrencia;
           const b = porClave.get(`${v.id}|${sesion.sessionId}|${fecha}`);
           r.push({
@@ -573,7 +620,7 @@ export class EjecucionesDeEntrenamientoService {
               state: !b ? 'NOT_STARTED' : b.ejecucion ? 'REGISTERED' : 'DRAFT_IN_PROGRESS',
               draftId: b?.id ?? null,
               executionId: b?.ejecucion?.id ?? null,
-              sessionCondition: b?.ejecucion ? CONDICION_DE_SESION_API[b.ejecucion.condicion] : null,
+              sessionCondition: b?.ejecucion ? CONDICION_DE_SESION_API[condicionVigente(b.ejecucion)] : null,
             },
           });
         }
@@ -646,6 +693,7 @@ export class EjecucionesDeEntrenamientoService {
     r: { granularidad: GranularidadDeRegistro | null; condicion: CondicionDeSesion | null; contenido: ContenidoDeRegistro },
     sesion: SesionDeOcurrencia | null,
     prefijo: string,
+    profesionalDelPlan: string,
   ): Promise<void> {
     const conPrefijo = (issues: readonly ValidationIssue[]) => issues.map((i) => ({ code: i.code, path: `${prefijo}${i.path}` }));
     const coherencia = problemasDeCoherencia({ condicion: r.condicion, granularidad: r.granularidad, ejercicios: r.contenido.exercises, resumenDeSesion: r.contenido.sessionSummary });
@@ -658,18 +706,42 @@ export class EjecucionesDeEntrenamientoService {
       ...r.contenido.exercises.flatMap((e: EjercicioRegistradoEntrada, i) => (prescriptas.has(e.prescriptionId) ? [] : [{ code: 'PRESCRIPTION_NOT_IN_SESSION', path: `exercises[${i}].prescriptionId` }])),
     ];
     if (valores.length > 0) throw new ErrorDeApi(422, CodigoDeError.EXECUTION_VALUE_INVALID, 'Hay valores registrados que no se pueden guardar.', { issues: conPrefijo(valores) });
-    const citables = await this.catalogo.citables(tx, actor.identidadId, ambito, r.contenido.exercises.map((e) => e.performedExerciseVersionId));
+    const citables = await this.catalogo.citables(tx, actor.identidadId, ambito, r.contenido.exercises.map((e) => e.performedExerciseVersionId), profesionalDelPlan);
     const invalidos = r.contenido.exercises.flatMap((e, i) => (citables.has(e.performedExerciseVersionId) ? [] : [{ code: 'PERFORMED_EXERCISE_INVALID', path: `exercises[${i}].performedExerciseVersionId` }]));
     if (invalidos.length > 0) throw new ErrorDeApi(422, CodigoDeError.EXERCISE_REFERENCE_INVALID, 'Hay un ejercicio realizado que no está en el catálogo.', { issues: conPrefijo(invalidos) });
   }
 
-  /** El instante declarado cae en la fecha de la ocurrencia y no es futuro (DL-088; la base exige lo mismo). */
-  private async verificarInstante(tx: Tx, instante: Date, fecha: string, zona: string, ruta: string): Promise<void> {
+  /** Desde la activación de la versión hasta la activación de su sucesora, si la hay. */
+  private async vigenciaDe(tx: Tx, versionId: string): Promise<{ readonly desde: Date; readonly hasta: Date | null }> {
+    const v = await tx.versionDePlanDeEntrenamiento.findUniqueOrThrow({ where: { id: versionId }, select: { momentoDeActivacion: true } });
+    const sucesora = await tx.versionDePlanDeEntrenamiento.findFirst({ where: { predecesoraId: versionId, estado: 'ACTIVADA' }, select: { momentoDeActivacion: true } });
+    return { desde: v.momentoDeActivacion as Date, hasta: sucesora?.momentoDeActivacion ?? null };
+  }
+
+  /** Lo que hoy rige de una ejecución: la última corrección de la cadena, o el original. */
+  private async contenidoVigente(tx: Tx, ejecucionId: string, ultimaCorreccionId: string | null): Promise<ContenidoDeCorreccion> {
+    if (ultimaCorreccionId) {
+      const c = await tx.correccionDeEjecucionDeEntrenamiento.findUniqueOrThrow({ where: { id: ultimaCorreccionId }, select: { contenido: true } });
+      return c.contenido as unknown as ContenidoDeCorreccion;
+    }
+    const x = await tx.ejecucionDeEntrenamiento.findUniqueOrThrow({ where: { id: ejecucionId }, select: { granularidad: true, condicion: true, motivo: true, contenido: true } });
+    const contenido = x.contenido as unknown as ContenidoDeRegistro;
+    return { granularidad: x.granularidad, condicion: x.condicion, motivo: x.motivo, exercises: contenido.exercises, sessionSummary: contenido.sessionSummary };
+  }
+
+  /**
+   * El instante declarado cae en la fecha de la ocurrencia, mientras regía su versión, y no es futuro (DL-088; la base
+   * exige la fecha). Una versión rige desde que se activa hasta que se activa su sucesora (06:4351).
+   */
+  private async verificarInstante(tx: Tx, instante: Date, fecha: string, zona: string, ruta: string, vigencia: { readonly desde: Date; readonly hasta: Date | null }): Promise<void> {
     if (instante.getTime() > (await momentoDeLaBase(tx)).getTime() + TOLERANCIA_FUTURO_MS) {
       throw new ErrorDeApi(422, CodigoDeError.EXECUTION_VALUE_INVALID, 'La sesión no puede ser futura.', { issues: [{ code: 'OCCURRED_AT_IN_FUTURE', path: ruta }] });
     }
     if (fechaLocalEn(instante, zona) !== fecha) {
       throw new ErrorDeApi(422, CodigoDeError.EXECUTION_VALUE_INVALID, 'El horario no corresponde al día de la sesión.', { issues: [{ code: 'OCCURRED_AT_OUTSIDE_OCCURRENCE_DATE', path: ruta }] });
+    }
+    if (instante < vigencia.desde || (vigencia.hasta && instante >= vigencia.hasta)) {
+      throw new ErrorDeApi(422, CodigoDeError.EXECUTION_VALUE_INVALID, 'A esa hora regía otra versión del plan.', { issues: [{ code: 'OCCURRED_AT_OUTSIDE_PLAN_VERSION', path: ruta }] });
     }
   }
 
