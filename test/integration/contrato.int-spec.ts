@@ -4,6 +4,7 @@
  * - WP-03: TEST-CT-REL-01…09 · TEST-CT-CON-01…04, 06…08 · TEST-CT-DSH-03 (parcial).
  * - WP-04: TEST-CT-NUT-01…21 · TEST-CT-INT-NUT-01 · la lista propia de ingestas (DL-055).
  * - WP-05: TEST-CT-ANT-01, 03, 05 a 12, la evolución propia, y MTH-01/02 con CAL-01 a 04.
+ * - WP-06: TEST-CT-TRN por tramos; lo que todavía no tiene servicio figura en EN_CONSTRUCCION.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -44,6 +45,7 @@ import {
   registrarComida,
   registrarLibre,
 } from './soporte-nutricion';
+import { circuitoDeEntrenamiento, cuerpoDeEvaluacionDeEntrenamiento, cuerpoDeObjetivoDeEntrenamiento } from './soporte-entrenamiento';
 
 interface Observada {
   metodo: string;
@@ -570,10 +572,47 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de MTH y CAL', async () => {
  * la saque. **Para cerrar WP-06 tiene que quedar vacía.**
  */
 const EN_CONSTRUCCION: ReadonlySet<string> = new Set([
-  ...Array.from({ length: 24 }, (_, i) => `API-TRN-${String(i + 1).padStart(2, '0')}`),
+  ...[7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].map((n) => `API-TRN-${String(n).padStart(2, '0')}`),
   'API-TRN-14-PERIODO',
-  'API-INT-TRN-01',
 ]);
+
+it('TEST-CT (WP-06, tramo 1): se ejercitan éxitos y errores de la evaluación, el objetivo y el catálogo de entrenamiento', async () => {
+  const c = await circuitoDeEntrenamiento(app, 'contrato');
+  const pro = conSesion(app, c.pro.token);
+  const ase = conSesion(app, c.ase.token);
+  const ajeno = randomUUID();
+  const ev = `/api/v1/advisees/${c.ase.id}/training/evaluations`;
+  // TRN-01 a 03
+  const clave = claveDeIdempotencia();
+  const creada = await pro.post(ev, clave).send(cuerpoDeEvaluacionDeEntrenamiento()).expect(201);
+  await pro.post(ev, clave).send({ ...cuerpoDeEvaluacionDeEntrenamiento(), professionalNotes: 'otra' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post(ev).send({ ...cuerpoDeEvaluacionDeEntrenamiento(), occurredAt: new Date(Date.now() + 86_400_000).toISOString() }).expect(422);
+  await pro.post(`/api/v1/advisees/${ajeno}/training/evaluations`).send(cuerpoDeEvaluacionDeEntrenamiento()).expect(404);
+  await pro.post(ev).send({ ...cuerpoDeEvaluacionDeEntrenamiento(), extra: 1 }).expect(400);
+  await pro.get(ev).expect(200);
+  await pro.get(`${ev}?cursor=xx`).expect(400);
+  await pro.get(`/api/v1/advisees/${ajeno}/training/evaluations`).expect(404);
+  await pro.get(`/api/v1/training/evaluations/${creada.body.data.evaluationId}`).expect(200);
+  await pro.get(`/api/v1/training/evaluations/${ajeno}`).expect(404);
+  // TRN-04 a 06
+  const ob = `/api/v1/advisees/${c.ase.id}/training/objectives`;
+  await pro.post(ob).send(cuerpoDeObjetivoDeEntrenamiento(ajeno)).expect(422); // EVALUATION_NOT_COMPATIBLE
+  await pro.post(`/api/v1/advisees/${ajeno}/training/objectives`).send(cuerpoDeObjetivoDeEntrenamiento(creada.body.data.evaluationId)).expect(404);
+  await pro.post(ob).send(cuerpoDeObjetivoDeEntrenamiento(creada.body.data.evaluationId)).expect(201);
+  await pro.get(ob).expect(200);
+  await pro.get(`/api/v1/advisees/${ajeno}/training/objectives`).expect(404);
+  await pro.get(`${ob}/effective`).expect(200);
+  await pro.get(`/api/v1/advisees/${ajeno}/training/objectives/effective`).expect(404);
+  // TRN-13 e INT-TRN-01
+  await pro.get('/api/v1/training/exercises?q=press').expect(200);
+  await pro.get('/api/v1/training/exercises?zona=pecho').expect(400);
+  await ase.get('/api/v1/training/exercises').expect(403);
+  const ejercicio = { name: 'Ejercicio sintético del contrato', muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } };
+  await pro.post('/api/v1/training/exercises').send(ejercicio).expect(201);
+  await pro.post('/api/v1/training/exercises').send({ ...ejercicio, muscleZones: [{ zoneId: 'zone_x', role: 'PRIMARY' }] }).expect(422);
+  await pro.post('/api/v1/training/exercises').send({ ...ejercicio, extra: 1 }).expect(400);
+  await ase.post('/api/v1/training/exercises').send(ejercicio).expect(403);
+});
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
   const noDeclaradas: string[] = [];

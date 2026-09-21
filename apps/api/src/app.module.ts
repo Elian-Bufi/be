@@ -16,6 +16,7 @@ import { ProfesionalModule } from './profesional/profesional.module';
 import { SesionModule } from './sesion/sesion.module';
 import { VinculoModule } from './vinculo/vinculo.module';
 import { AntropometriaModule } from './antropometria/antropometria.module';
+import { EntrenamientoModule } from './entrenamiento/entrenamiento.module';
 import { NutricionModule } from './nutricion/nutricion.module';
 import { ProcesoModule } from './proceso/proceso.module';
 
@@ -67,7 +68,8 @@ export class AppModule {
         DashboardModule,
         ProcesoModule,
         NutricionModule,
-    AntropometriaModule,
+        AntropometriaModule,
+        EntrenamientoModule,
       ],
       // 09v7 T16: todo error sale como ErrorEnvelope, sin detalle interno (DL-005).
       providers: [{ provide: APP_FILTER, useClass: FiltroDeErrores }],

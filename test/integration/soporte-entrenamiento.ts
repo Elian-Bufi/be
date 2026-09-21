@@ -173,3 +173,31 @@ export function procesoDeEntrenamiento(c: CircuitoDeEntrenamiento, versionId: st
 }
 
 export { PROCEDENCIA as PROCEDENCIA_SQL };
+
+// ─── Cuerpos de request por la API (WP-06, tramo de evaluación y catálogo) ─────────────────────
+
+/** Una evaluación de entrenamiento: cada dato con su fuente, como en nutrición (DL-048; B10-06:132). */
+export function cuerpoDeEvaluacionDeEntrenamiento(): Record<string, unknown> {
+  return {
+    occurredAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    assessment: {
+      entries: [
+        { concept: 'Experiencia en entrenamiento de fuerza', value: 'Dos años, con interrupciones', source: 'REPORTED' },
+        { concept: 'Dolor o limitación de hombro', value: 'Molestia leve al elevar el brazo', source: 'REPORTED' },
+        { concept: 'Sentadilla sin carga observada', value: 'Técnica estable', source: 'OBSERVED' },
+      ],
+    },
+    evidenceReferences: [],
+    professionalNotes: 'Notas sintéticas del profesional.',
+  };
+}
+
+export function cuerpoDeObjetivoDeEntrenamiento(evaluationId: string, enunciado = 'Mejorar la fuerza en los básicos con técnica estable.'): Record<string, unknown> {
+  return {
+    evaluationId,
+    effectiveFrom: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    effectiveUntil: null,
+    objective: { statement: enunciado },
+    rationale: 'Fundamento sintético: la evaluación muestra base técnica y margen de progresión.',
+  };
+}
