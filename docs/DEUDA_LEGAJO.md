@@ -1751,3 +1751,31 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** No evaluar capacidad en la activación del plan de entrenamiento hasta que exista RF-066 completo.
 
 **Provisorio en código.** A. Es el mismo provisorio que ya rige en nutrición por DL-051, y reutilizarlo evita dos comportamientos distintos para la misma regla.
+
+## DL-088 — Las formas que el contrato de entrenamiento no fija, decididas al escribirlo
+
+**Prioridad:** media · **Documento:** 09v10 completo · DL-080 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** El 09 v0.10 fija rutas, tokens y errores, pero deja sin forma buena parte de lo que viaja, a veces a propósito («contenido profesional no fijado por 09», 09v10:202) y a veces por omisión. DL-080 fijó la política general —JSON validado por allowlist, salvo donde el 06 fija estructura— y esta entrada registra **cada decisión concreta** que tomó el código al escribir `packages/domain/src/contratos-entrenamiento.ts`, para que ninguna quede implícita.
+
+**Las decisiones, una por una.**
+
+1. **`planId` designa una versión y `trainingPlanId` el Plan**, con `basedOnPlanId` y `nextReviewAt` al crear. Es DL-046, DL-047 y DL-055 aplicadas por homología (REG-06-07): el 09 dice que entrenamiento «reutiliza el patrón vertical común» y que la diferencia vive en los schemas del dominio (09v10:111-122).
+2. **El `occurrenceId` es opaco, lo emite el servidor, y no se guarda: se codifica.** Una ocurrencia existe aunque nadie la haya registrado; guardarla al leer «Hoy» haría que una lectura escriba. Decodificarlo no autoriza nada: el servidor verifica igual que la versión sea del asesorado, que estuviera vigente ese día y que la sesión exista en su instantánea.
+3. **El identificador de un nodo del plan tiene alfabeto restringido** (`A-Z a-z 0-9 _ -`, hasta 64). El de la sesión forma parte del `occurrenceId`, y un separador adentro lo volvería ambiguo. Nutrición acepta cualquier texto; acá no se puede.
+4. **Abrir el borrador de una ocurrencia ya registrada devuelve `200` con el borrador en `REGISTERED` y el `executionId`**, no un error: «repetir la misma intención devuelve el mismo draft lógico» (09v10:933-935), y el APK necesita llegar a la ejecución.
+5. **El borrador solo lo ve su titular.** El profesional ve las ejecuciones registradas, nunca los borradores: un borrador no es evidencia (09v10:980).
+6. **`occurredAt` es opcional en el borrador y nunca se inventa.** Si no se declara, al confirmar se usa el comienzo del borrador **solo si fue el mismo día local de la ocurrencia**; si no, confirmar pide declararlo (`OCCURRED_AT_REQUIRED`). La base exige además que el instante caiga en la fecha de la ocurrencia.
+7. **`NOT_COMPLETED` se registra sin granularidad y sin datos de entrenamiento.** Obligar a elegir «por serie» o «por ejercicio» para decir que no se entrenó sería registrar un hecho que no ocurrió (REG-06-132). La base lo sostiene con un CHECK en las dos direcciones.
+8. **La falta de criterio de intensidad no es un problema al validar.** El B10-06 da «falta criterio de intensidad» como ejemplo de issue (B10-06:582), con la salvedad «cuando aplique» (B10-06:408); REG-06-128 es condicional —«cada Prescripción *que declare* criterio»— y el 06 prevalece sobre el ejemplo de UX.
+9. **Rangos de significado, no valores prescriptos:** un %RM está en (0, 100], un RIR objetivo en [0, 10], el esfuerzo percibido registrado en [0, 10], y la carga en `kg` o `lb`. El valor concreto lo decide el profesional; el rango solo descarta lo que no significa nada.
+10. **Formas mínimas de los `{}`:** las series prescriptas son una lista con repeticiones fijas o en rango; los «parámetros» del profesional son pares etiqueta–valor, con unidad obligatoria si el valor es numérico (REG-06-111); el resumen agregado y el de sesión son texto; el objetivo es un enunciado.
+11. **La corrección lleva el registro corregido completo**, validado con las mismas reglas que la confirmación. El original no se toca, y la vista efectiva es la de la corrección terminal (REG-06-16).
+12. **Criterio, condición y granularidad viajan como texto en la entrada**, para que un valor fuera de la taxonomía sea el `422` específico que declara el 09 (`INTENSITY_CRITERION_INVALID`, `SESSION_CONDITION_INVALID`, `EXECUTION_GRANULARITY_INVALID`) con su motivo, y no un `400` que no diga qué se violó. Es lo que ya hace `result` en la revisión.
+13. **`missingData` son los días del período sin ninguna ejecución registrada**, como en nutrición. Se presentan como «sin registro», nunca como sesiones no realizadas: el plan no fija qué días se entrena.
+
+**Opciones.**
+- **A.** Adoptar el conjunto como está, publicado en el OpenAPI y cubierto por pruebas de dominio.
+- **B.** Revisarlas una por una antes de exponer las operaciones.
+
+**Provisorio en código.** A. Ninguna agrega una ruta ni cambia una declarada; todas completan formas que el 09 dejó abiertas, y cada una cita la regla que la sostiene. Las que más pesan para la defensa son la 2, la 6 y la 7, porque son las que impiden que BE invente un hecho.
