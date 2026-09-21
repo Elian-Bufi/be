@@ -9,7 +9,7 @@ import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
-import { circuitoAntropometrico, type CircuitoAntropometrico } from './soporte-antropometria';
+import { CATALOGO_DEMO, circuitoAntropometrico, type CircuitoAntropometrico } from './soporte-antropometria';
 import { prepararProfesional, prepararAsesorado, vinculoCompleto, revocarB2 } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -28,11 +28,22 @@ const ayer = () => new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 /** Una medición directa, en la forma del 09: métrica, valor y unidad. El protocolo y el origen son de la toma. */
 const medicion = (metrica: string, valor: number, unidad: string) => ({ metricCode: metrica, value: valor, unit: unidad });
 
-/** El contenido de una toma: momento, especificación, origen y sus mediciones directas (09v11 §6). */
-const toma = (c: CircuitoAntropometrico, mediciones: ReturnType<typeof medicion>[], momento = ayer(), origen: 'DIRECT_CAPTURE' | 'SELF_REPORTED' = 'DIRECT_CAPTURE') => ({
+/**
+ * El contenido de una toma: momento, especificación, origen y sus mediciones directas (09v11 §6).
+ *
+ * `referencia` solo corresponde a `CONTROLLED_IMPORT`: el contrato la rechaza en los otros orígenes y la base
+ * también, con el control `origen_coherente` (INV-06-167; DL-062).
+ */
+const toma = (
+  c: CircuitoAntropometrico,
+  mediciones: ReturnType<typeof medicion>[],
+  momento = ayer(),
+  origen: 'DIRECT_CAPTURE' | 'SELF_REPORTED' | 'CONTROLLED_IMPORT' = 'DIRECT_CAPTURE',
+  referencia?: string,
+) => ({
   occurredAt: momento,
   specificationVersionId: c.protocoloVersionId,
-  source: { type: origen },
+  source: referencia === undefined ? { type: origen } : { type: origen, preparationReference: referencia },
   directMeasurements: mediciones,
   professionalNotes: 'Consulta sintética.',
 });
@@ -165,6 +176,43 @@ describe('TEST-ANT-004/006/007 · corregir y anular son actos distintos (UC-E03;
     expect(punto.correctionState).toBe('CORRECTED');
   });
 
+  /**
+   * TEST-ANT-005 (oráculo derivado bajo DL-065; ver `docs/paquetes/WP-05-ORACULOS.md`).
+   *
+   * Que la respuesta de la anulación diga `ANNULLED` no prueba que el original se conserve: lo prueba una lectura
+   * posterior, por otra operación, que devuelva la misma magnitud. La sobrescritura silenciosa que RF-050 prohíbe es
+   * justamente la que no se ve en la respuesta del acto.
+   */
+  it('TEST-ANT-005 · anular fija la condición y conserva el original, el motivo y la fila (REG-06-217; RF-050)', async () => {
+    const c = await circuitoAntropometrico(app, prisma, 'anular-conserva');
+    const e = await evaluacionRegistrada(c);
+    const talla = e.measurements.find((m) => m.metric === 'talla')!;
+    const antes = { ...talla.magnitude };
+
+    const motivo = 'Se midió con el calzado puesto.';
+    const anulada = await conSesion(app, c.pro.token)
+      .post(`/api/v1/anthropometry/measurements/${talla.measurementId}/annulments`, claveDeIdempotencia())
+      .send({ reason: motivo })
+      .expect(201);
+    expect(anulada.body.data.condition).toBe('ANNULLED');
+    expect(anulada.body.data.annulment.reason).toBe(motivo);
+    expect(anulada.body.data.annulment.author.identityId).toBe(c.pro.id);
+
+    // La relectura por otra operación: el original sigue intacto y el motivo se conserva tal como se escribió.
+    const releida = await conSesion(app, c.pro.token).get(`/api/v1/anthropometry/evaluations/${e.evaluationId}`).expect(200);
+    const vista = releida.body.data.measurements.find((m: { metric: string }) => m.metric === 'talla');
+    expect(vista.magnitude).toEqual(antes);
+    expect(vista.condition).toBe('ANNULLED');
+    expect(vista.annulment.reason).toBe(motivo);
+    // La evaluación que la contiene no cambió de estado: anular una medición no reabre ni degrada el registro.
+    expect(releida.body.data.state).toBe('REGISTERED');
+
+    // La fila no se borra ni se vacía: sigue en la base con su valor de origen (08 §56.12, no es destructivo).
+    const fila = await prisma.medicionAntropometrica.findUniqueOrThrow({ where: { id: talla.measurementId } });
+    expect(Number(fila.valor)).toBe(antes.value);
+    expect(fila.unidadDeOrigen).toBe(antes.unit);
+  });
+
   it('TEST-ANT-006 · adversarial 6: la segunda anulación no produce un segundo efecto ni un error nuevo', async () => {
     const c = await circuitoAntropometrico(app, prisma, 'anular');
     const e = await evaluacionRegistrada(c);
@@ -222,6 +270,58 @@ describe('TEST-ANT-004/006/007 · corregir y anular son actos distintos (UC-E03;
       .send({ targetId: peso.measurementId, reason: 'Quiero revivirla.', magnitude: { value: 70, unit: 'kg' } })
       .expect(422);
     expect(r.body.error.code).toBe('CORRECTION_NOT_ALLOWED');
+  });
+});
+
+/**
+ * TEST-ANT-011 (oráculo derivado bajo DL-065; ver `docs/paquetes/WP-05-ORACULOS.md`).
+ *
+ * No prueba que exista un flujo de importación —por DL-062 ese flujo vive en el paquete de integraciones—, sino que
+ * el dato importado **conserva de dónde vino**. Es la mitad que WP-05 sí garantiza, y la que hace que el flujo, el
+ * día que llegue, no pueda saltearse la procedencia.
+ */
+describe('TEST-ANT-011 · la importación controlada conserva la procedencia (RNF-DAT-002; INV-06-167)', () => {
+  it('el origen y la referencia de preparación sobreviven al registro y a la lectura', async () => {
+    const c = await circuitoAntropometrico(app, prisma, 'importacion');
+    // Opaca a propósito: el legajo prohíbe exigirle formato, proveedor o catálogo (INV-06-167).
+    const referencia = 'prep-sintetica-7f3a';
+
+    const borrador = await conSesion(app, c.pro.token)
+      .post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluation-drafts`, claveDeIdempotencia())
+      .send(toma(c, [medicion('peso', 70.4, 'kg')], ayer(), 'CONTROLLED_IMPORT', referencia))
+      .expect(201);
+    const registrada = await conSesion(app, c.pro.token)
+      .post(`/api/v1/anthropometry/evaluation-drafts/${borrador.body.data.evaluationId}/register`, claveDeIdempotencia())
+      .send({ expectedVersion: borrador.body.data.version })
+      .expect(200);
+
+    const m = registrada.body.data.measurements[0];
+    expect(m.origin).toBe('CONTROLLED_IMPORT');
+    expect(m.preparationReference).toBe(referencia);
+    // La unidad de origen se conserva tal cual: importar no convierte en silencio (REG-06-154).
+    expect(m.magnitude).toEqual({ value: 70.4, unit: 'kg' });
+
+    // Releída por otra operación: el origen no se normaliza a captura directa ni se pierde la referencia.
+    const releida = await conSesion(app, c.pro.token).get(`/api/v1/anthropometry/evaluations/${registrada.body.data.evaluationId}`).expect(200);
+    const vista = releida.body.data.measurements[0];
+    expect(vista.origin).toBe('CONTROLLED_IMPORT');
+    expect(vista.preparationReference).toBe(referencia);
+
+    // En la serie es un punto como cualquier otro, con su clase y su grupo de comparabilidad declarados.
+    const serie = await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/anthropometry/progress`).expect(200);
+    const punto = serie.body.data.metrics.find((s: { metricCode: string }) => s.metricCode === 'peso').series[0];
+    expect(punto.value).toBe(70.4);
+    expect(punto.dataClass).toBe('MEASURED');
+    expect(punto.comparabilityGroup).toBeTruthy();
+  });
+
+  it('una toma que no es importación controlada no puede llevar referencia de preparación', async () => {
+    const c = await circuitoAntropometrico(app, prisma, 'importacion-coherencia');
+    const r = await conSesion(app, c.pro.token)
+      .post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluation-drafts`, claveDeIdempotencia())
+      .send(toma(c, [medicion('peso', 70.4, 'kg')], ayer(), 'DIRECT_CAPTURE', 'prep-sintetica-7f3a'))
+      .expect(400);
+    expect(r.body.error.code).toBe('INVALID_REQUEST');
   });
 });
 
@@ -369,6 +469,44 @@ describe('D2 · el PDP custodia el dato antropométrico (adversarial 10; TEST-RN
     }
     // El catálogo es de la capacidad (WP-05 §0 D-C).
     await conSesion(app, nutricionista.token).get('/api/v1/anthropometry/specifications').expect(403);
+  });
+});
+
+/**
+ * DL-072, decidida: el catálogo suma `status` conservando `kind`. El estado **se deriva de la cadena de versiones**
+ * —una versión con sucesora es histórica—, nunca de una columna editable, porque eso permitiría declarar vigente una
+ * versión que la cadena ya superó. El catálogo sintético trae MET-DEMO con dos versiones justamente para esto.
+ */
+describe('DL-072 · el catálogo declara y filtra por estado, derivado de la cadena (REG-06-203)', () => {
+  it('sin filtro salen las vigentes; con HISTORICAL salen las superadas, y ninguna miente sobre su estado', async () => {
+    const c = await circuitoAntropometrico(app, prisma, 'catalogo-estado');
+
+    const vigentes = await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications').expect(200);
+    const filas = vigentes.body.data as { versionId: string; key: string; status: string }[];
+    expect(filas.length).toBeGreaterThan(0);
+    // Sin filtro, el catálogo ofrece lo seleccionable: todas se declaran vigentes.
+    expect(filas.every((e) => e.status === 'CURRENT')).toBe(true);
+    // La versión vigente de MET-DEMO es la v2; la v1 quedó atrás y no se ofrece.
+    expect(filas.map((e) => e.versionId)).toContain(CATALOGO_DEMO.metodo.v2);
+    expect(filas.map((e) => e.versionId)).not.toContain(CATALOGO_DEMO.metodo.v1);
+
+    const historicas = await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications?status=HISTORICAL').expect(200);
+    const viejas = historicas.body.data as { versionId: string; key: string; status: string }[];
+    expect(viejas.every((e) => e.status === 'HISTORICAL')).toBe(true);
+    // La v1 del método se consulta —para explicar las corridas que la citan— pero no aparece entre las vigentes.
+    expect(viejas.map((e) => e.versionId)).toContain(CATALOGO_DEMO.metodo.v1);
+    expect(filas.map((e) => e.versionId)).not.toContain(CATALOGO_DEMO.metodo.v1);
+
+    // `kind` y `status` se combinan sin pisarse. No se afirma igualdad exacta: otras pruebas de la suite siembran
+    // sus propias cadenas de especificaciones contra la misma base, así que lo verificable es que todo lo devuelto
+    // cumpla los dos filtros y que la v1 del método esté.
+    const metodosViejos = await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications?kind=METHOD&status=HISTORICAL').expect(200);
+    const combinado = metodosViejos.body.data as { versionId: string; kind: string; status: string }[];
+    expect(combinado.every((e) => e.kind === 'METHOD' && e.status === 'HISTORICAL')).toBe(true);
+    expect(combinado.map((e) => e.versionId)).toContain(CATALOGO_DEMO.metodo.v1);
+
+    // Un valor que no está declarado se rechaza, como con `kind`.
+    await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications?status=VIGENTE').expect(400);
   });
 
   it('revocar B2 corta el acceso en la operación siguiente', async () => {

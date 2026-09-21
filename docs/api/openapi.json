@@ -16831,6 +16831,19 @@
             }
           },
           {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "CURRENT (por defecto) o HISTORICAL. Se deriva de la cadena de versiones: una versión con sucesora es histórica. Las históricas se consultan, no se seleccionan (REG-06-203).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CURRENT",
+                "HISTORICAL"
+              ]
+            }
+          },
+          {
             "name": "X-BE-Surface",
             "in": "header",
             "required": false,
@@ -16876,6 +16889,13 @@
                               "METHOD"
                             ]
                           },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "CURRENT",
+                              "HISTORICAL"
+                            ]
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -16894,6 +16914,7 @@
                           "versionId",
                           "key",
                           "kind",
+                          "status",
                           "name",
                           "content",
                           "provenanceNote",
