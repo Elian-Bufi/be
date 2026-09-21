@@ -49,15 +49,27 @@ export class FiltroDeErrores implements ExceptionFilter {
       excepcion instanceof Prisma.PrismaClientInitializationError ||
       (excepcion instanceof Prisma.PrismaClientKnownRequestError && PRISMA_SIN_BASE.has(excepcion.code))
     ) {
-      return errores.baseNoDisponible();
+      return this.sinBase(excepcion, requestId);
     }
     // Deadlock o serialización que no pasó por conReintento: conflicto concurrente, no error interno (09 §3).
     if (esConflictoTransitorio(excepcion)) return errores.conflictoConcurrente();
     // P2028: no se pudo abrir o completar la transacción a tiempo (pool agotado): la base no está disponible ahora.
-    if (excepcion instanceof Prisma.PrismaClientKnownRequestError && excepcion.code === 'P2028') return errores.baseNoDisponible();
+    if (excepcion instanceof Prisma.PrismaClientKnownRequestError && excepcion.code === 'P2028') return this.sinBase(excepcion, requestId);
     const tipo = excepcion instanceof Error ? excepcion.constructor.name : typeof excepcion;
     const codigo = excepcion instanceof Prisma.PrismaClientKnownRequestError ? excepcion.code : undefined;
     this.log(JSON.stringify({ nivel: 'error', evento: 'error_no_clasificado', tipo, codigo, requestId: requestId ?? null }));
     return errores.interno();
+  }
+
+  /**
+   * 503 con su causa en el log técnico. Antes el 503 no dejaba rastro, y una falla intermitente bajo carga no se
+   * podía diagnosticar: se sabía que la base «no estaba disponible», no por qué. Se registra el tipo y el código de
+   * Prisma —que no contienen datos—, nunca el mensaje.
+   */
+  private sinBase(excepcion: unknown, requestId: string | undefined): ErrorDeApi {
+    const tipo = excepcion instanceof Error ? excepcion.constructor.name : typeof excepcion;
+    const codigo = excepcion instanceof Prisma.PrismaClientKnownRequestError ? excepcion.code : excepcion instanceof Prisma.PrismaClientInitializationError ? excepcion.errorCode ?? null : null;
+    this.log(JSON.stringify({ nivel: 'warn', evento: 'base_no_disponible', tipo, codigo, requestId: requestId ?? null }));
+    return errores.baseNoDisponible();
   }
 }

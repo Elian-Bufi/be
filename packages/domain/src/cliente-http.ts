@@ -1,5 +1,5 @@
 /**
- * Cliente HTTP de los contratos de WP-02, WP-03 y WP-04, compartido por el website y el APK (09v7 T21: una sola definición).
+ * Cliente HTTP de los contratos de WP-02 a WP-06, compartido por el website y el APK (09v7 T21: una sola definición).
  * Cada superficie lo instancia con su base y su superficie declarada:
  * - website: origen de la API inyectado en el build (`BE_API_BASE_URL`), llamada directa con CORS (DL-030);
  * - APK: base absoluta `API_BASE_URL/api/v1` del perfil de build (07:645, sin CORS).
@@ -103,6 +103,31 @@ import {
   MetodoResponseSchema,
   ReferenciaResponseSchema,
 } from './contratos-calculo';
+import {
+  ActivacionDePlanDeEntrenamientoResponseSchema,
+  BorradorDeEjecucionResponseSchema,
+  ConfirmacionDeEjecucionResponseSchema,
+  ContextoDeRevisionDeEntrenamientoResponseSchema,
+  CorregirEjecucionRequestSchema,
+  CrearEvaluacionDeEntrenamientoRequestSchema,
+  CrearObjetivoDeEntrenamientoRequestSchema,
+  CrearPlanDeEntrenamientoRequestSchema,
+  EditarBorradorDeEjecucionRequestSchema,
+  EditarPlanDeEntrenamientoRequestSchema,
+  EjecucionDeEntrenamientoResponseSchema,
+  EjercicioDeCatalogoResponseSchema,
+  HoyDeEntrenamientoResponseSchema,
+  ListaDeEjerciciosResponseSchema,
+  ListaDeEvaluacionesDeEntrenamientoResponseSchema,
+  ListaDeObjetivosDeEntrenamientoResponseSchema,
+  ListaDePlanesDeEntrenamientoResponseSchema,
+  ObjetivoDeEntrenamientoEfectivoResponseSchema,
+  ObjetivoDeEntrenamientoResponseSchema,
+  OcurrenciasDelPeriodoResponseSchema,
+  PlanDeEntrenamientoResponseSchema,
+  RegistrarRevisionDeEntrenamientoRequestSchema,
+  RevisionDeEntrenamientoResponseSchema,
+} from './contratos-entrenamiento';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import type { Superficie } from './procedencia';
@@ -575,6 +600,119 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         esquema: ReferenciaResponseSchema,
         cuerpo,
       });
+    },
+
+    // ─── TRN · entrenamiento (WP-06; 09v10) ──────────────────────────────────────────────────
+    /** API-TRN-01. */
+    crearEvaluacionDeEntrenamiento(token: string, asesoradoId: string, cuerpo: z.input<typeof CrearEvaluacionDeEntrenamientoRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/training/evaluations`, { token, claveDeIdempotencia, esquema: CrearEvaluacionResponseSchema, cuerpo });
+    },
+    /** API-TRN-02. */
+    listarEvaluacionesDeEntrenamiento(token: string, asesoradoId: string, filtro: { cursor?: string } = {}) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/training/evaluations${query(filtro)}`, { token, esquema: ListaDeEvaluacionesDeEntrenamientoResponseSchema });
+    },
+    /** API-TRN-04: una versión nueva; la anterior se conserva. */
+    crearObjetivoDeEntrenamiento(token: string, asesoradoId: string, cuerpo: z.input<typeof CrearObjetivoDeEntrenamientoRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/training/objectives`, { token, claveDeIdempotencia, esquema: ObjetivoDeEntrenamientoResponseSchema, cuerpo });
+    },
+    /** API-TRN-05. */
+    listarObjetivosDeEntrenamiento(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/training/objectives`, { token, esquema: ListaDeObjetivosDeEntrenamientoResponseSchema });
+    },
+    /** API-TRN-06: la terminal de la sucesión; `null` si no hay. */
+    objetivoDeEntrenamientoEfectivo(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/training/objectives/effective`, { token, esquema: ObjetivoDeEntrenamientoEfectivoResponseSchema });
+    },
+    /** API-TRN-07: el borrador es el mismo recurso del plan, en DRAFT. */
+    crearPlanDeEntrenamiento(token: string, asesoradoId: string, cuerpo: z.input<typeof CrearPlanDeEntrenamientoRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/training/plans`, { token, claveDeIdempotencia, esquema: PlanDeEntrenamientoResponseSchema, cuerpo });
+    },
+    /** API-TRN-08. */
+    listarPlanesDeEntrenamiento(token: string, asesoradoId: string, filtro: { state?: 'DRAFT' | 'ACTIVATED'; cursor?: string } = {}) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/training/plans${query(filtro)}`, { token, esquema: ListaDePlanesDeEntrenamientoResponseSchema });
+    },
+    /** API-TRN-09. */
+    consultarPlanDeEntrenamiento(token: string, planId: string) {
+      return llamar('GET', `/training/plans/${encodeURIComponent(planId)}`, { token, esquema: PlanDeEntrenamientoResponseSchema });
+    },
+    /** API-TRN-10: con la versión que se está viendo; si cambió, 409. */
+    editarPlanDeEntrenamiento(token: string, planId: string, cuerpo: z.input<typeof EditarPlanDeEntrenamientoRequestSchema>) {
+      return llamar('PATCH', `/training/plans/${encodeURIComponent(planId)}`, { token, esquema: PlanDeEntrenamientoResponseSchema, cuerpo });
+    },
+    /** API-TRN-11: validar no activa y no es un estado. */
+    validarPlanDeEntrenamiento(token: string, planId: string, versionMostrada: string) {
+      return llamar('POST', `/training/plans/${encodeURIComponent(planId)}/validate`, { token, esquema: ValidacionDePlanResponseSchema, cuerpo: { expectedVersion: versionMostrada } });
+    },
+    /** API-TRN-12. */
+    activarPlanDeEntrenamiento(token: string, planId: string, versionMostrada: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/training/plans/${encodeURIComponent(planId)}/activate`, {
+        token,
+        claveDeIdempotencia,
+        esquema: ActivacionDePlanDeEntrenamientoResponseSchema,
+        cuerpo: { expectedVersion: versionMostrada },
+      });
+    },
+    /** API-TRN-13. */
+    buscarEjercicios(token: string, texto: string) {
+      return llamar('GET', `/training/exercises${query({ q: texto, limit: '20' })}`, { token, esquema: ListaDeEjerciciosResponseSchema });
+    },
+    /** API-INT-TRN-01: carga manual, con cero zonas hasta WP-07. */
+    crearEjercicio(token: string, nombre: string, claveDeIdempotencia: string) {
+      return llamar('POST', '/training/exercises', {
+        token,
+        claveDeIdempotencia,
+        esquema: EjercicioDeCatalogoResponseSchema,
+        cuerpo: { name: nombre, muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } },
+      });
+    },
+    /** API-TRN-14. */
+    hoyDeEntrenamiento(token: string) {
+      return llamar('GET', '/me/training/today', { token, esquema: HoyDeEntrenamientoResponseSchema });
+    },
+    /** DL-078: para registrar en diferido. */
+    ocurrenciasDeEntrenamiento(token: string, periodo: { periodStart: string; periodEnd: string }) {
+      return llamar('GET', `/me/training/occurrences${query(periodo)}`, { token, esquema: OcurrenciasDelPeriodoResponseSchema });
+    },
+    /** API-TRN-15: «Comenzar» o «Continuar sesión»: siempre el mismo borrador de la ocurrencia. */
+    abrirBorradorDeEjecucion(token: string, occurrenceId: string) {
+      return llamar('PUT', `/training/occurrences/${encodeURIComponent(occurrenceId)}/execution-draft`, { token, esquema: BorradorDeEjecucionResponseSchema, cuerpo: {} });
+    },
+    /** API-TRN-16. */
+    consultarBorradorDeEjecucion(token: string, draftId: string) {
+      return llamar('GET', `/training/execution-drafts/${encodeURIComponent(draftId)}`, { token, esquema: BorradorDeEjecucionResponseSchema });
+    },
+    /** API-TRN-17: guardado incremental. */
+    guardarBorradorDeEjecucion(token: string, draftId: string, cuerpo: z.input<typeof EditarBorradorDeEjecucionRequestSchema>) {
+      return llamar('PATCH', `/training/execution-drafts/${encodeURIComponent(draftId)}`, { token, esquema: BorradorDeEjecucionResponseSchema, cuerpo });
+    },
+    /** API-TRN-18: confirmar crea la ejecución registrada; no hay vuelta. */
+    confirmarEjecucion(token: string, draftId: string, versionMostrada: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/training/execution-drafts/${encodeURIComponent(draftId)}/confirm`, {
+        token,
+        claveDeIdempotencia,
+        esquema: ConfirmacionDeEjecucionResponseSchema,
+        cuerpo: { expectedVersion: versionMostrada },
+      });
+    },
+    /** API-TRN-19. */
+    consultarEjecucionDeEntrenamiento(token: string, executionId: string) {
+      return llamar('GET', `/training/executions/${encodeURIComponent(executionId)}`, { token, esquema: EjecucionDeEntrenamientoResponseSchema });
+    },
+    /** API-TRN-20: el original queda; la corrección conserva autor y motivo. */
+    corregirEjecucion(token: string, executionId: string, cuerpo: z.input<typeof CorregirEjecucionRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/training/executions/${encodeURIComponent(executionId)}/corrections`, { token, claveDeIdempotencia, esquema: EjecucionDeEntrenamientoResponseSchema, cuerpo });
+    },
+    /** API-TRN-21: ver no es revisar. */
+    contextoDeRevisionDeEntrenamiento(token: string, asesoradoId: string, periodo: { periodStart?: string; periodEnd?: string } = {}) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/training/review-context${query(periodo)}`, { token, esquema: ContextoDeRevisionDeEntrenamientoResponseSchema });
+    },
+    /** API-TRN-22. */
+    registrarRevisionDeEntrenamiento(token: string, asesoradoId: string, cuerpo: z.input<typeof RegistrarRevisionDeEntrenamientoRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/training/reviews`, { token, claveDeIdempotencia, esquema: RevisionDeEntrenamientoResponseSchema, cuerpo });
+    },
+    /** API-TRN-24. */
+    aplicarRevisionDeEntrenamiento(token: string, revisionId: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/training/reviews/${encodeURIComponent(revisionId)}/apply`, { token, claveDeIdempotencia, esquema: AplicarRevisionResponseSchema, cuerpo: { expectedVersion: 'v1' } });
     },
   };
 }

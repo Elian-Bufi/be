@@ -60,6 +60,9 @@ describe('TEST-RF-018 / UC-P04 — solicitar por alcance y finalidad, sin acceso
     const pn = await prepararProfesional(app, 'concurrencia', ['NUTRICION']);
     const a01 = await prepararAsesorado(app, 'concurrencia');
     const respuestas = await Promise.all(Array.from({ length: 8 }, () => solicitar(app, pn, a01.id, 'NUTRICION')));
+    // Bajo carga local falló una vez con un 503 intermitente (WP-06). Si vuelve a pasar, esto dice qué respondió
+    // cada pedido en vez de un «undefined» sin contexto.
+    expect(respuestas.map((r) => `${r.status}${r.body?.error?.code ? ` ${r.body.error.code}` : ''}`).sort()).toEqual(['200', '200', '200', '200', '200', '200', '200', '201']);
     const ids = new Set(respuestas.map((r) => r.body.data.relationshipRequestId as string));
     expect(ids.size).toBe(1);
     expect(respuestas.filter((r) => r.status === 201)).toHaveLength(1);

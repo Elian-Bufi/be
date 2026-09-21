@@ -389,3 +389,34 @@ test('§4.1 · la asimetría del contrato: dos colecciones de ejecución, una so
   assert.equal(rutas.some((r) => r.includes('plan-drafts')), false, 'no se inventa /training/plan-drafts por simetría');
   assert.ok(rutas.includes('/training/occurrences/{occurrenceId}/execution-draft'), 'el borrador cuelga de la ocurrencia, en singular');
 });
+
+// ─── Copy (B10-06; B10-10; WP-06 §9.2) ──────────────────────────────────────────────────────────
+
+test('TEST-TRN-004 · sin registro nunca se muestra «No realizada»: hoy es «No iniciada», un día pasado es «Sin registro»', async () => {
+  const { vistaDeOcurrencia } = await import('./copy-entrenamiento');
+  const sin = { state: 'NOT_STARTED' as const, draftId: null, executionId: null, sessionCondition: null };
+  assert.deepEqual(vistaDeOcurrencia({ date: '2026-09-21', execution: sin }, '2026-09-21'), { texto: 'No iniciada', registrada: false });
+  assert.deepEqual(vistaDeOcurrencia({ date: '2026-09-19', execution: sin }, '2026-09-21'), { texto: 'Sin registro', registrada: false });
+  assert.equal(vistaDeOcurrencia({ date: '2026-09-21', execution: { ...sin, state: 'DRAFT_IN_PROGRESS', draftId: 'd' } }, '2026-09-21').texto, 'En curso');
+  // Aunque una respuesta mal formada trajera una condición sin ejecución registrada, no se muestra.
+  assert.equal(vistaDeOcurrencia({ date: '2026-09-19', execution: { ...sin, sessionCondition: 'NOT_COMPLETED' } }, '2026-09-21').texto, 'Sin registro');
+});
+
+test('REG-06-131 · «No realizada» aparece solo cuando el asesorado lo registró así', async () => {
+  const { vistaDeOcurrencia } = await import('./copy-entrenamiento');
+  const registrada = (sessionCondition: 'COMPLETED' | 'COMPLETED_WITH_DEVIATION' | 'NOT_COMPLETED') => ({ state: 'REGISTERED' as const, draftId: 'd', executionId: 'x', sessionCondition });
+  assert.deepEqual(vistaDeOcurrencia({ date: '2026-09-19', execution: registrada('NOT_COMPLETED') }, '2026-09-21'), { texto: 'Registrada · No realizada', registrada: true });
+  assert.equal(vistaDeOcurrencia({ date: '2026-09-19', execution: registrada('COMPLETED_WITH_DEVIATION') }, '2026-09-21').texto, 'Registrada · Realizada con desvío');
+});
+
+test('B10-10:134 · el copy de entrenamiento no tiene puntajes ni juicios; «% RM» sí, cualquier otro «%» no', async () => {
+  const { COPY_ENTRENAMIENTO, EFECTO_VISIBLE_DE_RESULTADO_DE_ENTRENAMIENTO, ETIQUETA_DE_CRITERIO, ETIQUETA_DE_GRANULARIDAD, terminosProhibidosDeEntrenamientoEn } = await import('./copy-entrenamiento');
+  const textos = [COPY_ENTRENAMIENTO, EFECTO_VISIBLE_DE_RESULTADO_DE_ENTRENAMIENTO, ETIQUETA_DE_CRITERIO, ETIQUETA_DE_GRANULARIDAD].flatMap((o) => Object.values(o));
+  assert.deepEqual(textos.flatMap((t) => terminosProhibidosDeEntrenamientoEn(t).map((p) => `${p} en «${t}»`)), []);
+  // El detector funciona, con sus dos excepciones declaradas.
+  assert.deepEqual(terminosProhibidosDeEntrenamientoEn('Cumplimiento 85%'), ['cumplimiento', '%']);
+  assert.deepEqual(terminosProhibidosDeEntrenamientoEn('Objetivo: 75 % RM'), []);
+  assert.deepEqual(terminosProhibidosDeEntrenamientoEn('Intensidad 80 kg'), ['carga como intensidad']);
+  assert.deepEqual(terminosProhibidosDeEntrenamientoEn('Fallaste la sesión'), ['fallaste']);
+  assert.deepEqual(terminosProhibidosDeEntrenamientoEn('Una progresión que conserva la estructura'), []);
+});

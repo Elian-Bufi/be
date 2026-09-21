@@ -412,7 +412,12 @@ export type HoyDeEntrenamientoResponse = z.infer<typeof HoyDeEntrenamientoRespon
  * la ausencia de registro se volvería permanente por limitación técnica. Hasta 31 días, y nunca después de hoy.
  */
 export const OcurrenciasDelPeriodoResponseSchema = z.strictObject({
-  data: z.strictObject({ period: PeriodoSchema, occurrences: z.array(OcurrenciaSchema) }),
+  data: z.strictObject({
+    period: PeriodoSchema,
+    /** Como en «Hoy»: una lista vacía por acceso suspendido no se confunde con un período sin sesiones. */
+    planState: z.enum(['AVAILABLE', 'NO_ACTIVE_PLAN', 'NOT_AVAILABLE']),
+    occurrences: z.array(OcurrenciaSchema),
+  }),
 });
 export type OcurrenciasDelPeriodoResponse = z.infer<typeof OcurrenciasDelPeriodoResponseSchema>;
 
