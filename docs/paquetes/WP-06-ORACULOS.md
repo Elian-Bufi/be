@@ -8,7 +8,7 @@
 >
 > **De dónde sale cada oráculo.** De la norma que el título cita o implica, con referencia `archivo:línea`. Un oráculo derivado dice qué hay que observar para aceptar la prueba; no inventa la regla, la lee.
 >
-> **Estado de la automatización.** Se completa por tramos, como el paquete. Donde una parte todavía no está escrita, el campo lo dice con la palabra **pendiente** y el tramo que la cubre; al cerrar WP-06 no puede quedar ninguna.
+> **Estado de la automatización.** Completa al cierre de WP-06: cada oráculo cita la prueba que lo ejecuta y la evidencia que lo muestra. Se escribió por tramos, como el paquete, y no quedó ningún campo pendiente.
 
 ---
 
@@ -112,7 +112,8 @@ AUTOMATION           test/integration/entrenamiento.int-spec.ts («REG-06-130 ·
                      packages/domain/src/contratos-wp06.test.ts («REG-06-130 · la sustitución es legítima…»)
 ENVIRONMENT          CI y en vivo contra `test`
 EVIDENCE_EXPECTED    Fila del caso en EVIDENCIA/WP-06/resultados-integracion-*.md · captura de la APK con
-                     «Prescripto / Realizado» (pendiente, tramo de la APK)
+                     «Planificado / Ejecutado / Sustituido» (DL-085): EVIDENCIA/WP-06/web/web-16-ejecuciones.png
+                     y EVIDENCIA/WP-06/apk/apk-05-sustitucion.jpg
 ```
 
 **Por qué `substituted` no es un error.** El 06 lo dice dos veces: la sustitución es legítima (09v10:1119) y no se clasifica por sí misma como error (REG-06-130). El campo existe para que la pantalla pueda mostrar las dos puntas; no para que alguien cuente sustituciones como falla.
@@ -146,10 +147,12 @@ AUTOMATION           packages/domain/src/dominio-wp06.test.ts (`vistaDeSesion`: 
                      test/integration/entrenamiento.int-spec.ts («H-09-TRN-01 · sin registro no es “no realizada”»,
                      «REG-06-131/132 · “No pude realizarla” se confirma sin granularidad»)
                      test/integration/maquinas-wp06.int-spec.ts (el CHECK de granularidad según condición)
-                     Guardia estructural de pantallas (§9.2 de WP-06.md): **pendiente**, tramos del website y la APK
+                     scripts/copy-pantallas.test.cjs («WP-06 §9.2 · ninguna pantalla de entrenamiento deriva «No
+                     realizada» de la ausencia de registro»): el texto de una sesión sale solo de `vistaDeOcurrencia`
 ENVIRONMENT          CI y en vivo contra `test`
 EVIDENCE_EXPECTED    Fila del caso en EVIDENCIA/WP-06/resultados-integracion-*.md · capturas del website y la
-                     APK con una sesión «Sin registro» (pendiente)
+                     APK: EVIDENCIA/WP-06/web/web-16-ejecuciones.png («Días sin registro»), apk/apk-03-hoy-no-iniciadas.jpg
+                     y apk/apk-08-hoy-registradas.jpg («No realizada» solo después de declararla)
 ```
 
 **Por qué hace falta una guardia estructural y no alcanza la lista de términos prohibidos.** «No realizada» es copy **legítimo** cuando viene de un acto del asesorado y prohibido cuando se deriva de la ausencia. La misma cadena, las dos cosas. Una lista negra no puede distinguirlas: la guardia verifica en el código de la pantalla que el estado sin registro renderiza el texto de «sin registro», y nunca el de «no realizada».
@@ -185,7 +188,7 @@ AUTOMATION           test/integration/entrenamiento.int-spec.ts («S10-TRN-05 ·
                      test/integration/maquinas-wp06.int-spec.ts («INV-06-124», «REG-06-116 · la cadena no se bifurca»)
 ENVIRONMENT          CI y en vivo contra `test`
 EVIDENCE_EXPECTED    Fila del caso en EVIDENCIA/WP-06/resultados-integracion-*.md · captura de «Registro original /
-                     Corrección vigente / Historial de correcciones» (pendiente, tramo de la APK)
+                     Corrección vigente»: EVIDENCIA/WP-06/web/web-16-ejecuciones.png y apk/apk-09-correccion.jpg
 ```
 
 **Por qué dos autores distintos en la misma prueba.** El 05 deja abierto quién corrige (05:9318-9319) y el 08 no lo resuelve (DL-076). Si solo corrige el asesorado, nunca se prueba lo que la variante V02 exige: que el dato corregido por el profesional no quede atribuido a quien no lo escribió.
@@ -223,7 +226,8 @@ AUTOMATION           packages/domain/src/contratos-wp06.test.ts (intensidad: «R
                      validar no exige criterio…») · test/integration/contrato.int-spec.ts (tramo 2)
 ENVIRONMENT          CI y en vivo contra `test`
 EVIDENCE_EXPECTED    Fila del caso en EVIDENCIA/WP-06/resultados-integracion-*.md · captura del editor con el
-                     criterio y la carga sugerida separados (pendiente, tramo del website)
+                     criterio y la carga sugerida separados: EVIDENCIA/WP-06/web/web-11-borrador-completo.png y
+                     web-15-plan-activado.png
 ```
 
 **Por qué el rango no es un valor prescripto.** El 06 no fija el valor concreto (06:5418) y el oráculo tampoco. Pero un «180 % de la repetición máxima» o «−1 repeticiones en reserva» no son una decisión profesional distinta: no significan nada. El rango descarta lo que no tiene significado y deja todo lo demás al profesional (DL-088).

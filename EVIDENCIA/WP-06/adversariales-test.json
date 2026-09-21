@@ -1,0 +1,81 @@
+{
+  "api": "https://be-api-hndp.onrender.com",
+  "momento": "2026-09-21T18:53:47.191Z",
+  "profesionales": [
+    "DEMO-PT"
+  ],
+  "casos": [
+    {
+      "caso": "8-entrenamiento",
+      "titulo": "un plan de entrenamiento activado no se edita: sigue igual, y corregirlo exige una versión sucesora que no lo toca",
+      "resultado": "PASA",
+      "observado": {
+        "intento": "422 PLAN_NOT_EDITABLE",
+        "activadaIntacta": true,
+        "huella": "98196bd882835c35",
+        "sucesora": "201 · DRAFT · predecesora la activada",
+        "activadaIntactaTrasLaSucesora": true
+      }
+    },
+    {
+      "caso": "S10-TRN-01",
+      "titulo": "«Comenzar sesión» dos veces da el mismo borrador: 201 y después 200",
+      "resultado": "PASA",
+      "observado": {
+        "primero": 201,
+        "segundo": 200,
+        "mismoBorrador": true
+      }
+    },
+    {
+      "caso": "borrador-no-es-evidencia",
+      "titulo": "el profesional no ve el borrador del asesorado: el mismo 404 que ante un identificador inventado",
+      "resultado": "PASA",
+      "observado": {
+        "borradorAjeno": 404,
+        "inventado": 404,
+        "mismoCuerpo": true
+      }
+    },
+    {
+      "caso": "7-entrenamiento",
+      "titulo": "una sesión sin registro se muestra como tal —sin condición, sin cero, sin porcentaje— y los días sin nada registrado son «sin dato»",
+      "resultado": "PASA",
+      "observado": {
+        "sesionSinRegistro": "NOT_STARTED · condición null",
+        "ejecucionesEnElContexto": 1,
+        "diasSinDato": 6,
+        "apareceNoRealizada": false
+      }
+    },
+    {
+      "caso": "TEST-TRN-004",
+      "titulo": "«No pude realizarla» se registra como un acto, sin granularidad y sin motivo obligatorio: es evidencia, no ausencia",
+      "resultado": "PASA",
+      "observado": {
+        "confirmacion": 201,
+        "condicion": "NOT_COMPLETED",
+        "granularidad": null
+      }
+    },
+    {
+      "caso": "REG-06-129",
+      "titulo": "el esfuerzo percibido no es criterio de prescripción: 422 con su motivo",
+      "resultado": "PASA",
+      "observado": {
+        "respuesta": "422 INTENSITY_CRITERION_INVALID",
+        "motivo": "PERCEIVED_EXERTION_AS_CRITERION"
+      }
+    },
+    {
+      "caso": "cero-juicio",
+      "titulo": "ninguna respuesta trae puntaje, cumplimiento, volumen ni marcas",
+      "resultado": "PASA",
+      "observado": {
+        "respuestasRevisadas": 36,
+        "hallazgos": []
+      }
+    }
+  ],
+  "todos": true
+}

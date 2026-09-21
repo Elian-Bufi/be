@@ -1,0 +1,27 @@
+APK 0.6.0 — identidad y control de secretos (07 §34, RNF-PORT-001, TEST-APK-008; 08 §32)
+
+Build EAS: c5d171c7-308c-4c6c-8a75-cd3af0d14890 (perfil test)
+Commit:    c50fdd905abcaea19b2cc2456145f3740d3c9f34
+Versión:   0.6.0 · versionCode 7
+Artefacto: be-0.6.0-c50fdd9.apk
+SHA-256:   6df67cac5a23181a7d078bdeb9805127e166af184909a8542b132d3568427b9c
+Tamaño:    69196670 bytes
+API:       https://be-api-hndp.onrender.com (API_BASE_URL del perfil test en eas.json)
+
+La configuración embebida (assets/app.config) declara lo que la app muestra en pantalla:
+  version 0.6.0 · versionCode 7 · appEnv test · apiBaseUrl https://be-api-hndp.onrender.com
+  commit c50fdd905abcaea19b2cc2456145f3740d3c9f34 · construidoEn 2026-09-21T19:10:55.256Z
+
+Por qué hay una 0.6.0: suma el circuito de entrenamiento (Cuenta → «Entrenamiento: Entrenamiento de hoy»).
+La 0.5.1 no tiene esas pantallas. Es el mismo commit que la API y el website desplegados en test.
+
+Búsqueda de secretos (cantidad de coincidencias, se espera 0 en todas). Se revisan los dos archivos del APK que
+llevan código o configuración: el bundle (bytecode de Hermes, cuyas cadenas quedan legibles) y assets/app.config.
+Las contraseñas y los correos de las cuentas demo se leen de .env.cuentas-demo y solo se cuentan, nunca se imprimen.
+                      bundle   app.config
+  JWT_SECRET          0        0
+  contraseña literal  0        0
+  token bearer        0        0
+  correo demo         0        0
+
+La app muestra su identidad en pantalla: versión, commit y ambiente (pie de Bienvenida).
