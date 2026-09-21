@@ -381,3 +381,28 @@ test('RF-048 · decir que algo NO es un diagnóstico no es lo mismo que presenta
   assert.deepEqual(terminosProhibidosDeAntropometriaEn('Diagnóstico del paciente'), ['diagnóstico']);
   assert.deepEqual(terminosProhibidosDeAntropometriaEn('El resultado es un diagnóstico'), ['diagnóstico']);
 });
+
+/**
+ * DL-072, decidida: el catálogo declara el estado de cada versión. El contrato lo vuelve obligatorio y cerrado, así
+ * que una respuesta sin estado —o con uno inventado— no pasa. El estado se deriva de la cadena en el servicio; lo
+ * que el contrato garantiza es que **siempre viaja y solo puede ser uno de los dos**.
+ */
+test('DL-072 · REG-06-203: la especificación declara su estado, y solo admite vigente o histórica', async () => {
+  const { EspecificacionSchema } = await import('./contratos-antropometria');
+  const base = {
+    specificationId: 'e1',
+    versionId: 'v1',
+    key: 'MET-DEMO',
+    kind: 'METHOD' as const,
+    name: 'Método de demostración',
+    content: {},
+    provenanceNote: 'Valores sintéticos de demostración.',
+    effectiveSince: '2026-09-20T00:00:00.000Z',
+  };
+  assert.equal(EspecificacionSchema.safeParse({ ...base, status: 'CURRENT' }).success, true);
+  assert.equal(EspecificacionSchema.safeParse({ ...base, status: 'HISTORICAL' }).success, true);
+  // Sin estado no valida: que viaje es parte del contrato, no algo opcional que la pantalla pueda suponer.
+  assert.equal(EspecificacionSchema.safeParse(base).success, false);
+  // Un tercer valor tampoco: la cadena solo produce estos dos, y un «BORRADOR» o un «APROBADO» serían otra cosa.
+  assert.equal(EspecificacionSchema.safeParse({ ...base, status: 'VIGENTE' }).success, false);
+});

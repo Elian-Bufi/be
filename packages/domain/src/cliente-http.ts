@@ -458,8 +458,12 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     },
 
     // ─── ANT · antropometría (WP-05) ──────────────────────────────────────────────────────────
-    /** API-ANT-01: protocolos y métodos admitidos, con su versión vigente. */
-    listarEspecificaciones(token: string, filtro: { kind?: 'PROTOCOL' | 'METHOD'; cursor?: string } = {}) {
+    /**
+     * API-ANT-01: protocolos y métodos admitidos. Sin `status` devuelve las versiones vigentes, que es lo que el
+     * catálogo existe para ofrecer; con `HISTORICAL`, las superadas, que se consultan pero no se seleccionan para
+     * una corrida nueva (REG-06-203; DL-072).
+     */
+    listarEspecificaciones(token: string, filtro: { kind?: 'PROTOCOL' | 'METHOD'; status?: 'CURRENT' | 'HISTORICAL'; cursor?: string } = {}) {
       return llamar('GET', `/anthropometry/specifications${query(filtro)}`, { token, esquema: ListaDeEspecificacionesResponseSchema });
     },
     /** API-ANT-02: la evaluación nace REGISTRADA, en un solo acto atómico (09v11 §6). */

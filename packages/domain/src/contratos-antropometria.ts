@@ -55,11 +55,22 @@ export const FichaDeComparabilidadSchema = z.strictObject({
 
 // ─── API-ANT-01 · especificaciones ──────────────────────────────────────────────────────────────
 
+/**
+ * El estado de una versión de especificación se **deriva de la cadena** (DL-072, decidida): es vigente si no tiene
+ * sucesora, e histórica si la tiene. Nunca es una columna que alguien pueda poner en cualquier valor, porque eso
+ * permitiría declarar vigente una versión que la cadena ya superó. Publicar una versión nueva no reescribe las
+ * evaluaciones ni los cálculos que citan la anterior (INV-06-172): la histórica se consulta, no se selecciona
+ * (REG-06-203).
+ */
+export const EstadoDeEspecificacionSchema = z.enum(['CURRENT', 'HISTORICAL']);
+export type EstadoDeEspecificacion = z.infer<typeof EstadoDeEspecificacionSchema>;
+
 export const EspecificacionSchema = z.strictObject({
   specificationId: IdOpaco,
   versionId: IdOpaco,
   key: z.string(),
   kind: z.enum(['PROTOCOL', 'METHOD']),
+  status: EstadoDeEspecificacionSchema,
   name: z.string(),
   /** Métricas, unidades admitidas, entradas requeridas y precisión declarada (REG-06-154/158/159). */
   content: z.unknown(),

@@ -782,7 +782,16 @@ const DEFINIDAS: readonly Operacion[] = [
       'Especificaciones admitidas: protocolos y métodos con su versión vigente. Evita hardcodear contenido técnico en las superficies. El contenido es sintético de demostración y está rotulado como tal.',
     autenticacion: 'SESSION',
     idempotencia: false,
-    query: [LIMIT, CURSOR, { nombre: 'kind', descripcion: 'PROTOCOL o METHOD.', schema: { type: 'string', enum: ['PROTOCOL', 'METHOD'] } }],
+    query: [
+      LIMIT,
+      CURSOR,
+      { nombre: 'kind', descripcion: 'PROTOCOL o METHOD.', schema: { type: 'string', enum: ['PROTOCOL', 'METHOD'] } },
+      {
+        nombre: 'status',
+        descripcion: 'CURRENT (por defecto) o HISTORICAL. Se deriva de la cadena de versiones: una versión con sucesora es histórica. Las históricas se consultan, no se seleccionan (REG-06-203).',
+        schema: { type: 'string', enum: ['CURRENT', 'HISTORICAL'] },
+      },
+    ],
     exitos: [{ status: 200, schema: ListaDeEspecificacionesResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
     fuente: '09v11:336-366 · REG-06-157 · WP-05 §0 D-C',
