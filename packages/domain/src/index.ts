@@ -27,5 +27,7 @@ export * from './contratos-antropometria';
 export * from './antropometria';
 export * from './copy-antropometria';
 export * from './entrenamiento';
+export * from './contratos-entrenamiento';
+export * from './plan-de-entrenamiento';
 export * from './calculo';
 export * from './contratos-calculo';
