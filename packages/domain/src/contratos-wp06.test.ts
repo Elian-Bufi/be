@@ -21,12 +21,15 @@ import {
 } from './contratos-entrenamiento';
 import {
   codificarOcurrencia,
+  construirInstantaneaDeEntrenamiento,
   decodificarOcurrencia,
   interpretarCriterio,
   normalizarEstructuraDeEntrenamiento,
   problemasDeCoherencia,
+  problemasDeReferencias,
   problemasDeCompletitud,
   problemasParaConfirmar,
+  referenciasDeEjercicio,
   sesionesDelPlan,
   type RegistroEnBorrador,
 } from './plan-de-entrenamiento';
@@ -127,6 +130,33 @@ test('09v10:738-744 · validar informa lo que falta, vinculado a bloque, sesión
   ]);
   const vacio = normalizarEstructuraDeEntrenamiento(estructura({ blocks: [] }), nuevoId);
   assert.equal(vacio.ok && problemasDeCompletitud(vacio.contenido)[0]?.code, 'BLOCK_REQUIRED');
+});
+
+test('09v10:752 · una referencia que no existe es EXERCISE_REFERENCE_INVALID; una que dejó de estar disponible, EXERCISE_NOT_AVAILABLE', () => {
+  const r = normalizarEstructuraDeEntrenamiento(
+    estructura({ blocks: [{ label: 'B', sessions: [{ label: 'A', prescriptions: [prescripcion(), prescripcion({ exerciseVersionId: OTRO_EJERCICIO })] }] }] }),
+    nuevoId,
+  );
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.deepEqual(referenciasDeEjercicio(r.contenido), [EJERCICIO, OTRO_EJERCICIO]);
+  const catalogo = new Map([[OTRO_EJERCICIO, { ejercicioId: 'e2', nombre: 'Press con mancuernas', disponible: false }]]);
+  assert.deepEqual(problemasDeReferencias(r.contenido, catalogo), [
+    { code: 'EXERCISE_REFERENCE_INVALID', path: 'blocks[0].sessions[0].prescriptions[0].exerciseVersionId' },
+    { code: 'EXERCISE_NOT_AVAILABLE', path: 'blocks[0].sessions[0].prescriptions[1].exerciseVersionId' },
+  ]);
+});
+
+test('REG-06-104/112 · la instantánea congela el ejercicio con su nombre, y no se construye si falta una referencia', () => {
+  const r = normalizarEstructuraDeEntrenamiento(estructura({ blocks: [{ label: 'B', sessions: [{ label: 'A', prescriptions: [prescripcion()] }] }] }), nuevoId);
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  const catalogo = new Map([[EJERCICIO, { ejercicioId: 'e1', nombre: 'Press de banca', disponible: true }]]);
+  const i = construirInstantaneaDeEntrenamiento(r.contenido, catalogo);
+  assert.deepEqual(i?.ejercicios, { [EJERCICIO]: { exerciseId: 'e1', exerciseName: 'Press de banca' } });
+  assert.deepEqual(i?.contenido, r.contenido);
+  assert.notEqual(i?.contenido, r.contenido, 'es una copia: modificar el borrador no la toca');
+  assert.equal(construirInstantaneaDeEntrenamiento(r.contenido, new Map()), null, '«si no puede preservarse la instantánea, el plan no se activa»');
 });
 
 // ─── Intensidad (REG-06-128, 129; 09v10:344-394) ────────────────────────────────────────────────

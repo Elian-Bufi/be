@@ -8,6 +8,7 @@
 import type { INestApplication } from '@nestjs/common';
 import type { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
+import { claveDeIdempotencia, conSesion } from './soporte-api';
 import { prepararAsesorado, prepararProfesional, vinculoCompleto, type Parte } from './soporte-vinculo';
 
 export interface CircuitoDeEntrenamiento {
@@ -17,8 +18,8 @@ export interface CircuitoDeEntrenamiento {
   readonly consentId: string;
 }
 
-export async function circuitoDeEntrenamiento(app: INestApplication, etiqueta: string): Promise<CircuitoDeEntrenamiento> {
-  const pro = await prepararProfesional(app, `trn-${etiqueta}`, ['ENTRENAMIENTO']);
+export async function circuitoDeEntrenamiento(app: INestApplication, etiqueta: string, profesional?: Parte): Promise<CircuitoDeEntrenamiento> {
+  const pro = profesional ?? (await prepararProfesional(app, `trn-${etiqueta}`, ['ENTRENAMIENTO']));
   const ase = await prepararAsesorado(app, `trn-${etiqueta}`, { a3: true });
   const v = await vinculoCompleto(app, pro, ase, 'ENTRENAMIENTO');
   return { pro, ase, vinculoId: v.vinculoId, consentId: v.consentId as string };
@@ -29,40 +30,56 @@ export const CATALOGO_DE_EJERCICIOS = {
   sentadilla: '4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e01',
   pressDeBanca: '4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e02',
   pressConMancuernas: '4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e03',
+  dominadas: '4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e06',
 } as const;
 
 const PROCEDENCIA = `'{"fuente":"PROPIA","casoDeUso":"PRUEBA","operacion":"SIEMBRA","superficie":null,"requestId":null}'`;
 const ZONA = 'America/Argentina/Buenos_Aires';
 
-/** Una estructura mínima válida: un bloque, una sesión, una prescripción. Los identificadores son estables. */
+/**
+ * Una estructura mínima válida, **en la forma que se guarda** (ContenidoDePlanDeEntrenamiento): un bloque, una sesión,
+ * una prescripción. Los identificadores son estables. El orden es el del arreglo.
+ */
 export function contenidoDePlan(sesionId = 'ses-a', prescripcionId = 'rx-1'): string {
-  return JSON.stringify({
+  return JSON.stringify(estructuraGuardada(sesionId, prescripcionId));
+}
+
+function estructuraGuardada(sesionId: string, prescripcionId: string) {
+  return {
     blocks: [
       {
         blockId: 'blq-1',
-        name: 'Bloque 1',
+        label: 'Bloque 1',
         purpose: 'Adaptación',
-        order: 1,
         microcycles: [],
         sessions: [
           {
             sessionId: sesionId,
-            name: 'Sesión A',
-            order: 1,
+            label: 'Sesión A',
+            instructions: null,
             prescriptions: [
               {
                 prescriptionId: prescripcionId,
                 exerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca,
-                order: 1,
-                sets: 3,
-                repetitions: 8,
-                intensity: { criterion: 'RIR', target: { value: 2 } },
+                sets: [1, 2, 3].map(() => ({ repetitions: { value: 8 }, note: null })),
+                intensity: { criterion: 'RIR', target: { value: 2, reference: null } },
+                suggestedLoad: null,
+                professionalParameters: [],
+                note: null,
               },
             ],
           },
         ],
       },
     ],
+  };
+}
+
+/** La instantánea de esa estructura: la misma, más el ejercicio congelado con su nombre (REG-06-112). */
+export function instantaneaDePlan(sesionId = 'ses-a', prescripcionId = 'rx-1'): string {
+  return JSON.stringify({
+    contenido: estructuraGuardada(sesionId, prescripcionId),
+    ejercicios: { [CATALOGO_DE_EJERCICIOS.pressDeBanca]: { exerciseId: '4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e02', exerciseName: 'Press de banca' } },
   });
 }
 
@@ -106,7 +123,7 @@ export async function sembrarPlanActivado(prisma: PrismaClient, c: CircuitoDeEnt
   const { planId, versionId } = await sembrarBorradorDePlan(prisma, c);
   await en(prisma, [
     `INSERT INTO "instantanea_de_plan_de_entrenamiento" ("id","version_de_plan_id","contenido","huella")
-     VALUES ('${randomUUID()}','${versionId}','${contenidoDePlan()}','${'a'.repeat(64)}')`,
+     VALUES ('${randomUUID()}','${versionId}','${instantaneaDePlan()}','${'a'.repeat(64)}')`,
     `UPDATE "version_de_plan_de_entrenamiento" SET "estado" = 'ACTIVADA', "version" = 2, "momento_de_activacion" = now() WHERE "id" = '${versionId}'`,
     hecho(c, versionId, 'BORRADOR', 'ACTIVADA', 'VersionDePlanDeEntrenamientoActivada'),
     `UPDATE "plan_de_entrenamiento" SET "version_efectiva_id" = '${versionId}' WHERE "id" = '${planId}'`,
@@ -200,4 +217,89 @@ export function cuerpoDeObjetivoDeEntrenamiento(evaluationId: string, enunciado 
     objective: { statement: enunciado },
     rationale: 'Fundamento sintético: la evaluación muestra base técnica y margen de progresión.',
   };
+}
+
+// ─── Plan por la API (tramo 2) ────────────────────────────────────────────────────────────────
+
+export interface CircuitoParaPlanificar extends CircuitoDeEntrenamiento {
+  readonly evaluationId: string;
+  readonly objectiveVersionId: string;
+}
+
+/** Circuito con evaluación y objetivo cargados por la API: lo mínimo para crear un plan (09v10:686). */
+export async function circuitoListoParaPlanificarEntrenamiento(app: INestApplication, etiqueta: string, pro?: Parte): Promise<CircuitoParaPlanificar> {
+  const c = await circuitoDeEntrenamiento(app, etiqueta, pro);
+  const ev = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/training/evaluations`).send(cuerpoDeEvaluacionDeEntrenamiento()).expect(201);
+  const ob = await conSesion(app, c.pro.token)
+    .post(`/api/v1/advisees/${c.ase.id}/training/objectives`)
+    .send(cuerpoDeObjetivoDeEntrenamiento(ev.body.data.evaluationId))
+    .expect(201);
+  return { ...c, evaluationId: ev.body.data.evaluationId as string, objectiveVersionId: ob.body.data.versionId as string };
+}
+
+/**
+ * Estructura de request: un bloque sin microciclos con dos sesiones (A y B). La A tiene press de banca con RIR y
+ * sentadilla con %RM; la B, dominadas sin criterio de intensidad —legítimo: REG-06-128 es condicional—.
+ */
+export function estructuraDeEntrenamiento(): Record<string, unknown> {
+  return {
+    blocks: [
+      {
+        label: 'Bloque 1',
+        purpose: 'Adaptación',
+        sessions: [
+          {
+            sessionId: 'ses-a',
+            label: 'Sesión A',
+            instructions: 'Entrada en calor de diez minutos.',
+            prescriptions: [
+              {
+                prescriptionId: 'rx-banca',
+                exerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca,
+                sets: [{ repetitions: { value: 8 } }, { repetitions: { value: 8 } }, { repetitions: { value: 8 } }],
+                intensity: { criterion: 'RIR', target: { value: 2 } },
+                suggestedLoad: { value: 60, unit: 'kg' },
+                professionalParameters: [{ label: 'Descanso', value: 90, unit: 's' }],
+              },
+              {
+                prescriptionId: 'rx-sentadilla',
+                exerciseVersionId: CATALOGO_DE_EJERCICIOS.sentadilla,
+                sets: [{ repetitions: { min: 6, max: 8 } }, { repetitions: { min: 6, max: 8 } }],
+                intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '1RM estimado por el profesional' } } },
+              },
+            ],
+          },
+          {
+            sessionId: 'ses-b',
+            label: 'Sesión B',
+            prescriptions: [{ prescriptionId: 'rx-dominadas', exerciseVersionId: CATALOGO_DE_EJERCICIOS.dominadas, sets: [{ repetitions: null }], intensity: null }],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+export async function crearBorradorDeEntrenamiento(
+  app: INestApplication,
+  c: CircuitoParaPlanificar,
+  extra: Record<string, unknown> = {},
+): Promise<{ planId: string; version: string; body: Record<string, unknown> }> {
+  const r = await conSesion(app, c.pro.token)
+    .post(`/api/v1/advisees/${c.ase.id}/training/plans`)
+    .send({ objectiveVersionId: c.objectiveVersionId, initialStructure: estructuraDeEntrenamiento(), ...extra })
+    .expect(201);
+  return { planId: r.body.data.planId as string, version: r.body.data.version as string, body: r.body.data };
+}
+
+export function activarPlanDeEntrenamiento(app: INestApplication, pro: Parte, planId: string, version: string, clave = claveDeIdempotencia()) {
+  return conSesion(app, pro.token).post(`/api/v1/training/plans/${planId}/activate`, clave).send({ expectedVersion: version });
+}
+
+/** Circuito con un plan de entrenamiento activado por la API. */
+export async function circuitoConPlanDeEntrenamientoActivo(app: INestApplication, etiqueta: string, pro?: Parte) {
+  const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta, pro);
+  const b = await crearBorradorDeEntrenamiento(app, c);
+  const act = await activarPlanDeEntrenamiento(app, c.pro, b.planId, b.version).expect(200);
+  return { ...c, planId: b.planId, trainingPlanId: act.body.data.trainingPlanId as string, activacion: act.body.data };
 }
