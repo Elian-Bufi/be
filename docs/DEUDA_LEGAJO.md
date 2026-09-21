@@ -1561,6 +1561,18 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Por qué importa.** Es peor que antropometría en proporción —allá eran siete de once y DV-05 al menos declaraba su déficit («Antropometría | 4 | 11»)— aunque el número absoluto sea menor. Acá el hueco es menos visible porque nadie lo declaró, no porque sea menor. Un paquete P0 no puede cerrarse contra pruebas que no existen.
 
+> **Y el problema es más grande que entrenamiento.** Un barrido del repositorio completo muestra que **la §6 del 11A nunca se aplicó a ninguna de las tres familias de dominio**:
+>
+> | Familia | Estado en el 11A | Qué pasó |
+> |---|---|---|
+> | `TEST-NUT-001` a `006` (11A:554-559) | Seis títulos de una línea | **WP-04 los materializó a mano sin declarar deuda** |
+> | `TEST-ANT-001` a `011` (11A:576-586) | Once títulos; DV-05 materializó cuatro | WP-05 escribió los siete faltantes — DL-065 |
+> | `TEST-TRN-001` a `006` (11A:565-570) | Seis títulos de una línea | Esta deuda |
+>
+> Entrenamiento sería el **tercer paquete consecutivo** en escribir a mano los oráculos que el 11A declara obligatorios y no porta. Eso ya no es una excepción por dominio: es un hueco estructural del propio documento de pruebas, que su DoD no detecta porque exige que todo RF tenga un `TEST-RF` y todo UC un `TEST-UC`, **pero no exige que los escenarios de dominio porten los trece campos de su propia §6** (11A:777-793).
+>
+> **Condición de cierre de esta deuda, entonces, es más amplia:** que el 11A incorpore los oráculos de las tres familias y corrija su DoD, no solo los seis de entrenamiento.
+
 **Opciones.**
 - **A.** WP-06 escribe los seis oráculos con la plantilla de 11A §6, como entregable de legajo del paquete, y los implementa. Mismo formato y método que `docs/paquetes/WP-05-ORACULOS.md`, ya autorizado por DL-065.
 - **B.** Implementar según el título y dejar los oráculos sin escribir.
