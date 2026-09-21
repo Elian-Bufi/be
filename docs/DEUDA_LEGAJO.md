@@ -1561,6 +1561,18 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Por qué importa.** Es peor que antropometría en proporción —allá eran siete de once y DV-05 al menos declaraba su déficit («Antropometría | 4 | 11»)— aunque el número absoluto sea menor. Acá el hueco es menos visible porque nadie lo declaró, no porque sea menor. Un paquete P0 no puede cerrarse contra pruebas que no existen.
 
+> **Y el problema es más grande que entrenamiento.** Un barrido del repositorio completo muestra que **la §6 del 11A nunca se aplicó a ninguna de las tres familias de dominio**:
+>
+> | Familia | Estado en el 11A | Qué pasó |
+> |---|---|---|
+> | `TEST-NUT-001` a `006` (11A:554-559) | Seis títulos de una línea | **WP-04 los materializó a mano sin declarar deuda** |
+> | `TEST-ANT-001` a `011` (11A:576-586) | Once títulos; DV-05 materializó cuatro | WP-05 escribió los siete faltantes — DL-065 |
+> | `TEST-TRN-001` a `006` (11A:565-570) | Seis títulos de una línea | Esta deuda |
+>
+> Entrenamiento sería el **tercer paquete consecutivo** en escribir a mano los oráculos que el 11A declara obligatorios y no porta. Eso ya no es una excepción por dominio: es un hueco estructural del propio documento de pruebas, que su DoD no detecta porque exige que todo RF tenga un `TEST-RF` y todo UC un `TEST-UC`, **pero no exige que los escenarios de dominio porten los trece campos de su propia §6** (11A:777-793).
+>
+> **Condición de cierre de esta deuda, entonces, es más amplia:** que el 11A incorpore los oráculos de las tres familias y corrija su DoD, no solo los seis de entrenamiento.
+
 **Opciones.**
 - **A.** WP-06 escribe los seis oráculos con la plantilla de 11A §6, como entregable de legajo del paquete, y los implementa. Mismo formato y método que `docs/paquetes/WP-05-ORACULOS.md`, ya autorizado por DL-065.
 - **B.** Implementar según el título y dejar los oráculos sin escribir.
@@ -1594,6 +1606,10 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** La ocurrencia la asigna la planificación: cada sesión lleva su ocurrencia prevista y el asesorado ejecuta contra ella.
 
 **Provisorio en código.** A para P0. B es más fiel a un plan con calendario, pero el 06 no fija que la sesión planificada tenga fecha concreta —el 10 advierte justamente que no se confunda sesión con fecha (B10-06:364-375)—, así que B exigiría inventar una estructura que el modelo no declara.
+
+**Es la misma regla que ya rige en nutrición (DL-049).** Allá la ocurrencia de una ingesta prescripta es (asesorado, versión, fecha local, comida), y «Hoy» no elige en silencio cuando hay más de un día tipo: el asesorado elige con un selector explícito. Entrenamiento hace exactamente lo mismo: la ocurrencia es (asesorado, versión activada, sesión planificada, fecha local), y si el plan tiene varias sesiones, «Hoy» las muestra y el asesorado elige cuál hace — BE no decide por él. Dos dominios, una sola regla: es REG-06-07 aplicado.
+
+**Implementado en la base** (migración `20260921100000`): la unicidad por ocurrencia está **dos veces**, como índice único sobre el borrador de ejecución y otro sobre la ejecución registrada, y además la ejecución es única por borrador. Hay una prueba para cada red en `maquinas-wp06.int-spec.ts`.
 
 ## DL-078 — No hay operación para llegar a una ocurrencia que no sea la de hoy
 

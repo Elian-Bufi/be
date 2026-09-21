@@ -141,22 +141,32 @@ model Identidad {
 
   // WP-04
   capacidades                                CapacidadProfesional[]
-  evaluacionesAntropometricasComoProfesional EvaluacionAntropometrica[] @relation("EvaluacionAntropometricaDelProfesional")
-  evaluacionesAntropometricasComoAsesorado   EvaluacionAntropometrica[] @relation("EvaluacionAntropometricaDelAsesorado")
-  medicionesCorregidas                       CorreccionDeMedicion[]     @relation("CorreccionDeMedicionDelAutor")
-  medicionesAnuladas                         AnulacionDeMedicion[]      @relation("AnulacionDeMedicionDelAutor")
-  ejecucionesDeCalculo                       EjecucionDeCalculo[]       @relation("EjecucionDeCalculoDelAutor")
-  referenciasDeCalculoComoAsesorado          ReferenciaDeCalculo[]      @relation("ReferenciaDeCalculoDelAsesorado")
-  referenciasDeCalculoComoProfesional        ReferenciaDeCalculo[]      @relation("ReferenciaDeCalculoDelProfesional")
-  procesosComoProfesional                    ProcesoOperativo[]         @relation("ProcesoDelProfesional")
-  procesosComoAsesorado                      ProcesoOperativo[]         @relation("ProcesoDelAsesorado")
-  evaluacionesComoProfesional                EvaluacionNutricional[]    @relation("EvaluacionDelProfesional")
-  evaluacionesComoAsesorado                  EvaluacionNutricional[]    @relation("EvaluacionDelAsesorado")
-  objetivosComoProfesional                   ObjetivoNutricional[]      @relation("ObjetivoDelProfesional")
-  objetivosComoAsesorado                     ObjetivoNutricional[]      @relation("ObjetivoDelAsesorado")
-  planesComoProfesional                      PlanNutricional[]          @relation("PlanDelProfesional")
-  planesComoAsesorado                        PlanNutricional[]          @relation("PlanDelAsesorado")
-  ingestas                                   IngestaNutricional[]       @relation("IngestaDelAsesorado")
+  evaluacionesAntropometricasComoProfesional EvaluacionAntropometrica[]             @relation("EvaluacionAntropometricaDelProfesional")
+  evaluacionesAntropometricasComoAsesorado   EvaluacionAntropometrica[]             @relation("EvaluacionAntropometricaDelAsesorado")
+  medicionesCorregidas                       CorreccionDeMedicion[]                 @relation("CorreccionDeMedicionDelAutor")
+  medicionesAnuladas                         AnulacionDeMedicion[]                  @relation("AnulacionDeMedicionDelAutor")
+  ejecucionesDeCalculo                       EjecucionDeCalculo[]                   @relation("EjecucionDeCalculoDelAutor")
+  referenciasDeCalculoComoAsesorado          ReferenciaDeCalculo[]                  @relation("ReferenciaDeCalculoDelAsesorado")
+  referenciasDeCalculoComoProfesional        ReferenciaDeCalculo[]                  @relation("ReferenciaDeCalculoDelProfesional")
+  procesosComoProfesional                    ProcesoOperativo[]                     @relation("ProcesoDelProfesional")
+  procesosComoAsesorado                      ProcesoOperativo[]                     @relation("ProcesoDelAsesorado")
+  evaluacionesComoProfesional                EvaluacionNutricional[]                @relation("EvaluacionDelProfesional")
+  evaluacionesComoAsesorado                  EvaluacionNutricional[]                @relation("EvaluacionDelAsesorado")
+  objetivosComoProfesional                   ObjetivoNutricional[]                  @relation("ObjetivoDelProfesional")
+  objetivosComoAsesorado                     ObjetivoNutricional[]                  @relation("ObjetivoDelAsesorado")
+  planesComoProfesional                      PlanNutricional[]                      @relation("PlanDelProfesional")
+  planesComoAsesorado                        PlanNutricional[]                      @relation("PlanDelAsesorado")
+  ingestas                                   IngestaNutricional[]                   @relation("IngestaDelAsesorado")
+  ejerciciosCreados                          EjercicioDeCatalogo[]                  @relation("EjercicioCreadoPor")
+  evaluacionesDeEntrenamientoComoProfesional EvaluacionDeEntrenamiento[]            @relation("EvaluacionDeEntrenamientoDelProfesional")
+  evaluacionesDeEntrenamientoComoAsesorado   EvaluacionDeEntrenamiento[]            @relation("EvaluacionDeEntrenamientoDelAsesorado")
+  objetivosDeEntrenamientoComoProfesional    ObjetivoDeEntrenamiento[]              @relation("ObjetivoDeEntrenamientoDelProfesional")
+  objetivosDeEntrenamientoComoAsesorado      ObjetivoDeEntrenamiento[]              @relation("ObjetivoDeEntrenamientoDelAsesorado")
+  planesDeEntrenamientoComoProfesional       PlanDeEntrenamiento[]                  @relation("PlanDeEntrenamientoDelProfesional")
+  planesDeEntrenamientoComoAsesorado         PlanDeEntrenamiento[]                  @relation("PlanDeEntrenamientoDelAsesorado")
+  borradoresDeEjecucion                      BorradorDeEjecucionDeEntrenamiento[]   @relation("BorradorDeEjecucionDelAsesorado")
+  ejecucionesDeEntrenamiento                 EjecucionDeEntrenamiento[]             @relation("EjecucionDeEntrenamientoDelAsesorado")
+  correccionesDeEjecucion                    CorreccionDeEjecucionDeEntrenamiento[] @relation("CorreccionDeEjecucionDelAutor")
 
   @@map("identidad")
 }
@@ -880,26 +890,29 @@ model CapacidadProfesional {
 /// T-06-25 — Proceso operativo. Como máximo uno ABIERTO por (profesional, asesorado, alcance): índice parcial en la
 /// migración (INV-06-74). CERRADO es terminal (INV-06-86).
 model ProcesoOperativo {
-  id                  String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  profesionalId       String                   @map("profesional_id") @db.Uuid
-  asesoradoId         String                   @map("asesorado_id") @db.Uuid
-  alcance             Alcance
-  estado              EstadoDeProceso          @default(ABIERTO)
-  version             Int                      @default(1)
-  motivoDeCierre      MotivoDeCierreDeProceso? @map("motivo_de_cierre")
-  /// «acto de apertura y versión/plan de apertura» (06:3364).
-  versionDeAperturaId String                   @unique @map("version_de_apertura_id") @db.Uuid
-  procedencia         Json
-  momentoDeOcurrencia DateTime?                @map("momento_de_ocurrencia") @db.Timestamptz(3)
-  momentoDeRegistro   DateTime                 @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
-  momentoDeCierre     DateTime?                @map("momento_de_cierre") @db.Timestamptz(3)
+  id                               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId                    String                   @map("profesional_id") @db.Uuid
+  asesoradoId                      String                   @map("asesorado_id") @db.Uuid
+  alcance                          Alcance
+  estado                           EstadoDeProceso          @default(ABIERTO)
+  version                          Int                      @default(1)
+  motivoDeCierre                   MotivoDeCierreDeProceso? @map("motivo_de_cierre")
+  /// «acto de apertura y versión/plan de apertura» (06:3364). Una de las dos, según el alcance del Proceso.
+  versionDeAperturaId              String?                  @unique @map("version_de_apertura_id") @db.Uuid
+  versionDeAperturaEntrenamientoId String?                  @unique @map("version_de_apertura_entrenamiento_id") @db.Uuid
+  procedencia                      Json
+  momentoDeOcurrencia              DateTime?                @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro                DateTime                 @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeCierre                  DateTime?                @map("momento_de_cierre") @db.Timestamptz(3)
 
-  profesional        Identidad                @relation("ProcesoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  asesorado          Identidad                @relation("ProcesoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  versionDeApertura  VersionDePlanNutricional @relation("AperturaDeProceso", fields: [versionDeAperturaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  eventos            EventoDeProceso[]
-  revisiones         RevisionNutricional[]
-  proximasRevisiones ProximaRevision[]
+  profesional                    Identidad                     @relation("ProcesoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado                      Identidad                     @relation("ProcesoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeApertura              VersionDePlanNutricional?     @relation("AperturaDeProceso", fields: [versionDeAperturaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeAperturaEntrenamiento VersionDePlanDeEntrenamiento? @relation("AperturaDeProcesoDeEntrenamiento", fields: [versionDeAperturaEntrenamientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  eventos                        EventoDeProceso[]
+  revisiones                     RevisionNutricional[]
+  revisionesDeEntrenamiento      RevisionDeEntrenamiento[]     @relation("RevisionDeEntrenamientoDelProceso")
+  proximasRevisiones             ProximaRevision[]
 
   @@index([profesionalId, asesoradoId, alcance])
   @@map("proceso_operativo")
@@ -908,25 +921,28 @@ model ProcesoOperativo {
 /// Hechos de M-04 (06:3563-3570). Append-only. ContinuidadOCierreAplicado se emite solo con la consecuencia aplicada
 /// (REG-06-75, 77).
 model EventoDeProceso {
-  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  secuencia           BigInt                @unique @default(autoincrement())
-  tipo                TipoDeEventoDeProceso
-  procesoId           String                @map("proceso_id") @db.Uuid
-  tipoDeAplicacion    TipoDeAplicacion?     @map("tipo_de_aplicacion")
-  revisionId          String?               @map("revision_id") @db.Uuid
-  estadoPrevio        EstadoDeProceso?      @map("estado_previo")
-  estadoPosterior     EstadoDeProceso       @map("estado_posterior")
+  id                        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  secuencia                 BigInt                @unique @default(autoincrement())
+  tipo                      TipoDeEventoDeProceso
+  procesoId                 String                @map("proceso_id") @db.Uuid
+  tipoDeAplicacion          TipoDeAplicacion?     @map("tipo_de_aplicacion")
+  revisionId                String?               @map("revision_id") @db.Uuid
+  revisionDeEntrenamientoId String?               @map("revision_de_entrenamiento_id") @db.Uuid
+  estadoPrevio              EstadoDeProceso?      @map("estado_previo")
+  estadoPosterior           EstadoDeProceso       @map("estado_posterior")
   /// Referencias de versiones cuando correspondan (REG-06-75).
-  datos               Json?
-  actorId             String?               @map("actor_id") @db.Uuid
-  actorServicio       String?               @map("actor_servicio")
-  procedencia         Json
-  momentoDeOcurrencia DateTime?             @map("momento_de_ocurrencia") @db.Timestamptz(3)
-  momentoDeRegistro   DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  datos                     Json?
+  actorId                   String?               @map("actor_id") @db.Uuid
+  actorServicio             String?               @map("actor_servicio")
+  procedencia               Json
+  momentoDeOcurrencia       DateTime?             @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro         DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  proceso    ProcesoOperativo      @relation(fields: [procesoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  revision   RevisionNutricional?  @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  aplicacion AplicacionDeRevision?
+  proceso                   ProcesoOperativo                     @relation(fields: [procesoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revision                  RevisionNutricional?                 @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revisionDeEntrenamiento   RevisionDeEntrenamiento?             @relation("EventoDeRevisionDeEntrenamiento", fields: [revisionDeEntrenamientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  aplicacion                AplicacionDeRevision?
+  aplicacionDeEntrenamiento AplicacionDeRevisionDeEntrenamiento? @relation("AplicacionDeEntrenamientoDelEvento")
 
   @@index([procesoId])
   @@map("evento_de_proceso")
@@ -934,24 +950,28 @@ model EventoDeProceso {
 
 /// REG-06-145/146: expectativa de revisión. Reprogramar crea una nueva y la anterior queda histórica (cadena lineal).
 model ProximaRevision {
-  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  procesoId           String                  @map("proceso_id") @db.Uuid
-  predecesoraId       String?                 @unique @map("predecesora_id") @db.Uuid
+  id                             String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  procesoId                      String                  @map("proceso_id") @db.Uuid
+  predecesoraId                  String?                 @unique @map("predecesora_id") @db.Uuid
   /// NULL = sin fecha: pendiente desde que se registró (REG-06-150).
-  fechaObjetivo       DateTime?               @map("fecha_objetivo") @db.Date
-  fuente              FuenteDeProximaRevision
-  versionDePlanId     String?                 @map("version_de_plan_id") @db.Uuid
-  revisionId          String?                 @map("revision_id") @db.Uuid
-  actorId             String                  @map("actor_id") @db.Uuid
-  procedencia         Json
-  momentoDeOcurrencia DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
-  momentoDeRegistro   DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  fechaObjetivo                  DateTime?               @map("fecha_objetivo") @db.Date
+  fuente                         FuenteDeProximaRevision
+  versionDePlanId                String?                 @map("version_de_plan_id") @db.Uuid
+  versionDePlanDeEntrenamientoId String?                 @map("version_de_plan_de_entrenamiento_id") @db.Uuid
+  revisionId                     String?                 @map("revision_id") @db.Uuid
+  revisionDeEntrenamientoId      String?                 @map("revision_de_entrenamiento_id") @db.Uuid
+  actorId                        String                  @map("actor_id") @db.Uuid
+  procedencia                    Json
+  momentoDeOcurrencia            DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro              DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  proceso       ProcesoOperativo          @relation(fields: [procesoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  predecesora   ProximaRevision?          @relation("CadenaDeProximaRevision", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  sucesora      ProximaRevision?          @relation("CadenaDeProximaRevision")
-  versionDePlan VersionDePlanNutricional? @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  revision      RevisionNutricional?      @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  proceso                      ProcesoOperativo              @relation(fields: [procesoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora                  ProximaRevision?              @relation("CadenaDeProximaRevision", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora                     ProximaRevision?              @relation("CadenaDeProximaRevision")
+  versionDePlan                VersionDePlanNutricional?     @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revision                     RevisionNutricional?          @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDePlanDeEntrenamiento VersionDePlanDeEntrenamiento? @relation("ProximaRevisionDePlanDeEntrenamiento", fields: [versionDePlanDeEntrenamientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revisionDeEntrenamiento      RevisionDeEntrenamiento?      @relation("ProximaRevisionDeRevisionDeEntrenamiento", fields: [revisionDeEntrenamientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([procesoId])
   @@map("proxima_revision")
@@ -1565,4 +1585,341 @@ model EventoDeAntropometria {
   @@index([evaluacionId])
   @@index([medicionId])
   @@map("evento_de_antropometria")
+}
+
+// ─── WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786) ─────────────────────────────────────
+//
+// Reutiliza las taxonomías comunes sin crear vocabularios paralelos (REG-06-07, 06:431): el estado de la versión de
+// plan es EstadoDeVersionDePlan, el resultado de la revisión es ResultadoDeRevision, la procedencia del catálogo es
+// ProcedenciaDeCatalogo. Los dominios, en cambio, no se fusionan: cada uno tiene sus tablas.
+
+/// REG-06-131: conjunto cerrado de tres. NO_REALIZADA registrada no es lo mismo que una sesión sin registro.
+enum CondicionDeSesion {
+  REALIZADA
+  REALIZADA_CON_DESVIO
+  NO_REALIZADA
+}
+
+/// REG-06-132: se conserva cuál granularidad se usó; no se descompone retrospectivamente.
+enum GranularidadDeRegistro {
+  SERIE
+  EJERCICIO_O_SESION
+}
+
+enum TipoDeEventoDeEntrenamiento {
+  EjercicioDeCatalogoCreado
+  EvaluacionDeEntrenamientoRegistrada
+  VersionDeObjetivoDeEntrenamientoEmitida
+  BorradorDePlanDeEntrenamientoCreado
+  BorradorDePlanDeEntrenamientoGuardado
+  VersionDePlanDeEntrenamientoActivada
+  BorradorDeEjecucionCreado
+  BorradorDeEjecucionGuardado
+  EjecucionRegistrada
+  EjecucionCorregida
+  RevisionDeEntrenamientoRegistrada
+}
+
+/// Catálogo propio de ejercicios (RF-037; REG-06-99 a 101). Un cambio de catálogo no reescribe sesiones ya
+/// prescriptas: la instantánea congela nombre y versión al activar (REG-06-112).
+model EjercicioDeCatalogo {
+  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  procedencia       ProcedenciaDeCatalogo
+  creadoPorId       String?               @map("creado_por_id") @db.Uuid
+  momentoDeRegistro DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  creadoPor Identidad?           @relation("EjercicioCreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones VersionDeEjercicio[]
+
+  @@map("ejercicio_de_catalogo")
+}
+
+model VersionDeEjercicio {
+  id                String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ejercicioId       String                   @map("ejercicio_id") @db.Uuid
+  predecesoraId     String?                  @unique @map("predecesora_id") @db.Uuid
+  nombre            String
+  disponibilidad    DisponibilidadDeElemento @default(DISPONIBLE)
+  procedencia       Json
+  momentoDeRegistro DateTime                 @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ejercicio   EjercicioDeCatalogo @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora VersionDeEjercicio? @relation("CadenaDeEjercicio", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora    VersionDeEjercicio? @relation("CadenaDeEjercicio")
+
+  @@index([ejercicioId])
+  @@map("version_de_ejercicio")
+}
+
+/// RF-036; REG-06-97. El contenido profesional no lo fija el 09 (09v10:202): JSON validado por allowlist (DL-080).
+model EvaluacionDeEntrenamiento {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId       String   @map("profesional_id") @db.Uuid
+  asesoradoId         String   @map("asesorado_id") @db.Uuid
+  valoracion          Json
+  referencias         Json
+  notas               String?
+  procedencia         Json
+  momentoDeOcurrencia DateTime @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional Identidad                          @relation("EvaluacionDeEntrenamientoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado   Identidad                          @relation("EvaluacionDeEntrenamientoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  objetivos   VersionDeObjetivoDeEntrenamiento[]
+
+  @@index([asesoradoId, profesionalId, momentoDeRegistro])
+  @@map("evaluacion_de_entrenamiento")
+}
+
+/// RF-064; REG-06-98. La serie del objetivo; cada cambio es una versión nueva y la anterior queda reconstruible.
+model ObjetivoDeEntrenamiento {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId     String   @map("profesional_id") @db.Uuid
+  asesoradoId       String   @map("asesorado_id") @db.Uuid
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional Identidad                          @relation("ObjetivoDeEntrenamientoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado   Identidad                          @relation("ObjetivoDeEntrenamientoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones   VersionDeObjetivoDeEntrenamiento[]
+
+  @@unique([profesionalId, asesoradoId])
+  @@map("objetivo_de_entrenamiento")
+}
+
+model VersionDeObjetivoDeEntrenamiento {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  objetivoId         String    @map("objetivo_id") @db.Uuid
+  predecesoraId      String?   @unique @map("predecesora_id") @db.Uuid
+  evaluacionId       String    @map("evaluacion_id") @db.Uuid
+  vigenteDesde       DateTime  @map("vigente_desde") @db.Timestamptz(3)
+  vigenteHasta       DateTime? @map("vigente_hasta") @db.Timestamptz(3)
+  /// «El contenido concreto del objetivo no se fija en 09» (09v10:228).
+  objetivo           Json
+  fundamento         String
+  /// Revisión CAMBIAR_OBJETIVO que la emitió, si la hay.
+  revisionDeOrigenId String?   @map("revision_de_origen_id") @db.Uuid
+  autorId            String    @map("autor_id") @db.Uuid
+  procedencia        Json
+  momentoDeRegistro  DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  objetivoDeLaSerie ObjetivoDeEntrenamiento           @relation(fields: [objetivoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora       VersionDeObjetivoDeEntrenamiento? @relation("CadenaDeObjetivoDeEntrenamiento", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora          VersionDeObjetivoDeEntrenamiento? @relation("CadenaDeObjetivoDeEntrenamiento")
+  evaluacion        EvaluacionDeEntrenamiento         @relation(fields: [evaluacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revisionDeOrigen  RevisionDeEntrenamiento?          @relation("ObjetivoDeRevisionDeEntrenamiento", fields: [revisionDeOrigenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionesDePlan   VersionDePlanDeEntrenamiento[]
+
+  @@index([objetivoId])
+  @@map("version_de_objetivo_de_entrenamiento")
+}
+
+/// REG-06-102. El 09 **no separa** los borradores de plan en otra colección (09v10:238-245, 682): el borrador es la
+/// misma versión en estado BORRADOR. Es la asimetría deliberada del contrato.
+model PlanDeEntrenamiento {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId     String   @map("profesional_id") @db.Uuid
+  asesoradoId       String   @map("asesorado_id") @db.Uuid
+  versionEfectivaId String?  @unique @map("version_efectiva_id") @db.Uuid
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional     Identidad                      @relation("PlanDeEntrenamientoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado       Identidad                      @relation("PlanDeEntrenamientoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionEfectiva VersionDePlanDeEntrenamiento?  @relation("VersionEfectivaDeEntrenamiento", fields: [versionEfectivaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones       VersionDePlanDeEntrenamiento[] @relation("VersionesDelPlanDeEntrenamiento")
+
+  @@unique([profesionalId, asesoradoId])
+  @@map("plan_de_entrenamiento")
+}
+
+model VersionDePlanDeEntrenamiento {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  planId              String                @map("plan_id") @db.Uuid
+  predecesoraId       String?               @unique @map("predecesora_id") @db.Uuid
+  /// Dos estados, no tres: no existe VALIDADO. Validar es condición de ActivarVersion (06:4330).
+  estado              EstadoDeVersionDePlan @default(BORRADOR)
+  version             Int                   @default(1)
+  versionDeObjetivoId String                @map("version_de_objetivo_id") @db.Uuid
+  /// Plan → Bloque → Microciclo [0..N] → Sesión planificada → Prescripción, con identificadores estables (REG-06-111).
+  contenido           Json
+  proximaRevision     DateTime?             @map("proxima_revision") @db.Date
+  /// Revisión AJUSTAR o SUSTITUIR que la creó, si la hay.
+  revisionDeOrigenId  String?               @map("revision_de_origen_id") @db.Uuid
+  autorId             String                @map("autor_id") @db.Uuid
+  procedencia         Json
+  momentoDeRegistro   DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActivacion DateTime?             @map("momento_de_activacion") @db.Timestamptz(3)
+
+  plan                  PlanDeEntrenamiento                  @relation("VersionesDelPlanDeEntrenamiento", fields: [planId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora           VersionDePlanDeEntrenamiento?        @relation("CadenaDePlanDeEntrenamiento", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora              VersionDePlanDeEntrenamiento?        @relation("CadenaDePlanDeEntrenamiento")
+  versionDeObjetivo     VersionDeObjetivoDeEntrenamiento     @relation(fields: [versionDeObjetivoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revisionDeOrigen      RevisionDeEntrenamiento?             @relation("PlanDeRevisionDeEntrenamiento", fields: [revisionDeOrigenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  instantanea           InstantaneaDePlanDeEntrenamiento?
+  efectivaDe            PlanDeEntrenamiento?                 @relation("VersionEfectivaDeEntrenamiento")
+  borradoresDeEjecucion BorradorDeEjecucionDeEntrenamiento[]
+  ejecuciones           EjecucionDeEntrenamiento[]
+  procesoAbierto        ProcesoOperativo?                    @relation("AperturaDeProcesoDeEntrenamiento")
+  proximasRevisiones    ProximaRevision[]                    @relation("ProximaRevisionDePlanDeEntrenamiento")
+
+  @@index([planId])
+  @@map("version_de_plan_de_entrenamiento")
+}
+
+/// REG-06-112: la instantánea reconstruye orden y relaciones exactamente como se emitieron. La ejecución cuelga de
+/// acá, nunca del catálogo ni del borrador actuales (REG-06-105; INV-06-121).
+model InstantaneaDePlanDeEntrenamiento {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionDePlanId   String   @unique @map("version_de_plan_id") @db.Uuid
+  contenido         Json
+  huella            String
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  versionDePlan VersionDePlanDeEntrenamiento @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("instantanea_de_plan_de_entrenamiento")
+}
+
+/// El borrador de ejecución es su **propia colección** en el 09 (09v10:924-1135), a diferencia del plan. Uno por
+/// ocurrencia: (asesorado, versión activada, sesión planificada, fecha local), como en nutrición (DL-049, DL-077).
+/// Una vez confirmado queda congelado: la vuelta de REGISTRADA a BORRADOR no existe (06:5221).
+model BorradorDeEjecucionDeEntrenamiento {
+  id                     String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  asesoradoId            String                  @map("asesorado_id") @db.Uuid
+  versionDePlanId        String                  @map("version_de_plan_id") @db.Uuid
+  sesionPlanificadaId    String                  @map("sesion_planificada_id")
+  fechaLocal             DateTime                @map("fecha_local") @db.Date
+  zonaHoraria            String                  @map("zona_horaria")
+  /// Nula al nacer: la granularidad se decide al editar (09v10:954).
+  granularidad           GranularidadDeRegistro?
+  condicion              CondicionDeSesion?
+  motivo                 String?
+  contenido              Json                    @default("{}")
+  /// Instante declarado de la sesión, para registrar en diferido. Nulo si no se declaró: al confirmar se usa el
+  /// comienzo del borrador solo si fue el mismo día local; BE no inventa la hora de una sesión pasada.
+  momentoDeOcurrencia    DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  version                Int                     @default(1)
+  momentoDeRegistro      DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime                @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  asesorado     Identidad                    @relation("BorradorDeEjecucionDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDePlan VersionDePlanDeEntrenamiento @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ejecucion     EjecucionDeEntrenamiento?
+
+  @@unique([asesoradoId, versionDePlanId, sesionPlanificadaId, fechaLocal])
+  @@map("borrador_de_ejecucion_de_entrenamiento")
+}
+
+/// La ejecución registrada: colección propia, inmutable. REG-06-115 vive en la base: una sola por ocurrencia.
+model EjecucionDeEntrenamiento {
+  id                  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  asesoradoId         String                 @map("asesorado_id") @db.Uuid
+  versionDePlanId     String                 @map("version_de_plan_id") @db.Uuid
+  sesionPlanificadaId String                 @map("sesion_planificada_id")
+  fechaLocal          DateTime               @map("fecha_local") @db.Date
+  zonaHoraria         String                 @map("zona_horaria")
+  borradorId          String                 @unique @map("borrador_id") @db.Uuid
+  /// Nula si y solo si la sesión se registró NO_REALIZADA: sin entrenamiento no se usó ninguna granularidad, y
+  /// exigir una sería registrar un hecho que no ocurrió (REG-06-132).
+  granularidad        GranularidadDeRegistro?
+  condicion           CondicionDeSesion
+  motivo              String?
+  contenido           Json
+  procedencia         Json
+  momentoDeOcurrencia DateTime               @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime               @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  asesorado     Identidad                              @relation("EjecucionDeEntrenamientoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDePlan VersionDePlanDeEntrenamiento           @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  borrador      BorradorDeEjecucionDeEntrenamiento     @relation(fields: [borradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  correcciones  CorreccionDeEjecucionDeEntrenamiento[]
+
+  @@unique([asesoradoId, versionDePlanId, sesionPlanificadaId, fechaLocal])
+  @@index([asesoradoId, fechaLocal])
+  @@map("ejecucion_de_entrenamiento")
+}
+
+/// REG-06-116: la ejecución registrada no se edita; se corrige por el patrón B-06 (UC-I12). Se conserva la autoría
+/// real: si corrige el profesional, el dato no se atribuye al asesorado (05:9209-9224).
+model CorreccionDeEjecucionDeEntrenamiento {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ejecucionId        String   @map("ejecucion_id") @db.Uuid
+  correccionPreviaId String?  @unique @map("correccion_previa_id") @db.Uuid
+  autorId            String   @map("autor_id") @db.Uuid
+  motivo             String
+  contenido          Json
+  procedencia        Json
+  momentoDeRegistro  DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ejecucion        EjecucionDeEntrenamiento              @relation(fields: [ejecucionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  correccionPrevia CorreccionDeEjecucionDeEntrenamiento? @relation("SucesionDeCorreccionDeEjecucion", fields: [correccionPreviaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  siguiente        CorreccionDeEjecucionDeEntrenamiento? @relation("SucesionDeCorreccionDeEjecucion")
+  autor            Identidad                             @relation("CorreccionDeEjecucionDelAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([ejecucionId])
+  @@map("correccion_de_ejecucion_de_entrenamiento")
+}
+
+/// UC-P18; REG-06-141. Seis resultados, sin séptimo: la progresión mapea a AJUSTAR o SUSTITUIR (REG-06-117).
+model RevisionDeEntrenamiento {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  procesoId           String              @map("proceso_id") @db.Uuid
+  periodoInicio       DateTime            @map("periodo_inicio") @db.Date
+  periodoFin          DateTime            @map("periodo_fin") @db.Date
+  zonaHoraria         String              @map("zona_horaria")
+  evidencias          Json
+  interpretacion      String
+  resultado           ResultadoDeRevision
+  fundamento          String
+  proximaAccion       Json                @map("proxima_accion")
+  autorId             String              @map("autor_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime?           @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime            @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  proceso            ProcesoOperativo                     @relation("RevisionDeEntrenamientoDelProceso", fields: [procesoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  aplicacion         AplicacionDeRevisionDeEntrenamiento?
+  planesCreados      VersionDePlanDeEntrenamiento[]       @relation("PlanDeRevisionDeEntrenamiento")
+  objetivosCreados   VersionDeObjetivoDeEntrenamiento[]   @relation("ObjetivoDeRevisionDeEntrenamiento")
+  eventos            EventoDeProceso[]                    @relation("EventoDeRevisionDeEntrenamiento")
+  proximasRevisiones ProximaRevision[]                    @relation("ProximaRevisionDeRevisionDeEntrenamiento")
+
+  @@index([procesoId])
+  @@map("revision_de_entrenamiento")
+}
+
+/// REG-06-75 y 77: la aplicación enlaza el ContinuidadOCierreAplicado de su revisión, y FINALIZAR ⇔ CIERRE_PROCESO.
+model AplicacionDeRevisionDeEntrenamiento {
+  id                        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  revisionId                String           @unique @map("revision_id") @db.Uuid
+  eventoId                  String           @unique @map("evento_id") @db.Uuid
+  tipo                      TipoDeAplicacion
+  estadoDeProcesoPosterior  EstadoDeProceso  @map("estado_de_proceso_posterior")
+  versionDePlanCreadaId     String?          @map("version_de_plan_creada_id") @db.Uuid
+  versionDeObjetivoCreadaId String?          @map("version_de_objetivo_creada_id") @db.Uuid
+  momentoDeRegistro         DateTime         @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  revision RevisionDeEntrenamiento @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  evento   EventoDeProceso         @relation("AplicacionDeEntrenamientoDelEvento", fields: [eventoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("aplicacion_de_revision_de_entrenamiento")
+}
+
+model EventoDeEntrenamiento {
+  id                  String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  secuencia           BigInt                      @unique @default(autoincrement())
+  tipo                TipoDeEventoDeEntrenamiento
+  profesionalId       String?                     @map("profesional_id") @db.Uuid
+  asesoradoId         String?                     @map("asesorado_id") @db.Uuid
+  recursoTipo         String                      @map("recurso_tipo")
+  recursoId           String                      @map("recurso_id") @db.Uuid
+  estadoPrevio        String?                     @map("estado_previo")
+  estadoPosterior     String?                     @map("estado_posterior")
+  actorId             String                      @map("actor_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime?                   @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                    @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  @@index([asesoradoId, momentoDeRegistro])
+  @@index([recursoId])
+  @@map("evento_de_entrenamiento")
 }
