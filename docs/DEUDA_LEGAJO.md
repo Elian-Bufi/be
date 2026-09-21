@@ -67,9 +67,9 @@
 | DL-060 | WP-05 · 2026-09-20 | 08:200 · 08:304 · 08:603 · 08:1335 | Sin fila de pertinencia para antropometría, y «ausencia de fila: Deny» | **DECIDIDA** 2026-09-20 · opción A, por delegación de Dirección en el ejecutor |
 | DL-061 | WP-05 · 2026-09-20 | 09v11:272 · 09v11:202-216 · 09v16 (grep `frmv_`: 0) | `formulaVersionId` obligatorio en el derivado y sin operación que lo descubra | ABIERTA |
 | DL-062 | WP-05 · 2026-09-20 | 09v11:309-332 · 09v16:1980-2000 · 06:6507 | `preparationReference` obligatorio en la importación, sin entidad ni API | ABIERTA |
-| DL-063 | WP-05 · 2026-09-20 | 08:1368, 08:1374, 08:1482, 08:1497 (R-18) | El borrador antropométrico no tiene plazo de expiración declarado | ABIERTA |
+| DL-063 | WP-05 · 2026-09-20 | 08:1368, 08:1374, 08:1482, 08:1497 (R-18) | El borrador antropométrico no tiene plazo de expiración declarado | **DECIDIDA** 2026-09-20 · opción A · el parámetro sigue pendiente de fijar antes del primer dato real |
 | DL-064 | WP-05 · 2026-09-20 | 06:6350-6359 · 06:6513 · 09v11:664-706 · 10-B10-07:1051-1062 | La «evaluación de compatibilidad» es obligatoria y no está modelada como objeto | ABIERTA |
-| DL-065 | WP-05 · 2026-09-20 | 11A:573-587 · 11A:155-169 · DV-05:1144 | Siete de los once TEST-ANT son solo un título de una línea | ABIERTA |
+| DL-065 | WP-05 · 2026-09-20 | 11A:573-587 · 11A:155-169 · DV-05:1144 | Siete de los once TEST-ANT son solo un título de una línea | **DECIDIDA** 2026-09-20 · opción A · se escriben los siete oráculos |
 | DL-066 | WP-05 · 2026-09-20 | DV-05:1131 · 08:1330-1341 · 09v16:1764-1775 | El adversarial 10 no tiene test que pruebe el borrador **de otro profesional** | ABIERTA |
 | DL-067 | WP-05 · 2026-09-20 | DV-05:1128 · 11A:540, 584, 625 · 06:6388-6398 | El adversarial 7 de mediciones no tiene ID de test asignado | ABIERTA |
 | DL-068 | WP-05 · 2026-09-20 | 08:200, 08:1332, 08:1385, 08:1525 · 09v11:388-400 | Nadie define quién autoriza **crear** y **registrar** la evaluación | ABIERTA |
@@ -77,7 +77,7 @@
 | DL-070 | WP-05 · 2026-09-20 | 09v11:713-757 · 04:583 | La evolución devuelve un bloque por métrica y el 09 declara una métrica por respuesta | ABIERTA |
 | DL-071 | WP-05 · 2026-09-20 | 09v11:592-605, 664 | ANT-05 no acepta el lote de correcciones ni los metadatos reconstruibles que el 09 admite | ABIERTA |
 | DL-072 | WP-05 · 2026-09-20 | 09v11:336-339 | ANT-01 filtra por `kind` y el 09 declara `status` | ABIERTA |
-| DL-073 | WP-05 · 2026-09-20 | 10-B10-07 · `direccion/UI-ANTROPOMETRIA.md` | El 10 declara la carga en formulario y Dirección pide la carga sobre la figura | ABIERTA |
+| DL-073 | WP-05 · 2026-09-20 | 10-B10-07 · `direccion/UI-ANTROPOMETRIA.md` | El 10 declara la carga en formulario y Dirección pide la carga sobre la figura | **DECIDIDA** 2026-09-20 · opción A · paquete de refinamiento de UI posterior |
 
 ---
 
@@ -1347,7 +1347,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-063 — El borrador antropométrico no tiene plazo de expiración declarado
 
-**Prioridad:** media · **Documento:** 08:1368, 1374, 1482, 1497 (R-18) · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 08:1368, 1374, 1482, 1497 (R-18) · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** R-18 dice que los residuos de preparación quedan «suprimidos tras [PARÁMETRO: plazo operativo corto a fijar antes de datos reales]» (08:1368) y que «el parámetro debe quedar configurado antes del primer dato real» (08:1374). El riesgo R-08-17 queda abierto.
 
@@ -1358,6 +1358,10 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Fijar un plazo provisorio (por ejemplo, 30 días) y purgar.
 
 **Provisorio en código.** A, con la constancia explícita de que el parámetro debe fijarse antes de cualquier dato real.
+
+**Decisión de Dirección (2026-09-20): opción A.** No se implementa expiración mientras el ambiente sea sintético.
+
+> **Condición que sobrevive a esta decisión.** Es la única deuda del paquete con un vencimiento que no controlamos: el plazo **tiene que quedar fijado antes de que entre el primer dato real de una persona**, y hasta entonces R-08-17 sigue abierto. Decidir «no implementar» no cierra el riesgo, lo posterga con fecha. Si BE sale de datos sintéticos sin este parámetro, un borrador con datos de salud queda como residuo permanente.
 
 ## DL-064 — La «evaluación de compatibilidad» es obligatoria y no está modelada como objeto
 
@@ -1373,7 +1377,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-065 — Siete de los once TEST-ANT son solo un título de una línea
 
-**Prioridad:** alta · **Documento:** 11A:573-587 · 11A:155-169 · **Estado:** ABIERTA
+**Prioridad:** alta · **Documento:** 11A:573-587 · 11A:155-169 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** El 11A §16 enuncia los once escenarios como títulos, sin ninguno de los trece campos que su propia §6 declara obligatorios (11A:155-169). DV-05 materializa cuatro y lo admite: «Antropometría | 4 | 11» (DV-05:1144). TEST-ANT-005 a 011 no tienen oráculo en ninguna parte.
 
@@ -1384,6 +1388,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Implementar según el título y dejar el oráculo sin escribir.
 
 **Provisorio en código.** A.
+
+**Decisión de Dirección (2026-09-20): opción A.** Se redactan los siete oráculos faltantes (TEST-ANT-005 a 011) con la plantilla de 11A §6 y quedan como entregable de legajo. El comportamiento ya está cubierto por pruebas que pasan; lo que falta es la **declaración de qué tenían que probar**, que es lo que una mesa puede exigir. Queda como trabajo pendiente del próximo tramo.
 
 ## DL-066 — El adversarial 10 no tiene test que pruebe el borrador **de otro profesional**
 
@@ -1479,7 +1485,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-073 — El 10 declara la carga en formulario y Dirección pide la carga sobre la figura
 
-**Prioridad:** media · **Documento:** 10-B10-07 · `docs/direccion/UI-ANTROPOMETRIA.md` · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 10-B10-07 · `docs/direccion/UI-ANTROPOMETRIA.md` · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** El B10-07 declara la toma antropométrica como un formulario: una lista de métricas con su valor y su unidad, con el protocolo y el momento a nivel de la evaluación. Es lo que WP-05 implementó y lo que prueban las capturas `web-04` a `web-08`.
 
@@ -1492,3 +1498,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Implementarla ahora, reabriendo las pantallas de WP-05 antes de seguir con las verticales que faltan.
 
 **Provisorio en código.** Ninguno: WP-05 quedó con el formulario del 10, que cumple la garantía. La instrucción queda registrada con su referencia versionada para que el paquete de UI la tome completa. Recomendación del ejecutor: **A**, porque el circuito funcional todavía tiene verticales sin cubrir y la figura no agrega ninguna garantía que el formulario no dé; agrega ergonomía, que rinde más cuando ya están todas las pantallas que la van a usar.
+
+**Decisión de Dirección (2026-09-20): opción A.** La figura entra en un paquete de refinamiento de UI posterior al circuito funcional. WP-05 no se reabre y la vertical de entrenamiento (WP-06) sigue primero.
+
+> **Condición que hereda el paquete de UI.** La figura es **ubicación, nunca calificación**. Un punto del cuerpo pintado por rango —verde, amarillo, rojo— sería el juicio que RF-048 e INV-06-06 prohíben, y llegaría por un camino que ninguna prueba de copy mira hoy, porque el color no es texto. Cuando se implemente, la prueba de cero juicio tiene que extenderse al color y a las etiquetas de la figura, no solo al copy.
