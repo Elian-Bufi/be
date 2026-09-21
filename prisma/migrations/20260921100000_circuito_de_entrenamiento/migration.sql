@@ -131,6 +131,7 @@ CREATE TABLE "borrador_de_ejecucion_de_entrenamiento" (
     "condicion" "CondicionDeSesion",
     "motivo" TEXT,
     "contenido" JSONB NOT NULL DEFAULT '{}',
+    "momento_de_ocurrencia" TIMESTAMPTZ(3),
     "version" INTEGER NOT NULL DEFAULT 1,
     "momento_de_registro" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "momento_de_actualizacion" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -147,7 +148,7 @@ CREATE TABLE "ejecucion_de_entrenamiento" (
     "fecha_local" DATE NOT NULL,
     "zona_horaria" TEXT NOT NULL,
     "borrador_id" UUID NOT NULL,
-    "granularidad" "GranularidadDeRegistro" NOT NULL,
+    "granularidad" "GranularidadDeRegistro",
     "condicion" "CondicionDeSesion" NOT NULL,
     "motivo" TEXT,
     "contenido" JSONB NOT NULL,
@@ -486,6 +487,9 @@ ALTER TABLE "instantanea_de_plan_de_entrenamiento" ADD CONSTRAINT "instantanea_d
 -- La sesión planificada tiene identificador; sin él la ocurrencia no es identificable (REG-06-115).
 ALTER TABLE "borrador_de_ejecucion_de_entrenamiento" ADD CONSTRAINT "borrador_de_ejecucion_sesion_identificable" CHECK (btrim("sesion_planificada_id") <> '');
 ALTER TABLE "ejecucion_de_entrenamiento" ADD CONSTRAINT "ejecucion_de_entrenamiento_sesion_identificable" CHECK (btrim("sesion_planificada_id") <> '');
+-- Sin entrenamiento no se usó ninguna granularidad: NO_REALIZADA va sin ella, y las otras dos condiciones la exigen.
+-- Obligar a elegir una para «No pude realizarla» sería registrar un hecho que no ocurrió (REG-06-131, REG-06-132).
+ALTER TABLE "ejecucion_de_entrenamiento" ADD CONSTRAINT "ejecucion_de_entrenamiento_granularidad_segun_condicion" CHECK (("condicion" = 'NO_REALIZADA') = ("granularidad" IS NULL));
 -- La corrección dice por qué (REG-06-116: «conserva actor, motivo…»).
 ALTER TABLE "correccion_de_ejecucion_de_entrenamiento" ADD CONSTRAINT "correccion_de_ejecucion_con_motivo" CHECK (btrim("motivo") <> '');
 -- REG-06-141: interpretación y fundamento no vacíos; período bien formado.
@@ -640,8 +644,13 @@ BEGIN
   -- Se confirma lo que se guardó: granularidad y condición son las del borrador, que ya no puede estar vacío.
   IF NOT EXISTS (
        SELECT 1 FROM "borrador_de_ejecucion_de_entrenamiento" b
-        WHERE b."id" = NEW."borrador_id" AND b."granularidad" = NEW."granularidad" AND b."condicion" = NEW."condicion") THEN
+        WHERE b."id" = NEW."borrador_id" AND b."granularidad" IS NOT DISTINCT FROM NEW."granularidad" AND b."condicion" = NEW."condicion") THEN
     RAISE EXCEPTION 'BE: se confirma lo que el borrador declaró: granularidad y condición (REG-06-131, REG-06-132)' USING ERRCODE = 'check_violation';
+  END IF;
+  -- El instante de la sesión cae en la fecha local de su ocurrencia. BE no inventa la hora de una sesión pasada, y
+  -- tampoco acepta una que la contradiga: la sesión del lunes no ocurrió el martes (09v10:188-189).
+  IF (NEW."momento_de_ocurrencia" AT TIME ZONE NEW."zona_horaria")::date <> NEW."fecha_local" THEN
+    RAISE EXCEPTION 'BE: la ejecución ocurre en la fecha local de su ocurrencia' USING ERRCODE = 'check_violation';
   END IF;
   RETURN NEW;
 END $$;

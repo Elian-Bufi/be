@@ -223,6 +223,52 @@ describe('ejecución real · la vuelta que no existe y la unicidad por ocurrenci
     const e = await errorDeLaBase(b.sql, x.sql, correccion(null), correccion(null));
     expect(e).toMatch(/23505|already exists/);
   });
+
+  // «No pude realizarla» no usa ninguna granularidad. La base lo sostiene en las dos direcciones, con el CHECK
+  // `ejecucion_de_entrenamiento_granularidad_segun_condicion`, porque el trigger de inserción solo mira que se
+  // confirme lo que el borrador declaró: si el borrador ya venía mal, el trigger lo dejaría pasar.
+  it('REG-06-131/132 · una sesión NO_REALIZADA se registra sin granularidad: no se usó ninguna', async () => {
+    const c = await fresco();
+    const { versionId } = await sembrarPlanActivado(prisma, c);
+    const b = borradorDeEjecucion(c, versionId, { granularidad: null, condicion: 'NO_REALIZADA' });
+    const e = await errorDeLaBase(b.sql, ejecucion(c, versionId, b.id, { granularidad: null, condicion: 'NO_REALIZADA' }).sql);
+    expect(e).toBe('SIN ERROR');
+  });
+
+  it('REG-06-132 · una sesión NO_REALIZADA no puede declarar granularidad: sería registrar un entrenamiento que no hubo', async () => {
+    const c = await fresco();
+    const { versionId } = await sembrarPlanActivado(prisma, c);
+    const b = borradorDeEjecucion(c, versionId, { granularidad: 'SERIE', condicion: 'NO_REALIZADA' });
+    const e = await errorDeLaBase(b.sql, ejecucion(c, versionId, b.id, { granularidad: 'SERIE', condicion: 'NO_REALIZADA' }).sql);
+    expect(e).toContain('ejecucion_de_entrenamiento_granularidad_segun_condicion');
+  });
+
+  it('REG-06-132 · una sesión realizada sí exige granularidad: se conserva cuál se usó', async () => {
+    const c = await fresco();
+    const { versionId } = await sembrarPlanActivado(prisma, c);
+    const b = borradorDeEjecucion(c, versionId, { granularidad: null, condicion: 'REALIZADA' });
+    const e = await errorDeLaBase(b.sql, ejecucion(c, versionId, b.id, { granularidad: null, condicion: 'REALIZADA' }).sql);
+    expect(e).toContain('ejecucion_de_entrenamiento_granularidad_segun_condicion');
+  });
+
+  it('09v10:188-189 · el instante de la sesión cae en la fecha de su ocurrencia: la del lunes no ocurrió el martes', async () => {
+    const c = await fresco();
+    const { versionId } = await sembrarPlanActivado(prisma, c);
+    const b = borradorDeEjecucion(c, versionId, { fecha: '2026-09-21' });
+    // 02:30 del martes en Buenos Aires: en UTC todavía sería martes 05:30, en ningún huso es lunes.
+    const martes = `('2026-09-22 02:30'::timestamp AT TIME ZONE 'America/Argentina/Buenos_Aires')`;
+    const e = await errorDeLaBase(b.sql, ejecucion(c, versionId, b.id, { fecha: '2026-09-21', momento: martes }).sql);
+    expect(e).toContain('fecha local de su ocurrencia');
+  });
+
+  it('la fecha se corta en hora local: una sesión del lunes a las 22:30 es del lunes, aunque en UTC ya sea martes', async () => {
+    const c = await fresco();
+    const { versionId } = await sembrarPlanActivado(prisma, c);
+    const b = borradorDeEjecucion(c, versionId, { fecha: '2026-09-21' });
+    const lunesALaNoche = `('2026-09-21 22:30'::timestamp AT TIME ZONE 'America/Argentina/Buenos_Aires')`;
+    const e = await errorDeLaBase(b.sql, ejecucion(c, versionId, b.id, { fecha: '2026-09-21', momento: lunesALaNoche }).sql);
+    expect(e).toBe('SIN ERROR');
+  });
 });
 
 // ─── El Proceso transversal: el agujero que se cerró ────────────────────────────────────────────

@@ -32,6 +32,7 @@ export const CATALOGO_DE_EJERCICIOS = {
 } as const;
 
 const PROCEDENCIA = `'{"fuente":"PROPIA","casoDeUso":"PRUEBA","operacion":"SIEMBRA","superficie":null,"requestId":null}'`;
+const ZONA = 'America/Argentina/Buenos_Aires';
 
 /** Una estructura mínima válida: un bloque, una sesión, una prescripción. Los identificadores son estables. */
 export function contenidoDePlan(sesionId = 'ses-a', prescripcionId = 'rx-1'): string {
@@ -136,19 +137,25 @@ export function borradorDeEjecucion(
   };
 }
 
-/** La ejecución registrada que nace de un borrador, con su misma ocurrencia. */
+/**
+ * La ejecución registrada que nace de un borrador, con su misma ocurrencia. El instante por defecto es el mediodía
+ * local de la fecha de la ocurrencia: la base exige que caiga en esa fecha, y `now()` no serviría en la CI.
+ */
 export function ejecucion(
   c: CircuitoDeEntrenamiento,
   versionId: string,
   borradorId: string,
-  campos: Partial<{ id: string; sesion: string; fecha: string; granularidad: string; condicion: string }> = {},
+  campos: Partial<{ id: string; sesion: string; fecha: string; granularidad: string | null; condicion: string; momento: string }> = {},
 ): { id: string; sql: string } {
   const id = campos.id ?? randomUUID();
+  const fecha = campos.fecha ?? '2026-09-21';
+  const granularidad = campos.granularidad === undefined ? 'SERIE' : campos.granularidad;
+  const momento = campos.momento ?? `('${fecha} 12:00'::timestamp AT TIME ZONE '${ZONA}')`;
   return {
     id,
     sql: `INSERT INTO "ejecucion_de_entrenamiento" ("id","asesorado_id","version_de_plan_id","sesion_planificada_id","fecha_local","zona_horaria","borrador_id","granularidad","condicion","contenido","procedencia","momento_de_ocurrencia")
-          VALUES ('${id}','${c.ase.id}','${versionId}','${campos.sesion ?? 'ses-a'}','${campos.fecha ?? '2026-09-21'}','America/Argentina/Buenos_Aires','${borradorId}',
-                  '${campos.granularidad ?? 'SERIE'}','${campos.condicion ?? 'REALIZADA'}','{}',${PROCEDENCIA}, now())`,
+          VALUES ('${id}','${c.ase.id}','${versionId}','${campos.sesion ?? 'ses-a'}','${fecha}','${ZONA}','${borradorId}',
+                  ${granularidad ? `'${granularidad}'` : 'NULL'},'${campos.condicion ?? 'REALIZADA'}','{}',${PROCEDENCIA}, ${momento})`,
   };
 }
 

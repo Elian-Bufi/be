@@ -1794,6 +1794,9 @@ model BorradorDeEjecucionDeEntrenamiento {
   condicion              CondicionDeSesion?
   motivo                 String?
   contenido              Json                    @default("{}")
+  /// Instante declarado de la sesión, para registrar en diferido. Nulo si no se declaró: al confirmar se usa el
+  /// comienzo del borrador solo si fue el mismo día local; BE no inventa la hora de una sesión pasada.
+  momentoDeOcurrencia    DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
   version                Int                     @default(1)
   momentoDeRegistro      DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
   momentoDeActualizacion DateTime                @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
@@ -1815,7 +1818,9 @@ model EjecucionDeEntrenamiento {
   fechaLocal          DateTime               @map("fecha_local") @db.Date
   zonaHoraria         String                 @map("zona_horaria")
   borradorId          String                 @unique @map("borrador_id") @db.Uuid
-  granularidad        GranularidadDeRegistro
+  /// Nula si y solo si la sesión se registró NO_REALIZADA: sin entrenamiento no se usó ninguna granularidad, y
+  /// exigir una sería registrar un hecho que no ocurrió (REG-06-132).
+  granularidad        GranularidadDeRegistro?
   condicion           CondicionDeSesion
   motivo              String?
   contenido           Json
