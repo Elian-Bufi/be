@@ -17,6 +17,7 @@ import {
   ETIQUETA_DE_CRITERIO,
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
+  registroVigente,
   vistaDeOcurrencia,
   type BorradorDeEjecucion,
   type EjecucionDeEntrenamiento,
@@ -30,7 +31,7 @@ import {
   type SesionDeOcurrencia,
 } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
 import { dia, fecha } from '../formato';
@@ -179,6 +180,44 @@ function TarjetaDeOcurrencia({
 
 // ─── La sesión: borrador incremental, revisión y confirmación ───────────────────────────────
 
+type Unidad = 'kg' | 'lb';
+interface SerieEnCarga {
+  readonly carga: string;
+  readonly unidad: Unidad;
+  readonly reps: string;
+  readonly rir: string;
+  readonly esfuerzo: string;
+}
+
+/** Un número con coma o punto. Vacío → null; lo que no es un número → NaN, para que no se guarde como otra cosa. */
+const leerNumero = (s: string): number | null => (s.trim() === '' ? null : Number(s.trim().replace(',', '.')));
+
+/** Lo que el borrador ya tiene cargado, dicho para la persona: «3 series», «1 resumen». `null` si no tiene nada. */
+function loCargado(b: BorradorDeEjecucion): string | null {
+  const series = b.exercises.reduce((n, e) => n + (e.sets?.length ?? 0), 0);
+  if (series > 0) return cantidadDeSeries(series);
+  const resumenes = b.exercises.filter((e) => e.executionSummary).length + (b.sessionSummary ? 1 : 0);
+  return resumenes === 0 ? null : resumenes === 1 ? '1 resumen' : `${resumenes} resúmenes`;
+}
+
+/**
+ * Antes de descartar lo registrado, se pregunta (B10-10:337: una acción sensible no se ejecuta de un toque, y menos al
+ * lado de una frecuente). El diálogo del sistema es accesible y dice qué se pierde.
+ */
+function confirmarDescarte(titulo: string, detalle: string): Promise<boolean> {
+  return new Promise((resolver) =>
+    Alert.alert(
+      titulo,
+      detalle,
+      [
+        { text: 'Cancelar', style: 'cancel', onPress: () => resolver(false) },
+        { text: 'Descartar y seguir', style: 'destructive', onPress: () => resolver(true) },
+      ],
+      { cancelable: true, onDismiss: () => resolver(false) },
+    ),
+  );
+}
+
 export function PantallaDeSesion({
   token,
   draftId,
@@ -203,6 +242,7 @@ export function PantallaDeSesion({
   const [aviso, setAviso] = useState<{ tipo: 'error' | 'info' | 'exito'; texto: string } | null>(null);
   const [revisando, setRevisando] = useState(false);
   const [motivo, setMotivo] = useState('');
+  const [resumenDeSesion, setResumenDeSesion] = useState('');
   const [hora, setHora] = useState('');
   const intentoDeConfirmar = useClaveDeIntento();
   const [confirmando, setConfirmando] = useState(false);
@@ -214,28 +254,37 @@ export function PantallaDeSesion({
     if (!r.ok) return setError(true);
     setB(r.datos.data);
     setMotivo(r.datos.data.reason ?? '');
+    setResumenDeSesion(r.datos.data.sessionSummary?.description ?? '');
   }, [token, draftId, sesionPerdida]);
 
   useEffect(() => {
     void cargar();
   }, [cargar]);
 
-  /** Guardado incremental: cada cambio va con la versión que se ve; si otra pantalla la cambió, se recarga. */
-  async function guardar(cambios: Parameters<typeof api.guardarBorradorDeEjecucion>[2]['changes']): Promise<boolean> {
-    if (!b) return false;
+  /**
+   * Guardado incremental: cada cambio va con la versión que se ve; si otra pantalla la cambió, se recarga. Devuelve
+   * `null` si guardó, o el mensaje del fallo. El fallo de una acción de la tarjeta de un ejercicio se muestra en la
+   * tarjeta, al lado de lo que la persona tocó; los demás, arriba.
+   */
+  async function guardarYDecir(cambios: Parameters<typeof api.guardarBorradorDeEjecucion>[2]['changes']): Promise<string | null> {
+    if (!b) return 'Todavía no se cargó la sesión.';
     setGuardando(true);
-    setAviso(null);
     const r = await api.guardarBorradorDeEjecucion(token, draftId, { expectedVersion: b.version, changes: cambios });
     setGuardando(false);
-    if (sesionPerdida(r)) return false;
+    if (sesionPerdida(r)) return 'Tu sesión se cerró.';
     if (!r.ok) {
       const f = falloDe(r);
-      setAviso({ tipo: 'error', texto: r.tipo === 'API' && r.issues.length > 0 ? 'Hay un dato que no se puede guardar. Revisalo.' : f.mensaje });
       if (f.tipo === 'actualizar') void cargar();
-      return false;
+      return r.tipo === 'API' && r.issues.length > 0 ? 'Hay un dato que no se puede guardar. Revisalo.' : f.mensaje;
     }
     setB(r.datos.data);
-    return true;
+    return null;
+  }
+  async function guardar(cambios: Parameters<typeof api.guardarBorradorDeEjecucion>[2]['changes']): Promise<boolean> {
+    setAviso(null);
+    const fallo = await guardarYDecir(cambios);
+    if (fallo) setAviso({ tipo: 'error', texto: fallo });
+    return fallo === null;
   }
 
   const ejercicios = (): EjercicioRegistradoEntrada[] =>
@@ -246,46 +295,66 @@ export function PantallaDeSesion({
     );
 
   async function elegirGranularidad(g: Granularidad) {
-    // Cambiar de forma no inventa datos: lo cargado en la otra forma no se convierte (09v10:1101).
+    if (!b || b.granularity === g) return;
+    // Cambiar de forma no inventa datos: lo cargado en la otra forma no se convierte (09v10:1101). Por eso se descarta,
+    // y se pregunta antes.
+    const cargado = loCargado(b);
+    if (cargado && !(await confirmarDescarte('Cambiar la forma de registrar', `Se descartan ${cargado} de esta sesión: lo cargado de una forma no se pasa a la otra.`))) return;
     await guardar({ granularity: g, exercises: [], sessionSummary: null });
   }
 
-  async function registrarSerie(p: Prescripcion, realizado: string, serie: { carga: string; reps: string; rir: string }) {
-    const n = (s: string) => (s.trim() === '' ? null : Number(s.replace(',', '.')));
+  async function registrarSerie(p: Prescripcion, realizado: string, serie: SerieEnCarga): Promise<string | null> {
+    const carga = leerNumero(serie.carga);
+    const reps = leerNumero(serie.reps);
+    const rir = leerNumero(serie.rir);
+    const esfuerzo = leerNumero(serie.esfuerzo);
+    if ([carga, reps, rir, esfuerzo].some((n) => n !== null && Number.isNaN(n))) return 'Revisá los números de la serie.';
+    if (esfuerzo !== null && (esfuerzo < 0 || esfuerzo > 10)) return 'El esfuerzo percibido va de 0 a 10.';
     const actuales = ejercicios();
     const existente = actuales.find((e) => e.prescriptionId === p.prescriptionId);
     const series = existente && 'sets' in existente ? existente.sets : [];
     const nueva = {
       setIndex: series.length + 1,
-      load: n(serie.carga) === null ? null : { value: n(serie.carga) as number, unit: 'kg' as const },
-      completedRepetitions: n(serie.reps) === null ? null : Math.round(n(serie.reps) as number),
-      rir: n(serie.rir),
-      perceivedExertion: null,
+      load: carga === null ? null : { value: carga, unit: serie.unidad },
+      completedRepetitions: reps === null ? null : Math.round(reps),
+      rir,
+      perceivedExertion: esfuerzo,
     };
     const actualizado = { prescriptionId: p.prescriptionId, performedExerciseVersionId: realizado, sets: [...series, nueva] };
-    return guardar({ exercises: existente ? actuales.map((e) => (e.prescriptionId === p.prescriptionId ? actualizado : e)) : [...actuales, actualizado] });
+    return guardarYDecir({ exercises: existente ? actuales.map((e) => (e.prescriptionId === p.prescriptionId ? actualizado : e)) : [...actuales, actualizado] });
   }
 
-  async function sustituir(p: Prescripcion, e: EjercicioDeCatalogo) {
+  /** Por serie, la sustitución se guarda sola. Por resumen, viaja con el resumen: no se inventa un texto por la persona. */
+  async function sustituir(p: Prescripcion, e: EjercicioDeCatalogo): Promise<string | null> {
     const actuales = ejercicios();
     const existente = actuales.find((x) => x.prescriptionId === p.prescriptionId);
     const nuevo: EjercicioRegistradoEntrada =
-      b?.granularity === 'EXERCISE_OR_SESSION'
-        ? { prescriptionId: p.prescriptionId, performedExerciseVersionId: e.versionId, executionSummary: existente && 'executionSummary' in existente ? existente.executionSummary : { description: 'Sustituido.' } }
+      existente && 'executionSummary' in existente
+        ? { prescriptionId: p.prescriptionId, performedExerciseVersionId: e.versionId, executionSummary: existente.executionSummary }
         : { prescriptionId: p.prescriptionId, performedExerciseVersionId: e.versionId, sets: existente && 'sets' in existente ? existente.sets : [] };
-    await guardar({ exercises: existente ? actuales.map((x) => (x.prescriptionId === p.prescriptionId ? nuevo : x)) : [...actuales, nuevo] });
+    return guardarYDecir({ exercises: existente ? actuales.map((x) => (x.prescriptionId === p.prescriptionId ? nuevo : x)) : [...actuales, nuevo] });
   }
 
-  async function resumir(p: Prescripcion, texto: string) {
+  async function resumir(p: Prescripcion, texto: string, realizado: string | null): Promise<string | null> {
     const actuales = ejercicios();
     const existente = actuales.find((x) => x.prescriptionId === p.prescriptionId);
-    const nuevo = { prescriptionId: p.prescriptionId, performedExerciseVersionId: existente?.performedExerciseVersionId ?? p.exerciseVersionId, executionSummary: { description: texto } };
-    await guardar({ exercises: existente ? actuales.map((x) => (x.prescriptionId === p.prescriptionId ? nuevo : x)) : [...actuales, nuevo] });
+    const nuevo = { prescriptionId: p.prescriptionId, performedExerciseVersionId: realizado ?? existente?.performedExerciseVersionId ?? p.exerciseVersionId, executionSummary: { description: texto } };
+    return guardarYDecir({ exercises: existente ? actuales.map((x) => (x.prescriptionId === p.prescriptionId ? nuevo : x)) : [...actuales, nuevo] });
   }
 
   async function noPude() {
-    // Un acto explícito: sin granularidad ni series, con motivo opcional (REG-06-131).
-    await guardar({ sessionCondition: 'NOT_COMPLETED', granularity: null, exercises: [], sessionSummary: null, reason: motivo.trim() || null });
+    if (!b) return;
+    // Un acto explícito: sin granularidad ni series, con motivo opcional (REG-06-131). Si ya había algo registrado, se
+    // descarta, y se pregunta antes.
+    const cargado = loCargado(b);
+    if (cargado && !(await confirmarDescarte(COPY_ENTRENAMIENTO.noPudeRealizarla, `Se descartan ${cargado} de esta sesión.`))) return;
+    if (await guardar({ sessionCondition: 'NOT_COMPLETED', granularity: null, exercises: [], sessionSummary: null, reason: motivo.trim() || null })) setRevisando(true);
+  }
+
+  /** «Revisar sesión» guarda antes el motivo, si cambió: lo que se escribió después de elegir la condición no se pierde. */
+  async function revisar() {
+    if (!b) return;
+    if (motivo.trim() !== (b.reason ?? '') && !(await guardar({ reason: motivo.trim() || null }))) return;
     setRevisando(true);
   }
 
@@ -319,7 +388,9 @@ export function PantallaDeSesion({
             ? 'Falta indicar cómo resultó la sesión.'
             : codigos.includes('OCCURRED_AT_REQUIRED')
               ? COPY_ENTRENAMIENTO.horaRequerida
-              : 'Falta registrar algo de la sesión antes de confirmar.',
+              : codigos.includes('OCCURRED_AT_OUTSIDE_PLAN_VERSION')
+                ? 'A esa hora regía otra versión de tu plan. Revisá la hora de la sesión.'
+                : 'Falta registrar algo de la sesión antes de confirmar.',
         });
       }
       if (r.tipo === 'API' && r.codigo === 'EXECUTION_ALREADY_REGISTERED') return setAviso({ tipo: 'info', texto: 'Esta sesión ya estaba registrada.' });
@@ -359,10 +430,13 @@ export function PantallaDeSesion({
       </Parrafo>
       {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
       <Seccion titulo={COPY_ENTRENAMIENTO.granularidad}>
-        <Boton texto={ETIQUETA_DE_GRANULARIDAD.SET} tipo={b.granularity === 'SET' ? 'primario' : 'secundario'} onPress={() => void elegirGranularidad('SET')} deshabilitado={guardando} />
+        {/* Lo elegido se dice con texto, no solo con el estilo del botón (B10-10:36). */}
+        <Parrafo>{b.granularity ? `Elegiste: ${ETIQUETA_DE_GRANULARIDAD[b.granularity as Granularidad]}` : 'Todavía no elegiste cómo registrar.'}</Parrafo>
+        <Boton texto={ETIQUETA_DE_GRANULARIDAD.SET} tipo={b.granularity === 'SET' ? 'primario' : 'secundario'} seleccionado={b.granularity === 'SET'} onPress={() => void elegirGranularidad('SET')} deshabilitado={guardando} />
         <Boton
           texto={ETIQUETA_DE_GRANULARIDAD.EXERCISE_OR_SESSION}
           tipo={b.granularity === 'EXERCISE_OR_SESSION' ? 'primario' : 'secundario'}
+          seleccionado={b.granularity === 'EXERCISE_OR_SESSION'}
           onPress={() => void elegirGranularidad('EXERCISE_OR_SESSION')}
           deshabilitado={guardando}
         />
@@ -377,24 +451,48 @@ export function PantallaDeSesion({
               granularidad={b.granularity as Granularidad}
               guardando={guardando}
               onSerie={(realizado, serie) => registrarSerie(p, realizado, serie)}
-              onSustituir={(e) => void sustituir(p, e)}
-              onResumen={(t) => void resumir(p, t)}
+              onSustituir={(e) => sustituir(p, e)}
+              onResumen={(t, realizado) => resumir(p, t, realizado)}
               sesionPerdida={sesionPerdida}
             />
           ))
         : null}
+      {b.granularity === 'EXERCISE_OR_SESSION' ? (
+        // «Sesión realizada + resumen» (B10-06:744-745): el registro agregado de toda la sesión.
+        <Seccion titulo={COPY_ENTRENAMIENTO.resumenDeLaSesion}>
+          <Campo etiqueta={`${COPY_ENTRENAMIENTO.resumenDeLaSesion} (opcional)`} value={resumenDeSesion} onChangeText={setResumenDeSesion} multiline />
+          <Boton
+            texto="Guardar resumen de la sesión"
+            tipo="secundario"
+            onPress={() => void guardar({ sessionSummary: resumenDeSesion.trim() ? { description: resumenDeSesion.trim() } : null })}
+            deshabilitado={guardando || resumenDeSesion.trim() === (b.sessionSummary?.description ?? '')}
+          />
+        </Seccion>
+      ) : null}
       <Seccion titulo={COPY_ENTRENAMIENTO.condicionDeLaSesion}>
-        <Boton texto="Realizada" tipo={b.sessionCondition === 'COMPLETED' ? 'primario' : 'secundario'} onPress={() => void guardar({ sessionCondition: 'COMPLETED' })} deshabilitado={guardando || !b.granularity} />
+        {/* El motivo va antes que los botones: lo escrito viaja con la condición, y «Revisar sesión» lo guarda si cambió. */}
+        <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} value={motivo} onChangeText={setMotivo} />
+        <Parrafo>{b.sessionCondition ? `Elegiste: ${etiquetaDeCondicionRegistrada({ sessionCondition: b.sessionCondition })}` : 'Todavía no indicaste cómo resultó la sesión.'}</Parrafo>
+        <Boton
+          texto="Realizada"
+          tipo={b.sessionCondition === 'COMPLETED' ? 'primario' : 'secundario'}
+          seleccionado={b.sessionCondition === 'COMPLETED'}
+          onPress={() => void guardar({ sessionCondition: 'COMPLETED', reason: motivo.trim() || null })}
+          deshabilitado={guardando || !b.granularity}
+        />
         <Boton
           texto="Realizada con desvío"
           tipo={b.sessionCondition === 'COMPLETED_WITH_DEVIATION' ? 'primario' : 'secundario'}
+          seleccionado={b.sessionCondition === 'COMPLETED_WITH_DEVIATION'}
           onPress={() => void guardar({ sessionCondition: 'COMPLETED_WITH_DEVIATION', reason: motivo.trim() || null })}
           deshabilitado={guardando || !b.granularity}
         />
-        <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} value={motivo} onChangeText={setMotivo} />
-        <Boton texto={COPY_ENTRENAMIENTO.noPudeRealizarla} tipo="enlace" onPress={() => void noPude()} deshabilitado={guardando} />
       </Seccion>
-      <Boton texto={COPY_ENTRENAMIENTO.revisarSesion} onPress={() => setRevisando(true)} deshabilitado={guardando || !b.sessionCondition} />
+      <Boton texto={COPY_ENTRENAMIENTO.revisarSesion} onPress={() => void revisar()} deshabilitado={guardando || !b.sessionCondition} />
+      {/* Lejos de «Revisar sesión» y de los botones frecuentes, y con confirmación si hay algo cargado (B10-10:337). */}
+      <Seccion titulo="¿No pudiste entrenar?">
+        <Boton texto={COPY_ENTRENAMIENTO.noPudeRealizarla} tipo="secundario" seleccionado={b.sessionCondition === 'NOT_COMPLETED'} onPress={() => void noPude()} deshabilitado={guardando} />
+      </Seccion>
     </View>
   );
 }
@@ -415,24 +513,48 @@ function EjercicioEnCurso({
   registrado: BorradorDeEjecucion['exercises'][number] | null;
   granularidad: Granularidad;
   guardando: boolean;
-  onSerie: (realizado: string, serie: { carga: string; reps: string; rir: string }) => Promise<boolean>;
-  onSustituir: (e: EjercicioDeCatalogo) => void;
-  onResumen: (texto: string) => void;
+  onSerie: (realizado: string, serie: SerieEnCarga) => Promise<string | null>;
+  onSustituir: (e: EjercicioDeCatalogo) => Promise<string | null>;
+  onResumen: (texto: string, realizado: string | null) => Promise<string | null>;
   sesionPerdida: (r: Resultado<unknown>) => boolean;
 }) {
   const ultima = registrado?.sets?.[registrado.sets.length - 1] ?? null;
-  // «Copiar carga anterior» como ayuda visible: el valor se ve y se edita antes de guardar (B10-06:1242-1255).
-  const [serie, setSerie] = useState({ carga: ultima?.load ? String(ultima.load.value) : p.suggestedLoad ? String(p.suggestedLoad.value) : '', reps: '', rir: '' });
+  // «Copiar carga anterior» como ayuda visible, **con su unidad**: el valor se ve y se edita antes de guardar
+  // (B10-06:1242-1255). Una carga sugerida en libras no se precarga como kilos.
+  const [serie, setSerie] = useState<SerieEnCarga>({
+    carga: ultima?.load ? String(ultima.load.value) : p.suggestedLoad ? String(p.suggestedLoad.value) : '',
+    unidad: ultima?.load?.unit ?? p.suggestedLoad?.unit ?? 'kg',
+    reps: '',
+    rir: '',
+    esfuerzo: '',
+  });
   const [resumen, setResumen] = useState(registrado?.executionSummary?.description ?? '');
   const [buscando, setBuscando] = useState(false);
   const [texto, setTexto] = useState('');
   const [resultados, setResultados] = useState<EjercicioDeCatalogo[] | null>(null);
+  const [falloDeBusqueda, setFalloDeBusqueda] = useState(false);
+  // Por resumen, el ejercicio sustituto se elige y se guarda junto con el resumen que escribe la persona.
+  const [sustitutoPendiente, setSustitutoPendiente] = useState<EjercicioDeCatalogo | null>(null);
+  const [fallo, setFallo] = useState<string | null>(null);
 
   async function buscar() {
     const r = await api.buscarEjercicios(token, texto.trim());
     if (sesionPerdida(r)) return;
-    setResultados(r.ok ? r.datos.data : []);
+    // Un error no es un catálogo vacío (B10-10:41).
+    setFalloDeBusqueda(!r.ok);
+    setResultados(r.ok ? r.datos.data : null);
   }
+
+  async function elegirSustituto(e: EjercicioDeCatalogo) {
+    setBuscando(false);
+    setResultados(null);
+    setFallo(null);
+    if (granularidad === 'EXERCISE_OR_SESSION' && !registrado?.executionSummary) return setSustitutoPendiente(e);
+    setFallo(await onSustituir(e));
+  }
+
+  const pendientes = granularidad === 'SET' ? p.sets.slice(registrado?.sets?.length ?? 0) : [];
+  const realizado = sustitutoPendiente ?? null;
 
   return (
     <Tarjeta>
@@ -444,23 +566,38 @@ function EjercicioEnCurso({
           <Insignia texto={COPY_ENTRENAMIENTO.sustituido} />
         </>
       ) : null}
+      {realizado ? (
+        <>
+          <Dato etiqueta={COPY_ENTRENAMIENTO.ejecutado} valor={realizado.name} />
+          <Parrafo tenue>{COPY_ENTRENAMIENTO.sustituido}: se guarda con el resumen del ejercicio.</Parrafo>
+        </>
+      ) : null}
+      {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {granularidad === 'SET' ? (
         <>
           {(registrado?.sets ?? []).map((s) => (
             <Parrafo key={s.setIndex}>
-              {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {s.load ? `${s.load.value} ${s.load.unit}` : 'sin carga'} × {s.completedRepetitions ?? '—'}
-              {s.rir !== null ? ` · RIR ${s.rir}` : ''} · {COPY_ENTRENAMIENTO.registradaEnBorrador}
+              {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {textoDeSerie(s)} · {COPY_ENTRENAMIENTO.registradaEnBorrador}
             </Parrafo>
           ))}
-          <Campo etiqueta={`${COPY_ENTRENAMIENTO.carga} (kg)`} value={serie.carga} onChangeText={(v) => setSerie({ ...serie, carga: v })} keyboardType="decimal-pad" />
+          {pendientes.map((_, i) => (
+            <Parrafo key={`p${i}`} tenue>
+              {COPY_ENTRENAMIENTO.serie} {(registrado?.sets?.length ?? 0) + i + 1}: {COPY_ENTRENAMIENTO.pendiente}
+            </Parrafo>
+          ))}
+          <Campo etiqueta={`${COPY_ENTRENAMIENTO.carga} (${serie.unidad})`} value={serie.carga} onChangeText={(v) => setSerie({ ...serie, carga: v })} keyboardType="decimal-pad" />
+          <Boton texto="kg" tipo={serie.unidad === 'kg' ? 'primario' : 'secundario'} seleccionado={serie.unidad === 'kg'} onPress={() => setSerie({ ...serie, unidad: 'kg' })} />
+          <Boton texto="lb" tipo={serie.unidad === 'lb' ? 'primario' : 'secundario'} seleccionado={serie.unidad === 'lb'} onPress={() => setSerie({ ...serie, unidad: 'lb' })} />
           <Campo etiqueta={COPY_ENTRENAMIENTO.reps} value={serie.reps} onChangeText={(v) => setSerie({ ...serie, reps: v })} keyboardType="number-pad" />
           <Campo etiqueta={`${COPY_ENTRENAMIENTO.rir} (opcional)`} ayuda={COPY_ENTRENAMIENTO.explicacionRir} value={serie.rir} onChangeText={(v) => setSerie({ ...serie, rir: v })} keyboardType="number-pad" />
+          <Campo etiqueta={COPY_ENTRENAMIENTO.esfuerzoPercibido} ayuda="De 0 a 10, cómo sentiste la serie. No cambia lo que planificó tu profesional." value={serie.esfuerzo} onChangeText={(v) => setSerie({ ...serie, esfuerzo: v })} keyboardType="decimal-pad" />
           <Boton
             texto={COPY_ENTRENAMIENTO.registrarSerie}
             deshabilitado={guardando || (serie.carga.trim() === '' && serie.reps.trim() === '')}
             onPress={() =>
-              void onSerie(registrado?.performedExerciseVersionId ?? p.exerciseVersionId, serie).then((ok) => {
-                if (ok) setSerie({ ...serie, reps: '', rir: '' });
+              void onSerie(registrado?.performedExerciseVersionId ?? p.exerciseVersionId, serie).then((f) => {
+                setFallo(f);
+                if (!f) setSerie({ ...serie, reps: '', rir: '', esfuerzo: '' });
               })
             }
           />
@@ -468,24 +605,26 @@ function EjercicioEnCurso({
       ) : (
         <>
           <Campo etiqueta={COPY_ENTRENAMIENTO.resumenDelEjercicio} value={resumen} onChangeText={setResumen} multiline />
-          <Boton texto="Guardar resumen" tipo="secundario" onPress={() => onResumen(resumen.trim())} deshabilitado={guardando || resumen.trim() === ''} />
+          <Boton
+            texto="Guardar resumen"
+            tipo="secundario"
+            onPress={() =>
+              void onResumen(resumen.trim(), realizado?.versionId ?? null).then((f) => {
+                setFallo(f);
+                if (!f) setSustitutoPendiente(null);
+              })
+            }
+            deshabilitado={guardando || resumen.trim() === ''}
+          />
         </>
       )}
       {buscando ? (
         <View>
           <Campo etiqueta="Buscar el ejercicio que hiciste" value={texto} onChangeText={setTexto} />
           <Boton texto="Buscar" tipo="secundario" onPress={() => void buscar()} />
+          {falloDeBusqueda ? <Aviso tipo="error" titulo="No pudimos buscar en el catálogo. Probá de nuevo." /> : null}
           {(resultados ?? []).map((e) => (
-            <Boton
-              key={e.versionId}
-              texto={`${COPY_ENTRENAMIENTO.confirmarSustitucion}: ${e.name}`}
-              tipo="secundario"
-              onPress={() => {
-                onSustituir(e);
-                setBuscando(false);
-                setResultados(null);
-              }}
-            />
+            <Boton key={e.versionId} texto={`${COPY_ENTRENAMIENTO.confirmarSustitucion}: ${e.name}`} tipo="secundario" onPress={() => void elegirSustituto(e)} />
           ))}
           {resultados && resultados.length === 0 ? <Parrafo tenue>No encontramos ejercicios con ese nombre.</Parrafo> : null}
           <Boton texto="Cancelar" tipo="enlace" onPress={() => setBuscando(false)} />
@@ -495,6 +634,11 @@ function EjercicioEnCurso({
       )}
     </Tarjeta>
   );
+}
+
+/** «60 kg × 8 reps · RIR 2 · esfuerzo 7». Una carga que no se registró se dice así: no es «sin carga» (06:5675). */
+function textoDeSerie(s: { load: { value: number; unit: string } | null; completedRepetitions: number | null; rir: number | null; perceivedExertion: number | null }): string {
+  return `${s.load ? `${s.load.value} ${s.load.unit}` : 'carga no registrada'} × ${s.completedRepetitions ?? '—'} ${COPY_ENTRENAMIENTO.reps.toLowerCase()}${s.rir !== null ? ` · RIR ${s.rir}` : ''}${s.perceivedExertion !== null ? ` · esfuerzo ${s.perceivedExertion}` : ''}`;
 }
 
 /** El resumen antes de confirmar: ejercicios, sustituciones, series y condición (B10-06:824-838). */
@@ -510,6 +654,7 @@ function ResumenDeRegistro({ registro: b }: { registro: BorradorDeEjecucion }) {
           valor={e.sets ? cantidadDeSeries(e.sets.length) : (e.executionSummary?.description ?? '')}
         />
       ))}
+      {b.sessionSummary ? <Dato etiqueta={COPY_ENTRENAMIENTO.resumenDeLaSesion} valor={b.sessionSummary.description} /> : null}
     </View>
   );
 }
@@ -529,8 +674,7 @@ function Registro({ registro }: { registro: RegistroDeEjecucion }) {
           />
           {(e.sets ?? []).map((s) => (
             <Parrafo key={s.setIndex}>
-              {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {s.load ? `${s.load.value} ${s.load.unit}` : 'sin carga'} × {s.completedRepetitions ?? '—'}
-              {s.rir !== null ? ` · RIR ${s.rir}` : ''}
+              {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {textoDeSerie(s)}
             </Parrafo>
           ))}
           {e.executionSummary ? <Parrafo>{e.executionSummary.description}</Parrafo> : null}
@@ -608,9 +752,28 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
   );
 }
 
+type Condicion = 'COMPLETED' | 'COMPLETED_WITH_DEVIATION' | 'NOT_COMPLETED';
+interface SerieEnCorreccion {
+  readonly carga: string;
+  readonly unidad: Unidad;
+  readonly reps: string;
+  readonly rir: string;
+}
+interface EstadoDeCorreccion {
+  readonly condicion: Condicion;
+  readonly motivoDeCondicion: string;
+  readonly series: readonly (readonly SerieEnCorreccion[])[];
+  readonly resumenes: readonly string[];
+  readonly resumenDeSesion: string;
+}
+
 /**
- * «Corregir registro» (B10-06:868-886): exige motivo y el cambio. Se corrigen las cargas, las repeticiones y el RIR
- * de las series; la corrección lleva el registro completo y el original no se toca (REG-06-116).
+ * «Corregir registro» (B10-06:868-886): exige motivo **y un cambio**. Se corrigen la condición y su motivo, la carga
+ * (con su unidad), las repeticiones y el RIR de cada serie, y los resúmenes; la corrección lleva el registro completo y
+ * el original no se toca (REG-06-116).
+ * - Corregir a «No pude realizarla» deja la corrección sin series: el original las conserva.
+ * - Corregir un «No pude realizarla» a realizada pide contar cómo fue la sesión: no se inventan series que no se
+ *   registraron (09v10:1099-1101).
  */
 function FormularioDeCorreccion({
   token,
@@ -625,84 +788,136 @@ function FormularioDeCorreccion({
   onCorregida: () => void;
   onCancelar: () => void;
 }) {
-  const base = x.effectiveView.kind === 'CORRECTED' ? (x.corrections.find((c) => c.correctionId === (x.effectiveView as { correctionId: string }).correctionId)?.correction ?? x.original) : x.original;
+  const base = registroVigente(x);
+  const inicial: EstadoDeCorreccion = {
+    condicion: base.sessionCondition,
+    motivoDeCondicion: base.reason ?? '',
+    series: base.exercises.map((e) =>
+      (e.sets ?? []).map((s) => ({
+        carga: s.load ? String(s.load.value) : '',
+        unidad: (s.load?.unit ?? 'kg') as Unidad,
+        reps: s.completedRepetitions === null ? '' : String(s.completedRepetitions),
+        rir: s.rir === null ? '' : String(s.rir),
+      })),
+    ),
+    resumenes: base.exercises.map((e) => e.executionSummary?.description ?? ''),
+    resumenDeSesion: base.sessionSummary?.description ?? '',
+  };
+  const [estado, setEstado] = useState<EstadoDeCorreccion>(inicial);
   const [motivo, setMotivo] = useState('');
-  const [series, setSeries] = useState(base.exercises.map((e) => (e.sets ?? []).map((s) => ({ carga: s.load ? String(s.load.value) : '', reps: s.completedRepetitions === null ? '' : String(s.completedRepetitions), rir: s.rir === null ? '' : String(s.rir) }))));
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
   const intento = useClaveDeIntento();
+  const sinDatosOriginales = base.sessionCondition === 'NOT_COMPLETED';
+
+  /** El registro corregido que describe un estado del formulario. El inicial describe lo que hoy rige. */
+  function construir(e: EstadoDeCorreccion) {
+    const reason = e.motivoDeCondicion.trim() || null;
+    if (e.condicion === 'NOT_COMPLETED') return { granularity: null, sessionCondition: e.condicion, reason, exercises: [], sessionSummary: null };
+    if (sinDatosOriginales) {
+      return { granularity: 'EXERCISE_OR_SESSION' as const, sessionCondition: e.condicion, reason, exercises: [], sessionSummary: e.resumenDeSesion.trim() ? { description: e.resumenDeSesion.trim() } : null };
+    }
+    return {
+      granularity: base.granularity,
+      sessionCondition: e.condicion,
+      reason,
+      exercises: base.exercises.map((ej, i) =>
+        ej.sets
+          ? {
+              prescriptionId: ej.prescriptionId,
+              performedExerciseVersionId: ej.performedExerciseVersionId,
+              sets: ej.sets.map((s, j) => {
+                const v = e.series[i]?.[j];
+                const carga = v ? leerNumero(v.carga) : null;
+                const reps = v ? leerNumero(v.reps) : null;
+                return {
+                  setIndex: s.setIndex,
+                  load: carga === null ? null : { value: carga, unit: v?.unidad ?? 'kg' },
+                  completedRepetitions: reps === null ? null : Math.round(reps),
+                  rir: v ? leerNumero(v.rir) : null,
+                  perceivedExertion: s.perceivedExertion,
+                };
+              }),
+            }
+          : { prescriptionId: ej.prescriptionId, performedExerciseVersionId: ej.performedExerciseVersionId, executionSummary: { description: (e.resumenes[i] ?? '').trim() } },
+      ),
+      sessionSummary: base.granularity === 'EXERCISE_OR_SESSION' && e.resumenDeSesion.trim() ? { description: e.resumenDeSesion.trim() } : null,
+    };
+  }
+
+  const cambiarSerie = (i: number, j: number, cambio: Partial<SerieEnCorreccion>) =>
+    setEstado((s) => ({ ...s, series: s.series.map((fila, a) => (a === i ? fila.map((c, k) => (k === j ? { ...c, ...cambio } : c)) : fila)) }));
 
   async function enviar() {
     if (!motivo.trim()) return setFallo('Contá por qué corregís el registro.');
-    const n = (s: string) => (s.trim() === '' ? null : Number(s.replace(',', '.')));
+    const esNumero = (t: string) => t.trim() === '' || Number.isFinite(Number(t.trim().replace(',', '.')));
+    if (!estado.series.every((fila) => fila.every((v) => esNumero(v.carga) && esNumero(v.reps) && esNumero(v.rir)))) return setFallo('Revisá los números de las series.');
+    const correccion = construir(estado);
+    // Corregir exige un cambio: una corrección igual a lo que rige no rectifica nada (B10-06:879-884).
+    if (JSON.stringify(correccion) === JSON.stringify(construir(inicial))) return setFallo('La corrección no cambia nada del registro.');
+    if (sinDatosOriginales && estado.condicion !== 'NOT_COMPLETED' && !estado.resumenDeSesion.trim()) return setFallo('Contá cómo fue la sesión.');
     setEnviando(true);
     setFallo(null);
-    const r = await api.corregirEjecucion(
-      token,
-      x.executionId,
-      {
-        reason: motivo.trim(),
-        correction: {
-          granularity: base.granularity,
-          sessionCondition: base.sessionCondition,
-          reason: base.reason,
-          sessionSummary: base.sessionSummary,
-          exercises: base.exercises.map((e, i) =>
-            e.sets
-              ? {
-                  prescriptionId: e.prescriptionId,
-                  performedExerciseVersionId: e.performedExerciseVersionId,
-                  sets: e.sets.map((s, j) => {
-                    const v = series[i]?.[j];
-                    return {
-                      setIndex: s.setIndex,
-                      load: v && n(v.carga) !== null ? { value: n(v.carga) as number, unit: s.load?.unit ?? 'kg' } : null,
-                      completedRepetitions: v && n(v.reps) !== null ? Math.round(n(v.reps) as number) : null,
-                      rir: v ? n(v.rir) : null,
-                      perceivedExertion: s.perceivedExertion,
-                    };
-                  }),
-                }
-              : { prescriptionId: e.prescriptionId, performedExerciseVersionId: e.performedExerciseVersionId, executionSummary: e.executionSummary ?? { description: '' } },
-          ),
-        },
-      },
-      intento.actual(),
-    );
+    const r = await api.corregirEjecucion(token, x.executionId, { reason: motivo.trim(), correction: correccion }, intento.actual());
     intento.registrar(r);
     setEnviando(false);
     if (sesionPerdida(r)) return;
-    if (!r.ok) return setFallo(r.tipo === 'API' && r.issues.length > 0 ? 'Hay un dato de la corrección que no se puede guardar.' : falloDe(r).mensaje);
+    if (!r.ok) return setFallo(r.tipo === 'API' && r.issues.some((i) => i.code === 'CORRECTION_WITHOUT_CHANGES') ? 'La corrección no cambia nada del registro.' : r.tipo === 'API' && r.issues.length > 0 ? 'Hay un dato de la corrección que no se puede guardar.' : falloDe(r).mensaje);
     onCorregida();
   }
+
+  const CONDICIONES: readonly { valor: Condicion; texto: string }[] = [
+    { valor: 'COMPLETED', texto: 'Realizada' },
+    { valor: 'COMPLETED_WITH_DEVIATION', texto: 'Realizada con desvío' },
+    { valor: 'NOT_COMPLETED', texto: COPY_ENTRENAMIENTO.noPudeRealizarla },
+  ];
 
   return (
     <Seccion titulo={COPY_ENTRENAMIENTO.corregirRegistro}>
       <Campo etiqueta={COPY_ENTRENAMIENTO.motivoDeLaCorreccion} value={motivo} onChangeText={setMotivo} />
-      {base.exercises.map((e, i) => (
-        <View key={e.prescriptionId}>
-          <Subtitulo>{e.performedExerciseName}</Subtitulo>
-          {(e.sets ?? []).map((s, j) => (
-            <View key={s.setIndex}>
-              <Parrafo>
-                {COPY_ENTRENAMIENTO.serie} {s.setIndex}
-              </Parrafo>
-              <Campo
-                etiqueta={`${COPY_ENTRENAMIENTO.carga} (${s.load?.unit ?? 'kg'})`}
-                value={series[i]?.[j]?.carga ?? ''}
-                onChangeText={(v) => setSeries((ss) => ss.map((fila, a) => (a === i ? fila.map((c, b) => (b === j ? { ...c, carga: v } : c)) : fila)))}
-                keyboardType="decimal-pad"
-              />
-              <Campo
-                etiqueta={COPY_ENTRENAMIENTO.reps}
-                value={series[i]?.[j]?.reps ?? ''}
-                onChangeText={(v) => setSeries((ss) => ss.map((fila, a) => (a === i ? fila.map((c, b) => (b === j ? { ...c, reps: v } : c)) : fila)))}
-                keyboardType="number-pad"
-              />
+      <Subtitulo>{COPY_ENTRENAMIENTO.condicionDeLaSesion}</Subtitulo>
+      {CONDICIONES.map((c) => (
+        <Boton key={c.valor} texto={c.texto} tipo={estado.condicion === c.valor ? 'primario' : 'secundario'} seleccionado={estado.condicion === c.valor} onPress={() => setEstado((s) => ({ ...s, condicion: c.valor }))} />
+      ))}
+      <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} value={estado.motivoDeCondicion} onChangeText={(v) => setEstado((s) => ({ ...s, motivoDeCondicion: v }))} />
+      {estado.condicion === 'NOT_COMPLETED' ? (
+        <Parrafo tenue>La corrección queda sin series. El registro original se conserva tal como está.</Parrafo>
+      ) : sinDatosOriginales ? (
+        <Campo etiqueta={`${COPY_ENTRENAMIENTO.resumenDeLaSesion}: contá cómo fue`} value={estado.resumenDeSesion} onChangeText={(v) => setEstado((s) => ({ ...s, resumenDeSesion: v }))} multiline />
+      ) : (
+        <>
+          {base.exercises.map((e, i) => (
+            <View key={e.prescriptionId}>
+              <Subtitulo>{e.performedExerciseName}</Subtitulo>
+              {(e.sets ?? []).map((s, j) => {
+                const v = estado.series[i]?.[j];
+                return (
+                  <View key={s.setIndex}>
+                    <Parrafo>
+                      {COPY_ENTRENAMIENTO.serie} {s.setIndex}
+                    </Parrafo>
+                    <Campo etiqueta={`${COPY_ENTRENAMIENTO.carga} (${v?.unidad ?? 'kg'})`} value={v?.carga ?? ''} onChangeText={(t) => cambiarSerie(i, j, { carga: t })} keyboardType="decimal-pad" />
+                    <Boton texto={`Cambiar a ${v?.unidad === 'lb' ? 'kg' : 'lb'}`} tipo="enlace" onPress={() => cambiarSerie(i, j, { unidad: v?.unidad === 'lb' ? 'kg' : 'lb' })} />
+                    <Campo etiqueta={COPY_ENTRENAMIENTO.reps} value={v?.reps ?? ''} onChangeText={(t) => cambiarSerie(i, j, { reps: t })} keyboardType="number-pad" />
+                    <Campo etiqueta={`${COPY_ENTRENAMIENTO.rir} (opcional)`} value={v?.rir ?? ''} onChangeText={(t) => cambiarSerie(i, j, { rir: t })} keyboardType="number-pad" />
+                  </View>
+                );
+              })}
+              {e.executionSummary ? (
+                <Campo
+                  etiqueta={COPY_ENTRENAMIENTO.resumenDelEjercicio}
+                  value={estado.resumenes[i] ?? ''}
+                  onChangeText={(t) => setEstado((s) => ({ ...s, resumenes: s.resumenes.map((r0, k) => (k === i ? t : r0)) }))}
+                  multiline
+                />
+              ) : null}
             </View>
           ))}
-        </View>
-      ))}
+          {base.granularity === 'EXERCISE_OR_SESSION' ? (
+            <Campo etiqueta={`${COPY_ENTRENAMIENTO.resumenDeLaSesion} (opcional)`} value={estado.resumenDeSesion} onChangeText={(v) => setEstado((s) => ({ ...s, resumenDeSesion: v }))} multiline />
+          ) : null}
+        </>
+      )}
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       <Boton texto="Registrar corrección" onPress={() => void enviar()} ocupado={enviando} />
       <Boton texto="Cancelar" tipo="enlace" onPress={onCancelar} deshabilitado={enviando} />

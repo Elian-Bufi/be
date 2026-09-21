@@ -102,7 +102,7 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   // Fallas de forma del pedido (400): un número que falta o que no se entiende.
   INVALID_TYPE: 'falta un número o no se entiende lo escrito',
   INVALID_UNION: 'falta un número o no se entiende lo escrito',
-  TOO_SMALL: 'el número es demasiado chico',
+  TOO_SMALL: 'falta un dato, o el número es demasiado chico',
   TOO_BIG: 'el número es demasiado grande',
   NOT_MULTIPLE_OF: 'el número no es entero',
 };
@@ -110,7 +110,7 @@ const PROBLEMA: Readonly<Record<string, string>> = {
 const sesionVacia = (n: number): SesionE => ({ label: `Sesión ${String.fromCharCode(64 + Math.min(n, 26))}`, instructions: null, prescriptions: [] });
 
 export function EditorDePlan({ planId, onActivado }: { planId: string; onActivado: () => void }) {
-  const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const [version, setVersion] = useState<VersionDePlanDeEntrenamiento | null>(null);
   const [error, setError] = useState<'no-disponible' | 'error' | null>(null);
   const [bloques, setBloques] = useState<Bloques>([]);
@@ -157,7 +157,7 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
     const actualizarObjetivo = objetivoVigente && objetivoVigente !== version.objectiveVersionId ? { objectiveVersionId: objetivoVigente } : {};
     const r = await api.editarPlanDeEntrenamiento(token, planId, { expectedVersion: version.version, changes: { blocks: bloques }, nextReviewAt: proximaRevision || null, ...actualizarObjetivo });
     setGuardando(false);
-    if (sesionPerdida(r)) return null;
+    if (sesionPerdida(r) || accesoRetirado(r)) return null;
     if (!r.ok) {
       if (r.tipo === 'API' && r.issues.length > 0) setProblemas(r.issues);
       setMensaje({ tipo: 'error', texto: r.tipo === 'API' && r.issues.length > 0 ? 'Hay elementos del plan que no se pueden guardar.' : mensajeDeFallo(r) });
@@ -174,7 +174,7 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
     const v = sucio ? await guardar() : version;
     if (!v) return;
     const r = await api.validarPlanDeEntrenamiento(token, planId, v.version);
-    if (sesionPerdida(r)) return;
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setMensaje({ tipo: 'error', texto: mensajeDeFallo(r) });
     setProblemas(r.datos.data.issues);
     setMensaje(r.datos.data.valid ? { tipo: 'exito', texto: COPY_ENTRENAMIENTO.sinProblemas } : { tipo: 'error', texto: 'Hay elementos por corregir antes de activar.' });
@@ -187,7 +187,7 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
     const r = await api.activarPlanDeEntrenamiento(token, planId, version.version, intentoDeActivar.actual());
     intentoDeActivar.registrar(r);
     setActivando(false);
-    if (sesionPerdida(r)) return;
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) {
       if (r.tipo === 'API' && r.issues.length > 0) {
         setConfirmar(false);
@@ -473,7 +473,9 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
             value={criterio}
             onChange={(e) => {
               const c = e.target.value as Criterio | '';
-              onCambiar({ intensity: c ? { criterion: c, target: { value: c === 'RIR' ? 2 : 70, reference: null } } : null });
+              // Elegir el criterio no trae un objetivo: el número lo escribe el profesional (09v10:339-340). Vacío no
+              // se guarda, y el guardado señala el ejercicio.
+              onCambiar({ intensity: c ? { criterion: c, target: { value: Number.NaN, reference: null } } : null });
             }}
           >
             <option value="">{COPY_ENTRENAMIENTO.sinCriterio}</option>
@@ -553,7 +555,7 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
             </button>
           </div>
         ))}
-        <button type="button" className="boton boton--enlace" onClick={() => onCambiar({ professionalParameters: [...parametros, { label: 'Descanso', value: 90, unit: 's' }] })}>
+        <button type="button" className="boton boton--enlace" onClick={() => onCambiar({ professionalParameters: [...parametros, { label: '', value: '', unit: null }] })}>
           Agregar parámetro
         </button>
       </fieldset>
@@ -570,10 +572,11 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
 
 /** «Agregar ejercicio → buscar catálogo BE» o «Crear manualmente» (B10-06:485-498). wger llega en WP-07. */
 function BuscadorDeEjercicios({ id, onElegir }: { id: string; onElegir: (e: EjercicioDeCatalogo) => void }) {
-  const { token, sesionPerdida } = useEntrenamiento();
+  const { token, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState('');
   const [resultados, setResultados] = useState<EjercicioDeCatalogo[] | null>(null);
+  const [falloDeBusqueda, setFalloDeBusqueda] = useState(false);
   const [manual, setManual] = useState(false);
   const [nombre, setNombre] = useState('');
   const [fallo, setFallo] = useState<string | null>(null);
@@ -583,14 +586,16 @@ function BuscadorDeEjercicios({ id, onElegir }: { id: string; onElegir: (e: Ejer
     e.preventDefault();
     const r = await api.buscarEjercicios(token, texto.trim());
     if (sesionPerdida(r)) return;
-    setResultados(r.ok ? r.datos.data : []);
+    // Un error no es un catálogo vacío (B10-10:41): se dice que no se pudo buscar, no que no hay resultados.
+    setFalloDeBusqueda(!r.ok);
+    setResultados(r.ok ? r.datos.data : null);
   }
 
   async function crear() {
     if (!nombre.trim()) return setFallo('Escribí el nombre del ejercicio.');
     const r = await api.crearEjercicio(token, nombre.trim(), intento.actual());
     intento.registrar(r);
-    if (sesionPerdida(r)) return;
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     onElegir(r.datos.data);
     setManual(false);
@@ -614,6 +619,11 @@ function BuscadorDeEjercicios({ id, onElegir }: { id: string; onElegir: (e: Ejer
         </button>
       </form>
       <p className="nota">{COPY_ENTRENAMIENTO.catalogoSintetico}</p>
+      {falloDeBusqueda ? (
+        <Aviso tipo="error">
+          <p>No pudimos buscar en el catálogo. Probá de nuevo.</p>
+        </Aviso>
+      ) : null}
       {resultados ? (
         resultados.length === 0 ? (
           <p>No encontramos ejercicios con ese nombre.</p>

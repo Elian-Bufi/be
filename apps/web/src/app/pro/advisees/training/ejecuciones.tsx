@@ -8,30 +8,33 @@
  * - Cada ejecución muestra lo planificado y lo ejecutado por separado, la sustitución con sus dos puntas, y las
  *   correcciones con su autor real: «Registro original / Corrección vigente / Historial» (B10-06:890-900).
  * - Sin «disciplinado», «mal rendimiento» ni porcentajes (B10-06:963-966).
+ * - Filtros por período, versión del plan y ejercicio (B10-06:956-961). El período vive fuera del estado de lectura.
+ * - Una carga que no se registró dice eso, «carga no registrada»: no es «sin carga» ni peso corporal (06:5675).
  */
 import {
   cantidadDeSeries,
   COPY_ENTRENAMIENTO,
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
+  registroVigente,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EjecucionDeEntrenamiento,
   type RegistroDeEjecucion,
 } from '@be/domain';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Campo } from '../../../../components/formulario';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
+import { FiltroDePeriodo, type Periodo } from './periodo';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
 
 export function VistaDeEjecuciones() {
   const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
-  const [periodo, setPeriodo] = useState<{ periodStart?: string; periodEnd?: string }>({});
-  const [desde, setDesde] = useState('');
-  const [hasta, setHasta] = useState('');
+  const [periodo, setPeriodo] = useState<Periodo>({});
   const [r, setR] = useState<Resultado<Contexto> | null>(null);
+  const [version, setVersion] = useState('');
+  const [ejercicio, setEjercicio] = useState('');
 
   const cargar = useCallback(async () => {
     setR(null);
@@ -44,22 +47,54 @@ export function VistaDeEjecuciones() {
     void cargar();
   }, [cargar]);
 
-  function filtrar(e: FormEvent) {
-    e.preventDefault();
-    setPeriodo({ ...(desde ? { periodStart: desde } : {}), ...(hasta ? { periodEnd: hasta } : {}) });
-  }
+  // Los ejercicios que aparecen en el período, planificados o ejecutados: el filtro no ofrece lo que no hay.
+  const ejercicios = useMemo(() => {
+    if (!r?.ok) return [];
+    const nombres = new Set<string>();
+    for (const x of r.datos.registeredExecutions) {
+      for (const p of x.plannedSession.prescriptions) nombres.add(p.exerciseName);
+      for (const e of registroVigente(x).exercises) nombres.add(e.performedExerciseName);
+    }
+    return [...nombres].sort((a, b) => a.localeCompare(b, 'es'));
+  }, [r]);
+  const visibles = r?.ok
+    ? r.datos.registeredExecutions.filter(
+        (x) =>
+          (!version || x.planId === version) &&
+          (!ejercicio || x.plannedSession.prescriptions.some((p) => p.exerciseName === ejercicio) || registroVigente(x).exercises.some((e) => e.performedExerciseName === ejercicio)),
+      )
+    : [];
 
   return (
-    <EstadoDeLectura r={r} onReintentar={cargar}>
+    <div className="secciones">
+      <FiltroDePeriodo id="trn-periodo" onAplicar={setPeriodo} />
+      <EstadoDeLectura r={r} onReintentar={cargar}>
       {r?.ok ? (
         <div className="secciones">
-          <form className="fila-de-dato" onSubmit={filtrar}>
-            <Campo id="trn-periodo-desde" etiqueta="Desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
-            <Campo id="trn-periodo-hasta" etiqueta="Hasta" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
-            <button type="submit" className="boton boton--secundario">
-              Ver período
-            </button>
-          </form>
+          <div className="fila-de-dato">
+            <div className="campo">
+              <label htmlFor="trn-filtro-version">Versión del plan</label>
+              <select id="trn-filtro-version" value={version} onChange={(e) => setVersion(e.target.value)}>
+                <option value="">Todas</option>
+                {r.datos.activePlanVersions.map((v) => (
+                  <option key={v.planId} value={v.planId}>
+                    Activada el {fecha(v.activatedAt as string)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="campo">
+              <label htmlFor="trn-filtro-ejercicio">Ejercicio</label>
+              <select id="trn-filtro-ejercicio" value={ejercicio} onChange={(e) => setEjercicio(e.target.value)}>
+                <option value="">Todos</option>
+                {ejercicios.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <p className="nota">
             Período: {dia(`${r.datos.period.start}T12:00:00Z`)} a {dia(`${r.datos.period.end}T12:00:00Z`)}
           </p>
@@ -67,8 +102,9 @@ export function VistaDeEjecuciones() {
           <section className="seccion" aria-labelledby="titulo-ejecuciones">
             <h2 id="titulo-ejecuciones">Sesiones registradas</h2>
             {r.datos.registeredExecutions.length === 0 ? <p>{COPY_ENTRENAMIENTO.sinEjecuciones}</p> : null}
+            {r.datos.registeredExecutions.length > 0 && visibles.length === 0 ? <p>Ninguna sesión registrada del período coincide con el filtro.</p> : null}
             <ul className="lista">
-              {r.datos.registeredExecutions.map((x) => (
+              {visibles.map((x) => (
                 <DetalleDeEjecucion key={x.executionId} ejecucion={x} />
               ))}
             </ul>
@@ -81,7 +117,8 @@ export function VistaDeEjecuciones() {
           </section>
         </div>
       ) : null}
-    </EstadoDeLectura>
+      </EstadoDeLectura>
+    </div>
   );
 }
 
@@ -109,7 +146,7 @@ export function Registro({ registro }: { registro: RegistroDeEjecucion }) {
               <ol>
                 {e.sets.map((s) => (
                   <li key={s.setIndex}>
-                    {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {s.load ? `${s.load.value} ${s.load.unit}` : 'sin carga'} × {s.completedRepetitions ?? '—'} {COPY_ENTRENAMIENTO.reps.toLowerCase()}
+                    {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {s.load ? `${s.load.value} ${s.load.unit}` : 'carga no registrada'} × {s.completedRepetitions ?? '—'} {COPY_ENTRENAMIENTO.reps.toLowerCase()}
                     {s.rir !== null ? ` · ${COPY_ENTRENAMIENTO.rir} ${s.rir}` : ''}
                     {s.perceivedExertion !== null ? ` · esfuerzo percibido ${s.perceivedExertion}` : ''}
                   </li>
@@ -127,10 +164,11 @@ export function Registro({ registro }: { registro: RegistroDeEjecucion }) {
 
 function DetalleDeEjecucion({ ejecucion: x }: { ejecucion: EjecucionDeEntrenamiento }) {
   const vigente = x.effectiveView.kind === 'CORRECTED' ? x.corrections.find((c) => c.correctionId === (x.effectiveView as { correctionId: string }).correctionId) : null;
+  const rige = registroVigente(x);
   return (
     <li className="lista__item">
       <p className="lista__titulo">
-        {x.plannedSession.label} · {dia(`${x.date}T12:00:00Z`)} · {etiquetaDeCondicionRegistrada(vigente ? vigente.correction : x.original)}
+        {x.plannedSession.label} · {dia(`${x.date}T12:00:00Z`)} · {etiquetaDeCondicionRegistrada(rige)}
       </p>
       <details>
         <summary>Ver detalle</summary>

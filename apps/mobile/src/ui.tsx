@@ -38,17 +38,20 @@ export function Boton({
   tipo = 'primario',
   deshabilitado = false,
   ocupado = false,
+  seleccionado,
 }: {
   texto: string;
   onPress: () => void;
   tipo?: TipoDeBoton;
   deshabilitado?: boolean;
   ocupado?: boolean;
+  /** Para una opción de un grupo: el lector de pantalla dice si está elegida, no solo el color (B10-10:36). */
+  seleccionado?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole={tipo === 'enlace' ? 'link' : 'button'}
-      accessibilityState={{ disabled: deshabilitado || ocupado, busy: ocupado }}
+      accessibilityState={{ disabled: deshabilitado || ocupado, busy: ocupado, ...(seleccionado === undefined ? {} : { selected: seleccionado }) }}
       disabled={deshabilitado || ocupado}
       onPress={onPress}
       style={({ pressed }) => [estilos.boton, estilos[`boton_${tipo}`], (deshabilitado || ocupado) && estilos.deshabilitado, pressed && estilos.presionado]}

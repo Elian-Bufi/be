@@ -24,7 +24,7 @@ function numerosDeVersion(versiones: readonly ResumenDeVersionDePlanDeEntrenamie
 }
 
 export function VistaDePlan() {
-  const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const [r, setR] = useState<Resultado<{ versiones: ResumenDeVersionDePlanDeEntrenamiento[]; activa: VersionDePlanDeEntrenamiento | null; objetivo: string | null }> | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [creando, setCreando] = useState(false);
@@ -63,7 +63,7 @@ export function VistaDePlan() {
     );
     intento.registrar(res);
     setCreando(false);
-    if (sesionPerdida(res)) return;
+    if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return setAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
     setAviso({ tipo: 'exito', texto: 'Borrador creado. No es visible para el asesorado hasta que lo actives.' });
     await cargar();
