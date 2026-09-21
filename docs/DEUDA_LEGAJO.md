@@ -65,19 +65,19 @@
 | DL-058 | WP-05 · 2026-09-20 | 06:8941-8986 · 04:6, 04:17 · 08:1703-1706 · 10-B10-07:10-12 | El núcleo operable de antropometría vive en material declarado «NO APROBADO» | **DECIDIDA** 2026-09-20 · opción A, por delegación de Dirección en el ejecutor |
 | DL-059 | WP-05 · 2026-09-20 | DV-05:1127 · 05:10879-10881 · 09v16:1959-1974 · 11A:581 | Qué responde la segunda anulación de la misma medición | **DECIDIDA** 2026-09-20 · opción A, por delegación de Dirección en el ejecutor |
 | DL-060 | WP-05 · 2026-09-20 | 08:200 · 08:304 · 08:603 · 08:1335 | Sin fila de pertinencia para antropometría, y «ausencia de fila: Deny» | **DECIDIDA** 2026-09-20 · opción A, por delegación de Dirección en el ejecutor |
-| DL-061 | WP-05 · 2026-09-20 | 09v11:272 · 09v11:202-216 · 09v16 (grep `frmv_`: 0) | `formulaVersionId` obligatorio en el derivado y sin operación que lo descubra | ABIERTA |
-| DL-062 | WP-05 · 2026-09-20 | 09v11:309-332 · 09v16:1980-2000 · 06:6507 | `preparationReference` obligatorio en la importación, sin entidad ni API | ABIERTA |
-| DL-063 | WP-05 · 2026-09-20 | 08:1368, 08:1374, 08:1482, 08:1497 (R-18) | El borrador antropométrico no tiene plazo de expiración declarado | ABIERTA |
-| DL-064 | WP-05 · 2026-09-20 | 06:6350-6359 · 06:6513 · 09v11:664-706 · 10-B10-07:1051-1062 | La «evaluación de compatibilidad» es obligatoria y no está modelada como objeto | ABIERTA |
-| DL-065 | WP-05 · 2026-09-20 | 11A:573-587 · 11A:155-169 · DV-05:1144 | Siete de los once TEST-ANT son solo un título de una línea | ABIERTA |
-| DL-066 | WP-05 · 2026-09-20 | DV-05:1131 · 08:1330-1341 · 09v16:1764-1775 | El adversarial 10 no tiene test que pruebe el borrador **de otro profesional** | ABIERTA |
-| DL-067 | WP-05 · 2026-09-20 | DV-05:1128 · 11A:540, 584, 625 · 06:6388-6398 | El adversarial 7 de mediciones no tiene ID de test asignado | ABIERTA |
-| DL-068 | WP-05 · 2026-09-20 | 08:200, 08:1332, 08:1385, 08:1525 · 09v11:388-400 | Nadie define quién autoriza **crear** y **registrar** la evaluación | ABIERTA |
-| DL-069 | WP-05 · 2026-09-20 | 09v11:534-538, 563-569, 726-748 | Objetos `{}` vacíos en los contratos de lectura de ANT-03, ANT-04 y ANT-06 | ABIERTA |
-| DL-070 | WP-05 · 2026-09-20 | 09v11:713-757 · 04:583 | La evolución devuelve un bloque por métrica y el 09 declara una métrica por respuesta | ABIERTA |
-| DL-071 | WP-05 · 2026-09-20 | 09v11:592-605, 664 | ANT-05 no acepta el lote de correcciones ni los metadatos reconstruibles que el 09 admite | ABIERTA |
-| DL-072 | WP-05 · 2026-09-20 | 09v11:336-339 | ANT-01 filtra por `kind` y el 09 declara `status` | ABIERTA |
-| DL-073 | WP-05 · 2026-09-20 | 10-B10-07 · `direccion/UI-ANTROPOMETRIA.md` | El 10 declara la carga en formulario y Dirección pide la carga sobre la figura | ABIERTA |
+| DL-061 | WP-05 · 2026-09-20 | 09v11:272 · 09v11:202-216 · 09v16 (grep `frmv_`: 0) | `formulaVersionId` obligatorio en el derivado y sin operación que lo descubra | **DECIDIDA** 2026-09-20 · opción A · la regla versionada del método cumple el rol |
+| DL-062 | WP-05 · 2026-09-20 | 09v11:309-332 · 09v16:1980-2000 · 06:6507 | `preparationReference` obligatorio en la importación, sin entidad ni API | **DECIDIDA** 2026-09-20 · opción A · el flujo va al paquete de integraciones |
+| DL-063 | WP-05 · 2026-09-20 | 08:1368, 08:1374, 08:1482, 08:1497 (R-18) | El borrador antropométrico no tiene plazo de expiración declarado | **DECIDIDA** 2026-09-20 · opción A · el parámetro sigue pendiente de fijar antes del primer dato real |
+| DL-064 | WP-05 · 2026-09-20 | 06:6350-6359 · 06:6513 · 09v11:664-706 · 10-B10-07:1051-1062 | La «evaluación de compatibilidad» es obligatoria y no está modelada como objeto | **DECIDIDA** 2026-09-20 · opción A · metadato calculado por tramo |
+| DL-065 | WP-05 · 2026-09-20 | 11A:573-587 · 11A:155-169 · DV-05:1144 | Siete de los once TEST-ANT son solo un título de una línea | **DECIDIDA** 2026-09-20 · opción A · se escriben los siete oráculos |
+| DL-066 | WP-05 · 2026-09-20 | DV-05:1131 · 08:1330-1341 · 09v16:1764-1775 | El adversarial 10 no tiene test que pruebe el borrador **de otro profesional** | **DECIDIDA** 2026-09-20 · opción A · oráculo derivado TEST-ANT-012 |
+| DL-067 | WP-05 · 2026-09-20 | DV-05:1128 · 11A:540, 584, 625 · 06:6388-6398 | El adversarial 7 de mediciones no tiene ID de test asignado | **DECIDIDA** 2026-09-20 · opción A · TEST-ANT-009 y TEST-ANT-010 |
+| DL-068 | WP-05 · 2026-09-20 | 08:200, 08:1332, 08:1385, 08:1525 · 09v11:388-400 | Nadie define quién autoriza **crear** y **registrar** la evaluación | **DECIDIDA** 2026-09-20 · opción A · misma lista que la retoma del borrador |
+| DL-069 | WP-05 · 2026-09-20 | 09v11:534-538, 563-569, 726-748 | Objetos `{}` vacíos en los contratos de lectura de ANT-03, ANT-04 y ANT-06 | **DECIDIDA** 2026-09-20 · opción A · forma mínima definida y publicada |
+| DL-070 | WP-05 · 2026-09-20 | 09v11:713-757 · 04:583 | La evolución devuelve un bloque por métrica y el 09 declara una métrica por respuesta | **DECIDIDA** 2026-09-20 · opción A · se mantiene el array de métricas |
+| DL-071 | WP-05 · 2026-09-20 | 09v11:592-605, 664 | ANT-05 no acepta el lote de correcciones ni los metadatos reconstruibles que el 09 admite | **DECIDIDA** 2026-09-20 · opción A · de a una; el lote cuando haya más de un tipo |
+| DL-072 | WP-05 · 2026-09-20 | 09v11:336-339 | ANT-01 filtra por `kind` y el 09 declara `status` | **DECIDIDA** 2026-09-20 · opción A · sumar `status`, conservar `kind` (PENDIENTE de implementar) |
+| DL-073 | WP-05 · 2026-09-20 | 10-B10-07 · `direccion/UI-ANTROPOMETRIA.md` | El 10 declara la carga en formulario y Dirección pide la carga sobre la figura | **DECIDIDA** 2026-09-20 · opción A · paquete de refinamiento de UI posterior |
 
 ---
 
@@ -1319,7 +1319,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-061 — `formulaVersionId` obligatorio en el derivado y sin operación que lo descubra
 
-**Prioridad:** media · **Documento:** 09v11:272 · 09v11:202-216 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 09v11:272 · 09v11:202-216 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** El schema `DerivedAnthropometricResult` obliga a persistir `formulaVersionId` (`frmv_…`, 09v11:272) junto al `methodVersionId`. Ninguna operación lo descubre: `AnthropometrySpecificationSummary` expone `specificationId` y `versionId`, no la fórmula (09v11:202-216). Un grep de `frmv_` sobre el consolidado v0.16 devuelve cero ocurrencias.
 
@@ -1333,9 +1333,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Materializado en WP-05.** La versión de método publica su regla de dominio con identificador versionado (`ruleId`, en API-MTH-01 y API-MTH-02), y la corrida la guarda tal como se aplicó (`ejecucion_de_calculo.regla`). El cliente no inventa nada y no la envía: la elige eligiendo la versión del método. Con eso, REG-06-156 queda satisfecho —«Fórmula/regla de dominio aplicable identificada y versionada»— sin crear un identificador `frmv_` que el legajo no define en ninguna operación. La deuda sigue abierta porque el nombre del campo en el 09v11 es otro; lo que está resuelto es la garantía.
 
+**Decisión de Dirección (2026-09-20): opción A.** La regla versionada que publica el método (`ruleId`) cumple el rol de identificar la fórmula aplicada. REG-06-156 queda satisfecho y auditable. Lo que permanece como diferencia es el **nombre del campo**: el 09v11 lo llama `formulaVersionId` con formato `frmv_…`, y ninguna operación del 09 lo entrega.
+
 ## DL-062 — `preparationReference` obligatorio en la importación, sin entidad ni API
 
-**Prioridad:** baja · **Documento:** 09v11:309-332 · 09v16:1980-2000 · 06:6507 · **Estado:** ABIERTA
+**Prioridad:** baja · **Documento:** 09v11:309-332 · 09v16:1980-2000 · 06:6507 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** El origen `CONTROLLED_IMPORT` exige `source.preparationReference` (`prep_…`) con procedencia reconstruible, pero el consolidado aclara que el parche «no crea una entidad/API de import-preparation» y que la referencia puede ser opaca. INV-06-167 se viola si se exige un formato o columnas concretas (06:6507).
 
@@ -1345,9 +1347,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A.
 
+**Decisión de Dirección (2026-09-20): opción A.** El flujo de carga va al paquete de integraciones, junto con RF-028 (DL-056). WP-05 conserva el valor de origen `CONTROLLED_IMPORT` y la referencia de preparación como texto opaco. El legajo **prohíbe** fijar formato o columnas (INV-06-167), así que diseñar la entidad sin un caso real de importación sería inventar una forma que después habría que deshacer.
+
 ## DL-063 — El borrador antropométrico no tiene plazo de expiración declarado
 
-**Prioridad:** media · **Documento:** 08:1368, 1374, 1482, 1497 (R-18) · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 08:1368, 1374, 1482, 1497 (R-18) · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** R-18 dice que los residuos de preparación quedan «suprimidos tras [PARÁMETRO: plazo operativo corto a fijar antes de datos reales]» (08:1368) y que «el parámetro debe quedar configurado antes del primer dato real» (08:1374). El riesgo R-08-17 queda abierto.
 
@@ -1359,9 +1363,13 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A, con la constancia explícita de que el parámetro debe fijarse antes de cualquier dato real.
 
+**Decisión de Dirección (2026-09-20): opción A.** No se implementa expiración mientras el ambiente sea sintético.
+
+> **Condición que sobrevive a esta decisión.** Es la única deuda del paquete con un vencimiento que no controlamos: el plazo **tiene que quedar fijado antes de que entre el primer dato real de una persona**, y hasta entonces R-08-17 sigue abierto. Decidir «no implementar» no cierra el riesgo, lo posterga con fecha. Si BE sale de datos sintéticos sin este parámetro, un borrador con datos de salud queda como residuo permanente.
+
 ## DL-064 — La «evaluación de compatibilidad» es obligatoria y no está modelada como objeto
 
-**Prioridad:** media · **Documento:** 06:6350-6359 · 06:6513 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 06:6350-6359 · 06:6513 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** REG-06-162 exige, para comparar dos observaciones, «una evaluación explícita y justificable de compatibilidad» que conserve especificación, versionado y fundamento sobre protocolo, método, versión y unidad. El 06 no la modela como entidad y el 09 la deja como `comparabilityMetadata: {}` (09v11:664-706).
 
@@ -1371,9 +1379,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A: cubre el invariante (lo no comparable se marca y no se fuerza) sin inventar una entidad que el 06 no declara.
 
+**Decisión de Dirección (2026-09-20): opción A.** La compatibilidad se resuelve como metadato calculado por tramo: cada punto declara su grupo y, si no es comparable con el anterior, por qué no. Cubre el invariante —lo no comparable se marca y no se fuerza— sin crear una entidad que el 06 no declara. La alternativa habría exigido que un profesional firme cada comparación entre dos puntos consecutivos.
+
 ## DL-065 — Siete de los once TEST-ANT son solo un título de una línea
 
-**Prioridad:** alta · **Documento:** 11A:573-587 · 11A:155-169 · **Estado:** ABIERTA
+**Prioridad:** alta · **Documento:** 11A:573-587 · 11A:155-169 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** El 11A §16 enuncia los once escenarios como títulos, sin ninguno de los trece campos que su propia §6 declara obligatorios (11A:155-169). DV-05 materializa cuatro y lo admite: «Antropometría | 4 | 11» (DV-05:1144). TEST-ANT-005 a 011 no tienen oráculo en ninguna parte.
 
@@ -1385,9 +1395,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A.
 
+**Decisión de Dirección (2026-09-20): opción A.** Se redactan los siete oráculos faltantes (TEST-ANT-005 a 011) con la plantilla de 11A §6 y quedan como entregable de legajo. El comportamiento ya está cubierto por pruebas que pasan; lo que falta es la **declaración de qué tenían que probar**, que es lo que una mesa puede exigir. Queda como trabajo pendiente del próximo tramo.
+
 ## DL-066 — El adversarial 10 no tiene test que pruebe el borrador **de otro profesional**
 
-**Prioridad:** alta · **Documento:** DV-05:1131 · 08:1330-1341 · **Estado:** ABIERTA
+**Prioridad:** alta · **Documento:** DV-05:1131 · 08:1330-1341 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** El adversarial 10 («Consultar un borrador de evaluación de otro profesional» → «No aparece: ni como bloqueado, ni como existente») declara como fuente «TEST-ANT-\* · 08 §56.5». Los dos candidatos del 11A —TEST-ANT-002 «draft no aparece como registrada» y TEST-DOM-004 «EN_PREPARACION ≠ REGISTRADA»— prueban otra cosa: que el borrador **propio** no cuenta como registrado, no que el **ajeno** sea indistinguible de inexistente.
 
@@ -1397,9 +1409,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A.
 
+**Decisión de Dirección (2026-09-20): opción A.** Se escribe el oráculo derivado del 08 §56.5 como **TEST-ANT-012**, con el mismo criterio que WP-04 usó en DL-027. Ya está implementado y pasa en CI y en vivo (captura `web-19`). Reinterpretar TEST-ANT-002 habría sido afirmar que está probado algo que no lo está, y justo en la garantía de privacidad más fuerte del sistema: la diferencia entre «no lo ves» y «no existe».
+
 ## DL-067 — El adversarial 7 de mediciones no tiene ID de test asignado
 
-**Prioridad:** media · **Documento:** DV-05:1128 · 11A:540, 584, 625 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** DV-05:1128 · 11A:540, 584, 625 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** DL-042 asigna a WP-05 «el 7 en su variante de evolución de mediciones (INV-06-176)» sin nombrar un TEST. Hay cuatro candidatos con el mismo invariante detrás: TEST-DOM-001, TEST-ANT-009, TEST-ANT-010 y el de proyecciones.
 
@@ -1409,9 +1423,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A.
 
+**Decisión de Dirección (2026-09-20): opción A.** El oráculo ejecutable es **TEST-ANT-009** complementado con **TEST-ANT-010**, y así queda declarado en la evidencia. El candidato de proyecciones está fuera de alcance: son M-11 e INV-06-182 prohíbe que B-10 modele proyección.
+
 ## DL-068 — Nadie define quién autoriza **crear** y **registrar** la evaluación
 
-**Prioridad:** alta · **Documento:** 08:200, 1332, 1385, 1525 · **Estado:** ABIERTA
+**Prioridad:** alta · **Documento:** 08:200, 1332, 1385, 1525 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** El 08 gobierna con lista de condiciones la retoma del borrador (§56.5.1), la anulación (§56.6.1) y la ejecución de métodos (§56.3.1), pero no hay lista equivalente para el acto de **registrar** la evaluación. La fila del §11 solo declara quién puede ver.
 
@@ -1421,9 +1437,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A.
 
+**Decisión de Dirección (2026-09-20): opción A.** Se aplica la misma lista que el 08 fija para la retoma del borrador: capacidad antropométrica habilitada, vínculo aceptado, B2 del alcance y A3 vigentes, evaluados dentro de la transacción de escritura. **Registrar es más sensible que retomar**, no menos: es el acto que vuelve el dato inmutable e histórico, y dejarlo con menos gobierno que la operación previa habría sido el peor resultado.
+
 ## DL-069 — Objetos `{}` vacíos en los contratos de lectura de ANT-03, ANT-04 y ANT-06
 
-**Prioridad:** media · **Documento:** 09v11:534-538, 563-569, 726-748 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 09v11:534-538, 563-569, 726-748 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** Varias respuestas dejan la forma sin definir: ANT-03 con `author{}` y `summary{}`; ANT-04 con `specification{}` y `comparabilityMetadata{}`; ANT-06 con `period{}` y `comparability{}`. No se puede escribir una prueba de contrato sobre un objeto vacío.
 
@@ -1433,9 +1451,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A, con la forma declarada en esta definición.
 
+**Decisión de Dirección (2026-09-20): opción A.** WP-05 define la forma mínima de cada objeto y la publica en `docs/api/openapi.json`, generado desde `@be/domain`. Mismo criterio que WP-04 con DL-055. Sobre un objeto vacío no se puede escribir una prueba de contrato, y el contrato es la mitad de la evidencia del proyecto.
+
 ## DL-070 — La evolución devuelve un bloque por métrica y el 09 declara una por respuesta
 
-**Prioridad:** media · **Documento:** 09v11:713-757 · 04:583 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 09v11:713-757 · 04:583 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** API-ANT-06 se declara `GET …/progress?metric=&periodStart=&periodEnd=` y su respuesta lleva `metricCode` en la raíz, con una sola serie: una métrica por llamada (09v11:713, 726-748).
 
@@ -1449,9 +1469,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A. La forma de cada bloque es exactamente la del 09, así que la diferencia es de cardinalidad, no de modelo: un cliente que pida una métrica recibe un array de uno.
 
+**Decisión de Dirección (2026-09-20): opción A.** Se mantiene `metrics[]` en las dos lecturas. La razón decisiva: **el asesorado no tiene ninguna operación en el 09 para descubrir qué métricas tiene** —el profesional sí, por ANT-03— y la lectura propia es una extensión de BE que el inventario no cubre. Con una métrica obligatoria por llamada, la APK no sabría qué pedir. La forma de cada bloque es exactamente la del 09: la diferencia es de cardinalidad, no de modelo.
+
 ## DL-071 — ANT-05 no acepta el lote de correcciones ni los metadatos reconstruibles
 
-**Prioridad:** media · **Documento:** 09v11:592-605, 664 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 09v11:592-605, 664 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** El request de API-ANT-05 lleva un array `corrections`, cada una con su `targetType` y su `targetId`, y admite corregir «metadatos reconstruibles cuando el patrón canónico lo permita» (09v11:605). Declara además un `422 CORRECTION_CHAIN_NOT_RESOLVABLE` (09v11:664).
 
@@ -1463,9 +1485,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A: hoy el único objetivo corregible es la medición directa, y un lote de un solo tipo no agrega garantía. El día que haya metadatos corregibles, el cuerpo cambia a la forma del 09.
 
+**Decisión de Dirección (2026-09-20): opción A.** ANT-05 corrige de a un objetivo. El lote y `targetType` entran cuando exista más de un tipo corregible; hoy sería una lista de un elemento con un campo constante. El `422 CORRECTION_CHAIN_NOT_RESOLVABLE` que el 09 declara **no se emite porque la base impide construir el estado**: los índices `una_raiz` y `correccion_previa_id` únicos hacen imposible bifurcar una cadena. Es una garantía más fuerte que el error.
+
 ## DL-072 — ANT-01 filtra por `kind` y el 09 declara `status`
 
-**Prioridad:** baja · **Documento:** 09v11:336-339 · **Estado:** ABIERTA
+**Prioridad:** baja · **Documento:** 09v11:336-339 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** `GET /anthropometry/specifications?limit=&cursor=&status=`.
 
@@ -1477,9 +1501,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A pendiente: hoy está solo `kind`. El costo de sumarlo es bajo, y la decisión de qué significa `status` para una especificación versionada conviene tomarla junto con DL-064.
 
+**Decisión de Dirección (2026-09-20): opción A.** Se suma `status` como filtro y se conserva `kind`. Con DL-064 ya decidida, `status` para una especificación versionada significa vigente o histórica, **derivado de la cadena de versiones**, nunca una columna editable. **Es la única de las trece con trabajo pendiente de implementar**: hoy el catálogo publica solo `kind`.
+
 ## DL-073 — El 10 declara la carga en formulario y Dirección pide la carga sobre la figura
 
-**Prioridad:** media · **Documento:** 10-B10-07 · `docs/direccion/UI-ANTROPOMETRIA.md` · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 10-B10-07 · `docs/direccion/UI-ANTROPOMETRIA.md` · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
 
 **Qué dice el legajo.** El B10-07 declara la toma antropométrica como un formulario: una lista de métricas con su valor y su unidad, con el protocolo y el momento a nivel de la evaluación. Es lo que WP-05 implementó y lo que prueban las capturas `web-04` a `web-08`.
 
@@ -1492,3 +1518,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Implementarla ahora, reabriendo las pantallas de WP-05 antes de seguir con las verticales que faltan.
 
 **Provisorio en código.** Ninguno: WP-05 quedó con el formulario del 10, que cumple la garantía. La instrucción queda registrada con su referencia versionada para que el paquete de UI la tome completa. Recomendación del ejecutor: **A**, porque el circuito funcional todavía tiene verticales sin cubrir y la figura no agrega ninguna garantía que el formulario no dé; agrega ergonomía, que rinde más cuando ya están todas las pantallas que la van a usar.
+
+**Decisión de Dirección (2026-09-20): opción A.** La figura entra en un paquete de refinamiento de UI posterior al circuito funcional. WP-05 no se reabre y la vertical de entrenamiento (WP-06) sigue primero.
+
+> **Condición que hereda el paquete de UI.** La figura es **ubicación, nunca calificación**. Un punto del cuerpo pintado por rango —verde, amarillo, rojo— sería el juicio que RF-048 e INV-06-06 prohíben, y llegaría por un camino que ninguna prueba de copy mira hoy, porque el color no es texto. Cuando se implemente, la prueba de cero juicio tiene que extenderse al color y a las etiquetas de la figura, no solo al copy.
