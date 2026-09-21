@@ -48,7 +48,8 @@ const hoyEn = (zona: string): string => new Intl.DateTimeFormat('en-CA', { timeZ
 function resumenDePrescripcion(p: Prescripcion): string {
   const reps = (s: Prescripcion['sets'][number]) => (!s.repetitions ? '—' : 'value' in s.repetitions ? `${s.repetitions.value}` : `${s.repetitions.min}-${s.repetitions.max}`);
   const partes = [p.sets.length > 0 ? `${p.sets.length} × ${reps(p.sets[0]!)}` : ''];
-  if (p.intensity) partes.push(`${ETIQUETA_DE_CRITERIO[p.intensity.criterion]} ${p.intensity.target.value}${p.intensity.criterion === 'PERCENT_RM' ? ' % RM' : ''}`);
+  // «75 % RM» y «RIR 2»: el rótulo del criterio va una sola vez.
+  if (p.intensity) partes.push(p.intensity.criterion === 'PERCENT_RM' ? `${p.intensity.target.value} ${ETIQUETA_DE_CRITERIO.PERCENT_RM}` : `${ETIQUETA_DE_CRITERIO.RIR} ${p.intensity.target.value}`);
   if (p.suggestedLoad) partes.push(`${COPY_ENTRENAMIENTO.cargaSugerida} ${p.suggestedLoad.value} ${p.suggestedLoad.unit}`);
   return partes.filter(Boolean).join(' · ');
 }
