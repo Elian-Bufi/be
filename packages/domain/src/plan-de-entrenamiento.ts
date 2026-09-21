@@ -237,6 +237,53 @@ export function problemasDeCompletitud(contenido: ContenidoDePlanDeEntrenamiento
   return issues;
 }
 
+// ─── Referencias al catálogo e instantánea (REG-06-105, 112) ────────────────────────────────────
+
+/** Las versiones de ejercicio que cita el plan, sin repetir. */
+export function referenciasDeEjercicio(contenido: ContenidoDePlanDeEntrenamiento): string[] {
+  return [...new Set(prescripcionesDelPlan(contenido).map((p) => p.prescripcion.exerciseVersionId))];
+}
+
+/** Lo que el catálogo dice de una versión de ejercicio que el actor puede citar. */
+export interface EjercicioCitable {
+  readonly ejercicioId: string;
+  readonly nombre: string;
+  readonly disponible: boolean;
+}
+
+/**
+ * Cada prescripción cita una versión de ejercicio que el profesional puede usar y que sigue disponible. Una
+ * referencia a algo que no existe o que no es suyo es `EXERCISE_REFERENCE_INVALID`; una que existía y dejó de estar
+ * disponible es `EXERCISE_NOT_AVAILABLE`, porque el arreglo es distinto: elegir otro ejercicio.
+ */
+export function problemasDeReferencias(contenido: ContenidoDePlanDeEntrenamiento, catalogo: ReadonlyMap<string, EjercicioCitable>): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  for (const { prescripcion, ruta } of prescripcionesDelPlan(contenido)) {
+    const e = catalogo.get(prescripcion.exerciseVersionId);
+    if (!e) issues.push({ code: P.EXERCISE_REFERENCE_INVALID, path: `${ruta}.exerciseVersionId` });
+    else if (!e.disponible) issues.push({ code: P.EXERCISE_NOT_AVAILABLE, path: `${ruta}.exerciseVersionId` });
+  }
+  return issues;
+}
+
+/**
+ * La instantánea: la estructura tal como se activa, más el ejercicio de cada referencia congelado con su nombre de
+ * ese momento. `null` si alguna referencia no se puede resolver: «si no puede preservarse la instantánea, el plan no
+ * se activa» (05:8878; REG-06-104).
+ */
+export function construirInstantaneaDeEntrenamiento(
+  contenido: ContenidoDePlanDeEntrenamiento,
+  catalogo: ReadonlyMap<string, EjercicioCitable>,
+): InstantaneaDeEntrenamiento | null {
+  const ejercicios: Record<string, EjercicioCongelado> = {};
+  for (const id of referenciasDeEjercicio(contenido)) {
+    const e = catalogo.get(id);
+    if (!e || !e.disponible) return null;
+    ejercicios[id] = { exerciseId: e.ejercicioId, exerciseName: e.nombre };
+  }
+  return { contenido: JSON.parse(JSON.stringify(contenido)) as ContenidoDePlanDeEntrenamiento, ejercicios };
+}
+
 // ─── Registro de ejecución ──────────────────────────────────────────────────────────────────────
 export const CodigoDeProblemaDeRegistro = {
   // Al guardar (EXECUTION_GRANULARITY_INVALID).

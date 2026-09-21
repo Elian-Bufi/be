@@ -4,6 +4,7 @@ import { CatalogoDeEjerciciosService } from './catalogo.service';
 import { EjecutorDeEntrenamiento } from './ejecutor';
 import { EntrenamientoController } from './entrenamiento.controller';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
+import { PlanesDeEntrenamientoService } from './planes.service';
 
 /**
  * B-08 — Circuito de entrenamiento (06:4947-5786). Como en nutrición, el PDP (AutorizacionModule) y el Proceso
@@ -12,6 +13,6 @@ import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
 @Module({
   imports: [SesionModule],
   controllers: [EntrenamientoController],
-  providers: [EjecutorDeEntrenamiento, CatalogoDeEjerciciosService, EvaluacionesDeEntrenamientoService],
+  providers: [EjecutorDeEntrenamiento, CatalogoDeEjerciciosService, EvaluacionesDeEntrenamientoService, PlanesDeEntrenamientoService],
 })
 export class EntrenamientoModule {}

@@ -30,7 +30,7 @@ import {
   registrarOk,
   tokenDe,
 } from './soporte-api';
-import { aceptar, dashboard, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo } from './soporte-vinculo';
+import { aceptar, dashboard, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 import { CATALOGO_DEMO, circuitoAntropometrico } from './soporte-antropometria';
 import { randomUUID } from 'node:crypto';
 import {
@@ -45,7 +45,17 @@ import {
   registrarComida,
   registrarLibre,
 } from './soporte-nutricion';
-import { circuitoDeEntrenamiento, cuerpoDeEvaluacionDeEntrenamiento, cuerpoDeObjetivoDeEntrenamiento } from './soporte-entrenamiento';
+import { ProcesoService } from '../../apps/api/src/proceso/proceso.service';
+import {
+  activarPlanDeEntrenamiento,
+  CATALOGO_DE_EJERCICIOS,
+  circuitoDeEntrenamiento,
+  circuitoListoParaPlanificarEntrenamiento,
+  crearBorradorDeEntrenamiento,
+  cuerpoDeEvaluacionDeEntrenamiento,
+  cuerpoDeObjetivoDeEntrenamiento,
+  estructuraDeEntrenamiento,
+} from './soporte-entrenamiento';
 
 interface Observada {
   metodo: string;
@@ -572,9 +582,73 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de MTH y CAL', async () => {
  * la saque. **Para cerrar WP-06 tiene que quedar vacía.**
  */
 const EN_CONSTRUCCION: ReadonlySet<string> = new Set([
-  ...[7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].map((n) => `API-TRN-${String(n).padStart(2, '0')}`),
+  ...[14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].map((n) => `API-TRN-${String(n).padStart(2, '0')}`),
   'API-TRN-14-PERIODO',
 ]);
+
+it('TEST-CT (WP-06, tramo 2): se ejercitan éxitos y errores del plan de entrenamiento', async () => {
+  const c = await circuitoListoParaPlanificarEntrenamiento(app, 'contrato-plan');
+  const pro = conSesion(app, c.pro.token);
+  const ajeno = randomUUID();
+  const planes = `/api/v1/advisees/${c.ase.id}/training/plans`;
+  // TRN-07
+  await pro.post(planes).send({ objectiveVersionId: ajeno }).expect(422); // OBJECTIVE_NOT_EFFECTIVE_OR_COMPATIBLE
+  await pro.post(`/api/v1/advisees/${ajeno}/training/plans`).send({ objectiveVersionId: c.objectiveVersionId }).expect(404);
+  await pro.post(planes).send({ objectiveVersionId: c.objectiveVersionId, extra: 1 }).expect(400);
+  const b = await crearBorradorDeEntrenamiento(app, c);
+  await pro.post(planes).send({ objectiveVersionId: c.objectiveVersionId }).expect(409); // RESOURCE_CONFLICT
+  // TRN-08 y 09
+  await pro.get(`${planes}?state=DRAFT`).expect(200);
+  await pro.get(`${planes}?state=VALIDATED`).expect(400); // no existe VALIDADO
+  await pro.get(`/api/v1/advisees/${ajeno}/training/plans`).expect(404);
+  await pro.get(`/api/v1/training/plans/${b.planId}`).expect(200);
+  await pro.get(`/api/v1/training/plans/${ajeno}`).expect(404);
+  // TRN-10
+  const ruta = `/api/v1/training/plans/${b.planId}`;
+  const sesion = (intensity: unknown) => ({ blocks: [{ label: 'B', sessions: [{ label: 'A', prescriptions: [{ exerciseVersionId: CATALOGO_DE_EJERCICIOS.sentadilla, sets: [], intensity }] }] }] });
+  await pro.patch(ruta).send({ expectedVersion: 'v9', changes: { blocks: [] } }).expect(409);
+  await pro.patch(ruta).send({ expectedVersion: b.version, changes: { blocks: [{ label: 'B', microcycles: [{ label: 'S', sessions: [] }], sessions: [{ label: 'A', prescriptions: [] }] }] } }).expect(422);
+  await pro.patch(ruta).send({ expectedVersion: b.version, changes: sesion({ criterion: 'RPE', target: { value: 8 } }) }).expect(422);
+  await pro.patch(ruta).send({ expectedVersion: b.version, changes: { blocks: [{ label: 'B', sessions: [{ label: 'A', prescriptions: [{ exerciseVersionId: ajeno, sets: [], intensity: null }] }] }] } }).expect(422);
+  await pro.patch(ruta).send({ expectedVersion: b.version, objectiveVersionId: ajeno, changes: { blocks: [] } }).expect(422);
+  await pro.patch(`/api/v1/training/plans/${ajeno}`).send({ expectedVersion: 'v1', changes: { blocks: [] } }).expect(404);
+  const guardado = await pro.patch(ruta).send({ expectedVersion: b.version, changes: estructuraDeEntrenamiento() }).expect(200);
+  // TRN-11 y 12
+  await pro.post(`${ruta}/validate`).send({ expectedVersion: 'v1' }).expect(409);
+  await pro.post(`/api/v1/training/plans/${ajeno}/validate`).send({ expectedVersion: 'v1' }).expect(404);
+  await pro.post(`${ruta}/validate`).send({ expectedVersion: guardado.body.data.version }).expect(200);
+  await activarPlanDeEntrenamiento(app, c.pro, b.planId, 'v1').expect(409);
+  await activarPlanDeEntrenamiento(app, c.pro, ajeno, 'v1').expect(404);
+  const act = await activarPlanDeEntrenamiento(app, c.pro, b.planId, guardado.body.data.version).expect(200);
+  await pro.patch(ruta).send({ expectedVersion: act.body.data.version, changes: { blocks: [] } }).expect(422); // PLAN_NOT_EDITABLE
+  await pro.post(`${ruta}/validate`).send({ expectedVersion: act.body.data.version }).expect(422); // PLAN_NOT_EDITABLE
+  await activarPlanDeEntrenamiento(app, c.pro, b.planId, act.body.data.version).expect(422); // OPERATION_NOT_READY
+  // Una sucesora vacía no se activa: OPERATION_NOT_READY con sus problemas.
+  const vacia = await pro.post(planes).send({ objectiveVersionId: c.objectiveVersionId }).expect(201);
+  await activarPlanDeEntrenamiento(app, c.pro, vacia.body.data.planId, vacia.body.data.version).expect(422);
+  // Capacidad y conflicto de vigencia.
+  const conCapacidad = await prepararProfesional(app, 'contrato-cap', ['ENTRENAMIENTO']);
+  await prisma.$transaction((tx) =>
+    app.get(ProcesoService).configurarCapacidad(tx, {
+      profesionalId: conCapacidad.id,
+      capacidad: { modo: 'LIMITADA', limite: 1 },
+      actorServicio: 'PRUEBA',
+      procedencia: { fuente: 'PROPIA', casoDeUso: 'PRUEBA', operacion: 'CAPACIDAD', superficie: null, requestId: null },
+    }),
+  );
+  const uno = await circuitoListoParaPlanificarEntrenamiento(app, 'contrato-cap-1', conCapacidad);
+  const bu = await crearBorradorDeEntrenamiento(app, uno);
+  await activarPlanDeEntrenamiento(app, conCapacidad, bu.planId, bu.version).expect(200);
+  const dos = await circuitoListoParaPlanificarEntrenamiento(app, 'contrato-cap-2', conCapacidad);
+  const bd = await crearBorradorDeEntrenamiento(app, dos);
+  await activarPlanDeEntrenamiento(app, conCapacidad, bd.planId, bd.version).expect(422); // CAPACITY_NOT_AVAILABLE
+  const rival = await circuitoListoParaPlanificarEntrenamiento(app, 'contrato-rival', undefined);
+  await vinculoCompleto(app, rival.pro, uno.ase, 'ENTRENAMIENTO');
+  const ev = await conSesion(app, rival.pro.token).post(`/api/v1/advisees/${uno.ase.id}/training/evaluations`).send(cuerpoDeEvaluacionDeEntrenamiento()).expect(201);
+  const ob = await conSesion(app, rival.pro.token).post(`/api/v1/advisees/${uno.ase.id}/training/objectives`).send(cuerpoDeObjetivoDeEntrenamiento(ev.body.data.evaluationId)).expect(201);
+  const br = await conSesion(app, rival.pro.token).post(`/api/v1/advisees/${uno.ase.id}/training/plans`).send({ objectiveVersionId: ob.body.data.versionId, initialStructure: estructuraDeEntrenamiento() }).expect(201);
+  await activarPlanDeEntrenamiento(app, rival.pro, br.body.data.planId, br.body.data.version).expect(409); // ACTIVE_PLAN_CONFLICT
+});
 
 it('TEST-CT (WP-06, tramo 1): se ejercitan éxitos y errores de la evaluación, el objetivo y el catálogo de entrenamiento', async () => {
   const c = await circuitoDeEntrenamiento(app, 'contrato');

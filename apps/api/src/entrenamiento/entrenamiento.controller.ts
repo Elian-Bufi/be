@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { HEADER_IDEMPOTENCY_KEY } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
@@ -8,6 +8,7 @@ import { LimitadorService } from '../plataforma/limitador.service';
 import { actorDe, SesionGuard, type SolicitudAutenticada } from '../sesion/sesion.guard';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
+import { PlanesDeEntrenamientoService } from './planes.service';
 
 type Solicitud = SolicitudAutenticada & SolicitudConContexto;
 
@@ -22,6 +23,7 @@ export class EntrenamientoController {
   constructor(
     private readonly evaluaciones: EvaluacionesDeEntrenamientoService,
     private readonly catalogo: CatalogoDeEjerciciosService,
+    private readonly planes: PlanesDeEntrenamientoService,
     private readonly limitador: LimitadorService,
   ) {}
 
@@ -66,6 +68,49 @@ export class EntrenamientoController {
   listarObjetivos(@Param('adviseeId') adviseeId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
     this.limitar(req);
     return this.evaluaciones.listarObjetivos(actorDe(req), adviseeId, query, contextoDe(req));
+  }
+
+  // ─── Plan (UC-P15, UC-P16) ──────────────────────────────────────────────────────────────────
+  /** API-TRN-07. El borrador es el mismo recurso del plan: no existe /training/plan-drafts (09v10:238-245). */
+  @Post('advisees/:adviseeId/training/plans')
+  async crearPlan(@Param('adviseeId') adviseeId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.planes.crearBorrador(actorDe(req), adviseeId, cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-TRN-08. */
+  @Get('advisees/:adviseeId/training/plans')
+  listarPlanes(@Param('adviseeId') adviseeId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.planes.listar(actorDe(req), adviseeId, query, contextoDe(req));
+  }
+
+  /** API-TRN-09. */
+  @Get('training/plans/:planId')
+  consultarPlan(@Param('planId') planId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.planes.consultar(actorDe(req), planId, query, contextoDe(req));
+  }
+
+  /** API-TRN-10. Sin Idempotency-Key: concurrencia por expectedVersion (09v10 §42). */
+  @Patch('training/plans/:planId')
+  async editarPlan(@Param('planId') planId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.planes.editarBorrador(actorDe(req), planId, cuerpo, contextoDe(req)));
+  }
+
+  /** API-TRN-11. */
+  @Post('training/plans/:planId/validate')
+  async validarPlan(@Param('planId') planId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.planes.validar(actorDe(req), planId, cuerpo, contextoDe(req)));
+  }
+
+  /** API-TRN-12. */
+  @Post('training/plans/:planId/activate')
+  async activarPlan(@Param('planId') planId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.planes.activar(actorDe(req), planId, cuerpo, clave, contextoDe(req)));
   }
 
   // ─── Catálogo (RF-037) ──────────────────────────────────────────────────────────────────────
