@@ -14,7 +14,7 @@
 | Usuarios demo | ✅ Se suma **DEMO-PA**, un profesional **sin ninguna Especialidad** y solo con capacidad antropométrica. Es la cuenta que prueba que la capacidad es transversal y no un permiso de nutrición. DEMO-PN suma la misma capacidad a la suya | `GUIA-DEMO.md` Parte 0 |
 | Datos sintéticos | ✅ Catálogo de especificaciones: un protocolo y un método con **dos versiones**, que es lo que hace demostrable «la versión exacta queda conservada». Rotulado en la propia fila: «no es un catálogo científico» (REG-06-157) | migraciones `20260920200000_antropometria` y `20260920220000_metodos_y_calculos` |
 | Guion | ✅ `EVIDENCIA/WP-05/GUIA-DEMO.md`: seis partes, con la cuenta, los datos a cargar y lo que tiene que verse en cada paso | — |
-| Grabación | **Pendiente de Dirección.** Están las 19 capturas del website, automatizadas contra `test`. Las del APK las toma Dirección sobre un Android real | `EVIDENCIA/WP-05/web/` · `apk/` |
+| Grabación | **No se hizo**, por el mismo motivo que en WP-04. En su lugar, capturas del estado final: 19 del website, automatizadas contra `test`, y 5 del APK en un Android real de Dirección | `EVIDENCIA/WP-05/web/` · `apk/` |
 | Hosting del video o link | La demo se muestra en vivo sobre las URLs de `test`, siguiendo la guía. No hay link a un video | — |
 
 ### URLs de la demo
@@ -40,7 +40,7 @@ Al circuito nutricional se le agregan cuatro momentos que ninguna otra parte del
 
 | | Antes de WP-05 | Ahora |
 |---|---|---|
-| **DV-11** | Demostrable con el circuito nutricional | **Demostrable con dos circuitos de salud completos**, uno con cálculo profesional reproducible. La demo del APK depende de que Dirección instale la 0.5.1 y tome las capturas |
+| **DV-11** | Demostrable con el circuito nutricional | **Demostrable con dos circuitos de salud completos**, uno con cálculo profesional reproducible, con evidencia real de las dos superficies: 19 capturas del website y 5 del APK 0.5.1 en un Android de Dirección |
 
 El dominio de entrenamiento (WP-06) va a sumar la tercera parte. La guía está pensada para crecer por partes.
 
