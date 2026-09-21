@@ -78,6 +78,20 @@
 | DL-071 | WP-05 · 2026-09-20 | 09v11:592-605, 664 | ANT-05 no acepta el lote de correcciones ni los metadatos reconstruibles que el 09 admite | **DECIDIDA** 2026-09-20 · opción A · de a una; el lote cuando haya más de un tipo |
 | DL-072 | WP-05 · 2026-09-20 | 09v11:336-339 | ANT-01 filtra por `kind` y el 09 declara `status` | **DECIDIDA** 2026-09-20 · opción A · sumar `status`, conservar `kind` (PENDIENTE de implementar) |
 | DL-073 | WP-05 · 2026-09-20 | 10-B10-07 · `direccion/UI-ANTROPOMETRIA.md` | El 10 declara la carga en formulario y Dirección pide la carga sobre la figura | **DECIDIDA** 2026-09-20 · opción A · paquete de refinamiento de UI posterior |
+| DL-074 | WP-06 · 2026-09-21 | 05:109-113 · 05:9969 · B10-06:8-10 | El núcleo operable de entrenamiento vive en material no aprobado | **DECIDIDA** 2026-09-21 · opción A, como DL-058 |
+| DL-075 | WP-06 · 2026-09-21 | 11A:562-571 · 11A:151-169 · DV-05:1137-1148 | Los seis TEST-TRN son títulos de una línea, y entrenamiento no figura en la matriz de DV-05 | **DECIDIDA** 2026-09-21 · opción A · se escriben los seis oráculos |
+| DL-076 | WP-06 · 2026-09-21 | 05:9174 · 05:9318-9319 · 08:421 | Quién puede corregir una ejecución de entrenamiento | ABIERTA |
+| DL-077 | WP-06 · 2026-09-21 | 06:5225 · 06:5235 | «Ocurrencia planificada» nunca se define estructuralmente | ABIERTA |
+| DL-078 | WP-06 · 2026-09-21 | 09v10:924 · 09v10:886 · 09v10:188-189, 915 | No hay operación para llegar a una ocurrencia que no sea la de hoy | **DECIDIDA** 2026-09-21 · opción A · se suma la operación |
+| DL-079 | WP-06 · 2026-09-21 | 09v10:1053, 1089 · 09v10:888 | `prescriptionId` es obligatorio al registrar ejecución y no se puede descubrir | ABIERTA |
+| DL-080 | WP-06 · 2026-09-21 | 09v10:549, 612, 328, 330, 1092, 1095, 1244, 1323, 406 | Once objetos `{}` en requests de escritura de entrenamiento | ABIERTA |
+| DL-081 | WP-06 · 2026-09-21 | 06:5614-5632 · 06:80, 4103 · 09v12:326-332 | Las 17 zonas musculares no tienen operación de descubrimiento, y DEC-047 no está en el repositorio | ABIERTA |
+| DL-082 | WP-06 · 2026-09-21 | 06:4651-4663 · 06:4958-4965 · 06:226 | No existe una regla equivalente a REG-06-125 para entrenamiento | ABIERTA |
+| DL-083 | WP-06 · 2026-09-21 | 08:238-246 · 08:304 · 08:291-293 | La matriz de pertinencia del 08 §11-bis no está instanciada para ENTRENAMIENTO | ABIERTA |
+| DL-084 | WP-06 · 2026-09-21 | DV-05:1128-1129 · DL-042 | Las variantes de entrenamiento de los adversariales 7 y 8 no tienen ID de test y nunca se ejecutaron | ABIERTA |
+| DL-085 | WP-06 · 2026-09-21 | B10-06:46, 773-776 · B10-10:53, 457-461 | Tres vocabularios para la misma distinción entre lo planificado y lo ejecutado | ABIERTA |
+| DL-086 | WP-06 · 2026-09-21 | 04:482, 378 · 04:1144 · 04:1130 · DL-056 | wger, Open Food Facts y el compromiso de dos APIs externas | **DECIDIDA** 2026-09-21 · wger se implementa en WP-07, no se difiere a un paquete indefinido |
+| DL-087 | WP-06 · 2026-09-21 | 04:511 · 04:681-689 · DL-051 | RF-041 es P0 y su criterio de aceptación depende de RF-066, que es P1 | ABIERTA |
 
 ---
 
@@ -1522,3 +1536,202 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 **Decisión de Dirección (2026-09-20): opción A.** La figura entra en un paquete de refinamiento de UI posterior al circuito funcional. WP-05 no se reabre y la vertical de entrenamiento (WP-06) sigue primero.
 
 > **Condición que hereda el paquete de UI.** La figura es **ubicación, nunca calificación**. Un punto del cuerpo pintado por rango —verde, amarillo, rojo— sería el juicio que RF-048 e INV-06-06 prohíben, y llegaría por un camino que ninguna prueba de copy mira hoy, porque el color no es texto. Cuando se implemente, la prueba de cero juicio tiene que extenderse al color y a las etiquetas de la figura, no solo al copy.
+
+## DL-074 — El núcleo operable de entrenamiento vive en material no aprobado
+
+**Prioridad:** alta · **Documento:** 05:109-113 · 05:9969 · B10-06:8-10 · **Estado:** **DECIDIDA** 2026-09-21 · opción A, como DL-058
+
+**Qué dice el legajo.** - El candidato **05 v0.15 está «NO APROBADO / NO CANONIZADO»** (05:109-113), mientras la baseline v0.14 sí está aprobada y canonizada.
+- El bloque §9 del 05, que es el circuito entero de entrenamiento, cierra con **«PENDIENTE DE REVISIÓN DE DIRECCIÓN»** (05:9969) y lista diez puntos que Dirección debe confirmar (05:9939-9952). Esa acta no está registrada.
+- Los tres documentos de UX son **«BORRADOR UX — NO CANÓNICO»** con **«Implementación: NO AUTORIZADA»** (B10-06:8-10).
+
+**Por qué importa.** Es exactamente la condición que WP-05 resolvió con DL-058: todo el contenido técnico del paquete está ahí, y no hay otro.
+
+**Opciones.**
+- **A.** Implementar con el material disponible y declararlo, como en WP-05. La aprobación formal queda como el trámite de Dirección que es, sobre lo ya construido.
+- **B.** Esperar la aprobación formal antes de escribir código.
+
+**Decisión de Dirección (2026-09-21): opción A.** Misma solución que DL-058. B detiene el proyecto sin cambiar el contenido de lo que hay que construir.
+
+## DL-075 — Los seis TEST-TRN son títulos de una línea, y entrenamiento no figura en la matriz de DV-05
+
+**Prioridad:** alta · **Documento:** 11A:562-571 · 11A:151-169 · DV-05:1137-1148 · **Estado:** **DECIDIDA** 2026-09-21 · opción A · se escriben los seis oráculos
+
+**Qué dice el legajo.** El 11A §15 enuncia los seis escenarios de entrenamiento como **títulos de una línea** (11A:562-571), sin ninguno de los trece campos que su propia §6 declara obligatorios (11A:151-169). Y la matriz de cobertura de DV-05 (DV-05:1137-1148) enumera nueve alcances: **entrenamiento no es uno de ellos**. La cadena `TEST-TRN` aparece en **un solo archivo de todo el repositorio**.
+
+**Por qué importa.** Es peor que antropometría en proporción —allá eran siete de once y DV-05 al menos declaraba su déficit («Antropometría | 4 | 11»)— aunque el número absoluto sea menor. Acá el hueco es menos visible porque nadie lo declaró, no porque sea menor. Un paquete P0 no puede cerrarse contra pruebas que no existen.
+
+**Opciones.**
+- **A.** WP-06 escribe los seis oráculos con la plantilla de 11A §6, como entregable de legajo del paquete, y los implementa. Mismo formato y método que `docs/paquetes/WP-05-ORACULOS.md`, ya autorizado por DL-065.
+- **B.** Implementar según el título y dejar los oráculos sin escribir.
+
+**Decisión de Dirección (2026-09-21): opción A.** Las seis reglas del 06 de las que se derivan existen y son citables (REG-06-113, 115, 116, 129, 130, 131): no hay que inventar norma, hay que leerla y escribir qué se observa.
+
+## DL-076 — Quién puede corregir una ejecución de entrenamiento
+
+**Prioridad:** alta · **Documento:** 05:9174 · 05:9318-9319 · 08:421 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** El 05 declara el actor de UC-E02 como «Asesorado o profesional autorizado, **según la política que defina el Documento 08**» (05:9174) y lo deriva explícitamente en sus decisiones abiertas (05:9318-9319). **El 08 no define esa política.** El único lugar donde menciona corregir en entrenamiento es para negarlo después de finalizado el vínculo (08:421).
+
+**Por qué importa.** Es el mismo patrón de DL-068 en antropometría: una operación de escritura sin lista de condiciones declarada. Sin decisión, UC-E02 no es implementable sin inventar política.
+
+**Opciones.**
+- **A.** El asesorado corrige su propia ejecución, y el profesional con alcance ENTRENAMIENTO también, con la misma lista que gobierna cualquier escritura sobre el dato: especialidad habilitada, vínculo aceptado, B2 y A3 vigentes, evaluados dentro de la transacción. Cuando corrige el profesional, **la autoría real se conserva**: el dato no se atribuye al asesorado (05:9209-9224, V02).
+- **B.** Solo el asesorado corrige lo suyo. Deja sin resolver el caso en que el profesional detecta un error de carga.
+
+**Provisorio en código.** A. La variante V02 del propio 05 ya describe la corrección por el profesional y exige conservar la autoría real: el legajo la contempla, solo que no dice quién autoriza. Aplicar la lista de la escritura es el precedente de DL-068, ya decidido.
+
+## DL-077 — «Ocurrencia planificada» nunca se define estructuralmente
+
+**Prioridad:** alta · **Documento:** 06:5225 · 06:5235 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** REG-06-115 exige **máximo una** ejecución `REGISTRADA` por (asesorado, versión activada, sesión planificada/**ocurrencia identificable**) (06:5225), y aclara: «Un nuevo intento deliberadamente distinto requiere una ocurrencia identificable distinta; **B-08 no la inventa por timestamp**» (06:5235). Pero el 06 nunca dice qué constituye una ocurrencia ni quién la genera.
+
+**Por qué importa.** Es exactamente el dato que falta para la clave única de la base. Sin definirlo no se puede implementar la unicidad que la regla exige.
+
+**Opciones.**
+- **A.** La ocurrencia es (sesión planificada + fecha local de ejecución), declarado explícitamente. Dos ejecuciones de la misma sesión el mismo día chocan; en días distintos, no.
+- **B.** La ocurrencia la asigna la planificación: cada sesión lleva su ocurrencia prevista y el asesorado ejecuta contra ella.
+
+**Provisorio en código.** A para P0. B es más fiel a un plan con calendario, pero el 06 no fija que la sesión planificada tenga fecha concreta —el 10 advierte justamente que no se confunda sesión con fecha (B10-06:364-375)—, así que B exigiría inventar una estructura que el modelo no declara.
+
+## DL-078 — No hay operación para llegar a una ocurrencia que no sea la de hoy
+
+**Prioridad:** alta · **Documento:** 09v10:924 · 09v10:886 · 09v10:188-189, 915 · **Estado:** **DECIDIDA** 2026-09-21 · opción A · se suma la operación
+
+**Qué dice el legajo.** `API-TRN-15` exige un `{occurrenceId}` en la ruta (09v10:924) y **la única operación que lo expone es `GET /me/training/today`** (09v10:886). No existe listado de ocurrencias por rango de fechas ni consulta por identificador.
+
+**Por qué importa.** Consecuencia directa: **no se podría registrar la sesión de anteayer.** Eso choca con dos cosas del propio legajo: la doble temporalidad `occurredAt` / `recordedAt` que consagra (09v10:188-189, 1178-1179), y la regla de que la ausencia de registro no es `NOT_COMPLETED` (09v10:915) — si no hay forma de registrar en diferido, la ausencia se vuelve permanente **por limitación técnica, no por un hecho**, que es justo lo que la regla prohíbe.
+
+**Opciones.**
+- **A.** Sumar una lectura de ocurrencias por período, declarada como diferencia con el 09.
+- **B.** Ceñirse al contrato: solo se registra la sesión del día, y la limitación queda declarada.
+- **C.** Ampliar «Hoy» para que devuelva también las ocurrencias sin registrar de los últimos N días, sin crear una operación nueva.
+
+**Decisión de Dirección (2026-09-21): opción A.** C cambia la semántica de una operación que se llama «today», y B convierte una limitación técnica en un hecho sobre la persona. La operación nueva es aditiva y no toca ninguna ruta declarada.
+
+## DL-079 — `prescriptionId` es obligatorio al registrar ejecución y no se puede descubrir
+
+**Prioridad:** alta · **Documento:** 09v10:1053, 1089 · 09v10:888 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** Las dos granularidades del borrador de ejecución exigen `prescriptionId` (09v10:1053 y 1089), y la sustitución de ejercicio se apoya en él (09v10:1110). El único lugar donde podría venir es `plannedSession` dentro de la respuesta de «Hoy»… que está declarado como objeto vacío `{}` (09v10:888).
+
+**Por qué importa.** `API-TRN-09` sí reconstruye el plan desde la instantánea, pero eso obligaría al APK a levantar el plan entero y correlacionar a mano, cosa que el contrato no declara en ningún lado. **Es exactamente el tipo de hueco que en WP-05 produjo el desvío de rutas.**
+
+**Opciones.**
+- **A.** Declarar la forma mínima de `plannedSession`, incluyendo las prescripciones con su identificador, y publicarla en el OpenAPI. Mismo criterio que DL-069.
+- **B.** Dejar que el cliente correlacione contra el plan completo.
+
+**Provisorio en código.** A. B pone en el cliente una correlación que el contrato no describe, y que cada superficie resolvería distinto.
+
+## DL-080 — Once objetos `{}` en requests de escritura de entrenamiento
+
+**Prioridad:** media · **Documento:** 09v10:549, 612, 328, 330, 1092, 1095, 1244, 1323, 406 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** El contrato declara sin forma: `assessment` (09v10:549), `objective` (612), `intensity.target` y `target.reference` (328, 351), `professionalParameters` (330), `executionSummary` y `sessionSummary` (1092, 1095), `correction` (1244), `nextAction` (1323), `provenance` (406) y `authorship` (505).
+
+**Por qué importa.** Varios son **deliberados y normativos**, no un olvido: «contenido profesional no fijado por 09» (09v10:202), «no se fija número de series, reps, descansos, cargas o frecuencia; el profesional decide» (09v10:339-340). Eso no los hace implementables. Caso aparte y más grave: **`intensity.target` es el corazón de la prescripción** y el contrato exige validar `INTENSITY_CRITERION_INVALID` (09v10:753) sobre una estructura cuya mitad no está definida.
+
+**Opciones.**
+- **A.** Una sola política: se persisten como JSON validado por allowlist, salvo donde el 06 fija estructura —criterio de intensidad, condición de sesión, granularidad—, que sí van tipados. Se declara la forma mínima en el OpenAPI.
+- **B.** Fijarle forma a los once, inventando estructura donde el legajo decidió no fijarla.
+
+**Provisorio en código.** A. B contradice la decisión explícita del 09 de no fijar contenido profesional.
+
+## DL-081 — Las 17 zonas musculares no tienen operación de descubrimiento, y DEC-047 no está en el repositorio
+
+**Prioridad:** media · **Documento:** 06:5614-5632 · 06:80, 4103 · 09v12:326-332 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** REG-06-137 fija **17 zonas** con identificador estable y la cardinalidad «9 anterior + 10 posterior − 2 ambas» (06:5614), nombra solo antebrazo y deltoides, y remite las otras quince a `DEC-047`: «B-08 no fija en esta revisión la lista concreta de las otras quince denominaciones» (06:5632). **`DEC-047` no está en el repositorio**: solo se lo referencia por hash (06:80, 06:4103). Y `API-INT-TRN-01` exige `muscleZones[].zoneId` en el request (09v12:326-332) sin que **ninguna de las 27 rutas** liste las zonas.
+
+**Por qué importa.** No se puede poblar un selector ni crear el primer ejercicio sin los identificadores, y no se pueden nombrar las zonas sin el documento que las nombra.
+
+**Opciones.**
+- **A.** WP-07 implementa la estructura completa (17 zonas, relación versionada con rol `PRINCIPAL`/`SECUNDARIO`) y suma la operación de descubrimiento que falta, con un catálogo **sintético rotulado como demostración**, igual que el de protocolos y métodos de WP-05. Las denominaciones reales entran cuando llegue DEC-047.
+- **B.** Pedir DEC-047 a Dirección antes de empezar WP-07.
+
+**Provisorio en código.** A. La estructura es lo que el paquete garantiza; los nombres son contenido, y rotular el catálogo como sintético ya es el precedente de REG-06-157 en WP-05. **Conecta con DL-073**: REG-06-138 declara que la Zona es entidad de dominio y **no un archivo gráfico**, y que el conjunto femenino reutiliza los mismos 17 identificadores (06:5636) — o sea que la silueta que Dirección pidió para antropometría tiene un uso declarado también acá, sin que una silueta obligue a migrar datos.
+
+## DL-082 — No existe una regla equivalente a REG-06-125 para entrenamiento
+
+**Prioridad:** media · **Documento:** 06:4651-4663 · 06:4958-4965 · 06:226 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** REG-06-125 —«Contraste nutricional descriptivo, nunca evaluativo», con sus cuatro prohibiciones (06:4651-4663)— está redactada **específicamente para nutrición**, y **B-08 no la reutiliza**: la lista de reglas que adopta por referencia es REG-06-97 a 108 (06:4958-4965). Lo más cercano en entrenamiento es `T-06-30`, «sin fórmulas de puntuación» (06:226), que es glosario, no regla del bloque.
+
+**Por qué importa.** La prohibición sí existe, pero **en la UX y no en el modelo**: el 10 declara `score de entrenamiento` prohibido (B10-06:920), `score global` prohibido como invariante (B10-10:56) y `Cumplimiento 85 %` con sustituto `Prescripto vs registrado` (B10-10:134). Una garantía que vive solo en la capa de presentación es más frágil que una que vive en el modelo.
+
+**Opciones.**
+- **A.** Aplicar la prohibición por analogía con REG-06-125 y con la lista explícita del 10, y declararla en la definición del paquete en vez de dejarla implícita. Se verifica en contratos, en copy y en respuestas reales, como en los otros dos dominios.
+- **B.** Aplicar solo lo que el 10 dice, sin extender la regla del modelo.
+
+**Provisorio en código.** A. Los equivalentes funcionales sí están en el modelo, repartidos: REG-06-131 e INV-06-141 (la ausencia de registro no se infiere como condición), REG-06-130 (el desvío no se clasifica como error) e INV-06-153 con el control falsable `sin_M11`. Lo que falta es el enunciado único.
+
+## DL-083 — La matriz de pertinencia del 08 §11-bis no está instanciada para ENTRENAMIENTO
+
+**Prioridad:** alta · **Documento:** 08:238-246 · 08:304 · 08:291-293 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** El §11-bis del 08 se titula literalmente «Acceso por pertinencia e *Información relevante para la seguridad del entrenamiento*» (08:219): **entrenamiento es su caso testigo**. Enumera en prosa las categorías permitidas —condiciones metabólicas, cardiovasculares y respiratorias, dolor, lesiones, restricciones funcionales, medicación con relevancia directa (08:238-246)— y define la *forma* de la tabla `alcance × categoría → {permitido, nivel_de_detalle}` (08:304). **Pero no publica las filas**, y declara: «**Ausencia de fila → Deny. La matriz es una allowlist, nunca una denylist**» (08:304). La matriz es propiedad de **Dirección, por acta**.
+
+**Por qué importa.** Un PDP literal hoy denegaría incluso la diabetes que la propia prueba P-1 exige permitir (08:999). La contradicción prosa↔allowlist es más aguda que en antropometría (DL-060), porque acá sí hay una lista enumerada que el ejecutor podría verse tentado a codificar **sin acta**.
+
+**Opciones.**
+- **A.** WP-06 no implementa la matriz de pertinencia: aplica el safe default que el propio 08 fija mientras VJR-1/VJR-4 sigan abiertas (08:291-293) —solo lo explícitamente clasificado, dudoso → deny— y el plan y la ejecución de entrenamiento se gobiernan con la fila C4 del §11 (08:199), que sí existe. La matriz queda pendiente de acta de Dirección.
+- **B.** Codificar las categorías que el §11-bis enumera en prosa, como si fueran la matriz.
+
+**Provisorio en código.** A. B sería que el ejecutor fije por su cuenta el ancho de lo accesible sobre datos de salud, que es exactamente lo que el 08 reserva a Dirección: «el ancho de lo accesible se cambia solo modificando la matriz, por acta» (08:251-255).
+
+## DL-084 — Las variantes de entrenamiento de los adversariales 7 y 8 no tienen ID de test y nunca se ejecutaron
+
+**Prioridad:** media · **Documento:** DV-05:1128-1129 · DL-042 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** El adversarial **8** (buscar un plan ya activado e intentar editarlo) es el propio de entrenamiento y cita `INV-06-04` como fuente (DV-05:1129), que es una regla, no un ID de test. Lo mismo el **7** (DV-05:1128), que cita `INV-06-176`.
+
+**Por qué importa.** Lo que se ejecutó del 8 en WP-04 fue la **variante nutricional**: el plan activado que se intenta editar es un plan de nutrición. La variante de entrenamiento (RF-041) nunca corrió. Con el 7 pasa lo mismo: corrió la nutricional en WP-04 y la de mediciones en WP-05, nunca la de progresión de entrenamiento. La afirmación de MESA-01 de que «los 10 adversariales son ejecutables en vivo» es cierta para las variantes asignadas por DL-042; estas dos son adicionales.
+
+**Opciones.**
+- **A.** WP-06 ejecuta las dos variantes de entrenamiento y les asigna oráculo derivado, con el mismo criterio de DL-067.
+- **B.** Darlas por cubiertas con las variantes ya ejecutadas en los otros dominios.
+
+**Provisorio en código.** A. Es el adversarial propio del dominio: darlo por cubierto con la variante de otra vertical sería afirmar que está probado algo que no se probó.
+
+## DL-085 — Tres vocabularios para la misma distinción entre lo planificado y lo ejecutado
+
+**Prioridad:** baja · **Documento:** B10-06:46, 773-776 · B10-10:53, 457-461 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** El B10-06 enuncia el invariante como `planificado ≠ ejecutado` (B10-06:46) pero la etiqueta de pantalla dice `Prescripto:` / `Realizado:` (B10-06:773-776). El B10-10 declara el invariante como `prescripto ≠ registrado` (B10-10:53) y el léxico de dominio como `Planificado / Ejecutado / Sustituido / Sin registro` (B10-10:457-461).
+
+**Por qué importa.** Hay que elegir uno para el código y para el diccionario de la prueba de copy, o el control de términos se vuelve inconsistente.
+
+**Opciones.**
+- **A.** Adoptar el léxico del B10-10, por ser el más tardío y el transversal.
+- **B.** Adoptar el del B10-06, por ser el específico del dominio.
+
+**Provisorio en código.** A.
+
+## DL-086 — wger, Open Food Facts y el compromiso de dos APIs externas
+
+**Prioridad:** alta · **Documento:** 04:482, 378 · 04:1144 · 04:1130 · DL-056 · **Estado:** **DECIDIDA** 2026-09-21 · wger se implementa en WP-07, no se difiere a un paquete indefinido
+
+**Qué dice el legajo.** RF-038 (wger) es **P0 con la etiqueta «Compromiso académico de integración»** (04:482), *la misma etiqueta literal* que RF-028, Open Food Facts (04:378). Q-API-001 fija: «mínimo adoptado: 2 APIs externas; **Open Food Facts y wger satisfacen el compromiso**» (04:1144). La regla transversal 6 los ata juntos: «deberán demostrar importación, procedencia, caída y fallback» (04:1091).
+
+**Por qué importa.** Es un efecto acumulado que ninguna decisión miró de frente. WP-04 difirió Open Food Facts a un paquete de integraciones (DL-056). Si entrenamiento hiciera lo mismo con wger, **el compromiso académico quedaría en cero**, sin que ninguna de las dos decisiones lo hubiera resuelto. Cada una fue razonable por separado.
+
+**Opciones.**
+- **A.** wger se implementa en **WP-07**, el paquete inmediatamente siguiente, no en un paquete de integraciones indefinido. El 04 respalda la secuencia: «implementar luego de diseño con catálogo propio y fallback» (04:1130), que es exactamente el corte entre WP-06 y WP-07.
+- **B.** Diferir wger junto con Open Food Facts a un paquete de integraciones, aceptando el cero temporal.
+
+**Decisión de Dirección (2026-09-21): opción A.** Con esto, **Open Food Facts queda como la única integración pendiente** después de WP-07, y el compromiso de Q-API-001 se cumple a la mitad con fecha, en vez de quedar en cero sin fecha.
+
+## DL-087 — RF-041 es P0 y su criterio de aceptación depende de RF-066, que es P1
+
+**Prioridad:** media · **Documento:** 04:511 · 04:681-689 · DL-051 · **Estado:** ABIERTA
+
+**Qué dice el legajo.** La verificación de aceptación de RF-041 dice «la activación de un proceso nuevo se rechaza cuando excede la capacidad configurada en **RF-066**, sin interrumpir procesos vigentes» (04:511). Pero RF-066 es **P1 — Alta prioridad** (04:681-689). El 04 no resuelve qué pasa con RF-041 si RF-066 se difiere.
+
+**Por qué importa.** Un criterio de aceptación P0 no debería depender de un RF diferible. La misma tensión existe en UC-P11 nutricional, así que conviene resolverla una sola vez.
+
+**Opciones.**
+- **A.** Se evalúa la capacidad con lo ya implementado en DL-051: capacidad versionada por profesional con `SIN_LIMITE` por defecto, configurada por servicio interno. En `test` se declara un límite por identidad demo para poder demostrar el rechazo, igual que en WP-04.
+- **B.** No evaluar capacidad en la activación del plan de entrenamiento hasta que exista RF-066 completo.
+
+**Provisorio en código.** A. Es el mismo provisorio que ya rige en nutrición por DL-051, y reutilizarlo evita dos comportamientos distintos para la misma regla.
