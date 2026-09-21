@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Patch, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { HEADER_IDEMPOTENCY_KEY } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
@@ -7,8 +7,10 @@ import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { LimitadorService } from '../plataforma/limitador.service';
 import { actorDe, SesionGuard, type SolicitudAutenticada } from '../sesion/sesion.guard';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
+import { EjecucionesDeEntrenamientoService } from './ejecuciones.service';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
 import { PlanesDeEntrenamientoService } from './planes.service';
+import { RevisionesDeEntrenamientoService } from './revisiones.service';
 
 type Solicitud = SolicitudAutenticada & SolicitudConContexto;
 
@@ -24,6 +26,8 @@ export class EntrenamientoController {
     private readonly evaluaciones: EvaluacionesDeEntrenamientoService,
     private readonly catalogo: CatalogoDeEjerciciosService,
     private readonly planes: PlanesDeEntrenamientoService,
+    private readonly ejecuciones: EjecucionesDeEntrenamientoService,
+    private readonly revisiones: RevisionesDeEntrenamientoService,
     private readonly limitador: LimitadorService,
   ) {}
 
@@ -125,6 +129,89 @@ export class EntrenamientoController {
   async crearEjercicio(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
     sinParametrosDeQuery(query);
     return responder(res, await this.catalogo.crear(actorDe(req), cuerpo, clave, contextoDe(req)));
+  }
+
+  // ─── Ejecución del asesorado (UC-P17) ───────────────────────────────────────────────────────
+  /** API-TRN-14. */
+  @Get('me/training/today')
+  hoy(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    return this.ejecuciones.hoy(actorDe(req), query, contextoDe(req));
+  }
+
+  /** DL-078: la lectura que falta para registrar en diferido. */
+  @Get('me/training/occurrences')
+  ocurrencias(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    return this.ejecuciones.ocurrenciasDelPeriodo(actorDe(req), query, contextoDe(req));
+  }
+
+  /** API-TRN-15. `PUT`: la ocurrencia tiene a lo sumo un borrador; 201 si lo creó, 200 si ya existía (09v10:927-945). */
+  @Put('training/occurrences/:occurrenceId/execution-draft')
+  async abrirBorrador(@Param('occurrenceId') occurrenceId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.ejecuciones.abrirBorrador(actorDe(req), occurrenceId, cuerpo, contextoDe(req)));
+  }
+
+  /** API-TRN-16. */
+  @Get('training/execution-drafts/:draftId')
+  consultarBorrador(@Param('draftId') draftId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    return this.ejecuciones.consultarBorrador(actorDe(req), draftId, query, contextoDe(req));
+  }
+
+  /** API-TRN-17. Sin Idempotency-Key: concurrencia por expectedVersion (09v10 §42). */
+  @Patch('training/execution-drafts/:draftId')
+  async guardarBorrador(@Param('draftId') draftId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.ejecuciones.editarBorrador(actorDe(req), draftId, cuerpo, contextoDe(req)));
+  }
+
+  /** API-TRN-18. */
+  @Post('training/execution-drafts/:draftId/confirm')
+  async confirmar(@Param('draftId') draftId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.ejecuciones.confirmar(actorDe(req), draftId, cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-TRN-19. */
+  @Get('training/executions/:executionId')
+  consultarEjecucion(@Param('executionId') executionId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.ejecuciones.consultarEjecucion(actorDe(req), executionId, query, contextoDe(req));
+  }
+
+  /** API-TRN-20. */
+  @Post('training/executions/:executionId/corrections')
+  async corregir(@Param('executionId') executionId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.ejecuciones.corregir(actorDe(req), executionId, cuerpo, clave, contextoDe(req)));
+  }
+
+  // ─── Revisión (UC-P18, UC-I05, UC-I06) ──────────────────────────────────────────────────────
+  /** API-TRN-21. */
+  @Get('advisees/:adviseeId/training/review-context')
+  contextoDeRevision(@Param('adviseeId') adviseeId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.revisiones.contexto(actorDe(req), adviseeId, query, contextoDe(req));
+  }
+
+  /** API-TRN-22. */
+  @Post('advisees/:adviseeId/training/reviews')
+  async registrarRevision(@Param('adviseeId') adviseeId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.revisiones.registrar(actorDe(req), adviseeId, cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-TRN-23. */
+  @Get('training/reviews/:reviewId')
+  consultarRevision(@Param('reviewId') reviewId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.revisiones.consultar(actorDe(req), reviewId, query, contextoDe(req));
+  }
+
+  /** API-TRN-24. */
+  @Post('training/reviews/:reviewId/apply')
+  async aplicarRevision(@Param('reviewId') reviewId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.revisiones.aplicar(actorDe(req), reviewId, cuerpo, clave, contextoDe(req)));
   }
 
   /** Límite de consultas protegidas por actor, desde cualquier red (como API-DSH-03). */

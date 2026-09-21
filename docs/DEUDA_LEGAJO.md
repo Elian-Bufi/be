@@ -1593,6 +1593,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** A. La variante V02 del propio 05 ya describe la corrección por el profesional y exige conservar la autoría real: el legajo la contempla, solo que no dice quién autoriza. Aplicar la lista de la escritura es el precedente de DL-068, ya decidido.
 
+**Implementado** (API-TRN-20): corrigen el asesorado y el profesional del plan, cada uno con el PDP evaluado en la transacción. Cada corrección guarda su autor y su rol (`ADVISEE` / `PROFESSIONAL`), y la del profesional no se le atribuye al asesorado. Otro profesional del mismo asesorado recibe el mismo 404 que lo inexistente. Pruebas en `entrenamiento.int-spec.ts` («DL-076 · el profesional también corrige…»).
+
 ## DL-077 — «Ocurrencia planificada» nunca se define estructuralmente
 
 **Prioridad:** alta · **Documento:** 06:5225 · 06:5235 · **Estado:** ABIERTA
@@ -1626,6 +1628,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Decisión de Dirección (2026-09-21): opción A.** C cambia la semántica de una operación que se llama «today», y B convierte una limitación técnica en un hecho sobre la persona. La operación nueva es aditiva y no toca ninguna ruta declarada.
 
+**Implementado** como `GET /me/training/occurrences?periodStart=&periodEnd=` (`API-TRN-14-PERIODO` en el OpenAPI): hasta 31 días, nunca después de hoy, con el mismo `planState` que «Hoy» para que una lista vacía por acceso suspendido no se confunda con un período sin sesiones. Solo lista los días en que el plan regía. La APK lo usa en «Registrar otro día».
+
 ## DL-079 — `prescriptionId` es obligatorio al registrar ejecución y no se puede descubrir
 
 **Prioridad:** alta · **Documento:** 09v10:1053, 1089 · 09v10:888 · **Estado:** ABIERTA
@@ -1639,6 +1643,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Dejar que el cliente correlacione contra el plan completo.
 
 **Provisorio en código.** A. B pone en el cliente una correlación que el contrato no describe, y que cada superficie resolvería distinto.
+
+**Implementado**: `plannedSession` es la sesión de la instantánea con sus prescripciones —identificador, ejercicio, series, criterio, carga sugerida y parámetros—, ubicada en su bloque y su microciclo (`SesionDeOcurrenciaSchema`). Está en el OpenAPI.
 
 ## DL-080 — Once objetos `{}` en requests de escritura de entrenamiento
 
@@ -1723,6 +1729,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Adoptar el del B10-06, por ser el específico del dominio.
 
 **Provisorio en código.** A.
+
+**Implementado** en `packages/domain/src/copy-entrenamiento.ts`: `Planificado`, `Ejecutado`, `Sustituido`, `Sin registro`. Las pantallas del website y de la APK lo toman de ahí.
 
 ## DL-086 — wger, Open Food Facts y el compromiso de dos APIs externas
 

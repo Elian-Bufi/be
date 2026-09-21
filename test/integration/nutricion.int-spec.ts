@@ -474,8 +474,10 @@ describe('D10 · un reintento no duplica (REG-06-107; TEST-RNF-REC-002)', () => 
         conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, initialStructure: estructura(c.arroz, c.pollo) }),
       ),
     );
-    expect(r.filter((x) => x.status === 201)).toHaveLength(1);
-    expect(r.filter((x) => x.status !== 201).every((x) => x.status === 409)).toBe(true);
+    // Falló de forma intermitente en corridas locales y no se pudo reproducir en quince seguidas. La base garantiza que
+    // no puede haber dos borradores; esta forma de afirmar dice qué respondió cada pedido si vuelve a pasar.
+    const estados = r.map((x) => `${x.status}${x.body?.error?.code ? ` ${x.body.error.code}` : ''}`).sort();
+    expect(estados).toEqual(['201', ...Array.from({ length: 9 }, () => '409 RESOURCE_CONFLICT')]);
     expect(await prisma.versionDePlanNutricional.count({ where: { plan: { asesoradoId: c.ase.id } } })).toBe(1);
   });
 });

@@ -10,7 +10,7 @@
  * `docs/api/openapi.json` (09v7 T21).
  */
 import type { INestApplication } from '@nestjs/common';
-import { VERSION_VIGENTE } from '@be/domain';
+import { VERSION_VIGENTE, codificarOcurrencia } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
@@ -49,6 +49,7 @@ import { ProcesoService } from '../../apps/api/src/proceso/proceso.service';
 import {
   activarPlanDeEntrenamiento,
   CATALOGO_DE_EJERCICIOS,
+  circuitoConPlanDeEntrenamientoActivo,
   circuitoDeEntrenamiento,
   circuitoListoParaPlanificarEntrenamiento,
   crearBorradorDeEntrenamiento,
@@ -581,10 +582,97 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de MTH y CAL', async () => {
  * de cobertura. La lista solo puede achicarse: si una operación de acá ya se ejercita, la prueba falla hasta que se
  * la saque. **Para cerrar WP-06 tiene que quedar vacía.**
  */
-const EN_CONSTRUCCION: ReadonlySet<string> = new Set([
-  ...[14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].map((n) => `API-TRN-${String(n).padStart(2, '0')}`),
-  'API-TRN-14-PERIODO',
-]);
+const EN_CONSTRUCCION: ReadonlySet<string> = new Set<string>([]);
+
+it('TEST-CT (WP-06, tramos 3 y 4): se ejercitan éxitos y errores de la ejecución, la corrección y la revisión', async () => {
+  const c = await circuitoConPlanDeEntrenamientoActivo(app, 'contrato-ejecucion');
+  const ase = conSesion(app, c.ase.token);
+  const pro = conSesion(app, c.pro.token);
+  const ajeno = randomUUID();
+  // TRN-14 y el período
+  const hoy = (await ase.get('/api/v1/me/training/today').expect(200)).body.data;
+  await ase.get('/api/v1/me/training/today?dia=1').expect(400);
+  await ase.get(`/api/v1/me/training/occurrences?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(200);
+  await ase.get('/api/v1/me/training/occurrences').expect(400);
+  // TRN-15 y 16
+  const [a, b] = hoy.occurrences;
+  const manana = new Date(new Date(`${hoy.date}T00:00:00.000Z`).getTime() + 86_400_000).toISOString().slice(0, 10);
+  const futura = codificarOcurrencia({ versionDePlanId: c.planId, sesionPlanificadaId: 'ses-a', fechaLocal: manana });
+  const borrador = (await ase.put(`/api/v1/training/occurrences/${a.occurrenceId}/execution-draft`).send({}).expect(201)).body.data;
+  await ase.put(`/api/v1/training/occurrences/${a.occurrenceId}/execution-draft`).send({}).expect(200);
+  await ase.put(`/api/v1/training/occurrences/${futura}/execution-draft`).send({}).expect(422); // OCCURRENCE_NOT_EXECUTABLE
+  await ase.put('/api/v1/training/occurrences/occ_otra/execution-draft').send({}).expect(404);
+  await ase.put(`/api/v1/training/occurrences/${a.occurrenceId}/execution-draft`).send({ extra: 1 }).expect(400);
+  await ase.get(`/api/v1/training/execution-drafts/${borrador.draftId}`).expect(200);
+  await pro.get(`/api/v1/training/execution-drafts/${borrador.draftId}`).expect(404);
+  // TRN-17
+  const ruta = `/api/v1/training/execution-drafts/${borrador.draftId}`;
+  const banca = (performedExerciseVersionId: string, extra: Record<string, unknown> = {}) => ({ prescriptionId: 'rx-banca', performedExerciseVersionId, ...extra });
+  const serie = { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 2, perceivedExertion: null };
+  await ase.patch(ruta).send({ expectedVersion: 'v9', changes: {} }).expect(409);
+  await ase.patch(ruta).send({ expectedVersion: borrador.version, changes: { sessionCondition: 'SKIPPED' } }).expect(422);
+  await ase.patch(ruta).send({ expectedVersion: borrador.version, changes: { granularity: 'BY_WEEK' } }).expect(422);
+  await ase.patch(ruta).send({ expectedVersion: borrador.version, changes: { granularity: 'EXERCISE_OR_SESSION', exercises: [banca(CATALOGO_DE_EJERCICIOS.pressDeBanca, { sets: [serie] })] } }).expect(422);
+  await ase.patch(ruta).send({ expectedVersion: borrador.version, changes: { granularity: 'SET', exercises: [{ ...banca(CATALOGO_DE_EJERCICIOS.pressDeBanca, { sets: [serie] }), prescriptionId: 'rx-otra' }] } }).expect(422);
+  await ase.patch(ruta).send({ expectedVersion: borrador.version, changes: { granularity: 'SET', exercises: [banca(ajeno, { sets: [serie] })] } }).expect(422);
+  await ase.patch(`/api/v1/training/execution-drafts/${ajeno}`).send({ expectedVersion: 'v1', changes: {} }).expect(404);
+  // TRN-18
+  await ase.post(`${ruta}/confirm`).send({ expectedVersion: borrador.version }).expect(422); // EXECUTION_DRAFT_NOT_READY
+  const guardado = (await ase.patch(ruta).send({ expectedVersion: borrador.version, changes: { granularity: 'SET', sessionCondition: 'COMPLETED', exercises: [banca(CATALOGO_DE_EJERCICIOS.pressDeBanca, { sets: [serie] })] } }).expect(200)).body.data;
+  await ase.post(`${ruta}/confirm`).send({ expectedVersion: 'v1' }).expect(409);
+  await ase.post(`/api/v1/training/execution-drafts/${ajeno}/confirm`).send({ expectedVersion: 'v1' }).expect(404);
+  const ejecucion = (await ase.post(`${ruta}/confirm`).send({ expectedVersion: guardado.version }).expect(201)).body.data;
+  await ase.post(`${ruta}/confirm`).send({ expectedVersion: guardado.version }).expect(409); // EXECUTION_ALREADY_REGISTERED
+  await ase.patch(ruta).send({ expectedVersion: guardado.version, changes: {} }).expect(422); // INVALID_STATE_TRANSITION
+  // TRN-19 y 20
+  const x = `/api/v1/training/executions/${ejecucion.executionId}`;
+  await ase.get(x).expect(200);
+  await pro.get(x).expect(200);
+  await pro.get(`/api/v1/training/executions/${ajeno}`).expect(404);
+  const registro = { granularity: 'SET', sessionCondition: 'COMPLETED', reason: null, exercises: [banca(CATALOGO_DE_EJERCICIOS.pressDeBanca, { sets: [{ ...serie, load: { value: 55, unit: 'kg' } }] })], sessionSummary: null };
+  await ase.post(`${x}/corrections`).send({ reason: 'Cargué mal la carga.', correction: registro }).expect(201);
+  await ase.post(`${x}/corrections`).send({ reason: 'x', correction: { ...registro, sessionCondition: 'SKIPPED' } }).expect(422);
+  await ase.post(`${x}/corrections`).send({ reason: 'x', correction: { ...registro, granularity: 'BY_WEEK' } }).expect(422);
+  await ase.post(`${x}/corrections`).send({ reason: 'x', correction: { ...registro, granularity: 'EXERCISE_OR_SESSION' } }).expect(422);
+  await ase.post(`${x}/corrections`).send({ reason: 'x', correction: { ...registro, exercises: [] } }).expect(422);
+  await ase.post(`${x}/corrections`).send({ reason: 'x', correction: { ...registro, exercises: [banca(ajeno, { sets: [serie] })] } }).expect(422);
+  await ase.post(`/api/v1/training/executions/${ajeno}/corrections`).send({ reason: 'x', correction: registro }).expect(404);
+  // TRN-21 a 24
+  const ctx = `/api/v1/advisees/${c.ase.id}/training/review-context`;
+  await pro.get(ctx).expect(200);
+  await pro.get(`${ctx}?periodStart=mal`).expect(400);
+  await pro.get(`/api/v1/advisees/${ajeno}/training/review-context`).expect(404);
+  const revisiones = `/api/v1/advisees/${c.ase.id}/training/reviews`;
+  const revision = (result: string, evidencia = [{ type: 'EXECUTION', id: ejecucion.executionId as string }], nextAction: Record<string, unknown> = {}) => ({
+    period: { start: hoy.date, end: hoy.date, timeZone: 'America/Argentina/Buenos_Aires' },
+    evidenceReferences: evidencia,
+    interpretation: 'Interpretación sintética.',
+    result,
+    rationale: 'Fundamento sintético.',
+    nextAction: { description: 'Próxima acción.', ...nextAction },
+  });
+  await pro.post(revisiones).send(revision('PROGRESS')).expect(422); // REVIEW_RESULT_INVALID
+  await pro.post(revisiones).send({ ...revision('MAINTAIN'), rationale: '' }).expect(422); // REVIEW_COMPONENT_REQUIRED
+  await pro.post(revisiones).send(revision('MAINTAIN', [{ type: 'EXECUTION', id: ajeno }])).expect(422); // REVIEW_EVIDENCE_NOT_RECONSTRUCTIBLE
+  await pro.post(`/api/v1/advisees/${ajeno}/training/reviews`).send(revision('MAINTAIN')).expect(404);
+  const mantener = (await pro.post(revisiones).send(revision('MAINTAIN', undefined, { nextReviewAt: '2030-01-01' })).expect(201)).body.data;
+  await pro.get(`/api/v1/training/reviews/${mantener.reviewId}`).expect(200);
+  await pro.get(`/api/v1/training/reviews/${ajeno}`).expect(404);
+  const aplicar = (id: string, expectedVersion = 'v1') => pro.post(`/api/v1/training/reviews/${id}/apply`).send({ expectedVersion });
+  await aplicar(mantener.reviewId, 'v2').expect(409); // VERSION_CONFLICT
+  await aplicar(mantener.reviewId).expect(200);
+  await aplicar(mantener.reviewId).expect(409); // REVIEW_ALREADY_APPLIED
+  await aplicar(ajeno).expect(404);
+  // AJUSTAR con un borrador ya abierto: la continuidad no se aplica (UC-I06 E02).
+  await pro.post(`/api/v1/advisees/${c.ase.id}/training/plans`).send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: c.planId }).expect(201);
+  const ajuste = (await pro.post(revisiones).send(revision('ADJUST')).expect(201)).body.data;
+  await aplicar(ajuste.reviewId).expect(422); // CONTINUITY_ACTION_NOT_APPLICABLE
+  // Cerrar el seguimiento: ya no hay qué revisar ni dónde registrar.
+  const cierre = (await pro.post(revisiones).send(revision('FINALIZE')).expect(201)).body.data;
+  await aplicar(cierre.reviewId).expect(200);
+  await pro.post(revisiones).send(revision('MAINTAIN')).expect(422); // REVIEW_NOT_ALLOWED
+  await ase.put(`/api/v1/training/occurrences/${b.occurrenceId}/execution-draft`).send({}).expect(422); // ACTIVE_PLAN_REQUIRED
+});
 
 it('TEST-CT (WP-06, tramo 2): se ejercitan éxitos y errores del plan de entrenamiento', async () => {
   const c = await circuitoListoParaPlanificarEntrenamiento(app, 'contrato-plan');

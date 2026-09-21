@@ -33176,6 +33176,14 @@
                           ],
                           "additionalProperties": false
                         },
+                        "planState": {
+                          "type": "string",
+                          "enum": [
+                            "AVAILABLE",
+                            "NO_ACTIVE_PLAN",
+                            "NOT_AVAILABLE"
+                          ]
+                        },
                         "occurrences": {
                           "type": "array",
                           "items": {
@@ -33566,6 +33574,7 @@
                       },
                       "required": [
                         "period",
+                        "planState",
                         "occurrences"
                       ],
                       "additionalProperties": false
@@ -37900,7 +37909,7 @@
             }
           },
           "422": {
-            "description": "ErrorEnvelope: EXECUTION_DRAFT_NOT_READY | EXECUTION_GRANULARITY_INVALID | SESSION_CONDITION_INVALID | EXECUTION_VALUE_INVALID | EXERCISE_REFERENCE_INVALID | CORRECTION_NOT_ALLOWED",
+            "description": "ErrorEnvelope: EXECUTION_GRANULARITY_INVALID | SESSION_CONDITION_INVALID | EXECUTION_VALUE_INVALID | EXERCISE_REFERENCE_INVALID | CORRECTION_NOT_ALLOWED",
             "content": {
               "application/json": {
                 "schema": {

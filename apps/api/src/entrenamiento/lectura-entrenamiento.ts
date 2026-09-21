@@ -1,5 +1,12 @@
+import { CONDICION_DE_SESION_API, GRANULARIDAD_API, sesionesDelPlan } from '@be/domain';
 import type {
   Bloque,
+  CondicionDeSesion,
+  EjercicioRegistrado,
+  EjercicioRegistradoEntrada,
+  GranularidadDeRegistro,
+  RegistroDeEjecucion,
+  SesionDeOcurrencia,
   ContenidoDePlanDeEntrenamiento,
   EjercicioCitable,
   EjercicioCongelado,
@@ -190,4 +197,82 @@ export function versionDePlanApi(v: VersionConPlan, nombreProfesional: string, c
     nextReviewAt: v.proximaRevision ? v.proximaRevision.toISOString().slice(0, 10) : null,
     blocks: bloquesApi(contenido, resolver),
   };
+}
+
+// ─── Ocurrencias, borradores y ejecuciones ───────────────────────────────────────────────────────
+
+/** Lo que guarda el borrador y la ejecución en `contenido`: los ejercicios registrados y el resumen de sesión. */
+export interface ContenidoDeRegistro {
+  readonly exercises: readonly EjercicioRegistradoEntrada[];
+  readonly sessionSummary: { readonly description: string } | null;
+}
+export const REGISTRO_VACIO: ContenidoDeRegistro = { exercises: [], sessionSummary: null };
+
+/**
+ * La sesión planificada de una ocurrencia, tal como está en la instantánea, ubicada en su bloque y su microciclo. Es
+ * la forma mínima que DL-079 exige para poder registrar: las prescripciones con su identificador.
+ */
+export function sesionDeOcurrenciaApi(i: InstantaneaDeEntrenamiento, sesionId: string): SesionDeOcurrencia | null {
+  const u = sesionesDelPlan(i.contenido).find((s) => s.sesion.sessionId === sesionId);
+  if (!u) return null;
+  const orden = (u.microciclo ? u.microciclo.sessions : u.bloque.sessions).indexOf(u.sesion) + 1;
+  return {
+    ...sesionApi(u.sesion, orden, resolverDeInstantanea(i)),
+    blockId: u.bloque.blockId,
+    blockLabel: u.bloque.label,
+    microcycleId: u.microciclo?.microcycleId ?? null,
+    microcycleLabel: u.microciclo?.label ?? null,
+  };
+}
+
+/**
+ * Los ejercicios tal como se registraron, con las dos puntas de una sustitución a la vista (REG-06-130). El
+ * prescripto sale de la instantánea; el realizado, del catálogo. Nunca se sintetizan series desde un resumen.
+ */
+export function ejerciciosRegistradosApi(
+  ejercicios: readonly EjercicioRegistradoEntrada[],
+  sesion: SesionDeOcurrencia | null,
+  nombres: ReadonlyMap<string, string>,
+): EjercicioRegistrado[] {
+  return ejercicios.map((e) => {
+    const prescripta = sesion?.prescriptions.find((p) => p.prescriptionId === e.prescriptionId);
+    const prescribedExerciseVersionId = prescripta?.exerciseVersionId ?? e.performedExerciseVersionId;
+    return {
+      prescriptionId: e.prescriptionId,
+      prescribedExerciseVersionId,
+      prescribedExerciseName: prescripta?.exerciseName ?? 'Ejercicio no disponible',
+      performedExerciseVersionId: e.performedExerciseVersionId,
+      performedExerciseName: nombres.get(e.performedExerciseVersionId) ?? 'Ejercicio no disponible',
+      substituted: e.performedExerciseVersionId !== prescribedExerciseVersionId,
+      sets: 'sets' in e ? e.sets.map((s) => ({ ...s })) : null,
+      executionSummary: 'executionSummary' in e ? { description: e.executionSummary.description } : null,
+    };
+  });
+}
+
+/** Un registro completo (el original o el contenido de una corrección) en la forma del contrato. */
+export function registroApi(
+  r: { granularidad: GranularidadDeRegistro | null; condicion: CondicionDeSesion; motivo: string | null; contenido: ContenidoDeRegistro },
+  sesion: SesionDeOcurrencia | null,
+  nombres: ReadonlyMap<string, string>,
+): RegistroDeEjecucion {
+  return {
+    granularity: r.granularidad ? GRANULARIDAD_API[r.granularidad] : null,
+    sessionCondition: CONDICION_DE_SESION_API[r.condicion],
+    reason: r.motivo,
+    exercises: ejerciciosRegistradosApi(r.contenido.exercises, sesion, nombres),
+    sessionSummary: r.contenido.sessionSummary,
+  };
+}
+
+/** Las versiones de ejercicio que se nombran en uno o más registros. */
+export function versionesRealizadas(...contenidos: readonly ContenidoDeRegistro[]): string[] {
+  return [...new Set(contenidos.flatMap((c) => c.exercises.map((e) => e.performedExerciseVersionId)))];
+}
+
+export async function nombresDeEjercicios(cliente: Prisma.TransactionClient, versionIds: readonly string[]): Promise<Map<string, string>> {
+  const validos = versionIds.filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+  if (validos.length === 0) return new Map();
+  const filas = await cliente.versionDeEjercicio.findMany({ where: { id: { in: validos } }, select: { id: true, nombre: true } });
+  return new Map(filas.map((f) => [f.id, f.nombre]));
 }
