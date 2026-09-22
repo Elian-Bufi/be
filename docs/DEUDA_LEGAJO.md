@@ -1880,7 +1880,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **A.** Dos estados persistidos (`PENDIENTE → RESPONDIDA`, sin retorno) y `respondable` como proyección de solo lectura del PDP, sin agregar un tercer estado.
 - **B.** Agregar estados propios de dominio (`CADUCADA`, `RECHAZADA`, `RETIRADA`) que el legajo no declara.
 
-**Decisión de Elián (2026-09-21): opción A.** Es lo que el propio 09 ya resuelve con `respondable` como proyección, y sostiene el patrón «solo agregar» (sin DELETE) que rige el resto de BE. **Registrado** en `docs/paquetes/WP-07.md` §7.2, D-B; falta sostenerlo en la base y en el servicio cuando se escriba el código.
+**Decisión de Elián (2026-09-21): opción A.** Es lo que el propio 09 ya resuelve con `respondable` como proyección, y sostiene el patrón «solo agregar» (sin DELETE) que rige el resto de BE. **Registrado** en `docs/paquetes/WP-07.md` §7.2, D-B, y ahora también en código: `packages/domain/src/formularios.ts` declara las dos transiciones con `TransicionDeMaquina` (mismo patrón CONV-06-03 que el resto del proyecto) y `contratos-wp07.test.ts` prueba que no hay retorno ni tercer estado. **Falta sostenerlo en la base** (constraint/trigger de Prisma) y en el servicio de la API — ninguno de los dos existe todavía.
 
 ## DL-094 — Los siete TEST-FRM son títulos de una línea, sin los trece campos de 11A §6
 
@@ -1893,3 +1893,27 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Dejarlos como títulos y cubrir por comportamiento, sin materializar el oráculo.
 
 **Decisión de Elián (2026-09-21): opción A.** Avanza también la condición de cierre de DL-075, que ya señalaba que el hueco de la §6 del 11A era estructural, no exclusivo de un dominio. **Falta escribir** `docs/paquetes/WP-07-ORACULOS.md` con el molde completo — la decisión ya está tomada, la redacción de los siete oráculos es el próximo paso.
+
+## DL-095 — Contratos de FRM con forma no definida en el 09
+
+**Prioridad:** media · **Documento:** 09v16.1 §22.1-§22.8 · 08 §11-bis · **Estado:** ABIERTA (hallada al implementar)
+
+**Qué dice el legajo.** El contrato de FRM-01 a 08 no tiene huecos de operación (WP-07.md, nota de versiones citables), pero sí deja varias formas de detalle sin fijar:
+- `purpose`, tanto de la Plantilla como de la Solicitud, no tiene catálogo cerrado: el único ejemplo del 09 (`"NUTRITION_EVALUATION"`) es conceptual, no un valor literal declarado en ningún enum (09:1500).
+- El 08 define una política de pertinencia por categoría (§11-bis) para datos de salud ya almacenados, pero no fija qué categorías aplican a los campos de una Plantilla de FRM ni una matriz alcance×categoría específica para este paquete — y su propia validación clínica/jurídica (VJR-1, VJR-4, VD-1) «no se declara resuelta» (08:382).
+- El tipo de dato de un campo de Plantilla no tiene catálogo cerrado en el 09 («tipos/unidades», 09:1479, sin enumerar cuáles).
+- La forma exacta del éxito `201` de FRM-08 (rectificar) no está dada: el 09 solo fija Request, Reglas, Errores y Audit (09:1628-1644), sin JSON de éxito.
+- El segundo token de estado de la Solicitud no tiene forma literal en el 09: el único ejemplo dado es `"status": "PENDING"` (09:1508); el que sigue a `RESPONDIDA` (REG-06-210) no aparece escrito en inglés en ningún lado.
+
+**Opciones.**
+- **A.** Definirlas en `@be/domain` (`contratos-formularios.ts`, `formularios.ts`), con la forma mínima coherente con el resto del proyecto:
+  - `purpose` es texto libre acotado (300 caracteres en la Solicitud), sin enum;
+  - categorías cerradas en cuatro valores (`SALUD_Y_SEGURIDAD`, `HABITOS_Y_CONTEXTO`, `OBJETIVOS_Y_PREFERENCIAS`, `DATOS_GENERALES`), con una matriz alcance×categoría explícita y **maximally permissive** en P0 — clasifica, no filtra por criterio clínico que nadie con competencia clínica revisó (§9.5 de WP-07.md ya acepta el riesgo residual R-08-12 en los mismos términos que el 08); el límite de acceso real sigue siendo Vínculo+Alcance+B2+PDP, nunca esta matriz;
+  - tipo de campo cerrado en `TEXT`/`NUMBER`/`BOOLEAN`, sin `CHOICE` ni multi-select (WP-07.md §9.3);
+  - éxito de FRM-08 simétrico al de una corrección de entrenamiento: `{ formResponseId, rectificationId, version, recordedAt }`, con `expectedVersion` agregado al request para sostener el `409 VERSION_CONFLICT` que el 09 sí declara;
+  - segundo token de estado: `RESPONDED`, par natural en inglés de `PENDING`.
+- **B.** Esperar una versión del 09 que fije estas formas y dejar el paquete sin avanzar.
+
+**Provisorio en código.** A. El OpenAPI generado (`docs/api/openapi.json`) publica esas formas y `contratos-wp07.test.ts` las verifica, incluida la matriz maximally-permissive y el rechazo de `value: null` en una respuesta.
+
+**Condición de cierre.** El 09 fija las formas listadas, o VJR-1/VJR-4/VD-1 se resuelven y el 08 publica una matriz de pertinencia específica para FRM que reemplace la provisoria.

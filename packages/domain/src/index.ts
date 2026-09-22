@@ -32,3 +32,5 @@ export * from './plan-de-entrenamiento';
 export * from './copy-entrenamiento';
 export * from './calculo';
 export * from './contratos-calculo';
+export * from './formularios';
+export * from './contratos-formularios';
