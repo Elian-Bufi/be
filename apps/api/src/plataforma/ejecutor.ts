@@ -134,14 +134,21 @@ export abstract class EjecutorDeDominio {
    * existe, con el titular si existe (08:491: el titular puede saber quién intentó acceder). La dimensión es ROL: el
    * actor no es el profesional del recurso. Si el PDP deniega antes, queda registrada su dimensión real.
    */
-  noRevelable(p: { operacion: string; actorId: string; recurso: Recurso | null; sujetoId?: string | null }, ctx: ContextoDeSolicitud): DenegacionDelPdp {
+  noRevelable(
+    p: { operacion: string; actorId: string; recurso: Recurso | null; sujetoId?: string | null; alcance?: Alcance },
+    ctx: ContextoDeSolicitud,
+  ): DenegacionDelPdp {
+    // El Alcance real, cuando ya se conoce (p. ej. porque el recurso existe y se leyó antes del corte), sostiene
+    // metadata de auditoría precisa incluso en un dominio transversal a más de un Alcance (WP-07: FRM opera sobre
+    // los tres). Sin él, se usa el fijo de la vertical, como siempre.
+    const alcance = p.alcance ?? this.alcance;
     return new DenegacionDelPdp({
       operacion: p.operacion,
       resultado: 'DENEGADA',
       actorId: p.actorId,
       sujetoId: p.sujetoId ?? null,
-      alcance: this.alcance,
-      finalidad: FINALIDAD_DE_ALCANCE[this.alcance],
+      alcance,
+      finalidad: FINALIDAD_DE_ALCANCE[alcance],
       dimensionesDesfavorables: ['ROL'],
       recursoTipo: p.recurso?.tipo ?? null,
       recursoId: p.recurso && esUuid(p.recurso.id) ? p.recurso.id.toLowerCase() : null,

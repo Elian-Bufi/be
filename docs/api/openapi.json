@@ -42893,7 +42893,7 @@
       "post": {
         "operationId": "API-FRM-07",
         "summary": "Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo.",
-        "description": "Fuente: 09v16.1 §22.7 · REG-06-211 · TEST-FRM-003/004/005. AuthN: SESSION.",
+        "description": "Fuente: 09v16.1 §22.7 · REG-06-211 · TEST-FRM-003/004/005 · DL-095. AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -43073,7 +43073,7 @@
             }
           },
           "422": {
-            "description": "ErrorEnvelope: FORM_REQUEST_NOT_RESPONDABLE",
+            "description": "ErrorEnvelope: FORM_REQUEST_NOT_RESPONDABLE | FORM_RESPONSE_INVALID",
             "content": {
               "application/json": {
                 "schema": {
