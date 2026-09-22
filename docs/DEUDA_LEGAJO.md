@@ -1911,7 +1911,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
   - categorías cerradas en cuatro valores (`SALUD_Y_SEGURIDAD`, `HABITOS_Y_CONTEXTO`, `OBJETIVOS_Y_PREFERENCIAS`, `DATOS_GENERALES`), con una matriz alcance×categoría explícita y **maximally permissive** en P0 — clasifica, no filtra por criterio clínico que nadie con competencia clínica revisó (§9.5 de WP-07.md ya acepta el riesgo residual R-08-12 en los mismos términos que el 08); el límite de acceso real sigue siendo Vínculo+Alcance+B2+PDP, nunca esta matriz;
   - tipo de campo cerrado en `TEXT`/`NUMBER`/`BOOLEAN`, sin `CHOICE` ni multi-select (WP-07.md §9.3);
   - éxito de FRM-08 simétrico al de una corrección de entrenamiento: `{ formResponseId, rectificationId, version, recordedAt }`, con `expectedVersion` agregado al request para sostener el `409 VERSION_CONFLICT` que el 09 sí declara;
-  - segundo token de estado: `RESPONDED`, par natural en inglés de `PENDING`.
+  - segundo token de estado: `RESPONDED`, par natural en inglés de `PENDING`;
+  - `422 FORM_RESPONSE_INVALID` también en FRM-07 (09:1585-1593 solo lo declara para FRM-08): la misma validación de forma — cada `fieldCode` existe en la plantilla y tiene el tipo declarado, sin duplicados, sin exceder lo solicitado — se aplica al enviar y al rectificar, y no tendría sentido rechazar una forma inválida solo la segunda vez.
 - **B.** Esperar una versión del 09 que fije estas formas y dejar el paquete sin avanzar.
 
 **Provisorio en código.** A. El OpenAPI generado (`docs/api/openapi.json`) publica esas formas y `contratos-wp07.test.ts` las verifica, incluida la matriz maximally-permissive y el rechazo de `value: null` en una respuesta.

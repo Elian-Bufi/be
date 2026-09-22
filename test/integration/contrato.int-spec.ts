@@ -5,7 +5,7 @@
  * - WP-04: TEST-CT-NUT-01…21 · TEST-CT-INT-NUT-01 · la lista propia de ingestas (DL-055).
  * - WP-05: TEST-CT-ANT-01, 03, 05 a 12, la evolución propia, y MTH-01/02 con CAL-01 a 04.
  * - WP-06: TEST-CT-TRN por tramos; lo que todavía no tiene servicio figura en EN_CONSTRUCCION.
- * - WP-07: contrato de FRM-01 a 08 publicado; sin servicio todavía, en EN_CONSTRUCCION.
+ * - WP-07: TEST-CT-FRM-01 a 08 (catálogo, Solicitud, Respuesta, rectificación).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -583,17 +583,7 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de MTH y CAL', async () => {
  * vez de relajar la exigencia de cobertura. La lista solo puede achicarse: si una operación de acá ya se ejercita, la
  * prueba falla hasta que se la saque. **Para cerrar cada paquete tiene que quedar sin sus operaciones.**
  */
-const EN_CONSTRUCCION: ReadonlySet<string> = new Set<string>([
-  // WP-07 (RF-071): contrato publicado en este tramo; el servicio de API todavía no existe.
-  'API-FRM-01',
-  'API-FRM-02',
-  'API-FRM-03',
-  'API-FRM-04',
-  'API-FRM-05',
-  'API-FRM-06',
-  'API-FRM-07',
-  'API-FRM-08',
-]);
+const EN_CONSTRUCCION: ReadonlySet<string> = new Set<string>([]);
 
 it('TEST-CT (WP-06, tramos 3 y 4): se ejercitan éxitos y errores de la ejecución, la corrección y la revisión', async () => {
   const c = await circuitoConPlanDeEntrenamientoActivo(app, 'contrato-ejecucion');
@@ -785,6 +775,97 @@ it('TEST-CT (WP-06, tramo 1): se ejercitan éxitos y errores de la evaluación, 
   await pro.post('/api/v1/training/exercises').send({ ...ejercicio, muscleZones: [{ zoneId: 'zone_x', role: 'PRIMARY' }] }).expect(422);
   await pro.post('/api/v1/training/exercises').send({ ...ejercicio, extra: 1 }).expect(400);
   await ase.post('/api/v1/training/exercises').send(ejercicio).expect(403);
+});
+
+it('TEST-CT (WP-07): FRM-01 a 08 — catálogo, Solicitud, Respuesta y rectificación', async () => {
+  const PLANTILLA_SALUD = '7aa84959-7702-4749-bf70-7fdc574db6ca';
+  const VERSION_SALUD = '349161b3-b831-4df1-896f-484517393a57';
+  const VERSION_HABITOS = '4879e539-235f-4f91-83fc-2e113c404393';
+
+  const proParte = await prepararProfesional(app, 'frm', ['ENTRENAMIENTO']);
+  const pro = conSesion(app, proParte.token);
+  const aseParte = await prepararAsesorado(app, 'frm', { a3: true });
+  const ase = conSesion(app, aseParte.token);
+  await vinculoCompleto(app, proParte, aseParte, 'ENTRENAMIENTO');
+  const ajenoParte = await prepararProfesional(app, 'frm-ajeno', ['ENTRENAMIENTO']);
+  const ajeno = conSesion(app, ajenoParte.token);
+
+  // FRM-01/02 — catálogo (metadatos, sin PDP)
+  const lista = await pro.get('/api/v1/form-templates').expect(200);
+  expect((lista.body.data as unknown[]).length).toBeGreaterThan(0);
+  await pro.get('/api/v1/form-templates?status=BOGUS').expect(400);
+  const version = await pro.get(`/api/v1/form-templates/${PLANTILLA_SALUD}/versions/${VERSION_SALUD}`).expect(200);
+  expect(version.body.data.sections[0].fields[0].fieldCode).toBe('condiciones_declaradas');
+  await pro.get(`/api/v1/form-templates/${PLANTILLA_SALUD}/versions/${randomUUID()}`).expect(404);
+
+  // FRM-03 — crear la Solicitud
+  const cuerpoDeSolicitud = {
+    templateVersionId: VERSION_SALUD,
+    purpose: 'Seguridad del entrenamiento',
+    scope: 'ENTRENAMIENTO',
+    requestedFieldCodes: ['condiciones_declaradas', 'dolor_o_lesiones'],
+    requiredFieldCodes: ['condiciones_declaradas'],
+  };
+  const claveDeSolicitud = claveDeIdempotencia();
+  const creada = await pro.post(`/api/v1/advisees/${aseParte.id}/form-requests`, claveDeSolicitud).send(cuerpoDeSolicitud).expect(201);
+  const formRequestId = creada.body.data.formRequestId as string;
+  expect(creada.body.data.status).toBe('PENDING');
+  await pro.post(`/api/v1/advisees/${aseParte.id}/form-requests`, claveDeSolicitud).send(cuerpoDeSolicitud).expect(201); // replay idempotente
+  await pro.post(`/api/v1/advisees/${aseParte.id}/form-requests`, claveDeSolicitud).send({ ...cuerpoDeSolicitud, purpose: 'Otro propósito' }).expect(409);
+  await request(app.getHttpServer()).post(`/api/v1/advisees/${aseParte.id}/form-requests`).set('Authorization', `Bearer ${proParte.token}`).send(cuerpoDeSolicitud).expect(400);
+  await pro.post(`/api/v1/advisees/${aseParte.id}/form-requests`).send({ ...cuerpoDeSolicitud, requiredFieldCodes: ['medicacion_relevante'] }).expect(422); // requerido fuera de lo solicitado
+  await pro.post(`/api/v1/advisees/${aseParte.id}/form-requests`).send({ ...cuerpoDeSolicitud, templateVersionId: randomUUID() }).expect(422); // plantilla inexistente
+  await pro.post(`/api/v1/advisees/${randomUUID()}/form-requests`).send(cuerpoDeSolicitud).expect(404); // sin vínculo
+
+  // FRM-04 — listar del lado del profesional
+  const listaDelProfesional = await pro.get(`/api/v1/advisees/${aseParte.id}/form-requests`).expect(200);
+  expect((listaDelProfesional.body.data as { formRequestId: string }[]).some((s) => s.formRequestId === formRequestId)).toBe(true);
+  await pro.get(`/api/v1/advisees/${randomUUID()}/form-requests`).expect(200); // vacío: no revela si el id corresponde a alguien
+
+  // FRM-05 — detalle actor-scoped
+  const detalleDelProfesional = await pro.get(`/api/v1/form-requests/${formRequestId}`).expect(200);
+  expect(detalleDelProfesional.body.data.response).toBeNull();
+  const detalleDelAsesorado = await ase.get(`/api/v1/form-requests/${formRequestId}`).expect(200);
+  expect(detalleDelAsesorado.body.data.request.formRequestId).toBe(formRequestId);
+  await ajeno.get(`/api/v1/form-requests/${formRequestId}`).expect(404);
+  await pro.get(`/api/v1/form-requests/${randomUUID()}`).expect(404);
+
+  // FRM-06 — Solicitudes propias del asesorado, con `respondable`
+  const propias = await ase.get('/api/v1/me/form-requests').expect(200);
+  const propia = (propias.body.data as { formRequestId: string; respondable: boolean }[]).find((s) => s.formRequestId === formRequestId);
+  expect(propia?.respondable).toBe(true);
+
+  // FRM-07 — responder
+  const respuestaCuerpo = { answers: [{ fieldCode: 'condiciones_declaradas', value: 'Sin condiciones' }] };
+  const respondida = await ase.post(`/api/v1/me/form-requests/${formRequestId}/responses`).send(respuestaCuerpo).expect(201);
+  const formResponseId = respondida.body.data.formResponseId as string;
+  expect(respondida.body.data.version).toBe('v1');
+  await ase.post(`/api/v1/me/form-requests/${formRequestId}/responses`).send(respuestaCuerpo).expect(422); // ya respondida
+  // Otra Solicitud, de la otra plantilla, para un valor de tipo incorrecto (NUMBER esperado, string enviado).
+  const otraSolicitud = await pro
+    .post(`/api/v1/advisees/${aseParte.id}/form-requests`)
+    .send({ templateVersionId: VERSION_HABITOS, purpose: 'Hábitos', scope: 'ENTRENAMIENTO', requestedFieldCodes: ['horas_de_sueno'], requiredFieldCodes: ['horas_de_sueno'] })
+    .expect(201);
+  await ase
+    .post(`/api/v1/me/form-requests/${otraSolicitud.body.data.formRequestId}/responses`)
+    .send({ answers: [{ fieldCode: 'horas_de_sueno', value: 'ocho' }] })
+    .expect(422);
+  await pro.post(`/api/v1/me/form-requests/${formRequestId}/responses`).send(respuestaCuerpo).expect(404); // el profesional no es el titular
+
+  // FRM-08 — rectificar
+  const rectificada = await ase
+    .post(`/api/v1/me/form-responses/${formResponseId}/rectifications`)
+    .send({ expectedVersion: 'v1', reason: 'Corrijo un dato mal tipeado.', answers: [{ fieldCode: 'condiciones_declaradas', value: 'Asma leve' }] })
+    .expect(201);
+  expect(rectificada.body.data.version).toBe('v2');
+  await ase
+    .post(`/api/v1/me/form-responses/${formResponseId}/rectifications`)
+    .send({ expectedVersion: 'v1', reason: 'Con la versión vieja.', answers: [{ fieldCode: 'condiciones_declaradas', value: 'x' }] })
+    .expect(409);
+  await ajeno
+    .post(`/api/v1/me/form-responses/${formResponseId}/rectifications`)
+    .send({ expectedVersion: 'v2', reason: 'x', answers: [{ fieldCode: 'condiciones_declaradas', value: 'x' }] })
+    .expect(404);
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

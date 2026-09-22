@@ -1551,8 +1551,11 @@ const DEFINIDAS: readonly Operacion[] = [
     idempotencia: true,
     request: EnviarRespuestaRequestSchema,
     exitos: [{ status: 201, schema: RespuestaCreadaResponseSchema }],
-    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['FORM_REQUEST_NOT_RESPONDABLE'] },
-    fuente: '09v16.1 §22.7 · REG-06-211 · TEST-FRM-003/004/005',
+    // FORM_RESPONSE_INVALID no está en el 09 para FRM-07 (solo lo declara para FRM-08), pero es la misma forma que
+    // valida FRM-08 y DL-095 ya lo registra como forma no fijada: un campo fuera de tipo o de lo solicitado tiene
+    // que rechazarse en las dos, no solo al rectificar.
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['FORM_REQUEST_NOT_RESPONDABLE', 'FORM_RESPONSE_INVALID'] },
+    fuente: '09v16.1 §22.7 · REG-06-211 · TEST-FRM-003/004/005 · DL-095',
   },
   {
     id: 'API-FRM-08',
