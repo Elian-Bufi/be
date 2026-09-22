@@ -1,0 +1,26 @@
+Verificación posterior al deploy — WP-07 (07 §37)
+Momento: 2026-09-22T22:21:22Z
+
+$ curl -s https://be-api-hndp.onrender.com/health/ready
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.7.0","commit":"56c0c4dcb5e8e04e7819946ae8a628fde0af0b11","construidoEn":"2026-09-22T21:57:54.691Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+
+$ curl -s https://be-api-hndp.onrender.com/health/live
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.7.0","commit":"56c0c4dcb5e8e04e7819946ae8a628fde0af0b11","construidoEn":"2026-09-22T21:57:54.691Z"}}}
+
+$ curl -sI https://be-web-1ngj.onrender.com/  (líneas de seguridad)
+HTTP/2 200 
+content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://be-api-hndp.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+strict-transport-security: max-age=315360000; includeSubdomains; preload
+x-content-type-options: nosniff
+x-frame-options: DENY
+
+$ la pestaña Información del website está en la versión desplegada. La página la sirve
+  /_next/static/chunks/app/pro/advisees/forms/page-c9b85fa1d4db487e.js, y el copy compartido con la APK vive en
+  el chunk común (viene de @be/domain, no del archivo de la pantalla), así que se cuenta ahí:
+/_next/static/chunks/400-da4602449ff54b13.js
+      1 Declarado por la persona
+
+APK 0.7.0 — descarga anónima del release permanente
+https://github.com/Elian-Bufi/be/releases/download/be-apk-0.7.0/be-0.7.0-e0e0cc9.apk
+SHA-256 esperado:   2cb6557b8907805d53200bf8310ef74f312ca07570f62816c28d9045b5c4664f
+SHA-256 descargado: 2cb6557b8907805d53200bf8310ef74f312ca07570f62816c28d9045b5c4664f (coincide)
