@@ -7,6 +7,7 @@
  * - las de WP-04 (docs/paquetes/WP-04.md §4);
  * - las de WP-05: la familia ANT y el patrón transversal MTH/CAL (docs/paquetes/WP-05.md §4);
  * - las de WP-06: la familia TRN, la carga manual de ejercicios y la lectura por período (docs/paquetes/WP-06.md §4).
+ * - las de WP-07: la familia FRM, transversal a los tres dominios (docs/paquetes/WP-07.md §4).
  */
 import { z } from 'zod';
 import {
@@ -125,6 +126,19 @@ import {
   RegistrarRevisionDeEntrenamientoRequestSchema,
   RevisionDeEntrenamientoResponseSchema,
 } from './contratos-entrenamiento';
+import {
+  CrearSolicitudDeFormularioRequestSchema,
+  DetalleDeSolicitudResponseSchema,
+  EnviarRespuestaRequestSchema,
+  ListaDePlantillasResponseSchema,
+  ListaDeSolicitudesPropiasResponseSchema,
+  ListaDeSolicitudesDeFormularioResponseSchema,
+  RectificacionCreadaResponseSchema,
+  RectificarRespuestaRequestSchema,
+  RespuestaCreadaResponseSchema,
+  SolicitudDeFormularioCreadaResponseSchema,
+  VersionDePlantillaResponseSchema,
+} from './contratos-formularios';
 
 type Codigo = keyof typeof CodigoDeError;
 type Errores = Partial<Record<400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503, readonly Codigo[]>>;
@@ -1445,6 +1459,117 @@ const DEFINIDAS: readonly Operacion[] = [
     },
     fuente: '09v10:1385-1442 · REG-06-75, 77',
   },
+  // ─── WP-07 · FRM (09v16.1 §22). Información profesional pertinente (RF-071) ─────────────────────
+  {
+    id: 'API-FRM-01',
+    metodo: 'get',
+    ruta: '/form-templates',
+    resumen: 'Catálogo BE de plantillas, sintético y de demostración. Metadatos: una plantilla listada no prueba que todos sus campos puedan solicitarse a un asesorado concreto.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      LIMIT,
+      CURSOR,
+      { nombre: 'domain', descripcion: 'Filtra por el Alcance de la plantilla, si está clasificada.', schema: { type: 'string', enum: ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'] } },
+      { nombre: 'purpose', descripcion: 'Filtra por texto libre de la descripción de la plantilla.', schema: { type: 'string' } },
+      { nombre: 'status', descripcion: 'Filtra por seleccionabilidad.', schema: { type: 'string', enum: ['SELECTABLE', 'HISTORICAL_NOT_SELECTABLE'] } },
+    ],
+    exitos: [{ status: 200, schema: ListaDePlantillasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: '09v16.1 §22.1 · REG-06-209',
+  },
+  {
+    id: 'API-FRM-02',
+    metodo: 'get',
+    ruta: '/form-templates/{templateId}/versions/{versionId}',
+    resumen: 'La versión exacta de una plantilla: secciones, campos, tipos/unidades, categoría de cada campo, requerido/opcional y estado. No devuelve datos personales.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: VersionDePlantillaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v16.1 §22.2 · REG-06-209',
+  },
+  {
+    // El 09 declara `SESSION_MFA` (09:1466); se implementa como `SESSION` en esta demo sintética, mismo tratamiento
+    // que WP-06 (DL-088 #17): «08 §25 deja el segundo factor opcional en la demo sintética».
+    id: 'API-FRM-03',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/form-requests',
+    resumen: 'Crear una Solicitud de información pertinente. Una plantilla con campos más amplios no amplía B2: cada categoría/campo pedido se valida contra Vínculo+Alcance+B2 vigentes en la misma transacción.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearSolicitudDeFormularioRequestSchema,
+    exitos: [{ status: 201, schema: SolicitudDeFormularioCreadaResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['FORM_TEMPLATE_NOT_SELECTABLE', 'FORM_REQUEST_NOT_ALLOWED', 'FORM_REQUEST_INVALID'],
+    },
+    fuente: '09v16.1 §22.3 · REG-06-210 · TEST-FRM-001/002',
+  },
+  {
+    id: 'API-FRM-04',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/form-requests',
+    resumen: 'Las Solicitudes del profesional autenticado sobre este asesorado. Solo devuelve las actualmente revelables: no hay lectura residual por autoría.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, { nombre: 'status', descripcion: 'Filtra por estado.', schema: { type: 'string', enum: ['PENDING', 'RESPONDED'] } }],
+    exitos: [{ status: 200, schema: ListaDeSolicitudesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v16.1 §22.4 · REG-06-213',
+  },
+  {
+    id: 'API-FRM-05',
+    metodo: 'get',
+    ruta: '/form-requests/{formRequestId}',
+    resumen: 'Una Solicitud, en la proyección del actor que consulta: el profesional solo si el PDP lo sigue permitiendo (si no, el mismo 404 que una inexistente), el asesorado siempre para lo propio. La respuesta nunca expone autorizaciones internas ajenas.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: DetalleDeSolicitudResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v16.1 §22.5 · REG-06-213 · TEST-FRM-007',
+  },
+  {
+    id: 'API-FRM-06',
+    metodo: 'get',
+    ruta: '/me/form-requests',
+    resumen: 'Las Solicitudes propias del actor autenticado, con `respondable` calculado por el PDP en esta misma lectura — no es un tercer estado de la Solicitud.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, { nombre: 'status', descripcion: 'Filtra por estado.', schema: { type: 'string', enum: ['PENDING', 'RESPONDED'] } }],
+    exitos: [{ status: 200, schema: ListaDeSolicitudesPropiasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: '09v16.1 §22.6 · REG-06-213',
+  },
+  {
+    id: 'API-FRM-07',
+    metodo: 'post',
+    ruta: '/me/form-requests/{formRequestId}/responses',
+    resumen: 'Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: EnviarRespuestaRequestSchema,
+    exitos: [{ status: 201, schema: RespuestaCreadaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['FORM_REQUEST_NOT_RESPONDABLE'] },
+    fuente: '09v16.1 §22.7 · REG-06-211 · TEST-FRM-003/004/005',
+  },
+  {
+    id: 'API-FRM-08',
+    metodo: 'post',
+    ruta: '/me/form-responses/{formResponseId}/rectifications',
+    resumen: 'Rectificar una respuesta propia: crea una sucesora, nunca sobrescribe la original, y mantiene SELF_REPORTED. No restaura la lectura del profesional si el PDP ya no la permite.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RectificarRespuestaRequestSchema,
+    exitos: [{ status: 201, schema: RectificacionCreadaResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'],
+      422: ['FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED', 'FORM_RESPONSE_INVALID'],
+    },
+    fuente: '09v16.1 §22.8 · REG-06-211 · TEST-FRM-006',
+  },
 ];
 
 /**
@@ -1482,6 +1607,9 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-TRN-19',
   'API-TRN-21',
   'API-TRN-23',
+  'API-FRM-04',
+  'API-FRM-05',
+  'API-FRM-06',
 ]);
 const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-CON-04', 'API-CON-08', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17']);
 
@@ -1555,10 +1683,11 @@ export function documentoOpenApi(): Record<string, unknown> {
   return {
     openapi: '3.1.0',
     info: {
-      title: 'BE API — WP-02 Identidad y sesiones · WP-03 Vínculo, consentimiento y PDP · WP-04 Circuito nutricional · WP-05 Antropometría, métodos y cálculos · WP-06 Circuito de entrenamiento',
-      version: '0.6.0',
+      title:
+        'BE API — WP-02 Identidad y sesiones · WP-03 Vínculo, consentimiento y PDP · WP-04 Circuito nutricional · WP-05 Antropometría, métodos y cálculos · WP-06 Circuito de entrenamiento · WP-07 Información profesional pertinente',
+      version: '0.7.0',
       description:
-        'Generado desde @be/domain (contratos.ts, contratos-vinculo.ts, contratos-nutricion.ts, contratos-antropometria.ts, contratos-calculo.ts y contratos-entrenamiento.ts). No editar a mano.',
+        'Generado desde @be/domain (contratos.ts, contratos-vinculo.ts, contratos-nutricion.ts, contratos-antropometria.ts, contratos-calculo.ts, contratos-entrenamiento.ts y contratos-formularios.ts). No editar a mano.',
     },
     servers: [{ url: '/api/v1' }],
     components: {
