@@ -1834,6 +1834,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** Ninguno: no hay nada implementado. **Recomendación: A**, con la decisión de Dirección sobre si entra en la entrega; B mezclaría una capacidad transversal con un enriquecimiento de dominio.
 
+**Decisión de Elián (2026-09-21): opción A, ahora, antes que todo lo demás.** Dado el plazo (10 días al 2026-10-01) y que RF-071 es P0 núcleo no recortable, entra como paquete propio antes de lo que se venía llamando «WP-07» (zonas musculares, wger), que corre a WP-08. **Cerrada:** ver `docs/paquetes/WP-07.md`, que registra la definición completa.
+
 ## DL-091 — Cuatro patrones de pantalla que el cierre de WP-06 corrigió en entrenamiento siguen iguales en nutrición
 
 **Prioridad:** media · **Documento:** B10-06:1145-1148 · B10-10:36, 164-165, 376 · **Estado:** ABIERTA
@@ -1851,3 +1853,43 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Dejarlo para cuando cada dominio vuelva a tocarse.
 
 **Provisorio en código.** Entrenamiento ya tiene 1 y 2, y 3 en el filtro de período. **Recomendación: A**, inmediatamente después de WP-06: son arreglos chicos y conocidos, y dejarlos haría que el mismo producto se comporte distinto según la pestaña.
+
+## DL-092 — El núcleo operable de RF-071 vive en seis documentos marcados «NO APROBADO»
+
+**Prioridad:** alta · **Documento:** 04:1176, 1297-1313 · 05 v0.15 (encabezado y cierre) · 06 v0.1.1 §20 · 08 v0.1.5 §56 · 09 v0.16.1 (encabezado) · 10 Adenda v0.5 (encabezado) · **Estado:** DECIDIDA 2026-09-21
+
+**Qué dice el legajo.** RF-071 se incorporó por un parche transversal (ACTA-DIR-021 en 04; ACTA-DIR-023 en 06; ACTA-DIR-025 en 08 y 09). Cada uno de los seis documentos propietarios declara, en su propio encabezado y en su cierre, que la versión que contiene el material de RF-071 es `BORRADOR DE PARCHE TRANSVERSAL — NO APROBADO`, `NO CANONIZADO`, con `Implementación: NO AUTORIZADA`. En 04, RF-071 figura puntualmente como `CANDIDATO … sujeto a contrarrevisión y aprobación de Dirección` (04:1176).
+
+**Por qué importa.** Es la misma condición que atravesaron WP-04, WP-05 y WP-06: el contenido técnico más nuevo y más específico del legajo vive, sistemáticamente, en material que el propio legajo todavía no canonizó formalmente.
+
+**Opciones.**
+- **A.** Implementar sobre este material, porque es el único contenido técnico que existe, y declararlo.
+- **B.** Esperar la aprobación formal de Dirección antes de escribir código.
+
+**Decisión de Elián (2026-09-21): opción A**, la misma que DL-058/074/086. B detiene el paquete sin cambiar el contenido de lo que hay que construir, y con 10 días al 1/10 no es una opción real.
+
+## DL-093 — La máquina de estados de la Solicitud queda con dos estados, sin cancelar ni rechazar
+
+**Prioridad:** media · **Documento:** 06:8524-8529 (REG-06-210) · 09:1610-1618 (API-FRM-06) · **Estado:** DECIDIDA 2026-09-21
+
+**Qué dice el legajo.** REG-06-210 declara «Estados mínimos: PENDIENTE, RESPONDIDA», sin tabla de transiciones, sin actor de creación nombrado y sin estados de caducidad, rechazo o retiro — a diferencia de la Solicitud de vínculo de B-03, que sí tiene cinco eventos con actor y guarda cada uno (06:3010-3040). El 09 no agrega ninguna operación para cancelar, rechazar o hacer caducar una Solicitud: API-FRM-06 expone en cambio `respondable: true/false` como «una proyección calculada con política actual; no crea un estado de dominio nuevo».
+
+**Por qué importa.** Sin esta decisión, no queda claro qué pasa con una Solicitud que el asesorado nunca responde, o que deja de ser respondible porque se pausó el vínculo mientras estaba `PENDIENTE`.
+
+**Opciones.**
+- **A.** Dos estados persistidos (`PENDIENTE → RESPONDIDA`, sin retorno) y `respondable` como proyección de solo lectura del PDP, sin agregar un tercer estado.
+- **B.** Agregar estados propios de dominio (`CADUCADA`, `RECHAZADA`, `RETIRADA`) que el legajo no declara.
+
+**Decisión de Elián (2026-09-21): opción A.** Es lo que el propio 09 ya resuelve con `respondable` como proyección, y sostiene el patrón «solo agregar» (sin DELETE) que rige el resto de BE. **Registrado** en `docs/paquetes/WP-07.md` §7.2, D-B; falta sostenerlo en la base y en el servicio cuando se escriba el código.
+
+## DL-094 — Los siete TEST-FRM son títulos de una línea, sin los trece campos de 11A §6
+
+**Prioridad:** media · **Documento:** 11A:604-610 (§18, TEST-FRM-001 a 007) · 11A:194, 348-349 (matriz, oráculo genérico) · **Estado:** DECIDIDA 2026-09-21
+
+**Qué dice el legajo.** Mismo patrón que TEST-TRN (DL-075), TEST-NUT y TEST-ANT (DL-065): `TEST-RF-071`, `TEST-UC-P32` y `TEST-UC-P33` llevan el oráculo-frase genérico compartido con otras 54 filas de la matriz, y los siete `TEST-FRM-001` a `007` de §18 son un título de una línea cada uno, sin `STEPS`/`EXPECTED`/`NEGATIVE_ASSERTIONS`.
+
+**Opciones.**
+- **A.** Escribir los siete con el molde completo de 11A §6, mismo formato que `WP-06-ORACULOS.md`.
+- **B.** Dejarlos como títulos y cubrir por comportamiento, sin materializar el oráculo.
+
+**Decisión de Elián (2026-09-21): opción A.** Avanza también la condición de cierre de DL-075, que ya señalaba que el hueco de la §6 del 11A era estructural, no exclusivo de un dominio. **Falta escribir** `docs/paquetes/WP-07-ORACULOS.md` con el molde completo — la decisión ya está tomada, la redacción de los siete oráculos es el próximo paso.
