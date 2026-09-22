@@ -127,6 +127,8 @@ export const SolicitudDeFormularioSchema = z.strictObject({
   relationshipId: IdOpaco,
   purpose: z.string(),
   scope: AlcanceSchema,
+  /** La plantilla y la versión exacta: con las dos, quien responde puede pedir su estructura a FRM-02 (DL-095). */
+  templateId: IdOpaco,
   templateVersionId: IdOpaco,
   templateName: z.string(),
   requestedFieldCodes: z.array(z.string()),

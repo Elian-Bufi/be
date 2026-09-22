@@ -11,7 +11,7 @@
  *   (UC-I02 E05; 10-B10:407). Es el estado que se ve cuando el asesorado revoca: el corte no espera a la sesión.
  * «Actualizar» vuelve a preguntar a la API y muestra la hora de la última consulta.
  */
-import { ALCANCES, CLAVE_DE_DOMINIO, COPY_VINCULO, ETIQUETA_DE_ALCANCE, estadoParaMostrar, type DashboardResponse, type Vinculo } from '@be/domain';
+import { ALCANCES, CLAVE_DE_DOMINIO, COPY_FORMULARIOS, COPY_VINCULO, ETIQUETA_DE_ALCANCE, estadoParaMostrar, type DashboardResponse, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -119,6 +119,10 @@ export function Workspace() {
                 </div>
               ))}
             </dl>
+            {/* Transversal a los tres alcances (WP-07): no cuelga de ninguno, así que va fuera de la lista. */}
+            <p>
+              <Link href={`/pro/advisees/forms?id=${encodeURIComponent(id)}`}>{COPY_FORMULARIOS.pedirInformacion}</Link>
+            </p>
           </>
         ) : null}
         <div className="acciones">

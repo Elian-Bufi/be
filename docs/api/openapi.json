@@ -42252,6 +42252,10 @@
                                 "ANTROPOMETRIA"
                               ]
                             },
+                            "templateId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
                             "templateVersionId": {
                               "type": "string",
                               "minLength": 1
@@ -42291,6 +42295,7 @@
                             "relationshipId",
                             "purpose",
                             "scope",
+                            "templateId",
                             "templateVersionId",
                             "templateName",
                             "requestedFieldCodes",
@@ -42748,6 +42753,10 @@
                               "ANTROPOMETRIA"
                             ]
                           },
+                          "templateId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
                           "templateVersionId": {
                             "type": "string",
                             "minLength": 1
@@ -42790,6 +42799,7 @@
                           "relationshipId",
                           "purpose",
                           "scope",
+                          "templateId",
                           "templateVersionId",
                           "templateName",
                           "requestedFieldCodes",

@@ -105,6 +105,21 @@ test('09:1618 · rectificar no sobrescribe: crea una sucesora, y la original sig
   assert.deepEqual(bifurcada, { valida: false, motivo: 'NO_SUCEDE_A_LA_TERMINAL' });
 });
 
+// ─── Copy (10 Adenda v0.5; WP-07 §5) ────────────────────────────────────────────────────────────
+
+test('WP-07 §5 · el copy no presenta la falta de respuesta como incumplimiento ni lo declarado como medición', async () => {
+  const { COPY_FORMULARIOS, terminosProhibidosDeFormulariosEn } = await import('./copy-formularios');
+  const textos = Object.values(COPY_FORMULARIOS);
+  assert.deepEqual(
+    textos.flatMap((t) => terminosProhibidosDeFormulariosEn(t).map((p) => `${p} en «${t}»`)),
+    [],
+  );
+  // El detector funciona: estas dos frases son exactamente las que el paquete prohíbe.
+  assert.deepEqual(terminosProhibidosDeFormulariosEn('Cumplimiento del formulario: 60%'), ['cumplimiento', '%']);
+  assert.deepEqual(terminosProhibidosDeFormulariosEn('Este campo es obligatorio'), ['obligatorio']);
+  assert.deepEqual(terminosProhibidosDeFormulariosEn('Declarado por la persona'), []);
+});
+
 // ─── El contrato generado (openapi.ts) ──────────────────────────────────────────────────────────
 
 test('09 §22 · las 8 operaciones FRM están en el documento, sin cancelar/rechazar/caducar ni crear plantilla', async () => {

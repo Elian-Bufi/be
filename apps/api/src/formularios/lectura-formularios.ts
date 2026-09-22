@@ -22,7 +22,7 @@ const token = (n: number): string => `v${n}`;
 type PlantillaConVersiones = FilaDePlantilla & { versiones: { id: string }[] };
 type VersionSeleccionable = FilaDeVersionDePlantilla & { sucesora?: { id: string } | null };
 type VersionConPlantilla = VersionSeleccionable & { plantilla: { id: string; clave: string } };
-type SolicitudConPartes = FilaDeSolicitud & { templateVersion: { nombre: string } };
+type SolicitudConPartes = FilaDeSolicitud & { templateVersion: { nombre: string; plantillaId: string } };
 type RespuestaConRectificaciones = FilaDeRespuesta & { rectificaciones: FilaDeRectificacion[] };
 
 interface CampoDeContenido {
@@ -110,6 +110,7 @@ export function solicitudApi(s: SolicitudConPartes, nombreProfesional: string, n
     relationshipId: s.vinculoId,
     purpose: s.proposito,
     scope: s.alcance,
+    templateId: s.templateVersion.plantillaId,
     templateVersionId: s.templateVersionId,
     templateName: s.templateVersion.nombre,
     requestedFieldCodes: s.camposSolicitados,
