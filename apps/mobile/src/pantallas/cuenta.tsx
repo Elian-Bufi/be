@@ -14,6 +14,7 @@ import {
   COPY,
   COPY_ANTROPOMETRIA,
   COPY_ENTRENAMIENTO,
+  COPY_FORMULARIOS,
   COPY_VINCULO,
   VERSION_VIGENTE,
   type MeResponse,
@@ -79,6 +80,7 @@ export function PantallaDeCuenta({ token, salir, ir }: { token: string; salir: (
       <Boton texto="Nutrición: Hoy" onPress={() => ir({ nombre: 'hoy' })} />
       <Boton texto={`Entrenamiento: ${COPY_ENTRENAMIENTO.entrenamientoDeHoy}`} tipo="secundario" onPress={() => ir({ nombre: 'entrenamiento' })} />
       <Boton texto={`Antropometría: ${COPY_ANTROPOMETRIA.miEvolucion}`} tipo="secundario" onPress={() => ir({ nombre: 'mi-evolucion' })} />
+      <Boton texto={`Información: ${COPY_FORMULARIOS.pestana}`} tipo="secundario" onPress={() => ir({ nombre: 'mis-solicitudes' })} />
       <Boton texto="Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
 
       <Seccion titulo="Estado de la cuenta">

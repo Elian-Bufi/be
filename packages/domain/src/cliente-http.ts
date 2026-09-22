@@ -128,6 +128,19 @@ import {
   RegistrarRevisionDeEntrenamientoRequestSchema,
   RevisionDeEntrenamientoResponseSchema,
 } from './contratos-entrenamiento';
+import {
+  CrearSolicitudDeFormularioRequestSchema,
+  DetalleDeSolicitudResponseSchema,
+  EnviarRespuestaRequestSchema,
+  ListaDePlantillasResponseSchema,
+  ListaDeSolicitudesDeFormularioResponseSchema,
+  ListaDeSolicitudesPropiasResponseSchema,
+  RectificacionCreadaResponseSchema,
+  RectificarRespuestaRequestSchema,
+  RespuestaCreadaResponseSchema,
+  SolicitudDeFormularioCreadaResponseSchema,
+  VersionDePlantillaResponseSchema,
+} from './contratos-formularios';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import type { Superficie } from './procedencia';
@@ -713,6 +726,40 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-TRN-24. */
     aplicarRevisionDeEntrenamiento(token: string, revisionId: string, claveDeIdempotencia: string) {
       return llamar('POST', `/training/reviews/${encodeURIComponent(revisionId)}/apply`, { token, claveDeIdempotencia, esquema: AplicarRevisionResponseSchema, cuerpo: { expectedVersion: 'v1' } });
+    },
+
+    // ─── FRM · información profesional pertinente (WP-07; 09v16.1 §22) ───────────────────────
+    /** API-FRM-01: el catálogo. Una plantilla listada no prueba que sus campos puedan pedirse a alguien. */
+    listarPlantillasDeFormulario(token: string, filtro: { domain?: string; status?: string; cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/form-templates${query(filtro)}`, { token, esquema: ListaDePlantillasResponseSchema });
+    },
+    /** API-FRM-02: la versión exacta, con sus secciones y campos. No devuelve datos personales. */
+    consultarVersionDePlantilla(token: string, plantillaId: string, versionId: string) {
+      return llamar('GET', `/form-templates/${encodeURIComponent(plantillaId)}/versions/${encodeURIComponent(versionId)}`, { token, esquema: VersionDePlantillaResponseSchema });
+    },
+    /** API-FRM-03: pedir. Solicitar no es consentir ni obtener acceso (05:15098). */
+    crearSolicitudDeFormulario(token: string, asesoradoId: string, cuerpo: z.input<typeof CrearSolicitudDeFormularioRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/form-requests`, { token, claveDeIdempotencia, esquema: SolicitudDeFormularioCreadaResponseSchema, cuerpo });
+    },
+    /** API-FRM-04: las del profesional sobre ese asesorado, solo las actualmente revelables. */
+    listarSolicitudesDeFormulario(token: string, asesoradoId: string, filtro: { status?: string; cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/form-requests${query(filtro)}`, { token, esquema: ListaDeSolicitudesDeFormularioResponseSchema });
+    },
+    /** API-FRM-05: proyección por actor. El profesional la ve si el PDP lo permite; el titular, siempre. */
+    consultarSolicitudDeFormulario(token: string, solicitudId: string) {
+      return llamar('GET', `/form-requests/${encodeURIComponent(solicitudId)}`, { token, esquema: DetalleDeSolicitudResponseSchema });
+    },
+    /** API-FRM-06: las propias, con `respondable` calculado en esta misma lectura. */
+    misSolicitudesDeFormulario(token: string, filtro: { status?: string; cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/me/form-requests${query(filtro)}`, { token, esquema: ListaDeSolicitudesPropiasResponseSchema });
+    },
+    /** API-FRM-07: responder. Un campo opcional que no se responde se omite, nunca cero ni default. */
+    responderSolicitudDeFormulario(token: string, solicitudId: string, cuerpo: z.input<typeof EnviarRespuestaRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/form-requests/${encodeURIComponent(solicitudId)}/responses`, { token, claveDeIdempotencia, esquema: RespuestaCreadaResponseSchema, cuerpo });
+    },
+    /** API-FRM-08: rectificar crea una sucesora; la original queda intacta (09:1618). */
+    rectificarRespuestaDeFormulario(token: string, respuestaId: string, cuerpo: z.input<typeof RectificarRespuestaRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/form-responses/${encodeURIComponent(respuestaId)}/rectifications`, { token, claveDeIdempotencia, esquema: RectificacionCreadaResponseSchema, cuerpo });
     },
   };
 }

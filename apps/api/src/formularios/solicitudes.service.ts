@@ -23,7 +23,7 @@ import { categoriasDeCampos, codigosDeCampo, respuestaApi, solicitudApi } from '
 
 type Tx = Prisma.TransactionClient;
 
-const INCLUIR_SOLICITUD = { templateVersion: { select: { nombre: true } }, respuesta: { select: { id: true } } } as const;
+const INCLUIR_SOLICITUD = { templateVersion: { select: { nombre: true, plantillaId: true } }, respuesta: { select: { id: true } } } as const;
 
 /**
  * API-FRM-03, 04, 05 y 06 — crear y consultar Solicitudes (09v16.1 §22.3 a §22.6; UC-P32).
