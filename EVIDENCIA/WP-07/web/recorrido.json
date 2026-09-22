@@ -1,0 +1,218 @@
+{
+  "web": "https://be-web-1ngj.onrender.com",
+  "api": "https://be-api-hndp.onrender.com",
+  "momento": "2026-09-22T21:44:06.761Z",
+  "profesionales": [
+    "DEMO-PT (Entrenamiento)"
+  ],
+  "pasos": [
+    {
+      "paso": "web-01-workspace-con-informacion",
+      "url": "/pro/advisees?id=9a578499-8cd8-430e-8150-8470f7720204",
+      "momento": "2026-09-22T21:43:49.754Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-02-sin-solicitudes",
+      "url": "/pro/advisees/forms?id=9a578499-8cd8-430e-8150-8470f7720204",
+      "momento": "2026-09-22T21:43:51.562Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-03-catalogo",
+      "url": "/pro/advisees/forms?id=9a578499-8cd8-430e-8150-8470f7720204&vista=pedir",
+      "momento": "2026-09-22T21:43:53.078Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-04-campos-de-la-plantilla",
+      "url": "/pro/advisees/forms?id=9a578499-8cd8-430e-8150-8470f7720204&vista=pedir",
+      "momento": "2026-09-22T21:43:54.238Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-05-pedido-armado",
+      "url": "/pro/advisees/forms?id=9a578499-8cd8-430e-8150-8470f7720204&vista=pedir",
+      "momento": "2026-09-22T21:43:56.006Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-06-solicitud-sin-responder",
+      "url": "/pro/advisees/forms?id=9a578499-8cd8-430e-8150-8470f7720204&vista=solicitudes",
+      "momento": "2026-09-22T21:43:58.032Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-07-detalle-sin-respuesta",
+      "url": "/pro/advisees/forms?id=9a578499-8cd8-430e-8150-8470f7720204&vista=solicitudes",
+      "momento": "2026-09-22T21:43:59.552Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-08-respuesta-declarada",
+      "url": "/pro/advisees/forms?id=9a578499-8cd8-430e-8150-8470f7720204&vista=solicitudes",
+      "momento": "2026-09-22T21:44:03.775Z",
+      "terminosProhibidos": []
+    },
+    {
+      "paso": "web-09-original-y-correccion",
+      "url": "/pro/advisees/forms?id=9a578499-8cd8-430e-8150-8470f7720204&vista=solicitudes",
+      "momento": "2026-09-22T21:44:06.760Z",
+      "terminosProhibidos": []
+    }
+  ],
+  "terminosProhibidosEnTotal": 0,
+  "llamadas": [
+    {
+      "momento": "2026-09-22T21:43:45.654Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/auth/sessions",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-22T21:43:46.223Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:46.276Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/health-data-consent-requirement",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:46.788Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:47.244Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationship-requests",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:47.317Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:48.471Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:48.916Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/9a578499-8cd8-430e-8150-8470f7720204/dashboard",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:49.009Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me/relationships",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:50.539Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/me",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:51.016Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/9a578499-8cd8-430e-8150-8470f7720204/form-requests",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:52.413Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/form-templates",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:53.559Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/form-templates/7aa84959-7702-4749-bf70-7fdc574db6ca/versions/349161b3-b831-4df1-896f-484517393a57",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:56.585Z",
+      "metodo": "POST",
+      "ruta": "/api/v1/advisees/9a578499-8cd8-430e-8150-8470f7720204/form-requests",
+      "status": 201
+    },
+    {
+      "momento": "2026-09-22T21:43:57.435Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/9a578499-8cd8-430e-8150-8470f7720204/form-requests",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:58.548Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/form-requests/d8998050-edb6-4233-a132-6a3b4fc3659f",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:43:58.978Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/form-templates/7aa84959-7702-4749-bf70-7fdc574db6ca/versions/349161b3-b831-4df1-896f-484517393a57",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:44:00.858Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/form-templates",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:44:01.569Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/9a578499-8cd8-430e-8150-8470f7720204/form-requests",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:44:02.133Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/form-requests/d8998050-edb6-4233-a132-6a3b4fc3659f",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:44:02.605Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/form-templates/7aa84959-7702-4749-bf70-7fdc574db6ca/versions/349161b3-b831-4df1-896f-484517393a57",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:44:04.553Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/form-templates",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:44:05.135Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/advisees/9a578499-8cd8-430e-8150-8470f7720204/form-requests",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:44:05.657Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/form-requests/d8998050-edb6-4233-a132-6a3b4fc3659f",
+      "status": 200
+    },
+    {
+      "momento": "2026-09-22T21:44:06.097Z",
+      "metodo": "GET",
+      "ruta": "/api/v1/form-templates/7aa84959-7702-4749-bf70-7fdc574db6ca/versions/349161b3-b831-4df1-896f-484517393a57",
+      "status": 200
+    }
+  ],
+  "status5xx": 0
+}

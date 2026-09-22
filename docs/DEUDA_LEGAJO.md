@@ -1892,7 +1892,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **A.** Escribir los siete con el molde completo de 11A §6, mismo formato que `WP-06-ORACULOS.md`.
 - **B.** Dejarlos como títulos y cubrir por comportamiento, sin materializar el oráculo.
 
-**Decisión de Elián (2026-09-21): opción A.** Avanza también la condición de cierre de DL-075, que ya señalaba que el hueco de la §6 del 11A era estructural, no exclusivo de un dominio. **Falta escribir** `docs/paquetes/WP-07-ORACULOS.md` con el molde completo — la decisión ya está tomada, la redacción de los siete oráculos es el próximo paso.
+**Decisión de Elián (2026-09-21): opción A.** Avanza también la condición de cierre de DL-075, que ya señalaba que el hueco de la §6 del 11A era estructural, no exclusivo de un dominio. **Escritos** en `docs/paquetes/WP-07-ORACULOS.md` (2026-09-22): los siete, con los trece campos. Seis con automatización completa; **TEST-FRM-004 quedó declarado como parcial** en su propio campo `AUTOMATION` — `profileSourceRef` se acepta como referencia opaca, sin verificación cruzada contra el dato de origen (ver DL-095). Se dejó el oráculo entero en vez de recortarlo para que coincidiera con lo implementado.
 
 ## DL-095 — Contratos de FRM con forma no definida en el 09
 
@@ -1912,7 +1912,9 @@ El OpenAPI generado publica todo y el contract test lo verifica.
   - tipo de campo cerrado en `TEXT`/`NUMBER`/`BOOLEAN`, sin `CHOICE` ni multi-select (WP-07.md §9.3);
   - éxito de FRM-08 simétrico al de una corrección de entrenamiento: `{ formResponseId, rectificationId, version, recordedAt }`, con `expectedVersion` agregado al request para sostener el `409 VERSION_CONFLICT` que el 09 sí declara;
   - segundo token de estado: `RESPONDED`, par natural en inglés de `PENDING`;
-  - `422 FORM_RESPONSE_INVALID` también en FRM-07 (09:1585-1593 solo lo declara para FRM-08): la misma validación de forma — cada `fieldCode` existe en la plantilla y tiene el tipo declarado, sin duplicados, sin exceder lo solicitado — se aplica al enviar y al rectificar, y no tendría sentido rechazar una forma inválida solo la segunda vez.
+  - `422 FORM_RESPONSE_INVALID` también en FRM-07 (09:1585-1593 solo lo declara para FRM-08): la misma validación de forma — cada `fieldCode` existe en la plantilla y tiene el tipo declarado, sin duplicados, sin exceder lo solicitado — se aplica al enviar y al rectificar, y no tendría sentido rechazar una forma inválida solo la segunda vez;
+  - `templateId` en la Solicitud, además de `templateVersionId`: sin él, quien responde no puede pedirle su estructura a FRM-02. Apareció al escribir la pantalla de la APK, no antes;
+  - **`profileSourceRef` se acepta como referencia opaca**, sin verificar que apunte a un dato propio del actor y de tipo compatible (09:1583-1585 lo pide; P0 no lo implementa). Es lo que deja a `TEST-FRM-004` declarado como parcial en `docs/paquetes/WP-07-ORACULOS.md`.
 - **B.** Esperar una versión del 09 que fije estas formas y dejar el paquete sin avanzar.
 
 **Provisorio en código.** A. El OpenAPI generado (`docs/api/openapi.json`) publica esas formas y `contratos-wp07.test.ts` las verifica, incluida la matriz maximally-permissive y el rechazo de `value: null` en una respuesta.
