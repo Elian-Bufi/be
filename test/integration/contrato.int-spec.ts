@@ -5,6 +5,7 @@
  * - WP-04: TEST-CT-NUT-01…21 · TEST-CT-INT-NUT-01 · la lista propia de ingestas (DL-055).
  * - WP-05: TEST-CT-ANT-01, 03, 05 a 12, la evolución propia, y MTH-01/02 con CAL-01 a 04.
  * - WP-06: TEST-CT-TRN por tramos; lo que todavía no tiene servicio figura en EN_CONSTRUCCION.
+ * - WP-07: contrato de FRM-01 a 08 publicado; sin servicio todavía, en EN_CONSTRUCCION.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -577,12 +578,22 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de MTH y CAL', async () => {
 });
 
 /**
- * WP-06 se implementa por tramos, con el contrato entero publicado primero (docs/paquetes/WP-06.md §9.6). Las
- * operaciones declaradas que todavía no tienen servicio figuran acá, **a la vista**, en vez de relajar la exigencia
- * de cobertura. La lista solo puede achicarse: si una operación de acá ya se ejercita, la prueba falla hasta que se
- * la saque. **Para cerrar WP-06 tiene que quedar vacía.**
+ * WP-06 y WP-07 se implementan por tramos, con el contrato entero publicado primero (docs/paquetes/WP-06.md §9.6;
+ * docs/paquetes/WP-07.md). Las operaciones declaradas que todavía no tienen servicio figuran acá, **a la vista**, en
+ * vez de relajar la exigencia de cobertura. La lista solo puede achicarse: si una operación de acá ya se ejercita, la
+ * prueba falla hasta que se la saque. **Para cerrar cada paquete tiene que quedar sin sus operaciones.**
  */
-const EN_CONSTRUCCION: ReadonlySet<string> = new Set<string>([]);
+const EN_CONSTRUCCION: ReadonlySet<string> = new Set<string>([
+  // WP-07 (RF-071): contrato publicado en este tramo; el servicio de API todavía no existe.
+  'API-FRM-01',
+  'API-FRM-02',
+  'API-FRM-03',
+  'API-FRM-04',
+  'API-FRM-05',
+  'API-FRM-06',
+  'API-FRM-07',
+  'API-FRM-08',
+]);
 
 it('TEST-CT (WP-06, tramos 3 y 4): se ejercitan éxitos y errores de la ejecución, la corrección y la revisión', async () => {
   const c = await circuitoConPlanDeEntrenamientoActivo(app, 'contrato-ejecucion');
