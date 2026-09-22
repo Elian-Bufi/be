@@ -168,6 +168,11 @@ model Identidad {
   ejecucionesDeEntrenamiento                 EjecucionDeEntrenamiento[]             @relation("EjecucionDeEntrenamientoDelAsesorado")
   correccionesDeEjecucion                    CorreccionDeEjecucionDeEntrenamiento[] @relation("CorreccionDeEjecucionDelAutor")
 
+  // WP-07
+  solicitudesDeFormularioComoProfesional SolicitudDeFormulario[] @relation("SolicitudDeFormularioDelProfesional")
+  solicitudesDeFormularioComoAsesorado   SolicitudDeFormulario[] @relation("SolicitudDeFormularioDelAsesorado")
+  respuestasDeFormulario                 RespuestaDeFormulario[] @relation("RespuestaDeFormularioDelAsesorado")
+
   @@map("identidad")
 }
 
@@ -563,9 +568,10 @@ model Vinculo {
   momentoDeOcurrencia DateTime? @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro   DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  profesional Identidad          @relation("VinculoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict)
-  asesorado   Identidad          @relation("VinculoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict)
-  alcances    AlcanceDeVinculo[]
+  profesional             Identidad               @relation("VinculoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict)
+  asesorado               Identidad               @relation("VinculoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict)
+  alcances                AlcanceDeVinculo[]
+  solicitudesDeFormulario SolicitudDeFormulario[]
 
   @@unique([profesionalId, asesoradoId])
   @@map("vinculo")
@@ -1622,6 +1628,14 @@ enum TipoDeEventoDeEntrenamiento {
   RevisionDeEntrenamientoRegistrada
 }
 
+/// D-B (docs/paquetes/WP-07.md): mismos dos nombres de evento que las transiciones de
+/// TRANSICIONES_DE_SOLICITUD_DE_FORMULARIO en @be/domain (formularios.ts), más la rectificación.
+enum TipoDeEventoDeFormulario {
+  SolicitudDeFormularioCreada
+  RespuestaDeFormularioRegistrada
+  RespuestaDeFormularioRectificada
+}
+
 /// Catálogo propio de ejercicios (RF-037; REG-06-99 a 101). Un cambio de catálogo no reescribe sesiones ya
 /// prescriptas: la instantánea congela nombre y versión al activar (REG-06-112).
 model EjercicioDeCatalogo {
@@ -1815,13 +1829,13 @@ model BorradorDeEjecucionDeEntrenamiento {
 
 /// La ejecución registrada: colección propia, inmutable. REG-06-115 vive en la base: una sola por ocurrencia.
 model EjecucionDeEntrenamiento {
-  id                  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  asesoradoId         String                 @map("asesorado_id") @db.Uuid
-  versionDePlanId     String                 @map("version_de_plan_id") @db.Uuid
-  sesionPlanificadaId String                 @map("sesion_planificada_id")
-  fechaLocal          DateTime               @map("fecha_local") @db.Date
-  zonaHoraria         String                 @map("zona_horaria")
-  borradorId          String                 @unique @map("borrador_id") @db.Uuid
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  asesoradoId         String                  @map("asesorado_id") @db.Uuid
+  versionDePlanId     String                  @map("version_de_plan_id") @db.Uuid
+  sesionPlanificadaId String                  @map("sesion_planificada_id")
+  fechaLocal          DateTime                @map("fecha_local") @db.Date
+  zonaHoraria         String                  @map("zona_horaria")
+  borradorId          String                  @unique @map("borrador_id") @db.Uuid
   /// Nula si y solo si la sesión se registró NO_REALIZADA: sin entrenamiento no se usó ninguna granularidad, y
   /// exigir una sería registrar un hecho que no ocurrió (REG-06-132).
   granularidad        GranularidadDeRegistro?
@@ -1829,8 +1843,8 @@ model EjecucionDeEntrenamiento {
   motivo              String?
   contenido           Json
   procedencia         Json
-  momentoDeOcurrencia DateTime               @map("momento_de_ocurrencia") @db.Timestamptz(3)
-  momentoDeRegistro   DateTime               @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeOcurrencia DateTime                @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
   asesorado     Identidad                              @relation("EjecucionDeEntrenamientoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   versionDePlan VersionDePlanDeEntrenamiento           @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -1926,4 +1940,136 @@ model EventoDeEntrenamiento {
   @@index([asesoradoId, momentoDeRegistro])
   @@index([recursoId])
   @@map("evento_de_entrenamiento")
+}
+
+// ─── WP-07 · Información profesional pertinente (CAP-DAT, 06 §20.4; RF-071) ─────────────────────
+
+/// Catálogo BE sintético y mínimo (D-D, docs/paquetes/WP-07.md): no hay operación de crear una plantilla en el 09 —
+/// API-FRM-01/02 solo la leen. Se siembra por migración, igual que el catálogo de ejercicios de WP-06.
+model PlantillaDeFormulario {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Clave estable y legible (p. ej. FRM-SALUD, FRM-HABITOS).
+  clave             String   @unique
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  versiones VersionDePlantillaDeFormulario[]
+
+  @@map("plantilla_de_formulario")
+}
+
+/// Sucesión lineal por relación (B-06). Seleccionable = sin sucesora, mismo patrón que
+/// VersionDeEspecificacionAntropometrica: publicar una versión nueva no modifica Solicitudes ya creadas (REG-06-209).
+model VersionDePlantillaDeFormulario {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  plantillaId       String   @map("plantilla_id") @db.Uuid
+  predecesoraId     String?  @unique @map("predecesora_id") @db.Uuid
+  version           String
+  nombre            String
+  proposito         String
+  /// NULL: la plantilla es transversal a los tres Alcances (D-D, catálogo domain-agnostic).
+  dominio           Alcance?
+  /// Secciones → campos, con tipo/unidad/categoría/ayuda (09:1479; REG-06-209).
+  contenido         Json
+  /// Rótulo obligatorio: el catálogo es sintético de demostración (D-D).
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  plantilla   PlantillaDeFormulario           @relation(fields: [plantillaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora VersionDePlantillaDeFormulario? @relation("SucesionDeVersionDePlantilla", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora    VersionDePlantillaDeFormulario? @relation("SucesionDeVersionDePlantilla")
+  solicitudes SolicitudDeFormulario[]
+  respuestas  RespuestaDeFormulario[]
+
+  @@index([plantillaId])
+  @@map("version_de_plantilla_de_formulario")
+}
+
+/// T-06-76 (06:8506-8533). Dos estados: PENDIENTE mientras no exista RespuestaDeFormulario, RESPONDIDA cuando
+/// exista — derivado de la relación, nunca persistido (D-B, docs/paquetes/WP-07.md), así la fila no puede decir
+/// «RESPONDIDA» sin que la Respuesta exista. La Solicitud no amplía vínculo, consentimiento ni acceso (REG-06-210).
+model SolicitudDeFormulario {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId     String   @map("profesional_id") @db.Uuid
+  asesoradoId       String   @map("asesorado_id") @db.Uuid
+  vinculoId         String   @map("vinculo_id") @db.Uuid
+  templateVersionId String   @map("template_version_id") @db.Uuid
+  proposito         String
+  alcance           Alcance
+  /// string[] de fieldCode. REG-06-212: requerido ⊆ solicitado, validado en el dominio antes de escribir.
+  camposSolicitados Json     @map("campos_solicitados")
+  camposRequeridos  Json     @map("campos_requeridos")
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional     Identidad                      @relation("SolicitudDeFormularioDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado       Identidad                      @relation("SolicitudDeFormularioDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  vinculo         Vinculo                        @relation(fields: [vinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  templateVersion VersionDePlantillaDeFormulario @relation(fields: [templateVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  respuesta       RespuestaDeFormulario?
+
+  @@index([asesoradoId, profesionalId, momentoDeRegistro])
+  @@index([vinculoId])
+  @@map("solicitud_de_formulario")
+}
+
+/// La respuesta original: colección propia, inmutable (09:1618 «no overwrite»). Siempre SELF_REPORTED (09 §22.7).
+/// Una por Solicitud: es lo que hace RESPONDIDA a la Solicitud (ver nota de SolicitudDeFormulario).
+model RespuestaDeFormulario {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  solicitudId       String   @unique @map("solicitud_id") @db.Uuid
+  asesoradoId       String   @map("asesorado_id") @db.Uuid
+  templateVersionId String   @map("template_version_id") @db.Uuid
+  /// Respuestas por campo, cada una con su procedencia SELF_REPORTED literal (09:1581; TEST-FRM-003).
+  contenido         Json
+  procedencia       Json
+  /// Token de concurrencia de esta Respuesta (compara contra `expectedVersion` en FRM-08).
+  version           Int      @default(1)
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  solicitud       SolicitudDeFormulario                  @relation(fields: [solicitudId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado       Identidad                              @relation("RespuestaDeFormularioDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  templateVersion VersionDePlantillaDeFormulario         @relation(fields: [templateVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rectificaciones RectificacionDeRespuestaDeFormulario[]
+
+  @@map("respuesta_de_formulario")
+}
+
+/// FRM-08: crea sucesora, nunca sobrescribe (09:1618). Mismo patrón que CorreccionDeEjecucionDeEntrenamiento, sin
+/// distinción de autor: FRM-08 es exclusivamente `/me/...`, siempre el titular de la Respuesta (09 §22.8).
+model RectificacionDeRespuestaDeFormulario {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  respuestaId        String   @map("respuesta_id") @db.Uuid
+  correccionPreviaId String?  @unique @map("correccion_previa_id") @db.Uuid
+  motivo             String
+  contenido          Json
+  procedencia        Json
+  /// Token de concurrencia: predecesora.version + 1 (o RespuestaDeFormulario.version + 1 si es la primera).
+  version            Int
+  momentoDeRegistro  DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  respuesta        RespuestaDeFormulario                 @relation(fields: [respuestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  correccionPrevia RectificacionDeRespuestaDeFormulario? @relation("SucesionDeRectificacionDeFormulario", fields: [correccionPreviaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  siguiente        RectificacionDeRespuestaDeFormulario? @relation("SucesionDeRectificacionDeFormulario")
+
+  @@index([respuestaId])
+  @@map("rectificacion_de_respuesta_de_formulario")
+}
+
+model EventoDeFormulario {
+  id                  String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  secuencia           BigInt                   @unique @default(autoincrement())
+  tipo                TipoDeEventoDeFormulario
+  profesionalId       String?                  @map("profesional_id") @db.Uuid
+  asesoradoId         String?                  @map("asesorado_id") @db.Uuid
+  recursoTipo         String                   @map("recurso_tipo")
+  recursoId           String                   @map("recurso_id") @db.Uuid
+  estadoPrevio        String?                  @map("estado_previo")
+  estadoPosterior     String?                  @map("estado_posterior")
+  actorId             String                   @map("actor_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime?                @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                 @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  @@index([asesoradoId, momentoDeRegistro])
+  @@index([recursoId])
+  @@map("evento_de_formulario")
 }
