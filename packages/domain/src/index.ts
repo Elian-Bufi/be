@@ -35,3 +35,4 @@ export * from './contratos-calculo';
 export * from './formularios';
 export * from './contratos-formularios';
 export * from './copy-formularios';
+export * from './formato-numeros';
