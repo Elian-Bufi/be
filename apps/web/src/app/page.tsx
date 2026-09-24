@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { AvisoDeLlegada } from '../components/aviso-de-llegada';
 import { Wordmark } from './wordmark';
 
+const version = process.env.BE_VERSION ?? 'no declarada';
 const commit = process.env.BE_COMMIT ? process.env.BE_COMMIT.slice(0, 7) : null;
 const construidoEn = process.env.BE_CONSTRUIDO_EN ?? null;
 
@@ -24,7 +25,7 @@ export default function Inicio() {
       </nav>
       <p className="nota">Ambiente de prueba: usá solo datos sintéticos. No ingreses datos reales de personas.</p>
       <p className="identidad" aria-label="Identidad del build">
-        web 0.2.0 · commit {commit ?? 'no declarado'} · build {construidoEn ?? 'no declarado'}
+        web {version} · commit {commit ?? 'no declarado'} · build {construidoEn ?? 'no declarado'}
       </p>
     </main>
   );

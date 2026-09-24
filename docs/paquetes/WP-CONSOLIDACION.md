@@ -1,6 +1,6 @@
 # Tramo de consolidación — definición
 
-> **Estado:** ABIERTO el 2026-09-22. Autorizado por Dirección el 2026-09-22 al elegir «consolidar y pulir» para los nueve días que quedan hasta la entrega del 2026-10-01, en lugar de abrir WP-08/09/10. Esta definición queda registrada en `main` antes del primer commit de código, como exige la regla de trabajo del proyecto.
+> **Estado:** **CERRADO** el 2026-09-24 en `main` (PRs #66 a #70 y el de cierre), con la defensa en `DEFENSA/CONSOLIDACION.md` y la evidencia en `EVIDENCIA/CONSOLIDACION/`. Abierto el 2026-09-22. Autorizado por Dirección el 2026-09-22 al elegir «consolidar y pulir» para los nueve días que quedan hasta la entrega del 2026-10-01, en lugar de abrir WP-08/09/10. Esta definición queda registrada en `main` antes del primer commit de código, como exige la regla de trabajo del proyecto.
 > **Qué es y qué no es.** No es un paquete nuevo de dominio: no agrega ninguna familia contractual del inventario P0 (09:2654-2668) ni ningún RF que no estuviera ya autorizado en un paquete cerrado. Es el cierre de tres cosas que los paquetes anteriores dejaron declaradas como deuda y que se defienden mal si quedan abiertas: **DL-091**, **DL-089** y la **condición de cierre de DL-031** (el dashboard sin contenido).
 > **Fuera de este tramo, con fundamento:** WP-08 (zonas musculares, wger, material didáctico), WP-09 (verificación profesional real y administración, DL-036), el resto de WP-10 (cartera, timeline, TVCC-30), Open Food Facts, RF-051, RF-061, RF-062, RF-003/004/005. La razón está en `docs/DEUDA_LEGAJO.md` y en la nota de MESA de WP-07: una deuda declarada con su fundamento se defiende; un dashboard vacío o un producto que se comporta distinto según la pestaña, no.
 
@@ -70,3 +70,11 @@ Cada bloque conserva dominio, período, procedencia y autoría (B10-08 §8.3). `
 - No hay cola de revisiones, próximas acciones ni proyecciones en el dashboard (WP-10).
 - La matriz de pertinencia de formularios sigue siendo maximalmente permisiva (DL-095).
 - Los comentarios de código que todavía dicen «wger llega en WP-07» pasan a decir WP-08 en el tramo A, de paso.
+
+## 7. Cierre — lo que se hizo distinto de lo definido
+
+- **Tramo B:** además de API-TRN-19 y API-TRN-09, se incluyó **API-TRN-08** para el titular. Sin él, TRN-09 devolvía 200 sobre una versión que la lista ya no ofrecía (PR #67; DL-089).
+- **Tramo A:** una revisión de calidad independiente encontró cinco fallas que ninguna prueba cubría, y se corrigieron antes de integrar (DL-091, resolución). Una de ellas no era del tramo: **API-ANT-06 cortaba la serie en silencio a los 92 días** desde WP-05; ahora responde `400 PERIOD_TOO_LONG`.
+- **Tramo A, APK:** no se agregó selector de período, porque la APK de entrenamiento tampoco lo tiene (§2, punto 2).
+- **Versión:** 0.8.0 en las tres aplicaciones. **Sin APK propia de este tramo:** la próxima APK se construye una sola vez al terminar el paquete de identidad visual, que también la cambia, y lleva las dos cosas.
+- **Orden de integración:** fue B, C, A, como se definió en §5.

@@ -35,7 +35,7 @@
 | DL-028 | WP-02 · 2026-09-18 | 08 R-08-05, §42-1 | Textos A1, A2, A3 y consecuencias del cierre: sintéticos | ABIERTA |
 | DL-029 | WP-02 · 2026-09-19 | 09v8 ACC-03 · 09v7 T14 | Logout idempotente frente a AuthN SESSION | ABIERTA |
 | DL-030 | WP-02 · 2026-09-19 | 07 CAND-07-J C · 08 §12.2, §38 | Detrás del rewrite del website, la API no ve la IP del cliente | **DECIDIDA E IMPLEMENTADA** 2026-09-19 · opción B, desvío fundamentado de 07 CAND-07-J C · verificada en `test` · solo falta que el 07 la incorpore |
-| DL-031 | WP-03 · 2026-09-19 | 09v11 §15 · 09:2654-2668 · brief WP-03 | Recurso protegido para demostrar el acceso sin dominios de salud | **DECIDIDA** 2026-09-19 · opción A (API-DSH-03 mínimo) |
+| DL-031 | WP-03 · 2026-09-19 | 09v11 §15 · 09:2654-2668 · brief WP-03 | Recurso protegido para demostrar el acceso sin dominios de salud | **CERRADA** 2026-09-24 · opción A · condición de cierre cumplida en la consolidación (PR #70) |
 | DL-032 | WP-03 · 2026-09-19 | 04:317 · 06:3183-3191 · 08:601, 08:406 · 09:2625-2639 | Las siete dimensiones del PDP y el lugar de A3 | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A) |
 | DL-033 | WP-03 · 2026-09-19 | 06:3105-3111 · 04:342, 04:345 · 05:3644 · 09v8:1395-1494 · CONV-06-03 | Máquinas del §7: actor habilitado, motivo y eventos | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A) |
 | DL-034 | WP-03 · 2026-09-19 | 06:3014, 06:3091-3093 · 09v8:1267-1270, 1398 | `relationshipId` del 09 frente al Vínculo multialcance del 06 | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A) |
@@ -90,8 +90,17 @@
 | DL-083 | WP-06 · 2026-09-21 | 08:238-246 · 08:304 · 08:291-293 | La matriz de pertinencia del 08 §11-bis no está instanciada para ENTRENAMIENTO | ABIERTA |
 | DL-084 | WP-06 · 2026-09-21 | DV-05:1128-1129 · DL-042 | Las variantes de entrenamiento de los adversariales 7 y 8 no tienen ID de test y nunca se ejecutaron | ABIERTA |
 | DL-085 | WP-06 · 2026-09-21 | B10-06:46, 773-776 · B10-10:53, 457-461 | Tres vocabularios para la misma distinción entre lo planificado y lo ejecutado | ABIERTA |
-| DL-086 | WP-06 · 2026-09-21 | 04:482, 378 · 04:1144 · 04:1130 · DL-056 | wger, Open Food Facts y el compromiso de dos APIs externas | **DECIDIDA** 2026-09-21 · wger se implementa en WP-07, no se difiere a un paquete indefinido |
+| DL-086 | WP-06 · 2026-09-21 | 04:482, 378 · 04:1144 · 04:1130 · DL-056 | wger, Open Food Facts y el compromiso de dos APIs externas | **DECIDIDA** 2026-09-21 · opción A — **sin ejecutar**: wger quedó en WP-08, fuera del rango literal de ACTA-DIR-034 y de la entrega (2026-09-22); el compromiso está en cero (ver actualización del 2026-09-24) |
 | DL-087 | WP-06 · 2026-09-21 | 04:511 · 04:681-689 · DL-051 | RF-041 es P0 y su criterio de aceptación depende de RF-066, que es P1 | ABIERTA |
+| DL-088 | WP-06 · 2026-09-21 | 09v10 completo · DL-080 | Las formas que el contrato de entrenamiento no fija, decididas al escribirlo | ABIERTA |
+| DL-089 | WP-06 · 2026-09-21 | 08:199 · 08:58 · 05:8944 | Revocado el consentimiento, el asesorado deja de ver su propia historia de entrenamiento | **CERRADA** 2026-09-24 · opción A (PR #67) |
+| DL-090 | WP-06 · 2026-09-21 | 04:266-275 · B10-06:149-177 · adenda B10 v0.5:1290-1310 | RF-071 es P0 y ningún paquete lo tenía | **CERRADA** 2026-09-22 · WP-07 (PRs #58 a #65) |
+| DL-091 | WP-06 · 2026-09-21 | B10-06:1145-1148 · B10-10:36, 164-165, 376 | Cuatro patrones de pantalla corregidos en entrenamiento y no en nutrición ni antropometría | **CERRADA** 2026-09-24 · opción A (PRs #66, #68, #69) |
+| DL-092 | WP-07 · 2026-09-21 | 04:1176, 1297-1313 · 05 · 06 §20 · 08 §56 · 09 v0.16.1 · 10 Adenda v0.5 | El núcleo operable de RF-071 vive en seis documentos «NO APROBADO» | **DECIDIDA** 2026-09-21 · opción A |
+| DL-093 | WP-07 · 2026-09-21 | 06:8524-8529 (REG-06-210) · 09:1610-1618 | La Solicitud de formulario queda con dos estados, sin cancelar ni rechazar | **DECIDIDA** 2026-09-21 |
+| DL-094 | WP-07 · 2026-09-21 | 11A:604-610 · 11A:194, 348-349 | Los siete TEST-FRM eran títulos de una línea | **CERRADA** 2026-09-22 · escritos en `docs/paquetes/WP-07-ORACULOS.md` |
+| DL-095 | WP-07 · 2026-09-22 | 09v16.1 §22.1-§22.8 · 08 §11-bis | Contratos de FRM con forma no definida en el 09 | ABIERTA |
+| DL-096 | Consolidación · 2026-09-24 | 08:199 · 08:58 · DL-089 · 09v10 TRN-08/09/19 | La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado | ABIERTA |
 
 ---
 
@@ -714,6 +723,10 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 **Resolución — DECIDIDA el 2026-09-19.** Dirección eligió A.
 
 **Condición de cierre.** El paquete de dominio (WP-04) agrega los resúmenes por dominio de DSH-03 y sus operaciones protegidas propias.
+
+**Condición de cierre cumplida — 2026-09-24** (tramo de consolidación, `docs/paquetes/WP-CONSOLIDACION.md` §4, PR #70). WP-04, WP-05 y WP-06 agregaron cada uno sus operaciones protegidas, pero ninguno volvió a DSH-03: el dashboard siguió respondiendo `summary: null` para los tres dominios hasta este tramo. Ahora cada alcance que el PDP permite trae el resumen factual de su propio read model —plan vigente, objetivo con su autoría, última revisión, próxima revisión, conteo de registros del período— y un dominio sin datos sigue siendo `summary: null` (RF-053). Un alcance denegado no se consulta: no puede filtrar ni un conteo al resumen de otro (`test/integration/dashboard.int-spec.ts`).
+
+**Lo que DSH-03 sigue sin traer, y por qué no es deuda nueva.** El 09 v0.11 §15 incluye también `reviews{}`, `nextActions[]` y `projectionAvailability[]`. No se agregan: pertenecen a la cola de revisiones (B10-08 §6), a la coordinación (§13) y a las proyecciones (B10-09), que son el resto de WP-10 y quedaron fuera de la entrega por la decisión de alcance del 2026-09-22. El contrato los omite en vez de devolverlos vacíos, para que ningún cliente los confunda con «no hay revisiones pendientes».
 
 ## DL-032 — Las siete dimensiones del PDP y el lugar de A3
 
@@ -1753,6 +1766,12 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Decisión de Dirección (2026-09-21): opción A.** Con esto, **Open Food Facts queda como la única integración pendiente** después de WP-07, y el compromiso de Q-API-001 se cumple a la mitad con fecha, en vez de quedar en cero sin fecha.
 
+**Actualización del 2026-09-24 — el efecto acumulado volvió a pasar.** Dos hechos posteriores a esta decisión la dejaron sin ejecutar, otra vez sin que ninguno la mirara de frente:
+1. El 2026-09-21 RF-071 tomó el número WP-07 (DL-090) y wger pasó a **WP-08**. ACTA-DIR-034 autoriza «WP-01 a WP-07»: cuando se firmó (2026-09-18), el WP-07 de la ruta *era* wger; con la renumeración quedó fuera del rango literal del acta.
+2. El 2026-09-22 Dirección eligió «consolidar y pulir» para los nueve días finales y declaró WP-08 fuera de la entrega.
+
+Resultado: **hoy el compromiso de Q-API-001 está en cero** —ni wger ni Open Food Facts—, que es exactamente lo que esta deuda advertía. RF-028 y RF-038 son P0 «Compromiso académico de integración», y el 09 v0.12 §5-§7 tiene sus cuatro operaciones completas (API-INT-NUT-02/03, API-INT-TRN-02/03). **Pendiente de Dirección:** confirmar si la integración entra en la entrega y bajo qué cobertura del acta.
+
 ## DL-087 — RF-041 es P0 y su criterio de aceptación depende de RF-066, que es P1
 
 **Prioridad:** media · **Documento:** 04:511 · 04:681-689 · DL-051 · **Estado:** ABIERTA
@@ -1807,7 +1826,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-089 — Revocado el consentimiento, el asesorado deja de ver su propia historia de entrenamiento
 
-**Prioridad:** media · **Documento:** 08:199 · 08:58 · 05:8944 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 08:199 · 08:58 · 05:8944 · **Estado:** **CERRADA** 2026-09-24 · opción A (PR #67)
 
 **Qué dice el legajo.** Dos cosas que tiran para lados distintos. La matriz de acceso del 08 le da al titular acceso pleno a «Plan entrenamiento + ejecución» (08:199), y el fin del vínculo corta al profesional «sin destruir la historia del asesorado» (08:58). Pero UC-P17 pide, para ejecutar, «vínculo y consentimiento vigentes» (05:8944).
 
@@ -1819,9 +1838,11 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 **Provisorio en código.** B, que es lo que ya hace y lo más restrictivo. **Recomendación: A**, por coherencia con los otros dos dominios y porque el derecho de acceso del titular a sus propios datos no debería depender de mantener abierto un acceso de terceros. La encontró la auditoría de seguridad del cierre de WP-06.
 
+**Resolución — CERRADA el 2026-09-24, opción A** (PR #67), dentro del tramo de consolidación que Dirección aprobó el 2026-09-22 (`docs/paquetes/WP-CONSOLIDACION.md` §3). Las lecturas de la historia ya registrada del titular exigen solo su A3 vigente, como en nutrición y antropometría: API-TRN-19 (su ejecución), API-TRN-09 sobre una versión ACTIVADA (su plan tal como lo aceptó) y **también API-TRN-08** para el titular. Este último no estaba en el texto de la deuda y se sumó a propósito: sin él, TRN-09 devolvía 200 sobre una versión que la lista ya no ofrecía, y la pantalla habría mostrado vacía una historia que el titular sí conserva. Lo que *opera* sobre el plan vigente —«Hoy», abrir un borrador, confirmar, corregir— sigue bajo el PDP del profesional (UC-P17 E03), y revocado el A3 se corta también lo propio (08:406). Cuatro pruebas nuevas en `test/integration/entrenamiento.int-spec.ts` fijan las cuatro caras.
+
 ## DL-090 — RF-071, «Solicitar y completar información profesional pertinente», es P0 y ningún paquete lo tiene
 
-**Prioridad:** alta · **Documento:** 04:266-275 · B10-06:149-177 · adenda B10 v0.5:1290-1310 · **Estado:** ABIERTA
+**Prioridad:** alta · **Documento:** 04:266-275 · B10-06:149-177 · adenda B10 v0.5:1290-1310 · **Estado:** **CERRADA** 2026-09-22 · WP-07 (PRs #58 a #65)
 
 **Qué dice el legajo.** RF-071 es **P0 — Núcleo no recortable** (04:269): el profesional le pide al asesorado información estructurada para una finalidad, y el asesorado la completa conservando solicitante, finalidad, versión de la estructura, estado y procedencia. El B10-06 le dedica una pantalla dentro de entrenamiento («Solicitar datos», B10-06:149-177), y la adenda de formularios lo desarrolla (v0.5:1290-1310). El propio 04 lo incorporó como candidato «sujeto a contrarrevisión y aprobación de Dirección» (04:1176).
 
@@ -1838,7 +1859,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-091 — Cuatro patrones de pantalla que el cierre de WP-06 corrigió en entrenamiento siguen iguales en nutrición
 
-**Prioridad:** media · **Documento:** B10-06:1145-1148 · B10-10:36, 164-165, 376 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** B10-06:1145-1148 · B10-10:36, 164-165, 376 · **Estado:** **CERRADA** 2026-09-24 · opción A (PRs #66, #68, #69)
 
 **Qué dice el legajo.** Una operación denegada limpia el contenido en la interacción siguiente (B10-06:1145-1148); un error se asocia a su campo (B10-10:164-165); un error de lectura ofrece la alternativa segura, no un reintento que repite lo mismo (B10-10:376).
 
@@ -1853,6 +1874,17 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Dejarlo para cuando cada dominio vuelva a tocarse.
 
 **Provisorio en código.** Entrenamiento ya tiene 1 y 2, y 3 en el filtro de período. **Recomendación: A**, inmediatamente después de WP-06: son arreglos chicos y conocidos, y dejarlos haría que el mismo producto se comporte distinto según la pestaña.
+
+**Resolución — CERRADA el 2026-09-24, opción A** (PRs #66, #68 y #69), dentro del tramo de consolidación que Dirección aprobó el 2026-09-22 (`docs/paquetes/WP-CONSOLIDACION.md` §2). Los cuatro patrones quedaron en nutrición y antropometría, en el website y en la APK, y el formato de números vive en un solo lugar del dominio (`packages/domain/src/formato-numeros.ts`).
+
+Una revisión de calidad independiente del tramo —escrito en parte por agentes y verificado hasta entonces solo con el compilador— encontró cinco fallas que ninguna prueba cubría, y se corrigieron antes de integrar:
+- `leerNumero("1.850")` devolvía 1,85: con la pantalla mostrando «1.850 kcal», copiar el número guardaba un objetivo de 1,85 kcal. Un entero de 1 a 3 cifras seguido de grupos de tres separados por punto ahora es **ambiguo** y se rechaza con un aviso que explica cómo escribirlo.
+- El formato redondeaba a 2 decimales por defecto: una talla de 1,755 m se veía 1,76, y un cálculo con 3 decimales declarados perdía uno. REG-06-158 prohíbe el redondeo silencioso; ahora se muestran todos los decimales del dato, y los cálculos, con la precisión que declara el método.
+- Una cantidad ilegible en el editor de plan dejaba guardar en silencio el último valor válido; en Formularios de la APK, un número ilegible se omitía como si el campo estuviera vacío. Los dos se señalan ahora en su campo.
+- **API-ANT-06 aceptaba cualquier período y cortaba la serie en silencio en el día 92** mientras `period` informaba el rango entero: lo que caía después desaparecía sin figurar siquiera como hueco. Ahora responde `400 PERIOD_TOO_LONG`, como API-NUT-17 y API-TRN-21 (prueba en `antropometria.int-spec.ts`).
+- Menores: avisos que quedaban en la fila equivocada al quitar una medición, un valor de parámetro que no dejaba escribir «1,05», una escritura más después de un 404 en la APK, y el lector de pantalla repitiendo el error.
+
+**Lo que no se hizo, y por qué.** La APK de entrenamiento no tenía selector de período, así que no se agregó en nutrición ni en antropometría de la APK: el patrón 2 es de la superficie profesional, donde la revisión elige el período.
 
 ## DL-092 — El núcleo operable de RF-071 vive en seis documentos marcados «NO APROBADO»
 
@@ -1884,7 +1916,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-094 — Los siete TEST-FRM son títulos de una línea, sin los trece campos de 11A §6
 
-**Prioridad:** media · **Documento:** 11A:604-610 (§18, TEST-FRM-001 a 007) · 11A:194, 348-349 (matriz, oráculo genérico) · **Estado:** DECIDIDA 2026-09-21
+**Prioridad:** media · **Documento:** 11A:604-610 (§18, TEST-FRM-001 a 007) · 11A:194, 348-349 (matriz, oráculo genérico) · **Estado:** **CERRADA** 2026-09-22 (oráculos escritos)
 
 **Qué dice el legajo.** Mismo patrón que TEST-TRN (DL-075), TEST-NUT y TEST-ANT (DL-065): `TEST-RF-071`, `TEST-UC-P32` y `TEST-UC-P33` llevan el oráculo-frase genérico compartido con otras 54 filas de la matriz, y los siete `TEST-FRM-001` a `007` de §18 son un título de una línea cada uno, sin `STEPS`/`EXPECTED`/`NEGATIVE_ASSERTIONS`.
 
@@ -1920,3 +1952,18 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 **Provisorio en código.** A. El OpenAPI generado (`docs/api/openapi.json`) publica esas formas y `contratos-wp07.test.ts` las verifica, incluida la matriz maximally-permissive y el rechazo de `value: null` en una respuesta.
 
 **Condición de cierre.** El 09 fija las formas listadas, o VJR-1/VJR-4/VD-1 se resuelven y el 08 publica una matriz de pertinencia específica para FRM que reemplace la provisoria.
+
+## DL-096 — La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado
+
+**Prioridad:** media · **Documento:** 08:199 · 08:58 · DL-089 · 09v10 (TRN-08, TRN-09, TRN-19) · **Estado:** ABIERTA (hallada al cerrar la consolidación)
+
+**Qué dice el legajo.** El titular tiene acceso pleno a «Plan entrenamiento + ejecución» (08:199), y el fin del vínculo no destruye su historia (08:58). DL-089 lo llevó a la API: revocado el B2, el titular sigue leyendo sus ejecuciones, su plan activado y la lista de sus planes.
+
+**Qué pasa hoy.** La garantía existe y está probada en la API, pero **ninguna pantalla de la APK la usa**: la sección de entrenamiento del asesorado es «Hoy» y el registro en diferido, que operan sobre el plan vigente y por eso —correctamente— pasan a «no disponible» con el B2 revocado. Además, el 09 no declara una operación para **listar** las ejecuciones propias: TRN-19 las lee de a una, por identificador, y la única lectura por período (API-TRN-14-PERIODO, DL-078) opera sobre el plan vigente. Nutrición resolvió lo mismo con una lista propia fuera del 09 (API-NUT-16-LISTA, DL-055).
+
+**Opciones.**
+- **A.** Una sección «Tu historial» en la APK con lo que el contrato ya da: la lista de planes (TRN-08) y cada plan tal como se aceptó (TRN-09). Para las sesiones registradas, una lectura propia por período exigiendo solo A3, declarada como desvío igual que DL-055.
+- **B.** Dejarlo en la API hasta que el 09 declare una lectura de historia del titular.
+
+**Provisorio en código.** B: nada nuevo en la APK. **Recomendación: A**, en el paquete que siga a la entrega, porque es la única forma de que el asesorado **vea** lo que la garantía le reconoce; sin pantalla, el derecho existe pero no se puede ejercer desde el teléfono.
+
