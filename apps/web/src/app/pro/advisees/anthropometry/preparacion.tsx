@@ -269,29 +269,37 @@ function Preparacion({
     professionalNotes: contexto.trim() || null,
   });
 
-  async function crear() {
-    if (Object.keys(revisar()).length > 0) return onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.medicionIncompleta });
-    setEnviando(true);
-    onAviso(null);
-    const res = await api.crearBorradorAntropometrico(token, asesoradoId, contenido(), intento.actual());
-    intento.registrar(res);
-    setEnviando(false);
+  /**
+   * Guarda el contenido tal como está en la pantalla y devuelve el borrador que la API confirmó, o `null` si no se
+   * pudo guardar (ya avisado). La usan «Guardar» y «Registrar evaluación» por igual: registrar sin pasar por acá
+   * registraría lo último que quedó guardado en el servidor, no lo que la pantalla muestra —una sorpresa que
+   * REG-06-214 inciso 4 no admite. Guardar y registrar siguen siendo dos actos y dos llamadas separadas; esto solo
+   * asegura que el segundo parta siempre del primero.
+   */
+  async function guardarContenido(): Promise<Borrador | null> {
+    if (Object.keys(revisar()).length > 0) {
+      onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.medicionIncompleta });
+      return null;
+    }
+    const res = borrador
+      ? await api.guardarBorradorAntropometrico(token, borrador.evaluationId, { expectedVersion: borrador.version, ...contenido() })
+      : await api.crearBorradorAntropometrico(token, asesoradoId, contenido(), intento.actual());
+    if (!borrador) intento.registrar(res);
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
-    if (sesionPerdida(res) || accesoRetirado(res)) return;
-    if (!res.ok) return onAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
-    onAviso({ tipo: 'exito', texto: COPY_ANTROPOMETRIA.guardado });
-    await onCambio();
+    if (sesionPerdida(res) || accesoRetirado(res)) return null;
+    if (!res.ok) {
+      onAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
+      return null;
+    }
+    return res.datos.data as Borrador;
   }
 
   async function guardar() {
-    if (Object.keys(revisar()).length > 0) return onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.medicionIncompleta });
-    if (!borrador) return crear();
     setEnviando(true);
     onAviso(null);
-    const res = await api.guardarBorradorAntropometrico(token, borrador.evaluationId, { expectedVersion: borrador.version, ...contenido() });
+    const fresco = await guardarContenido();
     setEnviando(false);
-    if (sesionPerdida(res) || accesoRetirado(res)) return;
-    if (!res.ok) return onAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
+    if (!fresco) return;
     onAviso({ tipo: 'exito', texto: COPY_ANTROPOMETRIA.guardado });
     await onCambio();
   }
@@ -299,7 +307,22 @@ function Preparacion({
   async function registrar() {
     if (!borrador) return;
     setEnviando(true);
-    const res = await api.registrarEvaluacionAntropometrica(token, borrador.evaluationId, borrador.version, intento.actual());
+    onAviso(null);
+    const fresco = await guardarContenido();
+    if (!fresco) {
+      setEnviando(false);
+      setConfirmando(false);
+      return;
+    }
+    // Lo que había en pantalla pudo vaciarse al guardar (la última fila libre, quitada; el último campo, borrado).
+    if (fresco.measurements.length === 0) {
+      setEnviando(false);
+      setConfirmando(false);
+      onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.sinContenidoRegistrable });
+      await onCambio();
+      return;
+    }
+    const res = await api.registrarEvaluacionAntropometrica(token, fresco.evaluationId, fresco.version, intento.actual());
     intento.registrar(res);
     setEnviando(false);
     setConfirmando(false);
