@@ -10,10 +10,13 @@
  * - La modalidad B no se ofrece, ni como «Próximamente» (B05:503-518).
  */
 import {
+  cantidad as formatearCantidad,
   COPY,
   COPY_NUTRICION,
   ETIQUETA_DE_PREPARACION,
   ETIQUETA_DE_UNIDAD,
+  leerNumero,
+  motivoDeNumeroIlegible,
   type ElementoDeCatalogo,
   type EstructuraDePlanEntrada,
   type ValidationIssue,
@@ -24,6 +27,7 @@ import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
+import { numeroEnCampo } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { NoDisponible, useNutricion } from './nutricion';
 
@@ -82,7 +86,7 @@ const PROBLEMA: Readonly<Record<string, string>> = {
 };
 
 export function EditorDeBorrador({ planId, onActivado }: { planId: string; onActivado: () => void }) {
-  const { token, asesoradoId, sesionPerdida } = useNutricion();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useNutricion();
   const [version, setVersion] = useState<VersionDePlan | null>(null);
   const [error, setError] = useState<'no-disponible' | 'error' | null>(null);
   const [estructura, setEstructura] = useState<Estructura>([]);
@@ -125,6 +129,10 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   /** Guarda (PATCH) y devuelve la versión nueva, o `null` si falló. */
   async function guardar(): Promise<VersionDePlan | null> {
     if (!version) return null;
+    if (hayCantidadesIlegibles(estructura)) {
+      setMensaje({ tipo: 'error', texto: 'Hay cantidades que no se entienden. Corregí los campos marcados antes de guardar.' });
+      return null;
+    }
     setGuardando(true);
     setMensaje(null);
     const actualizarObjetivo = objetivoVigente && objetivoVigente !== version.objectiveVersionId ? { objectiveVersionId: objetivoVigente } : {};
@@ -135,7 +143,8 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
       ...actualizarObjetivo,
     });
     setGuardando(false);
-    if (sesionPerdida(r)) return null;
+    // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
+    if (sesionPerdida(r) || accesoRetirado(r)) return null;
     if (!r.ok) {
       if (r.tipo === 'API' && r.issues.length > 0) setProblemas(r.issues);
       setMensaje({ tipo: 'error', texto: r.tipo === 'API' && r.issues.length > 0 ? 'Hay elementos del plan que no se pueden guardar.' : mensajeDeFallo(r) });
@@ -152,7 +161,7 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
     const v = sucio ? await guardar() : version;
     if (!v) return;
     const r = await api.validarPlan(token, planId, v.version);
-    if (sesionPerdida(r)) return;
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setMensaje({ tipo: 'error', texto: mensajeDeFallo(r) });
     setProblemas(r.datos.data.issues);
     setMensaje(r.datos.data.valid ? { tipo: 'exito', texto: COPY_NUTRICION.planValido } : { tipo: 'error', texto: COPY_NUTRICION.hayElementosPorCorregir });
@@ -165,7 +174,7 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
     const r = await api.activarPlan(token, planId, version.version, intentoDeActivar.actual());
     intentoDeActivar.registrar(r);
     setActivando(false);
-    if (sesionPerdida(r)) return;
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) {
       if (r.tipo === 'API' && r.issues.length > 0) {
         setConfirmar(false);
@@ -327,8 +336,26 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   );
 }
 
+/** Una cantidad escrita que no es un número queda como NaN en la estructura (ver `FilaDeItem`). */
+function hayCantidadesIlegibles(e: Estructura): boolean {
+  return e.some((d) => d.meals.some((m) => m.options.some((o) => o.items.some((i) => i.quantity !== null && Number.isNaN(i.quantity.value)))));
+}
+
 function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: string; item: Item; nombre: string; onCambiar: (c: Partial<Item>) => void; onQuitar: () => void }) {
-  const cantidad = item.quantity;
+  const magnitud = item.quantity;
+  /**
+   * El campo guarda el texto tal como se escribe y propaga lo interpretado: si mostrara siempre el número
+   * interpretado, «72,» se borraría a mitad de camino y no se podría escribir un decimal. Se resincroniza cuando el
+   * valor cambia desde afuera (al guardar, al quitar un ítem).
+   */
+  const externo = numeroEnCampo(magnitud?.value);
+  const [escrito, setEscrito] = useState(externo);
+  useEffect(() => {
+    setEscrito((t) => (numeroEnCampo(leerNumero(t)) === externo ? t : externo));
+  }, [externo]);
+  // Lo que no es un número se señala en el campo, en vez de guardarse como cero en silencio (B10-10:164-165).
+  const error = escrito.trim() !== '' && leerNumero(escrito) === null ? motivoDeNumeroIlegible(escrito) : null;
+
   return (
     <li className="fila-de-item">
       <strong>{nombre}</strong>
@@ -336,15 +363,20 @@ function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: string; ite
         id={`${id}-cantidad`}
         etiqueta="Cantidad"
         inputMode="decimal"
-        value={cantidad ? String(cantidad.value) : ''}
+        value={escrito}
+        error={error}
         onChange={(e) => {
-          const v = e.target.value.replace(',', '.');
-          onCambiar({ quantity: v === '' ? null : { value: Number(v) || 0, unit: cantidad?.unit ?? 'g' } });
+          setEscrito(e.target.value);
+          const n = leerNumero(e.target.value);
+          if (e.target.value.trim() === '') return onCambiar({ quantity: null });
+          // Lo que no se entiende viaja como NaN, igual que en entrenamiento: el guardado se niega y lo señala, en
+          // vez de guardar en silencio el último número válido que había en el campo.
+          onCambiar({ quantity: { value: n ?? Number.NaN, unit: magnitud?.unit ?? 'g' } });
         }}
       />
       <div className="campo">
         <label htmlFor={`${id}-unidad`}>Unidad</label>
-        <select id={`${id}-unidad`} value={cantidad?.unit ?? 'g'} disabled={!cantidad} onChange={(e) => cantidad && onCambiar({ quantity: { ...cantidad, unit: e.target.value as Unidad } })}>
+        <select id={`${id}-unidad`} value={magnitud?.unit ?? 'g'} disabled={!magnitud} onChange={(e) => magnitud && onCambiar({ quantity: { ...magnitud, unit: e.target.value as Unidad } })}>
           {(Object.keys(ETIQUETA_DE_UNIDAD) as Unidad[]).map((u) => (
             <option key={u} value={u}>
               {ETIQUETA_DE_UNIDAD[u]}
@@ -372,34 +404,52 @@ function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: string; ite
 
 /** «Agregar ítem → buscar catálogo BE» y «Crear manualmente» (B05:535-552). Sin proveedor externo en WP-04 (DL-056). */
 function BuscadorDeCatalogo({ id, onElegir }: { id: string; onElegir: (e: ElementoDeCatalogo) => void }) {
-  const { token, sesionPerdida } = useNutricion();
+  const { token, sesionPerdida, accesoRetirado } = useNutricion();
   const [abierto, setAbierto] = useState(false);
-  const [texto, setTexto] = useState('');
+  const [busqueda, setBusqueda] = useState('');
   const [resultados, setResultados] = useState<ElementoDeCatalogo[] | null>(null);
   const [manual, setManual] = useState(false);
   const intento = useClaveDeIntento();
   const [nuevo, setNuevo] = useState({ nombre: '', kcal: '', p: '', c: '', g: '' });
+  const [errores, setErrores] = useState<Record<string, string>>({});
   const [fallo, setFallo] = useState<string | null>(null);
 
   async function buscar(e: FormEvent) {
     e.preventDefault();
-    const r = await api.buscarEnCatalogo(token, texto.trim());
+    const r = await api.buscarEnCatalogo(token, busqueda.trim());
     if (sesionPerdida(r)) return;
     setResultados(r.ok ? r.datos.data : []);
   }
 
   async function crear() {
-    const n = (s: string) => Number(s.replace(',', '.'));
-    if (!nuevo.nombre.trim() || [nuevo.kcal, nuevo.p, nuevo.c, nuevo.g].some((s) => s.trim() === '' || !Number.isFinite(n(s)) || n(s) < 0)) {
-      return setFallo('Completá el nombre y los valores cada 100 g (números mayores o iguales a cero).');
+    // Los mismos requisitos de siempre, ahora señalados en el campo que falta (B10-10:164-165).
+    const problemas: Record<string, string> = {};
+    if (!nuevo.nombre.trim()) problemas['nombre'] = 'Falta el nombre del alimento.';
+    const valores: Record<string, number> = {};
+    for (const [clave, texto] of [
+      ['kcal', nuevo.kcal],
+      ['p', nuevo.p],
+      ['c', nuevo.c],
+      ['g', nuevo.g],
+    ] as const) {
+      const n = leerNumero(texto);
+      if (n === null) problemas[clave] = texto.trim() === '' ? 'Falta el valor cada 100 g.' : motivoDeNumeroIlegible(texto);
+      else if (n < 0) problemas[clave] = 'El valor no puede ser menor que cero.';
+      else valores[clave] = n;
     }
+    setErrores(problemas);
+    if (Object.keys(problemas).length > 0) return setFallo(null);
     const r = await api.crearElementoDeCatalogo(
       token,
-      { name: nuevo.nombre.trim(), itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: n(nuevo.kcal), proteinG: n(nuevo.p), carbohydrateG: n(nuevo.c), fatG: n(nuevo.g) } },
+      {
+        name: nuevo.nombre.trim(),
+        itemType: 'FOOD',
+        composition: { referenceAmount: '100g', energyKcal: valores['kcal']!, proteinG: valores['p']!, carbohydrateG: valores['c']!, fatG: valores['g']! },
+      },
       intento.actual(),
     );
     intento.registrar(r);
-    if (sesionPerdida(r)) return;
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     onElegir(r.datos.data);
     setManual(false);
@@ -416,7 +466,7 @@ function BuscadorDeCatalogo({ id, onElegir }: { id: string; onElegir: (e: Elemen
   return (
     <div className="buscador">
       <form onSubmit={buscar} className="fila-de-dato">
-        <Campo id={`${id}-texto`} etiqueta="Buscar en el catálogo BE" value={texto} onChange={(e) => setTexto(e.target.value)} />
+        <Campo id={`${id}-texto`} etiqueta="Buscar en el catálogo BE" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
         <button type="submit" className="boton boton--secundario">
           Buscar
         </button>
@@ -430,7 +480,7 @@ function BuscadorDeCatalogo({ id, onElegir }: { id: string; onElegir: (e: Elemen
             {resultados.map((el) => (
               <li key={el.catalogItemId} className="lista__item">
                 <span>
-                  {el.name} · {el.composition.energyKcal} kcal cada {el.composition.referenceAmount === '100ml' ? '100 ml' : '100 g'}
+                  {el.name} · {formatearCantidad(el.composition.energyKcal, 'kcal')} cada {el.composition.referenceAmount === '100ml' ? '100 ml' : '100 g'}
                 </span>
                 <button
                   type="button"
@@ -439,7 +489,7 @@ function BuscadorDeCatalogo({ id, onElegir }: { id: string; onElegir: (e: Elemen
                     onElegir(el);
                     setAbierto(false);
                     setResultados(null);
-                    setTexto('');
+                    setBusqueda('');
                   }}
                 >
                   Elegir {el.name}
@@ -452,12 +502,12 @@ function BuscadorDeCatalogo({ id, onElegir }: { id: string; onElegir: (e: Elemen
       {manual ? (
         <fieldset className="grupo">
           <legend>{COPY_NUTRICION.crearManualmente}</legend>
-          <Campo id={`${id}-nombre`} etiqueta="Nombre" value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
+          <Campo id={`${id}-nombre`} etiqueta="Nombre" value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} error={errores['nombre'] ?? null} />
           <div className="fila-de-dato">
-            <Campo id={`${id}-kcal`} etiqueta="kcal cada 100 g" inputMode="decimal" value={nuevo.kcal} onChange={(e) => setNuevo({ ...nuevo, kcal: e.target.value })} />
-            <Campo id={`${id}-p`} etiqueta="Proteínas (g)" inputMode="decimal" value={nuevo.p} onChange={(e) => setNuevo({ ...nuevo, p: e.target.value })} />
-            <Campo id={`${id}-c`} etiqueta="Carbohidratos (g)" inputMode="decimal" value={nuevo.c} onChange={(e) => setNuevo({ ...nuevo, c: e.target.value })} />
-            <Campo id={`${id}-g`} etiqueta="Grasas (g)" inputMode="decimal" value={nuevo.g} onChange={(e) => setNuevo({ ...nuevo, g: e.target.value })} />
+            <Campo id={`${id}-kcal`} etiqueta="kcal cada 100 g" inputMode="decimal" value={nuevo.kcal} onChange={(e) => setNuevo({ ...nuevo, kcal: e.target.value })} error={errores['kcal'] ?? null} />
+            <Campo id={`${id}-p`} etiqueta="Proteínas (g)" inputMode="decimal" value={nuevo.p} onChange={(e) => setNuevo({ ...nuevo, p: e.target.value })} error={errores['p'] ?? null} />
+            <Campo id={`${id}-c`} etiqueta="Carbohidratos (g)" inputMode="decimal" value={nuevo.c} onChange={(e) => setNuevo({ ...nuevo, c: e.target.value })} error={errores['c'] ?? null} />
+            <Campo id={`${id}-g`} etiqueta="Grasas (g)" inputMode="decimal" value={nuevo.g} onChange={(e) => setNuevo({ ...nuevo, g: e.target.value })} error={errores['g'] ?? null} />
           </div>
           {fallo ? (
             <Aviso tipo="error">

@@ -27,6 +27,9 @@ const MOTIVO_API = { PROTOCOLO: 'PROTOCOL', METODO: 'METHOD', UNIDAD: 'UNIT' } a
  *
  * Solo entran las mediciones de evaluaciones **registradas**: un borrador no es historia (REG-06-215).
  */
+/** El mismo tope que las lecturas de revisión (API-NUT-17, API-TRN-21). */
+const DIAS_MAXIMOS_DEL_PERIODO = 92;
+
 @Injectable()
 export class EvolucionService {
   constructor(private readonly ejecutor: EjecutorAntropometrico, private readonly pdp: PdpService) {}
@@ -202,6 +205,9 @@ export class EvolucionService {
     inicioPorDefecto.setUTCDate(inicioPorDefecto.getUTCDate() - 89);
     const desde = fecha(query.periodStart, inicioPorDefecto.toISOString().slice(0, 10), 'periodStart');
     if (desde > hasta) throw errores.solicitudInvalida([{ code: 'INVALID_PERIOD', path: 'periodStart' }]);
+    // Hasta 92 días, como API-NUT-17 y API-TRN-21. Antes se aceptaba cualquier período y la serie se cortaba en silencio
+    // en el día 92 mientras `period` informaba el rango completo: lo que caía después desaparecía sin figurar como hueco.
+    if (fechasDelPeriodo(desde, hasta, DIAS_MAXIMOS_DEL_PERIODO).at(-1) !== hasta) throw errores.solicitudInvalida([{ code: 'PERIOD_TOO_LONG', path: 'periodEnd' }]);
     const metricas =
       query.metric === undefined
         ? null

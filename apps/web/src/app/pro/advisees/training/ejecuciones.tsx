@@ -12,10 +12,12 @@
  * - Una carga que no se registró dice eso, «carga no registrada»: no es «sin carga» ni peso corporal (06:5675).
  */
 import {
+  cantidad,
   cantidadDeSeries,
   COPY_ENTRENAMIENTO,
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
+  numero,
   registroVigente,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EjecucionDeEntrenamiento,
@@ -25,7 +27,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
-import { FiltroDePeriodo, type Periodo } from './periodo';
+import { FiltroDePeriodo, type Periodo } from '../periodo';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
 
@@ -146,9 +148,10 @@ export function Registro({ registro }: { registro: RegistroDeEjecucion }) {
               <ol>
                 {e.sets.map((s) => (
                   <li key={s.setIndex}>
-                    {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {s.load ? `${s.load.value} ${s.load.unit}` : 'carga no registrada'} × {s.completedRepetitions ?? '—'} {COPY_ENTRENAMIENTO.reps.toLowerCase()}
-                    {s.rir !== null ? ` · ${COPY_ENTRENAMIENTO.rir} ${s.rir}` : ''}
-                    {s.perceivedExertion !== null ? ` · esfuerzo percibido ${s.perceivedExertion}` : ''}
+                    {COPY_ENTRENAMIENTO.serie} {numero(s.setIndex)}: {s.load ? cantidad(s.load.value, s.load.unit) : 'carga no registrada'} ×{' '}
+                    {s.completedRepetitions === null ? '—' : numero(s.completedRepetitions)} {COPY_ENTRENAMIENTO.reps.toLowerCase()}
+                    {s.rir !== null ? ` · ${COPY_ENTRENAMIENTO.rir} ${numero(s.rir)}` : ''}
+                    {s.perceivedExertion !== null ? ` · esfuerzo percibido ${numero(s.perceivedExertion)}` : ''}
                   </li>
                 ))}
               </ol>

@@ -6,12 +6,14 @@
  * - Cada vista pregunta a la API: el PDP decide en cada lectura, sin caché (08 §27.3).
  * - 404 = no hay nada que mostrar, con el texto neutral de siempre (UC-I02 E05; 10-B10:407): el mismo para un asesorado
  *   inexistente, ajeno, de otro alcance o que revocó.
+ * - Una **escritura** denegada retira el contenido de toda la pestaña, no solo la acción: si el asesorado revocó el
+ *   acceso, «siguiente operación deny → UI limpia contenido» (B10-06:1145-1148; DL-091 punto 1).
  * - La vista activa vive en la URL (`vista=`), así «Actualizar» y volver atrás la conservan.
  */
 import { COPY_NUTRICION, COPY_VINCULO } from '@be/domain';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
 import type { Resultado } from '../../../../lib/api';
@@ -34,6 +36,8 @@ export interface ContextoDeNutricion {
   readonly asesoradoId: string;
   /** Verdadero si la respuesta cerró la sesión (la UI ya redirige). */
   readonly sesionPerdida: (r: Resultado<unknown>) => boolean;
+  /** `true` si una escritura recibió el 404 no revelador: la pestaña pasa a «no disponible» entera. */
+  readonly accesoRetirado: (r: Resultado<unknown>) => boolean;
   readonly irA: (vista: Vista) => void;
 }
 
@@ -75,7 +79,13 @@ export function Nutricion() {
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees/nutrition?id=${id}`);
 
   const irA = useCallback((v: Vista) => router.replace(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`), [router, ruta, id]);
-  const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, irA } : null), [token, id, sesionPerdida, irA]);
+  const [retirado, setRetirado] = useState(false);
+  const accesoRetirado = useCallback((r: Resultado<unknown>) => {
+    if (r.ok || r.tipo !== 'API' || r.codigo !== 'RESOURCE_NOT_FOUND') return false;
+    setRetirado(true);
+    return true;
+  }, []);
+  const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, accesoRetirado, irA } : null), [token, id, sesionPerdida, accesoRetirado, irA]);
 
   if (!token || !contexto) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
   if (yo.tipo === 'cargando') return <Cargando />;
@@ -88,6 +98,14 @@ export function Nutricion() {
         <Link href={`/pro/advisees?id=${encodeURIComponent(id)}`}>Volver al workspace del asesorado</Link>
       </p>
       <h1>{COPY_NUTRICION.pestana}</h1>
+      {retirado ? <NoDisponible /> : <Secciones ruta={ruta} id={id} vista={vista} />}
+    </Contexto.Provider>
+  );
+}
+
+function Secciones({ ruta, id, vista }: { ruta: string; id: string; vista: Vista }) {
+  return (
+    <>
       <nav className="pestanas" aria-label="Secciones de Nutrición">
         <ul>
           {VISTAS.map((v) => (
@@ -103,6 +121,6 @@ export function Nutricion() {
       {vista === 'plan' ? <VistaDePlan /> : null}
       {vista === 'registros' ? <VistaDeRegistros /> : null}
       {vista === 'revisiones' ? <VistaDeRevisiones /> : null}
-    </Contexto.Provider>
+    </>
   );
 }

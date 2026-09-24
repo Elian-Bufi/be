@@ -8,7 +8,16 @@
  * - Un solo borrador por plan: si ya hay uno, se sigue sobre ese.
  * - Activar no se hace desde «Guardar» (B10-06:609): es un acto aparte, con su consecuencia a la vista.
  */
-import { COPY_ENTRENAMIENTO, ETIQUETA_DE_CRITERIO, type Bloque, type Prescripcion, type ResumenDeVersionDePlanDeEntrenamiento, type VersionDePlanDeEntrenamiento } from '@be/domain';
+import {
+  cantidad,
+  COPY_ENTRENAMIENTO,
+  ETIQUETA_DE_CRITERIO,
+  numero,
+  type Bloque,
+  type Prescripcion,
+  type ResumenDeVersionDePlanDeEntrenamiento,
+  type VersionDePlanDeEntrenamiento,
+} from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -135,21 +144,24 @@ export function VistaDePlan() {
 
 /** Cómo se lee una prescripción: series y repeticiones, criterio de intensidad, carga sugerida aparte, parámetros. */
 export function textoDePrescripcion(p: Prescripcion): string[] {
-  const reps = (s: Prescripcion['sets'][number]) => (!s.repetitions ? 'sin repeticiones fijadas' : 'value' in s.repetitions ? `${s.repetitions.value}` : `${s.repetitions.min}-${s.repetitions.max}`);
+  // Todo número que se muestra pasa por `numero`/`cantidad`: coma decimal rioplatense (DL-091 punto 4).
+  const reps = (s: Prescripcion['sets'][number]) =>
+    !s.repetitions ? 'sin repeticiones fijadas' : 'value' in s.repetitions ? numero(s.repetitions.value) : `${numero(s.repetitions.min)}-${numero(s.repetitions.max)}`;
   const partes: string[] = [];
   if (p.sets.length > 0) {
     const iguales = p.sets.every((s) => reps(s) === reps(p.sets[0]!));
-    partes.push(iguales ? `${p.sets.length} × ${reps(p.sets[0]!)}` : p.sets.map((s) => `Serie ${s.setIndex}: ${reps(s)}`).join(' · '));
+    partes.push(iguales ? `${numero(p.sets.length)} × ${reps(p.sets[0]!)}` : p.sets.map((s) => `Serie ${numero(s.setIndex)}: ${reps(s)}`).join(' · '));
   }
   partes.push(
     p.intensity
-      ? `${COPY_ENTRENAMIENTO.intensidad}: ${ETIQUETA_DE_CRITERIO[p.intensity.criterion]} · ${COPY_ENTRENAMIENTO.objetivoDeIntensidad}: ${p.intensity.target.value}${p.intensity.criterion === 'PERCENT_RM' ? ' % RM' : ''}${
-          p.intensity.target.reference ? ` (${p.intensity.target.reference.description})` : ''
-        }`
+      ? `${COPY_ENTRENAMIENTO.intensidad}: ${ETIQUETA_DE_CRITERIO[p.intensity.criterion]} · ${COPY_ENTRENAMIENTO.objetivoDeIntensidad}: ${numero(p.intensity.target.value)}${
+          p.intensity.criterion === 'PERCENT_RM' ? ' % RM' : ''
+        }${p.intensity.target.reference ? ` (${p.intensity.target.reference.description})` : ''}`
       : COPY_ENTRENAMIENTO.sinCriterio,
   );
-  if (p.suggestedLoad) partes.push(`${COPY_ENTRENAMIENTO.cargaSugerida}: ${p.suggestedLoad.value} ${p.suggestedLoad.unit}`);
-  for (const q of p.professionalParameters) partes.push(`${q.label}: ${q.value}${q.unit ? ` ${q.unit}` : ''}`);
+  if (p.suggestedLoad) partes.push(`${COPY_ENTRENAMIENTO.cargaSugerida}: ${cantidad(p.suggestedLoad.value, p.suggestedLoad.unit)}`);
+  // Un parámetro profesional puede traer texto o número: solo se formatea cuando es número.
+  for (const q of p.professionalParameters) partes.push(`${q.label}: ${typeof q.value === 'number' ? numero(q.value) : q.value}${q.unit ? ` ${q.unit}` : ''}`);
   if (p.note) partes.push(p.note);
   return partes;
 }

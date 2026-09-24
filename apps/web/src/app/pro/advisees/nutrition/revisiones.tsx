@@ -17,10 +17,11 @@ import {
   type Revision,
 } from '@be/domain';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Aviso, Campo, ResumenDeErrores } from '../../../../components/formulario';
+import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { FiltroDePeriodo, type Periodo } from '../periodo';
 import { CamposDeObjetivo, aObjetivo, erroresDeObjetivo, objetivoVacio } from './formularios';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 
@@ -30,25 +31,29 @@ const RESULTADOS = Object.keys(ETIQUETA_DE_RESULTADO) as ResultadoApi[];
 
 export function VistaDeRevisiones() {
   const { token, asesoradoId, sesionPerdida, irA } = useNutricion();
+  const [periodo, setPeriodo] = useState<Periodo>({});
   const [r, setR] = useState<Resultado<{ contexto: Contexto; evaluaciones: EvaluacionNutricional[] }> | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'info'; texto: string; alPlan?: boolean } | null>(null);
 
   const cargar = useCallback(async () => {
     setR(null);
-    const [cx, ev] = await Promise.all([api.contextoDeRevision(token, asesoradoId), api.listarEvaluaciones(token, asesoradoId)]);
+    const [cx, ev] = await Promise.all([api.contextoDeRevision(token, asesoradoId, periodo), api.listarEvaluaciones(token, asesoradoId)]);
     if (sesionPerdida(cx) || sesionPerdida(ev)) return;
     if (!cx.ok) return setR(cx as Resultado<never>);
     if (!ev.ok) return setR(ev as Resultado<never>);
     setR({ ok: true, datos: { contexto: cx.datos.data, evaluaciones: ev.datos.data } });
-  }, [token, asesoradoId, sesionPerdida]);
+  }, [token, asesoradoId, sesionPerdida, periodo]);
 
   useEffect(() => {
     void cargar();
   }, [cargar]);
 
   return (
-    <EstadoDeLectura r={r} onReintentar={cargar}>
-      {r?.ok ? (
+    <div className="secciones">
+      {/* El período de la revisión se elige (B10-06 §41, §43-§44), y vive fuera del estado de lectura (B10-10:376). */}
+      <FiltroDePeriodo id="nut-revision-periodo" onAplicar={setPeriodo} />
+      <EstadoDeLectura r={r} onReintentar={cargar}>
+        {r?.ok ? (
         <div className="secciones">
           <p className="nota">{COPY_NUTRICION.verNoEsRevisar}</p>
           {aviso ? (
@@ -101,13 +106,14 @@ export function VistaDeRevisiones() {
             </ul>
           </section>
         </div>
-      ) : null}
-    </EstadoDeLectura>
+        ) : null}
+      </EstadoDeLectura>
+    </div>
   );
 }
 
 function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contexto: Contexto; evaluaciones: readonly EvaluacionNutricional[]; onRegistrada: () => void }) {
-  const { token, asesoradoId, sesionPerdida } = useNutricion();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
   const [abierto, setAbierto] = useState(false);
   const [evidencia, setEvidencia] = useState<Set<string>>(new Set());
@@ -166,7 +172,8 @@ function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contex
     );
     intento.registrar(r);
     setEnviando(false);
-    if (sesionPerdida(r)) return;
+    // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     setAbierto(false);
     onRegistrada();
@@ -181,6 +188,22 @@ function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contex
       </div>
     );
   }
+  // El mismo error que enumera el resumen se marca en su campo (B10-10:164-165; DL-091 punto 3).
+  const porCampo = erroresPorCampo(errores);
+  const campo = (id: string) => {
+    const texto = porCampo[id];
+    return {
+      contenedor: `campo${texto ? ' campo--error' : ''}`,
+      atributos: { 'aria-invalid': texto ? true : undefined, 'aria-describedby': texto ? `${id}-error` : undefined } as const,
+      texto,
+    };
+  };
+  const evidencia_ = campo('revision-evidencia');
+  const interpretacion_ = campo('revision-interpretacion');
+  const resultado_ = campo('revision-resultado');
+  const fundamento_ = campo('revision-fundamento');
+  const accion_ = campo('revision-accion');
+
   return (
     <form className="formulario seccion" onSubmit={enviar} noValidate>
       <h2>{COPY_NUTRICION.nuevaRevision}</h2>
@@ -188,8 +211,14 @@ function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contex
         Período: {dia(`${contexto.period.start}T12:00:00Z`)} a {dia(`${contexto.period.end}T12:00:00Z`)}
       </p>
       <ResumenDeErrores titulo="Para registrar la revisión falta:" errores={errores} intento={envios} />
-      <fieldset className="grupo" id="revision-evidencia" tabIndex={-1}>
+      <fieldset className={`grupo${evidencia_.texto ? ' campo--error' : ''}`} id="revision-evidencia" tabIndex={-1} {...evidencia_.atributos}>
         <legend>Evidencia que examinaste</legend>
+        {evidencia_.texto ? (
+          <p id="revision-evidencia-error" className="campo__error">
+            <span aria-hidden="true">⚠ </span>
+            {evidencia_.texto}
+          </p>
+        ) : null}
         {candidatas.length === 0 ? <p>No hay registros en el período.</p> : null}
         {candidatas.map((c) => (
           <label key={c.id} className="acto">
@@ -209,13 +238,35 @@ function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contex
           </label>
         ))}
       </fieldset>
-      <div className="campo">
+      <div className={interpretacion_.contenedor}>
         <label htmlFor="revision-interpretacion">Interpretación</label>
-        <p className="campo__ayuda">{COPY_NUTRICION.interpretacionNoDiagnostica}</p>
-        <textarea id="revision-interpretacion" rows={3} value={interpretacion} onChange={(e) => setInterpretacion(e.target.value)} maxLength={4000} />
+        <p id="revision-interpretacion-ayuda" className="campo__ayuda">
+          {COPY_NUTRICION.interpretacionNoDiagnostica}
+        </p>
+        <textarea
+          id="revision-interpretacion"
+          rows={3}
+          value={interpretacion}
+          onChange={(e) => setInterpretacion(e.target.value)}
+          maxLength={4000}
+          aria-invalid={interpretacion_.texto ? true : undefined}
+          aria-describedby={interpretacion_.texto ? 'revision-interpretacion-ayuda revision-interpretacion-error' : 'revision-interpretacion-ayuda'}
+        />
+        {interpretacion_.texto ? (
+          <p id="revision-interpretacion-error" className="campo__error">
+            <span aria-hidden="true">⚠ </span>
+            {interpretacion_.texto}
+          </p>
+        ) : null}
       </div>
-      <fieldset className="grupo" id="revision-resultado" tabIndex={-1}>
+      <fieldset className={`grupo${resultado_.texto ? ' campo--error' : ''}`} id="revision-resultado" tabIndex={-1} {...resultado_.atributos}>
         <legend>Resultado</legend>
+        {resultado_.texto ? (
+          <p id="revision-resultado-error" className="campo__error">
+            <span aria-hidden="true">⚠ </span>
+            {resultado_.texto}
+          </p>
+        ) : null}
         {RESULTADOS.map((res) => (
           <label key={res} className="acto">
             <input type="radio" name="resultado" value={res} checked={resultado === res} onChange={() => setResultado(res)} /> <strong>{ETIQUETA_DE_RESULTADO[res]}</strong>
@@ -223,13 +274,25 @@ function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contex
           </label>
         ))}
       </fieldset>
-      <div className="campo">
+      <div className={fundamento_.contenedor}>
         <label htmlFor="revision-fundamento">Fundamento</label>
-        <textarea id="revision-fundamento" rows={3} value={fundamento} onChange={(e) => setFundamento(e.target.value)} maxLength={4000} />
+        <textarea id="revision-fundamento" rows={3} value={fundamento} onChange={(e) => setFundamento(e.target.value)} maxLength={4000} {...fundamento_.atributos} />
+        {fundamento_.texto ? (
+          <p id="revision-fundamento-error" className="campo__error">
+            <span aria-hidden="true">⚠ </span>
+            {fundamento_.texto}
+          </p>
+        ) : null}
       </div>
-      <div className="campo">
+      <div className={accion_.contenedor}>
         <label htmlFor="revision-accion">{resultado === 'FINALIZE' ? 'Cierre' : 'Próxima acción'}</label>
-        <textarea id="revision-accion" rows={2} value={accion} onChange={(e) => setAccion(e.target.value)} maxLength={2000} />
+        <textarea id="revision-accion" rows={2} value={accion} onChange={(e) => setAccion(e.target.value)} maxLength={2000} {...accion_.atributos} />
+        {accion_.texto ? (
+          <p id="revision-accion-error" className="campo__error">
+            <span aria-hidden="true">⚠ </span>
+            {accion_.texto}
+          </p>
+        ) : null}
       </div>
       {resultado !== 'FINALIZE' ? (
         <Campo
@@ -238,12 +301,13 @@ function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contex
           type="date"
           value={proxima}
           onChange={(e) => setProxima(e.target.value)}
+          error={porCampo['revision-proxima'] ?? null}
         />
       ) : null}
       {resultado === 'CHANGE_OBJECTIVE' ? (
         <fieldset className="grupo">
           <legend>Nuevo objetivo</legend>
-          <CamposDeObjetivo valores={objetivo} onCambiar={setObjetivo} evaluaciones={evaluaciones} prefijo="revision-objetivo" />
+          <CamposDeObjetivo valores={objetivo} onCambiar={setObjetivo} evaluaciones={evaluaciones} prefijo="revision-objetivo" errores={porCampo} />
         </fieldset>
       ) : null}
       {fallo ? (
@@ -264,7 +328,7 @@ function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contex
 }
 
 function ItemDeRevision({ revision, onAplicada }: { revision: Revision; onAplicada: (texto: string, alPlan: boolean) => void }) {
-  const { token, sesionPerdida } = useNutricion();
+  const { token, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
   const [aplicando, setAplicando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
@@ -275,7 +339,8 @@ function ItemDeRevision({ revision, onAplicada }: { revision: Revision; onAplica
     const r = await api.aplicarRevision(token, revision.reviewId, intento.actual());
     intento.registrar(r);
     setAplicando(false);
-    if (sesionPerdida(r)) return;
+    // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) {
       if (r.tipo === 'API' && r.codigo === 'CONTINUITY_ACTION_NOT_APPLICABLE') return setFallo('No se puede aplicar ahora: revisá si ya hay un borrador del plan o si el seguimiento cambió.');
       return setFallo(mensajeDeFallo(r));

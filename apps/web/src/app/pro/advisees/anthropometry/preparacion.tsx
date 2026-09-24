@@ -9,11 +9,11 @@
  * - cada medición declara protocolo, unidad de origen y cómo se obtuvo: medido, reportado o importado. La **clase**
  *   del dato se deriva del origen, no la elige quien carga (04:1090).
  */
-import { COPY_ANTROPOMETRIA, ETIQUETA_DE_ORIGEN, type Especificacion } from '@be/domain';
+import { COPY_ANTROPOMETRIA, ETIQUETA_DE_ORIGEN, leerNumero, motivoDeNumeroIlegible, type Especificacion } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
-import { fecha } from '../../../../lib/formato';
+import { fecha, numeroEnCampo } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 
@@ -101,7 +101,7 @@ function Preparacion({
   onCambio: () => Promise<void>;
   onRegistrada: () => void;
 }) {
-  const { token, asesoradoId, sesionPerdida } = useAntropometria();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useAntropometria();
   const intento = useClaveDeIntento();
   const protocoloPorDefecto = especificaciones[0]?.versionId ?? '';
   const [filas, setFilas] = useState<FilaEnEdicion[]>([]);
@@ -127,43 +127,60 @@ function Preparacion({
       setProtocolo(primera.protocol?.protocolVersionId ?? protocoloPorDefecto);
       setOrigen(primera.origin === 'SELF_REPORTED' ? 'SELF_REPORTED' : 'DIRECT_CAPTURE');
     }
-    setFilas(borrador.measurements.map((m) => ({ clave: m.measurementId, metric: m.metric, value: String(m.magnitude.value), unit: m.magnitude.unit })));
+    // El valor se muestra como lo lee una persona, con coma decimal; `leerNumero` lo vuelve a aceptar (DL-091 punto 4).
+    setFilas(borrador.measurements.map((m) => ({ clave: m.measurementId, metric: m.metric, value: numeroEnCampo(m.magnitude.value), unit: m.magnitude.unit })));
   }, [borrador, protocoloPorDefecto]);
 
-  /** Las filas que todavía no están completas: guardar con una a medias las perdería en silencio. */
-  const incompletas = () => filas.filter((f) => !(f.metric.trim() && f.value.trim() && f.unit.trim()));
+  /**
+   * Lo que le falta a cada fila, por campo: guardar con una a medias las perdería en silencio. El mismo aviso que ya
+   * se daba arriba se marca ahora en el campo que falta (B10-10:164-165; DL-091 punto 3).
+   */
+  const [errores, setErrores] = useState<Record<string, string>>({});
+  function revisar(): Record<string, string> {
+    const problemas: Record<string, string> = {};
+    filas.forEach((f, i) => {
+      if (!f.metric.trim()) problemas[`ant-metrica-${i}`] = 'Falta la métrica.';
+      if (!f.value.trim()) problemas[`ant-valor-${i}`] = 'Falta el valor.';
+      // `leerNumero` acepta coma o punto y devuelve `null` si no es un número (DL-091 punto 4).
+      else if (leerNumero(f.value) === null) problemas[`ant-valor-${i}`] = motivoDeNumeroIlegible(f.value);
+      if (!f.unit.trim()) problemas[`ant-unidad-${i}`] = 'Falta la unidad.';
+    });
+    setErrores(problemas);
+    return problemas;
+  }
 
   const contenido = () => ({
     occurredAt: new Date(momento).toISOString(),
     specificationVersionId: protocolo,
     source: { type: origen },
     directMeasurements: filas
-      .filter((f) => f.metric.trim() && f.value.trim() && f.unit.trim())
-      .map((f) => ({ metricCode: f.metric.trim(), value: Number(f.value.replace(',', '.')), unit: f.unit.trim() })),
+      .filter((f) => f.metric.trim() && leerNumero(f.value) !== null && f.unit.trim())
+      .map((f) => ({ metricCode: f.metric.trim(), value: leerNumero(f.value)!, unit: f.unit.trim() })),
     professionalNotes: contexto.trim() || null,
   });
 
   async function crear() {
-    if (incompletas().length > 0) return onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.medicionIncompleta });
+    if (Object.keys(revisar()).length > 0) return onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.medicionIncompleta });
     setEnviando(true);
     onAviso(null);
     const res = await api.crearBorradorAntropometrico(token, asesoradoId, contenido(), intento.actual());
     intento.registrar(res);
     setEnviando(false);
-    if (sesionPerdida(res)) return;
+    // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
+    if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return onAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
     onAviso({ tipo: 'exito', texto: COPY_ANTROPOMETRIA.guardado });
     await onCambio();
   }
 
   async function guardar() {
-    if (incompletas().length > 0) return onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.medicionIncompleta });
+    if (Object.keys(revisar()).length > 0) return onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.medicionIncompleta });
     if (!borrador) return crear();
     setEnviando(true);
     onAviso(null);
     const res = await api.guardarBorradorAntropometrico(token, borrador.evaluationId, { expectedVersion: borrador.version, ...contenido() });
     setEnviando(false);
-    if (sesionPerdida(res)) return;
+    if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return onAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
     onAviso({ tipo: 'exito', texto: COPY_ANTROPOMETRIA.guardado });
     await onCambio();
@@ -176,7 +193,7 @@ function Preparacion({
     intento.registrar(res);
     setEnviando(false);
     setConfirmando(false);
-    if (sesionPerdida(res)) return;
+    if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return onAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
     onRegistrada();
   }
@@ -221,10 +238,37 @@ function Preparacion({
         {filas.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinBorrador}</p> : null}
         {filas.map((f, i) => (
           <div key={f.clave} className="nodo nodo--dia">
-            <Campo id={`ant-metrica-${i}`} etiqueta={COPY_ANTROPOMETRIA.metrica} value={f.metric} onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, metric: e.target.value } : x)))} maxLength={60} />
-            <Campo id={`ant-valor-${i}`} etiqueta={COPY_ANTROPOMETRIA.valor} inputMode="decimal" value={f.value} onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, value: e.target.value } : x)))} maxLength={12} />
-            <Campo id={`ant-unidad-${i}`} etiqueta={COPY_ANTROPOMETRIA.unidad} value={f.unit} onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, unit: e.target.value } : x)))} maxLength={24} />
-            <button type="button" className="boton boton--enlace" onClick={() => setFilas((xs) => xs.filter((x) => x.clave !== f.clave))}>
+            <Campo
+              id={`ant-metrica-${i}`}
+              etiqueta={COPY_ANTROPOMETRIA.metrica}
+              value={f.metric}
+              onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, metric: e.target.value } : x)))}
+              maxLength={60}
+              error={errores[`ant-metrica-${i}`] ?? null}
+            />
+            <Campo
+              id={`ant-valor-${i}`}
+              etiqueta={COPY_ANTROPOMETRIA.valor}
+              inputMode="decimal"
+              value={f.value}
+              onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, value: e.target.value } : x)))}
+              maxLength={12}
+              error={errores[`ant-valor-${i}`] ?? null}
+            />
+            <Campo
+              id={`ant-unidad-${i}`}
+              etiqueta={COPY_ANTROPOMETRIA.unidad}
+              value={f.unit}
+              onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, unit: e.target.value } : x)))}
+              maxLength={24}
+              error={errores[`ant-unidad-${i}`] ?? null}
+            />
+            <button type="button" className="boton boton--enlace" onClick={() => {
+                // Los avisos van por posición: al quitar una fila las demás se corren, así que se descartan y se
+                // recalculan en el próximo guardado, en vez de quedar pegados a la fila equivocada.
+                setErrores({});
+                setFilas((xs) => xs.filter((x) => x.clave !== f.clave));
+              }}>
               {COPY_ANTROPOMETRIA.quitarMedicion}
             </button>
           </div>

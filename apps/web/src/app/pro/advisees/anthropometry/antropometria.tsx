@@ -4,12 +4,14 @@
  * Pestaña Antropometría del workspace (B10-07). Navegación local Evaluaciones / En preparación / Evolución.
  * - Cada vista pregunta a la API: el PDP decide en cada lectura, sin caché (08 §27.3).
  * - 404 = no hay nada que mostrar, con el texto neutral de siempre, igual que en Nutrición (10-B10:407).
+ * - Una **escritura** denegada retira el contenido de toda la pestaña, no solo la acción: «siguiente operación deny →
+ *   UI limpia contenido» (B10-06:1145-1148; DL-091 punto 1).
  * - La vista activa vive en la URL (`vista=`).
  */
 import { COPY_ANTROPOMETRIA, COPY_VINCULO } from '@be/domain';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
 import type { Resultado } from '../../../../lib/api';
@@ -29,6 +31,8 @@ export interface ContextoDeAntropometria {
   readonly token: string;
   readonly asesoradoId: string;
   readonly sesionPerdida: (r: Resultado<unknown>) => boolean;
+  /** `true` si una escritura recibió el 404 no revelador: la pestaña pasa a «no disponible» entera. */
+  readonly accesoRetirado: (r: Resultado<unknown>) => boolean;
   readonly irA: (vista: Vista) => void;
 }
 
@@ -69,7 +73,13 @@ export function Antropometria() {
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees/anthropometry?id=${id}`);
 
   const irA = useCallback((v: Vista) => router.replace(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`), [router, ruta, id]);
-  const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, irA } : null), [token, id, sesionPerdida, irA]);
+  const [retirado, setRetirado] = useState(false);
+  const accesoRetirado = useCallback((r: Resultado<unknown>) => {
+    if (r.ok || r.tipo !== 'API' || r.codigo !== 'RESOURCE_NOT_FOUND') return false;
+    setRetirado(true);
+    return true;
+  }, []);
+  const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, accesoRetirado, irA } : null), [token, id, sesionPerdida, accesoRetirado, irA]);
 
   if (!token || !contexto) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
   if (yo.tipo === 'cargando') return <Cargando />;
@@ -82,6 +92,14 @@ export function Antropometria() {
         <Link href={`/pro/advisees?id=${encodeURIComponent(id)}`}>Volver al workspace del asesorado</Link>
       </p>
       <h1>{COPY_ANTROPOMETRIA.pestana}</h1>
+      {retirado ? <NoDisponible /> : <Secciones ruta={ruta} id={id} vista={vista} />}
+    </Contexto.Provider>
+  );
+}
+
+function Secciones({ ruta, id, vista }: { ruta: string; id: string; vista: Vista }) {
+  return (
+    <>
       <nav className="pestanas" aria-label="Secciones de Antropometría">
         <ul>
           {VISTAS.map((v) => (
@@ -96,6 +114,6 @@ export function Antropometria() {
       {vista === 'evaluaciones' ? <VistaDeEvaluaciones /> : null}
       {vista === 'preparacion' ? <VistaDePreparacion /> : null}
       {vista === 'evolucion' ? <VistaDeEvolucion /> : null}
-    </Contexto.Provider>
+    </>
   );
 }
