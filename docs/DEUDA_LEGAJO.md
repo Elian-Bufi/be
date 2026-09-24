@@ -77,7 +77,7 @@
 | DL-070 | WP-05 · 2026-09-20 | 09v11:713-757 · 04:583 | La evolución devuelve un bloque por métrica y el 09 declara una métrica por respuesta | **DECIDIDA** 2026-09-20 · opción A · se mantiene el array de métricas |
 | DL-071 | WP-05 · 2026-09-20 | 09v11:592-605, 664 | ANT-05 no acepta el lote de correcciones ni los metadatos reconstruibles que el 09 admite | **DECIDIDA** 2026-09-20 · opción A · de a una; el lote cuando haya más de un tipo |
 | DL-072 | WP-05 · 2026-09-20 | 09v11:336-339 | ANT-01 filtra por `kind` y el 09 declara `status` | **DECIDIDA** 2026-09-20 · opción A · sumar `status`, conservar `kind` (PENDIENTE de implementar) |
-| DL-073 | WP-05 · 2026-09-20 | 10-B10-07 · `direccion/UI-ANTROPOMETRIA.md` | El 10 declara la carga en formulario y Dirección pide la carga sobre la figura | **DECIDIDA** 2026-09-20 · opción A · paquete de refinamiento de UI posterior |
+| DL-073 | WP-05 · 2026-09-20 | 10-B10-07 · `direccion/UI-ANTROPOMETRIA.md` | El 10 declara la carga en formulario y Dirección pide la carga sobre la figura | **CERRADA** 2026-09-24 · opción A, en el tramo D de `docs/paquetes/WP-IDENTIDAD-VISUAL.md` |
 | DL-074 | WP-06 · 2026-09-21 | 05:109-113 · 05:9969 · B10-06:8-10 | El núcleo operable de entrenamiento vive en material no aprobado | **DECIDIDA** 2026-09-21 · opción A, como DL-058 |
 | DL-075 | WP-06 · 2026-09-21 | 11A:562-571 · 11A:151-169 · DV-05:1137-1148 | Los seis TEST-TRN son títulos de una línea, y entrenamiento no figura en la matriz de DV-05 | **DECIDIDA** 2026-09-21 · opción A · se escriben los seis oráculos |
 | DL-076 | WP-06 · 2026-09-21 | 05:9174 · 05:9318-9319 · 08:421 | Quién puede corregir una ejecución de entrenamiento | ABIERTA |
@@ -1549,6 +1549,13 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 **Decisión de Dirección (2026-09-20): opción A.** La figura entra en un paquete de refinamiento de UI posterior al circuito funcional. WP-05 no se reabre y la vertical de entrenamiento (WP-06) sigue primero.
 
 > **Condición que hereda el paquete de UI.** La figura es **ubicación, nunca calificación**. Un punto del cuerpo pintado por rango —verde, amarillo, rojo— sería el juicio que RF-048 e INV-06-06 prohíben, y llegaría por un camino que ninguna prueba de copy mira hoy, porque el color no es texto. Cuando se implemente, la prueba de cero juicio tiene que extenderse al color y a las etiquetas de la figura, no solo al copy.
+
+**Cierre (2026-09-24, tramo D de `docs/paquetes/WP-IDENTIDAD-VISUAL.md`).** La toma de «En preparación» se hace sobre la figura, y la tensión con el 10 se resolvió con el propio 10: B10-07 §18 admite «ilustraciones, maniquíes, marcadores» como ayuda de interacción, con la regla «asset visual ≠ definición del punto/medición».
+- **Qué se mide lo declara el protocolo.** La figura dibuja los puntos de las métricas del protocolo elegido que sabe ubicar (`SITIOS_DE_LA_FIGURA` en `@be/domain`), y nada más. El protocolo de laboratorio de WP-05 solo declara peso y talla, así que se agregó un segundo protocolo sintético, «Pliegues y perímetros (demostración)», con nombre y familia por métrica (B10-07 §15) y el mismo rótulo de REG-06-157 (migración `20260924130000_protocolo_de_pliegues_y_perimetros`).
+- **Ubicación, nunca calificación.** `puntosDeLaFigura` recibe qué claves tienen dato, no los valores: por construcción, un punto no puede pintarse por rango. Lleno o vacío, siempre del mismo color; el que se está cargando lleva un halo. La prueba de cero juicio se extendió a la figura (`figura-antropometrica.test.ts`: un punto solo lleva sitio, nombre y si tiene dato), y el recorrido en el navegador verificó que dos pliegues con 8,5 mm y 31 mm se ven idénticos.
+- **La tabla equivalente obligatoria** (B10-10 §11) es la lista densa de B10-07 §16, agrupada por familia: es también el camino del teclado y del lector de pantalla. Tocar un punto lleva a su campo.
+- **Los contratos de WP-05 no cambiaron.** Lo que el protocolo no declara se sigue cargando libre, en «Otras mediciones».
+- Dirección había pedido **tema claro y azul** para esta pantalla: la figura usa el azul de su referencia (`#2E8FFF`) sobre una tarjeta blanca, con su contraste verificado por `scripts/contraste.test.cjs`. La silueta es propia: las imágenes del compositor no se usaron porque su origen y su licencia no están documentados.
 
 ## DL-074 — El núcleo operable de entrenamiento vive en material no aprobado
 
