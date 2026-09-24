@@ -5,13 +5,14 @@
  * - Encabezado con cada vínculo por alcance y su estado mínimo (10-B04 §28-§29; H10-04-04). El profesional ve
  *   «Acceso no disponible» sin la causa: nunca `B2=true` ni `PDP=DENY`.
  * - «Resumen» (API-DSH-03 mínimo, DL-031): cada lectura pasa por el PDP, sin caché (T-PDP-1). Desde WP-04, Nutrición
- *   abre su pestaña (B10-05); los demás dominios siguen sin datos (RF-053: los faltantes se muestran como tales). Los dominios no disponibles no se listan: se avisa la
- *   vista parcial, sin «Datos ocultos: …» (10-B04 §41).
+ *   abre su pestaña (B10-05). Desde el tramo de consolidación cada dominio disponible muestra su **resumen factual**
+ *   en una tarjeta (B10-08 §10), y lo que falta se dice que falta (RF-053). Los dominios no disponibles no se listan:
+ *   se avisa la vista parcial, sin «Datos ocultos: …» (10-B04 §41).
  * - 404 = no hay nada que mostrar: el mismo texto neutral para inexistente, ajeno, revocado o finalizado
  *   (UC-I02 E05; 10-B10:407). Es el estado que se ve cuando el asesorado revoca: el corte no espera a la sesión.
  * «Actualizar» vuelve a preguntar a la API y muestra la hora de la última consulta.
  */
-import { ALCANCES, CLAVE_DE_DOMINIO, COPY_FORMULARIOS, COPY_VINCULO, ETIQUETA_DE_ALCANCE, estadoParaMostrar, type DashboardResponse, type Vinculo } from '@be/domain';
+import { COPY_FORMULARIOS, COPY_VINCULO, estadoParaMostrar, type DashboardResponse, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -19,6 +20,7 @@ import { Cargando, ErrorConReintento } from '../../../components/estados';
 import { Aviso } from '../../../components/formulario';
 import { api } from '../../../lib/api';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
+import { TarjetaDeAntropometria, TarjetaDeEntrenamiento, TarjetaDeNutricion } from './tarjetas-de-dominio';
 
 type Resumen = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'no-disponible' } | { tipo: 'listo'; datos: DashboardResponse['data'] };
 type Encabezado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'listo'; vinculos: readonly Vinculo[] };
@@ -100,25 +102,13 @@ export function Workspace() {
         ) : null}
         {resumen.tipo === 'listo' ? (
           <>
+            {/* Un aviso único, sin listar qué falta ni por qué (B10-08 §8.4; 10-B04 §41). */}
             {resumen.datos.partialView ? <p className="nota">{COPY_VINCULO.vistaParcial}</p> : null}
-            <dl className="datos">
-              {ALCANCES.filter((a) => resumen.datos.domains[CLAVE_DE_DOMINIO[a]].available).map((a) => (
-                <div key={a}>
-                  <dt>{ETIQUETA_DE_ALCANCE[a]}</dt>
-                  <dd>
-                    {a === 'NUTRICION' ? (
-                      <Link href={`/pro/advisees/nutrition?id=${encodeURIComponent(id)}`}>Abrir Nutrición</Link>
-                    ) : a === 'ANTROPOMETRIA' ? (
-                      <Link href={`/pro/advisees/anthropometry?id=${encodeURIComponent(id)}`}>Abrir Antropometría</Link>
-                    ) : a === 'ENTRENAMIENTO' ? (
-                      <Link href={`/pro/advisees/training?id=${encodeURIComponent(id)}`}>Abrir Entrenamiento</Link>
-                    ) : (
-                      COPY_VINCULO.sinDatosTodavia
-                    )}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            <div className="tarjetas-de-dominio">
+              <TarjetaDeNutricion entrada={resumen.datos.domains.nutrition} id={id} />
+              <TarjetaDeEntrenamiento entrada={resumen.datos.domains.training} id={id} />
+              <TarjetaDeAntropometria entrada={resumen.datos.domains.anthropometry} id={id} />
+            </div>
             {/* Transversal a los tres alcances (WP-07): no cuelga de ninguno, así que va fuera de la lista. */}
             <p>
               <Link href={`/pro/advisees/forms?id=${encodeURIComponent(id)}`}>{COPY_FORMULARIOS.pedirInformacion}</Link>

@@ -5160,7 +5160,7 @@
     "/advisees/{adviseeId}/dashboard": {
       "get": {
         "operationId": "API-DSH-03",
-        "summary": "Dashboard del asesorado para un profesional, evaluado por el PDP en cada alcance. Sin datos de dominio en WP-03. Ningún alcance autorizado → 404 idéntico a inexistente.",
+        "summary": "Dashboard del asesorado para un profesional, evaluado por el PDP en cada alcance. Cada alcance permitido trae el resumen factual de su dominio, o `null` si todavía no tiene datos. Ningún alcance autorizado → 404 idéntico a inexistente.",
         "description": "Fuente: 09v11:895-950 · 08:581, 09:715 (SESSION con datos sintéticos) · DEUDA_LEGAJO DL-031. AuthN: SESSION.",
         "security": [
           {
@@ -5293,7 +5293,175 @@
                                       "minLength": 1
                                     },
                                     "summary": {
-                                      "type": "null"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "activePlan": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "planVersionId": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    },
+                                                    "activatedAt": {
+                                                      "type": "string",
+                                                      "format": "date-time",
+                                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                    },
+                                                    "nextReviewAt": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "planVersionId",
+                                                    "activatedAt",
+                                                    "nextReviewAt"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "objective": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "objectiveVersionId": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    },
+                                                    "estimatedEnergyRequirement": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "value": {
+                                                          "type": "number",
+                                                          "exclusiveMinimum": 0
+                                                        },
+                                                        "unit": {
+                                                          "type": "string",
+                                                          "const": "kcal/day"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "value",
+                                                        "unit"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    "authoredBy": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "identityId": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        },
+                                                        "displayName": {
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "identityId",
+                                                        "displayName"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "objectiveVersionId",
+                                                    "estimatedEnergyRequirement",
+                                                    "authoredBy"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "lastReview": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "reviewId": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    },
+                                                    "recordedAt": {
+                                                      "type": "string",
+                                                      "format": "date-time",
+                                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                    },
+                                                    "author": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "identityId": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        },
+                                                        "displayName": {
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "identityId",
+                                                        "displayName"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "reviewId",
+                                                    "recordedAt",
+                                                    "author"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "registeredIntakes": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "lastIntakeAt": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "string",
+                                                  "format": "date-time",
+                                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "activePlan",
+                                            "objective",
+                                            "lastReview",
+                                            "registeredIntakes",
+                                            "lastIntakeAt"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
                                     }
                                   },
                                   "required": [
@@ -5337,7 +5505,160 @@
                                       "minLength": 1
                                     },
                                     "summary": {
-                                      "type": "null"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "activePlan": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "planVersionId": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    },
+                                                    "activatedAt": {
+                                                      "type": "string",
+                                                      "format": "date-time",
+                                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                    },
+                                                    "nextReviewAt": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "planVersionId",
+                                                    "activatedAt",
+                                                    "nextReviewAt"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "objective": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "objectiveVersionId": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    },
+                                                    "statement": {
+                                                      "type": "string"
+                                                    },
+                                                    "authoredBy": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "identityId": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        },
+                                                        "displayName": {
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "identityId",
+                                                        "displayName"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "objectiveVersionId",
+                                                    "statement",
+                                                    "authoredBy"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "lastReview": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "reviewId": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    },
+                                                    "recordedAt": {
+                                                      "type": "string",
+                                                      "format": "date-time",
+                                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                    },
+                                                    "author": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "identityId": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        },
+                                                        "displayName": {
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "identityId",
+                                                        "displayName"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "reviewId",
+                                                    "recordedAt",
+                                                    "author"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "registeredExecutions": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "lastExecutionAt": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "string",
+                                                  "format": "date-time",
+                                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "activePlan",
+                                            "objective",
+                                            "lastReview",
+                                            "registeredExecutions",
+                                            "lastExecutionAt"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
                                     }
                                   },
                                   "required": [
@@ -5381,7 +5702,83 @@
                                       "minLength": 1
                                     },
                                     "summary": {
-                                      "type": "null"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "lastEvaluation": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "evaluationId": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    },
+                                                    "occurredAt": {
+                                                      "type": "string",
+                                                      "format": "date-time",
+                                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                    },
+                                                    "registeredAt": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "string",
+                                                          "format": "date-time",
+                                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "author": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "identityId": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        },
+                                                        "displayName": {
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "identityId",
+                                                        "displayName"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "evaluationId",
+                                                    "occurredAt",
+                                                    "registeredAt",
+                                                    "author"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "registeredEvaluations": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            }
+                                          },
+                                          "required": [
+                                            "lastEvaluation",
+                                            "registeredEvaluations"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
                                     }
                                   },
                                   "required": [

@@ -20,6 +20,7 @@ import {
   solicitudDentroDeLaPlantilla,
   TRANSICIONES_DE_SOLICITUD_DE_FORMULARIO,
 } from './formularios';
+import { DashboardResponseSchema, EntradaDeNutricionSchema } from './contratos-vinculo';
 import { transicionDe } from './maquina';
 import { evaluarNuevaCorreccion, resolverVistaEfectiva } from './versionado';
 
@@ -131,4 +132,61 @@ test('09 §22 · las 8 operaciones FRM están en el documento, sin cancelar/rech
   const metodos = deFormularios.flatMap(([, m]) => Object.keys(m));
   assert.equal(metodos.includes('delete'), false, 'patrón «solo agregar»: sin DELETE en ningún endpoint de formularios');
   assert.equal(Object.keys(doc.paths).includes('/form-templates/{templateId}'), false, 'no hay operación de crear/editar plantilla (D-D)');
+});
+
+// ─── Tramo de consolidación · API-DSH-03 con contenido (DL-031, condición de cierre) ────────────
+
+test('09v11 §15 · un dominio disponible trae el resumen de su dominio, y `null` cuando todavía no hay datos', () => {
+  const base = {
+    advisee: { identityId: '11111111-1111-4111-8111-111111111111', displayName: 'Asesorado sintético' },
+    period: { start: null, end: null },
+    partialView: true,
+    domains: {
+      nutrition: {
+        available: true as const,
+        relationshipId: '22222222-2222-4222-8222-222222222222',
+        summary: {
+          activePlan: { planVersionId: '33333333-3333-4333-8333-333333333333', activatedAt: '2026-09-01T10:00:00.000Z', nextReviewAt: '2026-10-01' },
+          objective: {
+            objectiveVersionId: '44444444-4444-4444-8444-444444444444',
+            estimatedEnergyRequirement: { value: 2200, unit: 'kcal/day' as const },
+            authoredBy: { identityId: '55555555-5555-4555-8555-555555555555', displayName: 'Profesional sintético' },
+          },
+          lastReview: null,
+          registeredIntakes: 3,
+          lastIntakeAt: '2026-09-20T13:00:00.000Z',
+        },
+      },
+      training: { available: true as const, relationshipId: '66666666-6666-4666-8666-666666666666', summary: null },
+      anthropometry: { available: false as const, reason: 'NOT_AVAILABLE_TO_VIEW' as const },
+    },
+  };
+  const r = DashboardResponseSchema.parse({ data: base });
+  assert.equal(r.data.domains.nutrition.available, true);
+  assert.equal(r.data.domains.training.available && r.data.domains.training.summary, null, 'sin datos todavía es null, no un objeto de ceros (RF-053)');
+});
+
+test('09v11 §15 · un resumen con una clave fuera del contrato se rechaza: el dashboard no admite un score inventado', () => {
+  const conScore = {
+    data: {
+      advisee: { identityId: '11111111-1111-4111-8111-111111111111', displayName: 'Asesorado sintético' },
+      period: { start: null, end: null },
+      partialView: false,
+      domains: {
+        nutrition: {
+          available: true,
+          relationshipId: '22222222-2222-4222-8222-222222222222',
+          summary: { activePlan: null, objective: null, lastReview: null, registeredIntakes: 0, lastIntakeAt: null, overallCompliance: 0.8 },
+        },
+        training: { available: false, reason: 'NOT_AVAILABLE_TO_VIEW' },
+        anthropometry: { available: false, reason: 'NOT_AVAILABLE_TO_VIEW' },
+      },
+    },
+  };
+  assert.equal(DashboardResponseSchema.safeParse(conScore).success, false);
+});
+
+test('B10-08 §8.4 · un dominio no disponible no lleva resumen ni identificador de vínculo', () => {
+  assert.equal(EntradaDeNutricionSchema.safeParse({ available: false, reason: 'NOT_AVAILABLE_TO_VIEW', summary: null }).success, false);
+  assert.equal(EntradaDeNutricionSchema.safeParse({ available: false, reason: 'NOT_AVAILABLE_TO_VIEW' }).success, true);
 });

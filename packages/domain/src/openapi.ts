@@ -499,7 +499,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/advisees/{adviseeId}/dashboard',
     resumen:
-      'Dashboard del asesorado para un profesional, evaluado por el PDP en cada alcance. Sin datos de dominio en WP-03. Ningún alcance autorizado → 404 idéntico a inexistente.',
+      'Dashboard del asesorado para un profesional, evaluado por el PDP en cada alcance. Cada alcance permitido trae el resumen factual de su dominio, o `null` si todavía no tiene datos. Ningún alcance autorizado → 404 idéntico a inexistente.',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
