@@ -5,7 +5,10 @@ import type { ExpoConfig } from 'expo/config';
  * EAS_BUILD_GIT_COMMIT_HASH lo provee EAS durante el build; APP_ENV y API_BASE_URL vienen del perfil de eas.json.
  * Ningún secreto se embebe en el APK (08 §32).
  */
-const VERSION = '0.8.0';
+const VERSION = '0.9.0';
+
+/** El fondo navy del tema oscuro (src/tema.ts): detrás de la app mientras carga y detrás del ícono adaptativo. */
+const FONDO = '#04213F';
 
 const config: ExpoConfig = {
   name: 'BE',
@@ -14,13 +17,15 @@ const config: ExpoConfig = {
   version: VERSION,
   orientation: 'portrait',
   icon: './assets/icon.png',
-  userInterfaceStyle: 'light',
+  // La APK usa el tema oscuro de las referencias de Dirección del 2026-09-21 (docs/paquetes/WP-IDENTIDAD-VISUAL.md).
+  userInterfaceStyle: 'dark',
+  backgroundColor: FONDO,
   android: {
     package: 'com.elianbufi.be',
-    versionCode: 9,
+    versionCode: 10,
     adaptiveIcon: {
       foregroundImage: './assets/android-icon-foreground.png',
-      backgroundColor: '#ffffff',
+      backgroundColor: FONDO,
     },
     predictiveBackGestureEnabled: false,
   },

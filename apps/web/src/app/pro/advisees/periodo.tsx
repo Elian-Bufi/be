@@ -36,7 +36,7 @@ export function FiltroDePeriodo({ id, onAplicar, diasMaximos = DIAS_MAXIMOS }: {
   }
 
   return (
-    <form className="fila-de-dato" onSubmit={aplicar} noValidate>
+    <form className="fila-de-dato filtro-de-periodo" onSubmit={aplicar} noValidate>
       <Campo id={`${id}-desde`} etiqueta="Desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} error={error?.campo === 'desde' ? error.texto : null} />
       <Campo id={`${id}-hasta`} etiqueta="Hasta" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} error={error?.campo === 'hasta' ? error.texto : null} />
       <button type="submit" className="boton boton--secundario">

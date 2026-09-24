@@ -1771,7 +1771,7 @@ export function documentoOpenApi(): Record<string, unknown> {
     info: {
       title:
         'BE API — WP-02 Identidad y sesiones · WP-03 Vínculo, consentimiento y PDP · WP-04 Circuito nutricional · WP-05 Antropometría, métodos y cálculos · WP-06 Circuito de entrenamiento · WP-07 Información profesional pertinente · WP-08 Integraciones P0',
-      version: '0.8.0',
+      version: '0.9.0',
       description:
         'Generado desde @be/domain (contratos.ts, contratos-vinculo.ts, contratos-nutricion.ts, contratos-antropometria.ts, contratos-calculo.ts, contratos-entrenamiento.ts, contratos-formularios.ts, contratos-procedencia-externa.ts y contratos-integraciones.ts). No editar a mano.',
     },

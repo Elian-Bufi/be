@@ -7,7 +7,7 @@ import { COPY, COPY_VINCULO, ETIQUETA_DE_MOTIVO, type Resultado } from '@be/doma
 import { useRef, useState, type ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { falloDe, useClaveDeIntento, type Fallo } from './intento';
-import { Aviso, Boton, COLOR, estilos as ui } from './ui';
+import { Aviso, Boton, COLOR, VELO, estilos as ui } from './ui';
 
 export function DialogoDeConfirmacion({
   visible,
@@ -176,33 +176,33 @@ export function useAccionConfirmada({
 }
 
 const estilos = StyleSheet.create({
-  fondo: { flex: 1, backgroundColor: 'rgba(17,24,39,0.55)' },
+  fondo: { flex: 1, backgroundColor: VELO },
   centrado: { flexGrow: 1, justifyContent: 'center', padding: 16 },
-  dialogo: { backgroundColor: '#fff', borderRadius: 12, padding: 20 },
+  dialogo: { backgroundColor: COLOR.superficie, borderRadius: 12, padding: 20, borderWidth: 1, borderColor: COLOR.borde },
   grupo: { marginVertical: 8 },
   opcion: {
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: 48,
     borderWidth: 1,
-    borderColor: COLOR.borde,
+    borderColor: COLOR.bordeControl,
     borderRadius: 8,
     paddingHorizontal: 12,
     marginVertical: 4,
-    backgroundColor: '#fff',
+    backgroundColor: COLOR.fondo,
   },
-  opcionElegida: { borderColor: COLOR.azul, borderWidth: 2, backgroundColor: COLOR.fondoSuave },
+  opcionElegida: { borderColor: COLOR.acento, borderWidth: 2, backgroundColor: COLOR.superficie },
   circulo: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: COLOR.azul,
+    borderColor: COLOR.acento,
     marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
   },
-  punto: { width: 12, height: 12, borderRadius: 6, backgroundColor: COLOR.azul },
+  punto: { width: 12, height: 12, borderRadius: 6, backgroundColor: COLOR.acento },
   textoDeOpcion: { flex: 1, fontSize: 16, color: COLOR.texto },
 });

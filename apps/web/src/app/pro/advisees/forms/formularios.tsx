@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
+import { MigasDelAsesorado } from '../../../../components/migas';
 import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
@@ -82,9 +83,7 @@ export function Formularios() {
 
   return (
     <Contexto.Provider value={contexto}>
-      <p>
-        <Link href={`/pro/advisees?id=${encodeURIComponent(id)}`}>{COPY_FORMULARIOS.volverAlWorkspace}</Link>
-      </p>
+      <MigasDelAsesorado id={id} pestana={COPY_FORMULARIOS.pestana} />
       <h1>{COPY_FORMULARIOS.pestana}</h1>
       <nav className="pestanas" aria-label="Secciones de Información">
         <ul>

@@ -8,14 +8,35 @@
  *   después no se edita;
  * - cada medición declara protocolo, unidad de origen y cómo se obtuvo: medido, reportado o importado. La **clase**
  *   del dato se deriva del origen, no la elige quien carga (04:1090).
+ *
+ * La toma se hace sobre la figura (DL-073, opción A; docs/paquetes/WP-IDENTIDAD-VISUAL.md, tramo D):
+ * - qué se mide lo declara el protocolo elegido (B10-07 §18): sus métricas, agrupadas por familia (§15), forman la
+ *   lista densa de §16 —teclado numérico, el foco pasa al campo siguiente—, que es también la tabla equivalente
+ *   obligatoria de la figura (B10-10 §11);
+ * - la figura ubica cada métrica que sabe dibujar y marca cuál tiene dato; tocar un punto lleva a su campo. Nunca
+ *   califica: no recibe los valores;
+ * - lo que el protocolo no declara se sigue pudiendo cargar en «Otras mediciones», como antes.
+ * Los contratos de WP-05 no cambian: la pantalla cambia cómo se escribe el valor, no qué se manda.
  */
-import { COPY_ANTROPOMETRIA, ETIQUETA_DE_ORIGEN, leerNumero, motivoDeNumeroIlegible, type Especificacion } from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  COPY_ANTROPOMETRIA,
+  ETIQUETA_DE_FAMILIA,
+  ETIQUETA_DE_ORIGEN,
+  leerNumero,
+  metricasDelProtocolo,
+  metricasPorFamilia,
+  motivoDeNumeroIlegible,
+  puntosDeLaFigura,
+  type Especificacion,
+  type MetricaDelProtocolo,
+} from '@be/domain';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { fecha, numeroEnCampo } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
+import { Figura } from './figura';
 
 type Borrador = {
   evaluationId: string;
@@ -24,11 +45,18 @@ type Borrador = {
   measurements: { measurementId: string; metric: string; magnitude: { value: number; unit: string }; dataClass: string; origin: string; occurredAt: string; protocol: { protocolVersionId: string } }[];
 };
 
-interface FilaEnEdicion {
+/** Una medición que el protocolo no declara: se carga libre, como en WP-05. */
+interface FilaLibre {
   readonly clave: string;
   metric: string;
   value: string;
   unit: string;
+}
+
+/** El valor escrito para una métrica del protocolo, tal como lo lee una persona, y su unidad de origen. */
+interface Escrito {
+  valor: string;
+  unidad: string;
 }
 
 /** ISO → `YYYY-MM-DDTHH:mm` en hora local, que es lo que entiende `datetime-local`. */
@@ -38,7 +66,8 @@ const paraElCampo = (iso: string): string => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
-const filaNueva = (): FilaEnEdicion => ({ clave: `m-${Math.random().toString(36).slice(2, 9)}`, metric: '', value: '', unit: '' });
+const filaNueva = (): FilaLibre => ({ clave: `m-${Math.random().toString(36).slice(2, 9)}`, metric: '', value: '', unit: '' });
+const idDelValor = (clave: string) => `ant-valor-${clave}`;
 
 export function VistaDePreparacion() {
   const { token, asesoradoId, sesionPerdida, irA } = useAntropometria();
@@ -104,7 +133,8 @@ function Preparacion({
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useAntropometria();
   const intento = useClaveDeIntento();
   const protocoloPorDefecto = especificaciones[0]?.versionId ?? '';
-  const [filas, setFilas] = useState<FilaEnEdicion[]>([]);
+  const [escritos, setEscritos] = useState<Record<string, Escrito>>({});
+  const [libres, setLibres] = useState<FilaLibre[]>([]);
   const [contexto, setContexto] = useState('');
   /**
    * El momento de la toma y la especificación son de la **evaluación**: una evaluación es una toma, con su protocolo
@@ -116,33 +146,75 @@ function Preparacion({
   const [origen, setOrigen] = useState<'DIRECT_CAPTURE' | 'SELF_REPORTED'>('DIRECT_CAPTURE');
   const [enviando, setEnviando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
+  const [activa, setActiva] = useState<string | null>(null);
+  const [errores, setErrores] = useState<Record<string, string>>({});
+
+  /** Las métricas que declara el protocolo elegido (B10-07 §18): lo que la figura y la lista ofrecen. */
+  const metricas = useMemo(() => metricasDelProtocolo(especificaciones.find((e) => e.versionId === protocolo)?.content), [especificaciones, protocolo]);
 
   useEffect(() => {
     setProtocolo((p) => p || protocoloPorDefecto);
-    if (!borrador) return setFilas([]);
+    if (!borrador) {
+      setEscritos({});
+      setLibres([]);
+      return;
+    }
     setContexto(borrador.context ?? '');
     const primera = borrador.measurements[0];
+    const protocoloDelBorrador = primera?.protocol?.protocolVersionId ?? protocoloPorDefecto;
     if (primera) {
       setMomento(paraElCampo(primera.occurredAt));
-      setProtocolo(primera.protocol?.protocolVersionId ?? protocoloPorDefecto);
+      setProtocolo(protocoloDelBorrador);
       setOrigen(primera.origin === 'SELF_REPORTED' ? 'SELF_REPORTED' : 'DIRECT_CAPTURE');
     }
-    // El valor se muestra como lo lee una persona, con coma decimal; `leerNumero` lo vuelve a aceptar (DL-091 punto 4).
-    setFilas(borrador.measurements.map((m) => ({ clave: m.measurementId, metric: m.metric, value: numeroEnCampo(m.magnitude.value), unit: m.magnitude.unit })));
-  }, [borrador, protocoloPorDefecto]);
+    // Lo que el protocolo del borrador declara va a su campo; lo demás, a «Otras mediciones». El valor se muestra como
+    // lo lee una persona, con coma decimal; `leerNumero` lo vuelve a aceptar (DL-091 punto 4).
+    const delProtocolo = new Set(metricasDelProtocolo(especificaciones.find((e) => e.versionId === protocoloDelBorrador)?.content).map((m) => m.clave));
+    const nuevos: Record<string, Escrito> = {};
+    const otras: FilaLibre[] = [];
+    for (const m of borrador.measurements) {
+      if (delProtocolo.has(m.metric) && !nuevos[m.metric]) nuevos[m.metric] = { valor: numeroEnCampo(m.magnitude.value), unidad: m.magnitude.unit };
+      else otras.push({ clave: m.measurementId, metric: m.metric, value: numeroEnCampo(m.magnitude.value), unit: m.magnitude.unit });
+    }
+    setEscritos(nuevos);
+    setLibres(otras);
+  }, [borrador, protocoloPorDefecto, especificaciones]);
+
+  /** Cambiar de protocolo no pierde nada: lo que el nuevo no declara pasa a «Otras mediciones». */
+  function cambiarProtocolo(nuevo: string) {
+    const siguientes = new Set(metricasDelProtocolo(especificaciones.find((e) => e.versionId === nuevo)?.content).map((m) => m.clave));
+    const quedan: Record<string, Escrito> = {};
+    const pasan: FilaLibre[] = [];
+    for (const [clave, e] of Object.entries(escritos)) {
+      if (e.valor.trim() === '') continue;
+      if (siguientes.has(clave)) quedan[clave] = e;
+      else pasan.push({ ...filaNueva(), metric: clave, value: e.valor, unit: e.unidad });
+    }
+    setEscritos(quedan);
+    setLibres((xs) => [...xs, ...pasan]);
+    setErrores({});
+    setProtocolo(nuevo);
+  }
+
+  const escritoDe = (m: MetricaDelProtocolo): Escrito => escritos[m.clave] ?? { valor: '', unidad: m.unidades[0]! };
+  const conDato = new Set(metricas.filter((m) => leerNumero(escritoDe(m).valor) !== null).map((m) => m.clave));
+  const puntos = puntosDeLaFigura(metricas, conDato);
 
   /**
-   * Lo que le falta a cada fila, por campo: guardar con una a medias las perdería en silencio. El mismo aviso que ya
-   * se daba arriba se marca ahora en el campo que falta (B10-10:164-165; DL-091 punto 3).
+   * Lo que le falta a cada medición, por campo: guardar con una a medias las perdería en silencio. El mismo aviso que
+   * se da arriba se marca en el campo que falta (B10-10:164-165; DL-091 punto 3).
    */
-  const [errores, setErrores] = useState<Record<string, string>>({});
   function revisar(): Record<string, string> {
     const problemas: Record<string, string> = {};
-    filas.forEach((f, i) => {
-      if (!f.metric.trim()) problemas[`ant-metrica-${i}`] = 'Falta la métrica.';
-      if (!f.value.trim()) problemas[`ant-valor-${i}`] = 'Falta el valor.';
+    for (const m of metricas) {
+      const texto = escritoDe(m).valor;
       // `leerNumero` acepta coma o punto y devuelve `null` si no es un número (DL-091 punto 4).
-      else if (leerNumero(f.value) === null) problemas[`ant-valor-${i}`] = motivoDeNumeroIlegible(f.value);
+      if (texto.trim() !== '' && leerNumero(texto) === null) problemas[idDelValor(m.clave)] = motivoDeNumeroIlegible(texto);
+    }
+    libres.forEach((f, i) => {
+      if (!f.metric.trim()) problemas[`ant-metrica-${i}`] = 'Falta la métrica.';
+      if (!f.value.trim()) problemas[`ant-valor-libre-${i}`] = 'Falta el valor.';
+      else if (leerNumero(f.value) === null) problemas[`ant-valor-libre-${i}`] = motivoDeNumeroIlegible(f.value);
       if (!f.unit.trim()) problemas[`ant-unidad-${i}`] = 'Falta la unidad.';
     });
     setErrores(problemas);
@@ -153,9 +225,14 @@ function Preparacion({
     occurredAt: new Date(momento).toISOString(),
     specificationVersionId: protocolo,
     source: { type: origen },
-    directMeasurements: filas
-      .filter((f) => f.metric.trim() && leerNumero(f.value) !== null && f.unit.trim())
-      .map((f) => ({ metricCode: f.metric.trim(), value: leerNumero(f.value)!, unit: f.unit.trim() })),
+    directMeasurements: [
+      ...metricas
+        .filter((m) => leerNumero(escritoDe(m).valor) !== null)
+        .map((m) => ({ metricCode: m.clave, value: leerNumero(escritoDe(m).valor)!, unit: escritoDe(m).unidad })),
+      ...libres
+        .filter((f) => f.metric.trim() && leerNumero(f.value) !== null && f.unit.trim())
+        .map((f) => ({ metricCode: f.metric.trim(), value: leerNumero(f.value)!, unit: f.unit.trim() })),
+    ],
     professionalNotes: contexto.trim() || null,
   });
 
@@ -198,6 +275,16 @@ function Preparacion({
     onRegistrada();
   }
 
+  /** Tocar un punto de la figura lleva al campo de esa medición: la figura ubica, la lista carga. */
+  function elegirEnLaFigura(clave: string) {
+    const campo = document.getElementById(idDelValor(clave));
+    campo?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    campo?.focus({ preventScroll: true });
+  }
+
+  const escribir = (m: MetricaDelProtocolo, cambio: Partial<Escrito>) => setEscritos((xs) => ({ ...xs, [m.clave]: { ...escritoDe(m), ...cambio } }));
+  const hayMedicionesGuardadas = !!borrador && borrador.measurements.length > 0;
+
   return (
     <div className="secciones">
       {aviso ? (
@@ -211,71 +298,148 @@ function Preparacion({
         <p className="nota">{COPY_ANTROPOMETRIA.borradorNoEsHistoria}</p>
         {borrador ? <p className="nota">Guardado por última vez: {fecha(new Date().toISOString())}</p> : null}
 
-        <Campo id="ant-contexto" etiqueta="Contexto (opcional)" value={contexto} onChange={(e) => setContexto(e.target.value)} maxLength={2000} />
-
         {/* El momento, el protocolo y el origen son de la toma entera: una evaluación es una toma (09v11 §6). */}
-        <Campo id="ant-momento" etiqueta={COPY_ANTROPOMETRIA.momentoDeLaToma} type="datetime-local" value={momento} onChange={(e) => setMomento(e.target.value)} />
-        <div className="campo">
-          <label htmlFor="ant-protocolo">{COPY_ANTROPOMETRIA.protocolo}</label>
-          <select id="ant-protocolo" value={protocolo} onChange={(e) => setProtocolo(e.target.value)}>
-            {especificaciones.map((e) => (
-              <option key={e.versionId} value={e.versionId}>
-                {e.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="campo">
-          <label htmlFor="ant-origen">{COPY_ANTROPOMETRIA.origenDelDato}</label>
-          <select id="ant-origen" value={origen} onChange={(e) => setOrigen(e.target.value as 'DIRECT_CAPTURE' | 'SELF_REPORTED')}>
-            <option value="DIRECT_CAPTURE">{ETIQUETA_DE_ORIGEN.DIRECT_CAPTURE}</option>
-            <option value="SELF_REPORTED">{ETIQUETA_DE_ORIGEN.SELF_REPORTED}</option>
-          </select>
-          <p className="campo__ayuda">{COPY_ANTROPOMETRIA.explicacionDeClases}</p>
+        <div className="grilla-de-datos">
+          <Campo id="ant-momento" etiqueta={COPY_ANTROPOMETRIA.momentoDeLaToma} type="datetime-local" value={momento} onChange={(e) => setMomento(e.target.value)} />
+          <div className="campo">
+            <label htmlFor="ant-protocolo">{COPY_ANTROPOMETRIA.protocolo}</label>
+            <select id="ant-protocolo" value={protocolo} onChange={(e) => cambiarProtocolo(e.target.value)}>
+              {especificaciones.map((e) => (
+                <option key={e.versionId} value={e.versionId}>
+                  {e.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="campo">
+            <label htmlFor="ant-origen">{COPY_ANTROPOMETRIA.origenDelDato}</label>
+            <select id="ant-origen" value={origen} onChange={(e) => setOrigen(e.target.value as 'DIRECT_CAPTURE' | 'SELF_REPORTED')} aria-describedby="ant-origen-ayuda">
+              <option value="DIRECT_CAPTURE">{ETIQUETA_DE_ORIGEN.DIRECT_CAPTURE}</option>
+              <option value="SELF_REPORTED">{ETIQUETA_DE_ORIGEN.SELF_REPORTED}</option>
+            </select>
+            <p className="campo__ayuda" id="ant-origen-ayuda">
+              {COPY_ANTROPOMETRIA.explicacionDeClases}
+            </p>
+          </div>
+          <Campo id="ant-contexto" etiqueta="Contexto (opcional)" value={contexto} onChange={(e) => setContexto(e.target.value)} maxLength={2000} />
         </div>
 
         <h3>Mediciones</h3>
-        {filas.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinBorrador}</p> : null}
-        {filas.map((f, i) => (
-          <div key={f.clave} className="nodo nodo--dia">
+        {metricas.length > 0 ? (
+          <div className={`toma${puntos.length > 0 ? '' : ' toma--sin-figura'}`}>
+            {puntos.length > 0 ? (
+              <div className="toma__figura">
+                <Figura puntos={puntos} activa={activa} onElegir={elegirEnLaFigura} />
+                <p className="nota">Tocá un punto para ir a su campo. La lista tiene las mismas mediciones, en el orden del protocolo.</p>
+              </div>
+            ) : null}
+            <div className="toma__lista">
+              {metricasPorFamilia(metricas).map((g) => (
+                <fieldset key={g.familia} className="grupo">
+                  <legend>{ETIQUETA_DE_FAMILIA[g.familia]}</legend>
+                  <ul className="medidas">
+                    {g.metricas.map((m) => {
+                      const e = escritoDe(m);
+                      const error = errores[idDelValor(m.clave)];
+                      return (
+                        <li key={m.clave} className={`medida${activa === m.clave ? ' medida--activa' : ''}`}>
+                          <label htmlFor={idDelValor(m.clave)} className="medida__nombre">
+                            {m.nombre}
+                          </label>
+                          <span className="medida__entrada">
+                            <input
+                              id={idDelValor(m.clave)}
+                              inputMode="decimal"
+                              autoComplete="off"
+                              value={e.valor}
+                              maxLength={12}
+                              onFocus={() => setActiva(m.clave)}
+                              onBlur={() => setActiva((a) => (a === m.clave ? null : a))}
+                              onChange={(ev) => escribir(m, { valor: ev.target.value })}
+                              aria-invalid={error ? true : undefined}
+                              aria-describedby={error ? `${idDelValor(m.clave)}-error` : undefined}
+                            />
+                            {m.unidades.length > 1 ? (
+                              <select aria-label={`Unidad de ${m.nombre}`} value={e.unidad} onChange={(ev) => escribir(m, { unidad: ev.target.value })}>
+                                {m.unidades.map((u) => (
+                                  <option key={u} value={u}>
+                                    {u}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="medida__unidad">{m.unidades[0]}</span>
+                            )}
+                          </span>
+                          {/* El estado se dice con texto, no solo con el punto de la figura (B10-10 §1). */}
+                          <span className="medida__estado">{conDato.has(m.clave) ? 'Cargado' : 'Sin cargar'}</span>
+                          {error ? (
+                            <p id={`${idDelValor(m.clave)}-error`} className="campo__error">
+                              <span aria-hidden="true">⚠ </span>
+                              {error}
+                            </p>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </fieldset>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {metricas.length > 0 ? (
+          <>
+            <h4>Otras mediciones</h4>
+            <p className="nota">Lo que el protocolo no declara se carga acá, con qué se midió y su unidad.</p>
+          </>
+        ) : null}
+        {libres.length === 0 && metricas.length === 0 && !hayMedicionesGuardadas ? <p>{COPY_ANTROPOMETRIA.sinBorrador}</p> : null}
+        {libres.map((f, i) => (
+          <div key={f.clave} className="nodo fila-de-dato">
             <Campo
               id={`ant-metrica-${i}`}
               etiqueta={COPY_ANTROPOMETRIA.metrica}
               value={f.metric}
-              onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, metric: e.target.value } : x)))}
+              onChange={(e) => setLibres((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, metric: e.target.value } : x)))}
               maxLength={60}
               error={errores[`ant-metrica-${i}`] ?? null}
             />
             <Campo
-              id={`ant-valor-${i}`}
+              id={`ant-valor-libre-${i}`}
               etiqueta={COPY_ANTROPOMETRIA.valor}
               inputMode="decimal"
               value={f.value}
-              onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, value: e.target.value } : x)))}
+              onChange={(e) => setLibres((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, value: e.target.value } : x)))}
               maxLength={12}
-              error={errores[`ant-valor-${i}`] ?? null}
+              error={errores[`ant-valor-libre-${i}`] ?? null}
             />
             <Campo
               id={`ant-unidad-${i}`}
               etiqueta={COPY_ANTROPOMETRIA.unidad}
               value={f.unit}
-              onChange={(e) => setFilas((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, unit: e.target.value } : x)))}
+              onChange={(e) => setLibres((xs) => xs.map((x) => (x.clave === f.clave ? { ...x, unit: e.target.value } : x)))}
               maxLength={24}
               error={errores[`ant-unidad-${i}`] ?? null}
             />
-            <button type="button" className="boton boton--enlace" onClick={() => {
+            <button
+              type="button"
+              className="boton boton--enlace"
+              onClick={() => {
                 // Los avisos van por posición: al quitar una fila las demás se corren, así que se descartan y se
                 // recalculan en el próximo guardado, en vez de quedar pegados a la fila equivocada.
                 setErrores({});
-                setFilas((xs) => xs.filter((x) => x.clave !== f.clave));
-              }}>
+                setLibres((xs) => xs.filter((x) => x.clave !== f.clave));
+              }}
+            >
               {COPY_ANTROPOMETRIA.quitarMedicion}
             </button>
           </div>
         ))}
         <div className="acciones">
-          <button type="button" className="boton boton--secundario" onClick={() => setFilas((xs) => [...xs, filaNueva()])} disabled={!protocolo}>
-            {COPY_ANTROPOMETRIA.agregarMedicion}
+          <button type="button" className="boton boton--secundario" onClick={() => setLibres((xs) => [...xs, filaNueva()])} disabled={!protocolo}>
+            {metricas.length > 0 ? 'Agregar otra medición' : COPY_ANTROPOMETRIA.agregarMedicion}
           </button>
           <button type="button" className="boton boton--secundario" onClick={() => void guardar()} disabled={enviando}>
             {COPY_ANTROPOMETRIA.guardarBorrador}

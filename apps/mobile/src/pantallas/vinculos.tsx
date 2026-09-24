@@ -260,5 +260,5 @@ function SolicitudAnterior({ s }: { s: SolicitudDeVinculo }) {
 
 const estilos = StyleSheet.create({
   nombre: { fontSize: 18, fontWeight: '700', color: COLOR.texto, marginBottom: 4 },
-  enlace: { fontSize: 16, fontWeight: '700', color: COLOR.azulOscuro, textDecorationLine: 'underline', marginTop: 8 },
+  enlace: { fontSize: 16, fontWeight: '700', color: COLOR.acento, textDecorationLine: 'underline', marginTop: 8 },
 });

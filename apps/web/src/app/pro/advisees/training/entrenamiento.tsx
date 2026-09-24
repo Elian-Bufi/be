@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
+import { MigasDelAsesorado } from '../../../../components/migas';
 import { Aviso } from '../../../../components/formulario';
 import type { Resultado } from '../../../../lib/api';
 import { SinEspacioProfesional, useEspacioProfesional } from '../../espacio-profesional';
@@ -92,9 +93,7 @@ export function Entrenamiento() {
 
   return (
     <Contexto.Provider value={contexto}>
-      <p>
-        <Link href={`/pro/advisees?id=${encodeURIComponent(id)}`}>Volver al workspace del asesorado</Link>
-      </p>
+      <MigasDelAsesorado id={id} pestana={COPY_ENTRENAMIENTO.pestana} />
       <h1>{COPY_ENTRENAMIENTO.pestana}</h1>
       {retirado ? <NoDisponible /> : <Secciones ruta={ruta} id={id} vista={vista} />}
     </Contexto.Provider>

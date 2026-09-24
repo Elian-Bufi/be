@@ -9,9 +9,8 @@ export const metadata: Metadata = { title: 'Vínculos · BE' };
 export default function PaginaDeVinculos() {
   return (
     <>
-      <Encabezado />
-      <main className="contenido">
-        <NavegacionDeCuenta />
+      <Encabezado navegacion={<NavegacionDeCuenta />} />
+      <main id="contenido" className="contenido">
         <h1>Vínculos</h1>
         <Vinculos />
       </main>

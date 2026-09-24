@@ -9,9 +9,8 @@ export const metadata: Metadata = { title: 'Privacidad · BE' };
 export default function PaginaDePrivacidad() {
   return (
     <>
-      <Encabezado />
-      <main className="contenido">
-        <NavegacionDeCuenta />
+      <Encabezado navegacion={<NavegacionDeCuenta />} />
+      <main id="contenido" className="contenido">
         <h1>Privacidad</h1>
         <Privacidad />
       </main>

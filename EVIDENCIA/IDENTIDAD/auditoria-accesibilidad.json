@@ -1,0 +1,563 @@
+{
+  "fecha": "2026-09-24T07:09:36.465Z",
+  "herramienta": "axe-core 4.13.0",
+  "reglas": [
+    "wcag2a",
+    "wcag2aa",
+    "wcag21a",
+    "wcag21aa",
+    "wcag22aa"
+  ],
+  "criterioDeCierre": "cero violaciones críticas o serias (RNF-ACC-001)",
+  "pantallas": 42,
+  "violacionesGraves": 0,
+  "erroresDeConsola": [],
+  "resultados": [
+    {
+      "pantalla": "Landing · escritorio",
+      "recorrido": "PUBLIC (B10-02 §3)",
+      "url": "/",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 15
+        }
+      ]
+    },
+    {
+      "pantalla": "Crear cuenta · escritorio",
+      "recorrido": "acceso",
+      "url": "/register",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 7
+        }
+      ]
+    },
+    {
+      "pantalla": "Términos · escritorio",
+      "recorrido": "acceso",
+      "url": "/legal/terminos",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 14
+        }
+      ]
+    },
+    {
+      "pantalla": "Iniciar sesión · escritorio",
+      "recorrido": "acceso",
+      "url": "/login",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 7
+        }
+      ]
+    },
+    {
+      "pantalla": "Cuenta · escritorio",
+      "recorrido": "acceso",
+      "url": "/account",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 5
+        }
+      ]
+    },
+    {
+      "pantalla": "Vínculos · escritorio",
+      "recorrido": "vínculo",
+      "url": "/account/relationships",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 5
+        }
+      ]
+    },
+    {
+      "pantalla": "Privacidad y consentimientos · escritorio",
+      "recorrido": "vínculo",
+      "url": "/account/privacy",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 5
+        }
+      ]
+    },
+    {
+      "pantalla": "Espacio profesional · escritorio",
+      "recorrido": "vínculo",
+      "url": "/pro",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Workspace del asesorado · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees?id=…",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Nutrición · Resumen · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/nutrition?id=…&vista=resumen",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Nutrición · Plan · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/nutrition?id=…&vista=plan",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Nutrición · Registros · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/nutrition?id=…&vista=registros",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Nutrición · Revisiones · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/nutrition?id=…&vista=revisiones",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Entrenamiento · Resumen · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/training?id=…&vista=resumen",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Entrenamiento · Plan · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/training?id=…&vista=plan",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Entrenamiento · Ejecuciones · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/training?id=…&vista=ejecuciones",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Entrenamiento · Revisiones · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/training?id=…&vista=revisiones",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Antropometría · Evaluaciones · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/anthropometry?id=…&vista=evaluaciones",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Antropometría · En preparación · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/anthropometry?id=…&vista=preparacion",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 6
+        }
+      ]
+    },
+    {
+      "pantalla": "Antropometría · Evolución · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/anthropometry?id=…&vista=evolucion",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Información (formularios) · escritorio",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/forms?id=…",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Landing · celular",
+      "recorrido": "PUBLIC (B10-02 §3)",
+      "url": "/",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 15
+        }
+      ]
+    },
+    {
+      "pantalla": "Crear cuenta · celular",
+      "recorrido": "acceso",
+      "url": "/register",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 7
+        }
+      ]
+    },
+    {
+      "pantalla": "Términos · celular",
+      "recorrido": "acceso",
+      "url": "/legal/terminos",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 14
+        }
+      ]
+    },
+    {
+      "pantalla": "Iniciar sesión · celular",
+      "recorrido": "acceso",
+      "url": "/login",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 7
+        }
+      ]
+    },
+    {
+      "pantalla": "Cuenta · celular",
+      "recorrido": "acceso",
+      "url": "/account",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 5
+        }
+      ]
+    },
+    {
+      "pantalla": "Vínculos · celular",
+      "recorrido": "vínculo",
+      "url": "/account/relationships",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 5
+        }
+      ]
+    },
+    {
+      "pantalla": "Privacidad y consentimientos · celular",
+      "recorrido": "vínculo",
+      "url": "/account/privacy",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 5
+        }
+      ]
+    },
+    {
+      "pantalla": "Espacio profesional · celular",
+      "recorrido": "vínculo",
+      "url": "/pro",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Workspace del asesorado · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees?id=…",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Nutrición · Resumen · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/nutrition?id=…&vista=resumen",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Nutrición · Plan · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/nutrition?id=…&vista=plan",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Nutrición · Registros · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/nutrition?id=…&vista=registros",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Nutrición · Revisiones · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/nutrition?id=…&vista=revisiones",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Entrenamiento · Resumen · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/training?id=…&vista=resumen",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Entrenamiento · Plan · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/training?id=…&vista=plan",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Entrenamiento · Ejecuciones · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/training?id=…&vista=ejecuciones",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Entrenamiento · Revisiones · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/training?id=…&vista=revisiones",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Antropometría · Evaluaciones · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/anthropometry?id=…&vista=evaluaciones",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Antropometría · En preparación · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/anthropometry?id=…&vista=preparacion",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 6
+        }
+      ]
+    },
+    {
+      "pantalla": "Antropometría · Evolución · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/anthropometry?id=…&vista=evolucion",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    },
+    {
+      "pantalla": "Información (formularios) · celular",
+      "recorrido": "revisión",
+      "url": "/pro/advisees/forms?id=…",
+      "violaciones": [],
+      "pendientesDeRevisionManual": [
+        {
+          "regla": "color-contrast",
+          "impacto": "serious",
+          "cantidad": 4
+        }
+      ]
+    }
+  ]
+}
