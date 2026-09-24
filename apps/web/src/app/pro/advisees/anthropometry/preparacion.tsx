@@ -44,8 +44,29 @@ type Borrador = {
   evaluationId: string;
   version: string;
   context: string | null;
-  measurements: { measurementId: string; metric: string; magnitude: { value: number; unit: string }; dataClass: string; origin: string; occurredAt: string; protocol: { protocolVersionId: string } }[];
+  recordedAt: string;
+  measurements: {
+    measurementId: string;
+    metric: string;
+    magnitude: { value: number; unit: string };
+    dataClass: string;
+    origin: string;
+    occurredAt: string;
+    recordedAt: string;
+    protocol: { protocolVersionId: string };
+  }[];
 };
+
+/**
+ * Cuándo se guardó el borrador por última vez, con lo que dice la API y nunca con la hora de la pantalla. Cada guardado
+ * reescribe las mediciones (API-ANT-10), así que la registrada más recientemente es la del último guardado. Sin
+ * mediciones, lo único que se sabe es cuándo se abrió. Una hora inventada sería presentar como guardado lo que no
+ * consta (B10-07 §8.1).
+ */
+function ultimoGuardado(b: Borrador): { rotulo: string; momento: string } {
+  const masReciente = b.measurements.map((m) => m.recordedAt).sort().at(-1);
+  return masReciente ? { rotulo: 'Guardado por última vez', momento: masReciente } : { rotulo: 'Abierta el', momento: b.recordedAt };
+}
 
 /** Una medición que el protocolo no declara: se carga libre, como en WP-05. */
 interface FilaLibre {
@@ -296,6 +317,7 @@ function Preparacion({
 
   const escribir = (m: MetricaDelProtocolo, cambio: Partial<Escrito>) => setEscritos((xs) => ({ ...xs, [m.clave]: { ...escritoDe(m), ...cambio } }));
   const hayMedicionesGuardadas = !!borrador && borrador.measurements.length > 0;
+  const guardado = borrador ? ultimoGuardado(borrador) : null;
 
   return (
     <div className="secciones">
@@ -308,7 +330,11 @@ function Preparacion({
       <section className="seccion" aria-labelledby="titulo-preparacion">
         <h2 id="titulo-preparacion">{borrador ? COPY_ANTROPOMETRIA.borradorEnCurso : COPY_ANTROPOMETRIA.nuevaEvaluacion}</h2>
         <p className="nota">{COPY_ANTROPOMETRIA.borradorNoEsHistoria}</p>
-        {borrador ? <p className="nota">Guardado por última vez: {fecha(new Date().toISOString())}</p> : null}
+        {guardado ? (
+          <p className="nota">
+            {guardado.rotulo}: {fecha(guardado.momento)}
+          </p>
+        ) : null}
 
         {/* El momento, el protocolo y el origen son de la toma entera: una evaluación es una toma (09v11 §6). */}
         <div className="grilla-de-datos">
