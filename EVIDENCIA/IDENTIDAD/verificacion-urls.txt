@@ -1,0 +1,23 @@
+Verificación posterior al deploy — tramo de identidad visual y accesibilidad (07 §37)
+Momento: 2026-09-24T07:31:09Z
+
+$ curl -s https://be-api-hndp.onrender.com/health/ready
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.9.0","commit":"fd08380f5e1a901bc3530f7fc93ee672e606ca3b","construidoEn":"2026-09-24T07:28:33.278Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+
+$ curl -sI https://be-web-1ngj.onrender.com/  (líneas de seguridad)
+HTTP/2 200 
+content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://be-api-hndp.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+strict-transport-security: max-age=315360000; includeSubdomains; preload
+x-content-type-options: nosniff
+x-frame-options: DENY
+
+$ la portada es la landing nueva y declara la versión desplegada
+  «Plataforma integrada de inteligencia en salud» 4
+  «Better Everyday»                              2
+  «Lo que BE no hace»                            2
+  «Descargar la APK de prueba»                   2
+  «Saltar al contenido»                          2
+  identidad del build: 0.9.0 · commit fd08380
+
+$ el protocolo nuevo está en test (migración 20260924130000): la API lo lista con sesión; acá se verifica que
+  la migración se aplicó mirando el estado de migraciones de /health/ready («migraciones":"OK»).

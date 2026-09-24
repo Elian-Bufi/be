@@ -1,0 +1,18 @@
+Verificación posterior al deploy — tramo de consolidación (07 §37)
+
+Observado el 2026-09-24 alrededor de las 06:55Z, con 0.8.0 recién desplegada (antes de integrar el tramo siguiente):
+
+$ curl -s https://be-api-hndp.onrender.com/health/ready
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.8.0","commit":"416fb14186bb60d69d354cf88aba7a83c511ca7f","construidoEn":"2026-09-24T04:20:38.061Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+
+$ curl -s https://be-web-1ngj.onrender.com/   (identidad del build en la portada)
+web 0.8.0 · commit 416fb14 · build 2026-09-24T04:20:43.38…
+
+La API y el website desplegados en `test` son el commit de cierre del tramo, `416fb14`, con la base y las
+migraciones en OK.
+
+Observado a las 07:22Z, ya integrado el PR #74 del tramo siguiente (la versión todavía dice 0.8.0: el cambio
+a 0.9.0 viene en el cierre de ese tramo):
+
+$ curl -s https://be-api-hndp.onrender.com/health/ready
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.8.0","commit":"faff8162a3261c508346e25d2af007e7e951892a","construidoEn":"2026-09-24T07:08:49.162Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}

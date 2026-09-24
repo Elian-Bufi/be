@@ -1,0 +1,105 @@
+{
+  "web": "https://be-web-1ngj.onrender.com",
+  "pasos": [
+    {
+      "captura": "web-01-landing",
+      "descripcion": "La landing pública: qué es BE, qué hace por cada persona y lo que no hace",
+      "ruta": "/",
+      "momento": "2026-09-24T08:48:19.879Z"
+    },
+    {
+      "captura": "web-02-acceso",
+      "descripcion": "Iniciar sesión en el tema oscuro",
+      "ruta": "/login",
+      "momento": "2026-09-24T08:48:22.944Z"
+    },
+    {
+      "captura": "web-03-espacio-profesional",
+      "descripcion": "Una tarjeta por asesorado, con cada alcance y su estado; pedir un vínculo al costado",
+      "ruta": "/pro",
+      "momento": "2026-09-24T08:48:30.749Z"
+    },
+    {
+      "captura": "web-04-workspace",
+      "descripcion": "Header contextual y tarjetas de dominio con resumen factual, sin puntaje ni semáforo",
+      "ruta": "/pro/advisees",
+      "momento": "2026-09-24T08:48:34.684Z"
+    },
+    {
+      "captura": "web-05-nutricion-registros",
+      "descripcion": "Prescripto y registrado por día; un día sin registro dice «Sin registro», nunca cero",
+      "ruta": "/pro/advisees/nutrition",
+      "momento": "2026-09-24T08:48:39.389Z"
+    },
+    {
+      "captura": "web-06-figura",
+      "descripcion": "La toma sobre la figura: 8,5 mm y 31 mm se ven igual; la figura ubica, no califica (sin guardar)",
+      "ruta": "/pro/advisees/anthropometry",
+      "momento": "2026-09-24T08:48:53.798Z"
+    },
+    {
+      "captura": "web-06-figura-detalle",
+      "descripcion": "La figura de cerca: el pliegue es un punto, el perímetro un anillo; lleno si tiene dato",
+      "ruta": "/pro/advisees/anthropometry",
+      "momento": "2026-09-24T08:48:54.523Z"
+    },
+    {
+      "captura": "web-07-landing-celular",
+      "descripcion": "La landing a 390 px, sin desborde",
+      "ruta": "/",
+      "momento": "2026-09-24T08:48:57.638Z"
+    }
+  ],
+  "observaciones": {
+    "registros": {
+      "diasSinRegistro": 17
+    },
+    "figura": {
+      "protocoloInicial": "Pliegues y perímetros (demostración)",
+      "protocolo": "Pliegues y perímetros (demostración)",
+      "puntos": 14,
+      "cargados": [
+        "Pliegue tricipital: cargado",
+        "Pliegue subescapular: cargado"
+      ],
+      "rellenos": [
+        "rgb(23, 69, 154)"
+      ],
+      "fueraDelProtocolo": []
+    }
+  },
+  "red": [
+    "POST /api/v1/auth/sessions 201",
+    "GET /api/v1/me 200",
+    "GET /api/v1/me/health-data-consent-requirement 200",
+    "GET /api/v1/me 200",
+    "GET /api/v1/me/relationship-requests 200",
+    "GET /api/v1/me/relationships 200",
+    "GET /api/v1/me 200",
+    "GET /api/v1/advisees/{id}/dashboard 200",
+    "GET /api/v1/me/relationships 200",
+    "GET /api/v1/me 200",
+    "GET /api/v1/advisees/{id}/nutrition/evaluations 200",
+    "GET /api/v1/advisees/{id}/nutrition/objectives 200",
+    "GET /api/v1/advisees/{id}/nutrition/plans 200",
+    "GET /api/v1/advisees/{id}/nutrition/review-context 200",
+    "GET /api/v1/advisees/{id}/nutrition/review-context 200",
+    "POST /api/v1/auth/sessions 201",
+    "GET /api/v1/me 200",
+    "GET /api/v1/me/health-data-consent-requirement 200",
+    "GET /api/v1/me 200",
+    "GET /api/v1/me/relationship-requests 200",
+    "GET /api/v1/me/relationships 200",
+    "GET /api/v1/me 200",
+    "GET /api/v1/me/relationships 200",
+    "GET /api/v1/advisees/{id}/dashboard 200",
+    "GET /api/v1/me 200",
+    "GET /api/v1/advisees/{id}/anthropometry/evaluations 200",
+    "GET /api/v1/anthropometry/evaluations/{id} 200",
+    "GET /api/v1/professional-methods 200",
+    "GET /api/v1/advisees/{id}/calculations 200",
+    "GET /api/v1/anthropometry/specifications 200",
+    "GET /api/v1/advisees/{id}/anthropometry/evaluation-drafts 200"
+  ],
+  "hallazgos": []
+}

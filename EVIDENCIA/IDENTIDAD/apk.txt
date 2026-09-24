@@ -1,0 +1,41 @@
+APK 0.9.0 — identidad y control de secretos (07 §34, RNF-PORT-001, TEST-APK-008; 08 §32)
+
+Build EAS: 6090e7d0-1431-42a9-83b5-76d305ba2d1a (perfil test)
+Commit:    fd08380f5e1a901bc3530f7fc93ee672e606ca3b
+Versión:   0.9.0 · versionCode 10
+Artefacto: be-0.9.0-fd08380.apk
+SHA-256:   021af7b1a21f5ac90b342000f5f5f23e0f818a0256d345d5e033c6cf82e4551d
+Tamaño:    69700858 bytes
+API:       https://be-api-hndp.onrender.com (API_BASE_URL del perfil test en eas.json)
+
+La configuración embebida (assets/app.config) declara lo que la app muestra en pantalla:
+  version 0.9.0 · versionCode 10 · appEnv test · apiBaseUrl https://be-api-hndp.onrender.com
+  commit fd08380f5e1a901bc3530f7fc93ee672e606ca3b · construidoEn 2026-09-24T07:27:25.475Z
+  userInterfaceStyle dark · backgroundColor #04213F (el tema oscuro del tramo E)
+
+Por qué hay una 0.9.0: el tema oscuro, el isotipo y el ícono nuevos del tramo de identidad visual, y los
+cambios de la consolidación, que no tuvo APK propia (0.8.0). Es el mismo commit que la API y el website
+desplegados en test. Se construyó con el árbol de trabajo limpio, desde `main`.
+
+Búsqueda de secretos (cantidad de coincidencias, se espera 0 en todas). Se revisan los dos archivos del APK que
+llevan código o configuración: el bundle (bytecode de Hermes) y assets/app.config. Las contraseñas y los correos
+de las cuentas demo se leen de .env.cuentas-demo y solo se cuentan, nunca se imprimen.
+                      bundle   app.config
+  JWT_SECRET          0        0
+  secreto local       0        0
+  token bearer        0        0
+  contraseña demo     0        0
+  correo demo         0        0
+
+El copy nuevo está en el bundle. Hermes guarda en UTF-16 las cadenas que llevan un carácter no ASCII (como «·»),
+así que se buscan codificadas en UTF-16; una búsqueda de bytes ASCII daría 0 aunque estén.
+  «Better Everyday»      1   (la bienvenida: «BE · Better Everyday»)
+  «Ambiente de prueba»   3
+Las cadenas que se buscan en el control de secretos son todas ASCII, así que ese control no tiene esa limitación.
+
+Descarga anónima del release permanente (sin credenciales de GitHub):
+https://github.com/Elian-Bufi/be/releases/download/be-apk-0.9.0/be-0.9.0-fd08380.apk
+SHA-256 esperado:   021af7b1a21f5ac90b342000f5f5f23e0f818a0256d345d5e033c6cf82e4551d
+SHA-256 descargado: 021af7b1a21f5ac90b342000f5f5f23e0f818a0256d345d5e033c6cf82e4551d (coincide)
+
+El artefacto de EAS expira el 2026-10-08; el release de GitHub es permanente.
