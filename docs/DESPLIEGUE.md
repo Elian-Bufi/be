@@ -1,6 +1,6 @@
 # DESPLIEGUE — ambiente `test`
 
-> Runbook de WP-01, actualizado en WP-02 y WP-03. Arquitectura: 07 §26–§39. Decisiones: `DECISIONES_TECNICAS.md` §3. Desvíos: `DEUDA_LEGAJO.md` DL-006, DL-007, DL-008 y DL-030.
+> Runbook de WP-01, actualizado en WP-02, WP-03 y al cierre de la entrega (APK vigente y vencimiento de la base). Arquitectura: 07 §26–§39. Decisiones: `DECISIONES_TECNICAS.md` §3. Desvíos: `DEUDA_LEGAJO.md` DL-006, DL-007, DL-008 y DL-030.
 > **Solo datos sintéticos.** Render no recibe datos reales mientras G-Q008-1, G-Q008-2 y el gate 08 §42 estén abiertos.
 
 ## Flujo
@@ -26,7 +26,7 @@ local, con sesión de EAS ─► npx eas-cli build --platform android --profile 
 |---|---|
 | API | `https://be-api-hndp.onrender.com` (`/health`, `/health/live`, `/health/ready`) |
 | Website | `https://be-web-1ngj.onrender.com` |
-| APK | **vigente:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.3.0/be-0.3.0-08cdd08.apk` (WP-03, release permanente; EAS `339436c0…` expira 2026-10-03) · anteriores: `be-apk-0.2.0/be-0.2.0-8256951.apk` (WP-02) y `be-apk-0.1.0/be-0.1.0-fd3ed53.apk` (WP-01) |
+| APK | **vigente:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.9.0/be-0.9.0-fd08380.apk` (0.9.0, identidad visual; release permanente, SHA-256 en `EVIDENCIA/IDENTIDAD/apk.txt`; el artefacto de EAS `6090e7d0…` expira 2026-10-08). La landing enlaza `releases/latest`, que es siempre la vigente · anteriores, todas en releases permanentes `be-apk-x.y.z`: `be-0.7.0-e0e0cc9.apk` (WP-07), `be-0.6.0-c50fdd9.apk` (WP-06), `be-0.5.1-0193a3d.apk` y `be-0.5.0-921063a.apk` (WP-05), `be-0.4.0-7b21cc7.apk` (WP-04), `be-0.3.0-08cdd08.apk` (WP-03), `be-0.2.0-8256951.apk` (WP-02) y `be-0.1.0-fd3ed53.apk` (WP-01). La 0.8.0 (consolidación) no tuvo APK propia: sus cambios salieron en la 0.9.0 |
 
 Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían a terceros, así que Render agrega sufijos. Qué depende de cada URL:
 
@@ -114,5 +114,8 @@ La primera respuesta puede tardar alrededor de 30 segundos: el plan gratuito apa
 ## Límites del plan gratuito
 
 - La API se apaga después de 15 minutos sin tráfico. Antes de una demo, abrir `/health/ready` unos minutos antes.
-- `be-db-test` expira a los 30 días de creada, con 14 días de gracia.
+- `be-db-test` expira a los 30 días de creada, con 14 días de gracia. Se creó con el primer Blueprint, alrededor del 2026-09-18: **vence cerca del 2026-10-18**. La fecha exacta está en el dashboard de Render. Si la defensa es después, hay que pasarla a un plan pago o recrearla. Una base recreada arranca vacía: las migraciones corren solas al arrancar la API, pero las cuentas demo y sus datos se vuelven a crear. Eso incluye:
+  - registrar las cuentas por la API pública;
+  - cargar sus identificadores nuevos en `BE_DEMO_PROFESIONALES`, con un PR solo de configuración;
+  - rehacer los vínculos, los planes y los registros del escenario.
 - No hay pre-deploy command (DL-006).
