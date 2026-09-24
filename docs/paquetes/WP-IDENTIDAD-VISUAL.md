@@ -1,6 +1,6 @@
 # Tramo de identidad visual y accesibilidad — definición
 
-> **Estado:** ABIERTO el 2026-09-24. Esta definición queda registrada en `main` antes del primer commit de código.
+> **Estado:** **CERRADO** el 2026-09-24. Definición en `main` antes del código (PR #73); tramos A, B, C y E en el PR #74; D y F, con la versión 0.9.0, en el PR de cierre. Defensa en `DEFENSA/IDENTIDAD.md`, evidencia en `EVIDENCIA/IDENTIDAD/`. El tramo E se integró con A, B y C —no aparte, como decía §9— porque la prueba de contraste cubre las dos superficies y no podía quedar a medias.
 > **Autorización.** Es el paso 3 del plan que Dirección eligió el 2026-09-22 («consolidar y pulir»: cerrar WP-07, consolidar, **identidad visual y landing pública**, cierre de entrega), y ejecuta dos decisiones que Dirección ya tomó:
 > - **2026-09-21 — identidad visual.** La paleta la elige el ejecutor «con criterio de accesibilidad (WCAG AA)», inspirada en las referencias que mandó Dirección (tema oscuro, degradé azul, isotipo nuevo); se suma una **landing pública**; y «habrá que pulir cada apartado profesional bastante y bien».
 > - **2026-09-20 — toma antropométrica (DL-073, opción A).** La carga sobre la figura entra en «un paquete de refinamiento de UI posterior al circuito funcional», con tema **claro y azul**.
