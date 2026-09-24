@@ -16,7 +16,7 @@ export interface Periodo {
   readonly periodEnd?: string;
 }
 
-/** Lo mismo que exigen las API de revisión y evolución (API-TRN-21, API-NUT-17, API-ANT-06): hasta 92 días. */
+/** Lo mismo que exigen las API de revisión y evolución (API-TRN-21, API-NUT-17, API-ANT-06): hasta 92 días inclusivos. */
 const DIAS_MAXIMOS = 92;
 const hoyLocal = (): string => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
 const dias = (desde: string, hasta: string): number => (new Date(`${hasta}T12:00:00Z`).getTime() - new Date(`${desde}T12:00:00Z`).getTime()) / 86_400_000;

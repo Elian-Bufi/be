@@ -543,15 +543,16 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
         {parametros.map((q, i) => (
           <div key={i} className="fila-de-dato">
             <Campo id={`${id}-param-${i}-etiqueta`} etiqueta="Parámetro" value={q.label} onChange={(e) => onCambiar({ professionalParameters: parametros.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} maxLength={60} />
-            <Campo
+            {/* Un parámetro puede ser texto o número; el número se escribe y se muestra con coma (DL-091 punto 4). El campo
+                guarda el texto tal como se escribe: si mostrara el número interpretado, «1,0» se volvería «1» y «1,05» no
+                se podría escribir. */}
+            <CampoInterpretado
               id={`${id}-param-${i}-valor`}
               etiqueta="Valor"
-              // Un parámetro puede ser texto o número; el número se escribe y se muestra con coma (DL-091 punto 4).
-              value={typeof q.value === 'number' ? numeroEnCampo(q.value) : q.value}
-              onChange={(e) => {
-                const v = e.target.value;
-                onCambiar({ professionalParameters: parametros.map((x, j) => (j === i ? { ...x, value: leerNumero(v) ?? v } : x)) });
-              }}
+              valor={q.value}
+              formatear={(v) => (typeof v === 'number' ? numeroEnCampo(v) : v)}
+              interpretar={(s) => leerNumero(s) ?? s}
+              onCambiar={(v) => onCambiar({ professionalParameters: parametros.map((x, j) => (j === i ? { ...x, value: v } : x)) })}
               maxLength={120}
             />
             <Campo id={`${id}-param-${i}-unidad`} etiqueta="Unidad (si es un número)" value={q.unit ?? ''} onChange={(e) => onCambiar({ professionalParameters: parametros.map((x, j) => (j === i ? { ...x, unit: e.target.value || null } : x)) })} maxLength={20} />

@@ -16,6 +16,7 @@ import {
   ETIQUETA_DE_PREPARACION,
   ETIQUETA_DE_UNIDAD,
   leerNumero,
+  motivoDeNumeroIlegible,
   type ElementoDeCatalogo,
   type EstructuraDePlanEntrada,
   type ValidationIssue,
@@ -128,6 +129,10 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   /** Guarda (PATCH) y devuelve la versión nueva, o `null` si falló. */
   async function guardar(): Promise<VersionDePlan | null> {
     if (!version) return null;
+    if (hayCantidadesIlegibles(estructura)) {
+      setMensaje({ tipo: 'error', texto: 'Hay cantidades que no se entienden. Corregí los campos marcados antes de guardar.' });
+      return null;
+    }
     setGuardando(true);
     setMensaje(null);
     const actualizarObjetivo = objetivoVigente && objetivoVigente !== version.objectiveVersionId ? { objectiveVersionId: objetivoVigente } : {};
@@ -331,6 +336,11 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   );
 }
 
+/** Una cantidad escrita que no es un número queda como NaN en la estructura (ver `FilaDeItem`). */
+function hayCantidadesIlegibles(e: Estructura): boolean {
+  return e.some((d) => d.meals.some((m) => m.options.some((o) => o.items.some((i) => i.quantity !== null && Number.isNaN(i.quantity.value)))));
+}
+
 function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: string; item: Item; nombre: string; onCambiar: (c: Partial<Item>) => void; onQuitar: () => void }) {
   const magnitud = item.quantity;
   /**
@@ -344,7 +354,7 @@ function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: string; ite
     setEscrito((t) => (numeroEnCampo(leerNumero(t)) === externo ? t : externo));
   }, [externo]);
   // Lo que no es un número se señala en el campo, en vez de guardarse como cero en silencio (B10-10:164-165).
-  const error = escrito.trim() !== '' && leerNumero(escrito) === null ? 'Escribí la cantidad como número: «150» o «72,5».' : null;
+  const error = escrito.trim() !== '' && leerNumero(escrito) === null ? motivoDeNumeroIlegible(escrito) : null;
 
   return (
     <li className="fila-de-item">
@@ -359,7 +369,9 @@ function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: string; ite
           setEscrito(e.target.value);
           const n = leerNumero(e.target.value);
           if (e.target.value.trim() === '') return onCambiar({ quantity: null });
-          if (n !== null) onCambiar({ quantity: { value: n, unit: magnitud?.unit ?? 'g' } });
+          // Lo que no se entiende viaja como NaN, igual que en entrenamiento: el guardado se niega y lo señala, en
+          // vez de guardar en silencio el último número válido que había en el campo.
+          onCambiar({ quantity: { value: n ?? Number.NaN, unit: magnitud?.unit ?? 'g' } });
         }}
       />
       <div className="campo">
@@ -421,7 +433,7 @@ function BuscadorDeCatalogo({ id, onElegir }: { id: string; onElegir: (e: Elemen
       ['g', nuevo.g],
     ] as const) {
       const n = leerNumero(texto);
-      if (n === null) problemas[clave] = 'Escribí el valor cada 100 g como número: «120» o «4,5».';
+      if (n === null) problemas[clave] = texto.trim() === '' ? 'Falta el valor cada 100 g.' : motivoDeNumeroIlegible(texto);
       else if (n < 0) problemas[clave] = 'El valor no puede ser menor que cero.';
       else valores[clave] = n;
     }

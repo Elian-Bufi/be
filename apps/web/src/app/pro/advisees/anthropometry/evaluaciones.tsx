@@ -9,7 +9,7 @@
  *
  * Lo medido, lo informado y lo calculado se muestran distinguidos siempre (04:1090).
  */
-import { cantidad, COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, leerNumero, type EvaluacionAntropometricaApi, type Medicion } from '@be/domain';
+import { cantidad, COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, leerNumero, motivoDeNumeroIlegible, type EvaluacionAntropometricaApi, type Medicion } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -128,7 +128,7 @@ function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; on
   async function corregir() {
     // `leerNumero` acepta coma o punto y devuelve `null` si no es un número (DL-091 punto 4).
     const nuevo = leerNumero(valor);
-    if (nuevo === null) return setErrorDeValor('Escribí el valor como número: «72,5» o «72.5».');
+    if (nuevo === null) return setErrorDeValor(motivoDeNumeroIlegible(valor));
     setErrorDeValor(null);
     setEnviando(true);
     // La corrección es de la evaluación, y la medición es el objetivo declarado en el cuerpo (09v11 §9).

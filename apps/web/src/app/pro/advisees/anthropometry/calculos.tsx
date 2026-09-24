@@ -14,7 +14,7 @@
  * - cada corrida muestra **método, versión, regla y precisión declarada**, que es lo que la vuelve reproducible
  *   (REG-06-156/158).
  */
-import { cantidad, COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
+import { cantidad, COPY_ANTROPOMETRIA, numeroConPrecision, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
@@ -122,7 +122,8 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
   return (
     <div className="nodo nodo--comida">
       <h4>
-        {corrida.result.metric}: {cantidad(corrida.result.magnitude.value, corrida.result.magnitude.unit)}{' '}
+        {/* Con la precisión que declara el método, aunque termine en cero (REG-06-158: sin redondeo silencioso). */}
+        {corrida.result.metric}: {numeroConPrecision(corrida.result.magnitude.value, corrida.precision.decimals)} {corrida.result.magnitude.unit}{' '}
         <span className="insignia">{ETIQUETA_DE_CLASE_DE_DATO.DERIVED}</span>
         {corrida.evaluationContext === 'IN_PREPARATION' ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoEnPreparacion}</span></> : null}
         {!corrida.effective ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoNoVigente}</span></> : null}

@@ -12,6 +12,7 @@ import {
   COPY_NUTRICION,
   ETIQUETA_DE_FUENTE,
   leerNumero,
+  motivoDeNumeroIlegible,
   type CrearEvaluacionRequest,
   type CrearObjetivoRequest,
   type EvaluacionNutricional,
@@ -185,11 +186,13 @@ export function erroresDeObjetivo(v: ValoresDeObjetivo, prefijo: string): { id: 
   // `leerNumero` acepta coma o punto y devuelve `null` cuando no es un número: nunca NaN (DL-091 punto 4).
   const positivo = (s: string) => (leerNumero(s) ?? 0) > 0;
   const noNegativo = (s: string) => (leerNumero(s) ?? -1) >= 0;
+  // Si hay algo escrito que no se entiende, el aviso dice por qué —«1.850» es ambiguo— en vez de pedir el dato otra vez.
+  const aviso = (s: string, falta: string) => (s.trim() !== '' && leerNumero(s) === null ? motivoDeNumeroIlegible(s) : falta);
   if (!v.evaluacionId) e.push({ id: `${prefijo}-evaluacion`, texto: 'Elegí la evaluación de referencia.' });
-  if (!positivo(v.kcal)) e.push({ id: `${prefijo}-kcal`, texto: 'Indicá el requerimiento energético (kcal por día).' });
-  if (!noNegativo(v.proteina)) e.push({ id: `${prefijo}-proteina`, texto: 'Indicá las proteínas (g por día).' });
-  if (!noNegativo(v.carbohidratos)) e.push({ id: `${prefijo}-carbohidratos`, texto: 'Indicá los carbohidratos (g por día).' });
-  if (!noNegativo(v.grasas)) e.push({ id: `${prefijo}-grasas`, texto: 'Indicá las grasas (g por día).' });
+  if (!positivo(v.kcal)) e.push({ id: `${prefijo}-kcal`, texto: aviso(v.kcal, 'Indicá el requerimiento energético (kcal por día).') });
+  if (!noNegativo(v.proteina)) e.push({ id: `${prefijo}-proteina`, texto: aviso(v.proteina, 'Indicá las proteínas (g por día).') });
+  if (!noNegativo(v.carbohidratos)) e.push({ id: `${prefijo}-carbohidratos`, texto: aviso(v.carbohidratos, 'Indicá los carbohidratos (g por día).') });
+  if (!noNegativo(v.grasas)) e.push({ id: `${prefijo}-grasas`, texto: aviso(v.grasas, 'Indicá las grasas (g por día).') });
   if (!v.fundamento.trim()) e.push({ id: `${prefijo}-fundamento`, texto: 'El fundamento es obligatorio.' });
   return e;
 }

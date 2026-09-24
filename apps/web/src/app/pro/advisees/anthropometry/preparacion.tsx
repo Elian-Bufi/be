@@ -9,7 +9,7 @@
  * - cada medición declara protocolo, unidad de origen y cómo se obtuvo: medido, reportado o importado. La **clase**
  *   del dato se deriva del origen, no la elige quien carga (04:1090).
  */
-import { COPY_ANTROPOMETRIA, ETIQUETA_DE_ORIGEN, leerNumero, type Especificacion } from '@be/domain';
+import { COPY_ANTROPOMETRIA, ETIQUETA_DE_ORIGEN, leerNumero, motivoDeNumeroIlegible, type Especificacion } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -142,7 +142,7 @@ function Preparacion({
       if (!f.metric.trim()) problemas[`ant-metrica-${i}`] = 'Falta la métrica.';
       if (!f.value.trim()) problemas[`ant-valor-${i}`] = 'Falta el valor.';
       // `leerNumero` acepta coma o punto y devuelve `null` si no es un número (DL-091 punto 4).
-      else if (leerNumero(f.value) === null) problemas[`ant-valor-${i}`] = 'Escribí el valor como número: «72,5» o «72.5».';
+      else if (leerNumero(f.value) === null) problemas[`ant-valor-${i}`] = motivoDeNumeroIlegible(f.value);
       if (!f.unit.trim()) problemas[`ant-unidad-${i}`] = 'Falta la unidad.';
     });
     setErrores(problemas);
@@ -263,7 +263,12 @@ function Preparacion({
               maxLength={24}
               error={errores[`ant-unidad-${i}`] ?? null}
             />
-            <button type="button" className="boton boton--enlace" onClick={() => setFilas((xs) => xs.filter((x) => x.clave !== f.clave))}>
+            <button type="button" className="boton boton--enlace" onClick={() => {
+                // Los avisos van por posición: al quitar una fila las demás se corren, así que se descartan y se
+                // recalculan en el próximo guardado, en vez de quedar pegados a la fila equivocada.
+                setErrores({});
+                setFilas((xs) => xs.filter((x) => x.clave !== f.clave));
+              }}>
               {COPY_ANTROPOMETRIA.quitarMedicion}
             </button>
           </div>

@@ -9,7 +9,7 @@
  * - Una comida fuera del plan se estructura como «Estimación profesional»: la descripción original queda en solo
  *   lectura y se conserva (INV-06-131). El botón dice «Agregar estimación», no «Corregir lo que comió».
  */
-import { cantidad, COPY_NUTRICION, ETIQUETA_DE_UNIDAD, leerNumero, type ContextoDeRevisionResponse, type ElementoDeCatalogo, type Ingesta } from '@be/domain';
+import { cantidad, COPY_NUTRICION, ETIQUETA_DE_UNIDAD, leerNumero, motivoDeNumeroIlegible, type ContextoDeRevisionResponse, type ElementoDeCatalogo, type Ingesta } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -153,7 +153,8 @@ function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () =
     if (!descripcion.trim()) problemas.descripcion = 'Describí lo que estimás.';
     // `leerNumero` acepta coma o punto y devuelve `null` si no es un número (DL-091 punto 4).
     const g = gramos.trim() === '' ? null : leerNumero(gramos);
-    if (gramos.trim() !== '' && !(g !== null && g > 0)) problemas.gramos = 'La cantidad tiene que ser un número mayor que cero.';
+    if (gramos.trim() !== '' && g === null) problemas.gramos = motivoDeNumeroIlegible(gramos);
+    else if (g !== null && !(g > 0)) problemas.gramos = 'La cantidad tiene que ser mayor que cero.';
     setErrores(problemas);
     if (problemas.descripcion || problemas.gramos) return setFallo(null);
     setEnviando(true);

@@ -341,6 +341,17 @@ describe('TEST-ANT-009 · adversarial 7: la serie no miente (REG-06-165/166; INV
     expect(serie.body.data.honesty).toEqual({ interpolated: false, imputed: false, carriedForward: false });
   });
 
+  it('la serie no se corta en silencio: un período de más de 92 días es 400 PERIOD_TOO_LONG, no una serie truncada', async () => {
+    // Antes la API aceptaba cualquier período y la serie se detenía en el día 92 mientras `period` informaba el rango
+    // entero: lo que caía después desaparecía sin figurar siquiera como hueco (hallazgo de la revisión de DL-091).
+    const c = await circuitoAntropometrico(app, prisma, 'periodo-largo');
+    const base = `/api/v1/advisees/${c.ase.id}/anthropometry/progress`;
+    const r = await conSesion(app, c.pro.token).get(`${base}?periodStart=2026-01-01&periodEnd=2026-04-30`).expect(400);
+    expect(r.body.error.details.issues).toEqual([{ code: 'PERIOD_TOO_LONG', path: 'periodEnd' }]);
+    // 92 días exactos, inclusivos, siguen siendo válidos.
+    await conSesion(app, c.pro.token).get(`${base}?periodStart=2026-01-01&periodEnd=2026-04-02`).expect(200);
+  });
+
   it('INV-06-177 · una medición de la tarde del último día del período aparece, no sale «sin dato»', async () => {
     // El período llega en fechas locales y los puntos se ubican en fechas locales: si la ventana se recortara en UTC,
     // las horas de la tarde del último día quedarían afuera y el día se vería como un hueco que no existe.
