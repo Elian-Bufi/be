@@ -612,3 +612,34 @@ details summary {
     display: block;
   }
 }
+
+/* Tarjetas de dominio del Resumen (B10-08 §10). Sin color de estado: el legajo prohíbe semáforo y color de riesgo. */
+.tarjetas-de-dominio {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.5rem 0 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+.tarjeta-de-dominio {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: var(--fondo-suave);
+}
+
+.tarjeta-de-dominio h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.tarjeta-de-dominio .datos dt {
+  min-width: 100%;
+  font-size: 0.9rem;
+  color: var(--tenue);
+  font-weight: 600;
+}
+
+.tenue {
+  color: var(--tenue);
+}
