@@ -11,7 +11,7 @@ import { codificarOcurrencia } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
-import { prepararAsesorado, prepararProfesional, revocarB2, vinculoCompleto } from './soporte-vinculo';
+import { a3Vigente, prepararAsesorado, prepararProfesional, revocarB2, vinculoCompleto } from './soporte-vinculo';
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { ProcesoService } from '../../apps/api/src/proceso/proceso.service';
 import {
@@ -1197,5 +1197,76 @@ describe('Cierre de WP-06 · contrato y dominio', () => {
     expect((await leer(con.body.data.evaluationId)).body.data.context).toBe('Consulta inicial, previa al bloque.');
     const sin = await conSesion(app, c.pro.token).post(evaluaciones(c.ase.id)).send(cuerpoDeEvaluacionDeEntrenamiento()).expect(201);
     expect((await leer(sin.body.data.evaluationId)).body.data.context).toBeNull();
+  });
+});
+
+describe('DL-089 opción A · revocado el consentimiento, el asesorado conserva su propia historia', () => {
+  /** Un circuito con una ejecución ya registrada por el titular. */
+  async function conHistoria(etiqueta: string) {
+    const c = await circuitoConPlanDeEntrenamientoActivo(app, `${etiqueta}-${++contador}`);
+    const [a] = (await hoyDe(c.ase.token).expect(200)).body.data.occurrences;
+    const b = (await borradorDe(c.ase.token, a.occurrenceId).expect(201)).body.data;
+    const v = (
+      await guardar(c.ase.token, b.draftId, b.version, {
+        granularity: 'SET',
+        sessionCondition: 'COMPLETED',
+        exercises: [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets: [serie(1, 80)] }],
+      }).expect(200)
+    ).body.data;
+    const conf = await confirmar(c.ase.token, b.draftId, v.version).expect(201);
+    return { ...c, executionId: conf.body.data.executionId as string };
+  }
+
+  it('08:58 y 08:199 · revocado el B2, el titular sigue leyendo su ejecución registrada y su plan activado; el profesional, no', async () => {
+    const x = await conHistoria('dl089-b2');
+    await revocarB2(app, x.ase, x.consentId).expect(200);
+
+    // El titular conserva su historia: la ejecución que registró y el plan tal como lo aceptó.
+    const eje = await conSesion(app, x.ase.token).get(`/api/v1/training/executions/${x.executionId}`).expect(200);
+    expect(eje.body.data.executionId).toBe(x.executionId);
+    await conSesion(app, x.ase.token).get(`/api/v1/training/plans/${x.planId}`).expect(200);
+    const lista = await conSesion(app, x.ase.token).get(`/api/v1/advisees/${x.ase.id}/training/plans`).expect(200);
+    expect(lista.body.data.map((v: { planId: string }) => v.planId)).toContain(x.planId);
+
+    // El profesional deja de ver: el mismo 404 no revelador de siempre (TEST-AUTH-005).
+    await conSesion(app, x.pro.token).get(`/api/v1/training/executions/${x.executionId}`).expect(404);
+    await conSesion(app, x.pro.token).get(`/api/v1/training/plans/${x.planId}`).expect(404);
+  });
+
+  it('UC-P17 E03 · lo que opera sobre el plan vigente sigue bajo el PDP del profesional: «Hoy» es NOT_AVAILABLE y no se puede corregir', async () => {
+    const x = await conHistoria('dl089-opera');
+    await revocarB2(app, x.ase, x.consentId).expect(200);
+    const hoy = await hoyDe(x.ase.token).expect(200);
+    expect(hoy.body.data).toMatchObject({ planState: 'NOT_AVAILABLE', activePlan: null, occurrences: [] });
+    await conSesion(app, x.ase.token)
+      .post(`/api/v1/training/executions/${x.executionId}/corrections`)
+      .send({
+        reason: 'Cargué mal la carga.',
+        correction: {
+          granularity: 'SET',
+          sessionCondition: 'COMPLETED',
+          reason: null,
+          exercises: [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets: [serie(1, 60)] }],
+          sessionSummary: null,
+        },
+      })
+      .expect(404);
+  });
+
+  it('08:406 · revocado el A3, se suspende también lo propio: la historia deja de leerse', async () => {
+    const x = await conHistoria('dl089-a3');
+    const a3 = await a3Vigente(app, x.ase.token);
+    await conSesion(app, x.ase.token).post(`/api/v1/me/health-data-consents/${a3}/revoke`).send({}).expect(200);
+    await conSesion(app, x.ase.token).get(`/api/v1/training/executions/${x.executionId}`).expect(403);
+    await conSesion(app, x.ase.token).get(`/api/v1/training/plans/${x.planId}`).expect(403);
+    await conSesion(app, x.ase.token).get(`/api/v1/advisees/${x.ase.id}/training/plans`).expect(403);
+  });
+
+  it('DL-057 · conservar la historia propia no abre nada de otro: un borrador ajeno sigue siendo 404', async () => {
+    const x = await conHistoria('dl089-ajeno');
+    const otro = await prepararAsesorado(app, `dl089-otro-${++contador}`);
+    await revocarB2(app, x.ase, x.consentId).expect(200);
+    await conSesion(app, otro.token).get(`/api/v1/training/executions/${x.executionId}`).expect(404);
+    await conSesion(app, otro.token).get(`/api/v1/training/plans/${x.planId}`).expect(404);
   });
 });
