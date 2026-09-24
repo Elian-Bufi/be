@@ -17,8 +17,12 @@ export const LICENCIA_DE_OPEN_FOOD_FACTS: LicenciaExterna = {
   attribution: 'Colaboradores de Open Food Facts',
 };
 
-/** Los campos que se piden: solo los que se revisan (minimización, 08). */
-const CAMPOS = 'code,product_name,product_name_es,generic_name,generic_name_es,nutriments,nutrition_data_per,product_quantity_unit';
+/**
+ * Los campos que se piden: solo los que se revisan (minimización, 08). `quantity` y `product_quantity` van aunque no se
+ * muestran: Open Food Facts deriva `product_quantity_unit` de ellos y, si no se piden, no la devuelve —y sin la unidad
+ * del envase no se puede ver que un «100g» es dudoso en un líquido— (verificado el 2026-09-24 con 5449000000996).
+ */
+const CAMPOS = 'code,product_name,product_name_es,generic_name,generic_name_es,nutriments,nutrition_data_per,quantity,product_quantity,product_quantity_unit';
 
 export type ResultadoDeOpenFoodFacts =
   | { readonly encontrado: true; readonly candidato: AlimentoCandidato; readonly respuesta: RespuestaDelProveedor; readonly licencia: LicenciaExterna }
