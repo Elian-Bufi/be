@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { IntegracionesModule } from '../integraciones/integraciones.module';
 import { SesionModule } from '../sesion/sesion.module';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
 import { EjecucionesDeEntrenamientoService } from './ejecuciones.service';
 import { EjecutorDeEntrenamiento } from './ejecutor';
 import { EntrenamientoController } from './entrenamiento.controller';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
+import { ImportacionDeEjerciciosService } from './importacion.service';
 import { PlanesDeEntrenamientoService } from './planes.service';
 import { RevisionesDeEntrenamientoService } from './revisiones.service';
 
@@ -13,7 +15,7 @@ import { RevisionesDeEntrenamientoService } from './revisiones.service';
  * (ProcesoModule) son globales: este módulo no decide autorización ni gestiona el ciclo del Proceso por su cuenta.
  */
 @Module({
-  imports: [SesionModule],
+  imports: [SesionModule, IntegracionesModule],
   controllers: [EntrenamientoController],
   providers: [
     EjecutorDeEntrenamiento,
@@ -22,6 +24,7 @@ import { RevisionesDeEntrenamientoService } from './revisiones.service';
     PlanesDeEntrenamientoService,
     EjecucionesDeEntrenamientoService,
     RevisionesDeEntrenamientoService,
+    ImportacionDeEjerciciosService,
   ],
 })
 export class EntrenamientoModule {}

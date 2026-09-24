@@ -133,8 +133,8 @@ export class CatalogoService {
     return new Map(filas.map((f) => [f.elementoId, { versionId: f.versionId, name: f.nombre, composition: f.composicion }]));
   }
 
-  /** Solo un profesional con Nutrición verificada y habilitada usa el catálogo nutricional. */
-  private async exigirProfesionalDeNutricion(cliente: Cliente, identidadId: string): Promise<void> {
+  /** Solo un profesional con Nutrición verificada y habilitada usa el catálogo nutricional (también para importar, WP-08). */
+  async exigirProfesionalDeNutricion(cliente: Cliente, identidadId: string): Promise<void> {
     const [fila] = await cliente.$queryRaw<{ ok: boolean }[]>`
       SELECT EXISTS (
         SELECT 1 FROM "verificacion_profesional" vp

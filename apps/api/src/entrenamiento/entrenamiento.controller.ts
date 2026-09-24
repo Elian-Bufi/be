@@ -9,13 +9,14 @@ import { actorDe, SesionGuard, type SolicitudAutenticada } from '../sesion/sesio
 import { CatalogoDeEjerciciosService } from './catalogo.service';
 import { EjecucionesDeEntrenamientoService } from './ejecuciones.service';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
+import { ImportacionDeEjerciciosService } from './importacion.service';
 import { PlanesDeEntrenamientoService } from './planes.service';
 import { RevisionesDeEntrenamientoService } from './revisiones.service';
 
 type Solicitud = SolicitudAutenticada & SolicitudConContexto;
 
 /**
- * Familia TRN (09v10), API-INT-TRN-01 (09v12) y la lectura por período (DL-078). AuthN SESSION en la demo sintética,
+ * Familia TRN (09v10), API-INT-TRN-01 a 03 (09v12; la importación de wger es WP-08) y la lectura por período (DL-078). AuthN SESSION en la demo sintética,
  * como NUT y ANT (08 §25). Ningún handler decide autorización: cada servicio invoca al PDP dentro de su transacción.
  * Las lecturas de datos de salud consumen el límite de consultas protegidas del actor.
  */
@@ -29,6 +30,7 @@ export class EntrenamientoController {
     private readonly ejecuciones: EjecucionesDeEntrenamientoService,
     private readonly revisiones: RevisionesDeEntrenamientoService,
     private readonly limitador: LimitadorService,
+    private readonly importacion: ImportacionDeEjerciciosService,
   ) {}
 
   // ─── Evaluación y objetivo (UC-P14) ─────────────────────────────────────────────────────────
@@ -129,6 +131,28 @@ export class EntrenamientoController {
   async crearEjercicio(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
     sinParametrosDeQuery(query);
     return responder(res, await this.catalogo.crear(actorDe(req), cuerpo, clave, contextoDe(req)));
+  }
+
+  // ─── Importación controlada de wger (UC-I07; WP-08) ─────────────────────────────────────────
+  /** API-INT-TRN-02. */
+  @Post('training/catalog-import-candidates')
+  async crearCandidato(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.importacion.crearCandidato(actorDe(req), cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-INT-TRN-03. */
+  @Post('training/catalog-import-candidates/:candidateId/resolve')
+  async resolverCandidato(
+    @Param('candidateId') candidateId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.importacion.resolver(actorDe(req), candidateId, cuerpo, clave, contextoDe(req)));
   }
 
   // ─── Ejecución del asesorado (UC-P17) ───────────────────────────────────────────────────────

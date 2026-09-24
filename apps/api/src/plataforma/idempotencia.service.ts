@@ -48,6 +48,15 @@ export class IdempotenciaService {
     return typeof clave === 'string' && /^[A-Za-z0-9._:-]{8,128}$/.test(clave);
   }
 
+  /**
+   * Si la clave ya tiene un resultado guardado, sin tomar el lock. Sirve para no repetir un I/O externo en un reintento
+   * (WP-08): la respuesta sale de lo guardado, y `ejecutar` sigue siendo quien decide con el lock tomado.
+   */
+  async yaRegistrada(params: { operacion: string; ambito: string; clave: string }): Promise<boolean> {
+    const previo = await this.prisma.registroDeIdempotencia.findUnique({ where: { operacion_ambito_clave: params }, select: { clave: true } });
+    return previo !== null;
+  }
+
   async ejecutar(
     params: { operacion: string; ambito: string; clave: string; huella: string },
     efecto: (tx: Prisma.TransactionClient) => Promise<ResultadoIdempotente>,

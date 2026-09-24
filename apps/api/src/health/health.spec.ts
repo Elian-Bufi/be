@@ -24,6 +24,7 @@ const ENTORNO = {
   saltosDeProxy: 1,
   caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
   demoProfesionales: [],
+  proveedores: { openFoodFactsUrl: 'http://127.0.0.1:9', wgerUrl: 'http://127.0.0.1:9', presupuestoMs: 1000 },
 };
 
 function directorioCon(migraciones: string[]): string {

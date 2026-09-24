@@ -94,6 +94,49 @@ export abstract class EjecutorDeDominio {
     );
   }
 
+  /**
+   * Escritura idempotente con una **preparación fuera de la transacción**: el I/O externo de la importación controlada
+   * (WP-08). «Ningún I/O externo ocurre dentro de las transacciones» (09v12:84): primero se consulta, después se abre la
+   * transacción que guarda.
+   * - La preparación corre después de validar el cuerpo y la clave, y solo si la clave todavía no tiene resultado: un
+   *   reintento se sirve de lo guardado, sin volver a consultar al proveedor.
+   * - Si otra request con la misma clave termina entre la consulta y el lock, `ejecutar` sirve la suya y este efecto no
+   *   corre: la consulta de más no deja rastro.
+   * - Un error de la preparación (el proveedor no responde, no conoce el identificador) se audita como cualquier rechazo.
+   */
+  async escribirIdempotenteConPreparacion<S extends EsquemaDeContrato, P>(
+    p: Comun & {
+      readonly clave: string | undefined;
+      readonly esquema: S;
+      readonly cuerpo: unknown;
+      readonly huellaExtra: Record<string, unknown>;
+      readonly preparar: (pedido: SalidaDe<S>) => Promise<P>;
+      readonly efecto: (tx: Tx, pedido: SalidaDe<S>, procedencia: Procedencia, preparado: P) => Promise<ResultadoDeEfecto>;
+    },
+  ): Promise<ResultadoIdempotente> {
+    const pedido = validarCuerpo(p.esquema, p.cuerpo);
+    if (!IdempotenciaService.claveValida(p.clave)) {
+      throw errores.solicitudInvalida([{ code: 'IDEMPOTENCY_KEY_REQUIRED', path: 'Idempotency-Key' }], { header: 'Idempotency-Key' });
+    }
+    const huella = IdempotenciaService.huella({ ...p.huellaExtra, pedido });
+    const procedencia = procedenciaDe(p.ctx, p.casoDeUso, p.operacion);
+    const clave = { operacion: p.operacion, ambito: p.actor.identidadId, clave: p.clave };
+    return this.conAuditoria(p, async () => {
+      const preparado = (await this.idempotencia.yaRegistrada(clave)) ? null : { valor: await p.preparar(pedido) };
+      return this.idempotencia.ejecutar({ ...clave, huella }, async (tx) => {
+        // Sin preparación solo se llega acá si el resultado guardado desapareció entre la consulta y el lock: no se hace
+        // I/O dentro de la transacción para reponerlo.
+        if (!preparado) throw errores.conflictoConcurrente();
+        const r = await p.efecto(tx, pedido, procedencia, preparado.valor);
+        await this.exito(tx, p, r);
+        return { estadoHttp: r.estadoHttp, cuerpo: r.cuerpo as Prisma.InputJsonValue };
+      }, {
+        capturar: (fn) => this.pdp.capturarDecisiones(fn),
+        reautorizar: (tx, decisiones) => this.pdp.reautorizar(tx, decisiones as readonly SolicitudDeDecision[], p.ctx),
+      });
+    });
+  }
+
   /** Escritura sin Idempotency-Key (PATCH con expectedVersion y validate, 09v9:1051-1068). */
   async escribir<S extends EsquemaDeContrato>(
     p: Comun & {

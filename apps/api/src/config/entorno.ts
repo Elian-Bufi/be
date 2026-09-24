@@ -4,7 +4,7 @@
  * falla y la plataforma conserva la versión anterior (07 §36).
  * Nunca se imprimen valores: solo nombres de variables (08 §32).
  */
-import { esAlcance, TipoDePerfilProfesional, type Alcance } from '@be/domain';
+import { esAlcance, PRESUPUESTO_DEL_PROVEEDOR_MS, TipoDePerfilProfesional, type Alcance } from '@be/domain';
 
 export const AMBIENTES = ['development', 'test', 'production'] as const;
 export type Ambiente = (typeof AMBIENTES)[number];
@@ -46,6 +46,20 @@ export interface Entorno {
    * Solo en `test` y `development`, identificados por su identidad ya registrada. Vacío por defecto.
    */
   readonly demoProfesionales: readonly ProfesionalDeDemostracion[];
+  /**
+   * WP-08 · los proveedores de la importación controlada (RF-028, RF-038). La URL base es configurable para que las
+   * pruebas usen un proveedor falso y la CI nunca dependa de un tercero (docs/paquetes/WP-08.md D-H).
+   */
+  readonly proveedores: ProveedoresExternos;
+}
+
+export interface ProveedoresExternos {
+  /** Origen https de Open Food Facts, sin ruta. Por defecto, el público. */
+  readonly openFoodFactsUrl: string;
+  /** Origen https de wger, sin ruta. Por defecto, el público. */
+  readonly wgerUrl: string;
+  /** Presupuesto de tiempo de cada consulta (D-E: 5 s, sin reintentos dentro de la request). */
+  readonly presupuestoMs: number;
 }
 
 export interface ProfesionalDeDemostracion {
@@ -120,6 +134,20 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
 
   const demoProfesionales = leerDemoProfesionales(env.BE_DEMO_PROFESIONALES, appEnv, errores);
 
+  // WP-08 D-H: el origen del proveedor es configurable (las pruebas usan un proveedor falso local); en producción
+  // tiene que ser https, y un origen local solo se admite fuera de producción.
+  const origenDeProveedor = (valor: string | undefined, porDefecto: string, nombre: string): string => {
+    const origen = (valor ?? porDefecto).replace(/\/+$/, '');
+    const esLocal = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origen);
+    if (!/^https:\/\/[a-z0-9.-]+(:\d+)?$/i.test(origen) && !(esLocal && appEnv !== 'production')) errores.push(`${nombre} debe ser un origen https sin ruta`);
+    return origen;
+  };
+  const proveedores: ProveedoresExternos = {
+    openFoodFactsUrl: origenDeProveedor(env.OPEN_FOOD_FACTS_BASE_URL, 'https://world.openfoodfacts.org', 'OPEN_FOOD_FACTS_BASE_URL'),
+    wgerUrl: origenDeProveedor(env.WGER_BASE_URL, 'https://wger.de', 'WGER_BASE_URL'),
+    presupuestoMs: PRESUPUESTO_DEL_PROVEEDOR_MS,
+  };
+
   if (errores.length > 0) {
     throw new Error(`Configuración inválida: ${errores.join('; ')}`);
   }
@@ -135,6 +163,7 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     saltosDeProxy: saltosDeProxy as number,
     caducidadDeSolicitudMs: (diasDeCaducidad ?? 30) * 24 * 60 * 60 * 1000,
     demoProfesionales,
+    proveedores,
   };
 }
 

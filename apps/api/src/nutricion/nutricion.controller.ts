@@ -8,6 +8,7 @@ import { LimitadorService } from '../plataforma/limitador.service';
 import { actorDe, SesionGuard, type SolicitudAutenticada } from '../sesion/sesion.guard';
 import { CatalogoService } from './catalogo.service';
 import { EvaluacionesService } from './evaluaciones.service';
+import { ImportacionNutricionalService } from './importacion.service';
 import { IngestasService } from './ingestas.service';
 import { PlanesService } from './planes.service';
 import { RevisionesService } from './revisiones.service';
@@ -15,7 +16,7 @@ import { RevisionesService } from './revisiones.service';
 type Solicitud = SolicitudAutenticada & SolicitudConContexto;
 
 /**
- * Familia NUT (09v9; CONS §11.2) y API-INT-NUT-01 (09v12). AuthN SESSION en la demo sintética (08 §25; WP-04 §4).
+ * Familia NUT (09v9; CONS §11.2) y API-INT-NUT-01 a 03 (09v12; la importación de Open Food Facts es WP-08). AuthN SESSION en la demo sintética (08 §25; WP-04 §4).
  * Ningún handler decide autorización: cada servicio invoca al PDP dentro de su transacción (EjecutorNutricional).
  * Las lecturas de datos de salud consumen el límite de consultas protegidas del actor, como API-DSH-03.
  */
@@ -29,6 +30,7 @@ export class NutricionController {
     private readonly ingestas: IngestasService,
     private readonly revisiones: RevisionesService,
     private readonly limitador: LimitadorService,
+    private readonly importacion: ImportacionNutricionalService,
   ) {}
 
   // ─── Evaluación y objetivo (UC-P09) ─────────────────────────────────────────────────────────
@@ -131,6 +133,27 @@ export class NutricionController {
     return responder(res, await this.catalogo.crear(actorDe(req), cuerpo, clave, contextoDe(req)));
   }
 
+  // ─── Importación controlada de Open Food Facts (UC-I07; WP-08) ──────────────────────────────
+  /** API-INT-NUT-02. */
+  @Post('nutrition/catalog-import-candidates')
+  async crearCandidato(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.importacion.crearCandidato(actorDe(req), cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-INT-NUT-03. */
+  @Post('nutrition/catalog-import-candidates/:candidateId/resolve')
+  async resolverCandidato(
+    @Param('candidateId') candidateId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.importacion.resolver(actorDe(req), candidateId, cuerpo, clave, contextoDe(req)));
+  }
   // ─── Ingesta (UC-P12) ───────────────────────────────────────────────────────────────────────
   /** API-NUT-14. */
   @Get('me/nutrition/today')

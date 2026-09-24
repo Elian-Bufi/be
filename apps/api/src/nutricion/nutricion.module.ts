@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
+import { IntegracionesModule } from '../integraciones/integraciones.module';
 import { SesionModule } from '../sesion/sesion.module';
 import { CatalogoService } from './catalogo.service';
 import { EjecutorNutricional } from './ejecutor';
 import { EvaluacionesService } from './evaluaciones.service';
+import { ImportacionNutricionalService } from './importacion.service';
 import { IngestasService } from './ingestas.service';
 import { NutricionController } from './nutricion.controller';
 import { PlanesService } from './planes.service';
@@ -13,8 +15,8 @@ import { RevisionesService } from './revisiones.service';
  * módulo no decide autorización ni gestiona el ciclo del Proceso por su cuenta.
  */
 @Module({
-  imports: [SesionModule],
+  imports: [SesionModule, IntegracionesModule],
   controllers: [NutricionController],
-  providers: [EjecutorNutricional, CatalogoService, EvaluacionesService, PlanesService, IngestasService, RevisionesService],
+  providers: [EjecutorNutricional, CatalogoService, EvaluacionesService, PlanesService, IngestasService, RevisionesService, ImportacionNutricionalService],
 })
 export class NutricionModule {}
