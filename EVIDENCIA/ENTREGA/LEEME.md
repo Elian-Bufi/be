@@ -16,6 +16,8 @@ El estado que se entrega el 2026-10-01: qué está desplegado, con qué garantí
 
 `verificacion-urls.txt` muestra la diferencia archivo por archivo.
 
+Las URLs de las láminas 12 y 13, los usuarios de la 14 y el estado de DV-05 están en la nota de MESA `docs/mesa/MESA_01/ESTADO_PUNTOS_5_11_14_ENTREGA.md`.
+
 ## Archivos
 
 | Archivo | Qué demuestra |
@@ -24,6 +26,7 @@ El estado que se entrega el 2026-10-01: qué está desplegado, con qué garantí
 | `capturas-web/` | El website en `test`, recorrido con Chrome por puppeteer con las cuentas demo. `recorrido.json` guarda los pasos, lo observado en cada pantalla y las llamadas a la API: 31, ninguna 4xx ni 5xx. Todas las pantallas son de DEMO-A01, como en la guía. En la figura se escribieron dos valores **sin guardar**: el recorrido no deja nada nuevo en `test` |
 | `resultados-integracion-796a5fe.json` y `.md` | La suite de integración de la CI de `main` en el último commit: **427/427** en 23 suites, 133 identificadores del 11A, contra PostgreSQL 16 real |
 | `ci-verificar-796a5fe.log` | El job `verificar` de esa corrida: typecheck, pruebas del dominio (259/259), guardias de copy y de contraste (14/14), pruebas unitarias de la API (33/33), build y auditoría de dependencias |
+| `cobertura-dv05.json` | Para cada uno de los 59 casos del catálogo DV-05, cuántas pruebas de esta CI lo nombran por su ID y cuántas pasaron: 33 con una prueba que pasa y ninguno que falle. Se rehace con `scripts/cobertura-dv05.cjs`; la lectura está en la nota de MESA de abajo |
 | `verificacion-urls.txt` | El despliegue de `test` tal como se entrega: readiness con las migraciones aplicadas, cabeceras de seguridad, CORS solo para el website, la URL de la API en el build (DL-030) y la descarga anónima de la APK con su SHA-256 |
 
 ## Las capturas del website
