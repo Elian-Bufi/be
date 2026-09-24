@@ -17,26 +17,24 @@
  * pantalla lo dice: la serie está bien construida con lo que este profesional puede ver, y no es toda la historia
  * (09v11:786-796).
  */
-import { COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, type EvolucionResponse, type SerieApi } from '@be/domain';
+import { cantidad, COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, numero, type EvolucionResponse, type SerieApi } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
-import { Aviso, Campo } from '../../../../components/formulario';
+import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
+import { FiltroDePeriodo, type Periodo } from '../periodo';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 
 type Datos = EvolucionResponse['data'];
 
 export function VistaDeEvolucion() {
   const { token, asesoradoId, sesionPerdida } = useAntropometria();
-  const [periodo, setPeriodo] = useState<{ desde: string; hasta: string }>({ desde: '', hasta: '' });
+  const [periodo, setPeriodo] = useState<Periodo>({});
   const [r, setR] = useState<Resultado<{ data: Datos }> | null>(null);
 
   const cargar = useCallback(async () => {
     setR(null);
-    const res = await api.evolucionAntropometrica(token, asesoradoId, {
-      periodStart: periodo.desde || undefined,
-      periodEnd: periodo.hasta || undefined,
-    });
+    const res = await api.evolucionAntropometrica(token, asesoradoId, periodo);
     if (sesionPerdida(res)) return;
     setR(res);
   }, [token, asesoradoId, sesionPerdida, periodo]);
@@ -46,22 +44,31 @@ export function VistaDeEvolucion() {
   }, [cargar]);
 
   return (
-    <EstadoDeLectura r={r} onReintentar={cargar}>
-      {r?.ok ? <Evolucion datos={r.datos.data} periodo={periodo} onPeriodo={setPeriodo} /> : null}
-    </EstadoDeLectura>
-  );
-}
-
-function Evolucion({ datos, periodo, onPeriodo }: { datos: Datos; periodo: { desde: string; hasta: string }; onPeriodo: (p: { desde: string; hasta: string }) => void }) {
-  return (
     <div className="secciones">
       <section className="seccion" aria-labelledby="titulo-periodo">
         <h2 id="titulo-periodo">{COPY_ANTROPOMETRIA.periodo}</h2>
-        <div className="campos-en-linea">
-          <Campo id="evo-desde" etiqueta="Desde" type="date" value={periodo.desde || datos.period.start} onChange={(e) => onPeriodo({ ...periodo, desde: e.target.value })} />
-          <Campo id="evo-hasta" etiqueta="Hasta" type="date" value={periodo.hasta || datos.period.end} onChange={(e) => onPeriodo({ ...periodo, hasta: e.target.value })} />
-        </div>
+        {/*
+          El período se elige, con la misma validación previa que los otros dos dominios (B10-06 §41, §43-§44;
+          DL-091 punto 2), y vive fuera del estado de lectura: si el período no se puede leer, el formulario sigue ahí
+          para corregirlo en vez de quedar atrapado en «Reintentar» (B10-10:376).
+        */}
+        <FiltroDePeriodo id="ant-evolucion-periodo" onAplicar={setPeriodo} />
         <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeSinDato}</p>
+      </section>
+      <EstadoDeLectura r={r} onReintentar={cargar}>
+        {r?.ok ? <Evolucion datos={r.datos.data} /> : null}
+      </EstadoDeLectura>
+    </div>
+  );
+}
+
+function Evolucion({ datos }: { datos: Datos }) {
+  return (
+    <div className="secciones">
+      <section className="seccion">
+        <p className="nota">
+          Período: {dia(`${datos.period.start}T12:00:00Z`)} a {dia(`${datos.period.end}T12:00:00Z`)}
+        </p>
         {datos.partialView ? (
           <Aviso tipo="info">
             <p>{COPY_ANTROPOMETRIA.vistaParcial}</p>
@@ -96,7 +103,7 @@ function SerieDeLaMetrica({ serie }: { serie: SerieApi }) {
       {serie.series.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinMediciones}</p> : null}
       <table className="tabla">
         <caption className="nota">
-          {serie.series.length} con dato · {diasSinDato} {COPY_ANTROPOMETRIA.sinDato.toLowerCase()}
+          {numero(serie.series.length)} con dato · {numero(diasSinDato)} {COPY_ANTROPOMETRIA.sinDato.toLowerCase()}
         </caption>
         <thead>
           <tr>
@@ -112,7 +119,7 @@ function SerieDeLaMetrica({ serie }: { serie: SerieApi }) {
               <tr key={`hueco-${f.hueco.from}`}>
                 <th scope="row">{f.hueco.days === 1 ? dia(`${f.hueco.from}T12:00:00Z`) : `${dia(`${f.hueco.from}T12:00:00Z`)} — ${dia(`${f.hueco.to}T12:00:00Z`)}`}</th>
                 <td>
-                  <span className="insignia">{f.hueco.days === 1 ? COPY_ANTROPOMETRIA.sinDato : `${f.hueco.days} días ${COPY_ANTROPOMETRIA.sinDato.toLowerCase()}`}</span>
+                  <span className="insignia">{f.hueco.days === 1 ? COPY_ANTROPOMETRIA.sinDato : `${numero(f.hueco.days)} días ${COPY_ANTROPOMETRIA.sinDato.toLowerCase()}`}</span>
                 </td>
                 <td>—</td>
                 <td>—</td>
@@ -121,7 +128,7 @@ function SerieDeLaMetrica({ serie }: { serie: SerieApi }) {
               <tr key={f.punto.sourceId}>
                 <th scope="row">{fecha(f.punto.occurredAt)}</th>
                 <td>
-                  {f.punto.value} {f.punto.unit}
+                  {cantidad(f.punto.value, f.punto.unit)}
                   {f.punto.correctionState === 'CORRECTED' ? (
                     <>
                       {' '}

@@ -7,6 +7,7 @@
  * como «BE recomienda» (B05:195-210).
  */
 import {
+  cantidad,
   COPY_NUTRICION,
   type ContextoDeRevisionResponse,
   type EvaluacionNutricional,
@@ -172,13 +173,13 @@ function Resumen({
             <dl className="datos">
               <div>
                 <dt>Requerimiento energético</dt>
-                <dd>{efectivo.estimatedEnergyRequirement.value} kcal por día</dd>
+                <dd>{cantidad(efectivo.estimatedEnergyRequirement.value, 'kcal')} por día</dd>
               </div>
               <div>
                 <dt>Proteínas · carbohidratos · grasas</dt>
                 <dd>
-                  {efectivo.macronutrientDistribution.protein.value} g · {efectivo.macronutrientDistribution.carbohydrate.value} g ·{' '}
-                  {efectivo.macronutrientDistribution.fat.value} g por día
+                  {cantidad(efectivo.macronutrientDistribution.protein.value, 'g')} · {cantidad(efectivo.macronutrientDistribution.carbohydrate.value, 'g')} ·{' '}
+                  {cantidad(efectivo.macronutrientDistribution.fat.value, 'g')} por día
                 </dd>
               </div>
               <div>
@@ -199,7 +200,7 @@ function Resumen({
                       <span className="historial__evento">
                         V{datos.objetivos.length - i} · {o.isEffective ? 'vigente' : 'anterior'}
                       </span>{' '}
-                      {o.estimatedEnergyRequirement.value} kcal · {dia(o.createdAt)} · {o.authoredBy.displayName}
+                      {cantidad(o.estimatedEnergyRequirement.value, 'kcal')} · {dia(o.createdAt)} · {o.authoredBy.displayName}
                     </li>
                   ))}
                 </ol>

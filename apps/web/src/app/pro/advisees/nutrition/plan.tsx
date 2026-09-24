@@ -7,7 +7,7 @@
  * - Un solo borrador por plan (REG-06-12): si ya hay uno, se sigue sobre ese.
  * - «Borrador creado», no «Plan creado correctamente» (B05:378-398).
  */
-import { COPY_NUTRICION, ETIQUETA_DE_PREPARACION, ETIQUETA_DE_UNIDAD, type VersionDePlan } from '@be/domain';
+import { cantidad, COPY_NUTRICION, ETIQUETA_DE_PREPARACION, ETIQUETA_DE_UNIDAD, type VersionDePlan } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -28,7 +28,7 @@ export function numerosDeVersion(versiones: readonly Resumen[]): Map<string, num
 }
 
 export function VistaDePlan() {
-  const { token, asesoradoId, sesionPerdida } = useNutricion();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useNutricion();
   const [r, setR] = useState<Resultado<{ versiones: Resumen[]; activa: VersionDePlan | null; objetivo: string | null }> | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [creando, setCreando] = useState(false);
@@ -69,7 +69,8 @@ export function VistaDePlan() {
     );
     intento.registrar(res);
     setCreando(false);
-    if (sesionPerdida(res)) return;
+    // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
+    if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return setAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
     setAviso({ tipo: 'exito', texto: COPY_NUTRICION.borradorCreado });
     await cargar();
@@ -168,7 +169,7 @@ export function VersionSoloLectura({ version, numero }: { version: VersionDePlan
                     {o.items.map((i) => (
                       <li key={i.itemId}>
                         {i.name}
-                        {i.quantity ? ` · ${i.quantity.value} ${ETIQUETA_DE_UNIDAD[i.quantity.unit]}` : ''}
+                        {i.quantity ? ` · ${cantidad(i.quantity.value, ETIQUETA_DE_UNIDAD[i.quantity.unit])}` : ''}
                         {i.preparationState ? ` · ${ETIQUETA_DE_PREPARACION[i.preparationState].toLowerCase()}` : ''}
                       </li>
                     ))}

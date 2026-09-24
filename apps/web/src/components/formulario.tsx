@@ -35,6 +35,17 @@ export const Campo = forwardRef<HTMLInputElement, PropsDeCampo>(function Campo({
 });
 
 /**
+ * El mismo error que va al resumen, indexado por el `id` del campo: el resumen enumera y el campo se marca, no una
+ * cosa o la otra (10-B10 §6; B10-10:36, 164-165; DL-091 punto 3). Para un `<select>` o un `<textarea>`, que no pasan
+ * por `Campo`, se usa con `aria-invalid` y `aria-describedby` a mano.
+ */
+export function erroresPorCampo(errores: readonly { id: string; texto: string }[]): Readonly<Record<string, string>> {
+  const porCampo: Record<string, string> = {};
+  for (const e of errores) porCampo[e.id] ??= e.texto;
+  return porCampo;
+}
+
+/**
  * El foco va al resumen solo cuando un envío produce errores (`intento` cambia), nunca en cada render: si no, cada
  * tecla que el usuario escribe para corregir un campo le devolvería el foco al resumen (10-B10 §6-§7).
  */
