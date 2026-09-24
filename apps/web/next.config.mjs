@@ -12,7 +12,11 @@
  * - `next dev` (solo local): sin BE_API_BASE_URL, /api/* se reescribe a BE_API_LOCAL (por defecto http://localhost:3001).
  * @type {import('next').NextConfig}
  */
+import { readFileSync } from 'node:fs';
+
 const desarrollo = process.env.NODE_ENV === 'development';
+/** La versión del website sale de su package.json: una sola fuente, sin números escritos a mano en las pantallas. */
+const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
 const apiBaseUrl = (process.env.BE_API_BASE_URL ?? '').replace(/\/+$/, '');
 
 if (process.env.RENDER && !/^https:\/\/[a-z0-9.-]+$/i.test(apiBaseUrl)) {
@@ -31,6 +35,7 @@ const nextConfig = {
   poweredByHeader: false,
   images: { unoptimized: true },
   env: {
+    BE_VERSION: version,
     BE_COMMIT: process.env.RENDER_GIT_COMMIT ?? '',
     BE_CONSTRUIDO_EN: new Date().toISOString(),
     BE_API_BASE_URL: apiBaseUrl,
