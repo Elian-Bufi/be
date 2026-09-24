@@ -36,5 +36,9 @@
     "audit:prod": "npm audit --omit=dev --audit-level=high -w @be/api && npm audit --omit=dev --audit-level=high -w @be/web && npm audit --omit=dev --audit-level=high -w @be/mobile",
     "openapi": "npm run build:domain && node scripts/generar-openapi.cjs",
     "openapi:verificar": "npm run build:domain && node scripts/generar-openapi.cjs --verificar"
+  },
+  "devDependencies": {
+    "axe-core": "4.13.0",
+    "puppeteer-core": "25.12.0"
   }
 }

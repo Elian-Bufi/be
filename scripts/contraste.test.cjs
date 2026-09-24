@@ -162,6 +162,32 @@ test('website · tema oscuro (landing, acceso, registro y legales)', () => {
   verificar(oscuro, PARES_WEB, 'oscuro');
 });
 
+/**
+ * La cara pública pinta un degradé (`.tema-oscuro` en globals.css): de `fondo` a `fondo-suave`, con un velo del azul
+ * encima. axe-core no puede medir texto sobre un degradé —lo deja «para revisión manual»—, así que se mide acá, en sus
+ * puntos extremos: los dos colores de base y la mezcla más clara, con la proporción que declara la hoja de estilos.
+ */
+test('website · el texto de la cara pública se lee en todo el degradé', () => {
+  const { oscuro } = temasWeb();
+  const css = readFileSync(join(RAIZ, 'apps/web/src/app/globals.css'), 'utf8');
+  const bloque = css.slice(css.indexOf('.tema-oscuro {'), css.indexOf('}', css.indexOf('.tema-oscuro {')));
+  const velo = /color-mix\(in srgb, var\(--azul\) (\d+)%, transparent\)/.exec(bloque);
+  assert.ok(velo, 'el degradé de .tema-oscuro cambió de forma: actualizar esta prueba');
+  const proporcion = Number(velo[1]) / 100;
+  const hex = (n) => Math.round(n).toString(16).padStart(2, '0');
+  const rgb = (h) => [0, 2, 4].map((i) => parseInt(h.slice(1 + i, 3 + i), 16));
+  const mezcla = (arriba, abajo, p) => `#${rgb(arriba).map((c, i) => hex(c * p + rgb(abajo)[i] * (1 - p))).join('')}`;
+  const fondos = { fondo: oscuro.fondo, 'fondo-suave': oscuro['fondo-suave'], 'velo del azul sobre el fondo': mezcla(oscuro.azul, oscuro.fondo, proporcion) };
+  const fallas = [];
+  for (const [nombreDelFondo, fondo] of Object.entries(fondos)) {
+    for (const frente of ['texto', 'tenue', 'enlace', 'error', 'exito']) {
+      const relacion = contraste(oscuro[frente], fondo);
+      if (relacion < TEXTO) fallas.push(`${frente} sobre ${nombreDelFondo} (${fondo}) = ${relacion.toFixed(2)}:1`);
+    }
+  }
+  assert.deepEqual(fallas, []);
+});
+
 test('APK · tema oscuro', () => {
   verificar(temaApk(), PARES_APK, 'APK');
 });

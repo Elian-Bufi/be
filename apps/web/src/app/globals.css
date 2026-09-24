@@ -1146,3 +1146,209 @@ details summary {
   border-radius: 16px;
   padding: 1.5rem;
 }
+
+/* ─── Toma antropométrica sobre la figura (tramo D; DL-073) ───────────── */
+/* Los datos de la toma, en dos columnas cuando entran. */
+.grilla-de-datos {
+  display: grid;
+  gap: 0 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.toma {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 56rem) {
+  .toma {
+    grid-template-columns: minmax(17rem, 0.8fr) minmax(0, 1.2fr);
+  }
+
+  .toma--sin-figura {
+    grid-template-columns: 1fr;
+  }
+
+  .toma__figura {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.figura {
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+
+.figura__vistas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.figura__vista {
+  width: 100%;
+  height: auto;
+  max-height: 28rem;
+}
+
+.figura__cuerpo {
+  fill: var(--figura-relleno);
+  stroke: var(--figura-trazo);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.figura__rotulo {
+  fill: var(--tenue);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Todos los puntos del mismo color, siempre: la forma dice si hay dato, el halo cuál se está cargando. */
+.figura__sitio {
+  cursor: pointer;
+}
+
+.figura__punto {
+  fill: var(--superficie);
+  stroke: var(--punto);
+  stroke-width: 2;
+}
+
+.figura__sitio--cargado .figura__punto {
+  fill: var(--punto);
+}
+
+.figura__anillo {
+  fill: none;
+  stroke: var(--punto);
+  stroke-width: 2;
+  stroke-dasharray: 3 2.5;
+}
+
+.figura__sitio--cargado .figura__anillo {
+  stroke-dasharray: none;
+  stroke-width: 2.6;
+}
+
+.figura__halo {
+  fill: none;
+  stroke: none;
+}
+
+.figura__sitio--activo .figura__halo,
+.figura__sitio:hover .figura__halo {
+  fill: var(--punto-halo);
+}
+
+.figura__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--tenue);
+}
+
+.figura__leyenda > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.figura__muestra {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.figura__leyenda .figura__punto {
+  fill: var(--punto);
+}
+
+/* La lista densa de B10-07 §16: una fila por medición, el campo corto y la unidad al lado. */
+.medidas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.medida {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.medida:last-child {
+  border-bottom: none;
+}
+
+.medida--activa {
+  background: var(--fondo-suave);
+}
+
+.medida__nombre {
+  font-weight: 600;
+}
+
+.medida__entrada {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.medida__entrada input,
+.medida__entrada select {
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
+  min-height: 44px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+}
+
+.medida__entrada input {
+  width: 6.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.medida__entrada input[aria-invalid='true'] {
+  border: 2px solid var(--error);
+}
+
+.medida__unidad {
+  min-width: 2.5rem;
+  color: var(--tenue);
+}
+
+.medida__estado {
+  min-width: 5.5rem;
+  font-size: 0.85rem;
+  color: var(--tenue);
+  text-align: right;
+}
+
+.medida .campo__error {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 30rem) {
+  .medida {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .medida__estado {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
