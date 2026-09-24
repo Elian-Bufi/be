@@ -71,53 +71,77 @@ describe('TEST-RF-028 · Open Food Facts: importación controlada con procedenci
     expect((fila.contenido as { composition: { energyKcal: number } }).composition.energyKcal).toBe(452);
   });
 
-  it('paso 4: lo que el proveedor no trajo viaja null, y no se incorpora sin completarlo: 422 con la ruta de cada faltante', async () => {
+  it('paso 4: lo que el proveedor no trajo viaja null —también la base—, y no se incorpora sin completarlo: 422 con la ruta de cada faltante', async () => {
     const pro = await nutricionista();
     const s = conSesion(app, pro.token);
     const candidato = (await s.post(NUT).send(pedirAlimento(OFF.sinComposicion)).expect(201)).body.data;
-    expect(candidato.candidate.composition).toEqual({ referenceAmount: '100g', energyKcal: null, proteinG: null, carbohydrateG: null, fatG: null });
+    expect(candidato.candidate.composition).toEqual({ referenceAmount: null, energyKcal: null, proteinG: null, carbohydrateG: null, fatG: null });
     const r = await s.post(`${NUT}/${candidato.candidateId}/resolve`).send({ decision: 'IMPORT', reviewedContent: candidato.candidate }).expect(422);
     expect(r.body.error.code).toBe('REVIEWED_CONTENT_INVALID');
     expect(r.body.error.details.issues.map((i: { path: string }) => i.path)).toEqual([
+      'reviewedContent.composition.referenceAmount',
       'reviewedContent.composition.energyKcal',
       'reviewedContent.composition.proteinG',
       'reviewedContent.composition.carbohydrateG',
       'reviewedContent.composition.fatG',
     ]);
-    // Completarlo sí lo incorpora, y los cuatro datos quedan como corregidos por el profesional.
+    // Completarlo sí lo incorpora, y los cinco datos quedan como del profesional: la base también.
     const completo = { ...candidato.candidate, composition: { referenceAmount: '100g', energyKcal: 120, proteinG: 3, carbohydrateG: 20, fatG: 2.5 } };
     const ok = await s.post(`${NUT}/${candidato.candidateId}/resolve`).send({ decision: 'IMPORT', reviewedContent: completo }).expect(200);
-    expect(ok.body.data.correctedFields).toEqual(['composition.energyKcal', 'composition.proteinG', 'composition.carbohydrateG', 'composition.fatG']);
+    expect(ok.body.data.correctedFields).toEqual([
+      'composition.referenceAmount',
+      'composition.energyKcal',
+      'composition.proteinG',
+      'composition.carbohydrateG',
+      'composition.fatG',
+    ]);
   });
 
-  it('un producto líquido se declara cada 100 ml', async () => {
+  it('la base se toma solo si el proveedor la declara sin ambigüedad: «100ml» sí; «100g» en un envase en ml, no', async () => {
     const pro = await nutricionista();
-    const r = await conSesion(app, pro.token).post(NUT).send(pedirAlimento(OFF.liquido)).expect(201);
-    expect(r.body.data.candidate.composition.referenceAmount).toBe('100ml');
+    const s = conSesion(app, pro.token);
+    expect((await s.post(NUT).send(pedirAlimento(OFF.liquido)).expect(201)).body.data.candidate.composition.referenceAmount).toBe('100ml');
+    expect((await s.post(NUT).send(pedirAlimento(OFF.liquidoAmbiguo)).expect(201)).body.data.candidate.composition.referenceAmount).toBeNull();
   });
 
-  it('paso 5: un código que el proveedor no tiene es 422 IMPORT_SOURCE_NOT_FOUND, no una caída', async () => {
+  it('paso 5: un código que el proveedor no tiene es 422 IMPORT_SOURCE_NOT_FOUND, no una caída —con 404 o con 200 y status 0—', async () => {
     const pro = await nutricionista();
-    const r = await conSesion(app, pro.token).post(NUT).send(pedirAlimento(OFF.inexistente)).expect(422);
-    expect(r.body.error.code).toBe('IMPORT_SOURCE_NOT_FOUND');
+    for (const codigo of [OFF.inexistente, OFF.sinProductoCon200]) {
+      const r = await conSesion(app, pro.token).post(NUT).send(pedirAlimento(codigo)).expect(422);
+      expect(r.body.error.code).toBe('IMPORT_SOURCE_NOT_FOUND');
+    }
   });
 
-  it('paso 6: con el proveedor caído o lento, 503 con el fallback declarado, sin candidato; la carga manual sigue', async () => {
+  it('paso 6: caído, lento, desmedido, redirigido o con una ruta rota → 503 con el fallback, sin candidato; la carga manual sigue', async () => {
     const pro = await nutricionista();
     const s = conSesion(app, pro.token);
     const antes = await prisma.candidatoDeImportacion.count({ where: { profesionalId: pro.id } });
-    for (const codigo of [OFF.caido, OFF.lento]) {
+    // Un 404 que no tiene la forma de Open Food Facts no dice «no existe»: dice que algo cambió del otro lado.
+    for (const codigo of [OFF.caido, OFF.lento, OFF.enorme, OFF.enormeDeclarado, OFF.redirige, OFF.rutaRota]) {
       const inicio = Date.now();
       const r = await s.post(NUT).send(pedirAlimento(codigo)).expect(503);
       expect(r.body.error).toMatchObject({ code: 'DEPENDENCY_UNAVAILABLE', details: { fallback: { catalog: true, manualEntry: true } } });
       // El presupuesto de tiempo se respeta: no se espera al proveedor lento (D-E).
       expect(Date.now() - inicio).toBeLessThan(4_500);
+      expect(r.body.error.code).toBe('DEPENDENCY_UNAVAILABLE');
     }
     expect(await prisma.candidatoDeImportacion.count({ where: { profesionalId: pro.id } })).toBe(antes);
     await s
       .post('/api/v1/nutrition/catalog-items')
       .send({ name: 'Alimento cargado a mano', itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: 100, proteinG: 1, carbohydrateG: 1, fatG: 1 } })
       .expect(201);
+  });
+
+  it('09v12:84 · mientras se espera al proveedor, la API no tiene ninguna transacción abierta', async () => {
+    const pro = await nutricionista();
+    // El proveedor lento tarda 5 s y el presupuesto es 1,5 s: a los 0,6 s la consulta está esperando al tercero.
+    const pendiente = conSesion(app, pro.token).post(NUT).send(pedirAlimento(OFF.lento)).then((r) => r);
+    await new Promise((listo) => setTimeout(listo, 600));
+    const [abiertas] = await prisma.$queryRaw<{ n: number }[]>`
+      SELECT count(*)::int AS n FROM pg_stat_activity
+      WHERE datname = current_database() AND pid <> pg_backend_pid() AND state LIKE 'idle in transaction%'`;
+    expect(abiertas?.n).toBe(0);
+    expect((await pendiente).status).toBe(503);
   });
 });
 
@@ -148,6 +172,14 @@ describe('TEST-RF-038 · wger: importación controlada, sin aceptar la relación
     const lista = ListaDeEjerciciosResponseSchema.parse((await s.get('/api/v1/training/exercises?q=Estabilizaci%C3%B3n%20abdominal').expect(200)).body).data;
     const importado = lista.find((e) => e.exerciseId === r.body.data.exercise.exerciseId);
     expect(importado).toMatchObject({ provenance: 'CONTROLLED_IMPORT', externalSource: { provider: 'WGER', externalId: WGER.enEspanol }, muscleZones: [] });
+
+    // Lo que se guardó, no solo lo que se responde: la resolución lleva el nombre y nada más, y la versión del ejercicio
+    // cita la fuente sin ningún músculo de wger (09v12:397-401).
+    const resolucion = await prisma.resolucionDeCandidato.findUniqueOrThrow({ where: { candidatoId: candidato.candidateId } });
+    expect(resolucion.contenidoRevisado).toEqual({ name: 'Estabilización abdominal' });
+    const version = await prisma.versionDeEjercicio.findUniqueOrThrow({ where: { id: r.body.data.exercise.versionId } });
+    expect(version.procedencia).toMatchObject({ fuenteExterna: { provider: 'WGER', externalId: WGER.enEspanol } });
+    expect(JSON.stringify(version.procedencia)).not.toMatch(/Rectus|Obliquus|Gym mat|Abs/);
   });
 
   it('pasos 4 y 5: rechazar no crea nada, y un candidato resuelto no se resuelve de nuevo', async () => {
@@ -163,11 +195,26 @@ describe('TEST-RF-038 · wger: importación controlada, sin aceptar la relación
     expect(otra.body.error.code).toBe('IMPORT_CANDIDATE_NOT_RESOLVABLE');
   });
 
-  it('un número desconocido es 422 y un wger caído es 503', async () => {
+  it('un número desconocido es 422; un wger caído o con una ruta rota es 503, y ninguno crea candidato', async () => {
     const pro = await entrenador();
     const s = conSesion(app, pro.token);
     expect((await s.post(TRN).send(pedirEjercicio(WGER.inexistente)).expect(422)).body.error.code).toBe('IMPORT_SOURCE_NOT_FOUND');
     expect((await s.post(TRN).send(pedirEjercicio(WGER.caido)).expect(503)).body.error.code).toBe('DEPENDENCY_UNAVAILABLE');
+    expect((await s.post(TRN).send(pedirEjercicio(WGER.rutaRota)).expect(503)).body.error.code).toBe('DEPENDENCY_UNAVAILABLE');
+    expect(await prisma.candidatoDeImportacion.count({ where: { profesionalId: pro.id } })).toBe(0);
+  });
+
+  it('datos raros del proveedor no rompen la request: se descarta lo que no es una traducción y se limpian los caracteres de control', async () => {
+    const pro = await entrenador();
+    const r = await conSesion(app, pro.token).post(TRN).send(pedirEjercicio(WGER.datosRaros)).expect(201);
+    expect(r.body.data.candidate).toMatchObject({ name: 'Plancha lateral', nameLanguage: 'es' });
+    expect(r.body.data.provenance.license).toMatchObject({ id: 'CC-BY-SA-4.0', attribution: 'autora -sintetica' });
+  });
+
+  it('una traducción sin licencia ni autor conocidos no toma prestados los del ejercicio', async () => {
+    const pro = await entrenador();
+    const r = await conSesion(app, pro.token).post(TRN).send(pedirEjercicio(WGER.sinAutor)).expect(201);
+    expect(r.body.data.provenance.license).toEqual({ id: 'desconocida', label: 'Licencia no informada por wger', url: null, attribution: null });
   });
 });
 
@@ -206,11 +253,70 @@ describe('TEST-UC-I07 · el candidato es de quien lo pidió, y la base sostiene 
     const s = conSesion(app, pro.token);
     const id = (await s.post(NUT).send(pedirAlimento(OFF.completo)).expect(201)).body.data.candidateId as string;
     await s.post(`${NUT}/${id}/resolve`).send({ decision: 'REJECT' }).expect(200);
-    await expect(prisma.candidatoDeImportacion.update({ where: { id }, data: { idExterno: '0000000000000' } })).rejects.toThrow();
-    await expect(prisma.resolucionDeCandidato.deleteMany({ where: { candidatoId: id } })).rejects.toThrow();
+    await expect(prisma.candidatoDeImportacion.update({ where: { id }, data: { idExterno: '0000000000000' } })).rejects.toThrow(/solo se agrega|append|BE:/i);
+    await expect(prisma.resolucionDeCandidato.deleteMany({ where: { candidatoId: id } })).rejects.toThrow(/solo se agrega|append|BE:/i);
+    // La segunda resolución la frena el índice único del candidato (P2002), no otra cosa.
+    await expect(prisma.resolucionDeCandidato.create({ data: { candidatoId: id, decision: 'RECHAZAR', autorId: pro.id, procedencia: {} } })).rejects.toMatchObject({ code: 'P2002' });
+  });
+
+  it('dos resoluciones concurrentes con claves distintas: una incorpora, la otra es 422, y hay un solo elemento', async () => {
+    const pro = await nutricionista();
+    const s = conSesion(app, pro.token);
+    const candidato = (await s.post(NUT).send(pedirAlimento(OFF.completo)).expect(201)).body.data;
+    const cuerpo = { decision: 'IMPORT', reviewedContent: candidato.candidate };
+    const resolver = () => conSesion(app, pro.token).post(`${NUT}/${candidato.candidateId}/resolve`, claveDeIdempotencia()).send(cuerpo).then((r) => r);
+    const respuestas = await Promise.all([resolver(), resolver()]);
+    expect(respuestas.map((r) => r.status).sort()).toEqual([200, 422]);
+    expect(respuestas.find((r) => r.status === 422)?.body.error.code).toBe('IMPORT_CANDIDATE_NOT_RESOLVABLE');
+    expect(await prisma.elementoDeCatalogoNutricional.count({ where: { creadoPorId: pro.id, procedencia: 'CONTROLLED_IMPORT' } })).toBe(1);
+  });
+
+  it('la base sostiene qué es importar: un elemento nuevo, propio, CONTROLLED_IMPORT, del dominio del candidato y con su versión', async () => {
+    const pro = await nutricionista();
+    const s = conSesion(app, pro.token);
+    const pedir = async () => (await s.post(NUT).send(pedirAlimento(OFF.completo)).expect(201)).body.data.candidateId as string;
+    const contenidoRevisado = { name: 'Galletitas de prueba', composition: { referenceAmount: '100g', energyKcal: 452, proteinG: 8.5, carbohydrateG: 66, fatG: 17.25 } };
+    const importar = (candidatoId: string, elemento: { elementoNutricionalId?: string; ejercicioId?: string }, versionCreadaId: string) =>
+      prisma.resolucionDeCandidato.create({ data: { candidatoId, decision: 'IMPORTAR', contenidoRevisado, autorId: pro.id, procedencia: {}, versionCreadaId, ...elemento } });
+
+    // Adoptar un alimento sembrado como si se hubiera importado.
+    const sembrado = await prisma.versionDeElementoNutricional.findFirstOrThrow({ where: { elemento: { procedencia: 'BE_SYNTHETIC_SEED' } } });
+    await expect(importar(await pedir(), { elementoNutricionalId: sembrado.elementoId }, sembrado.id)).rejects.toThrow(/CONTROLLED_IMPORT/);
+    // Un ejercicio para un candidato de nutrición.
+    const ejercicio = await prisma.versionDeEjercicio.findFirstOrThrow();
+    await expect(importar(await pedir(), { ejercicioId: ejercicio.ejercicioId }, ejercicio.id)).rejects.toThrow(/dominio del candidato/);
+    // Una versión inventada, aun con un elemento importado propio (todo en una transacción, que la base revierte).
+    const candidatoId = await pedir();
     await expect(
-      prisma.resolucionDeCandidato.create({ data: { candidatoId: id, decision: 'RECHAZAR', autorId: pro.id, procedencia: {} } }),
-    ).rejects.toThrow();
+      prisma.$transaction(async (tx) => {
+        const elemento = await tx.elementoDeCatalogoNutricional.create({ data: { procedencia: 'CONTROLLED_IMPORT', creadoPorId: pro.id } });
+        await tx.resolucionDeCandidato.create({
+          data: { candidatoId, decision: 'IMPORTAR', contenidoRevisado, autorId: pro.id, procedencia: {}, elementoNutricionalId: elemento.id, versionCreadaId: randomUUID() },
+        });
+      }),
+    ).rejects.toThrow(/versión del elemento importado/);
+    // Y un elemento CONTROLLED_IMPORT sin la resolución que lo incorpora no llega a existir.
+    await expect(prisma.elementoDeCatalogoNutricional.create({ data: { procedencia: 'CONTROLLED_IMPORT', creadoPorId: pro.id } })).rejects.toThrow(/resolución de su candidato/);
+  });
+
+  it('los CHECK de la base: el proveedor es el del dominio, y rechazar no crea ni guarda contenido', async () => {
+    const pro = await nutricionista();
+    const base = {
+      idExterno: '901',
+      contenido: { name: 'x' },
+      huellaDeLoRecibido: 'c'.repeat(64),
+      licencia: { id: 'CC-BY-SA-4.0' },
+      urlDeOrigen: 'http://127.0.0.1/sintetico',
+      profesionalId: pro.id,
+      recibidoEn: new Date(),
+      venceEn: new Date(Date.now() + 60_000),
+      procedencia: {},
+    };
+    await expect(prisma.candidatoDeImportacion.create({ data: { ...base, alcance: 'NUTRICION', proveedor: 'WGER' } })).rejects.toThrow(/proveedor_del_alcance/);
+    const id = (await conSesion(app, pro.token).post(NUT).send(pedirAlimento(OFF.completo)).expect(201)).body.data.candidateId as string;
+    await expect(
+      prisma.resolucionDeCandidato.create({ data: { candidatoId: id, decision: 'RECHAZAR', autorId: pro.id, procedencia: {}, contenidoRevisado: { name: 'x' } } }),
+    ).rejects.toThrow(/efecto_coherente/);
   });
 
   it('la base exige que la resolución sea de quien pidió el candidato', async () => {
@@ -241,6 +347,10 @@ describe('TEST-UC-I07 · el candidato es de quien lo pidió, y la base sostiene 
     const r = await conSesion(app, pro.token).post(`${NUT}/${vencido.id}/resolve`).send({ decision: 'REJECT' }).expect(422);
     expect(r.body.error.code).toBe('IMPORT_CANDIDATE_NOT_RESOLVABLE');
     await expect(prisma.resolucionDeCandidato.create({ data: { candidatoId: vencido.id, decision: 'RECHAZAR', autorId: pro.id, procedencia: {} } })).rejects.toThrow(/vencido/);
+    // La hora la pone la base: declarar una resolución «de antes» no saltea el vencimiento.
+    await expect(
+      prisma.resolucionDeCandidato.create({ data: { candidatoId: vencido.id, decision: 'RECHAZAR', autorId: pro.id, procedencia: {}, momentoDeRegistro: new Date(0) } }),
+    ).rejects.toThrow(/vencido/);
   });
 
   it('D-F: sin la capacidad del dominio, 403, y el proveedor no llega a consultarse', async () => {

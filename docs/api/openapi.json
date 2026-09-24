@@ -11120,10 +11120,17 @@
                               "type": "object",
                               "properties": {
                                 "referenceAmount": {
-                                  "type": "string",
-                                  "enum": [
-                                    "100g",
-                                    "100ml"
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "100g",
+                                        "100ml"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
                                   ]
                                 },
                                 "energyKcal": {
@@ -11355,10 +11362,17 @@
                             "type": "object",
                             "properties": {
                               "referenceAmount": {
-                                "type": "string",
-                                "enum": [
-                                  "100g",
-                                  "100ml"
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "100g",
+                                      "100ml"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
                                 ]
                               },
                               "energyKcal": {

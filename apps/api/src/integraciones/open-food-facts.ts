@@ -2,11 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { AlimentoCandidato, LicenciaExterna } from '@be/domain';
 import type { Entorno } from '../config/entorno';
 import { ENTORNO } from '../config/tokens';
-import { comoJson, consultarProveedor, ProveedorNoDisponible, type RespuestaDelProveedor } from './proveedor-http';
+import { comoJson, consultarProveedor, ProveedorNoDisponible, textoDelProveedor, type RespuestaDelProveedor } from './proveedor-http';
 
 /**
  * Open Food Facts (RF-028; 09v12 §5). Se consulta un producto por su código de barras y se normaliza **únicamente lo
- * necesario para revisión** (09v12:196): nombre y composición cada 100 g o 100 ml. Nada se convierte ni se completa:
+ * necesario para revisión** (09v12:196): nombre, base y composición. Nada se convierte ni se completa:
  * si el producto no declara las kilocalorías, el candidato dice `null`, no las calcula desde los kilojoules. El
  * profesional ve el faltante y decide (RF-028: «datos insuficientes se corrigen o rechazan»).
  */
@@ -32,23 +32,31 @@ export class OpenFoodFacts {
     const url = `${this.entorno.proveedores.openFoodFactsUrl}/api/v2/product/${encodeURIComponent(codigoDeBarras)}.json?fields=${CAMPOS}`;
     const respuesta = await consultarProveedor(url, this.entorno.proveedores.presupuestoMs);
     const json = comoJson(respuesta.cuerpo);
-    if (respuesta.status === 404) return { encontrado: false };
-    if (respuesta.status !== 200 || json === null || typeof json !== 'object') throw new ProveedorNoDisponible(`respuesta inesperada ${respuesta.status}`);
-    const producto = (json as { status?: unknown; product?: unknown }).product;
-    // Open Food Facts responde 200 con `status: 0` cuando no tiene el producto.
-    if ((json as { status?: unknown }).status === 0 || !producto || typeof producto !== 'object') return { encontrado: false };
-    return { encontrado: true, candidato: normalizarProducto(producto as Record<string, unknown>), respuesta, licencia: LICENCIA_DE_OPEN_FOOD_FACTS };
+    const cuerpo = json !== null && typeof json === 'object' && !Array.isArray(json) ? (json as { status?: unknown; product?: unknown }) : null;
+    // «No tengo ese producto» es un 404 —o un 200— con el cuerpo propio de Open Food Facts: `status: 0`. Un 404 con otra
+    // forma (una ruta que cambió, un proxy, una base mal configurada) no dice nada del producto: es una caída.
+    if (cuerpo?.status === 0 && (respuesta.status === 404 || respuesta.status === 200)) return { encontrado: false };
+    if (respuesta.status !== 200 || cuerpo === null || !cuerpo.product || typeof cuerpo.product !== 'object') throw new ProveedorNoDisponible(`respuesta inesperada ${respuesta.status}`);
+    return { encontrado: true, candidato: normalizarProducto(cuerpo.product as Record<string, unknown>), respuesta, licencia: LICENCIA_DE_OPEN_FOOD_FACTS };
   }
 }
 
-/** El producto tal como lo describe Open Food Facts, llevado a la forma del candidato. Pura: se prueba sin red. */
+/**
+ * El producto tal como lo describe Open Food Facts, llevado a la forma del candidato. Pura: se prueba sin red.
+ *
+ * La base (cada 100 g o cada 100 ml) se toma solo cuando el proveedor la declara sin ambigüedad. Open Food Facts guarda
+ * `nutrition_data_per: "100g"` también en muchos líquidos: si el envase se mide en ml, cl o l y la base dice «100g», no
+ * se sabe cuál es, y el candidato dice `null` para que el profesional la elija (B10-10 §1: un faltante no se completa).
+ */
 export function normalizarProducto(p: Record<string, unknown>): AlimentoCandidato {
   const n = (p.nutriments && typeof p.nutriments === 'object' ? p.nutriments : {}) as Record<string, unknown>;
-  const liquido = p.nutrition_data_per === '100ml' || (typeof p.product_quantity_unit === 'string' && p.product_quantity_unit.toLowerCase() === 'ml');
+  const por = typeof p.nutrition_data_per === 'string' ? p.nutrition_data_per.trim().toLowerCase() : null;
+  const unidadDelEnvase = typeof p.product_quantity_unit === 'string' ? p.product_quantity_unit.trim().toLowerCase() : null;
+  const envaseLiquido = unidadDelEnvase === 'ml' || unidadDelEnvase === 'cl' || unidadDelEnvase === 'l';
   return {
     name: primerTexto(p.product_name_es, p.product_name, p.generic_name_es, p.generic_name),
     composition: {
-      referenceAmount: liquido ? '100ml' : '100g',
+      referenceAmount: por === '100ml' ? '100ml' : por === '100g' && !envaseLiquido ? '100g' : null,
       energyKcal: nutriente(n['energy-kcal_100g']),
       proteinG: nutriente(n.proteins_100g),
       carbohydrateG: nutriente(n.carbohydrates_100g),
@@ -64,6 +72,9 @@ function nutriente(v: unknown): number | null {
 }
 
 function primerTexto(...candidatos: unknown[]): string | null {
-  for (const c of candidatos) if (typeof c === 'string' && c.trim() !== '') return c.trim().slice(0, 200);
+  for (const c of candidatos) {
+    const t = textoDelProveedor(c);
+    if (t !== null) return t;
+  }
   return null;
 }

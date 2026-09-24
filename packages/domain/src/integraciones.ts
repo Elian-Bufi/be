@@ -8,7 +8,10 @@
 import type { ValidationIssue } from './contratos';
 import type { AlimentoCandidato, ComposicionCandidata, EjercicioCandidato } from './contratos-integraciones';
 
-/** Retención técnica del candidato que el 09 deja «definida posteriormente» (09v12:104; WP-08 D-C). */
+/**
+ * Plazo para resolver un candidato, que el 09 deja «definido posteriormente» (09v12:104; WP-08 D-C). Es un plazo de
+ * decisión, no de borrado: el candidato es append-only y queda como evidencia de lo que se recibió.
+ */
 export const DIAS_DE_VIGENCIA_DEL_CANDIDATO = 7;
 
 /** Presupuesto de tiempo de una consulta al proveedor, sin reintentos dentro de la request (WP-08 D-E). */
@@ -23,6 +26,7 @@ const NUTRIENTES = ['energyKcal', 'proteinG', 'carbohydrateG', 'fatG'] as const;
 export function faltantesDeAlimento(revisado: AlimentoCandidato): ValidationIssue[] {
   const faltantes: ValidationIssue[] = [];
   if (revisado.name === null || revisado.name.trim() === '') faltantes.push({ code: 'REQUIRED', path: 'reviewedContent.name' });
+  if (revisado.composition.referenceAmount === null) faltantes.push({ code: 'REQUIRED', path: 'reviewedContent.composition.referenceAmount' });
   for (const n of NUTRIENTES) if (revisado.composition[n] === null) faltantes.push({ code: 'REQUIRED', path: `reviewedContent.composition.${n}` });
   return faltantes;
 }
@@ -50,6 +54,7 @@ export function camposCorregidosDeEjercicio(candidato: EjercicioCandidato, revis
 
 /** La composición completa, una vez verificado que no falta nada (`faltantesDeAlimento` vacío). */
 export function composicionCompleta(c: ComposicionCandidata): { referenceAmount: '100g' | '100ml'; energyKcal: number; proteinG: number; carbohydrateG: number; fatG: number } {
+  if (c.referenceAmount === null) throw new Error('composición incompleta: referenceAmount');
   for (const n of NUTRIENTES) if (c[n] === null) throw new Error(`composición incompleta: ${n}`);
   return { referenceAmount: c.referenceAmount, energyKcal: c.energyKcal!, proteinG: c.proteinG!, carbohydrateG: c.carbohydrateG!, fatG: c.fatG! };
 }

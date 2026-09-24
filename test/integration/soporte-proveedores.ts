@@ -15,7 +15,20 @@ export const OFF = {
   inexistente: '7790000000031',
   caido: '7790000000048',
   lento: '7790000000055',
+  /** Declara «cada 100 ml». */
   liquido: '7790000000062',
+  /** Envase en ml y base «100g»: Open Food Facts lo guarda así en muchos líquidos; la base no se sabe. */
+  liquidoAmbiguo: '7790000000079',
+  /** Responde 200 con `status: 0`: tampoco lo tiene. */
+  sinProductoCon200: '7790000000086',
+  /** Un cuerpo de más de 2 MB, sin `content-length`: se corta al leerlo. */
+  enorme: '7790000000093',
+  /** `content-length` de más de 2 MB: se descarta sin leerlo. */
+  enormeDeclarado: '7790000000109',
+  /** Una redirección: no se sigue. */
+  redirige: '7790000000116',
+  /** Un 404 que no es de Open Food Facts (HTML): la ruta cambió, no es «no existe». */
+  rutaRota: '7790000000123',
 } as const;
 
 /** Números de ejercicio de prueba. */
@@ -24,6 +37,12 @@ export const WGER = {
   soloEnIngles: '902',
   inexistente: '903',
   caido: '904',
+  /** Un 404 en HTML: la ruta cambió, no es «no existe». */
+  rutaRota: '905',
+  /** Traducciones con basura: un `null`, un número, un nombre con caracteres de control. */
+  datosRaros: '906',
+  /** La traducción elegida no informa su licencia ni su autor. */
+  sinAutor: '907',
 } as const;
 
 const productoCompleto = {
@@ -38,8 +57,10 @@ const productoLiquido = {
   code: OFF.liquido,
   product_name_es: 'Bebida de prueba',
   product_quantity_unit: 'ml',
+  nutrition_data_per: '100ml',
   nutriments: { 'energy-kcal_100g': 42, proteins_100g: 0, carbohydrates_100g: 10.6, fat_100g: 0 },
 };
+const productoLiquidoAmbiguo = { ...productoLiquido, code: OFF.liquidoAmbiguo, product_name_es: 'Bebida ambigua de prueba', nutrition_data_per: '100g' };
 
 const ejercicio = (id: number, traducciones: { language: number; name: string; license: number; license_author: string }[]) => ({
   id,
@@ -77,6 +98,27 @@ export async function levantarProveedorFalso(): Promise<ProveedorFalso> {
       if (codigo === OFF.liquido) return json(200, { status: 1, product: productoLiquido });
       if (codigo === OFF.caido) return json(500, { error: 'sintético' });
       if (codigo === OFF.lento) return void setTimeout(() => json(200, { status: 1, product: productoCompleto }), 5_000);
+      if (codigo === OFF.liquidoAmbiguo) return json(200, { status: 1, product: productoLiquidoAmbiguo });
+      if (codigo === OFF.sinProductoCon200) return json(200, { code: codigo, status: 0, status_verbose: 'product not found' });
+      if (codigo === OFF.enorme) {
+        // Sin content-length: se manda de a partes, 3 MB en total. La API tiene que cortar al pasar los 2 MB.
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        const parte = Buffer.alloc(256 * 1024, 0x20);
+        for (let i = 0; i < 12; i++) res.write(parte);
+        return void res.end();
+      }
+      if (codigo === OFF.enormeDeclarado) {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Length': String(3 * 1024 * 1024) });
+        return void res.end('{}');
+      }
+      if (codigo === OFF.redirige) {
+        res.writeHead(302, { Location: 'http://127.0.0.1:9/otra-parte' });
+        return void res.end();
+      }
+      if (codigo === OFF.rutaRota) {
+        res.writeHead(404, { 'Content-Type': 'text/html' });
+        return void res.end('<html><body>Not Found</body></html>');
+      }
       // Open Food Facts responde así cuando no tiene el producto.
       return json(404, { code: codigo, status: 0, status_verbose: 'product not found' });
     }
@@ -90,6 +132,16 @@ export async function levantarProveedorFalso(): Promise<ProveedorFalso> {
         ]));
       if (numero === WGER.soloEnIngles) return json(200, ejercicio(902, [{ language: 2, name: 'Plank', license: 1, license_author: 'autora-sintetica' }]));
       if (numero === WGER.caido) return json(503, { detail: 'sintético' });
+      if (numero === WGER.rutaRota) {
+        res.writeHead(404, { 'Content-Type': 'text/html' });
+        return void res.end('<html><body>Page not found</body></html>');
+      }
+      if (numero === WGER.datosRaros)
+        return json(200, {
+          ...ejercicio(906, []),
+          translations: [null, 7, { language: 4, name: 'Plancha\u0000 lateral\t ', license: 2, license_author: 'autora\u0007-sintetica' }],
+        });
+      if (numero === WGER.sinAutor) return json(200, ejercicio(907, [{ language: 4, name: 'Puente de glúteos', license: 99 } as never]));
       return json(404, { detail: 'No Exercise matches the given query.' });
     }
     json(404, {});

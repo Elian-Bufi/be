@@ -33,13 +33,18 @@ export function fuenteExternaDe(c: CandidatoDeImportacion): FuenteExterna {
  * El candidato, si es del actor y del dominio que lo pide, bloqueado para resolverlo: la resolución es única y dos
  * pedidos concurrentes se ordenan acá (la base igual lo sostiene con su índice único). Para cualquier otro actor —o si
  * no existe, o es del otro dominio— es el mismo 404 (09v12:103-105: «solo puede resolverse por actor autorizado»).
+ *
+ * El dueño y el dominio van en el mismo `WHERE` que el bloqueo: así otro profesional no bloquea un candidato ajeno ni
+ * espera a que se libere —esa espera revelaría que existe—. `FOR NO KEY UPDATE`, como el resto (prisma/concurrencia.ts).
  */
 export async function candidatoPropio(tx: Tx, candidateId: string, actorId: string, alcance: Alcance): Promise<CandidatoDeImportacion & { resolucion: ResolucionDeCandidato | null }> {
   if (!esUuid(candidateId)) throw errores.recursoNoEncontrado();
-  await tx.$queryRaw`SELECT 1 FROM "candidato_de_importacion" WHERE "id" = ${candidateId}::uuid FOR UPDATE`;
-  const c = await tx.candidatoDeImportacion.findUnique({ where: { id: candidateId }, include: { resolucion: true } });
-  if (!c || c.profesionalId !== actorId || c.alcance !== alcance) throw errores.recursoNoEncontrado();
-  return c;
+  const propio = await tx.$queryRaw<{ id: string }[]>`
+    SELECT "id" FROM "candidato_de_importacion"
+    WHERE "id" = ${candidateId}::uuid AND "profesional_id" = ${actorId}::uuid AND "alcance" = ${alcance}::"Alcance"
+    FOR NO KEY UPDATE`;
+  if (propio.length === 0) throw errores.recursoNoEncontrado();
+  return tx.candidatoDeImportacion.findUniqueOrThrow({ where: { id: candidateId }, include: { resolucion: true } });
 }
 
 /** Ya resuelto o vencido (D-C): no se resuelve de nuevo. */

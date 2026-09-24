@@ -103,6 +103,7 @@
 | DL-096 | Consolidación · 2026-09-24 | 08:199 · 08:58 · DL-089 · 09v10 TRN-08/09/19 | La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado | ABIERTA |
 | DL-097 | WP-08 · 2026-09-24 | 09v12 §5-§7 (09v12:184-188, 360-364, 369, 390) | Las formas de la importación controlada que el 09 no fija | ABIERTA (hallada al implementar) |
 | DL-098 | WP-08 · 2026-09-24 | 09v12:190 · B10-05 §19 · B10-06 §22 | La búsqueda por texto en los proveedores no tiene contrato | ABIERTA |
+| DL-099 | WP-08 · 2026-09-24 | 04 RF-060 (04:701-708) · 08 licencias | La procedencia externa llega hasta la elección, no hasta el ítem del plan | ABIERTA (hallada en la revisión de calidad) |
 
 ---
 
@@ -1980,7 +1981,7 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 **Opciones.**
 - **A.** Definirlas en `@be/domain` (`contratos-integraciones.ts`), con la forma mínima coherente con el resto del contrato:
   - identificador: código de barras de 8, 12, 13 o 14 dígitos en Open Food Facts; entero positivo en wger;
-  - candidato con `null` en cada dato que el proveedor no trajo, y `expiresAt` además de lo que muestra el 09;
+  - candidato con `null` en cada dato que el proveedor no trajo —también la base, cada 100 g o cada 100 ml, cuando el proveedor no la declara sin ambigüedad—, y `expiresAt` además de lo que muestra el 09;
   - contenido revisado con la misma forma que el candidato, y su completitud validada en el servicio: así un faltante da el `422 REVIEWED_CONTENT_INVALID` del 09 con la ruta de lo que falta, en vez de un `400` de forma;
   - éxito de NUT-03 = el del 09 más `candidateId`, `correctedFields` y `resolvedAt`; el de TRN-03, con `exercise: { exerciseId, versionId }`;
   - identificador desconocido: `422 IMPORT_SOURCE_NOT_FOUND`, código nuevo, porque no es una caída y el profesional tiene que poder distinguirlo;
@@ -2004,4 +2005,18 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 - **B.** Dejar la consulta por identificador como la única forma.
 
 **Provisorio en código.** B, con la ayuda en pantalla de dónde encontrar el identificador. **Recomendación: A**, porque es lo que el 10 describe y lo que hace usable la importación de ejercicios.
+
+## DL-099 — La procedencia externa llega hasta la elección, no hasta el ítem del plan
+
+**Prioridad:** media · **Documento:** 04 RF-060 (04:701-708) · 08 (licencias) · **Estado:** ABIERTA (hallada en la revisión de calidad de WP-08)
+
+**Qué dice el legajo.** RF-060: BE tiene que «permitir identificar proveedor, fecha y referencia suficiente de un dato externo **en los contextos donde se utiliza**», para el profesional, el asesorado o el administrador «según autorización». Las licencias de los dos proveedores (ODbL en Open Food Facts; CC BY-SA en wger, con su autor) piden citar la fuente donde se muestra el contenido.
+
+**Qué pasa hoy.** WP-08 muestra la procedencia donde el elemento **se elige**: el buscador del catálogo en los dos editores y el sustituto de un ejercicio en la APK dicen «Importado de Open Food Facts» o «de wger», con la fecha. Una vez en el plan, el ítem no la muestra —ni en el editor, ni en el plan activado, ni en lo que ve el asesorado—, porque las respuestas del plan (`ItemPrescripto`, `Prescripcion`) llevan el nombre y la versión del catálogo, no su fuente. La procedencia no se pierde: está en la versión del catálogo que el plan cita.
+
+**Opciones.**
+- **A.** Sumar `externalSource` al ítem prescripto y a la prescripción, resuelto desde la versión del catálogo que el plan congela, y mostrarlo en el editor, en el plan y en las pantallas del asesorado, con el identificador, la licencia y el autor. Es un cambio aditivo en respuestas estrictas: se despliega con la APK nueva, como el resto de WP-08 (§9 de `docs/paquetes/WP-08.md`).
+- **B.** Dejar la procedencia en el punto de elección y en el catálogo.
+
+**Provisorio en código.** B. **Recomendación: A**, en el mismo paquete que integre WP-08 o en el siguiente: es lo que RF-060 describe y lo que las licencias piden.
 

@@ -92,26 +92,71 @@ ALTER TABLE "resolucion_de_candidato" ADD CONSTRAINT "resolucion_de_candidato_ef
 ALTER TABLE "resolucion_de_candidato" ADD CONSTRAINT "resolucion_de_candidato_campos_corregidos" CHECK (jsonb_typeof("campos_corregidos") = 'array');
 ALTER TABLE "resolucion_de_candidato" ADD CONSTRAINT "resolucion_de_candidato_fundamento" CHECK ("fundamento" IS NULL OR btrim("fundamento") <> '');
 
--- 09v12:103-105: «solo puede resolverse por actor autorizado». El autor de la resolución es el profesional del
--- candidato; el elemento creado es del dominio del candidato; y no se resuelve lo vencido.
+-- 09v12:103-105: «solo puede resolverse por actor autorizado». La base sostiene, aunque el servicio se equivoque:
+-- - la hora de la resolución es la de la base: quien inserta no la elige, y con ella se controla el vencimiento;
+-- - el autor es el profesional del candidato, y no se resuelve lo vencido;
+-- - importar apunta a un elemento **nuevo del dominio del candidato**: de procedencia CONTROLLED_IMPORT, creado por el
+--   mismo profesional, y a una versión de ese mismo elemento. Una resolución no puede adoptar un elemento sembrado o
+--   ajeno, ni inventar la versión.
 CREATE OR REPLACE FUNCTION "be_resolucion_de_candidato_insertar"() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   c RECORD;
+  v_procedencia TEXT;
+  v_creado_por UUID;
+  v_version_del_elemento BOOLEAN;
 BEGIN
+  NEW."momento_de_registro" := now();
   SELECT "profesional_id", "alcance", "vence_en" INTO c FROM "candidato_de_importacion" WHERE "id" = NEW."candidato_id";
   IF NEW."autor_id" <> c."profesional_id" THEN
     RAISE EXCEPTION 'BE: la resolución de un candidato es de quien lo pidió' USING ERRCODE = 'check_violation';
   END IF;
-  IF NEW."decision" = 'IMPORTAR' AND ((c."alcance" = 'NUTRICION' AND NEW."elemento_nutricional_id" IS NULL) OR (c."alcance" = 'ENTRENAMIENTO' AND NEW."ejercicio_id" IS NULL)) THEN
-    RAISE EXCEPTION 'BE: el elemento importado tiene que ser del dominio del candidato' USING ERRCODE = 'check_violation';
-  END IF;
   IF NEW."momento_de_registro" > c."vence_en" THEN
     RAISE EXCEPTION 'BE: un candidato vencido no se resuelve' USING ERRCODE = 'check_violation';
+  END IF;
+  IF NEW."decision" = 'IMPORTAR' THEN
+    IF c."alcance" = 'NUTRICION' AND NEW."elemento_nutricional_id" IS NOT NULL THEN
+      SELECT "procedencia"::text, "creado_por_id" INTO v_procedencia, v_creado_por FROM "elemento_de_catalogo_nutricional" WHERE "id" = NEW."elemento_nutricional_id";
+      v_version_del_elemento := EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" WHERE "id" = NEW."version_creada_id" AND "elemento_id" = NEW."elemento_nutricional_id");
+    ELSIF c."alcance" = 'ENTRENAMIENTO' AND NEW."ejercicio_id" IS NOT NULL THEN
+      SELECT "procedencia"::text, "creado_por_id" INTO v_procedencia, v_creado_por FROM "ejercicio_de_catalogo" WHERE "id" = NEW."ejercicio_id";
+      v_version_del_elemento := EXISTS (SELECT 1 FROM "version_de_ejercicio" WHERE "id" = NEW."version_creada_id" AND "ejercicio_id" = NEW."ejercicio_id");
+    ELSE
+      RAISE EXCEPTION 'BE: el elemento importado tiene que ser del dominio del candidato' USING ERRCODE = 'check_violation';
+    END IF;
+    IF v_procedencia IS DISTINCT FROM 'CONTROLLED_IMPORT' OR v_creado_por IS DISTINCT FROM NEW."autor_id" THEN
+      RAISE EXCEPTION 'BE: importar crea un elemento propio, de procedencia CONTROLLED_IMPORT' USING ERRCODE = 'check_violation';
+    END IF;
+    IF NOT v_version_del_elemento THEN
+      RAISE EXCEPTION 'BE: la versión creada es una versión del elemento importado' USING ERRCODE = 'check_violation';
+    END IF;
   END IF;
   RETURN NEW;
 END;
 $$;
 CREATE TRIGGER "resolucion_de_candidato_insertar" BEFORE INSERT ON "resolucion_de_candidato" FOR EACH ROW EXECUTE FUNCTION "be_resolucion_de_candidato_insertar"();
+
+-- Un elemento importado lo es por una sola resolución, y una versión la crea una sola resolución.
+CREATE UNIQUE INDEX "resolucion_de_candidato_un_elemento_nutricional" ON "resolucion_de_candidato" ("elemento_nutricional_id") WHERE "elemento_nutricional_id" IS NOT NULL;
+CREATE UNIQUE INDEX "resolucion_de_candidato_un_ejercicio" ON "resolucion_de_candidato" ("ejercicio_id") WHERE "ejercicio_id" IS NOT NULL;
+CREATE UNIQUE INDEX "resolucion_de_candidato_una_version" ON "resolucion_de_candidato" ("version_creada_id") WHERE "version_creada_id" IS NOT NULL;
+
+-- Y al revés: no existe un elemento CONTROLLED_IMPORT sin la resolución que lo incorporó. Se verifica al confirmar la
+-- transacción, porque el servicio crea el elemento antes que la resolución que lo referencia. El valor del enum se
+-- compara como texto dentro de la función: `ADD VALUE` no permite usarlo en la misma transacción de esta migración.
+CREATE OR REPLACE FUNCTION "be_importado_con_resolucion"() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW."procedencia"::text = 'CONTROLLED_IMPORT' AND NOT EXISTS (
+    SELECT 1 FROM "resolucion_de_candidato"
+    WHERE (TG_TABLE_NAME = 'elemento_de_catalogo_nutricional' AND "elemento_nutricional_id" = NEW."id")
+       OR (TG_TABLE_NAME = 'ejercicio_de_catalogo' AND "ejercicio_id" = NEW."id")
+  ) THEN
+    RAISE EXCEPTION 'BE: un elemento importado existe solo por la resolución de su candidato' USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NULL;
+END;
+$$;
+CREATE CONSTRAINT TRIGGER "elemento_nutricional_importado_con_resolucion" AFTER INSERT ON "elemento_de_catalogo_nutricional" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "be_importado_con_resolucion"();
+CREATE CONSTRAINT TRIGGER "ejercicio_importado_con_resolucion" AFTER INSERT ON "ejercicio_de_catalogo" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "be_importado_con_resolucion"();
 
 -- Append-only: lo recibido y lo decidido no se reescriben ni se borran (UC-I07 §14.5.6: la corrección no oculta la fuente).
 CREATE TRIGGER "candidato_de_importacion_solo_agregar" BEFORE UPDATE OR DELETE ON "candidato_de_importacion" FOR EACH ROW EXECUTE FUNCTION "be_solo_agregar"();

@@ -60,6 +60,9 @@ test('B10-10 §1 · un nutriente que el proveedor no trajo viaja null; un negati
     },
   };
   assert.equal(CandidatoDeAlimentoSchema.safeParse({ ...base, candidate: { name: null, composition: { referenceAmount: '100g', energyKcal: null, proteinG: null, carbohydrateG: null, fatG: null } } }).success, true);
+  // La base tampoco se supone: si el proveedor no la declara sin ambigüedad, viaja null y la elige quien revisa.
+  assert.equal(CandidatoDeAlimentoSchema.safeParse({ ...base, candidate: alimento({ referenceAmount: null }) }).success, true);
+  assert.equal(CandidatoDeAlimentoSchema.safeParse({ ...base, candidate: alimento({ referenceAmount: '100kg' as never }) }).success, false);
   assert.equal(CandidatoDeAlimentoSchema.safeParse({ ...base, candidate: alimento({ fatG: -1 }) }).success, false);
   assert.equal(CandidatoDeAlimentoSchema.safeParse({ ...base, candidate: alimento(), provenance: { ...base.provenance, contentDigest: 'no-es-un-hash' } }).success, false);
 });
@@ -80,14 +83,16 @@ test('09v12:245-275 · IMPORT lleva el contenido revisado; REJECT no puede lleva
 test('RF-028 · lo que falta para incorporar se dice por ruta; un cero es un dato, no un faltante', () => {
   assert.deepEqual(faltantesDeAlimento(alimento()), []);
   assert.deepEqual(faltantesDeAlimento(alimento({ fatG: 0 })), [], '0 g de grasa es un dato');
-  assert.deepEqual(faltantesDeAlimento(alimento({ energyKcal: null, fatG: null }, '  ')), [
+  assert.deepEqual(faltantesDeAlimento(alimento({ referenceAmount: null, energyKcal: null, fatG: null }, '  ')), [
     { code: 'REQUIRED', path: 'reviewedContent.name' },
+    { code: 'REQUIRED', path: 'reviewedContent.composition.referenceAmount' },
     { code: 'REQUIRED', path: 'reviewedContent.composition.energyKcal' },
     { code: 'REQUIRED', path: 'reviewedContent.composition.fatG' },
   ]);
   assert.deepEqual(faltantesDeEjercicio({ name: null }), [{ code: 'REQUIRED', path: 'reviewedContent.name' }]);
   assert.deepEqual(faltantesDeEjercicio({ name: 'Plancha abdominal' }), []);
   assert.throws(() => composicionCompleta(alimento({ proteinG: null }).composition), /incompleta/);
+  assert.throws(() => composicionCompleta(alimento({ referenceAmount: null }).composition), /referenceAmount/);
   assert.deepEqual(composicionCompleta(alimento().composition), { referenceAmount: '100g', energyKcal: 450, proteinG: 7.5, carbohydrateG: 65, fatG: 18 });
 });
 
@@ -96,6 +101,8 @@ test('UC-I07 §14.5.6 · la corrección no oculta la fuente: se registra qué ca
   const revisado = alimento({ energyKcal: 452 }, 'Galletitas  de prueba ');
   assert.deepEqual(camposCorregidosDeAlimento(recibido, revisado), ['composition.energyKcal']);
   assert.deepEqual(camposCorregidosDeAlimento(recibido, { ...revisado, name: 'Galletitas dulces' }), ['name', 'composition.energyKcal']);
+  // Elegir la base que el proveedor no declaró también es un dato del profesional, y queda registrado.
+  assert.deepEqual(camposCorregidosDeAlimento(alimento({ referenceAmount: null }), alimento()), ['composition.referenceAmount']);
   const ejercicio = { name: 'Estabilización abdominal', nameLanguage: 'es' as const, category: 'Abdominales', primaryMuscles: [], secondaryMuscles: [], equipment: [] };
   assert.deepEqual(camposCorregidosDeEjercicio(ejercicio, { name: 'Estabilización abdominal' }), []);
   assert.deepEqual(camposCorregidosDeEjercicio(ejercicio, { name: 'Plancha' }), ['name']);

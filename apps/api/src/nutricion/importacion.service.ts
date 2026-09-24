@@ -14,7 +14,7 @@ import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
 import { candidatoPropio, exigirResoluble, fuenteExternaDe, fundamentoDe, procedenciaDeCandidato, vencimientoDe } from '../integraciones/candidatos';
 import { OpenFoodFacts } from '../integraciones/open-food-facts';
-import { ProveedorNoDisponible } from '../integraciones/proveedor-http';
+import { ProveedorNoDisponible, registrarProveedorNoDisponible } from '../integraciones/proveedor-http';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
@@ -62,7 +62,10 @@ export class ImportacionNutricionalService {
           if (!r.encontrado) throw errores.fuenteNoEncontrada();
           return r;
         } catch (e) {
-          if (e instanceof ProveedorNoDisponible) throw errores.proveedorNoDisponible();
+          if (e instanceof ProveedorNoDisponible) {
+            registrarProveedorNoDisponible('OPEN_FOOD_FACTS', e, ctx.requestId);
+            throw errores.proveedorNoDisponible();
+          }
           throw e;
         }
       },

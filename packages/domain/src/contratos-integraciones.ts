@@ -43,9 +43,12 @@ export type CrearCandidatoDeEjercicioRequest = z.infer<typeof CrearCandidatoDeEj
 /** Un nutriente que el proveedor puede no traer: `null` es «no vino», nunca «vale cero». */
 const NutrienteCandidato = z.number().nonnegative().finite().nullable();
 
-/** La composición tal como llegó, cada 100 g o 100 ml, con lo que faltó en `null`. */
+/**
+ * La composición tal como llegó, con lo que faltó en `null`. También la base: si el proveedor no dice sin ambigüedad
+ * si es cada 100 g o cada 100 ml, no se supone —la elige quien revisa—.
+ */
 export const ComposicionCandidataSchema = z.strictObject({
-  referenceAmount: z.enum(['100g', '100ml']),
+  referenceAmount: z.enum(['100g', '100ml']).nullable(),
   energyKcal: NutrienteCandidato,
   proteinG: NutrienteCandidato,
   carbohydrateG: NutrienteCandidato,

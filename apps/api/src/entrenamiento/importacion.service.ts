@@ -12,7 +12,7 @@ import type { CandidatoDeImportacion, Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
 import { candidatoPropio, exigirResoluble, fuenteExternaDe, fundamentoDe, procedenciaDeCandidato, vencimientoDe } from '../integraciones/candidatos';
-import { ProveedorNoDisponible } from '../integraciones/proveedor-http';
+import { ProveedorNoDisponible, registrarProveedorNoDisponible } from '../integraciones/proveedor-http';
 import { Wger } from '../integraciones/wger';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
@@ -56,7 +56,10 @@ export class ImportacionDeEjerciciosService {
           if (!r.encontrado) throw errores.fuenteNoEncontrada();
           return r;
         } catch (e) {
-          if (e instanceof ProveedorNoDisponible) throw errores.proveedorNoDisponible();
+          if (e instanceof ProveedorNoDisponible) {
+            registrarProveedorNoDisponible('WGER', e, ctx.requestId);
+            throw errores.proveedorNoDisponible();
+          }
           throw e;
         }
       },
