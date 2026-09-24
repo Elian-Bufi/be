@@ -65,7 +65,7 @@ export function Boton({
  * Campo con label persistente y, si hay error, el texto **debajo del campo y asociado a él**, no solo en el resumen y
  * no solo con color (B10-10:36, 164-165). React Native no tiene `accessibilityState.invalid` ni `aria-invalid` —el
  * website sí—, así que la asociación se hace con lo que el lector de pantalla del APK sí lee: el error entra en el
- * `accessibilityLabel` y en el `accessibilityHint` del propio campo. El borde rojo solo acompaña.
+ * `accessibilityLabel` del propio campo, una sola vez (el texto visible no se repite en voz). El borde rojo solo acompaña.
  */
 export function Campo({ etiqueta, ayuda, error, ...resto }: TextInputProps & { etiqueta: string; ayuda?: string; error?: string | null }) {
   return (
@@ -74,12 +74,17 @@ export function Campo({ etiqueta, ayuda, error, ...resto }: TextInputProps & { e
       {ayuda ? <Text style={estilos.tenue}>{ayuda}</Text> : null}
       <TextInput
         accessibilityLabel={error ? `${etiqueta}. Revisá este campo: ${error}` : etiqueta}
-        accessibilityHint={[ayuda, error].filter(Boolean).join('. ') || undefined}
+        accessibilityHint={ayuda || undefined}
         style={[estilos.entrada, error ? estilos.entradaConError : null]}
         placeholderTextColor={COLOR.tenue}
         {...resto}
       />
-      {error ? <Text style={estilos.error}>⚠ {error}</Text> : null}
+      {/* El lector ya lo dijo en el nombre del campo: el texto visible no se repite en voz. */}
+      {error ? (
+        <Text style={estilos.error} importantForAccessibility="no" accessibilityElementsHidden>
+          ⚠ {error}
+        </Text>
+      ) : null}
     </View>
   );
 }

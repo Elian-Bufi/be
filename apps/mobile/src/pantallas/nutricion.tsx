@@ -22,6 +22,7 @@ import {
   ETIQUETA_DE_PREPARACION,
   ETIQUETA_DE_UNIDAD,
   leerNumero,
+  motivoDeNumeroIlegible,
   type DiaTipo,
   type HoyResponse,
   type Ingesta,
@@ -198,12 +199,16 @@ function TarjetaDeComida({
     if (!opcion) return setFallo({ texto: COPY_NUTRICION.elegiQueOpcionComiste, incierto: false });
     // Una cantidad escrita que no se puede leer como número no se manda en silencio: se señala en su campo. Las
     // cantidades siguen siendo opcionales — un campo vacío no es un error (B05:836-846).
-    const ilegibles = opcion.items.filter((it) => {
+    // Un cero o un negativo tampoco se descartan callados: se leen bien como número, pero no son una cantidad comida.
+    const avisos = opcion.items.flatMap((it): [string, string][] => {
       const escrito = (cantidades[it.itemId] ?? '').trim();
-      return escrito !== '' && leerNumero(escrito) === null;
+      if (escrito === '') return [];
+      const v = leerNumero(escrito);
+      if (v === null) return [[it.itemId, motivoDeNumeroIlegible(escrito)]];
+      return v > 0 ? [] : [[it.itemId, 'La cantidad tiene que ser mayor que cero.']];
     });
-    if (ilegibles.length > 0) {
-      setErroresDeCantidad(Object.fromEntries(ilegibles.map((it) => [it.itemId, COPY_NUTRICION.cantidadNoEsUnNumero])));
+    if (avisos.length > 0) {
+      setErroresDeCantidad(Object.fromEntries(avisos));
       return setFallo({ texto: COPY_NUTRICION.revisaLasCantidades, incierto: false });
     }
     setErroresDeCantidad({});

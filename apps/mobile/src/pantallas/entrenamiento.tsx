@@ -313,7 +313,8 @@ export function PantallaDeSesion({
 
   /**
    * Guardado incremental: cada cambio va con la versión que se ve; si otra pantalla la cambió, se recarga. Devuelve
-   * `null` si guardó, o el mensaje del fallo. El fallo de una acción de la tarjeta de un ejercicio se muestra en la
+   * `null` si guardó, o el mensaje del fallo; `''` si el acceso se retiró: es un fallo —nada más debe escribirse
+   * después— pero sin mensaje, porque la pantalla ya muestra el estado neutral. El fallo de una acción de la tarjeta de un ejercicio se muestra en la
    * tarjeta, al lado de lo que la persona tocó; los demás, arriba.
    */
   async function guardarYDecir(cambios: Parameters<typeof api.guardarBorradorDeEjecucion>[2]['changes']): Promise<string | null> {
@@ -324,7 +325,7 @@ export function PantallaDeSesion({
     if (sesionPerdida(r)) return 'Tu sesión se cerró.';
     if (!r.ok) {
       // Guardar el borrador es una escritura: con el 404 no revelador se retira el contenido (B10-06:1145-1148).
-      if (accesoRetirado(r)) return null;
+      if (accesoRetirado(r)) return '';
       const f = falloDe(r);
       if (f.tipo === 'actualizar') void cargar();
       return r.tipo === 'API' && r.issues.length > 0 ? 'Hay un dato que no se puede guardar. Revisalo.' : f.mensaje;

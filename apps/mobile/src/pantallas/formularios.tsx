@@ -14,6 +14,7 @@
 import {
   COPY_FORMULARIOS,
   leerNumero,
+  motivoDeNumeroIlegible,
   numero,
   type CampoDePlantilla,
   type RespuestaDeFormulario,
@@ -93,6 +94,8 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
   const sesionPerdida = useSesionPerdida(salir);
   const [carga, setCarga] = useState<CargaDeDetalle>({ tipo: 'cargando' });
   const [valores, setValores] = useState<Record<string, string>>({});
+  /** Avisos por campo: un número escrito que no se entiende se marca ahí, no se descarta en silencio (B10-10:164-165). */
+  const [errores, setErrores] = useState<Record<string, string>>({});
   const [motivo, setMotivo] = useState('');
   const [aviso, setAviso] = useState<{ tipo: 'error' | 'exito'; texto: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -126,13 +129,23 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
 
   async function enviar() {
     setAviso(null);
+    // Lo que se escribió en un campo numérico y no es un número no se omite como si estuviera vacío: la persona lo
+    // completó, y perderlo sin avisar haría que un requerido parezca faltante o que un opcional desaparezca.
+    const ilegibles = Object.fromEntries(
+      pedidos
+        .filter((c) => c.dataType === 'NUMBER')
+        .map((c) => [c.fieldCode, (valores[c.fieldCode] ?? '').trim()] as const)
+        .filter(([, crudo]) => crudo !== '' && leerNumero(crudo) === null)
+        .map(([codigo, crudo]) => [codigo, motivoDeNumeroIlegible(crudo)]),
+    );
+    setErrores(ilegibles);
+    if (Object.keys(ilegibles).length > 0) return setAviso({ tipo: 'error', texto: 'Hay un número que no se entiende. Revisá el campo marcado.' });
     // Un campo sin completar se omite: nunca viaja como cero ni como cadena vacía (09:1586-1587).
     const answers = pedidos.flatMap((c): { fieldCode: string; value: string | number | boolean }[] => {
       const crudo = (valores[c.fieldCode] ?? '').trim();
       if (crudo === '') return [];
       if (c.dataType === 'NUMBER') {
-        // Coma o punto, como la persona lo escriba (DL-091 punto 4): `leerNumero` devuelve `null` si no es un número,
-        // y entonces el campo se omite, como si no se hubiera completado.
+        // Coma o punto, como la persona lo escriba (DL-091 punto 4). Lo ilegible ya se señaló arriba.
         const n = leerNumero(crudo);
         return n === null ? [] : [{ fieldCode: c.fieldCode, value: n }];
       }
@@ -200,8 +213,13 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
             etiqueta={`${c.label}${request.requiredFieldCodes.includes(c.fieldCode) ? '' : ` (${COPY_FORMULARIOS.opcional})`}`}
             ayuda={c.helpText ?? (c.dataType === 'BOOLEAN' ? 'Respondé «sí» o «no».' : COPY_FORMULARIOS.omitirCampo)}
             value={valores[c.fieldCode] ?? ''}
-            onChangeText={(t) => setValores({ ...valores, [c.fieldCode]: t })}
-            keyboardType={c.dataType === 'NUMBER' ? 'numeric' : 'default'}
+            error={errores[c.fieldCode] ?? null}
+            onChangeText={(t) => {
+              setValores({ ...valores, [c.fieldCode]: t });
+              if (errores[c.fieldCode]) setErrores(({ [c.fieldCode]: _, ...resto }) => resto);
+            }}
+            // El teclado decimal de Android puede ofrecer coma: por eso el valor se lee con `leerNumero`.
+            keyboardType={c.dataType === 'NUMBER' ? 'decimal-pad' : 'default'}
           />
         ))}
         {esCorreccion ? <Campo etiqueta={COPY_FORMULARIOS.motivoDeRectificacion} value={motivo} onChangeText={setMotivo} /> : null}
