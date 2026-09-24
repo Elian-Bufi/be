@@ -47,6 +47,16 @@ import {
   VinculoResponseSchema,
 } from './contratos-vinculo';
 import {
+  CandidatoDeAlimentoResponseSchema,
+  CandidatoDeEjercicioResponseSchema,
+  CrearCandidatoDeAlimentoRequestSchema,
+  CrearCandidatoDeEjercicioRequestSchema,
+  ResolucionDeAlimentoResponseSchema,
+  ResolucionDeEjercicioResponseSchema,
+  ResolverCandidatoDeAlimentoRequestSchema,
+  ResolverCandidatoDeEjercicioRequestSchema,
+} from './contratos-integraciones';
+import {
   ActivacionDePlanResponseSchema,
   AplicarRevisionResponseSchema,
   ContextoDeRevisionResponseSchema,
@@ -170,6 +180,13 @@ export interface Operacion {
 }
 
 const COMUNES: Errores = { 500: ['INTERNAL_ERROR'], 503: ['DB_UNAVAILABLE'] };
+
+/** Los errores de una operación con los comunes **sumados**: un 503 propio (WP-08) no pisa ni es pisado por DB_UNAVAILABLE. */
+function conComunes(errores: Errores): Record<string, readonly Codigo[]> {
+  const todos: Record<string, readonly Codigo[]> = { ...errores };
+  for (const [status, codigos] of Object.entries(COMUNES)) todos[status] = [...new Set([...(todos[status] ?? []), ...(codigos ?? [])])];
+  return todos;
+}
 const SESION: Errores = { 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'] };
 
 const LIMIT: ParametroDeQuery = { nombre: 'limit', descripcion: 'Tamaño de página (1 a 50; 20 por defecto).', schema: { type: 'integer', minimum: 1, maximum: 50 } };
@@ -689,6 +706,39 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 201, schema: ElementoDeCatalogoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
     fuente: '09v12:111-160 · RF-027',
+  },
+  {
+    id: 'API-INT-NUT-02',
+    metodo: 'post',
+    ruta: '/nutrition/catalog-import-candidates',
+    resumen:
+      'Consultar un alimento en Open Food Facts por su código de barras y crear un candidato de importación: todavía no es un elemento del catálogo. Proveedor caído → 503 con el catálogo propio y la carga manual disponibles.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearCandidatoDeAlimentoRequestSchema,
+    exitos: [{ status: 201, schema: CandidatoDeAlimentoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['IMPORT_SOURCE_NOT_FOUND'], 503: ['DEPENDENCY_UNAVAILABLE'] },
+    fuente: '09v12:166-236 · RF-028 · UC-I07 · UC-I08 · docs/paquetes/WP-08.md',
+  },
+  {
+    id: 'API-INT-NUT-03',
+    metodo: 'post',
+    ruta: '/nutrition/catalog-import-candidates/{candidateId}/resolve',
+    resumen:
+      'Resolver un candidato propio: IMPORT lo incorpora al catálogo con procedencia CONTROLLED_IMPORT y los datos corregidos; REJECT no crea nada. Un candidato ajeno es 404; uno resuelto o vencido, 422.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ResolverCandidatoDeAlimentoRequestSchema,
+    exitos: [{ status: 200, schema: ResolucionDeAlimentoResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['IMPORT_CANDIDATE_NOT_RESOLVABLE', 'REVIEWED_CONTENT_INVALID'],
+    },
+    fuente: '09v12:238-305 · RF-028 · RF-060 · UC-I07',
   },
   {
     id: 'API-NUT-14',
@@ -1287,6 +1337,39 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: '09v12:308-340 · RF-037 · REG-06-139 · docs/paquetes/WP-06.md §9.8',
   },
   {
+    id: 'API-INT-TRN-02',
+    metodo: 'post',
+    ruta: '/training/catalog-import-candidates',
+    resumen:
+      'Consultar un ejercicio en wger por su número y crear un candidato de importación. Los músculos que declara wger son dato del proveedor: nunca se copian como zona BE. Proveedor caído → 503.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearCandidatoDeEjercicioRequestSchema,
+    exitos: [{ status: 201, schema: CandidatoDeEjercicioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['IMPORT_SOURCE_NOT_FOUND'], 503: ['DEPENDENCY_UNAVAILABLE'] },
+    fuente: '09v12:349-381 · RF-038 · UC-I07 · UC-I08 · docs/paquetes/WP-08.md',
+  },
+  {
+    id: 'API-INT-TRN-03',
+    metodo: 'post',
+    ruta: '/training/catalog-import-candidates/{candidateId}/resolve',
+    resumen:
+      'Resolver un candidato propio de wger: IMPORT crea el ejercicio con procedencia CONTROLLED_IMPORT y sin zonas BE; REJECT no crea nada. Un candidato ajeno es 404; uno resuelto o vencido, 422.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ResolverCandidatoDeEjercicioRequestSchema,
+    exitos: [{ status: 200, schema: ResolucionDeEjercicioResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['IMPORT_CANDIDATE_NOT_RESOLVABLE', 'REVIEWED_CONTENT_INVALID'],
+    },
+    fuente: '09v12:383-411 · RF-038 · RF-060 · UC-I07',
+  },
+  {
     id: 'API-TRN-14',
     metodo: 'get',
     ruta: '/me/training/today',
@@ -1662,7 +1745,7 @@ export function documentoOpenApi(): Record<string, unknown> {
         ? { description: 'Éxito', content: { 'application/json': { schema: aJson(exito.schema) } } }
         : { description: 'Éxito, sin cuerpo' };
     }
-    for (const [status, codigos] of Object.entries({ ...op.errores, ...COMUNES })) {
+    for (const [status, codigos] of Object.entries(conComunes(op.errores))) {
       respuestas[status] = {
         description: `ErrorEnvelope: ${(codigos ?? []).join(' | ')}`,
         content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } },
@@ -1687,10 +1770,10 @@ export function documentoOpenApi(): Record<string, unknown> {
     openapi: '3.1.0',
     info: {
       title:
-        'BE API — WP-02 Identidad y sesiones · WP-03 Vínculo, consentimiento y PDP · WP-04 Circuito nutricional · WP-05 Antropometría, métodos y cálculos · WP-06 Circuito de entrenamiento · WP-07 Información profesional pertinente',
+        'BE API — WP-02 Identidad y sesiones · WP-03 Vínculo, consentimiento y PDP · WP-04 Circuito nutricional · WP-05 Antropometría, métodos y cálculos · WP-06 Circuito de entrenamiento · WP-07 Información profesional pertinente · WP-08 Integraciones P0',
       version: '0.8.0',
       description:
-        'Generado desde @be/domain (contratos.ts, contratos-vinculo.ts, contratos-nutricion.ts, contratos-antropometria.ts, contratos-calculo.ts, contratos-entrenamiento.ts y contratos-formularios.ts). No editar a mano.',
+        'Generado desde @be/domain (contratos.ts, contratos-vinculo.ts, contratos-nutricion.ts, contratos-antropometria.ts, contratos-calculo.ts, contratos-entrenamiento.ts, contratos-formularios.ts, contratos-procedencia-externa.ts y contratos-integraciones.ts). No editar a mano.',
     },
     servers: [{ url: '/api/v1' }],
     components: {
@@ -1707,7 +1790,7 @@ export function documentoOpenApi(): Record<string, unknown> {
 export function erroresDeclarados(id: string): Readonly<Record<string, readonly string[]>> {
   const op = OPERACIONES.find((o) => o.id === id);
   if (!op) throw new Error(`Operación no declarada: ${id}`);
-  return { ...op.errores, ...COMUNES };
+  return conComunes(op.errores);
 }
 
 /** Busca la operación de una request real (método + ruta concreta con parámetros). Lo usa el contract test. */

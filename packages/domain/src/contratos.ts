@@ -108,6 +108,11 @@ export const CodigoDeError = {
   FORM_REQUEST_NOT_RESPONDABLE: 'FORM_REQUEST_NOT_RESPONDABLE',
   FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED: 'FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED',
   FORM_RESPONSE_INVALID: 'FORM_RESPONSE_INVALID',
+  // INT (09v12 §5-§7). Importación controlada de Open Food Facts y wger (RF-028, RF-038; WP-08).
+  IMPORT_CANDIDATE_NOT_RESOLVABLE: 'IMPORT_CANDIDATE_NOT_RESOLVABLE',
+  REVIEWED_CONTENT_INVALID: 'REVIEWED_CONTENT_INVALID',
+  /** El proveedor respondió que no conoce ese identificador: no es una caída (WP-08 D-E; DL-097). */
+  IMPORT_SOURCE_NOT_FOUND: 'IMPORT_SOURCE_NOT_FOUND',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CrearElementoDeCatalogoRequestSchema, type ElementoDeCatalogo, type ElementoResuelto } from '@be/domain';
+import { CrearElementoDeCatalogoRequestSchema, type ElementoDeCatalogo, type ElementoResuelto, type FuenteExterna } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
@@ -19,8 +19,10 @@ interface FilaDeCatalogo {
   nombre: string;
   composicion: ElementoDeCatalogo['composition'];
   disponible: boolean;
-  procedencia: 'BE_SYNTHETIC_SEED' | 'PROFESSIONAL_MANUAL';
+  procedencia: 'BE_SYNTHETIC_SEED' | 'PROFESSIONAL_MANUAL' | 'CONTROLLED_IMPORT';
   momentoDeRegistro: Date;
+  /** De dónde vino un alimento importado de Open Food Facts (WP-08; RF-060). Vive en la procedencia de su versión. */
+  fuenteExterna: FuenteExterna | null;
 }
 
 /**
@@ -44,7 +46,8 @@ export class CatalogoService {
     const cursor = consulta.cursor;
     const filas = await this.prisma.$queryRaw<FilaDeCatalogo[]>`
       SELECT e."id"::text AS "elementoId", v."id"::text AS "versionId", v."nombre", v."composicion", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
-             e."procedencia"::text AS "procedencia", v."momento_de_registro" AS "momentoDeRegistro"
+             e."procedencia"::text AS "procedencia", v."momento_de_registro" AS "momentoDeRegistro",
+             v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"
         FROM "version_de_elemento_nutricional" v
         JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
        WHERE NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
@@ -105,6 +108,7 @@ export class CatalogoService {
           itemType: 'FOOD',
           composition: pedido.composition,
           provenance: 'PROFESSIONAL_MANUAL',
+          externalSource: null,
           available: true,
         };
         return { estadoHttp: 201, cuerpo: { data: item }, sujetoId: null, recurso: { tipo: 'ElementoDeCatalogoNutricional', id: elemento.id } };
@@ -118,7 +122,8 @@ export class CatalogoService {
     if (validos.length === 0) return new Map();
     const filas = await cliente.$queryRaw<FilaDeCatalogo[]>`
       SELECT e."id"::text AS "elementoId", v."id"::text AS "versionId", v."nombre", v."composicion", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
-             e."procedencia"::text AS "procedencia", v."momento_de_registro" AS "momentoDeRegistro"
+             e."procedencia"::text AS "procedencia", v."momento_de_registro" AS "momentoDeRegistro",
+             v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"
         FROM "version_de_elemento_nutricional" v
         JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
        WHERE e."id" = ANY(${validos}::uuid[])
@@ -147,6 +152,7 @@ function elementoApi(f: FilaDeCatalogo): ElementoDeCatalogo {
     itemType: 'FOOD',
     composition: f.composicion,
     provenance: f.procedencia,
+    externalSource: f.fuenteExterna ?? null,
     available: f.disponible,
   };
 }

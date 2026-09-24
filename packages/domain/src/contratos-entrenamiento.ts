@@ -40,6 +40,7 @@ import {
   ValoracionSchema,
   ZonaHorariaSchema,
 } from './contratos-nutricion';
+import { FuenteExternaSchema } from './contratos-procedencia-externa';
 import { PaginaSchema, ResumenDeActorSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
 const Texto = (max: number) => z.string().trim().min(1).max(max);
@@ -333,6 +334,8 @@ export const EjercicioDeCatalogoSchema = z.strictObject({
   versionId: IdOpaco,
   name: z.string(),
   provenance: ProcedenciaDeCatalogoSchema,
+  /** Proveedor, identificador, fecha y licencia de lo importado de wger; `null` en lo sembrado y lo manual (RF-060). */
+  externalSource: FuenteExternaSchema.nullable(),
   muscleZones: z.array(RelacionConZonaSchema),
   didacticResources: z.array(RecursoDidacticoSchema),
   available: z.boolean(),
