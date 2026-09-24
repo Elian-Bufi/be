@@ -7,12 +7,22 @@
  * - Sin puntajes, porcentajes ni juicios (REG-06-125). Sin registros hoy: «Todavía no registraste comidas hoy.».
  * - Un resultado incierto ofrece reintentar con la misma Idempotency-Key: no duplica (UC-P12 V04; B05:1415-1428).
  * - Si el consentimiento o la A3 están revocados, el plan no está disponible (UC-P12 E06).
+ *
+ * DL-091, los tres patrones que el cierre de WP-06 corrigió y acá faltaban:
+ * - una **escritura** denegada retira el contenido, no deja el plan viejo con un aviso encima (B10-06:1145-1148):
+ *   `useAccesoRetirado` en la pantalla, consultado por cada escritura;
+ * - cada error se asocia a su campo, además del resumen (B10-10:36, 164-165);
+ * - toda cantidad se muestra con `cantidad`/`numero` y toda entrada se lee con `leerNumero`, que acepta coma o punto
+ *   (`@be/domain`, `formato-numeros.ts`). El dato que se guarda no cambia: esto es solo cómo se escribe y cómo se lee.
  */
 import {
+  cantidad,
   COPY,
   COPY_NUTRICION,
   ETIQUETA_DE_PREPARACION,
   ETIQUETA_DE_UNIDAD,
+  leerNumero,
+  motivoDeNumeroIlegible,
   type DiaTipo,
   type HoyResponse,
   type Ingesta,
@@ -25,14 +35,15 @@ import { Cargando, ErrorConReintento, EstadoDeCarga, VerMas } from '../estados';
 import { dia, fecha } from '../formato';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useListaPaginada } from '../lista';
-import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
+import { useAccesoRetirado, useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, COLOR, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 
 type Hoy = HoyResponse['data'];
 type Comida = DiaTipo['meals'][number];
 
-const cantidad = (i: { quantity: { value: number; unit: 'g' | 'ml' | 'unit' } | null; preparationState: keyof typeof ETIQUETA_DE_PREPARACION | null }) =>
-  `${i.quantity ? ` · ${i.quantity.value} ${ETIQUETA_DE_UNIDAD[i.quantity.unit]}` : ''}${i.preparationState ? ` · ${ETIQUETA_DE_PREPARACION[i.preparationState].toLowerCase()}` : ''}`;
+/** Lo que acompaña al nombre de un ítem del plan: « · 150 g · cocido». La cantidad, con la coma del país. */
+const detalleDeItem = (i: { quantity: { value: number; unit: 'g' | 'ml' | 'unit' } | null; preparationState: keyof typeof ETIQUETA_DE_PREPARACION | null }) =>
+  `${i.quantity ? ` · ${cantidad(i.quantity.value, ETIQUETA_DE_UNIDAD[i.quantity.unit])}` : ''}${i.preparationState ? ` · ${ETIQUETA_DE_PREPARACION[i.preparationState].toLowerCase()}` : ''}`;
 
 /** Carga «Hoy» (API-NUT-14) con el día tipo elegido, si hay que elegir. */
 function useHoy(token: string, salir: (m: Salida) => void) {
@@ -53,6 +64,7 @@ function useHoy(token: string, salir: (m: Salida) => void) {
 
 export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void; subir: () => void }) {
   const { r, cargar, setDiaTipo, sesionPerdida } = useHoy(token, salir);
+  const { retirado, accesoRetirado } = useAccesoRetirado();
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error' | 'info'; texto: string } | null>(null);
 
   const registrado = (texto: string) => {
@@ -61,6 +73,18 @@ export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; sali
     void cargar();
   };
 
+  // Una escritura denegada retira el contenido de la pantalla entera, no solo el de la comida que se intentó registrar
+  // (B10-06:1145-1148). Queda el mismo estado neutral que cuando el acceso está suspendido.
+  if (retirado) {
+    return (
+      <View>
+        <Titulo>{COPY_NUTRICION.tuPlanDeHoy}</Titulo>
+        <Aviso tipo="info" titulo={COPY_NUTRICION.planNoDisponible}>
+          <Boton texto="Ir a Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
+        </Aviso>
+      </View>
+    );
+  }
   if (!r) return <Cargando />;
   if (!r.ok) return <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} />;
   const hoy = r.datos.data;
@@ -104,6 +128,7 @@ export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; sali
               comida={m}
               registro={hoy.registeredIntake.find((i) => i.mealId === m.mealId && i.origin === 'PRESCRIBED') ?? null}
               sesionPerdida={sesionPerdida}
+              accesoRetirado={accesoRetirado}
               onRegistrada={() => registrado(COPY_NUTRICION.comidaRegistrada)}
               onPlanCambio={() => {
                 setAviso({ tipo: 'info', texto: COPY_NUTRICION.planCambio });
@@ -115,7 +140,13 @@ export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; sali
       ) : null}
 
       {hoy.activePlan ? (
-        <ComidaFueraDelPlan token={token} planId={hoy.activePlan.planId} sesionPerdida={sesionPerdida} onRegistrada={() => registrado(COPY_NUTRICION.comidaRegistrada)} />
+        <ComidaFueraDelPlan
+          token={token}
+          planId={hoy.activePlan.planId}
+          sesionPerdida={sesionPerdida}
+          accesoRetirado={accesoRetirado}
+          onRegistrada={() => registrado(COPY_NUTRICION.comidaRegistrada)}
+        />
       ) : null}
 
       <Seccion titulo={COPY_NUTRICION.registrosDeHoy}>
@@ -139,6 +170,7 @@ function TarjetaDeComida({
   comida,
   registro,
   sesionPerdida,
+  accesoRetirado,
   onRegistrada,
   onPlanCambio,
 }: {
@@ -148,6 +180,7 @@ function TarjetaDeComida({
   comida: Comida;
   registro: Ingesta | null;
   sesionPerdida: (r: Resultado<unknown>) => boolean;
+  accesoRetirado: (r: Resultado<unknown>) => boolean;
   onRegistrada: () => void;
   onPlanCambio: () => void;
 }) {
@@ -155,16 +188,33 @@ function TarjetaDeComida({
   const [abierta, setAbierta] = useState(false);
   const [opcionId, setOpcionId] = useState<string | null>(comida.options.length === 1 ? (comida.options[0]?.optionId ?? null) : null);
   const [cantidades, setCantidades] = useState<Record<string, string>>({});
+  /** El error de cada cantidad, por ítem: va debajo de su campo, no solo en el resumen (B10-10:36, 164-165). */
+  const [erroresDeCantidad, setErroresDeCantidad] = useState<Record<string, string>>({});
   const [observacion, setObservacion] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<{ texto: string; incierto: boolean } | null>(null);
   const opcion = comida.options.find((o) => o.optionId === opcionId) ?? null;
 
   async function guardar() {
-    if (!opcion) return setFallo({ texto: 'Elegí qué opción comiste.', incierto: false });
+    if (!opcion) return setFallo({ texto: COPY_NUTRICION.elegiQueOpcionComiste, incierto: false });
+    // Una cantidad escrita que no se puede leer como número no se manda en silencio: se señala en su campo. Las
+    // cantidades siguen siendo opcionales — un campo vacío no es un error (B05:836-846).
+    // Un cero o un negativo tampoco se descartan callados: se leen bien como número, pero no son una cantidad comida.
+    const avisos = opcion.items.flatMap((it): [string, string][] => {
+      const escrito = (cantidades[it.itemId] ?? '').trim();
+      if (escrito === '') return [];
+      const v = leerNumero(escrito);
+      if (v === null) return [[it.itemId, motivoDeNumeroIlegible(escrito)]];
+      return v > 0 ? [] : [[it.itemId, 'La cantidad tiene que ser mayor que cero.']];
+    });
+    if (avisos.length > 0) {
+      setErroresDeCantidad(Object.fromEntries(avisos));
+      return setFallo({ texto: COPY_NUTRICION.revisaLasCantidades, incierto: false });
+    }
+    setErroresDeCantidad({});
     const consumidos = opcion.items.flatMap((it) => {
-      const v = Number((cantidades[it.itemId] ?? '').replace(',', '.'));
-      return cantidades[it.itemId] && v > 0 && it.quantity ? [{ itemId: it.itemId, quantity: { value: v, unit: it.quantity.unit } }] : [];
+      const v = leerNumero(cantidades[it.itemId] ?? '');
+      return v !== null && v > 0 && it.quantity ? [{ itemId: it.itemId, quantity: { value: v, unit: it.quantity.unit } }] : [];
     });
     setEnviando(true);
     setFallo(null);
@@ -185,6 +235,8 @@ function TarjetaDeComida({
       setAbierta(false);
       return onRegistrada();
     }
+    // 404 no revelador a una escritura: no hay aviso sobre el plan viejo, la pantalla entera retira el contenido.
+    if (accesoRetirado(r)) return;
     if (esIncierto(r)) return setFallo({ texto: COPY_NUTRICION.noPudimosConfirmar, incierto: true });
     if (r.tipo === 'API' && r.codigo === 'EXECUTION_ALREADY_REGISTERED_INCOMPATIBLY') return setFallo({ texto: COPY_NUTRICION.yaRegistrada, incierto: false });
     if (r.tipo === 'API' && r.codigo === 'ACTIVE_PLAN_REQUIRED') return onPlanCambio();
@@ -200,7 +252,7 @@ function TarjetaDeComida({
           {o.items.map((i) => (
             <Text key={i.itemId} style={s.item}>
               • {i.name}
-              {cantidad(i)}
+              {detalleDeItem(i)}
             </Text>
           ))}
         </View>
@@ -232,10 +284,16 @@ function TarjetaDeComida({
                   <Campo
                     key={i.itemId}
                     etiqueta={`${i.name}: cantidad que comiste (opcional, ${ETIQUETA_DE_UNIDAD[i.quantity!.unit]})`}
-                    ayuda={`Indicado: ${i.quantity!.value} ${ETIQUETA_DE_UNIDAD[i.quantity!.unit]}`}
+                    ayuda={`Indicado: ${cantidad(i.quantity!.value, ETIQUETA_DE_UNIDAD[i.quantity!.unit])}`}
+                    // El teclado decimal de Android puede ofrecer coma: por eso el valor se lee con `leerNumero`.
                     keyboardType="decimal-pad"
                     value={cantidades[i.itemId] ?? ''}
-                    onChangeText={(t) => setCantidades((c) => ({ ...c, [i.itemId]: t }))}
+                    error={erroresDeCantidad[i.itemId] ?? null}
+                    onChangeText={(t) => {
+                      setCantidades((c) => ({ ...c, [i.itemId]: t }));
+                      // El error de un campo se va cuando la persona lo corrige, no recién al volver a guardar.
+                      setErroresDeCantidad((e) => Object.fromEntries(Object.entries(e).filter(([k]) => k !== i.itemId)));
+                    }}
                   />
                 ))
             : null}
@@ -249,6 +307,7 @@ function TarjetaDeComida({
               intento.descartar();
               setAbierta(false);
               setFallo(null);
+              setErroresDeCantidad({});
             }}
             deshabilitado={enviando}
           />
@@ -260,7 +319,19 @@ function TarjetaDeComida({
   );
 }
 
-function ComidaFueraDelPlan({ token, planId, sesionPerdida, onRegistrada }: { token: string; planId: string; sesionPerdida: (r: Resultado<unknown>) => boolean; onRegistrada: () => void }) {
+function ComidaFueraDelPlan({
+  token,
+  planId,
+  sesionPerdida,
+  accesoRetirado,
+  onRegistrada,
+}: {
+  token: string;
+  planId: string;
+  sesionPerdida: (r: Resultado<unknown>) => boolean;
+  accesoRetirado: (r: Resultado<unknown>) => boolean;
+  onRegistrada: () => void;
+}) {
   const intento = useClaveDeIntento();
   const [abierta, setAbierta] = useState(false);
   const [descripcion, setDescripcion] = useState('');
@@ -288,6 +359,8 @@ function ComidaFueraDelPlan({ token, planId, sesionPerdida, onRegistrada }: { to
       setPorcion('');
       return onRegistrada();
     }
+    // 404 no revelador a una escritura: la pantalla retira el contenido (B10-06:1145-1148).
+    if (accesoRetirado(r)) return;
     setFallo(esIncierto(r) ? { texto: COPY_NUTRICION.noPudimosConfirmar, incierto: true } : { texto: falloDe(r).mensaje, incierto: false });
   }
 
@@ -339,10 +412,10 @@ export function PantallaDePlanActual({ token, salir }: { token: string; salir: (
       <Parrafo tenue>Vigente desde el {fecha(plan.activatedAt)}.</Parrafo>
       <Seccion titulo="Objetivo">
         <Parrafo tenue>{COPY_NUTRICION.objetivoDeclarado}</Parrafo>
-        <Dato etiqueta="Energía" valor={`${plan.objective.estimatedEnergyRequirement.value} kcal por día`} />
-        <Dato etiqueta="Proteínas" valor={`${plan.objective.macronutrientDistribution.protein.value} g por día`} />
-        <Dato etiqueta="Carbohidratos" valor={`${plan.objective.macronutrientDistribution.carbohydrate.value} g por día`} />
-        <Dato etiqueta="Grasas" valor={`${plan.objective.macronutrientDistribution.fat.value} g por día`} />
+        <Dato etiqueta="Energía" valor={`${cantidad(plan.objective.estimatedEnergyRequirement.value, 'kcal')} por día`} />
+        <Dato etiqueta="Proteínas" valor={`${cantidad(plan.objective.macronutrientDistribution.protein.value, 'g')} por día`} />
+        <Dato etiqueta="Carbohidratos" valor={`${cantidad(plan.objective.macronutrientDistribution.carbohydrate.value, 'g')} por día`} />
+        <Dato etiqueta="Grasas" valor={`${cantidad(plan.objective.macronutrientDistribution.fat.value, 'g')} por día`} />
         {plan.objective.mealDistribution ? <Parrafo>{plan.objective.mealDistribution}</Parrafo> : null}
       </Seccion>
       {plan.dayTypes.map((d) => (
@@ -356,7 +429,7 @@ export function PantallaDePlanActual({ token, salir }: { token: string; salir: (
                   {o.items.map((i) => (
                     <Text key={i.itemId} style={s.item}>
                       • {i.name}
-                      {cantidad(i)}
+                      {detalleDeItem(i)}
                     </Text>
                   ))}
                 </View>
@@ -431,7 +504,9 @@ export function PantallaDeRegistroNutricional({ token, id, salir }: { token: str
       <Dato etiqueta="Registrado" valor={fecha(i.recordedAt)} />
       {i.origin === 'PRESCRIBED' ? (
         <>
-          {i.consumedItems.length > 0 ? <Parrafo>Cantidades que informaste: {i.consumedItems.map((c) => `${c.quantity.value} ${ETIQUETA_DE_UNIDAD[c.quantity.unit]}`).join(', ')}</Parrafo> : null}
+          {i.consumedItems.length > 0 ? (
+            <Parrafo>Cantidades que informaste: {i.consumedItems.map((c) => cantidad(c.quantity.value, ETIQUETA_DE_UNIDAD[c.quantity.unit])).join(', ')}</Parrafo>
+          ) : null}
           {i.observation ? <Dato etiqueta="Observación" valor={i.observation} /> : null}
         </>
       ) : (
@@ -445,7 +520,7 @@ export function PantallaDeRegistroNutricional({ token, id, salir }: { token: str
           {efectiva.structuredEstimate.items.map((e, k) => (
             <Text key={k} style={s.item}>
               • {e.description}
-              {e.quantity ? ` · ${e.quantity.value} ${ETIQUETA_DE_UNIDAD[e.quantity.unit]}` : ''}
+              {e.quantity ? ` · ${cantidad(e.quantity.value, ETIQUETA_DE_UNIDAD[e.quantity.unit])}` : ''}
             </Text>
           ))}
           <Parrafo tenue>

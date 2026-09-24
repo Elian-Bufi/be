@@ -116,6 +116,10 @@ export const COPY_NUTRICION = {
   sinRegistrosHoy: 'Todavía no registraste comidas hoy.',
   yaRegistrada: 'Esa comida ya está registrada para hoy.',
   planCambio: 'Tu plan se actualizó. Volvé a abrir «Hoy» para ver el vigente.',
+  // El aviso de cada campo lo da `motivoDeNumeroIlegible` del dominio (distingue «1.850», que es ambiguo); este es el
+  // resumen de arriba (B10-10:36, 164-165).
+  revisaLasCantidades: 'Hay una cantidad que no pudimos usar. Revisá los campos señalados.',
+  elegiQueOpcionComiste: 'Elegí qué opción comiste.',
 } as const;
 
 /**

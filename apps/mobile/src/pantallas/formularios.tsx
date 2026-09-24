@@ -11,7 +11,17 @@
  * `respondable` lo decide la API en cada lectura, con la política vigente: si el vínculo se pausó o el
  * consentimiento se revocó, la solicitud sigue estando —es de la persona— pero ya no se puede responder.
  */
-import { COPY_FORMULARIOS, type CampoDePlantilla, type RespuestaDeFormulario, type SolicitudDeFormulario, type SolicitudPropia, type VersionDePlantilla } from '@be/domain';
+import {
+  COPY_FORMULARIOS,
+  leerNumero,
+  motivoDeNumeroIlegible,
+  numero,
+  type CampoDePlantilla,
+  type RespuestaDeFormulario,
+  type SolicitudDeFormulario,
+  type SolicitudPropia,
+  type VersionDePlantilla,
+} from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '../api';
@@ -22,6 +32,9 @@ import { useSesionPerdida, type Salida } from '../navegacion';
 import { Aviso, Boton, Campo, Insignia, Parrafo, Seccion, Tarjeta, Titulo } from '../ui';
 
 type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: readonly SolicitudPropia[] } | { tipo: 'error'; sinConexion: boolean };
+
+/** Lo respondido, escrito como lo lee una persona: «Sí»/«No», y los números con la coma del país (DL-091 punto 4). */
+const valorRespondido = (v: string | number | boolean): string => (typeof v === 'boolean' ? (v ? 'Sí' : 'No') : typeof v === 'number' ? numero(v) : v);
 
 export function PantallaDeFormularios({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: { nombre: 'mi-solicitud'; id: string }) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
@@ -81,6 +94,8 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
   const sesionPerdida = useSesionPerdida(salir);
   const [carga, setCarga] = useState<CargaDeDetalle>({ tipo: 'cargando' });
   const [valores, setValores] = useState<Record<string, string>>({});
+  /** Avisos por campo: un número escrito que no se entiende se marca ahí, no se descarta en silencio (B10-10:164-165). */
+  const [errores, setErrores] = useState<Record<string, string>>({});
   const [motivo, setMotivo] = useState('');
   const [aviso, setAviso] = useState<{ tipo: 'error' | 'exito'; texto: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -114,13 +129,25 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
 
   async function enviar() {
     setAviso(null);
+    // Lo que se escribió en un campo numérico y no es un número no se omite como si estuviera vacío: la persona lo
+    // completó, y perderlo sin avisar haría que un requerido parezca faltante o que un opcional desaparezca.
+    const ilegibles = Object.fromEntries(
+      pedidos
+        .filter((c) => c.dataType === 'NUMBER')
+        .map((c) => [c.fieldCode, (valores[c.fieldCode] ?? '').trim()] as const)
+        .filter(([, crudo]) => crudo !== '' && leerNumero(crudo) === null)
+        .map(([codigo, crudo]) => [codigo, motivoDeNumeroIlegible(crudo)]),
+    );
+    setErrores(ilegibles);
+    if (Object.keys(ilegibles).length > 0) return setAviso({ tipo: 'error', texto: 'Hay un número que no se entiende. Revisá el campo marcado.' });
     // Un campo sin completar se omite: nunca viaja como cero ni como cadena vacía (09:1586-1587).
     const answers = pedidos.flatMap((c): { fieldCode: string; value: string | number | boolean }[] => {
       const crudo = (valores[c.fieldCode] ?? '').trim();
       if (crudo === '') return [];
       if (c.dataType === 'NUMBER') {
-        const n = Number(crudo.replace(',', '.'));
-        return Number.isFinite(n) ? [{ fieldCode: c.fieldCode, value: n }] : [];
+        // Coma o punto, como la persona lo escriba (DL-091 punto 4). Lo ilegible ya se señaló arriba.
+        const n = leerNumero(crudo);
+        return n === null ? [] : [{ fieldCode: c.fieldCode, value: n }];
       }
       if (c.dataType === 'BOOLEAN') return [{ fieldCode: c.fieldCode, value: /^(s|si|sí|true|1)$/i.test(crudo) }];
       return [{ fieldCode: c.fieldCode, value: crudo }];
@@ -160,7 +187,7 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
           <Parrafo tenue>{COPY_FORMULARIOS.rectificarConservaHistoria}</Parrafo>
           {response.original.answers.map((a) => (
             <Parrafo key={a.fieldCode}>
-              {etiqueta(a.fieldCode)}: {typeof a.value === 'boolean' ? (a.value ? 'Sí' : 'No') : String(a.value)}
+              {etiqueta(a.fieldCode)}: {valorRespondido(a.value)}
             </Parrafo>
           ))}
           {response.rectifications.map((c) => (
@@ -170,7 +197,7 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
               </Parrafo>
               {c.answers.map((a) => (
                 <Parrafo key={a.fieldCode}>
-                  {etiqueta(a.fieldCode)}: {typeof a.value === 'boolean' ? (a.value ? 'Sí' : 'No') : String(a.value)}
+                  {etiqueta(a.fieldCode)}: {valorRespondido(a.value)}
                 </Parrafo>
               ))}
             </View>
@@ -186,8 +213,13 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
             etiqueta={`${c.label}${request.requiredFieldCodes.includes(c.fieldCode) ? '' : ` (${COPY_FORMULARIOS.opcional})`}`}
             ayuda={c.helpText ?? (c.dataType === 'BOOLEAN' ? 'Respondé «sí» o «no».' : COPY_FORMULARIOS.omitirCampo)}
             value={valores[c.fieldCode] ?? ''}
-            onChangeText={(t) => setValores({ ...valores, [c.fieldCode]: t })}
-            keyboardType={c.dataType === 'NUMBER' ? 'numeric' : 'default'}
+            error={errores[c.fieldCode] ?? null}
+            onChangeText={(t) => {
+              setValores({ ...valores, [c.fieldCode]: t });
+              if (errores[c.fieldCode]) setErrores(({ [c.fieldCode]: _, ...resto }) => resto);
+            }}
+            // El teclado decimal de Android puede ofrecer coma: por eso el valor se lee con `leerNumero`.
+            keyboardType={c.dataType === 'NUMBER' ? 'decimal-pad' : 'default'}
           />
         ))}
         {esCorreccion ? <Campo etiqueta={COPY_FORMULARIOS.motivoDeRectificacion} value={motivo} onChangeText={setMotivo} /> : null}
