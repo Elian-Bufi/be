@@ -127,6 +127,8 @@ export function VistaDePlan() {
 
           <section className="seccion" aria-labelledby="titulo-historial">
             <h2 id="titulo-historial">Historial</h2>
+            {/* Una sección vacía no dice nada: la ausencia se dice (B10-10 §16). */}
+            {r.datos.versiones.some((v) => v.state === 'ACTIVATED') ? null : <p className="nota">Todavía no se activó ninguna versión.</p>}
             <ol className="historial">
               {r.datos.versiones
                 .filter((v) => v.state === 'ACTIVATED')

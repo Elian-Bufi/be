@@ -59,7 +59,7 @@ function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () =>
         Lo prescripto y lo registrado, día por día. Un día o una comida sin registro es «{COPY_NUTRICION.sinRegistro}»: no se interpreta.
       </p>
       {dias.map((d) => (
-        <section key={d.date} className="seccion" aria-labelledby={`dia-${d.date}`}>
+        <section key={d.date} className={`seccion${d.meals.length === 0 ? ' seccion--compacta' : ''}`} aria-labelledby={`dia-${d.date}`}>
           <h2 id={`dia-${d.date}`}>{dia(`${d.date}T12:00:00Z`)}</h2>
           {d.dataState === 'NO_DATA' ? <p className="insignia">{COPY_NUTRICION.sinRegistro}</p> : null}
           {d.meals.length > 0 ? (

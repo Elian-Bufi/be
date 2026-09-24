@@ -1,0 +1,89 @@
+/*
+ * Tokens del sistema visual de BE: el único lugar del website donde se escribe un color.
+ *
+ * B10-10 §7 deja los «valores exactos de tamaño/tokens» al sistema visual; RNF-ACC-001 exige contraste suficiente con
+ * WCAG 2.2 AA como marco. `scripts/contraste.test.cjs` lee este archivo y falla si un par de texto baja de 4,5:1 o un
+ * borde de control, el foco o un punto de la figura bajan de 3:1 (WCAG 1.4.3 y 1.4.11). Un color nuevo entra acá y en
+ * esa prueba, o no entra.
+ *
+ * Dos temas con la misma marca (docs/paquetes/WP-IDENTIDAD-VISUAL.md, tramo A):
+ * - claro y azul para el website con sesión, donde se trabaja con datos (Dirección, 2026-09-20);
+ * - oscuro para la cara pública —landing, acceso, registro y legales—, como las referencias de Dirección del 2026-09-21.
+ * El encabezado es navy en los dos.
+ */
+:root {
+  /* Superficies y texto */
+  --fondo: #f4f7fb;
+  --fondo-suave: #eef3fa;
+  --superficie: #ffffff;
+  --texto: #0b1b2e;
+  --tenue: #475569;
+  /* Marca */
+  --azul: #1f5bc4;
+  --azul-oscuro: #17459a;
+  --navy: #04213f;
+  --cian: #5ee0fb;
+  /* Interacción */
+  --enlace: #17459a;
+  --boton-fondo: #1f5bc4;
+  --boton-fondo-activo: #17459a;
+  --boton-texto: #ffffff;
+  --boton-secundario-texto: #17459a;
+  --boton-secundario-borde: #1f5bc4;
+  --peligro-fondo: #b42318;
+  --peligro-texto: #ffffff;
+  /* Bordes: el decorativo separa; el de control delimita un campo y necesita 3:1 (WCAG 1.4.11) */
+  --borde: #d5deea;
+  --borde-control: #6b7a90;
+  --foco: #b45309;
+  /* Estados: siempre con texto o forma además del color (B10-10 §1, §12) */
+  --error: #b42318;
+  --error-fondo: #fef3f2;
+  --exito: #067647;
+  --exito-fondo: #ecfdf3;
+  /* Encabezado de marca: navy en los dos temas */
+  --encabezado-fondo: #04213f;
+  --encabezado-fondo-2: #0a2e52;
+  --encabezado-texto: #f2f7fc;
+  --encabezado-tenue: #a9c1da;
+  --encabezado-foco: #fbbf24;
+  /* Figura de la toma antropométrica (tramo D): el azul de la referencia de Dirección, sobre una tarjeta blanca */
+  --figura-relleno: #eaf3ff;
+  --figura-trazo: #2e8fff;
+  --punto: #17459a;
+  --punto-halo: #c4f0ff;
+  /* Sombras y velo: no son texto ni bordes de control */
+  --sombra-suave: 0 1px 2px rgb(4 33 63 / 6%), 0 1px 1px rgb(4 33 63 / 4%);
+  --sombra: 0 20px 50px rgb(4 33 63 / 30%);
+  --velo: rgb(4 33 63 / 55%);
+  color-scheme: light;
+}
+
+.tema-oscuro {
+  --fondo: #04213f;
+  --fondo-suave: #07284a;
+  --superficie: #0a2e52;
+  --texto: #f2f7fc;
+  --tenue: #a9c1da;
+  --azul: #2e8fff;
+  --azul-oscuro: #5ee0fb;
+  --enlace: #5ee0fb;
+  --boton-fondo: #5ee0fb;
+  --boton-fondo-activo: #a5f0ff;
+  --boton-texto: #04213f;
+  --boton-secundario-texto: #5ee0fb;
+  --boton-secundario-borde: #5ee0fb;
+  --peligro-fondo: #ff9b8f;
+  --peligro-texto: #04213f;
+  --borde: #1e4470;
+  --borde-control: #7fa3c8;
+  --foco: #fbbf24;
+  --error: #ff9b8f;
+  --error-fondo: #3b1a25;
+  --exito: #6ee7b7;
+  --exito-fondo: #0b3a3a;
+  --sombra-suave: none;
+  --sombra: 0 20px 50px rgb(0 0 0 / 45%);
+  --velo: rgb(0 0 0 / 60%);
+  color-scheme: dark;
+}

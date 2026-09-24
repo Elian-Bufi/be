@@ -7,6 +7,9 @@ import type { ExpoConfig } from 'expo/config';
  */
 const VERSION = '0.8.0';
 
+/** El fondo navy del tema oscuro (src/tema.ts): detrás de la app mientras carga y detrás del ícono adaptativo. */
+const FONDO = '#04213F';
+
 const config: ExpoConfig = {
   name: 'BE',
   slug: 'be',
@@ -14,13 +17,15 @@ const config: ExpoConfig = {
   version: VERSION,
   orientation: 'portrait',
   icon: './assets/icon.png',
-  userInterfaceStyle: 'light',
+  // La APK usa el tema oscuro de las referencias de Dirección del 2026-09-21 (docs/paquetes/WP-IDENTIDAD-VISUAL.md).
+  userInterfaceStyle: 'dark',
+  backgroundColor: FONDO,
   android: {
     package: 'com.elianbufi.be',
     versionCode: 9,
     adaptiveIcon: {
       foregroundImage: './assets/android-icon-foreground.png',
-      backgroundColor: '#ffffff',
+      backgroundColor: FONDO,
     },
     predictiveBackGestureEnabled: false,
   },

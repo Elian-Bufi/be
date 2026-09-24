@@ -10,9 +10,8 @@ export const metadata: Metadata = { title: 'Consentimiento · BE' };
 export default function PaginaDeConsentimiento() {
   return (
     <>
-      <Encabezado />
-      <main className="contenido">
-        <NavegacionDeCuenta />
+      <Encabezado navegacion={<NavegacionDeCuenta />} />
+      <main id="contenido" className="contenido">
         <h1>Revisar consentimiento</h1>
         <Suspense fallback={null}>
           <Consentimiento />

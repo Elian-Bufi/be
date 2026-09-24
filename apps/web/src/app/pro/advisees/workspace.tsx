@@ -69,12 +69,13 @@ export function Workspace() {
 
   return (
     <div className="secciones">
-      <section className="seccion" aria-labelledby="titulo-asesorado">
+      {/* Header contextual (B10-01): nombre, alcance, estado del vínculo; nada de ficha clínica. */}
+      <section className="seccion contexto" aria-labelledby="titulo-asesorado">
         <h2 id="titulo-asesorado">{nombre ?? 'Asesorado'}</h2>
         {encabezado.tipo === 'cargando' ? <Cargando /> : null}
         {encabezado.tipo === 'error' ? <ErrorConReintento onReintentar={consultar} /> : null}
         {encabezado.tipo === 'listo' && encabezado.vinculos.length > 0 ? (
-          <ul className="estados-de-vinculo">
+          <ul className="estados-de-vinculo estados-de-vinculo--en-linea">
             {encabezado.vinculos.map((v) => {
               const e = estadoParaMostrar(v, 'PROFESSIONAL');
               return (
@@ -123,9 +124,6 @@ export function Workspace() {
         {consultadoEn ? <p className="nota">Última consulta: {hora.format(consultadoEn)}</p> : null}
       </section>
 
-      <p>
-        <Link href="/pro">Volver al espacio profesional</Link>
-      </p>
     </div>
   );
 }

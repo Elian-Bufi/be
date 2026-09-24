@@ -13,9 +13,8 @@ export const metadata: Metadata = { title: 'Entrenamiento · BE' };
 export default function PaginaDeEntrenamiento() {
   return (
     <>
-      <Encabezado />
-      <main className="contenido contenido--ancho">
-        <NavegacionProfesional />
+      <Encabezado navegacion={<NavegacionProfesional />} />
+      <main id="contenido" className="contenido contenido--ancho">
         <Suspense fallback={null}>
           <Entrenamiento />
         </Suspense>

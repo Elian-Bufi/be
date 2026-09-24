@@ -13,9 +13,8 @@ export const metadata: Metadata = { title: 'Información · BE' };
 export default function PaginaDeFormularios() {
   return (
     <>
-      <Encabezado />
-      <main className="contenido contenido--ancho">
-        <NavegacionProfesional />
+      <Encabezado navegacion={<NavegacionProfesional />} />
+      <main id="contenido" className="contenido contenido--ancho">
         <Suspense fallback={null}>
           <Formularios />
         </Suspense>

@@ -1,19 +1,10 @@
-:root {
-  --azul: #1f5bc4;
-  --azul-oscuro: #17459a;
-  --texto: #111827;
-  --tenue: #4b5563;
-  --borde: #d1d5db;
-  --fondo: #ffffff;
-  --fondo-suave: #f3f6fb;
-  --error: #b42318;
-  --error-fondo: #fef3f2;
-  --exito: #067647;
-  --exito-fondo: #ecfdf3;
-  --foco: #f59e0b;
-  color-scheme: light;
-}
+/*
+ * Estilos del website. Ningún color se escribe acá: todos salen de tokens.css, que es lo que verifica la prueba de
+ * contraste (scripts/contraste.test.cjs). El tema lo da el contenedor: `:root` es el claro y azul del espacio de
+ * trabajo; `.tema-oscuro`, la cara pública (docs/paquetes/WP-IDENTIDAD-VISUAL.md, tramo A).
+ */
 
+/* ─── Base ────────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
@@ -24,11 +15,47 @@ body {
   background: var(--fondo);
   color: var(--texto);
   font-family: Inter, 'Segoe UI', Roboto, Arial, sans-serif;
-  line-height: 1.5;
+  font-size: 100%;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* La cara pública pinta toda la ventana, también lo que queda fuera del contenido. */
+html:has(.tema-oscuro),
+html:has(.tema-oscuro) body {
+  background: var(--navy);
+  color-scheme: dark;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: clamp(1.6rem, 1.1rem + 1.8vw, 2.15rem);
+  margin: 0.5rem 0 1rem;
+}
+
+h2 {
+  font-size: 1.3rem;
+}
+
+h3 {
+  font-size: 1.08rem;
 }
 
 a {
-  color: var(--azul-oscuro);
+  color: var(--enlace);
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
 }
 
 :focus-visible {
@@ -43,26 +70,183 @@ code {
   border-radius: 4px;
 }
 
-/* ─── Inicio ──────────────────────────────────────────────────────────── */
-.pantalla {
+/* Solo para el lector de pantalla (B10-10 §1: el texto también está, aunque no se vea). */
+.visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* «Saltar al contenido»: invisible hasta que recibe el foco del teclado (B10-10 §7). */
+.saltar {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 10;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  background: var(--boton-fondo);
+  color: var(--boton-texto);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.saltar:focus {
+  top: 0.75rem;
+}
+
+/* ─── Temas ───────────────────────────────────────────────────────────── */
+.tema-oscuro {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 2rem 1.25rem;
-  max-width: 48rem;
+  background:
+    radial-gradient(60rem 30rem at 85% -10%, color-mix(in srgb, var(--azul) 22%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--fondo) 0%, var(--fondo-suave) 100%);
+  color: var(--texto);
+}
+
+.tema-oscuro > main {
+  flex: 1 0 auto;
+}
+
+/* ─── Encabezado de marca: navy en los dos temas ──────────────────────── */
+.encabezado {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.75rem;
+  padding: 0.6rem clamp(1rem, 3vw, 2rem);
+  background: linear-gradient(90deg, var(--encabezado-fondo), var(--encabezado-fondo-2));
+  color: var(--encabezado-texto);
+  border-bottom: 2px solid var(--cian);
+}
+
+.encabezado :focus-visible {
+  outline-color: var(--encabezado-foco);
+}
+
+.encabezado__marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--encabezado-texto);
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+}
+
+.encabezado__marca img {
+  display: block;
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.encabezado__ambiente {
+  margin: 0 0 0 auto;
+  font-size: 0.85rem;
+  color: var(--encabezado-tenue);
+}
+
+/* La navegación de la sección, dentro del encabezado (B10-10 §9: navegación superior). */
+.encabezado .navegacion ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.encabezado .navegacion a {
+  display: inline-block;
+  padding: 0.45rem 0 0.3rem;
+  color: var(--encabezado-texto);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+}
+
+.encabezado .navegacion a:hover {
+  border-bottom-color: var(--encabezado-tenue);
+}
+
+/* La sección actual: el texto la dice (aria-current) y la forma la marca, no solo el color (B10-10 §1). */
+.encabezado .navegacion a[aria-current='page'],
+.encabezado .navegacion a[aria-current='location'] {
+  color: var(--encabezado-texto);
+  border-bottom-color: var(--cian);
+}
+
+@media (max-width: 40rem) {
+  .encabezado__ambiente {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}
+
+/* ─── Pie ─────────────────────────────────────────────────────────────── */
+.pie {
+  padding: 1.5rem clamp(1rem, 3vw, 2rem) 2rem;
+  border-top: 1px solid var(--borde);
+  color: var(--tenue);
+  font-size: 0.9rem;
+}
+
+.pie__contenido {
+  max-width: 72rem;
   margin: 0 auto;
-  border-top: 6px solid var(--azul);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 2rem;
+  align-items: baseline;
+  justify-content: space-between;
 }
 
-.wordmark {
-  width: 9rem;
-  height: auto;
+.pie ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-h1 {
-  font-size: clamp(1.5rem, 5vw, 2.25rem);
-  margin: 1rem 0 0.5rem;
+.pie p {
+  margin: 0;
+}
+
+.identidad {
+  font-size: 0.8rem;
+  color: var(--tenue);
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+/* ─── Estructura ──────────────────────────────────────────────────────── */
+.contenido {
+  width: 100%;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 1.75rem clamp(1rem, 3vw, 2rem) 4rem;
+}
+
+/* El espacio de trabajo profesional: densidad alta permitida (B10-10 §9, «PRO desktop»). */
+.contenido--ancho {
+  max-width: 76rem;
+}
+
+.nota {
+  color: var(--tenue);
+  font-size: 0.92rem;
 }
 
 .bajada {
@@ -71,55 +255,16 @@ h1 {
   font-size: 1.05rem;
 }
 
-.identidad {
-  margin-top: 3rem;
-  font-size: 0.8rem;
-  color: var(--tenue);
-  font-variant-numeric: tabular-nums;
-  word-break: break-all;
-}
-
-/* ─── Estructura ──────────────────────────────────────────────────────── */
-.encabezado {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-  padding: 0.75rem 1.25rem;
-  border-top: 6px solid var(--azul);
-  border-bottom: 1px solid var(--borde);
-}
-
-.encabezado__marca {
-  font-weight: 800;
-  font-size: 1.5rem;
-  color: var(--azul);
-  text-decoration: none;
-}
-
-.encabezado__ambiente {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--tenue);
-}
-
-.contenido {
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: 1rem 1.25rem 3rem;
-}
-
-.nota {
-  color: var(--tenue);
-  font-size: 0.9rem;
-}
-
 .acciones {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.75rem;
   margin: 1rem 0;
+}
+
+.tenue {
+  color: var(--tenue);
 }
 
 /* ─── Botones: jerarquía por texto y forma, no solo por color (10-B04:1218-1233) ─── */
@@ -127,43 +272,52 @@ h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.4rem;
   min-height: 44px;
-  padding: 0.6rem 1.1rem;
-  border-radius: 8px;
+  padding: 0.6rem 1.15rem;
+  border-radius: 10px;
   border: 2px solid transparent;
   font: inherit;
-  font-weight: 600;
+  font-weight: 650;
+  line-height: 1.2;
   text-decoration: none;
   cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
 }
 
 .boton:disabled {
   opacity: 0.6;
-  cursor: progress;
+  cursor: not-allowed;
 }
 
 .boton--primario {
-  background: var(--azul);
-  color: #fff;
+  background: var(--boton-fondo);
+  color: var(--boton-texto);
 }
 
 .boton--primario:hover:not(:disabled) {
-  background: var(--azul-oscuro);
+  background: var(--boton-fondo-activo);
 }
 
 .boton--secundario {
-  background: #fff;
-  color: var(--azul-oscuro);
-  border-color: var(--azul);
+  background: transparent;
+  color: var(--boton-secundario-texto);
+  border-color: var(--boton-secundario-borde);
+}
+
+.boton--secundario:hover:not(:disabled) {
+  background: var(--fondo-suave);
 }
 
 .boton--peligro {
-  background: var(--error);
-  color: #fff;
+  background: var(--peligro-fondo);
+  color: var(--peligro-texto);
 }
 
 .boton--peligro-secundario {
-  background: #fff;
+  background: transparent;
   color: var(--error);
   border-color: var(--error);
 }
@@ -173,8 +327,10 @@ h1 {
   padding: 0;
   background: none;
   border: none;
-  color: var(--azul-oscuro);
+  color: var(--enlace);
+  font-weight: 600;
   text-decoration: underline;
+  text-underline-offset: 0.18em;
 }
 
 /* ─── Formularios (10-B10 §6-§8) ─────────────────────────────────────── */
@@ -187,23 +343,60 @@ h1 {
 .campo {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
+  margin: 0 0 0.9rem;
+}
+
+/* Donde el contenedor ya separa con `gap`, el margen sobra. */
+.formulario .campo,
+.fila-de-dato .campo,
+.fila-de-item .campo {
+  margin: 0;
+}
+
+/* El filtro de período no necesita todo el ancho: dos fechas y un botón. */
+.filtro-de-periodo .campo {
+  flex: 0 1 14rem;
 }
 
 .campo label {
   font-weight: 600;
 }
 
-.campo input {
+.campo input,
+.campo select,
+.campo textarea {
   font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
   min-height: 44px;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--borde);
+  border: 1px solid var(--borde-control);
   border-radius: 8px;
   max-width: 100%;
 }
 
+.campo select,
+.campo textarea {
+  width: 100%;
+}
+
+.campo input:disabled,
+.campo select:disabled,
+.campo textarea:disabled {
+  background: var(--fondo-suave);
+  cursor: not-allowed;
+}
+
+.campo input::placeholder,
+.campo textarea::placeholder {
+  color: var(--tenue);
+  opacity: 1;
+}
+
 .campo--error input,
+.campo--error select,
+.campo--error textarea,
 .acto.campo--error {
   border-color: var(--error);
   border-width: 2px;
@@ -216,14 +409,19 @@ h1 {
 }
 
 .campo__error {
-  margin: 0.25rem 0 0;
+  margin: 0.2rem 0 0;
   color: var(--error);
   font-weight: 600;
 }
 
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--boton-fondo);
+}
+
 .actos {
   border: 1px solid var(--borde);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -241,7 +439,7 @@ h1 {
   gap: 0.25rem 0.75rem;
   padding: 0.75rem;
   border: 1px solid var(--borde);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--fondo-suave);
 }
 
@@ -262,8 +460,9 @@ h1 {
 
 /* ─── Avisos ─────────────────────────────────────────────────────────── */
 .aviso {
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
   border-left: 6px solid var(--azul);
   background: var(--fondo-suave);
   margin: 0.5rem 0;
@@ -292,7 +491,7 @@ h1 {
   font-weight: 700;
 }
 
-/* ─── Cuenta ─────────────────────────────────────────────────────────── */
+/* ─── Secciones y datos ───────────────────────────────────────────────── */
 .secciones {
   display: flex;
   flex-direction: column;
@@ -300,23 +499,35 @@ h1 {
 }
 
 .seccion {
+  background: var(--superficie);
   border: 1px solid var(--borde);
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  padding: 1.1rem 1.4rem 1.25rem;
+  box-shadow: var(--sombra-suave);
 }
 
 .seccion h2 {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.6rem;
   font-size: 1.25rem;
 }
 
 .seccion h3 {
-  margin: 0.5rem 0;
+  margin: 0.75rem 0 0.5rem;
   font-size: 1.05rem;
 }
 
 .seccion--cierre {
   border-color: var(--error);
+}
+
+/* Un día sin registro no necesita el espacio de uno con datos; sigue diciendo que no hay (B10-10 §1: NO_DATA ≠ 0). */
+.seccion--compacta {
+  padding: 0.6rem 1.25rem 0.7rem;
+}
+
+.seccion--compacta > * {
+  margin-top: 0.2rem;
+  margin-bottom: 0.2rem;
 }
 
 .datos {
@@ -351,8 +562,9 @@ h1 {
 
 .insignia {
   display: inline-block;
-  padding: 0.15rem 0.6rem;
+  padding: 0.1rem 0.65rem;
   border-radius: 999px;
+  font-size: 0.9rem;
   font-weight: 700;
   border: 2px solid currentColor;
 }
@@ -367,7 +579,8 @@ h1 {
 
 details summary {
   cursor: pointer;
-  color: var(--azul-oscuro);
+  color: var(--enlace);
+  font-weight: 600;
 }
 
 .texto-legal p {
@@ -376,14 +589,16 @@ details summary {
 
 .dialogo {
   max-width: min(36rem, calc(100vw - 2rem));
-  border: none;
-  border-radius: 12px;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
   padding: 1.25rem 1.5rem;
-  box-shadow: 0 20px 50px rgb(0 0 0 / 30%);
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra);
 }
 
 .dialogo::backdrop {
-  background: rgb(17 24 39 / 55%);
+  background: var(--velo);
 }
 
 .dialogo h2 {
@@ -396,29 +611,94 @@ details summary {
   }
 }
 
-/* ─── WP-03: navegación, listas, historial ────────────────────────────── */
-.navegacion ul {
+/* ─── Espacio profesional ─────────────────────────────────────────────── */
+/* Migas: dónde está la persona (B10-01, header contextual). */
+.migas ol {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.25rem;
+  gap: 0.25rem 0.5rem;
   list-style: none;
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.25rem;
   padding: 0;
+  font-size: 0.92rem;
+  color: var(--tenue);
 }
 
-.navegacion a {
-  display: inline-block;
-  padding: 0.35rem 0;
+.migas li + li::before {
+  content: '›';
+  margin-right: 0.5rem;
+  color: var(--tenue);
+}
+
+.migas [aria-current='page'] {
+  color: var(--texto);
   font-weight: 600;
 }
 
-.navegacion a[aria-current='page'],
-.navegacion a[aria-current='location'] {
-  color: var(--texto);
-  text-decoration: none;
-  border-bottom: 3px solid var(--azul);
+/* La lista de asesorados es lo principal; pedir un vínculo va al costado en pantallas anchas (B10-10 §9). */
+.espacio {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
 }
 
+@media (min-width: 64rem) {
+  .espacio {
+    grid-template-columns: minmax(0, 1.65fr) minmax(19rem, 1fr);
+  }
+
+  .espacio__lateral {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.asesorado__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.asesorado__cabecera .lista__titulo {
+  font-size: 1.08rem;
+}
+
+.alcances {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.alcances li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  padding: 0.45rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.alcances__nombre {
+  flex: 1 1 16rem;
+  font-weight: 600;
+}
+
+/* El header contextual del workspace: nombre y un estado por alcance, en una línea cuando entra. */
+.contexto h2 {
+  margin-bottom: 0.4rem;
+}
+
+.estados-de-vinculo.estados-de-vinculo--en-linea {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.75rem;
+}
+
+/* ─── Listas e historial ──────────────────────────────────────────────── */
 .lista {
   list-style: none;
   margin: 0.5rem 0;
@@ -428,8 +708,9 @@ details summary {
 }
 
 .lista__item {
+  background: var(--superficie);
   border: 1px solid var(--borde);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0.75rem 1rem;
 }
 
@@ -465,6 +746,8 @@ details summary {
   padding: 0.35rem 0.6rem;
   border-radius: 6px;
   background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  font-variant-numeric: tabular-nums;
   word-break: break-all;
   user-select: all;
 }
@@ -477,169 +760,389 @@ details summary {
   gap: 0.35rem;
 }
 
-.campo select {
-  font: inherit;
-  min-height: 44px;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid var(--borde);
-  border-radius: 8px;
-  background: #fff;
-  color: var(--texto);
-}
-
-/* ─── WP-04 · Nutrición (B10-05) ──────────────────────────────────────────────────────────────── */
-.contenido--ancho {
-  max-width: 64rem;
-}
+/* ─── Pestañas del workspace (B10-01: tabs como revelación) ───────────── */
 .pestanas ul {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.25rem;
+  gap: 0.25rem 1.5rem;
   list-style: none;
   margin: 0 0 1.5rem;
   padding: 0;
-  border-bottom: 1px solid var(--borde, #d0d5dd);
+  border-bottom: 1px solid var(--borde);
 }
+
 .pestanas a {
   display: inline-block;
-  padding: 0.5rem 0;
+  padding: 0.55rem 0;
+  color: var(--tenue);
+  font-weight: 600;
   text-decoration: none;
-  color: inherit;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
 }
+
+.pestanas a:hover {
+  color: var(--texto);
+}
+
 .pestanas a[aria-current='page'] {
-  font-weight: 600;
-  border-bottom: 3px solid var(--acento, #2f5bbf);
+  color: var(--texto);
+  border-bottom-color: var(--azul);
 }
-.campo textarea,
-.campo select {
-  font: inherit;
-  padding: 0.5rem;
-  border: 1px solid var(--borde, #98a2b3);
-  border-radius: 6px;
-  width: 100%;
-  box-sizing: border-box;
-}
+
+/* ─── Editores de plan: nutrición (B10-05) y entrenamiento (B10-06) ───── */
 .grupo {
-  border: 1px solid var(--borde, #d0d5dd);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 0.85rem 1.1rem 1rem;
   margin: 0 0 1rem;
+  background: var(--superficie);
 }
+
 .grupo legend {
-  font-weight: 600;
-  padding: 0 0.25rem;
+  font-weight: 700;
+  padding: 0 0.35rem;
 }
+
 .fila-de-dato {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: flex-end;
 }
+
 .fila-de-dato .campo {
   flex: 1 1 9rem;
+  margin: 0;
 }
+
 .jerarquia {
   display: grid;
   gap: 1rem;
   margin: 1rem 0;
 }
+
+/* Cada nivel del plan se distingue por su borde, su fondo y su título: nunca solo por el color. */
 .nodo {
-  border: 1px solid var(--borde, #d0d5dd);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 0.85rem 1.1rem;
   margin: 0 0 0.75rem;
+  background: var(--superficie);
 }
+
+.nodo .nodo {
+  background: var(--fondo-suave);
+}
+
+/* El tercer nivel vuelve a la superficie: cada nivel se separa del que lo contiene. */
+.nodo .nodo .nodo {
+  background: var(--superficie);
+}
+
 .nodo--comida {
-  border-left: 4px solid var(--acento, #2f5bbf);
+  border-left: 4px solid var(--azul);
 }
+
 .nodo--opcion {
-  background: var(--fondo-suave, #f5f7fb);
+  background: var(--fondo-suave);
 }
+
 .nodo legend,
 .nodo h3,
 .nodo h4 {
-  font-weight: 600;
+  font-weight: 700;
   margin: 0 0 0.5rem;
 }
+
 .items {
   list-style: none;
   margin: 0 0 0.5rem;
   padding: 0;
 }
+
 .fila-de-item {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 0.75rem;
   align-items: flex-end;
-  padding: 0.5rem 0;
-  border-bottom: 1px dashed var(--borde, #d0d5dd);
+  padding: 0.6rem 0;
+  border-bottom: 1px dashed var(--borde);
 }
+
 .fila-de-item strong {
   flex: 1 1 100%;
 }
+
 .fila-de-item .campo {
   flex: 1 1 8rem;
   margin: 0;
 }
+
 .buscador {
-  border: 1px dashed var(--borde, #98a2b3);
-  border-radius: 8px;
-  padding: 0.75rem;
+  border: 1px dashed var(--borde-control);
+  border-radius: 10px;
+  padding: 0.85rem;
   margin: 0.5rem 0;
+  background: var(--fondo-suave);
 }
+
 .tabla {
   width: 100%;
   border-collapse: collapse;
   margin: 0.5rem 0 1rem;
+  font-variant-numeric: tabular-nums;
 }
+
 .tabla th,
 .tabla td {
   text-align: left;
-  padding: 0.4rem 0.5rem;
-  border-bottom: 1px solid var(--borde, #d0d5dd);
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--borde);
   vertical-align: top;
 }
+
+.tabla thead th {
+  font-size: 0.88rem;
+  color: var(--tenue);
+  font-weight: 700;
+  border-bottom-width: 2px;
+}
+
 .diferencia {
   display: block;
 }
+
 @media (max-width: 40rem) {
   .tabla thead {
     display: none;
   }
+
   .tabla tr,
   .tabla th,
   .tabla td {
     display: block;
+  }
+
+  .tabla tr {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .tabla td {
+    border-bottom: none;
+    padding: 0.15rem 0;
+  }
+
+  /* Sin encabezado de columna a la vista, cada dato dice qué es (B10-10 §9: la tabla pasa a tarjeta sin perder semántica). */
+  .tabla td[data-etiqueta]::before {
+    content: attr(data-etiqueta) ': ';
+    font-weight: 600;
   }
 }
 
 /* Tarjetas de dominio del Resumen (B10-08 §10). Sin color de estado: el legajo prohíbe semáforo y color de riesgo. */
 .tarjetas-de-dominio {
   display: grid;
-  gap: 0.75rem;
+  gap: 1rem;
   margin: 0.5rem 0 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
 }
 
 .tarjeta-de-dominio {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--borde);
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-  background: var(--fondo-suave);
+  border-top: 4px solid var(--azul);
+  border-radius: 12px;
+  padding: 0.85rem 1.1rem 1rem;
+  background: var(--superficie);
 }
 
 .tarjeta-de-dominio h3 {
   margin: 0 0 0.5rem;
-  font-size: 1.05rem;
+  font-size: 1.08rem;
 }
 
 .tarjeta-de-dominio .datos dt {
   min-width: 100%;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--tenue);
   font-weight: 600;
 }
 
-.tenue {
+.tarjeta-de-dominio > :last-child {
+  margin-top: auto;
+}
+
+/* ─── Landing (B10-02 §3: el estado PUBLIC) ──────────────────────────── */
+.landing {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 3vw, 2rem) 3rem;
+}
+
+.portada {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 2rem 3rem;
+  align-items: center;
+  margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.portada__marca {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--cian);
+}
+
+.portada h1 {
+  font-size: clamp(2rem, 1.3rem + 3vw, 3.25rem);
+  line-height: 1.1;
+  margin: 0.75rem 0 1rem;
+}
+
+.portada__bajada {
+  font-size: clamp(1.05rem, 1rem + 0.35vw, 1.2rem);
   color: var(--tenue);
+  max-width: 36rem;
+  margin: 0 0 1.5rem;
+}
+
+.portada .acciones .boton {
+  min-height: 52px;
+  padding: 0.75rem 1.6rem;
+  font-size: 1.05rem;
+}
+
+.portada__isotipo {
+  display: grid;
+  place-items: center;
+}
+
+.portada__isotipo img {
+  width: min(20rem, 70vw);
+  height: auto;
+  filter: drop-shadow(0 0 3rem color-mix(in srgb, var(--cian) 35%, transparent));
+}
+
+.landing__seccion {
+  margin: 0 0 clamp(2.5rem, 5vw, 3.5rem);
+}
+
+.landing__seccion > h2 {
+  font-size: clamp(1.35rem, 1.1rem + 1vw, 1.75rem);
+  margin: 0 0 1rem;
+}
+
+.landing__texto {
+  font-size: 1.08rem;
+  max-width: 48rem;
+}
+
+.landing__columnas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1.25rem;
+}
+
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 1.25rem 1.4rem;
+}
+
+.tarjeta h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.tarjeta p {
+  margin: 0;
+  color: var(--tenue);
+}
+
+.tarjeta ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.tarjeta li {
+  margin: 0.35rem 0;
+}
+
+.tarjeta__icono {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--borde);
+  color: var(--cian);
+}
+
+.tarjeta__icono svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.landing__limites {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.landing__limites li {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--cian);
+  border-radius: 10px;
+  background: var(--superficie);
+}
+
+.landing__app {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+}
+
+.landing__app p {
+  margin: 0.25rem 0;
+}
+
+@media (max-width: 48rem) {
+  .portada {
+    grid-template-columns: 1fr;
+  }
+
+  .portada__isotipo {
+    order: -1;
+  }
+
+  .portada__isotipo img {
+    width: min(12rem, 50vw);
+  }
+}
+
+/* ─── Acceso: login y registro en el tema oscuro ──────────────────────── */
+.acceso {
+  max-width: 32rem;
+}
+
+.acceso .formulario {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 1.5rem;
 }
