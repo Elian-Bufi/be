@@ -643,3 +643,14 @@ details summary {
 .tenue {
   color: var(--tenue);
 }
+
+/* WP-08 · el candidato de una importación: se distingue del catálogo, sin color de estado. */
+.candidato {
+  border-left: 4px solid var(--azul);
+  padding: 0.25rem 0 0.25rem 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.candidato h4 {
+  margin: 0 0 0.25rem;
+}

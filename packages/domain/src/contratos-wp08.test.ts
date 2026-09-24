@@ -127,3 +127,19 @@ test('09v12 §5-§7 · las cuatro operaciones están declaradas, con Idempotency
   // Una operación sin 503 propio sigue declarando el común.
   assert.deepEqual(erroresDeclarados('API-INT-NUT-01')['503'], ['DB_UNAVAILABLE']);
 });
+
+test('B10-05 §19-§20 · el copy no dice «importado» antes de resolver, ni presenta al proveedor como garantía de BE', async () => {
+  const { COPY_INTEGRACIONES, terminosProhibidosDeIntegracionesEn } = await import('./copy-integraciones');
+  const { terminosProhibidosEn } = await import('./copy-nutricion');
+  const { terminosProhibidosDeEntrenamientoEn } = await import('./copy-entrenamiento');
+  const textos = Object.values(COPY_INTEGRACIONES);
+  const hallazgos = textos.flatMap((t) => [...terminosProhibidosDeIntegracionesEn(t), ...terminosProhibidosEn(t), ...terminosProhibidosDeEntrenamientoEn(t)].map((p) => `${p} en «${t}»`));
+  assert.deepEqual(hallazgos, []);
+  // «Importado de» solo existe para rotular un elemento ya incorporado; ningún texto del candidato lo usa.
+  for (const [clave, texto] of Object.entries(COPY_INTEGRACIONES)) if (clave !== 'importadoDe') assert.doesNotMatch(texto, /\bimportado\b/i, clave);
+  // La caída ofrece el camino alternativo, con las palabras de B10-05 §20.
+  assert.match(COPY_INTEGRACIONES.proveedorCaidoAlimento, /catálogo BE o cargar un alimento manualmente/);
+  // El detector distingue afirmar de negar.
+  assert.deepEqual(terminosProhibidosDeIntegracionesEn('Este dato está verificado por BE.'), ['verificado por be']);
+  assert.deepEqual(terminosProhibidosDeIntegracionesEn(COPY_INTEGRACIONES.noVerificadoPorBe), []);
+});
