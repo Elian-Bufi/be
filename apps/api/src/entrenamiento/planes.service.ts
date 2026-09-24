@@ -21,7 +21,7 @@ import {
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { createHash, randomUUID } from 'node:crypto';
-import { DenegacionDelPdp, PdpService } from '../autorizacion/pdp.service';
+import { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '../http/paginacion';
@@ -32,7 +32,7 @@ import { ProcesoService } from '../proceso/proceso.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esToken } from '../vinculo/lectura';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
-import { EjecutorDeEntrenamiento, esUuid } from './ejecutor';
+import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
 import { registrarEventoDeEntrenamiento } from './eventos';
 import { INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, seguimientoAbierto, versionDePlanApi, type VersionConPlan } from './lectura-entrenamiento';
@@ -227,7 +227,12 @@ export class PlanesDeEntrenamientoService {
   // ─── API-TRN-09 ────────────────────────────────────────────────────────────────────────────
   /**
    * El profesional autor ve sus versiones. El asesorado titular ve solo las ACTIVADAS («no visible como vigente al
-   * asesorado» mientras es borrador, 09v10:683), desde la instantánea y con el PDP evaluado sobre su profesional.
+   * asesorado» mientras es borrador, 09v10:683), desde la instantánea.
+   *
+   * Para el titular, una versión ACTIVADA es su plan **tal como lo aceptó**: historia propia, no acceso de un tercero.
+   * Alcanza con su A3 vigente, como en nutrición y antropometría (DL-089 opción A; 08:199, 08:58, 08:406). Lo que
+   * *opera* sobre el plan vigente —«Hoy», abrir un borrador, confirmar, corregir— sigue bajo el PDP de su profesional
+   * (UC-P17 E03).
    */
   consultar(actor: ActorAutenticado, planId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<{ data: VersionDePlanDeEntrenamiento }> {
     sinParametrosDeQuery(query);
@@ -244,7 +249,7 @@ export class PlanesDeEntrenamientoService {
         const titular = v.plan.asesoradoId;
         if (titular === actor.identidadId) {
           if (v.estado !== 'ACTIVADA') throw this.ejecutor.noRevelable({ operacion: 'API-TRN-09', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
-          await this.decidir(tx, 'API-TRN-09', actor, v.plan.profesionalId, titular, recurso, ctx);
+          await exigirA3Vigente(tx, actor.identidadId);
         } else {
           await this.decidir(tx, 'API-TRN-09', actor, actor.identidadId, titular, recurso, ctx);
           if (v.plan.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-09', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
@@ -428,25 +433,20 @@ export class PlanesDeEntrenamientoService {
     return versionDePlanApi(v, await nombreVisibleDe(tx, v.plan.profesionalId), aCitables(catalogo), await seguimientoAbierto(tx, v.plan.profesionalId, v.plan.asesoradoId));
   }
 
-  /** TRN-08 para el titular: las versiones ACTIVADAS de los planes cuyo profesional conserva el acceso, sin borradores. */
+  /**
+   * TRN-08 para el titular: las versiones ACTIVADAS de sus planes, sin borradores. Es su historia, así que se listan
+   * todas con su A3 vigente, sin depender de que el profesional conserve el acceso (DL-089 opción A; 08:199, 08:58).
+   * Si no se listaran, `API-TRN-09` devolvería 200 sobre una versión que la pantalla ya no puede ofrecer: el titular
+   * vería una lista vacía de algo que sí conserva.
+   */
   private async listarComoTitular(
     tx: Tx,
     actor: ActorAutenticado,
     consulta: ReturnType<typeof leerConsultaDeLista>,
     ctx: ContextoDeSolicitud,
   ): Promise<{ data: Omit<VersionDePlanDeEntrenamiento, 'blocks'>[]; page: unknown }> {
-    const planes = await tx.planDeEntrenamiento.findMany({ where: { asesoradoId: actor.identidadId }, select: { id: true, profesionalId: true } });
-    const visibles: { id: string; profesionalId: string }[] = [];
-    for (const p of planes) {
-      try {
-        await this.decidir(tx, 'API-TRN-08', actor, p.profesionalId, actor.identidadId, { tipo: 'PlanDeEntrenamiento', id: p.id }, ctx);
-        visibles.push(p);
-      } catch (e) {
-        // Un profesional sin acceso vigente: sus planes no se listan, y la decisión denegada queda registrada.
-        if (!(e instanceof DenegacionDelPdp)) throw e;
-        await this.pdp.registrarDenegacion(e);
-      }
-    }
+    await exigirA3Vigente(tx, actor.identidadId);
+    const visibles = await tx.planDeEntrenamiento.findMany({ where: { asesoradoId: actor.identidadId }, select: { id: true, profesionalId: true } });
     const filas = consulta.filtros.state === 'DRAFT' || visibles.length === 0
       ? []
       : await tx.versionDePlanDeEntrenamiento.findMany({
