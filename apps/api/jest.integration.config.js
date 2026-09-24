@@ -9,5 +9,8 @@ module.exports = {
   globalSetup: '<rootDir>/test/integration/global-setup.ts',
   globalTeardown: '<rootDir>/test/integration/global-teardown.ts',
   testTimeout: 120000,
+  // Los worktrees de trabajo en paralelo bajo `.claude/` son copias del repo: sin esto, Jest encuentra tres
+  // `package.json` con el nombre `@be/domain` y aborta por colisión de nombres. En CI el directorio no existe.
+  modulePathIgnorePatterns: ['<rootDir>/.claude/'],
   transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/apps/api/tsconfig.json' }] },
 };

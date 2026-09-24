@@ -266,23 +266,81 @@ export const HistorialDeConsentimientoDeSaludResponseSchema = z.strictObject({
 });
 export type HistorialDeConsentimientoDeSaludResponse = z.infer<typeof HistorialDeConsentimientoDeSaludResponseSchema>;
 
-// ─── API-DSH-03 mínimo — Dashboard del asesorado (09v11:895-950; DL-031) ────────────────────────
-/** Por dominio: disponible según el PDP, con el resumen `null` = «sin datos todavía» (RF-053: faltantes como tales). */
-export const EntradaDeDominioSchema = z.union([
-  z.strictObject({ available: z.literal(true), relationshipId: IdOpaco, summary: z.null() }),
-  z.strictObject({ available: z.literal(false), reason: z.literal('NOT_AVAILABLE_TO_VIEW') }),
-]);
+// ─── API-DSH-03 — Dashboard del asesorado (09v11:895-950; DL-031) ───────────────────────────────
+/**
+ * El dashboard es **composición de read models, no mezcla semántica** (B10-08 §8.3): cada bloque conserva dominio,
+ * período, procedencia y autoría, y nada se agrega entre dominios. Por eso no existe —ni puede existir— un
+ * `overallHealthScore`, `overallCompliance` ni `globalRisk` (09v11 §15, regla crítica), ni semáforo, «estado general»,
+ * color de riesgo, score o ranking (B10-08 §10). Los campos describen **datos**, nunca a la persona.
+ *
+ * Los resúmenes repiten el nombre y la forma que cada dominio ya usa en su propio contrato: lo que acá se llama
+ * `activatedAt`, `nextReviewAt` o `authoredBy` es el mismo campo del plan, la revisión o el objetivo de ese dominio.
+ * Todo lo que puede faltar es `nullable`, y el resumen entero es `null` cuando el dominio no tiene datos todavía
+ * (RF-053: «los faltantes se muestran como tales»).
+ */
+
+/** El plan vigente de un dominio: la versión ACTIVADA efectiva, con el momento en que lo fue. */
+const PlanVigenteSchema = z.strictObject({ planVersionId: IdOpaco, activatedAt: Instante, nextReviewAt: z.string().nullable() });
+
+/** La última revisión **visible para quien consulta**, sin su contenido: el dashboard no es la revisión (09v11 §15). */
+const UltimaRevisionSchema = z.strictObject({ reviewId: IdOpaco, recordedAt: Instante, author: ResumenDeActorSchema });
+
+export const ResumenDeNutricionSchema = z.strictObject({
+  activePlan: PlanVigenteSchema.nullable(),
+  objective: z.strictObject({
+    objectiveVersionId: IdOpaco,
+    estimatedEnergyRequirement: z.strictObject({ value: z.number().positive().finite(), unit: z.literal('kcal/day') }),
+    authoredBy: ResumenDeActorSchema,
+  }).nullable(),
+  lastReview: UltimaRevisionSchema.nullable(),
+  /** Ingestas registradas por el asesorado dentro del período consultado. Un conteo de registros, no una adherencia. */
+  registeredIntakes: z.number().int().nonnegative(),
+  lastIntakeAt: Instante.nullable(),
+});
+export type ResumenDeNutricion = z.infer<typeof ResumenDeNutricionSchema>;
+
+export const ResumenDeEntrenamientoSchema = z.strictObject({
+  activePlan: PlanVigenteSchema.nullable(),
+  objective: z.strictObject({ objectiveVersionId: IdOpaco, statement: z.string(), authoredBy: ResumenDeActorSchema }).nullable(),
+  lastReview: UltimaRevisionSchema.nullable(),
+  /** Ejecuciones registradas por el asesorado dentro del período. Un conteo de registros, no un cumplimiento. */
+  registeredExecutions: z.number().int().nonnegative(),
+  lastExecutionAt: Instante.nullable(),
+});
+export type ResumenDeEntrenamiento = z.infer<typeof ResumenDeEntrenamientoSchema>;
+
+export const ResumenDeAntropometriaSchema = z.strictObject({
+  lastEvaluation: z.strictObject({ evaluationId: IdOpaco, occurredAt: Instante, registeredAt: Instante.nullable(), author: ResumenDeActorSchema }).nullable(),
+  /** Evaluaciones REGISTRADAS dentro del período. Las que están en preparación no cuentan: todavía no son un dato. */
+  registeredEvaluations: z.number().int().nonnegative(),
+});
+export type ResumenDeAntropometria = z.infer<typeof ResumenDeAntropometriaSchema>;
+
+/**
+ * Por dominio: disponible según el PDP, con el resumen del dominio o `null` cuando no hay datos todavía. Un dominio no
+ * disponible **no** dice por qué ni qué hay detrás: es el mismo `NOT_AVAILABLE_TO_VIEW` para lo ajeno, lo pausado y lo
+ * revocado (B10-08 §8.4: no listar lo oculto).
+ */
+const entradaDeDominio = <T extends z.ZodTypeAny>(resumen: T) =>
+  z.union([
+    z.strictObject({ available: z.literal(true), relationshipId: IdOpaco, summary: resumen.nullable() }),
+    z.strictObject({ available: z.literal(false), reason: z.literal('NOT_AVAILABLE_TO_VIEW') }),
+  ]);
+
+export const EntradaDeNutricionSchema = entradaDeDominio(ResumenDeNutricionSchema);
+export const EntradaDeEntrenamientoSchema = entradaDeDominio(ResumenDeEntrenamientoSchema);
+export const EntradaDeAntropometriaSchema = entradaDeDominio(ResumenDeAntropometriaSchema);
 
 export const DashboardResponseSchema = z.strictObject({
   data: z.strictObject({
     advisee: ResumenDeActorSchema,
     period: z.strictObject({ start: Instante.nullable(), end: Instante.nullable() }),
-    /** Algún dominio no está disponible para este profesional (10-B04:1171-1176). */
+    /** Algún dominio no está disponible para este profesional (10-B04:1171-1176). Un aviso único, sin detalle. */
     partialView: z.boolean(),
     domains: z.strictObject({
-      nutrition: EntradaDeDominioSchema,
-      training: EntradaDeDominioSchema,
-      anthropometry: EntradaDeDominioSchema,
+      nutrition: EntradaDeNutricionSchema,
+      training: EntradaDeEntrenamientoSchema,
+      anthropometry: EntradaDeAntropometriaSchema,
     }),
   }),
 });
