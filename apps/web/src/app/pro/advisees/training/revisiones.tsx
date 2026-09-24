@@ -25,7 +25,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
-import { FiltroDePeriodo, type Periodo } from './periodo';
+import { FiltroDePeriodo, type Periodo } from '../periodo';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
 type ResultadoApi = keyof typeof ETIQUETA_DE_RESULTADO;

@@ -14,7 +14,7 @@
  * - cada corrida muestra **método, versión, regla y precisión declarada**, que es lo que la vuelve reproducible
  *   (REG-06-156/158).
  */
-import { COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
+import { cantidad, COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
@@ -94,7 +94,7 @@ export function BloqueDeCalculos({ evaluacion, onAviso }: { evaluacion: Evaluaci
 }
 
 function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; onHecho: (t: string) => void; onError: (t: string) => void }) {
-  const { token, asesoradoId, sesionPerdida } = useAntropometria();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useAntropometria();
   const intento = useClaveDeIntento();
   const [adoptando, setAdoptando] = useState(false);
   const [fundamento, setFundamento] = useState('');
@@ -112,7 +112,8 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
     );
     intento.registrar(res);
     setEnviando(false);
-    if (sesionPerdida(res)) return;
+    // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
+    if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return onError(mensajeDeFallo(res));
     setAdoptando(false);
     onHecho(res.datos.data.supersedesReferenceId ? `${COPY_ANTROPOMETRIA.referenciaHecha} ${COPY_ANTROPOMETRIA.referenciaReemplazada}` : COPY_ANTROPOMETRIA.referenciaHecha);
@@ -121,7 +122,7 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
   return (
     <div className="nodo nodo--comida">
       <h4>
-        {corrida.result.metric}: {corrida.result.magnitude.value} {corrida.result.magnitude.unit}{' '}
+        {corrida.result.metric}: {cantidad(corrida.result.magnitude.value, corrida.result.magnitude.unit)}{' '}
         <span className="insignia">{ETIQUETA_DE_CLASE_DE_DATO.DERIVED}</span>
         {corrida.evaluationContext === 'IN_PREPARATION' ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoEnPreparacion}</span></> : null}
         {!corrida.effective ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoNoVigente}</span></> : null}
@@ -138,7 +139,7 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
         <ul>
           {corrida.inputProvenance.map((i) => (
             <li key={i.sourceRef}>
-              {i.inputCode} · {i.metric}: {i.magnitude ? `${i.magnitude.value} ${i.magnitude.unit}` : COPY_ANTROPOMETRIA.valorNoConsultable} ·{' '}
+              {i.inputCode} · {i.metric}: {i.magnitude ? cantidad(i.magnitude.value, i.magnitude.unit) : COPY_ANTROPOMETRIA.valorNoConsultable} ·{' '}
               {ETIQUETA_DE_CLASE_DE_DATO[i.provenanceType === 'SELF_REPORTED' ? 'REPORTED' : 'MEASURED']} · {ETIQUETA_DE_CONDICION[i.condition]} · {fecha(i.sourceOccurredAt)}
             </li>
           ))}
@@ -192,7 +193,7 @@ function NuevoCalculo({
   onHecho: (t: string) => void;
   onError: (t: string) => void;
 }) {
-  const { token, asesoradoId, sesionPerdida } = useAntropometria();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useAntropometria();
   const intento = useClaveDeIntento();
   const [metodoId, setMetodoId] = useState(metodos[0]?.methodVersionId ?? '');
   const [entradas, setEntradas] = useState<Record<string, string>>({});
@@ -215,7 +216,8 @@ function NuevoCalculo({
     );
     intento.registrar(res);
     setEnviando(false);
-    if (sesionPerdida(res)) return;
+    // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
+    if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return onError(mensajeDeFallo(res));
     onHecho(COPY_ANTROPOMETRIA.calculoHecho);
   }
@@ -251,7 +253,7 @@ function NuevoCalculo({
             */}
             {disponibles.map((m) => (
               <option key={m.measurementId} value={m.measurementId}>
-                {m.metric}: {m.effectiveMagnitude ? `${m.effectiveMagnitude.value} ${m.effectiveMagnitude.unit}` : COPY_ANTROPOMETRIA.sinValorVigente} ·{' '}
+                {m.metric}: {m.effectiveMagnitude ? cantidad(m.effectiveMagnitude.value, m.effectiveMagnitude.unit) : COPY_ANTROPOMETRIA.sinValorVigente} ·{' '}
                 {ETIQUETA_DE_CLASE_DE_DATO[m.dataClass]}
                 {m.corrections.length > 0 ? ` · ${COPY_ANTROPOMETRIA.corregida}` : ''}
               </option>

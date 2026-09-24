@@ -11,12 +11,13 @@
 import {
   COPY_NUTRICION,
   ETIQUETA_DE_FUENTE,
+  leerNumero,
   type CrearEvaluacionRequest,
   type CrearObjetivoRequest,
   type EvaluacionNutricional,
 } from '@be/domain';
 import { useState, type FormEvent } from 'react';
-import { Aviso, Campo, ResumenDeErrores } from '../../../../components/formulario';
+import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
 import { dia } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
@@ -38,7 +39,7 @@ const ahoraLocal = (): string => {
 };
 
 export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: (evaluationId: string) => void; onCancelar: () => void }) {
-  const { token, asesoradoId, sesionPerdida } = useNutricion();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
   const [datos, setDatos] = useState<Dato[]>([datoVacio()]);
   const [contexto, setContexto] = useState('');
@@ -68,7 +69,8 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistr
       assessment: {
         entries: datos.map((d) => ({
           concept: d.concepto.trim(),
-          value: /^-?\d+(\.\d+)?$/.test(d.valor.trim()) ? Number(d.valor.trim()) : d.valor.trim(),
+          // Un valor que es un número se guarda como número, escrito con coma o con punto (DL-091 punto 4).
+          value: leerNumero(d.valor) ?? d.valor.trim(),
           unit: d.unidad.trim() || null,
           source: d.fuente,
           methodStatement: d.fuente === 'CALCULATED' ? d.metodo.trim() : null,
@@ -82,11 +84,14 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistr
     const r = await api.crearEvaluacion(token, asesoradoId, cuerpo, intento.actual());
     intento.registrar(r);
     setEnviando(false);
-    if (sesionPerdida(r)) return;
+    // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     onRegistrada(r.datos.data.evaluationId);
   }
 
+  // El mismo error va al resumen y al campo (B10-10:164-165).
+  const porCampo = erroresPorCampo(errores);
   return (
     <form className="formulario" onSubmit={enviar} noValidate>
       <h3>{COPY_NUTRICION.nuevaEvaluacion}</h3>
@@ -101,8 +106,8 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistr
         <p className="campo__ayuda">Cada dato indica de dónde sale. Un dato calculado declara el método: BE no calcula.</p>
         {datos.map((d, i) => (
           <div key={i} className="fila-de-dato">
-            <Campo id={`dato-${i}-concepto`} etiqueta="Concepto" value={d.concepto} onChange={(e) => cambiar(i, { concepto: e.target.value })} maxLength={120} />
-            <Campo id={`dato-${i}-valor`} etiqueta="Valor" value={d.valor} onChange={(e) => cambiar(i, { valor: e.target.value })} maxLength={500} />
+            <Campo id={`dato-${i}-concepto`} etiqueta="Concepto" value={d.concepto} onChange={(e) => cambiar(i, { concepto: e.target.value })} maxLength={120} error={porCampo[`dato-${i}-concepto`] ?? null} />
+            <Campo id={`dato-${i}-valor`} etiqueta="Valor" value={d.valor} onChange={(e) => cambiar(i, { valor: e.target.value })} maxLength={500} error={porCampo[`dato-${i}-valor`] ?? null} />
             <Campo id={`dato-${i}-unidad`} etiqueta="Unidad (opcional)" value={d.unidad} onChange={(e) => cambiar(i, { unidad: e.target.value })} maxLength={30} />
             <div className="campo">
               <label htmlFor={`dato-${i}-fuente`}>Fuente</label>
@@ -115,7 +120,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistr
               </select>
             </div>
             {d.fuente === 'CALCULATED' ? (
-              <Campo id={`dato-${i}-metodo`} etiqueta="Método declarado" value={d.metodo} onChange={(e) => cambiar(i, { metodo: e.target.value })} maxLength={500} />
+              <Campo id={`dato-${i}-metodo`} etiqueta="Método declarado" value={d.metodo} onChange={(e) => cambiar(i, { metodo: e.target.value })} maxLength={500} error={porCampo[`dato-${i}-metodo`] ?? null} />
             ) : null}
             {datos.length > 1 ? (
               <button type="button" className="boton boton--enlace" onClick={() => setDatos((ds) => ds.filter((_, j) => j !== i))}>
@@ -177,8 +182,9 @@ export const objetivoVacio = (evaluacionId: string): ValoresDeObjetivo => ({
 /** Errores de los campos del objetivo, con el id del campo para el resumen accesible. */
 export function erroresDeObjetivo(v: ValoresDeObjetivo, prefijo: string): { id: string; texto: string }[] {
   const e: { id: string; texto: string }[] = [];
-  const positivo = (s: string) => Number.isFinite(Number(s)) && Number(s) > 0;
-  const noNegativo = (s: string) => s.trim() !== '' && Number.isFinite(Number(s)) && Number(s) >= 0;
+  // `leerNumero` acepta coma o punto y devuelve `null` cuando no es un número: nunca NaN (DL-091 punto 4).
+  const positivo = (s: string) => (leerNumero(s) ?? 0) > 0;
+  const noNegativo = (s: string) => (leerNumero(s) ?? -1) >= 0;
   if (!v.evaluacionId) e.push({ id: `${prefijo}-evaluacion`, texto: 'Elegí la evaluación de referencia.' });
   if (!positivo(v.kcal)) e.push({ id: `${prefijo}-kcal`, texto: 'Indicá el requerimiento energético (kcal por día).' });
   if (!noNegativo(v.proteina)) e.push({ id: `${prefijo}-proteina`, texto: 'Indicá las proteínas (g por día).' });
@@ -189,12 +195,12 @@ export function erroresDeObjetivo(v: ValoresDeObjetivo, prefijo: string): { id: 
 }
 
 export function aObjetivo(v: ValoresDeObjetivo): CrearObjetivoRequest {
-  const g = (s: string) => ({ value: Number(s), unit: 'g/day' as const });
+  const g = (s: string) => ({ value: leerNumero(s) ?? 0, unit: 'g/day' as const });
   return {
     evaluationId: v.evaluacionId,
     effectiveFrom: new Date(v.desde).toISOString(),
     effectiveUntil: null,
-    estimatedEnergyRequirement: { value: Number(v.kcal), unit: 'kcal/day' },
+    estimatedEnergyRequirement: { value: leerNumero(v.kcal) ?? 0, unit: 'kcal/day' },
     macronutrientDistribution: { protein: g(v.proteina), carbohydrate: g(v.carbohidratos), fat: g(v.grasas) },
     mealDistribution: v.distribucion.trim() || null,
     rationale: v.fundamento.trim(),
@@ -207,19 +213,31 @@ export function CamposDeObjetivo({
   onCambiar,
   evaluaciones,
   prefijo,
+  errores = {},
 }: {
   valores: ValoresDeObjetivo;
   onCambiar: (v: ValoresDeObjetivo) => void;
   evaluaciones: readonly EvaluacionNutricional[];
   prefijo: string;
+  /** El mismo error que enumera el resumen, indexado por el `id` del campo (B10-10:164-165). */
+  errores?: Readonly<Record<string, string>>;
 }) {
   const c = (cambio: Partial<ValoresDeObjetivo>) => onCambiar({ ...valores, ...cambio });
+  const err = (sufijo: string) => errores[`${prefijo}-${sufijo}`] ?? null;
+  const errorDeEvaluacion = err('evaluacion');
+  const errorDeFundamento = err('fundamento');
   return (
     <>
       <p className="nota">{COPY_NUTRICION.noCalcula}</p>
-      <div className="campo">
+      <div className={`campo${errorDeEvaluacion ? ' campo--error' : ''}`}>
         <label htmlFor={`${prefijo}-evaluacion`}>Evaluación de referencia</label>
-        <select id={`${prefijo}-evaluacion`} value={valores.evaluacionId} onChange={(e) => c({ evaluacionId: e.target.value })}>
+        <select
+          id={`${prefijo}-evaluacion`}
+          value={valores.evaluacionId}
+          aria-invalid={errorDeEvaluacion ? true : undefined}
+          aria-describedby={errorDeEvaluacion ? `${prefijo}-evaluacion-error` : undefined}
+          onChange={(e) => c({ evaluacionId: e.target.value })}
+        >
           <option value="">Elegí una evaluación</option>
           {evaluaciones.map((ev) => (
             <option key={ev.evaluationId} value={ev.evaluationId}>
@@ -227,26 +245,60 @@ export function CamposDeObjetivo({
             </option>
           ))}
         </select>
+        {errorDeEvaluacion ? (
+          <p id={`${prefijo}-evaluacion-error`} className="campo__error">
+            <span aria-hidden="true">⚠ </span>
+            {errorDeEvaluacion}
+          </p>
+        ) : null}
       </div>
-      <Campo id={`${prefijo}-kcal`} etiqueta="Requerimiento energético estimado (kcal por día)" inputMode="decimal" value={valores.kcal} onChange={(e) => c({ kcal: e.target.value })} />
+      <Campo
+        id={`${prefijo}-kcal`}
+        etiqueta="Requerimiento energético estimado (kcal por día)"
+        inputMode="decimal"
+        value={valores.kcal}
+        onChange={(e) => c({ kcal: e.target.value })}
+        error={err('kcal')}
+      />
       <fieldset className="grupo">
         <legend>Distribución de macronutrientes (g por día)</legend>
         <div className="fila-de-dato">
-          <Campo id={`${prefijo}-proteina`} etiqueta="Proteínas (g)" inputMode="decimal" value={valores.proteina} onChange={(e) => c({ proteina: e.target.value })} />
-          <Campo id={`${prefijo}-carbohidratos`} etiqueta="Carbohidratos (g)" inputMode="decimal" value={valores.carbohidratos} onChange={(e) => c({ carbohidratos: e.target.value })} />
-          <Campo id={`${prefijo}-grasas`} etiqueta="Grasas (g)" inputMode="decimal" value={valores.grasas} onChange={(e) => c({ grasas: e.target.value })} />
+          <Campo id={`${prefijo}-proteina`} etiqueta="Proteínas (g)" inputMode="decimal" value={valores.proteina} onChange={(e) => c({ proteina: e.target.value })} error={err('proteina')} />
+          <Campo
+            id={`${prefijo}-carbohidratos`}
+            etiqueta="Carbohidratos (g)"
+            inputMode="decimal"
+            value={valores.carbohidratos}
+            onChange={(e) => c({ carbohidratos: e.target.value })}
+            error={err('carbohidratos')}
+          />
+          <Campo id={`${prefijo}-grasas`} etiqueta="Grasas (g)" inputMode="decimal" value={valores.grasas} onChange={(e) => c({ grasas: e.target.value })} error={err('grasas')} />
         </div>
       </fieldset>
       <div className="campo">
         <label htmlFor={`${prefijo}-distribucion`}>Distribución por comidas (opcional)</label>
         <textarea id={`${prefijo}-distribucion`} rows={2} value={valores.distribucion} onChange={(e) => c({ distribucion: e.target.value })} maxLength={1000} />
       </div>
-      <div className="campo">
+      <div className={`campo${errorDeFundamento ? ' campo--error' : ''}`}>
         <label htmlFor={`${prefijo}-fundamento`}>Fundamento</label>
         <p id={`${prefijo}-fundamento-ayuda`} className="campo__ayuda">
           Por qué fijás este objetivo. Es obligatorio: queda con la versión.
         </p>
-        <textarea id={`${prefijo}-fundamento`} rows={3} aria-describedby={`${prefijo}-fundamento-ayuda`} value={valores.fundamento} onChange={(e) => c({ fundamento: e.target.value })} maxLength={4000} />
+        <textarea
+          id={`${prefijo}-fundamento`}
+          rows={3}
+          aria-invalid={errorDeFundamento ? true : undefined}
+          aria-describedby={errorDeFundamento ? `${prefijo}-fundamento-ayuda ${prefijo}-fundamento-error` : `${prefijo}-fundamento-ayuda`}
+          value={valores.fundamento}
+          onChange={(e) => c({ fundamento: e.target.value })}
+          maxLength={4000}
+        />
+        {errorDeFundamento ? (
+          <p id={`${prefijo}-fundamento-error`} className="campo__error">
+            <span aria-hidden="true">⚠ </span>
+            {errorDeFundamento}
+          </p>
+        ) : null}
       </div>
       <Campo id={`${prefijo}-metodo`} etiqueta="Método o referencia declarada (opcional)" value={valores.metodo} onChange={(e) => c({ metodo: e.target.value })} maxLength={1000} />
       <Campo id={`${prefijo}-desde`} etiqueta="Vigente desde" type="datetime-local" value={valores.desde} onChange={(e) => c({ desde: e.target.value })} />
@@ -263,7 +315,7 @@ export function FormularioDeObjetivo({
   onEmitido: () => void;
   onCancelar: () => void;
 }) {
-  const { token, asesoradoId, sesionPerdida } = useNutricion();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
   const [valores, setValores] = useState(objetivoVacio(evaluaciones[0]?.evaluationId ?? ''));
   const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
@@ -282,7 +334,8 @@ export function FormularioDeObjetivo({
     const r = await api.crearObjetivo(token, asesoradoId, aObjetivo(valores), intento.actual());
     intento.registrar(r);
     setEnviando(false);
-    if (sesionPerdida(r)) return;
+    // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     onEmitido();
   }
@@ -298,7 +351,7 @@ export function FormularioDeObjetivo({
     <form className="formulario" onSubmit={enviar} noValidate>
       <h3>{COPY_NUTRICION.nuevaVersionDeObjetivo}</h3>
       <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={envios} />
-      <CamposDeObjetivo valores={valores} onCambiar={setValores} evaluaciones={evaluaciones} prefijo="objetivo" />
+      <CamposDeObjetivo valores={valores} onCambiar={setValores} evaluaciones={evaluaciones} prefijo="objetivo" errores={erroresPorCampo(errores)} />
       {fallo ? (
         <Aviso tipo="error" enfocar>
           <p>{fallo}</p>

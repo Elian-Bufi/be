@@ -4,38 +4,33 @@
  * NUT-13 Registros (B05:1072-1124) y NUT-12 Estructurar registro libre (B05:1014-1057).
  * - Contraste descriptivo: Prescripto / Registrado / Diferencia observada / Datos faltantes. Sin «82 % adherencia», sin
  *   «bien» ni «mal»; un día sin registro dice «Sin registro», nunca «0 %» ni «No cumplido» (REG-06-125; INV-06-135).
- * - Filtros por período; nunca «cumplidores / no cumplidores».
+ * - El período **se elige**, con la misma validación previa que entrenamiento (B10-06 §41, §43-§44; DL-091 punto 2):
+ *   sin elegir nada, la API responde con su período por defecto y la pantalla dice cuál es.
  * - Una comida fuera del plan se estructura como «Estimación profesional»: la descripción original queda en solo
  *   lectura y se conserva (INV-06-131). El botón dice «Agregar estimación», no «Corregir lo que comió».
  */
-import { COPY_NUTRICION, ETIQUETA_DE_UNIDAD, type ContextoDeRevisionResponse, type ElementoDeCatalogo, type Ingesta } from '@be/domain';
+import { cantidad, COPY_NUTRICION, ETIQUETA_DE_UNIDAD, leerNumero, type ContextoDeRevisionResponse, type ElementoDeCatalogo, type Ingesta } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { FiltroDePeriodo, type Periodo } from '../periodo';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 
 type Contexto = ContextoDeRevisionResponse['data'];
-const hoy = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
-const hace = (dias: number) => {
-  const d = new Date(`${hoy()}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - dias);
-  return d.toISOString().slice(0, 10);
-};
 
 export function VistaDeRegistros() {
   const { token, asesoradoId, sesionPerdida } = useNutricion();
-  const [inicio, setInicio] = useState(hace(6));
-  const [fin, setFin] = useState(hoy());
+  const [periodo, setPeriodo] = useState<Periodo>({});
   const [r, setR] = useState<Resultado<{ data: Contexto }> | null>(null);
 
   const cargar = useCallback(async () => {
     setR(null);
-    const res = await api.contextoDeRevision(token, asesoradoId, { periodStart: inicio, periodEnd: fin });
+    const res = await api.contextoDeRevision(token, asesoradoId, periodo);
     if (sesionPerdida(res)) return;
     setR(res);
-  }, [token, asesoradoId, sesionPerdida, inicio, fin]);
+  }, [token, asesoradoId, sesionPerdida, periodo]);
 
   useEffect(() => {
     void cargar();
@@ -43,19 +38,8 @@ export function VistaDeRegistros() {
 
   return (
     <div className="secciones">
-      <form
-        className="fila-de-dato"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void cargar();
-        }}
-      >
-        <Campo id="registros-desde" etiqueta="Desde" type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} />
-        <Campo id="registros-hasta" etiqueta="Hasta" type="date" value={fin} onChange={(e) => setFin(e.target.value)} />
-        <button type="submit" className="boton boton--secundario">
-          Ver período
-        </button>
-      </form>
+      {/* El filtro vive fuera del estado de lectura: si el período no se puede leer, sigue ahí para corregirlo (B10-10:376). */}
+      <FiltroDePeriodo id="nut-registros-periodo" onAplicar={setPeriodo} />
       <EstadoDeLectura r={r} onReintentar={cargar}>
         {r?.ok ? <Contraste contexto={r.datos.data} onCambio={cargar} /> : null}
       </EstadoDeLectura>
@@ -68,6 +52,9 @@ function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () =>
   const dias = [...contexto.descriptiveContrast.days].reverse();
   return (
     <>
+      <p className="nota">
+        Período: {dia(`${contexto.period.start}T12:00:00Z`)} a {dia(`${contexto.period.end}T12:00:00Z`)}
+      </p>
       <p className="nota">
         Lo prescripto y lo registrado, día por día. Un día o una comida sin registro es «{COPY_NUTRICION.sinRegistro}»: no se interpreta.
       </p>
@@ -105,9 +92,9 @@ function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () =>
                         {m.quantityDifferences.length > 0
                           ? m.quantityDifferences.map((q) => (
                               <span key={q.itemId} className="diferencia">
-                                {q.name}: prescripto {q.prescribed.value} {ETIQUETA_DE_UNIDAD[q.unit]} · registrado {q.registered.value} {ETIQUETA_DE_UNIDAD[q.unit]} ·{' '}
+                                {q.name}: prescripto {cantidad(q.prescribed.value, ETIQUETA_DE_UNIDAD[q.unit])} · registrado {cantidad(q.registered.value, ETIQUETA_DE_UNIDAD[q.unit])} ·{' '}
                                 {q.difference > 0 ? '+' : q.difference < 0 ? '−' : ''}
-                                {Math.abs(q.difference)} {ETIQUETA_DE_UNIDAD[q.unit]}
+                                {cantidad(Math.abs(q.difference), ETIQUETA_DE_UNIDAD[q.unit])}
                               </span>
                             ))
                           : '—'}
@@ -140,7 +127,7 @@ function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () =>
 }
 
 function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () => void }) {
-  const { token, sesionPerdida } = useNutricion();
+  const { token, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
   const [abierto, setAbierto] = useState(false);
   const [descripcion, setDescripcion] = useState('');
@@ -148,6 +135,8 @@ function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () =
   const [alimento, setAlimento] = useState<ElementoDeCatalogo | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [opciones, setOpciones] = useState<ElementoDeCatalogo[]>([]);
+  /** El mismo error que se avisa arriba se marca en su campo (B10-10:164-165; DL-091 punto 3). */
+  const [errores, setErrores] = useState<{ descripcion?: string; gramos?: string }>({});
   const [fallo, setFallo] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const ultima = ingesta.corrections[ingesta.corrections.length - 1];
@@ -160,9 +149,13 @@ function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () =
   }
 
   async function enviar() {
-    if (!descripcion.trim()) return setFallo('Describí lo que estimás.');
-    const g = gramos.trim() === '' ? null : Number(gramos.replace(',', '.'));
-    if (g !== null && !(g > 0)) return setFallo('La cantidad tiene que ser un número mayor que cero.');
+    const problemas: { descripcion?: string; gramos?: string } = {};
+    if (!descripcion.trim()) problemas.descripcion = 'Describí lo que estimás.';
+    // `leerNumero` acepta coma o punto y devuelve `null` si no es un número (DL-091 punto 4).
+    const g = gramos.trim() === '' ? null : leerNumero(gramos);
+    if (gramos.trim() !== '' && !(g !== null && g > 0)) problemas.gramos = 'La cantidad tiene que ser un número mayor que cero.';
+    setErrores(problemas);
+    if (problemas.descripcion || problemas.gramos) return setFallo(null);
     setEnviando(true);
     setFallo(null);
     const r = await api.corregirIngesta(
@@ -177,7 +170,8 @@ function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () =
     );
     intento.registrar(r);
     setEnviando(false);
-    if (sesionPerdida(r)) return;
+    // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     setAbierto(false);
     onCambio();
@@ -195,7 +189,7 @@ function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () =
       {efectiva ? (
         <p>
           <strong>{COPY_NUTRICION.estimacionProfesional}:</strong>{' '}
-          {efectiva.structuredEstimate.items.map((i) => `${i.description}${i.quantity ? ` · ${i.quantity.value} ${ETIQUETA_DE_UNIDAD[i.quantity.unit]}` : ''}`).join('; ')}{' '}
+          {efectiva.structuredEstimate.items.map((i) => `${i.description}${i.quantity ? ` · ${cantidad(i.quantity.value, ETIQUETA_DE_UNIDAD[i.quantity.unit])}` : ''}`).join('; ')}{' '}
           <span className="nota">
             ({efectiva.author.displayName}, {fecha(efectiva.recordedAt)}
             {ingesta.corrections.length > 1 ? `; ${ingesta.corrections.length} estimaciones en la historia` : ''})
@@ -206,8 +200,22 @@ function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () =
       {abierto ? (
         <fieldset className="grupo">
           <legend>{COPY_NUTRICION.agregarEstimacion}</legend>
-          <Campo id={`est-${ingesta.executionId}-desc`} etiqueta="Qué estimás" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} maxLength={200} />
-          <Campo id={`est-${ingesta.executionId}-g`} etiqueta="Cantidad estimada en gramos (opcional)" inputMode="decimal" value={gramos} onChange={(e) => setGramos(e.target.value)} />
+          <Campo
+            id={`est-${ingesta.executionId}-desc`}
+            etiqueta="Qué estimás"
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+            maxLength={200}
+            error={errores.descripcion ?? null}
+          />
+          <Campo
+            id={`est-${ingesta.executionId}-g`}
+            etiqueta="Cantidad estimada en gramos (opcional)"
+            inputMode="decimal"
+            value={gramos}
+            onChange={(e) => setGramos(e.target.value)}
+            error={errores.gramos ?? null}
+          />
           <div className="fila-de-dato">
             <Campo id={`est-${ingesta.executionId}-buscar`} etiqueta="Alimento del catálogo (opcional)" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
             <button type="button" className="boton boton--secundario" onClick={() => void buscar()}>

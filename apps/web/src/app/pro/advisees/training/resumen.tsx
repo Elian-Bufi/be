@@ -12,6 +12,8 @@ import {
   ETIQUETA_DE_FUENTE,
   ETIQUETA_DE_RESULTADO,
   etiquetaDeCondicionRegistrada,
+  leerNumero,
+  numero,
   registroVigente,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EvaluacionDeEntrenamiento,
@@ -125,7 +127,8 @@ export function VistaDeResumen() {
                       <div key={i}>
                         <dt>{d.concept}</dt>
                         <dd>
-                          {String(d.value)}
+                          {/* Un dato de evaluación puede ser texto o número: el número se muestra con coma (DL-091 punto 4). */}
+                          {typeof d.value === 'number' ? numero(d.value) : String(d.value)}
                           {d.unit ? ` ${d.unit}` : ''} <span className="nota">· {ETIQUETA_DE_FUENTE[d.source]}{d.methodStatement ? ` · Método: ${d.methodStatement}` : ''}</span>
                         </dd>
                       </div>
@@ -183,7 +186,10 @@ function Estado({ datos, onIrA }: { datos: Datos; onIrA: (v: 'plan' | 'ejecucion
           </dd>
         </div>
         <div>
-          <dt>Última sesión registrada (últimos 7 días)</dt>
+          {/* El período es el que devolvió la lectura, no un «últimos 7 días» fijo que podía no ser cierto (DL-091 punto 2). */}
+          <dt>
+            Última sesión registrada ({dia(`${datos.contexto.period.start}T12:00:00Z`)} a {dia(`${datos.contexto.period.end}T12:00:00Z`)})
+          </dt>
           <dd>
             {ultima ? `${ultima.plannedSession.label} · ${dia(`${ultima.date}T12:00:00Z`)} · ${etiquetaDeCondicionRegistrada(registroVigente(ultima))}` : COPY_ENTRENAMIENTO.sinEjecuciones}{' '}
             <button type="button" className="boton boton--enlace" onClick={() => onIrA('ejecuciones')}>
@@ -262,7 +268,8 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
         assessment: {
           entries: datos.map((d) => ({
             concept: d.concepto.trim(),
-            value: /^-?\d+(\.\d+)?$/.test(d.valor.trim()) ? Number(d.valor.trim()) : d.valor.trim(),
+            // Un valor que es un número se guarda como número, escrito con coma o con punto (DL-091 punto 4).
+            value: leerNumero(d.valor) ?? d.valor.trim(),
             unit: d.unidad.trim() || null,
             source: d.fuente,
             methodStatement: d.fuente === 'CALCULATED' ? d.metodo.trim() : null,

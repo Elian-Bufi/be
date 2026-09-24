@@ -15,6 +15,7 @@ import {
   COPY,
   COPY_ENTRENAMIENTO,
   ETIQUETA_DE_CRITERIO,
+  leerNumero,
   type EjercicioDeCatalogo,
   type EstructuraDePlanDeEntrenamientoEntrada,
   type ValidationIssue,
@@ -25,6 +26,7 @@ import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
+import { numeroEnCampo } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { NoDisponible, useEntrenamiento } from './entrenamiento';
 
@@ -413,13 +415,15 @@ function CampoInterpretado<T>({
   );
 }
 
-/** Un número con coma o punto decimal. Vacío → null; lo que no es un número → NaN. */
-function leerNumero(s: string): number | null {
+/**
+ * Un número del editor: vacío → null; lo que no es un número → NaN, que el guardado rechaza señalando el ejercicio.
+ * La lectura la hace `leerNumero` del dominio, que acepta coma o punto por igual (DL-091 punto 4).
+ */
+function leerValor(s: string): number | null {
   if (s.trim() === '') return null;
-  const n = Number(s.trim().replace(',', '.'));
-  return Number.isFinite(n) ? n : Number.NaN;
+  return leerNumero(s) ?? Number.NaN;
 }
-const escribirNumero = (n: number | null): string => (n === null || Number.isNaN(n) ? '' : String(n));
+const escribirNumero = (n: number | null): string => (n === null || Number.isNaN(n) ? '' : numeroEnCampo(n));
 
 /** Una prescripción: series y repeticiones, criterio de intensidad explícito, carga sugerida aparte, parámetros. */
 function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar }: { id: string; prescripcion: PrescripcionE; nombre: string; onCambiar: (c: Partial<PrescripcionE>) => void; onQuitar: () => void }) {
@@ -496,7 +500,7 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
               valor={p.intensity.target.value}
               formatear={escribirNumero}
               // Con un criterio elegido, el objetivo es obligatorio: vacío no es cero.
-              interpretar={(t) => leerNumero(t) ?? Number.NaN}
+              interpretar={(t) => leerValor(t) ?? Number.NaN}
               onCambiar={(v) => onCambiar({ intensity: { ...p.intensity!, target: { ...p.intensity!.target, value: v } } })}
             />
             {criterio === 'PERCENT_RM' ? (
@@ -522,7 +526,7 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
             inputMode="decimal"
             valor={p.suggestedLoad ? p.suggestedLoad.value : null}
             formatear={escribirNumero}
-            interpretar={leerNumero}
+            interpretar={leerValor}
             onCambiar={(v) => onCambiar({ suggestedLoad: v === null ? null : { value: v, unit: p.suggestedLoad?.unit ?? 'kg' } })}
           />
           <div className="campo">
@@ -542,10 +546,11 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
             <Campo
               id={`${id}-param-${i}-valor`}
               etiqueta="Valor"
-              value={String(q.value)}
+              // Un parámetro puede ser texto o número; el número se escribe y se muestra con coma (DL-091 punto 4).
+              value={typeof q.value === 'number' ? numeroEnCampo(q.value) : q.value}
               onChange={(e) => {
                 const v = e.target.value;
-                onCambiar({ professionalParameters: parametros.map((x, j) => (j === i ? { ...x, value: /^\d+([.,]\d+)?$/.test(v.trim()) ? Number(v.replace(',', '.')) : v } : x)) });
+                onCambiar({ professionalParameters: parametros.map((x, j) => (j === i ? { ...x, value: leerNumero(v) ?? v } : x)) });
               }}
               maxLength={120}
             />
@@ -570,7 +575,7 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
   );
 }
 
-/** «Agregar ejercicio → buscar catálogo BE» o «Crear manualmente» (B10-06:485-498). wger llega en WP-07. */
+/** «Agregar ejercicio → buscar catálogo BE» o «Crear manualmente» (B10-06:485-498). wger llega en WP-08. */
 function BuscadorDeEjercicios({ id, onElegir }: { id: string; onElegir: (e: EjercicioDeCatalogo) => void }) {
   const { token, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const [abierto, setAbierto] = useState(false);

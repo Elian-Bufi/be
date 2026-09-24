@@ -9,7 +9,7 @@
  *
  * Lo medido, lo informado y lo calculado se muestran distinguidos siempre (04:1090).
  */
-import { COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type EvaluacionAntropometricaApi, type Medicion } from '@be/domain';
+import { cantidad, COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, leerNumero, type EvaluacionAntropometricaApi, type Medicion } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -115,26 +115,33 @@ function Detalle({
 }
 
 function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; onHecho: (t: string) => void; onError: (t: string) => void }) {
-  const { token, sesionPerdida } = useAntropometria();
+  const { token, sesionPerdida, accesoRetirado } = useAntropometria();
   const intento = useClaveDeIntento();
   const [accion, setAccion] = useState<'corregir' | 'anular' | null>(null);
   const [motivo, setMotivo] = useState('');
   const [valor, setValor] = useState('');
+  /** Lo que no se entiende como número se señala en el campo, no en un aviso suelto (B10-10:164-165). */
+  const [errorDeValor, setErrorDeValor] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const anulada = medicion.condition === 'ANNULLED';
 
   async function corregir() {
+    // `leerNumero` acepta coma o punto y devuelve `null` si no es un número (DL-091 punto 4).
+    const nuevo = leerNumero(valor);
+    if (nuevo === null) return setErrorDeValor('Escribí el valor como número: «72,5» o «72.5».');
+    setErrorDeValor(null);
     setEnviando(true);
     // La corrección es de la evaluación, y la medición es el objetivo declarado en el cuerpo (09v11 §9).
     const res = await api.corregirMedicion(
       token,
       medicion.evaluationId,
-      { targetId: medicion.measurementId, reason: motivo.trim(), magnitude: { value: Number(valor.replace(',', '.')), unit: medicion.magnitude.unit } },
+      { targetId: medicion.measurementId, reason: motivo.trim(), magnitude: { value: nuevo, unit: medicion.magnitude.unit } },
       intento.actual(),
     );
     intento.registrar(res);
     setEnviando(false);
-    if (sesionPerdida(res)) return;
+    // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
+    if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return onError(mensajeDeFallo(res));
     setAccion(null);
     onHecho(COPY_ANTROPOMETRIA.correccionHecha);
@@ -145,7 +152,7 @@ function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; on
     const res = await api.anularMedicion(token, medicion.measurementId, { reason: motivo.trim() }, intento.actual());
     intento.registrar(res);
     setEnviando(false);
-    if (sesionPerdida(res)) return;
+    if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return onError(mensajeDeFallo(res));
     setAccion(null);
     onHecho(res.datos.data.alreadyAnnulled ? COPY_ANTROPOMETRIA.yaAnulada : COPY_ANTROPOMETRIA.anulacionHecha);
@@ -160,8 +167,7 @@ function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; on
         REG-06-154 exige conservar. Si la cadena no se puede resolver, no se inventa un titular.
       */}
       <h4>
-        {medicion.metric}: {(medicion.effectiveMagnitude ?? medicion.magnitude).value}{' '}
-        {(medicion.effectiveMagnitude ?? medicion.magnitude).unit}{' '}
+        {medicion.metric}: {cantidad((medicion.effectiveMagnitude ?? medicion.magnitude).value, (medicion.effectiveMagnitude ?? medicion.magnitude).unit)}{' '}
         <span className="insignia">{ETIQUETA_DE_CLASE_DE_DATO[medicion.dataClass]}</span>{' '}
         <span className="insignia">{ETIQUETA_DE_CONDICION[medicion.condition]}</span>
         {medicion.corrections.length > 0 ? (
@@ -183,21 +189,19 @@ function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; on
             {COPY_ANTROPOMETRIA.historialDeCorrecciones} ({medicion.corrections.length})
           </summary>
           <p className="nota">
-            {COPY_ANTROPOMETRIA.valorOriginal}: {medicion.magnitude.value} {medicion.magnitude.unit}
+            {COPY_ANTROPOMETRIA.valorOriginal}: {cantidad(medicion.magnitude.value, medicion.magnitude.unit)}
           </p>
           <ol className="historial">
             {medicion.corrections.map((c) => (
               <li key={c.correctionId}>
-                <span className="historial__evento">
-                  {c.magnitude.value} {c.magnitude.unit}
-                </span>{' '}
+                <span className="historial__evento">{cantidad(c.magnitude.value, c.magnitude.unit)}</span>{' '}
                 · {c.reason} · {c.author.displayName} · {fecha(c.recordedAt)}
               </li>
             ))}
           </ol>
           {medicion.effectiveMagnitude ? (
             <p>
-              <strong>{COPY_ANTROPOMETRIA.valorVigente}:</strong> {medicion.effectiveMagnitude.value} {medicion.effectiveMagnitude.unit}
+              <strong>{COPY_ANTROPOMETRIA.valorVigente}:</strong> {cantidad(medicion.effectiveMagnitude.value, medicion.effectiveMagnitude.unit)}
             </p>
           ) : (
             <Aviso tipo="info">
@@ -230,7 +234,15 @@ function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; on
 
       {accion === 'corregir' ? (
         <div>
-          <Campo id={`corr-valor-${medicion.measurementId}`} etiqueta={`${COPY_ANTROPOMETRIA.valor} (${medicion.magnitude.unit})`} inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} maxLength={12} />
+          <Campo
+            id={`corr-valor-${medicion.measurementId}`}
+            etiqueta={`${COPY_ANTROPOMETRIA.valor} (${medicion.magnitude.unit})`}
+            inputMode="decimal"
+            value={valor}
+            onChange={(e) => setValor(e.target.value)}
+            maxLength={12}
+            error={errorDeValor}
+          />
           <Campo id={`corr-motivo-${medicion.measurementId}`} etiqueta={COPY_ANTROPOMETRIA.motivoDeCorreccion} value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={1000} />
           <div className="acciones">
             <button type="button" className="boton boton--secundario" onClick={() => setAccion(null)} disabled={enviando}>
