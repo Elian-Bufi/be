@@ -1,0 +1,727 @@
+[
+  {
+    "id": "TEST-RF-001",
+    "rf": "RF-001",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Transversal",
+    "pruebas": 3,
+    "pasaron": 3,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-RF-006",
+    "rf": "RF-006",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-007",
+    "rf": "RF-007",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-010",
+    "rf": "RF-010",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Website",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-012",
+    "rf": "RF-012",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Website",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-070",
+    "rf": "RF-070",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Website",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-071",
+    "rf": "RF-071",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-020",
+    "rf": "RF-020",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Apk",
+    "pruebas": 3,
+    "pasaron": 3,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-RF-021",
+    "rf": "RF-021",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Transversal",
+    "pruebas": 2,
+    "pasaron": 2,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-RF-022",
+    "rf": "RF-022",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Apk",
+    "pruebas": 3,
+    "pasaron": 3,
+    "fallaron": 0,
+    "fuentes": [
+      "integración",
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-RF-023",
+    "rf": "RF-023",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Transversal",
+    "pruebas": 2,
+    "pasaron": 2,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-RF-024",
+    "rf": "RF-024",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Transversal",
+    "pruebas": 2,
+    "pasaron": 2,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-RF-026",
+    "rf": "RF-026",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Website",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-031",
+    "rf": "RF-031",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Website",
+    "pruebas": 2,
+    "pasaron": 2,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-RF-032",
+    "rf": "RF-032",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Apk",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-034",
+    "rf": "RF-034",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Website",
+    "pruebas": 1,
+    "pasaron": 1,
+    "fallaron": 0,
+    "fuentes": [
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-RF-036",
+    "rf": "RF-036",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Website",
+    "pruebas": 1,
+    "pasaron": 1,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-RF-041",
+    "rf": "RF-041",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Website",
+    "pruebas": 1,
+    "pasaron": 1,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-RF-042",
+    "rf": "RF-042",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Apk",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-047",
+    "rf": "RF-047",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Website",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-048",
+    "rf": "RF-048",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-049",
+    "rf": "RF-049",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-050",
+    "rf": "RF-050",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Website",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-054",
+    "rf": "RF-054",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-RF-059",
+    "rf": "RF-059",
+    "prioridad": "P0",
+    "nivel": "E2E",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-AUTH-001",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 4,
+    "pasaron": 4,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-AUTH-002",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 3,
+    "pasaron": 3,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-AUTH-003",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 3,
+    "pasaron": 3,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-AUTH-004",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 2,
+    "pasaron": 2,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-AUTH-005",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 3,
+    "pasaron": 3,
+    "fallaron": 0,
+    "fuentes": [
+      "integración",
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-AUTH-006",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 2,
+    "pasaron": 2,
+    "fallaron": 0,
+    "fuentes": [
+      "integración",
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-AUTH-007",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 2,
+    "pasaron": 2,
+    "fallaron": 0,
+    "fuentes": [
+      "integración",
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-AUTH-008",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 2,
+    "pasaron": 2,
+    "fallaron": 0,
+    "fuentes": [
+      "integración",
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-AUTH-009",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 3,
+    "pasaron": 3,
+    "fallaron": 0,
+    "fuentes": [
+      "integración",
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-AUTH-010",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-AUTH-011",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 2,
+    "pasaron": 2,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-AUTH-012",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 1,
+    "pasaron": 1,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-AUTH-013",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 5,
+    "pasaron": 5,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-DOM-001",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-DOM-002",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 1,
+    "pasaron": 1,
+    "fallaron": 0,
+    "fuentes": [
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-DOM-003",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-DOM-004",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-DOM-005",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-DOM-006",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-DOM-007",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-DOM-008",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 1,
+    "pasaron": 1,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-DOM-009",
+    "rf": "—",
+    "prioridad": "P0",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 1,
+    "pasaron": 1,
+    "fallaron": 0,
+    "fuentes": [
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-CAL-001",
+    "rf": "—",
+    "prioridad": "P1",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 3,
+    "pasaron": 3,
+    "fallaron": 0,
+    "fuentes": [
+      "integración",
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-CAL-002",
+    "rf": "—",
+    "prioridad": "P1",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 2,
+    "pasaron": 2,
+    "fallaron": 0,
+    "fuentes": [
+      "integración",
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-CAL-003",
+    "rf": "—",
+    "prioridad": "P1",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 1,
+    "pasaron": 1,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  },
+  {
+    "id": "TEST-CAL-004",
+    "rf": "—",
+    "prioridad": "P1",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 2,
+    "pasaron": 2,
+    "fallaron": 0,
+    "fuentes": [
+      "integración",
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-FRM-001",
+    "rf": "—",
+    "prioridad": "P1",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-FRM-002",
+    "rf": "—",
+    "prioridad": "P1",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-FRM-003",
+    "rf": "—",
+    "prioridad": "P1",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 1,
+    "pasaron": 1,
+    "fallaron": 0,
+    "fuentes": [
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-FRM-004",
+    "rf": "—",
+    "prioridad": "P1",
+    "nivel": "E2E HTTP",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-ANT-001",
+    "rf": "—",
+    "prioridad": "P1",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 1,
+    "pasaron": 1,
+    "fallaron": 0,
+    "fuentes": [
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-ANT-002",
+    "rf": "—",
+    "prioridad": "P1",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 0,
+    "pasaron": 0,
+    "fallaron": 0,
+    "fuentes": []
+  },
+  {
+    "id": "TEST-ANT-003",
+    "rf": "—",
+    "prioridad": "P1",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 2,
+    "pasaron": 2,
+    "fallaron": 0,
+    "fuentes": [
+      "integración",
+      "unitarias"
+    ]
+  },
+  {
+    "id": "TEST-ANT-004",
+    "rf": "—",
+    "prioridad": "P1",
+    "nivel": "Integración",
+    "canal": "Transversal",
+    "pruebas": 5,
+    "pasaron": 5,
+    "fallaron": 0,
+    "fuentes": [
+      "integración"
+    ]
+  }
+]

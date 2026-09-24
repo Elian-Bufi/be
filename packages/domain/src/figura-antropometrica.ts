@@ -22,7 +22,7 @@ export const ETIQUETA_DE_FAMILIA: Readonly<Record<FamiliaDeMedicion, string>> = 
   PLIEGUES: 'Pliegues cutáneos',
   PERIMETROS: 'Perímetros',
   DIAMETROS: 'Diámetros',
-  OTRAS: 'Otras mediciones',
+  OTRAS: 'Otras mediciones del protocolo',
 };
 
 const MetricaDelProtocoloSchema = z.object({
@@ -59,6 +59,36 @@ export function metricasDelProtocolo(contenido: unknown): MetricaDelProtocolo[] 
     metricas.push({ clave: m.clave, nombre: m.nombre ?? m.clave, familia: m.familia ?? 'OTRAS', unidades: m.unidades });
   }
   return metricas;
+}
+
+/** Una medición escrita en la toma, antes de guardarse: el valor, tal como lo escribió la persona. */
+export interface MedicionEscrita {
+  readonly metrica: string;
+  readonly valor: string;
+  readonly unidad: string;
+}
+
+/**
+ * Reparte las mediciones escritas entre los campos del protocolo y las de fuera del protocolo: al abrir un borrador y
+ * al cambiar de protocolo. Una medición va a su campo si el protocolo la declara **en esa unidad** —el campo muestra la
+ * unidad del protocolo, y otra quedaría escondida detrás de la que se ve—, si tiene valor y si el campo sigue libre: la
+ * primera lo ocupa. Las demás quedan fuera del protocolo, tal como están. Nada se descarta y la unidad nunca se
+ * convierte (B10-07 §17).
+ */
+export function repartirEnElProtocolo<T extends MedicionEscrita>(
+  mediciones: readonly T[],
+  metricas: readonly MetricaDelProtocolo[],
+): { enSuCampo: Map<string, T>; fuera: T[] } {
+  const declaradas = new Map(metricas.map((m) => [m.clave, m]));
+  const enSuCampo = new Map<string, T>();
+  const fuera: T[] = [];
+  for (const m of mediciones) {
+    const clave = m.metrica.trim();
+    const declarada = declaradas.get(clave);
+    if (declarada?.unidades.includes(m.unidad.trim()) && m.valor.trim() !== '' && !enSuCampo.has(clave)) enSuCampo.set(clave, m);
+    else fuera.push(m);
+  }
+  return { enSuCampo, fuera };
 }
 
 /** Las métricas agrupadas por familia, en el orden de B10-07 §15, con cada grupo en el orden del protocolo. */

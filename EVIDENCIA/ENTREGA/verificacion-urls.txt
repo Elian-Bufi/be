@@ -1,0 +1,43 @@
+Verificación posterior al deploy — estado entregado (07 §37)
+Momento: 2026-09-24T08:47:57Z
+
+$ curl -s https://be-api-hndp.onrender.com/health/ready
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.9.0","commit":"15d77811d348687bffcf4931773b80495cbf59b6","construidoEn":"2026-09-24T08:18:36.522Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+
+$ por qué la API dice 15d7781 y el website 796a5fe: lo que cambió entre los dos commits
+   apps/web/src/app/pro/advisees/anthropometry/preparacion.tsx | 30 ++++++++++++++++++++++++++++--
+   1 file changed, 28 insertions(+), 2 deletions(-)
+  Solo apps/web: el buildFilter de be-api en render.yaml (apps/api, packages/domain, prisma, package*.json)
+  no lo incluye, así que la API no se reconstruyó. Es el mismo código de API que 796a5fe.
+
+$ curl -s -o /dev/null -w "%{http_code}" https://be-api-hndp.onrender.com/health/live
+200
+
+$ curl -sI https://be-web-1ngj.onrender.com/  (líneas de seguridad)
+HTTP/2 200 
+content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://be-api-hndp.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+strict-transport-security: max-age=315360000; includeSubdomains; preload
+x-content-type-options: nosniff
+x-frame-options: DENY
+
+$ la portada declara la versión y el commit desplegados, y ofrece la APK
+  «Plataforma integrada de inteligencia en salud» 4
+  «Lo que BE no hace» 2
+  «Descargar la APK de prueba» 2
+  «releases/latest» 2
+  «Saltar al contenido» 2
+  identidad del build: 0.9.0 · commit 796a5fe
+
+$ DL-030: el build del website apunta a la API (la URL está en el JS de /login)
+  /_next/static/chunks/app/login/page-4b6f75b4e7600a83.js → be-api-hndp.onrender.com 1
+  /api/v1/x en el website no llega a la API (X-Request-Id o RESOURCE_NOT_FOUND): 0
+
+$ CORS: la API responde al website y a nadie más
+  Origin: el website → access-control-allow-origin: https://be-web-1ngj.onrender.com
+  Origin: https://ejemplo.invalid → 0 cabeceras Access-Control-Allow-Origin
+
+$ descarga anónima de la APK vigente, del release permanente (sin credenciales de GitHub)
+  https://github.com/Elian-Bufi/be/releases/download/be-apk-0.9.0/be-0.9.0-fd08380.apk
+  tamaño:             69700858 bytes
+  SHA-256 esperado:   021af7b1a21f5ac90b342000f5f5f23e0f818a0256d345d5e033c6cf82e4551d
+  SHA-256 descargado: 021af7b1a21f5ac90b342000f5f5f23e0f818a0256d345d5e033c6cf82e4551d (coincide)
