@@ -13,9 +13,8 @@ export const metadata: Metadata = { title: 'Nutrición · BE' };
 export default function PaginaDeNutricion() {
   return (
     <>
-      <Encabezado />
-      <main className="contenido contenido--ancho">
-        <NavegacionProfesional />
+      <Encabezado navegacion={<NavegacionProfesional />} />
+      <main id="contenido" className="contenido contenido--ancho">
         <Suspense fallback={null}>
           <Nutricion />
         </Suspense>

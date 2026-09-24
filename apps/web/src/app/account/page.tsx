@@ -9,9 +9,8 @@ export const metadata: Metadata = { title: 'Cuenta · BE' };
 export default function PaginaDeCuenta() {
   return (
     <>
-      <Encabezado />
-      <main className="contenido">
-        <NavegacionDeCuenta />
+      <Encabezado navegacion={<NavegacionDeCuenta />} />
+      <main id="contenido" className="contenido">
         <h1>Cuenta</h1>
         <Cuenta />
       </main>

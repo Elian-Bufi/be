@@ -13,9 +13,8 @@ export const metadata: Metadata = { title: 'Antropometría · BE' };
 export default function PaginaDeAntropometria() {
   return (
     <>
-      <Encabezado />
-      <main className="contenido contenido--ancho">
-        <NavegacionProfesional />
+      <Encabezado navegacion={<NavegacionProfesional />} />
+      <main id="contenido" className="contenido contenido--ancho">
         <Suspense fallback={null}>
           <Antropometria />
         </Suspense>

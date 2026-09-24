@@ -86,5 +86,5 @@ export function TextoVersionado({ version, visible, alCerrar }: { version: Versi
 const estilos = StyleSheet.create({
   contenido: { padding: 24, paddingTop: 48 },
   meta: { borderLeftWidth: 4, borderLeftColor: COLOR.borde, paddingLeft: 10, marginBottom: 12 },
-  desplegado: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 8, padding: 12, marginVertical: 6, backgroundColor: COLOR.fondoSuave },
+  desplegado: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 8, padding: 12, marginVertical: 6, backgroundColor: COLOR.superficie },
 });

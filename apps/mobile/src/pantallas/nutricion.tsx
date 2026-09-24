@@ -536,9 +536,9 @@ const s = StyleSheet.create({
   opcion: { marginVertical: 6 },
   negrita: { fontWeight: '700', color: COLOR.texto, fontSize: 16 },
   item: { fontSize: 16, color: COLOR.texto, lineHeight: 23 },
-  enlace: { color: COLOR.azulOscuro, textDecorationLine: 'underline' },
-  radio: { minHeight: 48, borderWidth: 2, borderColor: COLOR.borde, borderRadius: 8, paddingHorizontal: 12, justifyContent: 'center', marginVertical: 4 },
-  radioMarcado: { borderColor: COLOR.azul, backgroundColor: COLOR.fondoSuave },
+  enlace: { color: COLOR.acento, textDecorationLine: 'underline' },
+  radio: { minHeight: 48, borderWidth: 2, borderColor: COLOR.bordeControl, borderRadius: 8, paddingHorizontal: 12, justifyContent: 'center', marginVertical: 4 },
+  radioMarcado: { borderColor: COLOR.acento, backgroundColor: COLOR.superficie },
   textoRadio: { fontSize: 16, color: COLOR.texto },
   fila: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, minHeight: 48, borderBottomWidth: 1, borderBottomColor: COLOR.borde, paddingVertical: 6 },
 });

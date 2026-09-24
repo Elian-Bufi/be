@@ -81,76 +81,104 @@ export function EspacioProfesional() {
   const esMio = (p: { professional: { identityId: string } }) => p.professional.identityId === yo.id;
 
   return (
-    <div className="secciones">
-      <SolicitarVinculo token={token} sesionPerdida={sesionPerdida} alEnviar={() => void enviadas.recargar()} />
+    <div className="espacio">
+      <div className="espacio__principal secciones">
+        <section className="seccion" aria-labelledby="titulo-asesorados">
+          <h2 id="titulo-asesorados">Tus asesorados</h2>
+          {vinculos.estado.tipo === 'cargando' ? <Cargando /> : null}
+          {vinculos.estado.tipo === 'error' ? <ErrorConReintento onReintentar={vinculos.recargar} /> : null}
+          {vinculos.estado.tipo === 'listo'
+            ? (() => {
+                const propios = vinculos.estado.items.filter(esMio);
+                if (propios.length === 0) return <p>{COPY_VINCULO.sinAsesorados}</p>;
+                // Una persona, una tarjeta: el vínculo es por alcance (DL-039), pero el workspace es uno por asesorado.
+                const porAsesorado = new Map<string, typeof propios>();
+                for (const v of propios) porAsesorado.set(v.advisee.identityId, [...(porAsesorado.get(v.advisee.identityId) ?? []), v]);
+                return (
+                  <ul className="lista">
+                    {[...porAsesorado.entries()].map(([asesoradoId, deLaPersona]) => {
+                      const nombre = deLaPersona[0]!.advisee.displayName;
+                      return (
+                        <li key={asesoradoId} className="lista__item asesorado">
+                          <div className="asesorado__cabecera">
+                            <p className="lista__titulo">{nombre}</p>
+                            <Link className="boton boton--secundario" href={`/pro/advisees?id=${encodeURIComponent(asesoradoId)}`} aria-label={`Abrir el workspace de ${nombre}`}>
+                              Abrir
+                            </Link>
+                          </div>
+                          <ul className="alcances">
+                            {deLaPersona.map((v) => {
+                              const e = estadoParaMostrar(v, 'PROFESSIONAL');
+                              return (
+                                <li key={v.relationshipId}>
+                                  <span className="alcances__nombre">
+                                    {v.scope.label} · {ETIQUETA_DE_FINALIDAD[v.purpose]}
+                                  </span>
+                                  <span>
+                                    <span className="insignia">{e.estado}</span> {e.detalle}
+                                  </span>
+                                  <span className="nota">Desde el {dia(v.acceptedAt)}</span>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              })()
+            : null}
+          <VerMas estado={vinculos.estado} onVerMas={vinculos.verMas} />
+          <p>
+            <button type="button" className="boton boton--enlace" onClick={() => void vinculos.recargar()}>
+              Actualizar
+            </button>
+          </p>
+        </section>
 
-      <section className="seccion" aria-labelledby="titulo-asesorados">
-        <h2 id="titulo-asesorados">Tus asesorados</h2>
-        {vinculos.estado.tipo === 'cargando' ? <Cargando /> : null}
-        {vinculos.estado.tipo === 'error' ? <ErrorConReintento onReintentar={vinculos.recargar} /> : null}
-        {vinculos.estado.tipo === 'listo'
-          ? (() => {
-              const propios = vinculos.estado.items.filter(esMio);
-              if (propios.length === 0) return <p>{COPY_VINCULO.sinAsesorados}</p>;
-              return (
-                <ul className="lista">
-                  {propios.map((v) => {
-                    const e = estadoParaMostrar(v, 'PROFESSIONAL');
-                    return (
-                      <li key={v.relationshipId} className="lista__item">
-                        <p className="lista__titulo">{v.advisee.displayName}</p>
-                        <p>
-                          {v.scope.label} · {ETIQUETA_DE_FINALIDAD[v.purpose]}
-                        </p>
-                        <p>
-                          <span className="insignia">{e.estado}</span> {e.detalle}
-                        </p>
-                        <p className="nota">Desde el {dia(v.acceptedAt)}</p>
-                        <Link className="boton boton--secundario" href={`/pro/advisees?id=${encodeURIComponent(v.advisee.identityId)}`}>
-                          Abrir
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              );
-            })()
-          : null}
-        <VerMas estado={vinculos.estado} onVerMas={vinculos.verMas} />
-        <p>
-          <button type="button" className="boton boton--enlace" onClick={() => void vinculos.recargar()}>
-            Actualizar
-          </button>
-        </p>
-      </section>
+        <section className="seccion" aria-labelledby="titulo-enviadas">
+          <h2 id="titulo-enviadas">Solicitudes enviadas</h2>
+          {enviadas.estado.tipo === 'cargando' ? <Cargando /> : null}
+          {enviadas.estado.tipo === 'error' ? <ErrorConReintento onReintentar={enviadas.recargar} /> : null}
+          {enviadas.estado.tipo === 'listo'
+            ? (() => {
+                const propias = enviadas.estado.items.filter((s) => esMio(s) && s.initiatedBy === 'PROFESSIONAL');
+                if (propias.length === 0) return <p>{COPY_VINCULO.sinSolicitudes}</p>;
+                return (
+                  <table className="tabla">
+                    <caption className="visualmente-oculto">Solicitudes de vínculo que enviaste</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Asesorado</th>
+                        <th scope="col">Alcance</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Enviada</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {propias.map((s) => (
+                        <tr key={s.relationshipRequestId}>
+                          <td data-etiqueta="Asesorado">{s.advisee.displayName}</td>
+                          <td data-etiqueta="Alcance">
+                            {s.scope.label} · {ETIQUETA_DE_FINALIDAD[s.purpose]}
+                          </td>
+                          <td data-etiqueta="Estado">{COPY_VINCULO.estadoDeSolicitud[s.state]}</td>
+                          <td data-etiqueta="Enviada">{fecha(s.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                );
+              })()
+            : null}
+          <VerMas estado={enviadas.estado} onVerMas={enviadas.verMas} />
+        </section>
+      </div>
 
-      <section className="seccion" aria-labelledby="titulo-enviadas">
-        <h2 id="titulo-enviadas">Solicitudes enviadas</h2>
-        {enviadas.estado.tipo === 'cargando' ? <Cargando /> : null}
-        {enviadas.estado.tipo === 'error' ? <ErrorConReintento onReintentar={enviadas.recargar} /> : null}
-        {enviadas.estado.tipo === 'listo'
-          ? (() => {
-              const propias = enviadas.estado.items.filter((s) => esMio(s) && s.initiatedBy === 'PROFESSIONAL');
-              if (propias.length === 0) return <p>{COPY_VINCULO.sinSolicitudes}</p>;
-              return (
-                <ul className="lista">
-                  {propias.map((s) => (
-                    <li key={s.relationshipRequestId} className="lista__item">
-                      <p className="lista__titulo">{s.advisee.displayName}</p>
-                      <p>
-                        {s.scope.label} · {ETIQUETA_DE_FINALIDAD[s.purpose]}
-                      </p>
-                      <p className="nota">
-                        {COPY_VINCULO.estadoDeSolicitud[s.state]} · {fecha(s.createdAt)}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              );
-            })()
-          : null}
-        <VerMas estado={enviadas.estado} onVerMas={enviadas.verMas} />
-      </section>
+      <div className="espacio__lateral">
+        <SolicitarVinculo token={token} sesionPerdida={sesionPerdida} alEnviar={() => void enviadas.recargar()} />
+      </div>
     </div>
   );
 }

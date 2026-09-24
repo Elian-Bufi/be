@@ -9,9 +9,8 @@ export const metadata: Metadata = { title: 'Espacio profesional · BE' };
 export default function PaginaProfesional() {
   return (
     <>
-      <Encabezado />
-      <main className="contenido">
-        <NavegacionProfesional />
+      <Encabezado navegacion={<NavegacionProfesional />} />
+      <main id="contenido" className="contenido contenido--ancho">
         <h1>Espacio profesional</h1>
         <EspacioProfesional />
       </main>

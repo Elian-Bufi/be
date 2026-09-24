@@ -16,7 +16,7 @@
 import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { apiConfigurada, extra } from './src/api';
 import { anterior, requiereSesion, textoDeVolverA, type Ruta, type Salida } from './src/navegacion';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
@@ -102,9 +102,13 @@ export default function App() {
   return (
     <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={estilos.barra}>
-        <Text style={estilos.marca} accessibilityLabel="BE">
-          BE
-        </Text>
+        {/* El isotipo es decorativo: la marca ya la dice el texto «BE». */}
+        <View style={estilos.marcaConIsotipo}>
+          <Image source={ISOTIPO} style={estilos.isotipoChico} accessible={false} />
+          <Text style={estilos.marca} accessibilityLabel="BE">
+            BE
+          </Text>
+        </View>
         <Text style={estilos.ambiente}>Ambiente de prueba · solo datos sintéticos</Text>
       </View>
       <ScrollView ref={desplazamiento} contentContainerStyle={estilos.contenido} keyboardShouldPersistTaps="handled">
@@ -112,9 +116,8 @@ export default function App() {
 
         {ruta.nombre === 'bienvenida' ? (
           <View>
-            <Text style={estilos.wordmark} accessibilityLabel="BE">
-              BE
-            </Text>
+            <Image source={ISOTIPO} style={estilos.isotipoGrande} accessible={false} />
+            <Text style={estilos.lema}>BE · Better Everyday</Text>
             <Text style={estilos.tituloBienvenida} accessibilityRole="header">
               Plataforma integrada de inteligencia en salud
             </Text>
@@ -174,30 +177,35 @@ export default function App() {
           </Aviso>
         ) : null}
       </ScrollView>
-      <StatusBar style="dark" />
+      {/* Tema oscuro: los íconos de la barra del sistema van claros. */}
+      <StatusBar style="light" />
     </KeyboardAvoidingView>
   );
 }
 
+const ISOTIPO = require('./assets/isotipo.png');
+
 const estilos = StyleSheet.create({
-  raiz: { flex: 1, backgroundColor: '#ffffff' },
+  raiz: { flex: 1, backgroundColor: COLOR.fondo },
   barra: {
     paddingTop: Constants.statusBarHeight + 8,
-    paddingBottom: 8,
+    paddingBottom: 10,
     paddingHorizontal: 20,
-    borderTopWidth: 6,
-    borderTopColor: COLOR.azul,
-    borderBottomWidth: 1,
-    borderBottomColor: COLOR.borde,
+    backgroundColor: COLOR.fondo,
+    borderBottomWidth: 2,
+    borderBottomColor: COLOR.acento,
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
   },
-  marca: { fontSize: 24, fontWeight: '800', color: COLOR.azul },
+  marcaConIsotipo: { flexDirection: 'row', alignItems: 'center' },
+  isotipoChico: { width: 30, height: 30, marginRight: 8 },
+  marca: { fontSize: 22, fontWeight: '800', color: COLOR.texto, letterSpacing: 1 },
   ambiente: { fontSize: 12, color: COLOR.tenue },
   contenido: { padding: 20, paddingBottom: 48 },
-  wordmark: { fontSize: 88, fontWeight: '800', color: COLOR.azul, letterSpacing: -2, marginTop: 24 },
-  tituloBienvenida: { fontSize: 24, fontWeight: '700', color: COLOR.texto, marginVertical: 12 },
+  isotipoGrande: { width: 180, height: 180, alignSelf: 'center', marginTop: 16 },
+  lema: { fontSize: 14, fontWeight: '800', letterSpacing: 3, color: COLOR.acento, textAlign: 'center', marginTop: 12 },
+  tituloBienvenida: { fontSize: 26, fontWeight: '700', color: COLOR.texto, marginVertical: 12, textAlign: 'center' },
   identidad: { fontSize: 12, color: COLOR.tenue, marginTop: 32 },
 });

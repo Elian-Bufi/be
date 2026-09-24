@@ -27,7 +27,7 @@ import { api, nuevaClaveDeIdempotencia } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
 import { fecha } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Boton, COLOR, Dato, Insignia, Parrafo, Seccion, Titulo, estilos as ui } from '../ui';
+import { Aviso, Boton, COLOR, VELO, Dato, Insignia, Parrafo, Seccion, Titulo, estilos as ui } from '../ui';
 
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'error'; sinConexion: boolean };
 
@@ -247,11 +247,11 @@ const estilos = StyleSheet.create({
     fontFamily: Platform.select({ android: 'monospace', ios: 'Menlo', default: undefined }),
     fontSize: 16,
     color: COLOR.texto,
-    backgroundColor: COLOR.fondoSuave,
+    backgroundColor: COLOR.fondo,
     borderRadius: 6,
     padding: 10,
     marginVertical: 6,
   },
-  fondoModal: { flex: 1, backgroundColor: 'rgba(17,24,39,0.55)', justifyContent: 'center', padding: 16 },
-  dialogo: { backgroundColor: '#fff', borderRadius: 12, padding: 20 },
+  fondoModal: { flex: 1, backgroundColor: VELO, justifyContent: 'center', padding: 16 },
+  dialogo: { backgroundColor: COLOR.superficie, borderRadius: 12, padding: 20, borderWidth: 1, borderColor: COLOR.borde },
 });
