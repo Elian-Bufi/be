@@ -39,7 +39,7 @@ import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { ZONA_POR_DEFECTO, fechaLocalEn, finDelDiaLocal, inicioDelDiaLocal } from '../nutricion/zona';
 import { nombreDeAsesorado, token, esToken } from '../vinculo/lectura';
 import { CatalogoDeEjerciciosService, type Ambito } from './catalogo.service';
-import { EjecutorDeEntrenamiento, esUuid } from './ejecutor';
+import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { registrarEventoDeEntrenamiento } from './eventos';
 import {
   REGISTRO_VACIO,
@@ -450,6 +450,7 @@ export class EjecucionesDeEntrenamientoService {
   }
 
   // ─── API-TRN-19 ────────────────────────────────────────────────────────────────────────────
+  /** Lectura de historia: para el titular exige solo su A3 vigente (DL-089 opción A; 08:199, 08:58, 08:406). */
   consultarEjecucion(actor: ActorAutenticado, executionId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<{ data: EjecucionDeEntrenamiento }> {
     sinParametrosDeQuery(query);
     const recurso = { tipo: 'EjecucionDeEntrenamiento', id: executionId };
@@ -459,7 +460,7 @@ export class EjecucionesDeEntrenamientoService {
       actor,
       ctx,
       recursoIntentado: recurso,
-      lectura: async (tx) => ({ data: await this.ejecucionApi(tx, (await this.ejecucionRevelable(tx, 'API-TRN-19', actor, executionId, ctx)).id) }),
+      lectura: async (tx) => ({ data: await this.ejecucionApi(tx, (await this.ejecucionRevelable(tx, 'API-TRN-19', actor, executionId, ctx, 'HISTORIA')).id) }),
     });
   }
 
@@ -660,10 +661,14 @@ export class EjecucionesDeEntrenamientoService {
   }
 
   /**
-   * La ejecución, si es revelable para el actor: su titular (con el acceso vigente a su profesional), o el profesional
-   * del plan (con su PDP, y después la propiedad: DL-057). Para cualquier otro, el mismo 404 que lo inexistente.
+   * La ejecución, si es revelable para el actor: su titular, o el profesional del plan (con su PDP, y después la
+   * propiedad: DL-057). Para cualquier otro, el mismo 404 que lo inexistente.
+   *
+   * Para el titular, lo que se exige depende de qué se hace con la ejecución (DL-089 opción A; 08:199, 08:58, 08:406):
+   * - `HISTORIA` (API-TRN-19): es su historia ya registrada; alcanza con su A3 vigente, como en nutrición.
+   * - `OPERACION` (API-TRN-20, corregir): opera sobre el registro; sigue bajo el PDP de su profesional (UC-P17 E03).
    */
-  private async ejecucionRevelable(tx: Tx, operacion: string, actor: ActorAutenticado, executionId: string, ctx: ContextoDeSolicitud) {
+  private async ejecucionRevelable(tx: Tx, operacion: string, actor: ActorAutenticado, executionId: string, ctx: ContextoDeSolicitud, uso: 'HISTORIA' | 'OPERACION' = 'OPERACION') {
     const recurso = { tipo: 'EjecucionDeEntrenamiento', id: executionId };
     const x = esUuid(executionId)
       ? await tx.ejecucionDeEntrenamiento.findUnique({ where: { id: executionId }, include: { versionDePlan: { include: { plan: true, instantanea: true } } } })
@@ -671,7 +676,12 @@ export class EjecucionesDeEntrenamientoService {
     if (!x) throw this.ejecutor.noRevelable({ operacion, actorId: actor.identidadId, recurso }, ctx);
     const profesionalId = x.versionDePlan.plan.profesionalId;
     const esTitular = x.asesoradoId === actor.identidadId;
-    await this.decidir(tx, operacion, actor, esTitular ? profesionalId : actor.identidadId, x.asesoradoId, recurso, ctx);
+    if (esTitular && uso === 'HISTORIA') {
+      // DL-089 opción A; 08:199, 08:58, 08:406: la historia propia no depende del acceso de terceros.
+      await exigirA3Vigente(tx, actor.identidadId);
+    } else {
+      await this.decidir(tx, operacion, actor, esTitular ? profesionalId : actor.identidadId, x.asesoradoId, recurso, ctx);
+    }
     if (!esTitular && profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion, actorId: actor.identidadId, recurso, sujetoId: x.asesoradoId }, ctx);
     return {
       id: x.id,
