@@ -12,8 +12,11 @@
  * honesta de mostrar una serie con huecos, y en una pantalla de teléfono además es la legible.
  *
  * La pantalla es de solo lectura: el asesorado no corrige ni anula mediciones (eso es del profesional, REG-06-219).
+ * Por eso, de los cuatro patrones de DL-091, acá aplica el de los números: no hay escritura que pueda ser denegada ni
+ * formulario que pueda tener un error por campo. Cada valor se escribe con `cantidad`/`numero` de `@be/domain`, con la
+ * coma decimal del país; lo que llega del contrato no se toca.
  */
-import { COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, type EvolucionResponse, type SerieApi } from '@be/domain';
+import { cantidad, COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, numero, type EvolucionResponse, type SerieApi } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '../api';
@@ -81,7 +84,7 @@ function SerieDeLaMetrica({ serie }: { serie: SerieApi }) {
   return (
     <Seccion titulo={serie.metricCode}>
       <Parrafo tenue>
-        {serie.series.length} con dato · {diasSinDato} {COPY_ANTROPOMETRIA.sinDato.toLowerCase()}
+        {numero(serie.series.length)} con dato · {numero(diasSinDato)} {COPY_ANTROPOMETRIA.sinDato.toLowerCase()}
       </Parrafo>
       {tramos.map((t) => (t.tipo === 'punto' ? <PuntoDeLaSerie key={t.punto.sourceId} punto={t.punto} /> : <HuecoDeLaSerie key={`hueco-${t.hueco.from}`} hueco={t.hueco} />))}
       <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeComparabilidad}</Parrafo>
@@ -94,9 +97,7 @@ function PuntoDeLaSerie({ punto }: { punto: SerieApi['series'][number] }) {
   return (
     <Tarjeta>
       <Subtitulo>{fecha(punto.occurredAt)}</Subtitulo>
-      <Parrafo>
-        {punto.value} {punto.unit}
-      </Parrafo>
+      <Parrafo>{cantidad(punto.value, punto.unit)}</Parrafo>
       <Insignia texto={ETIQUETA_DE_CLASE_DE_DATO[punto.dataClass]} etiqueta={`${COPY_ANTROPOMETRIA.origenDelDato}: ${ETIQUETA_DE_CLASE_DE_DATO[punto.dataClass]}`} />
       {punto.correctionState === 'CORRECTED' ? <Insignia texto={COPY_ANTROPOMETRIA.corregida} etiqueta={COPY_ANTROPOMETRIA.corregida} /> : null}
       {punto.incomparableWithPrevious.length > 0 ? (
@@ -117,7 +118,7 @@ function HuecoDeLaSerie({ hueco }: { hueco: SerieApi['gaps'][number] }) {
   const desde = dia(`${hueco.from}T12:00:00Z`);
   const hasta = dia(`${hueco.to}T12:00:00Z`);
   const texto = hueco.days === 1 ? desde : `${desde} — ${hasta}`;
-  const detalle = hueco.days === 1 ? COPY_ANTROPOMETRIA.sinDato : `${hueco.days} días ${COPY_ANTROPOMETRIA.sinDato.toLowerCase()}`;
+  const detalle = hueco.days === 1 ? COPY_ANTROPOMETRIA.sinDato : `${numero(hueco.days)} días ${COPY_ANTROPOMETRIA.sinDato.toLowerCase()}`;
   return (
     <Tarjeta>
       <Subtitulo>{texto}</Subtitulo>

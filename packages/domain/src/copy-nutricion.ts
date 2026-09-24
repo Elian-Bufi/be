@@ -116,6 +116,11 @@ export const COPY_NUTRICION = {
   sinRegistrosHoy: 'Todavía no registraste comidas hoy.',
   yaRegistrada: 'Esa comida ya está registrada para hoy.',
   planCambio: 'Tu plan se actualizó. Volvé a abrir «Hoy» para ver el vigente.',
+  // Error asociado a su campo, además del resumen (B10-10:36, 164-165). El ejemplo lleva coma: acá los números se
+  // escriben y se leen como en el país (DL-091 punto 4), y el punto también se acepta.
+  cantidadNoEsUnNumero: 'Escribí la cantidad con números, por ejemplo 150 o 12,5.',
+  revisaLasCantidades: 'Hay una cantidad que no pudimos leer. Revisá los campos señalados.',
+  elegiQueOpcionComiste: 'Elegí qué opción comiste.',
 } as const;
 
 /**

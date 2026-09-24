@@ -11,7 +11,16 @@
  * `respondable` lo decide la API en cada lectura, con la política vigente: si el vínculo se pausó o el
  * consentimiento se revocó, la solicitud sigue estando —es de la persona— pero ya no se puede responder.
  */
-import { COPY_FORMULARIOS, type CampoDePlantilla, type RespuestaDeFormulario, type SolicitudDeFormulario, type SolicitudPropia, type VersionDePlantilla } from '@be/domain';
+import {
+  COPY_FORMULARIOS,
+  leerNumero,
+  numero,
+  type CampoDePlantilla,
+  type RespuestaDeFormulario,
+  type SolicitudDeFormulario,
+  type SolicitudPropia,
+  type VersionDePlantilla,
+} from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '../api';
@@ -22,6 +31,9 @@ import { useSesionPerdida, type Salida } from '../navegacion';
 import { Aviso, Boton, Campo, Insignia, Parrafo, Seccion, Tarjeta, Titulo } from '../ui';
 
 type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: readonly SolicitudPropia[] } | { tipo: 'error'; sinConexion: boolean };
+
+/** Lo respondido, escrito como lo lee una persona: «Sí»/«No», y los números con la coma del país (DL-091 punto 4). */
+const valorRespondido = (v: string | number | boolean): string => (typeof v === 'boolean' ? (v ? 'Sí' : 'No') : typeof v === 'number' ? numero(v) : v);
 
 export function PantallaDeFormularios({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: { nombre: 'mi-solicitud'; id: string }) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
@@ -119,8 +131,10 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
       const crudo = (valores[c.fieldCode] ?? '').trim();
       if (crudo === '') return [];
       if (c.dataType === 'NUMBER') {
-        const n = Number(crudo.replace(',', '.'));
-        return Number.isFinite(n) ? [{ fieldCode: c.fieldCode, value: n }] : [];
+        // Coma o punto, como la persona lo escriba (DL-091 punto 4): `leerNumero` devuelve `null` si no es un número,
+        // y entonces el campo se omite, como si no se hubiera completado.
+        const n = leerNumero(crudo);
+        return n === null ? [] : [{ fieldCode: c.fieldCode, value: n }];
       }
       if (c.dataType === 'BOOLEAN') return [{ fieldCode: c.fieldCode, value: /^(s|si|sí|true|1)$/i.test(crudo) }];
       return [{ fieldCode: c.fieldCode, value: crudo }];
@@ -160,7 +174,7 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
           <Parrafo tenue>{COPY_FORMULARIOS.rectificarConservaHistoria}</Parrafo>
           {response.original.answers.map((a) => (
             <Parrafo key={a.fieldCode}>
-              {etiqueta(a.fieldCode)}: {typeof a.value === 'boolean' ? (a.value ? 'Sí' : 'No') : String(a.value)}
+              {etiqueta(a.fieldCode)}: {valorRespondido(a.value)}
             </Parrafo>
           ))}
           {response.rectifications.map((c) => (
@@ -170,7 +184,7 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
               </Parrafo>
               {c.answers.map((a) => (
                 <Parrafo key={a.fieldCode}>
-                  {etiqueta(a.fieldCode)}: {typeof a.value === 'boolean' ? (a.value ? 'Sí' : 'No') : String(a.value)}
+                  {etiqueta(a.fieldCode)}: {valorRespondido(a.value)}
                 </Parrafo>
               ))}
             </View>

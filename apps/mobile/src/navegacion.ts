@@ -4,7 +4,7 @@
  * cierra la sesión. La sesión vive solo en memoria (DL-012): perderla lleva a Iniciar sesión.
  */
 import { CODIGOS_DE_SESION_NO_VALIDA, type Resultado, type SesionDeOcurrencia } from '@be/domain';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 export type Ruta =
   | { readonly nombre: 'bienvenida'; readonly aviso?: string }
@@ -86,6 +86,26 @@ export function textoDeVolverA(destino: Ruta): string {
     default:
       return 'Volver';
   }
+}
+
+/**
+ * «Escritura denegada → contenido retirado» (B10-06:1145-1148; S10-TRN-09). Si una **escritura** del asesorado recibe
+ * el 404 no revelador —el mismo para inexistente, ajeno, de otro alcance o revocado (10-B04 §40)—, la pantalla no deja
+ * el contenido viejo con un aviso encima: lo retira entero y queda en su estado neutral, el mismo que muestra cuando el
+ * acceso está suspendido. Es el mecanismo `accesoRetirado` del website
+ * (apps/web/src/app/pro/advisees/training/entrenamiento.tsx), escrito una sola vez para las pantallas del APK.
+ *
+ * El APK no recibe un 403 propio de «acceso suspendido»: la suspensión llega como `planState: 'NOT_AVAILABLE'` en la
+ * lectura siguiente, y por eso el estado neutral es el mismo aviso que esa lectura ya dibuja.
+ */
+export function useAccesoRetirado(): { readonly retirado: boolean; readonly accesoRetirado: (r: Resultado<unknown>) => boolean } {
+  const [retirado, setRetirado] = useState(false);
+  const accesoRetirado = useCallback((r: Resultado<unknown>) => {
+    if (r.ok || r.tipo !== 'API' || r.codigo !== 'RESOURCE_NOT_FOUND') return false;
+    setRetirado(true);
+    return true;
+  }, []);
+  return { retirado, accesoRetirado };
 }
 
 /** «Esta sesión ya no sirve»: la UI olvida el token y vuelve a Iniciar sesión. Devuelve `true` si salió. */

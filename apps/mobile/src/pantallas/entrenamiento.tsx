@@ -9,14 +9,19 @@
  * - «No pude realizarla» es un acto explícito, con motivo opcional: no se fuerza explicación (B10-06:800-816).
  * - «Revisar sesión» → «Confirmar sesión»: confirmar es definitivo, y después se corrige sin borrar (B10-06:820-898).
  * - Un resultado incierto ofrece reintentar con la misma Idempotency-Key: no duplica.
+ * - DL-091: toda cantidad se escribe con `cantidad`/`numero` de `@be/domain` y toda entrada se lee con `leerNumero`,
+ *   que acepta coma o punto; una escritura denegada con el 404 no revelador retira el contenido (B10-06:1145-1148).
  */
 import {
+  cantidad,
   cantidadDeSeries,
   COPY,
   COPY_ENTRENAMIENTO,
   ETIQUETA_DE_CRITERIO,
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
+  leerNumero,
+  numero,
   registroVigente,
   vistaDeOcurrencia,
   type BorradorDeEjecucion,
@@ -36,7 +41,7 @@ import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
 import { dia, fecha } from '../formato';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
-import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
+import { useAccesoRetirado, useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 
 type Hoy = HoyDeEntrenamientoResponse['data'];
@@ -47,11 +52,15 @@ const hoyEn = (zona: string): string => new Intl.DateTimeFormat('en-CA', { timeZ
 
 /** «3 × 8 · RIR 2 · Carga sugerida 60 kg»: lo planificado, con la carga separada del criterio (B10-06:463-477). */
 function resumenDePrescripcion(p: Prescripcion): string {
-  const reps = (s: Prescripcion['sets'][number]) => (!s.repetitions ? '—' : 'value' in s.repetitions ? `${s.repetitions.value}` : `${s.repetitions.min}-${s.repetitions.max}`);
-  const partes = [p.sets.length > 0 ? `${p.sets.length} × ${reps(p.sets[0]!)}` : ''];
+  const reps = (s: Prescripcion['sets'][number]) =>
+    !s.repetitions ? '—' : 'value' in s.repetitions ? numero(s.repetitions.value) : `${numero(s.repetitions.min)}-${numero(s.repetitions.max)}`;
+  const partes = [p.sets.length > 0 ? `${numero(p.sets.length)} × ${reps(p.sets[0]!)}` : ''];
   // «75 % RM» y «RIR 2»: el rótulo del criterio va una sola vez.
-  if (p.intensity) partes.push(p.intensity.criterion === 'PERCENT_RM' ? `${p.intensity.target.value} ${ETIQUETA_DE_CRITERIO.PERCENT_RM}` : `${ETIQUETA_DE_CRITERIO.RIR} ${p.intensity.target.value}`);
-  if (p.suggestedLoad) partes.push(`${COPY_ENTRENAMIENTO.cargaSugerida} ${p.suggestedLoad.value} ${p.suggestedLoad.unit}`);
+  if (p.intensity)
+    partes.push(
+      p.intensity.criterion === 'PERCENT_RM' ? `${numero(p.intensity.target.value)} ${ETIQUETA_DE_CRITERIO.PERCENT_RM}` : `${ETIQUETA_DE_CRITERIO.RIR} ${numero(p.intensity.target.value)}`,
+    );
+  if (p.suggestedLoad) partes.push(`${COPY_ENTRENAMIENTO.cargaSugerida} ${cantidad(p.suggestedLoad.value, p.suggestedLoad.unit)}`);
   return partes.filter(Boolean).join(' · ');
 }
 
@@ -59,8 +68,10 @@ function resumenDePrescripcion(p: Prescripcion): string {
 
 export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
+  const { retirado, accesoRetirado } = useAccesoRetirado();
   const [r, setR] = useState<Resultado<HoyDeEntrenamientoResponse> | null>(null);
   const [otroDia, setOtroDia] = useState('');
+  const [errorDeFecha, setErrorDeFecha] = useState<string | null>(null);
   const [delDia, setDelDia] = useState<{ fecha: string; ocurrencias: Ocurrencia[] } | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -78,13 +89,26 @@ export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; s
   /** DL-078: para registrar una sesión de un día anterior. */
   async function verOtroDia() {
     setAviso(null);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(otroDia)) return setAviso('Escribí la fecha como AAAA-MM-DD.');
+    setErrorDeFecha(null);
+    // El error de la fecha va en su campo, no solo arriba (B10-10:36, 164-165).
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(otroDia)) return setErrorDeFecha('Escribí la fecha como AAAA-MM-DD.');
     const res = await api.ocurrenciasDeEntrenamiento(token, { periodStart: otroDia, periodEnd: otroDia });
     if (sesionPerdida(res)) return;
     if (!res.ok) return setAviso('No pudimos ver ese día. Revisá que no sea una fecha futura ni de hace más de un mes.');
     setDelDia({ fecha: otroDia, ocurrencias: res.datos.data.occurrences });
   }
 
+  // Una escritura denegada con el 404 no revelador retira el contenido de la pantalla entera (B10-06:1145-1148).
+  if (retirado) {
+    return (
+      <View>
+        <Titulo>{COPY_ENTRENAMIENTO.entrenamientoDeHoy}</Titulo>
+        <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.planNoDisponible}>
+          <Boton texto="Ir a Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
+        </Aviso>
+      </View>
+    );
+  }
   if (!r) return <Cargando />;
   if (!r.ok) return <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} />;
   const hoy: Hoy = r.datos.data;
@@ -100,20 +124,29 @@ export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; s
       ) : null}
       {hoy.occurrences.length > 1 ? <Parrafo tenue>Tu plan tiene varias sesiones. Elegí la que hiciste o vas a hacer.</Parrafo> : null}
       {hoy.occurrences.map((o) => (
-        <TarjetaDeOcurrencia key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} ir={ir} />
+        <TarjetaDeOcurrencia key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} />
       ))}
 
       {hoy.planState === 'AVAILABLE' ? (
         <Seccion titulo={COPY_ENTRENAMIENTO.registrarOtroDia}>
           <Parrafo tenue>Si hiciste una sesión otro día y no la registraste, podés registrarla ahora.</Parrafo>
-          <Campo etiqueta="Fecha (AAAA-MM-DD)" value={otroDia} onChangeText={setOtroDia} keyboardType="numbers-and-punctuation" />
+          <Campo
+            etiqueta="Fecha (AAAA-MM-DD)"
+            value={otroDia}
+            error={errorDeFecha}
+            onChangeText={(v) => {
+              setOtroDia(v);
+              setErrorDeFecha(null);
+            }}
+            keyboardType="numbers-and-punctuation"
+          />
           <Boton texto="Ver sesiones de ese día" tipo="secundario" onPress={() => void verOtroDia()} />
           {aviso ? <Aviso tipo="error" titulo={aviso} /> : null}
           {delDia ? (
             delDia.ocurrencias.length === 0 ? (
               <Parrafo>Ese día tu plan no estaba vigente.</Parrafo>
             ) : (
-              delDia.ocurrencias.map((o) => <TarjetaDeOcurrencia key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} ir={ir} />)
+              delDia.ocurrencias.map((o) => <TarjetaDeOcurrencia key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} />)
             )
           ) : null}
         </Seccion>
@@ -128,12 +161,14 @@ function TarjetaDeOcurrencia({
   hoy,
   token,
   sesionPerdida,
+  accesoRetirado,
   ir,
 }: {
   ocurrencia: Ocurrencia;
   hoy: string;
   token: string;
   sesionPerdida: (r: Resultado<unknown>) => boolean;
+  accesoRetirado: (r: Resultado<unknown>) => boolean;
   ir: (r: Ruta) => void;
 }) {
   const [abriendo, setAbriendo] = useState(false);
@@ -147,6 +182,9 @@ function TarjetaDeOcurrencia({
     setAbriendo(false);
     if (sesionPerdida(r)) return;
     if (!r.ok) {
+      // Abrir el borrador es una escritura: con el 404 no revelador, la pantalla retira el contenido entero en vez de
+      // dejar el plan viejo con un aviso encima (B10-06:1145-1148).
+      if (accesoRetirado(r)) return;
       if (r.tipo === 'API' && r.codigo === 'ACTIVE_PLAN_REQUIRED') return setFallo('Tu plan ya no está vigente. Actualizá la pantalla.');
       if (r.tipo === 'API' && r.codigo === 'OCCURRENCE_NOT_EXECUTABLE') return setFallo('Esa sesión no se puede registrar para esa fecha.');
       return setFallo(falloDe(r).mensaje);
@@ -189,8 +227,19 @@ interface SerieEnCarga {
   readonly esfuerzo: string;
 }
 
-/** Un número con coma o punto. Vacío → null; lo que no es un número → NaN, para que no se guarde como otra cosa. */
-const leerNumero = (s: string): number | null => (s.trim() === '' ? null : Number(s.trim().replace(',', '.')));
+/**
+ * Lo que la persona escribió y no se puede leer como número. `leerNumero` de `@be/domain` devuelve `null` tanto para el
+ * campo vacío como para lo que no es un número, así que la diferencia la hace el texto: vacío es «no cargó nada»
+ * —legítimo, el RIR y el esfuerzo son opcionales—; escrito y sin leer es un error que hay que decir.
+ */
+const sinLeer = (t: string): boolean => t.trim() !== '' && leerNumero(t) === null;
+
+/**
+ * Un número ya guardado, escrito dentro de un campo editable: solo cambia el punto decimal por la coma. Acá no va
+ * `numero`, que es para **mostrar**: redondea a dos decimales y separa los miles con punto, y las dos cosas cambiarían
+ * el valor que la persona no tocó. Lo que se precarga tiene que volver de `leerNumero` idéntico a como salió.
+ */
+const paraEditar = (v: number): string => String(v).replace('.', ',');
 
 /** Lo que el borrador ya tiene cargado, dicho para la persona: «3 series», «1 resumen». `null` si no tiene nada. */
 function loCargado(b: BorradorDeEjecucion): string | null {
@@ -236,6 +285,7 @@ export function PantallaDeSesion({
   subir: () => void;
 }) {
   const sesionPerdida = useSesionPerdida(salir);
+  const { retirado, accesoRetirado } = useAccesoRetirado();
   const [b, setB] = useState<BorradorDeEjecucion | null>(null);
   const [error, setError] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -273,6 +323,8 @@ export function PantallaDeSesion({
     setGuardando(false);
     if (sesionPerdida(r)) return 'Tu sesión se cerró.';
     if (!r.ok) {
+      // Guardar el borrador es una escritura: con el 404 no revelador se retira el contenido (B10-06:1145-1148).
+      if (accesoRetirado(r)) return null;
       const f = falloDe(r);
       if (f.tipo === 'actualizar') void cargar();
       return r.tipo === 'API' && r.issues.length > 0 ? 'Hay un dato que no se puede guardar. Revisalo.' : f.mensaje;
@@ -304,11 +356,11 @@ export function PantallaDeSesion({
   }
 
   async function registrarSerie(p: Prescripcion, realizado: string, serie: SerieEnCarga): Promise<string | null> {
+    if ([serie.carga, serie.reps, serie.rir, serie.esfuerzo].some(sinLeer)) return 'Revisá los números de la serie.';
     const carga = leerNumero(serie.carga);
     const reps = leerNumero(serie.reps);
     const rir = leerNumero(serie.rir);
     const esfuerzo = leerNumero(serie.esfuerzo);
-    if ([carga, reps, rir, esfuerzo].some((n) => n !== null && Number.isNaN(n))) return 'Revisá los números de la serie.';
     if (esfuerzo !== null && (esfuerzo < 0 || esfuerzo > 10)) return 'El esfuerzo percibido va de 0 a 10.';
     const actuales = ejercicios();
     const existente = actuales.find((e) => e.prescriptionId === p.prescriptionId);
@@ -380,6 +432,7 @@ export function PantallaDeSesion({
     setConfirmando(false);
     if (sesionPerdida(r)) return;
     if (!r.ok) {
+      if (accesoRetirado(r)) return;
       if (r.tipo === 'API' && r.codigo === 'EXECUTION_DRAFT_NOT_READY') {
         const codigos = r.issues.map((i) => i.code);
         return setAviso({
@@ -400,6 +453,9 @@ export function PantallaDeSesion({
     ir({ nombre: 'ejecucion-de-entrenamiento', id: r.datos.data.executionId, aviso: COPY_ENTRENAMIENTO.sesionRegistrada });
   }
 
+  // Escritura denegada: se retira el borrador de la pantalla y queda el estado neutral. «Volver a Entrenamiento de hoy»
+  // lo dibuja App.tsx en todas las pantallas.
+  if (retirado) return <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.planNoDisponible} />;
   if (error) return <ErrorConReintento sinConexion={false} onReintentar={cargar} />;
   if (!b) return <Cargando />;
   const deHoy = b.date === hoyEn(b.timeZone);
@@ -522,7 +578,8 @@ function EjercicioEnCurso({
   // «Copiar carga anterior» como ayuda visible, **con su unidad**: el valor se ve y se edita antes de guardar
   // (B10-06:1242-1255). Una carga sugerida en libras no se precarga como kilos.
   const [serie, setSerie] = useState<SerieEnCarga>({
-    carga: ultima?.load ? String(ultima.load.value) : p.suggestedLoad ? String(p.suggestedLoad.value) : '',
+    // Precargada con la coma del país, sin redondear: `leerNumero` la vuelve a leer tal como estaba.
+    carga: ultima?.load ? paraEditar(ultima.load.value) : p.suggestedLoad ? paraEditar(p.suggestedLoad.value) : '',
     unidad: ultima?.load?.unit ?? p.suggestedLoad?.unit ?? 'kg',
     reps: '',
     rir: '',
@@ -638,7 +695,8 @@ function EjercicioEnCurso({
 
 /** «60 kg × 8 reps · RIR 2 · esfuerzo 7». Una carga que no se registró se dice así: no es «sin carga» (06:5675). */
 function textoDeSerie(s: { load: { value: number; unit: string } | null; completedRepetitions: number | null; rir: number | null; perceivedExertion: number | null }): string {
-  return `${s.load ? `${s.load.value} ${s.load.unit}` : 'carga no registrada'} × ${s.completedRepetitions ?? '—'} ${COPY_ENTRENAMIENTO.reps.toLowerCase()}${s.rir !== null ? ` · RIR ${s.rir}` : ''}${s.perceivedExertion !== null ? ` · esfuerzo ${s.perceivedExertion}` : ''}`;
+  const reps = s.completedRepetitions === null ? '—' : numero(s.completedRepetitions);
+  return `${s.load ? cantidad(s.load.value, s.load.unit) : 'carga no registrada'} × ${reps} ${COPY_ENTRENAMIENTO.reps.toLowerCase()}${s.rir !== null ? ` · RIR ${numero(s.rir)}` : ''}${s.perceivedExertion !== null ? ` · esfuerzo ${numero(s.perceivedExertion)}` : ''}`;
 }
 
 /** El resumen antes de confirmar: ejercicios, sustituciones, series y condición (B10-06:824-838). */
@@ -687,6 +745,7 @@ function Registro({ registro }: { registro: RegistroDeEjecucion }) {
 
 export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, salir }: { token: string; id: string; avisoInicial?: string; salir: (m: Salida) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
+  const { retirado, accesoRetirado } = useAccesoRetirado();
   const [r, setR] = useState<Resultado<{ data: EjecucionDeEntrenamiento }> | null>(null);
   const [corrigiendo, setCorrigiendo] = useState(false);
   const [aviso, setAviso] = useState<string | null>(avisoInicial ?? null);
@@ -702,6 +761,8 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
     void cargar();
   }, [cargar]);
 
+  // Corregir es una escritura: denegada con el 404 no revelador, el registro se retira de la pantalla.
+  if (retirado) return <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.planNoDisponible} />;
   if (!r) return <Cargando />;
   if (!r.ok) return <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} />;
   const x = r.datos.data;
@@ -738,6 +799,7 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
           token={token}
           ejecucion={x}
           sesionPerdida={sesionPerdida}
+          accesoRetirado={accesoRetirado}
           onCorregida={() => {
             setCorrigiendo(false);
             setAviso('Corrección registrada. El registro original se conserva.');
@@ -779,12 +841,14 @@ function FormularioDeCorreccion({
   token,
   ejecucion: x,
   sesionPerdida,
+  accesoRetirado,
   onCorregida,
   onCancelar,
 }: {
   token: string;
   ejecucion: EjecucionDeEntrenamiento;
   sesionPerdida: (r: Resultado<unknown>) => boolean;
+  accesoRetirado: (r: Resultado<unknown>) => boolean;
   onCorregida: () => void;
   onCancelar: () => void;
 }) {
@@ -794,10 +858,10 @@ function FormularioDeCorreccion({
     motivoDeCondicion: base.reason ?? '',
     series: base.exercises.map((e) =>
       (e.sets ?? []).map((s) => ({
-        carga: s.load ? String(s.load.value) : '',
+        carga: s.load ? paraEditar(s.load.value) : '',
         unidad: (s.load?.unit ?? 'kg') as Unidad,
-        reps: s.completedRepetitions === null ? '' : String(s.completedRepetitions),
-        rir: s.rir === null ? '' : String(s.rir),
+        reps: s.completedRepetitions === null ? '' : paraEditar(s.completedRepetitions),
+        rir: s.rir === null ? '' : paraEditar(s.rir),
       })),
     ),
     resumenes: base.exercises.map((e) => e.executionSummary?.description ?? ''),
@@ -850,8 +914,7 @@ function FormularioDeCorreccion({
 
   async function enviar() {
     if (!motivo.trim()) return setFallo('Contá por qué corregís el registro.');
-    const esNumero = (t: string) => t.trim() === '' || Number.isFinite(Number(t.trim().replace(',', '.')));
-    if (!estado.series.every((fila) => fila.every((v) => esNumero(v.carga) && esNumero(v.reps) && esNumero(v.rir)))) return setFallo('Revisá los números de las series.');
+    if (!estado.series.every((fila) => fila.every((v) => ![v.carga, v.reps, v.rir].some(sinLeer)))) return setFallo('Revisá los números de las series.');
     const correccion = construir(estado);
     // Corregir exige un cambio: una corrección igual a lo que rige no rectifica nada (B10-06:879-884).
     if (JSON.stringify(correccion) === JSON.stringify(construir(inicial))) return setFallo('La corrección no cambia nada del registro.');
@@ -862,6 +925,7 @@ function FormularioDeCorreccion({
     intento.registrar(r);
     setEnviando(false);
     if (sesionPerdida(r)) return;
+    if (accesoRetirado(r)) return;
     if (!r.ok) return setFallo(r.tipo === 'API' && r.issues.some((i) => i.code === 'CORRECTION_WITHOUT_CHANGES') ? 'La corrección no cambia nada del registro.' : r.tipo === 'API' && r.issues.length > 0 ? 'Hay un dato de la corrección que no se puede guardar.' : falloDe(r).mensaje);
     onCorregida();
   }
