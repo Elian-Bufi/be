@@ -12,7 +12,10 @@
  */
 import type { PuntoDeLaFigura, VistaDeLaFigura } from '@be/domain';
 
-/** La silueta, media figura espejada y suavizada: 200 × 440, con el eje de simetría en x = 100. */
+/**
+ * La silueta, media figura espejada y suavizada: 200 × 440, con el eje de simetría en x = 100. Cada vista suma abajo
+ * una franja para su rótulo, así no pisa los pies.
+ */
 const CONTORNO = [
   'M100,8 C103.7,8.0 108.0,8.3 111,10 C114.0,11.7 116.5,14.7 118,18 C119.5,21.3 119.8,25.7 120,30',
   'C120.2,34.3 119.8,39.8 119,44 C118.2,48.2 116.7,52.0 115,55 C113.3,58.0 110.2,59.5 109,62',
@@ -63,7 +66,7 @@ export function Figura({ puntos, activa, onElegir }: { puntos: readonly PuntoDeL
         {VISTAS.map(({ vista, titulo }) => {
           const deLaVista = puntos.filter((p) => p.vista === vista);
           return (
-            <svg key={vista} className="figura__vista" viewBox="0 0 200 440" role="img" aria-label={`${titulo}: ${deLaVista.length} puntos de toma`}>
+            <svg key={vista} className="figura__vista" viewBox="0 0 200 460" role="img" aria-label={`${titulo}: ${deLaVista.length} puntos de toma`}>
               <path d={CONTORNO} className="figura__cuerpo" />
               {deLaVista.map((p) => {
                 const clases = `figura__sitio${p.cargado ? ' figura__sitio--cargado' : ''}${p.clave === activa ? ' figura__sitio--activo' : ''}`;
@@ -84,7 +87,7 @@ export function Figura({ puntos, activa, onElegir }: { puntos: readonly PuntoDeL
                   </g>
                 );
               })}
-              <text className="figura__rotulo" x="100" y="437" textAnchor="middle">
+              <text className="figura__rotulo" x="100" y="455" textAnchor="middle">
                 {titulo}
               </text>
             </svg>

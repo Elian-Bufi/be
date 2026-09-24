@@ -3,7 +3,7 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { metricasDelProtocolo, metricasPorFamilia, puntosDeLaFigura, SITIOS_DE_LA_FIGURA } from './figura-antropometrica';
+import { metricasDelProtocolo, metricasPorFamilia, puntosDeLaFigura, repartirEnElProtocolo, SITIOS_DE_LA_FIGURA } from './figura-antropometrica';
 
 const PROTOCOLO = {
   metricas: [
@@ -48,6 +48,42 @@ test('B10-07 §15 · las familias en su orden, cada una con sus métricas en el 
       ['OTRAS', ['envergadura']],
     ],
   );
+});
+
+test('B10-07 §17 · una medición va a su campo solo si el protocolo la declara en esa unidad; si no, queda fuera, tal cual', () => {
+  const escritas = [
+    { id: 'a', metrica: 'perimetro-cintura', valor: '81', unidad: 'cm' },
+    { id: 'b', metrica: 'pliegue-triceps', valor: '85', unidad: 'cm' },
+    { id: 'c', metrica: 'perimetro-cadera', valor: '95', unidad: 'cm' },
+    { id: 'd', metrica: ' peso ', valor: '70,5', unidad: 'kg ' },
+  ];
+  const { enSuCampo, fuera } = repartirEnElProtocolo(escritas, metricasDelProtocolo(PROTOCOLO));
+  assert.deepEqual([...enSuCampo.keys()], ['perimetro-cintura', 'peso']);
+  // El pliegue en cm no se esconde detrás de los mm del campo, ni se convierte; la cadera no está en el protocolo.
+  assert.deepEqual(
+    fuera.map((m) => [m.id, m.metrica, m.valor, m.unidad]),
+    [
+      ['b', 'pliegue-triceps', '85', 'cm'],
+      ['c', 'perimetro-cadera', '95', 'cm'],
+    ],
+  );
+  // Lo que va al campo es la misma medición, con su valor como se escribió.
+  assert.equal(enSuCampo.get('peso'), escritas[3]);
+});
+
+test('el reparto no pierde nada: la primera ocupa el campo, una repetida o sin valor queda fuera del protocolo', () => {
+  const escritas = [
+    { id: 'campo', metrica: 'perimetro-cintura', valor: '81', unidad: 'cm' },
+    { id: 'repetida', metrica: 'perimetro-cintura', valor: '82', unidad: 'cm' },
+    { id: 'sin-valor', metrica: 'pliegue-triceps', valor: ' ', unidad: 'mm' },
+  ];
+  const { enSuCampo, fuera } = repartirEnElProtocolo(escritas, metricasDelProtocolo(PROTOCOLO));
+  assert.equal(enSuCampo.get('perimetro-cintura')?.id, 'campo');
+  assert.deepEqual(fuera.map((m) => m.id), ['repetida', 'sin-valor']);
+  // Sin métricas declaradas, todo queda fuera del protocolo; y siempre, lo que entra es lo que sale.
+  const sinProtocolo = repartirEnElProtocolo(escritas, []);
+  assert.equal(sinProtocolo.enSuCampo.size, 0);
+  assert.deepEqual(sinProtocolo.fuera, escritas);
 });
 
 test('la figura dibuja solo lo que el protocolo declara y tiene sitio; lo demás queda en la lista', () => {

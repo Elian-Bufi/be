@@ -15,7 +15,7 @@
  *   obligatoria de la figura (B10-10 §11);
  * - la figura ubica cada métrica que sabe dibujar y marca cuál tiene dato; tocar un punto lleva a su campo. Nunca
  *   califica: no recibe los valores;
- * - lo que el protocolo no declara se sigue pudiendo cargar en «Otras mediciones», como antes.
+ * - lo que el protocolo no declara se sigue pudiendo cargar «fuera del protocolo», como antes.
  * Los contratos de WP-05 no cambian: la pantalla cambia cómo se escribe el valor, no qué se manda.
  */
 import {
@@ -27,7 +27,9 @@ import {
   metricasPorFamilia,
   motivoDeNumeroIlegible,
   puntosDeLaFigura,
+  repartirEnElProtocolo,
   type Especificacion,
+  type MedicionEscrita,
   type MetricaDelProtocolo,
 } from '@be/domain';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -68,6 +70,13 @@ const paraElCampo = (iso: string): string => {
 
 const filaNueva = (): FilaLibre => ({ clave: `m-${Math.random().toString(36).slice(2, 9)}`, metric: '', value: '', unit: '' });
 const idDelValor = (clave: string) => `ant-valor-${clave}`;
+
+/** Una medición escrita para repartir entre los campos y lo de fuera del protocolo; `fila` es la clave de su fila. */
+type MedicionConFila = MedicionEscrita & { readonly fila: string };
+const deLaFila = (f: FilaLibre): MedicionConFila => ({ fila: f.clave, metrica: f.metric, valor: f.value, unidad: f.unit });
+const aLaFila = (m: MedicionConFila): FilaLibre => ({ clave: m.fila, metric: m.metrica, value: m.valor, unit: m.unidad });
+const aLosCampos = (enSuCampo: Map<string, MedicionConFila>): Record<string, Escrito> =>
+  Object.fromEntries([...enSuCampo].map(([clave, m]) => [clave, { valor: m.valor, unidad: m.unidad.trim() }]));
 
 export function VistaDePreparacion() {
   const { token, asesoradoId, sesionPerdida, irA } = useAntropometria();
@@ -167,31 +176,34 @@ function Preparacion({
       setProtocolo(protocoloDelBorrador);
       setOrigen(primera.origin === 'SELF_REPORTED' ? 'SELF_REPORTED' : 'DIRECT_CAPTURE');
     }
-    // Lo que el protocolo del borrador declara va a su campo; lo demás, a «Otras mediciones». El valor se muestra como
-    // lo lee una persona, con coma decimal; `leerNumero` lo vuelve a aceptar (DL-091 punto 4).
-    const delProtocolo = new Set(metricasDelProtocolo(especificaciones.find((e) => e.versionId === protocoloDelBorrador)?.content).map((m) => m.clave));
-    const nuevos: Record<string, Escrito> = {};
-    const otras: FilaLibre[] = [];
-    for (const m of borrador.measurements) {
-      if (delProtocolo.has(m.metric) && !nuevos[m.metric]) nuevos[m.metric] = { valor: numeroEnCampo(m.magnitude.value), unidad: m.magnitude.unit };
-      else otras.push({ clave: m.measurementId, metric: m.metric, value: numeroEnCampo(m.magnitude.value), unit: m.magnitude.unit });
-    }
-    setEscritos(nuevos);
-    setLibres(otras);
+    // Lo que el protocolo del borrador declara, en una unidad que admite, va a su campo; lo demás, fuera del protocolo.
+    // El valor se muestra como lo lee una persona, con coma decimal; `leerNumero` lo vuelve a aceptar (DL-091 punto 4).
+    const { enSuCampo, fuera } = repartirEnElProtocolo(
+      borrador.measurements.map((m): MedicionConFila => ({ fila: m.measurementId, metrica: m.metric, valor: numeroEnCampo(m.magnitude.value), unidad: m.magnitude.unit })),
+      metricasDelProtocolo(especificaciones.find((e) => e.versionId === protocoloDelBorrador)?.content),
+    );
+    setEscritos(aLosCampos(enSuCampo));
+    setLibres(fuera.map(aLaFila));
   }, [borrador, protocoloPorDefecto, especificaciones]);
 
-  /** Cambiar de protocolo no pierde nada: lo que el nuevo no declara pasa a «Otras mediciones». */
+  /**
+   * Cambiar de protocolo no pierde nada, en ninguna dirección (`repartirEnElProtocolo`): lo que el nuevo no declara —o
+   * declara en otra unidad— pasa a las mediciones fuera del protocolo, y una medición cargada fuera del protocolo que
+   * el nuevo declara en esa unidad pasa a su campo. Lo que ya estaba en un campo va primero: si el nuevo lo declara,
+   * conserva su campo. La unidad nunca se convierte (B10-07 §17).
+   */
   function cambiarProtocolo(nuevo: string) {
-    const siguientes = new Set(metricasDelProtocolo(especificaciones.find((e) => e.versionId === nuevo)?.content).map((m) => m.clave));
-    const quedan: Record<string, Escrito> = {};
-    const pasan: FilaLibre[] = [];
-    for (const [clave, e] of Object.entries(escritos)) {
-      if (e.valor.trim() === '') continue;
-      if (siguientes.has(clave)) quedan[clave] = e;
-      else pasan.push({ ...filaNueva(), metric: clave, value: e.valor, unit: e.unidad });
-    }
-    setEscritos(quedan);
-    setLibres((xs) => [...xs, ...pasan]);
+    const deLosCampos = Object.entries(escritos)
+      .filter(([, e]) => e.valor.trim() !== '')
+      .map(([clave, e]): MedicionConFila => ({ fila: filaNueva().clave, metrica: clave, valor: e.valor, unidad: e.unidad }));
+    const { enSuCampo, fuera } = repartirEnElProtocolo(
+      [...deLosCampos, ...libres.map(deLaFila)],
+      metricasDelProtocolo(especificaciones.find((e) => e.versionId === nuevo)?.content),
+    );
+    // Las filas que ya estaban fuera del protocolo conservan su lugar; las que salen de un campo se suman al final.
+    const salen = new Set(deLosCampos.map((m) => m.fila));
+    setEscritos(aLosCampos(enSuCampo));
+    setLibres([...fuera.filter((m) => !salen.has(m.fila)), ...fuera.filter((m) => salen.has(m.fila))].map(aLaFila));
     setErrores({});
     setProtocolo(nuevo);
   }
@@ -391,8 +403,8 @@ function Preparacion({
 
         {metricas.length > 0 ? (
           <>
-            <h4>Otras mediciones</h4>
-            <p className="nota">Lo que el protocolo no declara se carga acá, con qué se midió y su unidad.</p>
+            <h4>Fuera del protocolo</h4>
+            <p className="nota">Lo que el protocolo elegido no declara se carga acá, con qué se midió y su unidad.</p>
           </>
         ) : null}
         {libres.length === 0 && metricas.length === 0 && !hayMedicionesGuardadas ? <p>{COPY_ANTROPOMETRIA.sinBorrador}</p> : null}
