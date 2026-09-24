@@ -1,6 +1,8 @@
 import type { Prisma } from '@prisma/client';
 import type { ResumenDeAntropometria, ResumenDeEntrenamiento, ResumenDeNutricion } from '@be/domain';
+import { resolverVersionTerminal } from '@be/domain';
 import { nombreVisibleDe } from '../entrenamiento/lectura-entrenamiento';
+import type { ProcesoService } from '../proceso/proceso.service';
 
 type Tx = Prisma.TransactionClient;
 
@@ -26,25 +28,30 @@ const actor = (identityId: string, displayName: string) => ({ identityId, displa
  * agrega entre dominios y ningún número se convierte en un juicio — son conteos de registros, no adherencia ni
  * cumplimiento (09v11 §15, regla crítica; B10-08 §10).
  *
- * La versión vigente es siempre `versionEfectivaId`, la relación explícita del Plan (INV-06-110), nunca «la última por
- * fecha». La última revisión es la del Proceso de ese profesional con ese asesorado en ese Alcance.
+ * Vigente, en las tres cosas que este resumen llama así, es siempre la terminal de su propia cadena — nunca lo que
+ * quedó congelado en la versión de plan que se activó, que puede haber quedado atrás (hallazgo de la auditoría de
+ * cierre):
+ * - el **plan** es `versionEfectivaId`, la relación explícita del Plan (INV-06-110), y además exige que el Proceso
+ *   siga ABIERTO: una versión ACTIVADA no equivale a vigente si el seguimiento ya cerró (06:4297; DL-088 punto 18).
+ * - el **objetivo** es la terminal de la sucesión del Objetivo (INV-06-107), no `versionDeObjetivoId` del plan: ese
+ *   campo es una foto de qué objetivo regía cuando la versión se activó, y CAMBIAR_OBJETIVO no la actualiza.
+ * - la **próxima revisión** es la expectativa vigente del Proceso (REG-06-146: terminal de la cadena de
+ *   `ProximaRevision`, no la de fecha mayor), la misma que ya usa `review-context`; no la columna `proxima_revision`
+ *   de la versión de plan, que solo la siembra al activar y no se toca después.
  */
 
-export async function resumenDeNutricion(tx: Tx, profesionalId: string, asesoradoId: string, periodo: Periodo): Promise<ResumenDeNutricion | null> {
+export async function resumenDeNutricion(tx: Tx, procesos: ProcesoService, profesionalId: string, asesoradoId: string, periodo: Periodo): Promise<ResumenDeNutricion | null> {
   const plan = await tx.planNutricional.findUnique({
     where: { profesionalId_asesoradoId: { profesionalId, asesoradoId } },
-    select: { versionEfectiva: { select: { id: true, momentoDeActivacion: true, proximaRevision: true, versionDeObjetivoId: true } } },
+    select: { versionEfectiva: { select: { id: true, momentoDeActivacion: true } } },
   });
   const efectiva = plan?.versionEfectiva ?? null;
 
-  const objetivoFila = efectiva
-    ? await tx.versionDeObjetivoNutricional.findUnique({
-        where: { id: efectiva.versionDeObjetivoId },
-        select: { id: true, requerimientoEnergetico: true, autorId: true },
-      })
-    : null;
-
-  const ultima = await ultimaRevision(tx, profesionalId, asesoradoId, 'NUTRICION');
+  const [activePlan, objetivoFila, ultima] = await Promise.all([
+    planVigente(tx, procesos, profesionalId, asesoradoId, 'NUTRICION', efectiva),
+    objetivoEfectivoDeNutricion(tx, profesionalId, asesoradoId),
+    ultimaRevision(tx, profesionalId, asesoradoId, 'NUTRICION'),
+  ]);
 
   const ingestas = await tx.ingestaNutricional.aggregate({
     where: { asesoradoId, versionDePlan: { plan: { profesionalId } }, ...(enElPeriodo(periodo) ? { momentoDeOcurrencia: enElPeriodo(periodo) } : {}) },
@@ -53,10 +60,7 @@ export async function resumenDeNutricion(tx: Tx, profesionalId: string, asesorad
   });
 
   const resumen: ResumenDeNutricion = {
-    activePlan:
-      efectiva && efectiva.momentoDeActivacion
-        ? { planVersionId: efectiva.id, activatedAt: efectiva.momentoDeActivacion.toISOString(), nextReviewAt: efectiva.proximaRevision?.toISOString().slice(0, 10) ?? null }
-        : null,
+    activePlan,
     objective: objetivoFila
       ? {
           objectiveVersionId: objetivoFila.id,
@@ -71,18 +75,18 @@ export async function resumenDeNutricion(tx: Tx, profesionalId: string, asesorad
   return vacio(resumen) ? null : resumen;
 }
 
-export async function resumenDeEntrenamiento(tx: Tx, profesionalId: string, asesoradoId: string, periodo: Periodo): Promise<ResumenDeEntrenamiento | null> {
+export async function resumenDeEntrenamiento(tx: Tx, procesos: ProcesoService, profesionalId: string, asesoradoId: string, periodo: Periodo): Promise<ResumenDeEntrenamiento | null> {
   const plan = await tx.planDeEntrenamiento.findUnique({
     where: { profesionalId_asesoradoId: { profesionalId, asesoradoId } },
-    select: { versionEfectiva: { select: { id: true, momentoDeActivacion: true, proximaRevision: true, versionDeObjetivoId: true } } },
+    select: { versionEfectiva: { select: { id: true, momentoDeActivacion: true } } },
   });
   const efectiva = plan?.versionEfectiva ?? null;
 
-  const objetivoFila = efectiva
-    ? await tx.versionDeObjetivoDeEntrenamiento.findUnique({ where: { id: efectiva.versionDeObjetivoId }, select: { id: true, objetivo: true, autorId: true } })
-    : null;
-
-  const ultima = await ultimaRevision(tx, profesionalId, asesoradoId, 'ENTRENAMIENTO');
+  const [activePlan, objetivoFila, ultima] = await Promise.all([
+    planVigente(tx, procesos, profesionalId, asesoradoId, 'ENTRENAMIENTO', efectiva),
+    objetivoEfectivoDeEntrenamiento(tx, profesionalId, asesoradoId),
+    ultimaRevision(tx, profesionalId, asesoradoId, 'ENTRENAMIENTO'),
+  ]);
 
   const ejecuciones = await tx.ejecucionDeEntrenamiento.aggregate({
     where: { asesoradoId, versionDePlan: { plan: { profesionalId } }, ...(enElPeriodo(periodo) ? { momentoDeOcurrencia: enElPeriodo(periodo) } : {}) },
@@ -91,10 +95,7 @@ export async function resumenDeEntrenamiento(tx: Tx, profesionalId: string, ases
   });
 
   const resumen: ResumenDeEntrenamiento = {
-    activePlan:
-      efectiva && efectiva.momentoDeActivacion
-        ? { planVersionId: efectiva.id, activatedAt: efectiva.momentoDeActivacion.toISOString(), nextReviewAt: efectiva.proximaRevision?.toISOString().slice(0, 10) ?? null }
-        : null,
+    activePlan,
     objective: objetivoFila
       ? {
           objectiveVersionId: objetivoFila.id,
@@ -108,6 +109,44 @@ export async function resumenDeEntrenamiento(tx: Tx, profesionalId: string, ases
     lastExecutionAt: ejecuciones._max.momentoDeOcurrencia?.toISOString() ?? null,
   };
   return vacio(resumen) ? null : resumen;
+}
+
+/**
+ * El plan «vigente» para el resumen: la versión activada, con la próxima revisión que rige hoy en el Proceso, y solo
+ * si ese Proceso sigue abierto. Cerrado el seguimiento (FINALIZAR), el plan deja de presentarse como vigente aunque
+ * la versión activada siga siendo, técnicamente, la última (06:4297; DL-088 punto 18).
+ */
+async function planVigente(
+  tx: Tx,
+  procesos: ProcesoService,
+  profesionalId: string,
+  asesoradoId: string,
+  alcance: 'NUTRICION' | 'ENTRENAMIENTO',
+  efectiva: { id: string; momentoDeActivacion: Date | null } | null,
+): Promise<{ planVersionId: string; activatedAt: string; nextReviewAt: string | null } | null> {
+  if (!efectiva || !efectiva.momentoDeActivacion) return null;
+  const proceso = await tx.procesoOperativo.findFirst({ where: { profesionalId, asesoradoId, alcance, estado: 'ABIERTO' }, select: { id: true } });
+  if (!proceso) return null;
+  const expectativa = await procesos.proximaRevisionVigente(tx, proceso.id);
+  return { planVersionId: efectiva.id, activatedAt: efectiva.momentoDeActivacion.toISOString(), nextReviewAt: expectativa?.fechaObjetivo?.toISOString().slice(0, 10) ?? null };
+}
+
+/** El objetivo nutricional efectivo: la terminal de su sucesión (INV-06-107), igual que lee API-NUT-06. */
+async function objetivoEfectivoDeNutricion(tx: Tx, profesionalId: string, asesoradoId: string) {
+  const objetivo = await tx.objetivoNutricional.findUnique({ where: { profesionalId_asesoradoId: { profesionalId, asesoradoId } }, select: { id: true } });
+  if (!objetivo) return null;
+  const versiones = await tx.versionDeObjetivoNutricional.findMany({ where: { objetivoId: objetivo.id }, select: { id: true, objetivoId: true, predecesoraId: true, requerimientoEnergetico: true, autorId: true } });
+  const terminal = resolverVersionTerminal(versiones.map((v) => ({ id: v.id, objetoId: v.objetivoId, predecesoraId: v.predecesoraId })));
+  return terminal.tipo === 'TERMINAL' ? (versiones.find((v) => v.id === terminal.terminalId) ?? null) : null;
+}
+
+/** El objetivo de entrenamiento efectivo: la terminal de su sucesión (INV-06-107), igual que lee API-TRN-06. */
+async function objetivoEfectivoDeEntrenamiento(tx: Tx, profesionalId: string, asesoradoId: string) {
+  const objetivo = await tx.objetivoDeEntrenamiento.findUnique({ where: { profesionalId_asesoradoId: { profesionalId, asesoradoId } }, select: { id: true } });
+  if (!objetivo) return null;
+  const versiones = await tx.versionDeObjetivoDeEntrenamiento.findMany({ where: { objetivoId: objetivo.id }, select: { id: true, objetivoId: true, predecesoraId: true, objetivo: true, autorId: true } });
+  const terminal = resolverVersionTerminal(versiones.map((v) => ({ id: v.id, objetoId: v.objetivoId, predecesoraId: v.predecesoraId })));
+  return terminal.tipo === 'TERMINAL' ? (versiones.find((v) => v.id === terminal.terminalId) ?? null) : null;
 }
 
 export async function resumenDeAntropometria(tx: Tx, profesionalId: string, asesoradoId: string, periodo: Periodo): Promise<ResumenDeAntropometria | null> {

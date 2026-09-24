@@ -3,6 +3,7 @@ import { CLAVE_DE_DOMINIO, type DashboardResponse } from '@be/domain';
 import { decisionesDe, OperacionProtegida, PdpGuard, type SolicitudAutorizada } from '../autorizacion/pdp.guard';
 import { errores } from '../http/errores';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProcesoService } from '../proceso/proceso.service';
 import { actorDe, SesionGuard } from '../sesion/sesion.guard';
 import { nombreDeAsesorado } from '../vinculo/lectura';
 import { resumenDeAntropometria, resumenDeEntrenamiento, resumenDeNutricion, type Periodo } from './lectura-dashboard';
@@ -21,7 +22,10 @@ import { resumenDeAntropometria, resumenDeEntrenamiento, resumenDeNutricion, typ
  */
 @Controller()
 export class DashboardController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly procesos: ProcesoService,
+  ) {}
 
   @Get('advisees/:adviseeId/dashboard')
   @UseGuards(SesionGuard, PdpGuard)
@@ -41,9 +45,9 @@ export class DashboardController {
           if (!decision.permitida) return [CLAVE_DE_DOMINIO[alcance], { available: false as const, reason: 'NOT_AVAILABLE_TO_VIEW' as const }] as const;
           const summary =
             alcance === 'NUTRICION'
-              ? await resumenDeNutricion(tx, profesionalId, titularId, periodo)
+              ? await resumenDeNutricion(tx, this.procesos, profesionalId, titularId, periodo)
               : alcance === 'ENTRENAMIENTO'
-                ? await resumenDeEntrenamiento(tx, profesionalId, titularId, periodo)
+                ? await resumenDeEntrenamiento(tx, this.procesos, profesionalId, titularId, periodo)
                 : await resumenDeAntropometria(tx, profesionalId, titularId, periodo);
           return [CLAVE_DE_DOMINIO[alcance], { available: true as const, relationshipId: decision.alcanceDeVinculoId, summary }] as const;
         }),
