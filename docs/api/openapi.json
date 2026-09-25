@@ -35649,6 +35649,1069 @@
         }
       }
     },
+    "/me/training/executions": {
+      "get": {
+        "operationId": "API-TRN-19-LISTA",
+        "summary": "«Tu historial»: las sesiones registradas propias por período. Exige A3 vigente; no depende de un plan vigente ni del acceso del profesional (DL-096). Hasta 31 días, nunca después de hoy.",
+        "description": "Fuente: DEUDA_LEGAJO DL-096 (opción A, decidida por Dirección) · 08:199, 08:58, 08:406 · DL-089. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "periodStart",
+            "in": "query",
+            "required": true,
+            "description": "Fecha local YYYY-MM-DD.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "periodEnd",
+            "in": "query",
+            "required": true,
+            "description": "Fecha local YYYY-MM-DD, no posterior a hoy. Hasta 31 días desde periodStart: es el tope de la lectura, que por eso no pagina.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "period": {
+                          "type": "object",
+                          "properties": {
+                            "start": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "end": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "timeZone": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z_]+(?:\\/[A-Za-z0-9_+-]+)+$|^UTC$"
+                            }
+                          },
+                          "required": [
+                            "start",
+                            "end",
+                            "timeZone"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "executions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "executionId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "state": {
+                                "type": "string",
+                                "const": "REGISTERED"
+                              },
+                              "adviseeId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "planId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "snapshotDigest": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{64}$"
+                              },
+                              "occurrenceId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "date": {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              },
+                              "timeZone": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z_]+(?:\\/[A-Za-z0-9_+-]+)+$|^UTC$"
+                              },
+                              "plannedSession": {
+                                "type": "object",
+                                "properties": {
+                                  "sessionId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "order": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "instructions": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "prescriptions": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "prescriptionId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                        },
+                                        "order": {
+                                          "type": "integer",
+                                          "exclusiveMinimum": 0,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "exerciseId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "exerciseVersionId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "exerciseName": {
+                                          "type": "string"
+                                        },
+                                        "sets": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "setIndex": {
+                                                "type": "integer",
+                                                "exclusiveMinimum": 0,
+                                                "maximum": 9007199254740991
+                                              },
+                                              "repetitions": {
+                                                "anyOf": [
+                                                  {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "value": {
+                                                            "type": "integer",
+                                                            "exclusiveMinimum": 0,
+                                                            "maximum": 1000
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "value"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "min": {
+                                                            "type": "integer",
+                                                            "exclusiveMinimum": 0,
+                                                            "maximum": 1000
+                                                          },
+                                                          "max": {
+                                                            "type": "integer",
+                                                            "exclusiveMinimum": 0,
+                                                            "maximum": 1000
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "min",
+                                                          "max"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "note": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "setIndex",
+                                              "repetitions",
+                                              "note"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "intensity": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "criterion": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "PERCENT_RM",
+                                                    "RIR"
+                                                  ]
+                                                },
+                                                "target": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "value": {
+                                                      "type": "number"
+                                                    },
+                                                    "reference": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "description": {
+                                                              "type": "string"
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "description"
+                                                          ],
+                                                          "additionalProperties": false
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "value",
+                                                    "reference"
+                                                  ],
+                                                  "additionalProperties": false
+                                                }
+                                              },
+                                              "required": [
+                                                "criterion",
+                                                "target"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "suggestedLoad": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "value": {
+                                                  "type": "number",
+                                                  "minimum": 0
+                                                },
+                                                "unit": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "kg",
+                                                    "lb"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "value",
+                                                "unit"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "professionalParameters": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "label": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 60
+                                              },
+                                              "value": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "minLength": 1,
+                                                    "maxLength": 120
+                                                  },
+                                                  {
+                                                    "type": "number"
+                                                  }
+                                                ]
+                                              },
+                                              "unit": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "maxLength": 20
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "label",
+                                              "value"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "note": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "prescriptionId",
+                                        "order",
+                                        "exerciseId",
+                                        "exerciseVersionId",
+                                        "exerciseName",
+                                        "sets",
+                                        "intensity",
+                                        "suggestedLoad",
+                                        "professionalParameters",
+                                        "note"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "blockId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                  },
+                                  "blockLabel": {
+                                    "type": "string"
+                                  },
+                                  "microcycleId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "microcycleLabel": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "sessionId",
+                                  "label",
+                                  "order",
+                                  "instructions",
+                                  "prescriptions",
+                                  "blockId",
+                                  "blockLabel",
+                                  "microcycleId",
+                                  "microcycleLabel"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "original": {
+                                "type": "object",
+                                "properties": {
+                                  "granularity": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "SET",
+                                          "EXERCISE_OR_SESSION"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "sessionCondition": {
+                                    "type": "string",
+                                    "enum": [
+                                      "COMPLETED",
+                                      "COMPLETED_WITH_DEVIATION",
+                                      "NOT_COMPLETED"
+                                    ]
+                                  },
+                                  "reason": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "exercises": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "prescriptionId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                        },
+                                        "prescribedExerciseVersionId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "prescribedExerciseName": {
+                                          "type": "string"
+                                        },
+                                        "performedExerciseVersionId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "performedExerciseName": {
+                                          "type": "string"
+                                        },
+                                        "substituted": {
+                                          "type": "boolean"
+                                        },
+                                        "sets": {
+                                          "anyOf": [
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "setIndex": {
+                                                    "type": "integer",
+                                                    "exclusiveMinimum": 0,
+                                                    "maximum": 50
+                                                  },
+                                                  "load": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "value": {
+                                                            "type": "number",
+                                                            "minimum": 0
+                                                          },
+                                                          "unit": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "kg",
+                                                              "lb"
+                                                            ]
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "value",
+                                                          "unit"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "completedRepetitions": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "integer",
+                                                        "minimum": 0,
+                                                        "maximum": 1000
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "rir": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "number",
+                                                        "minimum": 0,
+                                                        "maximum": 20
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "perceivedExertion": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "number",
+                                                        "minimum": 0,
+                                                        "maximum": 10
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "setIndex",
+                                                  "load",
+                                                  "completedRepetitions",
+                                                  "rir",
+                                                  "perceivedExertion"
+                                                ],
+                                                "additionalProperties": false
+                                              }
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "executionSummary": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "description": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 1000
+                                                }
+                                              },
+                                              "required": [
+                                                "description"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "prescriptionId",
+                                        "prescribedExerciseVersionId",
+                                        "prescribedExerciseName",
+                                        "performedExerciseVersionId",
+                                        "performedExerciseName",
+                                        "substituted",
+                                        "sets",
+                                        "executionSummary"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "sessionSummary": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "description": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 2000
+                                          }
+                                        },
+                                        "required": [
+                                          "description"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "granularity",
+                                  "sessionCondition",
+                                  "reason",
+                                  "exercises",
+                                  "sessionSummary"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "corrections": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "correctionId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "previousCorrectionId": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "reason": {
+                                      "type": "string"
+                                    },
+                                    "correction": {
+                                      "type": "object",
+                                      "properties": {
+                                        "granularity": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "SET",
+                                                "EXERCISE_OR_SESSION"
+                                              ]
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "sessionCondition": {
+                                          "type": "string",
+                                          "enum": [
+                                            "COMPLETED",
+                                            "COMPLETED_WITH_DEVIATION",
+                                            "NOT_COMPLETED"
+                                          ]
+                                        },
+                                        "reason": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "exercises": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "prescriptionId": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "prescribedExerciseVersionId": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "prescribedExerciseName": {
+                                                "type": "string"
+                                              },
+                                              "performedExerciseVersionId": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "performedExerciseName": {
+                                                "type": "string"
+                                              },
+                                              "substituted": {
+                                                "type": "boolean"
+                                              },
+                                              "sets": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "setIndex": {
+                                                          "type": "integer",
+                                                          "exclusiveMinimum": 0,
+                                                          "maximum": 50
+                                                        },
+                                                        "load": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "value": {
+                                                                  "type": "number",
+                                                                  "minimum": 0
+                                                                },
+                                                                "unit": {
+                                                                  "type": "string",
+                                                                  "enum": [
+                                                                    "kg",
+                                                                    "lb"
+                                                                  ]
+                                                                }
+                                                              },
+                                                              "required": [
+                                                                "value",
+                                                                "unit"
+                                                              ],
+                                                              "additionalProperties": false
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "completedRepetitions": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 1000
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "rir": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "number",
+                                                              "minimum": 0,
+                                                              "maximum": 20
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "perceivedExertion": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "number",
+                                                              "minimum": 0,
+                                                              "maximum": 10
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "setIndex",
+                                                        "load",
+                                                        "completedRepetitions",
+                                                        "rir",
+                                                        "perceivedExertion"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "executionSummary": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "description": {
+                                                        "type": "string",
+                                                        "minLength": 1,
+                                                        "maxLength": 1000
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "description"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "prescriptionId",
+                                              "prescribedExerciseVersionId",
+                                              "prescribedExerciseName",
+                                              "performedExerciseVersionId",
+                                              "performedExerciseName",
+                                              "substituted",
+                                              "sets",
+                                              "executionSummary"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "sessionSummary": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "description": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 2000
+                                                }
+                                              },
+                                              "required": [
+                                                "description"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "granularity",
+                                        "sessionCondition",
+                                        "reason",
+                                        "exercises",
+                                        "sessionSummary"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "author": {
+                                      "type": "object",
+                                      "properties": {
+                                        "identityId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "displayName": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "identityId",
+                                        "displayName"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "authorRole": {
+                                      "type": "string",
+                                      "enum": [
+                                        "ADVISEE",
+                                        "PROFESSIONAL"
+                                      ]
+                                    },
+                                    "recordedAt": {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    }
+                                  },
+                                  "required": [
+                                    "correctionId",
+                                    "previousCorrectionId",
+                                    "reason",
+                                    "correction",
+                                    "author",
+                                    "authorRole",
+                                    "recordedAt"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "effectiveView": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "ORIGINAL"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "CORRECTED"
+                                      },
+                                      "correctionId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "correctionId"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "NOT_RESOLVABLE"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              },
+                              "occurredAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "recordedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "executionId",
+                              "state",
+                              "adviseeId",
+                              "planId",
+                              "snapshotDigest",
+                              "occurrenceId",
+                              "date",
+                              "timeZone",
+                              "plannedSession",
+                              "original",
+                              "corrections",
+                              "effectiveView",
+                              "occurredAt",
+                              "recordedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "period",
+                        "executions"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/training/occurrences/{occurrenceId}/execution-draft": {
       "put": {
         "operationId": "API-TRN-15",

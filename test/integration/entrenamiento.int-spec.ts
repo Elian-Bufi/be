@@ -1272,3 +1272,94 @@ describe('DL-089 opción A · revocado el consentimiento, el asesorado conserva 
     await conSesion(app, otro.token).get(`/api/v1/training/plans/${x.planId}`).expect(404);
   });
 });
+
+// ─── DL-096 · «Tu historial»: lista de ejecuciones propias por período (API-TRN-19-LISTA) ────────
+
+describe('DL-096 · «Tu historial» del titular: lista de ejecuciones propias por período (API-TRN-19-LISTA)', () => {
+  const listar = (token: string, periodStart: string, periodEnd: string) =>
+    conSesion(app, token).get(`/api/v1/me/training/executions?periodStart=${periodStart}&periodEnd=${periodEnd}`);
+
+  async function registrarPropia(etiqueta: string) {
+    const c = await circuitoConPlanDeEntrenamientoActivo(app, `${etiqueta}-${++contador}`);
+    const hoy = (await hoyDe(c.ase.token).expect(200)).body.data;
+    const b = (await borradorDe(c.ase.token, hoy.occurrences[0].occurrenceId).expect(201)).body.data;
+    const v = (
+      await guardar(c.ase.token, b.draftId, b.version, {
+        granularity: 'SET',
+        sessionCondition: 'COMPLETED',
+        exercises: [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets: [serie(1, 80)] }],
+      }).expect(200)
+    ).body.data;
+    const conf = await confirmar(c.ase.token, b.draftId, v.version).expect(201);
+    return { ...c, executionId: conf.body.data.executionId as string, fecha: hoy.date as string };
+  }
+
+  it('1 · el titular lista sus sesiones registradas y sus planes propios', async () => {
+    const x = await registrarPropia('propia');
+    const r = await listar(x.ase.token, x.fecha, x.fecha).expect(200);
+    expect(r.body.data.period).toMatchObject({ start: x.fecha, end: x.fecha });
+    expect(r.body.data.executions).toHaveLength(1);
+    expect(r.body.data.executions[0].executionId).toBe(x.executionId);
+    const planes = await conSesion(app, x.ase.token).get(`/api/v1/advisees/${x.ase.id}/training/plans`).expect(200);
+    expect(planes.body.data.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('2 · otro usuario no ve la historia ajena: su propia lista no la incluye y el detalle es 404', async () => {
+    const x = await registrarPropia('ajeno');
+    const otro = await prepararAsesorado(app, `hist-otro-${++contador}`, { a3: true });
+    const r = await listar(otro.token, x.fecha, x.fecha).expect(200);
+    expect(r.body.data.executions).toHaveLength(0);
+    await conSesion(app, otro.token).get(`/api/v1/training/executions/${x.executionId}`).expect(404);
+  });
+
+  it('3 · 08:58/08:199 · revocado el B2, el titular sigue listando su historia; «Hoy» pasa a no disponible', async () => {
+    const x = await registrarPropia('b2');
+    await revocarB2(app, x.ase, x.consentId).expect(200);
+    const r = await listar(x.ase.token, x.fecha, x.fecha).expect(200);
+    expect(r.body.data.executions.map((e: { executionId: string }) => e.executionId)).toContain(x.executionId);
+    expect((await hoyDe(x.ase.token).expect(200)).body.data.planState).toBe('NOT_AVAILABLE');
+  });
+
+  it('4 · 08:406 · revocado el A3, la lista se suspende con 403 (no es «sin datos»)', async () => {
+    const x = await registrarPropia('a3');
+    const a3 = await a3Vigente(app, x.ase.token);
+    await conSesion(app, x.ase.token).post(`/api/v1/me/health-data-consents/${a3}/revoke`).send({}).expect(200);
+    await listar(x.ase.token, x.fecha, x.fecha).expect(403);
+  });
+
+  it('5 · la lista conserva el original junto a la corrección, sin ocultarlo', async () => {
+    const x = await registrarPropia('corr');
+    await conSesion(app, x.ase.token)
+      .post(`/api/v1/training/executions/${x.executionId}/corrections`)
+      .send({
+        reason: 'Cargué mal la carga.',
+        correction: {
+          granularity: 'SET',
+          sessionCondition: 'COMPLETED',
+          reason: null,
+          exercises: [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets: [serie(1, 60)] }],
+          sessionSummary: null,
+        },
+      })
+      .expect(201);
+    const r = await listar(x.ase.token, x.fecha, x.fecha).expect(200);
+    const e = r.body.data.executions.find((y: { executionId: string }) => y.executionId === x.executionId);
+    expect(e.original.exercises[0].sets[0].load).toEqual({ value: 80, unit: 'kg' });
+    expect(e.corrections).toHaveLength(1);
+    expect(e.effectiveView).toEqual({ kind: 'CORRECTED', correctionId: e.corrections[0].correctionId });
+  });
+
+  it('6 · funciona sin plan vigente y devuelve una lista vacía cuando no hay registros', async () => {
+    const solo = await prepararAsesorado(app, `hist-vacio-${++contador}`, { a3: true });
+    const r = await listar(solo.token, '2024-01-01', '2024-01-31').expect(200);
+    expect(r.body.data.executions).toEqual([]);
+    expect(r.body.data.period).toMatchObject({ start: '2024-01-01', end: '2024-01-31' });
+  });
+
+  it('rechaza un período sin fechas o en el futuro, y uno mayor a un año', async () => {
+    const solo = await prepararAsesorado(app, `hist-periodo-${++contador}`, { a3: true });
+    await conSesion(app, solo.token).get('/api/v1/me/training/executions').expect(400);
+    await listar(solo.token, '2020-01-01', '2024-01-01').expect(400);
+    await listar(solo.token, '2999-01-01', '2999-01-02').expect(400);
+  });
+});

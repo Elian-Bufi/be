@@ -168,6 +168,13 @@ export class EntrenamientoController {
     return this.ejecuciones.ocurrenciasDelPeriodo(actorDe(req), query, contextoDe(req));
   }
 
+  /** API-TRN-19-LISTA (DL-096): «Tu historial» — sesiones registradas propias por período, solo con A3. */
+  @Get('me/training/executions')
+  historia(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.ejecuciones.listarHistoriaPropia(actorDe(req), query, contextoDe(req));
+  }
+
   /** API-TRN-15. `PUT`: la ocurrencia tiene a lo sumo un borrador; 201 si lo creó, 200 si ya existía (09v10:927-945). */
   @Put('training/occurrences/:occurrenceId/execution-draft')
   async abrirBorrador(@Param('occurrenceId') occurrenceId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {

@@ -24,6 +24,7 @@ import {
   type HoyDeEntrenamientoResponse,
   type InstantaneaDeEntrenamiento,
   type Ocurrencia,
+  type HistorialDeEntrenamientoResponse,
   type OcurrenciasDelPeriodoResponse,
   type SesionDeOcurrencia,
   type ValidationIssue,
@@ -57,6 +58,10 @@ type Tx = Prisma.TransactionClient;
 const TOLERANCIA_FUTURO_MS = 5 * 60 * 1000;
 /** DL-078: la lectura por período alcanza para registrar en diferido sin volverse un volcado del historial. */
 const DIAS_MAXIMOS_DEL_PERIODO = 31;
+/** «Tu historial» mira hasta un año: es lectura, no la ventana de registro en diferido (DL-096). */
+const DIAS_MAXIMOS_DE_HISTORIAL = 366;
+/** Tope de seguridad de filas por lectura de historial: el período ya la acota, esto evita una respuesta desmedida. */
+const MAXIMO_DE_HISTORIAL = 500;
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Versión activada del plan vigente, con su instantánea. */
@@ -450,6 +455,45 @@ export class EjecucionesDeEntrenamientoService {
   }
 
   // ─── API-TRN-19 ────────────────────────────────────────────────────────────────────────────
+  /**
+   * API-TRN-19-LISTA (DL-096, opción A): «Tu historial» — las sesiones registradas propias por período. La lista que
+   * TRN-19 no da (lee de a una) y que TRN-14-PERIODO tampoco, porque opera sobre el plan vigente. No depende de un plan
+   * activo ni del acceso del profesional: exige solo el A3 vigente del titular (08:199, 08:58, 08:406; DL-089).
+   */
+  listarHistoriaPropia(actor: ActorAutenticado, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<HistorialDeEntrenamientoResponse> {
+    const { periodStart, periodEnd, ...resto } = query;
+    sinParametrosDeQuery(resto);
+    if (typeof periodStart !== "string" || !FECHA.test(periodStart) || typeof periodEnd !== "string" || !FECHA.test(periodEnd)) {
+      throw errores.solicitudInvalida([{ code: "PERIOD_REQUIRED", path: "periodStart" }]);
+    }
+    return this.ejecutor.leer({
+      operacion: "API-TRN-19-LISTA",
+      casoDeUso: "UC-P17",
+      actor,
+      ctx,
+      recursoIntentado: null,
+      lectura: async (tx) => {
+        const zona = ZONA_POR_DEFECTO;
+        const hoy = fechaLocalEn(await momentoDeLaBase(tx), zona);
+        const dias = (comoFecha(periodEnd).getTime() - comoFecha(periodStart).getTime()) / 86_400_000;
+        if (Number.isNaN(dias) || dias < 0 || dias >= DIAS_MAXIMOS_DE_HISTORIAL) throw errores.solicitudInvalida([{ code: "PERIOD_INVALID", path: "periodEnd" }]);
+        // No se lista el futuro: una sesión que todavía no ocurrió no está registrada.
+        if (periodEnd > hoy) throw errores.solicitudInvalida([{ code: "PERIOD_IN_FUTURE", path: "periodEnd" }]);
+        // La historia propia depende solo del A3 vigente del titular, no del acceso de terceros (DL-089 opción A).
+        await exigirA3Vigente(tx, actor.identidadId);
+        const filas = await tx.ejecucionDeEntrenamiento.findMany({
+          where: { asesoradoId: actor.identidadId, fechaLocal: { gte: comoFecha(periodStart), lte: comoFecha(periodEnd) } },
+          select: { id: true },
+          orderBy: [{ fechaLocal: "desc" }, { momentoDeOcurrencia: "desc" }, { id: "desc" }],
+          take: MAXIMO_DE_HISTORIAL,
+        });
+        const executions: EjecucionDeEntrenamiento[] = [];
+        for (const f of filas) executions.push(await this.ejecucionApi(tx, f.id));
+        return { data: { period: { start: periodStart, end: periodEnd, timeZone: zona }, executions } };
+      },
+    });
+  }
+
   /** Lectura de historia: para el titular exige solo su A3 vigente (DL-089 opción A; 08:199, 08:58, 08:406). */
   consultarEjecucion(actor: ActorAutenticado, executionId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<{ data: EjecucionDeEntrenamiento }> {
     sinParametrosDeQuery(query);

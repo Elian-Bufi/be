@@ -373,14 +373,14 @@ test('TEST-PRJ-009 · el control detecta un campo prohibido, y la excepción de 
   assert.deepEqual(hallazgos, ['prueba.compliancePercent', 'prueba.properties.criterion=PERCENT_COMPLETED']);
 });
 
-test('TEST-PRJ-009 · el OpenAPI de entrenamiento tampoco expone nada de eso, y tiene las 28 operaciones', async () => {
+test('TEST-PRJ-009 · el OpenAPI de entrenamiento tampoco expone nada de eso, y tiene las 29 operaciones', async () => {
   const { documentoOpenApi } = await import('./openapi');
   const doc = documentoOpenApi() as { paths: Record<string, unknown> };
   const hallazgos: string[] = [];
   const deEntrenamiento = Object.entries(doc.paths).filter(([r]) => r.includes('training'));
   for (const [ruta, metodos] of deEntrenamiento) recorrer(metodos, ruta, hallazgos);
   const operaciones = deEntrenamiento.reduce((n, [, m]) => n + Object.keys(m as object).length, 0);
-  assert.equal(operaciones, 28, 'las 24 TRN, la carga manual (INT-TRN-01), la lectura por período (DL-078) y la importación de wger (INT-TRN-02/03, WP-08)');
+  assert.equal(operaciones, 29, 'las 24 TRN, la carga manual (INT-TRN-01), la lectura por período (DL-078), la importación de wger (INT-TRN-02/03, WP-08) y «Tu historial» (TRN-19-LISTA, DL-096)');
   assert.deepEqual(hallazgos, []);
 });
 

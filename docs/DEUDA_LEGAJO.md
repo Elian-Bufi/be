@@ -100,7 +100,7 @@
 | DL-093 | WP-07 · 2026-09-21 | 06:8524-8529 (REG-06-210) · 09:1610-1618 | La Solicitud de formulario queda con dos estados, sin cancelar ni rechazar | **DECIDIDA** 2026-09-21 |
 | DL-094 | WP-07 · 2026-09-21 | 11A:604-610 · 11A:194, 348-349 | Los siete TEST-FRM eran títulos de una línea | **CERRADA** 2026-09-22 · escritos en `docs/paquetes/WP-07-ORACULOS.md` |
 | DL-095 | WP-07 · 2026-09-22 | 09v16.1 §22.1-§22.8 · 08 §11-bis | Contratos de FRM con forma no definida en el 09 | ABIERTA |
-| DL-096 | Consolidación · 2026-09-24 | 08:199 · 08:58 · DL-089 · 09v10 TRN-08/09/19 | La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado | ABIERTA |
+| DL-096 | Consolidación · 2026-09-24 | 08:199 · 08:58 · DL-089 · 09v10 TRN-08/09/19 | La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado | EN CURSO (opción A, Dirección 2026-09-25) |
 | DL-097 | WP-08 · 2026-09-24 | 09v12 §5-§7 (09v12:184-188, 360-364, 369, 390) | Las formas de la importación controlada que el 09 no fija | ABIERTA (hallada al implementar) |
 | DL-098 | WP-08 · 2026-09-24 | 09v12:190 · B10-05 §19 · B10-06 §22 | La búsqueda por texto en los proveedores no tiene contrato | ABIERTA |
 | DL-099 | WP-08 · 2026-09-24 | 04 RF-060 (04:701-708) · 08 licencias | La procedencia externa llega hasta la elección, no hasta el ítem del plan | ABIERTA (hallada en la revisión de calidad) |
@@ -1967,7 +1967,7 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 
 ## DL-096 — La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado
 
-**Prioridad:** media · **Documento:** 08:199 · 08:58 · DL-089 · 09v10 (TRN-08, TRN-09, TRN-19) · **Estado:** ABIERTA (hallada al cerrar la consolidación)
+**Prioridad:** media · **Documento:** 08:199 · 08:58 · DL-089 · 09v10 (TRN-08, TRN-09, TRN-19) · **Estado:** EN CURSO — opción A autorizada por Dirección el 2026-09-25; implementada, verificación visual en el teléfono pendiente
 
 **Qué dice el legajo.** El titular tiene acceso pleno a «Plan entrenamiento + ejecución» (08:199), y el fin del vínculo no destruye su historia (08:58). DL-089 lo llevó a la API: revocado el B2, el titular sigue leyendo sus ejecuciones, su plan activado y la lista de sus planes.
 
@@ -1978,6 +1978,15 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 - **B.** Dejarlo en la API hasta que el 09 declare una lectura de historia del titular.
 
 **Provisorio en código.** B: nada nuevo en la APK. **Recomendación: A**, en el paquete que siga a la entrega, porque es la única forma de que el asesorado **vea** lo que la garantía le reconoce; sin pantalla, el derecho existe pero no se puede ejercer desde el teléfono.
+
+**Decisión (2026-09-25).** Dirección autoriza la **opción A**: acceso del asesorado a sus planes históricos y ejecuciones propias desde la APK, con la lectura propia por período que faltaba.
+
+**Qué se hizo.**
+- **API:** `GET /me/training/executions` (**API-TRN-19-LISTA**), lista de las sesiones registradas propias por período. Exige solo el A3 vigente del titular (08:199, 08:58, 08:406; DL-089): no depende de un plan activo ni del acceso del profesional. Es la lista que TRN-19 no da (lee de a una) y que TRN-14-PERIODO tampoco (opera sobre el plan vigente). Declarada como desvío del 09, igual que API-NUT-16-LISTA (DL-055): está en el OpenAPI generado y `contratos-wp06.test.ts` la cuenta. Ventana de hasta un año; no pagina, con un tope de seguridad de filas.
+- **APK:** una sección **«Tu historial»** (acceso desde Cuenta, siempre alcanzable): sus **planes** (TRN-08) y cada plan tal como se aceptó (TRN-09), reutilizados sin cambio, y sus **sesiones registradas** por período con su detalle (la pantalla de ejecución existente, TRN-19, que muestra original y correcciones). De solo lectura.
+- **Pruebas:** seis casos de integración (titular consulta lo propio; otro usuario no; B2 revocado y vínculo finalizado conservan la lectura; A3 revocado da 403; la corrección no oculta el original; funciona sin plan y con vacío comprensible).
+
+**Condición de cierre.** No se cierra como verificada hasta la comprobación visual de «Tu historial» en el teléfono (la APK 0.10.0 no la incluye; entra en la próxima APK). Trazabilidad: `docs/paquetes/WP-HISTORIAL-ENTRENAMIENTO.md`.
 
 ## DL-097 — Las formas de la importación controlada que el 09 no fija
 

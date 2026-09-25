@@ -21,6 +21,8 @@ export type Ruta =
   | { readonly nombre: 'registro-nutricional'; readonly id: string }
   | { readonly nombre: 'mi-evolucion' }
   | { readonly nombre: 'entrenamiento' }
+  | { readonly nombre: 'historial-de-entrenamiento' }
+  | { readonly nombre: 'plan-de-entrenamiento'; readonly id: string }
   | { readonly nombre: 'mis-solicitudes' }
   | { readonly nombre: 'mi-solicitud'; readonly id: string }
   | { readonly nombre: 'sesion-de-entrenamiento'; readonly draftId: string; readonly sesion: SesionDeOcurrencia; readonly fecha: string }
@@ -45,8 +47,11 @@ export function anterior(ruta: Ruta): Ruta | null {
     case 'hoy':
     case 'mi-evolucion':
     case 'entrenamiento':
+    case 'historial-de-entrenamiento':
     case 'mis-solicitudes':
       return { nombre: 'cuenta' };
+    case 'plan-de-entrenamiento':
+      return { nombre: 'historial-de-entrenamiento' };
     case 'mi-solicitud':
       return { nombre: 'mis-solicitudes' };
     case 'sesion-de-entrenamiento':

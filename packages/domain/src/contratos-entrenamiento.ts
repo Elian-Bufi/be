@@ -583,6 +583,20 @@ export const EjecucionDeEntrenamientoSchema = z.strictObject({
 export type EjecucionDeEntrenamiento = z.infer<typeof EjecucionDeEntrenamientoSchema>;
 export const EjecucionDeEntrenamientoResponseSchema = z.strictObject({ data: EjecucionDeEntrenamientoSchema });
 
+/**
+ * API-TRN-19-LISTA (DL-096, opción A): «Tu historial» del titular — sus sesiones registradas por período. No la
+ * declara el 09; es la lista que TRN-19 no da (lee de a una) y que la lectura por período del plan vigente (TRN-14)
+ * tampoco, porque opera sobre el plan activo. Exige solo el A3 vigente: no depende de un plan activo ni del acceso del
+ * profesional (08:199, 08:58, 08:406; DL-089). Cada ejecución trae su original y sus correcciones, sin ocultarlos.
+ */
+export const HistorialDeEntrenamientoResponseSchema = z.strictObject({
+  data: z.strictObject({
+    period: PeriodoSchema,
+    executions: z.array(EjecucionDeEntrenamientoSchema),
+  }),
+});
+export type HistorialDeEntrenamientoResponse = z.infer<typeof HistorialDeEntrenamientoResponseSchema>;
+
 /** La entrada de un registro corregido: la misma forma que el borrador, completa. */
 export const RegistroDeEjecucionEntradaSchema = z.strictObject({
   granularity: z.string().max(40).nullable(),
