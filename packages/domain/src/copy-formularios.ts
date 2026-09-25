@@ -54,6 +54,12 @@ export const COPY_FORMULARIOS = {
   completar: 'Completar',
   opcional: 'Opcional',
   omitirCampo: 'Podés dejarlo en blanco.',
+  // Sí/No se elige, no se escribe: lo escrito habría que interpretarlo, y lo mal interpretado queda como declarado
+  // por la persona (09 §22.7). Las dos opciones se ven juntas y ninguna viene marcada.
+  si: 'Sí',
+  no: 'No',
+  elegiSiONo: 'Elegí una opción. Podés dejarlo sin responder.',
+  volverASinResponder: 'Tocá de nuevo la opción elegida para dejar el campo sin responder.',
   enviarRespuesta: 'Enviar respuesta',
   respuestaEnviada: 'Respuesta enviada.',
   loQueRespondesEsTuyo: 'Lo que respondas queda registrado como declarado por vos.',

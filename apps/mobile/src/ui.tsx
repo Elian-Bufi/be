@@ -80,6 +80,59 @@ export function Campo({ etiqueta, ayuda, error, ...resto }: TextInputProps & { e
   );
 }
 
+/**
+ * Campo de dos opciones excluyentes (Sí/No) que **nace sin ninguna elegida**, y en el que volver a tocar lo elegido
+ * devuelve el campo a «sin responder». Ese tercer estado es el motivo de que esto no sea una casilla: una casilla
+ * desmarcada no distingue «No» de «no contesté», y acá la diferencia es el dato (09:1586-1587).
+ *
+ * Rol `radiogroup` con `radio` adentro, no botones: el lector de pantalla dice cuántas opciones hay y cuál está
+ * elegida, sin depender del color (B10-10:36). El aspecto es el mismo grupo de opciones que usa el resto del APK.
+ */
+export function CampoSiONo({
+  etiqueta,
+  ayuda,
+  opciones,
+  valor,
+  onCambio,
+  pista,
+}: {
+  etiqueta: string;
+  ayuda?: string;
+  /** El texto de cada opción y lo que vale: el copy vive en el dominio, no acá. */
+  opciones: readonly { readonly valor: string; readonly texto: string }[];
+  /** `''` = sin responder. */
+  valor: string;
+  onCambio: (v: string) => void;
+  /** Se muestra solo cuando hay algo elegido: cómo volver a dejar el campo sin responder. */
+  pista?: string;
+}) {
+  return (
+    <View style={estilos.campo}>
+      <Text style={estilos.etiqueta}>{etiqueta}</Text>
+      {ayuda ? <Text style={estilos.tenue}>{ayuda}</Text> : null}
+      <View style={estilos.grupoDeOpciones} accessibilityRole="radiogroup" accessibilityLabel={etiqueta}>
+        {opciones.map((o) => {
+          const elegida = valor === o.valor;
+          return (
+            <Pressable
+              key={o.valor}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: elegida }}
+              accessibilityLabel={o.texto}
+              // Tocar lo ya elegido lo suelta: sin esto, una elección por error no tendría vuelta atrás.
+              onPress={() => onCambio(elegida ? '' : o.valor)}
+              style={({ pressed }) => [estilos.boton, estilos.opcion, elegida ? estilos.boton_primario : estilos.boton_secundario, pressed && estilos.presionado]}
+            >
+              <Text style={[estilos.textoBoton, elegida ? estilos.textoBoton_primario : estilos.textoBoton_secundario]}>{o.texto}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {pista && valor !== '' ? <Text style={estilos.tenue}>{pista}</Text> : null}
+    </View>
+  );
+}
+
 /** Casilla accesible (rol checkbox con estado). Nunca premarcada: el estado lo decide quien la usa. */
 export function Casilla({
   marcada,
@@ -194,6 +247,8 @@ export const estilos = StyleSheet.create({
   deshabilitado: { opacity: 0.6 },
   presionado: { opacity: 0.8 },
   campo: { marginVertical: 8 },
+  grupoDeOpciones: { flexDirection: 'row', gap: 12 },
+  opcion: { flex: 1 },
   etiqueta: { fontSize: 16, fontWeight: '600', color: COLOR.texto, marginBottom: 4 },
   entrada: { minHeight: 48, borderWidth: 1, borderColor: COLOR.bordeControl, borderRadius: 8, paddingHorizontal: 12, fontSize: 16, color: COLOR.texto, backgroundColor: COLOR.superficie },
   entradaConError: { borderColor: COLOR.error, borderWidth: 2 },
