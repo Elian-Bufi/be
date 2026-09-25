@@ -1,4 +1,4 @@
-# Guía de demo de la entrega — BE 0.9.0
+# Guía de demo de la entrega — BE 0.10.0
 
 La demo para el tribunal (DV-11), en un solo recorrido de unos 22 minutos:
 - qué es BE;
@@ -13,8 +13,8 @@ El detalle de cada circuito está en la guía de su paquete (`EVIDENCIA/WP-04/GU
 | Qué | Dónde |
 |---|---|
 | Website | `https://be-web-1ngj.onrender.com` |
-| API (despertarla dos minutos antes: el plan gratuito duerme) | `https://be-api-hndp.onrender.com/health/ready` → `200` con `"aplicacion":"0.9.0"` |
-| **APK 0.9.0** | `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.9.0/be-0.9.0-fd08380.apk` · SHA-256 `021af7b1a21f5ac90b342000f5f5f23e0f818a0256d345d5e033c6cf82e4551d`. Se instala encima de cualquier versión anterior. Es la primera con el tema oscuro y el ícono nuevo. La landing la ofrece en «Descargar la APK de prueba» |
+| API (despertarla dos minutos antes: el plan gratuito duerme) | `https://be-api-hndp.onrender.com/health/ready` → `200` con `"aplicacion":"0.10.0"` |
+| **APK 0.10.0** | `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.10.0/be-0.10.0-d7e7c46.apk` · SHA-256 `5af10cb281160c1fcc7039f4162c3d8a36ebb1a981504d15ab4defc1b301dbe1`. Se instala encima de cualquier versión anterior. Suma WP-08 (importación de Open Food Facts y wger); requiere la API 0.10.0. La landing la ofrece en «Descargar la APK de prueba» |
 
 **Cuentas.** Las contraseñas están en `.env.cuentas-demo`, en el clon local de Dirección, no en el repositorio. Todos los datos son sintéticos, y las pantallas lo dicen.
 
@@ -86,7 +86,7 @@ Con **DEMO-A01** en el teléfono.
 ## Si algo falla
 
 - **La API tarda o responde 502:** está despertando. Esperar un minuto y recargar.
-- **La APK no carga una pantalla:** confirmar que es la 0.9.0 (Bienvenida, al pie). Los clientes validan cada respuesta con objetos estrictos: una versión vieja rechaza lo que no conoce.
+- **La APK no carga una pantalla:** confirmar que es la 0.10.0 (Bienvenida, al pie). Los clientes validan cada respuesta con objetos estrictos: una versión vieja rechaza lo que no conoce.
 - **Se cerró la sesión del website al recargar:** es a propósito. La sesión vive solo en la memoria de la pestaña (DL-012).
 - **Después de un ensayo que llegó al paso 5.5:** el acceso de Nutrición quedó revocado. Para dejar la demo lista otra vez, en la APK: Cuenta → Vínculos → el de Nutrición → «Autorizar nuevamente» → «Autorizar acceso». Es un consentimiento nuevo; el revocado queda en el historial.
 - **«Demasiados intentos» al iniciar sesión:** el límite es de 5 intentos cada 15 minutos por red y cuenta (DL-015). Esperar o usar otra cuenta demo.
