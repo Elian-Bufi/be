@@ -14,7 +14,7 @@
 | Usuarios demo | ✅ **DEMO-PT** (profesional de Entrenamiento) entra por primera vez a un circuito completo. DEMO-A01 queda con un plan de entrenamiento activo, además de sus vínculos de nutrición y antropometría: **una misma persona en los tres dominios** | `GUIA-DEMO.md` «Antes de empezar» |
 | Datos sintéticos | ✅ Catálogo de ejercicios rotulado «de demostración: no es una recomendación», con identificadores estables, más la carga manual de ejercicios del profesional | migración `20260921100000_circuito_de_entrenamiento` |
 | Guion | ✅ `EVIDENCIA/WP-06/GUIA-DEMO.md`: cuatro partes, con la cuenta, los datos a cargar y lo que tiene que verse en cada paso | — |
-| Grabación | **No se hizo**, por el mismo motivo que en WP-04 y WP-05. En su lugar, capturas del estado final: 22 del website, automatizadas contra `test`, y las del APK en un Android real de Dirección | `EVIDENCIA/WP-06/web/` · `apk/` |
+| Grabación | **No se hizo**, por el mismo motivo que en WP-04 y WP-05. En su lugar, capturas del estado final: 22 del website, automatizadas contra `test`, y 4 del APK 0.9.1 en un Android real, con el circuito de registro y la corrección que conserva el original | `EVIDENCIA/WP-06/web/` · `EVIDENCIA/ENTREGA/capturas-apk/` (apk-07 a apk-10) |
 
 ### Qué suma la demo
 

@@ -19,7 +19,7 @@ Es el tipo de hallazgo que la matriz de cobertura existe para prevenir, y que se
 | Aplicación ejecutable | ✅ Website y API **0.7.0** en `test`, y APK **0.7.0** en un release permanente. Se suma el **primer circuito transversal**: no pertenece a ningún alcance, atraviesa los tres | `EVIDENCIA/WP-07/verificacion-urls.txt` · `apk.txt` |
 | Usuarios demo | ✅ DEMO-PT pide información y la recibe; el asesorado responde y corrige desde la APK. Es el primer circuito donde **el asesorado aporta contenido estructurado**, no solo registros de su plan | `GUIA-DEMO.md` |
 | Datos sintéticos | ✅ Catálogo de dos formularios rotulado «de demostración: no es un catálogo clínico», con identificadores estables | migración `20260921220000_formularios_de_informacion_profesional` |
-| Grabación | **No se hizo**, por el mismo motivo que en WP-04, WP-05 y WP-06. En su lugar, capturas del estado final: 9 del website, automatizadas contra `test` | `EVIDENCIA/WP-07/web/` |
+| Grabación | **No se hizo**, por el mismo motivo que en WP-04, WP-05 y WP-06. En su lugar, capturas del estado final: 9 del website, automatizadas contra `test`, y 4 del APK 0.9.1 en un Android real (la pantalla del asesorado que RF-071 no tenía capturada, con el campo Sí/No corregido) | `EVIDENCIA/WP-07/web/` · `EVIDENCIA/ENTREGA/capturas-apk/` (apk-03 a apk-06) |
 
 ### Qué suma la demo
 
