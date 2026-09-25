@@ -23,6 +23,7 @@ Las URLs de las láminas 12 y 13, los usuarios de la 14 y el estado de DV-05 est
 | Archivo | Qué demuestra |
 |---|---|
 | `GUIA-DEMO.md` | La demo para el tribunal (DV-11), paso a paso, con qué mostrar en cada uno y qué garantía del legajo sostiene |
+| `capturas-apk/` | El APK **0.9.1** en un Android real con DEMO-A01: identidad del build, la corrección del campo Sí/No de formularios (PR #82) probada de punta a punta, el circuito de entrenamiento con corrección que conserva el original, y la evolución antropométrica con los huecos «sin dato». `capturas-apk/LEEME.md` dice qué prueba cada una. Sin EXIF |
 | `capturas-web/` | El website en `test`, recorrido con Chrome por puppeteer con las cuentas demo. `recorrido.json` guarda los pasos, lo observado en cada pantalla y las llamadas a la API: 31, ninguna 4xx ni 5xx. Todas las pantallas son de DEMO-A01, como en la guía. En la figura se escribieron dos valores **sin guardar**: el recorrido no deja nada nuevo en `test` |
 | `resultados-integracion-796a5fe.json` y `.md` | La suite de integración de la CI de `main` en el último commit: **427/427** en 23 suites, 133 identificadores del 11A, contra PostgreSQL 16 real |
 | `ci-verificar-796a5fe.log` | El job `verificar` de esa corrida: typecheck, pruebas del dominio (259/259), guardias de copy y de contraste (14/14), pruebas unitarias de la API (33/33), build y auditoría de dependencias |

@@ -20,6 +20,8 @@ apps/mobile/ios/
 .env
 .env.*
 !.env.example
+# Hojas de credenciales ya resueltas para operar (capturas, demo): se derivan de .env.cuentas-demo y viven fuera del repo.
+credenciales*.txt
 
 .DS_Store
 Thumbs.db

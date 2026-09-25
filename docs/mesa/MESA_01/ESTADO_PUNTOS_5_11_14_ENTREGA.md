@@ -33,7 +33,7 @@ La URL de la demo es la del website, con la APK de arriba. El recorrido para el 
 5. el asesorado en la APK;
 6. cómo se sabe que es cierto.
 
-Las capturas del website en `test` están en `EVIDENCIA/ENTREGA/capturas-web/`. Las de la APK las toma Dirección en su teléfono.
+Las capturas del website en `test` están en `EVIDENCIA/ENTREGA/capturas-web/`. Las de la APK 0.9.1 (`0698868`), tomadas en un Android real con DEMO-A01, están en `EVIDENCIA/ENTREGA/capturas-apk/`.
 
 ## Punto 14 — usuarios por rol
 
