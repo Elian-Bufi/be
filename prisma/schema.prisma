@@ -173,6 +173,10 @@ model Identidad {
   solicitudesDeFormularioComoAsesorado   SolicitudDeFormulario[] @relation("SolicitudDeFormularioDelAsesorado")
   respuestasDeFormulario                 RespuestaDeFormulario[] @relation("RespuestaDeFormularioDelAsesorado")
 
+  // WP-08
+  candidatosDeImportacion CandidatoDeImportacion[] @relation("CandidatoDelProfesional")
+  resolucionesDeCandidato ResolucionDeCandidato[]  @relation("ResolucionDelAutor")
+
   @@map("identidad")
 }
 
@@ -996,6 +1000,8 @@ enum DisponibilidadDeElemento {
 enum ProcedenciaDeCatalogo {
   BE_SYNTHETIC_SEED
   PROFESSIONAL_MANUAL
+  /// WP-08: incorporado desde un proveedor externo después de la revisión del profesional (UC-I07).
+  CONTROLLED_IMPORT
 }
 
 /// 06 §10.7: BORRADOR y ACTIVADA. No hay salida desde ACTIVADA (06:4307; trigger en la migración).
@@ -1045,7 +1051,8 @@ model ElementoDeCatalogoNutricional {
   creadoPorId       String?               @map("creado_por_id") @db.Uuid
   momentoDeRegistro DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  versiones VersionDeElementoNutricional[]
+  versiones    VersionDeElementoNutricional[]
+  importadoPor ResolucionDeCandidato[]        @relation("ElementoImportado")
 
   @@map("elemento_de_catalogo_nutricional")
 }
@@ -1644,8 +1651,9 @@ model EjercicioDeCatalogo {
   creadoPorId       String?               @map("creado_por_id") @db.Uuid
   momentoDeRegistro DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  creadoPor Identidad?           @relation("EjercicioCreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  versiones VersionDeEjercicio[]
+  creadoPor    Identidad?              @relation("EjercicioCreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones    VersionDeEjercicio[]
+  importadoPor ResolucionDeCandidato[] @relation("EjercicioImportado")
 
   @@map("ejercicio_de_catalogo")
 }
@@ -2072,4 +2080,67 @@ model EventoDeFormulario {
   @@index([asesoradoId, momentoDeRegistro])
   @@index([recursoId])
   @@map("evento_de_formulario")
+}
+
+// ─── WP-08 · Importación controlada (RF-028, RF-038; UC-I07; 09 v0.12 §3-§7) ─────────────────────
+
+/// Los dos proveedores del compromiso académico de integración (Q-API-001, 04:1144).
+enum ProveedorExterno {
+  OPEN_FOOD_FACTS
+  WGER
+}
+
+enum DecisionDeImportacion {
+  IMPORTAR
+  RECHAZAR
+}
+
+/// T-06-31 · candidato de importación (09v12:87-105): lo que respondió el proveedor, normalizado para revisar, con el
+/// SHA-256 de lo recibido tal cual y su licencia. **No es** un elemento del catálogo. Es de quien lo pidió, vence a
+/// los 7 días (WP-08 D-C) y nunca cambia: su resolución es un hecho aparte. Append-only.
+model CandidatoDeImportacion {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  alcance            Alcance
+  proveedor          ProveedorExterno
+  idExterno          String           @map("id_externo")
+  /// Lo necesario para revisar: nombre y composición (alimento) o nombre, categoría y músculos declarados (ejercicio).
+  contenido          Json
+  huellaDeLoRecibido String           @map("huella_de_lo_recibido")
+  licencia           Json
+  urlDeOrigen        String           @map("url_de_origen")
+  profesionalId      String           @map("profesional_id") @db.Uuid
+  recibidoEn         DateTime         @map("recibido_en") @db.Timestamptz(3)
+  venceEn            DateTime         @map("vence_en") @db.Timestamptz(3)
+  procedencia        Json
+  momentoDeRegistro  DateTime         @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional Identidad              @relation("CandidatoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  resolucion  ResolucionDeCandidato?
+
+  @@index([profesionalId, momentoDeRegistro])
+  @@map("candidato_de_importacion")
+}
+
+/// La decisión del profesional sobre un candidato: una sola por candidato (índice único), con autor, fundamento, los
+/// campos que corrigió y el elemento que creó si importó. Append-only: «la corrección no oculta la fuente» (UC-I07).
+model ResolucionDeCandidato {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  candidatoId           String                @unique @map("candidato_id") @db.Uuid
+  decision              DecisionDeImportacion
+  contenidoRevisado     Json?                 @map("contenido_revisado")
+  camposCorregidos      Json                  @default("[]") @map("campos_corregidos")
+  fundamento            String?
+  elementoNutricionalId String?               @map("elemento_nutricional_id") @db.Uuid
+  ejercicioId           String?               @map("ejercicio_id") @db.Uuid
+  versionCreadaId       String?               @map("version_creada_id") @db.Uuid
+  autorId               String                @map("autor_id") @db.Uuid
+  procedencia           Json
+  momentoDeRegistro     DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  candidato           CandidatoDeImportacion         @relation(fields: [candidatoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  autor               Identidad                      @relation("ResolucionDelAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  elementoNutricional ElementoDeCatalogoNutricional? @relation("ElementoImportado", fields: [elementoNutricionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ejercicio           EjercicioDeCatalogo?           @relation("EjercicioImportado", fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("resolucion_de_candidato")
 }

@@ -1,5 +1,5 @@
 /**
- * Cliente HTTP de los contratos de WP-02 a WP-06, compartido por el website y el APK (09v7 T21: una sola definición).
+ * Cliente HTTP de los contratos de WP-02 a WP-08, compartido por el website y el APK (09v7 T21: una sola definición).
  * Cada superficie lo instancia con su base y su superficie declarada:
  * - website: origen de la API inyectado en el build (`BE_API_BASE_URL`), llamada directa con CORS (DL-030);
  * - APK: base absoluta `API_BASE_URL/api/v1` del perfil de build (07:645, sin CORS).
@@ -22,6 +22,14 @@ import {
   type SolicitarCierreResponse,
   type ValidationIssue,
 } from './contratos';
+import {
+  CandidatoDeAlimentoResponseSchema,
+  CandidatoDeEjercicioResponseSchema,
+  ResolucionDeAlimentoResponseSchema,
+  ResolucionDeEjercicioResponseSchema,
+  type ResolverCandidatoDeAlimentoRequest,
+  type ResolverCandidatoDeEjercicioRequest,
+} from './contratos-integraciones';
 import {
   AceptarSolicitudResponseSchema,
   ConsentimientoDeSaludOtorgadoResponseSchema,
@@ -458,6 +466,24 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     crearElementoDeCatalogo(token: string, cuerpo: CrearElementoDeCatalogoRequest, claveDeIdempotencia: string) {
       return llamar('POST', '/nutrition/catalog-items', { token, claveDeIdempotencia, esquema: ElementoDeCatalogoResponseSchema, cuerpo });
     },
+    /** API-INT-NUT-02: consulta Open Food Facts y crea un candidato. Todavía no es un elemento del catálogo. */
+    crearCandidatoDeAlimento(token: string, codigoDeBarras: string, claveDeIdempotencia: string) {
+      return llamar('POST', '/nutrition/catalog-import-candidates', {
+        token,
+        claveDeIdempotencia,
+        esquema: CandidatoDeAlimentoResponseSchema,
+        cuerpo: { provider: 'OPEN_FOOD_FACTS', lookup: { externalId: codigoDeBarras } },
+      });
+    },
+    /** API-INT-NUT-03: incorporar lo revisado o rechazarlo. */
+    resolverCandidatoDeAlimento(token: string, candidateId: string, cuerpo: ResolverCandidatoDeAlimentoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/catalog-import-candidates/${encodeURIComponent(candidateId)}/resolve`, {
+        token,
+        claveDeIdempotencia,
+        esquema: ResolucionDeAlimentoResponseSchema,
+        cuerpo,
+      });
+    },
     /** API-NUT-14. El servidor fija la fecha; el día tipo lo elige el asesorado si hay más de uno (DL-049). */
     hoyNutricional(token: string, diaTipoId?: string) {
       return llamar('GET', `/me/nutrition/today${query({ dayTypeId: diaTipoId })}`, { token, esquema: HoyResponseSchema });
@@ -676,6 +702,24 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         claveDeIdempotencia,
         esquema: EjercicioDeCatalogoResponseSchema,
         cuerpo: { name: nombre, muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } },
+      });
+    },
+    /** API-INT-TRN-02: consulta wger y crea un candidato. Los músculos que trae son dato del proveedor. */
+    crearCandidatoDeEjercicio(token: string, numeroDeWger: string, claveDeIdempotencia: string) {
+      return llamar('POST', '/training/catalog-import-candidates', {
+        token,
+        claveDeIdempotencia,
+        esquema: CandidatoDeEjercicioResponseSchema,
+        cuerpo: { provider: 'WGER', lookup: { externalId: numeroDeWger } },
+      });
+    },
+    /** API-INT-TRN-03: incorporar lo revisado o rechazarlo. */
+    resolverCandidatoDeEjercicio(token: string, candidateId: string, cuerpo: ResolverCandidatoDeEjercicioRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/training/catalog-import-candidates/${encodeURIComponent(candidateId)}/resolve`, {
+        token,
+        claveDeIdempotencia,
+        esquema: ResolucionDeEjercicioResponseSchema,
+        cuerpo,
       });
     },
     /** API-TRN-14. */

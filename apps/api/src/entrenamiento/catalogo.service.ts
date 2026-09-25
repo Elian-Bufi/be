@@ -46,7 +46,8 @@ export class CatalogoDeEjerciciosService {
     const cursor = consulta.cursor;
     const filas = await this.prisma.$queryRaw<FilaDeEjercicio[]>`
       SELECT e."id"::text AS "ejercicioId", v."id"::text AS "versionId", v."nombre", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
-             e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro"
+             e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro",
+             v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"
         FROM "version_de_ejercicio" v
         JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"
        WHERE NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
@@ -79,7 +80,7 @@ export class CatalogoDeEjerciciosService {
       huellaExtra: {},
       efecto: async (tx, pedido, procedencia) => {
         if (!(await this.esProfesionalDeEntrenamiento(tx, actor.identidadId))) throw errores.accionNoPermitida();
-        // Las zonas y el material didáctico llegan en WP-07: hasta entonces el dominio no tiene ninguno, así que
+        // Las zonas y el material didáctico no están en la entrega (DL-081): el dominio no tiene ninguno, así que
         // cualquier referencia es a algo que no existe. Cero zonas sí es legítimo (REG-06-139).
         const issues: ValidationIssue[] = [
           ...pedido.muscleZones.map((_, i) => ({ code: 'MUSCLE_ZONE_UNKNOWN', path: `muscleZones[${i}].zoneId` })),
@@ -114,6 +115,7 @@ export class CatalogoDeEjerciciosService {
           procedencia: 'PROFESSIONAL_MANUAL',
           creadoPorId: actor.identidadId,
           momentoDeRegistro: version.momentoDeRegistro,
+          fuenteExterna: null,
         });
         return { estadoHttp: 201, cuerpo: { data: item }, sujetoId: null, recurso: { tipo: 'EjercicioDeCatalogo', id: ejercicio.id } };
       },
@@ -133,7 +135,8 @@ export class CatalogoDeEjerciciosService {
     const creadores = ambito === 'ASESORADO' && profesionalDelPlan ? [profesionalDelPlan] : await this.creadoresVisibles(cliente, actorId, ambito);
     const filas = await cliente.$queryRaw<FilaDeEjercicio[]>`
       SELECT e."id"::text AS "ejercicioId", v."id"::text AS "versionId", v."nombre", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
-             e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro"
+             e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro",
+             v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"
         FROM "version_de_ejercicio" v
         JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"
        WHERE v."id" = ANY(${validos}::uuid[])

@@ -12,6 +12,7 @@
 import {
   cantidad as formatearCantidad,
   COPY,
+  COPY_INTEGRACIONES,
   COPY_NUTRICION,
   ETIQUETA_DE_PREPARACION,
   ETIQUETA_DE_UNIDAD,
@@ -29,6 +30,7 @@ import { Aviso, Campo } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
 import { numeroEnCampo } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { ImportacionDeOpenFoodFacts, procedenciaDeElemento } from './importacion';
 import { NoDisponible, useNutricion } from './nutricion';
 
 type Estructura = EstructuraDePlanEntrada['dayTypes'];
@@ -402,13 +404,17 @@ function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: string; ite
   );
 }
 
-/** «Agregar ítem → buscar catálogo BE» y «Crear manualmente» (B05:535-552). Sin proveedor externo en WP-04 (DL-056). */
+/**
+ * «Agregar ítem → buscar catálogo BE», «Crear manualmente» o «Importar desde proveedor» (B05:535-552; B10-05 §18). La
+ * importación es una opción más, nunca la búsqueda principal obligatoria (WP-08).
+ */
 function BuscadorDeCatalogo({ id, onElegir }: { id: string; onElegir: (e: ElementoDeCatalogo) => void }) {
   const { token, sesionPerdida, accesoRetirado } = useNutricion();
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [resultados, setResultados] = useState<ElementoDeCatalogo[] | null>(null);
   const [manual, setManual] = useState(false);
+  const [importar, setImportar] = useState(false);
   const intento = useClaveDeIntento();
   const [nuevo, setNuevo] = useState({ nombre: '', kcal: '', p: '', c: '', g: '' });
   const [errores, setErrores] = useState<Record<string, string>>({});
@@ -481,6 +487,7 @@ function BuscadorDeCatalogo({ id, onElegir }: { id: string; onElegir: (e: Elemen
               <li key={el.catalogItemId} className="lista__item">
                 <span>
                   {el.name} · {formatearCantidad(el.composition.energyKcal, 'kcal')} cada {el.composition.referenceAmount === '100ml' ? '100 ml' : '100 g'}
+                  {procedenciaDeElemento(el) ? <span className="nota"> · {procedenciaDeElemento(el)}</span> : null}
                 </span>
                 <button
                   type="button"
@@ -523,6 +530,24 @@ function BuscadorDeCatalogo({ id, onElegir }: { id: string; onElegir: (e: Elemen
       ) : (
         <button type="button" className="boton boton--enlace" onClick={() => setManual(true)}>
           {COPY_NUTRICION.crearManualmente}
+        </button>
+      )}
+      {importar ? (
+        <ImportacionDeOpenFoodFacts
+          id={`${id}-importar`}
+          onIncorporado={(el) => {
+            onElegir(el);
+            setImportar(false);
+            setAbierto(false);
+          }}
+          onCargarManualmente={() => {
+            setImportar(false);
+            setManual(true);
+          }}
+        />
+      ) : (
+        <button type="button" className="boton boton--enlace" onClick={() => setImportar(true)}>
+          {COPY_INTEGRACIONES.importarDesdeOpenFoodFacts}
         </button>
       )}
       <button type="button" className="boton boton--enlace" onClick={() => setAbierto(false)}>

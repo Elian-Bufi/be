@@ -6,6 +6,7 @@
  * - WP-05: TEST-CT-ANT-01, 03, 05 a 12, la evolución propia, y MTH-01/02 con CAL-01 a 04.
  * - WP-06: TEST-CT-TRN por tramos; lo que todavía no tiene servicio figura en EN_CONSTRUCCION.
  * - WP-07: TEST-CT-FRM-01 a 08 (catálogo, Solicitud, Respuesta, rectificación).
+ * - WP-08: TEST-CT-INT-NUT-02/03 y TEST-CT-INT-TRN-02/03, contra un proveedor falso local (D-H).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -58,6 +59,7 @@ import {
   cuerpoDeObjetivoDeEntrenamiento,
   estructuraDeEntrenamiento,
 } from './soporte-entrenamiento';
+import { levantarProveedorFalso, OFF, WGER, type ProveedorFalso } from './soporte-proveedores';
 
 interface Observada {
   metodo: string;
@@ -69,9 +71,11 @@ interface Observada {
 const observadas: Observada[] = [];
 const prisma = new PrismaClient();
 let app: INestApplication;
+let proveedor: ProveedorFalso;
 
 beforeAll(async () => {
-  app = await appDePrueba({}, (a) => {
+  proveedor = await levantarProveedorFalso();
+  app = await appDePrueba({ proveedores: { openFoodFactsUrl: proveedor.url, wgerUrl: proveedor.url, presupuestoMs: 1_500 } }, (a) => {
     a.use((req: Request, res: Response, next: NextFunction) => {
       let codigo: string | null = null;
       const json = res.json.bind(res);
@@ -86,6 +90,7 @@ beforeAll(async () => {
 });
 afterAll(async () => {
   await app.close();
+  await proveedor.cerrar();
   await prisma.$disconnect();
 });
 
@@ -575,6 +580,55 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de MTH y CAL', async () => {
   await pro.put(referencia).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: 'v1', extra: 1 }).expect(400);
   await ase.put(referencia).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: null }).expect(404);
   await pro.put(`/api/v1/advisees/${ajeno}/calculation-references/ANTHROPOMETRIC_SUPPORT`).send({ calculationRunId: corrida.body.data.calculationRunId, expectedVersion: null }).expect(404);
+});
+
+it('TEST-CT (WP-08): INT-NUT-02/03 e INT-TRN-02/03 — candidato, resolución, fallas del proveedor', async () => {
+  const pn = await prepararProfesional(app, 'contrato-imp-nut', ['NUTRICION']);
+  const pt = await prepararProfesional(app, 'contrato-imp-trn', ['ENTRENAMIENTO']);
+  const ase = await prepararAsesorado(app, 'contrato-imp-ase', { a3: true });
+  const nut = conSesion(app, pn.token);
+  const trn = conSesion(app, pt.token);
+  const NUT = '/api/v1/nutrition/catalog-import-candidates';
+  const TRN = '/api/v1/training/catalog-import-candidates';
+  const alimento = (codigo: string) => ({ provider: 'OPEN_FOOD_FACTS', lookup: { externalId: codigo } });
+  const ejercicio = (numero: string) => ({ provider: 'WGER', lookup: { externalId: numero } });
+  // INT-NUT-02
+  const clave = claveDeIdempotencia();
+  const creado = (await nut.post(NUT, clave).send(alimento(OFF.completo)).expect(201)).body.data;
+  await nut.post(NUT, clave).send(alimento(OFF.liquido)).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await nut.post(NUT).send({ provider: 'OPEN_FOOD_FACTS', lookup: { externalId: 'abc' } }).expect(400);
+  await nut.post(NUT).send({ ...alimento(OFF.completo), extra: 1 }).expect(400);
+  await conSesion(app, ase.token).post(NUT).send(alimento(OFF.completo)).expect(403);
+  await nut.post(NUT).send(alimento(OFF.inexistente)).expect(422);
+  await nut.post(NUT).send(alimento(OFF.caido)).expect(503);
+  // INT-NUT-03
+  const incompleto = (await nut.post(NUT).send(alimento(OFF.sinComposicion)).expect(201)).body.data;
+  await nut.post(`${NUT}/${incompleto.candidateId}/resolve`).send({ decision: 'IMPORT', reviewedContent: incompleto.candidate }).expect(422); // REVIEWED_CONTENT_INVALID
+  const claveR = claveDeIdempotencia();
+  await nut.post(`${NUT}/${creado.candidateId}/resolve`, claveR).send({ decision: 'IMPORT', reviewedContent: creado.candidate }).expect(200);
+  await nut.post(`${NUT}/${creado.candidateId}/resolve`, claveR).send({ decision: 'REJECT' }).expect(409);
+  await nut.post(`${NUT}/${creado.candidateId}/resolve`).send({ decision: 'REJECT' }).expect(422); // IMPORT_CANDIDATE_NOT_RESOLVABLE
+  await nut.post(`${NUT}/${randomUUID()}/resolve`).send({ decision: 'REJECT' }).expect(404);
+  await nut.post(`${NUT}/${creado.candidateId}/resolve`).send({ decision: 'ACCEPT' }).expect(400);
+  await conSesion(app, ase.token).post(`${NUT}/${creado.candidateId}/resolve`).send({ decision: 'REJECT' }).expect(403);
+  // INT-TRN-02
+  const claveT = claveDeIdempotencia();
+  const ej = (await trn.post(TRN, claveT).send(ejercicio(WGER.enEspanol)).expect(201)).body.data;
+  await trn.post(TRN, claveT).send(ejercicio(WGER.soloEnIngles)).expect(409);
+  await trn.post(TRN).send({ provider: 'WGER', lookup: { externalId: '0' } }).expect(400);
+  await trn.post(TRN).send({ ...ejercicio(WGER.enEspanol), extra: 1 }).expect(400);
+  await conSesion(app, ase.token).post(TRN).send(ejercicio(WGER.enEspanol)).expect(403);
+  await trn.post(TRN).send(ejercicio(WGER.inexistente)).expect(422);
+  await trn.post(TRN).send(ejercicio(WGER.caido)).expect(503);
+  // INT-TRN-03
+  await trn.post(`${TRN}/${ej.candidateId}/resolve`).send({ decision: 'IMPORT', reviewedContent: { name: null } }).expect(422);
+  const claveTR = claveDeIdempotencia();
+  await trn.post(`${TRN}/${ej.candidateId}/resolve`, claveTR).send({ decision: 'IMPORT', reviewedContent: { name: ej.candidate.name } }).expect(200);
+  await trn.post(`${TRN}/${ej.candidateId}/resolve`, claveTR).send({ decision: 'REJECT' }).expect(409);
+  await trn.post(`${TRN}/${ej.candidateId}/resolve`).send({ decision: 'REJECT' }).expect(422);
+  await trn.post(`${TRN}/${randomUUID()}/resolve`).send({ decision: 'REJECT' }).expect(404);
+  await trn.post(`${TRN}/${ej.candidateId}/resolve`).send({ decision: 'REJECT', reviewedContent: { name: 'x' } }).expect(400);
+  await conSesion(app, ase.token).post(`${TRN}/${ej.candidateId}/resolve`).send({ decision: 'REJECT' }).expect(403);
 });
 
 /**

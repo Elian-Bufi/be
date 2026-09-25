@@ -1,4 +1,4 @@
-import { CONDICION_DE_SESION_API, GRANULARIDAD_API, sesionesDelPlan } from '@be/domain';
+import { CONDICION_DE_SESION_API, GRANULARIDAD_API, sesionesDelPlan, type FuenteExterna } from '@be/domain';
 import type {
   Bloque,
   CondicionDeSesion,
@@ -76,14 +76,17 @@ export interface FilaDeEjercicio {
   readonly versionId: string;
   readonly nombre: string;
   readonly disponible: boolean;
-  readonly procedencia: 'BE_SYNTHETIC_SEED' | 'PROFESSIONAL_MANUAL';
+  readonly procedencia: 'BE_SYNTHETIC_SEED' | 'PROFESSIONAL_MANUAL' | 'CONTROLLED_IMPORT';
   readonly creadoPorId: string | null;
   readonly momentoDeRegistro: Date;
+  /** De dónde vino un ejercicio importado de wger (WP-08; RF-060). Vive en la procedencia de su versión. */
+  readonly fuenteExterna?: FuenteExterna | null;
 }
 
 /**
- * Las zonas musculares y el material didáctico llegan en WP-07 (docs/paquetes/WP-06.md D-A, §9.8). Mientras tanto
- * viajan vacíos: cero zonas es legítimo (REG-06-139), y nunca se inventa una relación para llenar el campo.
+ * Las zonas musculares y el material didáctico no están en la entrega (DL-081; docs/paquetes/WP-06.md §9.8): viajan
+ * vacíos, porque cero zonas es legítimo (REG-06-139) y nunca se inventa una relación para llenar el campo. Tampoco un
+ * ejercicio importado de wger trae zonas: los músculos que declara el proveedor no son zona BE (09v12:397-401).
  */
 export function ejercicioApi(f: FilaDeEjercicio): EjercicioDeCatalogo {
   return {
@@ -91,6 +94,7 @@ export function ejercicioApi(f: FilaDeEjercicio): EjercicioDeCatalogo {
     versionId: f.versionId,
     name: f.nombre,
     provenance: f.procedencia,
+    externalSource: f.fuenteExterna ?? null,
     muscleZones: [],
     didacticResources: [],
     available: f.disponible,

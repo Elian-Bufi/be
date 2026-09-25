@@ -478,7 +478,7 @@ test('TEST-PRJ-009 · el OpenAPI generado tampoco expone puntaje de adherencia e
   const hallazgos: string[] = [];
   for (const [ruta, metodos] of Object.entries(doc.paths)) if (ruta.includes('nutrition')) recorrer(metodos, ruta, hallazgos);
   const operaciones = Object.entries(doc.paths).filter(([r]) => r.includes('nutrition')).reduce((n, [, m]) => n + Object.keys(m as object).length, 0);
-  assert.equal(operaciones, 23, 'las 21 NUT, INT-NUT-01 y la lista propia de ingestas');
+  assert.equal(operaciones, 25, 'las 21 NUT, INT-NUT-01, la lista propia de ingestas y la importación de Open Food Facts (INT-NUT-02/03, WP-08)');
   assert.deepEqual(hallazgos, []);
 });
 

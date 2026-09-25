@@ -159,7 +159,9 @@ describe('RF-037 · catálogo propio de ejercicios (API-TRN-13 y API-INT-TRN-01)
     for (const e of sembrados) {
       expect(e.muscleZones).toEqual([]);
       expect(e.didacticResources).toEqual([]);
-      expect(Object.keys(e).sort()).toEqual(['available', 'didacticResources', 'exerciseId', 'muscleZones', 'name', 'provenance', 'versionId']);
+      // Lo sembrado no viene de ningún proveedor: la fuente externa se declara y es null (RF-060; WP-08).
+      expect(e.externalSource).toBeNull();
+      expect(Object.keys(e).sort()).toEqual(['available', 'didacticResources', 'exerciseId', 'externalSource', 'muscleZones', 'name', 'provenance', 'versionId']);
     }
   });
 

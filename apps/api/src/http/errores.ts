@@ -70,6 +70,24 @@ export const errores = {
   consentimientoYaVigente: () => new ErrorDeApi(409, CodigoDeError.CONSENT_ALREADY_ACTIVE, 'Ya hay una autorización vigente.'),
   consentimientoDeSaludNoDisponible: () =>
     new ErrorDeApi(422, CodigoDeError.HEALTH_DATA_CONSENT_NOT_AVAILABLE, 'La versión indicada no corresponde a esta autorización.'),
+  // ─── WP-08 · importación controlada (09v12 §5-§7) ──────────────────────────────────────────────
+  /**
+   * 09v12:218-229: el proveedor no respondió, y la respuesta dice de forma segura que el catálogo propio y la carga
+   * manual siguen disponibles (UC-I08). Nunca «200 con datos inventados».
+   */
+  proveedorNoDisponible: () =>
+    new ErrorDeApi(503, CodigoDeError.DEPENDENCY_UNAVAILABLE, 'No pudimos consultar el proveedor. Podés seguir usando el catálogo BE o cargar el elemento manualmente.', {
+      fallback: { catalog: true, manualEntry: true },
+    }),
+  /** El proveedor respondió que no conoce ese identificador: no es una caída (WP-08 D-E). */
+  fuenteNoEncontrada: () =>
+    new ErrorDeApi(422, CodigoDeError.IMPORT_SOURCE_NOT_FOUND, 'El proveedor no tiene un elemento con ese identificador.'),
+  /** Ya resuelto o vencido (D-C): no se puede resolver de nuevo. */
+  candidatoNoResoluble: () =>
+    new ErrorDeApi(422, CodigoDeError.IMPORT_CANDIDATE_NOT_RESOLVABLE, 'Este candidato ya no se puede resolver. Consultá el proveedor de nuevo si lo necesitás.'),
+  /** Lo revisado no alcanza para incorporarlo al catálogo: se dice qué falta, por ruta (D-I). */
+  contenidoRevisadoInvalido: (issues: ValidationIssue[]) =>
+    new ErrorDeApi(422, CodigoDeError.REVIEWED_CONTENT_INVALID, 'Faltan datos para incorporar el elemento al catálogo.', { issues }),
   /** 09v7:185 — falla no clasificada (DEUDA_LEGAJO DL-005). */
   interno: () => new ErrorDeApi(500, CodigoDeError.INTERNAL_ERROR, 'Ocurrió un error inesperado.'),
 };

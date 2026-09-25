@@ -101,6 +101,9 @@
 | DL-094 | WP-07 · 2026-09-21 | 11A:604-610 · 11A:194, 348-349 | Los siete TEST-FRM eran títulos de una línea | **CERRADA** 2026-09-22 · escritos en `docs/paquetes/WP-07-ORACULOS.md` |
 | DL-095 | WP-07 · 2026-09-22 | 09v16.1 §22.1-§22.8 · 08 §11-bis | Contratos de FRM con forma no definida en el 09 | ABIERTA |
 | DL-096 | Consolidación · 2026-09-24 | 08:199 · 08:58 · DL-089 · 09v10 TRN-08/09/19 | La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado | ABIERTA |
+| DL-097 | WP-08 · 2026-09-24 | 09v12 §5-§7 (09v12:184-188, 360-364, 369, 390) | Las formas de la importación controlada que el 09 no fija | ABIERTA (hallada al implementar) |
+| DL-098 | WP-08 · 2026-09-24 | 09v12:190 · B10-05 §19 · B10-06 §22 | La búsqueda por texto en los proveedores no tiene contrato | ABIERTA |
+| DL-099 | WP-08 · 2026-09-24 | 04 RF-060 (04:701-708) · 08 licencias | La procedencia externa llega hasta la elección, no hasta el ítem del plan | ABIERTA (hallada en la revisión de calidad) |
 
 ---
 
@@ -1779,6 +1782,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 Resultado: **hoy el compromiso de Q-API-001 está en cero** —ni wger ni Open Food Facts—, que es exactamente lo que esta deuda advertía. RF-028 y RF-038 son P0 «Compromiso académico de integración», y el 09 v0.12 §5-§7 tiene sus cuatro operaciones completas (API-INT-NUT-02/03, API-INT-TRN-02/03). **Pendiente de Dirección:** confirmar si la integración entra en la entrega y bajo qué cobertura del acta.
 
+**Preparado el 2026-09-24:** WP-08 (`docs/paquetes/WP-08.md`) implementa las dos integraciones completas —Open Food Facts y wger, con candidato, revisión, procedencia y fallback— en el PR #72, **sin integrar a `main`** hasta esa confirmación (D-A del paquete). Si Dirección lo confirma, el compromiso de Q-API-001 queda cumplido entero.
+
 ## DL-087 — RF-041 es P0 y su criterio de aceptación depende de RF-066, que es P1
 
 **Prioridad:** media · **Documento:** 04:511 · 04:681-689 · DL-051 · **Estado:** ABIERTA
@@ -1973,4 +1978,52 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 - **B.** Dejarlo en la API hasta que el 09 declare una lectura de historia del titular.
 
 **Provisorio en código.** B: nada nuevo en la APK. **Recomendación: A**, en el paquete que siga a la entrega, porque es la única forma de que el asesorado **vea** lo que la garantía le reconoce; sin pantalla, el derecho existe pero no se puede ejercer desde el teléfono.
+
+## DL-097 — Las formas de la importación controlada que el 09 no fija
+
+**Prioridad:** media · **Documento:** 09v12 §5-§7 (09v12:184-188, 360-364, 369, 390) · **Estado:** ABIERTA (hallada al implementar WP-08)
+
+**Qué dice el legajo.** El 09 v0.12 da el request y el éxito de API-INT-NUT-02/03 y dice «mismo patrón» para API-INT-TRN-02/03 (09v12:369, 390). No fija el formato del identificador externo de cada proveedor, la forma del contenido del candidato ni la del contenido revisado, el éxito de TRN-03, ni qué responde BE cuando el proveedor contesta que no conoce el identificador.
+
+**Opciones.**
+- **A.** Definirlas en `@be/domain` (`contratos-integraciones.ts`), con la forma mínima coherente con el resto del contrato:
+  - identificador: código de barras de 8, 12, 13 o 14 dígitos en Open Food Facts; entero positivo en wger;
+  - candidato con `null` en cada dato que el proveedor no trajo —también la base, cada 100 g o cada 100 ml, cuando el proveedor no la declara sin ambigüedad—, y `expiresAt` además de lo que muestra el 09;
+  - contenido revisado con la misma forma que el candidato, y su completitud validada en el servicio: así un faltante da el `422 REVIEWED_CONTENT_INVALID` del 09 con la ruta de lo que falta, en vez de un `400` de forma;
+  - éxito de NUT-03 = el del 09 más `candidateId`, `correctedFields` y `resolvedAt`; el de TRN-03, con `exercise: { exerciseId, versionId }`;
+  - identificador desconocido: `422 IMPORT_SOURCE_NOT_FOUND`, código nuevo, porque no es una caída y el profesional tiene que poder distinguirlo;
+  - `externalSource` en cada elemento de los dos catálogos (`null` en lo sembrado y lo manual), para la procedencia visible de RF-060.
+- **B.** Esperar una versión del 09 que las fije.
+
+**Provisorio en código.** A, en el PR #72 (WP-08). El OpenAPI generado publica las formas y `contratos-wp08.test.ts` las fija.
+
+**Condición de cierre.** El 09 fija estas formas, o Dirección ratifica las de `@be/domain`.
+
+## DL-098 — La búsqueda por texto en los proveedores no tiene contrato
+
+**Prioridad:** media · **Documento:** 09v12:190 · B10-05 §19 («buscar/importar candidato») · B10-06 §22 («buscar candidato») · **Estado:** ABIERTA
+
+**Qué dice el legajo.** El 10 pide «buscar candidato» en los dos dominios, y el 09 admite «búsqueda first-party mediante parámetros allowlist sin convertir la API BE en passthrough del proveedor» (09v12:190), pero no la especifica: el único `lookup` definido es `externalId`.
+
+**Qué pasa hoy.** WP-08 consulta por identificador: el código de barras del envase en Open Food Facts y el número del ejercicio en wger. Es suficiente para el circuito y para el compromiso académico, pero encontrar un ejercicio de wger exige ir a buscar su número a wger.de. Agregar una búsqueda por texto sin contrato sería una familia contractual nueva, que el 09 prohíbe (09:2717-2719).
+
+**Opciones.**
+- **A.** Especificar la búsqueda en el 09 —parámetros permitidos, cuántos resultados, qué se muestra de cada uno— e implementarla en un paquete posterior.
+- **B.** Dejar la consulta por identificador como la única forma.
+
+**Provisorio en código.** B, con la ayuda en pantalla de dónde encontrar el identificador. **Recomendación: A**, porque es lo que el 10 describe y lo que hace usable la importación de ejercicios.
+
+## DL-099 — La procedencia externa llega hasta la elección, no hasta el ítem del plan
+
+**Prioridad:** media · **Documento:** 04 RF-060 (04:701-708) · 08 (licencias) · **Estado:** ABIERTA (hallada en la revisión de calidad de WP-08)
+
+**Qué dice el legajo.** RF-060: BE tiene que «permitir identificar proveedor, fecha y referencia suficiente de un dato externo **en los contextos donde se utiliza**», para el profesional, el asesorado o el administrador «según autorización». Las licencias de los dos proveedores (ODbL en Open Food Facts; CC BY-SA en wger, con su autor) piden citar la fuente donde se muestra el contenido.
+
+**Qué pasa hoy.** WP-08 muestra la procedencia donde el elemento **se elige**: el buscador del catálogo en los dos editores y el sustituto de un ejercicio en la APK dicen «Importado de Open Food Facts» o «de wger», con la fecha. Una vez en el plan, el ítem no la muestra —ni en el editor, ni en el plan activado, ni en lo que ve el asesorado—, porque las respuestas del plan (`ItemPrescripto`, `Prescripcion`) llevan el nombre y la versión del catálogo, no su fuente. La procedencia no se pierde: está en la versión del catálogo que el plan cita.
+
+**Opciones.**
+- **A.** Sumar `externalSource` al ítem prescripto y a la prescripción, resuelto desde la versión del catálogo que el plan congela, y mostrarlo en el editor, en el plan y en las pantallas del asesorado, con el identificador, la licencia y el autor. Es un cambio aditivo en respuestas estrictas: se despliega con la APK nueva, como el resto de WP-08 (§9 de `docs/paquetes/WP-08.md`).
+- **B.** Dejar la procedencia en el punto de elección y en el catálogo.
+
+**Provisorio en código.** B. **Recomendación: A**, en el mismo paquete que integre WP-08 o en el siguiente: es lo que RF-060 describe y lo que las licencias piden.
 

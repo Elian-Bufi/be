@@ -26,7 +26,17 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
       saltosDeProxy: 1,
       caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
       demoProfesionales: [],
+      proveedores: { openFoodFactsUrl: 'https://world.openfoodfacts.org', wgerUrl: 'https://wger.de', presupuestoMs: 5000 },
     });
+  });
+
+  it('WP-08 · el origen de cada proveedor es configurable, https en producción, sin ruta; un origen local solo fuera de producción', () => {
+    const e = leerEntorno({ ...BASE, OPEN_FOOD_FACTS_BASE_URL: 'http://127.0.0.1:4010/', WGER_BASE_URL: 'https://wger.example.org' });
+    expect(e.proveedores).toEqual({ openFoodFactsUrl: 'http://127.0.0.1:4010', wgerUrl: 'https://wger.example.org', presupuestoMs: 5000 });
+    for (const malo of ['http://wger.de', 'https://wger.de/api/v2', 'ftp://wger.de', 'wger.de']) {
+      expect(() => leerEntorno({ ...BASE, WGER_BASE_URL: malo })).toThrow(/WGER_BASE_URL/);
+    }
+    expect(() => leerEntorno({ ...BASE, APP_ENV: 'production', OPEN_FOOD_FACTS_BASE_URL: 'http://localhost:4010' })).toThrow(/OPEN_FOOD_FACTS_BASE_URL/);
   });
 
   it('WP-03 · plazo de caducidad de solicitudes parametrizado (DL-037): entero de 1 a 365 días', () => {

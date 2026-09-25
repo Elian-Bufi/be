@@ -19,6 +19,7 @@
  */
 import { z } from 'zod';
 import { IdOpaco, Instante, ValidationIssueSchema } from './contratos';
+import { FuenteExternaSchema } from './contratos-procedencia-externa';
 import { PaginaSchema, ResumenDeActorSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
 // ─── Tipos comunes ──────────────────────────────────────────────────────────────────────────────
@@ -266,7 +267,11 @@ export const ComposicionSchema = z.strictObject({
   carbohydrateG: z.number().nonnegative().finite(),
   fatG: z.number().nonnegative().finite(),
 });
-export const ProcedenciaDeCatalogoSchema = z.enum(['BE_SYNTHETIC_SEED', 'PROFESSIONAL_MANUAL']);
+/**
+ * De dónde salió un elemento del catálogo: sembrado por BE, cargado a mano por un profesional, o **importado de un
+ * proveedor externo después de su revisión** (WP-08; UC-I07). Lo comparten nutrición y entrenamiento.
+ */
+export const ProcedenciaDeCatalogoSchema = z.enum(['BE_SYNTHETIC_SEED', 'PROFESSIONAL_MANUAL', 'CONTROLLED_IMPORT']);
 export const ElementoDeCatalogoSchema = z.strictObject({
   catalogItemId: IdOpaco,
   versionId: IdOpaco,
@@ -274,6 +279,8 @@ export const ElementoDeCatalogoSchema = z.strictObject({
   itemType: z.literal('FOOD'),
   composition: ComposicionSchema,
   provenance: ProcedenciaDeCatalogoSchema,
+  /** Proveedor, identificador, fecha y licencia de lo importado; `null` en lo sembrado y lo manual (RF-060). */
+  externalSource: FuenteExternaSchema.nullable(),
   available: z.boolean(),
 });
 export type ElementoDeCatalogo = z.infer<typeof ElementoDeCatalogoSchema>;

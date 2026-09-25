@@ -36,4 +36,8 @@ export * from './formularios';
 export * from './contratos-formularios';
 export * from './copy-formularios';
 export * from './formato-numeros';
+export * from './contratos-procedencia-externa';
+export * from './contratos-integraciones';
+export * from './integraciones';
+export * from './copy-integraciones';
 export * from './figura-antropometrica';

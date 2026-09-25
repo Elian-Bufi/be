@@ -14,6 +14,7 @@
 import {
   COPY,
   COPY_ENTRENAMIENTO,
+  COPY_INTEGRACIONES,
   ETIQUETA_DE_CRITERIO,
   leerNumero,
   type EjercicioDeCatalogo,
@@ -29,6 +30,7 @@ import { api } from '../../../../lib/api';
 import { numeroEnCampo } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { NoDisponible, useEntrenamiento } from './entrenamiento';
+import { ImportacionDeWger, procedenciaDeEjercicio } from './importacion';
 
 type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
 type BloqueE = Bloques[number];
@@ -576,7 +578,7 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
   );
 }
 
-/** «Agregar ejercicio → buscar catálogo BE» o «Crear manualmente» (B10-06:485-498). wger llega en WP-08. */
+/** «Agregar ejercicio → buscar catálogo BE», «Crear manualmente» o «Importar desde wger» (B10-06:485-498; WP-08). */
 function BuscadorDeEjercicios({ id, onElegir }: { id: string; onElegir: (e: EjercicioDeCatalogo) => void }) {
   const { token, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const [abierto, setAbierto] = useState(false);
@@ -584,6 +586,7 @@ function BuscadorDeEjercicios({ id, onElegir }: { id: string; onElegir: (e: Ejer
   const [resultados, setResultados] = useState<EjercicioDeCatalogo[] | null>(null);
   const [falloDeBusqueda, setFalloDeBusqueda] = useState(false);
   const [manual, setManual] = useState(false);
+  const [importar, setImportar] = useState(false);
   const [nombre, setNombre] = useState('');
   const [fallo, setFallo] = useState<string | null>(null);
   const intento = useClaveDeIntento();
@@ -640,6 +643,7 @@ function BuscadorDeEjercicios({ id, onElegir }: { id: string; onElegir: (e: Ejer
                 <span>
                   {ej.name}
                   {ej.provenance === 'PROFESSIONAL_MANUAL' ? <span className="nota"> · cargado por vos</span> : null}
+                  {procedenciaDeEjercicio(ej) ? <span className="nota"> · {procedenciaDeEjercicio(ej)}</span> : null}
                 </span>
                 <button
                   type="button"
@@ -677,6 +681,24 @@ function BuscadorDeEjercicios({ id, onElegir }: { id: string; onElegir: (e: Ejer
       ) : (
         <button type="button" className="boton boton--enlace" onClick={() => setManual(true)}>
           {COPY_ENTRENAMIENTO.crearManualmente}
+        </button>
+      )}
+      {importar ? (
+        <ImportacionDeWger
+          id={`${id}-importar`}
+          onIncorporado={(ej) => {
+            onElegir(ej);
+            setImportar(false);
+            setAbierto(false);
+          }}
+          onCargarManualmente={() => {
+            setImportar(false);
+            setManual(true);
+          }}
+        />
+      ) : (
+        <button type="button" className="boton boton--enlace" onClick={() => setImportar(true)}>
+          {COPY_INTEGRACIONES.importarDesdeWger}
         </button>
       )}
       <button type="button" className="boton boton--enlace" onClick={() => setAbierto(false)}>

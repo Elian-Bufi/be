@@ -17,6 +17,8 @@ import {
   cantidadDeSeries,
   COPY,
   COPY_ENTRENAMIENTO,
+  COPY_INTEGRACIONES,
+  ETIQUETA_DE_PROVEEDOR,
   ETIQUETA_DE_CRITERIO,
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
@@ -682,7 +684,13 @@ function EjercicioEnCurso({
           <Boton texto="Buscar" tipo="secundario" onPress={() => void buscar()} />
           {falloDeBusqueda ? <Aviso tipo="error" titulo="No pudimos buscar en el catálogo. Probá de nuevo." /> : null}
           {(resultados ?? []).map((e) => (
-            <Boton key={e.versionId} texto={`${COPY_ENTRENAMIENTO.confirmarSustitucion}: ${e.name}`} tipo="secundario" onPress={() => void elegirSustituto(e)} />
+            // Un ejercicio importado dice de dónde vino, también acá, donde se lo elige (RF-060; WP-08).
+            <Boton
+              key={e.versionId}
+              texto={`${COPY_ENTRENAMIENTO.confirmarSustitucion}: ${e.name}${e.externalSource ? ` (${COPY_INTEGRACIONES.importadoDe} ${ETIQUETA_DE_PROVEEDOR[e.externalSource.provider]})` : ''}`}
+              tipo="secundario"
+              onPress={() => void elegirSustituto(e)}
+            />
           ))}
           {resultados && resultados.length === 0 ? <Parrafo tenue>No encontramos ejercicios con ese nombre.</Parrafo> : null}
           <Boton texto="Cancelar" tipo="enlace" onPress={() => setBuscando(false)} />
