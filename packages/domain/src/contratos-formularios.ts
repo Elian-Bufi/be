@@ -29,6 +29,22 @@ export const CategoriaDeDatoSchema = z.enum(['SALUD_Y_SEGURIDAD', 'HABITOS_Y_CON
 /** P0: TEXT/NUMBER/BOOLEAN. CHOICE/multi-select quedan fuera de este paquete (WP-07.md §9.3). */
 export const TipoDeCampoSchema = z.enum(['TEXT', 'NUMBER', 'BOOLEAN']);
 
+/**
+ * Lo elegido en un campo Sí/No mientras se responde, antes de armar la respuesta. El tercer estado es **no haber
+ * elegido**, y es el que importa: un campo Sí/No sin responder se omite del arreglo, no viaja como `false`
+ * (09:1586-1587) — «No» es una declaración de la persona y «sin responder» no lo es.
+ *
+ * Por eso una elección no se escribe: ningún texto libre se interpreta acá como «sí» o «no». Interpretarlo obligaría
+ * a adivinar («Sí, a veces», «sip», «igual dejé hace años») y lo no adivinado terminaría guardado como el contrario
+ * de lo declarado, sin aviso — un dato invertido y atribuido a la persona (09 §22.7).
+ */
+export type EleccionSiONo = 'SI' | 'NO';
+
+/** `true`/`false` si eligió; `null` si no eligió nada, y entonces el campo se omite. */
+export function valorDeEleccionSiONo(elegido: string): boolean | null {
+  return elegido === 'SI' ? true : elegido === 'NO' ? false : null;
+}
+
 // ─── API-FRM-01/02 · plantillas ─────────────────────────────────────────────────────────────────
 
 export const CampoDePlantillaSchema = z.strictObject({

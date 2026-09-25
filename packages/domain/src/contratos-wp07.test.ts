@@ -10,6 +10,7 @@ import {
   RectificarRespuestaRequestSchema,
   RespuestaDeCampoEntradaSchema,
   RespuestaDeCampoSchema,
+  valorDeEleccionSiONo,
 } from './contratos-formularios';
 import {
   CATEGORIAS_DE_DATO,
@@ -77,6 +78,17 @@ test('09:1586-1587 · un campo opcional que no se responde se omite del arreglo:
   assert.equal(RespuestaDeCampoEntradaSchema.safeParse({ fieldCode: 'dolor', value: 'Sin dolor' }).success, true);
   assert.equal(RespuestaDeCampoEntradaSchema.safeParse({ fieldCode: 'dolor', value: null }).success, false, 'nunca cero/default: se omite, no se manda null');
   assert.equal(EnviarRespuestaRequestSchema.safeParse({ answers: [] }).success, false, 'un envío sin ninguna respuesta no dice nada');
+});
+
+test('09:1586-1587 · un campo Sí/No sin elegir se omite: «No» es una declaración de la persona y no responder no lo es', () => {
+  assert.equal(valorDeEleccionSiONo('SI'), true);
+  assert.equal(valorDeEleccionSiONo('NO'), false);
+  assert.equal(valorDeEleccionSiONo(''), null, 'sin elegir el campo se omite; nunca viaja como false');
+  // Nada de lo que alguien escribiría a mano vale como elección. Interpretarlo era el error: «Sí, a veces» terminaba
+  // guardado como «No», invertido y atribuido a la persona (09 §22.7).
+  for (const escrito of ['Sí', 'Sí.', 'Sip', 'Si, a veces', 'sí', 'si', 's', 'yes', 'true', '1', 'No sé', 'Prefiero no decirlo']) {
+    assert.equal(valorDeEleccionSiONo(escrito), null, `«${escrito}» no es una elección: se elige, no se escribe`);
+  }
 });
 
 test('TEST-FRM-003 · cada respuesta persistida es SELF_REPORTED por invariante del schema, nunca otro valor', () => {
