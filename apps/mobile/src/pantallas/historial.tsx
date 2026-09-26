@@ -82,10 +82,11 @@ export function PantallaDeHistorial({ token, identidadId, salir, ir }: { token: 
               ? sesiones.datos.map((e) => (
                   <Tarjeta key={e.executionId}>
                     <Parrafo>{e.plannedSession.label}</Parrafo>
-                    <Parrafo tenue>{dia(e.date)}</Parrafo>
+                    {/* Fecha civil de la sesión: se ancla a mediodía UTC para que no retroceda un día en zonas al oeste de UTC (igual que el detalle y «Hoy»). */}
+                    <Parrafo tenue>{dia(`${e.date}T12:00:00Z`)}</Parrafo>
                     <Insignia texto={etiquetaDeCondicionRegistrada(e.original)} />
                     {e.effectiveView.kind === 'CORRECTED' ? <Insignia texto={COPY_ENTRENAMIENTO.corregida} /> : null}
-                    <Boton texto={COPY_ENTRENAMIENTO.verLaSesion} tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: e.executionId })} />
+                    <Boton texto={COPY_ENTRENAMIENTO.verLaSesion} tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: e.executionId, origen: 'historial' })} />
                   </Tarjeta>
                 ))
               : null}

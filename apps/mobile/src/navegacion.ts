@@ -26,7 +26,7 @@ export type Ruta =
   | { readonly nombre: 'mis-solicitudes' }
   | { readonly nombre: 'mi-solicitud'; readonly id: string }
   | { readonly nombre: 'sesion-de-entrenamiento'; readonly draftId: string; readonly sesion: SesionDeOcurrencia; readonly fecha: string }
-  | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string };
+  | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string; readonly origen?: 'hoy' | 'historial' };
 
 /** Por qué termina la sesión en el APK; cada motivo tiene su aviso en App.tsx. */
 export type Salida = 'sesion-cerrada' | 'sesiones-cerradas' | 'sesion-no-valida' | 'reautenticar' | 'cierre-registrado';
@@ -55,8 +55,10 @@ export function anterior(ruta: Ruta): Ruta | null {
     case 'mi-solicitud':
       return { nombre: 'mis-solicitudes' };
     case 'sesion-de-entrenamiento':
-    case 'ejecucion-de-entrenamiento':
       return { nombre: 'entrenamiento' };
+    case 'ejecucion-de-entrenamiento':
+      // El detalle se abre desde «Entrenamiento de hoy» y desde «Tu historial»: volver regresa al origen (DL-096).
+      return ruta.origen === 'historial' ? { nombre: 'historial-de-entrenamiento' } : { nombre: 'entrenamiento' };
     case 'plan-actual':
     case 'registros-nutricionales':
       return { nombre: 'hoy' };
@@ -88,6 +90,8 @@ export function textoDeVolverA(destino: Ruta): string {
       return 'Volver a Registros';
     case 'mis-solicitudes':
       return 'Volver a Información';
+    case 'historial-de-entrenamiento':
+      return 'Volver a Tu historial';
     default:
       return 'Volver';
   }

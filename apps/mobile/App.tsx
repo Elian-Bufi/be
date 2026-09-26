@@ -206,7 +206,10 @@ const estilos = StyleSheet.create({
   isotipoChico: { width: 30, height: 30, marginRight: 8 },
   marca: { fontSize: 22, fontWeight: '800', color: COLOR.texto, letterSpacing: 1 },
   ambiente: { fontSize: 12, color: COLOR.tenue },
-  contenido: { padding: 20, paddingBottom: 48 },
+  // Android es edge-to-edge desde Expo SDK 54: el ScrollView llega por detrás de la barra de navegación del sistema.
+  // Sin `safe-area-context` (no es dependencia del APK), este margen inferior deja el último control por encima de esa
+  // barra al desplazar hasta el fondo (p. ej. «Corregir registro»). Alto para cubrir barra de 3 botones (~48) más aire.
+  contenido: { padding: 20, paddingBottom: 96 },
   isotipoGrande: { width: 180, height: 180, alignSelf: 'center', marginTop: 16 },
   lema: { fontSize: 14, fontWeight: '800', letterSpacing: 3, color: COLOR.acento, textAlign: 'center', marginTop: 12 },
   tituloBienvenida: { fontSize: 26, fontWeight: '700', color: COLOR.texto, marginVertical: 12, textAlign: 'center' },
