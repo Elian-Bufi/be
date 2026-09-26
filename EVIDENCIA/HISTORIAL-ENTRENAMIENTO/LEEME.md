@@ -27,4 +27,16 @@ Estado de la publicación del 2026-09-26. El incremento (API-TRN-19-LISTA + pant
 
 La **pantalla «Tu historial» en un dispositivo** no está observada: la comprobación visual la hace Dirección con esta APK 0.11.0. Lo verificado hasta acá es API/contrato/integración (CI con PostgreSQL 16) y la identidad del artefacto. **DL-096 sigue EN CURSO** hasta esa evidencia en el teléfono.
 
+## Publicación 0.11.1 — correcciones de la validación en teléfono (PARCIAL)
+
+Estado del 2026-09-26. Las correcciones de los hallazgos de Dirección sobre la 0.11.0 (`hallazgos-validacion-telefono.md`) se integraron en el PR #89 (merge `23786dd`) y se versionaron a 0.11.1 en el PR #90 (merge `44bea3a`, versionCode 14). `44bea3a` desciende de `23786dd` (verificado con `git merge-base --is-ancestor`).
+
+| Componente | Versión · commit | Estado |
+|---|---|---|
+| API | 0.11.1 · `44bea3a` | `readiness-0.11.1.json`: readiness OK, base y migraciones OK, commit `44bea3a` |
+| Website | 0.11.1 · `44bea3a` | HTTP 200; redesplegado por el mismo `checksPass` |
+| APK | 0.11.1 · versionCode 14 | **NO construida ni publicada.** EAS rechazó el build: la cuenta `elianbufi` agotó los builds Android del plan gratuito del mes; la cuota se renueva el 2026-10-01 |
+
+La **APK vigente sigue siendo la 0.11.0**. Funciona contra la API 0.11.1 (el contrato no cambió), pero **no trae las correcciones**: volver al origen del detalle, `fechaCivil` y el inset inferior (`react-native-safe-area-context` es dependencia nativa y solo llega con una APK nueva). La comprobación en teléfono de esas correcciones queda bloqueada hasta que exista la APK 0.11.1.
+
 Solo datos sintéticos. Sin credenciales.

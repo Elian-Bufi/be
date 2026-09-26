@@ -1,0 +1,15 @@
+{
+  "data": {
+    "estado": "OK",
+    "ambiente": "test",
+    "version": {
+      "aplicacion": "0.11.1",
+      "commit": "44bea3af3266a5744d050ae0124993f3259b7f53",
+      "construidoEn": "2026-09-26T20:51:31.652Z"
+    },
+    "dependencias": {
+      "baseDeDatos": "OK",
+      "migraciones": "OK"
+    }
+  }
+}
