@@ -22,6 +22,13 @@ apps/mobile/ios/
 !.env.example
 # Hojas de credenciales ya resueltas para operar (capturas, demo): se derivan de .env.cuentas-demo y viven fuera del repo.
 credenciales*.txt
+# Credenciales de firma de Android bajadas de EAS (`eas credentials` → credentials.json + credentials/android/keystore.jks)
+# y cualquier keystore o propiedades de firma de un build local: nunca en el repositorio.
+credentials.json
+credentials/
+*.jks
+*.keystore
+keystore.properties
 
 .DS_Store
 Thumbs.db
