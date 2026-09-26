@@ -35,23 +35,37 @@ test('el enlace visible de volver nombra «Tu historial» cuando el destino es e
   assert.equal(nav.textoDeVolverA({ nombre: 'historial-de-entrenamiento' }), 'Volver a Tu historial');
 });
 
-// ─── 2. Fecha: la fecha civil no retrocede un día ───────────────────────────────────────────────
+// ─── 2. Fecha civil: `fechaCivil` no desplaza el día en ninguna zona ─────────────────────────────
 
-/** Corre `dia(...)` con TZ de Buenos Aires (UTC−3), donde el bug se manifiesta. Devuelve `anclada|cruda`. */
-function diaEnBuenosAires() {
-  const codigo = "const {dia}=await import('./apps/mobile/src/formato.ts');process.stdout.write(dia('2026-09-25T12:00:00Z')+'|'+dia('2026-09-25'));";
-  return execFileSync(process.execPath, ['--input-type=module', '-e', codigo], {
-    cwd: RAIZ,
-    env: { ...process.env, TZ: 'America/Argentina/Buenos_Aires' },
-    encoding: 'utf8',
-  });
+/** Zonas donde el anclaje ingenuo fallaba: al oeste retrocedía (UTC−3), al este muy positivo avanzaba (UTC+13/+14). */
+const ZONAS = ['America/Argentina/Buenos_Aires', 'UTC', 'Pacific/Auckland', 'Pacific/Kiritimati', 'Asia/Kathmandu'];
+
+/** Corre la función de producción `fechaCivil` sobre varias fechas, bajo una zona dada. Devuelve un arreglo alineado. */
+function fechaCivilEnZona(tz, fechas) {
+  const codigo = `const {fechaCivil}=await import('./apps/mobile/src/formato.ts');process.stdout.write(${JSON.stringify(fechas)}.map(fechaCivil).join('\\n'));`;
+  return execFileSync(process.execPath, ['--input-type=module', '-e', codigo], { cwd: RAIZ, env: { ...process.env, TZ: tz }, encoding: 'utf8' }).split('\n');
 }
 
-test('la fecha anclada a mediodía UTC muestra el día civil correcto (25), no el anterior', () => {
-  const [anclada, cruda] = diaEnBuenosAires().split('|');
-  // Lo que ahora usan la lista y el detalle: el día civil real de la sesión.
-  assert.ok(anclada.startsWith('25'), `esperaba día 25, vino «${anclada}»`);
-  // El patrón viejo de la lista retrocedía un día: se conserva como demostración del porqué del anclaje.
-  assert.ok(cruda.startsWith('24'), `el patrón sin anclar debía dar 24 en Buenos Aires, vino «${cruda}»`);
-  assert.notEqual(anclada, cruda);
+// La fecha del defecto original más límites de mes, año y una bisiesta. `esperaDia` es el número de día civil que debe mostrarse.
+const CASOS = [
+  { fecha: '2026-09-25', esperaDia: '25', anio: '2026' }, // el caso reportado
+  { fecha: '2026-08-31', esperaDia: '31', anio: '2026' }, // fin de mes
+  { fecha: '2026-09-01', esperaDia: '1', anio: '2026' }, // inicio de mes
+  { fecha: '2026-12-31', esperaDia: '31', anio: '2026' }, // fin de año
+  { fecha: '2027-01-01', esperaDia: '1', anio: '2027' }, // inicio de año
+  { fecha: '2024-02-29', esperaDia: '29', anio: '2024' }, // bisiesto
+];
+
+test('`fechaCivil` conserva el día civil en toda zona (Buenos Aires, UTC, extremos positivos), en límites de mes/año y bisiesto', () => {
+  const porZona = Object.fromEntries(ZONAS.map((tz) => [tz, fechaCivilEnZona(tz, CASOS.map((c) => c.fecha))]));
+  const referencia = porZona['UTC'];
+  for (const tz of ZONAS) {
+    // Independiente de zona: el mismo texto en todas.
+    assert.deepEqual(porZona[tz], referencia, `«${tz}» difiere de UTC: ${JSON.stringify(porZona[tz])}`);
+    CASOS.forEach((c, i) => {
+      const salida = porZona[tz][i];
+      assert.ok(salida.startsWith(c.esperaDia), `${c.fecha} en ${tz}: esperaba día ${c.esperaDia}, vino «${salida}»`);
+      assert.ok(salida.includes(c.anio), `${c.fecha} en ${tz}: esperaba año ${c.anio}, vino «${salida}»`);
+    });
+  }
 });

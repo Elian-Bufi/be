@@ -41,7 +41,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
-import { dia, fecha } from '../formato';
+import { dia, fecha, fechaCivil } from '../formato';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useAccesoRetirado, useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
@@ -201,7 +201,7 @@ function TarjetaDeOcurrencia({
       <Parrafo tenue>
         {o.plannedSession.blockLabel}
         {o.plannedSession.microcycleLabel ? ` · ${o.plannedSession.microcycleLabel}` : ''}
-        {o.date !== hoy ? ` · ${dia(`${o.date}T12:00:00Z`)}` : ''}
+        {o.date !== hoy ? ` · ${fechaCivil(o.date)}` : ''}
       </Parrafo>
       <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" />
       {o.plannedSession.prescriptions.map((p) => (
@@ -468,7 +468,7 @@ export function PantallaDeSesion({
       <View>
         <Titulo>{COPY_ENTRENAMIENTO.revisarSesion}</Titulo>
         <Parrafo>
-          {sesion.label} · {dia(`${fechaDeLaSesion}T12:00:00Z`)}
+          {sesion.label} · {fechaCivil(fechaDeLaSesion)}
         </Parrafo>
         <ResumenDeRegistro registro={b} />
         {!deHoy && !b.occurredAt ? <Campo etiqueta={`${COPY_ENTRENAMIENTO.horaDeLaSesion} (HH:MM)`} value={hora} onChangeText={setHora} keyboardType="numbers-and-punctuation" /> : null}
@@ -485,7 +485,7 @@ export function PantallaDeSesion({
       <Titulo>{sesion.label}</Titulo>
       <Parrafo tenue>
         {sesion.blockLabel}
-        {deHoy ? '' : ` · ${dia(`${fechaDeLaSesion}T12:00:00Z`)}`}
+        {deHoy ? '' : ` · ${fechaCivil(fechaDeLaSesion)}`}
       </Parrafo>
       {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
       <Seccion titulo={COPY_ENTRENAMIENTO.granularidad}>
@@ -780,7 +780,7 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
   return (
     <View>
       <Titulo>{x.plannedSession.label}</Titulo>
-      <Parrafo tenue>{dia(`${x.date}T12:00:00Z`)}</Parrafo>
+      <Parrafo tenue>{fechaCivil(x.date)}</Parrafo>
       {aviso ? <Aviso tipo="exito" titulo={aviso} /> : null}
       {vigente ? (
         <Seccion titulo={COPY_ENTRENAMIENTO.correccionVigente}>

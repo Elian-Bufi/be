@@ -24,7 +24,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
-import { dia } from '../formato';
+import { dia, fechaCivil } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 import { resumenDePrescripcion } from './entrenamiento';
@@ -82,8 +82,8 @@ export function PantallaDeHistorial({ token, identidadId, salir, ir }: { token: 
               ? sesiones.datos.map((e) => (
                   <Tarjeta key={e.executionId}>
                     <Parrafo>{e.plannedSession.label}</Parrafo>
-                    {/* Fecha civil de la sesión: se ancla a mediodía UTC para que no retroceda un día en zonas al oeste de UTC (igual que el detalle y «Hoy»). */}
-                    <Parrafo tenue>{dia(`${e.date}T12:00:00Z`)}</Parrafo>
+                    {/* La fecha civil de la sesión, sin desplazarla por la zona del dispositivo (misma función que el detalle). */}
+                    <Parrafo tenue>{fechaCivil(e.date)}</Parrafo>
                     <Insignia texto={etiquetaDeCondicionRegistrada(e.original)} />
                     {e.effectiveView.kind === 'CORRECTED' ? <Insignia texto={COPY_ENTRENAMIENTO.corregida} /> : null}
                     <Boton texto={COPY_ENTRENAMIENTO.verLaSesion} tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: e.executionId, origen: 'historial' })} />

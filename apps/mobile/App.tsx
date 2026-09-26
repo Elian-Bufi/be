@@ -17,6 +17,7 @@ import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiConfigurada, extra } from './src/api';
 import { anterior, requiereSesion, textoDeVolverA, type Ruta, type Salida } from './src/navegacion';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
@@ -51,6 +52,16 @@ interface Sesion {
 }
 
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <Contenido />
+    </SafeAreaProvider>
+  );
+}
+
+function Contenido() {
+  // Inset inferior real del sistema (barra de navegación de Android edge-to-edge / home indicator de iOS).
+  const insets = useSafeAreaInsets();
   const [ruta, setRuta] = useState<Ruta>({ nombre: 'bienvenida' });
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const desplazamiento = useRef<ScrollView>(null);
@@ -112,7 +123,7 @@ export default function App() {
         </View>
         <Text style={estilos.ambiente}>Ambiente de prueba · solo datos sintéticos</Text>
       </View>
-      <ScrollView ref={desplazamiento} contentContainerStyle={estilos.contenido} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={desplazamiento} contentContainerStyle={[estilos.contenido, { paddingBottom: 32 + insets.bottom }]} keyboardShouldPersistTaps="handled">
         {!apiConfigurada ? <Aviso tipo="error" titulo="Este build no tiene una API configurada." /> : null}
 
         {ruta.nombre === 'bienvenida' ? (
@@ -206,10 +217,9 @@ const estilos = StyleSheet.create({
   isotipoChico: { width: 30, height: 30, marginRight: 8 },
   marca: { fontSize: 22, fontWeight: '800', color: COLOR.texto, letterSpacing: 1 },
   ambiente: { fontSize: 12, color: COLOR.tenue },
-  // Android es edge-to-edge desde Expo SDK 54: el ScrollView llega por detrás de la barra de navegación del sistema.
-  // Sin `safe-area-context` (no es dependencia del APK), este margen inferior deja el último control por encima de esa
-  // barra al desplazar hasta el fondo (p. ej. «Corregir registro»). Alto para cubrir barra de 3 botones (~48) más aire.
-  contenido: { padding: 20, paddingBottom: 96 },
+  // El margen inferior se completa con el inset real del sistema (safe-area-context) en el contentContainerStyle:
+  // Android es edge-to-edge desde Expo SDK 54 y el ScrollView llega por detrás de la barra de navegación.
+  contenido: { padding: 20 },
   isotipoGrande: { width: 180, height: 180, alignSelf: 'center', marginTop: 16 },
   lema: { fontSize: 14, fontWeight: '800', letterSpacing: 3, color: COLOR.acento, textAlign: 'center', marginTop: 12 },
   tituloBienvenida: { fontSize: 26, fontWeight: '700', color: COLOR.texto, marginVertical: 12, textAlign: 'center' },
