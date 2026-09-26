@@ -649,6 +649,9 @@ it('TEST-CT (WP-06, tramos 3 y 4): se ejercitan éxitos y errores de la ejecuci�
   await ase.get('/api/v1/me/training/today?dia=1').expect(400);
   await ase.get(`/api/v1/me/training/occurrences?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(200);
   await ase.get('/api/v1/me/training/occurrences').expect(400);
+  // API-TRN-19-LISTA (DL-096): «Tu historial» — sesiones registradas propias por período, solo con A3.
+  await ase.get(`/api/v1/me/training/executions?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(200);
+  await ase.get('/api/v1/me/training/executions').expect(400);
   // TRN-15 y 16
   const [a, b] = hoy.occurrences;
   const manana = new Date(new Date(`${hoy.date}T00:00:00.000Z`).getTime() + 86_400_000).toISOString().slice(0, 10);

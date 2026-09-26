@@ -53,7 +53,7 @@ type Granularidad = 'SET' | 'EXERCISE_OR_SESSION';
 const hoyEn = (zona: string): string => new Intl.DateTimeFormat('en-CA', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 
 /** «3 × 8 · RIR 2 · Carga sugerida 60 kg»: lo planificado, con la carga separada del criterio (B10-06:463-477). */
-function resumenDePrescripcion(p: Prescripcion): string {
+export function resumenDePrescripcion(p: Prescripcion): string {
   const reps = (s: Prescripcion['sets'][number]) =>
     !s.repetitions ? '—' : 'value' in s.repetitions ? numero(s.repetitions.value) : `${numero(s.repetitions.min)}-${numero(s.repetitions.max)}`;
   const partes = [p.sets.length > 0 ? `${numero(p.sets.length)} × ${reps(p.sets[0]!)}` : ''];

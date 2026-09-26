@@ -131,6 +131,7 @@ import {
   ListaDePlanesDeEntrenamientoResponseSchema,
   ObjetivoDeEntrenamientoEfectivoResponseSchema,
   ObjetivoDeEntrenamientoResponseSchema,
+  HistorialDeEntrenamientoResponseSchema,
   OcurrenciasDelPeriodoResponseSchema,
   PlanDeEntrenamientoResponseSchema,
   RegistrarRevisionDeEntrenamientoRequestSchema,
@@ -754,6 +755,10 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-TRN-19. */
     consultarEjecucionDeEntrenamiento(token: string, executionId: string) {
       return llamar('GET', `/training/executions/${encodeURIComponent(executionId)}`, { token, esquema: EjecucionDeEntrenamientoResponseSchema });
+    },
+    /** API-TRN-19-LISTA (DL-096): «Tu historial» — sesiones registradas propias por período. */
+    misEjecucionesDeEntrenamiento(token: string, periodo: { periodStart: string; periodEnd: string }) {
+      return llamar('GET', `/me/training/executions${query(periodo)}`, { token, esquema: HistorialDeEntrenamientoResponseSchema });
     },
     /** API-TRN-20: el original queda; la corrección conserva autor y motivo. */
     corregirEjecucion(token: string, executionId: string, cuerpo: z.input<typeof CorregirEjecucionRequestSchema>, claveDeIdempotencia: string) {

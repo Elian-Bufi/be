@@ -79,6 +79,7 @@ export function PantallaDeCuenta({ token, salir, ir }: { token: string; salir: (
       <Titulo>Cuenta</Titulo>
       <Boton texto="Nutrición: Hoy" onPress={() => ir({ nombre: 'hoy' })} />
       <Boton texto={`Entrenamiento: ${COPY_ENTRENAMIENTO.entrenamientoDeHoy}`} tipo="secundario" onPress={() => ir({ nombre: 'entrenamiento' })} />
+      <Boton texto={`Entrenamiento: ${COPY_ENTRENAMIENTO.tuHistorial}`} tipo="secundario" onPress={() => ir({ nombre: 'historial-de-entrenamiento' })} />
       <Boton texto={`Antropometría: ${COPY_ANTROPOMETRIA.miEvolucion}`} tipo="secundario" onPress={() => ir({ nombre: 'mi-evolucion' })} />
       <Boton texto={`Información: ${COPY_FORMULARIOS.pestana}`} tipo="secundario" onPress={() => ir({ nombre: 'mis-solicitudes' })} />
       <Boton texto="Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />

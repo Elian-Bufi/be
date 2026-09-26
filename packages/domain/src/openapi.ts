@@ -131,6 +131,7 @@ import {
   ListaDePlanesDeEntrenamientoResponseSchema,
   ObjetivoDeEntrenamientoEfectivoResponseSchema,
   ObjetivoDeEntrenamientoResponseSchema,
+  HistorialDeEntrenamientoResponseSchema,
   OcurrenciasDelPeriodoResponseSchema,
   PlanDeEntrenamientoResponseSchema,
   RegistrarRevisionDeEntrenamientoRequestSchema,
@@ -1395,6 +1396,22 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: OcurrenciasDelPeriodoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'] },
     fuente: 'DEUDA_LEGAJO DL-078 (diferencia con el 09, decidida por Dirección) · 09v10:188-189, 915',
+  },
+  {
+    id: 'API-TRN-19-LISTA',
+    metodo: 'get',
+    ruta: '/me/training/executions',
+    resumen:
+      '«Tu historial»: las sesiones registradas propias por período. Exige A3 vigente; no depende de un plan vigente ni del acceso del profesional (DL-096). Hasta 31 días, nunca después de hoy.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'periodStart', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' }, obligatorio: true },
+      { nombre: 'periodEnd', descripcion: 'Fecha local YYYY-MM-DD, no posterior a hoy. Hasta 31 días desde periodStart: es el tope de la lectura, que por eso no pagina.', schema: { type: 'string', format: 'date' }, obligatorio: true },
+    ],
+    exitos: [{ status: 200, schema: HistorialDeEntrenamientoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DEUDA_LEGAJO DL-096 (opción A, decidida por Dirección) · 08:199, 08:58, 08:406 · DL-089',
   },
   {
     id: 'API-TRN-15',
