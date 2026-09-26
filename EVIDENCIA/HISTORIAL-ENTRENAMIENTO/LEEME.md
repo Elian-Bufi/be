@@ -27,7 +27,7 @@ Estado de la publicación del 2026-09-26. El incremento (API-TRN-19-LISTA + pant
 
 La **pantalla «Tu historial» en un dispositivo** no está observada: la comprobación visual la hace Dirección con esta APK 0.11.0. Lo verificado hasta acá es API/contrato/integración (CI con PostgreSQL 16) y la identidad del artefacto. **DL-096 sigue EN CURSO** hasta esa evidencia en el teléfono.
 
-## Publicación 0.11.1 — correcciones de la validación en teléfono (PARCIAL)
+## Publicación 0.11.1 — correcciones de la validación en teléfono
 
 Estado del 2026-09-26. Las correcciones de los hallazgos de Dirección sobre la 0.11.0 (`hallazgos-validacion-telefono.md`) se integraron en el PR #89 (merge `23786dd`) y se versionaron a 0.11.1 en el PR #90 (merge `44bea3a`, versionCode 14). `44bea3a` desciende de `23786dd` (verificado con `git merge-base --is-ancestor`).
 
@@ -35,8 +35,13 @@ Estado del 2026-09-26. Las correcciones de los hallazgos de Dirección sobre la 
 |---|---|---|
 | API | 0.11.1 · `44bea3a` | `readiness-0.11.1.json`: readiness OK, base y migraciones OK, commit `44bea3a` |
 | Website | 0.11.1 · `44bea3a` | HTTP 200; redesplegado por el mismo `checksPass` |
-| APK | 0.11.1 · versionCode 14 | **NO construida ni publicada.** EAS rechazó el build: la cuenta `elianbufi` agotó los builds Android del plan gratuito del mes; la cuota se renueva el 2026-10-01 |
+| APK | 0.11.1 · versionCode 14 · `44bea3a` | release permanente `be-apk-0.11.1`, **construida localmente con Gradle** (EAS rechazó el build por la cuota mensual del plan gratuito), con la firma existente. Procedencia y verificaciones: `build-local-0.11.1.md` |
 
-La **APK vigente sigue siendo la 0.11.0**. Funciona contra la API 0.11.1 (el contrato no cambió), pero **no trae las correcciones**: volver al origen del detalle, `fechaCivil` y el inset inferior (`react-native-safe-area-context` es dependencia nativa y solo llega con una APK nueva). La comprobación en teléfono de esas correcciones queda bloqueada hasta que exista la APK 0.11.1.
+- **Descarga directa:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.11.1/be-0.11.1-44bea3a.apk`
+- **SHA-256:** `f09cfb1b7113ea2cd56965a9aa4014beae00e4dbfb7302f31012bd5aa7b3d3cb` (descargado del release y re-hasheado: idéntico al construido)
+- **Firma:** certificado `61569691…893e06`, igual al de la 0.11.0: se instala encima como actualización.
+- Sin ID de build de EAS: no lo tiene.
+
+**Pendiente en dispositivo:** todo lo que enumera `hallazgos-validacion-telefono.md`. **DL-096 sigue EN CURSO.**
 
 Solo datos sintéticos. Sin credenciales.

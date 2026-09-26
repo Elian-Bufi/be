@@ -26,7 +26,7 @@ local, con sesión de EAS ─► npx eas-cli build --platform android --profile 
 |---|---|
 | API | `https://be-api-hndp.onrender.com` (`/health`, `/health/live`, `/health/ready`) |
 | Website | `https://be-web-1ngj.onrender.com` |
-| APK | **vigente:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.11.0/be-0.11.0-eb31269.apk` (0.11.0, «Tu historial de entrenamiento»; release permanente, SHA-256 `bf2ecffc9e797bcea7aedd1c9790ae08a625fc060b30c37799944d8f959c2686`). Cambio aditivo: la 0.10.0 sigue funcionando contra la API 0.11.0 (no llama al endpoint nuevo), pero la pantalla «Tu historial» solo está en la 0.11.0. La landing enlaza `releases/latest`, que es siempre la vigente · anteriores, todas en releases permanentes `be-apk-x.y.z`: `be-0.10.0-d7e7c46.apk` (WP-08 Integraciones), `be-0.9.1-0698868.apk` (formularios Sí/No), `be-0.9.0-fd08380.apk` (identidad visual), `be-0.7.0-e0e0cc9.apk` (WP-07), `be-0.6.0-c50fdd9.apk` (WP-06), `be-0.5.1-0193a3d.apk` y `be-0.5.0-921063a.apk` (WP-05), `be-0.4.0-7b21cc7.apk` (WP-04), `be-0.3.0-08cdd08.apk` (WP-03), `be-0.2.0-8256951.apk` (WP-02) y `be-0.1.0-fd3ed53.apk` (WP-01). Las 0.8.0 (consolidación) no tuvo APK propia |
+| APK | **vigente:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.11.1/be-0.11.1-44bea3a.apk` (0.11.1, correcciones de «Tu historial»: volver al origen, fecha civil y área inferior; release permanente, SHA-256 `f09cfb1b7113ea2cd56965a9aa4014beae00e4dbfb7302f31012bd5aa7b3d3cb`). **Construida localmente con Gradle, no por EAS** (cuota de EAS agotada; desvío aceptado por Dirección), con la misma firma: procedencia en `EVIDENCIA/HISTORIAL-ENTRENAMIENTO/build-local-0.11.1.md`. La landing enlaza `releases/latest`, que es siempre la vigente · anteriores, todas en releases permanentes `be-apk-x.y.z`: `be-0.11.0-eb31269.apk` («Tu historial de entrenamiento»), `be-0.10.0-d7e7c46.apk` (WP-08 Integraciones), `be-0.9.1-0698868.apk` (formularios Sí/No), `be-0.9.0-fd08380.apk` (identidad visual), `be-0.7.0-e0e0cc9.apk` (WP-07), `be-0.6.0-c50fdd9.apk` (WP-06), `be-0.5.1-0193a3d.apk` y `be-0.5.0-921063a.apk` (WP-05), `be-0.4.0-7b21cc7.apk` (WP-04), `be-0.3.0-08cdd08.apk` (WP-03), `be-0.2.0-8256951.apk` (WP-02) y `be-0.1.0-fd3ed53.apk` (WP-01). Las 0.8.0 (consolidación) no tuvo APK propia |
 
 Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían a terceros, así que Render agrega sufijos. Qué depende de cada URL:
 
@@ -78,6 +78,8 @@ Una identidad puede declararse más de una vez, una por alcance. WP-05 lo usa pa
 ```bash
 cd apps/mobile && npx eas-cli@24.6.0 build --platform android --profile test --non-interactive
 ```
+
+Si EAS no puede construir (por ejemplo, cuota mensual agotada), la alternativa usada para la 0.11.1 es un build local con Gradle y la keystore existente bajada de EAS: herramientas, pasos y verificaciones en `EVIDENCIA/HISTORIAL-ENTRENAMIENTO/build-local-0.11.1.md`. Nunca se genera una clave nueva: otra firma no se instala como actualización.
 
 El artefacto de EAS expira a los 14 días. Por eso el APK de cada paquete se publica como release permanente de GitHub (`be-apk-x.y.z`), con su SHA-256 en la evidencia.
 
