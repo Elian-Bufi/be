@@ -1967,7 +1967,7 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 
 ## DL-096 — La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado
 
-**Prioridad:** media · **Documento:** 08:199 · 08:58 · DL-089 · 09v10 (TRN-08, TRN-09, TRN-19) · **Estado:** EN CURSO — opción A autorizada por Dirección el 2026-09-25; implementada, verificación visual en el teléfono pendiente
+**Prioridad:** media · **Documento:** 08:199 · 08:58 · DL-089 · 09v10 (TRN-08, TRN-09, TRN-19) · **Estado:** EN CURSO — opción A autorizada por Dirección el 2026-09-25; implementada (#86) y publicada en la APK 0.11.0 (release be-apk-0.11.0); solo falta la comprobación visual en el teléfono
 
 **Qué dice el legajo.** El titular tiene acceso pleno a «Plan entrenamiento + ejecución» (08:199), y el fin del vínculo no destruye su historia (08:58). DL-089 lo llevó a la API: revocado el B2, el titular sigue leyendo sus ejecuciones, su plan activado y la lista de sus planes.
 
@@ -1986,7 +1986,7 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 - **APK:** una sección **«Tu historial»** (acceso desde Cuenta, siempre alcanzable): sus **planes** (TRN-08) y cada plan tal como se aceptó (TRN-09), reutilizados sin cambio, y sus **sesiones registradas** por período con su detalle (la pantalla de ejecución existente, TRN-19, que muestra original y correcciones). De solo lectura.
 - **Pruebas:** seis casos de integración (titular consulta lo propio; otro usuario no; B2 revocado y vínculo finalizado conservan la lectura; A3 revocado da 403; la corrección no oculta el original; funciona sin plan y con vacío comprensible).
 
-**Condición de cierre.** No se cierra como verificada hasta la comprobación visual de «Tu historial» en el teléfono (la APK 0.10.0 no la incluye; entra en la próxima APK). Trazabilidad: `docs/paquetes/WP-HISTORIAL-ENTRENAMIENTO.md`.
+**Condición de cierre.** No se cierra como verificada hasta la comprobación visual de «Tu historial» en el teléfono. La pantalla ya está en la **APK 0.11.0** (`be-apk-0.11.0`, commit `eb31269`); falta esa evidencia en dispositivo. Trazabilidad: `docs/paquetes/WP-HISTORIAL-ENTRENAMIENTO.md`; evidencia de publicación: `EVIDENCIA/HISTORIAL-ENTRENAMIENTO/`.
 
 ## DL-097 — Las formas de la importación controlada que el 09 no fija
 
