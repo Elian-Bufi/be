@@ -1,11 +1,13 @@
 /**
  * Regresión de los defectos hallados en «Tu historial» (DL-096) durante la validación en teléfono:
  *  1. Navegación: el detalle de ejecución se abre desde «Entrenamiento de hoy» y desde «Tu historial»; volver tiene que
- *     regresar al origen, no siempre a Hoy. Se prueban ambos orígenes y el botón Atrás (que usa `anterior`, igual que el
- *     enlace visible).
- *  2. Fecha: la lista formateaba la fecha civil como medianoche UTC y retrocedía un día en zonas al oeste de UTC; el
- *     detalle la ancla a mediodía UTC. La parte de fecha corre en un subproceso con TZ de Buenos Aires para reproducir
- *     el bug de forma determinista (la CI corre en UTC, donde no se manifestaría).
+ *     regresar al origen (`origen` en la ruta), no siempre a Hoy. Se prueban ambos orígenes; el botón Atrás de Android
+ *     y el enlace visible usan la misma `anterior`.
+ *  2. Fecha civil: se prueba la función de producción `fechaCivil` (formato.ts), que formatea un `YYYY-MM-DD` anclado
+ *     a medianoche UTC con un formateador fijado en UTC, así día/mes/año no dependen de la zona del dispositivo. Corre
+ *     en subprocesos con TZ Buenos Aires, UTC, Auckland, Kiritimati (UTC+14) y Kathmandu (UTC+05:45), en límites de
+ *     mes/año y una bisiesta; exige el mismo texto en todas. Los subprocesos hacen la prueba determinista aunque la CI
+ *     corra en UTC.
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
