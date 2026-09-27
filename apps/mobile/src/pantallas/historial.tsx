@@ -24,7 +24,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
-import { dia, fechaCivil } from '../formato';
+import { dia, fechaCivil, ultimosDiasEnZona } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 import { resumenDePrescripcion } from './entrenamiento';
@@ -34,13 +34,13 @@ type Ejecucion = HistorialDeEntrenamientoResponse['data']['executions'][number];
 /** Estado de una lectura: cargando, permitida con datos, sin A3 (403), o error de red/servidor. */
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'sinA3' } | { tipo: 'error'; sinConexion: boolean };
 
-/** La ventana por defecto de «Tu historial»: los últimos 90 días, dentro del tope del contrato (hasta un año). */
-function ultimos90Dias(): { periodStart: string; periodEnd: string } {
-  const fin = new Date();
-  const inicio = new Date(fin.getTime() - 89 * 86_400_000);
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-  return { periodStart: iso(inicio), periodEnd: iso(fin) };
-}
+/**
+ * La ventana por defecto de «Tu historial»: los últimos 90 días, dentro del tope del contrato (hasta un año). Las fechas
+ * son civiles en la zona con la que la API resuelve «hoy» (la que devuelve en `period.timeZone`): calcularlas en UTC
+ * pedía «mañana» de 21 a 24 h y la API respondía 400 `PERIOD_IN_FUTURE` (validación en teléfono de la 0.11.1).
+ */
+const ZONA_DEL_HISTORIAL = 'America/Argentina/Buenos_Aires';
+const ultimos90Dias = () => ultimosDiasEnZona(90, ZONA_DEL_HISTORIAL);
 
 export function PantallaDeHistorial({ token, identidadId, salir, ir }: { token: string; identidadId: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);

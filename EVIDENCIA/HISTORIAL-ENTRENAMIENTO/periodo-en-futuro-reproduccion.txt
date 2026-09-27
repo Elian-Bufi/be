@@ -1,0 +1,4 @@
+ahora UTC: 2026-09-27T00:09:16.822Z · fecha civil en Buenos Aires: 2026-09-26
+A) período de la APK { periodStart: '2026-06-30', periodEnd: '2026-09-27' } → {"ok":false,"tipo":"API","codigo":"INVALID_REQUEST","http":400,"issues":[{"code":"PERIOD_IN_FUTURE","path":"periodEnd"}]}
+B) mismo rango en fecha civil de Buenos Aires { periodStart: '2026-06-29', periodEnd: '2026-09-26' } → {"ok":true,"sesiones":1,"period":{"start":"2026-06-29","end":"2026-09-26","timeZone":"America/Argentina/Buenos_Aires"}}
+C) HTTP crudo con el período de la APK: 400 {"error":{"code":"INVALID_REQUEST","message":"La solicitud no es válida.","details":{"issues":[{"code":"PERIOD_IN_FUTURE","path":"periodEnd"}]}}}
