@@ -96,4 +96,29 @@ La versión de la APK se subió solo en `app.config.ts` (0.11.2, versionCode 15)
 - **SHA-256:** `c1e24d6eb9e9a355354ddac3d9b81ec0f88d8509a3ec92870fa5e95261684dae`. Se descargó del release y se volvió a calcular: es idéntico al del artefacto construido.
 - **Tamaño:** 70.698.327 bytes.
 
+## Repetición para la 0.11.3 (2026-09-27)
+
+Mismo procedimiento, herramientas y firma, sobre el commit `13280e67ec1a94cac93d8cb4ece62765c116ff39` (merge de #97). La versión subió solo en `app.config.ts` (0.11.3, versionCode 16).
+
+- **Primer intento fallido:** a los 22 min 53 s, en `:expo-modules-core:bundleLibRuntimeToJarRelease`, Windows respondió «Recursos insuficientes en el sistema para completar el servicio solicitado». Fue presión de memoria en la máquina de 5,9 GB, con otros procesos pesados abiertos. No fue un error del código ni de la configuración.
+- **Reintento:** solo la etapa de Gradle, con `org.gradle.workers.max=1` (antes 2) en el `gradle.properties` generado. Terminó bien en 6 min 42 s, reutilizando lo compilado. Reducir la concurrencia no cambia el artefacto.
+
+| Control | Resultado |
+|---|---|
+| `applicationId` | `com.elianbufi.be` |
+| Versión | `versionName` 0.11.3 · `versionCode` 16 |
+| Firma | válida, 1 firmante, esquema v2 |
+| Certificado | `61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06`, idéntico al de las anteriores |
+| Arquitecturas | `lib/arm64-v8a`, `lib/armeabi-v7a`, `lib/x86`, `lib/x86_64` |
+| Valores efectivos embebidos (`assets/app.config`) | `appEnv` `test` · `apiBaseUrl` `https://be-api-hndp.onrender.com` · `commit` `13280e67ec1a94cac93d8cb4ece62765c116ff39` · `construidoEn` `2026-09-27T22:50:44.066Z` |
+| Código nuevo incluido | el hash del bundle JS difiere del de la 0.11.2 |
+| Dependencia nativa | `com.th3rdwave.safeareacontext` sigue en el dex |
+| Credenciales privadas | ninguna: 1142 entradas, sin contraseñas, alias, `PRIVATE KEY`, keystore ni archivos de credenciales |
+
+**Publicación:**
+- **Release permanente:** https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.11.3 (tag en `13280e6`, marcado Latest; se conservan todas las anteriores).
+- **Descarga directa:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.11.3/be-0.11.3-13280e6.apk`
+- **SHA-256:** `4be0de7995283be46f719fd24fe60ef51a8f2d16e53a4bab557863caca0fdbae`, idéntico al construido después de descargarlo.
+- **Tamaño:** 70.698.327 bytes.
+
 Solo datos sintéticos. Sin credenciales.

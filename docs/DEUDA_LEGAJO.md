@@ -1971,7 +1971,7 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 
 ## DL-096 — La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado
 
-**Prioridad:** media · **Documento:** 08:199 · 08:58 · DL-089 · 09v10 (TRN-08, TRN-09, TRN-19) · **Estado:** EN CURSO — opción A autorizada por Dirección el 2026-09-25; implementada (#86) y publicada en la APK 0.11.0; las correcciones de la validación en teléfono (#89) están en la APK 0.11.1, y la del período de 21 a 24 h (#94), en la APK 0.11.2 (release be-apk-0.11.2); solo falta la comprobación visual en el teléfono
+**Prioridad:** media · **Documento:** 08:199 · 08:58 · DL-089 · 09v10 (TRN-08, TRN-09, TRN-19) · **Estado:** EN CURSO — opción A autorizada por Dirección el 2026-09-25; implementada (#86) y publicada en la APK 0.11.0; las correcciones de la validación en teléfono (#89) están en la APK 0.11.1, la del período de 21 a 24 h (#94), en la APK 0.11.2, y la del teclado (#97), en la APK 0.11.3 (release be-apk-0.11.3); solo falta la comprobación visual en el teléfono
 
 **Qué dice el legajo.** El titular tiene acceso pleno a «Plan entrenamiento + ejecución» (08:199), y el fin del vínculo no destruye su historia (08:58). DL-089 lo llevó a la API: revocado el B2, el titular sigue leyendo sus ejecuciones, su plan activado y la lista de sus planes.
 
@@ -1990,7 +1990,7 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 - **APK:** una sección **«Tu historial»** (acceso desde Cuenta, siempre alcanzable): sus **planes** (TRN-08) y cada plan tal como se aceptó (TRN-09), reutilizados sin cambio, y sus **sesiones registradas** por período con su detalle (la pantalla de ejecución existente, TRN-19, que muestra original y correcciones). De solo lectura.
 - **Pruebas:** seis casos de integración (titular consulta lo propio; otro usuario no; B2 revocado y vínculo finalizado conservan la lectura; A3 revocado da 403; la corrección no oculta el original; funciona sin plan y con vacío comprensible).
 
-**Condición de cierre.** No se cierra como verificada hasta la comprobación visual de «Tu historial» en el teléfono. La pantalla está desde la **APK 0.11.0**, y las correcciones de la validación en teléfono (#89), en la **APK 0.11.1** (`be-apk-0.11.1`, commit `44bea3a`). La corrección del período de 21 a 24 h (#94) está en la **APK 0.11.2** (`be-apk-0.11.2`, commit `46fd1fa`). Falta esa evidencia en dispositivo con la 0.11.2. Trazabilidad: `docs/paquetes/WP-HISTORIAL-ENTRENAMIENTO.md`; evidencia de publicación: `EVIDENCIA/HISTORIAL-ENTRENAMIENTO/`.
+**Condición de cierre.** No se cierra como verificada hasta la comprobación visual de «Tu historial» en el teléfono. La pantalla está desde la **APK 0.11.0**, y las correcciones de la validación en teléfono (#89), en la **APK 0.11.1** (`be-apk-0.11.1`, commit `44bea3a`). La corrección del período de 21 a 24 h (#94) está en la **APK 0.11.2**, y la del teclado (#97), en la **APK 0.11.3** (`be-apk-0.11.3`, commit `13280e6`). Falta esa evidencia en dispositivo con la 0.11.3. Trazabilidad: `docs/paquetes/WP-HISTORIAL-ENTRENAMIENTO.md`; evidencia de publicación: `EVIDENCIA/HISTORIAL-ENTRENAMIENTO/`.
 
 ## DL-097 — Las formas de la importación controlada que el 09 no fija
 

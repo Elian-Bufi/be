@@ -66,4 +66,25 @@ Estado del 2026-09-26. La validación de la 0.11.1 encontró que «Sesiones regi
 
 **DL-096 sigue EN CURSO.**
 
+## Publicación 0.11.3 — el teclado deja de tapar los campos
+
+Estado del 2026-09-27. La validación de la 0.11.2 encontró que, con el teclado abierto, «Reps» quedaba tapado en «Corregir registro» (`hallazgos-validacion-telefono.md` §5). La corrección y la versión (0.11.3, versionCode 16) van juntas en el PR #97 (merge `13280e6`).
+
+| Componente | Versión · commit | Estado |
+|---|---|---|
+| APK | 0.11.3 · versionCode 16 · `13280e6` | release permanente `be-apk-0.11.3`, build local con Gradle y la firma existente. Verificaciones en `build-local-0.11.1.md`, sección 0.11.3 |
+| API y website | 0.11.1 · `44bea3a` | **sin redesplegar**: el #97 no toca rutas de los `buildFilter`; el readiness sigue en `44bea3a` |
+
+- **Descarga directa:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.11.3/be-0.11.3-13280e6.apk`
+- **SHA-256:** `4be0de7995283be46f719fd24fe60ef51a8f2d16e53a4bab557863caca0fdbae` (descargado del release y re-hasheado: idéntico al construido)
+
+**Pendiente en dispositivo, con la 0.11.3:**
+- el teclado sobre «Reps» y «RIR», y «Registrar corrección» alcanzable con el teclado abierto;
+- que «Sesiones registradas» cargue después de las 21 h;
+- el final del detalle en modo de navegación por gestos;
+- Hoy → detalle → volver;
+- volver después de guardar una corrección.
+
+**DL-096 sigue EN CURSO.**
+
 Solo datos sintéticos. Sin credenciales.

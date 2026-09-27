@@ -8,7 +8,7 @@ El estado que se entrega el 2026-10-01: qué está desplegado, con qué garantí
 |---|---|---|
 | Website | `https://be-web-1ngj.onrender.com` | 0.9.0 · `796a5fe` |
 | API | `https://be-api-hndp.onrender.com` (`/health/ready`) | 0.9.0 · `15d7781` |
-| APK | release permanente `be-apk-0.11.2` → `be-0.11.2-46fd1fa.apk`, SHA-256 `c1e24d6eb9e9a355354ddac3d9b81ec0f88d8509a3ec92870fa5e95261684dae` (build local con Gradle, misma firma: `EVIDENCIA/HISTORIAL-ENTRENAMIENTO/build-local-0.11.1.md`) | 0.11.2 · `46fd1fa` |
+| APK | release permanente `be-apk-0.11.3` → `be-0.11.3-13280e6.apk`, SHA-256 `4be0de7995283be46f719fd24fe60ef51a8f2d16e53a4bab557863caca0fdbae` (build local con Gradle, misma firma: `EVIDENCIA/HISTORIAL-ENTRENAMIENTO/build-local-0.11.1.md`) | 0.11.3 · `13280e6` |
 
 **Por qué hay tres commits.** Los dos cambios posteriores a `fd08380` (PR #76 y #77) son del website y de una función pura del dominio que ni la API ni la APK usan. No tocan la API, la APK, el esquema ni el contrato: `docs/api/openapi.json` es idéntico. Render redespliega cada servicio solo cuando cambian sus archivos (`buildFilter` de `render.yaml`):
 - el #77 tocó solo el website, así que la API sigue en `15d7781`, con el mismo código de API que `796a5fe`;
