@@ -104,6 +104,10 @@
 | DL-097 | WP-08 · 2026-09-24 | 09v12 §5-§7 (09v12:184-188, 360-364, 369, 390) | Las formas de la importación controlada que el 09 no fija | ABIERTA (hallada al implementar) |
 | DL-098 | WP-08 · 2026-09-24 | 09v12:190 · B10-05 §19 · B10-06 §22 | La búsqueda por texto en los proveedores no tiene contrato | ABIERTA |
 | DL-099 | WP-08 · 2026-09-24 | 04 RF-060 (04:701-708) · 08 licencias | La procedencia externa llega hasta la elección, no hasta el ítem del plan | ABIERTA (hallada en la revisión de calidad) |
+| DL-100 | PF-01/02 · 2026-09-27 | B10-06 §4 (CAND-10-TRN-A) · 04 RF-071 · WP-07 | Plantilla «Antecedentes para entrenamiento» con seis conceptos | **DECIDIDA** 2026-09-27 · ratificada tal cual |
+| DL-101 | PF-01/02 · 2026-09-27 | 09v16.1 §22 · DL-095 | Los campos NUMBER aceptaban cualquier número | **DECIDIDA** 2026-09-27 · mínimo, máximo y entero |
+| DL-102 | PF-01/02 · 2026-09-27 | 09v10 TRN-01 · CA-FOR-04 del plan | La evaluación de entrenamiento no puede citar respuestas de forma verificable | **DECIDIDA** 2026-09-27 · referencias verificadas (opción A) |
+| DL-103 | PF-01/02 · 2026-09-27 | Plan Funcional §12.3 · DEC-04 | Alcance del primer incremento de contexto | **DECIDIDA** 2026-09-27 · solo entrenamiento, equipamiento en texto |
 
 ---
 
@@ -2036,3 +2040,45 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 
 **Provisorio en código.** B. **Recomendación: A**, en el mismo paquete que integre WP-08 o en el siguiente: es lo que RF-060 describe y lo que las licencias piden.
 
+## DL-100 — Plantilla «Antecedentes para entrenamiento» con seis conceptos
+
+**Prioridad:** alta · **Documento:** B10-06 §4 (CAND-10-TRN-A, «RATIFICAR») · 04 RF-071 · WP-07 · **Estado:** DECIDIDA 2026-09-27
+
+**Qué pasa hoy.** El catálogo de formularios tiene solo FRM-SALUD y FRM-HABITOS, sintéticas y transversales. No hay ninguna plantilla de entrenamiento, aunque B10-06 §4 prevé pedir «Antecedentes para entrenamiento» desde la evaluación.
+
+**Decisión de Dirección.** Se ratifica la plantilla `FRM-ENTRENAMIENTO` v1 tal como la propone `docs/propuestas/PF-01-02_contexto-de-entrenamiento.md` §2:
+- **Obligatorios:** objetivo declarado, experiencia, días por semana, minutos por sesión, y lugar y equipamiento.
+- **Opcional:** preferencias.
+
+Son preguntas de producto, no un instrumento clínico. Los textos pueden ajustarse después con una versión 2 de la plantilla, si lo pide una revisión profesional.
+
+## DL-101 — Los campos NUMBER aceptaban cualquier número
+
+**Prioridad:** media · **Documento:** 09v16.1 §22 · DL-095 · **Estado:** DECIDIDA 2026-09-27
+
+**Qué pasa hoy.** Un campo `NUMBER` solo exige un número finito (`lectura-formularios.ts`): «9 días por semana» o «-1 minutos» se aceptan.
+
+**Decisión de Dirección.** Se agregan restricciones opcionales al campo `NUMBER` de la plantilla (mínimo, máximo y entero), validadas en el servidor al responder y al rectificar. Para FRM-ENTRENAMIENTO:
+- **días por semana:** de 1 a 7, entero;
+- **minutos por sesión:** de 1 a 600, entero.
+
+Las plantillas existentes no cambian. Amplía la forma provisoria de DL-095. **El plan proponía admitir 0 días; Dirección fijó el mínimo en 1.**
+
+## DL-102 — La evaluación de entrenamiento no puede citar respuestas de forma verificable
+
+**Prioridad:** alta · **Documento:** 09v10 TRN-01 · CA-FOR-04 del Plan Funcional · **Estado:** DECIDIDA 2026-09-27
+
+**Qué pasa hoy.** `evidenceReferences` de la evaluación es una lista de textos sin validar, y el website siempre la manda vacía. Solo la revisión tiene evidencia tipada, y no incluye respuestas de formulario.
+
+**Opciones.**
+- **A.** Un campo nuevo de referencias a respuestas concretas, validado en el servidor. La respuesta tiene que ser de la misma persona y del alcance, y el profesional tiene que poder leerla en ese momento. Al leer la evaluación, cada referencia se resuelve con las reglas de FRM-05, con aviso neutral si ya no es legible.
+- **B.** Una convención sobre los textos libres, que no se valida.
+- **C.** Copiar el valor como dato `REPORTED`, que mezcla la declaración con la observación.
+
+**Decisión de Dirección.** A. `evidenceReferences` no se toca.
+
+## DL-103 — Alcance del primer incremento de contexto
+
+**Prioridad:** media · **Documento:** Plan Funcional §12.3 · DEC-04 · **Estado:** DECIDIDA 2026-09-27
+
+**Decisión de Dirección.** El primer incremento cubre solo entrenamiento, con los tipos actuales: lugar y equipamiento van como texto. La selección simple o múltiple y el patrón para nutrición (PF-04) y antropometría (PF-06) quedan para después, reutilizando lo que deje este incremento.
