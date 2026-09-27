@@ -46,7 +46,8 @@ Validación manual de Dirección sobre la **APK 0.11.0**. Cada hallazgo separa l
 - **Alcance:** no es propio de «Tu historial». El `KeyboardAvoidingView` es el raíz de toda la APK, así que afecta a cualquier formulario con campos en la mitad inferior de la pantalla. Probablemente viene desde que la APK es edge-to-edge; no se verificó en versiones anteriores.
 - **Corrección propuesta:** `behavior="padding"` en todas las plataformas. El `KeyboardAvoidingView` agrega abajo la altura del teclado, el `ScrollView` global se achica y el campo enfocado puede quedar a la vista. No agrega dependencias ni cambia API ni datos.
 - **Comprobado por pruebas:** solo la configuración (`scripts/historial-navegacion.test.mjs` §4, que lee el código fuente). **El efecto con el teclado abierto no se puede comprobar sin dispositivo.**
-- **Pendiente en dispositivo, con la APK que incluya esta corrección:** tocar «Reps» y «RIR» con el teclado abierto y ver que quedan visibles; llegar a «Registrar corrección» con el teclado abierto; comprobar que con el teclado cerrado no queda espacio de más.
+- **Incluida en la APK 0.11.3** (`be-apk-0.11.3`, commit `13280e6`, PR #97).
+- **Pendiente en dispositivo, con la 0.11.3:** tocar «Reps» y «RIR» con el teclado abierto y ver que quedan visibles; llegar a «Registrar corrección» con el teclado abierto; comprobar que con el teclado cerrado no queda espacio de más.
 
 ## Estado de la validación de la APK 0.11.2 (2026-09-27, 16:01–16:27, capturas de Dirección)
 
