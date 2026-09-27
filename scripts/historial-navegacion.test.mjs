@@ -12,9 +12,12 @@
  *     «hoy» (America/Argentina/Buenos_Aires). Con `toISOString()`, de 21 a 24 h en Buenos Aires se pedía «mañana» y la
  *     API respondía 400 PERIOD_IN_FUTURE. Se prueba el instante observado en la validación de la 0.11.1, con varias zonas
  *     de dispositivo y en límites de mes y año.
+ *  4. Teclado: el KeyboardAvoidingView raíz usa «padding» también en Android, porque con edge-to-edge el sistema ya no
+ *     achica la ventana (validación de la APK 0.11.2: el teclado tapaba el campo «Reps» de «Corregir registro»).
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import test from 'node:test';
@@ -111,4 +114,26 @@ test('el período respeta los límites de mes y año, y a media tarde coincide c
   assert.equal(periodoEnDispositivo('UTC', '2027-01-01T02:30:00.000Z').periodEnd, '2026-12-31');
   // 15:00 en Buenos Aires: no hay desfase.
   assert.deepEqual(periodoEnDispositivo('UTC', '2026-09-26T18:00:00.000Z'), { periodStart: '2026-06-29', periodEnd: '2026-09-26' });
+});
+
+// ─── 4. Teclado en Android: el KeyboardAvoidingView raíz tiene que actuar también en Android ─────
+// Validación de la APK 0.11.2 en «Corregir registro»: con edge-to-edge (Expo SDK 54+), Android ya no achica la ventana al
+// abrir el teclado (adjustResize deja de tener efecto). Con `behavior` indefinido en Android nada reaccionaba al teclado:
+// en las capturas, los elementos quedaban en la misma posición con y sin teclado, y el campo «Reps» quedaba tapado. Se lee
+// el código fuente, como copy-pantallas.test.cjs; el comportamiento real con teclado solo se comprueba en dispositivo.
+
+const APP = readFileSync(resolve(RAIZ, 'apps/mobile/App.tsx'), 'utf8');
+
+test('el KeyboardAvoidingView raíz tiene comportamiento «padding» también en Android (no depende de adjustResize)', () => {
+  const apertura = APP.match(/<KeyboardAvoidingView\b[^>]*>/);
+  assert.ok(apertura, 'App.tsx tiene que envolver la app en un KeyboardAvoidingView');
+  assert.match(apertura[0], /behavior="padding"/, `vino: ${apertura[0]}`);
+  assert.doesNotMatch(apertura[0], /undefined/, 'un comportamiento indefinido en Android deja el teclado tapando los campos');
+});
+
+test('el ScrollView global sigue dentro del KeyboardAvoidingView (el padding lo achica y el campo enfocado queda a la vista)', () => {
+  const inicio = APP.indexOf('<KeyboardAvoidingView');
+  const scroll = APP.indexOf('<ScrollView', inicio);
+  const fin = APP.indexOf('</KeyboardAvoidingView>');
+  assert.ok(inicio >= 0 && scroll > inicio && fin > scroll, 'el ScrollView global tiene que estar dentro del KeyboardAvoidingView');
 });

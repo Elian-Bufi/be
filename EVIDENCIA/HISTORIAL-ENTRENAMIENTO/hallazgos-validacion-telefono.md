@@ -39,6 +39,31 @@ Validación manual de Dirección sobre la **APK 0.11.0**. Cada hallazgo separa l
 - **Comprobado por pruebas:** `scripts/historial-navegacion.test.mjs`. La prueba reproduce la causa en el instante observado y exige `2026-06-29` a `2026-09-26` con el dispositivo en Buenos Aires, UTC, Kiritimati y Los Ángeles. También cubre los límites de mes y de año.
 - **Pendiente en dispositivo:** que «Sesiones registradas» cargue después de las 21 h con la **APK 0.11.2**, que incluye esta corrección.
 
+## 5. El teclado tapa los campos de abajo en Android (validación de la APK 0.11.2)
+
+- **Observado (teléfono, Dirección, 2026-09-27, 16:11–16:27, APK 0.11.2, navegación de tres botones):** en «Corregir registro», con el teclado abierto, los elementos quedan **en la misma posición** que sin teclado (`capturas-0.11.2/01` y `02`: «Motivo (opcional)» a la misma altura). Al tocar «Reps», el campo queda **debajo del teclado numérico**: solo se ve su borde superior (`03`). Con el teclado cerrado, el formulario completo y «Registrar corrección» sí se alcanzan desplazando.
+- **Causa comprobada (código):** `apps/mobile/App.tsx` pasaba `behavior={Platform.OS === 'ios' ? 'padding' : undefined}` al `KeyboardAvoidingView` raíz. En Android no hacía nada y dependía de que el sistema achicara la ventana (`android:windowSoftInputMode="adjustResize"`). El proyecto generado tiene `edgeToEdgeEnabled=true` (Expo SDK 54+), y con edge-to-edge Android ya no achica la ventana al abrir el teclado, así que nada reaccionaba a él. La posición idéntica de los elementos con y sin teclado es la consecuencia visible.
+- **Alcance:** no es propio de «Tu historial». El `KeyboardAvoidingView` es el raíz de toda la APK, así que afecta a cualquier formulario con campos en la mitad inferior de la pantalla. Probablemente viene desde que la APK es edge-to-edge; no se verificó en versiones anteriores.
+- **Corrección propuesta:** `behavior="padding"` en todas las plataformas. El `KeyboardAvoidingView` agrega abajo la altura del teclado, el `ScrollView` global se achica y el campo enfocado puede quedar a la vista. No agrega dependencias ni cambia API ni datos.
+- **Comprobado por pruebas:** solo la configuración (`scripts/historial-navegacion.test.mjs` §4, que lee el código fuente). **El efecto con el teclado abierto no se puede comprobar sin dispositivo.**
+- **Pendiente en dispositivo, con la APK que incluya esta corrección:** tocar «Reps» y «RIR» con el teclado abierto y ver que quedan visibles; llegar a «Registrar corrección» con el teclado abierto; comprobar que con el teclado cerrado no queda espacio de más.
+
+## Estado de la validación de la APK 0.11.2 (2026-09-27, 16:01–16:27, capturas de Dirección)
+
+| Punto | Resultado |
+|---|---|
+| Versión en pantalla: `app 0.11.2 · test · commit 46fd1fa` | ✅ |
+| «Sesiones registradas» carga | ✅ a las 16:02; **falta después de las 21 h** |
+| Historial → detalle → volver, con el enlace y con el gesto de Atrás | ✅ (el gesto, informado por Dirección) |
+| Misma fecha en lista y detalle («25 de sept de 2026») | ✅ |
+| Último control accesible, tres botones (`05`) | ✅ |
+| Último control accesible, navegación por gestos | ⏳ sin captura |
+| Guardar una corrección: validación del motivo y la corrección registrada con el original conservado (`04`) | ✅ |
+| Volver después de guardar la corrección | ⏳ el detalle muestra «Volver a Tu historial», pero no hay captura del destino |
+| Teclado sobre el primer campo («Motivo de la corrección») | ✅ visible |
+| Teclado sobre campos de abajo («Reps») | ❌ tapado: hallazgo 5 |
+| Hoy → detalle → volver a Hoy | ⏳ sin captura |
+
 ## Comportamiento del período (precisión sobre una afirmación anterior)
 
 La pantalla **no conserva un período elegido por la persona**: recalcula automáticamente una **ventana de los últimos 90 días** cada vez que se monta. Al volver desde el detalle, esa ventana se vuelve a calcular (mismo rango salvo cambio de día) y **el desplazamiento de la lista se reinicia** —la navegación monta y desmonta pantallas, no conserva scroll—. La afirmación previa de que «se conserva el período seleccionado» era imprecisa: no hay selección de período que conservar.
