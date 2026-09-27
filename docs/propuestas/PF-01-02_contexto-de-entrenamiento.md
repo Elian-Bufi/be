@@ -1,13 +1,13 @@
 # PF-01 / PF-02 — Ficha: contexto de entrenamiento conectado con la evaluación
 
-> **Estado:** PROPUESTA para decisión de Dirección. No implementa nada ni cambia permisos.
+> **Estado:** DECISIONES TOMADAS (Dirección, 2026-09-27: D-1 a D-5, registradas como DL-100 a DL-103). La implementación espera la orden de Dirección.
 > **Base:** `main` en `13280e6` (2026-09-27), contrastado con el Plan Funcional Profesional v1.1 (`docs/propuestas/BE_Plan_Funcional_Profesional_v1-1.md`, corte `46fd1fa`).
 > **Identificadores:** PF, TRN-Q, CA y V son locales al plan. Los anclajes del legajo son **RF-071, UC-P32/UC-P33 (WP-07), WP-06, CAND-10-TRN-A (B10-06 §4), DL-048, DL-095 y DL-009**. Las decisiones nuevas se registran como DL-100 en adelante recién cuando Dirección las apruebe.
 
 ```yaml
 package: PF-01 + PF-02 (primer incremento)
 title: Contexto de entrenamiento conectado con la evaluación
-status: proposed
+status: decided
 baseline_commit: 13280e67ec1a94cac93d8cb4ece62765c116ff39
 business_outcome: El profesional de entrenamiento decide con contexto declarado por la persona, con origen y fecha trazables
 in_scope:
@@ -20,7 +20,7 @@ out_of_scope:
   - Reutilizar el perfil (profileSourceRef, DL-095) y contenido del perfil propio (DL-009)
   - Nuevas modalidades de entrenamiento, IA, nutrición y antropometría
   - Cambios en la APK: responde cualquier plantilla con los tipos actuales
-decisions_required: [D-1, D-2, D-3, D-4, D-5]
+decisions: [DL-100 (D-1), DL-101 (D-2), DL-102 (D-3), DL-103 (D-4 y D-5)]
 acceptance: [CA-FOR-01, CA-FOR-04, CA-FOR-06, CA-FOR-07, CA-TRN-01]
 verification: [V-01, V-02, V-06, V-07, V-21]
 evidence:
@@ -51,8 +51,8 @@ La capacidad de formularios funciona de punta a punta desde WP-07: el profesiona
 |---|---|---|---|---|
 | Objetivo declarado (TRN-01, TRN-Q01) | No. El objetivo de entrenamiento es del profesional (`contratos-entrenamiento.ts:106`) | `trn_objetivo_declarado` — «Qué te gustaría poder hacer o mejorar con el entrenamiento» · OBJETIVOS_Y_PREFERENCIAS | TEXT | R |
 | Experiencia (TRN-02, TRN-Q02) | Parcial: `nivel_de_actividad` (FRM-HABITOS), transversal y ambiguo | `trn_experiencia` — «Qué actividad venís haciendo y desde hace cuánto» · HABITOS_Y_CONTEXTO | TEXT | R |
-| Días disponibles (TRN-04, TRN-Q03) | No | `trn_dias_por_semana` — «Cuántos días por semana podrías reservar de manera realista» · unidad «días/semana» · HABITOS_Y_CONTEXTO | NUMBER (0 a 7, entero: ver D-2) | R |
-| Minutos por sesión (TRN-04, TRN-Q05) | No | `trn_minutos_por_sesion` — «Cuánto tiempo podrías dedicar a cada sesión» · unidad «min» · HABITOS_Y_CONTEXTO | NUMBER (1 a 600, entero: ver D-2) | R |
+| Días disponibles (TRN-04, TRN-Q03) | No | `trn_dias_por_semana` — «Cuántos días por semana podrías reservar de manera realista» · unidad «días/semana» · HABITOS_Y_CONTEXTO | NUMBER (1 a 7, entero: DL-101) | R |
+| Minutos por sesión (TRN-04, TRN-Q05) | No | `trn_minutos_por_sesion` — «Cuánto tiempo podrías dedicar a cada sesión» · unidad «min» · HABITOS_Y_CONTEXTO | NUMBER (1 a 600, entero: DL-101) | R |
 | Equipamiento y lugar (TRN-05, TRN-Q06) | No en BE (wger trae `equipment` en la importación y se descarta) | `trn_lugar_y_equipamiento` — «Dónde entrenarías y con qué equipamiento contás» · HABITOS_Y_CONTEXTO | TEXT (la selección múltiple queda para D-4) | R |
 | Preferencias (TRN-06, TRN-Q07) | No | `trn_preferencias` — «Qué actividades disfrutás y cuáles preferís evitar» · OBJETIVOS_Y_PREFERENCIAS | TEXT | O |
 
@@ -95,6 +95,8 @@ flowchart TD
 
 ## 5 Decisiones
 
+> **Decididas por Dirección el 2026-09-27.** D-1: ratificada tal cual (DL-100). D-2: mínimo, máximo y entero; **días de 1 a 7** y minutos de 1 a 600 (DL-101). D-3: opción A (DL-102). D-4 y D-5: solo entrenamiento, equipamiento en texto (DL-103).
+
 ### De contenido (Dirección y profesional de entrenamiento: DEC-02)
 
 - **D-1 · Plantilla y textos.** ¿Se ratifica CAND-10-TRN-A con los seis campos, los textos y la obligatoriedad de §2? Recomendación: **sí**. Son preguntas originales de producto, no clínicas; la revisión profesional puede ajustar los textos después con una versión 2 de la plantilla.
@@ -128,7 +130,7 @@ flowchart TD
 | V-02 | Si se revoca B2 después de citar, la referencia se muestra con aviso neutral, sin contenido | Integración |
 | V-06 | Una solicitud emitida sigue con su versión de plantilla | Integración (existente) |
 | V-07 | Una respuesta rectificada después de citarla muestra que tiene sucesora | Integración |
-| D-2 | «9 días», «2,5 días» y «-1 min» se rechazan con un error comprensible | Contrato e integración |
+| DL-101 | «0 días», «9 días», «2,5 días» y «-1 min» se rechazan con un error comprensible | Contrato e integración |
 
 **Demostración de salida** (plan §12.3, acotada a este incremento): el profesional solicita el contexto; el asesorado responde en la APK; el profesional vuelve a la evaluación y cita dos respuestas; define objetivo y plan con las operaciones actuales; después se revoca la autorización y la evaluación muestra el aviso neutral en lugar del contenido.
 
@@ -136,4 +138,4 @@ flowchart TD
 
 - **PF-00 (DL-096)** se cierra por separado con la APK 0.11.3.
 - Este paquete **no toca la APK**, así que no interfiere con la validación en el teléfono.
-- No se implementa nada antes de que Dirección decida D-1 a D-5 y emita la orden sobre esta ficha.
+- Decisiones tomadas; la implementación empieza con la orden de Dirección.
