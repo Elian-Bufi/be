@@ -36,8 +36,10 @@ type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'si
 
 /**
  * La ventana por defecto de «Tu historial»: los últimos 90 días, dentro del tope del contrato (hasta un año). Las fechas
- * son civiles en la zona con la que la API resuelve «hoy» (la que devuelve en `period.timeZone`): calcularlas en UTC
- * pedía «mañana» de 21 a 24 h y la API respondía 400 `PERIOD_IN_FUTURE` (validación en teléfono de la 0.11.1).
+ * son civiles en **Buenos Aires, configurada acá de forma explícita**: coincide con la zona con la que hoy la API resuelve
+ * «hoy» (`ZONA_POR_DEFECTO` del servidor). No se descubre de `period.timeZone` en tiempo de ejecución: si la zona del
+ * servidor cambiara, esta constante tiene que cambiar con ella. Calcularlas en UTC pedía «mañana» de 21 a 24 h y la API
+ * respondía 400 `PERIOD_IN_FUTURE` (validación en teléfono de la 0.11.1).
  */
 const ZONA_DEL_HISTORIAL = 'America/Argentina/Buenos_Aires';
 const ultimos90Dias = () => ultimosDiasEnZona(90, ZONA_DEL_HISTORIAL);
