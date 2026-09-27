@@ -35,9 +35,9 @@ Validación manual de Dirección sobre la **APK 0.11.0**. Cada hallazgo separa l
   - Reintentar o volver a entrar no lo arregla, porque el período se recalcula igual. Antes de las 21 h en Buenos Aires no ocurre.
   - No es un problema de conexión ni de consentimiento: el A3 se evalúa después de la validación del período, y con el período correcto la respuesta es 200.
 - **Registros del servidor:** no los consulté. No hay acceso a los logs de Render desde este entorno. La reproducción en vivo muestra el HTTP y el cuerpo exactos.
-- **Corrección:** `ultimosDiasEnZona` (`apps/mobile/src/formato.ts`) calcula los 90 días civiles en la zona con la que la API resuelve «hoy», que es la que devuelve en `period.timeZone`. Es el mismo criterio que ya usaban `hoyEn` en `entrenamiento.tsx` y la lista de ingestas de nutrición. No cambian el contrato ni la API.
+- **Corrección (PR #94):** `ultimosDiasEnZona` (`apps/mobile/src/formato.ts`) calcula los 90 días civiles en **Buenos Aires, configurada de forma explícita** en `historial.tsx` (`ZONA_DEL_HISTORIAL`). Esa zona coincide con la que hoy usa el servidor para resolver «hoy» (`ZONA_POR_DEFECTO`). La APK **no la descubre** de `period.timeZone`: si la zona del servidor cambiara, esa constante tiene que cambiar con ella. Es el mismo criterio que ya usaban `hoyEn` en `entrenamiento.tsx` y la lista de ingestas de nutrición. No cambian el contrato ni la API.
 - **Comprobado por pruebas:** `scripts/historial-navegacion.test.mjs`. La prueba reproduce la causa en el instante observado y exige `2026-06-29` a `2026-09-26` con el dispositivo en Buenos Aires, UTC, Kiritimati y Los Ángeles. También cubre los límites de mes y de año.
-- **Pendiente en dispositivo:** que «Sesiones registradas» cargue después de las 21 h con la APK que incluya esta corrección.
+- **Pendiente en dispositivo:** que «Sesiones registradas» cargue después de las 21 h con la **APK 0.11.2**, que incluye esta corrección.
 
 ## Comportamiento del período (precisión sobre una afirmación anterior)
 
