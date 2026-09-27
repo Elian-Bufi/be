@@ -16,7 +16,7 @@
 import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Image, KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiConfigurada, extra } from './src/api';
 import { anterior, requiereSesion, textoDeVolverA, type Ruta, type Salida } from './src/navegacion';
@@ -112,7 +112,9 @@ function Contenido() {
   };
 
   return (
-    <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    // «padding» también en Android: con edge-to-edge (Expo SDK 54+) el sistema ya no achica la ventana al abrir el teclado
+    // (adjustResize deja de tener efecto), así que sin esto el teclado tapa los campos de abajo (validación de la 0.11.2).
+    <KeyboardAvoidingView style={estilos.raiz} behavior="padding">
       <View style={estilos.barra}>
         {/* El isotipo es decorativo: la marca ya la dice el texto «BE». */}
         <View style={estilos.marcaConIsotipo}>
