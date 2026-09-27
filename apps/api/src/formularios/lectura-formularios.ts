@@ -8,7 +8,7 @@
  * - la vista efectiva de una Respuesta reutiliza `resolverVistaEfectiva` de B-06 (versionado.ts) sin modificarlo,
  *   traduciendo `CORREGIDA` → `RECTIFIED` acá, igual que hace `ejecuciones.service.ts` con `CORRECTED`.
  */
-import { resolverVistaEfectiva, type RelacionDeCorreccion } from '@be/domain';
+import { resolverVistaEfectiva, type LimitesNumericos, type RelacionDeCorreccion } from '@be/domain';
 import type {
   PlantillaDeFormulario as FilaDePlantilla,
   RectificacionDeRespuestaDeFormulario as FilaDeRectificacion,
@@ -40,6 +40,9 @@ interface SeccionDeContenido {
 }
 export interface ContenidoDePlantilla {
   sections: SeccionDeContenido[];
+  /** DL-101: límites de los campos NUMBER, por código. Interno: FRM-02 devuelve solo `sections` (la APK lee esa
+   *  respuesta con esquemas estrictos y una propiedad nueva en un campo le impediría abrir el formulario). */
+  numberLimits?: Record<string, LimitesNumericos>;
 }
 
 /** Los códigos de campo declarados por la plantilla, para validar contra ellos lo que pide una Solicitud (REG-06-13). */
@@ -52,6 +55,11 @@ export function codigosDeCampo(contenido: unknown): string[] {
 export function camposPorCodigo(contenido: unknown): Map<string, CampoDeContenido> {
   const c = contenido as ContenidoDePlantilla;
   return new Map(c.sections.flatMap((s) => s.fields).map((f) => [f.fieldCode, f]));
+}
+
+/** DL-101: los límites declarados para un campo NUMBER, o `undefined` si la plantilla no los declara. */
+export function limitesDeCampo(contenido: unknown, fieldCode: string): LimitesNumericos | undefined {
+  return (contenido as ContenidoDePlantilla).numberLimits?.[fieldCode];
 }
 
 /** Las categorías de los campos pedidos, para la pertinencia alcance×categoría (08 §11-bis; DL-095). */

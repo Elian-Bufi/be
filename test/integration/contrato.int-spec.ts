@@ -925,6 +925,55 @@ it('TEST-CT (WP-07): FRM-01 a 08 — catálogo, Solicitud, Respuesta y rectifica
     .expect(404);
 });
 
+it('TEST-CT (PF-02 · DL-100/101): «Antecedentes para entrenamiento» — FRM-02 sin propiedades nuevas y límites NUMBER en el servidor', async () => {
+  const PLANTILLA_ENTRENAMIENTO = '67e4d0b3-cf4a-41e7-9d84-6864c5dde951';
+  const VERSION_ENTRENAMIENTO = '0fba80db-0a80-47a7-b183-130232ab7a9c';
+  const SEIS = ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
+
+  const proParte = await prepararProfesional(app, 'frm-trn', ['ENTRENAMIENTO']);
+  const pro = conSesion(app, proParte.token);
+  const aseParte = await prepararAsesorado(app, 'frm-trn', { a3: true });
+  const ase = conSesion(app, aseParte.token);
+  await vinculoCompleto(app, proParte, aseParte, 'ENTRENAMIENTO');
+
+  // FRM-01: aparece al filtrar por ENTRENAMIENTO. FRM-02: los seis campos, y **ninguna propiedad fuera del contrato**
+  // (la prueba de éxitos valida el cuerpo contra el esquema estricto que usa la APK 0.11.x).
+  const deEntrenamiento = await pro.get('/api/v1/form-templates?domain=ENTRENAMIENTO').expect(200);
+  expect((deEntrenamiento.body.data as { key: string }[]).map((p) => p.key)).toContain('FRM-ENTRENAMIENTO');
+  const version = await pro.get(`/api/v1/form-templates/${PLANTILLA_ENTRENAMIENTO}/versions/${VERSION_ENTRENAMIENTO}`).expect(200);
+  const campos = (version.body.data.sections as { fields: Record<string, unknown>[] }[]).flatMap((s) => s.fields);
+  expect(campos.map((c) => c.fieldCode)).toEqual(SEIS);
+  for (const c of campos) expect(Object.keys(c).sort()).toEqual(['category', 'dataType', 'fieldCode', 'helpText', 'label', 'unit']);
+  expect(JSON.stringify(version.body)).not.toContain('numberLimits');
+
+  const solicitud = await pro
+    .post(`/api/v1/advisees/${aseParte.id}/form-requests`)
+    .send({ templateVersionId: VERSION_ENTRENAMIENTO, purpose: 'Planificar tu entrenamiento', scope: 'ENTRENAMIENTO', requestedFieldCodes: SEIS, requiredFieldCodes: SEIS.slice(0, 5) })
+    .expect(201);
+  const responder = `/api/v1/me/form-requests/${solicitud.body.data.formRequestId}/responses`;
+  const respuestas = (dias: number, minutos: number) => ({
+    answers: [
+      { fieldCode: 'trn_objetivo_declarado', value: 'Ganar fuerza para subir escaleras sin cansarme' },
+      { fieldCode: 'trn_experiencia', value: 'Caminatas; nada de fuerza en el último año' },
+      { fieldCode: 'trn_dias_por_semana', value: dias },
+      { fieldCode: 'trn_minutos_por_sesion', value: minutos },
+      { fieldCode: 'trn_lugar_y_equipamiento', value: 'En casa, con mancuernas livianas' },
+    ],
+  });
+
+  // DL-101: días de 1 a 7 y enteros; minutos de 1 a 600 y enteros. Todo lo demás, 422 FORM_RESPONSE_INVALID.
+  for (const [dias, minutos] of [[0, 45], [9, 45], [2.5, 45], [-1, 45], [3, 0], [3, 601], [3, 45.5]] as const) {
+    const r = await ase.post(responder).send(respuestas(dias, minutos)).expect(422);
+    expect(r.body.error.code).toBe('FORM_RESPONSE_INVALID');
+  }
+  const respondida = await ase.post(responder).send(respuestas(3, 45)).expect(201);
+
+  // La rectificación valida lo mismo (y, como el envío, reemplaza la respuesta completa: lleva los requeridos).
+  const rectificar = `/api/v1/me/form-responses/${respondida.body.data.formResponseId}/rectifications`;
+  await ase.post(rectificar).send({ expectedVersion: 'v1', reason: 'Tengo un día más.', ...respuestas(8, 45) }).expect(422);
+  await ase.post(rectificar).send({ expectedVersion: 'v1', reason: 'Tengo un día más.', ...respuestas(4, 45) }).expect(201);
+});
+
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
   const noDeclaradas: string[] = [];
   const porOperacion = new Map<string, Set<string>>();
