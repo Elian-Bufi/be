@@ -16,3 +16,18 @@ export const dia = (iso: string) => soloDia.format(new Date(iso));
  * reales (recordedAt, activatedAt) **no** van por acá: su presentación sí depende de la zona (`fecha`/`dia`).
  */
 export const fechaCivil = (fechaLocal: string) => soloDiaCivil.format(new Date(`${fechaLocal.slice(0, 10)}T00:00:00Z`));
+
+/**
+ * La fecha civil de hoy (`YYYY-MM-DD`) **en una zona dada**, no en UTC ni en la del dispositivo. `toISOString()` da la
+ * fecha UTC: de 21 a 24 h en Buenos Aires ya es «mañana», y la API rechaza ese día como futuro (`PERIOD_IN_FUTURE`).
+ */
+export const hoyEnZona = (zona: string, ahora: Date = new Date()): string =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(ahora);
+
+/** Los últimos `dias` días civiles hasta hoy inclusive, en la zona dada: `{ periodStart, periodEnd }` para la API. */
+export function ultimosDiasEnZona(dias: number, zona: string, ahora: Date = new Date()): { periodStart: string; periodEnd: string } {
+  const periodEnd = hoyEnZona(zona, ahora);
+  const inicio = new Date(`${periodEnd}T00:00:00Z`);
+  inicio.setUTCDate(inicio.getUTCDate() - (dias - 1));
+  return { periodStart: inicio.toISOString().slice(0, 10), periodEnd };
+}
