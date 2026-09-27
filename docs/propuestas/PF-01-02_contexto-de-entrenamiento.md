@@ -85,13 +85,19 @@ flowchart TD
 | Capa | Cambio | Tamaño |
 |---|---|---|
 | Base de datos | Migración de solo agregado: plantilla FRM-ENTRENAMIENTO v1. Si D-3 se aprueba, una columna o una tabla de referencias de la evaluación a respuestas | S / M |
-| Dominio (contratos) | Si D-2: restricciones opcionales `minimum`, `maximum` e `integer` en el campo NUMBER, compatibles con las plantillas existentes. Si D-3: `formResponseReferences[]` (`formResponseId`, `fieldCode`) opcional en la evaluación, sin tocar `evidenceReferences` | S / M |
+| Dominio (contratos) | DL-101: **sin cambios en las respuestas de FRM** (ver «Compatibilidad»). DL-102: `formResponseReferences[]` (`formResponseId`, `fieldCode`) en la evaluación de entrenamiento, sin tocar `evidenceReferences` | S / M |
 | API | Validar las restricciones NUMBER al responder o rectificar. Validar cada referencia citada al crear la evaluación: misma persona, alcance ENTRENAMIENTO, legible para el profesional ahora y campo existente. Resolver las referencias al leer con las reglas de FRM-05. OpenAPI y registro de operaciones | M |
 | Website | Botón «Solicitar contexto» con retorno; sección «Contexto declarado» en la evaluación; vista de las referencias en el detalle | M |
-| APK | Ninguno. Si D-2 se aprueba, conviene mostrar el rango en el campo; el servidor rechaza igual con un mensaje comprensible | — / S |
+| APK | **Ninguno, y la 0.11.x sigue sirviendo** (ver «Compatibilidad») | — |
 | Servidor desplegado | Sí: cambian API y website | — |
 
-**Estimación gruesa:** entre tres y cuatro PR (contrato y migración, API, website e integración), sin APK nueva si la APK no muestra los rangos. La estimación fina se hace al aprobar las decisiones.
+**Compatibilidad con la APK instalada** (verificado en el código el 2026-09-27):
+- La APK lee la definición de la plantilla (FRM-02) con esquemas estrictos (`z.strictObject`). Si los campos de FRM-ENTRENAMIENTO trajeran una propiedad nueva, como `minimum`, `maximum` o `integer`, la APK 0.11.x instalada **no podría abrir el formulario**.
+- Por eso, en DL-101 las restricciones se guardan en la definición interna de la plantilla y **se validan solo en el servidor** al responder y al rectificar. El rango se le comunica a la persona en el `helpText` del campo («Entre 1 y 7»), que ya existe y se muestra.
+- Un valor fuera de rango vuelve como `422 FORM_RESPONSE_INVALID`, con un issue que nombra el campo. La APK ya muestra ese error.
+- La APK **no lee** evaluaciones de entrenamiento, así que DL-102 cambia solo la API y el website, que se despliegan juntos desde el mismo commit.
+
+**Estimación gruesa:** entre tres y cuatro PR (contrato y migración, API, website e integración), sin APK nueva. La estimación fina se hace al aprobar las decisiones.
 
 ## 5 Decisiones
 
