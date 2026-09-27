@@ -1,6 +1,6 @@
 # Tu historial de entrenamiento — definición del paquete (DL-096, opción A)
 
-> **Estado:** EN CURSO. Opción A de DL-096 autorizada por Dirección el 2026-09-25. Implementada (#86) y publicada en la **APK 0.11.0**; las correcciones de la validación en teléfono (#89) están en la **APK 0.11.1** (`be-apk-0.11.1`); **no cerrada como verificada** hasta la comprobación visual de la pantalla en el teléfono de Dirección.
+> **Estado:** EN CURSO. Opción A de DL-096 autorizada por Dirección el 2026-09-25. Implementada (#86) y publicada en la **APK 0.11.0**; las correcciones de la validación en teléfono están en la **APK 0.11.1** (#89) y la **APK 0.11.2** (#94, período de 21 a 24 h; `be-apk-0.11.2`); **no cerrada como verificada** hasta la comprobación visual de la pantalla en el teléfono de Dirección.
 > **Origen.** DL-096: el titular tiene acceso pleno a «Plan entrenamiento + ejecución» (08:199) y el fin del vínculo no destruye su historia (08:58); DL-089 lo llevó a la API. Hasta acá ninguna pantalla de la APK lo usaba: «Hoy» y el registro en diferido operan sobre el plan vigente y —correctamente— pasan a «no disponible» con el B2 revocado.
 
 ## Decisión (2026-09-25)

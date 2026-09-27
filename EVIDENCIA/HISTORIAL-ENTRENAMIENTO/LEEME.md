@@ -44,4 +44,26 @@ Estado del 2026-09-26. Las correcciones de los hallazgos de Dirección sobre la 
 
 **Pendiente en dispositivo:** todo lo que enumera `hallazgos-validacion-telefono.md`. **DL-096 sigue EN CURSO.**
 
+## Publicación 0.11.2 — período del historial en Buenos Aires
+
+Estado del 2026-09-26. La validación de la 0.11.1 encontró que «Sesiones registradas» no cargaba de 21 a 24 h en Buenos Aires: la API respondía 400 `PERIOD_IN_FUTURE`. Causa, reproducción y corrección en `hallazgos-validacion-telefono.md` §4 y `periodo-en-futuro-reproduccion.txt`. Se corrigió en el PR #94 (merge `0c9e5c0`) y se versionó en el PR #95 (merge `46fd1fa`).
+
+| Componente | Versión · commit | Estado |
+|---|---|---|
+| APK | 0.11.2 · versionCode 15 · `46fd1fa` | release permanente `be-apk-0.11.2`, build local con Gradle y la firma existente. Verificaciones en `build-local-0.11.1.md`, sección 0.11.2 |
+| API | 0.11.1 · `44bea3a` | **sin redesplegar**: la corrección es solo de la APK, y #94/#95 no tocan rutas de los `buildFilter`. Tras la integración, el readiness sigue en `44bea3a` |
+| Website | 0.11.1 · `44bea3a` | sin cambios |
+
+- **Descarga directa:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.11.2/be-0.11.2-46fd1fa.apk`
+- **SHA-256:** `c1e24d6eb9e9a355354ddac3d9b81ec0f88d8509a3ec92870fa5e95261684dae` (descargado del release y re-hasheado: idéntico al construido)
+
+**Pendiente en dispositivo, con la 0.11.2:**
+- que «Sesiones registradas» cargue después de las 21 h;
+- los retornos desde Historial y desde Hoy;
+- que las fechas coincidan;
+- la corrección de un registro;
+- el área inferior con teclado y con la navegación del sistema.
+
+**DL-096 sigue EN CURSO.**
+
 Solo datos sintéticos. Sin credenciales.

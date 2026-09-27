@@ -67,4 +67,33 @@ Nada de esto observa la app en un dispositivo. Quedan pendientes de la comprobac
 
 **DL-096 sigue EN CURSO.**
 
+## Repetición para la 0.11.2 (2026-09-26)
+
+Mismo procedimiento, herramientas y firma que arriba, sobre el commit `46fd1fae7d1c58a38d89987037bf38b255c7c2d0` (merge de #95). Pasos:
+- la misma copia aislada, movida a ese commit, con las exclusiones verificadas con `git check-ignore`;
+- `npm ci` (989 paquetes) y el hook `eas-build-post-install`;
+- `expo prebuild --clean` con `EAS_BUILD_GIT_COMMIT_HASH` en ese SHA;
+- la misma configuración nativa, que se vuelve a aplicar porque `--clean` regenera `android/`;
+- `assembleRelease` firmado, en 28 min 34 s.
+
+La versión de la APK se subió solo en `app.config.ts` (0.11.2, versionCode 15). `apps/mobile/package.json`, el lockfile, la API, el website y el OpenAPI no se tocaron: un cambio en `package.json` o `package-lock.json` redespliega API y web (`buildFilter` de `render.yaml`), y la corrección no los necesita.
+
+| Control | Resultado |
+|---|---|
+| `applicationId` | `com.elianbufi.be` |
+| Versión | `versionName` 0.11.2 · `versionCode` 15 |
+| Firma | válida, 1 firmante, esquema v2 |
+| Certificado | `61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06`, idéntico al de la 0.11.1 y la 0.11.0 |
+| Arquitecturas | `lib/arm64-v8a`, `lib/armeabi-v7a`, `lib/x86`, `lib/x86_64` |
+| Valores efectivos embebidos (`assets/app.config`) | `appEnv` `test` · `apiBaseUrl` `https://be-api-hndp.onrender.com` · `commit` `46fd1fae7d1c58a38d89987037bf38b255c7c2d0` · `construidoEn` `2026-09-27T00:47:12.962Z` |
+| Corrección incluida | el bundle JS contiene `ultimosDiasEnZona` y `hoyEnZona`, ausentes en la 0.11.1; el hash del bundle difiere |
+| Dependencia nativa | `com.th3rdwave.safeareacontext` sigue en el dex |
+| Credenciales privadas | ninguna: 1142 entradas sin contraseñas, alias, `PRIVATE KEY` ni keystore, y sin archivos de credenciales |
+
+**Publicación:**
+- **Release permanente:** https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.11.2 (tag en `46fd1fa`, marcado Latest; se conservan todas las anteriores).
+- **Descarga directa:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.11.2/be-0.11.2-46fd1fa.apk`
+- **SHA-256:** `c1e24d6eb9e9a355354ddac3d9b81ec0f88d8509a3ec92870fa5e95261684dae`. Se descargó del release y se volvió a calcular: es idéntico al del artefacto construido.
+- **Tamaño:** 70.698.327 bytes.
+
 Solo datos sintéticos. Sin credenciales.
