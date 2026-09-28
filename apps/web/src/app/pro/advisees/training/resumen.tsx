@@ -296,7 +296,8 @@ async function cargarCitables(token: string, asesoradoId: string): Promise<Resul
         formResponseId: respuesta.formResponseId,
         fieldCode: a.fieldCode,
         etiqueta: campo?.label ?? a.fieldCode,
-        valor: valorDeclarado(a.value, campo?.unit ?? null),
+        // La misma unidad que la API devuelve al citar (DL-102): la declarada por la persona o, si falta, la de la plantilla.
+        valor: valorDeclarado(a.value, a.unit ?? campo?.unit ?? null),
         fecha: rectificacion ? rectificacion.recordedAt : respuesta.submittedAt,
       });
     }
