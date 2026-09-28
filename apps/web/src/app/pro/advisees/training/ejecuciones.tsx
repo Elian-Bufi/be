@@ -13,20 +13,22 @@
  */
 import {
   cantidad,
-  cantidadDeSeries,
   COPY_ENTRENAMIENTO,
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
   numero,
   registroVigente,
+  repeticionesPlanificadas,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EjecucionDeEntrenamiento,
+  type Prescripcion,
   type RegistroDeEjecucion,
 } from '@be/domain';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
+import { LineasDePrescripcion } from './plan';
 import { FiltroDePeriodo, type Periodo } from '../periodo';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
@@ -124,8 +126,12 @@ export function VistaDeEjecuciones() {
   );
 }
 
-/** Lo registrado de una sesión, ejercicio por ejercicio, sin reinterpretar un registro agregado como series. */
-export function Registro({ registro }: { registro: RegistroDeEjecucion }) {
+/**
+ * Lo registrado de una sesión, ejercicio por ejercicio, sin reinterpretar un registro agregado como series. Con
+ * `planificado` (las prescripciones de la versión que rigió esa sesión), cada serie registrada dice también lo
+ * planificado para ella: «· planificadas 8». Sin porcentajes ni colores: comparar no es calificar (DL-105).
+ */
+export function Registro({ registro, planificado = [] }: { registro: RegistroDeEjecucion; planificado?: readonly Prescripcion[] }) {
   return (
     <>
       <p className="nota">
@@ -148,10 +154,12 @@ export function Registro({ registro }: { registro: RegistroDeEjecucion }) {
               <ol>
                 {e.sets.map((s) => (
                   <li key={s.setIndex}>
+                    {/* La serie planificada con el mismo número, de la prescripción que rigió (no de la versión vigente hoy). */}
                     {COPY_ENTRENAMIENTO.serie} {numero(s.setIndex)}: {s.load ? cantidad(s.load.value, s.load.unit) : 'carga no registrada'} ×{' '}
                     {s.completedRepetitions === null ? '—' : numero(s.completedRepetitions)} {COPY_ENTRENAMIENTO.reps.toLowerCase()}
                     {s.rir !== null ? ` · ${COPY_ENTRENAMIENTO.rir} ${numero(s.rir)}` : ''}
                     {s.perceivedExertion !== null ? ` · esfuerzo percibido ${numero(s.perceivedExertion)}` : ''}
+                    {planificadasPara(planificado, e.prescriptionId, s.setIndex)}
                   </li>
                 ))}
               </ol>
@@ -176,10 +184,17 @@ function DetalleDeEjecucion({ ejecucion: x }: { ejecucion: EjecucionDeEntrenamie
       <details>
         <summary>Ver detalle</summary>
         <h4>{COPY_ENTRENAMIENTO.planificado}</h4>
+        {/* La prescripción de la versión que rigió esta sesión (su instantánea), completa: no la de la versión vigente hoy. */}
+        {x.plannedSession.instructions ? (
+          <p className="nota">
+            {COPY_ENTRENAMIENTO.indicacionesDeLaSesion}: {x.plannedSession.instructions}
+          </p>
+        ) : null}
         <ul>
           {x.plannedSession.prescriptions.map((p) => (
             <li key={p.prescriptionId}>
-              {p.exerciseName} · {cantidadDeSeries(p.sets.length)}
+              <strong>{p.exerciseName}</strong>
+              <LineasDePrescripcion prescripcion={p} />
             </li>
           ))}
         </ul>
@@ -189,12 +204,12 @@ function DetalleDeEjecucion({ ejecucion: x }: { ejecucion: EjecucionDeEntrenamie
             <p className="nota">
               {vigente.authorRole === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por el asesorado'} · {fecha(vigente.recordedAt)} · Motivo: {vigente.reason}
             </p>
-            <Registro registro={vigente.correction} />
+            <Registro registro={vigente.correction} planificado={x.plannedSession.prescriptions} />
           </>
         ) : null}
         <h4>{COPY_ENTRENAMIENTO.registroOriginal}</h4>
         <p className="nota">Registrado el {fecha(x.recordedAt)}</p>
-        <Registro registro={x.original} />
+        <Registro registro={x.original} planificado={x.plannedSession.prescriptions} />
         {x.corrections.length > 1 ? (
           <>
             <h4>{COPY_ENTRENAMIENTO.historialDeCorrecciones}</h4>
@@ -210,4 +225,12 @@ function DetalleDeEjecucion({ ejecucion: x }: { ejecucion: EjecucionDeEntrenamie
       </details>
     </li>
   );
+}
+
+/** « · planificadas 8» para una serie registrada, o nada si esa serie no estaba planificada o no fijaba repeticiones. */
+function planificadasPara(planificado: readonly Prescripcion[], prescriptionId: string, setIndex: number): string {
+  const serie = planificado.find((p) => p.prescriptionId === prescriptionId)?.sets.find((s) => s.setIndex === setIndex);
+  const reps = serie ? repeticionesPlanificadas(serie) : null;
+  if (reps === null) return '';
+  return ` · ${reps === '1' ? COPY_ENTRENAMIENTO.planificada : COPY_ENTRENAMIENTO.planificadas} ${reps}`;
 }

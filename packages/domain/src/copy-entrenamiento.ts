@@ -100,6 +100,18 @@ export const COPY_ENTRENAMIENTO = {
   cargaNoEsIntensidad: 'La carga sugerida es un complemento: no es el criterio de intensidad.',
   parametros: 'Descanso / parámetros',
   notas: 'Notas',
+  // PF-03, incremento 1 (DL-105): lo planificado, visible y comparable.
+  sinRepeticionesFijadas: 'sin repeticiones fijadas',
+  planificadas: 'planificadas',
+  planificada: 'planificada',
+  repeticion: 'repetición',
+  indicacionesDeLaSesion: 'Indicaciones de la sesión',
+  notaDeSerie: 'nota (opcional)',
+  // El atajo precarga solo el rótulo y la unidad: el valor lo escribe el profesional, nunca se inventa.
+  agregarDescanso: 'Agregar descanso',
+  descanso: 'Descanso',
+  ayudaDeTempo: 'Si indicás un tempo, explicalo con palabras: por ejemplo, bajar en 3 segundos y subir en 1. Un código como 3010 solo no alcanza.',
+  ayudaDelMotivo: 'Si cambiaste algo de lo planificado o no pudiste entrenar, podés contar por qué.',
   buscarEjercicio: 'Buscar en el catálogo BE',
   crearManualmente: 'Crear manualmente',
   catalogoSintetico: 'Catálogo de demostración: no es una recomendación.',

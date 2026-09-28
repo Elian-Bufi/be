@@ -722,6 +722,16 @@ details summary {
   font-weight: 700;
 }
 
+/* Lo planificado de una prescripción, una línea por dato (PF-03, DL-105). */
+.lista-compacta {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.25rem;
+}
+
+.lista-compacta li {
+  margin: 0.1rem 0;
+}
+
 .historial {
   margin: 0.5rem 0;
   padding-left: 1.25rem;
