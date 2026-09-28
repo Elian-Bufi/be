@@ -115,11 +115,23 @@ export interface LimitesNumericos {
 /** `true` si el número respeta los límites declarados; sin límites, cualquier número finito vale (como antes). */
 export function numeroDentroDeLimites(valor: number, limites: LimitesNumericos | undefined): boolean {
   if (!Number.isFinite(valor)) return false;
-  if (!limites) return true;
-  if (limites.integer && !Number.isInteger(valor)) return false;
-  if (limites.minimum !== undefined && valor < limites.minimum) return false;
-  if (limites.maximum !== undefined && valor > limites.maximum) return false;
-  return true;
+  return limiteVulnerado(valor, limites) === null;
+}
+
+/** Qué límite no respeta un número (DL-104). */
+export type LimiteVulnerado = 'NOT_INTEGER' | 'BELOW_MINIMUM' | 'ABOVE_MAXIMUM';
+
+/**
+ * El primer límite que el número no respeta, o `null` si los respeta todos. Se revisan en el mismo orden de siempre:
+ * primero entero, después mínimo y máximo. Así «2,5 días» es un problema de decimales, aunque además esté en rango.
+ * Supone un número finito, que ya exige el tipo NUMBER.
+ */
+export function limiteVulnerado(valor: number, limites: LimitesNumericos | undefined): LimiteVulnerado | null {
+  if (!limites) return null;
+  if (limites.integer && !Number.isInteger(valor)) return 'NOT_INTEGER';
+  if (limites.minimum !== undefined && valor < limites.minimum) return 'BELOW_MINIMUM';
+  if (limites.maximum !== undefined && valor > limites.maximum) return 'ABOVE_MAXIMUM';
+  return null;
 }
 
 /** Cada código pedido tiene que existir en la versión de plantilla citada — nunca en el catálogo vigente, que puede
