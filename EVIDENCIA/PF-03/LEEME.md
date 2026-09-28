@@ -49,7 +49,7 @@ Decisión: [DL-105](../../docs/DEUDA_LEGAJO.md) (PF03-D-1, opción A, Dirección
 
 ### Recorrido web local (12/12 controles)
 
-Recorrido con la API compilada, PostgreSQL 16, `next dev`, Chrome sin interfaz y datos sintéticos, el 2026-09-28. El asesorado registra la sesión por la API, como lo haría la APK. **No es el ambiente `test` desplegado.**
+Recorrido con la API compilada, PostgreSQL 16, `next dev`, Chrome sin interfaz y datos sintéticos, el 2026-09-28. Se repitió sobre el código final, con las correcciones de la revisión incluidas, con el mismo resultado; las capturas son de esa repetición. El asesorado registra la sesión por la API, como lo haría la APK. **No es el ambiente `test` desplegado.**
 
 | Control | Resultado |
 |---|---|
