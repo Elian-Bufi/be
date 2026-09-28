@@ -499,7 +499,9 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
         })}
         {cargaDeContexto === 'cargando' ? <p className="nota">Cargando…</p> : null}
         {cargaDeContexto === 'error' ? (
-          <button type="button" className="boton boton--enlace" onClick={() => void (citables.length === 0 ? cargarContexto() : cargarMas())}>
+          // Reintenta lo que falló: la primera página si no se cargó ninguna; si no, la página pendiente (aunque las
+          // cargadas no hayan traído respuestas de entrenamiento).
+          <button type="button" className="boton boton--enlace" onClick={() => void (paginas === 0 ? cargarContexto() : cargarMas())}>
             No se pudo cargar el contexto declarado. Reintentar
           </button>
         ) : null}

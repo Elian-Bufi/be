@@ -10,7 +10,9 @@ La auditoría del #102 sobre `e688368` pidió tres correcciones antes de integra
 | **2. Paginación del contexto** | Sin cambios: se usa el cursor que FRM-04 ya tenía. | Pide de a 20 Solicitudes. Si una página no trae respuestas de entrenamiento y quedan más, dice «hay más solicitudes para revisar», no «no hay respuestas». «Cargar más» agrega la página siguiente y conserva la selección. |
 | **3. Máximo de 20 citas** | Sin cambios: el contrato ya admitía hasta 20. | Muestra «Podés citar hasta 20 respuestas. Marcaste N de 20.». Con 20 marcadas, las demás casillas quedan deshabilitadas y aparece el aviso del máximo. Desmarcar libera un lugar. Antes de enviar se valida de nuevo, y ninguna selección se descarta sin avisar. |
 
-**Hallazgo de la revisión acotada, ya corregido.** Al actualizar después de un 409, el website releía la misma cantidad de páginas que antes. Si entre tanto la persona había respondido otras Solicitudes, una elegida podía quedar en una página posterior y darse por «ya no disponible» cuando seguía existiendo. Ahora sigue leyendo hasta encontrar todas las elegidas, o hasta que FRM-04 no tenga más páginas (`cargarPaginasDeCitables`). La cubren una prueba unitaria y la fase «corrimiento» del recorrido.
+**Hallazgos de la revisión acotada, ya corregidos:**
+1. **Relectura después de un 409.** Al actualizar, el website releía la misma cantidad de páginas que antes. Si entre tanto la persona había respondido otras Solicitudes, una elegida podía quedar en una página posterior y darse por «ya no disponible» cuando seguía existiendo. Ahora sigue leyendo hasta encontrar todas las elegidas, o hasta que FRM-04 no tenga más páginas (`cargarPaginasDeCitables`). La cubren una prueba unitaria y la fase «corrimiento» del recorrido.
+2. **Reintento de «Cargar más».** Si fallaba «Cargar más» cuando lo cargado todavía no tenía respuestas de entrenamiento, «Reintentar» volvía a pedir la primera página en lugar de la pendiente. Decidía por la cantidad de citables, no por las páginas cargadas. Ahora reintenta la primera página solo si no se cargó ninguna. Lo cubre la fase «reintento» del recorrido.
 
 ## Pruebas automáticas
 
@@ -75,11 +77,32 @@ Mientras el profesional elige, la persona responde 20 Solicitudes nuevas de nutr
 | Al actualizar se leen las páginas necesarias y están las 24 respuestas. La cambiada aparece en v2, desmarcada y señalada, no como «ya no disponible». La que no cambió sigue marcada aunque se corrió de página (`09`) | ✅ |
 | Se registra citando v2 y la que no cambió (`10`) | ✅ |
 
-Los únicos mensajes en la consola del navegador son los dos `409 (Conflict)` esperados, que Chrome registra solo.
+### Errores recuperables (fase `reintento`, 7/7)
+
+Las fallas de red se simulan con el protocolo de Chrome (`Fetch`) sobre un asesorado nuevo:
+- la carga inicial y «Cargar más» se cortan antes de salir;
+- el envío de la evaluación se corta **después** de que el servidor respondió 201, como una respuesta perdida.
+
+| Control | Resultado |
+|---|---|
+| Carga inicial cortada: ofrece «Reintentar» y no dice «no hay respuestas» (`11`); al reintentar, carga la primera página | ✅ |
+| «Cargar más» cortado: ofrece «Reintentar»; al reintentar llega la página pendiente, con las 24 respuestas y sin duplicados | ✅ |
+| Envío con la respuesta perdida (el servidor ya había respondido 201): «No pudimos confirmar el resultado. Reintentá.», con lo escrito y las 2 elegidas conservados (`12`) | ✅ |
+| El reintento reutiliza la misma `Idempotency-Key`: el servidor devuelve la misma evaluación y hay **una sola**, con sus 2 citas (`13`) | ✅ |
+
+### Mensajes de consola
+
+- Fases de conflicto: los dos `409 (Conflict)` esperados, que Chrome registra solo.
+- Fase de reintentos: los cortes simulados (`ERR_CONNECTION_REFUSED` y `ERR_CONNECTION_RESET`).
+- No hay ningún otro error.
 
 ### Comprobación en la base
 
-Para el asesorado del recorrido, el log de la API muestra `POST …/training/evaluations` con **409, 201, 409, 201**. En la base hay exactamente **2 evaluaciones**, cada una con 2 citas. En las dos, la cita de «días por semana» apunta a la rectificación (v2). Los 409 no escribieron nada.
+Desde el último arranque, el log de la API muestra `POST …/training/evaluations` con **201** (recorrido normal), **409, 201** (conflicto), **409, 201** (corrimiento) y **201, 201** (reintento: el original y su repetición idempotente). En la base:
+- el asesorado de las fases de conflicto tiene exactamente **2 evaluaciones**, cada una con 2 citas;
+- el de reintentos tiene **1**, con 2 citas.
+
+Los 409 no escribieron nada, y el reintento no duplicó la evaluación.
 
 ## Sigue pendiente, sin cambios
 

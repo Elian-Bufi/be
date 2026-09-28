@@ -15,13 +15,15 @@ La auditoría sobre `e688368` pidió tres correcciones. El detalle, las pruebas 
 2. **Paginación del contexto**, con el cursor de FRM-04 y «Cargar más». Una página sin respuestas de entrenamiento ya no se toma como vacío definitivo.
 3. **Máximo de 20 citas**, visible en pantalla, sin descartar selecciones y validado también antes de enviar.
 
+También se probaron en el navegador los **errores recuperables**: carga cortada, «Cargar más» cortado y envío con la respuesta perdida. En este último caso el reintento con la misma clave no duplica la evaluación.
+
 ## Adaptación del #102 al #101 integrado
 
 Con el #101, la API devuelve en cada cita la unidad **que declaró la persona** o, si falta, la del campo de la plantilla. La lista de respuestas citables del formulario de evaluación usaba siempre la de la plantilla. Ahora aplica la misma regla (commit `c5435e2`), así lo que el profesional marca coincide con lo que después muestra «Contexto citado».
 
 ## Recorrido local del website (previo a la integración)
 
-**Qué es y qué no es.** Es un recorrido en la máquina de desarrollo, el 2026-09-28, con el código del #102 sobre `main`: commit `c5435e2`, que incluye el #101 integrado. Se usó:
+**Qué es y qué no es.** Es un recorrido en la máquina de desarrollo, el 2026-09-28, con el código del #102 sobre `main`, que incluye el #101 integrado. Se hizo primero sobre `c5435e2` y **se repitió sobre el código final**, con las correcciones de la auditoría: los mismos 10 controles, en verde y sin errores de consola. Las capturas son las de esta última repetición. Se usó:
 - la API compilada contra PostgreSQL 16 local, con todas las migraciones aplicadas;
 - el website en `next dev`;
 - Chrome sin interfaz manejado con `puppeteer-core`;
