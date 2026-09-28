@@ -925,7 +925,7 @@ it('TEST-CT (WP-07): FRM-01 a 08 — catálogo, Solicitud, Respuesta y rectifica
     .expect(404);
 });
 
-it('TEST-CT (PF-02 · DL-100/101): «Antecedentes para entrenamiento» — FRM-02 sin propiedades nuevas y límites NUMBER en el servidor', async () => {
+it('TEST-CT (PF-02 · DL-100/101/102): «Antecedentes para entrenamiento» — FRM-02 sin propiedades nuevas, límites NUMBER en el servidor y la cita de una versión vieja es 409', async () => {
   const PLANTILLA_ENTRENAMIENTO = '67e4d0b3-cf4a-41e7-9d84-6864c5dde951';
   const VERSION_ENTRENAMIENTO = '0fba80db-0a80-47a7-b183-130232ab7a9c';
   const SEIS = ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
@@ -972,6 +972,16 @@ it('TEST-CT (PF-02 · DL-100/101): «Antecedentes para entrenamiento» — FRM-0
   const rectificar = `/api/v1/me/form-responses/${respondida.body.data.formResponseId}/rectifications`;
   await ase.post(rectificar).send({ expectedVersion: 'v1', reason: 'Tengo un día más.', ...respuestas(8, 45) }).expect(422);
   await ase.post(rectificar).send({ expectedVersion: 'v1', reason: 'Tengo un día más.', ...respuestas(4, 45) }).expect(201);
+
+  // DL-102 (auditoría del PR 102): la cita lleva la versión que el profesional vio. Citar la v1 después de la
+  // rectificación es 409 VERSION_CONFLICT, declarado en API-TRN-01; con la v2, el 201 valida contra el esquema de éxito.
+  const evaluar = `/api/v1/advisees/${aseParte.id}/training/evaluations`;
+  const citando = (expectedVersion: string) => ({
+    ...cuerpoDeEvaluacionDeEntrenamiento(),
+    formResponseReferences: [{ formResponseId: respondida.body.data.formResponseId, fieldCode: 'trn_dias_por_semana', expectedVersion }],
+  });
+  expect((await pro.post(evaluar).send(citando('v1')).expect(409)).body.error.code).toBe('VERSION_CONFLICT');
+  await pro.post(evaluar).send(citando('v2')).expect(201);
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

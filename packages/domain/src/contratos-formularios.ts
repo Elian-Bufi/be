@@ -103,6 +103,7 @@ export const VersionDePlantillaSchema = z.strictObject({
 export type VersionDePlantilla = z.infer<typeof VersionDePlantillaSchema>;
 
 export const VersionDePlantillaResponseSchema = z.strictObject({ data: VersionDePlantillaSchema });
+export type VersionDePlantillaResponse = z.infer<typeof VersionDePlantillaResponseSchema>;
 
 // ─── API-FRM-03 · crear solicitud ───────────────────────────────────────────────────────────────
 
@@ -155,6 +156,7 @@ export const SolicitudDeFormularioSchema = z.strictObject({
 export type SolicitudDeFormulario = z.infer<typeof SolicitudDeFormularioSchema>;
 
 export const ListaDeSolicitudesDeFormularioResponseSchema = z.strictObject({ data: z.array(SolicitudDeFormularioSchema), page: PaginaSchema });
+export type ListaDeSolicitudesDeFormularioResponse = z.infer<typeof ListaDeSolicitudesDeFormularioResponseSchema>;
 
 /** API-FRM-06 (09:1601-1618): agrega `respondable`, proyección del PDP — no un estado nuevo. */
 export const SolicitudPropiaSchema = SolicitudDeFormularioSchema.extend({ respondable: z.boolean() });
@@ -238,6 +240,7 @@ export const DetalleDeSolicitudSchema = z.strictObject({
   response: RespuestaDeFormularioSchema.nullable(),
 });
 export const DetalleDeSolicitudResponseSchema = z.strictObject({ data: DetalleDeSolicitudSchema });
+export type DetalleDeSolicitudResponse = z.infer<typeof DetalleDeSolicitudResponseSchema>;
 
 // ─── API-FRM-08 · rectificar respuesta propia ───────────────────────────────────────────────────
 

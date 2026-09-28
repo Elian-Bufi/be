@@ -18,6 +18,12 @@
  *
  * Una cita inválida devuelve el mismo 422 exista o no la respuesta: no se revela si un identificador es de otra persona.
  * La base repite las reglas de pertenencia (trigger `be_cita_de_respuesta_en_evaluacion_insertar`).
+ *
+ * **Precondición de versión** (auditoría del #102). Si la cita trae `expectedVersion` (la versión que el profesional vio
+ * al elegirla) y la versión vigente en esta misma lectura es otra, la API responde 409 `VERSION_CONFLICT` y la
+ * transacción no escribe ni la evaluación ni ninguna cita. Así una rectificación entre la carga de la pantalla y el envío
+ * no reemplaza en silencio lo que el profesional eligió. El control va después del PDP y de la pertenencia: sobre una
+ * respuesta ajena o inexistente sigue saliendo el 422 neutral, nunca un 409 que revele que existe.
  */
 import { CodigoDeError, resolverVistaEfectiva, type CitaDeRespuestaDeFormulario, type RelacionDeCorreccion, type RespuestaCitada } from '@be/domain';
 import type { Prisma } from '@prisma/client';
@@ -43,6 +49,12 @@ function invalida(indice: number): ErrorDeApi {
   });
 }
 
+function versionCambiada(indice: number): ErrorDeApi {
+  return new ErrorDeApi(409, CodigoDeError.VERSION_CONFLICT, 'Una respuesta citada cambió desde que la viste: actualizá el contexto y revisá tu selección.', {
+    issues: [{ code: 'FORM_RESPONSE_VERSION_CHANGED', path: `formResponseReferences[${indice}].expectedVersion` }],
+  });
+}
+
 function respuestasDe(contenido: unknown): RespuestaAlmacenada[] {
   return (contenido as { answers: RespuestaAlmacenada[] }).answers;
 }
@@ -55,7 +67,7 @@ export interface CitaValidada {
 }
 
 /** Una respuesta leída una vez: `null` si no existe o no se puede citar en esta evaluación; si no, su versión vigente. */
-type RespuestaCitable = { respuestaId: string; rectificacionId: string | null; campos: ReadonlySet<string> } | null;
+type RespuestaCitable = { respuestaId: string; rectificacionId: string | null; version: number; campos: ReadonlySet<string> } | null;
 
 /**
  * Valida las citas de una evaluación nueva, en orden. Lanza 422 `TRAINING_EVALUATION_INVALID` con el índice de la primera
@@ -73,6 +85,7 @@ export async function validarCitas(tx: Tx, citas: readonly CitaDeRespuestaDeForm
     if (!leidas.has(id)) leidas.set(id, await leerCitable(tx, id, par));
     const r = leidas.get(id);
     if (!r) throw invalida(i);
+    if (cita.expectedVersion !== undefined && cita.expectedVersion !== token(r.version)) throw versionCambiada(i);
     const clave = `${r.respuestaId}#${cita.fieldCode}`;
     if (vistas.has(clave) || !r.campos.has(cita.fieldCode)) throw invalida(i);
     vistas.add(clave);
@@ -89,7 +102,7 @@ async function leerCitable(tx: Tx, id: string, par: { profesionalId: string; ase
   if (vista.tipo === 'NO_RESOLUBLE') return null;
   const rectificacion = vista.tipo === 'CORREGIDA' ? r.rectificaciones.find((c) => c.id === vista.id) ?? null : null;
   const vigente = respuestasDe(rectificacion ? rectificacion.contenido : r.contenido);
-  return { respuestaId: r.id, rectificacionId: rectificacion?.id ?? null, campos: new Set(vigente.map((a) => a.fieldCode)) };
+  return { respuestaId: r.id, rectificacionId: rectificacion?.id ?? null, version: rectificacion ? rectificacion.version : r.version, campos: new Set(vigente.map((a) => a.fieldCode)) };
 }
 
 /**

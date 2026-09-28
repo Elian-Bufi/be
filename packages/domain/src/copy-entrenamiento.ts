@@ -189,6 +189,19 @@ export const COPY_ENTRENAMIENTO = {
   sinContextoParaCitar: 'Todavía no hay respuestas de contexto de entrenamiento para citar.',
   contextoCitado: 'Contexto citado',
   actualizadaDespues: 'La persona actualizó esta respuesta después de la evaluación; acá se muestra lo que se citó.',
+  // Auditoría del #102: versión vista, paginación y tope de citas
+  limiteDeCitas: 'Podés citar hasta 20 respuestas.',
+  topeDeCitasAlcanzado: 'Llegaste al máximo de 20 respuestas citadas. Desmarcá una para elegir otra.',
+  excesoDeCitas: 'Podés citar hasta 20 respuestas: desmarcá las que sobran antes de registrar.',
+  cargarMasContexto: 'Cargar más',
+  hayMasContexto: 'Todavía no aparecen respuestas de entrenamiento, pero hay más solicitudes para revisar.',
+  contextoCambio:
+    'Una respuesta que marcaste cambió desde que cargaste el contexto: la persona la actualizó. La evaluación no se registró y lo que escribiste se conserva. Actualizá el contexto y revisá tu selección antes de volver a registrar.',
+  actualizarContexto: 'Actualizar el contexto',
+  actualizaAntesDeRegistrar: 'Actualizá el contexto antes de volver a registrar: una respuesta que marcaste cambió.',
+  revisarCambiadas: 'Contexto actualizado. Las respuestas que cambiaron quedaron desmarcadas y señaladas: revisalas y volvé a marcarlas si corresponde.',
+  respuestaCambiada: 'Cambió desde que la elegiste: revisala y volvé a marcarla si corresponde.',
+  respuestaYaNoDisponible: 'Una respuesta que habías elegido ya no está disponible para citar.',
 } as const;
 
 /**

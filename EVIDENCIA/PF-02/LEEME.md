@@ -6,7 +6,14 @@ Ficha y decisiones: `docs/propuestas/PF-01-02_contexto-de-entrenamiento.md` (DL-
 |---|---|---|
 | #100 (1/3) | Plantilla «Antecedentes para entrenamiento» (DL-100) y límites NUMBER validados en el servidor (DL-101) | **Integrado** (`ea3e1ec`). Limitación de interfaz: DL-104, abierta |
 | #101 (2/3) | Citas de respuestas en la evaluación, verificadas en el servidor (DL-102) | **Integrado** (`ff2001e`). Evidencia por dimensión: `auditoria-pr-101.md` |
-| #102 (3/3) | Website: «Solicitar contexto» desde la evaluación, con retorno; citar respuestas y ver lo citado | **Para auditoría**, sin autorización de integración |
+| #102 (3/3) | Website: «Solicitar contexto» desde la evaluación, con retorno; citar respuestas y ver lo citado | **Para auditoría** con las tres correcciones pedidas sobre `e688368`, sin autorización de integración. Evidencia: `auditoria-pr-102.md` |
+
+## Correcciones de la auditoría del #102
+
+La auditoría sobre `e688368` pidió tres correcciones. El detalle, las pruebas y las capturas (`auditoria-pr-102/`) están en `auditoria-pr-102.md`:
+1. **Versión vista y versión citada.** El website envía la versión que mostró (`expectedVersion`). Si la persona rectificó en el medio, la API responde 409 sin registrar nada; el website conserva lo escrito y pide actualizar y revisar la selección.
+2. **Paginación del contexto**, con el cursor de FRM-04 y «Cargar más». Una página sin respuestas de entrenamiento ya no se toma como vacío definitivo.
+3. **Máximo de 20 citas**, visible en pantalla, sin descartar selecciones y validado también antes de enviar.
 
 ## Adaptación del #102 al #101 integrado
 
@@ -39,7 +46,7 @@ Son 10 controles, todos en verde. Las capturas están en `recorrido-local/`.
 ## Pendiente
 
 - La prueba completa **web → respuesta desde la APK → evaluación** en el ambiente desplegado, una vez integrado el #102.
-- La **prueba de concurrencia real** de las citas (#101).
+- La **prueba de concurrencia real** de las citas (#101). El caso secuencial de la auditoría del #102 (v1 → v2 → 409) no la reemplaza.
 - **DL-104** (mensaje ante un valor fuera de rango).
 
 Solo datos sintéticos. Sin credenciales.

@@ -18,7 +18,6 @@ import {
   leerNumero,
   numero,
   registroVigente,
-  type CitaDeRespuestaDeFormulario,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EvaluacionDeEntrenamiento,
   type RespuestaCitada,
@@ -26,11 +25,25 @@ import {
   type VersionDeObjetivoDeEntrenamiento,
 } from '@be/domain';
 import Link from 'next/link';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Aviso, Campo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import {
+  alternarSeleccion,
+  cargarPaginaDeCitables,
+  cargarPaginasDeCitables,
+  citasAEnviar,
+  claveDe,
+  excesoDeSeleccion,
+  LIMITE_DE_PAGINA,
+  MAXIMO_DE_CITAS,
+  reconciliarSeleccion,
+  valorDeclarado,
+  type Citable,
+  type FuenteDeContexto,
+} from './contexto-citable';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 
 interface Datos {
@@ -230,12 +243,6 @@ function Estado({ datos, onIrA }: { datos: Datos; onIrA: (v: 'plan' | 'ejecucion
   );
 }
 
-/** Valor de una respuesta declarada, con su unidad: el número con coma (DL-091 punto 4). */
-function valorDeclarado(valor: string | number | boolean, unidad: string | null): string {
-  const texto = typeof valor === 'number' ? numero(valor) : typeof valor === 'boolean' ? (valor ? 'Sí' : 'No') : valor;
-  return unidad ? `${texto} ${unidad}` : texto;
-}
-
 /** Lo citado en una evaluación (DL-102): declarado por la persona, con fecha, y el aviso si lo actualizó después. */
 function ContextoCitado({ citas }: { citas: readonly RespuestaCitada[] }) {
   return (
@@ -257,52 +264,6 @@ function ContextoCitado({ citas }: { citas: readonly RespuestaCitada[] }) {
       </dl>
     </div>
   );
-}
-
-/** Una respuesta que se puede citar: la versión vigente de un campo respondido, con rótulo y unidad de su plantilla. */
-interface Citable extends CitaDeRespuestaDeFormulario {
-  readonly etiqueta: string;
-  readonly valor: string;
-  readonly fecha: string;
-}
-
-/**
- * Las respuestas citables: las Solicitudes de ENTRENAMIENTO respondidas que este profesional hoy puede leer (FRM-04 ya
- * filtra por PDP), en su versión vigente. El servidor vuelve a validar cada cita al registrar la evaluación (DL-102).
- */
-async function cargarCitables(token: string, asesoradoId: string): Promise<Resultado<readonly Citable[]>> {
-  const lista = await api.listarSolicitudesDeFormulario(token, asesoradoId, { status: 'RESPONDED', limit: '50' });
-  if (!lista.ok) return lista as Resultado<never>;
-  const citables: Citable[] = [];
-  const plantillas = new Map<string, Map<string, { label: string; unit: string | null }>>();
-  for (const s of lista.datos.data.filter((x) => x.scope === 'ENTRENAMIENTO')) {
-    const detalle = await api.consultarSolicitudDeFormulario(token, s.formRequestId);
-    if (!detalle.ok) return detalle as Resultado<never>;
-    const respuesta = detalle.datos.data.response;
-    if (!respuesta || respuesta.effectiveView.kind === 'NOT_RESOLVABLE') continue;
-    const vista = respuesta.effectiveView;
-    const rectificacion = vista.kind === 'RECTIFIED' ? respuesta.rectifications.find((r) => r.rectificationId === vista.rectificationId) : undefined;
-    const vigentes = rectificacion ? rectificacion.answers : respuesta.original.answers;
-    let campos = plantillas.get(s.templateVersionId);
-    if (!campos) {
-      const version = await api.consultarVersionDePlantilla(token, s.templateId, s.templateVersionId);
-      if (!version.ok) return version as Resultado<never>;
-      campos = new Map(version.datos.data.sections.flatMap((sec) => sec.fields.map((c) => [c.fieldCode, { label: c.label, unit: c.unit }] as const)));
-      plantillas.set(s.templateVersionId, campos);
-    }
-    for (const a of vigentes) {
-      const campo = campos.get(a.fieldCode);
-      citables.push({
-        formResponseId: respuesta.formResponseId,
-        fieldCode: a.fieldCode,
-        etiqueta: campo?.label ?? a.fieldCode,
-        // La misma unidad que la API devuelve al citar (DL-102): la declarada por la persona o, si falta, la de la plantilla.
-        valor: valorDeclarado(a.value, a.unit ?? campo?.unit ?? null),
-        fecha: rectificacion ? rectificacion.recordedAt : respuesta.submittedAt,
-      });
-    }
-  }
-  return { ok: true, datos: citables };
 }
 
 type Fuente = 'REPORTED' | 'OBSERVED' | 'CALCULATED';
@@ -332,21 +293,79 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
   const [envios, setEnvios] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
-  const [citables, setCitables] = useState<Resultado<readonly Citable[]> | null>(null);
+  // Contexto declarado (DL-102; auditoría del #102): páginas de FRM-04, versión vista por respuesta y tope de 20 citas.
+  const [citables, setCitables] = useState<readonly Citable[]>([]);
+  const [siguiente, setSiguiente] = useState<string | null>(null);
+  const [paginas, setPaginas] = useState(0);
+  const [cargaDeContexto, setCargaDeContexto] = useState<'cargando' | 'listo' | 'error'>('cargando');
   const [citadas, setCitadas] = useState<readonly string[]>([]);
+  const [topeAvisado, setTopeAvisado] = useState(false);
+  const [conflicto, setConflicto] = useState(false);
+  const [cambiadas, setCambiadas] = useState<readonly string[]>([]);
+  const plantillas = useRef(new Map());
   const cambiar = (i: number, cambio: Partial<Dato>) => setDatos((ds) => ds.map((d, j) => (j === i ? { ...d, ...cambio } : d)));
-  const claveDe = (c: CitaDeRespuestaDeFormulario) => `${c.formResponseId}#${c.fieldCode}`;
+  const fuente = useMemo<FuenteDeContexto>(
+    () => ({
+      listar: (cursor) => api.listarSolicitudesDeFormulario(token, asesoradoId, { status: 'RESPONDED', limit: LIMITE_DE_PAGINA, ...(cursor ? { cursor } : {}) }),
+      detalle: (formRequestId) => api.consultarSolicitudDeFormulario(token, formRequestId),
+      version: (templateId, templateVersionId) => api.consultarVersionDePlantilla(token, templateId, templateVersionId),
+    }),
+    [token, asesoradoId],
+  );
 
   const cargarContexto = useCallback(async () => {
-    setCitables(null);
-    const r = await cargarCitables(token, asesoradoId);
+    setCargaDeContexto('cargando');
+    const r = await cargarPaginasDeCitables(fuente, plantillas.current, { minimo: 1 });
     if (sesionPerdida(r)) return;
-    setCitables(r);
-  }, [token, asesoradoId, sesionPerdida]);
+    if (!r.ok) return setCargaDeContexto('error');
+    setCitables(r.datos.citables);
+    setSiguiente(r.datos.siguiente);
+    setPaginas(r.datos.paginas);
+    setCargaDeContexto('listo');
+  }, [fuente, sesionPerdida]);
 
   useEffect(() => {
     void cargarContexto();
   }, [cargarContexto]);
+
+  /** «Cargar más»: la página siguiente se agrega; la selección se conserva. */
+  async function cargarMas() {
+    if (!siguiente) return;
+    setCargaDeContexto('cargando');
+    const r = await cargarPaginaDeCitables(fuente, siguiente, plantillas.current);
+    if (sesionPerdida(r)) return;
+    if (!r.ok) return setCargaDeContexto('error');
+    setCitables((cs) => [...cs, ...r.datos.citables]);
+    setSiguiente(r.datos.siguiente);
+    setPaginas((n) => n + 1);
+    setCargaDeContexto('listo');
+  }
+
+  /**
+   * Después de un 409: relee desde el principio al menos las páginas que había (y más, si una elegida se corrió) y
+   * desmarca, señalándolas, las elegidas que cambiaron.
+   */
+  async function actualizarContexto() {
+    setCargaDeContexto('cargando');
+    const r = await cargarPaginasDeCitables(fuente, plantillas.current, { minimo: Math.max(paginas, 1), buscadas: citadas });
+    if (sesionPerdida(r)) return;
+    if (!r.ok) return setCargaDeContexto('error');
+    const { seleccion, cambiadas: nuevas } = reconciliarSeleccion(citadas, citables, r.datos.citables);
+    setCitables(r.datos.citables);
+    setSiguiente(r.datos.siguiente);
+    setPaginas(r.datos.paginas);
+    setCitadas(seleccion);
+    setCambiadas(nuevas);
+    setConflicto(false);
+    setCargaDeContexto('listo');
+  }
+
+  function alternar(c: Citable) {
+    const r = alternarSeleccion(citadas, claveDe(c));
+    setCitadas(r.seleccion);
+    setTopeAvisado(r.topeAlcanzado);
+    if (r.seleccion.includes(claveDe(c))) setCambiadas((cs) => cs.filter((x) => x !== claveDe(c)));
+  }
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
@@ -358,6 +377,9 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
       if (!d.valor.trim()) problemas.push({ id: `trn-dato-${i}-valor`, texto: `Dato ${i + 1}: falta el valor.` });
       if (d.fuente === 'CALCULATED' && !d.metodo.trim()) problemas.push({ id: `trn-dato-${i}-metodo`, texto: `Dato ${i + 1}: un dato calculado declara su método.` });
     });
+    // Tope de citas y conflicto pendiente: se validan también acá, no solo al marcar.
+    if (excesoDeSeleccion(citadas) !== null) problemas.push({ id: 'trn-contexto', texto: COPY_ENTRENAMIENTO.excesoDeCitas });
+    if (conflicto) problemas.push({ id: 'trn-contexto', texto: COPY_ENTRENAMIENTO.actualizaAntesDeRegistrar });
     setErrores(problemas);
     setEnvios((n) => n + 1);
     if (problemas.length > 0) return;
@@ -379,10 +401,8 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
           })),
         },
         evidenceReferences: [],
-        // DL-102: referencias, en el orden en que se muestran; el servidor las valida y fija la versión citada.
-        formResponseReferences: (citables?.ok ? citables.datos : [])
-          .filter((c) => citadas.includes(claveDe(c)))
-          .map((c) => ({ formResponseId: c.formResponseId, fieldCode: c.fieldCode })),
+        // DL-102: referencias, en el orden en que se muestran, cada una con la versión que se vio (precondición).
+        formResponseReferences: citasAEnviar(citables, citadas),
         professionalNotes: notas.trim() || null,
         context: contexto.trim() || null,
       },
@@ -391,6 +411,11 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
     intento.registrar(r);
     setEnviando(false);
     if (sesionPerdida(r) || accesoRetirado(r)) return;
+    // 409 por versión: una respuesta elegida cambió. No se registró nada; lo escrito queda y se pide actualizar y revisar.
+    if (!r.ok && r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT' && r.issues.some((i) => i.code === 'FORM_RESPONSE_VERSION_CHANGED')) {
+      setConflicto(true);
+      return;
+    }
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     onRegistrada();
   }
@@ -430,37 +455,60 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
           Agregar dato
         </button>
       </fieldset>
-      <fieldset className="grupo">
+      <fieldset className="grupo" id="trn-contexto">
         <legend>{COPY_ENTRENAMIENTO.contextoDeclarado}</legend>
         <p className="campo__ayuda">{COPY_ENTRENAMIENTO.ayudaContextoDeclarado}</p>
-        {!citables ? <p className="nota">Cargando…</p> : null}
-        {citables && !citables.ok ? (
-          <button type="button" className="boton boton--enlace" onClick={() => void cargarContexto()}>
+        <p className="campo__ayuda" id="trn-contexto-limite">
+          {COPY_ENTRENAMIENTO.limiteDeCitas} Marcaste {citadas.length} de {MAXIMO_DE_CITAS}.
+        </p>
+        {conflicto ? (
+          <Aviso tipo="error" enfocar>
+            <p>{COPY_ENTRENAMIENTO.contextoCambio}</p>
+            <button type="button" className="boton boton--secundario" onClick={() => void actualizarContexto()}>
+              {COPY_ENTRENAMIENTO.actualizarContexto}
+            </button>
+          </Aviso>
+        ) : null}
+        {!conflicto && cambiadas.length > 0 ? (
+          <Aviso tipo="info" enfocar>
+            <p>{COPY_ENTRENAMIENTO.revisarCambiadas}</p>
+            {cambiadas.some((k) => !citables.some((c) => claveDe(c) === k)) ? <p>{COPY_ENTRENAMIENTO.respuestaYaNoDisponible}</p> : null}
+          </Aviso>
+        ) : null}
+        {topeAvisado || citadas.length >= MAXIMO_DE_CITAS ? <p className="nota" id="trn-contexto-tope">{COPY_ENTRENAMIENTO.topeDeCitasAlcanzado}</p> : null}
+        {citables.map((c) => {
+          const clave = claveDe(c);
+          const id = `trn-cita-${c.formResponseId}-${c.fieldCode}`;
+          const marcada = citadas.includes(clave);
+          return (
+            <div key={clave} className="campo-de-plantilla">
+              <input type="checkbox" id={id} checked={marcada} disabled={!marcada && citadas.length >= MAXIMO_DE_CITAS} onChange={() => alternar(c)} aria-describedby="trn-contexto-limite" />
+              <label htmlFor={id}>
+                {c.etiqueta}: {c.valor}{' '}
+                <span className="nota">
+                  · {COPY_FORMULARIOS.declaradoPorLaPersona} el {fecha(c.fecha)}
+                </span>
+              </label>
+              {cambiadas.includes(clave) ? (
+                <p className="nota" data-cambiada="si">
+                  {COPY_ENTRENAMIENTO.respuestaCambiada}
+                </p>
+              ) : null}
+            </div>
+          );
+        })}
+        {cargaDeContexto === 'cargando' ? <p className="nota">Cargando…</p> : null}
+        {cargaDeContexto === 'error' ? (
+          <button type="button" className="boton boton--enlace" onClick={() => void (citables.length === 0 ? cargarContexto() : cargarMas())}>
             No se pudo cargar el contexto declarado. Reintentar
           </button>
         ) : null}
-        {citables?.ok && citables.datos.length === 0 ? <p className="nota">{COPY_ENTRENAMIENTO.sinContextoParaCitar}</p> : null}
-        {citables?.ok
-          ? citables.datos.map((c) => {
-              const id = `trn-cita-${c.formResponseId}-${c.fieldCode}`;
-              return (
-                <div key={claveDe(c)} className="campo-de-plantilla">
-                  <input
-                    type="checkbox"
-                    id={id}
-                    checked={citadas.includes(claveDe(c))}
-                    onChange={() => setCitadas((cs) => (cs.includes(claveDe(c)) ? cs.filter((x) => x !== claveDe(c)) : [...cs, claveDe(c)]))}
-                  />
-                  <label htmlFor={id}>
-                    {c.etiqueta}: {c.valor}{' '}
-                    <span className="nota">
-                      · {COPY_FORMULARIOS.declaradoPorLaPersona} el {fecha(c.fecha)}
-                    </span>
-                  </label>
-                </div>
-              );
-            })
-          : null}
+        {cargaDeContexto === 'listo' && citables.length === 0 ? <p className="nota">{siguiente ? COPY_ENTRENAMIENTO.hayMasContexto : COPY_ENTRENAMIENTO.sinContextoParaCitar}</p> : null}
+        {cargaDeContexto === 'listo' && siguiente ? (
+          <button type="button" className="boton boton--secundario" onClick={() => void cargarMas()}>
+            {COPY_ENTRENAMIENTO.cargarMasContexto}
+          </button>
+        ) : null}
       </fieldset>
       <div className="campo">
         <label htmlFor="trn-evaluacion-contexto">Contexto (opcional)</label>
@@ -477,7 +525,7 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
         </Aviso>
       ) : null}
       <div className="acciones">
-        <button type="submit" className="boton boton--primario" disabled={enviando} aria-busy={enviando}>
+        <button type="submit" className="boton boton--primario" disabled={enviando || conflicto} aria-busy={enviando}>
           {enviando ? 'Registrando…' : 'Registrar evaluación'}
         </button>
         <button type="button" className="boton boton--secundario" onClick={onCancelar} disabled={enviando}>
