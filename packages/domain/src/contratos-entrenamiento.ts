@@ -71,10 +71,43 @@ export const CargaSchema = z.strictObject({ value: z.number().nonnegative().fini
  * La valoración es la misma lista de datos con fuente de nutrición (DL-048): «cada dato debe conservar origen»
  * (B10-06:132), y un dato calculado declara su método. Evidencia ≠ ejecución (09v10:199).
  */
+/**
+ * DL-102 (PF-02): una respuesta de formulario citada como evidencia de la evaluación. Es una **referencia**, no una
+ * copia: la declaración de la persona no se convierte en observación del profesional (CA-FOR-04 del Plan Funcional).
+ * El servidor la valida al crear la evaluación: tiene que ser una respuesta del mismo asesorado, a una Solicitud de
+ * ENTRENAMIENTO del mismo profesional, con el campo respondido en la versión vigente, que es la que queda citada.
+ */
+export const CitaDeRespuestaDeFormularioSchema = z.strictObject({
+  formResponseId: IdOpaco,
+  fieldCode: z.string().regex(/^[a-z][a-z0-9_]{0,63}$/),
+});
+export type CitaDeRespuestaDeFormulario = z.infer<typeof CitaDeRespuestaDeFormularioSchema>;
+
+/**
+ * Lo citado, resuelto al leer la evaluación. Rótulo y unidad salen de la versión de plantilla de la Solicitud; el
+ * valor, de la versión de la respuesta **vigente al citar** (`citedVersion`). Si la persona la rectificó después,
+ * `laterVersionExists` lo dice y el valor citado no cambia: la evaluación se fundó en lo que había.
+ */
+export const RespuestaCitadaSchema = z.strictObject({
+  formResponseId: IdOpaco,
+  formRequestId: IdOpaco,
+  fieldCode: z.string(),
+  label: z.string(),
+  value: z.union([z.string(), z.number(), z.boolean()]),
+  unit: z.string().nullable(),
+  provenance: z.literal('SELF_REPORTED'),
+  citedVersion: TokenDeVersionSchema,
+  answeredAt: Instante,
+  laterVersionExists: z.boolean(),
+});
+export type RespuestaCitada = z.infer<typeof RespuestaCitadaSchema>;
+
 export const CrearEvaluacionDeEntrenamientoRequestSchema = z.strictObject({
   occurredAt: Instante,
   assessment: ValoracionSchema,
   evidenceReferences: z.array(Texto(200)).max(20),
+  /** DL-102. Opcional para no romper a los clientes que ya crean evaluaciones; ausente es lo mismo que `[]`. */
+  formResponseReferences: z.array(CitaDeRespuestaDeFormularioSchema).max(20).optional(),
   professionalNotes: TextoOpcional(4000),
   /** RF-036: la evaluación se registra «con autoría, fecha, contexto y fuentes» (04:456; 09v10:190). Opcional para no
    *  romper a los clientes que ya la crean; ausente es lo mismo que `null`. */
@@ -91,6 +124,8 @@ export const EvaluacionDeEntrenamientoSchema = z.strictObject({
   recordedAt: Instante,
   assessment: ValoracionSchema,
   evidenceReferences: z.array(z.string()),
+  /** DL-102: las respuestas citadas, en el orden en que se citaron. */
+  formResponseReferences: z.array(RespuestaCitadaSchema),
   professionalNotes: z.string().nullable(),
   context: z.string().nullable(),
 });

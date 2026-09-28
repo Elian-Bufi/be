@@ -27156,6 +27156,28 @@
                       "maxLength": 200
                     }
                   },
+                  "formResponseReferences": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "formResponseId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fieldCode": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                        }
+                      },
+                      "required": [
+                        "formResponseId",
+                        "fieldCode"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
                   "professionalNotes": {
                     "anyOf": [
                       {
@@ -27493,6 +27515,70 @@
                               "type": "string"
                             }
                           },
+                          "formResponseReferences": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "formResponseId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "formRequestId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "fieldCode": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": [
+                                    "string",
+                                    "number",
+                                    "boolean"
+                                  ]
+                                },
+                                "unit": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "provenance": {
+                                  "type": "string",
+                                  "const": "SELF_REPORTED"
+                                },
+                                "citedVersion": {
+                                  "type": "string",
+                                  "pattern": "^v[1-9]\\d*$"
+                                },
+                                "answeredAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                "laterVersionExists": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "formResponseId",
+                                "formRequestId",
+                                "fieldCode",
+                                "label",
+                                "value",
+                                "unit",
+                                "provenance",
+                                "citedVersion",
+                                "answeredAt",
+                                "laterVersionExists"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "professionalNotes": {
                             "type": [
                               "string",
@@ -27515,6 +27601,7 @@
                           "recordedAt",
                           "assessment",
                           "evidenceReferences",
+                          "formResponseReferences",
                           "professionalNotes",
                           "context"
                         ],
@@ -27781,6 +27868,70 @@
                             "type": "string"
                           }
                         },
+                        "formResponseReferences": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "formResponseId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "formRequestId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "fieldCode": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "value": {
+                                "type": [
+                                  "string",
+                                  "number",
+                                  "boolean"
+                                ]
+                              },
+                              "unit": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "provenance": {
+                                "type": "string",
+                                "const": "SELF_REPORTED"
+                              },
+                              "citedVersion": {
+                                "type": "string",
+                                "pattern": "^v[1-9]\\d*$"
+                              },
+                              "answeredAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "laterVersionExists": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "formResponseId",
+                              "formRequestId",
+                              "fieldCode",
+                              "label",
+                              "value",
+                              "unit",
+                              "provenance",
+                              "citedVersion",
+                              "answeredAt",
+                              "laterVersionExists"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "professionalNotes": {
                           "type": [
                             "string",
@@ -27803,6 +27954,7 @@
                         "recordedAt",
                         "assessment",
                         "evidenceReferences",
+                        "formResponseReferences",
                         "professionalNotes",
                         "context"
                       ],

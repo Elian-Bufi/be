@@ -439,3 +439,39 @@ test('06:5253 · lo que rige de una ejecución es la corrección vigente, o el o
   assert.equal(registroVigente({ original, corrections: [], effectiveView: { kind: 'ORIGINAL' } } as never), original);
   assert.equal(registroVigente({ original, corrections: [correccion], effectiveView: { kind: 'CORRECTED', correctionId: 'c1' } } as never), corregida);
 });
+
+// ─── PF-02 · DL-102: respuestas de formulario citadas en la evaluación ──────────────────────────
+
+test('DL-102 · la evaluación acepta citas de respuestas; sin el campo sigue siendo válida (clientes anteriores)', () => {
+  const base = {
+    occurredAt: '2026-09-27T12:00:00.000Z',
+    assessment: { entries: [{ concept: 'Experiencia', value: 'Dos años', source: 'REPORTED' }] },
+    evidenceReferences: [],
+    professionalNotes: null,
+  };
+  const { CrearEvaluacionDeEntrenamientoRequestSchema: esquema } = contratosEntrenamiento;
+  assert.equal(esquema.safeParse(base).success, true, 'sin formResponseReferences');
+  const cita = { formResponseId: '0fba80db-0a80-47a7-b183-130232ab7a9c', fieldCode: 'trn_dias_por_semana' };
+  assert.equal(esquema.safeParse({ ...base, formResponseReferences: [cita] }).success, true);
+  assert.equal(esquema.safeParse({ ...base, formResponseReferences: [{ ...cita, fieldCode: 'Dias Por Semana' }] }).success, false, 'fieldCode fuera del patrón');
+  assert.equal(esquema.safeParse({ ...base, formResponseReferences: [{ ...cita, value: 3 }] }).success, false, 'una cita no lleva el valor: es una referencia, no una copia');
+  assert.equal(esquema.safeParse({ ...base, formResponseReferences: Array.from({ length: 21 }, () => cita) }).success, false, 'hasta 20');
+});
+
+test('DL-102 · lo citado se lee siempre como SELF_REPORTED, con la versión citada y el aviso de versión posterior', () => {
+  const { RespuestaCitadaSchema: esquema } = contratosEntrenamiento;
+  const citada = {
+    formResponseId: '0fba80db-0a80-47a7-b183-130232ab7a9c',
+    formRequestId: '67e4d0b3-cf4a-41e7-9d84-6864c5dde951',
+    fieldCode: 'trn_dias_por_semana',
+    label: 'Cuántos días por semana podrías reservar de manera realista',
+    value: 3,
+    unit: 'días por semana',
+    provenance: 'SELF_REPORTED',
+    citedVersion: 'v1',
+    answeredAt: '2026-09-27T12:00:00.000Z',
+    laterVersionExists: false,
+  };
+  assert.equal(esquema.safeParse(citada).success, true);
+  assert.equal(esquema.safeParse({ ...citada, provenance: 'OBSERVED' }).success, false, 'una declaración no se vuelve observación');
+});

@@ -18,6 +18,7 @@ import { sinParametrosDeQuery } from '../http/validacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
+import { citasResueltas, validarCitas } from './citas-de-respuestas';
 import { EjecutorDeEntrenamiento, esUuid } from './ejecutor';
 import { registrarEventoDeEntrenamiento } from './eventos';
 import { evaluacionApi, nombreVisibleDe, versionDeObjetivoApi } from './lectura-entrenamiento';
@@ -59,6 +60,8 @@ export class EvaluacionesDeEntrenamientoService {
             issues: [{ code: 'OCCURRED_AT_IN_FUTURE', path: 'occurredAt' }],
           });
         }
+        // DL-102: las respuestas citadas se validan y se fijan en la versión vigente al citar.
+        const citas = await validarCitas(tx, pedido.formResponseReferences ?? [], { profesionalId: actor.identidadId, asesoradoId });
         const e = await tx.evaluacionDeEntrenamiento.create({
           data: {
             profesionalId: actor.identidadId,
@@ -71,6 +74,9 @@ export class EvaluacionesDeEntrenamientoService {
             momentoDeOcurrencia: ocurrencia,
           },
         });
+        if (citas.length > 0) {
+          await tx.citaDeRespuestaEnEvaluacionDeEntrenamiento.createMany({ data: citas.map((c, orden) => ({ evaluacionId: e.id, orden, ...c })) });
+        }
         await registrarEventoDeEntrenamiento(tx, {
           tipo: 'EvaluacionDeEntrenamientoRegistrada',
           profesionalId: actor.identidadId,
@@ -110,7 +116,8 @@ export class EvaluacionesDeEntrenamientoService {
         });
         const { pagina, page } = paginar(filas, consulta.limit);
         const nombre = await nombreVisibleDe(tx, actor.identidadId);
-        return { data: pagina.map((e) => evaluacionApi(e, nombre)), page };
+        const citas = await citasResueltas(tx, pagina.map((e) => e.id));
+        return { data: pagina.map((e) => evaluacionApi(e, nombre, citas.get(e.id) ?? [])), page };
       },
     });
   }
@@ -130,7 +137,8 @@ export class EvaluacionesDeEntrenamientoService {
         if (!e) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-03', actorId: actor.identidadId, recurso }, ctx);
         await this.decidir(tx, 'API-TRN-03', actor, e.asesoradoId, recurso, ctx);
         if (e.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-03', actorId: actor.identidadId, recurso, sujetoId: e.asesoradoId }, ctx);
-        return { data: evaluacionApi(e, await nombreVisibleDe(tx, actor.identidadId)) };
+        const citas = await citasResueltas(tx, [e.id]);
+        return { data: evaluacionApi(e, await nombreVisibleDe(tx, actor.identidadId), citas.get(e.id) ?? []) };
       },
     });
   }

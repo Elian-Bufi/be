@@ -1689,12 +1689,35 @@ model EvaluacionDeEntrenamiento {
   momentoDeOcurrencia DateTime @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro   DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  profesional Identidad                          @relation("EvaluacionDeEntrenamientoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  asesorado   Identidad                          @relation("EvaluacionDeEntrenamientoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional Identidad                                    @relation("EvaluacionDeEntrenamientoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado   Identidad                                    @relation("EvaluacionDeEntrenamientoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   objetivos   VersionDeObjetivoDeEntrenamiento[]
+  citas       CitaDeRespuestaEnEvaluacionDeEntrenamiento[]
 
   @@index([asesoradoId, profesionalId, momentoDeRegistro])
   @@map("evaluacion_de_entrenamiento")
+}
+
+/// DL-102 (PF-02): una respuesta de formulario citada como evidencia de una evaluación de entrenamiento. Referencia, no
+/// copia: la declaración no se vuelve observación del profesional. Fija la versión vigente al citar (la respuesta original
+/// o una rectificación), así una rectificación posterior no cambia lo que fundó la evaluación. Solo agregado.
+model CitaDeRespuestaEnEvaluacionDeEntrenamiento {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  evaluacionId      String   @map("evaluacion_id") @db.Uuid
+  respuestaId       String   @map("respuesta_id") @db.Uuid
+  /// La rectificación vigente al citar; `null` si lo vigente era la respuesta original.
+  rectificacionId   String?  @map("rectificacion_id") @db.Uuid
+  codigoDeCampo     String   @map("codigo_de_campo")
+  orden             Int
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  evaluacion    EvaluacionDeEntrenamiento             @relation(fields: [evaluacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  respuesta     RespuestaDeFormulario                 @relation(fields: [respuestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rectificacion RectificacionDeRespuestaDeFormulario? @relation(fields: [rectificacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([evaluacionId, orden])
+  @@index([respuestaId])
+  @@map("cita_de_respuesta_en_evaluacion_de_entrenamiento")
 }
 
 /// RF-064; REG-06-98. La serie del objetivo; cada cambio es una versión nueva y la anterior queda reconstruible.
@@ -2033,10 +2056,11 @@ model RespuestaDeFormulario {
   version           Int      @default(1)
   momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  solicitud       SolicitudDeFormulario                  @relation(fields: [solicitudId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  asesorado       Identidad                              @relation("RespuestaDeFormularioDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  templateVersion VersionDePlantillaDeFormulario         @relation(fields: [templateVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  solicitud       SolicitudDeFormulario                        @relation(fields: [solicitudId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado       Identidad                                    @relation("RespuestaDeFormularioDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  templateVersion VersionDePlantillaDeFormulario               @relation(fields: [templateVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   rectificaciones RectificacionDeRespuestaDeFormulario[]
+  citas           CitaDeRespuestaEnEvaluacionDeEntrenamiento[]
 
   @@map("respuesta_de_formulario")
 }
@@ -2054,9 +2078,10 @@ model RectificacionDeRespuestaDeFormulario {
   version            Int
   momentoDeRegistro  DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  respuesta        RespuestaDeFormulario                 @relation(fields: [respuestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  correccionPrevia RectificacionDeRespuestaDeFormulario? @relation("SucesionDeRectificacionDeFormulario", fields: [correccionPreviaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  siguiente        RectificacionDeRespuestaDeFormulario? @relation("SucesionDeRectificacionDeFormulario")
+  respuesta        RespuestaDeFormulario                        @relation(fields: [respuestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  correccionPrevia RectificacionDeRespuestaDeFormulario?        @relation("SucesionDeRectificacionDeFormulario", fields: [correccionPreviaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  siguiente        RectificacionDeRespuestaDeFormulario?        @relation("SucesionDeRectificacionDeFormulario")
+  citas            CitaDeRespuestaEnEvaluacionDeEntrenamiento[]
 
   @@index([respuestaId])
   @@map("rectificacion_de_respuesta_de_formulario")
