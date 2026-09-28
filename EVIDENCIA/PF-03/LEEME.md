@@ -68,7 +68,7 @@ El único mensaje en la consola del navegador es el `400` esperado del guardado 
 - **«Hoy», la sesión y «Tu historial»** usan la presentación compartida, con una línea por dato. Antes mostraban «3 × 10» para una pirámide y no mostraban parámetros ni notas.
 - **Sesión:**
   - arriba, «Indicaciones de la sesión», que antes solo aparecían en la tarjeta de «Hoy»;
-  - cada serie pendiente dice «Pendiente · planificadas N repeticiones», y el campo de repeticiones **sigue vacío**, así que lo realizado lo escribe la persona;
+  - cada serie pendiente dice todo lo planificado para ella: «Pendiente · planificadas N repeticiones», con su nota, o «sin repeticiones fijadas». El campo de repeticiones **sigue vacío**, así que lo realizado lo escribe la persona;
   - el motivo tiene la ayuda «Si cambiaste algo de lo planificado o no pudiste entrenar, podés contar por qué.».
 - **No cambia:** la navegación (DL-096), el borrador, la confirmación, la corrección ni los contratos.
 

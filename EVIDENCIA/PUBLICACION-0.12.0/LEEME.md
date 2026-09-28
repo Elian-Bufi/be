@@ -33,11 +33,19 @@
 
 ## Verificación del artefacto, antes de publicar
 
-- `versionName` 0.12.0 · `versionCode` 17.
-- Commit embebido igual al de `main` que se construyó.
-- Mismo certificado de firma que la 0.11.3 (`apksigner verify --print-certs`). Si no coincide, no se publica.
-- Control de secretos del procedimiento sobre el bundle y `assets/app.config`.
-- SHA-256 del archivo, anotado.
+Los mismos controles que las 0.11.1 a 0.11.3 ([`build-local-0.11.1.md`](../HISTORIAL-ENTRENAMIENTO/build-local-0.11.1.md), «Verificación del artefacto»). Si alguno falla, no se publica.
+
+| Control | Esperado |
+|---|---|
+| `applicationId` | `com.elianbufi.be` (`aapt2 dump badging`) |
+| Versión | `versionName` 0.12.0 · `versionCode` 17 |
+| Firma | `apksigner verify`: válida, 1 firmante, esquema v2 |
+| Certificado | SHA-256 `61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06`, **idéntico al de la 0.11.3**, para que se instale como actualización |
+| Arquitecturas | `lib/arm64-v8a`, `lib/armeabi-v7a`, `lib/x86`, `lib/x86_64` |
+| Valores efectivos embebidos (`assets/app.config`) | `appEnv` `test` · `apiBaseUrl` `https://be-api-hndp.onrender.com` · `commit` = el de `main` construido · `construidoEn` de la construcción. Un `apiBaseUrl` nulo o distinto invalida el artefacto |
+| Código nuevo incluido | El hash del bundle JS difiere del de la 0.11.3 |
+| Credenciales privadas | Ninguna: todas las entradas, descomprimidas, sin contraseñas ni alias (ASCII y UTF-16LE), sin marcadores `PRIVATE KEY` ni el inicio de la keystore, y sin archivos `credentials.json`, `.jks`, `.keystore` ni `.env` |
+| Archivo | SHA-256 anotado para la release y para `docs/DESPLIEGUE.md` |
 
 ## Publicación
 
@@ -61,7 +69,7 @@ Cada paso se informa con la hora y una captura. «Implementado», «CI verde», 
 **C · PF-03, con la 0.12.0:**
 6. «Hoy» muestra la pirámide serie por serie («Serie 1: 10», «Serie 2: 8 · pausa de 2 s abajo», «Serie 3: 6»). También la intensidad con su referencia, la carga sugerida, los parámetros con su unidad y la nota.
 7. Al entrar a la sesión, arriba aparecen «Indicaciones de la sesión».
-8. Registrando por serie, cada serie pendiente dice «Pendiente · planificadas N repeticiones». **El campo de repeticiones está vacío.** Si se registra otro número, queda el que escribió la persona.
+8. Registrando por serie, cada serie pendiente dice «Pendiente · planificadas N repeticiones», con la nota de la serie si la tiene (por ejemplo, «· pausa de 2 s abajo»). **El campo de repeticiones está vacío.** Si se registra otro número, queda el que escribió la persona.
 9. «Tu historial» muestra lo planificado completo de cada sesión.
 10. El motivo de la sesión muestra la ayuda «Si cambiaste algo de lo planificado o no pudiste entrenar, podés contar por qué.».
 

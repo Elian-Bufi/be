@@ -638,17 +638,13 @@ function EjercicioEnCurso({
               {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {textoDeSerie(s)} · {COPY_ENTRENAMIENTO.registradaEnBorrador}
             </Parrafo>
           ))}
-          {pendientes.map((planificada, i) => {
-            // Lo planificado para esa serie se muestra como referencia; el campo de repeticiones queda vacío: lo
-            // realizado lo escribe la persona (B10-06:1242-1255; DL-105).
-            const referencia = referenciaDeSerie(planificada);
-            return (
-              <Parrafo key={`p${i}`} tenue>
-                {COPY_ENTRENAMIENTO.serie} {(registrado?.sets?.length ?? 0) + i + 1}: {COPY_ENTRENAMIENTO.pendiente}
-                {referencia ? ` · ${referencia}` : ''}
-              </Parrafo>
-            );
-          })}
+          {pendientes.map((planificada, i) => (
+            // Todo lo planificado para esa serie (repeticiones y nota) se muestra como referencia; el campo de
+            // repeticiones queda vacío: lo realizado lo escribe la persona (B10-06:1242-1255; DL-105).
+            <Parrafo key={`p${i}`} tenue>
+              {COPY_ENTRENAMIENTO.serie} {(registrado?.sets?.length ?? 0) + i + 1}: {COPY_ENTRENAMIENTO.pendiente} · {referenciaDeSerie(planificada)}
+            </Parrafo>
+          ))}
           <Campo etiqueta={`${COPY_ENTRENAMIENTO.carga} (${serie.unidad})`} value={serie.carga} onChangeText={(v) => setSerie({ ...serie, carga: v })} keyboardType="decimal-pad" />
           <Boton texto="kg" tipo={serie.unidad === 'kg' ? 'primario' : 'secundario'} seleccionado={serie.unidad === 'kg'} onPress={() => setSerie({ ...serie, unidad: 'kg' })} />
           <Boton texto="lb" tipo={serie.unidad === 'lb' ? 'primario' : 'secundario'} seleccionado={serie.unidad === 'lb'} onPress={() => setSerie({ ...serie, unidad: 'lb' })} />
