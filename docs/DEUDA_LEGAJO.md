@@ -100,7 +100,7 @@
 | DL-093 | WP-07 · 2026-09-21 | 06:8524-8529 (REG-06-210) · 09:1610-1618 | La Solicitud de formulario queda con dos estados, sin cancelar ni rechazar | **DECIDIDA** 2026-09-21 |
 | DL-094 | WP-07 · 2026-09-21 | 11A:604-610 · 11A:194, 348-349 | Los siete TEST-FRM eran títulos de una línea | **CERRADA** 2026-09-22 · escritos en `docs/paquetes/WP-07-ORACULOS.md` |
 | DL-095 | WP-07 · 2026-09-22 | 09v16.1 §22.1-§22.8 · 08 §11-bis | Contratos de FRM con forma no definida en el 09 | ABIERTA |
-| DL-096 | Consolidación · 2026-09-24 | 08:199 · 08:58 · DL-089 · 09v10 TRN-08/09/19 | La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado | EN CURSO (opción A, Dirección 2026-09-25) |
+| DL-096 | Consolidación · 2026-09-24 | 08:199 · 08:58 · DL-089 · 09v10 TRN-08/09/19 | La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado | **CERRADA** 2026-09-27 · verificada en dispositivo con la APK 0.11.3 |
 | DL-097 | WP-08 · 2026-09-24 | 09v12 §5-§7 (09v12:184-188, 360-364, 369, 390) | Las formas de la importación controlada que el 09 no fija | ABIERTA (hallada al implementar) |
 | DL-098 | WP-08 · 2026-09-24 | 09v12:190 · B10-05 §19 · B10-06 §22 | La búsqueda por texto en los proveedores no tiene contrato | ABIERTA |
 | DL-099 | WP-08 · 2026-09-24 | 04 RF-060 (04:701-708) · 08 licencias | La procedencia externa llega hasta la elección, no hasta el ítem del plan | ABIERTA (hallada en la revisión de calidad) |
@@ -108,6 +108,7 @@
 | DL-101 | PF-01/02 · 2026-09-27 | 09v16.1 §22 · DL-095 | Los campos NUMBER aceptaban cualquier número | **DECIDIDA** 2026-09-27 · mínimo, máximo y entero |
 | DL-102 | PF-01/02 · 2026-09-27 | 09v10 TRN-01 · CA-FOR-04 del plan | La evaluación de entrenamiento no puede citar respuestas de forma verificable | **DECIDIDA** 2026-09-27 · referencias verificadas (opción A) |
 | DL-103 | PF-01/02 · 2026-09-27 | Plan Funcional §12.3 · DEC-04 | Alcance del primer incremento de contexto | **DECIDIDA** 2026-09-27 · solo entrenamiento, equipamiento en texto |
+| DL-104 | PF-01/02 · 2026-09-28 | DL-101 · 09v16.1 §22.7/§22.8 · auditoría del PR #100 | Un valor fuera de rango en un formulario no le dice a la persona qué corregir | ABIERTA (limitación de interfaz) |
 
 ---
 
@@ -1971,7 +1972,7 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 
 ## DL-096 — La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado
 
-**Prioridad:** media · **Documento:** 08:199 · 08:58 · DL-089 · 09v10 (TRN-08, TRN-09, TRN-19) · **Estado:** EN CURSO — opción A autorizada por Dirección el 2026-09-25; implementada (#86) y publicada en la APK 0.11.0; las correcciones de la validación en teléfono (#89) están en la APK 0.11.1, la del período de 21 a 24 h (#94), en la APK 0.11.2, y la del teclado (#97), en la APK 0.11.3 (release be-apk-0.11.3); solo falta la comprobación visual en el teléfono
+**Prioridad:** media · **Documento:** 08:199 · 08:58 · DL-089 · 09v10 (TRN-08, TRN-09, TRN-19) · **Estado:** **CERRADA** 2026-09-27 — opción A autorizada por Dirección el 2026-09-25; implementada (#86) y publicada en la APK 0.11.0; correcciones de la validación en teléfono en la 0.11.1 (#89), la 0.11.2 (#94) y la 0.11.3 (#97); **verificada en dispositivo con la APK 0.11.3**
 
 **Qué dice el legajo.** El titular tiene acceso pleno a «Plan entrenamiento + ejecución» (08:199), y el fin del vínculo no destruye su historia (08:58). DL-089 lo llevó a la API: revocado el B2, el titular sigue leyendo sus ejecuciones, su plan activado y la lista de sus planes.
 
@@ -1988,9 +1989,11 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 **Qué se hizo.**
 - **API:** `GET /me/training/executions` (**API-TRN-19-LISTA**), lista de las sesiones registradas propias por período. Exige solo el A3 vigente del titular (08:199, 08:58, 08:406; DL-089): no depende de un plan activo ni del acceso del profesional. Es la lista que TRN-19 no da (lee de a una) y que TRN-14-PERIODO tampoco (opera sobre el plan vigente). Declarada como desvío del 09, igual que API-NUT-16-LISTA (DL-055): está en el OpenAPI generado y `contratos-wp06.test.ts` la cuenta. Ventana de hasta un año; no pagina, con un tope de seguridad de filas.
 - **APK:** una sección **«Tu historial»** (acceso desde Cuenta, siempre alcanzable): sus **planes** (TRN-08) y cada plan tal como se aceptó (TRN-09), reutilizados sin cambio, y sus **sesiones registradas** por período con su detalle (la pantalla de ejecución existente, TRN-19, que muestra original y correcciones). De solo lectura.
-- **Pruebas:** seis casos de integración (titular consulta lo propio; otro usuario no; B2 revocado y vínculo finalizado conservan la lectura; A3 revocado da 403; la corrección no oculta el original; funciona sin plan y con vacío comprensible).
+- **Pruebas:** seis casos de integración (titular consulta lo propio; otro usuario no; con B2 revocado se conserva la lectura y «Hoy» pasa a no disponible; A3 revocado da 403; la corrección no oculta el original; sin plan vigente, un período sin registros devuelve la lista vacía).
 
-**Condición de cierre.** No se cierra como verificada hasta la comprobación visual de «Tu historial» en el teléfono. La pantalla está desde la **APK 0.11.0**, y las correcciones de la validación en teléfono (#89), en la **APK 0.11.1** (`be-apk-0.11.1`, commit `44bea3a`). La corrección del período de 21 a 24 h (#94) está en la **APK 0.11.2**, y la del teclado (#97), en la **APK 0.11.3** (`be-apk-0.11.3`, commit `13280e6`). Falta esa evidencia en dispositivo con la 0.11.3. Trazabilidad: `docs/paquetes/WP-HISTORIAL-ENTRENAMIENTO.md`; evidencia de publicación: `EVIDENCIA/HISTORIAL-ENTRENAMIENTO/`.
+**Condición de cierre.** No se cierra como verificada hasta la comprobación visual de «Tu historial» en el teléfono. La pantalla está desde la **APK 0.11.0**, y las correcciones de la validación en teléfono (#89), en la **APK 0.11.1** (`be-apk-0.11.1`, commit `44bea3a`). La corrección del período de 21 a 24 h (#94) está en la **APK 0.11.2**, y la del teclado (#97), en la **APK 0.11.3** (`be-apk-0.11.3`, commit `13280e6`). Faltaba esa evidencia en dispositivo con la 0.11.3; se obtuvo el 2026-09-27 (ver «Cierre»). Trazabilidad: `docs/paquetes/WP-HISTORIAL-ENTRENAMIENTO.md`; evidencia de publicación: `EVIDENCIA/HISTORIAL-ENTRENAMIENTO/`.
+
+**Cierre (2026-09-27).** Se cumplió la condición de cierre: Dirección validó «Tu historial» en el teléfono con la **APK 0.11.3** (commit `13280e6`) entre las 21:43 y las 21:50, y confirmó que todos los puntos funcionaron. El registro separa lo observable en las siete capturas, lo confirmado por Dirección y las pruebas automatizadas: `EVIDENCIA/HISTORIAL-ENTRENAMIENTO/validacion-0.11.3.md`. Quedaron cerrados los cinco hallazgos de la validación: volver al origen, fecha civil, área inferior, carga de 21 a 24 h y teclado. **Limitaciones conocidas que se conservan:** ventana automática de 90 días, sin selector de período ni paginación, y el desplazamiento se reinicia al volver del detalle. Van a una revisión funcional posterior (Plan Funcional, PF-07, DEC-09).
 
 ## DL-097 — Las formas de la importación controlada que el 09 no fija
 
@@ -2064,6 +2067,8 @@ Son preguntas de producto, no un instrumento clínico. Los textos pueden ajustar
 
 Las plantillas existentes no cambian. Amplía la forma provisoria de DL-095. **El plan proponía admitir 0 días; Dirección fijó el mínimo en 1.**
 
+**Limitación conocida:** el rechazo no dice qué campo ni qué rango, y la APK muestra un mensaje genérico. Queda como **DL-104**.
+
 ## DL-102 — La evaluación de entrenamiento no puede citar respuestas de forma verificable
 
 **Prioridad:** alta · **Documento:** 09v10 TRN-01 · CA-FOR-04 del Plan Funcional · **Estado:** DECIDIDA 2026-09-27
@@ -2072,6 +2077,8 @@ Las plantillas existentes no cambian. Amplía la forma provisoria de DL-095. **E
 
 **Opciones.**
 - **A.** Un campo nuevo de referencias a respuestas concretas, validado en el servidor. La respuesta tiene que ser de la misma persona y del alcance, y el profesional tiene que poder leerla en ese momento. Al leer la evaluación, cada referencia se resuelve con las reglas de FRM-05, con aviso neutral si ya no es legible.
+
+**Nota de implementación (PR #101).** Las condiciones de una cita (mismo asesorado, Solicitud del mismo profesional, alcance ENTRENAMIENTO) coinciden con las de FRM-05, y la evaluación ya exige el PDP de ENTRENAMIENTO para ese par. Por eso una cita se lee exactamente cuando se lee su evaluación: si se revoca B2 o A3, o se pausa o finaliza el vínculo, la evaluación entera da 404 neutral y no hay un aviso por cita. La base repite la pertenencia en un trigger. La versión vigente al citar la fija la API.
 - **B.** Una convención sobre los textos libres, que no se valida.
 - **C.** Copiar el valor como dato `REPORTED`, que mezcla la declaración con la observación.
 
@@ -2082,3 +2089,22 @@ Las plantillas existentes no cambian. Amplía la forma provisoria de DL-095. **E
 **Prioridad:** media · **Documento:** Plan Funcional §12.3 · DEC-04 · **Estado:** DECIDIDA 2026-09-27
 
 **Decisión de Dirección.** El primer incremento cubre solo entrenamiento, con los tipos actuales: lugar y equipamiento van como texto. La selección simple o múltiple y el patrón para nutrición (PF-04) y antropometría (PF-06) quedan para después, reutilizando lo que deje este incremento.
+
+## DL-104 — Un valor fuera de rango en un formulario no le dice a la persona qué corregir
+
+**Prioridad:** media · **Documento:** DL-101 · 09v16.1 §22.7 (FRM-07) y §22.8 (FRM-08) · auditoría del PR #100 (2026-09-28) · **Estado:** ABIERTA (limitación de interfaz)
+
+**Qué pasa hoy.**
+- Con DL-101, la API rechaza un número fuera de los límites de la plantilla (por ejemplo, «9» en días por semana) con `422 FORM_RESPONSE_INVALID`. La respuesta trae solo el código y un mensaje de texto: **no trae un issue que nombre el campo ni el rango**.
+- La APK 0.11.3 no tiene un caso para ese código y muestra el mensaje genérico «El servicio no está disponible en este momento. Probá de nuevo más tarde.».
+- La persona solo conoce el rango por el `helpText` del campo, que ve antes de responder. El rechazo no le dice qué dato corregir.
+- Pasa igual al responder (FRM-07) y al rectificar (FRM-08).
+
+**Criterio de aceptación.** Ante un valor fuera de rango, la interfaz indica **qué dato corregir y qué rango admite**, tanto **al responder** como **al rectificar**.
+
+**Opciones.**
+- **A.** La API agrega al 422 un issue por campo (código de campo y límites), declarado en el contrato. La APK traduce ese issue a un mensaje junto al campo, con el rótulo y el rango. Requiere APK nueva.
+- **B.** La APK valida antes de enviar. No es viable sin exponer los límites en FRM-02, y eso rompe a la APK instalada (DL-101).
+
+**Provisorio.** Sin cambios: el rechazo en el servidor protege el dato, y el `helpText` anticipa el rango. Por decisión de Dirección (auditoría del PR #100), **no se amplía el PR #100 ni se construye otra APK por este punto**. **Recomendación: A**, en la próxima tanda que incluya una APK.
+

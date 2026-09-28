@@ -221,6 +221,8 @@ describe('08 §29 — historia por adición', () => {
     'version_de_consentimiento',
     'evento_de_vinculo',
     'decision_de_acceso',
+    // PF-02 · DL-102
+    'cita_de_respuesta_en_evaluacion_de_entrenamiento',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {

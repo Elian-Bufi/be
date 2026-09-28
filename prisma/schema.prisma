@@ -1716,6 +1716,8 @@ model CitaDeRespuestaEnEvaluacionDeEntrenamiento {
   rectificacion RectificacionDeRespuestaDeFormulario? @relation(fields: [rectificacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([evaluacionId, orden])
+  /// Una misma respuesta y campo se cita una sola vez por evaluación (la API compara el id canónico).
+  @@unique([evaluacionId, respuestaId, codigoDeCampo], map: "cita_de_respuesta_en_evaluacion_respuesta_y_campo_unicos")
   @@index([respuestaId])
   @@map("cita_de_respuesta_en_evaluacion_de_entrenamiento")
 }

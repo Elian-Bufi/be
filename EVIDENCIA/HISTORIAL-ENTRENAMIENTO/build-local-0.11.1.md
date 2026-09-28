@@ -65,7 +65,7 @@ Nada de esto observa la app en un dispositivo. Quedan pendientes de la comprobac
 - que el último control sea accesible con navegación por gestos y con tres botones;
 - la pantalla de corrección con el teclado abierto y cerrado.
 
-**DL-096 sigue EN CURSO.**
+**DL-096 seguía EN CURSO** a la fecha de esta publicación; quedó cerrada el 2026-09-27 (`validacion-0.11.3.md`).
 
 ## Repetición para la 0.11.2 (2026-09-26)
 

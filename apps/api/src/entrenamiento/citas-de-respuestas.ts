@@ -5,11 +5,19 @@
  * observación del profesional (CA-FOR-04 del Plan Funcional). Se valida al crear la evaluación y queda fija:
  * - la respuesta es del **mismo asesorado** y responde a una Solicitud del **mismo profesional**, de alcance
  *   **ENTRENAMIENTO**. Es la misma condición con la que FRM-05 le deja leerla (autor de la Solicitud y PDP del alcance),
- *   y la evaluación ya pasó el PDP de ENTRENAMIENTO para ese par. Por eso quien puede leer la evaluación puede leer lo citado;
+ *   y la evaluación ya pasó el PDP de ENTRENAMIENTO para ese par. Por eso quien puede leer la evaluación puede leer lo
+ *   citado, y cuando deja de poder (B2, A3, vínculo), la evaluación entera da 404: no hay un aviso por cita;
  * - el campo está respondido en la **versión vigente al citar**, que es la que se guarda. Una rectificación posterior no
  *   cambia lo que fundó la evaluación; la lectura avisa que existe (`laterVersionExists`, V-07).
  *
+ * «Vigente al citar» es la vigente **en la lectura de esta transacción**. Cada respuesta se lee una sola vez, así que
+ * todas las citas de una misma respuesta quedan en la misma versión. Si una rectificación concurrente se confirma entre
+ * esa lectura y el commit, la cita nace apuntando a la versión anterior y la primera lectura ya dice
+ * `laterVersionExists: true`, que es el aviso correcto. Por eso la base no exige «vigente»: con READ COMMITTED, esa
+ * carrera haría fallar una escritura válida.
+ *
  * Una cita inválida devuelve el mismo 422 exista o no la respuesta: no se revela si un identificador es de otra persona.
+ * La base repite las reglas de pertenencia (trigger `be_cita_de_respuesta_en_evaluacion_insertar`).
  */
 import { CodigoDeError, resolverVistaEfectiva, type CitaDeRespuestaDeFormulario, type RelacionDeCorreccion, type RespuestaCitada } from '@be/domain';
 import type { Prisma } from '@prisma/client';
@@ -22,6 +30,7 @@ type Tx = Prisma.TransactionClient;
 interface RespuestaAlmacenada {
   fieldCode: string;
   value: string | number | boolean;
+  unit?: string | null;
 }
 
 const INCLUIR_RESPUESTA = { solicitud: true, templateVersion: true, rectificaciones: true } as const;
@@ -45,31 +54,52 @@ export interface CitaValidada {
   codigoDeCampo: string;
 }
 
+/** Una respuesta leída una vez: `null` si no existe o no se puede citar en esta evaluación; si no, su versión vigente. */
+type RespuestaCitable = { respuestaId: string; rectificacionId: string | null; campos: ReadonlySet<string> } | null;
+
 /**
  * Valida las citas de una evaluación nueva, en orden. Lanza 422 `TRAINING_EVALUATION_INVALID` con el índice de la primera
- * cita que no cumple. Una misma respuesta y campo no se cita dos veces.
+ * cita que no cumple. Una misma respuesta y campo no se cita dos veces; la repetición se compara con el id **canónico** de
+ * la respuesta, después de comprobar la pertenencia, así un mismo UUID con otras mayúsculas no la esquiva y el orden de
+ * los controles no revela nada de una respuesta ajena.
  */
 export async function validarCitas(tx: Tx, citas: readonly CitaDeRespuestaDeFormulario[], par: { profesionalId: string; asesoradoId: string }): Promise<CitaValidada[]> {
+  const leidas = new Map<string, RespuestaCitable>();
   const vistas = new Set<string>();
   const validadas: CitaValidada[] = [];
   for (const [i, cita] of citas.entries()) {
-    const clave = `${cita.formResponseId}#${cita.fieldCode}`;
-    if (vistas.has(clave)) throw invalida(i);
+    if (!esUuid(cita.formResponseId)) throw invalida(i);
+    const id = cita.formResponseId.toLowerCase();
+    if (!leidas.has(id)) leidas.set(id, await leerCitable(tx, id, par));
+    const r = leidas.get(id);
+    if (!r) throw invalida(i);
+    const clave = `${r.respuestaId}#${cita.fieldCode}`;
+    if (vistas.has(clave) || !r.campos.has(cita.fieldCode)) throw invalida(i);
     vistas.add(clave);
-    const r = esUuid(cita.formResponseId) ? await tx.respuestaDeFormulario.findUnique({ where: { id: cita.formResponseId }, include: INCLUIR_RESPUESTA }) : null;
-    if (!r || r.asesoradoId !== par.asesoradoId || r.solicitud.profesionalId !== par.profesionalId || r.solicitud.alcance !== 'ENTRENAMIENTO') throw invalida(i);
-    const relaciones: RelacionDeCorreccion[] = r.rectificaciones.map((c) => ({ id: c.id, originalId: r.id, correccionPreviaId: c.correccionPreviaId }));
-    const vista = resolverVistaEfectiva(r.id, relaciones);
-    if (vista.tipo === 'NO_RESOLUBLE') throw invalida(i);
-    const rectificacion = vista.tipo === 'CORREGIDA' ? r.rectificaciones.find((c) => c.id === vista.id) ?? null : null;
-    const vigente = respuestasDe(rectificacion ? rectificacion.contenido : r.contenido);
-    if (!vigente.some((a) => a.fieldCode === cita.fieldCode)) throw invalida(i);
-    validadas.push({ respuestaId: r.id, rectificacionId: rectificacion?.id ?? null, codigoDeCampo: cita.fieldCode });
+    validadas.push({ respuestaId: r.respuestaId, rectificacionId: r.rectificacionId, codigoDeCampo: cita.fieldCode });
   }
   return validadas;
 }
 
-/** Las citas de varias evaluaciones, resueltas y en el orden en que se citaron. Una evaluación sin citas da `[]`. */
+async function leerCitable(tx: Tx, id: string, par: { profesionalId: string; asesoradoId: string }): Promise<RespuestaCitable> {
+  const r = await tx.respuestaDeFormulario.findUnique({ where: { id }, include: INCLUIR_RESPUESTA });
+  if (!r || r.asesoradoId !== par.asesoradoId || r.solicitud.profesionalId !== par.profesionalId || r.solicitud.alcance !== 'ENTRENAMIENTO') return null;
+  const relaciones: RelacionDeCorreccion[] = r.rectificaciones.map((c) => ({ id: c.id, originalId: r.id, correccionPreviaId: c.correccionPreviaId }));
+  const vista = resolverVistaEfectiva(r.id, relaciones);
+  if (vista.tipo === 'NO_RESOLUBLE') return null;
+  const rectificacion = vista.tipo === 'CORREGIDA' ? r.rectificaciones.find((c) => c.id === vista.id) ?? null : null;
+  const vigente = respuestasDe(rectificacion ? rectificacion.contenido : r.contenido);
+  return { respuestaId: r.id, rectificacionId: rectificacion?.id ?? null, campos: new Set(vigente.map((a) => a.fieldCode)) };
+}
+
+/**
+ * Las citas de varias evaluaciones, resueltas y en el orden en que se citaron. Una evaluación sin citas da `[]`.
+ *
+ * El valor y la unidad son los de la versión citada; la unidad es la que declaró la persona, y si no declaró ninguna,
+ * la del campo de la plantilla. El rótulo sale de la versión de plantilla de la Solicitud, que es de solo agregado.
+ * `laterVersionExists` compara con la terminal de la cadena de rectificaciones, que es lineal por construcción: la base
+ * impide ramas y ciclos. Si alguna vez no lo fuera, `terminalVersion` devolvería la del original y el aviso daría `false`.
+ */
 export async function citasResueltas(tx: Tx, evaluacionIds: readonly string[]): Promise<Map<string, RespuestaCitada[]>> {
   const porEvaluacion = new Map<string, RespuestaCitada[]>(evaluacionIds.map((id) => [id, []]));
   if (evaluacionIds.length === 0) return porEvaluacion;
@@ -90,7 +120,7 @@ export async function citasResueltas(tx: Tx, evaluacionIds: readonly string[]): 
       fieldCode: f.codigoDeCampo,
       label: campo.label,
       value: respuesta.value,
-      unit: campo.unit,
+      unit: respuesta.unit ?? campo.unit,
       provenance: 'SELF_REPORTED',
       citedVersion: token(citada.version),
       answeredAt: citada.momentoDeRegistro.toISOString(),
