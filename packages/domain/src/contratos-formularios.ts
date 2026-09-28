@@ -103,6 +103,7 @@ export const VersionDePlantillaSchema = z.strictObject({
 export type VersionDePlantilla = z.infer<typeof VersionDePlantillaSchema>;
 
 export const VersionDePlantillaResponseSchema = z.strictObject({ data: VersionDePlantillaSchema });
+export type VersionDePlantillaResponse = z.infer<typeof VersionDePlantillaResponseSchema>;
 
 // ─── API-FRM-03 · crear solicitud ───────────────────────────────────────────────────────────────
 
@@ -155,6 +156,7 @@ export const SolicitudDeFormularioSchema = z.strictObject({
 export type SolicitudDeFormulario = z.infer<typeof SolicitudDeFormularioSchema>;
 
 export const ListaDeSolicitudesDeFormularioResponseSchema = z.strictObject({ data: z.array(SolicitudDeFormularioSchema), page: PaginaSchema });
+export type ListaDeSolicitudesDeFormularioResponse = z.infer<typeof ListaDeSolicitudesDeFormularioResponseSchema>;
 
 /** API-FRM-06 (09:1601-1618): agrega `respondable`, proyección del PDP — no un estado nuevo. */
 export const SolicitudPropiaSchema = SolicitudDeFormularioSchema.extend({ respondable: z.boolean() });
@@ -193,6 +195,46 @@ export type EnviarRespuestaRequest = z.infer<typeof EnviarRespuestaRequestSchema
 /** Éxito `201` de FRM-07 (09:1595-1596): mínimo, sin volver a listar las respuestas enviadas. */
 export const RespuestaCreadaSchema = z.strictObject({ formResponseId: IdOpaco, version: TokenDeVersionSchema, submittedAt: Instante });
 export const RespuestaCreadaResponseSchema = z.strictObject({ data: RespuestaCreadaSchema });
+
+// ─── DL-104 · qué campo corregir cuando un número queda fuera de lo que admite la plantilla ─────────
+
+/**
+ * Códigos de issue del `422 FORM_RESPONSE_INVALID` cuando un número respondido (FRM-07) o rectificado (FRM-08) no
+ * respeta los límites de su campo (DL-101): tiene decimales y el campo pide un entero, o queda por debajo del mínimo
+ * o por encima del máximo. Son códigos de issue, no de error: el error sigue siendo `FORM_RESPONSE_INVALID`.
+ */
+export const CODIGO_DE_NUMERO_FUERA_DE_LIMITES = {
+  NOT_INTEGER: 'FORM_ANSWER_NOT_INTEGER',
+  BELOW_MINIMUM: 'FORM_ANSWER_BELOW_MINIMUM',
+  ABOVE_MAXIMUM: 'FORM_ANSWER_ABOVE_MAXIMUM',
+} as const;
+
+/** Los límites de un campo NUMBER, tal como los declara la plantilla (`numberLimits`, DL-101). */
+export const LimitesDeCampoSchema = z.strictObject({
+  minimum: z.number().optional(),
+  maximum: z.number().optional(),
+  integer: z.boolean().optional(),
+});
+
+/**
+ * Un issue por campo fuera de límites (DL-104, opción A). Además de `code` y `path` (la forma transversal de los
+ * issues), trae `fieldCode` y los límites completos del campo, para que la APK diga qué dato corregir y qué valores
+ * admite. `path` apunta a la respuesta enviada: `answers[2].value`. **Nunca repite el valor enviado**, que la persona
+ * ya tiene en pantalla. Los límites son de la plantilla, iguales para todos, y no revelan nada de nadie.
+ *
+ * Compatibilidad con la APK 0.11.3: viaja **dentro de `error.details.issues`**, que ese cliente no valida. Una clave
+ * nueva en `error` o en la raíz haría que no reconozca el rechazo y lo tome como resultado incierto.
+ */
+export const ProblemaDeRespuestaSchema = z.object({
+  code: z.enum([CODIGO_DE_NUMERO_FUERA_DE_LIMITES.NOT_INTEGER, CODIGO_DE_NUMERO_FUERA_DE_LIMITES.BELOW_MINIMUM, CODIGO_DE_NUMERO_FUERA_DE_LIMITES.ABOVE_MAXIMUM]),
+  path: z.string(),
+  fieldCode: z.string(),
+  limits: LimitesDeCampoSchema,
+});
+export type ProblemaDeRespuesta = z.infer<typeof ProblemaDeRespuestaSchema>;
+
+/** `error.details` del `422 FORM_RESPONSE_INVALID` por números fuera de límites: un issue por campo, todos a la vez. */
+export const DetalleDeRespuestaFueraDeLimitesSchema = z.object({ issues: z.array(ProblemaDeRespuestaSchema).min(1) });
 
 export const RectificacionDeRespuestaSchema = z.strictObject({
   rectificationId: IdOpaco,
@@ -238,6 +280,7 @@ export const DetalleDeSolicitudSchema = z.strictObject({
   response: RespuestaDeFormularioSchema.nullable(),
 });
 export const DetalleDeSolicitudResponseSchema = z.strictObject({ data: DetalleDeSolicitudSchema });
+export type DetalleDeSolicitudResponse = z.infer<typeof DetalleDeSolicitudResponseSchema>;
 
 // ─── API-FRM-08 · rectificar respuesta propia ───────────────────────────────────────────────────
 

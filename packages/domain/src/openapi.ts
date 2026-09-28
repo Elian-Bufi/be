@@ -149,6 +149,7 @@ import {
   RespuestaCreadaResponseSchema,
   SolicitudDeFormularioCreadaResponseSchema,
   VersionDePlantillaResponseSchema,
+  DetalleDeRespuestaFueraDeLimitesSchema,
 } from './contratos-formularios';
 
 type Codigo = keyof typeof CodigoDeError;
@@ -177,6 +178,11 @@ export interface Operacion {
   /** El primero es el éxito principal. REL-01 y CON-02 también responden 200 (deduplicado o replay). */
   readonly exitos: readonly { readonly status: 200 | 201 | 204; readonly schema?: z.ZodType }[];
   readonly errores: Errores;
+  /**
+   * La forma de `error.details` de un código 422 que la trae (DL-104). Se declara sobre el ErrorEnvelope común, sin
+   * cambiarlo para las demás operaciones.
+   */
+  readonly detalleDe422?: { readonly codigo: Codigo; readonly schema: z.ZodType; readonly descripcion: string };
   readonly fuente: string;
 }
 
@@ -189,6 +195,14 @@ function conComunes(errores: Errores): Record<string, readonly Codigo[]> {
   return todos;
 }
 const SESION: Errores = { 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'] };
+
+/** FRM-07 y FRM-08 (DL-104): el 422 por números fuera de límites dice qué campo corregir y qué valores admite. */
+const DETALLE_DE_NUMEROS_FUERA_DE_LIMITES: NonNullable<Operacion['detalleDe422']> = {
+  codigo: 'FORM_RESPONSE_INVALID',
+  schema: DetalleDeRespuestaFueraDeLimitesSchema,
+  descripcion:
+    'cuando el rechazo es por números fuera de los límites de la plantilla, details.issues trae un issue por campo (FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM o FORM_ANSWER_ABOVE_MAXIMUM) con fieldCode y los límites del campo (DL-104). Los otros rechazos de este código no traen details.',
+};
 
 const LIMIT: ParametroDeQuery = { nombre: 'limit', descripcion: 'Tamaño de página (1 a 50; 20 por defecto).', schema: { type: 'integer', minimum: 1, maximum: 50 } };
 const CURSOR: ParametroDeQuery = { nombre: 'cursor', descripcion: 'Cursor opaco de la página siguiente.', schema: { type: 'string' } };
@@ -1166,7 +1180,8 @@ const DEFINIDAS: readonly Operacion[] = [
     idempotencia: true,
     request: CrearEvaluacionDeEntrenamientoRequestSchema,
     exitos: [{ status: 201, schema: CrearEvaluacionResponseSchema }],
-    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['TRAINING_EVALUATION_INVALID'] },
+    // VERSION_CONFLICT: una respuesta citada cambió de versión desde que el profesional la vio (expectedVersion, DL-102).
+    errores: { ...ESCRITURA_REVELABLE, 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['TRAINING_EVALUATION_INVALID'] },
     fuente: '09v10:520-570 · REG-06-97 · DEUDA_LEGAJO DL-048, DL-080',
   },
   {
@@ -1655,7 +1670,8 @@ const DEFINIDAS: readonly Operacion[] = [
     // valida FRM-08 y DL-095 ya lo registra como forma no fijada: un campo fuera de tipo o de lo solicitado tiene
     // que rechazarse en las dos, no solo al rectificar.
     errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['FORM_REQUEST_NOT_RESPONDABLE', 'FORM_RESPONSE_INVALID'] },
-    fuente: '09v16.1 §22.7 · REG-06-211 · TEST-FRM-003/004/005 · DL-095',
+    detalleDe422: DETALLE_DE_NUMEROS_FUERA_DE_LIMITES,
+    fuente: '09v16.1 §22.7 · REG-06-211 · TEST-FRM-003/004/005 · DL-095 · DL-104',
   },
   {
     id: 'API-FRM-08',
@@ -1671,7 +1687,8 @@ const DEFINIDAS: readonly Operacion[] = [
       409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'],
       422: ['FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED', 'FORM_RESPONSE_INVALID'],
     },
-    fuente: '09v16.1 §22.8 · REG-06-211 · TEST-FRM-006',
+    detalleDe422: DETALLE_DE_NUMEROS_FUERA_DE_LIMITES,
+    fuente: '09v16.1 §22.8 · REG-06-211 · TEST-FRM-006 · DL-104',
   },
 ];
 
@@ -1763,9 +1780,17 @@ export function documentoOpenApi(): Record<string, unknown> {
         : { description: 'Éxito, sin cuerpo' };
     }
     for (const [status, codigos] of Object.entries(conComunes(op.errores))) {
+      const detalle = status === '422' ? op.detalleDe422 : undefined;
+      const envelope = { $ref: '#/components/schemas/ErrorEnvelope' };
       respuestas[status] = {
-        description: `ErrorEnvelope: ${(codigos ?? []).join(' | ')}`,
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } },
+        description: `ErrorEnvelope: ${(codigos ?? []).join(' | ')}${detalle ? `. ${detalle.codigo}: ${detalle.descripcion}` : ''}`,
+        content: {
+          'application/json': {
+            schema: detalle
+              ? { allOf: [envelope, { type: 'object', properties: { error: { type: 'object', properties: { details: aJson(detalle.schema) } } } }] }
+              : envelope,
+          },
+        },
       };
     }
     paths[op.ruta] = {

@@ -75,7 +75,9 @@ async function rectificar(ase: Parte, formResponseId: string, expectedVersion: s
   return { rectificationId: r.body.data.rectificationId as string, recordedAt: r.body.data.recordedAt as string };
 }
 
-const conCitas = (citas: { formResponseId: string; fieldCode: string }[]) => ({ ...cuerpoDeEvaluacionDeEntrenamiento(), formResponseReferences: citas });
+/** Una cita tal como la manda el cliente: `expectedVersion` es la versión de la respuesta que vio (opcional). */
+type Cita = { formResponseId: string; fieldCode: string; expectedVersion?: string };
+const conCitas = (citas: Cita[]) => ({ ...cuerpoDeEvaluacionDeEntrenamiento(), formResponseReferences: citas });
 
 async function citasDe(pro: Parte, evaluationId: string): Promise<RespuestaCitada[]> {
   const r = await conSesion(app, pro.token).get(detalle(evaluationId)).expect(200);
@@ -85,7 +87,7 @@ async function citasPorLista(pro: Parte, adviseeId: string): Promise<Map<string,
   const r = await conSesion(app, pro.token).get(evaluaciones(adviseeId)).expect(200);
   return new Map(ListaDeEvaluacionesDeEntrenamientoResponseSchema.parse(r.body).data.map((e) => [e.evaluationId, e.formResponseReferences]));
 }
-async function citar(pro: Parte, ase: Parte, citas: { formResponseId: string; fieldCode: string }[]): Promise<string> {
+async function citar(pro: Parte, ase: Parte, citas: Cita[]): Promise<string> {
   const r = await conSesion(app, pro.token).post(evaluaciones(ase.id)).send(conCitas(citas)).expect(201);
   return r.body.data.evaluationId as string;
 }
@@ -407,5 +409,69 @@ describe('PF-02 · DL-102 · 5. migración y restricciones de integridad (a nive
     const citaRepetida = await errorDeLaBase(nueva, citaSql(e, propia), citaSql(e, propia, { orden: 1 }));
     expect(citaRepetida).toContain('23505');
     expect(citaRepetida).toContain('(evaluacion_id, respuesta_id, codigo_de_campo)');
+  });
+});
+
+// ─── 6. Precondición de versión (auditoría del #102) ────────────────────────────────────────────
+
+describe('PF-02 · DL-102 · 6. precondición de versión: se cita lo que el profesional vio', () => {
+  /** La versión de la respuesta que ve el website al cargar el contexto (FRM-05). */
+  async function versionVista(pro: Parte, formRequestId: string): Promise<{ version: string; dias: unknown }> {
+    const r = await conSesion(app, pro.token).get(`/api/v1/form-requests/${formRequestId}`).expect(200);
+    const respuesta = r.body.data.response;
+    const vigente = respuesta.effectiveView.kind === 'RECTIFIED' ? respuesta.rectifications.find((x: { rectificationId: string }) => x.rectificationId === respuesta.effectiveView.rectificationId) : respuesta.original;
+    return { version: respuesta.version as string, dias: vigente.answers.find((a: { fieldCode: string }) => a.fieldCode === 'trn_dias_por_semana')?.value };
+  }
+
+  it('cargar v1, rectificar a v2 y enviar lo de v1 da 409 sin escribir nada; actualizar, revisar y enviar v2 cita v2', async () => {
+    const c = await fresco();
+    const { formResponseId } = await responder(c.pro, c.ase, 3);
+    const formRequestId = (await prisma.respuestaDeFormulario.findUniqueOrThrow({ where: { id: formResponseId } })).solicitudId;
+    // 1. El profesional carga el contexto y ve v1 (3 días).
+    const vista = await versionVista(c.pro, formRequestId);
+    expect(vista).toEqual({ version: 'v1', dias: 3 });
+    // 2. Mientras tanto, la persona rectifica a v2 (4 días).
+    await rectificar(c.ase, formResponseId, 'v1', 4);
+    // 3. El envío con lo que vio (v1) no se registra: conflicto, sin evaluación ni cita.
+    const pro = conSesion(app, c.pro.token);
+    const conflicto = await pro.post(evaluaciones(c.ase.id)).send(conCitas([{ formResponseId, fieldCode: 'trn_dias_por_semana', expectedVersion: vista.version }])).expect(409);
+    expect(conflicto.body.error.code).toBe('VERSION_CONFLICT');
+    expect(conflicto.body.error.details.issues).toEqual([{ code: 'FORM_RESPONSE_VERSION_CHANGED', path: 'formResponseReferences[0].expectedVersion' }]);
+    expect(await prisma.evaluacionDeEntrenamiento.count({ where: { asesoradoId: c.ase.id } })).toBe(0);
+    expect(await prisma.citaDeRespuestaEnEvaluacionDeEntrenamiento.count({ where: { respuestaId: formResponseId } })).toBe(0);
+    // 4. Actualiza el contexto, ve v2 (4 días), lo revisa y lo cita: se registra con v2.
+    const actualizada = await versionVista(c.pro, formRequestId);
+    expect(actualizada).toEqual({ version: 'v2', dias: 4 });
+    const creada = await pro.post(evaluaciones(c.ase.id)).send(conCitas([{ formResponseId, fieldCode: 'trn_dias_por_semana', expectedVersion: actualizada.version }])).expect(201);
+    expect((await citasDe(c.pro, creada.body.data.evaluationId))[0]).toMatchObject({ value: 4, citedVersion: 'v2', laterVersionExists: false });
+  });
+
+  it('si la rectificación quitó el campo elegido, también es 409 (no un 422): lo que cambió es la versión', async () => {
+    const c = await fresco();
+    const { formResponseId } = await responder(c.pro, c.ase, 3, { preferencias: 'Me gusta caminar' });
+    await rectificar(c.ase, formResponseId, 'v1', 3); // sin preferencias
+    const r = await conSesion(app, c.pro.token).post(evaluaciones(c.ase.id)).send(conCitas([{ formResponseId, fieldCode: 'trn_preferencias', expectedVersion: 'v1' }])).expect(409);
+    expect(r.body.error.code).toBe('VERSION_CONFLICT');
+  });
+
+  it('sobre una respuesta ajena o inexistente, la precondición no se evalúa: sigue el 422 neutral idéntico, nunca un 409 que revele que existe', async () => {
+    const c = await fresco();
+    const otroAse = await prepararAsesorado(app, `ctx-ver-${++contador}`, { a3: true });
+    await vinculoCompleto(app, c.pro, otroAse, 'ENTRENAMIENTO');
+    const ajena = await contextoRespondido(c.pro, otroAse);
+    const pro = conSesion(app, c.pro.token);
+    const inexistente = (await pro.post(evaluaciones(c.ase.id)).send(conCitas([{ formResponseId: randomUUID(), fieldCode: 'trn_dias_por_semana', expectedVersion: 'v9' }])).expect(422)).body;
+    for (const expectedVersion of ['v1', 'v9']) {
+      const r = await pro.post(evaluaciones(c.ase.id)).send(conCitas([{ formResponseId: ajena, fieldCode: 'trn_dias_por_semana', expectedVersion }])).expect(422);
+      expect(r.body).toEqual(inexistente);
+    }
+  });
+
+  it('con la versión correcta se registra igual que sin precondición (compatibilidad del contrato)', async () => {
+    const c = await fresco();
+    const { formResponseId } = await responder(c.pro, c.ase, 3);
+    const conPrecondicion = await citar(c.pro, c.ase, [{ formResponseId, fieldCode: 'trn_dias_por_semana', expectedVersion: 'v1' }]);
+    const sinPrecondicion = await citar(c.pro, c.ase, [{ formResponseId, fieldCode: 'trn_dias_por_semana' }]);
+    for (const id of [conPrecondicion, sinPrecondicion]) expect((await citasDe(c.pro, id))[0]).toMatchObject({ value: 3, citedVersion: 'v1' });
   });
 });
