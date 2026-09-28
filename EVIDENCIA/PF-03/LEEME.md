@@ -78,6 +78,12 @@ El único mensaje en la consola del navegador es el `400` esperado del guardado 
 - **Control de términos prohibidos** de las pantallas de entrenamiento (`scripts/copy-pantallas.test.cjs`).
 - **No se probó en un teléfono ni en un emulador.** La APK no corre en el navegador, y en esta tanda no se construye.
 
+## Publicación y hallazgo registrado
+
+- **Integrado:** #106 (`05eba13`, desplegado en `test`) y #107 (`2cf5091`).
+- **Publicado:** APK **0.12.0** (`be-apk-0.12.0`, commit `33b533d`), junto con DL-104. Controles y recorrido de validación en [`EVIDENCIA/PUBLICACION-0.12.0/LEEME.md`](../PUBLICACION-0.12.0/LEEME.md).
+- **Hallazgo no bloqueante de la auditoría**, registrado sin corregir: las series pendientes se calculan por cantidad de registros y no por índice. Un borrador con numeración discontinua mostraría pendientes corridas. Está detallado en el documento de publicación.
+
 ## Pendiente
 
 - **Comprobación nativa de PR-2:** en la publicación conjunta con DL-104 ([`EVIDENCIA/PUBLICACION-0.12.0/LEEME.md`](../PUBLICACION-0.12.0/LEEME.md), pasos A a D).

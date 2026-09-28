@@ -108,7 +108,7 @@
 | DL-101 | PF-01/02 · 2026-09-27 | 09v16.1 §22 · DL-095 | Los campos NUMBER aceptaban cualquier número | **DECIDIDA** 2026-09-27 · mínimo, máximo y entero |
 | DL-102 | PF-01/02 · 2026-09-27 | 09v10 TRN-01 · CA-FOR-04 del plan | La evaluación de entrenamiento no puede citar respuestas de forma verificable | **DECIDIDA** 2026-09-27 · referencias verificadas (opción A) |
 | DL-103 | PF-01/02 · 2026-09-27 | Plan Funcional §12.3 · DEC-04 | Alcance del primer incremento de contexto | **DECIDIDA** 2026-09-27 · solo entrenamiento, equipamiento en texto |
-| DL-104 | PF-01/02 · 2026-09-28 | DL-101 · 09v16.1 §22.7/§22.8 · auditoría del PR #100 | Un valor fuera de rango en un formulario no le dice a la persona qué corregir | EN CURSO (opción A implementada; falta comprobarla en una APK construida con el cambio) |
+| DL-104 | PF-01/02 · 2026-09-28 | DL-101 · 09v16.1 §22.7/§22.8 · auditoría del PR #100 | Un valor fuera de rango en un formulario no le dice a la persona qué corregir | EN CURSO (opción A integrada y publicada en la APK 0.12.0; falta la validación de Dirección en el teléfono) |
 | DL-105 | PF-03 · 2026-09-28 | 04 RF-040/042/045 · 05 UC-P17 · ficha PF-03 (PF03-D-1) | La APK no muestra lo que el profesional planificó, y la web no lo compara con lo registrado | **DECIDIDA** 2026-09-28 · incremento 1 «Lo planificado, visible y comparable», con el contrato actual |
 
 ---
@@ -2101,7 +2101,7 @@ Es distinta de la carrera entre transacciones concurrentes, cuya prueba real sig
 
 ## DL-104 — Un valor fuera de rango en un formulario no le dice a la persona qué corregir
 
-**Prioridad:** media · **Documento:** DL-101 · 09v16.1 §22.7 (FRM-07) y §22.8 (FRM-08) · auditoría del PR #100 (2026-09-28) · **Estado:** EN CURSO (opción A implementada; falta comprobarla en una APK construida con el cambio)
+**Prioridad:** media · **Documento:** DL-101 · 09v16.1 §22.7 (FRM-07) y §22.8 (FRM-08) · auditoría del PR #100 (2026-09-28) · **Estado:** EN CURSO (opción A integrada y publicada en la APK 0.12.0; falta la validación de Dirección en el teléfono)
 
 **Qué pasa hoy.**
 - Con DL-101, la API rechaza un número fuera de los límites de la plantilla (por ejemplo, «9» en días por semana) con `422 FORM_RESPONSE_INVALID`. La respuesta trae solo el código y un mensaje de texto: **no trae un issue que nombre el campo ni el rango**.
@@ -2164,6 +2164,8 @@ Es distinta de la carrera entre transacciones concurrentes, cuya prueba real sig
 
 Hasta esa comprobación, DL-104 no se declara cerrada.
 
+**Publicación (2026-09-28).** La opción A salió en la APK **0.12.0** (release `be-apk-0.12.0`, commit `33b533d`), junto con PF-03 (DL-105). El recorrido de validación está en `EVIDENCIA/PUBLICACION-0.12.0/LEEME.md`.
+
 ## DL-105 — Primer incremento de PF-03: «Lo planificado, visible y comparable»
 
 **Prioridad:** alta · **Documento:** 04 RF-040, RF-042 y RF-045 · 05 UC-P17 · ficha `docs/propuestas/PF-03_profundizacion-de-entrenamiento.md` (PF03-D-1) · **Estado:** DECIDIDA 2026-09-28
@@ -2184,4 +2186,6 @@ Se conservan las instantáneas históricas, la navegación corregida (DL-096) y 
 **No se aprueban con esta decisión:** el descanso estructurado (PF03-D-2), las alternativas preaprobadas (PF03-D-4), los cuestionarios nuevos (PF03-D-6 y D-7), los objetivos nutricionales por tipo (PF-04) ni un cambio global para que el cliente ignore propiedades desconocidas (PF03-D-5 D). Siguen como propuestas.
 
 **Entrega prevista.** Dos PR de código: dominio y website; APK. La APK sale en una única publicación junto con DL-104, que se construye después de auditar los dos PR.
+
+**Estado de la implementación (2026-09-28).** Integrada: #106 (`05eba13`, dominio y website, desplegado en `test`) y #107 (`2cf5091`, APK). Publicada en la APK **0.12.0** (`be-apk-0.12.0`, commit `33b533d`). La decisión está tomada; **la comprobación nativa queda pendiente** hasta la validación de Dirección en el teléfono (`EVIDENCIA/PUBLICACION-0.12.0/LEEME.md`). Hallazgo no bloqueante registrado ahí: las series pendientes se calculan por cantidad y no por índice.
 

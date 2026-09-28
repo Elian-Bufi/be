@@ -121,4 +121,17 @@ Mismo procedimiento, herramientas y firma, sobre el commit `13280e67ec1a94cac93d
 - **SHA-256:** `4be0de7995283be46f719fd24fe60ef51a8f2d16e53a4bab557863caca0fdbae`, idéntico al construido después de descargarlo.
 - **Tamaño:** 70.698.327 bytes.
 
+## Repetición para la 0.12.0 (2026-09-28)
+
+Mismo procedimiento, herramientas y firma, sobre el commit `33b533dd484db4c3d21679f74798e377bca8dba1` (merge de #108), con CI 4/4 verde. La versión subió solo en `app.config.ts` (0.12.0, versionCode 17), en un PR propio.
+- **Un solo worker de Gradle desde el comienzo** (`org.gradle.workers.max=1`), sin pruebas ni otros trabajos pesados en paralelo. `BUILD SUCCESSFUL in 18m 43s`, en el primer intento de Gradle.
+- **Antes**, el primer lanzamiento se cortó en `npm ci` con `EBADENGINE`: en la máquina ya no estaba Node 22.23.2, que exige el repositorio. Se reinstaló esa versión con fnm y se repitió desde el principio.
+
+Controles, publicación y recorrido de validación: [`EVIDENCIA/PUBLICACION-0.12.0/LEEME.md`](../PUBLICACION-0.12.0/LEEME.md).
+- **Release permanente:** https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.12.0 (tag en `33b533d`, marcada Latest; se conservan todas las anteriores).
+- **Descarga directa:** `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.12.0/be-0.12.0-33b533d.apk`
+- **SHA-256:** `077ed0f7b09e2ae794d02e6b0ec321df9b43dd313d5ac08b1cfc684127e79281`, idéntico al construido después de descargarlo.
+- **Tamaño:** 70.711.403 bytes.
+
+
 Solo datos sintéticos. Sin credenciales.
