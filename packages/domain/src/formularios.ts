@@ -85,6 +85,19 @@ export function requeridosDentroDeSolicitados(requestedFieldCodes: readonly stri
   return requiredFieldCodes.every((codigo) => solicitados.has(codigo));
 }
 
+// ─── Pedido de contexto desde la evaluación de entrenamiento (PF-02 · DL-100) ─────────────────────
+
+/**
+ * Lo que la pantalla precarga cuando el profesional llega desde la evaluación de entrenamiento: la plantilla ratificada
+ * por Dirección (DL-100), sus seis campos y los cinco obligatorios (preferencias es opcional). Es una propuesta
+ * editable: el profesional puede desmarcar antes de enviar, porque la minimización sigue siendo suya (09:1528).
+ */
+export const CONTEXTO_DE_ENTRENAMIENTO = {
+  clavePlantilla: 'FRM-ENTRENAMIENTO',
+  campos: ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'],
+  requeridos: ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento'],
+} as const;
+
 // ─── Límites de un campo NUMBER (DL-101) ────────────────────────────────────────────────────────
 
 /**

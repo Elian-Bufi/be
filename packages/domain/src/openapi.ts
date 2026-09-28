@@ -1180,7 +1180,8 @@ const DEFINIDAS: readonly Operacion[] = [
     idempotencia: true,
     request: CrearEvaluacionDeEntrenamientoRequestSchema,
     exitos: [{ status: 201, schema: CrearEvaluacionResponseSchema }],
-    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['TRAINING_EVALUATION_INVALID'] },
+    // VERSION_CONFLICT: una respuesta citada cambió de versión desde que el profesional la vio (expectedVersion, DL-102).
+    errores: { ...ESCRITURA_REVELABLE, 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['TRAINING_EVALUATION_INVALID'] },
     fuente: '09v10:520-570 · REG-06-97 · DEUDA_LEGAJO DL-048, DL-080',
   },
   {
