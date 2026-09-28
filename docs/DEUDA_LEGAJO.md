@@ -109,6 +109,7 @@
 | DL-102 | PF-01/02 · 2026-09-27 | 09v10 TRN-01 · CA-FOR-04 del plan | La evaluación de entrenamiento no puede citar respuestas de forma verificable | **DECIDIDA** 2026-09-27 · referencias verificadas (opción A) |
 | DL-103 | PF-01/02 · 2026-09-27 | Plan Funcional §12.3 · DEC-04 | Alcance del primer incremento de contexto | **DECIDIDA** 2026-09-27 · solo entrenamiento, equipamiento en texto |
 | DL-104 | PF-01/02 · 2026-09-28 | DL-101 · 09v16.1 §22.7/§22.8 · auditoría del PR #100 | Un valor fuera de rango en un formulario no le dice a la persona qué corregir | EN CURSO (opción A implementada; falta comprobarla en una APK construida con el cambio) |
+| DL-105 | PF-03 · 2026-09-28 | 04 RF-040/042/045 · 05 UC-P17 · ficha PF-03 (PF03-D-1) | La APK no muestra lo que el profesional planificó, y la web no lo compara con lo registrado | **DECIDIDA** 2026-09-28 · incremento 1 «Lo planificado, visible y comparable», con el contrato actual |
 
 ---
 
@@ -2162,3 +2163,25 @@ Es distinta de la carrera entre transacciones concurrentes, cuya prueba real sig
 4. Sin conexión, el mensaje es «No pudimos confirmar el resultado. Reintentá.» y el botón dice «Reintentar»; no aparece el de dato no aceptado.
 
 Hasta esa comprobación, DL-104 no se declara cerrada.
+
+## DL-105 — Primer incremento de PF-03: «Lo planificado, visible y comparable»
+
+**Prioridad:** alta · **Documento:** 04 RF-040, RF-042 y RF-045 · 05 UC-P17 · ficha `docs/propuestas/PF-03_profundizacion-de-entrenamiento.md` (PF03-D-1) · **Estado:** DECIDIDA 2026-09-28
+
+**Qué pasa hoy.**
+- La APK resume cada prescripción con las repeticiones de la primera serie: una pirámide 10/8/6 aparece como «3 × 10».
+- No muestra el descanso ni los demás parámetros, las notas ni la referencia del %RM. Tampoco muestra las indicaciones de la sesión mientras se registra, ni lo planificado en cada serie pendiente.
+- La nota por serie existe en el contrato, pero el editor no la ofrece.
+- En Ejecuciones, el website reduce lo planificado a «N series».
+
+**Decisión de Dirección (PF03-D-1, opción A).** Mostrar lo planificado de forma fiel y comparable, **con el contrato actual**:
+- una presentación compartida de todas las series (iguales, distintas, rangos y repeticiones no fijadas), con las indicaciones de la sesión, la nota de la prescripción, las notas por serie, los parámetros con su unidad, el criterio y la referencia de intensidad, y la carga sugerida;
+- **website:** editar y conservar las notas por serie; un atajo de descanso que precarga solo el rótulo y la unidad, **sin inventar un valor**; ayuda para escribir el tempo como texto; y la comparación legible entre lo planificado y lo registrado;
+- **APK:** la presentación completa en «Hoy», en la sesión y en el historial, y lo planificado como referencia mientras se registra. **Lo planificado no se carga como realizado.**
+
+Se conservan las instantáneas históricas, la navegación corregida (DL-096) y la separación entre planificación y ejecución.
+
+**No se aprueban con esta decisión:** el descanso estructurado (PF03-D-2), las alternativas preaprobadas (PF03-D-4), los cuestionarios nuevos (PF03-D-6 y D-7), los objetivos nutricionales por tipo (PF-04) ni un cambio global para que el cliente ignore propiedades desconocidas (PF03-D-5 D). Siguen como propuestas.
+
+**Entrega prevista.** Dos PR de código: dominio y website; APK. La APK sale en una única publicación junto con DL-104, que se construye después de auditar los dos PR.
+
