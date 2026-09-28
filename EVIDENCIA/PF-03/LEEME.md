@@ -26,19 +26,23 @@ Decisión: [DL-105](../../docs/DEUDA_LEGAJO.md) (PF03-D-1, opción A, Dirección
   - Cada serie registrada dice lo planificado para ella («· planificadas 8»), sin porcentajes ni calificaciones.
 
 **Pruebas.**
-- **Unitarias del dominio** (`presentacion-de-prescripcion.test.ts`, 9):
+- **Unitarias del dominio** (`presentacion-de-prescripcion.test.ts`, 9, dentro de las 291 del dominio):
   - la pirámide 10/8/6 serie por serie, nunca «3 × 10»;
   - series iguales, rangos, series sin fijar y notas por serie;
   - la intensidad con su referencia y la coma decimal;
   - el orden completo de las líneas;
   - la ausencia de criterio (explícita en la web);
-  - la referencia de la serie;
+  - la referencia de la serie, con concordancia («planificada 1 repetición»), sin fijar y con su nota;
   - que no haya términos prohibidos.
-- **Integración contra PostgreSQL** (`test/integration/prescripcion-visible.int-spec.ts`, 3):
-  - editar como el editor web, guardar, validar, activar y consultar conserva las notas por serie, los parámetros y la nota; «Hoy» trae la pirámide completa y valida contra el esquema estricto de la APK;
+- **Integración contra PostgreSQL** (`test/integration/prescripcion-visible.int-spec.ts`, 4). Edita con la **misma función del editor web** (`estructuraComoEntrada`, que pasó al dominio para eso):
+  - editar, guardar, validar, activar y consultar conserva las notas por serie, los parámetros y la nota; «Hoy» trae la pirámide completa y valida contra el esquema estricto de la APK;
   - la sucesora parte de la instantánea con las notas, y reeditarla no las pierde;
-  - una ejecución registrada con la pirámide sigue mostrando 10/8/6 después de activar una versión con 5 × 5, leída por el profesional y por el asesorado; lo registrado es lo que escribió la persona (5), no lo planificado (6).
-- **Regresión:** entrenamiento, PF-02 y contrato, 129/129 con las 3 nuevas. `npm test` (dominio 291, scripts 31, API 47), typecheck, OpenAPI al día, build del website y legajo.
+  - **lo planificado nunca se carga como realizado:** el borrador de ejecución nace vacío, y una serie guardada sin repeticiones queda sin repeticiones, sin tomar las 6 planificadas;
+  - una ejecución registrada con la pirámide sigue mostrando 10/8/6 después de activar una versión con 5 × 5, leída por el profesional y por el asesorado.
+- **Regresión:** entrenamiento, PF-02 y contrato, 129/129 con las 3 primeras; con la cuarta, entrenamiento, PF-02 y PF-03 dan 118/118.
+- **Revisión acotada**, con dos revisores de solo lectura:
+  - no encontró defectos en los datos, el contrato ni la navegación;
+  - hubo cinco hallazgos bajos, todos corregidos: una aserción que no podía fallar, un comentario inexacto, la copia de la función del editor en la prueba, la concordancia de «1 repetición» y la nota de la serie pendiente. El quinto, la verificación del artefacto de la publicación, se corrigió en el PR-2. `npm test` (dominio 291, scripts 31, API 47), typecheck, OpenAPI al día, build del website y legajo.
 
 ### Recorrido web local (12/12 controles)
 

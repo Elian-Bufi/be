@@ -10,11 +10,11 @@
 import type { INestApplication } from '@nestjs/common';
 import {
   EjecucionDeEntrenamientoResponseSchema,
+  estructuraComoEntrada,
   HoyDeEntrenamientoResponseSchema,
   lineasDePrescripcion,
   PlanDeEntrenamientoResponseSchema,
   type Prescripcion,
-  type VersionDePlanDeEntrenamiento,
 } from '@be/domain';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { activarPlanDeEntrenamiento, CATALOGO_DE_EJERCICIOS, circuitoListoParaPlanificarEntrenamiento, crearBorradorDeEntrenamiento, type CircuitoParaPlanificar } from './soporte-entrenamiento';
@@ -34,34 +34,15 @@ const editar = (c: CircuitoParaPlanificar, planId: string, expectedVersion: stri
   conSesion(app, c.pro.token).patch(`/api/v1/training/plans/${planId}`).send({ expectedVersion, changes: { blocks } });
 const hoy = (c: CircuitoParaPlanificar) => conSesion(app, c.ase.token).get('/api/v1/me/training/today');
 
-/**
- * La misma transformación que hace el editor del website al guardar (`aEntrada` en
- * apps/web/src/app/pro/advisees/training/editor.tsx): la respuesta vuelve como entrada, con las notas por serie.
- */
-function comoEntrada(v: VersionDePlanDeEntrenamiento) {
-  const sesion = (s: VersionDePlanDeEntrenamiento['blocks'][number]['sessions'][number]) => ({
-    sessionId: s.sessionId,
-    label: s.label,
-    instructions: s.instructions,
-    prescriptions: s.prescriptions.map((p) => ({
-      prescriptionId: p.prescriptionId,
-      exerciseVersionId: p.exerciseVersionId,
-      sets: p.sets.map((x) => ({ repetitions: x.repetitions, note: x.note })),
-      intensity: p.intensity ? { criterion: p.intensity.criterion, target: { value: p.intensity.target.value, reference: p.intensity.target.reference } } : null,
-      suggestedLoad: p.suggestedLoad,
-      professionalParameters: p.professionalParameters.map((q) => ({ label: q.label, value: q.value, unit: q.unit })),
-      note: p.note,
-    })),
-  });
-  return v.blocks.map((b) => ({ blockId: b.blockId, label: b.label, purpose: b.purpose, microcycles: b.microcycles.map((m) => ({ microcycleId: m.microcycleId, label: m.label, purpose: m.purpose, sessions: m.sessions.map(sesion) })), sessions: b.sessions.map(sesion) }));
-}
+/** La misma transformación que usa el editor del website en cada guardado (`estructuraComoEntrada`, del dominio). */
+const comoEntrada = estructuraComoEntrada;
 
 const banca = (v: { blocks: { sessions: { prescriptions: Prescripcion[] }[] }[] }): Prescripcion =>
   v.blocks[0]!.sessions[0]!.prescriptions.find((p) => p.prescriptionId === 'rx-banca') as Prescripcion;
 
 /** Como lo carga el profesional en el editor: pirámide con una nota en la serie 2, descanso con el atajo, tempo en texto. */
 function conPiramide(bloques: ReturnType<typeof comoEntrada>) {
-  const rx = bloques[0]!.sessions[0]!.prescriptions.find((p) => p.prescriptionId === 'rx-banca')!;
+  const rx = bloques[0]!.sessions![0]!.prescriptions.find((p) => p.prescriptionId === 'rx-banca')!;
   rx.sets = [{ repetitions: { value: 10 }, note: null }, { repetitions: { value: 8 }, note: 'pausa de 2 s abajo' }, { repetitions: { value: 6 }, note: null }];
   rx.professionalParameters = [
     { label: 'Descanso', value: 90, unit: 's' },
@@ -90,7 +71,8 @@ describe('PF-03 · DL-105 · lo planificado se conserva y se presenta completo',
     const { c, planId, editada } = await planConPiramideActivado();
     expect(banca(editada).sets.map((s) => s.note)).toEqual([null, 'pausa de 2 s abajo', null]);
 
-    // Guardar otra vez sin tocar nada, como hace el editor con cada cambio ajeno: la nota por serie no se pierde.
+    // La versión activada, leída de nuevo: la nota por serie quedó en la instantánea. (Reeditar sin perderla lo
+    // cubre la prueba siguiente, sobre la sucesora.)
     const activada = PlanDeEntrenamientoResponseSchema.parse((await plan(c, planId).expect(200)).body).data;
     expect(activada.state).toBe('ACTIVATED');
     expect(lineasDePrescripcion(banca(activada))).toEqual(LINEAS_DE_LA_PIRAMIDE);
@@ -109,6 +91,25 @@ describe('PF-03 · DL-105 · lo planificado se conserva y se presenta completo',
     expect(lineasDePrescripcion(banca(leida))).toEqual(LINEAS_DE_LA_PIRAMIDE);
     const reeditada = PlanDeEntrenamientoResponseSchema.parse((await editar(c, leida.planId, leida.version, comoEntrada(leida)).expect(200)).body).data;
     expect(lineasDePrescripcion(banca(reeditada))).toEqual(LINEAS_DE_LA_PIRAMIDE);
+  });
+});
+
+describe('PF-03 · DL-105 · lo planificado nunca se carga como realizado', () => {
+  it('el borrador de ejecución nace vacío, y una serie guardada sin repeticiones queda sin repeticiones: no toma las planificadas', async () => {
+    const { c } = await planConPiramideActivado();
+    const [a] = HoyDeEntrenamientoResponseSchema.parse((await hoy(c).expect(200)).body).data.occurrences;
+    const apk = conSesion(app, c.ase.token);
+    const borrador = (await apk.put(`/api/v1/training/occurrences/${a!.occurrenceId}/execution-draft`).send({}).expect(201)).body.data;
+    expect(borrador.exercises).toEqual([]);
+    const sinReps = { setIndex: 3, load: { value: 60, unit: 'kg' }, completedRepetitions: null, rir: null, perceivedExertion: null };
+    const guardado = (
+      await apk
+        .patch(`/api/v1/training/execution-drafts/${borrador.draftId}`)
+        .send({ expectedVersion: borrador.version, changes: { granularity: 'SET', exercises: [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets: [sinReps] }] } })
+        .expect(200)
+    ).body.data;
+    // La serie 3 planifica 6 repeticiones; guardada sin repeticiones, sigue sin repeticiones.
+    expect(guardado.exercises[0].sets).toEqual([expect.objectContaining({ setIndex: 3, completedRepetitions: null })]);
   });
 });
 
@@ -137,7 +138,7 @@ describe('PF-03 · DL-105 · la comparación usa la prescripción de la versión
     const sucesora = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/training/plans`).send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: planId }).expect(201);
     const leida = PlanDeEntrenamientoResponseSchema.parse((await plan(c, sucesora.body.data.planId).expect(200)).body).data;
     const bloques = comoEntrada(leida);
-    bloques[0]!.sessions[0]!.prescriptions.find((p) => p.prescriptionId === 'rx-banca')!.sets = Array.from({ length: 5 }, () => ({ repetitions: { value: 5 }, note: null }));
+    bloques[0]!.sessions![0]!.prescriptions.find((p) => p.prescriptionId === 'rx-banca')!.sets = Array.from({ length: 5 }, () => ({ repetitions: { value: 5 }, note: null }));
     const v2 = PlanDeEntrenamientoResponseSchema.parse((await editar(c, leida.planId, leida.version, bloques).expect(200)).body).data;
     await activarPlanDeEntrenamiento(app, c.pro, v2.planId, v2.version).expect(200);
     expect(lineasDePrescripcion(banca(PlanDeEntrenamientoResponseSchema.parse((await plan(c, v2.planId).expect(200)).body).data))[0]).toBe('5 × 5');

@@ -15,7 +15,7 @@
  * ideales, la selección de ejercicios, la progresión. Tampoco se exige criterio de intensidad: REG-06-128 es
  * condicional, y una prescripción sin criterio es legítima (DL-088).
  */
-import type { EjercicioRegistradoEntrada, EstructuraDePlanDeEntrenamientoEntrada, SesionEntrada } from './contratos-entrenamiento';
+import type { EjercicioRegistradoEntrada, EstructuraDePlanDeEntrenamientoEntrada, SesionEntrada, VersionDePlanDeEntrenamiento } from './contratos-entrenamiento';
 import type { ValidationIssue } from './contratos';
 import type { CondicionDeSesion, GranularidadDeRegistro, MotivoDeIntensidadInvalida } from './entrenamiento';
 
@@ -447,4 +447,35 @@ export function decodificarOcurrencia(id: string): OcurrenciaPlanificada | null 
   const o = { versionDePlanId, sesionPlanificadaId, fechaLocal };
   // Una sola escritura por ocurrencia: dos cadenas que decodifican igual no pueden ser las dos válidas.
   return codificarOcurrencia(o) === id ? o : null;
+}
+
+// ─── Del website: la versión leída, como entrada de la edición (API-TRN-10) ──────────────────────
+
+/**
+ * La jerarquía de una versión leída como entrada del PATCH: con los identificadores, sin `order` ni nombres. Conserva
+ * todo lo que el profesional cargó, incluidas las **notas por serie** (DL-105): el editor del website la usa en cada
+ * guardado, y las pruebas de integración, para editar exactamente como él.
+ */
+export function estructuraComoEntrada(v: VersionDePlanDeEntrenamiento): EstructuraDePlanDeEntrenamientoEntrada['blocks'] {
+  const sesion = (s: VersionDePlanDeEntrenamiento['blocks'][number]['sessions'][number]): SesionEntrada => ({
+    sessionId: s.sessionId,
+    label: s.label,
+    instructions: s.instructions,
+    prescriptions: s.prescriptions.map((p) => ({
+      prescriptionId: p.prescriptionId,
+      exerciseVersionId: p.exerciseVersionId,
+      sets: p.sets.map((x) => ({ repetitions: x.repetitions, note: x.note })),
+      intensity: p.intensity ? { criterion: p.intensity.criterion, target: { value: p.intensity.target.value, reference: p.intensity.target.reference } } : null,
+      suggestedLoad: p.suggestedLoad,
+      professionalParameters: p.professionalParameters.map((q) => ({ label: q.label, value: q.value, unit: q.unit })),
+      note: p.note,
+    })),
+  });
+  return v.blocks.map((b) => ({
+    blockId: b.blockId,
+    label: b.label,
+    purpose: b.purpose,
+    microcycles: b.microcycles.map((m) => ({ microcycleId: m.microcycleId, label: m.label, purpose: m.purpose, sessions: m.sessions.map(sesion) })),
+    sessions: b.sessions.map(sesion),
+  }));
 }

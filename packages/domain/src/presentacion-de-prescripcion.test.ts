@@ -96,10 +96,13 @@ test('PF-03 · sin criterio: la APK no lo dice; el website lo dice explícitamen
   assert.deepEqual(lineasDePrescripcion(prescripcion(), { sinCriterioExplicito: true }), ['3 × 10', COPY_ENTRENAMIENTO.sinCriterio]);
 });
 
-test('PF-03 · la referencia de lo planificado para registrar una serie, sin valor precargado', () => {
+test('PF-03 · la referencia de lo planificado para registrar una serie: repeticiones con concordancia, sin fijar y la nota de la serie', () => {
   assert.equal(referenciaDeSerie(serie(2, fijas(8))), 'planificadas 8 repeticiones');
+  assert.equal(referenciaDeSerie(serie(1, fijas(1))), 'planificada 1 repetición');
   assert.equal(referenciaDeSerie(serie(2, rango(8, 12))), 'planificadas 8-12 repeticiones');
-  assert.equal(referenciaDeSerie(serie(2, null)), null);
+  assert.equal(referenciaDeSerie(serie(2, null)), 'sin repeticiones fijadas');
+  assert.equal(referenciaDeSerie(serie(2, fijas(8), 'pausa de 2 s abajo')), 'planificadas 8 repeticiones · pausa de 2 s abajo');
+  assert.equal(referenciaDeSerie(serie(3, null, 'a gusto')), 'sin repeticiones fijadas · a gusto');
   // Con el formato del país (DL-091 punto 4): separador de miles con punto.
   assert.equal(repeticionesPlanificadas(serie(1, fijas(1000))), '1.000');
 });
@@ -112,7 +115,8 @@ test('PF-03 · los textos de la presentación no usan términos prohibidos de en
   });
   const textos = [
     ...lineasDePrescripcion(p, { sinCriterioExplicito: true }),
-    referenciaDeSerie(serie(1, fijas(8))) as string,
+    referenciaDeSerie(serie(1, fijas(8))),
+    referenciaDeSerie(serie(1, fijas(1), 'pausa')),
     COPY_ENTRENAMIENTO.indicacionesDeLaSesion,
     COPY_ENTRENAMIENTO.agregarDescanso,
     COPY_ENTRENAMIENTO.ayudaDeTempo,

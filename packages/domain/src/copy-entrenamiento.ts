@@ -103,6 +103,8 @@ export const COPY_ENTRENAMIENTO = {
   // PF-03, incremento 1 (DL-105): lo planificado, visible y comparable.
   sinRepeticionesFijadas: 'sin repeticiones fijadas',
   planificadas: 'planificadas',
+  planificada: 'planificada',
+  repeticion: 'repetición',
   indicacionesDeLaSesion: 'Indicaciones de la sesión',
   notaDeSerie: 'nota (opcional)',
   // El atajo precarga solo el rótulo y la unidad: el valor lo escribe el profesional, nunca se inventa.

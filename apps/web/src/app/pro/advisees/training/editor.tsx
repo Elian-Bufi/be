@@ -16,6 +16,7 @@ import {
   COPY_ENTRENAMIENTO,
   COPY_INTEGRACIONES,
   ETIQUETA_DE_CRITERIO,
+  estructuraComoEntrada,
   leerNumero,
   type EjercicioDeCatalogo,
   type EstructuraDePlanDeEntrenamientoEntrada,
@@ -38,30 +39,8 @@ type SesionE = NonNullable<BloqueE['sessions']>[number];
 type PrescripcionE = SesionE['prescriptions'][number];
 type Criterio = 'PERCENT_RM' | 'RIR';
 
-/** La jerarquía de la respuesta como entrada del PATCH: con los identificadores, sin `order` ni nombres. */
-function aEntrada(v: VersionDePlanDeEntrenamiento): Bloques {
-  const sesion = (s: VersionDePlanDeEntrenamiento['blocks'][number]['sessions'][number]): SesionE => ({
-    sessionId: s.sessionId,
-    label: s.label,
-    instructions: s.instructions,
-    prescriptions: s.prescriptions.map((p) => ({
-      prescriptionId: p.prescriptionId,
-      exerciseVersionId: p.exerciseVersionId,
-      sets: p.sets.map((x) => ({ repetitions: x.repetitions, note: x.note })),
-      intensity: p.intensity ? { criterion: p.intensity.criterion, target: { value: p.intensity.target.value, reference: p.intensity.target.reference } } : null,
-      suggestedLoad: p.suggestedLoad,
-      professionalParameters: p.professionalParameters.map((q) => ({ label: q.label, value: q.value, unit: q.unit })),
-      note: p.note,
-    })),
-  });
-  return v.blocks.map((b) => ({
-    blockId: b.blockId,
-    label: b.label,
-    purpose: b.purpose,
-    microcycles: b.microcycles.map((m) => ({ microcycleId: m.microcycleId, label: m.label, purpose: m.purpose, sessions: m.sessions.map(sesion) })),
-    sessions: b.sessions.map(sesion),
-  }));
-}
+/** La jerarquía de la respuesta como entrada del PATCH (en el dominio, para que las pruebas editen exactamente igual). */
+const aEntrada = (v: VersionDePlanDeEntrenamiento): Bloques => estructuraComoEntrada(v);
 
 function nombresDe(v: VersionDePlanDeEntrenamiento): Record<string, string> {
   const n: Record<string, string> = {};
