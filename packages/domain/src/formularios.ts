@@ -85,6 +85,30 @@ export function requeridosDentroDeSolicitados(requestedFieldCodes: readonly stri
   return requiredFieldCodes.every((codigo) => solicitados.has(codigo));
 }
 
+// ─── Límites de un campo NUMBER (DL-101) ────────────────────────────────────────────────────────
+
+/**
+ * Límites opcionales de un campo `NUMBER` de la plantilla: «días por semana» va de 1 a 7 y es entero. Viven en la
+ * definición interna de la versión (`contenido.numberLimits`), **no** en los campos que devuelve FRM-02: la APK lee
+ * esa respuesta con esquemas estrictos, y una propiedad nueva le impediría abrir el formulario (ficha PF-01/02,
+ * «Compatibilidad»). Por eso los valida solo el servidor, y el rango se le comunica a la persona en el `helpText`.
+ */
+export interface LimitesNumericos {
+  readonly minimum?: number;
+  readonly maximum?: number;
+  readonly integer?: boolean;
+}
+
+/** `true` si el número respeta los límites declarados; sin límites, cualquier número finito vale (como antes). */
+export function numeroDentroDeLimites(valor: number, limites: LimitesNumericos | undefined): boolean {
+  if (!Number.isFinite(valor)) return false;
+  if (!limites) return true;
+  if (limites.integer && !Number.isInteger(valor)) return false;
+  if (limites.minimum !== undefined && valor < limites.minimum) return false;
+  if (limites.maximum !== undefined && valor > limites.maximum) return false;
+  return true;
+}
+
 /** Cada código pedido tiene que existir en la versión de plantilla citada — nunca en el catálogo vigente, que puede
  *  haber cambiado (REG-06-13: la instantánea se reconstruye desde lo emitido). */
 export function solicitudDentroDeLaPlantilla(requestedFieldCodes: readonly string[], codigosDeLaPlantilla: readonly string[]): boolean {

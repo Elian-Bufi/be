@@ -3,6 +3,7 @@ import {
   CodigoDeError,
   EnviarRespuestaRequestSchema,
   evaluarNuevaCorreccion,
+  numeroDentroDeLimites,
   RectificarRespuestaRequestSchema,
   resolverVistaEfectiva,
   type Alcance,
@@ -17,7 +18,7 @@ import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
 import { registrarEventoDeFormulario } from './eventos';
-import { camposPorCodigo, tipoDeValorCorrecto } from './lectura-formularios';
+import { camposPorCodigo, limitesDeCampo, tipoDeValorCorrecto } from './lectura-formularios';
 
 type Tx = Prisma.TransactionClient;
 type Answer = { fieldCode: string; value: string | number | boolean; unit?: string | null; profileSourceRef?: string | null };
@@ -185,6 +186,10 @@ export class RespuestasService {
       const campo = campos.get(a.fieldCode);
       if (!campo || !tipoDeValorCorrecto(campo.dataType, a.value)) {
         throw new ErrorDeApi(422, CodigoDeError.FORM_RESPONSE_INVALID, `El campo "${a.fieldCode}" no tiene el tipo declarado por la plantilla.`);
+      }
+      // DL-101: un NUMBER con límites declarados (p. ej. días por semana de 1 a 7, entero) no acepta valores fuera.
+      if (campo.dataType === 'NUMBER' && !numeroDentroDeLimites(a.value as number, limitesDeCampo(contenido, a.fieldCode))) {
+        throw new ErrorDeApi(422, CodigoDeError.FORM_RESPONSE_INVALID, `El campo "${a.fieldCode}" está fuera del rango que admite la plantilla.`);
       }
     }
   }

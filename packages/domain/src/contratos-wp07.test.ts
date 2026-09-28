@@ -16,6 +16,7 @@ import {
   CATEGORIAS_DE_DATO,
   categoriaPertinenteParaAlcance,
   ESTADO_DE_SOLICITUD_DE_FORMULARIO_API,
+  numeroDentroDeLimites,
   puedeSerRespondableEstructuralmente,
   requeridosDentroDeSolicitados,
   solicitudDentroDeLaPlantilla,
@@ -50,6 +51,28 @@ test('DL-095 · P0 es maximally permissive: las cuatro categorías son pertinent
     for (const categoria of CATEGORIAS_DE_DATO) assert.equal(categoriaPertinenteParaAlcance(alcance, categoria), true);
   }
   assert.equal(CATEGORIAS_DE_DATO.length, 4);
+});
+
+// ─── DL-101 · límites de un campo NUMBER ────────────────────────────────────────────────────────
+
+test('DL-101 · días por semana: de 1 a 7 y entero; 0, 9, 2,5 y -1 no pasan', () => {
+  const dias = { minimum: 1, maximum: 7, integer: true };
+  for (const v of [1, 4, 7]) assert.equal(numeroDentroDeLimites(v, dias), true, String(v));
+  for (const v of [0, 8, 9, 2.5, -1]) assert.equal(numeroDentroDeLimites(v, dias), false, String(v));
+});
+
+test('DL-101 · sin límites declarados, cualquier número finito vale (las plantillas existentes no cambian)', () => {
+  assert.equal(numeroDentroDeLimites(7.5, undefined), true);
+  assert.equal(numeroDentroDeLimites(-3, {}), true);
+  assert.equal(numeroDentroDeLimites(Number.NaN, undefined), false);
+  assert.equal(numeroDentroDeLimites(Number.POSITIVE_INFINITY, undefined), false);
+});
+
+test('DL-101 · un solo límite se aplica solo: mínimo sin máximo, entero sin rango', () => {
+  assert.equal(numeroDentroDeLimites(600, { minimum: 1 }), true);
+  assert.equal(numeroDentroDeLimites(0, { minimum: 1 }), false);
+  assert.equal(numeroDentroDeLimites(1000, { integer: true }), true);
+  assert.equal(numeroDentroDeLimites(10.1, { integer: true }), false);
 });
 
 // ─── REG-06-212 · requerido ⊆ solicitado, y solicitado ⊆ plantilla ──────────────────────────────
