@@ -4,31 +4,42 @@ Ficha y decisiones: `docs/propuestas/PF-01-02_contexto-de-entrenamiento.md` (DL-
 
 | PR | Qué entrega | Estado |
 |---|---|---|
-| #100 (1/3) | Plantilla «Antecedentes para entrenamiento» (DL-100) y límites NUMBER validados en el servidor (DL-101) | Para auditoría |
-| #101 (2/3) | Citas de respuestas en la evaluación, verificadas en el servidor (DL-102) | Para auditoría (encadenado sobre #100) |
-| #102 (3/3) | Website: «Solicitar contexto» desde la evaluación, con retorno; citar respuestas y ver lo citado | Para auditoría (encadenado sobre #101) |
+| #100 (1/3) | Plantilla «Antecedentes para entrenamiento» (DL-100) y límites NUMBER validados en el servidor (DL-101) | **Integrado** (`ea3e1ec`). Limitación de interfaz: DL-104, abierta |
+| #101 (2/3) | Citas de respuestas en la evaluación, verificadas en el servidor (DL-102) | **Integrado** (`ff2001e`). Evidencia por dimensión: `auditoria-pr-101.md` |
+| #102 (3/3) | Website: «Solicitar contexto» desde la evaluación, con retorno; citar respuestas y ver lo citado | **Para auditoría**, sin autorización de integración |
+
+## Adaptación del #102 al #101 integrado
+
+Con el #101, la API devuelve en cada cita la unidad **que declaró la persona** o, si falta, la del campo de la plantilla. La lista de respuestas citables del formulario de evaluación usaba siempre la de la plantilla. Ahora aplica la misma regla (commit `c5435e2`), así lo que el profesional marca coincide con lo que después muestra «Contexto citado».
 
 ## Recorrido local del website (previo a la integración)
 
-**Qué es y qué no es.** Es un recorrido en la máquina de desarrollo, el 2026-09-27, con el código de los tres PR:
-- API compilada contra PostgreSQL 16 local, con las migraciones aplicadas;
-- website en `next dev`;
+**Qué es y qué no es.** Es un recorrido en la máquina de desarrollo, el 2026-09-28, con el código del #102 sobre `main`: commit `c5435e2`, que incluye el #101 integrado. Se usó:
+- la API compilada contra PostgreSQL 16 local, con todas las migraciones aplicadas;
+- el website en `next dev`;
 - Chrome sin interfaz manejado con `puppeteer-core`;
-- datos sintéticos sembrados por la API: un profesional de ENTRENAMIENTO verificado como demo y un asesorado con A3, vínculo y B2.
+- datos sintéticos sembrados por la API: un profesional de ENTRENAMIENTO verificado como demo y un asesorado con A3, vínculo y B2. El asesorado responde por la API, como lo haría la APK, **declarando la unidad «minutos»**.
 
-**No es el ambiente `test` de Render** y no reemplaza la verificación después de integrar.
+**No es el ambiente `test` de Render** y no reemplaza la prueba completa web → respuesta desde la APK → evaluación en el ambiente desplegado, que sigue pendiente.
 
 | Control | Resultado |
 |---|---|
 | El resumen de Entrenamiento ofrece «Solicitar contexto» junto a «Nueva evaluación» (`01`) | ✅ |
-| El pedido llega precargado: «Antecedentes para entrenamiento», los seis campos, cinco requeridos (preferencias opcional), propósito «Planificar tu entrenamiento» y alcance Entrenamiento, con aviso de que se puede cambiar (`02`) | ✅ |
+| El pedido llega precargado: «Antecedentes para entrenamiento», los seis campos, cinco requeridos (preferencias opcional), propósito «Planificar tu entrenamiento» y alcance Entrenamiento (`02`) | ✅ |
+| Aviso «Viniste desde Entrenamiento», con enlace de vuelta (`02`) | ✅ |
 | Al enviar, vuelve a Entrenamiento (CA-FOR-06, `03`) | ✅ |
-| Respondida la Solicitud (por la API, como el asesorado), el formulario de evaluación ofrece las cinco respuestas para citar, cada una «Declarado por la persona», con fecha y unidad («3 días por semana», «45 min») (`04`) | ✅ |
-| La evaluación registrada muestra «Contexto citado» aparte de la valoración, y lo citado no aparece como dato observado (CA-FOR-04, `05`) | ✅ |
+| Respondida la Solicitud, el formulario de evaluación ofrece las cinco respuestas para citar (`04`) | ✅ |
+| Cada citable dice «Declarado por la persona», con fecha y unidad: «45 **minutos**» (la declarada) y «3 días por semana» (la de la plantilla) (`04`) | ✅ |
+| La evaluación registrada muestra «Contexto citado», con lo citado (`05`) | ✅ |
+| Lo citado no aparece como dato de la valoración (CA-FOR-04, `05`) | ✅ |
 | Errores en la consola del navegador | ninguno |
 
-**Pendiente:**
-- el mismo recorrido en el ambiente `test`, una vez integrados los tres PR;
-- el pedido respondido desde la APK. La APK no cambia: responde con la pantalla genérica de formularios.
+Son 10 controles, todos en verde. Las capturas están en `recorrido-local/`.
+
+## Pendiente
+
+- La prueba completa **web → respuesta desde la APK → evaluación** en el ambiente desplegado, una vez integrado el #102.
+- La **prueba de concurrencia real** de las citas (#101).
+- **DL-104** (mensaje ante un valor fuera de rango).
 
 Solo datos sintéticos. Sin credenciales.
