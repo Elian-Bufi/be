@@ -2077,6 +2077,8 @@ Las plantillas existentes no cambian. Amplía la forma provisoria de DL-095. **E
 
 **Opciones.**
 - **A.** Un campo nuevo de referencias a respuestas concretas, validado en el servidor. La respuesta tiene que ser de la misma persona y del alcance, y el profesional tiene que poder leerla en ese momento. Al leer la evaluación, cada referencia se resuelve con las reglas de FRM-05, con aviso neutral si ya no es legible.
+
+**Nota de implementación (PR #101).** Las condiciones de una cita (mismo asesorado, Solicitud del mismo profesional, alcance ENTRENAMIENTO) coinciden con las de FRM-05, y la evaluación ya exige el PDP de ENTRENAMIENTO para ese par. Por eso una cita se lee exactamente cuando se lee su evaluación: si se revoca B2 o A3, o se pausa o finaliza el vínculo, la evaluación entera da 404 neutral y no hay un aviso por cita. La base repite la pertenencia en un trigger. La versión vigente al citar la fija la API.
 - **B.** Una convención sobre los textos libres, que no se valida.
 - **C.** Copiar el valor como dato `REPORTED`, que mezcla la declaración con la observación.
 

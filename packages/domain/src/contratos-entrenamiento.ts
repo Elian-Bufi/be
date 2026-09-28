@@ -68,10 +68,6 @@ export const CargaSchema = z.strictObject({ value: z.number().nonnegative().fini
 
 // ─── Evaluación (API-TRN-01 a 03) ───────────────────────────────────────────────────────────────
 /**
- * La valoración es la misma lista de datos con fuente de nutrición (DL-048): «cada dato debe conservar origen»
- * (B10-06:132), y un dato calculado declara su método. Evidencia ≠ ejecución (09v10:199).
- */
-/**
  * DL-102 (PF-02): una respuesta de formulario citada como evidencia de la evaluación. Es una **referencia**, no una
  * copia: la declaración de la persona no se convierte en observación del profesional (CA-FOR-04 del Plan Funcional).
  * El servidor la valida al crear la evaluación: tiene que ser una respuesta del mismo asesorado, a una Solicitud de
@@ -84,9 +80,16 @@ export const CitaDeRespuestaDeFormularioSchema = z.strictObject({
 export type CitaDeRespuestaDeFormulario = z.infer<typeof CitaDeRespuestaDeFormularioSchema>;
 
 /**
- * Lo citado, resuelto al leer la evaluación. Rótulo y unidad salen de la versión de plantilla de la Solicitud; el
- * valor, de la versión de la respuesta **vigente al citar** (`citedVersion`). Si la persona la rectificó después,
- * `laterVersionExists` lo dice y el valor citado no cambia: la evaluación se fundó en lo que había.
+ * Lo citado, resuelto al leer la evaluación.
+ * - `value` y `unit` son los de la versión de la respuesta **vigente al citar** (`citedVersion`). `unit` es la que declaró
+ *   la persona o, si no declaró ninguna, la del campo de la plantilla. `label` sale de la versión de plantilla de la
+ *   Solicitud, que no cambia.
+ * - `answeredAt`: cuándo se registró la versión citada. Es el envío original si `citedVersion` es la primera, o la
+ *   rectificación citada.
+ * - `laterVersionExists`: la persona rectificó después; el valor citado no cambia, porque la evaluación se fundó en lo
+ *   que había.
+ * Se lee exactamente cuando se lee la evaluación: si se revoca el acceso, la evaluación entera da 404 (no hay aviso por
+ * cita).
  */
 export const RespuestaCitadaSchema = z.strictObject({
   formResponseId: IdOpaco,
@@ -102,6 +105,10 @@ export const RespuestaCitadaSchema = z.strictObject({
 });
 export type RespuestaCitada = z.infer<typeof RespuestaCitadaSchema>;
 
+/**
+ * La valoración es la misma lista de datos con fuente de nutrición (DL-048): «cada dato debe conservar origen»
+ * (B10-06:132), y un dato calculado declara su método. Evidencia ≠ ejecución (09v10:199).
+ */
 export const CrearEvaluacionDeEntrenamientoRequestSchema = z.strictObject({
   occurredAt: Instante,
   assessment: ValoracionSchema,
