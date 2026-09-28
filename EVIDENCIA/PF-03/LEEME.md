@@ -39,10 +39,13 @@ Decisión: [DL-105](../../docs/DEUDA_LEGAJO.md) (PF03-D-1, opción A, Dirección
   - la sucesora parte de la instantánea con las notas, y reeditarla no las pierde;
   - **lo planificado nunca se carga como realizado:** el borrador de ejecución nace vacío, y una serie guardada sin repeticiones queda sin repeticiones, sin tomar las 6 planificadas;
   - una ejecución registrada con la pirámide sigue mostrando 10/8/6 después de activar una versión con 5 × 5, leída por el profesional y por el asesorado.
-- **Regresión:** entrenamiento, PF-02 y contrato, 129/129 con las 3 primeras; con la cuarta, entrenamiento, PF-02 y PF-03 dan 118/118.
-- **Revisión acotada**, con dos revisores de solo lectura:
-  - no encontró defectos en los datos, el contrato ni la navegación;
-  - hubo cinco hallazgos bajos, todos corregidos: una aserción que no podía fallar, un comentario inexacto, la copia de la función del editor en la prueba, la concordancia de «1 repetición» y la nota de la serie pendiente. El quinto, la verificación del artefacto de la publicación, se corrigió en el PR-2. `npm test` (dominio 291, scripts 31, API 47), typecheck, OpenAPI al día, build del website y legajo.
+- **Regresión:** entrenamiento, PF-02 y contrato, 129/129 con las 3 primeras; con la cuarta, entrenamiento, PF-02 y PF-03 dan 118/118. `npm test` (dominio 291, scripts 31, API 47), typecheck, OpenAPI al día, build del website y legajo.
+- **Revisión acotada**, con dos revisores de solo lectura. No encontró defectos en los datos, el contrato ni la navegación. Marcó cinco hallazgos de severidad baja, todos corregidos:
+  1. una aserción que no podía fallar;
+  2. un comentario inexacto, y una copia a mano de la función del editor en la prueba;
+  3. la concordancia de «1 repetición»;
+  4. la nota de la serie pendiente, que no se mostraba;
+  5. la verificación del artefacto de la publicación, más angosta que la del procedimiento (corregida en el PR-2).
 
 ### Recorrido web local (12/12 controles)
 
