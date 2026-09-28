@@ -1,6 +1,6 @@
 # PF-03 — Ficha: profundización de entrenamiento dentro de fuerza
 
-> **Estado:** PROPUESTA ESPECIFICADA para decisión de Dirección; no implementada.
+> **Estado:** PROPUESTA ESPECIFICADA. **PF03-D-1 aprobada por Dirección el 2026-09-28, opción A** ([DL-105](../DEUDA_LEGAJO.md)): el incremento 1 pasa a implementarse. Las demás decisiones siguen **pendientes** y lo que proponen sigue siendo propuesta.
 > **Base:** `main` en `ff2001e` (2026-09-28), contrastado con el Plan Funcional Profesional v1.1 ([`docs/propuestas/BE_Plan_Funcional_Profesional_v1-1.md`](BE_Plan_Funcional_Profesional_v1-1.md), corte `46fd1fa`). La base incluye #100 y #101 de PF-02 (plantilla FRM-ENTRENAMIENTO, límites NUMBER y citas en la evaluación). **No incluye** el #102 (website de PF-02, en auditoría) ni DL-104 (en implementación aparte).
 > **Identificadores:**
 > - **Locales al plan:** PF-00 a PF-04, TRN-05, TRN-13 a TRN-37, F-TRN-02 (SES-Q01 a SES-Q04), F-TRN-03 (REV-TRN-Q01 a REV-TRN-Q03), CA-TRN-02 a CA-TRN-05, CA-FOR-04, V-05, V-08 a V-16, V-17, DAT-04, DEC-02, DEC-04, DEC-07, DEC-08, DEC-10 y CU-PROP-02.
@@ -11,7 +11,7 @@
 ```yaml
 package: PF-03
 title: Profundización de entrenamiento dentro de fuerza
-status: proposed
+status: proposed (PF03-D-1 aprobada: DL-105; incremento 1 en implementación)
 baseline_commit: ff2001e (main, 2026-09-28)
 business_outcome: La persona ve y registra exactamente lo que su profesional planificó, y el profesional revisa lo planificado junto a lo registrado, sin cálculos ni juicios automáticos
 in_scope:
@@ -456,6 +456,8 @@ No son preguntas: son los rótulos que el inc. 1 necesita. **PROPUESTO** de la f
 - **seis campos de plantilla FRM** (F-TRN-03);
 - **dos exclusiones:** SES-Q01 y la parte sensible de REV-TRN-Q02.
 
+**Ajuste de la auditoría del #105: datos protegidos en los campos TEXT.** Excluir las preguntas sensibles no vuelve inocuas a las demás. En un TEXT como REV-TRN-Q01 o el motivo de una sesión, la persona puede contar espontáneamente un dolor, una lesión o un medicamento, y las ayudas no lo impiden técnicamente. Por eso esas respuestas se tratan como dato protegido completo (C4, `08:162`): solo las lee el profesional del alcance, con A3 y B2 vigentes, y el texto no se analiza para detectar contenido. La rectificación conserva la original, así que lo escrito de más queda en la historia. El camino de supresión es la decisión transversal que plantea PF-04 (D-11).
+
 ## f. Cambios en API, persistencia y pantallas
 
 ### f.1 Incremento 1 — Lo planificado, visible y comparable
@@ -504,6 +506,7 @@ Son **PROPUESTOS**, y cada uno depende de su decisión.
   2. APK nueva, instalada;
   3. recién entonces, la edición en la web.
 - **Coordinación.** DL-104 también necesita una APK. Si las dos llegan a tiempo, conviene una sola construcción.
+- **Ajuste de la auditoría del #105.** Publicar e instalar la APK nueva no retira las anteriores. El orden de despliegue protege al asesorado que actualizó, no al que conserva la 0.11.3: ver la nota agregada en PF03-D-5.
 
 ### f.4 Diagramas
 
@@ -662,6 +665,7 @@ stateDiagram-v2
   - **B:** A más el descanso con semántica. Suma el cambio de contrato y el orden de despliegue de PF03-D-5.
   - **C:** A más las alternativas. Es lo de mayor valor nuevo, pero es el cambio más grande (contrato, validación, instantánea, APK y web).
   - **Recomendación: A.** Es el menor incremento completo: el profesional prescribe en la web, la persona lo ve y lo registra en la APK, y el profesional lo revisa. Sin A, cualquier campo nuevo llegaría a una APK que ni siquiera muestra lo que ya existe.
+  - **APROBADO: opción A** (Dirección, 2026-09-28; [DL-105](../DEUDA_LEGAJO.md)). No se aprueban con ella el descanso estructurado, las alternativas preaprobadas, los cuestionarios nuevos ni la tolerancia del cliente a propiedades desconocidas: siguen como PF03-D-2, D-4, D-6, D-7 y D-5 D.
 - **PF03-D-2 · Descanso con semántica (TRN-23).**
   - **A:** un campo `rest` por prescripción: segundos o rango, opcional, sin valor por defecto.
   - **B:** seguir con el parámetro libre y el atajo del inc. 1. Da consistencia visual, pero no semántica garantizada.
@@ -685,6 +689,7 @@ stateDiagram-v2
   - **C:** que la APK declare su versión en un encabezado y el servidor adapte la respuesta. Es una decisión transversal nueva, que amplía [DL-022](../DEUDA_LEGAJO.md).
   - **D:** que desde la APK 0.12.0 el cliente **ignore los campos desconocidos en las respuestas**, nunca en los pedidos, que siguen con `400 UNKNOWN_FIELD`. Consecuencia: una APK desactualizada no muestra lo nuevo, pero no se rompe. Cambia la política de esquemas estrictos del cliente y le sirve también a PF-04 (V-17).
   - **Recomendación: A para PF-03.** Además, abrir **D como DL transversal antes de construir la 0.12.0**: si se adopta ahí, los inc. 2 y 3 ya no rompen la 0.12.0.
+  - **Ajuste de la auditoría del #105.** Ninguna de estas opciones se garantiza con una comprobación en un teléfono ni con un interruptor. Las APK no se actualizan solas: una 0.11.3 puede seguir instalada mucho después de publicar la 0.12.0. Con A, un plan que use los campos nuevos deja de abrir en toda APK anterior que tenga su asesorado. Por eso A exige dos cosas: (1) que los campos se **omitan** cuando no hay dato, de modo que las prescripciones sin descanso ni alternativas conserven exactamente su forma, probado parseando las respuestas con los esquemas estrictos del tag `be-apk-0.11.3`; y (2) que, antes de habilitar la edición de lo nuevo, Dirección decida qué pasa con los asesorados que conservan una APK antigua: C (negociación por capacidad, como PF-04 D-9), D (solo protege desde la 0.12.0) o una versión mínima comunicada.
 - **PF03-D-6 · Contexto breve de la sesión (F-TRN-02).**
   - **A:** campos opcionales de la ejecución para SES-Q03 y SES-Q04.
   - **B:** una solicitud FRM vinculada a cada ocurrencia. El plan la deja abierta frente a A, sin duplicar capturas (PFP:514). La ficha no la recomienda por su costo: una solicitud y un acto del profesional por cada ocurrencia (API-FRM-03), y cada sesión sin respuesta deja una solicitud pendiente, porque no hay cancelar ni caducar ([DL-093](../DEUDA_LEGAJO.md)).
@@ -710,7 +715,7 @@ stateDiagram-v2
 
 ## i. Primer incremento recomendado y división en PR
 
-**Primer incremento: «Lo planificado, visible y comparable» (PF03-D-1 A).**
+**Primer incremento: «Lo planificado, visible y comparable» (PF03-D-1 A, aprobada: [DL-105](../DEUDA_LEGAJO.md)).**
 
 Es el menor incremento completo que aporta valor, de punta a punta, **con el contrato actual**:
 - el profesional prescribe en la web lo que ya puede, más la nota por serie y el atajo de descanso;

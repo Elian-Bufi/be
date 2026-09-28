@@ -17,7 +17,7 @@ in_scope:
   - I1 · Ver en el website el contenido de una evaluación nutricional, con sus citas
   - I1 · FRM-03 exige que la plantilla sea compatible con el alcance de la solicitud
   - I2 · Objetivo nutricional cuantitativo, conductual o combinado (DEC-05), con lectura de versiones anteriores
-  - I2 · APK nueva que lee el objetivo por tipo, y activación de planes con objetivo no cuantitativo recién con esa APK verificada
+  - I2 · APK nueva que lee el objetivo por tipo y declara su capacidad; activación de planes con objetivo no cuantitativo según D-9, que protege también a las APK antiguas instaladas
 out_of_scope:
   - Preguntas sensibles NUT-Q09 a NUT-Q14 hasta resolver DEC-02, DEC-04, DAT-06, la matriz de pertinencia y el B2 por categoría (reabrir DL-039); quedan para I3
   - Selección simple o múltiple, fechas, grupos repetibles y condicionales en formularios
@@ -28,7 +28,8 @@ out_of_scope:
 decisions_required:
   - D-1 y D-2 · Plantilla general, avance sin revisor designado (desviación de PFP:760) y separación del bloque sensible (contenido, DEC-02)
   - D-3 y D-4 · Citas en la evaluación nutricional y compatibilidad plantilla-alcance
-  - D-5 a D-10 · Objetivo por tipo (DEC-05), lectura de REG-06-123, plan asociado, APK instalada y vista del asesorado
+  - D-5 a D-10 · Objetivo por tipo (DEC-05), lectura de REG-06-123, plan asociado, APK instaladas y vista del asesorado
+  - D-11 · Información sensible escrita espontáneamente en preguntas generales (auditoría del #105)
 acceptance: [CA-FOR-01, CA-FOR-03, CA-FOR-04, CA-FOR-06, CA-FOR-07, CA-NUT-01, CA-NUT-02 (I3)]
 verification: [V-01, V-02, V-03, V-05 (parcial), V-06, V-07, V-17, V-20, V-21]
 evidence:
@@ -152,7 +153,7 @@ flowchart TD
 5. **PROPUESTO (ficha, D-3)** · El nutricionista vuelve a la evaluación. Una sección «Contexto declarado» lista las respuestas que puede leer, con fecha y la leyenda «declarado por la persona». Marca las que cita. API-NUT-01 valida cada cita en el servidor.
 6. **PROPUESTO (ficha)** · El detalle de la evaluación en el website muestra datos con su fuente, contexto, notas y citas con origen, fecha y aviso de versión posterior.
 7. **EXISTENTE** · Define el objetivo con energía y macronutrientes. **PROPUESTO (ficha, I2, D-6)** · Elige el tipo: cuantitativo, conductual o combinado. **PROPUESTO (ficha, I1)** · Mientras I2 no exista, el formulario de objetivo dice que un objetivo solo conductual todavía no se puede registrar y que no hay que cargar valores no decididos (CU-PROP-03, `PFP:806`).
-8. **EXISTENTE** · Arma, valida y activa el plan con API-NUT-07 a 12. **PROPUESTO (ficha, I2, D-9)** · Si el objetivo no es cuantitativo, la activación espera a que la APK nueva esté verificada.
+8. **EXISTENTE** · Arma, valida y activa el plan con API-NUT-07 a 12. **PROPUESTO (ficha, I2, D-9)** · Si el objetivo no es cuantitativo, la activación depende de D-9: exige la negociación con los clientes instalados, no solo una APK nueva verificada.
 9. **EXISTENTE** · El asesorado ve el objetivo en «Plan actual». **PROPUESTO (ficha, I2, D-10)** · Lo ve según su tipo.
 
 ## c. Casos de uso
@@ -230,10 +231,10 @@ Los identificadores PF04-CU-xx son locales a esta ficha. Cada caso se apoya en U
 ### PF04-CU-05 · Activar un plan con objetivo no cuantitativo (I2)
 
 - **Precondiciones.** **EXISTENTE** · Hay un borrador contra el objetivo efectivo. **PROPUESTO (ficha, D-8)** · Ese objetivo es conductual o combinado.
-- **Camino normal.** **PROPUESTO (ficha, D-9)** · Con la APK nueva publicada y verificada, validar y activar funcionan como hoy. «Hoy» y «Plan actual» muestran el objetivo por tipo.
-- **Alternativas.** **PROPUESTO (ficha, D-9)** · Antes de verificar la APK nueva, validar devuelve un issue explícito y activar se rechaza. El borrador queda y un plan cuantitativo ya activo sigue vigente.
+- **Camino normal.** **PROPUESTO (ficha, D-9)** · Con la negociación de D-9 en el servidor y una APK que la declara, validar y activar funcionan como hoy. «Hoy» y «Plan actual» muestran el objetivo por tipo a esa APK.
+- **Alternativas.** **PROPUESTO (ficha, D-9)** · Mientras el servidor no habilite el tipo (el interruptor, como control de despliegue), validar devuelve un issue explícito y activar se rechaza. El borrador queda y un plan cuantitativo ya activo sigue vigente. Un asesorado con una APK sin declaración recibe lo que decida D-9.
 - **Errores.** **EXISTENTE** · Objetivo que ya no es el efectivo: `OBJECTIVE_NOT_EFFECTIVE` ([`apps/api/src/nutricion/planes.service.ts:466`](../../apps/api/src/nutricion/planes.service.ts#L466)).
-- **Resultado.** **PROPUESTO (ficha)** · La APK instalada nunca recibe un objetivo que no puede leer (V-17).
+- **Resultado.** **PROPUESTO (ficha)** · Ninguna APK instalada recibe una forma que su esquema rechace: el cuantitativo no cambia de forma y lo nuevo solo viaja a quien lo declara (V-17).
 
 ### PF04-CU-06 · Cambiar el tipo de objetivo desde una revisión (I2)
 
@@ -248,7 +249,7 @@ Los identificadores PF04-CU-xx son locales a esta ficha. Cada caso se apoya en U
 - **Precondiciones.** **EXISTENTE** · Hay un plan activado y el PDP de su profesional es favorable ([`apps/api/src/nutricion/ingestas.service.ts:74-86`](../../apps/api/src/nutricion/ingestas.service.ts#L74-L86)).
 - **Camino normal.** **PROPUESTO (ficha, D-10)** · «Plan actual» muestra la formulación autorizada según el tipo: metas, números o ambos, más distribución por comida y vigencia. No muestra fundamento ni método, como hoy (`05:5658`).
 - **Alternativas.** **EXISTENTE** · Sin plan activado: «Actualmente no tenés un plan activo de Nutrición.». Con acceso suspendido: «Tu plan de Nutrición no está disponible en este momento. Revisá el estado del vínculo y de tus autorizaciones en Cuenta.» ([`packages/domain/src/copy-nutricion.ts:104-105`](../../packages/domain/src/copy-nutricion.ts#L104-L105); [`apps/mobile/src/pantallas/nutricion.tsx:408`](../../apps/mobile/src/pantallas/nutricion.tsx#L408)).
-- **Errores.** **PROPUESTO (ficha)** · Con la APK 0.11.3 no hay error, porque nunca recibe un tipo que no conoce (D-9).
+- **Errores.** **PROPUESTO (ficha, D-9)** · La 0.11.3 sigue recibiendo el objetivo cuantitativo con la forma de hoy. Ante uno que no puede representar recibe la salida que decida D-9, nunca una respuesta que su esquema rechace sin aviso.
 - **Resultado.** **APROBADO** · El asesorado consulta la formulación autorizada (RF-029, `04:392`).
 
 ### PF04-CU-08 · Declarar una alergia, una situación de salud o medicación (I3, bloqueado)
@@ -347,6 +348,13 @@ F-NUT-01 (`PFP:537-590`) se divide en dos plantillas. **Todas las preguntas del 
   - la 8, porque la ayuda desvía las alergias a la conversación, porque este formulario no las registra.
 - **PROPUESTO (ficha)** · **Limitación declarada:** no existen «No sé» ni «Prefiero conversarlo» (V-05; DAT-06). Un opcional se omite; un requerido se responde con texto. No se simulan con palabras clave.
 
+**Ajuste de la auditoría del #105: «generales» no quiere decir inocuas.**
+- **APROBADO** · Todo lo respondido en FRM-NUTRICION es dato protegido: son hábitos y contexto de una persona identificada (C4, `08:162`).
+- **PROPUESTO (ficha)** · Las once preguntas son TEXT. La persona puede escribir **espontáneamente** información sensible en cualquiera de ellas: una enfermedad, un medicamento, un embarazo, una práctica religiosa o una conducta alimentaria de riesgo. Las ayudas orientan, pero **no impiden técnicamente que se capture**. Tampoco se propone detectarla con filtros automáticos: serían inexactos, darían una falsa seguridad y obligarían a procesar el contenido todavía más.
+- **PROPUESTO (ficha)** · Por eso la respuesta completa se trata con el régimen de lo protegido, aunque la pregunta sea general. Solo la lee el nutricionista que la pidió, con A3 y B2 vigentes. No se cita ni se muestra fuera de nutrición (CA-FOR-07), no aparece en listados ni en avisos, y el titular la rectifica por FRM-08 (PF04-CA-08).
+- **EXISTENTE** · La rectificación agrega una versión y **conserva la original** (`09:1618`; [`apps/api/src/formularios/respuestas.service.ts`](../../apps/api/src/formularios/respuestas.service.ts)). Lo que la persona escribió de más queda en la historia, visible para el profesional que la lee. Hoy no hay un camino para suprimirlo.
+- **PROPUESTO (ficha)** · Qué hacer con esa información espontánea, y si hace falta un camino de supresión, lo decide Dirección en D-11. No se implementa en este paquete.
+
 ### e.2 Bloque sensible (I3; no implementable hasta resolver D-2)
 
 - **PROPUESTO (ficha)** · Plantilla aparte, con nombre técnico a definir (por ejemplo `FRM-NUTRICION-RESERVADO`), con `domain = NUTRICION` y categoría `SALUD_Y_SEGURIDAD`, salvo la pregunta 12, que es cultural.
@@ -383,7 +391,7 @@ F-NUT-01 (`PFP:537-590`) se divide en dos plantillas. **Todas las preguntas del 
 | OpenAPI y cliente | **EXISTENTE** · Generación del OpenAPI y prueba de contrato | **PROPUESTO (ficha)** · Se regeneran. La prueba sin puntajes (TEST-PRJ-009, [`packages/domain/src/contratos-nutricion.ts:17-18`](../../packages/domain/src/contratos-nutricion.ts#L17-L18)) cubre las metas | **PROPUESTO (ficha, T-7)** · Método del cliente para API-NUT-03 | I1 · I2 |
 | Website | **EXISTENTE** · Pestaña Información ([`apps/web/src/app/pro/advisees/forms/pedir.tsx`](../../apps/web/src/app/pro/advisees/forms/pedir.tsx)), formulario de evaluación ([`apps/web/src/app/pro/advisees/nutrition/formularios.tsx:42`](../../apps/web/src/app/pro/advisees/nutrition/formularios.tsx#L42)), `CamposDeObjetivo`, que también usa la revisión ([`apps/web/src/app/pro/advisees/nutrition/revisiones.tsx:307-310`](../../apps/web/src/app/pro/advisees/nutrition/revisiones.tsx#L307-L310)) | **PROPUESTO (ficha)** · I1: «Contexto declarado» en la evaluación y aviso honesto en el formulario de objetivo. I2: selector de tipo y metas en `CamposDeObjetivo`; resumen e historia por tipo, porque hoy muestran kcal por versión ([`apps/web/src/app/pro/advisees/nutrition/resumen.tsx:169-205`](../../apps/web/src/app/pro/advisees/nutrition/resumen.tsx#L169-L205)) | **PROPUESTO (ficha)** · I1: botón «Solicitar contexto» con retorno, y detalle de evaluación con datos, notas y citas. Reutiliza los componentes del #102 | I1 · I2 |
 | APK | **EXISTENTE** · La pantalla genérica de formularios responde FRM-NUTRICION sin cambios ([`apps/mobile/src/pantallas/formularios.tsx`](../../apps/mobile/src/pantallas/formularios.tsx)) | **PROPUESTO (ficha)** · I2: «Plan actual» por tipo ([`apps/mobile/src/pantallas/nutricion.tsx:403-419`](../../apps/mobile/src/pantallas/nutricion.tsx#L403-L419)) | **PROPUESTO (ficha)** · I2: APK nueva, con número a definir. Puede sumar la opción A de DL-104 si Dirección lo decide | I2 |
-| Servidor desplegado | — | **PROPUESTO (ficha)** · Cambia la API y el website en I1 y en I2. El interruptor de D-9 se abre recién con la APK nueva verificada | — | I1 · I2 |
+| Servidor desplegado | — | **PROPUESTO (ficha)** · Cambia la API y el website en I1 y en I2. La compatibilidad la dan la negociación de D-9 y las pruebas con los esquemas de cada APK publicada; el interruptor es solo un control de despliegue | — | I1 · I2 |
 
 **Boceto del objetivo por tipo (PROPUESTO, ficha; nombres técnicos a confirmar en el PR).**
 
@@ -497,11 +505,18 @@ stateDiagram-v2
   BORRADOR --> ACTIVADA : activar con objetivo efectivo y tipo habilitado
 ```
 
-**Compatibilidad con la APK instalada.**
+**Compatibilidad con las APK instaladas.**
 - **EXISTENTE** · La APK de nutrición solo llama a «Hoy», a registrar ingesta y a sus registros. No lee evaluaciones, objetivos ni revisiones. Por eso **I1 no toca la APK**: las citas y el detalle de la evaluación son del website, que se despliega junto con la API.
 - **EXISTENTE** · La APK valida «Hoy» con un esquema estricto. Un `null` o un campo nuevo en `activePlan.objective` hace que no abra «Hoy» ni «Plan actual» ([`packages/domain/src/cliente-http.ts:216-217`](../../packages/domain/src/cliente-http.ts#L216-L217)). Es el mismo límite que dejó `numberLimits` fuera de FRM-02 ([`prisma/migrations/20260928000000_plantilla_de_entrenamiento/migration.sql:6-8`](../../prisma/migrations/20260928000000_plantilla_de_entrenamiento/migration.sql#L6-L8); [DL-101](../DEUDA_LEGAJO.md)).
 - **EXISTENTE** · El servidor no sabe qué versión de APK llama: el cliente manda solo `X-BE-Surface` ([`packages/domain/src/cliente-http.ts:189`](../../packages/domain/src/cliente-http.ts#L189)).
-- **EXISTENTE** · «Hoy» proyecta el objetivo **del plan activado**, no el efectivo ([`apps/api/src/nutricion/ingestas.service.ts:88`](../../apps/api/src/nutricion/ingestas.service.ts#L88)). **PROPUESTO (ficha, D-9)** · Si el servidor no activa planes con objetivo conductual o combinado hasta verificar la APK nueva, la 0.11.3 nunca recibe un objetivo que no puede leer. El combinado también espera, porque la 0.11.3 mostraría solo los números y ocultaría las metas.
+- **EXISTENTE** · «Hoy» proyecta el objetivo **del plan activado**, no el efectivo ([`apps/api/src/nutricion/ingestas.service.ts:88`](../../apps/api/src/nutricion/ingestas.service.ts#L88)).
+- **EXISTENTE** · La APK se instala desde un release, fuera de una tienda, y no se actualiza sola ([`docs/DESPLIEGUE.md`](../DESPLIEGUE.md), fila APK). Publicar una versión nueva no retira las anteriores: una 0.11.3 puede seguir instalada y en uso durante meses.
+
+**Ajuste de la auditoría del #105: qué garantiza la compatibilidad y qué no.**
+- **PROPUESTO (ficha)** · **Un interruptor de activación y una comprobación en un teléfono no la garantizan.** El interruptor solo decide qué objetivos se pueden activar. La comprobación prueba un dispositivo con una versión. Ninguno de los dos cambia lo que reciben las APK antiguas que siguen instaladas, y una vez abierto el interruptor, cualquier asesorado con la 0.11.3 recibiría lo nuevo.
+- **PROPUESTO (ficha)** · **El riesgo no se limita al objetivo conductual.** Si I2 agrega a la proyección del objetivo una propiedad, aunque el objetivo sea **cuantitativo** (por ejemplo `kind: "QUANTITATIVE"` o `behavioralGoals: null`), el esquema estricto de la 0.11.3 rechaza la respuesta entera ([`packages/domain/src/contratos-nutricion.ts:379-386`](../../packages/domain/src/contratos-nutricion.ts#L379-L386); [`packages/domain/src/cliente-http.ts:216-217`](../../packages/domain/src/cliente-http.ts#L216-L217)). Entonces la persona deja de ver «Hoy» y «Plan actual» sin que exista ningún objetivo conductual. Vale para toda respuesta que lea una APK instalada.
+- **PROPUESTO (ficha)** · **Invariante de I2.** Toda respuesta que lee una APK publicada conserva exactamente su forma para lo que esa APK sabe leer: un objetivo cuantitativo se proyecta como hoy, sin propiedades nuevas ni `null` nuevos. Lo nuevo viaja solo a un cliente que declare entenderlo (D-9). Se demuestra con pruebas de contrato que parsean las respuestas con los esquemas estrictos del tag de cada APK publicada (hoy, `be-apk-0.11.3`), no con una comprobación manual.
+- **PROPUESTO (ficha)** · **Un objetivo que una APK antigua no puede representar** (conductual, o las metas de un combinado) no tiene una salida inocua para esa APK. Mostrar solo los números esconde las metas; omitir el objetivo lo hace pasar por inexistente; un error lo hace pasar por una falla. Qué recibe esa APK, y hasta cuándo se la admite, lo decide Dirección en D-9.
 
 **Lectura de lo anterior.**
 - **PROPUESTO (ficha, T-4 y T-5)** · Ninguna fila se reescribe, porque las tablas son de solo agregado. Las versiones existentes quedan `CUANTITATIVO` por el valor por defecto de la columna. Las revisiones guardadas con `nextAction.objective` sin tipo se leen y aplican como cuantitativas. El website y la API se despliegan juntos, así que no hay un cliente web antiguo.
@@ -522,8 +537,9 @@ stateDiagram-v2
 | V-05 (parcial) | Un opcional omitido no viaja como «no» ni como texto vacío. «No sé» todavía no existe y se declara | Leer una ausencia como respuesta | Contrato (existente, TEST-FRM-005, `11A:608`) | I1 | **PROPUESTO** (plan); limitación declarada |
 | V-07 | Una rectificación posterior a la cita se avisa y el valor citado no cambia | Una evaluación que cambia sola | Integración | I1 | **PROPUESTO** (plan) |
 | PF04-CA-03 | El website nunca muestra «sin alergias» ni «sin condiciones» por lo que no se preguntó | Falsa seguridad (`08:343`; `PFP:332`) | Recorrido web y revisión de textos | I1 | **PROPUESTO** (ficha) |
+| PF04-CA-08 | Las respuestas de FRM-NUTRICION se tratan como dato protegido completo, aunque la pregunta sea general: no se leen fuera de nutrición, ni sin A3 y B2 vigentes, y el texto no se analiza para detectar contenido | Información sensible espontánea expuesta o tratada como inocua | Integración (las de V-01, V-02 y PF04-CA-07 sobre FRM-NUTRICION) y revisión del código: ningún procesamiento del texto | I1 | **PROPUESTO** (ficha) |
 | V-20 | FRM-NUTRICION se puede responder con texto ampliado y lector de pantalla | Formulario largo inaccesible | Recorrido en la APK y en el teléfono | I1 | **PROPUESTO** (plan) |
-| CA-NUT-01 / V-17 | Un objetivo conductual existe sin números, y la APK antigua no falla | Calorías ficticias; APK rota | Contrato: la unión rechaza números en el conductual y los exige en el cuantitativo. Integración: API-NUT-04, 05, 06, 18 y 20. Prueba de que «Hoy» nunca proyecta un objetivo no cuantitativo con el interruptor cerrado. Comprobación en la 0.11.3 y en la APK nueva | I2 | **PROPUESTO** (plan) |
+| CA-NUT-01 / V-17 | Un objetivo conductual existe sin números, y la APK antigua no falla | Calorías ficticias; APK rota | Contrato: la unión rechaza números en el conductual y los exige en el cuantitativo. Integración: API-NUT-04, 05, 06, 18 y 20. Contrato: las respuestas que lee la APK se parsean con los esquemas estrictos del tag `be-apk-0.11.3`, con un objetivo cuantitativo (sin propiedades nuevas) y con cada tipo; un cliente sin declaración nunca recibe una forma que su esquema rechace. Comprobación en la 0.11.3 y en la APK nueva, como complemento | I2 | **PROPUESTO** (plan) |
 | PF04-CA-04 | Las versiones y las revisiones anteriores se leen y aplican como cuantitativas | Romper la historia | Integración con filas creadas antes de la migración | I2 | **PROPUESTO** (ficha) |
 | PF04-CA-05 | El cuantitativo y el combinado conservan exactamente las reglas de hoy (kcal > 0, macronutrientes ≥ 0) | Relajar lo existente | Contrato | I2 | **PROPUESTO** (ficha) |
 | PF04-CA-06 | Las metas no tienen puntaje, porcentaje ni estado de cumplimiento | Calificar a la persona (REG-06-125, `06:4651`) | TEST-PRJ-009 extendida | I2 | **PROPUESTO** (ficha) |
@@ -555,8 +571,9 @@ stateDiagram-v2
 | D-6 | ¿Qué variantes de objetivo se aprueban? Y antes: **¿se decide sin revisor de nutrición designado, con datos sintéticos, como con DL-100?** El plan asigna la revisión de «objetivos» al profesional de nutrición designado (`PFP:790`) y la pone como dependencia de PF-04 (`PFP:760`): decidir sin él **se aparta del plan** | **A.** Unión explícita por `kind` (cuantitativo, conductual, combinado), cada una con sus campos mínimos; los números siguen obligatorios donde el tipo los pide. **B.** Una entidad paralela de «metas conductuales» con el objetivo actual intacto: dos series por par, choca con la versión efectiva única de REG-06-98 (`06:4218`), y el plan seguiría pidiendo kcal. **C.** Volver opcionales los números: rechazado por `PFP:349`, porque la ausencia no significaría nada. **D.** No ofrecerlo todavía: la interfaz no lo promete y se registra la limitación (`PFP:806`) | **A** | **PROPUESTO** (plan DEC-05, `PFP:888`; forma de la ficha) |
 | D-7 | ¿Qué forma tiene una meta conductual? Vale la misma pregunta previa que en D-6: sin revisor designado, la forma de la meta **se aparta del plan** (`PFP:760`, `PFP:790`) | **A.** Acción (obligatoria), contexto, frecuencia propuesta en texto y cómo se va a revisar en texto; de 1 a 5 por versión; sin fecha propia, porque la próxima revisión sigue saliendo del plan o de la revisión (REG-06-145, `06:5916`; [DL-054](../DEUDA_LEGAJO.md)). **B.** Frecuencia estructurada, por ejemplo «n veces por semana», con fecha por meta: invita a calcular cumplimiento (contra REG-06-125, `06:4651-4661`), no hay registro de conductas que lo alimente y crearía una segunda fuente de «revisión pendiente» | **A** | **PROPUESTO** (ficha) |
 | D-8 | ¿Se puede activar un plan con objetivo conductual? | **A.** Sí: el plan exige el objetivo efectivo, cualquiera sea su tipo (REG-06-102, `06:4272`). **B.** Solo con cuantitativo o combinado: quien trabaja solo conductas queda sin plan, sin Proceso, sin revisión y sin registro de ingesta | **A** | **PROPUESTO** (ficha) |
-| D-9 | ¿Cómo se protege la APK instalada? | **A.** APK nueva que lee el objetivo por tipo. Hasta verificarla en el teléfono, el servidor no activa planes con objetivo conductual o combinado; el interruptor es de configuración y reversible. **B.** Activar igual: la 0.11.3 deja de abrir «Hoy» y «Plan actual» y muestra un mensaje genérico. **C.** No mostrarle nunca las metas al asesorado: incumple RF-029, que pide que consulte la formulación autorizada (`04:392`) | **A**. Si Dirección quiere, la misma APK lleva la opción A de DL-104 | **PROPUESTO** (ficha) |
+| D-9 | ¿Cómo se protegen las APK instaladas, que no se actualizan solas? (ajustada por la auditoría del #105) | **A.** Negociación por capacidad: desde la próxima APK, el cliente declara en cada pedido qué formas entiende (un encabezado que amplía [DL-022](../DEUDA_LEGAJO.md)). El servidor manda el objetivo por tipo solo a quien lo declara; a un cliente sin declaración le conserva la forma de hoy, con el invariante de §f, y ante un objetivo que no puede representar le responde lo que Dirección elija entre las salidas de §f. **B.** Tolerancia desde la próxima APK: el cliente ignora propiedades desconocidas en las respuestas (PF03-D-5 D). Protege a las versiones futuras, **no a la 0.11.3**. **C.** Versión mínima: pasada una fecha comunicada, el servidor deja de atender a clientes sin declaración; la 0.11.3 mostraría un mensaje genérico. **D.** Solo interruptor y comprobación en un teléfono: **no alcanza**, porque no cambia lo que reciben las APK antiguas (§f) | **A + B**, con el interruptor como control de despliegue y no como garantía, y pruebas de contrato con los esquemas de cada APK publicada. Antes de habilitar objetivos no cuantitativos, Dirección fija qué recibe una 0.11.3 y hasta cuándo se la admite (C). Si Dirección quiere, la misma APK lleva la opción A de DL-104 | **PROPUESTO** (ficha) |
 | D-10 | ¿Qué ve el asesorado de un objetivo por tipo? | **A.** Metas (acción, contexto y frecuencia), números si los hay, distribución por comida y vigencia; ni fundamento ni método, como hoy ([`packages/domain/src/contratos-nutricion.ts:379-386`](../../packages/domain/src/contratos-nutricion.ts#L379-L386)). **B.** También el fundamento: expone la valoración profesional, que hoy no se muestra | **A** | **PROPUESTO** (ficha) |
+| D-11 | ¿Qué se hace con la información sensible que una persona escribe espontáneamente en una pregunta general? (auditoría del #105) | **A.** Tratar toda la respuesta como protegida, que es lo que ya hace el sistema (§e.1), y avisarlo antes de responder, sin cambiar la APK: en el propósito precargado o en la ayuda de la primera pregunta («Lo que escribas lo lee solo tu nutricionista. Si preferís no contar datos de salud por acá, podés conversarlos en la consulta.»). Se declara la limitación: la rectificación conserva la original. **B.** Detectar términos sensibles y bloquear o enmascarar: inexacto, da falsa seguridad y procesa más el dato. **C.** A más un camino de supresión a pedido del titular para respuestas de formularios. Es una decisión de legajo propia (derechos del 08) y alcanza a todas las plantillas, no solo a FRM-NUTRICION | **A** en I1, y **C** como decisión propia antes de I3 o cuando Dirección la priorice. **B no** | **PROPUESTO** (ficha) |
 
 ### Técnicas (las resuelve el ejecutor dentro del paquete aprobado)
 
@@ -565,7 +582,8 @@ stateDiagram-v2
 - **PROPUESTO (ficha) · T-3.** Un solo módulo de citas, sin duplicarlo ([`apps/api/src/entrenamiento/citas-de-respuestas.ts:66-131`](../../apps/api/src/entrenamiento/citas-de-respuestas.ts#L66-L131)). Hay que parametrizar el alcance, hoy fijo en `'ENTRENAMIENTO'` ([`:86`](../../apps/api/src/entrenamiento/citas-de-respuestas.ts#L86)), y también la tabla de citas, hoy fija en la de entrenamiento ([`:106`](../../apps/api/src/entrenamiento/citas-de-respuestas.ts#L106)). El código de error del rechazo también es de entrenamiento: `TRAINING_EVALUATION_INVALID` ([`:41`](../../apps/api/src/entrenamiento/citas-de-respuestas.ts#L41)).
 - **PROPUESTO (ficha) · T-4.** Columnas nuevas con valor por defecto y CHECK por tipo. Hay que comprobar en el PR que agregarlas no dispara los triggers de solo agregar ni reescribe filas.
 - **PROPUESTO (ficha) · T-5.** Ausencia de `kind` = `QUANTITATIVE`, tanto en pedidos como en `proxima_accion` guardadas.
-- **PROPUESTO (ficha) · T-6.** Interruptor de configuración del servidor para D-9. Su apertura queda registrada con la evidencia del teléfono.
+- **PROPUESTO (ficha) · T-6.** Interruptor de configuración del servidor, como **control de despliegue** de D-9, no como garantía de compatibilidad.
+- **PROPUESTO (ficha) · T-8.** Declaración de capacidad del cliente en cada pedido (amplía DL-022) y pruebas de contrato que parsean las respuestas con los esquemas estrictos del tag de cada APK publicada (D-9).
 - **PROPUESTO (ficha) · T-7.** Método del cliente para API-NUT-03, o detalle armado desde API-NUT-02, que ya devuelve la evaluación completa ([`apps/api/src/nutricion/lectura-nutricion.ts:43-56`](../../apps/api/src/nutricion/lectura-nutricion.ts#L43-L56)).
 
 ### Prerrequisitos que esta ficha no decide
@@ -603,9 +621,9 @@ stateDiagram-v2
 | 3 | Website | «Solicitar contexto» con retorno; «Contexto declarado»; detalle de la evaluación; aviso honesto en el formulario de objetivo (CU-PROP-03). Requiere el #102 integrado | **PROPUESTO** (ficha) · I1 |
 | 4 | Evidencia | Recorrido web y respuesta desde la APK 0.11.3 en el ambiente desplegado, incluida la comprobación de V-03 con A3 revocado, con capturas y estados informados por separado | **PROPUESTO** (ficha) · I1 |
 | 5 | Contrato y migración del objetivo | `kind`, metas y CHECK; lectura de versiones y revisiones anteriores; OpenAPI; parte de contrato de V-17 | **PROPUESTO** (ficha) · I2 |
-| 6 | API del objetivo | API-NUT-04, 05 y 06; `CHANGE_OBJECTIVE`; interruptor en API-NUT-11 y 12; proyección en «Hoy» | **PROPUESTO** (ficha) · I2 |
+| 6 | API del objetivo | API-NUT-04, 05 y 06; `CHANGE_OBJECTIVE`; proyección por capacidad del cliente en «Hoy» (D-9, T-8); interruptor en API-NUT-11 y 12 como control de despliegue | **PROPUESTO** (ficha) · I2 |
 | 7 | Website del objetivo | Tipo y metas en `CamposDeObjetivo` (objetivo y revisión); resumen e historia por tipo | **PROPUESTO** (ficha) · I2 |
-| 8 | APK nueva | «Plan actual» por tipo (y DL-104 A, si se decide); publicación y verificación en el teléfono; recién entonces se abre el interruptor | **PROPUESTO** (ficha) · I2 |
+| 8 | APK nueva | «Plan actual» por tipo y declaración de capacidad (T-8); publicación y verificación en el teléfono. El interruptor se abre según la política de D-9 para las APK que no se actualizaron | **PROPUESTO** (ficha) · I2 |
 | — | Bloque sensible | Después de D-2, DEC-02, DEC-04, DAT-06, la matriz por acta y un B2 con categorías (reabrir DL-039). Requiere tipos nuevos y otra APK | **PROPUESTO** (ficha) · I3 |
 
 **Demostración de salida de I1.**
@@ -617,8 +635,8 @@ stateDiagram-v2
 
 **Demostración de salida de I2.**
 - **PROPUESTO (ficha)** · El nutricionista emite un objetivo conductual sin números.
-- **PROPUESTO (ficha)** · Con el interruptor cerrado, el plan no se activa y la 0.11.3 sigue funcionando.
-- **PROPUESTO (ficha)** · Con la APK nueva verificada se abre el interruptor, se activa el plan y el asesorado ve sus metas en «Plan actual».
+- **PROPUESTO (ficha)** · Con una 0.11.3 instalada, «Hoy» sigue abriendo con un objetivo cuantitativo, porque su forma no cambia; ante uno conductual recibe la salida decidida en D-9.
+- **PROPUESTO (ficha)** · Con la APK nueva, que declara su capacidad, el asesorado ve sus metas en «Plan actual».
 - **PROPUESTO (ficha)** · Una revisión anterior al cambio se aplica como cuantitativa.
 
 **Estimación gruesa.**

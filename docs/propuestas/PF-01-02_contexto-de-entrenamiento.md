@@ -1,6 +1,6 @@
 # PF-01 / PF-02 — Ficha: contexto de entrenamiento conectado con la evaluación
 
-> **Estado:** DECISIONES TOMADAS (Dirección, 2026-09-27: D-1 a D-5, registradas como DL-100 a DL-103). La implementación espera la orden de Dirección.
+> **Estado:** DECISIONES TOMADAS (Dirección, 2026-09-27: D-1 a D-5, registradas como DL-100 a DL-103). **Implementada e integrada** en `main` (#100 `ea3e1ec`, #101 `ff2001e`, #102 `c76f8dd`; 2026-09-28). Falta el recorrido web → respuesta desde la APK → evaluación en el ambiente desplegado (pasos en `EVIDENCIA/PF-02/LEEME.md`).
 > **Base:** `main` en `13280e6` (2026-09-27), contrastado con el Plan Funcional Profesional v1.1 (`docs/propuestas/BE_Plan_Funcional_Profesional_v1-1.md`, corte `46fd1fa`).
 > **Identificadores:** PF, TRN-Q, CA y V son locales al plan. Los anclajes del legajo son **RF-071, UC-P32/UC-P33 (WP-07), WP-06, CAND-10-TRN-A (B10-06 §4), DL-048, DL-095 y DL-009**. Las decisiones nuevas se registran como DL-100 en adelante recién cuando Dirección las apruebe.
 
