@@ -449,15 +449,24 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
           {COPY_ENTRENAMIENTO.series} y {COPY_ENTRENAMIENTO.repeticiones.toLowerCase()}
         </legend>
         {p.sets.map((s, i) => (
-          <CampoInterpretado
-            key={i}
-            id={`${id}-serie-${i}`}
-            etiqueta={`${COPY_ENTRENAMIENTO.serie} ${i + 1}: repeticiones (un número o un rango, 8-12)`}
-            valor={s.repetitions}
-            formatear={reps}
-            interpretar={leerReps}
-            onCambiar={(r) => onCambiar({ sets: p.sets.map((x, j) => (j === i ? { ...x, repetitions: r } : x)) })}
-          />
+          <div key={i} className="fila-de-dato">
+            <CampoInterpretado
+              id={`${id}-serie-${i}`}
+              etiqueta={`${COPY_ENTRENAMIENTO.serie} ${i + 1}: repeticiones (un número o un rango, 8-12)`}
+              valor={s.repetitions}
+              formatear={reps}
+              interpretar={leerReps}
+              onCambiar={(r) => onCambiar({ sets: p.sets.map((x, j) => (j === i ? { ...x, repetitions: r } : x)) })}
+            />
+            {/* La nota por serie ya viajaba en el contrato y se conservaba al guardar, pero no se podía escribir (DL-105). */}
+            <Campo
+              id={`${id}-serie-${i}-nota`}
+              etiqueta={`${COPY_ENTRENAMIENTO.serie} ${i + 1}: ${COPY_ENTRENAMIENTO.notaDeSerie}`}
+              value={s.note ?? ''}
+              onChange={(e) => onCambiar({ sets: p.sets.map((x, j) => (j === i ? { ...x, note: e.target.value || null } : x)) })}
+              maxLength={200}
+            />
+          </div>
         ))}
         <div className="acciones">
           <button type="button" className="boton boton--enlace" onClick={() => onCambiar({ sets: [...p.sets, { repetitions: p.sets[p.sets.length - 1]?.repetitions ?? null }] })}>
@@ -542,6 +551,7 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
       </fieldset>
       <fieldset className="grupo">
         <legend>{COPY_ENTRENAMIENTO.parametros} (opcional)</legend>
+        <p className="campo__ayuda">{COPY_ENTRENAMIENTO.ayudaDeTempo}</p>
         {parametros.map((q, i) => (
           <div key={i} className="fila-de-dato">
             <Campo id={`${id}-param-${i}-etiqueta`} etiqueta="Parámetro" value={q.label} onChange={(e) => onCambiar({ professionalParameters: parametros.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} maxLength={60} />
@@ -563,9 +573,22 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
             </button>
           </div>
         ))}
-        <button type="button" className="boton boton--enlace" onClick={() => onCambiar({ professionalParameters: [...parametros, { label: '', value: '', unit: null }] })}>
-          Agregar parámetro
-        </button>
+        <div className="acciones">
+          <button type="button" className="boton boton--enlace" onClick={() => onCambiar({ professionalParameters: [...parametros, { label: '', value: '', unit: null }] })}>
+            Agregar parámetro
+          </button>
+          {/* Atajo (DL-105): precarga solo el rótulo y la unidad. El valor lo escribe el profesional; vacío, el guardado
+              lo señala. Si ya hay un descanso, no se ofrece otro. */}
+          {parametros.some((q) => q.label.trim().toLowerCase() === COPY_ENTRENAMIENTO.descanso.toLowerCase()) ? null : (
+            <button
+              type="button"
+              className="boton boton--enlace"
+              onClick={() => onCambiar({ professionalParameters: [...parametros, { label: COPY_ENTRENAMIENTO.descanso, value: '', unit: 's' }] })}
+            >
+              {COPY_ENTRENAMIENTO.agregarDescanso}
+            </button>
+          )}
+        </div>
       </fieldset>
       <div className="campo">
         <label htmlFor={`${id}-nota`}>{COPY_ENTRENAMIENTO.notas} (opcional)</label>

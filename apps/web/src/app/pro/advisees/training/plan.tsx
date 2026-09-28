@@ -9,10 +9,8 @@
  * - Activar no se hace desde «Guardar» (B10-06:609): es un acto aparte, con su consecuencia a la vista.
  */
 import {
-  cantidad,
   COPY_ENTRENAMIENTO,
-  ETIQUETA_DE_CRITERIO,
-  numero,
+  lineasDePrescripcion,
   type Bloque,
   type Prescripcion,
   type ResumenDeVersionDePlanDeEntrenamiento,
@@ -144,28 +142,19 @@ export function VistaDePlan() {
   );
 }
 
-/** Cómo se lee una prescripción: series y repeticiones, criterio de intensidad, carga sugerida aparte, parámetros. */
-export function textoDePrescripcion(p: Prescripcion): string[] {
-  // Todo número que se muestra pasa por `numero`/`cantidad`: coma decimal rioplatense (DL-091 punto 4).
-  const reps = (s: Prescripcion['sets'][number]) =>
-    !s.repetitions ? 'sin repeticiones fijadas' : 'value' in s.repetitions ? numero(s.repetitions.value) : `${numero(s.repetitions.min)}-${numero(s.repetitions.max)}`;
-  const partes: string[] = [];
-  if (p.sets.length > 0) {
-    const iguales = p.sets.every((s) => reps(s) === reps(p.sets[0]!));
-    partes.push(iguales ? `${numero(p.sets.length)} × ${reps(p.sets[0]!)}` : p.sets.map((s) => `Serie ${numero(s.setIndex)}: ${reps(s)}`).join(' · '));
-  }
-  partes.push(
-    p.intensity
-      ? `${COPY_ENTRENAMIENTO.intensidad}: ${ETIQUETA_DE_CRITERIO[p.intensity.criterion]} · ${COPY_ENTRENAMIENTO.objetivoDeIntensidad}: ${numero(p.intensity.target.value)}${
-          p.intensity.criterion === 'PERCENT_RM' ? ' % RM' : ''
-        }${p.intensity.target.reference ? ` (${p.intensity.target.reference.description})` : ''}`
-      : COPY_ENTRENAMIENTO.sinCriterio,
+/**
+ * Lo planificado de una prescripción, una línea por dato, con la presentación que comparte con la APK (DL-105): todas
+ * las series con sus notas, la intensidad con su referencia, la carga sugerida, los parámetros y la nota. Sin criterio
+ * de intensidad, el website lo dice: el profesional tiene que verlo.
+ */
+export function LineasDePrescripcion({ prescripcion }: { prescripcion: Prescripcion }) {
+  return (
+    <ul className="lista-compacta">
+      {lineasDePrescripcion(prescripcion, { sinCriterioExplicito: true }).map((l, i) => (
+        <li key={i}>{l}</li>
+      ))}
+    </ul>
   );
-  if (p.suggestedLoad) partes.push(`${COPY_ENTRENAMIENTO.cargaSugerida}: ${cantidad(p.suggestedLoad.value, p.suggestedLoad.unit)}`);
-  // Un parámetro profesional puede traer texto o número: solo se formatea cuando es número.
-  for (const q of p.professionalParameters) partes.push(`${q.label}: ${typeof q.value === 'number' ? numero(q.value) : q.value}${q.unit ? ` ${q.unit}` : ''}`);
-  if (p.note) partes.push(p.note);
-  return partes;
 }
 
 function SesionSoloLectura({ sesion }: { sesion: Bloque['sessions'][number] }) {
@@ -176,7 +165,8 @@ function SesionSoloLectura({ sesion }: { sesion: Bloque['sessions'][number] }) {
       <ul>
         {sesion.prescriptions.map((p) => (
           <li key={p.prescriptionId}>
-            <strong>{p.exerciseName}</strong> · {textoDePrescripcion(p).join(' · ')}
+            <strong>{p.exerciseName}</strong>
+            <LineasDePrescripcion prescripcion={p} />
           </li>
         ))}
       </ul>

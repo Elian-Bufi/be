@@ -30,6 +30,7 @@ export * from './entrenamiento';
 export * from './contratos-entrenamiento';
 export * from './plan-de-entrenamiento';
 export * from './copy-entrenamiento';
+export * from './presentacion-de-prescripcion';
 export * from './calculo';
 export * from './contratos-calculo';
 export * from './formularios';
