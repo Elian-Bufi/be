@@ -57,6 +57,8 @@ Con el #102 y el #104 integrados, el ambiente `test` quedó desplegado desde `ma
 
 ## Comprobación pendiente de Dirección: website → respuesta desde la APK → evaluación
 
+> **Actualización (2026-09-28).** Esta comprobación quedó incluida en la tanda única de validación de la APK 0.12.0 (fases 1, 4, 5, 6 y 7 de `EVIDENCIA/PUBLICACION-0.12.0/LEEME.md`), que agrega los errores por campo de DL-104. Los pasos de abajo siguen valiendo, pero conviene seguir aquel recorrido.
+
 **Qué se necesita.**
 - El website de `test` (`https://be-web-1ngj.onrender.com`) con la cuenta demo de Entrenamiento (DEMO-PT).
 - La APK 0.11.3 instalada, con la cuenta demo del asesorado (DEMO-A01), que tiene vínculo y autorizaciones vigentes con DEMO-PT.

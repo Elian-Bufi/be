@@ -1,7 +1,7 @@
 # Evidencia · DL-104 — qué campo corregir cuando un número queda fuera de rango
 
 Decisión: opción A, autorizada por Dirección el 2026-09-28. Detalle en `docs/DEUDA_LEGAJO.md`, entrada DL-104.
-**Estado: EN CURSO.** La API, el contrato y la lógica de la APK están implementados y probados. Falta la comprobación en una APK construida con el cambio, y en esta tanda no se construye ni se publica ninguna.
+**Estado: EN CURSO.** Integrada (#104, `db9fcda`) y **publicada en la APK 0.12.0** (`be-apk-0.12.0`, commit `33b533d`, 2026-09-28). Falta la validación de Dirección en el teléfono: fases 2 a 7 del recorrido de `EVIDENCIA/PUBLICACION-0.12.0/LEEME.md`.
 
 ## Qué cambia para la persona
 
