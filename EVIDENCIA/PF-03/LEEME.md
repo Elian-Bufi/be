@@ -55,9 +55,25 @@ Recorrido con la API compilada, PostgreSQL 16, `next dev`, Chrome sin interfaz y
 
 El único mensaje en la consola del navegador es el `400` esperado del guardado con el descanso vacío.
 
+## PR-2 · APK
+
+**Qué cambia** (`apps/mobile/src/pantallas/entrenamiento.tsx` e `historial.tsx`):
+- **«Hoy», la sesión y «Tu historial»** usan la presentación compartida, con una línea por dato. Antes mostraban «3 × 10» para una pirámide y no mostraban parámetros ni notas.
+- **Sesión:**
+  - arriba, «Indicaciones de la sesión», que antes solo aparecían en la tarjeta de «Hoy»;
+  - cada serie pendiente dice «Pendiente · planificadas N repeticiones», y el campo de repeticiones **sigue vacío**, así que lo realizado lo escribe la persona;
+  - el motivo tiene la ayuda «Si cambiaste algo de lo planificado o no pudiste entrenar, podés contar por qué.».
+- **No cambia:** la navegación (DL-096), el borrador, la confirmación, la corrección ni los contratos.
+
+**Cómo se comprobó.**
+- **Typecheck de la APK y revisión del código.**
+- **Textos de pantalla:** salen de la presentación compartida, probada por unitarias. Las respuestas de la API que la alimentan («Hoy» y la ejecución) se probaron en integración contra el esquema estricto de la APK.
+- **Control de términos prohibidos** de las pantallas de entrenamiento (`scripts/copy-pantallas.test.cjs`).
+- **No se probó en un teléfono ni en un emulador.** La APK no corre en el navegador, y en esta tanda no se construye.
+
 ## Pendiente
 
-- **PR-2 (APK):** su evidencia se agrega en ese PR. La APK no corre en el navegador: sus pantallas se verifican con typecheck, revisión del código y la presentación compartida probada. La comprobación en un teléfono queda para la publicación conjunta con DL-104.
+- **Comprobación nativa de PR-2:** en la publicación conjunta con DL-104 ([`EVIDENCIA/PUBLICACION-0.12.0/LEEME.md`](../PUBLICACION-0.12.0/LEEME.md), pasos A a D).
 - **Publicación conjunta (APK 0.12.0):** PF-03 y DL-104 en una sola construcción, después de auditar los PR. Todavía no se construye ni se publica.
 - Sin cambios: la **prueba de concurrencia real** de las citas (PF-02) sigue pendiente.
 
