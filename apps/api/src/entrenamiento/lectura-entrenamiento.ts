@@ -30,7 +30,7 @@ import { nombreDeProfesional, token } from '../vinculo/lectura';
 
 // ─── Evaluación ──────────────────────────────────────────────────────────────────────────────────
 
-export function evaluacionApi(e: FilaDeEvaluacion, nombreProfesional: string): EvaluacionDeEntrenamiento {
+export function evaluacionApi(e: FilaDeEvaluacion, nombreProfesional: string, citas: EvaluacionDeEntrenamiento['formResponseReferences']): EvaluacionDeEntrenamiento {
   return {
     evaluationId: e.id,
     version: token(1),
@@ -40,6 +40,7 @@ export function evaluacionApi(e: FilaDeEvaluacion, nombreProfesional: string): E
     recordedAt: e.momentoDeRegistro.toISOString(),
     assessment: e.valoracion as EvaluacionDeEntrenamiento['assessment'],
     evidenceReferences: e.referencias as string[],
+    formResponseReferences: citas,
     professionalNotes: e.notas,
     context: e.contexto,
   };
