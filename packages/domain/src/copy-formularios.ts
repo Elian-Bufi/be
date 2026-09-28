@@ -65,6 +65,9 @@ export const COPY_FORMULARIOS = {
   loQueRespondesEsTuyo: 'Lo que respondas queda registrado como declarado por vos.',
   podesNoResponder: 'Podés no responder. No pasa nada si dejás esta solicitud sin completar.',
   faltaRequerido: 'Falta responder un campo marcado como requerido por el profesional.',
+  // DL-104: un rechazo por los datos no es una falla del servicio. Se dice que un dato no se aceptó y lo escrito queda.
+  respuestaNoAceptada: 'No pudimos guardar: hay un dato que no se puede aceptar. Revisá lo que completaste y volvé a enviarlo.',
+  numeroIlegible: 'Hay un número que no se entiende. Revisá el campo marcado.',
 
   // ─── Rectificar ───────────────────────────────────────────────────────────────────────────────
   rectificar: 'Corregir mi respuesta',

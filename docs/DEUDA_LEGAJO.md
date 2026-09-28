@@ -108,7 +108,7 @@
 | DL-101 | PF-01/02 · 2026-09-27 | 09v16.1 §22 · DL-095 | Los campos NUMBER aceptaban cualquier número | **DECIDIDA** 2026-09-27 · mínimo, máximo y entero |
 | DL-102 | PF-01/02 · 2026-09-27 | 09v10 TRN-01 · CA-FOR-04 del plan | La evaluación de entrenamiento no puede citar respuestas de forma verificable | **DECIDIDA** 2026-09-27 · referencias verificadas (opción A) |
 | DL-103 | PF-01/02 · 2026-09-27 | Plan Funcional §12.3 · DEC-04 | Alcance del primer incremento de contexto | **DECIDIDA** 2026-09-27 · solo entrenamiento, equipamiento en texto |
-| DL-104 | PF-01/02 · 2026-09-28 | DL-101 · 09v16.1 §22.7/§22.8 · auditoría del PR #100 | Un valor fuera de rango en un formulario no le dice a la persona qué corregir | ABIERTA (limitación de interfaz) |
+| DL-104 | PF-01/02 · 2026-09-28 | DL-101 · 09v16.1 §22.7/§22.8 · auditoría del PR #100 | Un valor fuera de rango en un formulario no le dice a la persona qué corregir | EN CURSO (opción A implementada; falta comprobarla en una APK construida con el cambio) |
 
 ---
 
@@ -2092,7 +2092,7 @@ Las plantillas existentes no cambian. Amplía la forma provisoria de DL-095. **E
 
 ## DL-104 — Un valor fuera de rango en un formulario no le dice a la persona qué corregir
 
-**Prioridad:** media · **Documento:** DL-101 · 09v16.1 §22.7 (FRM-07) y §22.8 (FRM-08) · auditoría del PR #100 (2026-09-28) · **Estado:** ABIERTA (limitación de interfaz)
+**Prioridad:** media · **Documento:** DL-101 · 09v16.1 §22.7 (FRM-07) y §22.8 (FRM-08) · auditoría del PR #100 (2026-09-28) · **Estado:** EN CURSO (opción A implementada; falta comprobarla en una APK construida con el cambio)
 
 **Qué pasa hoy.**
 - Con DL-101, la API rechaza un número fuera de los límites de la plantilla (por ejemplo, «9» en días por semana) con `422 FORM_RESPONSE_INVALID`. La respuesta trae solo el código y un mensaje de texto: **no trae un issue que nombre el campo ni el rango**.
@@ -2108,3 +2108,49 @@ Las plantillas existentes no cambian. Amplía la forma provisoria de DL-095. **E
 
 **Provisorio.** Sin cambios: el rechazo en el servidor protege el dato, y el `helpText` anticipa el rango. Por decisión de Dirección (auditoría del PR #100), **no se amplía el PR #100 ni se construye otra APK por este punto**. **Recomendación: A**, en la próxima tanda que incluya una APK.
 
+**Decisión (Dirección, 2026-09-28): opción A.** Errores estructurados por campo en la API y mensajes comprensibles en la APK. No cambian los rangos aprobados (DL-101) ni la obligatoriedad de los campos.
+
+**Implementación (PR independiente, sin integrar).**
+- **API (FRM-07 y FRM-08).**
+  - Un número que no respeta los límites de su campo se sigue rechazando con `422 FORM_RESPONSE_INVALID`. Ahora `error.details.issues` trae **un issue por campo, todos a la vez**, con el formato `{ code, path, fieldCode, limits }`.
+  - Códigos de issue: `FORM_ANSWER_NOT_INTEGER`, `FORM_ANSWER_BELOW_MINIMUM` y `FORM_ANSWER_ABOVE_MAXIMUM`. `path` apunta a la respuesta enviada (`answers[2].value`), y `limits` son los límites de la plantilla.
+  - **No repite el valor enviado.** Los límites son del catálogo, iguales para todos: no revelan nada de nadie. FRM-07/08 son operaciones propias del titular (09:1652-1658).
+  - Los demás rechazos del mismo código siguen igual y **sin detalle**: otro tipo de valor, falta un requerido, un campo repetido o no pedido.
+- **Contrato.**
+  - `ProblemaDeRespuestaSchema` y `DetalleDeRespuestaFueraDeLimitesSchema` están en `contratos-formularios.ts`. OpenAPI los declara en el 422 de API-FRM-07 y API-FRM-08, sobre el `ErrorEnvelope` común.
+  - No se amplió el `ValidationIssueSchema` transversal.
+  - **Las respuestas exitosas de FRM no cambian.**
+- **Compatibilidad con la APK 0.11.3.**
+  - El detalle viaja dentro de `error.details`, que ese cliente no valida: sigue reconociendo el `FORM_RESPONSE_INVALID` y muestra lo mismo que antes.
+  - Una clave nueva en `error` o en la raíz lo habría convertido en un resultado incierto. Por eso no se usó.
+- **APK (`formularios.tsx`, con la lógica pura en `packages/domain/src/errores-de-formulario.ts`).**
+  - Cada campo rechazado muestra, junto a él, qué pasó y qué valores admite, con la unidad de la plantilla. Ejemplo: «Es más de lo que se admite. Ingresá un número entero entre 1 y 7 días por semana.».
+  - Un resumen junto al botón se anuncia al lector de pantalla («Revisá los campos marcados. Hay 2 datos que necesitan corrección.») y nombra cada campo por su rótulo.
+  - Si el 422 no trae un detalle reconocible, dice «No pudimos guardar: hay un dato que no se puede aceptar…», **no** «El servicio no está disponible». La red y el servicio siguen con sus mensajes.
+  - Lo escrito se conserva. La clave de idempotencia se renueva después del rechazo (es definitivo) y se conserva solo ante un resultado incierto, con el botón en «Reintentar».
+
+**Qué quedó comprobado y cómo.**
+- **Integración, contra PostgreSQL y la API real** (`test/integration/formularios-errores.int-spec.ts`):
+  - rechazo al responder y al rectificar;
+  - cada límite con su código y los dos campos a la vez;
+  - nada escrito en el rechazo;
+  - corrección y éxito, también reusando la clave del rechazo;
+  - el conflicto de versión antes que los límites;
+  - el respaldo sin detalle;
+  - las respuestas exitosas de FRM-02, 05, 06, 07 y 08 validadas contra los esquemas estrictos de la APK.
+- **Unitarias del dominio** (`errores-de-formulario.test.ts`):
+  - qué límite se vulnera;
+  - el cuerpo nuevo pasando por **el mismo cliente HTTP que compila la APK 0.11.3**, reconocido y nunca incierto;
+  - los mensajes por campo, con el rótulo, el rango y la unidad;
+  - el respaldo ante issues no reconocidos;
+  - que la red, el servicio o un conflicto no se confunden con un rechazo de datos;
+  - los textos sin términos prohibidos.
+- **Pantalla de la APK:** revisión del código y typecheck. **No se probó en un dispositivo.** Este repositorio no corre la APK en el navegador, y en esta tanda no se construye otra APK.
+
+**Qué falta para cerrarla.** La comprobación en una APK construida con este cambio, al responder y al rectificar «Antecedentes para entrenamiento»:
+1. Con «9» en días por semana, el mensaje aparece junto a ese campo, con el rango, y el resumen se anuncia.
+2. Con «9» en días y «45,5» en minutos, se marcan los dos a la vez.
+3. Lo escrito sigue en pantalla; al corregir, el mensaje del campo se va y el envío se registra.
+4. Sin conexión, el mensaje es «No pudimos confirmar el resultado. Reintentá.» y el botón dice «Reintentar»; no aparece el de dato no aceptado.
+
+Hasta esa comprobación, DL-104 no se declara cerrada.

@@ -194,6 +194,46 @@ export type EnviarRespuestaRequest = z.infer<typeof EnviarRespuestaRequestSchema
 export const RespuestaCreadaSchema = z.strictObject({ formResponseId: IdOpaco, version: TokenDeVersionSchema, submittedAt: Instante });
 export const RespuestaCreadaResponseSchema = z.strictObject({ data: RespuestaCreadaSchema });
 
+// ─── DL-104 · qué campo corregir cuando un número queda fuera de lo que admite la plantilla ─────────
+
+/**
+ * Códigos de issue del `422 FORM_RESPONSE_INVALID` cuando un número respondido (FRM-07) o rectificado (FRM-08) no
+ * respeta los límites de su campo (DL-101): tiene decimales y el campo pide un entero, o queda por debajo del mínimo
+ * o por encima del máximo. Son códigos de issue, no de error: el error sigue siendo `FORM_RESPONSE_INVALID`.
+ */
+export const CODIGO_DE_NUMERO_FUERA_DE_LIMITES = {
+  NOT_INTEGER: 'FORM_ANSWER_NOT_INTEGER',
+  BELOW_MINIMUM: 'FORM_ANSWER_BELOW_MINIMUM',
+  ABOVE_MAXIMUM: 'FORM_ANSWER_ABOVE_MAXIMUM',
+} as const;
+
+/** Los límites de un campo NUMBER, tal como los declara la plantilla (`numberLimits`, DL-101). */
+export const LimitesDeCampoSchema = z.strictObject({
+  minimum: z.number().optional(),
+  maximum: z.number().optional(),
+  integer: z.boolean().optional(),
+});
+
+/**
+ * Un issue por campo fuera de límites (DL-104, opción A). Además de `code` y `path` (la forma transversal de los
+ * issues), trae `fieldCode` y los límites completos del campo, para que la APK diga qué dato corregir y qué valores
+ * admite. `path` apunta a la respuesta enviada: `answers[2].value`. **Nunca repite el valor enviado**, que la persona
+ * ya tiene en pantalla. Los límites son de la plantilla, iguales para todos, y no revelan nada de nadie.
+ *
+ * Compatibilidad con la APK 0.11.3: viaja **dentro de `error.details.issues`**, que ese cliente no valida. Una clave
+ * nueva en `error` o en la raíz haría que no reconozca el rechazo y lo tome como resultado incierto.
+ */
+export const ProblemaDeRespuestaSchema = z.object({
+  code: z.enum([CODIGO_DE_NUMERO_FUERA_DE_LIMITES.NOT_INTEGER, CODIGO_DE_NUMERO_FUERA_DE_LIMITES.BELOW_MINIMUM, CODIGO_DE_NUMERO_FUERA_DE_LIMITES.ABOVE_MAXIMUM]),
+  path: z.string(),
+  fieldCode: z.string(),
+  limits: LimitesDeCampoSchema,
+});
+export type ProblemaDeRespuesta = z.infer<typeof ProblemaDeRespuestaSchema>;
+
+/** `error.details` del `422 FORM_RESPONSE_INVALID` por números fuera de límites: un issue por campo, todos a la vez. */
+export const DetalleDeRespuestaFueraDeLimitesSchema = z.object({ issues: z.array(ProblemaDeRespuestaSchema).min(1) });
+
 export const RectificacionDeRespuestaSchema = z.strictObject({
   rectificationId: IdOpaco,
   previousRectificationId: IdOpaco.nullable(),

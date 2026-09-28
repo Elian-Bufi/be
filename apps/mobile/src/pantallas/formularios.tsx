@@ -12,10 +12,12 @@
  * consentimiento se revocó, la solicitud sigue estando —es de la persona— pero ya no se puede responder.
  */
 import {
+  COPY,
   COPY_FORMULARIOS,
   leerNumero,
   motivoDeNumeroIlegible,
   numero,
+  rechazoDeFormulario,
   valorDeEleccionSiONo,
   type CampoDePlantilla,
   type RespuestaDeFormulario,
@@ -106,6 +108,13 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [motivo, setMotivo] = useState('');
   const [aviso, setAviso] = useState<{ tipo: 'error' | 'exito'; texto: string } | null>(null);
+  /**
+   * Por qué no se pudo enviar, junto al botón: el título se anuncia al lector de pantalla y, si el rechazo es por
+   * campos (DL-104), cada línea nombra el campo por su rótulo. `incierto` convierte el botón en «Reintentar».
+   */
+  const [problema, setProblema] = useState<{ titulo: string; lineas: readonly string[]; incierto: boolean } | null>(null);
+  /** Cada envío vuelve a montar el aviso, así se anuncia aunque el texto sea el mismo que en el intento anterior. */
+  const [envios, setEnvios] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const clave = useClaveDeIntento();
 
@@ -137,6 +146,8 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
 
   async function enviar() {
     setAviso(null);
+    setProblema(null);
+    setEnvios((n) => n + 1);
     // Lo que se escribió en un campo numérico y no es un número no se omite como si estuviera vacío: la persona lo
     // completó, y perderlo sin avisar haría que un requerido parezca faltante o que un opcional desaparezca.
     const ilegibles = Object.fromEntries(
@@ -147,7 +158,7 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
         .map(([codigo, crudo]) => [codigo, motivoDeNumeroIlegible(crudo)]),
     );
     setErrores(ilegibles);
-    if (Object.keys(ilegibles).length > 0) return setAviso({ tipo: 'error', texto: 'Hay un número que no se entiende. Revisá el campo marcado.' });
+    if (Object.keys(ilegibles).length > 0) return setProblema({ titulo: COPY_FORMULARIOS.numeroIlegible, lineas: [], incierto: false });
     // Un campo sin completar se omite: nunca viaja como cero ni como cadena vacía (09:1586-1587).
     const answers = pedidos.flatMap((c): { fieldCode: string; value: string | number | boolean }[] => {
       const crudo = (valores[c.fieldCode] ?? '').trim();
@@ -165,8 +176,7 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
       return [{ fieldCode: c.fieldCode, value: crudo }];
     });
     const faltaRequerido = request.requiredFieldCodes.some((codigo) => !answers.some((a) => a.fieldCode === codigo));
-    if (faltaRequerido) return setAviso({ tipo: 'error', texto: COPY_FORMULARIOS.faltaRequerido });
-    if (answers.length === 0) return setAviso({ tipo: 'error', texto: COPY_FORMULARIOS.faltaRequerido });
+    if (faltaRequerido || answers.length === 0) return setProblema({ titulo: COPY_FORMULARIOS.faltaRequerido, lineas: [], incierto: false });
 
     setEnviando(true);
     const r = esCorreccion
@@ -175,7 +185,19 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
     clave.registrar(r);
     setEnviando(false);
     if (sesionPerdida(r)) return;
-    if (!r.ok) return setAviso({ tipo: 'error', texto: falloDe(r).mensaje });
+    if (!r.ok) {
+      // DL-104: un rechazo por los datos se marca en cada campo, con los valores que admite, y lo escrito queda. No es una
+      // falla del servicio: sin detalle reconocible se dice que un dato no se aceptó.
+      const rechazo = rechazoDeFormulario(r, pedidos);
+      if (rechazo?.tipo === 'por-campo') {
+        setErrores(rechazo.errores);
+        return setProblema({ titulo: rechazo.resumen, lineas: rechazo.lineas, incierto: false });
+      }
+      if (rechazo) return setProblema({ titulo: rechazo.mensaje, lineas: [], incierto: false });
+      // Red, servicio, conflicto o no disponible: `falloDe`. Si el resultado es incierto, se reintenta con la misma clave.
+      const fallo = falloDe(r);
+      return setProblema({ titulo: fallo.mensaje, lineas: [], incierto: fallo.tipo === 'incierto' });
+    }
     setAviso({ tipo: 'exito', texto: esCorreccion ? COPY_FORMULARIOS.rectificacionEnviada : COPY_FORMULARIOS.respuestaEnviada });
     setValores({});
     setMotivo('');
@@ -250,8 +272,15 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
           );
         })}
         {esCorreccion ? <Campo etiqueta={COPY_FORMULARIOS.motivoDeRectificacion} value={motivo} onChangeText={setMotivo} /> : null}
+        {problema ? (
+          <Aviso key={envios} tipo="error" titulo={problema.titulo}>
+            {problema.lineas.map((l) => (
+              <Parrafo key={l}>{l}</Parrafo>
+            ))}
+          </Aviso>
+        ) : null}
         <Boton
-          texto={esCorreccion ? COPY_FORMULARIOS.rectificar : COPY_FORMULARIOS.enviarRespuesta}
+          texto={problema?.incierto ? COPY.reintentar : esCorreccion ? COPY_FORMULARIOS.rectificar : COPY_FORMULARIOS.enviarRespuesta}
           onPress={() => void enviar()}
           ocupado={enviando}
           deshabilitado={enviando || (esCorreccion && motivo.trim().length === 0)}

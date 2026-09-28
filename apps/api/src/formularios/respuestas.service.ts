@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import {
+  CODIGO_DE_NUMERO_FUERA_DE_LIMITES,
   CodigoDeError,
   EnviarRespuestaRequestSchema,
   evaluarNuevaCorreccion,
-  numeroDentroDeLimites,
+  limiteVulnerado,
   RectificarRespuestaRequestSchema,
   resolverVistaEfectiva,
   type Alcance,
+  type LimitesNumericos,
   type RelacionDeCorreccion,
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
@@ -22,6 +24,15 @@ import { camposPorCodigo, limitesDeCampo, tipoDeValorCorrecto } from './lectura-
 
 type Tx = Prisma.TransactionClient;
 type Answer = { fieldCode: string; value: string | number | boolean; unit?: string | null; profileSourceRef?: string | null };
+
+/** Solo los tres límites del contrato (DL-104), aunque la definición interna de la plantilla trajera otras claves. */
+function limitesPublicables(l: LimitesNumericos): LimitesNumericos {
+  return {
+    ...(l.minimum !== undefined ? { minimum: l.minimum } : {}),
+    ...(l.maximum !== undefined ? { maximum: l.maximum } : {}),
+    ...(l.integer !== undefined ? { integer: l.integer } : {}),
+  };
+}
 
 /**
  * API-FRM-07 y API-FRM-08 — enviar y rectificar la respuesta propia (09v16.1 §22.7 y §22.8; UC-P33).
@@ -187,10 +198,19 @@ export class RespuestasService {
       if (!campo || !tipoDeValorCorrecto(campo.dataType, a.value)) {
         throw new ErrorDeApi(422, CodigoDeError.FORM_RESPONSE_INVALID, `El campo "${a.fieldCode}" no tiene el tipo declarado por la plantilla.`);
       }
-      // DL-101: un NUMBER con límites declarados (p. ej. días por semana de 1 a 7, entero) no acepta valores fuera.
-      if (campo.dataType === 'NUMBER' && !numeroDentroDeLimites(a.value as number, limitesDeCampo(contenido, a.fieldCode))) {
-        throw new ErrorDeApi(422, CodigoDeError.FORM_RESPONSE_INVALID, `El campo "${a.fieldCode}" está fuera del rango que admite la plantilla.`);
-      }
+    }
+    // DL-101: un NUMBER con límites declarados (p. ej. días por semana de 1 a 7, entero) no acepta valores fuera.
+    // DL-104: se informan todos los campos fuera de límites a la vez, cada uno con su issue (campo y límites), para
+    // que la persona sepa qué corregir y qué valores admite. El valor enviado no se repite.
+    const fueraDeLimites = answers.flatMap((a, i) => {
+      if (campos.get(a.fieldCode)?.dataType !== 'NUMBER') return [];
+      const limites = limitesDeCampo(contenido, a.fieldCode);
+      const vulnerado = limiteVulnerado(a.value as number, limites);
+      if (!limites || !vulnerado) return [];
+      return [{ code: CODIGO_DE_NUMERO_FUERA_DE_LIMITES[vulnerado], path: `answers[${i}].value`, fieldCode: a.fieldCode, limits: limitesPublicables(limites) }];
+    });
+    if (fueraDeLimites.length > 0) {
+      throw new ErrorDeApi(422, CodigoDeError.FORM_RESPONSE_INVALID, 'Hay respuestas numéricas fuera de lo que admite la plantilla.', { issues: fueraDeLimites });
     }
   }
 
