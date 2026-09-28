@@ -16,17 +16,22 @@ Evidencia para la auditoría del PR #101, organizada por las cinco dimensiones q
    - faltaba la definición de `answeredAt`;
    - no se explicaba por qué la base no exige «versión vigente» (carrera con una rectificación concurrente).
 
-## Resultado de las pruebas (local, antes de la CI)
+## Diff y resultados
+
+**Diff auditado** (`main...7f9c725`): **14 archivos, +1065 −12**. Es el conteo de GitHub. `git diff --stat` muestra +913 porque `.gitattributes` marca `docs/** -text -diff` y trata `docs/api/openapi.json` como binario; ese archivo suma **+152 líneas** (`git diff --no-index --numstat` entre las dos versiones). El commit final agrega solo los ajustes de la auditoría: pruebas y esta evidencia.
+
+**Ajustes de la auditoría sobre 7f9c725:**
+- En `contexto-entrenamiento.int-spec.ts`, el titular que intenta crear una evaluación citando sus propias respuestas y el otro asesorado que intenta leer una evaluación ahora **exigen 404** y comparan el **cuerpo completo** con el de un recurso inexistente consultado por **ese mismo actor**. Antes aceptaban 403 o 404.
+- En `citas-de-respuestas.spec.ts`, `R` es un UUID válido **con letras**, así `toUpperCase()` cambia el identificador y la prueba ejercita la normalización. Una aserción lo garantiza.
 
 | Suite | Resultado |
 |---|---|
-| Integración (PostgreSQL 16 local, sin deriva de esquema) | **477/477** (464 antes de este PR) |
-| Unitarias de la API | **47/47** (3 nuevas, de `validarCitas`) |
-| Dominio | 274/274 |
-| Scripts | 24/24 |
+| Integración completa (PostgreSQL 16 local, sin deriva de esquema), sobre 7f9c725 | **477/477** (464 antes de este PR) |
+| Integración de `contexto-entrenamiento.int-spec.ts` con los ajustes | **17/17** |
+| Unitarias de la API | 47/47 (3 de `validarCitas`) |
+| Dominio · scripts | 274/274 · 24/24 |
 | Typecheck, `openapi:verificar`, legajo, build del website | sin errores |
-
-La CI del PR corre las mismas suites sobre el commit entregado.
+| CI del commit final | ver la descripción del PR |
 
 ## Evidencia por dimensión
 
@@ -40,7 +45,7 @@ Las pruebas de integración están en `test/integration/contexto-entrenamiento.i
 | El 422 es **idéntico** exista o no la respuesta | `invalida()`: mismo código, mensaje e issue | Misma prueba: se compara el **cuerpo completo** de cada caso con el del id inexistente |
 | Una cita no se repite, tampoco con otras mayúsculas | comparación con el id canónico, después de la pertenencia | Misma prueba (índice 1) y unitaria «repetición con otras mayúsculas» (`citas-de-respuestas.spec.ts` l. 49) |
 | Un intento rechazado no escribe nada | `validarCitas` corre antes de `create`, en la misma transacción | Misma prueba: la lista queda vacía |
-| **El PDP decide antes que las citas**: sin vínculo, B2 o rol profesional, da 404 aunque las citas sean válidas (nunca un 422 que sirva de oráculo) | `evaluaciones.service.ts`: `decidir` antes de `validarCitas` | «el PDP decide antes que las citas …» (l. 169): el titular con sus propios ids y el profesional con B2 revocado (404 idéntico al de un asesorado inexistente); cero evaluaciones en la base |
+| **El PDP decide antes que las citas**: sin vínculo, B2 o rol profesional, da 404 aunque las citas sean válidas (nunca un 422 que sirva de oráculo) | `evaluaciones.service.ts`: `decidir` antes de `validarCitas` | «el PDP decide antes que las citas …» (l. 169): el titular con sus propios ids recibe **404 con el mismo cuerpo** que al pedir sobre un asesorado inexistente; el profesional con B2 revocado, **404 con el mismo cuerpo** que el de un asesorado inexistente; cero evaluaciones en la base |
 | La cita es una referencia sin valor, con `fieldCode` acotado, hasta 20, y opcional | `CitaDeRespuestaDeFormularioSchema` | `packages/domain/src/contratos-wp06.test.ts` l. 445 |
 | Compatibilidad: sin citas, igual que antes | `formResponseReferences` opcional | «compatibilidad …» (l. 114) |
 
@@ -67,7 +72,7 @@ Las pruebas de integración están en `test/integration/contexto-entrenamiento.i
 
 | Regla | Código | Prueba |
 |---|---|---|
-| Otro profesional (con su propio vínculo) y otro asesorado no leen una evaluación con citas: 404 idéntico al inexistente y lista vacía, sin contenido | `consultarEvaluacion`: PDP y autor antes de `citasResueltas`; `listarEvaluaciones` filtra por profesional | «V-01 · otro profesional y otro asesorado …» (l. 292) |
+| Otro profesional (con su propio vínculo) y otro asesorado no leen una evaluación con citas: cada uno recibe **404 con el mismo cuerpo** que al pedir una evaluación inexistente; el otro profesional, además, una lista vacía; sin contenido | `consultarEvaluacion`: PDP y autor antes de `citasResueltas`; `listarEvaluaciones` filtra por profesional | «V-01 · otro profesional y otro asesorado …» (l. 292) |
 | Revocado el **B2**, revocado el **A3** del titular, **pausado** o **finalizado** el vínculo: el detalle da 404 idéntico al inexistente, sin contenido, y la lista da 404 idéntico al de un asesorado inexistente | `decidir` antes de resolver las citas | «V-02 · %s …» (l. 315), parametrizada en los cuatro cortes |
 | No hay aviso por cita: una cita se lee exactamente cuando se lee su evaluación | Condiciones de la cita = FRM-05; nota de implementación en DL-102 | Las dos filas anteriores |
 
@@ -90,7 +95,10 @@ Migración: `prisma/migrations/20260928010000_citas_de_respuestas_en_evaluacion/
 ## Lo que no está comprobado
 
 - El recorrido en el **ambiente desplegado**: este PR no se integra hasta la aprobación.
-- La **carrera** con una rectificación concurrente: el comportamiento está razonado y documentado, sin una prueba con dos transacciones reales.
+- **Pendiente: prueba de concurrencia real.** La carrera con una rectificación concurrente está razonada y documentada, y la lectura única por respuesta está probada con una transacción simulada. No hay una prueba con dos transacciones reales en paralelo.
+- **Política de unidad, sin cambios en este incremento:** se muestra la unidad declarada por la persona y, si falta, la de la plantilla. No se agrega otra regla.
+- La prueba completa **web → respuesta desde la APK → evaluación** en el ambiente desplegado.
+- **DL-104** (mensaje ante un valor fuera de rango) sigue abierta.
 - El **website** (PR #102) sigue esperando su propia auditoría.
 
 Solo datos sintéticos. Sin credenciales.

@@ -171,9 +171,11 @@ describe('PF-02 · DL-102 · 1. autorización de las citas', () => {
     const propia = await contextoRespondido(c.pro, c.ase);
     const citas = [{ formResponseId: propia, fieldCode: 'trn_dias_por_semana' }];
     const neutral = (await conSesion(app, c.pro.token).post(evaluaciones(randomUUID())).send(conCitas(citas)).expect(404)).body;
-    // El titular conoce sus ids, pero no es profesional: su intento no evalúa las citas.
-    const delTitular = await conSesion(app, c.ase.token).post(evaluaciones(c.ase.id)).send(conCitas(citas));
-    expect([403, 404]).toContain(delTitular.status);
+    // El titular conoce sus ids, pero no es profesional: su intento no evalúa las citas. Recibe el mismo 404 que al
+    // pedir sobre un asesorado inexistente.
+    const titular = conSesion(app, c.ase.token);
+    const inexistenteParaElTitular = (await titular.post(evaluaciones(randomUUID())).send(conCitas(citas)).expect(404)).body;
+    expect((await titular.post(evaluaciones(c.ase.id)).send(conCitas(citas)).expect(404)).body).toEqual(inexistenteParaElTitular);
     await revocarB2(app, c.ase, c.consentId).expect(200);
     expect((await conSesion(app, c.pro.token).post(evaluaciones(c.ase.id)).send(conCitas(citas)).expect(404)).body).toEqual(neutral);
     const filas = await prisma.evaluacionDeEntrenamiento.count({ where: { asesoradoId: c.ase.id } });
@@ -301,8 +303,10 @@ describe('PF-02 · DL-102 · 4. lectura tras revocar permisos', () => {
     expect(JSON.stringify(ajena.body)).not.toContain('Ganar fuerza');
     expect((await conSesion(app, otroPro.token).get(evaluaciones(c.ase.id)).expect(200)).body.data).toEqual([]);
     const otroAse = await prepararAsesorado(app, `ctx-lector-ase-${contador}`, { a3: true });
-    const delOtroAsesorado = await conSesion(app, otroAse.token).get(detalle(evaluationId));
-    expect([403, 404]).toContain(delOtroAsesorado.status);
+    const otro = conSesion(app, otroAse.token);
+    const inexistenteParaElOtro = (await otro.get(detalle(randomUUID())).expect(404)).body;
+    const delOtroAsesorado = await otro.get(detalle(evaluationId)).expect(404);
+    expect(delOtroAsesorado.body).toEqual(inexistenteParaElOtro);
     expect(JSON.stringify(delOtroAsesorado.body)).not.toContain('Ganar fuerza');
   });
 

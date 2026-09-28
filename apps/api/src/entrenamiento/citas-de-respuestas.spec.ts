@@ -7,7 +7,8 @@ import { validarCitas } from './citas-de-respuestas';
  */
 const PRO = '11111111-1111-4111-8111-111111111111';
 const ASE = '22222222-2222-4222-8222-222222222222';
-const R = '33333333-3333-4333-8333-333333333333';
+// Con letras, así `toUpperCase()` cambia el identificador y la prueba ejercita la normalización.
+const R = 'a3c9e1f0-7b2d-4e8a-9f6c-1d2b3c4d5e6f';
 const RECT_1 = '44444444-4444-4444-8444-444444444444';
 const RECT_2 = '55555555-5555-4555-8555-555555555555';
 
@@ -36,6 +37,7 @@ function txQueCambia() {
 
 describe('DL-102 · validarCitas', () => {
   it('lee cada respuesta una sola vez: dos citas de la misma respuesta quedan en la misma rectificación', async () => {
+    expect(R.toUpperCase()).not.toBe(R);
     const { tx, lecturas } = txQueCambia();
     const citas = await validarCitas(tx, [
       { formResponseId: R, fieldCode: 'trn_dias_por_semana' },
