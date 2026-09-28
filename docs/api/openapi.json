@@ -27169,6 +27169,10 @@
                         "fieldCode": {
                           "type": "string",
                           "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                        },
+                        "expectedVersion": {
+                          "type": "string",
+                          "pattern": "^v[1-9]\\d*$"
                         }
                       },
                       "required": [
@@ -27291,7 +27295,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {

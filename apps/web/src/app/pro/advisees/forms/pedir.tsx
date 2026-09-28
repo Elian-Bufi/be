@@ -12,9 +12,15 @@
  *
  * Los alcances se ofrecen los tres: la UI no adivina cuál está autorizado. Si no lo está, la API responde el mismo
  * 404 neutral que ante un asesorado inexistente, y eso es lo que se muestra.
+ *
+ * PF-02 (DL-100): si el profesional llega desde la evaluación de entrenamiento (`plantilla=FRM-ENTRENAMIENTO` y
+ * `volver=entrenamiento`), la pantalla precarga la plantilla ratificada, sus campos y el alcance, y al enviar vuelve a
+ * Entrenamiento. Es una propuesta editable, no una excepción a la minimización: se puede desmarcar antes de enviar.
  */
-import { ALCANCES, COPY_FORMULARIOS, ETIQUETA_DE_ALCANCE, type Alcance, type CampoDePlantilla, type Plantilla, type VersionDePlantilla } from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { ALCANCES, CONTEXTO_DE_ENTRENAMIENTO, COPY_FORMULARIOS, ETIQUETA_DE_ALCANCE, type Alcance, type CampoDePlantilla, type Plantilla, type VersionDePlantilla } from '@be/domain';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
@@ -31,6 +37,12 @@ export function VistaDePedido() {
   const [aviso, setAviso] = useState<{ tipo: 'error' | 'exito'; texto: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
   const clave = useClaveDeIntento();
+  const parametros = useSearchParams();
+  const router = useRouter();
+  const desdeEntrenamiento = parametros.get('volver') === 'entrenamiento';
+  const precargar = desdeEntrenamiento && parametros.get('plantilla') === CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla;
+  const precargada = useRef(false);
+  const rutaDeEntrenamiento = `/pro/advisees/training?id=${encodeURIComponent(asesoradoId)}`;
 
   const cargar = useCallback(async () => {
     setR(null);
@@ -44,17 +56,35 @@ export function VistaDePedido() {
   }, [cargar]);
 
   const abrir = useCallback(
-    async (p: Plantilla) => {
+    async (p: Plantilla, conPrecarga = false) => {
       setAviso(null);
       const v = await api.consultarVersionDePlantilla(token, p.templateId, p.latestVersionId);
       if (sesionPerdida(v)) return;
       if (!v.ok) return setAviso({ tipo: 'error', texto: mensajeDeFallo(v) });
       setElegida(v.datos.data);
-      setPedidos([]);
-      setRequeridos([]);
+      if (!conPrecarga) {
+        setPedidos([]);
+        setRequeridos([]);
+        return;
+      }
+      // DL-100: solo lo que la versión elegida realmente tiene; si el catálogo cambiara, no se pide un campo inexistente.
+      const disponibles = new Set(v.datos.data.sections.flatMap((s) => s.fields.map((c) => c.fieldCode)));
+      setPedidos(CONTEXTO_DE_ENTRENAMIENTO.campos.filter((c) => disponibles.has(c)));
+      setRequeridos(CONTEXTO_DE_ENTRENAMIENTO.requeridos.filter((c) => disponibles.has(c)));
+      setProposito(COPY_FORMULARIOS.propositoDeContextoDeEntrenamiento);
+      setAlcance('ENTRENAMIENTO');
     },
     [token, sesionPerdida],
   );
+
+  // Al llegar desde Entrenamiento, abrir una sola vez la plantilla ratificada con su precarga.
+  useEffect(() => {
+    if (!precargar || precargada.current || !r?.ok) return;
+    const plantilla = r.datos.find((p) => p.key === CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla);
+    if (!plantilla) return;
+    precargada.current = true;
+    void abrir(plantilla, true);
+  }, [precargar, r, abrir]);
 
   const alternar = (codigo: string, lista: readonly string[], set: (v: readonly string[]) => void) =>
     set(lista.includes(codigo) ? lista.filter((c) => c !== codigo) : [...lista, codigo]);
@@ -84,6 +114,8 @@ export function VistaDePedido() {
     setElegida(null);
     setProposito('');
     setAviso({ tipo: 'exito', texto: COPY_FORMULARIOS.solicitudEnviada });
+    // CA-FOR-06: si el pedido salió de la evaluación, se vuelve a ella para seguir trabajando.
+    if (desdeEntrenamiento) return router.push(rutaDeEntrenamiento);
     irA('solicitudes');
   }
 
@@ -94,6 +126,15 @@ export function VistaDePedido() {
           {aviso ? (
             <Aviso tipo={aviso.tipo} enfocar>
               <p>{aviso.texto}</p>
+            </Aviso>
+          ) : null}
+
+          {desdeEntrenamiento ? (
+            <Aviso tipo="info">
+              <p>{COPY_FORMULARIOS.pedidoDesdeEntrenamiento}</p>
+              <p>
+                <Link href={rutaDeEntrenamiento}>{COPY_FORMULARIOS.volverAEntrenamiento}</Link>
+              </p>
             </Aviso>
           ) : null}
 

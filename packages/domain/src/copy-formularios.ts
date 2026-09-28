@@ -78,6 +78,11 @@ export const COPY_FORMULARIOS = {
   // ─── Procedencia ──────────────────────────────────────────────────────────────────────────────
   declaradoPorLaPersona: 'Declarado por la persona',
   noEsMedicion: 'Esta información la declaró el asesorado. No es una medición ni un diagnóstico.',
+
+  // ─── PF-02 · pedido desde la evaluación de entrenamiento ─────────────────────────────────────
+  propositoDeContextoDeEntrenamiento: 'Planificar tu entrenamiento',
+  pedidoDesdeEntrenamiento: 'Viniste desde Entrenamiento: el formulario, los campos y el alcance ya están elegidos. Podés cambiarlos antes de enviar.',
+  volverAEntrenamiento: 'Volver a Entrenamiento',
 } as const;
 
 /**
