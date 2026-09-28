@@ -59,10 +59,13 @@ export function lineasDePrescripcion(p: Prescripcion, opciones: { readonly sinCr
 }
 
 /**
- * La referencia de lo planificado para una serie mientras se registra: «planificadas 8 repeticiones». Se muestra al
- * lado de la serie; **nunca se carga como realizado** (B10-06:1242-1255). `null` si la serie no fija repeticiones.
+ * Lo planificado para una serie mientras se registra, con su nota: «planificadas 8 repeticiones · pausa de 2 s abajo»,
+ * «planificada 1 repetición» o «sin repeticiones fijadas». Se muestra al lado de la serie; **nunca se carga como
+ * realizado** (B10-06:1242-1255).
  */
-export function referenciaDeSerie(s: Pick<Serie, 'repetitions'>): string | null {
+export function referenciaDeSerie(s: Pick<Serie, 'repetitions' | 'note'>): string {
   const r = repeticionesPlanificadas(s);
-  return r === null ? null : `${COPY_ENTRENAMIENTO.planificadas} ${r} ${COPY_ENTRENAMIENTO.repeticiones.toLowerCase()}`;
+  const una = !!s.repetitions && 'value' in s.repetitions && s.repetitions.value === 1;
+  const reps = r === null ? COPY_ENTRENAMIENTO.sinRepeticionesFijadas : una ? `${COPY_ENTRENAMIENTO.planificada} ${r} ${COPY_ENTRENAMIENTO.repeticion}` : `${COPY_ENTRENAMIENTO.planificadas} ${r} ${COPY_ENTRENAMIENTO.repeticiones.toLowerCase()}`;
+  return s.note ? `${reps} · ${s.note}` : reps;
 }

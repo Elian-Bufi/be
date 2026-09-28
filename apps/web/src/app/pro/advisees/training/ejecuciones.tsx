@@ -231,5 +231,6 @@ function DetalleDeEjecucion({ ejecucion: x }: { ejecucion: EjecucionDeEntrenamie
 function planificadasPara(planificado: readonly Prescripcion[], prescriptionId: string, setIndex: number): string {
   const serie = planificado.find((p) => p.prescriptionId === prescriptionId)?.sets.find((s) => s.setIndex === setIndex);
   const reps = serie ? repeticionesPlanificadas(serie) : null;
-  return reps === null ? '' : ` · ${COPY_ENTRENAMIENTO.planificadas} ${reps}`;
+  if (reps === null) return '';
+  return ` · ${reps === '1' ? COPY_ENTRENAMIENTO.planificada : COPY_ENTRENAMIENTO.planificadas} ${reps}`;
 }
