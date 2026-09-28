@@ -1,6 +1,6 @@
 # Tu historial de entrenamiento — definición del paquete (DL-096, opción A)
 
-> **Estado:** EN CURSO. Opción A de DL-096 autorizada por Dirección el 2026-09-25. Implementada (#86) y publicada en la **APK 0.11.0**; las correcciones de la validación en teléfono están en la **APK 0.11.1** (#89), la **APK 0.11.2** (#94, período de 21 a 24 h) y la **APK 0.11.3** (#97, teclado; `be-apk-0.11.3`); **no cerrada como verificada** hasta la comprobación visual de la pantalla en el teléfono de Dirección.
+> **Estado:** **CERRADO** 2026-09-27, verificado en dispositivo con la **APK 0.11.3** (commit `13280e6`, `be-apk-0.11.3`). Opción A de DL-096 autorizada por Dirección el 2026-09-25. Implementado en #86 y publicado en la APK 0.11.0; las correcciones de la validación en teléfono están en la 0.11.1 (#89), la 0.11.2 (#94, período de 21 a 24 h) y la 0.11.3 (#97, teclado). Validación: `EVIDENCIA/HISTORIAL-ENTRENAMIENTO/validacion-0.11.3.md`. **Limitaciones conocidas:** ventana automática de 90 días, sin selector de período ni paginación, y el desplazamiento se reinicia al volver del detalle.
 > **Origen.** DL-096: el titular tiene acceso pleno a «Plan entrenamiento + ejecución» (08:199) y el fin del vínculo no destruye su historia (08:58); DL-089 lo llevó a la API. Hasta acá ninguna pantalla de la APK lo usaba: «Hoy» y el registro en diferido operan sobre el plan vigente y —correctamente— pasan a «no disponible» con el B2 revocado.
 
 ## Decisión (2026-09-25)
@@ -40,7 +40,7 @@ Una sección **«Tu historial»**, accesible desde Cuenta (siempre alcanzable, a
 ## Verificación
 
 - **Integración (API):** seis casos en `test/integration/entrenamiento.int-spec.ts` (describe DL-096): 1) el titular lista lo propio; 2) otro usuario no ve la historia ajena; 3) con B2 revocado el titular conserva la lista y «Hoy» pasa a no disponible; 4) con A3 revocado la lista da 403; 5) la corrección no oculta el original; 6) funciona sin plan y devuelve vacío comprensible. Más el rechazo de períodos inválidos.
-- **Comprobación visual (APK):** pendiente en el teléfono, con la próxima APK. Se deja el recorrido manual en el PR.
+- **Comprobación visual (APK):** hecha el 2026-09-27 con la APK 0.11.3 (commit `13280e6`) y aprobada por Dirección: `EVIDENCIA/HISTORIAL-ENTRENAMIENTO/validacion-0.11.3.md`. Separa lo observable en las capturas, lo confirmado por Dirección y las pruebas.
 
 ## Fuera de alcance
 

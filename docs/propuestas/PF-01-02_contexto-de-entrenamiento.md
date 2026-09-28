@@ -143,6 +143,6 @@ flowchart TD
 
 ## 7 Qué no bloquea
 
-- **PF-00 (DL-096)** se cierra por separado con la APK 0.11.3.
+- **PF-00 (DL-096)** quedó **cerrado** el 2026-09-27 con la validación en dispositivo de la APK 0.11.3.
 - Este paquete **no toca la APK**, así que no interfiere con la validación en el teléfono.
 - Decisiones tomadas; la implementación empieza con la orden de Dirección.

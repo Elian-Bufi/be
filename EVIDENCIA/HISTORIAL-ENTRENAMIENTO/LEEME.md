@@ -1,5 +1,7 @@
 # Evidencia · publicación de «Tu historial de entrenamiento» (DL-096, 0.11.0)
 
+> **Cierre (2026-09-27).** DL-096 está **CERRADA**: validada en dispositivo con la APK 0.11.3 (`validacion-0.11.3.md`). Las secciones que siguen conservan el estado de cada publicación **a su fecha**.
+
 Estado de la publicación del 2026-09-26. El incremento (API-TRN-19-LISTA + pantalla «Tu historial») se integró en el PR #86 (merge `696717e`) y se versionó a 0.11.0 en el PR #87 (merge `eb31269`).
 
 ## Lo publicado
@@ -25,7 +27,7 @@ Estado de la publicación del 2026-09-26. El incremento (API-TRN-19-LISTA + pant
 
 ## Qué NO está comprobado
 
-La **pantalla «Tu historial» en un dispositivo** no está observada: la comprobación visual la hace Dirección con esta APK 0.11.0. Lo verificado hasta acá es API/contrato/integración (CI con PostgreSQL 16) y la identidad del artefacto. **DL-096 sigue EN CURSO** hasta esa evidencia en el teléfono.
+La **pantalla «Tu historial» en un dispositivo** no está observada: la comprobación visual la hace Dirección con esta APK 0.11.0. Lo verificado hasta acá es API/contrato/integración (CI con PostgreSQL 16) y la identidad del artefacto. **DL-096 seguía EN CURSO** (a esa fecha) hasta esa evidencia en el teléfono.
 
 ## Publicación 0.11.1 — correcciones de la validación en teléfono
 
@@ -42,7 +44,7 @@ Estado del 2026-09-26. Las correcciones de los hallazgos de Dirección sobre la 
 - **Firma:** certificado `61569691…893e06`, igual al de la 0.11.0: se instala encima como actualización.
 - Sin ID de build de EAS: no lo tiene.
 
-**Pendiente en dispositivo:** todo lo que enumera `hallazgos-validacion-telefono.md`. **DL-096 sigue EN CURSO.**
+**Pendiente en dispositivo:** todo lo que enumera `hallazgos-validacion-telefono.md`. **DL-096 seguía EN CURSO** (a esa fecha).
 
 ## Publicación 0.11.2 — período del historial en Buenos Aires
 
@@ -64,7 +66,7 @@ Estado del 2026-09-26. La validación de la 0.11.1 encontró que «Sesiones regi
 - la corrección de un registro;
 - el área inferior con teclado y con la navegación del sistema.
 
-**DL-096 sigue EN CURSO.**
+**DL-096 seguía EN CURSO** (a esa fecha).
 
 ## Publicación 0.11.3 — el teclado deja de tapar los campos
 
@@ -85,6 +87,14 @@ Estado del 2026-09-27. La validación de la 0.11.2 encontró que, con el teclado
 - Hoy → detalle → volver;
 - volver después de guardar una corrección.
 
-**DL-096 sigue EN CURSO.**
+Estos puntos se cumplieron el 2026-09-27 (`validacion-0.11.3.md`).
+
+**DL-096 seguía EN CURSO** (a esa fecha).
+
+## Validación en dispositivo con la 0.11.3 — DL-096 CERRADA
+
+El 2026-09-27, entre las 21:43 y las 21:50, Dirección hizo la tanda completa con la APK 0.11.3 (commit `13280e6`) y confirmó que todos los puntos funcionaron. Hay siete capturas en `capturas-0.11.3/`. El registro, que separa lo observable, lo confirmado por Dirección y las pruebas automatizadas, está en **`validacion-0.11.3.md`**. Los cinco hallazgos de `hallazgos-validacion-telefono.md` quedan cerrados.
+
+**Limitaciones conocidas que se conservan:** ventana automática de 90 días, sin selector de período ni paginación, y el desplazamiento se reinicia al volver del detalle.
 
 Solo datos sintéticos. Sin credenciales.
