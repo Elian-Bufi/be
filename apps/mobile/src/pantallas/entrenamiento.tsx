@@ -19,11 +19,12 @@ import {
   COPY_ENTRENAMIENTO,
   COPY_INTEGRACIONES,
   ETIQUETA_DE_PROVEEDOR,
-  ETIQUETA_DE_CRITERIO,
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
   leerNumero,
+  lineasDePrescripcion,
   numero,
+  referenciaDeSerie,
   registroVigente,
   vistaDeOcurrencia,
   type BorradorDeEjecucion,
@@ -52,18 +53,13 @@ type Granularidad = 'SET' | 'EXERCISE_OR_SESSION';
 /** La fecha local de hoy en la zona del borrador: después de las 21 en Buenos Aires, en UTC ya es mañana. */
 const hoyEn = (zona: string): string => new Intl.DateTimeFormat('en-CA', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 
-/** «3 × 8 · RIR 2 · Carga sugerida 60 kg»: lo planificado, con la carga separada del criterio (B10-06:463-477). */
-export function resumenDePrescripcion(p: Prescripcion): string {
-  const reps = (s: Prescripcion['sets'][number]) =>
-    !s.repetitions ? '—' : 'value' in s.repetitions ? numero(s.repetitions.value) : `${numero(s.repetitions.min)}-${numero(s.repetitions.max)}`;
-  const partes = [p.sets.length > 0 ? `${numero(p.sets.length)} × ${reps(p.sets[0]!)}` : ''];
-  // «75 % RM» y «RIR 2»: el rótulo del criterio va una sola vez.
-  if (p.intensity)
-    partes.push(
-      p.intensity.criterion === 'PERCENT_RM' ? `${numero(p.intensity.target.value)} ${ETIQUETA_DE_CRITERIO.PERCENT_RM}` : `${ETIQUETA_DE_CRITERIO.RIR} ${numero(p.intensity.target.value)}`,
-    );
-  if (p.suggestedLoad) partes.push(`${COPY_ENTRENAMIENTO.cargaSugerida} ${cantidad(p.suggestedLoad.value, p.suggestedLoad.unit)}`);
-  return partes.filter(Boolean).join(' · ');
+/**
+ * Lo planificado de una prescripción, completo y una línea por dato (DL-105), con la presentación que comparte con el
+ * website: todas las series (una pirámide 10/8/6 ya no es «3 × 10») con sus notas, la intensidad con su referencia, la
+ * carga sugerida aparte del criterio (B10-06:463-477), los parámetros con su unidad y la nota.
+ */
+export function textoDePrescripcion(p: Prescripcion): string {
+  return lineasDePrescripcion(p).join('\n');
 }
 
 // ─── Entrenamiento de hoy ────────────────────────────────────────────────────────────────────
@@ -205,7 +201,7 @@ function TarjetaDeOcurrencia({
       </Parrafo>
       <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" />
       {o.plannedSession.prescriptions.map((p) => (
-        <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={resumenDePrescripcion(p)} />
+        <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={textoDePrescripcion(p)} />
       ))}
       {o.plannedSession.instructions ? <Parrafo tenue>{o.plannedSession.instructions}</Parrafo> : null}
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
@@ -488,6 +484,8 @@ export function PantallaDeSesion({
         {deHoy ? '' : ` · ${fechaCivil(fechaDeLaSesion)}`}
       </Parrafo>
       {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
+      {/* Las indicaciones de la sesión, arriba y mientras se registra: antes solo se veían en la tarjeta de «Hoy» (DL-105). */}
+      {sesion.instructions ? <Dato etiqueta={COPY_ENTRENAMIENTO.indicacionesDeLaSesion} valor={sesion.instructions} /> : null}
       <Seccion titulo={COPY_ENTRENAMIENTO.granularidad}>
         {/* Lo elegido se dice con texto, no solo con el estilo del botón (B10-10:36). */}
         <Parrafo>{b.granularity ? `Elegiste: ${ETIQUETA_DE_GRANULARIDAD[b.granularity as Granularidad]}` : 'Todavía no elegiste cómo registrar.'}</Parrafo>
@@ -530,7 +528,7 @@ export function PantallaDeSesion({
       ) : null}
       <Seccion titulo={COPY_ENTRENAMIENTO.condicionDeLaSesion}>
         {/* El motivo va antes que los botones: lo escrito viaja con la condición, y «Revisar sesión» lo guarda si cambió. */}
-        <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} value={motivo} onChangeText={setMotivo} />
+        <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} ayuda={COPY_ENTRENAMIENTO.ayudaDelMotivo} value={motivo} onChangeText={setMotivo} />
         <Parrafo>{b.sessionCondition ? `Elegiste: ${etiquetaDeCondicionRegistrada({ sessionCondition: b.sessionCondition })}` : 'Todavía no indicaste cómo resultó la sesión.'}</Parrafo>
         <Boton
           texto="Realizada"
@@ -619,7 +617,7 @@ function EjercicioEnCurso({
   return (
     <Tarjeta>
       <Subtitulo>{p.exerciseName}</Subtitulo>
-      <Dato etiqueta={COPY_ENTRENAMIENTO.planificado} valor={resumenDePrescripcion(p)} />
+      <Dato etiqueta={COPY_ENTRENAMIENTO.planificado} valor={textoDePrescripcion(p)} />
       {registrado?.substituted ? (
         <>
           <Dato etiqueta={COPY_ENTRENAMIENTO.ejecutado} valor={registrado.performedExerciseName} />
@@ -640,9 +638,11 @@ function EjercicioEnCurso({
               {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {textoDeSerie(s)} · {COPY_ENTRENAMIENTO.registradaEnBorrador}
             </Parrafo>
           ))}
-          {pendientes.map((_, i) => (
+          {pendientes.map((planificada, i) => (
+            // Todo lo planificado para esa serie (repeticiones y nota) se muestra como referencia; el campo de
+            // repeticiones queda vacío: lo realizado lo escribe la persona (B10-06:1242-1255; DL-105).
             <Parrafo key={`p${i}`} tenue>
-              {COPY_ENTRENAMIENTO.serie} {(registrado?.sets?.length ?? 0) + i + 1}: {COPY_ENTRENAMIENTO.pendiente}
+              {COPY_ENTRENAMIENTO.serie} {(registrado?.sets?.length ?? 0) + i + 1}: {COPY_ENTRENAMIENTO.pendiente} · {referenciaDeSerie(planificada)}
             </Parrafo>
           ))}
           <Campo etiqueta={`${COPY_ENTRENAMIENTO.carga} (${serie.unidad})`} value={serie.carga} onChangeText={(v) => setSerie({ ...serie, carga: v })} keyboardType="decimal-pad" />

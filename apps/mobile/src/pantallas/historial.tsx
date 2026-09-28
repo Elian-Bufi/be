@@ -27,7 +27,7 @@ import { Cargando, ErrorConReintento } from '../estados';
 import { dia, fechaCivil, ultimosDiasEnZona } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
-import { resumenDePrescripcion } from './entrenamiento';
+import { textoDePrescripcion } from './entrenamiento';
 
 type Ejecucion = HistorialDeEntrenamientoResponse['data']['executions'][number];
 
@@ -155,7 +155,7 @@ export function PantallaDePlanDeEntrenamiento({ token, id, salir }: { token: str
           {s.instructions ? <Parrafo tenue>{s.instructions}</Parrafo> : null}
           {s.prescriptions.length === 0 ? <Parrafo tenue>{COPY_ENTRENAMIENTO.sinPrescripciones}</Parrafo> : null}
           {s.prescriptions.map((p) => (
-            <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={resumenDePrescripcion(p)} />
+            <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={textoDePrescripcion(p)} />
           ))}
         </Seccion>
       ))}
