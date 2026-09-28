@@ -108,6 +108,7 @@
 | DL-101 | PF-01/02 · 2026-09-27 | 09v16.1 §22 · DL-095 | Los campos NUMBER aceptaban cualquier número | **DECIDIDA** 2026-09-27 · mínimo, máximo y entero |
 | DL-102 | PF-01/02 · 2026-09-27 | 09v10 TRN-01 · CA-FOR-04 del plan | La evaluación de entrenamiento no puede citar respuestas de forma verificable | **DECIDIDA** 2026-09-27 · referencias verificadas (opción A) |
 | DL-103 | PF-01/02 · 2026-09-27 | Plan Funcional §12.3 · DEC-04 | Alcance del primer incremento de contexto | **DECIDIDA** 2026-09-27 · solo entrenamiento, equipamiento en texto |
+| DL-104 | PF-01/02 · 2026-09-28 | DL-101 · 09v16.1 §22.7/§22.8 · auditoría del PR #100 | Un valor fuera de rango en un formulario no le dice a la persona qué corregir | ABIERTA (limitación de interfaz) |
 
 ---
 
@@ -2064,6 +2065,8 @@ Son preguntas de producto, no un instrumento clínico. Los textos pueden ajustar
 
 Las plantillas existentes no cambian. Amplía la forma provisoria de DL-095. **El plan proponía admitir 0 días; Dirección fijó el mínimo en 1.**
 
+**Limitación conocida:** el rechazo no dice qué campo ni qué rango, y la APK muestra un mensaje genérico. Queda como **DL-104**.
+
 ## DL-102 — La evaluación de entrenamiento no puede citar respuestas de forma verificable
 
 **Prioridad:** alta · **Documento:** 09v10 TRN-01 · CA-FOR-04 del Plan Funcional · **Estado:** DECIDIDA 2026-09-27
@@ -2082,3 +2085,22 @@ Las plantillas existentes no cambian. Amplía la forma provisoria de DL-095. **E
 **Prioridad:** media · **Documento:** Plan Funcional §12.3 · DEC-04 · **Estado:** DECIDIDA 2026-09-27
 
 **Decisión de Dirección.** El primer incremento cubre solo entrenamiento, con los tipos actuales: lugar y equipamiento van como texto. La selección simple o múltiple y el patrón para nutrición (PF-04) y antropometría (PF-06) quedan para después, reutilizando lo que deje este incremento.
+
+## DL-104 — Un valor fuera de rango en un formulario no le dice a la persona qué corregir
+
+**Prioridad:** media · **Documento:** DL-101 · 09v16.1 §22.7 (FRM-07) y §22.8 (FRM-08) · auditoría del PR #100 (2026-09-28) · **Estado:** ABIERTA (limitación de interfaz)
+
+**Qué pasa hoy.**
+- Con DL-101, la API rechaza un número fuera de los límites de la plantilla (por ejemplo, «9» en días por semana) con `422 FORM_RESPONSE_INVALID`. La respuesta trae solo el código y un mensaje de texto: **no trae un issue que nombre el campo ni el rango**.
+- La APK 0.11.3 no tiene un caso para ese código y muestra el mensaje genérico «El servicio no está disponible en este momento. Probá de nuevo más tarde.».
+- La persona solo conoce el rango por el `helpText` del campo, que ve antes de responder. El rechazo no le dice qué dato corregir.
+- Pasa igual al responder (FRM-07) y al rectificar (FRM-08).
+
+**Criterio de aceptación.** Ante un valor fuera de rango, la interfaz indica **qué dato corregir y qué rango admite**, tanto **al responder** como **al rectificar**.
+
+**Opciones.**
+- **A.** La API agrega al 422 un issue por campo (código de campo y límites), declarado en el contrato. La APK traduce ese issue a un mensaje junto al campo, con el rótulo y el rango. Requiere APK nueva.
+- **B.** La APK valida antes de enviar. No es viable sin exponer los límites en FRM-02, y eso rompe a la APK instalada (DL-101).
+
+**Provisorio.** Sin cambios: el rechazo en el servidor protege el dato, y el `helpText` anticipa el rango. Por decisión de Dirección (auditoría del PR #100), **no se amplía el PR #100 ni se construye otra APK por este punto**. **Recomendación: A**, en la próxima tanda que incluya una APK.
+
