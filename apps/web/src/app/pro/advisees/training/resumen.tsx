@@ -6,20 +6,26 @@
  * - Sin puntaje general, sin «fatiga» inferida, sin «riesgo» automático y sin progresión recomendada (B10-06:110-115).
  * - La evaluación marca la fuente de cada dato; el self-reported no se presenta como diagnóstico (B10-06:132-145).
  * - El objetivo es «Nueva versión de objetivo», nunca «Editar objetivo actual» (B10-06:253-259).
+ * - PF-02 (DL-102): la evaluación cita respuestas de formulario **por referencia**. Lo citado se muestra como declarado
+ *   por la persona, con su fecha, y nunca como un dato observado por el profesional (CA-FOR-04).
  */
 import {
   COPY_ENTRENAMIENTO,
+  COPY_FORMULARIOS,
   ETIQUETA_DE_FUENTE,
   ETIQUETA_DE_RESULTADO,
   etiquetaDeCondicionRegistrada,
   leerNumero,
   numero,
   registroVigente,
+  type CitaDeRespuestaDeFormulario,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EvaluacionDeEntrenamiento,
+  type RespuestaCitada,
   type ResumenDeVersionDePlanDeEntrenamiento,
   type VersionDeObjetivoDeEntrenamiento,
 } from '@be/domain';
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Aviso, Campo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -134,6 +140,7 @@ export function VistaDeResumen() {
                       </div>
                     ))}
                   </dl>
+                  {e.formResponseReferences.length > 0 ? <ContextoCitado citas={e.formResponseReferences} /> : null}
                   {e.context ? <p className="nota">Contexto: {e.context}</p> : null}
                   {e.professionalNotes ? <p className="nota">{e.professionalNotes}</p> : null}
                 </li>
@@ -149,11 +156,18 @@ export function VistaDeResumen() {
                 onCancelar={() => setFormulario(null)}
               />
             ) : (
-              <div className="acciones">
-                <button type="button" className="boton boton--secundario" onClick={() => setFormulario('evaluacion')}>
-                  {COPY_ENTRENAMIENTO.nuevaEvaluacion}
-                </button>
-              </div>
+              <>
+                <div className="acciones">
+                  <button type="button" className="boton boton--secundario" onClick={() => setFormulario('evaluacion')}>
+                    {COPY_ENTRENAMIENTO.nuevaEvaluacion}
+                  </button>
+                  {/* PF-02 (CA-FOR-06): pedir contexto desde acá y volver acá al enviarlo. */}
+                  <Link className="boton boton--secundario" href={`/pro/advisees/forms?id=${encodeURIComponent(asesoradoId)}&vista=pedir&plantilla=FRM-ENTRENAMIENTO&volver=entrenamiento`}>
+                    {COPY_ENTRENAMIENTO.solicitarContexto}
+                  </Link>
+                </div>
+                <p className="nota">{COPY_ENTRENAMIENTO.ayudaSolicitarContexto}</p>
+              </>
             )}
           </section>
         </div>
@@ -216,6 +230,80 @@ function Estado({ datos, onIrA }: { datos: Datos; onIrA: (v: 'plan' | 'ejecucion
   );
 }
 
+/** Valor de una respuesta declarada, con su unidad: el número con coma (DL-091 punto 4). */
+function valorDeclarado(valor: string | number | boolean, unidad: string | null): string {
+  const texto = typeof valor === 'number' ? numero(valor) : typeof valor === 'boolean' ? (valor ? 'Sí' : 'No') : valor;
+  return unidad ? `${texto} ${unidad}` : texto;
+}
+
+/** Lo citado en una evaluación (DL-102): declarado por la persona, con fecha, y el aviso si lo actualizó después. */
+function ContextoCitado({ citas }: { citas: readonly RespuestaCitada[] }) {
+  return (
+    <div>
+      <p className="lista__titulo">{COPY_ENTRENAMIENTO.contextoCitado}</p>
+      <dl className="datos">
+        {citas.map((c) => (
+          <div key={`${c.formResponseId}#${c.fieldCode}`}>
+            <dt>{c.label}</dt>
+            <dd>
+              {valorDeclarado(c.value, c.unit)}{' '}
+              <span className="nota">
+                · {COPY_FORMULARIOS.declaradoPorLaPersona} el {fecha(c.answeredAt)}
+              </span>
+              {c.laterVersionExists ? <p className="nota">{COPY_ENTRENAMIENTO.actualizadaDespues}</p> : null}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+/** Una respuesta que se puede citar: la versión vigente de un campo respondido, con rótulo y unidad de su plantilla. */
+interface Citable extends CitaDeRespuestaDeFormulario {
+  readonly etiqueta: string;
+  readonly valor: string;
+  readonly fecha: string;
+}
+
+/**
+ * Las respuestas citables: las Solicitudes de ENTRENAMIENTO respondidas que este profesional hoy puede leer (FRM-04 ya
+ * filtra por PDP), en su versión vigente. El servidor vuelve a validar cada cita al registrar la evaluación (DL-102).
+ */
+async function cargarCitables(token: string, asesoradoId: string): Promise<Resultado<readonly Citable[]>> {
+  const lista = await api.listarSolicitudesDeFormulario(token, asesoradoId, { status: 'RESPONDED', limit: '50' });
+  if (!lista.ok) return lista as Resultado<never>;
+  const citables: Citable[] = [];
+  const plantillas = new Map<string, Map<string, { label: string; unit: string | null }>>();
+  for (const s of lista.datos.data.filter((x) => x.scope === 'ENTRENAMIENTO')) {
+    const detalle = await api.consultarSolicitudDeFormulario(token, s.formRequestId);
+    if (!detalle.ok) return detalle as Resultado<never>;
+    const respuesta = detalle.datos.data.response;
+    if (!respuesta || respuesta.effectiveView.kind === 'NOT_RESOLVABLE') continue;
+    const vista = respuesta.effectiveView;
+    const rectificacion = vista.kind === 'RECTIFIED' ? respuesta.rectifications.find((r) => r.rectificationId === vista.rectificationId) : undefined;
+    const vigentes = rectificacion ? rectificacion.answers : respuesta.original.answers;
+    let campos = plantillas.get(s.templateVersionId);
+    if (!campos) {
+      const version = await api.consultarVersionDePlantilla(token, s.templateId, s.templateVersionId);
+      if (!version.ok) return version as Resultado<never>;
+      campos = new Map(version.datos.data.sections.flatMap((sec) => sec.fields.map((c) => [c.fieldCode, { label: c.label, unit: c.unit }] as const)));
+      plantillas.set(s.templateVersionId, campos);
+    }
+    for (const a of vigentes) {
+      const campo = campos.get(a.fieldCode);
+      citables.push({
+        formResponseId: respuesta.formResponseId,
+        fieldCode: a.fieldCode,
+        etiqueta: campo?.label ?? a.fieldCode,
+        valor: valorDeclarado(a.value, campo?.unit ?? null),
+        fecha: rectificacion ? rectificacion.recordedAt : respuesta.submittedAt,
+      });
+    }
+  }
+  return { ok: true, datos: citables };
+}
+
 type Fuente = 'REPORTED' | 'OBSERVED' | 'CALCULATED';
 interface Dato {
   concepto: string;
@@ -243,7 +331,21 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
   const [envios, setEnvios] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
+  const [citables, setCitables] = useState<Resultado<readonly Citable[]> | null>(null);
+  const [citadas, setCitadas] = useState<readonly string[]>([]);
   const cambiar = (i: number, cambio: Partial<Dato>) => setDatos((ds) => ds.map((d, j) => (j === i ? { ...d, ...cambio } : d)));
+  const claveDe = (c: CitaDeRespuestaDeFormulario) => `${c.formResponseId}#${c.fieldCode}`;
+
+  const cargarContexto = useCallback(async () => {
+    setCitables(null);
+    const r = await cargarCitables(token, asesoradoId);
+    if (sesionPerdida(r)) return;
+    setCitables(r);
+  }, [token, asesoradoId, sesionPerdida]);
+
+  useEffect(() => {
+    void cargarContexto();
+  }, [cargarContexto]);
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
@@ -276,6 +378,10 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
           })),
         },
         evidenceReferences: [],
+        // DL-102: referencias, en el orden en que se muestran; el servidor las valida y fija la versión citada.
+        formResponseReferences: (citables?.ok ? citables.datos : [])
+          .filter((c) => citadas.includes(claveDe(c)))
+          .map((c) => ({ formResponseId: c.formResponseId, fieldCode: c.fieldCode })),
         professionalNotes: notas.trim() || null,
         context: contexto.trim() || null,
       },
@@ -322,6 +428,38 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
         <button type="button" className="boton boton--secundario" onClick={() => setDatos((ds) => [...ds, datoVacio()])}>
           Agregar dato
         </button>
+      </fieldset>
+      <fieldset className="grupo">
+        <legend>{COPY_ENTRENAMIENTO.contextoDeclarado}</legend>
+        <p className="campo__ayuda">{COPY_ENTRENAMIENTO.ayudaContextoDeclarado}</p>
+        {!citables ? <p className="nota">Cargando…</p> : null}
+        {citables && !citables.ok ? (
+          <button type="button" className="boton boton--enlace" onClick={() => void cargarContexto()}>
+            No se pudo cargar el contexto declarado. Reintentar
+          </button>
+        ) : null}
+        {citables?.ok && citables.datos.length === 0 ? <p className="nota">{COPY_ENTRENAMIENTO.sinContextoParaCitar}</p> : null}
+        {citables?.ok
+          ? citables.datos.map((c) => {
+              const id = `trn-cita-${c.formResponseId}-${c.fieldCode}`;
+              return (
+                <div key={claveDe(c)} className="campo-de-plantilla">
+                  <input
+                    type="checkbox"
+                    id={id}
+                    checked={citadas.includes(claveDe(c))}
+                    onChange={() => setCitadas((cs) => (cs.includes(claveDe(c)) ? cs.filter((x) => x !== claveDe(c)) : [...cs, claveDe(c)]))}
+                  />
+                  <label htmlFor={id}>
+                    {c.etiqueta}: {c.valor}{' '}
+                    <span className="nota">
+                      · {COPY_FORMULARIOS.declaradoPorLaPersona} el {fecha(c.fecha)}
+                    </span>
+                  </label>
+                </div>
+              );
+            })
+          : null}
       </fieldset>
       <div className="campo">
         <label htmlFor="trn-evaluacion-contexto">Contexto (opcional)</label>

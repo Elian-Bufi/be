@@ -178,6 +178,17 @@ export const COPY_ENTRENAMIENTO = {
   historialDeCorrecciones: 'Historial de correcciones',
   corregidoPorElProfesional: 'Corregido por el profesional',
   corregidoPorVos: 'Corregido por vos',
+
+  // PF-02 · contexto declarado conectado con la evaluación (DL-100, DL-102)
+  solicitarContexto: 'Solicitar contexto',
+  ayudaSolicitarContexto:
+    'Le pide a la persona «Antecedentes para entrenamiento»: qué busca, su experiencia, cuánto tiempo tiene, dónde entrena y qué prefiere. Pedir no da acceso a nada nuevo hasta que responda.',
+  contextoDeclarado: 'Contexto declarado por la persona',
+  ayudaContextoDeclarado:
+    'Marcá las respuestas que usás para fundar esta evaluación. Quedan citadas tal como están ahora, con su fecha; no se copian como datos observados por vos.',
+  sinContextoParaCitar: 'Todavía no hay respuestas de contexto de entrenamiento para citar.',
+  contextoCitado: 'Contexto citado',
+  actualizadaDespues: 'La persona actualizó esta respuesta después de la evaluación; acá se muestra lo que se citó.',
 } as const;
 
 /**
