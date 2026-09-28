@@ -86,15 +86,16 @@ flowchart TD
 |---|---|---|
 | Base de datos | Migración de solo agregado: plantilla FRM-ENTRENAMIENTO v1. Si D-3 se aprueba, una columna o una tabla de referencias de la evaluación a respuestas | S / M |
 | Dominio (contratos) | DL-101: **sin cambios en las respuestas de FRM** (ver «Compatibilidad»). DL-102: `formResponseReferences[]` (`formResponseId`, `fieldCode`) en la evaluación de entrenamiento, sin tocar `evidenceReferences` | S / M |
-| API | Validar las restricciones NUMBER al responder o rectificar. Validar cada referencia citada al crear la evaluación: misma persona, alcance ENTRENAMIENTO, legible para el profesional ahora y campo existente. Resolver las referencias al leer con las reglas de FRM-05. OpenAPI y registro de operaciones | M |
+| API | Validar las restricciones NUMBER al responder o rectificar. Validar cada referencia citada al crear la evaluación: misma persona, Solicitud del mismo profesional y de alcance ENTRENAMIENTO, campo respondido en la versión vigente, que queda fija. Al leer, la cita se resuelve dentro de la lectura de la evaluación, que ya exige el PDP de ENTRENAMIENTO para ese par. OpenAPI regenerado | M |
 | Website | Botón «Solicitar contexto» con retorno; sección «Contexto declarado» en la evaluación; vista de las referencias en el detalle | M |
-| APK | **Ninguno, y la 0.11.x sigue sirviendo** (ver «Compatibilidad») | — |
+| APK | **Ninguno en este paquete.** La compatibilidad con la 0.11.x está comprobada por contrato y revisión del código, no en el ambiente desplegado; el mensaje ante un valor fuera de rango queda pendiente (DL-104). Ver «Compatibilidad» | — |
 | Servidor desplegado | Sí: cambian API y website | — |
 
-**Compatibilidad con la APK instalada** (verificado en el código el 2026-09-27):
+**Compatibilidad con la APK instalada.** Está comprobada **por contrato y por revisión del código** (2026-09-27). **La prueba con la APK respondiendo esta plantilla en el ambiente desplegado sigue pendiente.**
 - La APK lee la definición de la plantilla (FRM-02) con esquemas estrictos (`z.strictObject`). Si los campos de FRM-ENTRENAMIENTO trajeran una propiedad nueva, como `minimum`, `maximum` o `integer`, la APK 0.11.x instalada **no podría abrir el formulario**.
 - Por eso, en DL-101 las restricciones se guardan en la definición interna de la plantilla y **se validan solo en el servidor** al responder y al rectificar. El rango se le comunica a la persona en el `helpText` del campo («Entre 1 y 7»), que ya existe y se muestra.
-- Un valor fuera de rango vuelve como `422 FORM_RESPONSE_INVALID`, con un issue que nombra el campo. La APK ya muestra ese error.
+- Contrato: la integración de contrato de #100 verifica que FRM-02 de FRM-ENTRENAMIENTO devuelve en cada campo exactamente las seis propiedades del esquema estricto, sin `numberLimits`, y que el cuerpo valida contra ese esquema, que es el que usa la APK.
+- Un valor fuera de rango vuelve como `422 FORM_RESPONSE_INVALID` **sin un issue que nombre el campo**: solo trae el código y un mensaje de texto. La APK 0.11.3 no tiene un caso para ese código y muestra el mensaje genérico «El servicio no está disponible en este momento». **La persona no se entera de qué dato corregir ni qué rango se admite**, salvo por el `helpText` que ve antes de responder. Es una limitación de interfaz registrada como **DL-104**, fuera de este paquete y sin APK nueva por ahora.
 - La APK **no lee** evaluaciones de entrenamiento, así que DL-102 cambia solo la API y el website, que se despliegan juntos desde el mismo commit.
 
 **Estimación gruesa:** entre tres y cuatro PR (contrato y migración, API, website e integración), sin APK nueva. La estimación fina se hace al aprobar las decisiones.
@@ -133,12 +134,12 @@ flowchart TD
 | CA-FOR-06 / V-21 | Desde la evaluación se pide contexto y se vuelve a la evaluación | Website |
 | CA-FOR-07 | Una respuesta de otro alcance no se puede citar ni leer desde entrenamiento | Integración |
 | V-01 | Otro profesional u otro titular no puede citar ni leer la respuesta | Integración |
-| V-02 | Si se revoca B2 después de citar, la referencia se muestra con aviso neutral, sin contenido | Integración |
+| V-02 | Si se revoca B2 después de citar, la evaluación entera deja de leerse (404 neutral), así que tampoco se lee lo citado | Integración |
 | V-06 | Una solicitud emitida sigue con su versión de plantilla | Integración (existente) |
 | V-07 | Una respuesta rectificada después de citarla muestra que tiene sucesora | Integración |
-| DL-101 | «0 días», «9 días», «2,5 días» y «-1 min» se rechazan con un error comprensible | Contrato e integración |
+| DL-101 | «0 días», «9 días», «2,5 días» y «-1 min» se rechazan con `422 FORM_RESPONSE_INVALID`. El mensaje comprensible en la APK queda pendiente (DL-104) | Contrato e integración |
 
-**Demostración de salida** (plan §12.3, acotada a este incremento): el profesional solicita el contexto; el asesorado responde en la APK; el profesional vuelve a la evaluación y cita dos respuestas; define objetivo y plan con las operaciones actuales; después se revoca la autorización y la evaluación muestra el aviso neutral en lugar del contenido.
+**Demostración de salida** (plan §12.3, acotada a este incremento): el profesional solicita el contexto; el asesorado responde en la APK; el profesional vuelve a la evaluación y cita dos respuestas; define objetivo y plan con las operaciones actuales; después se revoca la autorización y la evaluación deja de leerse (404 neutral), sin mostrar lo citado.
 
 ## 7 Qué no bloquea
 
