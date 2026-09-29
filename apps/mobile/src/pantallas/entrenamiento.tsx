@@ -24,8 +24,10 @@ import {
   leerNumero,
   lineasDePrescripcion,
   numero,
+  proximoNumeroDeSerie,
   referenciaDeSerie,
   registroVigente,
+  seriesPendientes,
   vistaDeOcurrencia,
   type BorradorDeEjecucion,
   type EjecucionDeEntrenamiento,
@@ -364,14 +366,18 @@ export function PantallaDeSesion({
     const actuales = ejercicios();
     const existente = actuales.find((e) => e.prescriptionId === p.prescriptionId);
     const series = existente && 'sets' in existente ? existente.sets : [];
+    // El número de la serie sale de lo planificado y lo ya registrado, no de la cantidad de registros: con la 1 y la 3
+    // registradas, la próxima es la 2 (la cantidad daba 3, que la API rechaza por repetida).
+    const indice = proximoNumeroDeSerie(p, series);
+    if (indice === null) return 'Ya registraste el máximo de series de este ejercicio.';
     const nueva = {
-      setIndex: series.length + 1,
+      setIndex: indice,
       load: carga === null ? null : { value: carga, unit: serie.unidad },
       completedRepetitions: reps === null ? null : Math.round(reps),
       rir,
       perceivedExertion: esfuerzo,
     };
-    const actualizado = { prescriptionId: p.prescriptionId, performedExerciseVersionId: realizado, sets: [...series, nueva] };
+    const actualizado = { prescriptionId: p.prescriptionId, performedExerciseVersionId: realizado, sets: [...series, nueva].sort((a, b) => a.setIndex - b.setIndex) };
     return guardarYDecir({ exercises: existente ? actuales.map((e) => (e.prescriptionId === p.prescriptionId ? actualizado : e)) : [...actuales, actualizado] });
   }
 
@@ -611,7 +617,9 @@ function EjercicioEnCurso({
     setFallo(await onSustituir(e));
   }
 
-  const pendientes = granularidad === 'SET' ? p.sets.slice(registrado?.sets?.length ?? 0) : [];
+  // Por número real de serie: si solo está registrada la 3, siguen pendientes la 1 y la 2, cada una con lo suyo.
+  const pendientes = granularidad === 'SET' ? seriesPendientes(p, registrado?.sets ?? []) : [];
+  const registradasEnOrden = [...(registrado?.sets ?? [])].sort((a, b) => a.setIndex - b.setIndex);
   const realizado = sustitutoPendiente ?? null;
 
   return (
@@ -633,16 +641,16 @@ function EjercicioEnCurso({
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {granularidad === 'SET' ? (
         <>
-          {(registrado?.sets ?? []).map((s) => (
+          {registradasEnOrden.map((s) => (
             <Parrafo key={s.setIndex}>
               {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {textoDeSerie(s)} · {COPY_ENTRENAMIENTO.registradaEnBorrador}
             </Parrafo>
           ))}
-          {pendientes.map((planificada, i) => (
+          {pendientes.map((planificada) => (
             // Todo lo planificado para esa serie (repeticiones y nota) se muestra como referencia; el campo de
             // repeticiones queda vacío: lo realizado lo escribe la persona (B10-06:1242-1255; DL-105).
-            <Parrafo key={`p${i}`} tenue>
-              {COPY_ENTRENAMIENTO.serie} {(registrado?.sets?.length ?? 0) + i + 1}: {COPY_ENTRENAMIENTO.pendiente} · {referenciaDeSerie(planificada)}
+            <Parrafo key={`p${planificada.setIndex}`} tenue>
+              {COPY_ENTRENAMIENTO.serie} {planificada.setIndex}: {COPY_ENTRENAMIENTO.pendiente} · {referenciaDeSerie(planificada)}
             </Parrafo>
           ))}
           <Campo etiqueta={`${COPY_ENTRENAMIENTO.carga} (${serie.unidad})`} value={serie.carga} onChangeText={(v) => setSerie({ ...serie, carga: v })} keyboardType="decimal-pad" />

@@ -10,8 +10,9 @@
  * - **no promete el dato**: el aviso dice que pedir no amplía el acceso y que hasta que la persona responda no hay
  *   nada nuevo (05:15098-15099).
  *
- * Los alcances se ofrecen los tres: la UI no adivina cuál está autorizado. Si no lo está, la API responde el mismo
- * 404 neutral que ante un asesorado inexistente, y eso es lo que se muestra.
+ * Con una plantilla transversal (sin dominio) se ofrecen los tres alcances: la UI no adivina cuál está autorizado. Si
+ * no lo está, la API responde el mismo 404 neutral que ante un asesorado inexistente, y eso es lo que se muestra. Una
+ * plantilla con dominio se pide solo en su Alcance (FRM-03; UC-P32, precondición 7): la pantalla fija ese Alcance.
  *
  * PF-02 (DL-100): si el profesional llega desde la evaluación de entrenamiento (`plantilla=FRM-ENTRENAMIENTO` y
  * `volver=entrenamiento`), la pantalla precarga la plantilla ratificada, sus campos y el alcance, y al enviar vuelve a
@@ -25,6 +26,13 @@ import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EstadoDeLectura, useFormularios } from './formularios';
+
+/** Los rechazos de FRM-03 que dependen de lo elegido: se dicen, en vez de «el servicio no está disponible». */
+const RECHAZO_DE_SOLICITUD: Readonly<Record<string, string>> = {
+  FORM_TEMPLATE_NOT_SELECTABLE: COPY_FORMULARIOS.plantillaNoSeleccionable,
+  FORM_REQUEST_NOT_ALLOWED: COPY_FORMULARIOS.campoNoPertinente,
+  FORM_REQUEST_INVALID: COPY_FORMULARIOS.solicitudInvalida,
+};
 
 export function VistaDePedido() {
   const { token, asesoradoId, sesionPerdida, irA } = useFormularios();
@@ -62,6 +70,8 @@ export function VistaDePedido() {
       if (sesionPerdida(v)) return;
       if (!v.ok) return setAviso({ tipo: 'error', texto: mensajeDeFallo(v) });
       setElegida(v.datos.data);
+      // Una plantilla con dominio se pide solo en su Alcance (FRM-03 lo exige): se fija acá, no se deja elegir otro.
+      if (v.datos.data.domain) setAlcance(v.datos.data.domain);
       if (!conPrecarga) {
         setPedidos([]);
         setRequeridos([]);
@@ -110,7 +120,7 @@ export function VistaDePedido() {
     clave.registrar(r);
     setEnviando(false);
     if (sesionPerdida(r)) return;
-    if (!r.ok) return setAviso({ tipo: 'error', texto: mensajeDeFallo(r) });
+    if (!r.ok) return setAviso({ tipo: 'error', texto: RECHAZO_DE_SOLICITUD[r.tipo === 'API' ? r.codigo : ''] ?? mensajeDeFallo(r) });
     setElegida(null);
     setProposito('');
     setAviso({ tipo: 'exito', texto: COPY_FORMULARIOS.solicitudEnviada });
@@ -213,8 +223,9 @@ export function VistaDePedido() {
 
               <div className="campo">
                 <label htmlFor="alcance">{COPY_FORMULARIOS.alcance}</label>
+                {elegida.domain ? <p className="campo__ayuda">{COPY_FORMULARIOS.alcanceDeLaPlantilla}</p> : null}
                 <select id="alcance" value={alcance} onChange={(e) => setAlcance(e.target.value as Alcance)}>
-                  {ALCANCES.map((a) => (
+                  {(elegida.domain ? [elegida.domain] : ALCANCES).map((a) => (
                     <option key={a} value={a}>
                       {ETIQUETA_DE_ALCANCE[a]}
                     </option>
