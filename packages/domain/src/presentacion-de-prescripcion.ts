@@ -69,3 +69,30 @@ export function referenciaDeSerie(s: Pick<Serie, 'repetitions' | 'note'>): strin
   const reps = r === null ? COPY_ENTRENAMIENTO.sinRepeticionesFijadas : una ? `${COPY_ENTRENAMIENTO.planificada} ${r} ${COPY_ENTRENAMIENTO.repeticion}` : `${COPY_ENTRENAMIENTO.planificadas} ${r} ${COPY_ENTRENAMIENTO.repeticiones.toLowerCase()}`;
   return s.note ? `${reps} · ${s.note}` : reps;
 }
+
+// ─── Series pendientes al registrar por serie ────────────────────────────────────────────────────
+
+/** El máximo de `setIndex` que admite el contrato de una serie registrada (API-TRN-17). */
+export const NUMERO_MAXIMO_DE_SERIE = 50;
+
+/**
+ * Las series planificadas que todavía no tienen registro, **por su número real** (`setIndex`), no por la cantidad de
+ * registros. Si solo está registrada la serie 3, siguen pendientes la 1 y la 2, cada una con su prescripción y su nota.
+ * Devuelve las series planificadas tal cual: mostrarlas no las convierte en realizadas.
+ */
+export function seriesPendientes(p: Pick<Prescripcion, 'sets'>, registradas: readonly { readonly setIndex: number }[]): Prescripcion['sets'] {
+  const hechas = new Set(registradas.map((s) => s.setIndex));
+  return p.sets.filter((s) => !hechas.has(s.setIndex));
+}
+
+/**
+ * El número de la próxima serie que se registra: la primera planificada sin registro; si todas tienen registro, la
+ * siguiente al número más alto registrado o planificado (una serie de más es legítima). Nunca repite un número ya
+ * registrado, que la API rechaza (`DUPLICATE_SET_INDEX`). `null` si se pasaría del máximo del contrato.
+ */
+export function proximoNumeroDeSerie(p: Pick<Prescripcion, 'sets'>, registradas: readonly { readonly setIndex: number }[]): number | null {
+  const pendiente = seriesPendientes(p, registradas)[0];
+  if (pendiente) return pendiente.setIndex;
+  const siguiente = Math.max(0, ...registradas.map((s) => s.setIndex), ...p.sets.map((s) => s.setIndex)) + 1;
+  return siguiente > NUMERO_MAXIMO_DE_SERIE ? null : siguiente;
+}
