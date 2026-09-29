@@ -248,9 +248,33 @@ Además, dos defectos de maquetación encontrados al medir:
 
 Capturas: `cierre/03` a `cierre/09`.
 
-### 3 · Integración combinada
+### 3 · Integración combinada de las seis ramas
 
-Se registra en la sección siguiente, con los commits exactos de la combinación y el resultado de la CI.
+**La ejecución local anterior** de la suite completa sobre las seis ramas juntas quedó sin resultados: se interrumpió por falta de memoria. **No se cuenta como aprobada ni como falla**, y no se relanzó en las mismas condiciones.
+
+**Esta vez se usó la CI existente**, con las mismas exigencias:
+- la combinación de los commits finales se armó con `git merge-tree`, sin tocar `main`;
+- se subió a una rama temporal `wp-tmp-combinada-tanda-2026-09-29`: el disparador `push` de `wp-*` corre los mismos cuatro trabajos que un PR;
+- después se borró la rama. Sin PR, sin integrar y sin desplegar: Render despliega solo `main`.
+
+| Qué | Commit |
+|---|---|
+| Base | `main` `065689b` |
+| #115 comparación visual | `b3d4135` |
+| #110 series pendientes | `f103e82` |
+| #111 plantilla y alcance | `1311aef` |
+| #112 concurrencia de citas | `3acb6b1` |
+| #113 recuperación de formularios | `92f93bc` |
+| #114 propuesta REV-A | `8ce2c63` |
+| **Combinación** (seis merges, sin conflictos) | `0851a6a` |
+
+**Resultado** (CI run 36599081528, 2026-09-29): **4/4 trabajos en verde**.
+- verificar: typecheck, dominio **347/347**, scripts **31/31**, API **47/47**, build y audit;
+- integración con PostgreSQL 16: **32/32 suites, 522/522 pruebas**;
+- imagen de la API: migraciones y readiness;
+- legajo.
+
+Este registro se agregó en un commit posterior de solo evidencia. La combinación verificó el código de `b3d4135`.
 
 ## Límites y pendientes
 
