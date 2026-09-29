@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Prescripcion } from './contratos-entrenamiento';
 import { COPY_ENTRENAMIENTO, terminosProhibidosDeEntrenamientoEn } from './copy-entrenamiento';
-import { intensidadPlanificada, lineasDePrescripcion, referenciaDeSerie, repeticionesPlanificadas, seriesPlanificadas } from './presentacion-de-prescripcion';
+import { intensidadPlanificada, lineasDePrescripcion, NUMERO_MAXIMO_DE_SERIE, proximoNumeroDeSerie, referenciaDeSerie, repeticionesPlanificadas, seriesPendientes, seriesPlanificadas } from './presentacion-de-prescripcion';
 
 type Repeticiones = Prescripcion['sets'][number]['repetitions'];
 const serie = (setIndex: number, repetitions: Repeticiones, note: string | null = null) => ({ setIndex, repetitions, note });
@@ -124,4 +124,50 @@ test('PF-03 · los textos de la presentación no usan términos prohibidos de en
     COPY_ENTRENAMIENTO.notaDeSerie,
   ];
   for (const t of textos) assert.deepEqual(terminosProhibidosDeEntrenamientoEn(t), [], t);
+});
+
+// ─── Series pendientes: por número real de serie, no por cantidad de registros ────────────────────
+
+const piramide = () => prescripcion({ sets: [serie(1, fijas(10)), serie(2, fijas(8), 'pausa de 2 s abajo'), serie(3, fijas(6))] });
+const registrada = (setIndex: number) => ({ setIndex, load: { value: 60, unit: 'kg' }, completedRepetitions: 5, rir: null, perceivedExertion: null });
+const indices = (xs: readonly { setIndex: number }[]) => xs.map((x) => x.setIndex);
+
+test('PF-03 · series pendientes · registro secuencial: la próxima es la primera sin registro', () => {
+  const p = piramide();
+  const hechas: ReturnType<typeof registrada>[] = [];
+  for (const esperada of [1, 2, 3]) {
+    assert.equal(proximoNumeroDeSerie(p, hechas), esperada);
+    hechas.push(registrada(esperada));
+  }
+  assert.deepEqual(seriesPendientes(p, hechas), []);
+  assert.equal(proximoNumeroDeSerie(p, hechas), 4, 'una serie de más es legítima y lleva el número siguiente');
+});
+
+test('PF-03 · series pendientes · numeración salteada: con solo la 3 registrada, siguen pendientes la 1 y la 2 con su prescripción y su nota', () => {
+  const p = piramide();
+  const pendientes = seriesPendientes(p, [registrada(3)]);
+  assert.deepEqual(pendientes, [serie(1, fijas(10)), serie(2, fijas(8), 'pausa de 2 s abajo')]);
+  assert.deepEqual(pendientes.map(referenciaDeSerie), ['planificadas 10 repeticiones', 'planificadas 8 repeticiones · pausa de 2 s abajo']);
+  assert.equal(proximoNumeroDeSerie(p, [registrada(3)]), 1);
+  // Con la 1 y la 3 registradas, la próxima es la 2: la numeración por cantidad daba 3 y la API la rechaza por repetida.
+  assert.deepEqual(indices(seriesPendientes(p, [registrada(1), registrada(3)])), [2]);
+  assert.equal(proximoNumeroDeSerie(p, [registrada(1), registrada(3)]), 2);
+  // Con la 2 y una serie extra (5), falta la 1 y después la 3.
+  assert.deepEqual(indices(seriesPendientes(p, [registrada(5), registrada(2)])), [1, 3]);
+});
+
+test('PF-03 · series pendientes · lo planificado no se transforma en realizado ni se altera', () => {
+  const p = piramide();
+  const antes = structuredClone(p);
+  const pendientes = seriesPendientes(p, [registrada(2)]);
+  for (const s of pendientes) assert.deepEqual(Object.keys(s).sort(), ['note', 'repetitions', 'setIndex'], 'una pendiente es la serie planificada, sin campos de lo realizado');
+  assert.deepEqual(p, antes);
+});
+
+test('PF-03 · series pendientes · sin series planificadas, y el máximo del contrato', () => {
+  const sinSeries = prescripcion({ sets: [] });
+  assert.deepEqual(seriesPendientes(sinSeries, []), []);
+  assert.equal(proximoNumeroDeSerie(sinSeries, []), 1);
+  assert.equal(proximoNumeroDeSerie(sinSeries, [registrada(NUMERO_MAXIMO_DE_SERIE - 1)]), NUMERO_MAXIMO_DE_SERIE);
+  assert.equal(proximoNumeroDeSerie(sinSeries, [registrada(NUMERO_MAXIMO_DE_SERIE)]), null);
 });
