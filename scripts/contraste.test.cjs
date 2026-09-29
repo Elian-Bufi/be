@@ -144,6 +144,15 @@ function verificar(tema, pares, nombreDelTema) {
   assert.deepEqual(fallas, [], `Pares sin contraste suficiente:\n${fallas.join('\n')}`);
 }
 
+/** Solo en el tema claro: los gráficos de planificado y registrado viven en el espacio profesional. */
+const PARES_GRAFICO = [
+  ['grafico-planificado', 'superficie', NO_TEXTO, 'barras, franjas y línea de lo planificado'],
+  ['grafico-registrado', 'superficie', NO_TEXTO, 'barras, puntos y línea de lo registrado'],
+  ['grafico-planificado', 'fondo-suave', NO_TEXTO, 'muestra de lo planificado en la leyenda'],
+  ['grafico-registrado', 'fondo-suave', NO_TEXTO, 'muestra de lo registrado en la leyenda'],
+  ['grafico-hueco', 'superficie', NO_TEXTO, 'rayado de una sesión sin dato en el gráfico'],
+];
+
 test('la fórmula de contraste es la de WCAG 2.2', () => {
   assert.equal(contraste('#000000', '#ffffff').toFixed(2), '21.00');
   assert.equal(contraste('#ffffff', '#ffffff').toFixed(2), '1.00');
@@ -154,7 +163,7 @@ test('la fórmula de contraste es la de WCAG 2.2', () => {
 
 test('website · tema claro (espacio profesional y cuenta)', () => {
   const { claro } = temasWeb();
-  verificar(claro, [...PARES_WEB, ...PARES_FIGURA], 'claro');
+  verificar(claro, [...PARES_WEB, ...PARES_FIGURA, ...PARES_GRAFICO], 'claro');
 });
 
 test('website · tema oscuro (landing, acceso, registro y legales)', () => {
