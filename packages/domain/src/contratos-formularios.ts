@@ -163,6 +163,7 @@ export const SolicitudPropiaSchema = SolicitudDeFormularioSchema.extend({ respon
 export type SolicitudPropia = z.infer<typeof SolicitudPropiaSchema>;
 
 export const ListaDeSolicitudesPropiasResponseSchema = z.strictObject({ data: z.array(SolicitudPropiaSchema), page: PaginaSchema });
+export type ListaDeSolicitudesPropiasResponse = z.infer<typeof ListaDeSolicitudesPropiasResponseSchema>;
 
 // ─── Respuesta: original + rectificaciones + vista efectiva (mismo patrón que ejecución de TRN) ────
 

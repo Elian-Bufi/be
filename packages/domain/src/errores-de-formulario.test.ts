@@ -13,7 +13,7 @@ import { ErrorEnvelopeSchema } from './contratos';
 import { DetalleDeRespuestaFueraDeLimitesSchema, type CampoDePlantilla } from './contratos-formularios';
 import { COPY } from './copy';
 import { COPY_FORMULARIOS, terminosProhibidosDeFormulariosEn } from './copy-formularios';
-import { mensajeDeProblema, problemasReconocidos, rechazoDeFormulario, valoresAdmitidos } from './errores-de-formulario';
+import { desenlaceDeEnvio, mensajeDeProblema, problemasReconocidos, rechazoDeFormulario, valoresAdmitidos } from './errores-de-formulario';
 import { limiteVulnerado, numeroDentroDeLimites } from './formularios';
 
 const DIAS = { minimum: 1, maximum: 7, integer: true };
@@ -161,4 +161,67 @@ test('DL-104 · los textos nuevos no usan términos prohibidos de formularios', 
     ),
   ];
   for (const t of textos) assert.deepEqual(terminosProhibidosDeFormulariosEn(t), [], t);
+});
+
+// ─── Recuperación: cada rechazo de la API tiene su desenlace, y ninguno es «el servicio no está disponible» ─────
+
+const cuerpoDeError = (code: string) => ({ error: { code, message: 'x' } });
+
+test('recuperación · responder: FORM_REQUEST_NOT_RESPONDABLE dice que ya no se puede, que lo escrito sigue, y ofrece cargar y volver', async () => {
+  const r = await clienteQueResponde(422, cuerpoDeError('FORM_REQUEST_NOT_RESPONDABLE')).responderSolicitudDeFormulario('token', 'solicitud', { answers: [] }, 'clave-de-prueba-10');
+  const d = desenlaceDeEnvio(r, CAMPOS, { esCorreccion: false });
+  assert.deepEqual(d, { tipo: 'ya-no-se-puede', sobre: 'respuesta', mensaje: COPY_FORMULARIOS.noSePuedeResponderYa, acciones: ['cargar', 'volver'] });
+});
+
+test('recuperación · corregir: FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED dice que no se puede corregir ahora', async () => {
+  const r = await clienteQueResponde(422, cuerpoDeError('FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED')).rectificarRespuestaDeFormulario('token', 'respuesta', { expectedVersion: 'v1', reason: 'x', answers: [] }, 'clave-de-prueba-11');
+  assert.equal(desenlaceDeEnvio(r, CAMPOS, { esCorreccion: true })?.tipo, 'ya-no-se-puede');
+  assert.equal((desenlaceDeEnvio(r, CAMPOS, { esCorreccion: true }) as { mensaje: string }).mensaje, COPY_FORMULARIOS.noSePuedeCorregirYa);
+});
+
+test('recuperación · corregir sobre una versión vieja (409 VERSION_CONFLICT): ofrece cargar la versión guardada, sin reenviar', async () => {
+  const r = await clienteQueResponde(409, cuerpoDeError('VERSION_CONFLICT')).rectificarRespuestaDeFormulario('token', 'respuesta', { expectedVersion: 'v1', reason: 'x', answers: [] }, 'clave-de-prueba-12');
+  assert.deepEqual(desenlaceDeEnvio(r, CAMPOS, { esCorreccion: true }), { tipo: 'version-vieja', mensaje: COPY_FORMULARIOS.respuestaCambioAntesDeCorregir, acciones: ['cargar', 'volver'] });
+  // Responder no lleva expectedVersion: un 409 de versión ahí no es este caso y lo decide falloDe.
+  assert.equal(desenlaceDeEnvio(r, CAMPOS, { esCorreccion: false }), null);
+});
+
+test('recuperación · editar después de un resultado incierto: 409 IDEMPOTENCY_KEY_REUSED quiere decir que el primer envío se guardó', async () => {
+  for (const esCorreccion of [false, true]) {
+    const cliente = clienteQueResponde(409, cuerpoDeError('IDEMPOTENCY_KEY_REUSED'));
+    const r = esCorreccion
+      ? await cliente.rectificarRespuestaDeFormulario('token', 'respuesta', { expectedVersion: 'v1', reason: 'x', answers: [] }, 'clave-de-prueba-13')
+      : await cliente.responderSolicitudDeFormulario('token', 'solicitud', { answers: [] }, 'clave-de-prueba-13');
+    assert.deepEqual(desenlaceDeEnvio(r, CAMPOS, { esCorreccion }), { tipo: 'envio-anterior-guardado', mensaje: COPY_FORMULARIOS.envioAnteriorGuardado, acciones: ['cargar', 'volver'] });
+  }
+});
+
+test('recuperación · lo validado en la 0.12.0 sigue igual: por campo, dato no aceptado; y red, 404 y servicio siguen en falloDe', async () => {
+  const porCampo = desenlaceDeEnvio(rechazo('FORM_RESPONSE_INVALID', CUERPO_422.error.details.issues), CAMPOS, { esCorreccion: false });
+  assert.equal(porCampo?.tipo, 'por-campo');
+  assert.equal(desenlaceDeEnvio(rechazo('FORM_RESPONSE_INVALID'), CAMPOS, { esCorreccion: true })?.tipo, 'dato-no-aceptado');
+  const otros: Resultado<unknown>[] = [
+    { ok: false, tipo: 'RED' },
+    rechazo('RESPUESTA_NO_RECONOCIDA'),
+    { ok: false, tipo: 'API', status: 404, codigo: 'RESOURCE_NOT_FOUND', issues: [] },
+    { ok: false, tipo: 'API', status: 500, codigo: 'INTERNAL_ERROR', issues: [] },
+    { ok: false, tipo: 'API', status: 503, codigo: 'DB_UNAVAILABLE', issues: [] },
+    { ok: true, datos: null },
+  ];
+  for (const r of otros) for (const esCorreccion of [false, true]) assert.equal(desenlaceDeEnvio(r, CAMPOS, { esCorreccion }), null, JSON.stringify(r));
+});
+
+test('recuperación · los mensajes nuevos no usan términos prohibidos ni dicen «servicio no disponible»', () => {
+  for (const t of [
+    COPY_FORMULARIOS.noSePuedeResponderYa,
+    COPY_FORMULARIOS.noSePuedeCorregirYa,
+    COPY_FORMULARIOS.respuestaCambioAntesDeCorregir,
+    COPY_FORMULARIOS.envioAnteriorGuardado,
+    COPY_FORMULARIOS.loGuardadoEstaArriba,
+    COPY_FORMULARIOS.borradorSinEnviar,
+    COPY_FORMULARIOS.sinRespuestaGuardada,
+  ]) {
+    assert.deepEqual(terminosProhibidosDeFormulariosEn(t), [], t);
+    assert.notEqual(t, COPY.noDisponible);
+  }
 });

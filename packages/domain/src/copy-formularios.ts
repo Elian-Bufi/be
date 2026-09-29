@@ -73,6 +73,22 @@ export const COPY_FORMULARIOS = {
   // DL-104: un rechazo por los datos no es una falla del servicio. Se dice que un dato no se aceptó y lo escrito queda.
   respuestaNoAceptada: 'No pudimos guardar: hay un dato que no se puede aceptar. Revisá lo que completaste y volvé a enviarlo.',
   numeroIlegible: 'Hay un número que no se entiende. Revisá el campo marcado.',
+  // Recuperación ante un envío que no se registró: cada caso dice qué pasó, que lo escrito sigue ahí y qué se puede hacer.
+  noSePuedeResponderYa:
+    'Esta solicitud ya no se puede responder: puede que ya tenga una respuesta, o que el vínculo o tus autorizaciones hayan cambiado. Lo que escribiste no se envió y sigue en los campos.',
+  noSePuedeCorregirYa: 'Esta respuesta no se puede corregir ahora. Lo que escribiste no se envió y sigue en los campos.',
+  respuestaCambioAntesDeCorregir:
+    'Tu respuesta cambió desde que abriste esta pantalla, por ejemplo porque la corregiste desde otro lado. Lo que escribiste no se envió y sigue en los campos. Cargá la versión guardada, revisala y, si todavía querés corregirla, volvé a enviar.',
+  envioAnteriorGuardado:
+    'Tu envío anterior sí se guardó, aunque en ese momento no pudimos confirmarlo. Lo que cambiaste después no se envió y sigue en los campos. Cargá lo guardado y, si querés cambiarlo, enviá una corrección.',
+  cargarLoGuardado: 'Cargar lo guardado',
+  volverAMisSolicitudes: 'Volver a Información',
+  loGuardadoEstaArriba: 'Cargamos lo guardado: está arriba, con su fecha. Lo que está en los campos es tu borrador y todavía no se envió.',
+  sinRespuestaGuardada:
+    'Esta solicitud no tiene una respuesta guardada y ahora no se puede responder: puede que haya cambiado el vínculo o tus autorizaciones. Lo que escribiste sigue en los campos.',
+  sePuedeResponderDeNuevo: 'Volvimos a consultar: esta solicitud se puede responder. Lo que escribiste sigue en los campos; revisalo y enviá cuando quieras.',
+  actualizarEstado: 'Volver a consultar',
+  borradorSinEnviar: 'Lo que está en los campos es tu borrador: todavía no se envió.',
 
   // ─── Rectificar ───────────────────────────────────────────────────────────────────────────────
   rectificar: 'Corregir mi respuesta',

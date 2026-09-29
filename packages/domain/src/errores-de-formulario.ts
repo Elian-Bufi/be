@@ -95,3 +95,41 @@ export function rechazoDeFormulario(r: Resultado<unknown>, campos: readonly Camp
   }
   return { tipo: 'por-campo', errores, resumen: COPY.resumenDeErrores(problemas.length), lineas };
 }
+
+/**
+ * Qué hacer ante el fallo de un envío de respuesta (API-FRM-07) o de corrección (API-FRM-08). Cada caso sale de lo que
+ * la API realmente devuelve, y ninguno se confunde con una falla del servicio:
+ * - **por campo** o **dato no aceptado** (`422 FORM_RESPONSE_INVALID`, DL-104): como `rechazoDeFormulario`;
+ * - **ya no se puede** (`422 FORM_REQUEST_NOT_RESPONDABLE` al responder; `422 FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED`
+ *   al corregir): ya tiene respuesta, o cambió el vínculo o una autorización. Se ofrece cargar lo guardado y volver;
+ * - **versión vieja** (`409 VERSION_CONFLICT` al corregir): la respuesta cambió desde que se abrió la pantalla. Se
+ *   ofrece cargar la versión guardada, sin reenviar nada: la persona revisa y decide;
+ * - **envío anterior guardado** (`409 IDEMPOTENCY_KEY_REUSED`): después de un resultado incierto, la persona cambió algo
+ *   y reenvió con la misma clave, y la API dice que esa clave ya tiene un envío **guardado** con otro contenido (solo
+ *   guarda éxitos). O sea, el primer envío llegó. Se ofrece cargarlo; lo cambiado no se envió.
+ * En todos, lo escrito no se envió y sigue en los campos. `null`: lo decide `falloDe` (red, 404, servicio).
+ */
+export type DesenlaceDeEnvio =
+  | RechazoDeFormulario
+  | { readonly tipo: 'ya-no-se-puede'; readonly sobre: 'respuesta' | 'correccion'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] }
+  | { readonly tipo: 'version-vieja'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] }
+  | { readonly tipo: 'envio-anterior-guardado'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] };
+
+export function desenlaceDeEnvio(r: Resultado<unknown>, campos: readonly CampoDePlantilla[], opciones: { readonly esCorreccion: boolean }): DesenlaceDeEnvio | null {
+  const rechazo = rechazoDeFormulario(r, campos);
+  if (rechazo) return rechazo;
+  if (r.ok || r.tipo !== 'API') return null;
+  switch (r.codigo) {
+    case 'FORM_REQUEST_NOT_RESPONDABLE':
+      return { tipo: 'ya-no-se-puede', sobre: 'respuesta', mensaje: COPY_FORMULARIOS.noSePuedeResponderYa, acciones: ['cargar', 'volver'] };
+    case 'FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED':
+      return { tipo: 'ya-no-se-puede', sobre: 'correccion', mensaje: COPY_FORMULARIOS.noSePuedeCorregirYa, acciones: ['cargar', 'volver'] };
+    case 'VERSION_CONFLICT':
+      // FRM-07 no declara 409 de versión: solo la corrección lleva expectedVersion.
+      return opciones.esCorreccion ? { tipo: 'version-vieja', mensaje: COPY_FORMULARIOS.respuestaCambioAntesDeCorregir, acciones: ['cargar', 'volver'] } : null;
+    case 'IDEMPOTENCY_KEY_REUSED':
+      return { tipo: 'envio-anterior-guardado', mensaje: COPY_FORMULARIOS.envioAnteriorGuardado, acciones: ['cargar', 'volver'] };
+    default:
+      return null;
+  }
+}
