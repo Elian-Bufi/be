@@ -16,8 +16,8 @@ import {
   COPY_FORMULARIOS,
   leerNumero,
   motivoDeNumeroIlegible,
+  desenlaceDeEnvio,
   numero,
-  rechazoDeFormulario,
   valorDeEleccionSiONo,
   type CampoDePlantilla,
   type RespuestaDeFormulario,
@@ -100,39 +100,66 @@ interface Detalle {
 
 type CargaDeDetalle = { tipo: 'cargando' } | { tipo: 'listo'; detalle: Detalle; plantilla: VersionDePlantilla } | { tipo: 'error'; sinConexion: boolean };
 
-export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id: string; salir: (m: Salida) => void }) {
+export function PantallaDeMiSolicitud({ token, id, salir, volver }: { token: string; id: string; salir: (m: Salida) => void; volver: () => void }) {
   const sesionPerdida = useSesionPerdida(salir);
   const [carga, setCarga] = useState<CargaDeDetalle>({ tipo: 'cargando' });
   const [valores, setValores] = useState<Record<string, string>>({});
   /** Avisos por campo: un número escrito que no se entiende se marca ahí, no se descarta en silencio (B10-10:164-165). */
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [motivo, setMotivo] = useState('');
-  const [aviso, setAviso] = useState<{ tipo: 'error' | 'exito'; texto: string } | null>(null);
+  const [aviso, setAviso] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string } | null>(null);
   /**
    * Por qué no se pudo enviar, junto al botón: el título se anuncia al lector de pantalla y, si el rechazo es por
    * campos (DL-104), cada línea nombra el campo por su rótulo. `incierto` convierte el botón en «Reintentar».
    */
-  const [problema, setProblema] = useState<{ titulo: string; lineas: readonly string[]; incierto: boolean } | null>(null);
+  const [problema, setProblema] = useState<{ titulo: string; lineas: readonly string[]; incierto: boolean; acciones?: readonly ('cargar' | 'volver')[] } | null>(null);
+  /**
+   * Lo que está en los campos es el borrador de la persona; lo guardado se ve arriba, en la historia. Cuando un envío no
+   * se registró (versión vieja, ya no se puede, envío anterior guardado), el borrador se conserva y se dice que no se
+   * envió. Cargar lo guardado **no** lo pisa ni lo reenvía: la persona revisa y decide.
+   */
+  const [borradorSinEnviar, setBorradorSinEnviar] = useState(false);
   /** Cada envío vuelve a montar el aviso, así se anuncia aunque el texto sea el mismo que en el intento anterior. */
   const [envios, setEnvios] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const clave = useClaveDeIntento();
 
-  const cargar = useCallback(async () => {
+  /** Lee la solicitud (FRM-05) y la plantilla. Devuelve el detalle, o `null` si no se pudo (la pantalla ya lo muestra). */
+  const cargar = useCallback(async (): Promise<Detalle | null> => {
     setCarga({ tipo: 'cargando' });
     const r = await api.consultarSolicitudDeFormulario(token, id);
-    if (sesionPerdida(r)) return;
-    if (!r.ok) return setCarga({ tipo: 'error', sinConexion: r.tipo === 'RED' });
+    if (sesionPerdida(r)) return null;
+    if (!r.ok) {
+      setCarga({ tipo: 'error', sinConexion: r.tipo === 'RED' });
+      return null;
+    }
     const { templateId, templateVersionId } = r.datos.data.request;
     const v = await api.consultarVersionDePlantilla(token, templateId, templateVersionId);
-    if (sesionPerdida(v)) return;
-    if (!v.ok) return setCarga({ tipo: 'error', sinConexion: v.tipo === 'RED' });
+    if (sesionPerdida(v)) return null;
+    if (!v.ok) {
+      setCarga({ tipo: 'error', sinConexion: v.tipo === 'RED' });
+      return null;
+    }
     setCarga({ tipo: 'listo', detalle: r.datos.data, plantilla: v.datos.data });
+    return r.datos.data;
   }, [token, id, sesionPerdida]);
 
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  /** «Cargar lo guardado»: vuelve a leer la solicitud (FRM-05) y la plantilla, sin tocar el borrador ni reenviar nada. */
+  async function cargarLoGuardado() {
+    setProblema(null);
+    const detalle = await cargar();
+    // Si la lectura falló, la pantalla de error ya lo dice y el borrador sigue en memoria para el reintento.
+    if (!detalle) return;
+    setBorradorSinEnviar(true);
+    // Sin respuesta guardada (por ejemplo, el vínculo se pausó): no hay nada «arriba», y responder ahora vuelve a fallar.
+    // Se dice eso y se ofrece volver, en lugar de dejar un envío que va a ser rechazado de nuevo.
+    if (!detalle.response) return setProblema({ titulo: COPY_FORMULARIOS.sinRespuestaGuardada, lineas: [], incierto: false, acciones: ['volver'] });
+    setAviso({ tipo: 'info', texto: COPY_FORMULARIOS.loGuardadoEstaArriba });
+  }
 
   if (carga.tipo === 'cargando') return <Cargando />;
   if (carga.tipo === 'error') return <ErrorConReintento sinConexion={carga.sinConexion} onReintentar={cargar} />;
@@ -188,17 +215,24 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
     if (!r.ok) {
       // DL-104: un rechazo por los datos se marca en cada campo, con los valores que admite, y lo escrito queda. No es una
       // falla del servicio: sin detalle reconocible se dice que un dato no se aceptó.
-      const rechazo = rechazoDeFormulario(r, pedidos);
-      if (rechazo?.tipo === 'por-campo') {
-        setErrores(rechazo.errores);
-        return setProblema({ titulo: rechazo.resumen, lineas: rechazo.lineas, incierto: false });
+      const desenlace = desenlaceDeEnvio(r, pedidos, { esCorreccion });
+      if (desenlace?.tipo === 'por-campo') {
+        setErrores(desenlace.errores);
+        return setProblema({ titulo: desenlace.resumen, lineas: desenlace.lineas, incierto: false });
       }
-      if (rechazo) return setProblema({ titulo: rechazo.mensaje, lineas: [], incierto: false });
+      if (desenlace?.tipo === 'dato-no-aceptado') return setProblema({ titulo: desenlace.mensaje, lineas: [], incierto: false });
+      // Ya no se puede, versión vieja o envío anterior guardado: nada se registró con este envío. Se ofrece cargar lo
+      // guardado y volver; el borrador queda y no se reenvía solo. La clave ya se renovó (resultado definitivo).
+      if (desenlace) {
+        setBorradorSinEnviar(true);
+        return setProblema({ titulo: desenlace.mensaje, lineas: [], incierto: false, acciones: desenlace.acciones });
+      }
       // Red, servicio, conflicto o no disponible: `falloDe`. Si el resultado es incierto, se reintenta con la misma clave.
       const fallo = falloDe(r);
       return setProblema({ titulo: fallo.mensaje, lineas: [], incierto: fallo.tipo === 'incierto' });
     }
     setAviso({ tipo: 'exito', texto: esCorreccion ? COPY_FORMULARIOS.rectificacionEnviada : COPY_FORMULARIOS.respuestaEnviada });
+    setBorradorSinEnviar(false);
     setValores({});
     setMotivo('');
     void cargar();
@@ -219,6 +253,7 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
       {response ? (
         <Seccion titulo={COPY_FORMULARIOS.respuestaOriginal}>
           <Parrafo tenue>{COPY_FORMULARIOS.rectificarConservaHistoria}</Parrafo>
+          {response.effectiveView.kind === 'ORIGINAL' ? <Insignia texto={COPY_FORMULARIOS.vigente} positiva /> : null}
           {response.original.answers.map((a) => (
             <Parrafo key={a.fieldCode}>
               {etiqueta(a.fieldCode)}: {valorRespondido(a.value)}
@@ -229,6 +264,9 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
               <Parrafo tenue>
                 {COPY_FORMULARIOS.correccion} · {fecha(c.recordedAt)} · {c.reason}
               </Parrafo>
+              {response.effectiveView.kind === 'RECTIFIED' && response.effectiveView.rectificationId === c.rectificationId ? (
+                <Insignia texto={COPY_FORMULARIOS.vigente} positiva />
+              ) : null}
               {c.answers.map((a) => (
                 <Parrafo key={a.fieldCode}>
                   {etiqueta(a.fieldCode)}: {valorRespondido(a.value)}
@@ -241,6 +279,7 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
 
       <Seccion titulo={esCorreccion ? COPY_FORMULARIOS.rectificar : COPY_FORMULARIOS.responder}>
         <Parrafo tenue>{COPY_FORMULARIOS.loQueRespondesEsTuyo}</Parrafo>
+        {borradorSinEnviar ? <Parrafo>{COPY_FORMULARIOS.borradorSinEnviar}</Parrafo> : null}
         {pedidos.map((c) => {
           const rotulo = `${c.label}${request.requiredFieldCodes.includes(c.fieldCode) ? '' : ` (${COPY_FORMULARIOS.opcional})`}`;
           // Sí/No se elige entre dos opciones: escribirlo obligaría a interpretar el texto, y lo mal interpretado
@@ -277,6 +316,8 @@ export function PantallaDeMiSolicitud({ token, id, salir }: { token: string; id:
             {problema.lineas.map((l) => (
               <Parrafo key={l}>{l}</Parrafo>
             ))}
+            {problema.acciones?.includes('cargar') ? <Boton texto={COPY_FORMULARIOS.cargarLoGuardado} tipo="secundario" onPress={() => void cargarLoGuardado()} /> : null}
+            {problema.acciones?.includes('volver') ? <Boton texto={COPY_FORMULARIOS.volverAMisSolicitudes} tipo="enlace" onPress={volver} /> : null}
           </Aviso>
         ) : null}
         <Boton
