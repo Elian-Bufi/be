@@ -81,6 +81,8 @@ export const COPY_FORMULARIOS = {
   loGuardadoEstaArriba: 'Cargamos lo guardado: está arriba, con su fecha. Lo que está en los campos es tu borrador y todavía no se envió.',
   sinRespuestaGuardada:
     'Esta solicitud no tiene una respuesta guardada y ahora no se puede responder: puede que haya cambiado el vínculo o tus autorizaciones. Lo que escribiste sigue en los campos.',
+  sePuedeResponderDeNuevo: 'Volvimos a consultar: esta solicitud se puede responder. Lo que escribiste sigue en los campos; revisalo y enviá cuando quieras.',
+  actualizarEstado: 'Volver a consultar',
   borradorSinEnviar: 'Lo que está en los campos es tu borrador: todavía no se envió.',
 
   // ─── Rectificar ───────────────────────────────────────────────────────────────────────────────

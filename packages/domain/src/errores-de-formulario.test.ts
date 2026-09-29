@@ -170,7 +170,7 @@ const cuerpoDeError = (code: string) => ({ error: { code, message: 'x' } });
 test('recuperación · responder: FORM_REQUEST_NOT_RESPONDABLE dice que ya no se puede, que lo escrito sigue, y ofrece cargar y volver', async () => {
   const r = await clienteQueResponde(422, cuerpoDeError('FORM_REQUEST_NOT_RESPONDABLE')).responderSolicitudDeFormulario('token', 'solicitud', { answers: [] }, 'clave-de-prueba-10');
   const d = desenlaceDeEnvio(r, CAMPOS, { esCorreccion: false });
-  assert.deepEqual(d, { tipo: 'ya-no-se-puede', mensaje: COPY_FORMULARIOS.noSePuedeResponderYa, acciones: ['cargar', 'volver'] });
+  assert.deepEqual(d, { tipo: 'ya-no-se-puede', sobre: 'respuesta', mensaje: COPY_FORMULARIOS.noSePuedeResponderYa, acciones: ['cargar', 'volver'] });
 });
 
 test('recuperación · corregir: FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED dice que no se puede corregir ahora', async () => {

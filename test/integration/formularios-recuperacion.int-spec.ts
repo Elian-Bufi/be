@@ -10,7 +10,8 @@
  * - el reintento con el mismo contenido devuelve lo guardado, sin duplicar.
  */
 import type { INestApplication } from '@nestjs/common';
-import { desenlaceDeEnvio, VersionDePlantillaResponseSchema, type CampoDePlantilla, type Resultado } from '@be/domain';
+import { crearClienteBe, desenlaceDeEnvio, VersionDePlantillaResponseSchema, type CampoDePlantilla, type Resultado } from '@be/domain';
+import type { AddressInfo } from 'node:net';
 import { PrismaClient } from '@prisma/client';
 import type { Response } from 'supertest';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
@@ -151,6 +152,67 @@ describe('Recuperación · edición después de un resultado incierto', () => {
     const clave = claveDeIdempotencia();
     await ase.post(e.responder, clave).send(respuestas(9)).expect(422); // fuera de rango: la API no guarda el error
     await ase.post(e.responder, clave).send(respuestas(4)).expect(201);
+    expect(await cuantasRespuestas(e)).toBe(1);
+  });
+});
+
+/**
+ * Reproducción controlada de los dos escenarios de un resultado incierto, con **el mismo cliente HTTP que usa la APK**
+ * (`crearClienteBe`, de @be/domain) contra la API real. Un `fetch` envuelto hace de red:
+ * - «nunca llegó»: falla antes de enviar (como sin señal o en modo avión);
+ * - «llegó, pero se perdió la respuesta»: envía de verdad, el servidor guarda, y el `fetch` descarta la respuesta.
+ * En los dos casos el cliente devuelve `RED` (resultado incierto) y la APK conserva la clave. Lo que cambia es qué
+ * pasa al reenviar con la misma clave después de editar.
+ */
+describe('Recuperación · resultado incierto, reproducción controlada con el cliente de la APK', () => {
+  type Red = 'normal' | 'nunca-llega' | 'se-pierde-la-respuesta';
+  function clienteConRed(token: string) {
+    let red: Red = 'normal';
+    const puerto = (app.getHttpServer().address() as AddressInfo).port;
+    const cliente = crearClienteBe({
+      baseUrl: `http://127.0.0.1:${puerto}/api/v1`,
+      superficie: 'APK',
+      fetch: (async (url: string, init: RequestInit) => {
+        if (red === 'nunca-llega') throw new TypeError('sin conexión');
+        const respuesta = await fetch(url, init);
+        if (red === 'se-pierde-la-respuesta') {
+          await respuesta.text();
+          throw new TypeError('se cortó la conexión antes de recibir la respuesta');
+        }
+        return respuesta;
+      }) as unknown as typeof fetch,
+    });
+    return { cliente, poner: (r: Red) => (red = r), token };
+  }
+
+  it('nunca llegó: RED; editado y reenviado con la misma clave, se procesa una vez y no aparece «envío anterior guardado»', async () => {
+    const e = await escenario();
+    const { cliente, poner } = clienteConRed(e.c.ase.token);
+    const clave = claveDeIdempotencia();
+    poner('nunca-llega');
+    const primero = await cliente.responderSolicitudDeFormulario(e.c.ase.token, e.formRequestId, respuestas(3), clave);
+    expect(primero).toEqual({ ok: false, tipo: 'RED' });
+    expect(await cuantasRespuestas(e)).toBe(0);
+    poner('normal');
+    const editado = await cliente.responderSolicitudDeFormulario(e.c.ase.token, e.formRequestId, respuestas(4), clave);
+    expect(editado.ok).toBe(true);
+    expect(desenlaceDeEnvio(editado, campos, { esCorreccion: false })).toBeNull();
+    expect(await cuantasRespuestas(e)).toBe(1);
+  });
+
+  it('llegó y se perdió la respuesta: RED; sin editar, el reintento devuelve lo guardado; editado, 409 → «envío anterior guardado»; una sola respuesta', async () => {
+    const e = await escenario();
+    const { cliente, poner } = clienteConRed(e.c.ase.token);
+    const clave = claveDeIdempotencia();
+    poner('se-pierde-la-respuesta');
+    const primero = await cliente.responderSolicitudDeFormulario(e.c.ase.token, e.formRequestId, respuestas(3), clave);
+    expect(primero).toEqual({ ok: false, tipo: 'RED' });
+    expect(await cuantasRespuestas(e)).toBe(1); // el servidor sí guardó
+    poner('normal');
+    const editado = await cliente.responderSolicitudDeFormulario(e.c.ase.token, e.formRequestId, respuestas(4), clave);
+    expect(desenlaceDeEnvio(editado, campos, { esCorreccion: false })?.tipo).toBe('envio-anterior-guardado');
+    const reintento = await cliente.responderSolicitudDeFormulario(e.c.ase.token, e.formRequestId, respuestas(3), clave);
+    expect(reintento.ok).toBe(true);
     expect(await cuantasRespuestas(e)).toBe(1);
   });
 });

@@ -37,6 +37,7 @@ export * from './formularios';
 export * from './contratos-formularios';
 export * from './copy-formularios';
 export * from './errores-de-formulario';
+export * from './recuperacion-de-formulario';
 export * from './formato-numeros';
 export * from './contratos-procedencia-externa';
 export * from './contratos-integraciones';

@@ -111,7 +111,7 @@ export function rechazoDeFormulario(r: Resultado<unknown>, campos: readonly Camp
  */
 export type DesenlaceDeEnvio =
   | RechazoDeFormulario
-  | { readonly tipo: 'ya-no-se-puede'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] }
+  | { readonly tipo: 'ya-no-se-puede'; readonly sobre: 'respuesta' | 'correccion'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] }
   | { readonly tipo: 'version-vieja'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] }
   | { readonly tipo: 'envio-anterior-guardado'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] };
 
@@ -121,9 +121,9 @@ export function desenlaceDeEnvio(r: Resultado<unknown>, campos: readonly CampoDe
   if (r.ok || r.tipo !== 'API') return null;
   switch (r.codigo) {
     case 'FORM_REQUEST_NOT_RESPONDABLE':
-      return { tipo: 'ya-no-se-puede', mensaje: COPY_FORMULARIOS.noSePuedeResponderYa, acciones: ['cargar', 'volver'] };
+      return { tipo: 'ya-no-se-puede', sobre: 'respuesta', mensaje: COPY_FORMULARIOS.noSePuedeResponderYa, acciones: ['cargar', 'volver'] };
     case 'FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED':
-      return { tipo: 'ya-no-se-puede', mensaje: COPY_FORMULARIOS.noSePuedeCorregirYa, acciones: ['cargar', 'volver'] };
+      return { tipo: 'ya-no-se-puede', sobre: 'correccion', mensaje: COPY_FORMULARIOS.noSePuedeCorregirYa, acciones: ['cargar', 'volver'] };
     case 'VERSION_CONFLICT':
       // FRM-07 no declara 409 de versión: solo la corrección lleva expectedVersion.
       return opciones.esCorreccion ? { tipo: 'version-vieja', mensaje: COPY_FORMULARIOS.respuestaCambioAntesDeCorregir, acciones: ['cargar', 'volver'] } : null;
