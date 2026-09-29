@@ -110,6 +110,7 @@
 | DL-103 | PF-01/02 · 2026-09-27 | Plan Funcional §12.3 · DEC-04 | Alcance del primer incremento de contexto | **DECIDIDA** 2026-09-27 · solo entrenamiento, equipamiento en texto |
 | DL-104 | PF-01/02 · 2026-09-28 | DL-101 · 09v16.1 §22.7/§22.8 · auditoría del PR #100 | Un valor fuera de rango en un formulario no le dice a la persona qué corregir | EN CURSO (opción A integrada y publicada en la APK 0.12.0; falta la validación de Dirección en el teléfono) |
 | DL-105 | PF-03 · 2026-09-28 | 04 RF-040/042/045 · 05 UC-P17 · ficha PF-03 (PF03-D-1) | La APK no muestra lo que el profesional planificó, y la web no lo compara con lo registrado | **DECIDIDA** 2026-09-28 · incremento 1 «Lo planificado, visible y comparable», con el contrato actual |
+| DL-106 | PF-03 · 2026-09-29 | 06 REG-06-131/132 · 09v10 TRN-15 a 20 · orden de Dirección del 2026-09-29 (comparación visual) | Una serie planificada que falta en un registro por serie no se puede declarar como no realizada | ABIERTA · la comparación la muestra como «sin dato» (provisorio, del lado que no inventa) |
 
 ---
 
@@ -2188,4 +2189,23 @@ Se conservan las instantáneas históricas, la navegación corregida (DL-096) y 
 **Entrega prevista.** Dos PR de código: dominio y website; APK. La APK sale en una única publicación junto con DL-104, que se construye después de auditar los dos PR.
 
 **Estado de la implementación (2026-09-28).** Integrada: #106 (`05eba13`, dominio y website, desplegado en `test`) y #107 (`2cf5091`, APK). Publicada en la APK **0.12.0** (`be-apk-0.12.0`, commit `33b533d`). La decisión está tomada; **la comprobación nativa queda pendiente** hasta la validación de Dirección en el teléfono (`EVIDENCIA/PUBLICACION-0.12.0/LEEME.md`). Hallazgo no bloqueante registrado ahí: las series pendientes se calculan por cantidad y no por índice.
+
+## DL-106 — Una serie que falta no se puede declarar como no realizada
+
+**Prioridad:** media · **Documento:** 06 REG-06-131/132 (condición de la sesión) · 09v10 TRN-15 a 20 (registro por serie y corrección) · orden de Dirección del 2026-09-29 (comparación visual entre lo planificado y lo registrado) · **Estado:** ABIERTA
+
+**Qué pasa hoy.**
+- La única declaración de omisión que existe es la de la sesión entera: «No pude realizarla» (`NOT_COMPLETED`).
+- En un registro por serie, una serie planificada que no está registrada puede significar dos cosas distintas: que la persona no la hizo, o que no la anotó. El contrato no permite decir cuál.
+- La comparación visual (`EVIDENCIA/PF-03/comparacion/LEEME.md`) sigue la regla de Dirección: la muestra como «Sin dato: la serie no está en el registro». Nunca la muestra como «no realizada» ni como cero.
+- Tampoco se agregó un flujo de declaración: la orden lo excluye.
+
+**Opciones.**
+- **A. Mantenerlo así.** La ausencia de una serie es siempre «sin dato», y solo la sesión entera se declara no realizada. No cambia el contrato, la API ni la APK.
+- **B. Extender el registro con una declaración por serie** («no la hice», con un motivo opcional), en el borrador, la confirmación y la corrección (TRN-16 a 20). Así la comparación podría mostrar «no realizada, declarada» en esa serie. Requiere:
+  - contrato, API y migración;
+  - una pantalla nueva en la APK y una APK nueva;
+  - resolver la compatibilidad con las APK publicadas, cuyos esquemas estrictos rechazarían una propiedad nueva en la ejecución (PF03-D-5).
+
+**Recomendación del ejecutor.** A para la entrega. B, si Dirección la quiere, como un incremento propio de PF-03, con su diseño de compatibilidad.
 
