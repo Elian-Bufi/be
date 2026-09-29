@@ -52,6 +52,11 @@
   --figura-trazo: #2e8fff;
   --punto: #17459a;
   --punto-halo: #c4f0ff;
+  /* Planificado y registrado (gráficos del espacio profesional): además del color, lo planificado va rayado o con
+     línea discontinua y cuadrados, y lo registrado lleno o con línea continua y círculos (B10-10 §11). */
+  --grafico-planificado: #1f5bc4;
+  --grafico-registrado: #c2410c;
+  --grafico-hueco: #6b7a90;
   /* Sombras y velo: no son texto ni bordes de control */
   --sombra-suave: 0 1px 2px rgb(4 33 63 / 6%), 0 1px 1px rgb(4 33 63 / 4%);
   --sombra: 0 20px 50px rgb(4 33 63 / 30%);

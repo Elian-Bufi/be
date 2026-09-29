@@ -10,13 +10,19 @@
  * - Sin «disciplinado», «mal rendimiento» ni porcentajes (B10-06:963-966).
  * - Filtros por período, versión del plan y ejercicio (B10-06:956-961). El período vive fuera del estado de lectura.
  * - Una carga que no se registró dice eso, «carga no registrada»: no es «sin carga» ni peso corporal (06:5675).
+ * - Planificado y registrado (amplía DL-105): cada ejecución compara sus series con las de la prescripción que rigió, y
+ *   un ejercicio elegido muestra su evolución en el período (`comparacion.tsx`). El ejercicio se elige por identidad del
+ *   catálogo, no por nombre: dos ejercicios con el mismo nombre no se mezclan.
  */
 import {
   cantidad,
+  COPY_COMPARACION,
   COPY_ENTRENAMIENTO,
+  ejerciciosComparables,
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
   numero,
+  observacionesDelEjercicio,
   registroVigente,
   repeticionesPlanificadas,
   type ContextoDeRevisionDeEntrenamientoResponse,
@@ -24,7 +30,9 @@ import {
   type Prescripcion,
   type RegistroDeEjecucion,
 } from '@be/domain';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Cargando } from '../../../../components/estados';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
@@ -32,6 +40,11 @@ import { LineasDePrescripcion } from './plan';
 import { FiltroDePeriodo, type Periodo } from '../periodo';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
+
+// Los gráficos (Recharts) se cargan cuando hacen falta: al elegir un ejercicio o al abrir una ejecución. Así la vista
+// de Ejecuciones no paga su peso de entrada.
+const EvolucionDelEjercicio = dynamic(() => import('./comparacion').then((m) => m.EvolucionDelEjercicio), { ssr: false, loading: () => <Cargando /> });
+const ComparacionPorSerie = dynamic(() => import('./comparacion').then((m) => m.ComparacionPorSerie), { ssr: false, loading: () => <Cargando /> });
 
 export function VistaDeEjecuciones() {
   const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
@@ -51,23 +64,21 @@ export function VistaDeEjecuciones() {
     void cargar();
   }, [cargar]);
 
-  // Los ejercicios que aparecen en el período, planificados o ejecutados: el filtro no ofrece lo que no hay.
-  const ejercicios = useMemo(() => {
-    if (!r?.ok) return [];
-    const nombres = new Set<string>();
-    for (const x of r.datos.registeredExecutions) {
-      for (const p of x.plannedSession.prescriptions) nombres.add(p.exerciseName);
-      for (const e of registroVigente(x).exercises) nombres.add(e.performedExerciseName);
-    }
-    return [...nombres].sort((a, b) => a.localeCompare(b, 'es'));
-  }, [r]);
-  const visibles = r?.ok
-    ? r.datos.registeredExecutions.filter(
-        (x) =>
-          (!version || x.planId === version) &&
-          (!ejercicio || x.plannedSession.prescriptions.some((p) => p.exerciseName === ejercicio) || registroVigente(x).exercises.some((e) => e.performedExerciseName === ejercicio)),
-      )
-    : [];
+  // Los ejercicios que aparecen en el período, planificados o realizados por sustitución, por su identidad en el
+  // catálogo: el filtro no ofrece lo que no hay, y dos ejercicios con el mismo nombre no se mezclan.
+  const ejecuciones = useMemo(() => (r?.ok ? r.datos.registeredExecutions : []), [r]);
+  const ejercicios = useMemo(() => ejerciciosComparables(ejecuciones), [ejecuciones]);
+  const deLaVersion = useMemo(() => ejecuciones.filter((x) => !version || x.planId === version), [ejecuciones, version]);
+  const conElEjercicio = useMemo(
+    () => (ejercicio ? new Set(observacionesDelEjercicio(deLaVersion, ejercicio).map((o) => o.comparacion.executionId)) : null),
+    [deLaVersion, ejercicio],
+  );
+  const visibles = deLaVersion.filter((x) => !conElEjercicio || conElEjercicio.has(x.executionId));
+  const elegido = ejercicios.find((e) => e.clave === ejercicio);
+  const versiones = useMemo(() => new Map((r?.ok ? r.datos.activePlanVersions : []).map((v) => [v.planId, fecha(v.activatedAt as string)])), [r]);
+  /** La ejecución que se pidió abrir desde la evolución: se despliega, muestra la prescripción del punto y recibe el foco. */
+  const [pedido, setPedido] = useState<{ executionId: string; prescriptionId: string; vez: number } | null>(null);
+  const abrir = useCallback((executionId: string, prescriptionId: string) => setPedido((p) => ({ executionId, prescriptionId, vez: (p?.vez ?? 0) + 1 })), []);
 
   return (
     <div className="secciones">
@@ -91,9 +102,9 @@ export function VistaDeEjecuciones() {
               <label htmlFor="trn-filtro-ejercicio">Ejercicio</label>
               <select id="trn-filtro-ejercicio" value={ejercicio} onChange={(e) => setEjercicio(e.target.value)}>
                 <option value="">Todos</option>
-                {ejercicios.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
+                {ejercicios.map((e) => (
+                  <option key={e.clave} value={e.clave}>
+                    {nombreParaElegir(e, ejercicios)}
                   </option>
                 ))}
               </select>
@@ -103,13 +114,36 @@ export function VistaDeEjecuciones() {
             Período: {dia(`${r.datos.period.start}T12:00:00Z`)} a {dia(`${r.datos.period.end}T12:00:00Z`)}
           </p>
 
+          <section className="seccion" aria-labelledby="titulo-evolucion">
+            <h2 id="titulo-evolucion">{COPY_COMPARACION.titulo}</h2>
+            <p className="nota">{COPY_COMPARACION.soloRegistradas}</p>
+            {ejercicios.some((e) => e.homonimo) ? <p className="nota">Hay ejercicios distintos con el mismo nombre: se listan por separado.</p> : null}
+            {!elegido ? (
+              <p>{r.datos.registeredExecutions.length === 0 ? COPY_ENTRENAMIENTO.sinEjecuciones : COPY_COMPARACION.elegiUnEjercicio}</p>
+            ) : (
+              <>
+                <h3>
+                  {COPY_COMPARACION.evolucion}: {nombreParaElegir(elegido, ejercicios)}
+                </h3>
+                <EvolucionDelEjercicio
+                  key={`${elegido.clave}|${version}`}
+                  ejecuciones={deLaVersion}
+                  clave={elegido.clave}
+                  nombre={nombreParaElegir(elegido, ejercicios)}
+                  versiones={versiones}
+                  onAbrir={abrir}
+                />
+              </>
+            )}
+          </section>
+
           <section className="seccion" aria-labelledby="titulo-ejecuciones">
             <h2 id="titulo-ejecuciones">Sesiones registradas</h2>
             {r.datos.registeredExecutions.length === 0 ? <p>{COPY_ENTRENAMIENTO.sinEjecuciones}</p> : null}
             {r.datos.registeredExecutions.length > 0 && visibles.length === 0 ? <p>Ninguna sesión registrada del período coincide con el filtro.</p> : null}
             <ul className="lista">
               {visibles.map((x) => (
-                <DetalleDeEjecucion key={x.executionId} ejecucion={x} />
+                <DetalleDeEjecucion key={x.executionId} ejecucion={x} pedido={pedido?.executionId === x.executionId ? pedido : null} />
               ))}
             </ul>
           </section>
@@ -173,16 +207,41 @@ export function Registro({ registro, planificado = [] }: { registro: RegistroDeE
   );
 }
 
-function DetalleDeEjecucion({ ejecucion: x }: { ejecucion: EjecucionDeEntrenamiento }) {
+/** Cómo se ofrece un ejercicio para elegir: su nombre y, si otro ejercicio distinto se llama igual, cuál de ellos es. */
+function nombreParaElegir(e: { clave: string; nombre: string; homonimo: boolean }, todos: readonly { clave: string; nombre: string }[]): string {
+  if (!e.homonimo) return e.nombre;
+  const iguales = todos.filter((o) => o.nombre === e.nombre);
+  return `${e.nombre} (${iguales.findIndex((o) => o.clave === e.clave) + 1} de ${iguales.length} con este nombre)`;
+}
+
+function DetalleDeEjecucion({ ejecucion: x, pedido }: { ejecucion: EjecucionDeEntrenamiento; pedido: { prescriptionId: string; vez: number } | null }) {
   const vigente = x.effectiveView.kind === 'CORRECTED' ? x.corrections.find((c) => c.correctionId === (x.effectiveView as { correctionId: string }).correctionId) : null;
   const rige = registroVigente(x);
+  const [abierta, setAbierta] = useState(false);
+  const resumen = useRef<HTMLElement>(null);
+  // Abrir desde un punto de la evolución: se despliega, se ve la prescripción de ese punto y el foco llega acá.
+  useEffect(() => {
+    if (!pedido) return;
+    setAbierta(true);
+    requestAnimationFrame(() => {
+      resumen.current?.scrollIntoView({ block: 'start' });
+      resumen.current?.focus();
+    });
+  }, [pedido]);
   return (
-    <li className="lista__item">
+    <li className="lista__item" id={`ejecucion-${x.executionId}`}>
       <p className="lista__titulo">
         {x.plannedSession.label} · {dia(`${x.date}T12:00:00Z`)} · {etiquetaDeCondicionRegistrada(rige)}
       </p>
-      <details>
-        <summary>Ver detalle</summary>
+      <details open={abierta} onToggle={(e) => setAbierta((e.currentTarget as HTMLDetailsElement).open)}>
+        <summary ref={resumen}>Ver detalle</summary>
+        {/* Se dibuja solo abierta: un gráfico dentro de un bloque cerrado no tiene medidas. */}
+        {abierta ? (
+          <>
+            <h4>{COPY_COMPARACION.porSerie}</h4>
+            <ComparacionPorSerie key={pedido ? `${pedido.prescriptionId}-${pedido.vez}` : 'inicial'} ejecucion={x} prescriptionId={pedido?.prescriptionId} />
+          </>
+        ) : null}
         <h4>{COPY_ENTRENAMIENTO.planificado}</h4>
         {/* La prescripción de la versión que rigió esta sesión (su instantánea), completa: no la de la versión vigente hoy. */}
         {x.plannedSession.instructions ? (
