@@ -39,13 +39,13 @@ Toda la lógica está en el dominio (`packages/domain/src/comparacion-de-entrena
 |---|---|
 | Unidad de observación de la evolución | **Una prescripción de una ejecución registrada** en la que aparece el ejercicio. Dos ejecuciones el mismo día son dos puntos («17/9 (1)» y «17/9 (2)»; «1 de 2 del día» en la tabla). El eje horizontal ordena las sesiones: no es proporcional al tiempo, y se dice |
 | Series | Se compara la serie del **número elegido**. Nunca se promedian, suman ni se toma la máxima |
-| Emparejamiento | Por **número real** (`setIndex`). Un número planificado sin registro queda **sin dato**. Uno registrado que la prescripción no tiene es **adicional**, sin prescripción inventada. No se renumera |
+| Emparejamiento | Por **número real** (`setIndex`). Un número planificado sin registro queda **sin dato**. Uno registrado que la prescripción no tiene es **adicional**, sin prescripción inventada. No se renumera. En la evolución, una sesión que no tiene la serie elegida ni planificada ni registrada dice «La prescripción no tiene esta serie, y no se registró»: no es adicional ni «no realizada» |
 | Prescripción histórica | Cada ejecución se compara con la **instantánea de la versión que rigió** (REG-06-105), no con la vigente. El 3 × 8 viejo no se compara con la pirámide nueva |
 | Rangos | «6-8» se dibuja como franja y se compara como rango: «dentro del rango», «−1 del mínimo», «+2 del máximo». Nunca se convierte en 7 |
-| Carga | La **carga sugerida** es de la prescripción y se marca «(sugerida)»: no es una obligación. El **%RM no se convierte a kg**: no hay base registrada. **kg y lb son variables separadas**: una sesión en la otra unidad queda «otra unidad», sin convertir |
+| Carga | La **carga sugerida** es de la prescripción y se marca «(sugerida)»: no es una obligación, y la diferencia se dice **respecto de la sugerida** («5 kg menos que la carga sugerida», «−5 kg sug.» en el eje). El **%RM no se convierte a kg**: no hay base registrada. **kg y lb son variables separadas**: una sesión en la otra unidad queda «otra unidad», sin convertir |
 | RIR | El planificado es el objetivo de la prescripción (rige para todas sus series), y se dice |
 | Correcciones | Rige el **registro vigente** (`registroVigente`). La serie cambiada se marca «Corregida» y el valor original queda a la vista. Una vista vigente no resoluble no se grafica, y se dice |
-| Identidad | Por `exerciseId` del catálogo, nunca por el nombre: dos ejercicios con el mismo nombre se listan por separado. El realizado en una sustitución se identifica por su versión. En la evolución del planificado se ve «se registró otro ejercicio». En la del realizado, «se planificó otro ejercicio». Nunca se calcula la diferencia entre ejercicios distintos |
+| Identidad | Por `exerciseId` del catálogo, nunca por el nombre: dos ejercicios con el mismo nombre se listan por separado. El realizado en una sustitución se identifica por su versión, con todo el período como referencia, aunque se filtre por versión del plan. Otra versión del mismo ejercicio no se toma como otro ejercicio. En la evolución del planificado se ve «se registró otro ejercicio». En la del realizado, «se planificó otro ejercicio». Nunca se calcula la diferencia entre ejercicios distintos |
 | Líneas | Lo registrado se une solo entre sesiones seguidas **con valor**. Lo planificado se une solo entre ocurrencias de **la misma prescripción de la misma versión**: se corta cuando cambia la versión o la sesión. Un rango es franja, no línea |
 | Datos que faltan | Ver la tabla siguiente |
 
@@ -54,7 +54,7 @@ Toda la lógica está en el dominio (`packages/domain/src/comparacion-de-entrena
 | Caso | Cómo se muestra |
 |---|---|
 | Registro confirmado | Su valor. Si un campo no se registró: «Sin dato: carga no registrada», nunca 0 |
-| «No realizada» | Solo si la sesión se registró como `NOT_COMPLETED`, que es la **única declaración de omisión que existe** |
+| «No realizada» | Solo si la sesión se registró como `NOT_COMPLETED`, que es la **única declaración de omisión que existe**, y solo para lo que estaba planificado |
 | Sin registro | «Sin dato», con su motivo: la serie no está en el registro, el ejercicio no está, se registró un resumen, se registró otro ejercicio, o la vista vigente no se puede resolver. Nunca 0 |
 | Borradores | No llegan: API-TRN-21 trae solo lo registrado (09v10:980). El recorrido lo comprueba con un borrador abierto |
 | Serie adicional | «Adicional: sin prescripción para esta serie», distinta de una prescripción en cero, que el contrato no admite |
@@ -87,12 +87,12 @@ No hay porcentajes de adherencia, puntajes ni rótulos de mejor o peor. La difer
 
 | Prueba | Qué cubre | Resultado |
 |---|---|---|
-| Unitarias del dominio (`comparacion-de-entrenamiento.test.ts`, 25, con datos validados contra el esquema estricto) | Ver la lista siguiente | dominio **316/316** |
+| Unitarias del dominio (`comparacion-de-entrenamiento.test.ts`, 28, con datos validados contra el esquema estricto) | Ver la lista siguiente | dominio **319/319** |
 | Integración `comparacion-entrenamiento.int-spec.ts`, contra PostgreSQL y por los flujos reales | La lectura real de API-TRN-21 pasada por la misma lógica. Ver la lista siguiente | **11/11** |
 | Regresión de integración: la nueva, entrenamiento, contexto de entrenamiento, PF-03, contrato y máquinas de WP-06 | | **170/170** (6 suites) |
 | `npm test` (dominio, scripts de pantallas y contraste, API), typecheck, OpenAPI (sin cambios), legajo, `audit:prod` y build del website | | sin fallas |
 
-**Unitarias del dominio (25):**
+**Unitarias del dominio (28):**
 - el caso de aceptación (10/8/6 contra 10/8/5, la serie 3 da −1);
 - números salteados y serie adicional;
 - ausencia ≠ cero, en cada motivo;
@@ -105,7 +105,8 @@ No hay porcentajes de adherencia, puntajes ni rótulos de mejor o peor. La difer
 - varias sesiones el mismo día y prescripción histórica;
 - líneas que no cruzan lo desconocido ni otra prescripción;
 - serie ausente en una observación;
-- rótulo del eje y copy sin términos prohibidos.
+- rótulo del eje y copy sin términos prohibidos;
+- por la revisión enfocada: la serie inexistente, la declaración que no cubre lo no planificado, el filtro por versión, otra versión del mismo ejercicio y la diferencia respecto de la carga sugerida.
 
 **Integración (11):** el período sintético del encabezado de la prueba, en un solo día y por los flujos reales:
 - la pirámide y el caso de aceptación; la serie salteada y la adicional; la corrección con su original;
@@ -118,11 +119,11 @@ No hay porcentajes de adherencia, puntajes ni rótulos de mejor o peor. La difer
   - el período de más de 92 días es PERIOD_TOO_LONG;
   - con el B2 revocado, 404.
 
-### Recorrido web local (45/45 controles)
+### Recorrido web local (48/48 controles)
 
 - **Entorno:** la API compilada, PostgreSQL 16 embebido, `next dev` y Chrome sin interfaz, el 2026-09-29.
 - **Cómo:** el profesional entra como una persona y elige el período en el formulario.
-- **Controles:** 42 en escritorio y móvil, y 3 de carga y error con la API detenida a propósito.
+- **Controles:** 45 en escritorio y móvil, y 3 de carga y error con la API detenida a propósito. Se repitió completo después de las correcciones de la revisión, y las capturas son de esa repetición.
 - **No es el ambiente `test` desplegado.**
 
 | Control | Resultado |
@@ -145,7 +146,8 @@ No hay porcentajes de adherencia, puntajes ni rótulos de mejor o peor. La difer
 | Sentadilla en kg: «75 % RM (…)», sin convertir | ✅ |
 | **axe-core** (WCAG 2.2 A y AA), con la evolución y una ejecución abiertas: cero violaciones críticas o serias | ✅ |
 | Período con una sola sesión: dice que todavía no hay evolución y sugiere ampliar; período sin sesiones: estado vacío | ✅ |
-| Móvil (390 px): la página no se desplaza en horizontal (el gráfico sí, dentro de su marco); tocar un punto elige esa sesión; sin recuadro flotante | ✅ (3 controles) |
+| Abrir una ejecución y cambiar el período ida y vuelta no la vuelve a abrir sola; un ejercicio que no está en el período nuevo deja de filtrar («Todos» y la lista completa) | ✅ (2 controles) |
+| Móvil (390 px): la página no se desplaza en horizontal (el gráfico sí, dentro de su marco); tocar un punto elige esa sesión; con las flechas, el punto elegido se trae a la vista; sin recuadro flotante | ✅ (4 controles) |
 | Sin errores de consola ni de página, en escritorio y en móvil | ✅ |
 | Carga y error: «Cargando…»; sin la API, «Reintentar» sin gráfico viejo; el formulario del período sigue a mano (B10-10:376) | ✅ (3 controles) |
 
@@ -156,6 +158,22 @@ No hay porcentajes de adherencia, puntajes ni rótulos de mejor o peor. La difer
 - `09` a `11`: móvil;
 - `12`: una sola sesión;
 - `13`: error con «Reintentar».
+
+### Revisión enfocada
+
+Una revisión de solo lectura del código nuevo, con un revisor, sin auditoría masiva, encontró **nueve defectos**: cuatro de severidad media y cinco baja. **Todos quedaron corregidos**, en el commit que sigue al del desarrollo:
+
+| # | Severidad | Defecto | Corrección y prueba |
+|---|---|---|---|
+| 1 | Media | En la evolución, una sesión sin la serie elegida (ni planificada ni registrada) decía «Adicional», y en una sesión «no realizada» decía «no realizada» de una serie que no existía | Estado propio «La prescripción no tiene esta serie, y no se registró»; la declaración cubre solo lo planificado. 2 unitarias |
+| 2 | Media | Filtrar por versión del plan cambiaba a qué ejercicio se atribuía una sustitución | La identidad sale de todo el período. 1 unitaria |
+| 3 | Media | Un ejercicio elegido que no estaba en el período nuevo seguía filtrando | Vuelve a «Todos». Control del recorrido |
+| 5 | Media | La diferencia contra la carga sugerida se decía «que lo planificado», como una obligación | Se dice «respecto de la sugerida». 1 unitaria |
+| 4 | Baja | El pedido de abrir una ejecución quedaba guardado y la volvía a abrir sola | Se atiende una vez y se descarta al cambiar período o filtros. Control del recorrido |
+| 6 | Baja | Otra versión del mismo ejercicio contaba como otro ejercicio; «homónimos» afirmaba que eran distintos | Mismo ejercicio si la versión es del mismo; el aviso dice que no se pueden identificar como el mismo. 1 unitaria |
+| 7 | Baja | Un rango 8-8 no se veía en el gráfico | Alto mínimo visible (`minPointSize`). Sin dato así en el recorrido |
+| 8 | Baja | En móvil, con las flechas, el punto elegido podía quedar fuera de la vista | El marco se desplaza hasta el punto. Control del recorrido |
+| 9 | Baja | Con la vista no resoluble, el aviso decía «no se grafica» y lo planificado sí se dibujaba | «Lo registrado no se grafica» |
 
 **Datos del recorrido, sintéticos y locales.** La API registra solo el día de hoy (DL-077/078), y para ver varias semanas cada sesión se preparó así:
 - se registró hoy por los flujos reales de la APK (borrador, guardar, confirmar);
@@ -171,6 +189,7 @@ Es preparación de datos, no un flujo del producto, y no se usó en ningún ambi
 - **Móvil:** la evolución larga se desplaza en horizontal dentro de su marco, y el eje vertical se desplaza con ella. La tabla y el panel de valores siguen completos.
 - **RIR planificado y carga sugerida:** son de la prescripción, no de cada serie, y la pantalla lo dice.
 - **Vista vigente no resoluble:** no se puede producir por la API. Se prueba solo en las unitarias.
+- **Rango de mínimo igual al máximo (8-8):** se dibuja con un alto mínimo. No hubo un dato así en el recorrido, así que no se comprobó en el navegador.
 - **Filtro «Ejercicio» de Ejecuciones** (hallazgo fuera de la orden, severidad baja, corregido porque la evolución depende de él): antes filtraba por nombre y mezclaba dos ejercicios distintos con el mismo nombre. Ahora filtra por identidad.
 - **No validado por Dirección, no desplegado.** TalkBack y la APK no se tocan.
 

@@ -236,7 +236,10 @@ test('repeticiones sin fijar, criterio y carga: la sugerida se marca, el %RM no 
   const b = seriesParaGraficar(banca!, KG)[0]!;
   assert.deepEqual(b.planificado, { tipo: 'valor', valor: 60, origen: 'prescripcion', sugerida: true });
   assert.equal(textoPlanificado(b.planificado, KG), '60 kg (sugerida)');
-  assert.equal(textoDeDiferencia(b.diferencia!, KG), '+2,5 kg');
+  // La sugerida no es una obligación: la diferencia se dice respecto de ella, en el gráfico y en palabras.
+  assert.equal(textoDeDiferencia(b.diferencia!, KG), '+2,5 kg respecto de la sugerida');
+  assert.equal(diferenciaEnPalabras(b.diferencia!, KG), '2,5 kg más que la carga sugerida');
+  assert.equal(rotuloCorto(b, KG), '+2,5 kg sug.');
   const r = seriesParaGraficar(banca!, RIR)[0]!;
   assert.deepEqual(r.planificado, { tipo: 'valor', valor: 2, origen: 'prescripcion', sugerida: false });
   assert.equal(diferenciaEnPalabras(r.diferencia!, RIR), '1 de RIR menos que lo planificado');
@@ -425,17 +428,50 @@ test('carga en kg: la sesión en lb es otra unidad, sin conversión, y corta la 
   assert.deepEqual(puntos[3]!.planificado, { tipo: 'valor', valor: 60, origen: 'prescripcion', sugerida: true });
 });
 
-test('una serie que no existe en una observación deja el punto vacío, con su motivo, y no se une', () => {
-  // La sesión B tiene dos series: la serie 3 no está planificada ni registrada ahí.
+test('una serie que no existe en una observación deja el punto vacío, sin llamarla «adicional», y no se une', () => {
+  // La sesión B tiene dos series: la serie 3 no está planificada ni registrada ahí. No es adicional: nada se registró.
   const puntos = evolucion(observacionesDelEjercicio(periodo(), 'e:ej-banca'), REPS, 3);
   const b = puntos[4]!;
   assert.equal(b.fila, null);
-  assert.deepEqual(b.planificado, { tipo: 'no-planificada' });
+  assert.deepEqual(b.planificado, { tipo: 'sin-serie' });
   assert.deepEqual(b.registrado, { tipo: 'sin-dato', motivo: 'serie-no-registrada' });
-  assert.equal(textoPlanificado(b.planificado, REPS), COPY_COMPARACION.noPlanificada);
+  assert.equal(textoPlanificado(b.planificado, REPS), COPY_COMPARACION.sinSerieEnLaPrescripcion);
+  assert.equal(rotuloCorto(b, REPS), 'sin serie');
   assert.equal(b.tramoRegistrado, null);
   // En la sesión no realizada, la serie 3 planificada es «no realizada», por la declaración de la sesión.
   assert.deepEqual(puntos[2]!.registrado, { tipo: 'no-realizada' });
+});
+
+test('la declaración «no realizada» cubre lo planificado, no una serie que la sesión no tenía', () => {
+  const dos = prescripcion('rx-banca', BANCA, [exacta(8), exacta(8)]);
+  const x = ejecucion({ fecha: '2026-09-01', prescripciones: [dos], registrado: [], condicion: 'NOT_COMPLETED' });
+  const [p] = evolucion(observacionesDelEjercicio([x], 'e:ej-banca'), REPS, 3);
+  assert.deepEqual(p!.planificado, { tipo: 'sin-serie' });
+  assert.deepEqual(p!.registrado, { tipo: 'sin-dato', motivo: 'serie-no-registrada' });
+  const [q] = evolucion(observacionesDelEjercicio([x], 'e:ej-banca'), REPS, 2);
+  assert.deepEqual(q!.registrado, { tipo: 'no-realizada' });
+});
+
+test('filtrar por versión no cambia a qué ejercicio se atribuye una sustitución (la identidad sale del período)', () => {
+  const sentadilla = prescripcion('rx-sentadilla', SENTADILLA, [exacta(5)]);
+  const v1 = ejecucion({ fecha: '2026-09-01', planId: 'plan-v1', prescripciones: [sentadilla], registrado: [{ prescriptionId: 'rx-sentadilla', sets: [serie(1, 5)] }] });
+  const v2 = ejecucion({ fecha: '2026-09-08', planId: 'plan-v2', prescripciones: [tresPorOcho], registrado: [{ prescriptionId: 'rx-banca', sets: [serie(1, 5)], realizado: { versionId: SENTADILLA.exerciseVersionId, nombre: 'Sentadilla' } }] });
+  // Solo la v2 a la vista, pero con el período completo como referencia de identidad.
+  const obs = observacionesDelEjercicio([v2], 'e:ej-sentadilla', [v1, v2]);
+  assert.deepEqual(obs.map((o) => [o.comparacion.planId, o.rol]), [['plan-v2', 'por-sustitucion']]);
+});
+
+test('otra versión del mismo ejercicio no es otro ejercicio: el punto conserva su valor y su diferencia', () => {
+  const v2DeBanca = { versionId: 'ver-banca-2', nombre: 'Press de banca' };
+  const conV2 = prescripcion('rx-banca-x', { ...BANCA, exerciseVersionId: 'ver-banca-2' }, [exacta(8)]);
+  const a = ejecucion({ fecha: '2026-09-01', prescripciones: [tresPorOcho], registrado: [{ prescriptionId: 'rx-banca', sets: [serie(1, 7)], realizado: v2DeBanca }] });
+  const b = ejecucion({ fecha: '2026-09-02', prescripciones: [conV2], registrado: [{ prescriptionId: 'rx-banca-x', sets: [serie(1, 8)] }] });
+  const obs = observacionesDelEjercicio([a, b], 'e:ej-banca');
+  assert.deepEqual(obs.map((o) => o.rol), ['planificado-y-registrado', 'planificado-y-registrado']);
+  const [p] = evolucion(obs, REPS, 1);
+  assert.deepEqual(p!.registrado, { tipo: 'valor', valor: 7 });
+  assert.equal(textoDeDiferencia(p!.diferencia!, REPS), '−1');
+  assert.equal(ejerciciosComparables([a, b]).filter((e) => e.nombre === 'Press de banca').length, 1);
 });
 
 test('el ejercicio realizado por sustitución tiene su evolución: lo planificado era de otro ejercicio', () => {
@@ -482,7 +518,8 @@ test('diferencia: sin dos valores comparables no hay diferencia', () => {
   assert.equal(diferencia({ tipo: 'valor', valor: 3, origen: 'serie', sugerida: false }, { tipo: 'sin-dato', motivo: 'serie-no-registrada' }), null);
   assert.equal(diferencia({ tipo: 'valor', valor: 3, origen: 'serie', sugerida: false }, { tipo: 'no-realizada' }), null);
   // Decimales sin ruido binario: 62,5 − 60,1 es 2,4.
-  assert.deepEqual(diferencia({ tipo: 'valor', valor: 60.1, origen: 'prescripcion', sugerida: true }, { tipo: 'valor', valor: 62.5 }), { tipo: 'distinta', delta: 2.4 });
+  assert.deepEqual(diferencia({ tipo: 'valor', valor: 60.1, origen: 'prescripcion', sugerida: true }, { tipo: 'valor', valor: 62.5 }), { tipo: 'distinta', delta: 2.4, respectoDeLaSugerida: true });
+  assert.deepEqual(diferencia({ tipo: 'valor', valor: 8, origen: 'serie', sugerida: false }, { tipo: 'valor', valor: 8 }), { tipo: 'igual', respectoDeLaSugerida: false });
 });
 
 test('TEST-PRJ-009 · el copy de la comparación no puntúa ni juzga', () => {

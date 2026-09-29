@@ -68,17 +68,20 @@ export function VistaDeEjecuciones() {
   // catálogo: el filtro no ofrece lo que no hay, y dos ejercicios con el mismo nombre no se mezclan.
   const ejecuciones = useMemo(() => (r?.ok ? r.datos.registeredExecutions : []), [r]);
   const ejercicios = useMemo(() => ejerciciosComparables(ejecuciones), [ejecuciones]);
+  const ejercicioVigente = ejercicios.some((x) => x.clave === ejercicio) ? ejercicio : '';
   const deLaVersion = useMemo(() => ejecuciones.filter((x) => !version || x.planId === version), [ejecuciones, version]);
   const conElEjercicio = useMemo(
-    () => (ejercicio ? new Set(observacionesDelEjercicio(deLaVersion, ejercicio).map((o) => o.comparacion.executionId)) : null),
-    [deLaVersion, ejercicio],
+    () => (ejercicioVigente ? new Set(observacionesDelEjercicio(deLaVersion, ejercicioVigente, ejecuciones).map((o) => o.comparacion.executionId)) : null),
+    [deLaVersion, ejercicioVigente, ejecuciones],
   );
   const visibles = deLaVersion.filter((x) => !conElEjercicio || conElEjercicio.has(x.executionId));
-  const elegido = ejercicios.find((e) => e.clave === ejercicio);
+  const elegido = ejercicios.find((x) => x.clave === ejercicioVigente);
   const versiones = useMemo(() => new Map((r?.ok ? r.datos.activePlanVersions : []).map((v) => [v.planId, fecha(v.activatedAt as string)])), [r]);
   /** La ejecución que se pidió abrir desde la evolución: se despliega, muestra la prescripción del punto y recibe el foco. */
   const [pedido, setPedido] = useState<{ executionId: string; prescriptionId: string; vez: number } | null>(null);
   const abrir = useCallback((executionId: string, prescriptionId: string) => setPedido((p) => ({ executionId, prescriptionId, vez: (p?.vez ?? 0) + 1 })), []);
+  const atendido = useCallback(() => setPedido(null), []);
+  useEffect(() => setPedido(null), [periodo, version, ejercicioVigente]);
 
   return (
     <div className="secciones">
@@ -100,7 +103,7 @@ export function VistaDeEjecuciones() {
             </div>
             <div className="campo">
               <label htmlFor="trn-filtro-ejercicio">Ejercicio</label>
-              <select id="trn-filtro-ejercicio" value={ejercicio} onChange={(e) => setEjercicio(e.target.value)}>
+              <select id="trn-filtro-ejercicio" value={ejercicioVigente} onChange={(e) => setEjercicio(e.target.value)}>
                 <option value="">Todos</option>
                 {ejercicios.map((e) => (
                   <option key={e.clave} value={e.clave}>
@@ -117,7 +120,7 @@ export function VistaDeEjecuciones() {
           <section className="seccion" aria-labelledby="titulo-evolucion">
             <h2 id="titulo-evolucion">{COPY_COMPARACION.titulo}</h2>
             <p className="nota">{COPY_COMPARACION.soloRegistradas}</p>
-            {ejercicios.some((e) => e.homonimo) ? <p className="nota">Hay ejercicios distintos con el mismo nombre: se listan por separado.</p> : null}
+            {ejercicios.some((e) => e.homonimo) ? <p className="nota">Hay ejercicios con el mismo nombre que no se pueden identificar como el mismo (otro ejercicio del catálogo, o una versión registrada por sustitución que no está prescripta en el período): se listan por separado.</p> : null}
             {!elegido ? (
               <p>{r.datos.registeredExecutions.length === 0 ? COPY_ENTRENAMIENTO.sinEjecuciones : COPY_COMPARACION.elegiUnEjercicio}</p>
             ) : (
@@ -128,6 +131,7 @@ export function VistaDeEjecuciones() {
                 <EvolucionDelEjercicio
                   key={`${elegido.clave}|${version}`}
                   ejecuciones={deLaVersion}
+                  periodo={ejecuciones}
                   clave={elegido.clave}
                   nombre={nombreParaElegir(elegido, ejercicios)}
                   versiones={versiones}
@@ -143,7 +147,7 @@ export function VistaDeEjecuciones() {
             {r.datos.registeredExecutions.length > 0 && visibles.length === 0 ? <p>Ninguna sesión registrada del período coincide con el filtro.</p> : null}
             <ul className="lista">
               {visibles.map((x) => (
-                <DetalleDeEjecucion key={x.executionId} ejecucion={x} pedido={pedido?.executionId === x.executionId ? pedido : null} />
+                <DetalleDeEjecucion key={x.executionId} ejecucion={x} pedido={pedido?.executionId === x.executionId ? pedido : null} onAtendido={atendido} />
               ))}
             </ul>
           </section>
@@ -207,27 +211,40 @@ export function Registro({ registro, planificado = [] }: { registro: RegistroDeE
   );
 }
 
-/** Cómo se ofrece un ejercicio para elegir: su nombre y, si otro ejercicio distinto se llama igual, cuál de ellos es. */
+/** Cómo se ofrece un ejercicio para elegir: su nombre y, si otra entrada que no se puede identificar como la misma se llama igual, cuál es. */
 function nombreParaElegir(e: { clave: string; nombre: string; homonimo: boolean }, todos: readonly { clave: string; nombre: string }[]): string {
   if (!e.homonimo) return e.nombre;
   const iguales = todos.filter((o) => o.nombre === e.nombre);
   return `${e.nombre} (${iguales.findIndex((o) => o.clave === e.clave) + 1} de ${iguales.length} con este nombre)`;
 }
 
-function DetalleDeEjecucion({ ejecucion: x, pedido }: { ejecucion: EjecucionDeEntrenamiento; pedido: { prescriptionId: string; vez: number } | null }) {
+function DetalleDeEjecucion({
+  ejecucion: x,
+  pedido,
+  onAtendido,
+}: {
+  ejecucion: EjecucionDeEntrenamiento;
+  pedido: { prescriptionId: string; vez: number } | null;
+  onAtendido: () => void;
+}) {
   const vigente = x.effectiveView.kind === 'CORRECTED' ? x.corrections.find((c) => c.correctionId === (x.effectiveView as { correctionId: string }).correctionId) : null;
   const rige = registroVigente(x);
   const [abierta, setAbierta] = useState(false);
+  /** La prescripción pedida desde la evolución: queda acá, porque el pedido se descarta apenas se atiende. */
+  const [pedida, setPedida] = useState<{ prescriptionId: string; vez: number } | null>(null);
   const resumen = useRef<HTMLElement>(null);
-  // Abrir desde un punto de la evolución: se despliega, se ve la prescripción de ese punto y el foco llega acá.
+  // Abrir desde un punto de la evolución: se despliega, se ve la prescripción de ese punto y el foco llega acá. El pedido
+  // se atiende una sola vez: si la ejecución se vuelve a mostrar después, no se abre sola.
   useEffect(() => {
     if (!pedido) return;
     setAbierta(true);
+    setPedida(pedido);
+    onAtendido();
     requestAnimationFrame(() => {
       resumen.current?.scrollIntoView({ block: 'start' });
       resumen.current?.focus();
     });
-  }, [pedido]);
+  }, [pedido, onAtendido]);
   return (
     <li className="lista__item" id={`ejecucion-${x.executionId}`}>
       <p className="lista__titulo">
@@ -239,7 +256,7 @@ function DetalleDeEjecucion({ ejecucion: x, pedido }: { ejecucion: EjecucionDeEn
         {abierta ? (
           <>
             <h4>{COPY_COMPARACION.porSerie}</h4>
-            <ComparacionPorSerie key={pedido ? `${pedido.prescriptionId}-${pedido.vez}` : 'inicial'} ejecucion={x} prescriptionId={pedido?.prescriptionId} />
+            <ComparacionPorSerie key={pedida ? `${pedida.prescriptionId}-${pedida.vez}` : 'inicial'} ejecucion={x} prescriptionId={pedida?.prescriptionId} />
           </>
         ) : null}
         <h4>{COPY_ENTRENAMIENTO.planificado}</h4>

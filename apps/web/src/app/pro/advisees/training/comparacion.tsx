@@ -47,7 +47,7 @@ import {
   type ValorPlanificado,
   type ValorRegistrado,
 } from '@be/domain';
-import { useId, useMemo, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from 'react';
 import { Bar, BarChart, CartesianGrid, ComposedChart, LabelList, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Aviso } from '../../../../components/formulario';
 import { dia, diaCorto, fecha } from '../../../../lib/formato';
@@ -460,7 +460,7 @@ function GraficoPorSerie({
               <Tooltip cursor={{ fill: 'var(--fondo-suave)' }} content={({ active, label }) => (active ? <TooltipDeSerie serie={series.find((s) => s.numero === label)} medida={medida} /> : null)} />
             ) : null}
             {capas.planificado ? (
-              <Bar dataKey="plan" name={COPY_COMPARACION.capaPlanificado} fill={`url(#${id}-planificado)`} stroke="var(--grafico-planificado)" strokeWidth={2} maxBarSize={48} isAnimationActive={false} className="grafico__elegible" onClick={(_dato: unknown, i: number) => onElegir(i)}>
+              <Bar dataKey="plan" name={COPY_COMPARACION.capaPlanificado} fill={`url(#${id}-planificado)`} stroke="var(--grafico-planificado)" strokeWidth={2} maxBarSize={48} minPointSize={3} isAnimationActive={false} className="grafico__elegible" onClick={(_dato: unknown, i: number) => onElegir(i)}>
                 <LabelList dataKey="etiquetaPlan" position="top" className="grafico__valor" />
               </Bar>
             ) : null}
@@ -555,12 +555,15 @@ function rotuloDeObservacion(o: ObservacionDeEvolucion): string {
 
 export function EvolucionDelEjercicio({
   ejecuciones,
+  periodo,
   clave,
   nombre,
   versiones,
   onAbrir,
 }: {
   ejecuciones: readonly EjecucionDeEntrenamiento[];
+  /** Todas las ejecuciones del período: de ahí sale la identidad de cada versión, aunque `ejecuciones` venga filtrada. */
+  periodo: readonly EjecucionDeEntrenamiento[];
   clave: string;
   nombre: string;
   /** planId → «activada el …», para decir a qué versión pertenece cada punto. */
@@ -568,7 +571,7 @@ export function EvolucionDelEjercicio({
   onAbrir: (executionId: string, prescriptionId: string) => void;
 }) {
   const id = useId();
-  const observaciones = useMemo(() => observacionesDelEjercicio(ejecuciones, clave), [ejecuciones, clave]);
+  const observaciones = useMemo(() => observacionesDelEjercicio(ejecuciones, clave, periodo), [ejecuciones, clave, periodo]);
   const numeros = numerosDeSerie(observaciones);
   const [claveMedida, setClaveMedida] = useState('repeticiones');
   const [numeroElegido, setNumeroElegido] = useState<number | null>(null);
@@ -670,6 +673,15 @@ function GraficoDeEvolucion({
   onAbrir: (executionId: string, prescriptionId: string) => void;
 }) {
   const conPuntero = useConPuntero();
+  const marco = useRef<HTMLDivElement>(null);
+  // En una pantalla angosta el gráfico se desplaza de costado: el punto elegido (por ejemplo, con las flechas) se trae a
+  // la vista si quedó afuera.
+  useEffect(() => {
+    const el = marco.current;
+    if (!el || elegido === null || puntos.length === 0) return;
+    const x = (el.scrollWidth * (elegido + 0.5)) / puntos.length;
+    if (x < el.scrollLeft + 24 || x > el.scrollLeft + el.clientWidth - 24) el.scrollLeft = Math.max(0, x - el.clientWidth / 2);
+  }, [elegido, puntos.length]);
   const unidad = unidadDeMedida(medida);
   const tramosPlan = [...new Set(puntos.flatMap((p) => (p.tramoPlanificado === null ? [] : [p.tramoPlanificado])))];
   const tramosReg = [...new Set(puntos.flatMap((p) => (p.tramoRegistrado === null ? [] : [p.tramoRegistrado])))];
@@ -690,7 +702,7 @@ function GraficoDeEvolucion({
         {titulo}. Eje vertical: {etiquetaDeMedida(medida)} ({unidad}). Eje horizontal: sesiones registradas, en orden.
       </figcaption>
       {!capas.planificado && !capas.registrado ? <p>{COPY_COMPARACION.capaOculta}</p> : null}
-      <div className="grafico__desplazable">
+      <div className="grafico__desplazable" ref={marco}>
         <div
           className="grafico__lienzo"
           style={{ minWidth: `${Math.max(puntos.length * 56, 280)}px` }}
@@ -766,7 +778,7 @@ function GraficoDeEvolucion({
                 />
               ) : null}
               {capas.planificado ? (
-                <Bar dataKey="rango" name="Rango planificado" fill={`url(#${id}-planificado)`} stroke="var(--grafico-planificado)" strokeWidth={2} barSize={14} isAnimationActive={false} className="grafico__elegible" onClick={(_dato: unknown, i: number) => onElegir(i)} />
+                <Bar dataKey="rango" name="Rango planificado" fill={`url(#${id}-planificado)`} stroke="var(--grafico-planificado)" strokeWidth={2} barSize={14} minPointSize={3} isAnimationActive={false} className="grafico__elegible" onClick={(_dato: unknown, i: number) => onElegir(i)} />
               ) : null}
               {capas.planificado
                 ? tramosPlan.map((t) => (

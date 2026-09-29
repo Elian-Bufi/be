@@ -205,6 +205,8 @@ export type ValorPlanificado =
   | { readonly tipo: 'porcentaje-rm'; readonly valor: number; readonly referencia: string | null }
   | { readonly tipo: 'otra-unidad'; readonly carga: Carga }
   | { readonly tipo: 'no-planificada' }
+  /** En la evolución: la prescripción no tiene la serie elegida y tampoco se registró. No es «adicional». */
+  | { readonly tipo: 'sin-serie' }
   | { readonly tipo: 'otro-ejercicio'; readonly nombre: string };
 
 export type ValorRegistrado =
@@ -241,8 +243,9 @@ export function valorRegistrado(fila: Pick<FilaDeSerie, 'registrada'>, medida: M
 }
 
 export type Diferencia =
-  | { readonly tipo: 'igual' }
-  | { readonly tipo: 'distinta'; readonly delta: number }
+  /** `respectoDeLaSugerida`: lo planificado es la carga sugerida, un complemento y no una obligación (09v10:391). */
+  | { readonly tipo: 'igual'; readonly respectoDeLaSugerida: boolean }
+  | { readonly tipo: 'distinta'; readonly delta: number; readonly respectoDeLaSugerida: boolean }
   | { readonly tipo: 'dentro-del-rango' }
   | { readonly tipo: 'bajo-el-rango'; readonly delta: number }
   | { readonly tipo: 'sobre-el-rango'; readonly delta: number };
@@ -257,7 +260,8 @@ export function diferencia(planificado: ValorPlanificado, registrado: ValorRegis
   const r = registrado.valor;
   if (planificado.tipo === 'valor') {
     const delta = Number((r - planificado.valor).toPrecision(12));
-    return delta === 0 ? { tipo: 'igual' } : { tipo: 'distinta', delta };
+    const respectoDeLaSugerida = planificado.sugerida;
+    return delta === 0 ? { tipo: 'igual', respectoDeLaSugerida } : { tipo: 'distinta', delta, respectoDeLaSugerida };
   }
   if (planificado.tipo === 'rango') {
     if (r < planificado.min) return { tipo: 'bajo-el-rango', delta: r - planificado.min };
@@ -318,7 +322,10 @@ export interface EjercicioComparable {
   readonly nombre: string;
   /** Otros nombres con los que aparece en el período (una versión anterior del catálogo). */
   readonly otrosNombres: readonly string[];
-  /** Hay otro ejercicio distinto con el mismo nombre: la pantalla los distingue. */
+  /**
+   * Hay otra entrada con el mismo nombre que no se puede identificar como el mismo ejercicio: otro ejercicio del catálogo,
+   * o una versión realizada por sustitución que no está prescripta en el período. La pantalla las lista por separado.
+   */
   readonly homonimo: boolean;
 }
 
@@ -381,15 +388,25 @@ export interface ObservacionDeEvolucion {
   readonly delDia: { readonly orden: number; readonly total: number };
 }
 
-/** Las observaciones del ejercicio, en el orden en que ocurrieron las sesiones. */
-export function observacionesDelEjercicio(ejecuciones: readonly EjecucionDeEntrenamiento[], claveDelEjercicio: string): ObservacionDeEvolucion[] {
-  const porVersion = ejercicioPorVersion(ejecuciones);
+/**
+ * Las observaciones del ejercicio, en el orden en que ocurrieron las sesiones. `periodo` son todas las ejecuciones del
+ * período: de ahí sale a qué ejercicio pertenece cada versión, así un filtro (por ejemplo, por versión del plan) no cambia
+ * a qué ejercicio se atribuye una sustitución.
+ */
+export function observacionesDelEjercicio(
+  ejecuciones: readonly EjecucionDeEntrenamiento[],
+  claveDelEjercicio: string,
+  periodo: readonly EjecucionDeEntrenamiento[] = ejecuciones,
+): ObservacionDeEvolucion[] {
+  const porVersion = ejercicioPorVersion(periodo);
   const sinDia: Omit<ObservacionDeEvolucion, 'delDia'>[] = [];
   for (const x of [...ejecuciones].sort(porOcurrencia)) {
     for (const c of compararEjecucion(x)) {
       const clave = `${c.executionId}|${c.prescriptionId}`;
-      if (claveDelPrescripto(c) === claveDelEjercicio) sinDia.push({ clave, rol: c.sustituido ? 'sustituido' : 'planificado-y-registrado', comparacion: c });
-      else if (c.sustituido && claveDelRealizado(c, porVersion) === claveDelEjercicio) sinDia.push({ clave, rol: 'por-sustitucion', comparacion: c });
+      // La API marca sustitución cuando cambia la versión; si la versión realizada es del mismo ejercicio, es el mismo.
+      const otroEjercicio = c.sustituido && claveDelRealizado(c, porVersion) !== claveDelPrescripto(c);
+      if (claveDelPrescripto(c) === claveDelEjercicio) sinDia.push({ clave, rol: otroEjercicio ? 'sustituido' : 'planificado-y-registrado', comparacion: c });
+      else if (otroEjercicio && claveDelRealizado(c, porVersion) === claveDelEjercicio) sinDia.push({ clave, rol: 'por-sustitucion', comparacion: c });
     }
   }
   return sinDia.map((o) => {
@@ -430,11 +447,14 @@ export function evolucion(observaciones: readonly ObservacionDeEvolucion[], medi
   for (const [indice, o] of observaciones.entries()) {
     const c = o.comparacion;
     const fila = c.filas.find((f) => f.numero === numeroDeSerie) ?? null;
+    // Sin fila, la serie no estaba planificada ni se registró: no es «adicional», y la declaración «no realizada» de la
+    // sesión no la abarca (solo cubre lo planificado).
     const base: Pick<FilaDeSerie, 'planificada' | 'registrada'> = fila ?? {
       planificada: { tipo: 'no-planificada' },
-      registrada: c.condicion === 'NOT_COMPLETED' ? { tipo: 'no-realizada' } : sinDatoDeLaSerie(c),
+      registrada: c.condicion === 'NOT_COMPLETED' ? { tipo: 'sin-dato', motivo: 'serie-no-registrada' } : sinDatoDeLaSerie(c),
     };
-    const planificado: ValorPlanificado = o.rol === 'por-sustitucion' ? { tipo: 'otro-ejercicio', nombre: c.prescripto.nombre } : valorPlanificado(c, base, medida);
+    const planificado: ValorPlanificado =
+      o.rol === 'por-sustitucion' ? { tipo: 'otro-ejercicio', nombre: c.prescripto.nombre } : fila ? valorPlanificado(c, base, medida) : { tipo: 'sin-serie' };
     const registrado: ValorRegistrado = o.rol === 'sustituido' ? { tipo: 'sin-dato', motivo: 'otro-ejercicio' } : valorRegistrado(base, medida);
     const anterior = puntos[puntos.length - 1];
     const tramoRegistrado = registrado.tipo !== 'valor' ? null : anterior?.tramoRegistrado != null ? anterior.tramoRegistrado : ++tramo;
@@ -496,7 +516,7 @@ export const COPY_COMPARACION = {
   sinFijar: 'Sin fijar',
   noPlanificada: 'Adicional: sin prescripción para esta serie',
   noPlanificadaCorto: 'adicional',
-  sinSerieEnLaPrescripcion: 'La prescripción no tiene esta serie',
+  sinSerieEnLaPrescripcion: 'La prescripción no tiene esta serie, y no se registró',
   otroEjercicioPlanificado: 'Se planificó otro ejercicio',
   noRealizada: 'No realizada: la sesión se registró así',
   noRealizadaCorto: 'no realizada',
@@ -511,7 +531,7 @@ export const COPY_COMPARACION = {
   correccionVigente: 'Corrección vigente',
   enElOriginal: 'En el registro original',
   noEstabaEnElOriginal: 'No estaba en el registro original',
-  vistaNoResoluble: 'El registro vigente de esta sesión no se puede determinar: no se grafica.',
+  vistaNoResoluble: 'El registro vigente de esta sesión no se puede determinar: lo registrado no se grafica.',
   sustitucion: 'Se registró otro ejercicio en lugar del planificado: se muestran los dos, pero no se calcula la diferencia entre ejercicios distintos.',
   tablaEquivalente: 'Tabla de valores',
   tablaMuestraAmbas: 'La tabla muestra siempre las dos capas, con los mismos valores del gráfico.',
@@ -563,6 +583,8 @@ export function textoPlanificado(v: ValorPlanificado, m: Medida): string {
       return `${cantidad(v.carga.value, v.carga.unit)} (${COPY_COMPARACION.sugerida}, otra unidad)`;
     case 'no-planificada':
       return COPY_COMPARACION.noPlanificada;
+    case 'sin-serie':
+      return COPY_COMPARACION.sinSerieEnLaPrescripcion;
     case 'otro-ejercicio':
       return `${COPY_COMPARACION.otroEjercicioPlanificado}: ${v.nombre}`;
   }
@@ -591,9 +613,9 @@ const conSigno = (delta: number, m: Medida): string => {
 export function textoDeDiferencia(d: Diferencia, m: Medida): string {
   switch (d.tipo) {
     case 'igual':
-      return 'igual';
+      return d.respectoDeLaSugerida ? 'igual a la sugerida' : 'igual';
     case 'distinta':
-      return conSigno(d.delta, m);
+      return d.respectoDeLaSugerida ? `${conSigno(d.delta, m)} respecto de la sugerida` : conSigno(d.delta, m);
     case 'dentro-del-rango':
       return COPY_COMPARACION.dentroDelRango;
     case 'bajo-el-rango':
@@ -611,11 +633,12 @@ export function textoDeDiferencia(d: Diferencia, m: Medida): string {
 export function rotuloCorto(p: { readonly planificado: ValorPlanificado; readonly registrado: ValorRegistrado; readonly diferencia: Diferencia | null }, m: Medida): string {
   const d = p.diferencia;
   if (d) {
-    if (d.tipo === 'igual') return 'igual';
-    if (d.tipo === 'distinta') return conSigno(d.delta, m);
+    if (d.tipo === 'igual') return d.respectoDeLaSugerida ? 'igual sug.' : 'igual';
+    if (d.tipo === 'distinta') return d.respectoDeLaSugerida ? `${conSigno(d.delta, m)} sug.` : conSigno(d.delta, m);
     if (d.tipo === 'dentro-del-rango') return 'en rango';
     return `${conSigno(d.delta, m)} ${d.tipo === 'bajo-el-rango' ? 'mín.' : 'máx.'}`;
   }
+  if (p.planificado.tipo === 'sin-serie') return 'sin serie';
   const r = p.registrado;
   if (r.tipo === 'no-realizada') return COPY_COMPARACION.noRealizadaCorto;
   if (r.tipo === 'otra-unidad') return `en ${r.carga.unit}`;
@@ -626,12 +649,13 @@ export function rotuloCorto(p: { readonly planificado: ValorPlanificado; readonl
 
 /** La diferencia en palabras, para el lector de pantalla y la tabla: «1 repetición menos que lo planificado». */
 export function diferenciaEnPalabras(d: Diferencia, m: Medida): string {
-  if (d.tipo === 'igual') return COPY_COMPARACION.igual;
+  if (d.tipo === 'igual') return d.respectoDeLaSugerida ? 'igual a la carga sugerida' : COPY_COMPARACION.igual;
   if (d.tipo === 'dentro-del-rango') return COPY_COMPARACION.dentroDelRango;
   const n = Math.abs(d.delta);
   const cuanto =
     m.variable === 'carga' ? cantidad(n, m.unidad) : m.variable === 'rir' ? `${numero(n)} de RIR` : `${numero(n)} ${n === 1 ? 'repetición' : 'repeticiones'}`;
   const sentido = d.delta < 0 ? 'menos' : 'más';
-  const referencia = d.tipo === 'distinta' ? 'que lo planificado' : d.tipo === 'bajo-el-rango' ? 'que el mínimo del rango' : 'que el máximo del rango';
+  const referencia =
+    d.tipo === 'distinta' ? (d.respectoDeLaSugerida ? 'que la carga sugerida' : 'que lo planificado') : d.tipo === 'bajo-el-rango' ? 'que el mínimo del rango' : 'que el máximo del rango';
   return `${cuanto} ${sentido} ${referencia}`;
 }
