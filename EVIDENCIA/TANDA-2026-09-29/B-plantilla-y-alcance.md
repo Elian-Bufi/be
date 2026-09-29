@@ -32,7 +32,7 @@ En `main`, FRM-03 no comparaba el dominio de la plantilla con el Alcance: se pod
 
 | Prueba | Resultado |
 |---|---|
-| Integración `formularios-alcance.int-spec.ts`: válidos (plantilla de entrenamiento en su Alcance; transversal en NUTRICION y ENTRENAMIENTO); cruce con 422 sin escrituras (Solicitudes y eventos) y creación posterior en el Alcance correcto; privacidad (sin autorización, el cruce da el mismo 404 que una plantilla válida y que un asesorado inexistente) | 3/3 (antes de la corrección, 2/3) |
+| Integración `formularios-alcance.int-spec.ts`: válidos (plantilla de entrenamiento en su Alcance; transversal en NUTRICION y ENTRENAMIENTO); cruce con 422 sin escrituras (Solicitudes y eventos); después, **con la misma Idempotency-Key explícita**, el pedido en el Alcance correcto se procesa (el rechazo no quedó guardado), su repetición devuelve lo mismo y queda **exactamente una** Solicitud y un evento; privacidad (sin autorización, el cruce da el mismo 404 que una plantilla válida y que un asesorado inexistente) | 3/3 (antes de la corrección, 2/3) |
 | Regresión de formularios, contrato y PF-02 (`contrato`, `contexto-entrenamiento`, `formularios-errores`) | 40/40 |
 | `npm test`, typecheck, `openapi:verificar`, legajo | verdes |
 | Recorrido web local (API compilada, PostgreSQL 16 con base nueva, `next dev`, Chrome sin interfaz, datos sintéticos): Alcance fijo con la plantilla de entrenamiento, tres Alcances con la transversal, pedido enviado y guardado en ENTRENAMIENTO (comprobado en la base) | 5/5, sin errores de consola. Capturas en `B-plantilla-y-alcance/` |
@@ -41,3 +41,5 @@ En `main`, FRM-03 no comparaba el dominio de la plantilla con el Alcance: se pod
 
 - El mensaje del website ante un 422 de FRM-03 no se vio en el navegador: la pantalla ya no deja armar el cruce. Se verificó por typecheck y revisión.
 - **Decisión pendiente de Dirección:** si una plantilla transversal tiene que declarar, además, finalidades compatibles (UC-P32, precondición 7, «compatible con esa finalidad»). Hoy el propósito es texto libre.
+
+**Corrección de la auditoría (2026-09-29).** La prueba decía reusar la clave, pero el helper generaba una nueva en cada pedido. Ahora el helper `pedir` recibe la clave explícita, y el caso usa la misma en el rechazo, en el pedido válido y en su repetición.

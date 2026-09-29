@@ -11,7 +11,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
-import { appDePrueba, conSesion } from './soporte-api';
+import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { prepararAsesorado, prepararProfesional, vinculoCompleto, type Parte } from './soporte-vinculo';
 
 const VERSION_ENTRENAMIENTO = '0fba80db-0a80-47a7-b183-130232ab7a9c';
@@ -32,7 +32,9 @@ afterAll(async () => {
 
 const pedidoDeEntrenamiento = (scope: string) => ({ templateVersionId: VERSION_ENTRENAMIENTO, purpose: 'Contexto', scope, requestedFieldCodes: SEIS, requiredFieldCodes: SEIS.slice(0, 5) });
 const pedidoDeHabitos = (scope: string) => ({ templateVersionId: VERSION_HABITOS, purpose: 'Hábitos', scope, requestedFieldCodes: ['horas_de_sueno'], requiredFieldCodes: [] });
-const pedir = (pro: Parte, adviseeId: string, cuerpo: object) => conSesion(app, pro.token).post(`/api/v1/advisees/${adviseeId}/form-requests`).send(cuerpo);
+/** FRM-03 con una Idempotency-Key explícita; sin `clave`, una nueva por pedido. */
+const pedir = (pro: Parte, adviseeId: string, cuerpo: object, clave = claveDeIdempotencia()) =>
+  conSesion(app, pro.token).post(`/api/v1/advisees/${adviseeId}/form-requests`, clave).send(cuerpo);
 
 /** Profesional con NUTRICION y ENTRENAMIENTO, vinculado y autorizado en los dos con el mismo asesorado. */
 async function dosAlcances(): Promise<{ pro: Parte; ase: Parte }> {
@@ -58,15 +60,21 @@ describe('API-FRM-03 · plantilla y Alcance', () => {
     expect(await prisma.solicitudDeFormulario.count({ where: { asesoradoId: ase.id } })).toBe(3);
   });
 
-  it('cruce: FRM-ENTRENAMIENTO con Alcance NUTRICION es 422 FORM_TEMPLATE_NOT_SELECTABLE y no escribe nada', async () => {
+  it('cruce: FRM-ENTRENAMIENTO con Alcance NUTRICION es 422 FORM_TEMPLATE_NOT_SELECTABLE y no escribe nada; con la misma clave, el pedido corregido crea una sola Solicitud', async () => {
     const { pro, ase } = await dosAlcances();
+    const clave = claveDeIdempotencia();
     const antes = await escrituras(ase.id);
-    const r = await pedir(pro, ase.id, pedidoDeEntrenamiento('NUTRICION')).expect(422);
+    const r = await pedir(pro, ase.id, pedidoDeEntrenamiento('NUTRICION'), clave).expect(422);
     expect(r.body.error.code).toBe('FORM_TEMPLATE_NOT_SELECTABLE');
     expect(r.body.error.details).toBeUndefined();
     expect(await escrituras(ase.id)).toEqual(antes);
-    // Con la misma clave y el Alcance corregido, se crea: el rechazo no quedó guardado.
-    await pedir(pro, ase.id, pedidoDeEntrenamiento('ENTRENAMIENTO')).expect(201);
+    // Misma clave, Alcance corregido: el rechazo no quedó guardado (IdempotenciaService solo guarda éxitos), así que
+    // la clave está libre y el pedido se procesa.
+    const creada = await pedir(pro, ase.id, pedidoDeEntrenamiento('ENTRENAMIENTO'), clave).expect(201);
+    // Repetirlo con la misma clave es un reintento: devuelve lo guardado, sin crear otra.
+    const repetida = await pedir(pro, ase.id, pedidoDeEntrenamiento('ENTRENAMIENTO'), clave).expect(201);
+    expect(repetida.body).toEqual(creada.body);
+    expect(await escrituras(ase.id)).toEqual({ solicitudes: antes.solicitudes + 1, eventos: antes.eventos + 1 });
   });
 
   it('privacidad: sin autorización en NUTRICION, el cruce da el mismo 404 que una plantilla válida y que un asesorado inexistente', async () => {
