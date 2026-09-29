@@ -34,6 +34,11 @@ export const COPY_FORMULARIOS = {
   proposito: 'Para qué lo necesitás',
   ayudaProposito: 'Queda registrado y el asesorado lo ve. Explicá para qué vas a usar esta información.',
   alcance: 'Alcance',
+  // FRM-03 exige que una plantilla con dominio se pida en su Alcance (UC-P32, precondición 7): la pantalla lo fija.
+  alcanceDeLaPlantilla: 'Esta plantilla es de un solo Alcance: la solicitud va con ese.',
+  plantillaNoSeleccionable: 'Esta plantilla no se puede pedir así: es de otro Alcance o hay una versión más nueva. Volvé a elegirla y revisá el Alcance.',
+  campoNoPertinente: 'Alguno de los campos pedidos no es pertinente para este Alcance. Revisá los campos o el Alcance.',
+  solicitudInvalida: 'Revisá los campos pedidos: los requeridos tienen que estar entre los pedidos.',
   enviarSolicitud: 'Enviar solicitud',
   solicitudEnviada: 'Solicitud enviada.',
   solicitarNoEsAcceder: 'Pedir información no amplía tu acceso ni el consentimiento: hasta que el asesorado responda, no hay dato nuevo.',
