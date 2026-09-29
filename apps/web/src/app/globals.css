@@ -704,6 +704,8 @@ details summary {
   margin: 0.5rem 0;
   padding: 0;
   display: grid;
+  /* La columna se puede achicar: un contenido ancho (un gráfico que se desplaza por dentro) no empuja la página. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
 }
 
@@ -1379,6 +1381,12 @@ details summary {
    no solo por color; y todo valor exacto está a un clic, un toque o una tecla, no solo al pasar el puntero. */
 .grafico {
   margin: 0.5rem 0 1rem;
+  min-width: 0;
+}
+
+/* La figura del gráfico no lleva el margen por defecto del navegador (40 px por lado): en un teléfono es casi un tercio del ancho. */
+.grafico__figura {
+  margin: 0;
 }
 
 .grafico__controles {

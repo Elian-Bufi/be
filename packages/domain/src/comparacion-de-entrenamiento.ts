@@ -24,8 +24,14 @@
  * tiene una base válida para hacerlo (09v10:356). Las unidades no se mezclan: kg y lb son medidas distintas.
  *
  * **Identidad del ejercicio.** Se sigue por `exerciseId` del catálogo, que es estable entre versiones, y nunca por el
- * nombre: dos ejercicios distintos con el mismo nombre quedan separados. El ejercicio realizado en una sustitución se
- * identifica por su versión; si esa versión aparece prescripta en el período, se sabe a qué ejercicio pertenece.
+ * nombre: dos ejercicios distintos con el mismo nombre quedan separados. Hay que distinguir dos cosas:
+ * - la **sustitución de versión** (`sustituido`) es lo que informa el contrato: se registró una versión distinta de la
+ *   prescripta;
+ * - la **identidad** (`identidad`) es qué se sabe del ejercicio registrado. La ejecución trae solo la versión registrada,
+ *   y a qué ejercicio pertenece se sabe si esa versión aparece prescripta en alguna ejecución del período
+ *   (`identidadDeVersiones`). Puede ser el mismo ejercicio (otra versión), otro ejercicio, o no saberse.
+ * Las dos vistas (por serie y evolución) usan la misma identidad: la diferencia se calcula solo cuando se sabe que es el
+ * mismo ejercicio. Cuando no se sabe, se dice, sin afirmar que es el mismo ni que es otro.
  */
 import type { EjecucionDeEntrenamiento, EjercicioRegistrado, Prescripcion, SerieEjecutadaApi } from './contratos-entrenamiento';
 import { registroVigente } from './copy-entrenamiento';
@@ -45,13 +51,14 @@ export type MotivoSinDato =
   | 'registro-resumido'
   | 'vista-no-resoluble'
   | 'otro-ejercicio'
+  | 'identidad-desconocida'
   | 'campo-no-registrado';
 
 export type SeriePlanificada = { readonly tipo: 'planificada'; readonly repeticiones: Repeticiones | null; readonly nota: string | null } | { readonly tipo: 'no-planificada' };
 
 export type SerieRegistrada =
   | { readonly tipo: 'registrada'; readonly serie: SerieEjecutadaApi }
-  | { readonly tipo: 'sin-dato'; readonly motivo: Exclude<MotivoSinDato, 'campo-no-registrado' | 'otro-ejercicio'> }
+  | { readonly tipo: 'sin-dato'; readonly motivo: Exclude<MotivoSinDato, 'campo-no-registrado' | 'otro-ejercicio' | 'identidad-desconocida'> }
   | { readonly tipo: 'no-realizada' };
 
 export interface FilaDeSerie {
@@ -80,6 +87,32 @@ export type FuenteDelRegistro =
     }
   | { readonly tipo: 'no-resoluble' };
 
+/**
+ * Qué se sabe del ejercicio registrado respecto del prescripto:
+ * - `misma-version`: se registró la versión prescripta;
+ * - `mismo-ejercicio`: otra versión del mismo ejercicio del catálogo (el contrato la informa como sustitución);
+ * - `otro-ejercicio`: una versión de otro ejercicio;
+ * - `desconocida`: la versión registrada no aparece prescripta en el período, y no se sabe a qué ejercicio pertenece;
+ * - `sin-registro`: el registro vigente no incluye esta prescripción, o no se puede resolver.
+ */
+export type IdentidadDelRegistro = 'misma-version' | 'mismo-ejercicio' | 'otro-ejercicio' | 'desconocida' | 'sin-registro';
+
+/** Versión del catálogo → ejercicio (`exerciseId`), según las prescripciones de un conjunto de ejecuciones. */
+export type IdentidadDeVersiones = ReadonlyMap<string, string>;
+
+/**
+ * Lo que las ejecuciones dicen de la identidad de cada versión: cada prescripción trae su versión y su ejercicio. Se arma
+ * con **todas** las ejecuciones del período, así las dos vistas y cualquier filtro usan la misma información.
+ */
+export function identidadDeVersiones(ejecuciones: readonly EjecucionDeEntrenamiento[]): IdentidadDeVersiones {
+  const m = new Map<string, string>();
+  for (const x of ejecuciones) for (const p of x.plannedSession.prescriptions) m.set(p.exerciseVersionId, p.exerciseId);
+  return m;
+}
+
+/** Se sabe que lo registrado es el ejercicio prescripto (la misma versión u otra del mismo ejercicio). */
+export const esElMismoEjercicio = (identidad: IdentidadDelRegistro): boolean => identidad === 'misma-version' || identidad === 'mismo-ejercicio';
+
 /** Una prescripción de una ejecución registrada, con lo planificado y lo registrado serie por serie. */
 export interface ComparacionDeEjercicio {
   readonly executionId: string;
@@ -91,9 +124,15 @@ export interface ComparacionDeEjercicio {
   readonly prescriptionId: string;
   readonly orden: number;
   readonly prescripto: { readonly exerciseId: string; readonly exerciseVersionId: string; readonly nombre: string };
-  /** `null` si el registro vigente no incluye esta prescripción. */
-  readonly realizado: { readonly exerciseVersionId: string; readonly nombre: string } | null;
+  /**
+   * `null` si el registro vigente no incluye esta prescripción. `exerciseId` es el ejercicio de la versión registrada si
+   * se sabe (ver `identidad`), y `null` si no.
+   */
+  readonly realizado: { readonly exerciseVersionId: string; readonly exerciseId: string | null; readonly nombre: string } | null;
+  /** Lo que informa el contrato: se registró una versión distinta de la prescripta. No dice si es otro ejercicio. */
   readonly sustituido: boolean;
+  /** Qué se sabe del ejercicio registrado. La diferencia se calcula solo si es el mismo (`esElMismoEjercicio`). */
+  readonly identidad: IdentidadDelRegistro;
   /** La condición del registro vigente; `null` si la vista vigente no se puede resolver. */
   readonly condicion: Condicion | null;
   readonly resumen: string | null;
@@ -144,11 +183,22 @@ function registradaDe(
   return serie ? { tipo: 'registrada', serie } : { tipo: 'sin-dato', motivo: 'serie-no-registrada' };
 }
 
+function identidadDe(p: Prescripcion, ejercicio: EjercicioRegistrado | null, versiones: IdentidadDeVersiones): { identidad: IdentidadDelRegistro; exerciseId: string | null } {
+  if (!ejercicio) return { identidad: 'sin-registro', exerciseId: null };
+  if (ejercicio.performedExerciseVersionId === p.exerciseVersionId) return { identidad: 'misma-version', exerciseId: p.exerciseId };
+  const exerciseId = versiones.get(ejercicio.performedExerciseVersionId) ?? null;
+  if (exerciseId === null) return { identidad: 'desconocida', exerciseId: null };
+  return { identidad: exerciseId === p.exerciseId ? 'mismo-ejercicio' : 'otro-ejercicio', exerciseId };
+}
+
 /**
  * Cada prescripción de la sesión que rigió, en su orden, con sus filas: la unión de los números planificados y
  * registrados, ordenados y sin renumerar. Un número que falta en los dos no genera fila.
+ *
+ * `versiones` es la identidad de las versiones del período (`identidadDeVersiones`). Sin ella, se usa lo que dice esta
+ * sola ejecución, y una versión que no esté prescripta acá queda como identidad desconocida.
  */
-export function compararEjecucion(x: EjecucionDeEntrenamiento): ComparacionDeEjercicio[] {
+export function compararEjecucion(x: EjecucionDeEntrenamiento, versiones: IdentidadDeVersiones = identidadDeVersiones([x])): ComparacionDeEjercicio[] {
   const fuente = fuenteDe(x);
   const vigente = fuente.tipo === 'no-resoluble' ? null : registroVigente(x);
   const condicion = vigente?.sessionCondition ?? null;
@@ -156,6 +206,7 @@ export function compararEjecucion(x: EjecucionDeEntrenamiento): ComparacionDeEje
     .sort((a, b) => a.order - b.order)
     .map((p) => {
       const ejercicio = vigente?.exercises.find((e) => e.prescriptionId === p.prescriptionId) ?? null;
+      const { identidad, exerciseId } = identidadDe(p, ejercicio, versiones);
       const enElOriginal = fuente.tipo === 'correccion' ? (x.original.exercises.find((e) => e.prescriptionId === p.prescriptionId) ?? null) : undefined;
       const numeros = [...new Set([...p.sets.map((s) => s.setIndex), ...(ejercicio?.sets ?? []).map((s) => s.setIndex)])].sort((a, b) => a - b);
       const filas = numeros.map((n): FilaDeSerie => {
@@ -180,8 +231,9 @@ export function compararEjecucion(x: EjecucionDeEntrenamiento): ComparacionDeEje
         prescriptionId: p.prescriptionId,
         orden: p.order,
         prescripto: { exerciseId: p.exerciseId, exerciseVersionId: p.exerciseVersionId, nombre: p.exerciseName },
-        realizado: ejercicio ? { exerciseVersionId: ejercicio.performedExerciseVersionId, nombre: ejercicio.performedExerciseName } : null,
+        realizado: ejercicio ? { exerciseVersionId: ejercicio.performedExerciseVersionId, exerciseId, nombre: ejercicio.performedExerciseName } : null,
         sustituido: ejercicio?.substituted ?? false,
+        identidad,
         condicion,
         resumen: ejercicio?.executionSummary?.description ?? null,
         fuente,
@@ -207,7 +259,10 @@ export type ValorPlanificado =
   | { readonly tipo: 'no-planificada' }
   /** En la evolución: la prescripción no tiene la serie elegida y tampoco se registró. No es «adicional». */
   | { readonly tipo: 'sin-serie' }
-  | { readonly tipo: 'otro-ejercicio'; readonly nombre: string };
+  /** En la evolución de un ejercicio registrado por sustitución: lo planificado era de otro ejercicio. */
+  | { readonly tipo: 'otro-ejercicio'; readonly nombre: string }
+  /** Como el anterior, pero no se sabe si lo planificado es el mismo ejercicio o uno distinto. */
+  | { readonly tipo: 'identidad-desconocida'; readonly nombre: string };
 
 export type ValorRegistrado =
   | { readonly tipo: 'valor'; readonly valor: number }
@@ -277,27 +332,32 @@ export interface SerieParaGraficar {
   readonly planificado: ValorPlanificado;
   readonly registrado: ValorRegistrado;
   readonly diferencia: Diferencia | null;
+  /** Qué se sabe de lo registrado: con otro ejercicio o una identidad desconocida, el rótulo dice por qué no se compara. */
+  readonly identidad: IdentidadDelRegistro;
 }
 
 /**
  * Las series de una prescripción para una medida: lo que dibuja el gráfico de barras agrupadas y lo que lista la tabla.
- * En una sustitución no se calcula la diferencia: lo registrado es de otro ejercicio.
+ * La diferencia se calcula solo si se sabe que lo registrado es el mismo ejercicio (`identidad`), con el mismo criterio
+ * que la evolución: otra versión del mismo ejercicio se compara; otro ejercicio o una identidad desconocida, no.
  */
 export function seriesParaGraficar(c: ComparacionDeEjercicio, medida: Medida): SerieParaGraficar[] {
   return c.filas.map((fila) => {
     const planificado = valorPlanificado(c, fila, medida);
     const registrado = valorRegistrado(fila, medida);
-    return { numero: fila.numero, fila, planificado, registrado, diferencia: c.sustituido ? null : diferencia(planificado, registrado) };
+    const comparable = c.identidad === 'sin-registro' || esElMismoEjercicio(c.identidad);
+    return { numero: fila.numero, fila, planificado, registrado, diferencia: comparable ? diferencia(planificado, registrado) : null, identidad: c.identidad };
   });
 }
 
-/** Las medidas que tienen algún dato, planificado o registrado, en estas comparaciones: repeticiones, carga por unidad y RIR. */
-export function medidasDisponibles(comparaciones: readonly ComparacionDeEjercicio[]): Medida[] {
+/** Lo que aporta cada lado de una comparación a las medidas: lo planificado, lo registrado, o los dos. */
+function medidasDe(partes: readonly { readonly c: ComparacionDeEjercicio; readonly plan: boolean; readonly registro: boolean }[]): Medida[] {
   const unidades = new Set<'kg' | 'lb'>();
   let rir = false;
-  for (const c of comparaciones) {
-    if (c.cargaSugerida) unidades.add(c.cargaSugerida.unit);
-    if (c.rirObjetivo !== null) rir = true;
+  for (const { c, plan, registro } of partes) {
+    if (plan && c.cargaSugerida) unidades.add(c.cargaSugerida.unit);
+    if (plan && c.rirObjetivo !== null) rir = true;
+    if (!registro) continue;
     for (const f of c.filas) {
       if (f.registrada.tipo !== 'registrada') continue;
       if (f.registrada.serie.load) unidades.add(f.registrada.serie.load.unit);
@@ -309,6 +369,11 @@ export function medidasDisponibles(comparaciones: readonly ComparacionDeEjercici
     ...(['kg', 'lb'] as const).filter((u) => unidades.has(u)).map((unidad): Medida => ({ variable: 'carga', unidad })),
     ...(rir ? [{ variable: 'rir' } as const] : []),
   ];
+}
+
+/** Las medidas que tienen algún dato, planificado o registrado, en estas comparaciones: repeticiones, carga por unidad y RIR. */
+export function medidasDisponibles(comparaciones: readonly ComparacionDeEjercicio[]): Medida[] {
+  return medidasDe(comparaciones.map((c) => ({ c, plan: true, registro: true })));
 }
 
 export const claveDeMedida = (m: Medida): string => (m.variable === 'carga' ? `carga-${m.unidad}` : m.variable);
@@ -329,24 +394,18 @@ export interface EjercicioComparable {
   readonly homonimo: boolean;
 }
 
-/** Versión de ejercicio → ejercicio, con lo que dicen las prescripciones del período. */
-function ejercicioPorVersion(ejecuciones: readonly EjecucionDeEntrenamiento[]): Map<string, string> {
-  const m = new Map<string, string>();
-  for (const x of ejecuciones) for (const p of x.plannedSession.prescriptions) m.set(p.exerciseVersionId, p.exerciseId);
-  return m;
-}
-
 const claveDelPrescripto = (c: ComparacionDeEjercicio): string => `e:${c.prescripto.exerciseId}`;
-function claveDelRealizado(c: ComparacionDeEjercicio, porVersion: Map<string, string>): string | null {
+/** La clave del ejercicio registrado, según su identidad: la del prescripto, la de otro ejercicio, o la de su versión. */
+function claveDelRealizado(c: ComparacionDeEjercicio): string | null {
   if (!c.realizado) return null;
-  if (!c.sustituido) return claveDelPrescripto(c);
-  const id = porVersion.get(c.realizado.exerciseVersionId);
-  return id ? `e:${id}` : `v:${c.realizado.exerciseVersionId}`;
+  if (esElMismoEjercicio(c.identidad)) return claveDelPrescripto(c);
+  if (c.identidad === 'otro-ejercicio' && c.realizado.exerciseId) return `e:${c.realizado.exerciseId}`;
+  return `v:${c.realizado.exerciseVersionId}`;
 }
 
 /** Los ejercicios del período, planificados o realizados por sustitución, por identidad; ordenados por nombre. */
 export function ejerciciosComparables(ejecuciones: readonly EjecucionDeEntrenamiento[]): EjercicioComparable[] {
-  const porVersion = ejercicioPorVersion(ejecuciones);
+  const versiones = identidadDeVersiones(ejecuciones);
   const nombres = new Map<string, string[]>();
   const anotar = (clave: string, nombre: string) => {
     const lista = nombres.get(clave) ?? [];
@@ -354,10 +413,11 @@ export function ejerciciosComparables(ejecuciones: readonly EjecucionDeEntrenami
     nombres.set(clave, lista);
   };
   for (const x of [...ejecuciones].sort(porOcurrencia)) {
-    for (const c of compararEjecucion(x)) {
+    for (const c of compararEjecucion(x, versiones)) {
       anotar(claveDelPrescripto(c), c.prescripto.nombre);
-      const realizado = claveDelRealizado(c, porVersion);
-      if (realizado && c.sustituido && c.realizado) anotar(realizado, c.realizado.nombre);
+      // Otra versión del mismo ejercicio suma su nombre al del ejercicio; otro ejercicio o uno sin identificar, su entrada.
+      const realizado = claveDelRealizado(c);
+      if (realizado && c.realizado && c.identidad !== 'misma-version') anotar(realizado, c.realizado.nombre);
     }
   }
   const lista = [...nombres].map(([clave, vistos]) => {
@@ -370,11 +430,21 @@ export function ejerciciosComparables(ejecuciones: readonly EjecucionDeEntrenami
 }
 
 /**
- * - `planificado-y-registrado`: se prescribió este ejercicio y lo registrado es de este ejercicio (o no hay registro);
+ * - `planificado-y-registrado`: se prescribió este ejercicio y lo registrado es de este ejercicio, en la misma versión o
+ *   en otra (o no hay registro);
  * - `sustituido`: se prescribió este ejercicio, pero se registró otro: lo planificado vale, lo registrado no es de él;
- * - `por-sustitucion`: se registró este ejercicio en lugar de otro: lo registrado vale, lo planificado era de otro.
+ * - `por-sustitucion`: se registró este ejercicio en lugar de otro: lo registrado vale, lo planificado era de otro;
+ * - `registrado-sin-identidad`: se prescribió este ejercicio y se registró una versión que no se puede identificar: lo
+ *   planificado vale, y de lo registrado no se sabe si es este ejercicio;
+ * - `planificado-sin-identidad`: esta entrada es una versión registrada sin identificar: lo registrado vale, y de lo
+ *   planificado no se sabe si era el mismo ejercicio.
  */
-export type RolDeLaObservacion = 'planificado-y-registrado' | 'sustituido' | 'por-sustitucion';
+export type RolDeLaObservacion = 'planificado-y-registrado' | 'sustituido' | 'por-sustitucion' | 'registrado-sin-identidad' | 'planificado-sin-identidad';
+
+/** Lo planificado de la observación es de este ejercicio. */
+const elPlanEsDelEjercicio = (rol: RolDeLaObservacion): boolean => rol === 'planificado-y-registrado' || rol === 'sustituido' || rol === 'registrado-sin-identidad';
+/** Lo registrado de la observación es de este ejercicio. */
+const elRegistroEsDelEjercicio = (rol: RolDeLaObservacion): boolean => rol === 'planificado-y-registrado' || rol === 'por-sustitucion' || rol === 'planificado-sin-identidad';
 
 /**
  * La unidad de observación de la evolución: **una prescripción de una ejecución registrada** en la que aparece el
@@ -398,15 +468,18 @@ export function observacionesDelEjercicio(
   claveDelEjercicio: string,
   periodo: readonly EjecucionDeEntrenamiento[] = ejecuciones,
 ): ObservacionDeEvolucion[] {
-  const porVersion = ejercicioPorVersion(periodo);
+  const versiones = identidadDeVersiones(periodo);
   const sinDia: Omit<ObservacionDeEvolucion, 'delDia'>[] = [];
   for (const x of [...ejecuciones].sort(porOcurrencia)) {
-    for (const c of compararEjecucion(x)) {
+    // La misma identidad que usa la vista por serie: la de todo el período.
+    for (const c of compararEjecucion(x, versiones)) {
       const clave = `${c.executionId}|${c.prescriptionId}`;
-      // La API marca sustitución cuando cambia la versión; si la versión realizada es del mismo ejercicio, es el mismo.
-      const otroEjercicio = c.sustituido && claveDelRealizado(c, porVersion) !== claveDelPrescripto(c);
-      if (claveDelPrescripto(c) === claveDelEjercicio) sinDia.push({ clave, rol: otroEjercicio ? 'sustituido' : 'planificado-y-registrado', comparacion: c });
-      else if (otroEjercicio && claveDelRealizado(c, porVersion) === claveDelEjercicio) sinDia.push({ clave, rol: 'por-sustitucion', comparacion: c });
+      if (claveDelPrescripto(c) === claveDelEjercicio) {
+        const rol = c.identidad === 'otro-ejercicio' ? 'sustituido' : c.identidad === 'desconocida' ? 'registrado-sin-identidad' : 'planificado-y-registrado';
+        sinDia.push({ clave, rol, comparacion: c });
+      } else if (claveDelRealizado(c) === claveDelEjercicio) {
+        sinDia.push({ clave, rol: c.identidad === 'desconocida' ? 'planificado-sin-identidad' : 'por-sustitucion', comparacion: c });
+      }
     }
   }
   return sinDia.map((o) => {
@@ -415,9 +488,27 @@ export function observacionesDelEjercicio(
   });
 }
 
-/** Los números de serie que aparecen, planificados o registrados, en estas observaciones. */
+/**
+ * Los números de serie de este ejercicio en estas observaciones: los planificados de sus prescripciones y los registrados
+ * de sus registros. Una serie que solo tiene el registro de otro ejercicio (o de uno sin identificar) no es de este.
+ */
 export function numerosDeSerie(observaciones: readonly ObservacionDeEvolucion[]): number[] {
-  return [...new Set(observaciones.flatMap((o) => o.comparacion.filas.map((f) => f.numero)))].sort((a, b) => a - b);
+  const numeros = observaciones.flatMap((o) =>
+    o.comparacion.filas
+      .filter(
+        (f) =>
+          o.rol === 'planificado-y-registrado' ||
+          (elPlanEsDelEjercicio(o.rol) && f.planificada.tipo === 'planificada') ||
+          (elRegistroEsDelEjercicio(o.rol) && f.registrada.tipo === 'registrada'),
+      )
+      .map((f) => f.numero),
+  );
+  return [...new Set(numeros)].sort((a, b) => a - b);
+}
+
+/** Las medidas de la evolución, con el mismo criterio: de cada observación, solo el lado que es de este ejercicio. */
+export function medidasDeLaEvolucion(observaciones: readonly ObservacionDeEvolucion[]): Medida[] {
+  return medidasDe(observaciones.map((o) => ({ c: o.comparacion, plan: elPlanEsDelEjercicio(o.rol), registro: elRegistroEsDelEjercicio(o.rol) })));
 }
 
 export interface PuntoDeEvolucion {
@@ -453,9 +544,23 @@ export function evolucion(observaciones: readonly ObservacionDeEvolucion[], medi
       planificada: { tipo: 'no-planificada' },
       registrada: c.condicion === 'NOT_COMPLETED' ? { tipo: 'sin-dato', motivo: 'serie-no-registrada' } : sinDatoDeLaSerie(c),
     };
+    // Una serie que existe solo en el registro de otro ejercicio (o de uno sin identificar) no es «adicional» de este:
+    // la prescripción de este ejercicio no la tiene.
+    const soloDeOtroRegistro = fila?.planificada.tipo === 'no-planificada' && !elRegistroEsDelEjercicio(o.rol);
     const planificado: ValorPlanificado =
-      o.rol === 'por-sustitucion' ? { tipo: 'otro-ejercicio', nombre: c.prescripto.nombre } : fila ? valorPlanificado(c, base, medida) : { tipo: 'sin-serie' };
-    const registrado: ValorRegistrado = o.rol === 'sustituido' ? { tipo: 'sin-dato', motivo: 'otro-ejercicio' } : valorRegistrado(base, medida);
+      o.rol === 'por-sustitucion'
+        ? { tipo: 'otro-ejercicio', nombre: c.prescripto.nombre }
+        : o.rol === 'planificado-sin-identidad'
+          ? { tipo: 'identidad-desconocida', nombre: c.prescripto.nombre }
+          : fila && !soloDeOtroRegistro
+            ? valorPlanificado(c, base, medida)
+            : { tipo: 'sin-serie' };
+    const registrado: ValorRegistrado =
+      o.rol === 'sustituido'
+        ? { tipo: 'sin-dato', motivo: 'otro-ejercicio' }
+        : o.rol === 'registrado-sin-identidad'
+          ? { tipo: 'sin-dato', motivo: 'identidad-desconocida' }
+          : valorRegistrado(base, medida);
     const anterior = puntos[puntos.length - 1];
     const tramoRegistrado = registrado.tipo !== 'valor' ? null : anterior?.tramoRegistrado != null ? anterior.tramoRegistrado : ++tramo;
     // Lo planificado se une solo entre ocurrencias de la misma prescripción de la misma versión: es la línea de una
@@ -503,6 +608,7 @@ export const COPY_COMPARACION = {
   ejercicio: 'Ejercicio',
   elegiUnEjercicio: 'Elegí un ejercicio para ver cómo se compara lo planificado con lo registrado en el período.',
   sinObservaciones: 'Este ejercicio no aparece en las sesiones registradas del período.',
+  sinObservacionesEnLaVersion: 'Este ejercicio no aparece en las sesiones registradas de la versión del plan elegida: está en otra versión del período.',
   soloRegistradas: 'Solo sesiones registradas: los borradores y las sesiones que todavía no ocurrieron no aparecen.',
   unidadDeObservacion:
     'Cada punto es una sesión registrada en la que aparece el ejercicio, en el orden en que ocurrió; la distancia entre puntos no es proporcional al tiempo. Se compara la serie del número elegido: las series no se promedian ni se suman.',
@@ -516,7 +622,7 @@ export const COPY_COMPARACION = {
   sinFijar: 'Sin fijar',
   noPlanificada: 'Adicional: sin prescripción para esta serie',
   noPlanificadaCorto: 'adicional',
-  sinSerieEnLaPrescripcion: 'La prescripción no tiene esta serie, y no se registró',
+  sinSerieEnLaPrescripcion: 'La prescripción no tiene esta serie',
   otroEjercicioPlanificado: 'Se planificó otro ejercicio',
   noRealizada: 'No realizada: la sesión se registró así',
   noRealizadaCorto: 'no realizada',
@@ -533,9 +639,15 @@ export const COPY_COMPARACION = {
   noEstabaEnElOriginal: 'No estaba en el registro original',
   vistaNoResoluble: 'El registro vigente de esta sesión no se puede determinar: lo registrado no se grafica.',
   sustitucion: 'Se registró otro ejercicio en lugar del planificado: se muestran los dos, pero no se calcula la diferencia entre ejercicios distintos.',
+  otraVersionDelMismo: 'El registro indica una sustitución de versión, pero las dos versiones son del mismo ejercicio del catálogo: se compara como el mismo ejercicio.',
+  identidadSinResolver:
+    'El registro indica una sustitución, y con las sesiones del período no se puede saber si lo registrado es el mismo ejercicio o uno distinto: se muestran los dos, sin calcular la diferencia.',
+  noSeSabeSiEsElMismo: 'no se puede saber si es el mismo ejercicio',
   tablaEquivalente: 'Tabla de valores',
   tablaMuestraAmbas: 'La tabla muestra siempre las dos capas, con los mismos valores del gráfico.',
   capaOculta: 'Las dos capas están ocultas. Activá al menos una para ver el gráfico; la tabla sigue abajo.',
+  seDesplazaSeries: 'Hay más series a los costados: desplazá el gráfico o recorrelo con las flechas. La tabla tiene todas.',
+  seDesplazaSesiones: 'Hay más sesiones a los costados: desplazá el gráfico o recorrelo con las flechas. La tabla tiene todas.',
   sinSeries: 'Esta prescripción no tiene series planificadas ni registradas.',
 } as const;
 
@@ -545,6 +657,7 @@ const MOTIVO: Readonly<Record<Exclude<MotivoSinDato, 'campo-no-registrado'>, str
   'registro-resumido': 'Sin dato por serie: se registró un resumen',
   'vista-no-resoluble': 'Sin dato: el registro vigente no se puede determinar',
   'otro-ejercicio': 'Se registró otro ejercicio',
+  'identidad-desconocida': 'Se registró una versión que no se puede identificar: no se sabe si es este ejercicio',
 };
 
 const NO_REGISTRADO: Readonly<Record<Medida['variable'], string>> = {
@@ -587,6 +700,8 @@ export function textoPlanificado(v: ValorPlanificado, m: Medida): string {
       return COPY_COMPARACION.sinSerieEnLaPrescripcion;
     case 'otro-ejercicio':
       return `${COPY_COMPARACION.otroEjercicioPlanificado}: ${v.nombre}`;
+    case 'identidad-desconocida':
+      return `Se planificó ${v.nombre}: ${COPY_COMPARACION.noSeSabeSiEsElMismo}`;
   }
 }
 
@@ -630,7 +745,10 @@ export function textoDeDiferencia(d: Diferencia, m: Medida): string {
  * hay dos valores comparables, qué pasa con lo registrado («sin dato», «no realizada», «adicional», «en lb»). Así el
  * estado se lee en el gráfico sin depender del color ni del puntero.
  */
-export function rotuloCorto(p: { readonly planificado: ValorPlanificado; readonly registrado: ValorRegistrado; readonly diferencia: Diferencia | null }, m: Medida): string {
+export function rotuloCorto(
+  p: { readonly planificado: ValorPlanificado; readonly registrado: ValorRegistrado; readonly diferencia: Diferencia | null; readonly identidad?: IdentidadDelRegistro },
+  m: Medida,
+): string {
   const d = p.diferencia;
   if (d) {
     if (d.tipo === 'igual') return d.respectoDeLaSugerida ? 'igual sug.' : 'igual';
@@ -639,10 +757,14 @@ export function rotuloCorto(p: { readonly planificado: ValorPlanificado; readonl
     return `${conSigno(d.delta, m)} ${d.tipo === 'bajo-el-rango' ? 'mín.' : 'máx.'}`;
   }
   if (p.planificado.tipo === 'sin-serie') return 'sin serie';
+  if (p.planificado.tipo === 'identidad-desconocida') return 'sin identificar';
+  if (p.planificado.tipo === 'otro-ejercicio') return 'por sustitución';
+  if (p.registrado.tipo === 'valor' && p.identidad === 'otro-ejercicio') return 'otro ejercicio';
+  if (p.registrado.tipo === 'valor' && p.identidad === 'desconocida') return 'sin identificar';
   const r = p.registrado;
   if (r.tipo === 'no-realizada') return COPY_COMPARACION.noRealizadaCorto;
   if (r.tipo === 'otra-unidad') return `en ${r.carga.unit}`;
-  if (r.tipo === 'sin-dato') return r.motivo === 'otro-ejercicio' ? 'otro ejercicio' : COPY_COMPARACION.sinDato.toLowerCase();
+  if (r.tipo === 'sin-dato') return r.motivo === 'otro-ejercicio' ? 'otro ejercicio' : r.motivo === 'identidad-desconocida' ? 'sin identificar' : COPY_COMPARACION.sinDato.toLowerCase();
   if (p.planificado.tipo === 'no-planificada') return COPY_COMPARACION.noPlanificadaCorto;
   return '';
 }

@@ -45,7 +45,7 @@ Toda la lógica está en el dominio (`packages/domain/src/comparacion-de-entrena
 | Carga | La **carga sugerida** es de la prescripción y se marca «(sugerida)»: no es una obligación, y la diferencia se dice **respecto de la sugerida** («5 kg menos que la carga sugerida», «−5 kg sug.» en el eje). El **%RM no se convierte a kg**: no hay base registrada. **kg y lb son variables separadas**: una sesión en la otra unidad queda «otra unidad», sin convertir |
 | RIR | El planificado es el objetivo de la prescripción (rige para todas sus series), y se dice |
 | Correcciones | Rige el **registro vigente** (`registroVigente`). La serie cambiada se marca «Corregida» y el valor original queda a la vista. Una vista vigente no resoluble no se grafica, y se dice |
-| Identidad | Por `exerciseId` del catálogo, nunca por el nombre: dos ejercicios con el mismo nombre se listan por separado. El realizado en una sustitución se identifica por su versión, con todo el período como referencia, aunque se filtre por versión del plan. Otra versión del mismo ejercicio no se toma como otro ejercicio. En la evolución del planificado se ve «se registró otro ejercicio». En la del realizado, «se planificó otro ejercicio». Nunca se calcula la diferencia entre ejercicios distintos |
+| Identidad | Por `exerciseId` del catálogo, nunca por el nombre. Se distinguen dos cosas: la **sustitución de versión** que informa el contrato (`substituted`, se conserva y se muestra) y la **identidad** de lo registrado. La ejecución trae solo la versión registrada, y a qué ejercicio pertenece se sabe si esa versión aparece prescripta en alguna sesión registrada del período. Puede ser **el mismo ejercicio en otra versión**: se compara, con la misma diferencia en las dos vistas. Puede ser **otro ejercicio**: no se compara, y cada ejercicio conserva lo suyo. O puede **no saberse**: no se compara, y se dice que no se sabe, sin afirmar que es el mismo ni otro. Las dos vistas y los avisos usan la misma identidad, la de todo el período, aunque se filtre por versión del plan |
 | Líneas | Lo registrado se une solo entre sesiones seguidas **con valor**. Lo planificado se une solo entre ocurrencias de **la misma prescripción de la misma versión**: se corta cuando cambia la versión o la sesión. Un rango es franja, no línea |
 | Datos que faltan | Ver la tabla siguiente |
 
@@ -87,12 +87,12 @@ No hay porcentajes de adherencia, puntajes ni rótulos de mejor o peor. La difer
 
 | Prueba | Qué cubre | Resultado |
 |---|---|---|
-| Unitarias del dominio (`comparacion-de-entrenamiento.test.ts`, 28, con datos validados contra el esquema estricto) | Ver la lista siguiente | dominio **319/319** |
-| Integración `comparacion-entrenamiento.int-spec.ts`, contra PostgreSQL y por los flujos reales | La lectura real de API-TRN-21 pasada por la misma lógica. Ver la lista siguiente | **11/11** |
+| Unitarias del dominio (`comparacion-de-entrenamiento.test.ts`, 34, con datos validados contra el esquema estricto) | Ver la lista siguiente | dominio **325/325** |
+| Integración `comparacion-entrenamiento.int-spec.ts`, contra PostgreSQL y por los flujos reales | La lectura real de API-TRN-21 pasada por la misma lógica. Ver la lista siguiente | **12/12** |
 | Regresión de integración: la nueva, entrenamiento, contexto de entrenamiento, PF-03, contrato y máquinas de WP-06 | | **170/170** (6 suites) |
 | `npm test` (dominio, scripts de pantallas y contraste, API), typecheck, OpenAPI (sin cambios), legajo, `audit:prod` y build del website | | sin fallas |
 
-**Unitarias del dominio (28):**
+**Unitarias del dominio (34):**
 - el caso de aceptación (10/8/6 contra 10/8/5, la serie 3 da −1);
 - números salteados y serie adicional;
 - ausencia ≠ cero, en cada motivo;
@@ -106,9 +106,10 @@ No hay porcentajes de adherencia, puntajes ni rótulos de mejor o peor. La difer
 - líneas que no cruzan lo desconocido ni otra prescripción;
 - serie ausente en una observación;
 - rótulo del eje y copy sin términos prohibidos;
-- por la revisión enfocada: la serie inexistente, la declaración que no cubre lo no planificado, el filtro por versión, otra versión del mismo ejercicio y la diferencia respecto de la carga sugerida.
+- por la revisión enfocada: la serie inexistente, la declaración que no cubre lo no planificado, el filtro por versión, otra versión del mismo ejercicio y la diferencia respecto de la carga sugerida;
+- por el cierre (identidad): la contradicción reproducida, con las dos vistas; la identidad desconocida; otro ejercicio conocido; una propiedad que recorre todo el período y exige la misma diferencia en las dos vistas; y las series y variables que solo tiene el registro de otro ejercicio o de uno sin identificar.
 
-**Integración (11):** el período sintético del encabezado de la prueba, en un solo día y por los flujos reales:
+**Integración (12):** el período sintético del encabezado de la prueba, en un solo día y por los flujos reales:
 - la pirámide y el caso de aceptación; la serie salteada y la adicional; la corrección con su original;
 - el ejercicio sin registro, la sesión no realizada y el resumen; rangos, %RM y unidades;
 - cinco sesiones el mismo día, de dos versiones; la sustitución;
@@ -117,13 +118,14 @@ No hay porcentajes de adherencia, puntajes ni rótulos de mejor o peor. La difer
   - otro profesional de entrenamiento vinculado al mismo asesorado no ve estas ejecuciones;
   - otro alcance, un asesorado ajeno y el propio asesorado reciben el mismo 404;
   - el período de más de 92 días es PERIOD_TOO_LONG;
-  - con el B2 revocado, 404.
+  - con el B2 revocado, 404;
+- **identidad del ejercicio** (el cierre): una versión 2 del ejercicio, escrita como la dejaría un cambio de catálogo. Mientras ninguna sesión del período la prescribe, la identidad es desconocida en las dos vistas. Cuando se registra una sesión que la prescribe, las dos vistas dan −1. Además, un caso con otro ejercicio conocido.
 
-### Recorrido web local (48/48 controles)
+### Recorrido web local (49/49 controles, repetido en el cierre)
 
 - **Entorno:** la API compilada, PostgreSQL 16 embebido, `next dev` y Chrome sin interfaz, el 2026-09-29.
 - **Cómo:** el profesional entra como una persona y elige el período en el formulario.
-- **Controles:** 45 en escritorio y móvil, y 3 de carga y error con la API detenida a propósito. Se repitió completo después de las correcciones de la revisión, y las capturas son de esa repetición.
+- **Controles:** 46 en escritorio y móvil, y 3 de carga y error con la API detenida a propósito. Se repitió completo con el código del cierre, y las capturas `01` a `13` son de esa repetición.
 - **No es el ambiente `test` desplegado.**
 
 | Control | Resultado |
@@ -141,7 +143,8 @@ No hay porcentajes de adherencia, puntajes ni rótulos de mejor o peor. La difer
 | Por serie: el eje dice «Serie 3 · −1»; elegir la serie 3 muestra carga, RIR y la diferencia en palabras; un clic sobre la tercera barra elige la serie 3 | ✅ (3 controles) |
 | Números reales: «Serie 3 · sin dato» y «Serie 4 · adicional», sin renumerar ni inventar prescripción | ✅ |
 | Corrección: rige 7, marcada «Corregida», con el original (8) a la vista | ✅ |
-| Sustitución: las dos puntas, sin diferencia | ✅ |
+| Sustitución por una versión que el período no identifica: las dos puntas, sin afirmar identidad ni calcular diferencia | ✅ |
+| Filtro de versión: un ejercicio que está en otra versión del período lo dice así, no «no aparece en el período» | ✅ |
 | Puntero: el recuadro aparece al pasar; el clic elige esa sesión; después, la flecha sigue desde ahí | ✅ (3 controles) |
 | Sentadilla en kg: «75 % RM (…)», sin convertir | ✅ |
 | **axe-core** (WCAG 2.2 A y AA), con la evolución y una ejecución abiertas: cero violaciones críticas o serias | ✅ |
@@ -171,7 +174,7 @@ Una revisión de solo lectura del código nuevo, con un revisor, sin auditoría 
 | 5 | Media | La diferencia contra la carga sugerida se decía «que lo planificado», como una obligación | Se dice «respecto de la sugerida». 1 unitaria |
 | 4 | Baja | El pedido de abrir una ejecución quedaba guardado y la volvía a abrir sola | Se atiende una vez y se descarta al cambiar período o filtros. Control del recorrido |
 | 6 | Baja | Otra versión del mismo ejercicio contaba como otro ejercicio; «homónimos» afirmaba que eran distintos | Mismo ejercicio si la versión es del mismo; el aviso dice que no se pueden identificar como el mismo. 1 unitaria |
-| 7 | Baja | Un rango 8-8 no se veía en el gráfico | Alto mínimo visible (`minPointSize`). Sin dato así en el recorrido |
+| 7 | Baja | Un rango 8-8 no se veía en el gráfico | Alto mínimo visible (`minPointSize`). Comprobado en el navegador en el cierre |
 | 8 | Baja | En móvil, con las flechas, el punto elegido podía quedar fuera de la vista | El marco se desplaza hasta el punto. Control del recorrido |
 | 9 | Baja | Con la vista no resoluble, el aviso decía «no se grafica» y lo planificado sí se dibujaba | «Lo registrado no se grafica» |
 
@@ -182,14 +185,81 @@ Una revisión de solo lectura del código nuevo, con un revisor, sin auditoría 
 
 Es preparación de datos, no un flujo del producto, y no se usó en ningún ambiente compartido. Las pruebas de integración no lo necesitan: arman su caso en un solo día, con la regla de la activación de una sucesora.
 
+## Cierre de la tanda (segunda revisión de Dirección, 2026-09-29)
+
+### 1 · Identidad del ejercicio, la misma en las dos vistas
+
+**Reproducción sobre `f1d4003`.** Se prescribe la versión 1 de press de banca (8) y se registra la versión 2 del mismo ejercicio (7), y otra prescripción del período dice que la versión 2 es de press de banca. Resultado con el dominio de `f1d4003`:
+- **evolución:** `planificado-y-registrado`, diferencia −1;
+- **por serie:** `sustituido: true` y **ninguna diferencia**, con el aviso «Se registró otro ejercicio…»;
+- es decir, **contradicción**.
+
+Con la corrección, las dos vistas dan −1 y el aviso dice «las dos versiones son del mismo ejercicio del catálogo».
+
+**Corrección** (`comparacion-de-entrenamiento.ts`, `comparacion.tsx` y `ejecuciones.tsx`):
+- `sustituido` sigue siendo lo que informa el contrato;
+- `identidad` es lo que se sabe, y sale de la identidad de las versiones de **todo el período** (`identidadDeVersiones`);
+- la usan la evolución, la vista por serie (también cuando se abre desde la evolución), los avisos, los rótulos del eje, el panel de valores («Ejercicio registrado: …, otra versión del mismo ejercicio», «otro ejercicio» o «no se puede saber si es el mismo ejercicio») y las opciones del selector;
+- la diferencia se calcula solo si se sabe que es el mismo ejercicio;
+- sin identidad resuelta, se dice que no se sabe.
+
+**Revisión adversarial** (13 agentes: tres lectores independientes, por consistencia, incertidumbre y contrato con pruebas, y un escéptico por hallazgo). Reportaron 10 hallazgos; **2 sobrevivieron a la refutación**, y quedaron corregidos:
+- **media:** en la evolución, una serie que solo tiene el registro de otro ejercicio (o de uno sin identificar) se rotulaba «Adicional» de este ejercicio, y esas series y variables entraban en los selectores. Ahora cada observación aporta solo el lado que es del ejercicio;
+- **baja:** con el filtro de versión, la evolución decía «no aparece en el período» de un ejercicio que está en otra versión. Ahora lo dice así.
+
+Otros dos ajustes: el rótulo del eje por serie dice «otro ejercicio» o «sin identificar», como la evolución; y el panel de valores muestra la versión registrada.
+
+**Pruebas:** 6 unitarias nuevas (dominio 325/325) y 1 de integración nueva (12/12). Lo visible, en el recorrido de densidad e identidad: los dos avisos **abiertos desde la evolución** (capturas `cierre/10` y `cierre/11`).
+
+### 2 · Legibilidad del gráfico por serie con cantidades grandes
+
+**Caso:**
+- 20 series planificadas, el máximo del contrato para una prescripción, con exactas y rangos;
+- series adicionales hasta la 50, el máximo de una ejecución, con numeración salteada: 47 series en total (7 y 13 planificadas sin registro; 25, 33 y 41 inexistentes);
+- cargas que dan los rótulos más largos contra la sugerida («−12,5 kg sug.»);
+- el rango 8-8.
+
+Todo por los flujos reales, en una base local nueva.
+
+**Antes de la corrección** (el código de `f1d4003` con la identidad del cierre): el riesgo **se confirmó**.
+- En escritorio y en móvil se superponían números de serie, estados y valores (captura `cierre/01` y `cierre/02`).
+- En móvil, la serie elegida con el teclado podía quedar fuera de la vista.
+
+**Corrección:**
+- cada grupo del eje tiene un ancho mínimo según sus rótulos y valores;
+- si no entra, el gráfico se desplaza **dentro de su marco**, nunca la página, y una nota dice que hay más series a los costados y que la tabla tiene todas;
+- el elegido con el teclado se trae a la vista;
+- un estado largo se parte en dos líneas («−12,5 kg» y «sug.»), sin achicar la letra;
+- lo mismo en la evolución.
+
+Además, dos defectos de maquetación encontrados al medir:
+- la figura del gráfico tenía el margen por defecto del navegador (40 px por lado);
+- la columna de la lista de ejecuciones crecía con el contenido.
+
+**Después: 55/55 controles**, en escritorio de 1280 px y en móvil de 390 px:
+- una marca por serie real;
+- sin superposición entre números, entre estados, entre valores, ni de valores con el eje;
+- letra de 11 px o más, sin desplazamiento de la página;
+- con 47 series, la nota; con 2, ni desplazamiento ni nota;
+- Fin e Inicio con el teclado, a la vista; un toque o un clic sobre la barra 23 elige esa serie;
+- la tabla con las 47;
+- el **rango 8-8** visible por serie y en la evolución, con «en rango» y «−1 mín.» y la tabla con «8-8»;
+- y los avisos de identidad.
+
+Capturas: `cierre/03` a `cierre/09`.
+
+### 3 · Integración combinada
+
+Se registra en la sección siguiente, con los commits exactos de la combinación y el resultado de la CI.
+
 ## Límites y pendientes
 
 - **DL-106 (abierta):** una serie que falta no se puede declarar como no realizada. Se muestra sin dato. La decisión queda para Dirección.
 - **Eje horizontal ordinal:** ordena las sesiones pero no es proporcional al tiempo, y se dice en la pantalla. Así dos sesiones del mismo día no se superponen.
-- **Móvil:** la evolución larga se desplaza en horizontal dentro de su marco, y el eje vertical se desplaza con ella. La tabla y el panel de valores siguen completos.
+- **Gráficos anchos:** con muchas series o sesiones, el gráfico se desplaza dentro de su marco y el eje vertical se desplaza con él; una nota lo dice. La tabla y el panel de valores siguen completos.
+- **Identidad de lo registrado:** la ejecución trae solo la versión registrada. Si esa versión no aparece prescripta en ninguna sesión del período, no se sabe a qué ejercicio pertenece, y la pantalla lo dice. Pasa con sustituciones comunes, por ejemplo press con mancuernas en lugar de press de banca. Resolverlo del todo necesitaría que la API informara el ejercicio de la versión registrada. Es un cambio de contrato, fuera de esta orden: queda como propuesta, sin decisión.
 - **RIR planificado y carga sugerida:** son de la prescripción, no de cada serie, y la pantalla lo dice.
 - **Vista vigente no resoluble:** no se puede producir por la API. Se prueba solo en las unitarias.
-- **Rango de mínimo igual al máximo (8-8):** se dibuja con un alto mínimo. No hubo un dato así en el recorrido, así que no se comprobó en el navegador.
 - **Filtro «Ejercicio» de Ejecuciones** (hallazgo fuera de la orden, severidad baja, corregido porque la evolución depende de él): antes filtraba por nombre y mezclaba dos ejercicios distintos con el mismo nombre. Ahora filtra por identidad.
 - **No validado por Dirección, no desplegado.** TalkBack y la APK no se tocan.
 
@@ -197,4 +267,5 @@ Es preparación de datos, no un flujo del producto, y no se usó en ningún ambi
 - decidir DL-106;
 - un eje proporcional al tiempo como opción;
 - llevar la comparación al historial del asesorado en la APK, fuera de esta orden;
-- exportar la tabla.
+- exportar la tabla;
+- que la API informe el ejercicio de la versión registrada, para resolver la identidad de toda sustitución.

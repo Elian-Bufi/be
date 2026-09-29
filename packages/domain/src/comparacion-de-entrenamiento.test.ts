@@ -15,6 +15,8 @@ import {
   ejerciciosComparables,
   etiquetaDeMedida,
   evolucion,
+  identidadDeVersiones,
+  medidasDeLaEvolucion,
   medidasDisponibles,
   numerosDeSerie,
   rotuloCorto,
@@ -30,6 +32,7 @@ const REPS: Medida = { variable: 'repeticiones' };
 const KG: Medida = { variable: 'carga', unidad: 'kg' };
 const LB: Medida = { variable: 'carga', unidad: 'lb' };
 const RIR: Medida = { variable: 'rir' };
+const MEDIDAS: readonly Medida[] = [REPS, KG, LB, RIR];
 
 const BANCA = { exerciseId: 'ej-banca', exerciseVersionId: 'ver-banca-1', exerciseName: 'Press de banca' };
 const SENTADILLA = { exerciseId: 'ej-sentadilla', exerciseVersionId: 'ver-sentadilla-1', exerciseName: 'Sentadilla' };
@@ -303,11 +306,12 @@ test('una vista vigente no resoluble no se grafica: sin dato, con su motivo', ()
   assert.ok(seriesParaGraficar(c, REPS).every((f) => f.registrado.tipo === 'sin-dato' && f.registrado.motivo === 'vista-no-resoluble'));
 });
 
-test('sustitución dentro de la ejecución: se ve lo registrado, pero no se calcula la diferencia con otro ejercicio', () => {
+test('sustitución por una versión que el período no identifica: se ve lo registrado, sin afirmar identidad ni calcular diferencia', () => {
   const x = ejecucion({ fecha: '2026-09-01', prescripciones: [piramide], registrado: [{ prescriptionId: 'rx-banca', sets: [serie(1, 12)], realizado: MANCUERNAS }] });
   const c = compararEjecucion(x)[0]!;
   assert.equal(c.sustituido, true);
-  assert.deepEqual(c.realizado, { exerciseVersionId: MANCUERNAS.versionId, nombre: MANCUERNAS.nombre });
+  assert.equal(c.identidad, 'desconocida');
+  assert.deepEqual(c.realizado, { exerciseVersionId: MANCUERNAS.versionId, exerciseId: null, nombre: MANCUERNAS.nombre });
   const f = seriesParaGraficar(c, REPS)[0]!;
   assert.deepEqual(f.registrado, { tipo: 'valor', valor: 12 });
   assert.equal(f.diferencia, null);
@@ -383,7 +387,7 @@ test('evolución de la serie 1: valores, sin dato, no realizada, sustitución, r
       ['8', COPY_COMPARACION.noRealizada],
       ['10', '10'],
       ['6-8', '7'],
-      ['10', 'Se registró otro ejercicio'],
+      ['10', 'Se registró una versión que no se puede identificar: no se sabe si es este ejercicio'],
       ['10', 'Sin dato por serie: se registró un resumen'],
       ['10', '10'],
     ],
@@ -474,14 +478,16 @@ test('otra versión del mismo ejercicio no es otro ejercicio: el punto conserva 
   assert.equal(ejerciciosComparables([a, b]).filter((e) => e.nombre === 'Press de banca').length, 1);
 });
 
-test('el ejercicio realizado por sustitución tiene su evolución: lo planificado era de otro ejercicio', () => {
+test('la versión registrada sin identificar tiene su propia evolución: no se afirma que lo planificado sea otro ejercicio', () => {
   const obs = observacionesDelEjercicio(periodo(), `v:${MANCUERNAS.versionId}`);
   assert.equal(obs.length, 1);
-  assert.equal(obs[0]!.rol, 'por-sustitucion');
+  assert.equal(obs[0]!.rol, 'planificado-sin-identidad');
   const [p] = evolucion(obs, REPS, 1);
-  assert.deepEqual(p!.planificado, { tipo: 'otro-ejercicio', nombre: 'Press de banca' });
+  assert.deepEqual(p!.planificado, { tipo: 'identidad-desconocida', nombre: 'Press de banca' });
+  assert.equal(textoPlanificado(p!.planificado, REPS), `Se planificó Press de banca: ${COPY_COMPARACION.noSeSabeSiEsElMismo}`);
   assert.deepEqual(p!.registrado, { tipo: 'valor', valor: 12 });
   assert.equal(p!.diferencia, null);
+  assert.equal(rotuloCorto(p!, REPS), 'sin identificar');
 });
 
 test('una sustitución con un ejercicio prescripto en el período se reconoce por su versión', () => {
@@ -493,11 +499,147 @@ test('una sustitución con un ejercicio prescripto en el período se reconoce po
   assert.equal(ejerciciosComparables([x1, x2]).filter((e) => e.nombre === 'Sentadilla').length, 1);
 });
 
+// ─── Identidad del ejercicio: la misma en las dos vistas ────────────────────────────────────────
+
+/**
+ * La contradicción que se reprodujo con f1d4003: se prescribe la versión 1 de press de banca (8) y se registra la
+ * versión 2 del mismo ejercicio (7); otra prescripción del período dice que la versión 2 es de press de banca. La
+ * evolución daba −1 y la vista por serie, sin diferencia y «otro ejercicio».
+ */
+const BANCA_V2 = { ...BANCA, exerciseVersionId: 'ver-banca-2', exerciseName: 'Press de banca plano' };
+const conVersion2 = () =>
+  ejecucion({ fecha: '2026-09-01', prescripciones: [tresPorOcho], registrado: [{ prescriptionId: 'rx-banca', sets: [serie(1, 7)], realizado: { versionId: BANCA_V2.exerciseVersionId, nombre: BANCA_V2.exerciseName } }] });
+const prescribeVersion2 = () =>
+  ejecucion({ fecha: '2026-09-03', prescripciones: [prescripcion('rx-banca-v2', BANCA_V2, [exacta(8)])], registrado: [{ prescriptionId: 'rx-banca-v2', sets: [serie(1, 8)] }] });
+
+test('identidad · otra versión del mismo ejercicio: las dos vistas la comparan y dan la misma diferencia (−1)', () => {
+  const a = conVersion2();
+  const periodo2 = [a, prescribeVersion2()];
+  const versiones = identidadDeVersiones(periodo2);
+  // Vista por serie, con la identidad del período.
+  const c = compararEjecucion(a, versiones)[0]!;
+  assert.equal(c.sustituido, true, 'el contrato informa la sustitución de versión, y se conserva');
+  assert.equal(c.identidad, 'mismo-ejercicio');
+  assert.deepEqual(c.realizado, { exerciseVersionId: 'ver-banca-2', exerciseId: 'ej-banca', nombre: 'Press de banca plano' });
+  const porSerie = seriesParaGraficar(c, REPS)[0]!;
+  assert.equal(textoDeDiferencia(porSerie.diferencia!, REPS), '−1');
+  // Evolución, con la misma identidad.
+  const [punto] = evolucion(observacionesDelEjercicio(periodo2, 'e:ej-banca'), REPS, 1);
+  assert.equal(punto!.observacion.rol, 'planificado-y-registrado');
+  assert.deepEqual(punto!.diferencia, porSerie.diferencia);
+  // Un solo ejercicio en el selector, con los dos nombres.
+  const bancas = ejerciciosComparables(periodo2).filter((e) => e.clave === 'e:ej-banca');
+  assert.equal(bancas.length, 1);
+  assert.ok(ejerciciosComparables(periodo2).every((e) => !e.clave.startsWith('v:')));
+});
+
+test('identidad · la misma ejecución sin la prescripción que identifica la versión: desconocida en las dos vistas', () => {
+  const a = conVersion2();
+  const c = compararEjecucion(a, identidadDeVersiones([a]))[0]!;
+  assert.equal(c.identidad, 'desconocida');
+  assert.equal(seriesParaGraficar(c, REPS)[0]!.diferencia, null);
+  const [punto] = evolucion(observacionesDelEjercicio([a], 'e:ej-banca'), REPS, 1);
+  assert.equal(punto!.observacion.rol, 'registrado-sin-identidad');
+  assert.deepEqual(punto!.registrado, { tipo: 'sin-dato', motivo: 'identidad-desconocida' });
+  assert.equal(punto!.diferencia, null);
+  // Ni «otro ejercicio» ni el mismo: la versión queda como entrada propia, sin identificar.
+  assert.notEqual(textoRegistrado(punto!.registrado, REPS), 'Se registró otro ejercicio');
+  const [propio] = evolucion(observacionesDelEjercicio([a], 'v:ver-banca-2'), REPS, 1);
+  assert.equal(propio!.observacion.rol, 'planificado-sin-identidad');
+  assert.deepEqual(propio!.registrado, { tipo: 'valor', valor: 7 });
+  assert.equal(propio!.diferencia, null);
+});
+
+test('identidad · otro ejercicio conocido: sin diferencia en las dos vistas, y cada ejercicio con lo suyo', () => {
+  const sentadilla = prescripcion('rx-sentadilla', SENTADILLA, [exacta(5)]);
+  const conSentadilla = ejecucion({ fecha: '2026-09-02', prescripciones: [sentadilla], registrado: [{ prescriptionId: 'rx-sentadilla', sets: [serie(1, 5)] }] });
+  const sustituida = ejecucion({ fecha: '2026-09-04', prescripciones: [tresPorOcho], registrado: [{ prescriptionId: 'rx-banca', sets: [serie(1, 5)], realizado: { versionId: SENTADILLA.exerciseVersionId, nombre: 'Sentadilla' } }] });
+  const periodo3 = [conSentadilla, sustituida];
+  const c = compararEjecucion(sustituida, identidadDeVersiones(periodo3))[0]!;
+  assert.equal(c.identidad, 'otro-ejercicio');
+  assert.equal(seriesParaGraficar(c, REPS)[0]!.diferencia, null);
+  const [enBanca] = evolucion(observacionesDelEjercicio(periodo3, 'e:ej-banca'), REPS, 1);
+  assert.equal(enBanca!.observacion.rol, 'sustituido');
+  assert.equal(textoRegistrado(enBanca!.registrado, REPS), 'Se registró otro ejercicio');
+  const enSentadilla = evolucion(observacionesDelEjercicio(periodo3, 'e:ej-sentadilla'), REPS, 1);
+  assert.deepEqual(enSentadilla.map((p) => p.observacion.rol), ['planificado-y-registrado', 'por-sustitucion']);
+  assert.equal(enSentadilla[1]!.diferencia, null);
+});
+
+test('identidad · una serie que solo tiene el registro de otro ejercicio no es «adicional» de este, ni se ofrece', () => {
+  // Se prescribe press de banca 3 × 8 y se registra sentadilla (que otra sesión prescribe) con cuatro series en lb y RIR.
+  const sentadilla = prescripcion('rx-sentadilla', SENTADILLA, [exacta(5)]);
+  const conSentadilla = ejecucion({ fecha: '2026-09-02', prescripciones: [sentadilla], registrado: [{ prescriptionId: 'rx-sentadilla', sets: [serie(1, 5)] }] });
+  const cuatro = [1, 2, 3, 4].map((n) => serie(n, 5, { value: 200, unit: 'lb' }, 1));
+  const sustituida = ejecucion({ fecha: '2026-09-04', prescripciones: [prescripcion('rx-banca', BANCA, [exacta(8), exacta(8), exacta(8)])], registrado: [{ prescriptionId: 'rx-banca', sets: cuatro, realizado: { versionId: SENTADILLA.exerciseVersionId, nombre: 'Sentadilla' } }] });
+  const todo = [conSentadilla, sustituida];
+  const obsBanca = observacionesDelEjercicio(todo, 'e:ej-banca');
+  assert.deepEqual(numerosDeSerie(obsBanca), [1, 2, 3], 'la serie 4 es de la sentadilla');
+  assert.deepEqual(medidasDeLaEvolucion(obsBanca), [REPS], 'lb y RIR son solo de la sentadilla');
+  const [p4] = evolucion(obsBanca, REPS, 4);
+  assert.deepEqual(p4!.planificado, { tipo: 'sin-serie' });
+  assert.notEqual(textoPlanificado(p4!.planificado, REPS), COPY_COMPARACION.noPlanificada);
+  const [p3] = evolucion(obsBanca, REPS, 3);
+  assert.deepEqual([textoPlanificado(p3!.planificado, REPS), textoRegistrado(p3!.registrado, REPS)], ['8', 'Se registró otro ejercicio']);
+  // En la evolución de la sentadilla, en cambio, la serie 4 existe: lo registrado es de ella.
+  const obsSentadilla = observacionesDelEjercicio(todo, 'e:ej-sentadilla');
+  assert.deepEqual(numerosDeSerie(obsSentadilla), [1, 2, 3, 4]);
+  assert.deepEqual(medidasDeLaEvolucion(obsSentadilla).map(etiquetaDeMedida), ['Repeticiones', 'Carga (kg)', 'Carga (lb)', 'RIR']);
+  const s4 = evolucion(obsSentadilla, REPS, 4).find((p) => p.observacion.rol === 'por-sustitucion')!;
+  assert.deepEqual(s4.planificado, { tipo: 'otro-ejercicio', nombre: 'Press de banca' });
+  // La vista por serie de esa ejecución dice lo mismo en el eje: «otro ejercicio», sin diferencia.
+  const c = compararEjecucion(sustituida, identidadDeVersiones(todo))[0]!;
+  assert.deepEqual(seriesParaGraficar(c, REPS).map((x) => rotuloCorto(x, REPS)), ['otro ejercicio', 'otro ejercicio', 'otro ejercicio', 'otro ejercicio']);
+});
+
+test('identidad · con una versión sin identificar pasa lo mismo, y el eje por serie dice «sin identificar»', () => {
+  const cuatro = [1, 2, 3, 4].map((n) => serie(n, 7, { value: 150, unit: 'lb' }, 2));
+  const a = ejecucion({ fecha: '2026-09-01', prescripciones: [prescripcion('rx-banca', BANCA, [exacta(8), exacta(8), exacta(8)])], registrado: [{ prescriptionId: 'rx-banca', sets: cuatro, realizado: { versionId: 'ver-x', nombre: 'Press de banca' } }] });
+  const obs = observacionesDelEjercicio([a], 'e:ej-banca');
+  assert.equal(obs[0]!.rol, 'registrado-sin-identidad');
+  assert.deepEqual(numerosDeSerie(obs), [1, 2, 3]);
+  assert.deepEqual(medidasDeLaEvolucion(obs), [REPS]);
+  assert.deepEqual(evolucion(obs, REPS, 4)[0]!.planificado, { tipo: 'sin-serie' });
+  const propia = observacionesDelEjercicio([a], 'v:ver-x');
+  assert.deepEqual(numerosDeSerie(propia), [1, 2, 3, 4]);
+  assert.deepEqual(evolucion(propia, REPS, 4)[0]!.planificado, { tipo: 'identidad-desconocida', nombre: 'Press de banca' });
+  // Mismo nombre, pero sin identidad resuelta: la entrada propia no se funde con press de banca ni se afirma distinta.
+  const entradas = ejerciciosComparables([a]).filter((e) => e.nombre === 'Press de banca');
+  assert.deepEqual(entradas.map((e) => e.clave).sort(), ['e:ej-banca', 'v:ver-x']);
+  const c = compararEjecucion(a)[0]!;
+  assert.deepEqual(seriesParaGraficar(c, REPS).map((x) => rotuloCorto(x, REPS)), ['sin identificar', 'sin identificar', 'sin identificar', 'sin identificar']);
+});
+
+test('identidad · propiedad: en todo el período, las dos vistas dan la misma diferencia para la misma serie', () => {
+  const todo = [...periodo(), conVersion2(), prescribeVersion2()];
+  const versiones = identidadDeVersiones(todo);
+  for (const e of ejerciciosComparables(todo)) {
+    const obs = observacionesDelEjercicio(todo, e.clave);
+    for (const numeroDeSerie of numerosDeSerie(obs)) {
+      for (const medida of MEDIDAS) {
+        for (const p of evolucion(obs, medida, numeroDeSerie)) {
+          if (!p.fila) continue;
+          const x = todo.find((y) => y.executionId === p.observacion.comparacion.executionId)!;
+          const c = compararEjecucion(x, versiones).find((y) => y.prescriptionId === p.observacion.comparacion.prescriptionId)!;
+          const s = seriesParaGraficar(c, medida).find((y) => y.numero === numeroDeSerie)!;
+          if (p.observacion.rol === 'planificado-y-registrado') {
+            assert.deepEqual(p.diferencia, s.diferencia, `${e.clave} · ${x.date} · serie ${numeroDeSerie} · ${medida.variable}`);
+          } else {
+            // Otro ejercicio o identidad desconocida: ninguna de las dos vistas calcula la diferencia.
+            assert.equal(p.diferencia, null);
+            assert.equal(s.diferencia, null, `${e.clave} · ${x.date} · serie ${numeroDeSerie}`);
+          }
+        }
+      }
+    }
+  }
+});
+
 test('rótulo del eje: la diferencia o el estado, nunca vacío cuando falta el dato', () => {
   const puntos = evolucion(observacionesDelEjercicio(periodo(), 'e:ej-banca'), REPS, 1);
   assert.deepEqual(
     puntos.map((p) => rotuloCorto(p, REPS)),
-    ['igual', 'igual', COPY_COMPARACION.noRealizadaCorto, 'igual', 'en rango', 'otro ejercicio', 'sin dato', 'igual'],
+    ['igual', 'igual', COPY_COMPARACION.noRealizadaCorto, 'igual', 'en rango', 'sin identificar', 'sin dato', 'igual'],
   );
   const kg = evolucion(observacionesDelEjercicio(periodo(), 'e:ej-banca'), KG, 1);
   assert.equal(rotuloCorto(kg[1]!, KG), 'en lb');

@@ -19,6 +19,7 @@ import {
   COPY_COMPARACION,
   COPY_ENTRENAMIENTO,
   ejerciciosComparables,
+  identidadDeVersiones,
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
   numero,
@@ -27,6 +28,7 @@ import {
   repeticionesPlanificadas,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EjecucionDeEntrenamiento,
+  type IdentidadDeVersiones,
   type Prescripcion,
   type RegistroDeEjecucion,
 } from '@be/domain';
@@ -76,6 +78,8 @@ export function VistaDeEjecuciones() {
   );
   const visibles = deLaVersion.filter((x) => !conElEjercicio || conElEjercicio.has(x.executionId));
   const elegido = ejercicios.find((x) => x.clave === ejercicioVigente);
+  // La identidad de las versiones sale de todo el período, para la evolución y para el detalle por serie: la misma.
+  const identidadDelPeriodo = useMemo(() => identidadDeVersiones(ejecuciones), [ejecuciones]);
   const versiones = useMemo(() => new Map((r?.ok ? r.datos.activePlanVersions : []).map((v) => [v.planId, fecha(v.activatedAt as string)])), [r]);
   /** La ejecución que se pidió abrir desde la evolución: se despliega, muestra la prescripción del punto y recibe el foco. */
   const [pedido, setPedido] = useState<{ executionId: string; prescriptionId: string; vez: number } | null>(null);
@@ -147,7 +151,13 @@ export function VistaDeEjecuciones() {
             {r.datos.registeredExecutions.length > 0 && visibles.length === 0 ? <p>Ninguna sesión registrada del período coincide con el filtro.</p> : null}
             <ul className="lista">
               {visibles.map((x) => (
-                <DetalleDeEjecucion key={x.executionId} ejecucion={x} pedido={pedido?.executionId === x.executionId ? pedido : null} onAtendido={atendido} />
+                <DetalleDeEjecucion
+                  key={x.executionId}
+                  ejecucion={x}
+                  identidad={identidadDelPeriodo}
+                  pedido={pedido?.executionId === x.executionId ? pedido : null}
+                  onAtendido={atendido}
+                />
               ))}
             </ul>
           </section>
@@ -220,10 +230,12 @@ function nombreParaElegir(e: { clave: string; nombre: string; homonimo: boolean 
 
 function DetalleDeEjecucion({
   ejecucion: x,
+  identidad,
   pedido,
   onAtendido,
 }: {
   ejecucion: EjecucionDeEntrenamiento;
+  identidad: IdentidadDeVersiones;
   pedido: { prescriptionId: string; vez: number } | null;
   onAtendido: () => void;
 }) {
@@ -256,7 +268,7 @@ function DetalleDeEjecucion({
         {abierta ? (
           <>
             <h4>{COPY_COMPARACION.porSerie}</h4>
-            <ComparacionPorSerie key={pedida ? `${pedida.prescriptionId}-${pedida.vez}` : 'inicial'} ejecucion={x} prescriptionId={pedida?.prescriptionId} />
+            <ComparacionPorSerie key={pedida ? `${pedida.prescriptionId}-${pedida.vez}` : 'inicial'} ejecucion={x} prescriptionId={pedida?.prescriptionId} identidad={identidad} />
           </>
         ) : null}
         <h4>{COPY_ENTRENAMIENTO.planificado}</h4>

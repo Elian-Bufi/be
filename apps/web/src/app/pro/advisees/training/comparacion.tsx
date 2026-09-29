@@ -25,6 +25,7 @@ import {
   etiquetaDeMedida,
   evolucion,
   intensidadPlanificada,
+  medidasDeLaEvolucion,
   medidasDisponibles,
   numero,
   numerosDeSerie,
@@ -37,6 +38,7 @@ import {
   type ComparacionDeEjercicio,
   type Diferencia,
   type EjecucionDeEntrenamiento,
+  type IdentidadDeVersiones,
   type FilaDeSerie,
   type Medida,
   type ObservacionDeEvolucion,
@@ -47,7 +49,7 @@ import {
   type ValorPlanificado,
   type ValorRegistrado,
 } from '@be/domain';
-import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { Bar, BarChart, CartesianGrid, ComposedChart, LabelList, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Aviso } from '../../../../components/formulario';
 import { dia, diaCorto, fecha } from '../../../../lib/formato';
@@ -100,6 +102,9 @@ function SelectorDeMedida({ id, medidas, medida, onCambio }: { id: string; medid
   );
 }
 
+/** El eje vertical con su unidad, sin repetirla: «Repeticiones (reps)», «Carga (kg)», «RIR». */
+const ejeVertical = (m: Medida): string => (m.variable === 'repeticiones' ? `${etiquetaDeMedida(m)} (${unidadDeMedida(m)})` : etiquetaDeMedida(m));
+
 /** La medida elegida, si sigue disponible; si no, la primera (siempre hay repeticiones). */
 function medidaElegida(medidas: readonly Medida[], clave: string): Medida {
   return medidas.find((m) => claveDeMedida(m) === clave) ?? (medidas[0] as Medida);
@@ -120,6 +125,78 @@ function useConPuntero(): boolean {
     () => window.matchMedia(CONSULTA_PUNTERO).matches,
     () => false,
   );
+}
+
+/**
+ * El ancho mínimo de cada grupo del eje horizontal (una serie o una sesión), para que números, estados y valores no se
+ * superpongan con muchas series o rótulos largos («−12,5 kg sug.»). Se estima por la cantidad de caracteres, con margen:
+ * el recorrido lo mide en el navegador. Si el gráfico queda más ancho que su marco, el marco se desplaza por dentro y la
+ * página no.
+ */
+function anchoPorGrupo(rotulos: readonly string[], valoresSobreBarras: readonly string[] = []): number {
+  const texto = Math.max(0, ...rotulos.map((t) => t.length)) * 7.2 + 20;
+  // Dos barras por grupo, cada una con su valor encima; las barras ocupan cerca del 80 % del grupo.
+  const barras = valoresSobreBarras.length > 0 ? (2 * (Math.max(0, ...valoresSobreBarras.map((t) => t.length)) * 7.6 + 8)) / 0.8 : 0;
+  return Math.ceil(Math.min(140, Math.max(64, texto, barras)));
+}
+const MARGEN_DEL_EJE = 70;
+
+/**
+ * El estado debajo del eje, en una o dos líneas: uno largo con espacios se parte en el último espacio («−12,5 kg» y
+ * «sug.», «sin» e «identificar»), así cada grupo necesita menos ancho sin achicar la letra.
+ */
+function lineasDelRotulo(rotulo: string): string[] {
+  const corte = rotulo.lastIndexOf(' ');
+  return rotulo.length <= 10 || corte < 1 ? [rotulo] : [rotulo.slice(0, corte), rotulo.slice(corte + 1)];
+}
+const ALTO_DEL_EJE = 66;
+
+/** El rótulo de un grupo del eje horizontal: la serie o la fecha, y debajo su estado, en una o dos líneas. */
+function RotuloDelEje({ x, y, primera, estado, onElegir }: { x: number | string; y: number | string; primera: string; estado: string; onElegir: () => void }) {
+  return (
+    <g transform={`translate(${x},${y})`} className="grafico__elegible" onClick={onElegir}>
+      <text textAnchor="middle" dy={14} className="grafico__tick">
+        {primera}
+      </text>
+      {lineasDelRotulo(estado).map((linea, k) => (
+        <text key={k} textAnchor="middle" dy={30 + k * 16} className="grafico__tick grafico__tick--estado">
+          {linea}
+        </text>
+      ))}
+    </g>
+  );
+}
+
+/**
+ * Trae a la vista, dentro del marco que se desplaza, el grupo elegido: con las flechas el marco no se mueve solo, porque
+ * las teclas se usan para elegir. Se ubica por el rótulo del eje de ese grupo y se centra si quedó afuera.
+ */
+function useTraerALaVista(marco: RefObject<HTMLDivElement | null>, elegido: number | null) {
+  useEffect(() => {
+    const el = marco.current;
+    if (!el || elegido === null) return;
+    const rotulo = [...el.querySelectorAll('svg g[transform]')].filter((g) => g.querySelector(':scope > text.grafico__tick'))[elegido];
+    if (!rotulo) return;
+    const r = rotulo.getBoundingClientRect();
+    const m = el.getBoundingClientRect();
+    if (r.left < m.left || r.right > m.right) el.scrollLeft += r.left + r.width / 2 - (m.left + m.width / 2);
+  }, [marco, elegido]);
+}
+
+/** Si el gráfico es más ancho que su marco (hay series o sesiones fuera de la vista), para decirlo con texto. */
+function useSeDesplaza(marco: RefObject<HTMLDivElement | null>): boolean {
+  const [seDesplaza, setSeDesplaza] = useState(false);
+  useEffect(() => {
+    const el = marco.current;
+    if (!el) return;
+    const medir = () => setSeDesplaza(el.scrollWidth > el.clientWidth + 1);
+    medir();
+    const observador = new ResizeObserver(medir);
+    observador.observe(el);
+    if (el.firstElementChild) observador.observe(el.firstElementChild);
+    return () => observador.disconnect();
+  }, [marco]);
+  return seDesplaza;
 }
 
 /** Recorre una lista con el teclado: flechas, Inicio y Fin. Devuelve el índice nuevo, o `null` si la tecla no es suya. */
@@ -168,10 +245,19 @@ function textoDeLaFuente(c: ComparacionDeEjercicio): string {
   return `${COPY_COMPARACION.correccionVigente}: ${quien} (${f.autor}), el ${fecha(f.registradaEl)}. Motivo: ${f.motivo}`;
 }
 
+/** Qué se sabe de la versión registrada, cuando no es la prescripta (el contrato la informa como sustitución). */
+const EJERCICIO_REGISTRADO: Readonly<Record<'mismo-ejercicio' | 'otro-ejercicio' | 'desconocida', string>> = {
+  'mismo-ejercicio': 'otra versión del mismo ejercicio del catálogo',
+  'otro-ejercicio': 'otro ejercicio',
+  desconocida: 'otra versión del catálogo; no se puede saber si es el mismo ejercicio',
+};
+
 const ROL: Readonly<Record<RolDeLaObservacion, string | null>> = {
   'planificado-y-registrado': null,
   sustituido: 'Se registró otro ejercicio en lugar de este: lo registrado no es de este ejercicio.',
   'por-sustitucion': 'Este ejercicio se registró en lugar de otro: lo planificado era de otro ejercicio.',
+  'registrado-sin-identidad': 'Se registró una versión del catálogo que las sesiones del período no permiten identificar: no se sabe si es este ejercicio, y no se compara.',
+  'planificado-sin-identidad': 'Esta versión se registró en lugar de lo planificado, y las sesiones del período no permiten saber si es el mismo ejercicio: no se compara.',
 };
 
 /**
@@ -232,6 +318,14 @@ function DetalleDeValores({
             <dd>{c.resumen}</dd>
           </>
         ) : null}
+        {c.realizado && c.identidad !== 'misma-version' && c.identidad !== 'sin-registro' ? (
+          <>
+            <dt>Ejercicio registrado</dt>
+            <dd>
+              {c.realizado.nombre}: {EJERCICIO_REGISTRADO[c.identidad]}
+            </dd>
+          </>
+        ) : null}
         <dt>Registro</dt>
         <dd>{textoDeLaFuente(c)}</dd>
         {fila?.corregida ? (
@@ -274,9 +368,18 @@ function datosPorSerie(series: readonly SerieParaGraficar[], medida: Medida): Da
  * Una ejecución registrada, prescripción por prescripción: el profesional elige el ejercicio y la variable, y ve cada
  * serie planificada al lado de la registrada con el mismo número.
  */
-export function ComparacionPorSerie({ ejecucion, prescriptionId: inicial }: { ejecucion: EjecucionDeEntrenamiento; prescriptionId?: string }) {
+export function ComparacionPorSerie({
+  ejecucion,
+  prescriptionId: inicial,
+  identidad,
+}: {
+  ejecucion: EjecucionDeEntrenamiento;
+  prescriptionId?: string;
+  /** La identidad de las versiones de todo el período: la misma que usa la evolución, así las dos vistas coinciden. */
+  identidad: IdentidadDeVersiones;
+}) {
   const id = useId();
-  const comparaciones = useMemo(() => compararEjecucion(ejecucion), [ejecucion]);
+  const comparaciones = useMemo(() => compararEjecucion(ejecucion, identidad), [ejecucion, identidad]);
   const [prescriptionId, setPrescriptionId] = useState(inicial ?? comparaciones[0]?.prescriptionId ?? '');
   const [claveMedida, setClaveMedida] = useState('repeticiones');
   const [capas, setCapas] = useState<Capas>(AMBAS);
@@ -305,7 +408,7 @@ export function ComparacionPorSerie({ ejecucion, prescriptionId: inicial }: { ej
             >
               {comparaciones.map((x) => (
                 <option key={x.prescriptionId} value={x.prescriptionId}>
-                  {x.sustituido && x.realizado ? `${x.prescripto.nombre} (se registró ${x.realizado.nombre})` : x.prescripto.nombre}
+                  {opcionDeEjercicio(x)}
                 </option>
               ))}
             </select>
@@ -349,6 +452,20 @@ export function ComparacionPorSerie({ ejecucion, prescriptionId: inicial }: { ej
   );
 }
 
+/** Cómo se ofrece una prescripción para elegir: con lo que se sabe de lo registrado, sin afirmar de más. */
+function opcionDeEjercicio(x: ComparacionDeEjercicio): string {
+  if (!x.realizado || x.identidad === 'misma-version' || x.identidad === 'sin-registro') return x.prescripto.nombre;
+  if (x.identidad === 'mismo-ejercicio') return `${x.prescripto.nombre} (otra versión: ${x.realizado.nombre})`;
+  return `${x.prescripto.nombre} (se registró ${x.realizado.nombre})`;
+}
+
+/** Qué se dice de una sustitución, según lo que se sabe de la identidad (el mismo criterio que la evolución). */
+const AVISO_DE_IDENTIDAD: Readonly<Partial<Record<ComparacionDeEjercicio['identidad'], string>>> = {
+  'mismo-ejercicio': COPY_COMPARACION.otraVersionDelMismo,
+  'otro-ejercicio': COPY_COMPARACION.sustitucion,
+  desconocida: COPY_COMPARACION.identidadSinResolver,
+};
+
 /** Lo que el gráfico no puede decir solo: sustitución, resumen, vista no resoluble y cómo se lee lo planificado. */
 function AvisosDeLaComparacion({ c, medida }: { c: ComparacionDeEjercicio; medida: Medida }) {
   const notas: string[] = [];
@@ -362,10 +479,10 @@ function AvisosDeLaComparacion({ c, medida }: { c: ComparacionDeEjercicio; medid
           <p>{COPY_COMPARACION.vistaNoResoluble}</p>
         </Aviso>
       ) : null}
-      {c.sustituido && c.realizado ? (
+      {c.realizado && AVISO_DE_IDENTIDAD[c.identidad] ? (
         <Aviso tipo="info">
           <p>
-            {COPY_ENTRENAMIENTO.planificado}: {c.prescripto.nombre} · {COPY_ENTRENAMIENTO.ejecutado}: {c.realizado.nombre}. {COPY_COMPARACION.sustitucion}
+            {COPY_ENTRENAMIENTO.planificado}: {c.prescripto.nombre} · {COPY_ENTRENAMIENTO.ejecutado}: {c.realizado.nombre}. {AVISO_DE_IDENTIDAD[c.identidad]}
           </p>
         </Aviso>
       ) : null}
@@ -399,79 +516,83 @@ function GraficoPorSerie({
   onElegir: (i: number | null) => void;
 }) {
   const conPuntero = useConPuntero();
+  const marco = useRef<HTMLDivElement>(null);
+  useTraerALaVista(marco, elegida);
+  const seDesplaza = useSeDesplaza(marco);
   const datos = datosPorSerie(series, medida);
+  const ancho = anchoPorGrupo(
+    datos.flatMap((d) => [`${COPY_ENTRENAMIENTO.serie} ${numero(d.numero)}`, ...lineasDelRotulo(d.rotulo)]),
+    datos.flatMap((d) => [d.etiquetaPlan, d.etiquetaReg]),
+  );
   const unidad = unidadDeMedida(medida);
   const resumen = series.map((s) => `${COPY_ENTRENAMIENTO.serie} ${numero(s.numero)}: ${COPY_COMPARACION.capaPlanificado.toLowerCase()} ${textoPlanificado(s.planificado, medida)}, ${COPY_COMPARACION.capaRegistrado.toLowerCase()} ${textoRegistrado(s.registrado, medida)}`).join('. ');
   return (
     <figure className="grafico__figura" aria-labelledby={`${id}-titulo`}>
       <figcaption id={`${id}-titulo`} className="nota">
-        {titulo}. Eje vertical: {etiquetaDeMedida(medida)} ({unidad}). Eje horizontal: número real de la serie.
+        {titulo}. Eje vertical: {ejeVertical(medida)}. Eje horizontal: número real de la serie.
       </figcaption>
       {!capas.planificado && !capas.registrado ? <p>{COPY_COMPARACION.capaOculta}</p> : null}
-      <div
-        className="grafico__lienzo"
-        tabIndex={0}
-        role="group"
-        onClick={(e) => e.currentTarget.focus({ preventScroll: true })}
-        aria-label={`${titulo}. ${resumen}. Usá las flechas para recorrer las series; los valores de la serie elegida aparecen debajo del gráfico.`}
-        onKeyDown={(e) => {
-          const i = indiceConTeclado(e, elegida, series.length);
-          if (i === null) return;
-          e.preventDefault();
-          onElegir(i);
-        }}
-      >
-        <ResponsiveContainer height={ALTO} initialDimension={{ width: 640, height: ALTO }}>
-          <BarChart
-            data={datos}
-            margin={{ top: 24, right: 12, bottom: 8, left: 4 }}
-            barGap={4}
-            accessibilityLayer={false}
-          >
-            <Patrones id={id} />
-            <CartesianGrid vertical={false} stroke="var(--borde)" />
-            {elegida !== null && datos[elegida] ? <ReferenceArea x1={datos[elegida].numero} x2={datos[elegida].numero} fill="var(--fondo-suave)" stroke="var(--foco)" strokeWidth={2} /> : null}
-            <XAxis
-              dataKey="numero"
-              interval={0}
-              height={46}
-              tickLine={false}
-              axisLine={{ stroke: 'var(--borde-control)' }}
-              tick={({ x, y, index }: { x: number | string; y: number | string; index: number }) => (
-                <g transform={`translate(${x},${y})`} className="grafico__elegible" onClick={() => onElegir(index)}>
-                  <text textAnchor="middle" dy={14} className="grafico__tick">
-                    {`${COPY_ENTRENAMIENTO.serie} ${numero(datos[index]?.numero ?? 0)}`}
-                  </text>
-                  <text textAnchor="middle" dy={30} className="grafico__tick grafico__tick--estado">
-                    {datos[index]?.rotulo ?? ''}
-                  </text>
-                </g>
-              )}
-            />
-            <YAxis
-              domain={DOMINIO}
-              allowDecimals={medida.variable !== 'repeticiones'}
-              width={48}
-              tick={{ fill: 'var(--tenue)', fontSize: 12 }}
-              axisLine={{ stroke: 'var(--borde-control)' }}
-              label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: 12 }}
-            />
-            {conPuntero ? (
-              <Tooltip cursor={{ fill: 'var(--fondo-suave)' }} content={({ active, label }) => (active ? <TooltipDeSerie serie={series.find((s) => s.numero === label)} medida={medida} /> : null)} />
-            ) : null}
-            {capas.planificado ? (
-              <Bar dataKey="plan" name={COPY_COMPARACION.capaPlanificado} fill={`url(#${id}-planificado)`} stroke="var(--grafico-planificado)" strokeWidth={2} maxBarSize={48} minPointSize={3} isAnimationActive={false} className="grafico__elegible" onClick={(_dato: unknown, i: number) => onElegir(i)}>
-                <LabelList dataKey="etiquetaPlan" position="top" className="grafico__valor" />
-              </Bar>
-            ) : null}
-            {capas.registrado ? (
-              <Bar dataKey="reg" name={COPY_COMPARACION.capaRegistrado} fill="var(--grafico-registrado)" maxBarSize={48} isAnimationActive={false} className="grafico__elegible" onClick={(_dato: unknown, i: number) => onElegir(i)}>
-                <LabelList dataKey="etiquetaReg" position="top" className="grafico__valor" />
-              </Bar>
-            ) : null}
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="grafico__desplazable" ref={marco}>
+        <div
+          className="grafico__lienzo"
+          style={{ minWidth: `${series.length * ancho + MARGEN_DEL_EJE}px` }}
+          tabIndex={0}
+          role="group"
+          onClick={(e) => e.currentTarget.focus({ preventScroll: true })}
+          aria-label={`${titulo}. ${resumen}. Usá las flechas para recorrer las series; los valores de la serie elegida aparecen debajo del gráfico.`}
+          onKeyDown={(e) => {
+            const i = indiceConTeclado(e, elegida, series.length);
+            if (i === null) return;
+            e.preventDefault();
+            onElegir(i);
+          }}
+        >
+          <ResponsiveContainer height={ALTO} initialDimension={{ width: 640, height: ALTO }}>
+            <BarChart
+              data={datos}
+              margin={{ top: 24, right: 12, bottom: 8, left: 4 }}
+              barGap={4}
+              accessibilityLayer={false}
+            >
+              <Patrones id={id} />
+              <CartesianGrid vertical={false} stroke="var(--borde)" />
+              {elegida !== null && datos[elegida] ? <ReferenceArea x1={datos[elegida].numero} x2={datos[elegida].numero} fill="var(--fondo-suave)" stroke="var(--foco)" strokeWidth={2} /> : null}
+              <XAxis
+                dataKey="numero"
+                interval={0}
+                height={ALTO_DEL_EJE}
+                tickLine={false}
+                axisLine={{ stroke: 'var(--borde-control)' }}
+                tick={({ x, y, index }: { x: number | string; y: number | string; index: number }) => (
+                  <RotuloDelEje x={x} y={y} primera={`${COPY_ENTRENAMIENTO.serie} ${numero(datos[index]?.numero ?? 0)}`} estado={datos[index]?.rotulo ?? ''} onElegir={() => onElegir(index)} />
+                )}
+              />
+              <YAxis
+                domain={DOMINIO}
+                allowDecimals={medida.variable !== 'repeticiones'}
+                width={48}
+                tick={{ fill: 'var(--tenue)', fontSize: 12 }}
+                axisLine={{ stroke: 'var(--borde-control)' }}
+                label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: 12 }}
+              />
+              {conPuntero ? (
+                <Tooltip cursor={{ fill: 'var(--fondo-suave)' }} content={({ active, label }) => (active ? <TooltipDeSerie serie={series.find((s) => s.numero === label)} medida={medida} /> : null)} />
+              ) : null}
+              {capas.planificado ? (
+                <Bar dataKey="plan" name={COPY_COMPARACION.capaPlanificado} fill={`url(#${id}-planificado)`} stroke="var(--grafico-planificado)" strokeWidth={2} maxBarSize={48} minPointSize={3} isAnimationActive={false} className="grafico__elegible" onClick={(_dato: unknown, i: number) => onElegir(i)}>
+                  <LabelList dataKey="etiquetaPlan" position="top" className="grafico__valor" />
+                </Bar>
+              ) : null}
+              {capas.registrado ? (
+                <Bar dataKey="reg" name={COPY_COMPARACION.capaRegistrado} fill="var(--grafico-registrado)" maxBarSize={48} isAnimationActive={false} className="grafico__elegible" onClick={(_dato: unknown, i: number) => onElegir(i)}>
+                  <LabelList dataKey="etiquetaReg" position="top" className="grafico__valor" />
+                </Bar>
+              ) : null}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
+      {seDesplaza ? <p className="nota">{COPY_COMPARACION.seDesplazaSeries}</p> : null}
     </figure>
   );
 }
@@ -547,6 +668,12 @@ function TablaPorSerie({ c, series, medida }: { c: ComparacionDeEjercicio; serie
 
 // ─── B · Evolución de un ejercicio ──────────────────────────────────────────────────────────────
 
+/** La primera línea del eje de la evolución: «17/9», y «17/9 (2)» si ese día hubo más de una sesión. */
+function rotuloDelEje(p: PuntoDeEvolucion): string {
+  const o = p.observacion;
+  return `${diaCorto(o.comparacion.fecha)}${o.delDia.total > 1 ? ` (${o.delDia.orden})` : ''}`;
+}
+
 /** El rótulo de una observación: «8 sept 2026 · Sesión A», y «2 de 2 del día» si ese día hubo más de una. */
 function rotuloDeObservacion(o: ObservacionDeEvolucion): string {
   const c = o.comparacion;
@@ -578,8 +705,13 @@ export function EvolucionDelEjercicio({
   const [capas, setCapas] = useState<Capas>(AMBAS);
   const [elegido, setElegido] = useState<number | null>(null);
 
-  if (observaciones.length === 0) return <p>{COPY_COMPARACION.sinObservaciones}</p>;
-  const medidas = medidasDisponibles(observaciones.map((o) => o.comparacion));
+  if (observaciones.length === 0) {
+    // Con un filtro de versión, el ejercicio puede estar en el período y no en la versión elegida: se dice eso.
+    const enElPeriodo = ejecuciones.length < periodo.length && observacionesDelEjercicio(periodo, clave, periodo).length > 0;
+    return <p>{enElPeriodo ? COPY_COMPARACION.sinObservacionesEnLaVersion : COPY_COMPARACION.sinObservaciones}</p>;
+  }
+  // De cada observación, solo el lado que es de este ejercicio (lo planificado, lo registrado o los dos).
+  const medidas = medidasDeLaEvolucion(observaciones);
   const medida = medidaElegida(medidas, claveMedida);
   const numeroDeSerie = numeroElegido !== null && numeros.includes(numeroElegido) ? numeroElegido : (numeros[0] ?? 1);
   const puntos = evolucion(observaciones, medida, numeroDeSerie);
@@ -676,12 +808,9 @@ function GraficoDeEvolucion({
   const marco = useRef<HTMLDivElement>(null);
   // En una pantalla angosta el gráfico se desplaza de costado: el punto elegido (por ejemplo, con las flechas) se trae a
   // la vista si quedó afuera.
-  useEffect(() => {
-    const el = marco.current;
-    if (!el || elegido === null || puntos.length === 0) return;
-    const x = (el.scrollWidth * (elegido + 0.5)) / puntos.length;
-    if (x < el.scrollLeft + 24 || x > el.scrollLeft + el.clientWidth - 24) el.scrollLeft = Math.max(0, x - el.clientWidth / 2);
-  }, [elegido, puntos.length]);
+  useTraerALaVista(marco, elegido);
+  const seDesplaza = useSeDesplaza(marco);
+  const ancho = anchoPorGrupo(puntos.flatMap((p) => [rotuloDelEje(p), ...lineasDelRotulo(rotuloCorto(p, medida))]));
   const unidad = unidadDeMedida(medida);
   const tramosPlan = [...new Set(puntos.flatMap((p) => (p.tramoPlanificado === null ? [] : [p.tramoPlanificado])))];
   const tramosReg = [...new Set(puntos.flatMap((p) => (p.tramoRegistrado === null ? [] : [p.tramoRegistrado])))];
@@ -699,13 +828,13 @@ function GraficoDeEvolucion({
   return (
     <figure className="grafico__figura" aria-labelledby={`${id}-titulo`}>
       <figcaption id={`${id}-titulo`} className="nota">
-        {titulo}. Eje vertical: {etiquetaDeMedida(medida)} ({unidad}). Eje horizontal: sesiones registradas, en orden.
+        {titulo}. Eje vertical: {ejeVertical(medida)}. Eje horizontal: sesiones registradas, en orden.
       </figcaption>
       {!capas.planificado && !capas.registrado ? <p>{COPY_COMPARACION.capaOculta}</p> : null}
       <div className="grafico__desplazable" ref={marco}>
         <div
           className="grafico__lienzo"
-          style={{ minWidth: `${Math.max(puntos.length * 56, 280)}px` }}
+          style={{ minWidth: `${puntos.length * ancho + MARGEN_DEL_EJE}px` }}
           tabIndex={0}
           role="group"
           onClick={(e) => e.currentTarget.focus({ preventScroll: true })}
@@ -744,23 +873,13 @@ function GraficoDeEvolucion({
                 dataKey="indice"
                 type="category"
                 interval={0}
-                height={46}
+                height={ALTO_DEL_EJE}
                 tickLine={false}
                 axisLine={{ stroke: 'var(--borde-control)' }}
                 tick={({ x, y, index }: { x: number | string; y: number | string; index: number }) => {
                   const p = puntos[index];
                   if (!p) return <g />;
-                  return (
-                    <g transform={`translate(${x},${y})`} className="grafico__elegible" onClick={() => onElegir(index)}>
-                      <text textAnchor="middle" dy={14} className="grafico__tick">
-                        {diaCorto(p.observacion.comparacion.fecha)}
-                        {p.observacion.delDia.total > 1 ? ` (${p.observacion.delDia.orden})` : ''}
-                      </text>
-                      <text textAnchor="middle" dy={30} className="grafico__tick grafico__tick--estado">
-                        {rotuloCorto(p, medida)}
-                      </text>
-                    </g>
-                  );
+                  return <RotuloDelEje x={x} y={y} primera={rotuloDelEje(p)} estado={rotuloCorto(p, medida)} onElegir={() => onElegir(index)} />;
                 }}
               />
               <YAxis
@@ -821,6 +940,7 @@ function GraficoDeEvolucion({
           </ResponsiveContainer>
         </div>
       </div>
+      {seDesplaza ? <p className="nota">{COPY_COMPARACION.seDesplazaSesiones}</p> : null}
     </figure>
   );
 }

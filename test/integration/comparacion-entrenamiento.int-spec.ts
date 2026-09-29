@@ -23,6 +23,7 @@ import {
   ejerciciosComparables,
   estructuraComoEntrada,
   evolucion,
+  identidadDeVersiones,
   medidasDisponibles,
   observacionesDelEjercicio,
   PlanDeEntrenamientoResponseSchema,
@@ -34,6 +35,7 @@ import {
   type Medida,
 } from '@be/domain';
 import { randomUUID } from 'node:crypto';
+import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { activarPlanDeEntrenamiento, CATALOGO_DE_EJERCICIOS, circuitoListoParaPlanificarEntrenamiento, type CircuitoParaPlanificar } from './soporte-entrenamiento';
 import { prepararAsesorado, prepararProfesional, revocarB2, vinculoCompleto } from './soporte-vinculo';
@@ -266,14 +268,16 @@ describe('Planificado y registrado · evolución del ejercicio, con los datos re
     const obs = observacionesDelEjercicio(xs, banca.clave);
     expect(obs.map((o) => o.comparacion.executionId)).toEqual([caso.e.e1, caso.e.e2, caso.e.e3, caso.e.e4, caso.e.e5]);
     expect(obs.map((o) => o.delDia)).toEqual([1, 2, 3, 4, 5].map((orden) => ({ orden, total: 5 })));
-    expect(obs.map((o) => o.rol)).toEqual(['planificado-y-registrado', 'planificado-y-registrado', 'planificado-y-registrado', 'planificado-y-registrado', 'sustituido']);
+    // La sesión E registró press con mancuernas, que ninguna sesión del período prescribe: no se sabe a qué ejercicio
+    // pertenece esa versión, y no se afirma que sea otro ni el mismo.
+    expect(obs.map((o) => o.rol)).toEqual(['planificado-y-registrado', 'planificado-y-registrado', 'planificado-y-registrado', 'planificado-y-registrado', 'registrado-sin-identidad']);
     const puntos = evolucion(obs, REPS, 1);
     expect(puntos.map((p) => [textoPlanificado(p.planificado, REPS), textoRegistrado(p.registrado, REPS)])).toEqual([
       ['8', '8'],
       ['6-8', 'No realizada: la sesión se registró así'],
       ['5', 'Sin dato por serie: se registró un resumen'],
       ['10', '10'],
-      ['6-8', 'Se registró otro ejercicio'],
+      ['6-8', 'Se registró una versión que no se puede identificar: no se sabe si es este ejercicio'],
     ]);
     // La línea de lo planificado no une la v1 con la v2; lo registrado se corta en lo desconocido.
     expect(puntos[2]!.tramoPlanificado).not.toBe(puntos[3]!.tramoPlanificado);
@@ -281,17 +285,98 @@ describe('Planificado y registrado · evolución del ejercicio, con los datos re
     expect(puntos.map((p) => p.tramoRegistrado === null)).toEqual([false, true, true, false, true]);
   });
 
-  it('identidad y unidades: el ejercicio realizado por sustitución queda aparte; kg y lb son medidas separadas', async () => {
+  it('identidad y unidades: la versión registrada sin identificar queda aparte, sin afirmar identidad; kg y lb son medidas separadas', async () => {
     const xs = await contexto();
     const ejercicios = ejerciciosComparables(xs);
     const mancuernas = ejercicios.find((e) => e.clave === `v:${CATALOGO_DE_EJERCICIOS.pressConMancuernas}`)!;
     expect(mancuernas).toBeDefined();
     const [p] = evolucion(observacionesDelEjercicio(xs, mancuernas.clave), { variable: 'carga', unidad: 'lb' }, 1);
-    expect(p!.planificado.tipo).toBe('otro-ejercicio');
+    expect(p!.planificado.tipo).toBe('identidad-desconocida');
+    expect(p!.diferencia).toBeNull();
     expect(p!.registrado).toEqual({ tipo: 'valor', valor: 45 });
     const banca = ejercicios.find((e) => e.nombre.toLowerCase().includes('banca') && e.clave.startsWith('e:'))!;
     const medidas = medidasDisponibles(observacionesDelEjercicio(xs, banca.clave).map((o) => o.comparacion));
     expect(medidas).toEqual([{ variable: 'repeticiones' }, { variable: 'carga', unidad: 'kg' }, { variable: 'carga', unidad: 'lb' }, { variable: 'rir' }]);
+  });
+});
+
+describe('Planificado y registrado · identidad del ejercicio, la misma en las dos vistas (datos reales)', () => {
+  /**
+   * El profesional carga su ejercicio y el catálogo lo cambia a una versión 2, como lo haría un cambio de catálogo. No
+   * hay operación P0 para versionar un ejercicio, así que la versión 2 se escribe directo, como en la prueba de la
+   * instantánea de entrenamiento.int-spec.ts. Sesión 1: prescribe la versión 1 (8) y se registra la 2 (7). Sesión 2:
+   * prescribe la versión 2. Sesión 3: prescribe la versión 1 y se registra sentadilla, que la sesión 4 prescribe.
+   */
+  it('otra versión del mismo ejercicio: desconocida mientras el período no la identifica, y después −1 en las dos vistas', async () => {
+    const pro = await prepararProfesional(app, `cmp-ver-${randomUUID().slice(0, 6)}`, ['ENTRENAMIENTO']);
+    const propio = (await conSesion(app, pro.token).post('/api/v1/training/exercises').send({ name: 'Press sintético', muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } }).expect(201)).body.data;
+    const v2 = await app.get(PrismaService).versionDeEjercicio.create({ data: { ejercicioId: propio.exerciseId, predecesoraId: propio.versionId, nombre: 'Press sintético plano', procedencia: {} } });
+    const c = await circuitoListoParaPlanificarEntrenamiento(app, `cmp-ver-${randomUUID().slice(0, 6)}`, pro);
+    const rx = (prescriptionId: string, exerciseVersionId: string) => ({ prescriptionId, exerciseVersionId, sets: [{ repetitions: { value: 8 } }], intensity: null });
+    const estructura = {
+      blocks: [
+        {
+          label: 'Bloque',
+          sessions: [
+            { sessionId: 'ses-1', label: 'Sesión 1', prescriptions: [rx('rx-1', propio.versionId)] },
+            { sessionId: 'ses-2', label: 'Sesión 2', prescriptions: [rx('rx-2', v2.id)] },
+            { sessionId: 'ses-3', label: 'Sesión 3', prescriptions: [rx('rx-3', propio.versionId)] },
+            { sessionId: 'ses-4', label: 'Sesión 4', prescriptions: [rx('rx-4', CATALOGO_DE_EJERCICIOS.sentadilla)] },
+          ],
+        },
+      ],
+    };
+    const b = await conSesion(app, pro.token).post(`/api/v1/advisees/${c.ase.id}/training/plans`).send({ objectiveVersionId: c.objectiveVersionId, initialStructure: estructura }).expect(201);
+    await activarPlanDeEntrenamiento(app, pro, b.body.data.planId, b.body.data.version).expect(200);
+    const t = c.ase.token;
+    const porSerie = (prescriptionId: string, performedExerciseVersionId: string, sets: Serie[]) => ({ granularity: 'SET', sessionCondition: 'COMPLETED', exercises: [{ prescriptionId, performedExerciseVersionId, sets }] });
+    const e1 = await registrar(t, await ocurrencia(t, 'ses-1'), porSerie('rx-1', v2.id, [serie(1, 7, 60)]));
+    const leer = async () =>
+      ContextoDeRevisionDeEntrenamientoResponseSchema.parse((await conSesion(app, pro.token).get(`/api/v1/advisees/${c.ase.id}/training/review-context`).expect(200)).body).data.registeredExecutions;
+    const clave = `e:${propio.exerciseId}`;
+
+    // Solo la sesión 1: ninguna sesión del período prescribe la versión 2. El contrato informa la sustitución; la
+    // identidad no se puede resolver, y ninguna de las dos vistas afirma nada ni calcula la diferencia.
+    let xs = await leer();
+    let x1 = de(xs, e1);
+    expect(x1.original.exercises[0]!.substituted).toBe(true);
+    let comp = compararEjecucion(x1, identidadDeVersiones(xs))[0]!;
+    expect(comp.identidad).toBe('desconocida');
+    expect(seriesParaGraficar(comp, REPS)[0]!.diferencia).toBeNull();
+    let [punto] = evolucion(observacionesDelEjercicio(xs, clave), REPS, 1);
+    expect(punto!.observacion.rol).toBe('registrado-sin-identidad');
+    expect(punto!.diferencia).toBeNull();
+
+    // Se registra la sesión 2, que prescribe la versión 2: el período ya dice que es el mismo ejercicio.
+    await registrar(t, await ocurrencia(t, 'ses-2'), porSerie('rx-2', v2.id, [serie(1, 8, 60)]));
+    xs = await leer();
+    x1 = de(xs, e1);
+    comp = compararEjecucion(x1, identidadDeVersiones(xs))[0]!;
+    expect(comp.sustituido).toBe(true);
+    expect(comp.identidad).toBe('mismo-ejercicio');
+    const s1 = seriesParaGraficar(comp, REPS)[0]!;
+    expect(textoDeDiferencia(s1.diferencia!, REPS)).toBe('−1');
+    [punto] = evolucion(observacionesDelEjercicio(xs, clave), REPS, 1);
+    expect(punto!.observacion.comparacion.executionId).toBe(e1);
+    expect(punto!.observacion.rol).toBe('planificado-y-registrado');
+    expect(punto!.diferencia).toEqual(s1.diferencia);
+    expect(ejerciciosComparables(xs).filter((e) => e.clave === clave)).toHaveLength(1);
+    expect(ejerciciosComparables(xs).some((e) => e.clave.startsWith('v:'))).toBe(false);
+
+    // Otro ejercicio conocido: la sesión 3 registra sentadilla, que la sesión 4 prescribe. Ninguna vista compara.
+    const e3 = await registrar(t, await ocurrencia(t, 'ses-3'), porSerie('rx-3', CATALOGO_DE_EJERCICIOS.sentadilla, [serie(1, 5, 90)]));
+    await registrar(t, await ocurrencia(t, 'ses-4'), porSerie('rx-4', CATALOGO_DE_EJERCICIOS.sentadilla, [serie(1, 6, 90)]));
+    xs = await leer();
+    const comp3 = compararEjecucion(de(xs, e3), identidadDeVersiones(xs))[0]!;
+    expect(comp3.identidad).toBe('otro-ejercicio');
+    expect(seriesParaGraficar(comp3, REPS)[0]!.diferencia).toBeNull();
+    const enPropio = evolucion(observacionesDelEjercicio(xs, clave), REPS, 1).find((p) => p.observacion.comparacion.executionId === e3)!;
+    expect(enPropio.observacion.rol).toBe('sustituido');
+    expect(enPropio.diferencia).toBeNull();
+    const sentadilla = ejerciciosComparables(xs).find((e) => e.clave === `e:${comp3.realizado!.exerciseId}`)!;
+    const enSentadilla = evolucion(observacionesDelEjercicio(xs, sentadilla.clave), REPS, 1).find((p) => p.observacion.comparacion.executionId === e3)!;
+    expect(enSentadilla.observacion.rol).toBe('por-sustitucion');
+    expect(enSentadilla.diferencia).toBeNull();
   });
 });
 
