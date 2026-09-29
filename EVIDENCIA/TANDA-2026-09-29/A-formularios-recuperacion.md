@@ -41,7 +41,7 @@ Hay un caso que no admite duplicados en ningún orden: si el primer envío **no*
 
 ## Revisión enfocada
 
-Una revisión de solo lectura del diff encontró un defecto de severidad media, ya corregido: después de un «ya no se puede» con el vínculo pausado, «Cargar lo guardado» decía «lo guardado está arriba» aunque la solicitud no tuviera respuesta. Ahora la carga devuelve lo que leyó. Si no hay respuesta guardada, lo dice («Esta solicitud no tiene una respuesta guardada y ahora no se puede responder…») y ofrece volver. Si la lectura falla, no muestra ningún aviso. La prueba de integración del vínculo pausado comprueba que FRM-05 devuelve  en ese caso.
+Una revisión de solo lectura del diff encontró un defecto de severidad media, ya corregido: después de un «ya no se puede» con el vínculo pausado, «Cargar lo guardado» decía «lo guardado está arriba» aunque la solicitud no tuviera respuesta. Ahora la carga devuelve lo que leyó. Si no hay respuesta guardada, lo dice («Esta solicitud no tiene una respuesta guardada y ahora no se puede responder…») y ofrece volver. Si la lectura falla, no muestra ningún aviso. La prueba de integración del vínculo pausado comprueba que FRM-05 devuelve la respuesta en nulo en ese caso.
 
 La revisión confirmó el resto: el mapeo de códigos contra la API, la clave de idempotencia (los cuatro desenlaces son definitivos y la renuevan; el resultado incierto la conserva), el borrador conservado, el paso de responder a corregir y DL-104 sin cambios.
 
