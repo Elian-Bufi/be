@@ -77,6 +77,12 @@ export class SolicitudesService {
         if (version.sucesora) {
           throw new ErrorDeApi(422, CodigoDeError.FORM_TEMPLATE_NOT_SELECTABLE, 'Esa versión de la plantilla es histórica. Para solicitar, elegí la versión vigente.');
         }
+        // UC-P32, precondición 7 y E04: la plantilla tiene que ser compatible con la Solicitud. Una plantilla con dominio
+        // (FRM-ENTRENAMIENTO) se pide solo en su Alcance; una sin dominio es transversal a los tres (D-D). Va después del
+        // PDP, como el resto de las validaciones del contrato: a quien no puede pedir, el mismo 404 de siempre.
+        if (version.dominio !== null && version.dominio !== pedido.scope) {
+          throw new ErrorDeApi(422, CodigoDeError.FORM_TEMPLATE_NOT_SELECTABLE, 'Esta plantilla es de otro Alcance: se solicita solo en su Alcance.');
+        }
 
         const codigos = codigosDeCampo(version.contenido);
         if (!solicitudDentroDeLaPlantilla(pedido.requestedFieldCodes, codigos)) {
