@@ -8,7 +8,7 @@ import type { INestApplication } from '@nestjs/common';
 import { ComidaHabitualResponseSchema, ListaDeAlimentosHabitualesResponseSchema, ListaDeComidasHabitualesResponseSchema, MarcaDeAlimentoResponseSchema, PlanResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
-import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
+import { appDePrueba, claveDeIdempotencia, conSesion, resumenDeRespuestas, simultaneos } from './soporte-api';
 import { circuitoListoParaPlanificarEntrenamiento } from './soporte-entrenamiento';
 import { circuitoListoParaPlanificar, crearBorrador, type Circuito } from './soporte-nutricion';
 
@@ -180,5 +180,29 @@ describe('API-HAN · comidas habituales', () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(comidas.every((m) => m.options[0]!.items.every((i) => i.quantity === null))).toBe(true);
     expect(JSON.stringify(comidas)).toContain('Cocinar con poca sal.');
+  });
+});
+
+describe('API-HAN · escrituras simultáneas (la base decide; nunca un 500)', () => {
+  const N = 6;
+  const repetido = (codigo: string) => Array<string>(N - 1).fill(codigo);
+
+  it('marcar a la vez es idempotente con un solo evento; guardar con el mismo nombre y editar con la misma versión: un solo éxito y el resto 409', async () => {
+    const c = await circuitoListoParaPlanificar(app, etiqueta());
+    const marcas = await simultaneos(N, () => marcar(c, c.arroz, 'MARKED'));
+    expect(resumenDeRespuestas(marcas)).toEqual(Array<string>(N).fill('200'));
+    expect(await prisma.alimentoHabitual.count({ where: { profesionalId: c.pro.id } })).toBe(1);
+    expect(await prisma.eventoDeNutricion.count({ where: { actorId: c.pro.id, tipo: 'AlimentoHabitualMarcado' } })).toBe(1);
+    const quitas = await simultaneos(N, () => marcar(c, c.arroz, 'REMOVED'));
+    expect(resumenDeRespuestas(quitas)).toEqual(Array<string>(N).fill('200'));
+    expect(await prisma.eventoDeNutricion.count({ where: { actorId: c.pro.id, tipo: 'AlimentoHabitualQuitado' } })).toBe(1);
+
+    const guardados = await simultaneos(N, () => guardar(c, { name: 'Almuerzo simultáneo', structure: comida(c) }));
+    expect(resumenDeRespuestas(guardados)).toEqual(['201', ...repetido('409 PRESET_NAME_TAKEN')]);
+    const h = ComidaHabitualResponseSchema.parse(guardados.find((r) => r.status === 201)!.body).data;
+
+    const ediciones = await simultaneos(N, (i) => editar(c, h.presetId, { expectedVersion: h.version, name: `Almuerzo ${i}` }));
+    expect(resumenDeRespuestas(ediciones)).toEqual(['200', ...repetido('409 VERSION_CONFLICT')]);
+    expect((await comidasDe(c)).map((m) => m.version)).toEqual(['v2']);
   });
 });

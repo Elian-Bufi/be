@@ -22,8 +22,8 @@ Solo el profesional que los creó los ve y los usa; lo ajeno es 404 neutral; un 
 
 | Prueba | Resultado |
 |---|---|
-| Integración `habituales.int-spec.ts` (entrenamiento): marcar, listar con la forma del buscador, quitar y volver a marcar; ejercicio inexistente o de otro profesional 422; asesorado y nutricionista 403; sesión guardada sin ids ni cargas y con nombres de ejercicios; con cargas; nombre tomado 409; `replaces` reemplaza y sube la versión; ajeno 404; renombrar; quitar y no listar; nombre de una quitada reactiva; campo desconocido 400; insertada dos veces en un borrador real con ids distintos asignados por el servidor | **6/6** |
-| Integración `habituales-nutricionales.int-spec.ts`: lo mismo con alimentos y comidas (`quantity: null` salvo `copyQuantities`; alimento cargado por otro 422 `CATALOG_REFERENCE_INVALID`; modalidad por intercambios 422 `EXCHANGE_MODE_NOT_AVAILABLE`) | **3/3** |
+| Integración `habituales.int-spec.ts` (entrenamiento): marcar, listar con la forma del buscador, quitar y volver a marcar; ejercicio inexistente o de otro profesional 422; asesorado y nutricionista 403; sesión guardada sin ids ni cargas y con nombres de ejercicios; con cargas; nombre tomado 409; `replaces` reemplaza y sube la versión; ajeno 404; renombrar; quitar y no listar; nombre de una quitada reactiva; campo desconocido 400; insertada dos veces en un borrador real con ids distintos asignados por el servidor | **6/6** (7/7 con escrituras simultáneas) |
+| Integración `habituales-nutricionales.int-spec.ts`: lo mismo con alimentos y comidas (`quantity: null` salvo `copyQuantities`; alimento cargado por otro 422 `CATALOG_REFERENCE_INVALID`; modalidad por intercambios 422 `EXCHANGE_MODE_NOT_AVAILABLE`) | **3/3** (4/4 con escrituras simultáneas) |
 | Contrato (TEST-CT) con las diez operaciones observadas (éxitos, 400, 403, 404, 409, 422, 401) | 12/12 |
 | Esquema (`schema.int-spec`: deriva vacía, sin booleanos) | 51/51 |
 | Regresión: nutrición 21/21 · plantillas 6/6 y 3/3 (el servicio de catálogo cambió por dentro) | ✅ |
@@ -32,7 +32,7 @@ Solo el profesional que los creó los ve y los usa; lo ajeno es 404 neutral; un 
 | Recorrido web local de entrenamiento (`recorrido.mjs`), escritorio 1280 px y móvil 390 px | **20/20 y 20/20** |
 | Recorrido web local de nutrición (`recorrido-nutricion.mjs`), escritorio y móvil | **20/20 y 20/20** |
 
-Auditoría de la API por un revisor independiente antes del cierre: dos hallazgos corregidos (la comida quitada se borraba al liberar su nombre, ahora queda QUITADO como en entrenamiento; el 422 de nutrición devolvía `VALIDATION_FAILED` y ahora usa el mismo código principal que un borrador, `CATALOG_REFERENCE_INVALID` / `EXCHANGE_MODE_NOT_AVAILABLE`) y una deuda compartida con las plantillas (dos guardados simultáneos con el mismo nombre: la unicidad de la base los frena, pero el perdedor recibiría 500 en vez de 409).
+Auditoría de la API por un revisor independiente antes del cierre: dos hallazgos corregidos (la comida quitada se borraba al liberar su nombre, ahora queda QUITADO como en entrenamiento; el 422 de nutrición devolvía `VALIDATION_FAILED` y ahora usa el mismo código principal que un borrador, `CATALOG_REFERENCE_INVALID` / `EXCHANGE_MODE_NOT_AVAILABLE`).
 
 ### Recorridos web locales (contra la base que dejó cada spec)
 
@@ -52,10 +52,24 @@ Auditoría de la API por un revisor independiente antes del cierre: dos hallazgo
 
 Capturas: `01-dialogo-guardar-sesion-habitual.png`, `02-dialogo-reemplazar.png`, `03-sesion-habitual-insertada.png`, `04-buscador-con-habituales.png`, `05-mis-habituales-detalle.png`, `movil-05-mis-habituales-detalle.png`, y `nutricion-01..05` con `nutricion-movil-05`.
 
+## Escrituras simultáneas (corrección posterior)
+
+Una prueba nueva lanza seis pedidos a la vez contra la base. Contra el código anterior encontró que **seis «quitar» simultáneos del mismo alimento dejaban seis eventos de quitado** para una sola transición, y que dos ediciones con la misma versión esperada podían pisarse. El 500 por nombre duplicado, que figuraba como límite, también quedó resuelto.
+
+- **Marcar y quitar** son idempotentes también a la vez: la inserción ignora el duplicado y cada transición se condiciona al estado, así queda una fila y un evento, y todos reciben 200.
+- **Guardar** con un nombre nuevo tomado a la vez: la base deja pasar uno; el resto recibe 409 `PRESET_NAME_TAKEN`, que el website convierte en «Reemplazar».
+- **Renombrar y quitar** una sesión o comida escriben condicionados a la versión leída: si otra edición ganó, 409 `VERSION_CONFLICT`.
+- Lo mismo se corrigió en las plantillas (PR #121) y llega a esta rama por merge. La traducción de la violación de unicidad es `sinDuplicar` en `apps/api/src/prisma/concurrencia.ts`.
+
+| Prueba | Resultado |
+|---|---|
+| Seis marcas y seis quitas simultáneas; seis guardados con el mismo nombre; seis ediciones con la misma versión (entrenamiento y nutrición) | marcas y quitas: todas 200, una fila y un evento; guardados y ediciones: un solo éxito y el resto 409 con su código; ningún 500 · tres corridas seguidas en verde en cada área |
+| La misma prueba contra el código anterior | **falla**: seis eventos de quitado donde hubo uno |
+| Specs de plantillas en esta rama, tres corridas · contrato (TEST-CT) · API unitarias | 7/7 y 4/4 · 12/12 · 51/51 |
+
 ## Límites
 
 - Un ejercicio o alimento habitual que deja de estar disponible desaparece de la lista, sin aviso.
 - Los favoritos no se paginan (tope 200 por profesional).
 - La estructura de una sesión o comida habitual no se edita en «Plantillas y habituales»: se vuelve a guardar desde el editor, con reemplazo.
-- Dos guardados simultáneos con el mismo nombre: 500 en vez de 409 (deuda compartida con las plantillas; propuesta: mapear la violación de unicidad de Prisma a 409 en el filtro de errores, una sola vez para todo el repo).
 - Teclado en PC verificado por automatización, no por Dirección. No validado por Dirección, no desplegado.

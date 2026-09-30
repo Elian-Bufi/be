@@ -24,7 +24,7 @@ import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { escribirCursor, leerConsultaDeLista } from '../http/paginacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
-import { momentoDeLaBase } from '../prisma/concurrencia';
+import { momentoDeLaBase, sinDuplicar } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
 import { EjecutorDeEntrenamiento, esUuid } from './ejecutor';
@@ -113,16 +113,19 @@ export class HabitualesDeEntrenamientoService {
           if (!vigente || !vigente.disponible) {
             throw new ErrorDeApi(422, CodigoDeError.EXERCISE_REFERENCE_INVALID, 'Ese ejercicio no está disponible para marcarlo como habitual.', { issues: [{ code: 'EXERCISE_NOT_AVAILABLE', path: 'exerciseId' }] });
           }
+          // Marcar es idempotente también a la vez (dos clics, dos pestañas): la inserción ignora el duplicado y cada
+          // transición se condiciona al estado, así el evento queda una sola vez y nadie recibe un error.
           if (!existente) {
-            const marca = await tx.ejercicioHabitual.create({ data: { profesionalId: actor.identidadId, ejercicioId: exerciseId, momentoDeActualizacion: momento } });
-            await this.evento(tx, 'EjercicioHabitualMarcado', actor.identidadId, { tipo: RECURSO_EJERCICIO, id: marca.id }, null, 'ACTIVO', procedencia, momento);
+            const id = randomUUID();
+            const creada = await tx.ejercicioHabitual.createMany({ data: [{ id, profesionalId: actor.identidadId, ejercicioId: exerciseId, momentoDeActualizacion: momento }], skipDuplicates: true });
+            if (creada.count === 1) await this.evento(tx, 'EjercicioHabitualMarcado', actor.identidadId, { tipo: RECURSO_EJERCICIO, id }, null, 'ACTIVO', procedencia, momento);
           } else if (existente.estado === 'QUITADO') {
-            await tx.ejercicioHabitual.update({ where: { id: existente.id }, data: { estado: 'ACTIVO', momentoDeActualizacion: momento } });
-            await this.evento(tx, 'EjercicioHabitualMarcado', actor.identidadId, { tipo: RECURSO_EJERCICIO, id: existente.id }, 'QUITADO', 'ACTIVO', procedencia, momento);
+            const r = await tx.ejercicioHabitual.updateMany({ where: { id: existente.id, estado: 'QUITADO' }, data: { estado: 'ACTIVO', momentoDeActualizacion: momento } });
+            if (r.count === 1) await this.evento(tx, 'EjercicioHabitualMarcado', actor.identidadId, { tipo: RECURSO_EJERCICIO, id: existente.id }, 'QUITADO', 'ACTIVO', procedencia, momento);
           }
         } else if (existente && existente.estado === 'ACTIVO') {
-          await tx.ejercicioHabitual.update({ where: { id: existente.id }, data: { estado: 'QUITADO', momentoDeActualizacion: momento } });
-          await this.evento(tx, 'EjercicioHabitualQuitado', actor.identidadId, { tipo: RECURSO_EJERCICIO, id: existente.id }, 'ACTIVO', 'QUITADO', procedencia, momento);
+          const r = await tx.ejercicioHabitual.updateMany({ where: { id: existente.id, estado: 'ACTIVO' }, data: { estado: 'QUITADO', momentoDeActualizacion: momento } });
+          if (r.count === 1) await this.evento(tx, 'EjercicioHabitualQuitado', actor.identidadId, { tipo: RECURSO_EJERCICIO, id: existente.id }, 'ACTIVO', 'QUITADO', procedencia, momento);
         }
         const data: { exerciseId: string; state: EstadoDeMarca } = { exerciseId, state: pedido.state };
         return { estadoHttp: 200, cuerpo: { data }, sujetoId: null, recurso };
@@ -200,11 +203,13 @@ export class HabitualesDeEntrenamientoService {
         let id: string;
         let estadoPrevio: EstadoDeHabitual | null;
         if (destino) {
-          await tx.sesionHabitual.update({ where: { id: destino.id }, data: { ...datos, estado: 'ACTIVO', version: { increment: 1 } } });
+          await sinDuplicar(tx.sesionHabitual.update({ where: { id: destino.id }, data: { ...datos, estado: 'ACTIVO', version: { increment: 1 } } }), nombreTomado);
           id = destino.id;
           estadoPrevio = destino.estado;
         } else {
-          id = (await tx.sesionHabitual.create({ data: { profesionalId: actor.identidadId, ...datos } })).id;
+          // Dos guardados simultáneos con el mismo nombre nuevo: la base deja pasar uno; el otro recibe el 409 que el
+          // website convierte en «Reemplazar».
+          id = (await sinDuplicar(tx.sesionHabitual.create({ data: { profesionalId: actor.identidadId, ...datos } }), nombreTomado)).id;
           estadoPrevio = null;
         }
         await this.evento(tx, 'SesionHabitualGuardada', actor.identidadId, { tipo: RECURSO_SESION, id }, estadoPrevio, 'ACTIVO', procedencia, momento);
@@ -241,10 +246,15 @@ export class HabitualesDeEntrenamientoService {
         }
         const momento = await momentoDeLaBase(tx);
         const quitar = pedido.state === 'REMOVED';
-        await tx.sesionHabitual.update({
-          where: { id: fila.id },
-          data: { ...(nombre ?? {}), ...(quitar ? { estado: 'QUITADO' } : {}), version: { increment: 1 }, momentoDeActualizacion: momento },
-        });
+        // Condicionado a la versión leída: dos ediciones simultáneas con la misma versión esperada no se pisan (409).
+        const r = await sinDuplicar(
+          tx.sesionHabitual.updateMany({
+            where: { id: fila.id, version: fila.version },
+            data: { ...(nombre ?? {}), ...(quitar ? { estado: 'QUITADO' as const } : {}), version: { increment: 1 }, momentoDeActualizacion: momento },
+          }),
+          nombreTomado,
+        );
+        if (r.count === 0) throw errores.conflictoDeVersion();
         await this.evento(tx, 'SesionHabitualEditada', actor.identidadId, recurso, fila.estado, quitar ? 'QUITADO' : fila.estado, procedencia, momento);
         return { estadoHttp: 200, cuerpo: { data: await this.leer(tx, actor.identidadId, fila.id) }, sujetoId: null, recurso };
       },

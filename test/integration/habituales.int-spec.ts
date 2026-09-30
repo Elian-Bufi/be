@@ -15,7 +15,7 @@ import type { INestApplication } from '@nestjs/common';
 import { ListaDeEjerciciosHabitualesResponseSchema, ListaDeSesionesHabitualesResponseSchema, PlanDeEntrenamientoResponseSchema, SesionHabitualResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
-import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
+import { appDePrueba, claveDeIdempotencia, conSesion, resumenDeRespuestas, simultaneos } from './soporte-api';
 import { CATALOGO_DE_EJERCICIOS, circuitoListoParaPlanificarEntrenamiento, crearBorradorDeEntrenamiento, estructuraDeEntrenamiento } from './soporte-entrenamiento';
 import { prepararAsesorado, prepararProfesional, type Parte } from './soporte-vinculo';
 
@@ -225,5 +225,33 @@ describe('API-HAB-03/04/05 · sesiones habituales', () => {
     await conSesion(app, c.pro.token).patch(`${SESIONES}/${s.presetId}`).send({ expectedVersion: 'v1', state: 'REMOVED' }).expect(200);
     const despues = PlanDeEntrenamientoResponseSchema.parse((await conSesion(app, c.pro.token).get(`/api/v1/training/plans/${plan.planId}`).expect(200)).body).data;
     expect(despues.blocks[0]!.sessions).toHaveLength(4);
+  });
+});
+
+describe('API-HAB · escrituras simultáneas (la base decide; nunca un 500)', () => {
+  const N = 6;
+  const repetido = (codigo: string) => Array<string>(N - 1).fill(codigo);
+
+  it('marcar a la vez es idempotente con un solo evento; guardar con el mismo nombre y editar con la misma versión: un solo éxito y el resto 409', async () => {
+    const pro = await prepararProfesional(app, etiqueta(), ['ENTRENAMIENTO']);
+    const banca = await ejercicioDe(CATALOGO_DE_EJERCICIOS.pressDeBanca);
+    // Seis marcas a la vez del mismo ejercicio (dos clics, dos pestañas): todas 200, una sola fila y un solo evento.
+    const marcas = await simultaneos(N, () => marcar(pro, banca, 'MARKED'));
+    expect(resumenDeRespuestas(marcas)).toEqual(Array<string>(N).fill('200'));
+    expect(await prisma.ejercicioHabitual.count({ where: { profesionalId: pro.id } })).toBe(1);
+    expect(await prisma.eventoDeEntrenamiento.count({ where: { actorId: pro.id, tipo: 'EjercicioHabitualMarcado' } })).toBe(1);
+    const quitas = await simultaneos(N, () => marcar(pro, banca, 'REMOVED'));
+    expect(resumenDeRespuestas(quitas)).toEqual(Array<string>(N).fill('200'));
+    expect(await prisma.eventoDeEntrenamiento.count({ where: { actorId: pro.id, tipo: 'EjercicioHabitualQuitado' } })).toBe(1);
+
+    // Seis guardados a la vez con el mismo nombre nuevo: uno queda; el resto, el 409 que el website convierte en «Reemplazar».
+    const guardados = await simultaneos(N, () => guardar(pro, { name: 'Pierna simultánea', structure: sesionDePrueba() }));
+    expect(resumenDeRespuestas(guardados)).toEqual(['201', ...repetido('409 PRESET_NAME_TAKEN')]);
+    const h = SesionHabitualResponseSchema.parse(guardados.find((r) => r.status === 201)!.body).data;
+
+    // Seis ediciones con la misma versión esperada: sin la condición en la base, las seis pasaban y se pisaban.
+    const ediciones = await simultaneos(N, (i) => conSesion(app, pro.token).patch(`${SESIONES}/${h.presetId}`).send({ expectedVersion: h.version, name: `Pierna ${i}` }));
+    expect(resumenDeRespuestas(ediciones)).toEqual(['200', ...repetido('409 VERSION_CONFLICT')]);
+    expect((await listarSesiones(pro)).map((s) => s.version)).toEqual(['v2']);
   });
 });

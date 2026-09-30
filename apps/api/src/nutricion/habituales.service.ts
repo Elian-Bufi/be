@@ -23,7 +23,7 @@ import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { escribirCursor, leerConsultaDeLista } from '../http/paginacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
-import { momentoDeLaBase } from '../prisma/concurrencia';
+import { momentoDeLaBase, sinDuplicar } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoService } from './catalogo.service';
 import { EjecutorNutricional } from './ejecutor';
@@ -110,16 +110,18 @@ export class HabitualesNutricionalesService {
           // Solo se marca lo que este profesional puede prescribir hoy: la misma regla que un ítem del borrador.
           const disponibles = await this.catalogo.disponibles(tx, profesionalId, [catalogItemId]);
           if (!disponibles.has(catalogItemId)) throw new ErrorDeApi(422, CodigoDeError.CATALOG_REFERENCE_INVALID, 'Ese elemento del catálogo no está disponible para prescribir.', { issues: [{ code: CodigoDeProblemaDePlan.CATALOG_REFERENCE_INVALID, path: 'catalogItemId' }] });
+          // Idempotente también a la vez: la inserción ignora el duplicado y cada transición se condiciona al estado.
           if (!marca) {
-            const nueva = await tx.alimentoHabitual.create({ data: { profesionalId, elementoId: catalogItemId, momentoDeActualizacion: momento } });
-            await this.evento(tx, 'AlimentoHabitualMarcado', profesionalId, { tipo: RECURSO_ALIMENTO, id: nueva.id }, null, 'ACTIVO', procedencia, momento);
+            const id = randomUUID();
+            const creada = await tx.alimentoHabitual.createMany({ data: [{ id, profesionalId, elementoId: catalogItemId, momentoDeActualizacion: momento }], skipDuplicates: true });
+            if (creada.count === 1) await this.evento(tx, 'AlimentoHabitualMarcado', profesionalId, { tipo: RECURSO_ALIMENTO, id }, null, 'ACTIVO', procedencia, momento);
           } else if (marca.estado !== 'ACTIVO') {
-            await tx.alimentoHabitual.update({ where: { id: marca.id }, data: { estado: 'ACTIVO', momentoDeActualizacion: momento } });
-            await this.evento(tx, 'AlimentoHabitualMarcado', profesionalId, { tipo: RECURSO_ALIMENTO, id: marca.id }, 'QUITADO', 'ACTIVO', procedencia, momento);
+            const r = await tx.alimentoHabitual.updateMany({ where: { id: marca.id, estado: 'QUITADO' }, data: { estado: 'ACTIVO', momentoDeActualizacion: momento } });
+            if (r.count === 1) await this.evento(tx, 'AlimentoHabitualMarcado', profesionalId, { tipo: RECURSO_ALIMENTO, id: marca.id }, 'QUITADO', 'ACTIVO', procedencia, momento);
           }
         } else if (marca && marca.estado === 'ACTIVO') {
-          await tx.alimentoHabitual.update({ where: { id: marca.id }, data: { estado: 'QUITADO', momentoDeActualizacion: momento } });
-          await this.evento(tx, 'AlimentoHabitualQuitado', profesionalId, { tipo: RECURSO_ALIMENTO, id: marca.id }, 'ACTIVO', 'QUITADO', procedencia, momento);
+          const r = await tx.alimentoHabitual.updateMany({ where: { id: marca.id, estado: 'ACTIVO' }, data: { estado: 'QUITADO', momentoDeActualizacion: momento } });
+          if (r.count === 1) await this.evento(tx, 'AlimentoHabitualQuitado', profesionalId, { tipo: RECURSO_ALIMENTO, id: marca.id }, 'ACTIVO', 'QUITADO', procedencia, momento);
         }
         // Marcar lo ya marcado o quitar lo que nunca se marcó no cambia nada: la respuesta es la misma (idempotente).
         return { estadoHttp: 200, cuerpo: { data: { catalogItemId, state: pedido.state } }, sujetoId: null, recurso };
@@ -196,14 +198,16 @@ export class HabitualesNutricionalesService {
         if (reemplazada) {
           // D-2 de DL-109: el profesional pidió reemplazar esa comida; una quitada que tuviera el nombre nuevo lo libera.
           if (quitadaConElNombre) await this.liberarNombre(tx, quitadaConElNombre);
-          fila = await tx.comidaHabitual.update({ where: { id: reemplazada.id }, data: { ...datos, estado: 'ACTIVO', version: { increment: 1 } } });
+          fila = await sinDuplicar(tx.comidaHabitual.update({ where: { id: reemplazada.id }, data: { ...datos, estado: 'ACTIVO', version: { increment: 1 } } }), nombreTomado);
           await this.evento(tx, 'ComidaHabitualGuardada', profesionalId, { tipo: RECURSO_COMIDA, id: fila.id }, 'ACTIVO', 'ACTIVO', procedencia, momento);
         } else if (quitadaConElNombre) {
           // El nombre era de una comida quitada: vuelve, con el contenido nuevo.
-          fila = await tx.comidaHabitual.update({ where: { id: quitadaConElNombre.id }, data: { ...datos, estado: 'ACTIVO', version: { increment: 1 } } });
+          fila = await sinDuplicar(tx.comidaHabitual.update({ where: { id: quitadaConElNombre.id }, data: { ...datos, estado: 'ACTIVO', version: { increment: 1 } } }), nombreTomado);
           await this.evento(tx, 'ComidaHabitualGuardada', profesionalId, { tipo: RECURSO_COMIDA, id: fila.id }, 'QUITADO', 'ACTIVO', procedencia, momento);
         } else {
-          fila = await tx.comidaHabitual.create({ data: datos });
+          // Dos guardados simultáneos con el mismo nombre nuevo: la base deja pasar uno; el otro recibe el 409 que el
+          // website convierte en «Reemplazar».
+          fila = await sinDuplicar(tx.comidaHabitual.create({ data: datos }), nombreTomado);
           await this.evento(tx, 'ComidaHabitualGuardada', profesionalId, { tipo: RECURSO_COMIDA, id: fila.id }, null, 'ACTIVO', procedencia, momento);
         }
         return { estadoHttp: 201, cuerpo: { data: await this.leer(tx, profesionalId, fila.id) }, sujetoId: null, recurso: { tipo: RECURSO_COMIDA, id: fila.id } };
@@ -237,7 +241,9 @@ export class HabitualesNutricionalesService {
         }
         const momento = await momentoDeLaBase(tx);
         const estado = pedido.state === 'REMOVED' ? 'QUITADO' : fila.estado;
-        await tx.comidaHabitual.update({ where: { id: fila.id }, data: { ...nombre, estado, version: { increment: 1 }, momentoDeActualizacion: momento } });
+        // Condicionado a la versión leída: dos ediciones simultáneas con la misma versión esperada no se pisan (409).
+        const r = await sinDuplicar(tx.comidaHabitual.updateMany({ where: { id: fila.id, version: fila.version }, data: { ...nombre, estado, version: { increment: 1 }, momentoDeActualizacion: momento } }), nombreTomado);
+        if (r.count === 0) throw errores.conflictoDeVersion();
         await this.evento(tx, 'ComidaHabitualEditada', profesionalId, recurso, fila.estado, estado, procedencia, momento);
         return { estadoHttp: 200, cuerpo: { data: await this.leer(tx, profesionalId, fila.id) }, sujetoId: null, recurso };
       },
@@ -302,7 +308,7 @@ export class HabitualesNutricionalesService {
   private async nombreLibre(tx: Tx, profesionalId: string, nombreNormalizado: string, salvoId: string | null): Promise<FilaDeComida | null> {
     const existente = await tx.comidaHabitual.findUnique({ where: { profesionalId_nombreNormalizado: { profesionalId, nombreNormalizado } } });
     if (!existente || existente.id === salvoId) return null;
-    if (existente.estado === 'ACTIVO') throw new ErrorDeApi(409, CodigoDeError.PRESET_NAME_TAKEN, 'Ya tenés una comida habitual con ese nombre.');
+    if (existente.estado === 'ACTIVO') throw nombreTomado();
     return existente;
   }
 
@@ -344,3 +350,5 @@ function comidaApi(f: FilaDeComida, disponibles: ReadonlyMap<string, ElementoRes
     updatedAt: f.momentoDeActualizacion.toISOString(),
   };
 }
+
+const nombreTomado = (): ErrorDeApi => new ErrorDeApi(409, CodigoDeError.PRESET_NAME_TAKEN, 'Ya tenés una comida habitual con ese nombre.');
