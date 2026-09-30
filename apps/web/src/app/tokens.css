@@ -12,7 +12,8 @@
  * - «Azul noche»: fondo azul profundo, superficies navy, acentos cian y azul; la predeterminada, inspirada en las
  *   referencias de Dirección del 2026-09-21 y del 2026-09-30.
  * El tema se aplica con `data-tema` en `<html>` (`apps/web/src/lib/apariencia.ts`); el encabezado es navy en los dos.
- * `:root` tiene el claro y `[data-tema='azul-noche']` lo redefine entero, figura y gráficos incluidos.
+ * `:root` tiene el claro y `[data-tema='azul-noche']` redefine todo lo que cambia (figura y gráficos incluidos); los tokens
+ * del encabezado, `--navy` y `--cian` son comunes a las dos apariencias y se heredan de `:root`.
  */
 :root {
   /* Superficies y texto */

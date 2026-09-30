@@ -6,13 +6,13 @@
  * visita. Elegir un tema no cambia nada más que la apariencia.
  */
 import { useEffect, useId, useState } from 'react';
-import { aplicarTema, leerTema, NOMBRE_DEL_TEMA, sePuedeGuardar, TEMAS, temaValido, type Tema } from '../lib/apariencia';
+import { aplicarTema, leerTema, NOMBRE_DEL_TEMA, sePuedeGuardar, TEMA_PREDETERMINADO, TEMAS, temaValido, type Tema } from '../lib/apariencia';
 
 export function SelectorDeApariencia() {
   const id = useId();
   // Antes de montar no se sabe la preferencia: el `<select>` nace con el predeterminado y se alinea al montar, sin
   // tocar el atributo que el script de inicio ya puso (así no hay salto ni diferencia de hidratación en el resto).
-  const [tema, setTema] = useState<Tema>('azul-noche');
+  const [tema, setTema] = useState<Tema>(TEMA_PREDETERMINADO);
   const [guardable, setGuardable] = useState(true);
   useEffect(() => {
     setTema(leerTema());

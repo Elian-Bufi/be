@@ -173,7 +173,7 @@ test('website · apariencia «Azul noche», todas las pantallas', () => {
 });
 
 /**
- * La cara pública pinta un degradé (`.tema-oscuro` en globals.css): de `fondo` a `fondo-suave`, con un velo del azul
+ * La cara pública pinta un degradé (`.cara-publica` en globals.css): de `fondo` a `fondo-suave`, con un velo del azul
  * encima. axe-core no puede medir texto sobre un degradé —lo deja «para revisión manual»—, así que se mide acá, en sus
  * puntos extremos: los dos colores de base y la mezcla más clara, con la proporción que declara la hoja de estilos.
  */
