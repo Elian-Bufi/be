@@ -866,6 +866,55 @@ it('TEST-CT (WP-06, tramo 1): se ejercitan éxitos y errores de la evaluación, 
   await nutPro.patch(`/api/v1/nutrition/plan-templates/${tpnId}`).send({ expectedVersion: tpn2.body.data.version }).expect(400);
   await nutPro.patch(`/api/v1/nutrition/plan-templates/${tpnId}`).send({ expectedVersion: tpn2.body.data.version, state: 'ARCHIVED' }).expect(200);
   await request(app.getHttpServer()).get('/api/v1/nutrition/plan-templates').expect(401);
+
+  // HAB-01..05 («Mis habituales» de entrenamiento, DL-109): marcar, listar y quitar un ejercicio habitual (inexistente
+  // 422, estado inválido 400, asesorado 403); sesión habitual guardada, nombre repetido 409, `replaces` inexistente 404,
+  // ejercicio inexistente 422, cuerpo inválido 400, límite inválido 400, versión vencida 409, renombrar, quitar, sin sesión.
+  const buscado = await pro.get('/api/v1/training/exercises?q=sentadilla').expect(200);
+  const ejercicioHabitualId = buscado.body.data[0].exerciseId as string;
+  await pro.patch(`/api/v1/training/favorite-exercises/${ejercicioHabitualId}`).send({ state: 'MARKED' }).expect(200);
+  await pro.patch(`/api/v1/training/favorite-exercises/${randomUUID()}`).send({ state: 'MARKED' }).expect(422);
+  await pro.patch(`/api/v1/training/favorite-exercises/${ejercicioHabitualId}`).send({ state: 'FAVORITO' }).expect(400);
+  await pro.get('/api/v1/training/favorite-exercises').expect(200);
+  await ase.get('/api/v1/training/favorite-exercises').expect(403);
+  const sesionHabitual = { label: 'Sesión de contrato', prescriptions: [{ exerciseVersionId: CATALOGO_DE_EJERCICIOS.sentadilla, sets: [], intensity: null }] };
+  const hab = await pro.post('/api/v1/training/session-presets').send({ name: 'Pierna de contrato', structure: sesionHabitual }).expect(201);
+  const habId = hab.body.data.presetId as string;
+  await pro.post('/api/v1/training/session-presets').send({ name: 'pierna de contrato', structure: sesionHabitual }).expect(409);
+  await pro.post('/api/v1/training/session-presets').send({ name: 'Otra', structure: sesionHabitual, replaces: randomUUID() }).expect(404);
+  await pro.post('/api/v1/training/session-presets').send({ name: 'Con ajeno', structure: { ...sesionHabitual, prescriptions: [{ exerciseVersionId: randomUUID(), sets: [], intensity: null }] } }).expect(422);
+  await pro.post('/api/v1/training/session-presets').send({ name: '', structure: sesionHabitual }).expect(400);
+  await pro.get('/api/v1/training/session-presets').expect(200);
+  await pro.get('/api/v1/training/session-presets?limit=0').expect(400);
+  await pro.patch(`/api/v1/training/session-presets/${habId}`).send({ expectedVersion: 'v99', name: 'Otro' }).expect(409);
+  await pro.patch(`/api/v1/training/session-presets/${habId}`).send({ expectedVersion: hab.body.data.version }).expect(400);
+  await pro.patch(`/api/v1/training/session-presets/${randomUUID()}`).send({ expectedVersion: hab.body.data.version, name: 'Otro' }).expect(404);
+  const habRenombrado = await pro.patch(`/api/v1/training/session-presets/${habId}`).send({ expectedVersion: hab.body.data.version, name: 'Pierna renombrada' }).expect(200);
+  await pro.patch(`/api/v1/training/session-presets/${habId}`).send({ expectedVersion: habRenombrado.body.data.version, state: 'REMOVED' }).expect(200);
+  await pro.patch(`/api/v1/training/favorite-exercises/${ejercicioHabitualId}`).send({ state: 'REMOVED' }).expect(200);
+  await request(app.getHttpServer()).get('/api/v1/training/session-presets').expect(401);
+
+  // HAN-01..05 («Mis habituales» de nutrición, DL-109): lo mismo con alimentos y comidas, con el circuito de nutrición.
+  await nutPro.patch(`/api/v1/nutrition/favorite-items/${nut.arroz}`).send({ state: 'MARKED' }).expect(200);
+  await nutPro.patch(`/api/v1/nutrition/favorite-items/${randomUUID()}`).send({ state: 'MARKED' }).expect(422);
+  await nutPro.patch(`/api/v1/nutrition/favorite-items/${nut.arroz}`).send({ state: 'FAVORITO' }).expect(400);
+  await nutPro.get('/api/v1/nutrition/favorite-items').expect(200);
+  await conSesion(app, nut.ase.token).get('/api/v1/nutrition/favorite-items').expect(403);
+  const comidaHabitual = (estructura(nut.arroz, nut.pollo).dayTypes as Array<{ meals: unknown[] }>)[0]!.meals[0];
+  const han = await nutPro.post('/api/v1/nutrition/meal-presets').send({ name: 'Almuerzo de contrato', structure: comidaHabitual }).expect(201);
+  const hanId = han.body.data.presetId as string;
+  await nutPro.post('/api/v1/nutrition/meal-presets').send({ name: 'almuerzo de contrato', structure: comidaHabitual }).expect(409);
+  await nutPro.post('/api/v1/nutrition/meal-presets').send({ name: 'Otra', structure: comidaHabitual, replaces: randomUUID() }).expect(404);
+  await nutPro.post('/api/v1/nutrition/meal-presets').send({ name: '', structure: comidaHabitual }).expect(400);
+  await nutPro.get('/api/v1/nutrition/meal-presets').expect(200);
+  await nutPro.get('/api/v1/nutrition/meal-presets?limit=0').expect(400);
+  await nutPro.patch(`/api/v1/nutrition/meal-presets/${hanId}`).send({ expectedVersion: 'v99', name: 'Otro' }).expect(409);
+  await nutPro.patch(`/api/v1/nutrition/meal-presets/${hanId}`).send({ expectedVersion: han.body.data.version }).expect(400);
+  await nutPro.patch(`/api/v1/nutrition/meal-presets/${randomUUID()}`).send({ expectedVersion: han.body.data.version, name: 'Otro' }).expect(404);
+  const hanRenombrado = await nutPro.patch(`/api/v1/nutrition/meal-presets/${hanId}`).send({ expectedVersion: han.body.data.version, name: 'Almuerzo renombrado' }).expect(200);
+  await nutPro.patch(`/api/v1/nutrition/meal-presets/${hanId}`).send({ expectedVersion: hanRenombrado.body.data.version, state: 'REMOVED' }).expect(200);
+  await nutPro.patch(`/api/v1/nutrition/favorite-items/${nut.arroz}`).send({ state: 'REMOVED' }).expect(200);
+  await request(app.getHttpServer()).get('/api/v1/nutrition/meal-presets').expect(401);
   await pro.post('/api/v1/training/exercises').send({ ...ejercicio, muscleZones: [{ zoneId: 'zone_x', role: 'PRIMARY' }] }).expect(422);
   await pro.post('/api/v1/training/exercises').send({ ...ejercicio, extra: 1 }).expect(400);
   await ase.post('/api/v1/training/exercises').send(ejercicio).expect(403);

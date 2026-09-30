@@ -118,9 +118,20 @@ export class CatalogoService {
 
   /** Ítems disponibles para el profesional (global + propios), con su versión vigente: validan y arman la instantánea. */
   async disponibles(cliente: Cliente, profesionalId: string, ids: readonly string[]): Promise<Map<string, ElementoResuelto>> {
+    const filas = await this.filasDisponibles(cliente, profesionalId, ids);
+    return new Map(filas.map((f) => [f.elementoId, { versionId: f.versionId, name: f.nombre, composition: f.composicion }]));
+  }
+
+  /** Los mismos ítems disponibles, con la forma completa del buscador (API-HAN-01: los alimentos habituales). */
+  async vigentes(cliente: Cliente, profesionalId: string, ids: readonly string[]): Promise<Map<string, ElementoDeCatalogo>> {
+    const filas = await this.filasDisponibles(cliente, profesionalId, ids);
+    return new Map(filas.map((f) => [f.elementoId, elementoApi(f)]));
+  }
+
+  private async filasDisponibles(cliente: Cliente, profesionalId: string, ids: readonly string[]): Promise<FilaDeCatalogo[]> {
     const validos = [...new Set(ids)].filter((id) => /^[0-9a-f-]{36}$/i.test(id));
-    if (validos.length === 0) return new Map();
-    const filas = await cliente.$queryRaw<FilaDeCatalogo[]>`
+    if (validos.length === 0) return [];
+    return cliente.$queryRaw<FilaDeCatalogo[]>`
       SELECT e."id"::text AS "elementoId", v."id"::text AS "versionId", v."nombre", v."composicion", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
              e."procedencia"::text AS "procedencia", v."momento_de_registro" AS "momentoDeRegistro",
              v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"
@@ -130,7 +141,6 @@ export class CatalogoService {
          AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
          AND v."disponibilidad" = 'DISPONIBLE'
          AND (e."procedencia" = 'BE_SYNTHETIC_SEED' OR e."creado_por_id" = ${profesionalId}::uuid)`;
-    return new Map(filas.map((f) => [f.elementoId, { versionId: f.versionId, name: f.nombre, composition: f.composicion }]));
   }
 
   /** Solo un profesional con Nutrición verificada y habilitada usa el catálogo nutricional (también para importar, WP-08). */
