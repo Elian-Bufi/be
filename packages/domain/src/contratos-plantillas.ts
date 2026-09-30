@@ -117,3 +117,64 @@ export const nombreNormalizadoDePlantilla = (nombre: string): string =>
     .trim()
     .replace(/\s+/g, ' ')
     .toLowerCase();
+
+// ─── Nutrición: el mismo molde con la estructura de API-NUT-07 y las cantidades como dato de la persona (D-2) ─────────
+import { EstructuraDePlanEntradaSchema } from './contratos-nutricion';
+
+export const CrearPlantillaNutricionalRequestSchema = z.strictObject({
+  name: Texto(120),
+  description: TextoOpcional(1000).optional(),
+  structure: EstructuraDePlanEntradaSchema,
+  /** D-2: las cantidades no se copian por defecto; con `true` quedan como referencia de la plantilla. */
+  copyQuantities: z.boolean().optional(),
+  origin: OrigenDePlantillaSchema.optional(),
+});
+export type CrearPlantillaNutricionalRequest = z.infer<typeof CrearPlantillaNutricionalRequestSchema>;
+
+export const NuevaVersionDePlantillaNutricionalRequestSchema = z.strictObject({
+  expectedVersion: TokenDeVersionSchema,
+  structure: EstructuraDePlanEntradaSchema,
+  copyQuantities: z.boolean().optional(),
+  origin: OrigenDePlantillaSchema.optional(),
+});
+export type NuevaVersionDePlantillaNutricionalRequest = z.infer<typeof NuevaVersionDePlantillaNutricionalRequestSchema>;
+
+export const ResumenDePlantillaNutricionalSchema = z.strictObject({
+  templateId: IdOpaco,
+  versionId: IdOpaco,
+  versionNumber: z.number().int().positive(),
+  version: TokenDeVersionSchema,
+  name: z.string(),
+  description: z.string().nullable(),
+  state: EstadoDePlantillaSchema,
+  copiedQuantities: z.boolean(),
+  origin: OrigenDePlantillaSchema.nullable(),
+  mealCount: z.number().int().nonnegative(),
+  createdAt: Instante,
+  updatedAt: Instante,
+});
+export type ResumenDePlantillaNutricional = z.infer<typeof ResumenDePlantillaNutricionalSchema>;
+
+/** Por `catalogItemId`: el nombre vigente del elemento y si sigue disponible para este profesional. */
+export const ElementoDePlantillaSchema = z.strictObject({ name: z.string(), available: z.boolean() });
+
+export const PlantillaNutricionalSchema = ResumenDePlantillaNutricionalSchema.extend({
+  structure: EstructuraDePlanEntradaSchema,
+  items: z.record(IdOpaco, ElementoDePlantillaSchema),
+});
+export type PlantillaNutricional = z.infer<typeof PlantillaNutricionalSchema>;
+export const PlantillaNutricionalResponseSchema = z.strictObject({ data: PlantillaNutricionalSchema });
+export const ListaDePlantillasNutricionalesResponseSchema = z.strictObject({ data: z.array(ResumenDePlantillaNutricionalSchema), page: PaginaSchema });
+
+/** Cuenta comidas de una estructura de comidas: días tipo → comidas. */
+export const comidasDeLaEstructura = (structure: z.infer<typeof EstructuraDePlanEntradaSchema>): number => structure.dayTypes.reduce((n, d) => n + d.meals.length, 0);
+
+/** D-2 en nutrición: quita las cantidades de cada ítem (son de la persona); el elemento, el estado de preparación y la nota quedan. */
+export function sinCantidades(structure: z.infer<typeof EstructuraDePlanEntradaSchema>): z.infer<typeof EstructuraDePlanEntradaSchema> {
+  return {
+    dayTypes: structure.dayTypes.map((d) => ({
+      ...d,
+      meals: d.meals.map((m) => ({ ...m, options: m.options.map((o) => ({ ...o, items: o.items.map((i) => ({ ...i, quantity: null })) })) })),
+    })),
+  };
+}

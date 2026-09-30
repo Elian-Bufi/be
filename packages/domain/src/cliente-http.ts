@@ -68,6 +68,10 @@ import {
   type CrearPlantillaDeEntrenamientoRequest,
   type EditarPlantillaRequest,
   type NuevaVersionDePlantillaRequest,
+  ListaDePlantillasNutricionalesResponseSchema,
+  PlantillaNutricionalResponseSchema,
+  type CrearPlantillaNutricionalRequest,
+  type NuevaVersionDePlantillaNutricionalRequest,
 } from './contratos-plantillas';
 import {
   ActivacionDePlanResponseSchema,
@@ -430,6 +434,21 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     },
     editarPlantillaDeEntrenamiento(token: string, templateId: string, cuerpo: EditarPlantillaRequest) {
       return llamar('PATCH', `/training/plan-templates/${encodeURIComponent(templateId)}`, { token, cuerpo, esquema: PlantillaDeEntrenamientoResponseSchema });
+    },
+    crearPlantillaNutricional(token: string, cuerpo: CrearPlantillaNutricionalRequest, clave: string) {
+      return llamar('POST', '/nutrition/plan-templates', { token, cuerpo, claveDeIdempotencia: clave, esquema: PlantillaNutricionalResponseSchema });
+    },
+    listarPlantillasNutricionales(token: string, filtro: { state?: 'ACTIVE' | 'ARCHIVED'; cursor?: string } = {}) {
+      return llamar('GET', `/nutrition/plan-templates${query(filtro)}`, { token, esquema: ListaDePlantillasNutricionalesResponseSchema });
+    },
+    consultarPlantillaNutricional(token: string, templateId: string) {
+      return llamar('GET', `/nutrition/plan-templates/${encodeURIComponent(templateId)}`, { token, esquema: PlantillaNutricionalResponseSchema });
+    },
+    nuevaVersionDePlantillaNutricional(token: string, templateId: string, cuerpo: NuevaVersionDePlantillaNutricionalRequest, clave: string) {
+      return llamar('POST', `/nutrition/plan-templates/${encodeURIComponent(templateId)}/versions`, { token, cuerpo, claveDeIdempotencia: clave, esquema: PlantillaNutricionalResponseSchema });
+    },
+    editarPlantillaNutricional(token: string, templateId: string, cuerpo: EditarPlantillaRequest) {
+      return llamar('PATCH', `/nutrition/plan-templates/${encodeURIComponent(templateId)}`, { token, cuerpo, esquema: PlantillaNutricionalResponseSchema });
     },
 
     // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 ────────────────────────────────────────────

@@ -47,6 +47,19 @@ Solo el profesional que la creó la ve y la aplica (D-1). Si deja BE, quedan ina
 
 Capturas: `01-dialogo-guardar-plantilla.png`, `02-borrador-desde-plantilla.png`, `03-mis-plantillas-detalle.png`, `movil-03-mis-plantillas-detalle.png`.
 
+## Nutrición (PR-3, mismo patrón)
+
+Plantillas de plan de comidas (API-TPN-01..05; `apps/api/src/nutricion/plantillas.service.ts`; API-NUT-07 con `fromTemplateVersionId`): la misma regla de propiedad y autorización (profesional de Nutrición verificado y habilitado), la estructura de API-NUT-07 validada como un borrador (forma y **elementos del catálogo disponibles** para este profesional) y guardada tal como entra, **sin cantidades salvo pedido** (D-2 en nutrición: la cantidad es de cada persona), notas de ítem confirmadas una por una (D-3), sin objetivo (D-5). El detalle trae el nombre vigente de cada alimento. En el website: «Guardar como plantilla» sobre la versión activa y el borrador de comidas, «Empezar desde una plantilla» al crear, la nota de origen, y la sección «Plantillas de comidas» en «Mis plantillas» (cada sección se oculta para el profesional que no tiene esa área).
+
+| Prueba | Resultado |
+|---|---|
+| Integración `plantillas-nutricionales.int-spec.ts`: guardar sin y con cantidades, nota conservada, sin datos del asesorado, nombres del catálogo; ajeno 404; asesorado y entrenador 403; nombre repetido 409; alimento cargado por otro profesional 422; aplicar: borrador con origen (visible para el profesional, no para el titular), la plantilla no ata al plan, archivada 422, fuentes excluyentes 422, inexistente 404 | **3/3** |
+| Contrato (TEST-CT) con las cinco operaciones TPN observadas · esquema 51/51 (migración `20260930130000_plantillas_de_plan_nutricional` derivada del schema) · nutrición 21/21 | ✅ |
+| Dominio: notas de ítems, vaciar, sin cantidades, comidas; 30 operaciones de nutrición en el OpenAPI | 352/352 |
+| Recorrido web local (`recorrido-nutricion.mjs`), escritorio y móvil 390 px: botón sobre el borrador, diálogo con cantidades apagadas y notas, guardado, sección de comidas en «Mis plantillas» con la lista y el detalle (alimentos con nombre, «sin cantidades»), archivar, sin desplazamiento horizontal | **10/10 y 10/10** |
+
+Capturas: `nutricion-01-dialogo-guardar-plantilla-comidas.png`, `nutricion-02-borrador-comidas.png`, `nutricion-03-mis-plantillas-comidas.png`.
+
 ## Límites
 
 - Un ejercicio del catálogo no disponible al aplicar responde 422 con el detalle (como al guardar un plan), en vez de crear el borrador señalado: desvío documentado de TPL-CU-04.

@@ -10,6 +10,7 @@
  * - La modalidad B no se ofrece, ni como «Próximamente» (B05:503-518).
  */
 import {
+  estructuraNutricionalComoEntrada,
   cantidad as formatearCantidad,
   COPY,
   COPY_INTEGRACIONES,
@@ -32,29 +33,16 @@ import { numeroEnCampo } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { ImportacionDeOpenFoodFacts, procedenciaDeElemento } from './importacion';
 import { NoDisponible, useNutricion } from './nutricion';
+import { DialogoGuardarPlantillaNutricional, NotaDeOrigenNutricional } from './plantillas';
+import { COPY_PLANTILLAS } from '@be/domain';
 
 type Estructura = EstructuraDePlanEntrada['dayTypes'];
 type Item = Estructura[number]['meals'][number]['options'][number]['items'][number];
 type Preparacion = 'RAW' | 'COOKED' | 'AS_PURCHASED';
 type Unidad = 'g' | 'ml' | 'unit';
 
-/** La jerarquía de la respuesta, como entrada del PATCH (sin `order`, nombres ni versión de catálogo). */
-function aEntrada(v: VersionDePlan): Estructura {
-  return v.dayTypes.map((d) => ({
-    dayTypeId: d.dayTypeId,
-    label: d.label,
-    meals: d.meals.map((m) => ({
-      mealId: m.mealId,
-      label: m.label,
-      prescriptionMode: m.prescriptionMode,
-      options: m.options.map((o) => ({
-        optionId: o.optionId,
-        label: o.label,
-        items: o.items.map((i) => ({ itemId: i.itemId, catalogItemId: i.catalogItemId, quantity: i.quantity, preparationState: i.preparationState, note: i.note })),
-      })),
-    })),
-  }));
-}
+/** La jerarquía de la respuesta, como entrada del PATCH: el helper compartido con las plantillas (PF-09). */
+const aEntrada = (v: VersionDePlan): Estructura => estructuraNutricionalComoEntrada(v).dayTypes;
 
 function nombresDe(v: VersionDePlan): Record<string, string> {
   const n: Record<string, string> = {};
@@ -99,6 +87,8 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);
   const [confirmar, setConfirmar] = useState(false);
+  // «Guardar como plantilla» sobre el borrador tal como está en pantalla (PF-09; DL-108); sin origen: no es una versión activada.
+  const [guardarPlantilla, setGuardarPlantilla] = useState(false);
   const [activando, setActivando] = useState(false);
   const [falloDeActivacion, setFalloDeActivacion] = useState<string | null>(null);
   const [objetivoVigente, setObjetivoVigente] = useState<string | null>(null);
@@ -202,6 +192,7 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
       </h2>
       <p className="nota">El borrador no es visible para el asesorado. Guardar no activa.</p>
       {version.predecessorPlanId ? <p className="nota">Nueva versión a partir de la versión activa. La versión activa no cambia hasta que actives esta.</p> : null}
+      {version.templateOrigin ? <NotaDeOrigenNutricional token={token} origen={version.templateOrigin} /> : null}
       {objetivoVigente && objetivoVigente !== version.objectiveVersionId ? (
         <Aviso tipo="info">
           <p>Hay una versión de objetivo más nueva. Al guardar, el borrador pasa a usarla.</p>
@@ -314,8 +305,22 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
         <button type="button" className="boton boton--secundario" onClick={() => setConfirmar(true)} disabled={guardando || sucio}>
           {COPY_NUTRICION.activarPlan}
         </button>
+        <button type="button" className="boton boton--secundario" onClick={() => setGuardarPlantilla(true)} disabled={guardando}>
+          {COPY_PLANTILLAS.guardarComoPlantilla}
+        </button>
       </div>
       {sucio ? <p className="nota">Guardá los cambios antes de activar.</p> : null}
+      <DialogoGuardarPlantillaNutricional
+        token={token}
+        abierto={guardarPlantilla}
+        estructura={{ dayTypes: estructura }}
+        origen={null}
+        onCerrar={() => setGuardarPlantilla(false)}
+        onGuardada={() => {
+          setGuardarPlantilla(false);
+          setMensaje({ tipo: 'exito', texto: COPY_PLANTILLAS.guardada });
+        }}
+      />
 
       <DialogoDeConfirmacion
         abierto={confirmar}

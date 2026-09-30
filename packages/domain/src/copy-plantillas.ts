@@ -40,4 +40,13 @@ export const COPY_PLANTILLAS = {
   origen: (fecha: string): string => `Guardada desde una versión de plan el ${fecha}`,
   desdeCero: 'Escrita desde cero',
   soloTuya: 'Solo vos ves y aplicás tus plantillas. Si dejás BE, quedan inactivas; los planes ya creados no dependen de ellas.',
+  // Nutrición
+  queCopiaNutricion: 'La plantilla copia la estructura (días tipo, comidas, opciones y alimentos), no a la persona: no lleva objetivo, cantidades ni próxima revisión.',
+  cantidades: 'Conservar las cantidades como referencia de la plantilla',
+  cantidadesAyuda: 'Apagado, las cantidades no se copian: son de cada persona. Encendido, quedan en la plantilla como referencia y las revisás al aplicarla.',
+  comidas: (n: number): string => `${n} ${n === 1 ? 'comida' : 'comidas'}`,
+  conCantidades: 'Con cantidades de referencia',
+  sinCantidades: 'Sin cantidades',
+  plantillasDeEntrenamiento: 'Plantillas de entrenamiento',
+  plantillasDeNutricion: 'Plantillas de comidas',
 } as const;

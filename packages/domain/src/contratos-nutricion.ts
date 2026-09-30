@@ -195,6 +195,8 @@ export const CrearPlanRequestSchema = z.strictObject({
   basedOnPlanId: IdOpaco.optional(),
   /** Próxima revisión que fija esta versión (REG-06-145); al activar nace la expectativa del Proceso (DL-055). */
   nextReviewAt: FechaLocalSchema.nullable().optional(),
+  /** PF-09 (DL-108): empezar desde una versión de plantilla propia; excluyente con `basedOnPlanId` e `initialStructure`. */
+  fromTemplateVersionId: IdOpaco.optional(),
 });
 export type CrearPlanRequest = z.infer<typeof CrearPlanRequestSchema>;
 
@@ -215,6 +217,8 @@ export const VersionDePlanSchema = z.strictObject({
   /** SHA-256 de la instantánea; `null` en un borrador (REG-06-105). */
   snapshotDigest: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
   nextReviewAt: FechaLocalSchema.nullable(),
+  /** PF-09 (DL-108): de qué plantilla y versión salió. Solo en lecturas del profesional (la APK instalada valida con esquemas estrictos). */
+  templateOrigin: z.strictObject({ templateId: IdOpaco, templateVersionId: IdOpaco }).nullable().optional(),
   dayTypes: z.array(DiaTipoSchema),
 });
 export type VersionDePlan = z.infer<typeof VersionDePlanSchema>;

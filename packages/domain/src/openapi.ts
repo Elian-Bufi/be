@@ -52,6 +52,10 @@ import {
   ListaDePlantillasDeEntrenamientoResponseSchema,
   NuevaVersionDePlantillaRequestSchema,
   PlantillaDeEntrenamientoResponseSchema,
+  CrearPlantillaNutricionalRequestSchema,
+  ListaDePlantillasNutricionalesResponseSchema,
+  NuevaVersionDePlantillaNutricionalRequestSchema,
+  PlantillaNutricionalResponseSchema,
 } from './contratos-plantillas';
 import {
   CandidatoDeAlimentoResponseSchema,
@@ -1397,6 +1401,65 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: 'docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md · DEUDA_LEGAJO DL-108',
   },
   {
+    id: 'API-TPN-01',
+    metodo: 'post',
+    ruta: '/nutrition/plan-templates',
+    resumen: 'Guardar una plantilla propia de plan de comidas: nombre único por profesional y una estructura con la misma forma que API-NUT-07, validada como un borrador (forma y elementos del catálogo disponibles). Sin cantidades salvo pedido explícito; nada del asesorado. Solo un profesional de Nutrición verificado y habilitado.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearPlantillaNutricionalRequestSchema,
+    exitos: [{ status: 201, schema: PlantillaNutricionalResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'TEMPLATE_NAME_TAKEN'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md · DEUDA_LEGAJO DL-108',
+  },
+  {
+    id: 'API-TPN-02',
+    metodo: 'get',
+    ruta: '/nutrition/plan-templates',
+    resumen: 'Mis plantillas de plan de comidas (solo las propias), con su versión vigente; filtro por estado.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, { nombre: 'state', descripcion: 'Estado de la plantilla.', schema: { type: 'string', enum: ['ACTIVE', 'ARCHIVED'] } }],
+    exitos: [{ status: 200, schema: ListaDePlantillasNutricionalesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md · DEUDA_LEGAJO DL-108',
+  },
+  {
+    id: 'API-TPN-03',
+    metodo: 'get',
+    ruta: '/nutrition/plan-templates/{templateId}',
+    resumen: 'Una plantilla propia de comidas con su estructura vigente y los nombres de sus elementos. Ajena o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PlantillaNutricionalResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md · DEUDA_LEGAJO DL-108',
+  },
+  {
+    id: 'API-TPN-04',
+    metodo: 'post',
+    ruta: '/nutrition/plan-templates/{templateId}/versions',
+    resumen: 'Nueva versión de una plantilla propia de comidas; exige expectedVersion; una archivada no se versiona.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: NuevaVersionDePlantillaNutricionalRequestSchema,
+    exitos: [{ status: 201, schema: PlantillaNutricionalResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['VALIDATION_FAILED', 'TEMPLATE_ARCHIVED'] },
+    fuente: 'docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md · DEUDA_LEGAJO DL-108',
+  },
+  {
+    id: 'API-TPN-05',
+    metodo: 'patch',
+    ruta: '/nutrition/plan-templates/{templateId}',
+    resumen: 'Renombrar, describir, archivar o reactivar una plantilla propia de comidas; exige expectedVersion.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: EditarPlantillaRequestSchema,
+    exitos: [{ status: 200, schema: PlantillaNutricionalResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'TEMPLATE_NAME_TAKEN'] },
+    fuente: 'docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md · DEUDA_LEGAJO DL-108',
+  },
+  {
     id: 'API-TPL-04',
     metodo: 'post',
     ruta: '/training/plan-templates/{templateId}/versions',
@@ -1799,7 +1862,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-FRM-05',
   'API-FRM-06',
 ]);
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-CON-04', 'API-CON-08', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-CON-04', 'API-CON-08', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };

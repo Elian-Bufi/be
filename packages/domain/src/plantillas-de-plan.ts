@@ -50,9 +50,12 @@ export function notasDeLaEstructura(e: Estructura): NotaDeLaEstructura[] {
   return notas;
 }
 
-/** La misma estructura con esa nota vacía (`null` para propósitos e instrucciones y notas de prescripción; la serie, sin nota). */
-export function vaciarNota(e: Estructura, lugar: string): Estructura {
-  const copia = JSON.parse(JSON.stringify(e)) as Estructura;
+/**
+ * La misma estructura con esa nota vacía (`null` para propósitos, instrucciones y notas de prescripción o de ítem; la
+ * serie, sin nota). Sirve para entrenamiento y para nutrición: el lugar es un camino en la estructura.
+ */
+export function vaciarNota<T extends object>(e: T, lugar: string): T {
+  const copia = JSON.parse(JSON.stringify(e)) as T;
   const partes = lugar.match(/[a-zA-Z]+|\d+/g) ?? [];
   let nodo: unknown = copia;
   for (let i = 0; i < partes.length - 1; i += 1) {
@@ -65,4 +68,42 @@ export function vaciarNota(e: Estructura, lugar: string): Estructura {
   if (ultima === 'note' && lugar.includes('.sets[')) delete (nodo as Record<string, unknown>)[ultima];
   else (nodo as Record<string, unknown>)[ultima] = null;
   return copia;
+}
+
+// ─── Nutrición ────────────────────────────────────────────────────────────────────────────
+import type { EstructuraDePlanEntrada, VersionDePlan } from './contratos-nutricion';
+
+/** Las notas de texto libre de una estructura de comidas (la nota de cada ítem), en orden de lectura. */
+export function notasDeLaEstructuraNutricional(e: EstructuraDePlanEntrada): NotaDeLaEstructura[] {
+  const notas: NotaDeLaEstructura[] = [];
+  e.dayTypes.forEach((d, i) =>
+    d.meals.forEach((m, j) =>
+      m.options.forEach((o, k) =>
+        o.items.forEach((it, l) => {
+          if (tiene(it.note)) notas.push({ lugar: `dayTypes[${i}].meals[${j}].options[${k}].items[${l}].note`, rotulo: `Nota del ítem ${l + 1} de «${o.label}» (${m.label}, ${d.label})`, texto: it.note });
+        }),
+      ),
+    ),
+  );
+  return notas;
+}
+
+/** La jerarquía de una versión de plan de comidas como entrada (con identificadores; sin `order`, nombres ni versión de catálogo). */
+export function estructuraNutricionalComoEntrada(v: VersionDePlan): EstructuraDePlanEntrada {
+  return {
+    dayTypes: v.dayTypes.map((d) => ({
+      dayTypeId: d.dayTypeId,
+      label: d.label,
+      meals: d.meals.map((m) => ({
+        mealId: m.mealId,
+        label: m.label,
+        prescriptionMode: m.prescriptionMode,
+        options: m.options.map((o) => ({
+          optionId: o.optionId,
+          label: o.label,
+          items: o.items.map((i) => ({ itemId: i.itemId, catalogItemId: i.catalogItemId, quantity: i.quantity, preparationState: i.preparationState, note: i.note })),
+        })),
+      })),
+    })),
+  };
 }

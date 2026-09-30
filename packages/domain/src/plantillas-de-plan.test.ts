@@ -4,8 +4,9 @@ import assert from 'node:assert/strict';
 import type { EstructuraDePlanDeEntrenamientoEntrada } from './contratos-entrenamiento';
 import { COPY_PLANTILLAS } from './copy-plantillas';
 import { terminosProhibidosDeEntrenamientoEn } from './copy-entrenamiento';
-import { notasDeLaEstructura, vaciarNota } from './plantillas-de-plan';
-import { sesionesDeLaEstructura, sinCargasSugeridas, nombreNormalizadoDePlantilla } from './contratos-plantillas';
+import type { EstructuraDePlanEntrada } from './contratos-nutricion';
+import { notasDeLaEstructura, notasDeLaEstructuraNutricional, vaciarNota } from './plantillas-de-plan';
+import { comidasDeLaEstructura, sesionesDeLaEstructura, sinCantidades, sinCargasSugeridas, nombreNormalizadoDePlantilla } from './contratos-plantillas';
 
 const estructura: EstructuraDePlanDeEntrenamientoEntrada = {
   blocks: [
@@ -59,6 +60,30 @@ test('sin cargas sugeridas: se quitan de cada prescripción y nada más cambia; 
   assert.equal(sin.blocks[0]!.microcycles![0]!.sessions[0]!.prescriptions[0]!.note, 'Cuidado con la rodilla');
   assert.equal(sesionesDeLaEstructura(sin), 2);
   assert.equal(nombreNormalizadoDePlantilla('  Fuerza   Básica  '), 'fuerza basica');
+});
+
+test('nutrición: las notas de los ítems se listan y se vacían; sin cantidades deja el elemento, la preparación y la nota', () => {
+  const e: EstructuraDePlanEntrada = {
+    dayTypes: [
+      {
+        label: 'Día habitual',
+        meals: [
+          { label: 'Desayuno', prescriptionMode: 'DISH_OPTIONS', options: [{ label: 'Opción 1', items: [{ catalogItemId: 'al-1', quantity: { value: 200, unit: 'ml' }, preparationState: 'RAW', note: 'Sin azúcar para Ana' }, { catalogItemId: 'al-2', quantity: { value: 40, unit: 'g' }, preparationState: null }] }] },
+          { label: 'Almuerzo', prescriptionMode: 'EXCHANGE_PORTIONS', options: [] },
+        ],
+      },
+    ],
+  };
+  const notas = notasDeLaEstructuraNutricional(e);
+  assert.deepEqual(notas.map((n) => [n.lugar, n.texto]), [['dayTypes[0].meals[0].options[0].items[0].note', 'Sin azúcar para Ana']]);
+  assert.equal(notas[0]!.rotulo, 'Nota del ítem 1 de «Opción 1» (Desayuno, Día habitual)');
+  const vaciada = vaciarNota(e, notas[0]!.lugar);
+  assert.equal(vaciada.dayTypes[0]!.meals[0]!.options[0]!.items[0]!.note, null);
+  assert.equal(e.dayTypes[0]!.meals[0]!.options[0]!.items[0]!.note, 'Sin azúcar para Ana', 'la entrada no se muta');
+  const sin = sinCantidades(e);
+  assert.deepEqual(sin.dayTypes[0]!.meals[0]!.options[0]!.items.map((i) => i.quantity), [null, null]);
+  assert.equal(sin.dayTypes[0]!.meals[0]!.options[0]!.items[0]!.preparationState, 'RAW');
+  assert.equal(comidasDeLaEstructura(e), 2);
 });
 
 test('TEST-PRJ-009 · el copy de las plantillas no califica ni promete', () => {

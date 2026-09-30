@@ -11,6 +11,7 @@ import { EvaluacionesService } from './evaluaciones.service';
 import { ImportacionNutricionalService } from './importacion.service';
 import { IngestasService } from './ingestas.service';
 import { PlanesService } from './planes.service';
+import { PlantillasNutricionalesService } from './plantillas.service';
 import { RevisionesService } from './revisiones.service';
 
 type Solicitud = SolicitudAutenticada & SolicitudConContexto;
@@ -31,6 +32,7 @@ export class NutricionController {
     private readonly revisiones: RevisionesService,
     private readonly limitador: LimitadorService,
     private readonly importacion: ImportacionNutricionalService,
+    private readonly plantillas: PlantillasNutricionalesService,
   ) {}
 
   // ─── Evaluación y objetivo (UC-P09) ─────────────────────────────────────────────────────────
@@ -131,6 +133,41 @@ export class NutricionController {
   async crearElemento(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
     sinParametrosDeQuery(query);
     return responder(res, await this.catalogo.crear(actorDe(req), cuerpo, clave, contextoDe(req)));
+  }
+
+  // ─── Plantillas de plan de comidas del profesional (PF-09; DL-108) ─────────────────────────────
+  /** API-TPN-01. */
+  @Post('nutrition/plan-templates')
+  async crearPlantilla(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.plantillas.crear(actorDe(req), cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-TPN-02. */
+  @Get('nutrition/plan-templates')
+  listarPlantillas(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    return this.plantillas.listar(actorDe(req), query, contextoDe(req));
+  }
+
+  /** API-TPN-03. */
+  @Get('nutrition/plan-templates/:templateId')
+  consultarPlantilla(@Param('templateId') templateId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return this.plantillas.consultar(actorDe(req), templateId, contextoDe(req));
+  }
+
+  /** API-TPN-04. */
+  @Post('nutrition/plan-templates/:templateId/versions')
+  async nuevaVersionDePlantilla(@Param('templateId') templateId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.plantillas.nuevaVersion(actorDe(req), templateId, cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-TPN-05. */
+  @Patch('nutrition/plan-templates/:templateId')
+  async editarPlantilla(@Param('templateId') templateId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.plantillas.editar(actorDe(req), templateId, cuerpo, contextoDe(req)));
   }
 
   // ─── Importación controlada de Open Food Facts (UC-I07; WP-08) ──────────────────────────────

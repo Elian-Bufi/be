@@ -17,6 +17,7 @@ import { fecha } from '../../../lib/formato';
 import { mensajeDeFallo } from '../../../lib/intento';
 import { useListaPaginada } from '../../../lib/lista';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
+import { MisPlantillasNutricionales } from './mis-plantillas-nutricion';
 
 type Estado = 'ACTIVE' | 'ARCHIVED';
 
@@ -26,8 +27,20 @@ export function MisPlantillas() {
   const [abiertaId, setAbiertaId] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const listo = yo.tipo === 'listo';
+  // Un profesional sin Entrenamiento recibe 403: la sección no es para él y se omite (mostrar u ocultar no autoriza nada).
+  const [sinArea, setSinArea] = useState(false);
   const lista = useListaPaginada(
-    useMemo(() => (token && listo ? (cursor?: string) => api.listarPlantillasDeEntrenamiento(token, { ...(estado ? { state: estado } : {}), ...(cursor ? { cursor } : {}) }) : null), [token, listo, estado]),
+    useMemo(
+      () =>
+        token && listo
+          ? (cursor?: string) =>
+              api.listarPlantillasDeEntrenamiento(token, { ...(estado ? { state: estado } : {}), ...(cursor ? { cursor } : {}) }).then((r) => {
+                if (!r.ok && r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN') setSinArea(true);
+                return r;
+              })
+          : null,
+      [token, listo, estado],
+    ),
     sesionPerdida,
   );
 
@@ -43,8 +56,9 @@ export function MisPlantillas() {
           <p>{aviso.texto}</p>
         </Aviso>
       ) : null}
+      {sinArea ? null : (
       <section className="seccion" aria-labelledby="titulo-plantillas">
-        <h2 id="titulo-plantillas">{COPY_PLANTILLAS.misPlantillas}</h2>
+        <h2 id="titulo-plantillas">{COPY_PLANTILLAS.plantillasDeEntrenamiento}</h2>
         <p className="nota">{COPY_PLANTILLAS.soloTuya}</p>
         <div className="campo">
           <label htmlFor="plantillas-estado">Estado</label>
@@ -91,6 +105,8 @@ export function MisPlantillas() {
         ) : null}
         <VerMas estado={lista.estado} onVerMas={lista.verMas} />
       </section>
+      )}
+      <MisPlantillasNutricionales token={token} sesionPerdida={sesionPerdida} />
     </div>
   );
 }
