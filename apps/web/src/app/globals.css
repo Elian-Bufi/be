@@ -1503,6 +1503,21 @@ details summary {
   background: var(--grafico-registrado);
 }
 
+/* Evolución antropométrica: punto comparable y rombo no comparable, del mismo color; la forma dice la diferencia. */
+.muestra--punto {
+  width: 0.9rem;
+  border-radius: 50%;
+  background: var(--grafico-registrado);
+}
+
+.muestra--rombo {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 2px;
+  background: var(--grafico-registrado);
+  transform: rotate(45deg);
+}
+
 .muestra--hueco {
   border: 1px dashed var(--grafico-hueco);
   background: repeating-linear-gradient(45deg, var(--grafico-hueco) 0 1px, transparent 1px 5px);

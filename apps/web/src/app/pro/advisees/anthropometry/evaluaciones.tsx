@@ -10,6 +10,7 @@
  * Lo medido, lo informado y lo calculado se muestran distinguidos siempre (04:1090).
  */
 import { cantidad, COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, leerNumero, motivoDeNumeroIlegible, type EvaluacionAntropometricaApi, type Medicion } from '@be/domain';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -23,7 +24,9 @@ type Resumen = { evaluationId: string; state: string; occurredAt: string; regist
 export function VistaDeEvaluaciones() {
   const { token, asesoradoId, sesionPerdida } = useAntropometria();
   const [r, setR] = useState<Resultado<{ lista: Resumen[]; abierta: EvaluacionAntropometricaApi | null }> | null>(null);
-  const [abiertaId, setAbiertaId] = useState<string | null>(null);
+  // Desde la evolución llega `evaluacion=` en la URL: es la evaluación de origen de una observación (RF-049).
+  const pedida = useSearchParams().get('evaluacion');
+  const [abiertaId, setAbiertaId] = useState<string | null>(pedida);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
 
   const cargar = useCallback(async () => {
