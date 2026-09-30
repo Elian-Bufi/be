@@ -32,6 +32,8 @@ import { numeroEnCampo } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { NoDisponible, useEntrenamiento } from './entrenamiento';
 import { ImportacionDeWger, procedenciaDeEjercicio } from './importacion';
+import { DialogoGuardarPlantilla, NotaDeOrigen } from './plantillas';
+import { COPY_PLANTILLAS } from '@be/domain';
 
 type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
 type BloqueE = Bloques[number];
@@ -104,6 +106,8 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
   const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);
   const [confirmar, setConfirmar] = useState(false);
+  // «Guardar como plantilla» sobre el borrador tal como está en pantalla (PF-09; DL-108); sin origen: no es una versión activada.
+  const [guardarPlantilla, setGuardarPlantilla] = useState(false);
   const [activando, setActivando] = useState(false);
   const [falloDeActivacion, setFalloDeActivacion] = useState<string | null>(null);
   const [objetivoVigente, setObjetivoVigente] = useState<string | null>(null);
@@ -233,6 +237,7 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
       </h2>
       <p className="nota">El borrador no es visible para el asesorado. Guardar no activa.</p>
       {version.predecessorPlanId ? <p className="nota">Nueva versión a partir de la versión activa. La versión activa no cambia hasta que actives esta.</p> : null}
+      {version.templateOrigin ? <NotaDeOrigen token={token} origen={version.templateOrigin} /> : null}
       {objetivoVigente && objetivoVigente !== version.objectiveVersionId ? (
         <Aviso tipo="info">
           <p>Hay una versión de objetivo más nueva. Al guardar, el borrador pasa a usarla.</p>
@@ -340,8 +345,22 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
         <button type="button" className="boton boton--secundario" onClick={() => setConfirmar(true)} disabled={guardando || sucio}>
           {COPY_ENTRENAMIENTO.activarPlan}
         </button>
+        <button type="button" className="boton boton--secundario" onClick={() => setGuardarPlantilla(true)} disabled={guardando}>
+          {COPY_PLANTILLAS.guardarComoPlantilla}
+        </button>
       </div>
       {sucio ? <p className="nota">Guardá los cambios antes de activar.</p> : null}
+      <DialogoGuardarPlantilla
+        token={token}
+        abierto={guardarPlantilla}
+        estructura={{ blocks: bloques }}
+        origen={null}
+        onCerrar={() => setGuardarPlantilla(false)}
+        onGuardada={() => {
+          setGuardarPlantilla(false);
+          setMensaje({ tipo: 'exito', texto: COPY_PLANTILLAS.guardada });
+        }}
+      />
 
       <DialogoDeConfirmacion
         abierto={confirmar}

@@ -16,6 +16,7 @@ const DE_CUENTA = [
 
 const PROFESIONAL = [
   { href: '/pro', texto: 'Espacio profesional' },
+  { href: '/pro/templates', texto: 'Mis plantillas' },
   { href: '/account', texto: 'Cuenta' },
 ] as const;
 
