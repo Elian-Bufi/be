@@ -60,6 +60,20 @@ Plantillas de plan de comidas (API-TPN-01..05; `apps/api/src/nutricion/plantilla
 
 Capturas: `nutricion-01-dialogo-guardar-plantilla-comidas.png`, `nutricion-02-borrador-comidas.png`, `nutricion-03-mis-plantillas-comidas.png`.
 
+## Escrituras simultáneas (corrección posterior)
+
+Una prueba nueva lanza seis pedidos a la vez contra la base. Contra el código anterior encontró un defecto real: **seis ediciones simultáneas con la misma `expectedVersion` respondían 200 las seis**, y cada una pisaba a la anterior sin aviso. La comparación con la versión leída no alcanza entre dos transacciones.
+
+- **Corrección:** renombrar, describir, archivar y versionar escriben con la condición «sigue en la versión leída» en la base (`updateMany` con `version`); si otra escritura ganó, 409 `VERSION_CONFLICT`. La versión nueva se numera después de tomar la plantilla.
+- **Nombre y número de versión:** la base deja pasar uno solo; el resto recibe 409 `TEMPLATE_NAME_TAKEN` o `VERSION_CONFLICT`, no un 500 (`sinDuplicar` en `apps/api/src/prisma/concurrencia.ts`, el mismo criterio que registro, vínculos y ejecuciones).
+
+| Prueba | Resultado |
+|---|---|
+| Seis creaciones con el mismo nombre, seis ediciones y seis versiones con la misma versión esperada, seis renombres al mismo nombre (entrenamiento y nutrición) | un solo éxito y el resto 409 con su código; ningún 500 · tres corridas seguidas en verde en cada área |
+| La misma prueba contra el código anterior | **falla**: las seis ediciones daban 200 |
+| Unitaria `concurrencia.spec.ts` (P2002 al 409 de la operación; otros errores pasan) | API 51/51 |
+| Contrato (TEST-CT) | 12/12 |
+
 ## Límites
 
 - Un ejercicio del catálogo no disponible al aplicar responde 422 con el detalle (como al guardar un plan), en vez de crear el borrador señalado: desvío documentado de TPL-CU-04.

@@ -36,6 +36,25 @@ export function esConflictoTransitorio(e: unknown): boolean {
   return false;
 }
 
+/** Violación de un índice único (P2002): otra transacción escribió lo mismo primero. */
+export function esViolacionDeUnicidad(e: unknown): boolean {
+  return e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002';
+}
+
+/**
+ * Una escritura que la base puede rechazar por unicidad bajo concurrencia: la verificación previa («el nombre está
+ * libre») no alcanza entre dos transacciones simultáneas, y la base deja pasar una sola. La otra recibe el 409 preciso
+ * de la operación, no un 500. La transacción queda abortada, así que el error sale enseguida.
+ */
+export async function sinDuplicar<T>(escritura: PromiseLike<T>, conflicto: () => Error): Promise<T> {
+  try {
+    return await escritura;
+  } catch (e) {
+    if (esViolacionDeUnicidad(e)) throw conflicto();
+    throw e;
+  }
+}
+
 /**
  * Repite la transacción ante un conflicto transitorio, con espera corta y variable. Si se agotan los intentos, el
  * conflicto sale como 409 (09 §3: «conflicto concurrente»), que el servicio audita como cualquier rechazo, y no

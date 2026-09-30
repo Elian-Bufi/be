@@ -152,3 +152,16 @@ export function mediana(valores: number[]): number {
   const medio = Math.floor(orden.length / 2);
   return orden.length % 2 ? orden[medio] : (orden[medio - 1] + orden[medio]) / 2;
 }
+
+/**
+ * `n` pedidos lanzados a la vez (sin esperar uno para mandar el siguiente), para probar lo que decide la base entre
+ * escrituras simultáneas: una verificación previa en el servicio no alcanza entre dos transacciones.
+ */
+export function simultaneos<T>(n: number, pedido: (i: number) => PromiseLike<T>): Promise<T[]> {
+  return Promise.all(Array.from({ length: n }, (_, i) => pedido(i)));
+}
+
+/** Estado y código de cada respuesta, ordenados: se comparan sin depender de cuál ganó. */
+export function resumenDeRespuestas(respuestas: readonly { status: number; body: { error?: { code?: string } } }[]): string[] {
+  return respuestas.map((r) => (r.status >= 400 ? `${r.status} ${r.body?.error?.code ?? ''}` : String(r.status))).sort();
+}

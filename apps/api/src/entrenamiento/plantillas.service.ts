@@ -22,7 +22,7 @@ import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { leerConsultaDeLista, paginar } from '../http/paginacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
-import { momentoDeLaBase } from '../prisma/concurrencia';
+import { momentoDeLaBase, sinDuplicar } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
 import { EjecutorDeEntrenamiento } from './ejecutor';
@@ -32,6 +32,7 @@ type Tx = Prisma.TransactionClient;
 const RECURSO = 'PlantillaDePlanDeEntrenamiento';
 const CASO_DE_USO = 'UC-P15';
 const token = (n: number): string => `v${n}`;
+const nombreTomado = (): ErrorDeApi => new ErrorDeApi(409, CodigoDeError.TEMPLATE_NAME_TAKEN, 'Ya tenés una plantilla con ese nombre.');
 
 type PlantillaFila = Prisma.PlantillaDePlanDeEntrenamientoGetPayload<{ include: { versiones: true } }>;
 
@@ -69,9 +70,12 @@ export class PlantillasDeEntrenamientoService {
         if (pedido.origin) await this.exigirVersionDePlanPropia(tx, actor.identidadId, pedido.origin.planVersionId);
         await this.exigirNombreLibre(tx, actor.identidadId, pedido.name, null);
         const momento = await momentoDeLaBase(tx);
-        const plantilla = await tx.plantillaDePlanDeEntrenamiento.create({
-          data: { profesionalId: actor.identidadId, nombre: pedido.name, nombreNormalizado: nombreNormalizadoDePlantilla(pedido.name), descripcion: pedido.description ?? null, momentoDeActualizacion: momento },
-        });
+        const plantilla = await sinDuplicar(
+          tx.plantillaDePlanDeEntrenamiento.create({
+            data: { profesionalId: actor.identidadId, nombre: pedido.name, nombreNormalizado: nombreNormalizadoDePlantilla(pedido.name), descripcion: pedido.description ?? null, momentoDeActualizacion: momento },
+          }),
+          nombreTomado,
+        );
         await tx.versionDePlantillaDePlanDeEntrenamiento.create({
           data: {
             plantillaId: plantilla.id,
@@ -156,8 +160,9 @@ export class PlantillasDeEntrenamientoService {
         const estructura = await this.estructuraVerificada(tx, actor.identidadId, pedido.structure, pedido.copySuggestedLoads === true);
         if (pedido.origin) await this.exigirVersionDePlanPropia(tx, actor.identidadId, pedido.origin.planVersionId);
         const momento = await momentoDeLaBase(tx);
+        await this.avanzarVersion(tx, fila, { momentoDeActualizacion: momento });
         const ultima = fila.versiones[0];
-        await tx.versionDePlantillaDePlanDeEntrenamiento.create({
+        await sinDuplicar(tx.versionDePlantillaDePlanDeEntrenamiento.create({
           data: {
             plantillaId: fila.id,
             numero: (ultima?.numero ?? 0) + 1,
@@ -167,8 +172,7 @@ export class PlantillasDeEntrenamientoService {
             autorId: actor.identidadId,
             procedencia: procedencia as unknown as Prisma.InputJsonValue,
           },
-        });
-        await tx.plantillaDePlanDeEntrenamiento.update({ where: { id: fila.id }, data: { version: { increment: 1 }, momentoDeActualizacion: momento } });
+        }), errores.conflictoDeVersion);
         await this.evento(tx, 'PlantillaDePlanVersionada', actor.identidadId, fila.id, procedencia, momento);
         return { estadoHttp: 201, cuerpo: { data: await this.leer(tx, actor.identidadId, fila.id) }, sujetoId: null, recurso };
       },
@@ -193,15 +197,11 @@ export class PlantillasDeEntrenamientoService {
         if (pedido.expectedVersion !== token(fila.version)) throw errores.conflictoDeVersion();
         if (pedido.name !== undefined) await this.exigirNombreLibre(tx, actor.identidadId, pedido.name, fila.id);
         const momento = await momentoDeLaBase(tx);
-        await tx.plantillaDePlanDeEntrenamiento.update({
-          where: { id: fila.id },
-          data: {
-            ...(pedido.name !== undefined ? { nombre: pedido.name, nombreNormalizado: nombreNormalizadoDePlantilla(pedido.name) } : {}),
-            ...(pedido.description !== undefined ? { descripcion: pedido.description } : {}),
-            ...(pedido.state !== undefined ? { estado: pedido.state === 'ACTIVE' ? 'ACTIVA' : 'ARCHIVADA' } : {}),
-            version: { increment: 1 },
-            momentoDeActualizacion: momento,
-          },
+        await this.avanzarVersion(tx, fila, {
+          ...(pedido.name !== undefined ? { nombre: pedido.name, nombreNormalizado: nombreNormalizadoDePlantilla(pedido.name) } : {}),
+          ...(pedido.description !== undefined ? { descripcion: pedido.description } : {}),
+          ...(pedido.state !== undefined ? { estado: pedido.state === 'ACTIVE' ? ('ACTIVA' as const) : ('ARCHIVADA' as const) } : {}),
+          momentoDeActualizacion: momento,
         });
         await this.evento(tx, 'PlantillaDePlanEditada', actor.identidadId, fila.id, procedencia, momento);
         return { estadoHttp: 200, cuerpo: { data: await this.leer(tx, actor.identidadId, fila.id) }, sujetoId: null, recurso };
@@ -275,7 +275,17 @@ export class PlantillasDeEntrenamientoService {
 
   private async exigirNombreLibre(tx: Tx, profesionalId: string, nombre: string, salvoId: string | null): Promise<void> {
     const existente = await tx.plantillaDePlanDeEntrenamiento.findUnique({ where: { profesionalId_nombreNormalizado: { profesionalId, nombreNormalizado: nombreNormalizadoDePlantilla(nombre) } }, select: { id: true } });
-    if (existente && existente.id !== salvoId) throw new ErrorDeApi(409, CodigoDeError.TEMPLATE_NAME_TAKEN, 'Ya tenés una plantilla con ese nombre.');
+    if (existente && existente.id !== salvoId) throw nombreTomado();
+  }
+
+  /**
+   * Escribe la plantilla solo si sigue en la versión que se leyó, y la avanza. Comparar `expectedVersion` con lo leído
+   * no alcanza entre dos escrituras simultáneas: las dos pasarían. Con la condición en la base, la segunda espera el
+   * bloqueo de la fila, ya no la encuentra en esa versión y recibe 409. Un nombre tomado entre tanto también es 409.
+   */
+  private async avanzarVersion(tx: Tx, fila: PlantillaFila, data: Prisma.PlantillaDePlanDeEntrenamientoUpdateManyMutationInput): Promise<void> {
+    const r = await sinDuplicar(tx.plantillaDePlanDeEntrenamiento.updateMany({ where: { id: fila.id, version: fila.version }, data: { ...data, version: { increment: 1 } } }), nombreTomado);
+    if (r.count === 0) throw errores.conflictoDeVersion();
   }
 
   private evento(tx: Tx, tipo: 'PlantillaDePlanCreada' | 'PlantillaDePlanVersionada' | 'PlantillaDePlanEditada', actorId: string, plantillaId: string, procedencia: unknown, momento: Date): Promise<void> {

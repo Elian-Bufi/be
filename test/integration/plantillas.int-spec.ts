@@ -13,7 +13,7 @@ import type { INestApplication } from '@nestjs/common';
 import { PlanDeEntrenamientoResponseSchema, PlantillaDeEntrenamientoResponseSchema, ListaDePlantillasDeEntrenamientoResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
-import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
+import { appDePrueba, claveDeIdempotencia, conSesion, resumenDeRespuestas, simultaneos } from './soporte-api';
 import { circuitoListoParaPlanificarEntrenamiento, estructuraDeEntrenamiento, type CircuitoParaPlanificar } from './soporte-entrenamiento';
 import { prepararProfesional } from './soporte-vinculo';
 
@@ -154,5 +154,35 @@ describe('API-TRN-07 con fromTemplateVersionId · aplicar una plantilla', () => 
     await conSesion(app, otro.pro.token).post(`/api/v1/advisees/${otro.ase.id}/training/plans`, claveDeIdempotencia()).send({ objectiveVersionId: otro.objectiveVersionId, fromTemplateVersionId: t.versionId }).expect(404);
     await conSesion(app, c.pro.token).patch(`${RUTA}/${t.templateId}`).send({ expectedVersion: 'v1', state: 'ARCHIVED' }).expect(200);
     expect((await conSesion(app, c.pro.token).post(planes, claveDeIdempotencia()).send({ objectiveVersionId: c.objectiveVersionId, fromTemplateVersionId: t.versionId }).expect(422)).body.error.code).toBe('TEMPLATE_ARCHIVED');
+  });
+});
+
+describe('API-TPL · escrituras simultáneas (la base decide; nunca un 500)', () => {
+  const N = 6;
+  const repetido = (codigo: string) => Array<string>(N - 1).fill(codigo);
+
+  it('crear con el mismo nombre, editar y versionar con la misma expectedVersion, renombrar al mismo nombre: un solo éxito y el resto 409 con su código', async () => {
+    const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta());
+    const pro = conSesion(app, c.pro.token);
+    const creaciones = await simultaneos(N, () => crear(c, { name: 'Simultánea', structure: estructuraDeEntrenamiento() }));
+    expect(resumenDeRespuestas(creaciones)).toEqual(['201', ...repetido('409 TEMPLATE_NAME_TAKEN')]);
+    const t = PlantillaDeEntrenamientoResponseSchema.parse(creaciones.find((r) => r.status === 201)!.body).data;
+
+    // Seis ediciones con la misma versión esperada: sin la condición en la base, las seis pasaban y cada una pisaba a la anterior.
+    const ediciones = await simultaneos(N, (i) => pro.patch(`${RUTA}/${t.templateId}`).send({ expectedVersion: t.version, name: `Renombrada ${i}` }));
+    expect(resumenDeRespuestas(ediciones)).toEqual(['200', ...repetido('409 VERSION_CONFLICT')]);
+    const editada = PlantillaDeEntrenamientoResponseSchema.parse((await pro.get(`${RUTA}/${t.templateId}`).expect(200)).body).data;
+    expect(editada.version).toBe('v2');
+
+    const versiones = await simultaneos(N, () => pro.post(`${RUTA}/${t.templateId}/versions`).send({ expectedVersion: editada.version, structure: estructuraDeEntrenamiento() }));
+    expect(resumenDeRespuestas(versiones)).toEqual(['201', ...repetido('409 VERSION_CONFLICT')]);
+    const versionada = PlantillaDeEntrenamientoResponseSchema.parse((await pro.get(`${RUTA}/${t.templateId}`).expect(200)).body).data;
+    expect(versionada).toMatchObject({ version: 'v3', versionNumber: 2 });
+
+    // Seis plantillas distintas renombradas a la vez al mismo nombre: una sola se queda con él.
+    const otras: { templateId: string; version: string }[] = [];
+    for (let i = 0; i < N; i += 1) otras.push(PlantillaDeEntrenamientoResponseSchema.parse((await crear(c, { name: `Otra ${i}`, structure: estructuraDeEntrenamiento() }).expect(201)).body).data);
+    const renombres = await simultaneos(N, (i) => pro.patch(`${RUTA}/${otras[i]!.templateId}`).send({ expectedVersion: otras[i]!.version, name: 'Mismo nombre' }));
+    expect(resumenDeRespuestas(renombres)).toEqual(['200', ...repetido('409 TEMPLATE_NAME_TAKEN')]);
   });
 });

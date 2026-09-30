@@ -21,7 +21,7 @@ import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { leerConsultaDeLista, paginar } from '../http/paginacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
-import { momentoDeLaBase } from '../prisma/concurrencia';
+import { momentoDeLaBase, sinDuplicar } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoService } from './catalogo.service';
 import { EjecutorNutricional } from './ejecutor';
@@ -31,6 +31,7 @@ type Tx = Prisma.TransactionClient;
 const RECURSO = 'PlantillaDePlanNutricional';
 const CASO_DE_USO = 'UC-P10';
 const token = (n: number): string => `v${n}`;
+const nombreTomado = (): ErrorDeApi => new ErrorDeApi(409, CodigoDeError.TEMPLATE_NAME_TAKEN, 'Ya tenés una plantilla con ese nombre.');
 const UUID = /^[0-9a-f-]{36}$/i;
 
 type PlantillaFila = Prisma.PlantillaDePlanNutricionalGetPayload<{ include: { versiones: true } }>;
@@ -67,9 +68,12 @@ export class PlantillasNutricionalesService {
         if (pedido.origin) await this.exigirVersionDePlanPropia(tx, actor.identidadId, pedido.origin.planVersionId);
         await this.exigirNombreLibre(tx, actor.identidadId, pedido.name, null);
         const momento = await momentoDeLaBase(tx);
-        const plantilla = await tx.plantillaDePlanNutricional.create({
-          data: { profesionalId: actor.identidadId, nombre: pedido.name, nombreNormalizado: nombreNormalizadoDePlantilla(pedido.name), descripcion: pedido.description ?? null, momentoDeActualizacion: momento },
-        });
+        const plantilla = await sinDuplicar(
+          tx.plantillaDePlanNutricional.create({
+            data: { profesionalId: actor.identidadId, nombre: pedido.name, nombreNormalizado: nombreNormalizadoDePlantilla(pedido.name), descripcion: pedido.description ?? null, momentoDeActualizacion: momento },
+          }),
+          nombreTomado,
+        );
         await tx.versionDePlantillaDePlanNutricional.create({
           data: {
             plantillaId: plantilla.id,
@@ -154,7 +158,8 @@ export class PlantillasNutricionalesService {
         const estructura = await this.estructuraVerificada(tx, actor.identidadId, pedido.structure, pedido.copyQuantities === true);
         if (pedido.origin) await this.exigirVersionDePlanPropia(tx, actor.identidadId, pedido.origin.planVersionId);
         const momento = await momentoDeLaBase(tx);
-        await tx.versionDePlantillaDePlanNutricional.create({
+        await this.avanzarVersion(tx, fila, { momentoDeActualizacion: momento });
+        await sinDuplicar(tx.versionDePlantillaDePlanNutricional.create({
           data: {
             plantillaId: fila.id,
             numero: (fila.versiones[0]?.numero ?? 0) + 1,
@@ -164,8 +169,7 @@ export class PlantillasNutricionalesService {
             autorId: actor.identidadId,
             procedencia: procedencia as unknown as Prisma.InputJsonValue,
           },
-        });
-        await tx.plantillaDePlanNutricional.update({ where: { id: fila.id }, data: { version: { increment: 1 }, momentoDeActualizacion: momento } });
+        }), errores.conflictoDeVersion);
         await this.evento(tx, 'PlantillaDePlanVersionada', actor.identidadId, fila.id, procedencia, momento);
         return { estadoHttp: 201, cuerpo: { data: await this.leer(tx, actor.identidadId, fila.id) }, sujetoId: null, recurso };
       },
@@ -190,15 +194,11 @@ export class PlantillasNutricionalesService {
         if (pedido.expectedVersion !== token(fila.version)) throw errores.conflictoDeVersion();
         if (pedido.name !== undefined) await this.exigirNombreLibre(tx, actor.identidadId, pedido.name, fila.id);
         const momento = await momentoDeLaBase(tx);
-        await tx.plantillaDePlanNutricional.update({
-          where: { id: fila.id },
-          data: {
-            ...(pedido.name !== undefined ? { nombre: pedido.name, nombreNormalizado: nombreNormalizadoDePlantilla(pedido.name) } : {}),
-            ...(pedido.description !== undefined ? { descripcion: pedido.description } : {}),
-            ...(pedido.state !== undefined ? { estado: pedido.state === 'ACTIVE' ? 'ACTIVA' : 'ARCHIVADA' } : {}),
-            version: { increment: 1 },
-            momentoDeActualizacion: momento,
-          },
+        await this.avanzarVersion(tx, fila, {
+          ...(pedido.name !== undefined ? { nombre: pedido.name, nombreNormalizado: nombreNormalizadoDePlantilla(pedido.name) } : {}),
+          ...(pedido.description !== undefined ? { descripcion: pedido.description } : {}),
+          ...(pedido.state !== undefined ? { estado: pedido.state === 'ACTIVE' ? ('ACTIVA' as const) : ('ARCHIVADA' as const) } : {}),
+          momentoDeActualizacion: momento,
         });
         await this.evento(tx, 'PlantillaDePlanEditada', actor.identidadId, fila.id, procedencia, momento);
         return { estadoHttp: 200, cuerpo: { data: await this.leer(tx, actor.identidadId, fila.id) }, sujetoId: null, recurso };
@@ -257,7 +257,13 @@ export class PlantillasNutricionalesService {
 
   private async exigirNombreLibre(tx: Tx, profesionalId: string, nombre: string, salvoId: string | null): Promise<void> {
     const existente = await tx.plantillaDePlanNutricional.findUnique({ where: { profesionalId_nombreNormalizado: { profesionalId, nombreNormalizado: nombreNormalizadoDePlantilla(nombre) } }, select: { id: true } });
-    if (existente && existente.id !== salvoId) throw new ErrorDeApi(409, CodigoDeError.TEMPLATE_NAME_TAKEN, 'Ya tenés una plantilla con ese nombre.');
+    if (existente && existente.id !== salvoId) throw nombreTomado();
+  }
+
+  /** Como en entrenamiento: escribe solo si la plantilla sigue en la versión leída (si no, 409), y el nombre lo decide la base. */
+  private async avanzarVersion(tx: Tx, fila: PlantillaFila, data: Prisma.PlantillaDePlanNutricionalUpdateManyMutationInput): Promise<void> {
+    const r = await sinDuplicar(tx.plantillaDePlanNutricional.updateMany({ where: { id: fila.id, version: fila.version }, data: { ...data, version: { increment: 1 } } }), nombreTomado);
+    if (r.count === 0) throw errores.conflictoDeVersion();
   }
 
   private evento(tx: Tx, tipo: 'PlantillaDePlanCreada' | 'PlantillaDePlanVersionada' | 'PlantillaDePlanEditada', actorId: string, plantillaId: string, procedencia: unknown, momento: Date): Promise<void> {
