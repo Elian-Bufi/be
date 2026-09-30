@@ -183,20 +183,36 @@ function useTraerALaVista(marco: RefObject<HTMLDivElement | null>, elegido: numb
   }, [marco, elegido]);
 }
 
-/** Si el gráfico es más ancho que su marco (hay series o sesiones fuera de la vista), para decirlo con texto. */
-function useSeDesplaza(marco: RefObject<HTMLDivElement | null>): boolean {
-  const [seDesplaza, setSeDesplaza] = useState(false);
+/**
+ * Cuántos grupos del eje (series o sesiones) quedan fuera de la vista del marco, para decirlo con texto. Cuenta los
+ * rótulos del eje cuyo recuadro cae fuera del marco: un desborde de unos píxeles por márgenes no es un grupo oculto, y
+ * antes se avisaba «hay más a los costados» con las tres series a la vista. Se vuelve a medir al desplazar y al cambiar
+ * de tamaño, así el número sigue a lo que la persona ve.
+ */
+function useFueraDeLaVista(marco: RefObject<HTMLDivElement | null>): number {
+  const [fuera, setFuera] = useState(0);
   useEffect(() => {
     const el = marco.current;
     if (!el) return;
-    const medir = () => setSeDesplaza(el.scrollWidth > el.clientWidth + 1);
+    const medir = () => {
+      const m = el.getBoundingClientRect();
+      const rotulos = [...el.querySelectorAll('svg g[transform]')].filter((g) => g.querySelector(':scope > text.grafico__tick'));
+      setFuera(rotulos.filter((g) => {
+        const r = g.getBoundingClientRect();
+        return r.right < m.left + 1 || r.left > m.right - 1;
+      }).length);
+    };
     medir();
     const observador = new ResizeObserver(medir);
     observador.observe(el);
     if (el.firstElementChild) observador.observe(el.firstElementChild);
-    return () => observador.disconnect();
+    el.addEventListener('scroll', medir, { passive: true });
+    return () => {
+      observador.disconnect();
+      el.removeEventListener('scroll', medir);
+    };
   }, [marco]);
-  return seDesplaza;
+  return fuera;
 }
 
 /** Recorre una lista con el teclado: flechas, Inicio y Fin. Devuelve el índice nuevo, o `null` si la tecla no es suya. */
@@ -518,7 +534,7 @@ function GraficoPorSerie({
   const conPuntero = useConPuntero();
   const marco = useRef<HTMLDivElement>(null);
   useTraerALaVista(marco, elegida);
-  const seDesplaza = useSeDesplaza(marco);
+  const fueraDeLaVista = useFueraDeLaVista(marco);
   const datos = datosPorSerie(series, medida);
   const ancho = anchoPorGrupo(
     datos.flatMap((d) => [`${COPY_ENTRENAMIENTO.serie} ${numero(d.numero)}`, ...lineasDelRotulo(d.rotulo)]),
@@ -592,7 +608,7 @@ function GraficoPorSerie({
           </ResponsiveContainer>
         </div>
       </div>
-      {seDesplaza ? <p className="nota">{COPY_COMPARACION.seDesplazaSeries}</p> : null}
+      {fueraDeLaVista > 0 ? <p className="nota">{COPY_COMPARACION.fueraDeLaVista(fueraDeLaVista, 'series')}</p> : null}
     </figure>
   );
 }
@@ -809,7 +825,7 @@ function GraficoDeEvolucion({
   // En una pantalla angosta el gráfico se desplaza de costado: el punto elegido (por ejemplo, con las flechas) se trae a
   // la vista si quedó afuera.
   useTraerALaVista(marco, elegido);
-  const seDesplaza = useSeDesplaza(marco);
+  const fueraDeLaVista = useFueraDeLaVista(marco);
   const ancho = anchoPorGrupo(puntos.flatMap((p) => [rotuloDelEje(p), ...lineasDelRotulo(rotuloCorto(p, medida))]));
   const unidad = unidadDeMedida(medida);
   const tramosPlan = [...new Set(puntos.flatMap((p) => (p.tramoPlanificado === null ? [] : [p.tramoPlanificado])))];
@@ -940,7 +956,7 @@ function GraficoDeEvolucion({
           </ResponsiveContainer>
         </div>
       </div>
-      {seDesplaza ? <p className="nota">{COPY_COMPARACION.seDesplazaSesiones}</p> : null}
+      {fueraDeLaVista > 0 ? <p className="nota">{COPY_COMPARACION.fueraDeLaVista(fueraDeLaVista, 'sesiones')}</p> : null}
     </figure>
   );
 }

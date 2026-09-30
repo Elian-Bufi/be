@@ -666,7 +666,7 @@ test('diferencia: sin dos valores comparables no hay diferencia', () => {
 
 test('TEST-PRJ-009 · el copy de la comparación no puntúa ni juzga', () => {
   const textos = [
-    ...Object.values(COPY_COMPARACION),
+    ...Object.values(COPY_COMPARACION).map((v) => (typeof v === 'function' ? v(3, 'series') : v)),
     ...['serie-no-registrada', 'ejercicio-no-registrado', 'registro-resumido', 'vista-no-resoluble', 'otro-ejercicio', 'campo-no-registrado'].map((motivo) =>
       textoRegistrado({ tipo: 'sin-dato', motivo } as never, REPS),
     ),
