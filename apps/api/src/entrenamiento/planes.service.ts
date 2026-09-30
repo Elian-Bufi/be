@@ -15,6 +15,7 @@ import {
   type ContenidoDePlanDeEntrenamiento,
   type EjercicioCitable,
   type EstructuraDePlanDeEntrenamientoEntrada,
+  type OrigenDePlanEnPlantilla,
   type Procedencia,
   type ValidationIssue,
   type VersionDePlanDeEntrenamiento,
@@ -29,6 +30,7 @@ import { sinParametrosDeQuery } from '../http/validacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { ProcesoService } from '../proceso/proceso.service';
+import { PlantillasDeEntrenamientoService } from './plantillas.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esToken } from '../vinculo/lectura';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
@@ -82,6 +84,7 @@ export class PlanesDeEntrenamientoService {
     private readonly catalogo: CatalogoDeEjerciciosService,
     private readonly evaluaciones: EvaluacionesDeEntrenamientoService,
     private readonly procesos: ProcesoService,
+    private readonly plantillas: PlantillasDeEntrenamientoService,
   ) {}
 
   // ─── API-TRN-07 ────────────────────────────────────────────────────────────────────────────
@@ -101,17 +104,22 @@ export class PlanesDeEntrenamientoService {
         if (pedido.basedOnPlanId && pedido.initialStructure) {
           throw errores.validacionFallida([{ code: 'BASED_ON_AND_STRUCTURE_ARE_EXCLUSIVE', path: 'initialStructure' }]);
         }
+        // PF-09: una plantilla es una tercera fuente, excluyente con las otras dos.
+        if (pedido.fromTemplateVersionId && (pedido.basedOnPlanId || pedido.initialStructure)) {
+          throw errores.validacionFallida([{ code: 'PLAN_SOURCE_CONFLICT', path: 'fromTemplateVersionId' }]);
+        }
         const version = await this.crearVersionBorrador(tx, {
           profesionalId: actor.identidadId,
           asesoradoId,
           objetivoVersionId: pedido.objectiveVersionId,
           estructura: pedido.initialStructure ?? null,
           basadaEn: pedido.basedOnPlanId ?? null,
+          desdePlantilla: pedido.fromTemplateVersionId ?? null,
           proximaRevision: pedido.nextReviewAt ?? null,
           revisionDeOrigenId: null,
           procedencia,
         });
-        return { estadoHttp: 201, cuerpo: { data: await this.leerVersion(tx, version) }, sujetoId: asesoradoId, recurso: { tipo: RECURSO, id: version } };
+        return { estadoHttp: 201, cuerpo: { data: await this.leerVersion(tx, version, true) }, sujetoId: asesoradoId, recurso: { tipo: RECURSO, id: version } };
       },
     });
   }
@@ -129,6 +137,8 @@ export class PlanesDeEntrenamientoService {
       estructura: EstructuraDePlanDeEntrenamientoEntrada | null;
       /** `planId` de la versión efectiva a copiar (DL-047, por homología), o `null`. */
       basadaEn: string | null;
+      /** PF-09 (DL-108): versión de plantilla propia desde la que nace el borrador, o `null`. */
+      desdePlantilla?: string | null;
       proximaRevision: string | null;
       revisionDeOrigenId: string | null;
       procedencia: Procedencia;
@@ -145,7 +155,13 @@ export class PlanesDeEntrenamientoService {
       throw new ErrorDeApi(409, CodigoDeError.RESOURCE_CONFLICT, 'Ya hay un borrador de este plan. Seguí trabajando sobre ese borrador.', { draftPlanId: borrador.id });
     }
     let contenido: ContenidoDePlanDeEntrenamiento;
-    if (p.basadaEn) {
+    let origenDePlantilla: OrigenDePlanEnPlantilla | null = null;
+    if (p.desdePlantilla) {
+      // La plantilla se vuelve a normalizar con identificadores nuevos: el plan es de la persona, no del molde.
+      const plantilla = await this.plantillas.versionParaAplicar(tx, p.profesionalId, p.desdePlantilla);
+      contenido = await this.normalizarYVerificar(tx, p.profesionalId, plantilla.estructura);
+      origenDePlantilla = { templateId: plantilla.plantillaId, templateVersionId: plantilla.versionId };
+    } else if (p.basadaEn) {
       if (p.basadaEn !== plan.versionEfectivaId) throw errores.validacionFallida([{ code: 'BASED_ON_MUST_BE_EFFECTIVE_VERSION', path: 'basedOnPlanId' }]);
       // La sucesora parte de lo que se activó —la instantánea—, con los mismos identificadores de nodo: una ejecución
       // registrada contra la anterior sigue apuntando a una sesión identificable (REG-06-111).
@@ -172,6 +188,7 @@ export class PlanesDeEntrenamientoService {
         revisionDeOrigenId: p.revisionDeOrigenId,
         autorId: p.profesionalId,
         procedencia: p.procedencia as unknown as Prisma.InputJsonValue,
+        ...(origenDePlantilla ? { origenDePlantilla: origenDePlantilla as unknown as Prisma.InputJsonValue } : {}),
       },
       select: { id: true },
     });
@@ -215,7 +232,7 @@ export class PlanesDeEntrenamientoService {
         const abierto = await seguimientoAbierto(tx, actor.identidadId, asesoradoId);
         return {
           data: pagina.map((v) => {
-            const { blocks: _b, ...resumen } = versionDePlanApi(v, nombre, new Map(), abierto);
+            const { blocks: _b, ...resumen } = { ...versionDePlanApi(v, nombre, new Map(), abierto), templateOrigin: (v.origenDePlantilla as OrigenDePlanEnPlantilla | null) ?? null };
             return resumen;
           }),
           page,
@@ -254,7 +271,7 @@ export class PlanesDeEntrenamientoService {
           await this.decidir(tx, 'API-TRN-09', actor, actor.identidadId, titular, recurso, ctx);
           if (v.plan.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-09', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
         }
-        return { data: await this.leerVersion(tx, v.id) };
+        return { data: await this.leerVersion(tx, v.id, titular !== actor.identidadId) };
       },
     });
   }
@@ -300,7 +317,7 @@ export class PlanesDeEntrenamientoService {
           procedencia,
           momento: await momentoDeLaBase(tx),
         });
-        return { estadoHttp: 200, cuerpo: { data: await this.leerVersion(tx, v.id) }, sujetoId: v.asesoradoId, recurso };
+        return { estadoHttp: 200, cuerpo: { data: await this.leerVersion(tx, v.id, true) }, sujetoId: v.asesoradoId, recurso };
       },
     });
   }
@@ -424,13 +441,15 @@ export class PlanesDeEntrenamientoService {
 
   // ─── Auxiliares ─────────────────────────────────────────────────────────────────────────────
 
-  async leerVersion(tx: Tx, id: string): Promise<VersionDePlanDeEntrenamiento> {
+  async leerVersion(tx: Tx, id: string, incluirOrigen = false): Promise<VersionDePlanDeEntrenamiento> {
     const v = (await tx.versionDePlanDeEntrenamiento.findUniqueOrThrow({ where: { id }, include: INCLUIR_PLAN_DE_ENTRENAMIENTO })) as VersionConPlan;
     const catalogo =
       v.estado === 'BORRADOR'
         ? await this.catalogo.citables(tx, v.plan.profesionalId, 'PROFESIONAL', referenciasDeEjercicio(v.contenido as unknown as ContenidoDePlanDeEntrenamiento))
         : new Map();
-    return versionDePlanApi(v, await nombreVisibleDe(tx, v.plan.profesionalId), aCitables(catalogo), await seguimientoAbierto(tx, v.plan.profesionalId, v.plan.asesoradoId));
+    const api = versionDePlanApi(v, await nombreVisibleDe(tx, v.plan.profesionalId), aCitables(catalogo), await seguimientoAbierto(tx, v.plan.profesionalId, v.plan.asesoradoId));
+    // El origen de plantilla solo lo ve el profesional: la APK instalada valida con esquemas estrictos que no lo conocen.
+    return incluirOrigen ? { ...api, templateOrigin: (v.origenDePlantilla as OrigenDePlanEnPlantilla | null) ?? null } : api;
   }
 
   /**

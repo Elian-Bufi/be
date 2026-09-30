@@ -45,3 +45,4 @@ export * from './contratos-integraciones';
 export * from './integraciones';
 export * from './copy-integraciones';
 export * from './figura-antropometrica';
+export * from './contratos-plantillas';

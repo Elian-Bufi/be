@@ -8,6 +8,7 @@ import { EntrenamientoController } from './entrenamiento.controller';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
 import { ImportacionDeEjerciciosService } from './importacion.service';
 import { PlanesDeEntrenamientoService } from './planes.service';
+import { PlantillasDeEntrenamientoService } from './plantillas.service';
 import { RevisionesDeEntrenamientoService } from './revisiones.service';
 
 /**
@@ -22,6 +23,7 @@ import { RevisionesDeEntrenamientoService } from './revisiones.service';
     CatalogoDeEjerciciosService,
     EvaluacionesDeEntrenamientoService,
     PlanesDeEntrenamientoService,
+    PlantillasDeEntrenamientoService,
     EjecucionesDeEntrenamientoService,
     RevisionesDeEntrenamientoService,
     ImportacionDeEjerciciosService,
