@@ -49,7 +49,7 @@ import {
   type ValorPlanificado,
   type ValorRegistrado,
 } from '@be/domain';
-import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { Bar, BarChart, CartesianGrid, ComposedChart, LabelList, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Aviso } from '../../../../components/formulario';
 import { dia, diaCorto, fecha } from '../../../../lib/formato';
@@ -191,18 +191,19 @@ function useTraerALaVista(marco: RefObject<HTMLDivElement | null>, elegido: numb
  */
 function useFueraDeLaVista(marco: RefObject<HTMLDivElement | null>): number {
   const [fuera, setFuera] = useState(0);
+  const medir = useCallback(() => {
+    const el = marco.current;
+    if (!el) return;
+    const m = el.getBoundingClientRect();
+    const rotulos = [...el.querySelectorAll('svg g[transform]')].filter((g) => g.querySelector(':scope > text.grafico__tick'));
+    setFuera(rotulos.filter((g) => {
+      const r = g.getBoundingClientRect();
+      return r.right < m.left + 1 || r.left > m.right - 1;
+    }).length);
+  }, [marco]);
   useEffect(() => {
     const el = marco.current;
     if (!el) return;
-    const medir = () => {
-      const m = el.getBoundingClientRect();
-      const rotulos = [...el.querySelectorAll('svg g[transform]')].filter((g) => g.querySelector(':scope > text.grafico__tick'));
-      setFuera(rotulos.filter((g) => {
-        const r = g.getBoundingClientRect();
-        return r.right < m.left + 1 || r.left > m.right - 1;
-      }).length);
-    };
-    medir();
     const observador = new ResizeObserver(medir);
     observador.observe(el);
     if (el.firstElementChild) observador.observe(el.firstElementChild);
@@ -211,7 +212,14 @@ function useFueraDeLaVista(marco: RefObject<HTMLDivElement | null>): number {
       observador.disconnect();
       el.removeEventListener('scroll', medir);
     };
-  }, [marco]);
+  }, [marco, medir]);
+  // Después de cada dibujo del componente (otra variable, otra capa, otros datos) se vuelve a medir, aunque el marco no
+  // cambie de tamaño: el primer dibujo ocurre antes de que Recharts ubique los rótulos, y lo cubre la notificación
+  // inicial del ResizeObserver; esto cubre los redibujos que no mueven el tamaño. Si el número no cambia, React no
+  // vuelve a dibujar.
+  useEffect(() => {
+    medir();
+  });
   return fuera;
 }
 

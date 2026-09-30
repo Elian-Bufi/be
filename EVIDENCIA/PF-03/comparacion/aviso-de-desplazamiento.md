@@ -28,4 +28,15 @@ Capturas: `cierre/12-aviso-47-series.png` (escritorio, «36 series quedan fuera 
 
 ## Límite
 
-La cantidad cuenta grupos del eje, no barras ni puntos: es lo que el marco esconde y lo que las flechas recorren. La navegación por teclado en PC sigue verificada solo por automatización.
+La cantidad cuenta grupos del eje, no barras ni puntos: es lo que el marco esconde y lo que las flechas recorren. Desplazar el gráfico **no siempre baja el número**: lo que entra por un lado puede dejar grupos ocultos del otro; el aviso desaparece solo cuando todos caben en el marco. La navegación por teclado en PC sigue verificada solo por automatización.
+
+## Tanda 2 (2026-09-30): la primera carga y los redibujos sin cambio de tamaño
+
+Pendiente de la auditoría: el gancho medía al montar (antes de que Recharts ubicara los rótulos) y después solo ante cambios de tamaño y desplazamiento. Comprobación con `sonda-primera-carga.mjs`: 47 series, ancho angosto (**720 px y 420 px**), desde la primera carga del gráfico (abrir el detalle y muestrear cada 100 ms el número del aviso y la cuenta real de rótulos fuera del marco, con la misma regla).
+
+| Ancho | Primera carga | Tras cambiar la variable (mismo marco) | Desplazado al final |
+|---|---|---|---|
+| 720 px (marco 596 px) | 0 durante ≤ 100 ms tras el primer dibujo (SVG ya a 4572 px) → **41 = 41** | 41 = 41 | 41 = 41 (las ocultas quedan del lado izquierdo) |
+| 420 px (marco 307 px) | 0 durante ≤ 100 ms → **44 = 44** | 44 = 44 | 44 = 44 |
+
+No se reprodujo un conteo incorrecto en estado estable: la notificación inicial del `ResizeObserver` llega después del primer dibujo real. Como eso no demuestra que cubra todo redibujo, se agregó el mecanismo más simple: **volver a medir después de cada dibujo del componente** (un `useEffect` sin dependencias; si el número no cambia, React no vuelve a dibujar). Sin `setTimeout`, sin sondeo, sin observadores de la página. Con el cambio, las mismas tres mediciones coinciden en los dos anchos; el recorrido de densidad completo se volvió a correr (ver el PR).
