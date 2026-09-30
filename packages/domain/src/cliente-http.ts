@@ -62,6 +62,7 @@ import {
   type RespuestaDeCrearSolicitud,
   type VinculoResponse,
 } from './contratos-vinculo';
+import { CarteraResponseSchema, type CarteraResponse, type FiltroDeCartera } from './contratos-cartera';
 import {
   ActivacionDePlanResponseSchema,
   AplicarRevisionResponseSchema,
@@ -407,6 +408,10 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-DSH-03. 404 = no hay acceso que mostrar: la UI no distingue por qué (UC-I02 E05). */
     consultarDashboard(token: string, asesoradoId: string): Promise<Resultado<DashboardResponse>> {
       return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/dashboard`, { token, esquema: DashboardResponseSchema });
+    },
+    /** API-DSH-04 (PF-07, propuesta): los pendientes de toda la cartera del profesional. */
+    consultarCartera(token: string, filtro: FiltroDeCartera = {}): Promise<Resultado<CarteraResponse>> {
+      return llamar('GET', `/me/portfolio${query(filtro as Readonly<Record<string, string | undefined>>)}`, { token, esquema: CarteraResponseSchema });
     },
 
     // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 ────────────────────────────────────────────
