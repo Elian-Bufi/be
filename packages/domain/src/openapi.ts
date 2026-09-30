@@ -553,8 +553,8 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
-      { nombre: 'periodStart', descripcion: 'Inicio del período de actividad (RFC 3339).', schema: { type: 'string', format: 'date-time' } },
-      { nombre: 'periodEnd', descripcion: 'Fin del período de actividad (RFC 3339).', schema: { type: 'string', format: 'date-time' } },
+      { nombre: 'periodStart', descripcion: 'Inicio del período de actividad (fecha civil AAAA-MM-DD, inclusive).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'periodEnd', descripcion: 'Fin del período de actividad (fecha civil AAAA-MM-DD, inclusive).', schema: { type: 'string', format: 'date' } },
       { nombre: 'domain', descripcion: 'Filtra por dominio.', schema: { type: 'string', enum: ['nutrition', 'training', 'anthropometry'] } },
       {
         nombre: 'kind',

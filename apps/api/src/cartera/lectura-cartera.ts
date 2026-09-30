@@ -1,7 +1,6 @@
 import type { Alcance, Prisma } from '@prisma/client';
-import { CLAVE_DE_DOMINIO, clasificarRevision, fechaCivil, ordenarPendientes, type CarteraResponse, type DominioDeCartera, type PendienteDeCartera, type TipoDePendiente, type VistaDeApertura } from '@be/domain';
+import { CLAVE_DE_DOMINIO, clasificarRevision, diaSiguiente, fechaCivil, inicioDelDia, ordenarPendientes, type CarteraResponse, type DominioDeCartera, type PendienteDeCartera, type TipoDePendiente, type VistaDeApertura } from '@be/domain';
 import type { PdpService } from '../autorizacion/pdp.service';
-import type { Periodo } from '../dashboard/lectura-dashboard';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
 import { ZONA_POR_DEFECTO } from '../nutricion/zona';
@@ -23,8 +22,14 @@ type Tx = Prisma.TransactionClient;
  *   un dato del ítem, nunca un ítem (D-3 de la ficha).
  * - «Hoy» es la fecha civil en la zona por defecto de BE (la misma que usan las lecturas nutricionales); se informa.
  */
+/** Período de actividad en fechas civiles (inclusive), `null` = sin cota de ese lado. Se recorta en la zona por defecto. */
+export interface PeriodoCivil {
+  readonly start: string | null;
+  readonly end: string | null;
+}
+
 export interface ConsultaDeCartera {
-  readonly periodo: Periodo;
+  readonly periodo: PeriodoCivil;
   readonly domain: DominioDeCartera | null;
   readonly kind: TipoDePendiente | null;
   readonly limit: number;
@@ -119,7 +124,7 @@ export async function leerCartera(prisma: PrismaService, pdp: PdpService, proces
 }
 
 /** Nutrición y entrenamiento comparten la forma: plan con versión efectiva, Proceso con expectativa, borradores y solicitudes. */
-async function dePlanificacion(tx: Tx, procesos: ProcesoService, profesionalId: string, asesoradoId: string, alcance: 'NUTRICION' | 'ENTRENAMIENTO', hoy: string, periodo: Periodo): Promise<[Hecho[], Actividad]> {
+async function dePlanificacion(tx: Tx, procesos: ProcesoService, profesionalId: string, asesoradoId: string, alcance: 'NUTRICION' | 'ENTRENAMIENTO', hoy: string, periodo: PeriodoCivil): Promise<[Hecho[], Actividad]> {
   const hechos: Hecho[] = [];
   const par = { profesionalId_asesoradoId: { profesionalId, asesoradoId } };
   const plan =
@@ -159,7 +164,7 @@ async function dePlanificacion(tx: Tx, procesos: ProcesoService, profesionalId: 
   return [hechos, { lastActivityAt: registros._max.momentoDeOcurrencia?.toISOString() ?? null, activityCount: registros._count._all }];
 }
 
-async function deAntropometria(tx: Tx, profesionalId: string, asesoradoId: string, _hoy: string, periodo: Periodo): Promise<[Hecho[], Actividad]> {
+async function deAntropometria(tx: Tx, profesionalId: string, asesoradoId: string, _hoy: string, periodo: PeriodoCivil): Promise<[Hecho[], Actividad]> {
   const hechos: Hecho[] = [];
   const enPreparacion = await tx.evaluacionAntropometrica.findFirst({ where: { profesionalId, asesoradoId, estado: 'EN_PREPARACION' }, orderBy: { momentoDeRegistro: 'asc' }, select: { momentoDeRegistro: true } });
   if (enPreparacion) hechos.push({ kind: 'ANTHRO_DRAFT_PENDING', since: civil(enPreparacion.momentoDeRegistro), daysOverdue: null, daysUntil: null });
@@ -182,8 +187,9 @@ async function solicitudAbierta(tx: Tx, profesionalId: string, asesoradoId: stri
 
 const civil = (momento: Date): string => fechaCivil(momento.toISOString(), ZONA_POR_DEFECTO);
 
-function enElPeriodo(p: Periodo): { gte?: Date; lte?: Date } | undefined {
-  const filtro = { ...(p.start ? { gte: new Date(p.start) } : {}), ...(p.end ? { lte: new Date(p.end) } : {}) };
+/** Del primer instante del día inicial al primer instante del día siguiente al final (exclusivo), en la zona por defecto. */
+function enElPeriodo(p: PeriodoCivil): { gte?: Date; lt?: Date } | undefined {
+  const filtro = { ...(p.start ? { gte: new Date(inicioDelDia(p.start, ZONA_POR_DEFECTO)) } : {}), ...(p.end ? { lt: new Date(inicioDelDia(diaSiguiente(p.end), ZONA_POR_DEFECTO)) } : {}) };
   return Object.keys(filtro).length > 0 ? filtro : undefined;
 }
 

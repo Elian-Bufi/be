@@ -25,3 +25,24 @@ export const diasEntreFechas = (a: string, b: string): number => Math.round((utc
 
 /** La fecha civil siguiente. */
 export const diaSiguiente = (fechaCivilAaaaMmDd: string): string => new Date(utcDe(fechaCivilAaaaMmDd) + DIA).toISOString().slice(0, 10);
+
+/** Desfase (ms) entre la hora civil de la zona y UTC en ese instante; 0 si la zona no se reconoce. */
+function desfaseDeZona(instante: number, zonaHoraria: string): number {
+  try {
+    const partes = new Intl.DateTimeFormat('en-US', { timeZone: zonaHoraria, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(instante));
+    const n = (tipo: Intl.DateTimeFormatPartTypes): number => Number(partes.find((p) => p.type === tipo)?.value ?? 0);
+    return Date.UTC(n('year'), n('month') - 1, n('day'), n('hour') % 24, n('minute'), n('second')) - Math.floor(instante / 1000) * 1000;
+  } catch {
+    return 0;
+  }
+}
+
+/** El instante (ms) en que empieza una fecha civil en una zona. Con un cambio de horario ese mismo día, se corrige una vez más. */
+export function inicioDelDia(fechaCivilAaaaMmDd: string, zonaHoraria: string): number {
+  const supuesto = utcDe(fechaCivilAaaaMmDd);
+  const primero = supuesto - desfaseDeZona(supuesto, zonaHoraria);
+  return supuesto - desfaseDeZona(primero, zonaHoraria);
+}
+
+/** Una fecha civil válida (`AAAA-MM-DD` y existente en el calendario). */
+export const esFechaCivil = (valor: unknown): valor is string => typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(valor) && new Date(utcDe(valor)).toISOString().slice(0, 10) === valor;

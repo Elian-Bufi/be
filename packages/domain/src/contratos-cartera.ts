@@ -48,7 +48,8 @@ export const CarteraResponseSchema = z.strictObject({
   data: z.strictObject({
     today: FechaCivil,
     timeZone: z.string(),
-    period: z.strictObject({ start: Instante.nullable(), end: Instante.nullable() }),
+    /** Fechas civiles del período de actividad, tal como se pidieron (`null` = sin cota de ese lado). */
+    period: z.strictObject({ start: FechaCivil.nullable(), end: FechaCivil.nullable() }),
     partialView: z.boolean(),
     items: z.array(PendienteDeCarteraSchema),
   }),

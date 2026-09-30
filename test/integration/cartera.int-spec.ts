@@ -163,9 +163,11 @@ describe('API-DSH-04 · filtros, período y paginación', () => {
     expect((await cartera(pro, '?domain=training')).data.items).toEqual([]);
     expect((await cartera(pro, '?kind=PLAN_DRAFT_PENDING')).data.items.map((i) => i.advisee.identityId)).toEqual([b.ase.id]);
     // Un período futuro deja la actividad en cero, pero la revisión vencida sigue siendo un pendiente.
-    const futuro = await cartera(pro, '?periodStart=2099-01-01T00:00:00Z');
+    const futuro = await cartera(pro, '?periodStart=2099-01-01');
     expect(de(futuro, a.ase.id)[0]).toMatchObject({ kind: 'REVIEW_OVERDUE', activityCount: 0, lastActivityAt: null });
-    expect(futuro.data.period.start).toBe('2099-01-01T00:00:00.000Z');
+    expect(futuro.data.period.start).toBe('2099-01-01');
+    await conSesion(app, pro.token).get('/api/v1/me/portfolio?periodStart=2026-02-30').expect(400);
+    await conSesion(app, pro.token).get('/api/v1/me/portfolio?periodStart=2026-03-02&periodEnd=2026-03-01').expect(400);
 
     const p1 = await cartera(pro, '?limit=2');
     expect(p1.data.items).toHaveLength(2);

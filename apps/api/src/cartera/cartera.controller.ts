@@ -1,5 +1,5 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
-import { DominioDeCarteraSchema, TipoDePendienteSchema, type CarteraResponse } from '@be/domain';
+import { DominioDeCarteraSchema, esFechaCivil, TipoDePendienteSchema, type CarteraResponse } from '@be/domain';
 import { PdpService } from '../autorizacion/pdp.service';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
 import { errores } from '../http/errores';
@@ -41,12 +41,12 @@ function leerConsulta(query: Record<string, unknown>): ConsultaDeCartera {
   const permitidos = new Set(['periodStart', 'periodEnd', 'domain', 'kind', 'limit', 'cursor']);
   const desconocidos = Object.keys(query ?? {}).filter((k) => !permitidos.has(k));
   if (desconocidos.length > 0) throw errores.solicitudInvalida(desconocidos.map((c) => ({ code: 'UNKNOWN_QUERY_PARAMETER', path: c })));
+  // Fechas civiles, como en las lecturas por período de los dominios (API-ANT-06, API-TRN-21): el filtro del website las manda así.
   const fecha = (clave: string): string | null => {
     const valor = query[clave];
     if (valor === undefined) return null;
-    const d = typeof valor === 'string' ? new Date(valor) : null;
-    if (!d || Number.isNaN(d.getTime()) || !/^\d{4}-\d{2}-\d{2}T/.test(valor as string)) throw errores.solicitudInvalida([{ code: 'INVALID_DATE_TIME', path: clave }]);
-    return d.toISOString();
+    if (!esFechaCivil(valor)) throw errores.solicitudInvalida([{ code: 'INVALID_DATE', path: clave }]);
+    return valor;
   };
   const enumerado = <T extends string>(clave: string, esquema: { safeParse: (v: unknown) => { success: boolean; data?: T } }): T | null => {
     if (query[clave] === undefined) return null;
@@ -61,8 +61,10 @@ function leerConsulta(query: Record<string, unknown>): ConsultaDeCartera {
     limit = n;
   }
   if (query.cursor !== undefined && typeof query.cursor !== 'string') throw errores.cursorInvalido();
+  const periodo = { start: fecha('periodStart'), end: fecha('periodEnd') };
+  if (periodo.start && periodo.end && periodo.start > periodo.end) throw errores.solicitudInvalida([{ code: 'INVALID_PERIOD', path: 'periodStart' }]);
   return {
-    periodo: { start: fecha('periodStart'), end: fecha('periodEnd') },
+    periodo,
     domain: enumerado('domain', DominioDeCarteraSchema),
     kind: enumerado('kind', TipoDePendienteSchema),
     limit,
