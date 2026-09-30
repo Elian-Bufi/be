@@ -23,7 +23,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Cargando } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
-import { dia } from '../../../../lib/formato';
+import { diaCivil } from '../../../../lib/formato';
 import { FiltroDePeriodo, type Periodo } from '../periodo';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 
@@ -76,7 +76,7 @@ function Evolucion({ datos, metricaPedida, onMetrica, onAbrirEvaluacion }: { dat
     <div className="secciones">
       <section className="seccion">
         <p className="nota">
-          Período: {dia(`${datos.period.start}T12:00:00Z`)} a {dia(`${datos.period.end}T12:00:00Z`)}
+          Período: {diaCivil(datos.period.start)} a {diaCivil(datos.period.end)}
         </p>
         {datos.partialView ? (
           <Aviso tipo="info">

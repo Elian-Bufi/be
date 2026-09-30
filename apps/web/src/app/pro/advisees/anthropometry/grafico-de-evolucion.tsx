@@ -22,15 +22,21 @@ import {
   cantidad,
   COPY_ANTROPOMETRIA,
   COPY_EVOLUCION,
+  diasEnPalabras,
   diferenciaDescriptiva,
   ETIQUETA_DE_CLASE_DE_DATO,
+  fechaCivil,
   grupoVigente,
+  limitesDelPeriodo,
+  marcasDelPeriodo,
+  metodoEnPalabras,
   motivosEnPalabras,
   nombreDelGrupo,
   numero,
   observacionesDelGrupo,
   observacionPorId,
   prepararSerie,
+  protocoloEnPalabras,
   resumenDeObservacion,
   textoDeDiferenciaAntropometrica,
   unidadDelGrupo,
@@ -41,11 +47,10 @@ import {
 import { useEffect, useId, useMemo, useState } from 'react';
 import { CartesianGrid, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from 'recharts';
 import { Aviso } from '../../../../components/formulario';
-import { dia, fecha } from '../../../../lib/formato';
+import { diaCivil, fechaEnZona } from '../../../../lib/formato';
 import { indiceConTeclado, useConPuntero } from '../../../../lib/graficos';
 
 const ALTO = 300;
-const DIA = 86_400_000;
 
 /** El eje vertical con margen arriba y abajo, sin forzar el cero: un perímetro de 85 cm no se lee desde 0. */
 const DOMINIO: [(min: number) => number, (max: number) => number] = [(min) => Math.floor(min - Math.max(1, Math.abs(min) * 0.05)), (max) => Math.ceil(max + Math.max(1, Math.abs(max) * 0.05))];
@@ -70,16 +75,19 @@ export function EvolucionDeMetrica({
   const [elegidaId, setElegidaId] = useState<string | null>(null);
   const elegida = observacionPorId(preparada, elegidaId);
   const elegidaVisible = elegida && elegida.punto.comparabilityGroup === grupo ? elegida : null;
+  // La comparada vale solo si existe, está en el grupo visible y no es la misma observación elegida: si la persona
+  // pasa a elegir como principal la que estaba comparando, la comparación se vacía en el estado y en el selector.
   const [comparadaId, setComparadaId] = useState<string | null>(null);
-  const comparada = observacionPorId(preparada, comparadaId);
+  const comparadaCandidata = observacionPorId(preparada, comparadaId);
+  const comparada = comparadaCandidata && comparadaCandidata.punto.comparabilityGroup === grupo && comparadaCandidata.punto.sourceId !== elegidaVisible?.punto.sourceId ? comparadaCandidata : null;
   useEffect(() => {
     if (elegidaId && !elegidaVisible) setElegidaId(null);
-    if (comparadaId && (!comparada || comparada.punto.comparabilityGroup !== grupo)) setComparadaId(null);
-  }, [elegidaId, elegidaVisible, comparadaId, comparada, grupo]);
+    if (comparadaId && !comparada) setComparadaId(null);
+  }, [elegidaId, elegidaVisible, comparadaId, comparada]);
 
   const ficha = preparada.grupos.find((g) => g.comparabilityGroup === grupo) ?? null;
   const unidad = visibles[0] ? unidadDelGrupo(ficha, visibles[0].punto) : (ficha?.unit ?? '');
-  const titulo = `${COPY_ANTROPOMETRIA.evolucion}: ${serie.metricCode}${ficha ? ` · ${nombreDelGrupo(ficha)}` : ''}`;
+  const titulo = `${COPY_ANTROPOMETRIA.evolucion}: ${serie.metricCode}${ficha ? ` · ${nombreDelGrupo(ficha, preparada.grupos)}` : ''}`;
   const indiceElegido = elegidaVisible ? visibles.findIndex((o) => o.punto.sourceId === elegidaVisible.punto.sourceId) : null;
 
   return (
@@ -98,7 +106,7 @@ export function EvolucionDeMetrica({
                 .filter((g) => preparada.observaciones.some((o) => o.punto.comparabilityGroup === g.comparabilityGroup))
                 .map((g) => (
                   <option key={g.comparabilityGroup} value={g.comparabilityGroup}>
-                    {nombreDelGrupo(g)} ({numero(observacionesDelGrupo(preparada, g.comparabilityGroup).length)})
+                    {nombreDelGrupo(g, preparada.grupos)} ({numero(observacionesDelGrupo(preparada, g.comparabilityGroup).length)})
                   </option>
                 ))}
             </select>
@@ -107,20 +115,20 @@ export function EvolucionDeMetrica({
       ) : null}
       {visibles.length === 1 ? <p className="nota">{COPY_EVOLUCION.unaSola}</p> : null}
       {visibles.length > 0 ? (
-        <Grafico id={id} titulo={titulo} visibles={visibles} unidad={unidad} periodo={periodo} elegido={indiceElegido} onElegir={(i) => setElegidaId(i === null ? null : (visibles[i]?.punto.sourceId ?? null))} />
+        <Grafico id={id} titulo={titulo} visibles={visibles} unidad={unidad} periodo={periodo} zonaHoraria={zonaHoraria} elegido={indiceElegido} onElegir={(i) => setElegidaId(i === null ? null : (visibles[i]?.punto.sourceId ?? null))} />
       ) : null}
       <div aria-live="polite">
         {elegidaVisible ? (
-          <Detalle observacion={elegidaVisible} ficha={ficha} unidad={unidad} onAbrir={onAbrirEvaluacion}>
+          <Detalle observacion={elegidaVisible} ficha={ficha} grupos={preparada.grupos} unidad={unidad} zonaHoraria={zonaHoraria} onAbrir={onAbrirEvaluacion}>
             {visibles.length > 1 ? (
-              <Comparacion id={id} elegida={elegidaVisible} candidatas={visibles.filter((o) => o.punto.sourceId !== elegidaVisible.punto.sourceId)} comparada={comparada} onElegir={setComparadaId} />
+              <Comparacion id={id} elegida={elegidaVisible} candidatas={visibles.filter((o) => o.punto.sourceId !== elegidaVisible.punto.sourceId)} comparada={comparada} zonaHoraria={zonaHoraria} onElegir={setComparadaId} />
             ) : null}
           </Detalle>
         ) : visibles.length > 0 ? (
           <p className="nota">{COPY_EVOLUCION.ninguna}</p>
         ) : null}
       </div>
-      <Tabla preparada={preparada} grupo={grupo} elegidaId={elegidaVisible?.punto.sourceId ?? null} onElegir={setElegidaId} />
+      <Tabla preparada={preparada} grupo={grupo} zonaHoraria={zonaHoraria} elegidaId={elegidaVisible?.punto.sourceId ?? null} onElegir={setElegidaId} />
       <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeComparabilidad}</p>
     </section>
   );
@@ -138,6 +146,7 @@ function Grafico({
   visibles,
   unidad,
   periodo,
+  zonaHoraria,
   elegido,
   onElegir,
 }: {
@@ -146,19 +155,22 @@ function Grafico({
   visibles: readonly Observacion[];
   unidad: string;
   periodo: { readonly start: string; readonly end: string };
+  zonaHoraria: string;
   elegido: number | null;
   onElegir: (i: number | null) => void;
 }) {
   const conPuntero = useConPuntero();
   const datos: Dato[] = visibles.map((o) => ({ x: o.instante, y: o.punto.value, sourceId: o.punto.sourceId }));
-  // El eje cubre el período pedido, a escala: un mes con dos mediciones se ve como un mes, no como dos columnas.
-  const desde = new Date(`${periodo.start}T00:00:00Z`).getTime();
-  const hasta = new Date(`${periodo.end}T23:59:59Z`).getTime();
-  const resumen = visibles.map((o) => `${dia(o.punto.occurredAt)}${o.delDia.total > 1 ? ` (${COPY_EVOLUCION.delDia(o.delDia.orden, o.delDia.total)})` : ''}: ${resumenDeObservacion(o)}`).join('. ');
+  // El eje cubre el período pedido, a escala y recortado en la zona del período (la misma con la que la API lo recortó):
+  // un mes con dos mediciones se ve como un mes, y una toma de las 23:30 del último día sigue adentro aunque el
+  // navegador esté en otra zona. Las marcas son fechas civiles de esa zona, nunca posteriores al último día.
+  const { desde, hasta } = limitesDelPeriodo(periodo, zonaHoraria);
+  const marcas = marcasDelPeriodo(periodo, zonaHoraria);
+  const resumen = visibles.map((o) => `${diaCivil(o.fecha)}${o.delDia.total > 1 ? ` (${COPY_EVOLUCION.delDia(o.delDia.orden, o.delDia.total)})` : ''}: ${resumenDeObservacion(o)}`).join('. ');
   return (
     <figure className="grafico__figura">
       <figcaption className="nota">
-        {titulo}. {COPY_EVOLUCION.ejeTemporal}
+        {titulo}. {COPY_EVOLUCION.ejeTemporal} {COPY_EVOLUCION.zona(zonaHoraria)}
       </figcaption>
       <div
         className="grafico__lienzo"
@@ -180,15 +192,23 @@ function Grafico({
               dataKey="x"
               type="number"
               domain={[desde, hasta]}
-              ticks={ticksDelPeriodo(desde, hasta)}
-              tickFormatter={(v: number) => dia(new Date(v).toISOString())}
-              tick={{ fill: 'var(--texto)', fontSize: 12 }}
+              ticks={marcas.map((m) => m.instante)}
+              interval={0}
+              // El rótulo se dibuja acá, con la fecha civil de la zona del período: no depende del filtrado de marcas de
+              // Recharts ni de la zona del navegador.
+              tick={({ x, y, payload }: { x?: number | string; y?: number | string; payload?: { value?: number } }) => (
+                <g transform={`translate(${x ?? 0},${y ?? 0})`}>
+                  <text textAnchor="middle" dy={14} className="grafico__tick">
+                    {Number.isFinite(Number(payload?.value)) ? diaCivil(fechaCivil(new Date(Number(payload?.value)).toISOString(), zonaHoraria)) : ''}
+                  </text>
+                </g>
+              )}
               axisLine={{ stroke: 'var(--borde-control)' }}
               tickLine={false}
               height={36}
             />
             <YAxis dataKey="y" type="number" domain={DOMINIO} width={56} tickFormatter={(v: number) => numero(v, 1)} tick={{ fill: 'var(--tenue)', fontSize: 12 }} axisLine={{ stroke: 'var(--borde-control)' }} label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: 12 }} />
-            {conPuntero ? <Tooltip cursor={false} content={({ active, payload }) => (active && payload?.[0] ? <Recuadro observacion={visibles.find((o) => o.punto.sourceId === (payload[0]!.payload as Dato).sourceId)} /> : null)} /> : null}
+            {conPuntero ? <Tooltip cursor={false} content={({ active, payload }) => (active && payload?.[0] ? <Recuadro observacion={visibles.find((o) => o.punto.sourceId === (payload[0]!.payload as Dato).sourceId)} zonaHoraria={zonaHoraria} /> : null)} /> : null}
             <Scatter
               data={datos}
               isAnimationActive={false}
@@ -227,21 +247,12 @@ function Grafico({
   );
 }
 
-/** Marcas del eje temporal: entre cuatro y siete fechas repartidas en el período, en días enteros. */
-function ticksDelPeriodo(desde: number, hasta: number): number[] {
-  const dias = Math.max(1, Math.round((hasta - desde) / DIA));
-  const paso = Math.max(1, Math.ceil(dias / 6));
-  const marcas: number[] = [];
-  for (let d = 0; d <= dias; d += paso) marcas.push(desde + d * DIA + DIA / 2);
-  return marcas;
-}
-
-function Recuadro({ observacion: o }: { observacion: Observacion | undefined }) {
+function Recuadro({ observacion: o, zonaHoraria }: { observacion: Observacion | undefined; zonaHoraria: string }) {
   if (!o) return null;
   return (
     <div className="grafico__tooltip">
       <p>
-        <strong>{fecha(o.punto.occurredAt)}</strong>
+        <strong>{fechaEnZona(o.punto.occurredAt, zonaHoraria)}</strong>
         {o.delDia.total > 1 ? ` · ${COPY_EVOLUCION.delDia(o.delDia.orden, o.delDia.total)}` : ''}
       </p>
       <p>{resumenDeObservacion(o)}</p>
@@ -250,29 +261,29 @@ function Recuadro({ observacion: o }: { observacion: Observacion | undefined }) 
   );
 }
 
-function Detalle({ observacion: o, ficha, unidad, onAbrir, children }: { observacion: Observacion; ficha: SeriePreparada['grupos'][number] | null; unidad: string; onAbrir: (evaluationId: string) => void; children?: React.ReactNode }) {
+function Detalle({ observacion: o, ficha, grupos, unidad, zonaHoraria, onAbrir, children }: { observacion: Observacion; ficha: SeriePreparada['grupos'][number] | null; grupos: SeriePreparada['grupos']; unidad: string; zonaHoraria: string; onAbrir: (evaluationId: string) => void; children?: React.ReactNode }) {
   const motivos = motivosEnPalabras(o);
   return (
     <div className="detalle-de-valores">
       <h4>
-        {COPY_EVOLUCION.puntoElegido}: {fecha(o.punto.occurredAt)}
+        {COPY_EVOLUCION.puntoElegido}: {fechaEnZona(o.punto.occurredAt, zonaHoraria)}
         {o.delDia.total > 1 ? ` · ${COPY_EVOLUCION.delDia(o.delDia.orden, o.delDia.total)}` : ''}
       </h4>
       <dl>
         <dt>{COPY_EVOLUCION.valor}</dt>
         <dd>{cantidad(o.punto.value, unidad)}</dd>
         <dt>{COPY_EVOLUCION.momento}</dt>
-        <dd>{fecha(o.punto.occurredAt)}</dd>
+        <dd>{fechaEnZona(o.punto.occurredAt, zonaHoraria)}</dd>
         <dt>{COPY_EVOLUCION.registro}</dt>
-        <dd>{fecha(o.punto.recordedAt)}</dd>
+        <dd>{fechaEnZona(o.punto.recordedAt, zonaHoraria)}</dd>
         <dt>{COPY_EVOLUCION.clase}</dt>
         <dd>{ETIQUETA_DE_CLASE_DE_DATO[o.punto.dataClass]}</dd>
         <dt>{COPY_EVOLUCION.protocolo}</dt>
-        <dd>{ficha?.protocolName ?? '—'}</dd>
+        <dd>{ficha ? protocoloEnPalabras(ficha, grupos) : '—'}</dd>
         {ficha?.methodVersionId ? (
           <>
             <dt>{COPY_EVOLUCION.metodo}</dt>
-            <dd>{COPY_ANTROPOMETRIA.calculado} con un método declarado</dd>
+            <dd>{metodoEnPalabras(ficha.methodVersionId)}</dd>
           </>
         ) : null}
         <dt>{COPY_EVOLUCION.correccion}</dt>
@@ -288,7 +299,7 @@ function Detalle({ observacion: o, ficha, unidad, onAbrir, children }: { observa
   );
 }
 
-function Comparacion({ id, elegida, candidatas, comparada, onElegir }: { id: string; elegida: Observacion; candidatas: readonly Observacion[]; comparada: Observacion | null; onElegir: (sourceId: string | null) => void }) {
+function Comparacion({ id, elegida, candidatas, comparada, zonaHoraria, onElegir }: { id: string; elegida: Observacion; candidatas: readonly Observacion[]; comparada: Observacion | null; zonaHoraria: string; onElegir: (sourceId: string | null) => void }) {
   const d = comparada ? diferenciaDescriptiva(elegida, comparada) : null;
   return (
     <div className="campo">
@@ -297,13 +308,13 @@ function Comparacion({ id, elegida, candidatas, comparada, onElegir }: { id: str
         <option value="">{COPY_EVOLUCION.sinComparar}</option>
         {candidatas.map((o) => (
           <option key={o.punto.sourceId} value={o.punto.sourceId}>
-            {fecha(o.punto.occurredAt)} · {resumenDeObservacion(o)}
+            {fechaEnZona(o.punto.occurredAt, zonaHoraria)} · {resumenDeObservacion(o)}
           </option>
         ))}
       </select>
       {comparada ? (
         <p>
-          <strong>{COPY_EVOLUCION.diferencia}:</strong> {d ? `${textoDeDiferenciaAntropometrica(d)} en ${numero(d.dias)} ${d.dias === 1 ? 'día' : 'días'}` : COPY_EVOLUCION.noComparables}
+          <strong>{COPY_EVOLUCION.diferencia}:</strong> {d ? `${textoDeDiferenciaAntropometrica(d)}, ${diasEnPalabras(d.dias)}` : COPY_EVOLUCION.noComparables}
           <br />
           <span className="nota">{COPY_EVOLUCION.diferenciaAclaracion}</span>
         </p>
@@ -312,7 +323,7 @@ function Comparacion({ id, elegida, candidatas, comparada, onElegir }: { id: str
   );
 }
 
-function Tabla({ preparada, grupo, elegidaId, onElegir }: { preparada: SeriePreparada; grupo: string | null; elegidaId: string | null; onElegir: (sourceId: string) => void }) {
+function Tabla({ preparada, grupo, zonaHoraria, elegidaId, onElegir }: { preparada: SeriePreparada; grupo: string | null; zonaHoraria: string; elegidaId: string | null; onElegir: (sourceId: string) => void }) {
   const diasSinDato = preparada.filas.reduce((n, f) => (f.tipo === 'hueco' ? n + f.hueco.days : n), 0);
   return (
     <>
@@ -334,7 +345,7 @@ function Tabla({ preparada, grupo, elegidaId, onElegir }: { preparada: SeriePrep
           {preparada.filas.map((f) =>
             f.tipo === 'hueco' ? (
               <tr key={`hueco-${f.hueco.from}`}>
-                <th scope="row">{f.hueco.days === 1 ? dia(`${f.hueco.from}T12:00:00Z`) : `${dia(`${f.hueco.from}T12:00:00Z`)} — ${dia(`${f.hueco.to}T12:00:00Z`)}`}</th>
+                <th scope="row">{f.hueco.days === 1 ? diaCivil(f.hueco.from) : `${diaCivil(f.hueco.from)} — ${diaCivil(f.hueco.to)}`}</th>
                 <td data-etiqueta={COPY_ANTROPOMETRIA.valor}>
                   <span className="insignia">{f.hueco.days === 1 ? COPY_ANTROPOMETRIA.sinDato : `${numero(f.hueco.days)} días ${COPY_ANTROPOMETRIA.sinDato.toLowerCase()}`}</span>
                 </td>
@@ -345,7 +356,7 @@ function Tabla({ preparada, grupo, elegidaId, onElegir }: { preparada: SeriePrep
             ) : (
               <tr key={f.observacion.punto.sourceId} aria-current={f.observacion.punto.sourceId === elegidaId ? 'true' : undefined}>
                 <th scope="row">
-                  {fecha(f.observacion.punto.occurredAt)}
+                  {fechaEnZona(f.observacion.punto.occurredAt, zonaHoraria)}
                   {f.observacion.delDia.total > 1 ? ` · ${COPY_EVOLUCION.delDia(f.observacion.delDia.orden, f.observacion.delDia.total)}` : ''}
                 </th>
                 <td data-etiqueta={COPY_ANTROPOMETRIA.valor}>
@@ -367,7 +378,7 @@ function Tabla({ preparada, grupo, elegidaId, onElegir }: { preparada: SeriePrep
                 </td>
                 <td data-etiqueta="Acciones">
                   {f.observacion.punto.comparabilityGroup === grupo ? (
-                    <button type="button" className="boton boton--enlace" onClick={() => onElegir(f.observacion.punto.sourceId)} aria-label={`${COPY_EVOLUCION.elegirEnTabla}: ${fecha(f.observacion.punto.occurredAt)}`}>
+                    <button type="button" className="boton boton--enlace" onClick={() => onElegir(f.observacion.punto.sourceId)} aria-label={`${COPY_EVOLUCION.elegirEnTabla}: ${fechaEnZona(f.observacion.punto.occurredAt, zonaHoraria)}`}>
                       {COPY_EVOLUCION.elegirEnTabla}
                     </button>
                   ) : (

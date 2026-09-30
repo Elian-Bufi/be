@@ -34,7 +34,9 @@ Toda la lógica está en `packages/domain/src/evolucion-antropometrica.ts`. El g
 | No comparabilidad | Rombo en el gráfico y motivo en palabras en la tabla y el detalle (REG-06-164). Forma y texto, no solo color |
 | Corrección | Rige el valor vigente (REG-06-16); se marca «Corregida» en la tabla y con centro claro en el punto; el original se conserva en la evaluación |
 | Métrica al cambiar de período | Si sigue en la respuesta, se conserva; si no, se pasa a la primera y se dice. Sin detalle viejo ni filtro obsoleto |
-| Diferencia | Solo dentro del mismo grupo; aritmética y descriptiva («−1,5 kg en 10 días»). No es progreso ni resultado clínico |
+| Diferencia | Solo dentro del mismo grupo y nunca de una observación consigo misma; aritmética y descriptiva («−1,5 kg, con 10 días de calendario entre las fechas»). Los días son de calendario en la zona del período. No es progreso ni resultado clínico |
+| Zona horaria | El eje, sus marcas, los huecos, las fechas y las horas de la vista están en la **zona del período** (`period.timeZone`, la del asesorado), no en la del navegador. Los instantes no cambian: se muestran en esa zona |
+| Grupos homónimos | Si dos grupos solo difieren en la versión del método o del protocolo, el nombre agrega la referencia de esa versión tal como la publica el contrato (recortada; entera si el recorte no alcanza). El detalle muestra la referencia completa del método |
 | Vista parcial | `partialView` se muestra: hay evaluaciones de otro profesional que existen y no se ven |
 | Origen | Abre Evaluaciones con `evaluacion=` en la URL; la lectura y la autorización son las de siempre |
 
@@ -49,7 +51,7 @@ Toda la lógica está en `packages/domain/src/evolucion-antropometrica.ts`. El g
 
 | Prueba | Qué cubre | Resultado |
 |---|---|---|
-| Unitarias del dominio (`evolucion-antropometrica.test.ts`, 10, con datos validados contra el esquema estricto) | serie vacía y un punto; cero registrado; huecos iniciales, intermedios y finales; dos observaciones el mismo día; selección por `sourceId`; cambio de protocolo, método y unidad; corrección; métrica que deja de estar; diferencia solo en el mismo grupo; copy sin términos prohibidos | ver el PR |
+| Unitarias del dominio (`evolucion-antropometrica.test.ts`, 13, con datos validados contra el esquema estricto) | serie vacía y un punto; cero registrado; huecos iniciales, intermedios y finales; dos observaciones el mismo día; selección por `sourceId`; cambio de protocolo, método y unidad; corrección; métrica que deja de estar; diferencia solo en el mismo grupo; límites y marcas del período en la zona del período; días de calendario con cambio de fecha en menos de 12 h; grupos que solo difieren en la versión del método o del protocolo; copy sin términos prohibidos | ver el PR |
 | Integración `evolucion-antropometrica.int-spec.ts` (4), por los flujos reales contra PostgreSQL | dos evaluaciones el mismo día (la API publica una por día) y la corrección vigente; medición anulada y borrador excluidos, huecos; otra unidad como otro grupo; `partialView` con otro profesional y el origen accesible | **4/4** |
 | Recorrido web local, escritorio 1280 px y móvil 390 px | ver la tabla siguiente | **18/18 y 18/18** |
 | `npm test`, typecheck, OpenAPI (sin cambios), legajo y build del website | | ver el PR |
@@ -82,7 +84,23 @@ Capturas en esta carpeta: `01` puntos en kg con tabla; `02` detalle de la observ
 ## Límites
 
 - **Una observación por día y métrica** es lo que publica la API (checkpoint diario). Si dos evaluaciones del mismo día deben verse por separado, es un cambio de la lectura, fuera de esta orden. La presentación ya lo soporta.
-- **El método** se identifica por su versión en el contrato; la pantalla no inventa su nombre («calculado con un método declarado»).
+- **El método** se identifica por su versión en el contrato; la pantalla muestra esa referencia y no inventa su nombre.
 - **La métrica** se muestra por su código (`peso`, `cintura`), como en la lectura existente.
 - **Teclado en PC:** verificado con automatización; no equivale a la prueba manual de Dirección.
 - No validado por Dirección, no desplegado.
+
+## Tanda 2 (2026-09-30): casos de la auditoría, reproducidos y corregidos
+
+Capturas en `tanda-2/`. Navegador en **Asia/Tokyo** (UTC+9) con el período en **America/Argentina/Buenos_Aires** (UTC−3), para que cualquier dependencia de la zona del navegador salte a la vista. Datos: los de la siembra original más una cintura tomada a las 23:00 locales (02:00Z del día siguiente) y una cintura con la **versión 2 del mismo protocolo** (mismo nombre; grupo homónimo).
+
+| Caso | Reproducción | Corrección | Control |
+|---|---|---|---|
+| 1. Extremo del período | Período de un día (27/9): la toma de las 23:00 locales era válida para la API y quedaba fuera del eje (`T23:59:59Z`) | `limitesDelPeriodo` y `marcasDelPeriodo` en el dominio, calculados en la zona del período con `Intl` (sin la zona del navegador); las marcas son fechas civiles y ninguna cae después del último día; el rótulo se dibuja con la fecha civil de esa zona; la vista entera (tabla, detalle, recuadro) muestra fechas y horas en esa zona y lo dice | `01`: un punto, una marca «27 sept 2026», la toma a la derecha del eje; período completo con 6 marcas, la última ≤ «hasta» |
+| 1b. Días de la diferencia | `Math.round(ms / 24 h)`: fechas consecutivas podían decir «0 días» | Días de calendario entre las fechas civiles de la zona del período: «con 1 día de calendario entre las fechas», «el mismo día». Sin tocar los valores ni su resta. Prueba unitaria con cambio de fecha a 1,5 h y mismo día a 14,5 h | `04` |
+| 2. Comparación consigo misma | A elegida, B comparada, B pasa a principal: el selector excluía a B pero conservaba el valor y la diferencia era B − B | La comparada vale solo si existe, está en el grupo y no es la elegida; si no, el estado se vacía (selector en «No comparar»). `diferenciaDescriptiva` devuelve `null` para la misma observación | `05`; cambio de grupo también la vacía |
+| 3. Grupos y métodos homónimos | `nombreDelGrupo` daba el mismo rótulo a dos grupos con igual protocolo y unidad y distinta versión de método o de protocolo; el detalle decía «un método declarado» | `nombreDelGrupo(g, todos)` agrega «(método <ref>)» o «(versión del protocolo <ref>)» solo cuando hay homónimos, con la referencia recortada o entera si el recorte coincide; `protocoloEnPalabras` y `metodoEnPalabras` en el detalle. Prueba unitaria donde **solo cambia la versión del método** | `02` y `03` (versión del protocolo, reproducida en el navegador); la versión del método, en la prueba unitaria: la base local no tiene dos versiones de método con cálculos |
+| 5. `?evaluacion=` inválido | Una evaluación pedida que no existe dejaba la pestaña entera en «No disponible»; el parámetro solo inicializaba el estado | La lista se muestra siempre; 404 → aviso neutral (no distingue inexistente de no autorizada) con «Volver a la lista de evaluaciones» (saca el parámetro de la URL y abre la más reciente); otro fallo → «Reintentar» y la misma vuelta. `evaluacion=` se sigue si cambia después | `06` (inexistente), `07` (corte del detalle con la lista visible; reintento OK); cambio del parámetro sin recargar: el detalle pasa a la nueva |
+
+Recorrido dirigido `recorrido-tanda2.mjs`: **17/17**. Recorrido original: 16/18, y los dos que no pasan son los conteos que cambiaron con la siembra ampliada (cintura pasa de 4 observaciones y un grupo a 6 y dos grupos); no son defectos. Dominio: 13 pruebas de evolución, suite completa 360/360.
+
+**Fuera de esta tanda, sin cambios:** la API publica una observación efectiva por día y métrica; el recorrido actual no permite ver todas las tomas de un mismo día.

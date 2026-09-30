@@ -56,6 +56,66 @@ export function fechaCivil(instante: string, zonaHoraria: string): string {
   }
 }
 
+const DIA = 86_400_000;
+
+/** Desfase (ms) entre la hora civil de la zona y UTC en ese instante; 0 si la zona no se reconoce. */
+function desfaseDeZona(instante: number, zonaHoraria: string): number {
+  try {
+    const partes = new Intl.DateTimeFormat('en-US', { timeZone: zonaHoraria, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(instante));
+    const n = (tipo: Intl.DateTimeFormatPartTypes): number => Number(partes.find((p) => p.type === tipo)?.value ?? 0);
+    const civil = Date.UTC(n('year'), n('month') - 1, n('day'), n('hour') % 24, n('minute'), n('second'));
+    return civil - Math.floor(instante / 1000) * 1000;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * El instante (ms) en que empieza una fecha civil en la zona del período. No usa la zona del navegador: un profesional
+ * que mira desde otra zona ve el período recortado igual que la API lo recortó.
+ */
+export function inicioDelDia(fechaCivilAaaaMmDd: string, zonaHoraria: string): number {
+  const [a, m, d] = fechaCivilAaaaMmDd.split('-').map(Number);
+  const supuesto = Date.UTC(a ?? 1970, (m ?? 1) - 1, d ?? 1);
+  const primero = supuesto - desfaseDeZona(supuesto, zonaHoraria);
+  // Si el desfase cambia en ese mismo día (cambio de horario), se corrige una vez más.
+  return supuesto - desfaseDeZona(primero, zonaHoraria);
+}
+
+/** La fecha civil siguiente (`AAAA-MM-DD`), sin zona: es aritmética de calendario. */
+export function diaSiguiente(fechaCivilAaaaMmDd: string): string {
+  const [a, m, d] = fechaCivilAaaaMmDd.split('-').map(Number);
+  return new Date(Date.UTC(a ?? 1970, (m ?? 1) - 1, d ?? 1) + DIA).toISOString().slice(0, 10);
+}
+
+/** Días de calendario entre dos fechas civiles (`b − a`); negativo si `b` es anterior. */
+export const diasEntreFechas = (a: string, b: string): number => Math.round((inicioDelDia(b, 'UTC') - inicioDelDia(a, 'UTC')) / DIA);
+
+/**
+ * Los límites del eje temporal para el período pedido, en la zona del período: desde el inicio del primer día hasta el
+ * inicio del día siguiente al último (exclusivo). Una observación válida para la API cae siempre adentro.
+ */
+export function limitesDelPeriodo(periodo: { readonly start: string; readonly end: string }, zonaHoraria: string): { readonly desde: number; readonly hasta: number } {
+  return { desde: inicioDelDia(periodo.start, zonaHoraria), hasta: inicioDelDia(diaSiguiente(periodo.end), zonaHoraria) };
+}
+
+/**
+ * Marcas del eje temporal: entre una y siete fechas civiles del período, repartidas en días enteros y ubicadas al
+ * mediodía de su día en la zona del período. Ninguna cae después del último día.
+ */
+export function marcasDelPeriodo(periodo: { readonly start: string; readonly end: string }, zonaHoraria: string): { readonly instante: number; readonly fecha: string }[] {
+  const dias = Math.max(1, diasEntreFechas(periodo.start, periodo.end) + 1);
+  const paso = Math.max(1, Math.ceil(dias / 6));
+  const marcas: { instante: number; fecha: string }[] = [];
+  let fecha = periodo.start;
+  for (let d = 0; d < dias; d += paso) {
+    const inicio = inicioDelDia(fecha, zonaHoraria);
+    marcas.push({ instante: inicio + (inicioDelDia(diaSiguiente(fecha), zonaHoraria) - inicio) / 2, fecha });
+    for (let i = 0; i < paso; i += 1) fecha = diaSiguiente(fecha);
+  }
+  return marcas;
+}
+
 /** Prepara una métrica: ordena, resuelve el grupo de cada punto y numera las observaciones de un mismo día. */
 export function prepararSerie(serie: SerieApi, zonaHoraria: string): SeriePreparada {
   const grupos = serie.comparability.groups;
@@ -116,23 +176,56 @@ export const unidadDelGrupo = (g: GrupoDeComparabilidad | null, punto: PuntoDeSe
 
 /**
  * La diferencia entre dos observaciones **del mismo grupo**: aritmética y descriptiva («+1,5 kg entre el 3 y el 20 de
- * septiembre»). `null` si no comparten grupo: no se comparan medidas con otro protocolo, método o unidad.
+ * septiembre»). `null` si no comparten grupo, o si son la misma observación: no se comparan medidas con otro protocolo,
+ * método o unidad, ni una medida consigo misma. `dias` son días de calendario entre las dos fechas civiles en la zona
+ * del período: dos tomas de fechas consecutivas distan 1 día aunque las separen dos horas, y dos del mismo día, 0.
  */
 export function diferenciaDescriptiva(a: Observacion, b: Observacion): { readonly delta: number; readonly unidad: string; readonly dias: number } | null {
-  if (a.punto.comparabilityGroup !== b.punto.comparabilityGroup) return null;
+  if (a.punto.comparabilityGroup !== b.punto.comparabilityGroup || a.punto.sourceId === b.punto.sourceId) return null;
   const [primera, segunda] = a.instante <= b.instante ? [a, b] : [b, a];
   const delta = Number((segunda.punto.value - primera.punto.value).toPrecision(12));
-  const dias = Math.round((segunda.instante - primera.instante) / 86_400_000);
-  return { delta, unidad: unidadDelGrupo(segunda.grupo, segunda.punto), dias };
+  return { delta, unidad: unidadDelGrupo(segunda.grupo, segunda.punto), dias: diasEntreFechas(primera.fecha, segunda.fecha) };
 }
 
 export const textoDeDiferenciaAntropometrica = (d: { readonly delta: number; readonly unidad: string }): string => `${d.delta < 0 ? '−' : d.delta > 0 ? '+' : ''}${cantidad(Math.abs(d.delta), d.unidad)}`;
 
-/** El nombre de un grupo para elegirlo: protocolo, método si lo hay y unidad. Nunca inventa nombres de método. */
-export function nombreDelGrupo(g: GrupoDeComparabilidad): string {
-  const metodo = g.methodVersionId ? ` · ${COPY_ANTROPOMETRIA.calculado.toLowerCase()} con método` : '';
-  return `${g.protocolName}${metodo} · ${g.unit}`;
+/** «el mismo día» / «con 1 día de calendario entre las fechas» / «con 12 días de calendario entre las fechas». */
+export const diasEnPalabras = (dias: number): string => (dias === 0 ? 'el mismo día' : `con ${numero(dias)} ${dias === 1 ? 'día' : 'días'} de calendario entre las fechas`);
+
+/** Una referencia legible de un identificador opaco: los primeros 8 caracteres, o entero si es corto. */
+const referenciaCorta = (id: string): string => (id.length > 10 ? `${id.slice(0, 8)}…` : id);
+
+/**
+ * El nombre de un grupo para elegirlo: protocolo, método si lo hay y unidad. Nunca inventa nombres de método: si dos
+ * grupos de la misma serie solo se distinguen por la versión del método o del protocolo, agrega la referencia de esa
+ * versión tal como la publica el contrato (recortada si es larga; entera si el recorte no alcanza para distinguirlos).
+ */
+export function nombreDelGrupo(g: GrupoDeComparabilidad, todos: readonly GrupoDeComparabilidad[] = [g]): string {
+  const base = `${g.protocolName}${g.methodVersionId ? ` · ${COPY_ANTROPOMETRIA.calculado.toLowerCase()} con método` : ''} · ${g.unit}`;
+  const homonimos = todos.filter((o) => o.comparabilityGroup !== g.comparabilityGroup && nombreBase(o) === base);
+  if (homonimos.length === 0) return base;
+  const partes: string[] = [];
+  if (g.methodVersionId && homonimos.some((o) => o.methodVersionId !== g.methodVersionId)) partes.push(`método ${referencia(g.methodVersionId, homonimos.map((o) => o.methodVersionId ?? ''))}`);
+  if (homonimos.some((o) => o.protocolVersionId !== g.protocolVersionId)) partes.push(`versión del protocolo ${referencia(g.protocolVersionId, homonimos.map((o) => o.protocolVersionId))}`);
+  return partes.length === 0 ? base : `${base} (${partes.join(', ')})`;
 }
+
+const nombreBase = (g: GrupoDeComparabilidad): string => `${g.protocolName}${g.methodVersionId ? ` · ${COPY_ANTROPOMETRIA.calculado.toLowerCase()} con método` : ''} · ${g.unit}`;
+
+/** La referencia corta si no coincide con la de ningún otro; si coincide, el identificador entero. */
+function referencia(id: string, otros: readonly string[]): string {
+  const corta = referenciaCorta(id);
+  return otros.some((o) => o !== id && referenciaCorta(o) === corta) ? id : corta;
+}
+
+/** El protocolo de una observación, con la referencia de su versión si la serie tiene otra versión del mismo nombre. */
+export function protocoloEnPalabras(g: GrupoDeComparabilidad, todos: readonly GrupoDeComparabilidad[]): string {
+  const otraVersion = todos.some((o) => o.protocolName === g.protocolName && o.protocolVersionId !== g.protocolVersionId);
+  return otraVersion ? `${g.protocolName} (versión ${referencia(g.protocolVersionId, todos.map((o) => o.protocolVersionId))})` : g.protocolName;
+}
+
+/** El método de una observación calculada: la referencia declarada por el contrato, sin inventarle un nombre. */
+export const metodoEnPalabras = (methodVersionId: string): string => `${COPY_ANTROPOMETRIA.calculado} con el método declarado en la evaluación (referencia ${methodVersionId})`;
 
 /** Lo que dice la observación en una línea: valor, clase y si viene de una corrección. */
 export function resumenDeObservacion(o: Observacion): string {
@@ -176,5 +269,10 @@ export const COPY_EVOLUCION = {
   tablaAclaracion: 'La tabla tiene las mismas observaciones y los mismos huecos que el gráfico.',
   elegirEnTabla: 'Ver en el gráfico',
   metricaCambio: 'La métrica que estabas viendo no tiene observaciones en este período: se muestra la primera disponible.',
+  /** Neutral a propósito: no dice si la evaluación existe, fue anulada o no está autorizada (misma regla que el 404). */
+  evaluacionNoDisponible: 'La evaluación solicitada no está disponible. La lista de evaluaciones sigue completa.',
+  evaluacionNoCargo: 'No pudimos abrir la evaluación solicitada.',
+  volverALaLista: 'Volver a la lista de evaluaciones',
   delDia: (orden: number, total: number): string => `${numero(orden)} de ${numero(total)} del día`,
+  zona: (zonaHoraria: string): string => `Fechas y horas en la zona del período (${zonaHoraria}).`,
 } as const;
