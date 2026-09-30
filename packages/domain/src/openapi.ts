@@ -58,6 +58,20 @@ import {
   PlantillaNutricionalResponseSchema,
 } from './contratos-plantillas';
 import {
+  EditarHabitualRequestSchema,
+  GuardarComidaHabitualRequestSchema,
+  GuardarSesionHabitualRequestSchema,
+  ListaDeAlimentosHabitualesResponseSchema,
+  ListaDeComidasHabitualesResponseSchema,
+  ListaDeEjerciciosHabitualesResponseSchema,
+  ListaDeSesionesHabitualesResponseSchema,
+  MarcaDeAlimentoResponseSchema,
+  MarcaDeEjercicioResponseSchema,
+  MarcarHabitualRequestSchema,
+  ComidaHabitualResponseSchema,
+  SesionHabitualResponseSchema,
+} from './contratos-habituales';
+import {
   CandidatoDeAlimentoResponseSchema,
   CandidatoDeEjercicioResponseSchema,
   CrearCandidatoDeAlimentoRequestSchema,
@@ -1483,6 +1497,133 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'TEMPLATE_NAME_TAKEN'] },
     fuente: 'docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md · DEUDA_LEGAJO DL-108',
   },
+  // ─── PF-09 bis · «Mis habituales» del profesional (DL-109, decidido el 2026-09-30) ──────────────────────
+  {
+    id: 'API-HAB-01',
+    metodo: 'get',
+    ruta: '/training/favorite-exercises',
+    resumen:
+      'Mis ejercicios habituales: los que marqué y siguen disponibles para mí, con la misma forma que el buscador del catálogo (versión vigente); el marcado más reciente primero; hasta 200, sin paginar. Solo un profesional de Entrenamiento verificado y habilitado.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDeEjerciciosHabitualesResponseSchema }],
+    errores: { ...SESION, 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DEUDA_LEGAJO DL-109 · docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md',
+  },
+  {
+    id: 'API-HAB-02',
+    metodo: 'patch',
+    ruta: '/training/favorite-exercises/{exerciseId}',
+    resumen:
+      'Marcar o quitar un ejercicio habitual: la misma operación, idempotente por naturaleza (quitar uno no marcado responde 200 igual). Marcar uno que no está disponible para este profesional: 422.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: MarcarHabitualRequestSchema,
+    exitos: [{ status: 200, schema: MarcaDeEjercicioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 422: ['VALIDATION_FAILED', 'EXERCISE_REFERENCE_INVALID'] },
+    fuente: 'DEUDA_LEGAJO DL-109 · docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md',
+  },
+  {
+    id: 'API-HAB-03',
+    metodo: 'get',
+    ruta: '/training/session-presets',
+    resumen:
+      'Mis sesiones habituales (solo las propias, sin las quitadas), cada una con su estructura sin identificadores, lista para agregar a un borrador, y los nombres vigentes de sus ejercicios; la guardada más recientemente primero.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeSesionesHabitualesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DEUDA_LEGAJO DL-109 · docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md',
+  },
+  {
+    id: 'API-HAB-04',
+    metodo: 'post',
+    ruta: '/training/session-presets',
+    resumen:
+      'Guardar una sesión habitual: una sesión con la misma forma que las de API-TRN-07, validada como en un plan (forma, criterios de intensidad, referencias del catálogo disponibles), guardada sin identificadores de nodo y sin cargas sugeridas salvo pedido. Nombre tomado por otra activa sin `replaces` que la señale: 409; con `replaces` (propia y activa; si no, 404) reemplaza esa (nombre, estructura y cargas); el nombre de una quitada la reactiva y reemplaza.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: GuardarSesionHabitualRequestSchema,
+    exitos: [{ status: 201, schema: SesionHabitualResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'PRESET_NAME_TAKEN'], 422: ['VALIDATION_FAILED', 'TRAINING_PLAN_STRUCTURE_INVALID', 'INTENSITY_CRITERION_INVALID', 'EXERCISE_REFERENCE_INVALID'] },
+    fuente: 'DEUDA_LEGAJO DL-109 · docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md',
+  },
+  {
+    id: 'API-HAB-05',
+    metodo: 'patch',
+    ruta: '/training/session-presets/{presetId}',
+    resumen: 'Renombrar o quitar una sesión habitual propia; no cambia la estructura (para eso se vuelve a guardar desde el editor). Exige expectedVersion. Ajena o inexistente: 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: EditarHabitualRequestSchema,
+    exitos: [{ status: 200, schema: SesionHabitualResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'PRESET_NAME_TAKEN'] },
+    fuente: 'DEUDA_LEGAJO DL-109 · docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md',
+  },
+  {
+    id: 'API-HAN-01',
+    metodo: 'get',
+    ruta: '/nutrition/favorite-items',
+    resumen:
+      'Mis alimentos habituales: los que marqué y siguen disponibles para mí, con la misma forma que el buscador del catálogo (versión vigente); el marcado más reciente primero; hasta 200, sin paginar. Solo un profesional de Nutrición verificado y habilitado.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDeAlimentosHabitualesResponseSchema }],
+    errores: { ...SESION, 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DEUDA_LEGAJO DL-109 · docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md',
+  },
+  {
+    id: 'API-HAN-02',
+    metodo: 'patch',
+    ruta: '/nutrition/favorite-items/{catalogItemId}',
+    resumen:
+      'Marcar o quitar un alimento habitual: la misma operación, idempotente por naturaleza (quitar uno no marcado responde 200 igual). Marcar uno que no está disponible para este profesional: 422.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: MarcarHabitualRequestSchema,
+    exitos: [{ status: 200, schema: MarcaDeAlimentoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 422: ['VALIDATION_FAILED', 'CATALOG_REFERENCE_INVALID'] },
+    fuente: 'DEUDA_LEGAJO DL-109 · docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md',
+  },
+  {
+    id: 'API-HAN-03',
+    metodo: 'get',
+    ruta: '/nutrition/meal-presets',
+    resumen:
+      'Mis comidas habituales (solo las propias, sin las quitadas), cada una con su estructura sin identificadores, lista para agregar a un borrador, y los nombres vigentes de sus alimentos; la guardada más recientemente primero.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeComidasHabitualesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DEUDA_LEGAJO DL-109 · docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md',
+  },
+  {
+    id: 'API-HAN-04',
+    metodo: 'post',
+    ruta: '/nutrition/meal-presets',
+    resumen:
+      'Guardar una comida habitual: una comida con la misma forma que las de API-NUT-07, validada como en un borrador (forma y elementos del catálogo disponibles), guardada sin identificadores de nodo y sin cantidades salvo pedido. Nombre tomado por otra activa sin `replaces` que la señale: 409; con `replaces` (propia y activa; si no, 404) reemplaza esa (nombre, estructura y cantidades); el nombre de una quitada la reactiva y reemplaza.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: GuardarComidaHabitualRequestSchema,
+    exitos: [{ status: 201, schema: ComidaHabitualResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'PRESET_NAME_TAKEN'], 422: ['VALIDATION_FAILED', 'NUTRITION_PLAN_STRUCTURE_INVALID', 'CATALOG_REFERENCE_INVALID', 'EXCHANGE_MODE_NOT_AVAILABLE'] },
+    fuente: 'DEUDA_LEGAJO DL-109 · docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md',
+  },
+  {
+    id: 'API-HAN-05',
+    metodo: 'patch',
+    ruta: '/nutrition/meal-presets/{presetId}',
+    resumen: 'Renombrar o quitar una comida habitual propia; no cambia la estructura (para eso se vuelve a guardar desde el editor). Exige expectedVersion. Ajena o inexistente: 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: EditarHabitualRequestSchema,
+    exitos: [{ status: 200, schema: ComidaHabitualResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'PRESET_NAME_TAKEN'] },
+    fuente: 'DEUDA_LEGAJO DL-109 · docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md',
+  },
   {
     id: 'API-INT-TRN-02',
     metodo: 'post',
@@ -1862,7 +2003,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-FRM-05',
   'API-FRM-06',
 ]);
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-CON-04', 'API-CON-08', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-CON-04', 'API-CON-08', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };

@@ -111,6 +111,7 @@
 | DL-104 | PF-01/02 · 2026-09-28 | DL-101 · 09v16.1 §22.7/§22.8 · auditoría del PR #100 | Un valor fuera de rango en un formulario no le dice a la persona qué corregir | EN CURSO (opción A integrada y publicada en la APK 0.12.0; falta la validación de Dirección en el teléfono) |
 | DL-105 | PF-03 · 2026-09-28 | 04 RF-040/042/045 · 05 UC-P17 · ficha PF-03 (PF03-D-1) | La APK no muestra lo que el profesional planificó, y la web no lo compara con lo registrado | **DECIDIDA** 2026-09-28 · incremento 1 «Lo planificado, visible y comparable», con el contrato actual |
 | DL-106 | PF-03 · 2026-09-29 | 06 REG-06-131/132 · 09v10 TRN-15 a 20 · orden de Dirección del 2026-09-29 (comparación visual) | Una serie planificada que falta en un registro por serie no se puede declarar como no realizada | ABIERTA · la comparación la muestra como «sin dato» (provisorio, del lado que no inventa) |
+| DL-109 | PF-09 · 2026-09-30 | ficha «Plantillas del profesional» (mejora C «Mis habituales») · DL-108 · 06 REG-06-111 | Lo que el profesional repite de a pedazos (un ejercicio, un alimento, una sesión, una comida) se vuelve a buscar y a escribir en cada plan | **DECIDIDA** 2026-09-30 · «Mis habituales»: elementos y bloques; reguardar con el mismo nombre reemplaza, con aviso |
 
 ---
 
@@ -2209,3 +2210,19 @@ Se conservan las instantáneas históricas, la navegación corregida (DL-096) y 
 
 **Recomendación del ejecutor.** A para la entrega. B, si Dirección la quiere, como un incremento propio de PF-03, con su diseño de compatibilidad.
 
+
+## DL-109 — «Mis habituales»: los elementos y bloques que el profesional repite
+
+**Prioridad:** media · **Documento:** ficha «Plantillas del profesional» (`docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md`, mejora C) · DL-108 (plantillas del profesional) · 06 REG-06-111 (identificadores de nodo por plan) · **Estado:** DECIDIDA 2026-09-30
+
+**Qué pasa hoy.**
+- Las plantillas (DL-108) resuelven el plan entero. Lo que el profesional repite de a pedazos (el mismo ejercicio en cada plan, la misma sesión de pierna, el mismo desayuno) se vuelve a buscar y a escribir cada vez.
+
+**Decisiones de Dirección (2026-09-30).**
+- **D-1 Alcance: elementos y bloques.** Ejercicios y alimentos habituales (una marca por profesional y elemento, a mano arriba de cada buscador) y sesiones y comidas habituales (un bloque con nombre que se guarda desde el editor y se inserta en cualquier borrador).
+- **D-2 Reguardado con el mismo nombre: reemplaza, con aviso.** El website avisa «Ya tenés una sesión habitual «X»: se reemplaza» y pide confirmar. Sin versiones: el bloque es una herramienta de trabajo y ningún plan depende de él (lo insertado ya es del plan). La API exige que el pedido señale qué habitual reemplaza (`replaces`); sin eso, el nombre tomado es 409 `PRESET_NAME_TAKEN`.
+- **Heredado de DL-108:** solo lo ve y lo usa el profesional que lo creó (lo ajeno es 404 neutral; otra área o un asesorado, 403); las cargas y las cantidades no se copian salvo pedido; las notas de texto libre se confirman una por una; nada de la persona.
+- **Regla técnica:** un bloque habitual se guarda **sin identificadores de nodo** y se inserta sin ellos: el servidor los asigna al guardar el borrador (REG-06-111: por plan, estables). Así el mismo bloque se puede insertar dos veces.
+- **Estados como enums** (`EstadoDeHabitual`: ACTIVO, QUITADO): quitar no borra la fila; volver a marcar, o guardar con ese nombre, la reactiva y reemplaza. La historia queda en los eventos de dominio.
+
+**Qué queda afuera.** Habituales compartidos entre profesionales; bloques de más de un nivel (un bloque entero de entrenamiento, un día tipo); la APK (el profesional trabaja en el website).

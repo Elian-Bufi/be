@@ -48,3 +48,6 @@ export * from './figura-antropometrica';
 export * from './contratos-plantillas';
 export * from './copy-plantillas';
 export * from './plantillas-de-plan';
+export * from './contratos-habituales';
+export * from './copy-habituales';
+export * from './habituales';
