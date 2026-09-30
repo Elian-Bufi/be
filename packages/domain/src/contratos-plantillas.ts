@@ -73,9 +73,15 @@ export const ResumenDePlantillaDeEntrenamientoSchema = z.strictObject({
 });
 export type ResumenDePlantillaDeEntrenamiento = z.infer<typeof ResumenDePlantillaDeEntrenamientoSchema>;
 
+/** Cómo se llama hoy cada ejercicio que la estructura referencia, y si sigue disponible para este profesional. */
+export const EjercicioDePlantillaSchema = z.strictObject({ exerciseId: IdOpaco, exerciseName: z.string(), available: z.boolean() });
+export type EjercicioDePlantilla = z.infer<typeof EjercicioDePlantillaSchema>;
+
 export const PlantillaDeEntrenamientoSchema = ResumenDePlantillaDeEntrenamientoSchema.extend({
   /** La estructura tal como se guardó: la misma forma que se manda al crear un plan. */
   structure: EstructuraDePlanDeEntrenamientoEntradaSchema,
+  /** Por `exerciseVersionId`: el nombre vigente en el catálogo y su disponibilidad. Uno que ya no exista no figura. */
+  exercises: z.record(IdOpaco, EjercicioDePlantillaSchema),
 });
 export type PlantillaDeEntrenamiento = z.infer<typeof PlantillaDeEntrenamientoSchema>;
 

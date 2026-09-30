@@ -62,8 +62,13 @@ describe('API-TPL · guardar y leer plantillas propias', () => {
     const lista = ListaDePlantillasDeEntrenamientoResponseSchema.parse((await conSesion(app, c.pro.token).get(RUTA).expect(200)).body);
     expect(lista.data.map((p) => p.name)).toEqual(['Fuerza con cargas', 'Fuerza 3 días']);
     expect(lista.data.every((p) => !('structure' in p))).toBe(true);
-    const detalle = await conSesion(app, c.pro.token).get(`${RUTA}/${t.templateId}`).expect(200);
-    expect(PlantillaDeEntrenamientoResponseSchema.parse(detalle.body).data.templateId).toBe(t.templateId);
+    const detalle = PlantillaDeEntrenamientoResponseSchema.parse((await conSesion(app, c.pro.token).get(`${RUTA}/${t.templateId}`).expect(200)).body).data;
+    expect(detalle.templateId).toBe(t.templateId);
+    // Los ejercicios referenciados vienen con su nombre vigente y su disponibilidad, para mostrarlos sin otra consulta.
+    const referenciados = detalle.structure.blocks.flatMap((b) => (b.sessions ?? []).flatMap((s) => s.prescriptions.map((p) => p.exerciseVersionId)));
+    expect(referenciados.length).toBeGreaterThan(0);
+    for (const id of referenciados) expect(detalle.exercises[id]).toMatchObject({ available: true });
+    expect(Object.values(detalle.exercises).every((e) => e.exerciseName.length > 0)).toBe(true);
   });
 
   it('nombre único por profesional (sin distinguir mayúsculas ni acentos); estructura inválida o ejercicio ajeno, 422', async () => {

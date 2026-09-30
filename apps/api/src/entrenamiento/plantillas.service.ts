@@ -129,7 +129,7 @@ export class PlantillasDeEntrenamientoService {
         await this.exigirProfesional(tx, actor.identidadId);
         const fila = await this.propia(tx, actor.identidadId, templateId);
         if (!fila) throw this.ejecutor.noRevelable({ operacion: 'API-TPL-03', actorId: actor.identidadId, recurso }, ctx);
-        return { data: plantillaApi(fila) };
+        return { data: await this.conEjercicios(tx, actor.identidadId, fila) };
       },
     });
   }
@@ -237,7 +237,17 @@ export class PlantillasDeEntrenamientoService {
   private async leer(tx: Tx, profesionalId: string, templateId: string): Promise<PlantillaDeEntrenamiento> {
     const fila = await this.propia(tx, profesionalId, templateId);
     if (!fila) throw errores.recursoNoEncontrado();
-    return plantillaApi(fila);
+    return this.conEjercicios(tx, profesionalId, fila);
+  }
+
+  /** El detalle con los nombres vigentes de sus ejercicios (los que este profesional puede citar; el resto no figura). */
+  private async conEjercicios(tx: Tx, profesionalId: string, fila: PlantillaFila): Promise<PlantillaDeEntrenamiento> {
+    const base = plantillaApi(fila);
+    const referencias = [...new Set(referenciasDeLaEstructura(base.structure))];
+    const citables = referencias.length > 0 ? await this.catalogo.citables(tx, profesionalId, 'PROFESIONAL', referencias) : new Map();
+    const exercises: PlantillaDeEntrenamiento['exercises'] = {};
+    for (const [versionId, e] of citables) exercises[versionId] = { exerciseId: e.ejercicioId, exerciseName: e.nombre, available: e.disponible };
+    return { ...base, exercises };
   }
 
   /**
@@ -307,7 +317,13 @@ function resumenApi(p: PlantillaFila): ResumenDePlantillaDeEntrenamiento {
 
 function plantillaApi(p: PlantillaFila): PlantillaDeEntrenamiento {
   const v = p.versiones[0];
-  return { ...resumenApi(p), structure: (v?.estructura as unknown as EstructuraDePlanDeEntrenamientoEntrada) ?? { blocks: [] } };
+  return { ...resumenApi(p), structure: (v?.estructura as unknown as EstructuraDePlanDeEntrenamientoEntrada) ?? { blocks: [] }, exercises: {} };
+}
+
+/** Los `exerciseVersionId` que una estructura de entrada referencia. */
+function referenciasDeLaEstructura(e: EstructuraDePlanDeEntrenamientoEntrada): string[] {
+  const deSesion = (s: { prescriptions: readonly { exerciseVersionId: string }[] }) => s.prescriptions.map((p) => p.exerciseVersionId);
+  return e.blocks.flatMap((b) => [...(b.sessions ?? []).flatMap(deSesion), ...(b.microcycles ?? []).flatMap((m) => m.sessions.flatMap(deSesion))]);
 }
 
 /** Las filas del catálogo como citables (la misma conversión que usa el servicio de planes). */

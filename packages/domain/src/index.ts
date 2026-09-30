@@ -46,3 +46,5 @@ export * from './integraciones';
 export * from './copy-integraciones';
 export * from './figura-antropometrica';
 export * from './contratos-plantillas';
+export * from './copy-plantillas';
+export * from './plantillas-de-plan';

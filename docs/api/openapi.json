@@ -35585,6 +35585,34 @@
                             "blocks"
                           ],
                           "additionalProperties": false
+                        },
+                        "exercises": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "exerciseId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "exerciseName": {
+                                "type": "string"
+                              },
+                              "available": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "exerciseId",
+                              "exerciseName",
+                              "available"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -35600,7 +35628,8 @@
                         "sessionCount",
                         "createdAt",
                         "updatedAt",
-                        "structure"
+                        "structure",
+                        "exercises"
                       ],
                       "additionalProperties": false
                     }
@@ -36646,6 +36675,34 @@
                             "blocks"
                           ],
                           "additionalProperties": false
+                        },
+                        "exercises": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "exerciseId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "exerciseName": {
+                                "type": "string"
+                              },
+                              "available": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "exerciseId",
+                              "exerciseName",
+                              "available"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -36661,7 +36718,8 @@
                         "sessionCount",
                         "createdAt",
                         "updatedAt",
-                        "structure"
+                        "structure",
+                        "exercises"
                       ],
                       "additionalProperties": false
                     }
@@ -37492,6 +37550,34 @@
                             "blocks"
                           ],
                           "additionalProperties": false
+                        },
+                        "exercises": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "exerciseId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "exerciseName": {
+                                "type": "string"
+                              },
+                              "available": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "exerciseId",
+                              "exerciseName",
+                              "available"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -37507,7 +37593,8 @@
                         "sessionCount",
                         "createdAt",
                         "updatedAt",
-                        "structure"
+                        "structure",
+                        "exercises"
                       ],
                       "additionalProperties": false
                     }
@@ -38951,6 +39038,34 @@
                             "blocks"
                           ],
                           "additionalProperties": false
+                        },
+                        "exercises": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "exerciseId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "exerciseName": {
+                                "type": "string"
+                              },
+                              "available": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "exerciseId",
+                              "exerciseName",
+                              "available"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -38966,7 +39081,8 @@
                         "sessionCount",
                         "createdAt",
                         "updatedAt",
-                        "structure"
+                        "structure",
+                        "exercises"
                       ],
                       "additionalProperties": false
                     }
