@@ -6,10 +6,23 @@
 -- CreateEnum
 CREATE TYPE "EstadoDePlantilla" AS ENUM ('ACTIVA', 'ARCHIVADA');
 
--- AlterEnum · eventos propios de la plantilla (sin asesorado, como EjercicioDeCatalogoCreado)
+-- CreateEnum
+CREATE TYPE "CargasDePlantilla" AS ENUM ('NO_COPIADAS', 'COPIADAS');
+
+-- AlterEnum
+-- This migration adds more than one value to an enum.
+-- With PostgreSQL versions 11 and earlier, this is not possible
+-- in a single migration. This can be worked around by creating
+-- multiple migrations, each migration adding only one value to
+-- the enum.
+
+
 ALTER TYPE "TipoDeEventoDeEntrenamiento" ADD VALUE 'PlantillaDePlanCreada';
 ALTER TYPE "TipoDeEventoDeEntrenamiento" ADD VALUE 'PlantillaDePlanVersionada';
 ALTER TYPE "TipoDeEventoDeEntrenamiento" ADD VALUE 'PlantillaDePlanEditada';
+
+-- AlterTable
+ALTER TABLE "version_de_plan_de_entrenamiento" ADD COLUMN     "origen_de_plantilla" JSONB;
 
 -- CreateTable
 CREATE TABLE "plantilla_de_plan_de_entrenamiento" (
@@ -32,7 +45,7 @@ CREATE TABLE "version_de_plantilla_de_plan_de_entrenamiento" (
     "plantilla_id" UUID NOT NULL,
     "numero" INTEGER NOT NULL,
     "estructura" JSONB NOT NULL,
-    "cargas_copiadas" BOOLEAN NOT NULL DEFAULT false,
+    "cargas" "CargasDePlantilla" NOT NULL DEFAULT 'NO_COPIADAS',
     "origen" JSONB,
     "autor_id" UUID NOT NULL,
     "procedencia" JSONB NOT NULL,
@@ -41,17 +54,14 @@ CREATE TABLE "version_de_plantilla_de_plan_de_entrenamiento" (
     CONSTRAINT "version_de_plantilla_de_plan_de_entrenamiento_pkey" PRIMARY KEY ("id")
 );
 
--- AlterTable · de qué plantilla y versión salió un borrador de plan (trazabilidad; null si no salió de ninguna)
-ALTER TABLE "version_de_plan_de_entrenamiento" ADD COLUMN "origen_de_plantilla" JSONB;
-
--- CreateIndex · un nombre por profesional (mayúsculas indistintas: nombre_normalizado)
-CREATE UNIQUE INDEX "plantilla_de_plan_de_entrenamiento_profesional_nombre_key" ON "plantilla_de_plan_de_entrenamiento"("profesional_id", "nombre_normalizado");
+-- CreateIndex
+CREATE INDEX "plantilla_de_plan_de_entrenamiento_profesional_id_estado_mo_idx" ON "plantilla_de_plan_de_entrenamiento"("profesional_id", "estado", "momento_de_actualizacion");
 
 -- CreateIndex
-CREATE INDEX "plantilla_de_plan_de_entrenamiento_profesional_id_idx" ON "plantilla_de_plan_de_entrenamiento"("profesional_id", "estado", "momento_de_actualizacion");
+CREATE UNIQUE INDEX "plantilla_de_plan_de_entrenamiento_profesional_id_nombre_no_key" ON "plantilla_de_plan_de_entrenamiento"("profesional_id", "nombre_normalizado");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "version_de_plantilla_de_plan_de_entrenamiento_plantilla_numero_key" ON "version_de_plantilla_de_plan_de_entrenamiento"("plantilla_id", "numero");
+CREATE UNIQUE INDEX "version_de_plantilla_de_plan_de_entrenamiento_plantilla_id__key" ON "version_de_plantilla_de_plan_de_entrenamiento"("plantilla_id", "numero");
 
 -- AddForeignKey
 ALTER TABLE "plantilla_de_plan_de_entrenamiento" ADD CONSTRAINT "plantilla_de_plan_de_entrenamiento_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "identidad"("id") ON DELETE RESTRICT ON UPDATE RESTRICT;
@@ -61,6 +71,7 @@ ALTER TABLE "version_de_plantilla_de_plan_de_entrenamiento" ADD CONSTRAINT "vers
 
 -- AddForeignKey
 ALTER TABLE "version_de_plantilla_de_plan_de_entrenamiento" ADD CONSTRAINT "version_de_plantilla_de_plan_de_entrenamiento_autor_id_fkey" FOREIGN KEY ("autor_id") REFERENCES "identidad"("id") ON DELETE RESTRICT ON UPDATE RESTRICT;
+
 
 -- ─── Historia por adición: una versión de plantilla no se edita, no se borra y no se trunca (06 §4.4) ────────────
 CREATE TRIGGER "version_de_plantilla_de_plan_de_entrenamiento_solo_agregar" BEFORE UPDATE OR DELETE ON "version_de_plantilla_de_plan_de_entrenamiento" FOR EACH ROW EXECUTE FUNCTION "be_solo_agregar"();

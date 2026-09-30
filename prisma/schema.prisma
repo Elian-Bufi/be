@@ -2186,6 +2186,12 @@ enum EstadoDePlantilla {
   ARCHIVADA
 }
 
+/// D-2: si la versión de plantilla conserva las cargas sugeridas como referencia (nunca un booleano: TEST-RUN-003).
+enum CargasDePlantilla {
+  NO_COPIADAS
+  COPIADAS
+}
+
 /// Molde propio del profesional, sin asesorado: nombre único por profesional; versiones inmutables; `version` es el
 /// token de concurrencia de la plantilla (nombre, descripción, estado y versión nueva).
 model PlantillaDePlanDeEntrenamiento {
@@ -2214,7 +2220,7 @@ model VersionDePlantillaDePlanDeEntrenamiento {
   plantillaId       String   @map("plantilla_id") @db.Uuid
   numero            Int
   estructura        Json
-  cargasCopiadas    Boolean  @default(false) @map("cargas_copiadas")
+  cargas            CargasDePlantilla @default(NO_COPIADAS)
   origen            Json?
   autorId           String   @map("autor_id") @db.Uuid
   procedencia       Json
