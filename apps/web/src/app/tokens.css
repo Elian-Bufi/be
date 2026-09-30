@@ -6,10 +6,13 @@
  * borde de control, el foco o un punto de la figura bajan de 3:1 (WCAG 1.4.3 y 1.4.11). Un color nuevo entra acá y en
  * esa prueba, o no entra.
  *
- * Dos temas con la misma marca (docs/paquetes/WP-IDENTIDAD-VISUAL.md, tramo A):
- * - claro y azul para el website con sesión, donde se trabaja con datos (Dirección, 2026-09-20);
- * - oscuro para la cara pública —landing, acceso, registro y legales—, como las referencias de Dirección del 2026-09-21.
- * El encabezado es navy en los dos.
+ * Dos apariencias con la misma marca, que la persona elige (Dirección, 2026-09-30; antes eran una por superficie,
+ * docs/paquetes/WP-IDENTIDAD-VISUAL.md, tramo A):
+ * - «Claro»: claro y azul, el de trabajo con datos de la decisión del 2026-09-20;
+ * - «Azul noche»: fondo azul profundo, superficies navy, acentos cian y azul; la predeterminada, inspirada en las
+ *   referencias de Dirección del 2026-09-21 y del 2026-09-30.
+ * El tema se aplica con `data-tema` en `<html>` (`apps/web/src/lib/apariencia.ts`); el encabezado es navy en los dos.
+ * `:root` tiene el claro y `[data-tema='azul-noche']` lo redefine entero, figura y gráficos incluidos.
  */
 :root {
   /* Superficies y texto */
@@ -64,7 +67,7 @@
   color-scheme: light;
 }
 
-.tema-oscuro {
+[data-tema='azul-noche'] {
   --fondo: #04213f;
   --fondo-suave: #07284a;
   --superficie: #0a2e52;
@@ -87,6 +90,16 @@
   --error-fondo: #3b1a25;
   --exito: #6ee7b7;
   --exito-fondo: #0b3a3a;
+  /* Figura de la toma sobre una tarjeta navy: relleno apenas más claro, trazo y punto en cian, halo azul claro. Los
+     puntos siguen sin conocer el valor: un solo color por estado de carga. */
+  --figura-relleno: #123a66;
+  --figura-trazo: #5ee0fb;
+  --punto: #a5f0ff;
+  --punto-halo: #1f5bc4;
+  /* Gráficos: planificado en cian, registrado en naranja claro, hueco en gris azulado; rayado y forma siguen igual. */
+  --grafico-planificado: #5ee0fb;
+  --grafico-registrado: #ff9b5c;
+  --grafico-hueco: #7fa3c8;
   --sombra-suave: none;
   --sombra: 0 20px 50px rgb(0 0 0 / 45%);
   --velo: rgb(0 0 0 / 60%);

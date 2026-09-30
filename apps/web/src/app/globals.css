@@ -1,7 +1,7 @@
 /*
  * Estilos del website. Ningún color se escribe acá: todos salen de tokens.css, que es lo que verifica la prueba de
- * contraste (scripts/contraste.test.cjs). El tema lo da el contenedor: `:root` es el claro y azul del espacio de
- * trabajo; `.tema-oscuro`, la cara pública (docs/paquetes/WP-IDENTIDAD-VISUAL.md, tramo A).
+ * contraste (scripts/contraste.test.cjs). El tema lo elige la persona y se aplica con `data-tema` en `<html>`:
+ * «Azul noche» (predeterminado) o «Claro» (Dirección, 2026-09-30). Antes lo daba el contenedor por superficie.
  */
 
 /* ─── Base ────────────────────────────────────────────────────────────── */
@@ -21,9 +21,9 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* La cara pública pinta toda la ventana, también lo que queda fuera del contenido. */
-html:has(.tema-oscuro),
-html:has(.tema-oscuro) body {
+/* En Azul noche toda la ventana es navy, también lo que queda fuera del contenido. */
+html[data-tema='azul-noche'],
+html[data-tema='azul-noche'] body {
   background: var(--navy);
   color-scheme: dark;
 }
@@ -101,19 +101,46 @@ code {
   top: 0.75rem;
 }
 
-/* ─── Temas ───────────────────────────────────────────────────────────── */
-.tema-oscuro {
+/* ─── Cara pública ────────────────────────────────────────────────────── */
+/* Landing, acceso, registro y legales: un degradé moderado sobre el fondo del tema elegido. En Claro es apenas un
+   velo azul; en Azul noche, el degradé navy de la referencia. Los colores salen de los tokens del tema. */
+.cara-publica {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background:
-    radial-gradient(60rem 30rem at 85% -10%, color-mix(in srgb, var(--azul) 22%, transparent), transparent 70%),
+    radial-gradient(60rem 30rem at 85% -10%, color-mix(in srgb, var(--azul) 10%, transparent), transparent 70%),
     linear-gradient(180deg, var(--fondo) 0%, var(--fondo-suave) 100%);
   color: var(--texto);
 }
 
-.tema-oscuro > main {
+.cara-publica > main {
   flex: 1 0 auto;
+}
+
+/* ─── Selector de apariencia (encabezado) ─────────────────────────────── */
+.apariencia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+  color: var(--encabezado-texto);
+  font-size: 0.9rem;
+}
+
+.apariencia select {
+  min-height: 36px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--encabezado-tenue);
+  background: var(--encabezado-fondo-2);
+  color: var(--encabezado-texto);
+  font: inherit;
+}
+
+.apariencia select:focus-visible {
+  outline: 3px solid var(--encabezado-foco);
+  outline-offset: 2px;
 }
 
 /* ─── Encabezado de marca: navy en los dos temas ──────────────────────── */
