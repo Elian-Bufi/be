@@ -111,6 +111,7 @@
 | DL-104 | PF-01/02 · 2026-09-28 | DL-101 · 09v16.1 §22.7/§22.8 · auditoría del PR #100 | Un valor fuera de rango en un formulario no le dice a la persona qué corregir | EN CURSO (opción A integrada y publicada en la APK 0.12.0; falta la validación de Dirección en el teléfono) |
 | DL-105 | PF-03 · 2026-09-28 | 04 RF-040/042/045 · 05 UC-P17 · ficha PF-03 (PF03-D-1) | La APK no muestra lo que el profesional planificó, y la web no lo compara con lo registrado | **DECIDIDA** 2026-09-28 · incremento 1 «Lo planificado, visible y comparable», con el contrato actual |
 | DL-106 | PF-03 · 2026-09-29 | 06 REG-06-131/132 · 09v10 TRN-15 a 20 · orden de Dirección del 2026-09-29 (comparación visual) | Una serie planificada que falta en un registro por serie no se puede declarar como no realizada | ABIERTA · la comparación la muestra como «sin dato» (provisorio, del lado que no inventa) |
+| DL-110 | Crítica de negocio · 2026-09-30 | REG-06-209 · UC-P32 · WP-07 D-D · T-06-33 · UC-P19 · DIR-10-MET-A · REG-06-151/157/162/168 | Formularios propios (mejora D) y protocolos propios de antropometría (mejora E) | **DECIDIDA** 2026-09-30 · D postergada (exclusión de P0 vigente); E: catálogo real de BE, sin protocolos ni fórmulas del profesional; contenido pendiente de Dirección |
 
 ---
 
@@ -2208,4 +2209,24 @@ Se conservan las instantáneas históricas, la navegación corregida (DL-096) y 
   - resolver la compatibilidad con las APK publicadas, cuyos esquemas estrictos rechazarían una propiedad nueva en la ejecución (PF03-D-5).
 
 **Recomendación del ejecutor.** A para la entrega. B, si Dirección la quiere, como un incremento propio de PF-03, con su diseño de compatibilidad.
+
+## DL-110 — Formularios propios y protocolos propios: qué se hace y qué no
+
+**Prioridad:** media · **Documento:** crítica de negocio del 2026-09-30 (mejoras D y E) · 06 REG-06-209 · 05 UC-P32 · WP-07 D-D y §8 · 06 T-06-33 · 05 UC-P19 · 10 DIR-10-MET-A · 06 REG-06-151/157/162/168 · **Estado:** DECIDIDA 2026-09-30
+
+**Qué pasa hoy.**
+- Las plantillas de formulario son un catálogo de BE sembrado por migración, con tres tipos de campo. El legajo excluye en P0 que el profesional arme las suyas («P0 no modela un builder libre arbitrario», REG-06-209), y WP-07 registra el editor como descartado por Dirección.
+- Los protocolos de medición y los métodos de cálculo son un catálogo sintético (PROTO-LAB, PROTO-CUERPO, MET-DEMO). El legajo deja el protocolo concreto al criterio profesional (T-06-33) pero exige métodos preestablecidos por BE (DIR-10-MET-A).
+- La toma acepta hoy como protocolo cualquier versión de especificación, incluso la de un método o una versión reemplazada, y no controla las mediciones ni las unidades declaradas.
+
+**Decisiones de Dirección (2026-09-30).**
+- **Mejora D (formularios propios): postergada.** La exclusión de P0 sigue vigente. Si se retoma, una pregunta propia del profesional no puede ser de salud: solo hábitos, preferencias, disponibilidad y logística, hasta que exista la matriz de pertinencia por acta (DL-083, DEC-06).
+- **Mejora E: el catálogo antropométrico lo define BE.** Dirección carga el contenido real (primeros pedidos: protocolos de 9 y 7 componentes, índice cintura-altura e IMC; más adelante bioimpedancia, al menos para comparar, aunque los datos lleguen por archivo). El profesional elige entre lo cargado; no arma protocolos ni fórmulas propias. «Mi protocolo» se reevalúa cuando el catálogo real esté cargado y en uso.
+- **Carga:** Dirección pasa cada protocolo y cada fórmula con su fuente y casos de prueba; el ejecutor los siembra por migración, versionados y con procedencia, y programa cada fórmula con pruebas contra la fuente. Planilla: `docs/propuestas/CATALOGO-ANTROPOMETRICO_planilla-de-carga.md`.
+- **Comparabilidad:** se mantiene la regla actual (cada versión de protocolo es su propio grupo). Comparar por medición exige cambiar la respuesta de la evolución y una APK nueva.
+- **Validación de la toma:** se cierra junto con la carga del catálogo (al crear, solo un protocolo vigente del catálogo; al corregir, el que ya tenía).
+
+**Qué queda afuera.** Protocolos y fórmulas del profesional; métodos con varios componentes por ejecución y repeticiones por medición, hasta que el contenido los pida; importación de bioimpedancia por archivo.
+
+**Pendiente de Dirección.** El contenido de cada protocolo y método, según la planilla.
 
