@@ -7,7 +7,7 @@ import type { INestApplication } from '@nestjs/common';
 import { ListaDePlantillasNutricionalesResponseSchema, PlanResponseSchema, PlantillaNutricionalResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
-import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
+import { appDePrueba, claveDeIdempotencia, conSesion, resumenDeRespuestas, simultaneos } from './soporte-api';
 import { circuitoListoParaPlanificarEntrenamiento } from './soporte-entrenamiento';
 import { activar, circuitoListoParaPlanificar, crearBorrador, estructura, type Circuito } from './soporte-nutricion';
 
@@ -99,5 +99,33 @@ describe('API-TPN · plantillas de comidas propias', () => {
     expect((await conSesion(app, c.pro.token).post(`/api/v1/advisees/${d.ase.id}/nutrition/plans`, claveDeIdempotencia()).send({ objectiveVersionId: d.objectiveVersionId, fromTemplateVersionId: t.versionId }).expect(422)).body.error.code).toBe('TEMPLATE_ARCHIVED');
     expect((await conSesion(app, c.pro.token).post(`/api/v1/advisees/${d.ase.id}/nutrition/plans`, claveDeIdempotencia()).send({ objectiveVersionId: d.objectiveVersionId, fromTemplateVersionId: t.versionId, initialStructure: estructura(c.arroz, c.pollo) }).expect(422)).body.error.code).toBe('VALIDATION_FAILED');
     await conSesion(app, c.pro.token).post(`/api/v1/advisees/${d.ase.id}/nutrition/plans`, claveDeIdempotencia()).send({ objectiveVersionId: d.objectiveVersionId, fromTemplateVersionId: randomUUID() }).expect(404);
+  });
+});
+
+describe('API-TPN · escrituras simultáneas (la base decide; nunca un 500)', () => {
+  const N = 6;
+  const repetido = (codigo: string) => Array<string>(N - 1).fill(codigo);
+
+  it('crear con el mismo nombre, editar y versionar con la misma expectedVersion, renombrar al mismo nombre: un solo éxito y el resto 409 con su código', async () => {
+    const c = await circuitoListoParaPlanificar(app, etiqueta());
+    const pro = conSesion(app, c.pro.token);
+    const creaciones = await simultaneos(N, () => crear(c, { name: 'Simultánea', structure: estructura(c.arroz, c.pollo) }));
+    expect(resumenDeRespuestas(creaciones)).toEqual(['201', ...repetido('409 TEMPLATE_NAME_TAKEN')]);
+    const t = PlantillaNutricionalResponseSchema.parse(creaciones.find((r) => r.status === 201)!.body).data;
+
+    const ediciones = await simultaneos(N, (i) => pro.patch(`${RUTA}/${t.templateId}`).send({ expectedVersion: t.version, name: `Renombrada ${i}` }));
+    expect(resumenDeRespuestas(ediciones)).toEqual(['200', ...repetido('409 VERSION_CONFLICT')]);
+    const editada = PlantillaNutricionalResponseSchema.parse((await pro.get(`${RUTA}/${t.templateId}`).expect(200)).body).data;
+    expect(editada.version).toBe('v2');
+
+    const versiones = await simultaneos(N, () => pro.post(`${RUTA}/${t.templateId}/versions`).send({ expectedVersion: editada.version, structure: estructura(c.arroz, c.pollo) }));
+    expect(resumenDeRespuestas(versiones)).toEqual(['201', ...repetido('409 VERSION_CONFLICT')]);
+    const versionada = PlantillaNutricionalResponseSchema.parse((await pro.get(`${RUTA}/${t.templateId}`).expect(200)).body).data;
+    expect(versionada).toMatchObject({ version: 'v3', versionNumber: 2 });
+
+    const otras: { templateId: string; version: string }[] = [];
+    for (let i = 0; i < N; i += 1) otras.push(PlantillaNutricionalResponseSchema.parse((await crear(c, { name: `Otra ${i}`, structure: estructura(c.arroz, c.pollo) }).expect(201)).body).data);
+    const renombres = await simultaneos(N, (i) => pro.patch(`${RUTA}/${otras[i]!.templateId}`).send({ expectedVersion: otras[i]!.version, name: 'Mismo nombre' }));
+    expect(resumenDeRespuestas(renombres)).toEqual(['200', ...repetido('409 TEMPLATE_NAME_TAKEN')]);
   });
 });
