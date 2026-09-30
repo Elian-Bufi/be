@@ -129,10 +129,8 @@ export function Pendientes({ token, sesionPerdida }: { token: string; sesionPerd
                   <tr key={`${p.kind}|${p.domain}|${p.advisee.identityId}`}>
                     <th scope="row">{p.advisee.displayName}</th>
                     <td data-etiqueta={COPY_CARTERA.filtroDominio}>{COPY_CARTERA.dominio[p.domain]}</td>
-                    <td data-etiqueta="Pendiente">
-                      <span className="insignia">{COPY_CARTERA.tipo[p.kind]}</span> {textoDePendiente(p)}
-                    </td>
-                    <td data-etiqueta="Último registro">{p.lastActivityAt ? COPY_CARTERA.ultimoRegistro(fecha(p.lastActivityAt)) : COPY_CARTERA.sinRegistros}</td>
+                    <td data-etiqueta="Pendiente">{textoDePendiente(p)}</td>
+                    <td data-etiqueta="Último registro">{p.lastActivityAt ? fecha(p.lastActivityAt) : COPY_CARTERA.sinRegistros}</td>
                     <td data-etiqueta="Acciones">
                       <Link className="boton boton--enlace" href={rutaQueResuelve(p)} aria-label={`${COPY_CARTERA.abrir}: ${p.advisee.displayName}, ${COPY_CARTERA.dominio[p.domain]}, ${textoDePendiente(p)}`}>
                         {COPY_CARTERA.abrir}
