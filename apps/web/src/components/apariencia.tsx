@@ -15,7 +15,11 @@ export function SelectorDeApariencia() {
   const [tema, setTema] = useState<Tema>(TEMA_PREDETERMINADO);
   const [guardable, setGuardable] = useState(true);
   useEffect(() => {
-    setTema(leerTema());
+    // Al montar, el atributo de la página, el selector y la apariencia efectiva quedan iguales: la preferencia vigente
+    // (guardada, o la ya aplicada en esta visita si el almacenamiento no responde).
+    const vigente = leerTema();
+    setTema(vigente);
+    if (document.documentElement.dataset.tema !== vigente) document.documentElement.dataset.tema = vigente;
     setGuardable(sePuedeGuardar());
   }, []);
   return (

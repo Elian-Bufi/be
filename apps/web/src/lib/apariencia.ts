@@ -17,13 +17,26 @@ export const NOMBRE_DEL_TEMA: Readonly<Record<Tema, string>> = { 'azul-noche': '
 /** Interpreta lo guardado: solo un tema conocido vale; cualquier otra cosa es el predeterminado. */
 export const temaValido = (valor: unknown): Tema => (TEMAS.includes(valor as Tema) ? (valor as Tema) : TEMA_PREDETERMINADO);
 
-/** Lee la preferencia guardada. Sin almacenamiento (privado, bloqueado, sin ventana), el predeterminado. */
+/** El tema que la página ya tiene aplicado (`data-tema`), si es uno conocido. */
+export function temaAplicado(): Tema | null {
+  if (typeof document === 'undefined') return null;
+  const t = document.documentElement.dataset.tema;
+  return TEMAS.includes(t as Tema) ? (t as Tema) : null;
+}
+
+/**
+ * Lee la preferencia vigente: la guardada si el almacenamiento responde (un valor desconocido es el predeterminado); si
+ * no responde (privado, bloqueado), la elección que ya está aplicada en la página, así una elección hecha en esta visita
+ * sigue valiendo al montar otro encabezado; sin nada de eso, el predeterminado.
+ */
 export function leerTema(): Tema {
   try {
-    return temaValido(window.localStorage.getItem(CLAVE_DE_APARIENCIA));
+    const guardado = window.localStorage.getItem(CLAVE_DE_APARIENCIA);
+    if (guardado !== null) return temaValido(guardado);
   } catch {
-    return TEMA_PREDETERMINADO;
+    // Sin almacenamiento: vale lo que la página ya tiene aplicado.
   }
+  return temaAplicado() ?? TEMA_PREDETERMINADO;
 }
 
 /** Aplica el tema a la página y lo guarda si se puede; si no se puede guardar, igual se aplica hasta recargar. */

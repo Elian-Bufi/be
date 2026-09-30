@@ -39,6 +39,14 @@ Sin preferencia guardada, o con un valor desconocido, la apariencia es Azul noch
 
 Capturas: `apariencia/01-login-azul-noche.png`, `02-login-claro.png`, `03-evolucion-claro.png`, `04-evolucion-azul-noche.png`, `05-figura-azul-noche.png`, `06-movil-login-claro.png`.
 
+## Tanda 2 (2026-09-30): almacenamiento bloqueado durante la navegación
+
+Caso de la auditoría, **reproducido** antes de corregir (recorrido con la corrección retirada: 19/21): con el almacenamiento bloqueado y «Claro» elegido en la cara pública, entrar al espacio profesional monta otro encabezado y `leerTema()` volvía al predeterminado al no poder leer el almacenamiento. Resultado: `<html data-tema="claro">` y fondo claro, pero el selector decía «Azul noche».
+
+Corrección (`apps/web/src/lib/apariencia.ts`, `components/apariencia.tsx`): `leerTema()` usa la preferencia guardada si el almacenamiento responde (un valor desconocido sigue siendo el predeterminado); si no responde, **reutiliza la elección ya aplicada en la página** (`temaAplicado()`); y al montar, el selector alinea atributo y valor. Sin otro mecanismo de persistencia. Con el almacenamiento bloqueado el aviso dice «vale por esta visita», que es lo que ocurre: tras recargar vuelve el predeterminado.
+
+Controles nuevos del recorrido (`recorrido-tema.mjs`), todos ✅ con la corrección (**21/21**): en la cara pública atributo, selector y fondo coinciden en Claro y lo escrito en el formulario sigue; en el espacio profesional (otro encabezado) los tres siguen en Claro y el aviso dice que vale por la visita; al navegar dentro del espacio, igual; tras recargar sin almacenamiento, el predeterminado sin errores. Captura: `apariencia/07-bloqueado-claro-en-espacio-profesional.png`.
+
 ## Límites
 
 - **Parpadeo residual:** el HTML servido lleva Azul noche y el script corrige antes del primer dibujo; en un navegador con JavaScript deshabilitado queda Azul noche siempre. No se puede eliminar del todo sin mover la preferencia al servidor, que esta orden excluye.
