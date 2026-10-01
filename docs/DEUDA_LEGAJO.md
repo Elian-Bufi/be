@@ -115,6 +115,7 @@
 | DL-108 | Plantillas · 2026-09-30 | DL-047 · RF-060 · INV-06-109 · ficha `docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md` | Todo plan empieza en blanco o desde el plan anterior de la misma persona: no hay reutilización entre asesorados | **DECIDIDA** 2026-09-30 (D-1, D-2, D-3, D-5) · implementada en #121 (entrenamiento y comidas) |
 | DL-109 | PF-09 · 2026-09-30 | ficha «Plantillas del profesional» (mejora C «Mis habituales») · DL-108 · 06 REG-06-111 | Lo que el profesional repite de a pedazos (un ejercicio, un alimento, una sesión, una comida) se vuelve a buscar y a escribir en cada plan | **DECIDIDA** 2026-09-30 · «Mis habituales»: elementos y bloques; reguardar con el mismo nombre reemplaza, con aviso · implementada en #122 |
 | DL-110 | Crítica de negocio · 2026-09-30 | REG-06-209 · UC-P32 · WP-07 D-D · T-06-33 · UC-P19 · DIR-10-MET-A · REG-06-151/157/162/168 | Formularios propios (mejora D) y protocolos propios de antropometría (mejora E) | **DECIDIDA** 2026-09-30 · D postergada (exclusión de P0 vigente); E: catálogo real de BE, sin protocolos ni fórmulas del profesional; contenido pendiente de Dirección |
+| DL-111 | Pedido de Dirección · 2026-09-30 | DL-110 · DL-073 · 06 REG-06-156/157/162/203/204/205 · RF-048/049 · TEST-PRJ-009 | El catálogo antropométrico real (perfil completo y 40 fórmulas con fuente), la lámina del compositor en el website y la figura con los resultados en la APK | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · decisiones del ejecutor: sitios de la ficha, métodos por sexo, edad como dato de la toma, una métrica por familia, resultados en la evolución sin cambiar su forma |
 
 ---
 
@@ -2282,3 +2283,32 @@ Se conservan las instantáneas históricas, la navegación corregida (DL-096) y 
 
 **Pendiente de Dirección.** El contenido de cada protocolo y método, según la planilla.
 
+## DL-111 — El catálogo antropométrico de BE: perfil completo, 40 fórmulas, lámina y evolución física en la APK
+
+**Prioridad:** alta · **Documento:** pedido de Dirección del 2026-09-30 (noche) · DL-110 · DL-073 · 06 REG-06-156/157/162/165/166/203/204/205 · RF-048 · RF-049 · INV-06-06 · TEST-PRJ-009 · **Estado:** IMPLEMENTADA, A RATIFICAR por Dirección
+
+**Qué pidió Dirección.** La lámina del compositor (`BE-VIS-Compositor_v13.3.html`) en el website del profesional; la figura con las medidas y la comparación también en la APK, porque hoy la persona ve casi nada; y las fórmulas antropométricas investigadas y programadas, para que el profesional elija el método viendo qué datos pide y qué resultados da, y para que esos resultados lleguen a la APK como progreso físico real. DL-110 había dejado la carga del contenido a Dirección; este pedido la reemplaza por la investigación del ejecutor, con la fuente de cada fórmula a la vista.
+
+**Lo que se hizo y las decisiones que tomó el ejecutor (a ratificar).**
+1. **Protocolo «Perfil antropométrico completo»** (migración `20261001000000`): 30 mediciones con los sitios de la lámina de Dirección: peso, talla (en cm), edad, 11 pliegues, 13 perímetros y 3 diámetros. Los protocolos sintéticos quedan como están.
+2. **Ficha de investigación** (`docs/propuestas/METODOS-ANTROPOMETRICOS_ficha.md`): 58 entradas con fuente, población, sitios, fórmula y 199 casos de prueba verificados con una segunda implementación. Lo que no tiene fuente primaria verificable no se siembra (§13): US Navy, Faulkner para mujeres, masa ósea de Martin, De Rose y Guimarães para mujeres y las partes de Kerr que BE no puede medir.
+3. **40 métodos** (migración `20261001010000`), cada uno con descripción, fuente, población y categoría, y una regla versionada con pruebas contra los casos de la ficha (`formulas-antropometricas.ts`):
+   - índices: IMC, cintura/cadera, cintura/talla y conicidad;
+   - sumas de pliegues: 6 y 8 de ISAK, 7 de Jackson y Pollock;
+   - grasa corporal: Durnin y Womersley, Jackson y Pollock (7 y 3 pliegues), cada una con Siri y con Brozek; Faulkner (hombres), Yuhasz-Carter, RFM, BAI y Deurenberg;
+   - masas: grasa y libre de grasa de Faulkner (hombres), ósea de Rocha, residual de Würch, muscular en cuatro componentes (hombres) y muscular esquelética de Lee (con perímetros y con peso y talla);
+   - somatotipo de Heath y Carter, con sus tres componentes.
+4. **Sitios** (ficha, §2): el suprailíaco de Jackson y Pollock se toma en la **cresta ilíaca**, como el consenso del GREC (D-1); el de Faulkner, en el supraespinal; el de Durnin y Womersley, en la cresta ilíaca. La lámina rotula «Supraespinal» el punto frontal que el compositor llama «Suprailíaco».
+5. **Las ecuaciones que difieren por sexo son métodos distintos.** El sexo no es un dato de la toma: lo elige el profesional al elegir el método. **La edad sí es un dato de la toma** (medición «edad», en años).
+6. **Un resultado por método.** Las cadenas (densidad y después Siri o Brozek) viven dentro de la regla, sin redondear en el medio. Un porcentaje de grasa o una masa de cero o menos es un error de dominio (D-6), y el somatotipo usa el mínimo de 0,1 del manual.
+7. **Una métrica por familia de fórmulas** (por ejemplo «Grasa corporal (Faulkner)»), no una genérica como propone la ficha (D-12): la evolución publica una observación por día y métrica, y con una genérica dos métodos de la misma toma se pisarían.
+8. **La evolución incluye los resultados.** Las corridas vigentes de soporte antropométrico entran a API-ANT-06 como puntos de clase calculada, con el momento de sus entradas y agrupados por método. Una corrida reemplazada o con una entrada anulada no aporta punto. La forma de la respuesta no cambia: la APK 0.12.1 sigue funcionando.
+9. **Los nombres viajan en el dominio.** El asesorado no consulta el catálogo (API-MTH-01 es del profesional), así que los nombres de mediciones, resultados y métodos salen de un mapa generado del mismo catálogo (`nombres-de-metricas.ts`).
+10. **Ficha del método en el website**: al elegir, el profesional ve qué es, qué da, qué pide (y si la toma lo tiene), la fuente y la población; cada dato se asigna solo a la medición vigente de la toma, y se puede cambiar. Las listas de métodos y de corridas se leen completas (venían de a 20).
+11. **La lámina y la figura ubican, nunca califican.** No se trajeron los colores de «mejoró» y «empeoró» del modo Serie, ni los textos de «insights», ni el perfil nutricional de «Conclusiones» (es de otro dominio). Una diferencia es una resta con signo.
+12. **Lee y col. (2000)** tiene un término por etnia: BE aplica el de la muestra blanca e hispana (0) y lo dice en la población del método (D-2).
+13. **REG-06-157** prohibía fijar un catálogo científico desde WP-05. Queda superado por la decisión de Dirección (DL-110 y este pedido): BE ofrece varios métodos con su fuente y el profesional elige; ninguna corrida se adopta sola (REG-06-205).
+
+**Límites declarados.** Ningún profesional de Dirección validó todavía los coeficientes, los sitios ni las poblaciones: están contrastados con las fuentes y con dos implementaciones independientes, no con un caso clínico. La APK no se probó en un teléfono. La validación de la toma (al crear, solo un protocolo vigente del catálogo) sigue abierta, como dice DL-110.
+
+**Pendiente de Dirección.** Ratificar las decisiones 1 a 13. Decidir las abiertas de la ficha (§15.2): sitio del suprailíaco (D-1), término de etnia de Lee (D-2), sitios de muslo, pecho y cintura (D-3, D-4), densidad como resultado visible (D-7), métodos de Heymsfield, Martin y Kerr, y los índices de VanItallie y Kouri. Decidir si «Conclusiones» lleva la TMB y el perfil nutricional, y con qué método.
