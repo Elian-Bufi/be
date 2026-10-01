@@ -35,6 +35,14 @@ export const AZUL_NOCHE = {
   exitoFondo: '#0B3A3A',
   // El velo detrás de un diálogo: no es texto ni borde de control
   velo: 'rgba(0, 0, 0, 0.6)',
+  // La lámina de la toma (DL-111): los colores del tema «Azul» del compositor (`.slide.blue`), con las transparencias
+  // ya resueltas sobre su fondo para que la prueba de contraste las pueda medir.
+  laminaFondo: '#0C2E63',
+  laminaTarjeta: '#1F3F70',
+  laminaBorde: '#334F7C',
+  laminaNombre: '#E0E4EB',
+  laminaValor: '#FFFFFF',
+  laminaDetalle: '#CED5DF',
 };
 
 export const CLARO: Paleta = {
@@ -55,6 +63,14 @@ export const CLARO: Paleta = {
   exito: '#107F45',
   exitoFondo: '#EEF8F2',
   velo: 'rgba(10, 31, 68, 0.45)',
+  // La lámina de la toma (DL-111): los colores del tema «Claro» del compositor (`.slide.light`). El detalle va más
+  // oscuro que su `.rowUnit`, que no llega a 4,5:1.
+  laminaFondo: '#E4ECF8',
+  laminaTarjeta: '#FFFFFF',
+  laminaBorde: '#D6E2F3',
+  laminaNombre: '#334155',
+  laminaValor: '#1E6BF2',
+  laminaDetalle: '#475569',
 };
 
 export type Paleta = { readonly [K in keyof typeof AZUL_NOCHE]: string };

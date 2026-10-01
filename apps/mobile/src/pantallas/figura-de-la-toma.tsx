@@ -34,7 +34,7 @@ import {
 import { useEffect, useState } from 'react';
 import { Image, Text, View, type ImageSourcePropType } from 'react-native';
 import { useApariencia } from '../apariencia';
-import type { Tema } from '../tema';
+import { PALETAS, type Tema } from '../tema';
 import { Boton, Parrafo } from '../ui';
 
 const IMAGEN: Readonly<Record<SexoDeLaLamina, ImageSourcePropType>> = {
@@ -48,14 +48,12 @@ type Familia = 'PERIMETROS' | 'PLIEGUES';
 /** El tema de la lámina que corresponde a cada apariencia de la APK (compositor: `light` y `blue`). */
 const TEMA_DE_LA_LAMINA = { claro: 'CLARO', 'azul-noche': 'AZUL' } as const satisfies Readonly<Record<Tema, 'CLARO' | 'AZUL'>>;
 
-/**
- * Los colores de la lámina fuera del dibujo (compositor: `.slide.light` y `.slide.blue`, sus `.rowName`, `.rowVal` y
- * `.rowUnit`). El detalle va más oscuro que `.rowUnit` en el claro: acá es texto que se lee, no una unidad chica.
- */
-const LAMINA: Readonly<Record<Tema, { fondo: string; tarjeta: string; borde: string; nombre: string; valor: string; detalle: string }>> = {
-  claro: { fondo: '#E4ECF8', tarjeta: '#FFFFFF', borde: '#D6E2F3', nombre: '#334155', valor: '#1E6BF2', detalle: '#475569' },
-  'azul-noche': { fondo: '#0C2E63', tarjeta: 'rgba(255,255,255,0.08)', borde: 'rgba(255,255,255,0.16)', nombre: 'rgba(255,255,255,0.86)', valor: '#FFFFFF', detalle: 'rgba(255,255,255,0.78)' },
+/** Los colores de la lámina fuera del dibujo: tokens de cada tema (tema.ts), medidos por la prueba de contraste. */
+const laminaDe = (tema: Tema) => {
+  const p = PALETAS[tema];
+  return { fondo: p.laminaFondo, tarjeta: p.laminaTarjeta, borde: p.laminaBorde, nombre: p.laminaNombre, valor: p.laminaValor, detalle: p.laminaDetalle };
 };
+type ColoresDeLamina = ReturnType<typeof laminaDe>;
 
 /** Medidas del dibujo en dp. Las letras de la figura escalan hasta 1,2 veces; la lista de abajo escala sin tope. */
 const FILA = 44;
@@ -130,7 +128,7 @@ export function FiguraDeLaToma({ medidas }: { medidas: readonly MedidaDeLaToma[]
 function Lamina({ ancho, sexo, familia, medidas, tema }: { ancho: number; sexo: SexoDeLaLamina; familia: Familia; medidas: readonly MedidaDeLaToma[]; tema: Tema }) {
   const figura = FIGURAS_DE_LA_LAMINA[sexo].ENTERO;
   const colores = COLORES_DE_LA_FIGURA[TEMA_DE_LA_LAMINA[tema]];
-  const lamina = LAMINA[tema];
+  const lamina = laminaDe(tema);
 
   // La figura a la derecha, con el cuerpo en algo menos de la mitad del ancho (compositor: `figGeom`, `LAY`).
   const anchoDelCuerpo = ancho * 0.46;
@@ -211,7 +209,7 @@ function Lamina({ ancho, sexo, familia, medidas, tema }: { ancho: number; sexo: 
 }
 
 /** Una fila de tarjeta: el rótulo del compositor, el valor y la diferencia con la toma anterior comparable. */
-function FilaDeLaLamina({ sitio, lamina }: { sitio: Sitio; lamina: (typeof LAMINA)[Tema] }) {
+function FilaDeLaLamina({ sitio, lamina }: { sitio: Sitio; lamina: ColoresDeLamina }) {
   const { actual, diferencia } = sitio.medida;
   const signo = diferencia ? (diferencia.delta < 0 ? '−' : diferencia.delta > 0 ? '+' : '') : '';
   return (
