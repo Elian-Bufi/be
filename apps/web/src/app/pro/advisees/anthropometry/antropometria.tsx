@@ -34,7 +34,8 @@ export interface ContextoDeAntropometria {
   readonly sesionPerdida: (r: Resultado<unknown>) => boolean;
   /** `true` si una escritura recibió el 404 no revelador: la pestaña pasa a «no disponible» entera. */
   readonly accesoRetirado: (r: Resultado<unknown>) => boolean;
-  readonly irA: (vista: Vista) => void;
+  /** Cambia de vista; con `evaluacionId`, Evaluaciones abre esa evaluación (por su lectura y su autorización habituales). */
+  readonly irA: (vista: Vista, evaluacionId?: string) => void;
 }
 
 const Contexto = createContext<ContextoDeAntropometria | null>(null);
@@ -73,7 +74,10 @@ export function Antropometria() {
   const router = useRouter();
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees/anthropometry?id=${id}`);
 
-  const irA = useCallback((v: Vista) => router.replace(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`), [router, ruta, id]);
+  const irA = useCallback(
+    (v: Vista, evaluacionId?: string) => router.replace(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}${evaluacionId ? `&evaluacion=${encodeURIComponent(evaluacionId)}` : ''}`),
+    [router, ruta, id],
+  );
   const [retirado, setRetirado] = useState(false);
   const accesoRetirado = useCallback((r: Resultado<unknown>) => {
     if (r.ok || r.tipo !== 'API' || r.codigo !== 'RESOURCE_NOT_FOUND') return false;

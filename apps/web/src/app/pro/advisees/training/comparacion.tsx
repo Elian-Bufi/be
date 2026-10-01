@@ -49,9 +49,10 @@ import {
   type ValorPlanificado,
   type ValorRegistrado,
 } from '@be/domain';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Bar, BarChart, CartesianGrid, ComposedChart, LabelList, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Aviso } from '../../../../components/formulario';
+import { indiceConTeclado, useConPuntero } from '../../../../lib/graficos';
 import { dia, diaCorto, fecha } from '../../../../lib/formato';
 
 export interface Capas {
@@ -108,23 +109,6 @@ const ejeVertical = (m: Medida): string => (m.variable === 'repeticiones' ? `${e
 /** La medida elegida, si sigue disponible; si no, la primera (siempre hay repeticiones). */
 function medidaElegida(medidas: readonly Medida[], clave: string): Medida {
   return medidas.find((m) => claveDeMedida(m) === clave) ?? (medidas[0] as Medida);
-}
-
-/**
- * ¿Hay un puntero que pasa por encima (mouse)? El recuadro que sigue al puntero es una ayuda para ese caso. En una
- * pantalla táctil quedaría fijo encima del gráfico, y el panel de valores ya dice lo mismo: ahí no se muestra.
- */
-const CONSULTA_PUNTERO = '(hover: hover) and (pointer: fine)';
-function useConPuntero(): boolean {
-  return useSyncExternalStore(
-    (avisar) => {
-      const m = window.matchMedia(CONSULTA_PUNTERO);
-      m.addEventListener('change', avisar);
-      return () => m.removeEventListener('change', avisar);
-    },
-    () => window.matchMedia(CONSULTA_PUNTERO).matches,
-    () => false,
-  );
 }
 
 /**
@@ -223,16 +207,6 @@ function useFueraDeLaVista(marco: RefObject<HTMLDivElement | null>): number {
   return fuera;
 }
 
-/** Recorre una lista con el teclado: flechas, Inicio y Fin. Devuelve el índice nuevo, o `null` si la tecla no es suya. */
-function indiceConTeclado(e: KeyboardEvent, actual: number | null, total: number): number | null {
-  if (total === 0) return null;
-  const desde = actual ?? -1;
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') return Math.min(desde + 1, total - 1);
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') return Math.max(desde - 1, 0);
-  if (e.key === 'Home') return 0;
-  if (e.key === 'End') return total - 1;
-  return null;
-}
 
 /** Rayado para lo planificado y para las sesiones sin dato: el estado se ve sin depender del color (B10-10 §11). */
 function Patrones({ id }: { id: string }) {
