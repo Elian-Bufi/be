@@ -210,6 +210,17 @@ export const CODIGO_DE_NUMERO_FUERA_DE_LIMITES = {
   ABOVE_MAXIMUM: 'FORM_ANSWER_ABOVE_MAXIMUM',
 } as const;
 
+/**
+ * WP-07 §9.3: el texto libre de una respuesta tiene **longitud acotada**. Se cuenta en caracteres (puntos de código),
+ * no en unidades UTF-16: una tilde o un emoji cuentan uno. El motivo de una rectificación tiene su propio tope.
+ */
+export const LARGO_MAXIMO_DE_TEXTO_DE_RESPUESTA = 2000;
+export const LARGO_MAXIMO_DEL_MOTIVO_DE_RECTIFICACION = 1000;
+/** Código de issue de un texto de respuesta más largo que el tope (mismo `422 FORM_RESPONSE_INVALID`). */
+export const CODIGO_DE_TEXTO_DEMASIADO_LARGO = 'FORM_ANSWER_TOO_LONG';
+/** Largo de un texto en caracteres (puntos de código). */
+export const largoDeTexto = (texto: string): number => [...texto].length;
+
 /** Los límites de un campo NUMBER, tal como los declara la plantilla (`numberLimits`, DL-101). */
 export const LimitesDeCampoSchema = z.strictObject({
   minimum: z.number().optional(),
@@ -226,15 +237,27 @@ export const LimitesDeCampoSchema = z.strictObject({
  * Compatibilidad con la APK 0.11.3: viaja **dentro de `error.details.issues`**, que ese cliente no valida. Una clave
  * nueva en `error` o en la raíz haría que no reconozca el rechazo y lo tome como resultado incierto.
  */
-export const ProblemaDeRespuestaSchema = z.object({
+export const ProblemaDeNumeroSchema = z.object({
   code: z.enum([CODIGO_DE_NUMERO_FUERA_DE_LIMITES.NOT_INTEGER, CODIGO_DE_NUMERO_FUERA_DE_LIMITES.BELOW_MINIMUM, CODIGO_DE_NUMERO_FUERA_DE_LIMITES.ABOVE_MAXIMUM]),
   path: z.string(),
   fieldCode: z.string(),
   limits: LimitesDeCampoSchema,
 });
+/**
+ * Un texto más largo que el tope: `maxLength` es el tope en caracteres. La APK 0.12.0 no conoce este issue y lo
+ * ignora (`problemasReconocidos` descarta lo que no valida): muestra «un dato no se aceptó», nunca un fallo del
+ * servicio. Desde la 0.12.1 el campo no deja escribir más y, si igual llega, lo marca junto al campo.
+ */
+export const ProblemaDeTextoSchema = z.object({
+  code: z.literal(CODIGO_DE_TEXTO_DEMASIADO_LARGO),
+  path: z.string(),
+  fieldCode: z.string(),
+  maxLength: z.number().int().positive(),
+});
+export const ProblemaDeRespuestaSchema = z.union([ProblemaDeNumeroSchema, ProblemaDeTextoSchema]);
 export type ProblemaDeRespuesta = z.infer<typeof ProblemaDeRespuestaSchema>;
 
-/** `error.details` del `422 FORM_RESPONSE_INVALID` por números fuera de límites: un issue por campo, todos a la vez. */
+/** `error.details` del `422 FORM_RESPONSE_INVALID` por números fuera de límites o textos demasiado largos: un issue por campo, todos a la vez. */
 export const DetalleDeRespuestaFueraDeLimitesSchema = z.object({ issues: z.array(ProblemaDeRespuestaSchema).min(1) });
 
 export const RectificacionDeRespuestaSchema = z.strictObject({
@@ -287,7 +310,7 @@ export type DetalleDeSolicitudResponse = z.infer<typeof DetalleDeSolicitudRespon
 
 export const RectificarRespuestaRequestSchema = z.strictObject({
   expectedVersion: TokenDeVersionSchema,
-  reason: Texto(1000),
+  reason: Texto(LARGO_MAXIMO_DEL_MOTIVO_DE_RECTIFICACION),
   answers: z.array(RespuestaDeCampoEntradaSchema).min(1).max(60),
 });
 export type RectificarRespuestaRequest = z.infer<typeof RectificarRespuestaRequestSchema>;

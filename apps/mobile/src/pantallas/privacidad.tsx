@@ -19,7 +19,7 @@ import {
   type Resultado,
 } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 import { api } from '../api';
 import { DialogoDeConfirmacion, useAccionConfirmada } from '../dialogo';
 import { Cargando, ErrorConReintento, EstadoDeCarga, VerMas } from '../estados';
@@ -29,7 +29,7 @@ import { useListaPaginada } from '../lista';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { AvisoDeAccesoRevocado, RevocarConsentimiento } from '../revocacion';
 import { TextoDesplegable } from '../texto-versionado';
-import { Aviso, Boton, COLOR, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
+import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilosPorTema } from '../ui';
 
 type RequisitoA3 = RequisitoDeConsentimientoDeSaludResponse['data'];
 type CargaA3 = { readonly tipo: 'cargando' } | { readonly tipo: 'error'; readonly sinConexion: boolean } | { readonly tipo: 'listo'; readonly datos: RequisitoA3 };
@@ -294,6 +294,6 @@ function ConsentimientoAProfesional({
   );
 }
 
-const estilos = StyleSheet.create({
+const estilos = estilosPorTema((COLOR) => ({
   nombre: { fontSize: 18, fontWeight: '700', color: COLOR.texto, marginBottom: 4 },
-});
+}));
