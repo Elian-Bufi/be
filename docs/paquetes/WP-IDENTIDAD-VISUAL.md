@@ -115,3 +115,7 @@ RNF-ACC-001 pide auditoría automática y revisión manual de «acceso, vínculo
 - Un selector de tema claro/oscuro para la persona. **Evolución (2026-09-30):** Dirección lo autorizó en la orden de esa fecha, con «Azul noche» como apariencia predeterminada y «Claro» como alternativa, como preferencia local al navegador; reemplaza el tema fijo por superficie de los tramos B y C. Registro y evidencia en . Esta línea no reescribe la decisión original: la fecha.
 - La carga de mediciones por CSV del compositor: Dirección la descartó («era una prueba»); si vuelve, pasa por la procedencia `CONTROLLED_IMPORT` (DL-062).
 - La figura en la APK: la toma antropométrica es del profesional, en el website.
+
+## 11. Evolución (2026-09-30): dos temas en la APK
+
+Dirección autorizó en la orden de esa fecha los dos temas también en la APK, con selector en Cuenta: «Azul noche» (predeterminado, medido en las pantallas mobile de referencia de Dirección) y «Claro» (el compositor de láminas `docs/direccion/BE-VIS-Compositor_v13.3.html`, con seis ajustes de contraste en el mismo tono). La preferencia queda en el teléfono. Reemplaza el tema oscuro único de la APK de los tramos A y E. El website se actualiza a las mismas paletas después de integrar #118. Registro y evidencia: `EVIDENCIA/APARIENCIA-APK/LEEME.md`.

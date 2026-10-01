@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { crearClienteBe, type Resultado } from './cliente-http';
 import { ErrorEnvelopeSchema } from './contratos';
-import { DetalleDeRespuestaFueraDeLimitesSchema, type CampoDePlantilla } from './contratos-formularios';
+import { DetalleDeRespuestaFueraDeLimitesSchema, LARGO_MAXIMO_DE_TEXTO_DE_RESPUESTA, LARGO_MAXIMO_DEL_MOTIVO_DE_RECTIFICACION, largoDeTexto, type CampoDePlantilla } from './contratos-formularios';
 import { COPY } from './copy';
 import { COPY_FORMULARIOS, terminosProhibidosDeFormulariosEn } from './copy-formularios';
 import { desenlaceDeEnvio, mensajeDeProblema, problemasReconocidos, rechazoDeFormulario, valoresAdmitidos } from './errores-de-formulario';
@@ -224,4 +224,26 @@ test('recuperación · los mensajes nuevos no usan términos prohibidos ni dicen
     assert.deepEqual(terminosProhibidosDeFormulariosEn(t), [], t);
     assert.notEqual(t, COPY.noDisponible);
   }
+});
+
+test('WP-07 §9.3 · un texto más largo que el tope se marca junto al campo, con el tope en caracteres', () => {
+  const issue = { code: 'FORM_ANSWER_TOO_LONG', path: 'answers[0].value', fieldCode: 'trn_objetivo_declarado', maxLength: 2000 };
+  DetalleDeRespuestaFueraDeLimitesSchema.parse({ issues: [issue] });
+  assert.deepEqual(problemasReconocidos([issue], ['trn_objetivo_declarado']), [issue]);
+  const x = rechazoDeFormulario(rechazo('FORM_RESPONSE_INVALID', [issue, { code: 'FORM_ANSWER_ABOVE_MAXIMUM', path: 'answers[1].value', fieldCode: 'trn_dias_por_semana', limits: DIAS }]), CAMPOS);
+  assert.ok(x && x.tipo === 'por-campo');
+  assert.equal(x.errores.trn_objetivo_declarado, 'Es más largo de lo que se admite. Escribí hasta 2.000 caracteres.');
+  assert.equal(x.resumen, COPY.resumenDeErrores(2));
+  assert.deepEqual(terminosProhibidosDeFormulariosEn(x.errores.trn_objetivo_declarado as string), []);
+  // Sin tope o con un tope que no es entero positivo, no se reconoce: respaldo seguro, no un mensaje roto.
+  for (const malo of [{ ...issue, maxLength: 0 }, { ...issue, maxLength: 'mucho' }, { code: 'FORM_ANSWER_TOO_LONG', path: 'answers[0].value', fieldCode: 'trn_objetivo_declarado' }]) {
+    assert.deepEqual(problemasReconocidos([malo], ['trn_objetivo_declarado']), []);
+  }
+});
+
+test('WP-07 §9.3 · el largo se cuenta en caracteres, no en unidades UTF-16', () => {
+  assert.equal(largoDeTexto('ñandú'), 5);
+  assert.equal(largoDeTexto('💪'), 1);
+  assert.equal(LARGO_MAXIMO_DE_TEXTO_DE_RESPUESTA, 2000);
+  assert.equal(LARGO_MAXIMO_DEL_MOTIVO_DE_RECTIFICACION, 1000);
 });

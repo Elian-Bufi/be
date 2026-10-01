@@ -646,10 +646,13 @@ export const COPY_COMPARACION = {
   tablaEquivalente: 'Tabla de valores',
   tablaMuestraAmbas: 'La tabla muestra siempre las dos capas, con los mismos valores del gráfico.',
   capaOculta: 'Las dos capas están ocultas. Activá al menos una para ver el gráfico; la tabla sigue abajo.',
-  seDesplazaSeries: 'Hay más series a los costados: desplazá el gráfico o recorrelo con las flechas. La tabla tiene todas.',
-  seDesplazaSesiones: 'Hay más sesiones a los costados: desplazá el gráfico o recorrelo con las flechas. La tabla tiene todas.',
+  /** Solo cuando de verdad hay grupos fuera del marco: cuántos y de qué tipo, sin afirmar de más. */
+  fueraDeLaVista: (cantidad: number, tipo: 'series' | 'sesiones'): string =>
+    `${numero(cantidad)} ${cantidad === 1 ? SINGULAR[tipo] : tipo} ${cantidad === 1 ? 'queda' : 'quedan'} fuera de la vista: desplazá el gráfico o recorrelo con las flechas. La tabla tiene todas.`,
   sinSeries: 'Esta prescripción no tiene series planificadas ni registradas.',
 } as const;
+
+const SINGULAR = { series: 'serie', sesiones: 'sesión' } as const;
 
 const MOTIVO: Readonly<Record<Exclude<MotivoSinDato, 'campo-no-registrado'>, string>> = {
   'serie-no-registrada': 'Sin dato: la serie no está en el registro',

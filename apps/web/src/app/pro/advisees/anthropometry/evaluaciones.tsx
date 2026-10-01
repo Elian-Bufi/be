@@ -9,7 +9,8 @@
  *
  * Lo medido, lo informado y lo calculado se muestran distinguidos siempre (04:1090).
  */
-import { cantidad, COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, leerNumero, motivoDeNumeroIlegible, type EvaluacionAntropometricaApi, type Medicion } from '@be/domain';
+import { cantidad, COPY, COPY_ANTROPOMETRIA, COPY_EVOLUCION, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, leerNumero, motivoDeNumeroIlegible, type EvaluacionAntropometricaApi, type Medicion } from '@be/domain';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -20,10 +21,23 @@ import { BloqueDeCalculos } from './calculos';
 
 type Resumen = { evaluationId: string; state: string; occurredAt: string; registeredAt: string | null; summary: { metrics: string[]; measurementCount: number; annulledCount: number } };
 
+/**
+ * Qué pasó con la evaluación pedida cuando la lista sí se pudo leer: `no-disponible` es el 404 (no existe, o no está
+ * autorizada: no se distingue, como en toda la API) y `transitorio` es cualquier otro fallo, que amerita reintentar.
+ * En los dos casos la lista válida del asesorado se muestra igual: una evaluación fallida no la tapa.
+ */
+type FalloDeDetalle = 'no-disponible' | 'transitorio' | null;
+
 export function VistaDeEvaluaciones() {
-  const { token, asesoradoId, sesionPerdida } = useAntropometria();
-  const [r, setR] = useState<Resultado<{ lista: Resumen[]; abierta: EvaluacionAntropometricaApi | null }> | null>(null);
-  const [abiertaId, setAbiertaId] = useState<string | null>(null);
+  const { token, asesoradoId, sesionPerdida, irA } = useAntropometria();
+  const [r, setR] = useState<Resultado<{ lista: Resumen[]; abierta: EvaluacionAntropometricaApi | null; fallo: FalloDeDetalle }> | null>(null);
+  // Desde la evolución llega `evaluacion=` en la URL: es la evaluación de origen de una observación (RF-049). Si el
+  // parámetro cambia después (otra observación, o se vuelve a la lista), la evaluación abierta lo sigue.
+  const pedida = useSearchParams().get('evaluacion');
+  const [abiertaId, setAbiertaId] = useState<string | null>(pedida);
+  useEffect(() => {
+    setAbiertaId(pedida);
+  }, [pedida]);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
 
   const cargar = useCallback(async () => {
@@ -31,17 +45,26 @@ export function VistaDeEvaluaciones() {
     const lista = await api.listarEvaluacionesAntropometricas(token, asesoradoId);
     if (sesionPerdida(lista)) return;
     if (!lista.ok) return setR(lista as Resultado<never>);
-    const id = abiertaId ?? lista.datos.data[0]?.evaluationId ?? null;
-    if (!id) return setR({ ok: true, datos: { lista: lista.datos.data as Resumen[], abierta: null } });
+    const filas = lista.datos.data as Resumen[];
+    const id = abiertaId ?? filas[0]?.evaluationId ?? null;
+    if (!id) return setR({ ok: true, datos: { lista: filas, abierta: null, fallo: null } });
     const detalle = await api.consultarEvaluacionAntropometrica(token, id);
     if (sesionPerdida(detalle)) return;
-    if (!detalle.ok) return setR(detalle as Resultado<never>);
-    setR({ ok: true, datos: { lista: lista.datos.data as Resumen[], abierta: detalle.datos.data } });
+    if (!detalle.ok) {
+      const noDisponible = detalle.tipo === 'API' && detalle.codigo === 'RESOURCE_NOT_FOUND';
+      return setR({ ok: true, datos: { lista: filas, abierta: null, fallo: noDisponible ? 'no-disponible' : 'transitorio' } });
+    }
+    setR({ ok: true, datos: { lista: filas, abierta: detalle.datos.data, fallo: null } });
   }, [token, asesoradoId, sesionPerdida, abiertaId]);
 
   useEffect(() => {
     void cargar();
   }, [cargar]);
+  // Vuelve a la lista sin la evaluación pedida: saca el parámetro de la URL y abre la más reciente, como al entrar.
+  const volverALaLista = () => {
+    setAbiertaId(null);
+    irA('evaluaciones');
+  };
 
   return (
     <EstadoDeLectura r={r} onReintentar={cargar}>
@@ -50,6 +73,30 @@ export function VistaDeEvaluaciones() {
           {aviso ? (
             <Aviso tipo={aviso.tipo} enfocar>
               <p>{aviso.texto}</p>
+            </Aviso>
+          ) : null}
+          {r.datos.fallo === 'no-disponible' ? (
+            <Aviso tipo="info" enfocar>
+              <p>
+                {COPY_EVOLUCION.evaluacionNoDisponible}{' '}
+                <button type="button" className="boton boton--enlace" onClick={volverALaLista}>
+                  {COPY_EVOLUCION.volverALaLista}
+                </button>
+              </p>
+            </Aviso>
+          ) : null}
+          {r.datos.fallo === 'transitorio' ? (
+            <Aviso tipo="error" enfocar>
+              <p>
+                {COPY_EVOLUCION.evaluacionNoCargo}{' '}
+                <button type="button" className="boton boton--enlace" onClick={() => void cargar()}>
+                  {COPY.reintentar}
+                </button>{' '}
+                ·{' '}
+                <button type="button" className="boton boton--enlace" onClick={volverALaLista}>
+                  {COPY_EVOLUCION.volverALaLista}
+                </button>
+              </p>
             </Aviso>
           ) : null}
 
