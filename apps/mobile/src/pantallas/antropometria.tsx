@@ -50,6 +50,17 @@ import { Aviso, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, 
 import { FiguraDeLaToma } from './figura-de-la-toma';
 
 type Datos = EvolucionResponse['data'];
+
+const sinMediciones = (d: Datos): boolean => d.metrics.every((m) => m.series.length === 0);
+
+/** Los 90 días civiles que terminan el día anterior a `inicio` (`AAAA-MM-DD`), para la API. */
+function periodoAnterior(inicio: string): { periodStart: string; periodEnd: string } {
+  const fin = new Date(`${inicio}T12:00:00Z`);
+  fin.setUTCDate(fin.getUTCDate() - 1);
+  const desde = new Date(fin);
+  desde.setUTCDate(desde.getUTCDate() - 89);
+  return { periodStart: desde.toISOString().slice(0, 10), periodEnd: fin.toISOString().slice(0, 10) };
+}
 type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: Datos } | { tipo: 'error'; sinConexion: boolean };
 
 export function PantallaDeMiEvolucion({ token, salir }: { token: string; salir: (m: Salida) => void }) {
@@ -60,7 +71,18 @@ export function PantallaDeMiEvolucion({ token, salir }: { token: string; salir: 
     setCarga({ tipo: 'cargando' });
     const r = await api.miEvolucionAntropometrica(token);
     if (sesionPerdida(r)) return;
-    setCarga(r.ok ? { tipo: 'listo', datos: r.datos.data } : { tipo: 'error', sinConexion: r.tipo === 'RED' });
+    if (!r.ok) return setCarga({ tipo: 'error', sinConexion: r.tipo === 'RED' });
+    // La API mira de a 92 días como mucho. Si los últimos 90 no tienen ninguna medición, se mira hacia atrás, de a
+    // 90 días y hasta un año: quien se mide cada tres o cuatro meses tiene que ver su última toma. La pantalla dice
+    // qué período muestra. Si tampoco hay nada, queda el período actual, que dice que no hay mediciones.
+    let datos = r.datos.data;
+    for (let i = 0; i < 3 && sinMediciones(datos); i++) {
+      const anterior = await api.miEvolucionAntropometrica(token, periodoAnterior(datos.period.start));
+      if (sesionPerdida(anterior)) return;
+      if (!anterior.ok) break;
+      datos = anterior.datos.data;
+    }
+    setCarga({ tipo: 'listo', datos: sinMediciones(datos) ? r.datos.data : datos });
   }, [token, sesionPerdida]);
 
   useEffect(() => {
