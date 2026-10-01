@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Términos de uso · BE' };
 /** A1 — versión vigente de los términos (texto sintético, DEUDA_LEGAJO DL-028). */
 export default function Terminos() {
   return (
-    <div className="tema-oscuro">
+    <div className="cara-publica">
       <Encabezado />
       <main id="contenido" className="contenido">
         <TextoVersionado version={VERSION_VIGENTE.TERMINOS} />
