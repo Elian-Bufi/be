@@ -12,6 +12,8 @@
  * consentimiento se revocó, la solicitud sigue estando —es de la persona— pero ya no se puede responder.
  */
 import {
+  LARGO_MAXIMO_DE_TEXTO_DE_RESPUESTA,
+  LARGO_MAXIMO_DEL_MOTIVO_DE_RECTIFICACION,
   COPY,
   COPY_FORMULARIOS,
   desenlaceDeEnvio,
@@ -315,10 +317,12 @@ export function PantallaDeMiSolicitud({ token, id, salir, volver }: { token: str
               }}
               // El teclado decimal de Android puede ofrecer coma: por eso el valor se lee con `leerNumero`.
               keyboardType={c.dataType === 'NUMBER' ? 'decimal-pad' : 'default'}
+              // WP-07 §9.3: el texto tiene longitud acotada; el campo no deja pasarse (la API igual lo controla).
+              {...(c.dataType === 'TEXT' ? { maxLength: LARGO_MAXIMO_DE_TEXTO_DE_RESPUESTA } : {})}
             />
           );
         })}
-        {esCorreccion ? <Campo etiqueta={COPY_FORMULARIOS.motivoDeRectificacion} value={motivo} onChangeText={(m) => despachar({ tipo: 'editar-motivo', motivo: m })} /> : null}
+        {esCorreccion ? <Campo etiqueta={COPY_FORMULARIOS.motivoDeRectificacion} value={motivo} maxLength={LARGO_MAXIMO_DEL_MOTIVO_DE_RECTIFICACION} onChangeText={(m) => despachar({ tipo: 'editar-motivo', motivo: m })} /> : null}
         {problema ? (
           <Aviso key={envios} tipo="error" titulo={problema.titulo}>
             {problema.lineas.map((l) => (

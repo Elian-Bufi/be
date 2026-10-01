@@ -16,7 +16,7 @@ const APK = 'https://github.com/Elian-Bufi/be/releases/latest';
  */
 export default function Inicio() {
   return (
-    <div className="tema-oscuro">
+    <div className="cara-publica">
       <Encabezado />
       <main id="contenido" className="landing">
         <section className="portada" aria-labelledby="titulo-portada">

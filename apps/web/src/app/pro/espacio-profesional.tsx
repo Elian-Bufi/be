@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * Website `/pro` — espacio profesional mínimo, sin Cartera (DL-041 A):
+ * Website `/pro` — espacio profesional:
+ * - «Pendientes» (API-DSH-04; PF-07, DL-107): a quién mirar hoy, con hechos fechados y sin juicios (`pendientes.tsx`).
  * - «Solicitar vínculo» (REL-01): el asesorado se identifica por su identificador BE (DL-035) y la finalidad es la del
  *   alcance (DL-039). Cualquier rechazo semántico se muestra con el mismo mensaje neutral: la pantalla no revela si el
  *   identificador existe ni por qué no es elegible (09v7:151-157).
@@ -28,6 +29,7 @@ import { dia, fecha } from '../../lib/formato';
 import { esIncierto, useClaveDeIntento } from '../../lib/intento';
 import { useListaPaginada } from '../../lib/lista';
 import { useSesionRequerida } from '../../lib/sesion-requerida';
+import { Pendientes } from './pendientes';
 
 type Yo = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-espacio' } | { tipo: 'listo'; id: string };
 
@@ -83,6 +85,8 @@ export function EspacioProfesional() {
   return (
     <div className="espacio">
       <div className="espacio__principal secciones">
+        {/* Primero lo que hay que hacer (API-DSH-04, DL-107); debajo, la lista de siempre. */}
+        <Pendientes token={token} sesionPerdida={sesionPerdida} />
         <section className="seccion" aria-labelledby="titulo-asesorados">
           <h2 id="titulo-asesorados">Tus asesorados</h2>
           {vinculos.estado.tipo === 'cargando' ? <Cargando /> : null}

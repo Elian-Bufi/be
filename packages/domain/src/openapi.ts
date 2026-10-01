@@ -46,6 +46,7 @@ import {
   SolicitudDeduplicadaResponseSchema,
   VinculoResponseSchema,
 } from './contratos-vinculo';
+import { CarteraResponseSchema } from './contratos-cartera';
 import {
   CrearPlantillaDeEntrenamientoRequestSchema,
   EditarPlantillaRequestSchema,
@@ -212,7 +213,7 @@ const DETALLE_DE_NUMEROS_FUERA_DE_LIMITES: NonNullable<Operacion['detalleDe422']
   codigo: 'FORM_RESPONSE_INVALID',
   schema: DetalleDeRespuestaFueraDeLimitesSchema,
   descripcion:
-    'cuando el rechazo es por números fuera de los límites de la plantilla, details.issues trae un issue por campo (FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM o FORM_ANSWER_ABOVE_MAXIMUM) con fieldCode y los límites del campo (DL-104). Los otros rechazos de este código no traen details.',
+    'cuando el rechazo es por números fuera de los límites de la plantilla o por textos más largos que el tope, details.issues trae un issue por campo: FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM o FORM_ANSWER_ABOVE_MAXIMUM con fieldCode y los límites del campo (DL-104), o FORM_ANSWER_TOO_LONG con fieldCode y maxLength (WP-07 §9.3). Los otros rechazos de este código no traen details.',
 };
 
 const LIMIT: ParametroDeQuery = { nombre: 'limit', descripcion: 'Tamaño de página (1 a 50; 20 por defecto).', schema: { type: 'integer', minimum: 1, maximum: 50 } };
@@ -552,6 +553,31 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: DashboardResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: '09v11:895-950 · 08:581, 09:715 (SESSION con datos sintéticos) · DEUDA_LEGAJO DL-031',
+  },
+  // ─── PF-07 · Cartera del profesional (propuesta del 2026-09-30, pendiente de decisión) ─────────
+  {
+    id: 'API-DSH-04',
+    metodo: 'get',
+    ruta: '/me/portfolio',
+    resumen:
+      'Pendientes de toda la cartera del profesional: por cada asesorado con vínculo vigente y cada dominio que el PDP permite, los hechos fechados que piden una acción (revisión vencida, próxima o sin fecha; plan en borrador; sin plan activo; formulario sin responder; evaluación en preparación), con la última actividad registrada como dato. Sin puntajes ni juicios; un dominio no disponible no aparece y `partialView` lo avisa una sola vez. El período acota solo la actividad.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'periodStart', descripcion: 'Inicio del período de actividad (fecha civil AAAA-MM-DD, inclusive).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'periodEnd', descripcion: 'Fin del período de actividad (fecha civil AAAA-MM-DD, inclusive).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'domain', descripcion: 'Filtra por dominio.', schema: { type: 'string', enum: ['nutrition', 'training', 'anthropometry'] } },
+      {
+        nombre: 'kind',
+        descripcion: 'Filtra por tipo de pendiente.',
+        schema: { type: 'string', enum: ['REVIEW_OVERDUE', 'REVIEW_DUE_SOON', 'REVIEW_UNDATED', 'PLAN_DRAFT_PENDING', 'NO_ACTIVE_PLAN', 'FORM_REQUEST_OPEN', 'ANTHRO_DRAFT_PENDING'] },
+      },
+      LIMIT,
+      CURSOR,
+    ],
+    exitos: [{ status: 200, schema: CarteraResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: 'docs/propuestas/PF-07_vista-de-cartera.md (propuesta) · REG-06-145/150 · B10-08 §8.4 · 10-B04:1171-1176',
   },
   // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 (09v12) ─────────────────────────────────────
   {
@@ -1831,6 +1857,7 @@ const DEFINIDAS: readonly Operacion[] = [
  */
 const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-DSH-03',
+  'API-DSH-04',
   'API-ANT-03',
   'API-ANT-06',
   'API-ANT-06-PROPIA',

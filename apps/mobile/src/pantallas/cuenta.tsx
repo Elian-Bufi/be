@@ -22,12 +22,13 @@ import {
   type Resultado,
 } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Modal, Platform, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, ScrollView, Share, Text, View } from 'react-native';
 import { api, nuevaClaveDeIdempotencia } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
 import { fecha } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Boton, COLOR, VELO, Dato, Insignia, Parrafo, Seccion, Titulo, estilos as ui } from '../ui';
+import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Titulo, estilos as ui, estilosPorTema } from '../ui';
+import { SelectorDeApariencia } from '../apariencia';
 
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'error'; sinConexion: boolean };
 
@@ -108,6 +109,10 @@ export function PantallaDeCuenta({ token, salir, ir }: { token: string; salir: (
         {a3.tipo === 'error' ? <ErrorConReintento mensaje={COPY.errorA3} sinConexion={a3.sinConexion} onReintentar={cargarA3} /> : null}
         {a3.tipo === 'listo' ? <EstadoA3 datos={a3.datos} /> : null}
         <Boton texto="Privacidad y consentimientos" tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
+      </Seccion>
+
+      <Seccion titulo="Apariencia">
+        <SelectorDeApariencia />
       </Seccion>
 
       <Seccion titulo="Seguridad">
@@ -243,7 +248,7 @@ function CierreDeCuenta({ token, salir, sesionPerdida }: { token: string; salir:
   );
 }
 
-const estilos = StyleSheet.create({
+const estilos = estilosPorTema((COLOR) => ({
   identificador: {
     fontFamily: Platform.select({ android: 'monospace', ios: 'Menlo', default: undefined }),
     fontSize: 16,
@@ -253,6 +258,6 @@ const estilos = StyleSheet.create({
     padding: 10,
     marginVertical: 6,
   },
-  fondoModal: { flex: 1, backgroundColor: VELO, justifyContent: 'center', padding: 16 },
+  fondoModal: { flex: 1, backgroundColor: COLOR.velo, justifyContent: 'center', padding: 16 },
   dialogo: { backgroundColor: COLOR.superficie, borderRadius: 12, padding: 20, borderWidth: 1, borderColor: COLOR.borde },
-});
+}));

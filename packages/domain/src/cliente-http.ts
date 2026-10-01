@@ -62,6 +62,7 @@ import {
   type RespuestaDeCrearSolicitud,
   type VinculoResponse,
 } from './contratos-vinculo';
+import { CarteraResponseSchema, type CarteraResponse, type FiltroDeCartera } from './contratos-cartera';
 import {
   ListaDePlantillasDeEntrenamientoResponseSchema,
   PlantillaDeEntrenamientoResponseSchema,
@@ -449,6 +450,10 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     },
     editarPlantillaNutricional(token: string, templateId: string, cuerpo: EditarPlantillaRequest) {
       return llamar('PATCH', `/nutrition/plan-templates/${encodeURIComponent(templateId)}`, { token, cuerpo, esquema: PlantillaNutricionalResponseSchema });
+    },
+    /** API-DSH-04 (PF-07, propuesta): los pendientes de toda la cartera del profesional. */
+    consultarCartera(token: string, filtro: FiltroDeCartera = {}): Promise<Resultado<CarteraResponse>> {
+      return llamar('GET', `/me/portfolio${query(filtro as Readonly<Record<string, string | undefined>>)}`, { token, esquema: CarteraResponseSchema });
     },
 
     // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 ────────────────────────────────────────────
