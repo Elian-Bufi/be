@@ -85,7 +85,9 @@ export type ClaveDeLaLamina = PliegueDeLaLamina | PerimetroDeLaLamina | Diametro
  * - `plSuprailiaco` («Suprailíaco», PL3 del Jackson-Pollock 7) → `pliegue-supraespinal`. El compositor lo ubica de
  *   frente, sobre la línea axilar anterior y apenas arriba de la cresta ilíaca: es el «suprailíaco» de JP7 y ACSM, que en
  *   la nomenclatura ISAK se corresponde con el supraespinal (no son idénticos: cambian el reparo y la dirección del
- *   pliegue). La cresta ilíaca de ISAK se toma en la línea medioaxilar y el compositor no la dibuja.
+ *   pliegue). La cresta ilíaca de ISAK se toma en la línea medioaxilar y el compositor no la dibuja. En BE el rótulo
+ *   es «Supraespinal»: las fórmulas de Jackson y Pollock toman su suprailíaco en la cresta ilíaca (DL-111, D-1 de la
+ *   ficha de métodos), y un «Suprailíaco» con el valor del supraespinal diría otra cosa que el cálculo.
  * - `brazoCon` («Brazo contraído») → `perimetro-brazo-flexionado` (flexionado y contraído).
  * Además, `abdomen` se rotula «Abdomen bajo» (CM5 en la planilla).
  */
@@ -151,7 +153,7 @@ export const ROTULO_EN_LA_LAMINA: Readonly<Record<ClaveDeLaLamina, string>> = {
   'pliegue-triceps': 'Tríceps',
   'pliegue-subescapular': 'Subescapular',
   'pliegue-antebrazo': 'Antebrazo',
-  'pliegue-supraespinal': 'Suprailíaco',
+  'pliegue-supraespinal': 'Supraespinal',
   'pliegue-abdominal': 'Abdominal',
   'pliegue-muslo-frontal': 'Muslo anterior',
   'pliegue-pantorrilla': 'Pantorrilla',
