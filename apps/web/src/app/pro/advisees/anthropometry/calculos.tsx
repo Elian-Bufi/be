@@ -271,7 +271,17 @@ function NuevoCalculo({
           {datos.map((d) => (
             <li key={d.codigo}>
               {nombreDeMetrica(d.metrica)} ({d.unidades.join(', ')}):{' '}
-              {d.medicion ? cantidad(d.medicion.valor, d.medicion.unidad) : <strong>{COPY_ANTROPOMETRIA.datoFalta}</strong>}
+              {d.medicion ? (
+                cantidad(d.medicion.valor, d.medicion.unidad)
+              ) : (
+                <strong>
+                  {d.falta?.motivo === 'OTRA_UNIDAD'
+                    ? `${COPY_ANTROPOMETRIA.datoEnOtraUnidad} (${d.falta.unidad})`
+                    : d.falta?.motivo === 'SIN_VALOR_VIGENTE'
+                      ? COPY_ANTROPOMETRIA.datoSinValorVigente
+                      : COPY_ANTROPOMETRIA.datoFalta}
+                </strong>
+              )}
             </li>
           ))}
         </ul>

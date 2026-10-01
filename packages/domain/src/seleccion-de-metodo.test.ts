@@ -59,6 +59,14 @@ test('una medición anulada, sin valor vigente o en otra unidad no cubre el dato
   );
   assert.equal(datosDelMetodo(enMetros, TOMA)[0]!.medicion, null);
   assert.deepEqual(asignacionAutomatica(datosDelMetodo(icc, TOMA)), {});
+  // Y dice por qué: la anulada y la que no tiene valor vigente no son «otra unidad»; la talla en cm sí lo es.
+  assert.deepEqual(
+    datosDelMetodo(icc, TOMA).map((d) => d.falta),
+    [{ motivo: 'SIN_VALOR_VIGENTE' }, { motivo: 'SIN_VALOR_VIGENTE' }],
+  );
+  assert.deepEqual(datosDelMetodo(enMetros, TOMA)[0]!.falta, { motivo: 'OTRA_UNIDAD', unidad: 'cm' });
+  assert.deepEqual(datosDelMetodo(metodo('edad', [['EDAD', 'edad', ['años']]]), TOMA)[0]!.falta, { motivo: 'NO_ESTA' });
+  assert.equal(datosDelMetodo(icc, [medicion('m-c', 'perimetro-cintura', 80, 'cm'), medicion('m-k', 'perimetro-cadera', 95, 'cm')])[0]!.falta, null);
 });
 
 test('primero los métodos que la toma cubre por completo; adentro por categoría y nombre; los no seleccionables quedan afuera', () => {

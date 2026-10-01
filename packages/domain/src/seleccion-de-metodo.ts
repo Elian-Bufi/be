@@ -15,6 +15,11 @@ export interface DatoDelMetodo {
   readonly unidades: readonly string[];
   /** La medición asignada (vigente, con valor y en una unidad admitida), o `null` si la toma no la tiene. */
   readonly medicion: { readonly id: string; readonly valor: number; readonly unidad: string } | null;
+  /**
+   * Si falta, por qué: la toma no la midió, la tiene en otra unidad (nunca se convierte en silencio, REG-06-154) o no tiene
+   * un valor vigente (anulada o con la cadena de correcciones sin resolver).
+   */
+  readonly falta: null | { readonly motivo: 'NO_ESTA' | 'SIN_VALOR_VIGENTE' } | { readonly motivo: 'OTRA_UNIDAD'; readonly unidad: string };
 }
 
 /** Qué pide el método y con qué medición de la toma se cubre cada dato, si la hay. */
@@ -23,13 +28,16 @@ export function datosDelMetodo(metodo: Pick<MetodoApi, 'requiredInputs'>, medici
     const candidata = mediciones.find(
       (m) => m.condition === 'EFFECTIVE' && m.metric === e.metric && m.effectiveMagnitude !== null && e.acceptedUnits.includes(m.effectiveMagnitude.unit),
     );
-    return {
-      codigo: e.inputCode,
-      metrica: e.metric,
-      unidades: e.acceptedUnits,
-      medicion: candidata && candidata.effectiveMagnitude ? { id: candidata.measurementId, valor: candidata.effectiveMagnitude.value, unidad: candidata.effectiveMagnitude.unit } : null,
-    };
+    const medicion = candidata && candidata.effectiveMagnitude ? { id: candidata.measurementId, valor: candidata.effectiveMagnitude.value, unidad: candidata.effectiveMagnitude.unit } : null;
+    return { codigo: e.inputCode, metrica: e.metric, unidades: e.acceptedUnits, medicion, falta: medicion ? null : porQueFalta(e, mediciones) };
   });
+}
+
+function porQueFalta(entrada: MetodoApi['requiredInputs'][number], mediciones: readonly Medicion[]): NonNullable<DatoDelMetodo['falta']> {
+  const vigentes = mediciones.filter((m) => m.metric === entrada.metric && m.condition === 'EFFECTIVE');
+  const enOtraUnidad = vigentes.find((m) => m.effectiveMagnitude !== null);
+  if (enOtraUnidad?.effectiveMagnitude) return { motivo: 'OTRA_UNIDAD', unidad: enOtraUnidad.effectiveMagnitude.unit };
+  return mediciones.some((m) => m.metric === entrada.metric) ? { motivo: 'SIN_VALOR_VIGENTE' } : { motivo: 'NO_ESTA' };
 }
 
 /** La asignación automática como la pide la API: dato → medición, solo los que la toma cubre. */
