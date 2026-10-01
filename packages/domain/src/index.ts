@@ -50,6 +50,7 @@ export * from './integraciones';
 export * from './copy-integraciones';
 export * from './figura-antropometrica';
 export * from './figura-de-lamina';
+export * from './lamina';
 export * from './contratos-plantillas';
 export * from './copy-plantillas';
 export * from './plantillas-de-plan';

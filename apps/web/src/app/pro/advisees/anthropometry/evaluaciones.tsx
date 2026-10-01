@@ -144,12 +144,19 @@ function Detalle({
   onHecho: (t: string) => void;
   onError: (t: string) => void;
 }) {
+  const { irA } = useAntropometria();
   return (
     <section className="seccion" aria-labelledby="titulo-detalle">
       <h2 id="titulo-detalle">
         <span className="insignia">{COPY_ANTROPOMETRIA.soloLectura}</span> Evaluación del {fecha(evaluacion.registeredAt ?? evaluacion.occurredAt)}
       </h2>
       {evaluacion.context ? <p>{evaluacion.context}</p> : null}
+      {/* DL-111 · la lámina del compositor con esta toma. */}
+      <div className="acciones">
+        <button type="button" className="boton boton--secundario" onClick={() => irA('lamina', evaluacion.evaluationId)}>
+          {COPY_ANTROPOMETRIA.verLamina}
+        </button>
+      </div>
       <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeClases}</p>
 
       {evaluacion.measurements.map((m) => (

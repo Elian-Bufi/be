@@ -9,6 +9,7 @@
  * - La vista activa vive en la URL (`vista=`).
  */
 import { COPY_ANTROPOMETRIA, COPY_VINCULO } from '@be/domain';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
@@ -21,10 +22,14 @@ import { VistaDeEvaluaciones } from './evaluaciones';
 import { VistaDeEvolucion } from './evolucion';
 import { VistaDePreparacion } from './preparacion';
 
+// La lámina (DL-111) se carga recién cuando se abre: la pestaña no paga su peso de entrada.
+const VistaDeLamina = dynamic(() => import('./lamina').then((m) => m.VistaDeLamina), { ssr: false, loading: () => <Cargando /> });
+
 export const VISTAS = [
   { clave: 'evaluaciones', texto: 'Evaluaciones' },
   { clave: 'preparacion', texto: 'En preparación' },
   { clave: 'evolucion', texto: COPY_ANTROPOMETRIA.evolucion },
+  { clave: 'lamina', texto: COPY_ANTROPOMETRIA.lamina },
 ] as const;
 export type Vista = (typeof VISTAS)[number]['clave'];
 
@@ -117,6 +122,7 @@ function Secciones({ ruta, id, vista }: { ruta: string; id: string; vista: Vista
       {vista === 'evaluaciones' ? <VistaDeEvaluaciones /> : null}
       {vista === 'preparacion' ? <VistaDePreparacion /> : null}
       {vista === 'evolucion' ? <VistaDeEvolucion /> : null}
+      {vista === 'lamina' ? <VistaDeLamina /> : null}
     </>
   );
 }
