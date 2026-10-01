@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SelectorDeApariencia } from './apariencia';
 import type { ReactNode } from 'react';
 import isotipo from '../marca/isotipo-96.png';
 
@@ -20,6 +21,7 @@ export function Encabezado({ navegacion }: { navegacion?: ReactNode }) {
         <span aria-hidden="true">BE</span>
       </Link>
       {navegacion}
+      <SelectorDeApariencia />
       <p className="encabezado__ambiente">Ambiente de prueba · solo datos sintéticos</p>
     </header>
   );

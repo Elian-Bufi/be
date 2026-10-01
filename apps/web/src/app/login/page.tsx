@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Iniciar sesión · BE' };
 /** Website `/login` (10-B02:198-246). */
 export default function Login() {
   return (
-    <div className="tema-oscuro">
+    <div className="cara-publica">
       <Encabezado />
       <main id="contenido" className="contenido acceso">
         <h1>Iniciar sesión</h1>

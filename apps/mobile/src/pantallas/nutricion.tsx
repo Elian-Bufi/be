@@ -29,14 +29,14 @@ import {
   type Resultado,
 } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento, EstadoDeCarga, VerMas } from '../estados';
 import { dia, fecha } from '../formato';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useListaPaginada } from '../lista';
 import { useAccesoRetirado, useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Boton, COLOR, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
+import { Aviso, Boton, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilosPorTema } from '../ui';
 
 type Hoy = HoyResponse['data'];
 type Comida = DiaTipo['meals'][number];
@@ -532,7 +532,7 @@ export function PantallaDeRegistroNutricional({ token, id, salir }: { token: str
   );
 }
 
-const s = StyleSheet.create({
+const s = estilosPorTema((COLOR) => ({
   opcion: { marginVertical: 6 },
   negrita: { fontWeight: '700', color: COLOR.texto, fontSize: 16 },
   item: { fontSize: 16, color: COLOR.texto, lineHeight: 23 },
@@ -541,4 +541,4 @@ const s = StyleSheet.create({
   radioMarcado: { borderColor: COLOR.acento, backgroundColor: COLOR.superficie },
   textoRadio: { fontSize: 16, color: COLOR.texto },
   fila: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, minHeight: 48, borderBottomWidth: 1, borderBottomColor: COLOR.borde, paddingVertical: 6 },
-});
+}));

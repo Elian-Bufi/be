@@ -241,6 +241,13 @@ it('TEST-CT (WP-03): se ejercitan éxitos y errores de REL, CON y DSH-03', async
   await dashboard(app, pt, a01.id).expect(404);
   await request(servidor).get(`/api/v1/advisees/${a01.id}/dashboard`).expect(401);
 
+  // DSH-04 (cartera del profesional, DL-107): éxito con y sin filtros; query inválida y cursor inválido; sin sesión.
+  await conSesion(app, pn.token).get('/api/v1/me/portfolio').expect(200);
+  await conSesion(app, pn.token).get('/api/v1/me/portfolio?periodStart=2026-09-01&periodEnd=2026-09-30&domain=nutrition&kind=REVIEW_OVERDUE&limit=5').expect(200);
+  await conSesion(app, pn.token).get('/api/v1/me/portfolio?periodStart=ayer').expect(400);
+  await conSesion(app, pn.token).get('/api/v1/me/portfolio?cursor=%3F%3F').expect(400);
+  await request(servidor).get('/api/v1/me/portfolio').expect(401);
+
   // REL-07 / REL-08 / REL-09
   const v = await versionDeVinculo(app, a01.token, vinculoId);
   await pausar(app, a01.token, vinculoId, 'v99').expect(409); // VERSION_CONFLICT

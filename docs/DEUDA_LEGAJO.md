@@ -111,7 +111,10 @@
 | DL-104 | PF-01/02 · 2026-09-28 | DL-101 · 09v16.1 §22.7/§22.8 · auditoría del PR #100 | Un valor fuera de rango en un formulario no le dice a la persona qué corregir | EN CURSO (opción A integrada y publicada en la APK 0.12.0; falta la validación de Dirección en el teléfono) |
 | DL-105 | PF-03 · 2026-09-28 | 04 RF-040/042/045 · 05 UC-P17 · ficha PF-03 (PF03-D-1) | La APK no muestra lo que el profesional planificó, y la web no lo compara con lo registrado | **DECIDIDA** 2026-09-28 · incremento 1 «Lo planificado, visible y comparable», con el contrato actual |
 | DL-106 | PF-03 · 2026-09-29 | 06 REG-06-131/132 · 09v10 TRN-15 a 20 · orden de Dirección del 2026-09-29 (comparación visual) | Una serie planificada que falta en un registro por serie no se puede declarar como no realizada | ABIERTA · la comparación la muestra como «sin dato» (provisorio, del lado que no inventa) |
-| DL-109 | PF-09 · 2026-09-30 | ficha «Plantillas del profesional» (mejora C «Mis habituales») · DL-108 · 06 REG-06-111 | Lo que el profesional repite de a pedazos (un ejercicio, un alimento, una sesión, una comida) se vuelve a buscar y a escribir en cada plan | **DECIDIDA** 2026-09-30 · «Mis habituales»: elementos y bloques; reguardar con el mismo nombre reemplaza, con aviso |
+| DL-107 | PF-07 · 2026-09-30 | REG-06-145/150 · B10-08 §8.4 · 10-B04:1171-1176 · ficha `docs/propuestas/PF-07_vista-de-cartera.md` | El profesional no tiene una vista de cartera: entra asesorado por asesorado sin saber a quién mirar hoy | **DECIDIDA** 2026-09-30 · API-DSH-04 «Pendientes», los siete tipos, ventana de 7 días, actividad solo como dato, orden fijo, arriba de «Tus asesorados» · implementada en #120 |
+| DL-108 | Plantillas · 2026-09-30 | DL-047 · RF-060 · INV-06-109 · ficha `docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md` | Todo plan empieza en blanco o desde el plan anterior de la misma persona: no hay reutilización entre asesorados | **DECIDIDA** 2026-09-30 (D-1, D-2, D-3, D-5) · implementada en #121 (entrenamiento y comidas) |
+| DL-109 | PF-09 · 2026-09-30 | ficha «Plantillas del profesional» (mejora C «Mis habituales») · DL-108 · 06 REG-06-111 | Lo que el profesional repite de a pedazos (un ejercicio, un alimento, una sesión, una comida) se vuelve a buscar y a escribir en cada plan | **DECIDIDA** 2026-09-30 · «Mis habituales»: elementos y bloques; reguardar con el mismo nombre reemplaza, con aviso · implementada en #122 |
+| DL-110 | Crítica de negocio · 2026-09-30 | REG-06-209 · UC-P32 · WP-07 D-D · T-06-33 · UC-P19 · DIR-10-MET-A · REG-06-151/157/162/168 | Formularios propios (mejora D) y protocolos propios de antropometría (mejora E) | **DECIDIDA** 2026-09-30 · D postergada (exclusión de P0 vigente); E: catálogo real de BE, sin protocolos ni fórmulas del profesional; contenido pendiente de Dirección |
 
 ---
 
@@ -2210,6 +2213,38 @@ Se conservan las instantáneas históricas, la navegación corregida (DL-096) y 
 
 **Recomendación del ejecutor.** A para la entrega. B, si Dirección la quiere, como un incremento propio de PF-03, con su diseño de compatibilidad.
 
+## DL-107 — El profesional no tiene una vista de cartera: no sabe a quién mirar hoy
+
+**Prioridad:** media · **Documento:** 06 REG-06-145/150 (próxima revisión y expectativa del Proceso) · B10-08 §8.4 (no listar lo oculto) · 10-B04:1171-1176 (vista parcial) · ficha `docs/propuestas/PF-07_vista-de-cartera.md` · **Estado:** **DECIDIDA** 2026-09-30
+
+**Qué pasa hoy.**
+- El espacio profesional lista los vínculos y las solicitudes; el dashboard existe por asesorado (API-DSH-03). Con veinte asesorados son veinte pantallas para saber quién tiene una revisión vencida o un plan sin activar.
+- La expectativa de revisión ya vive en el servidor (`proxima_revision` por Proceso); nadie la agrega.
+
+**Decisión (Elián, 2026-09-30, sobre la ficha PF-07).**
+- **D-1 alcance:** los siete tipos de pendiente en el incremento 1: revisión vencida, próxima y sin fecha; plan en borrador; sin plan activo; formulario sin responder; evaluación antropométrica en preparación.
+- **D-2 ventana:** «revisión próxima» = hasta 7 días, fijos.
+- **D-3 actividad:** «sin registros en el período» es un dato de la fila, nunca un pendiente ni un juicio («inactivo»).
+- **D-4 orden:** fijo por urgencia objetiva; filtros por dominio y tipo.
+- **D-5 (DEC-09):** el período del historial de la APK queda aparte; acá el período acota solo la actividad.
+- **Ubicación:** «Pendientes» arriba de «Tus asesorados» en el espacio profesional, sin navegación nueva.
+
+**Cómo se ejecuta.** API-DSH-04 `GET /me/portfolio` (rama `feat/cartera-profesional`): el PDP decide y registra por asesorado y alcance como en API-DSH-03; un alcance denegado no aparece y deja `partialView`. Sin tablas nuevas, sin APK.
+
+## DL-108 — Todo plan empieza en blanco: no hay reutilización entre asesorados
+
+**Prioridad:** media · **Documento:** DL-047 (nueva versión a partir de la efectiva) · RF-060 (procedencia del catálogo) · INV-06-109 · ficha `docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md` · **Estado:** **DECIDIDA** 2026-09-30 · pendiente de implementar
+
+**Qué pasa hoy.** `CrearPlanDeEntrenamientoRequest` y `CrearPlanRequest` solo admiten una estructura escrita o `basedOnPlanId` de la misma persona. El profesional copia a mano de una pestaña a otra.
+
+**Decisión (Elián, 2026-09-30, sobre la ficha TPL).**
+- **D-1 propiedad:** las plantillas son solo del profesional que las creó; si deja BE quedan inactivas y los planes aplicados conservan su instantánea.
+- **D-2 qué se copia:** la estructura; nada cuantitativo de la persona por defecto (sin cargas sugeridas ni cantidades), con un interruptor apagado que las trae como «referencia de la plantilla» hasta que el profesional las confirme.
+- **D-3 notas:** al guardar, cada nota de texto libre se muestra y se confirma o se vacía una por una.
+- **D-5 objetivo:** siempre de la persona; la plantilla no lo trae.
+- Sin decidir todavía: D-4 (baja del profesional, recomendada (a)), D-6 (catálogo importado, recomendada (a)), D-7 (nombre canónico del paquete).
+
+**Cómo se ejecuta.** Según la ficha, §i: PR-1 dominio + API + Prisma (entrenamiento), PR-2 website, PR-3 nutrición; sin APK.
 
 ## DL-109 — «Mis habituales»: los elementos y bloques que el profesional repite
 
@@ -2226,3 +2261,24 @@ Se conservan las instantáneas históricas, la navegación corregida (DL-096) y 
 - **Estados como enums** (`EstadoDeHabitual`: ACTIVO, QUITADO): quitar no borra la fila; volver a marcar, o guardar con ese nombre, la reactiva y reemplaza. La historia queda en los eventos de dominio.
 
 **Qué queda afuera.** Habituales compartidos entre profesionales; bloques de más de un nivel (un bloque entero de entrenamiento, un día tipo); la APK (el profesional trabaja en el website).
+
+## DL-110 — Formularios propios y protocolos propios: qué se hace y qué no
+
+**Prioridad:** media · **Documento:** crítica de negocio del 2026-09-30 (mejoras D y E) · 06 REG-06-209 · 05 UC-P32 · WP-07 D-D y §8 · 06 T-06-33 · 05 UC-P19 · 10 DIR-10-MET-A · 06 REG-06-151/157/162/168 · **Estado:** DECIDIDA 2026-09-30
+
+**Qué pasa hoy.**
+- Las plantillas de formulario son un catálogo de BE sembrado por migración, con tres tipos de campo. El legajo excluye en P0 que el profesional arme las suyas («P0 no modela un builder libre arbitrario», REG-06-209), y WP-07 registra el editor como descartado por Dirección.
+- Los protocolos de medición y los métodos de cálculo son un catálogo sintético (PROTO-LAB, PROTO-CUERPO, MET-DEMO). El legajo deja el protocolo concreto al criterio profesional (T-06-33) pero exige métodos preestablecidos por BE (DIR-10-MET-A).
+- La toma acepta hoy como protocolo cualquier versión de especificación, incluso la de un método o una versión reemplazada, y no controla las mediciones ni las unidades declaradas.
+
+**Decisiones de Dirección (2026-09-30).**
+- **Mejora D (formularios propios): postergada.** La exclusión de P0 sigue vigente. Si se retoma, una pregunta propia del profesional no puede ser de salud: solo hábitos, preferencias, disponibilidad y logística, hasta que exista la matriz de pertinencia por acta (DL-083, DEC-06).
+- **Mejora E: el catálogo antropométrico lo define BE.** Dirección carga el contenido real (primeros pedidos: protocolos de 9 y 7 componentes, índice cintura-altura e IMC; más adelante bioimpedancia, al menos para comparar, aunque los datos lleguen por archivo). El profesional elige entre lo cargado; no arma protocolos ni fórmulas propias. «Mi protocolo» se reevalúa cuando el catálogo real esté cargado y en uso.
+- **Carga:** Dirección pasa cada protocolo y cada fórmula con su fuente y casos de prueba; el ejecutor los siembra por migración, versionados y con procedencia, y programa cada fórmula con pruebas contra la fuente. Planilla: `docs/propuestas/CATALOGO-ANTROPOMETRICO_planilla-de-carga.md`.
+- **Comparabilidad:** se mantiene la regla actual (cada versión de protocolo es su propio grupo). Comparar por medición exige cambiar la respuesta de la evolución y una APK nueva.
+- **Validación de la toma:** se cierra junto con la carga del catálogo (al crear, solo un protocolo vigente del catálogo; al corregir, el que ya tenía).
+
+**Qué queda afuera.** Protocolos y fórmulas del profesional; métodos con varios componentes por ejecución y repeticiones por medición, hasta que el contenido los pida; importación de bioimpedancia por archivo.
+
+**Pendiente de Dirección.** El contenido de cada protocolo y método, según la planilla.
+

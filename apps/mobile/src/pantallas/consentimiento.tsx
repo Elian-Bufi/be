@@ -20,14 +20,14 @@ import {
   type Resultado,
 } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
 import { fecha } from '../formato';
 import { falloDe, useClaveDeIntento, type Fallo } from '../intento';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { TextoDesplegable } from '../texto-versionado';
-import { Aviso, Boton, COLOR, Dato, Parrafo, Subtitulo, Titulo, estilos as ui } from '../ui';
+import { Aviso, Boton, Dato, Parrafo, Subtitulo, Titulo, estilos as ui, estilosPorTema } from '../ui';
 
 interface Datos {
   readonly req: RequisitosDeConsentimientoResponse['data'];
@@ -201,7 +201,7 @@ export function PantallaDeConsentimiento({
   );
 }
 
-const estilos = StyleSheet.create({
+const estilos = estilosPorTema((COLOR) => ({
   resumen: { fontSize: 17, color: COLOR.texto, lineHeight: 24, marginTop: 4 },
   destacado: { fontSize: 19, fontWeight: '700', color: COLOR.texto, marginBottom: 8 },
-});
+}));

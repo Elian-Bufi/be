@@ -51,3 +51,7 @@ export * from './plantillas-de-plan';
 export * from './contratos-habituales';
 export * from './copy-habituales';
 export * from './habituales';
+export * from './cartera';
+export * from './contratos-cartera';
+export * from './fechas-civiles';
+export * from './evolucion-antropometrica';
