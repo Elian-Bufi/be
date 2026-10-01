@@ -9,7 +9,7 @@
  *
  * Lo medido, lo informado y lo calculado se muestran distinguidos siempre (04:1090).
  */
-import { cantidad, COPY, COPY_ANTROPOMETRIA, COPY_EVOLUCION, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, leerNumero, motivoDeNumeroIlegible, type EvaluacionAntropometricaApi, type Medicion } from '@be/domain';
+import { cantidad, COPY, COPY_ANTROPOMETRIA, COPY_EVOLUCION, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, leerNumero, motivoDeNumeroIlegible, nombreDeMetrica, type EvaluacionAntropometricaApi, type Medicion } from '@be/domain';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
@@ -221,7 +221,7 @@ function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; on
         REG-06-154 exige conservar. Si la cadena no se puede resolver, no se inventa un titular.
       */}
       <h4>
-        {medicion.metric}: {cantidad((medicion.effectiveMagnitude ?? medicion.magnitude).value, (medicion.effectiveMagnitude ?? medicion.magnitude).unit)}{' '}
+        {nombreDeMetrica(medicion.metric)}: {cantidad((medicion.effectiveMagnitude ?? medicion.magnitude).value, (medicion.effectiveMagnitude ?? medicion.magnitude).unit)}{' '}
         <span className="insignia">{ETIQUETA_DE_CLASE_DE_DATO[medicion.dataClass]}</span>{' '}
         <span className="insignia">{ETIQUETA_DE_CONDICION[medicion.condition]}</span>
         {medicion.corrections.length > 0 ? (
