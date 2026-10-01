@@ -25545,6 +25545,41 @@
                           "provenanceNote": {
                             "type": "string"
                           },
+                          "description": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "source": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "population": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "category": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "INDICES",
+                                  "SUMAS_DE_PLIEGUES",
+                                  "GRASA_CORPORAL",
+                                  "MASAS",
+                                  "SOMATOTIPO"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "supersededByVersionId": {
                             "anyOf": [
                               {
@@ -25575,6 +25610,10 @@
                           "precisionPolicy",
                           "ruleId",
                           "provenanceNote",
+                          "description",
+                          "source",
+                          "population",
+                          "category",
                           "supersededByVersionId",
                           "effectiveSince"
                         ],
@@ -25839,6 +25878,41 @@
                         "provenanceNote": {
                           "type": "string"
                         },
+                        "description": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "source": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "population": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "category": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "INDICES",
+                                "SUMAS_DE_PLIEGUES",
+                                "GRASA_CORPORAL",
+                                "MASAS",
+                                "SOMATOTIPO"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "supersededByVersionId": {
                           "anyOf": [
                             {
@@ -25869,6 +25943,10 @@
                         "precisionPolicy",
                         "ruleId",
                         "provenanceNote",
+                        "description",
+                        "source",
+                        "population",
+                        "category",
                         "supersededByVersionId",
                         "effectiveSince"
                       ],

@@ -48,12 +48,11 @@ export function ultimaToma(datos: EvolucionResponse['data']): UltimaToma | null 
   const filas: MedidaDeLaToma[] = [];
   for (const serie of series) {
     // Las observaciones vienen ordenadas en el tiempo: la última de esta evaluación es la vigente.
-    const actual = serie.observaciones.filter((o) => o.punto.sourceEvaluationId === evaluacionId).at(-1);
+    const deLaToma = serie.observaciones.filter((o) => o.punto.sourceEvaluationId === evaluacionId);
+    const actual = deLaToma[deLaToma.length - 1];
     if (!actual) continue;
-    const anterior =
-      observacionesDelGrupo(serie, actual.punto.comparabilityGroup)
-        .filter((o) => o.instante < actual.instante && o.punto.sourceEvaluationId !== evaluacionId)
-        .at(-1) ?? null;
+    const previas = observacionesDelGrupo(serie, actual.punto.comparabilityGroup).filter((o) => o.instante < actual.instante && o.punto.sourceEvaluationId !== evaluacionId);
+    const anterior = previas[previas.length - 1] ?? null;
     filas.push({ metrica: serie.metricCode, nombre: nombreDeMetrica(serie.metricCode), actual, anterior, diferencia: anterior ? diferenciaDescriptiva(anterior, actual) : null });
   }
 
