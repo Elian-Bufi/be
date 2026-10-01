@@ -29,7 +29,7 @@ const DOMINIOS = [
   },
   {
     nombre: 'antropometría',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry')), join(RAIZ, 'apps/mobile/src/pantallas/antropometria.tsx')],
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry')), join(RAIZ, 'apps/mobile/src/pantallas/antropometria.tsx'), join(RAIZ, 'apps/mobile/src/pantallas/figura-de-la-toma.tsx')],
     prohibidos: terminosProhibidosDeAntropometriaEn,
     minimo: 5,
   },

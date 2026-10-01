@@ -1638,3 +1638,25 @@ details summary {
     margin-bottom: 0.4rem;
   }
 }
+
+/* DL-111 · la ficha del método al elegirlo: qué es, qué da, qué pide (y si esta toma lo tiene) y de qué fuente sale. */
+.ficha-de-metodo {
+  background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin: 0.25rem 0 1rem;
+}
+
+.ficha-de-metodo p {
+  margin: 0.25rem 0;
+}
+
+.ficha-de-metodo__datos {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.2rem;
+}
+
+.ficha-de-metodo__datos li {
+  margin: 0.15rem 0;
+}

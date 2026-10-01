@@ -146,6 +146,32 @@ export const COPY_ANTROPOMETRIA = {
   },
   explicacionDeComparabilidad: 'Dos mediciones se comparan solo si comparten protocolo, método y unidad. Cuando no, se muestran igual, señaladas.',
   catalogoSintetico: 'Catálogo BE con protocolos y métodos sintéticos de demostración.',
+
+  // ─── Última toma y resultados de las fórmulas (APK y lámina; DL-111) ─────────────────────────
+  tuUltimaToma: 'Tu última toma',
+  ultimaToma: 'Última toma',
+  tomaDel: 'Toma del',
+  comparadaCon: 'Comparada con la toma anterior del',
+  antes: 'Antes',
+  diferencia: 'Diferencia',
+  sinAnteriorComparable: 'Sin una toma anterior comparable en el período',
+  explicacionDeDiferencia:
+    'La diferencia es una resta entre dos tomas comparables: mismo protocolo, método y unidad. Dice cuánto cambió cada medida, sin calificar el cambio.',
+  resultadosDeLasFormulas: 'Resultados de las fórmulas',
+  explicacionDeResultados:
+    'Los calcula tu profesional a partir de las mediciones de la toma, con el método que elige. Cada resultado dice con qué método salió: dos métodos distintos no se comparan entre sí.',
+  metodoDelResultado: 'Método',
+  metodoSinNombre: 'Un método de cálculo elegido por tu profesional',
+  evolucionPorMedida: 'Evolución por medida',
+  verEvolucion: 'Ver evolución',
+  ocultarEvolucion: 'Ocultar evolución',
+  figura: 'Figura',
+  figuraHombre: 'Hombre',
+  figuraMujer: 'Mujer',
+  explicacionDeFigura: 'La figura ubica dónde se tomó cada medida. Elegí la que prefieras ver: no cambia ningún dato.',
+  perimetrosEnLaFigura: 'Perímetros',
+  plieguesEnLaFigura: 'Pliegues',
+  otrasMedidas: 'Otras medidas de la toma',
 } as const;
 
 export const ETIQUETA_DE_CLASE_DE_DATO = {
