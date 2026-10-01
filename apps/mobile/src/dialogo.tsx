@@ -5,9 +5,9 @@
  */
 import { COPY, COPY_VINCULO, ETIQUETA_DE_MOTIVO, type Resultado } from '@be/domain';
 import { useRef, useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { falloDe, useClaveDeIntento, type Fallo } from './intento';
-import { Aviso, Boton, COLOR, VELO, estilos as ui } from './ui';
+import { Aviso, Boton, estilos as ui, estilosPorTema } from './ui';
 
 export function DialogoDeConfirmacion({
   visible,
@@ -175,8 +175,8 @@ export function useAccionConfirmada({
   };
 }
 
-const estilos = StyleSheet.create({
-  fondo: { flex: 1, backgroundColor: VELO },
+const estilos = estilosPorTema((COLOR) => ({
+  fondo: { flex: 1, backgroundColor: COLOR.velo },
   centrado: { flexGrow: 1, justifyContent: 'center', padding: 16 },
   dialogo: { backgroundColor: COLOR.superficie, borderRadius: 12, padding: 20, borderWidth: 1, borderColor: COLOR.borde },
   grupo: { marginVertical: 8 },
@@ -205,4 +205,4 @@ const estilos = StyleSheet.create({
   },
   punto: { width: 12, height: 12, borderRadius: 6, backgroundColor: COLOR.acento },
   textoDeOpcion: { flex: 1, fontSize: 16, color: COLOR.texto },
-});
+}));

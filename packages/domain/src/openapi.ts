@@ -201,7 +201,7 @@ const DETALLE_DE_NUMEROS_FUERA_DE_LIMITES: NonNullable<Operacion['detalleDe422']
   codigo: 'FORM_RESPONSE_INVALID',
   schema: DetalleDeRespuestaFueraDeLimitesSchema,
   descripcion:
-    'cuando el rechazo es por números fuera de los límites de la plantilla, details.issues trae un issue por campo (FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM o FORM_ANSWER_ABOVE_MAXIMUM) con fieldCode y los límites del campo (DL-104). Los otros rechazos de este código no traen details.',
+    'cuando el rechazo es por números fuera de los límites de la plantilla o por textos más largos que el tope, details.issues trae un issue por campo: FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM o FORM_ANSWER_ABOVE_MAXIMUM con fieldCode y los límites del campo (DL-104), o FORM_ANSWER_TOO_LONG con fieldCode y maxLength (WP-07 §9.3). Los otros rechazos de este código no traen details.',
 };
 
 const LIMIT: ParametroDeQuery = { nombre: 'limit', descripcion: 'Tamaño de página (1 a 50; 20 por defecto).', schema: { type: 'integer', minimum: 1, maximum: 50 } };

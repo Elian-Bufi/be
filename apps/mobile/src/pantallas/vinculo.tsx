@@ -26,14 +26,14 @@ import {
   type Resultado,
 } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { api } from '../api';
 import { DialogoDeConfirmacion, SelectorDeMotivo, useAccionConfirmada } from '../dialogo';
 import { Cargando, ErrorConReintento } from '../estados';
 import { fecha } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { AvisoDeAccesoRevocado, RevocarConsentimiento } from '../revocacion';
-import { Aviso, Boton, COLOR, Dato, Insignia, Parrafo, Seccion, Titulo, estilos as ui } from '../ui';
+import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Titulo, estilos as ui, estilosPorTema } from '../ui';
 
 type Detalle = DetalleDeVinculoResponse['data'];
 type Carga = { readonly tipo: 'cargando' } | { readonly tipo: 'no-revelable' } | { readonly tipo: 'error'; readonly sinConexion: boolean } | { readonly tipo: 'listo'; readonly v: Detalle };
@@ -328,6 +328,6 @@ function Finalizar({ v, token, sesionPerdida, alTerminar, alRecargar }: PropsDeA
   );
 }
 
-const estilos = StyleSheet.create({
+const estilos = estilosPorTema((COLOR) => ({
   entrada: { borderLeftWidth: 3, borderLeftColor: COLOR.borde, paddingLeft: 10, marginVertical: 6 },
-});
+}));

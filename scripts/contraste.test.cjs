@@ -55,13 +55,14 @@ function temasWeb() {
   return { claro, oscuro };
 }
 
-function temaApk() {
+/** Los dos temas de la APK (`AZUL_NOCHE` y `CLARO` en tema.ts): solo los valores hexadecimales; el velo no es texto. */
+function temaApk(nombre) {
   const ts = readFileSync(TEMA_APK, 'utf8');
-  const inicio = ts.indexOf('export const COLOR = {');
-  assert.ok(inicio >= 0, 'tema.ts no exporta COLOR');
-  const cuerpo = ts.slice(inicio, ts.indexOf('}', inicio));
+  const inicio = ts.search(new RegExp(`export const ${nombre}(: \\w+)? = \\{`));
+  assert.ok(inicio >= 0, `tema.ts no exporta ${nombre}`);
+  const cuerpo = ts.slice(inicio, ts.indexOf('};', inicio));
   const tokens = {};
-  for (const [, nombre, valor] of cuerpo.matchAll(/(\w+):\s*'(#[0-9a-f]{6})'/gi)) tokens[nombre] = valor.toLowerCase();
+  for (const [, clave, valor] of cuerpo.matchAll(/(\w+):\s*'(#[0-9a-f]{6})'/gi)) tokens[clave] = valor.toLowerCase();
   return tokens;
 }
 
@@ -197,8 +198,16 @@ test('website · el texto de la cara pública se lee en todo el degradé', () =>
   assert.deepEqual(fallas, []);
 });
 
-test('APK · tema oscuro', () => {
-  verificar(temaApk(), PARES_APK, 'APK');
+test('APK · Azul noche', () => {
+  verificar(temaApk('AZUL_NOCHE'), PARES_APK, 'APK Azul noche');
+});
+
+test('APK · Claro', () => {
+  verificar(temaApk('CLARO'), PARES_APK, 'APK Claro');
+});
+
+test('APK · los dos temas declaran los mismos colores', () => {
+  assert.deepEqual(Object.keys(temaApk('CLARO')).sort(), Object.keys(temaApk('AZUL_NOCHE')).sort());
 });
 
 /** Todo color literal en estilos vive en los tokens: si no, la prueba no lo ve. */
