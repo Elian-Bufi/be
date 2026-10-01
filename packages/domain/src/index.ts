@@ -48,3 +48,4 @@ export * from './figura-antropometrica';
 export * from './cartera';
 export * from './contratos-cartera';
 export * from './fechas-civiles';
+export * from './evolucion-antropometrica';

@@ -1,36 +1,42 @@
 'use client';
 
 /**
- * «Evolución» (B10-07; API-ANT-06; RF-049). Es la pantalla donde el legajo es más exigente, y por eso acá no hay
- * ningún gráfico de línea continua:
+ * «Evolución» (B10-07; API-ANT-06; RF-049): el período, la métrica y, por métrica, el gráfico de puntos con su detalle y
+ * su tabla (`grafico-de-evolucion.tsx`). Es la pantalla donde el legajo es más exigente:
  * - un tramo sin medición vigente llega como **hueco**, con su rango y su cantidad de días, y no se completa con cero
  *   ni se une con el punto anterior (REG-06-165/166; INV-06-176/177);
- * - un tramo no comparable se señala con su motivo —otro protocolo, otro método u otra unidad— en vez de
- *   convertirse en silencio (REG-06-162/163/164);
+ * - un tramo no comparable se señala con su motivo —otro protocolo, otro método u otra unidad— en vez de convertirse en
+ *   silencio (REG-06-162/163/164), y cada grupo tiene su propio eje;
  * - cada punto conserva su clase —medido, reportado o calculado— y dice si su valor vigente viene de una corrección
  *   (INV-06-178; REG-06-16).
- *
- * La tabla es deliberada: es la forma honesta de mostrar una serie con huecos. Un gráfico de líneas tendría que
- * inventar el tramo que falta, y eso es justo lo que INV-06-177 prohíbe.
  *
  * Si el asesorado tiene evaluaciones de otro profesional en el período, la respuesta llega con `partialView` y la
  * pantalla lo dice: la serie está bien construida con lo que este profesional puede ver, y no es toda la historia
  * (09v11:786-796).
+ *
+ * La métrica elegida vive fuera del estado de lectura: al cambiar el período, si sigue en la respuesta se conserva; si
+ * no, se pasa a la primera y se dice (`metricaVigente`). Los gráficos se cargan recién cuando hay una métrica.
  */
-import { cantidad, COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, numero, type EvolucionResponse, type SerieApi } from '@be/domain';
+import { COPY_ANTROPOMETRIA, COPY_EVOLUCION, metricaVigente, type EvolucionResponse } from '@be/domain';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useState } from 'react';
+import { Cargando } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
-import { dia, fecha } from '../../../../lib/formato';
+import { diaCivil } from '../../../../lib/formato';
 import { FiltroDePeriodo, type Periodo } from '../periodo';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 
 type Datos = EvolucionResponse['data'];
 
+// Recharts se carga solo cuando hay algo que graficar: la pestaña no paga su peso de entrada.
+const EvolucionDeMetrica = dynamic(() => import('./grafico-de-evolucion').then((m) => m.EvolucionDeMetrica), { ssr: false, loading: () => <Cargando /> });
+
 export function VistaDeEvolucion() {
-  const { token, asesoradoId, sesionPerdida } = useAntropometria();
+  const { token, asesoradoId, sesionPerdida, irA } = useAntropometria();
   const [periodo, setPeriodo] = useState<Periodo>({});
   const [r, setR] = useState<Resultado<{ data: Datos }> | null>(null);
+  const [metricaPedida, setMetricaPedida] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setR(null);
@@ -48,106 +54,52 @@ export function VistaDeEvolucion() {
       <section className="seccion" aria-labelledby="titulo-periodo">
         <h2 id="titulo-periodo">{COPY_ANTROPOMETRIA.periodo}</h2>
         {/*
-          El período se elige, con la misma validación previa que los otros dos dominios (B10-06 §41, §43-§44;
-          DL-091 punto 2), y vive fuera del estado de lectura: si el período no se puede leer, el formulario sigue ahí
-          para corregirlo en vez de quedar atrapado en «Reintentar» (B10-10:376).
+          El período se elige con la misma validación previa que los otros dos dominios (B10-06 §41, §43-§44; DL-091
+          punto 2), y vive fuera del estado de lectura: si el período no se puede leer, el formulario sigue ahí para
+          corregirlo en vez de quedar atrapado en «Reintentar» (B10-10:376).
         */}
         <FiltroDePeriodo id="ant-evolucion-periodo" onAplicar={setPeriodo} />
         <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeSinDato}</p>
       </section>
       <EstadoDeLectura r={r} onReintentar={cargar}>
-        {r?.ok ? <Evolucion datos={r.datos.data} /> : null}
+        {r?.ok ? <Evolucion datos={r.datos.data} metricaPedida={metricaPedida} onMetrica={setMetricaPedida} onAbrirEvaluacion={(evaluationId) => irA('evaluaciones', evaluationId)} /> : null}
       </EstadoDeLectura>
     </div>
   );
 }
 
-function Evolucion({ datos }: { datos: Datos }) {
+function Evolucion({ datos, metricaPedida, onMetrica, onAbrirEvaluacion }: { datos: Datos; metricaPedida: string | null; onMetrica: (m: string) => void; onAbrirEvaluacion: (evaluationId: string) => void }) {
+  const metrica = metricaVigente(datos.metrics, metricaPedida);
+  const serie = datos.metrics.find((m) => m.metricCode === metrica) ?? null;
+  const cambio = metricaPedida !== null && metrica !== metricaPedida;
   return (
     <div className="secciones">
       <section className="seccion">
         <p className="nota">
-          Período: {dia(`${datos.period.start}T12:00:00Z`)} a {dia(`${datos.period.end}T12:00:00Z`)}
+          Período: {diaCivil(datos.period.start)} a {diaCivil(datos.period.end)}
         </p>
         {datos.partialView ? (
           <Aviso tipo="info">
             <p>{COPY_ANTROPOMETRIA.vistaParcial}</p>
           </Aviso>
         ) : null}
-      </section>
-
-      {datos.metrics.length === 0 ? (
-        <section className="seccion">
+        {datos.metrics.length === 0 ? (
           <p>{COPY_ANTROPOMETRIA.sinMediciones}</p>
-        </section>
-      ) : null}
-
-      {datos.metrics.map((serie) => (
-        <SerieDeLaMetrica key={serie.metricCode} serie={serie} />
-      ))}
+        ) : (
+          <div className="campo grafico__controles">
+            <label htmlFor="ant-evolucion-metrica">{COPY_EVOLUCION.metrica}</label>
+            <select id="ant-evolucion-metrica" value={metrica ?? ''} onChange={(e) => onMetrica(e.target.value)}>
+              {datos.metrics.map((m) => (
+                <option key={m.metricCode} value={m.metricCode}>
+                  {m.metricCode} ({m.series.length})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {cambio ? <p className="nota">{COPY_EVOLUCION.metricaCambio}</p> : null}
+      </section>
+      {serie ? <EvolucionDeMetrica key={`${serie.metricCode}|${datos.period.start}|${datos.period.end}`} serie={serie} zonaHoraria={datos.period.timeZone} periodo={datos.period} onAbrirEvaluacion={onAbrirEvaluacion} /> : null}
     </div>
-  );
-}
-
-function SerieDeLaMetrica({ serie }: { serie: SerieApi }) {
-  const diasSinDato = serie.gaps.reduce((n, g) => n + g.days, 0);
-  /** Puntos y huecos, ordenados por fecha. Los huecos ya vienen agrupados en rangos desde la API. */
-  const filas = [
-    ...serie.series.map((punto) => ({ orden: punto.occurredAt.slice(0, 10), tipo: 'punto' as const, punto })),
-    ...serie.gaps.map((hueco) => ({ orden: hueco.from, tipo: 'hueco' as const, hueco })),
-  ].sort((a, b) => a.orden.localeCompare(b.orden));
-
-  return (
-    <section className="seccion" aria-labelledby={`titulo-${serie.metricCode}`}>
-      <h2 id={`titulo-${serie.metricCode}`}>{serie.metricCode}</h2>
-      {serie.series.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinMediciones}</p> : null}
-      <table className="tabla">
-        <caption className="nota">
-          {numero(serie.series.length)} con dato · {numero(diasSinDato)} {COPY_ANTROPOMETRIA.sinDato.toLowerCase()}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Fecha</th>
-            <th scope="col">{COPY_ANTROPOMETRIA.valor}</th>
-            <th scope="col">Cómo se obtuvo</th>
-            <th scope="col">Comparabilidad</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filas.map((f) =>
-            f.tipo === 'hueco' ? (
-              <tr key={`hueco-${f.hueco.from}`}>
-                <th scope="row">{f.hueco.days === 1 ? dia(`${f.hueco.from}T12:00:00Z`) : `${dia(`${f.hueco.from}T12:00:00Z`)} — ${dia(`${f.hueco.to}T12:00:00Z`)}`}</th>
-                <td>
-                  <span className="insignia">{f.hueco.days === 1 ? COPY_ANTROPOMETRIA.sinDato : `${numero(f.hueco.days)} días ${COPY_ANTROPOMETRIA.sinDato.toLowerCase()}`}</span>
-                </td>
-                <td>—</td>
-                <td>—</td>
-              </tr>
-            ) : (
-              <tr key={f.punto.sourceId}>
-                <th scope="row">{fecha(f.punto.occurredAt)}</th>
-                <td>
-                  {cantidad(f.punto.value, f.punto.unit)}
-                  {f.punto.correctionState === 'CORRECTED' ? (
-                    <>
-                      {' '}
-                      <span className="insignia">{COPY_ANTROPOMETRIA.corregida}</span>
-                    </>
-                  ) : null}
-                </td>
-                <td>{ETIQUETA_DE_CLASE_DE_DATO[f.punto.dataClass]}</td>
-                <td>
-                  {f.punto.incomparableWithPrevious.length === 0
-                    ? COPY_ANTROPOMETRIA.comparableConElAnterior
-                    : `${COPY_ANTROPOMETRIA.noComparable}: ${f.punto.incomparableWithPrevious.map((m) => COPY_ANTROPOMETRIA.motivoNoComparable[m]).join(', ')}`}
-                </td>
-              </tr>
-            ),
-          )}
-        </tbody>
-      </table>
-      <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeComparabilidad}</p>
-    </section>
   );
 }

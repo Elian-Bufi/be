@@ -666,12 +666,19 @@ test('diferencia: sin dos valores comparables no hay diferencia', () => {
 
 test('TEST-PRJ-009 · el copy de la comparación no puntúa ni juzga', () => {
   const textos = [
-    ...Object.values(COPY_COMPARACION),
+    ...Object.values(COPY_COMPARACION).map((v) => (typeof v === 'function' ? v(3, 'series') : v)),
+    COPY_COMPARACION.fueraDeLaVista(1, 'series'),
+    COPY_COMPARACION.fueraDeLaVista(1, 'sesiones'),
+    COPY_COMPARACION.fueraDeLaVista(2, 'sesiones'),
     ...['serie-no-registrada', 'ejercicio-no-registrado', 'registro-resumido', 'vista-no-resoluble', 'otro-ejercicio', 'campo-no-registrado'].map((motivo) =>
       textoRegistrado({ tipo: 'sin-dato', motivo } as never, REPS),
     ),
   ];
   assert.deepEqual(textos.flatMap((t) => terminosProhibidosDeEntrenamientoEn(t).map((p) => `${p} en «${t}»`)), []);
+  // El singular de cada tipo es una palabra real: «1 serie», «1 sesión»; nunca «1 sesione».
+  assert.match(COPY_COMPARACION.fueraDeLaVista(1, 'series'), /^1 serie queda /);
+  assert.match(COPY_COMPARACION.fueraDeLaVista(1, 'sesiones'), /^1 sesión queda /);
+  assert.match(COPY_COMPARACION.fueraDeLaVista(36, 'sesiones'), /^36 sesiones quedan /);
 });
 
 function valores(filas: ReturnType<typeof seriesParaGraficar>) {

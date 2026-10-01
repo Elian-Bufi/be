@@ -149,6 +149,26 @@ describe('DL-104 · responder (API-FRM-07)', () => {
   });
 });
 
+describe('WP-07 §9.3 · texto de respuesta acotado', () => {
+  it('2001 caracteres: 422 con el issue del campo y el tope, junto con los números fuera de límites; 2000 (con tildes y emoji) se registra', async () => {
+    const e = await escenario();
+    const s = conSesion(app, e.ase.token);
+    const largo = respuestas(9, 45);
+    largo.answers[0] = { fieldCode: 'trn_objetivo_declarado', value: 'á'.repeat(2001) };
+    const r = await s.post(e.responder).send(largo).expect(422);
+    expect(issuesDe(r.body)).toEqual([
+      { code: 'FORM_ANSWER_TOO_LONG', path: 'answers[0].value', fieldCode: 'trn_objetivo_declarado', maxLength: 2000 },
+      { code: 'FORM_ANSWER_ABOVE_MAXIMUM', path: 'answers[2].value', fieldCode: 'trn_dias_por_semana', limits: DIAS },
+    ]);
+    // El detalle no repite lo que la persona escribió.
+    expect(JSON.stringify(r.body.error.details)).not.toContain('ááá');
+    await sinRespuesta(e);
+    const justo = respuestas(3, 45);
+    justo.answers[0] = { fieldCode: 'trn_objetivo_declarado', value: `${'á'.repeat(1998)}💪.` };
+    await s.post(e.responder).send(justo).expect(201);
+  });
+});
+
 describe('DL-104 · rectificar (API-FRM-08)', () => {
   it('8 días al rectificar: 422 con el issue del campo; la respuesta sigue en v1; con 4 se registra la v2', async () => {
     const e = await escenario();

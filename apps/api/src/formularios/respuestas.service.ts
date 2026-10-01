@@ -1,14 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import {
   CODIGO_DE_NUMERO_FUERA_DE_LIMITES,
+  CODIGO_DE_TEXTO_DEMASIADO_LARGO,
   CodigoDeError,
   EnviarRespuestaRequestSchema,
   evaluarNuevaCorreccion,
+  LARGO_MAXIMO_DE_TEXTO_DE_RESPUESTA,
+  largoDeTexto,
   limiteVulnerado,
   RectificarRespuestaRequestSchema,
   resolverVistaEfectiva,
   type Alcance,
   type LimitesNumericos,
+  type ProblemaDeRespuesta,
   type RelacionDeCorreccion,
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
@@ -200,17 +204,21 @@ export class RespuestasService {
       }
     }
     // DL-101: un NUMBER con límites declarados (p. ej. días por semana de 1 a 7, entero) no acepta valores fuera.
-    // DL-104: se informan todos los campos fuera de límites a la vez, cada uno con su issue (campo y límites), para
-    // que la persona sepa qué corregir y qué valores admite. El valor enviado no se repite.
-    const fueraDeLimites = answers.flatMap((a, i) => {
-      if (campos.get(a.fieldCode)?.dataType !== 'NUMBER') return [];
+    // WP-07 §9.3: un TEXT tiene longitud acotada. DL-104: se informan todos los campos a la vez, cada uno con su issue
+    // (campo y límites o tope), para que la persona sepa qué corregir. El valor enviado no se repite.
+    const fueraDeLimites = answers.flatMap((a, i): ProblemaDeRespuesta[] => {
+      const tipo = campos.get(a.fieldCode)?.dataType;
+      if (tipo === 'TEXT' && largoDeTexto(a.value as string) > LARGO_MAXIMO_DE_TEXTO_DE_RESPUESTA) {
+        return [{ code: CODIGO_DE_TEXTO_DEMASIADO_LARGO, path: `answers[${i}].value`, fieldCode: a.fieldCode, maxLength: LARGO_MAXIMO_DE_TEXTO_DE_RESPUESTA }];
+      }
+      if (tipo !== 'NUMBER') return [];
       const limites = limitesDeCampo(contenido, a.fieldCode);
       const vulnerado = limiteVulnerado(a.value as number, limites);
       if (!limites || !vulnerado) return [];
       return [{ code: CODIGO_DE_NUMERO_FUERA_DE_LIMITES[vulnerado], path: `answers[${i}].value`, fieldCode: a.fieldCode, limits: limitesPublicables(limites) }];
     });
     if (fueraDeLimites.length > 0) {
-      throw new ErrorDeApi(422, CodigoDeError.FORM_RESPONSE_INVALID, 'Hay respuestas numéricas fuera de lo que admite la plantilla.', { issues: fueraDeLimites });
+      throw new ErrorDeApi(422, CodigoDeError.FORM_RESPONSE_INVALID, 'Hay respuestas fuera de lo que admite la plantilla.', { issues: fueraDeLimites });
     }
   }
 
