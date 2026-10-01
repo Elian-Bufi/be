@@ -33,6 +33,7 @@ export * from './copy-entrenamiento';
 export * from './presentacion-de-prescripcion';
 export * from './comparacion-de-entrenamiento';
 export * from './calculo';
+export * from './formulas-antropometricas';
 export * from './contratos-calculo';
 export * from './seleccion-de-metodo';
 export * from './nombres-de-metricas';

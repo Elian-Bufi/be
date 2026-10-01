@@ -932,3 +932,26 @@ function leerJson(texto: string): unknown {
     return null;
   }
 }
+
+/**
+ * Junta todas las páginas de una lista por cursor (09:188-189), para las pantallas que necesitan la lista completa: los
+ * métodos del catálogo (desde DL-111 son más que una página) y las corridas de un asesorado (API-CAL-02 no filtra por
+ * evaluación). Pide de a `limite` (el máximo de la API es 50) y se detiene en `maximoDePaginas` para que una lista sin fin
+ * no cuelgue la pantalla: si quedó algo afuera, `completa` es falso y la pantalla lo puede decir. Un error en cualquier
+ * página es el resultado: no se muestra media lista como si fuera entera.
+ */
+export async function todasLasPaginas<T>(
+  pedir: (filtro: { cursor?: string; limit: string }) => Promise<Resultado<{ readonly data: readonly T[]; readonly page: { readonly nextCursor: string | null; readonly hasMore: boolean } }>>,
+  { limite = 50, maximoDePaginas = 20 }: { limite?: number; maximoDePaginas?: number } = {},
+): Promise<Resultado<{ data: T[]; completa: boolean }>> {
+  const data: T[] = [];
+  let cursor: string | undefined;
+  for (let pagina = 0; pagina < maximoDePaginas; pagina++) {
+    const r = await pedir({ ...(cursor ? { cursor } : {}), limit: String(limite) });
+    if (!r.ok) return r;
+    data.push(...r.datos.data);
+    if (!r.datos.page.hasMore || !r.datos.page.nextCursor) return { ok: true, datos: { data, completa: true } };
+    cursor = r.datos.page.nextCursor;
+  }
+  return { ok: true, datos: { data, completa: false } };
+}

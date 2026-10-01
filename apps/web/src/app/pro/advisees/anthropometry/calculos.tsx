@@ -14,7 +14,7 @@
  * - cada corrida muestra **método, versión, regla y precisión declarada**, que es lo que la vuelve reproducible
  *   (REG-06-156/158).
  */
-import { asignacionAutomatica, cantidad, COPY_ANTROPOMETRIA, datosDelMetodo, metodosParaLaToma, nombreDeMetrica, numeroConPrecision, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
+import { asignacionAutomatica, cantidad, todasLasPaginas, COPY_ANTROPOMETRIA, datosDelMetodo, metodosParaLaToma, nombreDeMetrica, numeroConPrecision, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
@@ -32,7 +32,12 @@ export function BloqueDeCalculos({ evaluacion, onAviso }: { evaluacion: Evaluaci
 
   const cargar = useCallback(async () => {
     setEstado({ tipo: 'cargando' });
-    const [metodos, corridas] = await Promise.all([api.listarMetodos(token), api.listarCalculos(token, asesoradoId)]);
+    // Las dos listas van completas: desde DL-111 el catálogo tiene más métodos que una página, y API-CAL-02 no filtra
+    // por evaluación, así que una corrida de esta toma puede estar en cualquier página.
+    const [metodos, corridas] = await Promise.all([
+      todasLasPaginas((f) => api.listarMetodos(token, f)),
+      todasLasPaginas((f) => api.listarCalculos(token, asesoradoId, f)),
+    ]);
     if (sesionPerdida(metodos) || sesionPerdida(corridas)) return;
     if (!metodos.ok || !corridas.ok) return setEstado({ tipo: 'error' });
     setEstado({
