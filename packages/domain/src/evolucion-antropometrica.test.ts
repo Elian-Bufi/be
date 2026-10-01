@@ -237,6 +237,8 @@ test('dos grupos que solo se distinguen por la versión del método o del protoc
   ];
   assert.equal(nombreDelGrupo(largos[0]!, largos), 'PROTO-LAB · calculado con método · % (método a1b2c3d4…)');
   assert.equal(metodoEnPalabras('a1b2c3d4-0000-4000-8000-000000000001'), 'Calculado con el método declarado en la evaluación (referencia a1b2c3d4-0000-4000-8000-000000000001)');
+  // DL-111: un método del catálogo de BE se nombra.
+  assert.equal(metodoEnPalabras('3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f01'), 'Calculado con el método «Índice de masa corporal (IMC)»');
   // Mismo nombre de protocolo, otra versión: también se distingue, en el nombre del grupo y en el detalle.
   const versiones: SerieApi['comparability']['groups'] = [
     { comparabilityGroup: 'cmp-1', protocolVersionId: 'proto-1', protocolName: 'PROTO-LAB', methodVersionId: null, unit: 'kg' },

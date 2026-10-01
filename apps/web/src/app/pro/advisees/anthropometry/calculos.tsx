@@ -14,7 +14,7 @@
  * - cada corrida muestra **método, versión, regla y precisión declarada**, que es lo que la vuelve reproducible
  *   (REG-06-156/158).
  */
-import { asignacionAutomatica, cantidad, todasLasPaginas, COPY_ANTROPOMETRIA, datosDelMetodo, metodosParaLaToma, nombreDeMetrica, numeroConPrecision, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
+import { asignacionAutomatica, cantidad, todasLasPaginas, UNIDAD_ADIMENSIONAL, COPY_ANTROPOMETRIA, datosDelMetodo, metodosParaLaToma, nombreDeMetrica, numeroConPrecision, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
@@ -128,7 +128,8 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
     <div className="nodo nodo--comida">
       <h4>
         {/* Con la precisión que declara el método, aunque termine en cero (REG-06-158: sin redondeo silencioso). */}
-        {corrida.result.metric}: {numeroConPrecision(corrida.result.magnitude.value, corrida.precision.decimals)} {corrida.result.magnitude.unit}{' '}
+        {nombreDeMetrica(corrida.result.metric)}: {numeroConPrecision(corrida.result.magnitude.value, corrida.precision.decimals)}
+        {corrida.result.magnitude.unit === UNIDAD_ADIMENSIONAL ? '' : ` ${corrida.result.magnitude.unit}`}{' '}
         <span className="insignia">{ETIQUETA_DE_CLASE_DE_DATO.DERIVED}</span>
         {corrida.evaluationContext === 'IN_PREPARATION' ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoEnPreparacion}</span></> : null}
         {!corrida.effective ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoNoVigente}</span></> : null}
@@ -145,7 +146,7 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
         <ul>
           {corrida.inputProvenance.map((i) => (
             <li key={i.sourceRef}>
-              {i.inputCode} · {i.metric}: {i.magnitude ? cantidad(i.magnitude.value, i.magnitude.unit) : COPY_ANTROPOMETRIA.valorNoConsultable} ·{' '}
+              {nombreDeMetrica(i.metric)}: {i.magnitude ? cantidad(i.magnitude.value, i.magnitude.unit) : COPY_ANTROPOMETRIA.valorNoConsultable} ·{' '}
               {ETIQUETA_DE_CLASE_DE_DATO[i.provenanceType === 'SELF_REPORTED' ? 'REPORTED' : 'MEASURED']} · {ETIQUETA_DE_CONDICION[i.condition]} · {fecha(i.sourceOccurredAt)}
             </li>
           ))}

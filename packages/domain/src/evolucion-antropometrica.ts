@@ -15,6 +15,7 @@ import type { EvolucionResponse, PuntoDeSerieApi, SerieApi } from './contratos-a
 import { COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO } from './copy-antropometria';
 import { diaSiguiente, diasEntreFechas, fechaCivil, inicioDelDia } from './fechas-civiles';
 import { cantidad, numero } from './formato-numeros';
+import { nombreDeMetodo } from './nombres-de-metricas';
 
 export type MetricaDeEvolucion = EvolucionResponse['data']['metrics'][number];
 export type GrupoDeComparabilidad = MetricaDeEvolucion['comparability']['groups'][number];
@@ -159,7 +160,7 @@ const referenciaCorta = (id: string): string => (id.length > 10 ? `${id.slice(0,
  * versión tal como la publica el contrato (recortada si es larga; entera si el recorte no alcanza para distinguirlos).
  */
 export function nombreDelGrupo(g: GrupoDeComparabilidad, todos: readonly GrupoDeComparabilidad[] = [g]): string {
-  const base = `${g.protocolName}${g.methodVersionId ? ` · ${COPY_ANTROPOMETRIA.calculado.toLowerCase()} con método` : ''} · ${g.unit}`;
+  const base = nombreBase(g);
   const homonimos = todos.filter((o) => o.comparabilityGroup !== g.comparabilityGroup && nombreBase(o) === base);
   if (homonimos.length === 0) return base;
   const partes: string[] = [];
@@ -168,7 +169,10 @@ export function nombreDelGrupo(g: GrupoDeComparabilidad, todos: readonly GrupoDe
   return partes.length === 0 ? base : `${base} (${partes.join(', ')})`;
 }
 
-const nombreBase = (g: GrupoDeComparabilidad): string => `${g.protocolName}${g.methodVersionId ? ` · ${COPY_ANTROPOMETRIA.calculado.toLowerCase()} con método` : ''} · ${g.unit}`;
+/** El método del grupo: su nombre si es del catálogo de BE (DL-111); si no, se dice que es calculado, sin inventarle un nombre. */
+const metodoDelGrupo = (g: GrupoDeComparabilidad): string | null =>
+  g.methodVersionId ? (nombreDeMetodo(g.methodVersionId) ?? `${COPY_ANTROPOMETRIA.calculado.toLowerCase()} con método`) : null;
+const nombreBase = (g: GrupoDeComparabilidad): string => `${g.protocolName}${metodoDelGrupo(g) ? ` · ${metodoDelGrupo(g)}` : ''} · ${g.unit}`;
 
 /** La referencia corta si no coincide con la de ningún otro; si coincide, el identificador entero. */
 function referencia(id: string, otros: readonly string[]): string {
@@ -182,8 +186,14 @@ export function protocoloEnPalabras(g: GrupoDeComparabilidad, todos: readonly Gr
   return otraVersion ? `${g.protocolName} (versión ${referencia(g.protocolVersionId, todos.map((o) => o.protocolVersionId))})` : g.protocolName;
 }
 
-/** El método de una observación calculada: la referencia declarada por el contrato, sin inventarle un nombre. */
-export const metodoEnPalabras = (methodVersionId: string): string => `${COPY_ANTROPOMETRIA.calculado} con el método declarado en la evaluación (referencia ${methodVersionId})`;
+/**
+ * El método de una observación calculada: su nombre si es del catálogo de BE (DL-111); si no, la referencia declarada por el
+ * contrato, sin inventarle un nombre.
+ */
+export const metodoEnPalabras = (methodVersionId: string): string => {
+  const nombre = nombreDeMetodo(methodVersionId);
+  return nombre ? `${COPY_ANTROPOMETRIA.calculado} con el método «${nombre}»` : `${COPY_ANTROPOMETRIA.calculado} con el método declarado en la evaluación (referencia ${methodVersionId})`;
+};
 
 /** Lo que dice la observación en una línea: valor, clase y si viene de una corrección. */
 export function resumenDeObservacion(o: Observacion): string {

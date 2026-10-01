@@ -17,7 +17,7 @@
  * La métrica elegida vive fuera del estado de lectura: al cambiar el período, si sigue en la respuesta se conserva; si
  * no, se pasa a la primera y se dice (`metricaVigente`). Los gráficos se cargan recién cuando hay una métrica.
  */
-import { COPY_ANTROPOMETRIA, COPY_EVOLUCION, metricaVigente, type EvolucionResponse } from '@be/domain';
+import { compararPorCatalogo, COPY_ANTROPOMETRIA, COPY_EVOLUCION, metricaVigente, nombreDeMetrica, type EvolucionResponse } from '@be/domain';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useState } from 'react';
 import { Cargando } from '../../../../components/estados';
@@ -89,11 +89,13 @@ function Evolucion({ datos, metricaPedida, onMetrica, onAbrirEvaluacion }: { dat
           <div className="campo grafico__controles">
             <label htmlFor="ant-evolucion-metrica">{COPY_EVOLUCION.metrica}</label>
             <select id="ant-evolucion-metrica" value={metrica ?? ''} onChange={(e) => onMetrica(e.target.value)}>
-              {datos.metrics.map((m) => (
-                <option key={m.metricCode} value={m.metricCode}>
-                  {m.metricCode} ({m.series.length})
-                </option>
-              ))}
+              {[...datos.metrics]
+                .sort((a, b) => compararPorCatalogo(a.metricCode, b.metricCode))
+                .map((m) => (
+                  <option key={m.metricCode} value={m.metricCode}>
+                    {nombreDeMetrica(m.metricCode)} ({m.series.length})
+                  </option>
+                ))}
             </select>
           </div>
         )}
