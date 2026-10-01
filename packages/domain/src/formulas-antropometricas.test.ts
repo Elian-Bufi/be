@@ -67,9 +67,9 @@ const falla = (id: string, valores: ValoresDeEntrada, contiene: string) => {
   assert.match((r as { error: string }).error, new RegExp(contiene));
 };
 
-test('las 40 reglas del catálogo de BE están registradas en el cálculo', () => {
+test('las 44 reglas del catálogo de BE están registradas en el cálculo', () => {
   for (const id of Object.keys(REGLAS_ANTROPOMETRICAS)) assert.ok(REGLAS_CONOCIDAS.includes(id), id);
-  assert.equal(Object.keys(REGLAS_ANTROPOMETRICAS).length, 40);
+  assert.equal(Object.keys(REGLAS_ANTROPOMETRICAS).length, 44);
 });
 
 test('índices (MA-01 a MA-04): IMC, cintura/cadera, cintura/talla y conicidad', () => {
@@ -135,6 +135,17 @@ test('masas (MA-39 a MA-42, MA-50 a MA-53): Lee, Rocha, Würch, Faulkner y cuatr
   // Masa grasa y libre de grasa de Faulkner: el peso por el porcentaje (MA-31), sin redondear en el medio.
   da('be/masa-grasa-faulkner@1', 1, [['H1', 8.5], ['H2', 14.2], ['H3', 18.6]]);
   da('be/masa-libre-de-grasa-faulkner@1', 1, [['H1', 63.5], ['H2', 73.8], ['H3', 73.4]]);
+});
+
+test('DL-112 · masa grasa y masa libre de grasa de Durnin y Womersley (Siri), con los porcentajes de MA-27 y MA-29', () => {
+  // H1: 72 kg × 14,217491 % = 10,2366 kg de grasa y 61,7634 kg libres de grasa; H3: 92 × 33,55198 % = 30,8678.
+  da('be/masa-grasa-durnin-womersley-hombres@1', 1, [['H1', 10.2], ['H3', 30.9]]);
+  da('be/masa-libre-de-grasa-durnin-womersley-hombres@1', 1, [['H1', 61.8], ['H3', 61.1]]);
+  // M2: 64 kg × 30,831271 % = 19,7320 kg de grasa y 44,2680 kg libres de grasa.
+  da('be/masa-grasa-durnin-womersley-mujeres@1', 1, [['M2', 19.7]]);
+  da('be/masa-libre-de-grasa-durnin-womersley-mujeres@1', 1, [['M2', 44.3]]);
+  // Sin coeficientes para la edad, tampoco hay masa: el error de la densidad sigue de largo.
+  falla('be/masa-grasa-durnin-womersley-hombres@1', persona('H1', { edad: 16 }), 'no tiene coeficientes');
 });
 
 test('Lee, modelo con perímetros (MA-39 y MA-40): los perímetros se corrigen con π y el pliegue en cm', () => {

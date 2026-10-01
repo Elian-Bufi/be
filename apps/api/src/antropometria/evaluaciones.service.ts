@@ -398,7 +398,7 @@ export class EvaluacionesAntropometricasService {
       const version = esUuid(methodVersionId)
         ? await tx.versionDeEspecificacionAntropometrica.findFirst({
             where: { id: methodVersionId, especificacion: { tipo: 'METODO' } },
-            include: { sucesora: { select: { id: true } } },
+            include: { sucesora: { select: { id: true } }, especificacion: { select: { retiro: { select: { id: true } } } } },
           })
         : null;
       const metodo = version ? leerEspecificacionDeMetodo(version.contenido) : null;
@@ -409,6 +409,9 @@ export class EvaluacionesAntropometricasService {
       }
       if (version.sucesora) {
         throw new ErrorDeApi(422, CodigoDeError.METHOD_VERSION_NOT_SELECTABLE, 'Esa versión del método es histórica. Para ejecutar, elegí la versión vigente.');
+      }
+      if (version.especificacion.retiro) {
+        throw new ErrorDeApi(422, CodigoDeError.METHOD_VERSION_NOT_SELECTABLE, 'Ese método fue retirado del catálogo. Lo que ya se calculó con él sigue en la historia.');
       }
       const propuestos: DatoPropuesto[] = metodo.entradas.flatMap((entrada) => {
         const m = mediciones.find((x) => x.metrica === entrada.metrica);

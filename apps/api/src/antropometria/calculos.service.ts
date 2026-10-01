@@ -79,7 +79,7 @@ export class CalculosService {
         const version = esUuid(pedido.methodVersionId)
           ? await tx.versionDeEspecificacionAntropometrica.findFirst({
               where: { id: pedido.methodVersionId, especificacion: { tipo: 'METODO' } },
-              include: { especificacion: true, sucesora: { select: { id: true } } },
+              include: { especificacion: { include: { retiro: { select: { id: true } } } }, sucesora: { select: { id: true } } },
             })
           : null;
         const metodo = version ? leerEspecificacionDeMetodo(version.contenido) : null;
@@ -89,6 +89,10 @@ export class CalculosService {
         // REG-06-203: una versión histórica se puede consultar, no seleccionar para una corrida nueva.
         if (version.sucesora) {
           throw new ErrorDeApi(422, CodigoDeError.METHOD_VERSION_NOT_SELECTABLE, 'Esa versión del método es histórica. Para ejecutar, elegí la versión vigente.');
+        }
+        // DL-112: un método retirado se sigue consultando, pero no se usa para una corrida nueva.
+        if (version.especificacion.retiro) {
+          throw new ErrorDeApi(422, CodigoDeError.METHOD_VERSION_NOT_SELECTABLE, 'Ese método fue retirado del catálogo. Lo que ya se calculó con él sigue en la historia.');
         }
         const finalidad = FINALIDAD_DESDE_API[pedido.purpose];
         if (!admiteFinalidad(metodo, finalidad)) {

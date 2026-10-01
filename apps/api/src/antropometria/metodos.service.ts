@@ -35,8 +35,9 @@ export class MetodosService {
       lectura: async (tx: Prisma.TransactionClient) => {
         await exigirCapacidadAntropometrica(tx, actor.identidadId);
         const filas = await tx.versionDeEspecificacionAntropometrica.findMany({
-          where: { sucesora: null, especificacion: { tipo: 'METODO' }, ...despuesDelCursor(consulta.cursor) },
-          include: { especificacion: true, sucesora: { select: { id: true } } },
+          // DL-112: un método retirado del catálogo no se ofrece; sus corridas siguen explicables (API-MTH-02).
+          where: { sucesora: null, especificacion: { tipo: 'METODO', retiro: { is: null } }, ...despuesDelCursor(consulta.cursor) },
+          include: { especificacion: { include: { retiro: { select: { id: true } } } }, sucesora: { select: { id: true } } },
           orderBy: ORDEN_DE_LISTA,
           take: consulta.limit + 1,
         });
@@ -72,7 +73,7 @@ export class MetodosService {
           esUuid(methodId) && esUuid(versionId)
             ? await tx.versionDeEspecificacionAntropometrica.findFirst({
                 where: { id: versionId, especificacionId: methodId, especificacion: { tipo: 'METODO' } },
-                include: { especificacion: true, sucesora: { select: { id: true } } },
+                include: { especificacion: { include: { retiro: { select: { id: true } } } }, sucesora: { select: { id: true } } },
               })
             : null;
         const especificacion = v ? leerEspecificacionDeMetodo(v.contenido) : null;
