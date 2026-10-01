@@ -13,6 +13,7 @@
  */
 import type { EvolucionResponse, PuntoDeSerieApi, SerieApi } from './contratos-antropometria';
 import { COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO } from './copy-antropometria';
+import { diaSiguiente, diasEntreFechas, fechaCivil, inicioDelDia } from './fechas-civiles';
 import { cantidad, numero } from './formato-numeros';
 
 export type MetricaDeEvolucion = EvolucionResponse['data']['metrics'][number];
@@ -44,52 +45,9 @@ export interface SeriePreparada {
 
 const porMomento = (a: PuntoDeSerieApi, b: PuntoDeSerieApi): number => a.occurredAt.localeCompare(b.occurredAt) || a.recordedAt.localeCompare(b.recordedAt) || a.sourceId.localeCompare(b.sourceId);
 
-/**
- * La fecha civil del momento en la zona del período. `Intl` da la fecha local sin depender de la zona del navegador:
- * es la misma regla con la que la API arma los huecos (por día local del asesorado).
- */
-export function fechaCivil(instante: string, zonaHoraria: string): string {
-  try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: zonaHoraria, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(instante));
-  } catch {
-    return instante.slice(0, 10);
-  }
-}
-
-const DIA = 86_400_000;
-
-/** Desfase (ms) entre la hora civil de la zona y UTC en ese instante; 0 si la zona no se reconoce. */
-function desfaseDeZona(instante: number, zonaHoraria: string): number {
-  try {
-    const partes = new Intl.DateTimeFormat('en-US', { timeZone: zonaHoraria, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(instante));
-    const n = (tipo: Intl.DateTimeFormatPartTypes): number => Number(partes.find((p) => p.type === tipo)?.value ?? 0);
-    const civil = Date.UTC(n('year'), n('month') - 1, n('day'), n('hour') % 24, n('minute'), n('second'));
-    return civil - Math.floor(instante / 1000) * 1000;
-  } catch {
-    return 0;
-  }
-}
-
-/**
- * El instante (ms) en que empieza una fecha civil en la zona del período. No usa la zona del navegador: un profesional
- * que mira desde otra zona ve el período recortado igual que la API lo recortó.
- */
-export function inicioDelDia(fechaCivilAaaaMmDd: string, zonaHoraria: string): number {
-  const [a, m, d] = fechaCivilAaaaMmDd.split('-').map(Number);
-  const supuesto = Date.UTC(a ?? 1970, (m ?? 1) - 1, d ?? 1);
-  const primero = supuesto - desfaseDeZona(supuesto, zonaHoraria);
-  // Si el desfase cambia en ese mismo día (cambio de horario), se corrige una vez más.
-  return supuesto - desfaseDeZona(primero, zonaHoraria);
-}
-
-/** La fecha civil siguiente (`AAAA-MM-DD`), sin zona: es aritmética de calendario. */
-export function diaSiguiente(fechaCivilAaaaMmDd: string): string {
-  const [a, m, d] = fechaCivilAaaaMmDd.split('-').map(Number);
-  return new Date(Date.UTC(a ?? 1970, (m ?? 1) - 1, d ?? 1) + DIA).toISOString().slice(0, 10);
-}
-
-/** Días de calendario entre dos fechas civiles (`b − a`); negativo si `b` es anterior. */
-export const diasEntreFechas = (a: string, b: string): number => Math.round((inicioDelDia(b, 'UTC') - inicioDelDia(a, 'UTC')) / DIA);
+// Las fechas civiles viven en `fechas-civiles.ts`, compartidas con la cartera: una sola fuente. Se vuelven a exportar
+// acá con los mismos nombres, para quien ya las importaba desde la evolución.
+export { diaSiguiente, diasEntreFechas, fechaCivil, inicioDelDia };
 
 /**
  * Los límites del eje temporal para el período pedido, en la zona del período: desde el inicio del primer día hasta el

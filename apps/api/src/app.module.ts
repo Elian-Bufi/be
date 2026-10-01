@@ -5,6 +5,7 @@ import { ENTORNO, VERSION } from './config/tokens';
 import type { VersionDesplegada } from './config/version';
 import { AutorizacionModule } from './autorizacion/autorizacion.module';
 import { ConsentimientoModule } from './consentimiento/consentimiento.module';
+import { CarteraModule } from './cartera/cartera.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { DIRECTORIO_MIGRACIONES } from './health/health.service';
 import { HealthModule } from './health/health.module';
@@ -67,6 +68,7 @@ export class AppModule {
         VinculoModule,
         ConsentimientoModule,
         DashboardModule,
+        CarteraModule,
         ProcesoModule,
         NutricionModule,
         AntropometriaModule,
