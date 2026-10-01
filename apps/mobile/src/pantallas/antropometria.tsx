@@ -24,6 +24,7 @@
  */
 import {
   cantidad,
+  compararPorCatalogo,
   COPY_ANTROPOMETRIA,
   ETIQUETA_DE_CLASE_DE_DATO,
   ETIQUETA_DE_FAMILIA,
@@ -95,7 +96,7 @@ function Evolucion({ datos }: { datos: Datos }) {
         <Seccion titulo={COPY_ANTROPOMETRIA.evolucionPorMedida}>
           <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeSinDato}</Parrafo>
           {[...conDatos]
-            .sort((a, b) => nombreDeMetrica(a.metricCode).localeCompare(nombreDeMetrica(b.metricCode), 'es'))
+            .sort((a, b) => compararPorCatalogo(a.metricCode, b.metricCode))
             .map((serie) => (
               <SerieDeLaMetrica key={serie.metricCode} serie={serie} />
             ))}
@@ -203,17 +204,30 @@ function SerieDeLaMetrica({ serie }: { serie: SerieApi }) {
         </View>
         <Text style={estilos.accion}>{abierta ? COPY_ANTROPOMETRIA.ocultarEvolucion : COPY_ANTROPOMETRIA.verEvolucion}</Text>
       </Pressable>
-      {abierta ? tramos.map((t) => (t.tipo === 'punto' ? <PuntoDeLaSerie key={t.punto.sourceId} punto={t.punto} /> : <HuecoDeLaSerie key={`hueco-${t.hueco.from}`} hueco={t.hueco} />)) : null}
+      {abierta
+        ? tramos.map((t) =>
+            t.tipo === 'punto' ? (
+              <PuntoDeLaSerie key={t.punto.sourceId} punto={t.punto} metodo={nombreDeMetodo(serie.comparability.groups.find((g) => g.comparabilityGroup === t.punto.comparabilityGroup)?.methodVersionId ?? null)} />
+            ) : (
+              <HuecoDeLaSerie key={`hueco-${t.hueco.from}`} hueco={t.hueco} />
+            ),
+          )
+        : null}
     </View>
   );
 }
 
-/** Un día con medición vigente. */
-function PuntoDeLaSerie({ punto }: { punto: SerieApi['series'][number] }) {
+/** Un día con medición vigente; si es un resultado de fórmula, con el método que lo dio. */
+function PuntoDeLaSerie({ punto, metodo }: { punto: SerieApi['series'][number]; metodo: string | null }) {
   return (
     <Tarjeta>
       <Subtitulo>{fecha(punto.occurredAt)}</Subtitulo>
       <Parrafo>{cantidad(punto.value, punto.unit)}</Parrafo>
+      {punto.dataClass === 'DERIVED' ? (
+        <Parrafo tenue>
+          {COPY_ANTROPOMETRIA.metodoDelResultado}: {metodo ?? COPY_ANTROPOMETRIA.metodoSinNombre}
+        </Parrafo>
+      ) : null}
       <Insignia texto={ETIQUETA_DE_CLASE_DE_DATO[punto.dataClass]} etiqueta={`${COPY_ANTROPOMETRIA.origenDelDato}: ${ETIQUETA_DE_CLASE_DE_DATO[punto.dataClass]}`} />
       {punto.correctionState === 'CORRECTED' ? <Insignia texto={COPY_ANTROPOMETRIA.corregida} etiqueta={COPY_ANTROPOMETRIA.corregida} /> : null}
       {punto.incomparableWithPrevious.length > 0 ? (

@@ -32,10 +32,11 @@ export interface UltimaToma {
   readonly derivadas: readonly MedidaDeLaToma[];
 }
 
-/** El orden del catálogo de BE; lo que BE no conoce va al final, por nombre. */
+/** El orden del catálogo de BE: primero las mediciones, después los resultados; lo que BE no conoce va al final, por nombre. */
 const ORDEN = new Map(Object.keys(NOMBRE_DE_METRICA).map((clave, i) => [clave, i]));
-const porCatalogo = (a: MedidaDeLaToma, b: MedidaDeLaToma): number =>
-  (ORDEN.get(a.metrica) ?? Number.MAX_SAFE_INTEGER) - (ORDEN.get(b.metrica) ?? Number.MAX_SAFE_INTEGER) || a.nombre.localeCompare(b.nombre, 'es');
+export const compararPorCatalogo = (a: string, b: string): number =>
+  (ORDEN.get(a) ?? Number.MAX_SAFE_INTEGER) - (ORDEN.get(b) ?? Number.MAX_SAFE_INTEGER) || nombreDeMetrica(a).localeCompare(nombreDeMetrica(b), 'es');
+const porCatalogo = (a: MedidaDeLaToma, b: MedidaDeLaToma): number => compararPorCatalogo(a.metrica, b.metrica);
 
 /** La última toma del período, con cada valor junto al anterior comparable; `null` si el período no tiene ninguna. */
 export function ultimaToma(datos: EvolucionResponse['data']): UltimaToma | null {
