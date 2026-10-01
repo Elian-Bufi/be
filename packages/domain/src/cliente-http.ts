@@ -75,6 +75,20 @@ import {
   type NuevaVersionDePlantillaNutricionalRequest,
 } from './contratos-plantillas';
 import {
+  ComidaHabitualResponseSchema,
+  ListaDeAlimentosHabitualesResponseSchema,
+  ListaDeComidasHabitualesResponseSchema,
+  ListaDeEjerciciosHabitualesResponseSchema,
+  ListaDeSesionesHabitualesResponseSchema,
+  MarcaDeAlimentoResponseSchema,
+  MarcaDeEjercicioResponseSchema,
+  SesionHabitualResponseSchema,
+  type EditarHabitualRequest,
+  type GuardarComidaHabitualRequest,
+  type GuardarSesionHabitualRequest,
+  type MarcarHabitualRequest,
+} from './contratos-habituales';
+import {
   ActivacionDePlanResponseSchema,
   AplicarRevisionResponseSchema,
   ContextoDeRevisionResponseSchema,
@@ -454,6 +468,48 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-DSH-04 (PF-07, propuesta): los pendientes de toda la cartera del profesional. */
     consultarCartera(token: string, filtro: FiltroDeCartera = {}): Promise<Resultado<CarteraResponse>> {
       return llamar('GET', `/me/portfolio${query(filtro as Readonly<Record<string, string | undefined>>)}`, { token, esquema: CarteraResponseSchema });
+    },
+
+    // ─── PF-09 bis · «Mis habituales» (DL-109) ────────────────────────────────────────────────
+    /** API-HAB-01. */
+    listarEjerciciosHabituales(token: string) {
+      return llamar('GET', '/training/favorite-exercises', { token, esquema: ListaDeEjerciciosHabitualesResponseSchema });
+    },
+    /** API-HAB-02: marcar o quitar, la misma operación. */
+    marcarEjercicioHabitual(token: string, exerciseId: string, cuerpo: MarcarHabitualRequest) {
+      return llamar('PATCH', `/training/favorite-exercises/${encodeURIComponent(exerciseId)}`, { token, cuerpo, esquema: MarcaDeEjercicioResponseSchema });
+    },
+    /** API-HAB-03. */
+    listarSesionesHabituales(token: string, filtro: { cursor?: string } = {}) {
+      return llamar('GET', `/training/session-presets${query(filtro)}`, { token, esquema: ListaDeSesionesHabitualesResponseSchema });
+    },
+    /** API-HAB-04. */
+    guardarSesionHabitual(token: string, cuerpo: GuardarSesionHabitualRequest, clave: string) {
+      return llamar('POST', '/training/session-presets', { token, cuerpo, claveDeIdempotencia: clave, esquema: SesionHabitualResponseSchema });
+    },
+    /** API-HAB-05: renombrar o quitar. */
+    editarSesionHabitual(token: string, presetId: string, cuerpo: EditarHabitualRequest) {
+      return llamar('PATCH', `/training/session-presets/${encodeURIComponent(presetId)}`, { token, cuerpo, esquema: SesionHabitualResponseSchema });
+    },
+    /** API-HAN-01. */
+    listarAlimentosHabituales(token: string) {
+      return llamar('GET', '/nutrition/favorite-items', { token, esquema: ListaDeAlimentosHabitualesResponseSchema });
+    },
+    /** API-HAN-02: marcar o quitar, la misma operación. */
+    marcarAlimentoHabitual(token: string, catalogItemId: string, cuerpo: MarcarHabitualRequest) {
+      return llamar('PATCH', `/nutrition/favorite-items/${encodeURIComponent(catalogItemId)}`, { token, cuerpo, esquema: MarcaDeAlimentoResponseSchema });
+    },
+    /** API-HAN-03. */
+    listarComidasHabituales(token: string, filtro: { cursor?: string } = {}) {
+      return llamar('GET', `/nutrition/meal-presets${query(filtro)}`, { token, esquema: ListaDeComidasHabitualesResponseSchema });
+    },
+    /** API-HAN-04. */
+    guardarComidaHabitual(token: string, cuerpo: GuardarComidaHabitualRequest, clave: string) {
+      return llamar('POST', '/nutrition/meal-presets', { token, cuerpo, claveDeIdempotencia: clave, esquema: ComidaHabitualResponseSchema });
+    },
+    /** API-HAN-05: renombrar o quitar. */
+    editarComidaHabitual(token: string, presetId: string, cuerpo: EditarHabitualRequest) {
+      return llamar('PATCH', `/nutrition/meal-presets/${encodeURIComponent(presetId)}`, { token, cuerpo, esquema: ComidaHabitualResponseSchema });
     },
 
     // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 ────────────────────────────────────────────

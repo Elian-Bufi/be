@@ -162,6 +162,10 @@ model Identidad {
   versionesDePlantillaAutor                  VersionDePlantillaDePlanDeEntrenamiento[] @relation("VersionDePlantillaPorAutor")
   plantillasDePlanNutricional                PlantillaDePlanNutricional[]           @relation("PlantillaNutricionalDelProfesional")
   versionesDePlantillaNutricionalAutor       VersionDePlantillaDePlanNutricional[]  @relation("VersionDePlantillaNutricionalPorAutor")
+  ejerciciosHabituales                       EjercicioHabitual[]                    @relation("EjercicioHabitualDelProfesional")
+  sesionesHabituales                         SesionHabitual[]                       @relation("SesionHabitualDelProfesional")
+  alimentosHabituales                        AlimentoHabitual[]                     @relation("AlimentoHabitualDelProfesional")
+  comidasHabituales                          ComidaHabitual[]                       @relation("ComidaHabitualDelProfesional")
   evaluacionesDeEntrenamientoComoProfesional EvaluacionDeEntrenamiento[]            @relation("EvaluacionDeEntrenamientoDelProfesional")
   evaluacionesDeEntrenamientoComoAsesorado   EvaluacionDeEntrenamiento[]            @relation("EvaluacionDeEntrenamientoDelAsesorado")
   objetivosDeEntrenamientoComoProfesional    ObjetivoDeEntrenamiento[]              @relation("ObjetivoDeEntrenamientoDelProfesional")
@@ -1048,6 +1052,10 @@ enum TipoDeEventoDeNutricion {
   PlantillaDePlanCreada
   PlantillaDePlanVersionada
   PlantillaDePlanEditada
+  AlimentoHabitualMarcado
+  AlimentoHabitualQuitado
+  ComidaHabitualGuardada
+  ComidaHabitualEditada
 }
 
 /// T-06-31 — Elemento de catálogo: identificador BE estable (REG-06-99). Inmutable; el contenido vive en sus versiones.
@@ -1060,6 +1068,7 @@ model ElementoDeCatalogoNutricional {
 
   versiones    VersionDeElementoNutricional[]
   importadoPor ResolucionDeCandidato[]        @relation("ElementoImportado")
+  habitualesDe AlimentoHabitual[]             @relation("AlimentoHabitualDelCatalogo")
 
   @@map("elemento_de_catalogo_nutricional")
 }
@@ -1645,6 +1654,10 @@ enum TipoDeEventoDeEntrenamiento {
   PlantillaDePlanCreada
   PlantillaDePlanVersionada
   PlantillaDePlanEditada
+  EjercicioHabitualMarcado
+  EjercicioHabitualQuitado
+  SesionHabitualGuardada
+  SesionHabitualEditada
 }
 
 /// D-B (docs/paquetes/WP-07.md): mismos dos nombres de evento que las transiciones de
@@ -1666,6 +1679,7 @@ model EjercicioDeCatalogo {
   creadoPor    Identidad?              @relation("EjercicioCreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   versiones    VersionDeEjercicio[]
   importadoPor ResolucionDeCandidato[] @relation("EjercicioImportado")
+  habitualesDe EjercicioHabitual[]     @relation("EjercicioHabitualDelCatalogo")
 
   @@map("ejercicio_de_catalogo")
 }
@@ -2283,4 +2297,95 @@ model VersionDePlantillaDePlanNutricional {
 
   @@unique([plantillaId, numero])
   @@map("version_de_plantilla_de_plan_nutricional")
+}
+
+// ─── Mis habituales (DL-109, decidido el 2026-09-30): elementos y bloques propios del profesional ─────────────────────
+// Un habitual es una herramienta de trabajo del profesional, sin asesorado: un ejercicio o alimento que usa seguido, o
+// una sesión o comida que inserta en los borradores. Solo lo ve quien lo creó. Las filas son mutables (guardar con el
+// mismo nombre reemplaza, D-2) y no llevan disparadores de solo-agregar: la historia queda en los eventos de dominio.
+
+/// Estado de un habitual: QUITADO no se lista; volver a marcarlo o guardar con ese nombre lo reactiva (nunca un booleano: TEST-RUN-003).
+enum EstadoDeHabitual {
+  ACTIVO
+  QUITADO
+}
+
+/// Ejercicio del catálogo que este profesional marcó como habitual: una fila por profesional y ejercicio (se reactiva, no se duplica).
+model EjercicioHabitual {
+  id                     String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String           @map("profesional_id") @db.Uuid
+  ejercicioId            String           @map("ejercicio_id") @db.Uuid
+  estado                 EstadoDeHabitual @default(ACTIVO)
+  momentoDeRegistro      DateTime         @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime         @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad           @relation("EjercicioHabitualDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ejercicio   EjercicioDeCatalogo @relation("EjercicioHabitualDelCatalogo", fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([profesionalId, ejercicioId])
+  @@index([profesionalId, estado])
+  @@map("ejercicio_habitual")
+}
+
+/// Sesión habitual del profesional: una sesión de entrada (la misma forma que valida API-TRN-07) SIN identificadores de
+/// nodo (el plan asigna los suyos al insertarla) y sin cargas salvo pedido; nombre único por profesional; `version` es
+/// el token de concurrencia. Guardar con el mismo nombre la reemplaza (D-2 de DL-109).
+model SesionHabitual {
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String            @map("profesional_id") @db.Uuid
+  nombre                 String
+  nombreNormalizado      String            @map("nombre_normalizado")
+  estructura             Json
+  cargas                 CargasDePlantilla @default(NO_COPIADAS)
+  estado                 EstadoDeHabitual  @default(ACTIVO)
+  version                Int               @default(1)
+  procedencia            Json
+  momentoDeRegistro      DateTime          @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime          @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad @relation("SesionHabitualDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([profesionalId, nombreNormalizado])
+  @@index([profesionalId, estado, momentoDeActualizacion])
+  @@map("sesion_habitual")
+}
+
+/// Alimento del catálogo que este profesional marcó como habitual: una fila por profesional y elemento (se reactiva, no se duplica).
+model AlimentoHabitual {
+  id                     String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String           @map("profesional_id") @db.Uuid
+  elementoId             String           @map("elemento_id") @db.Uuid
+  estado                 EstadoDeHabitual @default(ACTIVO)
+  momentoDeRegistro      DateTime         @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime         @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad                     @relation("AlimentoHabitualDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  elemento    ElementoDeCatalogoNutricional @relation("AlimentoHabitualDelCatalogo", fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([profesionalId, elementoId])
+  @@index([profesionalId, estado])
+  @@map("alimento_habitual")
+}
+
+/// Comida habitual del profesional: una comida de entrada (la misma forma que valida API-NUT-07) SIN identificadores de
+/// nodo y sin cantidades salvo pedido (son de cada persona); nombre único por profesional; `version` es el token de
+/// concurrencia. Guardar con el mismo nombre la reemplaza (D-2 de DL-109).
+model ComidaHabitual {
+  id                     String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String                @map("profesional_id") @db.Uuid
+  nombre                 String
+  nombreNormalizado      String                @map("nombre_normalizado")
+  estructura             Json
+  cantidades             CantidadesDePlantilla @default(NO_COPIADAS)
+  estado                 EstadoDeHabitual      @default(ACTIVO)
+  version                Int                   @default(1)
+  procedencia            Json
+  momentoDeRegistro      DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime              @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad @relation("ComidaHabitualDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([profesionalId, nombreNormalizado])
+  @@index([profesionalId, estado, momentoDeActualizacion])
+  @@map("comida_habitual")
 }

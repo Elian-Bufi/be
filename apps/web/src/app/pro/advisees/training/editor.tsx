@@ -33,7 +33,8 @@ import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/i
 import { NoDisponible, useEntrenamiento } from './entrenamiento';
 import { ImportacionDeWger, procedenciaDeEjercicio } from './importacion';
 import { DialogoGuardarPlantilla, NotaDeOrigen } from './plantillas';
-import { COPY_PLANTILLAS } from '@be/domain';
+import { COPY_HABITUALES, COPY_PLANTILLAS, type SesionHabitual } from '@be/domain';
+import { BloqueDeHabituales, BotonHabitual, DialogoGuardarSesionHabitual, InsertarSesionHabitual, nombresDeHabitual, useEjerciciosHabituales, useSesionesHabituales, type EjerciciosHabituales } from './habituales';
 
 type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
 type BloqueE = Bloques[number];
@@ -112,6 +113,10 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
   const [falloDeActivacion, setFalloDeActivacion] = useState<string | null>(null);
   const [objetivoVigente, setObjetivoVigente] = useState<string | null>(null);
   const intentoDeActivar = useClaveDeIntento();
+  // «Mis habituales» (PF-09 bis; DL-109): ejercicios a mano en el buscador; sesiones para guardar e insertar.
+  const ejerciciosHabituales = useEjerciciosHabituales(token);
+  const sesionesHabituales = useSesionesHabituales(token);
+  const [sesionHabitual, setSesionHabitual] = useState<SesionE | null>(null);
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -135,6 +140,13 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
     setSucio(true);
     setProblemas(null);
     setMensaje(null);
+  };
+
+  /** Una copia de la sesión habitual (sin identificadores: el servidor los asigna al guardar) al final de esa lista de sesiones. */
+  const insertarSesion = (h: SesionHabitual, ruta: (b: Bloques) => SesionE[]) => {
+    setNombres((n) => ({ ...n, ...nombresDeHabitual(h) }));
+    cambiar((x) => (ruta(x).push(structuredClone(h.structure)), x));
+    setMensaje({ tipo: 'info', texto: COPY_HABITUALES.insertadaSesion });
   };
 
   async function guardar(): Promise<VersionDePlanDeEntrenamiento | null> {
@@ -217,14 +229,20 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
           </ul>
           <BuscadorDeEjercicios
             id={`${prefijo}-s${k}-buscar`}
+            habituales={ejerciciosHabituales}
             onElegir={(e) => {
               setNombres((n) => ({ ...n, [e.versionId]: e.name }));
               cambiar((x) => (ruta(x)[k]!.prescriptions.push({ exerciseVersionId: e.versionId, sets: [{ repetitions: null }], intensity: null }), x));
             }}
           />
-          <button type="button" className="boton boton--enlace" onClick={() => cambiar((x) => (ruta(x).splice(k, 1), x))}>
-            Quitar sesión
-          </button>
+          <div className="acciones">
+            <button type="button" className="boton boton--secundario" onClick={() => setSesionHabitual(structuredClone(s))}>
+              {COPY_HABITUALES.guardarComoHabitual}
+            </button>
+            <button type="button" className="boton boton--enlace" onClick={() => cambiar((x) => (ruta(x).splice(k, 1), x))}>
+              Quitar sesión
+            </button>
+          </div>
         </fieldset>
       ))}
     </>
@@ -271,6 +289,7 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
                           Quitar microciclo
                         </button>
                       </div>
+                      <InsertarSesionHabitual id={`b${i}-m${j}`} sesiones={sesionesHabituales.sesiones} onInsertar={(h) => insertarSesion(h, (x) => x[i]!.microcycles![j]!.sessions)} />
                     </fieldset>
                   ))
                 : editorDeSesiones(b.sessions ?? [], (x) => (x[i]!.sessions ??= []), `b${i}`)}
@@ -297,6 +316,7 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
                   </button>
                 ) : null}
               </div>
+              {conMicro ? null : <InsertarSesionHabitual id={`b${i}`} sesiones={sesionesHabituales.sesiones} onInsertar={(h) => insertarSesion(h, (x) => (x[i]!.sessions ??= []))} />}
             </fieldset>
           );
         })}
@@ -359,6 +379,19 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
         onGuardada={() => {
           setGuardarPlantilla(false);
           setMensaje({ tipo: 'exito', texto: COPY_PLANTILLAS.guardada });
+        }}
+      />
+
+      <DialogoGuardarSesionHabitual
+        token={token}
+        abierto={sesionHabitual !== null}
+        sesion={sesionHabitual}
+        existentes={sesionesHabituales.sesiones}
+        onCerrar={() => setSesionHabitual(null)}
+        onGuardada={() => {
+          setSesionHabitual(null);
+          setMensaje({ tipo: 'exito', texto: COPY_HABITUALES.guardadaSesion });
+          void sesionesHabituales.recargar();
         }}
       />
 
@@ -600,7 +633,7 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
 }
 
 /** «Agregar ejercicio → buscar catálogo BE», «Crear manualmente» o «Importar desde wger» (B10-06:485-498; WP-08). */
-function BuscadorDeEjercicios({ id, onElegir }: { id: string; onElegir: (e: EjercicioDeCatalogo) => void }) {
+function BuscadorDeEjercicios({ id, habituales, onElegir }: { id: string; habituales: EjerciciosHabituales; onElegir: (e: EjercicioDeCatalogo) => void }) {
   const { token, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState('');
@@ -649,6 +682,15 @@ function BuscadorDeEjercicios({ id, onElegir }: { id: string; onElegir: (e: Ejer
         </button>
       </form>
       <p className="nota">{COPY_ENTRENAMIENTO.catalogoSintetico}</p>
+      <BloqueDeHabituales
+        habituales={habituales.habituales}
+        onElegir={(ej) => {
+          onElegir(ej);
+          setAbierto(false);
+          setResultados(null);
+          setTexto('');
+        }}
+      />
       {falloDeBusqueda ? (
         <Aviso tipo="error">
           <p>No pudimos buscar en el catálogo. Probá de nuevo.</p>
@@ -666,6 +708,7 @@ function BuscadorDeEjercicios({ id, onElegir }: { id: string; onElegir: (e: Ejer
                   {ej.provenance === 'PROFESSIONAL_MANUAL' ? <span className="nota"> · cargado por vos</span> : null}
                   {procedenciaDeEjercicio(ej) ? <span className="nota"> · {procedenciaDeEjercicio(ej)}</span> : null}
                 </span>
+                <BotonHabitual ejercicio={ej} marcado={habituales.esHabitual(ej.exerciseId)} onAlternar={(e) => void habituales.alternar(e)} />
                 <button
                   type="button"
                   className="boton boton--enlace"

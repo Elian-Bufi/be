@@ -17,6 +17,8 @@ import { fecha } from '../../../lib/formato';
 import { mensajeDeFallo } from '../../../lib/intento';
 import { useListaPaginada } from '../../../lib/lista';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
+import { MisHabitualesDeEntrenamiento } from './mis-habituales';
+import { MisHabitualesDeNutricion } from './mis-habituales-nutricion';
 import { MisPlantillasNutricionales } from './mis-plantillas-nutricion';
 
 type Estado = 'ACTIVE' | 'ARCHIVED';
@@ -107,6 +109,8 @@ export function MisPlantillas() {
       </section>
       )}
       <MisPlantillasNutricionales token={token} sesionPerdida={sesionPerdida} />
+      <MisHabitualesDeEntrenamiento token={token} sesionPerdida={sesionPerdida} />
+      <MisHabitualesDeNutricion token={token} sesionPerdida={sesionPerdida} />
     </div>
   );
 }

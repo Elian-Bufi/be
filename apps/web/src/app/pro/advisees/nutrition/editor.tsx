@@ -34,7 +34,8 @@ import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/i
 import { ImportacionDeOpenFoodFacts, procedenciaDeElemento } from './importacion';
 import { NoDisponible, useNutricion } from './nutricion';
 import { DialogoGuardarPlantillaNutricional, NotaDeOrigenNutricional } from './plantillas';
-import { COPY_PLANTILLAS } from '@be/domain';
+import { COPY_HABITUALES, COPY_PLANTILLAS } from '@be/domain';
+import { BloqueDeHabituales, BotonHabitual, DialogoGuardarComidaHabitual, InsertarComidaHabitual, useAlimentosHabituales, useComidasHabituales, type AlimentosHabituales } from './habituales';
 
 type Estructura = EstructuraDePlanEntrada['dayTypes'];
 type Item = Estructura[number]['meals'][number]['options'][number]['items'][number];
@@ -89,6 +90,11 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   const [confirmar, setConfirmar] = useState(false);
   // «Guardar como plantilla» sobre el borrador tal como está en pantalla (PF-09; DL-108); sin origen: no es una versión activada.
   const [guardarPlantilla, setGuardarPlantilla] = useState(false);
+  // «Guardar como habitual» sobre una comida del borrador (DL-109): la posición de la comida elegida, o nada.
+  const [guardarHabitual, setGuardarHabitual] = useState<{ i: number; j: number } | null>(null);
+  const comidasHabituales = useComidasHabituales(token);
+  // Los alimentos habituales se cargan una vez para todos los buscadores del borrador.
+  const alimentosHabituales = useAlimentosHabituales(token);
   const [activando, setActivando] = useState(false);
   const [falloDeActivacion, setFalloDeActivacion] = useState<string | null>(null);
   const [objetivoVigente, setObjetivoVigente] = useState<string | null>(null);
@@ -226,6 +232,7 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
                     </ul>
                     <BuscadorDeCatalogo
                       id={`buscar-${i}-${j}-${k}`}
+                      habituales={alimentosHabituales}
                       onElegir={(el) => {
                         setNombres((n) => ({ ...n, [el.catalogItemId]: el.name }));
                         cambiar((x) => (x[i]!.meals[j]!.options[k]!.items.push({ catalogItemId: el.catalogItemId, quantity: null, preparationState: null, note: null }), x));
@@ -246,6 +253,9 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
                   <button type="button" className="boton boton--enlace" onClick={() => cambiar((x) => (x[i]!.meals.splice(j, 1), x))}>
                     Quitar comida
                   </button>
+                  <button type="button" className="boton boton--enlace" onClick={() => setGuardarHabitual({ i, j })}>
+                    {COPY_HABITUALES.guardarComoHabitual}
+                  </button>
                 </div>
               </fieldset>
             ))}
@@ -259,6 +269,13 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
                 </button>
               ) : null}
             </div>
+            <InsertarComidaHabitual
+              comidas={comidasHabituales.lista}
+              onInsertar={(comida, nombresNuevos) => {
+                setNombres((n) => ({ ...n, ...nombresNuevos }));
+                cambiar((x) => (x[i]!.meals.push(comida), x));
+              }}
+            />
           </fieldset>
         ))}
         <button type="button" className="boton boton--secundario" onClick={() => cambiar((x) => (x.push({ label: `Día tipo ${x.length + 1}`, meals: [] }), x))}>
@@ -319,6 +336,18 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
         onGuardada={() => {
           setGuardarPlantilla(false);
           setMensaje({ tipo: 'exito', texto: COPY_PLANTILLAS.guardada });
+        }}
+      />
+      <DialogoGuardarComidaHabitual
+        token={token}
+        abierto={guardarHabitual !== null}
+        comida={guardarHabitual ? (estructura[guardarHabitual.i]?.meals[guardarHabitual.j] ?? null) : null}
+        existentes={comidasHabituales.lista ?? []}
+        onCerrar={() => setGuardarHabitual(null)}
+        onGuardada={() => {
+          setGuardarHabitual(null);
+          setMensaje({ tipo: 'exito', texto: COPY_HABITUALES.guardadaComida });
+          void comidasHabituales.recargar();
         }}
       />
 
@@ -413,7 +442,7 @@ function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: string; ite
  * «Agregar ítem → buscar catálogo BE», «Crear manualmente» o «Importar desde proveedor» (B05:535-552; B10-05 §18). La
  * importación es una opción más, nunca la búsqueda principal obligatoria (WP-08).
  */
-function BuscadorDeCatalogo({ id, onElegir }: { id: string; onElegir: (e: ElementoDeCatalogo) => void }) {
+function BuscadorDeCatalogo({ id, habituales, onElegir }: { id: string; habituales: AlimentosHabituales; onElegir: (e: ElementoDeCatalogo) => void }) {
   const { token, sesionPerdida, accesoRetirado } = useNutricion();
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -483,6 +512,16 @@ function BuscadorDeCatalogo({ id, onElegir }: { id: string; onElegir: (e: Elemen
         </button>
       </form>
       <p className="nota">{COPY_NUTRICION.catalogoSintetico}</p>
+      <BloqueDeHabituales
+        habituales={habituales.habituales}
+        fallo={habituales.fallo}
+        onElegir={(el) => {
+          onElegir(el);
+          setAbierto(false);
+          setResultados(null);
+          setBusqueda('');
+        }}
+      />
       {resultados ? (
         resultados.length === 0 ? (
           <p>No encontramos alimentos con ese nombre.</p>
@@ -494,6 +533,7 @@ function BuscadorDeCatalogo({ id, onElegir }: { id: string; onElegir: (e: Elemen
                   {el.name} · {formatearCantidad(el.composition.energyKcal, 'kcal')} cada {el.composition.referenceAmount === '100ml' ? '100 ml' : '100 g'}
                   {procedenciaDeElemento(el) ? <span className="nota"> · {procedenciaDeElemento(el)}</span> : null}
                 </span>
+                <BotonHabitual elemento={el} marcado={habituales.esHabitual(el.catalogItemId)} onAlternar={(e) => void habituales.alternar(e)} />
                 <button
                   type="button"
                   className="boton boton--enlace"

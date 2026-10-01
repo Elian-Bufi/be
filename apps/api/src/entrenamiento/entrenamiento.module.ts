@@ -6,6 +6,8 @@ import { EjecucionesDeEntrenamientoService } from './ejecuciones.service';
 import { EjecutorDeEntrenamiento } from './ejecutor';
 import { EntrenamientoController } from './entrenamiento.controller';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
+import { HabitualesDeEntrenamientoController } from './habituales.controller';
+import { HabitualesDeEntrenamientoService } from './habituales.service';
 import { ImportacionDeEjerciciosService } from './importacion.service';
 import { PlanesDeEntrenamientoService } from './planes.service';
 import { PlantillasDeEntrenamientoService } from './plantillas.service';
@@ -17,13 +19,14 @@ import { RevisionesDeEntrenamientoService } from './revisiones.service';
  */
 @Module({
   imports: [SesionModule, IntegracionesModule],
-  controllers: [EntrenamientoController],
+  controllers: [EntrenamientoController, HabitualesDeEntrenamientoController],
   providers: [
     EjecutorDeEntrenamiento,
     CatalogoDeEjerciciosService,
     EvaluacionesDeEntrenamientoService,
     PlanesDeEntrenamientoService,
     PlantillasDeEntrenamientoService,
+    HabitualesDeEntrenamientoService,
     EjecucionesDeEntrenamientoService,
     RevisionesDeEntrenamientoService,
     ImportacionDeEjerciciosService,

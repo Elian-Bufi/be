@@ -22,13 +22,18 @@ export interface NotaDeLaEstructura {
 
 const tiene = (t: string | null | undefined): t is string => typeof t === 'string' && t.trim().length > 0;
 
-function notasDeSesion(s: Sesion, lugar: string, contexto: string): NotaDeLaEstructura[] {
+/**
+ * Las notas de una sesión. `lugar` es el camino de la sesión en la estructura; vacío cuando la sesión es la raíz (una
+ * sesión habitual, DL-109), y entonces los lugares son relativos a ella (`instructions`, `prescriptions[0].note`).
+ */
+export function notasDeSesion(s: Sesion, lugar: string, contexto: string): NotaDeLaEstructura[] {
+  const en = (camino: string): string => (lugar ? `${lugar}.${camino}` : camino);
   const notas: NotaDeLaEstructura[] = [];
-  if (tiene(s.instructions)) notas.push({ lugar: `${lugar}.instructions`, rotulo: `Instrucciones de la sesión «${s.label}»${contexto}`, texto: s.instructions });
+  if (tiene(s.instructions)) notas.push({ lugar: en('instructions'), rotulo: `Instrucciones de la sesión «${s.label}»${contexto}`, texto: s.instructions });
   s.prescriptions.forEach((p, i) => {
-    if (tiene(p.note)) notas.push({ lugar: `${lugar}.prescriptions[${i}].note`, rotulo: `Nota de la prescripción ${i + 1} de «${s.label}»${contexto}`, texto: p.note });
+    if (tiene(p.note)) notas.push({ lugar: en(`prescriptions[${i}].note`), rotulo: `Nota de la prescripción ${i + 1} de «${s.label}»${contexto}`, texto: p.note });
     p.sets.forEach((x, j) => {
-      if (tiene(x.note)) notas.push({ lugar: `${lugar}.prescriptions[${i}].sets[${j}].note`, rotulo: `Nota de la serie ${j + 1}, prescripción ${i + 1} de «${s.label}»${contexto}`, texto: x.note });
+      if (tiene(x.note)) notas.push({ lugar: en(`prescriptions[${i}].sets[${j}].note`), rotulo: `Nota de la serie ${j + 1}, prescripción ${i + 1} de «${s.label}»${contexto}`, texto: x.note });
     });
   });
   return notas;

@@ -4,6 +4,8 @@ import { SesionModule } from '../sesion/sesion.module';
 import { CatalogoService } from './catalogo.service';
 import { EjecutorNutricional } from './ejecutor';
 import { EvaluacionesService } from './evaluaciones.service';
+import { HabitualesNutricionalesController } from './habituales.controller';
+import { HabitualesNutricionalesService } from './habituales.service';
 import { ImportacionNutricionalService } from './importacion.service';
 import { IngestasService } from './ingestas.service';
 import { NutricionController } from './nutricion.controller';
@@ -17,7 +19,7 @@ import { RevisionesService } from './revisiones.service';
  */
 @Module({
   imports: [SesionModule, IntegracionesModule],
-  controllers: [NutricionController],
-  providers: [EjecutorNutricional, CatalogoService, EvaluacionesService, PlanesService, PlantillasNutricionalesService, IngestasService, RevisionesService, ImportacionNutricionalService],
+  controllers: [NutricionController, HabitualesNutricionalesController],
+  providers: [EjecutorNutricional, CatalogoService, EvaluacionesService, PlanesService, PlantillasNutricionalesService, HabitualesNutricionalesService, IngestasService, RevisionesService, ImportacionNutricionalService],
 })
 export class NutricionModule {}
