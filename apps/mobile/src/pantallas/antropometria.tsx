@@ -8,6 +8,9 @@
  *    método y el anterior del mismo método (dos métodos distintos nunca se comparan);
  * 3. **Evolución por medida**: la serie de cada medida, con sus huecos.
  *
+ * Para que se lea de un vistazo (Dirección, 2026-10-01), la figura va arriba y cada explicación queda plegada en su
+ * «Cómo se lee»; la lista de lo que la figura ya muestra, en «La figura, en lista». Nada se borra: se pliega.
+ *
  * Con las mismas honestidades que el website:
  * - un tramo sin medición vigente llega como **hueco**, con su rango y su cantidad de días, y no se completa con cero
  *   ni arrastra el valor anterior (REG-06-165/166; INV-06-176/177);
@@ -46,8 +49,8 @@ import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
 import { dia, fecha, fechaCivil } from '../formato';
 import { useSesionPerdida, type Salida } from '../navegacion';
-import { Aviso, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
-import { FiguraDeLaToma } from './figura-de-la-toma';
+import { Aviso, Ayuda, Desplegable, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
+import { estaEnLaFigura, FiguraDeLaToma } from './figura-de-la-toma';
 
 type Datos = EvolucionResponse['data'];
 
@@ -99,6 +102,10 @@ export function PantallaDeMiEvolucion({ token, salir }: { token: string; salir: 
   );
 }
 
+/**
+ * El orden de la pantalla (Dirección, 2026-10-01: que se lea de un vistazo): arriba la toma con la figura; después los
+ * resultados de las fórmulas; después la evolución por medida. Cada explicación queda plegada en su «Cómo se lee».
+ */
 function Evolucion({ datos }: { datos: Datos }) {
   const conDatos = datos.metrics.filter((s) => s.series.length > 0);
   const toma = ultimaToma(datos);
@@ -116,13 +123,15 @@ function Evolucion({ datos }: { datos: Datos }) {
       {toma && toma.derivadas.length > 0 ? <ResultadosDeLasFormulas toma={toma} /> : null}
       {conDatos.length > 0 ? (
         <Seccion titulo={COPY_ANTROPOMETRIA.evolucionPorMedida}>
-          <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeSinDato}</Parrafo>
           {[...conDatos]
             .sort((a, b) => compararPorCatalogo(a.metricCode, b.metricCode))
             .map((serie) => (
               <SerieDeLaMetrica key={serie.metricCode} serie={serie} />
             ))}
-          <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeComparabilidad}</Parrafo>
+          <Ayuda>
+            <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeSinDato}</Parrafo>
+            <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeComparabilidad}</Parrafo>
+          </Ayuda>
         </Seccion>
       ) : null}
     </>
@@ -132,32 +141,52 @@ function Evolucion({ datos }: { datos: Datos }) {
 /** El orden de las familias en la lista: el de la lámina (perímetros, después pliegues). */
 const FAMILIAS: readonly FamiliaDeMedicion[] = ['MASA_Y_ESTATURA', 'PERIMETROS', 'PLIEGUES', 'DIAMETROS', 'OTRAS'];
 
-function LaUltimaToma({ toma }: { toma: UltimaToma }) {
-  const porFamilia = (familia: FamiliaDeMedicion) => toma.medidas.filter((m) => (FAMILIA_DE_METRICA[m.metrica] ?? 'OTRAS') === familia);
+/** Las medidas de la toma agrupadas por familia, en el orden de la lámina, con un subtítulo por familia. */
+function ListaPorFamilia({ medidas }: { medidas: readonly MedidaDeLaToma[] }) {
   return (
-    <Seccion titulo={COPY_ANTROPOMETRIA.tuUltimaToma}>
-      <Parrafo>
-        {COPY_ANTROPOMETRIA.tomaDel} {fechaCivil(toma.fecha)}
-      </Parrafo>
-      {toma.fechaAnterior ? (
-        <Parrafo tenue>
-          {COPY_ANTROPOMETRIA.comparadaCon} {fechaCivil(toma.fechaAnterior)}.
-        </Parrafo>
-      ) : null}
-      <FiguraDeLaToma medidas={toma.medidas} />
+    <>
       {FAMILIAS.map((familia) => {
-        const medidas = porFamilia(familia);
-        if (medidas.length === 0) return null;
+        const deLaFamilia = medidas.filter((m) => (FAMILIA_DE_METRICA[m.metrica] ?? 'OTRAS') === familia);
+        if (deLaFamilia.length === 0) return null;
         return (
           <View key={familia}>
             <Subtitulo>{ETIQUETA_DE_FAMILIA[familia]}</Subtitulo>
-            {medidas.map((m) => (
+            {deLaFamilia.map((m) => (
               <FilaDeLaToma key={m.metrica} medida={m} />
             ))}
           </View>
         );
       })}
-      <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeDiferencia}</Parrafo>
+    </>
+  );
+}
+
+/**
+ * La toma, con la figura arriba. Lo que la figura ya muestra (perímetros y pliegues) queda en una lista plegada, con el
+ * valor anterior, su fecha y la clase del dato: es la versión completa para leer —y la que recorre el lector de
+ * pantalla, porque la figura no se recorre—. Lo que la figura no dibuja (peso, talla, diámetros…) va a la vista.
+ */
+function LaUltimaToma({ toma }: { toma: UltimaToma }) {
+  const enLaFigura = toma.medidas.filter((m) => estaEnLaFigura(m.metrica));
+  const fueraDeLaFigura = toma.medidas.filter((m) => !estaEnLaFigura(m.metrica));
+  return (
+    <Seccion titulo={COPY_ANTROPOMETRIA.tuUltimaToma}>
+      {/* Una sola línea de contexto: de cuándo es la toma y con cuál se compara. */}
+      <Parrafo>
+        {COPY_ANTROPOMETRIA.tomaDel} {fechaCivil(toma.fecha)}
+        {toma.fechaAnterior ? `. ${COPY_ANTROPOMETRIA.comparadaCon} ${fechaCivil(toma.fechaAnterior)}.` : null}
+      </Parrafo>
+      <FiguraDeLaToma medidas={toma.medidas} />
+      <ListaPorFamilia medidas={fueraDeLaFigura} />
+      {enLaFigura.length > 0 ? (
+        <Desplegable titulo="La figura, en lista" detalle={enLaFigura.length === 1 ? '1 medida, con su valor anterior' : `${numero(enLaFigura.length)} medidas, con su valor anterior`}>
+          <ListaPorFamilia medidas={enLaFigura} />
+        </Desplegable>
+      ) : null}
+      <Ayuda>
+        {enLaFigura.length > 0 ? <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeFigura}</Parrafo> : null}
+        <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeDiferencia}</Parrafo>
+      </Ayuda>
     </Seccion>
   );
 }
@@ -165,10 +194,12 @@ function LaUltimaToma({ toma }: { toma: UltimaToma }) {
 function ResultadosDeLasFormulas({ toma }: { toma: UltimaToma }) {
   return (
     <Seccion titulo={COPY_ANTROPOMETRIA.resultadosDeLasFormulas}>
-      <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeResultados}</Parrafo>
       {toma.derivadas.map((m) => (
         <FilaDeLaToma key={`${m.metrica}-${m.actual.punto.comparabilityGroup}`} medida={m} conMetodo />
       ))}
+      <Ayuda>
+        <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeResultados}</Parrafo>
+      </Ayuda>
     </Seccion>
   );
 }

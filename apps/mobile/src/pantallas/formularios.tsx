@@ -42,7 +42,7 @@ import { Cargando, ErrorConReintento } from '../estados';
 import { fecha } from '../formato';
 import { falloDe, useClaveDeIntento } from '../intento';
 import { useSesionPerdida, type Salida } from '../navegacion';
-import { Aviso, Boton, Campo, CampoSiONo, Insignia, Parrafo, Seccion, Tarjeta, Titulo } from '../ui';
+import { Aviso, Ayuda, Boton, Campo, CampoSiONo, Insignia, Parrafo, Seccion, Tarjeta, Titulo } from '../ui';
 
 type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: readonly SolicitudPropia[] } | { tipo: 'error'; sinConexion: boolean };
 
@@ -262,7 +262,6 @@ export function PantallaDeMiSolicitud({ token, id, salir, volver }: { token: str
 
       {response ? (
         <Seccion titulo={COPY_FORMULARIOS.respuestaOriginal}>
-          <Parrafo tenue>{COPY_FORMULARIOS.rectificarConservaHistoria}</Parrafo>
           {response.effectiveView.kind === 'ORIGINAL' ? <Insignia texto={COPY_FORMULARIOS.vigente} positiva /> : null}
           {response.original.answers.map((a) => (
             <Parrafo key={a.fieldCode}>
@@ -284,6 +283,9 @@ export function PantallaDeMiSolicitud({ token, id, salir, volver }: { token: str
               ))}
             </View>
           ))}
+          <Ayuda>
+            <Parrafo tenue>{COPY_FORMULARIOS.rectificarConservaHistoria}</Parrafo>
+          </Ayuda>
         </Seccion>
       ) : null}
 

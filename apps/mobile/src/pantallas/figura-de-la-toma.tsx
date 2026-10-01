@@ -7,35 +7,43 @@
  * Circunferencias y Pliegues en el compositor. Las posiciones, los rótulos, el orden de las tarjetas y el apilado son
  * los del compositor (`figura-de-lamina.ts`, en @be/domain); lo que cambia es la escala, para que el texto se lea.
  *
+ * Anillos, puntos y guías se dibujan en SVG, con la receta de `dibujo-de-la-figura.ts`: cada anillo es una elipse de
+ * verdad, con la mitad trasera punteada y la delantera llena (Dirección, 2026-10-01).
+ *
  * La figura es de un hombre o de una mujer según elija la persona, y se recuerda en el teléfono: no se deduce de ningún
  * dato. Ubica, nunca califica (RF-048; INV-06-06; DL-073): los colores distinguen capas del dibujo, nunca rangos, y la
  * diferencia es un número con signo. El lector de pantalla no recorre la figura: los mismos datos, completos, están en
- * la lista de la toma, debajo.
+ * la lista de la toma, en la pantalla que la contiene.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   anilloEnLaLamina,
   apilarTarjetas,
   cantidad,
+  colorDeLaCapa,
   COLORES_DE_LA_FIGURA,
   COPY_ANTROPOMETRIA,
   esPliegueDeLaCaraPosterior,
   FIGURAS_DE_LA_LAMINA,
   numero,
+  opacidadDeLaCapa,
   puntoEnLaLamina,
   ROTULO_EN_LA_LAMINA,
   TARJETAS_DE_PERIMETROS,
   TARJETAS_DE_PLIEGUES,
   type ClaveDeLaLamina,
+  type ColoresDeLaFigura,
   type MedidaDeLaToma,
   type RectanguloEnLaLamina,
   type SexoDeLaLamina,
 } from '@be/domain';
 import { useEffect, useState } from 'react';
 import { Image, Text, View, type ImageSourcePropType } from 'react-native';
+import Svg, { Circle, G, Path } from 'react-native-svg';
 import { useApariencia } from '../apariencia';
+import { ANILLO_EN_EL_TELEFONO, arcoDeLaElipse, GUIA_EN_EL_TELEFONO, PLIEGUE_EN_EL_TELEFONO, PLIEGUE_POSTERIOR_EN_EL_TELEFONO, trazoDeLaGuia } from '../dibujo-de-la-figura';
 import { PALETAS, type Tema } from '../tema';
-import { Boton, Parrafo } from '../ui';
+import { Boton } from '../ui';
 
 const IMAGEN: Readonly<Record<SexoDeLaLamina, ImageSourcePropType>> = {
   HOMBRE: require('../../assets/figura/hombre-entero.png') as ImageSourcePropType,
@@ -44,6 +52,14 @@ const IMAGEN: Readonly<Record<SexoDeLaLamina, ImageSourcePropType>> = {
 const CLAVE_DE_LA_FIGURA = 'be-figura-de-la-toma';
 
 type Familia = 'PERIMETROS' | 'PLIEGUES';
+
+/** Los sitios que la figura puede dibujar: los de las tarjetas del compositor, en el cuerpo entero. */
+const SITIOS_EN_LA_FIGURA: ReadonlySet<string> = new Set([...TARJETAS_DE_PERIMETROS.ENTERO.flat(), ...TARJETAS_DE_PLIEGUES.ENTERO.flat()]);
+
+/** Si una medida de la toma se dibuja en la figura: un perímetro o un pliegue con sitio en la lámina. */
+export function estaEnLaFigura(metrica: string): boolean {
+  return SITIOS_EN_LA_FIGURA.has(metrica);
+}
 
 /** El tema de la lámina que corresponde a cada apariencia de la APK (compositor: `light` y `blue`). */
 const TEMA_DE_LA_LAMINA = { claro: 'CLARO', 'azul-noche': 'AZUL' } as const satisfies Readonly<Record<Tema, 'CLARO' | 'AZUL'>>;
@@ -55,7 +71,7 @@ const laminaDe = (tema: Tema) => {
 };
 type ColoresDeLamina = ReturnType<typeof laminaDe>;
 
-/** Medidas del dibujo en dp. Las letras de la figura escalan hasta 1,2 veces; la lista de abajo escala sin tope. */
+/** Medidas del dibujo en dp. Las letras de la figura escalan hasta 1,2 veces; la lista de la pantalla escala sin tope. */
 const FILA = 44;
 const RELLENO = 6;
 const SEPARACION = 8;
@@ -99,7 +115,6 @@ export function FiguraDeLaToma({ medidas }: { medidas: readonly MedidaDeLaToma[]
 
   return (
     <View>
-      <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeFigura}</Parrafo>
       {hayPerimetros && hayPliegues ? (
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <View style={{ flex: 1 }}>
@@ -110,6 +125,10 @@ export function FiguraDeLaToma({ medidas }: { medidas: readonly MedidaDeLaToma[]
           </View>
         </View>
       ) : null}
+      <View onLayout={(e) => setAncho(Math.round(e.nativeEvent.layout.width))} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {ancho > 0 ? <Lamina ancho={ancho} sexo={sexo} familia={familia} medidas={medidas} tema={tema} /> : null}
+      </View>
+      {/* Hombre o mujer, debajo de la figura: es solo cómo se ve el dibujo, no cambia ningún dato. */}
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <View style={{ flex: 1 }}>
           <Boton texto={COPY_ANTROPOMETRIA.figuraHombre} tipo={sexo === 'HOMBRE' ? 'primario' : 'secundario'} seleccionado={sexo === 'HOMBRE'} onPress={() => elegirSexo('HOMBRE')} />
@@ -117,9 +136,6 @@ export function FiguraDeLaToma({ medidas }: { medidas: readonly MedidaDeLaToma[]
         <View style={{ flex: 1 }}>
           <Boton texto={COPY_ANTROPOMETRIA.figuraMujer} tipo={sexo === 'MUJER' ? 'primario' : 'secundario'} seleccionado={sexo === 'MUJER'} onPress={() => elegirSexo('MUJER')} />
         </View>
-      </View>
-      <View onLayout={(e) => setAncho(Math.round(e.nativeEvent.layout.width))} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        {ancho > 0 ? <Lamina ancho={ancho} sexo={sexo} familia={familia} medidas={medidas} tema={tema} /> : null}
       </View>
     </View>
   );
@@ -179,21 +195,24 @@ function Lamina({ ancho, sexo, familia, medidas, tema }: { ancho: number; sexo: 
   return (
     <View style={{ height: alto, backgroundColor: lamina.fondo, borderRadius: 12, overflow: 'hidden', marginVertical: 8 }}>
       <Image source={IMAGEN[sexo]} style={{ position: 'absolute', left: imagen.x, top: imagen.y, width: imagen.ancho, height: imagen.alto }} resizeMode="stretch" />
-      {todos.map((s) => (s.anillo ? <Anillo key={s.clave} sitio={s} colores={colores} /> : <Punto key={s.clave} sitio={s} colores={colores} />))}
-      {grupos.map((g, i) =>
-        g.map((s, fila) => {
-          const y = bordes[i]! + RELLENO + fila * FILA + FILA / 2;
-          const quiebre = anchoDeTarjeta + 10;
-          const color = s.posterior ? colores.posterior : colores.guia;
-          return (
-            <View key={`guia-${s.clave}`} pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }}>
-              <Segmento x1={anchoDeTarjeta + 2} y1={y} x2={quiebre} y2={y} color={color} />
-              <Segmento x1={quiebre} y1={y} x2={s.izquierda - 3} y2={s.cy} color={color} />
-              <View style={{ position: 'absolute', left: anchoDeTarjeta, top: y - 2.5, width: 5, height: 5, borderRadius: 2.5, backgroundColor: colores.guiaPunto }} />
-            </View>
-          );
-        }),
-      )}
+      {/* Un solo dibujo encima del cuerpo, con los sitios y las guías; las tarjetas van encima de todo. */}
+      <Svg width={ancho} height={alto} style={{ position: 'absolute', left: 0, top: 0 }} pointerEvents="none">
+        {todos.map((s) => (
+          <CapasDelSitio key={s.clave} sitio={s} colores={colores} />
+        ))}
+        {grupos.map((g, i) =>
+          g.map((s, fila) => {
+            const y = bordes[i]! + RELLENO + fila * FILA + FILA / 2;
+            const t = s.posterior ? GUIA_EN_EL_TELEFONO.posterior : GUIA_EN_EL_TELEFONO.normal;
+            return (
+              <G key={`guia-${s.clave}`}>
+                <Path d={trazoDeLaGuia({ x: anchoDeTarjeta + 2, y }, anchoDeTarjeta + 10, { x: s.izquierda - 3, y: s.cy })} fill="none" stroke={colores[t.color]} strokeWidth={t.grosor} strokeDasharray={[...t.guiones]} />
+                <Circle cx={anchoDeTarjeta + 2.5} cy={y} r={t.radioDelPunto} fill={colores[t.colorDelPunto]} />
+              </G>
+            );
+          }),
+        )}
+      </Svg>
       {grupos.map((g, i) => (
         <View
           key={`tarjeta-${g[0]!.clave}`}
@@ -226,40 +245,31 @@ function FilaDeLaLamina({ sitio, lamina }: { sitio: Sitio; lamina: ColoresDeLami
   );
 }
 
-/** El anillo de un perímetro: una elipse achatada (compositor: `ringG`), con su resplandor. */
-function Anillo({ sitio, colores }: { sitio: Sitio; colores: (typeof COLORES_DE_LA_FIGURA)['CLARO'] }) {
-  const { rx, ry } = sitio.anillo!;
+/**
+ * Las capas de un sitio (`dibujo-de-la-figura.ts`), de abajo hacia arriba: un anillo es una elipse partida en su mitad
+ * trasera y su mitad delantera; un punto, círculos concéntricos. Una capa sin color en el tema no se dibuja.
+ */
+function CapasDelSitio({ sitio, colores }: { sitio: Sitio; colores: ColoresDeLaFigura }) {
+  const capas = sitio.anillo ? ANILLO_EN_EL_TELEFONO : sitio.posterior ? PLIEGUE_POSTERIOR_EN_EL_TELEFONO : PLIEGUE_EN_EL_TELEFONO;
   return (
-    <>
-      <View style={{ position: 'absolute', left: sitio.cx - rx - 2, top: sitio.cy - ry - 2, width: 2 * rx + 4, height: 2 * ry + 4, borderRadius: ry + 2, borderWidth: 4, borderColor: colores.anilloResplandor, opacity: 0.3 }} />
-      <View style={{ position: 'absolute', left: sitio.cx - rx, top: sitio.cy - ry, width: 2 * rx, height: 2 * ry, borderRadius: ry, borderWidth: 2, borderColor: colores.anilloNucleo }} />
-    </>
-  );
-}
-
-/** El punto de un pliegue (compositor: `dotG`); el de la cara posterior va con el aro punteado. */
-function Punto({ sitio, colores }: { sitio: Sitio; colores: (typeof COLORES_DE_LA_FIGURA)['CLARO'] }) {
-  const aro = sitio.posterior ? colores.posterior : colores.puntoAro;
-  const relleno = sitio.posterior ? colores.posteriorFondo : colores.puntoRelleno;
-  return (
-    <>
-      <View style={{ position: 'absolute', left: sitio.cx - 11, top: sitio.cy - 11, width: 22, height: 22, borderRadius: 11, backgroundColor: colores.anilloResplandor, opacity: 0.18 }} />
-      <View
-        style={{ position: 'absolute', left: sitio.cx - 7, top: sitio.cy - 7, width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: aro, borderStyle: sitio.posterior ? 'dashed' : 'solid', backgroundColor: relleno ?? 'transparent' }}
-      />
-      <View style={{ position: 'absolute', left: sitio.cx - 2, top: sitio.cy - 2, width: 4, height: 4, borderRadius: 2, backgroundColor: sitio.posterior ? colores.posterior : colores.puntoCentro }} />
-    </>
-  );
-}
-
-/** Un tramo recto de guía entre dos puntos: una barra fina girada sobre su centro. */
-function Segmento({ x1, y1, x2, y2, color }: { x1: number; y1: number; x2: number; y2: number; color: string }) {
-  const largo = Math.hypot(x2 - x1, y2 - y1);
-  if (largo < 0.5) return null;
-  const angulo = Math.atan2(y2 - y1, x2 - x1);
-  return (
-    <View
-      style={{ position: 'absolute', left: (x1 + x2) / 2 - largo / 2, top: (y1 + y2) / 2 - 0.75, width: largo, height: 1.5, backgroundColor: color, transform: [{ rotate: `${angulo}rad` }] }}
-    />
+    <G>
+      {capas.map((capa, i) => {
+        const color = colorDeLaCapa(capa, colores);
+        if (!color) return null;
+        const opacidad = opacidadDeLaCapa(capa, colores);
+        // Un trazo punteado termina en recto; uno lleno, redondeado, así el resplandor se cierra suave en las puntas.
+        const pintura =
+          capa.grosor === undefined
+            ? { fill: color }
+            : capa.guiones
+              ? { fill: 'none', stroke: color, strokeWidth: capa.grosor, strokeDasharray: [...capa.guiones] }
+              : { fill: 'none', stroke: color, strokeWidth: capa.grosor, strokeLinecap: 'round' as const };
+        if (sitio.anillo && capa.tramo && capa.tramo !== 'COMPLETO') {
+          return <Path key={i} d={arcoDeLaElipse({ cx: sitio.cx, cy: sitio.cy, rx: sitio.anillo.rx, ry: sitio.anillo.ry }, capa.tramo)} opacity={opacidad} {...pintura} />;
+        }
+        if (capa.radio !== undefined) return <Circle key={i} cx={sitio.cx} cy={sitio.cy} r={capa.radio} opacity={opacidad} {...pintura} />;
+        return null;
+      })}
+    </G>
   );
 }
