@@ -71,6 +71,8 @@ export const COPY_ANTROPOMETRIA = {
   entradasDelMetodo: 'Qué necesita este método',
   elegirEntrada: 'Con qué medición',
   finalidadDelCalculo: 'Para qué se calcula',
+  finalidadDeCalculo: { ANTHROPOMETRIC_SUPPORT: 'Soporte antropométrico', NUTRITION_OBJECTIVE_SUPPORT: 'Soporte de un objetivo nutricional' } as Record<string, string>,
+  decimales: (n: number): string => `${n} ${n === 1 ? 'decimal' : 'decimales'}`,
   ejecutarCalculo: 'Calcular',
   // DL-111 · la ficha del método al elegirlo
   metodoPide: 'Pide',

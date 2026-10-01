@@ -138,7 +138,7 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
       {!corrida.effective ? <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeCalculoNoVigente}</p> : null}
       <p className="nota">
         {COPY_ANTROPOMETRIA.metodo}: {corrida.methodName} · {COPY_ANTROPOMETRIA.versionDelMetodo} {corrida.methodVersion} · {COPY_ANTROPOMETRIA.reglaAplicada}: {corrida.ruleId} ·{' '}
-        {COPY_ANTROPOMETRIA.precisionDeclarada}: {corrida.precision.decimals} decimales · {fecha(corrida.recordedAt)}
+        {COPY_ANTROPOMETRIA.precisionDeclarada}: {COPY_ANTROPOMETRIA.decimales(corrida.precision.decimals)} · {fecha(corrida.recordedAt)}
         {corrida.supersedesRunId ? ` · ${COPY_ANTROPOMETRIA.corridaReemplazada}` : ''}
       </p>
       <details>
@@ -327,7 +327,8 @@ function NuevoCalculo({
       ))}
 
       <p className="nota">
-        {COPY_ANTROPOMETRIA.finalidadDelCalculo}: {metodo.purposes.join(', ')} · {COPY_ANTROPOMETRIA.precisionDeclarada}: {metodo.precisionPolicy.decimals} decimales ·{' '}
+        {COPY_ANTROPOMETRIA.finalidadDelCalculo}: {metodo.purposes.map((p) => COPY_ANTROPOMETRIA.finalidadDeCalculo[p] ?? p).join(', ')} · {COPY_ANTROPOMETRIA.precisionDeclarada}:{' '}
+        {COPY_ANTROPOMETRIA.decimales(metodo.precisionPolicy.decimals)} ·{' '}
         {COPY_ANTROPOMETRIA.reglaAplicada}: {metodo.ruleId}
       </p>
 
