@@ -9,6 +9,7 @@ import {
   evaluarSucesion,
   evaluarTransicionDePlan,
   normalizarEstructura,
+  type OrigenDePlanEnPlantilla,
   problemasDeBorrador,
   problemasParaActivar,
   serializacionCanonica,
@@ -27,6 +28,7 @@ import { sinParametrosDeQuery } from '../http/validacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { ProcesoService } from '../proceso/proceso.service';
+import { PlantillasNutricionalesService } from './plantillas.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esToken } from '../vinculo/lectura';
 import { CatalogoService } from './catalogo.service';
@@ -89,6 +91,7 @@ export class PlanesService {
     private readonly catalogo: CatalogoService,
     private readonly evaluaciones: EvaluacionesService,
     private readonly procesos: ProcesoService,
+    private readonly plantillas: PlantillasNutricionalesService,
   ) {}
 
   // ─── API-NUT-07 ────────────────────────────────────────────────────────────────────────────
@@ -114,13 +117,14 @@ export class PlanesService {
           objetivoVersionId: pedido.objectiveVersionId,
           estructura: pedido.initialStructure ?? null,
           basadaEn: pedido.basedOnPlanId ?? null,
+          desdePlantilla: pedido.fromTemplateVersionId ?? null,
           proximaRevision: pedido.nextReviewAt ?? null,
           revisionDeOrigenId: null,
           procedencia,
         });
         return {
           estadoHttp: 201,
-          cuerpo: { data: await this.leerVersion(tx, version, actor.identidadId) },
+          cuerpo: { data: await this.leerVersion(tx, version, actor.identidadId, true) },
           sujetoId: asesoradoId,
           recurso: { tipo: 'VersionDePlanNutricional', id: version },
         };
@@ -141,6 +145,8 @@ export class PlanesService {
       estructura: { dayTypes: Parameters<typeof normalizarEstructura>[0]['dayTypes'] } | null;
       /** `planId` de la versión efectiva a copiar (DL-047), o `null`. */
       basadaEn: string | null;
+      /** PF-09 (DL-108): versión de plantilla propia desde la que nace el borrador, o `null`. */
+      desdePlantilla?: string | null;
       proximaRevision: string | null;
       revisionDeOrigenId: string | null;
       procedencia: Procedencia;
@@ -154,7 +160,17 @@ export class PlanesService {
       throw new ErrorDeApi(409, CodigoDeError.RESOURCE_CONFLICT, 'Ya hay un borrador de este plan. Seguí trabajando sobre ese borrador.', { draftPlanId: borrador.id });
     }
     let contenido: ContenidoDePlan;
-    if (p.basadaEn) {
+    let origenDePlantilla: OrigenDePlanEnPlantilla | null = null;
+    if (p.desdePlantilla) {
+      if (p.basadaEn || p.estructura) throw errores.validacionFallida([{ code: 'PLAN_SOURCE_CONFLICT', path: 'fromTemplateVersionId' }]);
+      // La plantilla se normaliza como cualquier estructura y se verifica con el catálogo disponible: el plan es de la persona.
+      const plantilla = await this.plantillas.versionParaAplicar(tx, p.profesionalId, p.desdePlantilla);
+      contenido = normalizarEstructura(plantilla.estructura, randomUUID);
+      const disponibles = await this.catalogo.disponibles(tx, p.profesionalId, idsDeCatalogo(contenido));
+      const problemas = problemasDeBorrador(contenido, new Set(disponibles.keys()));
+      if (problemas.length > 0) throw errorDeBorrador(problemas);
+      origenDePlantilla = { templateId: plantilla.plantillaId, templateVersionId: plantilla.versionId };
+    } else if (p.basadaEn) {
       if (p.basadaEn !== plan.versionEfectivaId) {
         throw errores.validacionFallida([{ code: 'BASED_ON_MUST_BE_EFFECTIVE_VERSION', path: 'basedOnPlanId' }]);
       }
@@ -188,6 +204,7 @@ export class PlanesService {
         revisionDeOrigenId: p.revisionDeOrigenId,
         autorId: p.profesionalId,
         procedencia: p.procedencia as unknown as Prisma.InputJsonValue,
+        ...(origenDePlantilla ? { origenDePlantilla: origenDePlantilla as unknown as Prisma.InputJsonValue } : {}),
       },
       select: { id: true },
     });
@@ -263,7 +280,7 @@ export class PlanesService {
           await this.decidir(tx, 'API-NUT-09', actor, actor.identidadId, titular, recurso, ctx);
           if (v.plan.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-09', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
         }
-        return { data: await this.leerVersion(tx, v.id, v.plan.profesionalId) };
+        return { data: await this.leerVersion(tx, v.id, v.plan.profesionalId, titular !== actor.identidadId) };
       },
     });
   }
@@ -313,7 +330,7 @@ export class PlanesService {
           procedencia,
           momento,
         });
-        return { estadoHttp: 200, cuerpo: { data: await this.leerVersion(tx, v.id, v.profesionalId) }, sujetoId: v.asesoradoId, recurso };
+        return { estadoHttp: 200, cuerpo: { data: await this.leerVersion(tx, v.id, v.profesionalId, true) }, sujetoId: v.asesoradoId, recurso };
       },
     });
   }
@@ -453,10 +470,12 @@ export class PlanesService {
 
   // ─── Auxiliares ─────────────────────────────────────────────────────────────────────────────
 
-  async leerVersion(tx: Tx, id: string, profesionalId: string): Promise<VersionDePlan> {
+  async leerVersion(tx: Tx, id: string, profesionalId: string, incluirOrigen = false): Promise<VersionDePlan> {
     const v = (await tx.versionDePlanNutricional.findUniqueOrThrow({ where: { id }, include: INCLUIR_PLAN })) as VersionConPlan;
     const catalogo = v.estado === 'BORRADOR' ? await nombresDeCatalogo(tx, v.contenido as unknown as ContenidoDePlan) : new Map();
-    return versionDePlanApi(v, await nombreVisibleDe(tx, profesionalId), catalogo);
+    const api = versionDePlanApi(v, await nombreVisibleDe(tx, profesionalId), catalogo);
+    // El origen de plantilla solo lo ve el profesional: la APK instalada valida con esquemas estrictos que no lo conocen.
+    return incluirOrigen ? { ...api, templateOrigin: (v.origenDePlantilla as OrigenDePlanEnPlantilla | null) ?? null } : api;
   }
 
   private async problemasParaActivar(tx: Tx, v: VersionBloqueada): Promise<ValidationIssue[]> {

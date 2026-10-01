@@ -10,6 +10,8 @@
  */
 import {
   COPY_ENTRENAMIENTO,
+  COPY_PLANTILLAS,
+  estructuraComoEntrada,
   lineasDePrescripcion,
   type Bloque,
   type Prescripcion,
@@ -23,6 +25,7 @@ import { fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EditorDePlan } from './editor';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
+import { DialogoGuardarPlantilla, InicioDesdePlantilla } from './plantillas';
 
 /** Número de versión para la persona: el orden de activación. El `version` del 09 es un token de concurrencia. */
 function numerosDeVersion(versiones: readonly ResumenDeVersionDePlanDeEntrenamiento[]): Map<string, number> {
@@ -35,6 +38,10 @@ export function VistaDePlan() {
   const [r, setR] = useState<Resultado<{ versiones: ResumenDeVersionDePlanDeEntrenamiento[]; activa: VersionDePlanDeEntrenamiento | null; objetivo: string | null }> | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [creando, setCreando] = useState(false);
+  // «Guardar como plantilla» sobre la versión activa (PF-09; DL-108): abre el diálogo con la estructura de esa versión.
+  const [guardarPlantilla, setGuardarPlantilla] = useState(false);
+  // Cada plantilla guardada vuelve a cargar el selector «Empezar desde una plantilla», que la lista al montarse.
+  const [plantillasGuardadas, setPlantillasGuardadas] = useState(0);
   const intento = useClaveDeIntento();
 
   const cargar = useCallback(async () => {
@@ -76,6 +83,20 @@ export function VistaDePlan() {
     await cargar();
   }
 
+  /** Crear el borrador desde una plantilla propia (API-TRN-07 con `fromTemplateVersionId`): nace de la persona, con su objetivo. */
+  async function aplicar(templateVersionId: string) {
+    if (!r?.ok || !r.datos.objetivo) return;
+    setCreando(true);
+    setAviso(null);
+    const res = await api.crearPlanDeEntrenamiento(token, asesoradoId, { objectiveVersionId: r.datos.objetivo, fromTemplateVersionId: templateVersionId }, intento.actual());
+    intento.registrar(res);
+    setCreando(false);
+    if (sesionPerdida(res) || accesoRetirado(res)) return;
+    if (!res.ok) return setAviso({ tipo: 'error', texto: res.tipo === 'API' && res.codigo === 'TEMPLATE_ARCHIVED' ? COPY_PLANTILLAS.archivadaNoSeAplica : mensajeDeFallo(res) });
+    setAviso({ tipo: 'exito', texto: COPY_PLANTILLAS.aplicada });
+    await cargar();
+  }
+
   return (
     <EstadoDeLectura r={r} onReintentar={cargar}>
       {r?.ok ? (
@@ -106,11 +127,14 @@ export function VistaDePlan() {
               );
             }
             return r.datos.objetivo ? (
-              <div className="acciones">
-                <button type="button" className="boton boton--primario" onClick={() => void crear(r.datos.activa?.planId ?? null)} disabled={creando}>
-                  {r.datos.activa ? COPY_ENTRENAMIENTO.crearNuevaVersion : COPY_ENTRENAMIENTO.crearPlan}
-                </button>
-              </div>
+              <>
+                <div className="acciones">
+                  <button type="button" className="boton boton--primario" onClick={() => void crear(r.datos.activa?.planId ?? null)} disabled={creando}>
+                    {r.datos.activa ? COPY_ENTRENAMIENTO.crearNuevaVersion : COPY_ENTRENAMIENTO.crearPlan}
+                  </button>
+                </div>
+                <InicioDesdePlantilla key={plantillasGuardadas} token={token} deshabilitado={creando} onAplicar={(id) => void aplicar(id)} />
+              </>
             ) : null;
           })()}
 
@@ -119,6 +143,27 @@ export function VistaDePlan() {
               Plan activo {r.datos.activa ? <span className="insignia">{COPY_ENTRENAMIENTO.activo}</span> : null}
             </h2>
             {r.datos.activa ? <PlanSoloLectura version={r.datos.activa} numero={numerosDeVersion(r.datos.versiones).get(r.datos.activa.planId) ?? 1} /> : <p>{COPY_ENTRENAMIENTO.sinPlanActivo}</p>}
+            {r.datos.activa ? (
+              <>
+                <div className="acciones">
+                  <button type="button" className="boton boton--secundario" onClick={() => setGuardarPlantilla(true)}>
+                    {COPY_PLANTILLAS.guardarComoPlantilla}
+                  </button>
+                </div>
+                <DialogoGuardarPlantilla
+                  token={token}
+                  abierto={guardarPlantilla}
+                  estructura={{ blocks: estructuraComoEntrada(r.datos.activa) }}
+                  origen={r.datos.activa.planId}
+                  onCerrar={() => setGuardarPlantilla(false)}
+                  onGuardada={() => {
+                    setGuardarPlantilla(false);
+                    setPlantillasGuardadas((n) => n + 1);
+                    setAviso({ tipo: 'exito', texto: COPY_PLANTILLAS.guardada });
+                  }}
+                />
+              </>
+            ) : null}
           </section>
 
           <section className="seccion" aria-labelledby="titulo-historial">

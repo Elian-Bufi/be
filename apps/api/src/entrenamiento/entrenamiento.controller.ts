@@ -11,6 +11,7 @@ import { EjecucionesDeEntrenamientoService } from './ejecuciones.service';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
 import { ImportacionDeEjerciciosService } from './importacion.service';
 import { PlanesDeEntrenamientoService } from './planes.service';
+import { PlantillasDeEntrenamientoService } from './plantillas.service';
 import { RevisionesDeEntrenamientoService } from './revisiones.service';
 
 type Solicitud = SolicitudAutenticada & SolicitudConContexto;
@@ -31,6 +32,7 @@ export class EntrenamientoController {
     private readonly revisiones: RevisionesDeEntrenamientoService,
     private readonly limitador: LimitadorService,
     private readonly importacion: ImportacionDeEjerciciosService,
+    private readonly plantillas: PlantillasDeEntrenamientoService,
   ) {}
 
   // ─── Evaluación y objetivo (UC-P14) ─────────────────────────────────────────────────────────
@@ -131,6 +133,41 @@ export class EntrenamientoController {
   async crearEjercicio(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
     sinParametrosDeQuery(query);
     return responder(res, await this.catalogo.crear(actorDe(req), cuerpo, clave, contextoDe(req)));
+  }
+
+  // ─── Plantillas de plan del profesional (PF-09; DL-108) ─────────────────────────────────────────
+  /** API-TPL-01. */
+  @Post('training/plan-templates')
+  async crearPlantilla(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.plantillas.crear(actorDe(req), cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-TPL-02. */
+  @Get('training/plan-templates')
+  listarPlantillas(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    return this.plantillas.listar(actorDe(req), query, contextoDe(req));
+  }
+
+  /** API-TPL-03. */
+  @Get('training/plan-templates/:templateId')
+  consultarPlantilla(@Param('templateId') templateId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return this.plantillas.consultar(actorDe(req), templateId, contextoDe(req));
+  }
+
+  /** API-TPL-04. */
+  @Post('training/plan-templates/:templateId/versions')
+  async nuevaVersionDePlantilla(@Param('templateId') templateId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.plantillas.nuevaVersion(actorDe(req), templateId, cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-TPL-05. */
+  @Patch('training/plan-templates/:templateId')
+  async editarPlantilla(@Param('templateId') templateId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.plantillas.editar(actorDe(req), templateId, cuerpo, contextoDe(req)));
   }
 
   // ─── Importación controlada de wger (UC-I07; WP-08) ─────────────────────────────────────────

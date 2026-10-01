@@ -836,6 +836,43 @@ it('TEST-CT (WP-06, tramo 1): se ejercitan éxitos y errores de la evaluación, 
   await ase.get('/api/v1/training/exercises').expect(403);
   const ejercicio = { name: 'Ejercicio sintético del contrato', muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } };
   await pro.post('/api/v1/training/exercises').send(ejercicio).expect(201);
+
+  // TPL-01..05 (plantillas del profesional, DL-108): éxitos; nombre repetido; cuerpo inválido; filtro inválido; ajena;
+  // versión esperada vencida; archivar; sin sesión; un asesorado no tiene plantillas.
+  const plantilla = await pro.post('/api/v1/training/plan-templates').send({ name: 'Molde de contrato', structure: estructuraDeEntrenamiento() }).expect(201);
+  const plantillaId = plantilla.body.data.templateId as string;
+  await pro.post('/api/v1/training/plan-templates').send({ name: 'molde de contrato', structure: estructuraDeEntrenamiento() }).expect(409);
+  await pro.post('/api/v1/training/plan-templates').send({ name: '', structure: estructuraDeEntrenamiento() }).expect(400);
+  await pro.get('/api/v1/training/plan-templates').expect(200);
+  await pro.get('/api/v1/training/plan-templates?state=DRAFT').expect(400);
+  await pro.get(`/api/v1/training/plan-templates/${plantillaId}`).expect(200);
+  await pro.get(`/api/v1/training/plan-templates/${randomUUID()}`).expect(404);
+  await ase.get('/api/v1/training/plan-templates').expect(403);
+  await pro.post(`/api/v1/training/plan-templates/${plantillaId}/versions`).send({ expectedVersion: 'v99', structure: estructuraDeEntrenamiento() }).expect(409);
+  const segunda = await pro.post(`/api/v1/training/plan-templates/${plantillaId}/versions`).send({ expectedVersion: plantilla.body.data.version, structure: estructuraDeEntrenamiento() }).expect(201);
+  await pro.patch(`/api/v1/training/plan-templates/${plantillaId}`).send({ expectedVersion: 'v99', name: 'Otro' }).expect(409);
+  await pro.patch(`/api/v1/training/plan-templates/${plantillaId}`).send({ expectedVersion: segunda.body.data.version }).expect(400);
+  await pro.patch(`/api/v1/training/plan-templates/${plantillaId}`).send({ expectedVersion: segunda.body.data.version, state: 'ARCHIVED' }).expect(200);
+  await request(app.getHttpServer()).get('/api/v1/training/plan-templates').expect(401);
+
+  // TPN-01..05 (plantillas de comidas, DL-108): con un circuito de nutrición.
+  const nut = await circuitoListoParaPlanificar(app, 'contrato-tpn');
+  const nutPro = conSesion(app, nut.pro.token);
+  const tpn = await nutPro.post('/api/v1/nutrition/plan-templates').send({ name: 'Molde de comidas', structure: estructura(nut.arroz, nut.pollo) }).expect(201);
+  const tpnId = tpn.body.data.templateId as string;
+  await nutPro.post('/api/v1/nutrition/plan-templates').send({ name: 'molde de comidas', structure: estructura(nut.arroz, nut.pollo) }).expect(409);
+  await nutPro.post('/api/v1/nutrition/plan-templates').send({ name: '', structure: estructura(nut.arroz, nut.pollo) }).expect(400);
+  await nutPro.get('/api/v1/nutrition/plan-templates').expect(200);
+  await nutPro.get('/api/v1/nutrition/plan-templates?state=DRAFT').expect(400);
+  await nutPro.get(`/api/v1/nutrition/plan-templates/${tpnId}`).expect(200);
+  await nutPro.get(`/api/v1/nutrition/plan-templates/${randomUUID()}`).expect(404);
+  await conSesion(app, nut.ase.token).get('/api/v1/nutrition/plan-templates').expect(403);
+  await nutPro.post(`/api/v1/nutrition/plan-templates/${tpnId}/versions`).send({ expectedVersion: 'v99', structure: estructura(nut.arroz, nut.pollo) }).expect(409);
+  const tpn2 = await nutPro.post(`/api/v1/nutrition/plan-templates/${tpnId}/versions`).send({ expectedVersion: tpn.body.data.version, structure: estructura(nut.arroz, nut.pollo) }).expect(201);
+  await nutPro.patch(`/api/v1/nutrition/plan-templates/${tpnId}`).send({ expectedVersion: 'v99', name: 'Otro' }).expect(409);
+  await nutPro.patch(`/api/v1/nutrition/plan-templates/${tpnId}`).send({ expectedVersion: tpn2.body.data.version }).expect(400);
+  await nutPro.patch(`/api/v1/nutrition/plan-templates/${tpnId}`).send({ expectedVersion: tpn2.body.data.version, state: 'ARCHIVED' }).expect(200);
+  await request(app.getHttpServer()).get('/api/v1/nutrition/plan-templates').expect(401);
   await pro.post('/api/v1/training/exercises').send({ ...ejercicio, muscleZones: [{ zoneId: 'zone_x', role: 'PRIMARY' }] }).expect(422);
   await pro.post('/api/v1/training/exercises').send({ ...ejercicio, extra: 1 }).expect(400);
   await ase.post('/api/v1/training/exercises').send(ejercicio).expect(403);

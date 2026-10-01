@@ -64,6 +64,17 @@ import {
 } from './contratos-vinculo';
 import { CarteraResponseSchema, type CarteraResponse, type FiltroDeCartera } from './contratos-cartera';
 import {
+  ListaDePlantillasDeEntrenamientoResponseSchema,
+  PlantillaDeEntrenamientoResponseSchema,
+  type CrearPlantillaDeEntrenamientoRequest,
+  type EditarPlantillaRequest,
+  type NuevaVersionDePlantillaRequest,
+  ListaDePlantillasNutricionalesResponseSchema,
+  PlantillaNutricionalResponseSchema,
+  type CrearPlantillaNutricionalRequest,
+  type NuevaVersionDePlantillaNutricionalRequest,
+} from './contratos-plantillas';
+import {
   ActivacionDePlanResponseSchema,
   AplicarRevisionResponseSchema,
   ContextoDeRevisionResponseSchema,
@@ -408,6 +419,37 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-DSH-03. 404 = no hay acceso que mostrar: la UI no distingue por qué (UC-I02 E05). */
     consultarDashboard(token: string, asesoradoId: string): Promise<Resultado<DashboardResponse>> {
       return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/dashboard`, { token, esquema: DashboardResponseSchema });
+    },
+    // ─── PF-09 · Plantillas de plan de entrenamiento (DL-108) ─────────────────────────────
+    crearPlantillaDeEntrenamiento(token: string, cuerpo: CrearPlantillaDeEntrenamientoRequest, clave: string) {
+      return llamar('POST', '/training/plan-templates', { token, cuerpo, claveDeIdempotencia: clave, esquema: PlantillaDeEntrenamientoResponseSchema });
+    },
+    listarPlantillasDeEntrenamiento(token: string, filtro: { state?: 'ACTIVE' | 'ARCHIVED'; cursor?: string } = {}) {
+      return llamar('GET', `/training/plan-templates${query(filtro)}`, { token, esquema: ListaDePlantillasDeEntrenamientoResponseSchema });
+    },
+    consultarPlantillaDeEntrenamiento(token: string, templateId: string) {
+      return llamar('GET', `/training/plan-templates/${encodeURIComponent(templateId)}`, { token, esquema: PlantillaDeEntrenamientoResponseSchema });
+    },
+    nuevaVersionDePlantillaDeEntrenamiento(token: string, templateId: string, cuerpo: NuevaVersionDePlantillaRequest, clave: string) {
+      return llamar('POST', `/training/plan-templates/${encodeURIComponent(templateId)}/versions`, { token, cuerpo, claveDeIdempotencia: clave, esquema: PlantillaDeEntrenamientoResponseSchema });
+    },
+    editarPlantillaDeEntrenamiento(token: string, templateId: string, cuerpo: EditarPlantillaRequest) {
+      return llamar('PATCH', `/training/plan-templates/${encodeURIComponent(templateId)}`, { token, cuerpo, esquema: PlantillaDeEntrenamientoResponseSchema });
+    },
+    crearPlantillaNutricional(token: string, cuerpo: CrearPlantillaNutricionalRequest, clave: string) {
+      return llamar('POST', '/nutrition/plan-templates', { token, cuerpo, claveDeIdempotencia: clave, esquema: PlantillaNutricionalResponseSchema });
+    },
+    listarPlantillasNutricionales(token: string, filtro: { state?: 'ACTIVE' | 'ARCHIVED'; cursor?: string } = {}) {
+      return llamar('GET', `/nutrition/plan-templates${query(filtro)}`, { token, esquema: ListaDePlantillasNutricionalesResponseSchema });
+    },
+    consultarPlantillaNutricional(token: string, templateId: string) {
+      return llamar('GET', `/nutrition/plan-templates/${encodeURIComponent(templateId)}`, { token, esquema: PlantillaNutricionalResponseSchema });
+    },
+    nuevaVersionDePlantillaNutricional(token: string, templateId: string, cuerpo: NuevaVersionDePlantillaNutricionalRequest, clave: string) {
+      return llamar('POST', `/nutrition/plan-templates/${encodeURIComponent(templateId)}/versions`, { token, cuerpo, claveDeIdempotencia: clave, esquema: PlantillaNutricionalResponseSchema });
+    },
+    editarPlantillaNutricional(token: string, templateId: string, cuerpo: EditarPlantillaRequest) {
+      return llamar('PATCH', `/nutrition/plan-templates/${encodeURIComponent(templateId)}`, { token, cuerpo, esquema: PlantillaNutricionalResponseSchema });
     },
     /** API-DSH-04 (PF-07, propuesta): los pendientes de toda la cartera del profesional. */
     consultarCartera(token: string, filtro: FiltroDeCartera = {}): Promise<Resultado<CarteraResponse>> {

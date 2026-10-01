@@ -313,6 +313,8 @@ export const CrearPlanDeEntrenamientoRequestSchema = z.strictObject({
   basedOnPlanId: IdOpaco.optional(),
   /** Próxima revisión que fija esta versión (REG-06-145; DL-055, por homología). */
   nextReviewAt: FechaLocalSchema.nullable().optional(),
+  /** PF-09 (DL-108): empezar desde una versión de plantilla propia; excluyente con `basedOnPlanId` e `initialStructure`. */
+  fromTemplateVersionId: IdOpaco.optional(),
 });
 export type CrearPlanDeEntrenamientoRequest = z.infer<typeof CrearPlanDeEntrenamientoRequestSchema>;
 
@@ -333,6 +335,11 @@ export const VersionDePlanDeEntrenamientoSchema = z.strictObject({
   /** SHA-256 de la instantánea; `null` en un borrador (REG-06-105). */
   snapshotDigest: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
   nextReviewAt: FechaLocalSchema.nullable(),
+  /**
+   * PF-09 (DL-108): de qué plantilla y versión salió esta versión. Solo en lecturas del profesional (la APK instalada
+   * valida con esquemas estrictos y no la conoce): ausente para el titular, `null` si no salió de una plantilla.
+   */
+  templateOrigin: z.strictObject({ templateId: IdOpaco, templateVersionId: IdOpaco }).nullable().optional(),
   blocks: z.array(BloqueSchema),
 });
 export type VersionDePlanDeEntrenamiento = z.infer<typeof VersionDePlanDeEntrenamientoSchema>;

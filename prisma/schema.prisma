@@ -158,6 +158,10 @@ model Identidad {
   planesComoAsesorado                        PlanNutricional[]                      @relation("PlanDelAsesorado")
   ingestas                                   IngestaNutricional[]                   @relation("IngestaDelAsesorado")
   ejerciciosCreados                          EjercicioDeCatalogo[]                  @relation("EjercicioCreadoPor")
+  plantillasDePlanDeEntrenamiento            PlantillaDePlanDeEntrenamiento[]       @relation("PlantillaDePlanDelProfesional")
+  versionesDePlantillaAutor                  VersionDePlantillaDePlanDeEntrenamiento[] @relation("VersionDePlantillaPorAutor")
+  plantillasDePlanNutricional                PlantillaDePlanNutricional[]           @relation("PlantillaNutricionalDelProfesional")
+  versionesDePlantillaNutricionalAutor       VersionDePlantillaDePlanNutricional[]  @relation("VersionDePlantillaNutricionalPorAutor")
   evaluacionesDeEntrenamientoComoProfesional EvaluacionDeEntrenamiento[]            @relation("EvaluacionDeEntrenamientoDelProfesional")
   evaluacionesDeEntrenamientoComoAsesorado   EvaluacionDeEntrenamiento[]            @relation("EvaluacionDeEntrenamientoDelAsesorado")
   objetivosDeEntrenamientoComoProfesional    ObjetivoDeEntrenamiento[]              @relation("ObjetivoDeEntrenamientoDelProfesional")
@@ -1041,6 +1045,9 @@ enum TipoDeEventoDeNutricion {
   IngestaRegistrada
   CorreccionDeIngestaRegistrada
   RevisionRegistrada
+  PlantillaDePlanCreada
+  PlantillaDePlanVersionada
+  PlantillaDePlanEditada
 }
 
 /// T-06-31 — Elemento de catálogo: identificador BE estable (REG-06-99). Inmutable; el contenido vive en sus versiones.
@@ -1182,6 +1189,8 @@ model VersionDePlanNutricional {
   procedencia         Json
   momentoDeRegistro   DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
   momentoDeActivacion DateTime?             @map("momento_de_activacion") @db.Timestamptz(3)
+  /// PF-09 (DL-108): de qué plantilla y versión salió este borrador, si salió de una: `{ templateId, templateVersionId }`.
+  origenDePlantilla   Json?                 @map("origen_de_plantilla")
 
   plan               PlanNutricional               @relation("VersionesDelPlan", fields: [planId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   predecesora        VersionDePlanNutricional?     @relation("CadenaDePlan", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -1633,6 +1642,9 @@ enum TipoDeEventoDeEntrenamiento {
   EjecucionRegistrada
   EjecucionCorregida
   RevisionDeEntrenamientoRegistrada
+  PlantillaDePlanCreada
+  PlantillaDePlanVersionada
+  PlantillaDePlanEditada
 }
 
 /// D-B (docs/paquetes/WP-07.md): mismos dos nombres de evento que las transiciones de
@@ -1799,6 +1811,8 @@ model VersionDePlanDeEntrenamiento {
   procedencia         Json
   momentoDeRegistro   DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
   momentoDeActivacion DateTime?             @map("momento_de_activacion") @db.Timestamptz(3)
+  /// PF-09 (DL-108): de qué plantilla y versión salió este borrador, si salió de una: `{ templateId, templateVersionId }`.
+  origenDePlantilla   Json?                 @map("origen_de_plantilla")
 
   plan                  PlanDeEntrenamiento                  @relation("VersionesDelPlanDeEntrenamiento", fields: [planId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   predecesora           VersionDePlanDeEntrenamiento?        @relation("CadenaDePlanDeEntrenamiento", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -2170,4 +2184,103 @@ model ResolucionDeCandidato {
   ejercicio           EjercicioDeCatalogo?           @relation("EjercicioImportado", fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@map("resolucion_de_candidato")
+}
+
+// ─── PF-09 · Plantillas de plan de entrenamiento del profesional (DL-108) ─────────────────────────────
+
+enum EstadoDePlantilla {
+  ACTIVA
+  ARCHIVADA
+}
+
+/// D-2: si la versión de plantilla conserva las cargas sugeridas como referencia (nunca un booleano: TEST-RUN-003).
+enum CargasDePlantilla {
+  NO_COPIADAS
+  COPIADAS
+}
+
+/// Molde propio del profesional, sin asesorado: nombre único por profesional; versiones inmutables; `version` es el
+/// token de concurrencia de la plantilla (nombre, descripción, estado y versión nueva).
+model PlantillaDePlanDeEntrenamiento {
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String            @map("profesional_id") @db.Uuid
+  nombre                 String
+  nombreNormalizado      String            @map("nombre_normalizado")
+  descripcion            String?
+  estado                 EstadoDePlantilla @default(ACTIVA)
+  version                Int               @default(1)
+  momentoDeRegistro      DateTime          @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime          @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad                                 @relation("PlantillaDePlanDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones   VersionDePlantillaDePlanDeEntrenamiento[]
+
+  @@unique([profesionalId, nombreNormalizado])
+  @@index([profesionalId, estado, momentoDeActualizacion])
+  @@map("plantilla_de_plan_de_entrenamiento")
+}
+
+/// La estructura de entrada de un plan (la misma forma que valida API-TRN-07), sin cargas salvo pedido (D-2) y sin nada
+/// de una persona (D-5). `origen` es la versión de plan propia de la que salió, si salió de una.
+model VersionDePlantillaDePlanDeEntrenamiento {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  plantillaId       String   @map("plantilla_id") @db.Uuid
+  numero            Int
+  estructura        Json
+  cargas            CargasDePlantilla @default(NO_COPIADAS)
+  origen            Json?
+  autorId           String   @map("autor_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  plantilla PlantillaDePlanDeEntrenamiento @relation(fields: [plantillaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  autor     Identidad                      @relation("VersionDePlantillaPorAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([plantillaId, numero])
+  @@map("version_de_plantilla_de_plan_de_entrenamiento")
+}
+
+/// D-2 en nutrición: si la versión de plantilla conserva las cantidades (nunca un booleano: TEST-RUN-003).
+enum CantidadesDePlantilla {
+  NO_COPIADAS
+  COPIADAS
+}
+
+/// PF-09 (DL-108): molde propio de plan de comidas, sin asesorado; nombre único por profesional; versiones inmutables.
+model PlantillaDePlanNutricional {
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String            @map("profesional_id") @db.Uuid
+  nombre                 String
+  nombreNormalizado      String            @map("nombre_normalizado")
+  descripcion            String?
+  estado                 EstadoDePlantilla @default(ACTIVA)
+  version                Int               @default(1)
+  momentoDeRegistro      DateTime          @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime          @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad                             @relation("PlantillaNutricionalDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones   VersionDePlantillaDePlanNutricional[]
+
+  @@unique([profesionalId, nombreNormalizado])
+  @@index([profesionalId, estado, momentoDeActualizacion])
+  @@map("plantilla_de_plan_nutricional")
+}
+
+/// La estructura de entrada de un plan de comidas (la misma forma que valida API-NUT-07), sin cantidades salvo pedido.
+model VersionDePlantillaDePlanNutricional {
+  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  plantillaId       String                @map("plantilla_id") @db.Uuid
+  numero            Int
+  estructura        Json
+  cantidades        CantidadesDePlantilla @default(NO_COPIADAS)
+  origen            Json?
+  autorId           String                @map("autor_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  plantilla PlantillaDePlanNutricional @relation(fields: [plantillaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  autor     Identidad                  @relation("VersionDePlantillaNutricionalPorAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([plantillaId, numero])
+  @@map("version_de_plantilla_de_plan_nutricional")
 }

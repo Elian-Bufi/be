@@ -7,7 +7,7 @@
  * - Un solo borrador por plan (REG-06-12): si ya hay uno, se sigue sobre ese.
  * - «Borrador creado», no «Plan creado correctamente» (B05:378-398).
  */
-import { cantidad, COPY_NUTRICION, ETIQUETA_DE_PREPARACION, ETIQUETA_DE_UNIDAD, type VersionDePlan } from '@be/domain';
+import { cantidad, COPY_NUTRICION, COPY_PLANTILLAS, ETIQUETA_DE_PREPARACION, ETIQUETA_DE_UNIDAD, estructuraNutricionalComoEntrada, type VersionDePlan } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -15,6 +15,7 @@ import { fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EditorDeBorrador } from './editor';
 import { EstadoDeLectura, useNutricion } from './nutricion';
+import { DialogoGuardarPlantillaNutricional, InicioDesdePlantillaNutricional } from './plantillas';
 
 type Resumen = Omit<VersionDePlan, 'dayTypes'>;
 
@@ -32,6 +33,9 @@ export function VistaDePlan() {
   const [r, setR] = useState<Resultado<{ versiones: Resumen[]; activa: VersionDePlan | null; objetivo: string | null }> | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [creando, setCreando] = useState(false);
+  // «Guardar como plantilla» sobre la versión activa (PF-09; DL-108) y la recarga del selector al guardar una.
+  const [guardarPlantilla, setGuardarPlantilla] = useState(false);
+  const [plantillasGuardadas, setPlantillasGuardadas] = useState(0);
   const intento = useClaveDeIntento();
 
   const cargar = useCallback(async () => {
@@ -76,6 +80,20 @@ export function VistaDePlan() {
     await cargar();
   }
 
+  /** Crear el borrador desde una plantilla propia (API-NUT-07 con `fromTemplateVersionId`): nace de la persona, con su objetivo. */
+  async function aplicar(templateVersionId: string) {
+    if (!r?.ok || !r.datos.objetivo) return;
+    setCreando(true);
+    setAviso(null);
+    const res = await api.crearBorradorDePlan(token, asesoradoId, { objectiveVersionId: r.datos.objetivo, fromTemplateVersionId: templateVersionId }, intento.actual());
+    intento.registrar(res);
+    setCreando(false);
+    if (sesionPerdida(res) || accesoRetirado(res)) return;
+    if (!res.ok) return setAviso({ tipo: 'error', texto: res.tipo === 'API' && res.codigo === 'TEMPLATE_ARCHIVED' ? COPY_PLANTILLAS.archivadaNoSeAplica : mensajeDeFallo(res) });
+    setAviso({ tipo: 'exito', texto: COPY_PLANTILLAS.aplicada });
+    await cargar();
+  }
+
   return (
     <EstadoDeLectura r={r} onReintentar={cargar}>
       {r?.ok ? (
@@ -106,23 +124,47 @@ export function VistaDePlan() {
               );
             }
             return r.datos.objetivo ? (
-              <div className="acciones">
-                {r.datos.activa ? (
-                  <button type="button" className="boton boton--primario" onClick={() => void crear(r.datos.activa!.planId)} disabled={creando}>
-                    {COPY_NUTRICION.crearNuevaVersion}
-                  </button>
-                ) : (
-                  <button type="button" className="boton boton--primario" onClick={() => void crear(null)} disabled={creando}>
-                    {COPY_NUTRICION.crearNuevoPlan}
-                  </button>
-                )}
-              </div>
+              <>
+                <div className="acciones">
+                  {r.datos.activa ? (
+                    <button type="button" className="boton boton--primario" onClick={() => void crear(r.datos.activa!.planId)} disabled={creando}>
+                      {COPY_NUTRICION.crearNuevaVersion}
+                    </button>
+                  ) : (
+                    <button type="button" className="boton boton--primario" onClick={() => void crear(null)} disabled={creando}>
+                      {COPY_NUTRICION.crearNuevoPlan}
+                    </button>
+                  )}
+                </div>
+                <InicioDesdePlantillaNutricional key={plantillasGuardadas} token={token} deshabilitado={creando} onAplicar={(id) => void aplicar(id)} />
+              </>
             ) : null;
           })()}
 
           <section className="seccion" aria-labelledby="titulo-activo">
             <h2 id="titulo-activo">{COPY_NUTRICION.planActivo}</h2>
             {r.datos.activa ? <VersionSoloLectura version={r.datos.activa} numero={numerosDeVersion(r.datos.versiones).get(r.datos.activa.planId) ?? 1} /> : <p>{COPY_NUTRICION.sinPlanActivo}</p>}
+            {r.datos.activa ? (
+              <>
+                <div className="acciones">
+                  <button type="button" className="boton boton--secundario" onClick={() => setGuardarPlantilla(true)}>
+                    {COPY_PLANTILLAS.guardarComoPlantilla}
+                  </button>
+                </div>
+                <DialogoGuardarPlantillaNutricional
+                  token={token}
+                  abierto={guardarPlantilla}
+                  estructura={estructuraNutricionalComoEntrada(r.datos.activa)}
+                  origen={r.datos.activa.planId}
+                  onCerrar={() => setGuardarPlantilla(false)}
+                  onGuardada={() => {
+                    setGuardarPlantilla(false);
+                    setPlantillasGuardadas((n) => n + 1);
+                    setAviso({ tipo: 'exito', texto: COPY_PLANTILLAS.guardada });
+                  }}
+                />
+              </>
+            ) : null}
           </section>
 
           <section className="seccion" aria-labelledby="titulo-historial">
