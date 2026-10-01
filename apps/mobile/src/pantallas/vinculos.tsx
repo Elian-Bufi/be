@@ -11,14 +11,14 @@
  */
 import { COPY, COPY_VINCULO, ETIQUETA_DE_FINALIDAD, estadoParaMostrar, type Resultado, type SolicitudDeVinculo, type Vinculo } from '@be/domain';
 import { useCallback, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
 import { EstadoDeCarga, VerMas } from '../estados';
 import { dia, fecha } from '../formato';
 import { falloDe, useClaveDeIntento, type Fallo } from '../intento';
 import { useListaPaginada } from '../lista';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Boton, COLOR, Dato, Insignia, Parrafo, Seccion, Tarjeta, Titulo, estilos as ui } from '../ui';
+import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Tarjeta, Titulo, estilos as ui, estilosPorTema } from '../ui';
 
 type Decision = { readonly tipo: 'aceptada'; readonly vinculoId: string } | { readonly tipo: 'rechazada' };
 
@@ -258,7 +258,7 @@ function SolicitudAnterior({ s }: { s: SolicitudDeVinculo }) {
   );
 }
 
-const estilos = StyleSheet.create({
+const estilos = estilosPorTema((COLOR) => ({
   nombre: { fontSize: 18, fontWeight: '700', color: COLOR.texto, marginBottom: 4 },
   enlace: { fontSize: 16, fontWeight: '700', color: COLOR.acento, textDecorationLine: 'underline', marginTop: 8 },
-});
+}));

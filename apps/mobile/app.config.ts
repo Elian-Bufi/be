@@ -7,8 +7,8 @@ import type { ExpoConfig } from 'expo/config';
  */
 const VERSION = '0.12.1';
 
-/** El fondo navy del tema oscuro (src/tema.ts): detrás de la app mientras carga y detrás del ícono adaptativo. */
-const FONDO = '#04213F';
+/** El fondo de Azul noche (src/tema.ts, tema predeterminado): detrás de la app mientras carga y detrás del ícono adaptativo. */
+const FONDO = '#011325';
 
 const config: ExpoConfig = {
   name: 'BE',
@@ -17,7 +17,8 @@ const config: ExpoConfig = {
   version: VERSION,
   orientation: 'portrait',
   icon: './assets/icon.png',
-  // La APK usa el tema oscuro de las referencias de Dirección del 2026-09-21 (docs/paquetes/WP-IDENTIDAD-VISUAL.md).
+  // Azul noche es el tema predeterminado; Claro se elige en Cuenta (src/apariencia.tsx). Los diálogos del sistema
+  // quedan oscuros en los dos.
   userInterfaceStyle: 'dark',
   backgroundColor: FONDO,
   android: {

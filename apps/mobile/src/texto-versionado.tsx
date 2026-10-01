@@ -6,9 +6,9 @@
  */
 import type { VersionDeTexto } from '@be/domain';
 import { useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, ScrollView, Text, View } from 'react-native';
 import { dia } from './formato';
-import { Boton, COLOR, estilos as ui } from './ui';
+import { Boton, estilos as ui, estilosPorTema } from './ui';
 
 /** Versión tal como la entrega la API: lo que la pantalla muestra es lo que se envía al aceptar. */
 export interface VersionDeLaApi {
@@ -83,8 +83,8 @@ export function TextoVersionado({ version, visible, alCerrar }: { version: Versi
   );
 }
 
-const estilos = StyleSheet.create({
+const estilos = estilosPorTema((COLOR) => ({
   contenido: { padding: 24, paddingTop: 48 },
   meta: { borderLeftWidth: 4, borderLeftColor: COLOR.borde, paddingLeft: 10, marginBottom: 12 },
   desplegado: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 8, padding: 12, marginVertical: 6, backgroundColor: COLOR.superficie },
-});
+}));
