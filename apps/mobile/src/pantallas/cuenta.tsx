@@ -1,6 +1,7 @@
 /**
- * APK · Cuenta: Vínculos · Estado · Tu identificador BE · Privacidad · Seguridad · Cerrar mi cuenta
- * (docs/paquetes/WP-02.md §5; docs/paquetes/WP-03.md §5).
+ * APK · Cuenta: Vínculos · Estado · Tu identificador BE · Privacidad · Apariencia · Seguridad · Cerrar mi cuenta
+ * (docs/paquetes/WP-02.md §5; docs/paquetes/WP-03.md §5). Desde la barra inferior (Dirección, 2026-10-01), Cuenta ya
+ * no es el menú de las zonas: es una zona más, con lo que es de la cuenta.
  * - Estado: solo el estado operativo, nunca «habilitado» (TEST-RF-006).
  * - Tu identificador BE: el que el profesional necesita para solicitar un vínculo (DL-035). Por sí solo no da acceso a
  *   nada; se muestra seleccionable y se comparte con el menú del sistema.
@@ -10,24 +11,14 @@
  * - Seguridad: cerrar sesión / cerrar todas, separado del cierre de cuenta (10-B02:436-458).
  * - Cierre (PROTO-10-ACC-06): explicación → modal con consecuencias versionadas → «Confirmar cierre».
  */
-import {
-  COPY,
-  COPY_ANTROPOMETRIA,
-  COPY_ENTRENAMIENTO,
-  COPY_FORMULARIOS,
-  COPY_VINCULO,
-  VERSION_VIGENTE,
-  type MeResponse,
-  type RequisitoDeConsentimientoDeSaludResponse,
-  type Resultado,
-} from '@be/domain';
+import { COPY, COPY_VINCULO, VERSION_VIGENTE, type MeResponse, type RequisitoDeConsentimientoDeSaludResponse, type Resultado } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Platform, ScrollView, Share, Text, View } from 'react-native';
 import { api, nuevaClaveDeIdempotencia } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
 import { fecha } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Titulo, estilos as ui, estilosPorTema } from '../ui';
+import { Aviso, Ayuda, Boton, Dato, Insignia, Parrafo, Seccion, Titulo, estilos as ui, estilosPorTema } from '../ui';
 import { SelectorDeApariencia } from '../apariencia';
 
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'error'; sinConexion: boolean };
@@ -78,11 +69,7 @@ export function PantallaDeCuenta({ token, salir, ir }: { token: string; salir: (
   return (
     <>
       <Titulo>Cuenta</Titulo>
-      <Boton texto="Nutrición: Hoy" onPress={() => ir({ nombre: 'hoy' })} />
-      <Boton texto={`Entrenamiento: ${COPY_ENTRENAMIENTO.entrenamientoDeHoy}`} tipo="secundario" onPress={() => ir({ nombre: 'entrenamiento' })} />
-      <Boton texto={`Entrenamiento: ${COPY_ENTRENAMIENTO.tuHistorial}`} tipo="secundario" onPress={() => ir({ nombre: 'historial-de-entrenamiento' })} />
-      <Boton texto={`Antropometría: ${COPY_ANTROPOMETRIA.miEvolucion}`} tipo="secundario" onPress={() => ir({ nombre: 'mi-evolucion' })} />
-      <Boton texto={`Información: ${COPY_FORMULARIOS.pestana}`} tipo="secundario" onPress={() => ir({ nombre: 'mis-solicitudes' })} />
+      {/* Las zonas (Nutrición, Entrenamiento, Evolución, Información) están en la barra de abajo; acá queda lo de la cuenta. */}
       <Boton texto="Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
 
       <Seccion titulo="Estado de la cuenta">
@@ -94,7 +81,9 @@ export function PantallaDeCuenta({ token, salir, ir }: { token: string; salir: (
             <Dato etiqueta="Esta sesión vence" valor={fecha(cuenta.datos.session.expiresAt)} />
           </>
         ) : null}
-        <Parrafo tenue>El estado operativo indica si podés usar tu cuenta. No es una habilitación profesional ni una autorización sobre datos.</Parrafo>
+        <Ayuda>
+          <Parrafo tenue>El estado operativo indica si podés usar tu cuenta. No es una habilitación profesional ni una autorización sobre datos.</Parrafo>
+        </Ayuda>
       </Seccion>
 
       <Seccion titulo={COPY_VINCULO.tuIdentificador}>

@@ -2,6 +2,9 @@
  * Navegación del APK por estado, sin librería de rutas: cada pantalla es un valor de `Ruta` (App.tsx la dibuja).
  * «Atrás» (botón de Android o enlace visible) va a la pantalla lógica anterior, no a la historia cronológica, y nunca
  * cierra la sesión. La sesión vive solo en memoria (DL-012): perderla lleva a Iniciar sesión.
+ *
+ * Con sesión, la barra inferior (`barra-de-zonas.tsx`) lleva a las cinco zonas: cada pantalla pertenece a una
+ * (`zonaDe`), y tocar una zona abre su pantalla principal, como en Android.
  */
 import { CODIGOS_DE_SESION_NO_VALIDA, type Resultado, type SesionDeOcurrencia } from '@be/domain';
 import { useCallback, useState } from 'react';
@@ -9,7 +12,8 @@ import { useCallback, useState } from 'react';
 export type Ruta =
   | { readonly nombre: 'bienvenida'; readonly aviso?: string }
   | { readonly nombre: 'registro' }
-  | { readonly nombre: 'login'; readonly aviso?: string }
+  // `alEntrar`: adónde lleva iniciar sesión cuando no es Nutrición (por ahora, solo de vuelta a Cuenta).
+  | { readonly nombre: 'login'; readonly aviso?: string; readonly alEntrar?: 'cuenta' }
   | { readonly nombre: 'cuenta' }
   | { readonly nombre: 'vinculos' }
   | { readonly nombre: 'vinculo'; readonly id: string }
@@ -36,20 +40,96 @@ export function requiereSesion(ruta: Ruta): boolean {
   return ruta.nombre !== 'bienvenida' && ruta.nombre !== 'registro' && ruta.nombre !== 'login';
 }
 
-/** Pantalla lógica anterior. `null`: no hay (Bienvenida y Cuenta), y el botón de Android queda en manos del sistema. */
+// ─── La barra inferior: cinco zonas, como en las apps (Dirección, 2026-10-01) ───────────────────
+
+/** Las zonas de la barra inferior. Cada pantalla con sesión pertenece a una, y la barra la resalta. */
+export type Zona = 'nutricion' | 'entrenamiento' | 'evolucion' | 'informacion' | 'cuenta';
+
+/** Las cinco zonas, en el orden de la barra, con el texto visible y la pantalla principal que abre cada una. */
+export const ZONAS: readonly { readonly zona: Zona; readonly texto: string; readonly ruta: Ruta }[] = [
+  { zona: 'nutricion', texto: 'Nutrición', ruta: { nombre: 'hoy' } },
+  { zona: 'entrenamiento', texto: 'Entrenamiento', ruta: { nombre: 'entrenamiento' } },
+  { zona: 'evolucion', texto: 'Evolución', ruta: { nombre: 'mi-evolucion' } },
+  { zona: 'informacion', texto: 'Información', ruta: { nombre: 'mis-solicitudes' } },
+  { zona: 'cuenta', texto: 'Cuenta', ruta: { nombre: 'cuenta' } },
+];
+
+/**
+ * Donde abre la APK al iniciar sesión: Nutrición, la primera zona de la barra. Antes abría en Cuenta porque Cuenta era
+ * el menú; con la barra, el menú está siempre a la vista. Es también adonde lleva «atrás» desde las otras zonas.
+ */
+export const INICIO: Ruta = { nombre: 'hoy' };
+
+/**
+ * La pantalla que abre al iniciar sesión desde `login`: Nutrición, salvo que Cuenta haya pedido volver a entrar para
+ * confirmar una acción (el cierre de cuenta con reautenticación): entonces vuelve a Cuenta, donde quedó esa acción.
+ */
+export function alIniciarSesion(login: Ruta): Ruta {
+  return login.nombre === 'login' && login.alEntrar === 'cuenta' ? { nombre: 'cuenta' } : INICIO;
+}
+
+/** La zona de una pantalla: la que queda resaltada en la barra. `null` fuera de la sesión (Bienvenida, registro, login). */
+export function zonaDe(ruta: Ruta): Zona | null {
+  switch (ruta.nombre) {
+    case 'hoy':
+    case 'plan-actual':
+    case 'registros-nutricionales':
+    case 'registro-nutricional':
+      return 'nutricion';
+    case 'entrenamiento':
+    case 'historial-de-entrenamiento':
+    case 'plan-de-entrenamiento':
+    case 'sesion-de-entrenamiento':
+    case 'ejecucion-de-entrenamiento':
+      return 'entrenamiento';
+    case 'mi-evolucion':
+      return 'evolucion';
+    case 'mis-solicitudes':
+    case 'mi-solicitud':
+      return 'informacion';
+    case 'cuenta':
+    case 'vinculos':
+    case 'vinculo':
+    case 'consentimiento':
+    case 'privacidad':
+      return 'cuenta';
+    case 'bienvenida':
+    case 'registro':
+    case 'login':
+      return null;
+    default: {
+      // Una pantalla nueva sin zona no compila: la barra tiene que saber qué resaltar.
+      const sinZona: never = ruta;
+      return sinZona;
+    }
+  }
+}
+
+/** Si la pantalla es la principal de su zona (la que abre la barra): esas no llevan enlace de volver. */
+export function esPrincipal(ruta: Ruta): boolean {
+  return ZONAS.some((z) => z.ruta.nombre === ruta.nombre);
+}
+
+/**
+ * Pantalla lógica anterior. `null`: no hay, y el botón de Android queda en manos del sistema, que sale de la app. Pasa en
+ * Bienvenida y en Nutrición: desde las otras zonas principales, «atrás» lleva a Nutrición, como en las apps.
+ */
 export function anterior(ruta: Ruta): Ruta | null {
   switch (ruta.nombre) {
     case 'registro':
     case 'login':
       return { nombre: 'bienvenida' };
+    case 'entrenamiento':
+    case 'mi-evolucion':
+    case 'mis-solicitudes':
+    case 'cuenta':
+      return INICIO;
     case 'vinculos':
     case 'privacidad':
-    case 'hoy':
-    case 'mi-evolucion':
-    case 'entrenamiento':
-    case 'historial-de-entrenamiento':
-    case 'mis-solicitudes':
       return { nombre: 'cuenta' };
+    // «Tu historial» se abre desde Entrenamiento de hoy: ya no hay un botón en Cuenta.
+    case 'historial-de-entrenamiento':
+      return { nombre: 'entrenamiento' };
     case 'plan-de-entrenamiento':
       return { nombre: 'historial-de-entrenamiento' };
     case 'mi-solicitud':
@@ -83,7 +163,7 @@ export function textoDeVolverA(destino: Ruta): string {
     case 'vinculo':
       return 'Volver al vínculo';
     case 'hoy':
-      return 'Volver a Hoy';
+      return 'Volver a Tu plan de hoy';
     case 'entrenamiento':
       return 'Volver a Entrenamiento de hoy';
     case 'registros-nutricionales':

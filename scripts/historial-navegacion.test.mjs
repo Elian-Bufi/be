@@ -14,6 +14,8 @@
  *     de dispositivo y en límites de mes y año.
  *  4. Teclado: el KeyboardAvoidingView raíz usa «padding» también en Android, porque con edge-to-edge el sistema ya no
  *     achica la ventana (validación de la APK 0.11.2: el teclado tapaba el campo «Reps» de «Corregir registro»).
+ *  5. Barra inferior (Dirección, 2026-10-01): las cinco zonas, la zona madre de cada subpantalla, «atrás» hacia
+ *     Nutrición desde las zonas principales, y la barra fija abajo, accesible y fuera del camino del teclado.
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -136,4 +138,124 @@ test('el ScrollView global sigue dentro del KeyboardAvoidingView (el padding lo 
   const scroll = APP.indexOf('<ScrollView', inicio);
   const fin = APP.indexOf('</KeyboardAvoidingView>');
   assert.ok(inicio >= 0 && scroll > inicio && fin > scroll, 'el ScrollView global tiene que estar dentro del KeyboardAvoidingView');
+});
+
+// ─── 5. La barra inferior (Dirección, 2026-10-01): cinco zonas, como en las apps ─────────────────
+// Con sesión, la APK navega con una barra fija abajo: Nutrición, Entrenamiento, Evolución, Información y Cuenta. Cada
+// pantalla pertenece a una zona, que queda resaltada también en sus subpantallas; «atrás» desde una zona principal lleva
+// a Nutrición, y desde Nutrición sale de la app. El dibujo real (área segura, teclado) solo se comprueba en el teléfono.
+
+/** Una ruta de ejemplo por cada nombre de `Ruta`, con los datos que piden. */
+const RUTAS = [
+  { nombre: 'bienvenida' },
+  { nombre: 'registro' },
+  { nombre: 'login' },
+  { nombre: 'cuenta' },
+  { nombre: 'vinculos' },
+  { nombre: 'vinculo', id: 'v1' },
+  { nombre: 'consentimiento', vinculoId: 'v1' },
+  { nombre: 'privacidad' },
+  { nombre: 'hoy' },
+  { nombre: 'plan-actual' },
+  { nombre: 'registros-nutricionales' },
+  { nombre: 'registro-nutricional', id: 'i1' },
+  { nombre: 'mi-evolucion' },
+  { nombre: 'entrenamiento' },
+  { nombre: 'historial-de-entrenamiento' },
+  { nombre: 'plan-de-entrenamiento', id: 'p1' },
+  { nombre: 'mis-solicitudes' },
+  { nombre: 'mi-solicitud', id: 's1' },
+  { nombre: 'sesion-de-entrenamiento', draftId: 'd1', sesion: {}, fecha: '2026-10-01' },
+  { nombre: 'ejecucion-de-entrenamiento', id: 'e1' },
+];
+
+test('la barra tiene las cinco zonas, en orden, con su texto y su pantalla principal', () => {
+  assert.deepEqual(
+    nav.ZONAS.map((z) => [z.texto, z.ruta.nombre]),
+    [
+      ['Nutrición', 'hoy'],
+      ['Entrenamiento', 'entrenamiento'],
+      ['Evolución', 'mi-evolucion'],
+      ['Información', 'mis-solicitudes'],
+      ['Cuenta', 'cuenta'],
+    ],
+  );
+  for (const z of nav.ZONAS) assert.equal(nav.zonaDe(z.ruta), z.zona, `la pantalla principal de ${z.texto} pertenece a su zona`);
+});
+
+test('toda pantalla con sesión tiene zona, y las de afuera de la sesión no (sin barra en Bienvenida, registro ni login)', () => {
+  for (const ruta of RUTAS) {
+    const zona = nav.zonaDe(ruta);
+    if (nav.requiereSesion(ruta)) assert.ok(zona, `«${ruta.nombre}» no tiene zona`);
+    else assert.equal(zona, null, `«${ruta.nombre}» no debería mostrar la barra`);
+  }
+});
+
+test('en una subpantalla queda resaltada la zona madre', () => {
+  const madre = (nombre) => nav.zonaDe(RUTAS.find((r) => r.nombre === nombre));
+  assert.equal(madre('sesion-de-entrenamiento'), 'entrenamiento');
+  assert.equal(madre('ejecucion-de-entrenamiento'), 'entrenamiento');
+  assert.equal(madre('historial-de-entrenamiento'), 'entrenamiento');
+  assert.equal(madre('plan-de-entrenamiento'), 'entrenamiento');
+  assert.equal(madre('vinculo'), 'cuenta');
+  assert.equal(madre('consentimiento'), 'cuenta');
+  assert.equal(madre('privacidad'), 'cuenta');
+  assert.equal(madre('mi-solicitud'), 'informacion');
+  assert.equal(madre('registro-nutricional'), 'nutricion');
+  assert.equal(madre('plan-actual'), 'nutricion');
+});
+
+test('«atrás» desde una zona principal lleva a Nutrición, y desde Nutrición deja salir de la app', () => {
+  assert.equal(nav.INICIO.nombre, 'hoy', 'con sesión, la APK abre en Nutrición');
+  for (const nombre of ['entrenamiento', 'mi-evolucion', 'mis-solicitudes', 'cuenta']) assert.deepEqual(nav.anterior({ nombre }), { nombre: 'hoy' }, nombre);
+  assert.equal(nav.anterior({ nombre: 'hoy' }), null, 'en Nutrición decide el sistema: sale de la app');
+});
+
+test('«Tu historial» vuelve a Entrenamiento de hoy: ya no se entra desde Cuenta', () => {
+  assert.deepEqual(nav.anterior({ nombre: 'historial-de-entrenamiento' }), { nombre: 'entrenamiento' });
+  assert.equal(nav.textoDeVolverA(nav.anterior({ nombre: 'historial-de-entrenamiento' })), 'Volver a Entrenamiento de hoy');
+});
+
+test('las zonas principales no llevan enlace de volver; las subpantallas sí, hacia una pantalla de su misma zona', () => {
+  for (const ruta of RUTAS.filter(nav.requiereSesion)) {
+    if (nav.esPrincipal(ruta)) continue;
+    const destino = nav.anterior(ruta);
+    assert.ok(destino, `«${ruta.nombre}» necesita volver`);
+    assert.equal(nav.zonaDe(destino), nav.zonaDe(ruta), `volver desde «${ruta.nombre}» no cambia de zona`);
+  }
+  assert.match(APP, /destinoAnterior && !esPrincipal\(ruta\)/, 'App.tsx no dibuja el enlace de volver en las zonas principales');
+});
+
+test('la barra va fija abajo: fuera del ScrollView y dentro del KeyboardAvoidingView, y solo con sesión', () => {
+  const finDelScroll = APP.indexOf('</ScrollView>');
+  const barra = APP.indexOf('<BarraDeZonas');
+  const fin = APP.indexOf('</KeyboardAvoidingView>');
+  assert.ok(finDelScroll >= 0 && barra > finDelScroll && fin > barra, 'la barra tiene que ir después del ScrollView y dentro del KeyboardAvoidingView');
+  assert.match(APP, /const zona = sesion \? zonaDe\(ruta\) : null;/, 'sin sesión no hay barra');
+  assert.match(APP, /ir\(alIniciarSesion\(ruta\)\)/, 'al iniciar sesión se abre la pantalla que decide alIniciarSesion');
+});
+
+test('al iniciar sesión se abre Nutrición; si Cuenta pidió volver a entrar para confirmar una acción, se vuelve a Cuenta', () => {
+  assert.deepEqual(nav.alIniciarSesion({ nombre: 'login' }), { nombre: 'hoy' });
+  assert.deepEqual(nav.alIniciarSesion({ nombre: 'login', aviso: 'La sesión ya no es válida.' }), { nombre: 'hoy' });
+  assert.deepEqual(nav.alIniciarSesion({ nombre: 'login', aviso: 'Por seguridad…', alEntrar: 'cuenta' }), { nombre: 'cuenta' });
+  assert.match(APP, /motivo === 'reautenticar' \? \{ alEntrar: 'cuenta' as const \}/, 'la reautenticación del cierre de cuenta vuelve a Cuenta');
+});
+
+test('cada destino de la barra es una pestaña accesible de 48 dp o más, respeta el área segura y se oculta con el teclado', () => {
+  const BARRA = readFileSync(resolve(RAIZ, 'apps/mobile/src/barra-de-zonas.tsx'), 'utf8');
+  assert.match(BARRA, /accessibilityRole="tab"/);
+  assert.match(BARRA, /accessibilityState=\{\{ selected: elegida \}\}/);
+  assert.match(BARRA, /accessibilityRole="tablist"/);
+  const alto = Number(/destino: \{[^}]*minHeight: (\d+)/.exec(BARRA)?.[1]);
+  const ancho = Number(/destino: \{[^}]*minWidth: (\d+)/.exec(BARRA)?.[1]);
+  assert.ok(alto >= 48 && ancho >= 48, `el destino mide ${ancho} × ${alto} dp`);
+  assert.match(BARRA, /paddingBottom: insets\.bottom/, 'la barra deja libre el área segura de abajo');
+  assert.match(BARRA, /keyboardDidShow/, 'la barra se oculta con el teclado abierto (Android)');
+  assert.match(BARRA, /if \(tecladoAbierto\) return null;/);
+  // Cuenta ya no es el menú: sus botones a las zonas salieron, porque están en la barra.
+  const CUENTA = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/cuenta.tsx'), 'utf8');
+  for (const nombre of ['hoy', 'entrenamiento', 'historial-de-entrenamiento', 'mi-evolucion', 'mis-solicitudes']) {
+    assert.doesNotMatch(CUENTA, new RegExp(`ir\\(\\{ nombre: '${nombre}' \\}\\)`), `Cuenta todavía abre «${nombre}»`);
+  }
 });
