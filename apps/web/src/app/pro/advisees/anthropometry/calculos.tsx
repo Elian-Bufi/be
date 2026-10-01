@@ -14,7 +14,7 @@
  * - cada corrida muestra **método, versión, regla y precisión declarada**, que es lo que la vuelve reproducible
  *   (REG-06-156/158).
  */
-import { cantidad, COPY_ANTROPOMETRIA, numeroConPrecision, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
+import { asignacionAutomatica, cantidad, COPY_ANTROPOMETRIA, datosDelMetodo, metodosParaLaToma, nombreDeMetrica, numeroConPrecision, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
@@ -196,12 +196,23 @@ function NuevoCalculo({
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useAntropometria();
   const intento = useClaveDeIntento();
-  const [metodoId, setMetodoId] = useState(metodos[0]?.methodVersionId ?? '');
-  const [entradas, setEntradas] = useState<Record<string, string>>({});
+  // DL-111 · los métodos que esta toma cubre por completo primero, y adentro por categoría y nombre: nunca por «mejor».
+  const { posibles, faltanDatos } = metodosParaLaToma(metodos, evaluacion.measurements);
+  const primero = posibles[0] ?? faltanDatos[0] ?? metodos[0]!;
+  const [metodoId, setMetodoId] = useState(primero.methodVersionId);
+  const metodo = metodos.find((m) => m.methodVersionId === metodoId) ?? primero;
+  const datos = datosDelMetodo(metodo, evaluacion.measurements);
+  // Cada dato se asigna solo a la medición vigente de la toma con la misma clave; el profesional la puede cambiar.
+  const [entradas, setEntradas] = useState<Record<string, string>>(() => asignacionAutomatica(datosDelMetodo(primero, evaluacion.measurements)));
   const [enviando, setEnviando] = useState(false);
-  const metodo = metodos.find((m) => m.methodVersionId === metodoId) ?? metodos[0]!;
   // Solo las mediciones vigentes: una anulada dejó de contar, también como entrada (REG-06-217).
   const disponibles = evaluacion.measurements.filter((m) => m.condition === 'EFFECTIVE');
+
+  function elegirMetodo(id: string) {
+    const elegido = metodos.find((m) => m.methodVersionId === id);
+    setMetodoId(id);
+    setEntradas(elegido ? asignacionAutomatica(datosDelMetodo(elegido, evaluacion.measurements)) : {});
+  }
 
   async function ejecutar() {
     setEnviando(true);
@@ -224,26 +235,62 @@ function NuevoCalculo({
   }
 
   const completo = metodo.requiredInputs.every((e) => entradas[e.inputCode]);
+  const etiquetaDeCategoria = (m: MetodoApi): string => (m.category ? `${COPY_ANTROPOMETRIA.categoriaDeMetodo[m.category] ?? m.category} · ` : '');
+  const opcion = (m: MetodoApi) => (
+    <option key={m.methodVersionId} value={m.methodVersionId}>
+      {etiquetaDeCategoria(m)}
+      {m.name} · {COPY_ANTROPOMETRIA.versionDelMetodo} {m.version}
+    </option>
+  );
 
   return (
     <div className="nodo nodo--dia">
       <div className="campo">
         <label htmlFor="cal-metodo">{COPY_ANTROPOMETRIA.metodo}</label>
-        <select id="cal-metodo" value={metodoId} onChange={(e) => { setMetodoId(e.target.value); setEntradas({}); }}>
-          {metodos.map((m) => (
-            <option key={m.methodVersionId} value={m.methodVersionId}>
-              {m.name} · {COPY_ANTROPOMETRIA.versionDelMetodo} {m.version}
-            </option>
-          ))}
+        <select id="cal-metodo" value={metodoId} onChange={(e) => elegirMetodo(e.target.value)}>
+          {posibles.length > 0 ? <optgroup label={COPY_ANTROPOMETRIA.metodosPosibles}>{posibles.map(opcion)}</optgroup> : null}
+          {faltanDatos.length > 0 ? <optgroup label={COPY_ANTROPOMETRIA.metodosConDatosFaltantes}>{faltanDatos.map(opcion)}</optgroup> : null}
         </select>
-        <p className="campo__ayuda">{metodo.provenanceNote}</p>
       </div>
 
-      <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeAdmisibilidad}</p>
+      {/* La ficha del método: qué es, qué da, qué pide (y si esta toma lo tiene) y de dónde sale (DL-111). */}
+      <div className="ficha-de-metodo" aria-live="polite">
+        {metodo.description ? <p>{metodo.description}</p> : null}
+        <p>
+          <strong>{COPY_ANTROPOMETRIA.metodoDa}:</strong> {nombreDeMetrica(metodo.output.metric)} ({metodo.output.unit})
+        </p>
+        <p>
+          <strong>{COPY_ANTROPOMETRIA.metodoPide}:</strong>
+        </p>
+        <ul className="ficha-de-metodo__datos">
+          {datos.map((d) => (
+            <li key={d.codigo}>
+              {nombreDeMetrica(d.metrica)} ({d.unidades.join(', ')}):{' '}
+              {d.medicion ? cantidad(d.medicion.valor, d.medicion.unidad) : <strong>{COPY_ANTROPOMETRIA.datoFalta}</strong>}
+            </li>
+          ))}
+        </ul>
+        {metodo.source ? (
+          <p className="nota">
+            <strong>{COPY_ANTROPOMETRIA.metodoFuente}:</strong> {metodo.source}
+          </p>
+        ) : (
+          <p className="campo__ayuda">{metodo.provenanceNote}</p>
+        )}
+        {metodo.population ? (
+          <p className="nota">
+            <strong>{COPY_ANTROPOMETRIA.metodoPoblacion}:</strong> {metodo.population}
+          </p>
+        ) : null}
+      </div>
+
+      <p className="nota">
+        {COPY_ANTROPOMETRIA.explicacionDeAdmisibilidad} {COPY_ANTROPOMETRIA.asignacionAutomatica}
+      </p>
       {metodo.requiredInputs.map((e) => (
         <div className="campo" key={e.inputCode}>
           <label htmlFor={`cal-entrada-${e.inputCode}`}>
-            {e.inputCode} · {e.metric} ({e.acceptedUnits.join(', ')})
+            {nombreDeMetrica(e.metric)} ({e.acceptedUnits.join(', ')})
           </label>
           <select id={`cal-entrada-${e.inputCode}`} value={entradas[e.inputCode] ?? ''} onChange={(ev) => setEntradas((x) => ({ ...x, [e.inputCode]: ev.target.value }))}>
             <option value="">{COPY_ANTROPOMETRIA.elegirEntrada}</option>
@@ -254,7 +301,7 @@ function NuevoCalculo({
             */}
             {disponibles.map((m) => (
               <option key={m.measurementId} value={m.measurementId}>
-                {m.metric}: {m.effectiveMagnitude ? cantidad(m.effectiveMagnitude.value, m.effectiveMagnitude.unit) : COPY_ANTROPOMETRIA.sinValorVigente} ·{' '}
+                {nombreDeMetrica(m.metric)}: {m.effectiveMagnitude ? cantidad(m.effectiveMagnitude.value, m.effectiveMagnitude.unit) : COPY_ANTROPOMETRIA.sinValorVigente} ·{' '}
                 {ETIQUETA_DE_CLASE_DE_DATO[m.dataClass]}
                 {m.corrections.length > 0 ? ` · ${COPY_ANTROPOMETRIA.corregida}` : ''}
               </option>

@@ -397,6 +397,10 @@ test('DL-072 · REG-06-203: la especificación declara su estado, y solo admite 
     name: 'Método de demostración',
     content: {},
     provenanceNote: 'Valores sintéticos de demostración.',
+    description: null,
+    source: null,
+    population: null,
+    category: null,
     effectiveSince: '2026-09-20T00:00:00.000Z',
   };
   assert.equal(EspecificacionSchema.safeParse({ ...base, status: 'CURRENT' }).success, true);

@@ -34,6 +34,8 @@ export * from './presentacion-de-prescripcion';
 export * from './comparacion-de-entrenamiento';
 export * from './calculo';
 export * from './contratos-calculo';
+export * from './seleccion-de-metodo';
+export * from './nombres-de-metricas';
 export * from './formularios';
 export * from './contratos-formularios';
 export * from './copy-formularios';
