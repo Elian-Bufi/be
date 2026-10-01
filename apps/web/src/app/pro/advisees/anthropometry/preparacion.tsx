@@ -33,6 +33,8 @@ import {
   type MetricaDelProtocolo,
 } from '@be/domain';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
+import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { fecha, numeroEnCampo } from '../../../../lib/formato';
@@ -344,7 +346,12 @@ function Preparacion({
 
   return (
     <div className="secciones">
-      {aviso ? (
+      {aviso && aviso.tipo === 'exito' ? (
+        <AvisoFlotante onCerrar={() => onAviso(null)}>
+          <p>{aviso.texto}</p>
+        </AvisoFlotante>
+      ) : null}
+      {aviso && aviso.tipo !== 'exito' ? (
         <Aviso tipo={aviso.tipo} enfocar>
           <p>{aviso.texto}</p>
         </Aviso>
@@ -352,7 +359,9 @@ function Preparacion({
 
       <section className="seccion" aria-labelledby="titulo-preparacion">
         <h2 id="titulo-preparacion">{borrador ? COPY_ANTROPOMETRIA.borradorEnCurso : COPY_ANTROPOMETRIA.nuevaEvaluacion}</h2>
-        <p className="nota">{COPY_ANTROPOMETRIA.borradorNoEsHistoria}</p>
+        <Ayuda titulo="Qué es una evaluación en preparación">
+          <p>{COPY_ANTROPOMETRIA.borradorNoEsHistoria}</p>
+        </Ayuda>
         {guardado ? (
           <p className="nota">
             {guardado.rotulo}: {fecha(guardado.momento)}
@@ -514,20 +523,18 @@ function Preparacion({
         {borrador && borrador.measurements.length === 0 ? <p className="nota">{COPY_ANTROPOMETRIA.sinContenidoRegistrable}</p> : null}
       </section>
 
-      {confirmando && borrador ? (
-        <dialog open className="dialogo" aria-labelledby="titulo-registrar">
-          <h2 id="titulo-registrar">{COPY_ANTROPOMETRIA.registrarEvaluacion}</h2>
-          <p>{COPY_ANTROPOMETRIA.explicacionDeRegistro}</p>
-          <div className="acciones">
-            <button type="button" className="boton boton--secundario" onClick={() => setConfirmando(false)} disabled={enviando}>
-              Volver
-            </button>
-            <button type="button" className="boton boton--primario" onClick={() => void registrar()} disabled={enviando}>
-              {COPY_ANTROPOMETRIA.confirmarRegistro}
-            </button>
-          </div>
-        </dialog>
-      ) : null}
+      <DialogoDeConfirmacion
+        abierto={confirmando && !!borrador}
+        titulo={COPY_ANTROPOMETRIA.registrarEvaluacion}
+        textoVolver="Volver"
+        textoConfirmar={COPY_ANTROPOMETRIA.confirmarRegistro}
+        textoEnviando="Registrando…"
+        enviando={enviando}
+        onVolver={() => setConfirmando(false)}
+        onConfirmar={() => void registrar()}
+      >
+        <p>{COPY_ANTROPOMETRIA.explicacionDeRegistro}</p>
+      </DialogoDeConfirmacion>
     </div>
   );
 }

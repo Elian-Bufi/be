@@ -1749,3 +1749,72 @@ details summary {
 .lamina__notas .nota {
   margin: 0.35rem 0;
 }
+
+/* DL-113 · el aviso de un resultado, donde la persona está mirando: fijo abajo, sin mover la página. */
+.aviso-flotante {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: max-content;
+  max-width: min(36rem, calc(100vw - 2rem));
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.75rem 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-left: 6px solid var(--exito);
+  border-radius: 12px;
+  background: var(--exito-fondo);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+
+.aviso-flotante__texto p {
+  margin: 0;
+}
+
+.aviso-flotante__cerrar {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* DL-113 · las explicaciones largas, plegadas: «Cómo se lee». */
+.ayuda {
+  margin: 0.25rem 0 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.ayuda > summary {
+  cursor: pointer;
+  padding: 0.6rem 0.9rem;
+  font-weight: 600;
+  color: var(--enlace);
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.ayuda[open] > summary {
+  border-bottom: 1px solid var(--borde);
+}
+
+.ayuda__cuerpo {
+  padding: 0.5rem 0.9rem 0.75rem;
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+.ayuda__cuerpo p {
+  margin: 0.35rem 0;
+}

@@ -59,7 +59,6 @@ export function VistaDeEvolucion() {
           corregirlo en vez de quedar atrapado en «Reintentar» (B10-10:376).
         */}
         <FiltroDePeriodo id="ant-evolucion-periodo" onAplicar={setPeriodo} />
-        <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeSinDato}</p>
       </section>
       <EstadoDeLectura r={r} onReintentar={cargar}>
         {r?.ok ? <Evolucion datos={r.datos.data} metricaPedida={metricaPedida} onMetrica={setMetricaPedida} onAbrirEvaluacion={(evaluationId) => irA('evaluaciones', evaluationId)} /> : null}

@@ -741,10 +741,13 @@ function FranjaDeResumen({ c, franja }: { c: ColoresDeLaLamina; franja: readonly
       <Vidrio x={44} y={352} ancho={ancho} alto={106} c={c} />
       {franja.map((item, i) => {
         const centro = 44 + (ancho * (i + 0.5)) / k;
-        const n = item.valores.length;
         const ultimo = [...item.valores].reverse().find((v): v is ValorDeLaLamina => v !== null);
         const unidad = ultimo ? unidadVisible(ultimo.unidad) : '';
-        const textos = item.valores.map((v) => (v ? textoDelValor(v) : '—'));
+        // Solo los valores comparables con el último: mismo protocolo, método y unidad (REG-06-162). Una toma con otro
+        // protocolo o en otra unidad (la talla en metros de un protocolo viejo) no entra en la cadena.
+        const comparables = item.valores.filter((v): v is ValorDeLaLamina => v !== null && v.grupo === ultimo?.grupo);
+        const textos = comparables.map(textoDelValor);
+        const n = textos.length;
         const cadena = n <= 3 ? textos : [textos[0]!, textos[n - 1]!];
         const tamano = n <= 3 ? 23 : 26;
         const disponible = ancho / k - 24;
