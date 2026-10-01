@@ -54,6 +54,10 @@ export function metodoApi(v: VersionConEspecificacion, especificacion: Especific
     precisionPolicy: { decimals: especificacion.precision.decimales, rounding: REDONDEO_API[especificacion.precision.modo] },
     ruleId: especificacion.regla,
     provenanceNote: (v.procedencia as { rotulo?: string } | null)?.rotulo ?? 'Valores sintéticos de demostración.',
+    description: especificacion.descripcion ?? null,
+    source: especificacion.fuente ?? null,
+    population: especificacion.poblacion ?? null,
+    category: especificacion.categoria ?? null,
     supersededByVersionId: v.sucesora?.id ?? null,
     effectiveSince: v.momentoDeRegistro.toISOString(),
   };

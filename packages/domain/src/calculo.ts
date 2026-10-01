@@ -14,11 +14,12 @@
  *   otras y no crea objetivo ni prescripción: la decisión sigue siendo del profesional (INV-06-05).
  *
  * Lo que este módulo **no** hace es fijar una fórmula profesional: «este bloque define la estructura para
- * representarlas y reconstruirlas, no selecciona una como universal» (REG-06-157, 06:6304). La única fórmula que
- * aparece es la del catálogo sintético de demostración, y está rotulada como tal.
+ * representarlas y reconstruirlas, no selecciona una como universal» (REG-06-157, 06:6304). Tampoco con el catálogo de
+ * BE (DL-111): ofrece varios métodos, cada uno con su fuente y su población, y el que se usa lo elige el profesional.
  */
 import { z } from 'zod';
 import { aplicarPrecision, type EntradaDeCalculo, type Magnitud, type ModoDeRedondeo, type OrigenDeMedicion, type PrecisionDeclarada } from './antropometria';
+import { REGLAS_ANTROPOMETRICAS } from './formulas-antropometricas';
 
 // ─── Finalidad (REG-06-205: «finalidad/contexto») ───────────────────────────────────────────────
 
@@ -61,7 +62,19 @@ export interface EspecificacionDeMetodo {
   readonly precision: PrecisionDeclarada;
   /** Identificador de la regla de dominio aplicada, versionada junto con la especificación (REG-06-156). */
   readonly regla: string;
+  /**
+   * DL-111 · lo que el profesional ve al elegir el método: qué es, de dónde sale la fórmula (cita) y en qué población
+   * se validó. Opcionales: los métodos sintéticos de demostración no los traen.
+   */
+  readonly descripcion?: string;
+  readonly fuente?: string;
+  readonly poblacion?: string;
+  /** Para agrupar en la lista: índices, sumas de pliegues, composición corporal, somatotipo. */
+  readonly categoria?: CategoriaDeMetodo;
 }
+
+export const CATEGORIAS_DE_METODO = ['INDICES', 'SUMAS_DE_PLIEGUES', 'GRASA_CORPORAL', 'MASAS', 'SOMATOTIPO'] as const;
+export type CategoriaDeMetodo = (typeof CATEGORIAS_DE_METODO)[number];
 
 /**
  * La forma que tiene que tener el contenido versionado de un método (REG-06-203). Se valida al leerlo: una
@@ -83,6 +96,10 @@ const EspecificacionDeMetodoSchema = z.strictObject({
   salida: z.strictObject({ metrica: z.string().min(1), unidad: z.string().min(1) }),
   precision: z.strictObject({ decimales: z.number().int().min(0).max(6), modo: z.enum(['MEDIO_ARRIBA', 'ABAJO', 'ARRIBA']) }),
   regla: z.string().min(1),
+  descripcion: z.string().min(1).optional(),
+  fuente: z.string().min(1).optional(),
+  poblacion: z.string().min(1).optional(),
+  categoria: z.enum(CATEGORIAS_DE_METODO).optional(),
 });
 
 /** Devuelve la especificación si el contenido cumple la forma declarada, o `null` si no se puede usar. */
@@ -182,19 +199,22 @@ export type ResultadoDeEjecucion =
   | { readonly ok: false; readonly motivo: 'NO_REPRODUCIBLE'; readonly detalle: string };
 
 /**
- * Las reglas del catálogo sintético de demostración. El legajo prohíbe fijar un catálogo científico desde este
- * bloque (REG-06-157), así que la tabla es explícitamente de demostración y cada regla se cita por identificador
- * versionado: la corrida guarda **cuál** se aplicó, que es lo que la vuelve reproducible (REG-06-156).
+ * Las reglas que BE sabe aplicar, cada una citada por identificador versionado: la corrida guarda **cuál** se aplicó,
+ * que es lo que la vuelve reproducible (REG-06-156).
  *
- * MET-DEMO tiene dos versiones que citan **la misma** regla: entre v1 y v2 no cambió la operación, cambiaron la
- * precisión declarada y las procedencias admisibles. Es el caso interesante, porque muestra que un cambio
- * metodológico no es necesariamente un cambio de fórmula, y que las dos corridas siguen siendo distintas y válidas.
+ * - `demo/…`: el catálogo sintético de demostración de WP-05. MET-DEMO tiene dos versiones que citan **la misma**
+ *   regla: entre v1 y v2 no cambió la operación, cambiaron la precisión declarada y las procedencias admisibles. Muestra
+ *   que un cambio metodológico no es necesariamente un cambio de fórmula.
+ * - `be/…`: el catálogo antropométrico de BE (DL-111, `formulas-antropometricas.ts`). REG-06-157 prohibía fijar un
+ *   catálogo científico desde WP-05; Dirección lo decidió después (DL-110, DL-111): BE ofrece métodos con su fuente y
+ *   su población, el profesional elige cuál usar, y ninguna corrida se adopta sola (REG-06-205).
  */
 const REGLAS: Readonly<Record<string, (entradas: Readonly<Record<string, number>>) => number | { error: string }>> = {
   'demo/peso-sobre-talla-cuadrado@1': (e) => (e.talla === 0 ? { error: 'la talla no puede ser cero' } : e.peso! / (e.talla! * e.talla!)),
+  ...REGLAS_ANTROPOMETRICAS,
 };
 
-/** Las reglas que el catálogo sintético sabe aplicar. Una especificación que cite otra no es ejecutable acá. */
+/** Las reglas que BE sabe aplicar. Una especificación que cite otra no es ejecutable acá. */
 export const REGLAS_CONOCIDAS: readonly string[] = Object.keys(REGLAS);
 
 /**

@@ -14,7 +14,7 @@
  * - cada corrida muestra **método, versión, regla y precisión declarada**, que es lo que la vuelve reproducible
  *   (REG-06-156/158).
  */
-import { cantidad, COPY_ANTROPOMETRIA, numeroConPrecision, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
+import { asignacionAutomatica, cantidad, todasLasPaginas, UNIDAD_ADIMENSIONAL, COPY_ANTROPOMETRIA, datosDelMetodo, metodosParaLaToma, nombreDeMetrica, numeroConPrecision, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
@@ -32,7 +32,12 @@ export function BloqueDeCalculos({ evaluacion, onAviso }: { evaluacion: Evaluaci
 
   const cargar = useCallback(async () => {
     setEstado({ tipo: 'cargando' });
-    const [metodos, corridas] = await Promise.all([api.listarMetodos(token), api.listarCalculos(token, asesoradoId)]);
+    // Las dos listas van completas: desde DL-111 el catálogo tiene más métodos que una página, y API-CAL-02 no filtra
+    // por evaluación, así que una corrida de esta toma puede estar en cualquier página.
+    const [metodos, corridas] = await Promise.all([
+      todasLasPaginas((f) => api.listarMetodos(token, f)),
+      todasLasPaginas((f) => api.listarCalculos(token, asesoradoId, f)),
+    ]);
     if (sesionPerdida(metodos) || sesionPerdida(corridas)) return;
     if (!metodos.ok || !corridas.ok) return setEstado({ tipo: 'error' });
     setEstado({
@@ -123,7 +128,8 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
     <div className="nodo nodo--comida">
       <h4>
         {/* Con la precisión que declara el método, aunque termine en cero (REG-06-158: sin redondeo silencioso). */}
-        {corrida.result.metric}: {numeroConPrecision(corrida.result.magnitude.value, corrida.precision.decimals)} {corrida.result.magnitude.unit}{' '}
+        {nombreDeMetrica(corrida.result.metric)}: {numeroConPrecision(corrida.result.magnitude.value, corrida.precision.decimals)}
+        {corrida.result.magnitude.unit === UNIDAD_ADIMENSIONAL ? '' : ` ${corrida.result.magnitude.unit}`}{' '}
         <span className="insignia">{ETIQUETA_DE_CLASE_DE_DATO.DERIVED}</span>
         {corrida.evaluationContext === 'IN_PREPARATION' ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoEnPreparacion}</span></> : null}
         {!corrida.effective ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoNoVigente}</span></> : null}
@@ -132,7 +138,7 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
       {!corrida.effective ? <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeCalculoNoVigente}</p> : null}
       <p className="nota">
         {COPY_ANTROPOMETRIA.metodo}: {corrida.methodName} · {COPY_ANTROPOMETRIA.versionDelMetodo} {corrida.methodVersion} · {COPY_ANTROPOMETRIA.reglaAplicada}: {corrida.ruleId} ·{' '}
-        {COPY_ANTROPOMETRIA.precisionDeclarada}: {corrida.precision.decimals} decimales · {fecha(corrida.recordedAt)}
+        {COPY_ANTROPOMETRIA.precisionDeclarada}: {COPY_ANTROPOMETRIA.decimales(corrida.precision.decimals)} · {fecha(corrida.recordedAt)}
         {corrida.supersedesRunId ? ` · ${COPY_ANTROPOMETRIA.corridaReemplazada}` : ''}
       </p>
       <details>
@@ -140,7 +146,7 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
         <ul>
           {corrida.inputProvenance.map((i) => (
             <li key={i.sourceRef}>
-              {i.inputCode} · {i.metric}: {i.magnitude ? cantidad(i.magnitude.value, i.magnitude.unit) : COPY_ANTROPOMETRIA.valorNoConsultable} ·{' '}
+              {nombreDeMetrica(i.metric)}: {i.magnitude ? cantidad(i.magnitude.value, i.magnitude.unit) : COPY_ANTROPOMETRIA.valorNoConsultable} ·{' '}
               {ETIQUETA_DE_CLASE_DE_DATO[i.provenanceType === 'SELF_REPORTED' ? 'REPORTED' : 'MEASURED']} · {ETIQUETA_DE_CONDICION[i.condition]} · {fecha(i.sourceOccurredAt)}
             </li>
           ))}
@@ -196,12 +202,23 @@ function NuevoCalculo({
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useAntropometria();
   const intento = useClaveDeIntento();
-  const [metodoId, setMetodoId] = useState(metodos[0]?.methodVersionId ?? '');
-  const [entradas, setEntradas] = useState<Record<string, string>>({});
+  // DL-111 · los métodos que esta toma cubre por completo primero, y adentro por categoría y nombre: nunca por «mejor».
+  const { posibles, faltanDatos } = metodosParaLaToma(metodos, evaluacion.measurements);
+  const primero = posibles[0] ?? faltanDatos[0] ?? metodos[0]!;
+  const [metodoId, setMetodoId] = useState(primero.methodVersionId);
+  const metodo = metodos.find((m) => m.methodVersionId === metodoId) ?? primero;
+  const datos = datosDelMetodo(metodo, evaluacion.measurements);
+  // Cada dato se asigna solo a la medición vigente de la toma con la misma clave; el profesional la puede cambiar.
+  const [entradas, setEntradas] = useState<Record<string, string>>(() => asignacionAutomatica(datosDelMetodo(primero, evaluacion.measurements)));
   const [enviando, setEnviando] = useState(false);
-  const metodo = metodos.find((m) => m.methodVersionId === metodoId) ?? metodos[0]!;
   // Solo las mediciones vigentes: una anulada dejó de contar, también como entrada (REG-06-217).
   const disponibles = evaluacion.measurements.filter((m) => m.condition === 'EFFECTIVE');
+
+  function elegirMetodo(id: string) {
+    const elegido = metodos.find((m) => m.methodVersionId === id);
+    setMetodoId(id);
+    setEntradas(elegido ? asignacionAutomatica(datosDelMetodo(elegido, evaluacion.measurements)) : {});
+  }
 
   async function ejecutar() {
     setEnviando(true);
@@ -224,26 +241,72 @@ function NuevoCalculo({
   }
 
   const completo = metodo.requiredInputs.every((e) => entradas[e.inputCode]);
+  const etiquetaDeCategoria = (m: MetodoApi): string => (m.category ? `${COPY_ANTROPOMETRIA.categoriaDeMetodo[m.category] ?? m.category} · ` : '');
+  const opcion = (m: MetodoApi) => (
+    <option key={m.methodVersionId} value={m.methodVersionId}>
+      {etiquetaDeCategoria(m)}
+      {m.name} · {COPY_ANTROPOMETRIA.versionDelMetodo} {m.version}
+    </option>
+  );
 
   return (
     <div className="nodo nodo--dia">
       <div className="campo">
         <label htmlFor="cal-metodo">{COPY_ANTROPOMETRIA.metodo}</label>
-        <select id="cal-metodo" value={metodoId} onChange={(e) => { setMetodoId(e.target.value); setEntradas({}); }}>
-          {metodos.map((m) => (
-            <option key={m.methodVersionId} value={m.methodVersionId}>
-              {m.name} · {COPY_ANTROPOMETRIA.versionDelMetodo} {m.version}
-            </option>
-          ))}
+        <select id="cal-metodo" value={metodoId} onChange={(e) => elegirMetodo(e.target.value)}>
+          {posibles.length > 0 ? <optgroup label={COPY_ANTROPOMETRIA.metodosPosibles}>{posibles.map(opcion)}</optgroup> : null}
+          {faltanDatos.length > 0 ? <optgroup label={COPY_ANTROPOMETRIA.metodosConDatosFaltantes}>{faltanDatos.map(opcion)}</optgroup> : null}
         </select>
-        <p className="campo__ayuda">{metodo.provenanceNote}</p>
       </div>
 
-      <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeAdmisibilidad}</p>
+      {/* La ficha del método: qué es, qué da, qué pide (y si esta toma lo tiene) y de dónde sale (DL-111). */}
+      <div className="ficha-de-metodo" aria-live="polite">
+        {metodo.description ? <p>{metodo.description}</p> : null}
+        <p>
+          <strong>{COPY_ANTROPOMETRIA.metodoDa}:</strong> {nombreDeMetrica(metodo.output.metric)} ({metodo.output.unit})
+        </p>
+        <p>
+          <strong>{COPY_ANTROPOMETRIA.metodoPide}:</strong>
+        </p>
+        <ul className="ficha-de-metodo__datos">
+          {datos.map((d) => (
+            <li key={d.codigo}>
+              {nombreDeMetrica(d.metrica)} ({d.unidades.join(', ')}):{' '}
+              {d.medicion ? (
+                cantidad(d.medicion.valor, d.medicion.unidad)
+              ) : (
+                <strong>
+                  {d.falta?.motivo === 'OTRA_UNIDAD'
+                    ? `${COPY_ANTROPOMETRIA.datoEnOtraUnidad} (${d.falta.unidad})`
+                    : d.falta?.motivo === 'SIN_VALOR_VIGENTE'
+                      ? COPY_ANTROPOMETRIA.datoSinValorVigente
+                      : COPY_ANTROPOMETRIA.datoFalta}
+                </strong>
+              )}
+            </li>
+          ))}
+        </ul>
+        {metodo.source ? (
+          <p className="nota">
+            <strong>{COPY_ANTROPOMETRIA.metodoFuente}:</strong> {metodo.source}
+          </p>
+        ) : (
+          <p className="campo__ayuda">{metodo.provenanceNote}</p>
+        )}
+        {metodo.population ? (
+          <p className="nota">
+            <strong>{COPY_ANTROPOMETRIA.metodoPoblacion}:</strong> {metodo.population}
+          </p>
+        ) : null}
+      </div>
+
+      <p className="nota">
+        {COPY_ANTROPOMETRIA.explicacionDeAdmisibilidad} {COPY_ANTROPOMETRIA.asignacionAutomatica}
+      </p>
       {metodo.requiredInputs.map((e) => (
         <div className="campo" key={e.inputCode}>
           <label htmlFor={`cal-entrada-${e.inputCode}`}>
-            {e.inputCode} · {e.metric} ({e.acceptedUnits.join(', ')})
+            {nombreDeMetrica(e.metric)} ({e.acceptedUnits.join(', ')})
           </label>
           <select id={`cal-entrada-${e.inputCode}`} value={entradas[e.inputCode] ?? ''} onChange={(ev) => setEntradas((x) => ({ ...x, [e.inputCode]: ev.target.value }))}>
             <option value="">{COPY_ANTROPOMETRIA.elegirEntrada}</option>
@@ -254,7 +317,7 @@ function NuevoCalculo({
             */}
             {disponibles.map((m) => (
               <option key={m.measurementId} value={m.measurementId}>
-                {m.metric}: {m.effectiveMagnitude ? cantidad(m.effectiveMagnitude.value, m.effectiveMagnitude.unit) : COPY_ANTROPOMETRIA.sinValorVigente} ·{' '}
+                {nombreDeMetrica(m.metric)}: {m.effectiveMagnitude ? cantidad(m.effectiveMagnitude.value, m.effectiveMagnitude.unit) : COPY_ANTROPOMETRIA.sinValorVigente} ·{' '}
                 {ETIQUETA_DE_CLASE_DE_DATO[m.dataClass]}
                 {m.corrections.length > 0 ? ` · ${COPY_ANTROPOMETRIA.corregida}` : ''}
               </option>
@@ -264,7 +327,8 @@ function NuevoCalculo({
       ))}
 
       <p className="nota">
-        {COPY_ANTROPOMETRIA.finalidadDelCalculo}: {metodo.purposes.join(', ')} · {COPY_ANTROPOMETRIA.precisionDeclarada}: {metodo.precisionPolicy.decimals} decimales ·{' '}
+        {COPY_ANTROPOMETRIA.finalidadDelCalculo}: {metodo.purposes.map((p) => COPY_ANTROPOMETRIA.finalidadDeCalculo[p] ?? p).join(', ')} · {COPY_ANTROPOMETRIA.precisionDeclarada}:{' '}
+        {COPY_ANTROPOMETRIA.decimales(metodo.precisionPolicy.decimals)} ·{' '}
         {COPY_ANTROPOMETRIA.reglaAplicada}: {metodo.ruleId}
       </p>
 

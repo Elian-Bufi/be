@@ -32,6 +32,7 @@ import {
   metodoEnPalabras,
   motivosEnPalabras,
   nombreDelGrupo,
+  nombreDeMetrica,
   numero,
   observacionesDelGrupo,
   observacionPorId,
@@ -87,12 +88,12 @@ export function EvolucionDeMetrica({
 
   const ficha = preparada.grupos.find((g) => g.comparabilityGroup === grupo) ?? null;
   const unidad = visibles[0] ? unidadDelGrupo(ficha, visibles[0].punto) : (ficha?.unit ?? '');
-  const titulo = `${COPY_ANTROPOMETRIA.evolucion}: ${serie.metricCode}${ficha ? ` · ${nombreDelGrupo(ficha, preparada.grupos)}` : ''}`;
+  const titulo = `${COPY_ANTROPOMETRIA.evolucion}: ${nombreDeMetrica(serie.metricCode)}${ficha ? ` · ${nombreDelGrupo(ficha, preparada.grupos)}` : ''}`;
   const indiceElegido = elegidaVisible ? visibles.findIndex((o) => o.punto.sourceId === elegidaVisible.punto.sourceId) : null;
 
   return (
     <section className="seccion" aria-labelledby={`${id}-titulo`}>
-      <h2 id={`${id}-titulo`}>{serie.metricCode}</h2>
+      <h2 id={`${id}-titulo`}>{nombreDeMetrica(serie.metricCode)}</h2>
       {preparada.observaciones.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinMediciones}</p> : null}
       {preparada.variosGrupos ? (
         <>

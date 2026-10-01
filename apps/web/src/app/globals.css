@@ -1638,3 +1638,114 @@ details summary {
     margin-bottom: 0.4rem;
   }
 }
+
+/* DL-111 · la ficha del método al elegirlo: qué es, qué da, qué pide (y si esta toma lo tiene) y de qué fuente sale. */
+.ficha-de-metodo {
+  background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin: 0.25rem 0 1rem;
+}
+
+.ficha-de-metodo p {
+  margin: 0.25rem 0;
+}
+
+.ficha-de-metodo__datos {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.2rem;
+}
+
+.ficha-de-metodo__datos li {
+  margin: 0.15rem 0;
+}
+
+/* ─── DL-111 · La lámina del compositor de Dirección (antropometría, website del profesional) ─────
+ * Adentro de la lámina, los colores son los del compositor y viven en @be/domain (lamina.ts y figura-de-lamina.ts):
+ * el tema de la lámina no es el del website. Acá va solo lo de alrededor —controles, contenedor y notas—, con los
+ * tokens de siempre. La lámina se escala al ancho disponible y nunca pasa del alto de la ventana. */
+.lamina__controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.85rem 1.5rem;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.lamina__grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.lamina__grupo-titulo {
+  color: var(--tenue);
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.lamina__opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.lamina__toma {
+  max-width: 24rem;
+}
+
+.lamina__tomas {
+  margin: 0.5rem 0;
+  padding: 0.6rem 1rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.lamina__tomas legend {
+  padding: 0 0.35rem;
+  font-weight: 650;
+}
+
+.lamina__tomas ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lamina__tomas label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.lamina__tomas input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--azul);
+}
+
+.lamina__lienzo {
+  width: min(100%, 36rem, calc((100vh - 2rem) * 9 / 16));
+  aspect-ratio: 9 / 16;
+  margin: 0.5rem auto 1rem;
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  box-shadow: var(--sombra-suave);
+}
+
+.lamina__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lamina__notas .nota {
+  margin: 0.35rem 0;
+}

@@ -47,8 +47,13 @@ export const MetodoSchema = z.strictObject({
   precisionPolicy: z.strictObject({ decimals: z.number().int().min(0).max(6), rounding: ModoDeRedondeoApiSchema }),
   /** REG-06-156: la regla de dominio aplicable, identificada y versionada. */
   ruleId: z.string(),
-  /** Rótulo obligatorio: el contenido es sintético de demostración (REG-06-157). */
+  /** Rótulo obligatorio: el contenido es sintético de demostración (REG-06-157) o la procedencia del catálogo de BE. */
   provenanceNote: z.string(),
+  /** DL-111 · qué es el método, la cita de su fórmula, la población en que se validó y su categoría. `null` en los sintéticos. */
+  description: z.string().nullable(),
+  source: z.string().nullable(),
+  population: z.string().nullable(),
+  category: z.enum(['INDICES', 'SUMAS_DE_PLIEGUES', 'GRASA_CORPORAL', 'MASAS', 'SOMATOTIPO']).nullable(),
   /** La versión que sucede a esta, si dejó de ser seleccionable. Nunca se elimina (REG-06-203). */
   supersededByVersionId: IdOpaco.nullable(),
   effectiveSince: Instante,

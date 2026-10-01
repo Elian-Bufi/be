@@ -183,9 +183,49 @@ export class EvolucionService {
         },
       ];
     });
-    const porMedicion = new Map(
+    const porMedicion = new Map<string, { evaluacionId: string; momentoDeOcurrencia: Date; momentoDeRegistro: Date; correcciones: { id: string }[] }>(
       filas.map((m) => [m.id, { evaluacionId: m.evaluacionId, momentoDeOcurrencia: m.momentoDeOcurrencia, momentoDeRegistro: m.momentoDeRegistro, correcciones: m.correcciones }]),
     );
+
+    // DL-111 · los resultados de las fórmulas también son evolución física. Cada corrida vigente (no reemplazada) de
+    // finalidad antropométrica, de una evaluación registrada, aporta un punto en la métrica que el método declara como
+    // salida, fechado en la toma de sus entradas y agrupado por método: nunca se compara con otro método (REG-06-162).
+    // Una corrida que usó una medición anulada no aporta punto (REG-06-221). La forma de la respuesta no cambia: es un
+    // punto más, de clase calculada, con su grupo de comparabilidad.
+    const corridas = await tx.ejecucionDeCalculo.findMany({
+      where: {
+        finalidad: 'SOPORTE_ANTROPOMETRICO',
+        reemplazadaPor: { is: null },
+        evaluacion: { asesoradoId: titular, estado: 'REGISTRADA', ...(titular === actorId ? {} : { profesionalId: actorId }) },
+      },
+      include: { metodoVersion: true, entradas: { include: { medicion: { include: { protocoloVersion: true, anulacion: true } } } } },
+      orderBy: { momentoDeRegistro: 'asc' },
+    });
+    for (const c of corridas) {
+      if (c.entradas.length === 0 || c.entradas.some((e) => e.medicion.anulacion)) continue;
+      const momento = new Date(Math.max(...c.entradas.map((e) => e.medicion.momentoDeOcurrencia.getTime())));
+      if (momento < ventana.gte || momento >= ventana.lt) continue;
+      const base = c.entradas[0]!.medicion;
+      const ficha: ReturnType<typeof fichaDe> = {
+        protocolId: base.protocoloVersion.especificacionId,
+        protocolVersionId: base.protocoloVersionId,
+        protocolName: base.protocoloVersion.nombre,
+        methodId: c.metodoVersion.especificacionId,
+        methodVersionId: c.metodoVersionId,
+        unit: c.unidad,
+      };
+      fichasPorMedicion.set(c.id, ficha);
+      porMedicion.set(c.id, { evaluacionId: c.evaluacionId, momentoDeOcurrencia: momento, momentoDeRegistro: c.momentoDeRegistro, correcciones: [] });
+      observaciones.push({
+        fechaLocal: fechaLocalEn(momento, ZONA_POR_DEFECTO),
+        metrica: c.metrica,
+        magnitud: { valor: Number(c.valor.toString()), unidad: c.unidad },
+        clase: 'CALCULADO',
+        condicion: 'VIGENTE',
+        ficha: fichaDeDominio(ficha),
+        origenId: c.id,
+      });
+    }
     return { observaciones, fichasPorMedicion, porMedicion, partialView: ajenas > 0 };
   }
 

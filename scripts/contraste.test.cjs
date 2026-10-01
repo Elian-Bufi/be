@@ -133,6 +133,9 @@ const PARES_APK = [
   ['bordeControl', 'fondo', NO_TEXTO, 'borde de campos y casillas (1.4.11)'],
   ['bordeControl', 'superficie', NO_TEXTO, 'borde de campos dentro de tarjetas'],
   ['acento', 'fondo', NO_TEXTO, 'borde de casillas y opciones elegidas'],
+  ['laminaNombre', 'laminaTarjeta', TEXTO, 'rótulo de un sitio en la lámina de la toma'],
+  ['laminaValor', 'laminaTarjeta', TEXTO, 'valor de un sitio en la lámina de la toma'],
+  ['laminaDetalle', 'laminaTarjeta', TEXTO, 'diferencia con la toma anterior en la lámina'],
 ];
 
 function verificar(tema, pares, nombreDelTema) {

@@ -70,7 +70,9 @@ const bindings = (porMetrica: Record<string, string>) => [
 
 describe('API-MTH-01/02 — métodos versionados (REG-06-203)', () => {
   it('TEST-CAL-001 (parte 1): solo la versión vigente se ofrece como seleccionable; la histórica se consulta y dice que lo es', async () => {
-    const lista = await pro.get('/api/v1/professional-methods').expect(200);
+    // Desde DL-111 el catálogo de BE tiene más métodos que la página por defecto (20): se pide la página máxima.
+    const lista = await pro.get('/api/v1/professional-methods?limit=50').expect(200);
+    expect(lista.body.page.hasMore).toBe(false);
     const claves = (lista.body.data as { methodVersionId: string; status: string }[]).map((m) => m.methodVersionId);
     expect(claves).toContain(CATALOGO_DEMO.metodo.v2);
     expect(claves).not.toContain(CATALOGO_DEMO.metodo.v1);

@@ -69,10 +69,12 @@ describe('E2E-06 · del borrador a la evolución (UC-P19, UC-P20)', () => {
   it('el borrador no es historia, registrar es un acto explícito y la serie sale de lo registrado', async () => {
     const c = await circuitoAntropometrico(app, prisma, 'e2e');
 
-    // API-ANT-01: el catálogo publica el protocolo y el método, rotulados como demostración (REG-06-157).
-    const catalogo = await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications').expect(200);
+    // API-ANT-01: el catálogo publica el protocolo y el método, rotulados como demostración (REG-06-157). Desde DL-111
+    // el catálogo de BE tiene más especificaciones que la página por defecto (20): se pide la página máxima.
+    const catalogo = await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications?limit=50').expect(200);
+    expect(catalogo.body.page.hasMore).toBe(false);
     expect(catalogo.body.data.map((e: { key: string }) => e.key)).toEqual(expect.arrayContaining(['MET-DEMO', 'PROTO-LAB']));
-    expect(catalogo.body.data[0].provenanceNote).toContain('demostración');
+    expect(catalogo.body.data.find((e: { key: string }) => e.key === 'MET-DEMO').provenanceNote).toContain('demostración');
 
     // API-ANT-07: nace EN_PREPARACION.
     const borrador = await conSesion(app, c.pro.token)
@@ -492,7 +494,8 @@ describe('DL-072 · el catálogo declara y filtra por estado, derivado de la cad
   it('sin filtro salen las vigentes; con HISTORICAL salen las superadas, y ninguna miente sobre su estado', async () => {
     const c = await circuitoAntropometrico(app, prisma, 'catalogo-estado');
 
-    const vigentes = await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications').expect(200);
+    const vigentes = await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications?limit=50').expect(200);
+    expect(vigentes.body.page.hasMore).toBe(false);
     const filas = vigentes.body.data as { versionId: string; key: string; status: string }[];
     expect(filas.length).toBeGreaterThan(0);
     // Sin filtro, el catálogo ofrece lo seleccionable: todas se declaran vigentes.
