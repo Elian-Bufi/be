@@ -112,7 +112,7 @@ RNF-ACC-001 pide auditoría automática y revisión manual de «acceso, vínculo
 ## 10. OUT OF SCOPE
 
 - Gráficos de progreso: Dirección los difirió el 2026-09-21, y cuando vuelvan tienen que respetar INV-06-176/177 (sin interpolar huecos).
-- Un selector de tema claro/oscuro para la persona.
+- Un selector de tema claro/oscuro para la persona. **Evolución (2026-09-30):** Dirección lo autorizó en la orden de esa fecha, con «Azul noche» como apariencia predeterminada y «Claro» como alternativa, como preferencia local al navegador; reemplaza el tema fijo por superficie de los tramos B y C. Registro y evidencia en . Esta línea no reescribe la decisión original: la fecha.
 - La carga de mediciones por CSV del compositor: Dirección la descartó («era una prueba»); si vuelve, pasa por la procedencia `CONTROLLED_IMPORT` (DL-062).
 - La figura en la APK: la toma antropométrica es del profesional, en el website.
 

@@ -2,7 +2,8 @@
  * RNF-ACC-001 (TEST-RNF-ACC-001): «contraste suficiente», con WCAG 2.2 AA como marco. B10-10 §7 deja los tokens al
  * sistema visual; esta prueba es la que impide que el sistema visual elija un color que no se lee.
  *
- * Lee los tokens de donde viven —`apps/web/src/app/tokens.css` (tema claro en `:root`, oscuro en `.tema-oscuro`) y
+ * Lee los tokens de donde viven —`apps/web/src/app/tokens.css` («Claro» en `:root`, «Azul noche» en
+ * `[data-tema='azul-noche']`; la persona elige, Dirección 2026-09-30) y
  * `apps/mobile/src/tema.ts`— y calcula la relación de contraste de cada par que las pantallas usan:
  * - texto sobre su fondo: 4,5:1 (WCAG 1.4.3);
  * - borde de un control, foco y puntos de la figura antropométrica: 3:1 (WCAG 1.4.11).
@@ -50,8 +51,8 @@ function bloqueCss(css, selector) {
 function temasWeb() {
   const css = readFileSync(TOKENS_WEB, 'utf8');
   const claro = bloqueCss(css, ':root');
-  // El tema oscuro redefine lo que cambia; el resto (el encabezado, la marca) es el mismo en los dos.
-  const oscuro = { ...claro, ...bloqueCss(css, '.tema-oscuro') };
+  // Azul noche redefine lo que cambia; el resto (el encabezado, la marca) es el mismo en los dos.
+  const oscuro = { ...claro, ...bloqueCss(css, "[data-tema='azul-noche']") };
   return { claro, oscuro };
 }
 
@@ -106,7 +107,7 @@ const PARES_WEB = [
   ['encabezado-foco', 'encabezado-fondo-2', NO_TEXTO, 'anillo de foco en el encabezado, del otro lado del degradé'],
 ];
 
-/** Solo en el tema claro: la figura de la toma antropométrica vive en el espacio profesional (tramo D). */
+/** En las dos apariencias: la figura de la toma antropométrica se ve en cualquiera (tramo D; Dirección 2026-09-30). */
 const PARES_FIGURA = [
   ['figura-trazo', 'superficie', NO_TEXTO, 'contorno de la silueta sobre su tarjeta'],
   ['punto', 'figura-relleno', NO_TEXTO, 'punto de toma sobre la figura'],
@@ -145,7 +146,7 @@ function verificar(tema, pares, nombreDelTema) {
   assert.deepEqual(fallas, [], `Pares sin contraste suficiente:\n${fallas.join('\n')}`);
 }
 
-/** Solo en el tema claro: los gráficos de planificado y registrado viven en el espacio profesional. */
+/** En las dos apariencias: los gráficos de entrenamiento y de antropometría se ven en cualquiera. */
 const PARES_GRAFICO = [
   ['grafico-planificado', 'superficie', NO_TEXTO, 'barras, franjas y línea de lo planificado'],
   ['grafico-registrado', 'superficie', NO_TEXTO, 'barras, puntos y línea de lo registrado'],
@@ -162,37 +163,39 @@ test('la fórmula de contraste es la de WCAG 2.2', () => {
   assert.ok(contraste('#f59e0b', '#ffffff') < NO_TEXTO, 'el foco viejo no llegaba a 3:1');
 });
 
-test('website · tema claro (espacio profesional y cuenta)', () => {
+test('website · apariencia «Claro», todas las pantallas', () => {
   const { claro } = temasWeb();
   verificar(claro, [...PARES_WEB, ...PARES_FIGURA, ...PARES_GRAFICO], 'claro');
 });
 
-test('website · tema oscuro (landing, acceso, registro y legales)', () => {
+test('website · apariencia «Azul noche», todas las pantallas', () => {
   const { oscuro } = temasWeb();
-  verificar(oscuro, PARES_WEB, 'oscuro');
+  verificar(oscuro, [...PARES_WEB, ...PARES_FIGURA, ...PARES_GRAFICO], 'azul noche');
 });
 
 /**
- * La cara pública pinta un degradé (`.tema-oscuro` en globals.css): de `fondo` a `fondo-suave`, con un velo del azul
+ * La cara pública pinta un degradé (`.cara-publica` en globals.css): de `fondo` a `fondo-suave`, con un velo del azul
  * encima. axe-core no puede medir texto sobre un degradé —lo deja «para revisión manual»—, así que se mide acá, en sus
  * puntos extremos: los dos colores de base y la mezcla más clara, con la proporción que declara la hoja de estilos.
  */
-test('website · el texto de la cara pública se lee en todo el degradé', () => {
-  const { oscuro } = temasWeb();
+test('website · el texto de la cara pública se lee en todo el degradé, en las dos apariencias', () => {
+  const temas = temasWeb();
   const css = readFileSync(join(RAIZ, 'apps/web/src/app/globals.css'), 'utf8');
-  const bloque = css.slice(css.indexOf('.tema-oscuro {'), css.indexOf('}', css.indexOf('.tema-oscuro {')));
+  const bloque = css.slice(css.indexOf('.cara-publica {'), css.indexOf('}', css.indexOf('.cara-publica {')));
   const velo = /color-mix\(in srgb, var\(--azul\) (\d+)%, transparent\)/.exec(bloque);
-  assert.ok(velo, 'el degradé de .tema-oscuro cambió de forma: actualizar esta prueba');
+  assert.ok(velo, 'el degradé de .cara-publica cambió de forma: actualizar esta prueba');
   const proporcion = Number(velo[1]) / 100;
   const hex = (n) => Math.round(n).toString(16).padStart(2, '0');
   const rgb = (h) => [0, 2, 4].map((i) => parseInt(h.slice(1 + i, 3 + i), 16));
   const mezcla = (arriba, abajo, p) => `#${rgb(arriba).map((c, i) => hex(c * p + rgb(abajo)[i] * (1 - p))).join('')}`;
-  const fondos = { fondo: oscuro.fondo, 'fondo-suave': oscuro['fondo-suave'], 'velo del azul sobre el fondo': mezcla(oscuro.azul, oscuro.fondo, proporcion) };
   const fallas = [];
-  for (const [nombreDelFondo, fondo] of Object.entries(fondos)) {
-    for (const frente of ['texto', 'tenue', 'enlace', 'error', 'exito']) {
-      const relacion = contraste(oscuro[frente], fondo);
-      if (relacion < TEXTO) fallas.push(`${frente} sobre ${nombreDelFondo} (${fondo}) = ${relacion.toFixed(2)}:1`);
+  for (const [nombreDelTema, tema] of Object.entries(temas)) {
+    const fondos = { fondo: tema.fondo, 'fondo-suave': tema['fondo-suave'], 'velo del azul sobre el fondo': mezcla(tema.azul, tema.fondo, proporcion) };
+    for (const [nombreDelFondo, fondo] of Object.entries(fondos)) {
+      for (const frente of ['texto', 'tenue', 'enlace', 'error', 'exito']) {
+        const relacion = contraste(tema[frente], fondo);
+        if (relacion < TEXTO) fallas.push(`${nombreDelTema} · ${frente} sobre ${nombreDelFondo} (${fondo}) = ${relacion.toFixed(2)}:1`);
+      }
     }
   }
   assert.deepEqual(fallas, []);
