@@ -1,7 +1,7 @@
 /*
  * Estilos del website. Ningún color se escribe acá: todos salen de tokens.css, que es lo que verifica la prueba de
- * contraste (scripts/contraste.test.cjs). El tema lo da el contenedor: `:root` es el claro y azul del espacio de
- * trabajo; `.tema-oscuro`, la cara pública (docs/paquetes/WP-IDENTIDAD-VISUAL.md, tramo A).
+ * contraste (scripts/contraste.test.cjs). El tema lo elige la persona y se aplica con `data-tema` en `<html>`:
+ * «Azul noche» (predeterminado) o «Claro» (Dirección, 2026-09-30). Antes lo daba el contenedor por superficie.
  */
 
 /* ─── Base ────────────────────────────────────────────────────────────── */
@@ -21,9 +21,9 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* La cara pública pinta toda la ventana, también lo que queda fuera del contenido. */
-html:has(.tema-oscuro),
-html:has(.tema-oscuro) body {
+/* En Azul noche toda la ventana es navy, también lo que queda fuera del contenido. */
+html[data-tema='azul-noche'],
+html[data-tema='azul-noche'] body {
   background: var(--navy);
   color-scheme: dark;
 }
@@ -101,19 +101,46 @@ code {
   top: 0.75rem;
 }
 
-/* ─── Temas ───────────────────────────────────────────────────────────── */
-.tema-oscuro {
+/* ─── Cara pública ────────────────────────────────────────────────────── */
+/* Landing, acceso, registro y legales: un degradé moderado sobre el fondo del tema elegido. En Claro es apenas un
+   velo azul; en Azul noche, el degradé navy de la referencia. Los colores salen de los tokens del tema. */
+.cara-publica {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background:
-    radial-gradient(60rem 30rem at 85% -10%, color-mix(in srgb, var(--azul) 22%, transparent), transparent 70%),
+    radial-gradient(60rem 30rem at 85% -10%, color-mix(in srgb, var(--azul) 10%, transparent), transparent 70%),
     linear-gradient(180deg, var(--fondo) 0%, var(--fondo-suave) 100%);
   color: var(--texto);
 }
 
-.tema-oscuro > main {
+.cara-publica > main {
   flex: 1 0 auto;
+}
+
+/* ─── Selector de apariencia (encabezado) ─────────────────────────────── */
+.apariencia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+  color: var(--encabezado-texto);
+  font-size: 0.9rem;
+}
+
+.apariencia select {
+  min-height: 36px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--encabezado-tenue);
+  background: var(--encabezado-fondo-2);
+  color: var(--encabezado-texto);
+  font: inherit;
+}
+
+.apariencia select:focus-visible {
+  outline: 3px solid var(--encabezado-foco);
+  outline-offset: 2px;
 }
 
 /* ─── Encabezado de marca: navy en los dos temas ──────────────────────── */
@@ -704,6 +731,8 @@ details summary {
   margin: 0.5rem 0;
   padding: 0;
   display: grid;
+  /* La columna se puede achicar: un contenido ancho (un gráfico que se desplaza por dentro) no empuja la página. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
 }
 
@@ -1372,4 +1401,240 @@ details summary {
 
 .candidato h4 {
   margin: 0 0 0.25rem;
+}
+
+/* ─── Planificado y registrado: gráficos del espacio profesional (amplía DL-105; B10-10 §11) ─── */
+/* Cada gráfico tiene título, período, unidad, leyenda y tabla equivalente; los estados se leen por forma y texto,
+   no solo por color; y todo valor exacto está a un clic, un toque o una tecla, no solo al pasar el puntero. */
+.grafico {
+  margin: 0.5rem 0 1rem;
+  min-width: 0;
+}
+
+/* La figura del gráfico no lleva el margen por defecto del navegador (40 px por lado): en un teléfono es casi un tercio del ancho. */
+.grafico__figura {
+  margin: 0;
+}
+
+.grafico__controles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  align-items: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.grafico__controles .campo {
+  min-width: 12rem;
+  flex: 0 1 16rem;
+}
+
+.grafico__desplazable {
+  overflow-x: auto;
+}
+
+.grafico__lienzo {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--superficie);
+  padding: 0.5rem 0.25rem 0.25rem;
+}
+
+.grafico__lienzo:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* Recharts 3 deja sus capas con tabindex="-1": un clic las enfoca y el navegador dibuja su contorno. No se alcanzan con
+   el teclado, que entra por el marco del gráfico; el marco toma el foco después de cada clic o toque. */
+.grafico__lienzo svg g[tabindex='-1']:focus {
+  outline: none;
+}
+
+/* Barras, puntos, franjas y rótulos del eje se eligen con clic o toque; el teclado recorre lo mismo con las flechas. */
+.grafico__elegible {
+  cursor: pointer;
+}
+
+.grafico__tick {
+  fill: var(--texto);
+  font-size: 0.8rem;
+}
+
+.grafico__tick--estado {
+  fill: var(--tenue);
+  font-size: 0.75rem;
+}
+
+.grafico__valor {
+  fill: var(--texto);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.grafico__tooltip {
+  background: var(--superficie);
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.85rem;
+  box-shadow: var(--sombra-suave);
+}
+
+.grafico__tooltip p {
+  margin: 0;
+}
+
+.capas {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.25rem 0.75rem 0.5rem;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.25rem;
+}
+
+.capas legend {
+  font-weight: 700;
+  padding: 0 0.25rem;
+}
+
+.capa {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.capa input {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.muestra {
+  display: inline-block;
+  flex: none;
+  width: 1.75rem;
+  height: 0.9rem;
+  border-radius: 3px;
+}
+
+.muestra--planificado {
+  border: 2px solid var(--grafico-planificado);
+  background: repeating-linear-gradient(135deg, var(--grafico-planificado) 0 2px, transparent 2px 6px);
+}
+
+.muestra--registrado {
+  background: var(--grafico-registrado);
+}
+
+/* Evolución antropométrica: punto comparable y rombo no comparable, del mismo color; la forma dice la diferencia. */
+.muestra--punto {
+  width: 0.9rem;
+  border-radius: 50%;
+  background: var(--grafico-registrado);
+}
+
+.muestra--rombo {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 2px;
+  background: var(--grafico-registrado);
+  transform: rotate(45deg);
+}
+
+.muestra--hueco {
+  border: 1px dashed var(--grafico-hueco);
+  background: repeating-linear-gradient(45deg, var(--grafico-hueco) 0 1px, transparent 1px 5px);
+}
+
+.leyenda {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--tenue);
+}
+
+.leyenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.selector-de-series {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 2px solid var(--boton-secundario-borde);
+  background: var(--superficie);
+  color: var(--boton-secundario-texto);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--boton-fondo);
+  border-color: var(--boton-fondo);
+  color: var(--boton-texto);
+}
+
+.chip:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.detalle-de-valores {
+  border: 1px solid var(--borde);
+  border-left: 6px solid var(--azul);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: var(--fondo-suave);
+  margin: 0.5rem 0 1rem;
+}
+
+.detalle-de-valores h4 {
+  margin: 0 0 0.4rem;
+}
+
+.detalle-de-valores dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3rem 0.85rem;
+  margin: 0 0 0.5rem;
+}
+
+.detalle-de-valores dt {
+  font-weight: 600;
+}
+
+.detalle-de-valores dd {
+  margin: 0;
+}
+
+@media (max-width: 30rem) {
+  .detalle-de-valores dl {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .detalle-de-valores dd {
+    margin-bottom: 0.4rem;
+  }
 }

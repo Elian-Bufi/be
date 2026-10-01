@@ -12,14 +12,14 @@
  * Lo escrito no se toca: la pantalla conserva los valores, y la persona corrige solo lo marcado.
  */
 import type { Resultado } from './cliente-http';
-import { CODIGO_DE_NUMERO_FUERA_DE_LIMITES, ProblemaDeRespuestaSchema, type CampoDePlantilla, type ProblemaDeRespuesta } from './contratos-formularios';
+import { CODIGO_DE_NUMERO_FUERA_DE_LIMITES, CODIGO_DE_TEXTO_DEMASIADO_LARGO, ProblemaDeRespuestaSchema, type CampoDePlantilla, type ProblemaDeRespuesta } from './contratos-formularios';
 import { COPY } from './copy';
 import { COPY_FORMULARIOS } from './copy-formularios';
 import { numero } from './formato-numeros';
 import type { LimitesNumericos } from './formularios';
 
 /** Qué pasó con el número, antes del rango que se admite. */
-const MOTIVO: Readonly<Record<ProblemaDeRespuesta['code'], string>> = {
+const MOTIVO: Readonly<Record<Exclude<ProblemaDeRespuesta['code'], typeof CODIGO_DE_TEXTO_DEMASIADO_LARGO>, string>> = {
   [CODIGO_DE_NUMERO_FUERA_DE_LIMITES.NOT_INTEGER]: 'Sin decimales.',
   [CODIGO_DE_NUMERO_FUERA_DE_LIMITES.BELOW_MINIMUM]: 'Es menos de lo que se admite.',
   [CODIGO_DE_NUMERO_FUERA_DE_LIMITES.ABOVE_MAXIMUM]: 'Es más de lo que se admite.',
@@ -39,8 +39,9 @@ export function valoresAdmitidos(limites: LimitesNumericos, unidad: string | nul
   return `Ingresá ${tipo}.`;
 }
 
-/** El mensaje de un campo: qué pasó y qué valores admite. */
+/** El mensaje de un campo: qué pasó y qué admite. */
 export function mensajeDeProblema(p: ProblemaDeRespuesta, unidad: string | null): string {
+  if (p.code === CODIGO_DE_TEXTO_DEMASIADO_LARGO) return `Es más largo de lo que se admite. Escribí hasta ${numero(p.maxLength)} caracteres.`;
   return `${MOTIVO[p.code]} ${valoresAdmitidos(p.limits, unidad)}`;
 }
 
@@ -94,4 +95,42 @@ export function rechazoDeFormulario(r: Resultado<unknown>, campos: readonly Camp
     lineas.push(`${campo.label}: ${mensaje}`);
   }
   return { tipo: 'por-campo', errores, resumen: COPY.resumenDeErrores(problemas.length), lineas };
+}
+
+/**
+ * Qué hacer ante el fallo de un envío de respuesta (API-FRM-07) o de corrección (API-FRM-08). Cada caso sale de lo que
+ * la API realmente devuelve, y ninguno se confunde con una falla del servicio:
+ * - **por campo** o **dato no aceptado** (`422 FORM_RESPONSE_INVALID`, DL-104): como `rechazoDeFormulario`;
+ * - **ya no se puede** (`422 FORM_REQUEST_NOT_RESPONDABLE` al responder; `422 FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED`
+ *   al corregir): ya tiene respuesta, o cambió el vínculo o una autorización. Se ofrece cargar lo guardado y volver;
+ * - **versión vieja** (`409 VERSION_CONFLICT` al corregir): la respuesta cambió desde que se abrió la pantalla. Se
+ *   ofrece cargar la versión guardada, sin reenviar nada: la persona revisa y decide;
+ * - **envío anterior guardado** (`409 IDEMPOTENCY_KEY_REUSED`): después de un resultado incierto, la persona cambió algo
+ *   y reenvió con la misma clave, y la API dice que esa clave ya tiene un envío **guardado** con otro contenido (solo
+ *   guarda éxitos). O sea, el primer envío llegó. Se ofrece cargarlo; lo cambiado no se envió.
+ * En todos, lo escrito no se envió y sigue en los campos. `null`: lo decide `falloDe` (red, 404, servicio).
+ */
+export type DesenlaceDeEnvio =
+  | RechazoDeFormulario
+  | { readonly tipo: 'ya-no-se-puede'; readonly sobre: 'respuesta' | 'correccion'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] }
+  | { readonly tipo: 'version-vieja'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] }
+  | { readonly tipo: 'envio-anterior-guardado'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] };
+
+export function desenlaceDeEnvio(r: Resultado<unknown>, campos: readonly CampoDePlantilla[], opciones: { readonly esCorreccion: boolean }): DesenlaceDeEnvio | null {
+  const rechazo = rechazoDeFormulario(r, campos);
+  if (rechazo) return rechazo;
+  if (r.ok || r.tipo !== 'API') return null;
+  switch (r.codigo) {
+    case 'FORM_REQUEST_NOT_RESPONDABLE':
+      return { tipo: 'ya-no-se-puede', sobre: 'respuesta', mensaje: COPY_FORMULARIOS.noSePuedeResponderYa, acciones: ['cargar', 'volver'] };
+    case 'FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED':
+      return { tipo: 'ya-no-se-puede', sobre: 'correccion', mensaje: COPY_FORMULARIOS.noSePuedeCorregirYa, acciones: ['cargar', 'volver'] };
+    case 'VERSION_CONFLICT':
+      // FRM-07 no declara 409 de versión: solo la corrección lleva expectedVersion.
+      return opciones.esCorreccion ? { tipo: 'version-vieja', mensaje: COPY_FORMULARIOS.respuestaCambioAntesDeCorregir, acciones: ['cargar', 'volver'] } : null;
+    case 'IDEMPOTENCY_KEY_REUSED':
+      return { tipo: 'envio-anterior-guardado', mensaje: COPY_FORMULARIOS.envioAnteriorGuardado, acciones: ['cargar', 'volver'] };
+    default:
+      return null;
+  }
 }

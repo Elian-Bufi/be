@@ -75,7 +75,9 @@ export function categoriasDeCampos(contenido: unknown, fieldCodes: readonly stri
 export function tipoDeValorCorrecto(dataType: CampoDeContenido['dataType'], value: unknown): boolean {
   if (dataType === 'TEXT') return typeof value === 'string' && value.trim().length > 0;
   if (dataType === 'NUMBER') return typeof value === 'number' && Number.isFinite(value);
-  return typeof value === 'boolean';
+  if (dataType === 'BOOLEAN') return typeof value === 'boolean';
+  // Un tipo que este servidor no conoce no se valida como otro: se rechaza (antes caía en «sí/no»).
+  return false;
 }
 
 export function plantillaApi(p: PlantillaConVersiones, ultima: VersionSeleccionable): unknown {
