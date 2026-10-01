@@ -15,7 +15,7 @@ import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { diferenciaDescriptiva, EvolucionResponseSchema, grupoVigente, observacionesDelGrupo, observacionPorId, prepararSerie, resumenDeObservacion, type EvolucionResponse } from '@be/domain';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
-import { circuitoAntropometrico, type CircuitoAntropometrico } from './soporte-antropometria';
+import { CATALOGO_DEMO, circuitoAntropometrico, type CircuitoAntropometrico } from './soporte-antropometria';
 import { prepararProfesional, vinculoCompleto } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -137,5 +137,86 @@ describe('Evolución antropométrica visual · la presentación conserva lo que 
     // Y la evaluación de origen del punto es de este profesional: abrirla no cruza a la del otro.
     expect(serie.observaciones[0]!.punto.sourceEvaluationId).toBeTruthy();
     await conSesion(app, c.pro.token).get(`/api/v1/anthropometry/evaluations/${serie.observaciones[0]!.punto.sourceEvaluationId}`).expect(200);
+  });
+});
+
+/**
+ * DL-111 · los resultados de las fórmulas también son evolución. Una corrida vigente de soporte antropométrico aporta
+ * un punto **derivado** en la métrica de su resultado, con el momento de sus entradas y agrupado por método: el
+ * asesorado lo ve en su propia evolución (la que lee la APK) sin un endpoint nuevo. Una corrida reemplazada no aparece
+ * (rige su sucesora), y una corrida con una entrada anulada tampoco: su resultado dejó de valer.
+ */
+describe('DL-111 · los resultados derivados entran en la evolución', () => {
+  async function calcular(c: CircuitoAntropometrico, porMetrica: Record<string, string>) {
+    const r = await conSesion(app, c.pro.token)
+      .post(`/api/v1/advisees/${c.ase.id}/calculations`, claveDeIdempotencia())
+      .send({
+        purpose: 'ANTHROPOMETRIC_SUPPORT',
+        methodVersionId: CATALOGO_DEMO.metodo.v2,
+        inputBindings: [
+          { inputCode: 'PESO', sourceRef: porMetrica.peso! },
+          { inputCode: 'TALLA', sourceRef: porMetrica.talla! },
+        ],
+      })
+      .expect(201);
+    return r.body.data as { calculationRunId: string };
+  }
+  const porMetrica = (e: { measurements: { measurementId: string; metric: string }[] }) => Object.fromEntries(e.measurements.map((m) => [m.metric, m.measurementId]));
+
+  it('una corrida vigente aporta un punto derivado en la métrica de su resultado, con el momento de sus entradas y su propio grupo; el asesorado lo ve', async () => {
+    const c = await circuitoAntropometrico(app, prisma, `evo-${++contador}`);
+    const e = await registrada(c, haceDias(4), [medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
+    const corrida = await calcular(c, porMetrica(e));
+
+    const datos = await evolucion(c);
+    expect(datos.metrics.map((m) => m.metricCode)).toEqual(['indice-demo', 'peso', 'talla']);
+    const indice = datos.metrics.find((m) => m.metricCode === 'indice-demo')!;
+    expect(indice.series).toHaveLength(1);
+    expect(indice.series[0]).toMatchObject({
+      value: 23.673,
+      unit: 'kg/m2',
+      dataClass: 'DERIVED',
+      sourceId: corrida.calculationRunId,
+      sourceEvaluationId: e.evaluationId,
+      correctionState: 'EFFECTIVE',
+      occurredAt: haceDias(4),
+    });
+    // El grupo de comparabilidad lleva el método: dos métodos distintos nunca se comparan entre sí.
+    expect(indice.comparability.groups).toEqual([expect.objectContaining({ methodVersionId: CATALOGO_DEMO.metodo.v2, unit: 'kg/m2', protocolVersionId: c.protocoloVersionId })]);
+    const peso = datos.metrics.find((m) => m.metricCode === 'peso')!;
+    expect(peso.comparability.groups[0]!.methodVersionId).toBeNull();
+
+    // La propia evolución del asesorado (API-ANT-06 sobre «me», la que lee la APK) trae el mismo punto.
+    const propia = await conSesion(app, c.ase.token).get(`/api/v1/me/anthropometry/progress?periodStart=${haceDias(30).slice(0, 10)}&periodEnd=${new Date().toISOString().slice(0, 10)}`).expect(200);
+    const suya = EvolucionResponseSchema.parse(propia.body).data.metrics.find((m) => m.metricCode === 'indice-demo')!;
+    expect(suya.series.map((p) => [p.value, p.dataClass])).toEqual([[23.673, 'DERIVED']]);
+  });
+
+  it('al corregir una entrada rige la corrida sucesora: un solo punto, con el valor recalculado', async () => {
+    const c = await circuitoAntropometrico(app, prisma, `evo-${++contador}`);
+    const e = await registrada(c, haceDias(6), [medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
+    const original = await calcular(c, porMetrica(e));
+    await conSesion(app, c.pro.token)
+      .post(`/api/v1/anthropometry/evaluations/${e.evaluationId}/corrections`, claveDeIdempotencia())
+      .send({ targetId: porMetrica(e).peso, reason: 'Se leyó mal la balanza.', magnitude: { value: 74, unit: 'kg' } })
+      .expect(201);
+
+    const indice = (await evolucion(c)).metrics.find((m) => m.metricCode === 'indice-demo')!;
+    // 74 / 1,75² = 24,163: la reemplazada (23,673) no reaparece como punto.
+    expect(indice.series.map((p) => p.value)).toEqual([24.163]);
+    expect(indice.series[0]!.sourceId).not.toBe(original.calculationRunId);
+  });
+
+  it('una corrida con una entrada anulada deja de aportar: su resultado ya no vale', async () => {
+    const c = await circuitoAntropometrico(app, prisma, `evo-${++contador}`);
+    const e = await registrada(c, haceDias(5), [medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
+    await calcular(c, porMetrica(e));
+    await conSesion(app, c.pro.token)
+      .post(`/api/v1/anthropometry/measurements/${porMetrica(e).talla}/annulments`, claveDeIdempotencia())
+      .send({ reason: 'Se midió con el calzado puesto.' })
+      .expect(201);
+
+    const datos = await evolucion(c);
+    expect(datos.metrics.map((m) => m.metricCode)).toEqual(['peso', 'talla']);
   });
 });
