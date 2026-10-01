@@ -16,9 +16,10 @@
 import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, Image, KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Image, KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiConfigurada, extra } from './src/api';
+import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
 import { anterior, requiereSesion, textoDeVolverA, type Ruta, type Salida } from './src/navegacion';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
@@ -32,7 +33,8 @@ import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRegistro } from './src/pantallas/registro';
 import { PantallaDeVinculo } from './src/pantallas/vinculo';
 import { PantallaDeVinculos } from './src/pantallas/vinculos';
-import { Aviso, Boton, COLOR, Parrafo } from './src/ui';
+import { BARRA_DEL_SISTEMA } from './src/tema';
+import { Aviso, Boton, Parrafo, estilosPorTema } from './src/ui';
 
 const AVISOS: Record<Salida, string> = {
   'sesion-cerrada': 'Cerraste la sesión.',
@@ -51,15 +53,25 @@ interface Sesion {
   readonly identidadId: string;
 }
 
+/**
+ * La raíz guarda la apariencia: al cambiarla se vuelve a dibujar y con ella toda la app, con los colores del tema nuevo
+ * y sin perder la pantalla ni la sesión. Hasta leer la preferencia guardada muestra solo el fondo, para que la app no
+ * aparezca en un tema y cambie al otro.
+ */
 export default function App() {
+  const apariencia = useAparienciaGuardada();
+  if (!apariencia.lista) return <View style={estilos.raiz} />;
   return (
-    <SafeAreaProvider>
-      <Contenido />
-    </SafeAreaProvider>
+    <ProveedorDeApariencia value={apariencia}>
+      <SafeAreaProvider>
+        <Contenido />
+      </SafeAreaProvider>
+    </ProveedorDeApariencia>
   );
 }
 
 function Contenido() {
+  const { tema } = useApariencia();
   // Inset inferior real del sistema (barra de navegación de Android edge-to-edge / home indicator de iOS).
   const insets = useSafeAreaInsets();
   const [ruta, setRuta] = useState<Ruta>({ nombre: 'bienvenida' });
@@ -193,15 +205,15 @@ function Contenido() {
           </Aviso>
         ) : null}
       </ScrollView>
-      {/* Tema oscuro: los íconos de la barra del sistema van claros. */}
-      <StatusBar style="light" />
+      {/* Los íconos de la barra del sistema: claros sobre Azul noche, oscuros sobre Claro. */}
+      <StatusBar style={BARRA_DEL_SISTEMA[tema]} />
     </KeyboardAvoidingView>
   );
 }
 
 const ISOTIPO = require('./assets/isotipo.png');
 
-const estilos = StyleSheet.create({
+const estilos = estilosPorTema((COLOR) => ({
   raiz: { flex: 1, backgroundColor: COLOR.fondo },
   barra: {
     paddingTop: Constants.statusBarHeight + 8,
@@ -226,4 +238,4 @@ const estilos = StyleSheet.create({
   lema: { fontSize: 14, fontWeight: '800', letterSpacing: 3, color: COLOR.acento, textAlign: 'center', marginTop: 12 },
   tituloBienvenida: { fontSize: 26, fontWeight: '700', color: COLOR.texto, marginVertical: 12, textAlign: 'center' },
   identidad: { fontSize: 12, color: COLOR.tenue, marginTop: 32 },
-});
+}));

@@ -3,11 +3,11 @@
  * 48 dp, roles y estados accesibles, sin gestos exclusivos. Botón destructivo distinguible por texto y jerarquía.
  */
 import { useEffect, type ReactNode } from 'react';
-import { AccessibilityInfo, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
-import { COLOR } from './tema';
+import { AccessibilityInfo, Pressable, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { COLOR, estilosPorTema } from './tema';
 
 // Los colores viven en tema.ts, donde los verifica la prueba de contraste; se reexportan para las pantallas.
-export { COLOR, VELO } from './tema';
+export { COLOR, estilosPorTema } from './tema';
 
 export function Titulo({ children }: { children: ReactNode }) {
   return (
@@ -227,7 +227,7 @@ export function Insignia({ texto, positiva = false, etiqueta }: { texto: string;
   );
 }
 
-export const estilos = StyleSheet.create({
+export const estilos = estilosPorTema((COLOR) => ({
   titulo: { fontSize: 28, fontWeight: '700', color: COLOR.texto, marginBottom: 12 },
   parrafo: { fontSize: 16, color: COLOR.texto, lineHeight: 23, marginVertical: 4 },
   tenue: { color: COLOR.tenue, fontSize: 14 },
@@ -274,4 +274,4 @@ export const estilos = StyleSheet.create({
   insigniaPositiva: { borderColor: COLOR.exito },
   textoInsignia: { fontWeight: '700', color: COLOR.tenue, fontSize: 15 },
   textoInsigniaPositiva: { color: COLOR.exito },
-});
+}));
