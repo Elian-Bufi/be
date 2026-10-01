@@ -1,0 +1,87 @@
+[
+  {
+    "nombre": "el selector ofrece los 40 métodos del catálogo y el de demostración",
+    "ok": true,
+    "detalle": "41 opciones"
+  },
+  {
+    "nombre": "la ficha dice qué da, qué pide, la fuente y la población",
+    "ok": true,
+    "detalle": "Densidad corporal con el logaritmo de la suma de 4 pliegues (bíceps, tríceps, subescapular y cresta ilíaca) y los coeficientes de la franja de edad. El porcentaje de grasa sale de la densidad con la e"
+  },
+  {
+    "nombre": "la ficha nombra las mediciones, no sus códigos",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "nombre": "la finalidad y la precisión se leen en palabras",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "nombre": "la lámina tiene role=\"img\" y una descripción",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "nombre": "Circunferencias muestra la cintura de la última toma",
+    "ok": true,
+    "detalle": "Cuello39cmHombros119,6cmPecho102cmBrazo relajado33,6cmBrazo contraído36,3cmAntebrazo29,4cmMuñeca17,2cmCintura83cmAbdomen bajo85,4cmCadera97,8cmMuslo57,6cmPantor"
+  },
+  {
+    "nombre": "la lámina no califica (sin «mejoró», «empeoró», «excelente», «normal»)",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "nombre": "el botón elegido queda apretado (aria-pressed)",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "nombre": "Pliegues rotula el punto frontal «Supraespinal»",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "nombre": "Conclusiones muestra resultados de las fórmulas con su método",
+    "ok": true,
+    "detalle": "RESULTADOS CALCULADOS, CADA UNO CON SU MÉTODODatos de la tomaPesoMedido80,8kgTallaMedido176cmEdad al momento de la tomaMedido31añosÍndicesÍndice cintura/cadera0,85Índice cintura/talla0,47Índice de con"
+  },
+  {
+    "nombre": "Serie muestra más de una toma",
+    "ok": true,
+    "detalle": "Hombros119,6 cm+1,6 cm116,7118,8120,9T1T2T3118  ·  118,8  ·  119,6Brazo relajado33,6 cm+0,6 cm32,633,334,0T1T2T333  ·  33,3  ·  33,6Brazo contraído36,3 cm+0,8 cm35,135,936,7T1T2T335,5  ·  35,9  ·  36,"
+  },
+  {
+    "nombre": "Serie no pinta «mejor» ni «peor»",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "nombre": "«Descargar imagen» baja un PNG de 2160 × 3840",
+    "ok": true,
+    "detalle": "lamina-2026-09-25-circunferencias-tren-superior.png: 2160 × 3840, 4440301 bytes"
+  },
+  {
+    "nombre": "sin desplazamiento horizontal a 1280 px",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "nombre": "sin desplazamiento horizontal a 390 px",
+    "ok": true,
+    "detalle": ""
+  },
+  {
+    "nombre": "el selector de la evolución muestra nombres, no códigos",
+    "ok": true,
+    "detalle": "Peso (3) | Talla (3) | Edad al momento de la toma (3) | Pliegue pectoral (3) | Pliegue axilar medio (3) | Pliegue tricipital (3)"
+  },
+  {
+    "nombre": "sin errores de consola ni de página",
+    "ok": true,
+    "detalle": ""
+  }
+]
