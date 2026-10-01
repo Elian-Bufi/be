@@ -1,6 +1,6 @@
 # Evidencia · DL-111: catálogo antropométrico de BE, lámina y evolución física en la APK
 
-**Estado:** implementada en la rama `feat/antropometria-lamina` y verificada localmente; la integración, el despliegue en test y la APK 0.12.2 se registran al pie cuando ocurren. Falta la validación de Dirección en el teléfono.
+**Estado:** integrada en `main` con el PR #126 (`0308355`), CI en verde y desplegada en test; APK 0.12.2 publicada (`EVIDENCIA/PUBLICACION-0.12.2/LEEME.md`). **Falta la validación de Dirección en el teléfono.**
 
 Pedido de Dirección del 2026-09-30 (noche): la lámina del compositor en el website del profesional, la figura con las medidas y la comparación en la APK, y las fórmulas antropométricas investigadas y programadas para que el profesional elija el método. Las decisiones que tomó el ejecutor están en DL-111 (`docs/DEUDA_LEGAJO.md`), **a ratificar**.
 
@@ -27,7 +27,7 @@ Pedido de Dirección del 2026-09-30 (noche): la lámina del compositor en el web
 | Scripts: vocabulario prohibido en las pantallas, contraste de los temas (con los colores de la lámina de la APK), figuras idénticas a las del compositor | **35/35** |
 | API, unitarias | **53/53** |
 | Integración de antropometría: el catálogo (los 40 métodos ejecutados por la API sobre una toma completa), la evolución con resultados derivados, los cálculos y la antropometría | **46/46** |
-| Integración completa | __INTEGRACION__ |
+| Integración completa, en la CI (PostgreSQL 16) | **561/561** (39 suites) |
 | Typecheck del dominio, la API, el website y la APK · OpenAPI al día | ✅ |
 | Recorrido del website en Chrome sin ventana: ficha del método, lámina en sus modos y temas, descarga del PNG, evolución con nombres, 1280 y 390 px | **17/17** |
 
