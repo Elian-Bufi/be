@@ -42,9 +42,15 @@ export function numeroConPrecision(valor: number, decimales: number): string {
   return conSeparadores(fijo, Number(fijo) !== 0 && valor < 0);
 }
 
-/** «72,5 kg»: el número y la unidad como la escribió el contrato. */
+/**
+ * La unidad de un resultado sin dimensión: un cociente de dos longitudes (índice cintura/cadera) o un componente del
+ * somatotipo. El catálogo la declara así (DL-111) y `cantidad` muestra solo el número.
+ */
+export const UNIDAD_ADIMENSIONAL = 'adimensional';
+
+/** «72,5 kg»: el número y la unidad como la escribió el contrato. Sin dimensión, solo el número: «0,85». */
 export function cantidad(valor: number, unidad: string, maximo?: number): string {
-  return `${numero(valor, maximo)} ${unidad}`;
+  return unidad === UNIDAD_ADIMENSIONAL ? numero(valor, maximo) : `${numero(valor, maximo)} ${unidad}`;
 }
 
 /**

@@ -1,6 +1,6 @@
 /**
  * DL-111 · el catálogo antropométrico de BE, sembrado por migración, contra PostgreSQL y por la API real:
- * - el protocolo «Perfil antropométrico completo» y sus 29 métodos se publican con su ficha (descripción, fuente,
+ * - el protocolo «Perfil antropométrico completo» y sus 40 métodos se publican con su ficha (descripción, fuente,
  *   población y categoría), seleccionables y con una regla que BE sabe aplicar; la ficha no califica (TEST-PRJ-009);
  * - una toma completa con el perfil alcanza para ejecutar cada método, y cada resultado es el de la regla del dominio con
  *   la precisión que el método declara;
@@ -98,9 +98,9 @@ async function tomaRegistrada(occurredAt: string): Promise<EvaluacionAntropometr
 }
 
 describe('DL-111 · el catálogo antropométrico de BE', () => {
-  it('publica los 29 métodos con su ficha, seleccionables, con una regla conocida y sin calificar', async () => {
+  it('publica los 40 métodos con su ficha, seleccionables, con una regla conocida y sin calificar', async () => {
     const metodos = await metodosDeBE();
-    expect(metodos).toHaveLength(29);
+    expect(metodos).toHaveLength(40);
     for (const m of metodos) {
       expect(m.status).toBe('SELECTABLE');
       expect(m.purposes).toEqual(['ANTHROPOMETRIC_SUPPORT']);
@@ -136,8 +136,8 @@ describe('DL-111 · el catálogo antropométrico de BE', () => {
     const r = await conSesion(app, c.ase.token).get('/api/v1/me/anthropometry/progress').expect(200);
     const datos = EvolucionResponseSchema.parse(r.body).data;
     const derivadas = datos.metrics.filter((s) => s.series.some((p) => p.dataClass === 'DERIVED'));
-    // 29 métodos y 21 familias: los métodos por sexo comparten la métrica de su familia.
-    expect(derivadas).toHaveLength(21);
+    // 40 métodos y 28 familias: los métodos por sexo comparten la métrica de su familia.
+    expect(derivadas).toHaveLength(28);
     for (const s of derivadas) {
       expect(NOMBRE_DE_METRICA[s.metricCode]).toBeTruthy();
       // Dos métodos de la misma familia y el mismo día (el de hombres y el de mujeres): la API publica uno por día, y
