@@ -135,42 +135,42 @@ function Lamina({ ancho, sexo, familia, medidas, tema }: { ancho: number; sexo: 
   const anchoDeImagen = anchoDelCuerpo / (figura.cuerpo.ancho / 100);
   const altoDeImagen = (anchoDeImagen * figura.altoPx) / figura.anchoPx;
   const altoDelCuerpo = (altoDeImagen * figura.cuerpo.alto) / 100;
-  const centroX = ancho - anchoDelCuerpo / 2 - 4;
-  const imagen: RectanguloEnLaLamina = {
-    x: centroX - (figura.cuerpo.centroX / 100) * anchoDeImagen,
-    y: MARGEN - (figura.cuerpo.arriba / 100) * altoDeImagen,
-    ancho: anchoDeImagen,
-    alto: altoDeImagen,
-  };
 
   // Los sitios con valor en la toma, agrupados en las tarjetas del compositor (`GR`, `GF`), en su orden.
   const porClave = new Map(medidas.map((m) => [m.metrica, m]));
-  const grupos = (familia === 'PERIMETROS' ? TARJETAS_DE_PERIMETROS.ENTERO : TARJETAS_DE_PLIEGUES.ENTERO)
-    .map((grupo) =>
-      grupo.flatMap((clave): Sitio[] => {
-        const medida = porClave.get(clave);
-        if (!medida) return [];
-        if (familia === 'PERIMETROS') {
-          const lugar = figura.perimetros[clave as keyof typeof figura.perimetros];
-          if (!lugar) return [];
-          const a = anilloEnLaLamina(imagen, lugar);
-          return [{ medida, clave, cx: a.cx, cy: a.cy, izquierda: a.cx - a.rx, anillo: { rx: a.rx, ry: Math.max(a.ry, 3) }, posterior: false }];
-        }
-        const lugar = figura.pliegues[clave as keyof typeof figura.pliegues];
-        if (!lugar) return [];
-        const p = puntoEnLaLamina(imagen, lugar);
-        return [{ medida, clave, cx: p.cx, cy: p.cy, izquierda: p.cx - 7, anillo: null, posterior: esPliegueDeLaCaraPosterior(clave) }];
-      }),
-    )
-    .filter((g) => g.length > 0);
+  const lugares = familia === 'PERIMETROS' ? figura.perimetros : figura.pliegues;
+  const claves = (familia === 'PERIMETROS' ? TARJETAS_DE_PERIMETROS.ENTERO : TARJETAS_DE_PLIEGUES.ENTERO)
+    .map((grupo) => grupo.filter((clave) => porClave.has(clave) && (lugares as Readonly<Record<string, unknown>>)[clave] !== undefined))
+    .filter((grupo) => grupo.length > 0);
+  if (claves.length === 0) return null;
 
+  // En el teléfono las filas son más altas, en proporción, que en la lámina: con muchos sitios, las tarjetas piden más
+  // alto que el cuerpo. La figura se centra en ese alto, así la diferencia se reparte arriba y abajo.
+  const altos = claves.map((g) => g.length * FILA + 2 * RELLENO);
+  const necesario = altos.reduce((a, b) => a + b, 0) + (claves.length - 1) * SEPARACION + 2 * MARGEN;
+  const alto = Math.max(altoDelCuerpo + 2 * MARGEN, necesario);
+  const desplazamiento = (alto - altoDelCuerpo - 2 * MARGEN) / 2;
+  const centroX = ancho - anchoDelCuerpo / 2 - 4;
+  const imagen: RectanguloEnLaLamina = {
+    x: centroX - (figura.cuerpo.centroX / 100) * anchoDeImagen,
+    y: MARGEN + desplazamiento - (figura.cuerpo.arriba / 100) * altoDeImagen,
+    ancho: anchoDeImagen,
+    alto: altoDeImagen,
+  };
+  const grupos = claves.map((grupo) =>
+    grupo.map((clave): Sitio => {
+      const medida = porClave.get(clave)!;
+      if (familia === 'PERIMETROS') {
+        const a = anilloEnLaLamina(imagen, figura.perimetros[clave as keyof typeof figura.perimetros]!);
+        return { medida, clave, cx: a.cx, cy: a.cy, izquierda: a.cx - a.rx, anillo: { rx: a.rx, ry: Math.max(a.ry, 3) }, posterior: false };
+      }
+      const p = puntoEnLaLamina(imagen, figura.pliegues[clave as keyof typeof figura.pliegues]!);
+      return { medida, clave, cx: p.cx, cy: p.cy, izquierda: p.cx - 7, anillo: null, posterior: esPliegueDeLaCaraPosterior(clave) };
+    }),
+  );
   const todos = grupos.flat();
-  if (todos.length === 0) return null;
   // Las tarjetas terminan antes del sitio que queda más a la izquierda, con lugar para el quiebre de la guía.
   const anchoDeTarjeta = Math.max(120, Math.min(ancho * 0.52, Math.min(...todos.map((s) => s.izquierda)) - 22));
-  const altos = grupos.map((g) => g.length * FILA + 2 * RELLENO);
-  const necesario = altos.reduce((a, b) => a + b, 0) + (grupos.length - 1) * SEPARACION + 2 * MARGEN;
-  const alto = Math.max(altoDelCuerpo + 2 * MARGEN, necesario);
   const bordes = apilarTarjetas(
     grupos.map((g, i) => ({ alto: altos[i]!, centroDeseado: g.reduce((n, s) => n + s.cy, 0) / g.length })),
     { tope: MARGEN, piso: alto - MARGEN, separacion: SEPARACION },
