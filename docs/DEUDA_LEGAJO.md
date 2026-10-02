@@ -118,6 +118,7 @@
 | DL-111 | Pedido de Dirección · 2026-09-30 | DL-110 · DL-073 · 06 REG-06-156/157/162/203/204/205 · RF-048/049 · TEST-PRJ-009 | El catálogo antropométrico real (perfil completo y 40 fórmulas con fuente), la lámina del compositor en el website y la figura con los resultados en la APK | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · decisiones del ejecutor: sitios de la ficha, métodos por sexo, edad como dato de la toma, una métrica por familia, resultados en la evolución sin cambiar su forma |
 | DL-112 | Pedido de Dirección · 2026-10-01 | DL-111 · 06 REG-06-205 · RF-048 · DL-072 (especificaciones de solo agregar) | El catálogo ofrece demasiados métodos para elegir: 40 métodos, 28 resultados | **DECIDIDA** 2026-10-01 (la purga) · la lista la armó el ejecutor, A RATIFICAR · 21 vigentes, 23 retirados y 4 nuevos; lo calculado sigue en la historia |
 | DL-113 | Pedido de Dirección · 2026-10-01 | B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 | Mucho texto a la vista, avisos fuera de la vista en el teléfono, la APK sin navegación fija y pliegues del catálogo fuera de la figura | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · guía `docs/ux/GUIA-UX-UI.md` · falta la prueba de Dirección en el teléfono |
+| DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **PROVISORIA, A RATIFICAR** 2026-10-01 · excepción declarada por aviso y paquete, con motivo y vencimiento (2026-10-31) |
 
 ---
 
@@ -2457,3 +2458,30 @@ En la prueba del mismo día marcó cinco cosas:
   - los avisos;
   - las coordenadas del bíceps y de la cresta ilíaca.
 - Decidir si la APK abre en Nutrición o en otra zona.
+
+---
+
+## DL-114 — Excepción declarada en la auditoría de dependencias: node-forge sin versión corregida
+
+**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** PROVISORIA, A RATIFICAR por Dirección; la excepción vence el 2026-10-31
+
+**Qué pasó.**
+- El 2026-10-01 a las 21:09 UTC, GitHub actualizó el aviso GHSA-86w9-cpqp-85rv de node-forge: la verificación de firmas RSA PKCS#1 v1.5 acepta elementos DigestAlgorithm anidados de más.
+- Ahora abarca hasta la 1.4.0, que es la última publicada, y **no hay versión corregida**.
+- node-forge entra por `expo` → `@expo/cli` → `@expo/code-signing-certificates`. Desde ese momento la auditoría de `@be/mobile` falla en cualquier PR, y también fallaría en `main`: el lock de `0308355` tiene los mismos avisos.
+
+**Por qué no aplica a BE.**
+- `@expo/code-signing-certificates` firma y verifica actualizaciones OTA de expo-updates, y BE no usa expo-updates ni esa firma.
+- node-forge es parte de la CLI de construcción: no viaja en el bundle de la APK.
+- No está en las dependencias de la API ni del website, que auditan limpias.
+
+**Lo que se hizo (provisorio).**
+- `npm audit --audit-level=high` no admite excepciones, así que la auditoría pasa a `scripts/auditoria-de-dependencias.cjs`.
+- Sigue fallando con **cualquier** aviso alto o crítico, salvo los declarados en `EXCEPCIONES`.
+- Cada excepción dice el aviso, el paquete, el motivo y la fecha de vencimiento.
+- Una excepción vale solo para ese aviso en ese paquete. Vencida, vuelve a fallar.
+- Las pruebas están en `scripts/auditoria-de-dependencias.test.cjs`.
+
+**Pendiente de Dirección.**
+- Ratificar la excepción o pedir otra salida.
+- Antes del 2026-10-31, revisar si node-forge publicó la corrección (entonces se fija con `overrides` y la excepción se borra) o si Expo dejó de depender de node-forge.
