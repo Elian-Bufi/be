@@ -10,6 +10,7 @@ import {
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { DenegacionDelPdp, PdpService } from '../autorizacion/pdp.service';
+import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '../http/paginacion';
@@ -199,7 +200,9 @@ export class SolicitudesService {
         if (!esAsesorado && !esProfesional) {
           throw this.ejecutor.noRevelable({ operacion: 'API-FRM-05', actorId: actor.identidadId, recurso, sujetoId: s.asesoradoId, alcance: s.alcance as Alcance }, ctx);
         }
-        // El asesorado consulta lo propio siempre, aunque el profesional ya no conserve lectura (REG-06-213).
+        // El asesorado consulta lo propio aunque el profesional ya no conserve lectura (REG-06-213), «conforme a 08»
+        // (09 §22.5): con el A3 revocado o nunca otorgado, 403 (08:406; DL-115). Lo ajeno y lo inexistente ya dieron 404.
+        if (esAsesorado) await exigirA3Vigente(tx, actor.identidadId);
         if (!esAsesorado) {
           // Profesional: exactamente el mismo corte que crear/listar — sin autorización actual, el mismo 404
           // que lo inexistente (TEST-FRM-007). Se deja propagar la denegación: no se atrapa acá.

@@ -88,6 +88,11 @@ export const COPY_FORMULARIOS = {
     'Esta solicitud no tiene una respuesta guardada y ahora no se puede responder: puede que haya cambiado el vínculo o tus autorizaciones. Lo que escribiste sigue en los campos.',
   sePuedeResponderDeNuevo: 'Volvimos a consultar: esta solicitud se puede responder. Lo que escribiste sigue en los campos; revisalo y enviá cuando quieras.',
   actualizarEstado: 'Volver a consultar',
+  // DL-115 · con el A3 revocado o nunca otorgado, lo propio no se lee ni se envía (08:406). La solicitud sigue siendo de
+  // la persona; lo escrito no se pierde.
+  necesitaA3: 'Para ver tus respuestas y responder necesitás tener activo el consentimiento de datos de salud. Lo que ya respondiste no se borró.',
+  necesitaA3ParaEnviar: 'No se envió: para responder o corregir necesitás tener activo el consentimiento de datos de salud. Lo que escribiste sigue en los campos mientras no salgas de esta pantalla.',
+  irAPrivacidad: 'Ir a Privacidad y consentimientos',
   borradorSinEnviar: 'Lo que está en los campos es tu borrador: todavía no se envió.',
 
   // ─── Rectificar ───────────────────────────────────────────────────────────────────────────────

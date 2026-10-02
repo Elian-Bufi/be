@@ -119,7 +119,7 @@
 | DL-112 | Pedido de Dirección · 2026-10-01 | DL-111 · 06 REG-06-205 · RF-048 · DL-072 (especificaciones de solo agregar) | El catálogo ofrece demasiados métodos para elegir: 40 métodos, 28 resultados | **DECIDIDA** 2026-10-01 (la purga) · la lista la armó el ejecutor, A RATIFICAR · 21 vigentes, 23 retirados y 4 nuevos; lo calculado sigue en la historia |
 | DL-113 | Pedido de Dirección · 2026-10-01 | B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 | Mucho texto a la vista, avisos fuera de la vista en el teléfono, la APK sin navegación fija y pliegues del catálogo fuera de la figura | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · pulido y corrección de los puntos anatómicos 2026-10-02 · guía `docs/ux/GUIA-UX-UI.md` · falta la prueba de Dirección en el teléfono |
 | DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **PROVISORIA, A RATIFICAR** 2026-10-01 · excepción declarada por aviso y paquete, con motivo y vencimiento (2026-10-31) |
-| DL-115 | Matriz de DV-05 · 2026-10-02 | 08:406 (08 §13) · DL-089 · TEST-AUTH-003 · TEST-AUTH-004 | Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan | **ABIERTA** 2026-10-02 · severidad alta · espera la decisión de Dirección |
+| DL-115 | Matriz de DV-05 · 2026-10-02 | 08:406 (08 §13) · DL-089 · TEST-AUTH-003 · TEST-AUTH-004 | Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan | **DECIDIDA** 2026-10-02 · opción A · implementada en la rama `fix/a3-titular-antropometria-formularios`, sin integrar: va con la candidata 0.13.2 |
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección |
 
 ---
@@ -2565,6 +2565,36 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 **Provisorio en código.** B, de hecho y sin declarar.
 
 **Recomendación: A**, por el 08:406 y por coherencia con los otros dos dominios. Además, un tribunal puede probarlo en vivo: revocar el A3 en la APK y abrir «Mi evolución».
+
+**Resolución — DECIDIDA el 2026-10-02, opción A** (Dirección la autorizó el mismo día). Está implementada en la rama
+`fix/a3-titular-antropometria-formularios`, **sin integrar**: se integra y se publica con la candidata 0.13.2, cuando
+termine la prueba manual de Dirección.
+- **API.** El control vive en `apps/api/src/consentimiento/a3-del-titular.ts`, y lo comparten entrenamiento (DL-089),
+  antropometría y formularios. El A3 es del titular: sobre un recurso con id, primero se ve si es suyo (lo ajeno y lo
+  inexistente siguen dando el mismo 404, como fija TEST-CT de WP-07) y, sobre lo propio, el A3 va antes que cualquier
+  otra regla de la operación (09 §36).
+  - **Evolución propia** (API-ANT-06-PROPIA, y API-ANT-06 con el propio id): 403 `ACTION_FORBIDDEN` sin A3.
+  - **API-FRM-05**, la proyección del asesorado («conforme a 08», 09 §22.5): 403 sin A3. Lo ajeno y lo inexistente
+    siguen dando el mismo 404.
+  - **API-FRM-07**, responder: 403 sin A3, antes que «ya respondida». El PDP lo vuelve a mirar con el acto bloqueado, en
+    el orden único.
+  - **API-FRM-08**, rectificar: 403 sin A3. Como no pasa por el PDP, toma el acto A3 en modo compartido; así, una
+    revocación en curso también la corta.
+  - **API-FRM-06 se conserva.** El contrato la permite y no trae respuestas; sin A3, ninguna solicitud es respondable.
+- **Contrato.** `403 ACTION_FORBIDDEN` en API-ANT-06, API-ANT-06-PROPIA y API-FRM-05, 07 y 08. Se regeneró el OpenAPI.
+  También lo declaran API-TRN-08, 09 y 19, que lo devolvían desde DL-089 sin que el contrato lo dijera.
+- **APK.** «Mi evolución», el detalle de un formulario y la lista de «Información» muestran el aviso con «Ir a
+  Privacidad y consentimientos», como «Tu historial».
+  - Lo escrito en un formulario se conserva mientras no se sale de la pantalla, y se dice así. No se guarda en el
+    teléfono.
+  - Cada pantalla vuelve a leer al entrar. Volver a una pantalla después de revocar no muestra lo de antes.
+- **Datos previamente cargados.** No se borran: la revocación es prospectiva. Con un A3 nuevo vuelven idénticos, y está
+  probado.
+- **Pruebas.**
+  - `test/integration/a3-del-titular.int-spec.ts` tiene 3 pruebas: la PE-01 de la matriz de DV-05, que cubre
+    TEST-AUTH-004 y la variante del titular de TEST-AUTH-003. Se verificaron con una mutación: sin el control, fallan.
+  - El dominio suma 4 pruebas, para el reductor y el desenlace del envío.
+- **Pendiente:** la APK candidata 0.13.2 y la prueba en el teléfono.
 
 ---
 

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CLASE_DE_DATO_API, construirSerie, fechasDelPeriodo, type ObservacionDeSerie } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
+import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
@@ -115,7 +116,12 @@ export class EvolucionService {
    * antropométrica habilitada sobre él (WP-05 §0 D-C). Para el asesorado no hay PDP de vínculo: son sus datos.
    */
   private async titularAutorizado(tx: Tx, actor: ActorAutenticado, adviseeId: string, ctx: ContextoDeSolicitud): Promise<string> {
-    if (adviseeId === 'me' || adviseeId === actor.identidadId) return actor.identidadId;
+    // Lo propio exige el A3 vigente (08:406; DL-115): revocado, la evolución deja de leerse, también por la ruta del
+    // profesional con el propio id. Los datos no se borran: con un A3 nuevo vuelven a leerse.
+    if (adviseeId === 'me' || adviseeId === actor.identidadId) {
+      await exigirA3Vigente(tx, actor.identidadId);
+      return actor.identidadId;
+    }
     const d = await this.pdp.decidirEnTransaccion(
       tx,
       {

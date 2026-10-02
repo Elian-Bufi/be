@@ -185,6 +185,38 @@ function listaFalsa(paginas: { id: string; respondable: boolean }[][]) {
   return { listar, pedidos };
 }
 
+// ─── DL-115 · sin A3 no se lee ni se envía lo propio (08:406) ─────────────────────────────────
+
+const sinA3: DesenlaceDeEnvio = { tipo: 'sin-a3', mensaje: COPY_FORMULARIOS.necesitaA3ParaEnviar, acciones: ['privacidad', 'volver'] };
+
+test('DL-115 · leer sin A3 deja la carga en sin-a3: no es un error ni un «no hay nada», no habilita el envío y el borrador queda', () => {
+  const e = aplicar([{ tipo: 'cargar', intencion: 'abrir' }, { tipo: 'carga-sin-a3' }], conBorrador(pendienteValida));
+  assert.equal(e.carga.tipo, 'sin-a3');
+  assert.equal(sePuedeEnviar(e), false);
+  assert.deepEqual(e.borrador, BORRADOR);
+  assert.equal(e.problema, null);
+});
+
+test('DL-115 · un envío rechazado por el A3 suspende el envío, ofrece ir a Privacidad y volver, y conserva lo escrito', () => {
+  const e = aplicar([{ tipo: 'enviando' }, { tipo: 'rechazado', desenlace: sinA3 }], conBorrador(pendienteValida));
+  assert.equal(e.suspension, 'sin-a3');
+  assert.equal(sePuedeEnviar(e), false);
+  assert.deepEqual(e.problema?.acciones, ['privacidad', 'volver']);
+  assert.equal(e.problema?.titulo, COPY_FORMULARIOS.necesitaA3ParaEnviar);
+  assert.equal(e.borradorSinEnviar, true);
+  assert.deepEqual(e.borrador, BORRADOR);
+});
+
+test('DL-115 · volver a leer con un A3 nuevo levanta la suspensión: se puede enviar lo que ya estaba escrito', () => {
+  const rechazado = aplicar([{ tipo: 'enviando' }, { tipo: 'rechazado', desenlace: sinA3 }], conBorrador(pendienteValida));
+  const sinA3AlLeer = aplicar([{ tipo: 'cargar', intencion: 'recuperar' }, { tipo: 'carga-sin-a3' }], rechazado);
+  assert.equal(sinA3AlLeer.carga.tipo, 'sin-a3');
+  const conA3 = aplicar([{ tipo: 'cargar', intencion: 'recuperar' }, { tipo: 'carga-lista', vista: pendienteValida }], sinA3AlLeer);
+  assert.equal(conA3.suspension, null);
+  assert.equal(sePuedeEnviar(conA3), true);
+  assert.deepEqual(conA3.borrador, BORRADOR);
+});
+
 test('respondable · se lee de FRM-06 recorriendo las páginas; si no está entre las pendientes, no se puede responder; un error se propaga', async () => {
   const dos = listaFalsa([[{ id: 'a', respondable: true }], [{ id: 'b', respondable: false }, { id: 'c', respondable: true }]]);
   assert.deepEqual(await respondibleDe('c', dos.listar), { ok: true, datos: true });

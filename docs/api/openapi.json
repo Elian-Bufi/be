@@ -24606,7 +24606,7 @@
       "get": {
         "operationId": "API-ANT-06",
         "summary": "Evolución antropométrica del asesorado. Un checkpoint sin medición vigente es NO_DATA y no lleva valor: no se interpola, no se imputa y no se arrastra. Un cero medido sigue siendo un punto disponible.",
-        "description": "Fuente: 09v11:710-760 · REG-06-165/166/167 · INV-06-176/177 · DV-05 caso 7. AuthN: SESSION.",
+        "description": "Fuente: 09v11:710-760 · REG-06-165/166/167 · INV-06-176/177 · DV-05 caso 7 · el 403 es solo con el propio id y el A3 revocado o nunca otorgado (08:406; DL-115). AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -24945,6 +24945,16 @@
               }
             }
           },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
             "content": {
@@ -24991,8 +25001,8 @@
     "/me/anthropometry/progress": {
       "get": {
         "operationId": "API-ANT-06-PROPIA",
-        "summary": "La misma evolución, del lado del asesorado, que RF-049 nombra como actor. La consume la APK.",
-        "description": "Fuente: 04:583 (RF-049) · UC-P31 V03 · 04:1093. AuthN: SESSION.",
+        "summary": "La misma evolución, del lado del asesorado, que RF-049 nombra como actor. La consume la APK. Exige el A3 vigente: revocado o nunca otorgado, 403 ACTION_FORBIDDEN; los datos no se borran y vuelven a leerse con un A3 nuevo (08:406; DL-115).",
+        "description": "Fuente: 04:583 (RF-049) · UC-P31 V03 · 04:1093 · 08:406 · 09v16.1 §36 · DL-115. AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -25315,6 +25325,16 @@
           },
           "401": {
             "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -31244,6 +31264,16 @@
               }
             }
           },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
             "content": {
@@ -32116,6 +32146,16 @@
           },
           "401": {
             "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -51589,6 +51629,16 @@
               }
             }
           },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
             "content": {
@@ -57116,8 +57166,8 @@
     "/form-requests/{formRequestId}": {
       "get": {
         "operationId": "API-FRM-05",
-        "summary": "Una Solicitud, en la proyección del actor que consulta: el profesional solo si el PDP lo sigue permitiendo (si no, el mismo 404 que una inexistente), el asesorado siempre para lo propio. La respuesta nunca expone autorizaciones internas ajenas.",
-        "description": "Fuente: 09v16.1 §22.5 · REG-06-213 · TEST-FRM-007. AuthN: SESSION.",
+        "summary": "Una Solicitud, en la proyección del actor que consulta: el profesional solo si el PDP lo sigue permitiendo (si no, el mismo 404 que una inexistente), el asesorado para lo propio «conforme a 08»: con el A3 revocado o nunca otorgado, 403 ACTION_FORBIDDEN (08:406; DL-115). La respuesta nunca expone autorizaciones internas ajenas.",
+        "description": "Fuente: 09v16.1 §22.5 · REG-06-213 · TEST-FRM-007 · 08:406 · DL-115. AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -57547,6 +57597,16 @@
               }
             }
           },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
             "content": {
@@ -57864,8 +57924,8 @@
     "/me/form-requests/{formRequestId}/responses": {
       "post": {
         "operationId": "API-FRM-07",
-        "summary": "Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo.",
-        "description": "Fuente: 09v16.1 §22.7 · REG-06-211 · TEST-FRM-003/004/005 · DL-095 · DL-104. AuthN: SESSION.",
+        "summary": "Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo. Sobre una solicitud propia, sin el A3 vigente, 403 ACTION_FORBIDDEN antes que cualquier otra regla; lo ajeno y lo inexistente, 404 (09v16.1 §36; DL-115).",
+        "description": "Fuente: 09v16.1 §22.7 · §36 · REG-06-211 · TEST-FRM-003/004/005 · DL-095 · DL-104 · DL-115. AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -58016,6 +58076,16 @@
           },
           "401": {
             "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -58177,8 +58247,8 @@
     "/me/form-responses/{formResponseId}/rectifications": {
       "post": {
         "operationId": "API-FRM-08",
-        "summary": "Rectificar una respuesta propia: crea una sucesora, nunca sobrescribe la original, y mantiene SELF_REPORTED. No restaura la lectura del profesional si el PDP ya no la permite.",
-        "description": "Fuente: 09v16.1 §22.8 · REG-06-211 · TEST-FRM-006 · DL-104. AuthN: SESSION.",
+        "summary": "Rectificar una respuesta propia: crea una sucesora, nunca sobrescribe la original, y mantiene SELF_REPORTED. No restaura la lectura del profesional si el PDP ya no la permite. Sobre una respuesta propia, sin el A3 vigente, 403 ACTION_FORBIDDEN antes que cualquier otra regla; lo ajeno y lo inexistente, 404 (09v16.1 §36; DL-115).",
+        "description": "Fuente: 09v16.1 §22.8 · §36 · REG-06-211 · TEST-FRM-006 · DL-104 · DL-115. AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -58345,6 +58415,16 @@
           },
           "401": {
             "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
