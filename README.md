@@ -8,7 +8,7 @@ BE se especificó por completo antes de escribir código. **La fuente de verdad 
 |---|---|
 | `apps/api` | API NestJS 11 · monolito modular |
 | `apps/web` | Website Next.js 15.5 (export estático) |
-| `apps/mobile` | App Expo SDK 57 · APK por EAS |
+| `apps/mobile` | App Expo SDK 57 · APK construida localmente con Gradle desde la 0.11.1 (sin cuota de EAS) |
 | `packages/domain` | Lo que comparten la API, el website y la APK: tipos y enums del Documento 06, contratos del 09, copy de las pantallas y reglas puras, con sus pruebas |
 | `prisma` | Schema y migraciones |
 | `test/integration` | Integración contra PostgreSQL 16 real (Testcontainers) |
@@ -23,10 +23,12 @@ BE se especificó por completo antes de escribir código. **La fuente de verdad 
 | Qué | Dónde |
 |---|---|
 | Website, en el ambiente `test` | `https://be-web-1ngj.onrender.com` |
-| APK 0.9.0 | `https://github.com/Elian-Bufi/be/releases/latest` (release permanente `be-apk-0.9.0`) |
+| APK vigente (0.13.0) | `https://github.com/Elian-Bufi/be/releases/latest`, que siempre apunta a la última. Cada versión tiene su release permanente `be-apk-x.y.z`; la vigente y sus controles están en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) |
 | La demo, paso a paso | [`EVIDENCIA/ENTREGA/GUIA-DEMO.md`](EVIDENCIA/ENTREGA/GUIA-DEMO.md) |
 | Qué demuestra cada paquete | `DEFENSA/` (la lectura razonada) y `EVIDENCIA/` (pruebas, capturas y resultados de la CI) |
 | Qué quedó afuera y por qué | [`docs/DEUDA_LEGAJO.md`](docs/DEUDA_LEGAJO.md) |
+| Qué falta desarrollar | [`docs/QUE-FALTA.md`](docs/QUE-FALTA.md) |
+| Buenas prácticas de UX y UI | [`docs/ux/GUIA-UX-UI.md`](docs/ux/GUIA-UX-UI.md) |
 
 ## Desarrollo
 

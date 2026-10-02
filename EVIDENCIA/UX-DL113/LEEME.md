@@ -1,7 +1,7 @@
 # Evidencia · DL-112 y DL-113: purga del catálogo y UX/UI del website y la APK
 
-**Estado:** implementado en la rama `feat/ux-ui-1`. La integración, el despliegue en test y la APK 0.13.0 se
-registran en el PR de publicación. **Falta la prueba de Dirección en el teléfono.**
+**Estado:** integrado en `main` con el PR #128 (`0c02326`), CI en verde y desplegado en test. APK 0.13.0 publicada
+(`EVIDENCIA/PUBLICACION-0.13.0/LEEME.md`). **Falta la prueba de Dirección en el teléfono.**
 
 El pedido de Dirección del 2026-10-01 tuvo cuatro partes:
 - purgar el catálogo de métodos («28 son demasiados»);
