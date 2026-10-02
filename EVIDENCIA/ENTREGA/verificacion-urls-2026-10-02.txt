@@ -1,0 +1,82 @@
+# MESA-01 · puntos 12 y 13 — verificación en vivo de las URLs (2026-10-02)
+# Hecha desde la máquina de desarrollo, con curl y en modo lectura: HEAD (curl -sI) para cada URL,
+# más dos GET de solo lectura (la versión en /health/ready y los enlaces de la landing).
+# Las horas son UTC. No se descargó la APK: el tamaño sale de la cabecera, y el SHA-256 es el
+# verificado en la publicación (EVIDENCIA/PUBLICACION-0.13.0/LEEME.md), no se recalculó acá.
+# La URL de la descarga a la que redirige GitHub lleva una firma temporal: se omite desde el «?».
+
+=== 2026-10-02T19:33:11Z  curl -sI https://github.com/Elian-Bufi/be/releases/latest
+HTTP/2 302
+location: https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.13.0
+
+=== 2026-10-02T19:33:11Z  curl -sI https://github.com/Elian-Bufi/be/releases/download/be-apk-0.13.0/be-0.13.0-0c02326.apk
+HTTP/2 302
+location: https://release-assets.githubusercontent.com/github-production-release-asset/1375425919/1f10e7bb-9a74-4016-86d7-eb43afa37806?(firma temporal omitida)
+
+=== 2026-10-02T19:33:28Z  curl -sIL https://github.com/Elian-Bufi/be/releases/download/be-apk-0.13.0/be-0.13.0-0c02326.apk
+HTTP/2 302
+HTTP/2 200
+last-modified: Fri, 02 Oct 2026 01:24:25 GMT
+content-type: application/vnd.android.package-archive
+content-length: 78103826
+# 78.103.826 bytes: el mismo tamaño que registra EVIDENCIA/PUBLICACION-0.13.0/LEEME.md.
+
+=== 2026-10-02T19:33:12Z  curl -sI https://github.com/Elian-Bufi/be
+HTTP/2 200
+
+=== 2026-10-02T19:33:13Z  curl -sI https://be-web-1ngj.onrender.com/
+HTTP/2 200
+content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://be-api-hndp.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+strict-transport-security: max-age=315360000; includeSubdomains; preload
+
+=== 2026-10-02T19:33:29Z  curl -sI https://be-api-hndp.onrender.com/health/ready
+HTTP/2 200
+cache-control: no-store
+strict-transport-security: max-age=31536000; includeSubDomains
+x-render-origin-server: Render
+# Tardó 33 s: la API estaba dormida (plan gratuito) y arrancó en frío.
+
+=== 2026-10-02T19:34:02Z  curl -s https://be-api-hndp.onrender.com/health/ready   (GET de solo lectura)
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.11.1","commit":"0c0232633033331f60934b36caee944bb1e6def4","construidoEn":"2026-10-02T00:59:09.317Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+# La API está en el commit de la APK 0.13.0 (0c02326, merge del PR #128). El número de versión de la
+# aplicación quedó en 0.11.1: apps/api/package.json no cambia desde el 2026-09-26 (f8eaac1). Lo desplegado
+# se identifica por el commit, no por ese número.
+
+=== 2026-10-02T19:34:04Z  enlaces a releases en la landing   (GET de solo lectura de https://be-web-1ngj.onrender.com/)
+href="https://github.com/Elian-Bufi/be/releases/latest"
+
+# ─────────────────────────────────────────────────────────────────────────────────────────────
+# Segunda verificación, después de publicar la APK 0.13.1 y de desplegar 6213ec8 (merge del PR #131).
+# Mismo método: HEAD (curl -sI) y GETs de solo lectura. La APK sí se descargó, en la publicación, para recalcular
+# el SHA-256 (EVIDENCIA/PUBLICACION-0.13.1/LEEME.md).
+
+=== 2026-10-02T21:09:13Z  curl -sI https://github.com/Elian-Bufi/be/releases/latest
+HTTP/2 302 
+location: https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.13.1
+
+=== 2026-10-02T21:09:13Z  curl -sI https://github.com/Elian-Bufi/be/releases/download/be-apk-0.13.1/be-0.13.1-6213ec8.apk
+HTTP/2 302 
+location: https://release-assets.githubusercontent.com/github-production-release-asset/1375425919/4d279ac8-af21-4a46-80aa-248b6b59eaec?(firma temporal omitida)
+
+=== 2026-10-02T21:09:14Z  curl -sIL https://github.com/Elian-Bufi/be/releases/download/be-apk-0.13.1/be-0.13.1-6213ec8.apk
+HTTP/2 302 
+content-type: text/html; charset=utf-8
+content-length: 0
+HTTP/2 200 
+last-modified: Fri, 02 Oct 2026 21:08:43 GMT
+content-type: application/vnd.android.package-archive
+content-length: 78104642
+# 78.104.642 bytes: el tamaño registrado en EVIDENCIA/PUBLICACION-0.13.1/LEEME.md.
+
+=== 2026-10-02T21:09:15Z  curl -sI https://github.com/Elian-Bufi/be
+HTTP/2 200 
+
+=== 2026-10-02T21:09:16Z  curl -sI https://be-web-1ngj.onrender.com/
+HTTP/2 200 
+
+=== 2026-10-02T21:09:16Z  curl -s https://be-api-hndp.onrender.com/health/ready   (GET de solo lectura)
+{"data":{"estado":"OK","ambiente":"test","version":{"aplicacion":"0.11.1","commit":"6213ec8ae73c9edd13dcd36d6c5f7d7ab920e822","construidoEn":"2026-10-02T20:41:05.817Z"},"dependencias":{"baseDeDatos":"OK","migraciones":"OK"}}}
+# La API y el website están en 6213ec8, el commit de la APK 0.13.1.
+
+=== 2026-10-02T21:09:49Z  enlaces a releases en la landing   (GET de solo lectura de https://be-web-1ngj.onrender.com/)
+href="https://github.com/Elian-Bufi/be/releases/latest"

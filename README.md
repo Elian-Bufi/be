@@ -1,6 +1,6 @@
 # BE — Plataforma integrada de inteligencia en salud
 
-Trabajo final · Analista de Sistemas · Elián Bufi · entrega 2026-10-01.
+Trabajo final · Analista de Sistemas · Elián Bufi · entrega 2026-10-10 (Dirección la pasó del 2026-10-01 el 2026-09-27).
 
 BE se especificó por completo antes de escribir código. **La fuente de verdad es el legajo en [`docs/legajo`](docs/legajo)**. El código implementa lo que el legajo dice, y cada cambio lo demuestra con un bloque `TRACE` y pruebas.
 

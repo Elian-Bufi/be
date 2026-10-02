@@ -1,0 +1,20 @@
+tag,nombre,publicado_utc,publicado_art,commit_del_tag,latest_al_capturar
+be-apk-0.1.0,APK BE 0.1.0 — WP-01,2026-09-18T17:57:48Z,2026-09-18 14:57,fd3ed53,no
+be-apk-0.2.0,APK BE 0.2.0 — WP-02 Identidad y sesiones,2026-09-19T01:24:24Z,2026-09-18 22:24,8256951,no
+be-apk-0.3.0,"APK BE 0.3.0 (WP-03, test)",2026-09-19T13:03:13Z,2026-09-19 10:03,08cdd08,no
+be-apk-0.4.0,"APK BE 0.4.0 (WP-04, test)",2026-09-19T19:34:42Z,2026-09-19 16:34,13d577d,no
+be-apk-0.5.0,APK 0.5.0 — WP-05 antropometría,2026-09-20T16:28:19Z,2026-09-20 13:28,921063a,no
+be-apk-0.5.1,APK 0.5.1 — WP-05 con el contrato del 09,2026-09-20T21:25:13Z,2026-09-20 18:25,0193a3d,no
+be-apk-0.6.0,APK 0.6.0 — WP-06 circuito de entrenamiento,2026-09-21T19:16:11Z,2026-09-21 16:16,c50fdd9,no
+be-apk-0.7.0,APK 0.7.0 — WP-07 información profesional pertinente,2026-09-22T22:39:51Z,2026-09-22 19:39,e0e0cc9,no
+be-apk-0.9.0,APK 0.9.0 — identidad visual y accesibilidad,2026-09-24T07:32:47Z,2026-09-24 04:32,fd08380,no
+be-apk-0.9.1,"APK 0.9.1 — Formularios: Sí/No se elige, no se escribe",2026-09-25T03:01:01Z,2026-09-25 00:01,0698868,no
+be-apk-0.10.0,APK 0.10.0 — WP-08 Integraciones (Open Food Facts y wger),2026-09-25T20:15:50Z,2026-09-25 17:15,e83245d,no
+be-apk-0.11.0,APK 0.11.0 — Tu historial de entrenamiento (DL-096),2026-09-26T04:16:51Z,2026-09-26 01:16,eb31269,no
+be-apk-0.11.1,"APK 0.11.1 — Tu historial: volver, fecha civil y área inferior (DL-096)",2026-09-26T23:33:55Z,2026-09-26 20:33,44bea3a,no
+be-apk-0.11.2,APK 0.11.2 — Tu historial: el período se calcula en Buenos Aires (DL-096),2026-09-27T01:11:58Z,2026-09-26 22:11,46fd1fa,no
+be-apk-0.11.3,APK 0.11.3 — el teclado deja de tapar los campos (DL-096),2026-09-27T22:57:03Z,2026-09-27 19:57,13280e6,no
+be-apk-0.12.0,APK 0.12.0 — lo planificado completo (PF-03) y errores por campo en formularios (DL-104),2026-09-28T19:36:59Z,2026-09-28 16:36,33b533d,no
+be-apk-0.12.1,"APK 0.12.1 — temas Azul noche y Claro, formularios acotados y series por número",2026-10-01T01:33:18Z,2026-09-30 22:33,fec9450,no
+be-apk-0.12.2,APK 0.12.2 — evolución física: figura de la lámina y resultados de las fórmulas,2026-10-01T06:10:55Z,2026-10-01 03:10,0308355,no
+be-apk-0.13.0,"BE APK 0.13.0 (test): barra inferior, figura en SVG y menos texto",2026-10-02T01:24:26Z,2026-10-01 22:24,0c02326,sí

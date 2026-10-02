@@ -1,0 +1,546 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1690" height="1899" viewBox="0 0 1690 1899" role="img" aria-labelledby="dv10-titulo dv10-desc">
+<title id="dv10-titulo">Figura DV-10.1 — Gantt de BE: historia respaldada y plan sujeto a gate</title>
+<desc id="dv10-desc">Gantt del proyecto BE del 2026-09-06 al 2026-10-19. Historia en 38 filas fechadas por actas, commits, PR y releases, más 2 sin fuente ni fecha; plan rotulado PLAN — SUJETO A GATE desde el corte del 2026-10-02. La tabla equivalente está en DV-10_FASES.csv.</desc>
+<defs><marker id="flecha" viewBox="0 0 8 8" refX="7.5" refY="4" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0L8 4L0 8z" fill="#6B7A90"/></marker><marker id="flecha-invertida" viewBox="0 0 8 8" refX="7.5" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0L8 4L0 8z" fill="#C98F2C"/></marker></defs>
+<rect width="1690" height="1899" fill="#FFFFFF"/>
+<rect x="32" y="266" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="326" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="386" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="446" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="506" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="594" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="654" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="742" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="802" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="862" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="922" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="982" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="1042" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="1102" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="1162" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="1222" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="1282" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="1342" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="1430" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="1490" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="1578" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="32" y="1638" width="1618" height="30" fill="#F7F9FB"/>
+<rect x="690" y="196" width="144" height="1502" fill="#F1F2F4" opacity="0.9"/>
+<rect x="1233.8" y="196" width="416.3" height="1588" fill="#EEF2F7" opacity="0.85"/>
+<text x="582" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">5</text>
+<line x1="570" y1="192" x2="570" y2="196" stroke="#C9D3E0"/>
+<text x="606" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">6</text>
+<line x1="594" y1="192" x2="594" y2="196" stroke="#C9D3E0"/>
+<text x="630" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#3D4A5C" text-anchor="middle">7</text>
+<line x1="618" y1="192" x2="618" y2="196" stroke="#C9D3E0"/>
+<line x1="618" y1="196" x2="618" y2="1784" stroke="#E6EBF1"/>
+<text x="654" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">8</text>
+<line x1="642" y1="192" x2="642" y2="196" stroke="#C9D3E0"/>
+<text x="678" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">9</text>
+<line x1="666" y1="192" x2="666" y2="196" stroke="#C9D3E0"/>
+<text x="702" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">10</text>
+<line x1="690" y1="192" x2="690" y2="196" stroke="#C9D3E0"/>
+<text x="726" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">11</text>
+<line x1="714" y1="192" x2="714" y2="196" stroke="#C9D3E0"/>
+<text x="750" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">12</text>
+<line x1="738" y1="192" x2="738" y2="196" stroke="#C9D3E0"/>
+<text x="774" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">13</text>
+<line x1="762" y1="192" x2="762" y2="196" stroke="#C9D3E0"/>
+<text x="798" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#3D4A5C" text-anchor="middle">14</text>
+<line x1="786" y1="192" x2="786" y2="196" stroke="#C9D3E0"/>
+<line x1="786" y1="196" x2="786" y2="1784" stroke="#E6EBF1"/>
+<text x="822" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">15</text>
+<line x1="810" y1="192" x2="810" y2="196" stroke="#C9D3E0"/>
+<text x="846" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">16</text>
+<line x1="834" y1="192" x2="834" y2="196" stroke="#C9D3E0"/>
+<text x="870" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">17</text>
+<line x1="858" y1="192" x2="858" y2="196" stroke="#C9D3E0"/>
+<text x="894" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">18</text>
+<line x1="882" y1="192" x2="882" y2="196" stroke="#C9D3E0"/>
+<text x="918" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">19</text>
+<line x1="906" y1="192" x2="906" y2="196" stroke="#C9D3E0"/>
+<text x="942" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">20</text>
+<line x1="930" y1="192" x2="930" y2="196" stroke="#C9D3E0"/>
+<text x="966" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#3D4A5C" text-anchor="middle">21</text>
+<line x1="954" y1="192" x2="954" y2="196" stroke="#C9D3E0"/>
+<line x1="954" y1="196" x2="954" y2="1784" stroke="#E6EBF1"/>
+<text x="990" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">22</text>
+<line x1="978" y1="192" x2="978" y2="196" stroke="#C9D3E0"/>
+<text x="1014" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">23</text>
+<line x1="1002" y1="192" x2="1002" y2="196" stroke="#C9D3E0"/>
+<text x="1038" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">24</text>
+<line x1="1026" y1="192" x2="1026" y2="196" stroke="#C9D3E0"/>
+<text x="1062" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">25</text>
+<line x1="1050" y1="192" x2="1050" y2="196" stroke="#C9D3E0"/>
+<text x="1086" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">26</text>
+<line x1="1074" y1="192" x2="1074" y2="196" stroke="#C9D3E0"/>
+<text x="1110" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">27</text>
+<line x1="1098" y1="192" x2="1098" y2="196" stroke="#C9D3E0"/>
+<text x="1134" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#3D4A5C" text-anchor="middle">28</text>
+<line x1="1122" y1="192" x2="1122" y2="196" stroke="#C9D3E0"/>
+<line x1="1122" y1="196" x2="1122" y2="1784" stroke="#E6EBF1"/>
+<text x="1158" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">29</text>
+<line x1="1146" y1="192" x2="1146" y2="196" stroke="#C9D3E0"/>
+<text x="1182" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">30</text>
+<line x1="1170" y1="192" x2="1170" y2="196" stroke="#C9D3E0"/>
+<text x="1206" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">1</text>
+<line x1="1194" y1="192" x2="1194" y2="196" stroke="#C9D3E0"/>
+<text x="1230" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">2</text>
+<line x1="1218" y1="192" x2="1218" y2="196" stroke="#C9D3E0"/>
+<text x="1254" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">3</text>
+<line x1="1242" y1="192" x2="1242" y2="196" stroke="#C9D3E0"/>
+<text x="1278" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">4</text>
+<line x1="1266" y1="192" x2="1266" y2="196" stroke="#C9D3E0"/>
+<text x="1302" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#3D4A5C" text-anchor="middle">5</text>
+<line x1="1290" y1="192" x2="1290" y2="196" stroke="#C9D3E0"/>
+<line x1="1290" y1="196" x2="1290" y2="1784" stroke="#E6EBF1"/>
+<text x="1326" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">6</text>
+<line x1="1314" y1="192" x2="1314" y2="196" stroke="#C9D3E0"/>
+<text x="1350" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">7</text>
+<line x1="1338" y1="192" x2="1338" y2="196" stroke="#C9D3E0"/>
+<text x="1374" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">8</text>
+<line x1="1362" y1="192" x2="1362" y2="196" stroke="#C9D3E0"/>
+<text x="1398" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">9</text>
+<line x1="1386" y1="192" x2="1386" y2="196" stroke="#C9D3E0"/>
+<text x="1422" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">10</text>
+<line x1="1410" y1="192" x2="1410" y2="196" stroke="#C9D3E0"/>
+<text x="1446" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">11</text>
+<line x1="1434" y1="192" x2="1434" y2="196" stroke="#C9D3E0"/>
+<text x="1470" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#3D4A5C" text-anchor="middle">12</text>
+<line x1="1458" y1="192" x2="1458" y2="196" stroke="#C9D3E0"/>
+<line x1="1458" y1="196" x2="1458" y2="1784" stroke="#E6EBF1"/>
+<text x="1494" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">13</text>
+<line x1="1482" y1="192" x2="1482" y2="196" stroke="#C9D3E0"/>
+<text x="1518" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">14</text>
+<line x1="1506" y1="192" x2="1506" y2="196" stroke="#C9D3E0"/>
+<text x="1542" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">15</text>
+<line x1="1530" y1="192" x2="1530" y2="196" stroke="#C9D3E0"/>
+<text x="1566" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">16</text>
+<line x1="1554" y1="192" x2="1554" y2="196" stroke="#C9D3E0"/>
+<text x="1590" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">17</text>
+<line x1="1578" y1="192" x2="1578" y2="196" stroke="#C9D3E0"/>
+<text x="1614" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90" text-anchor="middle">18</text>
+<line x1="1602" y1="192" x2="1602" y2="196" stroke="#C9D3E0"/>
+<text x="1638" y="188" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#3D4A5C" text-anchor="middle">19</text>
+<line x1="1626" y1="192" x2="1626" y2="196" stroke="#C9D3E0"/>
+<line x1="1626" y1="196" x2="1626" y2="1784" stroke="#E6EBF1"/>
+<text x="576" y="170" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#3D4A5C">septiembre 2026</text>
+<line x1="570" y1="158" x2="570" y2="196" stroke="#C9D3E0"/>
+<text x="1200" y="170" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#3D4A5C">octubre 2026</text>
+<line x1="1194" y1="158" x2="1194" y2="196" stroke="#C9D3E0"/>
+<line x1="570" y1="196" x2="1650" y2="196" stroke="#C9D3E0"/>
+<line x1="1650" y1="158" x2="1650" y2="196" stroke="#C9D3E0"/>
+<line x1="900.8" y1="151" x2="900.8" y2="157" stroke="#0F1C2E" stroke-width="1.5" opacity="0.5"/>
+<line x1="900.8" y1="196" x2="900.8" y2="1698" stroke="#0F1C2E" stroke-width="1.5" opacity="0.5"/>
+<line x1="1233.8" y1="151" x2="1233.8" y2="157" stroke="#0F1C2E" stroke-width="1.2" opacity="0.6"/>
+<line x1="1233.8" y1="196" x2="1233.8" y2="1784" stroke="#0F1C2E" stroke-width="1.2" opacity="0.6"/>
+<line x1="32" y1="208.5" x2="1650" y2="208.5" stroke="#C9D3E0"/>
+<rect x="40" y="218" width="14" height="9" rx="2" fill="#1F5FBF"/>
+<text x="62" y="227.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#0F1C2E" letter-spacing="0.2">ESPECIFICACIÓN · fechada por actas (ACTA-DIR-021 a 033.2)</text>
+<line x1="32" y1="536.5" x2="1650" y2="536.5" stroke="#C9D3E0"/>
+<rect x="40" y="546" width="14" height="9" rx="2" fill="#C98F2C"/>
+<text x="62" y="555.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#0F1C2E" letter-spacing="0.2">TRANSICIÓN · intake, WP-01 y gate de implementación</text>
+<line x1="32" y1="714.5" x2="1650" y2="714.5" stroke="#C9D3E0"/>
+<rect x="40" y="724" width="14" height="9" rx="2" fill="#1FA97A"/>
+<text x="62" y="733.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#0F1C2E" letter-spacing="0.2">CONSTRUCCIÓN · del primer commit al último merge de cada paquete</text>
+<line x1="32" y1="1372.5" x2="1650" y2="1372.5" stroke="#C9D3E0"/>
+<rect x="40" y="1382" width="14" height="9" rx="2" fill="#0F1C2E"/>
+<text x="62" y="1391.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#0F1C2E" letter-spacing="0.2">APK · releases y hitos M0 a M3 del 02 §19.3</text>
+<line x1="32" y1="1520.5" x2="1650" y2="1520.5" stroke="#C9D3E0"/>
+<rect x="40" y="1530" width="14" height="9" rx="2" fill="#FFFFFF" stroke="#6B7A90" stroke-width="1.3" stroke-dasharray="3 2"/>
+<text x="62" y="1539.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#0F1C2E" letter-spacing="0.2">PLAN — SUJETO A GATE · desde el corte del 2026-10-02</text>
+<text x="40" y="249" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">D00</text>
+<text x="78" y="249" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Legajo 00–12 y cierre original de G0 a G3</text>
+<text x="78" y="261.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">sin fuente: las actas 001 a 020 no están en el repositorio</text>
+<text x="40" y="279" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">D01</text>
+<text x="78" y="279" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Auditoría transversal ratificada; se autoriza el parche</text>
+<text x="78" y="291.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">ACTA-DIR-021</text>
+<text x="40" y="309" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">D02</text>
+<text x="78" y="309" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Parche transversal: 04 → 05 → 06 → 08 → 09 v0.16</text>
+<text x="78" y="321.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">ACTA-DIR-021 a 026</text>
+<text x="40" y="339" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">D03</text>
+<text x="78" y="339" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Reconciliación UX del 10: v0.7.2 y v0.8 (B10-08/09)</text>
+<text x="78" y="351.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">ACTA-DIR-026 a 028</text>
+<text x="40" y="369" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">D04</text>
+<text x="78" y="369" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Corrección contractual A3: 09 v0.16.1</text>
+<text x="78" y="381.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">ACTA-DIR-028 y 029</text>
+<text x="40" y="399" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">D05</text>
+<text x="78" y="399" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Entrega F: B10-02, B10-03 y B10-10</text>
+<text x="78" y="411.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">ACTA-DIR-029 y 030</text>
+<text x="40" y="429" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">D06</text>
+<text x="78" y="429" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Entrega G: B10-11 y esqueleto del 11A</text>
+<text x="78" y="441.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">ACTA-DIR-030 a 032</text>
+<text x="40" y="459" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">D07</text>
+<text x="78" y="459" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Entrega H: 11A y 12 baselineados</text>
+<text x="78" y="471.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">ACTA-DIR-032 y 033</text>
+<text x="40" y="489" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">D08</text>
+<text x="78" y="489" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Entrega I: 01 definitivo y borrador del gate</text>
+<text x="78" y="501.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">ACTA-DIR-033, 033.1 y 033.2</text>
+<text x="40" y="519" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">D09</text>
+<text x="78" y="519" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Tramo documental cerrado; implementación no autorizada</text>
+<text x="78" y="531.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">ACTA-DIR-033.2</text>
+<text x="40" y="577" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">T00</text>
+<text x="78" y="577" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Producción de MESA-01 y MESA-02 (DV-01 a DV-09)</text>
+<text x="78" y="589.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">sin fuente del período de trabajo; en git desde el 2026-09-16</text>
+<text x="40" y="607" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">T01</text>
+<text x="78" y="607" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Legajo, actas 021 a 033.2, intake y MESA entran a git</text>
+<text x="78" y="619.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">commit 747fe11</text>
+<text x="40" y="637" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">T02</text>
+<text x="78" y="637" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Intake técnico de solo lectura sobre be-health</text>
+<text x="78" y="649.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">ACTA-DIR-034 §11 · commit 747fe11</text>
+<text x="40" y="667" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">T03</text>
+<text x="78" y="667" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">WP-01 — proyecto nuevo, desplegado</text>
+<text x="78" y="679.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">commits 747fe11 a e090253 · PR #1 a #4</text>
+<text x="40" y="697" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">T04</text>
+<text x="78" y="697" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#0F1C2E">ACTA-DIR-034 firmada: implementación autorizada</text>
+<text x="78" y="709.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">ACTA-DIR-034 · commit 662330c · PR #5</text>
+<text x="40" y="755" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C01</text>
+<text x="78" y="755" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">WP-02 — Identidad y sesiones (con DL-030)</text>
+<text x="78" y="767.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #6 a #8 y #11 a #15 · be-apk-0.2.0</text>
+<text x="40" y="785" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C02</text>
+<text x="78" y="785" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Ensayo de rollback: revert de un merge y Render</text>
+<text x="78" y="797.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #9, #10 y #14</text>
+<text x="40" y="815" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C03</text>
+<text x="78" y="815" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Protección técnica de main activa</text>
+<text x="78" y="827.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #16</text>
+<text x="40" y="845" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C04</text>
+<text x="78" y="845" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">WP-03 — Vínculo, consentimiento y PDP</text>
+<text x="78" y="857.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #17 a #22 · be-apk-0.3.0</text>
+<text x="40" y="875" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C05</text>
+<text x="78" y="875" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">WP-04 — Circuito nutricional</text>
+<text x="78" y="887.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #23 a #28 · be-apk-0.4.0</text>
+<text x="40" y="905" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C06</text>
+<text x="78" y="905" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">WP-05 — Antropometría</text>
+<text x="78" y="917.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #29 a #47 · be-apk-0.5.0 y 0.5.1</text>
+<text x="40" y="935" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C07</text>
+<text x="78" y="935" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">WP-06 — Circuito de entrenamiento</text>
+<text x="78" y="947.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #48 a #56 · be-apk-0.6.0</text>
+<text x="40" y="965" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C08</text>
+<text x="78" y="965" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">WP-07 — Información profesional pertinente (RF-071)</text>
+<text x="78" y="977.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #58 a #65 · be-apk-0.7.0</text>
+<text x="40" y="995" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C09</text>
+<text x="78" y="995" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Dirección elige «consolidar y pulir» (PR #66)</text>
+<text x="78" y="1007.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #66 (docs/paquetes/WP-CONSOLIDACION.md)</text>
+<text x="40" y="1025" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C10</text>
+<text x="78" y="1025" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Consolidación: DL-089, DL-091 y DL-031 (0.8.0)</text>
+<text x="78" y="1037.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #66 a #71 · sin APK</text>
+<text x="40" y="1055" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C11</text>
+<text x="78" y="1055" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Identidad visual y accesibilidad (0.9.0)</text>
+<text x="78" y="1067.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #73 a #77 · be-apk-0.9.0</text>
+<text x="40" y="1085" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C12</text>
+<text x="78" y="1085" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Cierre de la entrega entonces prevista para el 1/10</text>
+<text x="78" y="1097.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #78</text>
+<text x="40" y="1115" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C13</text>
+<text x="78" y="1115" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Correcciones del cierre y APK 0.9.1</text>
+<text x="78" y="1127.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #79 a #83 · be-apk-0.9.1</text>
+<text x="40" y="1145" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C14</text>
+<text x="78" y="1145" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">WP-08 — Integraciones P0: Open Food Facts y wger</text>
+<text x="78" y="1157.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #72, #84 y #85 · be-apk-0.10.0</text>
+<text x="40" y="1175" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C15</text>
+<text x="78" y="1175" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Dirección confirma que ACTA-DIR-034 cubre WP-08</text>
+<text x="78" y="1187.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #72 (cuerpo, «Autorización»)</text>
+<text x="40" y="1205" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C16</text>
+<text x="78" y="1205" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">DL-096 — «Tu historial de entrenamiento»</text>
+<text x="78" y="1217.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #86 a #97, #99 y #103 · be-apk-0.11.0 a 0.11.3</text>
+<text x="40" y="1235" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C17</text>
+<text x="78" y="1235" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Plan Funcional Profesional: PF-02, PF-03 y DL-104</text>
+<text x="78" y="1247.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #98, #100 a #102 y #104 a #109 · be-apk-0.12.0</text>
+<text x="40" y="1265" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C18</text>
+<text x="78" y="1265" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Tanda del 29 y 30/9 (0.12.1)</text>
+<text x="78" y="1277.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #110 a #125 · be-apk-0.12.1</text>
+<text x="40" y="1295" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C19</text>
+<text x="78" y="1295" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">DL-111 — catálogo antropométrico y lámina (0.12.2)</text>
+<text x="78" y="1307.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #126 y #127 · be-apk-0.12.2</text>
+<text x="40" y="1325" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C20</text>
+<text x="78" y="1325" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">DL-112 y DL-113 — 21 métodos y UX/UI (0.13.0)</text>
+<text x="78" y="1337.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">PR #128 y #129 · be-apk-0.13.0 (vigente)</text>
+<text x="40" y="1355" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">C21</text>
+<text x="78" y="1355" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">DL-114 — auditoría de dependencias (sin integrar)</text>
+<text x="78" y="1367.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">commit c61b8f5 · rama fix/auditoria-errores</text>
+<text x="40" y="1413" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">R00</text>
+<text x="78" y="1413" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Releases de la APK: 19, de 0.1.0 a 0.13.0 (vigente)</text>
+<text x="78" y="1425.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">gh release list · DV-10_FUENTES_RELEASES.csv</text>
+<text x="40" y="1443" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">M0</text>
+<text x="78" y="1443" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">M0 — build instalable (APK 0.1.0)</text>
+<text x="78" y="1455.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">be-apk-0.1.0 · DEFENSA/WP-01.md</text>
+<text x="40" y="1473" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">M12</text>
+<text x="78" y="1473" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">M1 y M2 — lectura y escritura reales (APK 0.2.0)</text>
+<text x="78" y="1485.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">be-apk-0.2.0 · DEFENSA/WP-02.md</text>
+<text x="40" y="1503" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">M3</text>
+<text x="78" y="1503" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">M3 — circuito integrado: nutrición (APK 0.4.0)</text>
+<text x="78" y="1515.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">be-apk-0.4.0 · PR #28 · DEFENSA/WP-04.md</text>
+<text x="40" y="1561" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">P01</text>
+<text x="78" y="1561" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Cierre de la entrega (DV-10, DV-11 a DV-14, validaciones)</text>
+<text x="78" y="1573.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">instrucción de Dirección · docs/QUE-FALTA.md §1 y §4</text>
+<text x="40" y="1591" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">P02</text>
+<text x="78" y="1591" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Entrega del trabajo final</text>
+<text x="78" y="1603.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">instrucción de Dirección; sin acta ni commit</text>
+<text x="40" y="1621" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">P03</text>
+<text x="78" y="1621" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Vence la base de test (be-db-test)</text>
+<text x="78" y="1633.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">DECISIONES_TECNICAS.md · DEFENSA/WP-01.md · docs/DESPLIEGUE.md</text>
+<text x="40" y="1651" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">P04</text>
+<text x="78" y="1651" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">Defensa ante el tribunal</text>
+<text x="78" y="1663.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">sin fecha: Q-FECHA-001 sigue abierta</text>
+<text x="40" y="1681" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90">P05</text>
+<text x="78" y="1681" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#0F1C2E">M4 — versión de defensa de la APK</text>
+<text x="78" y="1693.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">sin decisión de Dirección; vigente: be-apk-0.13.0</text>
+<line x1="32" y1="1711.5" x2="1650" y2="1711.5" stroke="#C9D3E0"/>
+<text x="78" y="1738" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#0F1C2E">Commits por día</text>
+<text x="78" y="1752" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">440 commits del 16/09 al 02/10, 171 de ellos merges</text>
+<text x="78" y="1765" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">git log hasta c61b8f5 · DV-10_COMMITS_POR_DIA.csv</text>
+<path d="M612.5 281C628.5 281 580 311 594.5 311" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>D01 → D02 (FS): ACTA-DIR-021 §4 y §5: autoriza el parche en orden 04 → 05 → 06 → 08 → 09 → 10 → 11A → 12</title></path>
+<path d="M640 311C656 311 604 341 618.5 341" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>D02 → D03 (FS): ACTA-DIR-026 §3: aprobado el 09 v0.16, se autoriza la reconciliación UX del 10</title></path>
+<path d="M640 341C656 341 604 371 618.5 371" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>D03 → D04 (FS): ACTA-DIR-028 §2 a §4: al abrir B10-02 aparece el hallazgo H-09-10-A3-01 y se autoriza el 09 v0.16.1</title></path>
+<path d="M640 371C656 371 604 401 618.5 401" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>D04 → D05 (FS): ACTA-DIR-028 §5 y ACTA-DIR-029 §4: B10-02 y B10-03 no cierran hasta aprobar el 09 v0.16.1</title></path>
+<path d="M640 401C656 401 604 431 618.5 431" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>D05 → D06 (FS): ACTA-DIR-030 §2: aprobada la Entrega F, se autoriza la G</title></path>
+<path d="M688 431C704 431 652 461 666.5 461" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>D06 → D07 (FS): ACTA-DIR-032 §4: aprobada la Entrega G, se autoriza la H</title></path>
+<path d="M688 461C704 461 652 491 666.5 491" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>D07 → D08 (FS): ACTA-DIR-033 §4: aprobada la Entrega H, se autoriza la I</title></path>
+<path d="M688 491C704 491 655.5 521 670 521" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>D08 → D09 (FS): ACTA-DIR-033.2 §3 y §11: aprobada la Entrega I, se cierra el tramo documental</title></path>
+<path d="M684.5 521C700.5 521 823.5 639 838 639" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>D09 → T02 (FS): ACTA-DIR-033.2 §9: la siguiente fase posible es el intake técnico de solo lectura</title></path>
+<path d="M852.5 639C868.5 639 833.1 669 847.6 669" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>T02 → T03 (FS): ACTA-DIR-034 §11: el intake llevó a no usar be-health como base; DEFENSA/WP-01.md: mandato de Dirección del 2026-09-16</title></path>
+<path d="M852.5 639C868.5 639 875.7 699 890.2 699" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>T02 → T04 (FS): ACTA-DIR-034 §14, Nota 1: el gate se completa con la evidencia del intake del 2026-09-16</title></path>
+<path d="M891.7 699C841.7 699 803.1 669 847.6 669" fill="none" stroke="#C98F2C" stroke-width="1.5" stroke-dasharray="2 3" marker-end="url(#flecha-invertida)"><title>T04 → T03 (INVERTIDA): ACTA-DIR-034 §14, Nota 2, y docs/DEUDA_LEGAJO.md DL-001: WP-01 se ejecutó antes de la firma y el acta lo ratificó</title></path>
+<text x="797.1" y="687.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#3D4A5C" text-anchor="end">ratificado después (DL-001)</text>
+<path d="M909.9 699C925.9 699 886.1 757 900.6 757" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>T04 → C01 (FS): ACTA-DIR-034 §3: implementación autorizada de WP-01 a WP-07, cada paquete con su definición por IDs antes del primer commit</title></path>
+<path d="M902.1 757C886.1 757 888.4 787 902.9 787" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C01 → C02 (SS): ACTA-DIR-034 §12: el ensayo de rollback va después del primer merge de WP-02 y antes de cerrarlo</title></path>
+<path d="M909.9 699C925.9 699 889.1 817 903.6 817" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>T04 → C03 (FS): ACTA-DIR-034 §5: la protección técnica de main queda pendiente, con plan</title></path>
+<path d="M910.1 757C926.1 757 896.9 847 911.4 847" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C01 → C04 (FS): docs/paquetes/WP-03.md: WP-03 reutiliza piezas de WP-02 (T-06-23, T-06-24 y T-06-N08)</title></path>
+<path d="M920.9 847C936.9 847 904.5 877 919 877" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C04 → C05 (FS): docs/paquetes/WP-04.md: todas las operaciones de nutrición pasan por el PDP de WP-03</title></path>
+<path d="M929.4 877C945.4 877 913.9 907 928.4 907" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C05 → C06 (FS): docs/paquetes/WP-04.md, encabezado: al cerrar WP-04, Dirección deja el orden de los dominios al ejecutor; docs/paquetes/WP-05.md reutiliza el patrón de corrección de WP-04</title></path>
+<path d="M952.7 907C968.7 907 937.1 937 951.6 937" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C06 → C07 (FS): docs/paquetes/WP-04.md, encabezado: «WP-05 es antropometría y WP-06, entrenamiento»; docs/paquetes/WP-06.md: «la misma cadena que WP-05»</title></path>
+<path d="M970.4 937C986.4 937 959.5 967 974 967" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C07 → C08 (FS): docs/paquetes/WP-07.md: RF-071 lo encontró la auditoría de UX del cierre de WP-06 (DL-090)</title></path>
+<path d="M997.8 967C1013.8 967 978.3 997 992.8 997" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C08 → C09 (FS): docs/paquetes/WP-CONSOLIDACION.md: cerrado WP-07, Dirección elige consolidar en lugar de abrir WP-08, WP-09 y WP-10</title></path>
+<path d="M1007.3 997C1023.3 997 984.8 1027 999.3 1027" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C09 → C10 (FS): docs/paquetes/WP-CONSOLIDACION.md: «Autorizado por Dirección el 2026-09-22 al elegir “consolidar y pulir”»; el orden de los pasos (cerrar WP-07, consolidar, identidad visual, cierre) está en docs/paquetes/WP-IDENTIDAD-VISUAL.md</title></path>
+<path d="M1027.2 1027C1043.2 1027 1012.5 1057 1027 1057" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C10 → C11 (FS): docs/paquetes/WP-IDENTIDAD-VISUAL.md: la identidad visual es el paso 3 del plan del 2026-09-22</title></path>
+<path d="M1036.5 1057C1052.5 1057 1009.5 1087 1024 1087" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C11 → C12 (FS): EVIDENCIA/ENTREGA/LEEME.md: el cierre de la entrega es el paso 4 del plan del 2026-09-22</title></path>
+<path d="M1068.5 1177C1086.5 1177 1086.5 1147 1069.6 1147" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C15 → C14 (FF): docs/paquetes/WP-08.md (D-A) y PR #72: el código se prepara completo, pero la integración espera la confirmación de Dirección</title></path>
+<path d="M1203 1297C1219 1297 1198.5 1327 1213 1327" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C19 → C20 (FS): docs/DEUDA_LEGAJO.md, DL-112: la purga reduce a 21 métodos el catálogo de 40 que dejó DL-111</title></path>
+<path d="M1222.5 1327C1238.5 1327 1217.8 1563 1232.3 1563" fill="none" stroke="#6B7A90" stroke-width="1.15" opacity="0.9" marker-end="url(#flecha)"><title>C20 → P01 (FS): docs/DESPLIEGUE.md: la APK 0.13.0 es la vigente, y la demo y las láminas se arman sobre ella</title></path>
+<g><title>D00 · Elaboración del legajo 00–12 hasta el 2026-09-05 y cierre original de los gates G0 a G3 (00 §8; 02 §18)
+sin fecha
+Fuente: Sin fuente admitida. Las actas ACTA-DIR-001 a 020 que lo aprobaron no están en el repositorio (ACTA-DIR-034 §14, Nota 3). Los encabezados del legajo declaran fechas (00: 2026-07-18; 02 y 03: 2026-07-27; 07 v0.1.11: 2026-08-29), pero no son actas ni commits
+Estado: sin fuente · sin fecha</title><line x1="576" y1="251" x2="1227.8" y2="251" stroke="#AEB8C6" stroke-width="1.6" stroke-dasharray="1 3" stroke-linecap="round"/><rect x="1100.8" y="243" width="127" height="16" fill="#FFFFFF"/><text x="1221.8" y="254.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90" text-anchor="end" font-style="italic">sin fuente · sin fecha</text></g>
+<g><title>D01 · Ratificación de la Auditoría de Impacto Transversal v0.2.1 y autorización del parche documental (CAP-MET, CAP-DAT, ANT-DRAFT, ANT-VOID)
+2026-09-06
+Fuente: ACTA-DIR-021 (2026-09-06), §2 a §6
+Estado: ratificada</title><path d="M606 274.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#1F5FBF" stroke="#FFFFFF" stroke-width="2"/></g>
+<g><title>D02 · Parche transversal del legajo: BE-LEG-04 v0.4.2.1, 05 v0.15, 06 v0.1.1, 08 v0.1.5 y 09 v0.16, cada uno contrarrevisado y aprobado documentalmente
+2026-09-06 → 2026-09-07
+Fuente: ACTA-DIR-021 (autoriza, 2026-09-06) y ACTA-DIR-022 a 026 (aprueban 04, 05, 06, 08 y 09 v0.16, 2026-09-07)
+Estado: aprobado documentalmente</title><rect x="596" y="305" width="44" height="12" rx="3" fill="#1F5FBF"/></g>
+<g><title>D03 · BE-LEG-10 v0.7.2 (reconciliación transversal UX) y v0.8 (cartera, dashboard, timeline, coordinación y proyecciones)
+2026-09-07
+Fuente: ACTA-DIR-026 (autoriza v0.7.2), ACTA-DIR-027 (aprueba v0.7.2 y autoriza v0.8) y ACTA-DIR-028 (aprueba v0.8), todas del 2026-09-07
+Estado: aprobado documentalmente</title><rect x="620" y="335" width="20" height="12" rx="3" fill="#1F5FBF"/></g>
+<g><title>D04 · Hallazgo H-09-10-A3-01 (faltaban las operaciones de A3) y corrección aditiva BE-LEG-09 v0.16.1: API-CON-05 a 08, de 118 a 122 operaciones P0
+2026-09-07
+Fuente: ACTA-DIR-028 §2 a §4 (hallazgo y autorización) y ACTA-DIR-029 §1 (aprobación), 2026-09-07
+Estado: aprobado documentalmente</title><rect x="620" y="365" width="20" height="12" rx="3" fill="#1F5FBF"/></g>
+<g><title>D05 · Entrega F del 10: acceso, onboarding y cuenta; profesional, verificación y administración; accesibilidad, copy y responsive
+2026-09-07
+Fuente: ACTA-DIR-029 §4 (autoriza) y ACTA-DIR-030 §1 (aprueba), 2026-09-07
+Estado: aprobada documentalmente</title><rect x="620" y="395" width="20" height="12" rx="3" fill="#1F5FBF"/></g>
+<g><title>D06 · Entrega G: convergencia de prototipos B10-11 y esqueleto del 11A, con la corrección menor de trazabilidad de RF-069 (H-10-G-RF069-01)
+2026-09-07 → 2026-09-09
+Fuente: ACTA-DIR-030 (autoriza, 2026-09-07), ACTA-DIR-031 (devuelve por RF-069, 2026-09-07) y ACTA-DIR-032 (aprueba, emitida el 2026-09-09)
+Estado: aprobada documentalmente</title><rect x="620" y="425" width="68" height="12" rx="3" fill="#1F5FBF"/></g>
+<g><title>D07 · Entrega H: plan y estrategia de pruebas (11A v1.0-H) y trazabilidad y control de calidad (12 v1.0-H), baselineados
+2026-09-09
+Fuente: ACTA-DIR-032 §4 (autoriza) y ACTA-DIR-033 §2 (aprueba y baselinea), 2026-09-09
+Estado: aprobada y baselineada</title><rect x="668" y="455" width="20" height="12" rx="3" fill="#1F5FBF"/></g>
+<g><title>D08 · Entrega I: BE-LEG-01 v1.0-I y paquete de gate de implementación (borrador de ACTA-DIR-034 v0.1.1, con MENOR-01 de rollback)
+2026-09-09
+Fuente: ACTA-DIR-033 §4 (autoriza), ACTA-DIR-033.1 (MENOR-01) y ACTA-DIR-033.2 §3 (aprueba), 2026-09-09
+Estado: aprobada documentalmente</title><rect x="668" y="485" width="20" height="12" rx="3" fill="#1F5FBF"/></g>
+<g><title>D09 · Cierre del tramo documental pre-implementación: gate documental para construcción satisfecho, implementación no autorizada
+2026-09-09
+Fuente: ACTA-DIR-033.2 §6 y §11 (2026-09-09)
+Estado: cerrado</title><path d="M678 514.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#1F5FBF" stroke="#FFFFFF" stroke-width="2"/></g>
+<g><title>T00 · Matriz de cobertura MESA-01, estándar de calidad y entregables DV-01 a DV-09 de MESA-02
+sin fecha
+Fuente: Sin acta ni commit del período de trabajo. Los nombres de archivo llevan 2026-09-10 y 2026-09-11, pero no son actas. Todo entró a git el 2026-09-16 (747fe11)
+Estado: sin fuente · sin fecha</title><line x1="576" y1="579" x2="1227.8" y2="579" stroke="#AEB8C6" stroke-width="1.6" stroke-dasharray="1 3" stroke-linecap="round"/><rect x="1100.8" y="571" width="127" height="16" fill="#FFFFFF"/><text x="1221.8" y="582.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90" text-anchor="end" font-style="italic">sin fuente · sin fecha</text></g>
+<g><title>T01 · Primer commit del repositorio: legajo 00–12, actas ACTA-DIR-021 a 033.2 con el borrador del gate, intake y MESA-01/02, verificados por SHA-256
+2026-09-16 15:04
+Fuente: commit 747fe11 (2026-09-16 15:04)
+Estado: publicado; se verifica en cada push contra docs/MANIFEST.sha256</title><path d="M849.1 602.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#C98F2C" stroke="#FFFFFF" stroke-width="2"/></g>
+<g><title>T02 · Intake técnico de solo lectura sobre el repositorio anterior be-health: 0 coincidencias exactas de schema y 21 conflictos estructurales; Dirección decide no usarlo como base
+2026-09-16
+Fuente: ACTA-DIR-034 §11 («EJECUTADO 2026-09-16»); docs/intake/INTAKE_01.md, en git desde 747fe11
+Estado: ejecutado</title><path d="M846 632.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#C98F2C" stroke="#FFFFFF" stroke-width="2"/></g>
+<g><title>T03 · WP-01: monorepo nuevo con API /health, website y APK placeholder, CI/CD y despliegue en Render; ejecutado por orden de Dirección antes de la firma del gate (DL-001)
+2026-09-16 → 2026-09-18
+Fuente: Commits 747fe11 (2026-09-16) a e090253 (PR #4, 2026-09-18); release be-apk-0.1.0; ACTA-DIR-034 §14, Nota 2
+Estado: cumplido; ratificado por ACTA-DIR-034</title><rect x="849.1" y="663" width="48" height="12" rx="3" fill="#C98F2C"/></g>
+<g><title>T04 · Gate de implementación: ACTA-DIR-034 v1.0 firmada; autoriza WP-01 a WP-07, cada uno con su definición por IDs antes del primer commit
+2026-09-18 18:48
+Fuente: ACTA-DIR-034 v1.0 (2026-09-18); commit 662330c (18:48) y PR #5 (18:50)
+Estado: firmada</title><path d="M900.8 689.9l9.1 9.1l-9.1 9.1l-9.1 -9.1z" fill="#C98F2C" stroke="#0F1C2E" stroke-width="2.2"/><text x="915.9" y="702.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#0F1C2E">18:48</text></g>
+<g><title>C01 · WP-02 · Identidad y sesiones: registro con A1 y A2 separados, login neutral, cuenta y cierre; incluye DL-030 (el website llama a la API directo, con CORS, para que la API vea la IP real)
+2026-09-18 → 2026-09-19
+Fuente: PR #6 a #8 y #11 a #15 (definición b9242a3, 2026-09-18 20:05; último merge 2026-09-19 01:43); release be-apk-0.2.0
+Estado: integrado en main</title><rect x="902.1" y="751" width="8" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C02 · Ensayo de rollback exigido por ACTA-DIR-034 §12: git revert -m 1 de un merge publicado (PR #9 y #10) y rollback de be-api en Render (parte 2, registrada en el PR #14)
+2026-09-18 → 2026-09-19
+Fuente: PR #9 y #10 (2026-09-18 22:29 y 22:34) y PR #14 (2026-09-19 01:24); EVIDENCIA/ENSAYO-ROLLBACK/
+Estado: ejecutado (partes 1 y 2)</title><rect x="904.4" y="781" width="8" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C03 · Protección de main: PR obligatorio, cuatro checks de CI y rama al día, sin excepción para administradores (pendiente en ACTA-DIR-034 §5)
+2026-09-19 05:37
+Fuente: PR #16 (2026-09-19 05:37); docs/DESPLIEGUE.md, «Rollback»
+Estado: activa</title><path d="M911.6 810.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#1FA97A" stroke="#FFFFFF" stroke-width="2"/></g>
+<g><title>C04 · WP-03 · Vínculo, consentimiento y PDP: solicitud y aceptación del vínculo por alcance, consentimiento B2 por finalidad y punto único de decisión de autorización
+2026-09-19
+Fuente: PR #17 (definición, 06:55) a #22 (13:06), 2026-09-19; release be-apk-0.3.0
+Estado: integrado en main</title><rect x="912.9" y="841" width="8" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C05 · WP-04 · Circuito nutricional: plan del profesional en el website, registro de comidas del asesorado en la APK y revisión, con versiones inmutables
+2026-09-19
+Fuente: PR #23 (definición, 14:51) a #28 (capturas del APK en Android, 23:24), 2026-09-19; release be-apk-0.4.0
+Estado: integrado en main</title><rect x="920.5" y="871" width="8.9" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C06 · WP-05 · Antropometría: evaluación en preparación y registrada, corrección y anulación de mediciones (anulada ≠ borrada), evolución, métodos versionados y cálculo reproducible
+2026-09-19 → 2026-09-20
+Fuente: PR #29 (definición, 2026-09-19 23:59) a #47 (2026-09-20 22:42); releases be-apk-0.5.0 y be-apk-0.5.1
+Estado: integrado en main</title><rect x="929.9" y="901" width="22.8" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C07 · WP-06 · Circuito de entrenamiento: evaluación, objetivo, catálogo, plan con validación y activación, ejecución y revisión (26 operaciones)
+2026-09-20 → 2026-09-21
+Fuente: PR #48 (definición, 2026-09-20 23:11) a #56 (2026-09-21 16:22); release be-apk-0.6.0
+Estado: integrado en main</title><rect x="953.1" y="931" width="17.3" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C08 · WP-07 · Información profesional pertinente (RF-071): plantillas, solicitudes y respuestas autoinformadas (API-FRM-01 a 08)
+2026-09-21 → 2026-09-22
+Fuente: PR #58 (definición, 2026-09-21 21:35) a #65 (2026-09-22 19:49); release be-apk-0.7.0
+Estado: integrado en main</title><rect x="975.5" y="961" width="22.3" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C09 · Decisión de Dirección del 2026-09-22: consolidar y pulir hasta la entrega en lugar de abrir WP-08, WP-09 y WP-10
+2026-09-22 22:48
+Fuente: docs/paquetes/WP-CONSOLIDACION.md, registrada en el primer commit del PR #66 (2026-09-22 22:48)
+Estado: decidida</title><path d="M1000.8 990.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#1FA97A" stroke="#FFFFFF" stroke-width="2"/></g>
+<g><title>C10 · Consolidación: historia propia del asesorado en entrenamiento (DL-089), nutrición y antropometría en website y APK (DL-091) y contenido factual del dashboard (DL-031); versión 0.8.0, sin APK propia
+2026-09-22 → 2026-09-24
+Fuente: PR #66 (2026-09-22 22:48) a #71 (2026-09-24 01:14)
+Estado: integrado en main</title><rect x="1000.8" y="1021" width="26.4" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C11 · Identidad visual y accesibilidad: tokens verificados, cara pública, espacio profesional, APK oscura y figura antropométrica; versión 0.9.0
+2026-09-24
+Fuente: PR #73 (definición, 03:34) a #77 (05:31), 2026-09-24; release be-apk-0.9.0
+Estado: integrado en main</title><rect x="1028.5" y="1051" width="8" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C12 · Cierre de la entrega entonces prevista para el 2026-10-01: evidencia, guía de demo, capturas y despliegue al día
+2026-09-24 06:01
+Fuente: PR #78 (2026-09-24 06:01)
+Estado: cerrado; la entrega se movió después al 2026-10-10</title><path d="M1032 1080.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#1FA97A" stroke="#FFFFFF" stroke-width="2"/></g>
+<g><title>C13 · Correcciones posteriores a la revisión de cierre (registrar guarda antes, resumen vigente del dashboard, guía de capturas) y APK 0.9.1 (formularios: Sí/No se elige)
+2026-09-24 → 2026-09-25
+Fuente: PR #79 (2026-09-24) a #83 (2026-09-25 14:34); release be-apk-0.9.1
+Estado: integrado en main</title><rect x="1042.2" y="1111" width="22.4" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C14 · WP-08 · Integraciones P0: importación controlada desde Open Food Facts (RF-028) y wger (RF-038), con procedencia conservada y respaldo ante caída del proveedor
+2026-09-24 → 2026-09-25
+Fuente: PR #72 (primer commit 2026-09-24 01:20, merge 2026-09-25 17:08), #84 y #85; release be-apk-0.10.0
+Estado: integrado en main</title><rect x="1027.3" y="1141" width="40.7" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C15 · Dirección confirma, en el PR #72, que la autorización de ACTA-DIR-034 cubre WP-08; recién entonces se integra
+2026-09-25
+Fuente: PR #72, sección «Autorización» del cuerpo: «Dirección confirmó el 2026-09-25…» (gh pr view 72)
+Estado: confirmada</title><path d="M1062 1170.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#1FA97A" stroke="#FFFFFF" stroke-width="2"/></g>
+<g><title>C16 · DL-096 · «Tu historial de entrenamiento»: el asesorado ve sus planes y ejecuciones históricas desde la APK; correcciones de la validación en teléfono (0.11.1 a 0.11.3)
+2026-09-25 → 2026-09-27
+Fuente: PR #86 (primer commit 2026-09-25 19:13) a #103 (2026-09-27 22:28); releases be-apk-0.11.0 a 0.11.3
+Estado: integrado en main</title><rect x="1069.2" y="1201" width="51.3" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C17 · Plan Funcional Profesional: propuesta PF-01/PF-02, plantilla de antecedentes y citas en la evaluación (PF-02), lo planificado completo (PF-03, incremento 1) y errores por campo (DL-104); APK 0.12.0
+2026-09-27 → 2026-09-28
+Fuente: PR #98 (primer commit 2026-09-27 19:15) a #109 (2026-09-28 16:49); release be-apk-0.12.0
+Estado: integrado en main</title><rect x="1117.3" y="1231" width="21.6" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C18 · Tanda del 29 y 30/9: correcciones de series y formularios, comparación planificado/registrado, evolución antropométrica visual, apariencia del website, cartera, plantillas, «Mis habituales» y temas de la APK; APK 0.12.1
+2026-09-29 → 2026-09-30
+Fuente: PR #110 (primer commit 2026-09-29 01:41) a #125 (2026-09-30 22:42); release be-apk-0.12.1
+Estado: integrado en main</title><rect x="1147.7" y="1261" width="45" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C19 · DL-111 · Catálogo antropométrico de BE con 40 métodos, lámina del compositor en el website y figura con resultados en la APK 0.12.2
+2026-10-01
+Fuente: PR #126 (primer commit 00:59, merge 02:46) y #127 (03:19), 2026-10-01; release be-apk-0.12.2
+Estado: integrado en main</title><rect x="1195" y="1291" width="8" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C20 · DL-112 y DL-113 · Purga del catálogo a 21 métodos vigentes y UX/UI del website y de la APK (barra inferior, figura en SVG, menos texto); APK 0.13.0, la vigente
+2026-10-01
+Fuente: PR #128 (primer commit 20:32, merge 21:51) y #129 (22:33), 2026-10-01; release be-apk-0.13.0
+Estado: integrado en main</title><rect x="1214.5" y="1321" width="8" height="12" rx="3" fill="#1FA97A"/></g>
+<g><title>C21 · DL-114 · La auditoría de dependencias deja de aprobar con un informe ilegible o un error de npm; commit en la rama fix/auditoria-errores, sin integrar al corte
+2026-10-02 15:45
+Fuente: commit c61b8f5 (2026-10-02 15:45), rama fix/auditoria-errores
+Estado: en curso, sin integrar</title><path d="M1233.8 1350.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#1FA97A" stroke="#FFFFFF" stroke-width="2"/></g>
+<g><title>R00 · Releases permanentes de la APK en GitHub, de be-apk-0.1.0 a be-apk-0.13.0 (la 0.8.0 no tuvo APK)
+2026-09-18 → 2026-10-01
+Fuente: gh release list (19 releases); DV-10_FUENTES_RELEASES.csv
+Estado: publicadas; la vigente es be-apk-0.13.0</title><line x1="897" y1="1408" x2="897" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.1.0 · 2026-09-18 14:57 · APK BE 0.1.0 — WP-01</title></line><line x1="904.4" y1="1408" x2="904.4" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.2.0 · 2026-09-18 22:24 · APK BE 0.2.0 — WP-02 Identidad y sesiones</title></line><line x1="916.1" y1="1408" x2="916.1" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.3.0 · 2026-09-19 10:03 · APK BE 0.3.0 (WP-03, test)</title></line><line x1="922.6" y1="1408" x2="922.6" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.4.0 · 2026-09-19 16:34 · APK BE 0.4.0 (WP-04, test)</title></line><line x1="943.5" y1="1408" x2="943.5" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.5.0 · 2026-09-20 13:28 · APK 0.5.0 — WP-05 antropometría</title></line><line x1="948.4" y1="1408" x2="948.4" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.5.1 · 2026-09-20 18:25 · APK 0.5.1 — WP-05 con el contrato del 09</title></line><line x1="970.3" y1="1408" x2="970.3" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.6.0 · 2026-09-21 16:16 · APK 0.6.0 — WP-06 circuito de entrenamiento</title></line><line x1="997.7" y1="1408" x2="997.7" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.7.0 · 2026-09-22 19:39 · APK 0.7.0 — WP-07 información profesional pertinente</title></line><line x1="1030.5" y1="1408" x2="1030.5" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.9.0 · 2026-09-24 04:32 · APK 0.9.0 — identidad visual y accesibilidad</title></line><line x1="1050" y1="1408" x2="1050" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.9.1 · 2026-09-25 00:01 · APK 0.9.1 — Formularios: Sí/No se elige, no se escribe</title></line><line x1="1067.3" y1="1408" x2="1067.3" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.10.0 · 2026-09-25 17:15 · APK 0.10.0 — WP-08 Integraciones (Open Food Facts y wger)</title></line><line x1="1075.3" y1="1408" x2="1075.3" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.11.0 · 2026-09-26 01:16 · APK 0.11.0 — Tu historial de entrenamiento (DL-096)</title></line><line x1="1094.6" y1="1408" x2="1094.6" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.11.1 · 2026-09-26 20:33 · APK 0.11.1 — Tu historial: volver, fecha civil y área inferior (DL-096)</title></line><line x1="1096.2" y1="1408" x2="1096.2" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.11.2 · 2026-09-26 22:11 · APK 0.11.2 — Tu historial: el período se calcula en Buenos Aires (DL-096)</title></line><line x1="1118" y1="1408" x2="1118" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.11.3 · 2026-09-27 19:57 · APK 0.11.3 — el teclado deja de tapar los campos (DL-096)</title></line><line x1="1138.6" y1="1408" x2="1138.6" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.12.0 · 2026-09-28 16:36 · APK 0.12.0 — lo planificado completo (PF-03) y errores por campo en formularios (DL-104)</title></line><line x1="1192.6" y1="1408" x2="1192.6" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.12.1 · 2026-09-30 22:33 · APK 0.12.1 — temas Azul noche y Claro, formularios acotados y series por número</title></line><line x1="1197.2" y1="1408" x2="1197.2" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.12.2 · 2026-10-01 03:10 · APK 0.12.2 — evolución física: figura de la lámina y resultados de las fórmulas</title></line><line x1="1216.4" y1="1408" x2="1216.4" y2="1422" stroke="#0F1C2E" stroke-width="1.6" opacity="0.85"><title>be-apk-0.13.0 · 2026-10-01 22:24 · BE APK 0.13.0 (test): barra inferior, figura en SVG y menos texto</title></line><text x="892" y="1418.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#3D4A5C" text-anchor="end">0.1.0</text></g>
+<g><title>M0 · M0 de 02 §19.3, build instalable: la APK 0.1.0 se publicó y Dirección la instaló y abrió en un Android físico
+2026-09-18 14:57
+Fuente: Release be-apk-0.1.0 (2026-09-18 14:57); DEFENSA/WP-01.md (instalada el 2026-09-18); fotos del teléfono en el PR #16
+Estado: cumplido</title><path d="M897 1438.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#0F1C2E" stroke="#FFFFFF" stroke-width="2"/></g>
+<g><title>M12 · M1 y M2 de 02 §19.3: la APK 0.2.0, en el Android de Dirección, crea una cuenta en la API de test (escritura) y lee su estado y A3 (lectura). Real quiere decir contra la API desplegada, siempre con datos sintéticos
+2026-09-18 22:24
+Fuente: Release be-apk-0.2.0 (2026-09-18 22:24); DEFENSA/WP-02.md (prueba en el teléfono, 2026-09-18 de 23:49 a 23:54); capturas en el PR #14
+Estado: cumplido</title><path d="M904.4 1468.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#0F1C2E" stroke="#FFFFFF" stroke-width="2"/></g>
+<g><title>M3 · M3 de 02 §19.3: circuito nutricional de punta a punta (website del profesional, APK del asesorado y revisión), con 11 capturas en un Android real
+2026-09-19 16:34
+Fuente: Release be-apk-0.4.0 (2026-09-19 16:34); DEFENSA/WP-04.md; capturas en el PR #28 (23:24)
+Estado: cumplido</title><path d="M922.6 1498.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#0F1C2E" stroke="#FFFFFF" stroke-width="2"/></g>
+<g><title>P01 · Cierre de la entrega: DV-10 y DV-11 a DV-14 al día, validación en el teléfono de las APK 0.12.0 a 0.13.0 y ratificaciones que esperan a Dirección (DL-111, DL-112 y DL-113)
+2026-10-02 → 2026-10-10
+Fuente: Instrucción de Dirección (entrega el 2026-10-10); pendientes en docs/QUE-FALTA.md §1 y §4
+Estado: PLAN — SUJETO A GATE</title><rect x="1233.8" y="1557" width="198.3" height="12" rx="3" fill="#FFFFFF" stroke="#6B7A90" stroke-width="1.4" stroke-dasharray="4 3"/></g>
+<g><title>P02 · Entrega del trabajo final a la escuela
+2026-10-10
+Fuente: Instrucción de Dirección. Sin acta ni commit: el repositorio todavía dice 2026-10-01 (README.md y EVIDENCIA/ENTREGA/LEEME.md)
+Estado: PLAN — SUJETO A GATE · fecha a registrar</title><path d="M1422 1586.5l6.5 6.5l-6.5 6.5l-6.5 -6.5z" fill="#FFFFFF" stroke="#6B7A90" stroke-width="1.6"/><text x="1434.5" y="1596.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#3D4A5C">10/10</text></g>
+<g><title>P03 · La base de datos gratuita de Render que usa el ambiente test vence entre el 16 y el 18/10; después hay 14 días de gracia
+2026-10-16 → 2026-10-18
+Fuente: Tres estimaciones en el repositorio: DECISIONES_TECNICAS.md §3 (~2026-10-16), DEFENSA/WP-01.md (≈ 2026-10-17) y docs/DESPLIEGUE.md (cerca del 2026-10-18); la fecha exacta está en el dashboard de Render
+Estado: A VERIFICAR (rango)</title><rect x="1556" y="1617" width="68" height="12" rx="3" fill="#FFFFFF" stroke="#6B7A90" stroke-width="1.4" stroke-dasharray="4 3"/><text x="1550" y="1626.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#3D4A5C" text-anchor="end">16 a 18/10 · la fecha exacta está en Render</text></g>
+<g><title>P04 · Defensa del trabajo final ante el tribunal
+sin fecha
+Fuente: Sin fecha en el repositorio. La pregunta Q-FECHA-001 (02 §20) sigue abierta para la defensa
+Estado: A VERIFICAR</title><line x1="1239.8" y1="1653" x2="1644" y2="1653" stroke="#AEB8C6" stroke-width="1.6" stroke-dasharray="1 3" stroke-linecap="round"/><rect x="1511.8" y="1645" width="132.2" height="16" fill="#EEF2F7"/><text x="1638" y="1656.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90" text-anchor="end" font-style="italic">sin fecha · A VERIFICAR</text></g>
+<g><title>P05 · M4 de 02 §19.3: versión de defensa de la APK
+sin fecha
+Fuente: Sin decisión de Dirección. La vigente es be-apk-0.13.0, publicada y todavía sin validar en el teléfono
+Estado: A VERIFICAR</title><line x1="1239.8" y1="1683" x2="1644" y2="1683" stroke="#AEB8C6" stroke-width="1.6" stroke-dasharray="1 3" stroke-linecap="round"/><rect x="1511.8" y="1675" width="132.2" height="16" fill="#EEF2F7"/><text x="1638" y="1686.5" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90" text-anchor="end" font-style="italic">sin fecha · A VERIFICAR</text></g>
+<path d="M837 1784V1783.2Q837 1782.4 837.8 1782.4H854.2Q855 1782.4 855 1783.2V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-16: 2 commits (0 merges)</title></path>
+<path d="M861 1784V1782.8Q861 1781.6 862.2 1781.6H877.8Q879 1781.6 879 1782.8V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-17: 3 commits (1 merges)</title></path>
+<path d="M885 1784V1761.4Q885 1758.4 888 1758.4H900Q903 1758.4 903 1761.4V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-18: 32 commits (13 merges)</title></path>
+<path d="M909 1784V1743.8Q909 1740.8 912 1740.8H924Q927 1740.8 927 1743.8V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-19: 54 commits (21 merges)</title></path>
+<path d="M933 1784V1739Q933 1736 936 1736H948Q951 1736 951 1739V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-20: 60 commits (23 merges)</title></path>
+<text x="942" y="1732" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#3D4A5C" text-anchor="middle">60</text>
+<path d="M957 1784V1758.2Q957 1755.2 960 1755.2H972Q975 1755.2 975 1758.2V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-21: 36 commits (13 merges)</title></path>
+<path d="M981 1784V1779.8Q981 1776.8 984 1776.8H996Q999 1776.8 999 1779.8V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-22: 9 commits (4 merges)</title></path>
+<path d="M1005 1784V1779Q1005 1776 1008 1776H1020Q1023 1776 1023 1779V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-23: 10 commits (6 merges)</title></path>
+<path d="M1029 1784V1752.6Q1029 1749.6 1032 1749.6H1044Q1047 1749.6 1047 1752.6V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-24: 43 commits (20 merges)</title></path>
+<path d="M1053 1784V1778.2Q1053 1775.2 1056 1775.2H1068Q1071 1775.2 1071 1778.2V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-25: 11 commits (5 merges)</title></path>
+<path d="M1077 1784V1767.8Q1077 1764.8 1080 1764.8H1092Q1095 1764.8 1095 1767.8V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-26: 24 commits (11 merges)</title></path>
+<path d="M1101 1784V1771.8Q1101 1768.8 1104 1768.8H1116Q1119 1768.8 1119 1771.8V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-27: 19 commits (8 merges)</title></path>
+<path d="M1125 1784V1761.4Q1125 1758.4 1128 1758.4H1140Q1143 1758.4 1143 1761.4V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-28: 32 commits (15 merges)</title></path>
+<path d="M1149 1784V1768.6Q1149 1765.6 1152 1765.6H1164Q1167 1765.6 1167 1768.6V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-29: 23 commits (9 merges)</title></path>
+<path d="M1173 1784V1743Q1173 1740 1176 1740H1188Q1191 1740 1191 1743V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-09-30: 55 commits (20 merges)</title></path>
+<path d="M1197 1784V1766.2Q1197 1763.2 1200 1763.2H1212Q1215 1763.2 1215 1766.2V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-10-01: 26 commits (2 merges)</title></path>
+<path d="M1221 1784V1783.3Q1221 1782.5 1221.8 1782.5H1238.3Q1239 1782.5 1239 1783.3V1784Z" fill="#1F5FBF" opacity="0.55"><title>2026-10-02: 1 commits (0 merges)</title></path>
+<line x1="570" y1="1784" x2="1650" y2="1784" stroke="#C9D3E0"/>
+<text x="845" y="40" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" font-weight="700" fill="#0F1C2E" text-anchor="middle">Figura DV-10.1 — Gantt de BE: historia respaldada y plan sujeto a gate</text>
+<text x="845" y="62" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="500" fill="#6B7A90" text-anchor="middle">Cada fase pasada cita su acta, commit, PR o release; lo que no tiene fuente va sin fecha. Corte: 2026-10-02 15:45, commit c61b8f5. Plan: hasta el vencimiento de la base de test.</text>
+<line x1="40" y1="78" x2="1650" y2="78" stroke="#C9D3E0"/>
+<rect x="40" y="94" width="22" height="12" rx="3" fill="#1F5FBF"/>
+<text x="68" y="104" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#3D4A5C">Especificación (actas)</text>
+<rect x="219.05" y="94" width="22" height="12" rx="3" fill="#C98F2C"/>
+<text x="247.1" y="104" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#3D4A5C">Transición: intake y gate</text>
+<rect x="415.425" y="94" width="22" height="12" rx="3" fill="#1FA97A"/>
+<text x="443.4" y="104" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#3D4A5C">Construcción (PR integrados)</text>
+<path d="M640.125 93l7 7l-7 7l-7-7z" fill="#0F1C2E"/>
+<text x="657.1" y="104" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#3D4A5C">Hito</text>
+<line x1="715.225" y1="93" x2="715.225" y2="107" stroke="#0F1C2E" stroke-width="1.6"/>
+<text x="732.2" y="104" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#3D4A5C">Release de la APK</text>
+<rect x="854.4000000000001" y="94" width="22" height="12" rx="3" fill="#FFFFFF" stroke="#6B7A90" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text x="882.4" y="104" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#3D4A5C">Plan — sujeto a gate</text>
+<line x1="1021.9000000000001" y1="100" x2="1043.9" y2="100" stroke="#AEB8C6" stroke-width="1.6" stroke-dasharray="1 3" stroke-linecap="round"/>
+<text x="1049.9" y="104" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#3D4A5C">Sin fuente · sin fecha</text>
+<path d="M1200.95 100h18" stroke="#6B7A90" stroke-width="1.2" fill="none" marker-end="url(#flecha)"/>
+<text x="1229" y="104" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#3D4A5C">Dependencia</text>
+<path d="M1316.4750000000001 100h18" stroke="#C98F2C" stroke-width="1.4" stroke-dasharray="2 3" fill="none" marker-end="url(#flecha-invertida)"/>
+<text x="1344.5" y="104" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#3D4A5C">Dependencia invertida</text>
+<text x="900.8" y="146" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#0F1C2E" text-anchor="middle">18/09 18:48 · ACTA-DIR-034 firmada</text>
+<text x="1233.8" y="146" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#0F1C2E" text-anchor="middle">corte · 02/10 15:45</text>
+<text x="762" y="226" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#6B7A90" text-anchor="middle">sin actas ni commits</text>
+<text x="1441.9" y="226" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#3D4A5C" text-anchor="middle" letter-spacing="0.4">PLAN — SUJETO A GATE</text>
+<text x="40" y="1824" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">Cómo se lee: cada barra de construcción va del primer commit al último merge de sus PR, en hora argentina (UTC−3). Las fases fechadas solo por actas ocupan días enteros, porque las actas no tienen hora.</text>
+<text x="40" y="1841" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">Las actas fechan decisiones, no esfuerzo: las 15 del 06 al 09/09 registran aprobaciones y autorizaciones, no el tiempo de redacción. Las actas 001 a 020 no están en el repositorio (ACTA-DIR-034, Nota 3): lo anterior al 06/09 no se dibuja.</text>
+<text x="40" y="1858" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="500" fill="#6B7A90">La única dependencia invertida es WP-01: se ejecutó antes de la firma del gate y ACTA-DIR-034 lo ratificó (DL-001). Fuente: DV-10_FASES.csv y DV-10_DEPENDENCIAS.csv; figura generada con generar-gantt.cjs.</text>
+</svg>
