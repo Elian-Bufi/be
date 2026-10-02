@@ -26,6 +26,7 @@ import {
 } from '@be/domain';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso, Campo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
@@ -84,9 +85,9 @@ export function VistaDeResumen() {
       {r?.ok ? (
         <div className="secciones">
           {aviso ? (
-            <Aviso tipo="exito" enfocar>
+            <AvisoFlotante onCerrar={() => setAviso(null)}>
               <p>{aviso}</p>
-            </Aviso>
+            </AvisoFlotante>
           ) : null}
           <Estado datos={r.datos} onIrA={irA} />
 
@@ -179,7 +180,9 @@ export function VistaDeResumen() {
                     {COPY_ENTRENAMIENTO.solicitarContexto}
                   </Link>
                 </div>
-                <p className="nota">{COPY_ENTRENAMIENTO.ayudaSolicitarContexto}</p>
+                <Ayuda titulo="Qué se le pide a la persona">
+                  <p>{COPY_ENTRENAMIENTO.ayudaSolicitarContexto}</p>
+                </Ayuda>
               </>
             )}
           </section>

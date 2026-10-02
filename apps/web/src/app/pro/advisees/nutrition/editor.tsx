@@ -25,6 +25,7 @@ import {
   type VersionDePlan,
 } from '@be/domain';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
@@ -196,8 +197,10 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
       <h2 id="titulo-borrador">
         Versión en preparación <span className="insignia">{COPY_NUTRICION.borrador}</span>
       </h2>
-      <p className="nota">El borrador no es visible para el asesorado. Guardar no activa.</p>
-      {version.predecessorPlanId ? <p className="nota">Nueva versión a partir de la versión activa. La versión activa no cambia hasta que actives esta.</p> : null}
+      <Ayuda titulo="Qué es una versión en preparación">
+        <p>El borrador no es visible para el asesorado. Guardar no activa.</p>
+        {version.predecessorPlanId ? <p>Nueva versión a partir de la versión activa. La versión activa no cambia hasta que actives esta.</p> : null}
+      </Ayuda>
       {version.templateOrigin ? <NotaDeOrigenNutricional token={token} origen={version.templateOrigin} /> : null}
       {objetivoVigente && objetivoVigente !== version.objectiveVersionId ? (
         <Aviso tipo="info">
@@ -298,7 +301,12 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
       <p className="nota" aria-live="polite">
         {guardando ? COPY_NUTRICION.guardando : sucio ? COPY_NUTRICION.cambiosSinGuardar : COPY_NUTRICION.guardado}
       </p>
-      {mensaje ? (
+      {mensaje && mensaje.tipo === 'exito' ? (
+        <AvisoFlotante onCerrar={() => setMensaje(null)}>
+          <p>{mensaje.texto}</p>
+        </AvisoFlotante>
+      ) : null}
+      {mensaje && mensaje.tipo !== 'exito' ? (
         <Aviso tipo={mensaje.tipo} enfocar={mensaje.tipo !== 'info'}>
           <p>{mensaje.texto}</p>
           {problemas && problemas.length > 0 ? (

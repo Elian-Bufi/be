@@ -13,6 +13,7 @@
 import { COPY, COPY_VINCULO, ETIQUETA_DE_FINALIDAD, etiquetaDeConsentimiento, type RequisitoDeConsentimientoDeSaludResponse } from '@be/domain';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AvisoFlotante } from '../../../components/ayuda';
 import { DialogoDeConfirmacion } from '../../../components/dialogo';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso } from '../../../components/formulario';
@@ -117,15 +118,15 @@ function TratamientoDeDatosDeSalud({ token, sesionPerdida }: { token: string; se
             return (
               <>
                 {accion.tipo === 'otorgada' ? (
-                  <Aviso tipo="exito" enfocar>
+                  <AvisoFlotante onCerrar={() => setAccion({ tipo: 'libre' })}>
                     <p className="aviso__titulo">{COPY_VINCULO.a3Otorgada}</p>
-                  </Aviso>
+                  </AvisoFlotante>
                 ) : null}
                 {accion.tipo === 'revocada' ? (
-                  <Aviso tipo="exito" enfocar>
+                  <AvisoFlotante onCerrar={() => setAccion({ tipo: 'libre' })}>
                     <p className="aviso__titulo">{COPY_VINCULO.a3Revocada}</p>
                     <p>{COPY_VINCULO.a3RevocadaDetalle}</p>
-                  </Aviso>
+                  </AvisoFlotante>
                 ) : null}
                 <p>
                   <span className={`insignia ${vigente ? 'insignia--si' : 'insignia--no'}`}>{vigente ? 'Otorgado' : actual?.state === 'REVOKED' ? 'Revocado' : 'No otorgado'}</span>
@@ -272,7 +273,7 @@ function ConsentimientosAProfesionales({ token, sesionPerdida }: { token: string
   return (
     <section className="seccion" aria-labelledby="titulo-b2">
       <h2 id="titulo-b2">Consentimientos a profesionales</h2>
-      {revocado ? <AvisoDeAccesoRevocado vinculoId={revocado} /> : null}
+      {revocado ? <AvisoDeAccesoRevocado vinculoId={revocado} onCerrar={() => setRevocado(null)} /> : null}
       {lista.estado.tipo === 'cargando' ? <Cargando /> : null}
       {lista.estado.tipo === 'error' ? <ErrorConReintento onReintentar={lista.recargar} /> : null}
       {lista.estado.tipo === 'listo' ? (

@@ -11,6 +11,7 @@
  */
 import { COPY_HABITUALES, type EjercicioDeCatalogo, type SesionHabitual } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
+import { Ayuda, AvisoFlotante } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -56,9 +57,16 @@ export function MisHabitualesDeEntrenamiento({ token, sesionPerdida = nunca }: {
   return (
     <section className="seccion" aria-labelledby="titulo-habituales-entrenamiento">
       <h2 id="titulo-habituales-entrenamiento">{TITULO}</h2>
-      <p className="nota">{COPY_HABITUALES.soloTuyos}</p>
-      {aviso ? (
-        <Aviso tipo={aviso.tipo} enfocar>
+      <Ayuda titulo="Quién ve tus habituales">
+        <p>{COPY_HABITUALES.soloTuyos}</p>
+      </Ayuda>
+      {aviso && aviso.tipo === 'exito' ? (
+        <AvisoFlotante onCerrar={() => setAviso(null)}>
+          <p>{aviso.texto}</p>
+        </AvisoFlotante>
+      ) : null}
+      {aviso && aviso.tipo === 'error' ? (
+        <Aviso tipo="error" enfocar>
           <p>{aviso.texto}</p>
         </Aviso>
       ) : null}

@@ -21,6 +21,7 @@ import {
   type ElementoDeCatalogo,
 } from '@be/domain';
 import { useCallback, useEffect, useId, useState } from 'react';
+import { Ayuda } from '../../../../components/ayuda';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
@@ -216,7 +217,6 @@ export function DialogoGuardarComidaHabitual({
       onVolver={onCerrar}
       onConfirmar={() => void guardar()}
     >
-      <p className="nota">{COPY_HABITUALES.queCopiaComida}</p>
       <Campo id={`${id}-nombre`} etiqueta={COPY_HABITUALES.nombre} value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={120} />
       {reemplaza ? (
         <Aviso tipo="info">
@@ -247,7 +247,11 @@ export function DialogoGuardarComidaHabitual({
           </ul>
         </>
       )}
-      <p className="nota">{COPY_HABITUALES.soloTuyos}</p>
+      {/* DL-113: lo que explica el habitual, plegado y al final: así el foco del diálogo abre en el nombre. */}
+      <Ayuda titulo="Qué se copia y quién lo ve">
+        <p>{COPY_HABITUALES.queCopiaComida}</p>
+        <p>{COPY_HABITUALES.soloTuyos}</p>
+      </Ayuda>
     </DialogoDeConfirmacion>
   );
 }

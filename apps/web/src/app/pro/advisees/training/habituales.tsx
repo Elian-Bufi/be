@@ -22,6 +22,7 @@ import {
   type SesionHabitual,
 } from '@be/domain';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { Ayuda } from '../../../../components/ayuda';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -198,7 +199,6 @@ export function DialogoGuardarSesionHabitual({
       onVolver={onCerrar}
       onConfirmar={() => void guardar()}
     >
-      <p className="nota">{COPY_HABITUALES.queCopiaSesion}</p>
       <Campo id={`${id}-nombre`} etiqueta={COPY_HABITUALES.nombre} value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={120} />
       {existente ? (
         <Aviso tipo="info">
@@ -229,7 +229,11 @@ export function DialogoGuardarSesionHabitual({
           </ul>
         </>
       )}
-      <p className="nota">{COPY_HABITUALES.soloTuyos}</p>
+      {/* DL-113: lo que explica el habitual, plegado y al final: así el foco del diálogo abre en el nombre. */}
+      <Ayuda titulo="Qué se copia y quién lo ve">
+        <p>{COPY_HABITUALES.queCopiaSesion}</p>
+        <p>{COPY_HABITUALES.soloTuyos}</p>
+      </Ayuda>
     </DialogoDeConfirmacion>
   );
 }

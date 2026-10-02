@@ -16,6 +16,7 @@ import {
   type ResumenDePlantillaNutricional,
 } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
+import { Ayuda } from '../../../../components/ayuda';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -82,7 +83,6 @@ export function DialogoGuardarPlantillaNutricional({
       onVolver={onCerrar}
       onConfirmar={() => void guardar()}
     >
-      <p className="nota">{COPY_PLANTILLAS.queCopiaNutricion}</p>
       <Campo id={`${id}-nombre`} etiqueta={COPY_PLANTILLAS.nombre} value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={120} />
       <Campo id={`${id}-descripcion`} etiqueta={COPY_PLANTILLAS.descripcion} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} maxLength={1000} />
       <div className="campo">
@@ -109,7 +109,11 @@ export function DialogoGuardarPlantillaNutricional({
           </ul>
         </>
       )}
-      <p className="nota">{COPY_PLANTILLAS.soloTuya}</p>
+      {/* DL-113: lo que explica la plantilla, plegado y al final: así el foco del diálogo abre en el nombre. */}
+      <Ayuda titulo="Qué se copia y quién lo ve">
+        <p>{COPY_PLANTILLAS.queCopiaNutricion}</p>
+        <p>{COPY_PLANTILLAS.soloTuya}</p>
+      </Ayuda>
     </DialogoDeConfirmacion>
   );
 }

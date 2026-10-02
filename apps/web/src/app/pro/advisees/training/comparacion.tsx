@@ -51,6 +51,7 @@ import {
 } from '@be/domain';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Bar, BarChart, CartesianGrid, ComposedChart, LabelList, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Ayuda } from '../../../../components/ayuda';
 import { Aviso } from '../../../../components/formulario';
 import { indiceConTeclado, useConPuntero } from '../../../../lib/graficos';
 import { dia, diaCorto, fecha } from '../../../../lib/formato';
@@ -415,7 +416,7 @@ export function ComparacionPorSerie({
         <SelectorDeMedida id={`${id}-medida`} medidas={medidas} medida={medida} onCambio={setClaveMedida} />
         <ControlDeCapas capas={capas} onCambio={setCapas} />
       </div>
-      <AvisosDeLaComparacion c={c} medida={medida} />
+      <AvisosDeLaComparacion c={c} medida={medida} conTabla={series.length > 0} />
       {series.length === 0 ? (
         <p>{COPY_COMPARACION.sinSeries}</p>
       ) : (
@@ -465,7 +466,7 @@ const AVISO_DE_IDENTIDAD: Readonly<Partial<Record<ComparacionDeEjercicio['identi
 };
 
 /** Lo que el gráfico no puede decir solo: sustitución, resumen, vista no resoluble y cómo se lee lo planificado. */
-function AvisosDeLaComparacion({ c, medida }: { c: ComparacionDeEjercicio; medida: Medida }) {
+function AvisosDeLaComparacion({ c, medida, conTabla }: { c: ComparacionDeEjercicio; medida: Medida; conTabla: boolean }) {
   const notas: string[] = [];
   if (medida.variable === 'carga' && c.cargaSugerida) notas.push(COPY_COMPARACION.sugeridaNoEsObligacion);
   if (medida.variable === 'carga' && c.porcentajeRm) notas.push(COPY_COMPARACION.rmNoSeConvierte);
@@ -489,9 +490,13 @@ function AvisosDeLaComparacion({ c, medida }: { c: ComparacionDeEjercicio; medid
           {COPY_ENTRENAMIENTO.resumenDelEjercicio}: {c.resumen}
         </p>
       ) : null}
-      <p className="nota">
-        {COPY_COMPARACION.ausenciaNoEsCero} {COPY_COMPARACION.sinDeclaracionPorSerie} {notas.join(' ')}
-      </p>
+      {/* DL-113 · cómo se leen el gráfico y la tabla, plegado: a la vista quedan los avisos y los datos. */}
+      <Ayuda>
+        <p>
+          {COPY_COMPARACION.ausenciaNoEsCero} {COPY_COMPARACION.sinDeclaracionPorSerie} {notas.join(' ')}
+        </p>
+        {conTabla ? <p>{COPY_COMPARACION.tablaMuestraAmbas}</p> : null}
+      </Ayuda>
     </>
   );
 }
@@ -618,7 +623,6 @@ function TooltipDeSerie({ serie, medida }: { serie: SerieParaGraficar | undefine
 function TablaPorSerie({ c, series, medida }: { c: ComparacionDeEjercicio; series: readonly SerieParaGraficar[]; medida: Medida }) {
   return (
     <>
-      <p className="nota">{COPY_COMPARACION.tablaMuestraAmbas}</p>
       <table className="tabla">
         <caption className="nota">
           {COPY_COMPARACION.tablaEquivalente}: {c.prescripto.nombre} · {etiquetaDeMedida(medida)}
@@ -740,9 +744,15 @@ export function EvolucionDelEjercicio({
         </div>
         <ControlDeCapas capas={capas} onCambio={setCapas} lineas />
       </div>
-      <p className="nota">
-        {COPY_COMPARACION.unidadDeObservacion} {COPY_COMPARACION.comparaConSuPrescripcion} {COPY_COMPARACION.lineasSeCortan}
-      </p>
+      {/* DL-113 · cómo se leen el gráfico y la tabla, plegado: a la vista quedan la leyenda y los datos. */}
+      <Ayuda>
+        <p>
+          {COPY_COMPARACION.unidadDeObservacion} {COPY_COMPARACION.comparaConSuPrescripcion} {COPY_COMPARACION.lineasSeCortan}
+        </p>
+        {medida.variable === 'carga' ? <p>{`${COPY_COMPARACION.sugeridaNoEsObligacion} ${COPY_COMPARACION.rmNoSeConvierte}`}</p> : null}
+        {medida.variable === 'rir' ? <p>{COPY_COMPARACION.rirDeLaPrescripcion}</p> : null}
+        <p>{COPY_COMPARACION.tablaMuestraAmbas}</p>
+      </Ayuda>
       <ul className="leyenda" aria-label="Leyenda">
         <li>
           <span className="muestra muestra--hueco" aria-hidden="true" /> Franja gris rayada: sesión sin valor registrado de esta serie (el motivo está en la tabla)
@@ -751,8 +761,6 @@ export function EvolucionDelEjercicio({
       </ul>
       {observaciones.length === 1 ? <p className="nota">Hay una sola sesión con este ejercicio en el período: todavía no hay evolución que mirar. Podés ampliar el período (hasta 92 días).</p> : null}
       {!conValor ? <p>No hay valores de {etiquetaDeMedida(medida).toLowerCase()} para esta serie en el período. La tabla dice por qué en cada sesión.</p> : null}
-      {medida.variable === 'carga' ? <p className="nota">{`${COPY_COMPARACION.sugeridaNoEsObligacion} ${COPY_COMPARACION.rmNoSeConvierte}`}</p> : null}
-      {medida.variable === 'rir' ? <p className="nota">{COPY_COMPARACION.rirDeLaPrescripcion}</p> : null}
       <GraficoDeEvolucion id={id} titulo={titulo} puntos={puntos} medida={medida} capas={capas} elegido={elegido} onElegir={setElegido} onAbrir={onAbrir} />
       <div aria-live="polite">
         {p ? (
@@ -981,7 +989,6 @@ function TablaDeEvolucion({
 }) {
   return (
     <>
-      <p className="nota">{COPY_COMPARACION.tablaMuestraAmbas}</p>
       <table className="tabla">
         <caption className="nota">
           {COPY_COMPARACION.tablaEquivalente}: {nombre} · {COPY_ENTRENAMIENTO.serie.toLowerCase()} {numero(numeroDeSerie)} · {etiquetaDeMedida(medida)}

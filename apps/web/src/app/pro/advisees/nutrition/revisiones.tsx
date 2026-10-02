@@ -17,6 +17,7 @@ import {
   type Revision,
 } from '@be/domain';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
@@ -56,8 +57,9 @@ export function VistaDeRevisiones() {
         {r?.ok ? (
         <div className="secciones">
           <p className="nota">{COPY_NUTRICION.verNoEsRevisar}</p>
-          {aviso ? (
-            <Aviso tipo={aviso.tipo} enfocar>
+          {/* DL-113: el atajo al borrador va en el aviso, que por eso se queda hasta que se cierra. */}
+          {aviso && aviso.tipo === 'exito' ? (
+            <AvisoFlotante onCerrar={() => setAviso(null)} seQueda={!!aviso.alPlan}>
               <p>{aviso.texto}</p>
               {aviso.alPlan ? (
                 <p>
@@ -66,6 +68,11 @@ export function VistaDeRevisiones() {
                   </button>
                 </p>
               ) : null}
+            </AvisoFlotante>
+          ) : null}
+          {aviso && aviso.tipo !== 'exito' ? (
+            <Aviso tipo={aviso.tipo} enfocar>
+              <p>{aviso.texto}</p>
             </Aviso>
           ) : null}
           {r.datos.contexto.pendingReview.pending ? (

@@ -11,8 +11,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { api, type Resultado } from '../lib/api';
 import { esIncierto, mensajeDeFallo } from '../lib/intento';
+import { AvisoFlotante } from './ayuda';
 import { DialogoDeConfirmacion } from './dialogo';
-import { Aviso } from './formulario';
 
 type Estado = { tipo: 'cerrado' } | { tipo: 'abierto' } | { tipo: 'enviando' } | { tipo: 'error'; mensaje: string; incierto: boolean };
 
@@ -69,9 +69,11 @@ export function RevocarConsentimiento({
 }
 
 /** Éxito de la revocación (10-B04 §19). «debe» es literal: la UI no afirma lo que decide el servidor. */
-export function AvisoDeAccesoRevocado({ vinculoId }: { vinculoId?: string }) {
+export function AvisoDeAccesoRevocado({ vinculoId, onCerrar }: { vinculoId?: string; onCerrar: () => void }) {
+  // DL-113: donde se está mirando (se revoca desde un ítem y el aviso quedaba arriba de la sección); con el enlace al
+  // vínculo adentro, se queda hasta que se cierra.
   return (
-    <Aviso tipo="exito" enfocar>
+    <AvisoFlotante onCerrar={onCerrar} seQueda={!!vinculoId}>
       <p className="aviso__titulo">{COPY_VINCULO.accesoRevocado}</p>
       <p>{COPY_VINCULO.accesoRevocadoDetalle}</p>
       <p>{COPY_VINCULO.vinculoContinua}</p>
@@ -80,6 +82,6 @@ export function AvisoDeAccesoRevocado({ vinculoId }: { vinculoId?: string }) {
           <Link href={`/account/relationships/detail?id=${encodeURIComponent(vinculoId)}`}>{COPY_VINCULO.verVinculo}</Link>
         </p>
       ) : null}
-    </Aviso>
+    </AvisoFlotante>
   );
 }

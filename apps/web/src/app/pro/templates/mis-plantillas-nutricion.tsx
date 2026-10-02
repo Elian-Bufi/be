@@ -3,6 +3,7 @@
 /** «Mis plantillas» de comidas (PF-09; DL-108): la misma sección que la de entrenamiento, con la estructura de días tipo → comidas → opciones → alimentos. */
 import { cantidad, COPY_PLANTILLAS, ETIQUETA_DE_PREPARACION, type EstructuraDePlanEntrada, type PlantillaNutricional, type ResumenDePlantillaNutricional } from '@be/domain';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AvisoFlotante } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -25,8 +26,13 @@ export function MisPlantillasNutricionales({ token, sesionPerdida }: { token: st
   return (
     <section className="seccion" aria-labelledby="titulo-plantillas-nutricion">
       <h2 id="titulo-plantillas-nutricion">{COPY_PLANTILLAS.plantillasDeNutricion}</h2>
-      {aviso ? (
-        <Aviso tipo={aviso.tipo} enfocar>
+      {aviso && aviso.tipo === 'exito' ? (
+        <AvisoFlotante onCerrar={() => setAviso(null)}>
+          <p>{aviso.texto}</p>
+        </AvisoFlotante>
+      ) : null}
+      {aviso && aviso.tipo === 'error' ? (
+        <Aviso tipo="error" enfocar>
           <p>{aviso.texto}</p>
         </Aviso>
       ) : null}

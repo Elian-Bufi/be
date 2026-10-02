@@ -11,6 +11,7 @@
  */
 import { cantidad, COPY_NUTRICION, ETIQUETA_DE_UNIDAD, leerNumero, motivoDeNumeroIlegible, type ContextoDeRevisionResponse, type ElementoDeCatalogo, type Ingesta } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
+import { Ayuda } from '../../../../components/ayuda';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
@@ -55,9 +56,11 @@ function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () =>
       <p className="nota">
         Período: {dia(`${contexto.period.start}T12:00:00Z`)} a {dia(`${contexto.period.end}T12:00:00Z`)}
       </p>
-      <p className="nota">
-        Lo prescripto y lo registrado, día por día. Un día o una comida sin registro es «{COPY_NUTRICION.sinRegistro}»: no se interpreta.
-      </p>
+      <Ayuda>
+        <p>
+          Lo prescripto y lo registrado, día por día. Un día o una comida sin registro es «{COPY_NUTRICION.sinRegistro}»: no se interpreta.
+        </p>
+      </Ayuda>
       {dias.map((d) => (
         <section key={d.date} className={`seccion${d.meals.length === 0 ? ' seccion--compacta' : ''}`} aria-labelledby={`dia-${d.date}`}>
           <h2 id={`dia-${d.date}`}>{dia(`${d.date}T12:00:00Z`)}</h2>
