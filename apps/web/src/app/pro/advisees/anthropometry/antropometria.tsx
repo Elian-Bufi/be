@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
+import { Pestanas } from '../../../../components/pestanas';
 import { MigasDelAsesorado } from '../../../../components/migas';
 import { Aviso } from '../../../../components/formulario';
 import type { Resultado } from '../../../../lib/api';
@@ -108,17 +109,7 @@ export function Antropometria() {
 function Secciones({ ruta, id, vista }: { ruta: string; id: string; vista: Vista }) {
   return (
     <>
-      <nav className="pestanas" aria-label="Secciones de Antropometría">
-        <ul>
-          {VISTAS.map((v) => (
-            <li key={v.clave}>
-              <Link href={`${ruta}?id=${encodeURIComponent(id)}&vista=${v.clave}`} aria-current={v.clave === vista ? 'page' : undefined} replace>
-                {v.texto}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <Pestanas etiqueta="Secciones de Antropometría" vistas={VISTAS} actual={vista} href={(clave) => `${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`} />
       {vista === 'evaluaciones' ? <VistaDeEvaluaciones /> : null}
       {vista === 'preparacion' ? <VistaDePreparacion /> : null}
       {vista === 'evolucion' ? <VistaDeEvolucion /> : null}

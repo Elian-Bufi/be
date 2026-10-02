@@ -8,15 +8,38 @@
  *   porque el 08 prohíbe presentarla como una acción destructiva (08 §56.12).
  *
  * Lo medido, lo informado y lo calculado se muestran distinguidos siempre (04:1090).
+ *
+ * DL-113 · la pantalla se ordena por lo que el profesional viene a hacer:
+ * - cada toma se nombra por **cuándo se tomó**: la fecha de registro es un metadato, y con ella sola las tomas
+ *   registradas el mismo día se veían iguales;
+ * - en el detalle, los resultados calculados van antes que las mediciones;
+ * - las mediciones van en filas compactas por familia, con «Corregir» y «Anular» en cada fila. El protocolo y la
+ *   fecha de la toma se dicen una vez, y en una fila solo si difieren.
  */
-import { cantidad, COPY, COPY_ANTROPOMETRIA, COPY_EVOLUCION, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, leerNumero, motivoDeNumeroIlegible, nombreDeMetrica, type EvaluacionAntropometricaApi, type Medicion } from '@be/domain';
+import {
+  cantidad,
+  COPY,
+  COPY_ANTROPOMETRIA,
+  COPY_EVOLUCION,
+  ETIQUETA_DE_CLASE_DE_DATO,
+  ETIQUETA_DE_CONDICION,
+  ETIQUETA_DE_FAMILIA,
+  FAMILIA_DE_METRICA,
+  leerNumero,
+  motivoDeNumeroIlegible,
+  nombreDeMetrica,
+  type EvaluacionAntropometricaApi,
+  type FamiliaDeMedicion,
+  type Medicion,
+} from '@be/domain';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
-import { fecha } from '../../../../lib/formato';
+import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { EstadoVacio } from '../../../../components/estados';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 import { BloqueDeCalculos } from './calculos';
 
@@ -108,15 +131,29 @@ export function VistaDeEvaluaciones() {
           ) : null}
 
           <section className="seccion" aria-labelledby="titulo-registradas">
-            <h2 id="titulo-registradas">{COPY_ANTROPOMETRIA.evaluacionRegistrada}</h2>
-            {r.datos.lista.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinEvaluaciones}</p> : null}
-            <ol className="historial">
+            <h2 id="titulo-registradas">Tomas registradas</h2>
+            {r.datos.lista.length === 0 ? (
+              <EstadoVacio
+                titulo={COPY_ANTROPOMETRIA.sinEvaluaciones}
+                accion={
+                  <button type="button" className="boton boton--primario" onClick={() => irA('preparacion')}>
+                    Preparar una toma
+                  </button>
+                }
+              >
+                <p className="nota">Una toma se carga en «En preparación» y pasa a esta lista cuando se registra.</p>
+              </EstadoVacio>
+            ) : null}
+            <ol className="tomas">
               {r.datos.lista.map((e) => (
                 <li key={e.evaluationId}>
-                  <span className="historial__evento">{fecha(e.registeredAt ?? e.occurredAt)}</span> · {e.summary.measurementCount} mediciones
-                  {e.summary.annulledCount > 0 ? ` · ${e.summary.annulledCount} ${COPY_ANTROPOMETRIA.anulada.toLowerCase()}` : ''} ·{' '}
-                  <button type="button" className="boton boton--enlace" onClick={() => setAbiertaId(e.evaluationId)}>
-                    Ver
+                  <button type="button" className="tomas__toma" aria-current={e.evaluationId === r.datos.abierta?.evaluationId ? 'true' : undefined} onClick={() => setAbiertaId(e.evaluationId)}>
+                    <span className="tomas__fecha">{fecha(e.occurredAt)}</span>
+                    <span className="tomas__detalle">
+                      {e.summary.measurementCount} mediciones
+                      {e.summary.annulledCount > 0 ? ` · ${e.summary.annulledCount} ${COPY_ANTROPOMETRIA.anulada.toLowerCase()}` : ''}
+                      {e.registeredAt ? ` · registrada el ${dia(e.registeredAt)}` : ''}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -152,11 +189,20 @@ function Detalle({
   onError: (t: string) => void;
 }) {
   const { irA } = useAntropometria();
+  const protocolo = protocoloDeLaToma(evaluacion.measurements);
+  const anuladas = evaluacion.measurements.filter((m) => m.condition === 'ANNULLED').length;
+  const metadatos = [
+    protocolo ? `${COPY_ANTROPOMETRIA.protocolo}: ${protocolo}` : null,
+    `${evaluacion.measurements.length} mediciones${anuladas > 0 ? ` (${anuladas} ${COPY_ANTROPOMETRIA.anulada.toLowerCase()})` : ''}`,
+    evaluacion.registeredAt ? `registrada el ${fecha(evaluacion.registeredAt)} por ${evaluacion.author.displayName}` : null,
+  ].filter((p): p is string => p !== null);
   return (
     <section className="seccion" aria-labelledby="titulo-detalle">
       <h2 id="titulo-detalle">
-        <span className="insignia">{COPY_ANTROPOMETRIA.soloLectura}</span> Evaluación del {fecha(evaluacion.registeredAt ?? evaluacion.occurredAt)}
+        <span className="insignia">{COPY_ANTROPOMETRIA.soloLectura}</span> Toma del {fecha(evaluacion.occurredAt)}
       </h2>
+      {/* Lo que vale para toda la toma, dicho una vez. */}
+      <p className="metadatos">{metadatos.join(' · ')}</p>
       {evaluacion.context ? <p>{evaluacion.context}</p> : null}
       {/* DL-111 · la lámina del compositor con esta toma. */}
       <div className="acciones">
@@ -164,20 +210,56 @@ function Detalle({
           {COPY_ANTROPOMETRIA.verLamina}
         </button>
       </div>
-      <Ayuda titulo="Medido, reportado o calculado">
-        <p>{COPY_ANTROPOMETRIA.explicacionDeClases}</p>
-      </Ayuda>
-
-      {evaluacion.measurements.map((m) => (
-        <FilaDeMedicion key={m.measurementId} medicion={m} onHecho={onHecho} onError={onError} />
-      ))}
 
       <BloqueDeCalculos evaluacion={evaluacion} onAviso={onAviso} />
+
+      <section className="subseccion" aria-labelledby="titulo-mediciones">
+        <h3 id="titulo-mediciones">Mediciones</h3>
+        <Ayuda titulo="Medido, reportado o calculado">
+          <p>{COPY_ANTROPOMETRIA.explicacionDeClases}</p>
+        </Ayuda>
+        {FAMILIAS.map((familia) => {
+          const deLaFamilia = evaluacion.measurements.filter((m) => (FAMILIA_DE_METRICA[m.metric] ?? 'OTRAS') === familia);
+          if (deLaFamilia.length === 0) return null;
+          return (
+            <div key={familia} className="familia">
+              <h4>{ETIQUETA_DE_FAMILIA[familia]}</h4>
+              <ul className="mediciones">
+                {deLaFamilia.map((m) => (
+                  <FilaDeMedicion key={m.measurementId} medicion={m} protocoloDeLaToma={protocolo} momentoDeLaToma={evaluacion.occurredAt} onHecho={onHecho} onError={onError} />
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </section>
     </section>
   );
 }
 
-function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; onHecho: (t: string) => void; onError: (t: string) => void }) {
+/** El orden de las familias, el mismo de la toma y de la lámina. */
+const FAMILIAS: readonly FamiliaDeMedicion[] = ['MASA_Y_ESTATURA', 'PERIMETROS', 'PLIEGUES', 'DIAMETROS', 'OTRAS'];
+
+/** El protocolo de la toma: el que declaran sus mediciones (el más frecuente, si hubiera más de uno). */
+function protocoloDeLaToma(mediciones: readonly Medicion[]): string | null {
+  const cuenta = new Map<string, number>();
+  for (const m of mediciones) cuenta.set(m.protocol.protocolName, (cuenta.get(m.protocol.protocolName) ?? 0) + 1);
+  return [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+}
+
+function FilaDeMedicion({
+  medicion,
+  protocoloDeLaToma,
+  momentoDeLaToma,
+  onHecho,
+  onError,
+}: {
+  medicion: Medicion;
+  protocoloDeLaToma: string | null;
+  momentoDeLaToma: string;
+  onHecho: (t: string) => void;
+  onError: (t: string) => void;
+}) {
   const { token, sesionPerdida, accesoRetirado } = useAntropometria();
   const intento = useClaveDeIntento();
   const [accion, setAccion] = useState<'corregir' | 'anular' | null>(null);
@@ -221,30 +303,43 @@ function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; on
     onHecho(res.datos.data.alreadyAnnulled ? COPY_ANTROPOMETRIA.yaAnulada : COPY_ANTROPOMETRIA.anulacionHecha);
   }
 
+  const nombre = nombreDeMetrica(medicion.metric);
+  // El protocolo y la fecha de la toma ya están arriba: en la fila van solo si esta medición difiere.
+  const otroProtocolo = medicion.protocol.protocolName !== protocoloDeLaToma;
+  const otroMomento = medicion.occurredAt !== momentoDeLaToma;
   return (
-    <div className="nodo nodo--comida">
+    <li className={`medicion${anulada ? ' medicion--anulada' : ''}`}>
       {/*
         El titular es el valor que RIGE, no el que se tomó primero: una corrección cambia la vista efectiva
         (REG-06-16), y mostrar el original acá lo dejaba contradiciendo al cálculo derivado que ya usa el
         corregido. El original no se pierde: queda rotulado como tal dentro de «Correcciones», que es lo que
         REG-06-154 exige conservar. Si la cadena no se puede resolver, no se inventa un titular.
       */}
-      <h4>
-        {nombreDeMetrica(medicion.metric)}: {cantidad((medicion.effectiveMagnitude ?? medicion.magnitude).value, (medicion.effectiveMagnitude ?? medicion.magnitude).unit)}{' '}
-        <span className="insignia">{ETIQUETA_DE_CLASE_DE_DATO[medicion.dataClass]}</span>{' '}
-        <span className="insignia">{ETIQUETA_DE_CONDICION[medicion.condition]}</span>
-        {medicion.corrections.length > 0 ? (
-          <>
-            {' '}
-            <span className="insignia">
-              {medicion.effectiveMagnitude ? COPY_ANTROPOMETRIA.corregida : COPY_ANTROPOMETRIA.sinValorVigente}
-            </span>
-          </>
+      <div className="medicion__fila">
+        <span className="medicion__nombre">{nombre}</span>
+        <span className="medicion__valor">{cantidad((medicion.effectiveMagnitude ?? medicion.magnitude).value, (medicion.effectiveMagnitude ?? medicion.magnitude).unit)}</span>
+        <span className="medicion__pie">
+        <span className="medicion__estado">
+          {ETIQUETA_DE_CLASE_DE_DATO[medicion.dataClass]} · {anulada ? <strong>{ETIQUETA_DE_CONDICION[medicion.condition]}</strong> : ETIQUETA_DE_CONDICION[medicion.condition]}
+          {medicion.corrections.length > 0 ? ` · ${medicion.effectiveMagnitude ? COPY_ANTROPOMETRIA.corregida : COPY_ANTROPOMETRIA.sinValorVigente}` : ''}
+        </span>
+        {!anulada && accion === null ? (
+          <span className="medicion__acciones">
+            <button type="button" className="boton boton--secundario boton--compacto" aria-label={`${COPY_ANTROPOMETRIA.corregirMedicion}: ${nombre}`} onClick={() => setAccion('corregir')}>
+              Corregir
+            </button>
+            <button type="button" className="boton boton--secundario boton--compacto" aria-label={`${COPY_ANTROPOMETRIA.anularMedicion}: ${nombre}`} onClick={() => setAccion('anular')}>
+              Anular
+            </button>
+          </span>
         ) : null}
-      </h4>
-      <p className="nota">
-        {COPY_ANTROPOMETRIA.protocolo}: {medicion.protocol.protocolName} · {fecha(medicion.occurredAt)}
-      </p>
+        </span>
+      </div>
+      {otroProtocolo || otroMomento ? (
+        <p className="nota">
+          {COPY_ANTROPOMETRIA.protocolo}: {medicion.protocol.protocolName} · {fecha(medicion.occurredAt)}
+        </p>
+      ) : null}
 
       {medicion.corrections.length > 0 ? (
         <details>
@@ -282,17 +377,6 @@ function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; on
           </p>
           <p className="nota">{COPY_ANTROPOMETRIA.sinReversion}</p>
         </Aviso>
-      ) : null}
-
-      {!anulada && accion === null ? (
-        <div className="acciones">
-          <button type="button" className="boton boton--secundario" onClick={() => setAccion('corregir')}>
-            {COPY_ANTROPOMETRIA.corregirMedicion}
-          </button>
-          <button type="button" className="boton boton--secundario" onClick={() => setAccion('anular')}>
-            {COPY_ANTROPOMETRIA.anularMedicion}
-          </button>
-        </div>
       ) : null}
 
       {accion === 'corregir' ? (
@@ -334,6 +418,6 @@ function FilaDeMedicion({ medicion, onHecho, onError }: { medicion: Medicion; on
           </div>
         </div>
       ) : null}
-    </div>
+    </li>
   );
 }

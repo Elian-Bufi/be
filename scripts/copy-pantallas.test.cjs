@@ -98,13 +98,16 @@ test('T13 · en antropometría, un juicio afirmativo se detecta y su negación e
  * de la tarjeta tiene que mostrar el que rige: mostrar el original ahí lo dejaba contradiciendo al cálculo derivado
  * que ya usaba el corregido, con la insignia «Vigente» al lado. Que el campo exista en el contrato no alcanza; esta
  * prueba fija que la pantalla lo use, porque el error fue de lectura, no de contrato.
+ *
+ * DL-113: el titular dejó de ser un `<h4>` por tarjeta y pasó a ser la fila de la lista de mediciones
+ * (`medicion__fila`). Cambió dónde se busca; lo que se exige es lo mismo.
  */
 test('T13 · el titular de la medición muestra el valor vigente, no el original', () => {
   const archivo = join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry/evaluaciones.tsx');
   const fuente = ts.createSourceFile(archivo, readFileSync(archivo, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   let titular = null;
   const visitar = (n) => {
-    if (ts.isJsxElement(n) && n.openingElement.tagName.getText() === 'h4' && /medicion\.metric/.test(n.getText())) titular = n.getText();
+    if (ts.isJsxElement(n) && /className="medicion__fila"/.test(n.openingElement.getText())) titular = n.getText();
     ts.forEachChild(n, visitar);
   };
   visitar(fuente);

@@ -7,6 +7,8 @@
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRef } from 'react';
+import { useActualALaVista } from './pestanas';
 
 const DE_CUENTA = [
   { href: '/account', texto: 'Cuenta' },
@@ -34,9 +36,12 @@ function Navegacion({ etiqueta, enlaces }: { etiqueta: string; enlaces: readonly
   const actual = enlaces
     .filter((e) => ruta === e.href || ruta.startsWith(`${e.href}/`))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+  // DL-113: en el teléfono la línea se desplaza de costado; la sección actual queda siempre a la vista.
+  const lista = useRef<HTMLUListElement>(null);
+  useActualALaVista(lista, actual);
   return (
     <nav className="navegacion" aria-label={etiqueta}>
-      <ul>
+      <ul ref={lista} className="desplazable-x">
         {enlaces.map((e) => (
           <li key={e.href}>
             <Link href={e.href} aria-current={e.href === actual ? (ruta === e.href ? 'page' : 'location') : undefined}>
