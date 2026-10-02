@@ -117,7 +117,7 @@
 | DL-110 | Crítica de negocio · 2026-09-30 | REG-06-209 · UC-P32 · WP-07 D-D · T-06-33 · UC-P19 · DIR-10-MET-A · REG-06-151/157/162/168 | Formularios propios (mejora D) y protocolos propios de antropometría (mejora E) | **DECIDIDA** 2026-09-30 · D postergada (exclusión de P0 vigente); E: catálogo real de BE, sin protocolos ni fórmulas del profesional; contenido pendiente de Dirección |
 | DL-111 | Pedido de Dirección · 2026-09-30 | DL-110 · DL-073 · 06 REG-06-156/157/162/203/204/205 · RF-048/049 · TEST-PRJ-009 | El catálogo antropométrico real (perfil completo y 40 fórmulas con fuente), la lámina del compositor en el website y la figura con los resultados en la APK | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · decisiones del ejecutor: sitios de la ficha, métodos por sexo, edad como dato de la toma, una métrica por familia, resultados en la evolución sin cambiar su forma |
 | DL-112 | Pedido de Dirección · 2026-10-01 | DL-111 · 06 REG-06-205 · RF-048 · DL-072 (especificaciones de solo agregar) | El catálogo ofrece demasiados métodos para elegir: 40 métodos, 28 resultados | **DECIDIDA** 2026-10-01 (la purga) · la lista la armó el ejecutor, A RATIFICAR · 21 vigentes, 23 retirados y 4 nuevos; lo calculado sigue en la historia |
-| DL-113 | Pedido de Dirección · 2026-10-01 | B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 | Mucho texto a la vista, avisos fuera de la vista en el teléfono, la APK sin navegación fija y pliegues del catálogo fuera de la figura | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · guía `docs/ux/GUIA-UX-UI.md` · falta la prueba de Dirección en el teléfono |
+| DL-113 | Pedido de Dirección · 2026-10-01 | B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 | Mucho texto a la vista, avisos fuera de la vista en el teléfono, la APK sin navegación fija y pliegues del catálogo fuera de la figura | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · pulido y corrección de los puntos anatómicos 2026-10-02 · guía `docs/ux/GUIA-UX-UI.md` · falta la prueba de Dirección en el teléfono |
 | DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **PROVISORIA, A RATIFICAR** 2026-10-01 · excepción declarada por aviso y paquete, con motivo y vencimiento (2026-10-31) |
 
 ---
@@ -2458,6 +2458,36 @@ En la prueba del mismo día marcó cinco cosas:
   - los avisos;
   - las coordenadas del bíceps y de la cresta ilíaca.
 - Decidir si la APK abre en Nutrición o en otra zona.
+
+**Pulido del 2026-10-02 (pedido de Dirección del mismo día).** Dirección pidió elevar la calidad visual y de uso con
+implementación concreta, empezando por dos pantallas representativas. Evidencia: `EVIDENCIA/UX-PULIDO-DL113/LEEME.md`.
+- **Website, toma antropométrica:**
+  - las tomas se nombran por su fecha de ocurrencia;
+  - los cálculos van antes que las mediciones, y las mediciones van en filas por familia;
+  - la preparación muestra el protocolo completo y tiene las acciones fijas al pie, con el estado del guardado.
+  - Con los mismos datos, la página de la toma bajó de 14.124 a 7.525 px de alto en un teléfono de 390 px.
+- **Website, todas las pantallas:**
+  - el encabezado ocupa tres renglones en el teléfono;
+  - las pestañas van en una línea, con la elegida a la vista;
+  - la carga y el vacío tienen su estado, y el vacío, su acción.
+- **APK, «Mi evolución»:** cada fecha se dice una vez.
+- **Piezas compartidas y reglas:** `docs/ux/GUIA-UX-UI.md` §10.
+
+**Corrección del 2026-10-02: los puntos anatómicos no se mueven para resolver cruces (regla de Dirección).**
+- El punto 8 corría el bíceps un poco más abajo que el tríceps y la cresta ilíaca un poco más arriba que el
+  supraespinal, para que las guías no se cruzaran. **Eso no corresponde, y se revirtió**:
+  - el bíceps va a la misma altura que el tríceps: es la cara anterior del brazo, y el tríceps la posterior;
+  - la cresta ilíaca va a la misma altura que el supraespinal, sobre la línea medioaxilar.
+  - De frente, cada par casi coincide. Sus guías llegan al mismo lugar y las tarjetas dicen cuál es cuál.
+- **Los cruces se resuelven sin mover puntos:**
+  - **Lámina, Serie:** la guía que pasaría sobre otro punto entra de costado. Ahora es la del tríceps en el hombre y la del bíceps en la mujer.
+  - **APK:** las tarjetas se apilan por la altura media de sus sitios, no por su borde de arriba como en el compositor, y los puntos se dibujan encima de las guías.
+  - Con todos los pliegues, en el hombre, los cruces bajaron de 4 o 5 a 0 o 1, según el ancho.
+  - La lámina del website conserva el orden del compositor.
+- **Que no haya cruces no prueba que un sitio esté bien ubicado.** La ubicación la valida Dirección.
+- **Observación para Dirección:** el supraespinal del compositor está en el borde del tronco. Por ISAK va sobre la
+  línea que une la espina ilíaca anterosuperior con el borde axilar anterior, a la altura de la cresta. De frente, ese
+  punto cae algo más adentro que la cresta ilíaca. No se movió, porque es un sitio del compositor.
 
 ---
 

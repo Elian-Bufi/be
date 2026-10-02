@@ -126,11 +126,14 @@ export const CLAVE_BE_DEL_COMPOSITOR = {
  * DL-113 · dos pliegues que el compositor no dibuja y BE suma a la figura, porque los piden métodos del catálogo: el
  * **bíceps** (Durnin y Womersley) y la **cresta ilíaca** (Durnin y Womersley, Jackson y Pollock). Sus coordenadas no
  * vienen del compositor: las ubicó el ejecutor sobre cada figura y Dirección las tiene que validar.
- * - Bíceps: en la cara anterior del brazo, a la altura media, como el tríceps de la cara posterior. De frente los dos
- *   caen casi en el mismo lugar, así que el bíceps va un poco más abajo para que los puntos no se pisen.
- * - Cresta ilíaca: sobre la línea medioaxilar, a la altura del supraespinal. De frente es el borde del tronco; va un poco
- *   más arriba que el supraespinal para que su punto no quede en el camino de la guía del supraespinal.
- * En el tren inferior no hay brazos, y la cresta ilíaca va debajo del supraespinal, que está en el borde de la imagen.
+ * - Bíceps: en la cara anterior del brazo, a la mitad, **a la misma altura que el tríceps** (cara posterior), en el centro
+ *   del brazo a esa altura.
+ * - Cresta ilíaca: sobre la línea medioaxilar, **a la misma altura que el supraespinal**, que de frente es el borde del
+ *   tronco.
+ * De frente, cada par casi coincide: son caras o líneas distintas a la misma altura. No se corren para separarlos (regla
+ * de Dirección, 2026-10-02: un punto anatómico no se mueve para resolver un cruce). Sus guías llegan al mismo lugar y las
+ * tarjetas dicen cuál es cuál; el tríceps sigue marcado «posterior». La primera versión (DL-113) los corría unos puntos
+ * para separarlos, y eso no corresponde.
  */
 export const PLIEGUES_SUMADOS_POR_BE: readonly PliegueDeLaLamina[] = ['pliegue-biceps', 'pliegue-cresta-iliaca'];
 
@@ -251,11 +254,11 @@ export const FIGURAS_DE_LA_LAMINA: Readonly<Record<SexoDeLaLamina, Readonly<Reco
         'pliegue-pectoral': { x: -12, y: 22.5 },
         'pliegue-axilar-media': { x: -11.3, y: 25.7 },
         'pliegue-triceps': { x: -14.7, y: 28.5 },
-        'pliegue-biceps': { x: -15.6, y: 30 },
+        'pliegue-biceps': { x: -15.4, y: 28.5 },
         'pliegue-subescapular': { x: -1.7, y: 27.6 },
         'pliegue-antebrazo': { x: -17.3, y: 35.8 },
         'pliegue-supraespinal': { x: -8.6, y: 34.3 },
-        'pliegue-cresta-iliaca': { x: -9.1, y: 32.6 },
+        'pliegue-cresta-iliaca': { x: -9.2, y: 34.3 },
         'pliegue-abdominal': { x: -3.9, y: 36.3 },
         'pliegue-muslo-frontal': { x: -7.3, y: 53 },
         'pliegue-pantorrilla': { x: -4.6, y: 72.6 },
@@ -284,11 +287,11 @@ export const FIGURAS_DE_LA_LAMINA: Readonly<Record<SexoDeLaLamina, Readonly<Reco
         'pliegue-pectoral': { x: -19.6, y: 39.3 },
         'pliegue-axilar-media': { x: -19.8, y: 43.3 },
         'pliegue-triceps': { x: -26.1, y: 48.5 },
-        'pliegue-biceps': { x: -26.6, y: 50.3 },
+        'pliegue-biceps': { x: -26.3, y: 48.5 },
         'pliegue-subescapular': { x: -3.4, y: 45.5 },
         'pliegue-antebrazo': { x: -29.6, y: 59.7 },
         'pliegue-supraespinal': { x: -15.4, y: 57.8 },
-        'pliegue-cresta-iliaca': { x: -15.9, y: 56 },
+        'pliegue-cresta-iliaca': { x: -16.2, y: 57.8 },
         'pliegue-abdominal': { x: -7.5, y: 60.4 },
       },
     },
@@ -308,7 +311,7 @@ export const FIGURAS_DE_LA_LAMINA: Readonly<Record<SexoDeLaLamina, Readonly<Reco
       },
       pliegues: {
         'pliegue-supraespinal': { x: -17.4, y: 1 },
-        'pliegue-cresta-iliaca': { x: -18.8, y: 3.6 },
+        'pliegue-cresta-iliaca': { x: -18.7, y: 1 },
         'pliegue-abdominal': { x: -6.4, y: 4.4 },
         'pliegue-muslo-frontal': { x: -13.7, y: 29.9 },
         'pliegue-pantorrilla': { x: -7.7, y: 63.5 },
@@ -342,11 +345,11 @@ export const FIGURAS_DE_LA_LAMINA: Readonly<Record<SexoDeLaLamina, Readonly<Reco
         'pliegue-pectoral': { x: -9.7, y: 23 },
         'pliegue-axilar-media': { x: -9.5, y: 25.7 },
         'pliegue-triceps': { x: -13, y: 27.3 },
-        'pliegue-biceps': { x: -12.9, y: 28.9 },
+        'pliegue-biceps': { x: -12.4, y: 27.3 },
         'pliegue-subescapular': { x: -2.7, y: 28.3 },
         'pliegue-antebrazo': { x: -15, y: 35.9 },
         'pliegue-supraespinal': { x: -7.6, y: 36.2 },
-        'pliegue-cresta-iliaca': { x: -7.7, y: 34.6 },
+        'pliegue-cresta-iliaca': { x: -9.1, y: 36.2 },
         'pliegue-abdominal': { x: -3.2, y: 38.6 },
         'pliegue-muslo-frontal': { x: -7.3, y: 53.2 },
         'pliegue-pantorrilla': { x: -4.1, y: 74.4 },
@@ -375,11 +378,11 @@ export const FIGURAS_DE_LA_LAMINA: Readonly<Record<SexoDeLaLamina, Readonly<Reco
         'pliegue-pectoral': { x: -16.5, y: 38.8 },
         'pliegue-axilar-media': { x: -16.5, y: 43.1 },
         'pliegue-triceps': { x: -21.1, y: 45.5 },
-        'pliegue-biceps': { x: -20.9, y: 47.2 },
+        'pliegue-biceps': { x: -21.1, y: 45.5 },
         'pliegue-subescapular': { x: -4.1, y: 46.1 },
         'pliegue-antebrazo': { x: -24.3, y: 58.1 },
         'pliegue-supraespinal': { x: -13.1, y: 57.9 },
-        'pliegue-cresta-iliaca': { x: -13.2, y: 56.2 },
+        'pliegue-cresta-iliaca': { x: -14.6, y: 57.9 },
         'pliegue-abdominal': { x: -6.6, y: 59.7 },
       },
     },
@@ -399,7 +402,7 @@ export const FIGURAS_DE_LA_LAMINA: Readonly<Record<SexoDeLaLamina, Readonly<Reco
       },
       pliegues: {
         'pliegue-supraespinal': { x: -13.7, y: 7.7 },
-        'pliegue-cresta-iliaca': { x: -15.2, y: 9 },
+        'pliegue-cresta-iliaca': { x: -14.6, y: 7.7 },
         'pliegue-abdominal': { x: -6, y: 9.2 },
         'pliegue-muslo-frontal': { x: -12.2, y: 34.2 },
         'pliegue-pantorrilla': { x: -6.1, y: 65 },
@@ -824,13 +827,22 @@ export function puntoEnLaLamina(imagen: RectanguloEnLaLamina, sitio: SitioDePlie
  * abajo para dejar `separacion` entre ellas, sin pasar de `tope`; si la última se pasa de `piso`, se suben desde abajo
  * —la última y, mientras no quede hueco, las anteriores— y al final ninguna queda arriba de `tope`. Devuelve el borde
  * superior de cada tarjeta, en el orden en que llegaron.
+ *
+ * `orden` dice qué altura ordena la pila:
+ * - `BORDE`, la del borde de arriba deseado, es la del compositor; la usa la lámina del website.
+ * - `CENTRO`, la de `centroDeseado`, es la de la figura del teléfono. Ahí la figura es unas tres veces más chica frente
+ *   al alto de las filas, y ordenar por el borde ponía una tarjeta alta (cresta ilíaca, supraespinal y abdominal) antes
+ *   que una baja cuyos sitios están más arriba (subescapular y antebrazo). Sus guías se cruzaban y pasaban sobre otros
+ *   puntos. Ordenar por el centro deja las tarjetas en el orden de sus sitios, sin mover ningún punto (DL-113, regla de
+ *   Dirección del 2026-10-02).
  */
 export function apilarTarjetas(
   tarjetas: readonly { readonly alto: number; readonly centroDeseado: number }[],
   limites: { readonly tope: number; readonly piso: number; readonly separacion: number },
+  orden: 'BORDE' | 'CENTRO' = 'BORDE',
 ): number[] {
-  const pila = tarjetas.map((t, indice) => ({ indice, alto: t.alto, y: t.centroDeseado - t.alto / 2 }));
-  pila.sort((a, b) => a.y - b.y);
+  const pila = tarjetas.map((t, indice) => ({ indice, alto: t.alto, centro: t.centroDeseado, y: t.centroDeseado - t.alto / 2 }));
+  pila.sort((a, b) => (orden === 'CENTRO' ? a.centro - b.centro : a.y - b.y));
   pila.forEach((t, i) => {
     const anterior = pila[i - 1];
     t.y = Math.max(t.y, anterior ? anterior.y + anterior.alto + limites.separacion : limites.tope);

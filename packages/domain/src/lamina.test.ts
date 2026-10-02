@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { CorridaDeCalculoApi } from './contratos-calculo';
 import type { EvaluacionAntropometricaApi } from './contratos-antropometria';
-import { COLORES_DE_LA_FIGURA, DIBUJO_EN_MEDICION, FIGURAS_DE_LA_LAMINA, PLIEGUES_SUMADOS_POR_BE, TARJETAS_DE_PERIMETROS, TARJETAS_DE_PLIEGUES, altoDeTarjetaEnSerie } from './figura-de-lamina';
+import { COLORES_DE_LA_FIGURA, DIBUJO_EN_MEDICION, FIGURAS_DE_LA_LAMINA, PLIEGUES_SUMADOS_POR_BE, TARJETAS_DE_PERIMETROS, TARJETAS_DE_PLIEGUES, altoDeTarjetaEnSerie, apilarTarjetas } from './figura-de-lamina';
 import {
   agruparPorCategoria,
   COLORES_DE_LA_LAMINA,
@@ -17,6 +17,7 @@ import {
   corridasSinEfecto,
   diametrosDeLaToma,
   distanciaAlTramo,
+  enUnMismoLugar,
   escalaDelGrafico,
   FRANJA_DE_LA_SERIE,
   HOLGURA_DE_LA_GUIA,
@@ -193,6 +194,12 @@ test('Medición · los pliegues posteriores llevan la marca y su guía es la de 
 const SEXOS = ['HOMBRE', 'MUJER'] as const;
 const ENCUADRES = ['ENTERO', 'TREN_SUPERIOR', 'TREN_INFERIOR'] as const;
 const todosLosPliegues = (encuadre: (typeof ENCUADRES)[number]) => new Map(TARJETAS_DE_PLIEGUES[encuadre].flat().map((k) => [k, valor(5, 'mm')]));
+/**
+ * Los sitios que de frente caen juntos por anatomía comparten lugar (`enUnMismoLugar`): sus guías llegan al mismo lugar.
+ * Los puntos no se corren para separarlos (regla de Dirección, 2026-10-02), así que la holgura y los cruces se exigen
+ * frente a todos los demás sitios, no entre los de un mismo lugar.
+ */
+const enElMismoLugar = enUnMismoLugar;
 const cruzan = (a: readonly [number, number], b: readonly [number, number], c: readonly [number, number], d: readonly [number, number]) => {
   const lado = (p: readonly [number, number], q: readonly [number, number], r: readonly [number, number]) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]));
   return lado(a, b, c) !== lado(a, b, d) && lado(c, d, a) !== lado(c, d, b);
@@ -219,15 +226,18 @@ test('DL-113 · Medición: las filas siguen la altura de sus sitios y ninguna gu
         const alturas = t.filas.map((f) => f.sitio.cy);
         assert.deepEqual(alturas, [...alturas].sort((a, b) => a - b), `${sexo} ${encuadre}: filas fuera de orden`);
       }
+      const sitioDeLaGuia = (g: (typeof c.guias)[number]) => c.tarjetas.flatMap((t) => t.filas).find((f) => f.centro === g.puntos[0]![1])!.sitio;
       for (const [i, g] of c.guias.entries()) {
         for (const h of c.guias.slice(i + 1)) {
+          if (enElMismoLugar(sitioDeLaGuia(g), sitioDeLaGuia(h))) continue;
           for (let a = 0; a < g.puntos.length - 1; a++) for (let b = 0; b < h.puntos.length - 1; b++) assert.ok(!cruzan(g.puntos[a]!, g.puntos[a + 1]!, h.puntos[b]!, h.puntos[b + 1]!), `${sexo} ${encuadre}: guías cruzadas`);
         }
       }
       const filas = c.tarjetas.flatMap((t) => t.filas);
       for (const g of c.guias) {
-        const propio = filas.find((f) => f.centro === g.puntos[0]![1])!.sitio.clave;
-        for (const s of c.sitios.filter((x) => x.clave !== propio)) {
+        const sitio = filas.find((f) => f.centro === g.puntos[0]![1])!.sitio;
+        const propio = sitio.clave;
+        for (const s of c.sitios.filter((x) => x.clave !== propio && !enElMismoLugar(x, sitio))) {
           for (let a = 1; a < g.puntos.length - 1; a++) assert.ok(distanciaAlTramo([s.cx, s.cy], g.puntos[a]!, g.puntos[a + 1]!) >= HOLGURA_DE_LA_GUIA, `${sexo} ${encuadre}: la guía de ${propio} pasa sobre ${s.clave}`);
         }
       }
@@ -245,19 +255,37 @@ test('DL-113 · Serie: ninguna guía pasa sobre el punto de otro pliegue; si hac
         // Siempre termina en la marca; con desvío, el último tramo es horizontal, a la altura del sitio.
         assert.deepEqual(p[p.length - 1], t.guia.marca);
         if (p.length === 4) assert.equal(p[2]![1], p[3]![1]);
-        for (const s of c.sitios.filter((x) => x.punto !== null && x.clave !== t.sitio.clave)) {
+        for (const s of c.sitios.filter((x) => x.punto !== null && x.clave !== t.sitio.clave && !enElMismoLugar(x, t.sitio))) {
           for (let a = 1; a < p.length - 1; a++) assert.ok(distanciaAlTramo([s.cx, s.cy], p[a]!, p[a + 1]!) >= HOLGURA_DE_LA_GUIA, `${sexo} ${encuadre}: la guía de ${t.sitio.clave} pasa sobre ${s.clave}`);
         }
       }
     }
   }
-  // En el tren superior del hombre, la guía del bíceps pasaba por el punto del antebrazo: ahora entra de costado.
+  // En el tren superior, la guía del pliegue del brazo que llega desde más abajo (en el hombre, el tríceps; en la mujer,
+  // el bíceps, porque los dos están a la misma altura) pasaba por el punto del antebrazo: entra de costado.
   const toma = todosLosPliegues('TREN_SUPERIOR');
-  const biceps = componerSerie('HOMBRE', 'TREN_SUPERIOR', 'PLIEGUES', [toma, toma]).tarjetas.find((t) => t.sitio.clave === 'pliegue-biceps')!;
-  assert.equal(biceps.guia.puntos.length, 4);
+  const delBrazo = (sexo: 'HOMBRE' | 'MUJER', clave: string) => componerSerie(sexo, 'TREN_SUPERIOR', 'PLIEGUES', [toma, toma]).tarjetas.find((t) => t.sitio.clave === clave)!;
+  assert.equal(delBrazo('HOMBRE', 'pliegue-triceps').guia.puntos.length, 4);
+  assert.equal(delBrazo('MUJER', 'pliegue-biceps').guia.puntos.length, 4);
   // Los perímetros no necesitan desvío: sus guías quedan como en el compositor.
   const perimetros = componerSerie('HOMBRE', 'TREN_SUPERIOR', 'PERIMETROS', [ejemplo, ejemplo]);
   assert.ok(perimetros.tarjetas.every((t) => t.guia.puntos.length === 3));
+});
+
+test('DL-113 · apilar tarjetas: el compositor ordena por el borde de arriba; el teléfono, por la altura media de sus sitios', () => {
+  // Las tarjetas de la figura del teléfono, hombre entero, 360 dp: una alta con sitios un poco más abajo (cresta ilíaca,
+  // supraespinal y abdominal) y una baja con sitios más arriba (subescapular y antebrazo).
+  const tarjetas = [
+    { alto: 144, centroDeseado: 216.9 },
+    { alto: 100, centroDeseado: 198.3 },
+  ];
+  const limites = { tope: 10, piso: 1000, separacion: 8 };
+  const [altaPorBorde, bajaPorBorde] = apilarTarjetas(tarjetas, limites);
+  assert.ok(altaPorBorde! < bajaPorBorde!, 'por defecto, el orden del compositor: primero el borde de arriba más alto');
+  const [alta, baja] = apilarTarjetas(tarjetas, limites, 'CENTRO');
+  assert.ok(baja! < alta!, 'por el centro, primero la tarjeta de los sitios más altos');
+  assert.ok(alta! >= baja! + 100 + 8, 'y las tarjetas no se pisan');
+  assert.deepEqual(apilarTarjetas(tarjetas, limites, 'BORDE'), [altaPorBorde, bajaPorBorde]);
 });
 
 test('DL-113 · el pie de Pliegues lleva las dos sumas del catálogo, la corrida más reciente de cada una, o nada', () => {

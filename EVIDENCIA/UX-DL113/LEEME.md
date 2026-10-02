@@ -60,6 +60,11 @@ mismo resultado con otro método:
 Las coordenadas de los dos sitios nuevos son del ejecutor. `control-sitios-biceps-cresta-iliaca.png` muestra las seis
 figuras con los sitios del compositor en azul y los nuevos en rojo. **Dirección los tiene que validar.**
 
+> **Corrección del 2026-10-02.** Estas capturas y el control muestran la primera ubicación, con el bíceps y la cresta
+> ilíaca corridos unos puntos para que las guías no se cruzaran. Dirección estableció que los puntos anatómicos no se
+> mueven para resolver cruces: hoy el bíceps va a la altura del tríceps y la cresta ilíaca a la del supraespinal. Las
+> capturas nuevas están en `EVIDENCIA/UX-PULIDO-DL113/LEEME.md`, «La figura: los puntos en su lugar anatómico».
+
 ## La APK, en maqueta
 
 No hay teléfono ni emulador en esta máquina. Las maquetas dibujan en HTML **las mismas cuentas** que los componentes,

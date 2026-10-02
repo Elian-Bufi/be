@@ -134,6 +134,10 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
 - **Los puntos anatómicos no se mueven para resolver cruces de guías.**
   - Un cruce se resuelve con las guías, las tarjetas, el reparto o la escala. Por ejemplo, la guía puede entrar al sitio de costado.
   - Que no haya cruces no prueba que el sitio esté bien ubicado: la ubicación la valida Dirección.
+  - Dos sitios de caras distintas a la misma altura quedan, de frente, casi en el mismo lugar: el bíceps y el tríceps, la
+    cresta ilíaca y el supraespinal. Sus guías llegan juntas, la tarjeta dice cuál es cuál y el posterior lleva su marca.
+  - En el teléfono, las tarjetas se apilan por la altura media de sus sitios y los puntos se dibujan encima de las guías:
+    si una guía pasa junto a otro punto, pasa por detrás.
 - **Tabla equivalente.** Todo gráfico o figura tiene una tabla o lista equivalente, que es el camino del teclado y del
   lector de pantalla (B10-10 §11). En la APK, «La figura, en lista».
 - **Los resultados calculados siempre llevan su método.** Dos métodos no se comparan entre sí, y ninguno se marca

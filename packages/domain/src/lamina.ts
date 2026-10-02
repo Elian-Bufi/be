@@ -888,6 +888,16 @@ export function componerSerie(sexo: SexoDeLaLamina, encuadre: EncuadreEnSerie, f
 /** A cuántos px del centro del punto de otro pliegue puede pasar una guía: el punto mide 7,5 de radio más su aro. */
 export const HOLGURA_DE_LA_GUIA = 14;
 
+/**
+ * Dos sitios que de frente caen juntos por anatomía (el bíceps y el tríceps, caras opuestas a la misma altura; la cresta
+ * ilíaca y el supraespinal, a la misma altura) comparten lugar en la figura: sus puntos están a menos del diámetro de un
+ * punto. No se corren para separarlos (regla de Dirección, 2026-10-02): sus guías llegan al mismo lugar, y la holgura se
+ * mide frente a los demás sitios.
+ */
+export const DISTANCIA_DE_UN_MISMO_LUGAR = 18;
+export const enUnMismoLugar = (a: { readonly cx: number; readonly cy: number }, b: { readonly cx: number; readonly cy: number }): boolean =>
+  Math.hypot(a.cx - b.cx, a.cy - b.cy) < DISTANCIA_DE_UN_MISMO_LUGAR;
+
 /** La distancia de un punto a un tramo recto. */
 export function distanciaAlTramo(p: readonly [number, number], a: readonly [number, number], b: readonly [number, number]): number {
   const dx = b[0] - a[0];
@@ -906,7 +916,7 @@ export function distanciaAlTramo(p: readonly [number, number], a: readonly [numb
  */
 function conGuiaQueNoPisaPuntos(t: TarjetaDeSerie, sitios: readonly SitioDibujado[]): TarjetaDeSerie {
   const [inicio, codo, destino] = t.guia.puntos as readonly [readonly [number, number], readonly [number, number], readonly [number, number]];
-  const otros = sitios.filter((s) => s.punto !== null && s.clave !== t.sitio.clave);
+  const otros = sitios.filter((s) => s.punto !== null && s.clave !== t.sitio.clave && !enUnMismoLugar(s, t.sitio));
   const pisa = (a: readonly [number, number], b: readonly [number, number]) => otros.some((s) => distanciaAlTramo([s.cx, s.cy], a, b) < HOLGURA_DE_LA_GUIA);
   if (!pisa(codo, destino)) return t;
   const hacia = t.lado === 'IZQUIERDA' ? -1 : 1;
