@@ -2468,12 +2468,15 @@ En la prueba del mismo día marcó cinco cosas:
 **Qué pasó.**
 - El 2026-10-01 a las 21:09 UTC, GitHub actualizó el aviso GHSA-86w9-cpqp-85rv de node-forge: la verificación de firmas RSA PKCS#1 v1.5 acepta elementos DigestAlgorithm anidados de más.
 - Ahora abarca hasta la 1.4.0, que es la última publicada, y **no hay versión corregida**.
-- node-forge entra por `expo` → `@expo/cli` → `@expo/code-signing-certificates`. Desde ese momento la auditoría de `@be/mobile` falla en cualquier PR, y también fallaría en `main`: el lock de `0308355` tiene los mismos avisos.
+- node-forge entra por `expo` → `@expo/cli`, directamente y a través de `@expo/code-signing-certificates`. Desde ese momento la auditoría de `@be/mobile` falla en cualquier PR, y también fallaría en `main`: el lock de `0308355` tiene los mismos avisos.
 
-**Por qué no aplica a BE.**
-- `@expo/code-signing-certificates` firma y verifica actualizaciones OTA de expo-updates, y BE no usa expo-updates ni esa firma.
-- node-forge es parte de la CLI de construcción: no viaja en el bundle de la APK.
-- No está en las dependencias de la API ni del website, que auditan limpias.
+**Por qué el riesgo es bajo y acotado, pero no nulo** (revisado el 2026-10-02).
+- La CLI usa node-forge en dos caminos, y BE no configura ninguno:
+  - `@expo/code-signing-certificates` verifica firmas RSA al firmar los manifiestos de expo-updates;
+  - `@expo/cli` lo usa en la firma de iOS (`run:ios`).
+- node-forge no viaja en el bundle de la APK. Tampoco está en las dependencias de la API ni del website, que auditan limpias.
+- Lo que queda es la cadena de construcción: el código vulnerable está instalado en la CI y en la máquina que construye la APK, aunque BE no ejecute esos caminos.
+- **Solución vigente:** no hay. node-forge 1.4.0 es la última versión, y la última `@expo/code-signing-certificates` (0.0.7) sigue dependiendo de ella.
 
 **Lo que se hizo (provisorio).**
 - `npm audit --audit-level=high` no admite excepciones, así que la auditoría pasa a `scripts/auditoria-de-dependencias.cjs`.
@@ -2481,6 +2484,20 @@ En la prueba del mismo día marcó cinco cosas:
 - Cada excepción dice el aviso, el paquete, el motivo y la fecha de vencimiento.
 - Una excepción vale solo para ese aviso en ese paquete. Vencida, vuelve a fallar.
 - Las pruebas están en `scripts/auditoria-de-dependencias.test.cjs`.
+
+**Defecto corregido el 2026-10-02.** Lo detectó y reprodujo una revisión externa (Codex).
+- La primera versión del script recorría `reporte.vulnerabilities ?? {}`. Si `npm audit` no podía auditar (por ejemplo, `{"error":{"code":"ENOAUDIT",…}}`), tomaba el error como un informe limpio y aprobaba con código 0.
+- Ahora un informe que no se puede leer no aprueba. Eso incluye un error de npm, una salida que no es JSON, un informe sin `vulnerabilities` o sin los conteos, y conteos altos sin ningún aviso.
+- Los códigos de salida se distinguen:
+  - 0: aprueba;
+  - 1: hay vulnerabilidades bloqueantes o una excepción vencida;
+  - 2: la auditoría no se pudo hacer.
+- Las pruebas recorren el camino real, de la salida de npm al código, con informe limpio, vulnerabilidad bloqueante, excepción vigente, excepción vencida, `ENOAUDIT`, salida vacía o inválida e informe incompleto.
+
+**Qué se puede afirmar de las corridas anteriores.** Esto no prueba que alguna CI haya sufrido el defecto.
+- En las cuatro corridas con el script (`e4e75cf`, `0c02326`, `d7867ac` y `d1ddd69`), `@be/mobile` procesó un informe válido: el log muestra el aviso exceptuado.
+- Para `@be/api` y `@be/web`, el log no distingue un informe limpio de un error, así que no se afirma ni se invalida nada.
+- La auditoría local del 2026-10-02, con el script corregido, aprobó las dos con informes válidos.
 
 **Pendiente de Dirección.**
 - Ratificar la excepción o pedir otra salida.
