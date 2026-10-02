@@ -21,7 +21,10 @@ import type {
 import { ORIGEN_API, REDONDEO_API, token } from './lectura-antropometria';
 import type { CorridaDeCalculoApi, MetodoApi, ReferenciaApi } from './tipos';
 
-type VersionConEspecificacion = VersionDeEspecificacionAntropometrica & { especificacion: { id: string; clave: string; tipo: string }; sucesora?: { id: string } | null };
+type VersionConEspecificacion = VersionDeEspecificacionAntropometrica & {
+  especificacion: { id: string; clave: string; tipo: string; retiro?: { id: string } | null };
+  sucesora?: { id: string } | null;
+};
 type MedicionDeEntrada = MedicionAntropometrica & { anulacion?: { id: string } | null };
 type FilaDeCorrida = EjecucionDeCalculo & {
   entradas: (EntradaDeCalculo & { medicion?: MedicionDeEntrada | null })[];
@@ -43,7 +46,8 @@ export function metodoApi(v: VersionConEspecificacion, especificacion: Especific
     name: v.nombre,
     version: v.version,
     purposes: especificacion.finalidades.map((f) => FINALIDAD_DE_CALCULO_API[f]),
-    status: v.sucesora ? 'HISTORICAL_NOT_SELECTABLE' : 'SELECTABLE',
+    // Con sucesora o con el método retirado del catálogo (DL-112), la versión se consulta pero no se elige.
+    status: v.sucesora || v.especificacion.retiro ? 'HISTORICAL_NOT_SELECTABLE' : 'SELECTABLE',
     requiredInputs: especificacion.entradas.map((e) => ({
       inputCode: e.codigo,
       metric: e.metrica,

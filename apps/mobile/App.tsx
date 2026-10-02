@@ -8,6 +8,8 @@
  *   actual · Registros → Detalle de registro.
  * - WP-05 (docs/paquetes/WP-05.md §5): Cuenta → Antropometría: Mi evolución (RF-049, RF-065), de solo lectura y con
  *   los días sin medición vigente a la vista como «Sin dato».
+ * Desde la etapa de UI y UX (Dirección, 2026-10-01), con sesión se navega con la barra inferior: Nutrición,
+ * Entrenamiento, Evolución, Información y Cuenta (src/barra-de-zonas.tsx). Al iniciar sesión, la APK abre en Nutrición.
  * La sesión (Bearer) y el identificador de la identidad viven solo en memoria (DL-012, T5): cerrar la app exige volver a
  * iniciar sesión. Nunca se guarda un «rol autorizado» en el cliente: la API verifica la sesión y decide cada acceso en
  * cada request; ocultar un botón no concede ni quita nada.
@@ -20,7 +22,8 @@ import { BackHandler, Image, KeyboardAvoidingView, ScrollView, Text, View } from
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiConfigurada, extra } from './src/api';
 import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
-import { anterior, requiereSesion, textoDeVolverA, type Ruta, type Salida } from './src/navegacion';
+import { BarraDeZonas } from './src/barra-de-zonas';
+import { alIniciarSesion, anterior, esPrincipal, requiereSesion, textoDeVolverA, zonaDe, type Ruta, type Salida } from './src/navegacion';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
 import { PantallaDeCuenta } from './src/pantallas/cuenta';
@@ -98,8 +101,8 @@ function Contenido() {
     return () => clearTimeout(t);
   }, [sesion, ir]);
 
-  // Botón «atrás» de Android: vuelve a la pantalla lógica anterior (src/navegacion.ts) y nunca cierra la sesión. En
-  // Bienvenida y en Cuenta no hay anterior y decide el sistema.
+  // Botón «atrás» de Android: vuelve a la pantalla lógica anterior (src/navegacion.ts) y nunca cierra la sesión. Desde
+  // una zona principal de la barra lleva a Nutrición; en Nutrición y en Bienvenida no hay anterior y decide el sistema.
   useEffect(() => {
     const suscripcion = BackHandler.addEventListener('hardwareBackPress', () => {
       const destino = anterior(ruta);
@@ -113,7 +116,12 @@ function Contenido() {
   const salir = useCallback(
     (motivo: Salida) => {
       setSesion(null);
-      ir(motivo === 'cierre-registrado' ? { nombre: 'bienvenida', aviso: AVISOS[motivo] } : { nombre: 'login', aviso: AVISOS[motivo] });
+      // Si Cuenta pidió volver a entrar para confirmar una acción, al iniciar sesión se vuelve a Cuenta (alIniciarSesion).
+      ir(
+        motivo === 'cierre-registrado'
+          ? { nombre: 'bienvenida', aviso: AVISOS[motivo] }
+          : { nombre: 'login', aviso: AVISOS[motivo], ...(motivo === 'reautenticar' ? { alEntrar: 'cuenta' as const } : {}) },
+      );
     },
     [ir],
   );
@@ -122,6 +130,8 @@ function Contenido() {
   const volver = () => {
     if (destinoAnterior) ir(destinoAnterior);
   };
+  // La barra inferior, solo con sesión: resalta la zona de la pantalla, también en sus subpantallas.
+  const zona = sesion ? zonaDe(ruta) : null;
 
   return (
     // «padding» también en Android: con edge-to-edge (Expo SDK 54+) el sistema ya no achica la ventana al abrir el teclado
@@ -137,7 +147,8 @@ function Contenido() {
         </View>
         <Text style={estilos.ambiente}>Ambiente de prueba · solo datos sintéticos</Text>
       </View>
-      <ScrollView ref={desplazamiento} contentContainerStyle={[estilos.contenido, { paddingBottom: 32 + insets.bottom }]} keyboardShouldPersistTaps="handled">
+      {/* Con la barra inferior, el área segura de abajo la cubre la barra; sin ella, el contenido deja ese margen. */}
+      <ScrollView ref={desplazamiento} contentContainerStyle={[estilos.contenido, { paddingBottom: zona ? 24 : 32 + insets.bottom }]} keyboardShouldPersistTaps="handled">
         {!apiConfigurada ? <Aviso tipo="error" titulo="Este build no tiene una API configurada." /> : null}
 
         {ruta.nombre === 'bienvenida' ? (
@@ -165,15 +176,16 @@ function Contenido() {
             irARegistro={() => ir({ nombre: 'registro' })}
             alIniciar={(token, expiresAt, identidadId) => {
               setSesion({ token, expiraEn: new Date(expiresAt).getTime(), identidadId });
-              ir({ nombre: 'cuenta' });
+              ir(alIniciarSesion(ruta));
             }}
           />
         ) : null}
 
         {requiereSesion(ruta) && sesion ? (
           <>
-            {/* Volver sin depender del botón ni de un gesto del sistema (10-B10 §9). */}
-            {destinoAnterior ? <Boton texto={textoDeVolverA(destinoAnterior)} tipo="enlace" onPress={volver} /> : null}
+            {/* Volver sin depender del botón ni de un gesto del sistema (10-B10 §9). Las zonas principales no lo llevan:
+                se llega a ellas desde la barra. */}
+            {destinoAnterior && !esPrincipal(ruta) ? <Boton texto={textoDeVolverA(destinoAnterior)} tipo="enlace" onPress={volver} /> : null}
             {ruta.nombre === 'cuenta' ? <PantallaDeCuenta token={sesion.token} salir={salir} ir={ir} /> : null}
             {ruta.nombre === 'vinculos' ? <PantallaDeVinculos token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} subir={subir} /> : null}
             {ruta.nombre === 'vinculo' ? (
@@ -205,6 +217,8 @@ function Contenido() {
           </Aviso>
         ) : null}
       </ScrollView>
+      {/* Fuera del ScrollView: queda fija abajo y no tapa contenido, porque el ScrollView termina donde ella empieza. */}
+      {zona ? <BarraDeZonas actual={zona} ir={ir} /> : null}
       {/* Los íconos de la barra del sistema: claros sobre Azul noche, oscuros sobre Claro. */}
       <StatusBar style={BARRA_DEL_SISTEMA[tema]} />
     </KeyboardAvoidingView>

@@ -34,6 +34,7 @@ import {
 } from '@be/domain';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Ayuda } from '../../../../components/ayuda';
 import { Cargando } from '../../../../components/estados';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
@@ -123,8 +124,11 @@ export function VistaDeEjecuciones() {
 
           <section className="seccion" aria-labelledby="titulo-evolucion">
             <h2 id="titulo-evolucion">{COPY_COMPARACION.titulo}</h2>
-            <p className="nota">{COPY_COMPARACION.soloRegistradas}</p>
-            {ejercicios.some((e) => e.homonimo) ? <p className="nota">Hay ejercicios con el mismo nombre que no se pueden identificar como el mismo (otro ejercicio del catálogo, o una versión registrada por sustitución que no está prescripta en el período): se listan por separado.</p> : null}
+            {/* DL-113: qué entra en la comparación, plegado. Cómo se lee el gráfico va en su propia ayuda, junto a él. */}
+            <Ayuda titulo="Qué entra en la comparación">
+              <p>{COPY_COMPARACION.soloRegistradas}</p>
+              {ejercicios.some((e) => e.homonimo) ? <p>Hay ejercicios con el mismo nombre que no se pueden identificar como el mismo (otro ejercicio del catálogo, o una versión registrada por sustitución que no está prescripta en el período): se listan por separado.</p> : null}
+            </Ayuda>
             {!elegido ? (
               <p>{r.datos.registeredExecutions.length === 0 ? COPY_ENTRENAMIENTO.sinEjecuciones : COPY_COMPARACION.elegiUnEjercicio}</p>
             ) : (

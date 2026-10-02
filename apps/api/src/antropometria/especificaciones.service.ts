@@ -28,7 +28,12 @@ export class EspecificacionesService {
     // DL-072: `status` sale de la cadena, no de una columna. Sin filtro se listan las vigentes, que es lo que el
     // catálogo existe para ofrecer; pedir las históricas es un acto explícito, porque se consultan pero no se
     // seleccionan para una corrida nueva (REG-06-203).
-    const porEstado = consulta.filtros.status === 'HISTORICAL' ? { sucesora: { isNot: null } } : { sucesora: null };
+    // DL-112: una especificación retirada del catálogo cuenta como histórica, aunque su versión no tenga sucesora.
+    const historicas = consulta.filtros.status === 'HISTORICAL';
+    const tipo = consulta.filtros.kind ? (consulta.filtros.kind === 'METHOD' ? 'METODO' : 'PROTOCOLO') : undefined;
+    const porEstado = historicas
+      ? { OR: [{ sucesora: { isNot: null } }, { especificacion: { retiro: { isNot: null } } }], ...(tipo ? { especificacion: { tipo } } : {}) }
+      : { sucesora: null, especificacion: { retiro: { is: null }, ...(tipo ? { tipo } : {}) } };
     return this.ejecutor.leer({
       operacion: 'API-ANT-01',
       casoDeUso: 'UC-P19',
@@ -41,10 +46,9 @@ export class EspecificacionesService {
         const filas = await tx.versionDeEspecificacionAntropometrica.findMany({
           where: {
             ...porEstado,
-            ...(consulta.filtros.kind ? { especificacion: { tipo: consulta.filtros.kind === 'METHOD' ? 'METODO' : 'PROTOCOLO' } } : {}),
             ...despuesDelCursor(consulta.cursor),
           },
-          include: { especificacion: true, sucesora: { select: { id: true } } },
+          include: { especificacion: { include: { retiro: { select: { id: true } } } }, sucesora: { select: { id: true } } },
           orderBy: ORDEN_DE_LISTA,
           take: consulta.limit + 1,
         });

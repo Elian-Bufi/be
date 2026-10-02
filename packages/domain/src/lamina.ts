@@ -557,20 +557,11 @@ export function diametrosDeLaToma(valores: ReadonlyMap<string, ValorDeLaLamina>)
   return DIAMETROS_DE_LA_LAMINA.map((clave) => ({ clave, rotulo: ROTULO_EN_LA_LAMINA[clave], valor: valores.get(clave) ?? null }));
 }
 
-/**
- * Los pliegues del catálogo de BE que la figura no ubica (bíceps y cresta ilíaca: el compositor no los dibuja). Van al
- * pie de Pliegues, con su rótulo corto, para que no se pierdan.
- */
-export const PLIEGUES_SIN_SITIO: readonly { readonly clave: 'pliegue-biceps' | 'pliegue-cresta-iliaca'; readonly rotulo: string }[] = [
-  { clave: 'pliegue-biceps', rotulo: 'Bíceps' },
-  { clave: 'pliegue-cresta-iliaca', rotulo: 'Cresta ilíaca' },
-];
-
 /** Las mediciones de la toma que no son de ningún sitio de la figura ni del pie: masa, estatura y edad. */
 export const DATOS_DE_LA_TOMA = ['peso', 'talla', 'edad'] as const;
 
-/** Todo lo que la lámina sabe ubicar en algún lugar: sitios de la figura, diámetros, pliegues sin sitio y datos. */
-const CLAVES_CONOCIDAS = new Set<string>([...Object.keys(ROTULO_EN_LA_LAMINA), ...PLIEGUES_SIN_SITIO.map((p) => p.clave), ...DATOS_DE_LA_TOMA]);
+/** Todo lo que la lámina sabe ubicar en algún lugar: sitios de la figura, diámetros y datos de la toma. */
+const CLAVES_CONOCIDAS = new Set<string>([...Object.keys(ROTULO_EN_LA_LAMINA), ...DATOS_DE_LA_TOMA]);
 
 /** Las claves de la toma que la lámina no tiene dónde mostrar (de otros protocolos): van en la lista de abajo. */
 export const clavesSinLugarEnLaLamina = (valores: ReadonlyMap<string, ValorDeLaLamina>): string[] => [...valores.keys()].filter((c) => !CLAVES_CONOCIDAS.has(c));
@@ -636,13 +627,20 @@ export function resultadosDeLaToma(corridas: readonly CorridaDeCalculoApi[], met
 }
 
 /**
- * La suma de siete pliegues de Jackson y Pollock, que el compositor muestra al pie de Pliegues («SUMA 7 PLIEGUES»,
- * cargada a mano). En BE sale de la corrida vigente de la toma con esa métrica; si hay más de una, la más reciente.
+ * Las sumas de pliegues del pie de Pliegues. El compositor muestra una «SUMA 7 PLIEGUES» cargada a mano; en BE van las
+ * dos sumas del catálogo (DL-112), cada una de la corrida vigente de la toma con esa métrica (si hay más de una, la más
+ * reciente). Sin corrida, el pie dice «Sin calcular»: no es un cero ni un dato que falte en la toma.
  */
-export const METRICA_DEL_PIE_DE_PLIEGUES = 'suma-7-pliegues-jackson-pollock';
+export const SUMAS_DEL_PIE_DE_PLIEGUES = [
+  { metrica: 'suma-6-pliegues-isak', rotulo: 'Suma 6 pliegues (ISAK)' },
+  { metrica: 'suma-7-pliegues-jackson-pollock', rotulo: 'Suma 7 pliegues (JP)' },
+] as const;
 
-export function sumaDelPieDePliegues(resultados: readonly ResultadoDeLaToma[]): ResultadoDeLaToma | null {
-  return resultados.filter((r) => r.metrica === METRICA_DEL_PIE_DE_PLIEGUES).reduce<ResultadoDeLaToma | null>((a, r) => (!a || a.registradoEn < r.registradoEn ? r : a), null);
+export function sumasDelPieDePliegues(resultados: readonly ResultadoDeLaToma[]): readonly { readonly rotulo: string; readonly resultado: ResultadoDeLaToma | null }[] {
+  return SUMAS_DEL_PIE_DE_PLIEGUES.map(({ metrica, rotulo }) => ({
+    rotulo,
+    resultado: resultados.filter((r) => r.metrica === metrica).reduce<ResultadoDeLaToma | null>((a, r) => (!a || a.registradoEn < r.registradoEn ? r : a), null),
+  }));
 }
 
 /** Cuántas corridas de la toma quedaron sin efecto (reemplazadas o con una entrada anulada): no van en la lámina. */
@@ -883,24 +881,53 @@ export function componerSerie(sexo: SexoDeLaLamina, encuadre: EncuadreEnSerie, f
     .flat()
     .filter((clave) => !enElEncuadre.has(clave) && tomas.some((t) => t.has(clave)));
 
-  return { figura, imagen, encuadre: ubicacion, sitios, tarjetas: [...columna(izquierda, 'IZQUIERDA'), ...columna(derecha, 'DERECHA')], fueraDelEncuadre };
+  const tarjetas = [...columna(izquierda, 'IZQUIERDA'), ...columna(derecha, 'DERECHA')];
+  return { figura, imagen, encuadre: ubicacion, sitios, tarjetas: tarjetas.map((t) => conGuiaQueNoPisaPuntos(t, sitios)), fueraDelEncuadre };
+}
+
+/** A cuántos px del centro del punto de otro pliegue puede pasar una guía: el punto mide 7,5 de radio más su aro. */
+export const HOLGURA_DE_LA_GUIA = 14;
+
+/** La distancia de un punto a un tramo recto. */
+export function distanciaAlTramo(p: readonly [number, number], a: readonly [number, number], b: readonly [number, number]): number {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const largo = dx * dx + dy * dy;
+  const t = largo === 0 ? 0 : Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / largo));
+  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+}
+
+/**
+ * DL-113 · en Serie las tarjetas se reparten a lo alto de la lámina y varias guías llegan en diagonal largo a sitios
+ * apilados en el brazo o en la cintura: con el bíceps y la cresta ilíaca, alguna pasaba por encima del punto de otro
+ * pliegue (en el compositor ya pasaba con el tríceps y el antebrazo). Si el último tramo pasa a menos de
+ * `HOLGURA_DE_LA_GUIA` px de otro punto, la guía va hasta un codo a la altura del sitio, del lado de su tarjeta, y entra
+ * horizontal. Las guías que no pisan nada quedan como en el compositor.
+ */
+function conGuiaQueNoPisaPuntos(t: TarjetaDeSerie, sitios: readonly SitioDibujado[]): TarjetaDeSerie {
+  const [inicio, codo, destino] = t.guia.puntos as readonly [readonly [number, number], readonly [number, number], readonly [number, number]];
+  const otros = sitios.filter((s) => s.punto !== null && s.clave !== t.sitio.clave);
+  const pisa = (a: readonly [number, number], b: readonly [number, number]) => otros.some((s) => distanciaAlTramo([s.cx, s.cy], a, b) < HOLGURA_DE_LA_GUIA);
+  if (!pisa(codo, destino)) return t;
+  const hacia = t.lado === 'IZQUIERDA' ? -1 : 1;
+  for (const entrada of [28, 44, 60]) {
+    const costado: [number, number] = [destino[0] + hacia * entrada, destino[1]];
+    if (!pisa(codo, costado) && !pisa(costado, destino)) return { ...t, guia: { ...t.guia, puntos: [inicio, codo, costado, destino] } };
+  }
+  return t;
 }
 
 /**
  * La franja de Serie, debajo de las fechas (compositor: PESO, % GRASA JP7 y MASA MAGRA). Acá van las mediciones que la
- * figura no ubica: masa, estatura y, en Pliegues, los dos pliegues sin sitio. Los resultados calculados van en la
- * lámina «Evolución», cada uno con su método. Solo las que tienen dato en alguna toma.
+ * figura no ubica: masa y estatura (desde DL-113, el bíceps y la cresta ilíaca tienen sitio en la figura). Los
+ * resultados calculados van en la lámina «Evolución», cada uno con su método. Solo las que tienen dato en alguna toma.
  */
 export const FRANJA_DE_LA_SERIE: Readonly<Record<Exclude<HojaDeLaLamina, 'CONCLUSIONES'>, readonly { readonly clave: string; readonly rotulo: string }[]>> = {
   CIRCUNFERENCIAS: [
     { clave: 'peso', rotulo: 'PESO' },
     { clave: 'talla', rotulo: 'TALLA' },
   ],
-  PLIEGUES: [
-    { clave: 'peso', rotulo: 'PESO' },
-    { clave: 'pliegue-biceps', rotulo: 'BÍCEPS' },
-    { clave: 'pliegue-cresta-iliaca', rotulo: 'CRESTA ILÍACA' },
-  ],
+  PLIEGUES: [{ clave: 'peso', rotulo: 'PESO' }],
 };
 
 /** Una serie con nombre para la lámina «Evolución» de Serie. */

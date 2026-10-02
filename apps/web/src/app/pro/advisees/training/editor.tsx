@@ -24,6 +24,7 @@ import {
   type VersionDePlanDeEntrenamiento,
 } from '@be/domain';
 import { useCallback, useEffect, useState, type ComponentProps, type FormEvent } from 'react';
+import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
@@ -146,7 +147,9 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
   const insertarSesion = (h: SesionHabitual, ruta: (b: Bloques) => SesionE[]) => {
     setNombres((n) => ({ ...n, ...nombresDeHabitual(h) }));
     cambiar((x) => (ruta(x).push(structuredClone(h.structure)), x));
-    setMensaje({ tipo: 'info', texto: COPY_HABITUALES.insertadaSesion });
+    // DL-113: es el resultado de una acción, así que aparece donde se está mirando; como aviso al pie del editor, quedaba
+    // lejos del bloque donde se insertó la sesión.
+    setMensaje({ tipo: 'exito', texto: COPY_HABITUALES.insertadaSesion });
   };
 
   async function guardar(): Promise<VersionDePlanDeEntrenamiento | null> {
@@ -253,8 +256,10 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
       <h2 id="titulo-borrador">
         Versión en preparación <span className="insignia">{COPY_ENTRENAMIENTO.borrador}</span>
       </h2>
-      <p className="nota">El borrador no es visible para el asesorado. Guardar no activa.</p>
-      {version.predecessorPlanId ? <p className="nota">Nueva versión a partir de la versión activa. La versión activa no cambia hasta que actives esta.</p> : null}
+      <Ayuda titulo="Qué es una versión en preparación">
+        <p>El borrador no es visible para el asesorado. Guardar no activa.</p>
+        {version.predecessorPlanId ? <p>Nueva versión a partir de la versión activa. La versión activa no cambia hasta que actives esta.</p> : null}
+      </Ayuda>
       {version.templateOrigin ? <NotaDeOrigen token={token} origen={version.templateOrigin} /> : null}
       {objetivoVigente && objetivoVigente !== version.objectiveVersionId ? (
         <Aviso tipo="info">
@@ -340,7 +345,12 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
       <p className="nota" aria-live="polite">
         {guardando ? 'Guardando…' : sucio ? 'Hay cambios sin guardar.' : 'Guardado.'}
       </p>
-      {mensaje ? (
+      {mensaje && mensaje.tipo === 'exito' ? (
+        <AvisoFlotante onCerrar={() => setMensaje(null)}>
+          <p>{mensaje.texto}</p>
+        </AvisoFlotante>
+      ) : null}
+      {mensaje && mensaje.tipo !== 'exito' ? (
         <Aviso tipo={mensaje.tipo} enfocar={mensaje.tipo !== 'info'}>
           <p>{mensaje.texto}</p>
           {problemas && problemas.length > 0 ? (
@@ -730,7 +740,9 @@ function BuscadorDeEjercicios({ id, habituales, onElegir }: { id: string; habitu
         <fieldset className="grupo">
           <legend>{COPY_ENTRENAMIENTO.crearManualmente}</legend>
           <Campo id={`${id}-nombre`} etiqueta="Nombre del ejercicio" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={120} />
-          <p className="nota">Las zonas musculares y el material didáctico se suman más adelante.</p>
+          <Ayuda titulo="Por qué solo se pide el nombre">
+            <p>Las zonas musculares y el material didáctico se suman más adelante.</p>
+          </Ayuda>
           {fallo ? (
             <Aviso tipo="error">
               <p>{fallo}</p>

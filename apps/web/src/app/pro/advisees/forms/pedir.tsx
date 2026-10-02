@@ -35,14 +35,14 @@ const RECHAZO_DE_SOLICITUD: Readonly<Record<string, string>> = {
 };
 
 export function VistaDePedido() {
-  const { token, asesoradoId, sesionPerdida, irA } = useFormularios();
+  const { token, asesoradoId, sesionPerdida, irA, avisar } = useFormularios();
   const [r, setR] = useState<Resultado<readonly Plantilla[]> | null>(null);
   const [elegida, setElegida] = useState<VersionDePlantilla | null>(null);
   const [pedidos, setPedidos] = useState<readonly string[]>([]);
   const [requeridos, setRequeridos] = useState<readonly string[]>([]);
   const [proposito, setProposito] = useState('');
   const [alcance, setAlcance] = useState<Alcance>('ENTRENAMIENTO');
-  const [aviso, setAviso] = useState<{ tipo: 'error' | 'exito'; texto: string } | null>(null);
+  const [aviso, setAviso] = useState<{ tipo: 'error'; texto: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
   const clave = useClaveDeIntento();
   const parametros = useSearchParams();
@@ -123,7 +123,8 @@ export function VistaDePedido() {
     if (!r.ok) return setAviso({ tipo: 'error', texto: RECHAZO_DE_SOLICITUD[r.tipo === 'API' ? r.codigo : ''] ?? mensajeDeFallo(r) });
     setElegida(null);
     setProposito('');
-    setAviso({ tipo: 'exito', texto: COPY_FORMULARIOS.solicitudEnviada });
+    // DL-113: el éxito lo muestra la pestaña: esta vista pasa enseguida a «Solicitudes» y un aviso suyo se iría con ella.
+    avisar(COPY_FORMULARIOS.solicitudEnviada);
     // CA-FOR-06: si el pedido salió de la evaluación, se vuelve a ella para seguir trabajando.
     if (desdeEntrenamiento) return router.push(rutaDeEntrenamiento);
     irA('solicitudes');

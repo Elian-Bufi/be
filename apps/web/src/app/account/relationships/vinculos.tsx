@@ -12,6 +12,7 @@
 import { COPY, COPY_VINCULO, ETIQUETA_DE_FINALIDAD, estadoParaMostrar, type SolicitudDeVinculo } from '@be/domain';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AvisoFlotante } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso } from '../../../components/formulario';
 import { api } from '../../../lib/api';
@@ -89,6 +90,11 @@ export function Vinculos() {
 
   return (
     <div className="secciones">
+      {/*
+        DL-113: «Vínculo aceptado» no es un aviso flotante. Lleva el siguiente paso, revisar el consentimiento, que es un
+        acto aparte (TEST-AUTH-006; 10-B04:294-303), y ese botón no puede irse solo a los 6 segundos. Tampoco hay un lugar
+        de la lista donde la persona estuviera mirando: la pantalla vuelve del detalle de la solicitud.
+      */}
       {decision?.tipo === 'aceptada' ? (
         <Aviso tipo="exito" enfocar>
           <p className="aviso__titulo">{COPY_VINCULO.vinculoAceptado}</p>
@@ -101,9 +107,9 @@ export function Vinculos() {
         </Aviso>
       ) : null}
       {decision?.tipo === 'rechazada' ? (
-        <Aviso tipo="exito" enfocar>
+        <AvisoFlotante onCerrar={() => setDecision(null)}>
           <p className="aviso__titulo">{COPY_VINCULO.solicitudRechazada}</p>
-        </Aviso>
+        </AvisoFlotante>
       ) : null}
 
       <section className="seccion" aria-labelledby="titulo-recibidas">

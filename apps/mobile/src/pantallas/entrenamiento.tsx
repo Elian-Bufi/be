@@ -47,7 +47,7 @@ import { Cargando, ErrorConReintento } from '../estados';
 import { dia, fecha, fechaCivil } from '../formato';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useAccesoRetirado, useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Boton, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
+import { Aviso, Boton, Campo, Dato, Desplegable, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 
 type Hoy = HoyDeEntrenamientoResponse['data'];
 type Granularidad = 'SET' | 'EXERCISE_OR_SESSION';
@@ -98,7 +98,8 @@ export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; s
     setDelDia({ fecha: otroDia, ocurrencias: res.datos.data.occurrences });
   }
 
-  // Una escritura denegada con el 404 no revelador retira el contenido de la pantalla entera (B10-06:1145-1148).
+  // Una escritura denegada con el 404 no revelador retira el contenido de la pantalla entera (B10-06:1145-1148). Queda
+  // el mismo estado neutral que con el acceso suspendido, con «Tu historial», que no depende del plan (DL-096).
   if (retirado) {
     return (
       <View>
@@ -106,11 +107,20 @@ export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; s
         <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.planNoDisponible}>
           <Boton texto="Ir a Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
         </Aviso>
+        <Boton texto={COPY_ENTRENAMIENTO.tuHistorial} tipo="secundario" onPress={() => ir({ nombre: 'historial-de-entrenamiento' })} />
       </View>
     );
   }
   if (!r) return <Cargando />;
-  if (!r.ok) return <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} />;
+  if (!r.ok) {
+    // Sin «Hoy», «Tu historial» sigue a mano: lee otra cosa y puede responder aunque «Hoy» falle.
+    return (
+      <View>
+        <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} />
+        <Boton texto={COPY_ENTRENAMIENTO.tuHistorial} tipo="secundario" onPress={() => ir({ nombre: 'historial-de-entrenamiento' })} />
+      </View>
+    );
+  }
   const hoy: Hoy = r.datos.data;
 
   return (
@@ -127,8 +137,12 @@ export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; s
         <TarjetaDeOcurrencia key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} />
       ))}
 
+      {/* «Tu historial» es de esta zona: se abre desde acá y vuelve acá. Funciona aunque no haya un plan activo (DL-096). */}
+      <Boton texto={COPY_ENTRENAMIENTO.tuHistorial} tipo="secundario" onPress={() => ir({ nombre: 'historial-de-entrenamiento' })} />
+
       {hoy.planState === 'AVAILABLE' ? (
-        <Seccion titulo={COPY_ENTRENAMIENTO.registrarOtroDia}>
+        // Plegado: es para lo que quedó sin registrar; lo de hoy va primero.
+        <Desplegable titulo={COPY_ENTRENAMIENTO.registrarOtroDia} abiertoAlInicio={delDia !== null || aviso !== null}>
           <Parrafo tenue>Si hiciste una sesión otro día y no la registraste, podés registrarla ahora.</Parrafo>
           <Campo
             etiqueta="Fecha (AAAA-MM-DD)"
@@ -149,7 +163,7 @@ export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; s
               delDia.ocurrencias.map((o) => <TarjetaDeOcurrencia key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} />)
             )
           ) : null}
-        </Seccion>
+        </Desplegable>
       ) : null}
       <Boton texto="Actualizar" tipo="enlace" onPress={() => void cargar()} />
     </View>
@@ -202,16 +216,17 @@ function TarjetaDeOcurrencia({
         {o.date !== hoy ? ` · ${fechaCivil(o.date)}` : ''}
       </Parrafo>
       <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" />
-      {o.plannedSession.prescriptions.map((p) => (
-        <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={textoDePrescripcion(p)} />
-      ))}
-      {o.plannedSession.instructions ? <Parrafo tenue>{o.plannedSession.instructions}</Parrafo> : null}
+      {/* La acción va arriba, antes de lo planificado: con una sesión larga, al final de la tarjeta quedaba fuera de la vista. */}
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {o.execution.state === 'REGISTERED' && o.execution.executionId ? (
         <Boton texto="Ver registro" tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: o.execution.executionId! })} />
       ) : (
         <Boton texto={o.execution.state === 'DRAFT_IN_PROGRESS' ? COPY_ENTRENAMIENTO.continuarSesion : COPY_ENTRENAMIENTO.comenzarSesion} onPress={() => void abrir()} ocupado={abriendo} />
       )}
+      {o.plannedSession.prescriptions.map((p) => (
+        <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={textoDePrescripcion(p)} />
+      ))}
+      {o.plannedSession.instructions ? <Parrafo tenue>{o.plannedSession.instructions}</Parrafo> : null}
     </Tarjeta>
   );
 }
@@ -654,8 +669,15 @@ function EjercicioEnCurso({
             </Parrafo>
           ))}
           <Campo etiqueta={`${COPY_ENTRENAMIENTO.carga} (${serie.unidad})`} value={serie.carga} onChangeText={(v) => setSerie({ ...serie, carga: v })} keyboardType="decimal-pad" />
-          <Boton texto="kg" tipo={serie.unidad === 'kg' ? 'primario' : 'secundario'} seleccionado={serie.unidad === 'kg'} onPress={() => setSerie({ ...serie, unidad: 'kg' })} />
-          <Boton texto="lb" tipo={serie.unidad === 'lb' ? 'primario' : 'secundario'} seleccionado={serie.unidad === 'lb'} onPress={() => setSerie({ ...serie, unidad: 'lb' })} />
+          {/* kg y lb lado a lado: son dos opciones de lo mismo, y apiladas alargaban cada ejercicio. */}
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Boton texto="kg" tipo={serie.unidad === 'kg' ? 'primario' : 'secundario'} seleccionado={serie.unidad === 'kg'} onPress={() => setSerie({ ...serie, unidad: 'kg' })} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Boton texto="lb" tipo={serie.unidad === 'lb' ? 'primario' : 'secundario'} seleccionado={serie.unidad === 'lb'} onPress={() => setSerie({ ...serie, unidad: 'lb' })} />
+            </View>
+          </View>
           <Campo etiqueta={COPY_ENTRENAMIENTO.reps} value={serie.reps} onChangeText={(v) => setSerie({ ...serie, reps: v })} keyboardType="number-pad" />
           <Campo etiqueta={`${COPY_ENTRENAMIENTO.rir} (opcional)`} ayuda={COPY_ENTRENAMIENTO.explicacionRir} value={serie.rir} onChangeText={(v) => setSerie({ ...serie, rir: v })} keyboardType="number-pad" />
           <Campo etiqueta={COPY_ENTRENAMIENTO.esfuerzoPercibido} ayuda="De 0 a 10, cómo sentiste la serie. No cambia lo que planificó tu profesional." value={serie.esfuerzo} onChangeText={(v) => setSerie({ ...serie, esfuerzo: v })} keyboardType="decimal-pad" />

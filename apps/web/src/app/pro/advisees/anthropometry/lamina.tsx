@@ -35,13 +35,12 @@ import {
   MAXIMO_DE_TOMAS_EN_SERIE,
   nombreDeMetrica,
   nombreDelArchivoDeLaLamina,
-  PLIEGUES_SIN_SITIO,
   repartirConclusiones,
   resultadosDeLaToma,
   ROTULO_EN_LA_LAMINA,
   SERIES_EN_EVOLUCION,
   seriesDeEvolucion,
-  sumaDelPieDePliegues,
+  sumasDelPieDePliegues,
   textoDelValor,
   todasLasPaginas,
   tomasPorDefecto,
@@ -60,6 +59,7 @@ import {
 } from '@be/domain';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Ayuda } from '../../../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -323,7 +323,7 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
         }
       } else {
         const comp = componerMedicion(sexo, encuadre, FAMILIA_DE_LA_HOJA[hoja], valores.porClave);
-        const suma = hoja === 'PLIEGUES' ? (sumaDelPieDePliegues(resultados)?.valor ?? null) : null;
+        const sumas = hoja === 'PLIEGUES' ? sumasDelPieDePliegues(resultados).map((s) => ({ rotulo: s.rotulo, valor: s.resultado?.valor ?? null })) : [];
         calculosPendientes = hoja === 'PLIEGUES' && calculos.estado.tipo === 'cargando';
         contenido = (
           <HojaDeMedicion
@@ -331,7 +331,7 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
             comp={comp}
             hoja={hoja}
             valores={valores.porClave}
-            suma={suma}
+            sumas={sumas}
             encabezado={{ titulo: mayusculas(nombreDeLaHoja), linea, fecha, nombre, etiqueta: ETIQUETA_DEL_ENCUADRE[encuadre] }}
           />
         );
@@ -349,7 +349,7 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
         }
       }
 
-      const sinSitio = [...DATOS_DE_LA_TOMA, ...PLIEGUES_SIN_SITIO.map((p) => p.clave), ...DIAMETROS_DE_LA_LAMINA, ...clavesSinLugarEnLaLamina(valores.porClave)].flatMap((clave) => {
+      const sinSitio = [...DATOS_DE_LA_TOMA, ...DIAMETROS_DE_LA_LAMINA, ...clavesSinLugarEnLaLamina(valores.porClave)].flatMap((clave) => {
         const v = valores.porClave.get(clave);
         return v ? [`${nombreDeMetrica(clave)} ${conUnidad(v)}`] : [];
       });
@@ -408,7 +408,6 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
       notas.push(<Nota key="otro-encuadre" titulo={C.laminaEnOtroEncuadre} items={comp.fueraDelEncuadre.map((k) => ROTULO_EN_LA_LAMINA[k])} />);
     }
     if (estados.some((e) => e.estado.tipo === 'no-disponible')) notas.push(<p key="no-disponibles" className="nota">{COPY_EVOLUCION.evaluacionNoDisponible}</p>);
-    notas.push(<p key="resta" className="nota">{C.laminaExplicacionDeResta}</p>);
   }
 
   const nombreDelArchivo = nombreDelArchivoDeLaLamina({ modo, hoja, encuadre, fechas });
@@ -428,7 +427,14 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
   return (
     <section className="seccion lamina" aria-labelledby="titulo-lamina">
       <h2 id="titulo-lamina">{C.lamina}</h2>
-      <p className="nota">{C.explicacionDeLamina}</p>
+      {/* DL-113 · qué es la lámina y cómo se lee, plegado: arriba quedan los controles y la imagen. */}
+      <Ayuda>
+        <p>{C.explicacionDeLamina}</p>
+        {hoja !== 'CONCLUSIONES' ? <p>{C.explicacionDeFigura}</p> : null}
+        {modo === 'SERIE' ? <p>{C.laminaExplicacionDeResta}</p> : null}
+        {modo === 'SERIE' && hoja !== 'CONCLUSIONES' ? <p>{C.laminaSerieSinEntero}</p> : null}
+        <p>{C.laminaTemaPropio}</p>
+      </Ayuda>
       {pedida !== null && pedidaValida === null ? (
         <Aviso tipo="info">
           <p>{C.laminaEvaluacionPedidaNoEsta}</p>
@@ -467,11 +473,6 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
         ) : null}
         <Opciones id="lamina-tema" titulo={C.laminaTema} opciones={TEMAS.map((t) => ({ valor: t, texto: C.laminaTemas[t] }))} elegida={tema} onElegir={elegirTema} />
       </div>
-      <p className="nota">
-        {hoja !== 'CONCLUSIONES' ? `${C.explicacionDeFigura} ` : ''}
-        {C.laminaTemaPropio}
-        {modo === 'SERIE' && hoja !== 'CONCLUSIONES' ? ` ${C.laminaSerieSinEntero}` : ''}
-      </p>
 
       {modo === 'MEDICION' ? (
         <div className="campo lamina__toma">

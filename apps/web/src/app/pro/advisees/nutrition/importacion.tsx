@@ -26,6 +26,7 @@ import {
   type ValidationIssue,
 } from '@be/domain';
 import { useState, type FormEvent } from 'react';
+import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
 import { dia, numeroEnCampo } from '../../../../lib/formato';
@@ -220,7 +221,12 @@ export function ImportacionDeOpenFoodFacts({ id, onIncorporado, onCargarManualme
         </button>
       </form>
 
-      {aviso ? (
+      {aviso && aviso.tipo === 'exito' ? (
+        <AvisoFlotante onCerrar={() => setAviso(null)}>
+          <p>{aviso.texto}</p>
+        </AvisoFlotante>
+      ) : null}
+      {aviso && aviso.tipo !== 'exito' ? (
         <Aviso tipo={aviso.tipo}>
           <p>{aviso.texto}</p>
           {aviso.conAlternativa ? (
@@ -243,7 +249,9 @@ export function ImportacionDeOpenFoodFacts({ id, onIncorporado, onCargarManualme
       {candidato && revision ? (
         <section className="candidato" aria-labelledby={`${id}-candidato`}>
           <h4 id={`${id}-candidato`}>{COPY_INTEGRACIONES.candidatoTitulo}</h4>
-          <p className="nota">{COPY_INTEGRACIONES.candidatoAviso}</p>
+          <Ayuda titulo="Qué es un candidato">
+            <p>{COPY_INTEGRACIONES.candidatoAviso}</p>
+          </Ayuda>
           <p className="nota">
             {COPY_INTEGRACIONES.fuente}: {proveedor} · código {candidato.externalId} · {COPY_INTEGRACIONES.recibido} {dia(candidato.receivedAt)} ·{' '}
             {COPY_INTEGRACIONES.licencia}: {candidato.provenance.license.label}

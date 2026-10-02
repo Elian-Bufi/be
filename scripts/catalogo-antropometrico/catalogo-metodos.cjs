@@ -1,7 +1,7 @@
 // Fuente única de los métodos del catálogo de BE (DL-111): genera la migración SQL y alimenta los nombres del dominio
 // (catalogo-perfil-completo.cjs lo lee para NOMBRE_DE_METODO y los nombres de las salidas). Cada método sale de la ficha
 // docs/propuestas/METODOS-ANTROPOMETRICOS_ficha.md (MA-xx): fuente, población, sitios, fórmula y casos de prueba.
-// Uso (desde la raíz): node scripts/catalogo-antropometrico/catalogo-metodos.cjs prisma/migrations/20261001010000_metodos_antropometricos/migration.sql
+// Uso (desde la raíz): node scripts/catalogo-antropometrico/catalogo-metodos.cjs prisma/migrations/20261001010000_metodos_antropometricos/migration.sql prisma/migrations/20261002000000_purga_del_catalogo_antropometrico/migration.sql
 const fs = require('fs');
 const { METRICAS } = require('./catalogo-perfil-completo.cjs');
 
@@ -31,6 +31,8 @@ const SALIDAS = {
   'grasa-deurenberg': 'Grasa corporal desde el IMC (Deurenberg)',
   'masa-grasa-faulkner': 'Masa grasa (Faulkner)',
   'masa-libre-de-grasa-faulkner': 'Masa libre de grasa (Faulkner)',
+  'masa-grasa-durnin-womersley': 'Masa grasa (Durnin y Womersley)',
+  'masa-libre-de-grasa-durnin-womersley': 'Masa libre de grasa (Durnin y Womersley)',
   'masa-osea-rocha': 'Masa ósea (Rocha)',
   'masa-residual-wurch': 'Masa residual (Würch)',
   'masa-muscular-cuatro-componentes': 'Masa muscular (cuatro componentes)',
@@ -90,7 +92,8 @@ const DENSIDAD_JP3_M = 'Densidad corporal con la suma de 3 pliegues (tríceps, c
 const CON_SIRI = 'El porcentaje de grasa sale de la densidad con la ecuación de Siri, la que usaron los autores.';
 const CON_BROZEK = 'El porcentaje de grasa sale de la densidad con la ecuación de Brozek.';
 
-const METODOS = [
+// Los 40 de la migración 20261001010000: congelados. Una migración aplicada no se reescribe.
+const METODOS_ORIGINALES = [
   // ─── Índices ───
   M(1, 'MET-IMC', 'Índice de masa corporal (IMC)', 'INDICES', 'be/imc@1', ['peso', 'talla'], 'imc', 'kg/m²', 1,
     'Peso dividido por la talla al cuadrado. Usa solo peso y talla: no distingue la masa grasa de la magra ni dice dónde está la grasa.', KEYS, 'Adultos. Es un índice, no una ecuación de predicción.'),
@@ -175,6 +178,57 @@ const METODOS = [
     'El tercer componente del somatotipo: la linealidad relativa, con el índice ponderal recíproco (talla sobre la raíz cúbica del peso).', HEATH_CARTER, 'Cualquier edad y sexo.'),
 ];
 
+// ─── DL-112 (2026-10-01): purga del catálogo y masas de Durnin y Womersley (migración 20261002000000) ───
+const MASA_DW = 'El peso por el porcentaje de grasa de Durnin y Womersley con Siri (modelo de dos compartimentos).';
+const LIBRE_DW = 'El peso menos la masa grasa de Durnin y Womersley con Siri: todo lo que no es grasa (músculo, hueso, órganos y agua).';
+const METODOS_NUEVOS = [
+  M(41, 'MET-MASA-GRASA-DW-H', 'Masa grasa (Durnin y Womersley), hombres', 'MASAS', 'be/masa-grasa-durnin-womersley-hombres@1', ['peso', ...DW_4, 'edad'], 'masa-grasa-durnin-womersley', 'kg', 1, MASA_DW, `${DW} ${SIRI}`, POB_DW_H),
+  M(42, 'MET-MASA-GRASA-DW-M', 'Masa grasa (Durnin y Womersley), mujeres', 'MASAS', 'be/masa-grasa-durnin-womersley-mujeres@1', ['peso', ...DW_4, 'edad'], 'masa-grasa-durnin-womersley', 'kg', 1, MASA_DW, `${DW} ${SIRI}`, POB_DW_M),
+  M(43, 'MET-MASA-LIBRE-DW-H', 'Masa libre de grasa (Durnin y Womersley), hombres', 'MASAS', 'be/masa-libre-de-grasa-durnin-womersley-hombres@1', ['peso', ...DW_4, 'edad'], 'masa-libre-de-grasa-durnin-womersley', 'kg', 1, LIBRE_DW, `${DW} ${SIRI}`, POB_DW_H),
+  M(44, 'MET-MASA-LIBRE-DW-M', 'Masa libre de grasa (Durnin y Womersley), mujeres', 'MASAS', 'be/masa-libre-de-grasa-durnin-womersley-mujeres@1', ['peso', ...DW_4, 'edad'], 'masa-libre-de-grasa-durnin-womersley', 'kg', 1, LIBRE_DW, `${DW} ${SIRI}`, POB_DW_M),
+];
+
+/** DL-112: los retirados, con su motivo. Siguen explicables en la historia; no se ofrecen para cálculos nuevos. */
+const MOTIVO = {
+  BROZEK: 'Variante de Brozek: el catálogo conserva la de Siri, que es la que usaron los autores de las ecuaciones.',
+  JP3: 'Jackson y Pollock con 3 pliegues: queda la de 7, más precisa, que es la que usa la lámina de Dirección.',
+  FAULKNER: 'Faulkner: ecuación de una nota de tabla, sin validación demostrada (Pires Neto y Glaner, 2007), y solo para hombres.',
+  YUHASZ: 'Yuhasz-Carter: los originales no estuvieron accesibles; quedan Durnin y Womersley y Jackson y Pollock.',
+  BAI: 'BAI: precisión baja frente a DXA en las validaciones publicadas.',
+  DEURENBERG: 'Deurenberg: estimación desde el IMC, la más gruesa del catálogo (error estándar de 4,1 puntos).',
+  RESIDUAL: 'Masa residual de Würch: una proporción fija del peso, útil solo dentro del modelo de cuatro componentes, que sale.',
+  CUATRO_C: 'Cuatro componentes de De Rose y Guimarães: depende de Faulkner, que sale, y no tiene versión para mujeres.',
+  LEE_PESO: 'Lee con peso y talla: queda el modelo con perímetros, más preciso (error estándar de 2,2 kg frente a 2,8).',
+  CONICIDAD: 'Índice de conicidad: poco usado; quedan el IMC, cintura/talla y cintura/cadera.',
+  SUMA_8: 'Suma de 8 pliegues: quedan la de 6 de ISAK y la de 7 de Jackson y Pollock.',
+};
+const RETIRADOS = [
+  ['MET-CONICIDAD', MOTIVO.CONICIDAD],
+  ['MET-SUMA-8-ISAK', MOTIVO.SUMA_8],
+  ['MET-GRASA-DW-BROZEK-H', MOTIVO.BROZEK],
+  ['MET-GRASA-DW-BROZEK-M', MOTIVO.BROZEK],
+  ['MET-GRASA-JP7-BROZEK-H', MOTIVO.BROZEK],
+  ['MET-GRASA-JP7-BROZEK-M', MOTIVO.BROZEK],
+  ['MET-GRASA-JP3-H', MOTIVO.JP3],
+  ['MET-GRASA-JP3-M', MOTIVO.JP3],
+  ['MET-GRASA-JP3-BROZEK-H', MOTIVO.JP3],
+  ['MET-GRASA-JP3-BROZEK-M', MOTIVO.JP3],
+  ['MET-GRASA-FAULKNER', MOTIVO.FAULKNER],
+  ['MET-GRASA-YUHASZ-CARTER-H', MOTIVO.YUHASZ],
+  ['MET-GRASA-YUHASZ-CARTER-M', MOTIVO.YUHASZ],
+  ['MET-GRASA-BAI', MOTIVO.BAI],
+  ['MET-GRASA-DEURENBERG-H', MOTIVO.DEURENBERG],
+  ['MET-GRASA-DEURENBERG-M', MOTIVO.DEURENBERG],
+  ['MET-MASA-GRASA-FAULKNER', MOTIVO.FAULKNER],
+  ['MET-MASA-LIBRE-FAULKNER', MOTIVO.FAULKNER],
+  ['MET-MASA-RESIDUAL-H', MOTIVO.RESIDUAL],
+  ['MET-MASA-RESIDUAL-M', MOTIVO.RESIDUAL],
+  ['MET-MASA-MUSCULAR-4C-H', MOTIVO.CUATRO_C],
+  ['MET-MME-LEE-PESO-H', MOTIVO.LEE_PESO],
+  ['MET-MME-LEE-PESO-M', MOTIVO.LEE_PESO],
+];
+const METODOS = [...METODOS_ORIGINALES, ...METODOS_NUEVOS];
+
 const hex2 = (n) => n.toString(16).padStart(2, '0');
 const vistos = new Set();
 for (const m of METODOS) {
@@ -204,13 +258,18 @@ const contenido = (m) => ({
   categoria: m.categoria,
 });
 
-module.exports = { METODOS, SALIDAS, contenido };
+const RETIRADOS_POR_CLAVE = new Map(RETIRADOS);
+for (const [clave] of RETIRADOS) if (!METODOS.some((m) => m.clave === clave)) throw new Error(`retiro de una clave que no existe: ${clave}`);
+
+module.exports = { METODOS, METODOS_ORIGINALES, METODOS_NUEVOS, RETIRADOS, SALIDAS, contenido };
 
 if (require.main === module) {
-  const [salidaSql] = process.argv.slice(2);
+  // Uso: node catalogo-metodos.cjs <migración 20261001010000> [<migración 20261002000000>]
+  const [salidaSql, salidaSql2] = process.argv.slice(2);
   const sqlTexto = (s) => `'${s.replace(/'/g, "''")}'`;
   const MOMENTO = "'2026-10-01T01:00:00.000Z'";
-  const sql = `-- DL-111 · los métodos del catálogo antropométrico de BE: ${METODOS.length} fórmulas publicadas, cada una con su fuente, su población
+  // La migración 1 ya está aplicada en test: se genera solo con los 40 originales y tiene que quedar idéntica.
+  const sql = `-- DL-111 · los métodos del catálogo antropométrico de BE: ${METODOS_ORIGINALES.length} fórmulas publicadas, cada una con su fuente, su población
 -- y la regla de dominio versionada que la aplica (packages/domain/src/formulas-antropometricas.ts). Salen de la ficha de
 -- investigación (docs/propuestas/METODOS-ANTROPOMETRICOS_ficha.md), que trae los casos de prueba. BE no elige ninguna
 -- (REG-06-205): el profesional ve qué pide cada método y qué da, y elige. Las que difieren por sexo son métodos
@@ -219,10 +278,10 @@ if (require.main === module) {
 -- Generado por scripts/catalogo-antropometrico/catalogo-metodos.cjs.
 
 INSERT INTO "especificacion_antropometrica" ("id", "clave", "tipo", "momento_de_registro") VALUES
-${METODOS.map((m) => `  ('${m.especificacionId}', '${m.clave}', 'METODO', ${MOMENTO})`).join(',\n')};
+${METODOS_ORIGINALES.map((m) => `  ('${m.especificacionId}', '${m.clave}', 'METODO', ${MOMENTO})`).join(',\n')};
 
 INSERT INTO "version_de_especificacion_antropometrica" ("id", "especificacion_id", "predecesora_id", "version", "nombre", "contenido", "procedencia", "momento_de_registro") VALUES
-${METODOS.map(
+${METODOS_ORIGINALES.map(
   (m) => `  ('${m.versionId}', '${m.especificacionId}', NULL, '1',
    ${sqlTexto(m.nombre)},
    ${sqlTexto(JSON.stringify(contenido(m)))},
@@ -231,5 +290,59 @@ ${METODOS.map(
 ).join(',\n')};
 `;
   fs.writeFileSync(salidaSql, sql);
-  console.log(`métodos: ${METODOS.length}`);
+  console.log(`migración 1: ${METODOS_ORIGINALES.length} métodos`);
+
+  if (salidaSql2) {
+    const porClave = new Map(METODOS.map((m) => [m.clave, m]));
+    const MOMENTO2 = "'2026-10-02T00:00:00.000Z'";
+    const sql2 = `-- DL-112 · purga del catálogo antropométrico de BE, decidida por Dirección el 2026-10-01: quedan los métodos más usados y
+-- con mejor validación. Los retirados dejan de ofrecerse para cálculos nuevos; lo que ya se calculó con ellos sigue en la
+-- historia y se explica igual (API-MTH-02 los devuelve como históricos). El retiro es un hecho que solo se agrega: un
+-- método retirado no vuelve; si hace falta, se publica como una especificación nueva con la misma regla. Se suman la masa
+-- grasa y la masa libre de grasa de Durnin y Womersley, para los dos sexos.
+-- Generado por scripts/catalogo-antropometrico/catalogo-metodos.cjs; el DDL es el que da prisma migrate diff.
+
+-- CreateTable
+CREATE TABLE "retiro_de_especificacion" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "especificacion_id" UUID NOT NULL,
+    "motivo" TEXT NOT NULL,
+    "momento_de_registro" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "retiro_de_especificacion_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "retiro_de_especificacion_especificacion_id_key" ON "retiro_de_especificacion"("especificacion_id");
+
+-- AddForeignKey
+ALTER TABLE "retiro_de_especificacion" ADD CONSTRAINT "retiro_de_especificacion_especificacion_id_fkey" FOREIGN KEY ("especificacion_id") REFERENCES "especificacion_antropometrica"("id") ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+-- Historia por adición, como el resto del catálogo.
+CREATE TRIGGER "retiro_de_especificacion_solo_agregar" BEFORE UPDATE OR DELETE ON "retiro_de_especificacion" FOR EACH ROW EXECUTE FUNCTION "be_solo_agregar"();
+CREATE TRIGGER "retiro_de_especificacion_sin_truncate" BEFORE TRUNCATE ON "retiro_de_especificacion" FOR EACH STATEMENT EXECUTE FUNCTION "be_solo_agregar"();
+
+-- Masa grasa y masa libre de grasa de Durnin y Womersley.
+INSERT INTO "especificacion_antropometrica" ("id", "clave", "tipo", "momento_de_registro") VALUES
+${METODOS_NUEVOS.map((m) => `  ('${m.especificacionId}', '${m.clave}', 'METODO', ${MOMENTO2})`).join(',\n')};
+
+INSERT INTO "version_de_especificacion_antropometrica" ("id", "especificacion_id", "predecesora_id", "version", "nombre", "contenido", "procedencia", "momento_de_registro") VALUES
+${METODOS_NUEVOS.map(
+  (m) => `  ('${m.versionId}', '${m.especificacionId}', NULL, '1',
+   ${sqlTexto(m.nombre)},
+   ${sqlTexto(JSON.stringify(contenido(m)))},
+   ${sqlTexto(JSON.stringify({ rotulo: 'Catálogo de BE (DL-111, DL-112): fórmula publicada, con su fuente y su población. La elige el profesional; BE no la impone.' }))},
+   ${MOMENTO2})`,
+).join(',\n')};
+
+-- Los retiros, cada uno con su motivo.
+INSERT INTO "retiro_de_especificacion" ("id", "especificacion_id", "motivo", "momento_de_registro") VALUES
+${RETIRADOS.map(([clave, motivo]) => {
+  const m = porClave.get(clave);
+  return `  ('3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a5f${hex2(m.n)}', '${m.especificacionId}', ${sqlTexto(`DL-112 · ${motivo}`)}, ${MOMENTO2})`;
+}).join(',\n')};
+`;
+    fs.writeFileSync(salidaSql2, sql2);
+    console.log(`migración 2: ${METODOS_NUEVOS.length} métodos nuevos y ${RETIRADOS.length} retiros`);
+  }
 }

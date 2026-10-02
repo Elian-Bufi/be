@@ -57,6 +57,8 @@ export const NOMBRE_DE_METRICA: Readonly<Record<string, string>> = {
   'grasa-deurenberg': 'Grasa corporal desde el IMC (Deurenberg)',
   'masa-grasa-faulkner': 'Masa grasa (Faulkner)',
   'masa-libre-de-grasa-faulkner': 'Masa libre de grasa (Faulkner)',
+  'masa-grasa-durnin-womersley': 'Masa grasa (Durnin y Womersley)',
+  'masa-libre-de-grasa-durnin-womersley': 'Masa libre de grasa (Durnin y Womersley)',
   'masa-osea-rocha': 'Masa ósea (Rocha)',
   'masa-residual-wurch': 'Masa residual (Würch)',
   'masa-muscular-cuatro-componentes': 'Masa muscular (cuatro componentes)',
@@ -155,6 +157,10 @@ export const NOMBRE_DE_METODO: Readonly<Record<string, string>> = {
   '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f26': 'Endomorfia (Heath y Carter)',
   '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f27': 'Mesomorfia (Heath y Carter)',
   '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f28': 'Ectomorfia (Heath y Carter)',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f29': 'Masa grasa (Durnin y Womersley), hombres',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2a': 'Masa grasa (Durnin y Womersley), mujeres',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2b': 'Masa libre de grasa (Durnin y Womersley), hombres',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2c': 'Masa libre de grasa (Durnin y Womersley), mujeres',
 };
 
 /** El nombre del método de una versión, o `null` si BE no la conoce. */

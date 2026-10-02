@@ -15,7 +15,7 @@ import {
   type VersionDePlan,
 } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
-import { Aviso } from '../../../../components/formulario';
+import { AvisoFlotante } from '../../../../components/ayuda';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { EstadoDeLectura, useNutricion } from './nutricion';
@@ -61,6 +61,7 @@ export function VistaDeResumen() {
           datos={r.datos}
           formulario={formulario}
           aviso={aviso}
+          onCerrarAviso={() => setAviso(null)}
           onFormulario={(f) => {
             setAviso(null);
             setFormulario(f);
@@ -82,6 +83,7 @@ function Resumen({
   datos,
   formulario,
   aviso,
+  onCerrarAviso,
   onFormulario,
   onListo,
   onIrAlPlan,
@@ -90,6 +92,7 @@ function Resumen({
   datos: Datos;
   formulario: 'evaluacion' | 'objetivo' | null;
   aviso: string | null;
+  onCerrarAviso: () => void;
   onFormulario: (f: 'evaluacion' | 'objetivo' | null) => void;
   onListo: (texto: string) => void;
   onIrAlPlan: () => void;
@@ -105,9 +108,9 @@ function Resumen({
   return (
     <div className="secciones">
       {aviso ? (
-        <Aviso tipo="exito" enfocar>
+        <AvisoFlotante onCerrar={onCerrarAviso}>
           <p>{aviso}</p>
-        </Aviso>
+        </AvisoFlotante>
       ) : null}
 
       <section className="seccion" aria-labelledby="titulo-estado">

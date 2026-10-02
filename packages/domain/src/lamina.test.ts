@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { CorridaDeCalculoApi } from './contratos-calculo';
 import type { EvaluacionAntropometricaApi } from './contratos-antropometria';
-import { COLORES_DE_LA_FIGURA, DIBUJO_EN_MEDICION, TARJETAS_DE_PERIMETROS, TARJETAS_DE_PLIEGUES, altoDeTarjetaEnSerie } from './figura-de-lamina';
+import { COLORES_DE_LA_FIGURA, DIBUJO_EN_MEDICION, FIGURAS_DE_LA_LAMINA, PLIEGUES_SUMADOS_POR_BE, TARJETAS_DE_PERIMETROS, TARJETAS_DE_PLIEGUES, altoDeTarjetaEnSerie } from './figura-de-lamina';
 import {
   agruparPorCategoria,
   COLORES_DE_LA_LAMINA,
@@ -16,7 +16,10 @@ import {
   componerSerie,
   corridasSinEfecto,
   diametrosDeLaToma,
+  distanciaAlTramo,
   escalaDelGrafico,
+  FRANJA_DE_LA_SERIE,
+  HOLGURA_DE_LA_GUIA,
   grillaDelPiso,
   lineaDelDegradado,
   nombreDelArchivoDeLaLamina,
@@ -28,6 +31,7 @@ import {
   repartirEvolucion,
   resultadosDeLaToma,
   serieDeValores,
+  sumasDelPieDePliegues,
   seriesDeEvolucion,
   tomasPorDefecto,
   tramosDeLaSerie,
@@ -182,6 +186,97 @@ test('Medición · los pliegues posteriores llevan la marca y su guía es la de 
   const triceps = c.tarjetas.flatMap((t) => t.filas).find((f) => f.sitio.clave === 'pliegue-triceps')!;
   const guia = c.guias.find((g) => g.puntos[0]![1] === triceps.centro)!;
   assert.equal(guia.puntos[2]![0], triceps.sitio.cx - 16);
+});
+
+// ─── DL-113 · bíceps y cresta ilíaca en la figura ─────────────────────────────────────────────
+
+const SEXOS = ['HOMBRE', 'MUJER'] as const;
+const ENCUADRES = ['ENTERO', 'TREN_SUPERIOR', 'TREN_INFERIOR'] as const;
+const todosLosPliegues = (encuadre: (typeof ENCUADRES)[number]) => new Map(TARJETAS_DE_PLIEGUES[encuadre].flat().map((k) => [k, valor(5, 'mm')]));
+const cruzan = (a: readonly [number, number], b: readonly [number, number], c: readonly [number, number], d: readonly [number, number]) => {
+  const lado = (p: readonly [number, number], q: readonly [number, number], r: readonly [number, number]) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]));
+  return lado(a, b, c) !== lado(a, b, d) && lado(c, d, a) !== lado(c, d, b);
+};
+
+test('DL-113 · el bíceps y la cresta ilíaca tienen punto en cada figura que los muestra, y una fila con su guía', () => {
+  for (const sexo of SEXOS) {
+    for (const encuadre of ENCUADRES) {
+      const esperados = encuadre === 'TREN_INFERIOR' ? ['pliegue-cresta-iliaca'] : [...PLIEGUES_SUMADOS_POR_BE];
+      for (const clave of esperados) assert.ok(FIGURAS_DE_LA_LAMINA[sexo][encuadre].pliegues[clave as 'pliegue-biceps'], `${sexo} ${encuadre} ${clave}`);
+      const c = componerMedicion(sexo, encuadre, 'PLIEGUES', todosLosPliegues(encuadre));
+      const filas = c.tarjetas.flatMap((t) => t.filas);
+      for (const clave of esperados) assert.ok(filas.some((f) => f.sitio.clave === clave && f.valor !== null), `${sexo} ${encuadre} ${clave}`);
+      assert.equal(c.guias.length, filas.length);
+    }
+  }
+});
+
+test('DL-113 · Medición: las filas siguen la altura de sus sitios y ninguna guía se cruza ni pasa sobre otro punto', () => {
+  for (const sexo of SEXOS) {
+    for (const encuadre of ENCUADRES) {
+      const c = componerMedicion(sexo, encuadre, 'PLIEGUES', todosLosPliegues(encuadre));
+      for (const t of c.tarjetas) {
+        const alturas = t.filas.map((f) => f.sitio.cy);
+        assert.deepEqual(alturas, [...alturas].sort((a, b) => a - b), `${sexo} ${encuadre}: filas fuera de orden`);
+      }
+      for (const [i, g] of c.guias.entries()) {
+        for (const h of c.guias.slice(i + 1)) {
+          for (let a = 0; a < g.puntos.length - 1; a++) for (let b = 0; b < h.puntos.length - 1; b++) assert.ok(!cruzan(g.puntos[a]!, g.puntos[a + 1]!, h.puntos[b]!, h.puntos[b + 1]!), `${sexo} ${encuadre}: guías cruzadas`);
+        }
+      }
+      const filas = c.tarjetas.flatMap((t) => t.filas);
+      for (const g of c.guias) {
+        const propio = filas.find((f) => f.centro === g.puntos[0]![1])!.sitio.clave;
+        for (const s of c.sitios.filter((x) => x.clave !== propio)) {
+          for (let a = 1; a < g.puntos.length - 1; a++) assert.ok(distanciaAlTramo([s.cx, s.cy], g.puntos[a]!, g.puntos[a + 1]!) >= HOLGURA_DE_LA_GUIA, `${sexo} ${encuadre}: la guía de ${propio} pasa sobre ${s.clave}`);
+        }
+      }
+    }
+  }
+});
+
+test('DL-113 · Serie: ninguna guía pasa sobre el punto de otro pliegue; si hace falta, entra al sitio de costado', () => {
+  for (const sexo of SEXOS) {
+    for (const encuadre of ['TREN_SUPERIOR', 'TREN_INFERIOR'] as const) {
+      const toma = todosLosPliegues(encuadre);
+      const c = componerSerie(sexo, encuadre, 'PLIEGUES', [toma, toma]);
+      for (const t of c.tarjetas) {
+        const p = t.guia.puntos;
+        // Siempre termina en la marca; con desvío, el último tramo es horizontal, a la altura del sitio.
+        assert.deepEqual(p[p.length - 1], t.guia.marca);
+        if (p.length === 4) assert.equal(p[2]![1], p[3]![1]);
+        for (const s of c.sitios.filter((x) => x.punto !== null && x.clave !== t.sitio.clave)) {
+          for (let a = 1; a < p.length - 1; a++) assert.ok(distanciaAlTramo([s.cx, s.cy], p[a]!, p[a + 1]!) >= HOLGURA_DE_LA_GUIA, `${sexo} ${encuadre}: la guía de ${t.sitio.clave} pasa sobre ${s.clave}`);
+        }
+      }
+    }
+  }
+  // En el tren superior del hombre, la guía del bíceps pasaba por el punto del antebrazo: ahora entra de costado.
+  const toma = todosLosPliegues('TREN_SUPERIOR');
+  const biceps = componerSerie('HOMBRE', 'TREN_SUPERIOR', 'PLIEGUES', [toma, toma]).tarjetas.find((t) => t.sitio.clave === 'pliegue-biceps')!;
+  assert.equal(biceps.guia.puntos.length, 4);
+  // Los perímetros no necesitan desvío: sus guías quedan como en el compositor.
+  const perimetros = componerSerie('HOMBRE', 'TREN_SUPERIOR', 'PERIMETROS', [ejemplo, ejemplo]);
+  assert.ok(perimetros.tarjetas.every((t) => t.guia.puntos.length === 3));
+});
+
+test('DL-113 · el pie de Pliegues lleva las dos sumas del catálogo, la corrida más reciente de cada una, o nada', () => {
+  const metodos = [
+    { methodId: 'met-suma-6-pliegues-isak', methodVersionId: 'met-suma-6-pliegues-isak-v1', category: 'SUMAS_DE_PLIEGUES' as const },
+    { methodId: 'met-suma-7-pliegues-jackson-pollock', methodVersionId: 'met-suma-7-pliegues-jackson-pollock-v1', category: 'SUMAS_DE_PLIEGUES' as const },
+  ];
+  const vieja = corrida('ev-1', 'suma-7-pliegues-jackson-pollock', 80);
+  const nueva = corrida('ev-1', 'suma-7-pliegues-jackson-pollock', 82);
+  const sumas = sumasDelPieDePliegues(resultadosDeLaToma([vieja, nueva], metodos, 'ev-1'));
+  assert.deepEqual(
+    sumas.map((s) => [s.rotulo, s.resultado?.valor.valor ?? null]),
+    [
+      ['Suma 6 pliegues (ISAK)', null],
+      ['Suma 7 pliegues (JP)', 82],
+    ],
+  );
+  // La franja de Serie ya no repite los dos pliegues que ahora tienen sitio.
+  assert.deepEqual(FRANJA_DE_LA_SERIE.PLIEGUES.map((f) => f.clave), ['peso']);
 });
 
 test('el bloque de diámetros aparece solo si la toma tiene alguno, y lo que falta es «sin dato», no cero', () => {

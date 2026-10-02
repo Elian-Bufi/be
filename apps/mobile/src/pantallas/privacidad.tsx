@@ -4,7 +4,8 @@
  *   acto explícito y separado (CON-06), con «Ahora no» igual de visible y sin colores que castiguen no aceptar
  *   (10-B02 §7.3). Revocar lleva la explicación de 10-B02:396 y «Confirmar revocación» (CON-08). Volver a autorizar es
  *   un acto nuevo, nunca «reactivar»: el acto revocado queda en el historial (10-B02 §11).
- * - Historial A3 (CON-07): versión, fecha de aceptación, estado y revocación; sin IP ni user-agent (10-B02 §9).
+ * - Historial A3 (CON-07): versión, fecha de aceptación, estado y revocación; sin IP ni user-agent (10-B02 §9). Va
+ *   plegado (Dirección, 2026-10-01: menos texto a la vista), para que los consentimientos a profesionales no queden lejos.
  * - Consentimientos a profesionales (CON-03; CAND-10-CON-03): el mismo contenido que desde Vínculos, con «Revocar
  *   acceso de [Profesional]» tan localizable como otorgar (CAND-10-CON-B).
  * Revocar A3 deja sin efecto los consentimientos a profesionales sin revocarlos: por eso la lista se vuelve a leer.
@@ -29,7 +30,7 @@ import { useListaPaginada } from '../lista';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { AvisoDeAccesoRevocado, RevocarConsentimiento } from '../revocacion';
 import { TextoDesplegable } from '../texto-versionado';
-import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilosPorTema } from '../ui';
+import { Aviso, Boton, Dato, Desplegable, Insignia, Parrafo, Seccion, Tarjeta, Titulo, estilosPorTema } from '../ui';
 
 type RequisitoA3 = RequisitoDeConsentimientoDeSaludResponse['data'];
 type CargaA3 = { readonly tipo: 'cargando' } | { readonly tipo: 'error'; readonly sinConexion: boolean } | { readonly tipo: 'listo'; readonly datos: RequisitoA3 };
@@ -108,20 +109,22 @@ export function PantallaDePrivacidad({
           />
         ) : null}
 
-        <Subtitulo>Historial</Subtitulo>
-        <EstadoDeCarga estado={historial.estado} onReintentar={historial.recargar} />
-        {historial.estado.tipo === 'listo' && historial.estado.items.length === 0 ? <Parrafo>{COPY_VINCULO.historialA3Vacio}</Parrafo> : null}
-        {historial.estado.tipo === 'listo'
-          ? historial.estado.items.map((acto) => (
-              <Tarjeta key={acto.consentId}>
-                <Insignia texto={COPY_VINCULO.estadoDeConsentimiento[acto.state]} positiva={acto.state === 'ACTIVE'} etiqueta="Estado" />
-                <Dato etiqueta="Otorgado" valor={fecha(acto.acceptedAt)} />
-                {acto.revokedAt ? <Dato etiqueta="Revocado" valor={fecha(acto.revokedAt)} /> : null}
-                <Dato etiqueta="Versión" valor={acto.consentVersionId} />
-              </Tarjeta>
-            ))
-          : null}
-        <VerMas estado={historial.estado} onVerMas={historial.verMas} />
+        {/* Plegado: es el registro de los actos anteriores; así los consentimientos a profesionales quedan a la vista. */}
+        <Desplegable titulo="Historial" detalle="Cada vez que otorgaste o revocaste esta autorización">
+          <EstadoDeCarga estado={historial.estado} onReintentar={historial.recargar} />
+          {historial.estado.tipo === 'listo' && historial.estado.items.length === 0 ? <Parrafo>{COPY_VINCULO.historialA3Vacio}</Parrafo> : null}
+          {historial.estado.tipo === 'listo'
+            ? historial.estado.items.map((acto) => (
+                <Tarjeta key={acto.consentId}>
+                  <Insignia texto={COPY_VINCULO.estadoDeConsentimiento[acto.state]} positiva={acto.state === 'ACTIVE'} etiqueta="Estado" />
+                  <Dato etiqueta="Otorgado" valor={fecha(acto.acceptedAt)} />
+                  {acto.revokedAt ? <Dato etiqueta="Revocado" valor={fecha(acto.revokedAt)} /> : null}
+                  <Dato etiqueta="Versión" valor={acto.consentVersionId} />
+                </Tarjeta>
+              ))
+            : null}
+          <VerMas estado={historial.estado} onVerMas={historial.verMas} />
+        </Desplegable>
       </Seccion>
 
       <Seccion titulo="Consentimientos a profesionales">

@@ -189,15 +189,16 @@ export function evaluacionApi(
 }
 
 export function especificacionApi(
-  v: VersionDeEspecificacionAntropometrica & { especificacion: { id: string; clave: string; tipo: string }; sucesora: { id: string } | null },
+  v: VersionDeEspecificacionAntropometrica & { especificacion: { id: string; clave: string; tipo: string; retiro?: { id: string } | null }; sucesora: { id: string } | null },
 ): EspecificacionAntropometricaApi {
   return {
     specificationId: v.especificacionId,
     versionId: v.id,
     key: v.especificacion.clave,
     kind: v.especificacion.tipo === 'METODO' ? 'METHOD' : 'PROTOCOL',
-    // DL-072: el estado sale de la cadena, no de una columna. Con sucesora, esta versión ya fue superada.
-    status: v.sucesora === null ? 'CURRENT' : 'HISTORICAL',
+    // DL-072: el estado sale de la cadena, no de una columna. Con sucesora, esta versión ya fue superada; con la
+    // especificación retirada del catálogo (DL-112), también es histórica.
+    status: v.sucesora === null && !v.especificacion.retiro ? 'CURRENT' : 'HISTORICAL',
     name: v.nombre,
     content: v.contenido,
     provenanceNote: (v.procedencia as { rotulo?: string } | null)?.rotulo ?? 'Valores sintéticos de demostración.',

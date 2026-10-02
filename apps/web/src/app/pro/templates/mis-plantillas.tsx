@@ -10,6 +10,7 @@
  */
 import { COPY_PLANTILLAS, type EstructuraDePlanDeEntrenamientoEntrada, type PlantillaDeEntrenamiento, type ResumenDePlantillaDeEntrenamiento } from '@be/domain';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Ayuda, AvisoFlotante } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -53,15 +54,22 @@ export function MisPlantillas() {
 
   return (
     <div className="secciones">
-      {aviso ? (
-        <Aviso tipo={aviso.tipo} enfocar>
+      {aviso && aviso.tipo === 'exito' ? (
+        <AvisoFlotante onCerrar={() => setAviso(null)}>
+          <p>{aviso.texto}</p>
+        </AvisoFlotante>
+      ) : null}
+      {aviso && aviso.tipo === 'error' ? (
+        <Aviso tipo="error" enfocar>
           <p>{aviso.texto}</p>
         </Aviso>
       ) : null}
       {sinArea ? null : (
       <section className="seccion" aria-labelledby="titulo-plantillas">
         <h2 id="titulo-plantillas">{COPY_PLANTILLAS.plantillasDeEntrenamiento}</h2>
-        <p className="nota">{COPY_PLANTILLAS.soloTuya}</p>
+        <Ayuda titulo="Quién ve tus plantillas">
+          <p>{COPY_PLANTILLAS.soloTuya}</p>
+        </Ayuda>
         <div className="campo">
           <label htmlFor="plantillas-estado">Estado</label>
           <select id="plantillas-estado" value={estado} onChange={(e) => setEstado(e.target.value as Estado | '')}>

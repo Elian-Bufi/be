@@ -1404,8 +1404,23 @@ model EspecificacionAntropometrica {
   momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
   versiones VersionDeEspecificacionAntropometrica[]
+  retiro    RetiroDeEspecificacion?
 
   @@map("especificacion_antropometrica")
+}
+
+/// DL-112 — el retiro de una especificación del catálogo: deja de ofrecerse para nuevas tomas y cálculos, y todo lo que
+/// la usó sigue en la historia, explicable. Es un hecho que solo se agrega: un método retirado no vuelve; si hace falta
+/// de nuevo, se publica como una especificación nueva con la misma regla.
+model RetiroDeEspecificacion {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  especificacionId  String   @unique @map("especificacion_id") @db.Uuid
+  motivo            String
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  especificacion EspecificacionAntropometrica @relation(fields: [especificacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("retiro_de_especificacion")
 }
 
 /// Sucesión lineal por relación, como toda versión de B-06. Publicar una versión nueva no modifica evaluaciones

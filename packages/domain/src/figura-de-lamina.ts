@@ -51,9 +51,11 @@ export type PliegueDeLaLamina =
   | 'pliegue-pectoral'
   | 'pliegue-axilar-media'
   | 'pliegue-triceps'
+  | 'pliegue-biceps'
   | 'pliegue-subescapular'
   | 'pliegue-antebrazo'
   | 'pliegue-supraespinal'
+  | 'pliegue-cresta-iliaca'
   | 'pliegue-abdominal'
   | 'pliegue-muslo-frontal'
   | 'pliegue-pantorrilla';
@@ -85,9 +87,10 @@ export type ClaveDeLaLamina = PliegueDeLaLamina | PerimetroDeLaLamina | Diametro
  * - `plSuprailiaco` («Suprailíaco», PL3 del Jackson-Pollock 7) → `pliegue-supraespinal`. El compositor lo ubica de
  *   frente, sobre la línea axilar anterior y apenas arriba de la cresta ilíaca: es el «suprailíaco» de JP7 y ACSM, que en
  *   la nomenclatura ISAK se corresponde con el supraespinal (no son idénticos: cambian el reparo y la dirección del
- *   pliegue). La cresta ilíaca de ISAK se toma en la línea medioaxilar y el compositor no la dibuja. En BE el rótulo
- *   es «Supraespinal»: las fórmulas de Jackson y Pollock toman su suprailíaco en la cresta ilíaca (DL-111, D-1 de la
- *   ficha de métodos), y un «Suprailíaco» con el valor del supraespinal diría otra cosa que el cálculo.
+ *   pliegue). La cresta ilíaca de ISAK se toma en la línea medioaxilar y el compositor no la dibuja (BE la suma: ver
+ *   `PLIEGUES_SUMADOS_POR_BE`). En BE el rótulo es «Supraespinal»: las fórmulas de Jackson y Pollock toman su
+ *   suprailíaco en la cresta ilíaca (DL-111, D-1 de la ficha de métodos), y un «Suprailíaco» con el valor del
+ *   supraespinal diría otra cosa que el cálculo.
  * - `brazoCon` («Brazo contraído») → `perimetro-brazo-flexionado` (flexionado y contraído).
  * Además, `abdomen` se rotula «Abdomen bajo» (CM5 en la planilla).
  */
@@ -119,8 +122,17 @@ export const CLAVE_BE_DEL_COMPOSITOR = {
   doRodilla: 'diametro-femur',
 } as const satisfies Readonly<Record<string, ClaveDeLaLamina>>;
 
-/** Las claves del catálogo de BE que el compositor no ubica: se cargan en la lista, fuera de la figura. */
-export const CLAVES_BE_SIN_SITIO_EN_LA_LAMINA = ['pliegue-biceps', 'pliegue-cresta-iliaca'] as const;
+/**
+ * DL-113 · dos pliegues que el compositor no dibuja y BE suma a la figura, porque los piden métodos del catálogo: el
+ * **bíceps** (Durnin y Womersley) y la **cresta ilíaca** (Durnin y Womersley, Jackson y Pollock). Sus coordenadas no
+ * vienen del compositor: las ubicó el ejecutor sobre cada figura y Dirección las tiene que validar.
+ * - Bíceps: en la cara anterior del brazo, a la altura media, como el tríceps de la cara posterior. De frente los dos
+ *   caen casi en el mismo lugar, así que el bíceps va un poco más abajo para que los puntos no se pisen.
+ * - Cresta ilíaca: sobre la línea medioaxilar, a la altura del supraespinal. De frente es el borde del tronco; va un poco
+ *   más arriba que el supraespinal para que su punto no quede en el camino de la guía del supraespinal.
+ * En el tren inferior no hay brazos, y la cresta ilíaca va debajo del supraespinal, que está en el borde de la imagen.
+ */
+export const PLIEGUES_SUMADOS_POR_BE: readonly PliegueDeLaLamina[] = ['pliegue-biceps', 'pliegue-cresta-iliaca'];
 
 /**
  * Los pliegues de la cara posterior (compositor: `POST`). La figura está de frente: el punto real se dibuja debajo de la
@@ -151,9 +163,11 @@ export const ROTULO_EN_LA_LAMINA: Readonly<Record<ClaveDeLaLamina, string>> = {
   'pliegue-pectoral': 'Pectoral',
   'pliegue-axilar-media': 'Axilar media',
   'pliegue-triceps': 'Tríceps',
+  'pliegue-biceps': 'Bíceps',
   'pliegue-subescapular': 'Subescapular',
   'pliegue-antebrazo': 'Antebrazo',
   'pliegue-supraespinal': 'Supraespinal',
+  'pliegue-cresta-iliaca': 'Cresta ilíaca',
   'pliegue-abdominal': 'Abdominal',
   'pliegue-muslo-frontal': 'Muslo anterior',
   'pliegue-pantorrilla': 'Pantorrilla',
@@ -237,9 +251,11 @@ export const FIGURAS_DE_LA_LAMINA: Readonly<Record<SexoDeLaLamina, Readonly<Reco
         'pliegue-pectoral': { x: -12, y: 22.5 },
         'pliegue-axilar-media': { x: -11.3, y: 25.7 },
         'pliegue-triceps': { x: -14.7, y: 28.5 },
+        'pliegue-biceps': { x: -15.6, y: 30 },
         'pliegue-subescapular': { x: -1.7, y: 27.6 },
         'pliegue-antebrazo': { x: -17.3, y: 35.8 },
         'pliegue-supraespinal': { x: -8.6, y: 34.3 },
+        'pliegue-cresta-iliaca': { x: -9.1, y: 32.6 },
         'pliegue-abdominal': { x: -3.9, y: 36.3 },
         'pliegue-muslo-frontal': { x: -7.3, y: 53 },
         'pliegue-pantorrilla': { x: -4.6, y: 72.6 },
@@ -268,9 +284,11 @@ export const FIGURAS_DE_LA_LAMINA: Readonly<Record<SexoDeLaLamina, Readonly<Reco
         'pliegue-pectoral': { x: -19.6, y: 39.3 },
         'pliegue-axilar-media': { x: -19.8, y: 43.3 },
         'pliegue-triceps': { x: -26.1, y: 48.5 },
+        'pliegue-biceps': { x: -26.6, y: 50.3 },
         'pliegue-subescapular': { x: -3.4, y: 45.5 },
         'pliegue-antebrazo': { x: -29.6, y: 59.7 },
         'pliegue-supraespinal': { x: -15.4, y: 57.8 },
+        'pliegue-cresta-iliaca': { x: -15.9, y: 56 },
         'pliegue-abdominal': { x: -7.5, y: 60.4 },
       },
     },
@@ -290,6 +308,7 @@ export const FIGURAS_DE_LA_LAMINA: Readonly<Record<SexoDeLaLamina, Readonly<Reco
       },
       pliegues: {
         'pliegue-supraespinal': { x: -17.4, y: 1 },
+        'pliegue-cresta-iliaca': { x: -18.8, y: 3.6 },
         'pliegue-abdominal': { x: -6.4, y: 4.4 },
         'pliegue-muslo-frontal': { x: -13.7, y: 29.9 },
         'pliegue-pantorrilla': { x: -7.7, y: 63.5 },
@@ -323,9 +342,11 @@ export const FIGURAS_DE_LA_LAMINA: Readonly<Record<SexoDeLaLamina, Readonly<Reco
         'pliegue-pectoral': { x: -9.7, y: 23 },
         'pliegue-axilar-media': { x: -9.5, y: 25.7 },
         'pliegue-triceps': { x: -13, y: 27.3 },
+        'pliegue-biceps': { x: -12.9, y: 28.9 },
         'pliegue-subescapular': { x: -2.7, y: 28.3 },
         'pliegue-antebrazo': { x: -15, y: 35.9 },
         'pliegue-supraespinal': { x: -7.6, y: 36.2 },
+        'pliegue-cresta-iliaca': { x: -7.7, y: 34.6 },
         'pliegue-abdominal': { x: -3.2, y: 38.6 },
         'pliegue-muslo-frontal': { x: -7.3, y: 53.2 },
         'pliegue-pantorrilla': { x: -4.1, y: 74.4 },
@@ -354,9 +375,11 @@ export const FIGURAS_DE_LA_LAMINA: Readonly<Record<SexoDeLaLamina, Readonly<Reco
         'pliegue-pectoral': { x: -16.5, y: 38.8 },
         'pliegue-axilar-media': { x: -16.5, y: 43.1 },
         'pliegue-triceps': { x: -21.1, y: 45.5 },
+        'pliegue-biceps': { x: -20.9, y: 47.2 },
         'pliegue-subescapular': { x: -4.1, y: 46.1 },
         'pliegue-antebrazo': { x: -24.3, y: 58.1 },
         'pliegue-supraespinal': { x: -13.1, y: 57.9 },
+        'pliegue-cresta-iliaca': { x: -13.2, y: 56.2 },
         'pliegue-abdominal': { x: -6.6, y: 59.7 },
       },
     },
@@ -376,6 +399,7 @@ export const FIGURAS_DE_LA_LAMINA: Readonly<Record<SexoDeLaLamina, Readonly<Reco
       },
       pliegues: {
         'pliegue-supraespinal': { x: -13.7, y: 7.7 },
+        'pliegue-cresta-iliaca': { x: -15.2, y: 9 },
         'pliegue-abdominal': { x: -6, y: 9.2 },
         'pliegue-muslo-frontal': { x: -12.2, y: 34.2 },
         'pliegue-pantorrilla': { x: -6.1, y: 65 },
@@ -436,21 +460,25 @@ export const TARJETAS_DE_PERIMETROS: Readonly<Record<EncuadreDeLaLamina, readonl
   ],
 };
 
-/** Las tarjetas de Pliegues, en orden, con sus filas (compositor: `GF`). */
+/**
+ * Las tarjetas de Pliegues, en orden, con sus filas (compositor: `GF`). DL-113 suma el bíceps a la tarjeta del brazo y
+ * la cresta ilíaca a la de la cintura; adentro de cada tarjeta, las filas siguen la altura de sus sitios en las dos
+ * figuras, para que las guías no se crucen.
+ */
 export const TARJETAS_DE_PLIEGUES: Readonly<Record<EncuadreDeLaLamina, readonly (readonly PliegueDeLaLamina[])[]>> = {
   ENTERO: [
-    ['pliegue-pectoral', 'pliegue-axilar-media', 'pliegue-triceps'],
+    ['pliegue-pectoral', 'pliegue-axilar-media', 'pliegue-triceps', 'pliegue-biceps'],
     ['pliegue-subescapular', 'pliegue-antebrazo'],
-    ['pliegue-supraespinal', 'pliegue-abdominal'],
+    ['pliegue-cresta-iliaca', 'pliegue-supraespinal', 'pliegue-abdominal'],
     ['pliegue-muslo-frontal', 'pliegue-pantorrilla'],
   ],
   TREN_SUPERIOR: [
-    ['pliegue-pectoral', 'pliegue-axilar-media', 'pliegue-triceps'],
+    ['pliegue-pectoral', 'pliegue-axilar-media', 'pliegue-triceps', 'pliegue-biceps'],
     ['pliegue-subescapular', 'pliegue-antebrazo'],
-    ['pliegue-supraespinal', 'pliegue-abdominal'],
+    ['pliegue-cresta-iliaca', 'pliegue-supraespinal', 'pliegue-abdominal'],
   ],
   TREN_INFERIOR: [
-    ['pliegue-supraespinal', 'pliegue-abdominal'],
+    ['pliegue-supraespinal', 'pliegue-cresta-iliaca', 'pliegue-abdominal'],
     ['pliegue-muslo-frontal', 'pliegue-pantorrilla'],
   ],
 };

@@ -12,10 +12,12 @@
  * - **la referencia no es una decisión clínica**: no cambia el cálculo, no borra los otros y no crea objetivo ni
  *   prescripción (REG-06-207; INV-06-05). El texto lo dice antes de que apriete el botón;
  * - cada corrida muestra **método, versión, regla y precisión declarada**, que es lo que la vuelve reproducible
- *   (REG-06-156/158).
+ *   (REG-06-156/158). Desde DL-113, el método y la fecha quedan a la vista y lo demás, a un toque en «Con qué se
+ *   calculó», junto con las entradas: la pantalla muestra primero el resultado y las acciones.
  */
 import { asignacionAutomatica, cantidad, todasLasPaginas, UNIDAD_ADIMENSIONAL, COPY_ANTROPOMETRIA, datosDelMetodo, metodosParaLaToma, nombreDeMetrica, numeroConPrecision, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
+import { Ayuda } from '../../../../components/ayuda';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { api } from '../../../../lib/api';
@@ -54,7 +56,9 @@ export function BloqueDeCalculos({ evaluacion, onAviso }: { evaluacion: Evaluaci
   return (
     <section className="seccion" aria-labelledby="titulo-calculos">
       <h3 id="titulo-calculos">{COPY_ANTROPOMETRIA.calculos}</h3>
-      <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeCoexistencia}</p>
+      <Ayuda titulo="Cómo conviven los cálculos">
+        <p>{COPY_ANTROPOMETRIA.explicacionDeCoexistencia}</p>
+      </Ayuda>
       {estado.tipo === 'cargando' ? <Cargando /> : null}
       {estado.tipo === 'error' ? <ErrorConReintento onReintentar={cargar} /> : null}
       {estado.tipo === 'listo' ? (
@@ -82,6 +86,7 @@ export function BloqueDeCalculos({ evaluacion, onAviso }: { evaluacion: Evaluaci
             <NuevoCalculo
               evaluacion={evaluacion}
               metodos={estado.metodos}
+              corridas={estado.corridas}
               onCerrar={() => setAbierto(false)}
               onHecho={(texto) => {
                 setAbierto(false);
@@ -135,14 +140,21 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
         {!corrida.effective ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoNoVigente}</span></> : null}
         {corrida.referenceForPurpose ? <> <span className="insignia">{COPY_ANTROPOMETRIA.referenciaAdoptada}</span></> : null}
       </h4>
-      {!corrida.effective ? <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeCalculoNoVigente}</p> : null}
+      {!corrida.effective ? (
+        <Ayuda titulo="Por qué está sin efecto">
+          <p>{COPY_ANTROPOMETRIA.explicacionDeCalculoNoVigente}</p>
+        </Ayuda>
+      ) : null}
       <p className="nota">
-        {COPY_ANTROPOMETRIA.metodo}: {corrida.methodName} · {COPY_ANTROPOMETRIA.versionDelMetodo} {corrida.methodVersion} · {COPY_ANTROPOMETRIA.reglaAplicada}: {corrida.ruleId} ·{' '}
-        {COPY_ANTROPOMETRIA.precisionDeclarada}: {COPY_ANTROPOMETRIA.decimales(corrida.precision.decimals)} · {fecha(corrida.recordedAt)}
+        {COPY_ANTROPOMETRIA.metodo}: {corrida.methodName} · {fecha(corrida.recordedAt)}
         {corrida.supersedesRunId ? ` · ${COPY_ANTROPOMETRIA.corridaReemplazada}` : ''}
       </p>
-      <details>
-        <summary>{COPY_ANTROPOMETRIA.entradasDelCalculo}</summary>
+      {/* Lo que vuelve reproducible la corrida (REG-06-156/158), a un toque: versión, regla, precisión y entradas. */}
+      <Ayuda titulo={COPY_ANTROPOMETRIA.entradasDelCalculo}>
+        <p>
+          {COPY_ANTROPOMETRIA.versionDelMetodo} {corrida.methodVersion} · {COPY_ANTROPOMETRIA.reglaAplicada}: {corrida.ruleId} · {COPY_ANTROPOMETRIA.precisionDeclarada}:{' '}
+          {COPY_ANTROPOMETRIA.decimales(corrida.precision.decimals)}
+        </p>
         <ul>
           {corrida.inputProvenance.map((i) => (
             <li key={i.sourceRef}>
@@ -151,7 +163,7 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
             </li>
           ))}
         </ul>
-      </details>
+      </Ayuda>
 
       {!corrida.referenceForPurpose && !adoptando && corrida.evaluationContext === 'REGISTERED' && corrida.effective ? (
         <div className="acciones">
@@ -190,12 +202,15 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
 function NuevoCalculo({
   evaluacion,
   metodos,
+  corridas,
   onCerrar,
   onHecho,
   onError,
 }: {
   evaluacion: EvaluacionAntropometricaApi;
   metodos: readonly MetodoApi[];
+  /** Las corridas de esta toma: para avisar si el mismo resultado ya está calculado con otro método. */
+  corridas: readonly CorridaDeCalculoApi[];
   onCerrar: () => void;
   onHecho: (t: string) => void;
   onError: (t: string) => void;
@@ -241,6 +256,11 @@ function NuevoCalculo({
   }
 
   const completo = metodo.requiredInputs.every((e) => entradas[e.inputCode]);
+  // DL-113 · las variantes por sexo de un método dan la misma métrica (DL-112): si la toma ya la tiene calculada con
+  // otro método, las dos corridas conviven. La evolución muestra las dos, cada una con su método, pero «Tu última toma»
+  // de la APK muestra una sola por métrica: la registrada al final (`ultimaToma`). Se avisa antes de calcular, sin
+  // elegir por el profesional.
+  const yaCalculada = corridas.find((c) => c.effective && c.result.metric === metodo.output.metric && c.methodId !== metodo.methodId);
   const etiquetaDeCategoria = (m: MetodoApi): string => (m.category ? `${COPY_ANTROPOMETRIA.categoriaDeMetodo[m.category] ?? m.category} · ` : '');
   const opcion = (m: MetodoApi) => (
     <option key={m.methodVersionId} value={m.methodVersionId}>
@@ -269,68 +289,97 @@ function NuevoCalculo({
           <strong>{COPY_ANTROPOMETRIA.metodoPide}:</strong>
         </p>
         <ul className="ficha-de-metodo__datos">
-          {datos.map((d) => (
-            <li key={d.codigo}>
-              {nombreDeMetrica(d.metrica)} ({d.unidades.join(', ')}):{' '}
-              {d.medicion ? (
-                cantidad(d.medicion.valor, d.medicion.unidad)
-              ) : (
-                <strong>
-                  {d.falta?.motivo === 'OTRA_UNIDAD'
-                    ? `${COPY_ANTROPOMETRIA.datoEnOtraUnidad} (${d.falta.unidad})`
-                    : d.falta?.motivo === 'SIN_VALOR_VIGENTE'
-                      ? COPY_ANTROPOMETRIA.datoSinValorVigente
-                      : COPY_ANTROPOMETRIA.datoFalta}
-                </strong>
-              )}
-            </li>
-          ))}
+          {datos.map((d) => {
+            // El valor con el que se va a calcular: el de la medición asignada, sola o elegida por el profesional.
+            const elegida = disponibles.find((m) => m.measurementId === entradas[d.codigo]);
+            return (
+              <li key={d.codigo}>
+                {nombreDeMetrica(d.metrica)} ({d.unidades.join(', ')}):{' '}
+                {elegida ? (
+                  elegida.effectiveMagnitude ? (
+                    <>
+                      {cantidad(elegida.effectiveMagnitude.value, elegida.effectiveMagnitude.unit)}
+                      {elegida.metric !== d.metrica ? ` (${nombreDeMetrica(elegida.metric)})` : ''}
+                    </>
+                  ) : (
+                    <strong>{COPY_ANTROPOMETRIA.sinValorVigente}</strong>
+                  )
+                ) : (
+                  <strong>
+                    {d.falta?.motivo === 'OTRA_UNIDAD'
+                      ? `${COPY_ANTROPOMETRIA.datoEnOtraUnidad} (${d.falta.unidad})`
+                      : d.falta?.motivo === 'SIN_VALOR_VIGENTE'
+                        ? COPY_ANTROPOMETRIA.datoSinValorVigente
+                        : d.falta
+                          ? COPY_ANTROPOMETRIA.datoFalta
+                          : 'Sin elegir'}
+                  </strong>
+                )}
+              </li>
+            );
+          })}
         </ul>
-        {metodo.source ? (
-          <p className="nota">
-            <strong>{COPY_ANTROPOMETRIA.metodoFuente}:</strong> {metodo.source}
-          </p>
-        ) : (
-          <p className="campo__ayuda">{metodo.provenanceNote}</p>
-        )}
         {metodo.population ? (
           <p className="nota">
             <strong>{COPY_ANTROPOMETRIA.metodoPoblacion}:</strong> {metodo.population}
           </p>
         ) : null}
+        {yaCalculada ? (
+          <Aviso tipo="info">
+            <p>
+              Esta toma ya tiene «{nombreDeMetrica(metodo.output.metric)}» calculada con «{yaCalculada.methodName}». Si calculás también este método,
+              los dos resultados conviven: en la evolución se ven los dos, cada uno con su método, y en la APK la persona ve el último que se
+              registró.
+            </p>
+          </Aviso>
+        ) : null}
+        <Ayuda titulo="Fuente y regla del método">
+          {metodo.source ? (
+            <p>
+              <strong>{COPY_ANTROPOMETRIA.metodoFuente}:</strong> {metodo.source}
+            </p>
+          ) : (
+            <p>{metodo.provenanceNote}</p>
+          )}
+          <p>
+            {COPY_ANTROPOMETRIA.finalidadDelCalculo}: {metodo.purposes.map((p) => COPY_ANTROPOMETRIA.finalidadDeCalculo[p] ?? p).join(', ')} · {COPY_ANTROPOMETRIA.precisionDeclarada}:{' '}
+            {COPY_ANTROPOMETRIA.decimales(metodo.precisionPolicy.decimals)} · {COPY_ANTROPOMETRIA.reglaAplicada}: {metodo.ruleId}
+          </p>
+        </Ayuda>
       </div>
 
-      <p className="nota">
-        {COPY_ANTROPOMETRIA.explicacionDeAdmisibilidad} {COPY_ANTROPOMETRIA.asignacionAutomatica}
-      </p>
-      {metodo.requiredInputs.map((e) => (
-        <div className="campo" key={e.inputCode}>
-          <label htmlFor={`cal-entrada-${e.inputCode}`}>
-            {nombreDeMetrica(e.metric)} ({e.acceptedUnits.join(', ')})
-          </label>
-          <select id={`cal-entrada-${e.inputCode}`} value={entradas[e.inputCode] ?? ''} onChange={(ev) => setEntradas((x) => ({ ...x, [e.inputCode]: ev.target.value }))}>
-            <option value="">{COPY_ANTROPOMETRIA.elegirEntrada}</option>
-            {/*
-              El desplegable ofrece el valor con el que se va a calcular, que es el que rige (REG-06-16). Mostrar el
-              que se tomó primero hacía que el profesional eligiera un número y recibiera un resultado derivado de
-              otro. Con la cadena sin resolver no se ofrece un valor: la admisibilidad va a rechazar esa entrada.
-            */}
-            {disponibles.map((m) => (
-              <option key={m.measurementId} value={m.measurementId}>
-                {nombreDeMetrica(m.metric)}: {m.effectiveMagnitude ? cantidad(m.effectiveMagnitude.value, m.effectiveMagnitude.unit) : COPY_ANTROPOMETRIA.sinValorVigente} ·{' '}
-                {ETIQUETA_DE_CLASE_DE_DATO[m.dataClass]}
-                {m.corrections.length > 0 ? ` · ${COPY_ANTROPOMETRIA.corregida}` : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-      ))}
-
-      <p className="nota">
-        {COPY_ANTROPOMETRIA.finalidadDelCalculo}: {metodo.purposes.map((p) => COPY_ANTROPOMETRIA.finalidadDeCalculo[p] ?? p).join(', ')} · {COPY_ANTROPOMETRIA.precisionDeclarada}:{' '}
-        {COPY_ANTROPOMETRIA.decimales(metodo.precisionPolicy.decimals)} ·{' '}
-        {COPY_ANTROPOMETRIA.reglaAplicada}: {metodo.ruleId}
-      </p>
+      {/*
+        Cada dato ya sale de la medición de la toma con la misma clave y la ficha muestra su valor. Cambiarlo es la
+        excepción, así que los desplegables quedan plegados (DL-113).
+      */}
+      <details className="ayuda">
+        <summary>Cambiar de qué medición sale cada dato</summary>
+        <p className="nota">
+          {COPY_ANTROPOMETRIA.asignacionAutomatica} {COPY_ANTROPOMETRIA.explicacionDeAdmisibilidad}
+        </p>
+        {metodo.requiredInputs.map((e) => (
+          <div className="campo" key={e.inputCode}>
+            <label htmlFor={`cal-entrada-${e.inputCode}`}>
+              {nombreDeMetrica(e.metric)} ({e.acceptedUnits.join(', ')})
+            </label>
+            <select id={`cal-entrada-${e.inputCode}`} value={entradas[e.inputCode] ?? ''} onChange={(ev) => setEntradas((x) => ({ ...x, [e.inputCode]: ev.target.value }))}>
+              <option value="">{COPY_ANTROPOMETRIA.elegirEntrada}</option>
+              {/*
+                El desplegable ofrece el valor con el que se va a calcular, que es el que rige (REG-06-16). Mostrar el
+                que se tomó primero hacía que el profesional eligiera un número y recibiera un resultado derivado de
+                otro. Con la cadena sin resolver no se ofrece un valor: la admisibilidad va a rechazar esa entrada.
+              */}
+              {disponibles.map((m) => (
+                <option key={m.measurementId} value={m.measurementId}>
+                  {nombreDeMetrica(m.metric)}: {m.effectiveMagnitude ? cantidad(m.effectiveMagnitude.value, m.effectiveMagnitude.unit) : COPY_ANTROPOMETRIA.sinValorVigente} ·{' '}
+                  {ETIQUETA_DE_CLASE_DE_DATO[m.dataClass]}
+                  {m.corrections.length > 0 ? ` · ${COPY_ANTROPOMETRIA.corregida}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </details>
 
       <div className="acciones">
         <button type="button" className="boton boton--secundario" onClick={onCerrar} disabled={enviando}>

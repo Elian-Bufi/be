@@ -504,7 +504,7 @@ describe('DL-072 · el catálogo declara y filtra por estado, derivado de la cad
     expect(filas.map((e) => e.versionId)).toContain(CATALOGO_DEMO.metodo.v2);
     expect(filas.map((e) => e.versionId)).not.toContain(CATALOGO_DEMO.metodo.v1);
 
-    const historicas = await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications?status=HISTORICAL').expect(200);
+    const historicas = await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications?status=HISTORICAL&limit=50').expect(200);
     const viejas = historicas.body.data as { versionId: string; key: string; status: string }[];
     expect(viejas.every((e) => e.status === 'HISTORICAL')).toBe(true);
     // La v1 del método se consulta —para explicar las corridas que la citan— pero no aparece entre las vigentes.
@@ -514,7 +514,7 @@ describe('DL-072 · el catálogo declara y filtra por estado, derivado de la cad
     // `kind` y `status` se combinan sin pisarse. No se afirma igualdad exacta: otras pruebas de la suite siembran
     // sus propias cadenas de especificaciones contra la misma base, así que lo verificable es que todo lo devuelto
     // cumpla los dos filtros y que la v1 del método esté.
-    const metodosViejos = await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications?kind=METHOD&status=HISTORICAL').expect(200);
+    const metodosViejos = await conSesion(app, c.pro.token).get('/api/v1/anthropometry/specifications?kind=METHOD&status=HISTORICAL&limit=50').expect(200);
     const combinado = metodosViejos.body.data as { versionId: string; kind: string; status: string }[];
     expect(combinado.every((e) => e.kind === 'METHOD' && e.status === 'HISTORICAL')).toBe(true);
     expect(combinado.map((e) => e.versionId)).toContain(CATALOGO_DEMO.metodo.v1);

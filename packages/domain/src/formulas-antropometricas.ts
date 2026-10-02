@@ -99,6 +99,20 @@ function densidadDurninWomersley(sexo: Sexo, e: ValoresDeEntrada): Resultado {
   return franja.c - franja.m * Math.log10(suma(e, PLIEGUES_DW_4));
 }
 
+/**
+ * DL-112 · masa grasa y masa libre de grasa con el modelo de dos compartimentos (ficha, §8) sobre Durnin y Womersley con
+ * Siri, que es la ecuación de pliegues de referencia del catálogo para los dos sexos: masa grasa = peso · %G / 100, y
+ * masa libre de grasa = peso − masa grasa. El porcentaje se calcula adentro, sin redondear.
+ */
+function masaDurninWomersley(sexo: Sexo, que: 'GRASA' | 'LIBRE_DE_GRASA'): ReglaDeCalculo {
+  return (e) =>
+    positivas(e, ['peso']) ??
+    luego(luego(densidadDurninWomersley(sexo, e), siri), (porcentajeDeGrasa) => {
+      const grasa = (val(e, 'peso') * porcentajeDeGrasa) / 100;
+      return masa(que === 'GRASA' ? grasa : val(e, 'peso') - grasa);
+    });
+}
+
 // ─── Densidad: Jackson y Pollock (1978) y Jackson, Pollock y Ward (1980) ──────────────────────────
 
 /** Densidad = a − b · S + c · S² − d · edad. */
@@ -267,6 +281,10 @@ export const REGLAS_ANTROPOMETRICAS: Readonly<Record<string, ReglaDeCalculo>> = 
   'be/grasa-deurenberg-hombres@1': (e) => positivas(e, ['peso', 'talla', 'edad']) ?? porcentaje(1.2 * imc(e) + 0.23 * val(e, 'edad') - DEURENBERG.HOMBRES),
   'be/grasa-deurenberg-mujeres@1': (e) => positivas(e, ['peso', 'talla', 'edad']) ?? porcentaje(1.2 * imc(e) + 0.23 * val(e, 'edad') - DEURENBERG.MUJERES),
   // Masas
+  'be/masa-grasa-durnin-womersley-hombres@1': masaDurninWomersley('HOMBRES', 'GRASA'),
+  'be/masa-grasa-durnin-womersley-mujeres@1': masaDurninWomersley('MUJERES', 'GRASA'),
+  'be/masa-libre-de-grasa-durnin-womersley-hombres@1': masaDurninWomersley('HOMBRES', 'LIBRE_DE_GRASA'),
+  'be/masa-libre-de-grasa-durnin-womersley-mujeres@1': masaDurninWomersley('MUJERES', 'LIBRE_DE_GRASA'),
   'be/masa-grasa-faulkner@1': (e) => positivas(e, ['peso', ...PLIEGUES_FAULKNER_4]) ?? masa((val(e, 'peso') * porcentajeFaulkner(e)) / 100),
   'be/masa-libre-de-grasa-faulkner@1': (e) => positivas(e, ['peso', ...PLIEGUES_FAULKNER_4]) ?? masa(val(e, 'peso') * (1 - porcentajeFaulkner(e) / 100)),
   'be/masa-osea-rocha@1': (e) => positivas(e, ['talla', 'diametro-biestiloideo', 'diametro-femur']) ?? masaOseaRocha(e),

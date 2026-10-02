@@ -116,6 +116,9 @@
 | DL-109 | PF-09 · 2026-09-30 | ficha «Plantillas del profesional» (mejora C «Mis habituales») · DL-108 · 06 REG-06-111 | Lo que el profesional repite de a pedazos (un ejercicio, un alimento, una sesión, una comida) se vuelve a buscar y a escribir en cada plan | **DECIDIDA** 2026-09-30 · «Mis habituales»: elementos y bloques; reguardar con el mismo nombre reemplaza, con aviso · implementada en #122 |
 | DL-110 | Crítica de negocio · 2026-09-30 | REG-06-209 · UC-P32 · WP-07 D-D · T-06-33 · UC-P19 · DIR-10-MET-A · REG-06-151/157/162/168 | Formularios propios (mejora D) y protocolos propios de antropometría (mejora E) | **DECIDIDA** 2026-09-30 · D postergada (exclusión de P0 vigente); E: catálogo real de BE, sin protocolos ni fórmulas del profesional; contenido pendiente de Dirección |
 | DL-111 | Pedido de Dirección · 2026-09-30 | DL-110 · DL-073 · 06 REG-06-156/157/162/203/204/205 · RF-048/049 · TEST-PRJ-009 | El catálogo antropométrico real (perfil completo y 40 fórmulas con fuente), la lámina del compositor en el website y la figura con los resultados en la APK | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · decisiones del ejecutor: sitios de la ficha, métodos por sexo, edad como dato de la toma, una métrica por familia, resultados en la evolución sin cambiar su forma |
+| DL-112 | Pedido de Dirección · 2026-10-01 | DL-111 · 06 REG-06-205 · RF-048 · DL-072 (especificaciones de solo agregar) | El catálogo ofrece demasiados métodos para elegir: 40 métodos, 28 resultados | **DECIDIDA** 2026-10-01 (la purga) · la lista la armó el ejecutor, A RATIFICAR · 21 vigentes, 23 retirados y 4 nuevos; lo calculado sigue en la historia |
+| DL-113 | Pedido de Dirección · 2026-10-01 | B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 | Mucho texto a la vista, avisos fuera de la vista en el teléfono, la APK sin navegación fija y pliegues del catálogo fuera de la figura | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · guía `docs/ux/GUIA-UX-UI.md` · falta la prueba de Dirección en el teléfono |
+| DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **PROVISORIA, A RATIFICAR** 2026-10-01 · excepción declarada por aviso y paquete, con motivo y vencimiento (2026-10-31) |
 
 ---
 
@@ -2312,3 +2315,173 @@ Se conservan las instantáneas históricas, la navegación corregida (DL-096) y 
 **Límites declarados.** Ningún profesional de Dirección validó todavía los coeficientes, los sitios ni las poblaciones: están contrastados con las fuentes y con dos implementaciones independientes, no con un caso clínico. La APK no se probó en un teléfono. La validación de la toma (al crear, solo un protocolo vigente del catálogo) sigue abierta, como dice DL-110.
 
 **Pendiente de Dirección.** Ratificar las decisiones 1 a 13. Decidir las abiertas de la ficha (§15.2): sitio del suprailíaco (D-1), término de etnia de Lee (D-2), sitios de muslo, pecho y cintura (D-3, D-4), densidad como resultado visible (D-7), métodos de Heymsfield, Martin y Kerr, y los índices de VanItallie y Kouri. Decidir si «Conclusiones» lleva la TMB y el perfil nutricional, y con qué método.
+
+---
+
+## DL-112 — Purga del catálogo antropométrico: 21 métodos vigentes; los retirados siguen en la historia
+
+**Prioridad:** alta · **Documento:** pedido de Dirección del 2026-10-01 («28 métodos son demasiados, hagamos una purga y dejemos los más usados y los más efectivos») · DL-111 · 06 REG-06-205 · RF-048 · DL-072 · **Estado:** DECIDIDA la purga; la lista, A RATIFICAR por Dirección
+
+**Qué pidió Dirección.** Elegir un método entre 40 (28 resultados distintos) era demasiado. Pidió dejar los más usados y los más efectivos.
+
+**Criterio del ejecutor.** Se quedan:
+- los métodos de uso corriente en la consulta;
+- los que tienen validación publicada contra un método de referencia;
+- los que la lámina de Dirección usa: la suma y el porcentaje de Jackson y Pollock con 7 pliegues.
+
+Salen:
+- lo redundante: la variante de Brozek cuando los autores usaron Siri, y Jackson y Pollock con 3 pliegues cuando está el de 7;
+- lo de validación débil o con la fuente original no accesible.
+
+Cada retiro lleva su motivo en la migración.
+
+**Vigentes (21).**
+- Índices: IMC, cintura/cadera y cintura/talla.
+- Sumas de pliegues: 6 de ISAK y 7 de Jackson y Pollock.
+- Grasa corporal (Siri):
+  - Durnin y Womersley, hombres y mujeres;
+  - Jackson y Pollock, 7 pliegues, hombres;
+  - Jackson, Pollock y Ward, 7 pliegues, mujeres;
+  - RFM, hombres y mujeres.
+- Masas:
+  - grasa y libre de grasa de Durnin y Womersley, hombres y mujeres;
+  - ósea de Rocha;
+  - muscular esquelética de Lee con perímetros, hombres y mujeres.
+- Somatotipo de Heath y Carter: endomorfia, mesomorfia y ectomorfia.
+
+**Nuevos (4).** Masa grasa y masa libre de grasa de Durnin y Womersley, para hombres y para mujeres. Son el peso por el porcentaje de grasa de la misma ecuación, sin redondear en el medio. Así la composición en kilos no depende de Faulkner, que sale. Sus pruebas usan los casos de la ficha.
+
+**Retirados (23), con su motivo.**
+- Conicidad: poco usado.
+- Suma de 8 pliegues: quedan la de 6 y la de 7.
+- Variantes de Brozek de Durnin y Womersley y de Jackson y Pollock (4): los autores usaron Siri.
+- Jackson y Pollock con 3 pliegues, con Siri y con Brozek (4): queda el de 7, más preciso.
+- Faulkner, más su masa grasa y su masa libre de grasa (3): una ecuación de nota de tabla, sin validación demostrada y solo para hombres.
+- Yuhasz-Carter (2): los originales no estuvieron accesibles.
+- BAI: precisión baja frente a DXA.
+- Deurenberg (2): la estimación más gruesa del catálogo.
+- Masa residual de Würch (2): solo tiene sentido dentro del modelo de cuatro componentes, que sale.
+- Masa muscular en cuatro componentes: depende de Faulkner.
+- Lee con peso y talla (2): queda el de perímetros, más preciso.
+
+**Cómo se retira sin borrar.** Las especificaciones son de solo agregar (DL-072), así que el retiro es una tabla nueva, `retiro_de_especificacion`, también de solo agregar, con su motivo y su momento. La migración es `20261002000000_purga_del_catalogo_antropometrico`; la `20261001010000`, ya aplicada en test, no cambia.
+
+Un método retirado:
+- no se lista en API-MTH-01 ni se ofrece al calcular;
+- si se pide una corrida nueva con él, la API responde 422 `METHOD_VERSION_NOT_SELECTABLE` y dice que fue retirado;
+- se sigue consultando (API-MTH-02) como histórico;
+- las corridas que ya se hicieron con él siguen en la evaluación, en la lámina y en la evolución.
+
+**Pendiente de Dirección.** Ratificar la lista. Para recuperar un retirado, se publica de nuevo como especificación nueva con la misma regla: el retiro no se borra.
+
+---
+
+## DL-113 — UX y UI: navegación inferior en la APK, menos texto a la vista, avisos donde se mira y una guía de buenas prácticas
+
+**Prioridad:** alta · **Documento:** pedido de Dirección del 2026-10-01 · prueba de Dirección del 2026-10-01 en test · B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 · **Estado:** IMPLEMENTADA, A RATIFICAR por Dirección; falta la prueba en el teléfono
+
+**Qué pidió Dirección.** «Ya le vayamos poniendo UX y UI.» Pidió también:
+- una navegación en la zona baja de la APK, «como en las apps», para pasar de una zona a otra;
+- menos texto, porque «si no, se perderán funcionalidades por no verse»;
+- dejar planteadas las buenas prácticas que se van a seguir.
+
+En la prueba del mismo día marcó cinco cosas:
+- el aviso de «Registrar evaluación» aparecía arriba de todo en el teléfono;
+- los óvalos de la figura de la APK se rompían;
+- el bíceps no estaba en la figura;
+- «suprailíaco» y «supraespinal» confundían;
+- el pie de Pliegues decía «—».
+
+**Lo que se hizo, con las decisiones del ejecutor (a ratificar).**
+
+*APK*
+1. **Barra inferior con cinco zonas:** Nutrición, Entrenamiento, Evolución, Información y Cuenta.
+   - Cada zona mide 56 dp, con texto e ícono y rol de pestaña para TalkBack.
+   - La barra se oculta con el teclado.
+   - Cuenta deja de ser el menú: quedan vínculos, estado, privacidad, apariencia, sesión y cierre.
+   - **La APK abre en Nutrición.** Antes abría en Cuenta, que hacía de menú. Atrás, desde una zona, vuelve a Nutrición; desde Nutrición, sale.
+2. **La figura en SVG** (react-native-svg). Los anillos son elipses, con la mitad trasera punteada. Antes eran aproximaciones que se rompían.
+3. **Menos texto a la vista.** Quedan plegados:
+   - en Mi evolución: «Cómo se lee» y «La figura, en lista», que es el camino del lector de pantalla;
+   - el estado de la cuenta;
+   - «Registrar otro día»;
+   - el historial de A3.
+
+   Lo que se lee antes de aceptar sigue a la vista: registro, consentimiento y A3.
+
+*Website*
+
+4. **Avisos.** Un éxito aparece fijo abajo, donde se está mirando, y se va solo (`AvisoFlotante`). Un error queda junto al formulario, con el foco.
+5. **Registrar una evaluación** usa el diálogo modal centrado.
+6. **Cálculos.**
+   - A la vista quedan el resultado, el método, la fecha y las acciones.
+   - Versión, regla, precisión y entradas quedan a un toque, en «Con qué se calculó».
+   - **REG-06-156/158 se cumple a un toque, no a la vista**: a ratificar.
+   - La ficha del método muestra el valor con el que se va a calcular. Cambiar la medición de un dato es la excepción y queda plegado.
+7. **Aviso antes de calcular** cuando la toma ya tiene el mismo resultado con otro método, como las variantes por sexo.
+   - Las dos corridas conviven.
+   - La evolución muestra las dos, cada una con su método.
+   - «Tu última toma» de la APK muestra la registrada al final.
+   - Corrige el punto 7 de DL-111, que decía «una observación por día y métrica».
+8. **Lámina.**
+   - El bíceps y la cresta ilíaca van sobre la figura, con su guía, en las seis figuras. **Las coordenadas son del ejecutor y Dirección las tiene que validar**:
+     - el bíceps, en la cara anterior del brazo y un poco más abajo que el tríceps;
+     - la cresta ilíaca, en el borde del tronco y un poco más arriba que el supraespinal, para que su punto no quede en el camino de otra guía.
+   - Con la cresta ilíaca dibujada al lado del supraespinal, se ve que son dos sitios distintos. Las fichas de Jackson y Pollock ya decían que su suprailíaco se toma en la cresta ilíaca.
+   - El pie de Pliegues lleva las sumas de 6 y de 7 pliegues calculadas; sin corrida, dice «Sin calcular».
+   - En Serie, una guía que pasaría sobre otro punto entra al sitio de costado. En el compositor ya pasaba con el tríceps y el antebrazo.
+9. **El resto del website** sigue el mismo criterio: éxitos flotantes, confirmaciones modales y explicaciones largas plegadas.
+
+*Guía*
+
+10. **`docs/ux/GUIA-UX-UI.md`** reúne las buenas prácticas que se siguen desde ahora y la lista de control de cada pantalla. Cubre:
+    - texto;
+    - avisos y diálogos;
+    - navegación;
+    - toque y letra;
+    - color;
+    - figuras;
+    - estados.
+
+**Límites declarados.**
+- La prueba en el teléfono la hace Dirección. Nada de esto se probó todavía en un teléfono: la APK se revisó con maquetas HTML de la misma geometría y el website con recorridos automáticos.
+- TalkBack y la letra al máximo siguen sin probarse en un Android físico (RNF-ACC-001).
+- react-native-svg es nativo: hace falta la APK nueva, porque la 0.12.2 no lo tiene.
+- En la figura del teléfono, con muchos pliegues, los halos del tronco se tocan.
+
+**Pendiente de Dirección.**
+- Ratificar los puntos 1 a 10.
+- Validar en el teléfono:
+  - la barra;
+  - la figura;
+  - los plegados;
+  - los avisos;
+  - las coordenadas del bíceps y de la cresta ilíaca.
+- Decidir si la APK abre en Nutrición o en otra zona.
+
+---
+
+## DL-114 — Excepción declarada en la auditoría de dependencias: node-forge sin versión corregida
+
+**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** PROVISORIA, A RATIFICAR por Dirección; la excepción vence el 2026-10-31
+
+**Qué pasó.**
+- El 2026-10-01 a las 21:09 UTC, GitHub actualizó el aviso GHSA-86w9-cpqp-85rv de node-forge: la verificación de firmas RSA PKCS#1 v1.5 acepta elementos DigestAlgorithm anidados de más.
+- Ahora abarca hasta la 1.4.0, que es la última publicada, y **no hay versión corregida**.
+- node-forge entra por `expo` → `@expo/cli` → `@expo/code-signing-certificates`. Desde ese momento la auditoría de `@be/mobile` falla en cualquier PR, y también fallaría en `main`: el lock de `0308355` tiene los mismos avisos.
+
+**Por qué no aplica a BE.**
+- `@expo/code-signing-certificates` firma y verifica actualizaciones OTA de expo-updates, y BE no usa expo-updates ni esa firma.
+- node-forge es parte de la CLI de construcción: no viaja en el bundle de la APK.
+- No está en las dependencias de la API ni del website, que auditan limpias.
+
+**Lo que se hizo (provisorio).**
+- `npm audit --audit-level=high` no admite excepciones, así que la auditoría pasa a `scripts/auditoria-de-dependencias.cjs`.
+- Sigue fallando con **cualquier** aviso alto o crítico, salvo los declarados en `EXCEPCIONES`.
+- Cada excepción dice el aviso, el paquete, el motivo y la fecha de vencimiento.
+- Una excepción vale solo para ese aviso en ese paquete. Vencida, vuelve a fallar.
+- Las pruebas están en `scripts/auditoria-de-dependencias.test.cjs`.
+
+**Pendiente de Dirección.**
+- Ratificar la excepción o pedir otra salida.
+- Antes del 2026-10-31, revisar si node-forge publicó la corrección (entonces se fija con `overrides` y la excepción se borra) o si Expo dejó de depender de node-forge.

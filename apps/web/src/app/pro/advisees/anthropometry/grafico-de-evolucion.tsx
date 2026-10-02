@@ -47,6 +47,7 @@ import {
 } from '@be/domain';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { CartesianGrid, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from 'recharts';
+import { Ayuda } from '../../../../components/ayuda';
 import { Aviso } from '../../../../components/formulario';
 import { diaCivil, fechaEnZona } from '../../../../lib/formato';
 import { indiceConTeclado, useConPuntero } from '../../../../lib/graficos';
@@ -94,6 +95,12 @@ export function EvolucionDeMetrica({
   return (
     <section className="seccion" aria-labelledby={`${id}-titulo`}>
       <h2 id={`${id}-titulo`}>{nombreDeMetrica(serie.metricCode)}</h2>
+      {/* DL-113 · cómo se leen el gráfico y la tabla, plegado: arriba quedan los datos. */}
+      <Ayuda>
+        <p>{COPY_ANTROPOMETRIA.explicacionDeSinDato}</p>
+        <p>{COPY_ANTROPOMETRIA.explicacionDeComparabilidad}</p>
+        <p>{COPY_EVOLUCION.tablaAclaracion}</p>
+      </Ayuda>
       {preparada.observaciones.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinMediciones}</p> : null}
       {preparada.variosGrupos ? (
         <>
@@ -130,7 +137,6 @@ export function EvolucionDeMetrica({
         ) : null}
       </div>
       <Tabla preparada={preparada} grupo={grupo} zonaHoraria={zonaHoraria} elegidaId={elegidaVisible?.punto.sourceId ?? null} onElegir={setElegidaId} />
-      <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeComparabilidad}</p>
     </section>
   );
 }
@@ -328,7 +334,6 @@ function Tabla({ preparada, grupo, zonaHoraria, elegidaId, onElegir }: { prepara
   const diasSinDato = preparada.filas.reduce((n, f) => (f.tipo === 'hueco' ? n + f.hueco.days : n), 0);
   return (
     <>
-      <p className="nota">{COPY_EVOLUCION.tablaAclaracion}</p>
       <table className="tabla">
         <caption className="nota">
           {COPY_EVOLUCION.tabla}: {numero(preparada.observaciones.length)} con dato · {numero(diasSinDato)} {COPY_ANTROPOMETRIA.sinDato.toLowerCase()}

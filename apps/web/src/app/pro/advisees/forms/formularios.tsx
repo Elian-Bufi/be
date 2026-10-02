@@ -16,6 +16,7 @@ import { COPY_FORMULARIOS, COPY_VINCULO, type RespuestaDeFormulario, type Solici
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { AvisoFlotante } from '../../../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { MigasDelAsesorado } from '../../../../components/migas';
 import { Aviso } from '../../../../components/formulario';
@@ -35,6 +36,11 @@ export interface ContextoDeFormularios {
   readonly asesoradoId: string;
   readonly sesionPerdida: (r: Resultado<unknown>) => boolean;
   readonly irA: (vista: Vista) => void;
+  /**
+   * Un éxito que sobrevive al cambio de vista (DL-113): lo muestra la pestaña, fijo abajo. Un aviso de la vista que lo
+   * pidió se iba con ella: «Enviar solicitud» pasa enseguida a «Solicitudes».
+   */
+  readonly avisar: (texto: string) => void;
 }
 
 const Contexto = createContext<ContextoDeFormularios | null>(null);
@@ -74,7 +80,8 @@ export function Formularios() {
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees/forms?id=${id}`);
 
   const irA = useCallback((v: Vista) => router.replace(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`), [router, ruta, id]);
-  const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, irA } : null), [token, id, sesionPerdida, irA]);
+  const [exito, setExito] = useState<string | null>(null);
+  const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, irA, avisar: setExito } : null), [token, id, sesionPerdida, irA]);
 
   if (!token || !contexto) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
   if (yo.tipo === 'cargando') return <Cargando />;
@@ -96,6 +103,11 @@ export function Formularios() {
           ))}
         </ul>
       </nav>
+      {exito ? (
+        <AvisoFlotante onCerrar={() => setExito(null)}>
+          <p>{exito}</p>
+        </AvisoFlotante>
+      ) : null}
       {vista === 'solicitudes' ? <VistaDeSolicitudes /> : null}
       {vista === 'pedir' ? <VistaDePedido /> : null}
     </Contexto.Provider>

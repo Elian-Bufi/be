@@ -12,6 +12,7 @@
 import { cantidad, COPY, COPY_ANTROPOMETRIA, COPY_EVOLUCION, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, leerNumero, motivoDeNumeroIlegible, nombreDeMetrica, type EvaluacionAntropometricaApi, type Medicion } from '@be/domain';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
@@ -70,8 +71,14 @@ export function VistaDeEvaluaciones() {
     <EstadoDeLectura r={r} onReintentar={cargar}>
       {r?.ok ? (
         <div className="secciones">
-          {aviso ? (
-            <Aviso tipo={aviso.tipo} enfocar>
+          {/* DL-113: el éxito aparece donde se está mirando, sin mover la página; un error, arriba y con el foco. */}
+          {aviso && aviso.tipo === 'exito' ? (
+            <AvisoFlotante onCerrar={() => setAviso(null)}>
+              <p>{aviso.texto}</p>
+            </AvisoFlotante>
+          ) : null}
+          {aviso && aviso.tipo === 'error' ? (
+            <Aviso tipo="error" enfocar>
               <p>{aviso.texto}</p>
             </Aviso>
           ) : null}
@@ -157,7 +164,9 @@ function Detalle({
           {COPY_ANTROPOMETRIA.verLamina}
         </button>
       </div>
-      <p className="nota">{COPY_ANTROPOMETRIA.explicacionDeClases}</p>
+      <Ayuda titulo="Medido, reportado o calculado">
+        <p>{COPY_ANTROPOMETRIA.explicacionDeClases}</p>
+      </Ayuda>
 
       {evaluacion.measurements.map((m) => (
         <FilaDeMedicion key={m.measurementId} medicion={m} onHecho={onHecho} onError={onError} />

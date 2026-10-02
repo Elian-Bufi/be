@@ -2,8 +2,9 @@
  * Piezas de interfaz del APK (10-B10 §7, §9): label persistente, error con texto (no solo color), targets táctiles de
  * 48 dp, roles y estados accesibles, sin gestos exclusivos. Botón destructivo distinguible por texto y jerarquía.
  */
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Pressable, Text, TextInput, View, type TextInputProps } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { COLOR, estilosPorTema } from './tema';
 
 // Los colores viven en tema.ts, donde los verifica la prueba de contraste; se reexportan para las pantallas.
@@ -218,6 +219,70 @@ export function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   );
 }
 
+/**
+ * Las explicaciones largas, plegadas (Dirección, 2026-10-01: que la pantalla se lea de un vistazo). Un encabezado
+ * tocable, «Cómo se lee», que despliega el texto; empieza cerrado. El texto no se borra: se pliega, y el lector de
+ * pantalla dice si está abierto. No va acá lo que la persona tiene que leer antes de aceptar algo (consentimientos,
+ * privacidad, consecuencias de un acto): eso queda siempre a la vista.
+ */
+export function Ayuda({ titulo = 'Cómo se lee', children }: { titulo?: string; children: ReactNode }) {
+  const [abierta, setAbierta] = useState(false);
+  return (
+    <View style={estilos.ayuda}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: abierta }}
+        onPress={() => setAbierta((a) => !a)}
+        style={({ pressed }) => [estilos.cabezaDeAyuda, pressed && estilos.presionado]}
+      >
+        <Svg width={20} height={20} viewBox="0 0 24 24" accessible={false}>
+          <Circle cx={12} cy={12} r={9} stroke={COLOR.acento} strokeWidth={2} fill="none" />
+          <Path d="M12 11v6" stroke={COLOR.acento} strokeWidth={2.2} strokeLinecap="round" />
+          <Circle cx={12} cy={7.6} r={1.3} fill={COLOR.acento} />
+        </Svg>
+        <Text style={estilos.tituloDeAyuda}>{titulo}</Text>
+        <Chevron abierto={abierta} />
+      </Pressable>
+      {abierta ? <View style={estilos.cuerpoDeAyuda}>{children}</View> : null}
+    </View>
+  );
+}
+
+/**
+ * Contenido plegado detrás de un encabezado tocable con su título y, si hace falta, un detalle («22 medidas»): para lo
+ * que no hace falta ver de entrada y no tiene que empujar hacia abajo lo principal de la pantalla.
+ */
+export function Desplegable({ titulo, detalle, abiertoAlInicio = false, children }: { titulo: string; detalle?: string; abiertoAlInicio?: boolean; children: ReactNode }) {
+  const [abierto, setAbierto] = useState(abiertoAlInicio);
+  return (
+    <View style={estilos.desplegable}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: abierto }}
+        accessibilityLabel={detalle ? `${titulo}. ${detalle}` : titulo}
+        onPress={() => setAbierto((a) => !a)}
+        style={({ pressed }) => [estilos.cabezaDeDesplegable, pressed && estilos.presionado]}
+      >
+        <View style={estilos.textoDeDesplegable}>
+          <Text style={estilos.tituloDeDesplegable}>{titulo}</Text>
+          {detalle ? <Text style={estilos.tenue}>{detalle}</Text> : null}
+        </View>
+        <Chevron abierto={abierto} />
+      </Pressable>
+      {abierto ? children : null}
+    </View>
+  );
+}
+
+/** La flecha de lo que se pliega: hacia abajo cerrado, hacia arriba abierto. Solo acompaña al estado que dice el lector. */
+function Chevron({ abierto }: { abierto: boolean }) {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" accessible={false}>
+      <Path d={abierto ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} stroke={COLOR.acento} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </Svg>
+  );
+}
+
 /** Estado en forma de insignia: el texto dice el estado; el color solo acompaña (10-B10 §7). */
 export function Insignia({ texto, positiva = false, etiqueta }: { texto: string; positiva?: boolean; etiqueta?: string }) {
   return (
@@ -274,4 +339,12 @@ export const estilos = estilosPorTema((COLOR) => ({
   insigniaPositiva: { borderColor: COLOR.exito },
   textoInsignia: { fontWeight: '700', color: COLOR.tenue, fontSize: 15 },
   textoInsigniaPositiva: { color: COLOR.exito },
+  ayuda: { marginTop: 4 },
+  cabezaDeAyuda: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  tituloDeAyuda: { flex: 1, fontSize: 15, fontWeight: '700', color: COLOR.acento },
+  cuerpoDeAyuda: { borderLeftWidth: 3, borderLeftColor: COLOR.borde, paddingLeft: 10, marginBottom: 6 },
+  desplegable: { borderTopWidth: 1, borderTopColor: COLOR.borde, marginTop: 8 },
+  cabezaDeDesplegable: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 8 },
+  textoDeDesplegable: { flexShrink: 1 },
+  tituloDeDesplegable: { fontSize: 16, fontWeight: '700', color: COLOR.texto },
 }));

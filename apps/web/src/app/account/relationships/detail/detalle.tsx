@@ -25,6 +25,7 @@ import {
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { AvisoFlotante } from '../../../../components/ayuda';
 import { DialogoDeConfirmacion, SelectorDeMotivo } from '../../../../components/dialogo';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
@@ -90,26 +91,30 @@ export function DetalleDeVinculo() {
 
   return (
     <div className="secciones">
+      {/*
+        DL-113: el resultado de cada acción aparece donde se está mirando, sin mover la página. La revocación repite los
+        textos de `AvisoDeAccesoRevocado` (10-B04 §19) porque ese componente se dibuja arriba y se lleva el foco.
+      */}
       {exito === 'pausado' ? (
-        <Aviso tipo="exito" enfocar>
+        <AvisoFlotante onCerrar={() => setExito(null)}>
           <p className="aviso__titulo">{COPY_VINCULO.vinculoPausado}</p>
           <p>{COPY_VINCULO.accesoProfesionalBloqueado}</p>
-        </Aviso>
+        </AvisoFlotante>
       ) : null}
       {exito === 'reanudado' ? (
-        <Aviso tipo="exito" enfocar>
+        <AvisoFlotante onCerrar={() => setExito(null)}>
           <p className="aviso__titulo">{COPY_VINCULO.vinculoReanudado}</p>
           <p>{COPY_VINCULO.reanudacionSimple}</p>
-        </Aviso>
+        </AvisoFlotante>
       ) : null}
       {exito === 'finalizado' ? (
-        <Aviso tipo="exito" enfocar>
+        <AvisoFlotante onCerrar={() => setExito(null)}>
           <p className="aviso__titulo">{COPY_VINCULO.vinculoFinalizado}</p>
           <p>{COPY_VINCULO.vinculoFinalizadoDetalle(profesional)}</p>
           <p>{COPY_VINCULO.historialDisponible}</p>
-        </Aviso>
+        </AvisoFlotante>
       ) : null}
-      {exito === 'revocado' ? <AvisoDeAccesoRevocado /> : null}
+      {exito === 'revocado' ? <AvisoDeAccesoRevocado onCerrar={() => setExito(null)} /> : null}
 
       <section className="seccion" aria-labelledby="titulo-vinculo">
         <h2 id="titulo-vinculo">{profesional}</h2>

@@ -1,7 +1,8 @@
 /**
  * DL-111 · el catálogo antropométrico de BE, sembrado por migración, contra PostgreSQL y por la API real:
- * - el protocolo «Perfil antropométrico completo» y sus 40 métodos se publican con su ficha (descripción, fuente,
- *   población y categoría), seleccionables y con una regla que BE sabe aplicar; la ficha no califica (TEST-PRJ-009);
+ * - el protocolo «Perfil antropométrico completo» y sus 21 métodos vigentes se publican con su ficha (descripción,
+ *   fuente, población y categoría), seleccionables y con una regla que BE sabe aplicar; la ficha no califica (TEST-PRJ-009);
+ * - DL-112: los 23 retirados no se ofrecen ni se ejecutan, y se siguen consultando como históricos;
  * - una toma completa con el perfil alcanza para ejecutar cada método, y cada resultado es el de la regla del dominio con
  *   la precisión que el método declara;
  * - los resultados vigentes llegan a la evolución del asesorado (la que lee la APK), cada familia en su propia métrica:
@@ -98,9 +99,9 @@ async function tomaRegistrada(occurredAt: string): Promise<EvaluacionAntropometr
 }
 
 describe('DL-111 · el catálogo antropométrico de BE', () => {
-  it('publica los 40 métodos con su ficha, seleccionables, con una regla conocida y sin calificar', async () => {
+  it('publica los 21 métodos vigentes con su ficha, seleccionables, con una regla conocida y sin calificar', async () => {
     const metodos = await metodosDeBE();
-    expect(metodos).toHaveLength(40);
+    expect(metodos).toHaveLength(21);
     for (const m of metodos) {
       expect(m.status).toBe('SELECTABLE');
       expect(m.purposes).toEqual(['ANTHROPOMETRIC_SUPPORT']);
@@ -136,8 +137,8 @@ describe('DL-111 · el catálogo antropométrico de BE', () => {
     const r = await conSesion(app, c.ase.token).get('/api/v1/me/anthropometry/progress').expect(200);
     const datos = EvolucionResponseSchema.parse(r.body).data;
     const derivadas = datos.metrics.filter((s) => s.series.some((p) => p.dataClass === 'DERIVED'));
-    // 40 métodos y 28 familias: los métodos por sexo comparten la métrica de su familia.
-    expect(derivadas).toHaveLength(28);
+    // 21 métodos y 15 familias: los métodos por sexo comparten la métrica de su familia.
+    expect(derivadas).toHaveLength(15);
     for (const s of derivadas) {
       expect(NOMBRE_DE_METRICA[s.metricCode]).toBeTruthy();
       // Dos métodos de la misma familia y el mismo día (el de hombres y el de mujeres): la API publica uno por día, y
@@ -146,6 +147,31 @@ describe('DL-111 · el catálogo antropométrico de BE', () => {
       const grupo = s.comparability.groups.find((g) => g.comparabilityGroup === s.series[0]!.comparabilityGroup)!;
       expect(nombreDeMetodo(grupo.methodVersionId)).toBeTruthy();
     }
-    expect(derivadas.map((s) => s.metricCode)).toEqual(expect.arrayContaining(['imc', 'grasa-durnin-womersley', 'grasa-faulkner', 'masa-muscular-cuatro-componentes', 'endomorfia', 'mesomorfia', 'ectomorfia']));
+    expect(derivadas.map((s) => s.metricCode)).toEqual(
+      expect.arrayContaining(['imc', 'grasa-durnin-womersley', 'masa-grasa-durnin-womersley', 'masa-libre-de-grasa-durnin-womersley', 'endomorfia', 'mesomorfia', 'ectomorfia']),
+    );
+    expect(derivadas.map((s) => s.metricCode)).not.toContain('grasa-faulkner');
+  });
+
+  it('DL-112 · un método retirado no se ofrece ni se ejecuta, y se sigue consultando como histórico', async () => {
+    const pro = conSesion(app, c.pro.token);
+    // Faulkner: especificación …3f14 (n = 20), versión …4f14.
+    const especificacion = '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a3f14';
+    const version = '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f14';
+    expect((await metodosDeBE()).map((m) => m.methodVersionId)).not.toContain(version);
+    const consulta = await pro.get(`/api/v1/professional-methods/${especificacion}/versions/${version}`).expect(200);
+    expect(consulta.body.data).toMatchObject({ key: 'MET-GRASA-FAULKNER', status: 'HISTORICAL_NOT_SELECTABLE' });
+    const toma = await tomaRegistrada(new Date(Date.now() - 3 * 86_400_000).toISOString());
+    const asignacion = asignacionAutomatica(datosDelMetodo(consulta.body.data as MetodoApi, toma.measurements));
+    const r = await pro
+      .post(`/api/v1/advisees/${c.ase.id}/calculations`, claveDeIdempotencia())
+      .send({ purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: version, inputBindings: Object.entries(asignacion).map(([inputCode, sourceRef]) => ({ inputCode, sourceRef })) })
+      .expect(422);
+    expect(r.body.error.code).toBe('METHOD_VERSION_NOT_SELECTABLE');
+    // En el catálogo de especificaciones también figura como histórica, nunca como vigente.
+    const historicas = await pro.get('/api/v1/anthropometry/specifications?kind=METHOD&status=HISTORICAL&limit=50').expect(200);
+    expect(historicas.body.data.find((e: { versionId: string }) => e.versionId === version)?.status).toBe('HISTORICAL');
+    const vigentes = await pro.get('/api/v1/anthropometry/specifications?kind=METHOD&limit=50').expect(200);
+    expect(vigentes.body.data.map((e: { versionId: string }) => e.versionId)).not.toContain(version);
   });
 });

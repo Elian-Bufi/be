@@ -9,6 +9,7 @@
  */
 import { cantidad, COPY_NUTRICION, COPY_PLANTILLAS, ETIQUETA_DE_PREPARACION, ETIQUETA_DE_UNIDAD, estructuraNutricionalComoEntrada, type VersionDePlan } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
+import { AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
@@ -98,8 +99,13 @@ export function VistaDePlan() {
     <EstadoDeLectura r={r} onReintentar={cargar}>
       {r?.ok ? (
         <div className="secciones">
-          {aviso ? (
-            <Aviso tipo={aviso.tipo} enfocar>
+          {aviso && aviso.tipo === 'exito' ? (
+            <AvisoFlotante onCerrar={() => setAviso(null)}>
+              <p>{aviso.texto}</p>
+            </AvisoFlotante>
+          ) : null}
+          {aviso && aviso.tipo === 'error' ? (
+            <Aviso tipo="error" enfocar>
               <p>{aviso.texto}</p>
             </Aviso>
           ) : null}

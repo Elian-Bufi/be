@@ -22,6 +22,7 @@ import {
 } from '@be/domain';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Ayuda, AvisoFlotante } from '../../components/ayuda';
 import { Cargando, ErrorConReintento, VerMas } from '../../components/estados';
 import { Aviso, Campo } from '../../components/formulario';
 import { api, type Resultado } from '../../lib/api';
@@ -240,9 +241,9 @@ function SolicitarVinculo({ token, sesionPerdida, alEnviar }: { token: string; s
       <h2 id="titulo-solicitar">{COPY_VINCULO.solicitarVinculo}</h2>
       <form className="formulario" onSubmit={enviar} noValidate>
         {envio.tipo === 'enviada' ? (
-          <Aviso tipo="exito" enfocar>
+          <AvisoFlotante onCerrar={() => setEnvio({ tipo: 'editando' })}>
             <p>{envio.texto}</p>
-          </Aviso>
+          </AvisoFlotante>
         ) : null}
         {envio.tipo === 'error' ? (
           <Aviso tipo="error" enfocar>
@@ -285,7 +286,9 @@ function SolicitarVinculo({ token, sesionPerdida, alEnviar }: { token: string; s
         <p>
           <strong>{COPY_VINCULO.finalidad}:</strong> {finalidad}
         </p>
-        <p className="nota">La finalidad es la del alcance. El asesorado decide si acepta el vínculo y, por separado, si autoriza el acceso.</p>
+        <Ayuda titulo="Qué decide el asesorado">
+          <p>La finalidad es la del alcance. El asesorado decide si acepta el vínculo y, por separado, si autoriza el acceso.</p>
+        </Ayuda>
         <div className="acciones">
           <button type="submit" className="boton boton--primario" disabled={enviando} aria-busy={enviando}>
             {enviando ? COPY_VINCULO.enviando : envio.tipo === 'error' && envio.incierto ? COPY.reintentar : COPY_VINCULO.solicitarVinculo}
