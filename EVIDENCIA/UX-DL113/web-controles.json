@@ -1,0 +1,137 @@
+[
+ {
+  "nombre": "A1 · «Cómo conviven los cálculos» está plegada",
+  "ok": true,
+  "detalle": "{\"abierta\":false}"
+ },
+ {
+  "nombre": "A2 · cada corrida pliega «Con qué se calculó» y su línea visible no dice la regla",
+  "ok": true,
+  "detalle": "15 corridas · Método: Índice de masa corporal (IMC) · 1 oct 2026, 9:30 p. m."
+ },
+ {
+  "nombre": "A3 · el selector ofrece los 21 métodos vigentes y el de demostración",
+  "ok": true,
+  "detalle": "22 opciones"
+ },
+ {
+  "nombre": "A3b · ningún método retirado en el selector",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "A4 · aviso: la toma ya tiene el mismo resultado con otro método",
+  "ok": true,
+  "detalle": "Densidad corporal con el logaritmo de la suma de 4 pliegues (bíceps, tríceps, subescapular y cresta ilíaca) y los coeficientes de la franja de edad. El porcentaje de grasa sale de la densidad con la ecuación de Siri, la que usaron los autor"
+ },
+ {
+  "nombre": "A5 · la población queda a la vista",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "A5b · «Fuente y regla del método» y «Cambiar de qué medición sale cada dato» plegadas",
+  "ok": true,
+  "detalle": "{\"fuente\":{\"abierta\":false},\"cambiar\":{\"abierta\":false}}"
+ },
+ {
+  "nombre": "A6 · el éxito del cálculo aparece fijo, abajo y dentro de la pantalla",
+  "ok": true,
+  "detalle": "{\"fijo\":true,\"arriba\":727.609375,\"abajo\":828,\"alto\":844,\"texto\":\"Cálculo registrado. Queda con su método, su versión y sus entradas a la vista.×\"}"
+ },
+ {
+  "nombre": "A7 · el aviso se va solo cuando alcanzó a leerse",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "B0 · el perfil completo ofrece el campo del peso",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "B1 · «Guardado» aparece abajo, donde se mira",
+  "ok": true,
+  "detalle": "{\"fijo\":true,\"arriba\":758,\"abajo\":828,\"alto\":844,\"texto\":\"Guardado×\"}"
+ },
+ {
+  "nombre": "B2 · «Registrar evaluación» abre un diálogo modal, centrado y entero en la pantalla",
+  "ok": true,
+  "detalle": "{\"modal\":true,\"centro\":422,\"alto\":844,\"visible\":true}"
+ },
+ {
+  "nombre": "B3 · «Volver» cierra el diálogo sin registrar",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "C0 · la lámina tiene su «Cómo se lee» plegado",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "C1 · Pliegues dibuja el bíceps y la cresta ilíaca",
+  "ok": true,
+  "detalle": "Pectoral9mmAxilar media11mmTrícepsposterior9,6mmBíceps4mmSubescapularposterior12mmAntebrazo5,4mmCresta ilíaca15mmSupraespinal8mmAbdominal16mmMuslo anterior13mmPantorrilla7mmPLIEGUES EN LA FIGURA11SUMA"
+ },
+ {
+  "nombre": "C2 · el pie lleva las dos sumas y dice «Sin calcular» si falta una",
+  "ok": true,
+  "detalle": "Muslo anterior13mmPantorrilla7mmPLIEGUES EN LA FIGURA11SUMA 6 PLIEGUES (ISAK)65,6 mmSUMA 7 PLIEGUES (JP)85,6 mmPLIEGUESASESORADO · 9D80B7  ·  ANTROPOMETRÍA  ·  26 SEPT 2026CUERPO ENTEROBETTER EVERYDAY"
+ },
+ {
+  "nombre": "C3 · Serie de Pliegues lleva la tarjeta del bíceps",
+  "ok": true,
+  "detalle": "Pectoral9 mm−2 mm0815T1T2T311  ·  10  ·  9Axilar media11 mm−2 mm0815T1T2T313  ·  12  ·  11Trícepsposterior9,6 mm−2,4 mm0815T1T2T312  ·  10,8  ·  9,6Bíceps4 mm−1 mm036T1T2T35  ·  4,5  ·  4Antebrazo5,4 "
+ },
+ {
+  "nombre": "D1 · la evolución lleva «Cómo se lee» plegado",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "D · 21-espacio-profesional: sin errores y sin desborde a 390 px",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "D · 22-nutricion: sin errores y sin desborde a 390 px",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "D · 23-entrenamiento: sin errores y sin desborde a 390 px",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "D · 24-formularios: sin errores y sin desborde a 390 px",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "D · 25-plantillas: sin errores y sin desborde a 390 px",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "E · 30-cuenta: sin errores y sin desborde a 390 px",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "E · 31-privacidad: sin errores y sin desborde a 390 px",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "E · 32-vinculos: sin errores y sin desborde a 390 px",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "sin errores de página ni de consola",
+  "ok": true,
+  "detalle": ""
+ }
+]
