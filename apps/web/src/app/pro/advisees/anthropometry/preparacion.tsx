@@ -362,16 +362,12 @@ function Preparacion({
         <Ayuda titulo="Qué es una evaluación en preparación">
           <p>{COPY_ANTROPOMETRIA.borradorNoEsHistoria}</p>
         </Ayuda>
-        {guardado ? (
-          <p className="nota">
-            {guardado.rotulo}: {fecha(guardado.momento)}
-          </p>
-        ) : null}
 
         {/* El momento, el protocolo y el origen son de la toma entera: una evaluación es una toma (09v11 §6). */}
         <div className="grilla-de-datos">
           <Campo id="ant-momento" etiqueta={COPY_ANTROPOMETRIA.momentoDeLaToma} type="datetime-local" value={momento} onChange={(e) => setMomento(e.target.value)} />
-          <div className="campo">
+          {/* DL-113 · el nombre del protocolo es largo: en escritorio el campo ocupa dos columnas para no cortarlo. */}
+          <div className="campo campo--ancho">
             <label htmlFor="ant-protocolo">{COPY_ANTROPOMETRIA.protocolo}</label>
             <select id="ant-protocolo" value={protocolo} onChange={(e) => cambiarProtocolo(e.target.value)}>
               {especificaciones.map((e) => (
@@ -507,11 +503,20 @@ function Preparacion({
             </button>
           </div>
         ))}
+        {/* Una medición fuera del protocolo es la excepción: va junto a los campos, no entre las acciones principales. */}
         <div className="acciones">
-          <button type="button" className="boton boton--secundario" onClick={() => setLibres((xs) => [...xs, filaNueva()])} disabled={!protocolo}>
+          <button type="button" className="boton boton--secundario boton--compacto" onClick={() => setLibres((xs) => [...xs, filaNueva()])} disabled={!protocolo}>
             {metricas.length > 0 ? 'Agregar otra medición' : COPY_ANTROPOMETRIA.agregarMedicion}
           </button>
-          <button type="button" className="boton boton--secundario" onClick={() => void guardar()} disabled={enviando}>
+        </div>
+        {borrador && borrador.measurements.length === 0 ? <p className="nota">{COPY_ANTROPOMETRIA.sinContenidoRegistrable}</p> : null}
+        {/*
+          DL-113 · las acciones de la toma, fijas al pie mientras se recorre el formulario (son 30 mediciones), con el
+          estado del guardado. Sin borrador, guardar es lo principal; con borrador, registrar (que guarda antes).
+        */}
+        <div className="acciones acciones--fijas">
+          <p className="acciones__estado">{guardado ? `${guardado.rotulo}: ${fecha(guardado.momento)}` : 'Todavía no se guardó.'}</p>
+          <button type="button" className={`boton ${borrador ? 'boton--secundario' : 'boton--primario'}`} onClick={() => void guardar()} disabled={enviando}>
             {COPY_ANTROPOMETRIA.guardarBorrador}
           </button>
           {borrador ? (
@@ -520,7 +525,6 @@ function Preparacion({
             </button>
           ) : null}
         </div>
-        {borrador && borrador.measurements.length === 0 ? <p className="nota">{COPY_ANTROPOMETRIA.sinContenidoRegistrable}</p> : null}
       </section>
 
       <DialogoDeConfirmacion

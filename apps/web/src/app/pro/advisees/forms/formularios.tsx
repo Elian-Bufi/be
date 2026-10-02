@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
+import { Pestanas } from '../../../../components/pestanas';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { MigasDelAsesorado } from '../../../../components/migas';
 import { Aviso } from '../../../../components/formulario';
@@ -92,17 +93,7 @@ export function Formularios() {
     <Contexto.Provider value={contexto}>
       <MigasDelAsesorado id={id} pestana={COPY_FORMULARIOS.pestana} />
       <h1>{COPY_FORMULARIOS.pestana}</h1>
-      <nav className="pestanas" aria-label="Secciones de Información">
-        <ul>
-          {VISTAS.map((v) => (
-            <li key={v.clave}>
-              <Link href={`${ruta}?id=${encodeURIComponent(id)}&vista=${v.clave}`} aria-current={v.clave === vista ? 'page' : undefined} replace>
-                {v.texto}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <Pestanas etiqueta="Secciones de Información" vistas={VISTAS} actual={vista} href={(clave) => `${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`} />
       {exito ? (
         <AvisoFlotante onCerrar={() => setExito(null)}>
           <p>{exito}</p>

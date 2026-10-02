@@ -65,6 +65,9 @@
   --sombra-suave: 0 1px 2px rgb(4 33 63 / 6%), 0 1px 1px rgb(4 33 63 / 4%);
   --sombra: 0 20px 50px rgb(4 33 63 / 30%);
   --velo: rgb(4 33 63 / 55%);
+  /* La sombra que avisa que una línea sigue de costado (`.desplazable-x`): oscura sobre fondo claro, cian sobre navy */
+  --sombra-desplazamiento: rgb(4 33 63 / 28%);
+  --sombra-desplazamiento-sobre-navy: rgb(94 224 251 / 55%);
   color-scheme: light;
 }
 
@@ -103,6 +106,7 @@
   --grafico-hueco: #7fa3c8;
   --sombra-suave: none;
   --sombra: 0 20px 50px rgb(0 0 0 / 45%);
+  --sombra-desplazamiento: rgb(94 224 251 / 40%);
   --velo: rgb(0 0 0 / 60%);
   color-scheme: dark;
 }

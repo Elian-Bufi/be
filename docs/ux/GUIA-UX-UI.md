@@ -80,6 +80,14 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
 - Adentro de un asesorado, una pestaña por dominio.
 - La dirección dice dónde se está: se navega con el router (`irA`), no cambiando un estado escondido.
 - La acción principal de cada vista va arriba, visible sin desplazarse en 390 px de ancho.
+- **En el teléfono, el encabezado tiene tres renglones, no cinco:**
+  - la marca y la apariencia (la etiqueta «Apariencia» queda oculta a la vista, pero sigue siendo el nombre accesible);
+  - la navegación, en una sola línea;
+  - el aviso de ambiente, que el 08 §33 exige siempre a la vista.
+- **Las pestañas de cada sección van en una línea** (`Pestanas`).
+  - Si no entran, se desplazan de costado. Es un desplazamiento deliberado del componente, no de la página.
+  - Una sombra en el borde avisa que hay más.
+  - La pestaña elegida siempre queda a la vista, también al rotar el teléfono.
 
 ## 5. Toque, tamaño y letra
 
@@ -103,7 +111,7 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   - 4,5:1 para el texto;
   - 3:1 para los bordes de los controles y los íconos que comunican.
 - **Temas:**
-  - website del profesional: claro;
+  - website: «Azul noche», que es el predeterminado, y «Claro». Se eligen en el encabezado. La preferencia vive en el navegador (`localStorage`): no se guarda en la cuenta ni pasa a otros dispositivos. Cambiar de apariencia no toca lo escrito en un formulario;
   - APK: «Azul noche» y «Claro», elegibles en Cuenta;
   - la lámina tiene sus tres temas propios, que no cambian la apariencia del website.
 - **El significado no va solo en el color.** Un pliegue de la cara posterior se marca con el aro punteado y la palabra
@@ -123,6 +131,13 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   - se ubica sobre la imagen con una vista de control: los seis recortes con los sitios marcados;
   - se prueba que cae sobre el cuerpo y que no pisa a otro;
   - se declara a validar por Dirección.
+- **Los puntos anatómicos no se mueven para resolver cruces de guías.**
+  - Un cruce se resuelve con las guías, las tarjetas, el reparto o la escala. Por ejemplo, la guía puede entrar al sitio de costado.
+  - Que no haya cruces no prueba que el sitio esté bien ubicado: la ubicación la valida Dirección.
+  - Dos sitios de caras distintas a la misma altura quedan, de frente, casi en el mismo lugar: el bíceps y el tríceps, la
+    cresta ilíaca y el supraespinal. Sus guías llegan juntas, la tarjeta dice cuál es cuál y el posterior lleva su marca.
+  - En el teléfono, las tarjetas se apilan por la altura media de sus sitios y los puntos se dibujan encima de las guías:
+    si una guía pasa junto a otro punto, pasa por detrás.
 - **Tabla equivalente.** Todo gráfico o figura tiene una tabla o lista equivalente, que es el camino del teclado y del
   lector de pantalla (B10-10 §11). En la APK, «La figura, en lista».
 - **Los resultados calculados siempre llevan su método.** Dos métodos no se comparan entre sí, y ninguno se marca
@@ -131,9 +146,9 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
 ## 8. Estados
 
 Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx` (website y APK):
-- **cargando:** `Cargando`;
+- **cargando:** `Cargando`. En el website es una región de estado (`role="status"`), con una marca que se detiene con «reducir movimiento»;
 - **error con reintento:** `ErrorConReintento`, sin perder lo que la persona escribió;
-- **vacío:** qué significa y qué se puede hacer;
+- **vacío:** `EstadoVacio` en el website. Lleva un título que dice qué falta, una línea con qué significa y, si existe, la acción real que corresponde, nunca un dato inventado. Ejemplo: sin tomas, «Preparar una toma»;
 - **acceso retirado** (B10-06): se retira el contenido entero, no a medias;
 - **sesión vencida:** vuelve a «Iniciar sesión» y lo dice.
 
@@ -166,7 +181,37 @@ Se copia en la descripción del PR y se marca.
 - [ ] Se miró la pantalla de verdad: captura del website con datos sintéticos, o maqueta y después teléfono, para la APK.
 - [ ] El informe separa lo verificado por automatización de lo que falta probar en el teléfono.
 
-## 10. Cómo se verifica
+## 10. Componentes y patrones del website
+
+Viven en `apps/web/src/components/` y en `globals.css`. Antes de crear otro, se usa uno de estos.
+
+| Pieza | Para qué | Ejemplo |
+|---|---|---|
+| `Pestanas` | Las secciones de un asesorado, en una línea. La elegida, a la vista | `<Pestanas etiqueta="Secciones de Nutrición" vistas={VISTAS} actual={vista} href={(c) => …} />` |
+| `Ayuda` | Una explicación larga, plegada. Es un enlace con su marca ▸, no una caja | «Cómo conviven los cálculos», «Con qué se calculó» |
+| `AvisoFlotante` | El éxito de una acción, abajo. Con `seQueda` si trae una acción | «Cálculo registrado», «Guardado» |
+| `EstadoVacio` | Lo que todavía no hay, con su paso siguiente | «Todavía no hay evaluaciones registradas» → «Preparar una toma» |
+| `.metadatos` | Lo que vale para todo un bloque, dicho una vez debajo del título | «Protocolo: … · 30 mediciones · registrada el … por …» |
+| `.subseccion` | Un bloque dentro de una sección: un separador, no otra tarjeta | «Cálculos» y «Mediciones» dentro de la toma |
+| `.encabezado-de-bloque` | El título de un bloque con su acción principal al lado | «Cálculos» + «Calcular con un método» |
+| `.panel` | Un formulario que se abre en el lugar: una sola superficie | La ficha de un cálculo nuevo |
+| `.acciones--fijas` | Las acciones de un formulario largo, fijas al pie, con el estado de lo guardado | La preparación de una toma: «Todavía no se guardó.» + «Guardar» |
+| `.boton--compacto` | Una acción de fila: el mismo alto táctil (44 px), menos relleno | «Corregir» y «Anular» en cada medición |
+| `.tomas` | Elegir entre registros por su **fecha de ocurrencia**. El elegido, marcado por forma | Las tomas de antropometría |
+| `.mediciones` / `.medicion__fila` | Filas compactas por familia, con el valor alineado y las acciones en la fila | Las 30 mediciones de una toma |
+
+**Reglas que salieron de este trabajo:**
+- **La fecha que importa nombra al registro.** La fecha de ocurrencia es lo principal. La de registro es un metadato: con ella sola, tres tomas registradas el mismo día se veían iguales.
+- **El resultado va antes que el detalle.** En la toma, los cálculos van antes que las 30 mediciones.
+- **Una sola vez.** El protocolo, la fecha y la cantidad de algo que vale para todo un bloque se dicen una vez. En una fila, solo si difieren.
+- **Nombres completos a la vista.** Si un desplegable corta un nombre en el teléfono, el nombre elegido se repite completo en la ficha.
+- **Las acciones se jerarquizan por el estado real.**
+  - Sin borrador, «Guardar» es lo principal.
+  - Con borrador, lo principal es «Registrar», que guarda antes.
+  - Una acción excepcional, como agregar una medición fuera del protocolo, no va entre las principales.
+- **No se pliega lo que hace falta para decidir:** requisitos de un cálculo, población en que se validó, advertencias. Se pliega la explicación larga.
+
+## 11. Cómo se verifica
 
 | Qué | Cómo | Quién |
 |---|---|---|
@@ -179,7 +224,7 @@ Se copia en la descripción del PR y se marca.
 La automatización no reemplaza la prueba de Dirección en el teléfono. Un informe nunca dice «todo validado» si esa
 prueba no se hizo.
 
-## 11. Lo que se sabe que falta
+## 12. Lo que se sabe que falta
 
 Son las mejoras de UX detectadas que no entraron en DL-113. Cada una entra en un tramo cuando Dirección la prioriza.
 - **La figura del teléfono, en el tronco.** Con muchos pliegues, los halos se tocan. Se puede achicar el halo o
@@ -187,5 +232,8 @@ Son las mejoras de UX detectadas que no entraron en DL-113. Cada una entra en un
 - **TalkBack y letra al máximo en un Android físico** (RNF-ACC-001). Nunca se probaron.
 - **Recargar el website cierra la sesión** (DL-012): la sesión vive en memoria.
 - **Búsqueda por texto** en los catálogos externos (DL-098).
+- **La barra inferior de la APK a 320 dp.** Las etiquetas entran achicándose (hasta el 70 % con letra grande): hay que mirarlo en un teléfono chico.
+- **Los filtros de «Pendientes» en el teléfono** ocupan una pantalla antes del primer pendiente.
+- **Un 503 intermitente de la API** (`P2028`: la transacción no pudo empezar a tiempo) con lecturas concurrentes y poca memoria. La pantalla lo muestra con su reintento. Es de la API, no de la interfaz.
 - **Las demás pantallas del website.** Siguen esta guía desde DL-113. Las que se toquen después se revisan con la lista
   de control.

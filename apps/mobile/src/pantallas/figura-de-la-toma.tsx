@@ -187,19 +187,21 @@ function Lamina({ ancho, sexo, familia, medidas, tema }: { ancho: number; sexo: 
   const todos = grupos.flat();
   // Las tarjetas terminan antes del sitio que queda más a la izquierda, con lugar para el quiebre de la guía.
   const anchoDeTarjeta = Math.max(120, Math.min(ancho * 0.52, Math.min(...todos.map((s) => s.izquierda)) - 22));
+  // En el teléfono las tarjetas se apilan en el orden de la altura media de sus sitios, no por el borde de arriba como en
+  // el compositor: a esta escala, ese orden cruzaba las guías del tronco (ver `apilarTarjetas`).
   const bordes = apilarTarjetas(
     grupos.map((g, i) => ({ alto: altos[i]!, centroDeseado: g.reduce((n, s) => n + s.cy, 0) / g.length })),
     { tope: MARGEN, piso: alto - MARGEN, separacion: SEPARACION },
+    'CENTRO',
   );
 
   return (
     <View style={{ height: alto, backgroundColor: lamina.fondo, borderRadius: 12, overflow: 'hidden', marginVertical: 8 }}>
       <Image source={IMAGEN[sexo]} style={{ position: 'absolute', left: imagen.x, top: imagen.y, width: imagen.ancho, height: imagen.alto }} resizeMode="stretch" />
-      {/* Un solo dibujo encima del cuerpo, con los sitios y las guías; las tarjetas van encima de todo. */}
+      {/* Un solo dibujo encima del cuerpo, con las guías y los sitios; las tarjetas van encima de todo. Los sitios van
+          después de las guías: en el teléfono, con todos los pliegues, alguna guía pasa junto al punto de otro sitio (el
+          subescapular, junto al antebrazo), y así pasa por detrás del punto en lugar de taparlo. */}
       <Svg width={ancho} height={alto} style={{ position: 'absolute', left: 0, top: 0 }} pointerEvents="none">
-        {todos.map((s) => (
-          <CapasDelSitio key={s.clave} sitio={s} colores={colores} />
-        ))}
         {grupos.map((g, i) =>
           g.map((s, fila) => {
             const y = bordes[i]! + RELLENO + fila * FILA + FILA / 2;
@@ -212,6 +214,9 @@ function Lamina({ ancho, sexo, familia, medidas, tema }: { ancho: number; sexo: 
             );
           }),
         )}
+        {todos.map((s) => (
+          <CapasDelSitio key={s.clave} sitio={s} colores={colores} />
+        ))}
       </Svg>
       {grupos.map((g, i) => (
         <View

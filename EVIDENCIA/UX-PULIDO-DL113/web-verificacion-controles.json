@@ -1,0 +1,187 @@
+[
+ {
+  "nombre": "acceso · la página de ingreso no desborda a 390 px",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "390 px · el encabezado mide 130 px o menos",
+  "ok": true,
+  "detalle": "113 px"
+ },
+ {
+  "nombre": "390 px · las pestañas van en una sola línea",
+  "ok": true,
+  "detalle": "45 px"
+ },
+ {
+  "nombre": "390 px · la pestaña activa («Lámina», la última) queda a la vista",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "390 px · sin desborde horizontal de la página",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "360 px · el encabezado mide 130 px o menos",
+  "ok": true,
+  "detalle": "113 px"
+ },
+ {
+  "nombre": "360 px · las pestañas van en una sola línea",
+  "ok": true,
+  "detalle": "45 px"
+ },
+ {
+  "nombre": "360 px · la pestaña activa («Lámina», la última) queda a la vista",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "360 px · sin desborde horizontal de la página",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "evaluación · cada toma se nombra por su fecha y las tres se distinguen",
+  "ok": true,
+  "detalle": "26 sept 2026, 10:00 a. m. | 23 ago 2026, 10:00 a. m. | 24 jul 2026, 10:00 a. m."
+ },
+ {
+  "nombre": "evaluación · la toma abierta está marcada (aria-current)",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "evaluación · los cálculos van antes que las mediciones",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "evaluación · a 1440 px, «Cálculos» está en la primera pantalla",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "preparación · lo escrito sigue ahí después de cambiar la apariencia dos veces",
+  "ok": true,
+  "detalle": "71,5"
+ },
+ {
+  "nombre": "preparación · un valor ilegible se marca en su campo, con el mensaje al lado",
+  "ok": true,
+  "detalle": "{\"invalido\":true,\"mensaje\":\"⚠ Escribí un número: «150» o «72,5».\"}"
+ },
+ {
+  "nombre": "preparación · a mitad del formulario, «Guardar» sigue a la vista (barra fija)",
+  "ok": true,
+  "detalle": "{\"visible\":true,\"texto\":\"Todavía no se guardó.Guardar\"}"
+ },
+ {
+  "nombre": "nutrición · 1280 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "nutrición · 390 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "nutrición · sin concepto, el formulario señala el campo y no registra",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "nutrición · la evaluación se registra y el aviso aparece abajo, donde se mira",
+  "ok": true,
+  "detalle": "{\"fijo\":true,\"abajo\":true,\"texto\":\"×\"}"
+ },
+ {
+  "nombre": "entrenamiento · 1280 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "entrenamiento · 390 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "entrenamiento · la evaluación se registra y el aviso aparece abajo, donde se mira",
+  "ok": true,
+  "detalle": "{\"fijo\":true,\"abajo\":true,\"texto\":\"Evaluación registrada.×\"}"
+ },
+ {
+  "nombre": "cartera · azul-noche · 360 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "cartera · azul-noche · 1440 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "plantillas · azul-noche · 360 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "plantillas · azul-noche · 1440 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "cuenta · azul-noche · 360 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "cuenta · azul-noche · 1440 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "cartera · claro · 360 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "cartera · claro · 1440 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "plantillas · claro · 360 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "plantillas · claro · 1440 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "cuenta · claro · 360 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "cuenta · claro · 1440 px · sin desborde",
+  "ok": true,
+  "detalle": ""
+ },
+ {
+  "nombre": "vacío · sin tomas, lo dice y ofrece preparar una",
+  "ok": true,
+  "detalle": "{\"hay\":true,\"accion\":[\"Preparar una toma\"]}"
+ },
+ {
+  "nombre": "sin errores de página ni de consola (los 403/404 de alcance no cuentan)",
+  "ok": false,
+  "detalle": "Failed to load resource: the server responded with a status of 503 (Service Unavailable) | Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+ }
+]

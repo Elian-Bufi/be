@@ -54,8 +54,16 @@ export function BloqueDeCalculos({ evaluacion, onAviso }: { evaluacion: Evaluaci
   }, [cargar]);
 
   return (
-    <section className="seccion" aria-labelledby="titulo-calculos">
-      <h3 id="titulo-calculos">{COPY_ANTROPOMETRIA.calculos}</h3>
+    <section className="subseccion" aria-labelledby="titulo-calculos">
+      {/* DL-113 · la acción principal de esta parte, arriba: antes quedaba al final de la lista de corridas. */}
+      <div className="encabezado-de-bloque">
+        <h3 id="titulo-calculos">{COPY_ANTROPOMETRIA.calculos}</h3>
+        {estado.tipo === 'listo' && !abierto ? (
+          <button type="button" className="boton boton--primario" onClick={() => setAbierto(true)} disabled={estado.metodos.length === 0}>
+            {COPY_ANTROPOMETRIA.nuevoCalculo}
+          </button>
+        ) : null}
+      </div>
       <Ayuda titulo="Cómo conviven los cálculos">
         <p>{COPY_ANTROPOMETRIA.explicacionDeCoexistencia}</p>
       </Ayuda>
@@ -63,26 +71,7 @@ export function BloqueDeCalculos({ evaluacion, onAviso }: { evaluacion: Evaluaci
       {estado.tipo === 'error' ? <ErrorConReintento onReintentar={cargar} /> : null}
       {estado.tipo === 'listo' ? (
         <>
-          {estado.corridas.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinCalculos}</p> : null}
-          {estado.corridas.map((c) => (
-            <Corrida
-              key={c.calculationRunId}
-              corrida={c}
-              onHecho={(texto) => {
-                onAviso({ tipo: 'exito', texto });
-                void cargar();
-              }}
-              onError={(texto) => onAviso({ tipo: 'error', texto })}
-            />
-          ))}
-
-          {!abierto ? (
-            <div className="acciones">
-              <button type="button" className="boton boton--secundario" onClick={() => setAbierto(true)} disabled={estado.metodos.length === 0}>
-                {COPY_ANTROPOMETRIA.nuevoCalculo}
-              </button>
-            </div>
-          ) : (
+          {abierto ? (
             <NuevoCalculo
               evaluacion={evaluacion}
               metodos={estado.metodos}
@@ -95,8 +84,22 @@ export function BloqueDeCalculos({ evaluacion, onAviso }: { evaluacion: Evaluaci
               }}
               onError={(texto) => onAviso({ tipo: 'error', texto })}
             />
-          )}
+          ) : null}
           {estado.metodos.length === 0 ? <p className="nota">{COPY_ANTROPOMETRIA.sinMetodosSeleccionables}</p> : null}
+          {estado.corridas.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinCalculos}</p> : null}
+          <ul className="corridas">
+            {estado.corridas.map((c) => (
+              <Corrida
+                key={c.calculationRunId}
+                corrida={c}
+                onHecho={(texto) => {
+                  onAviso({ tipo: 'exito', texto });
+                  void cargar();
+                }}
+                onError={(texto) => onAviso({ tipo: 'error', texto })}
+              />
+            ))}
+          </ul>
         </>
       ) : null}
     </section>
@@ -130,11 +133,14 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
   }
 
   return (
-    <div className="nodo nodo--comida">
+    <li className="corrida">
       <h4>
         {/* Con la precisión que declara el método, aunque termine en cero (REG-06-158: sin redondeo silencioso). */}
-        {nombreDeMetrica(corrida.result.metric)}: {numeroConPrecision(corrida.result.magnitude.value, corrida.precision.decimals)}
-        {corrida.result.magnitude.unit === UNIDAD_ADIMENSIONAL ? '' : ` ${corrida.result.magnitude.unit}`}{' '}
+        <span className="corrida__nombre">{nombreDeMetrica(corrida.result.metric)}:</span>{' '}
+        <span className="corrida__valor">
+          {numeroConPrecision(corrida.result.magnitude.value, corrida.precision.decimals)}
+          {corrida.result.magnitude.unit === UNIDAD_ADIMENSIONAL ? '' : ` ${corrida.result.magnitude.unit}`}
+        </span>{' '}
         <span className="insignia">{ETIQUETA_DE_CLASE_DE_DATO.DERIVED}</span>
         {corrida.evaluationContext === 'IN_PREPARATION' ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoEnPreparacion}</span></> : null}
         {!corrida.effective ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoNoVigente}</span></> : null}
@@ -166,8 +172,8 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
       </Ayuda>
 
       {!corrida.referenceForPurpose && !adoptando && corrida.evaluationContext === 'REGISTERED' && corrida.effective ? (
-        <div className="acciones">
-          <button type="button" className="boton boton--secundario" onClick={() => setAdoptando(true)}>
+        <div className="acciones acciones--en-linea">
+          <button type="button" className="boton boton--secundario boton--compacto" onClick={() => setAdoptando(true)}>
             {COPY_ANTROPOMETRIA.adoptarReferencia}
           </button>
         </div>
@@ -195,9 +201,12 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
           </div>
         </div>
       ) : null}
-    </div>
+    </li>
   );
 }
+
+/** La categoría del método delante de su nombre, como en el desplegable. */
+const etiquetaDeCategoria = (m: MetodoApi): string => (m.category ? `${COPY_ANTROPOMETRIA.categoriaDeMetodo[m.category] ?? m.category} · ` : '');
 
 function NuevoCalculo({
   evaluacion,
@@ -261,7 +270,6 @@ function NuevoCalculo({
   // de la APK muestra una sola por métrica: la registrada al final (`ultimaToma`). Se avisa antes de calcular, sin
   // elegir por el profesional.
   const yaCalculada = corridas.find((c) => c.effective && c.result.metric === metodo.output.metric && c.methodId !== metodo.methodId);
-  const etiquetaDeCategoria = (m: MetodoApi): string => (m.category ? `${COPY_ANTROPOMETRIA.categoriaDeMetodo[m.category] ?? m.category} · ` : '');
   const opcion = (m: MetodoApi) => (
     <option key={m.methodVersionId} value={m.methodVersionId}>
       {etiquetaDeCategoria(m)}
@@ -270,7 +278,7 @@ function NuevoCalculo({
   );
 
   return (
-    <div className="nodo nodo--dia">
+    <div className="panel">
       <div className="campo">
         <label htmlFor="cal-metodo">{COPY_ANTROPOMETRIA.metodo}</label>
         <select id="cal-metodo" value={metodoId} onChange={(e) => elegirMetodo(e.target.value)}>
@@ -281,6 +289,11 @@ function NuevoCalculo({
 
       {/* La ficha del método: qué es, qué da, qué pide (y si esta toma lo tiene) y de dónde sale (DL-111). */}
       <div className="ficha-de-metodo" aria-live="polite">
+        {/* DL-113 · el nombre completo: en el desplegable se corta en el teléfono, y es lo que identifica al método. */}
+        <p className="ficha-de-metodo__nombre">
+          {etiquetaDeCategoria(metodo)}
+          {metodo.name} · {COPY_ANTROPOMETRIA.versionDelMetodo} {metodo.version}
+        </p>
         {metodo.description ? <p>{metodo.description}</p> : null}
         <p>
           <strong>{COPY_ANTROPOMETRIA.metodoDa}:</strong> {nombreDeMetrica(metodo.output.metric)} ({metodo.output.unit})
@@ -294,7 +307,8 @@ function NuevoCalculo({
             const elegida = disponibles.find((m) => m.measurementId === entradas[d.codigo]);
             return (
               <li key={d.codigo}>
-                {nombreDeMetrica(d.metrica)} ({d.unidades.join(', ')}):{' '}
+                {nombreDeMetrica(d.metrica)}
+                {elegida?.effectiveMagnitude ? '' : ` (${d.unidades.join(', ')})`}:{' '}
                 {elegida ? (
                   elegida.effectiveMagnitude ? (
                     <>

@@ -105,24 +105,27 @@ export function PantallaDeMiEvolucion({ token, salir }: { token: string; salir: 
 /**
  * El orden de la pantalla (Dirección, 2026-10-01: que se lea de un vistazo): arriba la toma con la figura; después los
  * resultados de las fórmulas; después la evolución por medida. Cada explicación queda plegada en su «Cómo se lee».
+ *
+ * DL-113 · cada fecha se dice una vez: la de la toma en su título; con cuál se compara, en la línea de abajo; y el
+ * período, en la evolución por medida, que es lo que abarca. Antes iban las tres seguidas arriba de todo.
  */
 function Evolucion({ datos }: { datos: Datos }) {
   const conDatos = datos.metrics.filter((s) => s.series.length > 0);
   const toma = ultimaToma(datos);
+  const periodo = `${COPY_ANTROPOMETRIA.periodo}: ${dia(`${datos.period.start}T12:00:00Z`)} — ${dia(`${datos.period.end}T12:00:00Z`)}`;
   return (
     <>
-      <Parrafo tenue>
-        {COPY_ANTROPOMETRIA.periodo}: {dia(`${datos.period.start}T12:00:00Z`)} — {dia(`${datos.period.end}T12:00:00Z`)}
-      </Parrafo>
       {conDatos.length === 0 ? (
         <Aviso tipo="info" titulo={COPY_ANTROPOMETRIA.sinMediciones}>
           <Parrafo tenue>Las mediciones las registra el profesional con el que tenés un vínculo activo en Antropometría.</Parrafo>
+          <Parrafo tenue>{periodo}</Parrafo>
         </Aviso>
       ) : null}
       {toma ? <LaUltimaToma toma={toma} /> : null}
       {toma && toma.derivadas.length > 0 ? <ResultadosDeLasFormulas toma={toma} /> : null}
       {conDatos.length > 0 ? (
         <Seccion titulo={COPY_ANTROPOMETRIA.evolucionPorMedida}>
+          <Parrafo tenue>{periodo}</Parrafo>
           {[...conDatos]
             .sort((a, b) => compararPorCatalogo(a.metricCode, b.metricCode))
             .map((serie) => (
@@ -142,7 +145,7 @@ function Evolucion({ datos }: { datos: Datos }) {
 const FAMILIAS: readonly FamiliaDeMedicion[] = ['MASA_Y_ESTATURA', 'PERIMETROS', 'PLIEGUES', 'DIAMETROS', 'OTRAS'];
 
 /** Las medidas de la toma agrupadas por familia, en el orden de la lámina, con un subtítulo por familia. */
-function ListaPorFamilia({ medidas }: { medidas: readonly MedidaDeLaToma[] }) {
+function ListaPorFamilia({ medidas, fechaComparada }: { medidas: readonly MedidaDeLaToma[]; fechaComparada: string | null }) {
   return (
     <>
       {FAMILIAS.map((familia) => {
@@ -152,7 +155,7 @@ function ListaPorFamilia({ medidas }: { medidas: readonly MedidaDeLaToma[] }) {
           <View key={familia}>
             <Subtitulo>{ETIQUETA_DE_FAMILIA[familia]}</Subtitulo>
             {deLaFamilia.map((m) => (
-              <FilaDeLaToma key={m.metrica} medida={m} />
+              <FilaDeLaToma key={m.metrica} medida={m} fechaComparada={fechaComparada} />
             ))}
           </View>
         );
@@ -170,17 +173,22 @@ function LaUltimaToma({ toma }: { toma: UltimaToma }) {
   const enLaFigura = toma.medidas.filter((m) => estaEnLaFigura(m.metrica));
   const fueraDeLaFigura = toma.medidas.filter((m) => !estaEnLaFigura(m.metrica));
   return (
-    <Seccion titulo={COPY_ANTROPOMETRIA.tuUltimaToma}>
-      {/* Una sola línea de contexto: de cuándo es la toma y con cuál se compara. */}
-      <Parrafo>
-        {COPY_ANTROPOMETRIA.tomaDel} {fechaCivil(toma.fecha)}
-        {toma.fechaAnterior ? `. ${COPY_ANTROPOMETRIA.comparadaCon} ${fechaCivil(toma.fechaAnterior)}.` : null}
+    <Seccion titulo={`${COPY_ANTROPOMETRIA.tuUltimaToma}: ${fechaCivil(toma.fecha)}`}>
+      {/* Una línea: con cuál se compara y qué hay. Son cantidades reales de la toma, no un indicador. */}
+      <Parrafo tenue>
+        {[
+          toma.fechaAnterior ? `${COPY_ANTROPOMETRIA.comparadaCon} ${fechaCivil(toma.fechaAnterior)}` : COPY_ANTROPOMETRIA.sinAnteriorComparable,
+          `${numero(toma.medidas.length)} ${toma.medidas.length === 1 ? 'medida' : 'medidas'}`,
+          toma.derivadas.length > 0 ? `${numero(toma.derivadas.length)} ${toma.derivadas.length === 1 ? 'resultado de fórmula' : 'resultados de fórmulas'}` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
       </Parrafo>
       <FiguraDeLaToma medidas={toma.medidas} />
-      <ListaPorFamilia medidas={fueraDeLaFigura} />
+      <ListaPorFamilia medidas={fueraDeLaFigura} fechaComparada={toma.fechaAnterior} />
       {enLaFigura.length > 0 ? (
         <Desplegable titulo="La figura, en lista" detalle={enLaFigura.length === 1 ? '1 medida, con su valor anterior' : `${numero(enLaFigura.length)} medidas, con su valor anterior`}>
-          <ListaPorFamilia medidas={enLaFigura} />
+          <ListaPorFamilia medidas={enLaFigura} fechaComparada={toma.fechaAnterior} />
         </Desplegable>
       ) : null}
       <Ayuda>
@@ -195,7 +203,7 @@ function ResultadosDeLasFormulas({ toma }: { toma: UltimaToma }) {
   return (
     <Seccion titulo={COPY_ANTROPOMETRIA.resultadosDeLasFormulas}>
       {toma.derivadas.map((m) => (
-        <FilaDeLaToma key={`${m.metrica}-${m.actual.punto.comparabilityGroup}`} medida={m} conMetodo />
+        <FilaDeLaToma key={`${m.metrica}-${m.actual.punto.comparabilityGroup}`} medida={m} conMetodo fechaComparada={toma.fechaAnterior} />
       ))}
       <Ayuda>
         <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeResultados}</Parrafo>
@@ -208,11 +216,14 @@ function ResultadosDeLasFormulas({ toma }: { toma: UltimaToma }) {
  * Una medida de la toma: nombre y valor, el método si es un resultado de fórmula, y el anterior comparable con la
  * diferencia. El lector de pantalla la lee como una sola frase.
  */
-function FilaDeLaToma({ medida, conMetodo = false }: { medida: MedidaDeLaToma; conMetodo?: boolean }) {
+function FilaDeLaToma({ medida, conMetodo = false, fechaComparada }: { medida: MedidaDeLaToma; conMetodo?: boolean; fechaComparada: string | null }) {
   const { actual, anterior, diferencia } = medida;
   const valor = cantidad(actual.punto.value, actual.punto.unit);
   const metodo = conMetodo ? `${COPY_ANTROPOMETRIA.metodoDelResultado}: ${nombreDeMetodo(actual.grupo?.methodVersionId ?? null) ?? COPY_ANTROPOMETRIA.metodoSinNombre}` : null;
-  const antes = anterior ? `${COPY_ANTROPOMETRIA.antes}: ${cantidad(anterior.punto.value, anterior.punto.unit)}, el ${fechaCivil(anterior.fecha)}` : COPY_ANTROPOMETRIA.sinAnteriorComparable;
+  // La fecha del anterior ya está arriba («Comparada con…»): en la fila va solo si este valor viene de otra toma.
+  const antes = anterior
+    ? `${COPY_ANTROPOMETRIA.antes}: ${cantidad(anterior.punto.value, anterior.punto.unit)}${anterior.fecha === fechaComparada ? '' : `, el ${fechaCivil(anterior.fecha)}`}`
+    : COPY_ANTROPOMETRIA.sinAnteriorComparable;
   const cambio = diferencia ? `${COPY_ANTROPOMETRIA.diferencia}: ${textoDeDiferenciaAntropometrica(diferencia)}` : null;
   const clase = actual.punto.dataClass === 'MEASURED' ? null : ETIQUETA_DE_CLASE_DE_DATO[actual.punto.dataClass];
   const corregida = actual.punto.correctionState === 'CORRECTED' ? COPY_ANTROPOMETRIA.corregida : null;
