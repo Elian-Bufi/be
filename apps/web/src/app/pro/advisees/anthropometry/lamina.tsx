@@ -35,13 +35,12 @@ import {
   MAXIMO_DE_TOMAS_EN_SERIE,
   nombreDeMetrica,
   nombreDelArchivoDeLaLamina,
-  PLIEGUES_SIN_SITIO,
   repartirConclusiones,
   resultadosDeLaToma,
   ROTULO_EN_LA_LAMINA,
   SERIES_EN_EVOLUCION,
   seriesDeEvolucion,
-  sumaDelPieDePliegues,
+  sumasDelPieDePliegues,
   textoDelValor,
   todasLasPaginas,
   tomasPorDefecto,
@@ -324,7 +323,7 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
         }
       } else {
         const comp = componerMedicion(sexo, encuadre, FAMILIA_DE_LA_HOJA[hoja], valores.porClave);
-        const suma = hoja === 'PLIEGUES' ? (sumaDelPieDePliegues(resultados)?.valor ?? null) : null;
+        const sumas = hoja === 'PLIEGUES' ? sumasDelPieDePliegues(resultados).map((s) => ({ rotulo: s.rotulo, valor: s.resultado?.valor ?? null })) : [];
         calculosPendientes = hoja === 'PLIEGUES' && calculos.estado.tipo === 'cargando';
         contenido = (
           <HojaDeMedicion
@@ -332,7 +331,7 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
             comp={comp}
             hoja={hoja}
             valores={valores.porClave}
-            suma={suma}
+            sumas={sumas}
             encabezado={{ titulo: mayusculas(nombreDeLaHoja), linea, fecha, nombre, etiqueta: ETIQUETA_DEL_ENCUADRE[encuadre] }}
           />
         );
@@ -350,7 +349,7 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
         }
       }
 
-      const sinSitio = [...DATOS_DE_LA_TOMA, ...PLIEGUES_SIN_SITIO.map((p) => p.clave), ...DIAMETROS_DE_LA_LAMINA, ...clavesSinLugarEnLaLamina(valores.porClave)].flatMap((clave) => {
+      const sinSitio = [...DATOS_DE_LA_TOMA, ...DIAMETROS_DE_LA_LAMINA, ...clavesSinLugarEnLaLamina(valores.porClave)].flatMap((clave) => {
         const v = valores.porClave.get(clave);
         return v ? [`${nombreDeMetrica(clave)} ${conUnidad(v)}`] : [];
       });

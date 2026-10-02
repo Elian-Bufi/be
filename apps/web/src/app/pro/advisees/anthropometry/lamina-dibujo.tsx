@@ -25,7 +25,6 @@ import {
   GUIA_EN_SERIE,
   LIENZO_DE_LA_LAMINA,
   PIE_DE_PLIEGUES,
-  PLIEGUES_SIN_SITIO,
   TARJETAS_EN_MEDICION,
   colorDeLaCapa,
   diametrosDeLaToma,
@@ -435,22 +434,22 @@ const anchoDeLaMarcaPosterior = () => medir(COPY_ANTROPOMETRIA.laminaPosterior, 
 
 /**
  * Una toma sobre la figura (compositor: `slide1` y `slide2`): las tarjetas a la izquierda, una fila por sitio con
- * valor, y al pie los diámetros óseos (Circunferencias) o los pliegues sin sitio en la figura (Pliegues).
+ * valor, y al pie los diámetros óseos (Circunferencias) o las sumas de pliegues calculadas (Pliegues).
  */
 export function HojaDeMedicion({
   tema,
   comp,
   hoja,
   valores,
-  suma,
+  sumas,
   encabezado,
 }: {
   tema: TemaDeLaLamina;
   comp: ComposicionDeMedicion;
   hoja: 'CIRCUNFERENCIAS' | 'PLIEGUES';
   valores: ReadonlyMap<string, ValorDeLaLamina>;
-  /** La suma de 7 pliegues de Jackson y Pollock calculada para la toma, para el pie de Pliegues. */
-  suma: ValorDeLaLamina | null;
+  /** Las sumas de pliegues calculadas para la toma (`SUMAS_DEL_PIE_DE_PLIEGUES`), para el pie de Pliegues. */
+  sumas: readonly { readonly rotulo: string; readonly valor: ValorDeLaLamina | null }[];
   encabezado: DatosDelEncabezado;
 }) {
   const c = COLORES_DE_LA_LAMINA[tema];
@@ -474,7 +473,7 @@ export function HojaDeMedicion({
         </g>
       ))}
       {comp.tarjetas.length === 0 ? <NotaVacia c={c} titulo={COPY_ANTROPOMETRIA.laminaSinMedidasTitulo} texto={COPY_ANTROPOMETRIA.laminaSinMedidas} /> : null}
-      {hoja === 'CIRCUNFERENCIAS' ? <PieDeDiametros c={c} valores={valores} /> : <PieDePliegues c={c} valores={valores} dibujados={comp.sitios.length} suma={suma} />}
+      {hoja === 'CIRCUNFERENCIAS' ? <PieDeDiametros c={c} valores={valores} /> : <PieDePliegues c={c} dibujados={comp.sitios.length} sumas={sumas} />}
       <Vineta c={c} />
       <Encabezado c={c} datos={encabezado} />
       <PieDePagina c={c} />
@@ -540,18 +539,14 @@ function PieDeDiametros({ c, valores }: { c: ColoresDeLaLamina; valores: Readonl
 
 /**
  * El pie de Pliegues (compositor: `slide2`). El compositor pone «MÉTODO · Jackson-Pollock 7», los sitios dibujados y una
- * «SUMA 7 PLIEGUES» cargada a mano. Acá van los pliegues dibujados, los dos que la figura no ubica (para que no se
- * pierdan) y la suma de Jackson y Pollock **calculada** para la toma, si la hay; los demás resultados van en
- * Conclusiones, cada uno con su método. Lo que falta dice «—», nunca cero.
+ * «SUMA 7 PLIEGUES» cargada a mano. Acá van los pliegues dibujados y las dos sumas del catálogo **calculadas** para la
+ * toma (`SUMAS_DEL_PIE_DE_PLIEGUES`); los demás resultados van en Conclusiones, cada uno con su método. Una suma sin
+ * corrida dice «Sin calcular», nunca cero (DL-113: el «—» no decía si faltaba el dato o el cálculo).
  */
-function PieDePliegues({ c, valores, dibujados, suma }: { c: ColoresDeLaLamina; valores: ReadonlyMap<string, ValorDeLaLamina>; dibujados: number; suma: ValorDeLaLamina | null }) {
+function PieDePliegues({ c, dibujados, sumas }: { c: ColoresDeLaLamina; dibujados: number; sumas: readonly { readonly rotulo: string; readonly valor: ValorDeLaLamina | null }[] }) {
   const { x, y, ancho, alto } = PIE_DE_PLIEGUES;
-  const conUnidad = (v: ValorDeLaLamina | null | undefined) => (v ? `${textoDelValor(v)} ${unidadVisible(v.unidad)}`.trim() : '—');
-  const columnas = [
-    { rotulo: COPY_ANTROPOMETRIA.laminaPlieguesEnLaFigura, valor: String(dibujados) },
-    ...PLIEGUES_SIN_SITIO.map((p) => ({ rotulo: p.rotulo, valor: conUnidad(valores.get(p.clave)) })),
-    { rotulo: COPY_ANTROPOMETRIA.laminaSumaDeSietePliegues, valor: conUnidad(suma) },
-  ];
+  const conUnidad = (v: ValorDeLaLamina | null) => (v ? `${textoDelValor(v)} ${unidadVisible(v.unidad)}`.trim() : COPY_ANTROPOMETRIA.laminaSinCalcular);
+  const columnas = [{ rotulo: COPY_ANTROPOMETRIA.laminaPlieguesEnLaFigura, valor: String(dibujados) }, ...sumas.map((s) => ({ rotulo: s.rotulo, valor: conUnidad(s.valor) }))];
   return (
     <g>
       <Vidrio x={x} y={y} ancho={ancho} alto={alto} c={c} />

@@ -211,6 +211,7 @@ export const COPY_ANTROPOMETRIA = {
   laminaPosterior: 'posterior',
   laminaPlieguesEnLaFigura: 'Pliegues en la figura',
   laminaSumaDeSietePliegues: 'Suma 7 pliegues (JP)',
+  laminaSinCalcular: 'Sin calcular',
   laminaNoComparables: 'No comparables',
   laminaEvolucionAntropometrica: 'Evolución antropométrica',
   laminaTomas: 'tomas',
