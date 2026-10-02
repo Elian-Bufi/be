@@ -86,6 +86,7 @@ export function BloqueDeCalculos({ evaluacion, onAviso }: { evaluacion: Evaluaci
             <NuevoCalculo
               evaluacion={evaluacion}
               metodos={estado.metodos}
+              corridas={estado.corridas}
               onCerrar={() => setAbierto(false)}
               onHecho={(texto) => {
                 setAbierto(false);
@@ -201,12 +202,15 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
 function NuevoCalculo({
   evaluacion,
   metodos,
+  corridas,
   onCerrar,
   onHecho,
   onError,
 }: {
   evaluacion: EvaluacionAntropometricaApi;
   metodos: readonly MetodoApi[];
+  /** Las corridas de esta toma: para avisar si el mismo resultado ya está calculado con otro método. */
+  corridas: readonly CorridaDeCalculoApi[];
   onCerrar: () => void;
   onHecho: (t: string) => void;
   onError: (t: string) => void;
@@ -252,6 +256,11 @@ function NuevoCalculo({
   }
 
   const completo = metodo.requiredInputs.every((e) => entradas[e.inputCode]);
+  // DL-113 · las variantes por sexo de un método dan la misma métrica (DL-112): si la toma ya la tiene calculada con
+  // otro método, las dos corridas conviven. La evolución muestra las dos, cada una con su método, pero «Tu última toma»
+  // de la APK muestra una sola por métrica: la registrada al final (`ultimaToma`). Se avisa antes de calcular, sin
+  // elegir por el profesional.
+  const yaCalculada = corridas.find((c) => c.effective && c.result.metric === metodo.output.metric && c.methodId !== metodo.methodId);
   const etiquetaDeCategoria = (m: MetodoApi): string => (m.category ? `${COPY_ANTROPOMETRIA.categoriaDeMetodo[m.category] ?? m.category} · ` : '');
   const opcion = (m: MetodoApi) => (
     <option key={m.methodVersionId} value={m.methodVersionId}>
@@ -314,6 +323,15 @@ function NuevoCalculo({
           <p className="nota">
             <strong>{COPY_ANTROPOMETRIA.metodoPoblacion}:</strong> {metodo.population}
           </p>
+        ) : null}
+        {yaCalculada ? (
+          <Aviso tipo="info">
+            <p>
+              Esta toma ya tiene «{nombreDeMetrica(metodo.output.metric)}» calculada con «{yaCalculada.methodName}». Si calculás también este método,
+              los dos resultados conviven: en la evolución se ven los dos, cada uno con su método, y en la APK la persona ve el último que se
+              registró.
+            </p>
+          </Aviso>
         ) : null}
         <Ayuda titulo="Fuente y regla del método">
           {metodo.source ? (
