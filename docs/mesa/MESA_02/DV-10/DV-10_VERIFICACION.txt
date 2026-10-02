@@ -1,0 +1,132 @@
+DV-10 · Verificación falsable del Gantt
+Corte: 2026-10-02 15:45 (hora argentina), commit c61b8f5
+Generado por generar-gantt.cjs a partir de DV-10_FASES.csv, DV-10_DEPENDENCIAS.csv y las fuentes capturadas.
+
+Fases: 45 (historia fechada 38, historia sin fecha 2, plan 5)
+Fases pasadas fechadas con fuente: 38 de 38
+Dependencias: 27 (26 se cumplen, 1 invertida declarada, 0 fallan)
+PR integrados con fase: 128 de 129 (sin fase: #57)
+Controles: 121 OK · 0 FALLA · 1 AVISO
+
+[OK] D00: docs/actas/ACTA_DIR_034_v1.0_GATE_IMPLEMENTACION_FIRMADA_2026-09-18.md dice «Las actas 001–020 no están en el repositorio»
+[OK] D00: sin fuente fechada y sin fecha, como se declara
+[OK] D01: ACTA-DIR-021: el nombre y el texto dicen 2026-09-06
+[OK] D01: 2026-09-06 cae dentro de sus fuentes (2026-09-06 → 2026-09-06)
+[OK] D02: ACTA-DIR-021: el nombre y el texto dicen 2026-09-06
+[OK] D02: ACTA-DIR-022: el nombre y el texto dicen 2026-09-07
+[OK] D02: ACTA-DIR-023: el nombre y el texto dicen 2026-09-07
+[OK] D02: ACTA-DIR-024: el nombre y el texto dicen 2026-09-07
+[OK] D02: ACTA-DIR-025: el nombre y el texto dicen 2026-09-07
+[OK] D02: ACTA-DIR-026: el nombre y el texto dicen 2026-09-07
+[OK] D02: 2026-09-06 → 2026-09-07 coincide con sus fuentes (6)
+[OK] D03: ACTA-DIR-026: el nombre y el texto dicen 2026-09-07
+[OK] D03: ACTA-DIR-027: el nombre y el texto dicen 2026-09-07
+[OK] D03: ACTA-DIR-028: el nombre y el texto dicen 2026-09-07
+[OK] D03: 2026-09-07 → 2026-09-07 coincide con sus fuentes (3)
+[OK] D04: ACTA-DIR-028: el nombre y el texto dicen 2026-09-07
+[OK] D04: ACTA-DIR-029: el nombre y el texto dicen 2026-09-07
+[OK] D04: 2026-09-07 → 2026-09-07 coincide con sus fuentes (2)
+[OK] D05: ACTA-DIR-029: el nombre y el texto dicen 2026-09-07
+[OK] D05: ACTA-DIR-030: el nombre y el texto dicen 2026-09-07
+[OK] D05: 2026-09-07 → 2026-09-07 coincide con sus fuentes (2)
+[OK] D06: ACTA-DIR-030: el nombre y el texto dicen 2026-09-07
+[OK] D06: ACTA-DIR-031: el nombre y el texto dicen 2026-09-07
+[OK] D06: ACTA-DIR-032: el nombre y el texto dicen 2026-09-09
+[OK] D06: 2026-09-07 → 2026-09-09 coincide con sus fuentes (3)
+[OK] D07: ACTA-DIR-032: el nombre y el texto dicen 2026-09-09
+[OK] D07: ACTA-DIR-033: el nombre y el texto dicen 2026-09-09
+[OK] D07: 2026-09-09 → 2026-09-09 coincide con sus fuentes (2)
+[OK] D08: ACTA-DIR-033: el nombre y el texto dicen 2026-09-09
+[OK] D08: ACTA-DIR-033.1: el nombre y el texto dicen 2026-09-09
+[OK] D08: ACTA-DIR-033.2: el nombre y el texto dicen 2026-09-09
+[OK] D08: 2026-09-09 → 2026-09-09 coincide con sus fuentes (3)
+[OK] D09: ACTA-DIR-033.2: el nombre y el texto dicen 2026-09-09
+[OK] D09: 2026-09-09 cae dentro de sus fuentes (2026-09-09 → 2026-09-09)
+[OK] T00: sin fuente fechada y sin fecha, como se declara
+[OK] T01: 2026-09-16 cae dentro de sus fuentes (2026-09-16 → 2026-09-16)
+[OK] T01: la hora 15:04 es la de commit 747fe11
+[OK] T02: docs/actas/ACTA_DIR_034_v1.0_GATE_IMPLEMENTACION_FIRMADA_2026-09-18.md dice «EJECUTADO 2026-09-16 sobre el repositorio anterior be-health»
+[OK] T02: 2026-09-16 cae dentro de sus fuentes (2026-09-16 → 2026-09-16)
+[OK] T03: docs/actas/ACTA_DIR_034_v1.0_GATE_IMPLEMENTACION_FIRMADA_2026-09-18.md dice «se ejecutó del 2026-09-16 al 2026-09-18»
+[OK] T03: 2026-09-16 → 2026-09-18 coincide con sus fuentes (6)
+[OK] T04: ACTA-DIR-034: el nombre y el texto dicen 2026-09-18
+[OK] T04: 2026-09-18 cae dentro de sus fuentes (2026-09-18 → 2026-09-18)
+[OK] T04: la hora 18:48 es la de PR #5
+[OK] C01: 2026-09-18 → 2026-09-19 coincide con sus fuentes (9)
+[OK] C02: 2026-09-18 → 2026-09-19 coincide con sus fuentes (3)
+[OK] C03: 2026-09-19 cae dentro de sus fuentes (2026-09-19 → 2026-09-19)
+[OK] C03: la hora 05:37 es la de PR #16
+[OK] C04: 2026-09-19 → 2026-09-19 coincide con sus fuentes (7)
+[OK] C05: 2026-09-19 → 2026-09-19 coincide con sus fuentes (7)
+[OK] C06: 2026-09-19 → 2026-09-20 coincide con sus fuentes (21)
+[OK] C07: 2026-09-20 → 2026-09-21 coincide con sus fuentes (10)
+[OK] C08: 2026-09-21 → 2026-09-22 coincide con sus fuentes (9)
+[OK] C09: docs/paquetes/WP-CONSOLIDACION.md dice «Autorizado por Dirección el 2026-09-22»
+[OK] C09: 2026-09-22 cae dentro de sus fuentes (2026-09-22 → 2026-09-23)
+[OK] C09: la hora 22:48 es la de PR #66
+[OK] C10: 2026-09-22 → 2026-09-24 coincide con sus fuentes (6)
+[OK] C11: 2026-09-24 → 2026-09-24 coincide con sus fuentes (6)
+[OK] C12: 2026-09-24 cae dentro de sus fuentes (2026-09-24 → 2026-09-24)
+[OK] C12: la hora 06:01 es la de PR #78
+[OK] C13: 2026-09-24 → 2026-09-25 coincide con sus fuentes (6)
+[OK] C14: 2026-09-24 → 2026-09-25 coincide con sus fuentes (4)
+[OK] C15: 2026-09-25 cae dentro de sus fuentes (2026-09-24 → 2026-09-25)
+[OK] C16: 2026-09-25 → 2026-09-27 coincide con sus fuentes (18)
+[OK] C17: 2026-09-27 → 2026-09-28 coincide con sus fuentes (11)
+[OK] C18: 2026-09-29 → 2026-09-30 coincide con sus fuentes (17)
+[OK] C19: 2026-10-01 → 2026-10-01 coincide con sus fuentes (3)
+[OK] C20: 2026-10-01 → 2026-10-01 coincide con sus fuentes (3)
+[OK] C21: 2026-10-02 cae dentro de sus fuentes (2026-10-02 → 2026-10-02)
+[OK] C21: la hora 15:45 es la de commit c61b8f5
+[OK] R00: 2026-09-18 → 2026-10-01 coincide con sus fuentes (19)
+[OK] M0: DEFENSA/WP-01.md dice «Dirección (2026-09-18): APK instalado y abierto»
+[OK] M0: 2026-09-18 cae dentro de sus fuentes (2026-09-18 → 2026-09-19)
+[OK] M0: la hora 14:57 es la de be-apk-0.1.0
+[OK] M12: DEFENSA/WP-02.md dice «instalado en el Android de Dirección (2026-09-18»
+[OK] M12: 2026-09-18 cae dentro de sus fuentes (2026-09-18 → 2026-09-19)
+[OK] M12: la hora 22:24 es la de be-apk-0.2.0
+[OK] M3: DEFENSA/WP-04.md dice «11 capturas en un Android real con DEMO-A01, el 2026-09-19»
+[OK] M3: 2026-09-19 cae dentro de sus fuentes (2026-09-19 → 2026-09-19)
+[OK] M3: la hora 16:34 es la de be-apk-0.4.0
+[OK] P01: docs/QUE-FALTA.md dice «Ninguna APK desde la 0.12.0 se probó en un teléfono»
+[OK] P01: rotulada «PLAN — SUJETO A GATE»
+[OK] P02: README.md dice «entrega 2026-10-01»
+[OK] P02: rotulada «PLAN — SUJETO A GATE · fecha a registrar»
+[OK] P03: DECISIONES_TECNICAS.md dice «creada ~2026-09-16 → ~2026-10-16»
+[OK] P03: DEFENSA/WP-01.md dice «≈ 2026-10-17»
+[OK] P03: docs/DESPLIEGUE.md dice «vence cerca del 2026-10-18»
+[OK] P03: docs/QUE-FALTA.md dice «vence cerca del 16 o 18/10»
+[OK] P03: rotulada «A VERIFICAR (rango)»
+[OK] P04: docs/legajo/02_Vision_Alcance_y_Plan_Estrategico.md dice «Q-FECHA-001 | Fecha exacta de entrega y defensa»
+[OK] P04: sin fuente fechada y sin fecha, como se declara
+[OK] P05: EVIDENCIA/PUBLICACION-0.13.0/LEEME.md dice «Falta la validación de Dirección en el teléfono»
+[OK] P05: sin fuente fechada y sin fecha, como se declara
+[OK] D01 → D02 (FS): el orden de las fuentes la respeta
+[OK] D02 → D03 (FS): el orden de las fuentes la respeta
+[OK] D03 → D04 (FS): el orden de las fuentes la respeta
+[OK] D04 → D05 (FS): el orden de las fuentes la respeta
+[OK] D05 → D06 (FS): el orden de las fuentes la respeta
+[OK] D06 → D07 (FS): el orden de las fuentes la respeta
+[OK] D07 → D08 (FS): el orden de las fuentes la respeta
+[OK] D08 → D09 (FS): el orden de las fuentes la respeta
+[OK] D09 → T02 (FS): el orden de las fuentes la respeta
+[OK] T02 → T03 (FS): el orden de las fuentes la respeta
+[OK] T02 → T04 (FS): el orden de las fuentes la respeta
+[OK] T04 → T03 (INVERTIDA): T03 empieza antes de que termine T04: la inversión declarada es real
+[OK] T04 → C01 (FS): el orden de las fuentes la respeta
+[OK] C01 → C02 (SS): el orden de las fuentes la respeta
+[OK] T04 → C03 (FS): el orden de las fuentes la respeta
+[OK] C01 → C04 (FS): el orden de las fuentes la respeta
+[OK] C04 → C05 (FS): el orden de las fuentes la respeta
+[OK] C05 → C06 (FS): el orden de las fuentes la respeta
+[OK] C06 → C07 (FS): el orden de las fuentes la respeta
+[OK] C07 → C08 (FS): el orden de las fuentes la respeta
+[OK] C08 → C09 (FS): el orden de las fuentes la respeta
+[OK] C09 → C10 (FS): el orden de las fuentes la respeta
+[OK] C10 → C11 (FS): el orden de las fuentes la respeta
+[OK] C11 → C12 (FS): el orden de las fuentes la respeta
+[OK] C15 → C14 (FF): el orden de las fuentes la respeta
+[OK] C19 → C20 (FS): el orden de las fuentes la respeta
+[OK] C20 → P01 (FS): el orden de las fuentes la respeta
+[AVISO] PR #57: no está en ninguna fase («web — el favicon del isotipo de BE»): va a la tabla de omisiones
+[OK] cobertura: 128 de 129 PR integrados tienen fase; 19 releases en el carril de la APK

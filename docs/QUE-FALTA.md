@@ -1,6 +1,11 @@
 # Qué falta desarrollar en BE
 
-**Corte:** 2026-10-01, con DL-112, DL-113 y DL-114 integradas en `main` (`0c02326`, #128).
+**Corte:** 2026-10-02. En `main` (`6213ec8`) están integrados:
+- DL-112, DL-113 y DL-114 (#128);
+- la auditoría de dependencias corregida (#130);
+- el pulido de UX/UI de DL-113 (#131).
+
+La APK vigente es la 0.13.1.
 
 **Fuentes:**
 - `docs/DEUDA_LEGAJO.md`, que tiene la tabla y cada DL;
@@ -18,8 +23,9 @@ Cada punto lleva su ID. El detalle está en el documento que se cita.
    - rehacer los vínculos y los datos del escenario.
 
    Ver «Límites del plan gratuito» en `docs/DESPLIEGUE.md`.
-2. **Ninguna APK desde la 0.12.0 se probó en un teléfono.** Quedan los recorridos de 0.12.0, 0.12.1, 0.12.2 y 0.13.0 (`EVIDENCIA/PUBLICACION-*/LEEME.md`).
+2. **Ninguna APK desde la 0.12.0 se probó en un teléfono.** Quedan los recorridos de la 0.12.0 a la 0.13.1 (`EVIDENCIA/PUBLICACION-*/LEEME.md`). El de la 0.13.1 incluye «Mi evolución» y la figura con los puntos en su altura anatómica.
 3. **TalkBack y la letra del sistema al máximo** nunca se probaron en un Android físico (RNF-ACC-001). Faltan las capturas 16, 17, 19, 20, 21 y 22 de la guía de capturas.
+4. **DL-115, de severidad alta.** Revocado el A3, el titular sigue leyendo su evolución antropométrica y el detalle de sus formularios; nutrición y entrenamiento sí lo cortan (08:406). Espera la decisión de Dirección. La recomendación es la opción A, de tamaño S, que necesita una APK nueva.
 
 ## 2. Funcionalidades P0 que faltan
 
@@ -27,9 +33,9 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 
 | Qué | Requisitos | Estado |
 |---|---|---|
-| **Alta y verificación de profesionales, y rol administrador** (WP-09). Hoy un profesional se habilita con un servicio interno y cuentas demo | RF-008 a RF-014 · UC-P01 a P03 · API-PRO-01 a 13 · DL-036 | Fuera del tramo; sin ficha `WP-09.md` |
+| **Alta y verificación de profesionales, y rol administrador** (WP-09). Hoy un profesional se habilita con un servicio interno y cuentas demo. El administrador es actor en RF-011, RF-012 y RF-014, y exige MFA siempre (08 §25) | RF-007 a RF-014 · RF-067 · UC-P01 a P03 · UC-E01 · API-PRO-01 a 13 · DL-036 | Fuera del tramo. Ficha del 2/10 en `docs/propuestas/PERFIL-DEL-ASESORADO-Y-ADMINISTRACION_fichas.md`. **La mesa pide distintos roles, no un administrador** |
 | **Seguimiento profesional** (lo que queda de WP-10): cola de revisiones, línea temporal, notas de coordinación, proyecciones y TVCC-30 | RF-052 a 055, 057 y 058 · API-DSH-01, 02, 04 y 05 · API-PRJ-01 a 03 · API-CRD-01 | Hecho en parte: «Pendientes» (DL-107) y los resúmenes por dominio (DL-031) |
-| **Perfil del asesorado** con nombre visible. Hoy el profesional ve «Asesorado · c36743» | RF-017 · UC-P25 · API-ACC-06 · DL-009 · DL-040 | Sin implementar |
+| **Perfil del asesorado** con nombre visible. Hoy el profesional ve «Asesorado · c36743». El perfil propio existe sin contenido (RF-017 parcial desde WP-02); el nombre visible sale del 09v8 §3.2 y del B10-08 §5.4 | RF-017 · UC-P25 · API-ACC-06 · DL-009 · DL-040 | El nombre y API-ACC-06, sin implementar. Ficha del 2/10 en el mismo documento |
 | **Exportar los datos del titular** y los pasos 2 y 3 de la revocación de A3 | DL-021 · REV-A-D4 | Sin implementar |
 | **Alta por invitación** con declaración de mayoría de edad. Hoy el asesorado pasa su identificador por fuera de BE | DL-023 · DL-035 | Sin implementar |
 | **Suspender y restablecer una cuenta** desde la interfaz | DL-020 | Solo servicio interno |
@@ -63,14 +69,21 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 - El asesorado no lee sus propias revisiones (REV-A).
 - El piloto de inteligencia supervisada (PF-08).
 
-**UX** (`docs/ux/GUIA-UX-UI.md` §11)
-- En la figura del teléfono, con muchos pliegues, los halos del tronco se tocan.
+**UX** (`docs/ux/GUIA-UX-UI.md` §12)
+- En la figura del teléfono, con todos los pliegues, la guía del subescapular cruza la del antebrazo dentro de su tarjeta y pasa por detrás de su punto (`EVIDENCIA/UX-PULIDO-DL113/LEEME.md`).
+- La barra inferior de la APK a 320 dp entra achicando las etiquetas. Hay que verla en un teléfono chico.
 - Recargar el website cierra la sesión (DL-012).
 
 ## 4. Decisiones que esperan a Dirección
 
 - **Ahora:**
-  - ratificar DL-111, DL-112 (la lista de 21 métodos) y DL-113 (la UX; incluye las coordenadas del bíceps y la cresta ilíaca, y en qué zona abre la APK);
+  - ratificar DL-111 y DL-112 (la lista de 21 métodos);
+  - ratificar DL-113, la UX y su pulido del 2/10. Incluye:
+    - la ubicación de los sitios de la figura: el bíceps y la cresta ilíaca ya están a su altura anatómica, y hay una observación sobre el supraespinal;
+    - en qué zona abre la APK;
+  - ratificar DL-114, la excepción de node-forge, que vence el 31/10;
+  - decidir DL-115, el A3 del titular en antropometría y formularios;
+  - las decisiones D-1 a D-7 de la matriz de DV-05 y las dudas de las reconciliaciones de DV-02 y DV-06;
   - las preguntas abiertas de la ficha de métodos (§15.2).
 - **Abiertas con provisorio en el código:** DL-106, DL-108 (D-4, D-6 y D-7), DL-063 (plazo del borrador antropométrico), REV-A (D1 a D4), PF-03 (D-2 a D-9), PF-04 (D-1 a D-11), DEC-01 a DEC-13 del Plan Funcional y el logo con alas. Además, unas cincuenta DL de plataforma, cuenta, vínculos, nutrición y entrenamiento: la lista completa está en la tabla de `docs/DEUDA_LEGAJO.md`.
 - **Decididas, pero esperan la reemisión del legajo** (el manifiesto impide editarlo desde el repo):
@@ -87,7 +100,9 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 - **APK:**
   - sin cuota de EAS, se construye localmente en 20 a 26 minutos;
   - `apk.yml` no tiene `EXPO_TOKEN`.
-- **Concurrencia:** hay un 503 intermitente bajo carga de concurrencia, sin explicar (`DEFENSA/WP-06.md` §5.5).
+- **Concurrencia:** hay un 503 intermitente con lecturas concurrentes (`DEFENSA/WP-06.md` §5.5).
+  - El 2026-10-02 se vio que es `P2028` de Prisma: la transacción no pudo empezar a tiempo. Pasó en la máquina local, con poca memoria (`EVIDENCIA/UX-PULIDO-DL113/LEEME.md`).
+  - Severidad media. Sin corregir.
 - **Antes de datos reales**, hay que cumplir el gate de 24 condiciones del 08 §42. Incluye:
   - MFA;
   - textos legales;

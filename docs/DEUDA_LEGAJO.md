@@ -119,6 +119,8 @@
 | DL-112 | Pedido de Dirección · 2026-10-01 | DL-111 · 06 REG-06-205 · RF-048 · DL-072 (especificaciones de solo agregar) | El catálogo ofrece demasiados métodos para elegir: 40 métodos, 28 resultados | **DECIDIDA** 2026-10-01 (la purga) · la lista la armó el ejecutor, A RATIFICAR · 21 vigentes, 23 retirados y 4 nuevos; lo calculado sigue en la historia |
 | DL-113 | Pedido de Dirección · 2026-10-01 | B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 | Mucho texto a la vista, avisos fuera de la vista en el teléfono, la APK sin navegación fija y pliegues del catálogo fuera de la figura | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · pulido y corrección de los puntos anatómicos 2026-10-02 · guía `docs/ux/GUIA-UX-UI.md` · falta la prueba de Dirección en el teléfono |
 | DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **PROVISORIA, A RATIFICAR** 2026-10-01 · excepción declarada por aviso y paquete, con motivo y vencimiento (2026-10-31) |
+| DL-115 | Matriz de DV-05 · 2026-10-02 | 08:406 (08 §13) · DL-089 · TEST-AUTH-003 · TEST-AUTH-004 | Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan | **ABIERTA** 2026-10-02 · severidad alta · espera la decisión de Dirección |
+| DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección |
 
 ---
 
@@ -1867,6 +1869,8 @@ Resultado: **hoy el compromiso de Q-API-001 está en cero** —ni wger ni Open F
 
 **Resolución — CERRADA el 2026-09-24, opción A** (PR #67), dentro del tramo de consolidación que Dirección aprobó el 2026-09-22 (`docs/paquetes/WP-CONSOLIDACION.md` §3). Las lecturas de la historia ya registrada del titular exigen solo su A3 vigente, como en nutrición y antropometría: API-TRN-19 (su ejecución), API-TRN-09 sobre una versión ACTIVADA (su plan tal como lo aceptó) y **también API-TRN-08** para el titular. Este último no estaba en el texto de la deuda y se sumó a propósito: sin él, TRN-09 devolvía 200 sobre una versión que la lista ya no ofrecía, y la pantalla habría mostrado vacía una historia que el titular sí conserva. Lo que *opera* sobre el plan vigente —«Hoy», abrir un borrador, confirmar, corregir— sigue bajo el PDP del profesional (UC-P17 E03), y revocado el A3 se corta también lo propio (08:406). Cuatro pruebas nuevas en `test/integration/entrenamiento.int-spec.ts` fijan las cuatro caras.
 
+> **Nota del 2026-10-02.** La frase «como en nutrición y antropometría» no es cierta para antropometría: su lectura propia no mira el A3. Ver DL-115.
+
 ## DL-090 — RF-071, «Solicitar y completar información profesional pertinente», es P0 y ningún paquete lo tiene
 
 **Prioridad:** alta · **Documento:** 04:266-275 · B10-06:149-177 · adenda B10 v0.5:1290-1310 · **Estado:** **CERRADA** 2026-09-22 · WP-07 (PRs #58 a #65)
@@ -2532,3 +2536,58 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 **Pendiente de Dirección.**
 - Ratificar la excepción o pedir otra salida.
 - Antes del 2026-10-31, revisar si node-forge publicó la corrección (entonces se fija con `overrides` y la excepción se borra) o si Expo dejó de depender de node-forge.
+
+---
+
+## DL-115 — Revocado el A3, el titular sigue leyendo su evolución antropométrica y sus formularios
+
+**Prioridad:** alta · **Documento:** 08:406 (08 §13) · DL-089 · TEST-AUTH-003 y TEST-AUTH-004 (DV-05) · **Estado:** ABIERTA. Se encontró el 2026-10-02, al armar la matriz de DV-05 (`docs/mesa/MESA_02/DV-05/MATRIZ_DE_RECONCILIACION_DV-05_2026-10.md`, H-1). Espera la decisión de Dirección
+
+**Qué dice el legajo.**
+- 08:406: revocar `DATOS_SALUD_BE` (A3) suspende de inmediato «toda operación sensible del servicio para ese titular (registro y acceso profesional incluidos)». Durante el plazo de decisión, los datos quedan bloqueados, «no operativos».
+- DL-089 (opción A, cerrada el 2026-09-24) aplicó ese criterio a la historia del titular en entrenamiento. Dijo además que nutrición y antropometría ya lo hacían.
+
+**Qué pasa hoy.** Se verificó leyendo el código el 2026-10-02.
+- **Nutrición y entrenamiento lo cumplen.** La lectura propia de nutrición (`apps/api/src/nutricion/ingestas.service.ts`) y la historia de entrenamiento (`exigirA3Vigente`, en `apps/api/src/entrenamiento/ejecutor.ts`) responden 403 `ACTION_FORBIDDEN` al titular sin A3. La APK lo muestra: «Tu historial» avisa que necesita el A3.
+- **Antropometría no lo cumple.** `EvolucionService.titularAutorizado` (`apps/api/src/antropometria/evolucion.service.ts`) devuelve la serie del titular (`/me/anthropometry/progress`, API-ANT-06-PROPIA) sin mirar el A3, y «Mi evolución» la sigue mostrando. **La frase de DL-089 sobre antropometría es incorrecta.**
+- **Formularios tampoco.** API-FRM-05 (`consultarDetalle`, en `apps/api/src/formularios/solicitudes.service.ts`) le devuelve al asesorado su solicitud con la respuesta, que puede traer datos de salud, sin mirar el A3.
+- Ninguna prueba ejercita estos dos caminos. Por eso, en la matriz de DV-05, TEST-AUTH-004 y la variante del titular de TEST-AUTH-003 quedan cubiertas en parte.
+- **No expone datos a terceros:** el PDP sí corta al profesional. Lo que falla es el bloqueo de los datos propios del titular.
+
+**Opciones.**
+- **A.** Las dos lecturas exigen el A3 vigente, como nutrición y entrenamiento.
+  - El titular sin A3 recibe 403 `ACTION_FORBIDDEN`, y el contrato suma ese 403 a API-ANT-06-PROPIA y a API-FRM-05.
+  - En la APK, «Mi evolución» y el detalle del formulario muestran el mismo aviso que «Tu historial».
+  - Lleva una prueba de integración por cada lectura (PE-01 de la matriz): sin A3, 403; con A3, 200; lo ajeno y lo inexistente, el mismo 404.
+  - Tamaño S, unas tres horas con la APK. Hace falta una APK nueva para el aviso: sin ella, la 0.13.x mostraría un error genérico en lugar de la serie.
+- **B.** Declarar la excepción: el titular conserva la lectura de lo propio mientras decide si reotorga el A3, exporta su historia o cierra la cuenta. Habría que justificarla frente a los datos «no operativos» del 08:406 y corregir DL-089.
+
+**Provisorio en código.** B, de hecho y sin declarar.
+
+**Recomendación: A**, por el 08:406 y por coherencia con los otros dos dominios. Además, un tribunal puede probarlo en vivo: revocar el A3 en la APK y abrir «Mi evolución».
+
+---
+
+## DL-116 — El ID API-DSH-04 nombra dos operaciones distintas
+
+**Prioridad:** media · **Documento:** 09 v0.11 §16 (`docs/legajo/09_AUX/BE_LEG_09_v0.11_CONTRATOS_P0_ANTROPOMETRIA_Y_PROYECCIONES_2026-08-31.md:964`) · DL-107 · **Estado:** ABIERTA. Se encontró el 2026-10-02, al armar las fichas de perfil y administración. Espera la decisión de Dirección
+
+**Qué dice el legajo.** En el 09, API-DSH-04 es la «Timeline longitudinal», la línea temporal del seguimiento profesional (RF-054), que no está implementada.
+
+**Qué pasa hoy.**
+- DL-107 (decidida el 2026-09-30) le dio el ID API-DSH-04 a «Pendientes», `GET /me/portfolio`. Así figura en `packages/domain/src/openapi.ts`, en el OpenAPI generado y en las operaciones que registra el PDP.
+- Un conteo por ID da por implementada la línea temporal, que no lo está.
+  - `docs/QUE-FALTA.md` §2 cuenta bien las 22 operaciones que faltan, porque la cuenta a mano.
+  - Pero en `openapi.ts` faltan solo 21 IDs del 09.
+- No cambia ningún comportamiento ni ninguna garantía: es un problema de trazabilidad.
+
+**Opciones.**
+- **A.** Darle a «Pendientes» un ID propio de BE, marcado como extensión, como `API-ANT-06-PROPIA`.
+  - Cambian `openapi.ts`, el OpenAPI generado, las referencias en el código y las pruebas, y DL-107.
+  - Las auditorías ya registradas conservan el ID viejo: se aclara en la DL.
+  - Tamaño S. No toca la APK.
+- **B.** Mantenerlo y declarar en DL-107 que API-DSH-04 nombra en BE otra operación que en el 09.
+
+**Provisorio en código.** B, de hecho y sin declarar.
+
+**Recomendación: A**, porque un tribunal puede contar las operaciones del 09 por ID.
