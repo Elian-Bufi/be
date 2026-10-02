@@ -5,7 +5,7 @@ import type { ExpoConfig } from 'expo/config';
  * EAS_BUILD_GIT_COMMIT_HASH lo provee EAS durante el build; APP_ENV y API_BASE_URL vienen del perfil de eas.json.
  * Ningún secreto se embebe en el APK (08 §32).
  */
-const VERSION = '0.13.0';
+const VERSION = '0.13.1';
 
 /** El fondo de Azul noche (src/tema.ts, tema predeterminado): detrás de la app mientras carga y detrás del ícono adaptativo. */
 const FONDO = '#011325';
@@ -23,7 +23,7 @@ const config: ExpoConfig = {
   backgroundColor: FONDO,
   android: {
     package: 'com.elianbufi.be',
-    versionCode: 20,
+    versionCode: 21,
     adaptiveIcon: {
       foregroundImage: './assets/android-icon-foreground.png',
       backgroundColor: FONDO,
