@@ -815,8 +815,9 @@ const DEFINIDAS: readonly Operacion[] = [
     idempotencia: false,
     query: [{ nombre: 'dayTypeId', descripcion: 'Día tipo elegido por el asesorado (DL-049).', schema: { type: 'string' } }],
     exitos: [{ status: 200, schema: HoyResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
-    fuente: '09v9:658-680 · UC-P12 E06 · DEUDA_LEGAJO DL-049',
+    // DL-115: sin A3 vigente del titular, 403 (08:406); las comidas registradas del día son datos de salud propios.
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: '09v9:658-680 · UC-P12 E06 · DEUDA_LEGAJO DL-049 · DL-115',
   },
   {
     id: 'API-NUT-15',
