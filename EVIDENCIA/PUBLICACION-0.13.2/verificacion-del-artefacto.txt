@@ -1,0 +1,57 @@
+== tamaño y SHA-256
+78331378
+a0b5bc461b48ca734ff2dfaffeb684b182d184b9ecb6eb579c1b9ad50a735037
+== badging
+package: name='com.elianbufi.be' versionCode='22' versionName='0.13.2'
+targetSdkVersion:'36'
+== firma
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Number of signers: 1
+Signer #1 certificate SHA-256 digest: 61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06
+== certificado contra la versión anterior
+idéntico: 61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06
+== versionCode contra la versión anterior
+package: name='com.elianbufi.be' versionCode='21' versionName='0.13.1'
+== arquitecturas
+lib/arm64-v8a/ lib/armeabi-v7a/ lib/x86/ lib/x86_64/ 
+== assets/app.config
+{"version":"0.13.2","versionCode":22,"appEnv":"test","apiBaseUrl":"https://be-api-hndp.onrender.com","commit":"4b49d43f1a0e97488ae26d130022a572dadeddfd","construidoEn":"2026-10-03T15:12:11.138Z","plugins":["expo-secure-store"]}
+== expo-secure-store en el código nativo
+referencias: 13
+== react-native-svg en el código
+referencias: 3
+== manifiesto: respaldo
+A: http://schemas.android.com/apk/res/android:allowBackup(0x01010280)=true
+A: http://schemas.android.com/apk/res/android:fullBackupContent(0x010104eb)=@0x7f140006
+A: http://schemas.android.com/apk/res/android:dataExtractionRules(0x0101063e)=@0x7f140007
+== recursos de las reglas de respaldo
+res/-K.xml res/Hq.xml xml/secure_store_backup_rules xml/secure_store_data_extraction_rules 
+-- res/-K.xml
+E: full-backup-content (line=4)
+E: include (line=5)
+A: domain="sharedpref" (Raw: "sharedpref")
+A: path="." (Raw: ".")
+E: exclude (line=6)
+A: domain="sharedpref" (Raw: "sharedpref")
+A: path="SecureStore" (Raw: "SecureStore")
+-- res/Hq.xml
+E: data-extraction-rules (line=4)
+E: cloud-backup (line=5)
+E: include (line=6)
+A: domain="sharedpref" (Raw: "sharedpref")
+A: path="." (Raw: ".")
+E: exclude (line=7)
+A: domain="sharedpref" (Raw: "sharedpref")
+A: path="SecureStore" (Raw: "SecureStore")
+E: device-transfer (line=9)
+E: include (line=10)
+A: domain="sharedpref" (Raw: "sharedpref")
+A: path="." (Raw: ".")
+== imágenes de la figura
+drawable/assets_figura_hombreentero drawable/assets_figura_mujerentero 
+== credenciales
+{"entradas":1162,"coincidencias":{},"archivosSensibles":[]}
