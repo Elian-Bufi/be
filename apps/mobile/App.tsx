@@ -29,7 +29,7 @@ import { apiConfigurada, extra } from './src/api';
 import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
 import { BarraDeZonas } from './src/barra-de-zonas';
 import { LineaDeActualizacion } from './src/estados';
-import { memoria, useHayActualizaciones } from './src/lecturas';
+import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lecturas';
 import { alIniciarSesion, anterior, esPrincipal, requiereSesion, textoDeVolverA, zonaDe, type Ruta, type Salida } from './src/navegacion';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
@@ -43,7 +43,7 @@ import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRegistro } from './src/pantallas/registro';
 import { PantallaDeVinculo } from './src/pantallas/vinculo';
 import { PantallaDeVinculos } from './src/pantallas/vinculos';
-import { avisoDeVencimiento, crearSesion, olvidarSesion, recordarSesion, restanteMs, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
+import { avisoDeVencimiento, crearSesion, olvidarSesion, quizasVencida, recordarSesion, restanteMs, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
 import { BARRA_DEL_SISTEMA } from './src/tema';
 import { Aviso, Boton, Parrafo, estilosPorTema } from './src/ui';
 
@@ -95,6 +95,10 @@ function Contenido() {
     if (sesion) recordarSesion(sesion, ruta);
     else olvidarSesion();
   }, [sesion, ruta]);
+  // Si al montar la sesión ya había vencido, también se olvida lo leído y lo elegido.
+  useEffect(() => {
+    if (alMontar.estado !== 'vigente') memoria.olvidarLaSesion();
+  }, [alMontar]);
   const sesionActual = useRef(sesion);
   sesionActual.current = sesion;
 
@@ -151,7 +155,11 @@ function Contenido() {
     const vencer = () => terminar({ nombre: 'login', aviso: avisoDeVencimiento(sesion) });
     const t = setTimeout(vencer, Math.max(0, Math.min(restanteMs(sesion, performance.now(), Date.now()), 2_147_000_000)));
     const suscripcion = AppState.addEventListener('change', (momento) => {
-      if (momento === 'active' && restanteMs(sesion, performance.now(), Date.now()) <= 0) vencer();
+      if (momento !== 'active') return;
+      if (restanteMs(sesion, performance.now(), Date.now()) <= 0) vencer();
+      // El teléfono durmió y el reloj de pared dice que la sesión pudo vencer: no se declara, pero ninguna pantalla
+      // muestra lo confirmado sin volver a preguntar. La API decide (SESSION_EXPIRED) o, sin red, no se ve nada.
+      else if (quizasVencida(sesion, Date.now())) exigirVerificacion();
     });
     return () => {
       clearTimeout(t);

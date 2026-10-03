@@ -44,10 +44,18 @@ export interface OpcionesDelCiclo<T> {
   readonly intentos?: number;
 }
 
+export interface OpcionesDeCarga {
+  /**
+   * Sin conservar lo confirmado: la pantalla vuelve a «verificando». Se usa después de una escritura propia, para no
+   * mostrar como vigente lo que la escritura cambió, y cuando la sesión pudo haber vencido mientras el teléfono dormía.
+   */
+  readonly desdeCero?: boolean;
+}
+
 export interface CicloDeLectura<T> {
   readonly estado: () => EstadoDeLectura<T>;
   /** Al entrar, al reintentar, al volver del segundo plano o después de escribir. */
-  readonly cargar: () => Promise<void>;
+  readonly cargar: (opciones?: OpcionesDeCarga) => Promise<void>;
   /** La pantalla se fue: nada de lo que llegue después la toca. */
   readonly terminar: () => void;
 }
@@ -65,10 +73,10 @@ export function crearCicloDeLectura<T>(o: OpcionesDelCiclo<T>): CicloDeLectura<T
     o.alCambiar(nuevo);
   };
 
-  async function cargar(): Promise<void> {
+  async function cargar(opciones: OpcionesDeCarga = {}): Promise<void> {
     if (terminado) return;
     const pedido = ++ultimoPedido;
-    const confirmado = estado.tipo === 'listo' ? estado.datos : null;
+    const confirmado = estado.tipo === 'listo' && !opciones.desdeCero ? estado.datos : null;
     poner(confirmado === null ? { tipo: 'verificando' } : { tipo: 'listo', datos: confirmado, actualizando: true, sinActualizar: false });
 
     for (let intento = 0; intento < (o.intentos ?? 3); intento++) {

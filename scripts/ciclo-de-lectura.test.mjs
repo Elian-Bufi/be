@@ -11,8 +11,22 @@ import { createRequire } from 'node:module';
 import { test } from 'node:test';
 
 const require = createRequire(import.meta.url);
-const { crearMemoriaDeLecturas } = require('../packages/domain/dist/index.js');
+const { crearMemoriaDeLecturas, CODIGOS_DE_SESION_NO_VALIDA } = require('../packages/domain/dist/index.js');
 const { crearCicloDeLectura } = await import('../apps/mobile/src/ciclo-de-lectura.ts');
+const { leerLista, leerMiEvolucion } = await import('../apps/mobile/src/lecturas-de-las-zonas.ts');
+
+/** El mismo predicado que usa la APK (useSesionPerdida): solo un código de sesión cierra la sesión. */
+function contadorDeCierres() {
+  const c = { veces: 0 };
+  c.sesionPerdida = (r) => {
+    if (!r.ok && r.tipo === 'API' && CODIGOS_DE_SESION_NO_VALIDA.has(r.codigo)) {
+      c.veces++;
+      return true;
+    }
+    return false;
+  };
+  return c;
+}
 
 const PROHIBIDO = { ok: false, tipo: 'API', status: 403, codigo: 'ACTION_FORBIDDEN', issues: [] };
 const SIN_SESION = { ok: false, tipo: 'API', status: 401, codigo: 'SESSION_REVOKED', issues: [] };
@@ -180,8 +194,8 @@ test('7 · sin red, 429 o 503 al actualizar: la sesión sigue y lo confirmado en
   for (const falla of [RED, DEMASIADOS, SATURADA]) {
     const memoria = crearMemoriaDeLecturas();
     const api = apiControlada();
-    let salio = false;
-    const p = pantalla(memoria, 'token-a', api, { sesionPerdida: () => (salio = false) });
+    const cierres = contadorDeCierres();
+    const p = pantalla(memoria, 'token-a', api, { sesionPerdida: cierres.sesionPerdida });
     const entrada = p.ciclo.cargar();
     await api.responder(ok({ toma: '1/10' }));
     await entrada;
@@ -189,7 +203,7 @@ test('7 · sin red, 429 o 503 al actualizar: la sesión sigue y lo confirmado en
     await api.responder(falla);
     await otra;
     assert.deepEqual(p.ciclo.estado(), { tipo: 'listo', datos: { toma: '1/10' }, actualizando: false, sinActualizar: true });
-    assert.equal(salio, false);
+    assert.equal(cierres.veces, 0, `${falla.tipo === 'RED' ? 'sin red' : falla.status} no cierra la sesión`);
   }
 });
 
@@ -256,4 +270,65 @@ test('si algo se olvida en cada intento, no queda nada a la vista sin confirmar'
   await carga;
   assert.deepEqual(p.ciclo.estado(), { tipo: 'sin-confirmar', falla: null });
   assert.deepEqual(p.datosMostrados(), []);
+});
+
+test('cargar desde cero (después de una escritura propia, o si la sesión pudo vencer dormida): lo confirmado se oculta hasta que la API conteste', async () => {
+  const memoria = crearMemoriaDeLecturas();
+  const api = apiControlada();
+  const p = pantalla(memoria, 'token-a', api);
+  const entrada = p.ciclo.cargar();
+  await api.responder(ok({ toma: '1/10' }));
+  await entrada;
+  const otra = p.ciclo.cargar({ desdeCero: true });
+  assert.deepEqual(p.ciclo.estado(), { tipo: 'verificando' });
+  await api.responder(RED);
+  await otra;
+  assert.deepEqual(p.ciclo.estado(), { tipo: 'sin-confirmar', falla: RED }, 'sin red no vuelve lo de antes');
+});
+
+test('un 401 de sesión vencida, en cambio, sí cierra la sesión: es el único caso', async () => {
+  const memoria = crearMemoriaDeLecturas();
+  const api = apiControlada();
+  const cierres = contadorDeCierres();
+  const p = pantalla(memoria, 'token-a', api, { sesionPerdida: cierres.sesionPerdida });
+  const carga = p.ciclo.cargar();
+  await api.responder({ ok: false, tipo: 'API', status: 401, codigo: 'SESSION_EXPIRED', issues: [] });
+  await carga;
+  assert.equal(cierres.veces, 1);
+});
+
+// ─── Las lecturas combinadas de «Mi evolución» e «Información» ──────────────────────────────────
+
+const vacia = { data: { period: { start: '2026-07-06', end: '2026-10-03', timeZone: 'America/Argentina/Buenos_Aires' }, metrics: [{ series: [] }] } };
+const conToma = { data: { period: { start: '2026-04-07', end: '2026-07-05', timeZone: 'America/Argentina/Buenos_Aires' }, metrics: [{ series: [{ value: 1 }] }] } };
+/** Una API de las zonas con respuestas en fila. */
+function apiDeZonas({ evolucion = [], lista, requisito }) {
+  const cola = [...evolucion];
+  return {
+    miEvolucionAntropometrica: async () => cola.shift(),
+    misSolicitudesDeFormulario: async () => lista,
+    consultarRequisitoA3: async () => requisito,
+  };
+}
+
+test('«Mi evolución»: una falla pasajera o de acceso en la búsqueda hacia atrás no se muestra como «sin mediciones»', async () => {
+  for (const falla of [RED, SATURADA, DEMASIADOS, PROHIBIDO]) {
+    const r = await leerMiEvolucion(apiDeZonas({ evolucion: [ok(vacia), falla] }), 'token-a');
+    assert.deepEqual(r, falla);
+  }
+  const conAnterior = await leerMiEvolucion(apiDeZonas({ evolucion: [ok(vacia), ok(conToma)] }), 'token-a');
+  assert.deepEqual(conAnterior, ok(conToma.data));
+  const otraFalla = { ok: false, tipo: 'API', status: 400, codigo: 'PERIOD_INVALID', issues: [] };
+  const sinNada = await leerMiEvolucion(apiDeZonas({ evolucion: [ok(vacia), otraFalla] }), 'token-a');
+  assert.deepEqual(sinNada, ok(vacia.data), 'un rechazo de otro tipo deja el período actual');
+});
+
+test('«Información»: si el A3 no se pudo consultar, no se presume vigente; la lista sin aviso no se confirma', async () => {
+  const lista = ok({ data: [], page: { limit: 20, nextCursor: null, hasMore: false } });
+  assert.deepEqual(await leerLista(apiDeZonas({ lista, requisito: RED }), 'token-a'), RED);
+  assert.deepEqual(await leerLista(apiDeZonas({ lista, requisito: SIN_SESION }), 'token-a'), SIN_SESION);
+  const vigente = ok({ data: { currentConsent: { state: 'ACTIVE' } } });
+  const revocado = ok({ data: { currentConsent: { state: 'REVOKED' } } });
+  assert.equal((await leerLista(apiDeZonas({ lista, requisito: vigente }), 'token-a')).datos.sinA3, false);
+  assert.equal((await leerLista(apiDeZonas({ lista, requisito: revocado }), 'token-a')).datos.sinA3, true);
 });

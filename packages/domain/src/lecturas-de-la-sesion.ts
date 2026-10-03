@@ -1,11 +1,12 @@
 /**
- * Lo que la APK recuerda mientras dura una sesión, para no volver a mostrar «Cargando…» cada vez que se cambia de zona
- * (navegación, 2026-10-03). Es lógica pura, sin React ni almacenamiento: la APK la usa en `apps/mobile/src/lecturas.ts`
+ * Lo que la APK recuerda mientras dura una sesión (navegación, 2026-10-03; revisado en la etapa A de la tanda siguiente).
+ * No sirve para mostrar antes de que la API confirme: sirve para reusar lo ya calculado cuando la respuesta dice lo mismo
+ * (`apps/mobile/src/ciclo-de-lectura.ts`). Es lógica pura, sin React ni almacenamiento: la APK la usa en `apps/mobile/src/lecturas.ts`
  * y las pruebas (`lecturas-de-la-sesion.test.ts`) ejercitan esta misma lógica. Reglas:
  * - **Solo en memoria.** Nada va a disco (DL-012; son datos de salud).
  * - **Es de una sesión.** Todo se guarda con el token que lo leyó. Antes de leer con otro token se olvida lo anterior:
  *   una sesión nunca ve lo de otra. Al cerrar, vencer o perder la sesión se olvida todo.
- * - **No reemplaza a la API.** Lo recordado se muestra mientras la pantalla lo vuelve a pedir, y la respuesta nueva
+ * - **No reemplaza a la API.** Nada recordado se muestra sin que la API lo confirme en esa entrada, y la respuesta nueva
  *   manda: si la API niega el acceso, lo recordado se borra.
  * - **Escribir olvida las lecturas.** Una comida, una respuesta, el A3, un consentimiento o un vínculo pueden cambiar lo
  *   que se ve o lo que se puede ver. Por eso cualquier escritura, aunque falle, olvida todo lo leído.
