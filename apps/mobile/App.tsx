@@ -43,6 +43,7 @@ import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRegistro } from './src/pantallas/registro';
 import { PantallaDeVinculo } from './src/pantallas/vinculo';
 import { PantallaDeVinculos } from './src/pantallas/vinculos';
+import { crearRestauracionDeAltura } from './src/altura-de-las-zonas';
 import { avisoDeVencimiento, crearSesion, olvidarSesion, quizasVencida, recordarSesion, restanteMs, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
 import { BARRA_DEL_SISTEMA } from './src/tema';
 import { Aviso, Boton, Parrafo, estilosPorTema } from './src/ui';
@@ -108,29 +109,28 @@ function Contenido() {
   rutaActual.current = ruta;
   const alturaActual = useRef(0);
   const alturas = useRef(new Map<string, number>());
-  const alturaPendiente = useRef<{ y: number; hasta: number } | null>(null);
+  const [restauracion] = useState(() => crearRestauracionDeAltura());
 
   const ir = useCallback((r: Ruta) => {
     const desde = rutaActual.current;
     if (esPrincipal(desde)) alturas.current.set(desde.nombre, desde.nombre === r.nombre ? 0 : alturaActual.current);
     const y = esPrincipal(r) ? (alturas.current.get(r.nombre) ?? 0) : 0;
-    alturaPendiente.current = y > 0 ? { y, hasta: Date.now() + 1500 } : null;
+    restauracion.pedir(y, performance.now());
     setRuta(r);
     desplazamiento.current?.scrollTo({ y: 0, animated: false });
-  }, []);
+  }, [restauracion]);
 
-  /** Devuelve la zona a su altura cuando el contenido ya alcanza; si tarda más de 1,5 s, se queda arriba. */
-  const alCambiarElContenido = useCallback((_ancho: number, alto: number) => {
-    const pendiente = alturaPendiente.current;
-    if (!pendiente) return;
-    if (Date.now() > pendiente.hasta) {
-      alturaPendiente.current = null;
-      return;
-    }
-    if (alto < pendiente.y) return;
-    alturaPendiente.current = null;
-    desplazamiento.current?.scrollTo({ y: pendiente.y, animated: false });
-  }, []);
+  /**
+   * Devuelve la zona a su altura cuando el contenido verificado ya alcanza, aunque la API tarde. Si la persona arrastra
+   * la pantalla mientras tanto, o pasaron 10 s, se queda donde está (src/altura-de-las-zonas.ts).
+   */
+  const alCambiarElContenido = useCallback(
+    (_ancho: number, alto: number) => {
+      const y = restauracion.alCambiarElAlto(alto, performance.now());
+      if (y !== null) desplazamiento.current?.scrollTo({ y, animated: false });
+    },
+    [restauracion],
+  );
 
   /** Lleva la pantalla al principio, donde cada pantalla deja el resultado de una acción. */
   const subir = useCallback(() => {
@@ -224,6 +224,7 @@ function Contenido() {
           alturaActual.current = e.nativeEvent.contentOffset.y;
         }}
         scrollEventThrottle={100}
+        onScrollBeginDrag={restauracion.alArrastrar}
         onContentSizeChange={alCambiarElContenido}
       >
         {!apiConfigurada ? <Aviso tipo="error" titulo="Este build no tiene una API configurada." /> : null}
