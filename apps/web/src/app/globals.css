@@ -1500,27 +1500,6 @@ details summary {
   text-align: right;
 }
 
-/*
- * Con la letra grande en un teléfono angosto, el estado de cada medición («Cargado» o «Sin cargar») baja a su propia
- * línea, y la fila no pasa el ancho de la pantalla. Con la letra normal no cambia nada: el estado conserva su ancho
- * mínimo, y la fila no salta al cargar un valor (tanda del 2026-10-03).
- */
-.toma__lista {
-  container-type: inline-size;
-}
-
-@container (max-width: 15rem) {
-  .medida {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .medida__estado {
-    grid-column: 1 / -1;
-    min-width: 0;
-    text-align: left;
-  }
-}
-
 .medida .campo__error {
   grid-column: 1 / -1;
 }
@@ -1532,6 +1511,27 @@ details summary {
 
   .medida__estado {
     grid-column: 1 / -1;
+    text-align: left;
+  }
+}
+
+/*
+ * Con la letra grande en un teléfono, el nombre, el campo y el estado de cada medición van uno debajo del otro. Al lado
+ * del campo, el nombre quedaba con una palabra por línea y se metía bajo la caja. Con la letra normal la lista mide más
+ * de 17rem y no cambia nada (tanda del 2026-10-03). Va después de la regla de 30rem para ganarle en el teléfono.
+ */
+.toma__lista {
+  container-type: inline-size;
+}
+
+@container (max-width: 17rem) {
+  .medida {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .medida__estado {
+    grid-column: 1 / -1;
+    min-width: 0;
     text-align: left;
   }
 }
