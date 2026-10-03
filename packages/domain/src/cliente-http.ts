@@ -465,7 +465,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     editarPlantillaNutricional(token: string, templateId: string, cuerpo: EditarPlantillaRequest) {
       return llamar('PATCH', `/nutrition/plan-templates/${encodeURIComponent(templateId)}`, { token, cuerpo, esquema: PlantillaNutricionalResponseSchema });
     },
-    /** API-DSH-04 (PF-07, propuesta): los pendientes de toda la cartera del profesional. */
+    /** API-CAR-01 (PF-07, propuesta; DL-116): los pendientes de toda la cartera del profesional. */
     consultarCartera(token: string, filtro: FiltroDeCartera = {}): Promise<Resultado<CarteraResponse>> {
       return llamar('GET', `/me/portfolio${query(filtro as Readonly<Record<string, string | undefined>>)}`, { token, esquema: CarteraResponseSchema });
     },

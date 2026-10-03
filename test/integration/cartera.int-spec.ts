@@ -1,5 +1,5 @@
 /**
- * API-DSH-04 · la cartera del profesional (PF-07, propuesta del 2026-09-30).
+ * API-CAR-01 · la cartera del profesional (PF-07, propuesta del 2026-09-30; antes API-DSH-04, DL-116).
  *
  * Lo que estas pruebas fijan:
  * - cada pendiente sale de un hecho fechado que ya existe (expectativa de revisión, borrador, ausencia de Proceso,
@@ -37,7 +37,7 @@ const cartera = async (pro: Parte, query = ''): Promise<CarteraResponse> => Cart
 const de = (r: CarteraResponse, adviseeId: string) => r.data.items.filter((i) => i.advisee.identityId === adviseeId);
 const enDias = (n: number): string => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
-describe('API-DSH-04 · pendientes por hechos fechados', () => {
+describe('API-CAR-01 · pendientes por hechos fechados', () => {
   it('nutrición: revisión vencida (desde la expectativa del Proceso), plan en borrador, y sin plan activo; orden por urgencia', async () => {
     const pro = await prepararProfesional(app, etiqueta(), ['NUTRICION']);
     // A: plan activado con próxima revisión en el pasado → REVIEW_OVERDUE con días de atraso.
@@ -110,7 +110,7 @@ describe('API-DSH-04 · pendientes por hechos fechados', () => {
   });
 });
 
-describe('API-DSH-04 · acceso', () => {
+describe('API-CAR-01 · acceso', () => {
   it('un alcance con vínculo aceptado que el PDP deniega desaparece y deja partialView; otro profesional no ve nada; un asesorado no tiene cartera', async () => {
     const pro = await prepararProfesional(app, etiqueta(), ['NUTRICION']);
     const a = await circuitoListoParaPlanificar(app, etiqueta(), pro);
@@ -147,7 +147,7 @@ describe('API-DSH-04 · acceso', () => {
   });
 });
 
-describe('API-DSH-04 · filtros, período y paginación', () => {
+describe('API-CAR-01 · filtros, período y paginación', () => {
   it('domain y kind acotan; el período solo cambia la actividad; la paginación recorre la lista ordenada sin repetir', async () => {
     const pro = await prepararProfesional(app, etiqueta(), ['NUTRICION']);
     const a = await circuitoListoParaPlanificar(app, etiqueta(), pro);
