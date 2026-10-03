@@ -24,6 +24,7 @@ import {
   COPY_EVOLUCION,
   diasEnPalabras,
   diferenciaDescriptiva,
+  dominioDelEjeVertical,
   ETIQUETA_DE_CLASE_DE_DATO,
   fechaCivil,
   grupoVigente,
@@ -54,8 +55,8 @@ import { indiceConTeclado, useConPuntero } from '../../../../lib/graficos';
 
 const ALTO = 300;
 
-/** El eje vertical con margen arriba y abajo, sin forzar el cero: un perímetro de 85 cm no se lee desde 0. */
-const DOMINIO: [(min: number) => number, (max: number) => number] = [(min) => Math.floor(min - Math.max(1, Math.abs(min) * 0.05)), (max) => Math.ceil(max + Math.max(1, Math.abs(max) * 0.05))];
+/** El eje vertical con margen arriba y abajo, sin forzar el cero: la regla es la misma que en la APK (`dominioDelEjeVertical`). */
+const DOMINIO: [(min: number) => number, (max: number) => number] = [(min) => dominioDelEjeVertical(min, min).desde, (max) => dominioDelEjeVertical(max, max).hasta];
 
 export function EvolucionDeMetrica({
   serie,

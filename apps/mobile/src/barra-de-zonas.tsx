@@ -50,7 +50,10 @@ export function BarraDeZonas({ actual, ir }: { actual: Zona; ir: (r: Ruta) => vo
             style={({ pressed }) => [estilos.destino, pressed && estilos.presionado]}
           >
             <View style={[estilos.marca, elegida && estilos.marcaElegida]} />
-            <Icono zona={z.zona} color={elegida ? COLOR.acento : COLOR.tenue} />
+            {/* La zona elegida lleva además una píldora detrás del ícono: se ve sin depender del color. */}
+            <View style={[estilos.indicador, elegida && estilos.indicadorElegido]}>
+              <Icono zona={z.zona} color={elegida ? COLOR.acento : COLOR.tenue} />
+            </View>
             {/* Las etiquetas crecen hasta 1,15 veces: con 1,3 y la letra al máximo, los cinco textos se achicaban hasta
                 quedar pegados (prueba de la 0.13.1). Si aun así no entran, se achican un poco en vez de cortarse. El
                 ícono acompaña y el lector de pantalla dice el nombre completo. */}
@@ -116,6 +119,8 @@ const estilos = estilosPorTema((COLOR) => ({
   // La marca de la zona elegida: una barrita arriba del ícono, del color del acento.
   marca: { position: 'absolute', top: 0, left: '50%', marginLeft: -18, width: 36, height: 3, borderBottomLeftRadius: 3, borderBottomRightRadius: 3, backgroundColor: 'transparent' },
   marcaElegida: { backgroundColor: COLOR.acento },
+  indicador: { paddingHorizontal: 14, paddingVertical: 2, borderRadius: 14 },
+  indicadorElegido: { backgroundColor: COLOR.superficieElevada },
   texto: { fontSize: 12, lineHeight: 16, marginTop: 2, fontWeight: '600', color: COLOR.tenue, textAlign: 'center' },
   textoElegido: { fontWeight: '800', color: COLOR.acento },
 }));

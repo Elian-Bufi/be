@@ -16,6 +16,7 @@ const comp = await import(pathToFileURL(path.join(RAIZ, 'apps/mobile/src/composi
 
 const [ancho = '320', sexo = 'HOMBRE', familia = 'PLIEGUES', tema = 'claro', escalaTxt = '1', salida = 'maqueta.html'] = process.argv.slice(2);
 const W = Number(ancho);
+const ELEGIDA = process.env.ELEGIDA ?? null;
 const E = Number(escalaTxt);
 // Los tokens de tema.ts que usa la figura.
 const tokens = fs.readFileSync(path.join(RAIZ, 'apps/mobile/src/tema.ts'), 'utf8');
@@ -69,13 +70,13 @@ function capasDelSitio(s) {
 
 function segmentos(opciones, elegida) {
   return `<div style="display:flex;flex-wrap:wrap;gap:4px;padding:3px;margin:6px 0;border-radius:27px;border:1px solid ${P.borde};background:${P.superficie}">${opciones
-    .map((o) => `<div style="flex:1 1 auto;min-height:48px;padding:8px 18px;box-sizing:border-box;border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:${px(16)};font-weight:${o === elegida ? 800 : 600};color:${o === elegida ? P.botonTexto : P.texto};background:${o === elegida ? P.boton : 'transparent'}">${o}</div>`)
+    .map((o) => `<div style="flex:1 1 auto;min-height:48px;padding:8px 10px;box-sizing:border-box;border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:${px(16)};font-weight:${o === elegida ? 800 : 600};color:${o === elegida ? P.botonTexto : P.texto};background:${o === elegida ? P.boton : 'transparent'}">${o}</div>`)
     .join('')}</div>`;
 }
 
 let h = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;600;700;800&display=swap" rel="stylesheet">`;
 h += `<body style="margin:0;background:${P.pagina};font-family:Roboto,Arial,sans-serif"><div style="width:${W}px;margin:12px 16px">`;
-h += `<div style="font:700 11px Roboto,Arial;letter-spacing:.06em;color:#fff;background:#B42318;padding:4px 8px;border-radius:4px;display:inline-block">MAQUETA · NO ES LA APK · ${sexo} · ${familia} · ${tema} · letra ×${E} · modo ${c.modo}</div>`;
+h += `<div style="font:700 11px Roboto,Arial;letter-spacing:.06em;color:#fff;background:#B42318;padding:4px 8px;border-radius:4px;display:inline-block">MAQUETA · NO ES LA APK · ${sexo} · ${familia} · ${tema} · letra ×${E} · modo ${c.modo}${ELEGIDA ? ' · elegida ' + ELEGIDA : ''}</div>`;
 h += segmentos(['Perímetros', 'Pliegues'], familia === 'PERIMETROS' ? 'Perímetros' : 'Pliegues');
 h += `<div style="position:relative;width:${W}px;height:${c.alto}px;background:${L.fondo};border-radius:16px;overflow:hidden;margin:8px 0">`;
 // El contorno: la imagen teñida y corrida en ocho direcciones (en el navegador, con un filtro que la lleva a un color).
@@ -86,10 +87,15 @@ h += `<img src="file:///${imagenArchivo}" style="${abs(c.imagen.x, c.imagen.y, c
 h += `<svg width="${W}" height="${c.alto}" style="position:absolute;left:0;top:0">`;
 for (const g of c.guias) {
   const t = g.posterior ? dibujo.GUIA_EN_EL_TELEFONO.posterior : dibujo.GUIA_EN_EL_TELEFONO.normal;
-  h += `<path d="${dibujo.trazoDeLaGuia(g.desde, g.quiebre, g.hasta)}" fill="none" stroke="${colores[t.color]}" stroke-width="${t.grosor}" stroke-dasharray="${t.guiones.join(' ')}"/>`;
-  h += `<circle cx="${g.desde.x + 0.5}" cy="${g.desde.y}" r="${t.radioDelPunto}" fill="${colores[t.colorDelPunto]}"/>`;
+  const opacidad = ELEGIDA === null ? 1 : g.clave === ELEGIDA ? 1 : 0.2;
+  const grosor = g.clave === ELEGIDA ? t.grosor + 0.9 : t.grosor;
+  h += `<g opacity="${opacidad}"><path d="${dibujo.trazoDeLaGuia(g.desde, g.quiebre, g.hasta)}" fill="none" stroke="${colores[t.color]}" stroke-width="${grosor}" stroke-dasharray="${t.guiones.join(' ')}"/>`;
+  h += `<circle cx="${g.desde.x + 0.5}" cy="${g.desde.y}" r="${t.radioDelPunto}" fill="${colores[t.colorDelPunto]}"/></g>`;
 }
 h += c.sitios.map(capasDelSitio).join('');
+for (const st of c.sitios.filter((x) => x.clave === ELEGIDA)) {
+  h += st.anillo ? `<ellipse cx="${st.cx}" cy="${st.cy}" rx="${st.anillo.rx + 5}" ry="${st.anillo.ry + 5}" fill="none" stroke="${L.valor}" stroke-width="2"/>` : `<circle cx="${st.cx}" cy="${st.cy}" r="11" fill="none" stroke="${L.valor}" stroke-width="2"/>`;
+}
 if (c.modo === 'NUMEROS') {
   for (const t of c.tarjetas) {
     const f = t.filas[0];
@@ -102,8 +108,9 @@ if (c.modo === 'TARJETAS') {
   for (const t of c.tarjetas) {
     h += `<div style="${abs(t.x, t.y, t.ancho, t.alto, `box-sizing:border-box;padding:6px 8px;border-radius:12px;border:1px solid ${L.borde};background:${L.tarjeta}`)}">`;
     for (const f of t.filas) {
-      h += `<div style="height:${f.alto}px;display:flex;flex-direction:column;justify-content:center">`;
-      h += `<div style="font-size:${px(comp.LETRA.rotulo)};line-height:${px(comp.INTERLINEA.rotulo)};color:${L.nombre};display:-webkit-box;-webkit-line-clamp:${f.lineasDelRotulo};-webkit-box-orient:vertical;overflow:hidden">${f.sitio.rotulo}</div>`;
+      const fe = f.sitio.clave === ELEGIDA;
+      h += `<div style="height:${f.alto}px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;margin:0 -6px;padding:0 5px;border-radius:8px;border:1px solid ${fe ? L.valor : 'transparent'}">`;
+      h += `<div style="font-size:${px(comp.LETRA.rotulo)};line-height:${px(comp.INTERLINEA.rotulo)};color:${L.nombre};font-weight:${fe ? 800 : 400};display:-webkit-box;-webkit-line-clamp:${f.lineasDelRotulo};-webkit-box-orient:vertical;overflow:hidden">${f.sitio.rotulo}</div>`;
       h += `<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:${px(comp.INTERLINEA.valor)}"><span style="font-size:${px(comp.LETRA.valor)};font-weight:700;color:${L.valor}">${f.sitio.valor}</span>${f.sitio.diferencia ? `<span style="font-size:${px(comp.LETRA.detalle)};color:${L.detalle}">&nbsp;&nbsp;${f.sitio.diferencia}</span>` : ''}</div>`;
       h += '</div>';
     }
@@ -118,6 +125,8 @@ if (c.modo === 'NUMEROS') {
   }
   h += '</div>';
 }
+const se = c.sitios.find((x) => x.clave === ELEGIDA);
+if (se) h += `<div style="background:${L.fondo};border-radius:12px;padding:8px 12px;margin-bottom:6px"><div style="font-size:${px(15)};font-weight:700;color:${L.valor}">${se.rotulo}: ${se.valor}</div><div style="font-size:${px(14)};color:${L.detalle}">Antes: (valor anterior) · Diferencia: ${se.diferencia ?? '—'}</div></div>`;
 h += segmentos(['Hombre', 'Mujer'], sexo === 'HOMBRE' ? 'Hombre' : 'Mujer');
 h += '</div></body>';
 fs.writeFileSync(salida, h);

@@ -59,6 +59,15 @@ export function limitesDelPeriodo(periodo: { readonly start: string; readonly en
 }
 
 /**
+ * El dominio del eje vertical de un gráfico de evolución, el mismo en el website y en la APK. Tiene margen arriba y
+ * abajo y no fuerza el cero: un perímetro de 85 cm no se lee desde 0. El margen es de al menos una unidad y del 5 % del
+ * valor, así una diferencia chica no parece enorme. Con un solo valor, o con valores iguales, queda centrado.
+ */
+export function dominioDelEjeVertical(minimo: number, maximo: number): { readonly desde: number; readonly hasta: number } {
+  return { desde: Math.floor(minimo - Math.max(1, Math.abs(minimo) * 0.05)), hasta: Math.ceil(maximo + Math.max(1, Math.abs(maximo) * 0.05)) };
+}
+
+/**
  * Marcas del eje temporal: entre una y siete fechas civiles del período, repartidas en días enteros y ubicadas al
  * mediodía de su día en la zona del período. Ninguna cae después del último día.
  */
