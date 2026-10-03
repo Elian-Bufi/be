@@ -61,6 +61,27 @@ describe('Deriva — schema.prisma y las migraciones describen la misma base', (
   });
 });
 
+describe('Funciones SQL que Prisma no modela', () => {
+  // `migrate diff` no compara funciones: si `be_bloquear_lo_que_corta` faltara o cambiara, la prueba de deriva
+  // seguiría vacía. Acá se verifica que exista con su firma y que tome los seis bloqueos del PDP en el orden único de
+  // prisma/concurrencia.ts, cada uno en modo compartido (migración 20261003000000; P2028).
+  it('be_bloquear_lo_que_corta existe, recibe (actor, titular) y bloquea en el orden único, en modo compartido', async () => {
+    const [funcion] = await prisma.$queryRaw<{ argumentos: string; resultado: string; lenguaje: string; cuerpo: string }[]>`
+      SELECT pg_get_function_identity_arguments(p.oid) AS "argumentos", pg_get_function_result(p.oid) AS "resultado",
+             l.lanname AS "lenguaje", p.prosrc AS "cuerpo"
+        FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace JOIN pg_language l ON l.oid = p.prolang
+       WHERE n.nspname = current_schema() AND p.proname = 'be_bloquear_lo_que_corta'`;
+    expect(funcion).toBeDefined();
+    expect(funcion!.argumentos).toBe('p_actor uuid, p_titular uuid');
+    expect(funcion!.resultado).toBe('integer');
+    expect(funcion!.lenguaje).toBe('plpgsql');
+    const sentencias = (funcion!.cuerpo.match(/PERFORM[^;]+/g) ?? []).map((x) => x.replace(/\s+/g, ' ').trim());
+    const tablas = sentencias.map((x) => x.match(/FROM "([a-z_]+)"/)![1]);
+    expect(tablas).toEqual(['identidad', 'verificacion_profesional', 'habilitacion', 'alcance_de_vinculo', 'consentimiento', 'acto_registrable']);
+    expect(sentencias.every((x) => /FOR SHARE( OF [a-z]+)?$/.test(x))).toBe(true);
+  });
+});
+
 describe('Schema vs 06 — TEST-RUN-003 migration deploy', () => {
   it('TEST-RUN-003: las migraciones de WP-01, WP-02 y WP-03 quedaron aplicadas por migrate deploy', async () => {
     const filas = await prisma.$queryRaw<{ migration_name: string }[]>`
