@@ -16,6 +16,10 @@
  *     achica la ventana (validación de la APK 0.11.2: el teclado tapaba el campo «Reps» de «Corregir registro»).
  *  5. Barra inferior (Dirección, 2026-10-01): las cinco zonas, la zona madre de cada subpantalla, «atrás» hacia
  *     Nutrición desde las zonas principales, y la barra fija abajo, accesible y fuera del camino del teclado.
+ *  6. Sesión (prueba de la 0.13.1: la APK volvía a la bienvenida). Si Android recrea la actividad, por ejemplo al
+ *     cambiar el tamaño de letra, la raíz encuentra la sesión y la pantalla que seguían en el proceso. Una sesión que
+ *     venció mientras tanto se informa como vencida, y una sesión olvidada no vuelve. Nada va a disco: lo fija
+ *     `sesion-en-memoria.ts`, que no importa ningún almacenamiento.
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -258,4 +262,25 @@ test('cada destino de la barra es una pestaña accesible de 48 dp o más, respet
   for (const nombre of ['hoy', 'entrenamiento', 'historial-de-entrenamiento', 'mi-evolucion', 'mis-solicitudes']) {
     assert.doesNotMatch(CUENTA, new RegExp(`ir\\(\\{ nombre: '${nombre}' \\}\\)`), `Cuenta todavía abre «${nombre}»`);
   }
+});
+
+// ─── 6. Sesión: sobrevive a que Android recree la actividad, nunca a que se la olvide ──────────────────────────────
+const memoria = await import('../apps/mobile/src/sesion-en-memoria.ts');
+
+test('6 · la raíz encuentra la sesión y la pantalla que seguían en el proceso; vencida, lo dice; olvidada, no vuelve', () => {
+  const ahora = Date.parse('2026-10-03T12:00:00Z');
+  assert.deepEqual(memoria.sesionAlMontar(ahora), { estado: 'ninguna' });
+  const sesion = { token: 'token-sintetico', expiraEn: ahora + 60_000, identidadId: 'identidad-sintetica' };
+  memoria.recordarSesion(sesion, { nombre: 'mi-evolucion' });
+  assert.deepEqual(memoria.sesionAlMontar(ahora), { estado: 'vigente', sesion, ruta: { nombre: 'mi-evolucion' } });
+  assert.deepEqual(memoria.sesionAlMontar(ahora + 60_000), { estado: 'vencida' });
+  memoria.olvidarSesion();
+  assert.deepEqual(memoria.sesionAlMontar(ahora), { estado: 'ninguna' });
+});
+
+test('6 · la sesión en memoria no toca ningún almacenamiento del teléfono', () => {
+  const fuente = readFileSync(resolve(RAIZ, 'apps/mobile/src/sesion-en-memoria.ts'), 'utf8');
+  const importaciones = fuente.split('\n').filter((l) => /^import /.test(l));
+  assert.deepEqual(importaciones, ["import type { Ruta } from './navegacion';"]);
+  assert.doesNotMatch(fuente, /AsyncStorage|SecureStore|localStorage/);
 });
