@@ -6,6 +6,7 @@
  * Uso: node --test scripts/grafico-de-evolucion.test.mjs (después de construir @be/domain).
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { test } from 'node:test';
 
@@ -97,4 +98,15 @@ test('el toque elige la observación más cercana dentro del radio; lejos, ningu
   assert.equal(g.puntoMasCercano(c, a.x, a.y), 0);
   assert.equal(g.puntoMasCercano(c, b.x, b.y + 2), 1);
   assert.equal(g.puntoMasCercano(c, c.area.izquierda, c.area.arriba), null);
+});
+
+test('en la APK, el gráfico y su lista salen de las mismas filas, y los días siguen siendo 30, 60 y 90', () => {
+  // filasDelPeriodo (dominio) da las observaciones del grupo elegido con la fecha civil de la zona de la serie, y los
+  // huecos recortados al período. El gráfico toma de ahí sus puntos, y la lista, sus filas: no pueden diferir.
+  const pantalla = readFileSync(new URL('../apps/mobile/src/pantallas/evolucion-de-una-medida.tsx', import.meta.url), 'utf8');
+  assert.match(pantalla, /const filas = useMemo\(\(\) => \(preparada \? filasDelPeriodo\(preparada, grupo,/);
+  assert.match(pantalla, /const observaciones = useMemo\(\(\) => filas\.flatMap\(/);
+  assert.match(pantalla, /<ListaDeLaSerie filas=\{filas\} \/>/);
+  assert.match(pantalla, /<GraficoDeEvolucion observaciones=\{observaciones\}/);
+  assert.match(pantalla, /const DIAS = \['30', '60', '90'\] as const;/);
 });
