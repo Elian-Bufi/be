@@ -213,6 +213,10 @@ export function decidirRecuperacion(credencial: CredencialGuardada, r: Resultado
  *
  * Si mientras tanto la persona eligió otra cosa (`sigueVigente()` da `false`), devuelve `null` y no toca nada: una
  * respuesta tardía no restaura una sesión.
+ *
+ * Nada de esto deja la app esperando. La lectura tiene su tope en la guarda. Si la API no responde en
+ * `esperaMaximaDeVerificacionMs`, cuenta como sin conexión: la credencial queda y se puede reintentar. El borrado
+ * queda en la fila sin frenar la decisión, y la fila conserva el orden.
  */
 export async function recuperarSesion(o: {
   readonly guarda: GuardaDeSesion;
@@ -220,6 +224,7 @@ export async function recuperarSesion(o: {
   readonly credencial?: CredencialGuardada;
   readonly ahora: () => { readonly monotono: number; readonly reloj: number };
   readonly sigueVigente: () => boolean;
+  readonly esperaMaximaDeVerificacionMs?: number;
 }): Promise<Recuperacion | null> {
   let credencial = o.credencial ?? null;
   if (!credencial) {
@@ -228,10 +233,27 @@ export async function recuperarSesion(o: {
     if (leida.tipo !== 'credencial') return { tipo: 'ninguna' };
     credencial = leida.credencial;
   }
-  const r = await o.verificar(credencial.token);
+  const r = await verificarConTope(o.verificar(credencial.token), o.esperaMaximaDeVerificacionMs ?? 10_000);
   if (!o.sigueVigente()) return null;
   const { monotono, reloj } = o.ahora();
   const decision = decidirRecuperacion(credencial, r, monotono, reloj);
-  if (decision.tipo === 'vencida' || decision.tipo === 'no-valida') await o.guarda.borrar();
+  if (decision.tipo === 'vencida' || decision.tipo === 'no-valida') void o.guarda.borrar();
   return decision;
+}
+
+/** La respuesta de la API, o «sin red» si no llega a tiempo: la app no se queda esperando una red colgada. */
+function verificarConTope(pedido: Promise<Resultado<MeResponse>>, ms: number): Promise<Resultado<MeResponse>> {
+  return new Promise((resolver) => {
+    const reloj = setTimeout(() => resolver({ ok: false, tipo: 'RED' }), ms);
+    pedido.then(
+      (r) => {
+        clearTimeout(reloj);
+        resolver(r);
+      },
+      () => {
+        clearTimeout(reloj);
+        resolver({ ok: false, tipo: 'RED' });
+      },
+    );
+  });
 }
