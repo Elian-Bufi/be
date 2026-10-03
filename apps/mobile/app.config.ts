@@ -30,6 +30,9 @@ const config: ExpoConfig = {
     },
     predictiveBackGestureEnabled: false,
   },
+  // DL-012 (decisión del 2026-10-03): la credencial de la sesión va al almacenamiento seguro. El plugin la deja fuera
+  // del respaldo automático de Android. No se usa biometría: sin el permiso de Face ID.
+  plugins: [['expo-secure-store', { configureAndroidBackup: true, faceIDPermission: false }]],
   extra: {
     appEnv: process.env.APP_ENV ?? 'development',
     apiBaseUrl: process.env.API_BASE_URL ?? null,

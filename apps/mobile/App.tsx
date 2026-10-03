@@ -10,9 +10,11 @@
  *   los días sin medición vigente a la vista como «Sin dato».
  * Desde la etapa de UI y UX (Dirección, 2026-10-01), con sesión se navega con la barra inferior: Nutrición,
  * Entrenamiento, Evolución, Información y Cuenta (src/barra-de-zonas.tsx). Al iniciar sesión, la APK abre en Nutrición.
- * La sesión (Bearer) y el identificador de la identidad viven solo en memoria (DL-012, T5): si el sistema cierra el
- * proceso o la persona cierra la app desde Recientes, hay que volver a iniciar sesión. Viven fuera del árbol de React
- * (src/sesion-en-memoria.ts). Un cambio de tamaño de letra hace que Android recree la pantalla, y ya no pierde la sesión.
+ * La sesión (Bearer) y el identificador de la identidad viven en memoria, fuera del árbol de React
+ * (src/sesion-en-memoria.ts): un cambio de tamaño de letra hace que Android recree la pantalla, y no pierde la sesión.
+ * La credencial se guarda además en el almacenamiento seguro del teléfono hasta que vence (DL-012, decisión de
+ * Dirección del 2026-10-03; src/sesion-persistente.ts). Si el sistema cierra el proceso o la persona cierra la app, al
+ * abrirla se verifica con la API antes de mostrar nada protegido. No se guarda la contraseña ni hay renovación.
  * Nunca se guarda un «rol autorizado» en el cliente: la API verifica la sesión y decide cada acceso en cada request;
  * ocultar un botón no concede ni quita nada.
  * Al entrar a una zona, la pantalla conserva su estructura y no muestra valores hasta que la API confirma el acceso en
@@ -25,10 +27,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, BackHandler, Image, KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { apiConfigurada, extra } from './src/api';
+import { api, apiConfigurada, extra } from './src/api';
 import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
 import { BarraDeZonas } from './src/barra-de-zonas';
-import { LineaDeActualizacion } from './src/estados';
+import { almacenSeguro } from './src/almacen-seguro';
+import { Cargando, LineaDeActualizacion } from './src/estados';
 import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lecturas';
 import { alIniciarSesion, anterior, esPrincipal, requiereSesion, textoDeVolverA, zonaDe, type Ruta, type Salida } from './src/navegacion';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
@@ -45,18 +48,28 @@ import { PantallaDeVinculo } from './src/pantallas/vinculo';
 import { PantallaDeVinculos } from './src/pantallas/vinculos';
 import { crearRestauracionDeAltura } from './src/altura-de-las-zonas';
 import { avisoDeVencimiento, crearSesion, olvidarSesion, quizasVencida, recordarSesion, restanteMs, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
+import { AVISO_DE_SESION_NO_VALIDA, crearGuardaDeSesion, recuperarSesion, type CredencialGuardada, type Recuperacion } from './src/sesion-persistente';
 import { BARRA_DEL_SISTEMA } from './src/tema';
 import { Aviso, Boton, Parrafo, estilosPorTema } from './src/ui';
 
 const AVISOS: Record<Salida, string> = {
   'sesion-cerrada': 'Cerraste la sesión.',
   'sesiones-cerradas': 'Cerraste todas tus sesiones.',
-  'sesion-no-valida': 'La sesión ya no es válida. Iniciá sesión para continuar.',
+  'sesion-no-valida': AVISO_DE_SESION_NO_VALIDA,
   // El de una sesión vencida se arma con la vigencia de esa sesión (avisoDeVencimiento, en sesion-en-memoria.ts).
   'sesion-vencida': avisoDeVencimiento(null),
   reautenticar: 'Por seguridad, volvé a iniciar sesión para confirmar esta acción.',
   'cierre-registrado': 'Solicitud de cierre registrada.',
 };
+
+/**
+ * La credencial de la sesión en el almacenamiento seguro (DL-012). Vive fuera del árbol de React, como la sesión en
+ * memoria: si Android recrea la pantalla, la fila de operaciones sigue siendo la misma.
+ */
+const guarda = crearGuardaDeSesion(almacenSeguro);
+
+/** Mientras no se sabe si la credencial guardada sirve, no se muestra nada de la cuenta. */
+type EstadoDeRecuperacion = { readonly tipo: 'verificando' } | { readonly tipo: 'sin-verificar'; readonly credencial: CredencialGuardada; readonly sinConexion: boolean };
 
 const version = Constants.expoConfig?.version ?? 'no declarada';
 const commit = extra.commit ? extra.commit.slice(0, 7) : 'no declarado';
@@ -89,6 +102,11 @@ function Contenido() {
     alMontar.estado === 'vigente' ? alMontar.ruta : alMontar.estado === 'vencida' ? { nombre: 'login', aviso: avisoDeVencimiento(alMontar.sesion) } : { nombre: 'bienvenida' },
   );
   const [sesion, setSesion] = useState<Sesion | null>(alMontar.estado === 'vigente' ? alMontar.sesion : null);
+  // Sin sesión en el proceso, se busca la credencial guardada y se verifica con la API antes de mostrar nada (DL-012).
+  const [recuperacion, setRecuperacion] = useState<EstadoDeRecuperacion | null>(() => (alMontar.estado === 'ninguna' ? { tipo: 'verificando' } : null));
+  const intentoDeRecuperacion = useRef(0);
+  // Si la sesión quedó guardada en el teléfono: Cuenta lo dice, y no promete recordarla si no se pudo guardar.
+  const [recordada, setRecordada] = useState<boolean | null>(() => (alMontar.estado === 'vigente' ? guarda.recordada(alMontar.sesion.token) : null));
   const desplazamiento = useRef<ScrollView>(null);
   const hayActualizaciones = useHayActualizaciones();
 
@@ -96,9 +114,10 @@ function Contenido() {
     if (sesion) recordarSesion(sesion, ruta);
     else olvidarSesion();
   }, [sesion, ruta]);
-  // Si al montar la sesión ya había vencido, también se olvida lo leído y lo elegido.
+  // Si al montar la sesión ya había vencido, también se olvida lo leído y lo elegido, y se borra la credencial guardada.
   useEffect(() => {
     if (alMontar.estado !== 'vigente') memoria.olvidarLaSesion();
+    if (alMontar.estado === 'vencida') void guarda.borrar();
   }, [alMontar]);
   const sesionActual = useRef(sesion);
   sesionActual.current = sesion;
@@ -137,16 +156,70 @@ function Contenido() {
     desplazamiento.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
-  /** Termina la sesión en la app: se olvidan el token, lo leído y lo elegido, antes de cambiar de pantalla. */
+  /**
+   * Termina la sesión en la app: se olvidan el token, lo leído y lo elegido, y se borra la credencial guardada, antes de
+   * cambiar de pantalla. Una recuperación que todavía estuviera en curso ya no cuenta.
+   */
   const terminar = useCallback(
     (destino: Ruta) => {
+      intentoDeRecuperacion.current++;
+      void guarda.borrar();
       olvidarSesion();
       memoria.olvidarLaSesion();
       setSesion(null);
+      setRecordada(null);
       ir(destino);
     },
     [ir],
   );
+
+  /**
+   * Al abrir la app sin sesión en el proceso: la credencial guardada se verifica con la API (src/sesion-persistente.ts).
+   * Hasta saberlo no se muestra nada de la cuenta. Si la persona eligió otra cosa mientras tanto, la respuesta se ignora.
+   */
+  const recuperar = useCallback(
+    async (credencial?: CredencialGuardada) => {
+      const intento = ++intentoDeRecuperacion.current;
+      setRecuperacion({ tipo: 'verificando' });
+      const resultado: Recuperacion | null = await recuperarSesion({
+        guarda,
+        verificar: (token) => api.consultarCuenta(token),
+        credencial,
+        ahora: () => ({ monotono: performance.now(), reloj: Date.now() }),
+        sigueVigente: () => intento === intentoDeRecuperacion.current,
+      });
+      if (!resultado || intento !== intentoDeRecuperacion.current) return;
+      if (resultado.tipo === 'sin-verificar') {
+        setRecuperacion({ tipo: 'sin-verificar', credencial: resultado.credencial, sinConexion: resultado.sinConexion });
+        return;
+      }
+      setRecuperacion(null);
+      if (resultado.tipo === 'recuperada') {
+        memoria.olvidarLaSesion();
+        alturas.current.clear();
+        setSesion(resultado.sesion);
+        setRecordada(true);
+        ir(alIniciarSesion({ nombre: 'bienvenida' }));
+      } else if (resultado.tipo === 'vencida') {
+        ir({ nombre: 'login', aviso: avisoDeVencimiento({ vigenciaMs: resultado.vigenciaMs }) });
+      } else if (resultado.tipo === 'no-valida') {
+        ir({ nombre: 'login', aviso: resultado.aviso });
+      }
+    },
+    [ir],
+  );
+
+  useEffect(() => {
+    if (alMontar.estado === 'ninguna') void recuperar();
+  }, [alMontar, recuperar]);
+
+  /** «Iniciar sesión de nuevo» cuando no se pudo verificar: la persona elige no esperar, y la credencial se borra. */
+  const iniciarDeNuevo = useCallback(() => {
+    intentoDeRecuperacion.current++;
+    void guarda.borrar();
+    setRecuperacion(null);
+    ir({ nombre: 'login' });
+  }, [ir]);
 
   // Al vencer, el token se descarta (la API lo rechazaría igual). Con la app en segundo plano el temporizador puede no
   // correr: al volver, si ya venció, se dice en ese momento y no recién con el primer pedido.
@@ -229,7 +302,15 @@ function Contenido() {
       >
         {!apiConfigurada ? <Aviso tipo="error" titulo="Este build no tiene una API configurada." /> : null}
 
-        {ruta.nombre === 'bienvenida' ? (
+        {recuperacion ? (
+          <PantallaDeRecuperacion
+            estado={recuperacion}
+            reintentar={() => void recuperar(recuperacion.tipo === 'sin-verificar' ? recuperacion.credencial : undefined)}
+            iniciarDeNuevo={iniciarDeNuevo}
+          />
+        ) : null}
+
+        {!recuperacion && ruta.nombre === 'bienvenida' ? (
           <View>
             <Image source={ISOTIPO} style={estilos.isotipoGrande} accessible={false} />
             <Text style={estilos.lema}>BE · Better Everyday</Text>
@@ -253,9 +334,16 @@ function Contenido() {
             aviso={ruta.aviso}
             irARegistro={() => ir({ nombre: 'registro' })}
             alIniciar={(token, expiresAt, identidadId, fechaDelServidor) => {
+              intentoDeRecuperacion.current++;
               memoria.olvidarLaSesion();
               alturas.current.clear();
-              setSesion(crearSesion({ token, identidadId, expiresAt, fechaDelServidor }, performance.now(), Date.now()));
+              const nueva = crearSesion({ token, identidadId, expiresAt, fechaDelServidor }, performance.now(), Date.now());
+              setSesion(nueva);
+              setRecordada(null);
+              // La credencial va al almacenamiento seguro. Si no se pudo guardar, Cuenta lo dice: no se promete recordarla.
+              void guarda.guardar({ token, identidadId, expiresAt, vigenciaMs: nueva.vigenciaMs }).then((guardada) => {
+                if (sesionActual.current?.token === token) setRecordada(guardada);
+              });
               ir(alIniciarSesion(ruta));
             }}
           />
@@ -266,7 +354,7 @@ function Contenido() {
             {/* Volver sin depender del botón ni de un gesto del sistema (10-B10 §9). Las zonas principales no lo llevan:
                 se llega a ellas desde la barra. */}
             {destinoAnterior && !esPrincipal(ruta) ? <Boton texto={textoDeVolverA(destinoAnterior)} tipo="enlace" onPress={volver} /> : null}
-            {ruta.nombre === 'cuenta' ? <PantallaDeCuenta token={sesion.token} salir={salir} ir={ir} /> : null}
+            {ruta.nombre === 'cuenta' ? <PantallaDeCuenta token={sesion.token} salir={salir} ir={ir} sesionRecordada={recordada} /> : null}
             {ruta.nombre === 'vinculos' ? <PantallaDeVinculos token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} subir={subir} /> : null}
             {ruta.nombre === 'vinculo' ? (
               <PantallaDeVinculo key={ruta.id} token={sesion.token} identidadId={sesion.identidadId} id={ruta.id} salir={salir} ir={ir} volver={volver} subir={subir} />
@@ -302,6 +390,28 @@ function Contenido() {
       {/* Los íconos de la barra del sistema: claros sobre Azul noche, oscuros sobre Claro. */}
       <StatusBar style={BARRA_DEL_SISTEMA[tema]} />
     </KeyboardAvoidingView>
+  );
+}
+
+/**
+ * Mientras se verifica la credencial guardada: no se muestra nada de la cuenta, ni de la anterior. Si no se pudo
+ * verificar (sin red, 429, 5xx), la credencial sigue guardada y se puede reintentar.
+ */
+function PantallaDeRecuperacion({ estado, reintentar, iniciarDeNuevo }: { estado: EstadoDeRecuperacion; reintentar: () => void; iniciarDeNuevo: () => void }) {
+  if (estado.tipo === 'verificando') {
+    return (
+      <View accessibilityLiveRegion="polite">
+        <Parrafo tenue>Verificando tu sesión guardada…</Parrafo>
+        <Cargando forma="lista" />
+      </View>
+    );
+  }
+  return (
+    <Aviso tipo="info" titulo="No pudimos verificar tu sesión">
+      <Parrafo>{`${estado.sinConexion ? 'Parece que no hay conexión.' : 'El servicio no respondió.'} Tu sesión sigue guardada en este teléfono: probá de nuevo en un momento.`}</Parrafo>
+      <Boton texto="Reintentar" onPress={reintentar} />
+      <Boton texto="Iniciar sesión de nuevo" tipo="secundario" onPress={iniciarDeNuevo} />
+    </Aviso>
   );
 }
 

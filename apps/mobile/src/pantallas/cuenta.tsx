@@ -29,7 +29,11 @@ const ESTADO_OPERATIVO: Record<MeResponse['data']['accountOperationalState'], st
   CERRADA: 'Cerrada',
 };
 
-export function PantallaDeCuenta({ token, salir, ir }: { token: string; salir: (motivo: Salida) => void; ir: (r: Ruta) => void }) {
+/**
+ * `sesionRecordada`: si la sesión quedó guardada en el almacenamiento seguro del teléfono (DL-012). Con `false` se dice
+ * que no se pudo guardar; con `null` (todavía no se sabe) no se dice nada.
+ */
+export function PantallaDeCuenta({ token, salir, ir, sesionRecordada = null }: { token: string; salir: (motivo: Salida) => void; ir: (r: Ruta) => void; sesionRecordada?: boolean | null }) {
   const [cuenta, setCuenta] = useState<Carga<MeResponse['data']>>({ tipo: 'cargando' });
   const [a3, setA3] = useState<Carga<RequisitoDeConsentimientoDeSaludResponse['data']>>({ tipo: 'cargando' });
   const [accion, setAccion] = useState<'libre' | 'una' | 'todas' | { error: string }>('libre');
@@ -106,6 +110,8 @@ export function PantallaDeCuenta({ token, salir, ir }: { token: string; salir: (
 
       <Seccion titulo="Seguridad">
         <Parrafo>Cerrar sesión no cierra tu cuenta.</Parrafo>
+        {sesionRecordada === true ? <Parrafo tenue>Tu sesión queda guardada de forma segura en este teléfono hasta que venza, para que no tengas que volver a entrar si cerrás la app. Cerrar sesión la borra.</Parrafo> : null}
+        {sesionRecordada === false ? <Parrafo tenue>No se pudo guardar la sesión en este teléfono: si cerrás la app, vas a tener que volver a iniciar sesión.</Parrafo> : null}
         {typeof accion === 'object' ? <Aviso tipo="error" titulo={accion.error} /> : null}
         <Boton texto={accion === 'una' ? 'Cerrando sesión…' : COPY.cerrarSesion} tipo="secundario" onPress={() => cerrarSesion('una')} ocupado={accion === 'una'} deshabilitado={ocupado} />
         <Boton texto={accion === 'todas' ? 'Cerrando sesiones…' : COPY.cerrarTodas} tipo="secundario" onPress={() => cerrarSesion('todas')} ocupado={accion === 'todas'} deshabilitado={ocupado} />

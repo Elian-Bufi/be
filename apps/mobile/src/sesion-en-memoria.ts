@@ -1,5 +1,5 @@
 /**
- * La sesión vive solo en memoria (DL-012), pero fuera del árbol de React (2026-10-03).
+ * La sesión vive en memoria, fuera del árbol de React (2026-10-03).
  *
  * Android vuelve a crear la pantalla de la app cuando cambia el tamaño de letra o de visualización, el idioma o la
  * negrita del sistema: esos cambios no están en `configChanges`. React monta todo de nuevo y el estado de los
@@ -7,9 +7,9 @@
  * de la raíz, cambiar el tamaño de letra devolvía a la bienvenida. Guardada acá, sobrevive a eso, junto con la pantalla
  * en la que se estaba.
  *
- * **No sobrevive a la muerte del proceso.** Nada va a disco: si el sistema cierra el proceso, o la persona cierra la app
- * desde Recientes, este módulo vuelve a empezar vacío y hay que iniciar sesión otra vez (DL-012, opción A provisoria).
- * En ese caso la app no sabe por qué no hay sesión, y no dice que venció.
+ * **No sobrevive a la muerte del proceso.** Este módulo no guarda nada: si el sistema cierra el proceso, o la persona
+ * cierra la app desde Recientes, vuelve a empezar vacío. Para ese caso está la credencial guardada
+ * (`sesion-persistente.ts`, DL-012): al abrir, la raíz la verifica con la API antes de mostrar nada protegido.
  *
  * **Cuándo vence.** Lo dice la API: `expiresAt`. La duración se mide contra el reloj del servidor (la cabecera `Date`
  * de la respuesta del inicio de sesión), así un reloj del teléfono adelantado o atrasado no la cambia. El tiempo que
