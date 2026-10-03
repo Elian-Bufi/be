@@ -1,6 +1,7 @@
 # Guía de UX y UI de BE
 
-**Estado:** vigente desde el 2026-10-01 (DL-113), a ratificar por Dirección.
+**Estado:** vigente desde el 2026-10-01 (DL-113) y ampliada el 2026-10-03 con la candidata 0.13.2. A ratificar por
+Dirección.
 **Alcance:** el website del profesional y del asesorado (`apps/web`) y la APK del asesorado (`apps/mobile`).
 **Cuándo se usa:** en cada pantalla nueva y en cada cambio de una pantalla existente. Antes de abrir el PR se recorre la
 [lista de control](#9-lista-de-control-por-pantalla).
@@ -75,11 +76,26 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
 - La barra se oculta mientras el teclado está abierto.
 - Atrás, desde una zona, vuelve a Nutrición; desde Nutrición, sale de la app.
 - Una función nueva entra en la zona que le corresponde por dominio. No se agregan botones de zona en Cuenta.
-- **Volver a una zona no recarga todo** (candidata 0.13.2, `src/lecturas.ts`).
-  - Se ve al instante lo último leído en la sesión y se vuelve a pedir una vez, en silencio. Mientras tanto corre una
-    línea fina sobre el borde del encabezado.
-  - La respuesta nueva manda. Escribir olvida todo lo leído, y nada pasa de una sesión a otra.
-  - Cada zona vuelve a la altura en que se la dejó, y tocar la zona en la que se está lleva al principio.
+- **Al entrar a una zona, primero se verifica y después se muestra** (candidata 0.13.2, `src/ciclo-de-lectura.ts`).
+  - Ningún valor protegido aparece antes de que la API confirme el acceso en esa entrada. Mientras tanto, la pantalla
+    conserva su estructura: el título y bloques del alto de lo que viene (`Cargando forma="lista"` o
+    `forma="figura"`), sin valores.
+  - No se muestra lo leído en una visita anterior para ahorrar la espera. Lo recordado en la sesión sirve para no
+    redibujar y para conservar la selección. **No prueba que el permiso siga vigente**: un tiempo de vida en memoria no
+    reemplaza la autorización.
+  - Con la pantalla abierta, lo confirmado queda a la vista mientras se reconfirma: al volver del segundo plano y
+    después de una escritura de la misma pantalla. Corre una línea fina sobre el borde del encabezado.
+  - Un 403 o un 404 retira lo que se mostraba. Sin red, con 429 o con 5xx, lo confirmado queda con «No pudimos
+    actualizar»; si no había nada confirmado, «Reintentar».
+  - Una respuesta pedida antes de una escritura, de un cierre de sesión o de un cambio de cuenta no se guarda ni se
+    muestra. Nada pasa de una sesión a otra.
+  - Cada zona vuelve a la altura en que se la dejó cuando llega su contenido, aunque la API tarde. Si la persona mueve
+    la pantalla mientras tanto, manda ella. Pasados 10 s ya no se salta (`src/altura-de-las-zonas.ts`). Tocar la zona
+    en la que se está lleva al principio.
+  - Una revocación hecha en otro dispositivo se conoce en el próximo contacto con la API: al entrar a una zona, al
+    volver del segundo plano o al escribir.
+- **Las vistas de una zona van en pestañas** (`Segmentos`) cuando la zona tiene tareas distintas sobre los mismos
+  datos. En «Mi evolución» son tres: Última toma, Comparar y Evolución. La pestaña elegida se recuerda en la sesión.
 
 **Website**
 - Adentro de un asesorado, una pestaña por dominio.
@@ -114,7 +130,25 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   marca no informa nada, y en la barra el ícono acompaña y el lector de pantalla dice el nombre completo. No se
   desactiva el escalado ni se achica el texto para que entre.
 - **Las opciones excluyentes van en píldoras** (`Segmentos`, APK). Si no entran, bajan enteras a la línea siguiente:
-  nunca se parte una palabra. Lo usan las preferencias visuales: la figura y los colores.
+  nunca se parte una palabra. Lo usan las preferencias visuales (la figura y los colores), las pestañas de una zona y
+  los períodos de un gráfico.
+- **Escala de letra de la APK** (`ui.tsx`). Una pantalla no inventa tamaños:
+  - 26, el título de la pantalla;
+  - 19, el título de una sección;
+  - 17, el subtítulo;
+  - 16, el texto, los campos y los botones;
+  - 14, el texto secundario;
+  - 12, el rótulo (`Rotulo`, en mayúsculas espaciadas).
+- **Las cifras van con `Cifra`:** dígitos de ancho fijo (`tabular-nums`) y la unidad al lado, más chica y tenue. La
+  unidad nunca se omite ni baja sola de línea.
+- **Una fila compacta de lectura no es un objetivo táctil compacto.** Una lista puede apretar el aire entre datos, pero
+  lo que se toca mide 48 dp.
+  - Desvío conocido: en la figura, las filas de las tarjetas miden 44 dp con la letra normal y un rótulo de una línea, y
+    las áreas de toque de los sitios, 44 dp. Ver la [sección 12](#12-lo-que-se-sabe-que-falta).
+- **No se achica la letra para que entre una composición.** Si no entra, cambia la composición:
+  - las tarjetas pasan a números;
+  - las píldoras bajan de línea;
+  - el gráfico saltea rótulos del eje.
 - **Una figura con texto adentro se adapta a la letra** (`composicion-de-la-figura.ts`). Con la letra de la persona,
   cada fila mide lo que necesita. Si las tarjetas no entran, la figura pasa a números, que bajan en orden, y debajo va
   una lista que crece sin tope.
@@ -133,6 +167,20 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   - APK: `tema.ts`;
   - lámina: `COLORES_DE_LA_LAMINA`.
   La prueba `scripts/contraste.test.cjs` falla con un color literal en una pantalla y mide los pares declarados.
+- **Superficies en escalones** (APK, `tema.ts`):
+  - `fondo` para la pantalla;
+  - `superficie` para las tarjetas y las secciones;
+  - `superficieElevada` para lo que se destaca sobre ellas: el botón secundario, las fichas de fecha y la zona elegida
+    de la barra inferior.
+  El `borde` decorativo es un azul apagado: separa sin competir. Era un azul brillante que competía con el cian.
+- **El cian orienta, no decora.** El acento (`acento`) marca lo que se elige o se toca:
+  - la zona elegida;
+  - los enlaces y el texto de los botones secundarios;
+  - las casillas;
+  - los títulos de las ayudas;
+  - los puntos de un gráfico.
+  No va en superficies, en títulos ni en bordes de tarjetas. El botón principal es claro sobre oscuro (`botonFondo`), y
+  el secundario es tonal, no un contorno cian.
 - **Contraste AA:**
   - 4,5:1 para el texto;
   - 3:1 para los bordes de los controles y los íconos que comunican.
@@ -171,8 +219,41 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   para que las guías doblen afuera.
 - **La imagen exportada se equilibra.** En Medición con el cuerpo entero, la figura arranca en 290 y mide 1390. Así no
   queda una franja vacía bajo el encabezado (Dirección, 2026-10-03). Los otros encuadres son los del compositor.
+- **Selección coordinada en la figura** (APK, `figura-de-la-toma.tsx`).
+  - Tocar una fila, o el sitio en la figura, lo elige. La fila lleva borde, el sitio lleva un aro propio, su guía se
+    resalta y las demás se atenúan. Debajo va el detalle. Tocar de nuevo lo suelta.
+  - La fila dice al lector de pantalla que es un botón y si está seleccionada.
+  - La selección no mueve ningún punto: solo cambia cómo se dibujan.
 - **Tabla equivalente.** Todo gráfico o figura tiene una tabla o lista equivalente, que es el camino del teclado y del
-  lector de pantalla (B10-10 §11). En la APK, «La figura, en lista».
+  lector de pantalla (B10-10 §11). En la APK, «La figura, en lista» y «La evolución, en lista».
+- **El gráfico de evolución de la APK es de puntos** (`grafico-de-evolucion.ts` y `evolucion-de-una-medida.tsx`).
+  - Cada punto es una medición, sobre una escala de tiempo con las fechas civiles de la zona de la API.
+  - Los puntos no se unen: no hay líneas, áreas ni tendencias (REG-06-166). Un día sin medición no es cero: no se
+    dibuja, y la lista lo dice como «Sin dato».
+  - Se ve una medida y un grupo comparable por vez, con el mismo protocolo, método y unidad. Si la medida tiene más de un
+    grupo, se elige el grupo: nunca se mezclan en un eje.
+  - El eje vertical usa la misma regla que el website (`dominioDelEjeVertical`). No fuerza el cero y tiene un margen
+    de al menos una unidad del eje y del 5 %. La unidad es 1 para las medidas de 10 o más, y la décima o la centésima
+    para los índices: un índice cintura/cadera de 0,84 a 0,86 va de 0,79 a 0,91, no de −1 a 2.
+  - Las marcas del eje son redondas, y los rótulos del tiempo se saltean si no entran con la letra de la persona.
+  - El período se elige dentro de lo que la API sirve: 30, 60 o 90 días. No hay «6 meses» ni «1 año» sin un contrato
+    que los sostenga.
+  - La última medición se distingue por forma, con un punto más grande, no por color.
+  - Tocar cerca de un punto elige el más cercano. Se ven una guía vertical punteada, su valor y su detalle debajo.
+    «Anterior» y «Siguiente» recorren las mediciones sin necesidad de precisión con el dedo.
+  - El lector de pantalla oye un resumen (cuántas mediciones hay, entre qué fechas y cuál es la última) y recorre la
+    lista equivalente. El gráfico y la lista salen de las mismas filas (`filasDelPeriodo`).
+  - Estados:
+    - sin mediciones de la medida, un aviso;
+    - una sola medición, el punto, centrado en el eje vertical;
+    - muchas, los puntos sobre la escala;
+    - puntos cercanos, gana el más cercano y la lista los separa.
+  - No hay anillo de composición corporal: mezclaría métodos (REG-06-205).
+- **Comparar dos tomas** (APK, `comparar-tomas.tsx`).
+  - Compara la última toma con la anterior comparable: el mismo par que ya calcula el dominio.
+  - No hay selector de otras tomas, porque la API no lo sostiene.
+  - Cuando una medida no tiene con qué compararse, se dice por qué: es la primera del período, o la anterior se tomó
+    con otro protocolo, método o unidad.
 - **Los resultados calculados siempre llevan su método.** Dos métodos no se comparan entre sí, y ninguno se marca
   como «el bueno» (REG-06-205).
 
@@ -180,11 +261,15 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
 
 Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx` (website y APK):
 - **cargando:** `Cargando`. En el website es una región de estado (`role="status"`), con una marca que se detiene con «reducir movimiento»;
-- **actualizando** (APK): con datos a la vista no se vuelve a «Cargando…». Corre la línea del encabezado, que queda quieta con «reducir movimiento». Si el pedido falla de forma pasajera, `SinActualizar` dice «No pudimos actualizar», muestra lo leído en la sesión y deja reintentar;
+- **verificando** (APK): al entrar a una zona, `Cargando` con la forma de lo que viene (`forma="lista"` o `"figura"`): la estructura queda quieta y no aparece ningún valor hasta que la API confirma;
+- **actualizando** (APK): con datos confirmados a la vista, no se vuelve a «Cargando…». Corre la línea del encabezado, que queda quieta con «reducir movimiento». Si el pedido falla de forma pasajera, `SinActualizar` dice «No pudimos actualizar», muestra lo confirmado y deja reintentar;
 - **error con reintento:** `ErrorConReintento`, sin perder lo que la persona escribió;
 - **vacío:** `EstadoVacio` en el website. Lleva un título que dice qué falta, una línea con qué significa y, si existe, la acción real que corresponde, nunca un dato inventado. Ejemplo: sin tomas, «Preparar una toma»;
 - **acceso retirado** (B10-06): se retira el contenido entero, no a medias;
 - **sesión vencida:** vuelve a «Iniciar sesión» y lo dice, con su propio aviso. En la APK, solo un código de sesión cierra la sesión: un 403, un 429, un 5xx o la falta de red, nunca.
+  - El aviso de vencimiento se muestra solo con un vencimiento comprobado: la API dijo `SESSION_EXPIRED`, o pasó la vigencia que la API informó al iniciar sesión, medida desde la hora del servidor.
+  - La duración que dice el aviso sale de esa vigencia, no de una constante copiada.
+  - Si Android cerró el proceso, la app no sabe por qué no hay sesión: vuelve a la bienvenida sin hablar de vencimiento.
 
 ## 9. Lista de control por pantalla
 
@@ -244,6 +329,12 @@ Viven en `apps/web/src/components/` y en `globals.css`. Antes de crear otro, se 
   - Con borrador, lo principal es «Registrar», que guarda antes.
   - Una acción excepcional, como agregar una medición fuera del protocolo, no va entre las principales.
 - **No se pliega lo que hace falta para decidir:** requisitos de un cálculo, población en que se validó, advertencias. Se pliega la explicación larga.
+- **El documento descargable y su vista previa son cosas distintas.** La imagen que se descarga (2160 × 3840) lleva todos
+  los datos con sus unidades. En el teléfono, la vista previa entra entera y su letra se ve chica: «Ver en tamaño real»
+  la muestra a 1080 px dentro de un visor que se recorre con el dedo, y «Ver entera» la devuelve. El botón dice su
+  estado (`aria-pressed`).
+- **La barra fija de guardado no tapa un error.** Con el teclado abierto, el campo enfocado y su mensaje quedan por
+  encima de la barra (`scroll-padding-bottom`). El error de un campo va junto a él, no solo en la barra.
 
 ## 11. Cómo se verifica
 
@@ -253,10 +344,12 @@ Viven en `apps/web/src/components/` y en `globals.css`. Antes de crear otro, se 
 | Geometría de la figura y la lámina | pruebas del dominio (`lamina.test.ts`) y recortes de control | ejecutor |
 | Recorrido del website | puppeteer con datos sintéticos, en un entorno aislado; capturas a 390 y 1280 px | ejecutor |
 | Pantallas de la APK | maquetas HTML con la misma composición que la APK (`composicion-de-la-figura.ts`), con la escala de letra simulada y en los dos temas. Se rotulan «MAQUETA · NO ES LA APK» | ejecutor |
-| Uso real | la APK publicada, en el teléfono, con TalkBack y la letra al máximo | **Dirección** |
+| Uso real | la APK publicada, en el teléfono, con la letra al máximo (obligatoria) y en los dos temas. TalkBack: no realizado, por decisión de Dirección | **Dirección** |
 
 La automatización no reemplaza la prueba de Dirección en el teléfono. Un informe nunca dice «todo validado» si esa
 prueba no se hizo.
+- Ninguna maqueta demuestra el comportamiento de la APK.
+- Una CI verde no es una aprobación visual ni una prueba en Android.
 
 ## 12. Lo que se sabe que falta
 
@@ -264,15 +357,20 @@ Son las mejoras de UX detectadas que no entraron en DL-113. Cada una entra en un
 - **La figura del teléfono, en el tronco.** Los halos se achicaron en la candidata 0.13.2, y con la letra grande la
   figura pasa a números. Falta mirarlo en el teléfono. Con números y letra ×2, algunas guías de pliegues todavía se
   cruzan, porque los sitios no se mueven.
-- **TalkBack y letra al máximo en un Android físico** (RNF-ACC-001). Nunca se probaron.
+- **Letra al máximo en un Android físico** (RNF-ACC-001): obligatoria en la próxima prueba del teléfono. **TalkBack:**
+  no realizado, por decisión de Dirección.
+- **Las filas de las tarjetas y las áreas de toque de los sitios en la figura miden 44 dp**, no 48. La propuesta es
+  subirlas a 48. Eso recompone las tarjetas: con la letra normal, entran menos y la figura pasa a números antes. Hay
+  que medirlo y mirarlo antes de decidirlo.
 - **Recargar el website cierra la sesión** (DL-012): la sesión vive en memoria.
 - **Cerrar la APK, o que Android cierre su proceso, obliga a volver a entrar** (DL-012). La propuesta de guardar el
   token en el almacenamiento seguro hasta que venza está en DL-012 y espera la decisión de Dirección.
 - **El texto de la imagen exportada se ve chico en un teléfono.** El lienzo es de 1080 px; equilibrarlo no lo agranda.
-  Agrandar la letra exige recomponer las tarjetas.
+  Para inspeccionarla, la vista previa tiene «Ver en tamaño real». Agrandar la letra del documento exige recomponer las
+  tarjetas.
 - **Búsqueda por texto** en los catálogos externos (DL-098).
 - **La barra inferior de la APK a 320 dp.** Las etiquetas crecen hasta 1,15 y se achican hasta el 85 % si no entran: hay que mirarlo en un teléfono chico.
 - **Los filtros de «Pendientes» en el teléfono** ocupan una pantalla antes del primer pendiente.
-- **Un 503 intermitente de la API** (`P2028`: la transacción no pudo empezar a tiempo) con lecturas concurrentes y poca memoria. La pantalla lo muestra con su reintento. Es de la API, no de la interfaz.
+- **Un 503 intermitente de la API** (`P2028`: la transacción no pudo empezar a tiempo) con lecturas concurrentes y poca memoria. La pantalla lo muestra con su reintento. Es de la API, no de la interfaz. La mejora medida y el límite que queda están en `EVIDENCIA/P2028`.
 - **Las demás pantallas del website.** Siguen esta guía desde DL-113. Las que se toquen después se revisan con la lista
   de control.
