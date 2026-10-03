@@ -10,19 +10,26 @@
  *   los días sin medición vigente a la vista como «Sin dato».
  * Desde la etapa de UI y UX (Dirección, 2026-10-01), con sesión se navega con la barra inferior: Nutrición,
  * Entrenamiento, Evolución, Información y Cuenta (src/barra-de-zonas.tsx). Al iniciar sesión, la APK abre en Nutrición.
- * La sesión (Bearer) y el identificador de la identidad viven solo en memoria (DL-012, T5): cerrar la app exige volver a
- * iniciar sesión. Nunca se guarda un «rol autorizado» en el cliente: la API verifica la sesión y decide cada acceso en
- * cada request; ocultar un botón no concede ni quita nada.
+ * La sesión (Bearer) y el identificador de la identidad viven solo en memoria (DL-012, T5): si el sistema cierra el
+ * proceso o la persona cierra la app desde Recientes, hay que volver a iniciar sesión. Viven fuera del árbol de React
+ * (src/sesion-en-memoria.ts). Un cambio de tamaño de letra hace que Android recree la pantalla, y ya no pierde la sesión.
+ * Nunca se guarda un «rol autorizado» en el cliente: la API verifica la sesión y decide cada acceso en cada request;
+ * ocultar un botón no concede ni quita nada.
+ * Al cambiar de zona, cada pantalla muestra lo último que leyó en esta sesión mientras lo vuelve a pedir
+ * (src/lecturas.ts). Cada zona principal vuelve a la altura en que se la dejó.
  * Identidad del build visible en Bienvenida (07 §34, TEST-APK-008).
  */
+import { DURACION_DE_SESION_MS } from '@be/domain';
 import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, Image, KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
+import { AppState, BackHandler, Image, KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiConfigurada, extra } from './src/api';
 import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
 import { BarraDeZonas } from './src/barra-de-zonas';
+import { LineaDeActualizacion } from './src/estados';
+import { memoria, useHayActualizaciones } from './src/lecturas';
 import { alIniciarSesion, anterior, esPrincipal, requiereSesion, textoDeVolverA, zonaDe, type Ruta, type Salida } from './src/navegacion';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
@@ -36,6 +43,7 @@ import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRegistro } from './src/pantallas/registro';
 import { PantallaDeVinculo } from './src/pantallas/vinculo';
 import { PantallaDeVinculos } from './src/pantallas/vinculos';
+import { olvidarSesion, recordarSesion, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
 import { BARRA_DEL_SISTEMA } from './src/tema';
 import { Aviso, Boton, Parrafo, estilosPorTema } from './src/ui';
 
@@ -43,18 +51,13 @@ const AVISOS: Record<Salida, string> = {
   'sesion-cerrada': 'Cerraste la sesión.',
   'sesiones-cerradas': 'Cerraste todas tus sesiones.',
   'sesion-no-valida': 'La sesión ya no es válida. Iniciá sesión para continuar.',
+  'sesion-vencida': `Tu sesión venció: dura ${DURACION_DE_SESION_MS / 3_600_000} horas. Iniciá sesión para continuar.`,
   reautenticar: 'Por seguridad, volvé a iniciar sesión para confirmar esta acción.',
   'cierre-registrado': 'Solicitud de cierre registrada.',
 };
 
 const version = Constants.expoConfig?.version ?? 'no declarada';
 const commit = extra.commit ? extra.commit.slice(0, 7) : 'no declarado';
-
-interface Sesion {
-  readonly token: string;
-  readonly expiraEn: number;
-  readonly identidadId: string;
-}
 
 /**
  * La raíz guarda la apariencia: al cambiarla se vuelve a dibujar y con ella toda la app, con los colores del tema nuevo
@@ -77,13 +80,49 @@ function Contenido() {
   const { tema } = useApariencia();
   // Inset inferior real del sistema (barra de navegación de Android edge-to-edge / home indicator de iOS).
   const insets = useSafeAreaInsets();
-  const [ruta, setRuta] = useState<Ruta>({ nombre: 'bienvenida' });
-  const [sesion, setSesion] = useState<Sesion | null>(null);
+  // Si Android recreó la pantalla (por ejemplo, al cambiar el tamaño de letra), la sesión y la pantalla siguen en el
+  // proceso: se vuelve a la misma. Si la sesión venció mientras tanto, se dice.
+  const [alMontar] = useState(sesionAlMontar);
+  const [ruta, setRuta] = useState<Ruta>(() =>
+    alMontar.estado === 'vigente' ? alMontar.ruta : alMontar.estado === 'vencida' ? { nombre: 'login', aviso: AVISOS['sesion-vencida'] } : { nombre: 'bienvenida' },
+  );
+  const [sesion, setSesion] = useState<Sesion | null>(alMontar.estado === 'vigente' ? alMontar.sesion : null);
   const desplazamiento = useRef<ScrollView>(null);
+  const hayActualizaciones = useHayActualizaciones();
+
+  useEffect(() => {
+    if (sesion) recordarSesion(sesion, ruta);
+    else olvidarSesion();
+  }, [sesion, ruta]);
+
+  // Cada zona principal vuelve a la altura en que se la dejó; las demás pantallas abren arriba. Tocar la zona en la que
+  // ya se está lleva al principio, como en las apps.
+  const rutaActual = useRef(ruta);
+  rutaActual.current = ruta;
+  const alturaActual = useRef(0);
+  const alturas = useRef(new Map<string, number>());
+  const alturaPendiente = useRef<{ y: number; hasta: number } | null>(null);
 
   const ir = useCallback((r: Ruta) => {
+    const desde = rutaActual.current;
+    if (esPrincipal(desde)) alturas.current.set(desde.nombre, desde.nombre === r.nombre ? 0 : alturaActual.current);
+    const y = esPrincipal(r) ? (alturas.current.get(r.nombre) ?? 0) : 0;
+    alturaPendiente.current = y > 0 ? { y, hasta: Date.now() + 1500 } : null;
     setRuta(r);
     desplazamiento.current?.scrollTo({ y: 0, animated: false });
+  }, []);
+
+  /** Devuelve la zona a su altura cuando el contenido ya alcanza; si tarda más de 1,5 s, se queda arriba. */
+  const alCambiarElContenido = useCallback((_ancho: number, alto: number) => {
+    const pendiente = alturaPendiente.current;
+    if (!pendiente) return;
+    if (Date.now() > pendiente.hasta) {
+      alturaPendiente.current = null;
+      return;
+    }
+    if (alto < pendiente.y) return;
+    alturaPendiente.current = null;
+    desplazamiento.current?.scrollTo({ y: pendiente.y, animated: false });
   }, []);
 
   /** Lleva la pantalla al principio, donde cada pantalla deja el resultado de una acción. */
@@ -91,15 +130,31 @@ function Contenido() {
     desplazamiento.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
-  // Al vencer, el token se descarta (la API lo rechazaría igual).
+  /** Termina la sesión en la app: se olvidan el token, lo leído y lo elegido, antes de cambiar de pantalla. */
+  const terminar = useCallback(
+    (destino: Ruta) => {
+      olvidarSesion();
+      memoria.olvidarLaSesion();
+      setSesion(null);
+      ir(destino);
+    },
+    [ir],
+  );
+
+  // Al vencer, el token se descarta (la API lo rechazaría igual). Con la app en segundo plano el temporizador puede no
+  // correr: al volver, si ya venció, se dice en ese momento y no recién con el primer pedido.
   useEffect(() => {
     if (!sesion) return;
-    const t = setTimeout(() => {
-      setSesion(null);
-      ir({ nombre: 'login', aviso: AVISOS['sesion-no-valida'] });
-    }, Math.max(0, Math.min(sesion.expiraEn - Date.now(), 2_147_000_000)));
-    return () => clearTimeout(t);
-  }, [sesion, ir]);
+    const vencer = () => terminar({ nombre: 'login', aviso: AVISOS['sesion-vencida'] });
+    const t = setTimeout(vencer, Math.max(0, Math.min(sesion.expiraEn - Date.now(), 2_147_000_000)));
+    const suscripcion = AppState.addEventListener('change', (momento) => {
+      if (momento === 'active' && sesion.expiraEn <= Date.now()) vencer();
+    });
+    return () => {
+      clearTimeout(t);
+      suscripcion.remove();
+    };
+  }, [sesion, terminar]);
 
   // Botón «atrás» de Android: vuelve a la pantalla lógica anterior (src/navegacion.ts) y nunca cierra la sesión. Desde
   // una zona principal de la barra lleva a Nutrición; en Nutrición y en Bienvenida no hay anterior y decide el sistema.
@@ -115,15 +170,14 @@ function Contenido() {
 
   const salir = useCallback(
     (motivo: Salida) => {
-      setSesion(null);
       // Si Cuenta pidió volver a entrar para confirmar una acción, al iniciar sesión se vuelve a Cuenta (alIniciarSesion).
-      ir(
+      terminar(
         motivo === 'cierre-registrado'
           ? { nombre: 'bienvenida', aviso: AVISOS[motivo] }
           : { nombre: 'login', aviso: AVISOS[motivo], ...(motivo === 'reautenticar' ? { alEntrar: 'cuenta' as const } : {}) },
       );
     },
-    [ir],
+    [terminar],
   );
 
   const destinoAnterior = anterior(ruta);
@@ -146,9 +200,19 @@ function Contenido() {
           </Text>
         </View>
         <Text style={estilos.ambiente}>Ambiente de prueba · solo datos sintéticos</Text>
+        <LineaDeActualizacion activa={hayActualizaciones && sesion !== null} />
       </View>
       {/* Con la barra inferior, el área segura de abajo la cubre la barra; sin ella, el contenido deja ese margen. */}
-      <ScrollView ref={desplazamiento} contentContainerStyle={[estilos.contenido, { paddingBottom: zona ? 24 : 32 + insets.bottom }]} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        ref={desplazamiento}
+        contentContainerStyle={[estilos.contenido, { paddingBottom: zona ? 24 : 32 + insets.bottom }]}
+        keyboardShouldPersistTaps="handled"
+        onScroll={(e) => {
+          alturaActual.current = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={100}
+        onContentSizeChange={alCambiarElContenido}
+      >
         {!apiConfigurada ? <Aviso tipo="error" titulo="Este build no tiene una API configurada." /> : null}
 
         {ruta.nombre === 'bienvenida' ? (
@@ -175,6 +239,8 @@ function Contenido() {
             aviso={ruta.aviso}
             irARegistro={() => ir({ nombre: 'registro' })}
             alIniciar={(token, expiresAt, identidadId) => {
+              memoria.olvidarLaSesion();
+              alturas.current.clear();
               setSesion({ token, expiraEn: new Date(expiresAt).getTime(), identidadId });
               ir(alIniciarSesion(ruta));
             }}

@@ -27,6 +27,7 @@
  */
 import {
   cantidad,
+  CODIGOS_DE_SESION_NO_VALIDA,
   compararPorCatalogo,
   COPY_ANTROPOMETRIA,
   ETIQUETA_DE_CLASE_DE_DATO,
@@ -41,12 +42,14 @@ import {
   type FamiliaDeMedicion,
   type MedidaDeLaToma,
   type SerieApi,
+  type Resultado,
   type UltimaToma,
 } from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
-import { Cargando, ErrorConReintento } from '../estados';
+import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
+import { useLecturaRecordada } from '../lecturas';
 import { dia, fecha, fechaCivil } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Ayuda, Boton, Desplegable, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
@@ -64,50 +67,62 @@ function periodoAnterior(inicio: string): { periodStart: string; periodEnd: stri
   desde.setUTCDate(desde.getUTCDate() - 89);
   return { periodStart: desde.toISOString().slice(0, 10), periodEnd: fin.toISOString().slice(0, 10) };
 }
-type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: Datos } | { tipo: 'error'; sinConexion: boolean } | { tipo: 'sinA3' };
+/**
+ * La API mira de a 92 días como mucho. Si los últimos 90 no tienen ninguna medición, se mira hacia atrás, de a 90 días y
+ * hasta un año: quien se mide cada tres o cuatro meses tiene que ver su última toma. La pantalla dice qué período
+ * muestra. Si tampoco hay nada, queda el período actual, que dice que no hay mediciones.
+ */
+async function leerMiEvolucion(token: string): Promise<Resultado<Datos>> {
+  const r = await api.miEvolucionAntropometrica(token);
+  if (!r.ok) return r;
+  let datos = r.datos.data;
+  for (let i = 0; i < 3 && sinMediciones(datos); i++) {
+    const anterior = await api.miEvolucionAntropometrica(token, periodoAnterior(datos.period.start));
+    // Una sesión que ya no sirve corta la búsqueda y se informa; cualquier otra falla deja lo que ya se tiene.
+    if (!anterior.ok && anterior.tipo === 'API' && CODIGOS_DE_SESION_NO_VALIDA.has(anterior.codigo)) return anterior;
+    if (!anterior.ok) break;
+    datos = anterior.datos.data;
+  }
+  return { ok: true, datos: sinMediciones(datos) ? r.datos.data : datos };
+}
 
 export function PantallaDeMiEvolucion({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
-  const [carga, setCarga] = useState<Carga>({ tipo: 'cargando' });
-
-  const cargar = useCallback(async () => {
-    setCarga({ tipo: 'cargando' });
-    const r = await api.miEvolucionAntropometrica(token);
-    if (sesionPerdida(r)) return;
-    // DL-115 · con el A3 revocado o nunca otorgado, lo propio no se lee (08:406). No es un error ni «sin mediciones»:
-    // los datos siguen guardados. Cada vez que se entra a esta pantalla se vuelve a leer, así que no queda nada viejo.
-    if (!r.ok && r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN') return setCarga({ tipo: 'sinA3' });
-    if (!r.ok) return setCarga({ tipo: 'error', sinConexion: r.tipo === 'RED' });
-    // La API mira de a 92 días como mucho. Si los últimos 90 no tienen ninguna medición, se mira hacia atrás, de a
-    // 90 días y hasta un año: quien se mide cada tres o cuatro meses tiene que ver su última toma. La pantalla dice
-    // qué período muestra. Si tampoco hay nada, queda el período actual, que dice que no hay mediciones.
-    let datos = r.datos.data;
-    for (let i = 0; i < 3 && sinMediciones(datos); i++) {
-      const anterior = await api.miEvolucionAntropometrica(token, periodoAnterior(datos.period.start));
-      if (sesionPerdida(anterior)) return;
-      if (!anterior.ok) break;
-      datos = anterior.datos.data;
-    }
-    setCarga({ tipo: 'listo', datos: sinMediciones(datos) ? r.datos.data : datos });
-  }, [token, sesionPerdida]);
-
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
+  const pedir = useCallback(() => leerMiEvolucion(token), [token]);
+  // Al volver a la zona se ve lo último leído en esta sesión mientras se vuelve a pedir (src/lecturas.ts).
+  const { r, cargar, sinActualizar } = useLecturaRecordada(token, 'mi-evolucion', pedir, sesionPerdida);
+  // DL-115 · con el A3 revocado o nunca otorgado, lo propio no se lee (08:406). No es un error ni «sin mediciones»: los
+  // datos siguen guardados. Cada visita vuelve a preguntar a la API; si niega el acceso, lo recordado se borra.
+  const sinA3 = r !== null && !r.ok && r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN';
 
   return (
     <View>
       <Titulo>{COPY_ANTROPOMETRIA.miEvolucion}</Titulo>
-      {carga.tipo === 'cargando' ? <Cargando /> : null}
-      {carga.tipo === 'error' ? <ErrorConReintento sinConexion={carga.sinConexion} onReintentar={cargar} /> : null}
-      {carga.tipo === 'sinA3' ? (
+      <SinActualizar visible={sinActualizar} onReintentar={cargar} />
+      {r === null ? <Cargando /> : null}
+      {r && !r.ok && !sinA3 ? <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} /> : null}
+      {sinA3 ? (
         <Aviso tipo="info" titulo={COPY_ANTROPOMETRIA.evolucionNecesitaA3}>
           <Boton texto={COPY_ANTROPOMETRIA.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
         </Aviso>
       ) : null}
-      {carga.tipo === 'listo' ? <Evolucion datos={carga.datos} /> : null}
+      {r?.ok ? <Evolucion datos={r.datos} /> : null}
     </View>
   );
+}
+
+/**
+ * El resumen de la toma se calcula una vez por respuesta: al volver a la zona con lo recordado, no se repite. Se guarda
+ * con la respuesta como clave débil, así se va con ella cuando se olvida.
+ */
+const resumenes = new WeakMap<Datos, UltimaToma | null>();
+function resumenDe(datos: Datos): UltimaToma | null {
+  let resumen = resumenes.get(datos);
+  if (resumen === undefined) {
+    resumen = ultimaToma(datos);
+    resumenes.set(datos, resumen);
+  }
+  return resumen;
 }
 
 /**
@@ -117,9 +132,9 @@ export function PantallaDeMiEvolucion({ token, salir, ir }: { token: string; sal
  * DL-113 · cada fecha se dice una vez: la de la toma en su título; con cuál se compara, en la línea de abajo; y el
  * período, en la evolución por medida, que es lo que abarca. Antes iban las tres seguidas arriba de todo.
  */
-function Evolucion({ datos }: { datos: Datos }) {
+const Evolucion = memo(function Evolucion({ datos }: { datos: Datos }) {
   const conDatos = datos.metrics.filter((s) => s.series.length > 0);
-  const toma = ultimaToma(datos);
+  const toma = resumenDe(datos);
   const periodo = `${COPY_ANTROPOMETRIA.periodo}: ${dia(`${datos.period.start}T12:00:00Z`)} — ${dia(`${datos.period.end}T12:00:00Z`)}`;
   return (
     <>
@@ -147,7 +162,7 @@ function Evolucion({ datos }: { datos: Datos }) {
       ) : null}
     </>
   );
-}
+});
 
 /** El orden de las familias en la lista: el de la lámina (perímetros, después pliegues). */
 const FAMILIAS: readonly FamiliaDeMedicion[] = ['MASA_Y_ESTATURA', 'PERIMETROS', 'PLIEGUES', 'DIAMETROS', 'OTRAS'];

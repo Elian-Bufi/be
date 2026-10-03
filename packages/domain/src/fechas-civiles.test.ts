@@ -11,6 +11,17 @@ test('la fecha civil depende de la zona, no del proceso; una zona desconocida ca
   assert.equal(fechaCivil('2026-09-30T02:30:00.000Z', 'Marte/Olympus'), '2026-09-30');
 });
 
+test('el formateador recordado por zona da lo mismo en cada llamada, también ante una zona o un instante inválidos', () => {
+  for (let i = 0; i < 3; i++) {
+    assert.equal(fechaCivil('2026-09-30T02:30:00.000Z', BA), '2026-09-29');
+    assert.equal(fechaCivil('2026-09-30T03:00:00.000Z', BA), '2026-09-30');
+    assert.equal(fechaCivil('2026-09-30T02:30:00.000Z', 'Marte/Olympus'), '2026-09-30');
+    assert.equal(fechaCivil('no es un instante', BA), 'no es un i');
+    assert.equal(new Date(inicioDelDia('2026-09-29', BA)).toISOString(), '2026-09-29T03:00:00.000Z');
+    assert.equal(inicioDelDia('2026-09-29', 'Marte/Olympus'), inicioDelDia('2026-09-29', 'UTC'));
+  }
+});
+
 test('días de calendario, día siguiente e inicio del día en la zona', () => {
   assert.equal(diasEntreFechas('2026-09-29', '2026-10-01'), 2);
   assert.equal(diasEntreFechas('2026-10-01', '2026-09-29'), -2);
