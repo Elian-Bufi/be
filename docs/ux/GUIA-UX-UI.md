@@ -143,8 +143,9 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   unidad nunca se omite ni baja sola de línea.
 - **Una fila compacta de lectura no es un objetivo táctil compacto.** Una lista puede apretar el aire entre datos, pero
   lo que se toca mide 48 dp.
-  - Desvío conocido: en la figura, las filas de las tarjetas miden 44 dp con la letra normal y un rótulo de una línea, y
-    las áreas de toque de los sitios, 44 dp. Ver la [sección 12](#12-lo-que-se-sabe-que-falta).
+  - En la figura, las filas de las tarjetas miden al menos 48 dp (`ALTO_MINIMO_DE_FILA`): crece el aire, no la letra.
+  - Un área invisible puede ser más grande que su marcador, pero nunca se superpone con la de otro: si dos objetivos
+    quedan casi juntos, el toque no adivina (ver la selección coordinada, §7).
 - **No se achica la letra para que entre una composición.** Si no entra, cambia la composición:
   - las tarjetas pasan a números;
   - las píldoras bajan de línea;
@@ -222,6 +223,11 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
 - **Selección coordinada en la figura** (APK, `figura-de-la-toma.tsx`).
   - Tocar una fila, o el sitio en la figura, lo elige. La fila lleva borde, el sitio lleva un aro propio, su guía se
     resalta y las demás se atenúan. Debajo va el detalle. Tocar de nuevo lo suelta.
+  - En la figura, cada sitio responde hasta 24 dp de su dibujo, un objetivo de 48 dp, sin agrandar el marcador
+    (`sitioTocado`). Un pliegue se mide al punto, y un perímetro, al eje de su anillo.
+  - Si otro sitio queda a menos de 8 dp de diferencia, el toque no elige: la pantalla dice cuáles quedan juntos y la
+    fila elige sin ambigüedad. Pasa con los que coinciden de frente: brazo relajado y contraído, tríceps y bíceps,
+    cresta ilíaca y supraespinal.
   - La fila dice al lector de pantalla que es un botón y si está seleccionada.
   - La selección no mueve ningún punto: solo cambia cómo se dibujan.
 - **Tabla equivalente.** Todo gráfico o figura tiene una tabla o lista equivalente, que es el camino del teclado y del
@@ -269,7 +275,12 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
 - **sesión vencida:** vuelve a «Iniciar sesión» y lo dice, con su propio aviso. En la APK, solo un código de sesión cierra la sesión: un 403, un 429, un 5xx o la falta de red, nunca.
   - El aviso de vencimiento se muestra solo con un vencimiento comprobado: la API dijo `SESSION_EXPIRED`, o pasó la vigencia que la API informó al iniciar sesión, medida desde la hora del servidor.
   - La duración que dice el aviso sale de esa vigencia, no de una constante copiada.
-  - Si Android cerró el proceso, la app no sabe por qué no hay sesión: vuelve a la bienvenida sin hablar de vencimiento.
+  - **La sesión guardada** (DL-012, decidida el 2026-10-03). Si Android cerró el proceso, al abrir se lee la credencial del almacenamiento seguro y se verifica con la API antes de mostrar nada. Mientras tanto, «Verificando tu sesión guardada…», sin datos de ninguna cuenta.
+    - Si la API la acepta, la app sigue.
+    - Si dice que venció o que no sirve, se borra y se va a «Iniciar sesión» con su aviso.
+    - Sin red, con 429 o con 5xx, «No pudimos verificar tu sesión», con «Reintentar» e «Iniciar sesión de nuevo».
+    - Sin credencial guardada, la bienvenida, sin hablar de vencimiento.
+  - Un token guardado no es una sesión autorizada, y no se promete recordar una sesión que no se pudo guardar: Cuenta dice si quedó guardada.
 
 ## 9. Lista de control por pantalla
 
@@ -359,12 +370,12 @@ Son las mejoras de UX detectadas que no entraron en DL-113. Cada una entra en un
   cruzan, porque los sitios no se mueven.
 - **Letra al máximo en un Android físico** (RNF-ACC-001): obligatoria en la próxima prueba del teléfono. **TalkBack:**
   no realizado, por decisión de Dirección.
-- **Las filas de las tarjetas y las áreas de toque de los sitios en la figura miden 44 dp**, no 48. La propuesta es
-  subirlas a 48. Eso recompone las tarjetas: con la letra normal, entran menos y la figura pasa a números antes. Hay
-  que medirlo y mirarlo antes de decidirlo.
+- **En la figura, los sitios que coinciden de frente no se eligen tocando el dibujo**: brazo relajado y contraído,
+  tríceps y bíceps, cresta ilíaca y supraespinal. Se eligen desde su fila. Las filas de 48 dp sumaron dos cruces de
+  guías con la letra normal: de 8 a 10 en los ocho casos medidos (`EVIDENCIA/PULIDO-0.13.2/apk-maquetas`).
 - **Recargar el website cierra la sesión** (DL-012): la sesión vive en memoria.
-- **Cerrar la APK, o que Android cierre su proceso, obliga a volver a entrar** (DL-012). La propuesta de guardar el
-  token en el almacenamiento seguro hasta que venza está en DL-012 y espera la decisión de Dirección.
+- **La sesión guardada de la APK no se probó en un Android** (DL-012). Las pruebas automáticas usan un almacén falso:
+  que el valor cifrado sobreviva al cierre del proceso se comprueba en el teléfono con la APK 0.13.2.
 - **El texto de la imagen exportada se ve chico en un teléfono.** El lienzo es de 1080 px; equilibrarlo no lo agranda.
   Para inspeccionarla, la vista previa tiene «Ver en tamaño real». Agrandar la letra del documento exige recomponer las
   tarjetas.
