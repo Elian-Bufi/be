@@ -18,6 +18,7 @@
 import {
   cantidad,
   COPY,
+  COPY_ANTROPOMETRIA,
   COPY_NUTRICION,
   ETIQUETA_DE_PREPARACION,
   ETIQUETA_DE_UNIDAD,
@@ -82,6 +83,17 @@ export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; sali
     );
   }
   if (!r) return <Cargando />;
+  // DL-115 · sin A3, «Hoy» no se lee: el aviso con el camino a Privacidad, no un error. Los registros siguen guardados.
+  if (!r.ok && r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN') {
+    return (
+      <View>
+        <Titulo>{COPY_NUTRICION.tuPlanDeHoy}</Titulo>
+        <Aviso tipo="info" titulo={COPY_NUTRICION.hoyNecesitaA3}>
+          <Boton texto={COPY_ANTROPOMETRIA.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
+        </Aviso>
+      </View>
+    );
+  }
   if (!r.ok) return <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} />;
   const hoy = r.datos.data;
   const dia = hoy.activePlan?.dayTypes.find((d) => d.dayTypeId === hoy.selectedDayTypeId) ?? null;
