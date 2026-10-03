@@ -16,7 +16,7 @@
 | DL-009 | WP-02 · 2026-09-18 | 06 §5.5/§5.12 · 05 UC-P25 · 09v8 | Perfil propio sin campos aprobados | ABIERTA |
 | DL-010 | WP-02 · 2026-09-18 | 09v8 ACC-01 · 08 §24.5 | El registro distingue identificador nuevo de existente (201/409) | ABIERTA |
 | DL-011 | WP-02 · 2026-09-18 | 06 INV-06-24, REG-06-19 · 08 §16 | Unicidad global del identificador, incluye cuentas cerradas | ABIERTA |
-| DL-012 | WP-02 · 2026-09-18 | 07 §43-bis · 08 §26 · 09v8 ACC-02 | Sesión: formato, transporte, TTL y renovación | ABIERTA |
+| DL-012 | WP-02 · 2026-09-18 | 07 §43-bis · 08 §26 · 09v8 ACC-02 | Sesión: formato, transporte, TTL y renovación | **DECIDIDA** 2026-10-03 · sin renovación; en la APK, el token en el almacenamiento seguro hasta que vence (#136, sin integrar) |
 | DL-013 | WP-02 · 2026-09-18 | 08 §24.2 | No hay política de contraseñas en el legajo | ABIERTA |
 | DL-014 | WP-02 · 2026-09-18 | 09v8 ACC-02 · 09:230 · 04 RF-006 | Neutralidad del login: tolerancia de tiempo y cuentas no operativas | ABIERTA |
 | DL-015 | WP-02 · 2026-09-18 | 08 §24.5, §38 · 09v12 | Rate limiting con umbrales provisionales | ABIERTA |
@@ -314,7 +314,7 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 ## DL-012 — Sesión: formato, transporte, TTL y renovación
 
-**Prioridad:** media · **Documento:** 07 §43-bis, 07:537, 07:786-789 · 08 §26 · 09v7 T01 · 09v8 ACC-02 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 07 §43-bis, 07:537, 07:786-789 · 08 §26 · 09v7 T01 · 09v8 ACC-02 · **Estado:** DECIDIDA (2026-10-03)
 
 **Qué dice el legajo.**
 - Las sesiones son revocables server-side (08:589).
@@ -365,6 +365,32 @@ Además:
 - **Riesgo.** Con el teléfono desbloqueado, alguien que tome la app entra hasta que la sesión venza o se la revoque.
 - **Alternativa.** Ratificar A tal como está. Para la demostración, conviene no cerrar la app ni cambiar de aplicación
   por mucho tiempo.
+
+**Decisión de Dirección del 2026-10-03 (tanda de cierre de la candidata 0.13.2).** Se aprueba la propuesta: el token de
+sesión se guarda en el almacenamiento seguro del teléfono hasta su vencimiento, sin guardar la contraseña y sin
+renovación automática.
+- **Qué rige en la APK.** La credencial va a `expo-secure-store` (Keystore de Android), fuera del respaldo automático de
+  Android. Son el token, la identidad, `expiresAt` y la vigencia. No se guardan datos de salud ni la pantalla.
+- **Un token guardado no es una sesión autorizada.** Al abrir la app se verifica con la API (API-ACC-05, `/me`) antes de
+  mostrar nada protegido.
+  - Si la API dice que venció o que no sirve, se borra y se va a Iniciar sesión con su aviso.
+  - Sin red, con 429 o con 5xx, no se borra: la app dice que no pudo verificarla y deja reintentar.
+- **Se borra** al cerrar la sesión, al cerrar todas las sesiones, al vencer y ante cualquier código de sesión.
+- **Qué no cambia.**
+  - La duración: 12 h desde el inicio, con `renewable: false`.
+  - La verificación de la fila de sesión en cada request, y la revocación.
+  - El website, que sigue con la opción A: la sesión vive en memoria.
+- **Relación con el legajo.** La decisión se aparta de 07:537 («reiniciar el APK obliga a volver a iniciar sesión») y
+  de 07:789 («JWT en memoria en el MVP»). Esos textos están protegidos por el manifiesto y no se modifican: la decisión
+  rige desde este registro hasta la próxima versión del legajo.
+- **Implementación y pruebas.**
+  - El código está en `apps/mobile/src/sesion-persistente.ts` y `almacen-seguro.ts`, en la rama
+    `apk/sesion-y-navegacion` (#136), sin integrar.
+  - `scripts/sesion-persistente.test.mjs` cubre los ocho casos de la tanda con un almacén falso.
+  - **Un mock no prueba que Android conserve el valor al cerrar el proceso**: se comprueba en el teléfono con la APK
+    0.13.2.
+- **Riesgo aceptado.** Con el teléfono desbloqueado, quien tome la app entra hasta que la sesión venza o se la revoque.
+  «Cerrar todas las sesiones», desde otro dispositivo, corta en el pedido siguiente.
 
 ## DL-013 — No hay política de contraseñas en el legajo
 

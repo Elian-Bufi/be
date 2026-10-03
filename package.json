@@ -30,7 +30,7 @@
     "build:api": "npm run build:domain && npm run build -w @be/api",
     "build:web": "npm run build:domain && npm run build -w @be/web",
     "typecheck": "npm run build:domain && npm run typecheck --workspaces --if-present",
-    "test": "npm run build:domain && npm run test -w @be/domain && node --test scripts/copy-pantallas.test.cjs scripts/contraste.test.cjs scripts/figura-de-lamina.test.cjs scripts/composicion-de-la-figura.test.mjs scripts/grafico-de-evolucion.test.mjs scripts/historial-navegacion.test.mjs scripts/ciclo-de-lectura.test.mjs scripts/contexto-citable.test.mjs scripts/auditoria-de-dependencias.test.cjs scripts/trazabilidad-de-operaciones.test.cjs && npm run test -w @be/api",
+    "test": "npm run build:domain && npm run test -w @be/domain && node --test scripts/copy-pantallas.test.cjs scripts/contraste.test.cjs scripts/figura-de-lamina.test.cjs scripts/composicion-de-la-figura.test.mjs scripts/grafico-de-evolucion.test.mjs scripts/historial-navegacion.test.mjs scripts/ciclo-de-lectura.test.mjs scripts/sesion-persistente.test.mjs scripts/contexto-citable.test.mjs scripts/auditoria-de-dependencias.test.cjs scripts/trazabilidad-de-operaciones.test.cjs && npm run test -w @be/api",
     "test:integration": "npm run build:domain && npm run test:integration -w @be/api",
     "legajo:verificar": "bash scripts/verificar-legajo.sh",
     "audit:prod": "node scripts/auditoria-de-dependencias.cjs",
