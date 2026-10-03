@@ -134,6 +134,10 @@ export const COPY_ANTROPOMETRIA = {
   // ─── Evolución ────────────────────────────────────────────────────────────────────────────────
   evolucion: 'Evolución',
   miEvolucion: 'Mi evolución',
+  // DL-115 · con el A3 revocado o nunca otorgado, la evolución propia no se lee (08:406). No es «sin datos»: los datos
+  // siguen guardados y vuelven a verse con un A3 nuevo.
+  irAPrivacidad: 'Ir a Privacidad y consentimientos',
+  evolucionNecesitaA3: 'Para ver tu evolución necesitás tener activo el consentimiento de datos de salud. Tus mediciones no se borraron: vuelven a verse cuando lo actives de nuevo.',
   periodo: 'Período',
   sinDato: 'Sin dato',
   explicacionDeSinDato: 'Los días sin medición aparecen como «Sin dato». No se completan con cero ni se unen con una línea.',

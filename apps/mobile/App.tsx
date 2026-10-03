@@ -198,7 +198,7 @@ function Contenido() {
             {ruta.nombre === 'plan-actual' ? <PantallaDePlanActual token={sesion.token} salir={salir} /> : null}
             {ruta.nombre === 'registros-nutricionales' ? <PantallaDeRegistros token={sesion.token} salir={salir} ir={ir} /> : null}
             {ruta.nombre === 'registro-nutricional' ? <PantallaDeRegistroNutricional key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
-            {ruta.nombre === 'mi-evolucion' ? <PantallaDeMiEvolucion token={sesion.token} salir={salir} /> : null}
+            {ruta.nombre === 'mi-evolucion' ? <PantallaDeMiEvolucion token={sesion.token} salir={salir} ir={ir} /> : null}
             {ruta.nombre === 'entrenamiento' ? <PantallaDeEntrenamiento token={sesion.token} salir={salir} ir={ir} /> : null}
             {ruta.nombre === 'sesion-de-entrenamiento' ? (
               <PantallaDeSesion key={ruta.draftId} token={sesion.token} draftId={ruta.draftId} sesion={ruta.sesion} fechaDeLaSesion={ruta.fecha} salir={salir} ir={ir} subir={subir} />
@@ -207,7 +207,7 @@ function Contenido() {
             {ruta.nombre === 'historial-de-entrenamiento' ? <PantallaDeHistorial token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
             {ruta.nombre === 'plan-de-entrenamiento' ? <PantallaDePlanDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
             {ruta.nombre === 'mis-solicitudes' ? <PantallaDeFormularios token={sesion.token} salir={salir} ir={ir} /> : null}
-            {ruta.nombre === 'mi-solicitud' ? <PantallaDeMiSolicitud key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} volver={volver} /> : null}
+            {ruta.nombre === 'mi-solicitud' ? <PantallaDeMiSolicitud key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} volver={volver} ir={ir} /> : null}
             {ruta.nombre === 'privacidad' ? <PantallaDePrivacidad token={sesion.token} salir={salir} ir={ir} volver={volver} /> : null}
           </>
         ) : null}

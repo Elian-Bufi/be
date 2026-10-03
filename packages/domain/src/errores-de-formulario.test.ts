@@ -186,6 +186,16 @@ test('recuperación · corregir sobre una versión vieja (409 VERSION_CONFLICT):
   assert.equal(desenlaceDeEnvio(r, CAMPOS, { esCorreccion: false }), null);
 });
 
+test('DL-115 · responder o corregir sin A3 (403 ACTION_FORBIDDEN): no es una falla del servicio; dice qué falta y ofrece Privacidad y volver', async () => {
+  const responder = await clienteQueResponde(403, cuerpoDeError('ACTION_FORBIDDEN')).responderSolicitudDeFormulario('token', 'solicitud', { answers: [] }, 'clave-de-prueba-20');
+  const corregir = await clienteQueResponde(403, cuerpoDeError('ACTION_FORBIDDEN')).rectificarRespuestaDeFormulario('token', 'respuesta', { expectedVersion: 'v1', reason: 'x', answers: [] }, 'clave-de-prueba-21');
+  for (const [r, esCorreccion] of [[responder, false], [corregir, true]] as const) {
+    assert.deepEqual(desenlaceDeEnvio(r, CAMPOS, { esCorreccion }), { tipo: 'sin-a3', mensaje: COPY_FORMULARIOS.necesitaA3ParaEnviar, acciones: ['privacidad', 'volver'] });
+  }
+  assert.deepEqual(terminosProhibidosDeFormulariosEn(COPY_FORMULARIOS.necesitaA3ParaEnviar), []);
+  assert.deepEqual(terminosProhibidosDeFormulariosEn(COPY_FORMULARIOS.necesitaA3), []);
+});
+
 test('recuperación · editar después de un resultado incierto: 409 IDEMPOTENCY_KEY_REUSED quiere decir que el primer envío se guardó', async () => {
   for (const esCorreccion of [false, true]) {
     const cliente = clienteQueResponde(409, cuerpoDeError('IDEMPOTENCY_KEY_REUSED'));

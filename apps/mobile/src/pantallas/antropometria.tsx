@@ -48,8 +48,8 @@ import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
 import { dia, fecha, fechaCivil } from '../formato';
-import { useSesionPerdida, type Salida } from '../navegacion';
-import { Aviso, Ayuda, Desplegable, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
+import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
+import { Aviso, Ayuda, Boton, Desplegable, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 import { estaEnLaFigura, FiguraDeLaToma } from './figura-de-la-toma';
 
 type Datos = EvolucionResponse['data'];
@@ -64,9 +64,9 @@ function periodoAnterior(inicio: string): { periodStart: string; periodEnd: stri
   desde.setUTCDate(desde.getUTCDate() - 89);
   return { periodStart: desde.toISOString().slice(0, 10), periodEnd: fin.toISOString().slice(0, 10) };
 }
-type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: Datos } | { tipo: 'error'; sinConexion: boolean };
+type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: Datos } | { tipo: 'error'; sinConexion: boolean } | { tipo: 'sinA3' };
 
-export function PantallaDeMiEvolucion({ token, salir }: { token: string; salir: (m: Salida) => void }) {
+export function PantallaDeMiEvolucion({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
   const [carga, setCarga] = useState<Carga>({ tipo: 'cargando' });
 
@@ -74,6 +74,9 @@ export function PantallaDeMiEvolucion({ token, salir }: { token: string; salir: 
     setCarga({ tipo: 'cargando' });
     const r = await api.miEvolucionAntropometrica(token);
     if (sesionPerdida(r)) return;
+    // DL-115 · con el A3 revocado o nunca otorgado, lo propio no se lee (08:406). No es un error ni «sin mediciones»:
+    // los datos siguen guardados. Cada vez que se entra a esta pantalla se vuelve a leer, así que no queda nada viejo.
+    if (!r.ok && r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN') return setCarga({ tipo: 'sinA3' });
     if (!r.ok) return setCarga({ tipo: 'error', sinConexion: r.tipo === 'RED' });
     // La API mira de a 92 días como mucho. Si los últimos 90 no tienen ninguna medición, se mira hacia atrás, de a
     // 90 días y hasta un año: quien se mide cada tres o cuatro meses tiene que ver su última toma. La pantalla dice
@@ -97,6 +100,11 @@ export function PantallaDeMiEvolucion({ token, salir }: { token: string; salir: 
       <Titulo>{COPY_ANTROPOMETRIA.miEvolucion}</Titulo>
       {carga.tipo === 'cargando' ? <Cargando /> : null}
       {carga.tipo === 'error' ? <ErrorConReintento sinConexion={carga.sinConexion} onReintentar={cargar} /> : null}
+      {carga.tipo === 'sinA3' ? (
+        <Aviso tipo="info" titulo={COPY_ANTROPOMETRIA.evolucionNecesitaA3}>
+          <Boton texto={COPY_ANTROPOMETRIA.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
+        </Aviso>
+      ) : null}
       {carga.tipo === 'listo' ? <Evolucion datos={carga.datos} /> : null}
     </View>
   );
