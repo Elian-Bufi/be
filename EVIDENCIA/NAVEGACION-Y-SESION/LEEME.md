@@ -143,6 +143,13 @@ La verificación y el refresco se ven como una línea fina que corre sobre el bo
 se pidió reducir el movimiento. Cada zona vuelve a la altura en que se la dejó, y Nutrición recuerda el día del plan
 elegido.
 
+**La altura de cada zona, con la verificación (revisión del 2026-10-03).** Desde que la zona verifica antes de mostrar,
+su contenido aparece cuando la API confirma. La restauración de la altura tenía un plazo fijo de 1,5 s: con la red del
+teléfono, la confirmación puede tardar más y la zona habría quedado arriba. Ahora la altura espera al contenido, con dos
+límites. Si la persona arrastra la pantalla mientras tanto, manda ella. Pasados 10 s ya no se salta, para que un
+«Reintentar» tardío no mueva lo que se está mirando. Está en `apps/mobile/src/altura-de-las-zonas.ts` y se prueba en
+`scripts/historial-navegacion.test.mjs`, sección 7. En el teléfono no se probó.
+
 ## Pendiente
 
 - Probar en el teléfono, con una APK nueva:
