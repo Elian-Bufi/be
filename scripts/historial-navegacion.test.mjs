@@ -16,6 +16,10 @@
  *     achica la ventana (validación de la APK 0.11.2: el teclado tapaba el campo «Reps» de «Corregir registro»).
  *  5. Barra inferior (Dirección, 2026-10-01): las cinco zonas, la zona madre de cada subpantalla, «atrás» hacia
  *     Nutrición desde las zonas principales, y la barra fija abajo, accesible y fuera del camino del teclado.
+ *  6. Sesión (prueba de la 0.13.1: la APK volvía a la bienvenida). Si Android recrea la actividad, por ejemplo al
+ *     cambiar el tamaño de letra, la raíz encuentra la sesión y la pantalla que seguían en el proceso. Una sesión que
+ *     venció mientras tanto se informa como vencida, y una sesión olvidada no vuelve. Nada va a disco: lo fija
+ *     `sesion-en-memoria.ts`, que no importa ningún almacenamiento.
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -258,4 +262,52 @@ test('cada destino de la barra es una pestaña accesible de 48 dp o más, respet
   for (const nombre of ['hoy', 'entrenamiento', 'historial-de-entrenamiento', 'mi-evolucion', 'mis-solicitudes']) {
     assert.doesNotMatch(CUENTA, new RegExp(`ir\\(\\{ nombre: '${nombre}' \\}\\)`), `Cuenta todavía abre «${nombre}»`);
   }
+});
+
+// ─── 6. Sesión: sobrevive a que Android recree la actividad, nunca a que se la olvide ──────────────────────────────
+const memoria = await import('../apps/mobile/src/sesion-en-memoria.ts');
+
+const DOCE_HORAS = 12 * 3_600_000;
+const INICIO = { token: 'token-sintetico', identidadId: 'identidad-sintetica', expiresAt: '2026-10-04T00:00:00.000Z', fechaDelServidor: 'Sat, 03 Oct 2026 12:00:00 GMT' };
+
+test('6 · la vigencia sale de la API y del reloj del servidor: un reloj del teléfono corrido no la cambia', () => {
+  // El teléfono atrasa una hora y la cuenta sigue siendo la del servidor: doce horas desde el inicio de sesión.
+  const sesion = memoria.crearSesion(INICIO, 1_000, Date.parse('2026-10-03T11:00:00Z'));
+  assert.equal(sesion.vigenciaMs, DOCE_HORAS);
+  assert.equal(memoria.restanteMs(sesion, 1_000, Date.parse('2026-10-03T11:00:00Z')), DOCE_HORAS);
+  // El tiempo que pasa se mide con el reloj monótono; el de pared puede saltar sin efecto.
+  assert.equal(memoria.restanteMs(sesion, 1_000 + DOCE_HORAS - 1, Date.parse('2030-01-01T00:00:00Z')), 1);
+  assert.equal(memoria.restanteMs(sesion, 1_000 + DOCE_HORAS, 0), 0);
+});
+
+test('6 · sin la cabecera Date, o con una vigencia increíble, se compara con el reloj del teléfono y el aviso no dice la duración', () => {
+  const sinFecha = memoria.crearSesion({ ...INICIO, fechaDelServidor: null }, 0, Date.parse('2026-10-03T12:00:00Z'));
+  assert.equal(sinFecha.vigenciaMs, null);
+  assert.equal(memoria.restanteMs(sinFecha, 999_999_999, Date.parse('2026-10-03T23:00:00Z')), 3_600_000);
+  assert.equal(memoria.avisoDeVencimiento(sinFecha), 'Tu sesión venció. Iniciá sesión para continuar.');
+  const increible = memoria.crearSesion({ ...INICIO, fechaDelServidor: 'Thu, 01 Jan 2026 00:00:00 GMT' }, 0, 0);
+  assert.equal(increible.vigenciaMs, null);
+});
+
+test('6 · el aviso de vencimiento dice cuánto duraba esa sesión, según la API', () => {
+  assert.equal(memoria.avisoDeVencimiento({ vigenciaMs: DOCE_HORAS }), 'Tu sesión venció: duraba 12 horas. Iniciá sesión para continuar.');
+  assert.equal(memoria.avisoDeVencimiento({ vigenciaMs: 3_600_000 }), 'Tu sesión venció: duraba 1 hora. Iniciá sesión para continuar.');
+  assert.equal(memoria.avisoDeVencimiento(null), 'Tu sesión venció. Iniciá sesión para continuar.');
+});
+
+test('6 · la raíz encuentra la sesión y la pantalla que seguían en el proceso; vencida, lo dice con su sesión; olvidada, no vuelve', () => {
+  assert.deepEqual(memoria.sesionAlMontar(0, 0), { estado: 'ninguna' }, 'proceso nuevo: no hay sesión ni motivo');
+  const sesion = memoria.crearSesion(INICIO, 1_000, Date.parse('2026-10-03T12:00:00Z'));
+  memoria.recordarSesion(sesion, { nombre: 'mi-evolucion' });
+  assert.deepEqual(memoria.sesionAlMontar(1_000 + 60_000, 0), { estado: 'vigente', sesion, ruta: { nombre: 'mi-evolucion' } });
+  assert.deepEqual(memoria.sesionAlMontar(1_000 + DOCE_HORAS, 0), { estado: 'vencida', sesion });
+  memoria.olvidarSesion();
+  assert.deepEqual(memoria.sesionAlMontar(1_000, 0), { estado: 'ninguna' });
+});
+
+test('6 · la sesión en memoria no toca ningún almacenamiento del teléfono', () => {
+  const fuente = readFileSync(resolve(RAIZ, 'apps/mobile/src/sesion-en-memoria.ts'), 'utf8');
+  const importaciones = fuente.split('\n').filter((l) => /^import /.test(l));
+  assert.deepEqual(importaciones, ["import type { Ruta } from './navegacion';"]);
+  assert.doesNotMatch(fuente, /AsyncStorage|SecureStore|localStorage/);
 });

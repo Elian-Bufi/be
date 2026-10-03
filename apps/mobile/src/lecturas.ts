@@ -1,24 +1,28 @@
 /**
- * Lecturas recordadas durante la sesión (navegación, 2026-10-03). Las reglas están en @be/domain
- * (`lecturas-de-la-sesion.ts`) y tienen sus pruebas allá.
+ * Lecturas protegidas de la APK durante la sesión (navegación del 2026-10-03; revisadas en la etapa A de la tanda
+ * siguiente). Las reglas de la memoria están en @be/domain (`lecturas-de-la-sesion.ts`), y las del ciclo de cada
+ * pantalla en `ciclo-de-lectura.ts`. Las dos tienen sus pruebas.
  *
- * Al volver a una zona, la pantalla muestra al instante lo último que leyó en esta sesión y lo vuelve a pedir en
- * silencio, con «Actualizando…» discreto. La respuesta nueva manda:
- * - si sale bien, reemplaza a la recordada;
- * - si la API niega el acceso o rechaza el pedido, lo recordado se borra y la pantalla muestra lo que corresponde, como
- *   antes;
- * - si la falla es pasajera (sin red, 429, 5xx), queda lo recordado con un aviso y «Reintentar»;
- * - si la sesión ya no sirve, se vuelve a Iniciar sesión y se olvida todo.
- * Se pide una vez por visita, como antes: no se precarga nada ni se multiplica la carga sobre la API.
+ * Lo que ve la persona:
+ * - Al entrar a una zona, la pantalla dibuja su estructura sin valores y corre la línea del encabezado hasta que la API
+ *   confirma el acceso. Recién entonces aparecen los datos. Si la respuesta dice lo mismo que la última vez, se reusa lo
+ *   ya calculado y se dibuja enseguida.
+ * - Con la pantalla abierta, lo confirmado queda a la vista mientras se vuelve a confirmar: al volver del segundo plano
+ *   (siempre, sin plazo) y después de una escritura de la misma pantalla.
+ * - Si la API niega el acceso, lo confirmado se retira y la pantalla muestra su aviso. Con una falla pasajera (sin red,
+ *   429, 5xx) queda lo confirmado con «No pudimos actualizar», o, si no había nada confirmado, «Reintentar».
+ * - Si la sesión ya no sirve, se vuelve a Iniciar sesión y se olvida todo.
+ * Se pide una vez por entrada: no se precarga nada ni se multiplica la carga sobre la API.
  */
-import { crearMemoriaDeLecturas, clasificarFalla, type Resultado } from '@be/domain';
+import { crearMemoriaDeLecturas, type Resultado } from '@be/domain';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
+import { crearCicloDeLectura, type CicloDeLectura, type EstadoDeLectura } from './ciclo-de-lectura';
 
 /** Una sola memoria para toda la app, en el proceso. Nunca va a disco. */
 export const memoria = crearMemoriaDeLecturas();
 
-// Cuántas pantallas están volviendo a pedir lo que ya muestran: la línea del encabezado corre mientras haya alguna.
+// Cuántas pantallas están confirmando lo que muestran: la línea del encabezado corre mientras haya alguna.
 let enCurso = 0;
 const oyentes = new Set<() => void>();
 function contar(diferencia: 1 | -1): void {
@@ -33,115 +37,82 @@ const suscribir = (oyente: () => void) => {
 };
 const hayActualizaciones = () => enCurso > 0;
 
-/** Para el encabezado: `true` mientras alguna pantalla actualiza en silencio lo que muestra. */
+/** Para el encabezado: `true` mientras alguna pantalla confirma o actualiza lo que muestra. */
 export function useHayActualizaciones(): boolean {
   return useSyncExternalStore(suscribir, hayActualizaciones);
 }
 
 export interface LecturaRecordada<T> {
-  /** Lo que la pantalla dibuja: `null` solo mientras carga sin nada que mostrar. */
+  /** Lo que la pantalla dibuja. `null` mientras se verifica la entrada: estructura sin valores. */
   readonly r: Resultado<T> | null;
-  /** Hay datos a la vista y se están pidiendo de nuevo. */
+  /** Hay datos confirmados a la vista y se están confirmando de nuevo. */
   readonly actualizando: boolean;
-  /** El último pedido falló de forma pasajera y quedó a la vista lo leído antes en esta sesión. */
+  /** La última confirmación falló de forma pasajera y quedó a la vista lo confirmado antes en esta entrada. */
   readonly sinActualizar: boolean;
   readonly cargar: () => Promise<void>;
 }
 
-/** Al volver del segundo plano se vuelve a pedir lo que está a la vista, si se leyó hace más que esto. */
-const VOLVER_A_PEDIR_AL_VOLVER_MS = 30_000;
+/** Sin nada confirmado y sin una respuesta que valga: se presenta como un error común, con «Reintentar». */
+const SIN_CONFIRMAR: Resultado<never> = { ok: false, tipo: 'API', status: 0, codigo: 'NO_CONFIRMADO', issues: [] };
 
-/**
- * Si la respuesta nueva dice lo mismo que la que se ve, queda la que se ve: con el mismo objeto, la pantalla no vuelve a
- * calcular ni a dibujar nada (la comparación cuesta mucho menos que redibujar la figura de «Mi evolución»).
- */
-function conservarSiEsIgual<T>(nuevo: Resultado<T> & { ok: true }, aLaVista: Resultado<T> | null): Resultado<T> & { ok: true } {
-  return aLaVista?.ok && JSON.stringify(aLaVista.datos) === JSON.stringify(nuevo.datos) ? aLaVista : nuevo;
-}
-
-interface Estado<T> {
-  readonly clave: string;
-  readonly r: Resultado<T> | null;
-  readonly actualizando: boolean;
-  readonly sinActualizar: boolean;
+function comoResultado<T>(estado: EstadoDeLectura<T>): Resultado<T> | null {
+  switch (estado.tipo) {
+    case 'verificando':
+      return null;
+    case 'listo':
+      return { ok: true, datos: estado.datos };
+    case 'rechazado':
+      return estado.falla;
+    case 'sin-confirmar':
+      return estado.falla ?? SIN_CONFIRMAR;
+  }
 }
 
 /**
- * Reemplaza el `useState` + `cargar` de una pantalla que lee al entrar. `pedir` tiene que ser estable (`useCallback`) y
- * devolver el resultado de la API tal cual: esta función decide qué se guarda y qué se muestra.
+ * Reemplaza el `useState` + `cargar` de una pantalla que lee al entrar. `pedir` y `sesionPerdida` tienen que ser
+ * estables (`useCallback`). La clave tiene que nombrar todo lo que cambia la respuesta: la zona, el día, el período, la
+ * elección.
  */
 export function useLecturaRecordada<T>(token: string, clave: string, pedir: () => Promise<Resultado<T>>, sesionPerdida: (r: Resultado<unknown>) => boolean): LecturaRecordada<T> {
-  const [estado, setEstado] = useState<Estado<T>>(() => {
-    const recordada = memoria.leer<T>(token, clave);
-    return { clave, r: recordada === undefined ? null : { ok: true, datos: recordada }, actualizando: false, sinActualizar: false };
-  });
-  const aLaVista = useRef(estado);
-  aLaVista.current = estado;
-  const ultimoPedido = useRef(0);
-  const montada = useRef(true);
-  const leidaEn = useRef(0);
-  const contando = useRef(false);
-  const marcarActualizando = useCallback((si: boolean) => {
-    if (contando.current === si) return;
-    contando.current = si;
-    contar(si ? 1 : -1);
-  }, []);
+  const [estado, setEstado] = useState<EstadoDeLectura<T>>({ tipo: 'verificando' });
+  const ciclo = useRef<CicloDeLectura<T> | null>(null);
 
   useEffect(() => {
-    montada.current = true;
+    const c = crearCicloDeLectura<T>({ memoria, token, clave, pedir, sesionPerdida, alCambiar: setEstado });
+    ciclo.current = c;
+    setEstado({ tipo: 'verificando' });
+    void c.cargar();
     return () => {
-      montada.current = false;
-      marcarActualizando(false);
+      c.terminar();
+      if (ciclo.current === c) ciclo.current = null;
     };
-  }, [marcarActualizando]);
+  }, [token, clave, pedir, sesionPerdida]);
 
-  const cargar = useCallback(async () => {
-    const pedido = ++ultimoPedido.current;
-    const antes = aLaVista.current;
-    const recordada = memoria.leer<T>(token, clave);
-    // Mientras se pide, queda lo que ya se ve de esta misma lectura o lo recordado; si no hay nada, «Cargando…».
-    const mientras: Resultado<T> | null = antes.clave === clave && antes.r?.ok ? antes.r : recordada === undefined ? null : { ok: true, datos: recordada };
-    setEstado({ clave, r: mientras, actualizando: mientras !== null, sinActualizar: false });
-    marcarActualizando(mientras !== null);
-
-    for (let intento = 1; intento <= 3; intento++) {
-      const marca = memoria.marca(token);
-      const res = await pedir();
-      // Una respuesta de otra visita o de un pedido viejo de esta pantalla no toca nada.
-      if (!montada.current || pedido !== ultimoPedido.current) return;
-      if (sesionPerdida(res)) return marcarActualizando(false);
-      // Se pidió antes de que algo se olvidara (una escritura, por ejemplo): no se guarda ni se muestra, se pide de nuevo.
-      if (marca !== memoria.marca(token) && intento < 3) continue;
-      leidaEn.current = Date.now();
-      marcarActualizando(false);
-      if (res.ok) {
-        const vigente = conservarSiEsIgual(res, mientras);
-        memoria.guardar(token, marca, clave, vigente.datos);
-        setEstado({ clave, r: vigente, actualizando: false, sinActualizar: false });
-      } else if (mientras && clasificarFalla(res) === 'pasajera') {
-        setEstado({ clave, r: mientras, actualizando: false, sinActualizar: true });
-      } else {
-        memoria.olvidar(clave);
-        setEstado({ clave, r: res, actualizando: false, sinActualizar: false });
-      }
-      return;
-    }
-  }, [token, clave, pedir, sesionPerdida, marcarActualizando]);
-
+  // La línea del encabezado corre mientras la pantalla confirma, al entrar o al actualizar.
+  const ocupada = estado.tipo === 'verificando' || (estado.tipo === 'listo' && estado.actualizando);
   useEffect(() => {
-    void cargar();
-  }, [cargar]);
+    if (!ocupada) return;
+    contar(1);
+    return () => contar(-1);
+  }, [ocupada]);
 
-  // Al volver del segundo plano: lo que está a la vista pudo cambiar, o el acceso pudo revocarse desde otro dispositivo.
+  // Al volver del segundo plano se confirma de nuevo, siempre: la API pudo revocar el acceso mientras tanto.
   useEffect(() => {
+    let anterior = AppState.currentState;
     const suscripcion = AppState.addEventListener('change', (momento) => {
-      if (momento === 'active' && Date.now() - leidaEn.current >= VOLVER_A_PEDIR_AL_VOLVER_MS) void cargar();
+      if (momento === 'active' && anterior !== 'active') void ciclo.current?.cargar();
+      anterior = momento;
     });
     return () => suscripcion.remove();
-  }, [cargar]);
+  }, []);
 
-  const deEstaClave = estado.clave === clave;
-  return { r: deEstaClave ? estado.r : null, actualizando: deEstaClave && estado.actualizando, sinActualizar: deEstaClave && estado.sinActualizar, cargar };
+  const cargar = useCallback(() => ciclo.current?.cargar() ?? Promise.resolve(), []);
+  return {
+    r: comoResultado(estado),
+    actualizando: estado.tipo === 'listo' && estado.actualizando,
+    sinActualizar: estado.tipo === 'listo' && estado.sinActualizar,
+    cargar,
+  };
 }
 
 /** Una elección de la pantalla que se recuerda al volver, mientras dure la sesión: qué día del plan, qué familia. */

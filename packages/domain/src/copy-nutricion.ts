@@ -103,6 +103,7 @@ export const COPY_NUTRICION = {
   registrosDeHoy: 'Registros de hoy',
   sinPlanAsesorado: 'Actualmente no tenés un plan activo de Nutrición.',
   planNoDisponible: 'Tu plan de Nutrición no está disponible en este momento. Revisá el estado del vínculo y de tus autorizaciones en Cuenta.',
+  hoyNecesitaA3: 'Para ver tu plan y lo que registraste hoy necesitás tener activo el consentimiento de datos de salud. Tus registros no se borraron: vuelven a verse cuando lo actives de nuevo.',
   elegiDiaTipo: 'Elegí qué día del plan corresponde hoy',
   registrarComida: 'Registrar comida',
   comidaRegistrada: 'Comida registrada',

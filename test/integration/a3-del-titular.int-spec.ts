@@ -14,6 +14,7 @@ import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { circuitoAntropometrico, type CircuitoAntropometrico } from './soporte-antropometria';
 import { circuitoDeEntrenamiento, type CircuitoDeEntrenamiento } from './soporte-entrenamiento';
+import { circuitoConPlanActivo, registrarComida } from './soporte-nutricion';
 import { a3Vigente, otorgarA3, prepararAsesorado, type Parte } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -161,5 +162,31 @@ describe('DL-115 · formularios: lo propio exige el A3 vigente; la lista sigue',
     expect(despues.body.data.response).toEqual(antes.body.data.response);
     await ase.post(`/api/v1/me/form-responses/${formResponseId}/rectifications`, claveDeIdempotencia()).send({ expectedVersion: 'v1', reason: 'Un día más.', ...respuestas(4) }).expect(201);
     await ase.post(`/api/v1/me/form-requests/${pendiente}/responses`, claveDeIdempotencia()).send(respuestas(4)).expect(201);
+  });
+});
+
+// ─── Nutrición: «Tu plan de hoy» (hallazgo del 2026-10-03) ──────────────────────────────────────
+
+describe('DL-115 · «Tu plan de hoy» (API-NUT-14) no trae lo propio sin A3', () => {
+  it('con una comida registrada hoy y el A3 revocado: 403, sin datos; con un A3 nuevo vuelve la misma comida', async () => {
+    const c = await circuitoConPlanActivo(app, `a3-nut-${++contador}`);
+    const registro = await registrarComida(app, c.ase, c.planId, c.dia).expect(201);
+    const antes = await conSesion(app, c.ase.token).get('/api/v1/me/nutrition/today').expect(200);
+    expect(antes.body.data.registeredIntake.map((i: { executionId: string }) => i.executionId)).toContain(registro.body.data.executionId);
+
+    await revocarA3(c.ase);
+    const sinA3 = await conSesion(app, c.ase.token).get('/api/v1/me/nutrition/today').expect(403);
+    expect(sinA3.body.error.code).toBe('ACTION_FORBIDDEN');
+    expect(sinA3.body.data).toBeUndefined();
+
+    await otorgarA3(app, c.ase.token).expect(201);
+    const despues = await conSesion(app, c.ase.token).get('/api/v1/me/nutrition/today').expect(200);
+    expect(despues.body.data.registeredIntake).toEqual(antes.body.data.registeredIntake);
+  });
+
+  it('un asesorado que nunca otorgó el A3 recibe 403 en «Hoy», con o sin plan', async () => {
+    const ase = await prepararAsesorado(app, `a3-nut-nunca-${++contador}`, { a3: false });
+    const r = await conSesion(app, ase.token).get('/api/v1/me/nutrition/today').expect(403);
+    expect(r.body.error.code).toBe('ACTION_FORBIDDEN');
   });
 });

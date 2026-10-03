@@ -12,6 +12,7 @@ import {
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { DenegacionDelPdp, PdpService } from '../autorizacion/pdp.service';
+import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '../http/paginacion';
@@ -67,6 +68,11 @@ export class IngestasService {
       ctx,
       recursoIntentado: null,
       lectura: async (tx) => {
+        // DL-115 · sin A3 vigente, lo propio no se lee (08:406). «Hoy» trae las comidas registradas del día, que son datos
+        // de salud del titular: van detrás del A3, como la lista propia (API-NUT-16-LISTA). Antes se leían y se devolvían
+        // aunque el plan quedara «no disponible». La suspensión del acceso por el vínculo o el B2, con el A3 vigente,
+        // sigue siendo «no disponible» (UC-P12 E06).
+        await exigirA3Vigente(tx, actor.identidadId);
         const zona = ZONA_POR_DEFECTO;
         const fecha = fechaLocalEn(await momentoDeLaBase(tx), zona);
         const registrado = await this.ingestasDelDia(tx, actor.identidadId, fecha);

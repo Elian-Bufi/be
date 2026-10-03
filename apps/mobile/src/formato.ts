@@ -24,6 +24,9 @@ export const fechaCivil = (fechaLocal: string) => soloDiaCivil.format(new Date(`
 export const hoyEnZona = (zona: string, ahora: Date = new Date()): string =>
   new Intl.DateTimeFormat('en-CA', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(ahora);
 
+/** La zona con la que la API resuelve «hoy» (`ZONA_POR_DEFECTO` de la API). */
+export const ZONA_DE_LA_API = 'America/Argentina/Buenos_Aires';
+
 /** Los últimos `dias` días civiles hasta hoy inclusive, en la zona dada: `{ periodStart, periodEnd }` para la API. */
 export function ultimosDiasEnZona(dias: number, zona: string, ahora: Date = new Date()): { periodStart: string; periodEnd: string } {
   const periodEnd = hoyEnZona(zona, ahora);

@@ -12137,7 +12137,7 @@
       "get": {
         "operationId": "API-NUT-14",
         "summary": "«Hoy» del asesorado: la instantánea vigente y sus registros del día. Sin registros → NO_DATA, nunca 0 %. No elige un día tipo en silencio.",
-        "description": "Fuente: 09v9:658-680 · UC-P12 E06 · DEUDA_LEGAJO DL-049. AuthN: SESSION.",
+        "description": "Fuente: 09v9:658-680 · UC-P12 E06 · DEUDA_LEGAJO DL-049 · DL-115. AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -12942,6 +12942,16 @@
           },
           "401": {
             "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
