@@ -246,6 +246,8 @@ function FilaDeLaLamina({ fila, lamina, elegida, alternar }: { fila: FilaDeLaTar
   return (
     <Pressable
       onPress={() => alternar(sitio.clave)}
+      accessibilityRole="button"
+      accessibilityState={{ selected: elegida }}
       style={{ height: fila.alto, justifyContent: 'center', marginHorizontal: -6, paddingHorizontal: 5, borderRadius: 8, borderWidth: 1, borderColor: elegida ? lamina.valor : 'transparent' }}
     >
       <Text style={{ fontSize: LETRA.rotulo, lineHeight: INTERLINEA.rotulo, color: lamina.nombre, fontWeight: elegida ? '800' : '400' }} numberOfLines={fila.lineasDelRotulo}>
@@ -295,7 +297,9 @@ function ListaDeNumeros({
         <Pressable
           key={s.clave}
           onPress={() => alternar(s.clave)}
-          style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, minHeight: 44, paddingVertical: 6, paddingHorizontal: 4, borderTopWidth: s.numero === 1 ? 0 : 1, borderTopColor: lamina.borde, borderRadius: 8, borderWidth: s.clave === elegida ? 1 : 0, borderColor: lamina.valor }}
+          accessibilityRole="button"
+          accessibilityState={{ selected: s.clave === elegida }}
+          style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, minHeight: 48, paddingVertical: 6, paddingHorizontal: 4, borderTopWidth: s.numero === 1 ? 0 : 1, borderTopColor: lamina.borde, borderRadius: 8, borderWidth: s.clave === elegida ? 1 : 0, borderColor: lamina.valor }}
         >
           <View style={{ width: ficha, height: ficha, borderRadius: ficha / 2, borderWidth: 1, borderColor: lamina.borde, backgroundColor: lamina.tarjeta, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 12, fontWeight: '700', color: lamina.valor }} maxFontSizeMultiplier={1.6}>

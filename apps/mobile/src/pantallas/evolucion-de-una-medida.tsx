@@ -20,16 +20,17 @@ import {
   ETIQUETA_DE_CLASE_DE_DATO,
   ETIQUETA_DE_FAMILIA,
   FAMILIA_DE_METRICA,
+  filasDelPeriodo,
   grupoVigente,
   metricaVigente,
   nombreDelGrupo,
   nombreDeMetodo,
   nombreDeMetrica,
   numero,
-  observacionesDelGrupo,
   prepararSerie,
   type EvolucionResponse,
   type FamiliaDeMedicion,
+  type FilaDeEvolucion,
   type Observacion,
   type SerieApi,
 } from '@be/domain';
@@ -67,10 +68,9 @@ export function EvolucionDeUnaMedida({ datos, token }: { datos: Datos; token: st
   const [grupoPedido, setGrupoPedido] = useSeleccionRecordada<string | null>(token, `mi-evolucion:grupo:${metrica ?? ''}`, null);
   const periodo = recortarPeriodo(datos.period, Number(dias));
   const grupo = preparada ? grupoVigente(preparada, grupoPedido) : null;
-  const observaciones = useMemo(
-    () => (preparada && grupo ? observacionesDelGrupo(preparada, grupo).filter((o) => o.fecha >= periodo.start && o.fecha <= periodo.end) : []),
-    [preparada, grupo, periodo.start, periodo.end],
-  );
+  // El gráfico y su lista salen de las mismas filas: las fechas civiles de la zona de la serie y el grupo elegido.
+  const filas = useMemo(() => (preparada ? filasDelPeriodo(preparada, grupo, { start: periodo.start, end: periodo.end }) : []), [preparada, grupo, periodo.start, periodo.end]);
+  const observaciones = useMemo(() => filas.flatMap((f) => (f.tipo === 'observacion' ? [f.observacion] : [])), [filas]);
   const [elegida, setElegida] = useState<number | null>(null);
   // Si cambian la medida, los días o el grupo, queda elegida la última observación.
   const indice = elegida !== null && elegida < observaciones.length ? elegida : observaciones.length - 1;
@@ -128,7 +128,7 @@ export function EvolucionDeUnaMedida({ datos, token }: { datos: Datos; token: st
       )}
 
       <Desplegable titulo={COPY_ANTROPOMETRIA.laEvolucionEnLista} detalle={`${numero(observaciones.length)} con dato en estos días`}>
-        <ListaDeLaSerie serie={serieApi} desde={periodo.start} hasta={periodo.end} />
+        <ListaDeLaSerie filas={filas} />
       </Desplegable>
       <Ayuda>
         <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDelGrafico}</Parrafo>
@@ -300,19 +300,18 @@ function DetalleDeLaObservacion({ observacion, esLaUltima }: { observacion: Obse
   );
 }
 
-/** Los puntos y los días sin dato de la serie, dentro de los días elegidos: la misma información que el gráfico. */
-function ListaDeLaSerie({ serie, desde, hasta }: { serie: SerieApi; desde: string; hasta: string }) {
-  const tramos = [
-    ...serie.series.filter((p) => p.occurredAt.slice(0, 10) >= desde && p.occurredAt.slice(0, 10) <= hasta).map((punto) => ({ orden: punto.occurredAt.slice(0, 10), tipo: 'punto' as const, punto })),
-    ...serie.gaps.filter((h) => h.to >= desde && h.from <= hasta).map((hueco) => ({ orden: hueco.from, tipo: 'hueco' as const, hueco })),
-  ].sort((a, b) => a.orden.localeCompare(b.orden));
+/**
+ * Las mediciones del grupo elegido y los días sin dato, dentro de los días elegidos: lo mismo que el gráfico, con las
+ * fechas en la misma zona (`filasDelPeriodo`).
+ */
+function ListaDeLaSerie({ filas }: { filas: readonly FilaDeEvolucion[] }) {
   return (
     <View>
-      {tramos.map((t) =>
-        t.tipo === 'punto' ? (
-          <PuntoDeLaSerie key={t.punto.sourceId} punto={t.punto} metodo={nombreDeMetodo(serie.comparability.groups.find((g) => g.comparabilityGroup === t.punto.comparabilityGroup)?.methodVersionId ?? null)} />
+      {filas.map((f) =>
+        f.tipo === 'observacion' ? (
+          <PuntoDeLaSerie key={f.observacion.punto.sourceId} punto={f.observacion.punto} metodo={nombreDeMetodo(f.observacion.grupo?.methodVersionId ?? null)} />
         ) : (
-          <HuecoDeLaSerie key={`hueco-${t.hueco.from}`} hueco={t.hueco} />
+          <HuecoDeLaSerie key={`hueco-${f.hueco.from}`} hueco={f.hueco} />
         ),
       )}
     </View>

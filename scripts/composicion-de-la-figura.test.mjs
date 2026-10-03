@@ -5,11 +5,13 @@
  * - con la letra grande la figura pasa a números, que bajan en orden por la columna, y la lista los repite;
  * - cada fila mide lo que su texto necesita con la letra de la persona;
  * - las tarjetas no se superponen y las guías van de su tarjeta a su sitio.
+ * - las filas que eligen un sitio dicen al lector de pantalla su rol y si están elegidas (selección coordinada).
  * El mismo módulo dibuja la APK y la maqueta del navegador.
  *
  * Uso: node --test scripts/composicion-de-la-figura.test.mjs (después de construir @be/domain).
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { test } from 'node:test';
 
@@ -103,4 +105,14 @@ test('las tarjetas no se superponen y quedan dentro de la lámina; cada guía va
       }
     }
   }
+});
+
+test('las filas que eligen un sitio dicen su rol y si están elegidas; la lista de números mide 48 dp', () => {
+  // La selección coordinada (fila, aro y detalle) se ve en el dibujo; el lector de pantalla tiene que oír cuál está
+  // elegida (B10-10:36). Las filas de las tarjetas miden lo que fija la composición; la lista de números no depende de ella.
+  const fuente = readFileSync(new URL('../apps/mobile/src/pantallas/figura-de-la-toma.tsx', import.meta.url), 'utf8');
+  assert.match(fuente, /accessibilityState={{ selected: elegida }}/);
+  assert.match(fuente, /accessibilityState={{ selected: s.clave === elegida }}/);
+  assert.equal((fuente.match(/accessibilityRole="button"/g) ?? []).length, 2);
+  assert.match(fuente, /gap: 10, minHeight: 48,/);
 });
