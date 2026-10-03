@@ -217,6 +217,9 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
   const [tomasElegidas, setTomasElegidas] = useState<readonly string[] | null>(null);
   const [seriesElegidas, setSeriesElegidas] = useState<readonly string[] | null>(null);
   const [descarga, setDescarga] = useState<'quieta' | 'preparando' | 'hecha' | 'error'>('quieta');
+  // En el teléfono, la vista previa entra entera y su letra se ve chica. Ampliada, va a su tamaño propio (1080 px de
+  // ancho) dentro de un visor que se recorre con el dedo. El archivo descargado no cambia.
+  const [ampliada, setAmpliada] = useState(false);
   const svg = useRef<SVGSVGElement | null>(null);
 
   // Las tomas, de la más antigua a la más reciente: así se numeran T1…Tn y la más reciente es la última.
@@ -487,10 +490,20 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
 
       <div className="lamina__vista">
         {espera ?? (
-          <div className="lamina__lienzo">
-            <LaminaSvg tema={tema} descripcion={descripcion} refDelSvg={svg}>
-              {contenido}
-            </LaminaSvg>
+          <div className={ampliada ? 'lamina__visor' : undefined}>
+            <div className={ampliada ? 'lamina__lienzo lamina__lienzo--ampliado' : 'lamina__lienzo'}>
+              <LaminaSvg tema={tema} descripcion={descripcion} refDelSvg={svg}>
+                {contenido}
+              </LaminaSvg>
+            </div>
+          </div>
+        )}
+        {espera ? null : (
+          <div className="lamina__ampliar">
+            <button type="button" className="boton boton--secundario" aria-pressed={ampliada} onClick={() => setAmpliada((a) => !a)}>
+              {ampliada ? C.laminaVerEntera : C.laminaAmpliar}
+            </button>
+            {ampliada ? <p className="nota">{C.laminaAmpliadaAyuda}</p> : null}
           </div>
         )}
         <div className="acciones lamina__acciones">

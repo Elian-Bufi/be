@@ -1926,6 +1926,32 @@ details summary {
   height: 100%;
 }
 
+/* La vista previa ampliada: la lámina a su tamaño propio, dentro de un visor que se recorre con el dedo o la rueda. */
+.lamina__visor {
+  max-height: 80vh;
+  overflow: auto;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lamina__lienzo--ampliado {
+  width: 1080px;
+  max-width: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.lamina__ampliar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+}
+
 .lamina__notas .nota {
   margin: 0.35rem 0;
 }
