@@ -570,7 +570,7 @@ const DEFINIDAS: readonly Operacion[] = [
   },
   // ─── PF-07 · Cartera del profesional (propuesta del 2026-09-30, pendiente de decisión) ─────────
   {
-    id: 'API-DSH-04',
+    id: 'API-CAR-01',
     metodo: 'get',
     ruta: '/me/portfolio',
     resumen:
@@ -591,7 +591,7 @@ const DEFINIDAS: readonly Operacion[] = [
     ],
     exitos: [{ status: 200, schema: CarteraResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
-    fuente: 'docs/propuestas/PF-07_vista-de-cartera.md (propuesta) · REG-06-145/150 · B10-08 §8.4 · 10-B04:1171-1176',
+    fuente: 'docs/propuestas/PF-07_vista-de-cartera.md (propuesta) · REG-06-145/150 · B10-08 §8.4 · 10-B04:1171-1176 · DL-107 · ID propio de BE desde DL-116 (antes API-DSH-04, que en el 09 es la línea temporal)',
   },
   // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 (09v12) ─────────────────────────────────────
   {
@@ -1998,7 +1998,7 @@ const DEFINIDAS: readonly Operacion[] = [
  */
 const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-DSH-03',
-  'API-DSH-04',
+  'API-CAR-01',
   'API-ANT-03',
   'API-ANT-06',
   'API-ANT-06-PROPIA',

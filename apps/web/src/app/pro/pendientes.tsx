@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * «Pendientes» (API-DSH-04; PF-07, decidido el 2026-09-30, DL-107): a quién mirar hoy, con hechos fechados.
+ * «Pendientes» (API-CAR-01; PF-07, decidido el 2026-09-30, DL-107): a quién mirar hoy, con hechos fechados.
  * - Una fila por asesorado y dominio donde hay algo objetivo que hacer; «Abrir» lleva a la vista que lo resuelve.
  * - La última actividad registrada acompaña a la fila como dato: no hay filas por «sin registros» y nada se colorea
  *   por comportamiento de la persona (09v11 §15, regla crítica; B10-08 §10).

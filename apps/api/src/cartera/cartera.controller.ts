@@ -11,7 +11,7 @@ import { actorDe, SesionGuard, type SolicitudAutenticada } from '../sesion/sesio
 import { leerCartera, type ConsultaDeCartera } from './lectura-cartera';
 
 /**
- * API-DSH-04 — Cartera del profesional (PF-07, propuesta del 2026-09-30).
+ * API-CAR-01 — Cartera del profesional (PF-07, propuesta del 2026-09-30; antes API-DSH-04, DL-116).
  * - `SesionGuard` autentica. No hay un titular en la ruta: el PDP decide por cada asesorado con vínculo vigente, dentro
  *   de la lectura, y registra cada decisión como en API-DSH-03.
  * - Es una lectura protegida: comparte el límite por actor de las demás (429 RATE_LIMITED).

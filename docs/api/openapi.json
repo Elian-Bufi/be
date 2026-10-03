@@ -5899,9 +5899,9 @@
     },
     "/me/portfolio": {
       "get": {
-        "operationId": "API-DSH-04",
+        "operationId": "API-CAR-01",
         "summary": "Pendientes de toda la cartera del profesional: por cada asesorado con vínculo vigente y cada dominio que el PDP permite, los hechos fechados que piden una acción (revisión vencida, próxima o sin fecha; plan en borrador; sin plan activo; formulario sin responder; evaluación en preparación), con la última actividad registrada como dato. Sin puntajes ni juicios; un dominio no disponible no aparece y `partialView` lo avisa una sola vez. El período acota solo la actividad.",
-        "description": "Fuente: docs/propuestas/PF-07_vista-de-cartera.md (propuesta) · REG-06-145/150 · B10-08 §8.4 · 10-B04:1171-1176. AuthN: SESSION.",
+        "description": "Fuente: docs/propuestas/PF-07_vista-de-cartera.md (propuesta) · REG-06-145/150 · B10-08 §8.4 · 10-B04:1171-1176 · DL-107 · ID propio de BE desde DL-116 (antes API-DSH-04, que en el 09 es la línea temporal). AuthN: SESSION.",
         "security": [
           {
             "sesion": []

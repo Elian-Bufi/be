@@ -2237,6 +2237,9 @@ Se conservan las instantáneas históricas, la navegación corregida (DL-096) y 
 - **D-5 (DEC-09):** el período del historial de la APK queda aparte; acá el período acota solo la actividad.
 - **Ubicación:** «Pendientes» arriba de «Tus asesorados» en el espacio profesional, sin navegación nueva.
 
+> **Nota del 2026-10-03 (DL-116).** El ID de esta operación pasa a API-CAR-01: API-DSH-04 es, en el 09, la línea temporal.
+> Lo que sigue conserva el ID con el que se decidió.
+
 **Cómo se ejecuta.** API-DSH-04 `GET /me/portfolio` (rama `feat/cartera-profesional`): el PDP decide y registra por asesorado y alcance como en API-DSH-03; un alcance denegado no aparece y deja `partialView`. Sin tablas nuevas, sin APK.
 
 ## DL-108 — Todo plan empieza en blanco: no hay reutilización entre asesorados
@@ -2591,3 +2594,24 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 **Provisorio en código.** B, de hecho y sin declarar.
 
 **Recomendación: A**, porque un tribunal puede contar las operaciones del 09 por ID.
+
+**Solución preparada — 2026-10-03** (Dirección autorizó completar DL-116 en esta tanda). Está en la rama
+`trazabilidad/dl116-y-decisiones`, **sin integrar**: va con la candidata 0.13.2.
+- **Opción A.** «Pendientes» (`GET /me/portfolio`) pasa a **API-CAR-01**, una familia propia de BE como TPL, TPN, HAB y
+  HAN. Cambian:
+  - el contrato (`openapi.ts` y el OpenAPI generado), con el 429 de las lecturas protegidas;
+  - la operación que registra el PDP (`lectura-cartera.ts`);
+  - los comentarios y los títulos de las pruebas.
+- **Lo histórico no se reescribe.** Las decisiones de acceso registradas antes conservan «API-DSH-04», porque la columna es
+  texto libre y la historia es de solo agregar. La evidencia de CARTERA, el intake, DV-06 y DV-10 citan el ID viejo con su
+  fecha; CARTERA lleva una nota.
+- **Guardia nueva:** `scripts/trazabilidad-de-operaciones.test.cjs`, que corre en `npm test`. Lee el 09 en solo lectura y
+  exige tres cosas:
+  - que una operación con un ID del inventario P0 tenga el método y la ruta que el 09 le da;
+  - que un ID fuera del inventario sea una extensión declarada de BE, con su familia o su sufijo y su fuente;
+  - que ningún ID se repita.
+- **Verificación.** Contra el contrato de `main` la guardia falla, y nombra el choque: «API-DSH-04: el contrato dice GET
+  /me/portfolio; el 09, GET /advisees/{}/timeline». Con el cambio, pasa. Recorre las 126 operaciones: 100 coinciden con el 09,
+  25 son extensiones declaradas y API-CAR-01 es la nueva.
+- **El conteo de faltantes no cambia:** siguen faltando 22 de las 122 operaciones P0. La línea temporal (API-DSH-04 del 09)
+  sigue sin implementar (D-3 de DV-05).
