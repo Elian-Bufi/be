@@ -90,7 +90,8 @@ export function PantallaDeMiEvolucion({ token, salir, ir }: { token: string; sal
   const sesionPerdida = useSesionPerdida(salir);
   const pedir = useCallback(() => leerMiEvolucion(token), [token]);
   // Al volver a la zona se ve lo último leído en esta sesión mientras se vuelve a pedir (src/lecturas.ts).
-  const { r, cargar, sinActualizar } = useLecturaRecordada(token, 'mi-evolucion', pedir, sesionPerdida);
+  // La clave nombra el período que se pide: los últimos 90 días, o el anterior con mediciones (`leerMiEvolucion`).
+  const { r, cargar, sinActualizar } = useLecturaRecordada(token, 'mi-evolucion:ultimos-90', pedir, sesionPerdida);
   // DL-115 · con el A3 revocado o nunca otorgado, lo propio no se lee (08:406). No es un error ni «sin mediciones»: los
   // datos siguen guardados. Cada visita vuelve a preguntar a la API; si niega el acceso, lo recordado se borra.
   const sinA3 = r !== null && !r.ok && r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN';
@@ -99,7 +100,7 @@ export function PantallaDeMiEvolucion({ token, salir, ir }: { token: string; sal
     <View>
       <Titulo>{COPY_ANTROPOMETRIA.miEvolucion}</Titulo>
       <SinActualizar visible={sinActualizar} onReintentar={cargar} />
-      {r === null ? <Cargando /> : null}
+      {r === null ? <Cargando forma="figura" /> : null}
       {r && !r.ok && !sinA3 ? <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} /> : null}
       {sinA3 ? (
         <Aviso tipo="info" titulo={COPY_ANTROPOMETRIA.evolucionNecesitaA3}>

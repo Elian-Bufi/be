@@ -33,7 +33,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento, EstadoDeCarga, SinActualizar, VerMas } from '../estados';
-import { dia, fecha } from '../formato';
+import { dia, fecha, hoyEnZona, ZONA_DE_LA_API } from '../formato';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useListaPaginada } from '../lista';
@@ -55,7 +55,8 @@ function useHoy(token: string, salir: (m: Salida) => void) {
   const pedir = useCallback((): Promise<Resultado<HoyResponse>> => api.hoyNutricional(token, diaTipo), [token, diaTipo]);
   // Al volver a la zona se ve lo último leído en esta sesión mientras se vuelve a pedir; después de registrar una comida,
   // también: la pantalla no se vacía (src/lecturas.ts).
-  const { r, cargar, sinActualizar } = useLecturaRecordada(token, `hoy-nutricional:${diaTipo ?? ''}`, pedir, sesionPerdida);
+  // La clave nombra el día civil (en la zona con la que la API resuelve «hoy») y el día del plan elegido.
+  const { r, cargar, sinActualizar } = useLecturaRecordada(token, `hoy-nutricional:${hoyEnZona(ZONA_DE_LA_API)}:${diaTipo ?? ''}`, pedir, sesionPerdida);
   return { r, cargar, sinActualizar, setDiaTipo, sesionPerdida };
 }
 
@@ -82,7 +83,15 @@ export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; sali
       </View>
     );
   }
-  if (!r) return <Cargando />;
+  // Mientras la API confirma el acceso, la pantalla conserva su título y su estructura, sin valores.
+  if (!r) {
+    return (
+      <View>
+        <Titulo>{COPY_NUTRICION.tuPlanDeHoy}</Titulo>
+        <Cargando forma="lista" />
+      </View>
+    );
+  }
   // DL-115 · sin A3, «Hoy» no se lee: el aviso con el camino a Privacidad, no un error. Los registros siguen guardados.
   if (!r.ok && r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN') {
     return (

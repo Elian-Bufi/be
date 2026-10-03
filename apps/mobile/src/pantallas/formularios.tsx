@@ -92,7 +92,7 @@ export function PantallaDeFormularios({ token, salir, ir }: { token: string; sal
           <Boton texto={COPY_FORMULARIOS.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
         </Aviso>
       ) : null}
-      {carga.tipo === 'cargando' ? <Cargando /> : null}
+      {carga.tipo === 'cargando' ? <Cargando forma="lista" /> : null}
       {carga.tipo === 'error' ? <ErrorConReintento sinConexion={carga.sinConexion} onReintentar={cargar} /> : null}
       {carga.tipo === 'listo' && carga.datos.length === 0 ? <Parrafo>{COPY_FORMULARIOS.sinSolicitudesPropias}</Parrafo> : null}
       {carga.tipo === 'listo'

@@ -18,10 +18,10 @@ app. La API no rechazó la sesión. Cuando la API la rechaza, la APK va a Inicia
 |---|---|---|
 | Cerrar la app desde Recientes, o que Android cierre el proceso en segundo plano | Se pierde el token, que vive solo en memoria: bienvenida | Igual. Es la política de DL-012 (opción A), que decide Dirección |
 | Cambiar el tamaño de letra o de visualización, el idioma o la negrita | Android recrea la actividad y React vuelve a montar la raíz: bienvenida | Siguen la sesión y la pantalla |
-| Pasar a segundo plano y volver, con el proceso vivo | Sigue todo | Sigue todo. Si la sesión venció, lo dice. Si pasaron más de 30 s, la pantalla se actualiza en silencio |
+| Pasar a segundo plano y volver, con el proceso vivo | Sigue todo | Sigue todo. Si la sesión venció, lo dice. La pantalla abierta se reconfirma siempre con la API |
 | Inactividad | No hay vencimiento por inactividad | Igual |
-| Vencimiento: 12 h desde el inicio de sesión | Iniciar sesión, con «La sesión ya no es válida» | Iniciar sesión, con «Tu sesión venció: dura 12 horas» |
-| Sin red | Error con «Reintentar»; la sesión sigue | Igual. Si había algo leído en la sesión, queda a la vista con un aviso |
+| Vencimiento: la vigencia que declara la API (hoy, 12 h desde el inicio de sesión) | Iniciar sesión, con «La sesión ya no es válida» | Iniciar sesión, con «Tu sesión venció: duraba N horas». N sale de esa sesión, medido contra el reloj del servidor |
+| Sin red | Error con «Reintentar»; la sesión sigue | Igual. Si la pantalla tenía algo confirmado en esta entrada, queda con un aviso; lo recordado de otra visita no se muestra |
 | 401: sesión requerida, inválida, vencida o revocada | Iniciar sesión, con aviso | Igual |
 | 403: A3 u otro permiso | Aviso en la pantalla (DL-115); la sesión sigue | Igual, y lo recordado de esa pantalla se borra |
 | 429 o 503 | Error con «Reintentar»; la sesión sigue | Igual, con lo leído a la vista si lo había |
@@ -89,8 +89,8 @@ Antes, cada zona se montaba de nuevo en cada visita: mostraba «Cargando…», v
 | Momento | Antes | Después |
 |---|---|---|
 | Primera visita | «Cargando…», un pedido y el cálculo | Igual, con el cálculo más rápido |
-| Segunda visita, en la misma sesión | Lo mismo que la primera | Lo último leído a la vista al instante, más un pedido en silencio. El resumen de la toma no se recalcula, y si la respuesta dice lo mismo, no se redibuja nada |
-| Volver del segundo plano | Sin cambios en la pantalla | Igual. Si pasaron más de 30 s, un pedido en silencio |
+| Segunda visita, en la misma sesión | Lo mismo que la primera | La estructura de la pantalla, sin valores, y un pedido. Al confirmar, si la respuesta dice lo mismo, se reusa lo calculado y no se redibuja la figura |
+| Volver del segundo plano | Sin cambios en la pantalla | Lo confirmado queda a la vista y se reconfirma con un pedido, siempre |
 | Después de registrar una comida | La pantalla se vaciaba en «Cargando…» | Queda a la vista mientras se actualiza |
 
 Las reglas de las lecturas recordadas están en `packages/domain/src/lecturas-de-la-sesion.ts`, con sus pruebas, y la APK
@@ -103,11 +103,43 @@ las usa en `apps/mobile/src/lecturas.ts`:
 - una respuesta pedida antes de olvidar no se guarda ni se muestra;
 - con una falla pasajera queda lo leído en la sesión, con «No pudimos actualizar» y «Reintentar».
 
-**Una propiedad que hay que conocer.** Si alguien revoca el A3 o cierra todas las sesiones desde otro dispositivo, la
-APK puede mostrar lo que ya había leído en esta sesión hasta que llega la respuesta del pedido en curso. Al llegar, lo
-recordado se borra. Nunca muestra datos que esta sesión no haya leído antes.
+**Revisión del 2026-10-03 (etapa A): primero se verifica, después se muestra.** La primera versión mostraba al instante
+lo leído en una visita anterior y lo confirmaba después. Así, una revocación hecha en otro dispositivo podía dejar a la
+vista datos protegidos hasta que llegaba la respuesta, y eso no respetaba DL-115. Ahora las garantías son estas
+(`apps/mobile/src/ciclo-de-lectura.ts`, con 15 pruebas deterministas en `scripts/ciclo-de-lectura.test.mjs`):
+- **G1.** Una sesión no ve nada de otra.
+- **G2.** Al entrar a una zona no se muestra ningún valor protegido hasta que la API confirma el acceso en esa entrada.
+  La pantalla conserva su estructura mientras tanto.
+- **G3.** Con la pantalla abierta, lo confirmado queda a la vista mientras se reconfirma: al volver del segundo plano
+  (siempre) y después de una escritura de la misma pantalla. Si la API lo niega, se retira.
+- **G4.** Una respuesta pedida antes de una escritura, de un cierre de sesión o de un cambio de cuenta, o reemplazada
+  por un pedido más nuevo, no se guarda ni se muestra.
+- **G5.** Sin red, con 429 o con 5xx, la sesión sigue. Lo confirmado en esta entrada queda con aviso; si no había nada
+  confirmado, «Reintentar», sin mostrar lo recordado.
 
-El refresco se ve como una línea fina que corre sobre el borde del encabezado. No mueve la pantalla, y queda quieta si
+**Lo que no se puede garantizar:** una revocación hecha en otro dispositivo se conoce recién en el próximo contacto con
+la API: al entrar a una zona, al volver del segundo plano o al escribir. No hay un canal que la avise antes. Con la
+pantalla abierta, hasta ese contacto se sigue viendo lo que se confirmó al entrar.
+
+**Las claves** nombran todo lo que cambia la respuesta:
+- «Mi evolución», el período pedido (`mi-evolucion:ultimos-90`);
+- «Tu plan de hoy», el día civil en la zona de la API y el día del plan elegido;
+- «Entrenamiento de hoy», el día civil;
+- «Información», la lista propia.
+La cuenta la separa el dueño de la memoria: el token de la sesión.
+
+**La sesión, revisada.** El vencimiento se calcula con la vigencia de cada sesión. Esa vigencia es `expiresAt` menos
+la hora del servidor, que sale de la cabecera `Date` de la respuesta del inicio de sesión. El tiempo transcurrido se
+mide con un reloj monótono, que puede quedarse corto si el teléfono duerme pero nunca se adelanta.
+- La app nunca da por vencida una sesión antes que la API. Si se queda corta, el próximo pedido recibe
+  `SESSION_EXPIRED` y la app lo dice.
+- Sin la cabecera, el aviso no dice la duración.
+- Si se perdió el proceso, la app no sabe por qué no hay sesión: va a la bienvenida, sin decir que venció.
+- Un 403 de una operación nunca cierra la sesión.
+- Probado en `scripts/historial-navegacion.test.mjs`, sección 6. El comportamiento nativo de Android, como la
+  recreación de la actividad o la muerte del proceso, **no se probó en un dispositivo**.
+
+La verificación y el refresco se ven como una línea fina que corre sobre el borde del encabezado. No mueve la pantalla, y queda quieta si
 se pidió reducir el movimiento. Cada zona vuelve a la altura en que se la dejó, y Nutrición recuerda el día del plan
 elegido.
 
