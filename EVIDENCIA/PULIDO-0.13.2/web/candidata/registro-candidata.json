@@ -1,0 +1,584 @@
+{
+  "registro": [
+    {
+      "nombre": "a-tomas-360-azul-noche-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 8393,
+      "principalEn": 367
+    },
+    {
+      "nombre": "a-tomas-360-azul-noche-letra-normal-orden",
+      "orden": [
+        "27 sept 2026, 10:00 a. m.",
+        "24 ago 2026, 10:00 a. m.",
+        "25 jul 2026, 10:00 a. m."
+      ],
+      "abierta": "27 sept 2026, 10:00 a. m."
+    },
+    {
+      "nombre": "b-lamina-360-azul-noche-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 2031,
+      "principalEn": 605
+    },
+    {
+      "nombre": "c-preparacion-360-azul-noche-letra-normal-teclado-emulado",
+      "campo": "ant-valor-edad",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": null,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "c-preparacion-360-azul-noche-letra-normal-teclado-emulado",
+      "desborde": false,
+      "altoDeLaPagina": 5246,
+      "principalEn": null
+    },
+    {
+      "nombre": "a-tomas-390-azul-noche-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 7505,
+      "principalEn": 341
+    },
+    {
+      "nombre": "a-tomas-390-azul-noche-letra-normal-orden",
+      "orden": [
+        "27 sept 2026, 10:00 a. m.",
+        "24 ago 2026, 10:00 a. m.",
+        "25 jul 2026, 10:00 a. m."
+      ],
+      "abierta": "27 sept 2026, 10:00 a. m."
+    },
+    {
+      "nombre": "b-lamina-390-azul-noche-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 2035,
+      "principalEn": 578
+    },
+    {
+      "nombre": "c-preparacion-390-azul-noche-letra-normal-teclado-emulado",
+      "campo": "ant-valor-edad",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": null,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "c-preparacion-390-azul-noche-letra-normal-teclado-emulado",
+      "desborde": false,
+      "altoDeLaPagina": 4908,
+      "principalEn": null
+    },
+    {
+      "nombre": "a-tomas-1440-azul-noche-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 5691,
+      "principalEn": 301
+    },
+    {
+      "nombre": "a-tomas-1440-azul-noche-letra-normal-orden",
+      "orden": [
+        "27 sept 2026, 10:00 a. m.",
+        "24 ago 2026, 10:00 a. m.",
+        "25 jul 2026, 10:00 a. m."
+      ],
+      "abierta": "27 sept 2026, 10:00 a. m."
+    },
+    {
+      "nombre": "b-lamina-1440-azul-noche-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 1382,
+      "principalEn": 309
+    },
+    {
+      "nombre": "c-preparacion-1440-azul-noche-letra-normal",
+      "campo": "ant-valor-edad",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": null,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "c-preparacion-1440-azul-noche-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 3016,
+      "principalEn": null
+    },
+    {
+      "nombre": "a-tomas-360-azul-noche-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 14899,
+      "principalEn": 566
+    },
+    {
+      "nombre": "a-tomas-360-azul-noche-letra-grande-orden",
+      "orden": [
+        "27 sept 2026, 10:00 a. m.",
+        "24 ago 2026, 10:00 a. m.",
+        "25 jul 2026, 10:00 a. m."
+      ],
+      "abierta": "27 sept 2026, 10:00 a. m."
+    },
+    {
+      "nombre": "b-lamina-360-azul-noche-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 3026,
+      "principalEn": 974
+    },
+    {
+      "nombre": "c-preparacion-360-azul-noche-letra-grande-teclado-emulado",
+      "campo": "ant-valor-edad",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": null,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "c-preparacion-360-azul-noche-letra-grande-teclado-emulado",
+      "desborde": false,
+      "altoDeLaPagina": 9216,
+      "principalEn": null
+    },
+    {
+      "nombre": "a-tomas-390-azul-noche-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 13869,
+      "principalEn": 566
+    },
+    {
+      "nombre": "a-tomas-390-azul-noche-letra-grande-orden",
+      "orden": [
+        "27 sept 2026, 10:00 a. m.",
+        "24 ago 2026, 10:00 a. m.",
+        "25 jul 2026, 10:00 a. m."
+      ],
+      "abierta": "27 sept 2026, 10:00 a. m."
+    },
+    {
+      "nombre": "b-lamina-390-azul-noche-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 3050,
+      "principalEn": 974
+    },
+    {
+      "nombre": "c-preparacion-390-azul-noche-letra-grande-teclado-emulado",
+      "campo": "ant-valor-edad",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": null,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "c-preparacion-390-azul-noche-letra-grande-teclado-emulado",
+      "desborde": false,
+      "altoDeLaPagina": 8994,
+      "principalEn": null
+    },
+    {
+      "nombre": "a-tomas-1440-azul-noche-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 8913,
+      "principalEn": 491
+    },
+    {
+      "nombre": "a-tomas-1440-azul-noche-letra-grande-orden",
+      "orden": [
+        "27 sept 2026, 10:00 a. m.",
+        "24 ago 2026, 10:00 a. m.",
+        "25 jul 2026, 10:00 a. m."
+      ],
+      "abierta": "27 sept 2026, 10:00 a. m."
+    },
+    {
+      "nombre": "b-lamina-1440-azul-noche-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 1653,
+      "principalEn": 503
+    },
+    {
+      "nombre": "c-preparacion-1440-azul-noche-letra-grande",
+      "campo": "ant-valor-edad",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": null,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "c-preparacion-1440-azul-noche-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 4366,
+      "principalEn": null
+    },
+    {
+      "nombre": "a-tomas-360-claro-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 8393,
+      "principalEn": 367
+    },
+    {
+      "nombre": "a-tomas-360-claro-letra-normal-orden",
+      "orden": [
+        "27 sept 2026, 10:00 a. m.",
+        "24 ago 2026, 10:00 a. m.",
+        "25 jul 2026, 10:00 a. m."
+      ],
+      "abierta": "27 sept 2026, 10:00 a. m."
+    },
+    {
+      "nombre": "b-lamina-360-claro-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 2031,
+      "principalEn": 605
+    },
+    {
+      "nombre": "c-preparacion-360-claro-letra-normal-teclado-emulado",
+      "campo": "ant-valor-edad",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": null,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "c-preparacion-360-claro-letra-normal-teclado-emulado",
+      "desborde": false,
+      "altoDeLaPagina": 5246,
+      "principalEn": null
+    },
+    {
+      "nombre": "a-tomas-390-claro-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 7505,
+      "principalEn": 341
+    },
+    {
+      "nombre": "a-tomas-390-claro-letra-normal-orden",
+      "orden": [
+        "27 sept 2026, 10:00 a. m.",
+        "24 ago 2026, 10:00 a. m.",
+        "25 jul 2026, 10:00 a. m."
+      ],
+      "abierta": "27 sept 2026, 10:00 a. m."
+    },
+    {
+      "nombre": "b-lamina-390-claro-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 2035,
+      "principalEn": 578
+    },
+    {
+      "nombre": "c-preparacion-390-claro-letra-normal-teclado-emulado",
+      "campo": "ant-valor-edad",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": null,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "c-preparacion-390-claro-letra-normal-teclado-emulado",
+      "desborde": false,
+      "altoDeLaPagina": 4908,
+      "principalEn": null
+    },
+    {
+      "nombre": "a-tomas-1440-claro-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 5691,
+      "principalEn": 301
+    },
+    {
+      "nombre": "a-tomas-1440-claro-letra-normal-orden",
+      "orden": [
+        "27 sept 2026, 10:00 a. m.",
+        "24 ago 2026, 10:00 a. m.",
+        "25 jul 2026, 10:00 a. m."
+      ],
+      "abierta": "27 sept 2026, 10:00 a. m."
+    },
+    {
+      "nombre": "b-lamina-1440-claro-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 1382,
+      "principalEn": 309
+    },
+    {
+      "nombre": "c-preparacion-1440-claro-letra-normal",
+      "campo": "ant-valor-edad",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": null,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "c-preparacion-1440-claro-letra-normal",
+      "desborde": false,
+      "altoDeLaPagina": 3016,
+      "principalEn": null
+    },
+    {
+      "nombre": "a-tomas-360-claro-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 14899,
+      "principalEn": 566
+    },
+    {
+      "nombre": "a-tomas-360-claro-letra-grande-orden",
+      "orden": [
+        "27 sept 2026, 10:00 a. m.",
+        "24 ago 2026, 10:00 a. m.",
+        "25 jul 2026, 10:00 a. m."
+      ],
+      "abierta": "27 sept 2026, 10:00 a. m."
+    },
+    {
+      "nombre": "b-lamina-360-claro-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 3026,
+      "principalEn": 974
+    },
+    {
+      "nombre": "c-preparacion-360-claro-letra-grande-teclado-emulado",
+      "campo": "ant-valor-edad",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": null,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "c-preparacion-360-claro-letra-grande-teclado-emulado",
+      "desborde": false,
+      "altoDeLaPagina": 9216,
+      "principalEn": null
+    },
+    {
+      "nombre": "a-tomas-390-claro-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 13869,
+      "principalEn": 566
+    },
+    {
+      "nombre": "a-tomas-390-claro-letra-grande-orden",
+      "orden": [
+        "27 sept 2026, 10:00 a. m.",
+        "24 ago 2026, 10:00 a. m.",
+        "25 jul 2026, 10:00 a. m."
+      ],
+      "abierta": "27 sept 2026, 10:00 a. m."
+    },
+    {
+      "nombre": "b-lamina-390-claro-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 3050,
+      "principalEn": 974
+    },
+    {
+      "nombre": "c-preparacion-390-claro-letra-grande-teclado-emulado",
+      "campo": "ant-valor-edad",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": null,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "c-preparacion-390-claro-letra-grande-teclado-emulado",
+      "desborde": false,
+      "altoDeLaPagina": 8994,
+      "principalEn": null
+    },
+    {
+      "nombre": "a-tomas-1440-claro-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 8913,
+      "principalEn": 491
+    },
+    {
+      "nombre": "a-tomas-1440-claro-letra-grande-orden",
+      "orden": [
+        "27 sept 2026, 10:00 a. m.",
+        "24 ago 2026, 10:00 a. m.",
+        "25 jul 2026, 10:00 a. m."
+      ],
+      "abierta": "27 sept 2026, 10:00 a. m."
+    },
+    {
+      "nombre": "b-lamina-1440-claro-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 1653,
+      "principalEn": 503
+    },
+    {
+      "nombre": "c-preparacion-1440-claro-letra-grande",
+      "campo": "ant-valor-edad",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": null,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "c-preparacion-1440-claro-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 4366,
+      "principalEn": null
+    },
+    {
+      "nombre": "d-visor-ampliado-390",
+      "hayVisor": true,
+      "seDesplaza": true,
+      "anchoDelLienzo": 1080,
+      "ariaPressed": "true",
+      "texto": "Ver entera"
+    },
+    {
+      "nombre": "d-visor-ampliado-390",
+      "desborde": false,
+      "altoDeLaPagina": 2210,
+      "principalEn": null
+    },
+    {
+      "nombre": "d-visor-ampliado-390-desplazado",
+      "desborde": false,
+      "altoDeLaPagina": 2210,
+      "principalEn": null
+    },
+    {
+      "nombre": "d-visor-vuelta",
+      "ariaPressed": "false",
+      "hayVisor": false
+    },
+    {
+      "nombre": "e-validacion-1-escrito",
+      "desborde": false,
+      "altoDeLaPagina": 4908,
+      "principalEn": null
+    },
+    {
+      "nombre": "e-validacion-2-aviso",
+      "campo": "ant-valor-edad",
+      "hayAviso": true,
+      "avisoVisible": true,
+      "focoEnElAviso": true,
+      "enlaces": [
+        "Edad al momento de la toma: Escribí un número: «150» o «72,5»."
+      ]
+    },
+    {
+      "nombre": "e-validacion-2-aviso",
+      "desborde": false,
+      "altoDeLaPagina": 5110,
+      "principalEn": null
+    },
+    {
+      "nombre": "e-validacion-3-en-el-campo",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": true,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "e-validacion-3-en-el-campo",
+      "desborde": false,
+      "altoDeLaPagina": 5110,
+      "principalEn": null
+    },
+    {
+      "nombre": "e-validacion-4-segundo-guardar",
+      "focoEnElAviso": true,
+      "avisoVisible": true
+    },
+    {
+      "nombre": "e-validacion-4-segundo-guardar",
+      "desborde": false,
+      "altoDeLaPagina": 5110,
+      "principalEn": null
+    },
+    {
+      "nombre": "e-validacion-1-escrito-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 9358,
+      "principalEn": null
+    },
+    {
+      "nombre": "e-validacion-2-aviso-letra-grande",
+      "campo": "ant-valor-edad",
+      "hayAviso": true,
+      "avisoVisible": true,
+      "focoEnElAviso": true,
+      "enlaces": [
+        "Edad al momento de la toma: Escribí un número: «150» o «72,5»."
+      ]
+    },
+    {
+      "nombre": "e-validacion-2-aviso-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 9483,
+      "principalEn": null
+    },
+    {
+      "nombre": "e-validacion-3-en-el-campo-letra-grande",
+      "foco": "ant-valor-edad",
+      "campoVisible": true,
+      "campoTapadoPorLaBarra": false,
+      "errorDelCampoVisible": true,
+      "guardarVisible": true
+    },
+    {
+      "nombre": "e-validacion-3-en-el-campo-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 9483,
+      "principalEn": null
+    },
+    {
+      "nombre": "e-validacion-4-segundo-guardar-letra-grande",
+      "focoEnElAviso": true,
+      "avisoVisible": true
+    },
+    {
+      "nombre": "e-validacion-4-segundo-guardar-letra-grande",
+      "desborde": false,
+      "altoDeLaPagina": 9483,
+      "principalEn": null
+    },
+    {
+      "nombre": "f-evolucion-indice-1440",
+      "hayIndice": true,
+      "rotulos": []
+    },
+    {
+      "nombre": "f-evolucion-indice-1440",
+      "desborde": false,
+      "altoDeLaPagina": 1634,
+      "principalEn": null
+    },
+    {
+      "nombre": "f-evolucion-indice-390",
+      "hayIndice": true,
+      "rotulos": []
+    },
+    {
+      "nombre": "f-evolucion-indice-390",
+      "desborde": false,
+      "altoDeLaPagina": 3043,
+      "principalEn": null
+    },
+    {
+      "nombre": "g-exportada",
+      "ancho": 2160,
+      "alto": 3840,
+      "bytes": 4192011
+    }
+  ],
+  "errores": []
+}
