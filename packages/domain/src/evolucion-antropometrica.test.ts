@@ -25,6 +25,7 @@ import {
   observacionesDelGrupo,
   observacionPorId,
   prepararSerie,
+  dominioDelEjeVertical,
   protocoloEnPalabras,
   resumenDeObservacion,
   textoDeDiferenciaAntropometrica,
@@ -255,4 +256,10 @@ test('TEST-PRJ-009 · el copy de la evolución no califica ni completa huecos', 
   const textos = Object.values(COPY_EVOLUCION).map((v) => (typeof v === 'function' ? (v as (...args: never[]) => string)(...([1, 2] as never[])) : v));
   textos.push(COPY_EVOLUCION.zona('America/Argentina/Buenos_Aires'), COPY_EVOLUCION.delDia(1, 2));
   assert.deepEqual(textos.flatMap((t) => terminosProhibidosDeAntropometriaEn(t).map((p) => `${p} en «${t}»`)), []);
+});
+
+test('el eje vertical tiene margen de al menos una unidad y del 5 %, sin forzar el cero; con un valor queda centrado', () => {
+  assert.deepEqual(dominioDelEjeVertical(85, 88), { desde: 80, hasta: 93 });
+  assert.deepEqual(dominioDelEjeVertical(10, 10), { desde: 9, hasta: 11 });
+  assert.deepEqual(dominioDelEjeVertical(0.5, 0.6), { desde: -1, hasta: 2 });
 });

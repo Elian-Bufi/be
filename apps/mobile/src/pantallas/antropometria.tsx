@@ -44,15 +44,17 @@ import {
   type Resultado,
   type UltimaToma,
 } from '@be/domain';
-import { memo, useCallback, useState } from 'react';
-import { Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { memo, useCallback } from 'react';
+import { Text, useWindowDimensions, View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
-import { useLecturaRecordada } from '../lecturas';
+import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { leerMiEvolucion } from '../lecturas-de-las-zonas';
 import { dia, fecha, fechaCivil } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Ayuda, Boton, Desplegable, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
+import { Aviso, Ayuda, Boton, Desplegable, estilosPorTema, Parrafo, Rotulo, Seccion, Segmentos, Titulo } from '../ui';
+import { CompararTomas } from './comparar-tomas';
+import { EvolucionDeUnaMedida } from './evolucion-de-una-medida';
 import { estaEnLaFigura, FiguraDeLaToma } from './figura-de-la-toma';
 
 type Datos = EvolucionResponse['data'];
@@ -79,7 +81,7 @@ export function PantallaDeMiEvolucion({ token, salir, ir }: { token: string; sal
           <Boton texto={COPY_ANTROPOMETRIA.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
         </Aviso>
       ) : null}
-      {r?.ok ? <Evolucion datos={r.datos} /> : null}
+      {r?.ok ? <Evolucion datos={r.datos} token={token} /> : null}
     </View>
   );
 }
@@ -98,41 +100,57 @@ function resumenDe(datos: Datos): UltimaToma | null {
   return resumen;
 }
 
+type Vista = 'TOMA' | 'COMPARAR' | 'EVOLUCION';
+
 /**
- * El orden de la pantalla (Dirección, 2026-10-01: que se lea de un vistazo): arriba la toma con la figura; después los
- * resultados de las fórmulas; después la evolución por medida. Cada explicación queda plegada en su «Cómo se lee».
- *
- * DL-113 · cada fecha se dice una vez: la de la toma en su título; con cuál se compara, en la línea de abajo; y el
- * período, en la evolución por medida, que es lo que abarca. Antes iban las tres seguidas arriba de todo.
+ * «Mi evolución» por tareas (tanda del 2026-10-03; antes, tres secciones seguidas en un solo desplazamiento):
+ * - **Última toma:** la figura, con Perímetros/Pliegues y la figura elegida; las medidas que la figura no dibuja, en
+ *   fichas y filas; todos los valores en «La figura, en lista»; y los resultados de las fórmulas.
+ * - **Comparar:** la última toma frente a la anterior comparable, medida por medida (comparar-tomas.tsx).
+ * - **Evolución:** una medida en el tiempo, con el gráfico de puntos y su lista equivalente (evolucion-de-una-medida.tsx).
+ * Arriba, una sola línea dice de qué toma se trata y con cuál se compara (DL-113: cada fecha, una vez). La vista elegida
+ * se recuerda mientras dure la sesión. Todo sale de la misma lectura: cambiar de vista no hace pedidos.
  */
-const Evolucion = memo(function Evolucion({ datos }: { datos: Datos }) {
-  const conDatos = datos.metrics.filter((s) => s.series.length > 0);
+const Evolucion = memo(function Evolucion({ datos, token }: { datos: Datos; token: string }) {
+  const [vista, setVista] = useSeleccionRecordada<Vista>(token, 'mi-evolucion:vista', 'TOMA');
   const toma = resumenDe(datos);
   const periodo = `${COPY_ANTROPOMETRIA.periodo}: ${dia(`${datos.period.start}T12:00:00Z`)} — ${dia(`${datos.period.end}T12:00:00Z`)}`;
+  if (sinMediciones(datos) || !toma) {
+    return (
+      <Aviso tipo="info" titulo={COPY_ANTROPOMETRIA.sinMediciones}>
+        <Parrafo tenue>Las mediciones las registra el profesional con el que tenés un vínculo activo en Antropometría.</Parrafo>
+        <Parrafo tenue>{periodo}</Parrafo>
+      </Aviso>
+    );
+  }
   return (
     <>
-      {conDatos.length === 0 ? (
-        <Aviso tipo="info" titulo={COPY_ANTROPOMETRIA.sinMediciones}>
-          <Parrafo tenue>Las mediciones las registra el profesional con el que tenés un vínculo activo en Antropometría.</Parrafo>
-          <Parrafo tenue>{periodo}</Parrafo>
-        </Aviso>
-      ) : null}
-      {toma ? <LaUltimaToma toma={toma} /> : null}
-      {toma && toma.derivadas.length > 0 ? <ResultadosDeLasFormulas toma={toma} /> : null}
-      {conDatos.length > 0 ? (
-        <Seccion titulo={COPY_ANTROPOMETRIA.evolucionPorMedida}>
-          <Parrafo tenue>{periodo}</Parrafo>
-          {[...conDatos]
-            .sort((a, b) => compararPorCatalogo(a.metricCode, b.metricCode))
-            .map((serie) => (
-              <SerieDeLaMetrica key={serie.metricCode} serie={serie} />
-            ))}
-          <Ayuda>
-            <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeSinDato}</Parrafo>
-            <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeComparabilidad}</Parrafo>
-          </Ayuda>
-        </Seccion>
-      ) : null}
+      {/* Una línea: qué toma es, con cuál se compara y qué hay. Son cantidades reales, no un indicador. */}
+      <View style={estilos.encabezadoDeLaToma} accessible>
+        <Text style={estilos.fechaDeLaToma}>{`${COPY_ANTROPOMETRIA.tuUltimaToma}: ${fechaCivil(toma.fecha)}`}</Text>
+        <Text style={estilos.detalle}>
+          {[
+            toma.fechaAnterior ? `${COPY_ANTROPOMETRIA.comparadaCon} ${fechaCivil(toma.fechaAnterior)}` : COPY_ANTROPOMETRIA.sinAnteriorComparable,
+            `${numero(toma.medidas.length)} ${toma.medidas.length === 1 ? 'medida' : 'medidas'}`,
+            toma.derivadas.length > 0 ? `${numero(toma.derivadas.length)} ${toma.derivadas.length === 1 ? 'resultado de fórmula' : 'resultados de fórmulas'}` : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
+      </View>
+      <Segmentos
+        etiqueta={COPY_ANTROPOMETRIA.queVer}
+        opciones={[
+          { valor: 'TOMA', texto: COPY_ANTROPOMETRIA.vistaUltimaToma },
+          { valor: 'COMPARAR', texto: COPY_ANTROPOMETRIA.vistaComparar },
+          { valor: 'EVOLUCION', texto: COPY_ANTROPOMETRIA.vistaEvolucion },
+        ]}
+        valor={vista}
+        alElegir={setVista}
+      />
+      {vista === 'TOMA' ? <LaUltimaToma toma={toma} /> : null}
+      {vista === 'COMPARAR' ? <CompararTomas toma={toma} /> : null}
+      {vista === 'EVOLUCION' ? <EvolucionDeUnaMedida datos={datos} token={token} /> : null}
     </>
   );
 });
@@ -155,7 +173,7 @@ function ListaPorFamilia({ medidas, fechaComparada }: { medidas: readonly Medida
         if (deLaFamilia.length === 0) return null;
         return (
           <View key={familia}>
-            <Subtitulo>{ETIQUETA_DE_FAMILIA[familia]}</Subtitulo>
+            <Rotulo>{ETIQUETA_DE_FAMILIA[familia]}</Rotulo>
             {EN_FICHAS.has(familia) ? (
               <View style={estilos.fichas}>
                 {deLaFamilia.map((m) => (
@@ -217,17 +235,7 @@ function LaUltimaToma({ toma }: { toma: UltimaToma }) {
   const enLaFigura = toma.medidas.filter((m) => estaEnLaFigura(m.metrica));
   const fueraDeLaFigura = toma.medidas.filter((m) => !estaEnLaFigura(m.metrica));
   return (
-    <Seccion titulo={`${COPY_ANTROPOMETRIA.tuUltimaToma}: ${fechaCivil(toma.fecha)}`}>
-      {/* Una línea: con cuál se compara y qué hay. Son cantidades reales de la toma, no un indicador. */}
-      <Parrafo tenue>
-        {[
-          toma.fechaAnterior ? `${COPY_ANTROPOMETRIA.comparadaCon} ${fechaCivil(toma.fechaAnterior)}` : COPY_ANTROPOMETRIA.sinAnteriorComparable,
-          `${numero(toma.medidas.length)} ${toma.medidas.length === 1 ? 'medida' : 'medidas'}`,
-          toma.derivadas.length > 0 ? `${numero(toma.derivadas.length)} ${toma.derivadas.length === 1 ? 'resultado de fórmula' : 'resultados de fórmulas'}` : null,
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-      </Parrafo>
+    <View>
       <FiguraDeLaToma medidas={toma.medidas} />
       <ListaPorFamilia medidas={fueraDeLaFigura} fechaComparada={toma.fechaAnterior} />
       {enLaFigura.length > 0 ? (
@@ -239,7 +247,8 @@ function LaUltimaToma({ toma }: { toma: UltimaToma }) {
         {enLaFigura.length > 0 ? <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeFigura}</Parrafo> : null}
         <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeDiferencia}</Parrafo>
       </Ayuda>
-    </Seccion>
+      {toma.derivadas.length > 0 ? <ResultadosDeLasFormulas toma={toma} /> : null}
+    </View>
   );
 }
 
@@ -288,87 +297,9 @@ function FilaDeLaToma({ medida, conMetodo = false, fechaComparada }: { medida: M
   );
 }
 
-/** La serie de una medida, plegada: abrirla muestra sus puntos y sus huecos. */
-function SerieDeLaMetrica({ serie }: { serie: SerieApi }) {
-  const [abierta, setAbierta] = useState(false);
-  const diasSinDato = serie.gaps.reduce((n, g) => n + g.days, 0);
-  const nombre = nombreDeMetrica(serie.metricCode);
-  const resumen = `${numero(serie.series.length)} con dato · ${numero(diasSinDato)} ${COPY_ANTROPOMETRIA.sinDato.toLowerCase()}`;
-  /** Puntos y huecos, ordenados por fecha. Los huecos ya vienen agrupados en rangos desde la API. */
-  const tramos = [
-    ...serie.series.map((punto) => ({ orden: punto.occurredAt.slice(0, 10), tipo: 'punto' as const, punto })),
-    ...serie.gaps.map((hueco) => ({ orden: hueco.from, tipo: 'hueco' as const, hueco })),
-  ].sort((a, b) => a.orden.localeCompare(b.orden));
-
-  return (
-    <View style={estilos.serie}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ expanded: abierta }}
-        accessibilityLabel={`${nombre}. ${resumen}. ${abierta ? COPY_ANTROPOMETRIA.ocultarEvolucion : COPY_ANTROPOMETRIA.verEvolucion}`}
-        onPress={() => setAbierta((x) => !x)}
-        style={({ pressed }) => [estilos.cabezaDeSerie, pressed && estilos.presionado]}
-      >
-        <View style={estilos.textoDeCabeza}>
-          <Text style={estilos.nombre}>{nombre}</Text>
-          <Text style={estilos.detalle}>{resumen}</Text>
-        </View>
-        <Text style={estilos.accion}>{abierta ? COPY_ANTROPOMETRIA.ocultarEvolucion : COPY_ANTROPOMETRIA.verEvolucion}</Text>
-      </Pressable>
-      {abierta
-        ? tramos.map((t) =>
-            t.tipo === 'punto' ? (
-              <PuntoDeLaSerie key={t.punto.sourceId} punto={t.punto} metodo={nombreDeMetodo(serie.comparability.groups.find((g) => g.comparabilityGroup === t.punto.comparabilityGroup)?.methodVersionId ?? null)} />
-            ) : (
-              <HuecoDeLaSerie key={`hueco-${t.hueco.from}`} hueco={t.hueco} />
-            ),
-          )
-        : null}
-    </View>
-  );
-}
-
-/** Un día con medición vigente; si es un resultado de fórmula, con el método que lo dio. */
-function PuntoDeLaSerie({ punto, metodo }: { punto: SerieApi['series'][number]; metodo: string | null }) {
-  return (
-    <Tarjeta>
-      <Subtitulo>{fecha(punto.occurredAt)}</Subtitulo>
-      <Parrafo>{cantidad(punto.value, punto.unit)}</Parrafo>
-      {punto.dataClass === 'DERIVED' ? (
-        <Parrafo tenue>
-          {COPY_ANTROPOMETRIA.metodoDelResultado}: {metodo ?? COPY_ANTROPOMETRIA.metodoSinNombre}
-        </Parrafo>
-      ) : null}
-      <Insignia texto={ETIQUETA_DE_CLASE_DE_DATO[punto.dataClass]} etiqueta={`${COPY_ANTROPOMETRIA.origenDelDato}: ${ETIQUETA_DE_CLASE_DE_DATO[punto.dataClass]}`} />
-      {punto.correctionState === 'CORRECTED' ? <Insignia texto={COPY_ANTROPOMETRIA.corregida} etiqueta={COPY_ANTROPOMETRIA.corregida} /> : null}
-      {punto.incomparableWithPrevious.length > 0 ? (
-        <Aviso tipo="info" titulo={COPY_ANTROPOMETRIA.noComparable}>
-          <Parrafo tenue>{punto.incomparableWithPrevious.map((m) => COPY_ANTROPOMETRIA.motivoNoComparable[m]).join(' · ')}</Parrafo>
-        </Aviso>
-      ) : null}
-    </Tarjeta>
-  );
-}
-
-/**
- * Los días sin medición vigente, dichos como lo que son: un rango, sin valor, sin cero y sin nada que los una.
- * Agruparlos no es ocultarlos —se dicen todos, con sus fechas y su cantidad—: es evitar que noventa filas iguales
- * tapen los días que sí tienen medición.
- */
-function HuecoDeLaSerie({ hueco }: { hueco: SerieApi['gaps'][number] }) {
-  const desde = dia(`${hueco.from}T12:00:00Z`);
-  const hasta = dia(`${hueco.to}T12:00:00Z`);
-  const texto = hueco.days === 1 ? desde : `${desde} — ${hasta}`;
-  const detalle = hueco.days === 1 ? COPY_ANTROPOMETRIA.sinDato : `${numero(hueco.days)} días ${COPY_ANTROPOMETRIA.sinDato.toLowerCase()}`;
-  return (
-    <Tarjeta>
-      <Subtitulo>{texto}</Subtitulo>
-      <Insignia texto={detalle} etiqueta={`${texto}: ${detalle}`} />
-    </Tarjeta>
-  );
-}
-
 const estilos = estilosPorTema((COLOR) => ({
+  encabezadoDeLaToma: { marginBottom: 4 },
+  fechaDeLaToma: { fontSize: 18, fontWeight: '800', color: COLOR.texto },
   fila: { borderTopWidth: 1, borderTopColor: COLOR.borde, paddingVertical: 9 },
   fichas: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 },
   ficha: { flexGrow: 1, flexBasis: 0, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.fondo },

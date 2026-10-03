@@ -18,6 +18,31 @@ export function Titulo({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * El rótulo de un grupo, en versalitas con aire entre letras: «PERÍMETROS», «DIÁMETROS ÓSEOS» (referencia estética de
+ * Dirección, 2026-10-03). Ordena una lista sin agregar otro título grande.
+ */
+export function Rotulo({ children }: { children: ReactNode }) {
+  return (
+    <Text style={estilos.rotulo} accessibilityRole="header">
+      {typeof children === 'string' ? children.toLocaleUpperCase('es-AR') : children}
+    </Text>
+  );
+}
+
+/**
+ * Una cifra con su unidad: el valor en negrita y con dígitos de ancho fijo, y la unidad más chica y tenue, para que las
+ * columnas de valores se alineen y la unidad no compita con el número. El lector de pantalla lee «86,5 cm».
+ */
+export function Cifra({ valor, unidad, tamano = 18 }: { valor: string; unidad?: string | null; tamano?: number }) {
+  return (
+    <Text style={estilos.cifra} accessibilityLabel={unidad ? `${valor} ${unidad}` : valor}>
+      <Text style={[estilos.valorDeCifra, { fontSize: tamano }]}>{valor}</Text>
+      {unidad ? <Text style={[estilos.unidadDeCifra, { fontSize: Math.round(tamano * 0.72) }]}>{` ${unidad}`}</Text> : null}
+    </Text>
+  );
+}
+
 export function Parrafo({ children, tenue = false }: { children: ReactNode; tenue?: boolean }) {
   return <Text style={[estilos.parrafo, tenue && estilos.tenue]}>{children}</Text>;
 }
@@ -334,13 +359,19 @@ export function Insignia({ texto, positiva = false, etiqueta }: { texto: string;
 }
 
 export const estilos = estilosPorTema((COLOR) => ({
-  titulo: { fontSize: 28, fontWeight: '700', color: COLOR.texto, marginBottom: 12 },
+  // Escala tipográfica (tanda del 2026-10-03): título 26, sección 19, subtítulo 17, cuerpo 16, detalle 14, rótulo 12.
+  titulo: { fontSize: 26, fontWeight: '800', letterSpacing: -0.2, color: COLOR.texto, marginBottom: 10 },
+  rotulo: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, color: COLOR.tenue, marginTop: 14, marginBottom: 6 },
+  cifra: { color: COLOR.texto },
+  valorDeCifra: { fontWeight: '800', color: COLOR.texto, fontVariant: ['tabular-nums'] },
+  unidadDeCifra: { fontWeight: '600', color: COLOR.tenue },
   parrafo: { fontSize: 16, color: COLOR.texto, lineHeight: 23, marginVertical: 4 },
   tenue: { color: COLOR.tenue, fontSize: 14 },
   negrita: { fontWeight: '700', color: COLOR.texto },
   boton: { minHeight: 48, paddingHorizontal: 18, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginVertical: 6 },
   boton_primario: { backgroundColor: COLOR.botonFondo, borderColor: COLOR.botonFondo },
-  boton_secundario: { backgroundColor: 'transparent', borderColor: COLOR.acento },
+  // Secundario tonal: relleno apenas más claro y borde fino. El cian queda en el texto: orienta sin competir.
+  boton_secundario: { backgroundColor: COLOR.superficieElevada, borderColor: COLOR.borde, borderWidth: 1 },
   boton_peligro: { backgroundColor: COLOR.peligroFondo, borderColor: COLOR.peligroFondo },
   boton_peligroSecundario: { backgroundColor: 'transparent', borderColor: COLOR.error },
   boton_enlace: { backgroundColor: 'transparent', borderColor: 'transparent', alignItems: 'flex-start', paddingHorizontal: 0 },
@@ -357,7 +388,8 @@ export const estilos = estilosPorTema((COLOR) => ({
   opcion: { flex: 1 },
   segmentos: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, padding: 3, marginVertical: 6, borderRadius: 27, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie },
   // Cada píldora crece para llenar su línea; si no entra junto a la otra, baja entera a la siguiente.
-  segmento: { flexGrow: 1, flexBasis: 'auto', minHeight: 48, paddingHorizontal: 18, paddingVertical: 8, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  // Relleno lateral de 10: con letra normal, tres opciones entran en una línea en un teléfono de 360 dp.
+  segmento: { flexGrow: 1, flexBasis: 'auto', minHeight: 48, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   segmentoElegido: { backgroundColor: COLOR.botonFondo },
   textoDeSegmento: { fontSize: 16, fontWeight: '600', color: COLOR.texto, textAlign: 'center' },
   textoDeSegmentoElegido: { fontWeight: '800', color: COLOR.botonTexto },
@@ -376,11 +408,11 @@ export const estilos = estilosPorTema((COLOR) => ({
   aviso_error: { borderLeftColor: COLOR.error, backgroundColor: COLOR.errorFondo },
   aviso_info: { borderLeftColor: COLOR.azul, backgroundColor: COLOR.superficie },
   aviso_exito: { borderLeftColor: COLOR.exito, backgroundColor: COLOR.exitoFondo },
-  seccion: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 16, marginVertical: 8, backgroundColor: COLOR.superficie },
+  seccion: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, backgroundColor: COLOR.superficie },
   seccionPeligro: { borderColor: COLOR.error },
-  tituloDeSeccion: { fontSize: 20, fontWeight: '700', color: COLOR.texto, marginBottom: 6 },
+  tituloDeSeccion: { fontSize: 19, fontWeight: '800', color: COLOR.texto, marginBottom: 6 },
   subtitulo: { fontSize: 17, fontWeight: '700', color: COLOR.texto, marginTop: 12, marginBottom: 4 },
-  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 10, padding: 12, marginVertical: 6, backgroundColor: COLOR.superficie },
+  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 12, marginVertical: 6, backgroundColor: COLOR.superficie },
   dato: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginVertical: 4 },
   insignia: { alignSelf: 'flex-start', borderWidth: 2, borderColor: COLOR.tenue, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginVertical: 6 },
   insigniaPositiva: { borderColor: COLOR.exito },

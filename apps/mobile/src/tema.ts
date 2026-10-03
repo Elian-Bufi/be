@@ -16,6 +16,8 @@ export const AZUL_NOCHE = {
   // Superficies y texto
   fondo: '#011325',
   superficie: '#052238',
+  // Un escalón más claro que la superficie: el botón secundario, las fichas y lo elegido (tanda del 2026-10-03).
+  superficieElevada: '#0A2B47',
   texto: '#FFFFFF',
   tenue: '#8DCAE5',
   // Marca e interacción: el cian es el acento; el azul, solo decoración
@@ -25,8 +27,10 @@ export const AZUL_NOCHE = {
   botonTexto: '#011325',
   peligroFondo: '#FF9B8F',
   peligroTexto: '#011325',
-  // Bordes: el decorativo separa (el brillo de las tarjetas); el de control delimita un campo y necesita 3:1
-  borde: '#0A72A1',
+  // Bordes: el decorativo separa; el de control delimita un campo y necesita 3:1. El decorativo era un azul brillante
+  // (#0A72A1) en todas las tarjetas y competía con el cian; desde el 2026-10-03 es un azul apagado, y el cian queda
+  // para lo que orienta: lo elegido, lo activo y los datos.
+  borde: '#173F61',
   bordeControl: '#4F7FA3',
   // Estados: siempre con texto además del color (B10-10 §1, §12)
   error: '#FF9B8F',
@@ -51,6 +55,7 @@ export const AZUL_NOCHE = {
 export const CLARO: Paleta = {
   fondo: '#F2F6FC',
   superficie: '#FFFFFF',
+  superficieElevada: '#F4F7FC',
   texto: '#0A1F44',
   tenue: '#62728A',
   acento: '#1465F1',

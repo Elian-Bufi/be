@@ -54,3 +54,29 @@ Desde la raíz, con Node 22 y el dominio construido:
 node EVIDENCIA/PULIDO-0.13.2/apk-maquetas/herramientas/maqueta-figura.mjs <ancho> <HOMBRE|MUJER> <PERIMETROS|PLIEGUES> <azul-noche|claro> <escala de letra> <salida.html>
 ```
 La página dice arriba, en rojo, que es una maqueta.
+
+## Segunda tanda (2026-10-03): «Mi evolución» por tareas, gráfico de puntos y selección en la figura
+
+**También son maquetas, no la APK.** La geometría del gráfico sale de `apps/mobile/src/grafico-de-evolucion.ts`, el
+mismo módulo que usa la APK, y la de la figura, de `composicion-de-la-figura.ts`. Las tipografías, las píldoras y las
+tarjetas se imitan a mano. Los valores son sintéticos.
+
+| Archivo | Qué muestra |
+|---|---|
+| `07-evolucion-azul-noche-x1.jpg` | La vista «Evolución» con letra normal: la medida, los días, el gráfico de puntos sobre un eje a escala, la observación elegida con su etiqueta, el detalle y «Anterior»/«Siguiente» |
+| `08-evolucion-claro-x1.6.jpg` | La misma vista en Claro con letra ×1,6: las píldoras bajan enteras, los rótulos del gráfico crecen y se saltean fechas para no pisarse |
+| `09-comparar-azul-noche-x1.jpg` | «Comparar»: ahora y antes, medida por medida, con la diferencia neutra. Si una medida se comparó con otra fecha, la fila lo dice |
+| `10-comparar-claro-x1.6.jpg` | «Comparar» en Claro con letra ×1,6, con una medida sin anterior comparable y su motivo |
+| `11-seleccion-azul.jpg` | La selección coordinada en la figura (subescapular): su fila con borde y negrita, su guía resaltada, las demás atenuadas, su sitio con aro propio y el detalle abajo. En la maqueta el anterior es un texto de muestra |
+
+Para rehacerlas, desde la raíz:
+```
+node EVIDENCIA/PULIDO-0.13.2/apk-maquetas/herramientas/maqueta-evolucion.mjs <EVOLUCION|COMPARAR> <azul-noche|claro> <escala> <salida.html>
+ELEGIDA=pliegue-subescapular node EVIDENCIA/PULIDO-0.13.2/apk-maquetas/herramientas/maqueta-figura.mjs 320 HOMBRE PLIEGUES azul-noche 1 <salida.html>
+```
+
+**En el teléfono, con la candidata, falta mirar:**
+- las tres vistas con la letra normal y al máximo;
+- el toque sobre un punto del gráfico y sobre un sitio de la figura;
+- «Anterior» y «Siguiente» con dos tomas del mismo día;
+- que al volver a la zona se recuerden la vista, la medida y los días elegidos.
