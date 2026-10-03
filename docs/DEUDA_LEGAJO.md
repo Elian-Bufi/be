@@ -2550,6 +2550,11 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
   2026-10-31. El resto de la auditoría sigue igual.
 - **Pendiente de Dirección.** Ratificarla junto con la de node-forge. Antes del 2026-10-31, revisar si braces publicó la
   corrección; si la publicó, se fija con `overrides` y la excepción se borra.
+- **Revisado de nuevo el 2026-10-03, en las fuentes primarias** (avisos de GitHub y registro de npm). Los dos avisos
+  siguen sin versión corregida: node-forge abarca hasta la 1.4.0, que es la última, y la última
+  `@expo/code-signing-certificates` (0.0.7) sigue pidiendo `^1.4.0`; braces abarca hasta la 3.0.3, que es la última. Las
+  excepciones siguen siendo por aviso y paquete y vencen el 2026-10-31. Un informe que no se puede leer no aprueba. **Ninguna
+  está ratificada**: la CI verde de la candidata las incluye.
 
 ---
 
