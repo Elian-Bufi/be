@@ -51,6 +51,6 @@ candidata 0.13.2 (ver la lista de abajo).
 
 Desde la raíz, con Node 22 y el dominio construido:
 ```
-node herramientas/maqueta-figura.mjs <ancho> <HOMBRE|MUJER> <PERIMETROS|PLIEGUES> <azul-noche|claro> <escala de letra> <salida.html>
+node EVIDENCIA/PULIDO-0.13.2/apk-maquetas/herramientas/maqueta-figura.mjs <ancho> <HOMBRE|MUJER> <PERIMETROS|PLIEGUES> <azul-noche|claro> <escala de letra> <salida.html>
 ```
 La página dice arriba, en rojo, que es una maqueta.
