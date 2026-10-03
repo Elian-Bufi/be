@@ -92,3 +92,76 @@ No cambia tiempos de espera, tamaño del pool ni límites.
 - **Tres consultas de sesión por pedido** (sesión, identidad y control de sesión), que podrían ser una.
 
 Las dos son propuestas para otra tanda: cambian código compartido por todas las lecturas.
+
+## Segunda tanda (2026-10-03): carga de una persona, estrés y un experimento descartado
+
+**Condiciones.** Iguales a las de arriba, en otra base sintética (`be_p2028b`):
+- base detrás del proxy de 25 ms por sentido;
+- API reiniciada antes de cada corrida, para que el límite por actor no contamine;
+- pool de 9 conexiones, `maxWait` de 2 s y `timeout` de 5 s, sin cambios.
+
+Los datos crudos están en `herramientas/2026-10-03/`.
+
+**Carga de una persona.** Una página de un asesorado: sus 11 lecturas a la vez, tres veces seguidas. Son 33 pedidos por
+corrida.
+
+| Corrida | Commit | Pedidos | Con 200 | Errores | Mediana | Máximo |
+|---|---|---|---|---|---|---|
+| 1 | `main` `0909fa9` | 33 | 33 | 0 | 2,07 s | 3,53 s |
+| 2 | `main` `0909fa9` | 33 | 33 | 0 | 1,99 s | 3,57 s |
+| 3 | `main` `0909fa9` | 33 | 33 | 0 | 1,97 s | 3,57 s |
+| 1 | PR #134 `d5c4bb2` | 33 | 33 | 0 | 1,58 s | 2,99 s |
+| 2 | PR #134 `d5c4bb2` | 33 | 33 | 0 | 1,59 s | 2,94 s |
+| 3 | PR #134 `d5c4bb2` | 33 | 33 | 0 | 1,61 s | 2,93 s |
+
+Con una persona no hay errores, ni antes ni después. #134 baja la mediana de ~2,0 s a ~1,6 s y el máximo de ~3,55 s a
+~2,95 s. Son tres corridas por lado: no alcanzan para percentiles.
+
+**Estrés.** Tres páginas a la vez: 33 lecturas simultáneas, como en la primera tanda.
+
+| Corrida | Commit | Pedidos | Con 200 | Con 503 (P2028, inicio) | Sin respuesta (60 s) | Mediana | Máximo con respuesta |
+|---|---|---|---|---|---|---|---|
+| 1 | PR #134 `d5c4bb2` | 33 | 21 | 11 | 1 | 3,26 s | 5,2 s |
+| 2 | PR #134 `d5c4bb2` | 33 | 21 | 12 | 0 | 3,22 s | 4,4 s |
+| 3 | PR #134 `d5c4bb2` | 33 | 22 | 11 | 0 | 3,25 s | 5,2 s |
+
+Confirma lo medido en la primera tanda, 11, 10 y 10. En la primera ráfaga después de reiniciar la API, un pedido quedó sin
+respuesta hasta que el cliente cortó a los 60 s. No se investigó: queda anotado.
+
+**Experimento E1, descartado: el guard de sesión en una sola consulta.**
+- **El cambio.** El guard leía la sesión, la identidad y el control de sesión con tres consultas fuera de la
+  transacción. Se probó una sola, con las mismas comprobaciones.
+- **El efecto en las consultas.** El detalle de una toma bajó de 19 a 17, los cálculos de 20 a 18 y las evaluaciones de
+  nutrición de 10 a 8.
+- **El estrés:**
+
+  | Corrida | Pedidos | Con 200 | Con 503 | Sin respuesta | Mediana |
+  |---|---|---|---|---|---|
+  | E1-1 | 33 | 19 | 13 | 1 | 2,70 s |
+  | E1-2 | 33 | 20 | 13 | 0 | 2,73 s |
+  | E1-3 | 33 | 20 | 13 | 0 | 2,69 s |
+
+- **Por qué se descartó.** La mediana bajó, pero los 503 subieron de 11–12 a 13. Al terminar antes el guard, más
+  pedidos llegan juntos a pedir su transacción, y la espera de 2 s se supera más seguido. No mejora el P2028, así que no
+  se incorporó. El código del experimento está en `herramientas/2026-10-03/experimento-e1-sesion.guard.ts.txt`.
+
+**Qué domina el costo hoy.** Medido con el contador temporal, de a una lectura. Una lectura protegida hace:
+- 3 consultas de sesión, fuera de la transacción;
+- dentro de la transacción: `BEGIN`, el PDP (bloqueos, hechos y la decisión registrada) y las lecturas del dominio con
+  `include`, una por relación (10 en el detalle de una toma, 11 en los cálculos, 1 en las evaluaciones de nutrición),
+  más los nombres de los profesionales y el `COMMIT`.
+- Lo que retiene la conexión son las idas y vueltas dentro de la transacción. Con 33 transacciones de unas 16 idas y
+  vueltas, y 9 conexiones, no todas pueden empezar en 2 s.
+
+**El límite que queda, delimitado.** Con una persona no hay errores. Con tres páginas a la vez y cada ida y vuelta
+estirada a 50 ms, un tercio de los pedidos recibe 503: el pool no da abasto en el `maxWait`. Las salidas cambian algo
+de fondo, y quedan como decisión:
+1. **Agrupar las lecturas con `include` en *joins*.** Prisma 6.19 lo hace con `relationLoadStrategy: 'join'`, pero solo
+   activando la función en preview `relationJoins`, que cambia el cliente generado entero. La otra vía es reescribir
+   esas lecturas en SQL. Ataca la causa.
+2. **Una cola de transacciones en la API**, con un tope de espera propio. Cambia el 503 por demora y hay que revisar las
+   transacciones anidadas para no crear un bloqueo mutuo.
+3. **Dimensionar el pool y el `maxWait` con los núcleos y la latencia reales de Render**, que no se midieron.
+
+Nada de esto toca los bloqueos, la auditoría ni la consistencia. Tampoco explica los ~3 s de «Mi evolución» en el
+teléfono, que se miden contra Render, con otra red y otro hardware.

@@ -1,0 +1,78 @@
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { cuentaPermiteOperar, type EstadoOperativoDeCuenta } from '@be/domain';
+import type { Request } from 'express';
+import { errores } from '../http/errores';
+import { PrismaService } from '../prisma/prisma.service';
+import { extraerBearer, TokensService } from './tokens.service';
+
+/** Actor autenticado. Sale siempre del token verificado + la base, nunca del cliente (07:883-897). */
+export interface ActorAutenticado {
+  readonly identidadId: string;
+  readonly sesionId: string;
+  readonly momentoDeAutenticacion: Date;
+  readonly expiraEn: Date;
+}
+
+export type SolicitudAutenticada = Request & { actor?: ActorAutenticado };
+
+/** Lo que el guard lee de la sesión, de su identidad y de su control de sesión, en una sola consulta. */
+interface FilaDeSesion {
+  readonly identidadId: string;
+  readonly estado: string;
+  readonly expiraEn: Date;
+  readonly momentoDeOcurrencia: Date;
+  readonly versionDeControl: number;
+  readonly estadoOperativoDeCuenta: string;
+  /** `null` si la identidad no tiene fila de control: entonces ningún token coincide y la sesión no autentica. */
+  readonly versionVigente: number | null;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * AuthN `SESSION` (09v7 T14): «Sesión activa y cuenta operativa». Se evalúa en CADA request contra la base, así
+ * la revocación afecta «la siguiente request» (09v7 T15) aunque el token no haya expirado (07:2977, TEST-AUTH-012).
+ */
+@Injectable()
+export class SesionGuard implements CanActivate {
+  constructor(private readonly prisma: PrismaService, private readonly tokens: TokensService) {}
+
+  async canActivate(contexto: ExecutionContext): Promise<boolean> {
+    const req = contexto.switchToHttp().getRequest<SolicitudAutenticada>();
+    const token = extraerBearer(req.get('authorization'));
+    if (!token) throw errores.autenticacionRequerida();
+    const reclamos = this.tokens.verificar(token);
+    if (!UUID.test(reclamos.sid)) throw errores.sesionInvalida();
+
+    // P2028 (EVIDENCIA/P2028) · una sola ida y vuelta, no tres. Prisma leía la sesión, la identidad y el control de
+    // sesión con una consulta cada una. El guard corre en cada pedido, fuera de la transacción, y cada consulta toma una
+    // conexión del pool. Se lee lo mismo y se comprueba lo mismo, en el mismo orden.
+    const [sesion] = await this.prisma.$queryRaw<FilaDeSesion[]>`
+      SELECT s."identidad_id"::text AS "identidadId", s."estado"::text AS "estado", s."expira_en" AS "expiraEn",
+             s."momento_de_ocurrencia" AS "momentoDeOcurrencia", s."version_de_control" AS "versionDeControl",
+             i."estado_operativo_de_cuenta"::text AS "estadoOperativoDeCuenta", c."version" AS "versionVigente"
+        FROM "sesion" s
+        JOIN "identidad" i ON i."id" = s."identidad_id"
+        LEFT JOIN "control_de_sesion" c ON c."identidad_id" = s."identidad_id"
+       WHERE s."id" = ${reclamos.sid}::uuid`;
+    if (!sesion || sesion.identidadId !== reclamos.sub) throw errores.sesionInvalida();
+    if (sesion.estado !== 'ACTIVA') throw errores.sesionRevocada();
+    if (sesion.expiraEn.getTime() <= Date.now()) throw errores.sesionExpirada();
+    if (sesion.versionVigente !== reclamos.tv || sesion.versionDeControl !== reclamos.tv) throw errores.sesionRevocada();
+    // INV-06-28 / REG-06-23: SUSPENDIDA y CERRADA no operan, aunque la sesión siga marcada ACTIVA.
+    if (!cuentaPermiteOperar(sesion.estadoOperativoDeCuenta as EstadoOperativoDeCuenta)) throw errores.sesionRevocada();
+
+    req.actor = {
+      identidadId: sesion.identidadId,
+      sesionId: reclamos.sid,
+      momentoDeAutenticacion: sesion.momentoDeOcurrencia,
+      expiraEn: sesion.expiraEn,
+    };
+    return true;
+  }
+}
+
+export function actorDe(req: SolicitudAutenticada): ActorAutenticado {
+  if (!req.actor) throw errores.autenticacionRequerida();
+  return req.actor;
+}
