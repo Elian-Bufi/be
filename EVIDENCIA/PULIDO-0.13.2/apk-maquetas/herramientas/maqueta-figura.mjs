@@ -17,6 +17,8 @@ const comp = await import(pathToFileURL(path.join(RAIZ, 'apps/mobile/src/composi
 const [ancho = '320', sexo = 'HOMBRE', familia = 'PLIEGUES', tema = 'claro', escalaTxt = '1', salida = 'maqueta.html'] = process.argv.slice(2);
 const W = Number(ancho);
 const ELEGIDA = process.env.ELEGIDA ?? null;
+// MAPA_DE_TOQUE=1: qué elige cada punto de la figura (comp.sitioTocado), sobre el dibujo.
+const MAPA = process.env.MAPA_DE_TOQUE === '1';
 const E = Number(escalaTxt);
 // Los tokens de tema.ts que usa la figura.
 const tokens = fs.readFileSync(path.join(RAIZ, 'apps/mobile/src/tema.ts'), 'utf8');
@@ -76,7 +78,7 @@ function segmentos(opciones, elegida) {
 
 let h = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;600;700;800&display=swap" rel="stylesheet">`;
 h += `<body style="margin:0;background:${P.pagina};font-family:Roboto,Arial,sans-serif"><div style="width:${W}px;margin:12px 16px">`;
-h += `<div style="font:700 11px Roboto,Arial;letter-spacing:.06em;color:#fff;background:#B42318;padding:4px 8px;border-radius:4px;display:inline-block">MAQUETA · NO ES LA APK · ${sexo} · ${familia} · ${tema} · letra ×${E} · modo ${c.modo}${ELEGIDA ? ' · elegida ' + ELEGIDA : ''}</div>`;
+h += `<div style="font:700 11px Roboto,Arial;letter-spacing:.06em;color:#fff;background:#B42318;padding:4px 8px;border-radius:4px;display:inline-block">MAQUETA · NO ES LA APK · ${sexo} · ${familia} · ${tema} · letra ×${E} · modo ${c.modo}${ELEGIDA ? ' · elegida ' + ELEGIDA : ''}${MAPA ? ' · mapa de toque' : ''}</div>`;
 h += segmentos(['Perímetros', 'Pliegues'], familia === 'PERIMETROS' ? 'Perímetros' : 'Pliegues');
 h += `<div style="position:relative;width:${W}px;height:${c.alto}px;background:${L.fondo};border-radius:16px;overflow:hidden;margin:8px 0">`;
 // El contorno: la imagen teñida y corrida en ocho direcciones (en el navegador, con un filtro que la lleva a un color).
@@ -101,6 +103,31 @@ if (c.modo === 'NUMEROS') {
     const f = t.filas[0];
     const x = t.x + 2 + c.ficha / 2;
     h += `<circle cx="${x}" cy="${f.y}" r="${c.ficha / 2}" fill="${L.tarjeta}" stroke="${L.borde}"/><text x="${x}" y="${f.y + c.ficha * 0.18}" font-size="${c.ficha * 0.5}" font-weight="700" fill="${L.valor}" text-anchor="middle" font-family="Roboto,Arial">${f.sitio.numero}</text>`;
+  }
+}
+if (MAPA) {
+  // Cada sitio, un color; el gris rayado es un toque parejo entre dos sitios. Se agrupan las celdas de una fila en tramos.
+  const tono = new Map(c.sitios.map((st, i) => [st.clave, Math.round((i * 360) / c.sitios.length)]));
+  const tapa = (x, y) => c.modo === 'TARJETAS' && c.tarjetas.some((t) => x >= t.x && x <= t.x + t.ancho && y >= t.y && y <= t.y + t.alto);
+  h += '<defs><pattern id="parejo" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="rgba(40,40,40,.55)"/><rect width="3" height="6" fill="rgba(230,230,230,.75)"/></pattern></defs>';
+  const paso = 2;
+  for (let y = 0; y < c.alto; y += paso) {
+    let inicio = 0;
+    let actual = null;
+    const cerrar = (fin) => {
+      if (actual === null) return;
+      const relleno = actual === 'parejo' ? 'url(#parejo)' : `hsla(${tono.get(actual)}, 85%, 55%, .42)`;
+      h += `<rect x="${inicio}" y="${y}" width="${fin - inicio}" height="${paso}" fill="${relleno}"/>`;
+    };
+    for (let x = 0; x <= W; x += paso) {
+      const t = x < W && !tapa(x, y) ? comp.sitioTocado(c.sitios, x + paso / 2, y + paso / 2) : null;
+      const valor = t === null ? null : t.tipo === 'sitio' ? t.clave : 'parejo';
+      if (valor !== actual) {
+        cerrar(x);
+        inicio = x;
+        actual = valor;
+      }
+    }
   }
 }
 h += '</svg>';

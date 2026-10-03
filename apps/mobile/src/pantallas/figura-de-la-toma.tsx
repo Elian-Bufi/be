@@ -19,6 +19,10 @@
  * tocarla la suelta. La relación no depende solo del color: la fila elegida lleva borde y negrita, y su sitio, un aro
  * propio. Los valores de todas las medidas siguen a la vista.
  *
+ * **Objetivos de 48 dp.** Las filas miden al menos 48 dp. En la figura, cada sitio responde hasta 24 dp de su dibujo,
+ * sin agrandar lo que se ve (`sitioTocado`). Donde dos sitios quedan casi juntos, el toque no adivina: lo dice, y la
+ * fila elige sin ambigüedad.
+ *
  * La figura es de un hombre o de una mujer según elija la persona, y se recuerda en el teléfono: no se deduce de ningún
  * dato. Ubica, nunca califica (RF-048; INV-06-06; DL-073): los colores distinguen capas del dibujo, nunca rangos, y la
  * diferencia es un número con signo. El lector de pantalla no recorre la figura: los mismos datos, completos, están en
@@ -43,7 +47,7 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, Text, useWindowDimensions, View, type ImageSourcePropType } from 'react-native';
 import Svg, { Circle, Ellipse, G, Path, Text as TextoSvg } from 'react-native-svg';
 import { useApariencia } from '../apariencia';
-import { componerLaFigura, INTERLINEA, LETRA, type ComposicionDeLaFigura, type FamiliaDeLaFigura, type FilaDeLaTarjeta, type SitioDeLaFigura } from '../composicion-de-la-figura';
+import { componerLaFigura, INTERLINEA, LETRA, sitioTocado, type ComposicionDeLaFigura, type FamiliaDeLaFigura, type FilaDeLaTarjeta, type SitioDeLaFigura } from '../composicion-de-la-figura';
 import { ANILLO_EN_EL_TELEFONO, arcoDeLaElipse, GUIA_EN_EL_TELEFONO, PLIEGUE_EN_EL_TELEFONO, PLIEGUE_POSTERIOR_EN_EL_TELEFONO, trazoDeLaGuia } from '../dibujo-de-la-figura';
 import { PALETAS, type Tema } from '../tema';
 import { Segmentos } from '../ui';
@@ -97,6 +101,8 @@ export function FiguraDeLaToma({ medidas }: { medidas: readonly MedidaDeLaToma[]
   const [familia, setFamilia] = useState<FamiliaDeLaFigura>(hayPerimetros ? 'PERIMETROS' : 'PLIEGUES');
   const [ancho, setAncho] = useState(0);
   const [elegida, setElegida] = useState<ClaveDeLaLamina | null>(null);
+  // Los sitios que quedaron casi juntos bajo el último toque: la pantalla lo dice en vez de elegir uno al azar.
+  const [juntos, setJuntos] = useState<readonly ClaveDeLaLamina[] | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(CLAVE_DE_LA_FIGURA)
@@ -116,7 +122,17 @@ export function FiguraDeLaToma({ medidas }: { medidas: readonly MedidaDeLaToma[]
   const lamina = laminaDe(tema);
   // La elegida vale solo si está en la familia que se ve.
   const sitioElegido = composicion?.sitios.find((x) => x.clave === elegida) ?? null;
-  const alternar = (clave: ClaveDeLaLamina) => setElegida((actual) => (actual === clave ? null : clave));
+  const alternar = (clave: ClaveDeLaLamina) => {
+    setJuntos(null);
+    setElegida((actual) => (actual === clave ? null : clave));
+  };
+  const tocar = (x: number, y: number) => {
+    if (!composicion) return;
+    const toque = sitioTocado(composicion.sitios, x, y);
+    if (toque?.tipo === 'sitio') alternar(toque.clave);
+    else if (toque?.tipo === 'ambiguo') setJuntos(toque.claves);
+  };
+  const rotulosJuntos = juntos ? (composicion?.sitios ?? []).filter((s) => juntos.includes(s.clave)).map((s) => s.rotulo) : [];
 
   return (
     <View>
@@ -132,11 +148,16 @@ export function FiguraDeLaToma({ medidas }: { medidas: readonly MedidaDeLaToma[]
         />
       ) : null}
       <View onLayout={(e) => setAncho(Math.round(e.nativeEvent.layout.width))} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        {composicion ? <Lamina composicion={composicion} sexo={sexo} tema={tema} elegida={sitioElegido?.clave ?? null} alternar={alternar} /> : null}
+        {composicion ? <Lamina composicion={composicion} sexo={sexo} tema={tema} elegida={sitioElegido?.clave ?? null} alternar={alternar} tocar={tocar} /> : null}
         {/* Con números, los valores van acá abajo y crecen con la letra. El lector de pantalla tiene la lista completa
             de la toma, más abajo en la pantalla, y no recorre esta. */}
         {composicion?.modo === 'NUMEROS' ? <ListaDeNumeros sitios={composicion.sitios} ficha={composicion.ficha} lamina={lamina} elegida={sitioElegido?.clave ?? null} alternar={alternar} /> : null}
       </View>
+      {rotulosJuntos.length > 1 ? (
+        <Text style={{ fontSize: 14, lineHeight: 20, color: lamina.detalle, marginBottom: 6 }} accessibilityLiveRegion="polite">
+          {`Ahí quedan juntos ${rotulosJuntos.join(' y ')}: tocá su fila para elegir uno.`}
+        </Text>
+      ) : null}
       {sitioElegido ? <DetalleDelSitio sitio={sitioElegido} lamina={lamina} /> : null}
       {/* Hombre o mujer, debajo de la figura: es solo cómo se ve el dibujo, no cambia ningún dato. */}
       <Segmentos
@@ -158,12 +179,14 @@ function Lamina({
   tema,
   elegida,
   alternar,
+  tocar,
 }: {
   composicion: ComposicionDeLaFigura;
   sexo: SexoDeLaLamina;
   tema: Tema;
   elegida: ClaveDeLaLamina | null;
   alternar: (clave: ClaveDeLaLamina) => void;
+  tocar: (x: number, y: number) => void;
 }) {
   const colores = COLORES_DE_LA_FIGURA[TEMA_DE_LA_LAMINA[tema]];
   const lamina = laminaDe(tema);
@@ -211,16 +234,10 @@ function Lamina({
             })
           : null}
       </Svg>
-      {/* Tocar el sitio en la figura lo elige: un área de 44 dp alrededor de cada uno. Con dos sitios en el mismo lugar
-          (bíceps y tríceps), gana el que se dibujó después; la fila elige sin ambigüedad. */}
-      {sitios.map((s) => (
-        <Pressable
-          key={`toque-${s.clave}`}
-          onPress={() => alternar(s.clave)}
-          style={{ position: 'absolute', left: s.cx - 22, top: s.cy - 22, width: 44, height: 44 }}
-          accessible={false}
-        />
-      ))}
+      {/* Tocar la figura elige el sitio más cercano, hasta 24 dp de su dibujo: un objetivo de 48 dp sin agrandar lo que se
+          ve. Donde dos sitios quedan casi juntos, no elige ninguno (sitioTocado). Las tarjetas van después, encima: sus
+          filas reciben su propio toque. */}
+      <Pressable onPress={(e) => tocar(e.nativeEvent.locationX, e.nativeEvent.locationY)} style={{ position: 'absolute', left: 0, top: 0, width: ancho, height: alto }} accessible={false} />
       {modo === 'TARJETAS'
         ? tarjetas.map((t) => (
             <View

@@ -44,6 +44,15 @@ export const INTERLINEA = { rotulo: 16, valor: 20 } as const;
 
 /** Medidas fijas del dibujo, en dp. */
 const RELLENO = 6;
+/**
+ * El alto mínimo de una fila de tarjeta: es un objetivo táctil, y la regla de la APK es 48 dp (guía de UX §5). Con la
+ * letra normal y un rótulo de una línea, el texto pide 44: la fila crece hasta 48, sin agrandar la letra.
+ */
+export const ALTO_MINIMO_DE_FILA = 48;
+/** Cuánto se aleja un toque del dibujo de un sitio y lo sigue eligiendo: 24 dp alrededor, un objetivo de 48 dp. */
+export const RADIO_DE_TOQUE = 24;
+/** Si otro sitio queda a menos de esta diferencia de distancia, el toque no elige: sería adivinar. Elige la fila. */
+export const MARGEN_DE_AMBIGUEDAD = 8;
 const SEPARACION = 8;
 const MARGEN = 10;
 const PADDING_DE_TARJETA = 8;
@@ -200,7 +209,7 @@ export function componerLaFigura(entrada: EntradaDeLaComposicion): ComposicionDe
           if (valor > util || rotulo > 2 * util * 0.92) return null;
           const lineasDelRotulo = rotulo > util ? 2 : 1;
           l.push(lineasDelRotulo);
-          a.push(Math.ceil((lineasDelRotulo * INTERLINEA.rotulo + INTERLINEA.valor) * escala) + 8);
+          a.push(Math.max(ALTO_MINIMO_DE_FILA, Math.ceil((lineasDelRotulo * INTERLINEA.rotulo + INTERLINEA.valor) * escala) + 8));
         }
         lineas.push(l);
         altosDeFila.push(a);
@@ -254,4 +263,33 @@ export function componerLaFigura(entrada: EntradaDeLaComposicion): ComposicionDe
     );
     return { modo, ancho, alto, imagen, sitios, tarjetas, guias, ficha };
   }
+}
+
+/**
+ * La distancia de un toque al dibujo de un sitio. Para un pliegue, al punto. Para un perímetro, al eje del anillo: los
+ * anillos son elipses planas que cruzan el cuerpo, y se miden como el segmento de su eje mayor. Así, tocar el centro de
+ * un anillo lo elige aunque otro anillo pase cerca, y dos anillos solo quedan parejos si de verdad coinciden.
+ */
+export function distanciaAlSitio(sitio: SitioDeLaFigura, x: number, y: number): number {
+  if (!sitio.anillo) return Math.hypot(x - sitio.cx, y - sitio.cy);
+  const { rx, ry } = sitio.anillo;
+  if (rx >= ry) return Math.hypot(Math.max(0, Math.abs(x - sitio.cx) - rx), y - sitio.cy);
+  return Math.hypot(x - sitio.cx, Math.max(0, Math.abs(y - sitio.cy) - ry));
+}
+
+export type ToqueEnLaFigura = { readonly tipo: 'sitio'; readonly clave: ClaveDeLaLamina } | { readonly tipo: 'ambiguo'; readonly claves: readonly ClaveDeLaLamina[] } | null;
+
+/**
+ * Qué elige un toque en la figura. Cada sitio responde hasta 24 dp de su dibujo, un objetivo de 48 dp, sin agrandar lo
+ * que se ve. Si otro sitio queda casi a la misma distancia (menos de 8 dp de diferencia), el toque no elige ninguno:
+ * sería adivinar. La pantalla lo dice, y la fila de cada sitio elige sin ambigüedad. Pasa, por ejemplo, con el bíceps
+ * y el tríceps, que de frente quedan casi en el mismo lugar.
+ */
+export function sitioTocado(sitios: readonly SitioDeLaFigura[], x: number, y: number): ToqueEnLaFigura {
+  const todos = sitios.map((sitio) => ({ sitio, distancia: distanciaAlSitio(sitio, x, y) })).sort((a, b) => a.distancia - b.distancia);
+  const masCerca = todos[0];
+  if (!masCerca || masCerca.distancia > RADIO_DE_TOQUE) return null;
+  // La ventaja se exige contra todos: un sitio apenas fuera de su radio también vuelve dudoso el toque.
+  const parejos = todos.filter((c) => c.distancia - masCerca.distancia < MARGEN_DE_AMBIGUEDAD);
+  return parejos.length === 1 ? { tipo: 'sitio', clave: masCerca.sitio.clave } : { tipo: 'ambiguo', claves: parejos.map((c) => c.sitio.clave) };
 }
