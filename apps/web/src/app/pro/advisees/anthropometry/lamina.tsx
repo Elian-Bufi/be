@@ -427,53 +427,24 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
   return (
     <section className="seccion lamina" aria-labelledby="titulo-lamina">
       <h2 id="titulo-lamina">{C.lamina}</h2>
-      {/* DL-113 · qué es la lámina y cómo se lee, plegado: arriba quedan los controles y la imagen. */}
-      <Ayuda>
-        <p>{C.explicacionDeLamina}</p>
-        {hoja !== 'CONCLUSIONES' ? <p>{C.explicacionDeFigura}</p> : null}
-        {modo === 'SERIE' ? <p>{C.laminaExplicacionDeResta}</p> : null}
-        {modo === 'SERIE' && hoja !== 'CONCLUSIONES' ? <p>{C.laminaSerieSinEntero}</p> : null}
-        <p>{C.laminaTemaPropio}</p>
-      </Ayuda>
       {pedida !== null && pedidaValida === null ? (
         <Aviso tipo="info">
           <p>{C.laminaEvaluacionPedidaNoEsta}</p>
         </Aviso>
       ) : null}
 
-      <div className="lamina__controles">
-        <Opciones
-          id="lamina-hoja"
-          titulo={C.lamina}
-          opciones={(['CIRCUNFERENCIAS', 'PLIEGUES', 'CONCLUSIONES'] as const).map((h) => ({ valor: h, texto: h === 'CONCLUSIONES' ? tercera : C.laminaHojas[h] }))}
-          elegida={hoja}
-          onElegir={setHoja}
-        />
-        <Opciones id="lamina-modo" titulo={C.laminaModo} opciones={(['MEDICION', 'SERIE'] as const).map((m) => ({ valor: m, texto: C.laminaModos[m] }))} elegida={modo} onElegir={elegirModo} />
-        {hoja !== 'CONCLUSIONES' ? (
-          <>
-            <Opciones
-              id="lamina-encuadre"
-              titulo={C.laminaEncuadre}
-              opciones={encuadres.map((e) => ({ valor: e, texto: C.laminaEncuadres[e] }))}
-              elegida={encuadreVisible}
-              onElegir={setEncuadre}
-            />
-            <Opciones
-              id="lamina-figura"
-              titulo={C.figura}
-              opciones={[
-                { valor: 'HOMBRE' as const, texto: C.figuraHombre },
-                { valor: 'MUJER' as const, texto: C.figuraMujer },
-              ]}
-              elegida={sexo}
-              onElegir={setSexo}
-            />
-          </>
-        ) : null}
-        <Opciones id="lamina-tema" titulo={C.laminaTema} opciones={TEMAS.map((t) => ({ valor: t, texto: C.laminaTemas[t] }))} elegida={tema} onElegir={elegirTema} />
-      </div>
-
+      {/*
+        Pulido del 2026-10-03 (prueba de Dirección con la 0.13.1: en el teléfono, los controles empujaban la imagen hacia
+        abajo). El orden es el de la tarea:
+        - qué se muestra: la toma, o las tomas de la serie, y la hoja;
+        - la imagen con «Descargar imagen»;
+        - los ajustes de cómo se ve;
+        - al final, las notas y la explicación.
+        En el teléfono la imagen entra en la primera pantalla. En una pantalla ancha va a la derecha y queda fija mientras
+        se ajusta. El orden del documento es el del teléfono, y el foco lo sigue.
+      */}
+      <div className="lamina__disposicion">
+      <div className="lamina__que">
       {modo === 'MEDICION' ? (
         <div className="campo lamina__toma">
           <label htmlFor="lamina-toma">{C.laminaToma}</label>
@@ -505,27 +476,77 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
           </ul>
         </fieldset>
       )}
-
-      {selectorDeSeries}
-
-      <div className="acciones">
-        <button type="button" className="boton boton--primario" onClick={() => void descargar()} disabled={!sePuedeDescargar} aria-busy={descarga === 'preparando'}>
-          {descarga === 'preparando' ? C.preparandoImagen : C.descargarImagen}
-        </button>
-        <p className="nota" role="status">
-          {descarga === 'hecha' ? C.imagenDescargada : descarga === 'error' ? C.imagenNoSePudo : ''}
-        </p>
+      <Opciones
+        id="lamina-hoja"
+        titulo={C.lamina}
+        opciones={(['CIRCUNFERENCIAS', 'PLIEGUES', 'CONCLUSIONES'] as const).map((h) => ({ valor: h, texto: h === 'CONCLUSIONES' ? tercera : C.laminaHojas[h] }))}
+        elegida={hoja}
+        onElegir={setHoja}
+      />
       </div>
 
-      {espera ?? (
-        <div className="lamina__lienzo">
-          <LaminaSvg tema={tema} descripcion={descripcion} refDelSvg={svg}>
-            {contenido}
-          </LaminaSvg>
+      <div className="lamina__vista">
+        {espera ?? (
+          <div className="lamina__lienzo">
+            <LaminaSvg tema={tema} descripcion={descripcion} refDelSvg={svg}>
+              {contenido}
+            </LaminaSvg>
+          </div>
+        )}
+        <div className="acciones lamina__acciones">
+          <button type="button" className="boton boton--primario" onClick={() => void descargar()} disabled={!sePuedeDescargar} aria-busy={descarga === 'preparando'}>
+            {descarga === 'preparando' ? C.preparandoImagen : C.descargarImagen}
+          </button>
+          <p className="nota" role="status">
+            {descarga === 'hecha' ? C.imagenDescargada : descarga === 'error' ? C.imagenNoSePudo : ''}
+          </p>
         </div>
-      )}
+      </div>
 
-      <div className="lamina__notas">{notas}</div>
+      <div className="lamina__ajustes" role="group" aria-labelledby="titulo-ajustes-de-la-lamina">
+        <h3 id="titulo-ajustes-de-la-lamina" className="lamina__ajustes-titulo">
+          {C.laminaAjustes}
+        </h3>
+        <div className="lamina__controles">
+          <Opciones id="lamina-modo" titulo={C.laminaModo} opciones={(['MEDICION', 'SERIE'] as const).map((m) => ({ valor: m, texto: C.laminaModos[m] }))} elegida={modo} onElegir={elegirModo} />
+          {hoja !== 'CONCLUSIONES' ? (
+            <>
+              <Opciones
+                id="lamina-encuadre"
+                titulo={C.laminaEncuadre}
+                opciones={encuadres.map((e) => ({ valor: e, texto: C.laminaEncuadres[e] }))}
+                elegida={encuadreVisible}
+                onElegir={setEncuadre}
+              />
+              <Opciones
+                id="lamina-figura"
+                titulo={C.figura}
+                opciones={[
+                  { valor: 'HOMBRE' as const, texto: C.figuraHombre },
+                  { valor: 'MUJER' as const, texto: C.figuraMujer },
+                ]}
+                elegida={sexo}
+                onElegir={setSexo}
+              />
+            </>
+          ) : null}
+          <Opciones id="lamina-tema" titulo={C.laminaTema} opciones={TEMAS.map((t) => ({ valor: t, texto: C.laminaTemas[t] }))} elegida={tema} onElegir={elegirTema} />
+        </div>
+        {selectorDeSeries}
+      </div>
+
+      <div className="lamina__pie">
+        <div className="lamina__notas">{notas}</div>
+        {/* DL-113 · qué es la lámina y cómo se lee, plegado y al final: arriba quedan lo que se muestra y la imagen. */}
+        <Ayuda>
+          <p>{C.explicacionDeLamina}</p>
+          {hoja !== 'CONCLUSIONES' ? <p>{C.explicacionDeFigura}</p> : null}
+          {modo === 'SERIE' ? <p>{C.laminaExplicacionDeResta}</p> : null}
+          {modo === 'SERIE' && hoja !== 'CONCLUSIONES' ? <p>{C.laminaSerieSinEntero}</p> : null}
+          <p>{C.laminaTemaPropio}</p>
+        </Ayuda>
+      </div>
+      </div>
     </section>
   );
 }

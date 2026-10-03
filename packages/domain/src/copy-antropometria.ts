@@ -192,6 +192,7 @@ export const COPY_ANTROPOMETRIA = {
   laminaEncuadre: 'Encuadre',
   laminaTema: 'Tema de la lámina',
   laminaTemaPropio: 'El tema es solo de la lámina: no cambia la apariencia del website.',
+  laminaAjustes: 'Cómo se ve',
   laminaHojas: { CIRCUNFERENCIAS: 'Circunferencias', PLIEGUES: 'Pliegues', CONCLUSIONES: 'Conclusiones' },
   laminaModos: { MEDICION: 'Medición', SERIE: 'Serie' },
   laminaEncuadres: { ENTERO: 'Entero', TREN_SUPERIOR: 'Tren superior', TREN_INFERIOR: 'Tren inferior' },

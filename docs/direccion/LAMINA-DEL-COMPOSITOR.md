@@ -112,6 +112,11 @@ La imagen se escala para que la caja del cuerpo mida `altoDelCuerpo` y se corre 
 | Modo | Encuadre | altoDelCuerpo | centroX | arriba | Piso |
 |---|---|---|---|---|---|
 | Medición (`LAY`) | Entero | 1270 | 840 | 408 | sí |
+
+> **Ajuste del 2026-10-03.** Dirección pidió una imagen exportada más equilibrada. En BE, Medición con el cuerpo entero
+> usa 1390 de alto y 290 arriba (el centro sigue en 840): la figura llena la franja vacía bajo el encabezado y los pies
+> quedan donde estaban. La tabla conserva los valores del compositor v13.3; el código dice cuáles usa BE
+> (`ENCUADRE_EN_MEDICION`).
 | Medición | Tren superior | 1120 | 875 | 300 | no |
 | Medición | Tren inferior | 1300 | 845 | 360 | sí |
 | Serie (`SLAY`) | Tren superior | 820 | 540 | 560 | no |
