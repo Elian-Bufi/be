@@ -36,7 +36,7 @@ export const COPY_ANTROPOMETRIA = {
   guardarBorrador: 'Guardar',
   guardado: 'Guardado',
   cambiosSinGuardar: 'Cambios sin guardar',
-  medicionIncompleta: 'Hay una medición sin completar. Cada medición necesita qué se midió, el valor, la unidad y cuándo se tomó. Completala o quitala antes de guardar.',
+  revisarAntesDeGuardar: 'Antes de guardar, revisá estas mediciones. Cada una lleva a su campo:',
 
   // ─── Registrar ────────────────────────────────────────────────────────────────────────────────
   registrarEvaluacion: 'Registrar evaluación',
