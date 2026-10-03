@@ -333,6 +333,39 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 **Condición de cierre.** Se implementa el refresh rotativo (T-10) o Dirección ratifica A para el MVP.
 
+**Nota del 2026-10-03: por qué la APK vuelve a la bienvenida.** Dirección informó, en la prueba de la 0.13.1, que la APK
+vuelve a la bienvenida después de cerrarla y también después de un tiempo que no se midió
+(`EVIDENCIA/PRUEBA-MANUAL-0.13.1`). Que vuelva a la **bienvenida**, y no a Iniciar sesión con un aviso, quiere decir que
+se perdió la memoria de la app. La API no rechazó la sesión. Hay dos causas:
+- **El proceso se cierra.** Pasa al cerrar la app desde Recientes, o cuando Android cierra una app en segundo plano para
+  liberar memoria, cosa frecuente en teléfonos con poca. Es la opción A de esta deuda, que sigue vigente: el token vive
+  solo en memoria.
+- **La actividad se recrea.** Android la recrea al cambiar el tamaño de letra o de visualización, el idioma o la negrita
+  del sistema. El proceso sigue vivo, pero React vuelve a montar la raíz y la sesión estaba en su estado. **Esta causa
+  se corrigió** en la rama `apk/sesion-y-navegacion`, sin integrar: la sesión vive fuera del árbol de React, siempre en
+  memoria.
+
+Además:
+- La API no transforma una falla pasajera en un rechazo de sesión. El secreto de firma es obligatorio y no se genera al
+  arrancar.
+- La APK solo sale de la sesión ante un código de sesión. Un 403, un 429, un 5xx o la falta de red no la cierran, y
+  ahora una prueba lo fija.
+- La sesión vence a las 12 h del inicio, aunque se use, y no por inactividad. Al vencer, la APK lo dice.
+
+**Propuesta, a decidir por Dirección: continuidad en el teléfono dentro de la misma sesión.**
+- **Qué se guarda.** El token que ya existe se guarda en el almacenamiento seguro de Android (Keystore, con
+  `expo-secure-store`) hasta su `expiresAt`, como mucho 12 h. No se guarda la contraseña.
+- **Qué no cambia.** No hay renovación ni otro mecanismo de autenticación. La API sigue verificando la fila de sesión en
+  cada request, así que «Cerrar todas las sesiones» y la revocación siguen cortando en el pedido siguiente.
+- **Cuándo se borra.** Al cerrar la sesión, al vencer y ante cualquier código de sesión.
+- **Qué cambia.** Reiniciar la APK ya no obliga a volver a iniciar sesión, cosa que hoy fija el 07:537. Por eso decide
+  Dirección.
+- **Qué hace falta.** Una dependencia nativa nueva y una APK nueva. Es la mitad de la opción B (SecureStore sin refresh
+  rotativo).
+- **Riesgo.** Con el teléfono desbloqueado, alguien que tome la app entra hasta que la sesión venza o se la revoque.
+- **Alternativa.** Ratificar A tal como está. Para la demostración, conviene no cerrar la app ni cambiar de aplicación
+  por mucho tiempo.
+
 ## DL-013 — No hay política de contraseñas en el legajo
 
 **Prioridad:** media · **Documento:** 08 §24.2 · 09v8:1953-1964 · **Estado:** ABIERTA
