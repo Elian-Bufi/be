@@ -125,6 +125,7 @@ test('2 · si la API dice que venció, se borra y el aviso dice que venció y cu
   const r = await p.recuperarSesion({ guarda: procesoNuevo(almacen), verificar: async () => rechazo(401, 'SESSION_EXPIRED'), ahora: ahora(Date.now()), sigueVigente: () => true });
   assert.deepEqual(r, { tipo: 'vencida', vigenciaMs: 12 * HORA });
   assert.equal(memoria.avisoDeVencimiento(r), 'Tu sesión venció: duraba 12 horas. Iniciá sesión para continuar.');
+  await vaciar();
   assert.equal(almacen.datos.size, 0);
 });
 
@@ -137,6 +138,7 @@ test('3 · si la API la rechaza (revocada, inválida, sin autenticar) o la ident
     await p.crearGuardaDeSesion(almacen).guardar(A);
     const r = await p.recuperarSesion({ guarda: procesoNuevo(almacen), verificar: async () => respuesta, ahora: ahora(Date.now()), sigueVigente: () => true });
     assert.deepEqual(r, { tipo: 'no-valida', aviso: 'La sesión ya no es válida. Iniciá sesión para continuar.' }, JSON.stringify(respuesta));
+    await vaciar();
     assert.equal(almacen.datos.size, 0);
   }
 });
@@ -161,6 +163,23 @@ test('4 · sin red, con 429, 503 o un 403, la credencial no se borra; reintentar
     const otra = await p.recuperarSesion({ guarda, credencial: r.credencial, verificar: async () => aceptada('identidad-a', A.expiresAt, 'Sat, 03 Oct 2026 15:00:00 GMT'), ahora: ahora(Date.now()), sigueVigente: () => true });
     assert.equal(otra.tipo, 'recuperada');
   }
+});
+
+test('4 · si la API no responde a tiempo, cuenta como sin conexión: la credencial queda y se puede reintentar', async () => {
+  const almacen = almacenFalso();
+  await p.crearGuardaDeSesion(almacen).guardar(A);
+  const r = await p.recuperarSesion({ guarda: procesoNuevo(almacen), verificar: () => new Promise(() => {}), ahora: ahora(Date.now()), sigueVigente: () => true, esperaMaximaDeVerificacionMs: 20 });
+  assert.equal(r.tipo, 'sin-verificar');
+  assert.equal(r.sinConexion, true);
+  assert.ok(almacen.datos.has(p.CLAVE_DE_LA_SESION));
+});
+
+test('8 · un borrado que el almacén no termina no frena la decisión: la app va a Iniciar sesión igual', async () => {
+  const almacen = almacenFalso();
+  await p.crearGuardaDeSesion(almacen).guardar(A);
+  almacen.borrar = () => new Promise(() => {});
+  const r = await p.recuperarSesion({ guarda: procesoNuevo(almacen), verificar: async () => rechazo(401, 'SESSION_EXPIRED'), ahora: ahora(Date.now()), sigueVigente: () => true });
+  assert.equal(r.tipo, 'vencida');
 });
 
 // ─── 5. Cerrar la sesión y volver a abrir ────────────────────────────────────────────────────────────────────────
