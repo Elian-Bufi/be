@@ -60,4 +60,5 @@ export * from './habituales';
 export * from './cartera';
 export * from './contratos-cartera';
 export * from './fechas-civiles';
+export * from './lecturas-de-la-sesion';
 export * from './evolucion-antropometrica';

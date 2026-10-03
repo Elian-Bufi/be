@@ -31,9 +31,10 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
-import { Cargando, ErrorConReintento, EstadoDeCarga, VerMas } from '../estados';
+import { Cargando, ErrorConReintento, EstadoDeCarga, SinActualizar, VerMas } from '../estados';
 import { dia, fecha } from '../formato';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
+import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useListaPaginada } from '../lista';
 import { useAccesoRetirado, useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilosPorTema } from '../ui';
@@ -48,22 +49,17 @@ const detalleDeItem = (i: { quantity: { value: number; unit: 'g' | 'ml' | 'unit'
 /** Carga «Hoy» (API-NUT-14) con el día tipo elegido, si hay que elegir. */
 function useHoy(token: string, salir: (m: Salida) => void) {
   const sesionPerdida = useSesionPerdida(salir);
-  const [diaTipo, setDiaTipo] = useState<string | undefined>(undefined);
-  const [r, setR] = useState<Resultado<HoyResponse> | null>(null);
-  const cargar = useCallback(async () => {
-    setR(null);
-    const res = await api.hoyNutricional(token, diaTipo);
-    if (sesionPerdida(res)) return;
-    setR(res);
-  }, [token, diaTipo, sesionPerdida]);
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
-  return { r, cargar, setDiaTipo, sesionPerdida };
+  // El día del plan elegido se recuerda al volver a la zona, mientras dure la sesión.
+  const [diaTipo, setDiaTipo] = useSeleccionRecordada<string | undefined>(token, 'hoy-nutricional:dia', undefined);
+  const pedir = useCallback((): Promise<Resultado<HoyResponse>> => api.hoyNutricional(token, diaTipo), [token, diaTipo]);
+  // Al volver a la zona se ve lo último leído en esta sesión mientras se vuelve a pedir; después de registrar una comida,
+  // también: la pantalla no se vacía (src/lecturas.ts).
+  const { r, cargar, sinActualizar } = useLecturaRecordada(token, `hoy-nutricional:${diaTipo ?? ''}`, pedir, sesionPerdida);
+  return { r, cargar, sinActualizar, setDiaTipo, sesionPerdida };
 }
 
 export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void; subir: () => void }) {
-  const { r, cargar, setDiaTipo, sesionPerdida } = useHoy(token, salir);
+  const { r, cargar, sinActualizar, setDiaTipo, sesionPerdida } = useHoy(token, salir);
   const { retirado, accesoRetirado } = useAccesoRetirado();
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error' | 'info'; texto: string } | null>(null);
 
@@ -93,6 +89,7 @@ export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; sali
   return (
     <View>
       <Titulo>{COPY_NUTRICION.tuPlanDeHoy}</Titulo>
+      <SinActualizar visible={sinActualizar} onReintentar={cargar} />
       {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
       {hoy.planState === 'NO_ACTIVE_PLAN' ? <Aviso tipo="info" titulo={COPY_NUTRICION.sinPlanAsesorado} /> : null}
       {hoy.planState === 'NOT_AVAILABLE' ? (
