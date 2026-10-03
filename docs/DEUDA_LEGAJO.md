@@ -2537,6 +2537,20 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 - Ratificar la excepción o pedir otra salida.
 - Antes del 2026-10-31, revisar si node-forge publicó la corrección (entonces se fija con `overrides` y la excepción se borra) o si Expo dejó de depender de node-forge.
 
+**Ampliación del 2026-10-03: braces (GHSA-vfj7-8cjw-p6xm).** El mismo caso, con otro paquete.
+- **Qué pasó.** El 2026-10-02 a las 22:36 UTC, GitHub actualizó el aviso de braces (CVE-2026-93687): un patrón con llaves
+  muy anidadas agota la pila. Abarca hasta la 3.0.3, la última publicada, y **no hay versión corregida**. Desde ese
+  momento la auditoría de `@be/mobile` falla en cualquier PR: #134 y #135 fallaron solo en ese paso. También fallaría en
+  `main`, porque el lock tiene la misma versión.
+- **Por dónde entra.** `expo` → `@expo/cli` → `@expo/metro-file-map` → `micromatch` → `braces`. Metro y la CLI lo
+  usan al construir, para expandir los patrones de archivos de su configuración. No reciben datos de las personas.
+- **Riesgo bajo y acotado, pero no nulo.** braces no viaja en el bundle de la APK. Tampoco está en la API ni en el
+  website, que auditan limpias. Queda la cadena de construcción: la CI y la máquina que construye la APK.
+- **Lo que se hizo.** Una excepción más en `EXCEPCIONES`, solo para este aviso en este paquete, que también vence el
+  2026-10-31. El resto de la auditoría sigue igual.
+- **Pendiente de Dirección.** Ratificarla junto con la de node-forge. Antes del 2026-10-31, revisar si braces publicó la
+  corrección; si la publicó, se fija con `overrides` y la excepción se borra.
+
 ---
 
 ## DL-115 — Revocado el A3, el titular sigue leyendo su evolución antropométrica y sus formularios
