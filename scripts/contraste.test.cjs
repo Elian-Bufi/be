@@ -136,6 +136,7 @@ const PARES_APK = [
   ['laminaNombre', 'laminaTarjeta', TEXTO, 'rótulo de un sitio en la lámina de la toma'],
   ['laminaValor', 'laminaTarjeta', TEXTO, 'valor de un sitio en la lámina de la toma'],
   ['laminaDetalle', 'laminaTarjeta', TEXTO, 'diferencia con la toma anterior en la lámina'],
+  ['laminaContorno', 'laminaFondo', NO_TEXTO, 'contorno de la silueta sobre la lámina de la toma (1.4.11)'],
 ];
 
 function verificar(tema, pares, nombreDelTema) {

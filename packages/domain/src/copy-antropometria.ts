@@ -179,6 +179,8 @@ export const COPY_ANTROPOMETRIA = {
   explicacionDeFigura: 'La figura ubica dónde se tomó cada medida. Elegí la que prefieras ver: no cambia ningún dato.',
   perimetrosEnLaFigura: 'Perímetros',
   plieguesEnLaFigura: 'Pliegues',
+  medidasDeLaFigura: 'Medidas en la figura',
+  numerosDeLaFigura: 'Cada número de la figura, con su valor',
   otrasMedidas: 'Otras medidas de la toma',
 
   // ─── Lámina (compositor de Dirección v13.3, en el website del profesional; DL-111) ───────────

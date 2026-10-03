@@ -43,6 +43,9 @@ export const AZUL_NOCHE = {
   laminaNombre: '#E0E4EB',
   laminaValor: '#FFFFFF',
   laminaDetalle: '#CED5DF',
+  // El contorno de la silueta. En Azul noche el cuerpo ya contrasta, unos 11:1 con el fondo, y el contorno va del tono
+  // del cuerpo: casi no se ve. En Claro es lo que separa el cuerpo del fondo.
+  laminaContorno: '#E9EEF5',
 };
 
 export const CLARO: Paleta = {
@@ -71,6 +74,9 @@ export const CLARO: Paleta = {
   laminaNombre: '#334155',
   laminaValor: '#1E6BF2',
   laminaDetalle: '#475569',
+  // El contorno de la silueta (prueba de la 0.13.1): el cuerpo blanco contra este fondo medía de 1,01:1 a 1,19:1.
+  // Con el contorno, la silueta se distingue con más de 3:1 (WCAG 1.4.11).
+  laminaContorno: '#64748B',
 };
 
 export type Paleta = { readonly [K in keyof typeof AZUL_NOCHE]: string };

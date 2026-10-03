@@ -134,6 +134,47 @@ export function CampoSiONo({
   );
 }
 
+/**
+ * Opciones excluyentes en píldoras: qué familia de medidas o qué figura (referencia estética de Dirección, 2026-10-03).
+ * - Con letra grande, una píldora que no entra pasa a la línea siguiente en vez de cortar una palabra. En la 0.13.1,
+ *   «Perímetros» y «Pliegues» se partían al medio con la letra al máximo.
+ * - La elegida va llena y en negrita: el color no es la única señal.
+ * - Rol `radiogroup` con `radio` adentro: el lector de pantalla dice cuántas opciones hay y cuál está elegida.
+ * - Cada píldora mide al menos 48 dp de alto.
+ */
+export function Segmentos<T extends string>({
+  etiqueta,
+  opciones,
+  valor,
+  alElegir,
+}: {
+  /** El nombre del grupo para el lector de pantalla. */
+  etiqueta: string;
+  opciones: readonly { readonly valor: T; readonly texto: string }[];
+  valor: T;
+  alElegir: (valor: T) => void;
+}) {
+  return (
+    <View style={estilos.segmentos} accessibilityRole="radiogroup" accessibilityLabel={etiqueta}>
+      {opciones.map((o) => {
+        const elegida = o.valor === valor;
+        return (
+          <Pressable
+            key={o.valor}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: elegida }}
+            accessibilityLabel={o.texto}
+            onPress={() => alElegir(o.valor)}
+            style={({ pressed }) => [estilos.segmento, elegida && estilos.segmentoElegido, pressed && estilos.presionado]}
+          >
+            <Text style={[estilos.textoDeSegmento, elegida && estilos.textoDeSegmentoElegido]}>{o.texto}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 /** Casilla accesible (rol checkbox con estado). Nunca premarcada: el estado lo decide quien la usa. */
 export function Casilla({
   marcada,
@@ -314,6 +355,12 @@ export const estilos = estilosPorTema((COLOR) => ({
   campo: { marginVertical: 8 },
   grupoDeOpciones: { flexDirection: 'row', gap: 12 },
   opcion: { flex: 1 },
+  segmentos: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, padding: 3, marginVertical: 6, borderRadius: 27, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie },
+  // Cada píldora crece para llenar su línea; si no entra junto a la otra, baja entera a la siguiente.
+  segmento: { flexGrow: 1, flexBasis: 'auto', minHeight: 48, paddingHorizontal: 18, paddingVertical: 8, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  segmentoElegido: { backgroundColor: COLOR.botonFondo },
+  textoDeSegmento: { fontSize: 16, fontWeight: '600', color: COLOR.texto, textAlign: 'center' },
+  textoDeSegmentoElegido: { fontWeight: '800', color: COLOR.botonTexto },
   etiqueta: { fontSize: 16, fontWeight: '600', color: COLOR.texto, marginBottom: 4 },
   entrada: { minHeight: 48, borderWidth: 1, borderColor: COLOR.bordeControl, borderRadius: 8, paddingHorizontal: 12, fontSize: 16, color: COLOR.texto, backgroundColor: COLOR.superficie },
   entradaConError: { borderColor: COLOR.error, borderWidth: 2 },
