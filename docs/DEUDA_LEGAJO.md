@@ -2596,6 +2596,20 @@ termine la prueba manual de Dirección.
   - El dominio suma 4 pruebas, para el reductor y el desenlace del envío.
 - **Pendiente:** la APK candidata 0.13.2 y la prueba en el teléfono.
 
+**Hallazgo del 2026-10-03: la premisa sobre nutrición era incompleta.** DL-115 decía que nutrición ya cumplía, y lo
+comprobó con la lista propia (API-NUT-16-LISTA). Pero «Tu plan de hoy» (**API-NUT-14**) leía las comidas registradas
+del día antes de cualquier control y las devolvía aunque el plan quedara «no disponible». Con el A3 revocado o nunca
+otorgado, la APK las mostraba debajo del aviso.
+- **Se aplicó la misma opción A ya autorizada.** API-NUT-14 exige el A3 vigente antes de leer y responde 403
+  `ACTION_FORBIDDEN` sin él. El contrato lo declara, y la APK muestra el aviso con «Ir a Privacidad y consentimientos».
+- **Lo demás no cambia.** La suspensión por el vínculo o el B2, con el A3 vigente, sigue siendo «no disponible»
+  (UC-P12 E06), con los registros propios a la vista.
+- **Entrenamiento ya cumplía** (API-TRN-14): no devuelve ocurrencias sin pasar por el PDP, que mira el A3.
+- **Prueba:** `a3-del-titular.int-spec.ts` suma el caso. Sin A3 da 403, aunque haya una comida registrada hoy; con un
+  A3 nuevo, la comida vuelve igual.
+- **Si Dirección prefiere otra respuesta**, por ejemplo «no disponible» sin los registros, se cambia la respuesta y la
+  prueba; el control queda. Esta implementación es la recomendada: un «sin datos» falso diría algo que no es cierto.
+
 ---
 
 ## DL-116 — El ID API-DSH-04 nombra dos operaciones distintas
