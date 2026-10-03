@@ -945,6 +945,8 @@ details summary {
   padding: 0.85rem 1.1rem 1rem;
   margin: 0 0 1rem;
   background: var(--superficie);
+  /* Un fieldset no se achica por debajo de su contenido salvo que se lo pida: con la letra grande desbordaba. */
+  min-inline-size: 0;
 }
 
 .grupo legend {
@@ -1090,11 +1092,15 @@ details summary {
 }
 
 /* Tarjetas de dominio del Resumen (B10-08 §10). Sin color de estado: el legajo prohíbe semáforo y color de riesgo. */
+/*
+ * Las grillas que reparten columnas («repeat(auto-fit, minmax(Nrem, 1fr))») usan min(Nrem, 100%): con la letra grande,
+ * una columna mínima en rem pasaba el ancho del teléfono y la página se desplazaba de costado (tanda del 2026-10-03).
+ */
 .tarjetas-de-dominio {
   display: grid;
   gap: 1rem;
   margin: 0.5rem 0 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
 }
 
 .tarjeta-de-dominio {
@@ -1194,7 +1200,7 @@ details summary {
 
 .landing__columnas {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
   gap: 1.25rem;
 }
 
@@ -1246,7 +1252,7 @@ details summary {
   padding: 0;
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
 }
 
 .landing__limites li {
@@ -1300,7 +1306,7 @@ details summary {
 .grilla-de-datos {
   display: grid;
   gap: 0 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
 }
 
 @media (min-width: 64rem) {
@@ -1311,6 +1317,8 @@ details summary {
 
 .toma {
   display: grid;
+  /* Una columna que no pasa el ancho disponible: sin esto, la lista de mediciones imponía su ancho mínimo. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
   align-items: start;
 }
@@ -1490,6 +1498,27 @@ details summary {
   font-size: 0.85rem;
   color: var(--tenue);
   text-align: right;
+}
+
+/*
+ * Con la letra grande en un teléfono angosto, el estado de cada medición («Cargado» o «Sin cargar») baja a su propia
+ * línea, y la fila no pasa el ancho de la pantalla. Con la letra normal no cambia nada: el estado conserva su ancho
+ * mínimo, y la fila no salta al cargar un valor (tanda del 2026-10-03).
+ */
+.toma__lista {
+  container-type: inline-size;
+}
+
+@container (max-width: 15rem) {
+  .medida {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .medida__estado {
+    grid-column: 1 / -1;
+    min-width: 0;
+    text-align: left;
+  }
 }
 
 .medida .campo__error {
@@ -2096,7 +2125,7 @@ details summary {
   padding: 0;
   display: grid;
   gap: 0.5rem;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
 }
 
 .tomas__toma {
