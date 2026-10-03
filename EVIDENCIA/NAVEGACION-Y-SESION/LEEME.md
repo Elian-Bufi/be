@@ -16,7 +16,7 @@ app. La API no rechazó la sesión. Cuando la API la rechaza, la APK va a Inicia
 
 | Situación | 0.13.1 | Con la rama |
 |---|---|---|
-| Cerrar la app desde Recientes, o que Android cierre el proceso en segundo plano | Se pierde el token, que vive solo en memoria: bienvenida | Igual. Es la política de DL-012 (opción A), que decide Dirección |
+| Cerrar la app desde Recientes, o que Android cierre el proceso en segundo plano | Se pierde el token, que vive solo en memoria: bienvenida | La credencial queda en el almacenamiento seguro (DL-012, decidida el 2026-10-03). Al abrir, «Verificando tu sesión guardada…», sin datos de ninguna cuenta. Si la API la acepta, la app sigue en Nutrición. Si dice que venció o que no sirve, se borra y se va a Iniciar sesión con su aviso. Sin red, con 429 o con 5xx, «No pudimos verificar tu sesión», con Reintentar |
 | Cambiar el tamaño de letra o de visualización, el idioma o la negrita | Android recrea la actividad y React vuelve a montar la raíz: bienvenida | Siguen la sesión y la pantalla |
 | Pasar a segundo plano y volver, con el proceso vivo | Sigue todo | Sigue todo. Si la sesión venció, lo dice. La pantalla abierta se reconfirma siempre con la API |
 | Inactividad | No hay vencimiento por inactividad | Igual |
@@ -32,8 +32,18 @@ Verificado en el código:
 - en la APK, solo los cuatro códigos de sesión cierran la sesión. Lo fija `clasificarFalla` con su prueba, en
   `packages/domain/src/lecturas-de-la-sesion.test.ts`.
 
-La propuesta para que cerrar la app no obligue a volver a entrar está en DL-012, «Nota del 2026-10-03», y la decide
-Dirección. **No se implementó.**
+**La sesión guardada (DL-012, decisión de Dirección del 2026-10-03).** Cerrar la app ya no obliga a volver a entrar
+mientras la sesión siga vigente.
+- **Qué se guarda.** La credencial, en el almacenamiento seguro del teléfono: el token, la identidad, `expiresAt` y la
+  vigencia. No se guardan la contraseña, datos de salud ni la pantalla.
+- **Al abrir**, la credencial se verifica con la API antes de mostrar nada.
+- **Se borra** al cerrar la sesión, al vencer y ante cualquier código de sesión. Un 403 o la falta de red no la borran.
+- **Operaciones en fila.** Las operaciones sobre el almacén van de a una, y cada pedido nuevo deja sin efecto a los
+  anteriores: una escritura tardía no restaura una sesión después de un cierre o de un cambio de cuenta.
+- **Si no se pudo guardar**, Cuenta lo dice, y la app no promete recordarla.
+- **Pruebas.** `scripts/sesion-persistente.test.mjs` cubre los ocho casos, y cuatro mutaciones hacen fallar cada una su
+  prueba: sin la fila, sin borrar la vencida, borrar ante la red y aceptar una verificación tardía.
+- **Que Android conserve el valor cifrado** al cerrar el proceso es del almacenamiento nativo: se prueba en el teléfono.
 
 ## Lo que cuesta entrar a cada zona (medición local)
 
@@ -153,8 +163,10 @@ límites. Si la persona arrastra la pantalla mientras tanto, manda ella. Pasados
 ## Pendiente
 
 - Probar en el teléfono, con una APK nueva:
+  - cerrar la app desde Recientes y abrirla: tiene que recuperar la sesión después de verificarla;
+  - cerrar la sesión, cerrar la app y abrirla: tiene que ir a la bienvenida;
   - el cambio de tamaño de letra sin perder la sesión;
   - el regreso del segundo plano;
   - la línea de actualización;
   - el tiempo de «Mi evolución».
-- La decisión de Dirección sobre DL-012.
+- DL-012 quedó decidida el 2026-10-03. Falta comprobar la persistencia nativa en el teléfono.
