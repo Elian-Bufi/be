@@ -20,6 +20,9 @@
  *     cambiar el tamaño de letra, la raíz encuentra la sesión y la pantalla que seguían en el proceso. Una sesión que
  *     venció mientras tanto se informa como vencida, y una sesión olvidada no vuelve. Nada va a disco: lo fija
  *     `sesion-en-memoria.ts`, que no importa ningún almacenamiento.
+ *  7. Altura de las zonas (candidata 0.13.2): desde que cada zona verifica antes de mostrar, el contenido llega cuando la
+ *     API confirma. Volver a una zona la deja a la altura en que se la dejó aunque eso tarde más de 1,5 s, salvo que la
+ *     persona haya movido la pantalla o hayan pasado 10 s.
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -318,4 +321,48 @@ test('6 · la sesión en memoria no toca ningún almacenamiento del teléfono', 
   const importaciones = fuente.split('\n').filter((l) => /^import /.test(l));
   assert.deepEqual(importaciones, ["import type { Ruta } from './navegacion';"]);
   assert.doesNotMatch(fuente, /AsyncStorage|SecureStore|localStorage/);
+});
+
+// ─── 7. Altura de las zonas: volver deja la zona donde estaba, aunque la verificación tarde ───────────────────────
+
+const altura = await import('../apps/mobile/src/altura-de-las-zonas.ts');
+
+test('la zona vuelve a su altura aunque la API confirme después de 1,5 s (la red del teléfono)', () => {
+  const r = altura.crearRestauracionDeAltura();
+  r.pedir(900, 0);
+  // Mientras se verifica, se ve el esqueleto: no alcanza la altura y se espera.
+  assert.equal(r.alCambiarElAlto(700, 300), null);
+  // La API confirma a los 2,4 s y aparece el contenido.
+  assert.equal(r.alCambiarElAlto(2600, 2400), 900);
+  // Una sola vez: lo que crezca después no vuelve a mover la pantalla.
+  assert.equal(r.alCambiarElAlto(3000, 2500), null);
+});
+
+test('si la persona mueve la pantalla mientras espera, manda ella', () => {
+  const r = altura.crearRestauracionDeAltura();
+  r.pedir(900, 0);
+  r.alArrastrar();
+  assert.equal(r.alCambiarElAlto(2600, 2400), null);
+});
+
+test('pasado el tope, un contenido tardío no mueve la pantalla (un «Reintentar» a los 20 s)', () => {
+  const r = altura.crearRestauracionDeAltura();
+  r.pedir(900, 0);
+  assert.equal(r.alCambiarElAlto(2600, altura.TOPE_DE_LA_ESPERA_MS + 1), null);
+  assert.equal(r.alCambiarElAlto(2600, 20_000), null);
+});
+
+test('una zona que se dejó arriba, o una pantalla que no es zona, abre arriba sin esperar nada', () => {
+  const r = altura.crearRestauracionDeAltura();
+  r.pedir(0, 0);
+  assert.equal(r.alCambiarElAlto(2600, 100), null);
+});
+
+test('la raíz de la APK usa la restauración y la descarta cuando la persona arrastra', () => {
+  const APP = readFileSync(resolve(RAIZ, 'apps/mobile/App.tsx'), 'utf8');
+  assert.match(APP, /crearRestauracionDeAltura/);
+  assert.match(APP, /onScrollBeginDrag=\{restauracion\.alArrastrar\}/);
+  assert.match(APP, /restauracion\.pedir\(/);
+  assert.match(APP, /restauracion\.alCambiarElAlto\(/);
+  assert.doesNotMatch(APP, /Date\.now\(\) \+ 1500/, 'el plazo fijo de 1,5 s dejaba la zona arriba con la red del teléfono');
 });
