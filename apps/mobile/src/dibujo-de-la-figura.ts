@@ -12,6 +12,9 @@
  * - una guía es punteada, como en la lámina, con su punto en el borde de la tarjeta.
  * Ubica, nunca califica (RF-048; DL-073): los colores distinguen capas del dibujo, nunca rangos.
  *
+ * Más livianos desde el 2026-10-03: en la prueba de la 0.13.1, los puntos, los halos y las guías se amontonaban en el
+ * tronco y el brazo. Los halos y los aros son más chicos y las guías más finas; ningún sitio se movió.
+ *
  * Sin JSX ni React, para que una maqueta en el navegador pueda dibujar con estos mismos números sin teléfono.
  */
 import type { CapaDelDibujo, ElipseEnLaLamina, TrazoDeLaGuia } from '@be/domain';
@@ -21,31 +24,31 @@ export const ANILLO_EN_EL_TELEFONO: readonly CapaDelDibujo[] = [
   // La mitad trasera: fina y punteada, se ve «a través» del cuerpo.
   { color: 'anilloTrazo', tramo: 'TRASERO', grosor: 1.2, opacidad: 0.7, guiones: [3, 2.6] },
   // La mitad delantera: el resplandor ancho y el angosto, con las opacidades del tema, y el trazo lleno encima.
-  { color: 'anilloResplandor', tramo: 'DELANTERO', grosor: 8, opacidad: { resplandor: 'ANCHO', mas: 0.02 } },
-  { color: 'anilloResplandor', tramo: 'DELANTERO', grosor: 4.6, opacidad: { resplandor: 'ANGOSTO', mas: 0.06 } },
-  { color: 'anilloNucleo', tramo: 'DELANTERO', grosor: 2.2, opacidad: 1 },
+  { color: 'anilloResplandor', tramo: 'DELANTERO', grosor: 6, opacidad: { resplandor: 'ANCHO', mas: 0.02 } },
+  { color: 'anilloResplandor', tramo: 'DELANTERO', grosor: 3.6, opacidad: { resplandor: 'ANGOSTO', mas: 0.06 } },
+  { color: 'anilloNucleo', tramo: 'DELANTERO', grosor: 2, opacidad: 1 },
 ];
 
 /** El punto de un pliegue (compositor: `DIBUJO_EN_MEDICION.pliegue`): el halo, el aro con su relleno y el centro. */
 export const PLIEGUE_EN_EL_TELEFONO: readonly CapaDelDibujo[] = [
-  { color: 'anilloResplandor', radio: 11, opacidad: 0.18 },
-  { color: 'puntoRelleno', radio: 6, opacidad: 1 },
-  { color: 'puntoAro', radio: 6, grosor: 2, opacidad: 1 },
-  { color: 'puntoCentro', radio: 2, opacidad: 1 },
+  { color: 'anilloResplandor', radio: 8, opacidad: 0.18 },
+  { color: 'puntoRelleno', radio: 5, opacidad: 1 },
+  { color: 'puntoAro', radio: 5, grosor: 1.8, opacidad: 1 },
+  { color: 'puntoCentro', radio: 1.8, opacidad: 1 },
 ];
 
 /** El punto de un pliegue de la cara posterior (compositor: `DIBUJO_EN_MEDICION.plieguePosterior`): el aro, punteado. */
 export const PLIEGUE_POSTERIOR_EN_EL_TELEFONO: readonly CapaDelDibujo[] = [
-  { color: 'anilloResplandor', radio: 11, opacidad: 0.18 },
-  { color: 'posteriorFondo', radio: 6, opacidad: 1 },
-  { color: 'posterior', radio: 6, grosor: 2, opacidad: 1, guiones: [2.6, 2.4] },
-  { color: 'posterior', radio: 2, opacidad: 1 },
+  { color: 'anilloResplandor', radio: 8, opacidad: 0.18 },
+  { color: 'posteriorFondo', radio: 5, opacidad: 1 },
+  { color: 'posterior', radio: 5, grosor: 1.8, opacidad: 1, guiones: [2.4, 2.2] },
+  { color: 'posterior', radio: 1.8, opacidad: 1 },
 ];
 
 /** Las guías (compositor: `GUIA_EN_MEDICION`), más finas: la de un pliegue posterior, con su propio punteado. */
 export const GUIA_EN_EL_TELEFONO: { readonly normal: TrazoDeLaGuia; readonly posterior: TrazoDeLaGuia } = {
-  normal: { color: 'guia', colorDelPunto: 'guiaPunto', grosor: 1.3, guiones: [4, 3], radioDelPunto: 2.5 },
-  posterior: { color: 'posterior', colorDelPunto: 'posterior', grosor: 1.3, guiones: [2, 3], radioDelPunto: 2.5 },
+  normal: { color: 'guia', colorDelPunto: 'guiaPunto', grosor: 1.1, guiones: [4, 3], radioDelPunto: 2.2 },
+  posterior: { color: 'posterior', colorDelPunto: 'posterior', grosor: 1.1, guiones: [2, 3], radioDelPunto: 2.2 },
 };
 
 /**

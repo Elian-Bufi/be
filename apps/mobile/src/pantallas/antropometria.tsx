@@ -46,7 +46,7 @@ import {
   type UltimaToma,
 } from '@be/domain';
 import { memo, useCallback, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { useLecturaRecordada } from '../lecturas';
@@ -167,6 +167,12 @@ const Evolucion = memo(function Evolucion({ datos }: { datos: Datos }) {
 /** El orden de las familias en la lista: el de la lámina (perímetros, después pliegues). */
 const FAMILIAS: readonly FamiliaDeMedicion[] = ['MASA_Y_ESTATURA', 'PERIMETROS', 'PLIEGUES', 'DIAMETROS', 'OTRAS'];
 
+/**
+ * Las familias cortas van en fichas, una al lado de la otra: peso y talla, y los tres diámetros óseos (referencia
+ * estética de Dirección, 2026-10-03). Las demás, en filas.
+ */
+const EN_FICHAS: ReadonlySet<FamiliaDeMedicion> = new Set(['MASA_Y_ESTATURA', 'DIAMETROS']);
+
 /** Las medidas de la toma agrupadas por familia, en el orden de la lámina, con un subtítulo por familia. */
 function ListaPorFamilia({ medidas, fechaComparada }: { medidas: readonly MedidaDeLaToma[]; fechaComparada: string | null }) {
   return (
@@ -177,13 +183,55 @@ function ListaPorFamilia({ medidas, fechaComparada }: { medidas: readonly Medida
         return (
           <View key={familia}>
             <Subtitulo>{ETIQUETA_DE_FAMILIA[familia]}</Subtitulo>
-            {deLaFamilia.map((m) => (
-              <FilaDeLaToma key={m.metrica} medida={m} fechaComparada={fechaComparada} />
-            ))}
+            {EN_FICHAS.has(familia) ? (
+              <View style={estilos.fichas}>
+                {deLaFamilia.map((m) => (
+                  <FichaDeLaToma key={m.metrica} medida={m} fechaComparada={fechaComparada} />
+                ))}
+              </View>
+            ) : (
+              deLaFamilia.map((m) => <FilaDeLaToma key={m.metrica} medida={m} fechaComparada={fechaComparada} />)
+            )}
           </View>
         );
       })}
     </>
+  );
+}
+
+/** Lo que el lector de pantalla dice de una medida, en una sola frase, sea fila o ficha. */
+function fraseDeLaMedida(medida: MedidaDeLaToma, fechaComparada: string | null, metodo: string | null = null): string {
+  const { actual, anterior, diferencia } = medida;
+  const antes = anterior
+    ? `${COPY_ANTROPOMETRIA.antes}: ${cantidad(anterior.punto.value, anterior.punto.unit)}${anterior.fecha === fechaComparada ? '' : `, el ${fechaCivil(anterior.fecha)}`}`
+    : COPY_ANTROPOMETRIA.sinAnteriorComparable;
+  const cambio = diferencia ? `${COPY_ANTROPOMETRIA.diferencia}: ${textoDeDiferenciaAntropometrica(diferencia)}` : null;
+  const clase = actual.punto.dataClass === 'MEASURED' ? null : ETIQUETA_DE_CLASE_DE_DATO[actual.punto.dataClass];
+  const corregida = actual.punto.correctionState === 'CORRECTED' ? COPY_ANTROPOMETRIA.corregida : null;
+  return [medida.nombre, cantidad(actual.punto.value, actual.punto.unit), metodo, antes, cambio, clase, corregida].filter(Boolean).join('. ');
+}
+
+/**
+ * Una ficha: el nombre, el valor grande y, debajo, la diferencia y el anterior. Con letra grande, las fichas ocupan más
+ * ancho y bajan a la línea siguiente, en vez de partir el valor.
+ */
+function FichaDeLaToma({ medida, fechaComparada }: { medida: MedidaDeLaToma; fechaComparada: string | null }) {
+  const { fontScale } = useWindowDimensions();
+  const { actual, anterior, diferencia } = medida;
+  const clase = actual.punto.dataClass === 'MEASURED' ? null : ETIQUETA_DE_CLASE_DE_DATO[actual.punto.dataClass];
+  const corregida = actual.punto.correctionState === 'CORRECTED' ? COPY_ANTROPOMETRIA.corregida : null;
+  return (
+    <View style={[estilos.ficha, { minWidth: 96 * Math.min(fontScale, 2.2) }]} accessible accessibilityLabel={fraseDeLaMedida(medida, fechaComparada)}>
+      <Text style={estilos.nombreDeFicha}>{medida.nombre}</Text>
+      <Text style={estilos.valorDeFicha}>{cantidad(actual.punto.value, actual.punto.unit)}</Text>
+      {diferencia ? <Text style={estilos.diferenciaDeFicha}>{textoDeDiferenciaAntropometrica(diferencia)}</Text> : null}
+      <Text style={estilos.detalle}>
+        {anterior
+          ? `${COPY_ANTROPOMETRIA.antes}: ${cantidad(anterior.punto.value, anterior.punto.unit)}${anterior.fecha === fechaComparada ? '' : `, el ${fechaCivil(anterior.fecha)}`}`
+          : COPY_ANTROPOMETRIA.sinAnteriorComparable}
+      </Text>
+      {clase || corregida ? <Text style={estilos.detalle}>{[clase, corregida].filter(Boolean).join(' · ')}</Text> : null}
+    </View>
   );
 }
 
@@ -247,18 +295,21 @@ function FilaDeLaToma({ medida, conMetodo = false, fechaComparada }: { medida: M
   const antes = anterior
     ? `${COPY_ANTROPOMETRIA.antes}: ${cantidad(anterior.punto.value, anterior.punto.unit)}${anterior.fecha === fechaComparada ? '' : `, el ${fechaCivil(anterior.fecha)}`}`
     : COPY_ANTROPOMETRIA.sinAnteriorComparable;
-  const cambio = diferencia ? `${COPY_ANTROPOMETRIA.diferencia}: ${textoDeDiferenciaAntropometrica(diferencia)}` : null;
   const clase = actual.punto.dataClass === 'MEASURED' ? null : ETIQUETA_DE_CLASE_DE_DATO[actual.punto.dataClass];
   const corregida = actual.punto.correctionState === 'CORRECTED' ? COPY_ANTROPOMETRIA.corregida : null;
+  // Compacta (referencia estética de Dirección, 2026-10-03): el nombre con el valor a la derecha y, en una sola línea
+  // debajo, la diferencia y el anterior. El lector de pantalla sigue leyendo la frase completa.
   return (
-    <View style={estilos.fila} accessible accessibilityLabel={[medida.nombre, valor, metodo, antes, cambio, clase, corregida].filter(Boolean).join('. ')}>
+    <View style={estilos.fila} accessible accessibilityLabel={fraseDeLaMedida(medida, fechaComparada, metodo)}>
       <View style={estilos.cabezaDeFila}>
         <Text style={estilos.nombre}>{medida.nombre}</Text>
         <Text style={estilos.valor}>{valor}</Text>
       </View>
       {metodo ? <Text style={estilos.detalle}>{metodo}</Text> : null}
-      <Text style={estilos.detalle}>{antes}</Text>
-      {cambio ? <Text style={estilos.diferencia}>{cambio}</Text> : null}
+      <Text style={estilos.detalle}>
+        {diferencia ? <Text style={estilos.diferencia}>{`${textoDeDiferenciaAntropometrica(diferencia)}  ·  `}</Text> : null}
+        {antes}
+      </Text>
       {clase || corregida ? <Text style={estilos.detalle}>{[clase, corregida].filter(Boolean).join(' · ')}</Text> : null}
     </View>
   );
@@ -345,12 +396,17 @@ function HuecoDeLaSerie({ hueco }: { hueco: SerieApi['gaps'][number] }) {
 }
 
 const estilos = estilosPorTema((COLOR) => ({
-  fila: { borderTopWidth: 1, borderTopColor: COLOR.borde, paddingVertical: 10 },
+  fila: { borderTopWidth: 1, borderTopColor: COLOR.borde, paddingVertical: 9 },
+  fichas: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 },
+  ficha: { flexGrow: 1, flexBasis: 0, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.fondo },
+  nombreDeFicha: { fontSize: 13, fontWeight: '600', color: COLOR.tenue },
+  valorDeFicha: { fontSize: 22, fontWeight: '800', color: COLOR.texto, marginTop: 2 },
+  diferenciaDeFicha: { fontSize: 14, fontWeight: '700', color: COLOR.texto, marginTop: 2 },
   cabezaDeFila: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 },
   nombre: { fontSize: 16, fontWeight: '700', color: COLOR.texto, flexShrink: 1 },
   valor: { fontSize: 18, fontWeight: '700', color: COLOR.texto },
   detalle: { fontSize: 14, color: COLOR.tenue, marginTop: 2 },
-  diferencia: { fontSize: 15, fontWeight: '600', color: COLOR.texto, marginTop: 2 },
+  diferencia: { fontSize: 14, fontWeight: '700', color: COLOR.texto },
   serie: { borderTopWidth: 1, borderTopColor: COLOR.borde },
   cabezaDeSerie: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, gap: 12 },
   textoDeCabeza: { flexShrink: 1 },

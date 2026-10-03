@@ -193,13 +193,18 @@ function Contenido() {
     <KeyboardAvoidingView style={estilos.raiz} behavior="padding">
       <View style={estilos.barra}>
         {/* El isotipo es decorativo: la marca ya la dice el texto «BE». */}
+        {/* Compacto: con la letra al máximo, el encabezado ocupaba mucho (prueba de la 0.13.1). La marca y el aviso del
+            ambiente crecen hasta 1,15 veces, y el aviso usa dos líneas a la derecha en vez de bajar debajo de la marca.
+            El contenido de cada pantalla crece sin tope. */}
         <View style={estilos.marcaConIsotipo}>
           <Image source={ISOTIPO} style={estilos.isotipoChico} accessible={false} />
-          <Text style={estilos.marca} accessibilityLabel="BE">
+          <Text style={estilos.marca} accessibilityLabel="BE" maxFontSizeMultiplier={1.15}>
             BE
           </Text>
         </View>
-        <Text style={estilos.ambiente}>Ambiente de prueba · solo datos sintéticos</Text>
+        <Text style={estilos.ambiente} numberOfLines={2} maxFontSizeMultiplier={1.15}>
+          Ambiente de prueba · solo datos sintéticos
+        </Text>
         <LineaDeActualizacion activa={hayActualizaciones && sesion !== null} />
       </View>
       {/* Con la barra inferior, el área segura de abajo la cubre la barra; sin ella, el contenido deja ese margen. */}
@@ -296,21 +301,20 @@ const ISOTIPO = require('./assets/isotipo.png');
 const estilos = estilosPorTema((COLOR) => ({
   raiz: { flex: 1, backgroundColor: COLOR.fondo },
   barra: {
-    paddingTop: Constants.statusBarHeight + 8,
-    paddingBottom: 10,
-    paddingHorizontal: 20,
+    paddingTop: Constants.statusBarHeight + 6,
+    paddingBottom: 8,
+    paddingHorizontal: 16,
     backgroundColor: COLOR.fondo,
     borderBottomWidth: 2,
     borderBottomColor: COLOR.acento,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
+    gap: 12,
   },
   marcaConIsotipo: { flexDirection: 'row', alignItems: 'center' },
-  isotipoChico: { width: 30, height: 30, marginRight: 8 },
-  marca: { fontSize: 22, fontWeight: '800', color: COLOR.texto, letterSpacing: 1 },
-  ambiente: { fontSize: 12, color: COLOR.tenue },
+  isotipoChico: { width: 26, height: 26, marginRight: 6 },
+  marca: { fontSize: 20, fontWeight: '800', color: COLOR.texto, letterSpacing: 1 },
+  ambiente: { flex: 1, fontSize: 12, lineHeight: 15, color: COLOR.tenue, textAlign: 'right' },
   // El margen inferior se completa con el inset real del sistema (safe-area-context) en el contentContainerStyle:
   // Android es edge-to-edge desde Expo SDK 54 y el ScrollView llega por detrás de la barra de navegación.
   contenido: { padding: 20 },
