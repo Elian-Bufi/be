@@ -59,12 +59,37 @@ export function limitesDelPeriodo(periodo: { readonly start: string; readonly en
 }
 
 /**
- * El dominio del eje vertical de un gráfico de evolución, el mismo en el website y en la APK. Tiene margen arriba y
- * abajo y no fuerza el cero: un perímetro de 85 cm no se lee desde 0. El margen es de al menos una unidad y del 5 % del
- * valor, así una diferencia chica no parece enorme. Con un solo valor, o con valores iguales, queda centrado.
+ * La unidad en que se redondea el eje vertical. Vale 1 para las medidas de 10 o más, como un perímetro, un peso o el
+ * IMC. Para los índices, que son menores (cintura/cadera ≈ 0,85, conicidad ≈ 1,2: resultados de fórmulas que la
+ * evolución muestra desde DL-111), es la décima o la centésima.
+ */
+export function unidadDelEje(minimo: number, maximo: number): number {
+  const escala = Math.max(Math.abs(minimo), Math.abs(maximo));
+  if (!(escala > 0) || escala >= 10) return 1;
+  return 10 ** (Math.floor(Math.log10(escala)) - 1);
+}
+
+/** Los decimales que necesitan los rótulos de un eje redondeado en `unidadDelEje`. */
+export const decimalesDelEje = (minimo: number, maximo: number): number => Math.max(0, -Math.round(Math.log10(unidadDelEje(minimo, maximo))));
+
+/**
+ * El dominio del eje vertical de un gráfico de evolución, el mismo en el website y en la APK.
+ * - Tiene margen arriba y abajo y no fuerza el cero: un perímetro de 85 cm no se lee desde 0.
+ * - El margen es de al menos una unidad del eje y del 5 % del valor, así una diferencia chica no parece enorme.
+ * - Con un solo valor, o con valores iguales, queda centrado.
+ * - Con valores que no son negativos, el eje no baja de cero.
+ * Con una unidad fija de 1, un índice cintura/cadera de 0,84 a 0,86 quedaba entre −1 y 2: los puntos se pegaban y el eje
+ * mostraba negativos.
  */
 export function dominioDelEjeVertical(minimo: number, maximo: number): { readonly desde: number; readonly hasta: number } {
-  return { desde: Math.floor(minimo - Math.max(1, Math.abs(minimo) * 0.05)), hasta: Math.ceil(maximo + Math.max(1, Math.abs(maximo) * 0.05)) };
+  const u = unidadDelEje(minimo, maximo);
+  const d = decimalesDelEje(minimo, maximo);
+  // En unidades del eje, sin el ruido de la coma flotante (0,6 / 0,01 = 59,999…).
+  const a = Number((minimo / u).toPrecision(12));
+  const b = Number((maximo / u).toPrecision(12));
+  const desde = Math.floor(a - Math.max(1, Math.abs(a) * 0.05)) * u;
+  const hasta = Math.ceil(b + Math.max(1, Math.abs(b) * 0.05)) * u;
+  return { desde: Number((minimo >= 0 ? Math.max(0, desde) : desde).toFixed(d)), hasta: Number(hasta.toFixed(d)) };
 }
 
 /**
@@ -122,6 +147,26 @@ export const observacionPorId = (serie: SeriePreparada, sourceId: string | null)
 
 /** Las observaciones de un grupo, para dibujarlas en su propio eje. */
 export const observacionesDelGrupo = (serie: SeriePreparada, comparabilityGroup: string): Observacion[] => serie.observaciones.filter((o) => o.punto.comparabilityGroup === comparabilityGroup);
+
+/**
+ * Lo que muestran, en un período, el gráfico de un grupo y su lista equivalente, en orden:
+ * - las observaciones de ese grupo cuya **fecha civil en la zona de la serie** cae en el período;
+ * - los huecos que tocan el período, recortados a él.
+ * Filtrar por el instante en UTC corría de día las mediciones de 21 a 24 h en Buenos Aires: la lista podía perder la
+ * última medición que el gráfico sí mostraba.
+ */
+export function filasDelPeriodo(serie: SeriePreparada, comparabilityGroup: string | null, periodo: { readonly start: string; readonly end: string }): FilaDeEvolucion[] {
+  return serie.filas.flatMap((f): FilaDeEvolucion[] => {
+    if (f.tipo === 'observacion') {
+      const o = f.observacion;
+      return comparabilityGroup !== null && o.punto.comparabilityGroup === comparabilityGroup && o.fecha >= periodo.start && o.fecha <= periodo.end ? [f] : [];
+    }
+    if (f.hueco.to < periodo.start || f.hueco.from > periodo.end) return [];
+    const from = f.hueco.from < periodo.start ? periodo.start : f.hueco.from;
+    const to = f.hueco.to > periodo.end ? periodo.end : f.hueco.to;
+    return [{ tipo: 'hueco', hueco: from === f.hueco.from && to === f.hueco.to ? f.hueco : { ...f.hueco, from, to, days: diasEntreFechas(from, to) + 1 } }];
+  });
+}
 
 /**
  * El grupo que se muestra al abrir una métrica: el de la observación más reciente. Si el grupo pedido ya no existe en

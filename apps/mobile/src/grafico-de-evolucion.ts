@@ -9,7 +9,8 @@
  * - **Un eje por grupo de comparabilidad.** Quien llama pasa las observaciones de un solo grupo: nunca se mezclan
  *   unidades, métodos ni protocolos en un mismo eje.
  * - **El eje vertical** usa la regla común (`dominioDelEjeVertical`): no fuerza el cero, y tiene un margen de al menos una
- *   unidad y del 5 %, así una diferencia chica no parece enorme. Las marcas muestran el rango, siempre.
+ *   unidad del eje y del 5 %, así una diferencia chica no parece enorme. La unidad es 1 para las medidas de 10 o más, y
+ *   la décima o la centésima para los índices (DL-111). Las marcas muestran el rango, siempre.
  */
 import { dominioDelEjeVertical, limitesDelPeriodo, marcasDelPeriodo, type Observacion } from '@be/domain';
 
