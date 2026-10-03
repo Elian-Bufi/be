@@ -116,3 +116,60 @@ test('las filas que eligen un sitio dicen su rol y si están elegidas; la lista 
   assert.equal((fuente.match(/accessibilityRole="button"/g) ?? []).length, 2);
   assert.match(fuente, /gap: 10, minHeight: 48,/);
 });
+
+// ─── Objetivos de 48 dp (tanda de cierre de la 0.13.2) ──────────────────────────────────────────────────────────
+
+/** Los sitios que, de frente, quedan casi en el mismo lugar: ahí el toque en la figura no elige, elige la fila. */
+const COINCIDENTES = new Set(['perimetro-brazo-relajado', 'perimetro-brazo-flexionado', 'pliegue-triceps', 'pliegue-biceps', 'pliegue-cresta-iliaca', 'pliegue-supraespinal']);
+
+test('las filas de las tarjetas miden al menos 48 dp: son objetivos táctiles, y la letra no se agranda para eso', () => {
+  for (const caso of CASOS) {
+    const figura = componer(caso);
+    if (figura.modo !== 'TARJETAS') continue;
+    for (const t of figura.tarjetas) for (const f of t.filas) assert.ok(f.alto >= c.ALTO_MINIMO_DE_FILA, `${caso.sexo} ${caso.familia} ×${caso.escalaDeLetra}: ${f.sitio.clave} mide ${f.alto}`);
+  }
+  assert.equal(c.ALTO_MINIMO_DE_FILA, 48);
+  assert.deepEqual(c.LETRA, { rotulo: 12, valor: 15, detalle: 12, ficha: 12 });
+});
+
+test('tocar el dibujo de un sitio lo elige; solo los que coinciden de frente quedan sin elección directa', () => {
+  for (const caso of CASOS) {
+    const figura = componer(caso);
+    for (const s of figura.sitios) {
+      const toque = c.sitioTocado(figura.sitios, s.cx, s.cy);
+      const etiqueta = `${caso.sexo} ${caso.familia} ×${caso.escalaDeLetra}: ${s.clave}`;
+      if (toque?.tipo === 'sitio') assert.equal(toque.clave, s.clave, etiqueta);
+      else {
+        assert.equal(toque?.tipo, 'ambiguo', etiqueta);
+        assert.ok(toque.claves.includes(s.clave) && toque.claves.every((k) => COINCIDENTES.has(k)), `${etiqueta}: parejo con ${toque.claves}`);
+      }
+    }
+  }
+});
+
+test('un sitio aislado responde hasta 24 dp de su dibujo (un objetivo de 48 dp), y no más', () => {
+  const figura = componer({ sexo: 'HOMBRE', familia: 'PERIMETROS', escalaDeLetra: 1 });
+  const tobillo = figura.sitios.find((s) => s.clave === 'perimetro-tobillo');
+  for (const [dx, dy] of [[0, 23], [0, -23], [tobillo.anillo.rx + 23, 0], [-(tobillo.anillo.rx + 23), 0]]) {
+    assert.deepEqual(c.sitioTocado(figura.sitios, tobillo.cx + dx, tobillo.cy + dy), { tipo: 'sitio', clave: 'perimetro-tobillo' }, `a ${dx},${dy}`);
+  }
+  assert.equal(c.sitioTocado(figura.sitios, tobillo.cx, tobillo.cy + 25), null);
+  // El dibujo no crece: el anillo es el de la lámina.
+  assert.ok(tobillo.anillo.rx < 24 && tobillo.anillo.ry <= 4);
+});
+
+test('un toque nunca elige un sitio si otro queda casi a la misma distancia: ampliar el área no crea elecciones dudosas', () => {
+  for (const caso of CASOS) {
+    const figura = componer(caso);
+    for (let x = 0; x <= figura.ancho; x += 3) {
+      for (let y = 0; y <= figura.alto; y += 3) {
+        const toque = c.sitioTocado(figura.sitios, x, y);
+        if (toque?.tipo !== 'sitio') continue;
+        const distancias = figura.sitios.map((s) => ({ clave: s.clave, d: c.distanciaAlSitio(s, x, y) })).sort((a, b) => a.d - b.d);
+        assert.equal(distancias[0].clave, toque.clave, `${caso.sexo} ${caso.familia} en ${x},${y}`);
+        assert.ok(distancias[0].d <= c.RADIO_DE_TOQUE);
+        assert.ok(distancias.length < 2 || distancias[1].d - distancias[0].d >= c.MARGEN_DE_AMBIGUEDAD, `${caso.sexo} ${caso.familia} en ${x},${y}: ${distancias[0].clave} contra ${distancias[1].clave}`);
+      }
+    }
+  }
+});

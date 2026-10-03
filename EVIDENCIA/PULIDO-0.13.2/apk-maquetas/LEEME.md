@@ -80,3 +80,43 @@ ELEGIDA=pliegue-subescapular node EVIDENCIA/PULIDO-0.13.2/apk-maquetas/herramien
 - el toque sobre un punto del gráfico y sobre un sitio de la figura;
 - «Anterior» y «Siguiente» con dos tomas del mismo día;
 - que al volver a la zona se recuerden la vista, la medida y los días elegidos.
+
+## Tanda de cierre (2026-10-03): objetivos táctiles de 48 dp en la figura
+
+**También son maquetas, no la APK.** La composición y el toque salen del mismo módulo que usa la APK
+(`composicion-de-la-figura.ts`: `ALTO_MINIMO_DE_FILA`, `sitioTocado`).
+
+- **Las filas de las tarjetas miden al menos 48 dp.**
+  - Con la letra normal medían 44. La letra no cambia: crece el aire de la fila.
+  - El lienzo crece de 40 a 52 dp con la letra normal; con ×1,15 o más las filas ya medían 50 y nada cambia.
+  - El modo, tarjetas o números, sigue igual en todos los casos.
+- **En la figura**, cada sitio responde hasta 24 dp de su dibujo, un objetivo de 48 dp, sin agrandar los marcadores.
+  - Un pliegue se mide al punto, y un perímetro, al eje de su anillo.
+  - Si otro sitio queda a menos de 8 dp de diferencia, el toque no elige: dice «Ahí quedan juntos … tocá su fila para
+    elegir uno». Las filas siempre eligen sin ambigüedad.
+- **Sin elección directa en la figura** quedan solo los sitios que coinciden en el dibujo, en todos los casos medidos
+  (dos figuras, dos familias, letra de ×1 a ×2, 320 y 360 dp):
+  - brazo relajado y brazo contraído, a unos 6 dp en el mismo brazo;
+  - tríceps y bíceps;
+  - cresta ilíaca y supraespinal.
+- **Entre sitios apretados** el área clara se achica. Los anillos del tronco quedan a unos 26 dp: entre dos anillos
+  hay una franja pareja, y ahí elige la fila. Nunca se elige el sitio equivocado: una prueba recorre cada figura cada
+  3 dp y lo verifica.
+- **Cruces de guías con la letra normal: de 8 a 10 en los ocho casos.** Aparecen cintura × abdomen en la figura de
+  mujer, hombros × pecho a 320 dp y tríceps × bíceps a 360 dp. Desaparecen dos de pliegues. Es la disposición que ya
+  tenía la letra ×1,15. Ningún sitio se movió. La selección coordinada atenúa las demás guías.
+
+| Archivo | Qué muestra |
+|---|---|
+| `12-mapa-de-toque.jpg` | Qué elige cada punto de la figura, hombre con perímetros (Azul noche) y mujer con pliegues (Claro). Cada color es un sitio, y el gris rayado, un toque parejo que deja elegir a la fila. Lo que tapan las tarjetas no se pinta: ahí el toque es de la fila |
+| `13-filas-de-48-antes-y-despues.jpg` | Mujer con perímetros, letra normal, 360 dp: a la izquierda las filas de 44 dp, y a la derecha las de 48 |
+
+Para rehacerlas, desde la raíz:
+```
+MAPA_DE_TOQUE=1 node EVIDENCIA/PULIDO-0.13.2/apk-maquetas/herramientas/maqueta-figura.mjs 360 HOMBRE PERIMETROS azul-noche 1 <salida.html>
+```
+
+**En el teléfono falta mirar:**
+- tocar cada sitio aislado y uno de los pares que coinciden, y leer el aviso;
+- elegir el par desde su fila;
+- todo con la letra normal y al máximo, en los dos temas.
