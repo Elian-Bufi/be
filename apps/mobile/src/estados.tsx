@@ -8,9 +8,28 @@ import { AccessibilityInfo, Animated, Easing, View } from 'react-native';
 import type { EstadoDeLista } from './lista';
 import { Aviso, Boton, Parrafo, estilosPorTema } from './ui';
 
-export function Cargando() {
-  return <Parrafo tenue>Cargando…</Parrafo>;
+/**
+ * Lo que se ve mientras una pantalla espera a la API. Con `forma`, la pantalla conserva su estructura (bloques del alto
+ * de lo que viene) y no muestra ningún valor hasta que la API confirma el acceso (etapa A, 2026-10-03). El lector de
+ * pantalla oye «Cargando». Los bloques no se animan: el movimiento lo da la línea del encabezado, que respeta «reducir
+ * movimiento».
+ */
+export function Cargando({ forma }: { forma?: 'lista' | 'figura' } = {}) {
+  if (!forma) return <Parrafo tenue>Cargando…</Parrafo>;
+  const altos = forma === 'figura' ? [22, 56, 440, 56, 72] : [72, 72, 72];
+  return (
+    <View accessible accessibilityRole="progressbar" accessibilityLabel="Cargando" accessibilityLiveRegion="polite">
+      {altos.map((alto, i) => (
+        <View key={i} style={[estilosDeCarga.bloque, { height: alto }, i === 0 && forma === 'figura' ? estilosDeCarga.renglon : null]} />
+      ))}
+    </View>
+  );
 }
+
+const estilosDeCarga = estilosPorTema((COLOR) => ({
+  bloque: { borderRadius: 12, marginVertical: 6, backgroundColor: COLOR.superficie, borderWidth: 1, borderColor: COLOR.borde },
+  renglon: { width: '60%', borderRadius: 6 },
+}));
 
 export function ErrorConReintento({ mensaje = COPY.errorDeVista, sinConexion, onReintentar }: { mensaje?: string; sinConexion: boolean; onReintentar: () => void }) {
   return (

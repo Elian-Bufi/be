@@ -182,7 +182,15 @@ import type { Superficie } from './procedencia';
 import { VERSION_VIGENTE } from './textos';
 
 export type Resultado<T> =
-  | { readonly ok: true; readonly datos: T }
+  | {
+      readonly ok: true;
+      readonly datos: T;
+      /**
+       * La cabecera `Date` de la respuesta, si se pudo leer. La APK la usa para medir la vigencia de la sesión contra el
+       * reloj del servidor. En el navegador no llega: CORS no la expone.
+       */
+      readonly fechaDelServidor?: string;
+    }
   /** La API respondió con un ErrorEnvelope. `codigo` decide la UI; nunca se muestra en pantalla (10-B01:1146-1189). */
   | { readonly ok: false; readonly tipo: 'API'; readonly status: number; readonly codigo: string; readonly issues: readonly ValidationIssue[] }
   /** Sin respuesta: no se sabe si la acción ocurrió (10-B10:430-438). */
@@ -238,10 +246,12 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       const issues = (error.data.error.details as { issues?: ValidationIssue[] } | undefined)?.issues ?? [];
       return { ok: false, tipo: 'API', status: respuesta.status, codigo: error.data.error.code, issues };
     }
-    if (extra.esquema === null) return { ok: true, datos: null as never };
+    const fecha = respuesta.headers?.get?.('date');
+    const conFecha = fecha ? { fechaDelServidor: fecha } : {};
+    if (extra.esquema === null) return { ok: true, datos: null as never, ...conFecha };
     const datos = extra.esquema.safeParse(json);
     if (!datos.success) return { ok: false, tipo: 'API', status: respuesta.status, codigo: 'RESPUESTA_NO_RECONOCIDA', issues: [] };
-    return { ok: true, datos: datos.data as never };
+    return { ok: true, datos: datos.data as never, ...conFecha };
   }
 
   return {

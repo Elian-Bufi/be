@@ -15,11 +15,11 @@
  * (src/sesion-en-memoria.ts). Un cambio de tamaño de letra hace que Android recree la pantalla, y ya no pierde la sesión.
  * Nunca se guarda un «rol autorizado» en el cliente: la API verifica la sesión y decide cada acceso en cada request;
  * ocultar un botón no concede ni quita nada.
- * Al cambiar de zona, cada pantalla muestra lo último que leyó en esta sesión mientras lo vuelve a pedir
- * (src/lecturas.ts). Cada zona principal vuelve a la altura en que se la dejó.
+ * Al entrar a una zona, la pantalla conserva su estructura y no muestra valores hasta que la API confirma el acceso en
+ * esa entrada (src/ciclo-de-lectura.ts). Lo confirmado sigue a la vista mientras se reconfirma al volver del segundo
+ * plano. Cada zona principal vuelve a la altura en que se la dejó.
  * Identidad del build visible en Bienvenida (07 §34, TEST-APK-008).
  */
-import { DURACION_DE_SESION_MS } from '@be/domain';
 import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -29,7 +29,7 @@ import { apiConfigurada, extra } from './src/api';
 import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
 import { BarraDeZonas } from './src/barra-de-zonas';
 import { LineaDeActualizacion } from './src/estados';
-import { memoria, useHayActualizaciones } from './src/lecturas';
+import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lecturas';
 import { alIniciarSesion, anterior, esPrincipal, requiereSesion, textoDeVolverA, zonaDe, type Ruta, type Salida } from './src/navegacion';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
@@ -43,7 +43,7 @@ import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRegistro } from './src/pantallas/registro';
 import { PantallaDeVinculo } from './src/pantallas/vinculo';
 import { PantallaDeVinculos } from './src/pantallas/vinculos';
-import { olvidarSesion, recordarSesion, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
+import { avisoDeVencimiento, crearSesion, olvidarSesion, quizasVencida, recordarSesion, restanteMs, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
 import { BARRA_DEL_SISTEMA } from './src/tema';
 import { Aviso, Boton, Parrafo, estilosPorTema } from './src/ui';
 
@@ -51,7 +51,8 @@ const AVISOS: Record<Salida, string> = {
   'sesion-cerrada': 'Cerraste la sesión.',
   'sesiones-cerradas': 'Cerraste todas tus sesiones.',
   'sesion-no-valida': 'La sesión ya no es válida. Iniciá sesión para continuar.',
-  'sesion-vencida': `Tu sesión venció: dura ${DURACION_DE_SESION_MS / 3_600_000} horas. Iniciá sesión para continuar.`,
+  // El de una sesión vencida se arma con la vigencia de esa sesión (avisoDeVencimiento, en sesion-en-memoria.ts).
+  'sesion-vencida': avisoDeVencimiento(null),
   reautenticar: 'Por seguridad, volvé a iniciar sesión para confirmar esta acción.',
   'cierre-registrado': 'Solicitud de cierre registrada.',
 };
@@ -82,9 +83,9 @@ function Contenido() {
   const insets = useSafeAreaInsets();
   // Si Android recreó la pantalla (por ejemplo, al cambiar el tamaño de letra), la sesión y la pantalla siguen en el
   // proceso: se vuelve a la misma. Si la sesión venció mientras tanto, se dice.
-  const [alMontar] = useState(sesionAlMontar);
+  const [alMontar] = useState(() => sesionAlMontar(performance.now(), Date.now()));
   const [ruta, setRuta] = useState<Ruta>(() =>
-    alMontar.estado === 'vigente' ? alMontar.ruta : alMontar.estado === 'vencida' ? { nombre: 'login', aviso: AVISOS['sesion-vencida'] } : { nombre: 'bienvenida' },
+    alMontar.estado === 'vigente' ? alMontar.ruta : alMontar.estado === 'vencida' ? { nombre: 'login', aviso: avisoDeVencimiento(alMontar.sesion) } : { nombre: 'bienvenida' },
   );
   const [sesion, setSesion] = useState<Sesion | null>(alMontar.estado === 'vigente' ? alMontar.sesion : null);
   const desplazamiento = useRef<ScrollView>(null);
@@ -94,6 +95,12 @@ function Contenido() {
     if (sesion) recordarSesion(sesion, ruta);
     else olvidarSesion();
   }, [sesion, ruta]);
+  // Si al montar la sesión ya había vencido, también se olvida lo leído y lo elegido.
+  useEffect(() => {
+    if (alMontar.estado !== 'vigente') memoria.olvidarLaSesion();
+  }, [alMontar]);
+  const sesionActual = useRef(sesion);
+  sesionActual.current = sesion;
 
   // Cada zona principal vuelve a la altura en que se la dejó; las demás pantallas abren arriba. Tocar la zona en la que
   // ya se está lleva al principio, como en las apps.
@@ -145,10 +152,14 @@ function Contenido() {
   // correr: al volver, si ya venció, se dice en ese momento y no recién con el primer pedido.
   useEffect(() => {
     if (!sesion) return;
-    const vencer = () => terminar({ nombre: 'login', aviso: AVISOS['sesion-vencida'] });
-    const t = setTimeout(vencer, Math.max(0, Math.min(sesion.expiraEn - Date.now(), 2_147_000_000)));
+    const vencer = () => terminar({ nombre: 'login', aviso: avisoDeVencimiento(sesion) });
+    const t = setTimeout(vencer, Math.max(0, Math.min(restanteMs(sesion, performance.now(), Date.now()), 2_147_000_000)));
     const suscripcion = AppState.addEventListener('change', (momento) => {
-      if (momento === 'active' && sesion.expiraEn <= Date.now()) vencer();
+      if (momento !== 'active') return;
+      if (restanteMs(sesion, performance.now(), Date.now()) <= 0) vencer();
+      // El teléfono durmió y el reloj de pared dice que la sesión pudo vencer: no se declara, pero ninguna pantalla
+      // muestra lo confirmado sin volver a preguntar. La API decide (SESSION_EXPIRED) o, sin red, no se ve nada.
+      else if (quizasVencida(sesion, Date.now())) exigirVerificacion();
     });
     return () => {
       clearTimeout(t);
@@ -171,10 +182,12 @@ function Contenido() {
   const salir = useCallback(
     (motivo: Salida) => {
       // Si Cuenta pidió volver a entrar para confirmar una acción, al iniciar sesión se vuelve a Cuenta (alIniciarSesion).
+      // Un SESSION_EXPIRED de la API es un vencimiento comprobado: el aviso dice cuánto duraba esa sesión, si se sabe.
+      const aviso = motivo === 'sesion-vencida' ? avisoDeVencimiento(sesionActual.current) : AVISOS[motivo];
       terminar(
         motivo === 'cierre-registrado'
-          ? { nombre: 'bienvenida', aviso: AVISOS[motivo] }
-          : { nombre: 'login', aviso: AVISOS[motivo], ...(motivo === 'reautenticar' ? { alEntrar: 'cuenta' as const } : {}) },
+          ? { nombre: 'bienvenida', aviso }
+          : { nombre: 'login', aviso, ...(motivo === 'reautenticar' ? { alEntrar: 'cuenta' as const } : {}) },
       );
     },
     [terminar],
@@ -243,10 +256,10 @@ function Contenido() {
           <PantallaDeLogin
             aviso={ruta.aviso}
             irARegistro={() => ir({ nombre: 'registro' })}
-            alIniciar={(token, expiresAt, identidadId) => {
+            alIniciar={(token, expiresAt, identidadId, fechaDelServidor) => {
               memoria.olvidarLaSesion();
               alturas.current.clear();
-              setSesion({ token, expiraEn: new Date(expiresAt).getTime(), identidadId });
+              setSesion(crearSesion({ token, identidadId, expiresAt, fechaDelServidor }, performance.now(), Date.now()));
               ir(alIniciarSesion(ruta));
             }}
           />
