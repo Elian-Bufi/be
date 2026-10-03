@@ -71,7 +71,7 @@ export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; s
   const sesionPerdida = useSesionPerdida(salir);
   const { retirado, accesoRetirado } = useAccesoRetirado();
   const pedir = useCallback((): Promise<Resultado<HoyDeEntrenamientoResponse>> => api.hoyDeEntrenamiento(token), [token]);
-  // Al volver a la zona se ve lo último leído en esta sesión mientras se vuelve a pedir (src/lecturas.ts).
+  // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts).
   // La clave nombra el día civil, en la zona con la que la API resuelve «hoy».
   const { r, cargar, sinActualizar } = useLecturaRecordada(token, `entrenamiento-hoy:${hoyEnZona(ZONA_DE_LA_API)}`, pedir, sesionPerdida);
   const [otroDia, setOtroDia] = useState('');

@@ -17,7 +17,7 @@
 import { crearMemoriaDeLecturas, type Resultado } from '@be/domain';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
-import { crearCicloDeLectura, type CicloDeLectura, type EstadoDeLectura } from './ciclo-de-lectura';
+import { crearCicloDeLectura, type CicloDeLectura, type EstadoDeLectura, type OpcionesDeCarga } from './ciclo-de-lectura';
 
 /** Una sola memoria para toda la app, en el proceso. Nunca va a disco. */
 export const memoria = crearMemoriaDeLecturas();
@@ -42,6 +42,13 @@ export function useHayActualizaciones(): boolean {
   return useSyncExternalStore(suscribir, hayActualizaciones);
 }
 
+// La raíz pide que todas las pantallas vuelvan a verificar desde cero: por ejemplo, si la sesión pudo vencer mientras el
+// teléfono dormía (quizasVencida, en sesion-en-memoria.ts).
+const oyentesDeEpoca = new Set<() => void>();
+export function exigirVerificacion(): void {
+  for (const oyente of oyentesDeEpoca) oyente();
+}
+
 export interface LecturaRecordada<T> {
   /** Lo que la pantalla dibuja. `null` mientras se verifica la entrada: estructura sin valores. */
   readonly r: Resultado<T> | null;
@@ -49,7 +56,7 @@ export interface LecturaRecordada<T> {
   readonly actualizando: boolean;
   /** La última confirmación falló de forma pasajera y quedó a la vista lo confirmado antes en esta entrada. */
   readonly sinActualizar: boolean;
-  readonly cargar: () => Promise<void>;
+  readonly cargar: (opciones?: OpcionesDeCarga) => Promise<void>;
 }
 
 /** Sin nada confirmado y sin una respuesta que valga: se presenta como un error común, con «Reintentar». */
@@ -74,13 +81,16 @@ function comoResultado<T>(estado: EstadoDeLectura<T>): Resultado<T> | null {
  * elección.
  */
 export function useLecturaRecordada<T>(token: string, clave: string, pedir: () => Promise<Resultado<T>>, sesionPerdida: (r: Resultado<unknown>) => boolean): LecturaRecordada<T> {
-  const [estado, setEstado] = useState<EstadoDeLectura<T>>({ tipo: 'verificando' });
+  // El estado lleva la clave con la que se obtuvo: si la clave cambió y el efecto todavía no corrió, no se dibuja lo de
+  // la clave anterior.
+  const [conClave, setConClave] = useState<{ readonly clave: string; readonly estado: EstadoDeLectura<T> }>({ clave, estado: { tipo: 'verificando' } });
+  const estado: EstadoDeLectura<T> = conClave.clave === clave ? conClave.estado : { tipo: 'verificando' };
   const ciclo = useRef<CicloDeLectura<T> | null>(null);
 
   useEffect(() => {
-    const c = crearCicloDeLectura<T>({ memoria, token, clave, pedir, sesionPerdida, alCambiar: setEstado });
+    const c = crearCicloDeLectura<T>({ memoria, token, clave, pedir, sesionPerdida, alCambiar: (nuevo) => setConClave({ clave, estado: nuevo }) });
     ciclo.current = c;
-    setEstado({ tipo: 'verificando' });
+    setConClave({ clave, estado: { tipo: 'verificando' } });
     void c.cargar();
     return () => {
       c.terminar();
@@ -106,7 +116,16 @@ export function useLecturaRecordada<T>(token: string, clave: string, pedir: () =
     return () => suscripcion.remove();
   }, []);
 
-  const cargar = useCallback(() => ciclo.current?.cargar() ?? Promise.resolve(), []);
+  // Cuando la raíz exige verificar de nuevo, la pantalla deja de mostrar lo confirmado hasta que la API conteste.
+  useEffect(() => {
+    const alExigir = () => void ciclo.current?.cargar({ desdeCero: true });
+    oyentesDeEpoca.add(alExigir);
+    return () => {
+      oyentesDeEpoca.delete(alExigir);
+    };
+  }, []);
+
+  const cargar = useCallback((opciones?: OpcionesDeCarga) => ciclo.current?.cargar(opciones) ?? Promise.resolve(), []);
   return {
     r: comoResultado(estado),
     actualizando: estado.tipo === 'listo' && estado.actualizando,

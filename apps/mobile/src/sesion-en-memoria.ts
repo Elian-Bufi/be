@@ -17,6 +17,10 @@
  * nunca se adelanta. Así la app nunca da por vencida una sesión antes que la API. Si se queda corta, el próximo pedido
  * recibe `SESSION_EXPIRED` y la app lo dice igual. Sin la cabecera, se compara `expiresAt` con el reloj del teléfono y
  * el aviso no dice cuánto duraba.
+ *
+ * **Con el teléfono dormido**, el reloj monótono se detiene. Si al volver el reloj de pared dice que ya pasó la vigencia,
+ * la sesión *pudo* vencer (`quizasVencida`). Entonces la app no lo declara, pero ninguna pantalla conserva lo
+ * confirmado: todas vuelven a verificar con la API. Sin red no se muestra nada protegido, y con red la API decide.
  */
 import type { Ruta } from './navegacion';
 
@@ -27,6 +31,8 @@ export interface Sesion {
   readonly vigenciaMs: number | null;
   /** `performance.now()` al iniciar la sesión. */
   readonly inicioMonotono: number;
+  /** `Date.now()` al iniciar la sesión: solo para sospechar un vencimiento mientras el teléfono dormía. */
+  readonly inicioReloj: number;
   /** `expiresAt` en el reloj del teléfono: solo para cuando no se conoce la vigencia. */
   readonly expiraEnReloj: number;
 }
@@ -40,7 +46,15 @@ export function crearSesion(datos: { token: string; identidadId: string; expires
   const servidor = datos.fechaDelServidor ? Date.parse(datos.fechaDelServidor) : Number.NaN;
   const vigencia = expira - servidor;
   const vigenciaMs = Number.isFinite(vigencia) && vigencia > 0 && vigencia <= VIGENCIA_MAXIMA_CREIBLE_MS ? vigencia : null;
-  return { token: datos.token, identidadId: datos.identidadId, vigenciaMs, inicioMonotono: ahoraMonotono, expiraEnReloj: expira };
+  return { token: datos.token, identidadId: datos.identidadId, vigenciaMs, inicioMonotono: ahoraMonotono, inicioReloj: ahoraReloj, expiraEnReloj: expira };
+}
+
+/**
+ * Si el reloj de pared dice que ya pasó la vigencia. No alcanza para declarar el vencimiento, porque ese reloj se puede
+ * mover. Alcanza para no mostrar nada sin volver a preguntarle a la API.
+ */
+export function quizasVencida(sesion: Sesion, ahoraReloj: number): boolean {
+  return sesion.vigenciaMs === null ? sesion.expiraEnReloj <= ahoraReloj : ahoraReloj - sesion.inicioReloj >= sesion.vigenciaMs;
 }
 
 /** Lo que le queda a la sesión, en ms (≤ 0: venció). */

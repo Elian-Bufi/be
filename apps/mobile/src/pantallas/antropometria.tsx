@@ -27,7 +27,6 @@
  */
 import {
   cantidad,
-  CODIGOS_DE_SESION_NO_VALIDA,
   compararPorCatalogo,
   COPY_ANTROPOMETRIA,
   ETIQUETA_DE_CLASE_DE_DATO,
@@ -50,6 +49,7 @@ import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { useLecturaRecordada } from '../lecturas';
+import { leerMiEvolucion } from '../lecturas-de-las-zonas';
 import { dia, fecha, fechaCivil } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Ayuda, Boton, Desplegable, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
@@ -59,38 +59,10 @@ type Datos = EvolucionResponse['data'];
 
 const sinMediciones = (d: Datos): boolean => d.metrics.every((m) => m.series.length === 0);
 
-/** Los 90 días civiles que terminan el día anterior a `inicio` (`AAAA-MM-DD`), para la API. */
-function periodoAnterior(inicio: string): { periodStart: string; periodEnd: string } {
-  const fin = new Date(`${inicio}T12:00:00Z`);
-  fin.setUTCDate(fin.getUTCDate() - 1);
-  const desde = new Date(fin);
-  desde.setUTCDate(desde.getUTCDate() - 89);
-  return { periodStart: desde.toISOString().slice(0, 10), periodEnd: fin.toISOString().slice(0, 10) };
-}
-/**
- * La API mira de a 92 días como mucho. Si los últimos 90 no tienen ninguna medición, se mira hacia atrás, de a 90 días y
- * hasta un año: quien se mide cada tres o cuatro meses tiene que ver su última toma. La pantalla dice qué período
- * muestra. Si tampoco hay nada, queda el período actual, que dice que no hay mediciones.
- */
-async function leerMiEvolucion(token: string): Promise<Resultado<Datos>> {
-  const r = await api.miEvolucionAntropometrica(token);
-  if (!r.ok) return r;
-  let datos = r.datos.data;
-  for (let i = 0; i < 3 && sinMediciones(datos); i++) {
-    const anterior = await api.miEvolucionAntropometrica(token, periodoAnterior(datos.period.start));
-    // Una sesión que ya no sirve corta la búsqueda y se informa; cualquier otra falla deja lo que ya se tiene.
-    if (!anterior.ok && anterior.tipo === 'API' && CODIGOS_DE_SESION_NO_VALIDA.has(anterior.codigo)) return anterior;
-    if (!anterior.ok) break;
-    datos = anterior.datos.data;
-  }
-  return { ok: true, datos: sinMediciones(datos) ? r.datos.data : datos };
-}
-
 export function PantallaDeMiEvolucion({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
-  const pedir = useCallback(() => leerMiEvolucion(token), [token]);
-  // Al volver a la zona se ve lo último leído en esta sesión mientras se vuelve a pedir (src/lecturas.ts).
-  // La clave nombra el período que se pide: los últimos 90 días, o el anterior con mediciones (`leerMiEvolucion`).
+  const pedir = useCallback(() => leerMiEvolucion(api, token), [token]);
+  // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts). La clave nombra el período que se pide: los últimos 90 días, o el anterior con mediciones (`leerMiEvolucion`).
   const { r, cargar, sinActualizar } = useLecturaRecordada(token, 'mi-evolucion:ultimos-90', pedir, sesionPerdida);
   // DL-115 · con el A3 revocado o nunca otorgado, lo propio no se lee (08:406). No es un error ni «sin mediciones»: los
   // datos siguen guardados. Cada visita vuelve a preguntar a la API; si niega el acceso, lo recordado se borra.

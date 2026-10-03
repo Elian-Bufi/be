@@ -53,8 +53,7 @@ function useHoy(token: string, salir: (m: Salida) => void) {
   // El día del plan elegido se recuerda al volver a la zona, mientras dure la sesión.
   const [diaTipo, setDiaTipo] = useSeleccionRecordada<string | undefined>(token, 'hoy-nutricional:dia', undefined);
   const pedir = useCallback((): Promise<Resultado<HoyResponse>> => api.hoyNutricional(token, diaTipo), [token, diaTipo]);
-  // Al volver a la zona se ve lo último leído en esta sesión mientras se vuelve a pedir; después de registrar una comida,
-  // también: la pantalla no se vacía (src/lecturas.ts).
+  // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts).
   // La clave nombra el día civil (en la zona con la que la API resuelve «hoy») y el día del plan elegido.
   const { r, cargar, sinActualizar } = useLecturaRecordada(token, `hoy-nutricional:${hoyEnZona(ZONA_DE_LA_API)}:${diaTipo ?? ''}`, pedir, sesionPerdida);
   return { r, cargar, sinActualizar, setDiaTipo, sesionPerdida };
@@ -65,10 +64,12 @@ export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; sali
   const { retirado, accesoRetirado } = useAccesoRetirado();
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error' | 'info'; texto: string } | null>(null);
 
+  // Después de registrar, se vuelve a leer desde cero: lo anterior ya no está al día (la comida recién registrada no
+  // figura), y dejarlo a la vista invitaría a registrarla de nuevo.
   const registrado = (texto: string) => {
     setAviso({ tipo: 'exito', texto });
     subir();
-    void cargar();
+    void cargar({ desdeCero: true });
   };
 
   // Una escritura denegada retira el contenido de la pantalla entera, no solo el de la comida que se intentó registrar

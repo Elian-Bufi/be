@@ -14,7 +14,6 @@
 import {
   LARGO_MAXIMO_DE_TEXTO_DE_RESPUESTA,
   LARGO_MAXIMO_DEL_MOTIVO_DE_RECTIFICACION,
-  CODIGOS_DE_SESION_NO_VALIDA,
   COPY,
   COPY_FORMULARIOS,
   desenlaceDeEnvio,
@@ -30,7 +29,6 @@ import {
   type Accion,
   type CampoDePlantilla,
   type Intencion,
-  type ListaDeSolicitudesPropiasResponse,
   type Resultado,
   type RespuestaDeFormulario,
   type SolicitudDeFormulario,
@@ -44,6 +42,7 @@ import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fecha } from '../formato';
 import { falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada } from '../lecturas';
+import { leerLista } from '../lecturas-de-las-zonas';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Ayuda, Boton, Campo, CampoSiONo, Insignia, Parrafo, Seccion, Tarjeta, Titulo } from '../ui';
 
@@ -59,24 +58,10 @@ const OPCIONES_SI_O_NO = [
   { valor: 'NO', texto: COPY_FORMULARIOS.no },
 ] as const;
 
-/** La lista y, al lado, si el A3 está vigente: se piden juntas y se recuerdan juntas. */
-interface ListaConA3 {
-  readonly solicitudes: ListaDeSolicitudesPropiasResponse['data'];
-  readonly sinA3: boolean;
-}
-
-async function leerLista(token: string): Promise<Resultado<ListaConA3>> {
-  const [r, requisito] = await Promise.all([api.misSolicitudesDeFormulario(token), api.consultarRequisitoA3(token)]);
-  if (!requisito.ok && requisito.tipo === 'API' && CODIGOS_DE_SESION_NO_VALIDA.has(requisito.codigo)) return requisito;
-  if (!r.ok) return r;
-  // Solo un A3 leído y no vigente muestra el aviso: si la consulta falla, no se presume nada.
-  return { ok: true, datos: { solicitudes: r.datos.data, sinA3: requisito.ok && requisito.datos.data.currentConsent?.state !== 'ACTIVE' } };
-}
-
 export function PantallaDeFormularios({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
-  const pedir = useCallback(() => leerLista(token), [token]);
-  // Al volver a la zona se ve lo último leído en esta sesión mientras se vuelve a pedir (src/lecturas.ts).
+  const pedir = useCallback(() => leerLista(api, token), [token]);
+  // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts).
   const { r, cargar, sinActualizar } = useLecturaRecordada(token, 'mis-solicitudes', pedir, sesionPerdida);
   const carga: Carga = r === null ? { tipo: 'cargando' } : r.ok ? { tipo: 'listo', datos: r.datos.solicitudes } : { tipo: 'error', sinConexion: r.tipo === 'RED' };
   /** DL-115 · sin A3 la lista sigue, pero lo propio no se lee ni se responde: se dice arriba, con el camino a Privacidad. */

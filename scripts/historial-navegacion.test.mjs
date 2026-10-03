@@ -305,6 +305,14 @@ test('6 · la raíz encuentra la sesión y la pantalla que seguían en el proces
   assert.deepEqual(memoria.sesionAlMontar(1_000, 0), { estado: 'ninguna' });
 });
 
+test('6 · con el teléfono dormido el reloj monótono se detiene: si el de pared dice que pasó la vigencia, la sesión «quizás venció» y no se declara', () => {
+  const sesion = memoria.crearSesion(INICIO, 1_000, Date.parse('2026-10-03T12:00:00Z'));
+  // Toda la noche dormido: el monótono avanzó 5 minutos; el de pared, 13 horas.
+  assert.ok(memoria.restanteMs(sesion, 1_000 + 300_000, Date.parse('2026-10-04T01:00:00Z')) > 0, 'no se declara vencida');
+  assert.equal(memoria.quizasVencida(sesion, Date.parse('2026-10-04T01:00:00Z')), true, 'pero no se muestra nada sin preguntar');
+  assert.equal(memoria.quizasVencida(sesion, Date.parse('2026-10-03T13:00:00Z')), false);
+});
+
 test('6 · la sesión en memoria no toca ningún almacenamiento del teléfono', () => {
   const fuente = readFileSync(resolve(RAIZ, 'apps/mobile/src/sesion-en-memoria.ts'), 'utf8');
   const importaciones = fuente.split('\n').filter((l) => /^import /.test(l));
