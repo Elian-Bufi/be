@@ -368,6 +368,8 @@ Son las mejoras de UX detectadas que no entraron en DL-113. Cada una entra en un
 - **El texto de la imagen exportada se ve chico en un teléfono.** El lienzo es de 1080 px; equilibrarlo no lo agranda.
   Para inspeccionarla, la vista previa tiene «Ver en tamaño real». Agrandar la letra del documento exige recomponer las
   tarjetas.
+- **Con la letra grande, la imagen de la lámina no entra en la primera pantalla del teléfono**: empieza a 974 px en 360
+  y en 390 px de ancho. Con la letra normal sí entra (605 y 578 px).
 - **Búsqueda por texto** en los catálogos externos (DL-098).
 - **La barra inferior de la APK a 320 dp.** Las etiquetas crecen hasta 1,15 y se achican hasta el 85 % si no entran: hay que mirarlo en un teléfono chico.
 - **Los filtros de «Pendientes» en el teléfono** ocupan una pantalla antes del primer pendiente.
