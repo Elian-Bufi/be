@@ -69,6 +69,19 @@ lo comprueba una prueba nueva en `fechas-civiles.test.ts`.
 - **El hosting.** En `test`, cada pedido suma la ida y vuelta hasta Render y, si la API estaba dormida, su arranque. Eso
   es del alojamiento, no de la app, y esta medición local no lo incluye.
 
+## Pedidos por visita (leídos en el código de cada pantalla)
+
+| Zona | Pedidos al entrar | Repetidos al volver, antes | Al volver, después |
+|---|---|---|---|
+| Evolución · «Mi evolución» | 1. Si los últimos 90 días no tienen mediciones, hasta 3 más, **en serie**, para buscar la última toma de hasta un año atrás | Todos otra vez, con «Cargando…» | Lo leído a la vista y los mismos pedidos en silencio |
+| Nutrición · «Tu plan de hoy» | 1 | 1, con «Cargando…» | 1, en silencio |
+| Entrenamiento · «Entrenamiento de hoy» | 1 | 1, con «Cargando…» | 1, en silencio |
+| Información · solicitudes | 2 **en paralelo**: la lista y el estado del A3 | 2, con «Cargando…» | 2, en silencio |
+| Cuenta | 2 en paralelo: la cuenta y el A3 | 2, con «Cargando…» | Igual que antes: Cuenta no recuerda lecturas |
+
+No hay pedidos duplicados dentro de una misma visita. La repetición estaba en cada visita, y sigue, a propósito: es la
+que verifica el acceso. Lo que se quita es la espera a la vista y el cálculo repetido.
+
 ## Lo que cambió en la navegación
 
 Antes, cada zona se montaba de nuevo en cada visita: mostraba «Cargando…», volvía a pedir y volvía a calcular. Después:
