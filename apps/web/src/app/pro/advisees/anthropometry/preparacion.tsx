@@ -42,6 +42,9 @@ import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 import { Figura } from './figura';
 
+/** El aviso de la toma. Un error de validación lista los campos que corregir, con un enlace a cada uno. */
+type AvisoDeLaToma = { tipo: 'exito' | 'error' | 'info'; texto: string; campos?: readonly { id: string; texto: string }[] };
+
 type Borrador = {
   evaluationId: string;
   version: string;
@@ -104,7 +107,7 @@ const aLosCampos = (enSuCampo: Map<string, MedicionConFila>): Record<string, Esc
 export function VistaDePreparacion() {
   const { token, asesoradoId, sesionPerdida, irA } = useAntropometria();
   const [r, setR] = useState<Resultado<{ borrador: Borrador | null; especificaciones: Especificacion[] }> | null>(null);
-  const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error' | 'info'; texto: string } | null>(null);
+  const [aviso, setAviso] = useState<AvisoDeLaToma | null>(null);
 
   const cargar = useCallback(async () => {
     setR(null);
@@ -157,8 +160,8 @@ function Preparacion({
 }: {
   borrador: Borrador | null;
   especificaciones: Especificacion[];
-  aviso: { tipo: 'exito' | 'error' | 'info'; texto: string } | null;
-  onAviso: (a: { tipo: 'exito' | 'error' | 'info'; texto: string } | null) => void;
+  aviso: AvisoDeLaToma | null;
+  onAviso: (a: AvisoDeLaToma | null) => void;
   onCambio: () => Promise<void>;
   onRegistrada: () => void;
 }) {
@@ -256,6 +259,25 @@ function Preparacion({
     return problemas;
   }
 
+  /** Los campos con algo para corregir, en el orden en que se ven, con su nombre y qué les pasa. */
+  function camposDelAviso(problemas: Record<string, string>): { id: string; texto: string }[] {
+    const deLosCampos = metricasPorFamilia(metricas)
+      .flatMap((g) => g.metricas)
+      .filter((m) => problemas[idDelValor(m.clave)])
+      .map((m) => ({ id: idDelValor(m.clave), texto: `${m.nombre}: ${problemas[idDelValor(m.clave)]}` }));
+    const partes = [
+      ['ant-metrica', COPY_ANTROPOMETRIA.metrica],
+      ['ant-valor-libre', COPY_ANTROPOMETRIA.valor],
+      ['ant-unidad', COPY_ANTROPOMETRIA.unidad],
+    ] as const;
+    const deLasFilas = libres.flatMap((_, i) =>
+      partes
+        .filter(([prefijo]) => problemas[`${prefijo}-${i}`])
+        .map(([prefijo, rotulo]) => ({ id: `${prefijo}-${i}`, texto: `Fuera del protocolo, fila ${i + 1} (${rotulo.toLocaleLowerCase('es-AR')}): ${problemas[`${prefijo}-${i}`]}` })),
+    );
+    return [...deLosCampos, ...deLasFilas];
+  }
+
   const contenido = () => ({
     occurredAt: new Date(momento).toISOString(),
     specificationVersionId: protocolo,
@@ -279,8 +301,9 @@ function Preparacion({
    * asegura que el segundo parta siempre del primero.
    */
   async function guardarContenido(): Promise<Borrador | null> {
-    if (Object.keys(revisar()).length > 0) {
-      onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.medicionIncompleta });
+    const problemas = revisar();
+    if (Object.keys(problemas).length > 0) {
+      onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.revisarAntesDeGuardar, campos: camposDelAviso(problemas) });
       return null;
     }
     const res = borrador
@@ -333,12 +356,18 @@ function Preparacion({
     onRegistrada();
   }
 
-  /** Tocar un punto de la figura lleva al campo de esa medición: la figura ubica, la lista carga. */
-  function elegirEnLaFigura(clave: string) {
-    const campo = document.getElementById(idDelValor(clave));
+  /**
+   * Lleva a un campo y lo deja en el centro de la ventana, por encima de la barra fija de guardado, también con el
+   * teclado del teléfono abierto. La usan la figura y el aviso de lo que hay que corregir.
+   */
+  function irAlCampo(id: string) {
+    const campo = document.getElementById(id);
     campo?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     campo?.focus({ preventScroll: true });
   }
+
+  /** Tocar un punto de la figura lleva al campo de esa medición: la figura ubica, la lista carga. */
+  const elegirEnLaFigura = (clave: string) => irAlCampo(idDelValor(clave));
 
   const escribir = (m: MetricaDelProtocolo, cambio: Partial<Escrito>) => setEscritos((xs) => ({ ...xs, [m.clave]: { ...escritoDe(m), ...cambio } }));
   const hayMedicionesGuardadas = !!borrador && borrador.measurements.length > 0;
@@ -354,6 +383,23 @@ function Preparacion({
       {aviso && aviso.tipo !== 'exito' ? (
         <Aviso tipo={aviso.tipo} enfocar>
           <p>{aviso.texto}</p>
+          {aviso.campos && aviso.campos.length > 0 ? (
+            <ul>
+              {aviso.campos.map((c) => (
+                <li key={c.id}>
+                  <a
+                    href={`#${c.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      irAlCampo(c.id);
+                    }}
+                  >
+                    {c.texto}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </Aviso>
       ) : null}
 
