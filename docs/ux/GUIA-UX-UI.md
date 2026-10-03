@@ -75,11 +75,25 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
 - La barra se oculta mientras el teclado está abierto.
 - Atrás, desde una zona, vuelve a Nutrición; desde Nutrición, sale de la app.
 - Una función nueva entra en la zona que le corresponde por dominio. No se agregan botones de zona en Cuenta.
+- **Volver a una zona no recarga todo** (candidata 0.13.2, `src/lecturas.ts`).
+  - Se ve al instante lo último leído en la sesión y se vuelve a pedir una vez, en silencio. Mientras tanto corre una
+    línea fina sobre el borde del encabezado.
+  - La respuesta nueva manda. Escribir olvida todo lo leído, y nada pasa de una sesión a otra.
+  - Cada zona vuelve a la altura en que se la dejó, y tocar la zona en la que se está lleva al principio.
 
 **Website**
 - Adentro de un asesorado, una pestaña por dominio.
 - La dirección dice dónde se está: se navega con el router (`irA`), no cambiando un estado escondido.
 - La acción principal de cada vista va arriba, visible sin desplazarse en 390 px de ancho.
+- **Lo principal, primero.** En la lámina, el orden es:
+  - qué se muestra (la toma y la hoja);
+  - enseguida, la imagen con «Descargar imagen»;
+  - después, los ajustes de cómo se ve;
+  - al final, la explicación.
+  En el teléfono, la imagen entra en la primera pantalla. El orden del documento es el del teléfono, y el foco lo sigue.
+- **Desde 1100 px (`69rem`), columnas con sentido:**
+  - las tomas, la lista a la izquierda (fija) y la abierta a la derecha;
+  - la lámina, lo que se elige a la izquierda y la imagen a la derecha, fija mientras se ajusta.
 - **En el teléfono, el encabezado tiene tres renglones, no cinco:**
   - la marca y la apariencia (la etiqueta «Apariencia» queda oculta a la vista, pero sigue siendo el nombre accesible);
   - la navegación, en una sola línea;
@@ -96,6 +110,18 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   - sin cortar texto;
   - sin desplazamiento horizontal;
   - `adjustsFontSizeToFit` solo en la barra inferior.
+- **APK: el contenido crece sin tope.** Solo el encabezado y las etiquetas de la barra inferior crecen hasta 1,15: la
+  marca no informa nada, y en la barra el ícono acompaña y el lector de pantalla dice el nombre completo. No se
+  desactiva el escalado ni se achica el texto para que entre.
+- **Las opciones excluyentes van en píldoras** (`Segmentos`, APK). Si no entran, bajan enteras a la línea siguiente:
+  nunca se parte una palabra. Lo usan las preferencias visuales: la figura y los colores.
+- **Una figura con texto adentro se adapta a la letra** (`composicion-de-la-figura.ts`). Con la letra de la persona,
+  cada fila mide lo que necesita. Si las tarjetas no entran, la figura pasa a números, que bajan en orden, y debajo va
+  una lista que crece sin tope.
+- **Website, con el teclado del teléfono abierto:**
+  - la ventana se achica (`interactive-widget=resizes-content`, en `layout.tsx`), y una barra fija queda arriba del
+    teclado, no detrás;
+  - el campo enfocado se lleva por encima de la barra (`scroll-padding-bottom`).
 - Anchos de referencia:
   - APK: 360 dp, y 286–300 dp para los equipos chicos;
   - website: 390 px en el teléfono y 1280 px en la computadora.
@@ -116,6 +142,9 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   - la lámina tiene sus tres temas propios, que no cambian la apariencia del website.
 - **El significado no va solo en el color.** Un pliegue de la cara posterior se marca con el aro punteado y la palabra
   «posterior». Una zona elegida, con barrita y negrita.
+- **Una silueta clara sobre un fondo claro lleva contorno**, con su contraste medido.
+  - En Claro, el cuerpo blanco daba de 1,01:1 a 1,19:1 contra la lámina.
+  - El contorno de la APK (`laminaContorno`) da 4,0:1, y la prueba de contraste lo verifica.
 
 ## 7. Figuras, láminas y gráficos
 
@@ -138,6 +167,10 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
     cresta ilíaca y el supraespinal. Sus guías llegan juntas, la tarjeta dice cuál es cuál y el posterior lleva su marca.
   - En el teléfono, las tarjetas se apilan por la altura media de sus sitios y los puntos se dibujan encima de las guías:
     si una guía pasa junto a otro punto, pasa por detrás.
+- **En el teléfono, la figura es liviana.** Halos y aros chicos, guías finas, y una calle entre las tarjetas y el cuerpo
+  para que las guías doblen afuera.
+- **La imagen exportada se equilibra.** En Medición con el cuerpo entero, la figura arranca en 290 y mide 1390. Así no
+  queda una franja vacía bajo el encabezado (Dirección, 2026-10-03). Los otros encuadres son los del compositor.
 - **Tabla equivalente.** Todo gráfico o figura tiene una tabla o lista equivalente, que es el camino del teclado y del
   lector de pantalla (B10-10 §11). En la APK, «La figura, en lista».
 - **Los resultados calculados siempre llevan su método.** Dos métodos no se comparan entre sí, y ninguno se marca
@@ -147,10 +180,11 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
 
 Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx` (website y APK):
 - **cargando:** `Cargando`. En el website es una región de estado (`role="status"`), con una marca que se detiene con «reducir movimiento»;
+- **actualizando** (APK): con datos a la vista no se vuelve a «Cargando…». Corre la línea del encabezado, que queda quieta con «reducir movimiento». Si el pedido falla de forma pasajera, `SinActualizar` dice «No pudimos actualizar», muestra lo leído en la sesión y deja reintentar;
 - **error con reintento:** `ErrorConReintento`, sin perder lo que la persona escribió;
 - **vacío:** `EstadoVacio` en el website. Lleva un título que dice qué falta, una línea con qué significa y, si existe, la acción real que corresponde, nunca un dato inventado. Ejemplo: sin tomas, «Preparar una toma»;
 - **acceso retirado** (B10-06): se retira el contenido entero, no a medias;
-- **sesión vencida:** vuelve a «Iniciar sesión» y lo dice.
+- **sesión vencida:** vuelve a «Iniciar sesión» y lo dice, con su propio aviso. En la APK, solo un código de sesión cierra la sesión: un 403, un 429, un 5xx o la falta de red, nunca.
 
 ## 9. Lista de control por pantalla
 
@@ -218,7 +252,7 @@ Viven en `apps/web/src/components/` y en `globals.css`. Antes de crear otro, se 
 | Tipos, copy y contraste | `npx tsc --noEmit` (website y APK) y `node --test scripts/*.test.cjs` | CI y ejecutor |
 | Geometría de la figura y la lámina | pruebas del dominio (`lamina.test.ts`) y recortes de control | ejecutor |
 | Recorrido del website | puppeteer con datos sintéticos, en un entorno aislado; capturas a 390 y 1280 px | ejecutor |
-| Pantallas de la APK | maquetas HTML con la misma geometría, a 286, 300 y 360 dp, y en los dos temas | ejecutor |
+| Pantallas de la APK | maquetas HTML con la misma composición que la APK (`composicion-de-la-figura.ts`), con la escala de letra simulada y en los dos temas. Se rotulan «MAQUETA · NO ES LA APK» | ejecutor |
 | Uso real | la APK publicada, en el teléfono, con TalkBack y la letra al máximo | **Dirección** |
 
 La automatización no reemplaza la prueba de Dirección en el teléfono. Un informe nunca dice «todo validado» si esa
@@ -227,12 +261,17 @@ prueba no se hizo.
 ## 12. Lo que se sabe que falta
 
 Son las mejoras de UX detectadas que no entraron en DL-113. Cada una entra en un tramo cuando Dirección la prioriza.
-- **La figura del teléfono, en el tronco.** Con muchos pliegues, los halos se tocan. Se puede achicar el halo o
-  agrupar los puntos cuando se tocan.
+- **La figura del teléfono, en el tronco.** Los halos se achicaron en la candidata 0.13.2, y con la letra grande la
+  figura pasa a números. Falta mirarlo en el teléfono. Con números y letra ×2, algunas guías de pliegues todavía se
+  cruzan, porque los sitios no se mueven.
 - **TalkBack y letra al máximo en un Android físico** (RNF-ACC-001). Nunca se probaron.
 - **Recargar el website cierra la sesión** (DL-012): la sesión vive en memoria.
+- **Cerrar la APK, o que Android cierre su proceso, obliga a volver a entrar** (DL-012). La propuesta de guardar el
+  token en el almacenamiento seguro hasta que venza está en DL-012 y espera la decisión de Dirección.
+- **El texto de la imagen exportada se ve chico en un teléfono.** El lienzo es de 1080 px; equilibrarlo no lo agranda.
+  Agrandar la letra exige recomponer las tarjetas.
 - **Búsqueda por texto** en los catálogos externos (DL-098).
-- **La barra inferior de la APK a 320 dp.** Las etiquetas entran achicándose (hasta el 70 % con letra grande): hay que mirarlo en un teléfono chico.
+- **La barra inferior de la APK a 320 dp.** Las etiquetas crecen hasta 1,15 y se achican hasta el 85 % si no entran: hay que mirarlo en un teléfono chico.
 - **Los filtros de «Pendientes» en el teléfono** ocupan una pantalla antes del primer pendiente.
 - **Un 503 intermitente de la API** (`P2028`: la transacción no pudo empezar a tiempo) con lecturas concurrentes y poca memoria. La pantalla lo muestra con su reintento. Es de la API, no de la interfaz.
 - **Las demás pantallas del website.** Siguen esta guía desde DL-113. Las que se toquen después se revisan con la lista

@@ -1785,12 +1785,72 @@ details summary {
  * Adentro de la lámina, los colores son los del compositor y viven en @be/domain (lamina.ts y figura-de-lamina.ts):
  * el tema de la lámina no es el del website. Acá va solo lo de alrededor —controles, contenedor y notas—, con los
  * tokens de siempre. La lámina se escala al ancho disponible y nunca pasa del alto de la ventana. */
+/* Pulido del 2026-10-03: qué se muestra, la imagen con su descarga, los ajustes y la explicación, en ese orden. En una
+ * pantalla ancha, dos columnas: lo que se elige a la izquierda y la imagen a la derecha, fija mientras se ajusta. */
+.lamina__disposicion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'que' 'vista' 'ajustes' 'pie';
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.lamina__que {
+  grid-area: que;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.lamina__vista {
+  grid-area: vista;
+}
+
+.lamina__acciones {
+  justify-content: center;
+  margin-top: 0;
+}
+
+.lamina__ajustes {
+  grid-area: ajustes;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.lamina__ajustes-titulo {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.lamina__pie {
+  grid-area: pie;
+}
+
+@media (min-width: 69rem) {
+  .lamina__disposicion {
+    grid-template-columns: minmax(20rem, 26rem) minmax(0, 1fr);
+    grid-template-areas: 'que vista' 'ajustes vista' 'pie vista';
+    grid-template-rows: auto auto 1fr;
+    align-items: start;
+    column-gap: 2rem;
+  }
+
+  .lamina__vista {
+    position: sticky;
+    top: 1rem;
+  }
+
+  .lamina__ajustes {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
 .lamina__controles {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 0.85rem 1.5rem;
-  margin: 0.75rem 0 0.25rem;
+  margin: 0.25rem 0;
 }
 
 .lamina__grupo {
@@ -2048,6 +2108,25 @@ details summary {
   font-size: 0.9rem;
 }
 
+/* Pulido del 2026-10-03: en una pantalla ancha, la lista de tomas a la izquierda, fija, y la toma abierta a la derecha. */
+@media (min-width: 69rem) {
+  .evaluaciones {
+    display: grid;
+    grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .evaluaciones__lista {
+    position: sticky;
+    top: 1rem;
+  }
+
+  .evaluaciones .tomas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Las mediciones de una toma, por familia: filas, no tarjetas. */
 .familia h4 {
   margin: 1rem 0 0.15rem;
@@ -2134,6 +2213,12 @@ details summary {
  * Las acciones de un formulario largo, fijas al pie de la pantalla mientras el formulario está a la vista, con el
  * estado de lo guardado. En el teléfono, los botones van uno al lado del otro para no tapar media pantalla.
  */
+/* Con el teclado abierto (`interactive-widget=resizes-content`, en layout.tsx), la barra queda arriba del teclado: el campo
+ * enfocado se lleva por encima de ella, no detrás. La barra mide unos 105 px en un teléfono (dos líneas). */
+html:has(.acciones--fijas) {
+  scroll-padding-bottom: 8rem;
+}
+
 .acciones--fijas {
   position: sticky;
   bottom: 0;

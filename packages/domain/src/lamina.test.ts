@@ -139,11 +139,14 @@ test('con dos mediciones vigentes de la misma clave, la lámina muestra la más 
 
 // ─── Medición ───────────────────────────────────────────────────────────────────────────────────
 
-test('Medición · hombre entero: las cuatro tarjetas de perímetros caen donde las pone el compositor', () => {
+test('Medición · hombre entero: las cuatro tarjetas de perímetros caen donde las pone la composición', () => {
   const c = componerMedicion('HOMBRE', 'ENTERO', 'PERIMETROS', ejemplo);
+  // Con el encuadre del compositor v13.3 caían en 551,5 · 783,5 · 1077,5 · 1309,5. Desde el 2026-10-03 el cuerpo entero
+  // sube y crece (ENCUADRE_EN_MEDICION, pedido de Dirección), y las tarjetas suben con sus sitios. El orden, las filas
+  // y las guías siguen las mismas reglas: lo verifican las pruebas de abajo.
   assert.deepEqual(
     c.tarjetas.map((t) => Number(t.y.toFixed(1))),
-    [551.5, 783.5, 1077.5, 1309.5],
+    [456.8, 688.8, 982.8, 1229.2],
   );
   assert.deepEqual(
     c.tarjetas.map((t) => t.filas.length),

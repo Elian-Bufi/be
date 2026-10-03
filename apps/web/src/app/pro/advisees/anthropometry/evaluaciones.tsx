@@ -46,6 +46,14 @@ import { BloqueDeCalculos } from './calculos';
 type Resumen = { evaluationId: string; state: string; occurredAt: string; registeredAt: string | null; summary: { metrics: string[]; measurementCount: number; annulledCount: number } };
 
 /**
+ * Las tomas, por cuándo se tomaron: la más reciente primero, y es la que abre. DL-113 nombra cada toma por esa fecha. La
+ * API pagina por fecha de registro, así que una toma cargada después quedaba primera aunque fuera más vieja. Pasó en la
+ * prueba de Dirección con la 0.13.1: la del 24/9, registrada después, quedaba antes que la del 1/10 y se abría ella.
+ * Con la misma fecha, la registrada después va primero.
+ */
+const porOcurrencia = (a: Resumen, b: Resumen): number => b.occurredAt.localeCompare(a.occurredAt) || (b.registeredAt ?? '').localeCompare(a.registeredAt ?? '');
+
+/**
  * Qué pasó con la evaluación pedida cuando la lista sí se pudo leer: `no-disponible` es el 404 (no existe, o no está
  * autorizada: no se distingue, como en toda la API) y `transitorio` es cualquier otro fallo, que amerita reintentar.
  * En los dos casos la lista válida del asesorado se muestra igual: una evaluación fallida no la tapa.
@@ -69,7 +77,7 @@ export function VistaDeEvaluaciones() {
     const lista = await api.listarEvaluacionesAntropometricas(token, asesoradoId);
     if (sesionPerdida(lista)) return;
     if (!lista.ok) return setR(lista as Resultado<never>);
-    const filas = lista.datos.data as Resumen[];
+    const filas = [...(lista.datos.data as Resumen[])].sort(porOcurrencia);
     const id = abiertaId ?? filas[0]?.evaluationId ?? null;
     if (!id) return setR({ ok: true, datos: { lista: filas, abierta: null, fallo: null } });
     const detalle = await api.consultarEvaluacionAntropometrica(token, id);
@@ -130,7 +138,9 @@ export function VistaDeEvaluaciones() {
             </Aviso>
           ) : null}
 
-          <section className="seccion" aria-labelledby="titulo-registradas">
+          {/* En una pantalla ancha, la lista a la izquierda y la toma abierta a la derecha (`.evaluaciones`). */}
+          <div className="evaluaciones">
+          <section className="seccion evaluaciones__lista" aria-labelledby="titulo-registradas">
             <h2 id="titulo-registradas">Tomas registradas</h2>
             {r.datos.lista.length === 0 ? (
               <EstadoVacio
@@ -171,6 +181,7 @@ export function VistaDeEvaluaciones() {
               onError={(texto) => setAviso({ tipo: 'error', texto })}
             />
           ) : null}
+          </div>
         </div>
       ) : null}
     </EstadoDeLectura>
