@@ -33,7 +33,7 @@ export type Ruta =
   | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string; readonly origen?: 'hoy' | 'historial' };
 
 /** Por qué termina la sesión en el APK; cada motivo tiene su aviso en App.tsx. */
-export type Salida = 'sesion-cerrada' | 'sesiones-cerradas' | 'sesion-no-valida' | 'reautenticar' | 'cierre-registrado';
+export type Salida = 'sesion-cerrada' | 'sesiones-cerradas' | 'sesion-no-valida' | 'sesion-vencida' | 'reautenticar' | 'cierre-registrado';
 
 /** Pantallas que necesitan una sesión en memoria. */
 export function requiereSesion(ruta: Ruta): boolean {
@@ -202,7 +202,9 @@ export function useSesionPerdida(salir: (motivo: Salida) => void) {
   return useCallback(
     (r: Resultado<unknown>) => {
       if (!r.ok && r.tipo === 'API' && CODIGOS_DE_SESION_NO_VALIDA.has(r.codigo)) {
-        salir('sesion-no-valida');
+        // Solo un código de sesión cierra la sesión. Un 403, un 429, un 5xx o la falta de red no: la pantalla lo dice y
+        // deja reintentar (clasificarFalla, en @be/domain).
+        salir(r.codigo === 'SESSION_EXPIRED' ? 'sesion-vencida' : 'sesion-no-valida');
         return true;
       }
       return false;

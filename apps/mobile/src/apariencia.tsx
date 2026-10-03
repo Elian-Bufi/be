@@ -9,7 +9,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { esTema, fijarTema, TEMA_PREDETERMINADO, TEMAS, temaVigente, type Tema } from './tema';
-import { CampoSiONo } from './ui';
+import { Text, View } from 'react-native';
+import { estilos, Segmentos } from './ui';
 
 /** La misma clave que el website (`apps/web/src/lib/apariencia.ts`). */
 export const CLAVE_DE_APARIENCIA = 'be-apariencia';
@@ -65,20 +66,16 @@ export function useAparienciaGuardada(): Apariencia & { readonly lista: boolean 
 }
 
 /**
- * El selector de Cuenta: el mismo grupo de opciones accesible del resto de la app (rol radiogroup). Tocar la opción ya
- * elegida no la suelta: siempre hay un tema.
+ * El selector de Cuenta. Es una preferencia visual, como la figura de «Mi evolución», y usa las mismas píldoras
+ * (`Segmentos`, rol radiogroup): siempre hay un tema elegido.
  */
 export function SelectorDeApariencia() {
   const { tema, cambiarTema } = useApariencia();
   return (
-    <CampoSiONo
-      etiqueta="Colores de la app"
-      ayuda="Azul noche es la predeterminada. Lo que elijas se guarda en este teléfono."
-      opciones={TEMAS.map((t) => ({ valor: t, texto: NOMBRE_DEL_TEMA[t] }))}
-      valor={tema}
-      onCambio={(valor) => {
-        if (esTema(valor)) cambiarTema(valor);
-      }}
-    />
+    <View style={estilos.campo}>
+      <Text style={estilos.etiqueta}>Colores de la app</Text>
+      <Text style={estilos.tenue}>Azul noche es la predeterminada. Lo que elijas se guarda en este teléfono.</Text>
+      <Segmentos etiqueta="Colores de la app" opciones={TEMAS.map((t) => ({ valor: t, texto: NOMBRE_DEL_TEMA[t] }))} valor={tema} alElegir={cambiarTema} />
+    </View>
   );
 }

@@ -945,6 +945,8 @@ details summary {
   padding: 0.85rem 1.1rem 1rem;
   margin: 0 0 1rem;
   background: var(--superficie);
+  /* Un fieldset no se achica por debajo de su contenido salvo que se lo pida: con la letra grande desbordaba. */
+  min-inline-size: 0;
 }
 
 .grupo legend {
@@ -1090,11 +1092,15 @@ details summary {
 }
 
 /* Tarjetas de dominio del Resumen (B10-08 §10). Sin color de estado: el legajo prohíbe semáforo y color de riesgo. */
+/*
+ * Las grillas que reparten columnas («repeat(auto-fit, minmax(Nrem, 1fr))») usan min(Nrem, 100%): con la letra grande,
+ * una columna mínima en rem pasaba el ancho del teléfono y la página se desplazaba de costado (tanda del 2026-10-03).
+ */
 .tarjetas-de-dominio {
   display: grid;
   gap: 1rem;
   margin: 0.5rem 0 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
 }
 
 .tarjeta-de-dominio {
@@ -1194,7 +1200,7 @@ details summary {
 
 .landing__columnas {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
   gap: 1.25rem;
 }
 
@@ -1246,7 +1252,7 @@ details summary {
   padding: 0;
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
 }
 
 .landing__limites li {
@@ -1300,7 +1306,7 @@ details summary {
 .grilla-de-datos {
   display: grid;
   gap: 0 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
 }
 
 @media (min-width: 64rem) {
@@ -1311,6 +1317,8 @@ details summary {
 
 .toma {
   display: grid;
+  /* Una columna que no pasa el ancho disponible: sin esto, la lista de mediciones imponía su ancho mínimo. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
   align-items: start;
 }
@@ -1503,6 +1511,27 @@ details summary {
 
   .medida__estado {
     grid-column: 1 / -1;
+    text-align: left;
+  }
+}
+
+/*
+ * Con la letra grande en un teléfono, el nombre, el campo y el estado de cada medición van uno debajo del otro. Al lado
+ * del campo, el nombre quedaba con una palabra por línea y se metía bajo la caja. Con la letra normal la lista mide más
+ * de 17rem y no cambia nada (tanda del 2026-10-03). Va después de la regla de 30rem para ganarle en el teléfono.
+ */
+.toma__lista {
+  container-type: inline-size;
+}
+
+@container (max-width: 17rem) {
+  .medida {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .medida__estado {
+    grid-column: 1 / -1;
+    min-width: 0;
     text-align: left;
   }
 }
@@ -1785,12 +1814,72 @@ details summary {
  * Adentro de la lámina, los colores son los del compositor y viven en @be/domain (lamina.ts y figura-de-lamina.ts):
  * el tema de la lámina no es el del website. Acá va solo lo de alrededor —controles, contenedor y notas—, con los
  * tokens de siempre. La lámina se escala al ancho disponible y nunca pasa del alto de la ventana. */
+/* Pulido del 2026-10-03: qué se muestra, la imagen con su descarga, los ajustes y la explicación, en ese orden. En una
+ * pantalla ancha, dos columnas: lo que se elige a la izquierda y la imagen a la derecha, fija mientras se ajusta. */
+.lamina__disposicion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'que' 'vista' 'ajustes' 'pie';
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.lamina__que {
+  grid-area: que;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.lamina__vista {
+  grid-area: vista;
+}
+
+.lamina__acciones {
+  justify-content: center;
+  margin-top: 0;
+}
+
+.lamina__ajustes {
+  grid-area: ajustes;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.lamina__ajustes-titulo {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.lamina__pie {
+  grid-area: pie;
+}
+
+@media (min-width: 69rem) {
+  .lamina__disposicion {
+    grid-template-columns: minmax(20rem, 26rem) minmax(0, 1fr);
+    grid-template-areas: 'que vista' 'ajustes vista' 'pie vista';
+    grid-template-rows: auto auto 1fr;
+    align-items: start;
+    column-gap: 2rem;
+  }
+
+  .lamina__vista {
+    position: sticky;
+    top: 1rem;
+  }
+
+  .lamina__ajustes {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
 .lamina__controles {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 0.85rem 1.5rem;
-  margin: 0.75rem 0 0.25rem;
+  margin: 0.25rem 0;
 }
 
 .lamina__grupo {
@@ -1864,6 +1953,32 @@ details summary {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* La vista previa ampliada: la lámina a su tamaño propio, dentro de un visor que se recorre con el dedo o la rueda. */
+.lamina__visor {
+  max-height: 80vh;
+  overflow: auto;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lamina__lienzo--ampliado {
+  width: 1080px;
+  max-width: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.lamina__ampliar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1rem;
 }
 
 .lamina__notas .nota {
@@ -2010,7 +2125,7 @@ details summary {
   padding: 0;
   display: grid;
   gap: 0.5rem;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
 }
 
 .tomas__toma {
@@ -2046,6 +2161,25 @@ details summary {
 .tomas__detalle {
   color: var(--tenue);
   font-size: 0.9rem;
+}
+
+/* Pulido del 2026-10-03: en una pantalla ancha, la lista de tomas a la izquierda, fija, y la toma abierta a la derecha. */
+@media (min-width: 69rem) {
+  .evaluaciones {
+    display: grid;
+    grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .evaluaciones__lista {
+    position: sticky;
+    top: 1rem;
+  }
+
+  .evaluaciones .tomas {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Las mediciones de una toma, por familia: filas, no tarjetas. */
@@ -2134,6 +2268,12 @@ details summary {
  * Las acciones de un formulario largo, fijas al pie de la pantalla mientras el formulario está a la vista, con el
  * estado de lo guardado. En el teléfono, los botones van uno al lado del otro para no tapar media pantalla.
  */
+/* Con el teclado abierto (`interactive-widget=resizes-content`, en layout.tsx), la barra queda arriba del teclado: el campo
+ * enfocado se lleva por encima de ella, no detrás. La barra mide unos 105 px en un teléfono (dos líneas). */
+html:has(.acciones--fijas) {
+  scroll-padding-bottom: 8rem;
+}
+
 .acciones--fijas {
   position: sticky;
   bottom: 0;

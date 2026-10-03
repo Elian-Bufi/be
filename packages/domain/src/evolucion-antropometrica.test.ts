@@ -12,8 +12,10 @@ import {
   diasEnPalabras,
   diasEntreFechas,
   diaSiguiente,
+  decimalesDelEje,
   diferenciaDescriptiva,
   fechaCivil,
+  filasDelPeriodo,
   grupoVigente,
   inicioDelDia,
   limitesDelPeriodo,
@@ -25,6 +27,7 @@ import {
   observacionesDelGrupo,
   observacionPorId,
   prepararSerie,
+  dominioDelEjeVertical,
   protocoloEnPalabras,
   resumenDeObservacion,
   textoDeDiferenciaAntropometrica,
@@ -255,4 +258,45 @@ test('TEST-PRJ-009 · el copy de la evolución no califica ni completa huecos', 
   const textos = Object.values(COPY_EVOLUCION).map((v) => (typeof v === 'function' ? (v as (...args: never[]) => string)(...([1, 2] as never[])) : v));
   textos.push(COPY_EVOLUCION.zona('America/Argentina/Buenos_Aires'), COPY_EVOLUCION.delDia(1, 2));
   assert.deepEqual(textos.flatMap((t) => terminosProhibidosDeAntropometriaEn(t).map((p) => `${p} en «${t}»`)), []);
+});
+
+test('el eje vertical tiene margen de al menos una unidad y del 5 %, sin forzar el cero; con un valor queda centrado', () => {
+  assert.deepEqual(dominioDelEjeVertical(85, 88), { desde: 80, hasta: 93 });
+  assert.deepEqual(dominioDelEjeVertical(10, 10), { desde: 9, hasta: 11 });
+});
+
+test('el eje de un índice se redondea en décimas o centésimas: los puntos no se pegan y no aparecen negativos', () => {
+  // Antes, con una unidad fija de 1, (0,5; 0,6) daba de −1 a 2. Ese oráculo describía el defecto: desde DL-111 la
+  // evolución muestra índices de fórmulas (cintura/cadera, cintura/talla, conicidad) y sus puntos quedaban pegados.
+  assert.deepEqual(dominioDelEjeVertical(0.5, 0.6), { desde: 0.47, hasta: 0.63 });
+  assert.deepEqual(dominioDelEjeVertical(0.84, 0.86), { desde: 0.79, hasta: 0.91 });
+  assert.deepEqual(dominioDelEjeVertical(1.18, 1.22), { desde: 1, hasta: 1.4 });
+  assert.deepEqual(dominioDelEjeVertical(0.85, 0.85), { desde: 0.8, hasta: 0.9 });
+  // Una medida que no es negativa no lleva el eje bajo cero.
+  assert.deepEqual(dominioDelEjeVertical(0.5, 12), { desde: 0, hasta: 13 });
+  assert.equal(decimalesDelEje(80, 93), 0);
+  assert.equal(decimalesDelEje(1.18, 1.22), 1);
+  assert.equal(decimalesDelEje(0.84, 0.86), 2);
+});
+
+test('la lista equivalente usa la fecha civil de la zona y el grupo del gráfico, con los huecos recortados al período', () => {
+  const s = prepararSerie(
+    serie(
+      [
+        punto('2026-09-10T14:00:00.000Z', 80),
+        punto('2026-09-12T14:00:00.000Z', 81, { comparabilityGroup: 'cmp-2' }),
+        // El 30 de septiembre a las 23:30 en Buenos Aires: en UTC ya es 1 de octubre.
+        punto('2026-10-01T02:30:00.000Z', 82),
+      ],
+      [{ from: '2026-09-01', to: '2026-09-09', state: 'NO_DATA', days: 9 }],
+    ),
+    ZONA,
+  );
+  const filas = filasDelPeriodo(s, 'cmp-1', { start: '2026-09-05', end: '2026-09-30' });
+  assert.deepEqual(
+    filas.map((f) => (f.tipo === 'hueco' ? `hueco ${f.hueco.from}..${f.hueco.to} (${f.hueco.days})` : `${f.observacion.fecha} ${f.observacion.punto.value}`)),
+    ['hueco 2026-09-05..2026-09-09 (5)', '2026-09-10 80', '2026-09-30 82'],
+  );
+  // Sin grupo, no hay observaciones que listar.
+  assert.ok(filasDelPeriodo(s, null, { start: '2026-09-05', end: '2026-09-30' }).every((f) => f.tipo === 'hueco'));
 });

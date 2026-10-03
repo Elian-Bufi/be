@@ -1,5 +1,5 @@
 /**
- * API-DSH-04 — Cartera del profesional (PF-07, propuesta del 2026-09-30): «Pendientes» de todos los asesorados con
+ * API-CAR-01 — Cartera del profesional (PF-07, propuesta del 2026-09-30; antes API-DSH-04, DL-116): «Pendientes» de todos los asesorados con
  * vínculo vigente, por dominio disponible según el PDP, con hechos fechados y sin juicios.
  *
  * - Cada ítem es **un pendiente** de un asesorado en un dominio (`kind`), con la fecha civil que lo origina y, si es

@@ -92,3 +92,16 @@ test('una métrica que no está en la última toma no aparece en ella, aunque te
     ['peso'],
   );
 });
+
+test('sin anterior comparable, la toma dice por qué: no hubo una antes, o la hubo con otro método o protocolo', () => {
+  const d = datos([
+    serie('peso', [punto('ev-septiembre', '2026-09-24', 80, G_PESO)], [G_PESO]),
+    serie('imc', [punto('ev-agosto', '2026-08-25', 26.4, G_IMC_OTRO, { dataClass: 'DERIVED' }), punto('ev-septiembre', '2026-09-24', 26.1, G_IMC, { dataClass: 'DERIVED' })], [G_IMC, G_IMC_OTRO]),
+    serie('perimetro-cintura', [punto('ev-agosto', '2026-08-25', 88, G_CINTURA), punto('ev-septiembre', '2026-09-24', 86.5, G_CINTURA)], [G_CINTURA]),
+  ]);
+  const toma = ultimaToma(d)!;
+  const motivo = (m: string) => [...toma.medidas, ...toma.derivadas].find((x) => x.metrica === m)!.motivoSinAnterior;
+  assert.equal(motivo('peso'), 'SIN_PREVIA');
+  assert.equal(motivo('imc'), 'OTRO_GRUPO');
+  assert.equal(motivo('perimetro-cintura'), null);
+});

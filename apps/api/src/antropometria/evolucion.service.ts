@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CLASE_DE_DATO_API, construirSerie, fechasDelPeriodo, type ObservacionDeSerie } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
+import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
@@ -34,9 +35,12 @@ const DIAS_MAXIMOS_DEL_PERIODO = 92;
 export class EvolucionService {
   constructor(private readonly ejecutor: EjecutorAntropometrico, private readonly pdp: PdpService) {}
 
-  consultar(actor: ActorAutenticado, adviseeId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<unknown> {
+  async consultar(actor: ActorAutenticado, adviseeId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<unknown> {
     const { desde, hasta, metricas } = this.leerConsulta(query);
-    return this.ejecutor.leer({
+    // La transacción decide y lee; la respuesta se arma después del COMMIT, con lo que se leyó en ella. Armarla adentro
+    // dejaba la conexión tomada mientras se calculaban las series, y bajo carga el pool se agotaba (P2028 → 503;
+    // EVIDENCIA/P2028).
+    const leido = await this.ejecutor.leer({
       operacion: 'API-ANT-06',
       casoDeUso: 'UC-P20',
       actor,
@@ -44,70 +48,72 @@ export class EvolucionService {
       recursoIntentado: { tipo: 'Asesorado', id: adviseeId },
       lectura: async (tx) => {
         const titular = await this.titularAutorizado(tx, actor, adviseeId, ctx);
-        const { observaciones, fichasPorMedicion, porMedicion, partialView } = await this.observaciones(tx, titular, actor.identidadId, desde, hasta);
-        const fechas = fechasDelPeriodo(desde, hasta);
-        const pedidas = metricas ?? [...new Set(observaciones.map((o) => o.metrica))].sort();
-
-        const gruposPorFicha = new Map<string, { comparabilityGroup: string; protocolVersionId: string; protocolName: string; methodVersionId: string | null; unit: string }>();
-        const grupoDe = (f: ReturnType<typeof fichaDe>): string => {
-          const clave = `${f.protocolVersionId}|${f.methodVersionId ?? ''}|${f.unit}`;
-          if (!gruposPorFicha.has(clave)) {
-            gruposPorFicha.set(clave, {
-              comparabilityGroup: `cmp-${gruposPorFicha.size + 1}`,
-              protocolVersionId: f.protocolVersionId,
-              protocolName: f.protocolName,
-              methodVersionId: f.methodVersionId,
-              unit: f.unit,
-            });
-          }
-          return gruposPorFicha.get(clave)!.comparabilityGroup;
-        };
-
-        return {
-          data: {
-            adviseeId: titular,
-            period: { start: desde, end: hasta, timeZone: ZONA_POR_DEFECTO },
-            metrics: pedidas.map((metrica) => {
-              const serie = construirSerie(metrica, fechas, observaciones);
-              const grupos = new Map<string, ReturnType<typeof grupoDe>>();
-              const puntos = serie.puntos
-                .filter((p) => p.disponibilidad === 'REGISTRADO')
-                .map((p) => {
-                  const fuente = porMedicion.get(p.origenId)!;
-                  const grupo = grupoDe(fichasPorMedicion.get(p.origenId)!);
-                  grupos.set(grupo, grupo);
-                  return {
-                    occurredAt: fuente.momentoDeOcurrencia.toISOString(),
-                    recordedAt: fuente.momentoDeRegistro.toISOString(),
-                    value: p.magnitud.valor,
-                    unit: p.magnitud.unidad,
-                    sourceEvaluationId: fuente.evaluacionId,
-                    sourceId: p.origenId,
-                    dataClass: CLASE_DE_DATO_API[p.clase],
-                    comparabilityGroup: grupo,
-                    // La vista efectiva viene de la cadena de correcciones o del original (REG-06-16): se dice cuál.
-                    correctionState: fuente.correcciones.length > 0 ? ('CORRECTED' as const) : ('EFFECTIVE' as const),
-                    incomparableWithPrevious: p.incomparableConElAnterior.map((m) => MOTIVO_API[m]),
-                  };
-                });
-              return {
-                metricCode: metrica,
-                series: puntos,
-                // Los días sin observación vigente, como rangos: un hueco no es una fila con un valor vacío.
-                gaps: huecosDe(serie.puntos.filter((p) => p.disponibilidad === 'SIN_DATO').map((p) => p.fechaLocal)),
-                comparability: { groups: [...gruposPorFicha.values()].filter((g) => grupos.has(g.comparabilityGroup)) },
-              };
-            }),
-            // 09v11:786-796: la vista es parcial cuando el actor ve solo el subconjunto de fuentes que puede
-            // consultar. Acá pasa cuando el asesorado tiene evaluaciones registradas de otro profesional en el
-            // período: existen, no se muestran, y la respuesta lo dice en vez de parecer completa.
-            partialView,
-            // Lo que el legajo prohíbe hacer con esta serie, dicho en la propia respuesta (REG-06-166).
-            honesty: { interpolated: false as const, imputed: false as const, carriedForward: false as const },
-          },
-        };
+        return { titular, ...(await leerFilas(tx, titular, actor.identidadId, desde, hasta)) };
       },
     });
+    const titular = leido.titular;
+    const { observaciones, fichasPorMedicion, porMedicion, partialView } = observacionesDe(leido, desde, hasta);
+    const fechas = fechasDelPeriodo(desde, hasta);
+    const pedidas = metricas ?? [...new Set(observaciones.map((o) => o.metrica))].sort();
+
+    const gruposPorFicha = new Map<string, { comparabilityGroup: string; protocolVersionId: string; protocolName: string; methodVersionId: string | null; unit: string }>();
+    const grupoDe = (f: ReturnType<typeof fichaDe>): string => {
+      const clave = `${f.protocolVersionId}|${f.methodVersionId ?? ''}|${f.unit}`;
+      if (!gruposPorFicha.has(clave)) {
+        gruposPorFicha.set(clave, {
+          comparabilityGroup: `cmp-${gruposPorFicha.size + 1}`,
+          protocolVersionId: f.protocolVersionId,
+          protocolName: f.protocolName,
+          methodVersionId: f.methodVersionId,
+          unit: f.unit,
+        });
+      }
+      return gruposPorFicha.get(clave)!.comparabilityGroup;
+    };
+
+    return {
+      data: {
+        adviseeId: titular,
+        period: { start: desde, end: hasta, timeZone: ZONA_POR_DEFECTO },
+        metrics: pedidas.map((metrica) => {
+          const serie = construirSerie(metrica, fechas, observaciones);
+          const grupos = new Map<string, ReturnType<typeof grupoDe>>();
+          const puntos = serie.puntos
+            .filter((p) => p.disponibilidad === 'REGISTRADO')
+            .map((p) => {
+              const fuente = porMedicion.get(p.origenId)!;
+              const grupo = grupoDe(fichasPorMedicion.get(p.origenId)!);
+              grupos.set(grupo, grupo);
+              return {
+                occurredAt: fuente.momentoDeOcurrencia.toISOString(),
+                recordedAt: fuente.momentoDeRegistro.toISOString(),
+                value: p.magnitud.valor,
+                unit: p.magnitud.unidad,
+                sourceEvaluationId: fuente.evaluacionId,
+                sourceId: p.origenId,
+                dataClass: CLASE_DE_DATO_API[p.clase],
+                comparabilityGroup: grupo,
+                // La vista efectiva viene de la cadena de correcciones o del original (REG-06-16): se dice cuál.
+                correctionState: fuente.correcciones.length > 0 ? ('CORRECTED' as const) : ('EFFECTIVE' as const),
+                incomparableWithPrevious: p.incomparableConElAnterior.map((m) => MOTIVO_API[m]),
+              };
+            });
+          return {
+            metricCode: metrica,
+            series: puntos,
+            // Los días sin observación vigente, como rangos: un hueco no es una fila con un valor vacío.
+            gaps: huecosDe(serie.puntos.filter((p) => p.disponibilidad === 'SIN_DATO').map((p) => p.fechaLocal)),
+            comparability: { groups: [...gruposPorFicha.values()].filter((g) => grupos.has(g.comparabilityGroup)) },
+          };
+        }),
+        // 09v11:786-796: la vista es parcial cuando el actor ve solo el subconjunto de fuentes que puede
+        // consultar. Acá pasa cuando el asesorado tiene evaluaciones registradas de otro profesional en el
+        // período: existen, no se muestran, y la respuesta lo dice en vez de parecer completa.
+        partialView,
+        // Lo que el legajo prohíbe hacer con esta serie, dicho en la propia respuesta (REG-06-166).
+        honesty: { interpolated: false as const, imputed: false as const, carriedForward: false as const },
+      },
+    };
   }
 
   /**
@@ -115,7 +121,12 @@ export class EvolucionService {
    * antropométrica habilitada sobre él (WP-05 §0 D-C). Para el asesorado no hay PDP de vínculo: son sus datos.
    */
   private async titularAutorizado(tx: Tx, actor: ActorAutenticado, adviseeId: string, ctx: ContextoDeSolicitud): Promise<string> {
-    if (adviseeId === 'me' || adviseeId === actor.identidadId) return actor.identidadId;
+    // Lo propio exige el A3 vigente (08:406; DL-115): revocado, la evolución deja de leerse, también por la ruta del
+    // profesional con el propio id. Los datos no se borran: con un A3 nuevo vuelven a leerse.
+    if (adviseeId === 'me' || adviseeId === actor.identidadId) {
+      await exigirA3Vigente(tx, actor.identidadId);
+      return actor.identidadId;
+    }
     const d = await this.pdp.decidirEnTransaccion(
       tx,
       {
@@ -129,104 +140,6 @@ export class EvolucionService {
       ctx,
     );
     return d.hechos.titular?.identidadId as string;
-  }
-
-  /** Las mediciones de evaluaciones REGISTRADAS del período, con su condición y su ficha de comparabilidad. */
-  private async observaciones(
-    tx: Tx,
-    titular: string,
-    actorId: string,
-    desde: string,
-    hasta: string,
-  ): Promise<{
-    observaciones: ObservacionDeSerie[];
-    fichasPorMedicion: Map<string, ReturnType<typeof fichaDe>>;
-    porMedicion: Map<string, { evaluacionId: string; momentoDeOcurrencia: Date; momentoDeRegistro: Date; correcciones: { id: string }[] }>;
-    partialView: boolean;
-  }> {
-    const ventana = { gte: inicioDelDiaLocal(desde, ZONA_POR_DEFECTO), lt: finDelDiaLocal(hasta, ZONA_POR_DEFECTO) };
-    // Lo que el actor **no** puede ver: evaluaciones registradas del mismo asesorado, en el mismo período, de otro
-    // profesional. Si las hay, la vista es parcial y la respuesta lo declara (09v11:786-796).
-    const ajenas =
-      titular === actorId
-        ? 0
-        : await tx.medicionAntropometrica.count({
-            where: { evaluacion: { asesoradoId: titular, estado: 'REGISTRADA', profesionalId: { not: actorId } }, momentoDeOcurrencia: ventana },
-          });
-    const filas = await tx.medicionAntropometrica.findMany({
-      where: {
-        evaluacion: { asesoradoId: titular, estado: 'REGISTRADA', ...(titular === actorId ? {} : { profesionalId: actorId }) },
-        // La ventana se recorta en la **misma zona** en la que después se ubica cada punto. Mezclar UTC acá y hora
-        // local allá deja afuera las mediciones de la tarde del último día, que saldrían como «sin dato» (INV-06-177).
-        momentoDeOcurrencia: ventana,
-      },
-      include: INCLUIR_MEDICION,
-      orderBy: { momentoDeOcurrencia: 'asc' },
-    });
-    const fichasPorMedicion = new Map(filas.map((m) => [m.id, fichaDe(m)]));
-    const observaciones = filas.flatMap((m) => {
-      // La magnitud efectiva sale de la cadena de correcciones, resuelta por relación (REG-06-16). Si la cadena no
-      // se puede resolver —rama o ciclo—, no hay valor vigente: la observación **no aporta punto**, y el día se ve
-      // como lo que es, sin dato. Mostrar el original como si fuera el efectivo sería afirmar algo que no se sabe.
-      const efectiva = magnitudEfectiva(m);
-      if (!efectiva) return [];
-      return [
-        {
-          fechaLocal: fechaLocalEn(m.momentoDeOcurrencia, ZONA_POR_DEFECTO),
-          metrica: m.metrica,
-          magnitud: { valor: efectiva.value, unidad: efectiva.unit },
-          clase: m.clase,
-          // 06:8670: sin evento de anulación, vigente. Una anulada no aporta punto (REG-06-221).
-          condicion: m.anulacion ? ('ANULADA' as const) : ('VIGENTE' as const),
-          ficha: fichaDeDominio(fichaDe(m)),
-          origenId: m.id,
-        },
-      ];
-    });
-    const porMedicion = new Map<string, { evaluacionId: string; momentoDeOcurrencia: Date; momentoDeRegistro: Date; correcciones: { id: string }[] }>(
-      filas.map((m) => [m.id, { evaluacionId: m.evaluacionId, momentoDeOcurrencia: m.momentoDeOcurrencia, momentoDeRegistro: m.momentoDeRegistro, correcciones: m.correcciones }]),
-    );
-
-    // DL-111 · los resultados de las fórmulas también son evolución física. Cada corrida vigente (no reemplazada) de
-    // finalidad antropométrica, de una evaluación registrada, aporta un punto en la métrica que el método declara como
-    // salida, fechado en la toma de sus entradas y agrupado por método: nunca se compara con otro método (REG-06-162).
-    // Una corrida que usó una medición anulada no aporta punto (REG-06-221). La forma de la respuesta no cambia: es un
-    // punto más, de clase calculada, con su grupo de comparabilidad.
-    const corridas = await tx.ejecucionDeCalculo.findMany({
-      where: {
-        finalidad: 'SOPORTE_ANTROPOMETRICO',
-        reemplazadaPor: { is: null },
-        evaluacion: { asesoradoId: titular, estado: 'REGISTRADA', ...(titular === actorId ? {} : { profesionalId: actorId }) },
-      },
-      include: { metodoVersion: true, entradas: { include: { medicion: { include: { protocoloVersion: true, anulacion: true } } } } },
-      orderBy: { momentoDeRegistro: 'asc' },
-    });
-    for (const c of corridas) {
-      if (c.entradas.length === 0 || c.entradas.some((e) => e.medicion.anulacion)) continue;
-      const momento = new Date(Math.max(...c.entradas.map((e) => e.medicion.momentoDeOcurrencia.getTime())));
-      if (momento < ventana.gte || momento >= ventana.lt) continue;
-      const base = c.entradas[0]!.medicion;
-      const ficha: ReturnType<typeof fichaDe> = {
-        protocolId: base.protocoloVersion.especificacionId,
-        protocolVersionId: base.protocoloVersionId,
-        protocolName: base.protocoloVersion.nombre,
-        methodId: c.metodoVersion.especificacionId,
-        methodVersionId: c.metodoVersionId,
-        unit: c.unidad,
-      };
-      fichasPorMedicion.set(c.id, ficha);
-      porMedicion.set(c.id, { evaluacionId: c.evaluacionId, momentoDeOcurrencia: momento, momentoDeRegistro: c.momentoDeRegistro, correcciones: [] });
-      observaciones.push({
-        fechaLocal: fechaLocalEn(momento, ZONA_POR_DEFECTO),
-        metrica: c.metrica,
-        magnitud: { valor: Number(c.valor.toString()), unidad: c.unidad },
-        clase: 'CALCULADO',
-        condicion: 'VIGENTE',
-        ficha: fichaDeDominio(ficha),
-        origenId: c.id,
-      });
-    }
-    return { observaciones, fichasPorMedicion, porMedicion, partialView: ajenas > 0 };
   }
 
   private leerConsulta(query: Record<string, unknown>): { desde: string; hasta: string; metricas: string[] | null } {
@@ -273,4 +186,112 @@ function huecosDe(fechas: readonly string[]): { from: string; to: string; state:
     }
   }
   return rangos;
+}
+
+/**
+ * Lo que la evolución lee de la base, dentro de la transacción que decidió el acceso: las mediciones de evaluaciones
+ * REGISTRADAS del período, las corridas vigentes y, si el actor no es el titular, cuántas mediciones de otro profesional
+ * no puede ver. No calcula nada: el cálculo va después del COMMIT (`observacionesDe`), para no retener la conexión.
+ */
+async function leerFilas(tx: Tx, titular: string, actorId: string, desde: string, hasta: string) {
+  const ventana = { gte: inicioDelDiaLocal(desde, ZONA_POR_DEFECTO), lt: finDelDiaLocal(hasta, ZONA_POR_DEFECTO) };
+  // Lo que el actor **no** puede ver: evaluaciones registradas del mismo asesorado, en el mismo período, de otro
+  // profesional. Si las hay, la vista es parcial y la respuesta lo declara (09v11:786-796).
+  const ajenas =
+    titular === actorId
+      ? 0
+      : await tx.medicionAntropometrica.count({
+          where: { evaluacion: { asesoradoId: titular, estado: 'REGISTRADA', profesionalId: { not: actorId } }, momentoDeOcurrencia: ventana },
+        });
+  const filas = await tx.medicionAntropometrica.findMany({
+    where: {
+      evaluacion: { asesoradoId: titular, estado: 'REGISTRADA', ...(titular === actorId ? {} : { profesionalId: actorId }) },
+      // La ventana se recorta en la **misma zona** en la que después se ubica cada punto. Mezclar UTC acá y hora
+      // local allá deja afuera las mediciones de la tarde del último día, que saldrían como «sin dato» (INV-06-177).
+      momentoDeOcurrencia: ventana,
+    },
+    include: INCLUIR_MEDICION,
+    orderBy: { momentoDeOcurrencia: 'asc' },
+  });
+  // DL-111 · los resultados de las fórmulas también son evolución física (ver `observacionesDe`).
+  const corridas = await tx.ejecucionDeCalculo.findMany({
+    where: {
+      finalidad: 'SOPORTE_ANTROPOMETRICO',
+      reemplazadaPor: { is: null },
+      evaluacion: { asesoradoId: titular, estado: 'REGISTRADA', ...(titular === actorId ? {} : { profesionalId: actorId }) },
+    },
+    include: { metodoVersion: true, entradas: { include: { medicion: { include: { protocoloVersion: true, anulacion: true } } } } },
+    orderBy: { momentoDeRegistro: 'asc' },
+  });
+  return { ajenas, filas, corridas };
+}
+
+/** Las observaciones de la serie, con su condición y su ficha de comparabilidad, a partir de lo leído. Sin base. */
+function observacionesDe(
+  leido: Awaited<ReturnType<typeof leerFilas>>,
+  desde: string,
+  hasta: string,
+): {
+  observaciones: ObservacionDeSerie[];
+  fichasPorMedicion: Map<string, ReturnType<typeof fichaDe>>;
+  porMedicion: Map<string, { evaluacionId: string; momentoDeOcurrencia: Date; momentoDeRegistro: Date; correcciones: { id: string }[] }>;
+  partialView: boolean;
+} {
+  const ventana = { gte: inicioDelDiaLocal(desde, ZONA_POR_DEFECTO), lt: finDelDiaLocal(hasta, ZONA_POR_DEFECTO) };
+  const { ajenas, filas, corridas } = leido;
+  const fichasPorMedicion = new Map(filas.map((m) => [m.id, fichaDe(m)]));
+  const observaciones = filas.flatMap((m) => {
+    // La magnitud efectiva sale de la cadena de correcciones, resuelta por relación (REG-06-16). Si la cadena no
+    // se puede resolver —rama o ciclo—, no hay valor vigente: la observación **no aporta punto**, y el día se ve
+    // como lo que es, sin dato. Mostrar el original como si fuera el efectivo sería afirmar algo que no se sabe.
+    const efectiva = magnitudEfectiva(m);
+    if (!efectiva) return [];
+    return [
+      {
+        fechaLocal: fechaLocalEn(m.momentoDeOcurrencia, ZONA_POR_DEFECTO),
+        metrica: m.metrica,
+        magnitud: { valor: efectiva.value, unidad: efectiva.unit },
+        clase: m.clase,
+        // 06:8670: sin evento de anulación, vigente. Una anulada no aporta punto (REG-06-221).
+        condicion: m.anulacion ? ('ANULADA' as const) : ('VIGENTE' as const),
+        ficha: fichaDeDominio(fichaDe(m)),
+        origenId: m.id,
+      },
+    ];
+  });
+  const porMedicion = new Map<string, { evaluacionId: string; momentoDeOcurrencia: Date; momentoDeRegistro: Date; correcciones: { id: string }[] }>(
+    filas.map((m) => [m.id, { evaluacionId: m.evaluacionId, momentoDeOcurrencia: m.momentoDeOcurrencia, momentoDeRegistro: m.momentoDeRegistro, correcciones: m.correcciones }]),
+  );
+
+  // DL-111 · los resultados de las fórmulas también son evolución física. Cada corrida vigente (no reemplazada) de
+  // finalidad antropométrica, de una evaluación registrada, aporta un punto en la métrica que el método declara como
+  // salida, fechado en la toma de sus entradas y agrupado por método: nunca se compara con otro método (REG-06-162).
+  // Una corrida que usó una medición anulada no aporta punto (REG-06-221). La forma de la respuesta no cambia: es un
+  // punto más, de clase calculada, con su grupo de comparabilidad.
+  for (const c of corridas) {
+    if (c.entradas.length === 0 || c.entradas.some((e) => e.medicion.anulacion)) continue;
+    const momento = new Date(Math.max(...c.entradas.map((e) => e.medicion.momentoDeOcurrencia.getTime())));
+    if (momento < ventana.gte || momento >= ventana.lt) continue;
+    const base = c.entradas[0]!.medicion;
+    const ficha: ReturnType<typeof fichaDe> = {
+      protocolId: base.protocoloVersion.especificacionId,
+      protocolVersionId: base.protocoloVersionId,
+      protocolName: base.protocoloVersion.nombre,
+      methodId: c.metodoVersion.especificacionId,
+      methodVersionId: c.metodoVersionId,
+      unit: c.unidad,
+    };
+    fichasPorMedicion.set(c.id, ficha);
+    porMedicion.set(c.id, { evaluacionId: c.evaluacionId, momentoDeOcurrencia: momento, momentoDeRegistro: c.momentoDeRegistro, correcciones: [] });
+    observaciones.push({
+      fechaLocal: fechaLocalEn(momento, ZONA_POR_DEFECTO),
+      metrica: c.metrica,
+      magnitud: { valor: Number(c.valor.toString()), unidad: c.unidad },
+      clase: 'CALCULADO',
+      condicion: 'VIGENTE',
+      ficha: fichaDeDominio(ficha),
+      origenId: c.id,
+    });
+  }
+  return { observaciones, fichasPorMedicion, porMedicion, partialView: ajenas > 0 };
 }

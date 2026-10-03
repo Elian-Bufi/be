@@ -16,7 +16,7 @@
 | DL-009 | WP-02 · 2026-09-18 | 06 §5.5/§5.12 · 05 UC-P25 · 09v8 | Perfil propio sin campos aprobados | ABIERTA |
 | DL-010 | WP-02 · 2026-09-18 | 09v8 ACC-01 · 08 §24.5 | El registro distingue identificador nuevo de existente (201/409) | ABIERTA |
 | DL-011 | WP-02 · 2026-09-18 | 06 INV-06-24, REG-06-19 · 08 §16 | Unicidad global del identificador, incluye cuentas cerradas | ABIERTA |
-| DL-012 | WP-02 · 2026-09-18 | 07 §43-bis · 08 §26 · 09v8 ACC-02 | Sesión: formato, transporte, TTL y renovación | ABIERTA |
+| DL-012 | WP-02 · 2026-09-18 | 07 §43-bis · 08 §26 · 09v8 ACC-02 | Sesión: formato, transporte, TTL y renovación | **DECIDIDA** 2026-10-03 · sin renovación; en la APK, el token en el almacenamiento seguro hasta que vence (#136, sin integrar) |
 | DL-013 | WP-02 · 2026-09-18 | 08 §24.2 | No hay política de contraseñas en el legajo | ABIERTA |
 | DL-014 | WP-02 · 2026-09-18 | 09v8 ACC-02 · 09:230 · 04 RF-006 | Neutralidad del login: tolerancia de tiempo y cuentas no operativas | ABIERTA |
 | DL-015 | WP-02 · 2026-09-18 | 08 §24.5, §38 · 09v12 | Rate limiting con umbrales provisionales | ABIERTA |
@@ -119,7 +119,7 @@
 | DL-112 | Pedido de Dirección · 2026-10-01 | DL-111 · 06 REG-06-205 · RF-048 · DL-072 (especificaciones de solo agregar) | El catálogo ofrece demasiados métodos para elegir: 40 métodos, 28 resultados | **DECIDIDA** 2026-10-01 (la purga) · la lista la armó el ejecutor, A RATIFICAR · 21 vigentes, 23 retirados y 4 nuevos; lo calculado sigue en la historia |
 | DL-113 | Pedido de Dirección · 2026-10-01 | B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 | Mucho texto a la vista, avisos fuera de la vista en el teléfono, la APK sin navegación fija y pliegues del catálogo fuera de la figura | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · pulido y corrección de los puntos anatómicos 2026-10-02 · guía `docs/ux/GUIA-UX-UI.md` · falta la prueba de Dirección en el teléfono |
 | DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **PROVISORIA, A RATIFICAR** 2026-10-01 · excepción declarada por aviso y paquete, con motivo y vencimiento (2026-10-31) |
-| DL-115 | Matriz de DV-05 · 2026-10-02 | 08:406 (08 §13) · DL-089 · TEST-AUTH-003 · TEST-AUTH-004 | Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan | **ABIERTA** 2026-10-02 · severidad alta · espera la decisión de Dirección |
+| DL-115 | Matriz de DV-05 · 2026-10-02 | 08:406 (08 §13) · DL-089 · TEST-AUTH-003 · TEST-AUTH-004 | Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan | **DECIDIDA** 2026-10-02 · opción A · implementada en la rama `fix/a3-titular-antropometria-formularios`, sin integrar: va con la candidata 0.13.2 |
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección |
 
 ---
@@ -314,7 +314,7 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 ## DL-012 — Sesión: formato, transporte, TTL y renovación
 
-**Prioridad:** media · **Documento:** 07 §43-bis, 07:537, 07:786-789 · 08 §26 · 09v7 T01 · 09v8 ACC-02 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 07 §43-bis, 07:537, 07:786-789 · 08 §26 · 09v7 T01 · 09v8 ACC-02 · **Estado:** DECIDIDA (2026-10-03)
 
 **Qué dice el legajo.**
 - Las sesiones son revocables server-side (08:589).
@@ -332,6 +332,65 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 **Provisorio en código.** A, con TTL de 12 h y `renewable: false`.
 
 **Condición de cierre.** Se implementa el refresh rotativo (T-10) o Dirección ratifica A para el MVP.
+
+**Nota del 2026-10-03: por qué la APK vuelve a la bienvenida.** Dirección informó, en la prueba de la 0.13.1, que la APK
+vuelve a la bienvenida después de cerrarla y también después de un tiempo que no se midió
+(`EVIDENCIA/PRUEBA-MANUAL-0.13.1`). Que vuelva a la **bienvenida**, y no a Iniciar sesión con un aviso, quiere decir que
+se perdió la memoria de la app. La API no rechazó la sesión. Hay dos causas:
+- **El proceso se cierra.** Pasa al cerrar la app desde Recientes, o cuando Android cierra una app en segundo plano para
+  liberar memoria, cosa frecuente en teléfonos con poca. Es la opción A de esta deuda, que sigue vigente: el token vive
+  solo en memoria.
+- **La actividad se recrea.** Android la recrea al cambiar el tamaño de letra o de visualización, el idioma o la negrita
+  del sistema. El proceso sigue vivo, pero React vuelve a montar la raíz y la sesión estaba en su estado. **Esta causa
+  se corrigió** en la rama `apk/sesion-y-navegacion`, sin integrar: la sesión vive fuera del árbol de React, siempre en
+  memoria.
+
+Además:
+- La API no transforma una falla pasajera en un rechazo de sesión. El secreto de firma es obligatorio y no se genera al
+  arrancar.
+- La APK solo sale de la sesión ante un código de sesión. Un 403, un 429, un 5xx o la falta de red no la cierran, y
+  ahora una prueba lo fija.
+- La sesión vence a las 12 h del inicio, aunque se use, y no por inactividad. Al vencer, la APK lo dice.
+
+**Propuesta, a decidir por Dirección: continuidad en el teléfono dentro de la misma sesión.**
+- **Qué se guarda.** El token que ya existe se guarda en el almacenamiento seguro de Android (Keystore, con
+  `expo-secure-store`) hasta su `expiresAt`, como mucho 12 h. No se guarda la contraseña.
+- **Qué no cambia.** No hay renovación ni otro mecanismo de autenticación. La API sigue verificando la fila de sesión en
+  cada request, así que «Cerrar todas las sesiones» y la revocación siguen cortando en el pedido siguiente.
+- **Cuándo se borra.** Al cerrar la sesión, al vencer y ante cualquier código de sesión.
+- **Qué cambia.** Reiniciar la APK ya no obliga a volver a iniciar sesión, cosa que hoy fija el 07:537. Por eso decide
+  Dirección.
+- **Qué hace falta.** Una dependencia nativa nueva y una APK nueva. Es la mitad de la opción B (SecureStore sin refresh
+  rotativo).
+- **Riesgo.** Con el teléfono desbloqueado, alguien que tome la app entra hasta que la sesión venza o se la revoque.
+- **Alternativa.** Ratificar A tal como está. Para la demostración, conviene no cerrar la app ni cambiar de aplicación
+  por mucho tiempo.
+
+**Decisión de Dirección del 2026-10-03 (tanda de cierre de la candidata 0.13.2).** Se aprueba la propuesta: el token de
+sesión se guarda en el almacenamiento seguro del teléfono hasta su vencimiento, sin guardar la contraseña y sin
+renovación automática.
+- **Qué rige en la APK.** La credencial va a `expo-secure-store` (Keystore de Android), fuera del respaldo automático de
+  Android. Son el token, la identidad, `expiresAt` y la vigencia. No se guardan datos de salud ni la pantalla.
+- **Un token guardado no es una sesión autorizada.** Al abrir la app se verifica con la API (API-ACC-05, `/me`) antes de
+  mostrar nada protegido.
+  - Si la API dice que venció o que no sirve, se borra y se va a Iniciar sesión con su aviso.
+  - Sin red, con 429 o con 5xx, no se borra: la app dice que no pudo verificarla y deja reintentar.
+- **Se borra** al cerrar la sesión, al cerrar todas las sesiones, al vencer y ante cualquier código de sesión.
+- **Qué no cambia.**
+  - La duración: 12 h desde el inicio, con `renewable: false`.
+  - La verificación de la fila de sesión en cada request, y la revocación.
+  - El website, que sigue con la opción A: la sesión vive en memoria.
+- **Relación con el legajo.** La decisión se aparta de 07:537 («reiniciar el APK obliga a volver a iniciar sesión») y
+  de 07:789 («JWT en memoria en el MVP»). Esos textos están protegidos por el manifiesto y no se modifican: la decisión
+  rige desde este registro hasta la próxima versión del legajo.
+- **Implementación y pruebas.**
+  - El código está en `apps/mobile/src/sesion-persistente.ts` y `almacen-seguro.ts`, en la rama
+    `apk/sesion-y-navegacion` (#136), sin integrar.
+  - `scripts/sesion-persistente.test.mjs` cubre los ocho casos de la tanda con un almacén falso.
+  - **Un mock no prueba que Android conserve el valor al cerrar el proceso**: se comprueba en el teléfono con la APK
+    0.13.2.
+- **Riesgo aceptado.** Con el teléfono desbloqueado, quien tome la app entra hasta que la sesión venza o se la revoque.
+  «Cerrar todas las sesiones», desde otro dispositivo, corta en el pedido siguiente.
 
 ## DL-013 — No hay política de contraseñas en el legajo
 
@@ -2237,6 +2296,9 @@ Se conservan las instantáneas históricas, la navegación corregida (DL-096) y 
 - **D-5 (DEC-09):** el período del historial de la APK queda aparte; acá el período acota solo la actividad.
 - **Ubicación:** «Pendientes» arriba de «Tus asesorados» en el espacio profesional, sin navegación nueva.
 
+> **Nota del 2026-10-03 (DL-116).** El ID de esta operación pasa a API-CAR-01: API-DSH-04 es, en el 09, la línea temporal.
+> Lo que sigue conserva el ID con el que se decidió.
+
 **Cómo se ejecuta.** API-DSH-04 `GET /me/portfolio` (rama `feat/cartera-profesional`): el PDP decide y registra por asesorado y alcance como en API-DSH-03; un alcance denegado no aparece y deja `partialView`. Sin tablas nuevas, sin APK.
 
 ## DL-108 — Todo plan empieza en blanco: no hay reutilización entre asesorados
@@ -2537,6 +2599,25 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 - Ratificar la excepción o pedir otra salida.
 - Antes del 2026-10-31, revisar si node-forge publicó la corrección (entonces se fija con `overrides` y la excepción se borra) o si Expo dejó de depender de node-forge.
 
+**Ampliación del 2026-10-03: braces (GHSA-vfj7-8cjw-p6xm).** El mismo caso, con otro paquete.
+- **Qué pasó.** El 2026-10-02 a las 22:36 UTC, GitHub actualizó el aviso de braces (CVE-2026-93687): un patrón con llaves
+  muy anidadas agota la pila. Abarca hasta la 3.0.3, la última publicada, y **no hay versión corregida**. Desde ese
+  momento la auditoría de `@be/mobile` falla en cualquier PR: #134 y #135 fallaron solo en ese paso. También fallaría en
+  `main`, porque el lock tiene la misma versión.
+- **Por dónde entra.** `expo` → `@expo/cli` → `@expo/metro-file-map` → `micromatch` → `braces`. Metro y la CLI lo
+  usan al construir, para expandir los patrones de archivos de su configuración. No reciben datos de las personas.
+- **Riesgo bajo y acotado, pero no nulo.** braces no viaja en el bundle de la APK. Tampoco está en la API ni en el
+  website, que auditan limpias. Queda la cadena de construcción: la CI y la máquina que construye la APK.
+- **Lo que se hizo.** Una excepción más en `EXCEPCIONES`, solo para este aviso en este paquete, que también vence el
+  2026-10-31. El resto de la auditoría sigue igual.
+- **Pendiente de Dirección.** Ratificarla junto con la de node-forge. Antes del 2026-10-31, revisar si braces publicó la
+  corrección; si la publicó, se fija con `overrides` y la excepción se borra.
+- **Revisado de nuevo el 2026-10-03, en las fuentes primarias** (avisos de GitHub y registro de npm). Los dos avisos
+  siguen sin versión corregida: node-forge abarca hasta la 1.4.0, que es la última, y la última
+  `@expo/code-signing-certificates` (0.0.7) sigue pidiendo `^1.4.0`; braces abarca hasta la 3.0.3, que es la última. Las
+  excepciones siguen siendo por aviso y paquete y vencen el 2026-10-31. Un informe que no se puede leer no aprueba. **Ninguna
+  está ratificada**: la CI verde de la candidata las incluye.
+
 ---
 
 ## DL-115 — Revocado el A3, el titular sigue leyendo su evolución antropométrica y sus formularios
@@ -2566,6 +2647,50 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 
 **Recomendación: A**, por el 08:406 y por coherencia con los otros dos dominios. Además, un tribunal puede probarlo en vivo: revocar el A3 en la APK y abrir «Mi evolución».
 
+**Resolución — DECIDIDA el 2026-10-02, opción A** (Dirección la autorizó el mismo día). Está implementada en la rama
+`fix/a3-titular-antropometria-formularios`, **sin integrar**: se integra y se publica con la candidata 0.13.2, cuando
+termine la prueba manual de Dirección.
+- **API.** El control vive en `apps/api/src/consentimiento/a3-del-titular.ts`, y lo comparten entrenamiento (DL-089),
+  antropometría y formularios. El A3 es del titular: sobre un recurso con id, primero se ve si es suyo (lo ajeno y lo
+  inexistente siguen dando el mismo 404, como fija TEST-CT de WP-07) y, sobre lo propio, el A3 va antes que cualquier
+  otra regla de la operación (09 §36).
+  - **Evolución propia** (API-ANT-06-PROPIA, y API-ANT-06 con el propio id): 403 `ACTION_FORBIDDEN` sin A3.
+  - **API-FRM-05**, la proyección del asesorado («conforme a 08», 09 §22.5): 403 sin A3. Lo ajeno y lo inexistente
+    siguen dando el mismo 404.
+  - **API-FRM-07**, responder: 403 sin A3, antes que «ya respondida». El PDP lo vuelve a mirar con el acto bloqueado, en
+    el orden único.
+  - **API-FRM-08**, rectificar: 403 sin A3. Como no pasa por el PDP, toma el acto A3 en modo compartido; así, una
+    revocación en curso también la corta.
+  - **API-FRM-06 se conserva.** El contrato la permite y no trae respuestas; sin A3, ninguna solicitud es respondable.
+- **Contrato.** `403 ACTION_FORBIDDEN` en API-ANT-06, API-ANT-06-PROPIA y API-FRM-05, 07 y 08. Se regeneró el OpenAPI.
+  También lo declaran API-TRN-08, 09 y 19, que lo devolvían desde DL-089 sin que el contrato lo dijera.
+- **APK.** «Mi evolución», el detalle de un formulario y la lista de «Información» muestran el aviso con «Ir a
+  Privacidad y consentimientos», como «Tu historial».
+  - Lo escrito en un formulario se conserva mientras no se sale de la pantalla, y se dice así. No se guarda en el
+    teléfono.
+  - Cada pantalla vuelve a leer al entrar. Volver a una pantalla después de revocar no muestra lo de antes.
+- **Datos previamente cargados.** No se borran: la revocación es prospectiva. Con un A3 nuevo vuelven idénticos, y está
+  probado.
+- **Pruebas.**
+  - `test/integration/a3-del-titular.int-spec.ts` tiene 3 pruebas: la PE-01 de la matriz de DV-05, que cubre
+    TEST-AUTH-004 y la variante del titular de TEST-AUTH-003. Se verificaron con una mutación: sin el control, fallan.
+  - El dominio suma 4 pruebas, para el reductor y el desenlace del envío.
+- **Pendiente:** la APK candidata 0.13.2 y la prueba en el teléfono.
+
+**Hallazgo del 2026-10-03: la premisa sobre nutrición era incompleta.** DL-115 decía que nutrición ya cumplía, y lo
+comprobó con la lista propia (API-NUT-16-LISTA). Pero «Tu plan de hoy» (**API-NUT-14**) leía las comidas registradas
+del día antes de cualquier control y las devolvía aunque el plan quedara «no disponible». Con el A3 revocado o nunca
+otorgado, la APK las mostraba debajo del aviso.
+- **Se aplicó la misma opción A ya autorizada.** API-NUT-14 exige el A3 vigente antes de leer y responde 403
+  `ACTION_FORBIDDEN` sin él. El contrato lo declara, y la APK muestra el aviso con «Ir a Privacidad y consentimientos».
+- **Lo demás no cambia.** La suspensión por el vínculo o el B2, con el A3 vigente, sigue siendo «no disponible»
+  (UC-P12 E06), con los registros propios a la vista.
+- **Entrenamiento ya cumplía** (API-TRN-14): no devuelve ocurrencias sin pasar por el PDP, que mira el A3.
+- **Prueba:** `a3-del-titular.int-spec.ts` suma el caso. Sin A3 da 403, aunque haya una comida registrada hoy; con un
+  A3 nuevo, la comida vuelve igual.
+- **Si Dirección prefiere otra respuesta**, por ejemplo «no disponible» sin los registros, se cambia la respuesta y la
+  prueba; el control queda. Esta implementación es la recomendada: un «sin datos» falso diría algo que no es cierto.
+
 ---
 
 ## DL-116 — El ID API-DSH-04 nombra dos operaciones distintas
@@ -2591,3 +2716,24 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 **Provisorio en código.** B, de hecho y sin declarar.
 
 **Recomendación: A**, porque un tribunal puede contar las operaciones del 09 por ID.
+
+**Solución preparada — 2026-10-03** (Dirección autorizó completar DL-116 en esta tanda). Está en la rama
+`trazabilidad/dl116-y-decisiones`, **sin integrar**: va con la candidata 0.13.2.
+- **Opción A.** «Pendientes» (`GET /me/portfolio`) pasa a **API-CAR-01**, una familia propia de BE como TPL, TPN, HAB y
+  HAN. Cambian:
+  - el contrato (`openapi.ts` y el OpenAPI generado), con el 429 de las lecturas protegidas;
+  - la operación que registra el PDP (`lectura-cartera.ts`);
+  - los comentarios y los títulos de las pruebas.
+- **Lo histórico no se reescribe.** Las decisiones de acceso registradas antes conservan «API-DSH-04», porque la columna es
+  texto libre y la historia es de solo agregar. La evidencia de CARTERA, el intake, DV-06 y DV-10 citan el ID viejo con su
+  fecha; CARTERA lleva una nota.
+- **Guardia nueva:** `scripts/trazabilidad-de-operaciones.test.cjs`, que corre en `npm test`. Lee el 09 en solo lectura y
+  exige tres cosas:
+  - que una operación con un ID del inventario P0 tenga el método y la ruta que el 09 le da;
+  - que un ID fuera del inventario sea una extensión declarada de BE, con su familia o su sufijo y su fuente;
+  - que ningún ID se repita.
+- **Verificación.** Contra el contrato de `main` la guardia falla, y nombra el choque: «API-DSH-04: el contrato dice GET
+  /me/portfolio; el 09, GET /advisees/{}/timeline». Con el cambio, pasa. Recorre las 126 operaciones: 100 coinciden con el 09,
+  25 son extensiones declaradas y API-CAR-01 es la nueva.
+- **El conteo de faltantes no cambia:** siguen faltando 22 de las 122 operaciones P0. La línea temporal (API-DSH-04 del 09)
+  sigue sin implementar (D-3 de DV-05).

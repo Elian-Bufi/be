@@ -108,13 +108,16 @@ export function rechazoDeFormulario(r: Resultado<unknown>, campos: readonly Camp
  * - **envío anterior guardado** (`409 IDEMPOTENCY_KEY_REUSED`): después de un resultado incierto, la persona cambió algo
  *   y reenvió con la misma clave, y la API dice que esa clave ya tiene un envío **guardado** con otro contenido (solo
  *   guarda éxitos). O sea, el primer envío llegó. Se ofrece cargarlo; lo cambiado no se envió.
+ * - **sin A3** (`403 ACTION_FORBIDDEN`, DL-115): la persona revocó o nunca otorgó el consentimiento de datos de salud, y
+ *   el A3 va antes que todo (09 §36). Se ofrece ir a Privacidad y volver.
  * En todos, lo escrito no se envió y sigue en los campos. `null`: lo decide `falloDe` (red, 404, servicio).
  */
 export type DesenlaceDeEnvio =
   | RechazoDeFormulario
   | { readonly tipo: 'ya-no-se-puede'; readonly sobre: 'respuesta' | 'correccion'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] }
   | { readonly tipo: 'version-vieja'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] }
-  | { readonly tipo: 'envio-anterior-guardado'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] };
+  | { readonly tipo: 'envio-anterior-guardado'; readonly mensaje: string; readonly acciones: readonly ('cargar' | 'volver')[] }
+  | { readonly tipo: 'sin-a3'; readonly mensaje: string; readonly acciones: readonly ('privacidad' | 'volver')[] };
 
 export function desenlaceDeEnvio(r: Resultado<unknown>, campos: readonly CampoDePlantilla[], opciones: { readonly esCorreccion: boolean }): DesenlaceDeEnvio | null {
   const rechazo = rechazoDeFormulario(r, campos);
@@ -130,6 +133,8 @@ export function desenlaceDeEnvio(r: Resultado<unknown>, campos: readonly CampoDe
       return opciones.esCorreccion ? { tipo: 'version-vieja', mensaje: COPY_FORMULARIOS.respuestaCambioAntesDeCorregir, acciones: ['cargar', 'volver'] } : null;
     case 'IDEMPOTENCY_KEY_REUSED':
       return { tipo: 'envio-anterior-guardado', mensaje: COPY_FORMULARIOS.envioAnteriorGuardado, acciones: ['cargar', 'volver'] };
+    case 'ACTION_FORBIDDEN':
+      return { tipo: 'sin-a3', mensaje: COPY_FORMULARIOS.necesitaA3ParaEnviar, acciones: ['privacidad', 'volver'] };
     default:
       return null;
   }

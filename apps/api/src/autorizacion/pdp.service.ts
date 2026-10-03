@@ -275,24 +275,13 @@ export class PdpService {
    * Bloqueo compartido de lo que puede cortar el acceso, en el orden único (prisma/concurrencia.ts). Varias lecturas no
    * se esperan entre sí; un corte en curso hace esperar a la decisión hasta que confirma, y una decisión en curso hace
    * esperar al corte. Las filas que todavía no existen (un otorgamiento nuevo) no cortan nada.
+   *
+   * Las seis sentencias viven en la función `be_bloquear_lo_que_corta` (migración 20261003000000), con el mismo orden y
+   * los mismos modos: una sola ida y vuelta en lugar de seis. Con seis, bajo carga, la conexión quedaba tomada mientras
+   * la API esperaba entre sentencia y sentencia, el pool se agotaba y una transacción no llegaba a empezar (P2028 → 503).
    */
   private async bloquearLoQueCorta(tx: Prisma.TransactionClient, actorId: string, titularId: string): Promise<void> {
-    await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" IN (${actorId}::uuid, ${titularId}::uuid) ORDER BY "id" FOR SHARE`;
-    await tx.$queryRaw`SELECT 1 FROM "verificacion_profesional" WHERE "identidad_id" = ${actorId}::uuid ORDER BY "id" FOR SHARE`;
-    await tx.$queryRaw`SELECT 1 FROM "habilitacion" WHERE "identidad_id" = ${actorId}::uuid ORDER BY "id" FOR SHARE`;
-    await tx.$queryRaw`
-      SELECT 1 FROM "alcance_de_vinculo" av JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
-       WHERE vi."profesional_id" = ${actorId}::uuid AND vi."asesorado_id" = ${titularId}::uuid AND av."estado" <> 'FINALIZADO'
-       ORDER BY av."id" FOR SHARE OF av`;
-    await tx.$queryRaw`
-      SELECT 1 FROM "consentimiento" c
-        JOIN "alcance_de_vinculo" av ON av."id" = c."alcance_de_vinculo_id"
-        JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
-       WHERE vi."profesional_id" = ${actorId}::uuid AND vi."asesorado_id" = ${titularId}::uuid AND av."estado" <> 'FINALIZADO'
-       ORDER BY c."id" FOR SHARE OF c`;
-    await tx.$queryRaw`
-      SELECT 1 FROM "acto_registrable"
-       WHERE "identidad_id" = ${titularId}::uuid AND "tipo" = 'DATOS_SALUD_BE' AND "estado" = 'VIGENTE' FOR SHARE`;
+    await tx.$queryRaw`SELECT "be_bloquear_lo_que_corta"(${actorId}::uuid, ${titularId}::uuid) AS "bloqueado"`;
   }
 
   /**

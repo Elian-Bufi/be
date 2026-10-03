@@ -43,9 +43,10 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { api } from '../api';
-import { Cargando, ErrorConReintento } from '../estados';
-import { dia, fecha, fechaCivil } from '../formato';
+import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
+import { dia, fecha, fechaCivil, hoyEnZona, ZONA_DE_LA_API } from '../formato';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
+import { useLecturaRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, Campo, Dato, Desplegable, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 
@@ -69,22 +70,14 @@ export function textoDePrescripcion(p: Prescripcion): string {
 export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
   const { retirado, accesoRetirado } = useAccesoRetirado();
-  const [r, setR] = useState<Resultado<HoyDeEntrenamientoResponse> | null>(null);
+  const pedir = useCallback((): Promise<Resultado<HoyDeEntrenamientoResponse>> => api.hoyDeEntrenamiento(token), [token]);
+  // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts).
+  // La clave nombra el día civil, en la zona con la que la API resuelve «hoy».
+  const { r, cargar, sinActualizar } = useLecturaRecordada(token, `entrenamiento-hoy:${hoyEnZona(ZONA_DE_LA_API)}`, pedir, sesionPerdida);
   const [otroDia, setOtroDia] = useState('');
   const [errorDeFecha, setErrorDeFecha] = useState<string | null>(null);
   const [delDia, setDelDia] = useState<{ fecha: string; ocurrencias: Ocurrencia[] } | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
-
-  const cargar = useCallback(async () => {
-    setR(null);
-    const res = await api.hoyDeEntrenamiento(token);
-    if (sesionPerdida(res)) return;
-    setR(res);
-  }, [token, sesionPerdida]);
-
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
 
   /** DL-078: para registrar una sesión de un día anterior. */
   async function verOtroDia() {
@@ -111,7 +104,15 @@ export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; s
       </View>
     );
   }
-  if (!r) return <Cargando />;
+  // Mientras la API confirma el acceso, la pantalla conserva su título y su estructura, sin valores.
+  if (!r) {
+    return (
+      <View>
+        <Titulo>{COPY_ENTRENAMIENTO.entrenamientoDeHoy}</Titulo>
+        <Cargando forma="lista" />
+      </View>
+    );
+  }
   if (!r.ok) {
     // Sin «Hoy», «Tu historial» sigue a mano: lee otra cosa y puede responder aunque «Hoy» falle.
     return (
@@ -126,6 +127,7 @@ export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; s
   return (
     <View>
       <Titulo>{COPY_ENTRENAMIENTO.entrenamientoDeHoy}</Titulo>
+      <SinActualizar visible={sinActualizar} onReintentar={cargar} />
       {hoy.planState === 'NO_ACTIVE_PLAN' ? <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.sinPlanAsesorado} /> : null}
       {hoy.planState === 'NOT_AVAILABLE' ? (
         <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.planNoDisponible}>

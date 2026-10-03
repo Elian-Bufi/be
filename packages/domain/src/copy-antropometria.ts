@@ -36,7 +36,7 @@ export const COPY_ANTROPOMETRIA = {
   guardarBorrador: 'Guardar',
   guardado: 'Guardado',
   cambiosSinGuardar: 'Cambios sin guardar',
-  medicionIncompleta: 'Hay una medición sin completar. Cada medición necesita qué se midió, el valor, la unidad y cuándo se tomó. Completala o quitala antes de guardar.',
+  revisarAntesDeGuardar: 'Antes de guardar, revisá estas mediciones. Cada una lleva a su campo:',
 
   // ─── Registrar ────────────────────────────────────────────────────────────────────────────────
   registrarEvaluacion: 'Registrar evaluación',
@@ -134,6 +134,10 @@ export const COPY_ANTROPOMETRIA = {
   // ─── Evolución ────────────────────────────────────────────────────────────────────────────────
   evolucion: 'Evolución',
   miEvolucion: 'Mi evolución',
+  // DL-115 · con el A3 revocado o nunca otorgado, la evolución propia no se lee (08:406). No es «sin datos»: los datos
+  // siguen guardados y vuelven a verse con un A3 nuevo.
+  irAPrivacidad: 'Ir a Privacidad y consentimientos',
+  evolucionNecesitaA3: 'Para ver tu evolución necesitás tener activo el consentimiento de datos de salud. Tus mediciones no se borraron: vuelven a verse cuando lo actives de nuevo.',
   periodo: 'Período',
   sinDato: 'Sin dato',
   explicacionDeSinDato: 'Los días sin medición aparecen como «Sin dato». No se completan con cero ni se unen con una línea.',
@@ -175,6 +179,28 @@ export const COPY_ANTROPOMETRIA = {
   explicacionDeFigura: 'La figura ubica dónde se tomó cada medida. Elegí la que prefieras ver: no cambia ningún dato.',
   perimetrosEnLaFigura: 'Perímetros',
   plieguesEnLaFigura: 'Pliegues',
+  medidasDeLaFigura: 'Medidas en la figura',
+  // ─── «Mi evolución» por tareas (tanda del 2026-10-03) ───────────────────────────────────────
+  queVer: 'Qué ver',
+  vistaUltimaToma: 'Última toma',
+  vistaComparar: 'Comparar',
+  vistaEvolucion: 'Evolución',
+  comparadaConLaDel: 'comparada con la del',
+  sinTomaAnterior: 'No hay una toma anterior en el período con la que comparar. La comparación aparece cuando haya dos tomas.',
+  sinAnteriorSinPrevia: 'Es la primera de esta medida en el período: no hay con qué compararla.',
+  sinAnteriorOtroGrupo: 'La anterior se tomó con otro protocolo, método o unidad, y no se comparan.',
+  explicacionDeComparar: 'Cada medida se compara con la anterior del mismo protocolo, método y unidad. Si una medida se tomó otro día, la fila lo dice. La diferencia es una resta: no dice si el cambio es bueno o malo.',
+  medida: 'Medida',
+  cambiarDeMedida: 'Cambiar de medida',
+  ultimosDias: 'Últimos días',
+  grupoDeLaMedida: 'Protocolo y método',
+  observacionAnterior: 'Anterior',
+  observacionSiguiente: 'Siguiente',
+  esLaUltima: 'Es la última de estos días.',
+  sinMedicionesDeLaMedida: 'No hay mediciones de esta medida en estos días.',
+  laEvolucionEnLista: 'La evolución, en lista',
+  explicacionDelGrafico: 'Cada punto es una medición. Los puntos no se unen: entre dos mediciones no hay un dato que inventar. Tocá un punto, o usá Anterior y Siguiente, para ver su detalle.',
+  numerosDeLaFigura: 'Cada número de la figura, con su valor',
   otrasMedidas: 'Otras medidas de la toma',
 
   // ─── Lámina (compositor de Dirección v13.3, en el website del profesional; DL-111) ───────────
@@ -186,6 +212,10 @@ export const COPY_ANTROPOMETRIA = {
   laminaEncuadre: 'Encuadre',
   laminaTema: 'Tema de la lámina',
   laminaTemaPropio: 'El tema es solo de la lámina: no cambia la apariencia del website.',
+  laminaAjustes: 'Cómo se ve',
+  laminaAmpliar: 'Ver en tamaño real',
+  laminaVerEntera: 'Ver entera',
+  laminaAmpliadaAyuda: 'La lámina está a su tamaño real: desplazala con el dedo para recorrerla. La imagen que se descarga es la misma, al doble.',
   laminaHojas: { CIRCUNFERENCIAS: 'Circunferencias', PLIEGUES: 'Pliegues', CONCLUSIONES: 'Conclusiones' },
   laminaModos: { MEDICION: 'Medición', SERIE: 'Serie' },
   laminaEncuadres: { ENTERO: 'Entero', TREN_SUPERIOR: 'Tren superior', TREN_INFERIOR: 'Tren inferior' },

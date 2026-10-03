@@ -32,7 +32,7 @@ import {
   type MedicionEscrita,
   type MetricaDelProtocolo,
 } from '@be/domain';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Aviso, Campo } from '../../../../components/formulario';
@@ -41,6 +41,9 @@ import { fecha, numeroEnCampo } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 import { Figura } from './figura';
+
+/** El aviso de la toma. Un error de validación lista los campos que corregir, con un enlace a cada uno. */
+type AvisoDeLaToma = { tipo: 'exito' | 'error' | 'info'; texto: string; campos?: readonly { id: string; texto: string }[]; vez?: number };
 
 type Borrador = {
   evaluationId: string;
@@ -104,7 +107,7 @@ const aLosCampos = (enSuCampo: Map<string, MedicionConFila>): Record<string, Esc
 export function VistaDePreparacion() {
   const { token, asesoradoId, sesionPerdida, irA } = useAntropometria();
   const [r, setR] = useState<Resultado<{ borrador: Borrador | null; especificaciones: Especificacion[] }> | null>(null);
-  const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error' | 'info'; texto: string } | null>(null);
+  const [aviso, setAviso] = useState<AvisoDeLaToma | null>(null);
 
   const cargar = useCallback(async () => {
     setR(null);
@@ -157,8 +160,8 @@ function Preparacion({
 }: {
   borrador: Borrador | null;
   especificaciones: Especificacion[];
-  aviso: { tipo: 'exito' | 'error' | 'info'; texto: string } | null;
-  onAviso: (a: { tipo: 'exito' | 'error' | 'info'; texto: string } | null) => void;
+  aviso: AvisoDeLaToma | null;
+  onAviso: (a: AvisoDeLaToma | null) => void;
   onCambio: () => Promise<void>;
   onRegistrada: () => void;
 }) {
@@ -256,6 +259,25 @@ function Preparacion({
     return problemas;
   }
 
+  /** Los campos con algo para corregir, en el orden en que se ven, con su nombre y qué les pasa. */
+  function camposDelAviso(problemas: Record<string, string>): { id: string; texto: string }[] {
+    const deLosCampos = metricasPorFamilia(metricas)
+      .flatMap((g) => g.metricas)
+      .filter((m) => problemas[idDelValor(m.clave)])
+      .map((m) => ({ id: idDelValor(m.clave), texto: `${m.nombre}: ${problemas[idDelValor(m.clave)]}` }));
+    const partes = [
+      ['ant-metrica', COPY_ANTROPOMETRIA.metrica],
+      ['ant-valor-libre', COPY_ANTROPOMETRIA.valor],
+      ['ant-unidad', COPY_ANTROPOMETRIA.unidad],
+    ] as const;
+    const deLasFilas = libres.flatMap((_, i) =>
+      partes
+        .filter(([prefijo]) => problemas[`${prefijo}-${i}`])
+        .map(([prefijo, rotulo]) => ({ id: `${prefijo}-${i}`, texto: `Fuera del protocolo, fila ${i + 1} (${rotulo.toLocaleLowerCase('es-AR')}): ${problemas[`${prefijo}-${i}`]}` })),
+    );
+    return [...deLosCampos, ...deLasFilas];
+  }
+
   const contenido = () => ({
     occurredAt: new Date(momento).toISOString(),
     specificationVersionId: protocolo,
@@ -279,8 +301,9 @@ function Preparacion({
    * asegura que el segundo parta siempre del primero.
    */
   async function guardarContenido(): Promise<Borrador | null> {
-    if (Object.keys(revisar()).length > 0) {
-      onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.medicionIncompleta });
+    const problemas = revisar();
+    if (Object.keys(problemas).length > 0) {
+      avisar({ tipo: 'error', texto: COPY_ANTROPOMETRIA.revisarAntesDeGuardar, campos: camposDelAviso(problemas) });
       return null;
     }
     const res = borrador
@@ -290,7 +313,7 @@ function Preparacion({
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
     if (sesionPerdida(res) || accesoRetirado(res)) return null;
     if (!res.ok) {
-      onAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
+      avisar({ tipo: 'error', texto: mensajeDeFallo(res) });
       return null;
     }
     return res.datos.data as Borrador;
@@ -302,7 +325,7 @@ function Preparacion({
     const fresco = await guardarContenido();
     setEnviando(false);
     if (!fresco) return;
-    onAviso({ tipo: 'exito', texto: COPY_ANTROPOMETRIA.guardado });
+    avisar({ tipo: 'exito', texto: COPY_ANTROPOMETRIA.guardado });
     await onCambio();
   }
 
@@ -320,7 +343,7 @@ function Preparacion({
     if (fresco.measurements.length === 0) {
       setEnviando(false);
       setConfirmando(false);
-      onAviso({ tipo: 'error', texto: COPY_ANTROPOMETRIA.sinContenidoRegistrable });
+      avisar({ tipo: 'error', texto: COPY_ANTROPOMETRIA.sinContenidoRegistrable });
       await onCambio();
       return;
     }
@@ -329,16 +352,28 @@ function Preparacion({
     setEnviando(false);
     setConfirmando(false);
     if (sesionPerdida(res) || accesoRetirado(res)) return;
-    if (!res.ok) return onAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
+    if (!res.ok) return avisar({ tipo: 'error', texto: mensajeDeFallo(res) });
     onRegistrada();
   }
 
-  /** Tocar un punto de la figura lleva al campo de esa medición: la figura ubica, la lista carga. */
-  function elegirEnLaFigura(clave: string) {
-    const campo = document.getElementById(idDelValor(clave));
-    campo?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  /**
+   * Lleva a un campo y lo deja en el centro de la ventana, por encima de la barra fija de guardado, también con el
+   * teclado del teléfono abierto. Se centra el campo con su nombre y su error, no solo la caja: con la letra grande, el
+   * error quedaba bajo la barra. La usan la figura y el aviso de lo que hay que corregir.
+   */
+  function irAlCampo(id: string) {
+    const campo = document.getElementById(id);
+    (campo?.closest('li, .campo') ?? campo)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     campo?.focus({ preventScroll: true });
   }
+
+  // Cada aviso nuevo es otro aviso: vuelve a tomar el foco aunque ya hubiera uno a la vista. Un segundo «Guardar» con
+  // algo para corregir no puede quedar mudo al pie de la página, lejos del aviso.
+  const vez = useRef(0);
+  const avisar = (a: AvisoDeLaToma | null) => onAviso(a ? { ...a, vez: ++vez.current } : null);
+
+  /** Tocar un punto de la figura lleva al campo de esa medición: la figura ubica, la lista carga. */
+  const elegirEnLaFigura = (clave: string) => irAlCampo(idDelValor(clave));
 
   const escribir = (m: MetricaDelProtocolo, cambio: Partial<Escrito>) => setEscritos((xs) => ({ ...xs, [m.clave]: { ...escritoDe(m), ...cambio } }));
   const hayMedicionesGuardadas = !!borrador && borrador.measurements.length > 0;
@@ -352,8 +387,25 @@ function Preparacion({
         </AvisoFlotante>
       ) : null}
       {aviso && aviso.tipo !== 'exito' ? (
-        <Aviso tipo={aviso.tipo} enfocar>
+        <Aviso key={aviso.vez ?? 0} tipo={aviso.tipo} enfocar>
           <p>{aviso.texto}</p>
+          {aviso.campos && aviso.campos.length > 0 ? (
+            <ul>
+              {aviso.campos.map((c) => (
+                <li key={c.id}>
+                  <a
+                    href={`#${c.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      irAlCampo(c.id);
+                    }}
+                  >
+                    {c.texto}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </Aviso>
       ) : null}
 

@@ -24,6 +24,8 @@ import {
   COPY_EVOLUCION,
   diasEnPalabras,
   diferenciaDescriptiva,
+  decimalesDelEje,
+  dominioDelEjeVertical,
   ETIQUETA_DE_CLASE_DE_DATO,
   fechaCivil,
   grupoVigente,
@@ -54,8 +56,6 @@ import { indiceConTeclado, useConPuntero } from '../../../../lib/graficos';
 
 const ALTO = 300;
 
-/** El eje vertical con margen arriba y abajo, sin forzar el cero: un perímetro de 85 cm no se lee desde 0. */
-const DOMINIO: [(min: number) => number, (max: number) => number] = [(min) => Math.floor(min - Math.max(1, Math.abs(min) * 0.05)), (max) => Math.ceil(max + Math.max(1, Math.abs(max) * 0.05))];
 
 export function EvolucionDeMetrica({
   serie,
@@ -168,6 +168,13 @@ function Grafico({
 }) {
   const conPuntero = useConPuntero();
   const datos: Dato[] = visibles.map((o) => ({ x: o.instante, y: o.punto.value, sourceId: o.punto.sourceId }));
+  // El eje vertical con margen arriba y abajo, sin forzar el cero: la regla es la misma que en la APK. Se calcula con el
+  // mínimo y el máximo juntos, así los índices (≈ 0,85) se redondean en centésimas y sus rótulos llevan esos decimales.
+  const valores = datos.map((d) => d.y);
+  const minimo = valores.length > 0 ? Math.min(...valores) : 0;
+  const maximo = valores.length > 0 ? Math.max(...valores) : 1;
+  const dominio = dominioDelEjeVertical(minimo, maximo);
+  const decimales = Math.max(1, decimalesDelEje(minimo, maximo));
   // El eje cubre el período pedido, a escala y recortado en la zona del período (la misma con la que la API lo recortó):
   // un mes con dos mediciones se ve como un mes, y una toma de las 23:30 del último día sigue adentro aunque el
   // navegador esté en otra zona. Las marcas son fechas civiles de esa zona, nunca posteriores al último día.
@@ -214,7 +221,7 @@ function Grafico({
               tickLine={false}
               height={36}
             />
-            <YAxis dataKey="y" type="number" domain={DOMINIO} width={56} tickFormatter={(v: number) => numero(v, 1)} tick={{ fill: 'var(--tenue)', fontSize: 12 }} axisLine={{ stroke: 'var(--borde-control)' }} label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: 12 }} />
+            <YAxis dataKey="y" type="number" domain={[dominio.desde, dominio.hasta]} width={56} tickFormatter={(v: number) => numero(v, decimales)} tick={{ fill: 'var(--tenue)', fontSize: 12 }} axisLine={{ stroke: 'var(--borde-control)' }} label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: 12 }} />
             {conPuntero ? <Tooltip cursor={false} content={({ active, payload }) => (active && payload?.[0] ? <Recuadro observacion={visibles.find((o) => o.punto.sourceId === (payload[0]!.payload as Dato).sourceId)} zonaHoraria={zonaHoraria} /> : null)} /> : null}
             <Scatter
               data={datos}

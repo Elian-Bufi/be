@@ -2,7 +2,7 @@
 
 /**
  * Website `/pro` — espacio profesional:
- * - «Pendientes» (API-DSH-04; PF-07, DL-107): a quién mirar hoy, con hechos fechados y sin juicios (`pendientes.tsx`).
+ * - «Pendientes» (API-CAR-01; PF-07, DL-107): a quién mirar hoy, con hechos fechados y sin juicios (`pendientes.tsx`).
  * - «Solicitar vínculo» (REL-01): el asesorado se identifica por su identificador BE (DL-035) y la finalidad es la del
  *   alcance (DL-039). Cualquier rechazo semántico se muestra con el mismo mensaje neutral: la pantalla no revela si el
  *   identificador existe ni por qué no es elegible (09v7:151-157).
@@ -86,7 +86,7 @@ export function EspacioProfesional() {
   return (
     <div className="espacio">
       <div className="espacio__principal secciones">
-        {/* Primero lo que hay que hacer (API-DSH-04, DL-107); debajo, la lista de siempre. */}
+        {/* Primero lo que hay que hacer (API-CAR-01, DL-107); debajo, la lista de siempre. */}
         <Pendientes token={token} sesionPerdida={sesionPerdida} />
         <section className="seccion" aria-labelledby="titulo-asesorados">
           <h2 id="titulo-asesorados">Tus asesorados</h2>

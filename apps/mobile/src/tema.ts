@@ -16,6 +16,8 @@ export const AZUL_NOCHE = {
   // Superficies y texto
   fondo: '#011325',
   superficie: '#052238',
+  // Un escalón más claro que la superficie: el botón secundario, las fichas y lo elegido (tanda del 2026-10-03).
+  superficieElevada: '#0A2B47',
   texto: '#FFFFFF',
   tenue: '#8DCAE5',
   // Marca e interacción: el cian es el acento; el azul, solo decoración
@@ -25,8 +27,10 @@ export const AZUL_NOCHE = {
   botonTexto: '#011325',
   peligroFondo: '#FF9B8F',
   peligroTexto: '#011325',
-  // Bordes: el decorativo separa (el brillo de las tarjetas); el de control delimita un campo y necesita 3:1
-  borde: '#0A72A1',
+  // Bordes: el decorativo separa; el de control delimita un campo y necesita 3:1. El decorativo era un azul brillante
+  // (#0A72A1) en todas las tarjetas y competía con el cian; desde el 2026-10-03 es un azul apagado, y el cian queda
+  // para lo que orienta: lo elegido, lo activo y los datos.
+  borde: '#173F61',
   bordeControl: '#4F7FA3',
   // Estados: siempre con texto además del color (B10-10 §1, §12)
   error: '#FF9B8F',
@@ -43,11 +47,15 @@ export const AZUL_NOCHE = {
   laminaNombre: '#E0E4EB',
   laminaValor: '#FFFFFF',
   laminaDetalle: '#CED5DF',
+  // El contorno de la silueta. En Azul noche el cuerpo ya contrasta, unos 11:1 con el fondo, y el contorno va del tono
+  // del cuerpo: casi no se ve. En Claro es lo que separa el cuerpo del fondo.
+  laminaContorno: '#E9EEF5',
 };
 
 export const CLARO: Paleta = {
   fondo: '#F2F6FC',
   superficie: '#FFFFFF',
+  superficieElevada: '#F4F7FC',
   texto: '#0A1F44',
   tenue: '#62728A',
   acento: '#1465F1',
@@ -71,6 +79,9 @@ export const CLARO: Paleta = {
   laminaNombre: '#334155',
   laminaValor: '#1E6BF2',
   laminaDetalle: '#475569',
+  // El contorno de la silueta (prueba de la 0.13.1): el cuerpo blanco contra este fondo medía de 1,01:1 a 1,19:1.
+  // Con el contorno, la silueta se distingue con más de 3:1 (WCAG 1.4.11).
+  laminaContorno: '#64748B',
 };
 
 export type Paleta = { readonly [K in keyof typeof AZUL_NOCHE]: string };

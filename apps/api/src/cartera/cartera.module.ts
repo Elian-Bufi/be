@@ -3,7 +3,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { SesionModule } from '../sesion/sesion.module';
 import { CarteraController } from './cartera.controller';
 
-/** API-DSH-04 (PF-07, propuesta). El PDP, el Proceso y el limitador vienen de módulos globales. */
+/** API-CAR-01 (PF-07, propuesta; DL-116). El PDP, el Proceso y el limitador vienen de módulos globales. */
 @Module({
   imports: [SesionModule, PrismaModule],
   controllers: [CarteraController],

@@ -19,6 +19,12 @@ export interface MedidaDeLaToma {
   /** La observación anterior del mismo grupo, de otra evaluación; `null` si no hay ninguna en el período. */
   readonly anterior: Observacion | null;
   readonly diferencia: { readonly delta: number; readonly unidad: string; readonly dias: number } | null;
+  /**
+   * Por qué no hay anterior comparable, si no lo hay:
+   * - `SIN_PREVIA`: la medida no tiene una observación anterior en el período;
+   * - `OTRO_GRUPO`: la tiene, pero con otro protocolo, método o unidad, y no se comparan (REG-06-162/164).
+   */
+  readonly motivoSinAnterior: 'SIN_PREVIA' | 'OTRO_GRUPO' | null;
 }
 
 export interface UltimaToma {
@@ -54,7 +60,9 @@ export function ultimaToma(datos: EvolucionResponse['data']): UltimaToma | null 
     if (!actual) continue;
     const previas = observacionesDelGrupo(serie, actual.punto.comparabilityGroup).filter((o) => o.instante < actual.instante && o.punto.sourceEvaluationId !== evaluacionId);
     const anterior = previas[previas.length - 1] ?? null;
-    filas.push({ metrica: serie.metricCode, nombre: nombreDeMetrica(serie.metricCode), actual, anterior, diferencia: anterior ? diferenciaDescriptiva(anterior, actual) : null });
+    const huboOtraAntes = serie.observaciones.some((o) => o.instante < actual.instante && o.punto.sourceEvaluationId !== evaluacionId);
+    const motivoSinAnterior = anterior ? null : huboOtraAntes ? ('OTRO_GRUPO' as const) : ('SIN_PREVIA' as const);
+    filas.push({ metrica: serie.metricCode, nombre: nombreDeMetrica(serie.metricCode), actual, anterior, diferencia: anterior ? diferenciaDescriptiva(anterior, actual) : null, motivoSinAnterior });
   }
 
   const conAnterior = filas.filter((f) => f.anterior !== null).map((f) => f.anterior!.fecha);

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { SCRIPT_DE_INICIO, TEMA_PREDETERMINADO } from '../lib/apariencia';
 import { ProveedorDeSesion } from '../lib/sesion';
@@ -10,6 +10,13 @@ export const metadata: Metadata = {
   description: 'BE — Plataforma integrada de inteligencia en salud.',
   robots: { index: false, follow: false },
 };
+
+/**
+ * `interactive-widget=resizes-content`: con el teclado del teléfono abierto, la ventana se achica en vez de quedar tapada.
+ * Así una barra fija abajo, como la de «Guardar» de la preparación, queda arriba del teclado y no detrás. En la prueba de
+ * Dirección con la 0.13.1, «Guardar» no siempre se veía con el teclado abierto. El navegador que no lo conoce lo ignora.
+ */
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, interactiveWidget: 'resizes-content' };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

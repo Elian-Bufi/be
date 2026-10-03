@@ -122,6 +122,9 @@ const PARES_APK = [
   ['tenue', 'superficie', TEXTO, 'ayudas dentro de tarjetas'],
   ['acento', 'fondo', TEXTO, 'enlaces y botón secundario'],
   ['acento', 'superficie', TEXTO, 'botón secundario dentro de una tarjeta'],
+  ['acento', 'superficieElevada', TEXTO, 'botón secundario tonal y opción elegida'],
+  ['texto', 'superficieElevada', TEXTO, 'texto en fichas y en la zona elegida'],
+  ['tenue', 'superficieElevada', TEXTO, 'detalle dentro de una ficha'],
   ['botonTexto', 'botonFondo', TEXTO, 'botón primario y casilla marcada'],
   ['peligroTexto', 'peligroFondo', TEXTO, 'botón de una acción destructiva'],
   ['error', 'fondo', TEXTO, 'mensaje de error junto al campo'],
@@ -136,6 +139,7 @@ const PARES_APK = [
   ['laminaNombre', 'laminaTarjeta', TEXTO, 'rótulo de un sitio en la lámina de la toma'],
   ['laminaValor', 'laminaTarjeta', TEXTO, 'valor de un sitio en la lámina de la toma'],
   ['laminaDetalle', 'laminaTarjeta', TEXTO, 'diferencia con la toma anterior en la lámina'],
+  ['laminaContorno', 'laminaFondo', NO_TEXTO, 'contorno de la silueta sobre la lámina de la toma (1.4.11)'],
 ];
 
 function verificar(tema, pares, nombreDelTema) {

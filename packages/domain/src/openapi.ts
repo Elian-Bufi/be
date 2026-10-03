@@ -570,7 +570,7 @@ const DEFINIDAS: readonly Operacion[] = [
   },
   // ─── PF-07 · Cartera del profesional (propuesta del 2026-09-30, pendiente de decisión) ─────────
   {
-    id: 'API-DSH-04',
+    id: 'API-CAR-01',
     metodo: 'get',
     ruta: '/me/portfolio',
     resumen:
@@ -591,7 +591,7 @@ const DEFINIDAS: readonly Operacion[] = [
     ],
     exitos: [{ status: 200, schema: CarteraResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
-    fuente: 'docs/propuestas/PF-07_vista-de-cartera.md (propuesta) · REG-06-145/150 · B10-08 §8.4 · 10-B04:1171-1176',
+    fuente: 'docs/propuestas/PF-07_vista-de-cartera.md (propuesta) · REG-06-145/150 · B10-08 §8.4 · 10-B04:1171-1176 · DL-107 · ID propio de BE desde DL-116 (antes API-DSH-04, que en el 09 es la línea temporal)',
   },
   // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 (09v12) ─────────────────────────────────────
   {
@@ -815,8 +815,9 @@ const DEFINIDAS: readonly Operacion[] = [
     idempotencia: false,
     query: [{ nombre: 'dayTypeId', descripcion: 'Día tipo elegido por el asesorado (DL-049).', schema: { type: 'string' } }],
     exitos: [{ status: 200, schema: HoyResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
-    fuente: '09v9:658-680 · UC-P12 E06 · DEUDA_LEGAJO DL-049',
+    // DL-115: sin A3 vigente del titular, 403 (08:406); las comidas registradas del día son datos de salud propios.
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: '09v9:658-680 · UC-P12 E06 · DEUDA_LEGAJO DL-049 · DL-115',
   },
   {
     id: 'API-NUT-15',
@@ -1114,14 +1115,14 @@ const DEFINIDAS: readonly Operacion[] = [
       { nombre: 'metric', descripcion: 'Métricas separadas por coma. Sin esto, todas las que tengan dato.', schema: { type: 'string' } },
     ],
     exitos: [{ status: 200, schema: EvolucionResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
-    fuente: '09v11:710-760 · REG-06-165/166/167 · INV-06-176/177 · DV-05 caso 7',
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v11:710-760 · REG-06-165/166/167 · INV-06-176/177 · DV-05 caso 7 · el 403 es solo con el propio id y el A3 revocado o nunca otorgado (08:406; DL-115)',
   },
   {
     id: 'API-ANT-06-PROPIA',
     metodo: 'get',
     ruta: '/me/anthropometry/progress',
-    resumen: 'La misma evolución, del lado del asesorado, que RF-049 nombra como actor. La consume la APK.',
+    resumen: 'La misma evolución, del lado del asesorado, que RF-049 nombra como actor. La consume la APK. Exige el A3 vigente: revocado o nunca otorgado, 403 ACTION_FORBIDDEN; los datos no se borran y vuelven a leerse con un A3 nuevo (08:406; DL-115).',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
@@ -1130,8 +1131,8 @@ const DEFINIDAS: readonly Operacion[] = [
       { nombre: 'metric', descripcion: 'Métricas separadas por coma. Sin esto, todas las que tengan dato.', schema: { type: 'string' } },
     ],
     exitos: [{ status: 200, schema: EvolucionResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
-    fuente: '04:583 (RF-049) · UC-P31 V03 · 04:1093',
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: '04:583 (RF-049) · UC-P31 V03 · 04:1093 · 08:406 · 09v16.1 §36 · DL-115',
   },
   // ─── MTH y CAL · el patrón transversal de cálculo reproducible (09v16 §21; T-06-N12) ─────────
   {
@@ -1319,7 +1320,7 @@ const DEFINIDAS: readonly Operacion[] = [
     idempotencia: false,
     query: [LIMIT, CURSOR, { nombre: 'state', descripcion: 'Estado de la versión.', schema: { type: 'string', enum: ['DRAFT', 'ACTIVATED'] } }],
     exitos: [{ status: 200, schema: ListaDePlanesDeEntrenamientoResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 404: ['RESOURCE_NOT_FOUND'] },
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: '09v10:690-696',
   },
   {
@@ -1330,7 +1331,7 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: PlanDeEntrenamientoResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: '09v10:700-706 · REG-06-112',
   },
   {
@@ -1795,7 +1796,7 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: EjecucionDeEntrenamientoResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: '09v10:1197-1217 · REG-06-16, 113',
   },
   {
@@ -1936,12 +1937,12 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-FRM-05',
     metodo: 'get',
     ruta: '/form-requests/{formRequestId}',
-    resumen: 'Una Solicitud, en la proyección del actor que consulta: el profesional solo si el PDP lo sigue permitiendo (si no, el mismo 404 que una inexistente), el asesorado siempre para lo propio. La respuesta nunca expone autorizaciones internas ajenas.',
+    resumen: 'Una Solicitud, en la proyección del actor que consulta: el profesional solo si el PDP lo sigue permitiendo (si no, el mismo 404 que una inexistente), el asesorado para lo propio «conforme a 08»: con el A3 revocado o nunca otorgado, 403 ACTION_FORBIDDEN (08:406; DL-115). La respuesta nunca expone autorizaciones internas ajenas.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: DetalleDeSolicitudResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
-    fuente: '09v16.1 §22.5 · REG-06-213 · TEST-FRM-007',
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v16.1 §22.5 · REG-06-213 · TEST-FRM-007 · 08:406 · DL-115',
   },
   {
     id: 'API-FRM-06',
@@ -1959,7 +1960,7 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-FRM-07',
     metodo: 'post',
     ruta: '/me/form-requests/{formRequestId}/responses',
-    resumen: 'Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo.',
+    resumen: 'Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo. Sobre una solicitud propia, sin el A3 vigente, 403 ACTION_FORBIDDEN antes que cualquier otra regla; lo ajeno y lo inexistente, 404 (09v16.1 §36; DL-115).',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: EnviarRespuestaRequestSchema,
@@ -1967,26 +1968,27 @@ const DEFINIDAS: readonly Operacion[] = [
     // FORM_RESPONSE_INVALID no está en el 09 para FRM-07 (solo lo declara para FRM-08), pero es la misma forma que
     // valida FRM-08 y DL-095 ya lo registra como forma no fijada: un campo fuera de tipo o de lo solicitado tiene
     // que rechazarse en las dos, no solo al rectificar.
-    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['FORM_REQUEST_NOT_RESPONDABLE', 'FORM_RESPONSE_INVALID'] },
+    errores: { ...ESCRITURA_REVELABLE, 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['FORM_REQUEST_NOT_RESPONDABLE', 'FORM_RESPONSE_INVALID'] },
     detalleDe422: DETALLE_DE_NUMEROS_FUERA_DE_LIMITES,
-    fuente: '09v16.1 §22.7 · REG-06-211 · TEST-FRM-003/004/005 · DL-095 · DL-104',
+    fuente: '09v16.1 §22.7 · §36 · REG-06-211 · TEST-FRM-003/004/005 · DL-095 · DL-104 · DL-115',
   },
   {
     id: 'API-FRM-08',
     metodo: 'post',
     ruta: '/me/form-responses/{formResponseId}/rectifications',
-    resumen: 'Rectificar una respuesta propia: crea una sucesora, nunca sobrescribe la original, y mantiene SELF_REPORTED. No restaura la lectura del profesional si el PDP ya no la permite.',
+    resumen: 'Rectificar una respuesta propia: crea una sucesora, nunca sobrescribe la original, y mantiene SELF_REPORTED. No restaura la lectura del profesional si el PDP ya no la permite. Sobre una respuesta propia, sin el A3 vigente, 403 ACTION_FORBIDDEN antes que cualquier otra regla; lo ajeno y lo inexistente, 404 (09v16.1 §36; DL-115).',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: RectificarRespuestaRequestSchema,
     exitos: [{ status: 201, schema: RectificacionCreadaResponseSchema }],
     errores: {
       ...ESCRITURA_REVELABLE,
+      403: ['ACTION_FORBIDDEN'],
       409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'],
       422: ['FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED', 'FORM_RESPONSE_INVALID'],
     },
     detalleDe422: DETALLE_DE_NUMEROS_FUERA_DE_LIMITES,
-    fuente: '09v16.1 §22.8 · REG-06-211 · TEST-FRM-006 · DL-104',
+    fuente: '09v16.1 §22.8 · §36 · REG-06-211 · TEST-FRM-006 · DL-104 · DL-115',
   },
 ];
 
@@ -1998,7 +2000,7 @@ const DEFINIDAS: readonly Operacion[] = [
  */
 const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-DSH-03',
-  'API-DSH-04',
+  'API-CAR-01',
   'API-ANT-03',
   'API-ANT-06',
   'API-ANT-06-PROPIA',

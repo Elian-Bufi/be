@@ -431,9 +431,16 @@ export interface EncuadreDeLaFiguraEnLaLamina {
   readonly conPiso: boolean;
 }
 
-/** Modo Medición (compositor: `LAY`): la figura va a la derecha y las tarjetas, a la izquierda. */
+/**
+ * Modo Medición (compositor: `LAY`): la figura va a la derecha y las tarjetas, a la izquierda.
+ *
+ * El cuerpo entero ya no es el del compositor v13.3 (1270, 840, 408): Dirección pidió una imagen exportada más
+ * equilibrada (2026-10-03). Con aquellos valores quedaba una franja vacía de unos 220 px entre el encabezado y la
+ * cabeza. Ahora la figura arranca en 290 y mide 1390: los pies quedan donde estaban, arriba del bloque de diámetros, y
+ * las tarjetas, que siguen a sus sitios, suben con ella. Los otros encuadres siguen siendo los del compositor.
+ */
 export const ENCUADRE_EN_MEDICION: Readonly<Record<EncuadreDeLaLamina, EncuadreDeLaFiguraEnLaLamina>> = {
-  ENTERO: { altoDelCuerpo: 1270, centroX: 840, arriba: 408, conPiso: true },
+  ENTERO: { altoDelCuerpo: 1390, centroX: 840, arriba: 290, conPiso: true },
   TREN_SUPERIOR: { altoDelCuerpo: 1120, centroX: 875, arriba: 300, conPiso: false },
   TREN_INFERIOR: { altoDelCuerpo: 1300, centroX: 845, arriba: 360, conPiso: true },
 };

@@ -17,6 +17,7 @@ import {
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { DenegacionDelPdp, PdpService } from '../autorizacion/pdp.service';
+import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
@@ -69,6 +70,9 @@ export class RespuestasService {
           : null;
         // Propio y revelable: no es un oráculo de terceros (09:1599). Ajeno o inexistente, el mismo 404.
         if (!s || s.asesoradoId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-FRM-07', actorId: actor.identidadId, recurso }, ctx);
+        // Sobre lo propio, el A3 va antes que cualquier otra regla (09 §36; 08:406; DL-115). Sin bloqueo: el PDP de
+        // `puedeResponder` lo vuelve a mirar con el acto bloqueado, en el orden único.
+        await exigirA3Vigente(tx, actor.identidadId);
         if (s.respuesta) throw new ErrorDeApi(422, CodigoDeError.FORM_REQUEST_NOT_RESPONDABLE, 'Esta Solicitud ya tiene una respuesta registrada.');
 
         const sigueVigente = await this.puedeResponder(tx, 'API-FRM-07', s.profesionalId, actor.identidadId, s.alcance, recurso, ctx);
@@ -129,6 +133,9 @@ export class RespuestasService {
             })
           : null;
         if (!r || r.asesoradoId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-FRM-08', actorId: actor.identidadId, recurso }, ctx);
+        // Rectificar es registrar datos de salud y no pasa por el PDP (09:1633): sobre lo propio, el A3 se exige antes que
+        // cualquier otra regla, con el acto bloqueado para que una revocación en curso también la corte (08:406; DL-115).
+        await exigirA3Vigente(tx, actor.identidadId, { bloquear: true });
 
         const relaciones: RelacionDeCorreccion[] = r.rectificaciones.map((c) => ({ id: c.id, originalId: r.id, correccionPreviaId: c.correccionPreviaId }));
         const vista = resolverVistaEfectiva(r.id, relaciones);

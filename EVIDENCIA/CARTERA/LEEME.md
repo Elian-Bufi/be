@@ -1,5 +1,8 @@
 # Evidencia · Cartera del profesional: «Pendientes» (API-DSH-04, PF-07, DL-107)
 
+> **Nota del 2026-10-03 (DL-116).** El ID de la operación pasa a **API-CAR-01**: API-DSH-04 es, en el 09, la línea
+> temporal. Esta evidencia conserva el ID con el que se hizo.
+
 Decisión de Elián del 2026-09-30 sobre la ficha `docs/propuestas/PF-07_vista-de-cartera.md`, registrada como DL-107. Rama `feat/cartera-profesional`, sobre `main` (`53cc70e`). Para auditoría, **sin integrar, sin desplegar y sin APK**.
 
 ## Qué puede hacer el profesional

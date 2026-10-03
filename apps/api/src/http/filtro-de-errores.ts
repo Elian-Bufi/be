@@ -4,6 +4,18 @@ import type { Request, Response } from 'express';
 import { esConflictoTransitorio } from '../prisma/concurrencia';
 import { ErrorDeApi, errores } from './errores';
 
+/**
+ * Un P2028 tiene dos causas, y no se corrigen igual: la transacción no consiguió una conexión a tiempo (`inicio`: el
+ * pool estaba tomado) o duró más de lo permitido (`vencida`). El mensaje de Prisma las distingue y no trae datos de
+ * nadie: se registra solo la fase, nunca el mensaje.
+ */
+export function faseDeP2028(e: unknown): 'inicio' | 'vencida' | 'otra' {
+  const mensaje = e instanceof Error ? e.message : '';
+  if (/Unable to start a transaction in the given time/i.test(mensaje)) return 'inicio';
+  if (/expired transaction|Transaction already closed|timeout for this transaction/i.test(mensaje)) return 'vencida';
+  return 'otra';
+}
+
 /** Códigos de Prisma que significan «base no disponible» (09v7 §4.6: 503 DB_UNAVAILABLE). */
 const PRISMA_SIN_BASE = new Set(['P1001', 'P1002', 'P1008', 'P1017', 'P2024']);
 
@@ -69,7 +81,8 @@ export class FiltroDeErrores implements ExceptionFilter {
   private sinBase(excepcion: unknown, requestId: string | undefined): ErrorDeApi {
     const tipo = excepcion instanceof Error ? excepcion.constructor.name : typeof excepcion;
     const codigo = excepcion instanceof Prisma.PrismaClientKnownRequestError ? excepcion.code : excepcion instanceof Prisma.PrismaClientInitializationError ? excepcion.errorCode ?? null : null;
-    this.log(JSON.stringify({ nivel: 'warn', evento: 'base_no_disponible', tipo, codigo, requestId: requestId ?? null }));
+    const fase = codigo === 'P2028' ? faseDeP2028(excepcion) : null;
+    this.log(JSON.stringify({ nivel: 'warn', evento: 'base_no_disponible', tipo, codigo, ...(fase ? { fase } : {}), requestId: requestId ?? null }));
     return errores.baseNoDisponible();
   }
 }

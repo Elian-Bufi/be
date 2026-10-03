@@ -11,7 +11,8 @@ import { nombreDeAsesorado } from '../vinculo/lectura';
 type Tx = Prisma.TransactionClient;
 
 /**
- * API-DSH-04 — Cartera del profesional (PF-07, propuesta). Reglas de lectura:
+ * API-CAR-01 — Cartera del profesional (PF-07, propuesta; DL-107). Hasta DL-116 se llamó API-DSH-04, que en el 09 es la
+ * línea temporal: las decisiones de acceso registradas antes conservan ese nombre. Reglas de lectura:
  * - Se recorren los vínculos con alcance ACEPTADO del profesional. Por asesorado, el PDP decide y registra por alcance
  *   igual que en API-DSH-03; solo los alcances permitidos aportan pendientes, y un alcance con vínculo aceptado que el
  *   PDP deniega (A3 revocado, cuenta suspendida) deja `partialView` en `true` sin decir por qué (B10-08 §8.4).
@@ -36,7 +37,7 @@ export interface ConsultaDeCartera {
   readonly cursor: string | null;
 }
 
-const OPERACION = 'API-DSH-04';
+const OPERACION = 'API-CAR-01';
 /** Tope de asesorados por lectura: por encima, la cartera necesita otra estrategia (ficha, §f.2). */
 export const MAXIMO_DE_ASESORADOS = 200;
 

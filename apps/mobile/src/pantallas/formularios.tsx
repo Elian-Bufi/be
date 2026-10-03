@@ -38,10 +38,12 @@ import {
 import { useCallback, useEffect, useReducer, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '../api';
-import { Cargando, ErrorConReintento } from '../estados';
+import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fecha } from '../formato';
 import { falloDe, useClaveDeIntento } from '../intento';
-import { useSesionPerdida, type Salida } from '../navegacion';
+import { useLecturaRecordada } from '../lecturas';
+import { leerLista } from '../lecturas-de-las-zonas';
+import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Ayuda, Boton, Campo, CampoSiONo, Insignia, Parrafo, Seccion, Tarjeta, Titulo } from '../ui';
 
 type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: readonly SolicitudPropia[] } | { tipo: 'error'; sinConexion: boolean };
@@ -56,26 +58,26 @@ const OPCIONES_SI_O_NO = [
   { valor: 'NO', texto: COPY_FORMULARIOS.no },
 ] as const;
 
-export function PantallaDeFormularios({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: { nombre: 'mi-solicitud'; id: string }) => void }) {
+export function PantallaDeFormularios({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
-  const [carga, setCarga] = useState<Carga>({ tipo: 'cargando' });
-
-  const cargar = useCallback(async () => {
-    setCarga({ tipo: 'cargando' });
-    const r = await api.misSolicitudesDeFormulario(token);
-    if (sesionPerdida(r)) return;
-    setCarga(r.ok ? { tipo: 'listo', datos: r.datos.data } : { tipo: 'error', sinConexion: r.tipo === 'RED' });
-  }, [token, sesionPerdida]);
-
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
+  const pedir = useCallback(() => leerLista(api, token), [token]);
+  // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts).
+  const { r, cargar, sinActualizar } = useLecturaRecordada(token, 'mis-solicitudes', pedir, sesionPerdida);
+  const carga: Carga = r === null ? { tipo: 'cargando' } : r.ok ? { tipo: 'listo', datos: r.datos.solicitudes } : { tipo: 'error', sinConexion: r.tipo === 'RED' };
+  /** DL-115 · sin A3 la lista sigue, pero lo propio no se lee ni se responde: se dice arriba, con el camino a Privacidad. */
+  const sinA3 = r?.ok === true && r.datos.sinA3;
 
   return (
     <View>
       <Titulo>{COPY_FORMULARIOS.pestana}</Titulo>
+      <SinActualizar visible={sinActualizar} onReintentar={cargar} />
       <Parrafo tenue>{COPY_FORMULARIOS.podesNoResponder}</Parrafo>
-      {carga.tipo === 'cargando' ? <Cargando /> : null}
+      {sinA3 ? (
+        <Aviso tipo="info" titulo={COPY_FORMULARIOS.necesitaA3}>
+          <Boton texto={COPY_FORMULARIOS.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
+        </Aviso>
+      ) : null}
+      {carga.tipo === 'cargando' ? <Cargando forma="lista" /> : null}
       {carga.tipo === 'error' ? <ErrorConReintento sinConexion={carga.sinConexion} onReintentar={cargar} /> : null}
       {carga.tipo === 'listo' && carga.datos.length === 0 ? <Parrafo>{COPY_FORMULARIOS.sinSolicitudesPropias}</Parrafo> : null}
       {carga.tipo === 'listo'
@@ -116,7 +118,7 @@ interface Detalle {
  * - la carga y su reintento son una sola operación con intención («abrir» o «recuperar»);
  * - el borrador (lo escrito y el motivo) solo se limpia cuando un envío se registra, y cargar nunca reenvía.
  */
-export function PantallaDeMiSolicitud({ token, id, salir, volver }: { token: string; id: string; salir: (m: Salida) => void; volver: () => void }) {
+export function PantallaDeMiSolicitud({ token, id, salir, volver, ir }: { token: string; id: string; salir: (m: Salida) => void; volver: () => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
   const [estado, despachar] = useReducer(reducirFormulario, estadoInicialDeFormulario);
   const [datos, setDatos] = useState<{ detalle: Detalle; plantilla: VersionDePlantilla } | null>(null);
@@ -138,6 +140,8 @@ export function PantallaDeMiSolicitud({ token, id, salir, volver }: { token: str
       const fallar = (r: Resultado<unknown>) => despachar({ tipo: 'carga-fallida', sinConexion: !r.ok && r.tipo === 'RED' });
       const r = await api.consultarSolicitudDeFormulario(token, id);
       if (sesionPerdida(r)) return;
+      // DL-115 · sin A3, lo propio no se lee (08:406): ni la solicitud ni la respuesta. Lo escrito queda en el estado.
+      if (!r.ok && r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN') return despachar({ tipo: 'carga-sin-a3' });
       if (!r.ok) return fallar(r);
       const { request, response } = r.datos.data;
       // Sin respuesta, lo que decide si se puede responder es `respondable` (FRM-06): una pendiente válida también tiene
@@ -162,6 +166,17 @@ export function PantallaDeMiSolicitud({ token, id, salir, volver }: { token: str
     void cargar('abrir');
   }, [cargar]);
 
+  if (estado.carga.tipo === 'sin-a3') {
+    return (
+      <View>
+        <Titulo>{COPY_FORMULARIOS.pestana}</Titulo>
+        <Aviso tipo="info" titulo={COPY_FORMULARIOS.necesitaA3}>
+          <Boton texto={COPY_FORMULARIOS.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
+          <Boton texto={COPY_FORMULARIOS.volverAMisSolicitudes} tipo="enlace" onPress={volver} />
+        </Aviso>
+      </View>
+    );
+  }
   if (estado.carga.tipo === 'error') {
     // El reintento conserva la intención: si era recuperar lo guardado, sigue siéndolo y termina con el mismo aviso.
     const intencion = estado.carga.intencion;
@@ -244,6 +259,7 @@ export function PantallaDeMiSolicitud({ token, id, salir, volver }: { token: str
       {lista.includes('recuperar') ? (
         <Boton texto={esCorreccion || puede.modo !== 'sin-accion' ? COPY_FORMULARIOS.cargarLoGuardado : COPY_FORMULARIOS.actualizarEstado} tipo="secundario" onPress={() => void cargar('recuperar')} />
       ) : null}
+      {lista.includes('privacidad') ? <Boton texto={COPY_FORMULARIOS.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} /> : null}
       {lista.includes('volver') ? <Boton texto={COPY_FORMULARIOS.volverAMisSolicitudes} tipo="enlace" onPress={volver} /> : null}
     </>
   );

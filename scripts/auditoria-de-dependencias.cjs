@@ -33,6 +33,13 @@ const EXCEPCIONES = [
       'Sin versión corregida: el aviso abarca hasta la 1.4.0, la última publicada (actualizado el 2026-10-01), y la última @expo/code-signing-certificates (0.0.7) sigue dependiendo de ella. node-forge entra por la CLI de Expo, que lo usa para firmar manifiestos de expo-updates y para la firma de iOS: BE no configura ninguna de las dos, y node-forge no viaja en el bundle de la APK ni está en la API ni en el website. El riesgo es bajo y acotado a la cadena de construcción (la CI y la máquina que construye la APK), no nulo.',
     vence: '2026-10-31',
   },
+  {
+    aviso: 'GHSA-vfj7-8cjw-p6xm',
+    paquete: 'braces',
+    motivo:
+      'Sin versión corregida: el aviso (CVE-2026-93687, agotamiento de la pila con patrones muy anidados) abarca hasta la 3.0.3, la última publicada (actualizado el 2026-10-02). braces entra por la CLI de Expo y por metro (expo → @expo/cli → @expo/metro-file-map → micromatch → braces), que lo usan al construir para expandir los patrones de archivos de la configuración, no datos de las personas. braces no viaja en el bundle de la APK ni está en la API ni en el website. El riesgo es bajo y acotado a la cadena de construcción (la CI y la máquina que construye la APK), no nulo.',
+    vence: '2026-10-31',
+  },
 ];
 
 /** El identificador del aviso: `GHSA-…`, tomado de su URL. */

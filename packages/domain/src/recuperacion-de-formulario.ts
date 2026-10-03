@@ -14,6 +14,8 @@
  *   corresponde (por ejemplo, si se reanudó el vínculo).
  * - **La carga y su reintento son una sola operación con su intención** («abrir» o «recuperar»): si falla la carga de
  *   una recuperación, el reintento sigue siendo una recuperación y termina con el mismo aviso.
+ * - **Sin A3 no se lee ni se envía lo propio** (DL-115; 08:406). Leer con el A3 revocado deja la carga en `sin-a3` y un
+ *   envío rechazado por eso suspende el envío. El borrador queda; al volver a leer con un A3 nuevo, se reevalúa.
  * La clave de idempotencia no vive acá: la maneja `useClaveDeIntento`, y leer no la toca.
  */
 import type { Resultado } from './cliente-http';
@@ -40,11 +42,15 @@ export function habilitacion(v: VistaDeSolicitud): Habilitacion {
 }
 
 export type Intencion = 'abrir' | 'recuperar';
-export type Accion = 'recuperar' | 'volver';
-export type Suspension = 'no-admite-respuesta' | 'no-admite-correccion' | 'version-desactualizada' | 'envio-anterior-guardado';
+export type Accion = 'recuperar' | 'volver' | 'privacidad';
+export type Suspension = 'no-admite-respuesta' | 'no-admite-correccion' | 'version-desactualizada' | 'envio-anterior-guardado' | 'sin-a3';
 
 export interface EstadoDeFormulario {
-  readonly carga: { readonly tipo: 'cargando'; readonly intencion: Intencion } | { readonly tipo: 'error'; readonly intencion: Intencion; readonly sinConexion: boolean } | { readonly tipo: 'lista'; readonly vista: VistaDeSolicitud };
+  readonly carga:
+    | { readonly tipo: 'cargando'; readonly intencion: Intencion }
+    | { readonly tipo: 'error'; readonly intencion: Intencion; readonly sinConexion: boolean }
+    | { readonly tipo: 'sin-a3'; readonly intencion: Intencion }
+    | { readonly tipo: 'lista'; readonly vista: VistaDeSolicitud };
   readonly borrador: { readonly valores: Readonly<Record<string, string>>; readonly motivo: string };
   /** Por qué no se pudo enviar o por qué ahora no se puede: se muestra junto al botón, con sus acciones. */
   readonly problema: { readonly titulo: string; readonly lineas: readonly string[]; readonly incierto: boolean; readonly acciones: readonly Accion[] } | null;
@@ -67,6 +73,7 @@ export const estadoInicialDeFormulario: EstadoDeFormulario = {
 export type EventoDeFormulario =
   | { readonly tipo: 'cargar'; readonly intencion: Intencion }
   | { readonly tipo: 'carga-fallida'; readonly sinConexion: boolean }
+  | { readonly tipo: 'carga-sin-a3' }
   | { readonly tipo: 'carga-lista'; readonly vista: VistaDeSolicitud }
   | { readonly tipo: 'editar-valor'; readonly fieldCode: string; readonly valor: string }
   | { readonly tipo: 'editar-motivo'; readonly motivo: string }
@@ -76,10 +83,11 @@ export type EventoDeFormulario =
   | { readonly tipo: 'fallo'; readonly titulo: string; readonly incierto: boolean }
   | { readonly tipo: 'enviado'; readonly texto: string };
 
-type DesenlaceRecuperable = Extract<DesenlaceDeEnvio, { tipo: 'ya-no-se-puede' | 'version-vieja' | 'envio-anterior-guardado' }>;
+type DesenlaceRecuperable = Extract<DesenlaceDeEnvio, { tipo: 'ya-no-se-puede' | 'version-vieja' | 'envio-anterior-guardado' | 'sin-a3' }>;
 
 function suspensionDe(d: DesenlaceRecuperable): Suspension {
   if (d.tipo === 'ya-no-se-puede') return d.sobre === 'respuesta' ? 'no-admite-respuesta' : 'no-admite-correccion';
+  if (d.tipo === 'sin-a3') return 'sin-a3';
   return d.tipo === 'version-vieja' ? 'version-desactualizada' : 'envio-anterior-guardado';
 }
 
@@ -93,6 +101,9 @@ export function reducirFormulario(e: EstadoDeFormulario, ev: EventoDeFormulario)
     case 'carga-fallida':
       // La intención se conserva: el reintento es la misma operación.
       return { ...e, carga: { tipo: 'error', intencion: e.carga.tipo === 'lista' ? 'abrir' : e.carga.intencion, sinConexion: ev.sinConexion } };
+    case 'carga-sin-a3':
+      // No es un error del servicio ni un «no hay nada»: lo propio está suspendido. El borrador queda (DL-115).
+      return { ...e, carga: { tipo: 'sin-a3', intencion: e.carga.tipo === 'lista' ? 'abrir' : e.carga.intencion }, problema: null, aviso: null };
     case 'carga-lista': {
       const intencion = e.carga.tipo === 'lista' ? 'abrir' : e.carga.intencion;
       const h = habilitacion(ev.vista);

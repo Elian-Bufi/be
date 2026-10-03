@@ -16,6 +16,13 @@
  *     achica la ventana (validación de la APK 0.11.2: el teclado tapaba el campo «Reps» de «Corregir registro»).
  *  5. Barra inferior (Dirección, 2026-10-01): las cinco zonas, la zona madre de cada subpantalla, «atrás» hacia
  *     Nutrición desde las zonas principales, y la barra fija abajo, accesible y fuera del camino del teclado.
+ *  6. Sesión (prueba de la 0.13.1: la APK volvía a la bienvenida). Si Android recrea la actividad, por ejemplo al
+ *     cambiar el tamaño de letra, la raíz encuentra la sesión y la pantalla que seguían en el proceso. Una sesión que
+ *     venció mientras tanto se informa como vencida, y una sesión olvidada no vuelve. Nada va a disco: lo fija
+ *     `sesion-en-memoria.ts`, que no importa ningún almacenamiento.
+ *  7. Altura de las zonas (candidata 0.13.2): desde que cada zona verifica antes de mostrar, el contenido llega cuando la
+ *     API confirma. Volver a una zona la deja a la altura en que se la dejó aunque eso tarde más de 1,5 s, salvo que la
+ *     persona haya movido la pantalla o hayan pasado 10 s.
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -258,4 +265,104 @@ test('cada destino de la barra es una pestaña accesible de 48 dp o más, respet
   for (const nombre of ['hoy', 'entrenamiento', 'historial-de-entrenamiento', 'mi-evolucion', 'mis-solicitudes']) {
     assert.doesNotMatch(CUENTA, new RegExp(`ir\\(\\{ nombre: '${nombre}' \\}\\)`), `Cuenta todavía abre «${nombre}»`);
   }
+});
+
+// ─── 6. Sesión: sobrevive a que Android recree la actividad, nunca a que se la olvide ──────────────────────────────
+const memoria = await import('../apps/mobile/src/sesion-en-memoria.ts');
+
+const DOCE_HORAS = 12 * 3_600_000;
+const INICIO = { token: 'token-sintetico', identidadId: 'identidad-sintetica', expiresAt: '2026-10-04T00:00:00.000Z', fechaDelServidor: 'Sat, 03 Oct 2026 12:00:00 GMT' };
+
+test('6 · la vigencia sale de la API y del reloj del servidor: un reloj del teléfono corrido no la cambia', () => {
+  // El teléfono atrasa una hora y la cuenta sigue siendo la del servidor: doce horas desde el inicio de sesión.
+  const sesion = memoria.crearSesion(INICIO, 1_000, Date.parse('2026-10-03T11:00:00Z'));
+  assert.equal(sesion.vigenciaMs, DOCE_HORAS);
+  assert.equal(memoria.restanteMs(sesion, 1_000, Date.parse('2026-10-03T11:00:00Z')), DOCE_HORAS);
+  // El tiempo que pasa se mide con el reloj monótono; el de pared puede saltar sin efecto.
+  assert.equal(memoria.restanteMs(sesion, 1_000 + DOCE_HORAS - 1, Date.parse('2030-01-01T00:00:00Z')), 1);
+  assert.equal(memoria.restanteMs(sesion, 1_000 + DOCE_HORAS, 0), 0);
+});
+
+test('6 · sin la cabecera Date, o con una vigencia increíble, se compara con el reloj del teléfono y el aviso no dice la duración', () => {
+  const sinFecha = memoria.crearSesion({ ...INICIO, fechaDelServidor: null }, 0, Date.parse('2026-10-03T12:00:00Z'));
+  assert.equal(sinFecha.vigenciaMs, null);
+  assert.equal(memoria.restanteMs(sinFecha, 999_999_999, Date.parse('2026-10-03T23:00:00Z')), 3_600_000);
+  assert.equal(memoria.avisoDeVencimiento(sinFecha), 'Tu sesión venció. Iniciá sesión para continuar.');
+  const increible = memoria.crearSesion({ ...INICIO, fechaDelServidor: 'Thu, 01 Jan 2026 00:00:00 GMT' }, 0, 0);
+  assert.equal(increible.vigenciaMs, null);
+});
+
+test('6 · el aviso de vencimiento dice cuánto duraba esa sesión, según la API', () => {
+  assert.equal(memoria.avisoDeVencimiento({ vigenciaMs: DOCE_HORAS }), 'Tu sesión venció: duraba 12 horas. Iniciá sesión para continuar.');
+  assert.equal(memoria.avisoDeVencimiento({ vigenciaMs: 3_600_000 }), 'Tu sesión venció: duraba 1 hora. Iniciá sesión para continuar.');
+  assert.equal(memoria.avisoDeVencimiento(null), 'Tu sesión venció. Iniciá sesión para continuar.');
+});
+
+test('6 · la raíz encuentra la sesión y la pantalla que seguían en el proceso; vencida, lo dice con su sesión; olvidada, no vuelve', () => {
+  assert.deepEqual(memoria.sesionAlMontar(0, 0), { estado: 'ninguna' }, 'proceso nuevo: no hay sesión ni motivo');
+  const sesion = memoria.crearSesion(INICIO, 1_000, Date.parse('2026-10-03T12:00:00Z'));
+  memoria.recordarSesion(sesion, { nombre: 'mi-evolucion' });
+  assert.deepEqual(memoria.sesionAlMontar(1_000 + 60_000, 0), { estado: 'vigente', sesion, ruta: { nombre: 'mi-evolucion' } });
+  assert.deepEqual(memoria.sesionAlMontar(1_000 + DOCE_HORAS, 0), { estado: 'vencida', sesion });
+  memoria.olvidarSesion();
+  assert.deepEqual(memoria.sesionAlMontar(1_000, 0), { estado: 'ninguna' });
+});
+
+test('6 · con el teléfono dormido el reloj monótono se detiene: si el de pared dice que pasó la vigencia, la sesión «quizás venció» y no se declara', () => {
+  const sesion = memoria.crearSesion(INICIO, 1_000, Date.parse('2026-10-03T12:00:00Z'));
+  // Toda la noche dormido: el monótono avanzó 5 minutos; el de pared, 13 horas.
+  assert.ok(memoria.restanteMs(sesion, 1_000 + 300_000, Date.parse('2026-10-04T01:00:00Z')) > 0, 'no se declara vencida');
+  assert.equal(memoria.quizasVencida(sesion, Date.parse('2026-10-04T01:00:00Z')), true, 'pero no se muestra nada sin preguntar');
+  assert.equal(memoria.quizasVencida(sesion, Date.parse('2026-10-03T13:00:00Z')), false);
+});
+
+test('6 · la sesión en memoria no toca ningún almacenamiento del teléfono', () => {
+  const fuente = readFileSync(resolve(RAIZ, 'apps/mobile/src/sesion-en-memoria.ts'), 'utf8');
+  const importaciones = fuente.split('\n').filter((l) => /^import /.test(l));
+  assert.deepEqual(importaciones, ["import type { Ruta } from './navegacion';"]);
+  assert.doesNotMatch(fuente, /AsyncStorage|SecureStore|localStorage/);
+});
+
+// ─── 7. Altura de las zonas: volver deja la zona donde estaba, aunque la verificación tarde ───────────────────────
+
+const altura = await import('../apps/mobile/src/altura-de-las-zonas.ts');
+
+test('la zona vuelve a su altura aunque la API confirme después de 1,5 s (la red del teléfono)', () => {
+  const r = altura.crearRestauracionDeAltura();
+  r.pedir(900, 0);
+  // Mientras se verifica, se ve el esqueleto: no alcanza la altura y se espera.
+  assert.equal(r.alCambiarElAlto(700, 300), null);
+  // La API confirma a los 2,4 s y aparece el contenido.
+  assert.equal(r.alCambiarElAlto(2600, 2400), 900);
+  // Una sola vez: lo que crezca después no vuelve a mover la pantalla.
+  assert.equal(r.alCambiarElAlto(3000, 2500), null);
+});
+
+test('si la persona mueve la pantalla mientras espera, manda ella', () => {
+  const r = altura.crearRestauracionDeAltura();
+  r.pedir(900, 0);
+  r.alArrastrar();
+  assert.equal(r.alCambiarElAlto(2600, 2400), null);
+});
+
+test('pasado el tope, un contenido tardío no mueve la pantalla (un «Reintentar» a los 20 s)', () => {
+  const r = altura.crearRestauracionDeAltura();
+  r.pedir(900, 0);
+  assert.equal(r.alCambiarElAlto(2600, altura.TOPE_DE_LA_ESPERA_MS + 1), null);
+  assert.equal(r.alCambiarElAlto(2600, 20_000), null);
+});
+
+test('una zona que se dejó arriba, o una pantalla que no es zona, abre arriba sin esperar nada', () => {
+  const r = altura.crearRestauracionDeAltura();
+  r.pedir(0, 0);
+  assert.equal(r.alCambiarElAlto(2600, 100), null);
+});
+
+test('la raíz de la APK usa la restauración y la descarta cuando la persona arrastra', () => {
+  const APP = readFileSync(resolve(RAIZ, 'apps/mobile/App.tsx'), 'utf8');
+  assert.match(APP, /crearRestauracionDeAltura/);
+  assert.match(APP, /onScrollBeginDrag=\{restauracion\.alArrastrar\}/);
+  assert.match(APP, /restauracion\.pedir\(/);
+  assert.match(APP, /restauracion\.alCambiarElAlto\(/);
+  assert.doesNotMatch(APP, /Date\.now\(\) \+ 1500/, 'el plazo fijo de 1,5 s dejaba la zona arriba con la red del teléfono');
 });

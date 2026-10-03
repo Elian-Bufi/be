@@ -13,7 +13,8 @@ export function PantallaDeLogin({
 }: {
   aviso?: string;
   /** El identificador de la identidad solo sirve para mostrar lo propio (por ejemplo, los vínculos donde es asesorado). */
-  alIniciar: (token: string, expiresAt: string, identidadId: string) => void;
+  /** `fechaDelServidor`: la cabecera `Date` de la respuesta, para medir la vigencia contra el reloj del servidor. */
+  alIniciar: (token: string, expiresAt: string, identidadId: string, fechaDelServidor: string | null) => void;
   irARegistro: () => void;
 }) {
   const [correo, setCorreo] = useState('');
@@ -30,7 +31,7 @@ export function PantallaDeLogin({
     setEnviando(false);
     if (r.ok) {
       setContrasena('');
-      return alIniciar(r.datos.data.session.accessToken, r.datos.data.session.expiresAt, r.datos.data.actor.identityId);
+      return alIniciar(r.datos.data.session.accessToken, r.datos.data.session.expiresAt, r.datos.data.actor.identityId, r.fechaDelServidor ?? null);
     }
     if (r.tipo === 'RED') return setError(COPY.resultadoIncierto);
     if (r.codigo === 'RATE_LIMITED') return setError(COPY.demasiadosIntentos);
