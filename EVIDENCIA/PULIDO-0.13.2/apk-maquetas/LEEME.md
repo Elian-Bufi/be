@@ -46,3 +46,11 @@ candidata 0.13.2 (ver la lista de abajo).
 5. Las fichas de peso, talla y diámetros óseos, y las filas compactas.
 6. El encabezado más bajo con letra grande, y las etiquetas de la barra inferior sin pegarse.
 7. El selector de colores de Cuenta, en píldoras.
+
+## Cómo se rehacen las maquetas de después
+
+Desde la raíz, con Node 22 y el dominio construido:
+```
+node herramientas/maqueta-figura.mjs <ancho> <HOMBRE|MUJER> <PERIMETROS|PLIEGUES> <azul-noche|claro> <escala de letra> <salida.html>
+```
+La página dice arriba, en rojo, que es una maqueta.
