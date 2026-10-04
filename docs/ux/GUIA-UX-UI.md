@@ -109,8 +109,11 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
   - Una revocación hecha en otro dispositivo se conoce en el próximo contacto con la API: al entrar a una zona, al
     volver del segundo plano o al escribir.
 - **Las vistas de una zona van en pestañas** (`Segmentos`) cuando la zona tiene tareas distintas sobre los mismos
-  datos. En «Mi evolución» son tres: Toma, Comparar y Evolución. La pestaña elegida se recuerda en la sesión, igual que la
-  toma elegida en el selector T1, T2, T3 (DL-117).
+  datos. En «Mi evolución» son cuatro: Mapa corporal, Indicadores, Comparar y Evolución. La pestaña elegida se recuerda en
+  la sesión, igual que la toma elegida en el selector T1, T2, T3 y la medida elegida, que es la misma en el mapa, en los
+  indicadores y en Evolución (DL-117).
+- **Un gráfico chico dice cómo se lee su eje.** Si los puntos van por orden de toma y no por tiempo, la pantalla lo dice,
+  y el gráfico rotula sus extremos (T1 … T6). No une puntos ni rellena huecos, y su ancho es el del lugar: no desborda.
 
 **Website**
 - Adentro de un asesorado, una pestaña por dominio.
