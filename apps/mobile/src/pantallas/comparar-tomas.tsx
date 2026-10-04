@@ -1,9 +1,10 @@
 /**
- * APK · «Mi evolución» → Comparar: la última toma frente a la anterior comparable (tanda del 2026-10-03).
+ * APK · «Mi evolución» → Comparar: la toma elegida frente a la anterior comparable (tanda del 2026-10-03; desde DL-117,
+ * cualquier toma del período, elegida en el selector T1, T2, T3…).
  *
- * Reusa la comparación que ya hace el dominio (`ultimaToma`). Cada medida va con la anterior **del mismo grupo de
- * comparabilidad**: mismo protocolo, método y unidad (REG-06-162/164). La pareja es la que define la API. No hay un
- * selector de otras tomas, porque el contrato no lo sostiene.
+ * Reusa la comparación que ya hace el dominio (`tomaDe`). Cada medida va con la anterior **del mismo grupo de
+ * comparabilidad**: mismo protocolo, método y unidad (REG-06-162/164), de una evaluación anterior a la elegida. Las tomas
+ * se reconstruyen por evaluación, nunca por fecha (D-3 en docs/ux/INICIO-Y-NAVEGACION.md).
  * - Arriba, las dos fechas. Si una medida se comparó con otra fecha, su fila lo dice.
  * - Cada fila: el valor de ahora, el anterior y la diferencia, con sus unidades. La diferencia es una resta con signo,
  *   sin color de «mejor» o «peor» (TEST-PRJ-009).
@@ -28,17 +29,18 @@ import { Aviso, Ayuda, Cifra, estilosPorTema, Parrafo, Rotulo } from '../ui';
 
 const FAMILIAS: readonly FamiliaDeMedicion[] = ['MASA_Y_ESTATURA', 'PERIMETROS', 'PLIEGUES', 'DIAMETROS', 'OTRAS'];
 
-export function CompararTomas({ toma }: { toma: UltimaToma }) {
+/** `etiqueta`: la de la toma elegida en el selector («T3»). Sin selector, la toma es la última. */
+export function CompararTomas({ toma, etiqueta }: { toma: UltimaToma; etiqueta?: string }) {
   if (!toma.fechaAnterior) return <Aviso tipo="info" titulo={COPY_ANTROPOMETRIA.sinTomaAnterior} />;
   return (
     <View>
       <View style={estilos.fechas} accessible accessibilityLabel={`${COPY_ANTROPOMETRIA.tomaDel} ${fechaCivil(toma.fecha)} ${COPY_ANTROPOMETRIA.comparadaConLaDel} ${fechaCivil(toma.fechaAnterior)}`}>
         <View style={estilos.fecha}>
-          <Text style={estilos.rotuloDeFecha}>AHORA</Text>
+          <Text style={estilos.rotuloDeFecha}>{etiqueta ? `TOMA ${etiqueta}` : 'ÚLTIMA TOMA'}</Text>
           <Text style={estilos.textoDeFecha}>{fechaCivil(toma.fecha)}</Text>
         </View>
         <View style={estilos.fecha}>
-          <Text style={estilos.rotuloDeFecha}>ANTES</Text>
+          <Text style={estilos.rotuloDeFecha}>ANTERIOR</Text>
           <Text style={estilos.textoDeFecha}>{fechaCivil(toma.fechaAnterior)}</Text>
         </View>
       </View>

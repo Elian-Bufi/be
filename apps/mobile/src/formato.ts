@@ -40,6 +40,11 @@ export function msHastaElProximoDia(zona: string, ahora: Date = new Date()): num
   return Math.max(1000, 86_400_000 - transcurrido + 500);
 }
 
+const diaCortoCivil = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+/** Una fecha civil corta, sin año ni punto: «25 jul». Para el selector de tomas, donde el año ya está en el período. */
+export const fechaCorta = (fechaLocal: string): string => diaCortoCivil.format(new Date(`${fechaLocal.slice(0, 10)}T00:00:00Z`)).replace(/\./g, '');
+
 const diaLargoCivil = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
 
 /** Una fecha civil con el día de la semana, para el saludo de Inicio: «Domingo, 4 de octubre». Sin desplazar el día. */
