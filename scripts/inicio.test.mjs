@@ -118,15 +118,33 @@ test('actividad: cuenta por la condición vigente, con las correcciones aplicada
           ejecucion('d', 'COMPLETED', ['NOT_COMPLETED']),
           // Corregida dos veces: rige la última.
           ejecucion('e', 'NOT_COMPLETED', ['COMPLETED_WITH_DEVIATION', 'COMPLETED']),
+          // Con correcciones que no se pueden ordenar: rige el original, y no se presenta como corregida.
+          { ...ejecucion('f', 'COMPLETED', ['NOT_COMPLETED']), effectiveView: { kind: 'NOT_RESOLVABLE' } },
         ],
       },
     }),
   });
   const periodo = { periodStart: '2026-09-05', periodEnd: '2026-10-04' };
   const r = await inicio.leerActividadDeEntrenamiento(api, 't', periodo);
-  assert.deepEqual(r.datos, { periodo: { desde: '2026-09-05', hasta: '2026-10-04' }, registradas: 5, realizadas: 2, conDesvio: 1, noRealizadas: 2, corregidas: 2 });
+  assert.deepEqual(r.datos, { periodo: { desde: '2026-09-05', hasta: '2026-10-04' }, registradas: 6, realizadas: 3, conDesvio: 1, noRealizadas: 2, corregidas: 2, sinOrdenar: 1 });
   assert.deepEqual(pedidos[0].args[1], periodo);
   assert.deepEqual(await inicio.leerActividadDeEntrenamiento(clienteDePrueba({ misEjecucionesDeEntrenamiento: SIN_A3 }).api, 't', periodo), SIN_A3);
+});
+
+test('actividad: si para la API el último día todavía es mañana (reloj adelantado), se pide una vez más, un día antes', async () => {
+  const futuro = { ok: false, tipo: 'API', status: 400, codigo: 'INVALID_REQUEST', issues: [{ code: 'PERIOD_IN_FUTURE', path: 'periodEnd' }] };
+  const respuestas = [futuro, ok({ data: { period: {}, executions: [ejecucion('a', 'COMPLETED')] } })];
+  const { api, pedidos } = clienteDePrueba({ misEjecucionesDeEntrenamiento: () => respuestas.shift() });
+  const r = await inicio.leerActividadDeEntrenamiento(api, 't', { periodStart: '2026-09-06', periodEnd: '2026-10-05' });
+  assert.deepEqual(pedidos.map((p) => p.args[1]), [
+    { periodStart: '2026-09-06', periodEnd: '2026-10-05' },
+    { periodStart: '2026-09-05', periodEnd: '2026-10-04' },
+  ]);
+  assert.deepEqual(r.datos.periodo, { desde: '2026-09-05', hasta: '2026-10-04' }, 'la tarjeta dice el período que la API respondió');
+  // Un segundo rechazo no se reintenta más: se muestra como falla.
+  const siempre = clienteDePrueba({ misEjecucionesDeEntrenamiento: futuro });
+  assert.deepEqual(await inicio.leerActividadDeEntrenamiento(siempre.api, 't', { periodStart: '2026-09-06', periodEnd: '2026-10-05' }), futuro);
+  assert.equal(siempre.pedidos.length, 2);
 });
 
 test('pendientes: pide solo las pendientes, con un tope, y dice si hay más; el A3 se lee y no se supone', async () => {
@@ -292,6 +310,26 @@ test('con letra grande, el título de una tarjeta no parte una palabra y dos acc
   assert.match(TARJETA, /flexBasis: 140 \* Math\.min\(Math\.max\(fontScale, 1\), 2\.2\)/);
   // Si nunca hubo un registro de comida, se dice una sola vez.
   assert.match(fuente('inicio-nutricion.tsx'), /ultimo\.tipo === 'nunca' \? 'Todavía no registraste ninguna comida\.' :/);
+});
+
+test('revisión de la candidata: la figura, «Ver la toma» y las respuestas tardías al abrir un borrador', () => {
+  const FIGURA = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/figura-de-la-toma.tsx'), 'utf8');
+  // Una toma con una sola familia se dibuja con la que tiene, aunque la elegida antes fuera la otra.
+  assert.ok(FIGURA.includes("const familiaVisible: FamiliaDeLaFigura = familia === 'PERIMETROS' ? (hayPerimetros ? 'PERIMETROS' : 'PLIEGUES') : hayPliegues ? 'PLIEGUES' : 'PERIMETROS';"));
+  assert.ok(FIGURA.includes('componerLaFigura({ ancho, sexo, familia: familiaVisible,'));
+  assert.ok(FIGURA.includes('valor={familiaVisible}'), 'el selector Perímetros/Pliegues dice la familia que se ve');
+  // «Ver la toma» desde Inicio abre la última, la que nombra la tarjeta.
+  const EVOLUCION = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/antropometria.tsx'), 'utf8');
+  assert.ok(EVOLUCION.includes("if (vista === 'ultima') memoria.recordarSeleccion<string | null>(token, 'mi-evolucion:toma', null);"));
+  // Una respuesta que llega después de irse de la pantalla no navega: se descarta antes de tocar nada.
+  const ENTRENAMIENTO = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), 'utf8');
+  const respuesta = ENTRENAMIENTO.indexOf('const r = await api.abrirBorradorDeEjecucion(token, o.occurrenceId);');
+  const descarte = ENTRENAMIENTO.indexOf('if (!montada.current) return;', respuesta);
+  const primerUso = ENTRENAMIENTO.indexOf('setAbriendo(false);', respuesta);
+  assert.ok(respuesta > 0 && descarte > respuesta && descarte < primerUso, 'el descarte va antes de usar la respuesta');
+  // A la medianoche, el temporizador espera por si el reloj del teléfono va adelantado.
+  const DIA = readFileSync(resolve(RAIZ, 'apps/mobile/src/dia-de-la-api.ts'), 'utf8');
+  assert.ok(DIA.includes('msHastaElProximoDia(ZONA_DE_LA_API) + MARGEN_DEL_RELOJ_MS'));
 });
 
 test('el saludo es neutro y no hay marcas de progreso', () => {

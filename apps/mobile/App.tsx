@@ -39,7 +39,7 @@ import { crearRegistroDeCambios, salirConCuidado } from './src/registro-de-cambi
 import { Cargando } from './src/estados';
 import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lecturas';
 import { MenuAuxiliar } from './src/menu-auxiliar';
-import { alIniciarSesion, anterior, esRaiz, navegar, pestanaActiva, requiereSesion, traePedido, type ModoDeNavegacion, type Ruta, type Salida } from './src/navegacion';
+import { alIniciarSesion, anterior, esRaiz, mismaPantalla, navegar, pestanaActiva, requiereSesion, traePedido, type ModoDeNavegacion, type Ruta, type Salida } from './src/navegacion';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
 import { PantallaDeCuenta } from './src/pantallas/cuenta';
@@ -171,7 +171,15 @@ function Contenido() {
   // el menú o el botón atrás pregunta antes (src/cambios-sin-guardar.tsx).
   const [registroDeCambios] = useState(crearRegistroDeCambios);
   const conCuidado = useCallback((salir: () => void) => salirConCuidado(registroDeCambios, salir, preguntarAntesDeSalir), [registroDeCambios]);
-  const irConCuidado = useCallback((r: Ruta) => conCuidado(() => ir(r)), [conCuidado, ir]);
+  const irConCuidado = useCallback(
+    (r: Ruta) => {
+      // Ir a la pantalla en la que ya se está (tocar su destino en la barra, o el avatar en Cuenta) no la desmonta ni
+      // pierde lo escrito: solo sube, sin preguntar.
+      if (mismaPantalla(navegar(rutaActual.current, r), rutaActual.current)) return ir(r);
+      conCuidado(() => ir(r));
+    },
+    [conCuidado, ir],
+  );
   const volverConCuidado = useCallback(() => conCuidado(volver), [conCuidado, volver]);
   /** El botón atrás de Android: si hay adónde volver, lo consume, aunque la persona elija quedarse. */
   const atras = useCallback(() => {
@@ -407,7 +415,7 @@ function Contenido() {
               {ruta.nombre === 'consentimiento' ? (
                 <PantallaDeConsentimiento key={ruta.vinculoId} token={sesion.token} vinculoId={ruta.vinculoId} salir={salir} ir={ir} volver={volver} subir={subir} />
               ) : null}
-              {ruta.nombre === 'hoy' ? <PantallaDeHoy key={ruta.accion ?? 'hoy'} token={sesion.token} salir={salir} ir={ir} subir={subir} accion={ruta.accion} llevarA={llevarA} /> : null}
+              {ruta.nombre === 'hoy' ? <PantallaDeHoy token={sesion.token} salir={salir} ir={ir} subir={subir} accion={ruta.accion} llevarA={llevarA} /> : null}
               {ruta.nombre === 'plan-actual' ? <PantallaDePlanActual token={sesion.token} salir={salir} /> : null}
               {ruta.nombre === 'registros-nutricionales' ? <PantallaDeRegistros token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'registro-nutricional' ? <PantallaDeRegistroNutricional key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}

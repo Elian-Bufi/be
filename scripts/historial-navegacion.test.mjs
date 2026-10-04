@@ -377,13 +377,29 @@ test('sin pérdidas silenciosas: con algo escrito sin guardar, salir pregunta y 
   assert.deepEqual([salidas.length, preguntas.length, preguntas[0].que], [1, 1, 'el registro de «Almuerzo»']);
   // «Seguir acá»: no se llama a confirmar, y lo escrito sigue declarado.
   assert.equal(registro.pendiente(), 'el registro de «Almuerzo»');
-  // «Salir sin guardar»: sale y olvida lo declarado.
+  // «Salir sin guardar»: sale. Lo declarado no lo borra la pregunta sino la tarjeta, al desmontarse. Antes la pregunta lo
+  // olvidaba: si la pantalla no se desmontaba (tocar la raíz en la que se estaba), lo escrito quedaba sin declarar y la
+  // salida siguiente lo perdía sin preguntar (revisión de la candidata).
   preguntas[0].confirmar();
-  assert.deepEqual([salidas.length, registro.pendiente()], [2, null]);
+  assert.deepEqual([salidas.length, registro.pendiente()], [2, 'el registro de «Almuerzo»']);
+  registro.declarar('comida', null);
+  assert.equal(registro.pendiente(), null, 'la tarjeta se desmontó');
   // Guardar o vaciar los campos deja de declararlo.
   registro.declarar('serie', 'lo que cargaste en «Sentadilla»');
   registro.declarar('serie', null);
   assert.equal(registro.pendiente(), null);
+});
+
+test('sin pérdidas silenciosas: ir a la pantalla en la que ya se está no pregunta ni la desmonta', () => {
+  // Tocar «Nutrición» estando en Nutrición, también si se llegó desde «Registrar» en Inicio: es la misma pantalla.
+  for (const actual of [{ nombre: 'hoy' }, { nombre: 'hoy', accion: 'registrar' }]) {
+    assert.ok(nav.mismaPantalla(nav.navegar(actual, { nombre: 'hoy' }), actual), JSON.stringify(actual));
+  }
+  const cuenta = nav.navegar({ nombre: 'inicio' }, { nombre: 'cuenta' });
+  assert.ok(nav.mismaPantalla(nav.navegar(cuenta, { nombre: 'cuenta' }), cuenta), 'el avatar estando en Cuenta');
+  assert.match(APP, /if \(mismaPantalla\(navegar\(rutaActual\.current, r\), rutaActual\.current\)\) return ir\(r\);/);
+  // Nutrición no se vuelve a montar al perder el pedido de una sola vez: lo escrito en una comida sigue ahí.
+  assert.doesNotMatch(APP, /<PantallaDeHoy key=/);
 });
 
 test('sin pérdidas silenciosas: la barra, el avatar, el menú, volver y el botón atrás preguntan; los formularios declaran lo escrito', () => {

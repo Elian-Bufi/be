@@ -116,6 +116,10 @@ Una pantalla con algo escrito y sin guardar lo declara (`useCambiosSinGuardar`, 
 Salir por la barra, la cabecera, el avatar, el menú o el botón atrás pregunta antes, con el diálogo del sistema:
 «Seguir acá» o «Salir sin guardar». Lo que una pantalla hace por sí misma (registrar y pasar al detalle, ir a
 Privacidad desde un aviso) lo decide esa pantalla, y que la sesión termine no pregunta.
+- Ir a la pantalla en la que ya se está (tocar su destino en la barra, o el avatar en Cuenta) no pregunta: no la
+  desmonta ni pierde nada, solo sube.
+- Lo declarado lo borra cada pantalla al desmontarse, no la pregunta. Si la pregunta lo borrara y la pantalla siguiera
+  montada, la salida siguiente perdería lo escrito sin preguntar.
 
 | Pantalla | Qué declara |
 |---|---|
@@ -162,7 +166,7 @@ recalcular y redibujar, no pedir. Contado con un cliente que anota cada pedido (
 | Elegir el día del plan en la tarjeta | **1 o 2** | NUT-14 con el día elegido, y NUT-16-LISTA si hoy no hay registros |
 | Volver del segundo plano con Inicio abierto | Las mismas | Cada tarjeta confirma de nuevo, con lo confirmado a la vista mientras tanto (G3) |
 | «Reintentar» en una tarjeta | Solo las de esa tarjeta | Las demás no se tocan |
-| A la medianoche, con Inicio abierto | Las de las tarjetas de hoy y la de la actividad | Cambia el día de la API, y con él sus claves (`useDiaDeLaApi`) |
+| A la medianoche, con Inicio abierto | Las de las tarjetas de hoy y la de la actividad | Cambia el día de la API, y con él sus claves (`useDiaDeLaApi`), 5 s después de la medianoche del teléfono por si su reloj va adelantado. Si la API igual responde que el período termina mañana, la actividad pide una vez más, un día antes |
 
 **Entorno de la medición.** Se contó con un cliente de prueba que anota cada pedido, sobre las mismas funciones de lectura
 que usan las tarjetas (`scripts/inicio.test.mjs`, sección 4). No se midió en el teléfono ni contra la API de test: esta

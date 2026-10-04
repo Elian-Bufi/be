@@ -127,6 +127,9 @@ export function ActividadDeEntrenamiento({ token, dia, sesionPerdida, ir }: { to
           {a.corregidas > 0 ? (
             <Parrafo tenue>{`${numero(a.corregidas)} ${a.corregidas === 1 ? 'sesión tiene una corrección: cuenta como quedó corregida.' : 'sesiones tienen una corrección: cuentan como quedaron corregidas.'}`}</Parrafo>
           ) : null}
+          {a.sinOrdenar > 0 ? (
+            <Parrafo tenue>{`${numero(a.sinOrdenar)} ${a.sinOrdenar === 1 ? 'sesión tiene correcciones que no se pueden ordenar: cuenta como se registró.' : 'sesiones tienen correcciones que no se pueden ordenar: cuentan como se registraron.'} El detalle está en Tu historial.`}</Parrafo>
+          ) : null}
         </>
       );
   }

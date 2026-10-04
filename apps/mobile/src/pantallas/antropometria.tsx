@@ -86,6 +86,8 @@ export function PantallaDeMiEvolucion({
   // El pedido se fija como elección antes del primer dibujo; después manda lo que elija la persona.
   useState(() => {
     if (vista) memoria.recordarSeleccion(token, 'mi-evolucion:vista', VISTA_PEDIDA[vista]);
+    // «Ver la toma» desde Inicio abre la última, la que nombra la tarjeta, aunque antes se haya elegido otra.
+    if (vista === 'ultima') memoria.recordarSeleccion<string | null>(token, 'mi-evolucion:toma', null);
     if (metrica) memoria.recordarSeleccion(token, 'mi-evolucion:medida', metrica);
     return null;
   });

@@ -76,6 +76,27 @@ Las etiquetas crecen hasta 1,15 veces: desde ahí, la letra del sistema ya no la
 | En una solicitud abierta desde Inicio, «Volver a Información» llevaba a Inicio, sin preguntar por lo escrito | Sí, en el código | Va a Información y pregunta si hay respuestas sin enviar |
 | Etiquetas de la barra cortadas en 360 dp con letra ×2 | **No**: era un error del primer emulador, que ajustaba cada etiqueta por separado y medía en píxeles enteros | El emulador se rehízo en dos fases y con medidas con decimales |
 
+## Revisión independiente del código
+
+Una revisión aparte del diff completo encontró tres defectos confirmados y tres plausibles. Están corregidos, con
+pruebas en `scripts/historial-navegacion.test.mjs` y `scripts/inicio.test.mjs`.
+
+| Hallazgo | Corrección |
+|---|---|
+| Tocar «Nutrición» estando en Nutrición con una comida a medio escribir preguntaba sin motivo. Si se elegía salir, lo escrito quedaba sin declarar, y la salida siguiente lo perdía sin preguntar | Ir a la misma pantalla no pregunta. Lo declarado lo borra cada pantalla al desmontarse, no la pregunta. Nutrición no se vuelve a montar al perder el pedido de una sola vez |
+| Con el selector de tomas, pasar a una toma que solo tiene la otra familia dejaba la silueta vacía | La figura dibuja la familia que la toma tiene |
+| «Ver la toma» desde Inicio podía abrir otra toma elegida antes | Abre la última, la que nombra la tarjeta |
+| Una respuesta tardía de «Comenzar sesión» movía a la persona aunque ya se hubiera ido de la pantalla o de la sesión | Se descarta si la tarjeta ya no está |
+| A la medianoche, con el reloj del teléfono adelantado, «hoy» se pedía cuando para la API todavía era ayer, y la actividad recibía «período en el futuro» | 5 s de margen después de la medianoche, y la actividad pide una vez más, un día antes |
+| Una sesión con correcciones que no se pueden ordenar se contaba como «corregida» | Se cuenta aparte, como se registró |
+
+Sin hallazgos en el resto de lo revisado:
+- `navegar` y `anterior`: 12 000 recorridos al azar, sin ciclos y con el tope respetado;
+- las reglas de los hooks;
+- las carreras de las lecturas;
+- `ultimaToma`: comparada con la versión anterior en 20 000 casos, da lo mismo salvo un empate exacto de instantes;
+- la accesibilidad.
+
 ## Lo que hay que mirar en el teléfono
 
 1. La barra en un teléfono angosto con la letra al máximo: las cinco etiquetas enteras.

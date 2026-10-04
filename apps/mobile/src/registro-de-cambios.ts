@@ -29,14 +29,14 @@ export function crearRegistroDeCambios(): RegistroDeCambios {
 }
 
 /**
- * Sale enseguida si no hay nada escrito sin guardar. Si hay, pregunta, y sale solo si la persona lo confirma: entonces
- * olvida lo declarado, porque la pantalla que lo tenía se va.
+ * Sale enseguida si no hay nada escrito sin guardar. Si hay, pregunta, y sale solo si la persona lo confirma.
+ *
+ * Al confirmar no se olvida lo declarado: lo borra cada pantalla al desmontarse. Si se olvidara acá y la pantalla no se
+ * desmontara, quedaría lo escrito sin declarar, y la salida siguiente lo perdería sin preguntar (revisión de la
+ * candidata: tocar la raíz en la que ya se estaba).
  */
 export function salirConCuidado(registro: RegistroDeCambios, salir: () => void, preguntar: (que: string, confirmar: () => void) => void): void {
   const que = registro.pendiente();
   if (!que) return salir();
-  preguntar(que, () => {
-    registro.olvidar();
-    salir();
-  });
+  preguntar(que, salir);
 }

@@ -99,6 +99,9 @@ export function FiguraDeLaToma({ medidas }: { medidas: readonly MedidaDeLaToma[]
   const hayPerimetros = TARJETAS_DE_PERIMETROS.ENTERO.flat().some((c) => conValor.has(c));
   const hayPliegues = TARJETAS_DE_PLIEGUES.ENTERO.flat().some((c) => conValor.has(c));
   const [familia, setFamilia] = useState<FamiliaDeLaFigura>(hayPerimetros ? 'PERIMETROS' : 'PLIEGUES');
+  // La familia que se dibuja: la elegida, si la toma la tiene; si no, la otra. Con el selector de tomas (DL-117), la
+  // elección sobrevive al cambio de toma, y una toma con una sola familia dejaba la silueta vacía (revisión de la candidata).
+  const familiaVisible: FamiliaDeLaFigura = familia === 'PERIMETROS' ? (hayPerimetros ? 'PERIMETROS' : 'PLIEGUES') : hayPliegues ? 'PLIEGUES' : 'PERIMETROS';
   const [ancho, setAncho] = useState(0);
   const [elegida, setElegida] = useState<ClaveDeLaLamina | null>(null);
   // Los sitios que quedaron casi juntos bajo el último toque: la pantalla lo dice en vez de elegir uno al azar.
@@ -118,7 +121,7 @@ export function FiguraDeLaToma({ medidas }: { medidas: readonly MedidaDeLaToma[]
     setSexo(s);
     AsyncStorage.setItem(CLAVE_DE_LA_FIGURA, s).catch(() => undefined);
   };
-  const composicion = ancho > 0 ? componerLaFigura({ ancho, sexo, familia, medidas, escalaDeLetra: fontScale }) : null;
+  const composicion = ancho > 0 ? componerLaFigura({ ancho, sexo, familia: familiaVisible, medidas, escalaDeLetra: fontScale }) : null;
   const lamina = laminaDe(tema);
   // La elegida vale solo si está en la familia que se ve.
   const sitioElegido = composicion?.sitios.find((x) => x.clave === elegida) ?? null;
@@ -143,7 +146,7 @@ export function FiguraDeLaToma({ medidas }: { medidas: readonly MedidaDeLaToma[]
             { valor: 'PERIMETROS', texto: COPY_ANTROPOMETRIA.perimetrosEnLaFigura },
             { valor: 'PLIEGUES', texto: COPY_ANTROPOMETRIA.plieguesEnLaFigura },
           ]}
-          valor={familia}
+          valor={familiaVisible}
           alElegir={setFamilia}
         />
       ) : null}

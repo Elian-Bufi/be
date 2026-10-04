@@ -40,7 +40,7 @@ import {
   type Resultado,
   type SesionDeOcurrencia,
 } from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { api } from '../api';
 import { useCambiosSinGuardar } from '../cambios-sin-guardar';
@@ -195,11 +195,22 @@ export function useAbrirOcurrencia({
 }) {
   const [abriendo, setAbriendo] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
+  // Si la persona se fue de la pantalla, o salió de la sesión, mientras se abría el borrador, la respuesta no la mueve:
+  // una respuesta tardía no se muestra ni navega (revisión de la candidata). El borrador queda abierto en la API, y
+  // «Continuar sesión» lo retoma.
+  const montada = useRef(true);
+  useEffect(() => {
+    montada.current = true;
+    return () => {
+      montada.current = false;
+    };
+  }, []);
 
   async function abrir() {
     setAbriendo(true);
     setFallo(null);
     const r = await api.abrirBorradorDeEjecucion(token, o.occurrenceId);
+    if (!montada.current) return;
     setAbriendo(false);
     if (sesionPerdida(r)) return;
     if (!r.ok) {

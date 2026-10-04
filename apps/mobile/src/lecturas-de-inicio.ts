@@ -82,31 +82,56 @@ export interface ActividadDeEntrenamiento {
   readonly realizadas: number;
   readonly conDesvio: number;
   readonly noRealizadas: number;
-  /** Cuántas de las registradas tienen al menos una corrección. Su condición ya es la corregida. */
+  /** Cuántas de las registradas rigen por una corrección: su condición ya es la corregida. */
   readonly corregidas: number;
+  /** Cuántas tienen correcciones que no se pueden ordenar (`NOT_RESOLVABLE`): cuentan como se registraron. */
+  readonly sinOrdenar: number;
 }
 
 /** Los días del resumen de actividad: un mes, dentro del tope de la lista (hasta un año). */
 export const DIAS_DE_ACTIVIDAD = 30;
 
+/** El período corrido un día atrás: lo que se pide si para la API el último día todavía es mañana. */
+function unDiaAntes(periodo: { periodStart: string; periodEnd: string }): { periodStart: string; periodEnd: string } {
+  const correr = (fecha: string) => {
+    const d = new Date(`${fecha}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 1);
+    return d.toISOString().slice(0, 10);
+  };
+  return { periodStart: correr(periodo.periodStart), periodEnd: correr(periodo.periodEnd) };
+}
+
+/** La API rechazó el período porque su último día todavía no llegó (400 con `PERIOD_IN_FUTURE`). */
+const esPeriodoFuturo = (r: Resultado<unknown>): boolean => !r.ok && r.tipo === 'API' && r.issues.some((i) => i.code === 'PERIOD_IN_FUTURE');
+
 /**
  * API-TRN-19-LISTA, la lista de «Tu historial», para un período. Se guarda solo el resumen, no las sesiones: Inicio
  * cuenta, y el detalle está en «Tu historial». La condición de cada sesión es la vigente (`registroVigente`): una sesión
- * corregida cuenta como quedó después de la corrección.
+ * corregida cuenta como quedó después de la corrección. Una con correcciones que no se pueden ordenar
+ * (`NOT_RESOLVABLE`) cuenta como se registró, y se cuenta aparte.
+ *
+ * Si el reloj del teléfono va adelantado a la medianoche, el período termina en un día que para la API es mañana, y la
+ * API responde `PERIOD_IN_FUTURE`: se pide una vez más, un día antes.
  */
 export async function leerActividadDeEntrenamiento(api: ApiDeInicio, token: string, periodo: { periodStart: string; periodEnd: string }): Promise<Resultado<ActividadDeEntrenamiento>> {
-  const r = await api.misEjecucionesDeEntrenamiento(token, periodo);
+  let pedido = periodo;
+  let r = await api.misEjecucionesDeEntrenamiento(token, pedido);
+  if (esPeriodoFuturo(r)) {
+    pedido = unDiaAntes(periodo);
+    r = await api.misEjecucionesDeEntrenamiento(token, pedido);
+  }
   if (!r.ok) return r;
-  const cuenta = { registradas: 0, realizadas: 0, conDesvio: 0, noRealizadas: 0, corregidas: 0 };
+  const cuenta = { registradas: 0, realizadas: 0, conDesvio: 0, noRealizadas: 0, corregidas: 0, sinOrdenar: 0 };
   for (const x of r.datos.data.executions) {
     cuenta.registradas++;
     const condicion = registroVigente(x).sessionCondition;
     if (condicion === 'COMPLETED') cuenta.realizadas++;
     else if (condicion === 'COMPLETED_WITH_DEVIATION') cuenta.conDesvio++;
     else cuenta.noRealizadas++;
-    if (x.corrections.length > 0) cuenta.corregidas++;
+    if (x.effectiveView.kind === 'CORRECTED') cuenta.corregidas++;
+    else if (x.effectiveView.kind === 'NOT_RESOLVABLE') cuenta.sinOrdenar++;
   }
-  return { ok: true, datos: { periodo: { desde: periodo.periodStart, hasta: periodo.periodEnd }, ...cuenta } };
+  return { ok: true, datos: { periodo: { desde: pedido.periodStart, hasta: pedido.periodEnd }, ...cuenta } };
 }
 
 // ─── Información: lo pendiente de responder ─────────────────────────────────────────────────────
