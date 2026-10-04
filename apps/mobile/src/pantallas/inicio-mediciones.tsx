@@ -12,7 +12,7 @@ import { useLecturaRecordada } from '../lecturas';
 import { medidaDestacada } from '../lecturas-de-inicio';
 import { leerMiEvolucion } from '../lecturas-de-las-zonas';
 import type { Ir } from '../navegacion';
-import { Boton, Cifra, Parrafo } from '../ui';
+import { Ayuda, Boton, Cifra, Parrafo } from '../ui';
 import { Accion, Acciones, estilos, faltaElA3, NoSePudo, SinA3, TarjetaDeInicio, Verificando, type AlPerderLaSesion } from './tarjeta-de-inicio';
 
 /** El resumen de la toma, una vez por respuesta: con la misma respuesta recordada no se recalcula. */
@@ -51,7 +51,6 @@ export function Mediciones({ token, sesionPerdida, ir }: { token: string; sesion
             .join(' · ')}
         </Text>
         {destacada ? <Destacada medida={destacada} /> : null}
-        <Parrafo tenue>Se destaca la primera medida de tu última toma en el orden del catálogo de BE, que empieza por el peso.</Parrafo>
         <Acciones>
           <Accion>
             <Boton texto="Ver la toma" tipo="secundario" onPress={() => ir({ nombre: 'mi-evolucion', vista: 'ultima' })} />
@@ -62,6 +61,12 @@ export function Mediciones({ token, sesionPerdida, ir }: { token: string; sesion
             </Accion>
           ) : null}
         </Acciones>
+        {/* Por qué esa medida: fuera del contenido principal, al ampliar (pulido del 2026-10-04). */}
+        {destacada ? (
+          <Ayuda>
+            <Parrafo tenue>Se destaca la primera medida de tu última toma en el orden del catálogo de BE, que empieza por el peso.</Parrafo>
+          </Ayuda>
+        ) : null}
       </>
     );
   }

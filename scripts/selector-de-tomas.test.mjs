@@ -190,6 +190,8 @@ test('la pantalla dice que el eje de los gráficos chicos es el orden de las tom
   assert.match(sinRaya, /En Evolución, el gráfico de una medida usa las fechas/);
   assert.doesNotMatch(sinRaya, /raya/);
   assert.match(textos.comoSeLeenLosPuntos(tomas, true), /Una raya sobre la base es una toma con esa medida en otro protocolo, método o unidad: no se compara\./);
+  // A la vista va una línea; la explicación completa, en «Cómo se lee».
+  assert.equal(textos.puntosEnUnaLinea(tomas), 'Puntos por toma, de T1 a T3, en orden: no es el tiempo.');
 });
 
 // ─── 4. La pantalla ───────────────────────────────────────────────────────────────────────────────────────────

@@ -37,6 +37,13 @@ export function frasePorToma(estados: readonly EnLaToma[], tomas: readonly TomaD
     .join('; ');
 }
 
+/** Lo esencial de cómo se leen los gráficos chicos, en una línea a la vista: el orden de las tomas, no el tiempo. */
+export function puntosEnUnaLinea(tomas: readonly TomaDelPeriodo[]): string {
+  const primera = tomas[0]?.etiqueta ?? 'T1';
+  const ultima = tomas[tomas.length - 1]?.etiqueta ?? primera;
+  return `Puntos por toma, de ${primera} a ${ultima}, en orden: no es el tiempo.`;
+}
+
 /** Una lista para leer: «T2», «T2 y T3», «T2, T3 y T4». */
 export function enumerar(partes: readonly string[]): string {
   if (partes.length <= 1) return partes[0] ?? '';

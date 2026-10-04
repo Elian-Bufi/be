@@ -6,8 +6,10 @@
  * - cada fila mide lo que su texto necesita con la letra de la persona;
  * - las tarjetas no se superponen y las guías van de su tarjeta a su sitio.
  * - las filas que eligen un sitio dicen al lector de pantalla su rol y si están elegidas (selección coordinada).
- * - mapa corporal: con más de una toma, cada fila lleva su gráfico chico, del ancho exacto de su contenido, sin mover
- *   ningún sitio; y la familia que se dibuja es la que la toma tiene.
+ * - mapa corporal: con más de una toma, cada fila lleva su gráfico chico, sin desbordar ni mover ningún sitio; y la
+ *   familia que se dibuja es la que la toma tiene.
+ * - el encuadre (pulido del 2026-10-04): el cuerpo es grande, empieza arriba, va a la derecha y lo recorta el borde, sin
+ *   dejar afuera ningún sitio; su tamaño no cambia con la cantidad de medidas.
  * El mismo módulo dibuja la APK y la maqueta del navegador.
  *
  * Uso: node --test scripts/composicion-de-la-figura.test.mjs (después de construir @be/domain).
@@ -125,26 +127,71 @@ test('mapa corporal: con más de una toma cada fila lleva su gráfico chico, sin
         assert.ok(Math.abs(s.cx - esperado.cx) < 1e-9 && Math.abs(s.cy - esperado.cy) < 1e-9, `${etiqueta}: ${s.clave} se movió`);
       }
       for (const t of con.tarjetas) {
+        // En una tarjeta, los gráficos tienen todos el mismo ancho: los puntos de cada toma quedan en columna.
+        if (con.modo === 'TARJETAS') assert.equal(new Set(t.filas.map((f) => f.anchoDeLosPuntos)).size, 1, `${etiqueta}: gráficos de anchos distintos en una tarjeta`);
         for (const [i, f] of t.filas.entries()) {
           if (con.modo === 'NUMEROS') {
             assert.equal(f.anchoDeLosPuntos, null, 'con números, el gráfico va en la lista');
             continue;
           }
-          // El ancho del gráfico es el contenido de la fila: la tarjeta sin su relleno ni sus bordes.
-          assert.equal(f.anchoDeLosPuntos, t.ancho - 18, etiqueta);
-          assert.ok(f.anchoDeLosPuntos >= 96, `${etiqueta}: ${f.anchoDeLosPuntos} dp es poco para doce tomas`);
+          // El gráfico cabe en el contenido de la fila (la tarjeta sin su relleno ni sus bordes) y comparte la última
+          // línea con la diferencia.
+          assert.ok(f.anchoDeLosPuntos <= t.ancho - 18, etiqueta);
+          if (f.sitio.diferencia) assert.ok(f.anchoDeLosPuntos + 6 + c.anchoEstimado(f.sitio.diferencia, c.LETRA.detalle * caso.escalaDeLetra) <= t.ancho - 18 + 1, `${etiqueta}: la diferencia de ${f.sitio.clave} no entra junto al gráfico`);
+          assert.ok(f.anchoDeLosPuntos >= 60, `${etiqueta}: ${f.anchoDeLosPuntos} dp es poco para doce tomas`);
           // La fila tiene lugar para su texto con la letra de la persona y, debajo, para el gráfico; y nunca menos de 48 dp.
-          const texto = Math.ceil((f.lineasDelRotulo * c.INTERLINEA.rotulo + c.INTERLINEA.valor) * caso.escalaDeLetra) + 8;
+          const texto = Math.ceil((f.enLinea ? c.INTERLINEA.valor : f.lineasDelRotulo * c.INTERLINEA.rotulo + c.INTERLINEA.valor) * caso.escalaDeLetra) + 8;
           assert.ok(f.alto >= texto + c.ALTO_DE_LOS_PUNTOS && f.alto >= c.ALTO_MINIMO_DE_FILA, `${etiqueta}: la fila no tiene lugar para el gráfico`);
           assert.ok(f.alto >= sin.tarjetas.find((x) => x.filas[0].sitio.clave === t.filas[0].sitio.clave).filas[i].alto, etiqueta);
           const g = graficos.geometriaDePuntos({ ancho: f.anchoDeLosPuntos, alto: c.ALTO_DEL_GRAFICO_EN_LA_FILA, estados: doce, elegida: 11 });
-          for (const p of g.puntos) assert.ok(p.x - p.radio >= 0 && p.x + p.radio <= f.anchoDeLosPuntos && p.y + p.radio <= c.ALTO_DEL_GRAFICO_EN_LA_FILA, `${etiqueta}: doce tomas desbordan la fila`);
+          for (const p of g.puntos) {
+            assert.ok(p.x - p.radio >= 0 && p.x + p.radio <= f.anchoDeLosPuntos && p.y + p.radio <= c.ALTO_DEL_GRAFICO_EN_LA_FILA, `${etiqueta}: doce tomas desbordan la fila`);
+            assert.ok(p.radio >= 1.5, `${etiqueta}: con doce tomas, un punto de ${p.radio} dp ya no se distingue`);
+          }
         }
       }
     }
   }
   // Sin gráficos (una sola toma), las filas no los reservan.
   assert.ok(componer({ sexo: 'HOMBRE', familia: 'PERIMETROS', escalaDeLetra: 1 }).tarjetas.every((t) => t.filas.every((f) => f.anchoDeLosPuntos === null)));
+});
+
+test('encuadre: el cuerpo empieza arriba y no cambia de tamaño con la cantidad de medidas', () => {
+  for (const ancho of [280, 320, 350, 372]) {
+    for (const sexo of ['HOMBRE', 'MUJER']) {
+      for (const familia of ['PERIMETROS', 'PLIEGUES']) {
+        const etiqueta = `${ancho} dp, ${sexo} ${familia}`;
+        const cuerpo = d.FIGURAS_DE_LA_LAMINA[sexo].ENTERO.cuerpo;
+        const todas = c.componerLaFigura({ ancho, sexo, familia, medidas: MEDIDAS, escalaDeLetra: 1, puntos: true });
+        const deLaFamilia = MEDIDAS.filter((m) => m.metrica.startsWith(familia === 'PERIMETROS' ? 'perimetro' : 'pliegue'));
+        const una = c.componerLaFigura({ ancho, sexo, familia, medidas: deLaFamilia.slice(0, 1), escalaDeLetra: 1, puntos: true });
+        // El borde de arriba del cuerpo, en el margen: nunca un hueco encima, ni con muchas tarjetas.
+        assert.ok(Math.abs(todas.imagen.y + (cuerpo.arriba / 100) * todas.imagen.alto - 10) < 1e-9, `${etiqueta}: el cuerpo no empieza arriba`);
+        assert.deepEqual(una.imagen, todas.imagen, `${etiqueta}: sumar medidas cambió el tamaño o el lugar del cuerpo`);
+      }
+    }
+  }
+});
+
+test('encuadre: el borde derecho recorta el cuerpo, pero ningún sitio queda afuera ni debajo de las tarjetas', () => {
+  for (const ancho of [280, 320, 350, 372]) {
+    for (const caso of CASOS) {
+      const etiqueta = `${ancho} dp, ${caso.sexo} ${caso.familia} ×${caso.escalaDeLetra}`;
+      const figura = c.componerLaFigura({ ancho, medidas: MEDIDAS, ...caso, puntos: true });
+      assert.ok(figura.imagen.x + figura.imagen.ancho > ancho, `${etiqueta}: la figura no llega al borde derecho`);
+      const derechaDeLasTarjetas = Math.max(...figura.tarjetas.map((t) => t.x + t.ancho));
+      for (const s of figura.sitios) {
+        // El centro del sitio a la vista: ahí responde el toque y ahí está su dibujo, aunque un anillo del tronco se
+        // corte en el borde. El punto de un pliegue, entero.
+        assert.ok(s.cx > derechaDeLasTarjetas && s.cx < ancho, `${etiqueta}: el centro de ${s.clave} queda fuera de la vista`);
+        assert.ok(s.cy > 0 && s.cy < figura.alto, `${etiqueta}: ${s.clave} queda fuera, arriba o abajo`);
+        if (!s.anillo) assert.ok(s.cx + 7 <= ancho, `${etiqueta}: el punto de ${s.clave} se corta en el borde`);
+        // Donde llega la guía, a la vista y a la derecha de las tarjetas.
+        assert.ok(s.izquierda - 3 > derechaDeLasTarjetas, `${etiqueta}: la guía de ${s.clave} termina debajo de una tarjeta`);
+        assert.equal(c.sitioTocado(figura.sitios, s.cx, s.cy)?.tipo !== undefined, true, `${etiqueta}: tocar ${s.clave} no responde`);
+      }
+    }
+  }
 });
 
 test('la figura dibuja la familia elegida si la toma la tiene; si no, la otra: nunca una silueta vacía', () => {
@@ -176,7 +223,8 @@ test('las filas de las tarjetas miden al menos 48 dp: son objetivos táctiles, y
     for (const t of figura.tarjetas) for (const f of t.filas) assert.ok(f.alto >= c.ALTO_MINIMO_DE_FILA, `${caso.sexo} ${caso.familia} ×${caso.escalaDeLetra}: ${f.sitio.clave} mide ${f.alto}`);
   }
   assert.equal(c.ALTO_MINIMO_DE_FILA, 48);
-  assert.deepEqual(c.LETRA, { rotulo: 12, valor: 15, detalle: 12, ficha: 12 });
+  // El nombre del sitio va a 13 sp (pulido del 2026-10-04: «nombre legible»); antes, 12.
+  assert.deepEqual(c.LETRA, { rotulo: 13, valor: 15, detalle: 12, ficha: 12 });
 });
 
 test('tocar el dibujo de un sitio lo elige; solo los que coinciden de frente quedan sin elección directa', () => {

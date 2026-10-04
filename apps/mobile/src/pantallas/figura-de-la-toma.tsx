@@ -47,13 +47,14 @@ import {
   type SexoDeLaLamina,
 } from '@be/domain';
 import { useEffect, useState } from 'react';
-import { Image, Pressable, Text, useWindowDimensions, View, type ImageSourcePropType } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View, type ImageSourcePropType } from 'react-native';
 import Svg, { Circle, Ellipse, G, Path, Text as TextoSvg } from 'react-native-svg';
 import { useApariencia } from '../apariencia';
 import { ALTO_DEL_GRAFICO_EN_LA_FILA, componerLaFigura, familiaQueSeVe, INTERLINEA, LETRA, sitioTocado, type ComposicionDeLaFigura, type FamiliaDeLaFigura, type FilaDeLaTarjeta, type SitioDeLaFigura } from '../composicion-de-la-figura';
 import { ANILLO_EN_EL_TELEFONO, arcoDeLaElipse, GUIA_EN_EL_TELEFONO, PLIEGUE_EN_EL_TELEFONO, PLIEGUE_POSTERIOR_EN_EL_TELEFONO, trazoDeLaGuia } from '../dibujo-de-la-figura';
 import { PALETAS, type Tema } from '../tema';
 import { Segmentos } from '../ui';
+import { BrilloDeVidrio, sombraDeVidrio } from '../vidrio';
 import type { PuntosDeLaToma } from '../graficos-por-toma';
 import { DetalleDeLaMedida } from './detalle-de-la-medida';
 import { PuntosPorToma } from './puntos-por-toma';
@@ -78,7 +79,18 @@ const TEMA_DE_LA_LAMINA = { claro: 'CLARO', 'azul-noche': 'AZUL' } as const sati
 /** Los colores de la lámina fuera del dibujo: tokens de cada tema (tema.ts), medidos por la prueba de contraste. */
 const laminaDe = (tema: Tema) => {
   const p = PALETAS[tema];
-  return { fondo: p.laminaFondo, tarjeta: p.laminaTarjeta, borde: p.laminaBorde, nombre: p.laminaNombre, valor: p.laminaValor, detalle: p.laminaDetalle, contorno: p.laminaContorno };
+  return {
+    fondo: p.laminaFondo,
+    tarjeta: p.laminaTarjeta,
+    borde: p.laminaBorde,
+    filo: p.laminaFilo,
+    brillo: p.laminaBrillo,
+    sombra: p.sombra,
+    nombre: p.laminaNombre,
+    valor: p.laminaValor,
+    detalle: p.laminaDetalle,
+    contorno: p.laminaContorno,
+  };
 };
 type ColoresDeLamina = ReturnType<typeof laminaDe>;
 
@@ -162,23 +174,34 @@ export function FiguraDeLaToma({
 
   return (
     <View>
-      {hayPerimetros && hayPliegues ? (
-        <Segmentos
-          etiqueta={COPY_ANTROPOMETRIA.medidasDeLaFigura}
-          opciones={[
-            { valor: 'PERIMETROS', texto: COPY_ANTROPOMETRIA.perimetrosEnLaFigura },
-            { valor: 'PLIEGUES', texto: COPY_ANTROPOMETRIA.plieguesEnLaFigura },
-          ]}
-          valor={familiaVisible}
-          alElegir={setFamilia}
-        />
-      ) : null}
-      <View onLayout={(e) => setAncho(Math.round(e.nativeEvent.layout.width))} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        {composicion ? <Lamina composicion={composicion} sexo={sexo} tema={tema} elegida={sitioElegido?.clave ?? null} alternar={alternar} tocar={tocar} puntos={conPuntos ? puntos : null} /> : null}
-        {/* Con números, los valores van acá abajo y crecen con la letra. El lector de pantalla tiene la lista completa
-            de la toma, más abajo en la pantalla, y no recorre esta. */}
-        {composicion?.modo === 'NUMEROS' ? <ListaDeNumeros sitios={composicion.sitios} ficha={composicion.ficha} lamina={lamina} elegida={sitioElegido?.clave ?? null} alternar={alternar} puntos={conPuntos ? puntos : null} /> : null}
+      {/* La lámina: la familia arriba, compacta (una elección del mapa, distinta de las vistas de la pantalla), y debajo
+          la figura. La figura se recorta en el borde derecho de esta caja (ENCUADRE, en composicion-de-la-figura.ts). */}
+      <View style={{ backgroundColor: lamina.fondo, borderRadius: 18, overflow: 'hidden', marginTop: 6, marginBottom: 8 }}>
+        {hayPerimetros && hayPliegues ? (
+          <View style={{ paddingHorizontal: 8, paddingTop: 8 }}>
+            <Segmentos
+              compactos
+              etiqueta={COPY_ANTROPOMETRIA.medidasDeLaFigura}
+              opciones={[
+                { valor: 'PERIMETROS', texto: COPY_ANTROPOMETRIA.perimetrosEnLaFigura },
+                { valor: 'PLIEGUES', texto: COPY_ANTROPOMETRIA.plieguesEnLaFigura },
+              ]}
+              valor={familiaVisible}
+              alElegir={setFamilia}
+            />
+          </View>
+        ) : null}
+        <View onLayout={(e) => setAncho(Math.round(e.nativeEvent.layout.width))} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {composicion ? <Lamina composicion={composicion} sexo={sexo} tema={tema} elegida={sitioElegido?.clave ?? null} alternar={alternar} tocar={tocar} puntos={conPuntos ? puntos : null} /> : null}
+        </View>
       </View>
+      {/* Con números, los valores van acá abajo y crecen con la letra. El lector de pantalla tiene la lista completa de la
+          toma, más abajo en la pantalla, y no recorre esta. */}
+      {composicion?.modo === 'NUMEROS' ? (
+        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <ListaDeNumeros sitios={composicion.sitios} ficha={composicion.ficha} lamina={lamina} elegida={sitioElegido?.clave ?? null} alternar={alternar} puntos={conPuntos ? puntos : null} />
+        </View>
+      ) : null}
       {rotulosJuntos.length > 1 ? (
         <Text style={{ fontSize: 14, lineHeight: 20, color: lamina.detalle, marginBottom: 6 }} accessibilityLiveRegion="polite">
           {`Ahí quedan juntos ${rotulosJuntos.join(' y ')}: tocá su fila para elegir uno.`}
@@ -187,6 +210,7 @@ export function FiguraDeLaToma({
       {sitioElegido ? <DetalleDeLaMedida medida={sitioElegido.medida} rotulo={sitioElegido.rotulo} fechaComparada={fechaComparada} puntos={puntos} verSuEvolucion={verSuEvolucion} /> : null}
       {/* Hombre o mujer, debajo de la figura: es solo cómo se ve el dibujo, no cambia ningún dato. */}
       <Segmentos
+        compactos
         etiqueta={COPY_ANTROPOMETRIA.figura}
         opciones={[
           { valor: 'HOMBRE', texto: COPY_ANTROPOMETRIA.figuraHombre },
@@ -222,7 +246,7 @@ function Lamina({
   const lugar = (dx = 0, dy = 0) => ({ position: 'absolute' as const, left: imagen.x + dx, top: imagen.y + dy, width: imagen.ancho, height: imagen.alto });
 
   return (
-    <View style={{ height: alto, backgroundColor: lamina.fondo, borderRadius: 16, overflow: 'hidden', marginVertical: 8 }}>
+    <View style={{ height: alto, overflow: 'hidden' }}>
       {CORRIMIENTOS_DEL_CONTORNO.map(([dx, dy]) => (
         <Image key={`${dx},${dy}`} source={IMAGEN[sexo]} style={[lugar(dx, dy), { tintColor: lamina.contorno }]} resizeMode="stretch" />
       ))}
@@ -270,8 +294,23 @@ function Lamina({
         ? tarjetas.map((t) => (
             <View
               key={`tarjeta-${t.filas[0]!.sitio.clave}`}
-              style={{ position: 'absolute', left: t.x, top: t.y, width: t.ancho, height: t.alto, paddingVertical: 6, paddingHorizontal: 8, borderRadius: 12, borderWidth: 1, borderColor: lamina.borde, backgroundColor: lamina.tarjeta }}
+              style={{
+                position: 'absolute',
+                left: t.x,
+                top: t.y,
+                width: t.ancho,
+                height: t.alto,
+                paddingVertical: 6,
+                paddingHorizontal: 8,
+                borderRadius: 14,
+                overflow: 'hidden',
+                borderWidth: StyleSheet.hairlineWidth,
+                borderColor: lamina.filo,
+                backgroundColor: lamina.tarjeta,
+                ...sombraDeVidrio(lamina.sombra),
+              }}
             >
+              <BrilloDeVidrio color={lamina.brillo} radio={14} />
               {t.filas.map((f) => (
                 <FilaDeLaLamina key={f.sitio.clave} fila={f} lamina={lamina} elegida={f.sitio.clave === elegida} alternar={alternar} puntos={puntos} />
               ))}
@@ -301,6 +340,9 @@ function FilaDeLaLamina({
   puntos: PuntosDeLaToma | null;
 }) {
   const { sitio } = fila;
+  const rotulo = { fontSize: LETRA.rotulo, lineHeight: INTERLINEA.rotulo, color: lamina.nombre, fontWeight: elegida ? ('800' as const) : ('500' as const) };
+  const valor = { fontSize: LETRA.valor, fontWeight: '700' as const, color: lamina.valor };
+  const detalle = { fontSize: LETRA.detalle, lineHeight: INTERLINEA.detalle, color: lamina.detalle };
   return (
     <Pressable
       onPress={() => alternar(sitio.clave)}
@@ -308,16 +350,31 @@ function FilaDeLaLamina({
       accessibilityState={{ selected: elegida }}
       style={{ height: fila.alto, justifyContent: 'center', marginHorizontal: -6, paddingHorizontal: 5, borderRadius: 8, borderWidth: 1, borderColor: elegida ? lamina.valor : 'transparent' }}
     >
-      <Text style={{ fontSize: LETRA.rotulo, lineHeight: INTERLINEA.rotulo, color: lamina.nombre, fontWeight: elegida ? '800' : '400' }} numberOfLines={fila.lineasDelRotulo}>
-        {sitio.rotulo}
-      </Text>
-      <Text numberOfLines={1} style={{ lineHeight: INTERLINEA.valor }}>
-        <Text style={{ fontSize: LETRA.valor, fontWeight: '700', color: lamina.valor }}>{sitio.valor}</Text>
-        {sitio.diferencia ? <Text style={{ fontSize: LETRA.detalle, color: lamina.detalle }}>{`  ${sitio.diferencia}`}</Text> : null}
-      </Text>
-      {puntos && fila.anchoDeLosPuntos ? (
-        <View style={{ marginTop: 2 }}>
-          <PuntosPorToma estados={puntos.estados(sitio.medida)} elegida={puntos.elegida} ancho={fila.anchoDeLosPuntos} alto={ALTO_DEL_GRAFICO_EN_LA_FILA} />
+      {fila.enLinea ? (
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 6 }}>
+          <Text style={[rotulo, { flexShrink: 1 }]} numberOfLines={1}>
+            {sitio.rotulo}
+          </Text>
+          <Text style={valor} numberOfLines={1}>
+            {sitio.valor}
+          </Text>
+        </View>
+      ) : (
+        <>
+          <Text style={rotulo} numberOfLines={fila.lineasDelRotulo}>
+            {sitio.rotulo}
+          </Text>
+          {/* El valor, contra el borde derecho como en las filas en línea: los valores forman una columna. */}
+          <Text style={[valor, { lineHeight: INTERLINEA.valor, textAlign: 'right' }]} numberOfLines={1}>
+            {sitio.valor}
+          </Text>
+        </>
+      )}
+      {/* La última línea, igual en todas las filas: la diferencia a la izquierda y el gráfico a la derecha. */}
+      {sitio.diferencia || (puntos && fila.anchoDeLosPuntos) ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
+          {sitio.diferencia ? <Text style={detalle}>{sitio.diferencia}</Text> : <View />}
+          {puntos && fila.anchoDeLosPuntos ? <PuntosPorToma estados={puntos.estados(sitio.medida)} elegida={puntos.elegida} ancho={fila.anchoDeLosPuntos} alto={ALTO_DEL_GRAFICO_EN_LA_FILA} /> : null}
         </View>
       ) : null}
     </Pressable>

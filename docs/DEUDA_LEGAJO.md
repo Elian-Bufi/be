@@ -2794,10 +2794,21 @@ Dirección lo mire en las imágenes y en el teléfono:
 - **La barra en dos filas con letra grande** es una adaptación excepcional y una decisión visual explícita: si las cinco
   etiquetas no entran en una fila con al menos el 90 % de su tamaño, la cápsula pasa a dos filas. Las etiquetas ya no
   tienen tope de crecimiento. **A ratificar por Dirección** (capturas 01 y 10 de `EVIDENCIA/INICIO-Y-NAVEGACION`).
-- **D-3, a la vista:** si otra evaluación cayó el mismo día, la toma dice que puede estar incompleta y cuenta «medidas a
-  la vista». «Cómo se lee» dice qué puede no verse de una toma. Sigue abierta la ampliación del contrato.
-- **D-4, medido y no justificado todavía:** con datos sintéticos y red simulada, la tarjeta de actividad baja 105 KB en
-  el caso típico y 539 KB con un historial cargado de correcciones. Comprimir las respuestas (gzip) llevaría toda la visita
-  de 176 a 9 KB y de 1,50 a 0,62 s en 4G lento, sin un endpoint nuevo ni un cambio de contrato. El primer paso propuesto es
-  verificar si Render ya comprime y, si no, comprimir en la API. El agregado se reconsidera solo si eso no alcanza
+- **D-3, a la vista:** si otra evaluación cayó el mismo día, la toma dice en una línea que puede estar incompleta, y
+  «Por qué» cuenta las medidas y los resultados que se ven. «Cómo se lee» dice qué puede no verse de una toma. Sigue
+  abierta la ampliación del contrato.
+- **D-4, diferida:** en una simulación local (datos sintéticos y red simulada, no una medición en el teléfono ni contra
+  la API de test), la tarjeta de actividad baja 105 KB en el caso típico y 539 KB con un historial cargado de
+  correcciones. En la misma simulación, comprimir las respuestas (gzip) llevaría toda la visita de 176 a 9 KB y de 1,50 a
+  0,62 s en 4G lento, sin un endpoint nuevo ni un cambio de contrato. No se crea el agregado: el primer paso propuesto es
+  verificar si Render ya comprime y, si no, decidir la compresión en la API
   (`EVIDENCIA/INICIO-Y-NAVEGACION/herramientas/medir-inicio/resultados.md`).
+
+**Pulido visual del 2026-10-04 (a la tarde, sin integrar ni construir).** Dirección priorizó la excelencia visual con la
+letra de siempre, sin desactivar el escalado. No cambia ninguna función. **A ratificar por Dirección**, con las capturas 12
+a 18 de `EVIDENCIA/INICIO-Y-NAVEGACION`, antes de construir la APK candidata:
+- el cuerpo grande, arriba y recortado a la derecha, con un tamaño que no depende de cuántas medidas hay;
+- la cabecera compacta: pestañas para las vistas, una fecha y un contexto, chips para las tomas y la familia dentro de
+  la lámina;
+- tarjetas de vidrio con filas de una sola forma y los valores en columna.
+Las referencias visuales del pedido no llegaron con el mensaje: se siguió la descripción escrita.

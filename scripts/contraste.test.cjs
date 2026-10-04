@@ -255,6 +255,30 @@ test('APK · las etiquetas de la barra se leen sobre el vidrio, pase lo que pase
   assert.deepEqual(fallas, []);
 });
 
+/**
+ * El vidrio de las tarjetas (pulido del 2026-10-04): un brillo translúcido arriba. El texto se mide sobre la mezcla del
+ * brillo con la tarjeta, que es donde más se aclara, además de sobre la tarjeta sola.
+ */
+test('APK · el brillo del vidrio no baja el contraste del texto de las tarjetas', () => {
+  const fallas = [];
+  for (const nombre of ['AZUL_NOCHE', 'CLARO']) {
+    const opacos = temaApk(nombre);
+    const translucidos = translucidosApk(nombre);
+    for (const [brillo, fondo, frentes] of [
+      ['laminaBrillo', 'laminaTarjeta', ['laminaNombre', 'laminaValor', 'laminaDetalle']],
+      ['vidrioBrillo', 'superficie', ['texto', 'tenue', 'acento']],
+    ]) {
+      assert.ok(translucidos[brillo], `${nombre}: falta el token «${brillo}»`);
+      const [base, alfa] = [translucidos[brillo].slice(0, 7), parseInt(translucidos[brillo].slice(7), 16) / 255];
+      for (const frente of frentes) {
+        const relacion = contraste(opacos[frente], mezcla(base, opacos[fondo], alfa));
+        if (relacion < TEXTO) fallas.push(`${nombre} · ${frente} sobre ${fondo} con ${brillo} = ${relacion.toFixed(2)}:1`);
+      }
+    }
+  }
+  assert.deepEqual(fallas, []);
+});
+
 /** Todo color literal en estilos vive en los tokens: si no, la prueba no lo ve. */
 test('ningún estilo del website ni de la APK escribe un color fuera de los tokens', () => {
   const archivos = [];

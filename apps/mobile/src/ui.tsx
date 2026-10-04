@@ -3,7 +3,7 @@
  * 48 dp, roles y estados accesibles, sin gestos exclusivos. Botón destructivo distinguible por texto y jerarquía.
  */
 import { useEffect, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, Pressable, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { AccessibilityInfo, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View, type TextInputProps } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { COLOR, estilosPorTema } from './tema';
 
@@ -165,22 +165,25 @@ export function CampoSiONo({
  *   «Perímetros» y «Pliegues» se partían al medio con la letra al máximo.
  * - La elegida va llena y en negrita: el color no es la única señal.
  * - Rol `radiogroup` con `radio` adentro: el lector de pantalla dice cuántas opciones hay y cuál está elegida.
- * - Cada píldora mide al menos 48 dp de alto.
+ * - Cada píldora mide al menos 48 dp de alto. Las compactas (`compactos`, para una elección secundaria dentro de una
+ *   tarjeta, como la familia del mapa) dibujan 40 dp y suman 4 de cada lado al área de toque: siguen siendo 48.
  */
 export function Segmentos<T extends string>({
   etiqueta,
   opciones,
   valor,
   alElegir,
+  compactos = false,
 }: {
   /** El nombre del grupo para el lector de pantalla. */
   etiqueta: string;
   opciones: readonly { readonly valor: T; readonly texto: string }[];
   valor: T;
   alElegir: (valor: T) => void;
+  compactos?: boolean;
 }) {
   return (
-    <View style={estilos.segmentos} accessibilityRole="radiogroup" accessibilityLabel={etiqueta}>
+    <View style={[estilos.segmentos, compactos && estilos.segmentosCompactos]} accessibilityRole="radiogroup" accessibilityLabel={etiqueta}>
       {opciones.map((o) => {
         const elegida = o.valor === valor;
         return (
@@ -190,14 +193,72 @@ export function Segmentos<T extends string>({
             accessibilityState={{ checked: elegida }}
             accessibilityLabel={o.texto}
             onPress={() => alElegir(o.valor)}
-            style={({ pressed }) => [estilos.segmento, elegida && estilos.segmentoElegido, pressed && estilos.presionado]}
+            hitSlop={compactos ? { top: 4, bottom: 4 } : undefined}
+            style={({ pressed }) => [estilos.segmento, compactos && estilos.segmentoCompacto, elegida && estilos.segmentoElegido, pressed && estilos.presionado]}
           >
-            <Text style={[estilos.textoDeSegmento, elegida && estilos.textoDeSegmentoElegido]}>{o.texto}</Text>
+            <Text style={[estilos.textoDeSegmento, compactos && estilos.textoDeSegmentoCompacto, elegida && estilos.textoDeSegmentoElegido]}>{o.texto}</Text>
           </Pressable>
         );
       })}
     </View>
   );
+}
+
+/**
+ * Las vistas de una pantalla en pestañas (pulido del 2026-10-04): el texto de cada vista y una raya debajo de la elegida.
+ * Se distinguen de las píldoras, que eligen entre opciones dentro de una vista.
+ * - Van de borde a borde de la pantalla. Si la palabra más larga de cada una entra, van todas en una fila: una pestaña
+ *   de dos palabras («Mapa corporal») cede ancho y pasa a dos líneas; las de una palabra no se achican. Si no entran, por
+ *   ejemplo con letra grande, bajan a otra fila, enteras.
+ * - La elegida va en negrita y con la raya: el color no es la única señal. Rol `tablist` con `tab` adentro.
+ * - Cada pestaña mide al menos 48 dp de alto.
+ */
+export function Pestanas<T extends string>({
+  etiqueta,
+  opciones,
+  valor,
+  alElegir,
+}: {
+  etiqueta: string;
+  opciones: readonly { readonly valor: T; readonly texto: string }[];
+  valor: T;
+  alElegir: (valor: T) => void;
+}) {
+  const { width, fontScale } = useWindowDimensions();
+  const unaFila = entranEnUnaFila(opciones.map((o) => o.texto), width - 2 * RELLENO_DE_LAS_PESTANAS, Math.max(1, fontScale));
+  return (
+    <View style={[estilos.pestanas, { flexWrap: unaFila ? 'nowrap' : 'wrap' }]} accessibilityRole="tablist" accessibilityLabel={etiqueta}>
+      {opciones.map((o) => {
+        const elegida = o.valor === valor;
+        return (
+          <Pressable
+            key={o.valor}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: elegida }}
+            accessibilityLabel={o.texto}
+            onPress={() => alElegir(o.valor)}
+            style={({ pressed }) => [estilos.pestana, { flexShrink: o.texto.includes(' ') ? 1 : 0 }, pressed && estilos.presionado]}
+          >
+            <Text style={[estilos.textoDePestana, elegida && estilos.textoDePestanaElegida]} numberOfLines={2}>
+              {o.texto}
+            </Text>
+            <View style={[estilos.rayaDePestana, elegida && estilos.rayaDePestanaElegida]} />
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** El relleno de cada lado de la fila de pestañas, que va de borde a borde de la pantalla. */
+const RELLENO_DE_LAS_PESTANAS = 8;
+/** El tamaño del texto de una pestaña, en sp. */
+const LETRA_DE_LA_PESTANA = 14;
+
+/** Si las pestañas entran en una fila: la palabra más larga de cada una, estimada holgada en negrita, más su relleno. */
+function entranEnUnaFila(textos: readonly string[], ancho: number, escala: number): boolean {
+  const total = textos.reduce((suma, texto) => suma + Math.max(...texto.split(' ').map((p) => p.length)) * LETRA_DE_LA_PESTANA * escala * 0.6 + 8, 0);
+  return total <= ancho;
 }
 
 /** Casilla accesible (rol checkbox con estado). Nunca premarcada: el estado lo decide quien la usa. */
@@ -393,6 +454,17 @@ export const estilos = estilosPorTema((COLOR) => ({
   segmentoElegido: { backgroundColor: COLOR.botonFondo },
   textoDeSegmento: { fontSize: 16, fontWeight: '600', color: COLOR.texto, textAlign: 'center' },
   textoDeSegmentoElegido: { fontWeight: '800', color: COLOR.botonTexto },
+  // Compactas: del ancho de sus opciones, más chicas y sin margen propio; el área de toque llega a 48 con `hitSlop`.
+  segmentosCompactos: { alignSelf: 'flex-start', gap: 2, marginVertical: 0, borderRadius: 23 },
+  segmentoCompacto: { flexGrow: 0, minHeight: 40, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
+  textoDeSegmentoCompacto: { fontSize: 14 },
+  // De borde a borde: la pantalla tiene 20 dp de relleno a cada lado (App.tsx), y la fila lo ocupa.
+  pestanas: { flexDirection: 'row', marginTop: 2, marginBottom: 2, marginHorizontal: -20, paddingHorizontal: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLOR.borde },
+  pestana: { flexGrow: 1, flexBasis: 'auto', minHeight: 48, paddingHorizontal: 4, paddingTop: 8, alignItems: 'center', justifyContent: 'space-between' },
+  textoDePestana: { fontSize: 14, lineHeight: 18, fontWeight: '600', color: COLOR.tenue, textAlign: 'center' },
+  textoDePestanaElegida: { fontWeight: '800', color: COLOR.texto },
+  rayaDePestana: { alignSelf: 'stretch', height: 3, marginTop: 6, borderRadius: 2, backgroundColor: 'transparent' },
+  rayaDePestanaElegida: { backgroundColor: COLOR.acento },
   etiqueta: { fontSize: 16, fontWeight: '600', color: COLOR.texto, marginBottom: 4 },
   entrada: { minHeight: 48, borderWidth: 1, borderColor: COLOR.bordeControl, borderRadius: 8, paddingHorizontal: 12, fontSize: 16, color: COLOR.texto, backgroundColor: COLOR.superficie },
   entradaConError: { borderColor: COLOR.error, borderWidth: 2 },

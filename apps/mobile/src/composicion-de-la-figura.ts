@@ -15,9 +15,21 @@
  * Los sitios no se mueven nunca (DL-113): cambian las tarjetas, las guías y el tamaño del cuerpo. El orden de las
  * tarjetas y de sus filas es el del compositor, y el apilado es por el centro de sus sitios (`apilarTarjetas`).
  *
- * **Mapa corporal** (cierre del 2026-10-04). Con más de una toma en el período, cada fila de tarjeta lleva debajo del
- * valor el gráfico chico de puntos de esa medida, unido a su sitio por la misma guía: la fila crece `ALTO_DE_LOS_PUNTOS`
- * y dice el ancho exacto que tiene el gráfico (`anchoDeLosPuntos`), así no desborda.
+ * **Mapa corporal** (cierre del 2026-10-04). Con más de una toma en el período, cada fila de tarjeta lleva el gráfico
+ * chico de puntos de esa medida, unido a su sitio por la misma guía, y dice el ancho exacto que tiene el gráfico
+ * (`anchoDeLosPuntos`), así no desborda. En una tarjeta, todos los gráficos tienen el mismo ancho y van contra el borde
+ * derecho: los puntos de cada toma quedan en columna.
+ *
+ * **Encuadre** (pulido del 2026-10-04, `ENCUADRE`). El cuerpo es grande, va a la derecha y lo recorta el borde derecho de
+ * la lámina. Ahí no hay sitios: se mide del lado derecho de la persona, que en la figura de frente queda a la izquierda,
+ * y los anillos del tronco tienen su centro en el eje del cuerpo, que queda a la vista. El tamaño sale del ancho de la
+ * lámina y de los sitios posibles de la familia, no de cuántas medidas tiene la toma, y el cuerpo empieza arriba: sumar
+ * medidas alarga las tarjetas hacia abajo, pero no achica el cuerpo ni deja un hueco encima. Figura, anillos, puntos,
+ * guías y zonas de toque salen del mismo rectángulo de la imagen: la misma escala y el mismo desplazamiento.
+ *
+ * **Filas.** Todas tienen la misma forma: el nombre a la izquierda y el valor a la derecha, en la misma línea si entran
+ * o, si el nombre es largo, el valor en la línea de abajo, siempre contra el borde derecho; y al final, la diferencia a la
+ * izquierda y el gráfico a la derecha. Así los valores forman una columna y la última línea es igual en todas.
  *
  * El ancho de un texto se estima por la cantidad de letras, con un ancho medio holgado para Roboto. Si la estimación se
  * pasa, la fila queda más alta o la figura pasa a números, nunca se corta.
@@ -43,8 +55,27 @@ export type FamiliaDeLaFigura = 'PERIMETROS' | 'PLIEGUES';
 export type ModoDeLaFigura = 'TARJETAS' | 'NUMEROS';
 
 /** Tamaños de letra de la figura en sp, antes de la escala de la persona, y sus interlineados. */
-export const LETRA = { rotulo: 12, valor: 15, detalle: 12, ficha: 12 } as const;
-export const INTERLINEA = { rotulo: 16, valor: 20 } as const;
+export const LETRA = { rotulo: 13, valor: 15, detalle: 12, ficha: 12 } as const;
+export const INTERLINEA = { rotulo: 17, valor: 20, detalle: 16 } as const;
+
+/**
+ * El encuadre del cuerpo en la lámina del teléfono (pulido del 2026-10-04): grande, a la derecha y recortado por el borde
+ * derecho, donde no hay sitios. Ver el comentario del módulo.
+ */
+export const ENCUADRE = {
+  /** El ancho de la imagen de la lámina, en veces el ancho de la lámina en el teléfono. */
+  anchoDeLaImagen: 1.44,
+  /** Cuánto se ve a la derecha del eje del cuerpo, en fracción del ancho de la imagen: lo demás queda fuera del borde. */
+  aLaDerechaDelEje: 0.13,
+  /** El ancho mínimo de una tarjeta: si no entra a la izquierda de los sitios, el cuerpo se achica lo justo. */
+  anchoMinimoDeTarjeta: 132,
+} as const;
+/** El radio del punto de un pliegue con su halo, en dp: su dibujo entero queda a la vista. */
+const RADIO_DEL_PUNTO = 7;
+/** Lo que separa el nombre del valor cuando van en la misma línea. */
+const SEPARACION_EN_LA_FILA = 6;
+/** Cuánto más ancho es el rótulo en peso 500 que la estimación común de `anchoEstimado`. */
+const PESO_DEL_ROTULO = 1.08;
 
 /** Medidas fijas del dibujo, en dp. */
 const RELLENO = 6;
@@ -99,7 +130,9 @@ export interface FilaDeLaTarjeta {
   readonly y: number;
   readonly alto: number;
   readonly lineasDelRotulo: 1 | 2;
-  /** El ancho del gráfico chico de la fila, el de su contenido; `null` si la fila no lleva gráfico. */
+  /** Si el nombre y el valor van en la misma línea; si no, el valor va en la de abajo. La diferencia y el gráfico, al final. */
+  readonly enLinea: boolean;
+  /** El ancho del gráfico chico de la fila; `null` si la fila no lleva gráfico. */
   readonly anchoDeLosPuntos: number | null;
 }
 
@@ -147,6 +180,35 @@ function diferenciaDe(m: MedidaDeLaToma): string | null {
   return `${d < 0 ? '−' : d > 0 ? '+' : ''}${numero(Math.abs(d))}`;
 }
 
+interface DisposicionDeLaFila {
+  readonly enLinea: boolean;
+  readonly lineasDelRotulo: 1 | 2;
+  readonly alto: number;
+  readonly anchoDeLosPuntos: number | null;
+}
+
+/**
+ * Cómo va una fila de tarjeta, o `null` si su texto no entra (la figura pasa a números). `util` es el ancho estimado
+ * para el texto y `contenido`, el ancho exacto de la fila. El gráfico comparte la última línea con la diferencia; la
+ * tarjeta después iguala el ancho de los gráficos de sus filas.
+ */
+function disponerFila(s: SitioDeLaFigura, util: number, contenido: number, escala: number, conPuntos: boolean): DisposicionDeLaFila | null {
+  const rotulo = anchoEstimado(s.rotulo, LETRA.rotulo * escala);
+  const valor = anchoEstimado(s.valor, LETRA.valor * escala, true);
+  const diferencia = s.diferencia ? anchoEstimado(s.diferencia, LETRA.detalle * escala) : 0;
+  if (valor + (diferencia ? SEPARACION_EN_LA_FILA + diferencia : 0) > util || rotulo > 2 * util * 0.92) return null;
+  // En línea solo si entran con holgura en el ancho exacto de la fila: el nombre va en peso 500, más ancho que la
+  // estimación común. Si no, se apilan: el nombre nunca se corta con «…».
+  const enLinea = rotulo * PESO_DEL_ROTULO + SEPARACION_EN_LA_FILA + valor <= contenido - 2;
+  const lineasDelRotulo: 1 | 2 = !enLinea && rotulo > util ? 2 : 1;
+  let lineas = (enLinea ? INTERLINEA.valor : lineasDelRotulo * INTERLINEA.rotulo + INTERLINEA.valor) * escala;
+  // La última línea: la diferencia a la izquierda y, con más de una toma, el gráfico a la derecha.
+  if (conPuntos) lineas += Math.max(ALTO_DE_LOS_PUNTOS, diferencia ? INTERLINEA.detalle * escala + 2 : 0);
+  else if (diferencia) lineas += INTERLINEA.detalle * escala;
+  const anchoDeLosPuntos = conPuntos ? Math.floor(contenido - (diferencia ? diferencia + SEPARACION_EN_LA_FILA : 0)) : null;
+  return { enLinea, lineasDelRotulo, alto: Math.max(ALTO_MINIMO_DE_FILA, Math.ceil(lineas) + 8), anchoDeLosPuntos };
+}
+
 export interface EntradaDeLaComposicion {
   /** El ancho disponible, en dp. */
   readonly ancho: number;
@@ -180,24 +242,28 @@ export function componerLaFigura(entrada: EntradaDeLaComposicion): ComposicionDe
     .filter((grupo) => grupo.length > 0);
   if (claves.length === 0) return null;
 
+  let ficha = 0;
   const enTarjetas = escala < ESCALA_DESDE_LA_QUE_VAN_NUMEROS ? componer('TARJETAS') : null;
   return enTarjetas ?? componer('NUMEROS');
 
   function componer(modo: ModoDeLaFigura): ComposicionDeLaFigura | null {
-    // El cuerpo, a la derecha. Con tarjetas ocupa algo menos de la mitad del ancho (compositor: `figGeom`, `LAY`); con
-    // números, la columna es angosta y el cuerpo crece.
-    const anchoDelCuerpo = ancho * (modo === 'TARJETAS' ? 0.46 : 0.62);
-    const anchoDeImagen = anchoDelCuerpo / (figura.cuerpo.ancho / 100);
+    // El cuerpo, grande y a la derecha, recortado por el borde derecho (`ENCUADRE`). Su tamaño no depende de cuántas
+    // medidas hay: el borde izquierdo se calcula con todos los sitios posibles de la familia.
+    ficha = modo === 'NUMEROS' ? Math.round(24 * Math.min(escala, ESCALA_MAXIMA_DE_LA_FICHA)) : 0;
+    const columna = modo === 'TARJETAS' ? ENCUADRE.anchoMinimoDeTarjeta : MARGEN / 2 + ficha + 4;
+    const relativos = Object.values(lugares as Readonly<Record<string, { x: number; ancho?: number }>>).map((l) => l.x / 100 - (familia === 'PERIMETROS' ? (l.ancho ?? 0) / 200 : 0));
+    const aLaIzquierda = -Math.min(...relativos);
+    const punto = familia === 'PLIEGUES' ? RADIO_DEL_PUNTO : 0;
+    // Si la columna de la izquierda no entra con el cuerpo al tamaño buscado, el cuerpo se achica lo justo.
+    const tope = (ancho - columna - CALLE - punto) / (ENCUADRE.aLaDerechaDelEje + aLaIzquierda);
+    const anchoDeImagen = Math.min(ancho * ENCUADRE.anchoDeLaImagen, tope);
     const altoDeImagen = (anchoDeImagen * figura.altoPx) / figura.anchoPx;
     const altoDelCuerpo = (altoDeImagen * figura.cuerpo.alto) / 100;
-    const centroX = ancho - anchoDelCuerpo / 2 - 4;
-    // La figura se centra en el alto final; acá se ubica con un desplazamiento provisorio y se corrige al final.
-    const ubicar = (desplazamiento: number): RectanguloEnLaLamina => ({
-      x: centroX - (figura.cuerpo.centroX / 100) * anchoDeImagen,
-      y: MARGEN + desplazamiento - (figura.cuerpo.arriba / 100) * altoDeImagen,
-      ancho: anchoDeImagen,
-      alto: altoDeImagen,
-    });
+    const eje = ancho - ENCUADRE.aLaDerechaDelEje * anchoDeImagen;
+    // El cuerpo empieza arriba, en el margen, sin importar el alto de las tarjetas.
+    const imagenFija: RectanguloEnLaLamina = { x: eje - anchoDeImagen / 2, y: MARGEN - (figura.cuerpo.arriba / 100) * altoDeImagen, ancho: anchoDeImagen, alto: altoDeImagen };
+    const izquierdaDeLaFamilia = eje - aLaIzquierda * anchoDeImagen - punto;
+    const ubicar = (): RectanguloEnLaLamina => imagenFija;
 
     let n = 0;
     const sitiosEn = (imagen: RectanguloEnLaLamina) =>
@@ -213,50 +279,41 @@ export function componerLaFigura(entrada: EntradaDeLaComposicion): ComposicionDe
           return { ...base, cx: p.cx, cy: p.cy, izquierda: p.cx - 7, anillo: null, posterior: esPliegueDeLaCaraPosterior(clave) };
         }),
       );
-    const provisorios = sitiosEn(ubicar(0));
-    const izquierdaMinima = Math.min(...provisorios.flat().map((s) => s.izquierda));
+    const provisorios = sitiosEn(ubicar());
 
     // Las filas de cada tarjeta y su alto, según el modo.
     let anchoDeTarjeta: number;
-    let ficha = 0;
-    let altosDeFila: number[][];
-    let lineas: (1 | 2)[][];
+    let disposiciones: DisposicionDeLaFila[][];
     if (modo === 'TARJETAS') {
-      anchoDeTarjeta = Math.max(120, Math.min(ancho * 0.5, izquierdaMinima - CALLE));
+      anchoDeTarjeta = Math.min(ancho * 0.56, izquierdaDeLaFamilia - CALLE);
       const util = anchoDeTarjeta - MARGEN / 2 - 2 * PADDING_DE_TARJETA;
-      lineas = [];
-      altosDeFila = [];
+      const contenido = anchoDeTarjeta - MARGEN / 2 - BORDES_DE_LA_FILA;
+      disposiciones = [];
       for (const grupo of provisorios) {
-        const l: (1 | 2)[] = [];
-        const a: number[] = [];
-        for (const s of grupo) {
-          const rotulo = anchoEstimado(s.rotulo, LETRA.rotulo * escala);
-          const valor = anchoEstimado(s.valor, LETRA.valor * escala, true) + (s.diferencia ? anchoEstimado(`  ${s.diferencia}`, LETRA.detalle * escala) : 0);
-          // Si el valor no entra en una línea, o el rótulo pide más de dos, la figura va con números.
-          if (valor > util || rotulo > 2 * util * 0.92) return null;
-          const lineasDelRotulo = rotulo > util ? 2 : 1;
-          l.push(lineasDelRotulo);
-          a.push(Math.max(ALTO_MINIMO_DE_FILA, Math.ceil((lineasDelRotulo * INTERLINEA.rotulo + INTERLINEA.valor) * escala) + 8 + (conPuntos ? ALTO_DE_LOS_PUNTOS : 0)));
+        const filas: DisposicionDeLaFila[] = [];
+        for (const sitio of grupo) {
+          const d = disponerFila(sitio, util, contenido, escala, conPuntos);
+          if (!d) return null;
+          filas.push(d);
         }
-        lineas.push(l);
-        altosDeFila.push(a);
+        // Los gráficos de una tarjeta, del ancho del más angosto y contra el borde derecho: los puntos de cada toma, en
+        // columna de una fila a otra.
+        const comun = conPuntos ? Math.min(...filas.map((d) => d.anchoDeLosPuntos!)) : null;
+        disposiciones.push(filas.map((d) => ({ ...d, anchoDeLosPuntos: comun })));
       }
     } else {
-      ficha = Math.round(24 * Math.min(escala, ESCALA_MAXIMA_DE_LA_FICHA));
-      anchoDeTarjeta = MARGEN / 2 + ficha + 4;
-      lineas = provisorios.map((g) => g.map(() => 1 as const));
-      altosDeFila = provisorios.map((g) => g.map(() => ficha + 6));
+      anchoDeTarjeta = columna;
+      disposiciones = provisorios.map((g) => g.map(() => ({ enLinea: false, lineasDelRotulo: 1 as const, alto: ficha + 6, anchoDeLosPuntos: null })));
     }
 
     // Con tarjetas, un grupo del compositor es una tarjeta. Con números, cada sitio es su propia ficha, para que cada
     // número quede lo más cerca posible de la altura de su sitio.
-    const bloques = modo === 'TARJETAS' ? provisorios.map((g, i) => ({ grupo: g, altos: altosDeFila[i]!, lineas: lineas[i]! })) : provisorios.flat().map((s, i) => ({ grupo: [s], altos: [altosDeFila.flat()[i]!], lineas: [1 as const] }));
-    const altosDeBloque = bloques.map((b) => b.altos.reduce((x, y) => x + y, 0) + (modo === 'TARJETAS' ? 2 * RELLENO : 0));
+    const bloques = modo === 'TARJETAS' ? provisorios.map((g, i) => ({ grupo: g, filas: disposiciones[i]! })) : provisorios.flat().map((s, i) => ({ grupo: [s], filas: [disposiciones.flat()[i]!] }));
+    const altosDeBloque = bloques.map((b) => b.filas.reduce((x, y) => x + y.alto, 0) + (modo === 'TARJETAS' ? 2 * RELLENO : 0));
     const separacion = modo === 'TARJETAS' ? SEPARACION : 2;
     const necesario = altosDeBloque.reduce((a, b) => a + b, 0) + (bloques.length - 1) * separacion + 2 * MARGEN;
     const alto = Math.max(altoDelCuerpo + 2 * MARGEN, necesario);
-    const desplazamiento = (alto - altoDelCuerpo - 2 * MARGEN) / 2;
-    const imagen = ubicar(desplazamiento);
+    const imagen = ubicar();
     const enSuLugar = new Map(sitiosEn(imagen).flat().map((s) => [s.clave, s]));
     const ubicados = bloques.map((b) => b.grupo.map((s) => enSuLugar.get(s.clave)!));
 
@@ -277,11 +334,10 @@ export function componerLaFigura(entrada: EntradaDeLaComposicion): ComposicionDe
     const tarjetas: TarjetaDeLaFigura[] = bloquesFinales.map((g, i) => {
       let y = bordes[i]! + (modo === 'TARJETAS' ? RELLENO : 0);
       const filas = g.map((sitio, fila): FilaDeLaTarjeta => {
-        const altoDeFila = bloques[i]!.altos[fila]!;
-        const centro = y + altoDeFila / 2;
-        y += altoDeFila;
-        const anchoDeLosPuntos = modo === 'TARJETAS' && conPuntos ? anchoDeTarjeta - MARGEN / 2 - BORDES_DE_LA_FILA : null;
-        return { sitio, y: centro, alto: altoDeFila, lineasDelRotulo: bloques[i]!.lineas[fila]!, anchoDeLosPuntos };
+        const d = bloques[i]!.filas[fila]!;
+        const centro = y + d.alto / 2;
+        y += d.alto;
+        return { sitio, y: centro, alto: d.alto, lineasDelRotulo: d.lineasDelRotulo, enLinea: d.enLinea, anchoDeLosPuntos: d.anchoDeLosPuntos };
       });
       return { x: MARGEN / 2, y: bordes[i]!, ancho: anchoDeTarjeta - MARGEN / 2, alto: altosDeBloque[i]!, filas };
     });
