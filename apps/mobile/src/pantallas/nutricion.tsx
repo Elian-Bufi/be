@@ -32,6 +32,7 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
+import { useCambiosSinGuardar } from '../cambios-sin-guardar';
 import { Cargando, ErrorConReintento, EstadoDeCarga, SinActualizar, VerMas } from '../estados';
 import { dia, fecha, hoyEnZona, ZONA_DE_LA_API } from '../formato';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
@@ -213,6 +214,8 @@ function TarjetaDeComida({
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<{ texto: string; incierto: boolean } | null>(null);
   const opcion = comida.options.find((o) => o.optionId === opcionId) ?? null;
+  // Lo escrito y sin guardar se declara: salir por la barra, la cabecera o atrás pregunta antes (DL-117).
+  useCambiosSinGuardar(abierta && (observacion.trim() !== '' || Object.values(cantidades).some((c) => c.trim() !== '')) ? `el registro de «${comida.label}»` : null);
 
   async function guardar() {
     if (!opcion) return setFallo({ texto: COPY_NUTRICION.elegiQueOpcionComiste, incierto: false });
@@ -358,6 +361,7 @@ function ComidaFueraDelPlan({
   const [error, setError] = useState<string | null>(null);
   const [fallo, setFallo] = useState<{ texto: string; incierto: boolean } | null>(null);
   const [enviando, setEnviando] = useState(false);
+  useCambiosSinGuardar(abierta && (descripcion.trim() !== '' || porcion.trim() !== '') ? 'la comida fuera del plan' : null);
 
   async function guardar() {
     if (!descripcion.trim()) return setError('Contanos qué comiste.');

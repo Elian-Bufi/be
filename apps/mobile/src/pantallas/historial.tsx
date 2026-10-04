@@ -88,7 +88,7 @@ export function PantallaDeHistorial({ token, identidadId, salir, ir }: { token: 
                     <Parrafo tenue>{fechaCivil(e.date)}</Parrafo>
                     <Insignia texto={etiquetaDeCondicionRegistrada(e.original)} />
                     {e.effectiveView.kind === 'CORRECTED' ? <Insignia texto={COPY_ENTRENAMIENTO.corregida} /> : null}
-                    <Boton texto={COPY_ENTRENAMIENTO.verLaSesion} tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: e.executionId, origen: 'historial' })} />
+                    <Boton texto={COPY_ENTRENAMIENTO.verLaSesion} tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: e.executionId })} />
                   </Tarjeta>
                 ))
               : null}

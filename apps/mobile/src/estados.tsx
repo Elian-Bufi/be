@@ -127,8 +127,8 @@ export function LineaDeActualizacion({ activa }: { activa: boolean }) {
 }
 
 const estilos = estilosPorTema((COLOR) => ({
-  carril: { position: 'absolute', left: 0, right: 0, bottom: -2, height: 2, overflow: 'hidden' },
-  // Corre sobre el borde de color del encabezado, en el color del fondo: se ve en los dos temas.
-  tramo: { height: 2, backgroundColor: COLOR.fondo },
+  carril: { position: 'absolute', left: 0, right: 0, bottom: -1, height: 2, overflow: 'hidden' },
+  // Corre sobre el borde fino de la cabecera (DL-117), en el color del acento: se ve en los dos temas.
+  tramo: { height: 2, backgroundColor: COLOR.acento },
   quieto: { width: '100%', opacity: 0.6 },
 }));

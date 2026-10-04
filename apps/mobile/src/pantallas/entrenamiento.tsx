@@ -43,11 +43,12 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { api } from '../api';
+import { useCambiosSinGuardar } from '../cambios-sin-guardar';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { dia, fecha, fechaCivil, hoyEnZona, ZONA_DE_LA_API } from '../formato';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada } from '../lecturas';
-import { useAccesoRetirado, useSesionPerdida, type Ruta, type Salida } from '../navegacion';
+import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, Campo, Dato, Desplegable, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 
 type Hoy = HoyDeEntrenamientoResponse['data'];
@@ -298,7 +299,7 @@ export function PantallaDeSesion({
   sesion: SesionDeOcurrencia;
   fechaDeLaSesion: string;
   salir: (m: Salida) => void;
-  ir: (r: Ruta) => void;
+  ir: Ir;
   subir: () => void;
 }) {
   const sesionPerdida = useSesionPerdida(salir);
@@ -327,6 +328,13 @@ export function PantallaDeSesion({
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  // Lo escrito y no guardado en el borrador: el motivo, el resumen de la sesión o la hora, distintos de lo guardado.
+  useCambiosSinGuardar(
+    b !== null && (motivo.trim() !== (b.reason ?? '').trim() || resumenDeSesion.trim() !== (b.sessionSummary?.description ?? '').trim() || (revisando && hora.trim() !== ''))
+      ? 'lo que escribiste en esta sesión'
+      : null,
+  );
 
   /**
    * Guardado incremental: cada cambio va con la versión que se ve; si otra pantalla la cambió, se recarga. Devuelve
@@ -472,11 +480,12 @@ export function PantallaDeSesion({
       return setAviso({ tipo: 'error', texto: esIncierto(r) ? COPY.resultadoIncierto : falloDe(r).mensaje });
     }
     subir();
-    ir({ nombre: 'ejecucion-de-entrenamiento', id: r.datos.data.executionId, aviso: COPY_ENTRENAMIENTO.sesionRegistrada });
+    // El registro reemplaza al borrador: volver lleva adonde se había abierto el borrador (Inicio o Entrenamiento de hoy).
+    ir({ nombre: 'ejecucion-de-entrenamiento', id: r.datos.data.executionId, aviso: COPY_ENTRENAMIENTO.sesionRegistrada }, 'reemplazar');
   }
 
-  // Escritura denegada: se retira el borrador de la pantalla y queda el estado neutral. «Volver a Entrenamiento de hoy»
-  // lo dibuja App.tsx en todas las pantallas.
+  // Escritura denegada: se retira el borrador de la pantalla y queda el estado neutral. Volver está en la cabecera, en
+  // todas las pantallas.
   if (retirado) return <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.planNoDisponible} />;
   if (error) return <ErrorConReintento sinConexion={false} onReintentar={cargar} />;
   if (!b) return <Cargando />;
@@ -638,6 +647,12 @@ function EjercicioEnCurso({
   const pendientes = granularidad === 'SET' ? seriesPendientes(p, registrado?.sets ?? []) : [];
   const registradasEnOrden = [...(registrado?.sets ?? [])].sort((a, b) => a.setIndex - b.setIndex);
   const realizado = sustitutoPendiente ?? null;
+  // Lo escrito y todavía no guardado en el borrador: una serie a medio cargar, o un resumen distinto del guardado.
+  const sinGuardar =
+    granularidad === 'SET'
+      ? serie.reps.trim() !== '' || serie.rir.trim() !== '' || serie.esfuerzo.trim() !== ''
+      : resumen.trim() !== (registrado?.executionSummary?.description ?? '').trim() || sustitutoPendiente !== null;
+  useCambiosSinGuardar(sinGuardar ? `lo que cargaste en «${p.exerciseName}»` : null);
 
   return (
     <Tarjeta>
@@ -913,6 +928,7 @@ function FormularioDeCorreccion({
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
   const intento = useClaveDeIntento();
+  useCambiosSinGuardar(motivo.trim() !== '' || JSON.stringify(estado) !== JSON.stringify(inicial) ? 'la corrección del registro' : null);
   const sinDatosOriginales = base.sessionCondition === 'NOT_COMPLETED';
 
   /** El registro corregido que describe un estado del formulario. El inicial describe lo que hoy rige. */

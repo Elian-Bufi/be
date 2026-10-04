@@ -39,6 +39,15 @@ export const AZUL_NOCHE = {
   exitoFondo: '#0B3A3A',
   // El velo detrás de un diálogo: no es texto ni borde de control
   velo: 'rgba(0, 0, 0, 0.6)',
+  // La barra inferior (DL-117): una cápsula de vidrio ahumado, sin desenfoque. El vidrio es el escalón elevado con un
+  // 10 % de transparencia: lo que pasa detrás apenas se insinúa. `scripts/contraste.test.cjs` mide las etiquetas sobre
+  // la mezcla del vidrio con cualquier color del tema que pueda pasar detrás.
+  barraVidrio: '#0A2B47E6',
+  barraBorde: '#1D4B72',
+  barraTexto: '#8DCAE5',
+  barraElegido: '#27D5F9',
+  // La sombra de lo que flota (la barra y el menú): no es texto ni borde.
+  sombra: '#000000',
   // La lámina de la toma (DL-111): los colores del tema «Azul» del compositor (`.slide.blue`), con las transparencias
   // ya resueltas sobre su fondo para que la prueba de contraste las pueda medir.
   laminaFondo: '#0C2E63',
@@ -71,6 +80,13 @@ export const CLARO: Paleta = {
   exito: '#107F45',
   exitoFondo: '#EEF8F2',
   velo: 'rgba(10, 31, 68, 0.45)',
+  // La barra inferior: el blanco con un 8 % de transparencia. Las etiquetas van más oscuras que `tenue` y que `acento`:
+  // sobre el vidrio, con un texto oscuro pasando detrás, esos dos no llegan a 4,5:1.
+  barraVidrio: '#FFFFFFEB',
+  barraBorde: '#D5E0F0',
+  barraTexto: '#4A5A70',
+  barraElegido: '#1453C9',
+  sombra: '#0A1F44',
   // La lámina de la toma (DL-111): los colores del tema «Claro» del compositor (`.slide.light`). El detalle va más
   // oscuro que su `.rowUnit`, que no llega a 4,5:1.
   laminaFondo: '#E4ECF8',

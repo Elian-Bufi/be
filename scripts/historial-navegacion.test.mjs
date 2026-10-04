@@ -1,8 +1,9 @@
 /**
  * Regresión de los defectos hallados en «Tu historial» (DL-096) durante la validación en teléfono:
- *  1. Navegación: el detalle de ejecución se abre desde «Entrenamiento de hoy» y desde «Tu historial»; volver tiene que
- *     regresar al origen (`origen` en la ruta), no siempre a Hoy. Se prueban ambos orígenes; el botón Atrás de Android
- *     y el enlace visible usan la misma `anterior`.
+ *  1. Navegación: el detalle de ejecución se abre desde «Entrenamiento de hoy», desde «Tu historial» y, desde DL-117,
+ *     desde Inicio; volver tiene que regresar al origen, no siempre a Hoy. El origen es la ruta anterior entera (`desde`,
+ *     asignado por `navegar`), que reemplazó al `origen: 'hoy' | 'historial'` de DL-096. El botón Atrás de Android y
+ *     el de la cabecera usan la misma `anterior`.
  *  2. Fecha civil: se prueba la función de producción `fechaCivil` (formato.ts), que formatea un `YYYY-MM-DD` anclado
  *     a medianoche UTC con un formateador fijado en UTC, así día/mes/año no dependen de la zona del dispositivo. Corre
  *     en subprocesos con TZ Buenos Aires, UTC, Auckland, Kiritimati (UTC+14) y Kathmandu (UTC+05:45), en límites de
@@ -14,8 +15,9 @@
  *     de dispositivo y en límites de mes y año.
  *  4. Teclado: el KeyboardAvoidingView raíz usa «padding» también en Android, porque con edge-to-edge el sistema ya no
  *     achica la ventana (validación de la APK 0.11.2: el teclado tapaba el campo «Reps» de «Corregir registro»).
- *  5. Barra inferior (Dirección, 2026-10-01): las cinco zonas, la zona madre de cada subpantalla, «atrás» hacia
- *     Nutrición desde las zonas principales, y la barra fija abajo, accesible y fuera del camino del teclado.
+ *  5. Barra, cabecera y origen (DL-117, Dirección, 2026-10-04; reemplaza a la barra del 2026-10-01): los cinco destinos
+ *     con Inicio, Cuenta en el avatar, «atrás» hacia Inicio desde las raíces, el origen de cada detalle, el menú auxiliar
+ *     y la cápsula flotante, accesible y fuera del camino del teclado.
  *  6. Sesión (prueba de la 0.13.1: la APK volvía a la bienvenida). Si Android recrea la actividad, por ejemplo al
  *     cambiar el tamaño de letra, la raíz encuentra la sesión y la pantalla que seguían en el proceso. Una sesión que
  *     venció mientras tanto se informa como vencida, y una sesión olvidada no vuelve. Nada va a disco: lo fija
@@ -35,22 +37,37 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const nav = await import('../apps/mobile/src/navegacion.ts');
 
 // ─── 1. Navegación: volver conserva el origen ───────────────────────────────────────────────────
+// Desde DL-117 (Dirección, 2026-10-04) el origen es la ruta anterior entera (`desde`), que asigna `navegar`. Reemplaza
+// al `origen: 'hoy' | 'historial'` de DL-096, que solo cubría la ejecución: ahora el mismo detalle abierto desde Inicio
+// vuelve a Inicio, y abierto desde su módulo vuelve al módulo.
+
+const HISTORIAL = { nombre: 'historial-de-entrenamiento', desde: { nombre: 'entrenamiento' } };
 
 test('el detalle abierto desde «Tu historial» vuelve a «Tu historial»', () => {
-  assert.deepEqual(nav.anterior({ nombre: 'ejecucion-de-entrenamiento', id: 'e1', origen: 'historial' }), { nombre: 'historial-de-entrenamiento' });
+  const detalle = nav.navegar(HISTORIAL, { nombre: 'ejecucion-de-entrenamiento', id: 'e1' });
+  assert.deepEqual(nav.anterior(detalle), HISTORIAL);
 });
 
-test('el detalle abierto desde «Hoy» sigue volviendo a «Entrenamiento de hoy» (origen explícito o ausente)', () => {
-  assert.deepEqual(nav.anterior({ nombre: 'ejecucion-de-entrenamiento', id: 'e1', origen: 'hoy' }), { nombre: 'entrenamiento' });
+test('el mismo detalle vuelve a Entrenamiento de hoy si se abrió ahí, a Inicio si se abrió desde Inicio, y sin origen a su madre', () => {
+  assert.deepEqual(nav.anterior(nav.navegar({ nombre: 'entrenamiento' }, { nombre: 'ejecucion-de-entrenamiento', id: 'e1' })), { nombre: 'entrenamiento' });
+  assert.deepEqual(nav.anterior(nav.navegar({ nombre: 'inicio' }, { nombre: 'ejecucion-de-entrenamiento', id: 'e1' })), { nombre: 'inicio' });
   assert.deepEqual(nav.anterior({ nombre: 'ejecucion-de-entrenamiento', id: 'e1' }), { nombre: 'entrenamiento' });
 });
 
-test('la pantalla de registro (borrador) sigue volviendo a Hoy: solo se abre desde Hoy', () => {
-  assert.deepEqual(nav.anterior({ nombre: 'sesion-de-entrenamiento', draftId: 'd1', sesion: {}, fecha: '2026-09-25' }), { nombre: 'entrenamiento' });
+test('registrar el borrador lo reemplaza por su ejecución: volver lleva adonde se había abierto el borrador', () => {
+  const sesion = { sesion: {}, fecha: '2026-10-04' };
+  for (const raiz of [{ nombre: 'inicio' }, { nombre: 'entrenamiento' }]) {
+    const borrador = nav.navegar(raiz, { nombre: 'sesion-de-entrenamiento', draftId: 'd1', ...sesion });
+    const registrada = nav.navegar(borrador, { nombre: 'ejecucion-de-entrenamiento', id: 'e1', aviso: 'Sesión registrada.' }, 'reemplazar');
+    assert.deepEqual(nav.anterior(registrada), raiz, `desde ${raiz.nombre}`);
+  }
+  assert.deepEqual(nav.anterior({ nombre: 'sesion-de-entrenamiento', draftId: 'd1', ...sesion }), { nombre: 'entrenamiento' }, 'sin origen, a Entrenamiento de hoy');
 });
 
-test('el enlace visible de volver nombra «Tu historial» cuando el destino es el historial', () => {
+test('el botón de volver nombra adónde vuelve', () => {
   assert.equal(nav.textoDeVolverA({ nombre: 'historial-de-entrenamiento' }), 'Volver a Tu historial');
+  assert.equal(nav.textoDeVolverA({ nombre: 'inicio' }), 'Volver a Inicio');
+  assert.equal(nav.textoDeVolverA({ nombre: 'mi-evolucion' }), 'Volver a Mi evolución');
 });
 
 // ─── 2. Fecha civil: `fechaCivil` no desplaza el día en ninguna zona ─────────────────────────────
@@ -147,16 +164,17 @@ test('el ScrollView global sigue dentro del KeyboardAvoidingView (el padding lo 
   assert.ok(inicio >= 0 && scroll > inicio && fin > scroll, 'el ScrollView global tiene que estar dentro del KeyboardAvoidingView');
 });
 
-// ─── 5. La barra inferior (Dirección, 2026-10-01): cinco zonas, como en las apps ─────────────────
-// Con sesión, la APK navega con una barra fija abajo: Nutrición, Entrenamiento, Evolución, Información y Cuenta. Cada
-// pantalla pertenece a una zona, que queda resaltada también en sus subpantallas; «atrás» desde una zona principal lleva
-// a Nutrición, y desde Nutrición sale de la app. El dibujo real (área segura, teclado) solo se comprueba en el teléfono.
+// ─── 5. Barra, cabecera y origen (DL-117, Dirección, 2026-10-04) ────────────────────────────────
+// Con sesión, la APK navega con una barra de cinco raíces: Inicio, Nutrición, Entrenamiento, Evolución e Información.
+// Cuenta se abre desde el avatar de la cabecera. Reemplaza a la barra del 2026-10-01, que tenía Cuenta en lugar de Inicio
+// y abría en Nutrición. El dibujo real (área segura, teclado, letra grande) solo se comprueba en el teléfono.
 
 /** Una ruta de ejemplo por cada nombre de `Ruta`, con los datos que piden. */
 const RUTAS = [
   { nombre: 'bienvenida' },
   { nombre: 'registro' },
   { nombre: 'login' },
+  { nombre: 'inicio' },
   { nombre: 'cuenta' },
   { nombre: 'vinculos' },
   { nombre: 'vinculo', id: 'v1' },
@@ -175,81 +193,146 @@ const RUTAS = [
   { nombre: 'sesion-de-entrenamiento', draftId: 'd1', sesion: {}, fecha: '2026-10-01' },
   { nombre: 'ejecucion-de-entrenamiento', id: 'e1' },
 ];
+const RAICES = ['inicio', 'hoy', 'entrenamiento', 'mi-evolucion', 'mis-solicitudes'].map((nombre) => ({ nombre }));
+const conSesion = RUTAS.filter(nav.requiereSesion);
 
-test('la barra tiene las cinco zonas, en orden, con su texto y su pantalla principal', () => {
+test('la barra tiene los cinco destinos, en orden, con su texto y su raíz', () => {
   assert.deepEqual(
     nav.ZONAS.map((z) => [z.texto, z.ruta.nombre]),
     [
+      ['Inicio', 'inicio'],
       ['Nutrición', 'hoy'],
       ['Entrenamiento', 'entrenamiento'],
       ['Evolución', 'mi-evolucion'],
       ['Información', 'mis-solicitudes'],
-      ['Cuenta', 'cuenta'],
     ],
   );
-  for (const z of nav.ZONAS) assert.equal(nav.zonaDe(z.ruta), z.zona, `la pantalla principal de ${z.texto} pertenece a su zona`);
-});
-
-test('toda pantalla con sesión tiene zona, y las de afuera de la sesión no (sin barra en Bienvenida, registro ni login)', () => {
-  for (const ruta of RUTAS) {
-    const zona = nav.zonaDe(ruta);
-    if (nav.requiereSesion(ruta)) assert.ok(zona, `«${ruta.nombre}» no tiene zona`);
-    else assert.equal(zona, null, `«${ruta.nombre}» no debería mostrar la barra`);
+  for (const z of nav.ZONAS) {
+    assert.equal(nav.moduloDe(z.ruta), z.zona, `la raíz de ${z.texto} pertenece a su módulo`);
+    assert.equal(nav.pestanaActiva(z.ruta), z.zona, `la raíz de ${z.texto} resalta su destino`);
+    assert.ok(nav.esRaiz(z.ruta));
   }
 });
 
-test('en una subpantalla queda resaltada la zona madre', () => {
-  const madre = (nombre) => nav.zonaDe(RUTAS.find((r) => r.nombre === nombre));
-  assert.equal(madre('sesion-de-entrenamiento'), 'entrenamiento');
-  assert.equal(madre('ejecucion-de-entrenamiento'), 'entrenamiento');
-  assert.equal(madre('historial-de-entrenamiento'), 'entrenamiento');
-  assert.equal(madre('plan-de-entrenamiento'), 'entrenamiento');
-  assert.equal(madre('vinculo'), 'cuenta');
-  assert.equal(madre('consentimiento'), 'cuenta');
-  assert.equal(madre('privacidad'), 'cuenta');
-  assert.equal(madre('mi-solicitud'), 'informacion');
-  assert.equal(madre('registro-nutricional'), 'nutricion');
-  assert.equal(madre('plan-actual'), 'nutricion');
+test('módulo, pestaña activa y barra son tres cosas: Cuenta es un módulo que no resalta ningún destino', () => {
+  for (const ruta of RUTAS) {
+    const modulo = nav.moduloDe(ruta);
+    if (nav.requiereSesion(ruta)) assert.ok(modulo, `«${ruta.nombre}» no tiene módulo`);
+    else assert.equal(modulo, null, `«${ruta.nombre}» está fuera de la sesión`);
+  }
+  for (const nombre of ['cuenta', 'vinculos', 'privacidad']) {
+    assert.equal(nav.moduloDe({ nombre }), 'cuenta');
+    assert.equal(nav.pestanaActiva({ nombre }), null, `«${nombre}» no resalta ningún destino`);
+  }
+  // Un detalle sin origen resalta su módulo; abierto desde Inicio, resalta Inicio, donde empezó el camino.
+  assert.equal(nav.pestanaActiva({ nombre: 'ejecucion-de-entrenamiento', id: 'e1' }), 'entrenamiento');
+  assert.equal(nav.pestanaActiva(nav.navegar({ nombre: 'inicio' }, { nombre: 'ejecucion-de-entrenamiento', id: 'e1' })), 'inicio');
+  assert.equal(nav.pestanaActiva(nav.navegar({ nombre: 'hoy' }, { nombre: 'privacidad' })), null, 'Privacidad es de Cuenta aunque se abra desde Nutrición');
 });
 
-test('«atrás» desde una zona principal lleva a Nutrición, y desde Nutrición deja salir de la app', () => {
-  assert.equal(nav.INICIO.nombre, 'hoy', 'con sesión, la APK abre en Nutrición');
-  for (const nombre of ['entrenamiento', 'mi-evolucion', 'mis-solicitudes', 'cuenta']) assert.deepEqual(nav.anterior({ nombre }), { nombre: 'hoy' }, nombre);
-  assert.equal(nav.anterior({ nombre: 'hoy' }), null, 'en Nutrición decide el sistema: sale de la app');
+test('«atrás» desde una raíz lleva a Inicio, y desde Inicio o Bienvenida deja actuar al sistema', () => {
+  assert.deepEqual(nav.INICIO, { nombre: 'inicio' }, 'con sesión, la APK abre en Inicio');
+  for (const nombre of ['hoy', 'entrenamiento', 'mi-evolucion', 'mis-solicitudes']) assert.deepEqual(nav.anterior({ nombre }), { nombre: 'inicio' }, nombre);
+  assert.equal(nav.anterior({ nombre: 'inicio' }), null);
+  assert.equal(nav.anterior({ nombre: 'bienvenida' }), null);
 });
 
-test('«Tu historial» vuelve a Entrenamiento de hoy: ya no se entra desde Cuenta', () => {
-  assert.deepEqual(nav.anterior({ nombre: 'historial-de-entrenamiento' }), { nombre: 'entrenamiento' });
-  assert.equal(nav.textoDeVolverA(nav.anterior({ nombre: 'historial-de-entrenamiento' })), 'Volver a Entrenamiento de hoy');
-});
-
-test('las zonas principales no llevan enlace de volver; las subpantallas sí, hacia una pantalla de su misma zona', () => {
-  for (const ruta of RUTAS.filter(nav.requiereSesion)) {
-    if (nav.esPrincipal(ruta)) continue;
+test('toda pantalla con sesión que no es raíz tiene adónde volver, también sin origen', () => {
+  for (const ruta of conSesion) {
+    if (nav.esRaiz(ruta)) continue;
     const destino = nav.anterior(ruta);
     assert.ok(destino, `«${ruta.nombre}» necesita volver`);
-    assert.equal(nav.zonaDe(destino), nav.zonaDe(ruta), `volver desde «${ruta.nombre}» no cambia de zona`);
+    assert.ok(nav.requiereSesion(destino), `volver desde «${ruta.nombre}» no sale de la sesión`);
   }
-  assert.match(APP, /destinoAnterior && !esPrincipal\(ruta\)/, 'App.tsx no dibuja el enlace de volver en las zonas principales');
 });
 
-test('la barra va fija abajo: fuera del ScrollView y dentro del KeyboardAvoidingView, y solo con sesión', () => {
-  const finDelScroll = APP.indexOf('</ScrollView>');
-  const barra = APP.indexOf('<BarraDeZonas');
-  const fin = APP.indexOf('</KeyboardAvoidingView>');
-  assert.ok(finDelScroll >= 0 && barra > finDelScroll && fin > barra, 'la barra tiene que ir después del ScrollView y dentro del KeyboardAvoidingView');
-  assert.match(APP, /const zona = sesion \? zonaDe\(ruta\) : null;/, 'sin sesión no hay barra');
+test('Cuenta abierta desde el avatar vuelve a la pantalla desde la que se abrió, en cada destino y en un detalle', () => {
+  const desdeUnDetalle = nav.navegar({ nombre: 'entrenamiento' }, { nombre: 'ejecucion-de-entrenamiento', id: 'e1' });
+  for (const origen of [...RAICES, desdeUnDetalle]) {
+    const cuenta = nav.navegar(origen, { nombre: 'cuenta' });
+    assert.equal(cuenta.nombre, 'cuenta');
+    assert.deepEqual(nav.anterior(cuenta), origen, `desde ${origen.nombre}`);
+  }
+  // Tocar el avatar estando en Cuenta no la apila de nuevo.
+  const cuenta = nav.navegar({ nombre: 'hoy' }, { nombre: 'cuenta' });
+  assert.deepEqual(nav.navegar(cuenta, { nombre: 'cuenta' }), cuenta);
+});
+
+test('Privacidad vuelve al aviso de A3 desde el que se abrió; desde Cuenta, a Cuenta, que conserva su propio origen', () => {
+  assert.deepEqual(nav.anterior(nav.navegar({ nombre: 'hoy' }, { nombre: 'privacidad' })), { nombre: 'hoy' });
+  const cuenta = nav.navegar({ nombre: 'mi-evolucion' }, { nombre: 'cuenta' });
+  const privacidad = nav.navegar(cuenta, { nombre: 'privacidad' });
+  assert.deepEqual(nav.anterior(privacidad), cuenta);
+  assert.deepEqual(nav.anterior(nav.anterior(privacidad)), { nombre: 'mi-evolucion' });
+});
+
+test('el menú auxiliar lleva a funciones que ya existen, fuera de la barra, y lo abierto vuelve a la raíz del menú', () => {
+  const MENU = readFileSync(resolve(RAIZ, 'apps/mobile/src/menu-auxiliar.tsx'), 'utf8');
+  const destinos = [...MENU.matchAll(/ruta: \{ nombre: '([a-z-]+)' \}/g)].map((m) => m[1]);
+  assert.deepEqual(destinos, ['vinculos', 'historial-de-entrenamiento', 'registros-nutricionales']);
+  for (const nombre of destinos) {
+    assert.ok(!nav.esRaiz({ nombre }), `«${nombre}» ya está en la barra`);
+    for (const raiz of RAICES) assert.deepEqual(nav.anterior(nav.navegar(raiz, { nombre })), raiz, `«${nombre}» desde ${raiz.nombre}`);
+  }
+  assert.match(MENU, /<Modal[^>]*onRequestClose=\{cerrar\}/, 'el botón atrás cierra el menú antes de navegar');
+});
+
+test('navegar: una raíz reinicia la cadena, una pantalla ya abierta no se duplica y el origen tiene tope', () => {
+  const profundo = nav.navegar(nav.navegar({ nombre: 'inicio' }, { nombre: 'cuenta' }), { nombre: 'vinculos' });
+  assert.deepEqual(nav.navegar(profundo, { nombre: 'entrenamiento' }), { nombre: 'entrenamiento' }, 'la barra deja la raíz sin origen');
+  // Después de consentir, «Ver vínculo» vuelve al vínculo de donde se vino, con su propio origen, sin apilarlo de nuevo.
+  const vinculo = nav.navegar(profundo, { nombre: 'vinculo', id: 'v1' });
+  const consentimiento = nav.navegar(vinculo, { nombre: 'consentimiento', vinculoId: 'v1' });
+  assert.deepEqual(nav.navegar(consentimiento, { nombre: 'vinculo', id: 'v1' }, 'reemplazar'), vinculo);
+  // Desde la lista de vínculos, el vínculo reemplaza al consentimiento y hereda su origen.
+  const desdeLaLista = nav.navegar(profundo, { nombre: 'consentimiento', vinculoId: 'v2' });
+  assert.deepEqual(nav.anterior(nav.navegar(desdeLaLista, { nombre: 'vinculo', id: 'v2' }, 'reemplazar')), profundo);
+  // Un vínculo distinto es otra pantalla: se apila.
+  assert.deepEqual(nav.anterior(nav.navegar(vinculo, { nombre: 'vinculo', id: 'v9' })), vinculo);
+  // El tope: por más que se encadenen detalles, se recuerdan como mucho TOPE_DEL_ORIGEN niveles.
+  let r = { nombre: 'inicio' };
+  for (let i = 0; i < 12; i++) r = nav.navegar(r, { nombre: 'vinculo', id: `v${i}` });
+  let niveles = 0;
+  for (let x = r; nav.desdeDe(x); x = nav.desdeDe(x)) niveles++;
+  assert.equal(niveles, nav.TOPE_DEL_ORIGEN);
+});
+
+test('lo que era de una sola vez no se recuerda para volver: el pedido de una raíz y el aviso de una ejecución', () => {
+  const registro = nav.navegar({ nombre: 'hoy', accion: 'registrar' }, { nombre: 'registro-nutricional', id: 'i1' });
+  assert.deepEqual(nav.anterior(registro), { nombre: 'hoy' });
+  const medida = nav.navegar({ nombre: 'mi-evolucion', vista: 'evolucion', metrica: 'peso' }, { nombre: 'cuenta' });
+  assert.deepEqual(nav.anterior(medida), { nombre: 'mi-evolucion' });
+  const registrada = { nombre: 'ejecucion-de-entrenamiento', id: 'e1', aviso: 'Sesión registrada.', desde: { nombre: 'inicio' } };
+  assert.deepEqual(nav.anterior(nav.navegar(registrada, { nombre: 'cuenta' })), { nombre: 'ejecucion-de-entrenamiento', id: 'e1', desde: { nombre: 'inicio' } });
+  assert.ok(nav.traePedido({ nombre: 'hoy', accion: 'registrar' }) && !nav.traePedido({ nombre: 'hoy' }));
+});
+
+test('al iniciar sesión se abre Inicio; si Cuenta pidió volver a entrar para confirmar una acción, se vuelve a Cuenta', () => {
+  assert.deepEqual(nav.alIniciarSesion({ nombre: 'login' }), { nombre: 'inicio' });
+  assert.deepEqual(nav.alIniciarSesion({ nombre: 'login', aviso: 'La sesión ya no es válida.' }), { nombre: 'inicio' });
+  assert.deepEqual(nav.alIniciarSesion({ nombre: 'login', aviso: 'Por seguridad…', alEntrar: 'cuenta' }), { nombre: 'cuenta' });
+  assert.deepEqual(nav.navegar({ nombre: 'login' }, nav.alIniciarSesion({ nombre: 'login', alEntrar: 'cuenta' })), { nombre: 'cuenta' }, 'sin origen: volver lleva a Inicio');
+  assert.match(APP, /motivo === 'reautenticar' \? \{ alEntrar: 'cuenta' as const \}/, 'la reautenticación del cierre de cuenta vuelve a Cuenta');
   assert.match(APP, /ir\(alIniciarSesion\(ruta\)\)/, 'al iniciar sesión se abre la pantalla que decide alIniciarSesion');
 });
 
-test('al iniciar sesión se abre Nutrición; si Cuenta pidió volver a entrar para confirmar una acción, se vuelve a Cuenta', () => {
-  assert.deepEqual(nav.alIniciarSesion({ nombre: 'login' }), { nombre: 'hoy' });
-  assert.deepEqual(nav.alIniciarSesion({ nombre: 'login', aviso: 'La sesión ya no es válida.' }), { nombre: 'hoy' });
-  assert.deepEqual(nav.alIniciarSesion({ nombre: 'login', aviso: 'Por seguridad…', alEntrar: 'cuenta' }), { nombre: 'cuenta' });
-  assert.match(APP, /motivo === 'reautenticar' \? \{ alEntrar: 'cuenta' as const \}/, 'la reautenticación del cierre de cuenta vuelve a Cuenta');
+test('App.tsx: cabecera arriba, barra flotante después del ScrollView, solo con sesión, y un único registro del botón atrás', () => {
+  const raiz = APP.indexOf('<KeyboardAvoidingView');
+  const cabecera = APP.indexOf('<Cabecera', raiz);
+  const scroll = APP.indexOf('<ScrollView', raiz);
+  const finDelScroll = APP.indexOf('</ScrollView>');
+  const barra = APP.indexOf('<BarraDeZonas');
+  const fin = APP.indexOf('</KeyboardAvoidingView>');
+  assert.ok(raiz >= 0 && cabecera > raiz && scroll > cabecera, 'la cabecera va antes del contenido');
+  assert.ok(finDelScroll >= 0 && barra > finDelScroll && fin > barra, 'la barra va después del ScrollView y dentro del KeyboardAvoidingView');
+  assert.match(APP, /\{conSesion \? <BarraDeZonas actual=\{pestanaActiva\(ruta\)\}/, 'sin sesión verificada no hay barra');
+  assert.match(APP, /alMedir=\{setAltoDeLaBarra\}/, 'el contenido deja libre el alto medido de la barra');
+  assert.match(APP, /BackHandler\.addEventListener\('hardwareBackPress', atras\)/);
+  assert.match(APP, /\}, \[atras\]\);/, 'el botón atrás se registra una vez, no en cada pantalla');
+  assert.doesNotMatch(APP, /textoDeVolverA|tipo="enlace" onPress=\{volver\}/, 'volver está en la cabecera, no como enlace dentro del contenido');
 });
 
-test('cada destino de la barra es una pestaña accesible de 48 dp o más, respeta el área segura y se oculta con el teclado', () => {
+test('la barra: pestañas accesibles de 48 dp, sin los indicadores viejos, sobre el área segura y oculta con el teclado', () => {
   const BARRA = readFileSync(resolve(RAIZ, 'apps/mobile/src/barra-de-zonas.tsx'), 'utf8');
   assert.match(BARRA, /accessibilityRole="tab"/);
   assert.match(BARRA, /accessibilityState=\{\{ selected: elegida \}\}/);
@@ -257,12 +340,73 @@ test('cada destino de la barra es una pestaña accesible de 48 dp o más, respet
   const alto = Number(/destino: \{[^}]*minHeight: (\d+)/.exec(BARRA)?.[1]);
   const ancho = Number(/destino: \{[^}]*minWidth: (\d+)/.exec(BARRA)?.[1]);
   assert.ok(alto >= 48 && ancho >= 48, `el destino mide ${ancho} × ${alto} dp`);
-  assert.match(BARRA, /paddingBottom: insets\.bottom/, 'la barra deja libre el área segura de abajo');
+  assert.match(BARRA, /borderRadius: 999/, 'una cápsula con los extremos redondeados del todo');
+  assert.match(BARRA, /bottom: insets\.bottom \+ SEPARACION_DE_LA_BARRA/, 'la cápsula flota sobre el área segura de abajo');
   assert.match(BARRA, /keyboardDidShow/, 'la barra se oculta con el teclado abierto (Android)');
   assert.match(BARRA, /if \(tecladoAbierto\) return null;/);
-  // Cuenta ya no es el menú: sus botones a las zonas salieron, porque están en la barra.
+  assert.match(BARRA, /onLayout=\{\(e\) => alMedir\(/, 'la barra informa su alto real');
+  assert.doesNotMatch(BARRA, /marcaElegida|indicadorElegido/, 'sin la marca ni la píldora de la barra anterior');
+  assert.doesNotMatch(BARRA, /numberOfLines=\{0\}|display: 'none'/, 'ninguna etiqueta se oculta');
+});
+
+test('la cabecera: volver con prioridad sobre el menú, y un avatar neutro que no muestra nombre ni iniciales', () => {
+  const CABECERA = readFileSync(resolve(RAIZ, 'apps/mobile/src/cabecera.tsx'), 'utf8');
+  assert.match(CABECERA, /\{volverA \? \([\s\S]*?\) : conMenu \? \(/, 'volver tiene prioridad sobre el menú');
+  assert.match(CABECERA, /accessibilityLabel=\{textoDeVolverA\(volverA\)\}/, 'el botón dice adónde vuelve');
+  assert.match(CABECERA, /accessibilityLabel="Cuenta"/);
+  const codigo = CABECERA.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  assert.doesNotMatch(codigo, /profile|displayName|email|correo|iniciales/i, 'el perfil no tiene nombre ni foto (D-2)');
+  assert.match(CABECERA, /Ambiente de prueba · solo datos sintéticos/, 'el ambiente siempre a la vista (08 §33)');
+  assert.match(APP, /conMenu=\{conSesion && raiz\}/, 'el menú, solo en una raíz con sesión');
+  assert.match(APP, /volverA=\{recuperacion \|\| raiz \? null : anterior\(ruta\)\}/, 'volver en todo lo que no es raíz');
+});
+
+const cambios = await import('../apps/mobile/src/registro-de-cambios.ts');
+
+test('sin pérdidas silenciosas: con algo escrito sin guardar, salir pregunta y solo sale si la persona lo confirma', () => {
+  const registro = cambios.crearRegistroDeCambios();
+  const salidas = [];
+  const preguntas = [];
+  const salir = () => salidas.push('salió');
+  // Sin nada escrito, sale enseguida y no pregunta.
+  cambios.salirConCuidado(registro, salir, (que, confirmar) => preguntas.push({ que, confirmar }));
+  assert.deepEqual([salidas.length, preguntas.length], [1, 0]);
+  // Una tarjeta declara lo escrito: salir pregunta y no sale todavía.
+  registro.declarar('comida', 'el registro de «Almuerzo»');
+  cambios.salirConCuidado(registro, salir, (que, confirmar) => preguntas.push({ que, confirmar }));
+  assert.deepEqual([salidas.length, preguntas.length, preguntas[0].que], [1, 1, 'el registro de «Almuerzo»']);
+  // «Seguir acá»: no se llama a confirmar, y lo escrito sigue declarado.
+  assert.equal(registro.pendiente(), 'el registro de «Almuerzo»');
+  // «Salir sin guardar»: sale y olvida lo declarado.
+  preguntas[0].confirmar();
+  assert.deepEqual([salidas.length, registro.pendiente()], [2, null]);
+  // Guardar o vaciar los campos deja de declararlo.
+  registro.declarar('serie', 'lo que cargaste en «Sentadilla»');
+  registro.declarar('serie', null);
+  assert.equal(registro.pendiente(), null);
+});
+
+test('sin pérdidas silenciosas: la barra, el avatar, el menú, volver y el botón atrás preguntan; los formularios declaran lo escrito', () => {
+  assert.match(APP, /<BarraDeZonas actual=\{pestanaActiva\(ruta\)\} ir=\{irConCuidado\}/);
+  assert.match(APP, /abrirCuenta=\{\(\) => irConCuidado\(\{ nombre: 'cuenta' \}\)\}/);
+  assert.match(APP, /volver=\{volverConCuidado\}/);
+  assert.match(APP, /setMenuAbierto\(false\);\s*irConCuidado\(r\);/, 'el menú se cierra y después pregunta');
+  assert.match(APP, /const atras = useCallback\(\(\) => \{\s*if \(!anterior\(rutaActual\.current\)\) return false;\s*volverConCuidado\(\);/);
+  const declaran = {
+    'nutricion.tsx': ['el registro de «${comida.label}»', 'la comida fuera del plan'],
+    'entrenamiento.tsx': ['lo que escribiste en esta sesión', 'lo que cargaste en «${p.exerciseName}»', 'la corrección del registro'],
+    'formularios.tsx': ['tus respuestas'],
+    'registro.tsx': ['los datos de tu cuenta nueva'],
+  };
+  for (const [archivo, textos] of Object.entries(declaran)) {
+    const fuente = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas', archivo), 'utf8');
+    for (const texto of textos) assert.ok(fuente.includes(texto), `${archivo} declara «${texto}»`);
+  }
+});
+
+test('Cuenta no abre los módulos: están en la barra y en el menú', () => {
   const CUENTA = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/cuenta.tsx'), 'utf8');
-  for (const nombre of ['hoy', 'entrenamiento', 'historial-de-entrenamiento', 'mi-evolucion', 'mis-solicitudes']) {
+  for (const nombre of ['inicio', 'hoy', 'entrenamiento', 'historial-de-entrenamiento', 'mi-evolucion', 'mis-solicitudes']) {
     assert.doesNotMatch(CUENTA, new RegExp(`ir\\(\\{ nombre: '${nombre}' \\}\\)`), `Cuenta todavía abre «${nombre}»`);
   }
 });

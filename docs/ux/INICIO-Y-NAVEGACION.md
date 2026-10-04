@@ -93,11 +93,50 @@ Lleva a funciones que ya existen y no tienen lugar en la barra: **Vínculos**, *
 
 ### Módulo, pestaña activa y barra
 
-Son tres cosas separadas en `src/navegacion.ts`:
-- **`moduloDe(ruta)`:** a qué módulo pertenece una pantalla. Cuenta y sus subpantallas son el módulo `cuenta`.
-- **`pestanaActiva(ruta)`:** qué destino se resalta. Es la raíz donde empieza la cadena de origen, o el módulo de la
-  pantalla. **Cuenta no resalta ninguno:** no es un sexto destino ni una especialidad.
-- **`barraVisible`:** visible con sesión y oculta con el teclado abierto.
+Son tres cosas separadas:
+- **`moduloDe(ruta)`** (`src/navegacion.ts`): a qué módulo pertenece una pantalla. Cuenta y sus subpantallas son el
+  módulo `cuenta`.
+- **`pestanaActiva(ruta)`** (`src/navegacion.ts`): qué destino se resalta. Es la raíz donde empieza la cadena de origen,
+  o el módulo de la pantalla. **Cuenta no resalta ninguno:** no es un sexto destino ni una especialidad.
+- **La barra se ve** (`conSesion` en `App.tsx`) con una sesión verificada, y se oculta con el teclado abierto
+  (`src/barra-de-zonas.tsx`).
+
+### Sin pérdidas silenciosas
+
+Una pantalla con algo escrito y sin guardar lo declara (`useCambiosSinGuardar`, en `src/cambios-sin-guardar.tsx`).
+Salir por la barra, la cabecera, el avatar, el menú o el botón atrás pregunta antes, con el diálogo del sistema:
+«Seguir acá» o «Salir sin guardar». Lo que una pantalla hace por sí misma (registrar y pasar al detalle, ir a
+Privacidad desde un aviso) lo decide esa pantalla, y que la sesión termine no pregunta.
+
+| Pantalla | Qué declara |
+|---|---|
+| Nutrición, una comida del plan | Las cantidades o la observación escritas con la tarjeta abierta |
+| Nutrición, comida fuera del plan | La descripción o la porción escritas |
+| Sesión de entrenamiento | El motivo, el resumen de la sesión o la hora, distintos de lo guardado en el borrador |
+| Sesión de entrenamiento, un ejercicio | Una serie a medio cargar, o un resumen distinto del guardado |
+| Corrección de un registro | El motivo o cualquier valor distinto del registro vigente |
+| Una solicitud de formulario | Las respuestas o el motivo del borrador |
+| Crear cuenta | El correo o la contraseña escritos |
+
+### Barra y cabecera: cómo se ven
+
+- **Barra.** Una cápsula flotante:
+  - con márgenes de 12 dp a los costados, u 8 en un teléfono de menos de 360 dp;
+  - extremos redondeados del todo y un borde fino (`barraBorde`);
+  - vidrio ahumado sin desenfoque (`barraVidrio`): el escalón elevado al 90 % en Azul noche y el blanco al 92 % en Claro;
+  - las cinco etiquetas siempre a la vista, a 12 sp, que crecen hasta 1,15 veces y, solo si no entran, bajan hasta un
+    85 %;
+  - el destino elegido lleva el ícono y la etiqueta en `barraElegido`, la etiqueta en negrita y un brillo radial suave
+    detrás del ícono. No hay puntito, recuadro, aro ni botón central;
+  - mide su alto real y el contenido deja ese espacio libre al final.
+- **Contraste del vidrio.** `scripts/contraste.test.cjs` mide las etiquetas sobre la mezcla del vidrio con cada color
+  del tema, el peor caso de lo que puede pasar detrás. El mínimo medido es 6,02:1 en Azul noche y 5,76:1 en Claro.
+- **Cabecera.**
+  - A la izquierda: «Volver» con su flecha, que le dice al lector de pantalla adónde vuelve; el menú en una raíz; o
+    nada. También en Crear cuenta e Iniciar sesión, que vuelven a Bienvenida.
+  - Al centro: el isotipo y «BE», con un brillo contenido en su lugar.
+  - A la derecha: el avatar neutro, de 48 dp.
+  - Debajo: la franja del ambiente de prueba, y un borde fino sobre el que corre la línea de actualización en cian.
 
 ## 4. Solicitudes por visita
 

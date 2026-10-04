@@ -1,7 +1,8 @@
 /**
  * APK · Cuenta: Vínculos · Estado · Tu identificador BE · Privacidad · Apariencia · Seguridad · Cerrar mi cuenta
- * (docs/paquetes/WP-02.md §5; docs/paquetes/WP-03.md §5). Desde la barra inferior (Dirección, 2026-10-01), Cuenta ya
- * no es el menú de las zonas: es una zona más, con lo que es de la cuenta.
+ * (docs/paquetes/WP-02.md §5; docs/paquetes/WP-03.md §5). Desde DL-117 (Dirección, 2026-10-04), Cuenta se abre desde
+ * el avatar de la cabecera y vuelve a la pantalla desde la que se abrió. No es un destino de la barra ni el menú de las
+ * zonas: reúne lo que es de la cuenta.
  * - Estado: solo el estado operativo, nunca «habilitado» (TEST-RF-006).
  * - Tu identificador BE: el que el profesional necesita para solicitar un vínculo (DL-035). Por sí solo no da acceso a
  *   nada; se muestra seleccionable y se comparte con el menú del sistema.
@@ -73,7 +74,7 @@ export function PantallaDeCuenta({ token, salir, ir, sesionRecordada = null }: {
   return (
     <>
       <Titulo>Cuenta</Titulo>
-      {/* Las zonas (Nutrición, Entrenamiento, Evolución, Información) están en la barra de abajo; acá queda lo de la cuenta. */}
+      {/* Los módulos están en la barra de abajo y el menú auxiliar; acá queda lo de la cuenta. Vínculos sigue también acá. */}
       <Boton texto="Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
 
       <Seccion titulo="Estado de la cuenta">

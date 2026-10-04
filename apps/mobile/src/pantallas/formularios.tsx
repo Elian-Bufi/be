@@ -38,6 +38,7 @@ import {
 import { useCallback, useEffect, useReducer, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '../api';
+import { useCambiosSinGuardar } from '../cambios-sin-guardar';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fecha } from '../formato';
 import { falloDe, useClaveDeIntento } from '../intento';
@@ -128,6 +129,8 @@ export function PantallaDeMiSolicitud({ token, id, salir, volver, ir }: { token:
   const [envios, setEnvios] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const clave = useClaveDeIntento();
+  // El borrador (lo escrito y el motivo) se declara: salir por la barra, la cabecera o atrás pregunta antes (DL-117).
+  useCambiosSinGuardar(Object.values(estado.borrador.valores).some((v) => v.trim() !== '') || estado.borrador.motivo.trim() !== '' ? 'tus respuestas' : null);
 
   /**
    * Lee la solicitud (FRM-05), si hace falta `respondable` (FRM-06) y la plantilla (FRM-02). Una sola función para abrir,

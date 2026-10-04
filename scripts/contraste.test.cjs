@@ -37,6 +37,10 @@ function contraste(a, b) {
   const [claro, oscuro] = [luminancia(a), luminancia(b)].sort((x, y) => y - x);
   return (claro + 0.05) / (oscuro + 0.05);
 }
+const hex = (n) => Math.round(n).toString(16).padStart(2, '0');
+const rgb = (h) => [0, 2, 4].map((i) => parseInt(h.slice(1 + i, 3 + i), 16));
+/** El color que se ve con `arriba` en una proporción `p` sobre `abajo` (una capa translúcida). */
+const mezcla = (arriba, abajo, p) => `#${rgb(arriba).map((c, i) => hex(c * p + rgb(abajo)[i] * (1 - p))).join('')}`;
 
 // ─── Lectura de los tokens ──────────────────────────────────────────────────────────────────────
 function bloqueCss(css, selector) {
@@ -192,9 +196,6 @@ test('website · el texto de la cara pública se lee en todo el degradé, en las
   const velo = /color-mix\(in srgb, var\(--azul\) (\d+)%, transparent\)/.exec(bloque);
   assert.ok(velo, 'el degradé de .cara-publica cambió de forma: actualizar esta prueba');
   const proporcion = Number(velo[1]) / 100;
-  const hex = (n) => Math.round(n).toString(16).padStart(2, '0');
-  const rgb = (h) => [0, 2, 4].map((i) => parseInt(h.slice(1 + i, 3 + i), 16));
-  const mezcla = (arriba, abajo, p) => `#${rgb(arriba).map((c, i) => hex(c * p + rgb(abajo)[i] * (1 - p))).join('')}`;
   const fallas = [];
   for (const [nombreDelTema, tema] of Object.entries(temas)) {
     const fondos = { fondo: tema.fondo, 'fondo-suave': tema['fondo-suave'], 'velo del azul sobre el fondo': mezcla(tema.azul, tema.fondo, proporcion) };
@@ -218,6 +219,40 @@ test('APK · Claro', () => {
 
 test('APK · los dos temas declaran los mismos colores', () => {
   assert.deepEqual(Object.keys(temaApk('CLARO')).sort(), Object.keys(temaApk('AZUL_NOCHE')).sort());
+  assert.deepEqual(Object.keys(translucidosApk('CLARO')).sort(), Object.keys(translucidosApk('AZUL_NOCHE')).sort());
+});
+
+/** Los colores translúcidos de la APK, escritos `#rrggbbaa` en tema.ts: el vidrio de la barra inferior. */
+function translucidosApk(nombre) {
+  const ts = readFileSync(TEMA_APK, 'utf8');
+  const inicio = ts.search(new RegExp(`export const ${nombre}(: \\w+)? = \\{`));
+  const cuerpo = ts.slice(inicio, ts.indexOf('};', inicio));
+  const tokens = {};
+  for (const [, clave, valor] of cuerpo.matchAll(/(\w+):\s*'(#[0-9a-f]{8})'/gi)) tokens[clave] = valor.toLowerCase();
+  return tokens;
+}
+
+/**
+ * La barra inferior de la APK es un vidrio translúcido (DL-117): al desplazarse, el contenido pasa por detrás. Sus
+ * etiquetas se miden sobre la mezcla del vidrio con cada color opaco del tema, que es el peor caso de lo que puede pasar
+ * detrás, y no solo sobre el vidrio quieto.
+ */
+test('APK · las etiquetas de la barra se leen sobre el vidrio, pase lo que pase detrás', () => {
+  const fallas = [];
+  for (const nombre of ['AZUL_NOCHE', 'CLARO']) {
+    const opacos = temaApk(nombre);
+    const vidrio = translucidosApk(nombre).barraVidrio;
+    assert.ok(vidrio, `${nombre}: falta el token «barraVidrio»`);
+    const [base, alfa] = [vidrio.slice(0, 7), parseInt(vidrio.slice(7), 16) / 255];
+    for (const frente of ['barraTexto', 'barraElegido']) {
+      assert.ok(opacos[frente], `${nombre}: falta el token «${frente}»`);
+      for (const [clave, detras] of Object.entries(opacos)) {
+        const relacion = contraste(opacos[frente], mezcla(base, detras, alfa));
+        if (relacion < TEXTO) fallas.push(`${nombre} · ${frente} sobre el vidrio con ${clave} detrás = ${relacion.toFixed(2)}:1`);
+      }
+    }
+  }
+  assert.deepEqual(fallas, []);
 });
 
 /** Todo color literal en estilos vive en los tokens: si no, la prueba no lo ve. */
