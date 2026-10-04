@@ -45,7 +45,8 @@ import { Alert, View } from 'react-native';
 import { api } from '../api';
 import { useCambiosSinGuardar } from '../cambios-sin-guardar';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
-import { dia, fecha, fechaCivil, hoyEnZona, ZONA_DE_LA_API } from '../formato';
+import { useDiaDeLaApi } from '../dia-de-la-api';
+import { dia, fecha, fechaCivil } from '../formato';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
@@ -73,8 +74,9 @@ export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; s
   const { retirado, accesoRetirado } = useAccesoRetirado();
   const pedir = useCallback((): Promise<Resultado<HoyDeEntrenamientoResponse>> => api.hoyDeEntrenamiento(token), [token]);
   // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts).
-  // La clave nombra el día civil, en la zona con la que la API resuelve «hoy».
-  const { r, cargar, sinActualizar } = useLecturaRecordada(token, `entrenamiento-hoy:${hoyEnZona(ZONA_DE_LA_API)}`, pedir, sesionPerdida);
+  // La clave nombra el día civil, en la zona con la que la API resuelve «hoy». A la medianoche cambia, y se vuelve a leer.
+  const hoyDeLaApi = useDiaDeLaApi();
+  const { r, cargar, sinActualizar } = useLecturaRecordada(token, `entrenamiento-hoy:${hoyDeLaApi}`, pedir, sesionPerdida);
   const [otroDia, setOtroDia] = useState('');
   const [errorDeFecha, setErrorDeFecha] = useState<string | null>(null);
   const [delDia, setDelDia] = useState<{ fecha: string; ocurrencias: Ocurrencia[] } | null>(null);
@@ -173,6 +175,48 @@ export function PantallaDeEntrenamiento({ token, salir, ir }: { token: string; s
   );
 }
 
+/**
+ * Abrir el borrador de una sesión y llevar a registrarla (API-TRN-15): es una escritura, y va solo cuando la persona
+ * toca «Comenzar» o «Continuar». La usan «Entrenamiento de hoy» e Inicio (DL-117), con el mismo circuito y los mismos
+ * mensajes. Si la sesión ya estaba registrada, lleva al registro.
+ */
+export function useAbrirOcurrencia({
+  ocurrencia: o,
+  token,
+  sesionPerdida,
+  accesoRetirado,
+  ir,
+}: {
+  ocurrencia: Ocurrencia;
+  token: string;
+  sesionPerdida: (r: Resultado<unknown>) => boolean;
+  accesoRetirado: (r: Resultado<unknown>) => boolean;
+  ir: (r: Ruta) => void;
+}) {
+  const [abriendo, setAbriendo] = useState(false);
+  const [fallo, setFallo] = useState<string | null>(null);
+
+  async function abrir() {
+    setAbriendo(true);
+    setFallo(null);
+    const r = await api.abrirBorradorDeEjecucion(token, o.occurrenceId);
+    setAbriendo(false);
+    if (sesionPerdida(r)) return;
+    if (!r.ok) {
+      // Abrir el borrador es una escritura: con el 404 no revelador, quien la usa retira su contenido entero en vez de
+      // dejar el plan viejo con un aviso encima (B10-06:1145-1148).
+      if (accesoRetirado(r)) return;
+      if (r.tipo === 'API' && r.codigo === 'ACTIVE_PLAN_REQUIRED') return setFallo('Tu plan ya no está vigente. Actualizá la pantalla.');
+      if (r.tipo === 'API' && r.codigo === 'OCCURRENCE_NOT_EXECUTABLE') return setFallo('Esa sesión no se puede registrar para esa fecha.');
+      return setFallo(falloDe(r).mensaje);
+    }
+    if (r.datos.data.state === 'REGISTERED' && r.datos.data.executionId) return ir({ nombre: 'ejecucion-de-entrenamiento', id: r.datos.data.executionId });
+    ir({ nombre: 'sesion-de-entrenamiento', draftId: r.datos.data.draftId, sesion: o.plannedSession, fecha: o.date });
+  }
+
+  return { abriendo, fallo, abrir } as const;
+}
+
 function TarjetaDeOcurrencia({
   ocurrencia: o,
   hoy,
@@ -188,27 +232,8 @@ function TarjetaDeOcurrencia({
   accesoRetirado: (r: Resultado<unknown>) => boolean;
   ir: (r: Ruta) => void;
 }) {
-  const [abriendo, setAbriendo] = useState(false);
-  const [fallo, setFallo] = useState<string | null>(null);
+  const { abriendo, fallo, abrir } = useAbrirOcurrencia({ ocurrencia: o, token, sesionPerdida, accesoRetirado, ir });
   const vista = vistaDeOcurrencia(o, hoy);
-
-  async function abrir() {
-    setAbriendo(true);
-    setFallo(null);
-    const r = await api.abrirBorradorDeEjecucion(token, o.occurrenceId);
-    setAbriendo(false);
-    if (sesionPerdida(r)) return;
-    if (!r.ok) {
-      // Abrir el borrador es una escritura: con el 404 no revelador, la pantalla retira el contenido entero en vez de
-      // dejar el plan viejo con un aviso encima (B10-06:1145-1148).
-      if (accesoRetirado(r)) return;
-      if (r.tipo === 'API' && r.codigo === 'ACTIVE_PLAN_REQUIRED') return setFallo('Tu plan ya no está vigente. Actualizá la pantalla.');
-      if (r.tipo === 'API' && r.codigo === 'OCCURRENCE_NOT_EXECUTABLE') return setFallo('Esa sesión no se puede registrar para esa fecha.');
-      return setFallo(falloDe(r).mensaje);
-    }
-    if (r.datos.data.state === 'REGISTERED' && r.datos.data.executionId) return ir({ nombre: 'ejecucion-de-entrenamiento', id: r.datos.data.executionId });
-    ir({ nombre: 'sesion-de-entrenamiento', draftId: r.datos.data.draftId, sesion: o.plannedSession, fecha: o.date });
-  }
 
   return (
     <Tarjeta>

@@ -72,7 +72,7 @@ export function BarraDeZonas({ actual, ir, alMedir }: { actual: Zona | null; ir:
           >
             <View style={estilos.lugarDelIcono}>
               {elegida ? <Brillo zona={z.zona} /> : null}
-              <Icono zona={z.zona} color={elegida ? COLOR.barraElegido : COLOR.barraTexto} grosor={elegida ? 2.1 : 1.8} />
+              <IconoDeZona zona={z.zona} color={elegida ? COLOR.barraElegido : COLOR.barraTexto} grosor={elegida ? 2.1 : 1.8} />
             </View>
             <Text style={[estilos.texto, elegida && estilos.textoElegido]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} maxFontSizeMultiplier={1.15}>
               {z.texto}
@@ -102,8 +102,11 @@ function Brillo({ zona }: { zona: Zona }) {
   );
 }
 
-/** Íconos de trazo, en una grilla de 24: solo acompañan al texto, y el lector de pantalla no los recorre. */
-function Icono({ zona, color, grosor }: { zona: Zona; color: string; grosor: number }) {
+/**
+ * Íconos de trazo, en una grilla de 24: solo acompañan al texto, y el lector de pantalla no los recorre. Inicio los usa
+ * también en el encabezado de cada tarjeta, para que el módulo se reconozca igual que en la barra.
+ */
+export function IconoDeZona({ zona, color, grosor }: { zona: Zona; color: string; grosor: number }) {
   const trazo = { stroke: color, strokeWidth: grosor, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' } as const;
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">

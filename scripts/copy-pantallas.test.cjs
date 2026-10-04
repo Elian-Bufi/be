@@ -19,23 +19,30 @@ const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhi
 const RAIZ = join(__dirname, '..');
 const tsx = (dir) => readdirSync(dir).filter((f) => f.endsWith('.tsx')).map((f) => join(dir, f));
 
+/**
+ * Inicio (DL-117): cada tarjeta vive en el archivo de su módulo y se revisa con la lista de su dominio. Las piezas comunes
+ * y la tarjeta de Información, que muestran texto de cualquier módulo, se revisan con las tres.
+ */
+const inicio = (archivo) => join(RAIZ, 'apps/mobile/src/pantallas', archivo);
+const INICIO_COMUN = ['inicio.tsx', 'tarjeta-de-inicio.tsx', 'inicio-informacion.tsx'].map(inicio);
+
 /** Las pantallas de cada dominio, con la lista de términos que le corresponde. */
 const DOMINIOS = [
   {
     nombre: 'nutrición',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition')), join(RAIZ, 'apps/mobile/src/pantallas/nutricion.tsx')],
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition')), join(RAIZ, 'apps/mobile/src/pantallas/nutricion.tsx'), inicio('inicio-nutricion.tsx'), ...INICIO_COMUN],
     prohibidos: terminosProhibidosEn,
     minimo: 8,
   },
   {
     nombre: 'antropometría',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry')), join(RAIZ, 'apps/mobile/src/pantallas/antropometria.tsx'), join(RAIZ, 'apps/mobile/src/pantallas/figura-de-la-toma.tsx')],
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry')), join(RAIZ, 'apps/mobile/src/pantallas/antropometria.tsx'), join(RAIZ, 'apps/mobile/src/pantallas/figura-de-la-toma.tsx'), inicio('inicio-mediciones.tsx'), ...INICIO_COMUN],
     prohibidos: terminosProhibidosDeAntropometriaEn,
     minimo: 5,
   },
   {
     nombre: 'entrenamiento',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx')],
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), inicio('inicio-entrenamiento.tsx'), ...INICIO_COMUN],
     prohibidos: terminosProhibidosDeEntrenamientoEn,
     minimo: 7,
   },

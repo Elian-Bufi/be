@@ -44,14 +44,14 @@ import {
   type Resultado,
   type UltimaToma,
 } from '@be/domain';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
-import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
+import { memoria, useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { leerMiEvolucion } from '../lecturas-de-las-zonas';
 import { dia, fecha, fechaCivil } from '../formato';
-import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
+import { useSesionPerdida, type Ruta, type Salida, type VistaDeEvolucion } from '../navegacion';
 import { Aviso, Ayuda, Boton, Desplegable, estilosPorTema, Parrafo, Rotulo, Seccion, Segmentos, Titulo } from '../ui';
 import { CompararTomas } from './comparar-tomas';
 import { EvolucionDeUnaMedida } from './evolucion-de-una-medida';
@@ -61,7 +61,29 @@ type Datos = EvolucionResponse['data'];
 
 const sinMediciones = (d: Datos): boolean => d.metrics.every((m) => m.series.length === 0);
 
-export function PantallaDeMiEvolucion({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
+/** Las vistas de la ruta (`navegacion.ts`) y las de la pantalla. */
+const VISTA_PEDIDA: Readonly<Record<VistaDeEvolucion, Vista>> = { ultima: 'TOMA', comparar: 'COMPARAR', evolucion: 'EVOLUCION' };
+
+export function PantallaDeMiEvolucion({
+  token,
+  salir,
+  ir,
+  vista,
+  metrica,
+}: {
+  token: string;
+  salir: (m: Salida) => void;
+  ir: (r: Ruta) => void;
+  /** Desde Inicio se puede abrir una vista y una medida (DL-117): es un pedido de una sola vez. */
+  vista?: VistaDeEvolucion;
+  metrica?: string;
+}) {
+  // El pedido se fija como elección antes del primer dibujo; después manda lo que elija la persona.
+  useState(() => {
+    if (vista) memoria.recordarSeleccion(token, 'mi-evolucion:vista', VISTA_PEDIDA[vista]);
+    if (metrica) memoria.recordarSeleccion(token, 'mi-evolucion:medida', metrica);
+    return null;
+  });
   const sesionPerdida = useSesionPerdida(salir);
   const pedir = useCallback(() => leerMiEvolucion(api, token), [token]);
   // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts). La clave nombra el período que se pide: los últimos 90 días, o el anterior con mediciones (`leerMiEvolucion`).

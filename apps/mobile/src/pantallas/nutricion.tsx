@@ -29,12 +29,13 @@ import {
   type Ingesta,
   type Resultado,
 } from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
 import { useCambiosSinGuardar } from '../cambios-sin-guardar';
 import { Cargando, ErrorConReintento, EstadoDeCarga, SinActualizar, VerMas } from '../estados';
-import { dia, fecha, hoyEnZona, ZONA_DE_LA_API } from '../formato';
+import { useDiaDeLaApi } from '../dia-de-la-api';
+import { dia, fecha } from '../formato';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useListaPaginada } from '../lista';
@@ -55,15 +56,43 @@ function useHoy(token: string, salir: (m: Salida) => void) {
   const [diaTipo, setDiaTipo] = useSeleccionRecordada<string | undefined>(token, 'hoy-nutricional:dia', undefined);
   const pedir = useCallback((): Promise<Resultado<HoyResponse>> => api.hoyNutricional(token, diaTipo), [token, diaTipo]);
   // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts).
-  // La clave nombra el día civil (en la zona con la que la API resuelve «hoy») y el día del plan elegido.
-  const { r, cargar, sinActualizar } = useLecturaRecordada(token, `hoy-nutricional:${hoyEnZona(ZONA_DE_LA_API)}:${diaTipo ?? ''}`, pedir, sesionPerdida);
+  // La clave nombra el día civil (en la zona con la que la API resuelve «hoy») y el día del plan elegido. A la
+  // medianoche cambia, y se vuelve a leer.
+  const hoyDeLaApi = useDiaDeLaApi();
+  const { r, cargar, sinActualizar } = useLecturaRecordada(token, `hoy-nutricional:${hoyDeLaApi}:${diaTipo ?? ''}`, pedir, sesionPerdida);
   return { r, cargar, sinActualizar, setDiaTipo, sesionPerdida };
 }
 
-export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void; subir: () => void }) {
+export function PantallaDeHoy({
+  token,
+  salir,
+  ir,
+  subir,
+  accion,
+  llevarA,
+}: {
+  token: string;
+  salir: (m: Salida) => void;
+  ir: (r: Ruta) => void;
+  subir: () => void;
+  /** Desde Inicio, «Registrar» abre esta pantalla en las comidas, o en la elección del día si hace falta (DL-117). */
+  accion?: 'registrar';
+  /** Lleva la pantalla a una altura, medida desde el principio del contenido. */
+  llevarA?: (y: number) => void;
+}) {
   const { r, cargar, sinActualizar, setDiaTipo, sesionPerdida } = useHoy(token, salir);
   const { retirado, accesoRetirado } = useAccesoRetirado();
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error' | 'info'; texto: string } | null>(null);
+  // El pedido de Inicio se atiende una vez: cuando aparece dónde se registra. Si después la pantalla se vuelve a dibujar
+  // (por ejemplo, al registrar una comida), no se mueve sola.
+  const yDeLaPantalla = useRef(0);
+  const pedidoAtendido = useRef(accion !== 'registrar');
+  const alUbicarElRegistro = (y: number) => {
+    if (pedidoAtendido.current) return;
+    pedidoAtendido.current = true;
+    // Después de este cuadro: así ya se midió dónde empieza la pantalla dentro del contenido.
+    setTimeout(() => llevarA?.(yDeLaPantalla.current + y - 8), 0);
+  };
 
   // Después de registrar, se vuelve a leer desde cero: lo anterior ya no está al día (la comida recién registrada no
   // figura), y dejarlo a la vista invitaría a registrarla de nuevo.
@@ -110,7 +139,7 @@ export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; sali
   const dia = hoy.activePlan?.dayTypes.find((d) => d.dayTypeId === hoy.selectedDayTypeId) ?? null;
 
   return (
-    <View>
+    <View onLayout={(e) => (yDeLaPantalla.current = e.nativeEvent.layout.y)}>
       <Titulo>{COPY_NUTRICION.tuPlanDeHoy}</Titulo>
       <SinActualizar visible={sinActualizar} onReintentar={cargar} />
       {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
@@ -122,41 +151,45 @@ export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; sali
       ) : null}
 
       {hoy.activePlan && !dia ? (
-        <Seccion titulo={COPY_NUTRICION.elegiDiaTipo}>
-          {hoy.activePlan.dayTypes.map((d) => (
-            <Boton key={d.dayTypeId} texto={d.label} tipo="secundario" onPress={() => setDiaTipo(d.dayTypeId)} />
-          ))}
-        </Seccion>
+        <View onLayout={(e) => alUbicarElRegistro(e.nativeEvent.layout.y)}>
+          <Seccion titulo={COPY_NUTRICION.elegiDiaTipo}>
+            {hoy.activePlan.dayTypes.map((d) => (
+              <Boton key={d.dayTypeId} texto={d.label} tipo="secundario" onPress={() => setDiaTipo(d.dayTypeId)} />
+            ))}
+          </Seccion>
+        </View>
       ) : null}
 
       {hoy.activePlan && dia ? (
-        <Seccion titulo={COPY_NUTRICION.comidasDelPlan}>
-          {hoy.activePlan.dayTypes.length > 1 ? (
-            <Parrafo tenue>
-              Día del plan: {dia.label}.{' '}
-              <Text style={s.enlace} onPress={() => setDiaTipo(undefined)} accessibilityRole="link">
-                Cambiar
-              </Text>
-            </Parrafo>
-          ) : null}
-          {dia.meals.map((m) => (
-            <TarjetaDeComida
-              key={m.mealId}
-              token={token}
-              planId={hoy.activePlan!.planId}
-              diaTipoId={dia.dayTypeId}
-              comida={m}
-              registro={hoy.registeredIntake.find((i) => i.mealId === m.mealId && i.origin === 'PRESCRIBED') ?? null}
-              sesionPerdida={sesionPerdida}
-              accesoRetirado={accesoRetirado}
-              onRegistrada={() => registrado(COPY_NUTRICION.comidaRegistrada)}
-              onPlanCambio={() => {
-                setAviso({ tipo: 'info', texto: COPY_NUTRICION.planCambio });
-                void cargar();
-              }}
-            />
-          ))}
-        </Seccion>
+        <View onLayout={(e) => alUbicarElRegistro(e.nativeEvent.layout.y)}>
+          <Seccion titulo={COPY_NUTRICION.comidasDelPlan}>
+            {hoy.activePlan.dayTypes.length > 1 ? (
+              <Parrafo tenue>
+                Día del plan: {dia.label}.{' '}
+                <Text style={s.enlace} onPress={() => setDiaTipo(undefined)} accessibilityRole="link">
+                  Cambiar
+                </Text>
+              </Parrafo>
+            ) : null}
+            {dia.meals.map((m) => (
+              <TarjetaDeComida
+                key={m.mealId}
+                token={token}
+                planId={hoy.activePlan!.planId}
+                diaTipoId={dia.dayTypeId}
+                comida={m}
+                registro={hoy.registeredIntake.find((i) => i.mealId === m.mealId && i.origin === 'PRESCRIBED') ?? null}
+                sesionPerdida={sesionPerdida}
+                accesoRetirado={accesoRetirado}
+                onRegistrada={() => registrado(COPY_NUTRICION.comidaRegistrada)}
+                onPlanCambio={() => {
+                  setAviso({ tipo: 'info', texto: COPY_NUTRICION.planCambio });
+                  void cargar();
+                }}
+              />
+            ))}
+          </Seccion>
+        </View>
       ) : null}
 
       {hoy.activePlan ? (
