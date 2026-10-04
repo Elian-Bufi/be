@@ -1,0 +1,1714 @@
+{
+  "tiempoDelServidorMs": 60,
+  "redes": [
+    {
+      "clave": "4g",
+      "nombre": "4G lento",
+      "rtt": 150,
+      "kbps": 1600
+    },
+    {
+      "clave": "3g",
+      "nombre": "3G lento",
+      "rtt": 400,
+      "kbps": 400
+    },
+    {
+      "clave": "wifi",
+      "nombre": "Wi-Fi",
+      "rtt": 40,
+      "kbps": 20000
+    }
+  ],
+  "escenarios": [
+    {
+      "clave": "tipico",
+      "nombre": "Típico",
+      "detalle": "Registros de comida hoy, tres tomas recientes y 12 sesiones en 30 días, 3 de ellas corregidas.",
+      "conRegistrosHoy": true,
+      "tomas": [
+        "2026-07-25",
+        "2026-08-24",
+        "2026-09-27"
+      ],
+      "sesiones": 12,
+      "corregidas": 3
+    },
+    {
+      "clave": "sin-registros",
+      "nombre": "Sin registros de comida hoy",
+      "detalle": "Como el típico, sin registros hoy: el último registro se pide aparte, después de «Hoy».",
+      "conRegistrosHoy": false,
+      "tomas": [
+        "2026-07-25",
+        "2026-08-24",
+        "2026-09-27"
+      ],
+      "sesiones": 12,
+      "corregidas": 3
+    },
+    {
+      "clave": "sin-mediciones",
+      "nombre": "Sin mediciones recientes",
+      "detalle": "La última toma es de hace casi un año: Mi evolución mira hacia atrás, de a 90 días, hasta encontrarla.",
+      "conRegistrosHoy": true,
+      "tomas": [
+        "2025-10-20",
+        "2025-11-18"
+      ],
+      "sesiones": 12,
+      "corregidas": 3
+    },
+    {
+      "clave": "historial-pesado",
+      "nombre": "Historial con muchas correcciones",
+      "detalle": "60 sesiones en 30 días, 20 de ellas corregidas, algunas dos veces.",
+      "conRegistrosHoy": true,
+      "tomas": [
+        "2026-07-25",
+        "2026-08-24",
+        "2026-09-27"
+      ],
+      "sesiones": 60,
+      "corregidas": 20
+    }
+  ],
+  "resultados": [
+    {
+      "escenario": "tipico",
+      "red": "4g",
+      "enFrio": true,
+      "alternativa": {},
+      "totalMs": 1505,
+      "solicitudes": 6,
+      "bytes": 180280,
+      "gzip": 8705,
+      "bytesDeSubida": 2520,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 622,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 767,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 863,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 1198,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 1505,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        }
+      ],
+      "rutas": [
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "tipico",
+      "red": "4g",
+      "enFrio": false,
+      "alternativa": {},
+      "totalMs": 1180,
+      "solicitudes": 6,
+      "bytes": 180280,
+      "gzip": 8705,
+      "bytesDeSubida": 2520,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 292,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 436,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 530,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 868,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 1180,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        }
+      ],
+      "rutas": [
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "tipico",
+      "red": "3g",
+      "enFrio": true,
+      "alternativa": {},
+      "totalMs": 4994,
+      "solicitudes": 6,
+      "bytes": 180280,
+      "gzip": 8705,
+      "bytesDeSubida": 2520,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 1515,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 2055,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 2471,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 3792,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 4994,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        }
+      ],
+      "rutas": [
+        "/me/health-data-consent-requirement",
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "tipico",
+      "red": "3g",
+      "enFrio": false,
+      "alternativa": {},
+      "totalMs": 4163,
+      "solicitudes": 6,
+      "bytes": 180280,
+      "gzip": 8705,
+      "bytesDeSubida": 2520,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 689,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 1234,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 1641,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 2961,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 4163,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        }
+      ],
+      "rutas": [
+        "/me/health-data-consent-requirement",
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "tipico",
+      "red": "wifi",
+      "enFrio": true,
+      "alternativa": {},
+      "totalMs": 313,
+      "solicitudes": 6,
+      "bytes": 180280,
+      "gzip": 8705,
+      "bytesDeSubida": 2520,
+      "tarjetas": [
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 247,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Para responder",
+          "ms": 247,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 262,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 295,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 313,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        }
+      ],
+      "rutas": [
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "tipico",
+      "red": "wifi",
+      "enFrio": false,
+      "alternativa": {},
+      "totalMs": 222,
+      "solicitudes": 6,
+      "bytes": 180280,
+      "gzip": 8705,
+      "bytesDeSubida": 2520,
+      "tarjetas": [
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 154,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Para responder",
+          "ms": 154,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 169,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 202,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 222,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        }
+      ],
+      "rutas": [
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "sin-registros",
+      "red": "4g",
+      "enFrio": true,
+      "alternativa": {},
+      "totalMs": 1477,
+      "solicitudes": 7,
+      "bytes": 179843,
+      "gzip": 8826,
+      "bytesDeSubida": 2940,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 598,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 744,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 824,
+          "solicitudes": 1,
+          "bytes": 13572,
+          "gzip": 1150
+        },
+        {
+          "tarjeta": "Nutrición · renglón del último registro",
+          "ms": 1094,
+          "solicitudes": 1,
+          "bytes": 755,
+          "gzip": 394
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 1174,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 1477,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        }
+      ],
+      "rutas": [
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/nutrition/executions?limit=1",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "sin-registros",
+      "red": "4g",
+      "enFrio": false,
+      "alternativa": {},
+      "totalMs": 1189,
+      "solicitudes": 7,
+      "bytes": 179843,
+      "gzip": 8826,
+      "bytesDeSubida": 2940,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 313,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 456,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 536,
+          "solicitudes": 1,
+          "bytes": 13572,
+          "gzip": 1150
+        },
+        {
+          "tarjeta": "Nutrición · renglón del último registro",
+          "ms": 807,
+          "solicitudes": 1,
+          "bytes": 755,
+          "gzip": 394
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 887,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 1189,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        }
+      ],
+      "rutas": [
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/nutrition/executions?limit=1",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "sin-registros",
+      "red": "3g",
+      "enFrio": true,
+      "alternativa": {},
+      "totalMs": 4959,
+      "solicitudes": 7,
+      "bytes": 179843,
+      "gzip": 8826,
+      "bytesDeSubida": 2940,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 1492,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 2033,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 2369,
+          "solicitudes": 1,
+          "bytes": 13572,
+          "gzip": 1150
+        },
+        {
+          "tarjeta": "Nutrición · renglón del último registro",
+          "ms": 2939,
+          "solicitudes": 1,
+          "bytes": 755,
+          "gzip": 394
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 3764,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 4959,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        }
+      ],
+      "rutas": [
+        "/me/health-data-consent-requirement",
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/nutrition/executions?limit=1",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "sin-registros",
+      "red": "3g",
+      "enFrio": false,
+      "alternativa": {},
+      "totalMs": 4169,
+      "solicitudes": 7,
+      "bytes": 179843,
+      "gzip": 8826,
+      "bytesDeSubida": 2940,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 692,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 1237,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 1570,
+          "solicitudes": 1,
+          "bytes": 13572,
+          "gzip": 1150
+        },
+        {
+          "tarjeta": "Nutrición · renglón del último registro",
+          "ms": 2142,
+          "solicitudes": 1,
+          "bytes": 755,
+          "gzip": 394
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 2966,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 4169,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        }
+      ],
+      "rutas": [
+        "/me/health-data-consent-requirement",
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/nutrition/executions?limit=1",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "sin-registros",
+      "red": "wifi",
+      "enFrio": true,
+      "alternativa": {},
+      "totalMs": 441,
+      "solicitudes": 7,
+      "bytes": 179843,
+      "gzip": 8826,
+      "bytesDeSubida": 2940,
+      "tarjetas": [
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 251,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Para responder",
+          "ms": 251,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 266,
+          "solicitudes": 1,
+          "bytes": 13572,
+          "gzip": 1150
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 299,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 317,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        },
+        {
+          "tarjeta": "Nutrición · renglón del último registro",
+          "ms": 441,
+          "solicitudes": 1,
+          "bytes": 755,
+          "gzip": 394
+        }
+      ],
+      "rutas": [
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04",
+        "/me/nutrition/executions?limit=1"
+      ]
+    },
+    {
+      "escenario": "sin-registros",
+      "red": "wifi",
+      "enFrio": false,
+      "alternativa": {},
+      "totalMs": 348,
+      "solicitudes": 7,
+      "bytes": 179843,
+      "gzip": 8826,
+      "bytesDeSubida": 2940,
+      "tarjetas": [
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 157,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Para responder",
+          "ms": 157,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 173,
+          "solicitudes": 1,
+          "bytes": 13572,
+          "gzip": 1150
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 209,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 225,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        },
+        {
+          "tarjeta": "Nutrición · renglón del último registro",
+          "ms": 348,
+          "solicitudes": 1,
+          "bytes": 755,
+          "gzip": 394
+        }
+      ],
+      "rutas": [
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04",
+        "/me/nutrition/executions?limit=1"
+      ]
+    },
+    {
+      "escenario": "sin-mediciones",
+      "red": "4g",
+      "enFrio": true,
+      "alternativa": {},
+      "totalMs": 1518,
+      "solicitudes": 9,
+      "bytes": 168539,
+      "gzip": 8690,
+      "bytesDeSubida": 3780,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 604,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 701,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 781,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 1250,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 1518,
+          "solicitudes": 4,
+          "bytes": 36091,
+          "gzip": 2572
+        }
+      ],
+      "rutas": [
+        "/me/anthropometry/progress",
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress?periodStart=2026-04-08&periodEnd=2026-07-06",
+        "/me/anthropometry/progress?periodStart=2026-01-08&periodEnd=2026-04-07",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04",
+        "/me/anthropometry/progress?periodStart=2025-10-10&periodEnd=2026-01-07"
+      ]
+    },
+    {
+      "escenario": "sin-mediciones",
+      "red": "4g",
+      "enFrio": false,
+      "alternativa": {},
+      "totalMs": 1223,
+      "solicitudes": 9,
+      "bytes": 168539,
+      "gzip": 8690,
+      "bytesDeSubida": 3780,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 298,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 395,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 474,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 937,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 1223,
+          "solicitudes": 4,
+          "bytes": 36091,
+          "gzip": 2572
+        }
+      ],
+      "rutas": [
+        "/me/anthropometry/progress",
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress?periodStart=2026-04-08&periodEnd=2026-07-06",
+        "/me/anthropometry/progress?periodStart=2026-01-08&periodEnd=2026-04-07",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04",
+        "/me/anthropometry/progress?periodStart=2025-10-10&periodEnd=2026-01-07"
+      ]
+    },
+    {
+      "escenario": "sin-mediciones",
+      "red": "3g",
+      "enFrio": true,
+      "alternativa": {},
+      "totalMs": 4747,
+      "solicitudes": 9,
+      "bytes": 168539,
+      "gzip": 8690,
+      "bytesDeSubida": 3780,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 1467,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 1868,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 2153,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 4371,
+          "solicitudes": 4,
+          "bytes": 36091,
+          "gzip": 2572
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 4747,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        }
+      ],
+      "rutas": [
+        "/me/anthropometry/progress",
+        "/me/health-data-consent-requirement",
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/training/today",
+        "/me/anthropometry/progress?periodStart=2026-04-08&periodEnd=2026-07-06",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress?periodStart=2026-01-08&periodEnd=2026-04-07",
+        "/me/anthropometry/progress?periodStart=2025-10-10&periodEnd=2026-01-07",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "sin-mediciones",
+      "red": "3g",
+      "enFrio": false,
+      "alternativa": {},
+      "totalMs": 3948,
+      "solicitudes": 9,
+      "bytes": 168539,
+      "gzip": 8690,
+      "bytesDeSubida": 3780,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 677,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 1076,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 1366,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 3581,
+          "solicitudes": 4,
+          "bytes": 36091,
+          "gzip": 2572
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 3948,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        }
+      ],
+      "rutas": [
+        "/me/anthropometry/progress",
+        "/me/health-data-consent-requirement",
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/training/today",
+        "/me/anthropometry/progress?periodStart=2026-04-08&periodEnd=2026-07-06",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress?periodStart=2026-01-08&periodEnd=2026-04-07",
+        "/me/anthropometry/progress?periodStart=2025-10-10&periodEnd=2026-01-07",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "sin-mediciones",
+      "red": "wifi",
+      "enFrio": true,
+      "alternativa": {},
+      "totalMs": 727,
+      "solicitudes": 9,
+      "bytes": 168539,
+      "gzip": 8690,
+      "bytesDeSubida": 3780,
+      "tarjetas": [
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 251,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Para responder",
+          "ms": 251,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 256,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 300,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 727,
+          "solicitudes": 4,
+          "bytes": 36091,
+          "gzip": 2572
+        }
+      ],
+      "rutas": [
+        "/me/anthropometry/progress",
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04",
+        "/me/anthropometry/progress?periodStart=2026-04-08&periodEnd=2026-07-06",
+        "/me/anthropometry/progress?periodStart=2026-01-08&periodEnd=2026-04-07",
+        "/me/anthropometry/progress?periodStart=2025-10-10&periodEnd=2026-01-07"
+      ]
+    },
+    {
+      "escenario": "sin-mediciones",
+      "red": "wifi",
+      "enFrio": false,
+      "alternativa": {},
+      "totalMs": 650,
+      "solicitudes": 9,
+      "bytes": 168539,
+      "gzip": 8690,
+      "bytesDeSubida": 3780,
+      "tarjetas": [
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 157,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Para responder",
+          "ms": 157,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 172,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 209,
+          "solicitudes": 1,
+          "bytes": 107589,
+          "gzip": 2760
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 650,
+          "solicitudes": 4,
+          "bytes": 36091,
+          "gzip": 2572
+        }
+      ],
+      "rutas": [
+        "/me/anthropometry/progress",
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04",
+        "/me/anthropometry/progress?periodStart=2026-04-08&periodEnd=2026-07-06",
+        "/me/anthropometry/progress?periodStart=2026-01-08&periodEnd=2026-04-07",
+        "/me/anthropometry/progress?periodStart=2025-10-10&periodEnd=2026-01-07"
+      ]
+    },
+    {
+      "escenario": "historial-pesado",
+      "red": "4g",
+      "enFrio": true,
+      "alternativa": {},
+      "totalMs": 3748,
+      "solicitudes": 6,
+      "bytes": 624190,
+      "gzip": 14267,
+      "bytesDeSubida": 2520,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 632,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 775,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 870,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 1205,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 3748,
+          "solicitudes": 1,
+          "bytes": 551499,
+          "gzip": 8322
+        }
+      ],
+      "rutas": [
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "historial-pesado",
+      "red": "4g",
+      "enFrio": false,
+      "alternativa": {},
+      "totalMs": 3429,
+      "solicitudes": 6,
+      "bytes": 624190,
+      "gzip": 14267,
+      "bytesDeSubida": 2520,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 324,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 468,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 564,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 902,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 3429,
+          "solicitudes": 1,
+          "bytes": 551499,
+          "gzip": 8322
+        }
+      ],
+      "rutas": [
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "historial-pesado",
+      "red": "3g",
+      "enFrio": true,
+      "alternativa": {},
+      "totalMs": 13901,
+      "solicitudes": 6,
+      "bytes": 624190,
+      "gzip": 14267,
+      "bytesDeSubida": 2520,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 1524,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 2065,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 2478,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 3797,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 13901,
+          "solicitudes": 1,
+          "bytes": 551499,
+          "gzip": 8322
+        }
+      ],
+      "rutas": [
+        "/me/health-data-consent-requirement",
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "historial-pesado",
+      "red": "3g",
+      "enFrio": false,
+      "alternativa": {},
+      "totalMs": 13086,
+      "solicitudes": 6,
+      "bytes": 624190,
+      "gzip": 14267,
+      "bytesDeSubida": 2520,
+      "tarjetas": [
+        {
+          "tarjeta": "Para responder",
+          "ms": 712,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 1258,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 1660,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 2990,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 13086,
+          "solicitudes": 1,
+          "bytes": 551499,
+          "gzip": 8322
+        }
+      ],
+      "rutas": [
+        "/me/health-data-consent-requirement",
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "historial-pesado",
+      "red": "wifi",
+      "enFrio": true,
+      "alternativa": {},
+      "totalMs": 525,
+      "solicitudes": 6,
+      "bytes": 624190,
+      "gzip": 14267,
+      "bytesDeSubida": 2520,
+      "tarjetas": [
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 265,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Para responder",
+          "ms": 265,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 281,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 313,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 525,
+          "solicitudes": 1,
+          "bytes": 551499,
+          "gzip": 8322
+        }
+      ],
+      "rutas": [
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    },
+    {
+      "escenario": "historial-pesado",
+      "red": "wifi",
+      "enFrio": false,
+      "alternativa": {},
+      "totalMs": 432,
+      "solicitudes": 6,
+      "bytes": 624190,
+      "gzip": 14267,
+      "bytesDeSubida": 2520,
+      "tarjetas": [
+        {
+          "tarjeta": "Entrenamiento de hoy",
+          "ms": 174,
+          "solicitudes": 1,
+          "bytes": 7977,
+          "gzip": 924
+        },
+        {
+          "tarjeta": "Para responder",
+          "ms": 174,
+          "solicitudes": 2,
+          "bytes": 2118,
+          "gzip": 1011
+        },
+        {
+          "tarjeta": "Nutrición de hoy",
+          "ms": 189,
+          "solicitudes": 1,
+          "bytes": 14764,
+          "gzip": 1423
+        },
+        {
+          "tarjeta": "Mediciones",
+          "ms": 222,
+          "solicitudes": 1,
+          "bytes": 47832,
+          "gzip": 2587
+        },
+        {
+          "tarjeta": "Tu actividad",
+          "ms": 432,
+          "solicitudes": 1,
+          "bytes": 551499,
+          "gzip": 8322
+        }
+      ],
+      "rutas": [
+        "/me/form-requests?status=PENDING&limit=3",
+        "/me/health-data-consent-requirement",
+        "/me/training/today",
+        "/me/nutrition/today",
+        "/me/anthropometry/progress",
+        "/me/training/executions?periodStart=2026-09-05&periodEnd=2026-10-04"
+      ]
+    }
+  ],
+  "comparaciones": [
+    {
+      "nombre": "Mirar hacia atrás en paralelo (las tres ventanas anteriores juntas)",
+      "red": "4G lento",
+      "que": "Mediciones",
+      "actual": {
+        "tarjeta": "Mediciones",
+        "ms": 1518,
+        "solicitudes": 4,
+        "bytes": 36091,
+        "gzip": 2572
+      },
+      "alternativa": {
+        "tarjeta": "Mediciones",
+        "ms": 1189,
+        "solicitudes": 4,
+        "bytes": 36091,
+        "gzip": 2572
+      },
+      "transferido": null
+    },
+    {
+      "nombre": "Mirar hacia atrás en paralelo (las tres ventanas anteriores juntas)",
+      "red": "3G lento",
+      "que": "Mediciones",
+      "actual": {
+        "tarjeta": "Mediciones",
+        "ms": 4371,
+        "solicitudes": 4,
+        "bytes": 36091,
+        "gzip": 2572
+      },
+      "alternativa": {
+        "tarjeta": "Mediciones",
+        "ms": 3464,
+        "solicitudes": 4,
+        "bytes": 36091,
+        "gzip": 2572
+      },
+      "transferido": null
+    },
+    {
+      "nombre": "Mirar hacia atrás guiado por la sesión (visita posterior: las ventanas conocidas juntas)",
+      "red": "4G lento",
+      "que": "Mediciones",
+      "actual": {
+        "tarjeta": "Mediciones",
+        "ms": 1518,
+        "solicitudes": 4,
+        "bytes": 36091,
+        "gzip": 2572
+      },
+      "alternativa": {
+        "tarjeta": "Mediciones",
+        "ms": 1077,
+        "solicitudes": 4,
+        "bytes": 36091,
+        "gzip": 2572
+      },
+      "transferido": null
+    },
+    {
+      "nombre": "Mirar hacia atrás guiado por la sesión (visita posterior: las ventanas conocidas juntas)",
+      "red": "3G lento",
+      "que": "Mediciones",
+      "actual": {
+        "tarjeta": "Mediciones",
+        "ms": 4371,
+        "solicitudes": 4,
+        "bytes": 36091,
+        "gzip": 2572
+      },
+      "alternativa": {
+        "tarjeta": "Mediciones",
+        "ms": 3303,
+        "solicitudes": 4,
+        "bytes": 36091,
+        "gzip": 2572
+      },
+      "transferido": null
+    },
+    {
+      "nombre": "Resumen agregado de la actividad (D-4), típico",
+      "red": "4G lento",
+      "que": "Tu actividad",
+      "actual": {
+        "tarjeta": "Tu actividad",
+        "ms": 1505,
+        "solicitudes": 1,
+        "bytes": 107589,
+        "gzip": 2760
+      },
+      "alternativa": {
+        "tarjeta": "Tu actividad",
+        "ms": 582,
+        "solicitudes": 1,
+        "bytes": 211,
+        "gzip": 166
+      },
+      "transferido": null
+    },
+    {
+      "nombre": "Resumen agregado de la actividad (D-4), típico",
+      "red": "3G lento",
+      "que": "Tu actividad",
+      "actual": {
+        "tarjeta": "Tu actividad",
+        "ms": 4994,
+        "solicitudes": 1,
+        "bytes": 107589,
+        "gzip": 2760
+      },
+      "alternativa": {
+        "tarjeta": "Tu actividad",
+        "ms": 1380,
+        "solicitudes": 1,
+        "bytes": 211,
+        "gzip": 166
+      },
+      "transferido": null
+    },
+    {
+      "nombre": "Resumen agregado de la actividad (D-4), historial pesado",
+      "red": "4G lento",
+      "que": "Tu actividad",
+      "actual": {
+        "tarjeta": "Tu actividad",
+        "ms": 3748,
+        "solicitudes": 1,
+        "bytes": 551499,
+        "gzip": 8322
+      },
+      "alternativa": {
+        "tarjeta": "Tu actividad",
+        "ms": 586,
+        "solicitudes": 1,
+        "bytes": 211,
+        "gzip": 166
+      },
+      "transferido": null
+    },
+    {
+      "nombre": "Resumen agregado de la actividad (D-4), historial pesado",
+      "red": "3G lento",
+      "que": "Tu actividad",
+      "actual": {
+        "tarjeta": "Tu actividad",
+        "ms": 13901,
+        "solicitudes": 1,
+        "bytes": 551499,
+        "gzip": 8322
+      },
+      "alternativa": {
+        "tarjeta": "Tu actividad",
+        "ms": 1386,
+        "solicitudes": 1,
+        "bytes": 211,
+        "gzip": 166
+      },
+      "transferido": null
+    },
+    {
+      "nombre": "Respuestas comprimidas con gzip, típico",
+      "red": "4G lento",
+      "que": "Toda la visita",
+      "actual": {
+        "ms": 1505,
+        "solicitudes": 6,
+        "bytes": 180280
+      },
+      "alternativa": {
+        "ms": 622,
+        "solicitudes": 6,
+        "bytes": 180280
+      },
+      "transferido": 8705
+    },
+    {
+      "nombre": "Respuestas comprimidas con gzip, típico",
+      "red": "3G lento",
+      "que": "Toda la visita",
+      "actual": {
+        "ms": 4994,
+        "solicitudes": 6,
+        "bytes": 180280
+      },
+      "alternativa": {
+        "ms": 1527,
+        "solicitudes": 6,
+        "bytes": 180280
+      },
+      "transferido": 8705
+    },
+    {
+      "nombre": "Respuestas comprimidas con gzip, historial pesado",
+      "red": "4G lento",
+      "que": "Toda la visita",
+      "actual": {
+        "ms": 3748,
+        "solicitudes": 6,
+        "bytes": 624190
+      },
+      "alternativa": {
+        "ms": 690,
+        "solicitudes": 6,
+        "bytes": 624190
+      },
+      "transferido": 14267
+    },
+    {
+      "nombre": "Respuestas comprimidas con gzip, historial pesado",
+      "red": "3G lento",
+      "que": "Toda la visita",
+      "actual": {
+        "ms": 13901,
+        "solicitudes": 6,
+        "bytes": 624190
+      },
+      "alternativa": {
+        "ms": 1688,
+        "solicitudes": 6,
+        "bytes": 624190
+      },
+      "transferido": 14267
+    }
+  ]
+}

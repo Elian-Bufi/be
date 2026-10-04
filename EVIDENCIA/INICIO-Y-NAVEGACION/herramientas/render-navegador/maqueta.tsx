@@ -19,6 +19,8 @@ const p = new URLSearchParams(location.search);
 const escena = p.get('escena') ?? 'inicio';
 const tema = (p.get('tema') ?? 'azul-noche') as Tema;
 const alFinal = p.get('final') === '1';
+/** Cuánto bajar el contenido antes de la captura, en dp: para mostrar lo que queda debajo de la figura. */
+const bajar = Number(p.get('bajar') ?? '0');
 fijarTema(tema);
 
 const TOKEN = 'token-de-maqueta';
@@ -28,9 +30,13 @@ const nada = () => undefined;
 function rutaDeLaEscena(): Ruta {
   if (escena === 'cuenta') return { nombre: 'cuenta', desde: { nombre: 'inicio' } };
   if (escena.startsWith('evolucion')) {
-    memoria.recordarSeleccion(TOKEN, 'mi-evolucion:vista', escena === 'evolucion-comparar' ? 'COMPARAR' : escena === 'evolucion-medida' ? 'EVOLUCION' : 'TOMA');
-    if (escena === 'evolucion-toma-t2') memoria.recordarSeleccion(TOKEN, 'mi-evolucion:toma', 'ev-ago');
+    const vista = escena.includes('comparar') ? 'COMPARAR' : escena.includes('medida') ? 'EVOLUCION' : escena.includes('indicadores') ? 'INDICADORES' : escena.includes('mapa') || escena.startsWith('evolucion-12') || escena.startsWith('evolucion-mismo-dia') ? 'MAPA' : 'TOMA';
+    memoria.recordarSeleccion(TOKEN, 'mi-evolucion:vista', vista);
+    if (escena.endsWith('-t2')) memoria.recordarSeleccion(TOKEN, 'mi-evolucion:toma', 'ev-ago');
+    if (escena.startsWith('evolucion-mismo-dia')) memoria.recordarSeleccion(TOKEN, 'mi-evolucion:toma', 'ev-tarde');
     if (escena === 'evolucion-medida') memoria.recordarSeleccion(TOKEN, 'mi-evolucion:medida', 'peso');
+    const medida = p.get('medida');
+    if (medida) memoria.recordarSeleccion(TOKEN, 'mi-evolucion:medida', medida);
     return { nombre: 'mi-evolucion' };
   }
   return { nombre: 'inicio' };
@@ -44,8 +50,8 @@ function Maqueta() {
   const raiz = esRaiz(ruta);
   const espacio = alto > 0 ? alto + insets.bottom + SEPARACION_DE_LA_BARRA + 16 : 32 + insets.bottom;
   useEffect(() => {
-    if (!alFinal) return;
-    const t = setTimeout(() => desplazamiento.current?.scrollToEnd({ animated: false }), 900);
+    if (!alFinal && !bajar) return;
+    const t = setTimeout(() => (alFinal ? desplazamiento.current?.scrollToEnd({ animated: false }) : desplazamiento.current?.scrollTo({ y: bajar, animated: false })), 900);
     return () => clearTimeout(t);
   }, []);
   return (

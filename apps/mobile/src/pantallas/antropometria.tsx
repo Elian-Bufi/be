@@ -1,15 +1,16 @@
 /**
- * APK · «Mi evolución» (RF-049, RF-065; API-ANT-06 del lado del asesorado; B10-07; DL-111).
+ * APK · «Mi evolución» (RF-049, RF-065; API-ANT-06 del lado del asesorado; B10-07; DL-111; DL-117).
  *
- * La persona ve su evolución antropométrica en tres partes, todas sobre la misma lectura de la API:
- * 1. **Tu última toma**: la figura de la lámina de Dirección con los sitios medidos y la lista de medidas por familia,
- *    cada una con su valor anterior comparable y la diferencia como una resta (`ultimaToma`, en @be/domain);
- * 2. **Resultados de las fórmulas**: lo que el profesional calculó con un método del catálogo de BE, con el nombre del
- *    método y el anterior del mismo método (dos métodos distintos nunca se comparan);
- * 3. **Evolución por medida**: la serie de cada medida, con sus huecos.
+ * La persona ve su evolución antropométrica en cuatro vistas, todas sobre la misma lectura de la API:
+ * 1. **Mapa corporal**: la figura de la lámina de Dirección con los sitios medidos en la toma elegida. Cada sitio tiene
+ *    su valor, la diferencia con el anterior comparable y su gráfico chico de puntos por toma (`figura-de-la-toma.tsx`);
+ * 2. **Indicadores**: lo que no tiene un sitio en la figura (peso, talla, diámetros y los resultados de las fórmulas),
+ *    en tarjetas sin cuerpo, cada una con su gráfico chico (`indicadores.tsx`);
+ * 3. **Comparar**: la toma elegida frente a la anterior comparable, medida por medida (`comparar-tomas.tsx`);
+ * 4. **Evolución**: una medida en el tiempo, con su gráfico de puntos a escala y su lista (`evolucion-de-una-medida.tsx`).
  *
- * Para que se lea de un vistazo (Dirección, 2026-10-01), la figura va arriba y cada explicación queda plegada en su
- * «Cómo se lee»; la lista de lo que la figura ya muestra, en «La figura, en lista». Nada se borra: se pliega.
+ * Mapa corporal e Indicadores reemplazan a la vista «Toma» (cierre del 2026-10-04): son la misma toma, partida entre lo
+ * que tiene sitio en la figura y lo que no. No suman un nivel de navegación.
  *
  * Con las mismas honestidades que el website:
  * - un tramo sin medición vigente llega como **hueco**, con su rango y su cantidad de días, y no se completa con cero
@@ -19,55 +20,54 @@
  * - un tramo no comparable se señala con su motivo, en vez de convertirse en silencio (REG-06-162/163/164);
  * - nada se califica (TEST-PRJ-009): una diferencia es un número con signo, sin color de «mejor» o «peor».
  *
- * Por eso tampoco hay gráfico de línea: una línea tendría que inventar el tramo que falta. La lista es la forma honesta
- * de mostrar una serie con huecos, y en una pantalla de teléfono además es la legible.
+ * Por eso tampoco hay gráfico de línea: una línea tendría que inventar el tramo que falta.
  *
  * La pantalla es de solo lectura: el asesorado no corrige ni anula mediciones (eso es del profesional, REG-06-219).
  * Cada valor se escribe con `cantidad`/`numero` de `@be/domain`, con la coma decimal del país.
  */
 import {
   cantidad,
-  compararPorCatalogo,
   COPY_ANTROPOMETRIA,
-  ETIQUETA_DE_CLASE_DE_DATO,
   ETIQUETA_DE_FAMILIA,
   FAMILIA_DE_METRICA,
-  nombreDeMetodo,
-  nombreDeMetrica,
   numero,
   textoDeDiferenciaAntropometrica,
-  tomaDe,
   tomasDelPeriodo,
-  valoresPorToma,
   type EvolucionResponse,
   type FamiliaDeMedicion,
   type MedidaDeLaToma,
-  type SerieApi,
-  type Resultado,
   type TomaDelPeriodo,
   type UltimaToma,
 } from '@be/domain';
-import { memo, useCallback, useMemo, useState } from 'react';
-import { Text, useWindowDimensions, View } from 'react-native';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { Text, View } from 'react-native';
 import { api } from '../api';
+import { diasQueIncluyen, eleccionesDelPedido, otrasTomasDelDia, seVeElSelectorDeTomas, vistaDeLaToma, type Dias, type Vista } from '../disposicion-de-la-toma';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
+import { dia, fechaCivil, fechaCorta } from '../formato';
+import { puntosDeLaToma, resumenDe, type EnLaToma, type PuntosDeLaToma } from '../graficos-por-toma';
 import { memoria, useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { leerMiEvolucion } from '../lecturas-de-las-zonas';
-import { dia, fecha, fechaCivil, fechaCorta } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida, type VistaDeEvolucion } from '../navegacion';
-import { Aviso, Ayuda, Boton, Desplegable, estilosPorTema, Parrafo, Rotulo, Seccion, Segmentos, Titulo } from '../ui';
+import { comoSeLeenLosPuntos, enumerar, frasePorToma } from '../textos-por-toma';
+import { Aviso, Ayuda, Boton, Desplegable, estilosPorTema, Parrafo, Rotulo, Segmentos, Titulo } from '../ui';
 import { CompararTomas } from './comparar-tomas';
+import { textoDeLaClase, textoDelAnterior, textoDelMetodo } from './detalle-de-la-medida';
 import { EvolucionDeUnaMedida } from './evolucion-de-una-medida';
-import { frasePorToma } from '../textos-por-toma';
-import { EvolucionPorToma } from './puntos-por-toma';
 import { estaEnLaFigura, FiguraDeLaToma } from './figura-de-la-toma';
+import { Indicadores } from './indicadores';
+import { EvolucionPorToma } from './puntos-por-toma';
 
 type Datos = EvolucionResponse['data'];
 
 const sinMediciones = (d: Datos): boolean => d.metrics.every((m) => m.series.length === 0);
 
-/** Las vistas de la ruta (`navegacion.ts`) y las de la pantalla. */
-const VISTA_PEDIDA: Readonly<Record<VistaDeEvolucion, Vista>> = { ultima: 'TOMA', comparar: 'COMPARAR', evolucion: 'EVOLUCION' };
+/**
+ * Lo que una toma puede no mostrar, por cómo proyecta la API (D-3 en docs/ux/INICIO-Y-NAVEGACION.md). Va en «Cómo se
+ * lee» del mapa y de los indicadores, para que una toma reconstruida no se lea como completa sin serlo.
+ */
+const QUE_PUEDE_FALTAR =
+  'Qué puede no verse de una toma: BE muestra una medición por día y por medida. Si ese día hubo dos evaluaciones, o el mismo resultado se calculó con dos métodos, se ve una sola. Una medición anulada, o con correcciones que no se pueden ordenar, no aparece.';
 
 export function PantallaDeMiEvolucion({
   token,
@@ -85,10 +85,7 @@ export function PantallaDeMiEvolucion({
 }) {
   // El pedido se fija como elección antes del primer dibujo; después manda lo que elija la persona.
   useState(() => {
-    if (vista) memoria.recordarSeleccion(token, 'mi-evolucion:vista', VISTA_PEDIDA[vista]);
-    // «Ver la toma» desde Inicio abre la última, la que nombra la tarjeta, aunque antes se haya elegido otra.
-    if (vista === 'ultima') memoria.recordarSeleccion<string | null>(token, 'mi-evolucion:toma', null);
-    if (metrica) memoria.recordarSeleccion(token, 'mi-evolucion:medida', metrica);
+    for (const [clave, valor] of eleccionesDelPedido({ vista, metrica })) memoria.recordarSeleccion<string | null>(token, clave, valor);
     return null;
   });
   const sesionPerdida = useSesionPerdida(salir);
@@ -116,52 +113,31 @@ export function PantallaDeMiEvolucion({
 }
 
 /**
- * El resumen de cada toma se calcula una vez por respuesta: al volver a la zona con lo recordado, o al volver a elegir
- * una toma, no se repite. Se guarda con la respuesta como clave débil, así se va con ella cuando se olvida.
- */
-const resumenes = new WeakMap<Datos, Map<string, UltimaToma | null>>();
-function resumenDe(datos: Datos, evaluacionId: string): UltimaToma | null {
-  let porToma = resumenes.get(datos);
-  if (!porToma) {
-    porToma = new Map();
-    resumenes.set(datos, porToma);
-  }
-  if (!porToma.has(evaluacionId)) porToma.set(evaluacionId, tomaDe(datos, evaluacionId));
-  return porToma.get(evaluacionId) ?? null;
-}
-
-/** Lo que una fila o una ficha necesita para dibujar su gráfico chico: las tomas del período y la elegida. */
-interface PorToma {
-  readonly datos: Datos;
-  readonly tomas: readonly TomaDelPeriodo[];
-  readonly elegida: string;
-}
-
-/** Los valores de una medida en cada toma, del mismo grupo de comparabilidad que su valor en la toma elegida. */
-const valoresDe = (m: MedidaDeLaToma, porToma: PorToma) => valoresPorToma(porToma.datos, m.metrica, m.actual.punto.comparabilityGroup, porToma.tomas);
-
-type Vista = 'TOMA' | 'COMPARAR' | 'EVOLUCION';
-
-/**
- * «Mi evolución» por tareas (tanda del 2026-10-03; antes, tres secciones seguidas en un solo desplazamiento):
- * - **Última toma:** la figura, con Perímetros/Pliegues y la figura elegida; las medidas que la figura no dibuja, en
- *   fichas y filas; todos los valores en «La figura, en lista»; y los resultados de las fórmulas.
- * - **Comparar:** la última toma frente a la anterior comparable, medida por medida (comparar-tomas.tsx).
- * - **Evolución:** una medida en el tiempo, con el gráfico de puntos y su lista equivalente (evolucion-de-una-medida.tsx).
- * Arriba, una sola línea dice de qué toma se trata y con cuál se compara (DL-113: cada fecha, una vez). La vista elegida
- * se recuerda mientras dure la sesión. Todo sale de la misma lectura: cambiar de vista no hace pedidos.
+ * «Mi evolución» por tareas. Arriba, una sola línea dice de qué toma se trata y con cuál se compara (DL-113: cada fecha,
+ * una vez). La vista, la toma y la medida elegidas se recuerdan mientras dure la sesión, y la medida es la misma en el
+ * mapa, en los indicadores y en Evolución. Todo sale de la misma lectura: cambiar de vista no hace pedidos.
  */
 const Evolucion = memo(function Evolucion({ datos, token }: { datos: Datos; token: string }) {
   const [vista, setVista] = useSeleccionRecordada<Vista>(token, 'mi-evolucion:vista', 'TOMA');
   // DL-117 · el selector de tomas: T1, T2, T3… por evaluación, nunca por fecha. Sin elección, la última. La elección se
   // recuerda mientras dure la sesión, y si esa toma ya no está en la respuesta, vuelve a la última.
   const [pedida, setPedida] = useSeleccionRecordada<string | null>(token, 'mi-evolucion:toma', null);
+  const [medida, setMedida] = useSeleccionRecordada<string | null>(token, 'mi-evolucion:medida', null);
+  // Cerrar el detalle en el mapa o en los indicadores no cambia la medida de Evolución: solo lo cierra.
+  const [cerrada, setCerrada] = useState(false);
   const tomas = useMemo(() => tomasDelPeriodo(datos), [datos]);
   const ultima = tomas[tomas.length - 1] ?? null;
   const elegida = tomas.find((t) => t.evaluacionId === pedida) ?? ultima;
   const toma = elegida ? resumenDe(datos, elegida.evaluacionId) : null;
+  const puntos = useMemo(() => (elegida ? puntosDeLaToma(datos, tomas, elegida.evaluacionId) : null), [datos, tomas, elegida]);
   const periodo = `${COPY_ANTROPOMETRIA.periodo}: ${dia(`${datos.period.start}T12:00:00Z`)} — ${dia(`${datos.period.end}T12:00:00Z`)}`;
-  if (sinMediciones(datos) || !toma) {
+  const visible = vistaDeLaToma(vista, toma ? toma.medidas.some((m) => estaEnLaFigura(m.metrica)) : false);
+  // El pedido de Inicio («Ver la toma») o la primera visita se resuelven una sola vez: después, cambiar de toma no cambia
+  // de vista por su cuenta.
+  useEffect(() => {
+    if (toma && vista === 'TOMA') setVista(visible);
+  }, [toma, vista, visible, setVista]);
+  if (sinMediciones(datos) || !toma || !elegida || !puntos) {
     return (
       <Aviso tipo="info" titulo={COPY_ANTROPOMETRIA.sinMediciones}>
         <Parrafo tenue>Las mediciones las registra el profesional con el que tenés un vínculo activo en Antropometría.</Parrafo>
@@ -169,15 +145,37 @@ const Evolucion = memo(function Evolucion({ datos, token }: { datos: Datos; toke
       </Aviso>
     );
   }
+  const otras = otrasTomasDelDia(tomas, elegida.evaluacionId);
+  const abierta = cerrada ? null : medida;
+  const elegirEnLaToma = (m: string | null) => {
+    if (m === null) setCerrada(true);
+    else {
+      setMedida(m);
+      setCerrada(false);
+    }
+  };
+  const elegirEnEvolucion = (m: string | null) => {
+    setMedida(m);
+    setCerrada(false);
+  };
+  // «Ver su evolución»: la misma medida, con el mismo grupo de comparabilidad, y días que incluyan esa toma.
+  const verSuEvolucion = (m: MedidaDeLaToma) => {
+    memoria.recordarSeleccion<string | null>(token, `mi-evolucion:grupo:${m.metrica}`, m.actual.punto.comparabilityGroup);
+    memoria.recordarSeleccion<Dias>(token, 'mi-evolucion:dias', diasQueIncluyen(m.actual.fecha, datos.period.end, memoria.leerSeleccion<Dias>(token, 'mi-evolucion:dias') ?? '90'));
+    elegirEnEvolucion(m.metrica);
+    setVista('EVOLUCION');
+  };
+  const frase = (m: MedidaDeLaToma) => fraseConTomas(fraseDeLaMedida(m, toma.fechaAnterior), puntos.estados(m), puntos.tomas, elegida.evaluacionId);
+  const medidasALaVista = toma.medidas.length;
   return (
     <>
       {/* Una línea: qué toma es, con cuál se compara y qué hay. Son cantidades reales, no un indicador. */}
       <View style={estilos.encabezadoDeLaToma} accessible>
-        <Text style={estilos.fechaDeLaToma}>{`${elegida === ultima ? COPY_ANTROPOMETRIA.tuUltimaToma : `Toma ${elegida!.etiqueta}`}: ${fechaCivil(toma.fecha)}`}</Text>
+        <Text style={estilos.fechaDeLaToma}>{`${elegida === ultima ? COPY_ANTROPOMETRIA.tuUltimaToma : `Toma ${elegida.etiqueta}`}: ${fechaCivil(toma.fecha)}`}</Text>
         <Text style={estilos.detalle}>
           {[
             toma.fechaAnterior ? `${COPY_ANTROPOMETRIA.comparadaCon} ${fechaCivil(toma.fechaAnterior)}` : COPY_ANTROPOMETRIA.sinAnteriorComparable,
-            `${numero(toma.medidas.length)} ${toma.medidas.length === 1 ? 'medida' : 'medidas'}`,
+            `${numero(medidasALaVista)} ${medidasALaVista === 1 ? 'medida' : 'medidas'}${otras.length > 0 ? ' a la vista' : ''}`,
             toma.derivadas.length > 0 ? `${numero(toma.derivadas.length)} ${toma.derivadas.length === 1 ? 'resultado de fórmula' : 'resultados de fórmulas'}` : null,
           ]
             .filter(Boolean)
@@ -187,25 +185,39 @@ const Evolucion = memo(function Evolucion({ datos, token }: { datos: Datos; toke
       <Segmentos
         etiqueta={COPY_ANTROPOMETRIA.queVer}
         opciones={[
-          // «Toma», y no «Última toma»: con el selector puede ser cualquiera del período.
-          { valor: 'TOMA', texto: 'Toma' },
+          { valor: 'MAPA', texto: 'Mapa corporal' },
+          { valor: 'INDICADORES', texto: 'Indicadores' },
           { valor: 'COMPARAR', texto: COPY_ANTROPOMETRIA.vistaComparar },
           { valor: 'EVOLUCION', texto: COPY_ANTROPOMETRIA.vistaEvolucion },
         ]}
-        valor={vista}
+        valor={visible}
         alElegir={setVista}
       />
-      {vista !== 'EVOLUCION' && tomas.length > 1 ? <SelectorDeToma tomas={tomas} elegida={elegida!.evaluacionId} alElegir={setPedida} periodo={periodo} /> : null}
-      {vista === 'TOMA' ? <LaToma toma={toma} porToma={{ datos, tomas, elegida: elegida!.evaluacionId }} /> : null}
-      {vista === 'COMPARAR' ? <CompararTomas toma={toma} etiqueta={elegida!.etiqueta} /> : null}
-      {vista === 'EVOLUCION' ? <EvolucionDeUnaMedida datos={datos} token={token} /> : null}
+      {seVeElSelectorDeTomas(visible, tomas.length) ? <SelectorDeToma tomas={tomas} elegida={elegida.evaluacionId} alElegir={setPedida} periodo={periodo} /> : null}
+      {visible !== 'EVOLUCION' && otras.length > 0 ? <TomaQuePuedeEstarIncompleta toma={toma} otras={otras} /> : null}
+      {visible === 'MAPA' ? (
+        <MapaCorporal toma={toma} puntos={puntos} medida={abierta} alElegir={elegirEnLaToma} verSuEvolucion={verSuEvolucion} irAIndicadores={() => setVista('INDICADORES')} frase={frase} />
+      ) : null}
+      {visible === 'INDICADORES' ? (
+        <>
+          <Indicadores toma={toma} puntos={puntos} elegida={abierta} alElegir={elegirEnLaToma} verSuEvolucion={verSuEvolucion} irAlMapa={() => setVista('MAPA')} frase={frase} />
+          <ComoSeLeenLosPuntos puntos={puntos} medidas={[...toma.medidas.filter((m) => !estaEnLaFigura(m.metrica)), ...toma.derivadas]} />
+          <Ayuda>
+            <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeDiferencia}</Parrafo>
+            <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeResultados}</Parrafo>
+            <Parrafo tenue>{QUE_PUEDE_FALTAR}</Parrafo>
+          </Ayuda>
+        </>
+      ) : null}
+      {visible === 'COMPARAR' ? <CompararTomas toma={toma} etiqueta={elegida.etiqueta} /> : null}
+      {visible === 'EVOLUCION' ? <EvolucionDeUnaMedida datos={datos} token={token} medida={medida} alElegirMedida={elegirEnEvolucion} /> : null}
     </>
   );
 });
 
 /**
- * Las tomas del período, de la más vieja a la más nueva, con sus fechas reales. Elegir una cambia a la vez la figura,
- * las medidas, los resultados, sus gráficos chicos y la comparación: todo dice de la misma toma.
+ * Las tomas del período, de la más vieja a la más nueva, con sus fechas reales. Elegir una cambia a la vez el mapa, los
+ * indicadores, sus gráficos chicos y la comparación: todo dice de la misma toma.
  */
 function SelectorDeToma({ tomas, elegida, alElegir, periodo }: { tomas: readonly TomaDelPeriodo[]; elegida: string; alElegir: (id: string) => void; periodo: string }) {
   return (
@@ -219,17 +231,81 @@ function SelectorDeToma({ tomas, elegida, alElegir, periodo }: { tomas: readonly
   );
 }
 
+/**
+ * D-3 · si ese día hubo otra evaluación, esta toma puede estar incompleta: la API muestra una medición por día y por
+ * medida, y lo que las dos tomaron se ve de una sola. La pantalla no la presenta como completa.
+ */
+function TomaQuePuedeEstarIncompleta({ toma, otras }: { toma: UltimaToma; otras: readonly TomaDelPeriodo[] }) {
+  const cuales = enumerar(otras.map((t) => t.etiqueta));
+  return (
+    <Aviso tipo="info" titulo="Esta toma puede estar incompleta">
+      <Text style={estilos.textoDeAviso}>
+        {`El ${fechaCivil(toma.fecha)} también hubo ${otras.length === 1 ? 'otra evaluación' : 'otras evaluaciones'} (${cuales}). BE muestra una sola medición por día y por medida: si dos evaluaciones de ese día tomaron la misma medida, se ve una. Las medidas que no se ven siguen registradas en su evaluación.`}
+      </Text>
+    </Aviso>
+  );
+}
+
+/**
+ * El mapa corporal: la figura con los sitios medidos en la toma elegida, cada uno con su valor, su diferencia y su
+ * gráfico chico. Lo que la figura muestra queda también en una lista plegada, con el valor anterior, su fecha y la
+ * clase del dato: es la versión completa para leer, y la que recorre el lector de pantalla, porque la figura no se
+ * recorre.
+ */
+function MapaCorporal({
+  toma,
+  puntos,
+  medida,
+  alElegir,
+  verSuEvolucion,
+  irAIndicadores,
+  frase,
+}: {
+  toma: UltimaToma;
+  puntos: PuntosDeLaToma;
+  medida: string | null;
+  alElegir: (metrica: string | null) => void;
+  verSuEvolucion: (m: MedidaDeLaToma) => void;
+  irAIndicadores: () => void;
+  frase: (m: MedidaDeLaToma) => string;
+}) {
+  const enLaFigura = toma.medidas.filter((m) => estaEnLaFigura(m.metrica));
+  if (enLaFigura.length === 0) {
+    return (
+      <Aviso tipo="info" titulo="Esta toma no tiene medidas en la figura">
+        <Text style={estilos.textoDeAviso}>Sus medidas no tienen un sitio en la figura: están en los indicadores.</Text>
+        <Boton texto="Ver los indicadores" tipo="secundario" onPress={irAIndicadores} />
+      </Aviso>
+    );
+  }
+  return (
+    <View>
+      <FiguraDeLaToma medidas={toma.medidas} fechaComparada={toma.fechaAnterior} puntos={puntos} elegida={medida} alElegir={alElegir} verSuEvolucion={verSuEvolucion} />
+      <ComoSeLeenLosPuntos puntos={puntos} medidas={enLaFigura} />
+      <Desplegable titulo="La figura, en lista" detalle={enLaFigura.length === 1 ? '1 medida, con su valor anterior' : `${numero(enLaFigura.length)} medidas, con su valor anterior`}>
+        <ListaPorFamilia medidas={enLaFigura} fechaComparada={toma.fechaAnterior} puntos={puntos} frase={frase} />
+      </Desplegable>
+      <Ayuda>
+        <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeFigura}</Parrafo>
+        <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeDiferencia}</Parrafo>
+        <Parrafo tenue>{QUE_PUEDE_FALTAR}</Parrafo>
+      </Ayuda>
+    </View>
+  );
+}
+
+/** Cómo se lee el eje de los gráficos chicos: el orden de las tomas, no el tiempo. Solo si hay gráficos. */
+function ComoSeLeenLosPuntos({ puntos, medidas }: { puntos: PuntosDeLaToma; medidas: readonly MedidaDeLaToma[] }) {
+  if (puntos.tomas.length < 2 || medidas.length === 0) return null;
+  const conOtroGrupo = medidas.some((m) => puntos.estados(m).some((e) => e.tipo === 'otro-grupo'));
+  return <Text style={estilos.pie}>{comoSeLeenLosPuntos(puntos.tomas, conOtroGrupo)}</Text>;
+}
+
 /** El orden de las familias en la lista: el de la lámina (perímetros, después pliegues). */
 const FAMILIAS: readonly FamiliaDeMedicion[] = ['MASA_Y_ESTATURA', 'PERIMETROS', 'PLIEGUES', 'DIAMETROS', 'OTRAS'];
 
-/**
- * Las familias cortas van en fichas, una al lado de la otra: peso y talla, y los tres diámetros óseos (referencia
- * estética de Dirección, 2026-10-03). Las demás, en filas.
- */
-const EN_FICHAS: ReadonlySet<FamiliaDeMedicion> = new Set(['MASA_Y_ESTATURA', 'DIAMETROS']);
-
 /** Las medidas de la toma agrupadas por familia, en el orden de la lámina, con un subtítulo por familia. */
-function ListaPorFamilia({ medidas, fechaComparada, porToma }: { medidas: readonly MedidaDeLaToma[]; fechaComparada: string | null; porToma: PorToma }) {
+function ListaPorFamilia({ medidas, fechaComparada, puntos, frase }: { medidas: readonly MedidaDeLaToma[]; fechaComparada: string | null; puntos: PuntosDeLaToma; frase: (m: MedidaDeLaToma) => string }) {
   return (
     <>
       {FAMILIAS.map((familia) => {
@@ -238,15 +314,9 @@ function ListaPorFamilia({ medidas, fechaComparada, porToma }: { medidas: readon
         return (
           <View key={familia}>
             <Rotulo>{ETIQUETA_DE_FAMILIA[familia]}</Rotulo>
-            {EN_FICHAS.has(familia) ? (
-              <View style={estilos.fichas}>
-                {deLaFamilia.map((m) => (
-                  <FichaDeLaToma key={m.metrica} medida={m} fechaComparada={fechaComparada} porToma={porToma} />
-                ))}
-              </View>
-            ) : (
-              deLaFamilia.map((m) => <FilaDeLaToma key={m.metrica} medida={m} fechaComparada={fechaComparada} porToma={porToma} />)
-            )}
+            {deLaFamilia.map((m) => (
+              <FilaDeLaToma key={m.metrica} medida={m} fechaComparada={fechaComparada} puntos={puntos} frase={frase(m)} />
+            ))}
           </View>
         );
       })}
@@ -254,118 +324,40 @@ function ListaPorFamilia({ medidas, fechaComparada, porToma }: { medidas: readon
   );
 }
 
-/** Lo que el lector de pantalla dice de una medida, en una sola frase, sea fila o ficha. */
-function fraseDeLaMedida(medida: MedidaDeLaToma, fechaComparada: string | null, metodo: string | null = null): string {
-  const { actual, anterior, diferencia } = medida;
-  const antes = anterior
-    ? `${COPY_ANTROPOMETRIA.antes}: ${cantidad(anterior.punto.value, anterior.punto.unit)}${anterior.fecha === fechaComparada ? '' : `, el ${fechaCivil(anterior.fecha)}`}`
-    : COPY_ANTROPOMETRIA.sinAnteriorComparable;
+/** Lo que el lector de pantalla dice de una medida, en una sola frase. */
+function fraseDeLaMedida(medida: MedidaDeLaToma, fechaComparada: string | null): string {
+  const { actual, diferencia } = medida;
   const cambio = diferencia ? `${COPY_ANTROPOMETRIA.diferencia}: ${textoDeDiferenciaAntropometrica(diferencia)}` : null;
-  const clase = actual.punto.dataClass === 'MEASURED' ? null : ETIQUETA_DE_CLASE_DE_DATO[actual.punto.dataClass];
-  const corregida = actual.punto.correctionState === 'CORRECTED' ? COPY_ANTROPOMETRIA.corregida : null;
-  return [medida.nombre, cantidad(actual.punto.value, actual.punto.unit), metodo, antes, cambio, clase, corregida].filter(Boolean).join('. ');
+  const metodo = actual.punto.dataClass === 'DERIVED' ? textoDelMetodo(medida) : null;
+  return [medida.nombre, cantidad(actual.punto.value, actual.punto.unit), metodo, textoDelAnterior(medida, fechaComparada), cambio, textoDeLaClase(medida)].filter(Boolean).join('. ');
+}
+
+/** La frase de una medida y, si hay más de una toma, lo que tiene en cada una: el gráfico chico, dicho en palabras. */
+function fraseConTomas(frase: string, estados: readonly EnLaToma[], tomas: readonly TomaDelPeriodo[], elegida: string): string {
+  return tomas.length > 1 && estados.some((e) => e.tipo !== 'sin-dato') ? `${frase}. Por toma: ${frasePorToma(estados, tomas, elegida, fechaCorta)}` : frase;
 }
 
 /**
- * Una ficha: el nombre, el valor grande y, debajo, la diferencia y el anterior. Con letra grande, las fichas ocupan más
- * ancho y bajan a la línea siguiente, en vez de partir el valor.
+ * Una medida de la lista: nombre y valor, el anterior comparable con la diferencia, la clase del dato y su gráfico chico
+ * con la lista equivalente. El lector de pantalla la lee como una sola frase.
  */
-function FichaDeLaToma({ medida, fechaComparada, porToma }: { medida: MedidaDeLaToma; fechaComparada: string | null; porToma: PorToma }) {
-  const { fontScale } = useWindowDimensions();
-  const { actual, anterior, diferencia } = medida;
-  const clase = actual.punto.dataClass === 'MEASURED' ? null : ETIQUETA_DE_CLASE_DE_DATO[actual.punto.dataClass];
-  const corregida = actual.punto.correctionState === 'CORRECTED' ? COPY_ANTROPOMETRIA.corregida : null;
-  const valores = valoresDe(medida, porToma);
-  return (
-    <View style={[estilos.ficha, { minWidth: 96 * Math.min(fontScale, 2.2) }]} accessible accessibilityLabel={fraseConTomas(fraseDeLaMedida(medida, fechaComparada), valores, porToma)}>
-      <Text style={estilos.nombreDeFicha}>{medida.nombre}</Text>
-      <Text style={estilos.valorDeFicha}>{cantidad(actual.punto.value, actual.punto.unit)}</Text>
-      {diferencia ? <Text style={estilos.diferenciaDeFicha}>{textoDeDiferenciaAntropometrica(diferencia)}</Text> : null}
-      <Text style={estilos.detalle}>
-        {anterior
-          ? `${COPY_ANTROPOMETRIA.antes}: ${cantidad(anterior.punto.value, anterior.punto.unit)}${anterior.fecha === fechaComparada ? '' : `, el ${fechaCivil(anterior.fecha)}`}`
-          : COPY_ANTROPOMETRIA.sinAnteriorComparable}
-      </Text>
-      {clase || corregida ? <Text style={estilos.detalle}>{[clase, corregida].filter(Boolean).join(' · ')}</Text> : null}
-      <EvolucionPorToma valores={valores} tomas={porToma.tomas} elegida={porToma.elegida} />
-    </View>
-  );
-}
-
-/** La frase de una medida y, si hay más de una toma, su valor en cada una: el gráfico chico, dicho en palabras. */
-function fraseConTomas(frase: string, valores: ReturnType<typeof valoresDe>, porToma: PorToma): string {
-  return porToma.tomas.length > 1 && valores.some((o) => o !== null) ? `${frase}. Por toma: ${frasePorToma(valores, porToma.tomas, porToma.elegida, fechaCorta)}` : frase;
-}
-
-/**
- * La toma, con la figura arriba. Lo que la figura ya muestra (perímetros y pliegues) queda en una lista plegada, con el
- * valor anterior, su fecha y la clase del dato: es la versión completa para leer —y la que recorre el lector de
- * pantalla, porque la figura no se recorre—. Lo que la figura no dibuja (peso, talla, diámetros…) va a la vista.
- */
-function LaToma({ toma, porToma }: { toma: UltimaToma; porToma: PorToma }) {
-  const enLaFigura = toma.medidas.filter((m) => estaEnLaFigura(m.metrica));
-  const fueraDeLaFigura = toma.medidas.filter((m) => !estaEnLaFigura(m.metrica));
-  return (
-    <View>
-      <FiguraDeLaToma medidas={toma.medidas} />
-      <ListaPorFamilia medidas={fueraDeLaFigura} fechaComparada={toma.fechaAnterior} porToma={porToma} />
-      {enLaFigura.length > 0 ? (
-        <Desplegable titulo="La figura, en lista" detalle={enLaFigura.length === 1 ? '1 medida, con su valor anterior' : `${numero(enLaFigura.length)} medidas, con su valor anterior`}>
-          <ListaPorFamilia medidas={enLaFigura} fechaComparada={toma.fechaAnterior} porToma={porToma} />
-        </Desplegable>
-      ) : null}
-      <Ayuda>
-        {enLaFigura.length > 0 ? <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeFigura}</Parrafo> : null}
-        <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeDiferencia}</Parrafo>
-      </Ayuda>
-      {toma.derivadas.length > 0 ? <ResultadosDeLasFormulas toma={toma} porToma={porToma} /> : null}
-    </View>
-  );
-}
-
-function ResultadosDeLasFormulas({ toma, porToma }: { toma: UltimaToma; porToma: PorToma }) {
-  return (
-    <Seccion titulo={COPY_ANTROPOMETRIA.resultadosDeLasFormulas}>
-      {toma.derivadas.map((m) => (
-        <FilaDeLaToma key={`${m.metrica}-${m.actual.punto.comparabilityGroup}`} medida={m} conMetodo fechaComparada={toma.fechaAnterior} porToma={porToma} />
-      ))}
-      <Ayuda>
-        <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeResultados}</Parrafo>
-      </Ayuda>
-    </Seccion>
-  );
-}
-
-/**
- * Una medida de la toma: nombre y valor, el método si es un resultado de fórmula, y el anterior comparable con la
- * diferencia. El lector de pantalla la lee como una sola frase.
- */
-function FilaDeLaToma({ medida, conMetodo = false, fechaComparada, porToma }: { medida: MedidaDeLaToma; conMetodo?: boolean; fechaComparada: string | null; porToma: PorToma }) {
-  const { actual, anterior, diferencia } = medida;
-  const valor = cantidad(actual.punto.value, actual.punto.unit);
-  const metodo = conMetodo ? `${COPY_ANTROPOMETRIA.metodoDelResultado}: ${nombreDeMetodo(actual.grupo?.methodVersionId ?? null) ?? COPY_ANTROPOMETRIA.metodoSinNombre}` : null;
-  // La fecha del anterior ya está arriba («Comparada con…»): en la fila va solo si este valor viene de otra toma.
-  const antes = anterior
-    ? `${COPY_ANTROPOMETRIA.antes}: ${cantidad(anterior.punto.value, anterior.punto.unit)}${anterior.fecha === fechaComparada ? '' : `, el ${fechaCivil(anterior.fecha)}`}`
-    : COPY_ANTROPOMETRIA.sinAnteriorComparable;
-  const clase = actual.punto.dataClass === 'MEASURED' ? null : ETIQUETA_DE_CLASE_DE_DATO[actual.punto.dataClass];
-  const corregida = actual.punto.correctionState === 'CORRECTED' ? COPY_ANTROPOMETRIA.corregida : null;
+function FilaDeLaToma({ medida, fechaComparada, puntos, frase }: { medida: MedidaDeLaToma; fechaComparada: string | null; puntos: PuntosDeLaToma; frase: string }) {
+  const { actual, diferencia } = medida;
+  const clase = textoDeLaClase(medida);
   // Compacta (referencia estética de Dirección, 2026-10-03): el nombre con el valor a la derecha y, en una sola línea
   // debajo, la diferencia y el anterior. El lector de pantalla sigue leyendo la frase completa.
-  const valores = valoresDe(medida, porToma);
   return (
-    <View style={estilos.fila} accessible accessibilityLabel={fraseConTomas(fraseDeLaMedida(medida, fechaComparada, metodo), valores, porToma)}>
+    <View style={estilos.fila} accessible accessibilityLabel={frase}>
       <View style={estilos.cabezaDeFila}>
         <Text style={estilos.nombre}>{medida.nombre}</Text>
-        <Text style={estilos.valor}>{valor}</Text>
+        <Text style={estilos.valor}>{cantidad(actual.punto.value, actual.punto.unit)}</Text>
       </View>
-      {metodo ? <Text style={estilos.detalle}>{metodo}</Text> : null}
       <Text style={estilos.detalle}>
         {diferencia ? <Text style={estilos.diferencia}>{`${textoDeDiferenciaAntropometrica(diferencia)}  ·  `}</Text> : null}
-        {antes}
+        {textoDelAnterior(medida, fechaComparada)}
       </Text>
-      {clase || corregida ? <Text style={estilos.detalle}>{[clase, corregida].filter(Boolean).join(' · ')}</Text> : null}
-      <EvolucionPorToma valores={valores} tomas={porToma.tomas} elegida={porToma.elegida} />
+      {clase ? <Text style={estilos.detalle}>{clase}</Text> : null}
+      <EvolucionPorToma estados={puntos.estados(medida)} tomas={puntos.tomas} elegida={puntos.elegida} />
     </View>
   );
 }
@@ -375,20 +367,12 @@ const estilos = estilosPorTema((COLOR) => ({
   rotuloDelSelector: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, color: COLOR.tenue, marginTop: 8 },
   encabezadoDeLaToma: { marginBottom: 4 },
   fechaDeLaToma: { fontSize: 18, fontWeight: '800', color: COLOR.texto },
+  textoDeAviso: { fontSize: 15, lineHeight: 21, color: COLOR.texto, marginBottom: 4 },
+  pie: { fontSize: 13, lineHeight: 19, color: COLOR.tenue, marginVertical: 6 },
   fila: { borderTopWidth: 1, borderTopColor: COLOR.borde, paddingVertical: 9 },
-  fichas: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 },
-  ficha: { flexGrow: 1, flexBasis: 0, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.fondo },
-  nombreDeFicha: { fontSize: 13, fontWeight: '600', color: COLOR.tenue },
-  valorDeFicha: { fontSize: 22, fontWeight: '800', color: COLOR.texto, marginTop: 2 },
-  diferenciaDeFicha: { fontSize: 14, fontWeight: '700', color: COLOR.texto, marginTop: 2 },
   cabezaDeFila: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 },
   nombre: { fontSize: 16, fontWeight: '700', color: COLOR.texto, flexShrink: 1 },
   valor: { fontSize: 18, fontWeight: '700', color: COLOR.texto },
   detalle: { fontSize: 14, color: COLOR.tenue, marginTop: 2 },
   diferencia: { fontSize: 14, fontWeight: '700', color: COLOR.texto },
-  serie: { borderTopWidth: 1, borderTopColor: COLOR.borde },
-  cabezaDeSerie: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, gap: 12 },
-  textoDeCabeza: { flexShrink: 1 },
-  accion: { fontSize: 15, fontWeight: '700', color: COLOR.acento },
-  presionado: { opacity: 0.8 },
 }));

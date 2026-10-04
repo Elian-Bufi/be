@@ -11,7 +11,8 @@
  * - **Elegir una observación.** Con un toque, o con «Anterior» y «Siguiente», que también alcanzan a dos puntos casi
  *   encimados. El detalle dice fecha, valor, unidad, protocolo y método, cómo se obtuvo y si se corrigió.
  * - **La lista equivalente** tiene los mismos datos, con los días sin dato: es el camino del lector de pantalla.
- * Lo elegido (medida, días y grupo) se recuerda mientras dure la sesión.
+ * Lo elegido (medida, días y grupo) se recuerda mientras dure la sesión. La medida es la misma del mapa corporal y de los
+ * indicadores: la lleva la pantalla (`mi-evolucion:medida`), y elegirla acá también la cambia allá.
  */
 import {
   cantidad,
@@ -58,11 +59,10 @@ function recortarPeriodo(periodo: Datos['period'], dias: number): { start: strin
   return { start: start < periodo.start ? periodo.start : start, end: periodo.end };
 }
 
-export function EvolucionDeUnaMedida({ datos, token }: { datos: Datos; token: string }) {
+export function EvolucionDeUnaMedida({ datos, token, medida, alElegirMedida }: { datos: Datos; token: string; medida: string | null; alElegirMedida: (m: string | null) => void }) {
   const conDatos = useMemo(() => [...datos.metrics.filter((m) => m.series.length > 0)].sort((a, b) => compararPorCatalogo(a.metricCode, b.metricCode)), [datos]);
-  const [pedida, setPedida] = useSeleccionRecordada<string | null>(token, 'mi-evolucion:medida', null);
   const [dias, setDias] = useSeleccionRecordada<Dias>(token, 'mi-evolucion:dias', '90');
-  const metrica = metricaVigente(conDatos, pedida);
+  const metrica = metricaVigente(conDatos, medida);
   const serieApi = conDatos.find((m) => m.metricCode === metrica) ?? null;
   const preparada = useMemo(() => (serieApi ? prepararSerie(serieApi, datos.period.timeZone) : null), [serieApi, datos.period.timeZone]);
   const [grupoPedido, setGrupoPedido] = useSeleccionRecordada<string | null>(token, `mi-evolucion:grupo:${metrica ?? ''}`, null);
@@ -82,7 +82,7 @@ export function EvolucionDeUnaMedida({ datos, token }: { datos: Datos; token: st
 
   return (
     <View>
-      <SelectorDeMedida metricas={conDatos} elegida={metrica} alElegir={(m) => { setPedida(m); setElegida(null); }} />
+      <SelectorDeMedida metricas={conDatos} elegida={metrica} alElegir={(m) => { alElegirMedida(m); setElegida(null); }} />
       <Segmentos
         etiqueta={COPY_ANTROPOMETRIA.ultimosDias}
         opciones={DIAS.map((d) => ({ valor: d, texto: `${d} días` }))}

@@ -6,6 +6,8 @@
  * - cada fila mide lo que su texto necesita con la letra de la persona;
  * - las tarjetas no se superponen y las guías van de su tarjeta a su sitio.
  * - las filas que eligen un sitio dicen al lector de pantalla su rol y si están elegidas (selección coordinada).
+ * - mapa corporal: con más de una toma, cada fila lleva su gráfico chico, del ancho exacto de su contenido, sin mover
+ *   ningún sitio; y la familia que se dibuja es la que la toma tiene.
  * El mismo módulo dibuja la APK y la maqueta del navegador.
  *
  * Uso: node --test scripts/composicion-de-la-figura.test.mjs (después de construir @be/domain).
@@ -18,6 +20,7 @@ import { test } from 'node:test';
 const require = createRequire(import.meta.url);
 const d = require('../packages/domain/dist/index.js');
 const c = await import('../apps/mobile/src/composicion-de-la-figura.ts');
+const graficos = await import('../apps/mobile/src/graficos-por-toma.ts');
 
 /** Una toma sintética con todos los sitios de la figura y una diferencia en cada uno. */
 const VALORES = {
@@ -105,6 +108,50 @@ test('las tarjetas no se superponen y quedan dentro de la lámina; cada guía va
       }
     }
   }
+});
+
+test('mapa corporal: con más de una toma cada fila lleva su gráfico chico, sin mover ningún sitio ni desbordar', () => {
+  const doce = Array.from({ length: 12 }, (_, i) => (i % 5 === 3 ? { tipo: 'sin-dato' } : { tipo: 'valor', observacion: { punto: { value: 30 + (i % 4), unit: 'cm' } } }));
+  for (const ancho of [320, 360, 411]) {
+    for (const caso of CASOS) {
+      const etiqueta = `${ancho} dp, ${caso.sexo} ${caso.familia} ×${caso.escalaDeLetra}`;
+      const sin = c.componerLaFigura({ ancho, medidas: MEDIDAS, ...caso });
+      const con = c.componerLaFigura({ ancho, medidas: MEDIDAS, ...caso, puntos: true });
+      assert.equal(con.modo, sin.modo, `${etiqueta}: el gráfico no cambia el modo`);
+      // Los sitios siguen donde los pone la lámina, en la imagen de esta composición.
+      const lugares = d.FIGURAS_DE_LA_LAMINA[caso.sexo].ENTERO;
+      for (const s of con.sitios) {
+        const esperado = caso.familia === 'PERIMETROS' ? d.anilloEnLaLamina(con.imagen, lugares.perimetros[s.clave]) : d.puntoEnLaLamina(con.imagen, lugares.pliegues[s.clave]);
+        assert.ok(Math.abs(s.cx - esperado.cx) < 1e-9 && Math.abs(s.cy - esperado.cy) < 1e-9, `${etiqueta}: ${s.clave} se movió`);
+      }
+      for (const t of con.tarjetas) {
+        for (const [i, f] of t.filas.entries()) {
+          if (con.modo === 'NUMEROS') {
+            assert.equal(f.anchoDeLosPuntos, null, 'con números, el gráfico va en la lista');
+            continue;
+          }
+          // El ancho del gráfico es el contenido de la fila: la tarjeta sin su relleno ni sus bordes.
+          assert.equal(f.anchoDeLosPuntos, t.ancho - 18, etiqueta);
+          assert.ok(f.anchoDeLosPuntos >= 96, `${etiqueta}: ${f.anchoDeLosPuntos} dp es poco para doce tomas`);
+          // La fila tiene lugar para su texto con la letra de la persona y, debajo, para el gráfico; y nunca menos de 48 dp.
+          const texto = Math.ceil((f.lineasDelRotulo * c.INTERLINEA.rotulo + c.INTERLINEA.valor) * caso.escalaDeLetra) + 8;
+          assert.ok(f.alto >= texto + c.ALTO_DE_LOS_PUNTOS && f.alto >= c.ALTO_MINIMO_DE_FILA, `${etiqueta}: la fila no tiene lugar para el gráfico`);
+          assert.ok(f.alto >= sin.tarjetas.find((x) => x.filas[0].sitio.clave === t.filas[0].sitio.clave).filas[i].alto, etiqueta);
+          const g = graficos.geometriaDePuntos({ ancho: f.anchoDeLosPuntos, alto: c.ALTO_DEL_GRAFICO_EN_LA_FILA, estados: doce, elegida: 11 });
+          for (const p of g.puntos) assert.ok(p.x - p.radio >= 0 && p.x + p.radio <= f.anchoDeLosPuntos && p.y + p.radio <= c.ALTO_DEL_GRAFICO_EN_LA_FILA, `${etiqueta}: doce tomas desbordan la fila`);
+        }
+      }
+    }
+  }
+  // Sin gráficos (una sola toma), las filas no los reservan.
+  assert.ok(componer({ sexo: 'HOMBRE', familia: 'PERIMETROS', escalaDeLetra: 1 }).tarjetas.every((t) => t.filas.every((f) => f.anchoDeLosPuntos === null)));
+});
+
+test('la figura dibuja la familia elegida si la toma la tiene; si no, la otra: nunca una silueta vacía', () => {
+  assert.equal(c.familiaQueSeVe('PERIMETROS', true, true), 'PERIMETROS');
+  assert.equal(c.familiaQueSeVe('PLIEGUES', true, true), 'PLIEGUES');
+  assert.equal(c.familiaQueSeVe('PERIMETROS', false, true), 'PLIEGUES', 'una toma solo con pliegues');
+  assert.equal(c.familiaQueSeVe('PLIEGUES', true, false), 'PERIMETROS', 'una toma solo con perímetros');
 });
 
 test('las filas que eligen un sitio dicen su rol y si están elegidas; la lista de números mide 48 dp', () => {

@@ -2785,3 +2785,19 @@ del titular) · **Estado:** DECIDIDA por Dirección el 2026-10-04
 - D-3: listar todas las tomas antropométricas, si la API tapa una evaluación del mismo día.
 - D-4: un agregado de la actividad de entrenamiento por período. Hoy Inicio descarga las sesiones de 30 días para
   contarlas (TRN-19-LISTA).
+
+**Cierre del 2026-10-04 (sin integrar).** Lo que se resolvió dentro del alcance decidido, y lo que queda para que
+Dirección lo mire en las imágenes y en el teléfono:
+- **Mapa corporal e Indicadores** reemplazan a la vista «Toma» de Mi evolución: son la misma toma, partida entre lo que
+  tiene sitio en la figura y lo que no. No suman un nivel de navegación. Los sitios no se movieron; Comparar y el gráfico
+  detallado por medida siguen igual.
+- **La barra en dos filas con letra grande** es una adaptación excepcional y una decisión visual explícita: si las cinco
+  etiquetas no entran en una fila con al menos el 90 % de su tamaño, la cápsula pasa a dos filas. Las etiquetas ya no
+  tienen tope de crecimiento. **A ratificar por Dirección** (capturas 01 y 10 de `EVIDENCIA/INICIO-Y-NAVEGACION`).
+- **D-3, a la vista:** si otra evaluación cayó el mismo día, la toma dice que puede estar incompleta y cuenta «medidas a
+  la vista». «Cómo se lee» dice qué puede no verse de una toma. Sigue abierta la ampliación del contrato.
+- **D-4, medido y no justificado todavía:** con datos sintéticos y red simulada, la tarjeta de actividad baja 105 KB en
+  el caso típico y 539 KB con un historial cargado de correcciones. Comprimir las respuestas (gzip) llevaría toda la visita
+  de 176 a 9 KB y de 1,50 a 0,62 s en 4G lento, sin un endpoint nuevo ni un cambio de contrato. El primer paso propuesto es
+  verificar si Render ya comprime y, si no, comprimir en la API. El agregado se reconsidera solo si eso no alcanza
+  (`EVIDENCIA/INICIO-Y-NAVEGACION/herramientas/medir-inicio/resultados.md`).

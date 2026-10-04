@@ -6,12 +6,13 @@
  * - **El destino elegido** se marca con el ícono en cian, la etiqueta en negrita y cian, y una iluminación suave detrás del
  *   ícono, que es un degradé radial sin borde. No hay puntito, recuadro ni aro, y no hay botón central. El lector de
  *   pantalla dice cuál está elegido (rol `tab`, estado `selected`): el color nunca es la única señal (10-B10 §7).
- * - **Las cinco etiquetas, siempre.** Cada destino mide lo que su texto más una parte igual del resto, así «Entrenamiento»
- *   entra sin achicar a los demás. Las etiquetas crecen con la letra hasta 1,15 veces. Si aun así no entran, primero se
- *   angostan los márgenes de la cápsula, y solo al final la letra baja, hasta un 80 % como mucho. Ninguna se oculta.
- *   Medido con Roboto en el render del navegador, que reparte el ancho como Yoga y después achica cada etiqueta en su
- *   caja (EVIDENCIA/INICIO-Y-NAVEGACION): desde 390 dp no se achica ninguna; en 360 dp, un 4 % con letra grande; en
- *   320 dp, un 4 % con letra normal y un 17 % con letra grande. Ninguna se corta.
+ * - **Las cinco etiquetas, siempre, y con la letra de la persona** (cierre del 2026-10-04: antes crecían hasta 1,15
+ *   veces y después se achicaban). Ninguna se oculta ni se corta. Para que entren, primero se reparte el ancho (cada
+ *   destino mide su texto más una parte igual del resto), después la cápsula se acerca a los bordes, y si las cinco no
+ *   entran en una fila con al menos el 90 % de su tamaño, **la cápsula pasa a dos filas**: Inicio, Nutrición y
+ *   Entrenamiento arriba; Evolución e Información abajo. Es una adaptación excepcional y explícita: la píldora queda
+ *   como un rectángulo de esquinas redondeadas. Solo si aun así no entran, la letra baja lo justo
+ *   (`disposicion-de-la-barra.ts`; el tamaño efectivo, medido, en EVIDENCIA/INICIO-Y-NAVEGACION).
  * - **La altura sale del contenido**, no de un número fijo. La barra informa la suya (`alMedir`) para que el contenido
  *   deje ese espacio libre al final y nada quede tapado.
  * - Respeta el área segura de abajo: flota por encima de la barra del sistema, con gestos o con botones.
@@ -23,6 +24,7 @@ import { Keyboard, Platform, Pressable, Text, useWindowDimensions, View } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg';
 import { useApariencia } from './apariencia';
+import { disposicionDeLaBarra } from './disposicion-de-la-barra';
 import { ZONAS, type Ruta, type Zona } from './navegacion';
 import { COLOR, estilosPorTema } from './tema';
 
@@ -47,42 +49,47 @@ export function useTecladoAbierto(): boolean {
 
 export function BarraDeZonas({ actual, ir, alMedir }: { actual: Zona | null; ir: (r: Ruta) => void; alMedir: (alto: number) => void }) {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, fontScale } = useWindowDimensions();
   const tecladoAbierto = useTecladoAbierto();
   // Mientras está oculta no ocupa lugar: el contenido recupera ese espacio.
   useEffect(() => {
     if (tecladoAbierto) alMedir(0);
   }, [tecladoAbierto, alMedir]);
   if (tecladoAbierto) return null;
-  // En un teléfono angosto, la cápsula gana ancho antes que achicar las etiquetas.
-  const margen = width < 340 ? 6 : width < 400 ? 8 : 12;
+  // Una fila o dos, y el margen: según el ancho del teléfono y la letra de la persona.
+  const { filas, margen } = disposicionDeLaBarra({ anchoDePantalla: width, escalaDeLetra: fontScale, zonas: ZONAS.map((z) => z.zona) });
   return (
     <View
       accessibilityRole="tablist"
       onLayout={(e) => alMedir(Math.ceil(e.nativeEvent.layout.height))}
-      style={[estilos.capsula, { left: margen, right: margen, bottom: insets.bottom + SEPARACION_DE_LA_BARRA, backgroundColor: COLOR.barraVidrio }]}
+      style={[estilos.capsula, filas.length > 1 && estilos.capsulaEnDosFilas, { left: margen, right: margen, bottom: insets.bottom + SEPARACION_DE_LA_BARRA, backgroundColor: COLOR.barraVidrio }]}
     >
-      {ZONAS.map((z) => {
-        const elegida = z.zona === actual;
-        return (
-          <Pressable
-            key={z.zona}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: elegida }}
-            accessibilityLabel={z.texto}
-            onPress={() => ir(z.ruta)}
-            style={({ pressed }) => [estilos.destino, pressed && estilos.presionado]}
-          >
-            <View style={estilos.lugarDelIcono}>
-              {elegida ? <Brillo zona={z.zona} /> : null}
-              <IconoDeZona zona={z.zona} color={elegida ? COLOR.barraElegido : COLOR.barraTexto} grosor={elegida ? 2.1 : 1.8} />
-            </View>
-            <Text style={[estilos.texto, elegida && estilos.textoElegido]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={1.15}>
-              {z.texto}
-            </Text>
-          </Pressable>
-        );
-      })}
+      {filas.map((fila) => (
+        <View key={fila.join('-')} style={estilos.fila}>
+          {ZONAS.filter((z) => fila.includes(z.zona)).map((z) => {
+            const elegida = z.zona === actual;
+            return (
+              <Pressable
+                key={z.zona}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: elegida }}
+                accessibilityLabel={z.texto}
+                onPress={() => ir(z.ruta)}
+                style={({ pressed }) => [estilos.destino, pressed && estilos.presionado]}
+              >
+                <View style={estilos.lugarDelIcono}>
+                  {elegida ? <Brillo zona={z.zona} /> : null}
+                  <IconoDeZona zona={z.zona} color={elegida ? COLOR.barraElegido : COLOR.barraTexto} grosor={elegida ? 2.1 : 1.8} />
+                </View>
+                {/* Sin tope: crece con la letra. Achicarse es el último recurso, para no cortarse. */}
+                <Text style={[estilos.texto, elegida && estilos.textoElegido]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                  {z.texto}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ))}
     </View>
   );
 }
@@ -155,7 +162,6 @@ export function IconoDeZona({ zona, color, grosor }: { zona: Zona; color: string
 const estilos = estilosPorTema((COLOR) => ({
   capsula: {
     position: 'absolute',
-    flexDirection: 'row',
     paddingHorizontal: 3,
     paddingVertical: 4,
     borderRadius: 999,
@@ -167,6 +173,9 @@ const estilos = estilosPorTema((COLOR) => ({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
+  // Dos filas: la píldora pasa a un rectángulo de esquinas redondeadas, con la misma separación del borde.
+  capsulaEnDosFilas: { borderRadius: 28, paddingVertical: 6, rowGap: 2 },
+  fila: { flexDirection: 'row' },
   // Cada destino mide lo que su texto más una parte igual del resto: con anchos iguales, «Entrenamiento» no entraba. Los
   // 2 dp a cada lado separan dos etiquetas vecinas cuando la letra es grande y la barra va justa.
   destino: { flexGrow: 1, flexShrink: 1, flexBasis: 'auto', minWidth: 48, minHeight: 56, alignItems: 'center', justifyContent: 'center', paddingVertical: 4, paddingHorizontal: 2, borderRadius: 999 },

@@ -9,7 +9,7 @@ import { api } from '../api';
 import { SinActualizar } from '../estados';
 import { fechaCivil, ultimosDiasHasta } from '../formato';
 import { useLecturaRecordada } from '../lecturas';
-import { DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
+import { detalleDeActividad, DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
 import { useAccesoRetirado, type Ir } from '../navegacion';
 import { Aviso, Boton, Cifra, Insignia, Parrafo } from '../ui';
 import { useAbrirOcurrencia } from './entrenamiento';
@@ -137,7 +137,7 @@ export function ActividadDeEntrenamiento({ token, dia, sesionPerdida, ir }: { to
     <TarjetaDeInicio
       zona="entrenamiento"
       titulo="Tu actividad"
-      detalle={`Entrenamiento · últimos ${numero(DIAS_DE_ACTIVIDAD)} días, del ${fechaCivil(periodo.periodStart)} al ${fechaCivil(periodo.periodEnd)}`}
+      detalle={detalleDeActividad(r && r.ok ? r.datos.periodo : null, fechaCivil)}
     >
       {contenido}
       <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />

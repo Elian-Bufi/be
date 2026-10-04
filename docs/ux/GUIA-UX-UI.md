@@ -141,9 +141,15 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
   - sin cortar texto;
   - sin desplazamiento horizontal;
   - `adjustsFontSizeToFit` solo en la barra inferior.
-- **APK: el contenido crece sin tope.** Solo el encabezado y las etiquetas de la barra inferior crecen hasta 1,15: la
-  marca no informa nada, y en la barra el ícono acompaña y el lector de pantalla dice el nombre completo. No se
-  desactiva el escalado ni se achica el texto para que entre.
+- **APK: el contenido crece sin tope.** Solo el encabezado crece hasta 1,15: la marca no informa nada. No se desactiva
+  el escalado ni se achica el texto para que entre.
+- **La barra inferior crece con la letra, sin tope** (cierre del 2026-10-04). Para que entren las cinco etiquetas, el
+  orden es: reparto del ancho, espacio útil (márgenes de 12, 8 o 6 dp) y alto. Si en una fila no entran con al menos el
+  90 % de su tamaño, la cápsula pasa a **dos filas** (Inicio, Nutrición y Entrenamiento arriba; Evolución e Información
+  abajo): es una adaptación excepcional y una decisión visual explícita. La letra baja solo como último recurso, para no
+  cortar (`disposicion-de-la-barra.ts`; el tamaño efectivo, medido, en `EVIDENCIA/INICIO-Y-NAVEGACION`).
+- **Que no se corte no alcanza.** Un texto achicado al 60 % no se corta y se lee mal. Cuando un componente achica texto,
+  se documenta su tamaño efectivo en los casos angostos y con letra grande.
 - **Las opciones excluyentes van en píldoras** (`Segmentos`, APK). Si no entran, bajan enteras a la línea siguiente:
   nunca se parte una palabra. Lo usan las preferencias visuales (la figura y los colores), las pestañas de una zona y
   los períodos de un gráfico.
@@ -397,7 +403,7 @@ Son las mejoras de UX detectadas que no entraron en DL-113. Cada una entra en un
 - **Con la letra grande, la imagen de la lámina no entra en la primera pantalla del teléfono**: empieza a 974 px en 360
   y en 390 px de ancho. Con la letra normal sí entra (605 y 578 px).
 - **Búsqueda por texto** en los catálogos externos (DL-098).
-- **La barra inferior de la APK a 320 dp.** Las etiquetas crecen hasta 1,15 y se achican hasta el 80 % si no entran. En el render del navegador, las cinco entran: se achican un 17 % con letra grande (`EVIDENCIA/INICIO-Y-NAVEGACION`). Falta mirarlo en un teléfono chico.
+- **La barra inferior de la APK en un teléfono chico.** En el render del navegador, a 320 dp: una fila con la letra de siempre, a 11,5 sp (un 4 % menos); dos filas desde ×1,15, enteras hasta ×1,8; con ×2, la fila de arriba queda a 21,8 sp en vez de 24 (`EVIDENCIA/INICIO-Y-NAVEGACION`). Falta mirarlo en un teléfono chico, y con la letra del fabricante (por ejemplo, la de Samsung), que puede ser más ancha que Roboto.
 - **Los filtros de «Pendientes» en el teléfono** ocupan una pantalla antes del primer pendiente.
 - **Un 503 intermitente de la API** (`P2028`: la transacción no pudo empezar a tiempo) con lecturas concurrentes y poca memoria. La pantalla lo muestra con su reintento. Es de la API, no de la interfaz. La mejora medida y el límite que queda están en `EVIDENCIA/P2028`.
 - **Las demás pantallas del website.** Siguen esta guía desde DL-113. Las que se toquen después se revisan con la lista

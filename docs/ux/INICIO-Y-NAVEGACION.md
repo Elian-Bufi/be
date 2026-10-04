@@ -32,9 +32,9 @@ por sí solo los datos de salud: cada lectura trae su propio permiso.
 | Elemento | Fuente existente | Campos | Permisos | Destino exacto | Estados | Dependencia |
 |---|---|---|---|---|---|---|
 | **Entrenamiento de hoy** | API-TRN-14 `hoyDeEntrenamiento`. Clave `entrenamiento-hoy:<día>`, la de Entrenamiento | `date`, `planState`, `occurrences[]`: `occurrenceId`, `plannedSession` (`label`, `blockLabel`, `prescriptions`) y `execution` (`state`, `draftId`, `executionId`, `sessionCondition`) | Sesión y A3 vigente (08:406). Con el vínculo pausado o un consentimiento revocado, `NOT_AVAILABLE` | Comenzar o continuar: `abrirBorradorDeEjecucion` (API-TRN-15, una escritura que va **solo al tocar**) y después `sesion-de-entrenamiento`. Registrada: `ejecucion-de-entrenamiento`, con su id | Verificando · sin plan (`NO_ACTIVE_PLAN`) · no disponible (`NOT_AVAILABLE`) · **varias sesiones: se elige, no se toma la primera** (DL-077) · registrada como no completada (no se dice «completada») · sin A3 · error · sin red | Ninguna |
-| **Nutrición de hoy** | API-NUT-14 `hoyNutricional(díaTipo)`, en `leerNutricionDeInicio` (`src/lecturas-de-inicio.ts`). Clave `inicio-nutricion:<día>:<díaTipo>`. El día tipo es la misma elección de Nutrición: `hoy-nutricional:dia` | `planState`, `activePlan.dayTypes[]` (`label`), `selectedDayTypeId`, `registeredIntake[]` (`origin`, `recordedAt`, `executionId`) | Sesión y A3 (DL-115) | Ver el plan: `plan-actual`. Registrar: `hoy` con `accion: 'registrar'`, que lleva a las comidas o a elegir el día. El último registro de hoy: `registro-nutricional`, con su id | Verificando · sin plan · no disponible · **elegir el día tipo: con varios y ninguno elegido, se pide la elección** (DL-049) · sin registros hoy (`NO_DATA`, nunca «0 %») · sin A3 · error | Parámetro de ruta nuevo: `accion` en `hoy` |
-| **Actividad: entrenamiento** | API-TRN-19-LISTA `misEjecucionesDeEntrenamiento` de los últimos 30 días. Es la lista de «Tu historial», que no se pagina (hasta 92 días) | `executions[]` con su `effectiveView.sessionCondition`, **con las correcciones aplicadas** | Sesión y A3 | `historial-de-entrenamiento` | Verificando · sin registros en 30 días (un dato real, no una falla) · sin A3 · error | Ninguna |
-| **Actividad: nutrición** | API-NUT-16-LISTA `listarMisIngestas` con `limit` 1 (el del contrato), en la misma lectura de la tarjeta. Se pide **solo si hoy no hay registros** | `data[0]`: `executionId`, `localDate`, `origin` | Sesión y A3 | `registro-nutricional`, con su id | Nunca registró · sin leer (una falla pasajera: la tarjeta no afirma nada) · sin A3 | **«Días con registros en 30 días» no se puede calcular con una página.** Exige recorrer todas las páginas o un agregado de la API (D-1). Se muestra lo último que se registró, con su fecha |
+| **Nutrición de hoy** | API-NUT-14 `hoyNutricional(díaTipo)`. Clave `hoy-nutricional:<día>:<díaTipo>`, la de Nutrición. El día tipo es la misma elección de Nutrición: `hoy-nutricional:dia` | `planState`, `activePlan.dayTypes[]` (`label`), `selectedDayTypeId`, `registeredIntake[]` (`origin`, `recordedAt`, `executionId`) | Sesión y A3 (DL-115) | Ver el plan: `plan-actual`. Registrar: `hoy` con `accion: 'registrar'`, que lleva a las comidas o a elegir el día. El último registro de hoy: `registro-nutricional`, con su id | Verificando · sin plan · no disponible · **elegir el día tipo: con varios y ninguno elegido, se pide la elección** (DL-049) · sin registros hoy (`NO_DATA`, nunca «0 %») · sin A3 · error | Parámetro de ruta nuevo: `accion` en `hoy` |
+| **Actividad: entrenamiento** | API-TRN-19-LISTA `misEjecucionesDeEntrenamiento` de los últimos 30 días, en `leerActividadDeEntrenamiento`. Es la lista de «Tu historial», que no se pagina (hasta 92 días) | `executions[]` con su `effectiveView.sessionCondition`, **con las correcciones aplicadas**. El encabezado dice el período que respondió la API (`data.period`), no el pedido | Sesión y A3 | `historial-de-entrenamiento` | Verificando · sin registros en 30 días (un dato real, no una falla) · sin A3 · error | Ninguna |
+| **Actividad: nutrición** | API-NUT-16-LISTA `listarMisIngestas` con `limit` 1 (el del contrato), en `leerUltimoRegistro`. Es **una lectura aparte**, con su ciclo y su clave (`inicio-ultimo-registro`), y se pide **solo si hoy no hay registros**. La tarjeta no la espera | `data[0]`: `executionId`, `localDate`, `origin` | Sesión y A3 | `registro-nutricional`, con su id | Nunca registró · sin leer (una falla pasajera: la tarjeta no afirma nada) · sin A3 | **«Días con registros en 30 días» no se puede calcular con una página.** Exige recorrer todas las páginas o un agregado de la API (D-1). Se muestra lo último que se registró, con su fecha |
 | **Mediciones: última toma** | API-ANT-06-PROPIA `miEvolucionAntropometrica` vía `leerMiEvolucion`. Clave `mi-evolucion:ultimos-90`, la de Evolución | `metrics[].series[]`: `occurredAt`, `sourceEvaluationId`, `comparabilityGroup`, `value` y `unit` | Sesión y A3 | `mi-evolucion` | Verificando · sin mediciones · sin A3 · error | Ninguna |
 | **Cambio entre observaciones comparables** | La misma lectura, con `ultimaToma()` del dominio | La medida, su anterior comparable y `diferenciaDescriptiva` (fechas y días) | — | `mi-evolucion` con `vista: 'evolucion'` y `metrica` | Sin anterior comparable: se dice por qué (`SIN_PREVIA`, `OTRO_GRUPO`) | Parámetros de ruta nuevos: `vista` y `metrica` |
 | **Para responder** | API-FRM-06 `misSolicitudesDeFormulario` con `status: PENDING` y `limit` 3, junto con API-CON-05 `consultarRequisitoA3`, en `leerPendientes`. Clave `inicio-pendientes` | `data[]`: `formRequestId`, `templateName`, `professional.displayName`, `respondable` y `createdAt`. También `page.hasMore` y si falta el A3 | Sesión. Responder exige el A3 (DL-115) | Si se puede responder: «Completar», a `mi-solicitud` con su id. Sin A3: el aviso con `privacidad`. Si no se puede responder por otro motivo: lo dice, sin botón | Verificando · sin pendientes · **con más páginas: «más de 3», nunca su largo como total** · sin A3 · error | Ninguna: `limit` y `status` son del contrato |
@@ -166,43 +166,81 @@ recalcular y redibujar, no pedir. Contado con un cliente que anota cada pedido (
 | Elegir el día del plan en la tarjeta | **1 o 2** | NUT-14 con el día elegido, y NUT-16-LISTA si hoy no hay registros |
 | Volver del segundo plano con Inicio abierto | Las mismas | Cada tarjeta confirma de nuevo, con lo confirmado a la vista mientras tanto (G3) |
 | «Reintentar» en una tarjeta | Solo las de esa tarjeta | Las demás no se tocan |
-| A la medianoche, con Inicio abierto | Las de las tarjetas de hoy y la de la actividad | Cambia el día de la API, y con él sus claves (`useDiaDeLaApi`), 5 s después de la medianoche del teléfono por si su reloj va adelantado. Si la API igual responde que el período termina mañana, la actividad pide una vez más, un día antes |
+| A la medianoche, con Inicio abierto | Las de las tarjetas de hoy y la de la actividad | Cambia el día de la API, y con él sus claves (`useDiaDeLaApi`), a la medianoche **del servidor**: la hora sale de la cabecera `Date` de cada respuesta (`reloj-del-servidor.ts`), la misma con la que la sesión mide su vigencia, y se cuenta con un reloj monótono: cambiar la hora del teléfono no la mueve, y una respuesta lenta no la atrasa. Como esa estimación nunca se adelanta al servidor, cuando cambia la clave la API ya está en el día nuevo, y el día que se muestra no vuelve atrás. Si la API igual responde que el período termina mañana (antes de la primera respuesta, o si el reloj del teléfono se movió), la actividad pide una vez más, un día antes, y dice ese período |
 
-**Entorno de la medición.** Se contó con un cliente de prueba que anota cada pedido, sobre las mismas funciones de lectura
-que usan las tarjetas (`scripts/inicio.test.mjs`, sección 4). No se midió en el teléfono ni contra la API de test: esta
-tanda no construye APK y no autoriza carga sobre test.
+**Medición local** (cierre del 2026-10-04; detalle en
+`EVIDENCIA/INICIO-Y-NAVEGACION/herramientas/medir-inicio/resultados.md`). El conteo de arriba no dice cuánto tarda. Se
+midió en esta computadora, con el cliente real de @be/domain y las lecturas reales de las tarjetas, contra un servidor
+local con datos sintéticos válidos contra los contratos y una red simulada. **No es una medición en el teléfono ni contra
+la API de test.** Supuestos: 60 ms de servidor por lectura y HTTP/2 sobre una conexión, que en frío se abre antes de la
+primera respuesta.
+
+| Tarjeta (caso típico) | Solicitudes | Bytes | Utilizable, 4G lento | Utilizable, 3G lento |
+|---|---|---|---|---|
+| Para responder | 2 | 2,1 KB | 0,62 s | 1,51 s |
+| Entrenamiento de hoy | 1 | 7,8 KB | 0,77 s | 2,06 s |
+| Nutrición de hoy | 1 | 14,4 KB | 0,86 s | 2,47 s |
+| Mediciones | 1 | 46,7 KB | 1,20 s | 3,79 s |
+| Tu actividad | 1 | 105,1 KB | 1,50 s | 4,99 s |
+| **Toda la visita** | **6** | **176,1 KB** | **1,50 s** | **4,99 s** |
+
+- **Sin registros de comida hoy:** la tarjeta de Nutrición se puede usar a los 0,82 s (4G lento), y el renglón del
+  último registro llega a los 1,09 s. Antes de este cierre la tarjeta esperaba los dos pedidos.
+- **Sin mediciones recientes:** Mediciones hace 4 pedidos, uno detrás de otro (1,52 s en 4G lento, 4,37 s en 3G lento).
+- **Historial con muchas correcciones** (60 sesiones en 30 días): la tarjeta de actividad baja 539 KB y tarda 3,75 s en
+  4G lento y 13,9 s en 3G lento. Es la que más pesa en todos los casos.
+- **Consultas repetidas.** En una visita no se repite ninguna. Volver a una pantalla vuelve a pedir: es la verificación
+  de permisos de cada entrada (G2), y no se debilitó. Las tres ventanas hacia atrás de Mediciones se piden en cada
+  visita porque cualquiera pudo cambiar; pedirlas juntas ahorraría entre 0,3 y 1 s con las mismas solicitudes (medido,
+  no implementado). Inicio y Nutrición comparten ahora la lectura de «Hoy» (`hoy-nutricional:<día>:<díaTipo>`).
 
 **Lo que se descarga.**
-- TRN-19-LISTA trae cada sesión de los 30 días completa, con su plan, su original y sus correcciones, para contarlas.
-  Inicio guarda solo la cuenta. Un agregado por período lo evitaría, y queda como opción (D-4).
-- NUT-16-LISTA trae una sola fila.
-- FRM-06 trae como mucho tres solicitudes.
+- TRN-19-LISTA trae cada sesión completa, con su plan, su original y sus correcciones, para contarlas: 105 KB en el caso
+  típico y 539 KB con muchas correcciones. Inicio guarda solo la cuenta.
+- La API no comprime sus respuestas. Con gzip, la visita típica bajaría de 176 KB a 8,5 KB y de 1,50 a 0,62 s en 4G
+  lento; la del historial pesado, de 610 KB a 14 KB y de 13,9 a 1,7 s en 3G lento. No se verificó si Render comprime en
+  su borde: las rutas públicas de la API son chicas y no alcanzan para saberlo.
+- NUT-16-LISTA trae una sola fila, y FRM-06 como mucho tres solicitudes.
 
-**Encadenadas.** Solo una, y se puede evitar: NUT-16-LISTA espera a NUT-14 para saber si hoy hay registros. Pedirla
-siempre en paralelo sumaría una solicitud en cada visita con registros. Se eligió encadenarla, porque solo demora el
-renglón del último registro y no la tarjeta.
+**Encadenadas.** Solo una: NUT-16-LISTA espera a NUT-14 para saber si hoy hay registros. Pedirla siempre en paralelo
+sumaría una solicitud en cada visita con registros. Desde el cierre del 2026-10-04 **solo demora el renglón del último
+registro**: es una lectura aparte (`leerUltimoRegistro`), y la tarjeta se puede usar en cuanto llega NUT-14. El renglón y su botón van debajo de «Registrar» y «Ver el plan»: cuando llegan, no corren las acciones bajo el dedo. Antes, la
+lectura de la tarjeta esperaba las dos respuestas, aunque este documento decía que solo demoraba el renglón. Se corrigió
+el comportamiento, no la afirmación.
 
-## 4 bis. Mi evolución: el selector de tomas (etapa 4)
+## 4 bis. Mi evolución: selector de tomas, mapa corporal e indicadores
 
 - **Las tomas.** T1, T2, T3… son las evaluaciones del período, de la más vieja a la más nueva, con su fecha real
   (`tomasDelPeriodo`, en `@be/domain`). Cada toma es una evaluación (`sourceEvaluationId`), **nunca una fecha**: dos
   evaluaciones del mismo día son dos tomas. T1 es la primera toma del período que se ve, no la primera de la historia: el
   período está escrito debajo del selector.
-- **Una sola elección.** Elegir una toma cambia a la vez la figura (el mapa corporal), las medidas, los resultados de las
-  fórmulas, sus gráficos chicos y la comparación. Sin elección, o si la toma elegida ya no está en la respuesta, se ve la
-  última. La elección se recuerda mientras dure la sesión (`mi-evolucion:toma`). Inicio puede abrir una vista y una
-  medida (`vista`, `metrica`).
-- **La comparación.** Cada medida de la toma elegida va con la anterior del mismo grupo de comparabilidad, de una
-  evaluación anterior a ella (`tomaDe`). Es la regla que ya tenía la última toma (REG-06-162/164).
-- **Los gráficos chicos.** Cada medida y cada resultado lleva un punto por toma, sin líneas. Una toma sin la medida, o
-  con otro protocolo, método o unidad, es un hueco: no hay punto (`valoresPorToma`). La toma elegida va resaltada. Debajo
-  está su lista equivalente («T1 82,4 · T2 sin dato · T3 80 kg»), y el lector de pantalla dice cada toma con su fecha.
-- **Lo que no cambia.** Los sitios anatómicos de la figura y los métodos: no se movió ni se quitó ninguno. La vista
-  «Evolución» sigue mostrando una medida en el tiempo, con su gráfico de puntos y su lista.
-- **Qué métodos se muestran y cómo.** El inventario de lo que ve el asesorado, con una propuesta para simplificar la
-  presentación, está en [MEDIDAS-Y-METODOS-EN-LA-APK.md](MEDIDAS-Y-METODOS-EN-LA-APK.md). Es una propuesta para revisar
-  con Dirección: no se implementó.
-- **Revisión visual.** Renders de los componentes en el navegador, no capturas nativas: `EVIDENCIA/INICIO-Y-NAVEGACION`.
+- **Cuatro vistas, sin otro nivel de navegación** (cierre del 2026-10-04). Mapa corporal, Indicadores, Comparar y
+  Evolución. Mapa corporal e Indicadores reemplazan a la vista «Toma»: son la misma toma, partida entre lo que tiene sitio
+  en la figura y lo que no. «Ver la toma», desde Inicio, abre el mapa si la toma tiene perímetros o pliegues, y si no, los
+  indicadores.
+- **Mapa corporal.** La figura con los sitios medidos en la toma elegida. Cada fila de tarjeta lleva el valor, la
+  diferencia con el anterior comparable y, debajo, el gráfico chico de puntos de esa medida, unido a su sitio por la misma
+  guía. Con letra ×1,3 o más, la figura va con números y cada fila de la lista de abajo lleva su gráfico. Los sitios no se
+  movieron.
+- **Indicadores.** Tarjetas sin cuerpo para lo que no tiene sitio en la figura: peso, talla, diámetros y los resultados
+  de las fórmulas, cada uno con su método. Dos columnas cuando entran, y una cuando la letra o el ancho lo piden: una
+  tarjeta no parte su valor (`columnasDeIndicadores`, con anchos medidos en Roboto).
+- **Una sola elección de toma y una de medida.** La toma elegida cambia a la vez el mapa, los indicadores, sus gráficos
+  chicos y la comparación. La medida elegida, en el mapa o en los indicadores, es la misma de Evolución
+  (`mi-evolucion:medida`): su detalle trae el gráfico más grande, la lista equivalente y «Ver su evolución», que abre
+  Evolución con esa medida y su mismo grupo de comparabilidad.
+- **Los gráficos chicos.** Un punto por toma, **en el orden de las tomas, no en el tiempo**: van a la misma distancia
+  aunque entre dos tomas pasen días distintos, y la pantalla lo dice. El gráfico de Evolución sí usa las fechas, a
+  escala. Sin líneas: una toma sin la medida es un hueco, y una con otro protocolo, método o unidad lleva una raya corta
+  sobre la base y dice «no comparable» en su lista (`graficos-por-toma.ts`). La toma elegida va resaltada. El ancho es
+  el del lugar: con doce tomas, los puntos se achican y no desbordan (probado con 1, 3, 6 y 12 tomas).
+- **Una toma que puede estar incompleta (D-3).** Si otra evaluación cayó el mismo día, la pantalla lo avisa, nombra la
+  otra toma y cuenta «medidas a la vista». «Cómo se lee» dice qué puede no verse de cualquier toma: la API muestra una
+  medición por día y por medida, y no muestra una medición anulada o con correcciones que no se pueden ordenar.
+- **Lo que no cambia.** Comparar y el gráfico detallado por medida. Ningún método se ocultó ni se quitó: la propuesta de
+  simplificación sigue en [MEDIDAS-Y-METODOS-EN-LA-APK.md](MEDIDAS-Y-METODOS-EN-LA-APK.md), sin implementar.
+- **Revisión visual.** Renders de los componentes reales en el navegador, no capturas nativas:
+  `EVIDENCIA/INICIO-Y-NAVEGACION`.
 
 ## 5. Dependencias y decisiones abiertas
 
@@ -210,8 +248,11 @@ renglón del último registro y no la tarjeta.
   paginado. Mientras tanto, Inicio muestra lo último que se registró, con su fecha, y no lo presenta como un resumen
   del período.
 - **D-2.** No hay nombre ni foto en el perfil (DL-009). El saludo y el avatar quedan neutros.
-- **D-4.** La actividad de entrenamiento cuenta sesiones que descarga completas (TRN-19-LISTA). Un agregado por período
-  ahorraría la descarga. Es una decisión de contrato y no se tomó en esta tanda.
+- **D-4.** La actividad de entrenamiento cuenta sesiones que descarga completas (TRN-19-LISTA). Medido en el cierre del
+  2026-10-04 (§4): un agregado bajaría la tarjeta de 1,50 a 0,58 s en 4G lento, pero comprimir las respuestas lleva toda
+  la visita a 0,62 s sin un endpoint nuevo ni un cambio de contrato. El agregado no se justifica todavía: primero, saber
+  si Render comprime y, si no, comprimir en la API.
 - **D-3.** La API proyecta una observación efectiva por día y medida. Una toma se reconstruye por su `sourceEvaluationId`.
-  Si dos evaluaciones caen el mismo día, de la tapada se ve solo lo que la API expone. Listar todas las tomas exigiría
-  ampliar el contrato.
+  Si dos evaluaciones caen el mismo día, de la tapada se ve solo lo que la API expone, y desde el cierre del 2026-10-04 la
+  pantalla lo dice (§4 bis). Lo mismo pasa con un resultado calculado con dos métodos el mismo día: se ve uno, y eso no
+  se puede detectar en el teléfono. Listar todas las tomas exigiría ampliar el contrato.

@@ -1,7 +1,9 @@
 # Medidas y métodos que ve el asesorado en la APK: inventario y propuesta de presentación
 
 **Estado:** inventario para revisar con Dirección (cola del 2026-10-04, punto 4). **Es una propuesta:** no se implementó,
-y no se eliminó ningún método, cálculo ni dato histórico. La selección definitiva se decide con Dirección.
+y no se eliminó ni se ocultó ningún método, cálculo, resultado ni dato histórico. La selección definitiva se decide con
+Dirección. Desde el cierre del 2026-10-04 la toma se ve en dos vistas, Mapa corporal e Indicadores, con todo lo que ya
+mostraba.
 
 **De dónde sale.**
 - El catálogo que la APK muestra: `NOMBRE_DE_METRICA`, `FAMILIA_DE_METRICA` y `NOMBRE_DE_METODO`
@@ -18,12 +20,10 @@ los criterios son de presentación y se pueden verificar en el código o en la f
 
 | Lugar de la APK | Qué muestra |
 |---|---|
-| Mi evolución → Toma → figura | Los perímetros y los pliegues que tienen sitio en la lámina, con su valor y su diferencia |
-| Mi evolución → Toma → fichas | Peso y talla; los tres diámetros óseos |
-| Mi evolución → Toma → filas | Las medidas sin sitio en la figura ni ficha (hoy, «Edad al momento de la toma», en «Otras») |
-| Mi evolución → Toma → «La figura, en lista» | Plegada: todo lo de la figura, con su anterior y su fecha |
-| Mi evolución → Toma → «Resultados de las fórmulas» | **A la vista y sin plegar:** cada resultado de la toma, con el nombre de su método |
-| Mi evolución → Toma → gráficos chicos (DL-117) | Debajo de cada medida y cada resultado: un punto por toma, con su lista equivalente |
+| Mi evolución → Mapa corporal | Los perímetros y los pliegues que tienen sitio en la lámina, con su valor, su diferencia y su gráfico chico de puntos por toma (cierre del 2026-10-04; antes, la vista «Toma») |
+| Mi evolución → Mapa corporal → «La figura, en lista» | Plegada: todo lo de la figura, con su anterior, su fecha y su gráfico con la lista equivalente |
+| Mi evolución → Indicadores → Medidas | Peso, talla, los tres diámetros óseos y las medidas sin sitio en la figura (hoy, «Edad al momento de la toma»), en tarjetas |
+| Mi evolución → Indicadores → «Resultados de las fórmulas» | **A la vista y sin plegar:** cada resultado de la toma, con el nombre de su método y su gráfico chico |
 | Mi evolución → Comparar | Todas las medidas y resultados de la toma elegida, con su anterior comparable |
 | Mi evolución → Evolución | Cualquier métrica con observaciones, en el tiempo, con el gráfico de puntos y su lista |
 | Inicio → Mediciones | Una sola: la primera medida de la última toma en el orden del catálogo (el peso, si está) |

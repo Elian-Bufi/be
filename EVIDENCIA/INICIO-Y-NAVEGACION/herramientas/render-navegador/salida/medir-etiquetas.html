@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&display=block">
+<style>
+  body { margin: 0; font-family: Roboto; }
+  span { font-family: Roboto; font-size: 100px; white-space: nowrap; display: inline-block; }
+</style>
+</head>
+<body>
+<div id="caja"></div>
+<script>
+  const ETIQUETAS = ['Inicio', 'Nutrición', 'Entrenamiento', 'Evolución', 'Información'];
+  window.medidas = null;
+  document.fonts.ready.then(async () => {
+    await document.fonts.load('500 100px Roboto');
+    await document.fonts.load('700 100px Roboto');
+    const caja = document.getElementById('caja');
+    const resultado = {};
+    for (const peso of [500, 700]) {
+      resultado[peso] = {};
+      for (const e of ETIQUETAS) {
+        const s = document.createElement('span');
+        s.style.fontWeight = String(peso);
+        s.textContent = e;
+        caja.appendChild(s);
+        // A 100 px: el ancho en «em» es el ancho dividido 100, con decimales.
+        resultado[peso][e] = Math.round((s.getBoundingClientRect().width / 100) * 10000) / 10000;
+      }
+    }
+    window.medidas = resultado;
+  });
+</script>
+</body>
+</html>

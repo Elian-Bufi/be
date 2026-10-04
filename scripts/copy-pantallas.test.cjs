@@ -17,6 +17,10 @@ const ts = require('typescript');
 const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeEntrenamientoEn } = require('../packages/domain/dist/index.js');
 
 const RAIZ = join(__dirname, '..');
+/** Los textos también viven en módulos sin JSX (`.ts`): se leen como TypeScript, no como TSX. */
+const tipoDeArchivo = (archivo) => (archivo.endsWith('.ts') ? ts.ScriptKind.TS : ts.ScriptKind.TSX);
+/** Las frases de Inicio y de los gráficos chicos que se arman fuera de las pantallas, en módulos puros. */
+const movil = (archivo) => join(RAIZ, 'apps/mobile/src', archivo);
 const tsx = (dir) => readdirSync(dir).filter((f) => f.endsWith('.tsx')).map((f) => join(dir, f));
 
 /**
@@ -30,19 +34,25 @@ const INICIO_COMUN = ['inicio.tsx', 'tarjeta-de-inicio.tsx', 'inicio-informacion
 const DOMINIOS = [
   {
     nombre: 'nutrición',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition')), join(RAIZ, 'apps/mobile/src/pantallas/nutricion.tsx'), inicio('inicio-nutricion.tsx'), ...INICIO_COMUN],
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition')), join(RAIZ, 'apps/mobile/src/pantallas/nutricion.tsx'), inicio('inicio-nutricion.tsx'), movil('lecturas-de-inicio.ts'), ...INICIO_COMUN],
     prohibidos: terminosProhibidosEn,
     minimo: 8,
   },
   {
     nombre: 'antropometría',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry')), join(RAIZ, 'apps/mobile/src/pantallas/antropometria.tsx'), join(RAIZ, 'apps/mobile/src/pantallas/figura-de-la-toma.tsx'), inicio('inicio-mediciones.tsx'), ...INICIO_COMUN],
+    archivos: [
+      ...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry')),
+      ...['antropometria.tsx', 'figura-de-la-toma.tsx', 'indicadores.tsx', 'detalle-de-la-medida.tsx', 'puntos-por-toma.tsx'].map((archivo) => join(RAIZ, 'apps/mobile/src/pantallas', archivo)),
+      movil('textos-por-toma.ts'),
+      inicio('inicio-mediciones.tsx'),
+      ...INICIO_COMUN,
+    ],
     prohibidos: terminosProhibidosDeAntropometriaEn,
     minimo: 5,
   },
   {
     nombre: 'entrenamiento',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), inicio('inicio-entrenamiento.tsx'), ...INICIO_COMUN],
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), inicio('inicio-entrenamiento.tsx'), movil('lecturas-de-inicio.ts'), ...INICIO_COMUN],
     prohibidos: terminosProhibidosDeEntrenamientoEn,
     minimo: 7,
   },
@@ -59,7 +69,7 @@ function dentroDeEstilos(nodo) {
 }
 
 function textosDe(archivo, contenido = readFileSync(archivo, 'utf8')) {
-  const fuente = ts.createSourceFile(archivo, contenido, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const fuente = ts.createSourceFile(archivo, contenido, ts.ScriptTarget.Latest, true, tipoDeArchivo(archivo));
   const textos = [];
   const visitar = (n) => {
     if ((ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n) || ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n) || ts.isJsxText(n)) && !dentroDeEstilos(n)) {
@@ -111,7 +121,7 @@ test('T13 · en antropometría, un juicio afirmativo se detecta y su negación e
  */
 test('T13 · el titular de la medición muestra el valor vigente, no el original', () => {
   const archivo = join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry/evaluaciones.tsx');
-  const fuente = ts.createSourceFile(archivo, readFileSync(archivo, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const fuente = ts.createSourceFile(archivo, readFileSync(archivo, 'utf8'), ts.ScriptTarget.Latest, true, tipoDeArchivo(archivo));
   let titular = null;
   const visitar = (n) => {
     if (ts.isJsxElement(n) && /className="medicion__fila"/.test(n.openingElement.getText())) titular = n.getText();

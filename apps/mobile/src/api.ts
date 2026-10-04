@@ -6,6 +6,7 @@ import { crearClienteBe } from '@be/domain';
 import Constants from 'expo-constants';
 import { randomUUID } from 'expo-crypto';
 import { memoria } from './lecturas';
+import { relojDelServidor } from './reloj-del-servidor';
 
 interface ExtraDeBuild {
   appEnv?: string;
@@ -27,7 +28,10 @@ const fetchQueOlvidaAlEscribir: typeof fetch = async (entrada, init) => {
   const escribe = (init?.method ?? 'GET').toUpperCase() !== 'GET';
   if (escribe) memoria.olvidarLecturas();
   try {
-    return await fetch(entrada, init);
+    const respuesta = await fetch(entrada, init);
+    // La hora del servidor, de cada respuesta: con ella se sabe qué día es «hoy» para la API (reloj-del-servidor.ts).
+    relojDelServidor.registrar(respuesta.headers?.get?.('date'));
+    return respuesta;
   } finally {
     if (escribe) memoria.olvidarLecturas();
   }

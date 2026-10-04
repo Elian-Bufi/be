@@ -15,6 +15,10 @@
  * Los sitios no se mueven nunca (DL-113): cambian las tarjetas, las guías y el tamaño del cuerpo. El orden de las
  * tarjetas y de sus filas es el del compositor, y el apilado es por el centro de sus sitios (`apilarTarjetas`).
  *
+ * **Mapa corporal** (cierre del 2026-10-04). Con más de una toma en el período, cada fila de tarjeta lleva debajo del
+ * valor el gráfico chico de puntos de esa medida, unido a su sitio por la misma guía: la fila crece `ALTO_DE_LOS_PUNTOS`
+ * y dice el ancho exacto que tiene el gráfico (`anchoDeLosPuntos`), así no desborda.
+ *
  * El ancho de un texto se estima por la cantidad de letras, con un ancho medio holgado para Roboto. Si la estimación se
  * pasa, la fila queda más alta o la figura pasa a números, nunca se corta.
  */
@@ -56,6 +60,15 @@ export const MARGEN_DE_AMBIGUEDAD = 8;
 const SEPARACION = 8;
 const MARGEN = 10;
 const PADDING_DE_TARJETA = 8;
+/** Lo que la fila suma para el gráfico chico de puntos: el gráfico y la luz que lo separa del valor. */
+export const ALTO_DE_LOS_PUNTOS = 20;
+/** El alto del gráfico chico dentro de la fila. */
+export const ALTO_DEL_GRAFICO_EN_LA_FILA = 18;
+/**
+ * Lo que la tarjeta y la fila quitan al ancho del texto: el relleno (8) y el borde (1) de la tarjeta de cada lado, y la
+ * fila, que se corre 6 hacia afuera y tiene 5 de relleno y 1 de borde. Es el ancho del gráfico chico de la fila.
+ */
+const BORDES_DE_LA_FILA = 2 * (PADDING_DE_TARJETA + 1) - 2 * 6 + 2 * (5 + 1);
 /** Lo que queda entre las tarjetas y el sitio más a la izquierda: ahí doblan las guías, fuera del cuerpo. */
 const CALLE = 28;
 /** Desde esta escala de letra, las tarjetas laterales ya no entran bien en un teléfono: la figura pasa a números. */
@@ -86,6 +99,8 @@ export interface FilaDeLaTarjeta {
   readonly y: number;
   readonly alto: number;
   readonly lineasDelRotulo: 1 | 2;
+  /** El ancho del gráfico chico de la fila, el de su contenido; `null` si la fila no lleva gráfico. */
+  readonly anchoDeLosPuntos: number | null;
 }
 
 export interface TarjetaDeLaFigura {
@@ -140,10 +155,22 @@ export interface EntradaDeLaComposicion {
   readonly medidas: readonly MedidaDeLaToma[];
   /** La escala de letra del sistema (`useWindowDimensions().fontScale`). */
   readonly escalaDeLetra: number;
+  /** Si cada fila de tarjeta lleva el gráfico chico de puntos de su medida: con más de una toma en el período. */
+  readonly puntos?: boolean;
+}
+
+/**
+ * La familia que se dibuja: la elegida, si la toma la tiene; si no, la otra. Con el selector de tomas (DL-117), la
+ * elección sobrevive al cambio de toma, y una toma con una sola familia dejaba la silueta vacía.
+ */
+export function familiaQueSeVe(elegida: FamiliaDeLaFigura, hayPerimetros: boolean, hayPliegues: boolean): FamiliaDeLaFigura {
+  if (elegida === 'PERIMETROS') return hayPerimetros ? 'PERIMETROS' : 'PLIEGUES';
+  return hayPliegues ? 'PLIEGUES' : 'PERIMETROS';
 }
 
 export function componerLaFigura(entrada: EntradaDeLaComposicion): ComposicionDeLaFigura | null {
   const { ancho, sexo, familia, medidas } = entrada;
+  const conPuntos = entrada.puntos === true;
   const escala = Math.max(1, entrada.escalaDeLetra);
   const figura = FIGURAS_DE_LA_LAMINA[sexo].ENTERO;
   const porClave = new Map(medidas.map((m) => [m.metrica, m]));
@@ -209,7 +236,7 @@ export function componerLaFigura(entrada: EntradaDeLaComposicion): ComposicionDe
           if (valor > util || rotulo > 2 * util * 0.92) return null;
           const lineasDelRotulo = rotulo > util ? 2 : 1;
           l.push(lineasDelRotulo);
-          a.push(Math.max(ALTO_MINIMO_DE_FILA, Math.ceil((lineasDelRotulo * INTERLINEA.rotulo + INTERLINEA.valor) * escala) + 8));
+          a.push(Math.max(ALTO_MINIMO_DE_FILA, Math.ceil((lineasDelRotulo * INTERLINEA.rotulo + INTERLINEA.valor) * escala) + 8 + (conPuntos ? ALTO_DE_LOS_PUNTOS : 0)));
         }
         lineas.push(l);
         altosDeFila.push(a);
@@ -253,7 +280,8 @@ export function componerLaFigura(entrada: EntradaDeLaComposicion): ComposicionDe
         const altoDeFila = bloques[i]!.altos[fila]!;
         const centro = y + altoDeFila / 2;
         y += altoDeFila;
-        return { sitio, y: centro, alto: altoDeFila, lineasDelRotulo: bloques[i]!.lineas[fila]! };
+        const anchoDeLosPuntos = modo === 'TARJETAS' && conPuntos ? anchoDeTarjeta - MARGEN / 2 - BORDES_DE_LA_FILA : null;
+        return { sitio, y: centro, alto: altoDeFila, lineasDelRotulo: bloques[i]!.lineas[fila]!, anchoDeLosPuntos };
       });
       return { x: MARGEN / 2, y: bordes[i]!, ancho: anchoDeTarjeta - MARGEN / 2, alto: altosDeBloque[i]!, filas };
     });

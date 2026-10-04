@@ -96,14 +96,19 @@ const a3 = (estado: 'ACTIVE' | 'REVOKED' | null) => ({
   },
 });
 
-// ─── Antropometría: tres tomas sintéticas ───────────────────────────────────────────────────────
-const TOMAS = [
+// ─── Antropometría: tomas sintéticas por escena ─────────────────────────────────────────────────
+type Toma = { id: string; dia: string; hora?: string };
+/** Un valor de una toma: un número, `null` si esa toma no lo tiene, o un valor con otro protocolo (otro grupo). */
+type Valor = number | null | { isak: number };
+const JUEGO = escena.startsWith('evolucion-12') ? 'doce' : escena.startsWith('evolucion-mismo-dia') ? 'mismo-dia' : 'tres';
+
+const TRES: Toma[] = [
   { id: 'ev-jul', dia: '2026-07-25' },
   { id: 'ev-ago', dia: '2026-08-24' },
   { id: 'ev-sep', dia: '2026-09-27' },
 ];
-// [julio, agosto, septiembre]; null: esa toma no la tiene.
-const VALORES: Record<string, (number | null)[]> = {
+// [julio, agosto, septiembre]. En agosto, el tríceps se tomó con el protocolo ISAK: otro grupo, no se compara.
+const VALORES_TRES: Record<string, Valor[]> = {
   peso: [78.9, 78.6, 78.4],
   talla: [176, null, 176],
   'perimetro-cuello': [38.5, null, 38],
@@ -121,7 +126,7 @@ const VALORES: Record<string, (number | null)[]> = {
   'perimetro-tobillo': [22, null, 22],
   'pliegue-pectoral': [10, null, 9],
   'pliegue-axilar-media': [11.5, null, 11],
-  'pliegue-triceps': [11.2, null, 10],
+  'pliegue-triceps': [11.2, { isak: 10.6 }, 10],
   'pliegue-subescapular': [12.8, null, 12],
   'pliegue-biceps': [6.4, null, 6],
   'pliegue-cresta-iliaca': [14, null, 13],
@@ -133,37 +138,78 @@ const VALORES: Record<string, (number | null)[]> = {
   'diametro-biestiloideo': [5.8, null, 5.8],
   'diametro-femur': [9.9, null, 9.9],
 };
+
+// Doce tomas semanales dentro del período. Los pliegues, cada dos semanas; el tríceps de la sexta, con ISAK.
+const DOCE: Toma[] = Array.from({ length: 12 }, (_, i) => {
+  const d = new Date(Date.UTC(2026, 6, 8 + i * 7));
+  return { id: `ev-s${i + 1}`, dia: d.toISOString().slice(0, 10) };
+});
+const serieDe = (base: number, paso: number, cada = 1, isakEn = -1): Valor[] =>
+  Array.from({ length: 12 }, (_, i) => (i === isakEn ? { isak: Math.round((base + 0.6) * 10) / 10 } : i % cada === 0 || i === 11 ? Math.round((base + paso * i + (i % 3 === 1 ? 0.3 : 0)) * 10) / 10 : null));
+const VALORES_DOCE: Record<string, Valor[]> = Object.fromEntries(
+  Object.entries(VALORES_TRES).map(([m, v]) => {
+    const ultimo = v[2] as number;
+    if (m === 'pliegue-triceps') return [m, serieDe(ultimo + 1.4, -0.12, 2, 5)];
+    if (m.startsWith('pliegue')) return [m, serieDe(ultimo + 1.2, -0.1, 2)];
+    if (m === 'talla' || m.startsWith('diametro')) return [m, serieDe(ultimo, 0, 4)];
+    if (m === 'peso') return [m, serieDe(ultimo + 1.1, -0.1)];
+    return [m, serieDe(ultimo + 0.8, -0.07)];
+  }),
+);
+
+// D-3: dos evaluaciones el 27/9. La API muestra una medición por día y medida: el peso, la cintura y la cadera de ese
+// día son los de la mañana, y de la tarde se ven solo los pliegues y los perímetros que la mañana no tomó.
+const MISMO_DIA: Toma[] = [
+  { id: 'ev-ago', dia: '2026-08-24' },
+  { id: 'ev-manana', dia: '2026-09-27', hora: '12' },
+  { id: 'ev-tarde', dia: '2026-09-27', hora: '20' },
+];
+const VALORES_MISMO_DIA: Record<string, Valor[]> = Object.fromEntries(
+  Object.entries(VALORES_TRES).map(([m, v]) => {
+    const [jul, , sep] = v as number[];
+    if (['peso', 'talla', 'perimetro-cintura', 'perimetro-cadera'].includes(m)) return [m, [jul, sep, null]];
+    return [m, [jul, null, sep]];
+  }),
+);
+
+const TOMAS = JUEGO === 'doce' ? DOCE : JUEGO === 'mismo-dia' ? MISMO_DIA : TRES;
+const VALORES = JUEGO === 'doce' ? VALORES_DOCE : JUEGO === 'mismo-dia' ? VALORES_MISMO_DIA : VALORES_TRES;
 const METODO = (n: string) => `3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f${n}`;
+const derivada = (tres: (number | null)[]): (number | null)[] => (JUEGO === 'doce' ? Array.from({ length: 12 }, (_, i) => (tres[2] === null ? null : i % 2 === 0 || i === 11 ? Math.round((tres[2] + 0.05 * (11 - i)) * 100) / 100 : null)) : JUEGO === 'mismo-dia' ? [tres[0], tres[2], null] : tres);
 const DERIVADAS: Record<string, { valores: (number | null)[]; unidad: string; metodo: string }> = {
-  imc: { valores: [25.5, 25.4, 25.3], unidad: 'kg/m2', metodo: METODO('01') },
-  'indice-cintura-talla': { valores: [0.49, null, 0.48], unidad: '', metodo: METODO('03') },
-  'suma-6-pliegues-isak': { valores: [71.6, null, 65], unidad: 'mm', metodo: METODO('05') },
-  'grasa-durnin-womersley': { valores: [17.9, null, 16.8], unidad: '%', metodo: METODO('08') },
-  'masa-osea-rocha': { valores: [null, null, 11.6], unidad: 'kg', metodo: METODO('1e') },
+  imc: { valores: derivada([25.5, 25.4, 25.3]), unidad: 'kg/m2', metodo: METODO('01') },
+  'indice-cintura-talla': { valores: derivada([0.49, null, 0.48]), unidad: '', metodo: METODO('03') },
+  'suma-6-pliegues-isak': { valores: derivada([71.6, null, 65]), unidad: 'mm', metodo: METODO('05') },
+  'grasa-durnin-womersley': { valores: derivada([17.9, null, 16.8]), unidad: '%', metodo: METODO('08') },
+  'masa-osea-rocha': { valores: derivada([null, null, 11.6]), unidad: 'kg', metodo: METODO('1e') },
 };
 let fuente = 0;
-function serie(metricCode: string, valores: (number | null)[], unidad: string, metodo: string | null, derivada: boolean) {
+function serie(metricCode: string, valores: Valor[], unidad: string, metodo: string | null, esDerivada: boolean) {
   const grupo = { comparabilityGroup: `g-${metricCode}`, protocolVersionId: 'perfil', protocolName: 'Perfil antropométrico completo', methodVersionId: metodo, unit: unidad };
+  const isak = { comparabilityGroup: `g-${metricCode}-isak`, protocolVersionId: 'isak', protocolName: 'ISAK', methodVersionId: metodo, unit: unidad };
+  let usaIsak = false;
   const series = TOMAS.flatMap((t, i) => {
-    const value = valores[i];
-    return value === null || value === undefined
-      ? []
-      : [
-          {
-            occurredAt: `${t.dia}T13:00:00.000Z`,
-            recordedAt: `${t.dia}T13:30:00.000Z`,
-            value,
-            unit: unidad,
-            sourceEvaluationId: t.id,
-            sourceId: `s-${++fuente}`,
-            dataClass: derivada ? 'DERIVED' : 'MEASURED',
-            comparabilityGroup: grupo.comparabilityGroup,
-            correctionState: 'EFFECTIVE',
-            incomparableWithPrevious: [],
-          },
-        ];
+    const v = valores[i];
+    if (v === null || v === undefined) return [];
+    const otro = typeof v === 'object';
+    if (otro) usaIsak = true;
+    const hora = t.hora ?? '13';
+    return [
+      {
+        occurredAt: `${t.dia}T${hora}:00:00.000Z`,
+        recordedAt: `${t.dia}T${hora}:30:00.000Z`,
+        value: otro ? v.isak : v,
+        unit: unidad,
+        sourceEvaluationId: t.id,
+        sourceId: `s-${++fuente}`,
+        dataClass: esDerivada ? 'DERIVED' : 'MEASURED',
+        comparabilityGroup: otro ? isak.comparabilityGroup : grupo.comparabilityGroup,
+        correctionState: 'EFFECTIVE',
+        incomparableWithPrevious: [],
+      },
+    ];
   });
-  return { metricCode, series, gaps: [], comparability: { groups: [grupo] } };
+  return { metricCode, series, gaps: [], comparability: { groups: usaIsak ? [grupo, isak] : [grupo] } };
 }
 const evolucion = {
   data: {
@@ -224,7 +270,7 @@ export const api = {
     if (escena === 'inicio-cargando') return nunca();
     if (escena === 'inicio-sin-red') return sinRed();
     if (escena === 'inicio-sin-a3') return sinA3();
-    if (escena === 'inicio-vacio') return ok(evolucionVacia);
+    if (escena === 'inicio-vacio' || escena === 'evolucion-vacia') return ok(evolucionVacia);
     return ok(evolucion);
   },
   consultarCuenta: (): R =>

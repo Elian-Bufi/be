@@ -21,8 +21,25 @@ export const fechaCivil = (fechaLocal: string) => soloDiaCivil.format(new Date(`
  * La fecha civil de hoy (`YYYY-MM-DD`) **en una zona dada**, no en UTC ni en la del dispositivo. `toISOString()` da la
  * fecha UTC: de 21 a 24 h en Buenos Aires ya es «mañana», y la API rechaza ese día como futuro (`PERIOD_IN_FUTURE`).
  */
-export const hoyEnZona = (zona: string, ahora: Date = new Date()): string =>
-  new Intl.DateTimeFormat('en-CA', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(ahora);
+export const hoyEnZona = (zona: string, ahora: Date = new Date()): string => formateadorDeZona(zona, 'dia').format(ahora);
+
+/**
+ * Un formateador por zona y por uso, creado una vez: crear un `Intl.DateTimeFormat` cuesta, y «hoy» se calcula en cada
+ * dibujo de las pantallas del día.
+ */
+const formateadores = new Map<string, Intl.DateTimeFormat>();
+function formateadorDeZona(zona: string, uso: 'dia' | 'hora'): Intl.DateTimeFormat {
+  const clave = `${uso}|${zona}`;
+  let f = formateadores.get(clave);
+  if (!f) {
+    f =
+      uso === 'dia'
+        ? new Intl.DateTimeFormat('en-CA', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' })
+        : new Intl.DateTimeFormat('en-GB', { timeZone: zona, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    formateadores.set(clave, f);
+  }
+  return f;
+}
 
 /** La zona con la que la API resuelve «hoy» (`ZONA_POR_DEFECTO` de la API). */
 export const ZONA_DE_LA_API = 'America/Argentina/Buenos_Aires';
@@ -33,12 +50,18 @@ export const ZONA_DE_LA_API = 'America/Argentina/Buenos_Aires';
  * pared de esa zona: si un cambio de horario lo adelanta o lo atrasa, quien lo usa vuelve a mirar el día al despertar.
  */
 export function msHastaElProximoDia(zona: string, ahora: Date = new Date()): number {
-  const hora = new Intl.DateTimeFormat('en-GB', { timeZone: zona, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(ahora);
+  const hora = formateadorDeZona(zona, 'hora').format(ahora);
   const m = /(\d{1,2})\D(\d{2})\D(\d{2})/.exec(hora);
   if (!m) return 60_000;
   const transcurrido = (((Number(m[1]) % 24) * 60 + Number(m[2])) * 60 + Number(m[3])) * 1000 + ahora.getMilliseconds();
   return Math.max(1000, 86_400_000 - transcurrido + 500);
 }
+
+/** El día de la API (`AAAA-MM-DD`) a una hora del servidor, en ms. La hora la estima `reloj-del-servidor.ts`. */
+export const diaDeLaApi = (horaDelServidor: number): string => hoyEnZona(ZONA_DE_LA_API, new Date(horaDelServidor));
+
+/** Cuánto falta, desde una hora del servidor, para la medianoche de la API: cuándo cambia `diaDeLaApi`. */
+export const msHastaLaMedianocheDeLaApi = (horaDelServidor: number): number => msHastaElProximoDia(ZONA_DE_LA_API, new Date(horaDelServidor));
 
 const diaCortoCivil = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
