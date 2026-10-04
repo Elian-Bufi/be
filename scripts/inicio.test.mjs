@@ -283,6 +283,17 @@ test('las acciones van a destinos tipados, y la única escritura es abrir un bor
   assert.match(PANTALLA, /onPress=\{\(\) => void abrir\(\)\}/, 'abrir el borrador va solo al tocar');
 });
 
+test('con letra grande, el título de una tarjeta no parte una palabra y dos acciones no parten su texto', () => {
+  const TARJETA = fuente('tarjeta-de-inicio.tsx');
+  // Render del navegador con letra ×2 en 360 dp: el título partía «Entrenamient / o». Crece hasta 1,5 y el ícono va arriba.
+  assert.match(TARJETA, /accessibilityRole="header" maxFontSizeMultiplier=\{1\.5\}/);
+  assert.match(TARJETA, /fontScale >= ESCALA_PARA_APILAR && estilos\.cabezaApilada/);
+  // Cada acción pide un ancho que crece con la letra: con letra grande baja a su línea entera.
+  assert.match(TARJETA, /flexBasis: 140 \* Math\.min\(Math\.max\(fontScale, 1\), 2\.2\)/);
+  // Si nunca hubo un registro de comida, se dice una sola vez.
+  assert.match(fuente('inicio-nutricion.tsx'), /ultimo\.tipo === 'nunca' \? 'Todavía no registraste ninguna comida\.' :/);
+});
+
 test('el saludo es neutro y no hay marcas de progreso', () => {
   const codigo = PANTALLA.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   assert.match(codigo, /<Titulo>Hola<\/Titulo>/);

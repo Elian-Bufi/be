@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Comparación</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;800&display=block">
+<style>
+  body { margin: 0; padding: 16px 20px 20px; background: #e9ecef; font-family: Roboto, Arial, sans-serif; color: #1b1f24; }
+  .aviso { background: #b00020; color: #fff; font-weight: 800; font-size: 15px; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; }
+  .titulo { font-size: 20px; font-weight: 800; margin: 8px 0 2px; }
+  .nota { font-size: 13px; color: #444; margin-bottom: 12px; }
+  .fila { display: flex; gap: 22px; align-items: flex-start; }
+  .marco { display: flex; flex-direction: column; gap: 6px; }
+  .rotulo { font-size: 14px; font-weight: 700; }
+  iframe { border: 0; border-radius: 18px; box-shadow: 0 6px 18px rgba(0,0,0,.25); background: #000; }
+</style>
+</head>
+<body>
+<div class="aviso">RENDER DE COMPONENTES EN NAVEGADOR (react-native-web) · NO ES LA APK NI UNA CAPTURA NATIVA · DATOS SINTÉTICOS</div>
+<div class="titulo" id="titulo"></div>
+<div class="nota" id="nota"></div>
+<div class="fila" id="fila"></div>
+<script>
+  // ?titulo=...&nota=...&m=escena|tema|ancho|escala|alto|extra;...
+  const p = new URLSearchParams(location.search);
+  document.getElementById('titulo').textContent = p.get('titulo') || '';
+  document.getElementById('nota').textContent = p.get('nota') || '';
+  const NOMBRE = { 'azul-noche': 'Azul noche', claro: 'Claro' };
+  for (const m of (p.get('m') || '').split(';').filter(Boolean)) {
+    const [escena, tema, ancho, escala, alto = '780', extra = ''] = m.split('|');
+    const marco = document.createElement('div');
+    marco.className = 'marco';
+    const rotulo = document.createElement('div');
+    rotulo.className = 'rotulo';
+    rotulo.textContent = `${NOMBRE[tema] || tema} · ${ancho} dp · letra ×${escala.replace('.', ',')}${extra.includes('final=1') ? ' · al final' : ''}${extra.includes('abajo=48') ? ' · 3 botones' : ''}`;
+    const f = document.createElement('iframe');
+    f.width = ancho;
+    f.height = alto;
+    f.src = `telefono.html?escena=${escena}&tema=${tema}&ancho=${ancho}&alto=${alto}&escala=${escala}${extra ? '&' + extra : ''}`;
+    marco.append(rotulo, f);
+    document.getElementById('fila').append(marco);
+  }
+</script>
+</body>
+</html>

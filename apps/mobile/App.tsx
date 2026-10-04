@@ -179,6 +179,11 @@ function Contenido() {
     volverConCuidado();
     return true;
   }, [volverConCuidado]);
+  /**
+   * «Volver a Información», dentro de una solicitud: va a Información aunque la solicitud se haya abierto desde Inicio
+   * (antes llevaba al origen y el texto no coincidía), y pregunta si hay respuestas escritas sin enviar.
+   */
+  const volverAInformacion = useCallback(() => irConCuidado({ nombre: 'mis-solicitudes' }), [irConCuidado]);
 
   /**
    * Devuelve la zona a su altura cuando el contenido verificado ya alcanza, aunque la API tarde. Si la persona arrastra
@@ -415,7 +420,7 @@ function Contenido() {
               {ruta.nombre === 'historial-de-entrenamiento' ? <PantallaDeHistorial token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'plan-de-entrenamiento' ? <PantallaDePlanDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
               {ruta.nombre === 'mis-solicitudes' ? <PantallaDeFormularios token={sesion.token} salir={salir} ir={ir} /> : null}
-              {ruta.nombre === 'mi-solicitud' ? <PantallaDeMiSolicitud key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} volver={volver} ir={ir} /> : null}
+              {ruta.nombre === 'mi-solicitud' ? <PantallaDeMiSolicitud key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} volver={volverAInformacion} ir={ir} /> : null}
               {ruta.nombre === 'privacidad' ? <PantallaDePrivacidad token={sesion.token} salir={salir} ir={ir} volver={volver} /> : null}
             </>
           ) : null}

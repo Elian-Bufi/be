@@ -73,9 +73,9 @@ function ContenidoDeNutricion({ datos: { hoy, ultimo }, elegirDia, ir }: { datos
       {plan && diaDelPlan && plan.dayTypes.length > 1 ? <Boton texto="Cambiar el día del plan" tipo="enlace" onPress={() => elegirDia(undefined)} /> : null}
 
       {/* Lo registrado hoy, aparte del plan: son registros, no comidas del plan. */}
-      <Parrafo>{registros.length === 0 ? COPY_NUTRICION.sinRegistrosHoy : textoDeRegistrosDeHoy(registros)}</Parrafo>
+      {/* Si nunca hubo un registro, se dice eso solo: «hoy no» y «nunca» juntos repetían lo mismo. */}
+      <Parrafo>{ultimo.tipo === 'nunca' ? 'Todavía no registraste ninguna comida.' : registros.length === 0 ? COPY_NUTRICION.sinRegistrosHoy : textoDeRegistrosDeHoy(registros)}</Parrafo>
       {ultimo.tipo === 'anterior' ? <Parrafo tenue>{`Tu último registro es del ${fechaCivil(ultimo.registro.localDate)}.`}</Parrafo> : null}
-      {ultimo.tipo === 'nunca' ? <Parrafo tenue>Todavía no registraste ninguna comida.</Parrafo> : null}
 
       {plan ? (
         <Acciones>

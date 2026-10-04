@@ -5,7 +5,7 @@
  */
 import { COPY, COPY_ANTROPOMETRIA, type Resultado } from '@be/domain';
 import type { ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { Text, useWindowDimensions, View } from 'react-native';
 import { IconoDeZona } from '../barra-de-zonas';
 import type { Ir, Zona } from '../navegacion';
 import { Boton, COLOR, estilosPorTema, Parrafo } from '../ui';
@@ -13,16 +13,24 @@ import { Boton, COLOR, estilosPorTema, Parrafo } from '../ui';
 export type Falla = Exclude<Resultado<unknown>, { ok: true }>;
 export type AlPerderLaSesion = (r: Resultado<unknown>) => boolean;
 
-/** Una tarjeta de Inicio: el ícono del módulo, como en la barra, el título y, si hace falta, de qué período habla. */
+/** Desde esta escala de letra, el ícono va arriba del título: al lado, el título partía «Entrenamiento» en dos. */
+const ESCALA_PARA_APILAR = 1.5;
+
+/**
+ * Una tarjeta de Inicio: el ícono del módulo, como en la barra, el título y, si hace falta, de qué período habla. El
+ * título crece con la letra hasta 1,5 veces: más grande, una palabra larga no entraba en la línea y se partía (render del
+ * navegador con letra ×2, en 360 dp). El resto de la tarjeta crece sin tope.
+ */
 export function TarjetaDeInicio({ zona, titulo, detalle, children }: { zona: Zona; titulo: string; detalle?: string; children: ReactNode }) {
+  const { fontScale } = useWindowDimensions();
   return (
     <View style={estilos.tarjeta}>
-      <View style={estilos.cabeza}>
+      <View style={[estilos.cabeza, fontScale >= ESCALA_PARA_APILAR && estilos.cabezaApilada]}>
         <View style={estilos.icono}>
           <IconoDeZona zona={zona} color={COLOR.acento} grosor={1.8} />
         </View>
-        <View style={estilos.textosDeCabeza}>
-          <Text style={estilos.titulo} accessibilityRole="header">
+        <View style={[estilos.textosDeCabeza, fontScale >= ESCALA_PARA_APILAR && estilos.textosApilados]}>
+          <Text style={estilos.titulo} accessibilityRole="header" maxFontSizeMultiplier={1.5}>
             {titulo}
           </Text>
           {detalle ? <Text style={estilos.detalle}>{detalle}</Text> : null}
@@ -65,12 +73,16 @@ export function SinA3({ texto, ir }: { texto: string; ir: Ir }) {
 
 export const faltaElA3 = (r: Resultado<unknown>): boolean => !r.ok && r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN';
 
-/** Dos acciones lado a lado; con letra grande, cada una baja a su línea. */
+/**
+ * Dos acciones lado a lado. Cada una pide un ancho que crece con la letra: con letra grande ya no entran dos en la línea,
+ * y cada una baja a la suya entera, en vez de partir su texto en dos renglones dentro del botón.
+ */
 export function Acciones({ children }: { children: ReactNode }) {
   return <View style={estilos.acciones}>{children}</View>;
 }
 export function Accion({ children }: { children: ReactNode }) {
-  return <View style={estilos.accion}>{children}</View>;
+  const { fontScale } = useWindowDimensions();
+  return <View style={[estilos.accion, { flexBasis: 140 * Math.min(Math.max(fontScale, 1), 2.2) }]}>{children}</View>;
 }
 
 export const estilos = estilosPorTema((COLOR) => ({
@@ -78,8 +90,11 @@ export const estilos = estilosPorTema((COLOR) => ({
   // Las tarjetas mantienen un fondo estable: la superficie del tema, con su borde.
   tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, backgroundColor: COLOR.superficie },
   cabeza: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
+  cabezaApilada: { flexDirection: 'column', alignItems: 'flex-start' },
   icono: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR.superficieElevada },
   textosDeCabeza: { flex: 1 },
+  // Apilados, los textos ocupan su alto: con flex 1 en una columna sin alto fijo, podían quedar sin lugar.
+  textosApilados: { flex: 0, alignSelf: 'stretch' },
   titulo: { fontSize: 19, fontWeight: '800', color: COLOR.texto },
   detalle: { fontSize: 14, lineHeight: 20, color: COLOR.tenue },
   carga: { paddingVertical: 4 },

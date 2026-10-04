@@ -1,0 +1,11 @@
+{
+  "name": "be-render-navegador",
+  "private": true,
+  "description": "Render de los componentes reales de la APK en el navegador, con react-native-web. No es la APK: ver ../../LEEME.md.",
+  "dependencies": {
+    "esbuild": "0.25.10",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native-web": "0.21.2"
+  }
+}

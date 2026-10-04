@@ -404,6 +404,15 @@ test('sin pérdidas silenciosas: la barra, el avatar, el menú, volver y el bot�
   }
 });
 
+test('«Volver a Información», dentro de una solicitud, va a Información aunque se haya abierto desde Inicio, y pregunta antes', () => {
+  assert.match(APP, /const volverAInformacion = useCallback\(\(\) => irConCuidado\(\{ nombre: 'mis-solicitudes' \}\), \[irConCuidado\]\)/);
+  assert.match(APP, /<PantallaDeMiSolicitud [^>]*volver=\{volverAInformacion\}/);
+  // Desde Inicio, el origen de la solicitud es Inicio; el botón del contenido no va al origen sino a Información.
+  const solicitud = nav.navegar({ nombre: 'inicio' }, { nombre: 'mi-solicitud', id: 's1' });
+  assert.deepEqual(nav.anterior(solicitud), { nombre: 'inicio' }, 'la cabecera vuelve a Inicio');
+  assert.deepEqual(nav.navegar(solicitud, { nombre: 'mis-solicitudes' }), { nombre: 'mis-solicitudes' }, 'el botón «Volver a Información» abre Información');
+});
+
 test('Cuenta no abre los módulos: están en la barra y en el menú', () => {
   const CUENTA = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/cuenta.tsx'), 'utf8');
   for (const nombre of ['inicio', 'hoy', 'entrenamiento', 'historial-de-entrenamiento', 'mi-evolucion', 'mis-solicitudes']) {

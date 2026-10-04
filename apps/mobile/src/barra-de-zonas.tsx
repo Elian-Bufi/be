@@ -8,7 +8,10 @@
  *   pantalla dice cuál está elegido (rol `tab`, estado `selected`): el color nunca es la única señal (10-B10 §7).
  * - **Las cinco etiquetas, siempre.** Cada destino mide lo que su texto más una parte igual del resto, así «Entrenamiento»
  *   entra sin achicar a los demás. Las etiquetas crecen con la letra hasta 1,15 veces. Si aun así no entran, primero se
- *   angostan los márgenes, y solo al final la letra baja hasta un 85 %, nunca hasta volverse ilegible. Ninguna se oculta.
+ *   angostan los márgenes de la cápsula, y solo al final la letra baja, hasta un 80 % como mucho. Ninguna se oculta.
+ *   Medido con Roboto en el render del navegador, que reparte el ancho como Yoga y después achica cada etiqueta en su
+ *   caja (EVIDENCIA/INICIO-Y-NAVEGACION): desde 390 dp no se achica ninguna; en 360 dp, un 4 % con letra grande; en
+ *   320 dp, un 4 % con letra normal y un 17 % con letra grande. Ninguna se corta.
  * - **La altura sale del contenido**, no de un número fijo. La barra informa la suya (`alMedir`) para que el contenido
  *   deje ese espacio libre al final y nada quede tapado.
  * - Respeta el área segura de abajo: flota por encima de la barra del sistema, con gestos o con botones.
@@ -52,7 +55,7 @@ export function BarraDeZonas({ actual, ir, alMedir }: { actual: Zona | null; ir:
   }, [tecladoAbierto, alMedir]);
   if (tecladoAbierto) return null;
   // En un teléfono angosto, la cápsula gana ancho antes que achicar las etiquetas.
-  const margen = width < 360 ? 8 : 12;
+  const margen = width < 340 ? 6 : width < 400 ? 8 : 12;
   return (
     <View
       accessibilityRole="tablist"
@@ -74,7 +77,7 @@ export function BarraDeZonas({ actual, ir, alMedir }: { actual: Zona | null; ir:
               {elegida ? <Brillo zona={z.zona} /> : null}
               <IconoDeZona zona={z.zona} color={elegida ? COLOR.barraElegido : COLOR.barraTexto} grosor={elegida ? 2.1 : 1.8} />
             </View>
-            <Text style={[estilos.texto, elegida && estilos.textoElegido]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} maxFontSizeMultiplier={1.15}>
+            <Text style={[estilos.texto, elegida && estilos.textoElegido]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={1.15}>
               {z.texto}
             </Text>
           </Pressable>
@@ -153,7 +156,7 @@ const estilos = estilosPorTema((COLOR) => ({
   capsula: {
     position: 'absolute',
     flexDirection: 'row',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
     paddingVertical: 4,
     borderRadius: 999,
     borderWidth: 1,
@@ -164,12 +167,14 @@ const estilos = estilosPorTema((COLOR) => ({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  // Cada destino mide lo que su texto más una parte igual del resto: con anchos iguales, «Entrenamiento» no entraba.
+  // Cada destino mide lo que su texto más una parte igual del resto: con anchos iguales, «Entrenamiento» no entraba. Los
+  // 2 dp a cada lado separan dos etiquetas vecinas cuando la letra es grande y la barra va justa.
   destino: { flexGrow: 1, flexShrink: 1, flexBasis: 'auto', minWidth: 48, minHeight: 56, alignItems: 'center', justifyContent: 'center', paddingVertical: 4, paddingHorizontal: 2, borderRadius: 999 },
   presionado: { opacity: 0.7 },
   // El lugar del ícono es más angosto que el destino más chico (48): el brillo lo desborda apenas, ya transparente.
   lugarDelIcono: { width: 40, height: 28, alignItems: 'center', justifyContent: 'center' },
   brillo: { position: 'absolute', left: -8, top: -6 },
-  texto: { fontSize: 12, lineHeight: 16, marginTop: 1, fontWeight: '600', color: COLOR.barraTexto, textAlign: 'center' },
-  textoElegido: { fontWeight: '800', color: COLOR.barraElegido },
+  // Medio y negrita (500 y 700): la diferencia se ve, y las cinco etiquetas ocupan menos que con 600 y 800.
+  texto: { fontSize: 12, lineHeight: 16, marginTop: 1, fontWeight: '500', color: COLOR.barraTexto, textAlign: 'center' },
+  textoElegido: { fontWeight: '700', color: COLOR.barraElegido },
 }));

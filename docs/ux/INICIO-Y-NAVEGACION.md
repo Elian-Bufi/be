@@ -132,14 +132,15 @@ Privacidad desde un aviso) lo decide esa pantalla, y que la sesión termine no p
 - **Barra.** Una cápsula flotante:
   - con márgenes de 12 dp a los costados, u 8 en un teléfono de menos de 360 dp;
   - extremos redondeados del todo y un borde fino (`barraBorde`);
-  - vidrio ahumado sin desenfoque (`barraVidrio`): el escalón elevado al 90 % en Azul noche y el blanco al 92 % en Claro;
+  - vidrio ahumado sin desenfoque (`barraVidrio`): el escalón elevado al 94 % en Azul noche y el blanco al 95 % en Claro;
   - las cinco etiquetas siempre a la vista, a 12 sp, que crecen hasta 1,15 veces y, solo si no entran, bajan hasta un
-    85 %;
+    80 %. Medido en el render del navegador: desde 390 dp no se achica ninguna, en 360 dp un 4 % con letra grande y en
+    320 dp un 17 % con letra grande; ninguna se corta;
   - el destino elegido lleva el ícono y la etiqueta en `barraElegido`, la etiqueta en negrita y un brillo radial suave
     detrás del ícono. No hay puntito, recuadro, aro ni botón central;
   - mide su alto real y el contenido deja ese espacio libre al final.
 - **Contraste del vidrio.** `scripts/contraste.test.cjs` mide las etiquetas sobre la mezcla del vidrio con cada color
-  del tema, el peor caso de lo que puede pasar detrás. El mínimo medido es 6,02:1 en Azul noche y 5,76:1 en Claro.
+  del tema, el peor caso de lo que puede pasar detrás. El mínimo medido es 6,86:1 en Azul noche y 6,13:1 en Claro.
 - **Cabecera.**
   - A la izquierda: «Volver» con su flecha, que le dice al lector de pantalla adónde vuelve; el menú en una raíz; o
     nada. También en Crear cuenta e Iniciar sesión, que vuelven a Bienvenida.
@@ -187,6 +188,10 @@ renglón del último registro y no la tarjeta.
   está su lista equivalente («T1 82,4 · T2 sin dato · T3 80 kg»), y el lector de pantalla dice cada toma con su fecha.
 - **Lo que no cambia.** Los sitios anatómicos de la figura y los métodos: no se movió ni se quitó ninguno. La vista
   «Evolución» sigue mostrando una medida en el tiempo, con su gráfico de puntos y su lista.
+- **Qué métodos se muestran y cómo.** El inventario de lo que ve el asesorado, con una propuesta para simplificar la
+  presentación, está en [MEDIDAS-Y-METODOS-EN-LA-APK.md](MEDIDAS-Y-METODOS-EN-LA-APK.md). Es una propuesta para revisar
+  con Dirección: no se implementó.
+- **Revisión visual.** Renders de los componentes en el navegador, no capturas nativas: `EVIDENCIA/INICIO-Y-NAVEGACION`.
 
 ## 5. Dependencias y decisiones abiertas
 
