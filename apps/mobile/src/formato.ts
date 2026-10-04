@@ -27,6 +27,34 @@ export const hoyEnZona = (zona: string, ahora: Date = new Date()): string =>
 /** La zona con la que la API resuelve «hoy» (`ZONA_POR_DEFECTO` de la API). */
 export const ZONA_DE_LA_API = 'America/Argentina/Buenos_Aires';
 
+/**
+ * Cuánto falta para que cambie el día civil en una zona, en milisegundos, con medio segundo de margen y nunca menos de
+ * uno. Lo usa `useDiaDeLaApi` para volver a leer «hoy» a la medianoche con la app abierta. Se calcula con la hora de
+ * pared de esa zona: si un cambio de horario lo adelanta o lo atrasa, quien lo usa vuelve a mirar el día al despertar.
+ */
+export function msHastaElProximoDia(zona: string, ahora: Date = new Date()): number {
+  const hora = new Intl.DateTimeFormat('en-GB', { timeZone: zona, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(ahora);
+  const m = /(\d{1,2})\D(\d{2})\D(\d{2})/.exec(hora);
+  if (!m) return 60_000;
+  const transcurrido = (((Number(m[1]) % 24) * 60 + Number(m[2])) * 60 + Number(m[3])) * 1000 + ahora.getMilliseconds();
+  return Math.max(1000, 86_400_000 - transcurrido + 500);
+}
+
+const diaLargoCivil = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+
+/** Una fecha civil con el día de la semana, para el saludo de Inicio: «Domingo, 4 de octubre». Sin desplazar el día. */
+export function fechaLarga(fechaLocal: string): string {
+  const texto = diaLargoCivil.format(new Date(`${fechaLocal.slice(0, 10)}T00:00:00Z`));
+  return texto.charAt(0).toLocaleUpperCase('es-AR') + texto.slice(1);
+}
+
+/** Los `dias` días civiles que terminan en `fin` (`AAAA-MM-DD`), inclusive: `{ periodStart, periodEnd }` para la API. */
+export function ultimosDiasHasta(fin: string, dias: number): { periodStart: string; periodEnd: string } {
+  const inicio = new Date(`${fin.slice(0, 10)}T00:00:00Z`);
+  inicio.setUTCDate(inicio.getUTCDate() - (dias - 1));
+  return { periodStart: inicio.toISOString().slice(0, 10), periodEnd: fin.slice(0, 10) };
+}
+
 /** Los últimos `dias` días civiles hasta hoy inclusive, en la zona dada: `{ periodStart, periodEnd }` para la API. */
 export function ultimosDiasEnZona(dias: number, zona: string, ahora: Date = new Date()): { periodStart: string; periodEnd: string } {
   const periodEnd = hoyEnZona(zona, ahora);

@@ -606,8 +606,8 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     registrarIngesta(token: string, cuerpo: RegistrarIngestaRequest, claveDeIdempotencia: string) {
       return llamar('POST', '/me/nutrition/executions', { token, claveDeIdempotencia, esquema: IngestaResponseSchema, cuerpo });
     },
-    /** Registros propios (DL-055). */
-    listarMisIngestas(token: string, filtro: { cursor?: string } = {}) {
+    /** Registros propios (DL-055). `limit` es el del contrato (API-NUT-16-LISTA): Inicio pide solo el último. */
+    listarMisIngestas(token: string, filtro: { cursor?: string; limit?: string } = {}) {
       return llamar('GET', `/me/nutrition/executions${query(filtro)}`, { token, esquema: ListaDeIngestasResponseSchema });
     },
     /** API-NUT-16. */

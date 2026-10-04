@@ -32,15 +32,23 @@ por sí solo los datos de salud: cada lectura trae su propio permiso.
 | Elemento | Fuente existente | Campos | Permisos | Destino exacto | Estados | Dependencia |
 |---|---|---|---|---|---|---|
 | **Entrenamiento de hoy** | API-TRN-14 `hoyDeEntrenamiento`. Clave `entrenamiento-hoy:<día>`, la de Entrenamiento | `date`, `planState`, `occurrences[]`: `occurrenceId`, `plannedSession` (`label`, `blockLabel`, `prescriptions`) y `execution` (`state`, `draftId`, `executionId`, `sessionCondition`) | Sesión y A3 vigente (08:406). Con el vínculo pausado o un consentimiento revocado, `NOT_AVAILABLE` | Comenzar o continuar: `abrirBorradorDeEjecucion` (API-TRN-15, una escritura que va **solo al tocar**) y después `sesion-de-entrenamiento`. Registrada: `ejecucion-de-entrenamiento`, con su id | Verificando · sin plan (`NO_ACTIVE_PLAN`) · no disponible (`NOT_AVAILABLE`) · **varias sesiones: se elige, no se toma la primera** (DL-077) · registrada como no completada (no se dice «completada») · sin A3 · error · sin red | Ninguna |
-| **Nutrición de hoy** | API-NUT-14 `hoyNutricional(díaTipo)`. Clave `hoy-nutricional:<día>:<díaTipo>`, la de Nutrición. El día tipo se recuerda en `hoy-nutricional:dia` | `planState`, `activePlan.dayTypes[]` (`label`, `meals`), `selectedDayTypeId`, `registeredIntake[]`, `dataState` | Sesión y A3 (DL-115) | Ver el plan: `plan-actual`. Registrar: `hoy` con `accion: 'registrar'`, que lleva a las comidas o a elegir el día. Un registro: `registro-nutricional`, con su id | Verificando · sin plan · no disponible · **elegir el día tipo: con varios y ninguno elegido, se pide la elección** (DL-049) · sin registros hoy (`NO_DATA`, nunca «0 %») · sin A3 · error | Parámetro de ruta nuevo: `accion` en `hoy` |
+| **Nutrición de hoy** | API-NUT-14 `hoyNutricional(díaTipo)`, en `leerNutricionDeInicio` (`src/lecturas-de-inicio.ts`). Clave `inicio-nutricion:<día>:<díaTipo>`. El día tipo es la misma elección de Nutrición: `hoy-nutricional:dia` | `planState`, `activePlan.dayTypes[]` (`label`), `selectedDayTypeId`, `registeredIntake[]` (`origin`, `recordedAt`, `executionId`) | Sesión y A3 (DL-115) | Ver el plan: `plan-actual`. Registrar: `hoy` con `accion: 'registrar'`, que lleva a las comidas o a elegir el día. El último registro de hoy: `registro-nutricional`, con su id | Verificando · sin plan · no disponible · **elegir el día tipo: con varios y ninguno elegido, se pide la elección** (DL-049) · sin registros hoy (`NO_DATA`, nunca «0 %») · sin A3 · error | Parámetro de ruta nuevo: `accion` en `hoy` |
 | **Actividad: entrenamiento** | API-TRN-19-LISTA `misEjecucionesDeEntrenamiento` de los últimos 30 días. Es la lista de «Tu historial», que no se pagina (hasta 92 días) | `executions[]` con su `effectiveView.sessionCondition`, **con las correcciones aplicadas** | Sesión y A3 | `historial-de-entrenamiento` | Verificando · sin registros en 30 días (un dato real, no una falla) · sin A3 · error | Ninguna |
-| **Actividad: nutrición** | API-NUT-16-LISTA `listarMisIngestas`, primera página, ordenada por **momento de registro** descendente. Se pide solo si hoy no hay registros | `data[0]` (`localDate`, `occurredAt`, `recordedAt`) y `page.hasMore` | Sesión y A3 | `registro-nutricional`, con su id | Verificando · nunca registró · sin A3 · error | **«Días con registros en 30 días» no se puede calcular con la primera página.** Exige recorrer todas las páginas o un agregado de la API (D-1). La alternativa honesta es lo último que se registró, con su fecha |
+| **Actividad: nutrición** | API-NUT-16-LISTA `listarMisIngestas` con `limit` 1 (el del contrato), en la misma lectura de la tarjeta. Se pide **solo si hoy no hay registros** | `data[0]`: `executionId`, `localDate`, `origin` | Sesión y A3 | `registro-nutricional`, con su id | Nunca registró · sin leer (una falla pasajera: la tarjeta no afirma nada) · sin A3 | **«Días con registros en 30 días» no se puede calcular con una página.** Exige recorrer todas las páginas o un agregado de la API (D-1). Se muestra lo último que se registró, con su fecha |
 | **Mediciones: última toma** | API-ANT-06-PROPIA `miEvolucionAntropometrica` vía `leerMiEvolucion`. Clave `mi-evolucion:ultimos-90`, la de Evolución | `metrics[].series[]`: `occurredAt`, `sourceEvaluationId`, `comparabilityGroup`, `value` y `unit` | Sesión y A3 | `mi-evolucion` | Verificando · sin mediciones · sin A3 · error | Ninguna |
 | **Cambio entre observaciones comparables** | La misma lectura, con `ultimaToma()` del dominio | La medida, su anterior comparable y `diferenciaDescriptiva` (fechas y días) | — | `mi-evolucion` con `vista: 'evolucion'` y `metrica` | Sin anterior comparable: se dice por qué (`SIN_PREVIA`, `OTRO_GRUPO`) | Parámetros de ruta nuevos: `vista` y `metrica` |
-| **Pendiente de revisar** | API-FRM-06 `misSolicitudesDeFormulario` y API-CON-05 `consultarRequisitoA3`, vía `leerLista`. Clave `mis-solicitudes`, la de Información | `data[]`: `formRequestId`, `templateName`, `professional.displayName`, `status`, `respondable` y `createdAt`. También `page.hasMore` y si falta el A3 | Sesión. Responder exige el A3 (DL-115) | Si se puede responder: `mi-solicitud`, con su id. Sin A3: `privacidad`. Si no se puede responder por otro motivo: lo dice, sin botón | Verificando · sin pendientes · **lista parcial: no se presenta su largo como total** · sin A3 · error | `leerLista` tiene que exponer `hayMas` |
+| **Para responder** | API-FRM-06 `misSolicitudesDeFormulario` con `status: PENDING` y `limit` 3, junto con API-CON-05 `consultarRequisitoA3`, en `leerPendientes`. Clave `inicio-pendientes` | `data[]`: `formRequestId`, `templateName`, `professional.displayName`, `respondable` y `createdAt`. También `page.hasMore` y si falta el A3 | Sesión. Responder exige el A3 (DL-115) | Si se puede responder: «Completar», a `mi-solicitud` con su id. Sin A3: el aviso con `privacidad`. Si no se puede responder por otro motivo: lo dice, sin botón | Verificando · sin pendientes · **con más páginas: «más de 3», nunca su largo como total** · sin A3 · error | Ninguna: `limit` y `status` son del contrato |
 | **Saludo y avatar** | API-ACC-05 `/me`. `profile` es `{}` | — | Sesión | Avatar: `cuenta`, desde la pantalla actual | — | Sin nombre ni foto en el contrato (DL-009): saludo neutro (D-2) |
 
-**Qué se construye con contratos existentes:** todas las tarjetas.
+**Qué se construye con contratos existentes:** todas las tarjetas. El cliente de `@be/domain` expone ahora el `limit` que
+API-NUT-16-LISTA ya declaraba en el contrato; la API y el OpenAPI no cambian.
+
+**Criterio de la medida destacada** (`medidaDestacada`): la primera medida de la última toma en el orden del catálogo de
+BE, que empieza por el peso; si la toma solo tiene resultados de fórmulas, el primero de ellos. La tarjeta lo dice.
+
+**Acciones de una sesión de hoy:** «Comenzar sesión» y «Continuar sesión» abren el borrador con el mismo circuito de
+Entrenamiento de hoy (`useAbrirOcurrencia`), solo al tocarlos. Consultar una sesión registrada es «Ver registro», el
+mismo texto del módulo.
 **Qué necesita parámetros de navegación:**
 - `hoy` con `accion`;
 - `mi-evolucion` con `vista` y `metrica`;
@@ -49,7 +57,8 @@ por sí solo los datos de salud: cada lectura trae su propio permiso.
 **Qué requiere una decisión o una ampliación de la API:**
 - D-1: el agregado de días con registros nutricionales;
 - D-2: el nombre o la foto del perfil;
-- D-3: listar todas las tomas, si una evaluación del mismo día queda tapada (§5).
+- D-3: listar todas las tomas, si una evaluación del mismo día queda tapada (§5);
+- D-4: un agregado de la actividad de entrenamiento por período, para no descargar las sesiones solo para contarlas.
 
 ## 3. Navegación
 
@@ -140,7 +149,26 @@ Privacidad desde un aviso) lo decide esa pantalla, y que la sesión termine no p
 
 ## 4. Solicitudes por visita
 
-Se completa con la medición de la etapa 3.
+Cada tarjeta pide lo suyo una vez por entrada: así verifica antes de mostrar (G2). Lo recordado en la sesión evita
+recalcular y redibujar, no pedir. Contado con un cliente que anota cada pedido (`scripts/inicio.test.mjs`, sección 4):
+
+| Momento | Solicitudes | Cuáles |
+|---|---|---|
+| Abrir Inicio, con registros de comida hoy | **6** | TRN-14, NUT-14, FRM-06 y CON-05 (juntas), TRN-19-LISTA, ANT-06-PROPIA |
+| Abrir Inicio, sin registros de comida hoy | **7** | Las mismas y NUT-16-LISTA con `limit` 1, después de NUT-14 |
+| Sin mediciones en los últimos 90 días | **+3** como mucho | ANT-06-PROPIA mira hacia atrás de a 90 días, hasta un año (`leerMiEvolucion`) |
+| Volver a Inicio, o volver después de registrar algo | Las mismas | Inicio se monta de nuevo y verifica |
+| Elegir el día del plan en la tarjeta | **1 o 2** | NUT-14 con el día elegido, y NUT-16-LISTA si hoy no hay registros |
+
+**Lo que se descarga.**
+- TRN-19-LISTA trae cada sesión de los 30 días completa, con su plan, su original y sus correcciones, para contarlas.
+  Inicio guarda solo la cuenta. Un agregado por período lo evitaría, y queda como opción (D-4).
+- NUT-16-LISTA trae una sola fila.
+- FRM-06 trae como mucho tres solicitudes.
+
+**Encadenadas.** Solo una, y se puede evitar: NUT-16-LISTA espera a NUT-14 para saber si hoy hay registros. Pedirla
+siempre en paralelo sumaría una solicitud en cada visita con registros. Se eligió encadenarla, porque solo demora el
+renglón del último registro y no la tarjeta.
 
 ## 5. Dependencias y decisiones abiertas
 
@@ -148,6 +176,8 @@ Se completa con la medición de la etapa 3.
   paginado. Mientras tanto, Inicio muestra lo último que se registró, con su fecha, y no lo presenta como un resumen
   del período.
 - **D-2.** No hay nombre ni foto en el perfil (DL-009). El saludo y el avatar quedan neutros.
+- **D-4.** La actividad de entrenamiento cuenta sesiones que descarga completas (TRN-19-LISTA). Un agregado por período
+  ahorraría la descarga. Es una decisión de contrato y no se tomó en esta tanda.
 - **D-3.** La API proyecta una observación efectiva por día y medida. Una toma se reconstruye por su `sourceEvaluationId`.
   Si dos evaluaciones caen el mismo día, de la tapada se ve solo lo que la API expone. Listar todas las tomas exigiría
   ampliar el contrato.

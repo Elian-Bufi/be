@@ -2783,3 +2783,5 @@ del titular) · **Estado:** DECIDIDA por Dirección el 2026-10-04
 - D-1: el agregado de días con registros nutricionales en un período.
 - D-2: el nombre o la foto del perfil.
 - D-3: listar todas las tomas antropométricas, si la API tapa una evaluación del mismo día.
+- D-4: un agregado de la actividad de entrenamiento por período. Hoy Inicio descarga las sesiones de 30 días para
+  contarlas (TRN-19-LISTA).

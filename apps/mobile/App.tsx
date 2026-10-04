@@ -197,6 +197,11 @@ function Contenido() {
     desplazamiento.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
+  /** Lleva la pantalla a una altura del contenido: por ejemplo, a las comidas cuando se llega desde «Registrar» en Inicio. */
+  const llevarA = useCallback((y: number) => {
+    desplazamiento.current?.scrollTo({ y: Math.max(0, y), animated: true });
+  }, []);
+
   /**
    * Termina la sesión en la app: se olvidan el token, lo leído y lo elegido, y se borra la credencial guardada, antes de
    * cambiar de pantalla. Una recuperación que todavía estuviera en curso ya no cuenta.
@@ -388,7 +393,7 @@ function Contenido() {
           {requiereSesion(ruta) && sesion ? (
             <>
               {/* Volver, sin depender del botón ni de un gesto del sistema (10-B10 §9), está en la cabecera. */}
-              {ruta.nombre === 'inicio' ? <PantallaDeInicio /> : null}
+              {ruta.nombre === 'inicio' ? <PantallaDeInicio token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'cuenta' ? <PantallaDeCuenta token={sesion.token} salir={salir} ir={ir} sesionRecordada={recordada} /> : null}
               {ruta.nombre === 'vinculos' ? <PantallaDeVinculos token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} subir={subir} /> : null}
               {ruta.nombre === 'vinculo' ? (
@@ -397,11 +402,11 @@ function Contenido() {
               {ruta.nombre === 'consentimiento' ? (
                 <PantallaDeConsentimiento key={ruta.vinculoId} token={sesion.token} vinculoId={ruta.vinculoId} salir={salir} ir={ir} volver={volver} subir={subir} />
               ) : null}
-              {ruta.nombre === 'hoy' ? <PantallaDeHoy token={sesion.token} salir={salir} ir={ir} subir={subir} /> : null}
+              {ruta.nombre === 'hoy' ? <PantallaDeHoy key={ruta.accion ?? 'hoy'} token={sesion.token} salir={salir} ir={ir} subir={subir} accion={ruta.accion} llevarA={llevarA} /> : null}
               {ruta.nombre === 'plan-actual' ? <PantallaDePlanActual token={sesion.token} salir={salir} /> : null}
               {ruta.nombre === 'registros-nutricionales' ? <PantallaDeRegistros token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'registro-nutricional' ? <PantallaDeRegistroNutricional key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
-              {ruta.nombre === 'mi-evolucion' ? <PantallaDeMiEvolucion token={sesion.token} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'mi-evolucion' ? <PantallaDeMiEvolucion token={sesion.token} salir={salir} ir={ir} vista={ruta.vista} metrica={ruta.metrica} /> : null}
               {ruta.nombre === 'entrenamiento' ? <PantallaDeEntrenamiento token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'sesion-de-entrenamiento' ? (
                 <PantallaDeSesion key={ruta.draftId} token={sesion.token} draftId={ruta.draftId} sesion={ruta.sesion} fechaDeLaSesion={ruta.fecha} salir={salir} ir={ir} subir={subir} />
