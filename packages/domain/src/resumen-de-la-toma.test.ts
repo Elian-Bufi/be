@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { EvolucionResponseSchema, type EvolucionResponse, type PuntoDeSerieApi, type SerieApi } from './contratos-antropometria';
-import { ultimaToma } from './resumen-de-la-toma';
+import { tomaDe, tomasDelPeriodo, ultimaToma, valoresPorToma } from './resumen-de-la-toma';
 
 const ZONA = 'America/Argentina/Buenos_Aires';
 const G_PESO = { comparabilityGroup: 'cmp-1', protocolVersionId: 'perfil', protocolName: 'Perfil antropométrico completo', methodVersionId: null, unit: 'kg' };
@@ -104,4 +104,73 @@ test('sin anterior comparable, la toma dice por qué: no hubo una antes, o la hu
   assert.equal(motivo('peso'), 'SIN_PREVIA');
   assert.equal(motivo('imc'), 'OTRO_GRUPO');
   assert.equal(motivo('perimetro-cintura'), null);
+});
+
+// ─── DL-117 · el selector de tomas: T1, T2, T3… por evaluación, nunca por fecha ──────────────────
+
+test('las tomas del período van de la más vieja a la más nueva, una por evaluación, con su fecha y sus métricas', () => {
+  const d = datos([
+    serie('peso', [punto('ev-julio', '2026-07-20', 82.4, G_PESO), punto('ev-agosto', '2026-08-25', 80.9, G_PESO), punto('ev-septiembre', '2026-09-24', 80, G_PESO)], [G_PESO]),
+    serie('perimetro-cintura', [punto('ev-julio', '2026-07-20', 90, G_CINTURA), punto('ev-septiembre', '2026-09-24', 86.5, G_CINTURA)], [G_CINTURA]),
+  ]);
+  assert.deepEqual(
+    tomasDelPeriodo(d).map((t) => [t.etiqueta, t.evaluacionId, t.fecha, t.metricas]),
+    [
+      ['T1', 'ev-julio', '2026-07-20', 2],
+      ['T2', 'ev-agosto', '2026-08-25', 1],
+      ['T3', 'ev-septiembre', '2026-09-24', 2],
+    ],
+  );
+  // La última toma es la misma que resume `ultimaToma`.
+  assert.equal(ultimaToma(d)!.evaluacionId, tomasDelPeriodo(d).at(-1)!.evaluacionId);
+});
+
+test('dos evaluaciones del mismo día son dos tomas, con la misma fecha: no se juntan por fecha', () => {
+  const d = datos([
+    serie('peso', [punto('ev-manana', '2026-09-24', 80, G_PESO, { occurredAt: '2026-09-24T12:00:00.000Z' }), punto('ev-tarde', '2026-09-24', 80.6, G_PESO, { occurredAt: '2026-09-24T20:00:00.000Z' })], [G_PESO]),
+  ]);
+  const tomas = tomasDelPeriodo(d);
+  assert.deepEqual(
+    tomas.map((t) => [t.etiqueta, t.evaluacionId, t.fecha]),
+    [
+      ['T1', 'ev-manana', '2026-09-24'],
+      ['T2', 'ev-tarde', '2026-09-24'],
+    ],
+  );
+  // La de la tarde se compara con la de la mañana: otra evaluación, aunque sea del mismo día.
+  const tarde = tomaDe(d, 'ev-tarde')!;
+  assert.equal(tarde.medidas[0]!.anterior?.punto.sourceEvaluationId, 'ev-manana');
+});
+
+test('una toma anterior se resume igual que la última: con el anterior comparable de una evaluación anterior a ella', () => {
+  const d = datos([
+    serie('peso', [punto('ev-julio', '2026-07-20', 82.4, G_PESO), punto('ev-agosto', '2026-08-25', 80.9, G_PESO), punto('ev-septiembre', '2026-09-24', 80, G_PESO)], [G_PESO]),
+    serie('perimetro-cintura', [punto('ev-julio', '2026-07-20', 90, G_CINTURA), punto('ev-septiembre', '2026-09-24', 86.5, G_CINTURA)], [G_CINTURA]),
+  ]);
+  const agosto = tomaDe(d, 'ev-agosto')!;
+  assert.equal(agosto.fecha, '2026-08-25');
+  assert.deepEqual(
+    agosto.medidas.map((m) => [m.metrica, m.actual.punto.value, m.anterior?.punto.value ?? null, m.diferencia?.delta ?? null]),
+    [['peso', 80.9, 82.4, -1.5]],
+  );
+  assert.equal(agosto.fechaAnterior, '2026-07-20');
+  // La primera toma no tiene con qué compararse, y una evaluación que no está en el período no se resume.
+  assert.equal(tomaDe(d, 'ev-julio')!.medidas.every((m) => m.motivoSinAnterior === 'SIN_PREVIA'), true);
+  assert.equal(tomaDe(d, 'ev-otra'), null);
+});
+
+test('los valores de una métrica por toma son de su grupo; una toma sin la métrica, o con otro método, es un hueco', () => {
+  const d = datos([
+    serie('peso', [punto('ev-1', '2026-07-20', 82, G_PESO), punto('ev-3', '2026-09-24', 80, G_PESO)], [G_PESO]),
+    serie(
+      'imc',
+      [punto('ev-1', '2026-07-20', 26.6, G_IMC, { dataClass: 'DERIVED' }), punto('ev-2', '2026-08-25', 26.4, G_IMC_OTRO, { dataClass: 'DERIVED' }), punto('ev-3', '2026-09-24', 26.1, G_IMC, { dataClass: 'DERIVED' })],
+      [G_IMC, G_IMC_OTRO],
+    ),
+  ]);
+  const tomas = tomasDelPeriodo(d);
+  assert.deepEqual(tomas.map((t) => t.etiqueta), ['T1', 'T2', 'T3']);
+  assert.deepEqual(valoresPorToma(d, 'peso', 'cmp-1', tomas).map((o) => o?.punto.value ?? null), [82, null, 80]);
+  assert.deepEqual(valoresPorToma(d, 'imc', 'cmp-3', tomas).map((o) => o?.punto.value ?? null), [26.6, null, 26.1], 'el IMC de otro método no entra en el gráfico');
+  assert.deepEqual(valoresPorToma(d, 'cintura', 'cmp-2', tomas), [null, null, null]);
 });

@@ -170,6 +170,24 @@ recalcular y redibujar, no pedir. Contado con un cliente que anota cada pedido (
 siempre en paralelo sumaría una solicitud en cada visita con registros. Se eligió encadenarla, porque solo demora el
 renglón del último registro y no la tarjeta.
 
+## 4 bis. Mi evolución: el selector de tomas (etapa 4)
+
+- **Las tomas.** T1, T2, T3… son las evaluaciones del período, de la más vieja a la más nueva, con su fecha real
+  (`tomasDelPeriodo`, en `@be/domain`). Cada toma es una evaluación (`sourceEvaluationId`), **nunca una fecha**: dos
+  evaluaciones del mismo día son dos tomas. T1 es la primera toma del período que se ve, no la primera de la historia: el
+  período está escrito debajo del selector.
+- **Una sola elección.** Elegir una toma cambia a la vez la figura (el mapa corporal), las medidas, los resultados de las
+  fórmulas, sus gráficos chicos y la comparación. Sin elección, o si la toma elegida ya no está en la respuesta, se ve la
+  última. La elección se recuerda mientras dure la sesión (`mi-evolucion:toma`). Inicio puede abrir una vista y una
+  medida (`vista`, `metrica`).
+- **La comparación.** Cada medida de la toma elegida va con la anterior del mismo grupo de comparabilidad, de una
+  evaluación anterior a ella (`tomaDe`). Es la regla que ya tenía la última toma (REG-06-162/164).
+- **Los gráficos chicos.** Cada medida y cada resultado lleva un punto por toma, sin líneas. Una toma sin la medida, o
+  con otro protocolo, método o unidad, es un hueco: no hay punto (`valoresPorToma`). La toma elegida va resaltada. Debajo
+  está su lista equivalente («T1 82,4 · T2 sin dato · T3 80 kg»), y el lector de pantalla dice cada toma con su fecha.
+- **Lo que no cambia.** Los sitios anatómicos de la figura y los métodos: no se movió ni se quitó ninguno. La vista
+  «Evolución» sigue mostrando una medida en el tiempo, con su gráfico de puntos y su lista.
+
 ## 5. Dependencias y decisiones abiertas
 
 - **D-1.** «Días con registros nutricionales en un período» exige un agregado de la API o recorrer el historial
