@@ -27,16 +27,16 @@
   document.getElementById('nota').textContent = p.get('nota') || '';
   const NOMBRE = { 'azul-noche': 'Azul noche', claro: 'Claro' };
   for (const m of (p.get('m') || '').split(';').filter(Boolean)) {
-    const [escena, tema, ancho, escala, alto = '780', extra = ''] = m.split('|');
+    const [escena, tema, ancho, escala, alto = '780', extra = '', pagina = 'telefono', nombre = ''] = m.split('|');
     const marco = document.createElement('div');
     marco.className = 'marco';
     const rotulo = document.createElement('div');
     rotulo.className = 'rotulo';
-    rotulo.textContent = `${NOMBRE[tema] || tema} · ${ancho} dp · letra ×${escala.replace('.', ',')}${extra.includes('final=1') ? ' · al final' : ''}${extra.includes('abajo=48') ? ' · 3 botones' : ''}`;
+    rotulo.textContent = `${nombre ? nombre + ' · ' : ''}${NOMBRE[tema] || tema} · ${ancho} dp · letra ×${escala.replace('.', ',')}${extra.includes('final=1') ? ' · al final' : ''}${extra.includes('abajo=48') ? ' · 3 botones' : ''}`;
     const f = document.createElement('iframe');
     f.width = ancho;
     f.height = alto;
-    f.src = `telefono.html?escena=${escena}&tema=${tema}&ancho=${ancho}&alto=${alto}&escala=${escala}${extra ? '&' + extra : ''}`;
+    f.src = `${pagina}.html?escena=${escena}&tema=${tema}&ancho=${ancho}&alto=${alto}&escala=${escala}${extra ? '&' + extra : ''}`;
     marco.append(rotulo, f);
     document.getElementById('fila').append(marco);
   }

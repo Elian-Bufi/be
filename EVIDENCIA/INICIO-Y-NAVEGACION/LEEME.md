@@ -40,10 +40,18 @@ cuando cargaron las fuentes y terminó el ajuste de las etiquetas.
 
 ## Las comparaciones
 
-Las de 01 a 05 se rehicieron en el cierre del 2026-10-04. La 06 cambió, y de la 07 a la 11 son nuevas.
+Todas se rehicieron con la candidata del pulido del mapa (2026-10-04, a la tarde), y de la 12 a la 18 son nuevas. Las
+cuatro individuales (12 a 15) tienen una pantalla cada una, al doble de píxeles, para verlas en el teléfono sin ampliar.
 
 | Archivo | Qué muestra |
 |---|---|
+| `capturas/12-perimetros-letra-normal.png` | **Individual.** Perímetros, Azul noche, 360 dp, letra normal |
+| `capturas/13-pliegues-letra-normal.png` | **Individual.** Pliegues, Claro, 360 dp, letra normal, con el tríceps elegido: su fila, su guía, su sitio y el detalle |
+| `capturas/14-indicadores-letra-normal.png` | **Individual.** Indicadores, Azul noche, 360 dp, letra normal |
+| `capturas/15-letra-grande.png` | **Individual.** La adaptación con letra ×1,3: pestañas en dos filas, la figura con números y los valores en la lista |
+| `capturas/16-antes-despues-perimetros.png` | Perímetros antes (6acc4c0) y después, con el mismo simulador y los mismos datos |
+| `capturas/17-antes-despues-pliegues.png` | Pliegues con el subescapular elegido, antes y después |
+| `capturas/18-encuadres.png` | El encuadre actual (A) y las dos propuestas: B, la elegida, y C, más recortada |
 | `capturas/01-inicio-arriba.png` | Inicio arriba en Azul noche y Claro, en 360, 390 y 412 dp, con letra ×1, ×1,3 y ×2. Con ×1,3 en 360 dp y con ×2, la barra en dos filas |
 | `capturas/02-inicio-al-final.png` | El final de Inicio: la última tarjeta queda libre sobre la cápsula, con gestos y con tres botones |
 | `capturas/03-inicio-estados.png` | Sin el A3, sin plan ni datos, sin conexión y mientras se verifica |
@@ -55,6 +63,73 @@ Las de 01 a 05 se rehicieron en el cierre del 2026-10-04. La 06 cambió, y de la
 | `capturas/09-indicadores.png` | Los indicadores en dos columnas, en una con letra ×1,3 en 360 dp, y una tarjeta elegida abierta a todo el ancho |
 | `capturas/10-barra-letra-grande.png` | La barra en 320 y 360 dp, de ×1 a ×2: una fila mientras entra, y dos filas cuando no |
 | `capturas/11-sin-datos-y-toma-incompleta.png` | Mi evolución sin mediciones, y una toma con otra evaluación el mismo día (D-3), con su aviso |
+
+## Pulido del mapa (2026-10-04, a la tarde)
+
+Dirección pidió priorizar la excelencia visual con la letra de siempre, y que con letra grande se lea bien aunque la
+composición cambie, sin desactivar el escalado. **Las referencias visuales que mencionaba el pedido no llegaron con el
+mensaje:** el pulido sigue la descripción escrita.
+
+**El encuadre** (`ENCUADRE` en `composicion-de-la-figura.ts`; 16 a 18):
+- Antes, el cuerpo se achicaba y se centraba en el alto de la lista: en 360 dp medía unos 512 dp de alto y, con muchas
+  medidas, quedaba un hueco encima.
+- Ahora la imagen mide 1,44 veces el ancho de la lámina, el eje del cuerpo queda a un 13 % del ancho de la imagen del
+  borde derecho y el cuerpo empieza a 10 dp del borde de arriba. En 360 dp mide unos 600 dp de alto y las tarjetas,
+  132 dp de ancho como mínimo.
+- El tamaño sale del ancho de la lámina y de todos los sitios posibles de la familia, no de cuántas medidas tiene la
+  toma. Sumar medidas alarga la lista hacia abajo, pero no achica el cuerpo ni deja un hueco encima. Con muchas medidas,
+  la lista termina más abajo que los pies y las guías de abajo suben hasta su sitio.
+- El borde derecho recorta el cuerpo donde no hay sitios. ISAK mide del lado derecho de la persona, que en la figura de
+  frente queda a la izquierda, y los anillos del tronco tienen su centro en el eje, que queda a la vista. La alternativa
+  de mostrar solo la parte de arriba o la de abajo no hizo falta.
+- Se compararon tres encuadres (18). C, con 1,55 veces y 9 %, corta los anillos del tronco casi por el centro. Se eligió
+  B.
+- Figura, anillos, puntos, guías y zonas de toque salen del mismo rectángulo de la imagen, con la misma escala y el mismo
+  desplazamiento. Ningún punto anatómico se movió.
+
+**La cabecera:**
+- Las vistas son pestañas subrayadas de borde a borde, y la familia es un control compacto dentro de la lámina: ya no
+  son dos filas de píldoras iguales.
+- Una fecha principal y un contexto breve («Última toma · se compara con el 25 jul 2026»).
+- Las tomas, en una fila de chips que se desplaza de costado.
+- El período y la explicación de los puntos, en «Cómo se lee».
+- El aviso de una toma que puede estar incompleta sigue a la vista, en una línea, y «Por qué» abre el detalle.
+
+**Las tarjetas:**
+- El nombre del sitio pasa de 12 a 13 sp.
+- Todas las filas tienen la misma forma. El nombre va a la izquierda y el valor a la derecha, en la misma línea si
+  entran o, si el nombre es largo, en la de abajo. Al final van la diferencia y los puntos. Los valores forman una
+  columna.
+- En una tarjeta, los gráficos tienen el mismo ancho: los puntos de cada toma quedan en columna.
+- Una primera versión ponía el valor a la derecha o debajo del nombre según el largo del nombre, y los valores saltaban
+  de un lado al otro. Se corrigió antes de entregar.
+- Los indicadores muestran nombre, valor, diferencia neutra, la marca (corregida, si corresponde) y los puntos. El
+  método se reconoce en el nombre, por ejemplo «Grasa corporal (Durnin y Womersley, Siri)». «Antes» y la descripción
+  completa del método quedan en el detalle.
+- El vidrio tiene un borde fino y translúcido, un brillo arriba que se apaga a la mitad y una sombra suave, sin bordes
+  fuertes. El brillo no baja el contraste del texto (`scripts/contraste.test.cjs`).
+
+**Lo comprobado:**
+- **Recortes.** `herramientas/render-navegador/cortes.js` compara el ancho de cada texto de una línea con el de su caja.
+  Se corrió en 19 configuraciones: 360, 390 y 412 dp; los dos temas; pocas y muchas medidas; doce tomas; letra ×1,15,
+  ×1,3 y ×2; y filas elegidas, con el nombre en negrita. Ningún texto se corta.
+- **La negrita.** En Roboto, el nombre en negrita mide como mucho 1,9 dp más que en peso normal a 13 sp. La holgura de
+  la estimación lo cubre: elegir una fila no corta su nombre.
+- **Selección y guías.** El tríceps elegido (13), el subescapular (17) y la cintura (07): la fila, la guía y el sitio
+  se resaltan, y la guía llega al sitio correcto.
+- **Pruebas.** `scripts/composicion-de-la-figura.test.mjs` controla que el cuerpo empiece arriba y no cambie con la
+  cantidad de medidas, y que ningún sitio quede afuera ni debajo de las tarjetas. También controla que tocar cada sitio
+  responda, y que los gráficos de una tarjeta tengan el mismo ancho y entren junto a la diferencia.
+- **Letra grande.** Con ×1,15 siguen las tarjetas. Desde ×1,3 la figura va con números, y los valores y sus puntos en
+  la lista (15 y 08). Las pestañas pasan a dos filas, y los chips de las tomas se desplazan de costado.
+
+**Límites del simulador.** Valen los de arriba. Además:
+- la sombra del vidrio es la del navegador, y en Android la da `elevation`;
+- el brillo es un degradado de `react-native-svg`, que no se miró en el teléfono;
+- los anchos de texto son los de Roboto de Google Fonts, no los de la fuente del teléfono.
+
+No se reconstruyó el simulador: se le sumaron la escala de pantalla para las individuales y tres variables de
+`construir.mjs` para compilar el «antes» y la variante C.
 
 ## Las etiquetas de la barra, medidas (cierre del 2026-10-04)
 
@@ -101,10 +176,10 @@ contra la API de test.** Los resultados completos, por escenario y por red, est�
 | Sin mediciones recientes | 9 | 165 KB | 1,52 s | 4,75 s | Mediciones: 4 pedidos seguidos |
 | Historial con muchas correcciones | 6 | 610 KB | 3,75 s | 13,9 s | Tu actividad (539 KB) |
 
-- Comprimir las respuestas con gzip llevaría la visita típica a 8,5 KB y 0,62 s en 4G lento. La API hoy no comprime; no
-  se verificó si Render lo hace en su borde.
-- Un resumen agregado de la actividad (D-4) bajaría esa tarjeta a 0,58 s en 4G lento. Con gzip, casi todo ese beneficio
-  llega sin un endpoint nuevo: el agregado no se justifica todavía.
+- **La mejora con gzip es una simulación local**, no una medición: en la simulación, la visita típica bajaría a 8,5 KB
+  y 0,62 s en 4G lento. La API hoy no comprime; no se verificó si Render lo hace en su borde.
+- Un resumen agregado de la actividad (D-4) bajaría esa tarjeta a 0,58 s en la misma simulación. **D-4 queda diferida**:
+  no se crea el endpoint, y la compresión se decide antes.
 
 ## Cierre del 2026-10-04
 
@@ -154,6 +229,10 @@ Una revisión aparte del diff del cierre no encontró defectos altos. Encontró 
 7. Inicio sin comidas registradas hoy: la tarjeta de Nutrición se ve antes que el renglón del último registro.
 8. El vidrio de la cápsula al desplazar Inicio, en los dos temas, con una y con dos filas.
 9. El diálogo «¿Salir sin guardar?»: con una comida a medio escribir, tocar otro destino de la barra.
+10. El mapa con la letra de siempre: el cuerpo grande, arriba y recortado a la derecha, sin hueco encima; los valores
+    en columna a la derecha; ningún nombre cortado, tampoco al elegir su fila.
+11. El vidrio de las tarjetas en los dos temas: el brillo arriba y la sombra con `elevation`, sin bordes fuertes.
+12. Con letra grande, los chips de las tomas: se desplazan de costado y la toma elegida queda a la vista.
 
 ## Cómo se rehacen
 
@@ -165,6 +244,10 @@ BE_REPO=<raíz del repo> node construir.mjs
 ./medir-barra.sh <carpeta de salida>
 ```
 Hace falta Node 22, Chrome y conexión para cargar Roboto. Los datos son los de `shims/api.ts`, todos sintéticos.
+
+`./capturar-pulido.sh <carpeta de salida>` hace de la 12 a la 18. Las comparaciones (16 a 18) necesitan además el
+«antes» y la variante C, y los comandos para compilarlos están en la cabecera del script. Para el control de cortes, `EXPRESION="$(cat cortes.js)" node cdp.mjs <png> <ancho> <alto> <url>`
+devuelve los textos mirados y los cortados.
 
 La medición de Inicio corre desde el repo, después de construir @be/domain:
 ```

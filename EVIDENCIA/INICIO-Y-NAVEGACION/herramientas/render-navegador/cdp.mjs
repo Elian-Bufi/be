@@ -58,7 +58,8 @@ try {
       ws.send(JSON.stringify({ id: n, method, params }));
     });
   await enviar('Page.enable');
-  await enviar('Emulation.setDeviceMetricsOverride', { width: Number(ancho), height: Number(alto), deviceScaleFactor: 1, mobile: false });
+  // ESCALA_DE_PANTALLA=2 saca la imagen con el doble de píxeles: se ve nítida en un teléfono sin ampliarla.
+  await enviar('Emulation.setDeviceMetricsOverride', { width: Number(ancho), height: Number(alto), deviceScaleFactor: Number(process.env.ESCALA_DE_PANTALLA ?? '1'), mobile: false });
   await enviar('Page.navigate', { url });
   for (let i = 0; i < 100 && !eventos.includes('Page.loadEventFired'); i++) await dormir(100);
   // Las fuentes de la página y de sus marcos, y el tiempo para que el ajuste corra con ellas.

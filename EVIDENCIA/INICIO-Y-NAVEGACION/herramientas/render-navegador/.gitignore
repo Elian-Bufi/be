@@ -1,0 +1,3 @@
+# Lo que generan construir.mjs y cdp.mjs: se rehace con ellos, no se versiona.
+salida/maqueta*.js
+perfil-cdp/

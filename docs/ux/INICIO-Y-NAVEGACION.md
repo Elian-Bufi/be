@@ -197,8 +197,9 @@ primera respuesta.
 **Lo que se descarga.**
 - TRN-19-LISTA trae cada sesión completa, con su plan, su original y sus correcciones, para contarlas: 105 KB en el caso
   típico y 539 KB con muchas correcciones. Inicio guarda solo la cuenta.
-- La API no comprime sus respuestas. Con gzip, la visita típica bajaría de 176 KB a 8,5 KB y de 1,50 a 0,62 s en 4G
-  lento; la del historial pesado, de 610 KB a 14 KB y de 13,9 a 1,7 s en 3G lento. No se verificó si Render comprime en
+- La API no comprime sus respuestas. **Simulación local, no medición:** comprimiendo con gzip en la simulación, la
+  visita típica bajaría de 176 KB a 8,5 KB y de 1,50 a 0,62 s en 4G lento; la del historial pesado, de 610 KB a 14 KB y
+  de 13,9 a 1,7 s en 3G lento. No se midió en el teléfono ni contra la API de test, y no se verificó si Render comprime en
   su borde: las rutas públicas de la API son chicas y no alcanzan para saberlo.
 - NUT-16-LISTA trae una sola fila, y FRM-06 como mucho tres solicitudes.
 
@@ -213,18 +214,30 @@ el comportamiento, no la afirmación.
 - **Las tomas.** T1, T2, T3… son las evaluaciones del período, de la más vieja a la más nueva, con su fecha real
   (`tomasDelPeriodo`, en `@be/domain`). Cada toma es una evaluación (`sourceEvaluationId`), **nunca una fecha**: dos
   evaluaciones del mismo día son dos tomas. T1 es la primera toma del período que se ve, no la primera de la historia: el
-  período está escrito debajo del selector.
+  período está en «Cómo se lee».
+- **La cabecera** (pulido del 2026-10-04). Arriba, las cuatro vistas son pestañas subrayadas de borde a borde. Debajo
+  van una fecha principal y un contexto breve («Última toma · se compara con el 25 jul 2026»), y las tomas en una fila de
+  chips que se desplaza de costado. La familia (Perímetros o Pliegues) es un control compacto dentro de la lámina. Así
+  vistas, tomas y familia no se confunden. Las explicaciones largas, en «Cómo se lee».
 - **Cuatro vistas, sin otro nivel de navegación** (cierre del 2026-10-04). Mapa corporal, Indicadores, Comparar y
   Evolución. Mapa corporal e Indicadores reemplazan a la vista «Toma»: son la misma toma, partida entre lo que tiene sitio
   en la figura y lo que no. «Ver la toma», desde Inicio, abre el mapa si la toma tiene perímetros o pliegues, y si no, los
   indicadores.
 - **Mapa corporal.** La figura con los sitios medidos en la toma elegida. Cada fila de tarjeta lleva el valor, la
-  diferencia con el anterior comparable y, debajo, el gráfico chico de puntos de esa medida, unido a su sitio por la misma
-  guía. Con letra ×1,3 o más, la figura va con números y cada fila de la lista de abajo lleva su gráfico. Los sitios no se
+  diferencia con el anterior comparable y el gráfico chico de puntos de esa medida, unida a su sitio por la misma guía.
+  Con letra ×1,3 o más, la figura va con números y cada fila de la lista de abajo lleva su gráfico. Los sitios no se
   movieron.
+- **El encuadre y las filas** (pulido del 2026-10-04). El cuerpo es grande, empieza arriba, va a la derecha y lo recorta
+  el borde derecho, donde no hay sitios. Su tamaño sale del ancho y de los sitios posibles de la familia, no de cuántas
+  medidas hay: sumar medidas alarga la lista hacia abajo, no achica el cuerpo. Todas las filas tienen la misma forma:
+  el nombre a la izquierda, el valor a la derecha (en la misma línea o, si el nombre es largo, en la de abajo) y, al
+  final, la diferencia y los puntos. En una tarjeta, los gráficos tienen el mismo ancho. Las tarjetas son de vidrio:
+  borde fino, brillo arriba y sombra suave.
 - **Indicadores.** Tarjetas sin cuerpo para lo que no tiene sitio en la figura: peso, talla, diámetros y los resultados
   de las fórmulas, cada uno con su método. Dos columnas cuando entran, y una cuando la letra o el ancho lo piden: una
-  tarjeta no parte su valor (`columnasDeIndicadores`, con anchos medidos en Roboto).
+  tarjeta no parte su valor (`columnasDeIndicadores`, con anchos medidos en Roboto). La tarjeta muestra el nombre, que
+  identifica el método, el valor, la diferencia, la marca (corregida, si corresponde) y los puntos; «Antes» y la
+  descripción completa del método van en el detalle.
 - **Una sola elección de toma y una de medida.** La toma elegida cambia a la vez el mapa, los indicadores, sus gráficos
   chicos y la comparación. La medida elegida, en el mapa o en los indicadores, es la misma de Evolución
   (`mi-evolucion:medida`): su detalle trae el gráfico más grande, la lista equivalente y «Ver su evolución», que abre
@@ -234,9 +247,10 @@ el comportamiento, no la afirmación.
   escala. Sin líneas: una toma sin la medida es un hueco, y una con otro protocolo, método o unidad lleva una raya corta
   sobre la base y dice «no comparable» en su lista (`graficos-por-toma.ts`). La toma elegida va resaltada. El ancho es
   el del lugar: con doce tomas, los puntos se achican y no desbordan (probado con 1, 3, 6 y 12 tomas).
-- **Una toma que puede estar incompleta (D-3).** Si otra evaluación cayó el mismo día, la pantalla lo avisa, nombra la
-  otra toma y cuenta «medidas a la vista». «Cómo se lee» dice qué puede no verse de cualquier toma: la API muestra una
-  medición por día y por medida, y no muestra una medición anulada o con correcciones que no se pueden ordenar.
+- **Una toma que puede estar incompleta (D-3).** Si otra evaluación cayó el mismo día, la pantalla lo avisa en una línea
+  que nombra la otra toma, y «Por qué» abre el detalle, que cuenta las medidas y los resultados que se ven. «Cómo se
+  lee» dice qué puede no verse de cualquier toma: la API muestra una medición por día y por medida, y no muestra una
+  medición anulada o con correcciones que no se pueden ordenar.
 - **Lo que no cambia.** Comparar y el gráfico detallado por medida. Ningún método se ocultó ni se quitó: la propuesta de
   simplificación sigue en [MEDIDAS-Y-METODOS-EN-LA-APK.md](MEDIDAS-Y-METODOS-EN-LA-APK.md), sin implementar.
 - **Revisión visual.** Renders de los componentes reales en el navegador, no capturas nativas:
@@ -248,10 +262,11 @@ el comportamiento, no la afirmación.
   paginado. Mientras tanto, Inicio muestra lo último que se registró, con su fecha, y no lo presenta como un resumen
   del período.
 - **D-2.** No hay nombre ni foto en el perfil (DL-009). El saludo y el avatar quedan neutros.
-- **D-4.** La actividad de entrenamiento cuenta sesiones que descarga completas (TRN-19-LISTA). Medido en el cierre del
-  2026-10-04 (§4): un agregado bajaría la tarjeta de 1,50 a 0,58 s en 4G lento, pero comprimir las respuestas lleva toda
-  la visita a 0,62 s sin un endpoint nuevo ni un cambio de contrato. El agregado no se justifica todavía: primero, saber
-  si Render comprime y, si no, comprimir en la API.
+- **D-4, diferida.** La actividad de entrenamiento cuenta sesiones que descarga completas (TRN-19-LISTA). En la
+  simulación local del cierre del 2026-10-04 (§4), un agregado bajaría la tarjeta de 1,50 a 0,58 s en 4G lento, y
+  comprimir las respuestas llevaría toda la visita a 0,62 s sin un endpoint nuevo ni un cambio de contrato. Son números
+  simulados, no medidos. No se crea el agregado: primero, saber si Render comprime y, si no, decidir la compresión en la
+  API.
 - **D-3.** La API proyecta una observación efectiva por día y medida. Una toma se reconstruye por su `sourceEvaluationId`.
   Si dos evaluaciones caen el mismo día, de la tapada se ve solo lo que la API expone, y desde el cierre del 2026-10-04 la
   pantalla lo dice (§4 bis). Lo mismo pasa con un resultado calculado con dos métodos el mismo día: se ve uno, y eso no

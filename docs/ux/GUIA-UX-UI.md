@@ -108,10 +108,16 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
     en la que se está lleva al principio.
   - Una revocación hecha en otro dispositivo se conoce en el próximo contacto con la API: al entrar a una zona, al
     volver del segundo plano o al escribir.
-- **Las vistas de una zona van en pestañas** (`Segmentos`) cuando la zona tiene tareas distintas sobre los mismos
+- **Las vistas de una zona van en pestañas** (`Pestanas`, APK) cuando la zona tiene tareas distintas sobre los mismos
   datos. En «Mi evolución» son cuatro: Mapa corporal, Indicadores, Comparar y Evolución. La pestaña elegida se recuerda en
   la sesión, igual que la toma elegida en el selector T1, T2, T3 y la medida elegida, que es la misma en el mapa, en los
   indicadores y en Evolución (DL-117).
+  - Las pestañas son texto con una raya debajo de la elegida, de borde a borde: se distinguen de las píldoras, que eligen
+    dentro de una vista. Antes, vistas y familia eran dos filas de píldoras iguales (pulido del 2026-10-04).
+  - En una fila mientras entran. Si no, bajan enteras a dos filas, sin partir palabras ni achicar la letra.
+- **Lo que se elige dentro de una vista va debajo de lo que la nombra.** En «Mi evolución» van la fecha principal y un
+  contexto breve, las tomas en chips que se desplazan de costado (la elegida queda a la vista), y la familia en
+  píldoras compactas dentro de la lámina. Las explicaciones largas van en «Cómo se lee».
 - **Un gráfico chico dice cómo se lee su eje.** Si los puntos van por orden de toma y no por tiempo, la pantalla lo dice,
   y el gráfico rotula sus extremos (T1 … T6). No une puntos ni rellena huecos, y su ancho es el del lugar: no desborda.
 
@@ -154,8 +160,9 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
 - **Que no se corte no alcanza.** Un texto achicado al 60 % no se corta y se lee mal. Cuando un componente achica texto,
   se documenta su tamaño efectivo en los casos angostos y con letra grande.
 - **Las opciones excluyentes van en píldoras** (`Segmentos`, APK). Si no entran, bajan enteras a la línea siguiente:
-  nunca se parte una palabra. Lo usan las preferencias visuales (la figura y los colores), las pestañas de una zona y
-  los períodos de un gráfico.
+  nunca se parte una palabra. Lo usan las preferencias visuales (la figura y los colores) y los períodos de un gráfico.
+  Dentro de la lámina van compactas (`compactos`): la familia y Hombre o Mujer, con 40 dp de alto y el área de toque
+  ampliada a 48.
 - **Escala de letra de la APK** (`ui.tsx`). Una pantalla no inventa tamaños:
   - 26, el título de la pantalla;
   - 19, el título de una sección;
@@ -198,6 +205,11 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
   - `superficieElevada` para lo que se destaca sobre ellas: el botón secundario y las fichas de fecha. La cápsula de la
     barra tiene sus propios tokens: `barraVidrio`, `barraBorde`, `barraTexto` y `barraElegido`.
   El `borde` decorativo es un azul apagado: separa sin competir. Era un azul brillante que competía con el cian.
+- **Las tarjetas sobre la figura y los indicadores son de vidrio** (`vidrio.tsx`; pulido del 2026-10-04).
+  - Las separan un borde fino y translúcido (`laminaFilo`, `vidrioFilo`), un brillo arriba que se apaga a la mitad
+    (`laminaBrillo`, `vidrioBrillo`) y una sombra suave. No llevan bordes fuertes.
+  - En Claro no hay brillo, que sobre blanco no se vería: separan la sombra y el filo.
+  - El brillo no baja el contraste del texto: la prueba de contraste lo mide sobre la mezcla.
 - **El cian orienta, no decora.** El acento (`acento`) marca lo que se elige o se toca:
   - el destino elegido de la barra;
   - los enlaces y el texto de los botones secundarios;
@@ -242,6 +254,18 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
     si una guía pasa junto a otro punto, pasa por detrás.
 - **En el teléfono, la figura es liviana.** Halos y aros chicos, guías finas, y una calle entre las tarjetas y el cuerpo
   para que las guías doblen afuera.
+- **El encuadre de la figura en el teléfono** (`ENCUADRE`, pulido del 2026-10-04).
+  - El cuerpo es grande, empieza arriba, va a la derecha y lo recorta el borde derecho, donde no hay sitios: ISAK mide
+    del lado derecho de la persona, que de frente queda a la izquierda.
+  - Su tamaño sale del ancho de la lámina y de los sitios posibles de la familia, no de cuántas medidas hay. Sumar
+    medidas alarga la lista hacia abajo: no achica el cuerpo ni deja un hueco encima.
+  - Figura, marcadores, anillos, guías y zonas de toque usan la misma transformación. Ningún centro de sitio queda fuera
+    de la vista ni debajo de una tarjeta.
+- **Las filas de una tarjeta tienen todas la misma forma.**
+  - El nombre va a la izquierda y el valor a la derecha, en la misma línea si entran o, si el nombre es largo, en la de
+    abajo. Al final, la diferencia y el gráfico chico.
+  - Los valores forman una columna. Mezclar el valor al lado y debajo del nombre lo hacía saltar de un lado al otro.
+  - En una tarjeta, los gráficos tienen el mismo ancho: los puntos de cada toma quedan en columna.
 - **La imagen exportada se equilibra.** En Medición con el cuerpo entero, la figura arranca en 290 y mide 1390. Así no
   queda una franja vacía bajo el encabezado (Dirección, 2026-10-03). Los otros encuadres son los del compositor.
 - **Selección coordinada en la figura** (APK, `figura-de-la-toma.tsx`).

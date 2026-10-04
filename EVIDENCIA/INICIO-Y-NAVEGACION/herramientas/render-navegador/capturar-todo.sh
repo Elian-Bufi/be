@@ -23,16 +23,16 @@ captura 03-inicio-estados 1660 960 "Estados de Inicio" "Sin el A3, sin plan ni d
   "inicio-sin-a3|azul-noche|360|1|820;inicio-vacio|claro|360|1|820;inicio-sin-red|azul-noche|360|1|820;inicio-cargando|claro|360|1|820"
 captura 04-menu-y-cuenta 860 960 "Menú y Cuenta" "El menú auxiliar abierto, y Cuenta desde el avatar, con «Volver» y sin destino resaltado." \
   "menu|azul-noche|360|1|820;cuenta|claro|360|1|820"
-captura 05-evolucion 1260 1160 "Mi evolución: vistas y selector de tomas" "Mapa corporal con la T2 elegida y con la última, y Comparar. La vista Toma ahora es Mapa corporal e Indicadores." \
-  "evolucion-mapa-t2|azul-noche|360|1|1020;evolucion-mapa|claro|360|1|1020;evolucion-comparar|azul-noche|390|1|1020"
-captura 06-graficos-chicos 1260 1160 "Gráficos chicos: otro grupo y doce tomas" "El tríceps de agosto se tomó con ISAK: una raya sobre la base y «no comparable» en la lista. Con doce tomas, los puntos se achican y no desbordan." \
-  "evolucion-mapa|azul-noche|360|1|1020|medida=pliegue-triceps%26bajar=1150;evolucion-12|claro|360|1|1020|medida=pliegue-triceps%26bajar=430;evolucion-12-indicadores|azul-noche|390|1|1020|bajar=560"
-captura 07-mapa-corporal 1260 1660 "Mapa corporal" "Cada sitio con su valor, su diferencia y su gráfico chico de puntos por toma, unido al sitio por la guía. Cintura elegida: fila, guía y sitio resaltados." \
-  "evolucion-mapa|azul-noche|360|1|1520|medida=perimetro-cintura;evolucion-mapa|claro|390|1|1520;evolucion-mapa|azul-noche|412|1|1520|medida=pliegue-subescapular"
-captura 08-mapa-detalle-y-letra-grande 1260 1160 "Mapa corporal: detalle y letra grande" "El detalle de la medida elegida, con su gráfico, su lista y «Ver su evolución». Con letra ×1,3 o más, la figura va con números y cada fila de la lista lleva su gráfico." \
-  "evolucion-mapa|azul-noche|360|1|1020|medida=perimetro-cintura%26bajar=1150;evolucion-mapa|claro|360|1.3|1020|bajar=1250;evolucion-mapa|azul-noche|360|2|1020|bajar=1750"
-captura 09-indicadores 1260 1560 "Indicadores" "Tarjetas sin cuerpo para lo que no tiene sitio en la figura. Dos columnas cuando entran; una con letra ×1,3 en 360 dp. La tarjeta elegida se abre a todo el ancho." \
-  "evolucion-indicadores|azul-noche|360|1|1420|medida=peso;evolucion-indicadores|claro|360|1.3|1420;evolucion-indicadores|azul-noche|412|1|1420|bajar=560"
+captura 05-evolucion 1260 1760 "Mi evolución: vistas y selector de tomas" "Mapa corporal con la T2 elegida y con la última, y Comparar. Cabecera compacta: pestañas, fecha, contexto y tomas." \
+  "evolucion-mapa-t2|azul-noche|360|1|1600;evolucion-mapa|claro|360|1|1600;evolucion-comparar|azul-noche|390|1|1600"
+captura 06-graficos-chicos 1260 2160 "Gráficos chicos: otro grupo y doce tomas" "El tríceps de agosto se tomó con ISAK: una raya sobre la base y «no comparable» en la lista. Con doce tomas, los puntos se achican y no desbordan." \
+  "evolucion-mapa|azul-noche|360|1|2000|medida=pliegue-triceps;evolucion-12|claro|360|1|2000|medida=pliegue-triceps;evolucion-12-indicadores|azul-noche|390|1|2000"
+captura 07-mapa-corporal 1260 1760 "Mapa corporal" "Cada sitio con su valor, su diferencia y su gráfico chico, unido al sitio por la guía. El cuerpo, grande y recortado a la derecha. Cintura elegida en el primero." \
+  "evolucion-mapa|azul-noche|360|1|1600|medida=perimetro-cintura;evolucion-mapa|claro|390|1|1600;evolucion-mapa|azul-noche|412|1|1600|medida=pliegue-subescapular"
+captura 08-mapa-detalle-y-letra-grande 1260 2760 "Mapa corporal: detalle y letra grande" "El detalle de la medida elegida, con su gráfico, su lista y «Ver su evolución». Con letra ×1,3 o más, la figura va con números y cada fila de la lista lleva su gráfico." \
+  "evolucion-mapa|azul-noche|360|1|2600|medida=perimetro-cintura;evolucion-mapa|claro|360|1.3|2600;evolucion-mapa|azul-noche|360|2|2600"
+captura 09-indicadores 1260 2160 "Indicadores" "Tarjetas de vidrio para lo que no tiene sitio en la figura. Dos columnas cuando entran; una con letra ×1,3 en 360 dp. La tarjeta elegida se abre a todo el ancho." \
+  "evolucion-indicadores|azul-noche|360|1|2000|medida=peso;evolucion-indicadores|claro|360|1.3|2000;evolucion-indicadores|azul-noche|412|1|2000"
 captura 10-barra-letra-grande 2060 960 "La barra con letra grande" "Las etiquetas crecen con la letra, sin tope. En una fila mientras entren con al menos el 90 % de su tamaño; si no, dos filas (decisión visual explícita). Tamaños medidos en el LEEME." \
   "inicio|azul-noche|320|1|820|final=1;inicio|claro|360|1.15|820|final=1;inicio|azul-noche|360|1.3|820|final=1;inicio|claro|360|2|820|final=1;inicio|azul-noche|320|2|820|final=1"
 captura 11-sin-datos-y-toma-incompleta 1260 1060 "Sin datos y una toma que puede estar incompleta" "Sin mediciones en el período; y dos evaluaciones el mismo día (D-3): la pantalla lo avisa y cuenta «a la vista»." \
