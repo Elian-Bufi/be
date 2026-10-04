@@ -160,6 +160,13 @@ recalcular y redibujar, no pedir. Contado con un cliente que anota cada pedido (
 | Sin mediciones en los últimos 90 días | **+3** como mucho | ANT-06-PROPIA mira hacia atrás de a 90 días, hasta un año (`leerMiEvolucion`) |
 | Volver a Inicio, o volver después de registrar algo | Las mismas | Inicio se monta de nuevo y verifica |
 | Elegir el día del plan en la tarjeta | **1 o 2** | NUT-14 con el día elegido, y NUT-16-LISTA si hoy no hay registros |
+| Volver del segundo plano con Inicio abierto | Las mismas | Cada tarjeta confirma de nuevo, con lo confirmado a la vista mientras tanto (G3) |
+| «Reintentar» en una tarjeta | Solo las de esa tarjeta | Las demás no se tocan |
+| A la medianoche, con Inicio abierto | Las de las tarjetas de hoy y la de la actividad | Cambia el día de la API, y con él sus claves (`useDiaDeLaApi`) |
+
+**Entorno de la medición.** Se contó con un cliente de prueba que anota cada pedido, sobre las mismas funciones de lectura
+que usan las tarjetas (`scripts/inicio.test.mjs`, sección 4). No se midió en el teléfono ni contra la API de test: esta
+tanda no construye APK y no autoriza carga sobre test.
 
 **Lo que se descarga.**
 - TRN-19-LISTA trae cada sesión de los 30 días completa, con su plan, su original y sus correcciones, para contarlas.

@@ -68,14 +68,28 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
 ## 4. Navegación
 
 **APK**
-- Barra inferior con cinco zonas: Nutrición, Entrenamiento, Evolución, Información y Cuenta (`barra-de-zonas.tsx`).
-- Cada zona lleva texto **e** ícono, mide 56 dp de alto y al menos 48 de ancho, y tiene rol de pestaña con su estado
-  «seleccionada».
-- La zona elegida se marca con una barrita y negrita, no solo con color.
-- En una subpantalla se resalta la zona madre, y el enlace «Volver» solo aparece en subpantallas.
-- La barra se oculta mientras el teclado está abierto.
-- Atrás, desde una zona, vuelve a Nutrición; desde Nutrición, sale de la app.
-- Una función nueva entra en la zona que le corresponde por dominio. No se agregan botones de zona en Cuenta.
+Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Inicio y las reglas de Atrás, está en
+[INICIO-Y-NAVEGACION.md](INICIO-Y-NAVEGACION.md).
+- **Barra inferior:** una cápsula flotante con cinco destinos, Inicio, Nutrición, Entrenamiento, Evolución e Información
+  (`barra-de-zonas.tsx`).
+  - Cada destino lleva texto **e** ícono, mide 56 dp de alto y al menos 48 de ancho, y tiene rol de pestaña con su estado
+    «seleccionada».
+  - El destino elegido se marca con negrita y un brillo suave detrás del ícono, no solo con color.
+  - Las cinco etiquetas se ven siempre.
+  - La barra se oculta mientras el teclado está abierto.
+- **Cabecera única:**
+  - a la izquierda, «Volver» en un detalle, o el menú auxiliar en una raíz;
+  - al centro, la marca;
+  - a la derecha, el avatar, que abre Cuenta.
+  Volver está en la cabecera, no como enlace dentro del contenido.
+- **Origen:** cada detalle vuelve a la pantalla desde la que se abrió. Desde una raíz, atrás vuelve a Inicio; desde Inicio,
+  sale de la app.
+- **Sin pérdidas silenciosas:** con algo escrito sin guardar, salir por la barra, la cabecera, el avatar, el menú o atrás
+  pregunta antes.
+- **Dónde va una función nueva:**
+  - en el destino que le corresponde por dominio;
+  - si no tiene lugar en la barra, en el menú auxiliar;
+  - en Cuenta, solo lo que es de la cuenta.
 - **Al entrar a una zona, primero se verifica y después se muestra** (candidata 0.13.2, `src/ciclo-de-lectura.ts`).
   - Ningún valor protegido aparece antes de que la API confirme el acceso en esa entrada. Mientras tanto, la pantalla
     conserva su estructura: el título y bloques del alto de lo que viene (`Cargando forma="lista"` o
@@ -95,7 +109,8 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   - Una revocación hecha en otro dispositivo se conoce en el próximo contacto con la API: al entrar a una zona, al
     volver del segundo plano o al escribir.
 - **Las vistas de una zona van en pestañas** (`Segmentos`) cuando la zona tiene tareas distintas sobre los mismos
-  datos. En «Mi evolución» son tres: Última toma, Comparar y Evolución. La pestaña elegida se recuerda en la sesión.
+  datos. En «Mi evolución» son tres: Toma, Comparar y Evolución. La pestaña elegida se recuerda en la sesión, igual que la
+  toma elegida en el selector T1, T2, T3 (DL-117).
 
 **Website**
 - Adentro de un asesorado, una pestaña por dominio.
@@ -171,11 +186,11 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
 - **Superficies en escalones** (APK, `tema.ts`):
   - `fondo` para la pantalla;
   - `superficie` para las tarjetas y las secciones;
-  - `superficieElevada` para lo que se destaca sobre ellas: el botón secundario, las fichas de fecha y la zona elegida
-    de la barra inferior.
+  - `superficieElevada` para lo que se destaca sobre ellas: el botón secundario y las fichas de fecha. La cápsula de la
+    barra tiene sus propios tokens: `barraVidrio`, `barraBorde`, `barraTexto` y `barraElegido`.
   El `borde` decorativo es un azul apagado: separa sin competir. Era un azul brillante que competía con el cian.
 - **El cian orienta, no decora.** El acento (`acento`) marca lo que se elige o se toca:
-  - la zona elegida;
+  - el destino elegido de la barra;
   - los enlaces y el texto de los botones secundarios;
   - las casillas;
   - los títulos de las ayudas;
@@ -190,7 +205,7 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   - APK: «Azul noche» y «Claro», elegibles en Cuenta;
   - la lámina tiene sus tres temas propios, que no cambian la apariencia del website.
 - **El significado no va solo en el color.** Un pliegue de la cara posterior se marca con el aro punteado y la palabra
-  «posterior». Una zona elegida, con barrita y negrita.
+  «posterior». El destino elegido de la barra, con negrita y su estado para el lector de pantalla.
 - **Una silueta clara sobre un fondo claro lleva contorno**, con su contraste medido.
   - En Claro, el cuerpo blanco daba de 1,01:1 a 1,19:1 contra la lámina.
   - El contorno de la APK (`laminaContorno`) da 4,0:1, y la prueba de contraste lo verifica.
@@ -298,7 +313,7 @@ Se copia en la descripción del PR y se marca.
 - [ ] Los éxitos son flotantes; los errores, junto al campo y con el foco.
 - [ ] Las confirmaciones son modales y la acción con efecto no es la opción por defecto.
 - [ ] Los objetivos táctiles miden al menos 44 px o 48 dp.
-- [ ] La APK no agrega accesos fuera de la barra inferior y su zona.
+- [ ] La APK no agrega accesos fuera de la barra, el menú auxiliar y Cuenta.
 
 **Accesibilidad y visual**
 - [ ] Con teclado se alcanza todo y el foco se ve.
@@ -382,7 +397,7 @@ Son las mejoras de UX detectadas que no entraron en DL-113. Cada una entra en un
 - **Con la letra grande, la imagen de la lámina no entra en la primera pantalla del teléfono**: empieza a 974 px en 360
   y en 390 px de ancho. Con la letra normal sí entra (605 y 578 px).
 - **Búsqueda por texto** en los catálogos externos (DL-098).
-- **La barra inferior de la APK a 320 dp.** Las etiquetas crecen hasta 1,15 y se achican hasta el 85 % si no entran: hay que mirarlo en un teléfono chico.
+- **La barra inferior de la APK a 320 dp.** Las etiquetas crecen hasta 1,15 y se achican hasta el 80 % si no entran. En el render del navegador, las cinco entran: se achican un 17 % con letra grande (`EVIDENCIA/INICIO-Y-NAVEGACION`). Falta mirarlo en un teléfono chico.
 - **Los filtros de «Pendientes» en el teléfono** ocupan una pantalla antes del primer pendiente.
 - **Un 503 intermitente de la API** (`P2028`: la transacción no pudo empezar a tiempo) con lecturas concurrentes y poca memoria. La pantalla lo muestra con su reintento. Es de la API, no de la interfaz. La mejora medida y el límite que queda están en `EVIDENCIA/P2028`.
 - **Las demás pantallas del website.** Siguen esta guía desde DL-113. Las que se toquen después se revisan con la lista
