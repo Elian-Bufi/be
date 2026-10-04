@@ -121,6 +121,7 @@
 | DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **RATIFICADA** por Dirección el 2026-10-03, hasta el 2026-10-31 · solo GHSA-86w9-cpqp-85rv en node-forge y GHSA-vfj7-8cjw-p6xm en braces, por aviso y paquete |
 | DL-115 | Matriz de DV-05 · 2026-10-02 | 08:406 (08 §13) · DL-089 · TEST-AUTH-003 · TEST-AUTH-004 | Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan | **DECIDIDA** 2026-10-02 · opción A · implementada en la rama `fix/a3-titular-antropometria-formularios`, sin integrar: va con la candidata 0.13.2 |
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección |
+| DL-117 | Decisión de Dirección · 2026-10-04 | B10-10 §9 · 08 §33 · DL-113 · DL-049 · DL-077 · DL-115 | La APK no tiene un Inicio que reúna lo disponible de los módulos, y Cuenta ocupa un lugar de la barra | **DECIDIDA** 2026-10-04 · Inicio personal y barra Inicio, Nutrición, Entrenamiento, Evolución, Información; Cuenta en el avatar. Implementación sin integrar |
 
 ---
 
@@ -2751,3 +2752,34 @@ otorgado, la APK las mostraba debajo del aviso.
   25 son extensiones declaradas y API-CAR-01 es la nueva.
 - **El conteo de faltantes no cambia:** siguen faltando 22 de las 122 operaciones P0. La línea temporal (API-DSH-04 del 09)
   sigue sin implementar (D-3 de DV-05).
+
+## DL-117 — Inicio personal y navegación nueva de la APK
+
+**Prioridad:** alta · **Documento:** B10-10 §9 (volver sin depender del sistema) · 08 §33 (el ambiente siempre a la vista)
+· DL-113 (la barra de cinco zonas del 2026-10-01) · DL-049 y DL-077 (BE no elige el día tipo ni la sesión) · DL-115 (A3
+del titular) · **Estado:** DECIDIDA por Dirección el 2026-10-04
+
+**Qué decidió Dirección.**
+- **Barra inferior.** Cinco destinos, en este orden: Inicio, Nutrición, Entrenamiento, Evolución, Información. Cuenta
+  pasa al avatar de la cabecera. Reemplaza la barra de DL-113, que tenía Cuenta en lugar de Inicio.
+- **Cabecera única.** Menú auxiliar a la izquierda en las pantallas principales, marca BE al centro y avatar a la
+  derecha. En un detalle, volver tiene prioridad sobre el menú.
+- **Inicio personal.** Reúne lo disponible de los módulos: qué hay para hoy, qué se registró, qué información reciente
+  se puede consultar y qué pide atención.
+- **Lo que no autoriza.** El dashboard interdisciplinario profesional con notas y coordinación, y una política de
+  permisos nueva.
+
+**Cómo se respeta el legajo.**
+- Cada dato de Inicio se lee con la misma operación y el mismo permiso que en su módulo. Inicio no escribe nada.
+- Abrir un borrador de entrenamiento es una escritura (API-TRN-15): va solo cuando la persona toca «Comenzar» o
+  «Continuar».
+- BE no elige por la persona la sesión ni el día tipo (DL-077, DL-049): si hay varios, Inicio pide la elección.
+- Ningún número califica (TEST-PRJ-009). Las cuentas de registros no se presentan como porcentajes ni como adherencia.
+- El avatar y el saludo son neutros: el perfil no tiene nombre ni foto (DL-009, «datos propios mínimos»).
+
+**Diseño y matriz de datos.** En `docs/ux/INICIO-Y-NAVEGACION.md`.
+
+**Dependencias que quedan abiertas.**
+- D-1: el agregado de días con registros nutricionales en un período.
+- D-2: el nombre o la foto del perfil.
+- D-3: listar todas las tomas antropométricas, si la API tapa una evaluación del mismo día.
