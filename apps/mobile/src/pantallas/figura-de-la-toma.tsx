@@ -15,14 +15,15 @@
  * verdad, con la mitad trasera punteada y la delantera llena (Dirección, 2026-10-01).
  *
  * **Selección coordinada** (tanda del 2026-10-03; cierre del 2026-10-04). Tocar una fila, un número o el sitio en la
- * figura elige esa medida: su guía y su sitio se resaltan, las demás guías se atenúan, y abajo aparece su detalle, con el
- * gráfico de puntos por toma y «Ver su evolución». Volver a tocarla la suelta. La relación no depende solo del color: la
- * fila elegida lleva borde y negrita, y su sitio, un aro propio. La medida elegida es la misma de los indicadores y de
- * Evolución (`mi-evolucion:medida`), y la toma es la del selector: todo dice de la misma toma y la misma medida.
+ * figura elige esa medida: su guía y su sitio se resaltan, las demás guías se atenúan, y abajo aparece su detalle con
+ * «Ver su progreso». Volver a tocarla la suelta. La relación no depende solo del color: la fila elegida lleva borde y
+ * negrita, y su sitio, un aro propio. La medida elegida es la misma de Progreso y de los indicadores
+ * (`mi-evolucion:medida`).
  *
- * **Gráficos chicos en sus sitios** (cierre del 2026-10-04). Con más de una toma, cada fila de tarjeta lleva, debajo del
- * valor, los puntos de esa medida en cada toma, unidos a su sitio por la misma guía. Con números, van en cada fila de la
- * lista, junto al número del sitio. El ancho de cada gráfico es el de su fila: no desborda con ninguna cantidad de tomas.
+ * **Los últimos datos** (DL-118, Dirección 2026-10-05). El mapa responde «¿cuáles son mis medidas más recientes?»: cada
+ * fila lleva el nombre y el valor con su unidad, sin gráfico chico ni diferencia. El cambio y el progreso aparecen al
+ * tocar, y en la vista Progreso, por zonas (`FiguraDeZona`, abajo). En Azul noche el cuerpo va atenuado, para que el
+ * foco caiga en los valores y en los sitios.
  *
  * **Objetivos de 48 dp.** Las filas miden al menos 48 dp. En la figura, cada sitio responde hasta 24 dp de su dibujo,
  * sin agrandar lo que se ve (`sitioTocado`). Donde dos sitios quedan casi juntos, el toque no adivina: lo dice, y la
@@ -35,6 +36,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+  cantidad,
   colorDeLaCapa,
   COLORES_DE_LA_FIGURA,
   COPY_ANTROPOMETRIA,
@@ -50,28 +52,40 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View, type ImageSourcePropType } from 'react-native';
 import Svg, { Circle, Ellipse, G, Path, Text as TextoSvg } from 'react-native-svg';
 import { useApariencia } from '../apariencia';
-import { ALTO_DEL_GRAFICO_EN_LA_FILA, componerLaFigura, familiaQueSeVe, INTERLINEA, LETRA, sitioTocado, type ComposicionDeLaFigura, type FamiliaDeLaFigura, type FilaDeLaTarjeta, type SitioDeLaFigura } from '../composicion-de-la-figura';
+import { componerLaFigura, componerLaFiguraDeZona, familiaQueSeVe, INTERLINEA, LETRA, sitioTocado, type ComposicionDeLaFigura, type FamiliaDeLaFigura, type FiguraDeLaZona, type FilaDeLaTarjeta, type SitioDeLaFigura } from '../composicion-de-la-figura';
 import { ANILLO_EN_EL_TELEFONO, arcoDeLaElipse, GUIA_EN_EL_TELEFONO, PLIEGUE_EN_EL_TELEFONO, PLIEGUE_POSTERIOR_EN_EL_TELEFONO, trazoDeLaGuia } from '../dibujo-de-la-figura';
 import { PALETAS, type Tema } from '../tema';
-import { Segmentos } from '../ui';
+import { esSitioDeLaFigura } from '../disposicion-de-la-toma';
+import { Boton, Segmentos } from '../ui';
 import { BrilloDeVidrio, sombraDeVidrio } from '../vidrio';
-import type { PuntosDeLaToma } from '../graficos-por-toma';
-import { DetalleDeLaMedida } from './detalle-de-la-medida';
-import { PuntosPorToma } from './puntos-por-toma';
+import { textoDeLaClase, textoDelCambio } from './progreso-de-una-medida';
 
 const IMAGEN: Readonly<Record<SexoDeLaLamina, ImageSourcePropType>> = {
   HOMBRE: require('../../assets/figura/hombre-entero.png') as ImageSourcePropType,
   MUJER: require('../../assets/figura/mujer-entero.png') as ImageSourcePropType,
 };
+/** Las figuras de cada tren, para Progreso (DL-118): las del compositor, con los mismos bytes que en @be/domain. */
+const IMAGEN_DE_LA_ZONA: Readonly<Record<SexoDeLaLamina, Readonly<Record<'TREN_SUPERIOR' | 'TREN_INFERIOR', ImageSourcePropType>>>> = {
+  HOMBRE: {
+    TREN_SUPERIOR: require('../../assets/figura/hombre-tren-superior.png') as ImageSourcePropType,
+    TREN_INFERIOR: require('../../assets/figura/hombre-tren-inferior.png') as ImageSourcePropType,
+  },
+  MUJER: {
+    TREN_SUPERIOR: require('../../assets/figura/mujer-tren-superior.png') as ImageSourcePropType,
+    TREN_INFERIOR: require('../../assets/figura/mujer-tren-inferior.png') as ImageSourcePropType,
+  },
+};
 const CLAVE_DE_LA_FIGURA = 'be-figura-de-la-toma';
 
-/** Los sitios que la figura puede dibujar: los de las tarjetas del compositor, en el cuerpo entero. */
-const SITIOS_EN_LA_FIGURA: ReadonlySet<string> = new Set([...TARJETAS_DE_PERIMETROS.ENTERO.flat(), ...TARJETAS_DE_PLIEGUES.ENTERO.flat()]);
+/**
+ * Cuánto se ve el cuerpo (DL-118): en Azul noche, el blanco del cuerpo competía con los valores y el cian; atenuado, los
+ * sitios conservan su contraste y la figura sigue siendo la de la marca. En Claro, el contorno ya lo separa del fondo.
+ */
+const OPACIDAD_DEL_CUERPO: Readonly<Record<Tema, number>> = { 'azul-noche': 0.8, claro: 1 };
 
 /** Si una medida de la toma se dibuja en la figura: un perímetro o un pliegue con sitio en la lámina. */
-export function estaEnLaFigura(metrica: string): boolean {
-  return SITIOS_EN_LA_FIGURA.has(metrica);
-}
+/** Si una medida tiene sitio en la figura (un perímetro o un pliegue que la lámina ubica). */
+export const estaEnLaFigura = esSitioDeLaFigura;
 
 /** El tema de la lámina que corresponde a cada apariencia de la APK (compositor: `light` y `blue`). */
 const TEMA_DE_LA_LAMINA = { claro: 'CLARO', 'azul-noche': 'AZUL' } as const satisfies Readonly<Record<Tema, 'CLARO' | 'AZUL'>>;
@@ -111,24 +125,19 @@ const CORRIMIENTOS_DEL_CONTORNO: readonly (readonly [number, number])[] = [
 
 export function FiguraDeLaToma({
   medidas,
-  fechaComparada,
-  puntos,
   elegida,
   alElegir,
-  verSuEvolucion,
+  verSuProgreso,
 }: {
   medidas: readonly MedidaDeLaToma[];
-  fechaComparada: string | null;
-  /** Las tomas del período y qué hay de cada medida en ellas. Con una sola toma no hay gráficos chicos. */
-  puntos: PuntosDeLaToma;
-  /** La medida elegida, la misma de los indicadores y de Evolución; `null` sin elección. */
+  /** La medida elegida, la misma de Progreso y de los indicadores; `null` sin elección. */
   elegida: string | null;
   alElegir: (metrica: string | null) => void;
-  verSuEvolucion: (m: MedidaDeLaToma) => void;
+  verSuProgreso: (m: MedidaDeLaToma) => void;
 }) {
   const { tema } = useApariencia();
   const { fontScale } = useWindowDimensions();
-  const [sexo, setSexo] = useState<SexoDeLaLamina>('HOMBRE');
+  const [sexo, setSexo] = useSexoDeLaFigura();
   const conValor = new Set(medidas.map((m) => m.metrica));
   const hayPerimetros = TARJETAS_DE_PERIMETROS.ENTERO.flat().some((c) => conValor.has(c));
   const hayPliegues = TARJETAS_DE_PLIEGUES.ENTERO.flat().some((c) => conValor.has(c));
@@ -141,22 +150,10 @@ export function FiguraDeLaToma({
   // Los sitios que quedaron casi juntos bajo el último toque: la pantalla lo dice en vez de elegir uno al azar.
   const [juntos, setJuntos] = useState<readonly ClaveDeLaLamina[] | null>(null);
 
-  useEffect(() => {
-    AsyncStorage.getItem(CLAVE_DE_LA_FIGURA)
-      .then((v) => {
-        if (v === 'HOMBRE' || v === 'MUJER') setSexo(v);
-      })
-      .catch(() => undefined);
-  }, []);
-
   if (!hayPerimetros && !hayPliegues) return null;
 
-  const elegirSexo = (s: SexoDeLaLamina) => {
-    setSexo(s);
-    AsyncStorage.setItem(CLAVE_DE_LA_FIGURA, s).catch(() => undefined);
-  };
-  const conPuntos = puntos.tomas.length > 1;
-  const composicion = ancho > 0 ? componerLaFigura({ ancho, sexo, familia: familiaVisible, medidas, escalaDeLetra: fontScale, puntos: conPuntos }) : null;
+  // El mapa lleva el nombre y el valor: ni gráfico chico ni diferencia en las filas.
+  const composicion = ancho > 0 ? componerLaFigura({ ancho, sexo, familia: familiaVisible, medidas, escalaDeLetra: fontScale, diferencias: false }) : null;
   const lamina = laminaDe(tema);
   // La elegida vale solo si está en la familia que se ve.
   const sitioElegido = composicion?.sitios.find((x) => x.clave === elegida) ?? null;
@@ -192,14 +189,14 @@ export function FiguraDeLaToma({
           </View>
         ) : null}
         <View onLayout={(e) => setAncho(Math.round(e.nativeEvent.layout.width))} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {composicion ? <Lamina composicion={composicion} sexo={sexo} tema={tema} elegida={sitioElegido?.clave ?? null} alternar={alternar} tocar={tocar} puntos={conPuntos ? puntos : null} /> : null}
+          {composicion ? <Lamina composicion={composicion} sexo={sexo} tema={tema} elegida={sitioElegido?.clave ?? null} alternar={alternar} tocar={tocar} /> : null}
         </View>
       </View>
       {/* Con números, los valores van acá abajo y crecen con la letra. El lector de pantalla tiene la lista completa de la
           toma, más abajo en la pantalla, y no recorre esta. */}
       {composicion?.modo === 'NUMEROS' ? (
         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <ListaDeNumeros sitios={composicion.sitios} ficha={composicion.ficha} lamina={lamina} elegida={sitioElegido?.clave ?? null} alternar={alternar} puntos={conPuntos ? puntos : null} />
+          <ListaDeNumeros sitios={composicion.sitios} ficha={composicion.ficha} lamina={lamina} elegida={sitioElegido?.clave ?? null} alternar={alternar} />
         </View>
       ) : null}
       {rotulosJuntos.length > 1 ? (
@@ -207,18 +204,62 @@ export function FiguraDeLaToma({
           {`Ahí quedan juntos ${rotulosJuntos.join(' y ')}: tocá su fila para elegir uno.`}
         </Text>
       ) : null}
-      {sitioElegido ? <DetalleDeLaMedida medida={sitioElegido.medida} rotulo={sitioElegido.rotulo} fechaComparada={fechaComparada} puntos={puntos} verSuEvolucion={verSuEvolucion} /> : null}
-      {/* Hombre o mujer, debajo de la figura: es solo cómo se ve el dibujo, no cambia ningún dato. */}
-      <Segmentos
-        compactos
-        etiqueta={COPY_ANTROPOMETRIA.figura}
-        opciones={[
-          { valor: 'HOMBRE', texto: COPY_ANTROPOMETRIA.figuraHombre },
-          { valor: 'MUJER', texto: COPY_ANTROPOMETRIA.figuraMujer },
-        ]}
-        valor={sexo}
-        alElegir={elegirSexo}
-      />
+      {sitioElegido ? <DetalleDelSitio medida={sitioElegido.medida} rotulo={sitioElegido.rotulo} lamina={lamina} verSuProgreso={verSuProgreso} /> : null}
+      <ElegirLaFigura sexo={sexo} alElegir={setSexo} />
+    </View>
+  );
+}
+
+/**
+ * Hombre o mujer: es solo cómo se ve el dibujo, no cambia ningún dato. Se recuerda en el teléfono y vale para el mapa y
+ * para Progreso.
+ */
+export function useSexoDeLaFigura(): readonly [SexoDeLaLamina, (s: SexoDeLaLamina) => void] {
+  const [sexo, setSexo] = useState<SexoDeLaLamina>('HOMBRE');
+  useEffect(() => {
+    AsyncStorage.getItem(CLAVE_DE_LA_FIGURA)
+      .then((v) => {
+        if (v === 'HOMBRE' || v === 'MUJER') setSexo(v);
+      })
+      .catch(() => undefined);
+  }, []);
+  const elegir = (s: SexoDeLaLamina) => {
+    setSexo(s);
+    AsyncStorage.setItem(CLAVE_DE_LA_FIGURA, s).catch(() => undefined);
+  };
+  return [sexo, elegir] as const;
+}
+
+/** El control de la figura, debajo del dibujo. */
+export function ElegirLaFigura({ sexo, alElegir }: { sexo: SexoDeLaLamina; alElegir: (s: SexoDeLaLamina) => void }) {
+  return (
+    <Segmentos
+      compactos
+      etiqueta={COPY_ANTROPOMETRIA.figura}
+      opciones={[
+        { valor: 'HOMBRE', texto: COPY_ANTROPOMETRIA.figuraHombre },
+        { valor: 'MUJER', texto: COPY_ANTROPOMETRIA.figuraMujer },
+      ]}
+      valor={sexo}
+      alElegir={alElegir}
+    />
+  );
+}
+
+/**
+ * El detalle de un sitio del mapa, al tocarlo: el valor, el cambio respecto de la anterior comparable con su fecha, la
+ * clase del dato si no es medido, y «Ver su progreso», que abre la vista Progreso en su zona.
+ */
+function DetalleDelSitio({ medida, rotulo, lamina, verSuProgreso }: { medida: MedidaDeLaToma; rotulo: string; lamina: ColoresDeLamina; verSuProgreso: (m: MedidaDeLaToma) => void }) {
+  const clase = textoDeLaClase(medida);
+  return (
+    <View style={{ borderRadius: 14, borderWidth: 1, borderColor: lamina.valor, backgroundColor: lamina.tarjeta, paddingVertical: 10, paddingHorizontal: 12, marginBottom: 8 }}>
+      <View accessible accessibilityLiveRegion="polite">
+        <Text style={{ fontSize: 16, lineHeight: 22, fontWeight: '800', color: lamina.nombre }}>{`${rotulo}: ${cantidad(medida.actual.punto.value, medida.actual.punto.unit)}`}</Text>
+        <Text style={{ fontSize: 14, lineHeight: 20, color: lamina.detalle, marginTop: 2 }}>{textoDelCambio(medida)}</Text>
+        {clase ? <Text style={{ fontSize: 14, lineHeight: 20, color: lamina.detalle, marginTop: 2 }}>{clase}</Text> : null}
+      </View>
+      <Boton texto="Ver su progreso" tipo="enlace" onPress={() => verSuProgreso(medida)} />
     </View>
   );
 }
@@ -230,7 +271,6 @@ function Lamina({
   elegida,
   alternar,
   tocar,
-  puntos,
 }: {
   composicion: ComposicionDeLaFigura;
   sexo: SexoDeLaLamina;
@@ -238,7 +278,6 @@ function Lamina({
   elegida: ClaveDeLaLamina | null;
   alternar: (clave: ClaveDeLaLamina) => void;
   tocar: (x: number, y: number) => void;
-  puntos: PuntosDeLaToma | null;
 }) {
   const colores = COLORES_DE_LA_FIGURA[TEMA_DE_LA_LAMINA[tema]];
   const lamina = laminaDe(tema);
@@ -250,7 +289,7 @@ function Lamina({
       {CORRIMIENTOS_DEL_CONTORNO.map(([dx, dy]) => (
         <Image key={`${dx},${dy}`} source={IMAGEN[sexo]} style={[lugar(dx, dy), { tintColor: lamina.contorno }]} resizeMode="stretch" />
       ))}
-      <Image source={IMAGEN[sexo]} style={lugar()} resizeMode="stretch" />
+      <Image source={IMAGEN[sexo]} style={[lugar(), { opacity: OPACIDAD_DEL_CUERPO[tema] }]} resizeMode="stretch" />
       {/* Un solo dibujo encima del cuerpo, con las guías y los sitios; las tarjetas van encima de todo. Los sitios van
           después de las guías: alguna guía pasa junto al punto de otro sitio y así pasa por detrás, sin taparlo. */}
       <Svg width={ancho} height={alto} style={{ position: 'absolute', left: 0, top: 0 }} pointerEvents="none">
@@ -312,7 +351,7 @@ function Lamina({
             >
               <BrilloDeVidrio color={lamina.brillo} radio={14} />
               {t.filas.map((f) => (
-                <FilaDeLaLamina key={f.sitio.clave} fila={f} lamina={lamina} elegida={f.sitio.clave === elegida} alternar={alternar} puntos={puntos} />
+                <FilaDeLaLamina key={f.sitio.clave} fila={f} lamina={lamina} elegida={f.sitio.clave === elegida} alternar={alternar} />
               ))}
             </View>
           ))
@@ -331,13 +370,11 @@ function FilaDeLaLamina({
   lamina,
   elegida,
   alternar,
-  puntos,
 }: {
   fila: FilaDeLaTarjeta;
   lamina: ColoresDeLamina;
   elegida: boolean;
   alternar: (clave: ClaveDeLaLamina) => void;
-  puntos: PuntosDeLaToma | null;
 }) {
   const { sitio } = fila;
   const rotulo = { fontSize: LETRA.rotulo, lineHeight: INTERLINEA.rotulo, color: lamina.nombre, fontWeight: elegida ? ('800' as const) : ('500' as const) };
@@ -370,13 +407,8 @@ function FilaDeLaLamina({
           </Text>
         </>
       )}
-      {/* La última línea, igual en todas las filas: la diferencia a la izquierda y el gráfico a la derecha. */}
-      {sitio.diferencia || (puntos && fila.anchoDeLosPuntos) ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
-          {sitio.diferencia ? <Text style={detalle}>{sitio.diferencia}</Text> : <View />}
-          {puntos && fila.anchoDeLosPuntos ? <PuntosPorToma estados={puntos.estados(sitio.medida)} elegida={puntos.elegida} ancho={fila.anchoDeLosPuntos} alto={ALTO_DEL_GRAFICO_EN_LA_FILA} /> : null}
-        </View>
-      ) : null}
+      {/* La diferencia, si la composición la pide; el mapa de DL-118 no la pide. */}
+      {sitio.diferencia ? <Text style={[detalle, { marginTop: 2 }]}>{sitio.diferencia}</Text> : null}
     </Pressable>
   );
 }
@@ -394,8 +426,8 @@ function Ficha({ x, y, diametro, numero, lamina }: { x: number; y: number; diame
 }
 
 /**
- * Con números, los valores de la figura: el número, el rótulo y el valor con su diferencia. Es texto común, que crece con
- * la letra sin tope; si el valor no entra al lado del rótulo, baja a la línea siguiente.
+ * Con números, los valores de la figura: el número, el rótulo y el valor (y la diferencia, si la composición la pide). Es
+ * texto común, que crece con la letra sin tope; si el valor no entra al lado del rótulo, baja a la línea siguiente.
  */
 function ListaDeNumeros({
   sitios,
@@ -403,17 +435,13 @@ function ListaDeNumeros({
   lamina,
   elegida,
   alternar,
-  puntos,
 }: {
   sitios: readonly SitioDeLaFigura[];
   ficha: number;
   lamina: ColoresDeLamina;
   elegida: ClaveDeLaLamina | null;
   alternar: (clave: ClaveDeLaLamina) => void;
-  puntos: PuntosDeLaToma | null;
 }) {
-  // El ancho del texto de cada fila, para su gráfico chico: todas miden lo mismo, y se toma el de la primera.
-  const [anchoDelTexto, setAnchoDelTexto] = useState(0);
   return (
     <View style={{ backgroundColor: lamina.fondo, borderRadius: 16, padding: 10, marginBottom: 8 }}>
       <Text style={{ fontSize: 14, fontWeight: '700', color: lamina.nombre, marginBottom: 6 }}>{COPY_ANTROPOMETRIA.numerosDeLaFigura}</Text>
@@ -430,7 +458,7 @@ function ListaDeNumeros({
               {String(s.numero)}
             </Text>
           </View>
-          <View style={{ flex: 1 }} onLayout={s.numero === 1 ? (e) => setAnchoDelTexto(Math.floor(e.nativeEvent.layout.width)) : undefined}>
+          <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', columnGap: 10 }}>
               <Text style={{ fontSize: 15, color: lamina.nombre, flexShrink: 1 }}>{s.rotulo}</Text>
               <Text>
@@ -438,11 +466,6 @@ function ListaDeNumeros({
                 {s.diferencia ? <Text style={{ fontSize: 14, color: lamina.detalle }}>{`  ${s.diferencia}`}</Text> : null}
               </Text>
             </View>
-            {puntos && anchoDelTexto > 0 ? (
-              <View style={{ marginTop: 4 }}>
-                <PuntosPorToma estados={puntos.estados(s.medida)} elegida={puntos.elegida} ancho={anchoDelTexto} alto={24} />
-              </View>
-            ) : null}
           </View>
         </Pressable>
       ))}
@@ -454,7 +477,7 @@ function ListaDeNumeros({
  * Las capas de un sitio (`dibujo-de-la-figura.ts`), de abajo hacia arriba: un anillo es una elipse partida en su mitad
  * trasera y su mitad delantera; un punto, círculos concéntricos. Una capa sin color en el tema no se dibuja.
  */
-function CapasDelSitio({ sitio, colores }: { sitio: SitioDeLaFigura; colores: ColoresDeLaFigura }) {
+function CapasDelSitio({ sitio, colores }: { sitio: Pick<SitioDeLaFigura, 'cx' | 'cy' | 'anillo' | 'posterior'>; colores: ColoresDeLaFigura }) {
   const capas = sitio.anillo ? ANILLO_EN_EL_TELEFONO : sitio.posterior ? PLIEGUE_POSTERIOR_EN_EL_TELEFONO : PLIEGUE_EN_EL_TELEFONO;
   return (
     <G>
@@ -478,3 +501,113 @@ function CapasDelSitio({ sitio, colores }: { sitio: SitioDeLaFigura; colores: Co
     </G>
   );
 }
+
+// ─── La figura de una zona, en Progreso (DL-118) ─────────────────────────────────────────────────────────────────────
+
+/**
+ * La figura de una zona: el tren del compositor (superior para el torso, inferior para las piernas), con un número por
+ * sitio en una columna a la izquierda, unido por su guía. Las tarjetas de Progreso, debajo, llevan los mismos números.
+ * Tocar un sitio o su número lo elige; donde dos sitios quedan casi juntos, el toque no adivina y lo dice. Es el mismo
+ * dibujo del mapa: los mismos anillos, puntos y guías, y el cuerpo atenuado en Azul noche.
+ */
+export function FiguraDeZona({
+  familia,
+  encuadre,
+  claves,
+  clavesDeLaZona,
+  sexo,
+  elegida,
+  alElegir,
+}: {
+  familia: FamiliaDeLaFigura;
+  encuadre: 'TREN_SUPERIOR' | 'TREN_INFERIOR';
+  claves: readonly ClaveDeLaLamina[];
+  clavesDeLaZona: readonly ClaveDeLaLamina[];
+  sexo: SexoDeLaLamina;
+  elegida: string | null;
+  alElegir: (clave: ClaveDeLaLamina | null) => void;
+}) {
+  const { tema } = useApariencia();
+  const { fontScale, height } = useWindowDimensions();
+  const [ancho, setAncho] = useState(0);
+  const [juntos, setJuntos] = useState<readonly ClaveDeLaLamina[] | null>(null);
+  // El cuerpo no pasa de algo más de la mitad del alto de la pantalla: las tarjetas empiezan a verse sin desplazarse mucho.
+  const altoMaximoDelCuerpo = Math.min(400, Math.max(260, Math.round(height * 0.5)));
+  const figura: FiguraDeLaZona | null = ancho > 0 ? componerLaFiguraDeZona({ ancho, sexo, familia, encuadre, claves, clavesDeLaZona, escalaDeLetra: fontScale, altoMaximoDelCuerpo }) : null;
+  const colores = COLORES_DE_LA_FIGURA[TEMA_DE_LA_LAMINA[tema]];
+  const lamina = laminaDe(tema);
+  const alternar = (clave: ClaveDeLaLamina) => {
+    setJuntos(null);
+    alElegir(elegida === clave ? null : clave);
+  };
+  const tocar = (x: number, y: number) => {
+    if (!figura) return;
+    // Un número elige su sitio sin ambigüedad.
+    const ficha = figura.fichas.find((f) => Math.hypot(x - f.x, y - f.y) <= figura.ficha / 2 + 12);
+    if (ficha) return alternar(ficha.clave);
+    const toque = sitioTocado(figura.sitios, x, y);
+    if (toque?.tipo === 'sitio') alternar(toque.clave);
+    else if (toque?.tipo === 'ambiguo') setJuntos(toque.claves);
+  };
+  const rotulosJuntos = juntos && figura ? figura.sitios.filter((s) => juntos.includes(s.clave)).map((s) => `${s.numero} (${s.rotulo})`) : [];
+  return (
+    <View>
+      <View onLayout={(e) => setAncho(Math.round(e.nativeEvent.layout.width))} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {figura ? (
+          <View style={{ height: figura.alto, overflow: 'hidden' }}>
+            {CORRIMIENTOS_DEL_CONTORNO.map(([dx, dy]) => (
+              <Image
+                key={`${dx},${dy}`}
+                source={IMAGEN_DE_LA_ZONA[sexo][encuadre]}
+                style={{ position: 'absolute', left: figura.imagen.x + dx, top: figura.imagen.y + dy, width: figura.imagen.ancho, height: figura.imagen.alto, tintColor: lamina.contorno }}
+                resizeMode="stretch"
+              />
+            ))}
+            <Image
+              source={IMAGEN_DE_LA_ZONA[sexo][encuadre]}
+              style={{ position: 'absolute', left: figura.imagen.x, top: figura.imagen.y, width: figura.imagen.ancho, height: figura.imagen.alto, opacity: OPACIDAD_DEL_CUERPO[tema] }}
+              resizeMode="stretch"
+            />
+            <Svg width={ancho} height={figura.alto} style={{ position: 'absolute', left: 0, top: 0 }} pointerEvents="none">
+              {figura.guias.map((g) => {
+                const t = g.posterior ? GUIA_EN_EL_TELEFONO.posterior : GUIA_EN_EL_TELEFONO.normal;
+                const opacidad = elegida === null ? 1 : g.clave === elegida ? 1 : 0.25;
+                const grosor = g.clave === elegida ? t.grosor + 0.9 : t.grosor;
+                return (
+                  <G key={`guia-${g.clave}`} opacity={opacidad}>
+                    <Path d={trazoDeLaGuia(g.desde, g.quiebre, g.hasta)} fill="none" stroke={colores[t.color]} strokeWidth={grosor} strokeDasharray={[...t.guiones]} />
+                  </G>
+                );
+              })}
+              {figura.sitios.map((s) => (
+                <CapasDelSitio key={s.clave} sitio={s} colores={colores} />
+              ))}
+              {figura.sitios
+                .filter((s) => s.clave === elegida)
+                .map((s) =>
+                  s.anillo ? (
+                    <Ellipse key={`elegida-${s.clave}`} cx={s.cx} cy={s.cy} rx={s.anillo.rx + 5} ry={s.anillo.ry + 5} fill="none" stroke={lamina.valor} strokeWidth={2} />
+                  ) : (
+                    <Circle key={`elegida-${s.clave}`} cx={s.cx} cy={s.cy} r={11} fill="none" stroke={lamina.valor} strokeWidth={2} />
+                  ),
+                )}
+              {figura.fichas.map((f) => (
+                <G key={`ficha-${f.clave}`}>
+                  <Ficha x={f.x} y={f.y} diametro={figura.ficha} numero={f.numero} lamina={lamina} />
+                  {f.clave === elegida ? <Circle cx={f.x} cy={f.y} r={figura.ficha / 2 + 3} fill="none" stroke={lamina.valor} strokeWidth={2} /> : null}
+                </G>
+              ))}
+            </Svg>
+            <Pressable onPress={(e) => tocar(e.nativeEvent.locationX, e.nativeEvent.locationY)} style={{ position: 'absolute', left: 0, top: 0, width: ancho, height: figura.alto }} accessible={false} />
+          </View>
+        ) : null}
+      </View>
+      {rotulosJuntos.length > 1 ? (
+        <Text style={{ fontSize: 14, lineHeight: 20, color: lamina.detalle, marginHorizontal: 10, marginBottom: 6 }} accessibilityLiveRegion="polite">
+          {`Ahí quedan juntos ${rotulosJuntos.join(' y ')}: tocá su número o su tarjeta para elegir uno.`}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+

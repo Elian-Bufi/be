@@ -109,3 +109,57 @@ export function puntoMasCercano(grafico: ComposicionDelGrafico, x: number, y: nu
   }
   return mejor;
 }
+
+export interface EntradaDelGraficoCompacto {
+  readonly observaciones: readonly Observacion[];
+  readonly periodo: { readonly start: string; readonly end: string };
+  readonly zonaHoraria: string;
+  readonly ancho: number;
+  readonly alto: number;
+  readonly escalaDeLetra: number;
+  readonly anchoDelTexto: (texto: string, tamano: number) => number;
+  readonly formatoDelValor: (valor: number) => string;
+}
+
+/** El radio de la observación de la toma elegida y el de las demás, en el gráfico compacto. */
+export const RADIO_COMPACTO_ELEGIDA = 5;
+export const RADIO_COMPACTO = 3.5;
+
+/**
+ * El gráfico chico de una tarjeta de Progreso o de Indicadores (DL-118): los mismos puntos y la misma regla de eje que el
+ * gráfico grande, en poco alto.
+ * - **Fechas reales.** El eje horizontal es el período, de punta a punta, con su primera y su última fecha rotuladas.
+ *   Dos observaciones cercanas en el tiempo quedan cerca. No es el orden de las tomas.
+ * - **La escala se ve.** Los rótulos del eje vertical son los extremos del dominio (`dominioDelEjeVertical`), que no
+ *   fuerza el cero y deja un margen: un cambio chico no parece enorme.
+ * - **Sin líneas ni rellenos.** Un hueco queda vacío.
+ * `null` con menos de dos observaciones: un solo punto no muestra un recorrido, y su valor ya está escrito.
+ */
+export function componerGraficoCompacto(e: EntradaDelGraficoCompacto): ComposicionDelGrafico | null {
+  if (e.observaciones.length < 2 || e.ancho <= 0 || e.alto <= 0) return null;
+  const escala = Math.max(1, e.escalaDeLetra);
+  const valores = e.observaciones.map((o) => o.punto.value);
+  const dominio = dominioDelEjeVertical(Math.min(...valores), Math.max(...valores));
+  const tamano = 11 * escala;
+  const izquierda = 4 + Math.max(e.anchoDelTexto(e.formatoDelValor(dominio.hasta), tamano), e.anchoDelTexto(e.formatoDelValor(dominio.desde), tamano)) + 6;
+  // Arriba y a la derecha, lugar para el punto más grande; abajo, para las dos fechas.
+  const area = { izquierda, derecha: e.ancho - RADIO_COMPACTO_ELEGIDA - 2, arriba: RADIO_COMPACTO_ELEGIDA + 2, abajo: e.alto - (6 + 14 * escala) };
+  const { desde, hasta } = limitesDelPeriodo(e.periodo, e.zonaHoraria);
+  const x = (instante: number) => area.izquierda + ((instante - desde) / Math.max(1, hasta - desde)) * (area.derecha - area.izquierda);
+  const y = (valor: number) => area.abajo - ((valor - dominio.desde) / Math.max(Number.EPSILON, dominio.hasta - dominio.desde)) * (area.abajo - area.arriba);
+  return {
+    ancho: e.ancho,
+    alto: e.alto,
+    area,
+    puntos: e.observaciones.map((observacion, indice) => ({ indice, x: x(observacion.instante), y: y(observacion.punto.value), observacion })),
+    marcasX: [
+      { x: area.izquierda, fecha: e.periodo.start },
+      { x: area.derecha, fecha: e.periodo.end },
+    ],
+    marcasY: [
+      { y: area.arriba, valor: dominio.hasta },
+      { y: area.abajo, valor: dominio.desde },
+    ],
+    dominio,
+  };
+}

@@ -31,7 +31,7 @@ import { AppState, BackHandler, Image, KeyboardAvoidingView, ScrollView, Text, V
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, apiConfigurada, extra } from './src/api';
 import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
-import { BarraDeZonas, SEPARACION_DE_LA_BARRA } from './src/barra-de-zonas';
+import { BarraDeZonas, SEPARACION_DE_LA_BARRA, VeloDeLaBarra } from './src/barra-de-zonas';
 import { almacenSeguro } from './src/almacen-seguro';
 import { Cabecera } from './src/cabecera';
 import { ProveedorDeCambios, preguntarAntesDeSalir } from './src/cambios-sin-guardar';
@@ -441,6 +441,9 @@ function Contenido() {
       </ScrollView>
       {/* La barra flota sobre el final del contenido, que deja libre su alto (espacioDeLaBarra). Resalta la raíz donde
           empezó el camino hasta esta pantalla; en Cuenta, ninguna. */}
+      {/* DL-118: un velo del color del fondo detrás de la cápsula, desde donde termina el espacio libre del contenido. Lo
+          que pasa por detrás no compite con los destinos, y el último contenido queda entero por encima. */}
+      {conSesion && altoDeLaBarra > 0 ? <VeloDeLaBarra alto={altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16} /> : null}
       {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} /> : null}
       <MenuAuxiliar
         visible={menuAbierto && conSesion && raiz}

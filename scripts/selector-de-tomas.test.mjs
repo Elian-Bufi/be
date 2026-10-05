@@ -1,14 +1,14 @@
 /**
- * «Mi evolución» de la APK: el selector de tomas, el mapa corporal y los indicadores (DL-117; cierre del 2026-10-04).
+ * «Mi evolución» de la APK: el selector de tomas, el mapa corporal, Progreso y los indicadores (DL-117; DL-118).
  * Las reglas de las tomas viven en @be/domain (`tomasDelPeriodo`, `tomaDe`, `valoresPorToma`) y tienen sus pruebas allí.
  * Esta prueba cubre lo de la APK, por comportamiento y sin teléfono:
- *  1. Qué hay de cada medida en cada toma (`graficos-por-toma.ts`): un valor de su grupo, otro grupo o nada. Una sola
- *     elección de toma decide el punto resaltado y el grupo con que se lee cada medida.
- *  2. Los gráficos chicos con 1, 3, 6 y 12 tomas: no desbordan ni se superponen, el eje es el orden de las tomas, los
- *     valores iguales van a media altura, un hueco no tiene punto y otro grupo lleva una raya.
- *  3. Sus textos: la lista equivalente, la frase del lector de pantalla y cómo se lee el eje.
- *  4. La pantalla (`disposicion-de-la-toma.ts`): qué abre un pedido de Inicio, cuándo se ve el selector, cuántas columnas
- *     llevan los indicadores y cuándo una toma puede estar incompleta (D-3).
+ *  1. Los textos: la lista para leer de las tomas del aviso de D-3. (Los gráficos chicos por orden de toma, y sus textos,
+ *     se retiraron en DL-118: el progreso va sobre fechas reales; sus pruebas se fueron con ellos.)
+ *  4. La pantalla (`disposicion-de-la-toma.ts`): cuántas columnas llevan los indicadores y cuándo una toma puede estar
+ *     incompleta (D-3).
+ *  5. Las tres vistas de DL-118 (Dirección, 2026-10-05): qué vistas hay, cuál se abre y qué toma muestra cada una, las
+ *     rutas viejas, Progreso por Torso y Piernas con sus paneles, los bloques de Indicadores y la serie con fechas de
+ *     una medida.
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -21,10 +21,11 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const d = require('../packages/domain/dist/index.js');
 const textos = await import('../apps/mobile/src/textos-por-toma.ts');
-const graficos = await import('../apps/mobile/src/graficos-por-toma.ts');
 const disposicion = await import('../apps/mobile/src/disposicion-de-la-toma.ts');
 const formato = await import('../apps/mobile/src/formato.ts');
 const composicion = await import('../apps/mobile/src/composicion-de-la-figura.ts');
+const zonas = await import('../apps/mobile/src/progreso-por-zonas.ts');
+const serieDeLaMedida = await import('../apps/mobile/src/serie-de-la-medida.ts');
 
 // ─── Datos sintéticos, validados contra el esquema estricto de API-ANT-06 ──────────────────────────────────────
 
@@ -60,121 +61,7 @@ const TRES = datos([
   serie('perimetro-cintura', [punto('ev-1', '2026-07-20', 90, G_CINTURA), punto('ev-3', '2026-09-24', 86.5, G_CINTURA)], [G_CINTURA]),
 ]);
 
-// ─── 1. Qué hay de cada medida en cada toma ───────────────────────────────────────────────────────────────────
-
-test('cada toma tiene un valor del grupo de la elegida, la medida con otro grupo, o nada; nunca un cero', () => {
-  const tomas = d.tomasDelPeriodo(TRES);
-  const p = graficos.puntosDeLaToma(TRES, tomas, 'ev-3');
-  assert.equal(p.elegida, 2);
-  const medidas = graficos.resumenDe(TRES, 'ev-3').medidas;
-  const tipos = (metrica) => p.estados(medidas.find((m) => m.metrica === metrica)).map((e) => e.tipo);
-  assert.deepEqual(tipos('peso'), ['valor', 'valor', 'valor']);
-  assert.deepEqual(tipos('pliegue-triceps'), ['valor', 'otro-grupo', 'valor'], 'el tríceps ISAK de agosto no se compara: es una raya, no un punto');
-  assert.deepEqual(tipos('perimetro-cintura'), ['valor', 'sin-dato', 'valor'], 'sin medición en agosto: un hueco');
-  const triceps = p.estados(medidas.find((m) => m.metrica === 'pliegue-triceps'));
-  assert.equal(triceps[1].observacion.punto.value, 11, 'la raya conserva su valor, para decirlo en la lista');
-});
-
-test('una sola elección de toma decide el punto resaltado y el grupo con que se lee cada medida', () => {
-  const tomas = d.tomasDelPeriodo(TRES);
-  const p = graficos.puntosDeLaToma(TRES, tomas, 'ev-2');
-  assert.equal(p.elegida, 1);
-  const triceps = graficos.resumenDe(TRES, 'ev-2').medidas.find((m) => m.metrica === 'pliegue-triceps');
-  // Elegida la toma ISAK, el gráfico se lee con ese protocolo: las otras dos tomas quedan como otro grupo.
-  assert.deepEqual(p.estados(triceps).map((e) => e.tipo), ['otro-grupo', 'valor', 'otro-grupo']);
-  // El resumen se calcula una vez por respuesta.
-  assert.equal(graficos.resumenDe(TRES, 'ev-2'), graficos.resumenDe(TRES, 'ev-2'));
-});
-
-// ─── 2. Los gráficos chicos ───────────────────────────────────────────────────────────────────────────────────
-
-const valor = (v, unit = 'kg') => ({ tipo: 'valor', observacion: { punto: { value: v, unit } } });
-const SIN = { tipo: 'sin-dato' };
-const OTRO = (v) => ({ tipo: 'otro-grupo', observacion: { punto: { value: v, unit: 'mm' } } });
-
-/** Tomas de prueba con valores, huecos y otro grupo mezclados; la elegida es la última, que siempre tiene valor. */
-const mezcla = (cantidad) => Array.from({ length: cantidad }, (_, i) => (i === cantidad - 1 ? valor(80) : i % 4 === 1 ? SIN : i % 4 === 2 ? OTRO(5) : valor(78 + (i % 3))));
-
-test('con 1, 3, 6 y 12 tomas el gráfico no desborda ni superpone puntos, en los anchos y altos de la pantalla', () => {
-  for (const cantidad of [1, 3, 6, 12]) {
-    for (const ancho of [97, 120, 137, 160, 296]) {
-      for (const alto of [18, 24, 26, 40]) {
-        const caso = `${cantidad} tomas en ${ancho}×${alto}`;
-        const estados = mezcla(cantidad);
-        const g = graficos.geometriaDePuntos({ ancho, alto, estados, elegida: cantidad - 1 });
-        if (cantidad === 1) {
-          assert.equal(g, null, 'una sola toma no dibuja un recorrido: su valor ya está escrito');
-          continue;
-        }
-        for (const p of g.puntos) {
-          assert.ok(p.x - p.radio >= 0 && p.x + p.radio <= ancho, `${caso}: un punto se sale por los costados`);
-          assert.ok(p.y - p.radio >= 0 && p.y + p.radio <= alto, `${caso}: un punto se sale por arriba o por abajo`);
-          assert.ok(p.radio >= 1.5, `${caso}: un punto de ${p.radio} dp ya no se distingue`);
-        }
-        const porIndice = new Map(g.puntos.map((p) => [p.indice, p]));
-        for (let i = 1; i < cantidad; i++) {
-          const a = porIndice.get(i - 1);
-          const b = porIndice.get(i);
-          if (a && b) assert.ok(b.x - a.x >= a.radio + b.radio, `${caso}: los puntos ${i} y ${i + 1} se tocan`);
-        }
-        for (const m of g.marcas) assert.ok(m.y1 >= 0 && m.y2 <= alto && m.x >= 0 && m.x <= ancho, `${caso}: una raya se sale`);
-      }
-    }
-  }
-});
-
-test('el eje es el orden de las tomas: misma distancia entre tomas, aunque entre ellas pasen días distintos', () => {
-  const g = graficos.geometriaDePuntos({ ancho: 160, alto: 26, estados: [valor(1), valor(2), valor(3), valor(4), valor(5), valor(6)], elegida: 5 });
-  const pasos = g.xs.slice(1).map((x, i) => x - g.xs[i]);
-  assert.ok(pasos.every((p) => Math.abs(p - pasos[0]) < 1e-9), 'T1, T2, T3… van a la misma distancia');
-  assert.ok(g.xs[0] < g.xs[5], 'T1 a la izquierda y la última a la derecha');
-});
-
-test('valores iguales a media altura, un hueco sin punto, otro grupo con una raya y la elegida resaltada', () => {
-  const iguales = graficos.geometriaDePuntos({ ancho: 140, alto: 26, estados: [valor(80), valor(80), valor(80)], elegida: 2 });
-  assert.equal(new Set(iguales.puntos.map((p) => p.y)).size, 1, 'sin escala que inventar');
-  assert.ok(Math.abs(iguales.puntos[0].y - iguales.base.y / 2) < 1e-9, 'a media altura, entre el techo y la base');
-
-  const g = graficos.geometriaDePuntos({ ancho: 140, alto: 26, estados: [valor(12, 'mm'), SIN, OTRO(11), valor(10, 'mm')], elegida: 3 });
-  assert.deepEqual(g.puntos.map((p) => p.indice), [0, 3], 'el hueco y el otro grupo no tienen punto');
-  assert.deepEqual(g.marcas.map((m) => m.indice), [2], 'otro grupo: una raya');
-  assert.ok(g.marcas.every((m) => m.y2 === g.base.y && m.y1 < m.y2), 'la raya sale de la base y es vertical: no une dos tomas');
-  assert.ok(Math.abs(g.base.x1 - g.xs[0]) < 1e-9 && Math.abs(g.base.x2 - g.xs.at(-1)) < 1e-9, 'la base es fija: de la primera toma a la última');
-  const elegida = g.puntos.find((p) => p.elegida);
-  assert.equal(elegida.indice, 3);
-  assert.ok(g.puntos.every((p) => p.elegida || p.radio < elegida.radio), 'la elegida es más grande');
-  assert.ok(g.puntos.find((p) => p.indice === 0).y < elegida.y, 'el valor más alto va más arriba');
-});
-
-test('el gráfico chico se dibuja con puntos y una base, sin trazos que unan tomas', () => {
-  // La forma la da la geometría (probada arriba); el componente no agrega ningún trazo libre entre puntos.
-  const PUNTOS = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/puntos-por-toma.tsx'), 'utf8');
-  const codigo = PUNTOS.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
-  assert.doesNotMatch(codigo, /<Polyline|<Path|<Polygon/, 'ninguna línea une dos tomas');
-  assert.equal((codigo.match(/<Line /g) ?? []).length, 2, 'solo la base y la raya de otro grupo');
-  assert.match(codigo, /<Line key=\{`otro-\$\{m\.indice\}`\} x1=\{m\.x\} x2=\{m\.x\}/, 'la raya es vertical, en la x de su toma: no une dos tomas');
-});
-
-// ─── 3. Los textos ────────────────────────────────────────────────────────────────────────────────────────────
-
-const tomas = [
-  { evaluacionId: 'ev-1', etiqueta: 'T1', fecha: '2026-07-20', instante: 1, metricas: 3 },
-  { evaluacionId: 'ev-2', etiqueta: 'T2', fecha: '2026-08-25', instante: 2, metricas: 1 },
-  { evaluacionId: 'ev-3', etiqueta: 'T3', fecha: '2026-09-24', instante: 3, metricas: 3 },
-];
-
-test('la lista equivalente dice el valor de cada toma, un hueco como «sin dato» y otro grupo como «no comparable»', () => {
-  assert.equal(textos.textoPorToma([valor(82.4), SIN, valor(80)], tomas), 'T1 82,4 · T2 sin dato · T3 80 kg');
-  assert.equal(textos.textoPorToma([valor(12, 'mm'), OTRO(11), valor(10, 'mm')], tomas), 'T1 12 · T2 no comparable · T3 10 mm');
-  assert.equal(textos.textoPorToma([SIN, SIN, SIN], tomas), 'T1 sin dato · T2 sin dato · T3 sin dato');
-});
-
-test('para el lector de pantalla, cada toma con su fecha, su valor con unidad, el otro grupo dicho y cuál es la elegida', () => {
-  const mes = (f) => formato.fechaCorta(f);
-  assert.equal(textos.frasePorToma([valor(82.4), SIN, valor(80)], tomas, 'ev-3', formato.fechaCorta), `T1, ${mes('2026-07-20')}: 82,4 kg; T2, ${mes('2026-08-25')}: sin dato; T3, ${mes('2026-09-24')}: 80 kg (la elegida)`);
-  assert.match(textos.frasePorToma([valor(12, 'mm'), OTRO(11), valor(10, 'mm')], tomas, 'ev-3', formato.fechaCorta), /T2, [^:]+: 11 mm, con otro protocolo, método o unidad: no se compara;/);
-  assert.match(formato.fechaCorta('2026-07-20'), /^20 jul$/, 'sin año y sin punto');
-});
+// ─── 1. Los textos ──────────────────────────────────────────────────────────────────────────────────────────────
 
 test('las otras tomas del día se nombran como una lista para leer', () => {
   assert.equal(textos.enumerar(['T2']), 'T2');
@@ -183,51 +70,7 @@ test('las otras tomas del día se nombran como una lista para leer', () => {
   assert.equal(textos.enumerar([]), '');
 });
 
-test('la pantalla dice que el eje de los gráficos chicos es el orden de las tomas, no el tiempo', () => {
-  const sinRaya = textos.comoSeLeenLosPuntos(tomas, false);
-  assert.match(sinRaya, /un punto por toma, en orden, de T1 a T3/);
-  assert.match(sinRaya, /misma distancia aunque entre dos tomas pasen días distintos/);
-  assert.match(sinRaya, /En Evolución, el gráfico de una medida usa las fechas/);
-  assert.doesNotMatch(sinRaya, /raya/);
-  assert.match(textos.comoSeLeenLosPuntos(tomas, true), /Una raya sobre la base es una toma con esa medida en otro protocolo, método o unidad: no se compara\./);
-  // A la vista va una línea; la explicación completa, en «Cómo se lee».
-  assert.equal(textos.puntosEnUnaLinea(tomas), 'Puntos por toma, de T1 a T3, en orden: no es el tiempo.');
-});
-
 // ─── 4. La pantalla ───────────────────────────────────────────────────────────────────────────────────────────
-
-test('«Ver la toma» desde Inicio abre la última toma en el mapa o en los indicadores; «Ver su evolución», la medida', () => {
-  assert.deepEqual(disposicion.eleccionesDelPedido({ vista: 'ultima' }), [
-    ['mi-evolucion:vista', 'TOMA'],
-    ['mi-evolucion:toma', null],
-  ]);
-  assert.deepEqual(disposicion.eleccionesDelPedido({ vista: 'evolucion', metrica: 'peso' }), [
-    ['mi-evolucion:vista', 'EVOLUCION'],
-    ['mi-evolucion:medida', 'peso'],
-  ]);
-  assert.deepEqual(disposicion.eleccionesDelPedido({}), [], 'sin pedido, manda lo que la persona eligió');
-  assert.equal(disposicion.vistaDeLaToma('TOMA', true), 'MAPA');
-  assert.equal(disposicion.vistaDeLaToma('TOMA', false), 'INDICADORES', 'una toma sin perímetros ni pliegues abre los indicadores');
-  for (const vista of ['MAPA', 'INDICADORES', 'COMPARAR', 'EVOLUCION']) assert.equal(disposicion.vistaDeLaToma(vista, false), vista);
-});
-
-test('«Ver su evolución» abre con días que incluyen esa toma, y no achica los que ya alcanzaban', () => {
-  // El período termina el 4/10: una toma del 27/9 entra en 30 días; una del 20/7, recién en 90.
-  assert.equal(disposicion.diasQueIncluyen('2026-09-27', '2026-10-04', '30'), '30');
-  assert.equal(disposicion.diasQueIncluyen('2026-08-24', '2026-10-04', '30'), '60');
-  assert.equal(disposicion.diasQueIncluyen('2026-07-20', '2026-10-04', '30'), '90');
-  assert.equal(disposicion.diasQueIncluyen('2026-09-27', '2026-10-04', '90'), '90', 'si ya alcanzaban, quedan los que eligió la persona');
-  assert.equal(disposicion.diasQueIncluyen('2026-09-05', '2026-10-04', '30'), '30', 'el día 30 entra en 30 días');
-  assert.equal(disposicion.diasQueIncluyen('2026-09-04', '2026-10-04', '30'), '60', 'el día 31 ya no');
-});
-
-test('el selector de tomas va en las vistas de una toma, con más de una; no en Evolución', () => {
-  for (const vista of ['MAPA', 'INDICADORES', 'COMPARAR']) {
-    assert.equal(disposicion.seVeElSelectorDeTomas(vista, 3), true, vista);
-    assert.equal(disposicion.seVeElSelectorDeTomas(vista, 1), false, `${vista} con una sola toma`);
-  }
-  assert.equal(disposicion.seVeElSelectorDeTomas('EVOLUCION', 3), false);
-});
 
 test('los indicadores van en dos columnas cuando entran, y en una cuando la letra o el ancho lo piden', () => {
   const valorMasLargo = (texto, escala) => disposicion.anchoDelValorEstimado(texto, 22 * escala);
@@ -262,5 +105,198 @@ test('D-3: si otra evaluación cayó el mismo día, la toma puede estar incomple
   assert.deepEqual(disposicion.otrasTomasDelDia(t, 'ev-tarde').map((x) => x.etiqueta), ['T2']);
   assert.deepEqual(disposicion.otrasTomasDelDia(t, 'ev-manana').map((x) => x.etiqueta), ['T3']);
   assert.deepEqual(disposicion.otrasTomasDelDia(t, 'ev-1'), [], 'una toma sola en su día no lleva el aviso');
-  assert.deepEqual(graficos.resumenDe(mismoDia, 'ev-tarde').medidas.map((m) => m.metrica), ['pliegue-triceps'], 'de la tarde se ve una parte: por eso el aviso');
+  assert.deepEqual(serieDeLaMedida.resumenDe(mismoDia, 'ev-tarde').medidas.map((m) => m.metrica), ['pliegue-triceps'], 'de la tarde se ve una parte: por eso el aviso');
 });
+
+// ─── 5. Las tres vistas de DL-118 ─────────────────────────────────────────────────────────────────────────────
+
+const G_IMC = grupo('cmp-imc', 'kg/m2', { methodVersionId: '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f01' });
+const G_EDAD = grupo('cmp-edad', 'años');
+const G_CODO = grupo('cmp-codo', 'cm');
+const derivado = (...args) => ({ ...punto(...args), dataClass: 'DERIVED' });
+
+/**
+ * Cuatro tomas: la T1 tiene sitios e indicadores; la T2, solo indicadores; la T3, solo sitios; la T4, la última, solo
+ * indicadores. Es el caso «la última toma solo tiene indicadores, aunque haya mapas anteriores».
+ */
+const CUATRO = datos([
+  serie('peso', [punto('ev-1', '2026-07-10', 82, G_PESO), punto('ev-2', '2026-08-01', 81, G_PESO), punto('ev-4', '2026-09-20', 79.5, G_PESO)], [G_PESO]),
+  serie('perimetro-cintura', [punto('ev-1', '2026-07-10', 90, G_CINTURA), punto('ev-3', '2026-08-30', 88, G_CINTURA)], [G_CINTURA]),
+  serie('imc', [derivado('ev-4', '2026-09-20', 25.1, G_IMC)], [G_IMC]),
+]);
+
+const contenidos = (dts) => d.tomasDelPeriodo(dts).map((t) => ({ toma: t, contenido: disposicion.contenidoDeLaToma(serieDeLaMedida.resumenDe(dts, t.evaluacionId)) }));
+
+test('DL-118: el mapa y Progreso solo con tomas que tienen sitios; Indicadores solo con indicadores; nunca una vista vacía', () => {
+  const c = contenidos(CUATRO);
+  assert.deepEqual(c.map((x) => [x.toma.etiqueta, x.contenido.conSitios, x.contenido.conIndicadores]), [
+    ['T1', true, true],
+    ['T2', false, true],
+    ['T3', true, false],
+    ['T4', false, true],
+  ]);
+  assert.deepEqual(disposicion.vistasDisponibles(c.map((x) => x.contenido)), ['MAPA', 'PROGRESO', 'INDICADORES']);
+  // Sin ninguna toma con sitios, no hay mapa ni Progreso: no se dibuja una figura vacía.
+  const soloPeso = datos([serie('peso', [punto('ev-1', '2026-07-10', 82, G_PESO), punto('ev-2', '2026-08-01', 81, G_PESO)], [G_PESO])]);
+  assert.deepEqual(disposicion.vistasDisponibles(contenidos(soloPeso).map((x) => x.contenido)), ['INDICADORES']);
+  // Sin indicadores, no hay pestaña de indicadores vacía.
+  const soloSitios = datos([serie('perimetro-cintura', [punto('ev-1', '2026-07-10', 90, G_CINTURA)], [G_CINTURA])]);
+  assert.deepEqual(disposicion.vistasDisponibles(contenidos(soloSitios).map((x) => x.contenido)), ['MAPA', 'PROGRESO']);
+  assert.deepEqual(disposicion.vistasDisponibles([]), [], 'sin mediciones en el período, ninguna vista');
+});
+
+test('DL-118: la primera visita abre el mapa si la última toma tiene sitios; si no, Indicadores. Comparar y Evolución abren Progreso', () => {
+  const todas = ['MAPA', 'PROGRESO', 'INDICADORES'];
+  assert.equal(disposicion.vistaQueSeVe('TOMA', todas, true), 'MAPA');
+  assert.equal(disposicion.vistaQueSeVe('TOMA', todas, false), 'INDICADORES', 'la última toma solo tiene indicadores');
+  assert.equal(disposicion.vistaQueSeVe('COMPARAR', todas, true), 'PROGRESO', 'la vista vieja de Comparar');
+  assert.equal(disposicion.vistaQueSeVe('EVOLUCION', todas, true), 'PROGRESO', 'la vista vieja de Evolución');
+  for (const v of todas) assert.equal(disposicion.vistaQueSeVe(v, todas, false), v, 'lo elegido se respeta');
+  assert.equal(disposicion.vistaQueSeVe('MAPA', ['INDICADORES'], false), 'INDICADORES', 'sin tomas con sitios no se muestra un mapa vacío');
+  assert.equal(disposicion.vistaQueSeVe('PROGRESO', ['INDICADORES'], false), 'INDICADORES');
+  assert.equal(disposicion.vistaQueSeVe('INDICADORES', ['MAPA', 'PROGRESO'], true), 'MAPA', 'sin indicadores, otra vista con datos');
+  assert.equal(disposicion.vistaQueSeVe('TOMA', [], false), null, 'sin mediciones, ninguna');
+});
+
+test('DL-118: cada vista muestra la toma elegida si tiene datos para ella; si no, la anterior más cercana con datos', () => {
+  const c = contenidos(CUATRO);
+  const tomas = c.map((x) => x.toma);
+  const datosPara = (vista) => (t) => disposicion.tieneDatosPara(vista, c.find((x) => x.toma.evaluacionId === t.evaluacionId).contenido);
+  const de = (vista, elegida) => disposicion.tomaDeLaVista(tomas, elegida, datosPara(vista))?.etiqueta ?? null;
+  // La última toma (T4) solo tiene indicadores: el mapa muestra la T3, la última con sitios, con su fecha.
+  assert.equal(de('MAPA', 'ev-4'), 'T3');
+  assert.equal(de('INDICADORES', 'ev-4'), 'T4');
+  // La T2 no tiene sitios: el mapa muestra la T1, la anterior; nunca una posterior si hay una anterior.
+  assert.equal(de('MAPA', 'ev-2'), 'T1');
+  assert.equal(de('PROGRESO', 'ev-2'), 'T1');
+  // La T3 no tiene indicadores: Indicadores muestra la T2.
+  assert.equal(de('INDICADORES', 'ev-3'), 'T2');
+  // Sin anterior con datos, la primera posterior.
+  const t2 = tomas.slice(1);
+  assert.equal(disposicion.tomaDeLaVista(t2, 'ev-2', datosPara('MAPA'))?.etiqueta, 'T3');
+  // Sin elección, la última con datos.
+  assert.equal(de('MAPA', null), 'T3');
+  assert.equal(de('INDICADORES', null), 'T4');
+  assert.equal(disposicion.tomaDeLaVista(tomas, 'ev-1', () => false), null, 'sin ninguna con datos, ninguna');
+  // El selector va con más de una toma para la vista.
+  assert.equal(disposicion.seVeElSelectorDeTomas(2), true);
+  assert.equal(disposicion.seVeElSelectorDeTomas(1), false);
+});
+
+test('DL-118: «Ver la toma» abre la última; Comparar abre Progreso; «Ver su evolución» abre un sitio en Progreso y otra medida en Indicadores', () => {
+  assert.deepEqual(disposicion.eleccionesDelPedido({ vista: 'ultima' }), [
+    ['mi-evolucion:vista', 'TOMA'],
+    ['mi-evolucion:toma', null],
+  ]);
+  assert.deepEqual(disposicion.eleccionesDelPedido({ vista: 'comparar' }), [['mi-evolucion:vista', 'PROGRESO']]);
+  assert.deepEqual(disposicion.eleccionesDelPedido({ vista: 'evolucion', metrica: 'peso' }), [
+    ['mi-evolucion:vista', 'INDICADORES'],
+    ['mi-evolucion:medida', 'peso'],
+  ]);
+  // Un sitio: Progreso, con su familia, y el panel lo decide la medida.
+  assert.deepEqual(disposicion.eleccionesDelPedido({ vista: 'evolucion', metrica: 'pliegue-triceps' }), [
+    ['mi-evolucion:vista', 'PROGRESO'],
+    ['mi-evolucion:medida', 'pliegue-triceps'],
+    ['mi-evolucion:familia', 'PLIEGUES'],
+    ['mi-evolucion:panel', null],
+  ]);
+  assert.deepEqual(disposicion.eleccionesDelPedido({}), [], 'sin pedido, manda lo que la persona eligió');
+  assert.equal(disposicion.familiaDelSitio('perimetro-cadera'), 'PERIMETROS');
+  assert.equal(disposicion.familiaDelSitio('imc'), null);
+});
+
+test('DL-118: cada sitio de la figura va en una sola zona, y la figura del compositor de esa zona lo tiene, para los dos sexos', () => {
+  for (const familia of ['PERIMETROS', 'PLIEGUES']) {
+    for (const sexo of ['HOMBRE', 'MUJER']) {
+      const entero = familia === 'PERIMETROS' ? d.FIGURAS_DE_LA_LAMINA[sexo].ENTERO.perimetros : d.FIGURAS_DE_LA_LAMINA[sexo].ENTERO.pliegues;
+      // Los mismos sitios que la figura entera: ninguno sin zona, ninguno de más.
+      assert.deepEqual(Object.keys(zonas.ZONA_DEL_SITIO[familia]).sort(), Object.keys(entero).sort(), `${familia} ${sexo}`);
+      for (const [clave, zona] of Object.entries(zonas.ZONA_DEL_SITIO[familia])) {
+        const figura = d.FIGURAS_DE_LA_LAMINA[sexo][zonas.ENCUADRE_DE_LA_ZONA[zona]];
+        const lugares = familia === 'PERIMETROS' ? figura.perimetros : figura.pliegues;
+        assert.ok(lugares[clave], `${clave} no tiene lugar en la figura de ${zona} (${sexo})`);
+        assert.equal(disposicion.familiaDelSitio(clave), familia, `${clave}: la familia de la pantalla y la de las zonas coinciden`);
+      }
+    }
+  }
+  // El torso reúne cuello, hombros, brazos y tronco; las piernas, la cadera y los miembros inferiores.
+  const torso = Object.entries(zonas.ZONA_DEL_SITIO.PERIMETROS).filter(([, z]) => z === 'TORSO').map(([c]) => c);
+  for (const c of ['perimetro-cuello', 'perimetro-hombros', 'perimetro-brazo-relajado', 'perimetro-muneca', 'perimetro-cintura', 'perimetro-abdomen']) assert.ok(torso.includes(c), c);
+  const piernas = Object.entries(zonas.ZONA_DEL_SITIO.PERIMETROS).filter(([, z]) => z === 'PIERNAS').map(([c]) => c);
+  assert.deepEqual(piernas.sort(), ['perimetro-cadera', 'perimetro-muslo', 'perimetro-pantorrilla', 'perimetro-tobillo']);
+});
+
+test('DL-118: el torso va en dos paneles con más de cinco sitios; los paneles no duplican ni omiten sitios y no dependen de la toma', () => {
+  for (const familia of ['PERIMETROS', 'PLIEGUES']) {
+    const todos = Object.keys(zonas.ZONA_DEL_SITIO[familia]);
+    const paneles = zonas.panelesDeProgreso(familia, () => true);
+    assert.deepEqual(paneles.map((p) => p.clave), ['TORSO-TRONCO', 'TORSO-BRAZOS', 'PIERNAS'], familia);
+    const repartidos = paneles.flatMap((p) => p.sitios);
+    assert.equal(new Set(repartidos).size, repartidos.length, `${familia}: un sitio en dos paneles`);
+    assert.deepEqual([...repartidos].sort(), [...todos].sort(), `${familia}: un sitio sin panel`);
+    for (const p of paneles.filter((x) => x.zona === 'TORSO')) assert.ok(p.sitios.every((c) => p.sitiosDeLaZona.includes(c)), 'el panel es parte de su zona');
+    // Los dos paneles del torso comparten la zona entera: la figura no cambia de tamaño al pasar de uno a otro.
+    assert.deepEqual(paneles[0].sitiosDeLaZona, paneles[1].sitiosDeLaZona);
+  }
+  // Con cinco sitios o menos en el torso, un solo panel.
+  const pocos = new Set(['perimetro-cuello', 'perimetro-cintura', 'perimetro-cadera']);
+  const p = zonas.panelesDeProgreso('PERIMETROS', (c) => pocos.has(c));
+  assert.deepEqual(p.map((x) => [x.clave, x.sitios]), [
+    ['TORSO', ['perimetro-cuello', 'perimetro-cintura']],
+    ['PIERNAS', ['perimetro-cadera']],
+  ]);
+  // Una zona sin datos no aparece.
+  assert.deepEqual(zonas.panelesDeProgreso('PLIEGUES', (c) => c === 'pliegue-pantorrilla').map((x) => x.clave), ['PIERNAS']);
+  assert.deepEqual(zonas.panelesDeProgreso('PLIEGUES', () => false), []);
+  // El panel que se ve: el pedido si sigue; si no, el de la medida; si no, el primero.
+  const todos = zonas.panelesDeProgreso('PLIEGUES', () => true);
+  assert.equal(zonas.panelQueSeVe(todos, 'PIERNAS', 'pliegue-triceps').clave, 'PIERNAS');
+  assert.equal(zonas.panelQueSeVe(todos, null, 'pliegue-triceps').clave, 'TORSO-BRAZOS');
+  assert.equal(zonas.panelQueSeVe(todos, 'TORSO', null).clave, 'TORSO-TRONCO', 'un panel que ya no existe pasa al primero');
+  assert.equal(zonas.panelQueSeVe([], null, null), null);
+});
+
+test('DL-118: los indicadores van en cuatro bloques; la edad es un dato de la toma y los diámetros van en «más datos»; nada se pierde', () => {
+  const toma = datos([
+    serie('peso', [punto('ev-1', '2026-09-20', 80, G_PESO)], [G_PESO]),
+    serie('talla', [punto('ev-1', '2026-09-20', 176, grupo('cmp-talla', 'cm'))], [grupo('cmp-talla', 'cm')]),
+    serie('edad', [punto('ev-1', '2026-09-20', 20, G_EDAD)], [G_EDAD]),
+    serie('diametro-humero', [punto('ev-1', '2026-09-20', 7, G_CODO)], [G_CODO]),
+    serie('perimetro-cintura', [punto('ev-1', '2026-09-20', 84, G_CINTURA)], [G_CINTURA]),
+    serie('imc', [derivado('ev-1', '2026-09-20', 25.8, G_IMC)], [G_IMC]),
+  ]);
+  const r = serieDeLaMedida.resumenDe(toma, 'ev-1');
+  const b = disposicion.bloquesDeIndicadores(r);
+  const claves = (lista) => lista.map((m) => m.metrica);
+  assert.deepEqual(claves(b.mediciones), ['peso', 'talla']);
+  assert.deepEqual(claves(b.resultados), ['imc']);
+  assert.deepEqual(claves(b.contexto), ['edad']);
+  assert.deepEqual(claves(b.masDatos), ['diametro-humero']);
+  // Todo lo que no tiene sitio está en un bloque; la cintura, que tiene sitio, va en el mapa.
+  const enBloques = [...b.mediciones, ...b.resultados, ...b.contexto, ...b.masDatos].map((m) => m.metrica).sort();
+  assert.deepEqual(enBloques, [...r.medidas, ...r.derivadas].map((m) => m.metrica).filter((m) => m !== 'perimetro-cintura').sort());
+});
+
+test('DL-118: la serie de una medida usa el grupo de la toma elegida, cuenta aparte el otro grupo y conserva las fechas reales', () => {
+  // El tríceps: julio y septiembre con un protocolo, agosto con ISAK.
+  const propio = serieDeLaMedida.serieDeLaMedida(TRES, 'pliegue-triceps', 'cmp-3');
+  assert.equal(propio.grupo, 'cmp-3');
+  assert.deepEqual(propio.observaciones.map((o) => [o.fecha, o.punto.value]), [
+    ['2026-07-20', 12],
+    ['2026-09-24', 10],
+  ]);
+  assert.equal(propio.enOtrosGrupos, 1, 'el de agosto no se dibuja en este eje, pero se cuenta');
+  assert.deepEqual(propio.grupos.map((g) => g.comparabilityGroup).sort(), ['cmp-3', 'cmp-4']);
+  const isak = serieDeLaMedida.serieDeLaMedida(TRES, 'pliegue-triceps', 'cmp-4');
+  assert.deepEqual(isak.observaciones.map((o) => o.punto.value), [11]);
+  assert.equal(isak.enOtrosGrupos, 2);
+  // Sin grupo pedido, el más reciente.
+  assert.equal(serieDeLaMedida.serieDeLaMedida(TRES, 'pliegue-triceps', null).grupo, 'cmp-3');
+  // La cintura no se midió en agosto: dos observaciones y, entre ellas, nada inventado.
+  const cintura = serieDeLaMedida.serieDeLaMedida(TRES, 'perimetro-cintura', 'cmp-2');
+  assert.deepEqual(cintura.observaciones.map((o) => o.punto.value), [90, 86.5]);
+  assert.equal(serieDeLaMedida.indiceDeLaToma(cintura.observaciones, 'ev-3'), 1);
+  assert.equal(serieDeLaMedida.indiceDeLaToma(cintura.observaciones, 'ev-2'), null, 'la toma de agosto no tiene la cintura');
+  assert.deepEqual(serieDeLaMedida.serieDeLaMedida(TRES, 'perimetro-muslo', null).observaciones, [], 'una medida que no está, vacía');
+});
+

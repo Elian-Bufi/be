@@ -42,7 +42,7 @@ const DOMINIOS = [
     nombre: 'antropometría',
     archivos: [
       ...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry')),
-      ...['antropometria.tsx', 'figura-de-la-toma.tsx', 'indicadores.tsx', 'detalle-de-la-medida.tsx', 'puntos-por-toma.tsx'].map((archivo) => join(RAIZ, 'apps/mobile/src/pantallas', archivo)),
+      ...['antropometria.tsx', 'figura-de-la-toma.tsx', 'indicadores.tsx', 'progreso.tsx', 'progreso-de-una-medida.tsx'].map((archivo) => join(RAIZ, 'apps/mobile/src/pantallas', archivo)),
       movil('textos-por-toma.ts'),
       inicio('inicio-mediciones.tsx'),
       ...INICIO_COMUN,

@@ -16,13 +16,16 @@
  * - **La altura sale del contenido**, no de un número fijo. La barra informa la suya (`alMedir`) para que el contenido
  *   deje ese espacio libre al final y nada quede tapado.
  * - Respeta el área segura de abajo: flota por encima de la barra del sistema, con gestos o con botones.
+ * - **Un velo detrás** (DL-118): un degradé del color del fondo, desde el final del espacio libre del contenido hasta el
+ *   borde de la pantalla, cubre lo que pasa por detrás de la cápsula y de la barra del sistema. Las cifras y los trazos
+ *   ya no compiten con los destinos, y el último contenido, al final del desplazamiento, queda entero por encima.
  * - Se oculta mientras el teclado está abierto, para no tapar el campo que se escribe.
  * - Tocar un destino abre su raíz, también desde un detalle de ese mismo destino.
  */
 import { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Defs, Ellipse, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useApariencia } from './apariencia';
 import { disposicionDeLaBarra } from './disposicion-de-la-barra';
 import { ZONAS, type Ruta, type Zona } from './navegacion';
@@ -90,6 +93,28 @@ export function BarraDeZonas({ actual, ir, alMedir }: { actual: Zona | null; ir:
           })}
         </View>
       ))}
+    </View>
+  );
+}
+
+/**
+ * El velo detrás de la barra: del color del fondo, transparente arriba y casi opaco abajo. App.tsx lo dibuja antes de la
+ * cápsula, desde donde termina el espacio libre del contenido. No recibe toques ni lo recorre el lector de pantalla.
+ */
+export function VeloDeLaBarra({ alto }: { alto: number }) {
+  useApariencia();
+  return (
+    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: alto }}>
+      <Svg width="100%" height="100%">
+        <Defs>
+          <LinearGradient id="velo-de-la-barra" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={COLOR.fondo.slice(0, 7)} stopOpacity={0} />
+            <Stop offset="0.4" stopColor={COLOR.fondo.slice(0, 7)} stopOpacity={0.9} />
+            <Stop offset="1" stopColor={COLOR.fondo.slice(0, 7)} stopOpacity={0.97} />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#velo-de-la-barra)" />
+      </Svg>
     </View>
   );
 }
