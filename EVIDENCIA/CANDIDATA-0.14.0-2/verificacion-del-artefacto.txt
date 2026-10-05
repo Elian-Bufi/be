@@ -1,0 +1,88 @@
+== tamaño y SHA-256
+80848758
+e33e6ac2bc548650f15d4e1b3a5ea691a1b27095bd6c411d02a196b9137a1b24
+== badging
+package: name='com.elianbufi.be' versionCode='24' versionName='0.14.0-candidata.2'
+targetSdkVersion:'36'
+== firma
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Number of signers: 1
+Signer #1 certificate SHA-256 digest: 61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06
+== certificado contra la versión anterior
+idéntico: 61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06
+== versionCode contra la versión anterior
+package: name='com.elianbufi.be' versionCode='23' versionName='0.14.0-candidata.1'
+== arquitecturas
+lib/arm64-v8a/ lib/armeabi-v7a/ lib/x86/ lib/x86_64/ 
+== assets/app.config
+{"version":"0.14.0-candidata.2","versionCode":24,"appEnv":"test","apiBaseUrl":"https://be-api-hndp.onrender.com","commit":"b4eb286fdc16f8bd4fa732de997fbaf785f9382c","construidoEn":"2026-10-05T16:48:34.867Z","plugins":["expo-secure-store"]}
+== expo-secure-store en el código nativo
+referencias: 13
+== react-native-svg en el código
+referencias: 3
+== manifiesto: respaldo
+A: http://schemas.android.com/apk/res/android:allowBackup(0x01010280)=true
+A: http://schemas.android.com/apk/res/android:fullBackupContent(0x010104eb)=@0x7f140006
+A: http://schemas.android.com/apk/res/android:dataExtractionRules(0x0101063e)=@0x7f140007
+== recursos de las reglas de respaldo
+res/-K.xml res/Hq.xml xml/secure_store_backup_rules xml/secure_store_data_extraction_rules 
+-- res/-K.xml
+E: full-backup-content (line=4)
+E: include (line=5)
+A: domain="sharedpref" (Raw: "sharedpref")
+A: path="." (Raw: ".")
+E: exclude (line=6)
+A: domain="sharedpref" (Raw: "sharedpref")
+A: path="SecureStore" (Raw: "SecureStore")
+-- res/Hq.xml
+E: data-extraction-rules (line=4)
+E: cloud-backup (line=5)
+E: include (line=6)
+A: domain="sharedpref" (Raw: "sharedpref")
+A: path="." (Raw: ".")
+E: exclude (line=7)
+A: domain="sharedpref" (Raw: "sharedpref")
+A: path="SecureStore" (Raw: "SecureStore")
+E: device-transfer (line=9)
+E: include (line=10)
+A: domain="sharedpref" (Raw: "sharedpref")
+A: path="." (Raw: ".")
+== imágenes de la figura
+drawable/assets_figura_hombreentero drawable/assets_figura_hombretreninferior drawable/assets_figura_hombretrensuperior drawable/assets_figura_mujerentero drawable/assets_figura_mujertreninferior drawable/assets_figura_mujertrensuperior 
+== credenciales
+{"entradas":1166,"coincidencias":{},"archivosSensibles":[]}
+== complemento: certificado contra la 0.13.2
+idéntico: 61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06
+== complemento: versionCode de la 0.13.2
+package: name='com.elianbufi.be' versionCode='22' versionName='0.13.2'
+== complemento: sdk y permisos
+package: name='com.elianbufi.be' versionCode='24' versionName='0.14.0-candidata.2' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
+minSdkVersion:'24'
+targetSdkVersion:'36'
+uses-permission: name='android.permission.INTERNET'
+uses-permission: name='android.permission.READ_EXTERNAL_STORAGE' maxSdkVersion='32'
+uses-permission: name='android.permission.SYSTEM_ALERT_WINDOW'
+uses-permission: name='android.permission.VIBRATE'
+uses-permission: name='android.permission.WRITE_EXTERNAL_STORAGE' maxSdkVersion='32'
+uses-permission: name='android.permission.USE_BIOMETRIC'
+uses-permission: name='android.permission.USE_FINGERPRINT'
+uses-permission: name='com.elianbufi.be.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
+== complemento: reglas data_extraction_rules, completas, contra las anteriores
+-- be-0.14.0-candidata.2-b4eb286.apk (res/Hq.xml) · a22c5537e3df
+-- be-0.14.0-candidata.1-0a28dd6.apk (res/Hq.xml) · a22c5537e3df
+-- be-0.13.2-4b49d43.apk (res/Hq.xml) · a22c5537e3df
+-- contenido en la candidata 2: E: data-extraction-rules (line=4) E: cloud-backup (line=5) E: include (line=6) A: domain="sharedpref" A: path="." E: exclude (line=7) A: domain="sharedpref" A: path="SecureStore" E: device-transfer (line=9) E: include (line=10) A: domain="sharedpref" A: path="." E: exclude (line=11) A: domain="sharedpref" A: path="SecureStore" 
+== complemento: reglas backup_rules, completas, contra las anteriores
+-- be-0.14.0-candidata.2-b4eb286.apk (res/-K.xml) · af5fb137a76f
+-- be-0.14.0-candidata.1-0a28dd6.apk (res/-K.xml) · af5fb137a76f
+-- be-0.13.2-4b49d43.apk (res/-K.xml) · af5fb137a76f
+-- contenido en la candidata 2: E: full-backup-content (line=4) E: include (line=5) A: domain="sharedpref" A: path="." E: exclude (line=6) A: domain="sharedpref" A: path="SecureStore" 
+== complemento: permisos contra las anteriores
+mismos permisos que la candidata 1 (8 declarados)
+mismos permisos que la 0.13.2
+== complemento: el árbol construido no cambió
+HEAD b4eb286fdc16f8bd4fa732de997fbaf785f9382c (esperado b4eb286fdc16f8bd4fa732de997fbaf785f9382c) · archivos versionados modificados: 0
