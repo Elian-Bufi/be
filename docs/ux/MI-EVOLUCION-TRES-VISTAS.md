@@ -122,3 +122,15 @@ No se agregan fórmulas, umbrales, diagnósticos ni totales. No se ocultan resul
 - Los huecos, las correcciones y los grupos comparables.
 - La lista equivalente de cada gráfico, para el lector de pantalla.
 - Los contratos, los métodos y la vista profesional. El website sigue teniendo su comparación y su lámina.
+
+## 7. Implementación (2026-10-05)
+
+Implementado en `3c6ac7c`, rama `apk/navegacion` (PR #146, en borrador). Sigue este documento, con dos diferencias,
+las dos reversibles:
+- **La lista del detalle** se llama «La evolución, en lista», el nombre que ya tenía la lista equivalente
+  (`GUIA-UX-UI.md` §7), y no «Detalle técnico». Va plegada al final del detalle, con los huecos.
+- **El recorte a 30, 60 o 90 días** de la vista Evolución se retiró con ella. No traía más datos: recortaba en el
+  teléfono el período que ya había llegado. El detalle muestra el período entero, el mismo de los gráficos chicos, y
+  así la tarjeta y su detalle dicen lo mismo.
+
+Las capturas, las pruebas y lo que falta probar en el teléfono están en `EVIDENCIA/MI-EVOLUCION-TRES-VISTAS/LEEME.md`.

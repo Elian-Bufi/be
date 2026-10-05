@@ -2857,3 +2857,10 @@ diseño reversibles, tomadas con ese documento y los patrones de BE.
 - Los sitios se asignan a una zona por su clave de BE, y las figuras de cada tren son las del compositor, con sus puntos
   calibrados por Dirección, sin moverlos.
 
+**Dónde está** (2026-10-05):
+- **Implementado** en `3c6ac7c`, rama `apk/navegacion`, PR #146 en borrador.
+- **Sin integrar ni desplegar**, y **sin probar en el teléfono**: la APK que lo incluya se construye después de que
+  Dirección revise las capturas.
+- **Evidencia:** renders de los componentes en el navegador, no capturas de Android, en
+  `EVIDENCIA/MI-EVOLUCION-TRES-VISTAS`.
+

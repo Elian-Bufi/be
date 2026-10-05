@@ -109,17 +109,19 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
   - Una revocación hecha en otro dispositivo se conoce en el próximo contacto con la API: al entrar a una zona, al
     volver del segundo plano o al escribir.
 - **Las vistas de una zona van en pestañas** (`Pestanas`, APK) cuando la zona tiene tareas distintas sobre los mismos
-  datos. En «Mi evolución» son cuatro: Mapa corporal, Indicadores, Comparar y Evolución. La pestaña elegida se recuerda en
-  la sesión, igual que la toma elegida en el selector T1, T2, T3 y la medida elegida, que es la misma en el mapa, en los
-  indicadores y en Evolución (DL-117).
+  datos. En «Mi evolución» son tres: Mapa corporal, Progreso e Indicadores (DL-118). Una vista sin datos no aparece y,
+  si queda una sola, no hay pestañas. La pestaña elegida se recuerda en la sesión, igual que la toma elegida en el
+  selector T1, T2, T3 y la medida elegida, que es la misma en el mapa, en Progreso y en los indicadores (DL-117).
   - Las pestañas son texto con una raya debajo de la elegida, de borde a borde: se distinguen de las píldoras, que eligen
     dentro de una vista. Antes, vistas y familia eran dos filas de píldoras iguales (pulido del 2026-10-04).
   - En una fila mientras entran. Si no, bajan enteras a dos filas, sin partir palabras ni achicar la letra.
 - **Lo que se elige dentro de una vista va debajo de lo que la nombra.** En «Mi evolución» van la fecha principal y un
-  contexto breve, las tomas en chips que se desplazan de costado (la elegida queda a la vista), y la familia en
-  píldoras compactas dentro de la lámina. Las explicaciones largas van en «Cómo se lee».
-- **Un gráfico chico dice cómo se lee su eje.** Si los puntos van por orden de toma y no por tiempo, la pantalla lo dice,
-  y el gráfico rotula sus extremos (T1 … T6). No une puntos ni rellena huecos, y su ancho es el del lugar: no desborda.
+  contexto breve, y las tomas en chips que se desplazan de costado (la elegida queda a la vista). En el mapa, la familia
+  va en píldoras compactas dentro de la lámina. En Progreso, la familia y la zona van en píldoras compactas sobre la
+  lámina, y la parte del torso, dentro. Las explicaciones largas van en «Cómo se lee».
+- **Un gráfico chico dice cómo se lee su eje.** Sus puntos van sobre fechas reales, con el principio y el fin del período
+  y los dos extremos de la escala rotulados (DL-118). No une puntos ni rellena huecos, muestra un solo grupo comparable,
+  y su ancho es el del lugar: no desborda. Con una sola observación no se dibuja.
 
 **Website**
 - Adentro de un asesorado, una pestaña por dominio.
@@ -263,9 +265,13 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
     de la vista ni debajo de una tarjeta.
 - **Las filas de una tarjeta tienen todas la misma forma.**
   - El nombre va a la izquierda y el valor a la derecha, en la misma línea si entran o, si el nombre es largo, en la de
-    abajo. Al final, la diferencia y el gráfico chico.
+    abajo. Desde DL-118, en el mapa no llevan diferencia ni gráfico chico: el cambio aparece al tocar el sitio.
   - Los valores forman una columna. Mezclar el valor al lado y debajo del nombre lo hacía saltar de un lado al otro.
-  - En una tarjeta, los gráficos tienen el mismo ancho: los puntos de cada toma quedan en columna.
+- **La figura de una zona** (Progreso, `componerLaFiguraDeZona`).
+  - Es la imagen del tren del compositor, con la misma transformación que la lámina: no se genera otro cuerpo ni se
+    mueve ningún punto.
+  - Cada sitio lleva un número, de arriba hacia abajo, y su tarjeta lleva el mismo.
+  - Los dos paneles del torso dibujan el mismo cuerpo en el mismo lugar: cambian los sitios, no la figura.
 - **La imagen exportada se equilibra.** En Medición con el cuerpo entero, la figura arranca en 290 y mide 1390. Así no
   queda una franja vacía bajo el encabezado (Dirección, 2026-10-03). Los otros encuadres son los del compositor.
 - **Selección coordinada en la figura** (APK, `figura-de-la-toma.tsx`).
@@ -280,7 +286,8 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
   - La selección no mueve ningún punto: solo cambia cómo se dibujan.
 - **Tabla equivalente.** Todo gráfico o figura tiene una tabla o lista equivalente, que es el camino del teclado y del
   lector de pantalla (B10-10 §11). En la APK, «La figura, en lista» y «La evolución, en lista».
-- **El gráfico de evolución de la APK es de puntos** (`grafico-de-evolucion.ts` y `evolucion-de-una-medida.tsx`).
+- **El gráfico de evolución de la APK es de puntos** (`grafico-de-evolucion.ts` y `progreso-de-una-medida.tsx`). Desde
+  DL-118 va en el detalle de cada tarjeta de Progreso y de Indicadores, con el grupo comparable de la toma elegida.
   - Cada punto es una medición, sobre una escala de tiempo con las fechas civiles de la zona de la API.
   - Los puntos no se unen: no hay líneas, áreas ni tendencias (REG-06-166). Un día sin medición no es cero: no se
     dibuja, y la lista lo dice como «Sin dato».
@@ -290,8 +297,8 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
     de al menos una unidad del eje y del 5 %. La unidad es 1 para las medidas de 10 o más, y la décima o la centésima
     para los índices: un índice cintura/cadera de 0,84 a 0,86 va de 0,79 a 0,91, no de −1 a 2.
   - Las marcas del eje son redondas, y los rótulos del tiempo se saltean si no entran con la letra de la persona.
-  - El período se elige dentro de lo que la API sirve: 30, 60 o 90 días. No hay «6 meses» ni «1 año» sin un contrato
-    que los sostenga.
+  - El período es el que sirve la API: los últimos 90 días o, si no tienen mediciones, el anterior con mediciones. El
+    recorte a 30 o 60 días se retiró con DL-118. No hay «6 meses» ni «1 año» sin un contrato que los sostenga.
   - La última medición se distingue por forma, con un punto más grande, no por color.
   - Tocar cerca de un punto elige el más cercano. Se ven una guía vertical punteada, su valor y su detalle debajo.
     «Anterior» y «Siguiente» recorren las mediciones sin necesidad de precisión con el dedo.
@@ -303,11 +310,12 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
     - muchas, los puntos sobre la escala;
     - puntos cercanos, gana el más cercano y la lista los separa.
   - No hay anillo de composición corporal: mezclaría métodos (REG-06-205).
-- **Comparar dos tomas** (APK, `comparar-tomas.tsx`).
-  - Compara la última toma con la anterior comparable: el mismo par que ya calcula el dominio.
-  - No hay selector de otras tomas, porque la API no lo sostiene.
-  - Cuando una medida no tiene con qué compararse, se dice por qué: es la primera del período, o la anterior se tomó
-    con otro protocolo, método o unidad.
+- **El cambio respecto de la anterior** (APK, tarjetas de Progreso e Indicadores). Desde DL-118, Comparar no es un
+  apartado.
+  - Cada tarjeta compara el valor de la toma elegida con la anterior comparable, el mismo par que calcula el dominio, y
+    dice su fecha («respecto del 25 jul»).
+  - Cuando una medida no tiene con qué compararse, se dice por qué: no hay una toma anterior comparable en el período,
+    o la anterior se tomó con otro protocolo, método o unidad.
 - **Los resultados calculados siempre llevan su método.** Dos métodos no se comparan entre sí, y ninguno se marca
   como «el bueno» (REG-06-205).
 

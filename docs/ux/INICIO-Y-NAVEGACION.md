@@ -209,52 +209,63 @@ registro**: es una lectura aparte (`leerUltimoRegistro`), y la tarjeta se puede 
 lectura de la tarjeta esperaba las dos respuestas, aunque este documento decía que solo demoraba el renglón. Se corrigió
 el comportamiento, no la afirmación.
 
-## 4 bis. Mi evolución: selector de tomas, mapa corporal e indicadores
+## 4 bis. Mi evolución: tres vistas y el selector de tomas
+
+Desde DL-118 (Dirección, 2026-10-05), las vistas son **Mapa corporal, Progreso e Indicadores**. El delta frente al cierre
+del 2026-10-04 y las reglas completas están en [MI-EVOLUCION-TRES-VISTAS.md](MI-EVOLUCION-TRES-VISTAS.md).
 
 - **Las tomas.** T1, T2, T3… son las evaluaciones del período, de la más vieja a la más nueva, con su fecha real
-  (`tomasDelPeriodo`, en `@be/domain`). Cada toma es una evaluación (`sourceEvaluationId`), **nunca una fecha**: dos
-  evaluaciones del mismo día son dos tomas. T1 es la primera toma del período que se ve, no la primera de la historia: el
-  período está en «Cómo se lee».
-- **La cabecera** (pulido del 2026-10-04). Arriba, las cuatro vistas son pestañas subrayadas de borde a borde. Debajo
-  van una fecha principal y un contexto breve («Última toma · se compara con el 25 jul 2026»), y las tomas en una fila de
-  chips que se desplaza de costado. La familia (Perímetros o Pliegues) es un control compacto dentro de la lámina. Así
-  vistas, tomas y familia no se confunden. Las explicaciones largas, en «Cómo se lee».
-- **Cuatro vistas, sin otro nivel de navegación** (cierre del 2026-10-04). Mapa corporal, Indicadores, Comparar y
-  Evolución. Mapa corporal e Indicadores reemplazan a la vista «Toma»: son la misma toma, partida entre lo que tiene sitio
-  en la figura y lo que no. «Ver la toma», desde Inicio, abre el mapa si la toma tiene perímetros o pliegues, y si no, los
-  indicadores.
-- **Mapa corporal.** La figura con los sitios medidos en la toma elegida. Cada fila de tarjeta lleva el valor, la
-  diferencia con el anterior comparable y el gráfico chico de puntos de esa medida, unida a su sitio por la misma guía.
-  Con letra ×1,3 o más, la figura va con números y cada fila de la lista de abajo lleva su gráfico. Los sitios no se
-  movieron.
-- **El encuadre y las filas** (pulido del 2026-10-04). El cuerpo es grande, empieza arriba, va a la derecha y lo recorta
-  el borde derecho, donde no hay sitios. Su tamaño sale del ancho y de los sitios posibles de la familia, no de cuántas
-  medidas hay: sumar medidas alarga la lista hacia abajo, no achica el cuerpo. Todas las filas tienen la misma forma:
-  el nombre a la izquierda, el valor a la derecha (en la misma línea o, si el nombre es largo, en la de abajo) y, al
-  final, la diferencia y los puntos. En una tarjeta, los gráficos tienen el mismo ancho. Las tarjetas son de vidrio:
-  borde fino, brillo arriba y sombra suave.
-- **Indicadores.** Tarjetas sin cuerpo para lo que no tiene sitio en la figura: peso, talla, diámetros y los resultados
-  de las fórmulas, cada uno con su método. Dos columnas cuando entran, y una cuando la letra o el ancho lo piden: una
-  tarjeta no parte su valor (`columnasDeIndicadores`, con anchos medidos en Roboto). La tarjeta muestra el nombre, que
-  identifica el método, el valor, la diferencia, la marca (corregida, si corresponde) y los puntos; «Antes» y la
-  descripción completa del método van en el detalle.
-- **Una sola elección de toma y una de medida.** La toma elegida cambia a la vez el mapa, los indicadores, sus gráficos
-  chicos y la comparación. La medida elegida, en el mapa o en los indicadores, es la misma de Evolución
-  (`mi-evolucion:medida`): su detalle trae el gráfico más grande, la lista equivalente y «Ver su evolución», que abre
-  Evolución con esa medida y su mismo grupo de comparabilidad.
-- **Los gráficos chicos.** Un punto por toma, **en el orden de las tomas, no en el tiempo**: van a la misma distancia
-  aunque entre dos tomas pasen días distintos, y la pantalla lo dice. El gráfico de Evolución sí usa las fechas, a
-  escala. Sin líneas: una toma sin la medida es un hueco, y una con otro protocolo, método o unidad lleva una raya corta
-  sobre la base y dice «no comparable» en su lista (`graficos-por-toma.ts`). La toma elegida va resaltada. El ancho es
-  el del lugar: con doce tomas, los puntos se achican y no desbordan (probado con 1, 3, 6 y 12 tomas).
-- **Una toma que puede estar incompleta (D-3).** Si otra evaluación cayó el mismo día, la pantalla lo avisa en una línea
-  que nombra la otra toma, y «Por qué» abre el detalle, que cuenta las medidas y los resultados que se ven. «Cómo se
-  lee» dice qué puede no verse de cualquier toma: la API muestra una medición por día y por medida, y no muestra una
-  medición anulada o con correcciones que no se pueden ordenar.
-- **Lo que no cambia.** Comparar y el gráfico detallado por medida. Ningún método se ocultó ni se quitó: la propuesta de
-  simplificación sigue en [MEDIDAS-Y-METODOS-EN-LA-APK.md](MEDIDAS-Y-METODOS-EN-LA-APK.md), sin implementar.
+  (`tomasDelPeriodo`, en `@be/domain`).
+  - Cada toma es una evaluación (`sourceEvaluationId`), **nunca una fecha**: dos evaluaciones del mismo día son dos
+    tomas.
+  - T1 es la primera toma del período que se ve, no la primera de la historia: el período está en «Cómo se lee».
+  - Cada vista lista solo las tomas que tienen datos para ella, con la misma numeración. Si la toma elegida no los
+    tiene, la vista muestra la anterior más cercana y lo dice con las dos fechas.
+- **La cabecera.**
+  - Arriba van las vistas, en pestañas subrayadas de borde a borde. Con una sola vista, no hay pestañas.
+  - Debajo, una fecha principal y un contexto breve («Última toma · se compara con el 25 jul 2026»), y las tomas en
+    una fila de chips que se desplaza de costado.
+  - Las explicaciones largas van en «Cómo se lee».
+- **Sin vistas vacías.**
+  - El mapa y Progreso aparecen si alguna toma tiene perímetros o pliegues; Indicadores, si alguna tiene indicadores.
+  - «Ver la toma», desde Inicio, abre el mapa si la última toma tiene sitios y, si no, Indicadores.
+  - La vista se resuelve una sola vez, con los datos.
+- **Mapa corporal:** «¿cuáles son mis medidas más recientes?».
+  - La figura, con el nombre y el valor de cada sitio de una toma, sin gráficos chicos ni diferencia.
+  - Al tocar un sitio aparecen el cambio con su fecha y «Ver su progreso».
+  - El encuadre es el del pulido del 2026-10-04: el cuerpo grande, arriba y recortado a la derecha. En Azul noche va
+    atenuado.
+  - Con letra ×1,3 o más, la figura va con números y los valores en la lista.
+- **Progreso:** «¿qué cambió en esta parte del cuerpo?».
+  - Dos elecciones: Perímetros o Pliegues, y Torso o Piernas.
+  - La figura es la del tren del compositor, con un número por sitio. Cada sitio va en una sola zona, por su clave.
+  - El torso, con más de cinco sitios, se reparte en dos paneles fijos.
+  - Una tarjeta por sitio: el valor de la toma, el cambio respecto de la anterior comparable con su fecha, y los puntos
+    sobre fechas reales. Al tocarla, el gráfico grande y la lista.
+  - Comparar salió como apartado: su lectura está en estas tarjetas.
+- **Indicadores:** «¿qué datos y resultados tengo disponibles?». Cuatro bloques:
+  - mediciones;
+  - resultados, marcados como estimación;
+  - la edad, como dato de la toma;
+  - «Más datos de esta toma», plegado.
+
+  Dos columnas cuando entran (`columnasDeIndicadores`). El detalle empieza con el resumen.
+- **Una sola elección de toma y una de medida.** La toma elegida cambia a la vez las tres vistas. La medida elegida
+  (`mi-evolucion:medida`) es la misma en el mapa, en Progreso y en los indicadores.
+- **Los gráficos chicos.** Desde DL-118 son de **fechas reales**: el período de punta a punta, la escala visible, sin
+  líneas ni rellenos y un solo grupo de comparabilidad por gráfico.
+  - El otro grupo se cuenta aparte y se elige en el detalle.
+  - Con una sola observación no hay gráfico.
+  - Los gráficos por orden de toma del cierre del 2026-10-04 se retiraron.
+- **Una toma que puede estar incompleta (D-3).** Si otra evaluación cayó el mismo día:
+  - la pantalla lo avisa en una línea que nombra la otra toma;
+  - «Por qué» abre el detalle, que cuenta las medidas y los resultados que se ven;
+  - «Cómo se lee» dice qué puede no verse de cualquier toma: BE muestra una medición por día y por medida, y no
+    muestra una medición anulada o con correcciones que no se pueden ordenar.
+- **Lo que no cambia.** Los contratos, los permisos y la vista profesional. Ningún método se ocultó ni se quitó: la
+  propuesta de simplificación sigue en [MEDIDAS-Y-METODOS-EN-LA-APK.md](MEDIDAS-Y-METODOS-EN-LA-APK.md), sin implementar.
 - **Revisión visual.** Renders de los componentes reales en el navegador, no capturas nativas:
-  `EVIDENCIA/INICIO-Y-NAVEGACION`.
+  `EVIDENCIA/MI-EVOLUCION-TRES-VISTAS` (DL-118) y `EVIDENCIA/INICIO-Y-NAVEGACION` (antes).
 
 ## 5. Dependencias y decisiones abiertas
 

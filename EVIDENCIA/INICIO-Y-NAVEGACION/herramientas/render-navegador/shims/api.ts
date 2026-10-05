@@ -100,7 +100,15 @@ const a3 = (estado: 'ACTIVE' | 'REVOKED' | null) => ({
 type Toma = { id: string; dia: string; hora?: string };
 /** Un valor de una toma: un número, `null` si esa toma no lo tiene, o un valor con otro protocolo (otro grupo). */
 type Valor = number | null | { isak: number };
-const JUEGO = escena.startsWith('evolucion-12') ? 'doce' : escena.startsWith('evolucion-mismo-dia') ? 'mismo-dia' : 'tres';
+const JUEGO = escena.startsWith('evolucion-12')
+  ? 'doce'
+  : escena.startsWith('evolucion-mismo-dia')
+    ? 'mismo-dia'
+    : escena.startsWith('evolucion-solo-indicadores')
+      ? 'solo-indicadores'
+      : escena.startsWith('evolucion-sin-sitios')
+        ? 'sin-sitios'
+        : 'tres';
 
 const TRES: Toma[] = [
   { id: 'ev-jul', dia: '2026-07-25' },
@@ -111,6 +119,7 @@ const TRES: Toma[] = [
 const VALORES_TRES: Record<string, Valor[]> = {
   peso: [78.9, 78.6, 78.4],
   talla: [176, null, 176],
+  edad: [20, null, 20],
   'perimetro-cuello': [38.5, null, 38],
   'perimetro-hombros': [114.8, null, 116],
   'perimetro-pecho': [97.2, null, 98],
@@ -151,7 +160,7 @@ const VALORES_DOCE: Record<string, Valor[]> = Object.fromEntries(
     const ultimo = v[2] as number;
     if (m === 'pliegue-triceps') return [m, serieDe(ultimo + 1.4, -0.12, 2, 5)];
     if (m.startsWith('pliegue')) return [m, serieDe(ultimo + 1.2, -0.1, 2)];
-    if (m === 'talla' || m.startsWith('diametro')) return [m, serieDe(ultimo, 0, 4)];
+    if (m === 'talla' || m === 'edad' || m.startsWith('diametro')) return [m, serieDe(ultimo, 0, 4)];
     if (m === 'peso') return [m, serieDe(ultimo + 1.1, -0.1)];
     return [m, serieDe(ultimo + 0.8, -0.07)];
   }),
@@ -172,10 +181,25 @@ const VALORES_MISMO_DIA: Record<string, Valor[]> = Object.fromEntries(
   }),
 );
 
-const TOMAS = JUEGO === 'doce' ? DOCE : JUEGO === 'mismo-dia' ? MISMO_DIA : TRES;
-const VALORES = JUEGO === 'doce' ? VALORES_DOCE : JUEGO === 'mismo-dia' ? VALORES_MISMO_DIA : VALORES_TRES;
+// DL-118: la última toma (1/10) solo tiene peso, talla, edad y resultados, aunque las anteriores tengan sitios.
+const CUATRO: Toma[] = [...TRES, { id: 'ev-oct', dia: '2026-10-01' }];
+const VALORES_SOLO_INDICADORES: Record<string, Valor[]> = Object.fromEntries(
+  Object.entries(VALORES_TRES).map(([m, v]) => [m, [...v, m === 'peso' ? 78.1 : m === 'talla' ? 176 : m === 'edad' ? 20 : null]]),
+);
+// DL-118: ninguna toma tiene perímetros ni pliegues: solo peso, talla, edad, diámetros y resultados.
+const VALORES_SIN_SITIOS: Record<string, Valor[]> = Object.fromEntries(Object.entries(VALORES_TRES).filter(([m]) => !m.startsWith('perimetro') && !m.startsWith('pliegue')));
+
+const TOMAS = JUEGO === 'doce' ? DOCE : JUEGO === 'mismo-dia' ? MISMO_DIA : JUEGO === 'solo-indicadores' ? CUATRO : TRES;
+const VALORES = JUEGO === 'doce' ? VALORES_DOCE : JUEGO === 'mismo-dia' ? VALORES_MISMO_DIA : JUEGO === 'solo-indicadores' ? VALORES_SOLO_INDICADORES : JUEGO === 'sin-sitios' ? VALORES_SIN_SITIOS : VALORES_TRES;
 const METODO = (n: string) => `3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f${n}`;
-const derivada = (tres: (number | null)[]): (number | null)[] => (JUEGO === 'doce' ? Array.from({ length: 12 }, (_, i) => (tres[2] === null ? null : i % 2 === 0 || i === 11 ? Math.round((tres[2] + 0.05 * (11 - i)) * 100) / 100 : null)) : JUEGO === 'mismo-dia' ? [tres[0], tres[2], null] : tres);
+const derivada = (tres: (number | null)[]): (number | null)[] =>
+  JUEGO === 'doce'
+    ? Array.from({ length: 12 }, (_, i) => (tres[2] === null ? null : i % 2 === 0 || i === 11 ? Math.round((tres[2] + 0.05 * (11 - i)) * 100) / 100 : null))
+    : JUEGO === 'mismo-dia'
+      ? [tres[0], tres[2], null]
+      : JUEGO === 'solo-indicadores'
+        ? [...tres, tres[2] === null ? null : Math.round((tres[2] - 0.1) * 100) / 100]
+        : tres;
 const DERIVADAS: Record<string, { valores: (number | null)[]; unidad: string; metodo: string }> = {
   imc: { valores: derivada([25.5, 25.4, 25.3]), unidad: 'kg/m2', metodo: METODO('01') },
   'indice-cintura-talla': { valores: derivada([0.49, null, 0.48]), unidad: '', metodo: METODO('03') },
@@ -216,7 +240,7 @@ const evolucion = {
     adviseeId: 'yo',
     period: { start: '2026-07-07', end: HOY, timeZone: ZONA },
     metrics: [
-      ...Object.entries(VALORES).map(([m, v]) => serie(m, v, m.startsWith('pliegue') ? 'mm' : m === 'peso' ? 'kg' : 'cm', null, false)),
+      ...Object.entries(VALORES).map(([m, v]) => serie(m, v, m.startsWith('pliegue') ? 'mm' : m === 'peso' ? 'kg' : m === 'edad' ? 'años' : 'cm', null, false)),
       ...Object.entries(DERIVADAS).map(([m, d]) => serie(m, d.valores, d.unidad, d.metodo, true)),
     ],
     partialView: false,

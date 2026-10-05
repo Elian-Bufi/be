@@ -5,7 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 import { AppRegistry, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProveedorDeApariencia } from '@movil/apariencia';
-import { BarraDeZonas, SEPARACION_DE_LA_BARRA } from '@movil/barra-de-zonas';
+import * as barra from '@movil/barra-de-zonas';
+const { BarraDeZonas, SEPARACION_DE_LA_BARRA } = barra;
+// El velo detrás de la barra (DL-118) lo dibuja App.tsx desde el 2026-10-05; la candidata anterior no lo tiene.
+const VeloDeLaBarra = (barra as { VeloDeLaBarra?: (p: { alto: number }) => JSX.Element }).VeloDeLaBarra;
 import { Cabecera } from '@movil/cabecera';
 import { memoria } from '@movil/lecturas';
 import { MenuAuxiliar } from '@movil/menu-auxiliar';
@@ -30,8 +33,22 @@ const nada = () => undefined;
 function rutaDeLaEscena(): Ruta {
   if (escena === 'cuenta') return { nombre: 'cuenta', desde: { nombre: 'inicio' } };
   if (escena.startsWith('evolucion')) {
-    const vista = escena.includes('comparar') ? 'COMPARAR' : escena.includes('medida') ? 'EVOLUCION' : escena.includes('indicadores') ? 'INDICADORES' : escena.includes('mapa') || escena.startsWith('evolucion-12') || escena.startsWith('evolucion-mismo-dia') ? 'MAPA' : 'TOMA';
-    memoria.recordarSeleccion(TOKEN, 'mi-evolucion:vista', vista);
+    // DL-118: Mapa corporal, Progreso e Indicadores. Sin vista en el nombre, se resuelve como «Ver la toma».
+    const vista = escena.includes('progreso')
+      ? 'PROGRESO'
+      : escena.includes('indicadores') && !escena.startsWith('evolucion-solo-indicadores')
+        ? 'INDICADORES'
+        : escena.includes('mapa') || escena.startsWith('evolucion-12') || escena.startsWith('evolucion-mismo-dia')
+          ? 'MAPA'
+          : 'TOMA';
+    // ?vista= fuerza una vista: sirve para el «antes» (COMPARAR, EVOLUCION) con la misma maqueta.
+    memoria.recordarSeleccion(TOKEN, 'mi-evolucion:vista', p.get('vista') ?? vista);
+    const familia = p.get('familia');
+    if (familia) memoria.recordarSeleccion(TOKEN, 'mi-evolucion:familia', familia);
+    const panel = p.get('panel');
+    if (panel) memoria.recordarSeleccion(TOKEN, 'mi-evolucion:panel', panel);
+    const toma = p.get('toma');
+    if (toma) memoria.recordarSeleccion(TOKEN, 'mi-evolucion:toma', toma);
     if (escena.endsWith('-t2')) memoria.recordarSeleccion(TOKEN, 'mi-evolucion:toma', 'ev-ago');
     if (escena.startsWith('evolucion-mismo-dia')) memoria.recordarSeleccion(TOKEN, 'mi-evolucion:toma', 'ev-tarde');
     if (escena === 'evolucion-medida') memoria.recordarSeleccion(TOKEN, 'mi-evolucion:medida', 'peso');
@@ -63,6 +80,7 @@ function Maqueta() {
           {ruta.nombre === 'cuenta' ? <PantallaDeCuenta token={TOKEN} salir={nada} ir={nada} sesionRecordada /> : null}
           {ruta.nombre === 'mi-evolucion' ? <PantallaDeMiEvolucion token={TOKEN} salir={nada} ir={nada} /> : null}
         </ScrollView>
+        {VeloDeLaBarra && alto > 0 ? <VeloDeLaBarra alto={alto + insets.bottom + SEPARACION_DE_LA_BARRA + 16} /> : null}
         <BarraDeZonas actual={pestanaActiva(ruta)} ir={nada} alMedir={setAlto} />
         <MenuAuxiliar visible={escena === 'menu'} cerrar={nada} elegir={nada} />
       </View>

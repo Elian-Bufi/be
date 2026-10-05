@@ -2,8 +2,8 @@
 
 **Estado:** inventario para revisar con Dirección (cola del 2026-10-04, punto 4). **Es una propuesta:** no se implementó,
 y no se eliminó ni se ocultó ningún método, cálculo, resultado ni dato histórico. La selección definitiva se decide con
-Dirección. Desde el cierre del 2026-10-04 la toma se ve en dos vistas, Mapa corporal e Indicadores, con todo lo que ya
-mostraba.
+Dirección. Desde DL-118 (2026-10-05) «Mi evolución» tiene tres vistas, Mapa corporal, Progreso e Indicadores, con todo
+lo que ya mostraba (`docs/ux/MI-EVOLUCION-TRES-VISTAS.md`).
 
 **De dónde sale.**
 - El catálogo que la APK muestra: `NOMBRE_DE_METRICA`, `FAMILIA_DE_METRICA` y `NOMBRE_DE_METODO`
@@ -20,12 +20,13 @@ los criterios son de presentación y se pueden verificar en el código o en la f
 
 | Lugar de la APK | Qué muestra |
 |---|---|
-| Mi evolución → Mapa corporal | Los perímetros y los pliegues que tienen sitio en la lámina, con su valor, su diferencia y su gráfico chico de puntos por toma (cierre del 2026-10-04; antes, la vista «Toma») |
-| Mi evolución → Mapa corporal → «La figura, en lista» | Plegada: todo lo de la figura, con su anterior, su fecha y su gráfico con la lista equivalente |
-| Mi evolución → Indicadores → Medidas | Peso, talla, los tres diámetros óseos y las medidas sin sitio en la figura (hoy, «Edad al momento de la toma»), en tarjetas |
-| Mi evolución → Indicadores → «Resultados de las fórmulas» | **A la vista y sin plegar:** cada resultado de la toma, con el nombre de su método y su gráfico chico |
-| Mi evolución → Comparar | Todas las medidas y resultados de la toma elegida, con su anterior comparable |
-| Mi evolución → Evolución | Cualquier métrica con observaciones, en el tiempo, con el gráfico de puntos y su lista |
+| Mi evolución → Mapa corporal | Los perímetros y los pliegues que tienen sitio en la lámina, con su nombre y su valor. Al tocar un sitio, su cambio con la fecha y «Ver su progreso» (DL-118) |
+| Mi evolución → Mapa corporal → «La figura, en lista» | Plegada: todo lo de la figura, con su valor, su cambio y, si no es un dato medido o fue corregido, su clase |
+| Mi evolución → Progreso | Los mismos sitios por familia y por zona (Torso o Piernas): una tarjeta por sitio con su valor, su cambio respecto de la anterior comparable y sus puntos sobre fechas reales. Al tocarla, el gráfico grande y la lista |
+| Mi evolución → Indicadores → Mediciones | Peso y talla, en tarjetas |
+| Mi evolución → Indicadores → «Resultados de las fórmulas» | **A la vista y sin plegar:** cada resultado de la toma, marcado como estimación y con el método en su nombre, su cambio y sus puntos |
+| Mi evolución → Indicadores → «Datos de la toma» | La edad al momento de la toma, como dato, sin gráfico ni diferencia |
+| Mi evolución → Indicadores → «Más datos de esta toma» | Plegado: los tres diámetros óseos y lo que BE no clasifica |
 | Inicio → Mediciones | Una sola: la primera medida de la última toma en el orden del catálogo (el peso, si está) |
 
 **Restricciones de comparación, para todo.**
@@ -110,7 +111,8 @@ los autores de las ecuaciones de densidad (D-9). No es un dato de uso.
 **Lo que no cambia con ninguna opción:**
 - el profesional sigue calculando y publicando todos los métodos;
 - la historia completa se conserva;
-- Comparar y Evolución siguen mostrando cualquier métrica que tenga observaciones;
+- cualquier métrica con observaciones se sigue viendo en su toma, en Progreso o en Indicadores, con su detalle en el
+  tiempo;
 - plegar no borra: «Más indicadores» se abre con un toque y el lector de pantalla dice si está abierto.
 
 **Dependencias.** Ninguna de contrato: la APK ya recibe el método de cada resultado (`methodVersionId`). Agrupar
