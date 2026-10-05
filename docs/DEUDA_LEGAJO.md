@@ -2852,7 +2852,8 @@ diseño reversibles, tomadas con ese documento y los patrones de BE.
 
 **Cómo se respeta el legajo.**
 - Todo sale de la misma lectura de API-ANT-06-PROPIA, con el mismo permiso (A3). No hay pedidos nuevos.
-- Cada gráfico tiene un solo grupo de comparabilidad, sin líneas ni rellenos, y un hueco no es un cero.
+- Cada gráfico tiene un solo grupo de comparabilidad, sin rellenos, y un hueco no es un cero. Desde el ajuste del
+  2026-10-05, una línea une solo tomas seguidas del mismo grupo y se corta en cada hueco (abajo).
 - Las diferencias son descriptivas: no tienen color de «mejor» o «peor».
 - Los sitios se asignan a una zona por su clave de BE, y las figuras de cada tren son las del compositor, con sus puntos
   calibrados por Dirección, sin moverlos.
@@ -2874,7 +2875,15 @@ diseño reversibles, tomadas con ese documento y los patrones de BE.
   - sacar de la cabecera «se compara con [fecha]», porque cada medida puede tener otra anterior comparable. Cada
     tarjeta conserva su fecha de comparación.
 - **Después pide** acercar los gráficos de las tarjetas a un ejemplo suyo. Se tomaron su jerarquía, las tres líneas de
-  referencia, los puntos huecos, la toma bajo cada punto y los valores en fila. No se tomaron la línea entre puntos
-  (REG-06-166; DL-118 la excluye) ni las tomas a la misma distancia (DL-118 decidió fechas reales). Detalle en §9.
+  referencia, los puntos huecos, la toma bajo cada punto y los valores en fila. No se tomaron las tomas a la misma
+  distancia (DL-118 decidió fechas reales). Detalle en §9.
+- **Y pide la línea entre los puntos**, como en el ejemplo. Reemplaza la exclusión de las líneas de arriba («Lo que no
+  autoriza»).
+  - Se usa la regla de la lámina del website (`tramosDeLaSerie`, INV-06-176/177): solo tomas seguidas del mismo grupo
+    comparable.
+  - Una toma sin la medida, un hueco o un cambio de protocolo, método o unidad la cortan.
+  - Cumple con B10-07 («la visualización debe conservar el hueco») y con ADV-10-PRJ-05 y 08: la línea no inventa
+    puntos entre sesiones ni une tramos no comparables.
+  - No hay áreas ni tendencias.
 - **No pide otra APK** hasta revisar este ajuste.
 

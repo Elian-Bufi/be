@@ -173,9 +173,21 @@ distingue, y lo que se tomó:
 | La toma bajo cada punto (T1 … T5) | Igual, con la numeración del selector. Si dos rótulos no entran, se escriben el de la elegida, el último y el primero |
 | Los valores en fila, debajo del gráfico | Igual, en el orden de los puntos, con el de la toma elegida resaltado |
 
+**La línea entre los puntos** (Dirección, 2026-10-05, después de ver el ejemplo implementado sin ella). Se toma
+con la regla que ya usa la lámina del website (`tramosDeLaSerie`, INV-06-176/177). Une dos mediciones solo si:
+- son de tomas seguidas del período;
+- son del mismo grupo comparable.
+
+Una toma sin la medida, un hueco de la API o una medición de otro protocolo, método o unidad la cortan. Así cumple con
+el legajo:
+- B10-07 pide que la visualización conserve el hueco;
+- ADV-10-PRJ-05 falla si la línea inventa puntos entre sesiones;
+- ADV-10-PRJ-08 falla si une tramos no comparables.
+
+No hay áreas, rellenos ni líneas de tendencia. La decisión reemplaza la exclusión de las líneas de DL-118 y la regla «los
+puntos no se unen» de la guía de UX, que era más estricta que el legajo.
+
 **Lo que no se tomó:**
-- **La línea que une los puntos.** REG-06-166 prohíbe interpolar entre dos tomas, y DL-118 excluyó las líneas entre
-  puntos de las láminas de referencia. Una línea sugiere valores que nadie midió y esconde los huecos.
 - **Las tomas a la misma distancia.** DL-118 decidió las fechas reales. La toma bajo cada punto da la identificación del
   ejemplo sin perder la escala del tiempo: dos tomas cercanas quedan cerca.
 - **El fondo blanco.** Se conservan Azul noche y Claro (DL-118). En Claro, la tarjeta se parece al ejemplo.
