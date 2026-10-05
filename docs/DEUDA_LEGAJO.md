@@ -54,7 +54,7 @@
 | DL-047 | WP-04 · 2026-09-19 | 05:5869-5873 (UC-P10 V07) · B05:1325-1339 (CAND-NUT-D) · 09v9:476-499 | Versión sucesora fuera de una revisión sin operación en el 09 | ABIERTA |
 | DL-048 | WP-04 · 2026-09-19 | 04:360-367 · 06:4183-4201, 4421-4429 · 09v9:158, 345 · B05:229 | Contenido de la evaluación nutricional sin campos definidos | ABIERTA |
 | DL-049 | WP-04 · 2026-09-19 | 06:4368-4394, 4447, 4566 · CONS:564-628 · 09v9:680, 1135 · B05:768-782 | Ingesta prescripta: ocurrencia planificada, clave de unicidad y día tipo en «Hoy» | ABIERTA |
-| DL-050 | WP-04 · 2026-09-19 | 09v9:762 · CONS:641-672 · 05:719 (UC-E02) | Corregir una ingesta prescripta: sin operación ni UC | ABIERTA |
+| DL-050 | WP-04 · 2026-09-19 | 09v9:762 · CONS:641-672 · 05:719 (UC-E02) | Corregir una ingesta prescripta: sin operación ni UC | **RESUELTA** 2026-10-05 por DL-121 (opción B, encargo de Dirección), sin integrar |
 | DL-051 | WP-04 · 2026-09-19 | 06:3667, 3751-3769, 3961 · 04:681-686 (RF-066 P1) · 05:6053 | Capacidad sin actor que la configure | ABIERTA |
 | DL-052 | WP-04 · 2026-09-19 | 06:4405-4411, 5940-5949 · 05:7556, 7564, 7595 · 09v9:925, 938 | Efectos de aplicar AJUSTAR, SUSTITUIR y CAMBIAR_OBJETIVO | ABIERTA |
 | DL-053 | WP-04 · 2026-09-19 | 04:446, 04:1141 · 11A:213 · 06:3504, 3612-3619, 7714 | Q-007: abierta en el 04 y el 11A, resuelta en el 06 | ABIERTA |
@@ -123,6 +123,9 @@
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección |
 | DL-117 | Decisión de Dirección · 2026-10-04 | B10-10 §9 · 08 §33 · DL-113 · DL-049 · DL-077 · DL-115 | La APK no tiene un Inicio que reúna lo disponible de los módulos, y Cuenta ocupa un lugar de la barra | **DECIDIDA** 2026-10-04 · Inicio personal y barra Inicio, Nutrición, Entrenamiento, Evolución, Información; Cuenta en el avatar. Implementación sin integrar |
 | DL-118 | Decisión de Dirección · 2026-10-05 | DL-117 · DL-111 · DL-113 · REG-06-162/165/166 · TEST-PRJ-009 | «Mi evolución» de la APK tiene cuatro vistas con mucho desplazamiento, gráficos ilegibles y vistas vacías; la lectura del asesorado es más técnica de lo necesario | **DECIDIDA** 2026-10-05 · tres vistas (Mapa corporal, Progreso por Torso y Piernas, Indicadores); Comparar sale como apartado móvil. Implementación sin integrar |
+| DL-119 | Encargo de Dirección · 2026-10-05 | REG-06-135 (inciso 2) · 06:4228-4394, 4554-4621 · RF-027 | Recetas como preparaciones propias del profesional, catálogo de referencia USDA y método de cálculo de energía y macros | **DECIDIDA** 2026-10-05 · familia REC, método `SUMA_FUENTE_POR_100G_V1`. Implementación en `wp-nutricion-recetas`, sin integrar |
+| DL-120 | Encargo de Dirección · 2026-10-05 | 08 §21 (08:519-531, 395, 451) · 07 §25 (07:939-965) · 09v12 §24 · 09v9 §28 · REG-06-133 · T-06-65 | Medios privados activados en el MVP sintético; almacenamiento en PostgreSQL detrás de una interfaz, en lugar de S3 | **DECIDIDA** 2026-10-05 la activación, con persistencia en la base existente. S3 (07 §25) queda abierto hasta que haya un servicio contratado |
+| DL-121 | Encargo de Dirección · 2026-10-05 | DL-049 · DL-050 · 06:1422-1462 · CONS:564-630 | Registro v2 de comidas: estado de las cantidades, anulación y rectificación del titular, y clave natural con secuencia | **DECIDIDA** 2026-10-05 · familia ING, endpoints nuevos. Resuelve DL-050; lo que lee la APK instalada no cambia |
 
 ---
 
@@ -1219,6 +1222,10 @@ WP-04 habilita el **8** (editar un plan activado) y el **7** en su variante nutr
 **Provisorio en código.** A.
 
 **Condición de cierre.** El 05 y el 09 definen la corrección de la ingesta prescripta.
+
+**Resolución (2026-10-05).** El encargo de Dirección pide «completar o corregir» las cantidades y «deshacer registro» con
+operaciones autorizadas y auditables. Se toma la opción B por DL-121: la anulación y la rectificación del titular, de solo
+agregar, con el patrón de B-06. Queda sin integrar hasta que Dirección apruebe el paquete.
 
 ## DL-051 — Capacidad sin actor que la configure
 
@@ -2887,3 +2894,111 @@ diseño reversibles, tomadas con ese documento y los patrones de BE.
   - No hay áreas ni tendencias.
 - **No pide otra APK** hasta revisar este ajuste.
 
+## DL-119 — Recetas como preparaciones propias, catálogo de referencia USDA y método de cálculo
+
+**Prioridad:** alta · **Documento:** REG-06-135 inciso 2 (06:4823-4831) · B-07, catálogo y anclaje (06:4228-4394) ·
+jerarquía y factores de conversión (06:4554-4621) · RF-027 · **Estado:** DECIDIDA por el encargo de Dirección del
+2026-10-05
+
+**Qué pide el encargo.** El profesional crea y edita recetas con ingredientes del catálogo por identidad y versión,
+porciones, preparación e imagen de referencia. Las ofrece como opciones de una comida del plan, con energía y macros
+calculados desde una fuente identificada.
+
+**Cómo se respeta el legajo.**
+- Una receta es una **preparación propia del profesional**: sus recursos visuales quedan en su ámbito (REG-06-135, inciso
+  2). No convierte el catálogo global en un repositorio libre.
+- Los ingredientes son elementos del catálogo, con su versión. Un cambio del catálogo o de la receta no reescribe lo
+  emitido: la opción del plan activado guarda la versión (REG-06-101, INV-06-115).
+- No se convierten estados de preparación ni unidades. Los factores son del catálogo (06:4617-4621), y estas recetas
+  pesan cada ingrediente en el estado indicado.
+
+**Decisiones del ejecutor, reversibles:**
+- **Familia de operaciones REC:** API-REC-01 a 07, extensión de BE que el 09 no tiene. Se declara en
+  `docs/paquetes/WP-NUTRICION-RECETAS.md` §4.
+- **Método `SUMA_FUENTE_POR_100G_V1`:**
+  - la suma de gramos ÷ 100 × valor cada 100 g, con aritmética exacta;
+  - las kcal salen de la fuente, sin 4/4/9;
+  - se redondea solo al mostrar.
+  - BE no tenía un método canónico de totales, así que no hay resultados anteriores que cambiar. Cada cálculo guarda su
+    método.
+- **Catálogo de referencia:** ocho alimentos de USDA FoodData Central · SR Legacy (CC0), con FDC, NDB, descripción
+  original, fecha de publicación y de consulta. Se siembran por migración como importación controlada, con el proveedor
+  `USDA_FDC_SR_LEGACY`.
+- **Fibra:** es opcional en la composición, y ausente quiere decir desconocida. Un nutriente desconocido deja el total
+  «incompleto» y nombra los ingredientes que lo deben.
+
+**Condición de cierre.** Dirección aprueba el paquete, y el 09 y el 05 incorporan las operaciones de recetas.
+
+## DL-120 — Medios privados activados; almacenamiento en PostgreSQL en lugar de S3
+
+**Prioridad:** alta · **Documento:** 08 §21 (08:519-531), acto `EVIDENCIA_VISUAL` (08:395) y supresión individual
+(08:451) · 07 §25 (07:939-965) y 07:256 · 09v12 §24 (09v12:975-1000) · 09v9 §28 (09v9:965-984) · REG-06-133 · T-06-65 ·
+**Estado:** DECIDIDA la activación por el encargo de Dirección del 2026-10-05; el almacenamiento S3 queda abierto
+
+**Qué dice el legajo.**
+- **08 §21:** la foto del asesorado es un dato C4 reforzado. Exige:
+  - un almacenamiento privado;
+  - una URL de lectura de 15 minutos como máximo;
+  - el EXIF depurado;
+  - el acceso auditado;
+  - la supresión individual a pedido.
+  - No se activa en el MVP sintético.
+- **09v12 §24:** los medios privados quedan condicionados a su activación: `POST /me/media/upload-intents` y
+  `GET /media/{mediaId}/access`.
+- **07 §25:** un almacenamiento de objetos compatible con S3, nunca el disco del contenedor. No está aprovisionado, y
+  Render no tiene almacenamiento de objetos disponible en general (07:256).
+
+**Qué decidió Dirección.** El encargo del 2026-10-05 activa las imágenes de receta y las fotos de una comida diferente:
+- «Reutilizá almacenamiento persistente existente»;
+- «No contrates servicios ni simules persistencia remota con una carpeta efímera del despliegue».
+
+**Cómo se implementa.**
+- **Familia de operaciones MED:** API-MED-01 a 05.
+  - API-MED-01 y 03 son las rutas que el 09v12 §24 nombra.
+  - API-MED-02 y 04 son la subida y la lectura firmadas.
+  - API-MED-05 es la supresión a pedido.
+- **El almacenamiento** es la interfaz `AlmacenDeMedios`, implementada en PostgreSQL (`contenido_de_medio`, en `bytea`).
+  Es la única persistencia que existe: sobrevive a un reinicio y no usa el disco del contenedor. Se elige con
+  `BE_MEDIOS_ALMACEN=postgres`.
+- **Garantías del 08 §21:**
+  - privado: no hay ninguna clave ni URL pública;
+  - URL firmadas con HMAC, de 10 minutos para subir y de 15 como máximo para leer;
+  - el servidor decodifica y recodifica cada imagen sin metadatos, así que el EXIF y el GPS desaparecen;
+  - cada acceso pasa por el PDP y se audita, con el acto `EVIDENCIA_VISUAL` para las fotos de ingesta;
+  - la supresión a pedido borra los bytes y deja el registro.
+- **Ninguna inferencia.** Una foto no agrega cantidades ni macros (09v9 §28), y no se envía a ninguna IA.
+
+**Lo que queda abierto: S3, según el 07 §25.** Hace falta un bucket privado y sus credenciales, que es un servicio a
+contratar. La interfaz queda lista para esa implementación. La base de `test` es gratuita, tiene 1 GB y vence antes de la
+entrega (QUE-FALTA §1).
+
+**Condición de cierre.** Dirección decide entre seguir en PostgreSQL y contratar un almacenamiento S3. El 08 registra la
+activación.
+
+## DL-121 — Registro v2 de comidas: estado de las cantidades, anulación y rectificación del titular
+
+**Prioridad:** alta · **Documento:** DL-049 (clave de unicidad) · DL-050 (corrección prescripta) · 06:1422-1462
+(corrección, vista efectiva y anulación propia del área, inciso 4) · CONS:564-630 · 09v7 T19 y T20 · **Estado:** DECIDIDA
+por el encargo de Dirección del 2026-10-05
+
+**Qué pide el encargo.**
+- «Comí esta opción» con las cantidades consumidas opcionales y explícitas, y «Comí las porciones del plan» como una
+  confirmación que empieza desmarcada.
+- Vacío no es cero.
+- Idempotencia ante un doble toque.
+- «Completar o corregir».
+- «Deshacer registro» con un efecto real y auditable, sin un borrado silencioso.
+
+**Cómo se implementa.**
+- **Familia de operaciones ING:** API-ING-01 a 06, en endpoints nuevos. Las APK instaladas validan con esquemas
+  estrictos, así que API-NUT-14, 15, 16 y 16-LISTA no cambian de forma (09v7 T19 declara compatible un endpoint nuevo).
+- **El estado de las cantidades** es uno de tres: `SIN_CONFIRMAR`, `PORCIONES_DEL_PLAN` o `INFORMADAS`, con «no lo comí»
+  por ingrediente. Lo previsto nunca se convierte en consumido.
+- **La anulación** (`anulacion_de_ingesta`) y **la rectificación de cantidades** (`rectificacion_de_cantidades`) son de
+  solo agregar: la ingesta original no se modifica. La vista efectiva sale de la cadena (06:1422-1462).
+- **La clave natural de DL-049** suma una secuencia: (versión, fecha, comida, secuencia). Sigue habiendo una sola ingesta
+  efectiva por comida y día, y después de deshacer se puede volver a registrar.
+- **Lo anulado deja de contar** en «Hoy», el contraste, la revisión, la cartera y el tablero, y no se devuelve por las
+  rutas que lee la APK instalada.
+
+**Condición de cierre.** Dirección aprueba el paquete, y el 05 y el 09 incorporan estas operaciones.

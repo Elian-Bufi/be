@@ -1,0 +1,160 @@
+{
+  "schema_version": "be-demo-input-1",
+  "method": "SUM_SOURCE_PER_100G_V1",
+  "quantity_basis": "Peso comestible en el estado de cada alimento; aceite en gramos",
+  "rounding": "HALF_UP al presentar: kcal enteras, gramos con un decimal; sin redondeos intermedios",
+  "recipes": [
+    {
+      "id": "BE-DEMO-NUT-001",
+      "name": "Pollo con arroz y verduras",
+      "image": "fotos/01_pollo_arroz_verduras.png",
+      "items": [
+        {
+          "food_id": "pollo_asado",
+          "quantity_g": "120"
+        },
+        {
+          "food_id": "arroz_cocido",
+          "quantity_g": "160"
+        },
+        {
+          "food_id": "brocoli_cocido",
+          "quantity_g": "80"
+        },
+        {
+          "food_id": "zanahoria_cocida",
+          "quantity_g": "70"
+        },
+        {
+          "food_id": "aceite_oliva",
+          "quantity_g": "8"
+        }
+      ],
+      "preparation": [
+        "Cociná la pechuga sin piel al horno, sin aceite adicional. Comprobá 74 °C en el centro con termómetro. Una vez cocida, pesá 120 g de la parte comestible y cortala en láminas.",
+        "Cociná el arroz en agua sin aceite añadido y pesá 160 g del arroz cocido.",
+        "Herví por separado el brócoli y la zanahoria hasta la textura deseada. Escurrí y pesá 80 g de brócoli y 70 g de zanahoria.",
+        "Serví los ingredientes y distribuí los 8 g de aceite de oliva pesados sobre el arroz y las verduras. Ese es todo el aceite incluido en el cálculo."
+      ],
+      "description": "Pechuga asada con arroz blanco, brócoli y zanahoria.",
+      "servings": "1",
+      "total_edible_weight_g": "438",
+      "image_provenance": "AI_GENERATED_REFERENCE",
+      "image_usage": "Ilustración de referencia; no demuestra gramos ni consumo real.",
+      "expected_nutrients_unrounded": {
+        "energy_kcal": "529.220",
+        "carbohydrate_g": "56.570",
+        "fat_g": "13.186",
+        "protein_g": "43.964",
+        "fiber_g": "5.380"
+      },
+      "display_nutrients": {
+        "energy_kcal": "529",
+        "carbohydrate_g": "56.6",
+        "fat_g": "13.2",
+        "protein_g": "44.0",
+        "fiber_g": "5.4"
+      }
+    },
+    {
+      "id": "BE-DEMO-NUT-002",
+      "name": "Salmón con papa y brócoli",
+      "image": "fotos/02_salmon_papa_brocoli.png",
+      "items": [
+        {
+          "food_id": "salmon_cocido",
+          "quantity_g": "150"
+        },
+        {
+          "food_id": "papa_cocida",
+          "quantity_g": "220"
+        },
+        {
+          "food_id": "brocoli_cocido",
+          "quantity_g": "100"
+        },
+        {
+          "food_id": "aceite_oliva",
+          "quantity_g": "5"
+        }
+      ],
+      "preparation": [
+        "Cociná el salmón al horno sin aceite adicional. Comprobá 63 °C en el centro con termómetro. Retirá las espinas y pesá 150 g cocidos de la parte comestible.",
+        "Herví las papas con piel hasta que estén tiernas. Pelalas, cortalas y pesá 220 g de pulpa cocida; no incluyas la piel en ese peso.",
+        "Herví el brócoli, escurrilo y pesá 100 g cocidos.",
+        "Serví el salmón junto a la papa y el brócoli. Agregá los 5 g de aceite de oliva pesados. No se contabilizan otros aderezos."
+      ],
+      "description": "Salmón al horno con papa hervida y brócoli.",
+      "servings": "1",
+      "total_edible_weight_g": "475",
+      "image_provenance": "AI_GENERATED_REFERENCE",
+      "image_usage": "Ilustración de referencia; no demuestra gramos ni consumo real.",
+      "expected_nutrients_unrounded": {
+        "energy_kcal": "579.600",
+        "carbohydrate_g": "51.466",
+        "fat_g": "24.155",
+        "protein_g": "39.644",
+        "fiber_g": "7.260"
+      },
+      "display_nutrients": {
+        "energy_kcal": "580",
+        "carbohydrate_g": "51.5",
+        "fat_g": "24.2",
+        "protein_g": "39.6",
+        "fiber_g": "7.3"
+      }
+    },
+    {
+      "id": "BE-DEMO-NUT-003",
+      "name": "Lentejas con arroz y verduras",
+      "image": "fotos/03_lentejas_arroz_verduras.png",
+      "items": [
+        {
+          "food_id": "lentejas_cocidas",
+          "quantity_g": "180"
+        },
+        {
+          "food_id": "arroz_cocido",
+          "quantity_g": "100"
+        },
+        {
+          "food_id": "brocoli_cocido",
+          "quantity_g": "80"
+        },
+        {
+          "food_id": "zanahoria_cocida",
+          "quantity_g": "60"
+        },
+        {
+          "food_id": "aceite_oliva",
+          "quantity_g": "8"
+        }
+      ],
+      "preparation": [
+        "Cociná las lentejas en agua sin aceite añadido hasta que estén tiernas. Escurrí el líquido sobrante y pesá 180 g de lentejas cocidas.",
+        "Cociná el arroz por separado y pesá 100 g del arroz cocido.",
+        "Herví el brócoli y la zanahoria, escurrí y pesá 80 g y 60 g respectivamente.",
+        "Serví las lentejas con el arroz y las verduras. Distribuí los 8 g de aceite de oliva pesados sobre el plato."
+      ],
+      "description": "Lentejas tiernas con arroz blanco, brócoli y zanahoria.",
+      "servings": "1",
+      "total_edible_weight_g": "428",
+      "image_provenance": "AI_GENERATED_REFERENCE",
+      "image_usage": "Ilustración de referencia; no demuestra gramos ni consumo real.",
+      "expected_nutrients_unrounded": {
+        "energy_kcal": "458.520",
+        "carbohydrate_g": "75.080",
+        "fat_g": "9.400",
+        "protein_g": "21.286",
+        "fiber_g": "19.060"
+      },
+      "display_nutrients": {
+        "energy_kcal": "459",
+        "carbohydrate_g": "75.1",
+        "fat_g": "9.4",
+        "protein_g": "21.3",
+        "fiber_g": "19.1"
+      }
+    }
+  ]
+}

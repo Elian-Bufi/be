@@ -1,0 +1,3 @@
+Fecha: 2026-10-05
+OK: 8 alimentos contrastados con la fuente; 3 recetas; 11 casos numéricos; redondeo y archivos de imagen verificados.
+Alcance: datos y aritmética del paquete. La aplicación BE, la carga profesional, los permisos y Android todavía deben probarse por separado.
