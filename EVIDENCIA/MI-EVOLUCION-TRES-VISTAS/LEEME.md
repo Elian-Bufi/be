@@ -9,6 +9,9 @@ la APK que lo incluya se construye después de que Dirección revise estas captu
 - **Rama:** `apk/navegacion`, PR #146 en borrador.
 - **Commits:** `597ffce` (delta), `3c6ac7c` (implementación) y el de esta evidencia.
 - **El «antes»:** la candidata probada en el teléfono, `2e53ac8`, que es la APK 0.14.0-candidata.1.
+- **El ajuste del 2026-10-05**, después de que Dirección revisara este cierre, tiene sus capturas en `capturas-ajuste`:
+  las 20 a 34, al final de este archivo. **Las capturas 01 a 19 son del cierre (`7bcf5dc`), antes del ajuste:** muestran
+  la cabecera con «se compara con», la figura alta y las tarjetas anteriores.
 
 ## Las capturas
 
@@ -94,3 +97,91 @@ En `EVIDENCIA/INICIO-Y-NAVEGACION/herramientas/render-navegador`:
   - la última toma con solo indicadores;
   - ninguna toma con sitios;
   - la edad.
+
+## Ajuste del 2026-10-05: Progreso compacto, cabecera y gráficos
+
+**Estas capturas tampoco son de la APK.** Son renders de los componentes reales en el navegador, con datos sintéticos,
+y cada una lo dice arriba, en rojo. Tienen la altura de un teléfono común: 360 × 800 dp.
+
+- **Pedido:** la corrección acotada de Dirección después de revisar el cierre, y su ejemplo de tarjeta.
+- **Delta y decisiones:** `docs/ux/MI-EVOLUCION-TRES-VISTAS.md`, §8 y §9.
+- **Commits:**
+  - `fc69e7f`, el delta antes de programar;
+  - `6dd69ca`, el código y las pruebas;
+  - `181afe2`, la fecha de entrega;
+  - el de esta evidencia.
+- **El «antes»:** el cierre que revisó Dirección, `7bcf5dc`. **El «después»:** `6dd69ca`.
+
+| Archivo | Qué muestra |
+|---|---|
+| `capturas-ajuste/20-progreso-al-abrir.png` | **Individual.** Progreso como se abre, con letra normal: la cabecera sin «se compara con» y los cuatro sitios del panel en la primera pantalla |
+| `capturas-ajuste/21-progreso-figura-y-tarjetas.png` | **Individual.** Bajando 300 dp: la figura y la primera tarjeta en la misma pantalla |
+| `capturas-ajuste/22-progreso-letra-maxima-al-abrir.png` | **Individual.** Letra ×2, al abrir: pestañas, controles y partes del torso en filas; nada se achica |
+| `capturas-ajuste/23-progreso-letra-maxima-figura.png` | **Individual.** Letra ×2: los números grandes en la franja, y la primera tarjeta, apilada |
+| `capturas-ajuste/24-progreso-letra-maxima-tarjetas.png` | **Individual.** Letra ×2: las tarjetas, con el cambio debajo del valor |
+| `capturas-ajuste/25-progreso-pliegues-claro.png` | **Individual.** Pliegues del torso, en Claro |
+| `capturas-ajuste/26-progreso-piernas.png` | **Individual.** Piernas: la franja de la cadera al tobillo |
+| `capturas-ajuste/27-indicadores-tarjetas.png` | **Individual.** Indicadores en Claro, con los gráficos nuevos en tarjetas angostas |
+| `capturas-ajuste/30-antes-despues-progreso-al-abrir.png` | Al abrir, antes y después |
+| `capturas-ajuste/31-antes-despues-progreso-bajando.png` | Bajando 300 dp, antes y después: antes la figura llenaba la pantalla |
+| `capturas-ajuste/32-antes-despues-letra-maxima.png` | Letra ×2, antes y después: sin el título de dos renglones y con la franja |
+| `capturas-ajuste/33-antes-despues-tarjeta.png` | Una tarjeta de Progreso, antes y después, en Claro, con la forma del ejemplo de Dirección y los puntos sin unir |
+| `capturas-ajuste/34-antes-despues-indicadores.png` | Indicadores, antes y después |
+
+### Qué se verificó, y dónde
+
+**En pruebas de scripts** (sin teléfono): 184 de 184. Las de este ajuste:
+- **`scripts/composicion-de-la-figura.test.mjs`:**
+  - la figura de una zona no pasa del alto máximo, salvo lo que piden los números;
+  - deja enteros los anillos y los puntos, marca dónde corta el cuerpo y no se mueve al cambiar de panel;
+  - con letra normal mide hasta 240 dp, y los números quedan en 24 dp, o en 38 dp con letra ×2.
+- **`scripts/grafico-de-evolucion.test.mjs`:**
+  - el gráfico de una tarjeta, con tres líneas de referencia y la toma bajo cada punto, sin pisarse (la elegida, siempre);
+  - los valores en fila;
+  - ningún gráfico de Mi evolución une los puntos.
+- **`scripts/selector-de-tomas.test.mjs`:**
+  - la toma de cada punto;
+  - la cabecera no dice una fecha de comparación, y cada tarjeta dice la suya: la cintura y el peso de una misma toma
+    se comparan con fechas distintas.
+
+También el typecheck de la APK sin errores y el legajo íntegro.
+
+**En el render del navegador** (componentes):
+- Las capturas de esta sección.
+- **El control de cortes** en 18 configuraciones: ningún texto cortado. Se recorrieron:
+  - Progreso en 360, 390 y 412 dp, con letra ×1, ×1,3 y ×2;
+  - los paneles del torso, los pliegues y las piernas;
+  - el detalle abierto;
+  - Indicadores en los dos temas y con letra grande;
+  - el mapa;
+  - la toma incompleta (D-3) y la última toma con solo indicadores.
+
+**En el teléfono:** nada de este ajuste. La próxima APK se construye después de que Dirección lo revise.
+
+### Límites
+
+- **El alto de la franja.** Es el 30 % del alto de la pantalla, entre 200 y 280 dp. En el teléfono de Dirección puede
+  medir distinto que en estas capturas.
+- **La primera tarjeta, al abrir.** En 360 × 800 dp queda justo debajo del borde. Hay que bajar unos 200 dp para ver
+  la figura y la primera tarjeta juntas.
+- **El largo total.** Las tarjetas miden unos 90 dp más que en el cierre. Para leer todos los cambios de un panel hay
+  que desplazarse más o menos lo mismo que antes, pero cada tarjeta se lee sin abrirla.
+- **Las flechas ↑ y ↓.** En el teléfono salen con la letra del sistema: falta verlas en Android.
+
+### Recorrido corto para el teléfono, con la APK que incluya este ajuste
+
+1. Abrí Mi evolución en **Progreso**. Debajo de la fecha tiene que decir «Última toma», sin «se compara con».
+2. Bajá hasta la figura. Tiene que entrar con la primera tarjeta, y el número de cada sitio tiene que coincidir con el
+   de su tarjeta.
+3. En cada tarjeta, revisá el valor grande, el cambio con flecha y su fecha, los puntos con T1, T2… debajo y los
+   valores en fila. Los puntos no van unidos.
+4. Pasá de «Cuello y tronco» a «Hombros y brazos». El cuerpo no se tiene que mover.
+5. Repetí con **letra máxima**: todo apilado y nada cortado.
+6. En **Indicadores**, en tarjetas angostas, el cambio va debajo del valor.
+
+### Cómo se rehacen
+
+En `EVIDENCIA/INICIO-Y-NAVEGACION/herramientas/render-navegador`:
+- `./capturar-ajuste-progreso.sh` hace las capturas 20 a 34.
+- Antes hay que armar dos maquetas, la nueva y la del cierre `7bcf5dc` (`telefono-cierre.html`). Los comandos están en
+  la cabecera del script.
