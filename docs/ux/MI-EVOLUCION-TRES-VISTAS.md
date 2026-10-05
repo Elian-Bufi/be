@@ -134,3 +134,27 @@ las dos reversibles:
   así la tarjeta y su detalle dicen lo mismo.
 
 Las capturas, las pruebas y lo que falta probar en el teléfono están en `EVIDENCIA/MI-EVOLUCION-TRES-VISTAS/LEEME.md`.
+
+## 8. Ajuste después de revisar el cierre (Dirección, 2026-10-05)
+
+Dirección revisó las capturas y pidió una última corrección acotada. Acepta las dos diferencias del §7, «La evolución,
+en lista» y el detalle con el período completo, y los controles en dos filas cuando el ancho o la letra lo piden.
+
+| Hoy (`7bcf5dc`) | Después del ajuste |
+|---|---|
+| Progreso: la figura de la zona mide hasta 400 dp de alto, con el cuerpo entero del tren | La figura muestra la franja del cuerpo donde están los sitios de la zona. Mide hasta un 30 % del alto de la pantalla, entre 200 y 280 dp. Donde la franja corta el cuerpo, se desvanece en el fondo de la lámina |
+| Entre la figura y la primera tarjeta, el título «Perímetros · Torso: …» | Las tarjetas siguen a la figura. La familia, la zona y la parte del torso se leen en los controles elegidos |
+| La cabecera dice «Última toma · se compara con el 25 jul 2026» | Dice «Última toma» o «Toma T2», con la fecha. Cada tarjeta sigue diciendo con qué fecha se compara, porque cada medida puede tener otra anterior comparable |
+
+**Por qué la figura no va al costado de las tarjetas.** En 360 a 412 dp, la figura al costado dejaba las tarjetas en
+unos 200 dp: el nombre, el cambio y los puntos se partían o se achicaban. Una franja más baja encima de las tarjetas
+deja ver la figura y dos o tres tarjetas juntas, con la letra y los gráficos de siempre.
+
+**Lo que no cambia:**
+- Torso y Piernas, los dos paneles del torso cuando corresponden, y el mismo número en la figura y en la tarjeta.
+- La letra, los números y las zonas de toque. La figura se achica recortando cuerpo, no texto.
+- Los sitios. La franja usa la misma transformación de la lámina, recortada: ningún punto se mueve.
+- El cuerpo al cambiar de panel. La franja sale de todos los sitios con datos de la zona, así que pasar de un panel al
+  otro no lo mueve.
+- La letra grande, apilada. Los controles bajan de fila, los números crecen hasta su tope y la figura crece lo que
+  ellos necesiten. Las tarjetas van a todo el ancho, debajo.

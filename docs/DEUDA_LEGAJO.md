@@ -2864,3 +2864,14 @@ diseño reversibles, tomadas con ese documento y los patrones de BE.
 - **Evidencia:** renders de los componentes en el navegador, no capturas de Android, en
   `EVIDENCIA/MI-EVOLUCION-TRES-VISTAS`.
 
+**Ajuste de Dirección después de revisar el cierre** (2026-10-05). Detalle en `docs/ux/MI-EVOLUCION-TRES-VISTAS.md`
+§8.
+- **Acepta** «La evolución, en lista», el detalle con el período completo y los controles en dos filas cuando el ancho
+  o la letra lo piden.
+- **Pide** dos cambios:
+  - en Progreso, una figura más compacta y más cerca de las tarjetas, sin achicar letra ni zonas de toque y apilada con
+    letra grande;
+  - sacar de la cabecera «se compara con [fecha]», porque cada medida puede tener otra anterior comparable. Cada
+    tarjeta conserva su fecha de comparación.
+- **No pide otra APK** hasta revisar este ajuste.
+
