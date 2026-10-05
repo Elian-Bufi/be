@@ -117,7 +117,7 @@ La primera respuesta puede tardar alrededor de 30 segundos: el plan gratuito apa
 ## Límites del plan gratuito
 
 - La API se apaga después de 15 minutos sin tráfico. Antes de una demo, abrir `/health/ready` unos minutos antes.
-- `be-db-test` expira a los 30 días de creada, con 14 días de gracia. Se creó con el primer Blueprint, alrededor del 2026-09-18: **vence cerca del 2026-10-18**. La fecha exacta está en el dashboard de Render. Si la defensa es después, hay que pasarla a un plan pago o recrearla. Una base recreada arranca vacía: las migraciones corren solas al arrancar la API, pero las cuentas demo y sus datos se vuelven a crear. Eso incluye:
+- `be-db-test` expira a los 30 días de creada, con 14 días de gracia. Se creó con el primer Blueprint, alrededor del 2026-09-18: **vence cerca del 2026-10-18**. La fecha exacta está en el dashboard de Render. **La entrega es el 2026-10-20, después del vencimiento:** hay que pasarla a un plan pago o recrearla antes. Las opciones están en `docs/propuestas/INSUMOS-EXPLORACION-VISUAL_2026-10-05.md`. Una base recreada arranca vacía: las migraciones corren solas al arrancar la API, pero las cuentas demo y sus datos se vuelven a crear. Eso incluye:
   - registrar las cuentas por la API pública;
   - cargar sus identificadores nuevos en `BE_DEMO_PROFESIONALES`, con un PR solo de configuración;
   - rehacer los vínculos, los planes y los registros del escenario.

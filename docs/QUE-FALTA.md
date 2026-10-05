@@ -1,5 +1,7 @@
 # Qué falta desarrollar en BE
 
+> **Nota del 2026-10-05.** La entrega es el 2026-10-20, por instrucción de Dirección. La base de `test` vence antes (punto 1 de §1). Dirección probó en el teléfono la APK 0.14.0-candidata.1 el 2026-10-05: el informe está en DL-117. El resto de este documento es del corte del 2026-10-02.
+
 **Corte:** 2026-10-02. En `main` (`6213ec8`) están integrados:
 - DL-112, DL-113 y DL-114 (#128);
 - la auditoría de dependencias corregida (#130);

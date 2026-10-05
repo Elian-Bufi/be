@@ -1,5 +1,7 @@
 # Fichas para Dirección: perfil del asesorado y administración mínima
 
+> **Nota del 2026-10-05.** La entrega pasó al 2026-10-20. Donde estas fichas dicen «10/10», la dependencia se lee contra el 20/10. Las recomendaciones no se reescribieron.
+
 **Fecha:** 2026-10-02 · **Para:** Dirección (Elián) · **De:** el ejecutor técnico
 **Pedido:** «Para perfil del asesorado y administración mínima: presentá una ficha breve (alcance, requisitos, dependencia real) antes de empezar cualquier módulo. No deduzcas que la mesa exige administrador únicamente porque solicita distintos roles.»
 **Base:** `main` en `6213ec8`, APK 0.13.1. **No se empezó ningún módulo:** son fichas para decidir.

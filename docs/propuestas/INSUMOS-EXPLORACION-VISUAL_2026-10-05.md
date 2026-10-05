@@ -75,7 +75,7 @@ Cualquier campo nuevo en una respuesta rompe las APK instaladas, porque validan 
 
 - **La fecha prudente es el 16/10.** La del 18/10 supone que la base se creó con el Blueprint del 18/9, pero el WP-01 empezó el 16/9.
 - **La fecha real no está en el repositorio.**
-- **Fecha de entrega.** El README dice 2026-10-10; el documento de Dirección, 2026-10-20. Si la entrega es el 20/10, la base vence antes.
+- **Fecha de entrega: 2026-10-20**, por instrucción de Dirección del 2026-10-05 (antes, 2026-10-10). La base vence antes de la entrega.
 
 **Qué exige el dashboard de Render**
 - Ver la fecha real y el plan.
