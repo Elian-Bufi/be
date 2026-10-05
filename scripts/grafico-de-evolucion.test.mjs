@@ -167,11 +167,15 @@ test('DL-118, con la forma del ejemplo de Dirección (2026-10-05): fechas reales
   assert.equal(g.componerGraficoCompacto({ observaciones: obs.slice(0, 1), tomas: ['T1'], elegida: 0, periodo: PERIODO, zonaHoraria: ZONA, ancho: 200, alto: 96, escalaDeLetra: 1, anchoDelTexto: () => 10, formatoDelValor: String }), null);
 });
 
-test('los gráficos de Mi evolución no unen los puntos: no hay líneas, áreas ni tendencias (REG-06-166, DL-118)', () => {
-  // El ejemplo de Dirección del 2026-10-05 une los puntos con una línea: eso no se toma. Una línea entre dos tomas sugiere
-  // valores que nadie midió. Las únicas líneas son las de referencia y la guía del punto elegido.
+test('la línea de los gráficos de Mi evolución une solo tomas seguidas, sin áreas (Dirección 2026-10-05; B10-07, ADV-10-PRJ-05 y 08)', () => {
+  // Dirección pidió la línea de su ejemplo. Se dibuja con los tramos de la serie (`tramosDeLaSerie`), la misma regla de la
+  // lámina del website: nunca une cualquier par de puntos, no rellena un área y no traza una tendencia.
+  const detalle = readFileSync(new URL('../apps/mobile/src/pantallas/progreso-de-una-medida.tsx', import.meta.url), 'utf8');
+  assert.equal((detalle.match(/\{tramos\.map\(\(\[a, b\]\) => \{/g) ?? []).length, 2, 'la tarjeta y el detalle dibujan la línea con los tramos');
+  assert.match(detalle, /<GraficoConFechas observaciones=\{serie\.observaciones\} tramos=\{serie\.tramos\}/);
   for (const archivo of ['progreso-de-una-medida.tsx', 'progreso.tsx', 'indicadores.tsx']) {
     const fuente = readFileSync(new URL(`../apps/mobile/src/pantallas/${archivo}`, import.meta.url), 'utf8');
-    assert.doesNotMatch(fuente, /Polyline|Polygon|<Path\b/, `${archivo} dibuja un trazo entre puntos`);
+    assert.doesNotMatch(fuente, /Polyline|Polygon|<Path\b/, `${archivo} dibuja un área o un trazo que une todos los puntos`);
+    if (archivo !== 'progreso-de-una-medida.tsx') assert.match(fuente, /<GraficoCompacto observaciones=\{serie\.observaciones\} tomas=\{serie\.tomas\} tramos=\{serie\.tramos\}/, `${archivo} no le pasa los tramos al gráfico`);
   }
 });

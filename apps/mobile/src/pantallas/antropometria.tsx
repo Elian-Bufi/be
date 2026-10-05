@@ -199,6 +199,7 @@ const Evolucion = memo(function Evolucion({ datos, token }: { datos: Datos; toke
           <Ayuda>
             <Parrafo tenue>Progreso muestra cada sitio de una zona con su valor en la toma elegida y el cambio respecto de la anterior comparable. El número de cada tarjeta es el de su sitio en la figura.</Parrafo>
             <Parrafo tenue>Los puntos están sobre las fechas reales del período: dos mediciones cercanas en el tiempo quedan cerca. La de la toma elegida va más grande y llena. Tocá una tarjeta para ver el gráfico grande, con cada medición.</Parrafo>
+            <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDelGrafico}</Parrafo>
             <Parrafo tenue>Si el torso tiene muchas medidas, se reparte en dos partes. Es la misma toma: cambiar de parte no cambia la fecha ni los valores.</Parrafo>
             <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeComparabilidad}</Parrafo>
             <Parrafo tenue>{periodoDeLasTomas(periodo)}</Parrafo>
@@ -213,6 +214,7 @@ const Evolucion = memo(function Evolucion({ datos, token }: { datos: Datos; toke
             <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeDiferencia}</Parrafo>
             <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDeResultados}</Parrafo>
             <Parrafo tenue>Los puntos de cada tarjeta están sobre las fechas reales del período. Con una sola medición comparable, la tarjeta muestra solo el valor.</Parrafo>
+            <Parrafo tenue>{COPY_ANTROPOMETRIA.explicacionDelGrafico}</Parrafo>
             <Parrafo tenue>{periodoDeLasTomas(periodo)}</Parrafo>
             <Parrafo tenue>{QUE_PUEDE_FALTAR}</Parrafo>
           </Ayuda>

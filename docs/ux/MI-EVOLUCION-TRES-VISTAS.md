@@ -62,7 +62,7 @@ fecha, la familia y la medida elegida.
 - el valor de la toma elegida, con su unidad, o «Sin dato en esta toma»;
 - el cambio respecto de la anterior comparable, con su fecha. Sin anterior comparable, la tarjeta dice por qué;
 - los puntos de la medida sobre las fechas reales del período, solo los del grupo comparable de la toma elegida. Los
-  puntos no se unen. La toma elegida va resaltada y la escala se ve.
+  puntos no se unen (desde el §9, una línea une las tomas seguidas). La toma elegida va resaltada y la escala se ve.
 
 Al tocarla se abre el detalle: un gráfico más grande, la observación elegida con su fecha y su valor, «Anterior» y
 «Siguiente», la procedencia, el otro grupo si lo hay y la lista equivalente.

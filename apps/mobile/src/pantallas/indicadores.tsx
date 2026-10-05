@@ -132,7 +132,7 @@ function Indicador({
         <Text style={[estilos.nombre, elegida && estilos.nombreElegido]}>{medida.nombre}</Text>
         <ValorYCambio medida={medida} tamano={LETRA_DEL_VALOR} angosta={ancho < ANCHO_DE_LA_CABECERA_AL_COSTADO} />
         {marca ? <Text style={estilos.marca}>{marca}</Text> : null}
-        {elegida ? null : <GraficoCompacto observaciones={serie.observaciones} tomas={serie.tomas} periodo={datos.period} zonaHoraria={datos.period.timeZone} elegida={indice} />}
+        {elegida ? null : <GraficoCompacto observaciones={serie.observaciones} tomas={serie.tomas} tramos={serie.tramos} periodo={datos.period} zonaHoraria={datos.period.timeZone} elegida={indice} />}
       </Pressable>
       {elegida ? <ProgresoDeUnaMedida datos={datos} metrica={medida.metrica} grupoInicial={grupo} evaluacionId={evaluacionId} nombre={medida.nombre} /> : null}
     </View>

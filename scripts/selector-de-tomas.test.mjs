@@ -306,6 +306,23 @@ test('DL-118: la serie de una medida usa el grupo de la toma elegida, cuenta apa
   assert.deepEqual(serieDeLaMedida.serieDeLaMedida(TRES, 'perimetro-muslo', null).tomas, []);
 });
 
+test('DL-118, Dirección 2026-10-05: la línea une solo tomas seguidas del mismo grupo; una toma sin la medida o de otro grupo la corta', () => {
+  // El peso está en las tres tomas: la línea las une de a dos.
+  assert.deepEqual(serieDeLaMedida.serieDeLaMedida(TRES, 'peso', null).tramos, [[0, 1], [1, 2]]);
+  // La cintura falta en la T2: la T1 y la T3 no se unen, la visualización conserva el hueco (B10-07, INV-06-177).
+  assert.deepEqual(serieDeLaMedida.serieDeLaMedida(TRES, 'perimetro-cintura', null).tramos, []);
+  // El tríceps de la T2 es ISAK: en el eje del protocolo propio, la T1 y la T3 no se unen (ADV-10-PRJ-08).
+  assert.deepEqual(serieDeLaMedida.serieDeLaMedida(TRES, 'pliegue-triceps', 'cmp-3').tramos, []);
+  assert.deepEqual(serieDeLaMedida.serieDeLaMedida(TRES, 'pliegue-triceps', 'cmp-4').tramos, []);
+  // La API marca como hueco cada día sin observación vigente: esos días no cortan la línea entre dos tomas seguidas.
+  const conHuecosDiarios = datos([
+    { metricCode: 'peso', series: [punto('ev-1', '2026-07-20', 82.4, G_PESO), punto('ev-2', '2026-08-25', 80.9, G_PESO)], gaps: [{ from: '2026-07-21', to: '2026-08-24', state: 'NO_DATA', days: 35 }], comparability: { groups: [G_PESO] } },
+  ]);
+  const peso = serieDeLaMedida.serieDeLaMedida(conHuecosDiarios, 'peso', null);
+  assert.ok(peso.filas.some((f) => f.tipo === 'hueco'), 'el hueco de la API está en la lista equivalente');
+  assert.deepEqual(peso.tramos, [[0, 1]]);
+});
+
 test('DL-118, ajuste del 2026-10-05: la cabecera dice la toma y su fecha, sin «se compara con»; cada tarjeta dice su propia fecha de comparación', () => {
   // Cada medida puede tener otra anterior comparable: la cintura de la T3 se compara con la T1, porque no se midió en la T2.
   const cintura = serieDeLaMedida.resumenDe(TRES, 'ev-3').medidas.find((m) => m.metrica === 'perimetro-cintura');

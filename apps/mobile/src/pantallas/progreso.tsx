@@ -175,7 +175,7 @@ function TarjetaDeProgreso({
         {medida ? <ValorYCambio medida={medida} tamano={28} /> : <Text style={estilos.sinDato}>{cambio}</Text>}
         {clase ? <Text style={estilos.nota}>{clase}</Text> : null}
         {/* Abierta, el gráfico grande del detalle reemplaza al compacto. */}
-        {elegida ? null : <GraficoCompacto observaciones={serie.observaciones} tomas={serie.tomas} periodo={datos.period} zonaHoraria={datos.period.timeZone} elegida={indice} />}
+        {elegida ? null : <GraficoCompacto observaciones={serie.observaciones} tomas={serie.tomas} tramos={serie.tramos} periodo={datos.period} zonaHoraria={datos.period.timeZone} elegida={indice} />}
         {serie.observaciones.length === 1 ? <Text style={estilos.nota}>Una sola medición comparable en el período.</Text> : null}
         {otros ? <Text style={estilos.nota}>{otros}</Text> : null}
       </Pressable>

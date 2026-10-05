@@ -147,8 +147,9 @@ const ESPACIO_ENTRE_ROTULOS = 6;
  *   la toma elegida, el último y el primero, y después los demás de izquierda a derecha.
  * - **La escala se ve.** Tres líneas de referencia: los extremos del dominio (`dominioDelEjeVertical`), que no fuerza el
  *   cero y deja un margen, y el medio, redondeado a la unidad del eje.
- * - **Puntos sin unir**, huecos con borde; el de la toma elegida, lleno y más grande. No hay líneas, áreas ni tendencias:
- *   unir los puntos sugeriría valores entre dos tomas que nadie midió (REG-06-166, DL-118). Un hueco queda vacío.
+ * - **Puntos huecos con borde**; el de la toma elegida, lleno y más grande. La línea entre tomas seguidas la dibuja la
+ *   pantalla con los tramos de la serie (`tramosDeLaSerie`, Dirección 2026-10-05): esta composición no une puntos por su
+ *   cuenta. No hay áreas ni tendencias (REG-06-166), y la línea nunca cruza una toma sin la medida: un hueco queda vacío.
  * - **Los valores, en fila**, en el orden de los puntos: se leen sin adivinarlos en la escala.
  * `null` con menos de dos observaciones: un solo punto no muestra un recorrido, y su valor ya está escrito.
  */

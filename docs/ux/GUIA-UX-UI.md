@@ -121,14 +121,14 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
   píldoras compactas sobre la lámina, y la parte del torso, dentro. Las explicaciones largas van en «Cómo se lee».
   - La cabecera no dice con qué fecha se compara: cada medida puede tener otra anterior comparable, y la fecha va en su
     tarjeta (ajuste de Dirección del 2026-10-05).
-- **Un gráfico chico dice cómo se lee su eje.** Tiene la forma del ejemplo de Dirección del 2026-10-05, sin unir los
-  puntos:
+- **Un gráfico chico dice cómo se lee su eje.** Tiene la forma del ejemplo de Dirección del 2026-10-05:
   - los puntos van sobre fechas reales, y debajo de cada uno, su toma (T1, T2…), la del selector;
+  - una línea une solo tomas seguidas del mismo grupo, y una toma sin la medida la corta;
   - tres líneas de referencia rotuladas: los extremos de la escala y el medio, redondeado;
   - los puntos son huecos, y el de la toma elegida, lleno y más grande;
   - debajo del gráfico, los valores en fila, en el orden de los puntos, con el de la toma elegida resaltado.
 
-  No une puntos ni rellena huecos, muestra un solo grupo comparable, y su ancho es el del lugar: no desborda. Si dos
+  No rellena huecos ni dibuja áreas, muestra un solo grupo comparable, y su ancho es el del lugar: no desborda. Si dos
   rótulos de toma no entran, se escriben el de la elegida, el último y el primero. Con una sola observación no se
   dibuja.
 
@@ -303,8 +303,14 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
 - **El gráfico de evolución de la APK es de puntos** (`grafico-de-evolucion.ts` y `progreso-de-una-medida.tsx`). Desde
   DL-118 va en el detalle de cada tarjeta de Progreso y de Indicadores, con el grupo comparable de la toma elegida.
   - Cada punto es una medición, sobre una escala de tiempo con las fechas civiles de la zona de la API.
-  - Los puntos no se unen: no hay líneas, áreas ni tendencias (REG-06-166). Un día sin medición no es cero: no se
-    dibuja, y la lista lo dice como «Sin dato».
+  - **La línea** (Dirección, 2026-10-05) une dos puntos solo si son de tomas seguidas del período y del mismo grupo
+    comparable. Usa la regla de la lámina del website (`tramosDeLaSerie`, INV-06-176/177). Una toma sin la medida, o
+    con la medida en otro grupo, la corta: la visualización conserva el hueco (B10-07). No inventa puntos entre
+    sesiones (ADV-10-PRJ-05) ni une tramos no comparables (ADV-10-PRJ-08).
+  - Los días sin medición entre dos tomas no cortan la línea: la API los marca como huecos día por día.
+  - No hay áreas ni tendencias (REG-06-166). Un día sin medición no es cero: no se dibuja, y la lista lo dice como
+    «Sin dato».
+  - Hasta el 2026-10-05, la guía decía que los puntos no se unían. Era una regla más estricta que el legajo.
   - Se ve una medida y un grupo comparable por vez, con el mismo protocolo, método y unidad. Si la medida tiene más de un
     grupo, se elige el grupo: nunca se mezclan en un eje.
   - El eje vertical usa la misma regla que el website (`dominioDelEjeVertical`). No fuerza el cero y tiene un margen

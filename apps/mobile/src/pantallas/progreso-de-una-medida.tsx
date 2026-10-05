@@ -4,7 +4,8 @@
  *
  * - **El gráfico primero.** Con el grupo comparable de la toma elegida, sin elegir antes medida, días ni método. La
  *   procedencia, el otro grupo y la lista van debajo.
- * - **Puntos sobre fechas reales**, sin líneas ni rellenos (REG-06-165/166): un tramo sin medición queda vacío. Un solo
+ * - **Puntos sobre fechas reales**, unidos por una línea solo entre tomas seguidas (`tramosDeLaSerie`, Dirección
+ *   2026-10-05): una toma sin la medida corta la línea, y no hay áreas ni rellenos (REG-06-165/166, B10-07). Un solo
  *   grupo de comparabilidad por eje (REG-06-162/164); el otro se elige en el detalle, nunca se mezcla.
  * - **El gráfico compacto** de las tarjetas usa la misma escala y la misma regla de eje que el grande, en poco alto.
  * - **La lista equivalente** dice lo mismo que el gráfico, con los huecos: es el camino del lector de pantalla.
@@ -149,11 +150,12 @@ export function fraseDeLaSerie(observaciones: readonly Observacion[], elegida: n
 
 /**
  * Los puntos de una medida en una tarjeta, con la forma del ejemplo de Dirección (2026-10-05): tres líneas de referencia
- * con su valor, los puntos sin unir sobre sus fechas reales, la toma bajo cada punto y, debajo, los valores en fila. La
+ * con su valor, los puntos sobre sus fechas reales unidos solo entre tomas seguidas, la toma bajo cada punto y, debajo,
+ * los valores en fila. La
  * observación de la toma elegida va llena y más grande, y su toma y su valor, resaltados. No recibe toques: la tarjeta
  * entera es el objetivo. Con menos de dos observaciones no se dibuja.
  */
-export function GraficoCompacto({ observaciones, tomas, periodo, zonaHoraria, elegida }: { observaciones: readonly Observacion[]; tomas: readonly (string | null)[]; periodo: Periodo; zonaHoraria: string; elegida: number | null }) {
+export function GraficoCompacto({ observaciones, tomas, tramos, periodo, zonaHoraria, elegida }: { observaciones: readonly Observacion[]; tomas: readonly (string | null)[]; tramos: readonly (readonly [number, number])[]; periodo: Periodo; zonaHoraria: string; elegida: number | null }) {
   const { fontScale } = useWindowDimensions();
   const escala = Math.max(1, fontScale);
   const [ancho, setAncho] = useState(0);
@@ -177,6 +179,12 @@ export function GraficoCompacto({ observaciones, tomas, periodo, zonaHoraria, el
                 </TextoSvg>
               </G>
             ))}
+            {/* La línea, debajo de los puntos: solo entre tomas seguidas. Una toma sin la medida la corta. */}
+            {tramos.map(([a, b]) => {
+              const desde = grafico.puntos[a];
+              const hasta = grafico.puntos[b];
+              return desde && hasta ? <Line key={`l-${a}`} x1={desde.x} y1={desde.y} x2={hasta.x} y2={hasta.y} stroke={COLOR.acento} strokeWidth={2} strokeLinecap="round" /> : null;
+            })}
             {grafico.tomas.map((t) => (
               <TextoSvg key={`t-${t.indice}`} x={t.x} y={alto - 4} fontSize={letra} fontWeight={t.indice === elegida ? '800' : '400'} fill={t.indice === elegida ? COLOR.texto : COLOR.tenue} textAnchor="middle">
                 {t.texto}
@@ -224,7 +232,7 @@ export function ProgresoDeUnaMedida({ datos, metrica, grupoInicial, evaluacionId
   const observacion = serie.observaciones[indice]!;
   return (
     <View style={estilos.detalle}>
-      <GraficoConFechas observaciones={serie.observaciones} periodo={datos.period} zonaHoraria={datos.period.timeZone} nombre={nombre} elegida={indice} alElegir={setElegida} />
+      <GraficoConFechas observaciones={serie.observaciones} tramos={serie.tramos} periodo={datos.period} zonaHoraria={datos.period.timeZone} nombre={nombre} elegida={indice} alElegir={setElegida} />
       <DetalleDeLaObservacion observacion={observacion} esLaUltima={indice === serie.observaciones.length - 1} />
       {serie.observaciones.length > 1 ? (
         <View style={estilos.pasos}>
@@ -264,6 +272,7 @@ export function ProgresoDeUnaMedida({ datos, metrica, grupoInicial, evaluacionId
  */
 export function GraficoConFechas({
   observaciones,
+  tramos,
   periodo,
   zonaHoraria,
   nombre,
@@ -271,6 +280,7 @@ export function GraficoConFechas({
   alElegir,
 }: {
   observaciones: readonly Observacion[];
+  tramos: readonly (readonly [number, number])[];
   periodo: Periodo;
   zonaHoraria: string;
   nombre: string;
@@ -328,6 +338,12 @@ export function GraficoConFechas({
             ))}
             {/* Una guía vertical fina bajo la observación elegida, para leer su fecha. No une observaciones. */}
             {p ? <Line x1={p.x} x2={p.x} y1={grafico.area.arriba} y2={grafico.area.abajo} stroke={COLOR.tenue} strokeWidth={1} strokeDasharray={[3, 4]} /> : null}
+            {/* La línea entre tomas seguidas, debajo de los puntos, como en la tarjeta. */}
+            {tramos.map(([a, b]) => {
+              const desde = grafico.puntos[a];
+              const hasta = grafico.puntos[b];
+              return desde && hasta ? <Line key={`l-${a}`} x1={desde.x} y1={desde.y} x2={hasta.x} y2={hasta.y} stroke={COLOR.acento} strokeWidth={2.5} strokeLinecap="round" /> : null;
+            })}
             {grafico.puntos.map((q) => {
               const esUltima = q.indice === grafico.puntos.length - 1;
               return <Circle key={q.observacion.punto.sourceId} cx={q.x} cy={q.y} r={esUltima ? 7 : 5} fill={COLOR.acento} stroke={COLOR.superficie} strokeWidth={1.5} />;

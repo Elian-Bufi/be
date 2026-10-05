@@ -258,7 +258,8 @@ del 2026-10-04 y las reglas completas están en [MI-EVOLUCION-TRES-VISTAS.md](MI
 - **Una sola elección de toma y una de medida.** La toma elegida cambia a la vez las tres vistas. La medida elegida
   (`mi-evolucion:medida`) es la misma en el mapa, en Progreso y en los indicadores.
 - **Los gráficos chicos.** Desde DL-118 son de **fechas reales**: el período de punta a punta, la escala visible, sin
-  líneas ni rellenos y un solo grupo de comparabilidad por gráfico.
+  rellenos y un solo grupo de comparabilidad por gráfico. Desde el 2026-10-05, una línea une solo tomas seguidas del
+  mismo grupo, y una toma sin la medida la corta.
   - Desde el ajuste del 2026-10-05 tienen tres líneas de referencia, la toma bajo cada punto y los valores en fila
     (`GUIA-UX-UI.md` §4).
   - El otro grupo se cuenta aparte y se elige en el detalle.
