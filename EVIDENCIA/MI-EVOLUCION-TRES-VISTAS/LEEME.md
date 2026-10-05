@@ -10,7 +10,7 @@ la APK que lo incluya se construye después de que Dirección revise estas captu
 - **Commits:** `597ffce` (delta), `3c6ac7c` (implementación) y el de esta evidencia.
 - **El «antes»:** la candidata probada en el teléfono, `2e53ac8`, que es la APK 0.14.0-candidata.1.
 - **El ajuste del 2026-10-05**, después de que Dirección revisara este cierre, tiene sus capturas en `capturas-ajuste`:
-  las 20 a 34, al final de este archivo. **Las capturas 01 a 19 son del cierre (`7bcf5dc`), antes del ajuste:** muestran
+  las 20 a 36, al final de este archivo. **Las capturas 01 a 19 son del cierre (`7bcf5dc`), antes del ajuste:** muestran
   la cabecera con «se compara con», la figura alta y las tarjetas anteriores.
 
 ## Las capturas
@@ -103,14 +103,17 @@ En `EVIDENCIA/INICIO-Y-NAVEGACION/herramientas/render-navegador`:
 **Estas capturas tampoco son de la APK.** Son renders de los componentes reales en el navegador, con datos sintéticos,
 y cada una lo dice arriba, en rojo. Tienen la altura de un teléfono común: 360 × 800 dp.
 
-- **Pedido:** la corrección acotada de Dirección después de revisar el cierre, y su ejemplo de tarjeta.
+- **Pedido:** la corrección acotada de Dirección después de revisar el cierre, su ejemplo de tarjeta y la línea entre
+  los puntos.
 - **Delta y decisiones:** `docs/ux/MI-EVOLUCION-TRES-VISTAS.md`, §8 y §9.
 - **Commits:**
   - `fc69e7f`, el delta antes de programar;
   - `6dd69ca`, el código y las pruebas;
   - `181afe2`, la fecha de entrega;
-  - el de esta evidencia.
-- **El «antes»:** el cierre que revisó Dirección, `7bcf5dc`. **El «después»:** `6dd69ca`.
+  - `55a6719`, la primera evidencia;
+  - `888dd86`, el delta de la línea;
+  - la línea y esta evidencia.
+- **El «antes»:** el cierre que revisó Dirección, `7bcf5dc`. **El «después»:** el ajuste con la línea.
 
 | Archivo | Qué muestra |
 |---|---|
@@ -125,12 +128,14 @@ y cada una lo dice arriba, en rojo. Tienen la altura de un teléfono común: 360
 | `capturas-ajuste/30-antes-despues-progreso-al-abrir.png` | Al abrir, antes y después |
 | `capturas-ajuste/31-antes-despues-progreso-bajando.png` | Bajando 300 dp, antes y después: antes la figura llenaba la pantalla |
 | `capturas-ajuste/32-antes-despues-letra-maxima.png` | Letra ×2, antes y después: sin el título de dos renglones y con la franja |
-| `capturas-ajuste/33-antes-despues-tarjeta.png` | Una tarjeta de Progreso, antes y después, en Claro, con la forma del ejemplo de Dirección y los puntos sin unir |
-| `capturas-ajuste/34-antes-despues-indicadores.png` | Indicadores, antes y después |
+| `capturas-ajuste/33-antes-despues-tarjeta.png` | Una tarjeta de Progreso, antes y después, en Claro, con la forma del ejemplo de Dirección. El cuello no se midió en la T2: no hay línea |
+| `capturas-ajuste/34-antes-despues-indicadores.png` | Indicadores, antes y después: el peso y el IMC, con su línea |
+| `capturas-ajuste/35-linea-entre-tomas-seguidas.png` | **Individual.** La línea une solo tomas seguidas: la cintura (T1, T2 y T3) va unida y el pecho, sin la T2, queda con los puntos sueltos |
+| `capturas-ajuste/36-detalle-con-linea.png` | **Individual.** La cintura abierta: el gráfico grande une las mismas tomas que la tarjeta |
 
 ### Qué se verificó, y dónde
 
-**En pruebas de scripts** (sin teléfono): 184 de 184. Las de este ajuste:
+**En pruebas de scripts** (sin teléfono): 185 de 185. Las de este ajuste:
 - **`scripts/composicion-de-la-figura.test.mjs`:**
   - la figura de una zona no pasa del alto máximo, salvo lo que piden los números;
   - deja enteros los anillos y los puntos, marca dónde corta el cuerpo y no se mueve al cambiar de panel;
@@ -138,13 +143,17 @@ y cada una lo dice arriba, en rojo. Tienen la altura de un teléfono común: 360
 - **`scripts/grafico-de-evolucion.test.mjs`:**
   - el gráfico de una tarjeta, con tres líneas de referencia y la toma bajo cada punto, sin pisarse (la elegida, siempre);
   - los valores en fila;
-  - ningún gráfico de Mi evolución une los puntos.
+  - la línea sale de los tramos de la serie, en la tarjeta y en el detalle, sin áreas.
 - **`scripts/selector-de-tomas.test.mjs`:**
   - la toma de cada punto;
   - la cabecera no dice una fecha de comparación, y cada tarjeta dice la suya: la cintura y el peso de una misma toma
-    se comparan con fechas distintas.
+    se comparan con fechas distintas;
+  - los tramos de la línea:
+    - el peso une sus tres tomas;
+    - la cintura sin la T2 y el tríceps con la T2 en ISAK no se unen;
+    - los huecos diarios de la API no cortan la línea.
 
-También el typecheck de la APK sin errores y el legajo íntegro.
+También el typecheck de la APK sin errores, las pruebas del dominio (450 de 450) y el legajo íntegro.
 
 **En el render del navegador** (componentes):
 - Las capturas de esta sección.
@@ -167,6 +176,9 @@ También el typecheck de la APK sin errores y el legajo íntegro.
 - **El largo total.** Las tarjetas miden unos 90 dp más que en el cierre. Para leer todos los cambios de un panel hay
   que desplazarse más o menos lo mismo que antes, pero cada tarjeta se lee sin abrirla.
 - **Las flechas ↑ y ↓.** En el teléfono salen con la letra del sistema: falta verlas en Android.
+- **La línea depende de las tomas.** Una toma que no midió el sitio la corta. En los datos sintéticos, la T2 no midió
+  cuello, pecho ni abdomen, y esas tarjetas muestran los puntos sueltos. Es la regla del legajo (B10-07) y la de la
+  lámina del website.
 
 ### Recorrido corto para el teléfono, con la APK que incluya este ajuste
 
@@ -174,7 +186,7 @@ También el typecheck de la APK sin errores y el legajo íntegro.
 2. Bajá hasta la figura. Tiene que entrar con la primera tarjeta, y el número de cada sitio tiene que coincidir con el
    de su tarjeta.
 3. En cada tarjeta, revisá el valor grande, el cambio con flecha y su fecha, los puntos con T1, T2… debajo y los
-   valores en fila. Los puntos no van unidos.
+   valores en fila. La línea une las tomas seguidas, y se corta si una toma no tiene la medida.
 4. Pasá de «Cuello y tronco» a «Hombros y brazos». El cuerpo no se tiene que mover.
 5. Repetí con **letra máxima**: todo apilado y nada cortado.
 6. En **Indicadores**, en tarjetas angostas, el cambio va debajo del valor.
@@ -182,6 +194,6 @@ También el typecheck de la APK sin errores y el legajo íntegro.
 ### Cómo se rehacen
 
 En `EVIDENCIA/INICIO-Y-NAVEGACION/herramientas/render-navegador`:
-- `./capturar-ajuste-progreso.sh` hace las capturas 20 a 34.
+- `./capturar-ajuste-progreso.sh` hace las capturas 20 a 36.
 - Antes hay que armar dos maquetas, la nueva y la del cierre `7bcf5dc` (`telefono-cierre.html`). Los comandos están en
   la cabecera del script.

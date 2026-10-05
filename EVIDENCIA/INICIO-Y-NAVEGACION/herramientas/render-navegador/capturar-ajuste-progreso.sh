@@ -46,7 +46,13 @@ captura 31-antes-despues-progreso-bajando 820 980 1 "Progreso bajando 300 dp: an
   "evolucion-progreso|azul-noche|360|1|800|bajar=300|telefono-cierre|Antes;evolucion-progreso|azul-noche|360|1|800|bajar=300|telefono|Después"
 captura 32-antes-despues-letra-maxima 820 980 1 "Progreso con letra ×2, bajando hasta la figura: antes y después" "Azul noche · 360 × 800 dp. La figura deja lugar a los números grandes sin ocupar toda la pantalla." \
   "evolucion-progreso|azul-noche|360|2|800|bajar=500|telefono-cierre|Antes;evolucion-progreso|azul-noche|360|2|800|bajar=500|telefono|Después"
-captura 33-antes-despues-tarjeta 820 980 2 "Una tarjeta de Progreso: antes y después" "Claro · 360 dp · letra normal. Después, con la forma del ejemplo de Dirección: valor grande, cambio con flecha y su fecha, tres líneas de referencia, la toma bajo cada punto y los valores en fila. Los puntos siguen sin unirse." \
+captura 33-antes-despues-tarjeta 820 980 2 "Una tarjeta de Progreso: antes y después" "Claro · 360 dp · letra normal. Después, con la forma del ejemplo de Dirección: valor grande, cambio con flecha y su fecha, tres líneas de referencia, la toma bajo cada punto y los valores en fila. La T2 no midió el cuello: sin tomas seguidas, no hay línea." \
   "evolucion-progreso|claro|360|1|800|bajar=560|telefono-cierre|Antes;evolucion-progreso|claro|360|1|800|bajar=380|telefono|Después"
 captura 34-antes-despues-indicadores 820 980 1 "Indicadores: antes y después" "Claro · 360 × 800 dp · letra normal. Las mismas tarjetas, con el gráfico nuevo y el cambio debajo del valor." \
   "evolucion-indicadores|claro|360|1|800|bajar=200|telefono-cierre|Antes;evolucion-indicadores|claro|360|1|800|bajar=200|telefono|Después"
+
+# ─── La línea entre los puntos (Dirección, 2026-10-05) ───
+captura 35-linea-entre-tomas-seguidas 420 980 2 "La línea une solo tomas seguidas" "Claro · 360 × 800 dp · letra normal. La cintura se midió en T1, T2 y T3: la línea las une. El pecho no se midió en la T2: la línea se corta y sus puntos quedan sueltos (B10-07)." \
+  "evolucion-progreso|claro|360|1|800|bajar=880"
+captura 36-detalle-con-linea 420 980 2 "El detalle de una medida, con la línea" "Azul noche · 360 × 800 dp · letra normal. La cintura abierta: el gráfico grande con fechas une las mismas tomas que la tarjeta." \
+  "evolucion-progreso|azul-noche|360|1|800|medida=perimetro-cintura%26bajar=1150"
