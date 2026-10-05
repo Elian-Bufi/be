@@ -122,6 +122,7 @@
 | DL-115 | Matriz de DV-05 · 2026-10-02 | 08:406 (08 §13) · DL-089 · TEST-AUTH-003 · TEST-AUTH-004 | Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan | **DECIDIDA** 2026-10-02 · opción A · implementada en la rama `fix/a3-titular-antropometria-formularios`, sin integrar: va con la candidata 0.13.2 |
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección |
 | DL-117 | Decisión de Dirección · 2026-10-04 | B10-10 §9 · 08 §33 · DL-113 · DL-049 · DL-077 · DL-115 | La APK no tiene un Inicio que reúna lo disponible de los módulos, y Cuenta ocupa un lugar de la barra | **DECIDIDA** 2026-10-04 · Inicio personal y barra Inicio, Nutrición, Entrenamiento, Evolución, Información; Cuenta en el avatar. Implementación sin integrar |
+| DL-118 | Decisión de Dirección · 2026-10-05 | DL-117 · DL-111 · DL-113 · REG-06-162/165/166 · TEST-PRJ-009 | «Mi evolución» de la APK tiene cuatro vistas con mucho desplazamiento, gráficos ilegibles y vistas vacías; la lectura del asesorado es más técnica de lo necesario | **DECIDIDA** 2026-10-05 · tres vistas (Mapa corporal, Progreso por Torso y Piernas, Indicadores); Comparar sale como apartado móvil. Implementación sin integrar |
 
 ---
 
@@ -2804,6 +2805,15 @@ Dirección lo mire en las imágenes y en el teléfono:
   verificar si Render ya comprime y, si no, decidir la compresión en la API
   (`EVIDENCIA/INICIO-Y-NAVEGACION/herramientas/medir-inicio/resultados.md`).
 
+**Prueba de Dirección en el teléfono (APK 0.14.0-candidata.1, reportada el 2026-10-05).**
+- La actualización sobre la 0.13.2 conservó la sesión.
+- Funcionaron bien los cinco controles pedidos: reapertura, navegación inferior, retorno desde Cuenta, tarjetas de Inicio
+  y retorno desde los detalles.
+
+Se registra como reporte manual de Dirección sobre esa candidata. No es una prueba independiente del ejecutor ni la
+aprobación de toda la aplicación. La APK es la prerelease `be-apk-0.14.0-candidata.1`, versionCode 23, construida desde
+`0a28dd6`.
+
 **Pulido visual del 2026-10-04 (a la tarde, sin integrar ni construir).** Dirección priorizó la excelencia visual con la
 letra de siempre, sin desactivar el escalado. No cambia ninguna función. **A ratificar por Dirección**, con las capturas 12
 a 18 de `EVIDENCIA/INICIO-Y-NAVEGACION`, antes de construir la APK candidata:
@@ -2812,3 +2822,38 @@ a 18 de `EVIDENCIA/INICIO-Y-NAVEGACION`, antes de construir la APK candidata:
   la lámina;
 - tarjetas de vidrio con filas de una sola forma y los valores en columna.
 Las referencias visuales del pedido no llegaron con el mensaje: se siguió la descripción escrita.
+
+## DL-118 — «Mi evolución» en tres vistas: Mapa corporal, Progreso e Indicadores
+
+**Prioridad:** alta · **Documento:** DL-117 (navegación y «Mi evolución» de la APK) · DL-111 (figura de la lámina) · DL-113
+(los sitios no se mueven) · REG-06-162/165/166 (comparabilidad, huecos y sin líneas) · TEST-PRJ-009 (nada califica) ·
+**Estado:** DECIDIDA por Dirección el 2026-10-05
+
+**Qué decidió Dirección**, en el documento «BE — Cierre de antropometría y siguiente tramo de producto», versión 2,
+después de probar la APK 0.14.0-candidata.1:
+- Simplificar la lectura del asesorado. Comparar sale como apartado.
+- Tres vistas:
+  - **Mapa corporal**, con los últimos datos de una toma y su fecha, sin gráficos chicos;
+  - **Progreso**, por Torso y Piernas, como las láminas de tren superior e inferior del compositor;
+  - **Indicadores**, con lo disponible y la edad como dato de la toma.
+- El torso se divide en dos paneles si concentra demasiadas medidas.
+- No hay tomas ni figuras vacías.
+- Es el último cierre acotado de antropometría: después, solo defectos que comprometan uso, datos, permisos o
+  legibilidad.
+
+**Lo que no autoriza.**
+- Eliminar información, métodos, contratos o herramientas profesionales.
+- Nuevas fórmulas, umbrales, diagnósticos o totales.
+- El tema blanco de las láminas de referencia, ni sus líneas entre puntos.
+- Entrenamiento y nutrición, que esperan sus maquetas.
+
+**Diseño, delta y reglas.** En `docs/ux/MI-EVOLUCION-TRES-VISTAS.md`. Las agrupaciones, tamaños y textos son decisiones de
+diseño reversibles, tomadas con ese documento y los patrones de BE.
+
+**Cómo se respeta el legajo.**
+- Todo sale de la misma lectura de API-ANT-06-PROPIA, con el mismo permiso (A3). No hay pedidos nuevos.
+- Cada gráfico tiene un solo grupo de comparabilidad, sin líneas ni rellenos, y un hueco no es un cero.
+- Las diferencias son descriptivas: no tienen color de «mejor» o «peor».
+- Los sitios se asignan a una zona por su clave de BE, y las figuras de cada tren son las del compositor, con sus puntos
+  calibrados por Dirección, sin moverlos.
+
