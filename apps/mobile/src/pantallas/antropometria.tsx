@@ -129,8 +129,9 @@ export function PantallaDeMiEvolucion({
 }
 
 /**
- * «Mi evolución» por tareas. Arriba, las vistas; debajo, la fecha de la toma que muestra la vista y con cuál se compara
- * (DL-113: cada fecha, una vez). La vista, la toma y la medida elegidas se recuerdan mientras dure la sesión, y la medida
+ * «Mi evolución» por tareas. Arriba, las vistas; debajo, la fecha de la toma que muestra la vista y cuál es. La fecha
+ * con la que se compara cada medida va en su tarjeta, porque cada una puede tener otra anterior comparable (ajuste de
+ * Dirección del 2026-10-05). La vista, la toma y la medida elegidas se recuerdan mientras dure la sesión, y la medida
  * es la misma en el mapa, en Progreso y en los indicadores. Todo sale de la misma lectura: cambiar de vista no hace pedidos.
  */
 const Evolucion = memo(function Evolucion({ datos, token }: { datos: Datos; token: string }) {
@@ -182,10 +183,11 @@ const Evolucion = memo(function Evolucion({ datos, token }: { datos: Datos; toke
       {disponibles.length > 1 ? (
         <Pestanas etiqueta={COPY_ANTROPOMETRIA.queVer} opciones={disponibles.map((v) => ({ valor: v, texto: NOMBRE_DE_LA_VISTA[v] }))} valor={visible} alElegir={setVista} />
       ) : null}
-      {/* La toma: la fecha, una línea de contexto y las tomas que tienen datos para esta vista. */}
-      <View style={estilos.encabezadoDeLaToma} accessible accessibilityLabel={`${nombreDeLaToma}, ${fechaCivil(toma.fecha)}. ${contextoDeLaToma(toma)}`}>
+      {/* La toma: su fecha y cuál es, y las tomas que tienen datos para esta vista. Con qué fecha se compara lo dice cada
+          tarjeta: cada medida puede tener otra anterior comparable (ajuste de Dirección del 2026-10-05). */}
+      <View style={estilos.encabezadoDeLaToma} accessible accessibilityLabel={`${nombreDeLaToma}, ${fechaCivil(toma.fecha)}`}>
         <Text style={estilos.fechaDeLaToma}>{fechaCivil(toma.fecha)}</Text>
-        <Text style={estilos.contexto}>{`${nombreDeLaToma} · ${contextoDeLaToma(toma)}`}</Text>
+        <Text style={estilos.contexto}>{nombreDeLaToma}</Text>
       </View>
       {mostrada !== elegida ? <Text style={estilos.otraToma}>{otraTomaQueLaElegida(visible, elegida, mostrada)}</Text> : null}
       {seVeElSelectorDeTomas(deLaVista.length) ? <SelectorDeToma tomas={deLaVista} elegida={mostrada.evaluacionId} alElegir={setPedida} periodo={periodo} /> : null}
@@ -270,11 +272,6 @@ function SelectorDeToma({ tomas, elegida, alElegir, periodo }: { tomas: readonly
       })}
     </ScrollView>
   );
-}
-
-/** La línea de contexto de la toma: con cuál se compara. */
-function contextoDeLaToma(toma: UltimaToma): string {
-  return toma.fechaAnterior ? `se compara con el ${fechaCivil(toma.fechaAnterior)}` : COPY_ANTROPOMETRIA.sinAnteriorComparable.charAt(0).toLocaleLowerCase('es-AR') + COPY_ANTROPOMETRIA.sinAnteriorComparable.slice(1);
 }
 
 /** El período de las tomas, para «Cómo se lee»: T1 es la primera del período que se ve, no la primera de la historia. */

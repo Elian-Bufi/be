@@ -23,12 +23,14 @@ import { anchoDelValorEstimado, bloquesDeIndicadores, columnasDeIndicadores, REL
 import { indiceDeLaToma, serieDeLaMedida } from '../serie-de-la-medida';
 import { COLOR, Desplegable, estilosPorTema, Rotulo } from '../ui';
 import { BrilloDeVidrio, sombraDeVidrio } from '../vidrio';
-import { fraseDeLaSerie, GraficoCompacto, ProgresoDeUnaMedida, textoDeLaClase, textoDelCambio } from './progreso-de-una-medida';
+import { fraseDeLaSerie, GraficoCompacto, ProgresoDeUnaMedida, textoDeLaClase, textoDelCambio, ValorYCambio } from './progreso-de-una-medida';
 
 type Datos = EvolucionResponse['data'];
 
 /** El tamaño del valor en la tarjeta, en sp antes de la escala de la persona. */
 const LETRA_DEL_VALOR = 22;
+/** Desde este ancho de tarjeta, el cambio va al costado del valor; en una tarjeta más angosta, debajo. */
+const ANCHO_DE_LA_CABECERA_AL_COSTADO = 260;
 
 export function Indicadores({ datos, toma, elegida, alElegir }: { datos: Datos; toma: UltimaToma; elegida: string | null; alElegir: (metrica: string | null) => void }) {
   const { fontScale } = useWindowDimensions();
@@ -95,8 +97,10 @@ export function Indicadores({ datos, toma, elegida, alElegir }: { datos: Datos; 
 }
 
 /**
- * Una tarjeta: el nombre, el valor grande, el cambio respecto de la anterior comparable con su fecha, su marca y sus
- * puntos sobre fechas reales. Elegida, ocupa todo el ancho y suma el detalle. Toda la tarjeta es el objetivo del toque.
+ * Una tarjeta, con la forma del ejemplo de Dirección (2026-10-05): el nombre; el valor grande, con el cambio respecto de
+ * la anterior comparable y su fecha a la derecha, o debajo si no entra; su marca; y sus puntos sobre fechas reales, con la
+ * toma de cada uno y los valores en fila. Elegida, ocupa todo el ancho y suma el detalle. Toda la tarjeta es el objetivo
+ * del toque.
  */
 function Indicador({
   datos,
@@ -126,10 +130,9 @@ function Indicador({
       <BrilloDeVidrio color={COLOR.vidrioBrillo} radio={16} />
       <Pressable onPress={alTocar} accessibilityRole="button" accessibilityState={{ selected: elegida, expanded: elegida }} accessibilityLabel={frase} style={({ pressed }) => [estilos.toque, pressed && estilos.presionado]}>
         <Text style={[estilos.nombre, elegida && estilos.nombreElegido]}>{medida.nombre}</Text>
-        <Text style={estilos.valor}>{valor}</Text>
-        <Text style={medida.diferencia ? estilos.diferencia : estilos.sinDiferencia}>{cambio}</Text>
+        <ValorYCambio medida={medida} tamano={LETRA_DEL_VALOR} angosta={ancho < ANCHO_DE_LA_CABECERA_AL_COSTADO} />
         {marca ? <Text style={estilos.marca}>{marca}</Text> : null}
-        {elegida ? null : <GraficoCompacto observaciones={serie.observaciones} periodo={datos.period} zonaHoraria={datos.period.timeZone} elegida={indice} />}
+        {elegida ? null : <GraficoCompacto observaciones={serie.observaciones} tomas={serie.tomas} periodo={datos.period} zonaHoraria={datos.period.timeZone} elegida={indice} />}
       </Pressable>
       {elegida ? <ProgresoDeUnaMedida datos={datos} metrica={medida.metrica} grupoInicial={grupo} evaluacionId={evaluacionId} nombre={medida.nombre} /> : null}
     </View>
@@ -153,9 +156,6 @@ const estilos = estilosPorTema((COLOR) => ({
   presionado: { opacity: 0.8 },
   nombre: { fontSize: 14, lineHeight: 19, fontWeight: '600', color: COLOR.texto },
   nombreElegido: { fontWeight: '800', color: COLOR.texto },
-  valor: { fontSize: LETRA_DEL_VALOR, lineHeight: 28, fontWeight: '800', color: COLOR.texto, marginTop: 2 },
-  diferencia: { fontSize: 14, lineHeight: 20, fontWeight: '700', color: COLOR.texto, marginTop: 2 },
-  sinDiferencia: { fontSize: 13, lineHeight: 18, color: COLOR.tenue, marginTop: 2 },
   marca: { fontSize: 13, lineHeight: 18, fontWeight: '600', color: COLOR.tenue, marginTop: 2 },
   contexto: { fontSize: 15, lineHeight: 22, color: COLOR.tenue, marginBottom: 8 },
   valorDeContexto: { fontWeight: '800', color: COLOR.texto },

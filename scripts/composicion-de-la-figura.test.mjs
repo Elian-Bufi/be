@@ -249,16 +249,19 @@ test('un toque nunca elige un sitio si otro queda casi a la misma distancia: amp
 const zonasDeProgreso = await import('../apps/mobile/src/progreso-por-zonas.ts');
 
 test('DL-118: la figura de una zona numera sus sitios de arriba hacia abajo, los deja a la vista y no cambia entre los paneles del torso', () => {
-  const ALTO_MAXIMO = 380;
+  const ALTO_MAXIMO = 240;
   for (const ancho of [280, 320, 372]) {
     for (const sexo of ['HOMBRE', 'MUJER']) {
       for (const familia of ['PERIMETROS', 'PLIEGUES']) {
         for (const escalaDeLetra of [1, 1.3, 2]) {
           let imagenDelTorso = null;
-          for (const panel of zonasDeProgreso.panelesDeProgreso(familia, () => true)) {
+          const paneles = zonasDeProgreso.panelesDeProgreso(familia, () => true);
+          for (const panel of paneles) {
             const encuadre = zonasDeProgreso.ENCUADRE_DE_LA_ZONA[panel.zona];
             const etiqueta = `${ancho} dp, ${sexo} ${familia} ${panel.clave} ×${escalaDeLetra}`;
-            const f = c.componerLaFiguraDeZona({ ancho, sexo, familia, encuadre, claves: panel.sitios, clavesDeLaZona: panel.sitiosDeLaZona, escalaDeLetra, altoMaximoDelCuerpo: ALTO_MAXIMO });
+            // Como en Progreso: el alto de los números del panel más largo de la zona, en todos sus paneles.
+            const maximoDeNumeros = Math.max(...paneles.filter((p) => p.zona === panel.zona).map((p) => p.sitios.length));
+            const f = c.componerLaFiguraDeZona({ ancho, sexo, familia, encuadre, claves: panel.sitios, clavesDeLaZona: panel.sitiosDeLaZona, escalaDeLetra, altoMaximo: ALTO_MAXIMO, maximoDeNumeros });
             assert.ok(f, etiqueta);
             // Todos los sitios del panel, con los números 1…n de arriba hacia abajo.
             assert.deepEqual([...f.sitios.map((s) => s.clave)].sort(), [...panel.sitios].sort(), `${etiqueta}: falta o sobra un sitio`);
@@ -270,11 +273,13 @@ test('DL-118: la figura de una zona numera sus sitios de arriba hacia abajo, los
               const esperado = familia === 'PERIMETROS' ? d.anilloEnLaLamina(f.imagen, figura.perimetros[s.clave]) : d.puntoEnLaLamina(f.imagen, figura.pliegues[s.clave]);
               assert.ok(Math.abs(s.cx - esperado.cx) < 1e-9 && Math.abs(s.cy - esperado.cy) < 1e-9, `${etiqueta}: ${s.clave} se movió`);
             }
-            // A la vista: a la derecha de la columna de números, adentro de la lámina; el punto de un pliegue, entero.
+            // A la vista: a la derecha de la columna de números, adentro de la lámina; el punto de un pliegue, entero, y el
+            // anillo de un perímetro, entero de arriba abajo, aunque la franja recorte el cuerpo.
             const columna = 5 + f.ficha + 4;
             for (const s of f.sitios) {
               assert.ok(s.cx > columna && s.cx < ancho, `${etiqueta}: ${s.clave} queda fuera en x`);
-              assert.ok(s.cy > 0 && s.cy < f.alto, `${etiqueta}: ${s.clave} queda fuera en y`);
+              const medioAlto = s.anillo ? s.anillo.ry : 7;
+              assert.ok(s.cy - medioAlto >= 0 && s.cy + medioAlto <= f.alto, `${etiqueta}: ${s.clave} queda cortado en y`);
               if (!s.anillo) assert.ok(s.cx + 7 <= ancho, `${etiqueta}: el punto de ${s.clave} se corta`);
             }
             for (const g of f.guias) assert.ok(g.hasta.x > columna, `${etiqueta}: la guía de ${g.clave} termina debajo de los números`);
@@ -282,8 +287,12 @@ test('DL-118: la figura de una zona numera sus sitios de arriba hacia abajo, los
             const ys = f.fichas.map((x) => x.y);
             for (let i = 1; i < ys.length; i++) assert.ok(ys[i] - ys[i - 1] >= f.ficha - 1e-6, `${etiqueta}: dos números se pisan`);
             for (const y of ys) assert.ok(y - f.ficha / 2 >= -1e-6 && y + f.ficha / 2 <= f.alto + 1e-6, `${etiqueta}: un número se sale`);
-            // El cuerpo no pasa del alto máximo: Progreso no es otra lámina enorme.
-            assert.ok((f.imagen.alto * figura.cuerpo.alto) / 100 <= ALTO_MAXIMO + 1e-6, `${etiqueta}: el cuerpo pasa del alto máximo`);
+            // La figura no pasa del alto máximo, salvo lo que pidan los números, que no se achican (ajuste del 2026-10-05).
+            const altoDeLosNumeros = maximoDeNumeros * f.ficha + (maximoDeNumeros - 1) * 4 + 20;
+            assert.ok(f.alto <= Math.max(ALTO_MAXIMO, altoDeLosNumeros) + 1e-6, `${etiqueta}: la figura pasa del alto máximo (${f.alto})`);
+            // Donde la franja corta el cuerpo, lo dice, para que la figura se desvanezca en vez de cortarse en seco.
+            assert.equal(f.cortadaArriba, f.imagen.y + (figura.cuerpo.arriba / 100) * f.imagen.alto < -0.5, `${etiqueta}: corte de arriba`);
+            assert.equal(f.cortadaAbajo, f.imagen.y + ((figura.cuerpo.arriba + figura.cuerpo.alto) / 100) * f.imagen.alto > f.alto + 0.5, `${etiqueta}: corte de abajo`);
             if (panel.zona === 'TORSO') {
               if (imagenDelTorso) assert.deepEqual(f.imagen, imagenDelTorso, `${etiqueta}: el cuerpo cambia al pasar de panel`);
               else imagenDelTorso = f.imagen;
@@ -301,8 +310,31 @@ test('DL-118: el número de cada sitio de una zona se conoce sin medir la figura
       for (const panel of zonasDeProgreso.panelesDeProgreso(familia, () => true)) {
         const encuadre = zonasDeProgreso.ENCUADRE_DE_LA_ZONA[panel.zona];
         const numeros = c.numerosDeLaZona(sexo, familia, encuadre, panel.sitios);
-        const f = c.componerLaFiguraDeZona({ ancho: 320, sexo, familia, encuadre, claves: panel.sitios, clavesDeLaZona: panel.sitiosDeLaZona, escalaDeLetra: 1, altoMaximoDelCuerpo: 380 });
+        const f = c.componerLaFiguraDeZona({ ancho: 320, sexo, familia, encuadre, claves: panel.sitios, clavesDeLaZona: panel.sitiosDeLaZona, escalaDeLetra: 1, altoMaximo: 240 });
         assert.deepEqual(f.sitios.map((s) => [s.clave, s.numero]), [...numeros.entries()].sort((a, b) => a[1] - b[1]), `${sexo} ${familia} ${panel.clave}`);
+      }
+    }
+  }
+});
+
+test('DL-118, ajuste del 2026-10-05: la figura de una zona es una franja compacta, y los números no se achican para entrar', () => {
+  for (const sexo of ['HOMBRE', 'MUJER']) {
+    for (const familia of ['PERIMETROS', 'PLIEGUES']) {
+      for (const panel of zonasDeProgreso.panelesDeProgreso(familia, () => true)) {
+        const encuadre = zonasDeProgreso.ENCUADRE_DE_LA_ZONA[panel.zona];
+        const figura = d.FIGURAS_DE_LA_LAMINA[sexo][encuadre];
+        const etiqueta = `${sexo} ${familia} ${panel.clave}`;
+        const zona = (escalaDeLetra, altoMaximo) => c.componerLaFiguraDeZona({ ancho: 328, sexo, familia, encuadre, claves: panel.sitios, clavesDeLaZona: panel.sitiosDeLaZona, escalaDeLetra, altoMaximo });
+        // Con la letra de siempre, en un teléfono de 360 dp, la franja no pasa de 240 dp: antes, el cuerpo entero medía
+        // hasta 400. Se ve menos cuerpo que la caja entera del tren, no un cuerpo más chico que los números.
+        const normal = zona(1, 240);
+        assert.ok(normal.alto <= 240 + 1e-6, `${etiqueta}: la franja mide ${normal.alto}`);
+        assert.ok(normal.alto < (normal.imagen.alto * figura.cuerpo.alto) / 100, `${etiqueta}: muestra el cuerpo entero, no una franja`);
+        assert.equal(normal.ficha, 24, `${etiqueta}: el número se achicó`);
+        // Con letra grande, los números crecen hasta su tope igual que antes, y la figura crece lo que ellos necesitan.
+        const grande = zona(2, 200);
+        assert.equal(grande.ficha, 38, `${etiqueta}: el número no creció con la letra`);
+        assert.ok(grande.alto >= panel.sitios.length * 38 + (panel.sitios.length - 1) * 4 + 20 - 1e-6, `${etiqueta}: los números no entran`);
       }
     }
   }

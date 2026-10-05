@@ -6,7 +6,8 @@
  *   sitios con datos, se reparte en dos paneles fijos (`progreso-por-zonas.ts`): la misma toma, la misma fecha, la misma
  *   familia y la misma medida elegida.
  * - **La figura de la zona** es la del compositor para ese tren, con un número por sitio (`FiguraDeZona`). Ningún punto
- *   se mueve.
+ *   se mueve. Es una franja del cuerpo con los sitios de la zona, y las tarjetas la siguen sin un título en el medio:
+ *   se ven juntas (ajuste de Dirección del 2026-10-05).
  * - **Una tarjeta por sitio**, en una columna ancha y con el número de su sitio: el valor de la toma elegida con su unidad,
  *   el cambio respecto de la anterior comparable con su fecha, y los puntos de la medida sobre las fechas reales del
  *   período, del grupo comparable de esa toma. La tarjeta de un sitio sin dato en esta toma lo dice, y sus puntos siguen.
@@ -20,13 +21,13 @@ import { useApariencia } from '../apariencia';
 import { numerosDeLaZona, rotuloDelSitio } from '../composicion-de-la-figura';
 import { familiaDelSitio } from '../disposicion-de-la-toma';
 import { useSeleccionRecordada } from '../lecturas';
-import { ENCUADRE_DE_LA_ZONA, NOMBRE_DE_LA_ZONA, panelesDeProgreso, panelQueSeVe, type FamiliaDeProgreso, type PanelDeProgreso, type ZonaDelCuerpo } from '../progreso-por-zonas';
+import { ENCUADRE_DE_LA_ZONA, NOMBRE_DE_LA_ZONA, panelesDeProgreso, panelQueSeVe, type FamiliaDeProgreso, type ZonaDelCuerpo } from '../progreso-por-zonas';
 import { indiceDeLaToma, serieDe, serieDeLaMedida } from '../serie-de-la-medida';
 import { PALETAS } from '../tema';
 import { COLOR, estilosPorTema, Segmentos } from '../ui';
 import { BrilloDeVidrio, sombraDeVidrio } from '../vidrio';
 import { ElegirLaFigura, FiguraDeZona, useSexoDeLaFigura } from './figura-de-la-toma';
-import { fraseDeLaSerie, GraficoCompacto, ProgresoDeUnaMedida, textoDeLaClase, textoDelCambio } from './progreso-de-una-medida';
+import { fraseDeLaSerie, GraficoCompacto, ProgresoDeUnaMedida, textoDeLaClase, textoDelCambio, ValorYCambio } from './progreso-de-una-medida';
 
 type Datos = EvolucionResponse['data'];
 
@@ -104,11 +105,10 @@ export function Progreso({
             <Segmentos compactos etiqueta="Parte del torso" opciones={panelesDeLaZona.map((p) => ({ valor: p.clave, texto: p.nombre }))} valor={panel.clave} alElegir={(p) => setPanel(p)} />
           </View>
         ) : null}
-        <FiguraDeZona familia={familia} encuadre={encuadre} claves={panel.sitios} clavesDeLaZona={panel.sitiosDeLaZona} sexo={sexo} elegida={medida} alElegir={alElegir} />
+        <FiguraDeZona familia={familia} encuadre={encuadre} claves={panel.sitios} clavesDeLaZona={panel.sitiosDeLaZona} maximoDeNumeros={Math.max(...panelesDeLaZona.map((p) => p.sitios.length))} sexo={sexo} elegida={medida} alElegir={alElegir} />
       </View>
-      <Text style={estilos.titulo} accessibilityRole="header">
-        {tituloDelPanel(panel, familia, panelesDeLaZona.length > 1)}
-      </Text>
+      {/* Las tarjetas siguen a la figura, sin un título en el medio: la familia, la zona y la parte del torso se leen en
+          los controles elegidos (ajuste de Dirección del 2026-10-05). */}
       {sitios.map((clave) => (
         <TarjetaDeProgreso
           key={clave}
@@ -127,15 +127,10 @@ export function Progreso({
   );
 }
 
-/** El título de la lista: la zona o la parte del torso, y la familia. */
-function tituloDelPanel(panel: PanelDeProgreso, familia: FamiliaDeProgreso, dividido: boolean): string {
-  const deLaFamilia = familia === 'PERIMETROS' ? COPY_ANTROPOMETRIA.perimetrosEnLaFigura : COPY_ANTROPOMETRIA.plieguesEnLaFigura;
-  return dividido ? `${deLaFamilia} · ${NOMBRE_DE_LA_ZONA[panel.zona]}: ${panel.nombre.toLocaleLowerCase('es-AR')}` : `${deLaFamilia} · ${NOMBRE_DE_LA_ZONA[panel.zona]}`;
-}
-
 /**
- * La tarjeta de un sitio: su número, su nombre y el valor de la toma elegida; el cambio respecto de la anterior
- * comparable con su fecha; y sus puntos sobre las fechas reales. Toda la tarjeta es el objetivo del toque, de 48 dp o más.
+ * La tarjeta de un sitio, con la forma del ejemplo de Dirección (2026-10-05): su número y su nombre; el valor de la toma
+ * elegida, grande, con el cambio respecto de la anterior comparable y su fecha a la derecha; sus puntos sobre las fechas
+ * reales con la toma de cada uno, y los valores en fila. Toda la tarjeta es el objetivo del toque, de 48 dp o más.
  */
 function TarjetaDeProgreso({
   numero: n,
@@ -176,12 +171,11 @@ function TarjetaDeProgreso({
             </Text>
           </View>
           <Text style={[estilos.nombre, elegida && estilos.nombreElegido]}>{rotulo}</Text>
-          {valor ? <Text style={estilos.valor}>{valor}</Text> : null}
         </View>
-        <Text style={medida ? estilos.cambio : estilos.sinDato}>{cambio}</Text>
+        {medida ? <ValorYCambio medida={medida} tamano={28} /> : <Text style={estilos.sinDato}>{cambio}</Text>}
         {clase ? <Text style={estilos.nota}>{clase}</Text> : null}
         {/* Abierta, el gráfico grande del detalle reemplaza al compacto. */}
-        {elegida ? null : <GraficoCompacto observaciones={serie.observaciones} periodo={datos.period} zonaHoraria={datos.period.timeZone} elegida={indice} />}
+        {elegida ? null : <GraficoCompacto observaciones={serie.observaciones} tomas={serie.tomas} periodo={datos.period} zonaHoraria={datos.period.timeZone} elegida={indice} />}
         {serie.observaciones.length === 1 ? <Text style={estilos.nota}>Una sola medición comparable en el período.</Text> : null}
         {otros ? <Text style={estilos.nota}>{otros}</Text> : null}
       </Pressable>
@@ -192,9 +186,8 @@ function TarjetaDeProgreso({
 
 const estilos = estilosPorTema((COLOR) => ({
   controles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  lamina: { borderRadius: 18, overflow: 'hidden', marginTop: 8, marginBottom: 4 },
+  lamina: { borderRadius: 18, overflow: 'hidden', marginTop: 8, marginBottom: 8 },
   panelesDelTorso: { paddingHorizontal: 8, paddingTop: 8 },
-  titulo: { fontSize: 15, lineHeight: 21, fontWeight: '800', color: COLOR.texto, marginTop: 10, marginBottom: 6 },
   tarjeta: {
     borderRadius: 16,
     overflow: 'hidden',
@@ -213,8 +206,6 @@ const estilos = estilosPorTema((COLOR) => ({
   numeroDeLaInsignia: { fontSize: 13, fontWeight: '800' },
   nombre: { flexGrow: 1, flexShrink: 1, fontSize: 15, lineHeight: 21, fontWeight: '600', color: COLOR.texto },
   nombreElegido: { fontWeight: '800' },
-  valor: { fontSize: 20, lineHeight: 26, fontWeight: '800', color: COLOR.texto },
-  cambio: { fontSize: 14, lineHeight: 20, fontWeight: '600', color: COLOR.texto, marginTop: 4 },
   sinDato: { fontSize: 14, lineHeight: 20, color: COLOR.tenue, marginTop: 4 },
   nota: { fontSize: 13, lineHeight: 18, color: COLOR.tenue, marginTop: 2 },
 }));

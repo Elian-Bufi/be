@@ -50,7 +50,7 @@ import {
 } from '@be/domain';
 import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View, type ImageSourcePropType } from 'react-native';
-import Svg, { Circle, Ellipse, G, Path, Text as TextoSvg } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop, Text as TextoSvg } from 'react-native-svg';
 import { useApariencia } from '../apariencia';
 import { componerLaFigura, componerLaFiguraDeZona, familiaQueSeVe, INTERLINEA, LETRA, sitioTocado, type ComposicionDeLaFigura, type FamiliaDeLaFigura, type FiguraDeLaZona, type FilaDeLaTarjeta, type SitioDeLaFigura } from '../composicion-de-la-figura';
 import { ANILLO_EN_EL_TELEFONO, arcoDeLaElipse, GUIA_EN_EL_TELEFONO, PLIEGUE_EN_EL_TELEFONO, PLIEGUE_POSTERIOR_EN_EL_TELEFONO, trazoDeLaGuia } from '../dibujo-de-la-figura';
@@ -82,6 +82,8 @@ const CLAVE_DE_LA_FIGURA = 'be-figura-de-la-toma';
  * sitios conservan su contraste y la figura sigue siendo la de la marca. En Claro, el contorno ya lo separa del fondo.
  */
 const OPACIDAD_DEL_CUERPO: Readonly<Record<Tema, number>> = { 'azul-noche': 0.8, claro: 1 };
+/** Lo que mide el desvanecido donde la franja de una zona corta el cuerpo, en dp. */
+const ALTO_DEL_DESVANECIDO = 28;
 
 /** Si una medida de la toma se dibuja en la figura: un perímetro o un pliegue con sitio en la lámina. */
 /** Si una medida tiene sitio en la figura (un perímetro o un pliegue que la lámina ubica). */
@@ -515,6 +517,7 @@ export function FiguraDeZona({
   encuadre,
   claves,
   clavesDeLaZona,
+  maximoDeNumeros,
   sexo,
   elegida,
   alElegir,
@@ -523,6 +526,8 @@ export function FiguraDeZona({
   encuadre: 'TREN_SUPERIOR' | 'TREN_INFERIOR';
   claves: readonly ClaveDeLaLamina[];
   clavesDeLaZona: readonly ClaveDeLaLamina[];
+  /** Cuántos números tiene el panel más largo de la zona: el cuerpo no se mueve al cambiar de panel. */
+  maximoDeNumeros: number;
   sexo: SexoDeLaLamina;
   elegida: string | null;
   alElegir: (clave: ClaveDeLaLamina | null) => void;
@@ -531,9 +536,10 @@ export function FiguraDeZona({
   const { fontScale, height } = useWindowDimensions();
   const [ancho, setAncho] = useState(0);
   const [juntos, setJuntos] = useState<readonly ClaveDeLaLamina[] | null>(null);
-  // El cuerpo no pasa de algo más de la mitad del alto de la pantalla: las tarjetas empiezan a verse sin desplazarse mucho.
-  const altoMaximoDelCuerpo = Math.min(400, Math.max(260, Math.round(height * 0.5)));
-  const figura: FiguraDeLaZona | null = ancho > 0 ? componerLaFiguraDeZona({ ancho, sexo, familia, encuadre, claves, clavesDeLaZona, escalaDeLetra: fontScale, altoMaximoDelCuerpo }) : null;
+  // La franja mide hasta un 30 % del alto de la pantalla, entre 200 y 280 dp: con ella se ven las primeras tarjetas
+  // (ajuste de Dirección del 2026-10-05).
+  const altoMaximo = Math.min(280, Math.max(200, Math.round(height * 0.3)));
+  const figura: FiguraDeLaZona | null = ancho > 0 ? componerLaFiguraDeZona({ ancho, sexo, familia, encuadre, claves, clavesDeLaZona, escalaDeLetra: fontScale, altoMaximo, maximoDeNumeros }) : null;
   const colores = COLORES_DE_LA_FIGURA[TEMA_DE_LA_LAMINA[tema]];
   const lamina = laminaDe(tema);
   const alternar = (clave: ClaveDeLaLamina) => {
@@ -568,6 +574,24 @@ export function FiguraDeZona({
               style={{ position: 'absolute', left: figura.imagen.x, top: figura.imagen.y, width: figura.imagen.ancho, height: figura.imagen.alto, opacity: OPACIDAD_DEL_CUERPO[tema] }}
               resizeMode="stretch"
             />
+            {/* Donde la franja corta el cuerpo, se desvanece en el fondo de la lámina: no es un borde del cuerpo. Va debajo de
+                los sitios, las guías y los números, que no se atenúan. */}
+            {figura.cortadaArriba || figura.cortadaAbajo ? (
+              <Svg width={ancho} height={figura.alto} style={{ position: 'absolute', left: 0, top: 0 }} pointerEvents="none">
+                <Defs>
+                  <LinearGradient id={`franja-arriba-${tema}`} x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor={lamina.fondo} stopOpacity={1} />
+                    <Stop offset="1" stopColor={lamina.fondo} stopOpacity={0} />
+                  </LinearGradient>
+                  <LinearGradient id={`franja-abajo-${tema}`} x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor={lamina.fondo} stopOpacity={0} />
+                    <Stop offset="1" stopColor={lamina.fondo} stopOpacity={1} />
+                  </LinearGradient>
+                </Defs>
+                {figura.cortadaArriba ? <Rect x={0} y={0} width={ancho} height={ALTO_DEL_DESVANECIDO} fill={`url(#franja-arriba-${tema})`} /> : null}
+                {figura.cortadaAbajo ? <Rect x={0} y={figura.alto - ALTO_DEL_DESVANECIDO} width={ancho} height={ALTO_DEL_DESVANECIDO} fill={`url(#franja-abajo-${tema})`} /> : null}
+              </Svg>
+            ) : null}
             <Svg width={ancho} height={figura.alto} style={{ position: 'absolute', left: 0, top: 0 }} pointerEvents="none">
               {figura.guias.map((g) => {
                 const t = g.posterior ? GUIA_EN_EL_TELEFONO.posterior : GUIA_EN_EL_TELEFONO.normal;

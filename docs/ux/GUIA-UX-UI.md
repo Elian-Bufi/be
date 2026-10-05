@@ -115,13 +115,22 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
   - Las pestañas son texto con una raya debajo de la elegida, de borde a borde: se distinguen de las píldoras, que eligen
     dentro de una vista. Antes, vistas y familia eran dos filas de píldoras iguales (pulido del 2026-10-04).
   - En una fila mientras entran. Si no, bajan enteras a dos filas, sin partir palabras ni achicar la letra.
-- **Lo que se elige dentro de una vista va debajo de lo que la nombra.** En «Mi evolución» van la fecha principal y un
-  contexto breve, y las tomas en chips que se desplazan de costado (la elegida queda a la vista). En el mapa, la familia
-  va en píldoras compactas dentro de la lámina. En Progreso, la familia y la zona van en píldoras compactas sobre la
-  lámina, y la parte del torso, dentro. Las explicaciones largas van en «Cómo se lee».
-- **Un gráfico chico dice cómo se lee su eje.** Sus puntos van sobre fechas reales, con el principio y el fin del período
-  y los dos extremos de la escala rotulados (DL-118). No une puntos ni rellena huecos, muestra un solo grupo comparable,
-  y su ancho es el del lugar: no desborda. Con una sola observación no se dibuja.
+- **Lo que se elige dentro de una vista va debajo de lo que la nombra.** En «Mi evolución» van la fecha de la toma y
+  cuál es («Última toma» o «Toma T2»), y las tomas en chips que se desplazan de costado (la elegida queda a la vista).
+  En el mapa, la familia va en píldoras compactas dentro de la lámina. En Progreso, la familia y la zona van en
+  píldoras compactas sobre la lámina, y la parte del torso, dentro. Las explicaciones largas van en «Cómo se lee».
+  - La cabecera no dice con qué fecha se compara: cada medida puede tener otra anterior comparable, y la fecha va en su
+    tarjeta (ajuste de Dirección del 2026-10-05).
+- **Un gráfico chico dice cómo se lee su eje.** Tiene la forma del ejemplo de Dirección del 2026-10-05, sin unir los
+  puntos:
+  - los puntos van sobre fechas reales, y debajo de cada uno, su toma (T1, T2…), la del selector;
+  - tres líneas de referencia rotuladas: los extremos de la escala y el medio, redondeado;
+  - los puntos son huecos, y el de la toma elegida, lleno y más grande;
+  - debajo del gráfico, los valores en fila, en el orden de los puntos, con el de la toma elegida resaltado.
+
+  No une puntos ni rellena huecos, muestra un solo grupo comparable, y su ancho es el del lugar: no desborda. Si dos
+  rótulos de toma no entran, se escriben el de la elegida, el último y el primero. Con una sola observación no se
+  dibuja.
 
 **Website**
 - Adentro de un asesorado, una pestaña por dominio.
@@ -271,7 +280,12 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
   - Es la imagen del tren del compositor, con la misma transformación que la lámina: no se genera otro cuerpo ni se
     mueve ningún punto.
   - Cada sitio lleva un número, de arriba hacia abajo, y su tarjeta lleva el mismo.
-  - Los dos paneles del torso dibujan el mismo cuerpo en el mismo lugar: cambian los sitios, no la figura.
+  - Es una franja: la parte del tren donde están los sitios de la zona, de hasta un 30 % del alto de la pantalla
+    (entre 200 y 280 dp). Donde corta el cuerpo, se desvanece en el fondo de la lámina. Los números no se achican: si no
+    entran, la figura crece lo que necesitan (ajuste de Dirección del 2026-10-05).
+  - Las tarjetas la siguen sin un título en el medio: se ven la figura y las primeras tarjetas juntas.
+  - Los dos paneles del torso dibujan el mismo cuerpo en el mismo lugar, con el alto del panel con más números:
+    cambian los sitios, no la figura.
 - **La imagen exportada se equilibra.** En Medición con el cuerpo entero, la figura arranca en 290 y mide 1390. Así no
   queda una franja vacía bajo el encabezado (Dirección, 2026-10-03). Los otros encuadres son los del compositor.
 - **Selección coordinada en la figura** (APK, `figura-de-la-toma.tsx`).
@@ -314,6 +328,10 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
   apartado.
   - Cada tarjeta compara el valor de la toma elegida con la anterior comparable, el mismo par que calcula el dominio, y
     dice su fecha («respecto del 25 jul»).
+  - Con la forma del ejemplo de Dirección del 2026-10-05: el valor grande con la unidad chica y, a su derecha, el
+    cambio con su flecha (↑ o ↓) y su fecha debajo. En una tarjeta angosta o con letra ×1,3 o más, el cambio va debajo
+    del valor.
+  - La flecha dice para dónde, no si es bueno o malo: va del mismo color hacia arriba y hacia abajo.
   - Cuando una medida no tiene con qué compararse, se dice por qué: no hay una toma anterior comparable en el período,
     o la anterior se tomó con otro protocolo, método o unidad.
 - **Los resultados calculados siempre llevan su método.** Dos métodos no se comparan entre sí, y ninguno se marca

@@ -7,9 +7,11 @@
  *   el detalle permite verlo (REG-06-162/164).
  * - **Las fechas reales del período**, con sus huecos (`filasDelPeriodo`): un tramo sin medición no se completa
  *   (REG-06-165/166).
- * - El resumen de cada toma (`tomaDe`) y la serie preparada se calculan una vez por respuesta.
+ * - **La toma de cada punto** (T1, T2…), con la numeración del selector (`tomasDelPeriodo`): el gráfico de una tarjeta la
+ *   escribe bajo cada punto (ajuste de Dirección del 2026-10-05).
+ * - El resumen de cada toma (`tomaDe`), la numeración y la serie preparada se calculan una vez por respuesta.
  */
-import { filasDelPeriodo, grupoVigente, prepararSerie, tomaDe, type EvolucionResponse, type FilaDeEvolucion, type GrupoDeComparabilidad, type Observacion, type SeriePreparada, type UltimaToma } from '@be/domain';
+import { filasDelPeriodo, grupoVigente, prepararSerie, tomaDe, tomasDelPeriodo, type EvolucionResponse, type FilaDeEvolucion, type GrupoDeComparabilidad, type Observacion, type SeriePreparada, type UltimaToma } from '@be/domain';
 
 type Datos = EvolucionResponse['data'];
 
@@ -42,6 +44,18 @@ export function resumenDe(datos: Datos, evaluacionId: string): UltimaToma | null
   return porToma.get(evaluacionId) ?? null;
 }
 
+const etiquetas = new WeakMap<Datos, ReadonlyMap<string, string>>();
+
+/** La etiqueta de cada evaluación del período (T1, T2…), la misma del selector de tomas, una vez por respuesta. */
+export function etiquetasDeLasTomas(datos: Datos): ReadonlyMap<string, string> {
+  let porEvaluacion = etiquetas.get(datos);
+  if (!porEvaluacion) {
+    porEvaluacion = new Map(tomasDelPeriodo(datos).map((t) => [t.evaluacionId, t.etiqueta]));
+    etiquetas.set(datos, porEvaluacion);
+  }
+  return porEvaluacion;
+}
+
 export interface SerieDeLaMedida {
   /** El grupo de comparabilidad que se dibuja, o `null` si la medida no tiene observaciones. */
   readonly grupo: string | null;
@@ -49,6 +63,8 @@ export interface SerieDeLaMedida {
   readonly filas: readonly FilaDeEvolucion[];
   /** Las observaciones del grupo dentro del período: lo que dibuja el gráfico. */
   readonly observaciones: readonly Observacion[];
+  /** La toma de cada observación (T1, T2…), en el mismo orden; `null` si su evaluación no está en el período. */
+  readonly tomas: readonly (string | null)[];
   /** Cuántas observaciones del período tienen otro protocolo, método o unidad: no se dibujan en este eje. */
   readonly enOtrosGrupos: number;
   /** Los grupos que la medida usa en el período, para elegir otro en el detalle. */
@@ -61,16 +77,18 @@ export interface SerieDeLaMedida {
  */
 export function serieDeLaMedida(datos: Datos, metrica: string, grupoPedido: string | null): SerieDeLaMedida {
   const serie = serieDe(datos, metrica);
-  if (!serie) return { grupo: null, filas: [], observaciones: [], enOtrosGrupos: 0, grupos: [] };
+  if (!serie) return { grupo: null, filas: [], observaciones: [], tomas: [], enOtrosGrupos: 0, grupos: [] };
   const grupo = grupoVigente(serie, grupoPedido);
   const filas = filasDelPeriodo(serie, grupo, datos.period);
   const observaciones = filas.flatMap((f) => (f.tipo === 'observacion' ? [f.observacion] : []));
   const delPeriodo = serie.observaciones.filter((o) => o.fecha >= datos.period.start && o.fecha <= datos.period.end);
   const usados = new Set(delPeriodo.map((o) => o.punto.comparabilityGroup));
+  const deCadaEvaluacion = etiquetasDeLasTomas(datos);
   return {
     grupo,
     filas,
     observaciones,
+    tomas: observaciones.map((o) => deCadaEvaluacion.get(o.punto.sourceEvaluationId) ?? null),
     enOtrosGrupos: delPeriodo.filter((o) => o.punto.comparabilityGroup !== grupo).length,
     grupos: serie.grupos.filter((g) => usados.has(g.comparabilityGroup)),
   };

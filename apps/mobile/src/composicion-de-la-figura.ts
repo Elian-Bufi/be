@@ -35,6 +35,7 @@
  * pasa, la fila queda más alta o la figura pasa a números, nunca se corta.
  */
 import {
+  ACHATAMIENTO_DEL_ANILLO,
   anilloEnLaLamina,
   apilarTarjetas,
   cantidad,
@@ -369,6 +370,17 @@ export function sitioTocado(sitios: readonly Pick<SitioDeLaFigura, 'clave' | 'cx
 
 // ─── La figura de una zona, en Progreso (DL-118) ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Cuánto cuerpo se ve por encima del sitio más alto de la zona y por debajo del más bajo, en fracción del alto de la
+ * imagen: el mentón sobre el cuello, un poco de muslo bajo la muñeca.
+ */
+const CONTEXTO_DE_LA_FRANJA = 0.04;
+/**
+ * El ancho máximo de la imagen de una zona, en veces el ancho de la figura. Una franja baja, como la de los pliegues del
+ * torso, agranda el cuerpo; con este tope se sigue viendo casi entero de ancho.
+ */
+const ANCHO_MAXIMO_DE_LA_IMAGEN_DE_ZONA = 1.2;
+
 export interface EntradaDeLaFiguraDeZona {
   /** El ancho disponible, en dp. */
   readonly ancho: number;
@@ -378,11 +390,17 @@ export interface EntradaDeLaFiguraDeZona {
   readonly encuadre: 'TREN_SUPERIOR' | 'TREN_INFERIOR';
   /** Los sitios del panel que se numeran. */
   readonly claves: readonly ClaveDeLaLamina[];
-  /** Todos los sitios con datos de la zona: fijan el tamaño y el lugar del cuerpo, iguales en los dos paneles. */
+  /** Todos los sitios con datos de la zona: fijan la franja, el tamaño y el lugar del cuerpo, iguales en los dos paneles. */
   readonly clavesDeLaZona: readonly ClaveDeLaLamina[];
   readonly escalaDeLetra: number;
-  /** El alto máximo del cuerpo, en dp. */
-  readonly altoMaximoDelCuerpo: number;
+  /** El alto máximo de la figura, en dp. Los números de los sitios pueden pedir más: nunca se achican para entrar. */
+  readonly altoMaximo: number;
+  /**
+   * Cuántos números tiene el panel más largo de la zona (por omisión, los de este panel). La figura reserva su alto en
+   * todos los paneles: si no, con letra grande, el panel de cinco números sería más alto que el de cuatro y el cuerpo se
+   * movería al cambiar de panel.
+   */
+  readonly maximoDeNumeros?: number;
 }
 
 /** Un sitio de la figura de una zona: dónde se dibuja y su número, que es el de su tarjeta. */
@@ -408,14 +426,21 @@ export interface FiguraDeLaZona {
   readonly guias: readonly GuiaDeLaFigura[];
   /** El diámetro de la ficha. */
   readonly ficha: number;
+  /** Si la franja corta el cuerpo arriba o abajo: ahí la figura se desvanece en el fondo de la lámina. */
+  readonly cortadaArriba: boolean;
+  readonly cortadaAbajo: boolean;
 }
 
 /**
  * La figura de una zona: la del compositor para ese tren, con un número por sitio en una columna angosta a la izquierda,
  * unido por su guía, como la figura con números del mapa. Los valores y los gráficos van en las tarjetas, debajo.
- * - Figura, anillos, puntos, guías y zonas de toque salen del mismo rectángulo de la imagen. Ningún sitio se mueve.
- * - El tamaño sale del alto máximo y de todos los sitios de la zona, no del panel: pasar de un panel a otro no mueve el
- *   cuerpo.
+ * - **Una franja del cuerpo** (ajuste de Dirección del 2026-10-05). Se ve la parte del tren donde están los sitios de la
+ *   zona, con un poco de cuerpo alrededor, y la figura mide hasta `altoMaximo`: así se ven la figura y las primeras
+ *   tarjetas juntas. Los números no se achican: si no entran, la figura crece lo que necesitan.
+ * - Figura, anillos, puntos, guías y zonas de toque salen del mismo rectángulo de la imagen, recortado por la franja.
+ *   Ningún sitio se mueve.
+ * - La franja y el tamaño salen de todos los sitios con datos de la zona, no del panel: pasar de un panel a otro no mueve
+ *   el cuerpo.
  * - El cuerpo va centrado en el espacio libre, sin pasar el límite de recorte del mapa (`ENCUADRE.aLaDerechaDelEje`) y
  *   sin que el sitio más a la izquierda quede debajo de la columna de números.
  * - Los números van de arriba hacia abajo, en el orden de la altura de sus sitios.
@@ -433,18 +458,35 @@ export function componerLaFiguraDeZona(e: EntradaDeLaFiguraDeZona): FiguraDeLaZo
   const punto = familia === 'PLIEGUES' ? RADIO_DEL_PUNTO : 0;
   const aLaIzquierda = Math.max(0, -Math.min(...deLaZona.map((c) => lugares[c]!.x / 100 - (familia === 'PERIMETROS' ? (lugares[c]!.ancho ?? 0) / 200 : 0))));
   const proporcion = figura.altoPx / figura.anchoPx;
-  const porAlto = e.altoMaximoDelCuerpo / (proporcion * (figura.cuerpo.alto / 100));
+  // La franja, en fracción del alto de la imagen: del borde de arriba del sitio más alto al de abajo del más bajo, con
+  // su contexto, sin pasar de la caja del cuerpo. El medio alto de un anillo también es una fracción fija de la imagen.
+  const medioAlto = (c: string) => (familia === 'PERIMETROS' ? (((lugares[c]!.ancho ?? 0) / 200) * ACHATAMIENTO_DEL_ANILLO) / proporcion : 0);
+  const cuerpoArriba = figura.cuerpo.arriba / 100;
+  const cuerpoAbajo = (figura.cuerpo.arriba + figura.cuerpo.alto) / 100;
+  const desde = Math.max(cuerpoArriba, Math.min(...deLaZona.map((c) => lugares[c]!.y / 100 - medioAlto(c))) - CONTEXTO_DE_LA_FRANJA);
+  const hasta = Math.min(cuerpoAbajo, Math.max(...deLaZona.map((c) => lugares[c]!.y / 100 + medioAlto(c))) + CONTEXTO_DE_LA_FRANJA);
+  // Entre la franja y el borde de la figura: el margen y, en los pliegues, el radio del punto, que se dibuja entero.
+  const borde = MARGEN + punto;
+  const porAlto = Math.max(1, e.altoMaximo - 2 * borde) / ((hasta - desde) * proporcion);
   const porAncho = (ancho - columna - CALLE - punto) / (ENCUADRE.aLaDerechaDelEje + aLaIzquierda);
-  const anchoDeImagen = Math.min(porAlto, porAncho, ancho * ENCUADRE.anchoDeLaImagen);
+  const anchoDeImagen = Math.min(porAlto, porAncho, ancho * ANCHO_MAXIMO_DE_LA_IMAGEN_DE_ZONA);
   const altoDeImagen = anchoDeImagen * proporcion;
-  const altoDelCuerpo = (altoDeImagen * figura.cuerpo.alto) / 100;
+  const altoDeLaFranja = (hasta - desde) * altoDeImagen + 2 * borde;
   const libre = columna + CALLE + punto;
   // El eje de la imagen es su centro; la caja del cuerpo puede estar un poco corrida de él.
   const ejeCentrado = (libre + ancho) / 2 - ((figura.cuerpo.centroX - 50) / 100) * anchoDeImagen;
   const ejeMinimo = libre + aLaIzquierda * anchoDeImagen;
   const ejeMaximo = Math.max(ejeMinimo, ancho - ENCUADRE.aLaDerechaDelEje * anchoDeImagen);
   const eje = Math.min(Math.max(ejeCentrado, ejeMinimo), ejeMaximo);
-  const imagen: RectanguloEnLaLamina = { x: eje - anchoDeImagen / 2, y: MARGEN - (figura.cuerpo.arriba / 100) * altoDeImagen, ancho: anchoDeImagen, alto: altoDeImagen };
+  const separacion = 4;
+  const numeros = Math.max(claves.length, e.maximoDeNumeros ?? 0);
+  const altoDeLosNumeros = numeros * ficha + (numeros - 1) * separacion + 2 * MARGEN;
+  const alto = Math.max(altoDeLaFranja, altoDeLosNumeros);
+  // Si los números piden más alto que la franja, la franja va en el medio y se ve un poco más de cuerpo.
+  const arribaDeLaFranja = borde + (alto - altoDeLaFranja) / 2;
+  const imagen: RectanguloEnLaLamina = { x: eje - anchoDeImagen / 2, y: arribaDeLaFranja - desde * altoDeImagen, ancho: anchoDeImagen, alto: altoDeImagen };
+  const cortadaArriba = imagen.y + cuerpoArriba * altoDeImagen < -0.5;
+  const cortadaAbajo = imagen.y + cuerpoAbajo * altoDeImagen > alto + 0.5;
 
   const ubicados = claves.map((clave) => {
     const base = { clave, rotulo: rotuloDelSitio(clave) };
@@ -457,12 +499,10 @@ export function componerLaFiguraDeZona(e: EntradaDeLaFiguraDeZona): FiguraDeLaZo
   });
   // De arriba hacia abajo; a la misma altura, en el orden del panel.
   const ordenados = ubicados.map((s, i) => ({ s, i })).sort((a, b) => a.s.cy - b.s.cy || a.i - b.i).map(({ s }, n) => ({ ...s, numero: n + 1 }));
-  const separacion = 4;
-  const alto = Math.max(altoDelCuerpo + 2 * MARGEN, ordenados.length * ficha + (ordenados.length - 1) * separacion + 2 * MARGEN);
   const bordes = apilarTarjetas(ordenados.map((s) => ({ alto: ficha, centroDeseado: s.cy })), { tope: MARGEN, piso: alto - MARGEN, separacion }, 'CENTRO');
   const fichas = ordenados.map((s, i) => ({ clave: s.clave, numero: s.numero, x: MARGEN / 2 + ficha / 2, y: bordes[i]! + ficha / 2 }));
   const guias: GuiaDeLaFigura[] = ordenados.map((s, i) => ({ clave: s.clave, desde: { x: MARGEN / 2 + ficha + 2, y: fichas[i]!.y }, quiebre: columna + 6, hasta: { x: s.izquierda - 3, y: s.cy }, posterior: s.posterior }));
-  return { ancho, alto, imagen, sitios: ordenados, fichas, guias, ficha };
+  return { ancho, alto, imagen, sitios: ordenados, fichas, guias, ficha, cortadaArriba, cortadaAbajo };
 }
 
 /**

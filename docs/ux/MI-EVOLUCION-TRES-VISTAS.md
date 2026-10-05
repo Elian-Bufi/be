@@ -148,7 +148,7 @@ en lista» y el detalle con el período completo, y los controles en dos filas c
 
 **Por qué la figura no va al costado de las tarjetas.** En 360 a 412 dp, la figura al costado dejaba las tarjetas en
 unos 200 dp: el nombre, el cambio y los puntos se partían o se achicaban. Una franja más baja encima de las tarjetas
-deja ver la figura y dos o tres tarjetas juntas, con la letra y los gráficos de siempre.
+deja ver la figura y la primera tarjeta juntas, con la letra de siempre.
 
 **Lo que no cambia:**
 - Torso y Piernas, los dos paneles del torso cuando corresponden, y el mismo número en la figura y en la tarjeta.
@@ -158,3 +158,28 @@ deja ver la figura y dos o tres tarjetas juntas, con la letra y los gráficos de
   otro no lo mueve.
 - La letra grande, apilada. Los controles bajan de fila, los números crecen hasta su tope y la figura crece lo que
   ellos necesiten. Las tarjetas van a todo el ancho, debajo.
+
+## 9. Los gráficos de las tarjetas, con la forma del ejemplo de Dirección (2026-10-05)
+
+Dirección mandó una tarjeta como ejemplo («Muslo, 56 cm, ↑ +3 cm») y pidió acercar los gráficos a ella. Lo que la
+distingue, y lo que se tomó:
+
+| Del ejemplo | En BE |
+|---|---|
+| El nombre arriba; el valor grande, con la unidad chica | Igual, con el número del sitio delante del nombre |
+| El cambio con su flecha, a la derecha del valor | Igual, con su fecha debajo («respecto del 25 jul»). La flecha va del mismo color hacia arriba y hacia abajo: dice para dónde, no si es bueno o malo. En una tarjeta angosta o con letra grande, el cambio va debajo del valor |
+| Tres líneas de referencia, con su valor | Igual: los extremos de la escala (`dominioDelEjeVertical`) y el medio, redondeado |
+| Puntos huecos, con borde | Igual; el de la toma elegida, lleno y más grande |
+| La toma bajo cada punto (T1 … T5) | Igual, con la numeración del selector. Si dos rótulos no entran, se escriben el de la elegida, el último y el primero |
+| Los valores en fila, debajo del gráfico | Igual, en el orden de los puntos, con el de la toma elegida resaltado |
+
+**Lo que no se tomó:**
+- **La línea que une los puntos.** REG-06-166 prohíbe interpolar entre dos tomas, y DL-118 excluyó las líneas entre
+  puntos de las láminas de referencia. Una línea sugiere valores que nadie midió y esconde los huecos.
+- **Las tomas a la misma distancia.** DL-118 decidió las fechas reales. La toma bajo cada punto da la identificación del
+  ejemplo sin perder la escala del tiempo: dos tomas cercanas quedan cerca.
+- **El fondo blanco.** Se conservan Azul noche y Claro (DL-118). En Claro, la tarjeta se parece al ejemplo.
+
+**Lo que cuesta.** Cada tarjeta mide unos 90 dp más que en el cierre. La franja de la figura lo compensa al principio de
+la pantalla. Para leer todos los cambios de un panel hay que desplazarse más o menos lo mismo que antes, pero cada
+tarjeta se lee sin abrirla.

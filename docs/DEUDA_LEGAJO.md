@@ -2873,5 +2873,8 @@ diseño reversibles, tomadas con ese documento y los patrones de BE.
     letra grande;
   - sacar de la cabecera «se compara con [fecha]», porque cada medida puede tener otra anterior comparable. Cada
     tarjeta conserva su fecha de comparación.
+- **Después pide** acercar los gráficos de las tarjetas a un ejemplo suyo. Se tomaron su jerarquía, las tres líneas de
+  referencia, los puntos huecos, la toma bajo cada punto y los valores en fila. No se tomaron la línea entre puntos
+  (REG-06-166; DL-118 la excluye) ni las tomas a la misma distancia (DL-118 decidió fechas reales). Detalle en §9.
 - **No pide otra APK** hasta revisar este ajuste.
 

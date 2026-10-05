@@ -223,8 +223,10 @@ del 2026-10-04 y las reglas completas están en [MI-EVOLUCION-TRES-VISTAS.md](MI
     tiene, la vista muestra la anterior más cercana y lo dice con las dos fechas.
 - **La cabecera.**
   - Arriba van las vistas, en pestañas subrayadas de borde a borde. Con una sola vista, no hay pestañas.
-  - Debajo, una fecha principal y un contexto breve («Última toma · se compara con el 25 jul 2026»), y las tomas en
-    una fila de chips que se desplaza de costado.
+  - Debajo, la fecha de la toma y cuál es («Última toma» o «Toma T2»), y las tomas en una fila de chips que se
+    desplaza de costado.
+  - No dice con qué fecha se compara: cada medida puede tener otra anterior comparable, y su tarjeta la dice (ajuste de
+    Dirección del 2026-10-05).
   - Las explicaciones largas van en «Cómo se lee».
 - **Sin vistas vacías.**
   - El mapa y Progreso aparecen si alguna toma tiene perímetros o pliegues; Indicadores, si alguna tiene indicadores.
@@ -239,9 +241,12 @@ del 2026-10-04 y las reglas completas están en [MI-EVOLUCION-TRES-VISTAS.md](MI
 - **Progreso:** «¿qué cambió en esta parte del cuerpo?».
   - Dos elecciones: Perímetros o Pliegues, y Torso o Piernas.
   - La figura es la del tren del compositor, con un número por sitio. Cada sitio va en una sola zona, por su clave.
+  - Desde el ajuste del 2026-10-05, la figura es una franja compacta con los sitios de la zona, y las tarjetas la
+    siguen sin un título en el medio.
   - El torso, con más de cinco sitios, se reparte en dos paneles fijos.
-  - Una tarjeta por sitio: el valor de la toma, el cambio respecto de la anterior comparable con su fecha, y los puntos
-    sobre fechas reales. Al tocarla, el gráfico grande y la lista.
+  - Una tarjeta por sitio, con la forma del ejemplo de Dirección del 2026-10-05: el valor grande, el cambio con su
+    flecha y su fecha, los puntos sobre fechas reales con la toma de cada uno, y los valores en fila. Al tocarla, el
+    gráfico grande y la lista.
   - Comparar salió como apartado: su lectura está en estas tarjetas.
 - **Indicadores:** «¿qué datos y resultados tengo disponibles?». Cuatro bloques:
   - mediciones;
@@ -254,6 +259,8 @@ del 2026-10-04 y las reglas completas están en [MI-EVOLUCION-TRES-VISTAS.md](MI
   (`mi-evolucion:medida`) es la misma en el mapa, en Progreso y en los indicadores.
 - **Los gráficos chicos.** Desde DL-118 son de **fechas reales**: el período de punta a punta, la escala visible, sin
   líneas ni rellenos y un solo grupo de comparabilidad por gráfico.
+  - Desde el ajuste del 2026-10-05 tienen tres líneas de referencia, la toma bajo cada punto y los valores en fila
+    (`GUIA-UX-UI.md` §4).
   - El otro grupo se cuenta aparte y se elige en el detalle.
   - Con una sola observación no hay gráfico.
   - Los gráficos por orden de toma del cierre del 2026-10-04 se retiraron.
