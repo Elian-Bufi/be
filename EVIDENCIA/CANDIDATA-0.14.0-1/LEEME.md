@@ -1,7 +1,7 @@
 # APK candidata 0.14.0-candidata.1 · Inicio y navegación (DL-117), con el pulido visual
 
 **Estado: construida para probar en el teléfono, el 2026-10-05 (el reintento empezó el 4 a la noche). No publicada.**
-- No se integró #146, no se desplegó nada y no se creó ninguna release.
+- No se integró #146 y no se desplegó nada. Por pedido de Dirección, se publicó como **prerelease**, no como Latest (ver «Publicación»).
 - La estable sigue siendo la 0.13.2: `releases/latest` redirige a `be-apk-0.13.2`.
 - Falta la prueba de Dirección en el teléfono.
 
@@ -12,7 +12,24 @@
 | Tamaño | 78.406.938 bytes |
 | Versión | `0.14.0-candidata.1`, versionCode 23 |
 | Commit construido | `0a28dd66e5ed5fd69b20afdd6a1aa5cba1af4faf`, en la rama `apk/candidata-0.14.0-1`. Es la candidata de #146 (`2e53ac8`) más la versión, y solo cambia `apps/mobile/app.config.ts`. Viaja incluido en la app |
-| Entrega | Por cable, desde una copia permanente en la carpeta Descargas del equipo de construcción, junto a un archivo con estos datos y la verificación. El SHA-256 de la copia coincide con el de la salida de Gradle. El canal de archivos de la sesión admite hasta 30 MiB y el APK pesa 74,8 MiB. Sin release |
+| Entrega | La prerelease [`be-apk-0.14.0-candidata.1`](https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.14.0-candidata.1), con el APK y su `.sha256`. Hay además una copia permanente en la carpeta Descargas del equipo de construcción, para pasarla por cable |
+
+## Publicación
+
+Se publicó el 2026-10-05, con la autorización de Dirección, como **prerelease**. Se subió el mismo archivo verificado, sin
+recompilar.
+
+| Control | Resultado |
+|---|---|
+| Release | `be-apk-0.14.0-candidata.1`, creada con `--prerelease --latest=false`: prerelease y no borrador |
+| Tag | `be-apk-0.14.0-candidata.1` apunta al commit completo `0a28dd66e5ed5fd69b20afdd6a1aa5cba1af4faf`. Es liviano, como el de la 0.13.2, y su nombre no dispara ningún workflow (`apk.yml` escucha `apk-v*`) |
+| Adjuntos | `be-0.14.0-candidata.1-0a28dd6.apk`, de 78.406.938 bytes, y `be-0.14.0-candidata.1-0a28dd6.apk.sha256` |
+| Descarga | El APK se bajó del enlace público, sin autenticación, con HTTP 200. Su SHA-256 es `57c23b27…19e8fc`, la comprobación con el `.sha256` publicado da OK y el archivo es idéntico byte a byte al verificado |
+| La estable | `releases/latest` sigue apuntando a `be-apk-0.13.2` |
+| #146 | Sigue en borrador, en `2e53ac8`, sin merge ni despliegue |
+
+- **Descarga directa:** https://github.com/Elian-Bufi/be/releases/download/be-apk-0.14.0-candidata.1/be-0.14.0-candidata.1-0a28dd6.apk
+- **Prerelease:** https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.14.0-candidata.1
 
 ## Antes de construir
 
