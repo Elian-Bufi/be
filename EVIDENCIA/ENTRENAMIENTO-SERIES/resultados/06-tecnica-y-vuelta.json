@@ -1,0 +1,29 @@
+{
+  "controles": [
+    {
+      "nombre": "la serie 1 tiene lo escrito (14 repeticiones, RIR 2,5) y es la serie actual del ejercicio 1",
+      "ok": true,
+      "detalle": "{\"repeticiones\":\"14\",\"rir\":\"2,5\",\"ejercicio\":\"Ejercicio 1 de 3\",\"actual\":true,\"sentadilla\":true}"
+    },
+    {
+      "nombre": "al volver de la técnica, la fila, lo escrito y el ejercicio activo son los mismos",
+      "ok": true,
+      "detalle": "{\"repeticiones\":\"14\",\"rir\":\"2,5\",\"ejercicio\":\"Ejercicio 1 de 3\",\"actual\":true,\"sentadilla\":true}"
+    },
+    {
+      "nombre": "desde «Ver rutina» se abre la técnica del peso muerto rumano, no la del ejercicio activo",
+      "ok": true,
+      "detalle": "RENDER DE COMPONENTES EN NAVEGADOR (react-native-web) · NO ES LA APK NI UNA CAPTURA NATIVA · DATOS SINTÉTICOS\nM05 · técnica y vuelta\nAzul noche · 390 dp · letra ×1\nVolver\nBE\nAmbiente de prueba · solo "
+    },
+    {
+      "nombre": "ver la técnica de otro ejercicio desde «Ver rutina» no cambia el activo ni lo escrito",
+      "ok": true,
+      "detalle": "{\"repeticiones\":\"14\",\"rir\":\"2,5\",\"ejercicio\":\"Ejercicio 1 de 3\",\"actual\":true,\"sentadilla\":true}"
+    },
+    {
+      "nombre": "sin errores de página",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

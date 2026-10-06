@@ -61,8 +61,9 @@ Se corrió con lo mismo que en producción, pero local:
 | 10 | La APK, en «Piernas A», con el guion de `DECISIONES_Y_TIEMPOS.md` | ídem | Series A1 y A2 cronometradas; descansos ligados a su serie; A1 a A3 registradas (A3 sin cronometrar); peso muerto activo; pausa de 120 s; B1 registrada; finalización a los 900 s con la condición declarada | `04` a `07`, `resultados/03` |
 | 11 | El profesional ve lo persistido | puppeteer contra la web | El plan histórico de cada serie frente a lo registrado y los tiempos con su certeza. El login vuelve a la pestaña Entrenamiento | `capturas-web/07`, `08`, `resultados/04` |
 | 12 | Se reinicia la API | script contra la API | Después del reinicio, todo lo del paso 7 y el 8 da igual: imágenes, objetivos y permisos | `resultados/05` |
+| 13 | **M05:** con lo escrito en la serie 1, abrir «Ver técnica» y volver; desde «Ver rutina», abrir la técnica del peso muerto y volver | render de componentes de la APK con datos sintéticos | La fila, lo escrito (14 repeticiones, RIR 2,5) y el ejercicio activo no cambian; la técnica que se abre es la del peso muerto | `capturas-apk-tecnica/`, `resultados/06` |
 
-**Resultado:** 101 controles aprobados de 101 en la corrida limpia (20, 26, 8, 21 y 26).
+**Resultado:** 106 controles aprobados de 106: los de la corrida limpia (20, 26, 8, 21 y 26) y los 5 de M05.
 
 ### El reloj de la APK en el recorrido
 
@@ -84,6 +85,9 @@ Ninguno de estos arreglos tocó el producto:
   cargas (200 s del guion y unos 4 s reales). El criterio del control pasó a ser la calidad y un piso de 200 s, y la
   corrección consta en `resultados/03` (`notaDelCriterio`).
 - **El control de las imágenes del plan activo** contaba antes de que terminaran de descargarse. Ahora espera.
+- **La prueba de M05** dio verde la primera vez sin probar lo que decía. Su selector abría la técnica del ejercicio activo
+  en lugar de la del peso muerto, y se vio al revisar la captura. El selector ahora es preciso, y un control nuevo exige
+  que la técnica abierta sea la del peso muerto.
 
 ## Qué tiempos son medidos y cuáles no
 
@@ -112,7 +116,7 @@ dominio con un reloj inyectado, en `packages/domain/src/tiempos-y-series.test.ts
 | Local | API unitaria | 71/71 |
 | Local | Integración de la API contra PostgreSQL 16 | `entrenamiento-por-serie` 24/24, `entrenamiento` 93/93 y `contrato` 14/14 en la última corrida; además, `a3-del-titular` 5/5 y, en la corrida anterior, `medios` 13/13, `recetas` 9/9, `schema` 52/52 (con la deriva) y `plantillas` 7/7 |
 | Local | Typecheck de los cuatro paquetes, export estático del website y OpenAPI regenerado | Sin errores |
-| Local | Recorrido de punta a punta (este documento) | 101/101 |
+| Local | Recorrido de punta a punta y M05 (este documento) | 106/106 |
 | Local | Renders de componentes de la APK: 37 capturas, entre ellas la matriz de 360, 390 y 412 dp × Azul noche y Claro × letra 1, 1,3 y 2 | `capturas-apk-navegador/` |
 | Remoto | CI de la rama en cada push: legajo, verificar (typecheck, unitarias, build y auditoría), integración completa e imagen de la API con `migrate deploy` | En verde en `e6bd769` |
 | Android | Teclado, TalkBack, pantalla bloqueada, muerte del proceso, cambio de hora, zona segura, botón atrás, superficie mate en Yoga, `expo-crypto` | **Pendiente:** no hay una APK nueva; no se sustituye por renders del navegador |
