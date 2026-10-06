@@ -1,0 +1,12 @@
+# Compilación del módulo nativo reloj-del-sistema, sin Gradle (precierre del 2026-10-06, §3)
+# Fecha: 2026-10-06T12:30:18-03:00 · commit base: 58567ec · expo-modules-core: "version":"57.0.18"
+# Clases de expo-modules-core: las de la compilación de la candidata 0.14.0-candidata.2 (misma versión, 57.0.18)
+# Comando: bash EVIDENCIA/ENTRENAMIENTO-SERIES/herramientas/precierre/compilar-modulo-nativo.sh <classes.jar de expo-modules-core>
+Compiló. Clases:
+./expo/modules/relojdelsistema/RelojDelSistemaModule$definition$lambda$2$$inlined$FunctionWithoutArgs$1.class
+./expo/modules/relojdelsistema/RelojDelSistemaModule$definition$lambda$2$$inlined$FunctionWithoutArgs$2.class
+./expo/modules/relojdelsistema/RelojDelSistemaModule.class
+# salida: 0
+
+# Enlace automático (npx expo-modules-autolinking resolve -p android), sin Gradle:
+{"packageName":"reloj-del-sistema","packageVersion":"0.1.0","sourceDir":"apps/mobile/modules/reloj-del-sistema/android","modules":["expo.modules.relojdelsistema.RelojDelSistemaModule"]}

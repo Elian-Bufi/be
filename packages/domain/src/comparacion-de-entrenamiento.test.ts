@@ -248,6 +248,38 @@ test('repeticiones sin fijar, criterio y carga: la sugerida se marca, el %RM no 
   assert.equal(diferenciaEnPalabras(r.diferencia!, RIR), '1 de RIR menos que lo planificado');
 });
 
+test('DL-122 · con los objetivos de la versión, el RIR y la carga planificados son los de cada serie; sin ellos, los de la prescripción', () => {
+  const x = ejecucion({ fecha: '2026-10-06', prescripciones: [piramide], registrado: [{ prescriptionId: 'rx-banca', sets: [serie(1, 10, { value: 60, unit: 'kg' }, 2), serie(2, 8, { value: 65, unit: 'kg' }, 1), serie(3, 6, { value: 70, unit: 'kg' }, 1)] }] });
+  // Como los devuelve API-SER-01: la serie 1 hereda, la 2 sobrescribe la carga y el RIR, y la 3 quita el RIR.
+  const objetivo = (setIndex: number, rir: number | null, carga: number, origenRir: 'SET' | 'PRESCRIPTION', origenCarga: 'SET' | 'PRESCRIPTION') => ({
+    setIndex,
+    target: { rir, suggestedLoad: { value: carga, unit: 'kg' as const } },
+    targetOrigin: { rir: origenRir, suggestedLoad: origenCarga },
+  });
+  const objetivos = new Map([['rx-banca', [objetivo(1, 2, 60, 'PRESCRIPTION', 'PRESCRIPTION'), objetivo(2, 1, 65, 'SET', 'SET'), objetivo(3, null, 70, 'SET', 'SET')]]]);
+  const [banca] = compararEjecucion(x, identidadDeVersiones([x]), objetivos);
+  assert.deepEqual(
+    seriesParaGraficar(banca!, RIR).map((f) => f.planificado),
+    [{ tipo: 'valor', valor: 2, origen: 'prescripcion', sugerida: false }, { tipo: 'valor', valor: 1, origen: 'serie', sugerida: false }, { tipo: 'sin-fijar' }],
+  );
+  assert.deepEqual(
+    seriesParaGraficar(banca!, KG).map((f) => [textoPlanificado(f.planificado, KG), f.diferencia && textoDeDiferencia(f.diferencia, KG)]),
+    [
+      ['60 kg (sugerida)', 'igual a la sugerida'],
+      ['65 kg (sugerida)', 'igual a la sugerida'],
+      ['70 kg (sugerida)', 'igual a la sugerida'],
+    ],
+  );
+  // Sin objetivos, como antes: la carga y el RIR de la prescripción para todas las series.
+  assert.deepEqual(
+    seriesParaGraficar(compararEjecucion(x)[0]!, KG).map((f) => textoPlanificado(f.planificado, KG)),
+    ['60 kg (sugerida)', '60 kg (sugerida)', '60 kg (sugerida)'],
+  );
+  // La evolución usa los objetivos de la versión de cada ejecución.
+  const [o] = observacionesDelEjercicio([x], 'e:ej-banca', [x], new Map([[x.planId, objetivos]]));
+  assert.deepEqual(seriesParaGraficar(o!.comparacion, RIR)[1]!.planificado, { tipo: 'valor', valor: 1, origen: 'serie', sugerida: false });
+});
+
 test('unidades: kg y lb no se mezclan; la otra unidad no se convierte y no tiene diferencia', () => {
   const x = ejecucion({ fecha: '2026-09-01', prescripciones: [piramide], registrado: [{ prescriptionId: 'rx-banca', sets: [serie(1, 10, { value: 135, unit: 'lb' })] }] });
   const c = compararEjecucion(x)[0]!;

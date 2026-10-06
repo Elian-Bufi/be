@@ -1,0 +1,146 @@
+{
+  "base": "https://be-api-hndp.onrender.com",
+  "consultado": "2026-10-06T18:57:23.836Z",
+  "salud": {
+    "status": 200,
+    "ms": 32696,
+    "commit": "2f0c14056079bb29633a1bb9c824b40fb3b58605"
+  },
+  "resultados": [
+    {
+      "id": "calibracion: ruta existente (API-ACC-05)",
+      "pr": "main",
+      "ruta": "/api/v1/me",
+      "status": 401,
+      "codigo": "AUTHENTICATION_REQUIRED",
+      "existe": true,
+      "ms": 250
+    },
+    {
+      "id": "calibracion: ruta inexistente",
+      "pr": "—",
+      "ruta": "/api/v1/ruta-que-no-existe",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 250
+    },
+    {
+      "id": "API-ING-01",
+      "pr": "#147",
+      "ruta": "/api/v1/me/nutrition/today/options",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 267
+    },
+    {
+      "id": "API-ING-03",
+      "pr": "#147",
+      "ruta": "/api/v1/nutrition/meal-records/00000000-0000-4000-8000-000000000000",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 257
+    },
+    {
+      "id": "API-REC-02",
+      "pr": "#147",
+      "ruta": "/api/v1/nutrition/recipes",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 247
+    },
+    {
+      "id": "API-REC-03",
+      "pr": "#147",
+      "ruta": "/api/v1/nutrition/recipes/00000000-0000-4000-8000-000000000000",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 247
+    },
+    {
+      "id": "API-MED-03",
+      "pr": "#147",
+      "ruta": "/api/v1/media/00000000-0000-4000-8000-000000000000/access",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 234
+    },
+    {
+      "id": "API-SER-01",
+      "pr": "#149",
+      "ruta": "/api/v1/training/plans/00000000-0000-4000-8000-000000000000/detail",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 242
+    },
+    {
+      "id": "API-SER-02",
+      "pr": "#149",
+      "ruta": "/api/v1/training/occurrences/00000000-0000-4000-8000-000000000000/session",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 247
+    },
+    {
+      "id": "API-TIE-02",
+      "pr": "#149",
+      "ruta": "/api/v1/training/execution-drafts/00000000-0000-4000-8000-000000000000/timing",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 253
+    },
+    {
+      "id": "API-TIE-03",
+      "pr": "#149",
+      "ruta": "/api/v1/training/executions/00000000-0000-4000-8000-000000000000/timing",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 243
+    },
+    {
+      "id": "API-TIE-04",
+      "pr": "#149",
+      "ruta": "/api/v1/me/training/session-in-progress",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 258
+    },
+    {
+      "id": "API-EJE-01",
+      "pr": "#149",
+      "ruta": "/api/v1/training/own-exercises",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 241
+    },
+    {
+      "id": "API-EVI-01",
+      "pr": "#149 (EVIDENCIA_VISUAL)",
+      "ruta": "/api/v1/relationships/00000000-0000-4000-8000-000000000000/visual-evidence-requirement",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 247
+    },
+    {
+      "id": "API-EVI-03",
+      "pr": "#149 (EVIDENCIA_VISUAL)",
+      "ruta": "/api/v1/me/visual-evidence-consents",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 250
+    }
+  ]
+}

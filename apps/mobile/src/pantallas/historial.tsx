@@ -45,6 +45,19 @@ const ZONA_DEL_HISTORIAL = 'America/Argentina/Buenos_Aires';
 const ultimos90Dias = () => ultimosDiasEnZona(90, ZONA_DEL_HISTORIAL);
 
 export function PantallaDeHistorial({ token, identidadId, salir, ir }: { token: string; identidadId: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
+  return (
+    <View>
+      <Titulo>{COPY_ENTRENAMIENTO.tuHistorial}</Titulo>
+      <ContenidoDelHistorial token={token} identidadId={identidadId} salir={salir} ir={ir} />
+    </View>
+  );
+}
+
+/**
+ * El contenido de «Tu historial», sin título: la pantalla propia (desde Inicio y el menú) y la pestaña Historial de
+ * Entrenamiento (WP-ENTRENAMIENTO-SERIES §7.1) muestran lo mismo.
+ */
+export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token: string; identidadId: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
   const [sesiones, setSesiones] = useState<Carga<Ejecucion[]>>({ tipo: 'cargando' });
   const [planes, setPlanes] = useState<Carga<ResumenDeVersionDePlanDeEntrenamiento[]>>({ tipo: 'cargando' });
@@ -67,7 +80,6 @@ export function PantallaDeHistorial({ token, identidadId, salir, ir }: { token: 
 
   return (
     <View>
-      <Titulo>{COPY_ENTRENAMIENTO.tuHistorial}</Titulo>
       <Parrafo tenue>{COPY_ENTRENAMIENTO.historialIntro}</Parrafo>
 
       {sinA3 ? (
@@ -88,7 +100,7 @@ export function PantallaDeHistorial({ token, identidadId, salir, ir }: { token: 
                     <Parrafo tenue>{fechaCivil(e.date)}</Parrafo>
                     <Insignia texto={etiquetaDeCondicionRegistrada(e.original)} />
                     {e.effectiveView.kind === 'CORRECTED' ? <Insignia texto={COPY_ENTRENAMIENTO.corregida} /> : null}
-                    <Boton texto={COPY_ENTRENAMIENTO.verLaSesion} tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: e.executionId, origen: 'historial' })} />
+                    <Boton texto={COPY_ENTRENAMIENTO.verLaSesion} tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: e.executionId })} />
                   </Tarjeta>
                 ))
               : null}

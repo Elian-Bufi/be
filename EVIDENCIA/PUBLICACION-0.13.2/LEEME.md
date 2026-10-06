@@ -111,5 +111,17 @@ así que la primera pantalla puede tardar unos 25 segundos.
 
 TalkBack: no se realiza, por decisión de Dirección.
 
+## Comprobaciones puntuales de Dirección en el teléfono (informadas el 2026-10-04)
+
+Dirección probó en el teléfono, con la APK 0.13.2:
+- **Reapertura.** Al cerrar la app y volver a abrirla, la sesión se conservó.
+- **Sin conexión.** Apareció la pantalla de sesión sin verificar, y después se recuperó sin pedir de nuevo las
+  credenciales.
+- **Cierre explícito.** Al cerrar la sesión, la app volvió a la bienvenida.
+- **Un anillo.** La medida se eligió tocando un anillo, con la captura de «Cuello».
+
+**Son comprobaciones puntuales.** No equivalen a la aprobación completa de la APK, de la anatomía ni de todas las áreas
+táctiles. El resto del recorrido sigue pendiente.
+
 «Implementado», «CI verde», «publicado» y «verificado en el teléfono» se informan por separado. Esta APK está
 implementada, con CI verde y publicada. **No está verificada en el teléfono.**

@@ -1,433 +1,147 @@
 /**
- * APK · Nutrición del asesorado (docs/paquetes/WP-04.md §5; B10-05 NUT-08 a NUT-11; 10-B01:351-357).
- * - «Hoy» muestra exactamente la instantánea vigente, nunca un borrador ni el catálogo actual (REG-06-105). Si el plan
- *   tiene varios días tipo, la persona elige cuál corresponde: BE no elige en silencio (B05:768-782; DL-049).
- * - «Registrar comida» deja la comida «Registrada», nunca «Cumplida» (B05:836-846). Las cantidades son opcionales.
- * - «Agregar comida fuera del plan» con texto libre: «Contanos qué comiste.» (B05:854-895). No marca ninguna comida.
- * - Sin puntajes, porcentajes ni juicios (REG-06-125). Sin registros hoy: «Todavía no registraste comidas hoy.».
- * - Un resultado incierto ofrece reintentar con la misma Idempotency-Key: no duplica (UC-P12 V04; B05:1415-1428).
- * - Si el consentimiento o la A3 están revocados, el plan no está disponible (UC-P12 E06).
+ * APK · Nutrición del asesorado (docs/paquetes/WP-04.md §5; B10-05 NUT-08 a NUT-11; WP-NUTRICION-RECETAS §9).
  *
- * DL-091, los tres patrones que el cierre de WP-06 corrigió y acá faltaban:
- * - una **escritura** denegada retira el contenido, no deja el plan viejo con un aviso encima (B10-06:1145-1148):
- *   `useAccesoRetirado` en la pantalla, consultado por cada escritura;
- * - cada error se asocia a su campo, además del resumen (B10-10:36, 164-165);
- * - toda cantidad se muestra con `cantidad`/`numero` y toda entrada se lee con `leerNumero`, que acepta coma o punto
- *   (`@be/domain`, `formato-numeros.ts`). El dato que se guarda no cambia: esto es solo cómo se escribe y cómo se lee.
+ * Desde WP-NUTRICION-RECETAS, la raíz de Nutrición tiene tres pestañas, que conservan su función:
+ * - **Hoy** (`nutricion-hoy.tsx`, API-ING-01): las comidas del plan, el carrusel de opciones y el registro.
+ * - **Plan**: el plan vigente con su objetivo y todos sus días (API-NUT-14), como antes. Muestra exactamente la
+ *   instantánea vigente, nunca un borrador ni el catálogo actual (REG-06-105).
+ * - **Registros** (API-ING-04): todos los registros, agrupados por día, con el estado de sus cantidades, sus fotos y lo
+ *   deshecho marcado. El detalle (API-ING-03) muestra la opción, lo informado, la estimación de lo consumido cuando se
+ *   puede calcular, las fotos y la estimación del profesional de una comida descrita (API-NUT-16), y deja completar,
+ *   corregir o deshacer.
+ * «Plan actual» y «Registros» siguen siendo pantallas propias desde Inicio y desde el menú.
+ *
+ * Sin puntajes, porcentajes ni juicios (REG-06-125). Un registro dice «Registrado», nunca «Cumplido» (B05:836-846).
+ * Si el consentimiento o la A3 están revocados, el plan no está disponible (UC-P12 E06).
+ * Toda cantidad se muestra con `cantidad`/`numero` y todo nutriente con `nutrienteParaMostrar` (`@be/domain`), con la
+ * coma del país. La pestaña elegida se recuerda mientras dure la sesión.
  */
 import {
   cantidad,
-  COPY,
-  COPY_ANTROPOMETRIA,
+  COPY_EVIDENCIA_VISUAL,
   COPY_NUTRICION,
+  COPY_REGISTRO_DE_COMIDAS,
   ETIQUETA_DE_PREPARACION,
   ETIQUETA_DE_UNIDAD,
-  leerNumero,
-  motivoDeNumeroIlegible,
-  type DiaTipo,
   type HoyResponse,
   type Ingesta,
+  type RegistroDeComida,
   type Resultado,
 } from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
-import { Cargando, ErrorConReintento, EstadoDeCarga, SinActualizar, VerMas } from '../estados';
-import { dia, fecha, hoyEnZona, ZONA_DE_LA_API } from '../formato';
-import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
+import { useDiaDeLaApi } from '../dia-de-la-api';
+import { Cargando, ErrorConReintento, EstadoDeCarga, VerMas } from '../estados';
+import { useBorrarFoto } from '../evidencia-visual';
+import { fecha, fechaCivil, hora } from '../formato';
+import { Flecha } from '../iconos-de-nutricion';
+import { ImagenDeMedio } from '../imagen-de-medio';
+import { falloDe } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useListaPaginada } from '../lista';
-import { useAccesoRetirado, useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Boton, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilosPorTema } from '../ui';
-
-type Hoy = HoyResponse['data'];
-type Comida = DiaTipo['meals'][number];
+import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
+import { CajaInformativa, FranjaDeMacros, LineaDeFibra } from '../piezas-de-nutricion';
+import { useDeshacer } from '../registro-de-comidas';
+import { Aviso, Boton, COLOR, Dato, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Subtitulo, Titulo } from '../ui';
+import { HoyDeNutricion } from './nutricion-hoy';
 
 /** Lo que acompaña al nombre de un ítem del plan: « · 150 g · cocido». La cantidad, con la coma del país. */
 const detalleDeItem = (i: { quantity: { value: number; unit: 'g' | 'ml' | 'unit' } | null; preparationState: keyof typeof ETIQUETA_DE_PREPARACION | null }) =>
   `${i.quantity ? ` · ${cantidad(i.quantity.value, ETIQUETA_DE_UNIDAD[i.quantity.unit])}` : ''}${i.preparationState ? ` · ${ETIQUETA_DE_PREPARACION[i.preparationState].toLowerCase()}` : ''}`;
 
-/** Carga «Hoy» (API-NUT-14) con el día tipo elegido, si hay que elegir. */
-function useHoy(token: string, salir: (m: Salida) => void) {
-  const sesionPerdida = useSesionPerdida(salir);
-  // El día del plan elegido se recuerda al volver a la zona, mientras dure la sesión.
-  const [diaTipo, setDiaTipo] = useSeleccionRecordada<string | undefined>(token, 'hoy-nutricional:dia', undefined);
-  const pedir = useCallback((): Promise<Resultado<HoyResponse>> => api.hoyNutricional(token, diaTipo), [token, diaTipo]);
-  // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts).
-  // La clave nombra el día civil (en la zona con la que la API resuelve «hoy») y el día del plan elegido.
-  const { r, cargar, sinActualizar } = useLecturaRecordada(token, `hoy-nutricional:${hoyEnZona(ZONA_DE_LA_API)}:${diaTipo ?? ''}`, pedir, sesionPerdida);
-  return { r, cargar, sinActualizar, setDiaTipo, sesionPerdida };
-}
+type AlPerderLaSesion = (r: Resultado<unknown>) => boolean;
 
-export function PantallaDeHoy({ token, salir, ir, subir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void; subir: () => void }) {
-  const { r, cargar, sinActualizar, setDiaTipo, sesionPerdida } = useHoy(token, salir);
-  const { retirado, accesoRetirado } = useAccesoRetirado();
-  const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error' | 'info'; texto: string } | null>(null);
+// ─── La raíz: Hoy · Plan · Registros ────────────────────────────────────────────────────────────
 
-  // Después de registrar, se vuelve a leer desde cero: lo anterior ya no está al día (la comida recién registrada no
-  // figura), y dejarlo a la vista invitaría a registrarla de nuevo.
-  const registrado = (texto: string) => {
-    setAviso({ tipo: 'exito', texto });
-    subir();
-    void cargar({ desdeCero: true });
-  };
+type VistaDeNutricion = 'HOY' | 'PLAN' | 'REGISTROS';
+const VISTAS: readonly { readonly valor: VistaDeNutricion; readonly texto: string }[] = [
+  { valor: 'HOY', texto: COPY_REGISTRO_DE_COMIDAS.hoy },
+  { valor: 'PLAN', texto: COPY_REGISTRO_DE_COMIDAS.plan },
+  { valor: 'REGISTROS', texto: COPY_REGISTRO_DE_COMIDAS.registros },
+];
 
-  // Una escritura denegada retira el contenido de la pantalla entera, no solo el de la comida que se intentó registrar
-  // (B10-06:1145-1148). Queda el mismo estado neutral que cuando el acceso está suspendido.
-  if (retirado) {
-    return (
-      <View>
-        <Titulo>{COPY_NUTRICION.tuPlanDeHoy}</Titulo>
-        <Aviso tipo="info" titulo={COPY_NUTRICION.planNoDisponible}>
-          <Boton texto="Ir a Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
-        </Aviso>
-      </View>
-    );
-  }
-  // Mientras la API confirma el acceso, la pantalla conserva su título y su estructura, sin valores.
-  if (!r) {
-    return (
-      <View>
-        <Titulo>{COPY_NUTRICION.tuPlanDeHoy}</Titulo>
-        <Cargando forma="lista" />
-      </View>
-    );
-  }
-  // DL-115 · sin A3, «Hoy» no se lee: el aviso con el camino a Privacidad, no un error. Los registros siguen guardados.
-  if (!r.ok && r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN') {
-    return (
-      <View>
-        <Titulo>{COPY_NUTRICION.tuPlanDeHoy}</Titulo>
-        <Aviso tipo="info" titulo={COPY_NUTRICION.hoyNecesitaA3}>
-          <Boton texto={COPY_ANTROPOMETRIA.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
-        </Aviso>
-      </View>
-    );
-  }
-  if (!r.ok) return <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} />;
-  const hoy = r.datos.data;
-  const dia = hoy.activePlan?.dayTypes.find((d) => d.dayTypeId === hoy.selectedDayTypeId) ?? null;
-
-  return (
-    <View>
-      <Titulo>{COPY_NUTRICION.tuPlanDeHoy}</Titulo>
-      <SinActualizar visible={sinActualizar} onReintentar={cargar} />
-      {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
-      {hoy.planState === 'NO_ACTIVE_PLAN' ? <Aviso tipo="info" titulo={COPY_NUTRICION.sinPlanAsesorado} /> : null}
-      {hoy.planState === 'NOT_AVAILABLE' ? (
-        <Aviso tipo="info" titulo={COPY_NUTRICION.planNoDisponible}>
-          <Boton texto="Ir a Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
-        </Aviso>
-      ) : null}
-
-      {hoy.activePlan && !dia ? (
-        <Seccion titulo={COPY_NUTRICION.elegiDiaTipo}>
-          {hoy.activePlan.dayTypes.map((d) => (
-            <Boton key={d.dayTypeId} texto={d.label} tipo="secundario" onPress={() => setDiaTipo(d.dayTypeId)} />
-          ))}
-        </Seccion>
-      ) : null}
-
-      {hoy.activePlan && dia ? (
-        <Seccion titulo={COPY_NUTRICION.comidasDelPlan}>
-          {hoy.activePlan.dayTypes.length > 1 ? (
-            <Parrafo tenue>
-              Día del plan: {dia.label}.{' '}
-              <Text style={s.enlace} onPress={() => setDiaTipo(undefined)} accessibilityRole="link">
-                Cambiar
-              </Text>
-            </Parrafo>
-          ) : null}
-          {dia.meals.map((m) => (
-            <TarjetaDeComida
-              key={m.mealId}
-              token={token}
-              planId={hoy.activePlan!.planId}
-              diaTipoId={dia.dayTypeId}
-              comida={m}
-              registro={hoy.registeredIntake.find((i) => i.mealId === m.mealId && i.origin === 'PRESCRIBED') ?? null}
-              sesionPerdida={sesionPerdida}
-              accesoRetirado={accesoRetirado}
-              onRegistrada={() => registrado(COPY_NUTRICION.comidaRegistrada)}
-              onPlanCambio={() => {
-                setAviso({ tipo: 'info', texto: COPY_NUTRICION.planCambio });
-                void cargar();
-              }}
-            />
-          ))}
-        </Seccion>
-      ) : null}
-
-      {hoy.activePlan ? (
-        <ComidaFueraDelPlan
-          token={token}
-          planId={hoy.activePlan.planId}
-          sesionPerdida={sesionPerdida}
-          accesoRetirado={accesoRetirado}
-          onRegistrada={() => registrado(COPY_NUTRICION.comidaRegistrada)}
-        />
-      ) : null}
-
-      <Seccion titulo={COPY_NUTRICION.registrosDeHoy}>
-        {hoy.registeredIntake.length === 0 ? <Parrafo>{COPY_NUTRICION.sinRegistrosHoy}</Parrafo> : null}
-        {hoy.registeredIntake.map((i) => (
-          <ResumenDeRegistro key={i.executionId} ingesta={i} dia={dia} onAbrir={() => ir({ nombre: 'registro-nutricional', id: i.executionId })} />
-        ))}
-      </Seccion>
-
-      {hoy.activePlan ? <Boton texto={COPY_NUTRICION.planActual} tipo="secundario" onPress={() => ir({ nombre: 'plan-actual' })} /> : null}
-      <Boton texto="Ver todos mis registros" tipo="secundario" onPress={() => ir({ nombre: 'registros-nutricionales' })} />
-      <Boton texto="Actualizar" tipo="enlace" onPress={() => void cargar()} />
-    </View>
-  );
-}
-
-function TarjetaDeComida({
+export function PantallaDeHoy({
   token,
-  planId,
-  diaTipoId,
-  comida,
-  registro,
-  sesionPerdida,
-  accesoRetirado,
-  onRegistrada,
-  onPlanCambio,
+  salir,
+  ir,
+  subir,
+  accion,
+  llevarA,
 }: {
   token: string;
-  planId: string;
-  diaTipoId: string;
-  comida: Comida;
-  registro: Ingesta | null;
-  sesionPerdida: (r: Resultado<unknown>) => boolean;
-  accesoRetirado: (r: Resultado<unknown>) => boolean;
-  onRegistrada: () => void;
-  onPlanCambio: () => void;
+  salir: (m: Salida) => void;
+  ir: Ir;
+  subir: () => void;
+  /** Desde Inicio, «Registrar» abre Hoy en las comidas, o en la elección del día si hace falta (DL-117). */
+  accion?: 'registrar';
+  /** Lleva la pantalla a una altura, medida desde el principio del contenido. */
+  llevarA?: (y: number) => void;
 }) {
-  const intento = useClaveDeIntento();
-  const [abierta, setAbierta] = useState(false);
-  const [opcionId, setOpcionId] = useState<string | null>(comida.options.length === 1 ? (comida.options[0]?.optionId ?? null) : null);
-  const [cantidades, setCantidades] = useState<Record<string, string>>({});
-  /** El error de cada cantidad, por ítem: va debajo de su campo, no solo en el resumen (B10-10:36, 164-165). */
-  const [erroresDeCantidad, setErroresDeCantidad] = useState<Record<string, string>>({});
-  const [observacion, setObservacion] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const [fallo, setFallo] = useState<{ texto: string; incierto: boolean } | null>(null);
-  const opcion = comida.options.find((o) => o.optionId === opcionId) ?? null;
-
-  async function guardar() {
-    if (!opcion) return setFallo({ texto: COPY_NUTRICION.elegiQueOpcionComiste, incierto: false });
-    // Una cantidad escrita que no se puede leer como número no se manda en silencio: se señala en su campo. Las
-    // cantidades siguen siendo opcionales — un campo vacío no es un error (B05:836-846).
-    // Un cero o un negativo tampoco se descartan callados: se leen bien como número, pero no son una cantidad comida.
-    const avisos = opcion.items.flatMap((it): [string, string][] => {
-      const escrito = (cantidades[it.itemId] ?? '').trim();
-      if (escrito === '') return [];
-      const v = leerNumero(escrito);
-      if (v === null) return [[it.itemId, motivoDeNumeroIlegible(escrito)]];
-      return v > 0 ? [] : [[it.itemId, 'La cantidad tiene que ser mayor que cero.']];
-    });
-    if (avisos.length > 0) {
-      setErroresDeCantidad(Object.fromEntries(avisos));
-      return setFallo({ texto: COPY_NUTRICION.revisaLasCantidades, incierto: false });
-    }
-    setErroresDeCantidad({});
-    const consumidos = opcion.items.flatMap((it) => {
-      const v = leerNumero(cantidades[it.itemId] ?? '');
-      return v !== null && v > 0 && it.quantity ? [{ itemId: it.itemId, quantity: { value: v, unit: it.quantity.unit } }] : [];
-    });
-    setEnviando(true);
-    setFallo(null);
-    const r = await api.registrarIngesta(
-      token,
-      {
-        activePlanId: planId,
-        dayTypeId: diaTipoId,
-        occurredAt: new Date().toISOString(),
-        recording: { origin: 'PRESCRIBED', mode: 'DISH_OPTIONS', mealId: comida.mealId, optionId: opcion.optionId, consumedItems: consumidos, observation: observacion.trim() || null },
-      },
-      intento.actual(),
-    );
-    intento.registrar(r);
-    setEnviando(false);
-    if (sesionPerdida(r)) return;
-    if (r.ok) {
-      setAbierta(false);
-      return onRegistrada();
-    }
-    // 404 no revelador a una escritura: no hay aviso sobre el plan viejo, la pantalla entera retira el contenido.
-    if (accesoRetirado(r)) return;
-    if (esIncierto(r)) return setFallo({ texto: COPY_NUTRICION.noPudimosConfirmar, incierto: true });
-    if (r.tipo === 'API' && r.codigo === 'EXECUTION_ALREADY_REGISTERED_INCOMPATIBLY') return setFallo({ texto: COPY_NUTRICION.yaRegistrada, incierto: false });
-    if (r.tipo === 'API' && r.codigo === 'ACTIVE_PLAN_REQUIRED') return onPlanCambio();
-    setFallo({ texto: falloDe(r).mensaje, incierto: false });
-  }
-
+  const [vista, setVista] = useSeleccionRecordada<VistaDeNutricion>(token, 'nutricion:vista', 'HOY');
+  // El pedido de Inicio abre Hoy una vez; después, las pestañas mandan.
+  const pedido = useRef(accion);
+  useEffect(() => {
+    if (pedido.current === 'registrar') setVista('HOY');
+  }, [setVista]);
+  const visible: VistaDeNutricion = pedido.current === 'registrar' ? 'HOY' : vista;
+  const yDeLaPantalla = useRef(0);
+  const yDeLaVista = useRef(0);
   return (
-    <Tarjeta>
-      <Subtitulo>{comida.label}</Subtitulo>
-      {comida.options.map((o) => (
-        <View key={o.optionId} style={s.opcion}>
-          <Text style={s.negrita}>{comida.options.length > 1 ? `Opción ${o.order}: ${o.label}` : o.label}</Text>
-          {o.items.map((i) => (
-            <Text key={i.itemId} style={s.item}>
-              • {i.name}
-              {detalleDeItem(i)}
-            </Text>
-          ))}
-        </View>
-      ))}
-      {registro ? (
-        <Insignia texto={COPY_NUTRICION.registrado} positiva etiqueta={comida.label} />
-      ) : abierta ? (
-        <View>
-          {comida.options.length > 1 ? (
-            <>
-              <Text style={s.negrita}>¿Qué opción comiste?</Text>
-              {comida.options.map((o) => (
-                <Pressable
-                  key={o.optionId}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: opcionId === o.optionId }}
-                  onPress={() => setOpcionId(o.optionId)}
-                  style={[s.radio, opcionId === o.optionId && s.radioMarcado]}
-                >
-                  <Text style={s.textoRadio}>{o.label}</Text>
-                </Pressable>
-              ))}
-            </>
-          ) : null}
-          {opcion
-            ? opcion.items
-                .filter((i) => i.quantity)
-                .map((i) => (
-                  <Campo
-                    key={i.itemId}
-                    etiqueta={`${i.name}: cantidad que comiste (opcional, ${ETIQUETA_DE_UNIDAD[i.quantity!.unit]})`}
-                    ayuda={`Indicado: ${cantidad(i.quantity!.value, ETIQUETA_DE_UNIDAD[i.quantity!.unit])}`}
-                    // El teclado decimal de Android puede ofrecer coma: por eso el valor se lee con `leerNumero`.
-                    keyboardType="decimal-pad"
-                    value={cantidades[i.itemId] ?? ''}
-                    error={erroresDeCantidad[i.itemId] ?? null}
-                    onChangeText={(t) => {
-                      setCantidades((c) => ({ ...c, [i.itemId]: t }));
-                      // El error de un campo se va cuando la persona lo corrige, no recién al volver a guardar.
-                      setErroresDeCantidad((e) => Object.fromEntries(Object.entries(e).filter(([k]) => k !== i.itemId)));
-                    }}
-                  />
-                ))
-            : null}
-          <Campo etiqueta="Observación (opcional)" value={observacion} onChangeText={setObservacion} maxLength={1000} />
-          {fallo ? <Aviso tipo="error" titulo={fallo.texto} /> : null}
-          <Boton texto={enviando ? 'Guardando…' : fallo?.incierto ? COPY.reintentar : 'Guardar'} onPress={() => void guardar()} ocupado={enviando} />
-          <Boton
-            texto={COPY.cancelar}
-            tipo="secundario"
-            onPress={() => {
-              intento.descartar();
-              setAbierta(false);
-              setFallo(null);
-              setErroresDeCantidad({});
-            }}
-            deshabilitado={enviando}
-          />
-        </View>
-      ) : (
-        <Boton texto={COPY_NUTRICION.registrarComida} tipo="secundario" onPress={() => setAbierta(true)} />
-      )}
-    </Tarjeta>
-  );
-}
-
-function ComidaFueraDelPlan({
-  token,
-  planId,
-  sesionPerdida,
-  accesoRetirado,
-  onRegistrada,
-}: {
-  token: string;
-  planId: string;
-  sesionPerdida: (r: Resultado<unknown>) => boolean;
-  accesoRetirado: (r: Resultado<unknown>) => boolean;
-  onRegistrada: () => void;
-}) {
-  const intento = useClaveDeIntento();
-  const [abierta, setAbierta] = useState(false);
-  const [descripcion, setDescripcion] = useState('');
-  const [porcion, setPorcion] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [fallo, setFallo] = useState<{ texto: string; incierto: boolean } | null>(null);
-  const [enviando, setEnviando] = useState(false);
-
-  async function guardar() {
-    if (!descripcion.trim()) return setError('Contanos qué comiste.');
-    setError(null);
-    setEnviando(true);
-    setFallo(null);
-    const r = await api.registrarIngesta(
-      token,
-      { activePlanId: planId, occurredAt: new Date().toISOString(), recording: { origin: 'OUTSIDE_PRESCRIPTION', mode: 'FREE_DESCRIPTION', description: descripcion.trim(), portionDescription: porcion.trim() || null } },
-      intento.actual(),
-    );
-    intento.registrar(r);
-    setEnviando(false);
-    if (sesionPerdida(r)) return;
-    if (r.ok) {
-      setAbierta(false);
-      setDescripcion('');
-      setPorcion('');
-      return onRegistrada();
-    }
-    // 404 no revelador a una escritura: la pantalla retira el contenido (B10-06:1145-1148).
-    if (accesoRetirado(r)) return;
-    setFallo(esIncierto(r) ? { texto: COPY_NUTRICION.noPudimosConfirmar, incierto: true } : { texto: falloDe(r).mensaje, incierto: false });
-  }
-
-  if (!abierta) return <Boton texto={COPY_NUTRICION.agregarComidaFueraDelPlan} tipo="secundario" onPress={() => setAbierta(true)} />;
-  return (
-    <Seccion titulo={COPY_NUTRICION.agregarComidaFueraDelPlan}>
-      <Parrafo>{COPY_NUTRICION.contanosQueComiste}</Parrafo>
-      <Parrafo tenue>{COPY_NUTRICION.podesDescribirlo}</Parrafo>
-      <Campo etiqueta={COPY_NUTRICION.queComiste} value={descripcion} onChangeText={setDescripcion} multiline maxLength={2000} error={error} />
-      <Campo etiqueta={COPY_NUTRICION.porcionAproximada} value={porcion} onChangeText={setPorcion} maxLength={500} />
-      {fallo ? <Aviso tipo="error" titulo={fallo.texto} /> : null}
-      <Boton texto={enviando ? 'Guardando…' : fallo?.incierto ? COPY.reintentar : 'Guardar'} onPress={() => void guardar()} ocupado={enviando} />
-      <Boton
-        texto={COPY.cancelar}
-        tipo="secundario"
-        onPress={() => {
-          intento.descartar();
-          setAbierta(false);
+    <View onLayout={(e) => (yDeLaPantalla.current = e.nativeEvent.layout.y)}>
+      <Titulo>{COPY_NUTRICION.pestana}</Titulo>
+      <Pestanas
+        etiqueta={COPY_REGISTRO_DE_COMIDAS.queVer}
+        opciones={VISTAS}
+        valor={visible}
+        alElegir={(v) => {
+          pedido.current = undefined;
+          setVista(v);
         }}
-        deshabilitado={enviando}
       />
-    </Seccion>
-  );
-}
-
-function ResumenDeRegistro({ ingesta, dia, onAbrir }: { ingesta: Ingesta; dia: DiaTipo | null; onAbrir: () => void }) {
-  const comida = dia?.meals.find((m) => m.mealId === ingesta.mealId)?.label;
-  return (
-    <Pressable accessibilityRole="button" onPress={onAbrir} style={s.fila}>
-      <Insignia texto={ingesta.origin === 'PRESCRIBED' ? 'DEL PLAN' : 'FUERA DEL PLAN'} positiva={ingesta.origin === 'PRESCRIBED'} />
-      <Text style={s.item}>
-        {fecha(ingesta.occurredAt)} · {ingesta.origin === 'PRESCRIBED' ? (comida ?? 'Comida del plan') : `«${ingesta.description}»`}
-      </Text>
-    </Pressable>
+      <View onLayout={(e) => (yDeLaVista.current = e.nativeEvent.layout.y)}>
+        {visible === 'HOY' ? (
+          <HoyDeNutricion token={token} salir={salir} ir={ir} subir={subir} accion={pedido.current} llevarA={(y) => llevarA?.(yDeLaPantalla.current + yDeLaVista.current + y)} />
+        ) : null}
+        {visible === 'PLAN' ? <ContenidoDelPlan token={token} salir={salir} /> : null}
+        {visible === 'REGISTROS' ? <ListaDeRegistros token={token} salir={salir} ir={ir} /> : null}
+      </View>
+    </View>
   );
 }
 
 // ─── Plan actual ─────────────────────────────────────────────────────────────────────────────────
 
+/** Carga «Hoy» (API-NUT-14) con el día tipo elegido: la misma lectura y la misma clave que la tarjeta de Inicio. */
+function useHoy(token: string, salir: (m: Salida) => void) {
+  const sesionPerdida = useSesionPerdida(salir);
+  // El día del plan elegido se recuerda al volver a la zona, mientras dure la sesión.
+  const [diaTipo, setDiaTipo] = useSeleccionRecordada<string | undefined>(token, 'hoy-nutricional:dia', undefined);
+  const pedir = useCallback((): Promise<Resultado<HoyResponse>> => api.hoyNutricional(token, diaTipo), [token, diaTipo]);
+  // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts). La clave nombra el día civil (en la zona con la que
+  // la API resuelve «hoy») y el día del plan elegido. A la medianoche cambia, y se vuelve a leer.
+  const hoyDeLaApi = useDiaDeLaApi();
+  const { r, cargar, sinActualizar } = useLecturaRecordada(token, `hoy-nutricional:${hoyDeLaApi}:${diaTipo ?? ''}`, pedir, sesionPerdida);
+  return { r, cargar, sinActualizar, setDiaTipo, sesionPerdida };
+}
+
 export function PantallaDePlanActual({ token, salir }: { token: string; salir: (m: Salida) => void }) {
+  return (
+    <View>
+      <Titulo>{COPY_NUTRICION.planActual}</Titulo>
+      <ContenidoDelPlan token={token} salir={salir} />
+    </View>
+  );
+}
+
+function ContenidoDelPlan({ token, salir }: { token: string; salir: (m: Salida) => void }) {
   const { r, cargar } = useHoy(token, salir);
-  if (!r) return <Cargando />;
-  if (!r.ok) return <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} />;
+  if (!r) return <Cargando forma="lista" />;
+  if (!r.ok) return <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={() => void cargar()} />;
   const plan = r.datos.data.activePlan;
   if (!plan) return <Aviso tipo="info" titulo={r.datos.data.planState === 'NOT_AVAILABLE' ? COPY_NUTRICION.planNoDisponible : COPY_NUTRICION.sinPlanAsesorado} />;
   return (
     <View>
-      <Titulo>{COPY_NUTRICION.planActual}</Titulo>
       <Parrafo tenue>Vigente desde el {fecha(plan.activatedAt)}.</Parrafo>
       <Seccion titulo="Objetivo">
         <Parrafo tenue>{COPY_NUTRICION.objetivoDeclarado}</Parrafo>
@@ -461,93 +175,283 @@ export function PantallaDePlanActual({ token, salir }: { token: string; salir: (
   );
 }
 
-// ─── Registros y detalle ─────────────────────────────────────────────────────────────────────────
+// ─── Registros (API-ING-04) ─────────────────────────────────────────────────────────────────────
 
-/** B10-05 NUT-11: agrupados en Hoy / Ayer / fecha, con etiquetas que no dependen del color (B05:968-983). */
-export function PantallaDeRegistros({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
-  const sesionPerdida = useSesionPerdida(salir);
-  const lista = useListaPaginada(
-    useCallback((cursor?: string) => api.listarMisIngestas(token, { cursor }), [token]),
-    sesionPerdida,
-  );
-  const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
-  const ayer = (() => {
-    const d = new Date(`${hoy}T12:00:00Z`);
-    d.setUTCDate(d.getUTCDate() - 1);
-    return d.toISOString().slice(0, 10);
-  })();
-  const grupo = (f: string) => (f === hoy ? 'Hoy' : f === ayer ? 'Ayer' : dia(`${f}T12:00:00Z`));
-
+export function PantallaDeRegistros({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: Ir }) {
   return (
     <View>
       <Titulo>{COPY_NUTRICION.registros}</Titulo>
-      <EstadoDeCarga estado={lista.estado} onReintentar={lista.recargar} />
-      {lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? <Parrafo>Todavía no registraste comidas.</Parrafo> : null}
-      {lista.estado.tipo === 'listo'
-        ? lista.estado.items.map((i, k, todos) => (
-            <View key={i.executionId}>
-              {k === 0 || todos[k - 1]?.localDate !== i.localDate ? <Subtitulo>{grupo(i.localDate)}</Subtitulo> : null}
-              <ResumenDeRegistro ingesta={i} dia={null} onAbrir={() => ir({ nombre: 'registro-nutricional', id: i.executionId })} />
-            </View>
-          ))
-        : null}
-      <VerMas estado={lista.estado} onVerMas={lista.verMas} />
+      <ListaDeRegistros token={token} salir={salir} ir={ir} />
     </View>
   );
 }
 
-export function PantallaDeRegistroNutricional({ token, id, salir }: { token: string; id: string; salir: (m: Salida) => void }) {
+/** El día anterior a una fecha civil (`AAAA-MM-DD`). */
+function diaAnterior(fechaLocal: string): string {
+  const d = new Date(`${fechaLocal.slice(0, 10)}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/** B10-05 NUT-11: agrupados en Hoy / Ayer / fecha, con etiquetas que no dependen del color (B05:968-983). */
+function ListaDeRegistros({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: Ir }) {
   const sesionPerdida = useSesionPerdida(salir);
-  const [r, setR] = useState<Resultado<{ data: Ingesta }> | null>(null);
-  const cargar = useCallback(async () => {
-    setR(null);
-    const res = await api.consultarIngesta(token, id);
-    if (sesionPerdida(res)) return;
-    setR(res);
-  }, [token, id, sesionPerdida]);
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
-  if (!r) return <Cargando />;
-  if (!r.ok) {
-    const f = falloDe(r);
-    return f.tipo === 'no-revelable' ? <Aviso tipo="info" titulo={f.mensaje} /> : <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} />;
-  }
-  const i = r.datos.data;
-  const efectiva = i.effectiveView.kind === 'CORRECTED' ? i.corrections.find((c) => c.correctionId === (i.effectiveView as { correctionId: string }).correctionId) : null;
+  const lista = useListaPaginada(
+    useCallback((cursor?: string) => api.listarMisRegistrosDeComida(token, { cursor }), [token]),
+    sesionPerdida,
+  );
+  // «Hoy» es el día de la API, no el del teléfono.
+  const hoy = useDiaDeLaApi();
+  const ayer = diaAnterior(hoy);
+  const grupo = (f: string) => (f === hoy ? COPY_REGISTRO_DE_COMIDAS.hoy : f === ayer ? COPY_REGISTRO_DE_COMIDAS.ayer : fechaCivil(f));
   return (
     <View>
-      <Titulo>Detalle de registro</Titulo>
-      <Insignia texto={i.origin === 'PRESCRIBED' ? 'DEL PLAN' : 'FUERA DEL PLAN'} positiva={i.origin === 'PRESCRIBED'} />
-      <Dato etiqueta="Cuándo" valor={fecha(i.occurredAt)} />
-      <Dato etiqueta="Registrado" valor={fecha(i.recordedAt)} />
-      {i.origin === 'PRESCRIBED' ? (
-        <>
-          {i.consumedItems.length > 0 ? (
-            <Parrafo>Cantidades que informaste: {i.consumedItems.map((c) => cantidad(c.quantity.value, ETIQUETA_DE_UNIDAD[c.quantity.unit])).join(', ')}</Parrafo>
-          ) : null}
-          {i.observation ? <Dato etiqueta="Observación" valor={i.observation} /> : null}
-        </>
+      <EstadoDeCarga estado={lista.estado} onReintentar={() => void lista.recargar()} />
+      {lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? <Parrafo>{COPY_REGISTRO_DE_COMIDAS.sinRegistros}</Parrafo> : null}
+      {lista.estado.tipo === 'listo'
+        ? lista.estado.items.map((registro, k, todos) => (
+            <View key={registro.recordId}>
+              {k === 0 || todos[k - 1]?.localDate !== registro.localDate ? <Subtitulo>{grupo(registro.localDate)}</Subtitulo> : null}
+              <FilaDeRegistro registro={registro} onAbrir={() => ir({ nombre: 'registro-nutricional', id: registro.recordId })} />
+            </View>
+          ))
+        : null}
+      <VerMas estado={lista.estado} onVerMas={() => void lista.verMas()} />
+    </View>
+  );
+}
+
+/** Lo que se lee de un registro en la lista, que ya está agrupada por día: la hora, la comida, qué fue y qué se sabe. */
+function resumenDeRegistro(r: RegistroDeComida): { readonly titulo: string; readonly detalle: string | null } {
+  const queFue = r.kind === 'PLAN_OPTION' ? (r.option?.label ?? null) : r.description ? `«${r.description}»` : COPY_REGISTRO_DE_COMIDAS.comisteAlgoDiferente;
+  const titulo = [hora(r.occurredAt), r.meal?.label ?? null, queFue].filter((t): t is string => t !== null).join(' · ');
+  const detalle =
+    r.kind === 'PLAN_OPTION'
+      ? r.consumption
+        ? COPY_REGISTRO_DE_COMIDAS.estadoDeCantidades[r.consumption.status]
+        : null
+      : r.evidence.length > 0
+        ? COPY_REGISTRO_DE_COMIDAS.fotos(r.evidence.length)
+        : null;
+  return { titulo, detalle };
+}
+
+function FilaDeRegistro({ registro, onAbrir }: { registro: RegistroDeComida; onAbrir: () => void }) {
+  const { titulo, detalle } = resumenDeRegistro(registro);
+  const tipo = registro.kind === 'PLAN_OPTION' ? COPY_NUTRICION.delPlan : COPY_REGISTRO_DE_COMIDAS.algoDiferente;
+  const deshecho = registro.annulment !== null;
+  const paraLeer = [tipo, deshecho ? COPY_REGISTRO_DE_COMIDAS.deshechoInsignia : null, titulo, detalle].filter((t): t is string => t !== null).join('. ');
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={paraLeer} onPress={onAbrir} style={({ pressed }) => [s.fila, pressed && s.presionada]}>
+      <View style={s.textosDeFila}>
+        <View style={s.insignias}>
+          <Insignia texto={tipo} positiva={registro.kind === 'PLAN_OPTION'} />
+          {deshecho ? <Insignia texto={COPY_REGISTRO_DE_COMIDAS.deshechoInsignia} /> : null}
+        </View>
+        <Text style={[s.item, deshecho && s.deshecho]}>{titulo}</Text>
+        {detalle ? <Text style={s.detalle}>{detalle}</Text> : null}
+      </View>
+      <Flecha color={COLOR.acento} hacia="derecha" />
+    </Pressable>
+  );
+}
+
+// ─── El detalle de un registro (API-ING-03) ─────────────────────────────────────────────────────
+
+export function PantallaDeRegistroNutricional({ token, id, salir, ir }: { token: string; id: string; salir: (m: Salida) => void; ir: Ir }) {
+  const sesionPerdida = useSesionPerdida(salir);
+  const pedir = useCallback(() => api.consultarRegistroDeComida(token, id), [token, id]);
+  const { r, cargar } = useLecturaRecordada(token, `registro-de-comida:${id}`, pedir, sesionPerdida);
+  const [aviso, setAviso] = useState<string | null>(null);
+  if (!r) {
+    return (
+      <View>
+        <Titulo>{COPY_REGISTRO_DE_COMIDAS.detalleDeRegistro}</Titulo>
+        <Cargando forma="lista" />
+      </View>
+    );
+  }
+  if (!r.ok) {
+    const f = falloDe(r);
+    return f.tipo === 'no-revelable' ? <Aviso tipo="info" titulo={f.mensaje} /> : <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={() => void cargar()} />;
+  }
+  return (
+    <DetalleDeRegistro
+      token={token}
+      registro={r.datos.data}
+      aviso={aviso}
+      sesionPerdida={sesionPerdida}
+      ir={ir}
+      alDeshacer={() => {
+        setAviso(COPY_REGISTRO_DE_COMIDAS.deshecho);
+        void cargar({ desdeCero: true });
+      }}
+      alBorrarFoto={() => {
+        setAviso(COPY_EVIDENCIA_VISUAL.fotoBorrada);
+        void cargar({ desdeCero: true });
+      }}
+      alActualizar={() => void cargar({ desdeCero: true })}
+    />
+  );
+}
+
+function DetalleDeRegistro({
+  token,
+  registro,
+  aviso,
+  sesionPerdida,
+  ir,
+  alDeshacer,
+  alBorrarFoto,
+  alActualizar,
+}: {
+  token: string;
+  registro: RegistroDeComida;
+  aviso: string | null;
+  sesionPerdida: AlPerderLaSesion;
+  ir: Ir;
+  alDeshacer: () => void;
+  alBorrarFoto: () => void;
+  alActualizar: () => void;
+}) {
+  const vigente = registro.annulment === null;
+  const deshacer = useDeshacer({ token, registro: vigente ? registro : null, sesionPerdida, alDeshacer, alActualizar });
+  const borrarFoto = useBorrarFoto({ token, sesionPerdida, alBorrar: alBorrarFoto, alActualizar });
+  const deUnaOpcion = registro.kind === 'PLAN_OPTION';
+  return (
+    <View>
+      <Titulo>{COPY_REGISTRO_DE_COMIDAS.detalleDeRegistro}</Titulo>
+      {aviso ? <Aviso tipo="exito" titulo={aviso} /> : null}
+      <View style={s.insignias}>
+        <Insignia texto={deUnaOpcion ? COPY_NUTRICION.delPlan : COPY_REGISTRO_DE_COMIDAS.algoDiferente} positiva={deUnaOpcion} />
+        {vigente ? null : <Insignia texto={COPY_REGISTRO_DE_COMIDAS.deshechoInsignia} />}
+      </View>
+      {registro.annulment ? <Aviso tipo="info" titulo={COPY_REGISTRO_DE_COMIDAS.deshechoEl(fecha(registro.annulment.annulledAt))} /> : null}
+      {registro.meal ? <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.comida} valor={registro.meal.label} /> : null}
+      <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.cuando} valor={fecha(registro.occurredAt)} />
+      <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.registrado} valor={fecha(registro.recordedAt)} />
+      {registro.observation ? <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.observacion} valor={registro.observation} /> : null}
+      {deUnaOpcion ? (
+        <OpcionRegistrada token={token} registro={registro} sesionPerdida={sesionPerdida} />
       ) : (
-        <Seccion titulo={COPY_NUTRICION.tuDescripcionOriginal}>
-          <Parrafo>{i.description}</Parrafo>
-          {i.portionDescription ? <Parrafo tenue>Porción: {i.portionDescription}</Parrafo> : null}
-        </Seccion>
+        <ComidaDiferenteRegistrada token={token} registro={registro} sesionPerdida={sesionPerdida} onBorrarFoto={borrarFoto.abrir} />
       )}
-      {efectiva ? (
-        <Seccion titulo={COPY_NUTRICION.estimacionProfesional}>
-          {efectiva.structuredEstimate.items.map((e, k) => (
-            <Text key={k} style={s.item}>
-              • {e.description}
-              {e.quantity ? ` · ${cantidad(e.quantity.value, ETIQUETA_DE_UNIDAD[e.quantity.unit])}` : ''}
-            </Text>
-          ))}
-          <Parrafo tenue>
-            {efectiva.author.displayName} · {fecha(efectiva.recordedAt)}. Es una estimación: tu descripción original se conserva.
-          </Parrafo>
+      {vigente && deUnaOpcion && registro.option ? (
+        <Boton
+          texto={registro.consumption?.status === 'UNCONFIRMED' ? COPY_REGISTRO_DE_COMIDAS.completarCantidades : COPY_REGISTRO_DE_COMIDAS.corregirCantidades}
+          tipo={registro.consumption?.status === 'UNCONFIRMED' ? 'primario' : 'secundario'}
+          onPress={() => ir({ nombre: 'opcion-de-comida', id: registro.option!.optionId, comidaId: registro.meal?.mealId, registroId: registro.recordId })}
+        />
+      ) : null}
+      {vigente ? <Boton texto={COPY_REGISTRO_DE_COMIDAS.deshacer} tipo="peligroSecundario" onPress={deshacer.abrir} /> : null}
+      {deshacer.dialogo}
+      {borrarFoto.dialogo}
+    </View>
+  );
+}
+
+/** Una opción registrada: la opción tal como estaba en el plan, lo que se informó y lo consumido si se puede calcular. */
+function OpcionRegistrada({ token, registro, sesionPerdida }: { token: string; registro: RegistroDeComida; sesionPerdida: AlPerderLaSesion }) {
+  const opcion = registro.option;
+  const consumo = registro.consumption;
+  const nombres = new Map((opcion?.items ?? []).map((i) => [i.itemId, i] as const));
+  return (
+    <View>
+      {opcion ? (
+        <Seccion titulo={opcion.label}>
+          <ImagenDeMedio token={token} mediaId={opcion.image?.mediaId ?? null} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.imagenDeReferencia} />
         </Seccion>
       ) : null}
+      {consumo ? (
+        <Seccion titulo={COPY_REGISTRO_DE_COMIDAS.cuantoComiste}>
+          <CajaInformativa
+            titulo={COPY_REGISTRO_DE_COMIDAS.estadoDeCantidades[consumo.status]}
+            texto={consumo.status === 'UNCONFIRMED' ? COPY_REGISTRO_DE_COMIDAS.cantidadesSinConfirmarDetalle : undefined}
+          />
+          {consumo.items.map((i) => {
+            const item = nombres.get(i.itemId);
+            const valor = i.notEaten ? COPY_REGISTRO_DE_COMIDAS.noLoComi : i.quantity ? cantidad(i.quantity.value, ETIQUETA_DE_UNIDAD[i.quantity.unit]) : COPY_REGISTRO_DE_COMIDAS.sinConfirmar;
+            return <Dato key={i.itemId} etiqueta={item?.name ?? COPY_REGISTRO_DE_COMIDAS.ingredienteDelPlan} valor={valor} />;
+          })}
+          {consumo.source === 'RECTIFIED' && consumo.rectifiedAt ? <Parrafo tenue>{COPY_REGISTRO_DE_COMIDAS.rectificadoEl(fecha(consumo.rectifiedAt))}</Parrafo> : null}
+        </Seccion>
+      ) : null}
+      {registro.consumed ? (
+        <Seccion titulo={COPY_REGISTRO_DE_COMIDAS.estimacionDeLoQueComiste}>
+          <FranjaDeMacros nutrientes={registro.consumed} />
+          <LineaDeFibra nutrientes={registro.consumed} />
+        </Seccion>
+      ) : (
+        <CajaInformativa titulo={COPY_REGISTRO_DE_COMIDAS.macrosSinCalcular} texto={COPY_REGISTRO_DE_COMIDAS.seCalculanAlConfirmar} />
+      )}
     </View>
+  );
+}
+
+/**
+ * Una comida diferente: el texto original, la cantidad aproximada y las fotos. Los macros quedan sin calcular. Cada foto se
+ * puede borrar (API-MED-05; 08:451): se borra la imagen, queda la constancia y el registro sigue, sin esa foto.
+ */
+function ComidaDiferenteRegistrada({
+  token,
+  registro,
+  sesionPerdida,
+  onBorrarFoto,
+}: {
+  token: string;
+  registro: RegistroDeComida;
+  sesionPerdida: AlPerderLaSesion;
+  onBorrarFoto: (mediaId: string) => void;
+}) {
+  return (
+    <View>
+      <Seccion titulo={COPY_REGISTRO_DE_COMIDAS.comisteAlgoDiferente}>
+        {registro.description ? <Parrafo>{registro.description}</Parrafo> : null}
+        {registro.approximateQuantity ? <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.cantidadAproximadaInformada} valor={registro.approximateQuantity} /> : null}
+        {registro.evidence.map((foto) => (
+          <View key={foto.mediaId} style={s.foto}>
+            <ImagenDeMedio token={token} mediaId={foto.mediaId} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.tuFoto} proporcion={4 / 3} />
+            <Boton texto={COPY_EVIDENCIA_VISUAL.borrarFoto} tipo="peligroSecundario" onPress={() => onBorrarFoto(foto.mediaId)} />
+          </View>
+        ))}
+        {registro.evidence.length > 0 ? <Parrafo tenue>{COPY_REGISTRO_DE_COMIDAS.fotoPrivada}</Parrafo> : null}
+      </Seccion>
+      <CajaInformativa titulo={COPY_REGISTRO_DE_COMIDAS.macrosSinCalcular} />
+      {registro.annulment === null ? <EstimacionDelProfesional token={token} id={registro.recordId} sesionPerdida={sesionPerdida} /> : null}
+    </View>
+  );
+}
+
+/**
+ * La estimación que el profesional hizo de una comida descrita (API-NUT-21), que conserva el texto original. Se lee
+ * aparte, en API-NUT-16, porque el registro v2 no la trae: si no hay o no se puede leer, no se muestra nada.
+ */
+function EstimacionDelProfesional({ token, id, sesionPerdida }: { token: string; id: string; sesionPerdida: AlPerderLaSesion }) {
+  const [ingesta, setIngesta] = useState<Ingesta | null>(null);
+  useEffect(() => {
+    let vigente = true;
+    void api.consultarIngesta(token, id).then((r) => {
+      if (!vigente || sesionPerdida(r)) return;
+      if (r.ok) setIngesta(r.datos.data);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [token, id, sesionPerdida]);
+  if (!ingesta || ingesta.effectiveView.kind !== 'CORRECTED') return null;
+  const correccionId = ingesta.effectiveView.correctionId;
+  const efectiva = ingesta.corrections.find((c) => c.correctionId === correccionId);
+  if (!efectiva) return null;
+  return (
+    <Seccion titulo={COPY_NUTRICION.estimacionProfesional}>
+      {efectiva.structuredEstimate.items.map((e, k) => (
+        <Text key={k} style={s.item}>
+          • {e.description}
+          {e.quantity ? ` · ${cantidad(e.quantity.value, ETIQUETA_DE_UNIDAD[e.quantity.unit])}` : ''}
+        </Text>
+      ))}
+      <Parrafo tenue>{COPY_REGISTRO_DE_COMIDAS.estimacionDelProfesionalDe(efectiva.author.displayName, fecha(efectiva.recordedAt))}</Parrafo>
+    </Seccion>
   );
 }
 
@@ -555,9 +459,11 @@ const s = estilosPorTema((COLOR) => ({
   opcion: { marginVertical: 6 },
   negrita: { fontWeight: '700', color: COLOR.texto, fontSize: 16 },
   item: { fontSize: 16, color: COLOR.texto, lineHeight: 23 },
-  enlace: { color: COLOR.acento, textDecorationLine: 'underline' },
-  radio: { minHeight: 48, borderWidth: 2, borderColor: COLOR.bordeControl, borderRadius: 8, paddingHorizontal: 12, justifyContent: 'center', marginVertical: 4 },
-  radioMarcado: { borderColor: COLOR.acento, backgroundColor: COLOR.superficie },
-  textoRadio: { fontSize: 16, color: COLOR.texto },
-  fila: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, minHeight: 48, borderBottomWidth: 1, borderBottomColor: COLOR.borde, paddingVertical: 6 },
+  insignias: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 8 },
+  foto: { marginVertical: 6 },
+  fila: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, borderBottomWidth: 1, borderBottomColor: COLOR.borde, paddingVertical: 8 },
+  presionada: { opacity: 0.8 },
+  textosDeFila: { flex: 1 },
+  deshecho: { color: COLOR.tenue, textDecorationLine: 'line-through' },
+  detalle: { fontSize: 14, lineHeight: 19, color: COLOR.tenue },
 }));

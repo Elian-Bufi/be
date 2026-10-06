@@ -106,6 +106,11 @@ export const CodigoDeError = {
   EXECUTION_GRANULARITY_INVALID: 'EXECUTION_GRANULARITY_INVALID',
   SESSION_CONDITION_INVALID: 'SESSION_CONDITION_INVALID',
   EXECUTION_VALUE_INVALID: 'EXECUTION_VALUE_INVALID',
+  /**
+   * Un plan con objetivos distintos por serie no se activa mientras su titular no haya usado una APK que los muestre: las
+   * instaladas mostrarían los generales (DL-122, precierre del 2026-10-06, §2; `compatibilidad-de-clientes.ts`).
+   */
+  CLIENT_CAPABILITY_REQUIRED: 'CLIENT_CAPABILITY_REQUIRED',
   // FRM (09v16.1 §22). Solicitar y completar información profesional pertinente (RF-071; WP-07).
   FORM_TEMPLATE_NOT_SELECTABLE: 'FORM_TEMPLATE_NOT_SELECTABLE',
   FORM_REQUEST_NOT_ALLOWED: 'FORM_REQUEST_NOT_ALLOWED',
@@ -118,6 +123,19 @@ export const CodigoDeError = {
   REVIEWED_CONTENT_INVALID: 'REVIEWED_CONTENT_INVALID',
   /** El proveedor respondió que no conoce ese identificador: no es una caída (WP-08 D-E; DL-097). */
   IMPORT_SOURCE_NOT_FOUND: 'IMPORT_SOURCE_NOT_FOUND',
+  // MED (09v8 API-PRO-04; 09v12 §24; DL-120). Los dos primeros son los del 09 para una subida.
+  FILE_TYPE_NOT_ALLOWED: 'FILE_TYPE_NOT_ALLOWED',
+  FILE_SIZE_NOT_ALLOWED: 'FILE_SIZE_NOT_ALLOWED',
+  /** Los bytes no se decodifican como el tipo declarado, o la imagen sale de las dimensiones admitidas (DL-120). */
+  FILE_CONTENT_INVALID: 'FILE_CONTENT_INVALID',
+  /** Un medio citado en el cuerpo no es propio, no está disponible o no es de esa finalidad (DL-119, DL-121). */
+  MEDIA_REFERENCE_INVALID: 'MEDIA_REFERENCE_INVALID',
+  /**
+   * Falta el acto `EVIDENCIA_VISUAL` (08 §12.4) del vínculo de Nutrición para subir la foto de una comida. Solo con la
+   * exigencia activa (`BE_EVIDENCIA_VISUAL_EXIGIDA`). `details` dice el vínculo y la versión del texto a mostrar
+   * (precierre del 2026-10-06, §6; DL-125).
+   */
+  VISUAL_EVIDENCE_ACT_REQUIRED: 'VISUAL_EVIDENCE_ACT_REQUIRED',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 

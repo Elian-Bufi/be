@@ -1,0 +1,188 @@
+{
+  "schemaVersion": "be-handoff-training-1",
+  "synthetic": true,
+  "notice": "Fixtures del encargo, no contratos actuales de BE ni prescripción para una persona real.",
+  "fixtureKey": "piernas_a_demo",
+  "name": "Piernas A",
+  "dateAssignment": null,
+  "realPlanId": null,
+  "realOccurrenceId": null,
+  "seriesCount": 9,
+  "exercises": [
+    {
+      "fixtureKey": "A",
+      "catalogFixtureKey": "sentadilla_goblet",
+      "loadBasis": "Única mancuerna",
+      "repetitionBasis": "Por serie",
+      "sets": [
+        {
+          "setIndex": 1,
+          "plannedRepetitions": {
+            "min": 12,
+            "max": 16
+          },
+          "suggestedLoad": {
+            "value": 16,
+            "unit": "kg"
+          },
+          "plannedRir": 3,
+          "recommendedRestSeconds": 90
+        },
+        {
+          "setIndex": 2,
+          "plannedRepetitions": {
+            "min": 10,
+            "max": 12
+          },
+          "suggestedLoad": {
+            "value": 18,
+            "unit": "kg"
+          },
+          "plannedRir": 2,
+          "recommendedRestSeconds": 120
+        },
+        {
+          "setIndex": 3,
+          "plannedRepetitions": {
+            "min": 8,
+            "max": 10
+          },
+          "suggestedLoad": {
+            "value": 20,
+            "unit": "kg"
+          },
+          "plannedRir": 1,
+          "recommendedRestSeconds": 150
+        }
+      ]
+    },
+    {
+      "fixtureKey": "B",
+      "catalogFixtureKey": "peso_muerto_rumano_mancuernas",
+      "loadBasis": "Por mancuerna; dos mancuernas",
+      "repetitionBasis": "Por serie",
+      "sets": [
+        {
+          "setIndex": 1,
+          "plannedRepetitions": {
+            "min": 10,
+            "max": 12
+          },
+          "suggestedLoad": {
+            "value": 10,
+            "unit": "kg"
+          },
+          "plannedRir": 3,
+          "recommendedRestSeconds": 90
+        },
+        {
+          "setIndex": 2,
+          "plannedRepetitions": {
+            "min": 10,
+            "max": 12
+          },
+          "suggestedLoad": {
+            "value": 12,
+            "unit": "kg"
+          },
+          "plannedRir": 2,
+          "recommendedRestSeconds": 120
+        },
+        {
+          "setIndex": 3,
+          "plannedRepetitions": {
+            "min": 8,
+            "max": 10
+          },
+          "suggestedLoad": {
+            "value": 12,
+            "unit": "kg"
+          },
+          "plannedRir": 2,
+          "recommendedRestSeconds": 120
+        }
+      ]
+    },
+    {
+      "fixtureKey": "C",
+      "catalogFixtureKey": "zancada_estatica",
+      "loadBasis": "Carga externa total",
+      "repetitionBasis": "Por pierna, no duplicar automáticamente",
+      "sets": [
+        {
+          "setIndex": 1,
+          "plannedRepetitions": {
+            "min": 10,
+            "max": 12
+          },
+          "suggestedLoad": {
+            "value": 0,
+            "unit": "kg"
+          },
+          "plannedRir": null,
+          "recommendedRestSeconds": 90
+        },
+        {
+          "setIndex": 2,
+          "plannedRepetitions": {
+            "min": 10,
+            "max": 12
+          },
+          "suggestedLoad": {
+            "value": 0,
+            "unit": "kg"
+          },
+          "plannedRir": null,
+          "recommendedRestSeconds": 90
+        },
+        {
+          "setIndex": 3,
+          "plannedRepetitions": {
+            "min": 8,
+            "max": 10
+          },
+          "suggestedLoad": {
+            "value": 0,
+            "unit": "kg"
+          },
+          "plannedRir": null,
+          "recommendedRestSeconds": null
+        }
+      ]
+    }
+  ],
+  "startingActualValues": null,
+  "startingRule": "Cada campo realizado empieza vacío; no copiar objetivos a realizados.",
+  "sampleRecordedSets": [
+    {
+      "exerciseFixtureKey": "A",
+      "setIndex": 1,
+      "actualLoad": {
+        "value": 16,
+        "unit": "kg"
+      },
+      "actualRepetitions": 14,
+      "actualRir": 3
+    },
+    {
+      "exerciseFixtureKey": "A",
+      "setIndex": 2,
+      "actualLoad": {
+        "value": 18,
+        "unit": "kg"
+      },
+      "actualRepetitions": 11,
+      "actualRir": 2
+    },
+    {
+      "exerciseFixtureKey": "A",
+      "setIndex": 3,
+      "actualLoad": {
+        "value": 20,
+        "unit": "kg"
+      },
+      "actualRepetitions": 9,
+      "actualRir": null
+    }
+  ]
+}

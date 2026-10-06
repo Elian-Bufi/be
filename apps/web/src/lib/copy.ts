@@ -19,14 +19,17 @@ export function avisoDe(valor: string | null): string | null {
 }
 
 /** Rutas propias a las que se puede volver después del login. */
-const RUTAS_DE_RETORNO: ReadonlySet<string> = new Set(['/account', '/account/relationships', '/account/privacy', '/pro']);
+const RUTAS_DE_RETORNO: ReadonlySet<string> = new Set(['/account', '/account/relationships', '/account/privacy', '/pro', '/pro/templates', '/pro/recipes', '/pro/exercises']);
 /** Rutas que llevan un identificador opaco en el query (el export estático no admite segmentos dinámicos, DL-041). */
-const RUTAS_CON_ID: ReadonlySet<string> = new Set(['/account/relationships/detail', '/account/relationships/consent', '/pro/advisees', '/pro/advisees/nutrition', '/pro/advisees/anthropometry']);
+const RUTAS_CON_ID: ReadonlySet<string> = new Set(['/account/relationships/detail', '/account/relationships/consent', '/pro/advisees', '/pro/advisees/nutrition', '/pro/advisees/anthropometry', '/pro/advisees/training', '/pro/recipes']);
+/** El nombre del parámetro con el identificador, si no es `id`: «Mis recetas» abre una receta con `?receta=` (DL-119). */
+const PARAMETRO_DEL_ID: Readonly<Record<string, string>> = { '/pro/recipes': 'receta' };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Retorno seguro después del login (10-B01:1146-1189): solo rutas propias conocidas, y como único parámetro un `id`
- * con forma de UUID. Cualquier otra cosa (otro origen, otro parámetro, `//`) vuelve a Cuenta.
+ * Retorno seguro después del login (10-B01:1146-1189): solo rutas propias conocidas, y como único parámetro el
+ * identificador de la ruta (`id`, o `receta` en «Mis recetas») con forma de UUID. Cualquier otra cosa (otro origen,
+ * otro parámetro, `//`) vuelve a Cuenta.
  */
 export function destinoSeguro(valor: string | null): string {
   if (!valor) return '/account';
@@ -34,6 +37,7 @@ export function destinoSeguro(valor: string | null): string {
   const corte = valor.indexOf('?');
   if (corte < 0) return '/account';
   const ruta = valor.slice(0, corte);
-  const id = valor.slice(corte + 1).match(/^id=([^&]*)$/)?.[1];
-  return RUTAS_CON_ID.has(ruta) && id && UUID.test(id) ? `${ruta}?id=${id}` : '/account';
+  const parametro = PARAMETRO_DEL_ID[ruta] ?? 'id';
+  const [nombre, id, ...resto] = valor.slice(corte + 1).split(/[=&]/);
+  return RUTAS_CON_ID.has(ruta) && nombre === parametro && resto.length === 0 && id && UUID.test(id) ? `${ruta}?${parametro}=${id}` : '/account';
 }

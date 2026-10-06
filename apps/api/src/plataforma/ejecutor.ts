@@ -47,7 +47,8 @@ export const esUuid = (s: string): boolean => UUID.test(s);
  *    auditoría de éxito y el registro de idempotencia, que guarda qué decidió el PDP. Un reintento con la misma clave
  *    vuelve a decidir antes de devolver la respuesta guardada: si ya no se permite, es el mismo 404;
  * 4. si el PDP denegó, la transacción se revirtió: se registra la decisión denegada y se responde el 404;
- * 5. todo rechazo de contrato queda auditado como RECHAZO, con el recurso intentado.
+ * 5. todo rechazo de contrato queda auditado como RECHAZO, con el recurso intentado y su motivo: el código que se
+ *    respondió, o el propio (`motivoDeAuditoria`) si se respondió idéntico a otro para no revelar nada.
  *
  * La auditoría es REQUIRED_SAME_TX (09v9:1051-1068): si no se puede auditar, no hay éxito (09v7 T18).
  *
@@ -160,13 +161,15 @@ export abstract class EjecutorDeDominio {
 
   /**
    * Lectura protegida: la decisión del PDP (que registra el acceso, 08:634) y la lectura en la misma transacción, así
-   * la respuesta sale de la misma foto que autorizó.
+   * la respuesta sale de la misma foto que autorizó. Un rechazo con motivo propio (`motivoDeAuditoria`) se audita como
+   * en una escritura: se responde idéntico a otro, y la auditoría es el único lugar donde queda su motivo real.
    */
   async leer<T>(p: Comun & { readonly lectura: (tx: Tx) => Promise<T> }): Promise<T> {
     try {
       return await conReintento(() => this.prisma.$transaction((tx) => p.lectura(tx)));
     } catch (e) {
       if (e instanceof DenegacionDelPdp) await this.pdp.registrarDenegacion(e);
+      if (e instanceof ErrorDeApi && e.motivoDeAuditoria) await this.auditarRechazo(p, e);
       throw e;
     }
   }
@@ -223,21 +226,24 @@ export abstract class EjecutorDeDominio {
       return await operacion();
     } catch (e) {
       if (e instanceof DenegacionDelPdp) await this.pdp.registrarDenegacion(e);
-      if (e instanceof ErrorDeApi) {
-        const intentado = p.recursoIntentado && esUuid(p.recursoIntentado.id) ? p.recursoIntentado : null;
-        await this.auditoria.registrar({
-          operacion: p.operacion,
-          resultado: 'RECHAZO',
-          motivo: e.code,
-          actorId: p.actor.identidadId,
-          recursoTipo: intentado?.tipo ?? null,
-          recursoId: intentado?.id.toLowerCase() ?? null,
-          superficie: p.ctx.superficie,
-          requestId: p.ctx.requestId,
-          momentoDeOcurrencia: p.ctx.momentoDeRecepcion,
-        });
-      }
+      if (e instanceof ErrorDeApi) await this.auditarRechazo(p, e);
       throw e;
     }
+  }
+
+  /** El rechazo, con el recurso intentado y su motivo: el propio si lo tiene, si no el código que se respondió. */
+  private async auditarRechazo(p: Comun, e: ErrorDeApi): Promise<void> {
+    const intentado = p.recursoIntentado && esUuid(p.recursoIntentado.id) ? p.recursoIntentado : null;
+    await this.auditoria.registrar({
+      operacion: p.operacion,
+      resultado: 'RECHAZO',
+      motivo: e.motivoDeAuditoria ?? e.code,
+      actorId: p.actor.identidadId,
+      recursoTipo: intentado?.tipo ?? null,
+      recursoId: intentado?.id.toLowerCase() ?? null,
+      superficie: p.ctx.superficie,
+      requestId: p.ctx.requestId,
+      momentoDeOcurrencia: p.ctx.momentoDeRecepcion,
+    });
   }
 }

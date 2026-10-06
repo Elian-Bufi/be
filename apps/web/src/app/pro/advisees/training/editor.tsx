@@ -10,18 +10,31 @@
  *   aparte y se dice que no es el criterio (B10-06:463-477).
  * - Validar informa los problemas vinculados a bloque → sesión → ejercicio, sin «Programa óptimo» (B10-06:563-591).
  * - «Guardar» no activa. Activar pide confirmación con la consecuencia literal de B10-06:607.
+ * - Objetivos por serie (DL-122): cada serie puede heredar, sobrescribir o quitar el RIR, la carga sugerida y el descanso
+ *   de la prescripción. El borrador se lee con API-SER-01, que trae ese tri-estado; API-TRN-09 no lo trae porque lo lee
+ *   también la APK instalada. «Así lo ve tu asesorado» resuelve igual que la API para el teléfono.
  */
 import {
+  BaseDeCargaSchema,
+  BaseDeRepeticionesSchema,
   COPY,
+  COPY_COMPATIBILIDAD_DE_CLIENTES,
   COPY_ENTRENAMIENTO,
   COPY_INTEGRACIONES,
+  ETIQUETA_DE_BASE_DE_CARGA,
+  ETIQUETA_DE_BASE_DE_REPETICIONES,
   ETIQUETA_DE_CRITERIO,
-  estructuraComoEntrada,
+  estructuraConObjetivosComoEntrada,
   leerNumero,
+  planExigeObjetivosPorSerie,
+  textoDeCarga,
+  textoDeRir,
+  textoDeSegundos,
   type EjercicioDeCatalogo,
   type EstructuraDePlanDeEntrenamientoEntrada,
+  type ImagenDeEjercicio,
+  type PlanConObjetivos,
   type ValidationIssue,
-  type VersionDePlanDeEntrenamiento,
 } from '@be/domain';
 import { useCallback, useEffect, useState, type ComponentProps, type FormEvent } from 'react';
 import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
@@ -36,6 +49,8 @@ import { ImportacionDeWger, procedenciaDeEjercicio } from './importacion';
 import { DialogoGuardarPlantilla, NotaDeOrigen } from './plantillas';
 import { COPY_HABITUALES, COPY_PLANTILLAS, type SesionHabitual } from '@be/domain';
 import { BloqueDeHabituales, BotonHabitual, DialogoGuardarSesionHabitual, InsertarSesionHabitual, nombresDeHabitual, useEjerciciosHabituales, useSesionesHabituales, type EjerciciosHabituales } from './habituales';
+import { CampoHeredable, TablaDeLaPrescripcion } from './objetivos-por-serie';
+import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 
 type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
 type BloqueE = Bloques[number];
@@ -43,24 +58,27 @@ type SesionE = NonNullable<BloqueE['sessions']>[number];
 type PrescripcionE = SesionE['prescriptions'][number];
 type Criterio = 'PERCENT_RM' | 'RIR';
 
-/** La jerarquía de la respuesta como entrada del PATCH (en el dominio, para que las pruebas editen exactamente igual). */
-const aEntrada = (v: VersionDePlanDeEntrenamiento): Bloques => estructuraComoEntrada(v);
+/** La jerarquía de API-SER-01 como entrada del PATCH, con el tri-estado de cada serie (en el dominio, para que las pruebas editen igual). */
+const aEntrada = (v: PlanConObjetivos): Bloques => estructuraConObjetivosComoEntrada(v);
 
-function nombresDe(v: VersionDePlanDeEntrenamiento): Record<string, string> {
-  const n: Record<string, string> = {};
-  const de = (s: VersionDePlanDeEntrenamiento['blocks'][number]['sessions']) => s.forEach((x) => x.prescriptions.forEach((p) => (n[p.exerciseVersionId] = p.exerciseName)));
-  v.blocks.forEach((b) => {
-    de(b.sessions);
-    b.microcycles.forEach((m) => de(m.sessions));
-  });
-  return n;
+/** Cada prescripción de la versión, en orden: de ahí salen los nombres y las imágenes por versión de ejercicio. */
+function prescripcionesDe(v: PlanConObjetivos) {
+  return v.blocks.flatMap((b) => [...b.sessions, ...b.microcycles.flatMap((m) => m.sessions)]).flatMap((s) => s.prescriptions);
+}
+
+function nombresDe(v: PlanConObjetivos): Record<string, string> {
+  return Object.fromEntries(prescripcionesDe(v).map((p) => [p.exerciseVersionId, p.exerciseName]));
+}
+
+function imagenesDe(v: PlanConObjetivos): Record<string, ImagenDeEjercicio | null> {
+  return Object.fromEntries(prescripcionesDe(v).map((p) => [p.exerciseVersionId, p.image]));
 }
 
 /** Ubicación de un problema sin rutas técnicas: «Bloque 1 → Semana 1 → Sesión A → Ejercicio 2» (B10-06:571-577). */
 function ubicacion(path: string, b: Bloques): string {
   // Un 400 de forma trae la ruta con puntos (changes.blocks.0.sessions.1…): se lee igual que la del dominio.
   const normalizada = path.replace(/^changes\./, '').replace(/\.(\d+)/g, '[$1]');
-  const m = normalizada.match(/^blocks\[(\d+)\](?:\.microcycles\[(\d+)\])?(?:\.sessions\[(\d+)\])?(?:\.prescriptions\[(\d+)\])?/);
+  const m = normalizada.match(/^blocks\[(\d+)\](?:\.microcycles\[(\d+)\])?(?:\.sessions\[(\d+)\])?(?:\.prescriptions\[(\d+)\])?(?:\.sets\[(\d+)\])?/);
   if (!m) return 'Plan';
   const bloque = b[Number(m[1])];
   const partes = [bloque?.label || `Bloque ${Number(m[1]) + 1}`];
@@ -69,6 +87,7 @@ function ubicacion(path: string, b: Bloques): string {
   const sesiones = micro ? micro.sessions : bloque?.sessions;
   if (m[3] !== undefined) partes.push(sesiones?.[Number(m[3])]?.label || `Sesión ${Number(m[3]) + 1}`);
   if (m[4] !== undefined) partes.push(`Ejercicio ${Number(m[4]) + 1}`);
+  if (m[5] !== undefined) partes.push(`Serie ${Number(m[5]) + 1}`);
   return partes.join(' → ');
 }
 
@@ -82,6 +101,8 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   INTENSITY_CRITERIA_COMBINED: 'se eligen % RM o RIR, no los dos',
   PERCEIVED_EXERTION_AS_CRITERION: 'el esfuerzo percibido se registra en la sesión: no es un criterio de prescripción',
   INTENSITY_TARGET_OUT_OF_RANGE: 'el objetivo de intensidad no tiene sentido para ese criterio',
+  SET_RIR_WITHOUT_RIR_CRITERION: 'un RIR por serie necesita que el ejercicio use el criterio RIR',
+  SET_RIR_OUT_OF_RANGE: 'el RIR objetivo de una serie va de 0 a 10',
   EXERCISE_REFERENCE_INVALID: 'el ejercicio no está en el catálogo',
   EXERCISE_NOT_AVAILABLE: 'el ejercicio ya no está disponible',
   OBJECTIVE_NOT_EFFECTIVE: 'el borrador usa un objetivo que ya no es el vigente',
@@ -98,10 +119,11 @@ const sesionVacia = (n: number): SesionE => ({ label: `Sesión ${String.fromChar
 
 export function EditorDePlan({ planId, onActivado }: { planId: string; onActivado: () => void }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
-  const [version, setVersion] = useState<VersionDePlanDeEntrenamiento | null>(null);
+  const [version, setVersion] = useState<PlanConObjetivos | null>(null);
   const [error, setError] = useState<'no-disponible' | 'error' | null>(null);
   const [bloques, setBloques] = useState<Bloques>([]);
   const [nombres, setNombres] = useState<Record<string, string>>({});
+  const [imagenes, setImagenes] = useState<Record<string, ImagenDeEjercicio | null>>({});
   const [proximaRevision, setProximaRevision] = useState('');
   const [sucio, setSucio] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -121,12 +143,13 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
 
   const cargar = useCallback(async () => {
     setError(null);
-    const [r, ob] = await Promise.all([api.consultarPlanDeEntrenamiento(token, planId), api.objetivoDeEntrenamientoEfectivo(token, asesoradoId)]);
+    const [r, ob] = await Promise.all([api.planConObjetivos(token, planId), api.objetivoDeEntrenamientoEfectivo(token, asesoradoId)]);
     if (sesionPerdida(r) || sesionPerdida(ob)) return;
     if (!r.ok) return setError(r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND' ? 'no-disponible' : 'error');
     setVersion(r.datos.data);
     setBloques(aEntrada(r.datos.data));
     setNombres(nombresDe(r.datos.data));
+    setImagenes(imagenesDe(r.datos.data));
     setProximaRevision(r.datos.data.nextReviewAt ?? '');
     setSucio(false);
     setObjetivoVigente(ob.ok ? (ob.datos.data.objective?.versionId ?? null) : null);
@@ -152,7 +175,7 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
     setMensaje({ tipo: 'exito', texto: COPY_HABITUALES.insertadaSesion });
   };
 
-  async function guardar(): Promise<VersionDePlanDeEntrenamiento | null> {
+  async function guardar(): Promise<PlanConObjetivos | null> {
     if (!version) return null;
     setGuardando(true);
     setMensaje(null);
@@ -165,11 +188,19 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
       setMensaje({ tipo: 'error', texto: r.tipo === 'API' && r.issues.length > 0 ? 'Hay elementos del plan que no se pueden guardar.' : mensajeDeFallo(r) });
       return null;
     }
-    setVersion(r.datos.data);
-    setBloques(aEntrada(r.datos.data));
-    setNombres((n) => ({ ...n, ...nombresDe(r.datos.data) }));
+    // La respuesta de API-TRN-10 tiene la forma que lee la APK instalada, sin los objetivos por serie: el borrador se
+    // vuelve a leer con API-SER-01. Si esa lectura falla, lo guardado es lo que se mandó y solo cambia el token.
+    const detalle = await api.planConObjetivos(token, planId);
+    if (sesionPerdida(detalle)) return null;
+    const guardada: PlanConObjetivos = detalle.ok ? detalle.datos.data : { ...version, version: r.datos.data.version, nextReviewAt: r.datos.data.nextReviewAt, objectiveVersionId: r.datos.data.objectiveVersionId };
+    setVersion(guardada);
+    if (detalle.ok) {
+      setBloques(aEntrada(detalle.datos.data));
+      setNombres((n) => ({ ...n, ...nombresDe(detalle.datos.data) }));
+      setImagenes((i) => ({ ...i, ...imagenesDe(detalle.datos.data) }));
+    }
     setSucio(false);
-    return r.datos.data;
+    return guardada;
   }
 
   async function validar() {
@@ -198,6 +229,10 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
       }
       if (r.tipo === 'API' && r.codigo === 'CAPACITY_NOT_AVAILABLE') return setFalloDeActivacion('No hay capacidad disponible para iniciar un nuevo seguimiento. Los seguimientos vigentes no se modifican.');
       if (r.tipo === 'API' && r.codigo === 'ACTIVE_PLAN_CONFLICT') return setFalloDeActivacion('El asesorado ya tiene un plan de entrenamiento vigente con otro profesional.');
+      if (r.tipo === 'API' && r.codigo === 'CLIENT_CAPABILITY_REQUIRED') {
+        void cargar();
+        return setFalloDeActivacion(`${COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada} ${COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}`);
+      }
       return setFalloDeActivacion(esIncierto(r) ? COPY.resultadoIncierto : 'No pudimos activar el plan. Probá de nuevo.');
     }
     setConfirmar(false);
@@ -207,6 +242,12 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
   if (error === 'no-disponible') return <NoDisponible />;
   if (error === 'error') return <ErrorConReintento onReintentar={cargar} />;
   if (!version) return <Cargando />;
+
+  // Precierre del 2026-10-06, §2: las APK instaladas muestran solo los objetivos generales. Si el plan escrito tiene
+  // objetivos distintos por serie (la misma regla que aplica la API) y el asesorado todavía no usó una app que los
+  // muestre (API-SER-01), no se puede activar: se dice por qué, y la API lo rechaza igual (409 CLIENT_CAPABILITY_REQUIRED).
+  const exigeObjetivosPorSerie = planExigeObjetivosPorSerie({ blocks: bloques });
+  const bloqueadoPorLaApp = exigeObjetivosPorSerie && !version.setTargetsDelivery.adviseeClientCapable;
 
   const editorDeSesiones = (sesiones: SesionE[], ruta: (b: Bloques) => SesionE[], prefijo: string) => (
     <>
@@ -225,6 +266,7 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
                 id={`${prefijo}-s${k}-p${l}`}
                 prescripcion={p}
                 nombre={nombres[p.exerciseVersionId] ?? 'Ejercicio'}
+                imagen={imagenes[p.exerciseVersionId] ?? null}
                 onCambiar={(c) => cambiar((x) => ((ruta(x)[k]!.prescriptions[l] = { ...p, ...c }), x))}
                 onQuitar={() => cambiar((x) => (ruta(x)[k]!.prescriptions.splice(l, 1), x))}
               />
@@ -261,6 +303,19 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
         {version.predecessorPlanId ? <p>Nueva versión a partir de la versión activa. La versión activa no cambia hasta que actives esta.</p> : null}
       </Ayuda>
       {version.templateOrigin ? <NotaDeOrigen token={token} origen={version.templateOrigin} /> : null}
+      {bloqueadoPorLaApp ? (
+        <Aviso tipo="info">
+          <p>
+            <strong>{COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueadaTitulo}</strong>
+          </p>
+          <p>{COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada}</p>
+          <p>{COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}</p>
+        </Aviso>
+      ) : exigeObjetivosPorSerie ? (
+        <Aviso tipo="info">
+          <p>{COPY_COMPATIBILIDAD_DE_CLIENTES.listoParaActivar}</p>
+        </Aviso>
+      ) : null}
       {objetivoVigente && objetivoVigente !== version.objectiveVersionId ? (
         <Aviso tipo="info">
           <p>Hay una versión de objetivo más nueva. Al guardar, el borrador pasa a usarla.</p>
@@ -372,7 +427,7 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
         <button type="button" className="boton boton--secundario" onClick={() => void validar()} disabled={guardando}>
           {COPY_ENTRENAMIENTO.validarPlan}
         </button>
-        <button type="button" className="boton boton--secundario" onClick={() => setConfirmar(true)} disabled={guardando || sucio}>
+        <button type="button" className="boton boton--secundario" onClick={() => setConfirmar(true)} disabled={guardando || sucio || bloqueadoPorLaApp} aria-describedby={bloqueadoPorLaApp ? 'motivo-sin-activar' : undefined}>
           {COPY_ENTRENAMIENTO.activarPlan}
         </button>
         <button type="button" className="boton boton--secundario" onClick={() => setGuardarPlantilla(true)} disabled={guardando}>
@@ -380,6 +435,11 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
         </button>
       </div>
       {sucio ? <p className="nota">Guardá los cambios antes de activar.</p> : null}
+      {bloqueadoPorLaApp ? (
+        <p className="nota" id="motivo-sin-activar">
+          {COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueadaTitulo}: {COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}
+        </p>
+      ) : null}
       <DialogoGuardarPlantilla
         token={token}
         abierto={guardarPlantilla}
@@ -468,10 +528,32 @@ function leerValor(s: string): number | null {
 }
 const escribirNumero = (n: number | null): string => (n === null || Number.isNaN(n) ? '' : numeroEnCampo(n));
 
-/** Una prescripción: series y repeticiones, criterio de intensidad explícito, carga sugerida aparte, parámetros. */
-function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar }: { id: string; prescripcion: PrescripcionE; nombre: string; onCambiar: (c: Partial<PrescripcionE>) => void; onQuitar: () => void }) {
+/** La unidad de las cargas de una prescripción: la de su carga sugerida, o kg. Las series usan la misma (DL-122). */
+const unidadDe = (p: PrescripcionE): 'kg' | 'lb' => p.suggestedLoad?.unit ?? p.sets.find((x) => x.suggestedLoad)?.suggestedLoad?.unit ?? 'kg';
+
+/**
+ * Una prescripción: el criterio de intensidad explícito, la carga sugerida aparte, el descanso y las bases, los
+ * parámetros, y cada serie con sus repeticiones, su nota y sus objetivos propios (DL-122), con la vista previa.
+ */
+function EditorDePrescripcion({
+  id,
+  prescripcion: p,
+  nombre,
+  imagen,
+  onCambiar,
+  onQuitar,
+}: {
+  id: string;
+  prescripcion: PrescripcionE;
+  nombre: string;
+  imagen: ImagenDeEjercicio | null;
+  onCambiar: (c: Partial<PrescripcionE>) => void;
+  onQuitar: () => void;
+}) {
+  const { token, sesionPerdida } = useEntrenamiento();
   const criterio = (p.intensity?.criterion as Criterio | undefined) ?? '';
   type Repeticiones = PrescripcionE['sets'][number]['repetitions'];
+  type Serie = PrescripcionE['sets'][number];
   const reps = (r: Repeticiones) => (!r ? '' : 'value' in r ? (Number.isNaN(r.value) ? '' : String(r.value)) : `${r.min}-${r.max}`);
   // Vacío: sin repeticiones fijadas. Un número o un rango «8-12». Otra cosa no se guarda como si no hubiera nada.
   const leerReps = (s: string): Repeticiones => {
@@ -482,44 +564,25 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
     return { value: Number.isInteger(n) && n > 0 ? n : Number.NaN };
   };
   const parametros = p.professionalParameters ?? [];
+  const unidad = unidadDe(p);
+  const rirDeLaPrescripcion = criterio === 'RIR' && p.intensity && !Number.isNaN(p.intensity.target.value) ? p.intensity.target.value : null;
+  /** Cambia un campo de una serie con su tri-estado: `undefined` quita la clave (hereda). */
+  const cambiarSerie = (i: number, campo: 'rir' | 'suggestedLoad' | 'restSeconds', valor: unknown) =>
+    onCambiar({
+      sets: p.sets.map((x, j) => {
+        if (j !== i) return x;
+        const copia: Record<string, unknown> = { ...x };
+        if (valor === undefined) delete copia[campo];
+        else copia[campo] = valor;
+        return copia as Serie;
+      }),
+    });
   return (
     <li className="fila-de-item">
-      <strong>{nombre}</strong>
-      <fieldset className="grupo">
-        <legend>
-          {COPY_ENTRENAMIENTO.series} y {COPY_ENTRENAMIENTO.repeticiones.toLowerCase()}
-        </legend>
-        {p.sets.map((s, i) => (
-          <div key={i} className="fila-de-dato">
-            <CampoInterpretado
-              id={`${id}-serie-${i}`}
-              etiqueta={`${COPY_ENTRENAMIENTO.serie} ${i + 1}: repeticiones (un número o un rango, 8-12)`}
-              valor={s.repetitions}
-              formatear={reps}
-              interpretar={leerReps}
-              onCambiar={(r) => onCambiar({ sets: p.sets.map((x, j) => (j === i ? { ...x, repetitions: r } : x)) })}
-            />
-            {/* La nota por serie ya viajaba en el contrato y se conservaba al guardar, pero no se podía escribir (DL-105). */}
-            <Campo
-              id={`${id}-serie-${i}-nota`}
-              etiqueta={`${COPY_ENTRENAMIENTO.serie} ${i + 1}: ${COPY_ENTRENAMIENTO.notaDeSerie}`}
-              value={s.note ?? ''}
-              onChange={(e) => onCambiar({ sets: p.sets.map((x, j) => (j === i ? { ...x, note: e.target.value || null } : x)) })}
-              maxLength={200}
-            />
-          </div>
-        ))}
-        <div className="acciones">
-          <button type="button" className="boton boton--enlace" onClick={() => onCambiar({ sets: [...p.sets, { repetitions: p.sets[p.sets.length - 1]?.repetitions ?? null }] })}>
-            Agregar serie
-          </button>
-          {p.sets.length > 0 ? (
-            <button type="button" className="boton boton--enlace" onClick={() => onCambiar({ sets: p.sets.slice(0, -1) })}>
-              Quitar la última serie
-            </button>
-          ) : null}
-        </div>
-      </fieldset>
+      <div className="tarjeta-de-receta">
+        {imagen ? <ImagenGuardadaDeEjercicio token={token} medioId={imagen.mediaId} nombre={nombre} textoAlternativo={imagen.altText} sesionPerdida={sesionPerdida} chica /> : null}
+        <strong>{nombre}</strong>
+      </div>
       <fieldset className="grupo">
         <legend>{COPY_ENTRENAMIENTO.intensidad}</legend>
         <div className="campo">
@@ -530,8 +593,12 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
             onChange={(e) => {
               const c = e.target.value as Criterio | '';
               // Elegir el criterio no trae un objetivo: el número lo escribe el profesional (09v10:339-340). Vacío no
-              // se guarda, y el guardado señala el ejercicio.
-              onCambiar({ intensity: c ? { criterion: c, target: { value: Number.NaN, reference: null } } : null });
+              // se guarda, y el guardado señala el ejercicio. Sin criterio RIR, el RIR de cada serie no tiene sentido:
+              // se quita, porque sería un segundo criterio (REG-06-128).
+              onCambiar({
+                intensity: c ? { criterion: c, target: { value: Number.NaN, reference: null } } : null,
+                ...(c === 'RIR' ? {} : { sets: p.sets.map(({ rir: _sinRir, ...x }) => x) }),
+              });
             }}
           >
             <option value="">{COPY_ENTRENAMIENTO.sinCriterio}</option>
@@ -541,7 +608,7 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
               </option>
             ))}
           </select>
-          {criterio === 'RIR' ? <p className="campo__ayuda">{COPY_ENTRENAMIENTO.explicacionRir}</p> : null}
+          {criterio === 'RIR' ? <p className="campo__ayuda">{COPY_ENTRENAMIENTO.explicacionRir} Cada serie puede tener el suyo.</p> : null}
         </div>
         {p.intensity ? (
           <>
@@ -570,7 +637,7 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
       </fieldset>
       <fieldset className="grupo">
         <legend>{COPY_ENTRENAMIENTO.cargaSugerida} (opcional)</legend>
-        <p className="campo__ayuda">{COPY_ENTRENAMIENTO.cargaNoEsIntensidad}</p>
+        <p className="campo__ayuda">{COPY_ENTRENAMIENTO.cargaNoEsIntensidad} Es la que heredan las series que no tienen una propia.</p>
         <div className="fila-de-dato">
           <CampoInterpretado
             id={`${id}-carga`}
@@ -579,16 +646,145 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
             valor={p.suggestedLoad ? p.suggestedLoad.value : null}
             formatear={escribirNumero}
             interpretar={leerValor}
-            onCambiar={(v) => onCambiar({ suggestedLoad: v === null ? null : { value: v, unit: p.suggestedLoad?.unit ?? 'kg' } })}
+            onCambiar={(v) => onCambiar({ suggestedLoad: v === null ? null : { value: v, unit: unidad } })}
           />
           <div className="campo">
             <label htmlFor={`${id}-unidad`}>Unidad</label>
-            <select id={`${id}-unidad`} value={p.suggestedLoad?.unit ?? 'kg'} disabled={!p.suggestedLoad} onChange={(e) => p.suggestedLoad && onCambiar({ suggestedLoad: { ...p.suggestedLoad, unit: e.target.value as 'kg' | 'lb' } })}>
+            {/* Una sola unidad por prescripción: cambiarla cambia también la de las series, sin convertir números. */}
+            <select
+              id={`${id}-unidad`}
+              value={unidad}
+              onChange={(e) => {
+                const u = e.target.value as 'kg' | 'lb';
+                onCambiar({
+                  ...(p.suggestedLoad ? { suggestedLoad: { ...p.suggestedLoad, unit: u } } : {}),
+                  sets: p.sets.map((x) => (x.suggestedLoad ? { ...x, suggestedLoad: { ...x.suggestedLoad, unit: u } } : x)),
+                });
+              }}
+            >
               <option value="kg">kg</option>
               <option value="lb">lb</option>
             </select>
           </div>
+          <div className="campo">
+            <label htmlFor={`${id}-base-carga`}>Cómo se cuenta la carga</label>
+            <select
+              id={`${id}-base-carga`}
+              value={p.loadBasis ?? ''}
+              onChange={(e) => {
+                const b = BaseDeCargaSchema.safeParse(e.target.value);
+                onCambiar({ loadBasis: b.success ? b.data : null });
+              }}
+            >
+              <option value="">Sin indicar</option>
+              {BaseDeCargaSchema.options.map((b) => (
+                <option key={b} value={b}>
+                  {ETIQUETA_DE_BASE_DE_CARGA[b]}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+      </fieldset>
+      <fieldset className="grupo">
+        <legend>Descanso recomendado (opcional)</legend>
+        <p className="campo__ayuda">En segundos, entre una serie y la siguiente. Es el que heredan las series que no tienen uno propio. 0 es sin pausa.</p>
+        <CampoInterpretado
+          id={`${id}-descanso`}
+          etiqueta="Descanso recomendado (segundos)"
+          inputMode="numeric"
+          valor={p.restSeconds ?? null}
+          formatear={escribirNumero}
+          interpretar={(t) => {
+            const v = leerValor(t);
+            return v === null || Number.isInteger(v) ? v : Number.NaN;
+          }}
+          onCambiar={(v) => onCambiar({ restSeconds: v })}
+        />
+      </fieldset>
+      <fieldset className="grupo">
+        <legend>
+          {COPY_ENTRENAMIENTO.series} y {COPY_ENTRENAMIENTO.repeticiones.toLowerCase()}
+        </legend>
+        <div className="campo">
+          <label htmlFor={`${id}-base-reps`}>Qué cuentan las repeticiones</label>
+          <select
+            id={`${id}-base-reps`}
+            value={p.repetitionBasis ?? ''}
+            onChange={(e) => {
+              const b = BaseDeRepeticionesSchema.safeParse(e.target.value);
+              onCambiar({ repetitionBasis: b.success ? b.data : null });
+            }}
+          >
+            <option value="">Sin indicar</option>
+            {BaseDeRepeticionesSchema.options.map((b) => (
+              <option key={b} value={b}>
+                {ETIQUETA_DE_BASE_DE_REPETICIONES[b]}
+              </option>
+            ))}
+          </select>
+        </div>
+        {p.sets.map((s, i) => (
+          <fieldset key={i} className="serie-del-editor">
+            <legend>
+              {COPY_ENTRENAMIENTO.serie} {i + 1}
+            </legend>
+            <div className="campos-de-la-serie">
+              <CampoInterpretado
+                id={`${id}-serie-${i}`}
+                etiqueta={`${COPY_ENTRENAMIENTO.serie} ${i + 1}: repeticiones (un número o un rango, 8-12)`}
+                valor={s.repetitions}
+                formatear={reps}
+                interpretar={leerReps}
+                onCambiar={(r) => onCambiar({ sets: p.sets.map((x, j) => (j === i ? { ...x, repetitions: r } : x)) })}
+              />
+              <CampoHeredable
+                id={`${id}-serie-${i}-carga`}
+                etiqueta={`${COPY_ENTRENAMIENTO.serie} ${i + 1}: carga sugerida (${unidad})`}
+                valor={s.suggestedLoad === undefined ? undefined : s.suggestedLoad === null ? null : s.suggestedLoad.value}
+                heredado={textoDeCarga(p.suggestedLoad ?? null)}
+                onCambiar={(v) => cambiarSerie(i, 'suggestedLoad', v === undefined || v === null ? v : { value: v, unit: unidad })}
+              />
+              {criterio === 'RIR' ? (
+                <CampoHeredable
+                  id={`${id}-serie-${i}-rir`}
+                  etiqueta={`${COPY_ENTRENAMIENTO.serie} ${i + 1}: RIR objetivo (0 a 10)`}
+                  valor={s.rir}
+                  heredado={textoDeRir(rirDeLaPrescripcion)}
+                  onCambiar={(v) => cambiarSerie(i, 'rir', v)}
+                />
+              ) : null}
+              <CampoHeredable
+                id={`${id}-serie-${i}-descanso`}
+                etiqueta={`${COPY_ENTRENAMIENTO.serie} ${i + 1}: descanso (segundos)`}
+                valor={s.restSeconds}
+                heredado={p.restSeconds === null || p.restSeconds === undefined || Number.isNaN(p.restSeconds) ? null : `${textoDeSegundos(p.restSeconds)} (${p.restSeconds} s)`}
+                entero
+                onCambiar={(v) => cambiarSerie(i, 'restSeconds', v)}
+              />
+              {/* La nota por serie ya viajaba en el contrato y se conservaba al guardar, pero no se podía escribir (DL-105). */}
+              <Campo
+                id={`${id}-serie-${i}-nota`}
+                etiqueta={`${COPY_ENTRENAMIENTO.serie} ${i + 1}: ${COPY_ENTRENAMIENTO.notaDeSerie}`}
+                value={s.note ?? ''}
+                onChange={(e) => onCambiar({ sets: p.sets.map((x, j) => (j === i ? { ...x, note: e.target.value || null } : x)) })}
+                maxLength={200}
+              />
+            </div>
+          </fieldset>
+        ))}
+        <div className="acciones">
+          {/* Una serie nueva copia las repeticiones de la anterior; sus objetivos propios no se copian: hereda. */}
+          <button type="button" className="boton boton--enlace" onClick={() => onCambiar({ sets: [...p.sets, { repetitions: p.sets[p.sets.length - 1]?.repetitions ?? null }] })}>
+            Agregar serie
+          </button>
+          {p.sets.length > 0 ? (
+            <button type="button" className="boton boton--enlace" onClick={() => onCambiar({ sets: p.sets.slice(0, -1) })}>
+              Quitar la última serie
+            </button>
+          ) : null}
+        </div>
+        <TablaDeLaPrescripcion prescripcion={p} bases={{ loadBasis: p.loadBasis ?? null, repetitionBasis: p.repetitionBasis ?? null }} />
       </fieldset>
       <fieldset className="grupo">
         <legend>{COPY_ENTRENAMIENTO.parametros} (opcional)</legend>
@@ -614,21 +810,12 @@ function EditorDePrescripcion({ id, prescripcion: p, nombre, onCambiar, onQuitar
             </button>
           </div>
         ))}
+        {/* DL-122: el descanso tiene su campo propio. Un parámetro «Descanso» que ya existía se conserva tal cual, sin
+            reinterpretarlo: ya no se ofrece el atajo que lo creaba. */}
         <div className="acciones">
           <button type="button" className="boton boton--enlace" onClick={() => onCambiar({ professionalParameters: [...parametros, { label: '', value: '', unit: null }] })}>
             Agregar parámetro
           </button>
-          {/* Atajo (DL-105): precarga solo el rótulo y la unidad. El valor lo escribe el profesional; vacío, el guardado
-              lo señala. Si ya hay un descanso, no se ofrece otro. */}
-          {parametros.some((q) => q.label.trim().toLowerCase() === COPY_ENTRENAMIENTO.descanso.toLowerCase()) ? null : (
-            <button
-              type="button"
-              className="boton boton--enlace"
-              onClick={() => onCambiar({ professionalParameters: [...parametros, { label: COPY_ENTRENAMIENTO.descanso, value: '', unit: 's' }] })}
-            >
-              {COPY_ENTRENAMIENTO.agregarDescanso}
-            </button>
-          )}
         </div>
       </fieldset>
       <div className="campo">

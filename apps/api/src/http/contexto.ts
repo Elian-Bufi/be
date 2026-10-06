@@ -1,4 +1,12 @@
-import { HEADER_DE_SUPERFICIE, superficieDeclarada, type Procedencia, type Superficie } from '@be/domain';
+import {
+  capacidadesDeclaradas,
+  HEADER_DE_CAPACIDADES,
+  HEADER_DE_SUPERFICIE,
+  superficieDeclarada,
+  type CapacidadDeCliente,
+  type Procedencia,
+  type Superficie,
+} from '@be/domain';
 import type { Request } from 'express';
 
 /** Datos de la request que se registran como procedencia y evidencia técnica (08 §12.2, T-06-23). */
@@ -10,6 +18,11 @@ export interface ContextoDeSolicitud {
   /** Evidencia técnica del acto (C3). Solo se guarda en actos A1/A2/A3, nunca en auditoría ni logs (08:658). */
   readonly direccionIp: string | null;
   readonly agenteDeUsuario: string | null;
+  /**
+   * Lo que el cliente declara que sabe mostrar (`X-BE-Capabilities`; DL-122, precierre del 2026-10-06). Sin la cabecera,
+   * vacío: las APK instaladas no la mandan. Como la superficie, nunca autoriza: decide qué se le entrega a ese cliente.
+   */
+  readonly capacidades: ReadonlySet<CapacidadDeCliente>;
 }
 
 export type SolicitudConContexto = Request & { requestId?: string; momentoDeRecepcion?: Date };
@@ -22,6 +35,7 @@ export function contextoDe(req: SolicitudConContexto): ContextoDeSolicitud {
     superficie: superficieDeclarada(req.get(HEADER_DE_SUPERFICIE)),
     direccionIp: req.ip ?? null,
     agenteDeUsuario: ua ? ua.slice(0, 256) : null,
+    capacidades: capacidadesDeclaradas(req.get(HEADER_DE_CAPACIDADES)),
   };
 }
 

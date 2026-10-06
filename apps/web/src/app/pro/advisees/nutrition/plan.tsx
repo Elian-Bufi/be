@@ -7,7 +7,7 @@
  * - Un solo borrador por plan (REG-06-12): si ya hay uno, se sigue sobre ese.
  * - «Borrador creado», no «Plan creado correctamente» (B05:378-398).
  */
-import { cantidad, COPY_NUTRICION, COPY_PLANTILLAS, ETIQUETA_DE_PREPARACION, ETIQUETA_DE_UNIDAD, estructuraNutricionalComoEntrada, type VersionDePlan } from '@be/domain';
+import { cantidad, COPY_NUTRICION, COPY_PLANTILLAS, COPY_RECETAS, ETIQUETA_DE_PREPARACION, ETIQUETA_DE_UNIDAD, estructuraNutricionalComoEntrada, type VersionDePlan } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso } from '../../../../components/formulario';
@@ -215,6 +215,11 @@ export function VersionSoloLectura({ version, numero }: { version: VersionDePlan
               {m.options.map((o) => (
                 <div key={o.optionId} className="nodo nodo--opcion">
                   <p className="lista__titulo">{m.options.length > 1 ? `Opción ${o.order}: ${o.label}` : o.label}</p>
+                  {o.recipe ? (
+                    <p className="nota">
+                      {COPY_RECETAS.opcionDeReceta(o.recipe.name, o.recipe.versionNumber)} · {COPY_RECETAS.porcionDeLaOpcion}
+                    </p>
+                  ) : null}
                   <ul>
                     {o.items.map((i) => (
                       <li key={i.itemId}>

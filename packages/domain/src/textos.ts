@@ -17,6 +17,11 @@ export const TipoDeTexto = {
   CONSENTIMIENTO_PROFESIONAL_SANITARIO: 'CONSENTIMIENTO_PROFESIONAL_SANITARIO',
   /** B2 para un profesional no sanitario (08 §12.3). WP-03. */
   CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO: 'CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO',
+  /**
+   * La información destacada de las fotos de comidas, dentro del alcance de Nutrición (08 §12.4 `EVIDENCIA_VISUAL`,
+   * §21.3). Precierre del 2026-10-06, §6: es una **propuesta** (`VERSIONES_PROPUESTAS`).
+   */
+  EVIDENCIA_VISUAL: 'EVIDENCIA_VISUAL',
 } as const;
 export type TipoDeTexto = (typeof TipoDeTexto)[keyof typeof TipoDeTexto];
 
@@ -117,6 +122,41 @@ Podés revocarlo cuando quieras. La revocación corta el acceso hacia adelante, 
 
 Aceptar esta versión no acepta versiones futuras.`;
 
+/**
+ * 08 §12.4 `EVIDENCIA_VISUAL` y §21.3: la información destacada de una categoría, las fotos de comidas, que se registra
+ * al habilitarla dentro del alcance de Nutrición. No es un consentimiento por foto. Cada afirmación es lo que hace la
+ * implementación: quién ve la foto (API-MED-03), el acceso de 15 minutos y su registro, los metadatos que se quitan
+ * (API-MED-02), el borrado de cada foto (API-MED-05) y la revocación (API-EVI-04).
+ *
+ * **Es una propuesta** (precierre del 2026-10-06, §6): la aprueba Dirección, con la validación jurídica, antes de usarse
+ * con personas reales. La versión aprobada entra como sucesora de esta, con otro id, y no hereda sus aceptaciones.
+ */
+const PROPUESTA = 'Texto propuesto, pendiente de aprobación de Dirección y de validación jurídica.';
+
+const EVIDENCIA_VISUAL = `Fotos de tus comidas — versión propuesta 2026-10
+
+${AVISO}
+
+${PROPUESTA}
+
+Esta información es sobre una sola categoría de datos: las fotos de comidas que subís a BE. Se muestra antes de tu primera foto para el profesional que te acompaña en Nutrición, y queda registrada aparte.
+
+Qué es: la foto de una comida que registrás, por ejemplo una comida diferente a la del plan. Es un dato personal de salud, y BE la protege por lo menos como al resto de tus datos de salud.
+
+Es opcional: podés registrar tus comidas sin fotos. No subir fotos no cambia nada del servicio.
+
+Quién la ve: vos y el profesional que te acompaña en Nutrición, mientras el vínculo, su autorización de acceso y tu consentimiento de datos de salud estén vigentes. No la ven otros asesorados ni otros profesionales. La administración de BE no tiene acceso, salvo el acceso excepcional de soporte, que queda registrado.
+
+Cómo se guarda: la foto es privada y no tiene una dirección pública. Cada vez que alguien la abre, BE da un acceso que vence en 15 minutos como máximo y registra quién la abrió y cuándo. Al recibirla, BE quita de la imagen los datos que no hacen falta, como la ubicación y el modelo del teléfono.
+
+Qué no hace BE con la foto: no calcula cantidades, calorías ni nutrientes, y no la envía a ningún servicio de inteligencia artificial.
+
+Podés borrar cada foto cuando quieras, desde el registro de esa comida: se borra la imagen y queda la constancia de que existió.
+
+Podés revocar esta autorización cuando quieras, desde Cuenta → Privacidad. Desde ese momento no se suben fotos nuevas para este profesional, y el profesional deja de verlas. Las fotos que ya subiste no se borran: las seguís viendo vos, y las podés borrar una por una.
+
+Aceptar esta versión no acepta versiones futuras.`;
+
 export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
   {
     id: 'terminos-2026-09-demo',
@@ -178,7 +218,24 @@ export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
     hash: 'b85090bdc5cd7b730a91093d14cba57c83f13d644b55dff97157535b67db4023',
     reemplazaA: null,
   },
+  {
+    id: 'evidencia-visual-2026-10-propuesta',
+    tipo: 'EVIDENCIA_VISUAL',
+    titulo: 'Fotos de tus comidas',
+    finalidad: 'INFORMACION_DESTACADA_DE_EVIDENCIA_VISUAL',
+    vigenteDesde: '2026-10-06T00:00:00.000Z',
+    texto: EVIDENCIA_VISUAL,
+    hash: '88eb764c3382f241a1d6f7f0a51e5daa3d0774232957492d860e1549f34e28a1',
+    reemplazaA: null,
+  },
 ];
+
+/**
+ * Las versiones que todavía son una propuesta (precierre del 2026-10-06, §6): la API lo informa con cada requisito
+ * (`textApproval: 'PENDING_APPROVAL'`) y la APK lo muestra junto al texto. Salen de acá cuando Dirección aprueba un texto,
+ * que entra como una versión nueva.
+ */
+export const VERSIONES_PROPUESTAS: ReadonlySet<string> = new Set(['evidencia-visual-2026-10-propuesta']);
 
 /** Versión vigente por tipo. Una versión nueva no hereda aceptación (09 §31.2.6). */
 export const VERSION_VIGENTE: Readonly<Record<TipoDeTexto, VersionDeTexto>> = Object.fromEntries(

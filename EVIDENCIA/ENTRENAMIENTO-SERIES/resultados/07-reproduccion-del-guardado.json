@@ -1,0 +1,38 @@
+{
+  "base": "58567ecfb377331f72e21eeed9f91d98f7a5837a",
+  "generado": "reproducir-guardado.mjs",
+  "resultados": [
+    {
+      "caso": "escritura rechazada",
+      "version": "58567ec",
+      "enElTelefono": 0,
+      "estadoDelGuardado": "(no existe: el error se descartaba con .catch(() => undefined))",
+      "textoDeLaFila": "Guardada en el teléfono"
+    },
+    {
+      "caso": "escritura rechazada",
+      "version": "corregido",
+      "enElTelefono": 0,
+      "estadoDelGuardado": "fallo-al-guardar",
+      "textoDeLaFila": "Solo en la app: todavía no está guardada en el teléfono"
+    },
+    {
+      "caso": "lectura rechazada con datos previos, y después un cambio",
+      "version": "58567ec",
+      "sesionesQueQuedaronEnLaClave": [
+        "borrador-1"
+      ],
+      "seConservoLaAnterior": false,
+      "estadoDelGuardado": "(no existe)"
+    },
+    {
+      "caso": "lectura rechazada con datos previos, y después un cambio",
+      "version": "corregido",
+      "sesionesQueQuedaronEnLaClave": [
+        "borrador-anterior"
+      ],
+      "seConservoLaAnterior": true,
+      "estadoDelGuardado": "sin-leer"
+    }
+  ]
+}

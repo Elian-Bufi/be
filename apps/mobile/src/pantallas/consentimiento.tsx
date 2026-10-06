@@ -25,7 +25,7 @@ import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
 import { fecha } from '../formato';
 import { falloDe, useClaveDeIntento, type Fallo } from '../intento';
-import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
+import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { TextoDesplegable } from '../texto-versionado';
 import { Aviso, Boton, Dato, Parrafo, Subtitulo, Titulo, estilos as ui, estilosPorTema } from '../ui';
 
@@ -54,7 +54,7 @@ export function PantallaDeConsentimiento({
   token: string;
   vinculoId: string;
   salir: (motivo: Salida) => void;
-  ir: (r: Ruta) => void;
+  ir: Ir;
   volver: () => void;
   /** Lleva la pantalla al principio, donde queda el resultado del acto. */
   subir: () => void;
@@ -105,7 +105,8 @@ export function PantallaDeConsentimiento({
     setActo({ tipo: 'fallo', fallo: falloDe(r) });
   }
 
-  const irAlVinculo = () => ir({ nombre: 'vinculo', id: vinculoId });
+  // El vínculo reemplaza al consentimiento: si se llegó desde ese vínculo, se vuelve a él; si no, hereda el origen.
+  const irAlVinculo = () => ir({ nombre: 'vinculo', id: vinculoId }, 'reemplazar');
 
   if (acto.tipo === 'otorgado') {
     const d = acto.datos;
@@ -118,7 +119,7 @@ export function PantallaDeConsentimiento({
           <Dato etiqueta={COPY_VINCULO.finalidad} valor={ETIQUETA_DE_FINALIDAD[d.purpose]} />
           <Dato etiqueta="Fecha" valor={fecha(d.acceptedAt)} />
           <Dato etiqueta="Estado" valor={COPY_VINCULO.estadoDeConsentimiento.ACTIVE} />
-          <Boton texto={COPY_VINCULO.verVinculo} onPress={() => ir({ nombre: 'vinculo', id: d.relationshipId })} />
+          <Boton texto={COPY_VINCULO.verVinculo} onPress={() => ir({ nombre: 'vinculo', id: d.relationshipId }, 'reemplazar')} />
         </Aviso>
       </>
     );

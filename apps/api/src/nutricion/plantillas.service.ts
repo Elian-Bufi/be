@@ -26,6 +26,7 @@ import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoService } from './catalogo.service';
 import { EjecutorNutricional } from './ejecutor';
 import { registrarEventoDeNutricion } from './eventos';
+import { opcionesDeRecetaNoAdmitidas } from './opciones-de-receta';
 
 type Tx = Prisma.TransactionClient;
 const RECURSO = 'PlantillaDePlanNutricional';
@@ -242,6 +243,10 @@ export class PlantillasNutricionalesService {
 
   /** Valida como un borrador (forma y elementos disponibles) y devuelve la estructura que se guarda: sin cantidades salvo pedido. */
   private async estructuraVerificada(tx: Tx, profesionalId: string, entrada: EstructuraDePlanEntrada, conCantidades: boolean): Promise<EstructuraDePlanEntrada> {
+    // DL-119: una plantilla no lleva opciones de receta. La receta es del profesional y su porción se arma en el plan de
+    // cada persona; aceptarla descartando la referencia la convertiría en otra opción sin decirlo.
+    const conReceta = opcionesDeRecetaNoAdmitidas(entrada.dayTypes.flatMap((d, i) => d.meals.map((m, j) => ({ options: m.options, ruta: `structure.dayTypes[${i}].meals[${j}]` }))));
+    if (conReceta.length > 0) throw new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'Una plantilla no lleva opciones de receta: agregá la receta en el plan de cada persona.', { issues: conReceta });
     const guardar = conCantidades ? entrada : sinCantidades(entrada);
     const contenido = normalizarEstructura(guardar, randomUUID);
     const disponibles = await this.catalogo.disponibles(tx, profesionalId, idsDeCatalogo(contenido));

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Render en navegador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&display=block">
+<style>
+  html, body { margin: 0; padding: 0; background: #2b2b2b; }
+  #root { position: relative; width: var(--ancho); height: var(--alto); overflow: hidden; display: flex; }
+  * { font-family: Roboto, Arial, sans-serif !important; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+  const p = new URLSearchParams(location.search);
+  document.documentElement.style.setProperty('--ancho', (p.get('ancho') || '360') + 'px');
+  document.documentElement.style.setProperty('--alto', (p.get('alto') || '780') + 'px');
+</script>
+<script src="maqueta-candidata.js"></script>
+</body>
+</html>

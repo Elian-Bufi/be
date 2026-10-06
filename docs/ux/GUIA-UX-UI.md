@@ -68,14 +68,28 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
 ## 4. Navegación
 
 **APK**
-- Barra inferior con cinco zonas: Nutrición, Entrenamiento, Evolución, Información y Cuenta (`barra-de-zonas.tsx`).
-- Cada zona lleva texto **e** ícono, mide 56 dp de alto y al menos 48 de ancho, y tiene rol de pestaña con su estado
-  «seleccionada».
-- La zona elegida se marca con una barrita y negrita, no solo con color.
-- En una subpantalla se resalta la zona madre, y el enlace «Volver» solo aparece en subpantallas.
-- La barra se oculta mientras el teclado está abierto.
-- Atrás, desde una zona, vuelve a Nutrición; desde Nutrición, sale de la app.
-- Una función nueva entra en la zona que le corresponde por dominio. No se agregan botones de zona en Cuenta.
+Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Inicio y las reglas de Atrás, está en
+[INICIO-Y-NAVEGACION.md](INICIO-Y-NAVEGACION.md).
+- **Barra inferior:** una cápsula flotante con cinco destinos, Inicio, Nutrición, Entrenamiento, Evolución e Información
+  (`barra-de-zonas.tsx`).
+  - Cada destino lleva texto **e** ícono, mide 56 dp de alto y al menos 48 de ancho, y tiene rol de pestaña con su estado
+    «seleccionada».
+  - El destino elegido se marca con negrita y un brillo suave detrás del ícono, no solo con color.
+  - Las cinco etiquetas se ven siempre.
+  - La barra se oculta mientras el teclado está abierto.
+- **Cabecera única:**
+  - a la izquierda, «Volver» en un detalle, o el menú auxiliar en una raíz;
+  - al centro, la marca;
+  - a la derecha, el avatar, que abre Cuenta.
+  Volver está en la cabecera, no como enlace dentro del contenido.
+- **Origen:** cada detalle vuelve a la pantalla desde la que se abrió. Desde una raíz, atrás vuelve a Inicio; desde Inicio,
+  sale de la app.
+- **Sin pérdidas silenciosas:** con algo escrito sin guardar, salir por la barra, la cabecera, el avatar, el menú o atrás
+  pregunta antes.
+- **Dónde va una función nueva:**
+  - en el destino que le corresponde por dominio;
+  - si no tiene lugar en la barra, en el menú auxiliar;
+  - en Cuenta, solo lo que es de la cuenta.
 - **Al entrar a una zona, primero se verifica y después se muestra** (candidata 0.13.2, `src/ciclo-de-lectura.ts`).
   - Ningún valor protegido aparece antes de que la API confirme el acceso en esa entrada. Mientras tanto, la pantalla
     conserva su estructura: el título y bloques del alto de lo que viene (`Cargando forma="lista"` o
@@ -94,8 +108,29 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
     en la que se está lleva al principio.
   - Una revocación hecha en otro dispositivo se conoce en el próximo contacto con la API: al entrar a una zona, al
     volver del segundo plano o al escribir.
-- **Las vistas de una zona van en pestañas** (`Segmentos`) cuando la zona tiene tareas distintas sobre los mismos
-  datos. En «Mi evolución» son tres: Última toma, Comparar y Evolución. La pestaña elegida se recuerda en la sesión.
+- **Las vistas de una zona van en pestañas** (`Pestanas`, APK) cuando la zona tiene tareas distintas sobre los mismos
+  datos. En «Mi evolución» son tres: Mapa corporal, Progreso e Indicadores (DL-118). Una vista sin datos no aparece y,
+  si queda una sola, no hay pestañas. La pestaña elegida se recuerda en la sesión, igual que la toma elegida en el
+  selector T1, T2, T3 y la medida elegida, que es la misma en el mapa, en Progreso y en los indicadores (DL-117).
+  - Las pestañas son texto con una raya debajo de la elegida, de borde a borde: se distinguen de las píldoras, que eligen
+    dentro de una vista. Antes, vistas y familia eran dos filas de píldoras iguales (pulido del 2026-10-04).
+  - En una fila mientras entran. Si no, bajan enteras a dos filas, sin partir palabras ni achicar la letra.
+- **Lo que se elige dentro de una vista va debajo de lo que la nombra.** En «Mi evolución» van la fecha de la toma y
+  cuál es («Última toma» o «Toma T2»), y las tomas en chips que se desplazan de costado (la elegida queda a la vista).
+  En el mapa, la familia va en píldoras compactas dentro de la lámina. En Progreso, la familia y la zona van en
+  píldoras compactas sobre la lámina, y la parte del torso, dentro. Las explicaciones largas van en «Cómo se lee».
+  - La cabecera no dice con qué fecha se compara: cada medida puede tener otra anterior comparable, y la fecha va en su
+    tarjeta (ajuste de Dirección del 2026-10-05).
+- **Un gráfico chico dice cómo se lee su eje.** Tiene la forma del ejemplo de Dirección del 2026-10-05:
+  - los puntos van sobre fechas reales, y debajo de cada uno, su toma (T1, T2…), la del selector;
+  - una línea une solo tomas seguidas del mismo grupo, y una toma sin la medida la corta;
+  - tres líneas de referencia rotuladas: los extremos de la escala y el medio, redondeado;
+  - los puntos son huecos, y el de la toma elegida, lleno y más grande;
+  - debajo del gráfico, los valores en fila, en el orden de los puntos, con el de la toma elegida resaltado.
+
+  No rellena huecos ni dibuja áreas, muestra un solo grupo comparable, y su ancho es el del lugar: no desborda. Si dos
+  rótulos de toma no entran, se escriben el de la elegida, el último y el primero. Con una sola observación no se
+  dibuja.
 
 **Website**
 - Adentro de un asesorado, una pestaña por dominio.
@@ -126,12 +161,19 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   - sin cortar texto;
   - sin desplazamiento horizontal;
   - `adjustsFontSizeToFit` solo en la barra inferior.
-- **APK: el contenido crece sin tope.** Solo el encabezado y las etiquetas de la barra inferior crecen hasta 1,15: la
-  marca no informa nada, y en la barra el ícono acompaña y el lector de pantalla dice el nombre completo. No se
-  desactiva el escalado ni se achica el texto para que entre.
+- **APK: el contenido crece sin tope.** Solo el encabezado crece hasta 1,15: la marca no informa nada. No se desactiva
+  el escalado ni se achica el texto para que entre.
+- **La barra inferior crece con la letra, sin tope** (cierre del 2026-10-04). Para que entren las cinco etiquetas, el
+  orden es: reparto del ancho, espacio útil (márgenes de 12, 8 o 6 dp) y alto. Si en una fila no entran con al menos el
+  90 % de su tamaño, la cápsula pasa a **dos filas** (Inicio, Nutrición y Entrenamiento arriba; Evolución e Información
+  abajo): es una adaptación excepcional y una decisión visual explícita. La letra baja solo como último recurso, para no
+  cortar (`disposicion-de-la-barra.ts`; el tamaño efectivo, medido, en `EVIDENCIA/INICIO-Y-NAVEGACION`).
+- **Que no se corte no alcanza.** Un texto achicado al 60 % no se corta y se lee mal. Cuando un componente achica texto,
+  se documenta su tamaño efectivo en los casos angostos y con letra grande.
 - **Las opciones excluyentes van en píldoras** (`Segmentos`, APK). Si no entran, bajan enteras a la línea siguiente:
-  nunca se parte una palabra. Lo usan las preferencias visuales (la figura y los colores), las pestañas de una zona y
-  los períodos de un gráfico.
+  nunca se parte una palabra. Lo usan las preferencias visuales (la figura y los colores) y los períodos de un gráfico.
+  Dentro de la lámina van compactas (`compactos`): la familia y Hombre o Mujer, con 40 dp de alto y el área de toque
+  ampliada a 48.
 - **Escala de letra de la APK** (`ui.tsx`). Una pantalla no inventa tamaños:
   - 26, el título de la pantalla;
   - 19, el título de una sección;
@@ -171,11 +213,16 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
 - **Superficies en escalones** (APK, `tema.ts`):
   - `fondo` para la pantalla;
   - `superficie` para las tarjetas y las secciones;
-  - `superficieElevada` para lo que se destaca sobre ellas: el botón secundario, las fichas de fecha y la zona elegida
-    de la barra inferior.
+  - `superficieElevada` para lo que se destaca sobre ellas: el botón secundario y las fichas de fecha. La cápsula de la
+    barra tiene sus propios tokens: `barraVidrio`, `barraBorde`, `barraTexto` y `barraElegido`.
   El `borde` decorativo es un azul apagado: separa sin competir. Era un azul brillante que competía con el cian.
+- **Las tarjetas sobre la figura y los indicadores son de vidrio** (`vidrio.tsx`; pulido del 2026-10-04).
+  - Las separan un borde fino y translúcido (`laminaFilo`, `vidrioFilo`), un brillo arriba que se apaga a la mitad
+    (`laminaBrillo`, `vidrioBrillo`) y una sombra suave. No llevan bordes fuertes.
+  - En Claro no hay brillo, que sobre blanco no se vería: separan la sombra y el filo.
+  - El brillo no baja el contraste del texto: la prueba de contraste lo mide sobre la mezcla.
 - **El cian orienta, no decora.** El acento (`acento`) marca lo que se elige o se toca:
-  - la zona elegida;
+  - el destino elegido de la barra;
   - los enlaces y el texto de los botones secundarios;
   - las casillas;
   - los títulos de las ayudas;
@@ -190,7 +237,7 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   - APK: «Azul noche» y «Claro», elegibles en Cuenta;
   - la lámina tiene sus tres temas propios, que no cambian la apariencia del website.
 - **El significado no va solo en el color.** Un pliegue de la cara posterior se marca con el aro punteado y la palabra
-  «posterior». Una zona elegida, con barrita y negrita.
+  «posterior». El destino elegido de la barra, con negrita y su estado para el lector de pantalla.
 - **Una silueta clara sobre un fondo claro lleva contorno**, con su contraste medido.
   - En Claro, el cuerpo blanco daba de 1,01:1 a 1,19:1 contra la lámina.
   - El contorno de la APK (`laminaContorno`) da 4,0:1, y la prueba de contraste lo verifica.
@@ -218,6 +265,27 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
     si una guía pasa junto a otro punto, pasa por detrás.
 - **En el teléfono, la figura es liviana.** Halos y aros chicos, guías finas, y una calle entre las tarjetas y el cuerpo
   para que las guías doblen afuera.
+- **El encuadre de la figura en el teléfono** (`ENCUADRE`, pulido del 2026-10-04).
+  - El cuerpo es grande, empieza arriba, va a la derecha y lo recorta el borde derecho, donde no hay sitios: ISAK mide
+    del lado derecho de la persona, que de frente queda a la izquierda.
+  - Su tamaño sale del ancho de la lámina y de los sitios posibles de la familia, no de cuántas medidas hay. Sumar
+    medidas alarga la lista hacia abajo: no achica el cuerpo ni deja un hueco encima.
+  - Figura, marcadores, anillos, guías y zonas de toque usan la misma transformación. Ningún centro de sitio queda fuera
+    de la vista ni debajo de una tarjeta.
+- **Las filas de una tarjeta tienen todas la misma forma.**
+  - El nombre va a la izquierda y el valor a la derecha, en la misma línea si entran o, si el nombre es largo, en la de
+    abajo. Desde DL-118, en el mapa no llevan diferencia ni gráfico chico: el cambio aparece al tocar el sitio.
+  - Los valores forman una columna. Mezclar el valor al lado y debajo del nombre lo hacía saltar de un lado al otro.
+- **La figura de una zona** (Progreso, `componerLaFiguraDeZona`).
+  - Es la imagen del tren del compositor, con la misma transformación que la lámina: no se genera otro cuerpo ni se
+    mueve ningún punto.
+  - Cada sitio lleva un número, de arriba hacia abajo, y su tarjeta lleva el mismo.
+  - Es una franja: la parte del tren donde están los sitios de la zona, de hasta un 30 % del alto de la pantalla
+    (entre 200 y 280 dp). Donde corta el cuerpo, se desvanece en el fondo de la lámina. Los números no se achican: si no
+    entran, la figura crece lo que necesitan (ajuste de Dirección del 2026-10-05).
+  - Las tarjetas la siguen sin un título en el medio: se ven la figura y las primeras tarjetas juntas.
+  - Los dos paneles del torso dibujan el mismo cuerpo en el mismo lugar, con el alto del panel con más números:
+    cambian los sitios, no la figura.
 - **La imagen exportada se equilibra.** En Medición con el cuerpo entero, la figura arranca en 290 y mide 1390. Así no
   queda una franja vacía bajo el encabezado (Dirección, 2026-10-03). Los otros encuadres son los del compositor.
 - **Selección coordinada en la figura** (APK, `figura-de-la-toma.tsx`).
@@ -232,18 +300,25 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
   - La selección no mueve ningún punto: solo cambia cómo se dibujan.
 - **Tabla equivalente.** Todo gráfico o figura tiene una tabla o lista equivalente, que es el camino del teclado y del
   lector de pantalla (B10-10 §11). En la APK, «La figura, en lista» y «La evolución, en lista».
-- **El gráfico de evolución de la APK es de puntos** (`grafico-de-evolucion.ts` y `evolucion-de-una-medida.tsx`).
+- **El gráfico de evolución de la APK es de puntos** (`grafico-de-evolucion.ts` y `progreso-de-una-medida.tsx`). Desde
+  DL-118 va en el detalle de cada tarjeta de Progreso y de Indicadores, con el grupo comparable de la toma elegida.
   - Cada punto es una medición, sobre una escala de tiempo con las fechas civiles de la zona de la API.
-  - Los puntos no se unen: no hay líneas, áreas ni tendencias (REG-06-166). Un día sin medición no es cero: no se
-    dibuja, y la lista lo dice como «Sin dato».
+  - **La línea** (Dirección, 2026-10-05) une dos puntos solo si son de tomas seguidas del período y del mismo grupo
+    comparable. Usa la regla de la lámina del website (`tramosDeLaSerie`, INV-06-176/177). Una toma sin la medida, o
+    con la medida en otro grupo, la corta: la visualización conserva el hueco (B10-07). No inventa puntos entre
+    sesiones (ADV-10-PRJ-05) ni une tramos no comparables (ADV-10-PRJ-08).
+  - Los días sin medición entre dos tomas no cortan la línea: la API los marca como huecos día por día.
+  - No hay áreas ni tendencias (REG-06-166). Un día sin medición no es cero: no se dibuja, y la lista lo dice como
+    «Sin dato».
+  - Hasta el 2026-10-05, la guía decía que los puntos no se unían. Era una regla más estricta que el legajo.
   - Se ve una medida y un grupo comparable por vez, con el mismo protocolo, método y unidad. Si la medida tiene más de un
     grupo, se elige el grupo: nunca se mezclan en un eje.
   - El eje vertical usa la misma regla que el website (`dominioDelEjeVertical`). No fuerza el cero y tiene un margen
     de al menos una unidad del eje y del 5 %. La unidad es 1 para las medidas de 10 o más, y la décima o la centésima
     para los índices: un índice cintura/cadera de 0,84 a 0,86 va de 0,79 a 0,91, no de −1 a 2.
   - Las marcas del eje son redondas, y los rótulos del tiempo se saltean si no entran con la letra de la persona.
-  - El período se elige dentro de lo que la API sirve: 30, 60 o 90 días. No hay «6 meses» ni «1 año» sin un contrato
-    que los sostenga.
+  - El período es el que sirve la API: los últimos 90 días o, si no tienen mediciones, el anterior con mediciones. El
+    recorte a 30 o 60 días se retiró con DL-118. No hay «6 meses» ni «1 año» sin un contrato que los sostenga.
   - La última medición se distingue por forma, con un punto más grande, no por color.
   - Tocar cerca de un punto elige el más cercano. Se ven una guía vertical punteada, su valor y su detalle debajo.
     «Anterior» y «Siguiente» recorren las mediciones sin necesidad de precisión con el dedo.
@@ -255,13 +330,51 @@ abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
     - muchas, los puntos sobre la escala;
     - puntos cercanos, gana el más cercano y la lista los separa.
   - No hay anillo de composición corporal: mezclaría métodos (REG-06-205).
-- **Comparar dos tomas** (APK, `comparar-tomas.tsx`).
-  - Compara la última toma con la anterior comparable: el mismo par que ya calcula el dominio.
-  - No hay selector de otras tomas, porque la API no lo sostiene.
-  - Cuando una medida no tiene con qué compararse, se dice por qué: es la primera del período, o la anterior se tomó
-    con otro protocolo, método o unidad.
+- **El cambio respecto de la anterior** (APK, tarjetas de Progreso e Indicadores). Desde DL-118, Comparar no es un
+  apartado.
+  - Cada tarjeta compara el valor de la toma elegida con la anterior comparable, el mismo par que calcula el dominio, y
+    dice su fecha («respecto del 25 jul»).
+  - Con la forma del ejemplo de Dirección del 2026-10-05: el valor grande con la unidad chica y, a su derecha, el
+    cambio con su flecha (↑ o ↓) y su fecha debajo. En una tarjeta angosta o con letra ×1,3 o más, el cambio va debajo
+    del valor.
+  - La flecha dice para dónde, no si es bueno o malo: va del mismo color hacia arriba y hacia abajo.
+  - Cuando una medida no tiene con qué compararse, se dice por qué: no hay una toma anterior comparable en el período,
+    o la anterior se tomó con otro protocolo, método o unidad.
 - **Los resultados calculados siempre llevan su método.** Dos métodos no se comparan entre sí, y ninguno se marca
   como «el bueno» (REG-06-205).
+
+## 7 bis. Opciones de comida, recetas e imágenes
+
+Vale desde WP-NUTRICION-RECETAS (encargo de Dirección del 2026-10-05; DL-119 a DL-121).
+
+- **Carrusel manual de opciones (APK):**
+  - una tarjeta por opción, con 24 dp de la siguiente a la vista; cada gesto se detiene en una tarjeta;
+  - el contador «Opción n de m» y las flechas son accesibles, y las flechas se deshabilitan en los extremos;
+  - no avanza solo, y con una sola opción no hay ni contador ni flechas;
+  - **deslizar no registra:** registrar es un botón, «Comí esta opción»;
+  - el lector de pantalla recorre solo la tarjeta a la vista.
+- **La franja de macros:**
+  - Calorías, Carbohidratos, Grasas y Proteínas, con las etiquetas completas;
+  - en el teléfono va en dos por dos con letra ×1 y ×1,3, y en una columna con ×2 (`franja-de-macros.ts`, con los
+    anchos medidos);
+  - debajo dice «Estimación para las porciones del plan».
+- **Un valor desconocido dice «Sin dato»**, nunca 0. Se redondea solo al mostrar, con `nutrienteParaMostrar` del dominio,
+  igual en el website y en la APK.
+- **Lo previsto y lo consumido no se mezclan:**
+  - «Porciones del plan» se muestra en lectura y no parece un campo completado;
+  - «¿Cuánto comiste?» va aparte, con «Comí las porciones del plan» desmarcada;
+  - hay un campo por ingrediente: vacío no es cero, y el cero se dice con «No lo comí».
+- **Las imágenes privadas:**
+  - se piden con su acceso firmado, que vence en 15 minutos como máximo, y no se guardan en disco;
+  - si la descarga falla, queda el ícono de respaldo, el resto sigue a la vista y se puede registrar igual;
+  - el rótulo «Imagen de referencia» va con la foto de una receta, porque no mide la porción ni demuestra lo que se
+    comió;
+  - en el website, la CSP admite imágenes `self` y `data:`: la imagen se descarga con su acceso y se muestra como data
+    URL.
+- **«Mis recetas» en el website:**
+  - el cálculo se ve mientras se edita (lo hace la API) y nombra lo que falta;
+  - la imagen se elige, se ve antes de cargarla, se le declara la procedencia y se carga;
+  - guardar una receta existente crea otra versión, y los planes ya activados conservan la suya.
 
 ## 8. Estados
 
@@ -298,7 +411,7 @@ Se copia en la descripción del PR y se marca.
 - [ ] Los éxitos son flotantes; los errores, junto al campo y con el foco.
 - [ ] Las confirmaciones son modales y la acción con efecto no es la opción por defecto.
 - [ ] Los objetivos táctiles miden al menos 44 px o 48 dp.
-- [ ] La APK no agrega accesos fuera de la barra inferior y su zona.
+- [ ] La APK no agrega accesos fuera de la barra, el menú auxiliar y Cuenta.
 
 **Accesibilidad y visual**
 - [ ] Con teclado se alcanza todo y el foco se ve.
@@ -382,7 +495,7 @@ Son las mejoras de UX detectadas que no entraron en DL-113. Cada una entra en un
 - **Con la letra grande, la imagen de la lámina no entra en la primera pantalla del teléfono**: empieza a 974 px en 360
   y en 390 px de ancho. Con la letra normal sí entra (605 y 578 px).
 - **Búsqueda por texto** en los catálogos externos (DL-098).
-- **La barra inferior de la APK a 320 dp.** Las etiquetas crecen hasta 1,15 y se achican hasta el 85 % si no entran: hay que mirarlo en un teléfono chico.
+- **La barra inferior de la APK en un teléfono chico.** En el render del navegador, a 320 dp: una fila con la letra de siempre, a 11,5 sp (un 4 % menos); dos filas desde ×1,15, enteras hasta ×1,8; con ×2, la fila de arriba queda a 21,8 sp en vez de 24 (`EVIDENCIA/INICIO-Y-NAVEGACION`). Falta mirarlo en un teléfono chico, y con la letra del fabricante (por ejemplo, la de Samsung), que puede ser más ancha que Roboto.
 - **Los filtros de «Pendientes» en el teléfono** ocupan una pantalla antes del primer pendiente.
 - **Un 503 intermitente de la API** (`P2028`: la transacción no pudo empezar a tiempo) con lecturas concurrentes y poca memoria. La pantalla lo muestra con su reintento. Es de la API, no de la interfaz. La mejora medida y el límite que queda están en `EVIDENCIA/P2028`.
 - **Las demás pantallas del website.** Siguen esta guía desde DL-113. Las que se toquen después se revisan con la lista

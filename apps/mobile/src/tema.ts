@@ -39,6 +39,15 @@ export const AZUL_NOCHE = {
   exitoFondo: '#0B3A3A',
   // El velo detrás de un diálogo: no es texto ni borde de control
   velo: 'rgba(0, 0, 0, 0.6)',
+  // La barra inferior (DL-117): una cápsula de vidrio ahumado, sin desenfoque. El vidrio es el escalón elevado con un
+  // 6 % de transparencia: lo que pasa detrás apenas se insinúa y no compite con las etiquetas (render del navegador). `scripts/contraste.test.cjs` mide las etiquetas sobre
+  // la mezcla del vidrio con cualquier color del tema que pueda pasar detrás.
+  barraVidrio: '#0A2B47F0',
+  barraBorde: '#1D4B72',
+  barraTexto: '#8DCAE5',
+  barraElegido: '#27D5F9',
+  // La sombra de lo que flota (la barra y el menú): no es texto ni borde.
+  sombra: '#000000',
   // La lámina de la toma (DL-111): los colores del tema «Azul» del compositor (`.slide.blue`), con las transparencias
   // ya resueltas sobre su fondo para que la prueba de contraste las pueda medir.
   laminaFondo: '#0C2E63',
@@ -50,6 +59,18 @@ export const AZUL_NOCHE = {
   // El contorno de la silueta. En Azul noche el cuerpo ya contrasta, unos 11:1 con el fondo, y el contorno va del tono
   // del cuerpo: casi no se ve. En Claro es lo que separa el cuerpo del fondo.
   laminaContorno: '#E9EEF5',
+  // El vidrio de las tarjetas (pulido del 2026-10-04): un filo apenas más claro en lugar de un borde. La profundidad la
+  // da la sombra. Desde WP-ENTRENAMIENTO-SERIES §7.7 la superficie es mate: los dos brillos ya no se dibujan (dejaban una
+  // placa recortada; ver vidrio.tsx). Quedan porque `scripts/contraste.test.cjs` todavía mide el texto sobre la mezcla
+  // del brillo con la tarjeta, que sigue siendo el peor caso; se retiran junto con esa medición.
+  laminaFilo: '#FFFFFF24',
+  laminaBrillo: '#FFFFFF14',
+  vidrioFilo: '#FFFFFF1C',
+  vidrioBrillo: '#FFFFFF10',
+  // El fondo de la ilustración de un ejercicio, ajustada entera (precierre del 2026-10-06, §5): el blanco con el que el
+  // servidor aplana la transparencia al guardar la imagen. Igual en los dos temas, para que la imagen no deje franjas.
+  // No lleva texto encima.
+  fondoDeIlustracion: '#FFFFFF',
 };
 
 export const CLARO: Paleta = {
@@ -71,6 +92,13 @@ export const CLARO: Paleta = {
   exito: '#107F45',
   exitoFondo: '#EEF8F2',
   velo: 'rgba(10, 31, 68, 0.45)',
+  // La barra inferior: el blanco con un 5 % de transparencia. Las etiquetas van más oscuras que `tenue` y que `acento`:
+  // sobre el vidrio, con un texto oscuro pasando detrás, esos dos no llegan a 4,5:1.
+  barraVidrio: '#FFFFFFF2',
+  barraBorde: '#D5E0F0',
+  barraTexto: '#4A5A70',
+  barraElegido: '#1453C9',
+  sombra: '#0A1F44',
   // La lámina de la toma (DL-111): los colores del tema «Claro» del compositor (`.slide.light`). El detalle va más
   // oscuro que su `.rowUnit`, que no llega a 4,5:1.
   laminaFondo: '#E4ECF8',
@@ -82,6 +110,13 @@ export const CLARO: Paleta = {
   // El contorno de la silueta (prueba de la 0.13.1): el cuerpo blanco contra este fondo medía de 1,01:1 a 1,19:1.
   // Con el contorno, la silueta se distingue con más de 3:1 (WCAG 1.4.11).
   laminaContorno: '#64748B',
+  // El vidrio en Claro: la tarjeta blanca se separa del fondo por la sombra y un filo apenas oscuro; sin brillo, que
+  // sobre blanco no se vería (y que desde WP-ENTRENAMIENTO-SERIES §7.7 tampoco se dibuja en Azul noche).
+  laminaFilo: '#0A1F4414',
+  laminaBrillo: '#FFFFFF00',
+  vidrioFilo: '#0A1F4414',
+  vidrioBrillo: '#FFFFFF00',
+  fondoDeIlustracion: '#FFFFFF',
 };
 
 export type Paleta = { readonly [K in keyof typeof AZUL_NOCHE]: string };

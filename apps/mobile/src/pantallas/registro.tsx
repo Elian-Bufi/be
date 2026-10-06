@@ -14,6 +14,7 @@ import {
 import { useRef, useState } from 'react';
 import { Text } from 'react-native';
 import { api, nuevaClaveDeIdempotencia } from '../api';
+import { useCambiosSinGuardar } from '../cambios-sin-guardar';
 import { TextoVersionado } from '../texto-versionado';
 import { Aviso, Boton, Campo, Casilla, Parrafo, Titulo, estilos as ui } from '../ui';
 
@@ -33,6 +34,8 @@ export function PantallaDeRegistro({ irALogin, mostrarAviso }: { irALogin: () =>
   const [estado, setEstado] = useState<Estado>('editando');
   const [texto, setTexto] = useState<VersionDeTexto | null>(null);
   const clave = useRef(nuevaClaveDeIdempotencia());
+  // Volver a Bienvenida con los datos escritos pregunta antes (DL-117: sin pérdidas silenciosas).
+  useCambiosSinGuardar(estado !== 'creada' && (correo.trim() !== '' || contrasena !== '') ? 'los datos de tu cuenta nueva' : null);
   const cambiar = <T,>(setter: (v: T) => void) => (v: T) => {
     setter(v);
     clave.current = nuevaClaveDeIdempotencia(); // otros datos = otro intento lógico

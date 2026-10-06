@@ -1,9 +1,9 @@
 # Evidencia · cierre de la entrega
 
-> **Nota del 2026-10-02.** Dirección pasó la entrega al **2026-10-10**: lo decidió el 2026-09-27, y no hay un acta de ese cambio en el repositorio. Lo que sigue es el estado del 2026-09-24, preparado para la fecha anterior. El estado vigente está en tres lugares:
+> **Nota del 2026-10-05.** La entrega es el **2026-10-20**, por instrucción de Dirección del 2026-10-05. Antes la había pasado del 2026-10-01 al 2026-10-10, el 2026-09-27. Ninguno de los dos cambios tiene un acta en el repositorio. Lo que sigue es el estado del 2026-09-24, preparado para la primera fecha. El estado vigente está en tres lugares:
 > - la demo, las URLs y los roles: `docs/mesa/MESA_01/ESTADO_PUNTOS_11_14_2026-10-02.md`;
 > - lo que falta: `docs/QUE-FALTA.md`;
-> - la APK vigente: `EVIDENCIA/PUBLICACION-0.13.1/LEEME.md`.
+> - la APK vigente: `EVIDENCIA/PUBLICACION-0.13.2/LEEME.md`.
 
 El estado que se entregaba el 2026-10-01: qué está desplegado, con qué garantías y qué queda en manos de Dirección. Es el paso 4 del plan que Dirección eligió el 2026-09-22 («consolidar y pulir»). No agrega RF ni operaciones.
 

@@ -19,7 +19,7 @@
  */
 import { z } from 'zod';
 import { IdOpaco, Instante, ValidationIssueSchema } from './contratos';
-import { FuenteExternaSchema } from './contratos-procedencia-externa';
+import { FuenteExternaDeAlimentoSchema } from './contratos-procedencia-externa';
 import { PaginaSchema, ResumenDeActorSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
 // ─── Tipos comunes ──────────────────────────────────────────────────────────────────────────────
@@ -149,6 +149,11 @@ export const OpcionDeComidaEntradaSchema = z.strictObject({
   optionId: IdOpaco.optional(),
   label: Texto(120),
   items: z.array(ItemPrescriptoEntradaSchema).max(40),
+  /**
+   * DL-119: la opción nace de una versión de receta propia. Sus ítems los arma el servidor con los ingredientes de una
+   * porción, así que `items` va vacío.
+   */
+  recipeVersionId: IdOpaco.optional(),
 });
 export const ComidaEntradaSchema = z.strictObject({
   mealId: IdOpaco.optional(),
@@ -175,6 +180,15 @@ export const ItemPrescriptoSchema = z.strictObject({
   preparationState: EstadoDePreparacionSchema.nullable(),
   note: z.string().nullable(),
 });
+/** DL-119: la receta de la que nació una opción, con su versión. */
+export const RecetaDeOpcionSchema = z.strictObject({
+  recipeId: IdOpaco,
+  recipeVersionId: IdOpaco,
+  versionNumber: z.number().int().positive(),
+  name: z.string(),
+  servings: z.number().int().positive(),
+});
+export type RecetaDeOpcion = z.infer<typeof RecetaDeOpcionSchema>;
 export const OpcionDeComidaSchema = z.strictObject({ optionId: IdOpaco, label: z.string(), order: z.number().int().positive(), items: z.array(ItemPrescriptoSchema) });
 export const ComidaSchema = z.strictObject({
   mealId: IdOpaco,
@@ -185,6 +199,16 @@ export const ComidaSchema = z.strictObject({
 });
 export const DiaTipoSchema = z.strictObject({ dayTypeId: IdOpaco, label: z.string(), order: z.number().int().positive(), meals: z.array(ComidaSchema) });
 export type DiaTipo = z.infer<typeof DiaTipoSchema>;
+
+/**
+ * DL-119: la estructura como la lee el profesional (la versión de plan de API-NUT-07, 09, 10 y 12), con la receta de la
+ * que nació cada opción. «Hoy» (API-NUT-14) sigue con `DiaTipoSchema`: la APK instalada valida con un esquema estricto
+ * que no conoce `recipe` (DL-121; la prueba de compatibilidad congela esa forma).
+ */
+export const OpcionDeComidaDelProfesionalSchema = OpcionDeComidaSchema.extend({ recipe: RecetaDeOpcionSchema.optional() });
+export const ComidaDelProfesionalSchema = ComidaSchema.extend({ options: z.array(OpcionDeComidaDelProfesionalSchema) });
+export const DiaTipoDelProfesionalSchema = DiaTipoSchema.extend({ meals: z.array(ComidaDelProfesionalSchema) });
+export type DiaTipoDelProfesional = z.infer<typeof DiaTipoDelProfesionalSchema>;
 
 // ─── Plan (API-NUT-07 a 12) ─────────────────────────────────────────────────────────────────────
 export const CrearPlanRequestSchema = z.strictObject({
@@ -219,7 +243,7 @@ export const VersionDePlanSchema = z.strictObject({
   nextReviewAt: FechaLocalSchema.nullable(),
   /** PF-09 (DL-108): de qué plantilla y versión salió. Solo en lecturas del profesional (la APK instalada valida con esquemas estrictos). */
   templateOrigin: z.strictObject({ templateId: IdOpaco, templateVersionId: IdOpaco }).nullable().optional(),
-  dayTypes: z.array(DiaTipoSchema),
+  dayTypes: z.array(DiaTipoDelProfesionalSchema),
 });
 export type VersionDePlan = z.infer<typeof VersionDePlanSchema>;
 export const PlanResponseSchema = z.strictObject({ data: VersionDePlanSchema });
@@ -270,6 +294,8 @@ export const ComposicionSchema = z.strictObject({
   proteinG: z.number().nonnegative().finite(),
   carbohydrateG: z.number().nonnegative().finite(),
   fatG: z.number().nonnegative().finite(),
+  /** DL-119: opcional. Ausente o `null` quiere decir desconocida, nunca cero. */
+  fiberG: z.number().nonnegative().finite().nullable().optional(),
 });
 /**
  * De dónde salió un elemento del catálogo: sembrado por BE, cargado a mano por un profesional, o **importado de un
@@ -284,7 +310,7 @@ export const ElementoDeCatalogoSchema = z.strictObject({
   composition: ComposicionSchema,
   provenance: ProcedenciaDeCatalogoSchema,
   /** Proveedor, identificador, fecha y licencia de lo importado; `null` en lo sembrado y lo manual (RF-060). */
-  externalSource: FuenteExternaSchema.nullable(),
+  externalSource: FuenteExternaDeAlimentoSchema.nullable(),
   available: z.boolean(),
 });
 export type ElementoDeCatalogo = z.infer<typeof ElementoDeCatalogoSchema>;
@@ -428,6 +454,13 @@ export const ContrasteDeComidaSchema = z.strictObject({
   state: z.enum(['REGISTERED', 'NO_DATA']),
   registeredOptionId: IdOpaco.nullable(),
   executionId: IdOpaco.nullable(),
+  /**
+   * DL-121: las comidas diferentes que el asesorado registró en el contexto de esta comida. Siguen fuera de la prescripción
+   * (están también en `outsidePrescription`) y no marcan la comida como `REGISTERED` (CONS:599-612): esto solo permite
+   * decir los dos hechos («Sin opción del plan registrada» y «Comida diferente registrada») en lugar de un «Sin registro»
+   * engañoso. Solo lo lee el profesional (API-NUT-17).
+   */
+  differentMealExecutionIds: z.array(IdOpaco),
   /** Diferencia de cantidad de un mismo ítem, con la misma unidad. Solo si el asesorado informó la cantidad. */
   quantityDifferences: z.array(
     z.strictObject({ itemId: IdOpaco, name: z.string(), prescribed: CantidadSchema, registered: CantidadSchema, difference: z.number().finite(), unit: UnidadDeCantidadSchema }),

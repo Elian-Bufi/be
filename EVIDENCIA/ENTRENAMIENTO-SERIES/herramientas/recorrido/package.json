@@ -1,0 +1,8 @@
+{
+  "name": "recorrido-entrenamiento-series",
+  "private": true,
+  "description": "Recorrido E2E de WP-ENTRENAMIENTO-SERIES (puppeteer contra la web estática y la API locales)",
+  "dependencies": {
+    "puppeteer-core": "25.12.0"
+  }
+}

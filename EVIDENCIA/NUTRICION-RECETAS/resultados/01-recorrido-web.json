@@ -1,0 +1,112 @@
+{
+  "recetas": {
+    "BE-DEMO-NUT-001": {
+      "recipeId": "f492924a-628c-402d-9029-0267f026e466"
+    },
+    "BE-DEMO-NUT-002": {
+      "recipeId": "4a4ea913-fe7f-4264-8cfa-25dc64c5e6d6"
+    },
+    "BE-DEMO-NUT-003": {
+      "recipeId": "d64602ce-3a9a-424e-ac86-59fdbf203965"
+    }
+  },
+  "errores": [],
+  "csp": [],
+  "controles": [
+    {
+      "nombre": "Pollo con arroz y verduras: el cálculo en vivo (API-REC-07) coincide con el paquete, receta completa",
+      "ok": true,
+      "detalle": "529 kcal · 56,6 g · 13,2 g · 44,0 g · 5,4 g | esperado 529 kcal · 56,6 g · 13,2 g · 44,0 g · 5,4 g"
+    },
+    {
+      "nombre": "Pollo con arroz y verduras: por porción (1 porción) igual al total",
+      "ok": true,
+      "detalle": "529 kcal · 56,6 g · 13,2 g · 44,0 g · 5,4 g"
+    },
+    {
+      "nombre": "Pollo con arroz y verduras: la foto se cargó, BE la guardó en JPEG y se ve como «Imagen de referencia · Generada por IA»",
+      "ok": true,
+      "detalle": "Imagen de referencia · Generada por IA · Generada por IA para la demostración de BE (paquete de Dirección del 2026-10-05) · 1254 × 1254 px · 6 oct 2026, 12:28 a. m."
+    },
+    {
+      "nombre": "Salmón con papa y brócoli: el cálculo en vivo (API-REC-07) coincide con el paquete, receta completa",
+      "ok": true,
+      "detalle": "580 kcal · 51,5 g · 24,2 g · 39,6 g · 7,3 g | esperado 580 kcal · 51,5 g · 24,2 g · 39,6 g · 7,3 g"
+    },
+    {
+      "nombre": "Salmón con papa y brócoli: por porción (1 porción) igual al total",
+      "ok": true,
+      "detalle": "580 kcal · 51,5 g · 24,2 g · 39,6 g · 7,3 g"
+    },
+    {
+      "nombre": "Salmón con papa y brócoli: la foto se cargó, BE la guardó en JPEG y se ve como «Imagen de referencia · Generada por IA»",
+      "ok": true,
+      "detalle": "Imagen de referencia · Generada por IA · Generada por IA para la demostración de BE (paquete de Dirección del 2026-10-05) · 1254 × 1254 px · 6 oct 2026, 12:28 a. m."
+    },
+    {
+      "nombre": "Lentejas con arroz y verduras: el cálculo en vivo (API-REC-07) coincide con el paquete, receta completa",
+      "ok": true,
+      "detalle": "459 kcal · 75,1 g · 9,4 g · 21,3 g · 19,1 g | esperado 459 kcal · 75,1 g · 9,4 g · 21,3 g · 19,1 g"
+    },
+    {
+      "nombre": "Lentejas con arroz y verduras: por porción (1 porción) igual al total",
+      "ok": true,
+      "detalle": "459 kcal · 75,1 g · 9,4 g · 21,3 g · 19,1 g"
+    },
+    {
+      "nombre": "Lentejas con arroz y verduras: la foto se cargó, BE la guardó en JPEG y se ve como «Imagen de referencia · Generada por IA»",
+      "ok": true,
+      "detalle": "Imagen de referencia · Generada por IA · Generada por IA para la demostración de BE (paquete de Dirección del 2026-10-05) · 1254 × 1254 px · 6 oct 2026, 12:29 a. m."
+    },
+    {
+      "nombre": "edición: arroz 160 → 200 g recalcula en vivo como el caso del paquete",
+      "ok": true,
+      "detalle": "581 kcal · 67,8 g · 13,3 g · 45,0 g · 5,5 g | 581 kcal · 67,8 g · 13,3 g · 45,0 g · 5,5 g"
+    },
+    {
+      "nombre": "edición: el pollo sin los 8 g de aceite recalcula como el caso del paquete",
+      "ok": true,
+      "detalle": "459 kcal · 56,6 g · 5,2 g · 44,0 g · 5,4 g | 459 kcal · 56,6 g · 5,2 g · 44,0 g · 5,4 g"
+    },
+    {
+      "nombre": "la edición guardada es la versión 2, con el historial y el mismo cálculo",
+      "ok": true,
+      "detalle": "529 kcal · 56,6 g · 13,2 g · 44,0 g · 5,4 g"
+    },
+    {
+      "nombre": "la foto sigue en la receta después de la versión nueva (va en la receta, no en la versión)",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "recargar la página pide volver a entrar (el token vive en memoria, DL-012)",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "después de recargar y entrar, la misma receta muestra su foto guardada",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "«Mis recetas» lista las tres con su foto y la energía por porción",
+      "ok": true,
+      "detalle": "Pollo con arroz y verduras | 1 porción · 529 kcal por porción | Versión 2 · actualizada el 6 oct 2026, 12:30 a. m. · imagen de referencia | Abrir Pollo con arroz y verduras | Lentejas con arroz y verduras | 1 porción · 459 kcal por porción | Versión 1 · actualizada el 6 oct 2026, 12:29 a. m. · image"
+    },
+    {
+      "nombre": "el borrador guardado muestra las opciones de receta con los ingredientes de una porción",
+      "ok": true,
+      "detalle": "Receta «Pollo con arroz y verduras», versión 2 | Receta «Salmón con papa y brócoli», versión 1 | Receta «Lentejas con arroz y verduras», versión 1 | Receta «Lentejas con arroz y verduras», versión 1"
+    },
+    {
+      "nombre": "el plan activado (instantánea) nombra la receta y su versión en cada opción",
+      "ok": true,
+      "detalle": "Receta «Pollo con arroz y verduras», versión 2 | Receta «Salmón con papa y brócoli», versión 1 | Receta «Lentejas con arroz y verduras», versión 1 | Receta «Lentejas con arroz y verduras», versión 1"
+    },
+    {
+      "nombre": "sin errores de página ni de CSP en el navegador",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

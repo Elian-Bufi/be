@@ -1,0 +1,7 @@
+{
+  "name": "reloj-del-sistema",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Módulo local de BE: el reloj desde el arranque de Android (SystemClock.elapsedRealtimeNanos) y el número de arranque, para medir los tiempos de entrenamiento con el reposo incluido.",
+  "main": "index.ts"
+}

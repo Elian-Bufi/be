@@ -1,0 +1,194 @@
+{
+  "schemaVersion": "be-handoff-series-1",
+  "notice": "Relaciones neutrales, no puntajes. Cero explícito distinto de ausente. El verificador del paquete no valida BE.",
+  "cases": [
+    {
+      "id": "S01",
+      "type": "reps",
+      "target": {
+        "min": 12,
+        "max": 16
+      },
+      "actual": 14,
+      "expected": "dentro"
+    },
+    {
+      "id": "S02",
+      "type": "reps",
+      "target": {
+        "min": 12,
+        "max": 16
+      },
+      "actual": 12,
+      "expected": "dentro"
+    },
+    {
+      "id": "S03",
+      "type": "reps",
+      "target": {
+        "min": 12,
+        "max": 16
+      },
+      "actual": 16,
+      "expected": "dentro"
+    },
+    {
+      "id": "S04",
+      "type": "reps",
+      "target": {
+        "min": 10,
+        "max": 12
+      },
+      "actual": 9,
+      "expected": "debajo"
+    },
+    {
+      "id": "S05",
+      "type": "reps",
+      "target": {
+        "min": 8,
+        "max": 10
+      },
+      "actual": 11,
+      "expected": "encima"
+    },
+    {
+      "id": "S06",
+      "type": "reps",
+      "target": {
+        "min": 12,
+        "max": 16
+      },
+      "actual": null,
+      "expected": "sin_dato"
+    },
+    {
+      "id": "S07",
+      "type": "reps",
+      "target": null,
+      "actual": 10,
+      "expected": "sin_objetivo"
+    },
+    {
+      "id": "S08",
+      "type": "rir",
+      "target": 3,
+      "actual": 0,
+      "expected": "debajo"
+    },
+    {
+      "id": "S09",
+      "type": "rir",
+      "target": 2,
+      "actual": null,
+      "expected": "sin_dato"
+    },
+    {
+      "id": "S10",
+      "type": "rir",
+      "target": 2,
+      "actual": 2.5,
+      "expected": "encima"
+    },
+    {
+      "id": "S11",
+      "type": "rir",
+      "target": null,
+      "actual": 0,
+      "expected": "sin_objetivo"
+    },
+    {
+      "id": "S12",
+      "type": "load",
+      "target": {
+        "value": 0,
+        "unit": "kg"
+      },
+      "actual": {
+        "value": 0,
+        "unit": "kg"
+      },
+      "expected": "igual"
+    },
+    {
+      "id": "S13",
+      "type": "load",
+      "target": {
+        "value": 16,
+        "unit": "kg"
+      },
+      "actual": null,
+      "expected": "sin_dato"
+    },
+    {
+      "id": "S14",
+      "type": "load",
+      "target": {
+        "value": 16,
+        "unit": "kg"
+      },
+      "actual": {
+        "value": 16,
+        "unit": "lb"
+      },
+      "expected": "unidades_incompatibles"
+    },
+    {
+      "id": "S15",
+      "type": "reps",
+      "target": {
+        "value": 8
+      },
+      "actual": 8,
+      "expected": "dentro"
+    },
+    {
+      "id": "S16",
+      "type": "rir",
+      "target": 2,
+      "actual": 21,
+      "expected": "invalido"
+    },
+    {
+      "id": "S17",
+      "type": "rir",
+      "target": 2,
+      "actual": -1,
+      "expected": "invalido"
+    },
+    {
+      "id": "S18",
+      "type": "reps",
+      "target": {
+        "min": 12,
+        "max": 10
+      },
+      "actual": 11,
+      "expected": "invalido"
+    },
+    {
+      "id": "S19",
+      "type": "empty_submission",
+      "placeholder": {
+        "load": 16,
+        "reps": "12–16",
+        "rir": 3
+      },
+      "actual": {
+        "load": null,
+        "reps": null,
+        "rir": null
+      },
+      "expected": "no_hay_datos_realizados"
+    },
+    {
+      "id": "S20",
+      "type": "reps",
+      "target": {
+        "value": 8
+      },
+      "actual": 0,
+      "expected": "debajo"
+    }
+  ]
+}

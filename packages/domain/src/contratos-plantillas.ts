@@ -97,9 +97,15 @@ export function sesionesDeLaEstructura(structure: z.infer<typeof EstructuraDePla
   return structure.blocks.reduce((n, b) => n + (b.sessions?.length ?? 0) + (b.microcycles ?? []).reduce((m, c) => m + c.sessions.length, 0), 0);
 }
 
-/** D-2: quita las cargas sugeridas de una estructura (son de la persona, no del molde). */
+/**
+ * D-2: quita las cargas sugeridas de una estructura (son de la persona, no del molde): la de cada prescripción y, desde
+ * DL-122, la de cada serie. El RIR y el descanso de cada serie quedan: son del método, no de la persona.
+ */
 export function sinCargasSugeridas(structure: z.infer<typeof EstructuraDePlanDeEntrenamientoEntradaSchema>): z.infer<typeof EstructuraDePlanDeEntrenamientoEntradaSchema> {
-  const sesion = <S extends { prescriptions: readonly { suggestedLoad?: unknown }[] }>(s: S): S => ({ ...s, prescriptions: s.prescriptions.map(({ suggestedLoad: _omitida, ...p }) => p) });
+  const sesion = <S extends { prescriptions: readonly { suggestedLoad?: unknown; sets: readonly { suggestedLoad?: unknown }[] }[] }>(s: S): S => ({
+    ...s,
+    prescriptions: s.prescriptions.map(({ suggestedLoad: _omitida, ...p }) => ({ ...p, sets: p.sets.map(({ suggestedLoad: _deLaSerie, ...serie }) => serie) })),
+  });
   return {
     blocks: structure.blocks.map((b) => ({
       ...b,

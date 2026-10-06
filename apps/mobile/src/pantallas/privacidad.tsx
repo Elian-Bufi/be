@@ -8,10 +8,13 @@
  *   plegado (Dirección, 2026-10-01: menos texto a la vista), para que los consentimientos a profesionales no queden lejos.
  * - Consentimientos a profesionales (CON-03; CAND-10-CON-03): el mismo contenido que desde Vínculos, con «Revocar
  *   acceso de [Profesional]» tan localizable como otorgar (CAND-10-CON-B).
+ * - Fotos de tus comidas (`EVIDENCIA_VISUAL`, 08 §12.4; DL-125): lo aceptado antes de subir fotos para cada profesional
+ *   de Nutrición (API-EVI-03), con «Revocar fotos para [Profesional]» (API-EVI-04). Revocar no borra fotos.
  * Revocar A3 deja sin efecto los consentimientos a profesionales sin revocarlos: por eso la lista se vuelve a leer.
  */
 import {
   COPY,
+  COPY_EVIDENCIA_VISUAL,
   COPY_VINCULO,
   ETIQUETA_DE_FINALIDAD,
   etiquetaDeConsentimiento,
@@ -23,6 +26,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Text } from 'react-native';
 import { api } from '../api';
 import { DialogoDeConfirmacion, useAccionConfirmada } from '../dialogo';
+import { FotosDeTusComidas } from '../evidencia-visual';
 import { Cargando, ErrorConReintento, EstadoDeCarga, VerMas } from '../estados';
 import { fecha } from '../formato';
 import { falloDe, useClaveDeIntento, type Fallo } from '../intento';
@@ -152,6 +156,10 @@ export function PantallaDePrivacidad({
             ))
           : null}
         <VerMas estado={consentimientos.estado} onVerMas={consentimientos.verMas} />
+      </Seccion>
+
+      <Seccion titulo={COPY_EVIDENCIA_VISUAL.titulo}>
+        <FotosDeTusComidas token={token} sesionPerdida={sesionPerdida} />
       </Seccion>
     </>
   );

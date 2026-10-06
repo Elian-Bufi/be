@@ -199,7 +199,7 @@ export const COPY_ANTROPOMETRIA = {
   esLaUltima: 'Es la última de estos días.',
   sinMedicionesDeLaMedida: 'No hay mediciones de esta medida en estos días.',
   laEvolucionEnLista: 'La evolución, en lista',
-  explicacionDelGrafico: 'Cada punto es una medición. Los puntos no se unen: entre dos mediciones no hay un dato que inventar. Tocá un punto, o usá Anterior y Siguiente, para ver su detalle.',
+  explicacionDelGrafico: 'Cada punto es una medición. La línea une solo dos tomas seguidas que tienen la medida, con el mismo protocolo, método y unidad: no es un valor entre ellas. Si una toma no tiene la medida, la línea se corta. Tocá un punto, o usá Anterior y Siguiente, para ver su detalle.',
   numerosDeLaFigura: 'Cada número de la figura, con su valor',
   otrasMedidas: 'Otras medidas de la toma',
 

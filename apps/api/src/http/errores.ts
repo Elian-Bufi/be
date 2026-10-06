@@ -10,6 +10,12 @@ export class ErrorDeApi extends Error {
     readonly code: CodigoDeError,
     readonly mensajeSeguro: string,
     readonly details?: Record<string, unknown>,
+    /**
+     * El motivo que queda en la auditoría cuando no es `code`. Nunca se serializa (09v7 T16). Lo lleva un rechazo que se
+     * responde idéntico a otro para no revelar nada, como el 404 de lo inexistente, pero cuyo motivo real tiene que poder
+     * reconstruirse (`EjecutorDeDominio` lo audita también en una lectura).
+     */
+    readonly motivoDeAuditoria?: string,
   ) {
     super(code);
   }
@@ -88,6 +94,29 @@ export const errores = {
   /** Lo revisado no alcanza para incorporarlo al catálogo: se dice qué falta, por ruta (D-I). */
   contenidoRevisadoInvalido: (issues: ValidationIssue[]) =>
     new ErrorDeApi(422, CodigoDeError.REVIEWED_CONTENT_INVALID, 'Faltan datos para incorporar el elemento al catálogo.', { issues }),
+  // ─── WP-NUTRICION-RECETAS · medios privados y registro v2 (DL-120, DL-121; 09v8 API-PRO-04) ─────────────────
+  /** El tipo declarado o el real no es JPEG, PNG ni WebP. */
+  tipoDeArchivoNoAdmitido: (issues: ValidationIssue[] = []) =>
+    new ErrorDeApi(422, CodigoDeError.FILE_TYPE_NOT_ALLOWED, 'La imagen tiene que ser JPG, PNG o WebP.', { issues }),
+  /** Más de 10 MB: un 422 del contrato, no un 413 ni un 400 del parser. */
+  tamanoDeArchivoNoAdmitido: () => new ErrorDeApi(422, CodigoDeError.FILE_SIZE_NOT_ALLOWED, 'La imagen supera los 10 MB.', { issues: [{ code: 'FILE_TOO_LARGE', path: '(body)' }] }),
+  /** Los bytes no se decodifican como el tipo declarado, o la imagen sale de las medidas admitidas. */
+  contenidoDeArchivoInvalido: (issues: ValidationIssue[]) =>
+    new ErrorDeApi(422, CodigoDeError.FILE_CONTENT_INVALID, 'La imagen no se puede leer o no tiene las medidas admitidas (de 64 a 8000 píxeles por lado).', { issues }),
+  /** Un medio citado en el cuerpo no es propio, no está disponible o no es de esa finalidad. Se dice cuál, por ruta. */
+  referenciaDeMedioInvalida: (issues: ValidationIssue[]) =>
+    new ErrorDeApi(422, CodigoDeError.MEDIA_REFERENCE_INVALID, 'Hay una imagen que no se puede usar acá.', { issues }),
+  /**
+   * 409 por el estado del recurso (DL-120, DL-121): anular dos veces, rectificar lo anulado o subir otros bytes a un medio
+   * que ya los tiene. El recurso es revelable para el actor: es suyo.
+   */
+  estadoEnConflicto: (mensaje: string) => new ErrorDeApi(409, CodigoDeError.INVALID_STATE_TRANSITION, mensaje),
+  // ─── EVIDENCIA_VISUAL (08 §12.4; DL-125), solo con la exigencia activa ─────────────────────────────────────────
+  /** API-MED-01: falta el acto del vínculo de Nutrición del plan vigente. `details` dice el vínculo y la versión a mostrar. */
+  evidenciaVisualRequerida: (detalle: { relationshipId: string; consentVersionId: string }) =>
+    new ErrorDeApi(403, CodigoDeError.VISUAL_EVIDENCE_ACT_REQUIRED, 'Antes de tu primera foto, leé la información sobre las fotos de tus comidas.', detalle),
+  /** API-MED-01: la foto de una comida sin un plan de Nutrición vigente: no hay un profesional al que se le informe. */
+  planDeNutricionRequerido: () => new ErrorDeApi(422, CodigoDeError.ACTIVE_PLAN_REQUIRED, 'Para subir la foto de una comida hace falta un plan de Nutrición vigente.'),
   /** 09v7:185 — falla no clasificada (DEUDA_LEGAJO DL-005). */
   interno: () => new ErrorDeApi(500, CodigoDeError.INTERNAL_ERROR, 'Ocurrió un error inesperado.'),
 };

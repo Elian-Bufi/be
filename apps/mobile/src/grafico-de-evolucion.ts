@@ -12,7 +12,7 @@
  *   unidad del eje y del 5 %, así una diferencia chica no parece enorme. La unidad es 1 para las medidas de 10 o más, y
  *   la décima o la centésima para los índices (DL-111). Las marcas muestran el rango, siempre.
  */
-import { dominioDelEjeVertical, limitesDelPeriodo, marcasDelPeriodo, type Observacion } from '@be/domain';
+import { decimalesDelEje, dominioDelEjeVertical, limitesDelPeriodo, marcasDelPeriodo, unidadDelEje, type Observacion } from '@be/domain';
 
 export interface PuntoDelGrafico {
   readonly indice: number;
@@ -108,4 +108,93 @@ export function puntoMasCercano(grafico: ComposicionDelGrafico, x: number, y: nu
     }
   }
   return mejor;
+}
+
+export interface EntradaDelGraficoCompacto {
+  readonly observaciones: readonly Observacion[];
+  /** La toma de cada observación (T1, T2…), en el mismo orden; `null` si no se sabe. */
+  readonly tomas: readonly (string | null)[];
+  /** La observación de la toma elegida: su rótulo no se saltea nunca. */
+  readonly elegida: number | null;
+  readonly periodo: { readonly start: string; readonly end: string };
+  readonly zonaHoraria: string;
+  readonly ancho: number;
+  readonly alto: number;
+  readonly escalaDeLetra: number;
+  readonly anchoDelTexto: (texto: string, tamano: number) => number;
+  readonly formatoDelValor: (valor: number) => string;
+}
+
+/** Lo que el gráfico de una tarjeta suma al grande: la toma bajo cada punto y los valores, en fila. */
+export interface ComposicionDelGraficoCompacto extends ComposicionDelGrafico {
+  /** El rótulo de la toma de cada punto que entra sin pisar a otro, de izquierda a derecha. El de la elegida, siempre. */
+  readonly tomas: readonly { readonly indice: number; readonly x: number; readonly texto: string }[];
+  /** El valor de cada punto, en su orden, como se escribe debajo del gráfico. */
+  readonly valores: readonly string[];
+}
+
+/** El radio de la observación de la toma elegida y el de las demás, en el gráfico compacto. */
+export const RADIO_COMPACTO_ELEGIDA = 5.5;
+export const RADIO_COMPACTO = 4.5;
+/** Lo que separa dos rótulos de toma: si no entra, el de menos prioridad no se escribe. */
+const ESPACIO_ENTRE_ROTULOS = 6;
+
+/**
+ * El gráfico de una tarjeta de Progreso o de Indicadores (DL-118, con la forma del ejemplo de Dirección del 2026-10-05):
+ * los mismos puntos y la misma regla de eje que el gráfico grande.
+ * - **Fechas reales.** Cada punto va en su fecha, dentro del período: dos observaciones cercanas en el tiempo quedan
+ *   cerca. Debajo de cada punto va su toma (T1, T2…), la del selector. Si dos rótulos se pisan, se escriben primero el de
+ *   la toma elegida, el último y el primero, y después los demás de izquierda a derecha.
+ * - **La escala se ve.** Tres líneas de referencia: los extremos del dominio (`dominioDelEjeVertical`), que no fuerza el
+ *   cero y deja un margen, y el medio, redondeado a la unidad del eje.
+ * - **Puntos huecos con borde**; el de la toma elegida, lleno y más grande. La línea entre tomas seguidas la dibuja la
+ *   pantalla con los tramos de la serie (`tramosDeLaSerie`, Dirección 2026-10-05): esta composición no une puntos por su
+ *   cuenta. No hay áreas ni tendencias (REG-06-166), y la línea nunca cruza una toma sin la medida: un hueco queda vacío.
+ * - **Los valores, en fila**, en el orden de los puntos: se leen sin adivinarlos en la escala.
+ * `null` con menos de dos observaciones: un solo punto no muestra un recorrido, y su valor ya está escrito.
+ */
+export function componerGraficoCompacto(e: EntradaDelGraficoCompacto): ComposicionDelGraficoCompacto | null {
+  if (e.observaciones.length < 2 || e.ancho <= 0 || e.alto <= 0) return null;
+  const escala = Math.max(1, e.escalaDeLetra);
+  const valores = e.observaciones.map((o) => o.punto.value);
+  const minimo = Math.min(...valores);
+  const maximo = Math.max(...valores);
+  const dominio = dominioDelEjeVertical(minimo, maximo);
+  const unidad = unidadDelEje(minimo, maximo);
+  const medio = Number((Math.round((dominio.desde + dominio.hasta) / 2 / unidad) * unidad).toFixed(decimalesDelEje(minimo, maximo)));
+  const marcas = [dominio.hasta, medio, dominio.desde];
+  const tamano = 11 * escala;
+  const izquierda = 4 + Math.max(...marcas.map((v) => e.anchoDelTexto(e.formatoDelValor(v), tamano))) + 6;
+  // Arriba y a la derecha, lugar para el punto más grande; abajo, para la fila de las tomas.
+  const area = { izquierda, derecha: e.ancho - RADIO_COMPACTO_ELEGIDA - 2, arriba: RADIO_COMPACTO_ELEGIDA + 2, abajo: e.alto - (8 + 13 * escala) };
+  const { desde, hasta } = limitesDelPeriodo(e.periodo, e.zonaHoraria);
+  const x = (instante: number) => area.izquierda + ((instante - desde) / Math.max(1, hasta - desde)) * (area.derecha - area.izquierda);
+  const y = (valor: number) => area.abajo - ((valor - dominio.desde) / Math.max(Number.EPSILON, dominio.hasta - dominio.desde)) * (area.abajo - area.arriba);
+  const puntos = e.observaciones.map((observacion, indice) => ({ indice, x: x(observacion.instante), y: y(observacion.punto.value), observacion }));
+
+  const ultimo = puntos.length - 1;
+  const prioridad = [e.elegida, ultimo, 0, ...puntos.map((p) => p.indice)].filter((i, k, todos): i is number => i !== null && i >= 0 && i <= ultimo && todos.indexOf(i) === k);
+  const ocupados: { desde: number; hasta: number }[] = [];
+  const tomas: { indice: number; x: number; texto: string }[] = [];
+  for (const indice of prioridad) {
+    const texto = e.tomas[indice];
+    if (!texto) continue;
+    const medioAncho = e.anchoDelTexto(texto, tamano) / 2;
+    const centro = Math.min(Math.max(puntos[indice]!.x, medioAncho), e.ancho - medioAncho);
+    const tramo = { desde: centro - medioAncho, hasta: centro + medioAncho };
+    if (ocupados.some((o) => tramo.desde < o.hasta + ESPACIO_ENTRE_ROTULOS && o.desde < tramo.hasta + ESPACIO_ENTRE_ROTULOS)) continue;
+    ocupados.push(tramo);
+    tomas.push({ indice, x: centro, texto });
+  }
+  return {
+    ancho: e.ancho,
+    alto: e.alto,
+    area,
+    puntos,
+    marcasX: [],
+    marcasY: marcas.map((valor) => ({ y: y(valor), valor })),
+    dominio,
+    tomas: tomas.sort((a, b) => a.x - b.x),
+    valores: valores.map((v) => e.formatoDelValor(v)),
+  };
 }

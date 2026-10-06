@@ -1,0 +1,49 @@
+{
+  "controles": [
+    {
+      "nombre": "Registros ofrece «Ver registro» en cada comida registrada y en lo de fuera del plan",
+      "ok": true,
+      "detalle": "3 registros"
+    },
+    {
+      "nombre": "la profesional ve las fotos privadas del asesorado (texto y foto, y solo foto)",
+      "ok": true,
+      "detalle": "2 fotos"
+    },
+    {
+      "nombre": "el registro con cantidades dice cómo se registraron y la estimación de lo consumido",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "la comida diferente dice «Macros sin calcular» y su cantidad aproximada; una foto no agrega macros",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "una comida diferente sin descripción dice «Sin descripción», sin comillas vacías",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "a 390 px, «Mis recetas» no se desplaza de costado",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "a 390 px, el editor con su foto no se desplaza de costado",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "a 390 px, el plan activo con sus recetas no se desplaza de costado",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "sin errores de página ni de CSP en el navegador",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}
