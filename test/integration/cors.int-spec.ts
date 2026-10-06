@@ -27,7 +27,8 @@ it('preflight del registro desde el website: 204 con el origen y los headers del
     .set('Access-Control-Request-Headers', 'content-type,idempotency-key,x-be-surface')
     .expect(204);
   expect(res.headers['access-control-allow-origin']).toBe(WEBSITE);
-  expect(res.headers['access-control-allow-headers']).toBe('authorization,content-type,idempotency-key,x-be-surface');
+  // `x-be-capabilities`: lo que el cliente sabe mostrar (DL-122, precierre del 2026-10-06). Nunca autoriza.
+  expect(res.headers['access-control-allow-headers']).toBe('authorization,content-type,idempotency-key,x-be-surface,x-be-capabilities');
   expect(res.headers['access-control-allow-credentials']).toBeUndefined();
 });
 

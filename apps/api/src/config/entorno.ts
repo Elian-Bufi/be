@@ -51,7 +51,23 @@ export interface Entorno {
    * pruebas usen un proveedor falso y la CI nunca dependa de un tercero (docs/paquetes/WP-08.md D-H).
    */
   readonly proveedores: ProveedoresExternos;
+  /**
+   * DL-120 · dónde se guardan los bytes de los medios privados (`BE_MEDIOS_ALMACEN`). Solo `postgres`, la base existente:
+   * sobrevive a un reinicio y no usa el disco del contenedor (07 §25). Un almacenamiento compatible con S3 necesita un
+   * bucket privado y sus credenciales, que no están contratados: pedirlo falla al arrancar.
+   */
+  readonly mediosAlmacen: AlmacenDeMediosConfigurado;
+  /**
+   * DL-125 · si la API exige el acto `EVIDENCIA_VISUAL` (08 §12.4) para subir la foto de una comida (API-MED-01) y para que
+   * el profesional la vea (API-MED-03) (`BE_EVIDENCIA_VISUAL_EXIGIDA`, `true` o `false`). Por defecto, `false`: el texto
+   * es una propuesta, pendiente de aprobación de Dirección y de validación jurídica, y activar la exigencia es su decisión
+   * (precierre del 2026-10-06, §6). Las operaciones del acto (API-EVI-01 a 04) responden igual con o sin ella.
+   */
+  readonly evidenciaVisualExigida: boolean;
 }
+
+export const ALMACENES_DE_MEDIOS = ['postgres'] as const;
+export type AlmacenDeMediosConfigurado = (typeof ALMACENES_DE_MEDIOS)[number];
 
 export interface ProveedoresExternos {
   /** Origen https de Open Food Facts, sin ruta. Por defecto, el público. */
@@ -148,6 +164,16 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     presupuestoMs: PRESUPUESTO_DEL_PROVEEDOR_MS,
   };
 
+  // DL-120: sin valor, la base existente. Otro valor no se interpreta: el mensaje nombra la variable, nunca el valor.
+  const almacen = (env.BE_MEDIOS_ALMACEN ?? '').trim() || 'postgres';
+  if (!(ALMACENES_DE_MEDIOS as readonly string[]).includes(almacen)) {
+    errores.push('BE_MEDIOS_ALMACEN solo admite «postgres»: el almacenamiento compatible con S3 no está configurado (DL-120)');
+  }
+
+  // DL-125: solo `true` o `false`; sin valor, `false`. Otro valor no se interpreta.
+  const exigida = (env.BE_EVIDENCIA_VISUAL_EXIGIDA ?? '').trim() || 'false';
+  if (exigida !== 'true' && exigida !== 'false') errores.push('BE_EVIDENCIA_VISUAL_EXIGIDA solo admite «true» o «false» (DL-125)');
+
   if (errores.length > 0) {
     throw new Error(`Configuración inválida: ${errores.join('; ')}`);
   }
@@ -164,6 +190,8 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     caducidadDeSolicitudMs: (diasDeCaducidad ?? 30) * 24 * 60 * 60 * 1000,
     demoProfesionales,
     proveedores,
+    mediosAlmacen: almacen as AlmacenDeMediosConfigurado,
+    evidenciaVisualExigida: exigida === 'true',
   };
 }
 

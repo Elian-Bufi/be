@@ -1,0 +1,14 @@
+-- Precierre del 2026-10-06, §6: que un respaldo de la base se pueda restaurar.
+--
+-- pg_restore carga los datos con la ruta de búsqueda vacía (`search_path = ''`), como hace pg_dump desde PostgreSQL 10.3
+-- por seguridad. Los CHECK de finalidad de `solicitud_de_vinculo`, `alcance_de_vinculo`, `version_de_consentimiento` y
+-- `decision_de_acceso` llaman a `be_finalidad_de_alcance`, cuyo cuerpo nombra el tipo "Finalidad" sin esquema: con la ruta
+-- vacía, el COPY de esas tablas falla y la restauración se corta (probado en local con pg_dump y pg_restore 16.11; ver
+-- EVIDENCIA/ENTRENAMIENTO-SERIES/resultados/09-respaldo-y-restauracion.json).
+--
+-- Se fija la ruta de búsqueda de la función con la que rige al migrar (`FROM CURRENT`): el esquema de la base, que
+-- `prisma migrate deploy` toma de la URL. En el despliegue es `public`; en las pruebas de integración que migran un
+-- esquema aislado, es ese esquema, y la función sigue resolviendo los tipos de su propio esquema. No cambia lo que
+-- devuelve ni ningún dato. Es la única función que se evalúa al cargar los datos: los disparadores se crean después de
+-- los datos y no corren durante una restauración.
+ALTER FUNCTION "be_finalidad_de_alcance"("Alcance") SET search_path FROM CURRENT;

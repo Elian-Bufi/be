@@ -1,0 +1,186 @@
+{
+  "method": "SUM_SOURCE_PER_100G_V1",
+  "numeric_cases": [
+    {
+      "id": "BE-DEMO-NUT-001-base",
+      "recipe_id": "BE-DEMO-NUT-001",
+      "factor": "1",
+      "quantity_overrides_g": {},
+      "expected": {
+        "energy_kcal": "529.220",
+        "carbohydrate_g": "56.570",
+        "fat_g": "13.186",
+        "protein_g": "43.964",
+        "fiber_g": "5.380"
+      }
+    },
+    {
+      "id": "BE-DEMO-NUT-001-mitad",
+      "recipe_id": "BE-DEMO-NUT-001",
+      "factor": "0.5",
+      "quantity_overrides_g": {},
+      "expected": {
+        "energy_kcal": "264.6100",
+        "carbohydrate_g": "28.2850",
+        "fat_g": "6.5930",
+        "protein_g": "21.9820",
+        "fiber_g": "2.6900"
+      }
+    },
+    {
+      "id": "BE-DEMO-NUT-001-doble",
+      "recipe_id": "BE-DEMO-NUT-001",
+      "factor": "2",
+      "quantity_overrides_g": {},
+      "expected": {
+        "energy_kcal": "1058.440",
+        "carbohydrate_g": "113.140",
+        "fat_g": "26.372",
+        "protein_g": "87.928",
+        "fiber_g": "10.760"
+      }
+    },
+    {
+      "id": "BE-DEMO-NUT-002-base",
+      "recipe_id": "BE-DEMO-NUT-002",
+      "factor": "1",
+      "quantity_overrides_g": {},
+      "expected": {
+        "energy_kcal": "579.600",
+        "carbohydrate_g": "51.466",
+        "fat_g": "24.155",
+        "protein_g": "39.644",
+        "fiber_g": "7.260"
+      }
+    },
+    {
+      "id": "BE-DEMO-NUT-002-mitad",
+      "recipe_id": "BE-DEMO-NUT-002",
+      "factor": "0.5",
+      "quantity_overrides_g": {},
+      "expected": {
+        "energy_kcal": "289.8000",
+        "carbohydrate_g": "25.7330",
+        "fat_g": "12.0775",
+        "protein_g": "19.8220",
+        "fiber_g": "3.6300"
+      }
+    },
+    {
+      "id": "BE-DEMO-NUT-002-doble",
+      "recipe_id": "BE-DEMO-NUT-002",
+      "factor": "2",
+      "quantity_overrides_g": {},
+      "expected": {
+        "energy_kcal": "1159.200",
+        "carbohydrate_g": "102.932",
+        "fat_g": "48.310",
+        "protein_g": "79.288",
+        "fiber_g": "14.520"
+      }
+    },
+    {
+      "id": "BE-DEMO-NUT-003-base",
+      "recipe_id": "BE-DEMO-NUT-003",
+      "factor": "1",
+      "quantity_overrides_g": {},
+      "expected": {
+        "energy_kcal": "458.520",
+        "carbohydrate_g": "75.080",
+        "fat_g": "9.400",
+        "protein_g": "21.286",
+        "fiber_g": "19.060"
+      }
+    },
+    {
+      "id": "BE-DEMO-NUT-003-mitad",
+      "recipe_id": "BE-DEMO-NUT-003",
+      "factor": "0.5",
+      "quantity_overrides_g": {},
+      "expected": {
+        "energy_kcal": "229.2600",
+        "carbohydrate_g": "37.5400",
+        "fat_g": "4.7000",
+        "protein_g": "10.6430",
+        "fiber_g": "9.5300"
+      }
+    },
+    {
+      "id": "BE-DEMO-NUT-003-doble",
+      "recipe_id": "BE-DEMO-NUT-003",
+      "factor": "2",
+      "quantity_overrides_g": {},
+      "expected": {
+        "energy_kcal": "917.040",
+        "carbohydrate_g": "150.160",
+        "fat_g": "18.800",
+        "protein_g": "42.572",
+        "fiber_g": "38.120"
+      }
+    },
+    {
+      "id": "BE-DEMO-NUT-001-arroz-200g",
+      "recipe_id": "BE-DEMO-NUT-001",
+      "factor": "1",
+      "quantity_overrides_g": {
+        "arroz_cocido": "200"
+      },
+      "expected": {
+        "energy_kcal": "581.220",
+        "carbohydrate_g": "67.838",
+        "fat_g": "13.298",
+        "protein_g": "45.040",
+        "fiber_g": "5.540"
+      }
+    },
+    {
+      "id": "BE-DEMO-NUT-001-sin-aceite",
+      "recipe_id": "BE-DEMO-NUT-001",
+      "factor": "1",
+      "quantity_overrides_g": {
+        "aceite_oliva": "0"
+      },
+      "expected": {
+        "energy_kcal": "458.50",
+        "carbohydrate_g": "56.570",
+        "fat_g": "5.186",
+        "protein_g": "43.964",
+        "fiber_g": "5.38"
+      }
+    }
+  ],
+  "behavioral_cases_not_executed_against_BE": [
+    {
+      "case": "cantidad_consumida_ausente",
+      "expected": "No reemplazar por cantidad del plan ni por cero."
+    },
+    {
+      "case": "nutriente_ausente",
+      "expected": "Nutriente desconocido/incompleto, no cero; no presentar un total completo."
+    },
+    {
+      "case": "foto_sin_ingredientes",
+      "expected": "No derivar macros de la imagen."
+    },
+    {
+      "case": "unidad_ml_sin_densidad",
+      "expected": "No convertir a gramos sin equivalencia identificada."
+    },
+    {
+      "case": "cantidad_negativa",
+      "expected": "Rechazo de validación."
+    },
+    {
+      "case": "valor_no_numerico",
+      "expected": "Rechazo de validación."
+    },
+    {
+      "case": "doble_toque_registro",
+      "expected": "Un solo registro persistido."
+    },
+    {
+      "case": "receta_modificada_despues",
+      "expected": "Conservar la versión y valores históricos del consumo."
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#888}div{overflow:hidden;width:var(--w);height:var(--h)}img{display:block;margin-top:calc(-1 * var(--y));width:var(--w)}</style></head>
+<body><div><img id="i"></div><script>const p=new URLSearchParams(location.search);const s=document.documentElement.style;s.setProperty('--w',p.get('w')+'px');s.setProperty('--h',p.get('h')+'px');s.setProperty('--y',p.get('y')+'px');document.getElementById('i').src=p.get('src');</script></body></html>

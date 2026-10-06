@@ -8,6 +8,9 @@ const soloDiaCivil = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', tim
 export const fecha = (iso: string) => conHora.format(new Date(iso));
 /** El día de un instante real, en la zona de la persona. No usar para fechas civiles `YYYY-MM-DD` (ver `fechaCivil`). */
 export const dia = (iso: string) => soloDia.format(new Date(iso));
+/** La hora de un instante real, en la zona de la persona: para una lista que ya está agrupada por día. */
+const soloHora = new Intl.DateTimeFormat('es-AR', { timeStyle: 'short' });
+export const hora = (iso: string) => soloHora.format(new Date(iso));
 
 /**
  * Una **fecha civil** (`YYYY-MM-DD`: la fecha de una sesión, una ocurrencia, un tramo), tal cual, sin desplazarla por la

@@ -23,16 +23,18 @@ import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoService } from './catalogo.service';
 import { EjecutorNutricional, esUuid } from './ejecutor';
 import { registrarEventoDeNutricion } from './eventos';
+import { itemsConsumidosV1 } from './cantidades-consumidas';
 import { diasTipoApi, ingestaApi, nombreVisibleDe } from './lectura-nutricion';
+import { INCLUIR_PARA_V1, INCLUIR_REGISTRO, type IngestaConTodo } from './lectura-registro';
 import { ZONA_POR_DEFECTO, fechaLocalEn } from './zona';
 
 type Tx = Prisma.TransactionClient;
 
-const TOLERANCIA_FUTURO_MS = 5 * 60 * 1000;
-const INCLUIR_CORRECCIONES = { correcciones: true } as const;
+export const TOLERANCIA_FUTURO_MS = 5 * 60 * 1000;
+const INCLUIR_CORRECCIONES = INCLUIR_PARA_V1;
 
 /** Plan vigente del asesorado: versión efectiva de un plan con su Proceso ABIERTO (REG-06-66; UC-I06 V05). */
-interface PlanDelAsesorado {
+export interface PlanDelAsesorado {
   versionId: string;
   version: number;
   profesionalId: string;
@@ -68,29 +70,11 @@ export class IngestasService {
       ctx,
       recursoIntentado: null,
       lectura: async (tx) => {
-        // DL-115 · sin A3 vigente, lo propio no se lee (08:406). «Hoy» trae las comidas registradas del día, que son datos
-        // de salud del titular: van detrás del A3, como la lista propia (API-NUT-16-LISTA). Antes se leían y se devolvían
-        // aunque el plan quedara «no disponible». La suspensión del acceso por el vínculo o el B2, con el A3 vigente,
-        // sigue siendo «no disponible» (UC-P12 E06).
-        await exigirA3Vigente(tx, actor.identidadId);
-        const zona = ZONA_POR_DEFECTO;
-        const fecha = fechaLocalEn(await momentoDeLaBase(tx), zona);
-        const registrado = await this.ingestasDelDia(tx, actor.identidadId, fecha);
-        const base = { date: fecha, timeZone: zona, registeredIntake: registrado, dataState: registrado.length > 0 ? ('HAS_DATA' as const) : ('NO_DATA' as const) };
-        const plan = await this.planVigente(tx, actor.identidadId);
-        if (!plan) return { data: { ...base, planState: 'NO_ACTIVE_PLAN', activePlan: null, selectedDayTypeId: null } };
-        try {
-          await this.pdp.decidirEnTransaccion(
-            tx,
-            { operacion: 'API-NUT-14', actorDeLaDecision: actor.identidadId, profesionalId: plan.profesionalId, titularId: actor.identidadId, alcance: 'NUTRICION', recurso: { tipo: 'VersionDePlanNutricional', id: plan.versionId } },
-            ctx,
-          );
-        } catch (e) {
-          if (!(e instanceof DenegacionDelPdp)) throw e;
-          // UC-P12 E06: hay plan, pero el acceso está suspendido. La decisión denegada queda registrada.
-          await this.pdp.registrarDenegacion(e);
-          return { data: { ...base, planState: 'NOT_AVAILABLE', activePlan: null, selectedDayTypeId: null } };
-        }
+        const hoy = await this.contextoDeHoy(tx, actor, 'API-NUT-14', ctx);
+        const registrado = await this.ingestasDelDia(tx, actor.identidadId, hoy.fecha);
+        const base = { date: hoy.fecha, timeZone: hoy.zona, registeredIntake: registrado, dataState: registrado.length > 0 ? ('HAS_DATA' as const) : ('NO_DATA' as const) };
+        if (hoy.estado !== 'AVAILABLE' || !hoy.plan) return { data: { ...base, planState: hoy.estado, activePlan: null, selectedDayTypeId: null } };
+        const plan = hoy.plan;
         const objetivo = await tx.versionDeObjetivoNutricional.findUniqueOrThrow({ where: { id: plan.versionDeObjetivoId } });
         const dias = diasTipoApi({ dayTypes: [] }, plan.instantanea, new Map());
         // No se elige un día tipo en silencio (09v9:680; DL-049): el único, o el que eligió el asesorado.
@@ -167,18 +151,17 @@ export class IngestasService {
           if (!ev.valida) {
             throw new ErrorDeApi(422, CodigoDeError.NUTRITION_EXECUTION_INVALID, 'La comida registrada no corresponde al plan vigente.', { issues: [{ code: ev.motivo, path: 'recording' }] });
           }
-          // REG-06-107: una por (versión, fecha, comida). Un reintento equivalente devuelve la existente (UC-P12 E04).
-          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`ingesta|${plan.versionId}|${fecha}|${r.mealId}`}, 0))`;
-          const previa = await tx.ingestaNutricional.findFirst({
-            where: { versionDePlanId: plan.versionId, fechaLocal: new Date(`${fecha}T00:00:00.000Z`), comidaId: r.mealId, origen: 'PRESCRIPTA' },
-            include: INCLUIR_CORRECCIONES,
-          });
+          // REG-06-107 y DL-121: una sola ingesta efectiva por (versión, fecha, comida), de cualquier clase (también una
+          // comida diferente registrada con esa comida como contexto). Un reintento equivalente devuelve la existente
+          // (UC-P12 E04); después de anular, se registra con la secuencia siguiente.
+          const { efectiva: previa, siguiente } = await this.efectivaDeLaComida(tx, plan.versionId, fecha, r.mealId);
           if (previa) {
             const igual =
+              previa.origen === 'PRESCRIPTA' &&
               previa.opcionId === r.optionId &&
               previa.diaTipoId === dayTypeId &&
               // jsonb reordena las claves: la comparación es por serialización canónica, no por texto.
-              serializacionCanonica(previa.itemsConsumidos) === serializacionCanonica(consumidos) &&
+              serializacionCanonica(itemsConsumidosV1(previa)) === serializacionCanonica(consumidos) &&
               (previa.observacion ?? null) === (r.observation ?? null);
             if (!igual) {
               throw new ErrorDeApi(409, CodigoDeError.EXECUTION_ALREADY_REGISTERED_INCOMPATIBLY, 'Esa comida ya está registrada para ese día.', { executionId: previa.id });
@@ -200,6 +183,7 @@ export class IngestasService {
               observacion: r.observation ?? null,
               procedencia: procedencia as unknown as Prisma.InputJsonValue,
               momentoDeOcurrencia: ocurrencia,
+              secuencia: siguiente,
             },
             include: INCLUIR_CORRECCIONES,
           });
@@ -250,9 +234,10 @@ export class IngestasService {
       recursoIntentado: recurso,
       lectura: async (tx) => {
         const i = esUuid(executionId)
-          ? await tx.ingestaNutricional.findUnique({ where: { id: executionId }, include: { ...INCLUIR_CORRECCIONES, versionDePlan: { select: { plan: { select: { profesionalId: true } } } } } })
+          ? await tx.ingestaNutricional.findUnique({ where: { id: executionId }, include: { ...INCLUIR_CORRECCIONES, anulacion: true, versionDePlan: { select: { plan: { select: { profesionalId: true } } } } } })
           : null;
-        if (!i) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-16', actorId: actor.identidadId, recurso }, ctx);
+        // DL-121: una ingesta anulada no se devuelve por las rutas que lee la APK instalada: es el mismo 404.
+        if (!i || i.anulacion) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-16', actorId: actor.identidadId, recurso }, ctx);
         const profesionalDelPlan = i.versionDePlan.plan.profesionalId;
         const esTitular = i.asesoradoId === actor.identidadId;
         // El titular, con el Proceso vigente de su profesional; un profesional, primero el PDP y después la propiedad (DL-057).
@@ -286,8 +271,9 @@ export class IngestasService {
         const [a3] = await tx.$queryRaw<{ vigente: boolean }[]>`
           SELECT EXISTS (SELECT 1 FROM "acto_registrable" WHERE "identidad_id" = ${actor.identidadId}::uuid AND "tipo" = 'DATOS_SALUD_BE' AND "estado" = 'VIGENTE') AS "vigente"`;
         if (!a3?.vigente) throw errores.accionNoPermitida();
+        // DL-121: lo anulado se omite (la lista v2, API-ING-04, lo muestra marcado).
         const filas = await tx.ingestaNutricional.findMany({
-          where: { asesoradoId: actor.identidadId, ...despuesDelCursor(consulta.cursor) },
+          where: { asesoradoId: actor.identidadId, anulacion: { is: null }, ...despuesDelCursor(consulta.cursor) },
           include: INCLUIR_CORRECCIONES,
           orderBy: ORDEN_DE_LISTA,
           take: consulta.limit + 1,
@@ -314,9 +300,10 @@ export class IngestasService {
       huellaExtra: { executionId },
       efecto: async (tx, pedido, procedencia) => {
         const i = esUuid(executionId)
-          ? await tx.ingestaNutricional.findUnique({ where: { id: executionId }, include: { versionDePlan: { select: { plan: { select: { profesionalId: true } } } } } })
+          ? await tx.ingestaNutricional.findUnique({ where: { id: executionId }, include: { anulacion: true, versionDePlan: { select: { plan: { select: { profesionalId: true } } } } } })
           : null;
-        if (!i) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-21', actorId: actor.identidadId, recurso }, ctx);
+        // DL-121: lo anulado deja de contar y no se estructura: el mismo 404 que API-NUT-16.
+        if (!i || i.anulacion) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-21', actorId: actor.identidadId, recurso }, ctx);
         await this.pdp.decidirEnTransaccion(
           tx,
           { operacion: 'API-NUT-21', actorDeLaDecision: actor.identidadId, profesionalId: actor.identidadId, titularId: i.asesoradoId, alcance: 'NUTRICION', recurso },
@@ -395,13 +382,68 @@ export class IngestasService {
   }
 
   private async ingestasDelDia(tx: Tx, asesoradoId: string, fecha: string): Promise<Ingesta[]> {
+    // DL-121: lo anulado deja de contar en el día.
     const filas = await tx.ingestaNutricional.findMany({
-      where: { asesoradoId, fechaLocal: new Date(`${fecha}T00:00:00.000Z`) },
+      where: { asesoradoId, fechaLocal: new Date(`${fecha}T00:00:00.000Z`), anulacion: { is: null } },
       include: INCLUIR_CORRECCIONES,
       orderBy: [{ momentoDeOcurrencia: 'asc' }, { id: 'asc' }],
     });
     const nombres = await this.nombresDeAutores(tx, filas.flatMap((i) => i.correcciones.map((c) => c.autorId)));
     return filas.map((i) => ingestaApi(i, nombres));
+  }
+
+  /**
+   * «Hoy» del asesorado, lo que comparten API-NUT-14 y API-ING-01:
+   * - DL-115 · sin A3 vigente, lo propio no se lee (08:406): «Hoy» trae las comidas registradas del día, que son datos de
+   *   salud del titular, y van detrás del A3 como la lista propia (API-NUT-16-LISTA);
+   * - la fecha civil y la zona del servidor (09v9:664) y el plan vigente;
+   * - la decisión del PDP: si hay plan pero el acceso está suspendido por el vínculo o el B2, con el A3 vigente, es «no
+   *   disponible», con la decisión denegada registrada (UC-P12 E06).
+   */
+  async contextoDeHoy(
+    tx: Tx,
+    actor: ActorAutenticado,
+    operacion: string,
+    ctx: ContextoDeSolicitud,
+  ): Promise<{ readonly fecha: string; readonly zona: string; readonly plan: PlanDelAsesorado | null; readonly estado: 'AVAILABLE' | 'NO_ACTIVE_PLAN' | 'NOT_AVAILABLE' }> {
+    await exigirA3Vigente(tx, actor.identidadId);
+    const zona = ZONA_POR_DEFECTO;
+    const fecha = fechaLocalEn(await momentoDeLaBase(tx), zona);
+    const plan = await this.planVigente(tx, actor.identidadId);
+    if (!plan) return { fecha, zona, plan: null, estado: 'NO_ACTIVE_PLAN' };
+    try {
+      await this.pdp.decidirEnTransaccion(
+        tx,
+        { operacion, actorDeLaDecision: actor.identidadId, profesionalId: plan.profesionalId, titularId: actor.identidadId, alcance: 'NUTRICION', recurso: { tipo: 'VersionDePlanNutricional', id: plan.versionId } },
+        ctx,
+      );
+    } catch (e) {
+      if (!(e instanceof DenegacionDelPdp)) throw e;
+      await this.pdp.registrarDenegacion(e);
+      return { fecha, zona, plan, estado: 'NOT_AVAILABLE' };
+    }
+    return { fecha, zona, plan, estado: 'AVAILABLE' };
+  }
+
+  /**
+   * DL-121 · la ingesta efectiva (no anulada) de una comida un día, en una versión del plan, de cualquier clase: la
+   * prescripta de esa comida o la comida diferente registrada con esa comida como contexto. Toma el cerrojo de la terna
+   * (el mismo en API-NUT-15 y API-ING-02, así se ordenan entre sí) y da la secuencia siguiente para registrar otra.
+   */
+  async efectivaDeLaComida(tx: Tx, versionId: string, fecha: string, mealId: string): Promise<{ readonly efectiva: IngestaConTodo | null; readonly siguiente: number }> {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`ingesta|${versionId}|${fecha}|${mealId}`}, 0))`;
+    const filas = await tx.ingestaNutricional.findMany({
+      where: {
+        versionDePlanId: versionId,
+        fechaLocal: new Date(`${fecha}T00:00:00.000Z`),
+        OR: [
+          { origen: 'PRESCRIPTA', comidaId: mealId },
+          { origen: 'FUERA_DE_PRESCRIPCION', comidaDeContextoId: mealId },
+        ],
+      },
+      include: INCLUIR_REGISTRO,
+    });
+    return { efectiva: filas.find((f) => !f.anulacion) ?? null, siguiente: filas.length === 0 ? 0 : Math.max(...filas.map((f) => f.secuencia)) + 1 };
   }
 
   private async nombresDeAutores(tx: Tx, ids: readonly string[]): Promise<Map<string, string>> {

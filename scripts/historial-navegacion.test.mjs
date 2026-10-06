@@ -184,6 +184,9 @@ const RUTAS = [
   { nombre: 'plan-actual' },
   { nombre: 'registros-nutricionales' },
   { nombre: 'registro-nutricional', id: 'i1' },
+  // WP-NUTRICION-RECETAS: el detalle de una opción de una comida y «Comí algo diferente».
+  { nombre: 'opcion-de-comida', id: 'o1', comidaId: 'm1' },
+  { nombre: 'comida-diferente', comidaId: 'm1', comida: 'Almuerzo', fecha: '2026-10-05', planId: 'p1', diaTipoId: 'd1' },
   { nombre: 'mi-evolucion' },
   { nombre: 'entrenamiento' },
   { nombre: 'historial-de-entrenamiento' },
@@ -408,8 +411,11 @@ test('sin pérdidas silenciosas: la barra, el avatar, el menú, volver y el bot�
   assert.match(APP, /volver=\{volverConCuidado\}/);
   assert.match(APP, /setMenuAbierto\(false\);\s*irConCuidado\(r\);/, 'el menú se cierra y después pregunta');
   assert.match(APP, /const atras = useCallback\(\(\) => \{\s*if \(!anterior\(rutaActual\.current\)\) return false;\s*volverConCuidado\(\);/);
+  // WP-NUTRICION-RECETAS: los formularios de Nutrición pasaron al detalle de una opción («¿Cuánto comiste?») y a «Comí
+  // algo diferente», que reemplazó a la comida fuera del plan.
   const declaran = {
-    'nutricion.tsx': ['el registro de «${comida.label}»', 'la comida fuera del plan'],
+    'opcion-de-comida.tsx': ['el registro de «${comida.label}»'],
+    'comida-diferente.tsx': ['lo que comiste en «${comida}»'],
     'entrenamiento.tsx': ['lo que escribiste en esta sesión', 'lo que cargaste en «${p.exerciseName}»', 'la corrección del registro'],
     'formularios.tsx': ['tus respuestas'],
     'registro.tsx': ['los datos de tu cuenta nueva'],

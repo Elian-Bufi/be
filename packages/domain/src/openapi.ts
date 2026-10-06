@@ -8,6 +8,7 @@
  * - las de WP-05: la familia ANT y el patrón transversal MTH/CAL (docs/paquetes/WP-05.md §4);
  * - las de WP-06: la familia TRN, la carga manual de ejercicios y la lectura por período (docs/paquetes/WP-06.md §4).
  * - las de WP-07: la familia FRM, transversal a los tres dominios (docs/paquetes/WP-07.md §4).
+ * - las de WP-NUTRICION-RECETAS: las familias REC, MED e ING (docs/paquetes/WP-NUTRICION-RECETAS.md §4).
  */
 import { z } from 'zod';
 import {
@@ -47,6 +48,13 @@ import {
   VinculoResponseSchema,
 } from './contratos-vinculo';
 import { CarteraResponseSchema } from './contratos-cartera';
+import {
+  DetalleDeEvidenciaVisualRequeridaSchema,
+  EvidenciaVisualOtorgadaResponseSchema,
+  ListaDeEvidenciaVisualResponseSchema,
+  OtorgarEvidenciaVisualRequestSchema,
+  RequisitoDeEvidenciaVisualResponseSchema,
+} from './contratos-evidencia-visual';
 import {
   CrearPlantillaDeEntrenamientoRequestSchema,
   EditarPlantillaRequestSchema,
@@ -177,6 +185,37 @@ import {
   VersionDePlantillaResponseSchema,
   DetalleDeRespuestaFueraDeLimitesSchema,
 } from './contratos-formularios';
+import {
+  AsociarImagenDeEjercicioRequestSchema,
+  EjercicioPropioResponseSchema,
+  ListaDeEjerciciosPropiosResponseSchema,
+  PlanConObjetivosResponseSchema,
+  RegistrarEventosDeTiempoRequestSchema,
+  ResultadoDeEventosResponseSchema,
+  SesionEnCursoResponseSchema,
+  SesionParaRegistrarResponseSchema,
+  TiemposDeSesionResponseSchema,
+} from './contratos-entrenamiento-por-serie';
+import { HEADER_DE_CAPACIDADES } from './compatibilidad-de-clientes';
+import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema } from './contratos-medios';
+import {
+  AsociarImagenDeRecetaRequestSchema,
+  CalcularRecetaRequestSchema,
+  CalculoDeRecetaResponseSchema,
+  CrearRecetaRequestSchema,
+  DetalleDeRecetaResponseSchema,
+  EditarRecetaRequestSchema,
+  ListaDeRecetasResponseSchema,
+  RecetaResponseSchema,
+} from './contratos-recetas';
+import {
+  AnularRegistroRequestSchema,
+  HoyConOpcionesResponseSchema,
+  ListaDeRegistrosDeComidaResponseSchema,
+  RectificarCantidadesRequestSchema,
+  RegistrarComidaRequestSchema,
+  RegistroDeComidaResponseSchema,
+} from './contratos-registro-de-comidas';
 
 type Codigo = keyof typeof CodigoDeError;
 type Errores = Partial<Record<400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503, readonly Codigo[]>>;
@@ -195,20 +234,25 @@ export interface Operacion {
   /** Relativa a `/api/v1`. Los parámetros de ruta van entre llaves: `/relationships/{relationshipId}`. */
   readonly ruta: string;
   readonly resumen: string;
-  readonly autenticacion: 'PUBLIC' | 'SESSION' | 'SESSION_STEP_UP';
+  /** `SIGNED_URL`: sin sesión; la autoriza la ruta firmada que emitió otra operación con sesión (DL-120). */
+  readonly autenticacion: 'PUBLIC' | 'SESSION' | 'SESSION_STEP_UP' | 'SIGNED_URL';
   readonly idempotencia: boolean;
   readonly request?: z.ZodType;
   /** Un cuerpo que el servidor también acepta ausente (API-TRN-15: el 09 no le declara cuerpo). */
   readonly requestOpcional?: boolean;
+  /** Un cuerpo de bytes crudos, con uno de estos tipos (API-MED-02), en lugar de JSON. */
+  readonly requestBinario?: readonly string[];
   readonly query?: readonly ParametroDeQuery[];
   /** El primero es el éxito principal. REL-01 y CON-02 también responden 200 (deduplicado o replay). */
-  readonly exitos: readonly { readonly status: 200 | 201 | 204; readonly schema?: z.ZodType }[];
+  readonly exitos: readonly { readonly status: 200 | 201 | 204; readonly schema?: z.ZodType; readonly binario?: string }[];
   readonly errores: Errores;
   /**
    * La forma de `error.details` de un código 422 que la trae (DL-104). Se declara sobre el ErrorEnvelope común, sin
    * cambiarlo para las demás operaciones.
    */
   readonly detalleDe422?: { readonly codigo: Codigo; readonly schema: z.ZodType; readonly descripcion: string };
+  /** Lo mismo para un 403 que trae `details`: el de API-MED-01 sin el acto `EVIDENCIA_VISUAL` (DL-125). */
+  readonly detalleDe403?: { readonly codigo: Codigo; readonly schema: z.ZodType; readonly descripcion: string };
   readonly fuente: string;
 }
 
@@ -550,6 +594,64 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: ConsentimientoRevocadoResponseSchema }],
     errores: ESCRITURA_REVELABLE,
     fuente: '09:2558-2621 · 08:406 (paso 1) · DEUDA_LEGAJO DL-021',
+  },
+  // ─── EVI: EVIDENCIA_VISUAL (08 §12.4 y §21.3; precierre del 2026-10-06, §6; DL-125). Familia propia de BE: el 09 no las
+  // define, y sus números no se toman de la familia CON del 09 (DL-116). Tienen la forma de CON-01, 02, 07 y 08 ─────
+  {
+    id: 'API-EVI-01',
+    metodo: 'get',
+    ruta: '/relationships/{relationshipId}/visual-evidence-requirement',
+    resumen:
+      'La información destacada de las fotos de comidas para un vínculo de Nutrición propio (solo el asesorado titular): el texto versionado a mostrar, si es una propuesta (`textApproval`), si la API ya exige el acto (`enforced`) y el acto vigente, si hay uno. Otro alcance, ajeno o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: RequisitoDeEvidenciaVisualResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '08 §12.4 (08:395) · 08 §21.3 · forma de API-CON-01 · DEUDA_LEGAJO DL-125',
+  },
+  {
+    id: 'API-EVI-02',
+    metodo: 'post',
+    ruta: '/relationships/{relationshipId}/visual-evidence-consents',
+    resumen:
+      'Registrar el acto EVIDENCIA_VISUAL de un vínculo de Nutrición propio, con la versión mostrada, que es la aceptada (solo el asesorado titular, con el vínculo aceptado y su B2 vigente). 201 al registrarlo; 200 si ya estaba vigente con esa versión. No es un consentimiento por foto.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: OtorgarEvidenciaVisualRequestSchema,
+    exitos: [
+      { status: 201, schema: EvidenciaVisualOtorgadaResponseSchema },
+      { status: 200, schema: EvidenciaVisualOtorgadaResponseSchema },
+    ],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['CONSENT_VERSION_STALE', 'CONSENT_ALREADY_ACTIVE', 'IDEMPOTENCY_KEY_REUSED'],
+      422: ['RELATIONSHIP_NOT_READY_FOR_CONSENT'],
+    },
+    fuente: '08 §12.2 · 08 §12.4 (08:395) · forma de API-CON-02 · DEUDA_LEGAJO DL-125',
+  },
+  {
+    id: 'API-EVI-03',
+    metodo: 'get',
+    ruta: '/me/visual-evidence-consents',
+    resumen: 'Los actos EVIDENCIA_VISUAL propios, vigentes y revocados, con su profesional y su versión. Sin IP ni user-agent.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeEvidenciaVisualResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: '08 §12.4 (08:395) · forma de API-CON-07 · DEUDA_LEGAJO DL-125',
+  },
+  {
+    id: 'API-EVI-04',
+    metodo: 'post',
+    ruta: '/me/visual-evidence-consents/{consentId}/revoke',
+    resumen:
+      'Revocar un acto EVIDENCIA_VISUAL. Idempotente por semántica, sin Idempotency-Key. Con la exigencia activa, corta las fotos nuevas para ese profesional (API-MED-01) y su acceso a las fotos (API-MED-03) en la operación siguiente. No borra fotos ni registros, y el titular sigue viendo las suyas.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ConsentimientoRevocadoResponseSchema }],
+    errores: ESCRITURA_REVELABLE,
+    fuente: '08 §12.4 (08:395) · 08 §13 · forma de API-CON-08 · DEUDA_LEGAJO DL-125',
   },
   // ─── WP-03 · DSH-03 mínimo (09v11 §15; DL-031) ───────────────────────────────────────────────
   {
@@ -1327,7 +1429,7 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-TRN-09',
     metodo: 'get',
     ruta: '/training/plans/{planId}',
-    resumen: 'Una versión de plan con su jerarquía. Si está activada, se reconstruye desde la instantánea, no desde el catálogo actual.',
+    resumen: 'Una versión de plan con su jerarquía. Si está activada, se reconstruye desde la instantánea, no desde el catálogo actual. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: 404 como lo inexistente (DL-122, precierre del 2026-10-06).',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: PlanDeEntrenamientoResponseSchema }],
@@ -1368,17 +1470,17 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/training/plans/{planId}/activate',
     resumen:
-      'Activar: en una transacción, versión esperada, PDP, capacidad, validación, instantánea inmutable, cambio de versión efectiva y apertura del Proceso si es nuevo. La anterior se conserva.',
+      'Activar: en una transacción, versión esperada, PDP, capacidad, validación, instantánea inmutable, cambio de versión efectiva y apertura del Proceso si es nuevo. La anterior se conserva. Un plan con objetivos distintos por serie no se activa mientras su titular no haya usado una APK que los muestre (409 CLIENT_CAPABILITY_REQUIRED): las instaladas mostrarían los generales.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: VersionEsperadaRequestSchema,
     exitos: [{ status: 200, schema: ActivacionDePlanDeEntrenamientoResponseSchema }],
     errores: {
       ...ESCRITURA_REVELABLE,
-      409: ['VERSION_CONFLICT', 'ACTIVE_PLAN_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'],
+      409: ['VERSION_CONFLICT', 'ACTIVE_PLAN_CONFLICT', 'IDEMPOTENCY_KEY_REUSED', 'CLIENT_CAPABILITY_REQUIRED'],
       422: ['OPERATION_NOT_READY', 'CAPACITY_NOT_AVAILABLE', 'PLAN_NOT_EDITABLE'],
     },
-    fuente: '09v10:788-834 · REG-06-104, 105 · 06:5164 · DEUDA_LEGAJO DL-087',
+    fuente: '09v10:788-834 · REG-06-104, 105 · 06:5164 · DEUDA_LEGAJO DL-087 · DL-122 (precierre del 2026-10-06, §2)',
   },
   {
     id: 'API-TRN-13',
@@ -1688,7 +1790,7 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-TRN-14',
     metodo: 'get',
     ruta: '/me/training/today',
-    resumen: '«Hoy» del asesorado: las sesiones de la instantánea vigente como ocurrencias del día, con el estado de su registro. La ausencia de registro no se convierte en NOT_COMPLETED.',
+    resumen: '«Hoy» del asesorado: las sesiones de la instantánea vigente como ocurrencias del día, con el estado de su registro. La ausencia de registro no se convierte en NOT_COMPLETED. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: planState NOT_AVAILABLE, sin plan ni ocurrencias. Con la capacidad, queda registrada para la activación (DL-122, precierre del 2026-10-06).',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: HoyDeEntrenamientoResponseSchema }],
@@ -1700,7 +1802,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/me/training/occurrences',
     resumen:
-      'Ocurrencias de un período pasado, para registrar en diferido. Sin esta lectura, la sesión de anteayer no se podría registrar y la ausencia de registro se volvería permanente. Hasta 31 días, nunca después de hoy.',
+      'Ocurrencias de un período pasado, para registrar en diferido. Sin esta lectura, la sesión de anteayer no se podría registrar y la ausencia de registro se volvería permanente. Hasta 31 días, nunca después de hoy. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: planState NOT_AVAILABLE, sin ocurrencias (DL-122, precierre del 2026-10-06).',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
@@ -1731,7 +1833,7 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-TRN-15',
     metodo: 'put',
     ruta: '/training/occurrences/{occurrenceId}/execution-draft',
-    resumen: 'Crear u obtener el borrador singular de una ocurrencia: 201 si lo creó, 200 si ya existía. Tocar «Comenzar» dos veces da el mismo borrador.',
+    resumen: 'Crear u obtener el borrador singular de una ocurrencia: 201 si lo creó, 200 si ya existía. Tocar «Comenzar» dos veces da el mismo borrador. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: 404 como lo inexistente, sin crear nada (DL-122, precierre del 2026-10-06).',
     autenticacion: 'SESSION',
     idempotencia: false,
     request: AbrirBorradorDeEjecucionRequestSchema,
@@ -1873,6 +1975,123 @@ const DEFINIDAS: readonly Operacion[] = [
     },
     fuente: '09v10:1385-1442 · REG-06-75, 77',
   },
+  // ─── WP-ENTRENAMIENTO-SERIES (encargo de Dirección del 2026-10-06). Operaciones nuevas: lo que lee la APK 0.13.2 no cambia ─
+  {
+    id: 'API-SER-01',
+    metodo: 'get',
+    ruta: '/training/plans/{planId}/detail',
+    resumen:
+      'La versión de plan de API-TRN-09 con los objetivos por serie (RIR, carga sugerida y descanso, con herencia desde la prescripción), la base de carga y de repeticiones, la imagen de cada ejercicio y si el plan se le puede entregar a la app del titular (`setTargetsDelivery`). Solo para el profesional del plan: el titular lee API-SER-02.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PlanConObjetivosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DEUDA_LEGAJO DL-122 · REG-06-111, 112, 128',
+  },
+  {
+    id: 'API-SER-02',
+    metodo: 'get',
+    ruta: '/training/occurrences/{occurrenceId}/session',
+    resumen:
+      'La sesión de una ocurrencia lista para registrarla serie por serie: el objetivo efectivo de cada serie desde la instantánea y la imagen de cada ejercicio (si ya se registró, la vigente al registrar). Solo para el titular; una ocurrencia que no puede ejecutar y sin registro es 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: SesionParaRegistrarResponseSchema }],
+    // 403: el titular sin A3 vigente no lee su historia registrada (DL-089), como en API-TRN-19.
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DEUDA_LEGAJO DL-122, DL-123 · REG-06-112',
+  },
+  {
+    id: 'API-TIE-01',
+    metodo: 'post',
+    ruta: '/training/execution-drafts/{draftId}/timing-events',
+    resumen:
+      'Registrar eventos de tiempo de la sesión en curso: inicio, pausa, ejercicio activo, descansos, series cronometradas y fin, en orden de secuencia. Cada evento trae su identificador: repetirlo no suma; con otro contenido es un conflicto. Responde qué pasó con cada uno y los tiempos calculados. Sin Idempotency-Key: la identidad es la de cada evento.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: RegistrarEventosDeTiempoRequestSchema,
+    exitos: [{ status: 200, schema: ResultadoDeEventosResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE },
+    fuente: 'DEUDA_LEGAJO DL-124 · paquete de Dirección del 2026-10-06 (DECISIONES_Y_TIEMPOS)',
+  },
+  {
+    id: 'API-TIE-02',
+    metodo: 'get',
+    ruta: '/training/execution-drafts/{draftId}/timing',
+    resumen: 'Los tiempos de un borrador, con su calidad y los eventos que los sostienen. Solo para su titular: sirve para retomar desde otro dispositivo o después de reinstalar.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: TiemposDeSesionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DEUDA_LEGAJO DL-124',
+  },
+  {
+    id: 'API-TIE-03',
+    metodo: 'get',
+    ruta: '/training/executions/{executionId}/timing',
+    resumen:
+      'Los tiempos de una ejecución registrada: sesión, pausas, ejercicios, descansos con su recomendado histórico y series cronometradas, cada uno medido, estimado, incompleto o sin dato. El titular y el profesional del plan, como API-TRN-19. Sin puntajes ni evaluación.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: TiemposDeSesionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DEUDA_LEGAJO DL-124 · 09v10:1135-1180',
+  },
+  {
+    id: 'API-TIE-04',
+    metodo: 'get',
+    ruta: '/me/training/session-in-progress',
+    resumen: 'La sesión en curso del titular, si hay una: de cualquier día y en cualquier dispositivo. Una sola a la vez; la de un borrador ya registrado no cuenta.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: SesionEnCursoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: 'DEUDA_LEGAJO DL-124',
+  },
+  {
+    id: 'API-EJE-01',
+    metodo: 'get',
+    ruta: '/training/own-exercises',
+    resumen: 'Los ejercicios propios del profesional (carga manual), con su imagen vigente. Hasta 500, del más nuevo al más viejo.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDeEjerciciosPropiosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DEUDA_LEGAJO DL-123 · REG-06-134, 135',
+  },
+  {
+    id: 'API-EJE-02',
+    metodo: 'put',
+    ruta: '/training/exercises/{exerciseId}/image',
+    resumen:
+      'Asociar o reemplazar la imagen de un ejercicio propio y de su versión, con un medio propio disponible de finalidad EXERCISE_REFERENCE y con autoría declarada. Exige licencia (sin licencia externa, con sus términos de uso, o una externa identificada), texto alternativo y estado de revisión técnica. Por identidad, nunca por nombre; la historia de imágenes queda.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AsociarImagenDeEjercicioRequestSchema,
+    exitos: [{ status: 200, schema: EjercicioPropioResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'],
+      422: ['MEDIA_REFERENCE_INVALID', 'EXERCISE_REFERENCE_INVALID'],
+    },
+    fuente: 'DEUDA_LEGAJO DL-123 · REG-06-134, 135 · 09v10 §9',
+  },
+  {
+    id: 'API-EJE-03',
+    metodo: 'delete',
+    ruta: '/training/exercises/{exerciseId}/image',
+    resumen: 'Retirar la imagen de un ejercicio propio; exige expectedImageVersion por query. El medio no se borra y la historia queda: lo ya registrado conserva su imagen histórica.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    query: [{ nombre: 'expectedImageVersion', descripcion: 'La versión de imagen que se vio.', schema: { type: 'integer', minimum: 1 }, obligatorio: true }],
+    exitos: [{ status: 200, schema: EjercicioPropioResponseSchema }],
+    // El cuerpo es vacío y estricto: un campo de más es UNKNOWN_FIELD, como en cualquier escritura.
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DEUDA_LEGAJO DL-123',
+  },
   // ─── WP-07 · FRM (09v16.1 §22). Información profesional pertinente (RF-071) ─────────────────────
   {
     id: 'API-FRM-01',
@@ -1990,6 +2209,264 @@ const DEFINIDAS: readonly Operacion[] = [
     detalleDe422: DETALLE_DE_NUMEROS_FUERA_DE_LIMITES,
     fuente: '09v16.1 §22.8 · §36 · REG-06-211 · TEST-FRM-006 · DL-104 · DL-115',
   },
+  // ─── WP-NUTRICION-RECETAS · REC: recetas del profesional (DL-119) ────────────────────────────────
+  {
+    id: 'API-REC-01',
+    metodo: 'post',
+    ruta: '/nutrition/recipes',
+    resumen:
+      'Crear una receta propia (versión 1): ingredientes del catálogo por identidad y versión, con gramos o mililitros del estado indicado, porciones y pasos. La API calcula energía y macros con SUM_SOURCE_PER_100G_V1 y no acepta totales del cliente. Solo un profesional de Nutrición verificado y habilitado.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearRecetaRequestSchema,
+    exitos: [{ status: 201, schema: RecetaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED', 'CATALOG_REFERENCE_INVALID'] },
+    fuente: 'REG-06-135 inciso 2 · 06:4617-4621 · DEUDA_LEGAJO DL-119',
+  },
+  {
+    id: 'API-REC-02',
+    metodo: 'get',
+    ruta: '/nutrition/recipes',
+    resumen: 'Mis recetas (solo las propias), con su versión vigente, su cálculo y su imagen de referencia; la editada más recientemente primero.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeRecetasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DEUDA_LEGAJO DL-119',
+  },
+  {
+    id: 'API-REC-03',
+    metodo: 'get',
+    ruta: '/nutrition/recipes/{recipeId}',
+    resumen: 'Una receta propia con su versión vigente y el historial de sus versiones. Ajena o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: DetalleDeRecetaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DEUDA_LEGAJO DL-119',
+  },
+  {
+    id: 'API-REC-04',
+    metodo: 'patch',
+    ruta: '/nutrition/recipes/{recipeId}',
+    resumen:
+      'Editar una receta propia: emite una versión nueva e inmutable, recalculada en el servidor; exige expectedVersion. Los planes ya activados conservan la versión que tenían, y ningún registro cambia.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: EditarRecetaRequestSchema,
+    exitos: [{ status: 200, schema: RecetaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['VALIDATION_FAILED', 'CATALOG_REFERENCE_INVALID'] },
+    fuente: 'DEUDA_LEGAJO DL-119',
+  },
+  {
+    id: 'API-REC-05',
+    metodo: 'put',
+    ruta: '/nutrition/recipes/{recipeId}/image',
+    resumen:
+      'Asociar o reemplazar la imagen de referencia con un medio propio disponible de finalidad RECIPE_REFERENCE; exige expectedVersion. No toca ingredientes, versiones ni registros, y la historia de imágenes queda.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AsociarImagenDeRecetaRequestSchema,
+    exitos: [{ status: 200, schema: RecetaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['MEDIA_REFERENCE_INVALID'] },
+    fuente: 'REG-06-135 inciso 2 · 09v12 §24 · DEUDA_LEGAJO DL-119, DL-120',
+  },
+  {
+    id: 'API-REC-06',
+    metodo: 'delete',
+    ruta: '/nutrition/recipes/{recipeId}/image',
+    resumen: 'Retirar la imagen de referencia; exige expectedVersion por query. El medio no se borra y la historia queda.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    query: [{ nombre: 'expectedVersion', descripcion: 'La versión del recurso que se vio.', schema: { type: 'string' }, obligatorio: true }],
+    exitos: [{ status: 200, schema: RecetaResponseSchema }],
+    // El cuerpo es vacío y estricto: un campo de más es UNKNOWN_FIELD, como en cualquier escritura.
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DEUDA_LEGAJO DL-119, DL-120',
+  },
+  {
+    id: 'API-REC-07',
+    metodo: 'post',
+    ruta: '/nutrition/recipe-calculations',
+    resumen:
+      'Calcular sin guardar, para ver el cálculo mientras se edita: total y por porción con SUM_SOURCE_PER_100G_V1, con lo que falta por nutriente. No escribe nada; al guardar, el servidor vuelve a calcular.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: CalcularRecetaRequestSchema,
+    exitos: [{ status: 200, schema: CalculoDeRecetaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 422: ['VALIDATION_FAILED', 'CATALOG_REFERENCE_INVALID'] },
+    fuente: 'DEUDA_LEGAJO DL-119',
+  },
+  // ─── MED: medios privados (09v12 §24; 08 §21; DL-120) ───────────────────────────────────────────
+  {
+    id: 'API-MED-01',
+    metodo: 'post',
+    ruta: '/me/media/upload-intents',
+    resumen: `Intención de subida: finalidad, tipo y bytes declarados. Crea el medio pendiente y devuelve una ruta firmada de subida que vence a los ${LIMITES_DE_MEDIO.vigenciaDeSubidaSegundos / 60} minutos. RECIPE_REFERENCE: un profesional de Nutrición verificado y habilitado; EXERCISE_REFERENCE: uno de Entrenamiento verificado y habilitado, con autoría declarada; MEAL_EVIDENCE: un asesorado con A3 vigente, siempre PERSON_PROVIDED; con la exigencia de EVIDENCIA_VISUAL activa, además, con un plan de Nutrición vigente y el acto de ese vínculo vigente (si falta, 403 VISUAL_EVIDENCE_ACT_REQUIRED con el vínculo y la versión a mostrar). Crear la intención no es subir.`,
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: IntencionDeSubidaRequestSchema,
+    exitos: [{ status: 201, schema: IntencionDeSubidaResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN', 'VISUAL_EVIDENCE_ACT_REQUIRED'],
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['VALIDATION_FAILED', 'FILE_TYPE_NOT_ALLOWED', 'FILE_SIZE_NOT_ALLOWED', 'ACTIVE_PLAN_REQUIRED'],
+    },
+    detalleDe403: {
+      codigo: 'VISUAL_EVIDENCE_ACT_REQUIRED',
+      schema: DetalleDeEvidenciaVisualRequeridaSchema,
+      descripcion: 'el vínculo de Nutrición del plan vigente y la versión del texto a mostrar antes de registrar el acto (API-EVI-01 y 02). ACTION_FORBIDDEN no trae details.',
+    },
+    fuente: '09v12 §24 · 09v8 API-PRO-04 · 08 §21 · 08:395 · DEUDA_LEGAJO DL-120 y DL-125',
+  },
+  {
+    id: 'API-MED-02',
+    metodo: 'put',
+    ruta: '/media/uploads/{token}',
+    resumen: `Subir los bytes a la ruta firmada, con el tipo declarado: JPEG, PNG o WebP, hasta ${LIMITES_DE_MEDIO.bytesMaximos / 1024 / 1024} MB, de ${LIMITES_DE_MEDIO.ladoMinimo} a ${LIMITES_DE_MEDIO.ladoMaximo} px por lado. El servidor decodifica, orienta y recodifica en JPEG sin metadatos (EXIF, GPS, ICC). La misma subida repetida responde el mismo medio; una ruta vencida, alterada o ajena, 404.`,
+    autenticacion: 'SIGNED_URL',
+    idempotencia: false,
+    requestBinario: TipoDeImagenSchema.options,
+    exitos: [{ status: 200, schema: MedioResponseSchema }],
+    errores: { 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'], 409: ['INVALID_STATE_TRANSITION'], 422: ['FILE_TYPE_NOT_ALLOWED', 'FILE_SIZE_NOT_ALLOWED', 'FILE_CONTENT_INVALID'] },
+    fuente: '09v12 §24 · 08 §21 · 07 §25 · DEUDA_LEGAJO DL-120',
+  },
+  {
+    id: 'API-MED-03',
+    metodo: 'get',
+    ruta: '/media/{mediaId}/access',
+    resumen: `Ruta temporal de lectura de un medio disponible, que vence en ${LIMITES_DE_MEDIO.vigenciaDeLecturaSegundos / 60} minutos como máximo. Decide el PDP: la imagen de una receta, su profesional y el asesorado con un plan que la ofrece; la de un ejercicio, su profesional y el asesorado con un plan activado de ese profesional que lo incluye, con acceso de Entrenamiento vigente; la foto de una comida, su titular y el profesional del plan con vínculo, B2 y A3 vigentes y, con la exigencia de EVIDENCIA_VISUAL activa, el acto de ese vínculo vigente. Cada acceso queda auditado. Lo ajeno o inexistente: 404.`,
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: AccesoAMedioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v12 §24 · 08 §21 · 08:395 · DEUDA_LEGAJO DL-120 y DL-125',
+  },
+  {
+    id: 'API-MED-04',
+    metodo: 'get',
+    ruta: '/media/content/{token}',
+    resumen: 'Los bytes del medio (JPEG), sin caché. Una ruta vencida, alterada o de un medio suprimido: 404.',
+    autenticacion: 'SIGNED_URL',
+    idempotencia: false,
+    exitos: [{ status: 200, binario: 'image/jpeg' }],
+    // 09 §3.1: un parámetro de query desconocido es 400, también en una ruta firmada (la ruta se usa tal como llega).
+    errores: { 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v12 §24 · 08 §21 · DEUDA_LEGAJO DL-120',
+  },
+  {
+    id: 'API-MED-05',
+    metodo: 'delete',
+    ruta: '/me/media/{mediaId}',
+    resumen: 'Supresión a pedido de una foto propia de una comida: se borran los bytes y queda el registro, con su momento. El registro de la comida no cambia y deja de mostrar esa foto. Otro medio o uno ajeno: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    exitos: [{ status: 200, schema: MedioResponseSchema }],
+    // El cuerpo es vacío y estricto: un campo de más es UNKNOWN_FIELD, como en cualquier escritura.
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: '08:451 · 08 §21 · DEUDA_LEGAJO DL-120',
+  },
+  // ─── ING: registro de comidas v2 (DL-121), para la APK nueva ────────────────────────────────────
+  {
+    id: 'API-ING-01',
+    metodo: 'get',
+    ruta: '/me/nutrition/today/options',
+    resumen:
+      '«Hoy» con opciones: las comidas del día tipo, cada opción con su receta, su imagen de referencia, sus ingredientes con estado y los macros de las porciones del plan, calculados por la API desde la instantánea. Más los registros de hoy que no están anulados. Sin día tipo elegido entre varios, no elige uno en silencio.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [{ nombre: 'dayTypeId', descripcion: 'Día tipo elegido por el asesorado (DL-049).', schema: { type: 'string' } }],
+    exitos: [{ status: 200, schema: HoyConOpcionesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: '09v9:658-680 · REG-06-133 · DEUDA_LEGAJO DL-049, DL-121',
+  },
+  {
+    id: 'API-ING-02',
+    metodo: 'post',
+    ruta: '/me/nutrition/meal-records',
+    resumen:
+      'Registrar una comida: una opción del plan con el estado de sus cantidades (sin confirmar, porciones del plan confirmadas o informadas por ingrediente), o una comida diferente con descripción, fotos propias o ambas. Lo previsto nunca se registra como consumido. Un reintento no duplica; si ya hay un registro de esa comida ese día, uno equivalente devuelve el existente y uno distinto da 409.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RegistrarComidaRequestSchema,
+    exitos: [
+      { status: 201, schema: RegistroDeComidaResponseSchema },
+      { status: 200, schema: RegistroDeComidaResponseSchema },
+    ],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      403: ['ACTION_FORBIDDEN'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'EXECUTION_ALREADY_REGISTERED_INCOMPATIBLY'],
+      422: ['ACTIVE_PLAN_REQUIRED', 'NUTRITION_EXECUTION_INVALID', 'MEDIA_REFERENCE_INVALID'],
+    },
+    fuente: '09v9:684-746 · 09v9 §28 · REG-06-133 · DEUDA_LEGAJO DL-049, DL-050, DL-121',
+  },
+  {
+    id: 'API-ING-03',
+    metodo: 'get',
+    ruta: '/nutrition/meal-records/{recordId}',
+    resumen: 'Un registro de comida en la forma v2: estado de las cantidades, vista efectiva de su rectificación, anulación, fotos y macros consumidos cuando se pueden calcular. Lo ven su titular y el profesional del plan. Ajeno o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: RegistroDeComidaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v9:750-756 · REG-06-133 · DEUDA_LEGAJO DL-121',
+  },
+  {
+    id: 'API-ING-04',
+    metodo: 'get',
+    ruta: '/me/nutrition/meal-records',
+    resumen: 'Mis registros de comidas en la forma v2, del más reciente al más viejo, con los anulados marcados como tales; por período de fechas locales. Exige A3 vigente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'from', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' } },
+      { nombre: 'to', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' } },
+      LIMIT,
+      CURSOR,
+    ],
+    exitos: [{ status: 200, schema: ListaDeRegistrosDeComidaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'B10-05 NUT-11 · DEUDA_LEGAJO DL-055, DL-121',
+  },
+  {
+    id: 'API-ING-05',
+    metodo: 'post',
+    ruta: '/nutrition/meal-records/{recordId}/consumed-quantities',
+    resumen:
+      'Completar o corregir las cantidades consumidas de una opción registrada: una rectificación nueva, de solo agregar, con el estado y las cantidades; la vista efectiva es la última. Exige expectedVersion. Solo el titular; un registro anulado no se rectifica.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RectificarCantidadesRequestSchema,
+    exitos: [{ status: 201, schema: RegistroDeComidaResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      403: ['ACTION_FORBIDDEN'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'INVALID_STATE_TRANSITION'],
+      422: ['NUTRITION_EXECUTION_INVALID'],
+    },
+    fuente: '06:1422-1462 inciso 4 · DEUDA_LEGAJO DL-050, DL-121',
+  },
+  {
+    id: 'API-ING-06',
+    metodo: 'post',
+    ruta: '/nutrition/meal-records/{recordId}/annulment',
+    resumen:
+      'Deshacer un registro propio: una anulación auditable, sin borrar. Deja de contar en el día, el contraste, la revisión, la cartera y el tablero, y libera la comida para volver a registrarla. Exige expectedVersion; anular dos veces: 409.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AnularRegistroRequestSchema,
+    exitos: [{ status: 201, schema: RegistroDeComidaResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      403: ['ACTION_FORBIDDEN'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'INVALID_STATE_TRANSITION'],
+    },
+    fuente: '06:1422-1462 inciso 4 · B10-07 · DEUDA_LEGAJO DL-050, DL-121',
+  },
 ];
 
 /**
@@ -2010,6 +2487,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-CAL-03',
   'API-REL-06',
   'API-CON-01',
+  'API-EVI-01',
   'API-NUT-02',
   'API-NUT-03',
   'API-NUT-05',
@@ -2028,11 +2506,19 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-TRN-19',
   'API-TRN-21',
   'API-TRN-23',
+  'API-SER-01',
+  'API-SER-02',
+  'API-TIE-02',
+  'API-TIE-03',
   'API-FRM-04',
   'API-FRM-05',
   'API-FRM-06',
+  'API-MED-03',
+  'API-ING-03',
 ]);
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-CON-04', 'API-CON-08', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05']);
+// API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
+// API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05', 'API-MED-02']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };
@@ -2074,14 +2560,24 @@ export function documentoOpenApi(): Record<string, unknown> {
       description: 'Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).',
       schema: { type: 'string', enum: ['WEB', 'APK'] },
     });
+    parametros.push({
+      name: HEADER_DE_CAPACIDADES,
+      in: 'header',
+      required: false,
+      description:
+        'Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.',
+      schema: { type: 'string', maxLength: 256 },
+    });
     const respuestas: Record<string, unknown> = {};
     for (const exito of op.exitos) {
-      respuestas[exito.status] = exito.schema
-        ? { description: 'Éxito', content: { 'application/json': { schema: aJson(exito.schema) } } }
-        : { description: 'Éxito, sin cuerpo' };
+      respuestas[exito.status] = exito.binario
+        ? { description: 'Éxito', content: { [exito.binario]: { schema: { type: 'string', contentMediaType: exito.binario } } } }
+        : exito.schema
+          ? { description: 'Éxito', content: { 'application/json': { schema: aJson(exito.schema) } } }
+          : { description: 'Éxito, sin cuerpo' };
     }
     for (const [status, codigos] of Object.entries(conComunes(op.errores))) {
-      const detalle = status === '422' ? op.detalleDe422 : undefined;
+      const detalle = status === '422' ? op.detalleDe422 : status === '403' ? op.detalleDe403 : undefined;
       const envelope = { $ref: '#/components/schemas/ErrorEnvelope' };
       respuestas[status] = {
         description: `ErrorEnvelope: ${(codigos ?? []).join(' | ')}${detalle ? `. ${detalle.codigo}: ${detalle.descripcion}` : ''}`,
@@ -2100,10 +2596,13 @@ export function documentoOpenApi(): Record<string, unknown> {
         operationId: op.id,
         summary: op.resumen,
         description: `Fuente: ${op.fuente}. AuthN: ${op.autenticacion}.`,
-        security: op.autenticacion === 'PUBLIC' ? [] : [{ sesion: [] }],
+        security: op.autenticacion === 'PUBLIC' || op.autenticacion === 'SIGNED_URL' ? [] : [{ sesion: [] }],
         parameters: parametros,
         ...(op.request
           ? { requestBody: { required: op.requestOpcional !== true, content: { 'application/json': { schema: aJson(op.request) } } } }
+          : {}),
+        ...(op.requestBinario
+          ? { requestBody: { required: true, content: Object.fromEntries(op.requestBinario.map((t) => [t, { schema: { type: 'string', contentMediaType: t } }])) } }
           : {}),
         responses: respuestas,
       },
@@ -2113,10 +2612,10 @@ export function documentoOpenApi(): Record<string, unknown> {
     openapi: '3.1.0',
     info: {
       title:
-        'BE API — WP-02 Identidad y sesiones · WP-03 Vínculo, consentimiento y PDP · WP-04 Circuito nutricional · WP-05 Antropometría, métodos y cálculos · WP-06 Circuito de entrenamiento · WP-07 Información profesional pertinente · WP-08 Integraciones P0',
+        'BE API — WP-02 Identidad y sesiones · WP-03 Vínculo, consentimiento y PDP · WP-04 Circuito nutricional · WP-05 Antropometría, métodos y cálculos · WP-06 Circuito de entrenamiento · WP-07 Información profesional pertinente · WP-08 Integraciones P0 · Recetas, medios privados y registro de comidas v2',
       version: '0.11.1',
       description:
-        'Generado desde @be/domain (contratos.ts, contratos-vinculo.ts, contratos-nutricion.ts, contratos-antropometria.ts, contratos-calculo.ts, contratos-entrenamiento.ts, contratos-formularios.ts, contratos-procedencia-externa.ts y contratos-integraciones.ts). No editar a mano.',
+        'Generado desde @be/domain (contratos.ts, contratos-vinculo.ts, contratos-nutricion.ts, contratos-antropometria.ts, contratos-calculo.ts, contratos-entrenamiento.ts, contratos-formularios.ts, contratos-procedencia-externa.ts, contratos-integraciones.ts, contratos-recetas.ts, contratos-medios.ts y contratos-registro-de-comidas.ts). No editar a mano.',
     },
     servers: [{ url: '/api/v1' }],
     components: {

@@ -44,10 +44,34 @@ export type Ruta =
   | { readonly nombre: 'plan-actual'; readonly desde?: Ruta }
   | { readonly nombre: 'registros-nutricionales'; readonly desde?: Ruta }
   | { readonly nombre: 'registro-nutricional'; readonly id: string; readonly desde?: Ruta }
+  // WP-NUTRICION-RECETAS: el detalle de una opción de una comida (`id` es la opción). Con `registroId`, completa o
+  // corrige las cantidades de ese registro; sin él, registra.
+  | { readonly nombre: 'opcion-de-comida'; readonly id: string; readonly comidaId?: string; readonly registroId?: string; readonly desde?: Ruta }
+  // «Comí algo diferente», con el contexto de la comida y del día que se estaba viendo en Hoy.
+  | {
+      readonly nombre: 'comida-diferente';
+      readonly comidaId: string;
+      readonly comida: string;
+      readonly fecha: string;
+      readonly planId: string;
+      readonly diaTipoId: string;
+      readonly desde?: Ruta;
+    }
   | { readonly nombre: 'historial-de-entrenamiento'; readonly desde?: Ruta }
   | { readonly nombre: 'plan-de-entrenamiento'; readonly id: string; readonly desde?: Ruta }
   | { readonly nombre: 'mi-solicitud'; readonly id: string; readonly desde?: Ruta }
-  | { readonly nombre: 'sesion-de-entrenamiento'; readonly draftId: string; readonly sesion: SesionDeOcurrencia; readonly fecha: string; readonly desde?: Ruta }
+  // WP-ENTRENAMIENTO-SERIES: la sesión enfocada. `sesion` es la de «Hoy» (API-TRN-14), que se muestra mientras llega
+  // API-SER-02; `modo` dice si lleva cronómetros (hoy) o no (otro día: el pasado no se cronometra).
+  | {
+      readonly nombre: 'sesion-de-entrenamiento';
+      readonly draftId: string;
+      readonly sesion?: SesionDeOcurrencia;
+      readonly fecha: string;
+      readonly occurrenceId?: string;
+      readonly modo?: 'en-vivo' | 'otro-dia';
+      readonly etiqueta?: string;
+      readonly desde?: Ruta;
+    }
   | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string; readonly desde?: Ruta };
 
 /** Por qué termina la sesión en el APK; cada motivo tiene su aviso en App.tsx. */
@@ -97,6 +121,15 @@ export function esRaiz(ruta: Ruta): boolean {
   return ZONAS.some((z) => z.ruta.nombre === ruta.nombre);
 }
 
+/**
+ * Las pantallas que no muestran la barra inferior (WP-ENTRENAMIENTO-SERIES §7.2): la sesión enfocada, para que la tabla,
+ * el descanso y sus acciones tengan la pantalla entera. Se sale con «Volver» de la cabecera o con el botón atrás, que
+ * conservan el estado: el entrenamiento sigue guardado en el teléfono.
+ */
+export function sinBarraInferior(ruta: Ruta): boolean {
+  return ruta.nombre === 'sesion-de-entrenamiento';
+}
+
 /** Si una raíz trae un pedido de una sola vez (una acción, una vista, una medida): abre arriba, no donde se la dejó. */
 export function traePedido(ruta: Ruta): boolean {
   return (ruta.nombre === 'hoy' && ruta.accion !== undefined) || (ruta.nombre === 'mi-evolucion' && (ruta.vista !== undefined || ruta.metrica !== undefined));
@@ -111,6 +144,8 @@ export function moduloDe(ruta: Ruta): Modulo | null {
     case 'plan-actual':
     case 'registros-nutricionales':
     case 'registro-nutricional':
+    case 'opcion-de-comida':
+    case 'comida-diferente':
       return 'nutricion';
     case 'entrenamiento':
     case 'historial-de-entrenamiento':
@@ -199,6 +234,8 @@ function madre(ruta: Ruta): Ruta | null {
       return { nombre: 'entrenamiento' };
     case 'plan-actual':
     case 'registros-nutricionales':
+    case 'opcion-de-comida':
+    case 'comida-diferente':
       return { nombre: 'hoy' };
     case 'registro-nutricional':
       return { nombre: 'registros-nutricionales' };
@@ -229,6 +266,7 @@ function identificador(ruta: Ruta): string | null {
   if ('id' in ruta) return ruta.id;
   if ('vinculoId' in ruta) return ruta.vinculoId;
   if ('draftId' in ruta) return ruta.draftId;
+  if (ruta.nombre === 'comida-diferente') return ruta.comidaId;
   return null;
 }
 
@@ -298,11 +336,13 @@ export function textoDeVolverA(destino: Ruta): string {
     case 'privacidad':
       return 'Volver a Privacidad';
     case 'hoy':
-      return 'Volver a Tu plan de hoy';
+      return 'Volver a Nutrición';
     case 'entrenamiento':
-      return 'Volver a Entrenamiento de hoy';
+      return 'Volver a Entrenamiento';
     case 'registros-nutricionales':
       return 'Volver a Registros';
+    case 'registro-nutricional':
+      return 'Volver al registro';
     case 'mi-evolucion':
       return 'Volver a Mi evolución';
     case 'mis-solicitudes':

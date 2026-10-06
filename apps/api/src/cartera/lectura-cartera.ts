@@ -160,7 +160,8 @@ async function dePlanificacion(tx: Tx, procesos: ProcesoService, profesionalId: 
   const donde = { asesoradoId, versionDePlan: { plan: { profesionalId } }, ...(enElPeriodo(periodo) ? { momentoDeOcurrencia: enElPeriodo(periodo) } : {}) };
   const registros =
     alcance === 'NUTRICION'
-      ? await tx.ingestaNutricional.aggregate({ where: donde, _count: { _all: true }, _max: { momentoDeOcurrencia: true } })
+      ? // DL-121: una ingesta anulada por su titular no es actividad.
+        await tx.ingestaNutricional.aggregate({ where: { ...donde, anulacion: { is: null } }, _count: { _all: true }, _max: { momentoDeOcurrencia: true } })
       : await tx.ejecucionDeEntrenamiento.aggregate({ where: donde, _count: { _all: true }, _max: { momentoDeOcurrencia: true } });
   return [hechos, { lastActivityAt: registros._max.momentoDeOcurrencia?.toISOString() ?? null, activityCount: registros._count._all }];
 }

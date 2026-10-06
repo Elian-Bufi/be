@@ -2357,3 +2357,186 @@ html:has(.acciones--fijas) {
 .estado-vacio .acciones {
   margin-bottom: 0;
 }
+
+/* ─── Recetas (DL-119) y fotos de un registro (DL-120) ─────────────────────────────────────────────── */
+
+/* La imagen de referencia: el ancho de la columna, con la proporción de la foto, sin estirarla. */
+.imagen-de-receta {
+  display: block;
+  width: 100%;
+  max-width: 28rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--borde);
+  background: var(--fondo-suave);
+}
+
+.imagen-de-receta--chica {
+  width: 6.5rem;
+  max-width: none;
+  flex: none;
+}
+
+/* Sin imagen o si la descarga falla: el ícono ocupa el mismo lugar y el resto sigue a la vista. */
+.imagen-de-receta--respaldo {
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  color: var(--tenue);
+}
+
+/* Objetivos por serie (DL-122): cada serie en su grupo, con sus campos alineados que bajan de fila si no entran. */
+.serie-del-editor {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem 0.4rem;
+  margin: 0 0 0.75rem;
+}
+
+.serie-del-editor legend {
+  font-weight: 700;
+  padding: 0 0.25rem;
+}
+
+.campos-de-la-serie {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+  gap: 0.5rem 0.75rem;
+  align-items: start;
+}
+
+.campos-de-la-serie .campo {
+  margin: 0;
+}
+
+/* «Sin objetivo en esta serie»: la casilla va debajo del campo, con su propio renglón. */
+.campo__casilla {
+  display: block;
+  margin-top: 0.3rem;
+  font-weight: 400;
+  font-size: 0.92rem;
+}
+
+/* Los tiempos de una sesión (DL-124): cada tiempo con su valor y su certeza, en dos columnas que bajan en el teléfono. */
+.datos-de-tiempo {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3rem 1rem;
+  margin: 0.5rem 0;
+}
+
+.datos-de-tiempo dt {
+  font-weight: 700;
+}
+
+.datos-de-tiempo dd {
+  margin: 0;
+}
+
+@media (max-width: 30rem) {
+  .datos-de-tiempo {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tabla--objetivos caption {
+  text-align: left;
+  font-weight: 700;
+  padding-bottom: 0.25rem;
+}
+
+/* La imagen de un ejercicio (DL-123): vertical, entera y sin recortar la postura. */
+.imagen-de-ejercicio {
+  max-width: 18rem;
+  aspect-ratio: 5 / 6;
+  object-fit: contain;
+}
+
+.imagen-de-ejercicio.imagen-de-receta--chica {
+  width: 5rem;
+}
+
+.figura-de-receta {
+  margin: 0.5rem 0;
+}
+
+.figura-de-receta figcaption {
+  margin-top: 0.35rem;
+}
+
+.vista-previa {
+  border: 1px dashed var(--borde-control);
+  border-radius: 10px;
+  padding: 0.85rem;
+  margin: 0.5rem 0;
+}
+
+.tarjeta-de-receta {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.ingredientes-de-receta,
+.pasos-de-receta {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+/* Un ingrediente de una receta: su nombre como título del grupo y tres campos alineados que bajan de fila si no entran. */
+.ingrediente-de-receta {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem 0.4rem;
+  margin: 0;
+}
+
+.ingrediente-de-receta legend {
+  font-weight: 700;
+  padding: 0 0.25rem;
+}
+
+.campos-del-ingrediente {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+  gap: 0.5rem 0.75rem;
+  align-items: end;
+}
+
+.campos-del-ingrediente .campo {
+  margin: 0;
+}
+
+.campos-del-ingrediente select {
+  width: 100%;
+}
+
+.tabla--calculo td {
+  white-space: nowrap;
+}
+
+/* Las fotos de un registro, en grilla: se adaptan al ancho del teléfono. */
+.fotos-del-registro {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(9rem, 100%), 1fr));
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.fotos-del-registro .imagen-de-receta {
+  max-width: none;
+}
+
+@media (max-width: 40rem) {
+  .tarjeta-de-receta {
+    flex-direction: column;
+  }
+
+  .imagen-de-receta--chica {
+    width: 100%;
+  }
+}

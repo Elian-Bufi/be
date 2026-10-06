@@ -1,0 +1,32 @@
+﻿ID,Área,Caso,Resultado esperado,Nivel,Estado inicial
+N01,Nutrición,Contraste de comida diferente,"Texto contextual claro; fuera de prescripción, sin falso cumplimiento",API y web,PENDIENTE EN BE
+N02,Nutrición,Persistencia/permiso de medios,Reutilizar evidencia; repetir si cambió; no afirmar prueba remota,Local / remoto separado,PENDIENTE EN BE
+N03,Seguridad,Arreglo mínimo de dependencia,"Auditoría pertinente y PR a main, sin merge/despliegue",CI,PENDIENTE EN BE
+P01,Profesional,Configurar objetivos distintos por serie,"3 rangos, 3 cargas, 3 RIR y descansos devueltos sin alteración",Web y API,PENDIENTE EN BE
+P02,Profesional,Objetivos ausentes y heredados,No convertir null a cero; resolución inequívoca,Dominio y API,PENDIENTE EN BE
+P03,Profesional,Cargar las tres imágenes reales,Persisten y aparecen en el móvil autorizado,Web → API → móvil,PENDIENTE EN BE
+P04,Medios,Sin foto/fallo/archivo inválido,"Respaldo visible, registro no bloqueado, validación servidor",Web y móvil,PENDIENTE EN BE
+P05,Permisos,Otro usuario/otro profesional,No acceso o edición fuera de vínculo/autoridad,API,PENDIENTE EN BE
+M01,Registro,Placeholders vacíos,Nunca se envían como datos realizados,Componente y API,PENDIENTE EN BE
+M02,Registro,RIR null/0/decimal y carga 0,Persisten con significado distinto,Dominio/API/UI,PENDIENTE EN BE
+M03,Registro,Datos parciales o todo vacío,"Semántica explícita, sin completar desde plan",Móvil y API,PENDIENTE EN BE
+M04,Registro,Idempotencia y conflicto de versión,Un efecto; sin pisar silenciosamente,API y móvil,PENDIENTE EN BE
+M05,Registro,Ir a técnica y volver,"Misma fila, borrador, objetivo y ejercicio activo",Móvil,PENDIENTE EN BE
+T01,Tiempo,Sesión/pausa/ejercicios,Fixture 900/120/780 y 440/330/10,Servicio con reloj inyectable,PENDIENTE EN BE
+T02,Tiempo,Descanso manual,"90/90, 135/120, sin objetivo, temprano y tardío",Servicio y móvil,PENDIENTE EN BE
+T03,Tiempo,Series medidas y no medidas,40 s cuando se midió; null cuando no,Servicio y API,PENDIENTE EN BE
+T04,Tiempo,Solapamientos/cierre abierto,"Resolución visible, sin intervalos inventados",Servicio y UI,PENDIENTE EN BE
+T05,Tiempo,Eventos repetidos/tardíos,"Deduplicación, orden causal, snapshot estable",Servicio y API,PENDIENTE EN BE
+T06,Tiempo,Reloj cambia/proceso termina,Medido vs estimado vs incompleto diferenciados,Android pendiente si falta dispositivo,PENDIENTE EN BE
+T07,Tiempo,Pantalla bloqueada/segundo plano,No reinicia ni suma ticks perdidos,Android,PENDIENTE EN BE
+T08,Tiempo,Más de un dispositivo,Conflicto explícito; no doble sesión o suma falsa,API,PENDIENTE EN BE
+H01,Profesional,Ver plan frente a realizado,"Objetivos históricos, RIR, tiempos y certeza",Web y API,PENDIENTE EN BE
+H02,Historia,Editar plan/imagen/rectificar,Conserva sentido histórico y trazabilidad,API y web,PENDIENTE EN BE
+R01,Reconexión,Timeout/red/API caída,No logout por red; reintento y borrador conservado,Móvil,PENDIENTE EN BE
+R02,Reconexión,Guardado local y sincronización,Estados honestos y un solo registro efectivo,Servicio y móvil,PENDIENTE EN BE
+R03,Privacidad,Cambio de cuenta,No muestra ni sincroniza borrador de otro,Móvil y API,PENDIENTE EN BE
+C01,Compatibilidad,Contratos APK anteriores,Esquemas estrictos siguen válidos,API y regresión,PENDIENTE EN BE
+V01,Visual,18 configuraciones,360/390/412 ×2 temas ×3 escalas; nada inaccesible,Render componentes,PENDIENTE EN BE
+V02,Accesibilidad,Teclado/TalkBack/safe area,Orden/labels/acciones alcanzables; sin anuncio cada segundo,Android,PENDIENTE EN BE
+V03,Identidad,Logo y superficies reales,Sin logo generado ni placa luminosa recortada,Revisión visual,PENDIENTE EN BE
+E01,Entrega,Informe y prueba punta a punta,"Separar local, remoto y Android; datos persistidos",Evidencia,PENDIENTE EN BE

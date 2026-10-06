@@ -34,10 +34,11 @@ import { PlantillasDeEntrenamientoService } from './plantillas.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esToken } from '../vinculo/lectura';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
+import { capacidadDelClienteRequerida, CompatibilidadDeClientesService, entregaRetenida, exigeObjetivosPorSerie, seRetieneLaEntrega } from './compatibilidad-de-clientes';
 import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
 import { registrarEventoDeEntrenamiento } from './eventos';
-import { INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, seguimientoAbierto, versionDePlanApi, type VersionConPlan } from './lectura-entrenamiento';
+import { contenidoDeLaVersion, INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, seguimientoAbierto, versionDePlanApi, type VersionConPlan } from './lectura-entrenamiento';
 
 type Tx = Prisma.TransactionClient;
 
@@ -75,6 +76,8 @@ const objetivoNoAplicable = () =>
  * - La activación es la transacción del 09 (09v10:807-823): versión esperada, PDP, validación, instantánea **antes**
  *   de la vigencia, vigencia única, Proceso nuevo con capacidad o continuidad, hecho y auditoría. Si algo falla, no
  *   cambia nada. El Proceso es el mismo de nutrición (06:5164), desatado de ese dominio en la base (§9.7).
+ * - Un plan con objetivos distintos por serie se activa solo si su titular ya usó una app que los muestra, y al titular
+ *   se le entrega solo a un cliente que los muestra (DL-122, precierre del 2026-10-06; `compatibilidad-de-clientes.ts`).
  */
 @Injectable()
 export class PlanesDeEntrenamientoService {
@@ -85,6 +88,7 @@ export class PlanesDeEntrenamientoService {
     private readonly evaluaciones: EvaluacionesDeEntrenamientoService,
     private readonly procesos: ProcesoService,
     private readonly plantillas: PlantillasDeEntrenamientoService,
+    private readonly compatibilidad: CompatibilidadDeClientesService,
   ) {}
 
   // ─── API-TRN-07 ────────────────────────────────────────────────────────────────────────────
@@ -250,6 +254,10 @@ export class PlanesDeEntrenamientoService {
    * Alcanza con su A3 vigente, como en nutrición y antropometría (DL-089 opción A; 08:199, 08:58, 08:406). Lo que
    * *opera* sobre el plan vigente —«Hoy», abrir un borrador, confirmar, corregir— sigue bajo el PDP de su profesional
    * (UC-P17 E03).
+   *
+   * Una versión con objetivos distintos por serie no se le entrega a un cliente que no los muestra: las APK instaladas
+   * dibujarían los generales como si fueran los de cada serie. Es el mismo 404 que lo inexistente, y el motivo queda en la
+   * auditoría (DL-122, precierre del 2026-10-06).
    */
   consultar(actor: ActorAutenticado, planId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<{ data: VersionDePlanDeEntrenamiento }> {
     sinParametrosDeQuery(query);
@@ -267,6 +275,7 @@ export class PlanesDeEntrenamientoService {
         if (titular === actor.identidadId) {
           if (v.estado !== 'ACTIVADA') throw this.ejecutor.noRevelable({ operacion: 'API-TRN-09', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
           await exigirA3Vigente(tx, actor.identidadId);
+          if (seRetieneLaEntrega(ctx, contenidoDeLaVersion(v, new Map()).contenido)) throw entregaRetenida();
         } else {
           await this.decidir(tx, 'API-TRN-09', actor, actor.identidadId, titular, recurso, ctx);
           if (v.plan.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-09', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
@@ -375,6 +384,10 @@ export class PlanesDeEntrenamientoService {
         // 5. Validar (UC-I04).
         const { issues, catalogo } = await this.problemasParaActivar(tx, v);
         if (issues.length > 0) throw noLista(issues);
+        // 5 bis. Un plan con objetivos distintos por serie, solo si su titular ya usó una app que los muestra: las instaladas
+        // mostrarían los generales (DL-122, precierre del 2026-10-06). Después de la versión esperada, el PDP y la validación,
+        // y antes de la instantánea: el 409 no deja nada cambiado, y un reintento con la misma clave vuelve a decidir.
+        if (exigeObjetivosPorSerie(v.contenido) && !(await this.compatibilidad.titularCapaz(tx, v.asesoradoId))) throw capacidadDelClienteRequerida();
         // 6. Preservar la instantánea ANTES de la vigencia (REG-06-104).
         const instantanea = construirInstantaneaDeEntrenamiento(v.contenido, catalogo);
         const evaluacion = evaluarTransicionDePlanDeEntrenamiento(v.estado, { transicion: 'ActivarVersion', borradorValido: true, instantaneaPreservable: instantanea !== null });

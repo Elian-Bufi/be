@@ -1,0 +1,269 @@
+{
+  "schemaVersion": "be-handoff-timing-1",
+  "notice": "Offsets en segundos. Fuente/calidad explícitas; no son timestamps de una sesión real. El cruce 86400 es una frontera de fixture, no una regla de timezone.",
+  "cases": [
+    {
+      "id": "T01",
+      "kind": "interval",
+      "label": "Serie medida en el mismo proceso",
+      "start": 20,
+      "end": 60,
+      "source": "monotonic",
+      "expected": {
+        "seconds": 40,
+        "quality": "medido"
+      }
+    },
+    {
+      "id": "T02",
+      "kind": "interval",
+      "label": "Registro final sin comienzo medido",
+      "start": null,
+      "end": 400,
+      "source": "monotonic",
+      "expected": {
+        "seconds": null,
+        "quality": "sin_dato"
+      }
+    },
+    {
+      "id": "T03",
+      "kind": "interval",
+      "label": "Inicio sin fin",
+      "start": 20,
+      "end": null,
+      "source": "monotonic",
+      "expected": {
+        "seconds": null,
+        "quality": "incompleto"
+      }
+    },
+    {
+      "id": "T04",
+      "kind": "rest",
+      "start": 65,
+      "end": 155,
+      "target": 90,
+      "expected": {
+        "seconds": 90,
+        "differenceSeconds": 0
+      }
+    },
+    {
+      "id": "T05",
+      "kind": "rest",
+      "start": 215,
+      "end": 350,
+      "target": 120,
+      "expected": {
+        "seconds": 135,
+        "differenceSeconds": 15
+      }
+    },
+    {
+      "id": "T06",
+      "kind": "rest",
+      "start": 0,
+      "end": 60,
+      "target": 90,
+      "expected": {
+        "seconds": 60,
+        "differenceSeconds": -30
+      }
+    },
+    {
+      "id": "T07",
+      "kind": "rest",
+      "start": 0,
+      "end": 75,
+      "target": null,
+      "expected": {
+        "seconds": 75,
+        "differenceSeconds": null
+      }
+    },
+    {
+      "id": "T08",
+      "kind": "session",
+      "start": 0,
+      "end": 900,
+      "pauses": [
+        [
+          500,
+          620
+        ]
+      ],
+      "exerciseSpans": [
+        {
+          "exercise": "A",
+          "start": 10,
+          "end": 450
+        },
+        {
+          "exercise": "B",
+          "start": 450,
+          "end": 900
+        }
+      ],
+      "expected": {
+        "elapsedSeconds": 900,
+        "pauseSeconds": 120,
+        "withoutPausesSeconds": 780,
+        "exerciseSeconds": {
+          "A": 440,
+          "B": 330
+        },
+        "unassignedSeconds": 10
+      }
+    },
+    {
+      "id": "T09",
+      "kind": "session",
+      "start": 0,
+      "end": 300,
+      "pauses": [],
+      "exerciseSpans": [
+        {
+          "exercise": "A",
+          "start": 0,
+          "end": 100
+        },
+        {
+          "exercise": "B",
+          "start": 100,
+          "end": 200
+        },
+        {
+          "exercise": "A",
+          "start": 200,
+          "end": 300
+        }
+      ],
+      "expected": {
+        "elapsedSeconds": 300,
+        "pauseSeconds": 0,
+        "withoutPausesSeconds": 300,
+        "exerciseSeconds": {
+          "A": 200,
+          "B": 100
+        },
+        "unassignedSeconds": 0
+      }
+    },
+    {
+      "id": "T10",
+      "kind": "duplicates",
+      "events": [
+        {
+          "id": "r1:start",
+          "type": "start",
+          "offset": 65
+        },
+        {
+          "id": "r1:start",
+          "type": "start",
+          "offset": 65
+        },
+        {
+          "id": "r1:end",
+          "type": "end",
+          "offset": 155
+        },
+        {
+          "id": "r1:end",
+          "type": "end",
+          "offset": 155
+        }
+      ],
+      "expected": {
+        "uniqueEvents": 2,
+        "restSeconds": 90
+      }
+    },
+    {
+      "id": "T11",
+      "kind": "interval",
+      "label": "Reloj civil retrocede; monotónico válido",
+      "start": 10,
+      "end": 50,
+      "civilStart": 1000,
+      "civilEnd": 940,
+      "source": "monotonic",
+      "expected": {
+        "seconds": 40,
+        "quality": "medido"
+      }
+    },
+    {
+      "id": "T12",
+      "kind": "interval",
+      "label": "Recuperación solo por reloj civil: estimación, no medición",
+      "start": 0,
+      "end": 600,
+      "source": "recovered_wall_clock",
+      "expected": {
+        "seconds": 600,
+        "quality": "estimado"
+      }
+    },
+    {
+      "id": "T13",
+      "kind": "interval",
+      "label": "Proceso murió sin cierre conocido",
+      "start": 0,
+      "end": null,
+      "reopenedAt": 3600,
+      "source": "recovered_wall_clock",
+      "expected": {
+        "seconds": null,
+        "quality": "incompleto"
+      }
+    },
+    {
+      "id": "T14",
+      "kind": "interval",
+      "label": "Tiempo negativo inconsistente",
+      "start": 100,
+      "end": 80,
+      "source": "monotonic",
+      "expected": {
+        "seconds": null,
+        "quality": "invalido"
+      }
+    },
+    {
+      "id": "T15",
+      "kind": "rest",
+      "start": null,
+      "end": null,
+      "target": 90,
+      "expected": {
+        "seconds": null,
+        "differenceSeconds": null
+      }
+    },
+    {
+      "id": "T16",
+      "kind": "session",
+      "start": 86370,
+      "end": 86490,
+      "pauses": [],
+      "exerciseSpans": [
+        {
+          "exercise": "A",
+          "start": 86370,
+          "end": 86490
+        }
+      ],
+      "expected": {
+        "elapsedSeconds": 120,
+        "pauseSeconds": 0,
+        "withoutPausesSeconds": 120,
+        "exerciseSeconds": {
+          "A": 120
+        },
+        "unassignedSeconds": 0
+      }
+    }
+  ]
+}

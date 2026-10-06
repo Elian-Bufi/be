@@ -1,0 +1,24 @@
+{
+  "controles": [
+    {
+      "nombre": "después de reiniciar la API, la foto de «Pollo con arroz y verduras» se lee igual (mismo SHA-256)",
+      "ok": true,
+      "detalle": "200 9c3073e6f9a6c966 vs 9c3073e6f9a6c966"
+    },
+    {
+      "nombre": "después de reiniciar la API, la foto de «Salmón con papa y brócoli» se lee igual (mismo SHA-256)",
+      "ok": true,
+      "detalle": "200 484b38cb4ffbd825 vs 484b38cb4ffbd825"
+    },
+    {
+      "nombre": "después de reiniciar la API, la foto de «Lentejas con arroz y verduras» se lee igual (mismo SHA-256)",
+      "ok": true,
+      "detalle": "200 31456ff431e3a8f0 vs 31456ff431e3a8f0"
+    },
+    {
+      "nombre": "después de reiniciar la API, la foto privada de la comida diferente se lee igual (mismo SHA-256)",
+      "ok": true,
+      "detalle": "200 4a474ac4dde427b6 vs 4a474ac4dde427b6"
+    }
+  ]
+}

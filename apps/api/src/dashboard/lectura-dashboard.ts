@@ -53,8 +53,9 @@ export async function resumenDeNutricion(tx: Tx, procesos: ProcesoService, profe
     ultimaRevision(tx, profesionalId, asesoradoId, 'NUTRICION'),
   ]);
 
+  // DL-121: una ingesta anulada por su titular deja de contar.
   const ingestas = await tx.ingestaNutricional.aggregate({
-    where: { asesoradoId, versionDePlan: { plan: { profesionalId } }, ...(enElPeriodo(periodo) ? { momentoDeOcurrencia: enElPeriodo(periodo) } : {}) },
+    where: { asesoradoId, versionDePlan: { plan: { profesionalId } }, anulacion: { is: null }, ...(enElPeriodo(periodo) ? { momentoDeOcurrencia: enElPeriodo(periodo) } : {}) },
     _count: { _all: true },
     _max: { momentoDeOcurrencia: true },
   });

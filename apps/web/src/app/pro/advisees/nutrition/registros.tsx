@@ -9,7 +9,7 @@
  * - Una comida fuera del plan se estructura como «Estimación profesional»: la descripción original queda en solo
  *   lectura y se conserva (INV-06-131). El botón dice «Agregar estimación», no «Corregir lo que comió».
  */
-import { cantidad, COPY_NUTRICION, ETIQUETA_DE_UNIDAD, leerNumero, motivoDeNumeroIlegible, type ContextoDeRevisionResponse, type ElementoDeCatalogo, type Ingesta } from '@be/domain';
+import { cantidad, COPY_NUTRICION, COPY_REGISTRO_PARA_EL_PROFESIONAL, ETIQUETA_DE_UNIDAD, leerNumero, motivoDeNumeroIlegible, type ContextoDeRevisionResponse, type ElementoDeCatalogo, type Ingesta } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
 import { Aviso, Campo } from '../../../../components/formulario';
@@ -17,6 +17,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { FiltroDePeriodo, type Periodo } from '../periodo';
+import { VerRegistro } from './detalle-de-registro';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 
 type Contexto = ContextoDeRevisionResponse['data'];
@@ -50,6 +51,8 @@ export function VistaDeRegistros() {
 
 function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () => void }) {
   const porId = new Map(contexto.registeredIntakes.map((i) => [i.executionId, i]));
+  // DL-121: en qué comida del plan se registró cada comida diferente, para nombrarla también en «Fuera del plan».
+  const comidaDeContexto = new Map(contexto.descriptiveContrast.days.flatMap((d) => d.meals.flatMap((m) => m.differentMealExecutionIds.map((id) => [id, m.label] as const))));
   const dias = [...contexto.descriptiveContrast.days].reverse();
   return (
     <>
@@ -86,6 +89,16 @@ function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () =>
                           <>
                             {COPY_NUTRICION.registrado}
                             {ingesta?.observation ? <span className="nota"> · «{ingesta.observation}»</span> : null}
+                            {m.executionId ? <VerRegistro registroId={m.executionId} /> : null}
+                          </>
+                        ) : m.differentMealExecutionIds.length > 0 ? (
+                          // Los dos hechos: no se registró una opción del plan y sí algo diferente (CONS:599-612).
+                          <>
+                            {COPY_REGISTRO_PARA_EL_PROFESIONAL.sinOpcionDelPlan}
+                            <span className="nota"> · {COPY_REGISTRO_PARA_EL_PROFESIONAL.comidaDiferenteRegistrada}</span>
+                            {m.differentMealExecutionIds.map((id) => (
+                              <VerRegistro key={id} registroId={id} />
+                            ))}
                           </>
                         ) : (
                           COPY_NUTRICION.sinRegistro
@@ -118,7 +131,7 @@ function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () =>
               <ul className="lista">
                 {d.outsidePrescription.map((o) => {
                   const ingesta = porId.get(o.executionId);
-                  return ingesta ? <RegistroLibre key={o.executionId} ingesta={ingesta} onCambio={onCambio} /> : null;
+                  return ingesta ? <RegistroLibre key={o.executionId} ingesta={ingesta} comida={comidaDeContexto.get(o.executionId) ?? null} onCambio={onCambio} /> : null;
                 })}
               </ul>
             </>
@@ -129,7 +142,7 @@ function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () =>
   );
 }
 
-function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () => void }) {
+function RegistroLibre({ ingesta, comida, onCambio }: { ingesta: Ingesta; comida: string | null; onCambio: () => void }) {
   const { token, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
   const [abierto, setAbierto] = useState(false);
@@ -185,9 +198,10 @@ function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () =
     <li className="lista__item">
       <p>
         <span className="insignia">{COPY_NUTRICION.fueraDelPlan}</span> {fecha(ingesta.occurredAt)}
+        {comida ? <span className="nota"> · {COPY_REGISTRO_PARA_EL_PROFESIONAL.registradaEn(comida)}</span> : null}
       </p>
       <p>
-        <strong>{COPY_NUTRICION.registroOriginal}:</strong> «{ingesta.description}»
+        <strong>{COPY_NUTRICION.registroOriginal}:</strong> {ingesta.description ? `«${ingesta.description}»` : COPY_REGISTRO_PARA_EL_PROFESIONAL.sinDescripcion}
         {ingesta.portionDescription ? ` · porción: ${ingesta.portionDescription}` : ''}
       </p>
       {efectiva ? (
@@ -201,6 +215,7 @@ function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () =
         </p>
       ) : null}
       {ultima && !efectiva ? <p className="nota">La historia de estimaciones no se puede resolver.</p> : null}
+      <VerRegistro registroId={ingesta.executionId} />
       {abierto ? (
         <fieldset className="grupo">
           <legend>{COPY_NUTRICION.agregarEstimacion}</legend>

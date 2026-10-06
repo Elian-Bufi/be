@@ -3,9 +3,10 @@ import {
   resolverVistaEfectiva,
   type ContenidoDeInstantanea,
   type ContenidoDePlan,
-  type DiaTipo,
+  type DiaTipoDelProfesional,
   type EvaluacionNutricional,
   type Ingesta,
+  type RecetaDeOpcion,
   type Revision,
   type VersionDeObjetivo,
   type VersionDePlan,
@@ -18,11 +19,15 @@ import type {
   InstantaneaDePlanNutricional,
   PlanNutricional,
   Prisma,
+  RectificacionDeCantidades,
   RevisionNutricional,
   VersionDeObjetivoNutricional,
   VersionDePlanNutricional,
 } from '@prisma/client';
 import { nombreDeProfesional, token } from '../vinculo/lectura';
+import { itemsConsumidosV1 } from './cantidades-consumidas';
+import { referenciaDeReceta } from './lectura-recetas';
+import { recetaCongelada, recetaDeLaOpcion, versionCitadaDelItem } from './opciones-de-receta';
 
 /**
  * Modelos de lectura de NUT (09v9; contratos-nutricion.ts). Un plan ACTIVADO se lee de su instantánea, nunca del catálogo
@@ -87,8 +92,18 @@ export function versionDeObjetivoApi(
 /** Nombre y versión de cada elemento de catálogo, para mostrar un borrador (la instantánea trae los suyos). */
 export type NombresDeCatalogo = ReadonlyMap<string, { versionId: string; nombre: string }>;
 
+/**
+ * DL-119 · la receta de una opción solo sale en las lecturas del profesional (API-NUT-07, 09, 10 y 12): la APK instalada
+ * lee «Hoy» y su plan con esquemas estrictos que no la conocen.
+ */
+export interface RecetasEnLaLectura {
+  readonly conReceta: boolean;
+  /** La referencia de cada versión de receta que cita un borrador (en una activada sale de la instantánea). */
+  readonly delBorrador?: ReadonlyMap<string, RecetaDeOpcion>;
+}
+
 /** Jerarquía de salida desde la instantánea (activada) o desde el contenido y el catálogo actual (borrador). */
-export function diasTipoApi(contenido: ContenidoDePlan, instantanea: ContenidoDeInstantanea | null, catalogo: NombresDeCatalogo): DiaTipo[] {
+export function diasTipoApi(contenido: ContenidoDePlan, instantanea: ContenidoDeInstantanea | null, catalogo: NombresDeCatalogo, recetas: RecetasEnLaLectura = { conReceta: false }): DiaTipoDelProfesional[] {
   if (instantanea) {
     return instantanea.dayTypes.map((d, i) => ({
       dayTypeId: d.dayTypeId,
@@ -103,6 +118,7 @@ export function diasTipoApi(contenido: ContenidoDePlan, instantanea: ContenidoDe
           optionId: o.optionId,
           label: o.label,
           order: k + 1,
+          ...(recetas.conReceta && recetaCongelada(o) ? { recipe: referenciaDeReceta(recetaCongelada(o)!) } : {}),
           items: o.items.map((it) => ({
             itemId: it.itemId,
             catalogItemId: it.catalogItemId,
@@ -125,20 +141,25 @@ export function diasTipoApi(contenido: ContenidoDePlan, instantanea: ContenidoDe
       label: m.label,
       order: j + 1,
       prescriptionMode: m.prescriptionMode,
-      options: m.options.map((o, k) => ({
-        optionId: o.optionId,
-        label: o.label,
-        order: k + 1,
-        items: o.items.map((it) => ({
-          itemId: it.itemId,
-          catalogItemId: it.catalogItemId,
-          catalogItemVersionId: null,
-          name: catalogo.get(it.catalogItemId)?.nombre ?? 'Elemento no disponible',
-          quantity: it.quantity,
-          preparationState: it.preparationState,
-          note: it.note,
-        })),
-      })),
+      options: m.options.map((o, k) => {
+        const receta = recetas.conReceta ? recetas.delBorrador?.get(recetaDeLaOpcion(o) ?? '') : undefined;
+        return {
+          optionId: o.optionId,
+          label: o.label,
+          order: k + 1,
+          ...(receta ? { recipe: receta } : {}),
+          items: o.items.map((it) => ({
+            itemId: it.itemId,
+            catalogItemId: it.catalogItemId,
+            // Un ítem nacido de una receta ya tiene su versión del catálogo: la que cita la receta (DL-119).
+            catalogItemVersionId: versionCitadaDelItem(it)?.catalogItemVersionId ?? null,
+            name: versionCitadaDelItem(it)?.name ?? catalogo.get(it.catalogItemId)?.nombre ?? 'Elemento no disponible',
+            quantity: it.quantity,
+            preparationState: it.preparationState,
+            note: it.note,
+          })),
+        };
+      }),
     })),
   }));
 }
@@ -146,7 +167,7 @@ export function diasTipoApi(contenido: ContenidoDePlan, instantanea: ContenidoDe
 export type VersionConPlan = VersionDePlanNutricional & { plan: PlanNutricional; instantanea: InstantaneaDePlanNutricional | null };
 export const INCLUIR_PLAN = { plan: true, instantanea: true } as const;
 
-export function versionDePlanApi(v: VersionConPlan, nombreProfesional: string, catalogo: NombresDeCatalogo, conJerarquia = true): VersionDePlan {
+export function versionDePlanApi(v: VersionConPlan, nombreProfesional: string, catalogo: NombresDeCatalogo, conJerarquia = true, recetas: RecetasEnLaLectura = { conReceta: false }): VersionDePlan {
   return {
     planId: v.id,
     nutritionPlanId: v.planId,
@@ -162,7 +183,7 @@ export function versionDePlanApi(v: VersionConPlan, nombreProfesional: string, c
     snapshotDigest: v.instantanea?.huella ?? null,
     nextReviewAt: v.proximaRevision ? fechaLocal(v.proximaRevision) : null,
     dayTypes: conJerarquia
-      ? diasTipoApi(v.contenido as unknown as ContenidoDePlan, (v.instantanea?.contenido as unknown as ContenidoDeInstantanea | undefined) ?? null, catalogo)
+      ? diasTipoApi(v.contenido as unknown as ContenidoDePlan, (v.instantanea?.contenido as unknown as ContenidoDeInstantanea | undefined) ?? null, catalogo, recetas)
       : [],
   };
 }
@@ -181,7 +202,12 @@ export async function nombresDeCatalogo(cliente: Cliente, contenido: ContenidoDe
 
 // ─── Ingesta ─────────────────────────────────────────────────────────────────────────────────────
 
-export function ingestaApi(i: IngestaNutricional & { correcciones: CorreccionDeIngesta[] }, nombres: ReadonlyMap<string, string>): Ingesta {
+/**
+ * La ingesta en la forma v1 (API-NUT-14, 15, 16, 16-LISTA y el contexto de revisión), que lee la APK instalada con esquemas
+ * estrictos. Un registro v2 se proyecta (DL-121): las porciones del plan confirmadas o las cantidades informadas, en su
+ * vista efectiva; una comida diferente con solo foto, sin descripción. Nada nuevo entra en esta forma.
+ */
+export function ingestaApi(i: IngestaNutricional & { correcciones: CorreccionDeIngesta[]; rectificaciones?: RectificacionDeCantidades[] }, nombres: ReadonlyMap<string, string>): Ingesta {
   const vista = resolverVistaEfectiva(
     i.id,
     i.correcciones.map((c) => ({ id: c.id, originalId: c.ingestaId, correccionPreviaId: c.correccionPreviaId })),
@@ -199,7 +225,7 @@ export function ingestaApi(i: IngestaNutricional & { correcciones: CorreccionDeI
     dayTypeId: i.diaTipoId,
     mealId: i.comidaId,
     optionId: i.opcionId,
-    consumedItems: i.itemsConsumidos as Ingesta['consumedItems'],
+    consumedItems: itemsConsumidosV1(i),
     observation: i.observacion,
     description: i.descripcion,
     portionDescription: i.descripcionDePorcion,

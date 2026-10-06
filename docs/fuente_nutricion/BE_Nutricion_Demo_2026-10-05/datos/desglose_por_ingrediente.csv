@@ -1,0 +1,15 @@
+﻿receta_id,ingrediente,fdc_id,gramos,kcal,carbohidratos_g,grasas_g,proteinas_g,fibra_g
+BE-DEMO-NUT-001,"Pechuga de pollo sin piel, asada, parte comestible",171477,120,198.00,0.00,4.284,37.224,0.00
+BE-DEMO-NUT-001,"Arroz blanco de grano largo, cocido",168878,160,208.00,45.072,0.448,4.304,0.64
+BE-DEMO-NUT-001,"Brócoli hervido y escurrido, sin sal",169967,80,28.00,5.744,0.328,1.904,2.64
+BE-DEMO-NUT-001,"Zanahoria hervida y escurrida, sin sal",170394,70,24.50,5.754,0.126,0.532,2.10
+BE-DEMO-NUT-001,Aceite de oliva,171413,8,70.720,0.000,8.000,0.000,0.000
+BE-DEMO-NUT-002,"Salmón atlántico de cultivo, cocido por calor seco",175168,150,309.00,0.00,18.525,33.15,0.00
+BE-DEMO-NUT-002,"Papa hervida con piel, solo pulpa comestible, sin sal",170438,220,191.40,44.286,0.22,4.114,3.96
+BE-DEMO-NUT-002,"Brócoli hervido y escurrido, sin sal",169967,100,35.0,7.18,0.41,2.38,3.3
+BE-DEMO-NUT-002,Aceite de oliva,171413,5,44.200,0.000,5.000,0.000,0.000
+BE-DEMO-NUT-003,Lentejas hervidas sin sal,172421,180,208.80,36.234,0.684,16.236,14.22
+BE-DEMO-NUT-003,"Arroz blanco de grano largo, cocido",168878,100,130.0,28.17,0.28,2.69,0.4
+BE-DEMO-NUT-003,"Brócoli hervido y escurrido, sin sal",169967,80,28.00,5.744,0.328,1.904,2.64
+BE-DEMO-NUT-003,"Zanahoria hervida y escurrida, sin sal",170394,60,21.00,4.932,0.108,0.456,1.80
+BE-DEMO-NUT-003,Aceite de oliva,171413,8,70.720,0.000,8.000,0.000,0.000

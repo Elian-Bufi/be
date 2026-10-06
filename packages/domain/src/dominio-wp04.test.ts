@@ -390,6 +390,28 @@ test('TEST-NUT-002/005 · contraste: prescripto ≠ registrado, sin registro = N
   assert.equal(d3?.meals[0]?.state, 'NO_DATA');
 });
 
+test('DL-121 · una comida diferente registrada en el contexto de una comida sigue fuera de la prescripción y se nombra en esa comida', () => {
+  const inst = construirInstantanea(planDeEjemplo(), RESUELTO);
+  assert.ok(inst);
+  const dia = inst.dayTypes[0]!;
+  const comida = dia.meals[0]!;
+  const [d] = construirContraste(
+    ['2026-09-02'],
+    [{ planId: 'p1', desde: '2026-09-01', hasta: null, instantanea: inst }],
+    [
+      { executionId: 'diferente', planId: 'p1', localDate: '2026-09-02', origin: 'OUTSIDE_PRESCRIPTION', dayTypeId: null, mealId: null, optionId: null, consumedItems: [], description: 'Una tarta', contextMealId: comida.mealId },
+      { executionId: 'sin-contexto', planId: 'p1', localDate: '2026-09-02', origin: 'OUTSIDE_PRESCRIPTION', dayTypeId: null, mealId: null, optionId: null, consumedItems: [], description: 'Una fruta' },
+    ],
+  ).days;
+  // Los dos hechos: la comida sigue sin opción del plan (NO_DATA, sin opción) y nombra la comida diferente de su contexto.
+  assert.equal(d?.meals[0]?.state, 'NO_DATA');
+  assert.equal(d?.meals[0]?.registeredOptionId, null);
+  assert.deepEqual(d?.meals[0]?.differentMealExecutionIds, ['diferente']);
+  // Las dos siguen fuera de la prescripción (CONS:599-612); la que no tiene contexto no se asigna a ninguna comida.
+  assert.deepEqual(d?.outsidePrescription.map((o) => o.executionId), ['diferente', 'sin-contexto']);
+  assert.ok(d?.meals.slice(1).every((m) => m.differentMealExecutionIds.length === 0));
+});
+
 test('INV-06-13 · lo registrado contra una versión no se pierde si ese día se activa una sucesora', () => {
   // v1 y v2 con nodos distintos: la sucesora se reescribió entera (sin conservar identificadores).
   const v1 = construirInstantanea(planDeEjemplo(), RESUELTO)!;
@@ -478,7 +500,7 @@ test('TEST-PRJ-009 · el OpenAPI generado tampoco expone puntaje de adherencia e
   const hallazgos: string[] = [];
   for (const [ruta, metodos] of Object.entries(doc.paths)) if (ruta.includes('nutrition')) recorrer(metodos, ruta, hallazgos);
   const operaciones = Object.entries(doc.paths).filter(([r]) => r.includes('nutrition')).reduce((n, [, m]) => n + Object.keys(m as object).length, 0);
-  assert.equal(operaciones, 35, 'las 5 de habituales (HAN-01..05, DL-109), las 5 de plantillas (TPN-01..05, DL-108), las 21 NUT, INT-NUT-01, la lista propia de ingestas y la importación de Open Food Facts (INT-NUT-02/03, WP-08)');
+  assert.equal(operaciones, 48, 'las 5 de habituales (HAN-01..05, DL-109), las 5 de plantillas (TPN-01..05, DL-108), las 21 NUT, INT-NUT-01, la lista propia de ingestas, la importación de Open Food Facts (INT-NUT-02/03, WP-08), las 7 de recetas (REC-01..07, DL-119) y las 6 del registro v2 (ING-01..06, DL-121); las de medios (MED, DL-120) no llevan «nutrition» en la ruta');
   assert.deepEqual(hallazgos, []);
 });
 

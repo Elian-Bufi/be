@@ -436,7 +436,8 @@ export const estilos = estilosPorTema((COLOR) => ({
   boton_peligro: { backgroundColor: COLOR.peligroFondo, borderColor: COLOR.peligroFondo },
   boton_peligroSecundario: { backgroundColor: 'transparent', borderColor: COLOR.error },
   boton_enlace: { backgroundColor: 'transparent', borderColor: 'transparent', alignItems: 'flex-start', paddingHorizontal: 0 },
-  textoBoton: { fontSize: 16, fontWeight: '700' },
+  // Centrado también cuando la letra grande lo parte en dos líneas (render de Nutrición con letra ×2, 2026-10-05).
+  textoBoton: { fontSize: 16, fontWeight: '700', textAlign: 'center' },
   textoBoton_primario: { color: COLOR.botonTexto },
   textoBoton_secundario: { color: COLOR.acento },
   textoBoton_peligro: { color: COLOR.peligroTexto },

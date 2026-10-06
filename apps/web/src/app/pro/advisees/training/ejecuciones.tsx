@@ -10,6 +10,8 @@
  * - Sin «disciplinado», «mal rendimiento» ni porcentajes (B10-06:963-966).
  * - Filtros por período, versión del plan y ejercicio (B10-06:956-961). El período vive fuera del estado de lectura.
  * - Una carga que no se registró dice eso, «carga no registrada»: no es «sin carga» ni peso corporal (06:5675).
+ * - Objetivos por serie y tiempos (DL-122, DL-124): cada versión del período se lee con API-SER-01, así el gráfico y la
+ *   tabla comparan contra el objetivo histórico de cada serie; y cada sesión abierta muestra sus tiempos con su certeza.
  * - Planificado y registrado (amplía DL-105): cada ejecución compara sus series con las de la prescripción que rigió, y
  *   un ejercicio elegido muestra su evolución en el período (`comparacion.tsx`). El ejercicio se elige por identidad del
  *   catálogo, no por nombre: dos ejercicios con el mismo nombre no se mezclan.
@@ -29,6 +31,8 @@ import {
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EjecucionDeEntrenamiento,
   type IdentidadDeVersiones,
+  type ObjetivosDeLaVersion,
+  type PlanConObjetivos,
   type Prescripcion,
   type RegistroDeEjecucion,
 } from '@be/domain';
@@ -41,6 +45,7 @@ import { dia, fecha } from '../../../../lib/formato';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { LineasDePrescripcion } from './plan';
 import { FiltroDePeriodo, type Periodo } from '../periodo';
+import { SeriesYTiempos } from './series-y-tiempos';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
 
@@ -82,6 +87,21 @@ export function VistaDeEjecuciones() {
   // La identidad de las versiones sale de todo el período, para la evolución y para el detalle por serie: la misma.
   const identidadDelPeriodo = useMemo(() => identidadDeVersiones(ejecuciones), [ejecuciones]);
   const versiones = useMemo(() => new Map((r?.ok ? r.datos.activePlanVersions : []).map((v) => [v.planId, fecha(v.activatedAt as string)])), [r]);
+  // DL-122: el plan de cada versión del período, con sus objetivos por serie. Una versión que no se puede leer queda
+  // sin objetivos por serie: la comparación usa entonces los de la prescripción, como antes.
+  const [planes, setPlanes] = useState<ReadonlyMap<string, PlanConObjetivos>>(new Map());
+  useEffect(() => {
+    let vigente = true;
+    const ids = [...new Set(ejecuciones.map((x) => x.planId))];
+    void Promise.all(ids.map((planId) => api.planConObjetivos(token, planId))).then((rs) => {
+      if (!vigente || rs.some((x) => sesionPerdida(x))) return;
+      setPlanes(new Map(rs.flatMap((x) => (x.ok ? [[x.datos.data.planId, x.datos.data] as const] : []))));
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [ejecuciones, token, sesionPerdida]);
+  const objetivosPorVersion = useMemo(() => new Map([...planes].map(([planId, plan]) => [planId, objetivosDe(plan)] as const)), [planes]);
   /** La ejecución que se pidió abrir desde la evolución: se despliega, muestra la prescripción del punto y recibe el foco. */
   const [pedido, setPedido] = useState<{ executionId: string; prescriptionId: string; vez: number } | null>(null);
   const abrir = useCallback((executionId: string, prescriptionId: string) => setPedido((p) => ({ executionId, prescriptionId, vez: (p?.vez ?? 0) + 1 })), []);
@@ -144,6 +164,7 @@ export function VistaDeEjecuciones() {
                   nombre={nombreParaElegir(elegido, ejercicios)}
                   versiones={versiones}
                   onAbrir={abrir}
+                  objetivosPorVersion={objetivosPorVersion}
                 />
               </>
             )}
@@ -161,6 +182,8 @@ export function VistaDeEjecuciones() {
                   identidad={identidadDelPeriodo}
                   pedido={pedido?.executionId === x.executionId ? pedido : null}
                   onAtendido={atendido}
+                  plan={planes.get(x.planId) ?? null}
+                  objetivos={objetivosPorVersion.get(x.planId)}
                 />
               ))}
             </ul>
@@ -225,6 +248,11 @@ export function Registro({ registro, planificado = [] }: { registro: RegistroDeE
   );
 }
 
+/** Los objetivos por serie de una versión, por prescripción: lo que necesita la comparación del dominio. */
+function objetivosDe(plan: PlanConObjetivos): ObjetivosDeLaVersion {
+  return new Map(plan.blocks.flatMap((b) => [...b.sessions, ...b.microcycles.flatMap((m) => m.sessions)]).flatMap((s) => s.prescriptions.map((p) => [p.prescriptionId, p.sets] as const)));
+}
+
 /** Cómo se ofrece un ejercicio para elegir: su nombre y, si otra entrada que no se puede identificar como la misma se llama igual, cuál es. */
 function nombreParaElegir(e: { clave: string; nombre: string; homonimo: boolean }, todos: readonly { clave: string; nombre: string }[]): string {
   if (!e.homonimo) return e.nombre;
@@ -237,11 +265,15 @@ function DetalleDeEjecucion({
   identidad,
   pedido,
   onAtendido,
+  plan,
+  objetivos,
 }: {
   ejecucion: EjecucionDeEntrenamiento;
   identidad: IdentidadDeVersiones;
   pedido: { prescriptionId: string; vez: number } | null;
   onAtendido: () => void;
+  plan: PlanConObjetivos | null;
+  objetivos: ObjetivosDeLaVersion | undefined;
 }) {
   const vigente = x.effectiveView.kind === 'CORRECTED' ? x.corrections.find((c) => c.correctionId === (x.effectiveView as { correctionId: string }).correctionId) : null;
   const rige = registroVigente(x);
@@ -271,11 +303,15 @@ function DetalleDeEjecucion({
         {/* Se dibuja solo abierta: un gráfico dentro de un bloque cerrado no tiene medidas. */}
         {abierta ? (
           <>
+            <SeriesYTiempos ejecucion={x} plan={plan} />
             <h4>{COPY_COMPARACION.porSerie}</h4>
-            <ComparacionPorSerie key={pedida ? `${pedida.prescriptionId}-${pedida.vez}` : 'inicial'} ejecucion={x} prescriptionId={pedida?.prescriptionId} identidad={identidad} />
+            <ComparacionPorSerie key={pedida ? `${pedida.prescriptionId}-${pedida.vez}` : 'inicial'} ejecucion={x} prescriptionId={pedida?.prescriptionId} identidad={identidad} objetivos={objetivos} />
           </>
         ) : null}
         <h4>{COPY_ENTRENAMIENTO.planificado}</h4>
+        {/* DL-122: estas líneas dicen lo general de cada prescripción; con objetivos por serie, una serie puede tener los
+            suyos, y la tabla de arriba dice el de cada una. */}
+        {plan ? <p className="nota">Lo general de cada prescripción. El objetivo de cada serie, heredado o propio, está en «Planificado frente a registrado».</p> : null}
         {/* La prescripción de la versión que rigió esta sesión (su instantánea), completa: no la de la versión vigente hoy. */}
         {x.plannedSession.instructions ? (
           <p className="nota">

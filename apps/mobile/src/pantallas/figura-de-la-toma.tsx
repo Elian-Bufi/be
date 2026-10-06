@@ -57,7 +57,7 @@ import { ANILLO_EN_EL_TELEFONO, arcoDeLaElipse, GUIA_EN_EL_TELEFONO, PLIEGUE_EN_
 import { PALETAS, type Tema } from '../tema';
 import { esSitioDeLaFigura } from '../disposicion-de-la-toma';
 import { Boton, Segmentos } from '../ui';
-import { BrilloDeVidrio, sombraDeVidrio } from '../vidrio';
+import { sombraDeVidrio } from '../vidrio';
 import { textoDeLaClase, textoDelCambio } from './progreso-de-una-medida';
 
 const IMAGEN: Readonly<Record<SexoDeLaLamina, ImageSourcePropType>> = {
@@ -100,7 +100,6 @@ const laminaDe = (tema: Tema) => {
     tarjeta: p.laminaTarjeta,
     borde: p.laminaBorde,
     filo: p.laminaFilo,
-    brillo: p.laminaBrillo,
     sombra: p.sombra,
     nombre: p.laminaNombre,
     valor: p.laminaValor,
@@ -351,7 +350,6 @@ function Lamina({
                 ...sombraDeVidrio(lamina.sombra),
               }}
             >
-              <BrilloDeVidrio color={lamina.brillo} radio={14} />
               {t.filas.map((f) => (
                 <FilaDeLaLamina key={f.sitio.clave} fila={f} lamina={lamina} elegida={f.sitio.clave === elegida} alternar={alternar} />
               ))}

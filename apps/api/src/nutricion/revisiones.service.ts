@@ -26,7 +26,9 @@ import { esToken } from '../vinculo/lectura';
 import { EjecutorNutricional, esUuid } from './ejecutor';
 import { EvaluacionesService } from './evaluaciones.service';
 import { registrarEventoDeNutricion } from './eventos';
+import { itemsConsumidosV1 } from './cantidades-consumidas';
 import { INCLUIR_PLAN, fechaLocal, ingestaApi, nombreVisibleDe, revisionApi, versionDeObjetivoApi, versionDePlanApi } from './lectura-nutricion';
+import { INCLUIR_PARA_V1 } from './lectura-registro';
 import { PlanesService } from './planes.service';
 import { ZONA_POR_DEFECTO, fechaLocalEn } from './zona';
 
@@ -101,13 +103,15 @@ export class RevisionesService {
         // `hasta >= inicio`: una versión reemplazada el primer día del período todavía tiene registros de ese día.
         const enPeriodo = conVigencia.filter((v) => v.desde <= fin && (v.hasta === null || v.hasta >= inicio));
 
+        // DL-121: una ingesta anulada por su titular deja de contar en el contraste y en la revisión.
         const ingestas = await tx.ingestaNutricional.findMany({
           where: {
             asesoradoId,
             versionDePlan: { plan: { profesionalId: actor.identidadId } },
             fechaLocal: { gte: new Date(`${inicio}T00:00:00.000Z`), lte: new Date(`${fin}T00:00:00.000Z`) },
+            anulacion: { is: null },
           },
-          include: { correcciones: true },
+          include: INCLUIR_PARA_V1,
           orderBy: [{ fechaLocal: 'asc' }, { momentoDeOcurrencia: 'asc' }],
         });
         const contraste = construirContraste(
@@ -121,8 +125,11 @@ export class RevisionesService {
             dayTypeId: i.diaTipoId,
             mealId: i.comidaId,
             optionId: i.opcionId,
-            consumedItems: i.itemsConsumidos as never,
+            // Un registro v2 entra con su vista efectiva: lo confirmado o informado, nunca lo previsto (DL-121).
+            consumedItems: itemsConsumidosV1(i),
             description: i.descripcion,
+            // DL-121: la comida del plan en cuyo contexto se registró algo diferente; sigue fuera de la prescripción.
+            contextMealId: i.origen === 'PRESCRIPTA' ? null : (i.comidaDeContextoId ?? null),
           })),
         );
 
@@ -415,7 +422,8 @@ export class RevisionesService {
   private async existeEvidencia(tx: Tx, profesionalId: string, asesoradoId: string, ref: { type: string; id: string }): Promise<boolean> {
     switch (ref.type) {
       case 'EXECUTION':
-        return (await tx.ingestaNutricional.count({ where: { id: ref.id, asesoradoId, versionDePlan: { plan: { profesionalId } } } })) > 0;
+        // Una ingesta anulada no es evidencia de una revisión nueva (DL-121): dejó de contar.
+        return (await tx.ingestaNutricional.count({ where: { id: ref.id, asesoradoId, versionDePlan: { plan: { profesionalId } }, anulacion: { is: null } } })) > 0;
       case 'PLAN_VERSION':
         return (await tx.versionDePlanNutricional.count({ where: { id: ref.id, estado: 'ACTIVADA', plan: { profesionalId, asesoradoId } } })) > 0;
       case 'OBJECTIVE_VERSION':

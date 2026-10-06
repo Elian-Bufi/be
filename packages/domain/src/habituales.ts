@@ -46,8 +46,11 @@ export function sinIdentificadoresDeComida(m: ComidaEntrada): ComidaEntrada {
   };
 }
 
-/** DL-108 D-2: la sesión sin las cargas sugeridas de cada prescripción; todo lo demás queda igual. */
-export const sinCargasDeLaSesion = (s: SesionEntrada): SesionEntrada => ({ ...s, prescriptions: s.prescriptions.map(({ suggestedLoad: _omitida, ...p }) => p) });
+/** DL-108 D-2: la sesión sin las cargas sugeridas de cada prescripción ni, desde DL-122, de cada serie; todo lo demás queda igual. */
+export const sinCargasDeLaSesion = (s: SesionEntrada): SesionEntrada => ({
+  ...s,
+  prescriptions: s.prescriptions.map(({ suggestedLoad: _omitida, ...p }) => ({ ...p, sets: p.sets.map(({ suggestedLoad: _deLaSerie, ...serie }) => serie) })),
+});
 
 /** DL-108 D-2 en nutrición: la comida con `quantity: null` en cada ítem; el elemento, la preparación y la nota quedan. */
 export const sinCantidadesDeLaComida = (m: ComidaEntrada): ComidaEntrada => ({ ...m, options: m.options.map((o) => ({ ...o, items: o.items.map((i) => ({ ...i, quantity: null })) })) });

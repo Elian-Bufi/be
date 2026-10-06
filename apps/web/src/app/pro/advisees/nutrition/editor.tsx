@@ -8,11 +8,16 @@
  * - «Guardar cambios» no activa (B05:607-624). Validar informa cada problema en su lugar; activar pide confirmación
  *   con el texto literal de B05:685-695 y la API revalida todo en la misma transacción.
  * - La modalidad B no se ofrece, ni como «Próximamente» (B05:503-518).
+ * - DL-119: «Agregar receta como opción» suma una opción `{label, recipeVersionId}`. Sus ítems los arma la API con los
+ *   ingredientes de una porción de esa versión de la receta: en el editor se ven en lectura, y para cambiarlos se edita
+ *   la receta y se vuelve a agregar. Las opciones no se presentan como equivalentes.
  */
 import {
   estructuraNutricionalComoEntrada,
   cantidad as formatearCantidad,
   COPY,
+  COPY_RECETAS,
+  nutrienteParaMostrar,
   COPY_INTEGRACIONES,
   COPY_NUTRICION,
   ETIQUETA_DE_PREPARACION,
@@ -21,9 +26,12 @@ import {
   motivoDeNumeroIlegible,
   type ElementoDeCatalogo,
   type EstructuraDePlanEntrada,
+  type Receta,
+  type RecetaDeOpcion,
   type ValidationIssue,
   type VersionDePlan,
 } from '@be/domain';
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
@@ -43,8 +51,38 @@ type Item = Estructura[number]['meals'][number]['options'][number]['items'][numb
 type Preparacion = 'RAW' | 'COOKED' | 'AS_PURCHASED';
 type Unidad = 'g' | 'ml' | 'unit';
 
-/** La jerarquía de la respuesta, como entrada del PATCH: el helper compartido con las plantillas (PF-09). */
-const aEntrada = (v: VersionDePlan): Estructura => estructuraNutricionalComoEntrada(v).dayTypes;
+/**
+ * La jerarquía de la respuesta, como entrada del PATCH: el helper compartido con las plantillas (PF-09). Una opción que
+ * nació de una receta vuelve como `{label, recipeVersionId}`, sin ítems: los vuelve a armar la API (DL-119).
+ */
+function aEntrada(v: VersionDePlan): Estructura {
+  return estructuraNutricionalComoEntrada(v).dayTypes.map((d, i) => ({
+    ...d,
+    meals: d.meals.map((m, j) => ({
+      ...m,
+      options: m.options.map((o, k) => {
+        const receta = v.dayTypes[i]?.meals[j]?.options[k]?.recipe;
+        return receta ? { ...(o.optionId ? { optionId: o.optionId } : {}), label: o.label, items: [], recipeVersionId: receta.recipeVersionId } : o;
+      }),
+    })),
+  }));
+}
+
+/** Las recetas de las opciones guardadas, por versión: para nombrarlas en el editor. */
+function recetasDe(v: VersionDePlan): Record<string, RecetaDeOpcion> {
+  const r: Record<string, RecetaDeOpcion> = {};
+  for (const d of v.dayTypes) for (const m of d.meals) for (const o of m.options) if (o.recipe) r[o.recipe.recipeVersionId] = o.recipe;
+  return r;
+}
+
+/** Los ítems que la API armó para una opción ya guardada (una porción de la receta). */
+function itemsGuardados(v: VersionDePlan, optionId: string | undefined) {
+  if (!optionId) return null;
+  for (const d of v.dayTypes) for (const m of d.meals) for (const o of m.options) if (o.optionId === optionId) return o.items;
+  return null;
+}
+
+const tieneRecetas = (comidas: readonly Estructura[number]['meals'][number][]) => comidas.some((m) => m.options.some((o) => o.recipeVersionId));
 
 function nombresDe(v: VersionDePlan): Record<string, string> {
   const n: Record<string, string> = {};
@@ -84,6 +122,9 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   const [estructura, setEstructura] = useState<Estructura>([]);
   const [proximaRevision, setProximaRevision] = useState('');
   const [nombres, setNombres] = useState<Record<string, string>>({});
+  // DL-119: la receta de cada opción de receta, por la versión que cita.
+  const [recetas, setRecetas] = useState<Record<string, RecetaDeOpcion>>({});
+  const [eligiendoReceta, setEligiendoReceta] = useState<{ i: number; j: number } | null>(null);
   const [sucio, setSucio] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string } | null>(null);
@@ -109,6 +150,7 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
     setVersion(r.datos.data);
     setEstructura(aEntrada(r.datos.data));
     setNombres(nombresDe(r.datos.data));
+    setRecetas(recetasDe(r.datos.data));
     setProximaRevision(r.datos.data.nextReviewAt ?? '');
     setSucio(false);
     setObjetivoVigente(ob.ok ? (ob.datos.data.objective?.versionId ?? null) : null);
@@ -152,6 +194,7 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
     setVersion(r.datos.data);
     setEstructura(aEntrada(r.datos.data));
     setNombres((n) => ({ ...n, ...nombresDe(r.datos.data) }));
+    setRecetas((x) => ({ ...x, ...recetasDe(r.datos.data) }));
     setSucio(false);
     return r.datos.data;
   }
@@ -221,6 +264,10 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
                   <fieldset key={o.optionId ?? k} className="nodo nodo--opcion">
                     <legend>Opción {k + 1}</legend>
                     <Campo id={`opcion-${i}-${j}-${k}`} etiqueta="Nombre de la opción" value={o.label} onChange={(e) => cambiar((x) => ((x[i]!.meals[j]!.options[k]!.label = e.target.value), x))} maxLength={120} />
+                    {o.recipeVersionId ? (
+                      <OpcionDeReceta receta={recetas[o.recipeVersionId] ?? null} items={itemsGuardados(version, o.optionId)} nombres={nombres} />
+                    ) : (
+                    <>
                     <ul className="items">
                       {o.items.map((it, l) => (
                         <FilaDeItem
@@ -241,6 +288,8 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
                         cambiar((x) => (x[i]!.meals[j]!.options[k]!.items.push({ catalogItemId: el.catalogItemId, quantity: null, preparationState: null, note: null }), x));
                       }}
                     />
+                    </>
+                    )}
                     <button type="button" className="boton boton--enlace" onClick={() => cambiar((x) => (x[i]!.meals[j]!.options.splice(k, 1), x))}>
                       Quitar opción {k + 1}
                     </button>
@@ -250,16 +299,42 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
                   <button type="button" className="boton boton--secundario" onClick={() => cambiar((x) => (x[i]!.meals[j]!.options.push({ label: `Opción ${m.options.length + 1}`, items: [] }), x))}>
                     Agregar opción
                   </button>
+                  <button
+                    type="button"
+                    className="boton boton--secundario"
+                    aria-expanded={eligiendoReceta?.i === i && eligiendoReceta.j === j}
+                    onClick={() => setEligiendoReceta(eligiendoReceta?.i === i && eligiendoReceta.j === j ? null : { i, j })}
+                  >
+                    {COPY_RECETAS.agregarComoOpcion}
+                  </button>
                   <button type="button" className="boton boton--enlace" disabled={j === 0} onClick={() => cambiar((x) => ([x[i]!.meals[j - 1], x[i]!.meals[j]] = [x[i]!.meals[j]!, x[i]!.meals[j - 1]!], x))}>
                     Subir
                   </button>
                   <button type="button" className="boton boton--enlace" onClick={() => cambiar((x) => (x[i]!.meals.splice(j, 1), x))}>
                     Quitar comida
                   </button>
-                  <button type="button" className="boton boton--enlace" onClick={() => setGuardarHabitual({ i, j })}>
+                  <button
+                    type="button"
+                    className="boton boton--enlace"
+                    onClick={() => (tieneRecetas([m]) ? setMensaje({ tipo: 'info', texto: COPY_RECETAS.recetaEnPlantilla }) : setGuardarHabitual({ i, j }))}
+                  >
                     {COPY_HABITUALES.guardarComoHabitual}
                   </button>
                 </div>
+                {eligiendoReceta?.i === i && eligiendoReceta.j === j ? (
+                  <ElegirReceta
+                    onCerrar={() => setEligiendoReceta(null)}
+                    onElegir={(receta) => {
+                      setRecetas((x) => ({
+                        ...x,
+                        [receta.recipeVersionId]: { recipeId: receta.recipeId, recipeVersionId: receta.recipeVersionId, versionNumber: receta.versionNumber, name: receta.name, servings: receta.servings },
+                      }));
+                      cambiar((x) => (x[i]!.meals[j]!.options.push({ label: receta.name, items: [], recipeVersionId: receta.recipeVersionId }), x));
+                      setEligiendoReceta(null);
+                    }}
+                  />
+                ) : null}
+                {m.options.some((o) => o.recipeVersionId) ? <p className="nota">{COPY_RECETAS.avisoDeOpciones}</p> : null}
               </fieldset>
             ))}
             <div className="acciones">
@@ -330,7 +405,12 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
         <button type="button" className="boton boton--secundario" onClick={() => setConfirmar(true)} disabled={guardando || sucio}>
           {COPY_NUTRICION.activarPlan}
         </button>
-        <button type="button" className="boton boton--secundario" onClick={() => setGuardarPlantilla(true)} disabled={guardando}>
+        <button
+          type="button"
+          className="boton boton--secundario"
+          onClick={() => (estructura.some((d) => tieneRecetas(d.meals)) ? setMensaje({ tipo: 'info', texto: COPY_RECETAS.recetaEnPlantilla }) : setGuardarPlantilla(true))}
+          disabled={guardando}
+        >
           {COPY_PLANTILLAS.guardarComoPlantilla}
         </button>
       </div>
@@ -605,6 +685,97 @@ function BuscadorDeCatalogo({ id, habituales, onElegir }: { id: string; habitual
       )}
       <button type="button" className="boton boton--enlace" onClick={() => setAbierto(false)}>
         Cerrar búsqueda
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Una opción que nació de una receta (DL-119): la receta y su versión, y los ítems de una porción que armó la API, en
+ * lectura. Antes de guardar, todavía no hay ítems: se dice.
+ */
+function OpcionDeReceta({ receta, items, nombres }: { receta: RecetaDeOpcion | null; items: VersionDePlan['dayTypes'][number]['meals'][number]['options'][number]['items'] | null; nombres: Record<string, string> }) {
+  return (
+    <div className="opcion-de-receta">
+      <p>
+        <span className="insignia">{receta ? COPY_RECETAS.opcionDeReceta(receta.name, receta.versionNumber) : 'Receta'}</span>
+      </p>
+      <p className="nota">{COPY_RECETAS.porcionDeLaOpcion}</p>
+      {items ? (
+        <ul className="lista-compacta">
+          {items.map((it) => (
+            <li key={it.itemId}>
+              <strong>{it.name || nombres[it.catalogItemId] || 'Elemento'}</strong>
+              {it.quantity ? ` · ${formatearCantidad(it.quantity.value, ETIQUETA_DE_UNIDAD[it.quantity.unit])}` : ''}
+              {it.preparationState ? ` · ${ETIQUETA_DE_PREPARACION[it.preparationState].toLowerCase()}` : ''}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="nota">{COPY_RECETAS.ingredientesAlGuardar}</p>
+      )}
+    </div>
+  );
+}
+
+/** Elegir una de mis recetas para ofrecerla como opción: se agrega su versión vigente (API-REC-02). */
+function ElegirReceta({ onElegir, onCerrar }: { onElegir: (r: Receta) => void; onCerrar: () => void }) {
+  const { token, sesionPerdida } = useNutricion();
+  const [estado, setEstado] = useState<{ tipo: 'cargando' } | { tipo: 'error'; texto: string } | { tipo: 'lista'; recetas: readonly Receta[]; mas: string | null }>({ tipo: 'cargando' });
+
+  const cargar = useCallback(
+    async (cursor?: string) => {
+      const r = await api.listarRecetas(token, cursor ? { cursor } : {});
+      if (sesionPerdida(r)) return;
+      if (!r.ok) return setEstado({ tipo: 'error', texto: r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN' ? COPY_RECETAS.soloNutricion : mensajeDeFallo(r) });
+      setEstado((e) => ({
+        tipo: 'lista',
+        recetas: cursor && e.tipo === 'lista' ? [...e.recetas, ...r.datos.data] : r.datos.data,
+        mas: r.datos.page.hasMore ? r.datos.page.nextCursor : null,
+      }));
+    },
+    [token, sesionPerdida],
+  );
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+
+  return (
+    <div className="buscador">
+      <p className="lista__titulo">{COPY_RECETAS.elegirReceta}</p>
+      {estado.tipo === 'cargando' ? <Cargando /> : null}
+      {estado.tipo === 'error' ? (
+        <Aviso tipo="error">
+          <p>{estado.texto}</p>
+        </Aviso>
+      ) : null}
+      {estado.tipo === 'lista' && estado.recetas.length === 0 ? (
+        <p>
+          {COPY_RECETAS.sinRecetasParaElegir} <Link href="/pro/recipes">{COPY_RECETAS.irAMisRecetas}</Link>
+        </p>
+      ) : null}
+      {estado.tipo === 'lista' && estado.recetas.length > 0 ? (
+        <ul className="lista">
+          {estado.recetas.map((r) => (
+            <li key={r.recipeId} className="lista__item">
+              <p className="lista__titulo">{r.name}</p>
+              <p className="nota">
+                {COPY_RECETAS.version(r.versionNumber)} · {COPY_RECETAS.porcionesYEnergia(r.servings, nutrienteParaMostrar(r.calculation.perServing.energyKcal, 'energyKcal'))}
+              </p>
+              <button type="button" className="boton boton--enlace" onClick={() => onElegir(r)}>
+                {COPY_RECETAS.agregarComoOpcion}: {r.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {estado.tipo === 'lista' && estado.mas ? (
+        <button type="button" className="boton boton--secundario" onClick={() => void cargar(estado.mas ?? undefined)}>
+          Ver más
+        </button>
+      ) : null}
+      <button type="button" className="boton boton--enlace" onClick={onCerrar}>
+        Cerrar
       </button>
     </div>
   );

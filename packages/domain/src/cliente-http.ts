@@ -64,6 +64,16 @@ import {
 } from './contratos-vinculo';
 import { CarteraResponseSchema, type CarteraResponse, type FiltroDeCartera } from './contratos-cartera';
 import {
+  DetalleDeEvidenciaVisualRequeridaSchema,
+  EvidenciaVisualOtorgadaResponseSchema,
+  ListaDeEvidenciaVisualResponseSchema,
+  RequisitoDeEvidenciaVisualResponseSchema,
+  type DetalleDeEvidenciaVisualRequerida,
+  type EvidenciaVisualOtorgadaResponse,
+  type ListaDeEvidenciaVisualResponse,
+  type RequisitoDeEvidenciaVisualResponse,
+} from './contratos-evidencia-visual';
+import {
   ListaDePlantillasDeEntrenamientoResponseSchema,
   PlantillaDeEntrenamientoResponseSchema,
   type CrearPlantillaDeEntrenamientoRequest,
@@ -116,6 +126,30 @@ import {
   type RegistrarRevisionRequest,
 } from './contratos-nutricion';
 import {
+  AccesoAMedioResponseSchema,
+  IntencionDeSubidaResponseSchema,
+  MedioResponseSchema,
+  type IntencionDeSubidaRequest,
+} from './contratos-medios';
+import {
+  CalculoDeRecetaResponseSchema,
+  DetalleDeRecetaResponseSchema,
+  ListaDeRecetasResponseSchema,
+  RecetaResponseSchema,
+  type AsociarImagenDeRecetaRequest,
+  type CalcularRecetaRequest,
+  type CrearRecetaRequest,
+  type EditarRecetaRequest,
+} from './contratos-recetas';
+import {
+  HoyConOpcionesResponseSchema,
+  ListaDeRegistrosDeComidaResponseSchema,
+  RegistroDeComidaResponseSchema,
+  type AnularRegistroRequest,
+  type RectificarCantidadesRequest,
+  type RegistrarComidaRequest,
+} from './contratos-registro-de-comidas';
+import {
   AnularMedicionResponseSchema,
   EvaluacionAntropometricaResponseSchema,
   EvolucionResponseSchema,
@@ -164,6 +198,17 @@ import {
   RevisionDeEntrenamientoResponseSchema,
 } from './contratos-entrenamiento';
 import {
+  EjercicioPropioResponseSchema,
+  ListaDeEjerciciosPropiosResponseSchema,
+  PlanConObjetivosResponseSchema,
+  ResultadoDeEventosResponseSchema,
+  SesionEnCursoResponseSchema,
+  SesionParaRegistrarResponseSchema,
+  TiemposDeSesionResponseSchema,
+  type AsociarImagenDeEjercicioRequest,
+  type RegistrarEventosDeTiempoRequest,
+} from './contratos-entrenamiento-por-serie';
+import {
   CrearSolicitudDeFormularioRequestSchema,
   DetalleDeSolicitudResponseSchema,
   EnviarRespuestaRequestSchema,
@@ -178,6 +223,7 @@ import {
 } from './contratos-formularios';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
+import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } from './compatibilidad-de-clientes';
 import type { Superficie } from './procedencia';
 import { VERSION_VIGENTE } from './textos';
 
@@ -192,7 +238,18 @@ export type Resultado<T> =
       readonly fechaDelServidor?: string;
     }
   /** La API respondió con un ErrorEnvelope. `codigo` decide la UI; nunca se muestra en pantalla (10-B01:1146-1189). */
-  | { readonly ok: false; readonly tipo: 'API'; readonly status: number; readonly codigo: string; readonly issues: readonly ValidationIssue[] }
+  | {
+      readonly ok: false;
+      readonly tipo: 'API';
+      readonly status: number;
+      readonly codigo: string;
+      readonly issues: readonly ValidationIssue[];
+      /**
+       * Con `VISUAL_EVIDENCE_ACT_REQUIRED` (API-MED-01; DL-125): el vínculo y la versión del texto a mostrar, validados
+       * contra su schema. Sin ellos, la pantalla no tiene qué mostrar y lo trata como cualquier otro rechazo.
+       */
+      readonly evidenciaVisual?: DetalleDeEvidenciaVisualRequerida;
+    }
   /** Sin respuesta: no se sabe si la acción ocurrió (10-B10:430-438). */
   | { readonly ok: false; readonly tipo: 'RED' };
 
@@ -208,12 +265,18 @@ export interface OpcionesDeCliente {
   /** Base con el prefijo de versión, sin barra final: `/api/v1` o `https://…/api/v1`. */
   readonly baseUrl: string;
   readonly superficie: Superficie;
+  /**
+   * Lo que este cliente sabe mostrar, en `X-BE-Capabilities` (`compatibilidad-de-clientes.ts`). Solo lo declara quien lo
+   * dibuja: la APK que muestra los objetivos de cada serie. Sin capacidades, la cabecera no va.
+   */
+  readonly capacidades?: readonly CapacidadDeCliente[];
   /** fetch de la plataforma (inyectable en pruebas). */
   readonly fetch?: typeof fetch;
 }
 
 export function crearClienteBe(opciones: OpcionesDeCliente) {
   const hacerFetch = opciones.fetch ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
+  const capacidades = opciones.capacidades && opciones.capacidades.length > 0 ? valorDeCapacidades(opciones.capacidades) : null;
 
   async function llamar<S extends EsquemaDeContrato | null>(
     metodo: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
@@ -221,6 +284,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     extra: { token?: string; cuerpo?: unknown; claveDeIdempotencia?: string; esquema: S },
   ): Promise<Resultado<S extends EsquemaDeContrato ? SalidaDe<S> : null>> {
     const encabezados: Record<string, string> = { Accept: 'application/json', 'X-BE-Surface': opciones.superficie };
+    if (capacidades) encabezados[HEADER_DE_CAPACIDADES] = capacidades;
     if (extra.cuerpo !== undefined) encabezados['Content-Type'] = 'application/json';
     if (extra.token) encabezados.Authorization = `Bearer ${extra.token}`;
     if (extra.claveDeIdempotencia) encabezados['Idempotency-Key'] = extra.claveDeIdempotencia;
@@ -244,7 +308,8 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       const error = ErrorEnvelopeSchema.safeParse(json);
       if (!error.success) return { ok: false, tipo: 'API', status: respuesta.status, codigo: 'RESPUESTA_NO_RECONOCIDA', issues: [] };
       const issues = (error.data.error.details as { issues?: ValidationIssue[] } | undefined)?.issues ?? [];
-      return { ok: false, tipo: 'API', status: respuesta.status, codigo: error.data.error.code, issues };
+      const evidenciaVisual = error.data.error.code === 'VISUAL_EVIDENCE_ACT_REQUIRED' ? DetalleDeEvidenciaVisualRequeridaSchema.safeParse(error.data.error.details) : null;
+      return { ok: false, tipo: 'API', status: respuesta.status, codigo: error.data.error.code, issues, ...(evidenciaVisual?.success ? { evidenciaVisual: evidenciaVisual.data } : {}) };
     }
     const fecha = respuesta.headers?.get?.('date');
     const conFecha = fecha ? { fechaDelServidor: fecha } : {};
@@ -254,7 +319,41 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     return { ok: true, datos: datos.data as never, ...conFecha };
   }
 
+  /**
+   * API-MED-02: sube los bytes de una imagen a la ruta firmada de la intención, con su tipo. No lleva sesión: la ruta
+   * firmada es la autorización, y vence a los 10 minutos. La respuesta se valida como cualquier otra.
+   */
+  async function subirBytes(rutaDeSubida: string, cuerpo: Blob | ArrayBuffer | Uint8Array, tipo: string): Promise<Resultado<SalidaDe<typeof MedioResponseSchema>>> {
+    let respuesta: Response;
+    try {
+      respuesta = await hacerFetch(`${opciones.baseUrl}${rutaDeSubida}`, {
+        method: 'PUT',
+        headers: { Accept: 'application/json', 'Content-Type': tipo, 'X-BE-Surface': opciones.superficie },
+        body: cuerpo as BodyInit,
+        credentials: 'omit',
+        cache: 'no-store',
+      });
+    } catch {
+      return { ok: false, tipo: 'RED' };
+    }
+    const texto = await respuesta.text().catch(() => '');
+    const json = texto ? leerJson(texto) : null;
+    if (!respuesta.ok) {
+      const error = ErrorEnvelopeSchema.safeParse(json);
+      if (!error.success) return { ok: false, tipo: 'API', status: respuesta.status, codigo: 'RESPUESTA_NO_RECONOCIDA', issues: [] };
+      const issues = (error.data.error.details as { issues?: ValidationIssue[] } | undefined)?.issues ?? [];
+      return { ok: false, tipo: 'API', status: respuesta.status, codigo: error.data.error.code, issues };
+    }
+    const datos = MedioResponseSchema.safeParse(json);
+    if (!datos.success) return { ok: false, tipo: 'API', status: respuesta.status, codigo: 'RESPUESTA_NO_RECONOCIDA', issues: [] };
+    return { ok: true, datos: datos.data };
+  }
+
   return {
+    /** La URL absoluta de una ruta de la API (la de una imagen con su acceso firmado, por ejemplo). */
+    urlDe(ruta: string): string {
+      return `${opciones.baseUrl}${ruta}`;
+    },
     /** API-ACC-01. A1 y A2 viajan como dos actos separados con la versión que la UI mostró. Nunca A3. */
     registrar(datos: { correo: string; contrasena: string }, claveDeIdempotencia: string): Promise<Resultado<RegistrarIdentidadResponse>> {
       return llamar('POST', '/registrations', {
@@ -433,6 +532,33 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-CON-08. Idempotente por semántica. */
     revocarA3(token: string, consentimientoId: string): Promise<Resultado<ConsentimientoRevocadoResponse>> {
       return llamar('POST', `/me/health-data-consents/${encodeURIComponent(consentimientoId)}/revoke`, {
+        token,
+        esquema: ConsentimientoRevocadoResponseSchema,
+        cuerpo: {},
+      });
+    },
+
+    // ─── EVIDENCIA_VISUAL (08 §12.4 y §21.3; DL-125) ──────────────────────────────────────────────
+    /** API-EVI-01. El texto a mostrar antes de la primera foto para el profesional de ese vínculo. */
+    consultarRequisitoDeEvidenciaVisual(token: string, vinculoId: string): Promise<Resultado<RequisitoDeEvidenciaVisualResponse>> {
+      return llamar('GET', `/relationships/${encodeURIComponent(vinculoId)}/visual-evidence-requirement`, { token, esquema: RequisitoDeEvidenciaVisualResponseSchema });
+    },
+    /** API-EVI-02. La versión enviada es la que la pantalla mostró; lo demás es del servidor. */
+    otorgarEvidenciaVisual(token: string, vinculoId: string, versionMostrada: string, claveDeIdempotencia: string): Promise<Resultado<EvidenciaVisualOtorgadaResponse>> {
+      return llamar('POST', `/relationships/${encodeURIComponent(vinculoId)}/visual-evidence-consents`, {
+        token,
+        claveDeIdempotencia,
+        esquema: EvidenciaVisualOtorgadaResponseSchema,
+        cuerpo: { consentVersionId: versionMostrada },
+      });
+    },
+    /** API-EVI-03. */
+    consultarEvidenciasVisuales(token: string, filtro: { cursor?: string } = {}): Promise<Resultado<ListaDeEvidenciaVisualResponse>> {
+      return llamar('GET', `/me/visual-evidence-consents${query(filtro)}`, { token, esquema: ListaDeEvidenciaVisualResponseSchema });
+    },
+    /** API-EVI-04. Idempotente por semántica: sin Idempotency-Key; reintentar repite el POST. */
+    revocarEvidenciaVisual(token: string, actoId: string): Promise<Resultado<ConsentimientoRevocadoResponse>> {
+      return llamar('POST', `/me/visual-evidence-consents/${encodeURIComponent(actoId)}/revoke`, {
         token,
         esquema: ConsentimientoRevocadoResponseSchema,
         cuerpo: {},
@@ -618,6 +744,78 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     corregirIngesta(token: string, ingestaId: string, cuerpo: CorregirIngestaRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/nutrition/executions/${encodeURIComponent(ingestaId)}/corrections`, { token, claveDeIdempotencia, esquema: IngestaResponseSchema, cuerpo });
     },
+    // ─── REC · recetas (DL-119) ──────────────────────────────────────────────────────────────
+    /** API-REC-01. */
+    crearReceta(token: string, cuerpo: CrearRecetaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/nutrition/recipes', { token, claveDeIdempotencia, esquema: RecetaResponseSchema, cuerpo });
+    },
+    /** API-REC-02. */
+    listarRecetas(token: string, filtro: { cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/nutrition/recipes${query(filtro)}`, { token, esquema: ListaDeRecetasResponseSchema });
+    },
+    /** API-REC-03. */
+    consultarReceta(token: string, recetaId: string) {
+      return llamar('GET', `/nutrition/recipes/${encodeURIComponent(recetaId)}`, { token, esquema: DetalleDeRecetaResponseSchema });
+    },
+    /** API-REC-04: emite una versión nueva. */
+    editarReceta(token: string, recetaId: string, cuerpo: EditarRecetaRequest, claveDeIdempotencia: string) {
+      return llamar('PATCH', `/nutrition/recipes/${encodeURIComponent(recetaId)}`, { token, claveDeIdempotencia, esquema: RecetaResponseSchema, cuerpo });
+    },
+    /** API-REC-05: asocia o reemplaza la imagen de referencia. */
+    asociarImagenDeReceta(token: string, recetaId: string, cuerpo: AsociarImagenDeRecetaRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', `/nutrition/recipes/${encodeURIComponent(recetaId)}/image`, { token, claveDeIdempotencia, esquema: RecetaResponseSchema, cuerpo });
+    },
+    /** API-REC-06: retira la imagen; el medio no se borra y la historia queda. */
+    retirarImagenDeReceta(token: string, recetaId: string, expectedVersion: string, claveDeIdempotencia: string) {
+      return llamar('DELETE', `/nutrition/recipes/${encodeURIComponent(recetaId)}/image${query({ expectedVersion })}`, { token, claveDeIdempotencia, esquema: RecetaResponseSchema });
+    },
+    /** API-REC-07: calcula sin guardar, para ver el cálculo mientras se edita. */
+    calcularReceta(token: string, cuerpo: CalcularRecetaRequest) {
+      return llamar('POST', '/nutrition/recipe-calculations', { token, esquema: CalculoDeRecetaResponseSchema, cuerpo });
+    },
+
+    // ─── MED · medios privados (DL-120) ─────────────────────────────────────────────────────
+    /** API-MED-01: la intención de subida, con su ruta firmada. */
+    crearIntencionDeSubida(token: string, cuerpo: IntencionDeSubidaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/media/upload-intents', { token, claveDeIdempotencia, esquema: IntencionDeSubidaResponseSchema, cuerpo });
+    },
+    /** API-MED-02. */
+    subirMedio: subirBytes,
+    /** API-MED-03: la ruta de lectura firmada, que vence en 15 minutos como máximo. */
+    accederAMedio(token: string, medioId: string) {
+      return llamar('GET', `/media/${encodeURIComponent(medioId)}/access`, { token, esquema: AccesoAMedioResponseSchema });
+    },
+    /** API-MED-05: supresión a pedido de una foto propia de una comida. */
+    suprimirMedio(token: string, medioId: string, claveDeIdempotencia: string) {
+      return llamar('DELETE', `/me/media/${encodeURIComponent(medioId)}`, { token, claveDeIdempotencia, esquema: MedioResponseSchema });
+    },
+
+    // ─── ING · registro de comidas v2 (DL-121) ──────────────────────────────────────────────
+    /** API-ING-01: «Hoy» con las opciones, sus imágenes y los macros de las porciones del plan. */
+    hoyConOpciones(token: string, diaTipoId?: string) {
+      return llamar('GET', `/me/nutrition/today/options${query({ dayTypeId: diaTipoId })}`, { token, esquema: HoyConOpcionesResponseSchema });
+    },
+    /** API-ING-02: el mismo comando desde el carrusel y desde el detalle, con la misma clave por intento. */
+    registrarComida(token: string, cuerpo: RegistrarComidaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/nutrition/meal-records', { token, claveDeIdempotencia, esquema: RegistroDeComidaResponseSchema, cuerpo });
+    },
+    /** API-ING-03. */
+    consultarRegistroDeComida(token: string, registroId: string) {
+      return llamar('GET', `/nutrition/meal-records/${encodeURIComponent(registroId)}`, { token, esquema: RegistroDeComidaResponseSchema });
+    },
+    /** API-ING-04. */
+    listarMisRegistrosDeComida(token: string, filtro: { from?: string; to?: string; cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/me/nutrition/meal-records${query(filtro)}`, { token, esquema: ListaDeRegistrosDeComidaResponseSchema });
+    },
+    /** API-ING-05: completar o corregir las cantidades, como una rectificación. */
+    rectificarCantidades(token: string, registroId: string, cuerpo: RectificarCantidadesRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/meal-records/${encodeURIComponent(registroId)}/consumed-quantities`, { token, claveDeIdempotencia, esquema: RegistroDeComidaResponseSchema, cuerpo });
+    },
+    /** API-ING-06: deshacer, como una anulación auditable. */
+    deshacerRegistroDeComida(token: string, registroId: string, cuerpo: AnularRegistroRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/meal-records/${encodeURIComponent(registroId)}/annulment`, { token, claveDeIdempotencia, esquema: RegistroDeComidaResponseSchema, cuerpo });
+    },
+
     /** API-NUT-17. Ver no es revisar. */
     contextoDeRevision(token: string, asesoradoId: string, periodo: { periodStart?: string; periodEnd?: string } = {}) {
       return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/review-context${query(periodo)}`, { token, esquema: ContextoDeRevisionResponseSchema });
@@ -888,6 +1086,44 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-TRN-24. */
     aplicarRevisionDeEntrenamiento(token: string, revisionId: string, claveDeIdempotencia: string) {
       return llamar('POST', `/training/reviews/${encodeURIComponent(revisionId)}/apply`, { token, claveDeIdempotencia, esquema: AplicarRevisionResponseSchema, cuerpo: { expectedVersion: 'v1' } });
+    },
+
+    // ─── WP-ENTRENAMIENTO-SERIES: objetivos por serie, imagen de ejercicio y tiempos (DL-122 a DL-124) ─────────
+    /** API-SER-01: la versión de plan con los objetivos por serie y las imágenes. Solo el profesional. */
+    planConObjetivos(token: string, planId: string) {
+      return llamar('GET', `/training/plans/${encodeURIComponent(planId)}/detail`, { token, esquema: PlanConObjetivosResponseSchema });
+    },
+    /** API-SER-02: la sesión de una ocurrencia, con el objetivo efectivo de cada serie. Solo el titular. */
+    sesionParaRegistrar(token: string, occurrenceId: string) {
+      return llamar('GET', `/training/occurrences/${encodeURIComponent(occurrenceId)}/session`, { token, esquema: SesionParaRegistrarResponseSchema });
+    },
+    /** API-TIE-01: eventos de tiempo, en orden de secuencia. Reintentar el mismo pedido no suma nada. */
+    registrarEventosDeTiempo(token: string, draftId: string, cuerpo: RegistrarEventosDeTiempoRequest) {
+      return llamar('POST', `/training/execution-drafts/${encodeURIComponent(draftId)}/timing-events`, { token, esquema: ResultadoDeEventosResponseSchema, cuerpo });
+    },
+    /** API-TIE-02: los tiempos de un borrador propio. */
+    tiemposDelBorrador(token: string, draftId: string) {
+      return llamar('GET', `/training/execution-drafts/${encodeURIComponent(draftId)}/timing`, { token, esquema: TiemposDeSesionResponseSchema });
+    },
+    /** API-TIE-03: los tiempos de una ejecución registrada, para el titular o el profesional del plan. */
+    tiemposDeLaEjecucion(token: string, executionId: string) {
+      return llamar('GET', `/training/executions/${encodeURIComponent(executionId)}/timing`, { token, esquema: TiemposDeSesionResponseSchema });
+    },
+    /** API-TIE-04: la sesión en curso, si hay una. */
+    sesionEnCurso(token: string) {
+      return llamar('GET', '/me/training/session-in-progress', { token, esquema: SesionEnCursoResponseSchema });
+    },
+    /** API-EJE-01: los ejercicios propios, con su imagen vigente. */
+    ejerciciosPropios(token: string) {
+      return llamar('GET', '/training/own-exercises', { token, esquema: ListaDeEjerciciosPropiosResponseSchema });
+    },
+    /** API-EJE-02: asocia o reemplaza la imagen de un ejercicio propio. */
+    asociarImagenDeEjercicio(token: string, exerciseId: string, cuerpo: AsociarImagenDeEjercicioRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', `/training/exercises/${encodeURIComponent(exerciseId)}/image`, { token, claveDeIdempotencia, esquema: EjercicioPropioResponseSchema, cuerpo });
+    },
+    /** API-EJE-03: retira la imagen; el medio no se borra y la historia queda. */
+    retirarImagenDeEjercicio(token: string, exerciseId: string, expectedImageVersion: number, claveDeIdempotencia: string) {
+      return llamar('DELETE', `/training/exercises/${encodeURIComponent(exerciseId)}/image${query({ expectedImageVersion: String(expectedImageVersion) })}`, { token, claveDeIdempotencia, esquema: EjercicioPropioResponseSchema });
     },
 
     // ─── FRM · información profesional pertinente (WP-07; 09v16.1 §22) ───────────────────────

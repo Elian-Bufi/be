@@ -50,15 +50,17 @@ export function useTecladoAbierto(): boolean {
   return abierto;
 }
 
-export function BarraDeZonas({ actual, ir, alMedir }: { actual: Zona | null; ir: (r: Ruta) => void; alMedir: (alto: number) => void }) {
+export function BarraDeZonas({ actual, ir, alMedir, oculta = false }: { actual: Zona | null; ir: (r: Ruta) => void; alMedir: (alto: number) => void; oculta?: boolean }) {
   const insets = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
   const tecladoAbierto = useTecladoAbierto();
-  // Mientras está oculta no ocupa lugar: el contenido recupera ese espacio.
+  // Mientras está oculta (con el teclado abierto, o en la sesión enfocada de entrenamiento, WP-ENTRENAMIENTO-SERIES §7.2)
+  // no ocupa lugar: el contenido recupera ese espacio.
   useEffect(() => {
-    if (tecladoAbierto) alMedir(0);
-  }, [tecladoAbierto, alMedir]);
+    if (tecladoAbierto || oculta) alMedir(0);
+  }, [tecladoAbierto, oculta, alMedir]);
   if (tecladoAbierto) return null;
+  if (oculta) return null;
   // Una fila o dos, y el margen: según el ancho del teléfono y la letra de la persona.
   const { filas, margen } = disposicionDeLaBarra({ anchoDePantalla: width, escalaDeLetra: fontScale, zonas: ZONAS.map((z) => z.zona) });
   return (

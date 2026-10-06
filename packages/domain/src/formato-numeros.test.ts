@@ -22,6 +22,12 @@ test('REG-06-158 · mostrar no redondea en silencio: sin máximo, se ven todos l
 test('con un máximo explícito, a lo sumo esos decimales: para conteos y lecturas deliberadamente resumidas', () => {
   assert.equal(numero(0.05, 1), '0,1');
   assert.equal(numero(12, 0), '12');
+  // Un conteo que termina en cero conserva sus ceros: 10 ejecuciones no son «1» (WP-ENTRENAMIENTO-SERIES).
+  assert.equal(numero(10, 0), '10');
+  assert.equal(numero(250, 0), '250');
+  assert.equal(numero(1000, 0), '1.000');
+  assert.equal(numero(10, 2), '10');
+  assert.equal(numero(10.5, 2), '10,5');
   assert.equal(numero(1234567.891, 2), '1.234.567,89');
 });
 

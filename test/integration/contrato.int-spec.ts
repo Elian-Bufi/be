@@ -7,6 +7,10 @@
  * - WP-06: TEST-CT-TRN por tramos; lo que todavía no tiene servicio figura en EN_CONSTRUCCION.
  * - WP-07: TEST-CT-FRM-01 a 08 (catálogo, Solicitud, Respuesta, rectificación).
  * - WP-08: TEST-CT-INT-NUT-02/03 y TEST-CT-INT-TRN-02/03, contra un proveedor falso local (D-H).
+ * - WP-NUTRICION-RECETAS: las familias REC (DL-119), MED (DL-120) e ING (DL-121), con las rutas firmadas de MED-02 y 04.
+ * - WP-ENTRENAMIENTO-SERIES: las familias SER (DL-122), TIE (DL-124) y EJE (DL-123), y MED con la imagen de un ejercicio.
+ * - Precierre del 2026-10-06: EVIDENCIA_VISUAL (EVI-01 a 04, DL-125), y MED-01 con la exigencia activa, en una segunda app
+ *   con el mismo observador.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -32,7 +36,7 @@ import {
   registrarOk,
   tokenDe,
 } from './soporte-api';
-import { aceptar, dashboard, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
+import { a3Vigente, aceptar, dashboard, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 import { CATALOGO_DEMO, circuitoAntropometrico } from './soporte-antropometria';
 import { randomUUID } from 'node:crypto';
 import {
@@ -43,6 +47,7 @@ import {
   cuerpoDeObjetivo,
   cuerpoDeRevision,
   estructura,
+  circuitoConPlanActivo,
   patchConSesion,
   registrarComida,
   registrarLibre,
@@ -60,6 +65,25 @@ import {
   estructuraDeEntrenamiento,
 } from './soporte-entrenamiento';
 import { levantarProveedorFalso, OFF, WGER, type ProveedorFalso } from './soporte-proveedores';
+import { alimentosUsda, cuerpoDeReceta, estructuraConRecetas, FOTOS, leerContenido, RECETAS, subirBytes, subirImagen } from './soporte-recetas';
+import {
+  abrirBorrador,
+  activar as activarLaDemo,
+  asociarImagen,
+  borradorDeLaDemo,
+  corrida,
+  cuerpoDeImagen,
+  IMAGENES_DEL_PAQUETE,
+  mandarEventos,
+  ocurrenciaDeHoy,
+  pasosDelEjemplo,
+  prescripcionIdDe,
+  registrarYConfirmar,
+  retirarImagen,
+  SESION_DEMO,
+  subirImagenDeEjercicio,
+  usarLaApk,
+} from './soporte-por-serie';
 
 interface Observada {
   metodo: string;
@@ -73,20 +97,23 @@ const prisma = new PrismaClient();
 let app: INestApplication;
 let proveedor: ProveedorFalso;
 
+/** El observador: cada respuesta real, con su método, su ruta, su status y su código. */
+function observar(a: INestApplication): void {
+  a.use((req: Request, res: Response, next: NextFunction) => {
+    let codigo: string | null = null;
+    const json = res.json.bind(res);
+    res.json = (cuerpo: unknown) => {
+      codigo = (cuerpo as { error?: { code?: string } } | null)?.error?.code ?? null;
+      return json(cuerpo);
+    };
+    res.on('finish', () => observadas.push({ metodo: req.method.toLowerCase(), ruta: req.originalUrl.split('?')[0], status: res.statusCode, codigo }));
+    next();
+  });
+}
+
 beforeAll(async () => {
   proveedor = await levantarProveedorFalso();
-  app = await appDePrueba({ proveedores: { openFoodFactsUrl: proveedor.url, wgerUrl: proveedor.url, presupuestoMs: 1_500 } }, (a) => {
-    a.use((req: Request, res: Response, next: NextFunction) => {
-      let codigo: string | null = null;
-      const json = res.json.bind(res);
-      res.json = (cuerpo: unknown) => {
-        codigo = (cuerpo as { error?: { code?: string } } | null)?.error?.code ?? null;
-        return json(cuerpo);
-      };
-      res.on('finish', () => observadas.push({ metodo: req.method.toLowerCase(), ruta: req.originalUrl.split('?')[0], status: res.statusCode, codigo }));
-      next();
-    });
-  });
+  app = await appDePrueba({ proveedores: { openFoodFactsUrl: proveedor.url, wgerUrl: proveedor.url, presupuestoMs: 1_500 } }, observar);
 });
 afterAll(async () => {
   await app.close();
@@ -1075,6 +1102,294 @@ it('TEST-CT (PF-02 · DL-100/101/102): «Antecedentes para entrenamiento» — F
   });
   expect((await pro.post(evaluar).send(citando('v1')).expect(409)).body.error.code).toBe('VERSION_CONFLICT');
   await pro.post(evaluar).send(citando('v2')).expect(201);
+});
+
+it('TEST-CT (WP-NUTRICION-RECETAS): las 18 operaciones REC, MED e ING, con éxitos y errores declarados', async () => {
+  const c = await circuitoListoParaPlanificar(app, 'contrato-recetas');
+  const pro = conSesion(app, c.pro.token);
+  const ase = conSesion(app, c.ase.token);
+  const servidor = app.getHttpServer();
+  const ajeno = randomUUID();
+  const alimentos = await alimentosUsda(app, c.pro);
+  const cuerpo = cuerpoDeReceta(RECETAS[0]!, alimentos);
+
+  // REC-01 · REC-07
+  const claveDeReceta = claveDeIdempotencia();
+  const receta = (await pro.post('/api/v1/nutrition/recipes', claveDeReceta).send(cuerpo).expect(201)).body.data;
+  await pro.post('/api/v1/nutrition/recipes', claveDeReceta).send({ ...cuerpo, name: 'Otro nombre' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post('/api/v1/nutrition/recipes').send({ ...cuerpo, total: 1 }).expect(400); // UNKNOWN_FIELD: el cliente no manda totales
+  await request(servidor).post('/api/v1/nutrition/recipes').set('Authorization', `Bearer ${c.pro.token}`).send(cuerpo).expect(400); // sin clave
+  await pro.post('/api/v1/nutrition/recipes').send({ ...cuerpo, ingredients: [{ ...cuerpo.ingredients[0]!, catalogItemVersionId: ajeno }] }).expect(422); // CATALOG_REFERENCE_INVALID
+  await ase.post('/api/v1/nutrition/recipes').send(cuerpo).expect(403);
+  await request(servidor).post('/api/v1/nutrition/recipes').set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo).expect(401);
+  await pro.post('/api/v1/nutrition/recipe-calculations').send({ servings: 2, ingredients: cuerpo.ingredients }).expect(200);
+  await pro.post('/api/v1/nutrition/recipe-calculations').send({ servings: 2 }).expect(400);
+  await pro.post('/api/v1/nutrition/recipe-calculations').send({ servings: 1, ingredients: [{ ...cuerpo.ingredients[0]!, catalogItemId: ajeno }] }).expect(422);
+  await ase.post('/api/v1/nutrition/recipe-calculations').send({ servings: 1, ingredients: cuerpo.ingredients }).expect(403);
+  // REC-02 · REC-03
+  await pro.get('/api/v1/nutrition/recipes?limit=5').expect(200);
+  await pro.get('/api/v1/nutrition/recipes?cursor=basura').expect(400); // INVALID_CURSOR
+  await pro.get('/api/v1/nutrition/recipes?orden=asc').expect(400);
+  await ase.get('/api/v1/nutrition/recipes').expect(403);
+  await pro.get(`/api/v1/nutrition/recipes/${receta.recipeId}`).expect(200);
+  await pro.get(`/api/v1/nutrition/recipes/${ajeno}`).expect(404);
+  await pro.get(`/api/v1/nutrition/recipes/${receta.recipeId}?x=1`).expect(400);
+  await ase.get(`/api/v1/nutrition/recipes/${receta.recipeId}`).expect(403);
+  // REC-04
+  const editar = (id: string, extra: Record<string, unknown>) => request(servidor).patch(`/api/v1/nutrition/recipes/${id}`).set('Authorization', `Bearer ${c.pro.token}`).set('Idempotency-Key', claveDeIdempotencia()).send({ ...cuerpo, ...extra });
+  const editada = (await editar(receta.recipeId, { expectedVersion: receta.version }).expect(200)).body.data;
+  await editar(receta.recipeId, { expectedVersion: receta.version }).expect(409); // VERSION_CONFLICT
+  await editar(ajeno, { expectedVersion: 'v1' }).expect(404);
+  await editar(receta.recipeId, { expectedVersion: editada.version, ingredients: [{ ...cuerpo.ingredients[0]!, catalogItemVersionId: ajeno }] }).expect(422);
+  await editar(receta.recipeId, { expectedVersion: editada.version, extra: true }).expect(400);
+  // MED-01 · MED-02
+  const intencion = (cuerpoDeIntencion: Record<string, unknown>, parte = pro, clave?: string) =>
+    parte.post('/api/v1/me/media/upload-intents', clave).send({ purpose: 'RECIPE_REFERENCE', contentType: 'image/png', byteSize: FOTOS[0]!.length, provenance: 'AI_GENERATED', authorship: null, ...cuerpoDeIntencion });
+  const claveDeIntencion = claveDeIdempotencia();
+  const subida = (await intencion({}, pro, claveDeIntencion).expect(201)).body.data;
+  await intencion({ byteSize: 10 }, pro, claveDeIntencion).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await intencion({ contentType: 'image/gif' }).expect(422); // FILE_TYPE_NOT_ALLOWED
+  await intencion({ byteSize: 10 * 1024 * 1024 + 1 }).expect(422); // FILE_SIZE_NOT_ALLOWED
+  await intencion({ purpose: 'MEAL_EVIDENCE', provenance: 'AI_GENERATED' }, ase).expect(422); // VALIDATION_FAILED
+  await intencion({}, ase).expect(403);
+  await intencion({ extra: 1 }).expect(400);
+  await request(servidor).post('/api/v1/me/media/upload-intents').set('Idempotency-Key', claveDeIdempotencia()).send({}).expect(401);
+  const imagen = (await subirBytes(app, subida.uploadPath, FOTOS[0]!, 'image/png').expect(200)).body.data;
+  await subirBytes(app, subida.uploadPath, FOTOS[0]!, 'image/png').expect(200); // la misma subida: el mismo medio
+  await subirBytes(app, subida.uploadPath, FOTOS[1]!, 'image/png').expect(409); // INVALID_STATE_TRANSITION
+  await subirBytes(app, '/media/uploads/no.es-una-ruta', FOTOS[0]!, 'image/png').expect(404);
+  const otraSubida = (await intencion({}).expect(201)).body.data;
+  await subirBytes(app, otraSubida.uploadPath, FOTOS[0]!, 'image/gif').expect(422); // FILE_TYPE_NOT_ALLOWED
+  await subirBytes(app, otraSubida.uploadPath, Buffer.from('no es una imagen'), 'image/png').expect(422); // FILE_CONTENT_INVALID
+  await subirBytes(app, otraSubida.uploadPath, Buffer.alloc(10 * 1024 * 1024 + 1, 1), 'image/png').expect(422); // FILE_SIZE_NOT_ALLOWED
+  await request(servidor).put(`/api/v1${otraSubida.uploadPath}?x=1`).set('Content-Type', 'image/png').send(FOTOS[0]!).expect(400);
+  // REC-05 · REC-06
+  const asociada = (await pro.put(`/api/v1/nutrition/recipes/${receta.recipeId}/image`).send({ mediaId: imagen.mediaId, expectedVersion: editada.version }).expect(200)).body.data;
+  await pro.put(`/api/v1/nutrition/recipes/${receta.recipeId}/image`).send({ mediaId: imagen.mediaId, expectedVersion: editada.version }).expect(409); // VERSION_CONFLICT
+  await pro.put(`/api/v1/nutrition/recipes/${receta.recipeId}/image`).send({ mediaId: ajeno, expectedVersion: asociada.version }).expect(422); // MEDIA_REFERENCE_INVALID
+  await pro.put(`/api/v1/nutrition/recipes/${ajeno}/image`).send({ mediaId: imagen.mediaId, expectedVersion: 'v1' }).expect(404);
+  await pro.put(`/api/v1/nutrition/recipes/${receta.recipeId}/image`).send({ mediaId: imagen.mediaId, expectedVersion: asociada.version, extra: 1 }).expect(400);
+  const retirar = (id: string, query: string) => request(servidor).delete(`/api/v1/nutrition/recipes/${id}/image${query}`).set('Authorization', `Bearer ${c.pro.token}`).set('Idempotency-Key', claveDeIdempotencia());
+  await retirar(receta.recipeId, '').expect(400);
+  await retirar(receta.recipeId, '?expectedVersion=v1').expect(409);
+  await retirar(ajeno, '?expectedVersion=v1').expect(404);
+  const conImagen = (await pro.put(`/api/v1/nutrition/recipes/${receta.recipeId}/image`).send({ mediaId: imagen.mediaId, expectedVersion: asociada.version }).expect(200)).body.data;
+  await retirar(receta.recipeId, `?expectedVersion=${conImagen.version}`).expect(200);
+  // MED-03 · MED-04
+  const acceso = (await pro.get(`/api/v1/media/${imagen.mediaId}/access`).expect(200)).body.data;
+  await pro.get(`/api/v1/media/${ajeno}/access`).expect(404);
+  await pro.get(`/api/v1/media/${imagen.mediaId}/access?x=1`).expect(400);
+  await leerContenido(app, acceso.path).expect(200);
+  await leerContenido(app, '/media/content/no.es-una-ruta').expect(404);
+  await leerContenido(app, `${acceso.path}?x=1`).expect(400);
+  // El plan con la receta: NUT-10 la acepta como opción y la activación la congela.
+  const borrador = await crearBorrador(app, c);
+  const conReceta = await patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${borrador.planId}`)
+    .send({ expectedVersion: borrador.version, changes: estructuraConRecetas([{ label: conImagen.name, recipeVersionId: conImagen.recipeVersionId }], c.pollo) })
+    .expect(200);
+  await patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${borrador.planId}`)
+    .send({ expectedVersion: conReceta.body.data.version, changes: estructuraConRecetas([{ label: 'Inexistente', recipeVersionId: ajeno }], c.pollo) })
+    .expect(422); // NUTRITION_PLAN_STRUCTURE_INVALID
+  await pro.post('/api/v1/nutrition/plan-templates').send({ name: 'Plantilla con receta', structure: estructuraConRecetas([{ label: 'R', recipeVersionId: conImagen.recipeVersionId }], c.pollo) }).expect(422);
+  await activar(app, c.pro, borrador.planId, conReceta.body.data.version).expect(200);
+  // ING-01
+  const hoy = (await ase.get('/api/v1/me/nutrition/today/options').expect(200)).body.data;
+  await ase.get('/api/v1/me/nutrition/today/options?otro=1').expect(400);
+  const sinA3 = await prepararAsesorado(app, 'contrato-ing-sin-a3');
+  await conSesion(app, sinA3.token).get('/api/v1/me/nutrition/today/options').expect(403);
+  // ING-02
+  const dia = hoy.dayTypes[0].dayTypeId as string;
+  const almuerzo = hoy.meals[0];
+  const ahora = new Date().toISOString();
+  const registro = (extra: Record<string, unknown>, clave?: string) =>
+    ase.post('/api/v1/me/nutrition/meal-records', clave).send({ kind: 'PLAN_OPTION', activePlanId: borrador.planId, dayTypeId: dia, mealId: almuerzo.mealId, optionId: almuerzo.options[0].optionId, occurredAt: ahora, consumption: { status: 'UNCONFIRMED' }, observation: null, ...extra });
+  const claveDeRegistro = claveDeIdempotencia();
+  const registrado = (await registro({}, claveDeRegistro).expect(201)).body.data;
+  await registro({}).expect(200); // equivalente
+  await registro({ consumption: { status: 'PLAN_PORTIONS' } }).expect(409); // EXECUTION_ALREADY_REGISTERED_INCOMPATIBLY
+  await registro({ consumption: { status: 'PLAN_PORTIONS' } }, claveDeRegistro).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await registro({ activePlanId: ajeno }).expect(404);
+  await registro({ optionId: ajeno }).expect(422); // NUTRITION_EXECUTION_INVALID
+  await registro({ kind: 'DIFFERENT', approximateQuantity: null, mediaIds: [ajeno], description: 'x', optionId: undefined, consumption: undefined, observation: undefined, mealId: null, dayTypeId: null }).expect(422); // MEDIA_REFERENCE_INVALID
+  await registro({ kind: 'DIFFERENT', approximateQuantity: null, description: null, mediaIds: [], optionId: undefined, consumption: undefined, observation: undefined, mealId: null, dayTypeId: null }).expect(400);
+  // ING-03 · ING-04
+  await ase.get(`/api/v1/nutrition/meal-records/${registrado.recordId}`).expect(200);
+  await ase.get(`/api/v1/nutrition/meal-records/${ajeno}`).expect(404);
+  await ase.get(`/api/v1/nutrition/meal-records/${registrado.recordId}?x=1`).expect(400);
+  await ase.get('/api/v1/me/nutrition/meal-records?from=2026-01-01').expect(200);
+  await ase.get('/api/v1/me/nutrition/meal-records?from=ayer').expect(400);
+  await ase.get('/api/v1/me/nutrition/meal-records?cursor=zz').expect(400); // INVALID_CURSOR
+  await conSesion(app, sinA3.token).get('/api/v1/me/nutrition/meal-records').expect(403);
+  // ING-05
+  const rectificar = (id: string, extra: Record<string, unknown>) => ase.post(`/api/v1/nutrition/meal-records/${id}/consumed-quantities`).send({ consumption: { status: 'PLAN_PORTIONS' }, expectedVersion: 'v1', ...extra });
+  const rectificado = (await rectificar(registrado.recordId, {}).expect(201)).body.data;
+  await rectificar(registrado.recordId, {}).expect(409); // VERSION_CONFLICT
+  await rectificar(registrado.recordId, { expectedVersion: rectificado.version, consumption: { status: 'REPORTED', items: [{ itemId: ajeno, quantity: null, notEaten: true }] } }).expect(422);
+  await rectificar(ajeno, {}).expect(404);
+  // ING-06
+  const anular = (id: string, expectedVersion: string) => ase.post(`/api/v1/nutrition/meal-records/${id}/annulment`).send({ reason: null, expectedVersion });
+  await anular(registrado.recordId, 'v1').expect(409); // VERSION_CONFLICT
+  const anulado = (await anular(registrado.recordId, rectificado.version).expect(201)).body.data;
+  await anular(registrado.recordId, anulado.version).expect(409); // INVALID_STATE_TRANSITION
+  await rectificar(registrado.recordId, { expectedVersion: anulado.version }).expect(409); // INVALID_STATE_TRANSITION
+  await anular(ajeno, 'v1').expect(404);
+  // ING-02 después de deshacer: 201 otra vez; con un plan que ya no es el vigente, ACTIVE_PLAN_REQUIRED.
+  await registro({ consumption: { status: 'PLAN_PORTIONS' } }).expect(201);
+  // MED-05
+  const foto = (await subirImagen(app, c.ase, FOTOS[2]!, { contentType: 'image/png', purpose: 'MEAL_EVIDENCE' })).mediaId;
+  const claveDeSupresion = claveDeIdempotencia();
+  const suprimir = (id: string, clave = claveDeIdempotencia()) => request(servidor).delete(`/api/v1/me/media/${id}`).set('Authorization', `Bearer ${c.ase.token}`).set('Idempotency-Key', clave);
+  await suprimir(foto, claveDeSupresion).expect(200);
+  await suprimir(ajeno, claveDeSupresion).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await suprimir(ajeno).expect(404);
+  await request(servidor).delete(`/api/v1/me/media/${foto}`).set('Authorization', `Bearer ${c.ase.token}`).expect(400); // sin clave
+  // ACTIVE_PLAN_REQUIRED: el profesional activa una sucesora y el pedido cita la anterior.
+  const sucesora = await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: borrador.planId }).expect(201);
+  await activar(app, c.pro, sucesora.body.data.planId, sucesora.body.data.version).expect(200);
+  await registro({ kind: 'DIFFERENT', approximateQuantity: null, description: 'Con el plan anterior', mediaIds: [], optionId: undefined, consumption: undefined, observation: undefined, mealId: null, dayTypeId: null }).expect(422);
+});
+
+it('TEST-CT (WP-ENTRENAMIENTO-SERIES): las 9 operaciones SER, TIE y EJE, y MED con la imagen de un ejercicio, con éxitos y errores declarados', async () => {
+  // El titular todavía no usó la APK que muestra los objetivos por serie: TRN-12 responde su 409 declarado (DL-122).
+  const plan = await borradorDeLaDemo(app, 'contrato-series', [], { apk: false });
+  const pro = conSesion(app, plan.pro.token);
+  const ase = conSesion(app, plan.ase.token);
+  const servidor = app.getHttpServer();
+  const ajeno = randomUUID();
+  const imagen = IMAGENES_DEL_PAQUETE.find((i) => i.fixtureKey === SESION_DEMO.exercises[0]!.catalogFixtureKey)!;
+  const ejercicio = plan.ejercicios.get(imagen.fixtureKey)!;
+
+  // MED-01 · MED-02 con EXERCISE_REFERENCE
+  const subida = await subirImagenDeEjercicio(app, plan.pro, imagen);
+  const intencion = { purpose: 'EXERCISE_REFERENCE', contentType: 'image/png', byteSize: 100, provenance: 'AI_GENERATED', authorship: 'Autoría declarada' };
+  await pro.post('/api/v1/me/media/upload-intents').send({ ...intencion, authorship: null }).expect(422); // VALIDATION_FAILED
+  await ase.post('/api/v1/me/media/upload-intents').send(intencion).expect(403);
+  // EJE-01
+  await pro.get('/api/v1/training/own-exercises').expect(200);
+  await ase.get('/api/v1/training/own-exercises').expect(403);
+  await request(servidor).get('/api/v1/training/own-exercises').expect(401);
+  // EJE-02
+  const cuerpo = cuerpoDeImagen(imagen, ejercicio.versionId, subida.mediaId, 0);
+  const claveDeImagen = claveDeIdempotencia();
+  await asociarImagen(app, plan.pro, ejercicio.exerciseId, cuerpo, claveDeImagen).expect(200);
+  await asociarImagen(app, plan.pro, ejercicio.exerciseId, cuerpo, claveDeImagen).expect(200); // reintento
+  await asociarImagen(app, plan.pro, ejercicio.exerciseId, { ...cuerpo, altText: 'Otro texto' }, claveDeImagen).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await asociarImagen(app, plan.pro, ejercicio.exerciseId, cuerpo).expect(409); // VERSION_CONFLICT
+  await asociarImagen(app, plan.pro, ejercicio.exerciseId, { ...cuerpo, expectedImageVersion: 1, exerciseVersionId: ajeno }).expect(422); // EXERCISE_REFERENCE_INVALID
+  await asociarImagen(app, plan.pro, ejercicio.exerciseId, { ...cuerpo, expectedImageVersion: 1, mediaId: ajeno }).expect(422); // MEDIA_REFERENCE_INVALID
+  await asociarImagen(app, plan.pro, ajeno, cuerpo).expect(404);
+  await asociarImagen(app, plan.pro, ejercicio.exerciseId, { ...cuerpo, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await asociarImagen(app, plan.ase, ejercicio.exerciseId, { ...cuerpo, expectedImageVersion: 1 }).expect(403);
+  await request(servidor).put(`/api/v1/training/exercises/${ejercicio.exerciseId}/image`).set('Authorization', `Bearer ${plan.pro.token}`).send(cuerpo).expect(400); // sin clave
+  // SER-01
+  await pro.get(`/api/v1/training/plans/${plan.planId}/detail`).expect(200);
+  await pro.get(`/api/v1/training/plans/${ajeno}/detail`).expect(404);
+  await pro.get(`/api/v1/training/plans/${plan.planId}/detail?x=1`).expect(400);
+  await ase.get(`/api/v1/training/plans/${plan.planId}/detail`).expect(404);
+  await request(servidor).get(`/api/v1/training/plans/${plan.planId}/detail`).expect(401);
+  // SER-02 y MED-03 de la imagen de un ejercicio, con el plan activado
+  await activarLaDemo(app, plan).expect(409); // CLIENT_CAPABILITY_REQUIRED
+  await usarLaApk(app, plan.ase);
+  await activarLaDemo(app, plan).expect(200);
+  const ocurrencia = await ocurrenciaDeHoy(app, plan.ase);
+  await ase.get(`/api/v1/training/occurrences/${ocurrencia}/session`).expect(200);
+  await ase.get('/api/v1/training/occurrences/occ_no-es-una-ocurrencia/session').expect(404);
+  await pro.get(`/api/v1/training/occurrences/${ocurrencia}/session`).expect(404);
+  await ase.get(`/api/v1/training/occurrences/${ocurrencia}/session?x=1`).expect(400);
+  await ase.get(`/api/v1/media/${subida.mediaId}/access`).expect(200);
+  await conSesion(app, (await prepararProfesional(app, 'contrato-series-otro', ['ENTRENAMIENTO'])).token).get(`/api/v1/media/${subida.mediaId}/access`).expect(404);
+  // TIE-01 · TIE-02 · TIE-04
+  const borrador = await abrirBorrador(app, plan.ase, ocurrencia);
+  const eventos = corrida(pasosDelEjemplo(prescripcionIdDe(SESION_DEMO.exercises[0]!), prescripcionIdDe(SESION_DEMO.exercises[1]!)), Date.now() - 60 * 60 * 1000, 'corrida-del-contrato');
+  await mandarEventos(app, plan.ase, borrador.draftId, eventos.slice(0, 3)).expect(200);
+  await ase.get('/api/v1/me/training/session-in-progress').expect(200);
+  await request(servidor).get('/api/v1/me/training/session-in-progress').expect(401);
+  await mandarEventos(app, plan.ase, borrador.draftId, eventos).expect(200); // los primeros son DUPLICATE
+  await mandarEventos(app, plan.ase, ajeno, eventos).expect(404);
+  await mandarEventos(app, plan.pro, borrador.draftId, eventos).expect(404);
+  await mandarEventos(app, plan.ase, borrador.draftId, []).expect(400); // INVALID_REQUEST
+  const eventosDe = (ruta: string, cuerpoDeEventos: unknown, token?: string) => {
+    const r = request(servidor).post(ruta);
+    return (token ? r.set('Authorization', `Bearer ${token}`) : r).send(cuerpoDeEventos as object);
+  };
+  await eventosDe(`/api/v1/training/execution-drafts/${borrador.draftId}/timing-events`, { events: eventos, extra: 1 }, plan.ase.token).expect(400); // UNKNOWN_FIELD
+  await eventosDe(`/api/v1/training/execution-drafts/${borrador.draftId}/timing-events?x=1`, { events: eventos }, plan.ase.token).expect(400);
+  await eventosDe(`/api/v1/training/execution-drafts/${borrador.draftId}/timing-events`, { events: eventos }).expect(401);
+  await ase.get(`/api/v1/training/execution-drafts/${borrador.draftId}/timing`).expect(200);
+  await pro.get(`/api/v1/training/execution-drafts/${borrador.draftId}/timing`).expect(404);
+  await ase.get(`/api/v1/training/execution-drafts/${borrador.draftId}/timing?x=1`).expect(400);
+  // TIE-03
+  const { executionId } = await registrarYConfirmar(app, plan, borrador);
+  await pro.get(`/api/v1/training/executions/${executionId}/timing`).expect(200);
+  await ase.get(`/api/v1/training/executions/${executionId}/timing`).expect(200);
+  await pro.get(`/api/v1/training/executions/${ajeno}/timing`).expect(404);
+  await pro.get(`/api/v1/training/executions/${executionId}/timing?x=1`).expect(400);
+  // EJE-03
+  const claveDeRetiro = claveDeIdempotencia();
+  await retirarImagen(app, plan.pro, ejercicio.exerciseId, '').expect(400);
+  await retirarImagen(app, plan.pro, ejercicio.exerciseId, '?expectedImageVersion=5').expect(409); // VERSION_CONFLICT
+  await retirarImagen(app, plan.pro, ajeno, '?expectedImageVersion=1').expect(404);
+  await retirarImagen(app, plan.ase, ejercicio.exerciseId, '?expectedImageVersion=1').expect(403);
+  await retirarImagen(app, plan.pro, ejercicio.exerciseId, '?expectedImageVersion=1', claveDeRetiro).expect(200);
+  await retirarImagen(app, plan.pro, ejercicio.exerciseId, '?expectedImageVersion=1', claveDeRetiro).expect(200); // reintento
+  await retirarImagen(app, plan.pro, ejercicio.exerciseId, '?expectedImageVersion=2', claveDeRetiro).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await conSesion(app, plan.pro.token).delete(`/api/v1/training/exercises/${ejercicio.exerciseId}/image?expectedImageVersion=2`).set('Idempotency-Key', claveDeIdempotencia()).send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  // Un parámetro desconocido en TIE-04 y EJE-01: 400 INVALID_REQUEST.
+  await ase.get('/api/v1/me/training/session-in-progress?x=1').expect(400);
+  await pro.get('/api/v1/training/own-exercises?x=1').expect(400);
+  // Revocado el A3, la historia del titular (SER-02 de una sesión registrada y TIE-03) es 403; la sesión en curso no
+  // ofrece ninguna (200), y dejar incompleta una corrida vuelve al PDP, que la deniega (404).
+  await ase.post(`/api/v1/me/health-data-consents/${await a3Vigente(app, plan.ase.token)}/revoke`).send({}).expect(200);
+  await ase.get(`/api/v1/training/occurrences/${ocurrencia}/session`).expect(403);
+  await ase.get(`/api/v1/training/executions/${executionId}/timing`).expect(403);
+  expect((await ase.get('/api/v1/me/training/session-in-progress').expect(200)).body.data.inProgress).toBeNull();
+  const cierre = corrida([{ s: 950, evento: { type: 'SESSION_FINISHED', resolution: 'LEFT_INCOMPLETE' } }], Date.now() - 60 * 60 * 1000, 'corrida-del-contrato', eventos.length + 1);
+  await mandarEventos(app, plan.ase, borrador.draftId, cierre).expect(404);
+});
+
+it('TEST-CT (DL-125): EVIDENCIA_VISUAL — EVI-01 a 04, y MED-01 con la exigencia activa', async () => {
+  const c = await circuitoListoParaPlanificar(app, 'contrato-ev');
+  const ase = conSesion(app, c.ase.token);
+  const pro = conSesion(app, c.pro.token);
+  const servidor = app.getHttpServer();
+  const version = VERSION_VIGENTE.EVIDENCIA_VISUAL.id;
+  const requisito = `/api/v1/relationships/${c.vinculoId}/visual-evidence-requirement`;
+  const actos = `/api/v1/relationships/${c.vinculoId}/visual-evidence-consents`;
+  // EVI-01
+  await ase.get(requisito).expect(200);
+  await ase.get(`${requisito}?x=1`).expect(400);
+  await pro.get(requisito).expect(404);
+  await request(servidor).get(requisito).expect(401);
+  // EVI-02
+  const clave = claveDeIdempotencia();
+  const acto = (await ase.post(actos, clave).send({ consentVersionId: version }).expect(201)).body.data;
+  await ase.post(actos, clave).send({ consentVersionId: 'otra-version' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await ase.post(actos).send({ consentVersionId: version }).expect(200); // ya vigente con esa versión
+  await ase.post(actos).send({ consentVersionId: 'acceso-profesional-sanitario-2026-09-demo' }).expect(409); // CONSENT_VERSION_STALE
+  await ase.post(actos).send({ consentVersionId: version, professionalId: c.pro.id }).expect(400); // UNKNOWN_FIELD
+  await pro.post(actos).send({ consentVersionId: version }).expect(404);
+  // EVI-03
+  await ase.get('/api/v1/me/visual-evidence-consents?limit=5').expect(200);
+  await ase.get('/api/v1/me/visual-evidence-consents?cursor=basura').expect(400); // INVALID_CURSOR
+  // EVI-04
+  await pro.post(`/api/v1/me/visual-evidence-consents/${acto.consentId}/revoke`).send({}).expect(404);
+  await ase.post(`/api/v1/me/visual-evidence-consents/${acto.consentId}/revoke`).send({ extra: 1 }).expect(400);
+  await ase.post(`/api/v1/me/visual-evidence-consents/${acto.consentId}/revoke`).send({}).expect(200);
+  // Sin B2 vigente no se registra: 422.
+  await ase.post(`/api/v1/me/consents/${c.consentId}/revoke`).send({}).expect(200);
+  await ase.post(actos).send({ consentVersionId: version }).expect(422); // RELATIONSHIP_NOT_READY_FOR_CONSENT
+  // MED-01 con la exigencia activa: sin plan vigente, 422; con plan y sin el acto, 403 con su detalle.
+  const conExigencia = await appDePrueba({ evidenciaVisualExigida: true }, observar);
+  try {
+    const intencion = (token: string) =>
+      conSesion(conExigencia, token).post('/api/v1/me/media/upload-intents').send({ purpose: 'MEAL_EVIDENCE', contentType: 'image/jpeg', byteSize: 20_000, provenance: 'PERSON_PROVIDED', authorship: null });
+    const sinPlan = await prepararAsesorado(conExigencia, 'contrato-ev-sin-plan', { a3: true });
+    await intencion(sinPlan.token).expect(422); // ACTIVE_PLAN_REQUIRED
+    const conPlan = await circuitoConPlanActivo(conExigencia, 'contrato-ev-plan');
+    await intencion(conPlan.ase.token).expect(403); // VISUAL_EVIDENCE_ACT_REQUIRED
+  } finally {
+    await conExigencia.close();
+  }
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

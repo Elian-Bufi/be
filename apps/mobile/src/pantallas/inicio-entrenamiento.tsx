@@ -1,12 +1,17 @@
 /**
  * Inicio · las tarjetas de Entrenamiento (DL-117): las sesiones de hoy con su estado real, y la actividad de los últimos
- * 30 días. Abrir un borrador usa el mismo circuito de Entrenamiento de hoy (`useAbrirOcurrencia`) y va solo al tocar.
+ * 30 días. Abrir un borrador usa el mismo circuito de Entrenamiento (`useAbrirOcurrencia`) y va solo al tocar: «Iniciar
+ * entrenamiento» empieza la sesión enfocada, y «Continuar entrenamiento» retoma la que corre en este teléfono
+ * (WP-ENTRENAMIENTO-SERIES §7.1).
  */
-import { COPY_ENTRENAMIENTO, numero, vistaDeOcurrencia, type HoyDeEntrenamientoResponse, type Ocurrencia, type Resultado } from '@be/domain';
+import { COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE, numero, vistaDeOcurrencia, type HoyDeEntrenamientoResponse, type Ocurrencia, type Resultado } from '@be/domain';
 import { useCallback, useMemo, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { api } from '../api';
+import { corridaAbierta } from '../corrida-de-entrenamiento';
+import { useEntrenamientoLocal } from '../entrenamiento-en-curso';
 import { SinActualizar } from '../estados';
+import { ejerciciosYSeries } from '../series-de-la-sesion';
 import { fechaCivil, ultimosDiasHasta } from '../formato';
 import { useLecturaRecordada } from '../lecturas';
 import { detalleDeActividad, DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
@@ -73,20 +78,20 @@ function SesionDeHoy({
 }) {
   const { abriendo, fallo, abrir } = useAbrirOcurrencia({ ocurrencia: o, token, sesionPerdida, accesoRetirado, ir });
   const vista = vistaDeOcurrencia(o, hoy);
-  const ejercicios = o.plannedSession.prescriptions.length;
+  const local = useEntrenamientoLocal();
+  // «Continuar» si hay un borrador en curso o si en este teléfono corre su entrenamiento.
+  const continuar = o.execution.state === 'DRAFT_IN_PROGRESS' || local.sesiones().some((s) => s.occurrenceId === o.occurrenceId && corridaAbierta(s.corrida));
   const executionId = o.execution.state === 'REGISTERED' ? o.execution.executionId : null;
   return (
     <View style={estilos.fila}>
       <Text style={estilos.nombre}>{o.plannedSession.label}</Text>
-      <Text style={estilos.detalle}>
-        {[o.plannedSession.blockLabel, o.plannedSession.microcycleLabel, `${numero(ejercicios)} ${ejercicios === 1 ? 'ejercicio' : 'ejercicios'}`].filter(Boolean).join(' · ')}
-      </Text>
+      <Text style={estilos.detalle}>{[o.plannedSession.blockLabel, o.plannedSession.microcycleLabel, ejerciciosYSeries(o.plannedSession.prescriptions)].filter(Boolean).join(' · ')}</Text>
       <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" />
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {executionId ? (
         <Boton texto="Ver registro" tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: executionId })} />
       ) : (
-        <Boton texto={o.execution.state === 'DRAFT_IN_PROGRESS' ? COPY_ENTRENAMIENTO.continuarSesion : COPY_ENTRENAMIENTO.comenzarSesion} onPress={() => void abrir()} ocupado={abriendo} />
+        <Boton texto={continuar ? COPY_ENTRENAMIENTO_POR_SERIE.continuarEntrenamiento : COPY_ENTRENAMIENTO_POR_SERIE.iniciarEntrenamiento} onPress={() => void abrir()} ocupado={abriendo} />
       )}
     </View>
   );

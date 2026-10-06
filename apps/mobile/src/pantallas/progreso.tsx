@@ -25,7 +25,7 @@ import { ENCUADRE_DE_LA_ZONA, NOMBRE_DE_LA_ZONA, panelesDeProgreso, panelQueSeVe
 import { indiceDeLaToma, serieDe, serieDeLaMedida } from '../serie-de-la-medida';
 import { PALETAS } from '../tema';
 import { COLOR, estilosPorTema, Segmentos } from '../ui';
-import { BrilloDeVidrio, sombraDeVidrio } from '../vidrio';
+import { sombraDeVidrio } from '../vidrio';
 import { ElegirLaFigura, FiguraDeZona, useSexoDeLaFigura } from './figura-de-la-toma';
 import { fraseDeLaSerie, GraficoCompacto, ProgresoDeUnaMedida, textoDeLaClase, textoDelCambio, ValorYCambio } from './progreso-de-una-medida';
 
@@ -162,7 +162,6 @@ function TarjetaDeProgreso({
   const frase = [`${n}. ${rotulo}`, valor ?? 'sin dato en esta toma', medida ? cambio : null, clase, fraseDeLaSerie(serie.observaciones, indice), otros].filter(Boolean).join('. ');
   return (
     <View style={[estilos.tarjeta, elegida && estilos.tarjetaElegida]}>
-      <BrilloDeVidrio color={COLOR.vidrioBrillo} radio={16} />
       <Pressable onPress={alTocar} accessibilityRole="button" accessibilityState={{ selected: elegida, expanded: elegida }} accessibilityLabel={frase} style={({ pressed }) => [estilos.toque, pressed && estilos.presionado]}>
         <View style={estilos.cabeza}>
           <View style={[estilos.insignia, { backgroundColor: insignia.fondo, borderColor: insignia.borde }]}>
