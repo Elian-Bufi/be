@@ -1,0 +1,132 @@
+{
+  "demora30": {
+    "fases": [
+      {
+        "fase": "comprobando",
+        "ms": 0
+      },
+      {
+        "fase": "tardando",
+        "ms": 5009
+      },
+      {
+        "fase": "recuperada",
+        "ms": 30119
+      }
+    ],
+    "pedidos": 1,
+    "superpuestos": 1
+  },
+  "dosFallas": {
+    "fases": [
+      {
+        "fase": "comprobando",
+        "ms": 0
+      },
+      {
+        "fase": "tardando",
+        "ms": 5005
+      },
+      {
+        "fase": "recuperada",
+        "ms": 6067
+      }
+    ],
+    "separaciones": [
+      2025,
+      4006
+    ]
+  },
+  "tiempoAgotado": {
+    "fases": [
+      {
+        "fase": "comprobando",
+        "ms": 0
+      },
+      {
+        "fase": "tardando",
+        "ms": 5011
+      },
+      {
+        "fase": "sin-verificar · tiempo-agotado",
+        "ms": 75006
+      }
+    ],
+    "pedidos": 1,
+    "cortados": 1
+  },
+  "sinConexion": {
+    "fases": [
+      {
+        "fase": "comprobando",
+        "ms": 0
+      },
+      {
+        "fase": "sin-verificar · sin-conexion",
+        "ms": 1
+      }
+    ]
+  },
+  "controles": [
+    {
+      "nombre": "la espera máxima de la APK es de 75 s y el aviso aparece a los 5 s",
+      "ok": true,
+      "detalle": "75000 y 5000"
+    },
+    {
+      "nombre": "30 s de demora: a los 5 s la pantalla pasa a «está tardando» (sigue el mismo pedido)",
+      "ok": true,
+      "detalle": "[{\"fase\":\"comprobando\",\"ms\":0},{\"fase\":\"tardando\",\"ms\":5009},{\"fase\":\"recuperada\",\"ms\":30119}]"
+    },
+    {
+      "nombre": "30 s de demora: la sesión se recupera cerca de los 30 s",
+      "ok": true,
+      "detalle": "recuperada a los 30119 ms"
+    },
+    {
+      "nombre": "30 s de demora: un solo pedido a /me, nunca dos a la vez",
+      "ok": true,
+      "detalle": "1 pedidos, 1 a la vez"
+    },
+    {
+      "nombre": "dos 503: se reintenta solo y se recupera",
+      "ok": true,
+      "detalle": "recuperada a los 6067 ms"
+    },
+    {
+      "nombre": "dos 503: tres pedidos, de a uno, con las esperas de la APK (2 s y 4 s)",
+      "ok": true,
+      "detalle": "separaciones [2025,4006] ms"
+    },
+    {
+      "nombre": "80 s de demora: a los 75 s, «tiempo agotado»",
+      "ok": true,
+      "detalle": "sin-verificar tiempo-agotado a los 75006 ms"
+    },
+    {
+      "nombre": "80 s de demora: ese pedido se corta y no se lanza otro (tampoco después)",
+      "ok": true,
+      "detalle": "1 pedidos, 1 cortado por el cliente"
+    },
+    {
+      "nombre": "80 s de demora: la credencial guardada no se borra",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "sin conexión: falla enseguida, con su causa, distinta del tiempo agotado",
+      "ok": true,
+      "detalle": "sin-conexion a los 1 ms"
+    },
+    {
+      "nombre": "sin conexión: la credencial guardada no se borra",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "en ninguno se inició sesión: el límite de intentos de login no interviene",
+      "ok": true,
+      "detalle": "0 inicios"
+    }
+  ]
+}

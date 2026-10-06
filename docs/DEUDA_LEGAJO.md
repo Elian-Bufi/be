@@ -124,11 +124,12 @@
 | DL-117 | Decisión de Dirección · 2026-10-04 | B10-10 §9 · 08 §33 · DL-113 · DL-049 · DL-077 · DL-115 | La APK no tiene un Inicio que reúna lo disponible de los módulos, y Cuenta ocupa un lugar de la barra | **DECIDIDA** 2026-10-04 · Inicio personal y barra Inicio, Nutrición, Entrenamiento, Evolución, Información; Cuenta en el avatar. Implementación sin integrar |
 | DL-118 | Decisión de Dirección · 2026-10-05 | DL-117 · DL-111 · DL-113 · REG-06-162/165/166 · TEST-PRJ-009 | «Mi evolución» de la APK tiene cuatro vistas con mucho desplazamiento, gráficos ilegibles y vistas vacías; la lectura del asesorado es más técnica de lo necesario | **DECIDIDA** 2026-10-05 · tres vistas (Mapa corporal, Progreso por Torso y Piernas, Indicadores); Comparar sale como apartado móvil. Implementación sin integrar |
 | DL-119 | Encargo de Dirección · 2026-10-05 | REG-06-135 (inciso 2) · 06:4228-4394, 4554-4621 · RF-027 | Recetas como preparaciones propias del profesional, catálogo de referencia USDA y método de cálculo de energía y macros | **DECIDIDA** 2026-10-05 · familia REC, método `SUM_SOURCE_PER_100G_V1`. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` (#147, borrador) y **probada localmente**. Sin integrar; pendiente la prueba remota (no hay despliegue) y en Android (no hay APK nueva) |
-| DL-120 | Encargo de Dirección · 2026-10-05 | 08 §21 (08:519-531, 395, 451) · 07 §25 (07:939-965) · 09v12 §24 · 09v9 §28 · REG-06-133 · T-06-65 | Medios privados activados en el MVP sintético; almacenamiento en PostgreSQL detrás de una interfaz, en lugar de S3 | **DECIDIDA** 2026-10-05 la activación, con persistencia en la base existente. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` y **probada localmente**. Sin integrar; pendientes la prueba remota y en Android. Para la demo sigue PostgreSQL (decisión del 2026-10-06), y S3 (07 §25) queda abierto. **Pendiente normativo aislado:** el acto `EVIDENCIA_VISUAL` (08 §12.4) no tiene texto versionado |
+| DL-120 | Encargo de Dirección · 2026-10-05 | 08 §21 (08:519-531, 395, 451) · 07 §25 (07:939-965) · 09v12 §24 · 09v9 §28 · REG-06-133 · T-06-65 | Medios privados activados en el MVP sintético; almacenamiento en PostgreSQL detrás de una interfaz, en lugar de S3 | **DECIDIDA** 2026-10-05 la activación, con persistencia en la base existente. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` y **probada localmente**. Sin integrar; pendientes la prueba remota y en Android. Para la demo sigue PostgreSQL (decisión del 2026-10-06), y S3 (07 §25) queda abierto. **Pendiente normativo aislado:** el acto `EVIDENCIA_VISUAL` (08 §12.4) tiene desde el precierre del 2026-10-06 un texto **propuesto**, su flujo y su mapeo a MED-01 y MED-03, sin activar (DL-125) |
 | DL-121 | Encargo de Dirección · 2026-10-05 | DL-049 · DL-050 · 06:1422-1462 · CONS:564-630 | Registro v2 de comidas: estado de las cantidades, anulación y rectificación del titular, y clave natural con secuencia | **DECIDIDA** 2026-10-05 · familia ING, endpoints nuevos. Resuelve DL-050; lo que lee la APK instalada no cambia. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` y **probada localmente**. Sin integrar; pendientes la prueba remota y en Android (la APK nueva no se compiló). Decidido el 2026-10-06: una entrada efectiva por comida y fecha; en el contraste, fuera de la prescripción y con los dos hechos dichos |
-| DL-122 | Encargo de Dirección · 2026-10-06 | REG-06-111, 112, 128 · 09v10 §5-§6 · PF03-D-2 · DL-105 | Objetivos efectivos por serie: RIR, carga sugerida y descanso con herencia, y base de la carga y de las repeticiones | **DECIDIDA** 2026-10-06 por el encargo · familia SER, lecturas nuevas; lo que lee la APK 0.13.2 no cambia. **IMPLEMENTADA** el 2026-10-06 en `wp-entrenamiento-series` y **probada localmente**, con la CI en verde. Sin integrar; pendiente en el teléfono. Queda para Dirección la versión mínima de la APK antes de usar objetivos por serie con personas |
+| DL-122 | Encargo de Dirección · 2026-10-06 | REG-06-111, 112, 128 · 09v10 §5-§6 · PF03-D-2 · DL-105 | Objetivos efectivos por serie: RIR, carga sugerida y descanso con herencia, y base de la carga y de las repeticiones | **DECIDIDA** 2026-10-06 por el encargo · familia SER, lecturas nuevas; lo que lee la APK 0.13.2 no cambia. **IMPLEMENTADA** el 2026-10-06 en `wp-entrenamiento-series` y **probada localmente**, con la CI en verde. Sin integrar; pendiente en el teléfono. Precierre del 2026-10-06 (§2): sin versión mínima, un plan que exige objetivos por serie no se activa ni se entrega a una app que no declare la capacidad (`X-BE-Capabilities`); la 0.13.2 y las candidatas reciben «no disponible». **IMPLEMENTADO y probado localmente** (integración y recorrido) |
 | DL-123 | Encargo de Dirección · 2026-10-06 | REG-06-134, 135, 136 · 09v10 §9 · DL-120 | Imagen del ejercicio: medio `EXERCISE_REFERENCE`, asociación de solo agregar, licencia honesta, procedencia y revisión técnica | **DECIDIDA** 2026-10-06 por el encargo · familia EJE. **IMPLEMENTADA** el 2026-10-06 en `wp-entrenamiento-series` y **probada localmente** (las tres imágenes del paquete por el flujo real), con la CI en verde. Sin integrar. API-TRN-13 sigue con `didacticResources` vacío |
-| DL-124 | Encargo de Dirección · 2026-10-06 | REG-06-130, 131 · paquete de Dirección (DECISIONES_Y_TIEMPOS) | Tiempos de la sesión como eventos idempotentes con calidad: medido, estimado, incompleto o sin dato | **DECIDIDA** 2026-10-06 por el encargo · familia TIE. **IMPLEMENTADA** el 2026-10-06 en `wp-entrenamiento-series` y **probada localmente** (el guion de tiempos del paquete, de punta a punta), con la CI en verde. Sin integrar. Pendiente en Android: pantalla bloqueada, muerte del proceso y reloj monotónico durante la suspensión. A decidir: los datos de la sesión en AsyncStorage sin cifrar |
+| DL-124 | Encargo de Dirección · 2026-10-06 | REG-06-130, 131 · paquete de Dirección (DECISIONES_Y_TIEMPOS) | Tiempos de la sesión como eventos idempotentes con calidad: medido, estimado, incompleto o sin dato | **DECIDIDA** 2026-10-06 por el encargo · familia TIE. **IMPLEMENTADA** el 2026-10-06 en `wp-entrenamiento-series` y **probada localmente** (el guion de tiempos del paquete, de punta a punta), con la CI en verde. Sin integrar. Pendiente en Android: pantalla bloqueada, muerte del proceso y reloj monotónico durante la suspensión. Precierre del 2026-10-06 (§1, §3, §4): estados honestos del guardado local, cifrado AES-256-GCM con la clave en el almacén seguro y fuera del respaldo de Android; reloj desde el arranque con su base en cada instante (`ELAPSED_SINCE_BOOT`). **IMPLEMENTADO**; Android pendiente |
+| DL-125 | Encargo de Dirección · 2026-10-06 (precierre, §6) | 08 §12.2, §12.4 (08:386, 08:395), §13, §21 · 08:451 · DL-120 · DL-116 | El acto `EVIDENCIA_VISUAL` no tenía texto versionado, ni registro, ni lo exigían MED-01 y MED-03 | **PROPUESTA**, sin activar · texto versionado propuesto (`evidencia-visual-2026-10-propuesta`), acto registrable por alcance de Nutrición, familia propia EVI (API-EVI-01 a 04) y mapeo a MED-01 y MED-03 detrás de `BE_EVIDENCIA_VISUAL_EXIGIDA` (por defecto `false`). **Punto de aprobación pendiente:** Dirección aprueba el texto, con la validación jurídica, y decide activar la exigencia |
 
 ---
 
@@ -2607,6 +2608,14 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 - Para `@be/api` y `@be/web`, el log no distingue un informe limpio de un error, así que no se afirma ni se invalida nada.
 - La auditoría local del 2026-10-02, con el script corregido, aprobó las dos con informes válidos.
 
+**Avisos nuevos del 2026-10-06: corregidos, no exceptuados.** Ese día se publicaron dos avisos que hicieron fallar la
+auditoría de producción de `main` y de toda rama que salga de ella (CI 37497698570):
+- `sharp` < 0.35.5 · alto · GHSA-wq5f-xc86-pv6w, en `@be/api` y en `@be/web` (por `next`): pasa a 0.35.5;
+- `shell-quote` 1.8.4 a 1.10.0 · crítico · GHSA-pqg4-j6r4-53mv, en `@be/mobile` (por `react-native`): pasa a 1.12.0.
+
+Están en #149 (`5144841`) y, para `main`, en #148, que suma `d85caec` al arreglo de `source-map-js`. Las únicas
+excepciones siguen siendo las de esta deuda.
+
 **Pendiente de Dirección.**
 - Ratificar la excepción o pedir otra salida.
 - Antes del 2026-10-31, revisar si node-forge publicó la corrección (entonces se fija con `overrides` y la excepción se borra) o si Expo dejó de depender de node-forge.
@@ -3035,8 +3044,20 @@ un plan pago o recrearla. No se recreó nada ni se pagó nada.
   - que MED-01 y MED-03 lo exijan.
 - Esto no frena el resto del trabajo: la demo es sintética, como todo el MVP.
 
+**Precierre del 2026-10-06 (§6).** El pendiente normativo tiene una propuesta, sin activar: el texto versionado, el acto
+con la evidencia del 08 §12.2 y su mapeo a MED-01 y MED-03 están en DL-125. Mientras la exigencia siga apagada, todo queda
+como se describe arriba.
+
+**Respaldo y restauración, probados en local** (precierre, §6; `docs/propuestas/CONTINUIDAD-BASE-DE-TEST_2026-10-06.md`).
+- Un respaldo de una base con el esquema de hoy no se restauraba de una vez: `pg_restore` carga los datos con la ruta de
+  búsqueda vacía, y el CHECK de finalidad llama a `be_finalidad_de_alcance`, que nombraba el tipo sin esquema. La
+  migración `20261006150000_funcion_de_finalidad_restaurable` lo corrige; para un respaldo anterior, se restaura por
+  secciones.
+- Las imágenes vuelven con la misma huella, y una base restaurada como la de `test` se migra hasta el head y la API
+  queda lista contra ella (`EVIDENCIA/ENTRENAMIENTO-SERIES/resultados/09` y `11`).
+
 **Condición de cierre.** Dirección decide entre seguir en PostgreSQL y contratar un almacenamiento S3, y aprueba el texto
-del acto `EVIDENCIA_VISUAL`. El 08 registra la activación.
+del acto `EVIDENCIA_VISUAL` (DL-125). El 08 registra la activación.
 
 ## DL-121 — Registro v2 de comidas: estado de las cantidades, anulación y rectificación del titular
 
@@ -3123,7 +3144,28 @@ muestra el valor general de la prescripción. El editor lo avisa.
 
 **Recomendación del ejecutor:** A para la entrega, porque hoy no hay asesorados reales. B si el producto crece.
 
-**Condición de cierre.** Dirección aprueba el paquete y decide A o B; el 05 y el 09 incorporan las operaciones SER.
+**Lo que decidió el precierre del 2026-10-06 (§2).** «Un aviso solo al entrenador no alcanza»: un cliente que no puede
+interpretar el plan nunca muestra los valores generales como objetivos efectivos. Las APK instaladas no muestran textos del
+servidor, así que no se les puede pedir «Actualizá BE»: se impide activar y entregar el plan incompatible, y se le explica
+al profesional. Sin inventar un versionCode futuro ni usar una versión mínima como única anotación.
+- **La capacidad la declara el cliente:** `X-BE-Capabilities: training-set-targets-1`. La APK nueva la manda en cada
+  pedido; la 0.13.2 y las dos candidatas no mandan nada, y se las trata igual. Cuando el titular lee API-TRN-14 o API-SER-02
+  con la capacidad, queda registrada (`capacidad_de_cliente_declarada`, de mejor esfuerzo y a lo sumo una vez por hora).
+- **Activar (API-TRN-12):** un plan con objetivos distintos por serie (RIR o carga distintos de los generales), sin ese
+  registro del titular, es 409 `CLIENT_CAPABILITY_REQUIRED`. API-SER-01 informa `setTargetsDelivery`, y el editor del
+  website dice antes por qué no se puede y qué hacer; el botón queda deshabilitado con el motivo asociado.
+- **Entregar:** sin la capacidad en el pedido, API-TRN-14 y su período responden `NOT_AVAILABLE` sin plan ni ocurrencias,
+  una forma que esas APK ya validan; API-TRN-09 y TRN-15 dan el 404 de lo inexistente. El motivo queda en la auditoría.
+  Lo que ve la 0.13.2 (y las candidatas): «Tu plan de entrenamiento no está disponible en este momento.», con «Ir a
+  Vínculos» (`be-apk-0.13.2:apps/mobile/src/pantallas/entrenamiento.tsx:132`).
+- **No cambian** los planes compatibles, la vista del profesional ni lo registrado.
+- **Probado:** integración (`compatibilidad-de-clientes`, `entrenamiento-por-serie`, `contrato`) y el recorrido local
+  (`EVIDENCIA/ENTRENAMIENTO-SERIES/resultados/01` y `02`).
+- **Límites:** el registro no vence (quien usó una vez la APK nueva queda habilitado; si vuelve a una vieja, la entrega
+  retenida lo cubre). El «Ir a Vínculos» de la APK vieja no es la causa real; es lo único que esa versión sabe mostrar.
+
+**Condición de cierre.** Dirección aprueba el paquete y la negociación por capacidad; el 05 y el 09 incorporan las
+operaciones SER, la cabecera y el 409.
 
 ## DL-123 — Imagen del ejercicio con licencia, procedencia y revisión técnica
 
@@ -3209,5 +3251,81 @@ APK no tiene cronómetro ni guarda nada localmente.
 - Corregir un evento de tiempo no está en el alcance: los tiempos son lo que se marcó, con su calidad.
 - Una serie declarada «no realizada» sigue en DL-106.
 
-**Condición de cierre.** Dirección aprueba el paquete; el 05 y el 09 incorporan la familia TIE; la prueba en el teléfono
-cubre los casos de Android.
+**Precierre del 2026-10-06 (§1, §3 y §4).**
+- **El guardado en el teléfono es honesto** (§1). Cinco estados: en memoria, escritura pendiente, guardado en el teléfono,
+  enviado y falla recuperable. «Guardada en el teléfono» se dice recién cuando la escritura terminó bien. Un error de lectura
+  o un JSON inválido no es «no hay nada»: lo leído no se pisa, se aparta para recuperarlo y se ofrece reintentar. La falla
+  anterior está reproducida contra `58567ec` (`EVIDENCIA/ENTRENAMIENTO-SERIES/resultados/07`).
+- **Cifrado y fuera del respaldo** (§4). Lo guardado va cifrado con AES-256-GCM (`expo-crypto`), con una clave por cuenta en
+  el almacén seguro; lo anterior en claro se migra sin pérdida, y sin la clave el dato queda apartado, no borrado. Los
+  borradores y eventos no entran en el respaldo automático ni en la transferencia entre teléfonos
+  (`fullBackupContent` hasta Android 11 y `dataExtractionRules` desde el 12), igual que las credenciales. **Corrección:**
+  el texto anterior decía «en AsyncStorage, como pide el encargo»; el encargo no pedía guardarlo sin cifrar.
+- **El reloj desde el arranque** (§3). Cada instante dice su base: `ELAPSED_SINCE_BOOT` (el módulo nativo
+  `reloj-del-sistema`, con `SystemClock.elapsedRealtime()`, que sigue contando mientras el teléfono duerme, y el número de
+  arranque como ancla) o `PROCESS_MONOTONIC` (el navegador o una app sin el módulo). Las bases no se mezclan, y la
+  tolerancia de 2 s se aplica solo a la del proceso. Cambiar la hora civil no cambia una duración medida. La recuperación
+  sigue siendo explícita: un reloj desde el arranque no dice cuándo terminó una serie abandonada.
+- **Probado en local:** el recorrido con las dos bases y anclas del propio recorrido (proceso: 203 408 ms estimados; arranque:
+  216 293 ms medidos; los dos a 0 ms de lo esperado), sin eventos repetidos ni duraciones absurdas
+  (`EVIDENCIA/ENTRENAMIENTO-SERIES/resultados/03`). El Kotlin del módulo compila contra android-36 y expo-modules-core
+  57.0.18 sin Gradle (`resultados/08`).
+- **Pendiente en Android, sin darlo por aprobado:** pantalla bloqueada, descarte de la actividad, cierre desde recientes,
+  muerte del proceso, reinicio del teléfono, cambio de hora, respaldo excluido (`EVIDENCIA/ENTRENAMIENTO-SERIES/LEEME.md`).
+
+**Condición de cierre.** Dirección aprueba el paquete; el 05 y el 09 incorporan la familia TIE y la base del reloj; la
+prueba en el teléfono cubre los casos de Android.
+
+## DL-125 — EVIDENCIA_VISUAL: el texto propuesto, el acto y lo que exigen MED-01 y MED-03
+
+**Prioridad:** alta · **Documento:** 08 §12.2 (evidencia de cada acto) · 08 §12.4 (08:386, 08:395: `EVIDENCIA_VISUAL`,
+«información destacada por categoría, dentro del alcance», B2 reforzado, obligatorio para subir y ver fotos, revocable) ·
+08 §13 (revocación) · 08 §21 (fotos) · 08:451 (supresión individual) · DL-120 · DL-116 (identificadores del 09) ·
+**Estado:** PROPUESTA del precierre del 2026-10-06, sin activar
+
+**Qué pasaba.** El acto era solo una etiqueta de auditoría (DL-120): no había un texto versionado que la persona leyera,
+ni un registro con la evidencia del 08 §12.2, y MED-01 y MED-03 no lo exigían.
+
+**Qué pidió el encargo.** «Preparar el texto versionado propuesto, el flujo de aceptación/revocación y su mapeo a
+MED-01/MED-03 según el canon. Dejar visible el punto de aprobación pendiente; no insertar aceptaciones de personas reales
+ni declarar validación jurídica. En pruebas, usar cuentas y actos sintéticos explícitos.»
+
+**Cómo se implementa.**
+- **El texto** (`evidencia-visual-2026-10-propuesta`, tipo de texto nuevo, en el catálogo y en la base): dice que es una
+  propuesta pendiente de aprobación de Dirección y de validación jurídica, y cada afirmación es lo que hace la
+  implementación (08 §21: opcional, privada, quién la ve, acceso de 15 minutos con su registro, metadatos quitados, sin IA,
+  borrado de cada foto y revocación). La API lo informa con `textApproval: 'PENDING_APPROVAL'` y la APK lo muestra.
+- **El acto** es un `acto_registrable` por alcance de Nutrición del titular, con versión y hash, finalidad del alcance,
+  superficie, actor, autoría y procedencia. La base exige que el alcance sea de Nutrición y del titular, la versión de su
+  tipo, uno vigente por alcance, la evidencia inmutable y solo VIGENTE → REVOCADO.
+- **Operaciones, en una familia propia de BE (EVI):** el 09 no las define, y tomar números de la familia CON repetiría el
+  problema de DL-116. Tienen la forma de CON-01, 02, 07 y 08: requisito (API-EVI-01), registrar con la versión mostrada
+  (API-EVI-02), los propios (API-EVI-03) y revocar (API-EVI-04). Registrar pide el vínculo aceptado y su B2 vigente.
+- **El mapeo, solo con `BE_EVIDENCIA_VISUAL_EXIGIDA=true`** (por defecto `false`, también en `render.yaml`):
+  - **MED-01** (foto de una comida): sin plan de Nutrición vigente, 422 `ACTIVE_PLAN_REQUIRED`; sin el acto del vínculo
+    del plan, 403 `VISUAL_EVIDENCE_ACT_REQUIRED` con el vínculo y la versión a mostrar;
+  - **MED-03:** el profesional ve una foto solo con el acto vigente; si no, el mismo 404, con la decisión denegada en la
+    dimensión del consentimiento. El titular ve las suyas siempre.
+  - La imagen de una receta y la de un ejercicio no cambian.
+- **La APK:** el texto entero en el momento de la subida, con «Ahora no» igual de visible (la foto y lo escrito siguen, y
+  se puede guardar sin la foto); «Fotos de tus comidas» en Privacidad, con la revocación; y «Borrar esta foto» en el
+  registro de una comida (API-MED-05 existía sin pantalla, y el texto lo promete).
+- **Revocar** corta en la operación siguiente las fotos nuevas para ese profesional y su acceso a las fotos. No borra
+  fotos ni registros.
+
+**Probado.** Dominio (el texto contra el 08 §21, contratos, operaciones y cliente HTTP), integración con cuentas y actos
+sintéticos (`evidencia-visual` 10/10 y el bloque de `contrato`, con una app con la exigencia) y renders de la APK
+(`EVIDENCIA/ENTRENAMIENTO-SERIES/capturas-apk-navegador/22` a `25`). No hay ninguna aceptación de una persona real.
+
+**Límites.**
+- Con la exigencia activa, el profesional sin el acto ve en el registro que hay fotos, pero no puede abrirlas (el 404 no
+  dice por qué).
+- Una versión nueva del texto no invalida los actos de la anterior: siguen vigentes hasta que se revoquen, como B2.
+- Cerrar la cuenta no revoca el acto (tampoco el A3): la cuenta cerrada no opera.
+
+**Punto de aprobación pendiente.**
+1. Dirección aprueba el texto, con la validación jurídica; la versión aprobada entra como sucesora, con otro id.
+2. Dirección decide activar `BE_EVIDENCIA_VISUAL_EXIGIDA` (en `test`, aun con cuentas sintéticas, es una decisión suya).
+3. El 08 registra la activación, y el 05 y el 09 incorporan la familia EVI.
+
+**Condición de cierre.** Los tres pasos anteriores.

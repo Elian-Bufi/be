@@ -1,6 +1,7 @@
 {
   "recuperacion": {
     "sesion": "Recuperación de prueba",
+    "reloj": "proceso",
     "descansos": [
       {
         "ejercicio": "Zancada estática",
@@ -8,21 +9,47 @@
         "texto": "Incompleto · 01:30 recomendado"
       }
     ],
-    "tiemposMinimos": {
-      "Tiempo transcurrido": {
-        "segundos": 200,
-        "calidad": "estimado"
-      },
-      "Pausas": {
-        "segundos": 0,
-        "calidad": "estimado"
-      },
-      "Sin pausas": {
-        "segundos": 200,
-        "calidad": "estimado"
-      }
+    "tiemposEsperados": {
+      "Tiempo transcurrido": "03:23 · estimado",
+      "Pausas": "00:00 · estimado",
+      "Sin pausas": "03:23 · estimado"
     },
-    "notaDelCriterio": "Corregido después de la corrida: la estimación civil incluye los segundos reales entre la carga que se cerró y la nueva."
+    "anclas": {
+      "cargasMs": [
+        1791311944336,
+        1791311947744
+      ],
+      "adelantoMs": 200000,
+      "esperadoMs": 203408,
+      "calculadoMs": 203408,
+      "toleranciaMs": 1000
+    }
+  },
+  "recuperacionDelArranque": {
+    "sesion": "Recuperación con el reloj del arranque",
+    "reloj": "arranque",
+    "descansos": [
+      {
+        "ejercicio": "Zancada estática",
+        "setIndex": 1,
+        "texto": "Incompleto · 01:30 recomendado"
+      }
+    ],
+    "tiemposEsperados": {
+      "Tiempo transcurrido": "03:36 · medido",
+      "Pausas": "00:00 · medido",
+      "Sin pausas": "03:36 · medido"
+    },
+    "anclas": {
+      "cargasMs": [
+        1791311951672,
+        1791311967965
+      ],
+      "adelantoMs": 200000,
+      "esperadoMs": 216293,
+      "calculadoMs": 216293,
+      "toleranciaMs": 1000
+    }
   },
   "piernas": {
     "sesion": "Piernas A",
@@ -117,22 +144,167 @@
       "detalle": ""
     },
     {
+      "nombre": "[proceso] la página usa el reloj pedido",
+      "ok": true,
+      "detalle": ""
+    },
+    {
       "nombre": "la primera vez, la APK explica qué tiempos guarda y quién los ve",
       "ok": true,
       "detalle": ""
     },
     {
-      "nombre": "después de cerrar la app, Hoy ofrece «Continuar entrenamiento»",
+      "nombre": "[proceso] después de cerrar la app, Hoy ofrece «Continuar entrenamiento»",
       "ok": true,
       "detalle": ""
     },
     {
-      "nombre": "al volver, la APK no cierra el descanso sola: pregunta qué pasó",
+      "nombre": "[proceso] al volver, la APK no cierra el descanso sola: pregunta qué pasó",
       "ok": true,
       "detalle": ""
     },
     {
-      "nombre": "«Recuperación de prueba» quedó registrada",
+      "nombre": "[proceso] la serie registrada se envía: «Enviado: está guardado en BE.»",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "[proceso] «Recuperación de prueba» quedó registrada",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "[proceso] el recorrido adelantó 200 s de reloj entre el inicio y el fin (30 + 60 + 110)",
+      "ok": true,
+      "detalle": "200000"
+    },
+    {
+      "nombre": "[proceso] un solo borrador para esta sesión",
+      "ok": true,
+      "detalle": "d47f72c8-a77d-4344-8641-a744b03c7872"
+    },
+    {
+      "nombre": "[proceso] tiempo transcurrido estimado, a no más de 1000 ms de las anclas del recorrido",
+      "ok": true,
+      "detalle": "API 203408 ms ESTIMATED · esperado 203408 ms (3408 ms entre las cargas + 200000)"
+    },
+    {
+      "nombre": "[proceso] sin pausas declaradas: pausas en 0 y «sin pausas» igual al total",
+      "ok": true,
+      "detalle": "{\"elapsed\":{\"ms\":203408,\"quality\":\"ESTIMATED\"},\"pauses\":{\"ms\":0,\"quality\":\"ESTIMATED\"},\"withoutPauses\":{\"ms\":203408,\"quality\":\"ESTIMATED\"}}"
+    },
+    {
+      "nombre": "[proceso] el descanso que quedó abierto es incompleto, sin duración",
+      "ok": true,
+      "detalle": "[{\"restId\":\"descanso-9c77a17c-cf46-46b6-83a1-1c8e1c292b5c\",\"prescriptionId\":\"6c9149eb-0dc8-4386-b955-90244f152222\",\"setIndex\":1,\"startedAt\":\"2026-10-06T18:39:34.336Z\",\"finishedAt\":null,\"duration\":{\"ms\":null,\"quality\":\"INCOMPLETE\"},\"recommendedSeconds\":90,\"differenceMs\":null}]"
+    },
+    {
+      "nombre": "[proceso] ningún evento repetido",
+      "ok": true,
+      "detalle": "5 eventos"
+    },
+    {
+      "nombre": "[proceso] un inicio y un fin de la sesión",
+      "ok": true,
+      "detalle": "[\"SESSION_STARTED\",\"EXERCISE_ACTIVATED\",\"REST_STARTED\",\"MEASUREMENT_LEFT_INCOMPLETE\",\"SESSION_FINISHED\"]"
+    },
+    {
+      "nombre": "[proceso] cada evento lleva la base de su reloj (PROCESS_MONOTONIC), sin mezclar",
+      "ok": true,
+      "detalle": "PROCESS_MONOTONIC"
+    },
+    {
+      "nombre": "[proceso] dos anclas: una por proceso",
+      "ok": true,
+      "detalle": "2 anclas"
+    },
+    {
+      "nombre": "[proceso] ninguna duración absurda (todas entre 0 y 6 h)",
+      "ok": true,
+      "detalle": "[{\"ms\":203408,\"quality\":\"ESTIMATED\"},{\"ms\":0,\"quality\":\"ESTIMATED\"},{\"ms\":203408,\"quality\":\"ESTIMATED\"},{\"ms\":0,\"quality\":\"ESTIMATED\"},{\"ms\":203408,\"quality\":\"ESTIMATED\"},{\"ms\":null,\"quality\":\"INCOMPLETE\"}]"
+    },
+    {
+      "nombre": "[arranque] la página usa el reloj pedido",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "[arranque] la imagen que no baja: un acceso y una sola renovación, ningún pedido más en los 5 s siguientes, y queda el respaldo con su texto",
+      "ok": true,
+      "detalle": "al ver el respaldo: 2 accesos y 2 descargas intentadas; 5 s después: 2 y 2"
+    },
+    {
+      "nombre": "[arranque] después de cerrar la app, Hoy ofrece «Continuar entrenamiento»",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "[arranque] al volver, la APK no cierra el descanso sola: pregunta qué pasó",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "[arranque] la serie registrada se envía: «Enviado: está guardado en BE.», con la imagen sin bajar",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "[arranque] «Recuperación con el reloj del arranque» quedó registrada",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "[arranque] el recorrido adelantó 200 s de reloj entre el inicio y el fin (30 + 60 + 110)",
+      "ok": true,
+      "detalle": "200000"
+    },
+    {
+      "nombre": "[arranque] un solo borrador para esta sesión",
+      "ok": true,
+      "detalle": "69b58131-c111-4252-8647-183e9b110bfe"
+    },
+    {
+      "nombre": "[arranque] tiempo transcurrido medido, a no más de 1000 ms de las anclas del recorrido",
+      "ok": true,
+      "detalle": "API 216293 ms MEASURED · esperado 216293 ms (16293 ms entre las cargas + 200000)"
+    },
+    {
+      "nombre": "[arranque] sin pausas declaradas: pausas en 0 y «sin pausas» igual al total",
+      "ok": true,
+      "detalle": "{\"elapsed\":{\"ms\":216293,\"quality\":\"MEASURED\"},\"pauses\":{\"ms\":0,\"quality\":\"MEASURED\"},\"withoutPauses\":{\"ms\":216293,\"quality\":\"MEASURED\"}}"
+    },
+    {
+      "nombre": "[arranque] el descanso que quedó abierto es incompleto, sin duración",
+      "ok": true,
+      "detalle": "[{\"restId\":\"descanso-bf1247d1-ec74-42e3-869c-e5d522792e93\",\"prescriptionId\":\"dcb8b43c-3e69-459e-9744-741e361ff550\",\"setIndex\":1,\"startedAt\":\"2026-10-06T18:43:01.672Z\",\"finishedAt\":null,\"duration\":{\"ms\":null,\"quality\":\"INCOMPLETE\"},\"recommendedSeconds\":90,\"differenceMs\":null}]"
+    },
+    {
+      "nombre": "[arranque] ningún evento repetido",
+      "ok": true,
+      "detalle": "5 eventos"
+    },
+    {
+      "nombre": "[arranque] un inicio y un fin de la sesión",
+      "ok": true,
+      "detalle": "[\"SESSION_STARTED\",\"EXERCISE_ACTIVATED\",\"REST_STARTED\",\"MEASUREMENT_LEFT_INCOMPLETE\",\"SESSION_FINISHED\"]"
+    },
+    {
+      "nombre": "[arranque] cada evento lleva la base de su reloj (ELAPSED_SINCE_BOOT), sin mezclar",
+      "ok": true,
+      "detalle": "ELAPSED_SINCE_BOOT"
+    },
+    {
+      "nombre": "[arranque] una sola ancla: el arranque no cambió",
+      "ok": true,
+      "detalle": "1 anclas"
+    },
+    {
+      "nombre": "[arranque] ninguna duración absurda (todas entre 0 y 6 h)",
+      "ok": true,
+      "detalle": "[{\"ms\":216293,\"quality\":\"MEASURED\"},{\"ms\":0,\"quality\":\"MEASURED\"},{\"ms\":216293,\"quality\":\"MEASURED\"},{\"ms\":0,\"quality\":\"MEASURED\"},{\"ms\":216293,\"quality\":\"MEASURED\"},{\"ms\":null,\"quality\":\"INCOMPLETE\"}]"
+    },
+    {
+      "nombre": "«Piernas A»: lo registrado quedó enviado antes de finalizar («Enviado: está guardado en BE.»)",
       "ok": true,
       "detalle": ""
     },

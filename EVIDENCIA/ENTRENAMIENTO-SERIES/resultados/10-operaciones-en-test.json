@@ -1,9 +1,9 @@
 {
   "base": "https://be-api-hndp.onrender.com",
-  "consultado": "2026-10-06T15:54:30.452Z",
+  "consultado": "2026-10-06T18:57:23.836Z",
   "salud": {
     "status": 200,
-    "ms": 43390,
+    "ms": 32696,
     "commit": "2f0c14056079bb29633a1bb9c824b40fb3b58605"
   },
   "resultados": [
@@ -14,7 +14,7 @@
       "status": 401,
       "codigo": "AUTHENTICATION_REQUIRED",
       "existe": true,
-      "ms": 243
+      "ms": 250
     },
     {
       "id": "calibracion: ruta inexistente",
@@ -23,7 +23,7 @@
       "status": 404,
       "codigo": "RESOURCE_NOT_FOUND",
       "existe": false,
-      "ms": 727
+      "ms": 250
     },
     {
       "id": "API-ING-01",
@@ -32,7 +32,7 @@
       "status": 404,
       "codigo": "RESOURCE_NOT_FOUND",
       "existe": false,
-      "ms": 271
+      "ms": 267
     },
     {
       "id": "API-ING-03",
@@ -41,7 +41,7 @@
       "status": 404,
       "codigo": "RESOURCE_NOT_FOUND",
       "existe": false,
-      "ms": 228
+      "ms": 257
     },
     {
       "id": "API-REC-02",
@@ -50,7 +50,7 @@
       "status": 404,
       "codigo": "RESOURCE_NOT_FOUND",
       "existe": false,
-      "ms": 217
+      "ms": 247
     },
     {
       "id": "API-REC-03",
@@ -59,7 +59,7 @@
       "status": 404,
       "codigo": "RESOURCE_NOT_FOUND",
       "existe": false,
-      "ms": 217
+      "ms": 247
     },
     {
       "id": "API-MED-03",
@@ -68,7 +68,7 @@
       "status": 404,
       "codigo": "RESOURCE_NOT_FOUND",
       "existe": false,
-      "ms": 214
+      "ms": 234
     },
     {
       "id": "API-SER-01",
@@ -77,7 +77,7 @@
       "status": 404,
       "codigo": "RESOURCE_NOT_FOUND",
       "existe": false,
-      "ms": 264
+      "ms": 242
     },
     {
       "id": "API-SER-02",
@@ -86,7 +86,7 @@
       "status": 404,
       "codigo": "RESOURCE_NOT_FOUND",
       "existe": false,
-      "ms": 222
+      "ms": 247
     },
     {
       "id": "API-TIE-02",
@@ -95,7 +95,7 @@
       "status": 404,
       "codigo": "RESOURCE_NOT_FOUND",
       "existe": false,
-      "ms": 223
+      "ms": 253
     },
     {
       "id": "API-TIE-03",
@@ -104,7 +104,7 @@
       "status": 404,
       "codigo": "RESOURCE_NOT_FOUND",
       "existe": false,
-      "ms": 212
+      "ms": 243
     },
     {
       "id": "API-TIE-04",
@@ -113,7 +113,7 @@
       "status": 404,
       "codigo": "RESOURCE_NOT_FOUND",
       "existe": false,
-      "ms": 279
+      "ms": 258
     },
     {
       "id": "API-EJE-01",
@@ -122,7 +122,25 @@
       "status": 404,
       "codigo": "RESOURCE_NOT_FOUND",
       "existe": false,
-      "ms": 259
+      "ms": 241
+    },
+    {
+      "id": "API-EVI-01",
+      "pr": "#149 (EVIDENCIA_VISUAL)",
+      "ruta": "/api/v1/relationships/00000000-0000-4000-8000-000000000000/visual-evidence-requirement",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 247
+    },
+    {
+      "id": "API-EVI-03",
+      "pr": "#149 (EVIDENCIA_VISUAL)",
+      "ruta": "/api/v1/me/visual-evidence-consents",
+      "status": 404,
+      "codigo": "RESOURCE_NOT_FOUND",
+      "existe": false,
+      "ms": 250
     }
   ]
 }

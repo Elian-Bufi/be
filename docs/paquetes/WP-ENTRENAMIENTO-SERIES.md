@@ -545,6 +545,24 @@ Las tres están decididas por el encargo. Las decisiones que quedan para Direcci
 | API: migraciones, servicios, endpoints e integración | Hecho (`033bfa1`): integración 24/24, 93/93 y 14/14, además de las de medios, recetas, schema, plantillas y A3 |
 | Web: editor por serie, «Mis ejercicios», plan activo y vista de ejecuciones | Hecho (`65a7d6a` y el commit de la evidencia): typecheck y export estático sin errores |
 | APK: pestañas, sesión enfocada, tiempos, persistencia, recuperación y superficies | Hecho (`e6bd769`): scripts 245/245 y typecheck sin errores; 37 renders de componentes |
-| Recorrido y evidencia | Hecho: 101/101 controles de punta a punta (`EVIDENCIA/ENTRENAMIENTO-SERIES/LEEME.md`) |
+| Recorrido y evidencia | Hecho: 106/106 controles de punta a punta en el primer encargo |
 | CI | En verde en `e6bd769`, con las cuatro tareas |
 | Teléfono | **Pendiente:** no hay una APK nueva. Los pasos están en la evidencia |
+
+### 14.1 El precierre del 2026-10-06 («Cierre técnico antes de la próxima candidata»)
+
+Una pasada acotada de robustez, sin funcionalidades nuevas de entrenamiento ni maquetas reabiertas. El detalle, con lo
+reproducido y la prueba de cada punto, está en `EVIDENCIA/ENTRENAMIENTO-SERIES/LEEME.md`.
+
+| § | Parte | Estado |
+|---|---|---|
+| 1 | Guardado local honesto: cinco estados, lo ilegible se aparta y se ofrece reintentar | Hecho (`98bf34b`), con la falla reproducida contra `58567ec` |
+| 2 | Compatibilidad: un plan con objetivos por serie no se activa ni se entrega a una app que no declare la capacidad | Hecho (`7ea47fb`, `0edd9a6` y `b54cf74`; DL-122) |
+| 3 | Reloj desde el arranque (`SystemClock.elapsedRealtime()`), con la base en cada instante | Hecho (`7ea47fb` y `98bf34b`; DL-124); el Kotlin compila sin Gradle |
+| 4 | Cifrado de lo guardado y exclusión del respaldo de Android | Hecho (`98bf34b`; DL-124) |
+| 5 | Imagen (sin imagen, descarga fallida, respuesta tardía, ilustración entera) y reconexión acotada | Hecho (`98bf34b`), con la reconexión probada con demoras reales |
+| 6 | EVIDENCIA_VISUAL propuesta, continuidad de la base de `test`, respaldo y restauración, plan de publicación | Hecho (`0186110`, `4812d6f`; DL-125); las decisiones son de Dirección |
+| — | Seguridad de dependencias: `sharp` 0.35.5 y `shell-quote` 1.12.0 (avisos del 2026-10-06) | Hecho (`5144841`; también en #148) |
+| — | Recorrido final en el head del precierre | 162/162 controles |
+| — | CI | En verde en `5144841`, con las cuatro tareas |
+| — | Teléfono | **Pendiente:** ver «Casos de Android» en la evidencia |

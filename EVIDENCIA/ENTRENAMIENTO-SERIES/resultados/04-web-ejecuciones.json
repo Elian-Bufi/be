@@ -81,24 +81,44 @@
       "detalle": "{\"Tiempo transcurrido\":\"15:00 · medido\",\"Pausas\":\"02:00 · medido\",\"Sin pausas\":\"13:00 · medido\",\"Sentadilla goblet\":\"07:30 · medido\",\"Peso muerto rumano con mancuernas\":\"05:30 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
     },
     {
-      "nombre": "Zancada estática · descanso que quedó abierto al cerrarse la app: «Incompleto · 01:30 recomendado»",
+      "nombre": "«Recuperación de prueba» · Zancada estática · el descanso que quedó abierto al cerrarse la app: «Incompleto · 01:30 recomendado»",
       "ok": true,
       "detalle": "[\"1\",\"10–12 rep.\",\"carga no registrada · 11 rep.\",\"Rep.: dentro del rango\",\"Incompleto · 01:30 recomendado\",\"Duración desconocida\"]"
     },
     {
-      "nombre": "«Recuperación de prueba» · Tiempo transcurrido: estimado, de al menos 200 s",
+      "nombre": "«Recuperación de prueba» · Tiempo transcurrido: «03:23 · estimado» (el cálculo de la API, a 0 ms de las anclas del recorrido)",
       "ok": true,
-      "detalle": "03:24 · estimado"
+      "detalle": "{\"Tiempo transcurrido\":\"03:23 · estimado\",\"Pausas\":\"00:00 · estimado\",\"Sin pausas\":\"03:23 · estimado\",\"Zancada estática\":\"03:23 · estimado\",\"Sin ejercicio asignado\":\"00:00 · estimado\"}"
     },
     {
-      "nombre": "«Recuperación de prueba» · Pausas: estimado, de al menos 0 s",
+      "nombre": "«Recuperación de prueba» · Pausas: «00:00 · estimado» (el cálculo de la API, a 0 ms de las anclas del recorrido)",
       "ok": true,
-      "detalle": "00:00 · estimado"
+      "detalle": "{\"Tiempo transcurrido\":\"03:23 · estimado\",\"Pausas\":\"00:00 · estimado\",\"Sin pausas\":\"03:23 · estimado\",\"Zancada estática\":\"03:23 · estimado\",\"Sin ejercicio asignado\":\"00:00 · estimado\"}"
     },
     {
-      "nombre": "«Recuperación de prueba» · Sin pausas: estimado, de al menos 200 s",
+      "nombre": "«Recuperación de prueba» · Sin pausas: «03:23 · estimado» (el cálculo de la API, a 0 ms de las anclas del recorrido)",
       "ok": true,
-      "detalle": "03:24 · estimado"
+      "detalle": "{\"Tiempo transcurrido\":\"03:23 · estimado\",\"Pausas\":\"00:00 · estimado\",\"Sin pausas\":\"03:23 · estimado\",\"Zancada estática\":\"03:23 · estimado\",\"Sin ejercicio asignado\":\"00:00 · estimado\"}"
+    },
+    {
+      "nombre": "«Recuperación con el reloj del arranque» · Zancada estática · el descanso que quedó abierto al cerrarse la app: «Incompleto · 01:30 recomendado»",
+      "ok": true,
+      "detalle": "[\"1\",\"10–12 rep.\",\"carga no registrada · 11 rep.\",\"Rep.: dentro del rango\",\"Incompleto · 01:30 recomendado\",\"Duración desconocida\"]"
+    },
+    {
+      "nombre": "«Recuperación con el reloj del arranque» · Tiempo transcurrido: «03:36 · medido» (el cálculo de la API, a 0 ms de las anclas del recorrido)",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"03:36 · medido\",\"Pausas\":\"00:00 · medido\",\"Sin pausas\":\"03:36 · medido\",\"Zancada estática\":\"03:36 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
+    },
+    {
+      "nombre": "«Recuperación con el reloj del arranque» · Pausas: «00:00 · medido» (el cálculo de la API, a 0 ms de las anclas del recorrido)",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"03:36 · medido\",\"Pausas\":\"00:00 · medido\",\"Sin pausas\":\"03:36 · medido\",\"Zancada estática\":\"03:36 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
+    },
+    {
+      "nombre": "«Recuperación con el reloj del arranque» · Sin pausas: «03:36 · medido» (el cálculo de la API, a 0 ms de las anclas del recorrido)",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"03:36 · medido\",\"Pausas\":\"00:00 · medido\",\"Sin pausas\":\"03:36 · medido\",\"Zancada estática\":\"03:36 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
     },
     {
       "nombre": "sin errores de página ni de CSP",

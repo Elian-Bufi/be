@@ -76,6 +76,7 @@ sintéticos: 94 tablas, 1.071 filas, 10 imágenes y 27 migraciones. Están en
 | 1. Restauración directa de un respaldo con el esquema de hoy | **Falla** en `COPY alcance_de_vinculo` |
 | 2. Restauración por secciones: esquema, ajuste de la función, datos y el resto | Igual al origen: filas de cada tabla, huella de cada imagen, migraciones, disparadores, funciones y restricciones |
 | 3. Restauración directa de un respaldo de una base con la migración | Igual al origen |
+| 4. Una base restaurada como la de `test` hoy, migrada hasta el head de #149 | Las 5 migraciones de la rama se aplican en 4 s y la API compilada arranca contra ella: `/health/ready` responde base de datos y migraciones en OK (`resultados/11-restauracion-migrada.json`, con `herramientas/precierre/restauracion-migrada.sh`) |
 
 **El procedimiento, para la base de test** (lo ejecuta Dirección, que tiene el dashboard; la URL externa nunca se versiona):
 1. Abrir el acceso externo de `be-db-test` solo para la IP de quien hace el respaldo.
@@ -98,7 +99,8 @@ sintéticos: 94 tablas, 1.071 filas, 10 imágenes y 27 migraciones. Están en
    ```
 
 6. Comparar origen y destino con la consulta del script.
-7. Levantar la API contra la base restaurada: `/health/ready` tiene que dar 200.
+7. Levantar la API contra la base restaurada: `/health/ready` tiene que dar 200. Si la base restaurada es anterior al
+   despliegue de #149, primero `prisma migrate deploy`, como lo hace el despliegue (caso 4).
 
 **Lo que no se probó:** la base remota, el acceso externo de Render, ni un respaldo de la base de test real. Nada de eso
 se tocó.
