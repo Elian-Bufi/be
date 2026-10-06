@@ -11,14 +11,31 @@
  * - **Sin imagen,** el ícono y «Sin imagen de referencia».
  * - **El rótulo** («Imagen de referencia», «Tu foto») va debajo de la imagen, solo mientras hay imagen: la foto de una
  *   receta no mide la porción ni demuestra lo que se comió.
+ * - **El respaldo es de quien la usa** (WP-ENTRENAMIENTO-SERIES §7.2): por omisión, el plato y los textos de Nutrición;
+ *   la imagen de un ejercicio usa la mancuerna de la app y «Sin imagen del ejercicio». Con `tamano`, el marco es un
+ *   cuadrado fijo (la imagen de 112 dp de la sesión enfocada) en lugar de ocupar el ancho.
  */
 import { COPY_REGISTRO_DE_COMIDAS, type Resultado } from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { Image, Text, View } from 'react-native';
 import { api } from './api';
 import { IconoDePlato } from './iconos-de-nutricion';
 import { relojDelServidor } from './reloj-del-servidor';
 import { COLOR, estilosPorTema } from './tema';
+
+/** Lo que se ve cuando no hay imagen o no se pudo mostrar: un ícono de la app y sus dos textos. */
+export interface RespaldoDeImagen {
+  readonly icono: (p: { readonly color: string; readonly tamano: number }) => ReactElement;
+  readonly sinImagen: string;
+  readonly noDisponible: string;
+}
+
+/** El respaldo de Nutrición: el plato con cubiertos. */
+export const RESPALDO_DE_COMIDA: RespaldoDeImagen = {
+  icono: ({ color, tamano }) => <IconoDePlato color={color} tamano={tamano} />,
+  sinImagen: COPY_REGISTRO_DE_COMIDAS.sinImagen,
+  noDisponible: COPY_REGISTRO_DE_COMIDAS.imagenNoDisponible,
+};
 
 /** Un acceso que vence en menos de esto no se usa: se pide otro. */
 const MARGEN_DEL_ACCESO_MS = 60_000;
@@ -63,6 +80,9 @@ export function ImagenDeMedio({
   proporcion = 16 / 10,
   respaldoCompacto = false,
   cargar = true,
+  respaldo = RESPALDO_DE_COMIDA,
+  tamano,
+  rotuloVisible = true,
 }: {
   token: string;
   mediaId: string | null;
@@ -75,6 +95,12 @@ export function ImagenDeMedio({
   respaldoCompacto?: boolean;
   /** `false` mientras no hace falta: el lugar queda reservado y el acceso no se pide (una opción lejana del carrusel). */
   cargar?: boolean;
+  /** El ícono y los textos de cuando no hay imagen. Por omisión, los de Nutrición. */
+  respaldo?: RespaldoDeImagen;
+  /** El lado de un marco cuadrado fijo, en dp. Sin él, la imagen ocupa el ancho con su proporción. */
+  tamano?: number;
+  /** `false`: el rótulo no se ve debajo (lo sigue diciendo el lector de pantalla). Para una miniatura al lado de su nombre. */
+  rotuloVisible?: boolean;
 }) {
   const [estado, setEstado] = useState<EstadoDeLaImagen>(mediaId ? { tipo: 'cargando' } : { tipo: 'sin-imagen' });
 
@@ -101,17 +127,17 @@ export function ImagenDeMedio({
     void urlDelMedio(token, mediaId, sesionPerdida, true).then((url) => setEstado(url ? { tipo: 'lista', url, renovada: true } : { tipo: 'fallo' }));
   }, [estado, token, mediaId, sesionPerdida]);
 
-  const texto = estado.tipo === 'sin-imagen' ? COPY_REGISTRO_DE_COMIDAS.sinImagen : COPY_REGISTRO_DE_COMIDAS.imagenNoDisponible;
+  const texto = estado.tipo === 'sin-imagen' ? respaldo.sinImagen : respaldo.noDisponible;
   return (
     <View>
-      <View style={[estilos.marco, { aspectRatio: proporcion }]}>
+      <View style={[estilos.marco, tamano === undefined ? { aspectRatio: proporcion } : { width: tamano, height: tamano, alignSelf: 'flex-start' }]}>
         {estado.tipo === 'lista' ? (
           <Image source={{ uri: estado.url }} style={estilos.imagen} resizeMode="cover" onError={alFallar} accessible accessibilityRole="image" accessibilityLabel={rotulo} />
         ) : estado.tipo === 'cargando' ? (
           <View style={estilos.imagen} accessible accessibilityRole="image" accessibilityLabel={rotulo} />
         ) : (
           <View style={estilos.respaldo} accessible accessibilityRole="image" accessibilityLabel={texto}>
-            <IconoDePlato color={COLOR.tenue} tamano={respaldoCompacto ? 32 : 44} />
+            {respaldo.icono({ color: COLOR.tenue, tamano: respaldoCompacto ? 32 : 44 })}
             {respaldoCompacto ? null : (
               <Text style={estilos.textoDeRespaldo} importantForAccessibility="no" accessibilityElementsHidden>
                 {texto}
@@ -120,7 +146,7 @@ export function ImagenDeMedio({
           </View>
         )}
       </View>
-      {estado.tipo === 'lista' || estado.tipo === 'cargando' ? (
+      {rotuloVisible && (estado.tipo === 'lista' || estado.tipo === 'cargando') ? (
         <Text style={estilos.rotulo} importantForAccessibility="no" accessibilityElementsHidden>
           {rotulo}
         </Text>

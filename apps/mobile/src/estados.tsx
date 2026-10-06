@@ -78,8 +78,11 @@ export function SinActualizar({ visible, onReintentar }: { visible: boolean; onR
   );
 }
 
-/** Si la persona pidió reducir el movimiento en Android, la línea queda quieta. */
-function useMovimientoReducido(): boolean {
+/**
+ * Si la persona pidió reducir el movimiento en Android: la línea del encabezado, el aro del descanso y el indicador de la
+ * recuperación quedan quietos.
+ */
+export function useMovimientoReducido(): boolean {
   const [reducido, setReducido] = useState(false);
   useEffect(() => {
     let vigente = true;

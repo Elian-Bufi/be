@@ -165,12 +165,16 @@ test('4 · sin red, con 429, 503 o un 403, la credencial no se borra; reintentar
   }
 });
 
-test('4 · si la API no responde a tiempo, cuenta como sin conexión: la credencial queda y se puede reintentar', async () => {
+test('4 · si la API no responde a tiempo, es «tiempo agotado»: la credencial queda y se puede reintentar', async () => {
   const almacen = almacenFalso();
   await p.crearGuardaDeSesion(almacen).guardar(A);
   const r = await p.recuperarSesion({ guarda: procesoNuevo(almacen), verificar: () => new Promise(() => {}), ahora: ahora(Date.now()), sigueVigente: () => true, esperaMaximaDeVerificacionMs: 20 });
   assert.equal(r.tipo, 'sin-verificar');
-  assert.equal(r.sinConexion, true);
+  // Cambió con el encargo de Dirección del 2026-10-06, §8: «Distinguir sin conexión, timeout, servicio no disponible y
+  // autenticación realmente inválida». Antes, el tope cumplido contaba como sin conexión (`sinConexion: true`); ahora es
+  // su propia causa, «tiempo agotado», y no se presenta como falta de red. Lo demás de esta prueba no cambia.
+  assert.equal(r.sinConexion, false);
+  assert.equal(r.causa, 'tiempo-agotado');
   assert.ok(almacen.datos.has(p.CLAVE_DE_LA_SESION));
 });
 

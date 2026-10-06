@@ -59,9 +59,10 @@ export const AZUL_NOCHE = {
   // El contorno de la silueta. En Azul noche el cuerpo ya contrasta, unos 11:1 con el fondo, y el contorno va del tono
   // del cuerpo: casi no se ve. En Claro es lo que separa el cuerpo del fondo.
   laminaContorno: '#E9EEF5',
-  // El vidrio de las tarjetas (pulido del 2026-10-04): un filo apenas más claro en lugar de un borde, y un brillo
-  // contenido arriba, que se apaga hacia abajo. La profundidad la da la sombra. `scripts/contraste.test.cjs` mide el
-  // texto sobre la mezcla del brillo con la tarjeta.
+  // El vidrio de las tarjetas (pulido del 2026-10-04): un filo apenas más claro en lugar de un borde. La profundidad la
+  // da la sombra. Desde WP-ENTRENAMIENTO-SERIES §7.7 la superficie es mate: los dos brillos ya no se dibujan (dejaban una
+  // placa recortada; ver vidrio.tsx). Quedan porque `scripts/contraste.test.cjs` todavía mide el texto sobre la mezcla
+  // del brillo con la tarjeta, que sigue siendo el peor caso; se retiran junto con esa medición.
   laminaFilo: '#FFFFFF24',
   laminaBrillo: '#FFFFFF14',
   vidrioFilo: '#FFFFFF1C',
@@ -106,7 +107,7 @@ export const CLARO: Paleta = {
   // Con el contorno, la silueta se distingue con más de 3:1 (WCAG 1.4.11).
   laminaContorno: '#64748B',
   // El vidrio en Claro: la tarjeta blanca se separa del fondo por la sombra y un filo apenas oscuro; sin brillo, que
-  // sobre blanco no se vería.
+  // sobre blanco no se vería (y que desde WP-ENTRENAMIENTO-SERIES §7.7 tampoco se dibuja en Azul noche).
   laminaFilo: '#0A1F4414',
   laminaBrillo: '#FFFFFF00',
   vidrioFilo: '#0A1F4414',

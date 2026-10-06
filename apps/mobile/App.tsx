@@ -19,6 +19,11 @@
  * La credencial se guarda además en el almacenamiento seguro del teléfono hasta que vence (DL-012, decisión de
  * Dirección del 2026-10-03; src/sesion-persistente.ts). Si el sistema cierra el proceso o la persona cierra la app, al
  * abrirla se verifica con la API antes de mostrar nada protegido. No se guarda la contraseña ni hay renovación.
+ * Mientras se verifica, la pantalla de la referencia 02 (src/pantallas/recuperacion.tsx): a los 5 s dice que está
+ * tardando y ofrece reintentar; si no se pudo, dice la causa (WP-ENTRENAMIENTO-SERIES §7.6).
+ * - WP-ENTRENAMIENTO-SERIES (docs/paquetes/WP-ENTRENAMIENTO-SERIES.md §7): Entrenamiento con pestañas Hoy · Plan ·
+ *   Historial y la sesión enfocada, que se ve sin la barra inferior. El entrenamiento en curso se guarda en el teléfono por
+ *   cuenta (src/entrenamiento-en-curso.ts): la raíz abre la cuenta con sesión y la cierra al salir.
  * Nunca se guarda un «rol autorizado» en el cliente: la API verifica la sesión y decide cada acceso en cada request;
  * ocultar un botón no concede ni quita nada.
  * Al entrar a una zona, la pantalla conserva su estructura y no muestra valores hasta que la API confirma el acceso en
@@ -38,10 +43,10 @@ import { almacenSeguro } from './src/almacen-seguro';
 import { Cabecera } from './src/cabecera';
 import { ProveedorDeCambios, preguntarAntesDeSalir } from './src/cambios-sin-guardar';
 import { crearRegistroDeCambios, salirConCuidado } from './src/registro-de-cambios';
-import { Cargando } from './src/estados';
+import { useCuentaDelEntrenamiento } from './src/entrenamiento-en-curso';
 import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lecturas';
 import { MenuAuxiliar } from './src/menu-auxiliar';
-import { alIniciarSesion, anterior, esRaiz, mismaPantalla, navegar, pestanaActiva, requiereSesion, traePedido, type ModoDeNavegacion, type Ruta, type Salida } from './src/navegacion';
+import { alIniciarSesion, anterior, esRaiz, mismaPantalla, navegar, pestanaActiva, requiereSesion, sinBarraInferior, traePedido, type ModoDeNavegacion, type Ruta, type Salida } from './src/navegacion';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
 import { PantallaDeComidaDiferente } from './src/pantallas/comida-diferente';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
@@ -54,12 +59,13 @@ import { PantallaDeLogin } from './src/pantallas/login';
 import { PantallaDeHoy, PantallaDePlanActual, PantallaDeRegistroNutricional, PantallaDeRegistros } from './src/pantallas/nutricion';
 import { PantallaDeOpcionDeComida } from './src/pantallas/opcion-de-comida';
 import { PantallaDePrivacidad } from './src/pantallas/privacidad';
+import { PantallaDeRecuperacion, type FaseDeLaRecuperacion } from './src/pantallas/recuperacion';
 import { PantallaDeRegistro } from './src/pantallas/registro';
 import { PantallaDeVinculo } from './src/pantallas/vinculo';
 import { PantallaDeVinculos } from './src/pantallas/vinculos';
 import { crearRestauracionDeAltura } from './src/altura-de-las-zonas';
 import { avisoDeVencimiento, crearSesion, olvidarSesion, quizasVencida, recordarSesion, restanteMs, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
-import { AVISO_DE_SESION_NO_VALIDA, crearGuardaDeSesion, recuperarSesion, type CredencialGuardada, type Recuperacion } from './src/sesion-persistente';
+import { AVISO_DE_SESION_NO_VALIDA, crearGuardaDeSesion, crearVigiaDeDemora, recuperarSesion, type CausaDeLaFalla, type CredencialGuardada, type Recuperacion, type TemporizadorDeDemora } from './src/sesion-persistente';
 import { BARRA_DEL_SISTEMA } from './src/tema';
 import { Aviso, Boton, Parrafo, estilosPorTema } from './src/ui';
 
@@ -80,7 +86,15 @@ const AVISOS: Record<Salida, string> = {
 const guarda = crearGuardaDeSesion(almacenSeguro);
 
 /** Mientras no se sabe si la credencial guardada sirve, no se muestra nada de la cuenta. */
-type EstadoDeRecuperacion = { readonly tipo: 'verificando' } | { readonly tipo: 'sin-verificar'; readonly credencial: CredencialGuardada; readonly sinConexion: boolean };
+type EstadoDeRecuperacion = { readonly tipo: 'verificando' } | { readonly tipo: 'sin-verificar'; readonly credencial: CredencialGuardada; readonly causa: CausaDeLaFalla };
+
+/** El temporizador del umbral de demora de la recuperación (5 s): el de la plataforma. */
+const TEMPORIZADOR_DE_DEMORA: TemporizadorDeDemora = {
+  esperar(ms, alCumplirse) {
+    const espera = setTimeout(alCumplirse, ms);
+    return () => clearTimeout(espera);
+  },
+};
 
 const version = Constants.expoConfig?.version ?? 'no declarada';
 const commit = extra.commit ? extra.commit.slice(0, 7) : 'no declarado';
@@ -116,10 +130,15 @@ function Contenido() {
   // Sin sesión en el proceso, se busca la credencial guardada y se verifica con la API antes de mostrar nada (DL-012).
   const [recuperacion, setRecuperacion] = useState<EstadoDeRecuperacion | null>(() => (alMontar.estado === 'ninguna' ? { tipo: 'verificando' } : null));
   const intentoDeRecuperacion = useRef(0);
+  // A los 5 s de comprobar sin respuesta, la pantalla dice que está tardando y ofrece reintentar. El pedido sigue.
+  const [tardando, setTardando] = useState(false);
+  const [vigiaDeDemora] = useState(() => crearVigiaDeDemora(TEMPORIZADOR_DE_DEMORA, () => setTardando(true)));
   // Si la sesión quedó guardada en el teléfono: Cuenta lo dice, y no promete recordarla si no se pudo guardar.
   const [recordada, setRecordada] = useState<boolean | null>(() => (alMontar.estado === 'vigente' ? guarda.recordada(alMontar.sesion.token) : null));
   const desplazamiento = useRef<ScrollView>(null);
   const hayActualizaciones = useHayActualizaciones();
+  // El entrenamiento en curso guardado en el teléfono es de la cuenta con sesión: se abre con ella y se cierra al salir.
+  useCuentaDelEntrenamiento(sesion);
 
   useEffect(() => {
     if (sesion) recordarSesion(sesion, ruta);
@@ -245,6 +264,9 @@ function Contenido() {
     async (credencial?: CredencialGuardada) => {
       const intento = ++intentoDeRecuperacion.current;
       setRecuperacion({ tipo: 'verificando' });
+      // Cada intento vuelve a contar los 5 s; un reintento deja sin efecto la respuesta del anterior.
+      setTardando(false);
+      vigiaDeDemora.reiniciar();
       const resultado: Recuperacion | null = await recuperarSesion({
         guarda,
         verificar: (token) => api.consultarCuenta(token),
@@ -253,8 +275,10 @@ function Contenido() {
         sigueVigente: () => intento === intentoDeRecuperacion.current,
       });
       if (!resultado || intento !== intentoDeRecuperacion.current) return;
+      vigiaDeDemora.parar();
+      setTardando(false);
       if (resultado.tipo === 'sin-verificar') {
-        setRecuperacion({ tipo: 'sin-verificar', credencial: resultado.credencial, sinConexion: resultado.sinConexion });
+        setRecuperacion({ tipo: 'sin-verificar', credencial: resultado.credencial, causa: resultado.causa });
         return;
       }
       setRecuperacion(null);
@@ -270,7 +294,7 @@ function Contenido() {
         ir({ nombre: 'login', aviso: resultado.aviso });
       }
     },
-    [ir],
+    [ir, vigiaDeDemora],
   );
 
   useEffect(() => {
@@ -280,10 +304,11 @@ function Contenido() {
   /** «Iniciar sesión de nuevo» cuando no se pudo verificar: la persona elige no esperar, y la credencial se borra. */
   const iniciarDeNuevo = useCallback(() => {
     intentoDeRecuperacion.current++;
+    vigiaDeDemora.parar();
     void guarda.borrar();
     setRecuperacion(null);
     ir({ nombre: 'login' });
-  }, [ir]);
+  }, [ir, vigiaDeDemora]);
 
   // Al vencer, el token se descarta (la API lo rechazaría igual). Con la app en segundo plano el temporizador puede no
   // correr: al volver, si ya venció, se dice en ese momento y no recién con el primer pedido.
@@ -330,8 +355,11 @@ function Contenido() {
   // Con sesión verificada: la barra, el avatar y el menú. Mientras se verifica una sesión guardada, nada de la cuenta.
   const conSesion = sesion !== null && recuperacion === null && requiereSesion(ruta);
   const raiz = esRaiz(ruta);
+  // La sesión enfocada de entrenamiento va sin la barra (WP-ENTRENAMIENTO-SERIES §7.2); se sale con Volver o con atrás.
+  const conBarra = conSesion && !sinBarraInferior(ruta);
   // La barra flota sobre el contenido: el contenido deja libre su alto real, el área segura y la separación.
-  const espacioDeLaBarra = conSesion && altoDeLaBarra > 0 ? altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16 : 32 + insets.bottom;
+  const espacioDeLaBarra = conBarra && altoDeLaBarra > 0 ? altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16 : 32 + insets.bottom;
+  const faseDeLaRecuperacion: FaseDeLaRecuperacion | null = !recuperacion ? null : recuperacion.tipo === 'sin-verificar' ? { tipo: 'sin-verificar', causa: recuperacion.causa } : tardando ? { tipo: 'tardando' } : { tipo: 'comprobando' };
 
   return (
     // «padding» también en Android: con edge-to-edge (Expo SDK 54+) el sistema ya no achica la ventana al abrir el teclado
@@ -360,9 +388,9 @@ function Contenido() {
         <ProveedorDeCambios registro={registroDeCambios}>
           {!apiConfigurada ? <Aviso tipo="error" titulo="Este build no tiene una API configurada." /> : null}
 
-          {recuperacion ? (
+          {recuperacion && faseDeLaRecuperacion ? (
             <PantallaDeRecuperacion
-              estado={recuperacion}
+              fase={faseDeLaRecuperacion}
               reintentar={() => void recuperar(recuperacion.tipo === 'sin-verificar' ? recuperacion.credencial : undefined)}
               iniciarDeNuevo={iniciarDeNuevo}
             />
@@ -450,9 +478,21 @@ function Contenido() {
                 />
               ) : null}
               {ruta.nombre === 'mi-evolucion' ? <PantallaDeMiEvolucion token={sesion.token} salir={salir} ir={ir} vista={ruta.vista} metrica={ruta.metrica} /> : null}
-              {ruta.nombre === 'entrenamiento' ? <PantallaDeEntrenamiento token={sesion.token} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'entrenamiento' ? <PantallaDeEntrenamiento token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'sesion-de-entrenamiento' ? (
-                <PantallaDeSesion key={ruta.draftId} token={sesion.token} draftId={ruta.draftId} sesion={ruta.sesion} fechaDeLaSesion={ruta.fecha} salir={salir} ir={ir} subir={subir} />
+                <PantallaDeSesion
+                  key={ruta.draftId}
+                  token={sesion.token}
+                  draftId={ruta.draftId}
+                  occurrenceId={ruta.occurrenceId}
+                  sesion={ruta.sesion}
+                  fechaDeLaSesion={ruta.fecha}
+                  modo={ruta.modo}
+                  etiqueta={ruta.etiqueta}
+                  salir={salir}
+                  ir={ir}
+                  subir={subir}
+                />
               ) : null}
               {ruta.nombre === 'ejecucion-de-entrenamiento' ? <PantallaDeEjecucionDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} avisoInicial={ruta.aviso} salir={salir} /> : null}
               {ruta.nombre === 'historial-de-entrenamiento' ? <PantallaDeHistorial token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
@@ -473,8 +513,8 @@ function Contenido() {
           empezó el camino hasta esta pantalla; en Cuenta, ninguna. */}
       {/* DL-118: un velo del color del fondo detrás de la cápsula, desde donde termina el espacio libre del contenido. Lo
           que pasa por detrás no compite con los destinos, y el último contenido queda entero por encima. */}
-      {conSesion && altoDeLaBarra > 0 ? <VeloDeLaBarra alto={altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16} /> : null}
-      {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} /> : null}
+      {conBarra && altoDeLaBarra > 0 ? <VeloDeLaBarra alto={altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16} /> : null}
+      {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} oculta={!conBarra} /> : null}
       <MenuAuxiliar
         visible={menuAbierto && conSesion && raiz}
         cerrar={() => setMenuAbierto(false)}
@@ -487,28 +527,6 @@ function Contenido() {
       {/* Los íconos de la barra del sistema: claros sobre Azul noche, oscuros sobre Claro. */}
       <StatusBar style={BARRA_DEL_SISTEMA[tema]} />
     </KeyboardAvoidingView>
-  );
-}
-
-/**
- * Mientras se verifica la credencial guardada: no se muestra nada de la cuenta, ni de la anterior. Si no se pudo
- * verificar (sin red, 429, 5xx), la credencial sigue guardada y se puede reintentar.
- */
-function PantallaDeRecuperacion({ estado, reintentar, iniciarDeNuevo }: { estado: EstadoDeRecuperacion; reintentar: () => void; iniciarDeNuevo: () => void }) {
-  if (estado.tipo === 'verificando') {
-    return (
-      <View accessibilityLiveRegion="polite">
-        <Parrafo tenue>Verificando tu sesión guardada…</Parrafo>
-        <Cargando forma="lista" />
-      </View>
-    );
-  }
-  return (
-    <Aviso tipo="info" titulo="No pudimos verificar tu sesión">
-      <Parrafo>{`${estado.sinConexion ? 'Parece que no hay conexión.' : 'El servicio no respondió.'} Tu sesión sigue guardada en este teléfono: probá de nuevo en un momento.`}</Parrafo>
-      <Boton texto="Reintentar" onPress={reintentar} />
-      <Boton texto="Iniciar sesión de nuevo" tipo="secundario" onPress={iniciarDeNuevo} />
-    </Aviso>
   );
 }
 
