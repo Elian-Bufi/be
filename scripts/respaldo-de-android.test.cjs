@@ -4,8 +4,10 @@
  *
  * - Android 11 o anterior (`full-backup-content`) y Android 12 o posterior (`data-extraction-rules`, con `cloud-backup` y
  *   `device-transfer` explícitos: una sección que falta queda abierta para todo).
- * - Solo se incluyen las preferencias de la plataforma; se excluyen por nombre el almacenamiento seguro (`SecureStore.xml`)
- *   y la base de AsyncStorage (`RKStorage` con sus `-journal`, `-wal` y `-shm`).
+ * - Solo se incluyen las preferencias de la plataforma, así que la base de AsyncStorage (`RKStorage`, del dominio
+ *   `database`) queda fuera; dentro de lo incluido se excluye por nombre el almacenamiento seguro (`SecureStore.xml`).
+ * - Cada exclusión cae dentro de algo incluido: si no, lint corta la compilación release (`FullBackupContent`, encontrado
+ *   al construir la 0.15.0-candidata.1).
  * - El plugin escribe esos dos archivos y apunta el manifiesto a ellos.
  *
  * **Lo que esto no prueba:** que Android las aplique. Eso se comprueba en el teléfono con `bmgr` (pasos en la evidencia).
@@ -26,10 +28,6 @@ const ESPERADAS = [
   'include:sharedpref:.',
   'exclude:sharedpref:SecureStore.xml',
   'exclude:sharedpref:SecureStore',
-  'exclude:database:RKStorage',
-  'exclude:database:RKStorage-journal',
-  'exclude:database:RKStorage-wal',
-  'exclude:database:RKStorage-shm',
 ];
 
 test('Android 11 o anterior: solo las preferencias de la plataforma, sin el almacenamiento seguro ni AsyncStorage', () => {
@@ -45,6 +43,17 @@ test('Android 12 o posterior: el respaldo en la nube y la transferencia entre di
   assert.deepEqual(reglasDe(nube), ESPERADAS);
   assert.deepEqual(reglasDe(transferencia), ESPERADAS);
   assert.doesNotMatch(plugin.XML_DE_EXTRACCION, /cross-platform-transfer/, 'BE no tiene una app para iOS que reciba datos');
+});
+
+test('cada exclusión cae dentro de lo incluido (lint FullBackupContent), y la base de AsyncStorage no está incluida', () => {
+  for (const xml of [plugin.XML_DE_RESPALDO, plugin.XML_DE_EXTRACCION]) {
+    const reglas = reglasDe(xml).map((r) => r.split(':'));
+    const incluidos = reglas.filter(([tipo]) => tipo === 'include').map(([, dominio, ruta]) => ({ dominio, ruta }));
+    for (const [tipo, dominio, ruta] of reglas.filter(([t]) => t === 'exclude')) {
+      assert.ok(incluidos.some((i) => i.dominio === dominio && (i.ruta === '.' || ruta === i.ruta || ruta.startsWith(`${i.ruta}/`))), `${tipo} ${dominio}/${ruta} no está en ningún include`);
+    }
+    assert.ok(!incluidos.some((i) => i.dominio === 'database' || i.dominio === 'root' || i.dominio === 'file'), 'ni la base de AsyncStorage ni los archivos de la app están incluidos');
+  }
 });
 
 test('el plugin escribe los dos archivos y apunta el manifiesto a ellos', async () => {
