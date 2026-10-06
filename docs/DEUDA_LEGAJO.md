@@ -3156,6 +3156,11 @@ rechaza) · DL-120 (medios privados) · **Estado:** DECIDIDA por el encargo de D
 - API-TRN-13 sigue devolviendo `didacticResources` vacío. Poblarlo exige decidir qué identifica `resourceId` frente
   a la asociación; no hace falta para el encargo.
 - Las imágenes del catálogo global sembrado (REG-06-135) quedan fuera: aquí solo hay imágenes de ejercicios propios.
+- La imagen se resuelve por la identidad del ejercicio y lleva la versión a la que se asoció. Hoy coincide con la
+  prescripta, porque no hay una API para versionar ejercicios; si la hubiera, habría que decidir si se filtra por versión.
+- Asociar o retirar una imagen no suma un tipo de evento de entrenamiento: el registro es la propia tabla, de solo
+  agregar, con autor, momento y procedencia. Si Dirección lo quiere también como evento (como las recetas), es otra
+  migración de enum.
 
 **Condición de cierre.** Dirección aprueba el paquete; el 05 y el 09 incorporan la familia EJE y la finalidad nueva.
 
@@ -3193,6 +3198,12 @@ APK no tiene cronómetro ni guarda nada localmente.
 - La verificación con la pantalla bloqueada, la muerte del proceso y el cambio de hora queda pendiente del teléfono.
 
 **Para decidir o anotar.**
+- **Una corrida huérfana siempre se puede cerrar.** Es una sesión empezada cuyo profesional perdió el acceso antes de
+  que terminara, y bloquearía para siempre cualquier sesión nueva del titular. Por eso:
+  - API-TIE-04 la muestra al titular como su propia historia, con su A3;
+  - API-TIE-01 acepta sin el acceso del profesional un pedido que solo la deja incompleta.
+
+  No se afirma cuándo terminó.
 - Corregir un evento de tiempo no está en el alcance: los tiempos son lo que se marcó, con su calidad.
 - Una serie declarada «no realizada» sigue en DL-106.
 

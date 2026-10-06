@@ -218,9 +218,13 @@ export function aplicarEventos(registrados: readonly EventoDeTiempo[], nuevos: r
 
 // ─── Los tiempos ────────────────────────────────────────────────────────────────────────────────
 
+/** Los eventos que arman los totales de la sesión: inicio, pausas, fin y ejercicio activo. Las mediciones, no. */
+const TIPOS_DE_LA_SESION: ReadonlySet<EventoDeTiempo['type']> = new Set(['SESSION_STARTED', 'SESSION_PAUSED', 'SESSION_RESUMED', 'SESSION_FINISHED', 'EXERCISE_ACTIVATED']);
+
 /**
- * La línea de tiempo de la corrida para los totales de la sesión. Es monotónica si todos los eventos se tomaron en
- * el mismo proceso y el reloj civil no se adelantó al monotónico. Si no, es civil y la calidad es `ESTIMADO`.
+ * La línea de tiempo de la corrida para los totales de la sesión, hecha solo con sus eventos (`TIPOS_DE_LA_SESION`). Es
+ * monotónica si todos se tomaron en el mismo proceso y el reloj civil no se adelantó al monotónico. Si no, es civil y la
+ * calidad es `ESTIMADO`. Un descanso o una serie cerrados por declaración («Terminó ahora») afectan solo su medición.
  * Los valores se redondean al milisegundo antes de sumar: así la suma de los ejercicios y de lo no asignado da
  * exactamente la sesión sin pausas.
  */
@@ -303,7 +307,7 @@ export function calcularTiempos(eventos: readonly EventoDeTiempo[], recomendado:
     exercises = activados.map((prescriptionId) => ({ prescriptionId, duration: SIN('INCOMPLETO') }));
     unassigned = SIN('INCOMPLETO');
   } else {
-    const corrida = ordenados.filter((e) => e.sequence >= inicio.sequence && e.sequence <= fin.sequence);
+    const corrida = ordenados.filter((e) => e.sequence >= inicio.sequence && e.sequence <= fin.sequence && TIPOS_DE_LA_SESION.has(e.type));
     const { t, calidad } = lineaDeTiempo(corrida);
     const invertida = corrida.some((e, i) => i > 0 && t(e) < t(corrida[i - 1]!));
     if (invertida) {

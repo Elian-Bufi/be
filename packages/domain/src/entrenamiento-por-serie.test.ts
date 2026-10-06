@@ -15,6 +15,7 @@ import { sinCargasSugeridas } from './contratos-plantillas';
 import { sinCargasDeLaSesion } from './habituales';
 import { objetivosEfectivos, problemasDeObjetivosPorSerie, type PrescripcionParaResolver } from './objetivos-por-serie';
 import { OPERACIONES } from './openapi';
+import { normalizarEstructuraDeEntrenamiento } from './plan-de-entrenamiento';
 import { aplicarEventos, calcularTiempos, enVivo, type ContextoDeEventos } from './sesion-de-entrenamiento';
 
 // ─── Compatibilidad con la APK 0.13.2 ──────────────────────────────────────────────────────────
@@ -156,6 +157,54 @@ test('la entrada del plan admite los objetivos por serie y sigue siendo estricta
   const leida = PrescripcionEntradaSchema.parse({ ...base, sets: [{ repetitions: null }, { repetitions: null, rir: null }] });
   assert.equal('rir' in leida.sets[0]!, false);
   assert.equal(leida.sets[1]!.rir, null);
+});
+
+test('P02 · al guardar, el tri-estado se conserva y un plan sin objetivos por serie queda igual que antes', () => {
+  let n = 0;
+  const id = () => `nodo-${++n}`;
+  const entrada = EstructuraDePlanDeEntrenamientoEntradaSchema.parse({
+    blocks: [
+      {
+        label: 'B',
+        sessions: [
+          {
+            label: 'Piernas A',
+            prescriptions: [
+              {
+                exerciseVersionId: 'ev_1',
+                intensity: { criterion: 'RIR', target: { value: 3 } },
+                suggestedLoad: { value: 16, unit: 'kg' },
+                restSeconds: 90,
+                loadBasis: 'SINGLE_IMPLEMENT',
+                sets: [{ repetitions: { min: 12, max: 16 } }, { repetitions: { min: 10, max: 12 }, rir: 2, restSeconds: null }],
+              },
+              { exerciseVersionId: 'ev_2', intensity: null, sets: [{ repetitions: { value: 10 } }] },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+  const r = normalizarEstructuraDeEntrenamiento(entrada, id);
+  assert.equal(r.ok, true);
+  const [conObjetivos, sinObjetivos] = r.ok ? r.contenido.blocks[0]!.sessions[0]!.prescriptions : [];
+  assert.deepEqual(conObjetivos!.sets, [
+    { repetitions: { min: 12, max: 16 }, note: null },
+    { repetitions: { min: 10, max: 12 }, note: null, rir: 2, restSeconds: null },
+  ]);
+  assert.deepEqual([conObjetivos!.restSeconds, conObjetivos!.loadBasis, 'repetitionBasis' in conObjetivos!], [90, 'SINGLE_IMPLEMENT', false]);
+  // Lo guardado es exactamente lo de antes de DL-122: ninguna clave nueva aparece sola.
+  assert.deepEqual(Object.keys(sinObjetivos!).sort(), ['exerciseVersionId', 'intensity', 'note', 'prescriptionId', 'professionalParameters', 'sets', 'suggestedLoad']);
+  assert.deepEqual(sinObjetivos!.sets, [{ repetitions: { value: 10 }, note: null }]);
+});
+
+test('P02 · al guardar, un RIR por serie sin criterio RIR o fuera de rango es un problema de intensidad, con su serie', () => {
+  const entrada = (intensity: unknown, rir: number) =>
+    EstructuraDePlanDeEntrenamientoEntradaSchema.parse({ blocks: [{ label: 'B', sessions: [{ label: 'S', prescriptions: [{ exerciseVersionId: 'ev_1', intensity, sets: [{ repetitions: null }, { repetitions: null, rir }] }] }] }] });
+  const sinCriterio = normalizarEstructuraDeEntrenamiento(entrada(null, 2), () => 'x' + Math.random().toString(36).slice(2));
+  assert.deepEqual(sinCriterio.ok ? null : [sinCriterio.tipo, sinCriterio.issues], ['INTENSIDAD', [{ code: 'SET_RIR_WITHOUT_RIR_CRITERION', path: 'blocks[0].sessions[0].prescriptions[0].sets[1].rir' }]]);
+  const fueraDeRango = normalizarEstructuraDeEntrenamiento(entrada({ criterion: 'RIR', target: { value: 2 } }, 12), () => 'x' + Math.random().toString(36).slice(2));
+  assert.deepEqual(fueraDeRango.ok ? null : fueraDeRango.issues.map((i) => i.code), ['SET_RIR_OUT_OF_RANGE']);
 });
 
 test('plantillas y habituales sin cargas quitan también la carga de cada serie, y conservan RIR y descanso', () => {
@@ -367,6 +416,25 @@ test('T06 · si el reloj civil se adelanta al monotónico (el teléfono durmió)
   assert.deepEqual(descanso(mono(150, 'proceso-uno', 210)), { ms: 150_000, quality: 'ESTIMATED' });
   // El civil retrocedió una hora: el monotónico sigue valiendo.
   assert.deepEqual(descanso(mono(150, 'proceso-uno', -3450)), { ms: 90_000, quality: 'MEASURED' });
+});
+
+test('un descanso cerrado por declaración es estimado, y no vuelve estimados los totales de la sesión medidos', () => {
+  const eventos = aplicarEventos(
+    [],
+    corrida([
+      { type: 'SESSION_STARTED', at: mono(0) },
+      { type: 'EXERCISE_ACTIVATED', prescriptionId: 'pA', at: mono(0) },
+      { type: 'REST_STARTED', restId: 'descanso-a1', prescriptionId: 'pA', setIndex: 1, at: mono(60) },
+      // Al finalizar, el descanso seguía abierto y la persona dijo «Terminó ahora»: es una declaración.
+      { type: 'REST_FINISHED', restId: 'descanso-a1', at: declarado(600), compoundActionId: 'cierre-final' },
+      { type: 'SESSION_FINISHED', resolution: 'FINISHED', at: mono(600), compoundActionId: 'cierre-final' },
+    ]),
+    CONTEXTO,
+  ).aRegistrar;
+  const t = calcularTiempos(eventos, RECOMENDADO);
+  assert.deepEqual(t.rests[0]!.duration, { ms: 540_000, quality: 'ESTIMATED' });
+  assert.deepEqual(t.session.elapsed, { ms: 600_000, quality: 'MEASURED' });
+  assert.deepEqual(t.exercises[0]!.duration, { ms: 600_000, quality: 'MEASURED' });
 });
 
 test('mientras corre: la sesión sin pausas y el descanso se recalculan desde los instantes, sin sumar ticks', () => {

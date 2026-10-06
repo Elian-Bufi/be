@@ -62,7 +62,8 @@ export const COPY_ENTRENAMIENTO_POR_SERIE = {
   finalizarDescanso: 'Finalizar descanso',
   descansoDeLaSerie: (n: number) => `Descanso · Serie ${numero(n, 0)}`,
   recomendadoTrasLaSerie: (n: number, t: string) => `Recomendado tras la serie ${numero(n, 0)}: ${t}`,
-  sinDescansoRecomendado: 'Sin descanso recomendado',
+  /** La frase del encargo de Dirección (§6) para una serie sin descanso recomendado: se puede medir igual. */
+  sinDescansoRecomendado: 'Descanso sin duración indicada',
   recomendado: (t: string) => `Recomendado: ${t}`,
   alTerminarSeguisCon: (n: number) => `Al terminar, seguís con la serie ${numero(n, 0)}`,
   cronometrarSerie: 'Cronometrar serie',
@@ -124,6 +125,48 @@ export const ETIQUETA_DE_REVISION_TECNICA: Readonly<Record<RevisionTecnica, stri
   PENDING_PROFESSIONAL_REVIEW: 'Pendiente de revisión profesional',
   REVIEWED_BY_PROFESSIONAL: 'Revisada por el profesional',
 };
+
+/** «Mis ejercicios» del profesional (DL-123): los ejercicios propios y su imagen. */
+export const COPY_EJERCICIOS_PROPIOS = {
+  titulo: 'Mis ejercicios',
+  tusEjercicios: 'Tus ejercicios',
+  queEs: 'Los ejercicios que cargaste a mano. Solo los ves vos y, cuando forman parte de un plan activado, la persona a la que se lo asignaste.',
+  sinEjercicios: 'Todavía no cargaste ejercicios propios. Podés crearlos acá o desde el editor del plan.',
+  soloEntrenamiento: 'Los ejercicios propios son del área de Entrenamiento: tu espacio profesional no la tiene habilitada.',
+  crearEjercicio: 'Crear ejercicio',
+  nombreDelEjercicio: 'Nombre del ejercicio',
+  ejercicioCreado: 'Ejercicio creado.',
+  imagen: 'Imagen del ejercicio',
+  sinImagen: 'Sin imagen',
+  elegirImagen: 'Elegir una imagen',
+  reemplazarImagen: 'Elegir otra imagen para reemplazarla',
+  vistaPrevia: 'Vista previa (todavía no se guardó)',
+  procedencia: 'Procedencia',
+  elegirProcedencia: 'Elegí la procedencia',
+  autoria: 'Autoría',
+  ayudaDeAutoria: 'Quién hizo o generó la imagen. Por ejemplo: «Generada por IA para BE».',
+  textoAlternativo: 'Texto alternativo',
+  ayudaDeTextoAlternativo: 'Qué muestra la imagen, para quien no la ve. Por ejemplo: «Persona adulta en zancada estática».',
+  licencia: 'Licencia',
+  sinLicenciaExterna: 'Sin licencia externa (contenido propio o generado para BE)',
+  terminosDeUso: 'Términos de uso',
+  ayudaDeTerminos: 'En qué términos aportás la imagen. No se completa sola.',
+  licenciaExterna: 'Licencia de terceros',
+  identificadorDeLicencia: 'Identificador de la licencia',
+  nombreDeLicencia: 'Nombre de la licencia',
+  urlDeLicencia: 'Dirección de la licencia (opcional)',
+  revisada: 'Revisé esta imagen: sirve para reconocer el ejercicio',
+  guardarImagen: 'Guardar imagen',
+  guardandoImagen: 'Guardando la imagen…',
+  imagenGuardada: 'Imagen guardada.',
+  retirarImagen: 'Retirar imagen',
+  confirmarRetiro: 'La imagen deja de mostrarse en este ejercicio. No se borra: lo ya registrado conserva la imagen que tenía.',
+  imagenRetirada: 'Imagen retirada.',
+  faltaUnDato: 'Completá la procedencia, la autoría, el texto alternativo y la licencia.',
+  imagenInvalida: 'Esa imagen no se puede usar: tiene que ser JPG, PNG o WebP, de hasta 10 MB y de 64 a 8000 px por lado.',
+  imagenNoGuardada: 'No pudimos guardar la imagen. Probá de nuevo.',
+  cambioEnOtraPestana: 'La imagen de este ejercicio cambió en otra pestaña o dispositivo. Recargá la página para ver la vigente.',
+} as const;
 
 /** El rol de la imagen, que se dice siempre que se muestra: ilustra, no certifica. */
 export const ROL_DE_LA_IMAGEN = 'Ilustración para reconocer el ejercicio. No certifica la técnica ni reemplaza las indicaciones de tu profesional.';

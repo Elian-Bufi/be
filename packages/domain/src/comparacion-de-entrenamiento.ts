@@ -54,7 +54,26 @@ export type MotivoSinDato =
   | 'identidad-desconocida'
   | 'campo-no-registrado';
 
-export type SeriePlanificada = { readonly tipo: 'planificada'; readonly repeticiones: Repeticiones | null; readonly nota: string | null } | { readonly tipo: 'no-planificada' };
+/**
+ * DL-122: el objetivo efectivo de una serie (de API-SER-01, para la versión que rigió), con el origen de cada valor. Solo
+ * está si se pasaron los objetivos de la versión: sin ellos, el RIR y la carga planificados son los de la prescripción.
+ */
+export interface ObjetivoPlanificadoDeSerie {
+  readonly rir: number | null;
+  readonly carga: Carga | null;
+  readonly origenDelRir: 'SET' | 'PRESCRIPTION' | 'NONE';
+  readonly origenDeLaCarga: 'SET' | 'PRESCRIPTION' | 'NONE';
+}
+
+export type SeriePlanificada =
+  | { readonly tipo: 'planificada'; readonly repeticiones: Repeticiones | null; readonly nota: string | null; readonly objetivo?: ObjetivoPlanificadoDeSerie }
+  | { readonly tipo: 'no-planificada' };
+
+/**
+ * DL-122: los objetivos efectivos de una versión de plan, por prescripción, tal como los devuelve API-SER-01. Se pasan a la
+ * comparación para que el RIR y la carga planificados sean los de cada serie.
+ */
+export type ObjetivosDeLaVersion = ReadonlyMap<string, readonly { readonly setIndex: number; readonly target: { readonly rir: number | null; readonly suggestedLoad: Carga | null }; readonly targetOrigin: { readonly rir: 'SET' | 'PRESCRIPTION' | 'NONE'; readonly suggestedLoad: 'SET' | 'PRESCRIPTION' | 'NONE' } }[]>;
 
 export type SerieRegistrada =
   | { readonly tipo: 'registrada'; readonly serie: SerieEjecutadaApi }
@@ -198,7 +217,7 @@ function identidadDe(p: Prescripcion, ejercicio: EjercicioRegistrado | null, ver
  * `versiones` es la identidad de las versiones del período (`identidadDeVersiones`). Sin ella, se usa lo que dice esta
  * sola ejecución, y una versión que no esté prescripta acá queda como identidad desconocida.
  */
-export function compararEjecucion(x: EjecucionDeEntrenamiento, versiones: IdentidadDeVersiones = identidadDeVersiones([x])): ComparacionDeEjercicio[] {
+export function compararEjecucion(x: EjecucionDeEntrenamiento, versiones: IdentidadDeVersiones = identidadDeVersiones([x]), objetivos?: ObjetivosDeLaVersion): ComparacionDeEjercicio[] {
   const fuente = fuenteDe(x);
   const vigente = fuente.tipo === 'no-resoluble' ? null : registroVigente(x);
   const condicion = vigente?.sessionCondition ?? null;
@@ -211,11 +230,19 @@ export function compararEjecucion(x: EjecucionDeEntrenamiento, versiones: Identi
       const numeros = [...new Set([...p.sets.map((s) => s.setIndex), ...(ejercicio?.sets ?? []).map((s) => s.setIndex)])].sort((a, b) => a - b);
       const filas = numeros.map((n): FilaDeSerie => {
         const planificada = p.sets.find((s) => s.setIndex === n);
+        const objetivo = objetivos?.get(p.prescriptionId)?.find((s) => s.setIndex === n);
         const registrada = registradaDe(condicion, ejercicio, n);
         const original = enElOriginal === undefined ? undefined : (enElOriginal?.sets?.find((s) => s.setIndex === n) ?? null);
         return {
           numero: n,
-          planificada: planificada ? { tipo: 'planificada', repeticiones: planificada.repetitions, nota: planificada.note } : { tipo: 'no-planificada' },
+          planificada: planificada
+            ? {
+                tipo: 'planificada',
+                repeticiones: planificada.repetitions,
+                nota: planificada.note,
+                ...(objetivo ? { objetivo: { rir: objetivo.target.rir, carga: objetivo.target.suggestedLoad, origenDelRir: objetivo.targetOrigin.rir, origenDeLaCarga: objetivo.targetOrigin.suggestedLoad } } : {}),
+              }
+            : { tipo: 'no-planificada' },
           registrada,
           enElOriginal: original,
           corregida: original !== undefined && !mismaSerie(registrada.tipo === 'registrada' ? registrada.serie : null, original),
@@ -277,6 +304,17 @@ export function valorPlanificado(c: ComparacionDeEjercicio, fila: Pick<FilaDeSer
     const r = fila.planificada.repeticiones;
     if (!r) return { tipo: 'sin-fijar' };
     return 'value' in r ? { tipo: 'valor', valor: r.value, origen: 'serie', sugerida: false } : { tipo: 'rango', min: r.min, max: r.max };
+  }
+  // DL-122: con el objetivo efectivo de la serie, el RIR y la carga son los de esa serie (heredados o propios).
+  const objetivo = fila.planificada.objetivo;
+  if (objetivo && medida.variable === 'rir') {
+    return objetivo.rir === null ? { tipo: 'sin-fijar' } : { tipo: 'valor', valor: objetivo.rir, origen: objetivo.origenDelRir === 'SET' ? 'serie' : 'prescripcion', sugerida: false };
+  }
+  if (objetivo && medida.variable === 'carga') {
+    if (objetivo.carga) {
+      return objetivo.carga.unit === medida.unidad ? { tipo: 'valor', valor: objetivo.carga.value, origen: objetivo.origenDeLaCarga === 'SET' ? 'serie' : 'prescripcion', sugerida: true } : { tipo: 'otra-unidad', carga: objetivo.carga };
+    }
+    return c.porcentajeRm ? { tipo: 'porcentaje-rm', valor: c.porcentajeRm.valor, referencia: c.porcentajeRm.referencia } : { tipo: 'sin-fijar' };
   }
   if (medida.variable === 'rir') return c.rirObjetivo === null ? { tipo: 'sin-fijar' } : { tipo: 'valor', valor: c.rirObjetivo, origen: 'prescripcion', sugerida: false };
   if (c.cargaSugerida) {
@@ -467,12 +505,14 @@ export function observacionesDelEjercicio(
   ejecuciones: readonly EjecucionDeEntrenamiento[],
   claveDelEjercicio: string,
   periodo: readonly EjecucionDeEntrenamiento[] = ejecuciones,
+  /** DL-122: los objetivos por serie de cada versión del período, por `planId`. */
+  objetivosPorVersion?: ReadonlyMap<string, ObjetivosDeLaVersion>,
 ): ObservacionDeEvolucion[] {
   const versiones = identidadDeVersiones(periodo);
   const sinDia: Omit<ObservacionDeEvolucion, 'delDia'>[] = [];
   for (const x of [...ejecuciones].sort(porOcurrencia)) {
     // La misma identidad que usa la vista por serie: la de todo el período.
-    for (const c of compararEjecucion(x, versiones)) {
+    for (const c of compararEjecucion(x, versiones, objetivosPorVersion?.get(x.planId))) {
       const clave = `${c.executionId}|${c.prescriptionId}`;
       if (claveDelPrescripto(c) === claveDelEjercicio) {
         const rol = c.identidad === 'otro-ejercicio' ? 'sustituido' : c.identidad === 'desconocida' ? 'registrado-sin-identidad' : 'planificado-y-registrado';

@@ -1929,7 +1929,8 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: SesionParaRegistrarResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    // 403: el titular sin A3 vigente no lee su historia registrada (DL-089), como en API-TRN-19.
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: 'DEUDA_LEGAJO DL-122, DL-123 · REG-06-112',
   },
   {
@@ -1965,7 +1966,7 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: TiemposDeSesionResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: 'DEUDA_LEGAJO DL-124 · 09v10:1135-1180',
   },
   {
@@ -1976,7 +1977,7 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: SesionEnCursoResponseSchema }],
-    errores: { ...SESION },
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
     fuente: 'DEUDA_LEGAJO DL-124',
   },
   {
@@ -1987,7 +1988,7 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: ListaDeEjerciciosPropiosResponseSchema }],
-    errores: { ...SESION, 403: ['ACTION_FORBIDDEN'] },
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
     fuente: 'DEUDA_LEGAJO DL-123 · REG-06-134, 135',
   },
   {
