@@ -18,6 +18,7 @@ import {
   BaseDeCargaSchema,
   BaseDeRepeticionesSchema,
   COPY,
+  COPY_COMPATIBILIDAD_DE_CLIENTES,
   COPY_ENTRENAMIENTO,
   COPY_INTEGRACIONES,
   ETIQUETA_DE_BASE_DE_CARGA,
@@ -25,6 +26,7 @@ import {
   ETIQUETA_DE_CRITERIO,
   estructuraConObjetivosComoEntrada,
   leerNumero,
+  planExigeObjetivosPorSerie,
   textoDeCarga,
   textoDeRir,
   textoDeSegundos,
@@ -47,7 +49,7 @@ import { ImportacionDeWger, procedenciaDeEjercicio } from './importacion';
 import { DialogoGuardarPlantilla, NotaDeOrigen } from './plantillas';
 import { COPY_HABITUALES, COPY_PLANTILLAS, type SesionHabitual } from '@be/domain';
 import { BloqueDeHabituales, BotonHabitual, DialogoGuardarSesionHabitual, InsertarSesionHabitual, nombresDeHabitual, useEjerciciosHabituales, useSesionesHabituales, type EjerciciosHabituales } from './habituales';
-import { AVISO_DE_LA_APK_ANTERIOR, CampoHeredable, TablaDeLaPrescripcion, tieneObjetivosPorSerie } from './objetivos-por-serie';
+import { CampoHeredable, TablaDeLaPrescripcion } from './objetivos-por-serie';
 import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 
 type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
@@ -227,6 +229,10 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
       }
       if (r.tipo === 'API' && r.codigo === 'CAPACITY_NOT_AVAILABLE') return setFalloDeActivacion('No hay capacidad disponible para iniciar un nuevo seguimiento. Los seguimientos vigentes no se modifican.');
       if (r.tipo === 'API' && r.codigo === 'ACTIVE_PLAN_CONFLICT') return setFalloDeActivacion('El asesorado ya tiene un plan de entrenamiento vigente con otro profesional.');
+      if (r.tipo === 'API' && r.codigo === 'CLIENT_CAPABILITY_REQUIRED') {
+        void cargar();
+        return setFalloDeActivacion(`${COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada} ${COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}`);
+      }
       return setFalloDeActivacion(esIncierto(r) ? COPY.resultadoIncierto : 'No pudimos activar el plan. Probá de nuevo.');
     }
     setConfirmar(false);
@@ -236,6 +242,12 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
   if (error === 'no-disponible') return <NoDisponible />;
   if (error === 'error') return <ErrorConReintento onReintentar={cargar} />;
   if (!version) return <Cargando />;
+
+  // Precierre del 2026-10-06, §2: las APK instaladas muestran solo los objetivos generales. Si el plan escrito tiene
+  // objetivos distintos por serie (la misma regla que aplica la API) y el asesorado todavía no usó una app que los
+  // muestre (API-SER-01), no se puede activar: se dice por qué, y la API lo rechaza igual (409 CLIENT_CAPABILITY_REQUIRED).
+  const exigeObjetivosPorSerie = planExigeObjetivosPorSerie({ blocks: bloques });
+  const bloqueadoPorLaApp = exigeObjetivosPorSerie && !version.setTargetsDelivery.adviseeClientCapable;
 
   const editorDeSesiones = (sesiones: SesionE[], ruta: (b: Bloques) => SesionE[], prefijo: string) => (
     <>
@@ -291,9 +303,17 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
         {version.predecessorPlanId ? <p>Nueva versión a partir de la versión activa. La versión activa no cambia hasta que actives esta.</p> : null}
       </Ayuda>
       {version.templateOrigin ? <NotaDeOrigen token={token} origen={version.templateOrigin} /> : null}
-      {bloques.some((b) => [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions)].some((s) => s.prescriptions.some((p) => tieneObjetivosPorSerie(p.sets)))) ? (
+      {bloqueadoPorLaApp ? (
         <Aviso tipo="info">
-          <p>{AVISO_DE_LA_APK_ANTERIOR}</p>
+          <p>
+            <strong>{COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueadaTitulo}</strong>
+          </p>
+          <p>{COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada}</p>
+          <p>{COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}</p>
+        </Aviso>
+      ) : exigeObjetivosPorSerie ? (
+        <Aviso tipo="info">
+          <p>{COPY_COMPATIBILIDAD_DE_CLIENTES.listoParaActivar}</p>
         </Aviso>
       ) : null}
       {objetivoVigente && objetivoVigente !== version.objectiveVersionId ? (
@@ -407,7 +427,7 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
         <button type="button" className="boton boton--secundario" onClick={() => void validar()} disabled={guardando}>
           {COPY_ENTRENAMIENTO.validarPlan}
         </button>
-        <button type="button" className="boton boton--secundario" onClick={() => setConfirmar(true)} disabled={guardando || sucio}>
+        <button type="button" className="boton boton--secundario" onClick={() => setConfirmar(true)} disabled={guardando || sucio || bloqueadoPorLaApp} aria-describedby={bloqueadoPorLaApp ? 'motivo-sin-activar' : undefined}>
           {COPY_ENTRENAMIENTO.activarPlan}
         </button>
         <button type="button" className="boton boton--secundario" onClick={() => setGuardarPlantilla(true)} disabled={guardando}>
@@ -415,6 +435,11 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
         </button>
       </div>
       {sucio ? <p className="nota">Guardá los cambios antes de activar.</p> : null}
+      {bloqueadoPorLaApp ? (
+        <p className="nota" id="motivo-sin-activar">
+          {COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueadaTitulo}: {COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}
+        </p>
+      ) : null}
       <DialogoGuardarPlantilla
         token={token}
         abierto={guardarPlantilla}

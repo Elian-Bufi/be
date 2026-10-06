@@ -170,11 +170,3 @@ export function TablaDeLaPrescripcion({ prescripcion, bases }: { prescripcion: P
   const filas = objetivosEfectivos(prescripcion);
   return <TablaDeObjetivos filas={filas} conRir={esCriterioRir(prescripcion.intensity) || filas.some((f) => f.rir !== null)} bases={bases} />;
 }
-
-/** Si alguna serie del plan declara un objetivo propio: la APK 0.13.2 no lo ve (DL-122). */
-export const tieneObjetivosPorSerie = (sets: readonly { readonly rir?: unknown; readonly suggestedLoad?: unknown; readonly restSeconds?: unknown }[]): boolean =>
-  sets.some((s) => s.rir !== undefined || s.suggestedLoad !== undefined || s.restSeconds !== undefined);
-
-/** El aviso de compatibilidad del editor, literal en un solo lugar. */
-export const AVISO_DE_LA_APK_ANTERIOR =
-  'La APK 0.13.2 muestra solo los valores generales de cada ejercicio. Los objetivos propios de cada serie se ven en la versión nueva de la app; antes de usarlos con una persona, confirmá que la tenga instalada.';
