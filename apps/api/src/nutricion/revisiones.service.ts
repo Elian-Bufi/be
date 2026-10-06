@@ -128,6 +128,8 @@ export class RevisionesService {
             // Un registro v2 entra con su vista efectiva: lo confirmado o informado, nunca lo previsto (DL-121).
             consumedItems: itemsConsumidosV1(i),
             description: i.descripcion,
+            // DL-121: la comida del plan en cuyo contexto se registró algo diferente; sigue fuera de la prescripción.
+            contextMealId: i.origen === 'PRESCRIPTA' ? null : (i.comidaDeContextoId ?? null),
           })),
         );
 

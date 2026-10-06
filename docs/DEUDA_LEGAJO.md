@@ -123,9 +123,9 @@
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección |
 | DL-117 | Decisión de Dirección · 2026-10-04 | B10-10 §9 · 08 §33 · DL-113 · DL-049 · DL-077 · DL-115 | La APK no tiene un Inicio que reúna lo disponible de los módulos, y Cuenta ocupa un lugar de la barra | **DECIDIDA** 2026-10-04 · Inicio personal y barra Inicio, Nutrición, Entrenamiento, Evolución, Información; Cuenta en el avatar. Implementación sin integrar |
 | DL-118 | Decisión de Dirección · 2026-10-05 | DL-117 · DL-111 · DL-113 · REG-06-162/165/166 · TEST-PRJ-009 | «Mi evolución» de la APK tiene cuatro vistas con mucho desplazamiento, gráficos ilegibles y vistas vacías; la lectura del asesorado es más técnica de lo necesario | **DECIDIDA** 2026-10-05 · tres vistas (Mapa corporal, Progreso por Torso y Piernas, Indicadores); Comparar sale como apartado móvil. Implementación sin integrar |
-| DL-119 | Encargo de Dirección · 2026-10-05 | REG-06-135 (inciso 2) · 06:4228-4394, 4554-4621 · RF-027 | Recetas como preparaciones propias del profesional, catálogo de referencia USDA y método de cálculo de energía y macros | **DECIDIDA** 2026-10-05 · familia REC, método `SUM_SOURCE_PER_100G_V1`. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` (#147, borrador), sin integrar |
-| DL-120 | Encargo de Dirección · 2026-10-05 | 08 §21 (08:519-531, 395, 451) · 07 §25 (07:939-965) · 09v12 §24 · 09v9 §28 · REG-06-133 · T-06-65 | Medios privados activados en el MVP sintético; almacenamiento en PostgreSQL detrás de una interfaz, en lugar de S3 | **DECIDIDA** 2026-10-05 la activación, con persistencia en la base existente. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas`, sin integrar. S3 (07 §25) queda abierto hasta que haya un servicio contratado |
-| DL-121 | Encargo de Dirección · 2026-10-05 | DL-049 · DL-050 · 06:1422-1462 · CONS:564-630 | Registro v2 de comidas: estado de las cantidades, anulación y rectificación del titular, y clave natural con secuencia | **DECIDIDA** 2026-10-05 · familia ING, endpoints nuevos. Resuelve DL-050; lo que lee la APK instalada no cambia. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas`, sin integrar; la APK nueva no está publicada |
+| DL-119 | Encargo de Dirección · 2026-10-05 | REG-06-135 (inciso 2) · 06:4228-4394, 4554-4621 · RF-027 | Recetas como preparaciones propias del profesional, catálogo de referencia USDA y método de cálculo de energía y macros | **DECIDIDA** 2026-10-05 · familia REC, método `SUM_SOURCE_PER_100G_V1`. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` (#147, borrador) y **probada localmente**. Sin integrar; pendiente la prueba remota (no hay despliegue) y en Android (no hay APK nueva) |
+| DL-120 | Encargo de Dirección · 2026-10-05 | 08 §21 (08:519-531, 395, 451) · 07 §25 (07:939-965) · 09v12 §24 · 09v9 §28 · REG-06-133 · T-06-65 | Medios privados activados en el MVP sintético; almacenamiento en PostgreSQL detrás de una interfaz, en lugar de S3 | **DECIDIDA** 2026-10-05 la activación, con persistencia en la base existente. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` y **probada localmente**. Sin integrar; pendientes la prueba remota y en Android. Para la demo sigue PostgreSQL (decisión del 2026-10-06), y S3 (07 §25) queda abierto. **Pendiente normativo aislado:** el acto `EVIDENCIA_VISUAL` (08 §12.4) no tiene texto versionado |
+| DL-121 | Encargo de Dirección · 2026-10-05 | DL-049 · DL-050 · 06:1422-1462 · CONS:564-630 | Registro v2 de comidas: estado de las cantidades, anulación y rectificación del titular, y clave natural con secuencia | **DECIDIDA** 2026-10-05 · familia ING, endpoints nuevos. Resuelve DL-050; lo que lee la APK instalada no cambia. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` y **probada localmente**. Sin integrar; pendientes la prueba remota y en Android (la APK nueva no se compiló). Decidido el 2026-10-06: una entrada efectiva por comida y fecha; en el contraste, fuera de la prescripción y con los dos hechos dichos |
 
 ---
 
@@ -2996,8 +2996,44 @@ entrega (QUE-FALTA §1).
 - **La APK nueva suma permisos:** CAMERA y, hasta Android 12, los de almacenamiento, que vienen de `expo-image-picker`.
   RECORD_AUDIO queda bloqueado.
 
-**Condición de cierre.** Dirección decide entre seguir en PostgreSQL y contratar un almacenamiento S3. El 08 registra la
-activación.
+**Decisión operativa del 2026-10-06 (encargo de Dirección).** Para la demostración sigue PostgreSQL con
+`AlmacenDeMedios`, sin contratar S3.
+
+**El almacenamiento, tal como queda:**
+
+| Tema | Cómo es | Lo que no cubre |
+|---|---|---|
+| **Límites** | Se reciben hasta 10 MB y de 64 a 8000 px por lado, con un máximo de 40 megapíxeles. Se guarda un JPEG de calidad 82 y 1600 px como máximo, de unos 150 a 400 KB por imagen. Una comida diferente lleva hasta 3 fotos. La base de `test` es del plan gratuito, con 1 GB para todo | No hay cuota por persona |
+| **Respaldo** | El que tenga la base. BE no hace copias aparte de los medios | No está verificado que el plan gratuito de `test` tenga respaldo. El régimen del 08 §18 no está cubierto en la demo |
+| **Retención** | Los medios duran lo que dure su base. Una intención que nunca se subió queda `PENDIENTE`, sin bytes | No hay una tarea que limpie los pendientes viejos |
+| **Borrado autorizado** | API-MED-05: el titular suprime una foto propia de comida. Se borran los bytes, queda el registro con su momento y motivo, y la supresión se anota en el registro de supresiones | Retirar la imagen de una receta no borra el medio: queda la historia |
+| **Cambiar de proveedor** | Se implementa `AlmacenDeMedios` (guardar, leer, suprimir) para S3, se agrega el valor a `BE_MEDIOS_ALMACEN` y se copian los bytes de `contenido_de_medio` con su `mediaId`. Las rutas firmadas, el PDP y la auditoría no cambian | Hace falta un bucket privado y sus credenciales: un servicio a contratar |
+
+**Lo que el reinicio local no prueba:** disponibilidad, respaldo ni persistencia en el despliegue remoto. Nada de esto se
+desplegó.
+
+**Bloqueo remoto, independiente del código.** `be-db-test` vence cerca del 2026-10-18 (`docs/DESPLIEGUE.md`), y la
+entrega es el 2026-10-20. Seguir con esa base después de esa fecha exige una decisión de servicio de Dirección: pasarla a
+un plan pago o recrearla. No se recreó nada ni se pagó nada.
+
+**Pendiente normativo aislado: el acto `EVIDENCIA_VISUAL`.**
+- Lo que pide el 08 (§12.4, tabla de actos):
+  - es un acto de información destacada por categoría, dentro del alcance B2 (B2 reforzado);
+  - es obligatorio para subir y ver fotos (§21), es revocable y exige la evidencia de §12.2;
+  - no es un consentimiento por foto (§21.3).
+- Lo que hay hoy:
+  - BE no tiene un texto versionado de esa información, y no se inventa un acto ni una aceptación;
+  - la APK muestra la información en el momento de la subida: «La foto es privada: la ven vos y el profesional que te
+    acompaña en Nutrición.»;
+  - cada acceso a una foto de comida queda auditado como `EVIDENCIA_VISUAL`, con el PDP de vínculo, B2 y A3.
+- Para activar la función con personas reales faltan:
+  - el texto aprobado por Dirección, con validación jurídica;
+  - su registro como acto, con la evidencia de §12.2;
+  - que MED-01 y MED-03 lo exijan.
+- Esto no frena el resto del trabajo: la demo es sintética, como todo el MVP.
+
+**Condición de cierre.** Dirección decide entre seguir en PostgreSQL y contratar un almacenamiento S3, y aprueba el texto
+del acto `EVIDENCIA_VISUAL`. El 08 registra la activación.
 
 ## DL-121 — Registro v2 de comidas: estado de las cantidades, anulación y rectificación del titular
 
@@ -3039,5 +3075,12 @@ por el encargo de Dirección del 2026-10-05
   - «no lo comí» y lo desconocido no aparecen, porque esa forma exige una cantidad positiva;
   - una comida diferente con solo foto se proyecta con `description: null`.
 - **La APK nueva** manda una foto por comida diferente, aunque el contrato admite tres.
+- **Decisión del 2026-10-06, ya implementada en el contraste:** haber registrado otra comida no es haber seguido la opción
+  prescrita.
+  - API-NUT-17 suma, por comida, `differentMealExecutionIds`: las comidas diferentes registradas en su contexto. La
+    comida sigue `NO_DATA`, sin opción, y las comidas diferentes siguen en `outsidePrescription`.
+  - El website dice los dos hechos, «Sin opción del plan registrada» y «Comida diferente registrada», y en «Fuera del
+    plan» nombra la comida («Registrada en “Cena”»).
+  - No se tocó ningún consumo ni registro histórico.
 
 **Condición de cierre.** Dirección aprueba el paquete, y el 05 y el 09 incorporan estas operaciones.

@@ -355,6 +355,8 @@ export interface IngestaParaContraste {
   readonly optionId: string | null;
   readonly consumedItems: readonly { readonly itemId: string; readonly quantity: Cantidad }[];
   readonly description: string | null;
+  /** DL-121: la comida del plan en cuyo contexto se registró una comida diferente (fuera de la prescripción). */
+  readonly contextMealId?: string | null;
 }
 
 /**
@@ -380,7 +382,7 @@ export function construirContraste(fechas: readonly string[], versiones: readonl
     }
     return null;
   };
-  const entrada = (mealId: string, label: string, registro: IngestaParaContraste | null) => {
+  const entrada = (mealId: string, label: string, registro: IngestaParaContraste | null, diferentes: readonly string[] = []) => {
     const opcion = registro ? comidaDe(registro)?.options.find((o) => o.optionId === registro.optionId) : undefined;
     const quantityDifferences = (registro?.consumedItems ?? []).flatMap((c) => {
       const item = opcion?.items.find((i) => i.itemId === c.itemId);
@@ -402,6 +404,7 @@ export function construirContraste(fechas: readonly string[], versiones: readonl
       state: registro ? ('REGISTERED' as const) : ('NO_DATA' as const),
       registeredOptionId: registro?.optionId ?? null,
       executionId: registro?.executionId ?? null,
+      differentMealExecutionIds: [...diferentes],
       quantityDifferences,
     };
   };
@@ -409,7 +412,10 @@ export function construirContraste(fechas: readonly string[], versiones: readonl
   return {
     days: fechas.map((fecha) => {
       const delDia = ingestas.filter((i) => i.localDate === fecha);
-      const libres = delDia.filter((i) => i.origin === 'OUTSIDE_PRESCRIPTION').map((i) => ({ executionId: i.executionId, description: i.description ?? '' }));
+      const libresDelDia = delDia.filter((i) => i.origin === 'OUTSIDE_PRESCRIPTION');
+      const libres = libresDelDia.map((i) => ({ executionId: i.executionId, description: i.description ?? '' }));
+      /** DL-121: las comidas diferentes registradas en el contexto de una comida del plan, sin dejar de estar fuera de él. */
+      const diferentesDe = (planId: string, mealId: string) => libresDelDia.filter((i) => i.planId === planId && i.contextMealId === mealId).map((i) => i.executionId);
       const prescriptas = delDia.filter((i) => i.origin === 'PRESCRIBED' && porId.has(i.planId));
       const dataState = delDia.length > 0 ? ('HAS_DATA' as const) : ('NO_DATA' as const);
       const referenciada = prescriptas.length > 0 ? porId.get(prescriptas[prescriptas.length - 1]!.planId)! : null;
@@ -423,7 +429,7 @@ export function construirContraste(fechas: readonly string[], versiones: readonl
       const meals = (dia?.meals ?? []).map((m) => {
         const registro = propias.find((i) => i.mealId === m.mealId) ?? prescriptas.find((i) => i.mealId === m.mealId && !usadas.has(i.executionId)) ?? null;
         if (registro) usadas.add(registro.executionId);
-        return entrada(m.mealId, m.label, registro);
+        return entrada(m.mealId, m.label, registro, diferentesDe(version.planId, m.mealId));
       });
       for (const i of prescriptas) {
         if (usadas.has(i.executionId)) continue;

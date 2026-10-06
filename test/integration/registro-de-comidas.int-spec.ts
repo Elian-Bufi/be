@@ -424,6 +424,13 @@ describe('D8 · «Comí algo diferente»: texto, foto o los dos; nunca vacía; s
     const v1 = (await conSesion(app, e.c.ase.token).get('/api/v1/me/nutrition/today').expect(200)).body;
     HoyResponseSchema.parse(v1);
     expect(v1.data.registeredIntake.find((i: { executionId: string }) => i.executionId === r.body.data.recordId).mealId).toBeNull();
+    // El contraste del profesional (API-NUT-17) dice los dos hechos: la cena sigue sin opción del plan (NO_DATA) y nombra
+    // la comida diferente registrada en su contexto, que sigue fuera de la prescripción (CONS:599-612; DL-121).
+    const contexto = (await conSesion(app, e.c.pro.token).get(`/api/v1/advisees/${e.c.ase.id}/nutrition/review-context`).expect(200)).body.data;
+    const dias = contexto.descriptiveContrast.days as { meals: { mealId: string; state: string; registeredOptionId: string | null; differentMealExecutionIds: string[] }[]; outsidePrescription: { executionId: string }[] }[];
+    const diaDelRegistro = dias.find((d) => d.outsidePrescription.some((o) => o.executionId === r.body.data.recordId))!;
+    expect(diaDelRegistro.meals.find((m) => m.mealId === cena)).toMatchObject({ state: 'NO_DATA', registeredOptionId: null, differentMealExecutionIds: [r.body.data.recordId] });
+    expect(diaDelRegistro.meals.filter((m) => m.mealId !== cena).every((m) => !m.differentMealExecutionIds.includes(r.body.data.recordId))).toBe(true);
   });
 
   it('la base sostiene la comida diferente: sin texto ni foto no se confirma; la foto unida y la anulación no se editan', async () => {

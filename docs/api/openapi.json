@@ -16028,6 +16028,13 @@
                                             }
                                           ]
                                         },
+                                        "differentMealExecutionIds": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        },
                                         "quantityDifferences": {
                                           "type": "array",
                                           "items": {
@@ -16114,6 +16121,7 @@
                                         "state",
                                         "registeredOptionId",
                                         "executionId",
+                                        "differentMealExecutionIds",
                                         "quantityDifferences"
                                       ],
                                       "additionalProperties": false

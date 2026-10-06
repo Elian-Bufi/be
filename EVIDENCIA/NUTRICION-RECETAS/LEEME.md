@@ -150,3 +150,27 @@ repo.
 
 El estado, las sesiones y las capturas de cada corrida quedan en `herramientas/recorrido/trabajo/`, que git ignora. La
 contraseña de las cuentas es sintética y solo sirve para esa base local.
+
+## Cierre del 2026-10-06 (encargo de Entrenamiento, §2)
+
+Los 78 controles de arriba son los de la corrida del 2026-10-06 y no se repitieron. Se volvieron a correr solo las
+pruebas que tocaba el cambio de este cierre.
+
+- **Comida diferente en el contraste.**
+  - Al profesional, API-NUT-17 le dice los dos hechos: «Sin opción del plan registrada» y «Comida diferente
+    registrada».
+  - La comida diferente sigue fuera de la prescripción (CONS:599-612), y ningún consumo histórico cambia.
+  - Pruebas:
+    - dominio: 476/476, con una prueba nueva;
+    - integración: `registro-de-comidas` 12/12, con la aserción del contraste, y `nutricion` 21/21.
+  - La captura de esa pantalla queda para el recorrido de Entrenamiento, que vuelve a compilar el website.
+- **Seguridad, `source-map-js` 1.2.2:**
+  - el mismo cambio de tres líneas del lock llegó a la rama de #146 (`6004c32`, fast-forward);
+  - quedó listo en el PR #148, en borrador contra `main`, sin integrar.
+
+  La auditoría del repo pasa con el cambio y falla sin él (control), en un árbol limpio de `main`.
+- **DL-119 a DL-121:** implementadas y probadas localmente. Sin integrar, y pendientes la prueba remota y en Android.
+- **DL-120** documenta límites, respaldo, retención, borrado autorizado y cómo cambiar de proveedor. Deja aislados dos
+  pendientes:
+  - el acto `EVIDENCIA_VISUAL` del 08 §12.4 no tiene texto versionado;
+  - la base de `test` vence cerca del 2026-10-18, y seguir con ella es una decisión de servicio.

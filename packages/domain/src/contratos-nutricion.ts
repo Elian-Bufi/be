@@ -454,6 +454,13 @@ export const ContrasteDeComidaSchema = z.strictObject({
   state: z.enum(['REGISTERED', 'NO_DATA']),
   registeredOptionId: IdOpaco.nullable(),
   executionId: IdOpaco.nullable(),
+  /**
+   * DL-121: las comidas diferentes que el asesorado registró en el contexto de esta comida. Siguen fuera de la prescripción
+   * (están también en `outsidePrescription`) y no marcan la comida como `REGISTERED` (CONS:599-612): esto solo permite
+   * decir los dos hechos («Sin opción del plan registrada» y «Comida diferente registrada») en lugar de un «Sin registro»
+   * engañoso. Solo lo lee el profesional (API-NUT-17).
+   */
+  differentMealExecutionIds: z.array(IdOpaco),
   /** Diferencia de cantidad de un mismo ítem, con la misma unidad. Solo si el asesorado informó la cantidad. */
   quantityDifferences: z.array(
     z.strictObject({ itemId: IdOpaco, name: z.string(), prescribed: CantidadSchema, registered: CantidadSchema, difference: z.number().finite(), unit: UnidadDeCantidadSchema }),

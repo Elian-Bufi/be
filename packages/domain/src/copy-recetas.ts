@@ -131,6 +131,10 @@ export const COPY_REGISTRO_PARA_EL_PROFESIONAL = {
   rectificado: (fecha: string) => `Cantidades completadas o corregidas el ${fecha}.`,
   opcionRegistrada: 'Opción registrada',
   algoDiferente: 'Comió algo diferente',
+  /** El contraste de una comida con algo diferente registrado en su contexto: los dos hechos, sin un «Sin registro» engañoso. */
+  sinOpcionDelPlan: 'Sin opción del plan registrada',
+  comidaDiferenteRegistrada: 'Comida diferente registrada',
+  registradaEn: (comida: string) => `Registrada en «${comida}»`,
   /** CONS:599-612: una comida diferente no marca la comida prescripta como realizada; el contraste la muestra aparte. */
   comidaDeContexto: (comida: string) => `Lo registró en «${comida}». En el contraste figura fuera del plan: no reemplaza la comida prescripta.`,
   cantidadAproximada: 'Cantidad aproximada',

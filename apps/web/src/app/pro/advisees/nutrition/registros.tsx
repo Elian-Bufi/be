@@ -51,6 +51,8 @@ export function VistaDeRegistros() {
 
 function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () => void }) {
   const porId = new Map(contexto.registeredIntakes.map((i) => [i.executionId, i]));
+  // DL-121: en qué comida del plan se registró cada comida diferente, para nombrarla también en «Fuera del plan».
+  const comidaDeContexto = new Map(contexto.descriptiveContrast.days.flatMap((d) => d.meals.flatMap((m) => m.differentMealExecutionIds.map((id) => [id, m.label] as const))));
   const dias = [...contexto.descriptiveContrast.days].reverse();
   return (
     <>
@@ -89,6 +91,15 @@ function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () =>
                             {ingesta?.observation ? <span className="nota"> · «{ingesta.observation}»</span> : null}
                             {m.executionId ? <VerRegistro registroId={m.executionId} /> : null}
                           </>
+                        ) : m.differentMealExecutionIds.length > 0 ? (
+                          // Los dos hechos: no se registró una opción del plan y sí algo diferente (CONS:599-612).
+                          <>
+                            {COPY_REGISTRO_PARA_EL_PROFESIONAL.sinOpcionDelPlan}
+                            <span className="nota"> · {COPY_REGISTRO_PARA_EL_PROFESIONAL.comidaDiferenteRegistrada}</span>
+                            {m.differentMealExecutionIds.map((id) => (
+                              <VerRegistro key={id} registroId={id} />
+                            ))}
+                          </>
                         ) : (
                           COPY_NUTRICION.sinRegistro
                         )}
@@ -120,7 +131,7 @@ function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () =>
               <ul className="lista">
                 {d.outsidePrescription.map((o) => {
                   const ingesta = porId.get(o.executionId);
-                  return ingesta ? <RegistroLibre key={o.executionId} ingesta={ingesta} onCambio={onCambio} /> : null;
+                  return ingesta ? <RegistroLibre key={o.executionId} ingesta={ingesta} comida={comidaDeContexto.get(o.executionId) ?? null} onCambio={onCambio} /> : null;
                 })}
               </ul>
             </>
@@ -131,7 +142,7 @@ function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () =>
   );
 }
 
-function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () => void }) {
+function RegistroLibre({ ingesta, comida, onCambio }: { ingesta: Ingesta; comida: string | null; onCambio: () => void }) {
   const { token, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
   const [abierto, setAbierto] = useState(false);
@@ -187,6 +198,7 @@ function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () =
     <li className="lista__item">
       <p>
         <span className="insignia">{COPY_NUTRICION.fueraDelPlan}</span> {fecha(ingesta.occurredAt)}
+        {comida ? <span className="nota"> · {COPY_REGISTRO_PARA_EL_PROFESIONAL.registradaEn(comida)}</span> : null}
       </p>
       <p>
         <strong>{COPY_NUTRICION.registroOriginal}:</strong> {ingesta.description ? `«${ingesta.description}»` : COPY_REGISTRO_PARA_EL_PROFESIONAL.sinDescripcion}
