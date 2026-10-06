@@ -1,0 +1,38 @@
+== tamaño y SHA-256
+81612294
+4126f3d9d0d88a3f01a435032c635e532dd5989a30f4def27f7afe1abb182866
+== paquete y versión: nueva · candidata 2 · 0.13.2
+package: name='com.elianbufi.be' versionCode='25' versionName='0.15.0-candidata.1'
+package: name='com.elianbufi.be' versionCode='24' versionName='0.14.0-candidata.2'
+package: name='com.elianbufi.be' versionCode='22' versionName='0.13.2'
+minSdkVersion:'24'
+targetSdkVersion:'36'
+== firma
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Number of signers: 1
+certificado idéntico a la candidata 2 y a la 0.13.2: 61569691…893e06
+== assets/app.config
+{"version":"0.15.0-candidata.1","versionCode":25,"appEnv":"test","apiBaseUrl":"https://be-api-hndp.onrender.com","commit":"5846274c879cb69d29f05a9e2b82fc3f49d0c8e1","plugins":["expo-secure-store","./plugins/respaldo-de-android","expo-image-picker"]}
+commit esperado: 5846274c879cb69d29f05a9e2b82fc3f49d0c8e1
+== código nativo: reloj desde el arranque, cifrado, almacén seguro, svg y selector de imágenes
+reloj-del-sistema: 5
+expo-crypto: 40
+expo-secure-store: 13
+react-native-svg: 3
+expo-image-picker: 46
+== manifiesto: respaldo
+A: http://schemas.android.com/apk/res/android:allowBackup(0x01010280)=true
+A: http://schemas.android.com/apk/res/android:fullBackupContent(0x010104eb)=@0x7f150001
+A: http://schemas.android.com/apk/res/android:dataExtractionRules(0x0101063e)=@0x7f150000
+-- be_reglas_de_respaldo (res/4D.xml): E: full-backup-content (line=3) E: include (line=4) A: domain="sharedpref" A: path="." E: exclude (line=5) A: domain="sharedpref" A: path="SecureStore.xml" E: exclude (line=6) A: domain="sharedpref" A: path="SecureStore" 
+-- be_reglas_de_extraccion (res/zJ.xml): E: data-extraction-rules (line=3) E: cloud-backup (line=4) E: include (line=5) A: domain="sharedpref" A: path="." E: exclude (line=6) A: domain="sharedpref" A: path="SecureStore.xml" E: exclude (line=7) A: domain="sharedpref" A: path="SecureStore" E: device-transfer (line=9) E: include (line=10) A: domain="sharedpref" A: path="." E: exclude (line=11) A: domain="sharedpref" A: path="SecureStore.xml" E: exclude (line=12) A: domain="sharedpref" A: path="SecureStore" 
+== permisos
+android.permission.CAMERA android.permission.INTERNET android.permission.READ_EXTERNAL_STORAGE android.permission.SYSTEM_ALERT_WINDOW android.permission.USE_BIOMETRIC android.permission.USE_FINGERPRINT android.permission.VIBRATE android.permission.WRITE_EXTERNAL_STORAGE com.elianbufi.be.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION 
+== credenciales
+{"entradas":1183,"coincidencias":{},"archivosSensibles":[]}
+== el árbol construido no cambió
+HEAD 5846274c879cb69d29f05a9e2b82fc3f49d0c8e1 (esperado 5846274c879cb69d29f05a9e2b82fc3f49d0c8e1) · archivos versionados modificados: 0
