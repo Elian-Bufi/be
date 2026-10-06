@@ -188,6 +188,17 @@ import {
   RevisionDeEntrenamientoResponseSchema,
 } from './contratos-entrenamiento';
 import {
+  EjercicioPropioResponseSchema,
+  ListaDeEjerciciosPropiosResponseSchema,
+  PlanConObjetivosResponseSchema,
+  ResultadoDeEventosResponseSchema,
+  SesionEnCursoResponseSchema,
+  SesionParaRegistrarResponseSchema,
+  TiemposDeSesionResponseSchema,
+  type AsociarImagenDeEjercicioRequest,
+  type RegistrarEventosDeTiempoRequest,
+} from './contratos-entrenamiento-por-serie';
+import {
   CrearSolicitudDeFormularioRequestSchema,
   DetalleDeSolicitudResponseSchema,
   EnviarRespuestaRequestSchema,
@@ -1018,6 +1029,44 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-TRN-24. */
     aplicarRevisionDeEntrenamiento(token: string, revisionId: string, claveDeIdempotencia: string) {
       return llamar('POST', `/training/reviews/${encodeURIComponent(revisionId)}/apply`, { token, claveDeIdempotencia, esquema: AplicarRevisionResponseSchema, cuerpo: { expectedVersion: 'v1' } });
+    },
+
+    // ─── WP-ENTRENAMIENTO-SERIES: objetivos por serie, imagen de ejercicio y tiempos (DL-122 a DL-124) ─────────
+    /** API-SER-01: la versión de plan con los objetivos por serie y las imágenes. Solo el profesional. */
+    planConObjetivos(token: string, planId: string) {
+      return llamar('GET', `/training/plans/${encodeURIComponent(planId)}/detail`, { token, esquema: PlanConObjetivosResponseSchema });
+    },
+    /** API-SER-02: la sesión de una ocurrencia, con el objetivo efectivo de cada serie. Solo el titular. */
+    sesionParaRegistrar(token: string, occurrenceId: string) {
+      return llamar('GET', `/training/occurrences/${encodeURIComponent(occurrenceId)}/session`, { token, esquema: SesionParaRegistrarResponseSchema });
+    },
+    /** API-TIE-01: eventos de tiempo, en orden de secuencia. Reintentar el mismo pedido no suma nada. */
+    registrarEventosDeTiempo(token: string, draftId: string, cuerpo: RegistrarEventosDeTiempoRequest) {
+      return llamar('POST', `/training/execution-drafts/${encodeURIComponent(draftId)}/timing-events`, { token, esquema: ResultadoDeEventosResponseSchema, cuerpo });
+    },
+    /** API-TIE-02: los tiempos de un borrador propio. */
+    tiemposDelBorrador(token: string, draftId: string) {
+      return llamar('GET', `/training/execution-drafts/${encodeURIComponent(draftId)}/timing`, { token, esquema: TiemposDeSesionResponseSchema });
+    },
+    /** API-TIE-03: los tiempos de una ejecución registrada, para el titular o el profesional del plan. */
+    tiemposDeLaEjecucion(token: string, executionId: string) {
+      return llamar('GET', `/training/executions/${encodeURIComponent(executionId)}/timing`, { token, esquema: TiemposDeSesionResponseSchema });
+    },
+    /** API-TIE-04: la sesión en curso, si hay una. */
+    sesionEnCurso(token: string) {
+      return llamar('GET', '/me/training/session-in-progress', { token, esquema: SesionEnCursoResponseSchema });
+    },
+    /** API-EJE-01: los ejercicios propios, con su imagen vigente. */
+    ejerciciosPropios(token: string) {
+      return llamar('GET', '/training/own-exercises', { token, esquema: ListaDeEjerciciosPropiosResponseSchema });
+    },
+    /** API-EJE-02: asocia o reemplaza la imagen de un ejercicio propio. */
+    asociarImagenDeEjercicio(token: string, exerciseId: string, cuerpo: AsociarImagenDeEjercicioRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', `/training/exercises/${encodeURIComponent(exerciseId)}/image`, { token, claveDeIdempotencia, esquema: EjercicioPropioResponseSchema, cuerpo });
+    },
+    /** API-EJE-03: retira la imagen; el medio no se borra y la historia queda. */
+    retirarImagenDeEjercicio(token: string, exerciseId: string, expectedImageVersion: number, claveDeIdempotencia: string) {
+      return llamar('DELETE', `/training/exercises/${encodeURIComponent(exerciseId)}/image${query({ expectedImageVersion: String(expectedImageVersion) })}`, { token, claveDeIdempotencia, esquema: EjercicioPropioResponseSchema });
     },
 
     // ─── FRM · información profesional pertinente (WP-07; 09v16.1 §22) ───────────────────────

@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "be-handoff-assets-1",
+  "assets": [
+    {
+      "fixtureKey": "sentadilla_goblet",
+      "name": "Sentadilla goblet",
+      "image": "ejercicios/sentadilla_goblet.png",
+      "alt": "Persona adulta sosteniendo una mancuerna frente al pecho en posición de sentadilla.",
+      "suggestedLoadBasis": "Única mancuerna",
+      "origin": "Generada por IA para este encargo BE",
+      "createdDate": "2026-10-06",
+      "generationMethod": "image_gen integrado",
+      "containsRealPerson": false,
+      "technicalReviewStatus": "PENDIENTE_REVISION_PROFESIONAL",
+      "role": "Ilustración de reconocimiento; no certifica técnica ni sustituye instrucciones profesionales",
+      "usage": "Contenido original aportado para cargar mediante el flujo real en la demostración BE",
+      "externalLicenseIdentifier": null,
+      "realCatalogId": null,
+      "realExerciseVersionId": null,
+      "mappingRule": "Crear o seleccionar identidad y versión explícitas por flujo autorizado; no coincidencia aproximada de nombres"
+    },
+    {
+      "fixtureKey": "peso_muerto_rumano_mancuernas",
+      "name": "Peso muerto rumano con mancuernas",
+      "image": "ejercicios/peso_muerto_rumano_mancuernas.png",
+      "alt": "Persona adulta en bisagra de cadera sosteniendo una mancuerna en cada mano.",
+      "suggestedLoadBasis": "Por mancuerna; dos mancuernas",
+      "origin": "Generada por IA para este encargo BE",
+      "createdDate": "2026-10-06",
+      "generationMethod": "image_gen integrado",
+      "containsRealPerson": false,
+      "technicalReviewStatus": "PENDIENTE_REVISION_PROFESIONAL",
+      "role": "Ilustración de reconocimiento; no certifica técnica ni sustituye instrucciones profesionales",
+      "usage": "Contenido original aportado para cargar mediante el flujo real en la demostración BE",
+      "externalLicenseIdentifier": null,
+      "realCatalogId": null,
+      "realExerciseVersionId": null,
+      "mappingRule": "Crear o seleccionar identidad y versión explícitas por flujo autorizado; no coincidencia aproximada de nombres"
+    },
+    {
+      "fixtureKey": "zancada_estatica",
+      "name": "Zancada estática",
+      "image": "ejercicios/zancada_estatica.png",
+      "alt": "Persona adulta en zancada estática, con manos en la cintura y rodilla posterior baja.",
+      "suggestedLoadBasis": "Carga externa total; ejercicio sin carga externa en esta demostración",
+      "origin": "Generada por IA para este encargo BE",
+      "createdDate": "2026-10-06",
+      "generationMethod": "image_gen integrado",
+      "containsRealPerson": false,
+      "technicalReviewStatus": "PENDIENTE_REVISION_PROFESIONAL",
+      "role": "Ilustración de reconocimiento; no certifica técnica ni sustituye instrucciones profesionales",
+      "usage": "Contenido original aportado para cargar mediante el flujo real en la demostración BE",
+      "externalLicenseIdentifier": null,
+      "realCatalogId": null,
+      "realExerciseVersionId": null,
+      "mappingRule": "Crear o seleccionar identidad y versión explícitas por flujo autorizado; no coincidencia aproximada de nombres"
+    }
+  ]
+}

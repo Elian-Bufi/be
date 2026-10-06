@@ -6,7 +6,7 @@
  * Esta guardia lee el 09 (solo lectura: el legajo está en el manifiesto y no se toca) y exige:
  * 1. una operación con un ID del inventario P0 del 09 tiene el método y la ruta que el 09 le da;
  * 2. una operación con un ID que no está en el inventario es una extensión declarada de BE, con una familia propia
- *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO) o con un ID P1 que el 09
+ *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO) o con un ID P1 que el 09
  *    nombra, y cita su fuente;
  * 3. ningún ID se repite.
  * Requiere `npm run build:domain` antes.
@@ -22,7 +22,7 @@ const INVENTARIO = path.join(RAIZ, 'docs/legajo/09_AUX/INVENTARIO_API_P0_BE_LEG_
 const { OPERACIONES } = require(path.join(RAIZ, 'packages/domain/dist/openapi.js'));
 
 /** Las familias propias de BE, cada una con la DL que la declara. */
-const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121' };
+const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124' };
 /** Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período). */
 const SUFIJOS_DE_BE = ['LISTA', 'PROPIA', 'PERIODO'];
 

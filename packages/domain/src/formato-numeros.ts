@@ -31,7 +31,8 @@ export function numero(valor: number, maximo?: number): string {
     return conSeparadores(fijo, limpio < 0);
   }
   const redondeado = Number(valor.toFixed(maximo));
-  const fijo = Math.abs(redondeado).toFixed(maximo).replace(/\.?0+$/, '');
+  // Solo se quitan los ceros de la parte decimal: con `maximo` 0 no hay coma, y «10» tiene que seguir siendo «10».
+  const fijo = Math.abs(redondeado).toFixed(maximo).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
   return conSeparadores(fijo, redondeado < 0);
 }
 

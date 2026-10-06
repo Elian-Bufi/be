@@ -197,7 +197,33 @@ export const RepeticionesPrescriptasSchema = z.union([
     .strictObject({ min: z.number().int().positive().max(1000), max: z.number().int().positive().max(1000) })
     .refine((r) => r.max >= r.min, { message: 'El rango termina después de empezar', path: ['max'] }),
 ]);
-export const SeriePrescriptaEntradaSchema = z.strictObject({ repetitions: RepeticionesPrescriptasSchema.nullable(), note: TextoOpcional(200).optional() });
+/**
+ * WP-ENTRENAMIENTO-SERIES (DL-122): cómo se cuenta la carga de una prescripción. Sin base declarada, nadie la supone:
+ * - `SINGLE_IMPLEMENT`: una sola mancuerna o implemento (la sentadilla goblet);
+ * - `PER_IMPLEMENT`: por mancuerna o implemento, cuando son dos (el peso muerto rumano con mancuernas);
+ * - `TOTAL_EXTERNAL`: la carga externa total.
+ * BE no multiplica ni suma: «dos mancuernas de 12 kg» no se muestra como 24 kg.
+ */
+export const BaseDeCargaSchema = z.enum(['SINGLE_IMPLEMENT', 'PER_IMPLEMENT', 'TOTAL_EXTERNAL']);
+export type BaseDeCarga = z.infer<typeof BaseDeCargaSchema>;
+/** DL-122: qué cuentan las repeticiones. `PER_SIDE` es por pierna o por lado, y BE no las duplica. */
+export const BaseDeRepeticionesSchema = z.enum(['PER_SET', 'PER_SIDE']);
+export type BaseDeRepeticiones = z.infer<typeof BaseDeRepeticionesSchema>;
+/** DL-122: el descanso recomendado, en segundos enteros. 0 es «sin pausa» (por ejemplo, una superserie); el tope, una hora. */
+export const DescansoRecomendadoSchema = z.number().int().min(0).max(3600);
+
+/**
+ * Una serie planificada. Los tres campos de DL-122 tienen tres estados: ausente hereda de la prescripción, `null` quita
+ * el objetivo en esta serie y un valor lo sobrescribe (`objetivosEfectivos`, en `objetivos-por-serie.ts`). El RIR
+ * viaja como número sin rango para que uno fuera de 0 a 10, o sin criterio RIR, sea el 422 específico y no un 400.
+ */
+export const SeriePrescriptaEntradaSchema = z.strictObject({
+  repetitions: RepeticionesPrescriptasSchema.nullable(),
+  note: TextoOpcional(200).optional(),
+  rir: z.number().finite().nullable().optional(),
+  suggestedLoad: CargaSchema.nullable().optional(),
+  restSeconds: DescansoRecomendadoSchema.nullable().optional(),
+});
 
 /**
  * «Descanso / parámetros» (B10-06:390): contenido del profesional, que el 06 no fija. Un parámetro cuantitativo
@@ -226,10 +252,15 @@ export const PrescripcionEntradaSchema = z.strictObject({
   sets: z.array(SeriePrescriptaEntradaSchema).max(20),
   /** `null`: la prescripción no declara criterio, y eso es legítimo (REG-06-128 es condicional). */
   intensity: IntensidadEntradaSchema.nullable(),
-  /** Complemento informativo: `suggestedLoad ≠ intensityCriterion` (09v10:391). */
+  /** Complemento informativo: `suggestedLoad ≠ intensityCriterion` (09v10:391). Es la carga que heredan las series (DL-122). */
   suggestedLoad: CargaSchema.nullable().optional(),
   professionalParameters: z.array(ParametroProfesionalSchema).max(12).optional(),
   note: TextoOpcional(1000).optional(),
+  /** DL-122: el descanso recomendado que heredan las series. No reemplaza ni reinterpreta un parámetro libre «Descanso». */
+  restSeconds: DescansoRecomendadoSchema.nullable().optional(),
+  /** DL-122: cómo se cuenta la carga y qué cuentan las repeticiones. `null` o ausente: no se declaró. */
+  loadBasis: BaseDeCargaSchema.nullable().optional(),
+  repetitionBasis: BaseDeRepeticionesSchema.nullable().optional(),
 });
 export const SesionEntradaSchema = z.strictObject({
   sessionId: IdDeNodoSchema.optional(),

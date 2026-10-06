@@ -189,8 +189,10 @@ test('D10 · las respuestas de nutrición que lee la APK instalada no cambian de
   const congeladas = JSON.parse(readFileSync(join(__dirname, '..', 'fixtures', 'respuestas-que-lee-la-apk-instalada.json'), 'utf8')) as {
     operaciones: Record<string, { metodo: string; ruta: string; pedido: unknown; respuestas: Record<string, unknown> }>;
   };
-  assert.deepEqual(Object.keys(congeladas.operaciones).sort(), ['API-NUT-14', 'API-NUT-15', 'API-NUT-16', 'API-NUT-16-LISTA']);
-  for (const [id, congelada] of Object.entries(congeladas.operaciones)) {
+  // Las de entrenamiento (WP-ENTRENAMIENTO-SERIES) se prueban en `entrenamiento-por-serie.test.ts`.
+  const nutricion = Object.entries(congeladas.operaciones).filter(([id]) => id.startsWith('API-NUT-'));
+  assert.deepEqual(nutricion.map(([id]) => id).sort(), ['API-NUT-14', 'API-NUT-15', 'API-NUT-16', 'API-NUT-16-LISTA']);
+  for (const [id, congelada] of nutricion) {
     const op = OPERACIONES.find((o) => o.id === id)!;
     assert.equal(op.metodo, congelada.metodo, id);
     assert.equal(op.ruta, congelada.ruta, id);

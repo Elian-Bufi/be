@@ -13,8 +13,11 @@
 import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';
 
-/** Para qué es el medio. Una foto de una comida es del titular y nunca se reusa como imagen de receta. */
-export const FinalidadDeMedioSchema = z.enum(['RECIPE_REFERENCE', 'MEAL_EVIDENCE']);
+/**
+ * Para qué es el medio. Una foto de una comida es del titular y nunca se reusa como imagen de receta.
+ * `EXERCISE_REFERENCE` (DL-123): la imagen de un ejercicio propio de un profesional de Entrenamiento.
+ */
+export const FinalidadDeMedioSchema = z.enum(['RECIPE_REFERENCE', 'MEAL_EVIDENCE', 'EXERCISE_REFERENCE']);
 export type FinalidadDeMedio = z.infer<typeof FinalidadDeMedioSchema>;
 
 /** De dónde viene la imagen: generada por IA (las tres de la demostración) o aportada por una persona. */
@@ -50,7 +53,10 @@ export const EstadoDeMedioSchema = z.enum(['PENDING', 'AVAILABLE', 'DELETED']);
 
 const Autoria = z.string().trim().min(1).max(120);
 
-/** API-MED-01. La finalidad decide quién puede subir: un profesional de Nutrición para una receta, el asesorado para su comida. */
+/**
+ * API-MED-01. La finalidad decide quién puede subir: un profesional de Nutrición para una receta, uno de Entrenamiento
+ * para un ejercicio y el asesorado para su comida.
+ */
 export const IntencionDeSubidaRequestSchema = z.strictObject({
   purpose: FinalidadDeMedioSchema,
   contentType: TipoDeImagenSchema,

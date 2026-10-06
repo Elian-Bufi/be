@@ -126,6 +126,9 @@
 | DL-119 | Encargo de Dirección · 2026-10-05 | REG-06-135 (inciso 2) · 06:4228-4394, 4554-4621 · RF-027 | Recetas como preparaciones propias del profesional, catálogo de referencia USDA y método de cálculo de energía y macros | **DECIDIDA** 2026-10-05 · familia REC, método `SUM_SOURCE_PER_100G_V1`. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` (#147, borrador) y **probada localmente**. Sin integrar; pendiente la prueba remota (no hay despliegue) y en Android (no hay APK nueva) |
 | DL-120 | Encargo de Dirección · 2026-10-05 | 08 §21 (08:519-531, 395, 451) · 07 §25 (07:939-965) · 09v12 §24 · 09v9 §28 · REG-06-133 · T-06-65 | Medios privados activados en el MVP sintético; almacenamiento en PostgreSQL detrás de una interfaz, en lugar de S3 | **DECIDIDA** 2026-10-05 la activación, con persistencia en la base existente. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` y **probada localmente**. Sin integrar; pendientes la prueba remota y en Android. Para la demo sigue PostgreSQL (decisión del 2026-10-06), y S3 (07 §25) queda abierto. **Pendiente normativo aislado:** el acto `EVIDENCIA_VISUAL` (08 §12.4) no tiene texto versionado |
 | DL-121 | Encargo de Dirección · 2026-10-05 | DL-049 · DL-050 · 06:1422-1462 · CONS:564-630 | Registro v2 de comidas: estado de las cantidades, anulación y rectificación del titular, y clave natural con secuencia | **DECIDIDA** 2026-10-05 · familia ING, endpoints nuevos. Resuelve DL-050; lo que lee la APK instalada no cambia. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` y **probada localmente**. Sin integrar; pendientes la prueba remota y en Android (la APK nueva no se compiló). Decidido el 2026-10-06: una entrada efectiva por comida y fecha; en el contraste, fuera de la prescripción y con los dos hechos dichos |
+| DL-122 | Encargo de Dirección · 2026-10-06 | REG-06-111, 112, 128 · 09v10 §5-§6 · PF03-D-2 · DL-105 | Objetivos efectivos por serie: RIR, carga sugerida y descanso con herencia, y base de la carga y de las repeticiones | **DECIDIDA** 2026-10-06 por el encargo · familia SER, lecturas nuevas; lo que lee la APK 0.13.2 no cambia. **En implementación** en `wp-entrenamiento-series`. Queda para Dirección la versión mínima de la APK antes de usar objetivos por serie con personas |
+| DL-123 | Encargo de Dirección · 2026-10-06 | REG-06-134, 135, 136 · 09v10 §9 · DL-120 | Imagen del ejercicio: medio `EXERCISE_REFERENCE`, asociación de solo agregar, licencia honesta, procedencia y revisión técnica | **DECIDIDA** 2026-10-06 por el encargo · familia EJE. **En implementación** en `wp-entrenamiento-series`. API-TRN-13 sigue con `didacticResources` vacío |
+| DL-124 | Encargo de Dirección · 2026-10-06 | REG-06-130, 131 · paquete de Dirección (DECISIONES_Y_TIEMPOS) | Tiempos de la sesión como eventos idempotentes con calidad: medido, estimado, incompleto o sin dato | **DECIDIDA** 2026-10-06 por el encargo · familia TIE. **En implementación** en `wp-entrenamiento-series`. Pendiente en Android: pantalla bloqueada, muerte del proceso y reloj monotónico durante la suspensión |
 
 ---
 
@@ -3084,3 +3087,114 @@ por el encargo de Dirección del 2026-10-05
   - No se tocó ningún consumo ni registro histórico.
 
 **Condición de cierre.** Dirección aprueba el paquete, y el 05 y el 09 incorporan estas operaciones.
+
+## DL-122 — Objetivos efectivos por serie
+
+**Prioridad:** alta · **Documento:** REG-06-111 (unidad y significado identificables) · REG-06-112 (instantánea) ·
+REG-06-128 (dos criterios que se excluyen) · 09v10 §5-§6 · PF03-D-2 (descanso con semántica) · DL-105 (incremento 1) ·
+**Estado:** DECIDIDA por el encargo de Dirección del 2026-10-06
+
+**Qué pasa hoy.**
+- Las repeticiones son por serie, pero el RIR objetivo y la carga sugerida son de la prescripción completa.
+- El descanso solo existe como parámetro libre.
+- No hay una forma de que una serie herede, sobrescriba o quite un objetivo.
+
+**Qué pide el encargo.**
+- Objetivos distintos por serie (repeticiones exactas o en rango, RIR, carga con unidad y descanso).
+- La herencia, la sobrescritura y la quita explícita, definidas en el contrato y probadas.
+- Que la vista previa web y el teléfono resuelvan el mismo objetivo efectivo, sin reinterpretar en silencio a los
+  clientes viejos.
+
+**Cómo se implementa** (`docs/paquetes/WP-ENTRENAMIENTO-SERIES.md` §3).
+- **Campos nuevos.**
+  - En la serie, `rir`, `suggestedLoad` y `restSeconds`, con tres estados: ausente hereda, `null` quita y un
+    valor sobrescribe.
+  - En la prescripción, `restSeconds`, `loadBasis` y `repetitionBasis`.
+- **Una sola resolución,** `objetivosEfectivos`, para la API, la web y la APK.
+- **El RIR por serie** existe solo con criterio RIR, de 0 a 10. El %RM rige para todas las series.
+- **Lecturas nuevas:** API-SER-01 (profesional) y API-SER-02 (titular). API-TRN-09, 14 y siguientes no cambian de
+  forma: están congeladas por prueba.
+
+**Para decidir.** La APK 0.13.2 lee la prescripción con su forma vieja: si el profesional sobrescribe por serie, esa APK
+muestra el valor general de la prescripción. El editor lo avisa.
+- **A.** Exigir la APK nueva (versión mínima comunicada) antes de usar objetivos por serie con personas.
+- **B.** Negociar por capacidad: la APK declara su versión y la web solo habilita la edición por serie para
+  asesorados con la APK nueva. Es una decisión transversal (PF03-D-5 C).
+
+**Recomendación del ejecutor:** A para la entrega, porque hoy no hay asesorados reales. B si el producto crece.
+
+**Condición de cierre.** Dirección aprueba el paquete y decide A o B; el 05 y el 09 incorporan las operaciones SER.
+
+## DL-123 — Imagen del ejercicio con licencia, procedencia y revisión técnica
+
+**Prioridad:** alta · **Documento:** REG-06-134 (recurso versionado, con autoría y licencia obligatoria), 135 (uno
+curado vigente en el catálogo global; los propios, en su ámbito) y 136 · 09v10 §9 (`provenance`; sin licencia se
+rechaza) · DL-120 (medios privados) · **Estado:** DECIDIDA por el encargo de Dirección del 2026-10-06
+
+**Qué pasa hoy.** El contrato del recurso didáctico existe, pero:
+- la API devuelve siempre una lista vacía;
+- crear un ejercicio con recursos da 422;
+- no hay tabla ni finalidad de medio para ejercicios.
+
+**Cómo se implementa** (`WP-ENTRENAMIENTO-SERIES.md` §4).
+- **Medio.** Finalidad `EXERCISE_REFERENCE`, que sube un profesional de Entrenamiento. Se reusa la infraestructura de
+  DL-120.
+- **Asociación.** Es de solo agregar, al ejercicio propio y a su versión, por identidad y nunca por nombre.
+  - Reemplazar es asociar de nuevo y retirar es un registro más. El medio no se borra.
+  - Familia EJE: API-EJE-01 a 03.
+- **Licencia.** Es obligatoria y nunca tiene un valor por defecto: sin licencia externa, con sus términos de uso, o una
+  externa identificada.
+  - Las imágenes de IA de la demostración van sin licencia externa, con el uso de `CATALOGO.json`. No se declaran CC0.
+- **Revisión técnica.** Hay un estado: pendiente o revisada por el profesional. La UI dice que la imagen ilustra y no
+  certifica la técnica.
+- **Quién la ve:** el profesional dueño y el asesorado con un plan activado de ese profesional que la incluye, con
+  acceso de Entrenamiento vigente.
+- **Historia.** Una sesión registrada muestra la imagen vigente al registrar. Si el medio falta, se muestra un ícono de
+  respaldo y se conserva su identidad.
+
+**Para decidir o anotar.**
+- API-TRN-13 sigue devolviendo `didacticResources` vacío. Poblarlo exige decidir qué identifica `resourceId` frente
+  a la asociación; no hace falta para el encargo.
+- Las imágenes del catálogo global sembrado (REG-06-135) quedan fuera: aquí solo hay imágenes de ejercicios propios.
+
+**Condición de cierre.** Dirección aprueba el paquete; el 05 y el 09 incorporan la familia EJE y la finalidad nueva.
+
+## DL-124 — Tiempos de la sesión como eventos con calidad
+
+**Prioridad:** alta · **Documento:** REG-06-130, 131 (registro y condición de la sesión) · paquete de Dirección del
+2026-10-06 (`DECISIONES_Y_TIEMPOS.md`, `casos_tiempos.json`) · **Estado:** DECIDIDA por el encargo de Dirección del
+2026-10-06
+
+**Qué pasa hoy.** No hay campos, tablas ni endpoints para medir la sesión, las pausas, los descansos ni las series. La
+APK no tiene cronómetro ni guarda nada localmente.
+
+**Cómo se implementa** (`WP-ENTRENAMIENTO-SERIES.md` §5).
+- **Eventos idempotentes** colgados del borrador de ejecución, con:
+  - identificador de cliente;
+  - corrida;
+  - secuencia causal;
+  - reloj civil y monotónico con su ancla;
+  - origen del instante.
+- **Reglas, iguales en la API y en la APK** (`aplicarEventos`).
+  - Una sola sesión en curso.
+  - A lo sumo una medición abierta.
+  - Nada se mide en pausa.
+  - Un duplicado no suma, y el mismo identificador con otro contenido es un conflicto.
+- **Cálculo** (`calcularTiempos`).
+  - Transcurrido, pausas, sin pausas, por ejercicio y sin ejercicio, sobre una sola línea de tiempo.
+  - Descansos con su recomendado histórico y la diferencia sin juicio, y series cronometradas.
+  - Cada tiempo es medido, estimado, incompleto o sin dato.
+  - Nunca se cierra nada a la hora de reabrir.
+- **Familia TIE:** API-TIE-01 a 04.
+
+**Límite técnico declarado.** El reloj monotónico que lee la app en Android no avanza mientras el teléfono duerme.
+- Si el reloj civil se adelanta más de 2 s, la duración se informa con el civil y como estimada.
+- Si el civil retrocede, el monotónico sigue valiendo.
+- La verificación con la pantalla bloqueada, la muerte del proceso y el cambio de hora queda pendiente del teléfono.
+
+**Para decidir o anotar.**
+- Corregir un evento de tiempo no está en el alcance: los tiempos son lo que se marcó, con su calidad.
+- Una serie declarada «no realizada» sigue en DL-106.
+
+**Condición de cierre.** Dirección aprueba el paquete; el 05 y el 09 incorporan la familia TIE; la prueba en el teléfono
+cubre los casos de Android.

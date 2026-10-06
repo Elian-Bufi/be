@@ -178,6 +178,17 @@ import {
   VersionDePlantillaResponseSchema,
   DetalleDeRespuestaFueraDeLimitesSchema,
 } from './contratos-formularios';
+import {
+  AsociarImagenDeEjercicioRequestSchema,
+  EjercicioPropioResponseSchema,
+  ListaDeEjerciciosPropiosResponseSchema,
+  PlanConObjetivosResponseSchema,
+  RegistrarEventosDeTiempoRequestSchema,
+  ResultadoDeEventosResponseSchema,
+  SesionEnCursoResponseSchema,
+  SesionParaRegistrarResponseSchema,
+  TiemposDeSesionResponseSchema,
+} from './contratos-entrenamiento-por-serie';
 import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema } from './contratos-medios';
 import {
   AsociarImagenDeRecetaRequestSchema,
@@ -1896,6 +1907,122 @@ const DEFINIDAS: readonly Operacion[] = [
     },
     fuente: '09v10:1385-1442 · REG-06-75, 77',
   },
+  // ─── WP-ENTRENAMIENTO-SERIES (encargo de Dirección del 2026-10-06). Operaciones nuevas: lo que lee la APK 0.13.2 no cambia ─
+  {
+    id: 'API-SER-01',
+    metodo: 'get',
+    ruta: '/training/plans/{planId}/detail',
+    resumen:
+      'La versión de plan de API-TRN-09 con los objetivos por serie (RIR, carga sugerida y descanso, con herencia desde la prescripción), la base de carga y de repeticiones y la imagen de cada ejercicio. Solo para el profesional del plan: el titular lee API-SER-02.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PlanConObjetivosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DEUDA_LEGAJO DL-122 · REG-06-111, 112, 128',
+  },
+  {
+    id: 'API-SER-02',
+    metodo: 'get',
+    ruta: '/training/occurrences/{occurrenceId}/session',
+    resumen:
+      'La sesión de una ocurrencia lista para registrarla serie por serie: el objetivo efectivo de cada serie desde la instantánea y la imagen de cada ejercicio (si ya se registró, la vigente al registrar). Solo para el titular; una ocurrencia que no puede ejecutar y sin registro es 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: SesionParaRegistrarResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DEUDA_LEGAJO DL-122, DL-123 · REG-06-112',
+  },
+  {
+    id: 'API-TIE-01',
+    metodo: 'post',
+    ruta: '/training/execution-drafts/{draftId}/timing-events',
+    resumen:
+      'Registrar eventos de tiempo de la sesión en curso: inicio, pausa, ejercicio activo, descansos, series cronometradas y fin, en orden de secuencia. Cada evento trae su identificador: repetirlo no suma; con otro contenido es un conflicto. Responde qué pasó con cada uno y los tiempos calculados. Sin Idempotency-Key: la identidad es la de cada evento.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: RegistrarEventosDeTiempoRequestSchema,
+    exitos: [{ status: 200, schema: ResultadoDeEventosResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE },
+    fuente: 'DEUDA_LEGAJO DL-124 · paquete de Dirección del 2026-10-06 (DECISIONES_Y_TIEMPOS)',
+  },
+  {
+    id: 'API-TIE-02',
+    metodo: 'get',
+    ruta: '/training/execution-drafts/{draftId}/timing',
+    resumen: 'Los tiempos de un borrador, con su calidad y los eventos que los sostienen. Solo para su titular: sirve para retomar desde otro dispositivo o después de reinstalar.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: TiemposDeSesionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DEUDA_LEGAJO DL-124',
+  },
+  {
+    id: 'API-TIE-03',
+    metodo: 'get',
+    ruta: '/training/executions/{executionId}/timing',
+    resumen:
+      'Los tiempos de una ejecución registrada: sesión, pausas, ejercicios, descansos con su recomendado histórico y series cronometradas, cada uno medido, estimado, incompleto o sin dato. El titular y el profesional del plan, como API-TRN-19. Sin puntajes ni evaluación.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: TiemposDeSesionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DEUDA_LEGAJO DL-124 · 09v10:1135-1180',
+  },
+  {
+    id: 'API-TIE-04',
+    metodo: 'get',
+    ruta: '/me/training/session-in-progress',
+    resumen: 'La sesión en curso del titular, si hay una: de cualquier día y en cualquier dispositivo. Una sola a la vez; la de un borrador ya registrado no cuenta.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: SesionEnCursoResponseSchema }],
+    errores: { ...SESION },
+    fuente: 'DEUDA_LEGAJO DL-124',
+  },
+  {
+    id: 'API-EJE-01',
+    metodo: 'get',
+    ruta: '/training/own-exercises',
+    resumen: 'Los ejercicios propios del profesional (carga manual), con su imagen vigente. Hasta 500, del más nuevo al más viejo.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDeEjerciciosPropiosResponseSchema }],
+    errores: { ...SESION, 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DEUDA_LEGAJO DL-123 · REG-06-134, 135',
+  },
+  {
+    id: 'API-EJE-02',
+    metodo: 'put',
+    ruta: '/training/exercises/{exerciseId}/image',
+    resumen:
+      'Asociar o reemplazar la imagen de un ejercicio propio y de su versión, con un medio propio disponible de finalidad EXERCISE_REFERENCE y con autoría declarada. Exige licencia (sin licencia externa, con sus términos de uso, o una externa identificada), texto alternativo y estado de revisión técnica. Por identidad, nunca por nombre; la historia de imágenes queda.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AsociarImagenDeEjercicioRequestSchema,
+    exitos: [{ status: 200, schema: EjercicioPropioResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'],
+      422: ['MEDIA_REFERENCE_INVALID', 'EXERCISE_REFERENCE_INVALID'],
+    },
+    fuente: 'DEUDA_LEGAJO DL-123 · REG-06-134, 135 · 09v10 §9',
+  },
+  {
+    id: 'API-EJE-03',
+    metodo: 'delete',
+    ruta: '/training/exercises/{exerciseId}/image',
+    resumen: 'Retirar la imagen de un ejercicio propio; exige expectedImageVersion por query. El medio no se borra y la historia queda: lo ya registrado conserva su imagen histórica.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    query: [{ nombre: 'expectedImageVersion', descripcion: 'La versión de imagen que se vio.', schema: { type: 'integer', minimum: 1 }, obligatorio: true }],
+    exitos: [{ status: 200, schema: EjercicioPropioResponseSchema }],
+    // El cuerpo es vacío y estricto: un campo de más es UNKNOWN_FIELD, como en cualquier escritura.
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DEUDA_LEGAJO DL-123',
+  },
   // ─── WP-07 · FRM (09v16.1 §22). Información profesional pertinente (RF-071) ─────────────────────
   {
     id: 'API-FRM-01',
@@ -2107,7 +2234,7 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-MED-01',
     metodo: 'post',
     ruta: '/me/media/upload-intents',
-    resumen: `Intención de subida: finalidad, tipo y bytes declarados. Crea el medio pendiente y devuelve una ruta firmada de subida que vence a los ${LIMITES_DE_MEDIO.vigenciaDeSubidaSegundos / 60} minutos. RECIPE_REFERENCE: un profesional de Nutrición verificado y habilitado; MEAL_EVIDENCE: un asesorado con A3 vigente, siempre PERSON_PROVIDED. Crear la intención no es subir.`,
+    resumen: `Intención de subida: finalidad, tipo y bytes declarados. Crea el medio pendiente y devuelve una ruta firmada de subida que vence a los ${LIMITES_DE_MEDIO.vigenciaDeSubidaSegundos / 60} minutos. RECIPE_REFERENCE: un profesional de Nutrición verificado y habilitado; EXERCISE_REFERENCE: uno de Entrenamiento verificado y habilitado, con autoría declarada; MEAL_EVIDENCE: un asesorado con A3 vigente, siempre PERSON_PROVIDED. Crear la intención no es subir.`,
     autenticacion: 'SESSION',
     idempotencia: true,
     request: IntencionDeSubidaRequestSchema,
@@ -2131,7 +2258,7 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-MED-03',
     metodo: 'get',
     ruta: '/media/{mediaId}/access',
-    resumen: `Ruta temporal de lectura de un medio disponible, que vence en ${LIMITES_DE_MEDIO.vigenciaDeLecturaSegundos / 60} minutos como máximo. Decide el PDP: la imagen de una receta, su profesional y el asesorado con un plan que la ofrece; la foto de una comida, su titular y el profesional del plan con vínculo, B2 y A3 vigentes. Cada acceso queda auditado. Lo ajeno o inexistente: 404.`,
+    resumen: `Ruta temporal de lectura de un medio disponible, que vence en ${LIMITES_DE_MEDIO.vigenciaDeLecturaSegundos / 60} minutos como máximo. Decide el PDP: la imagen de una receta, su profesional y el asesorado con un plan que la ofrece; la de un ejercicio, su profesional y el asesorado con un plan activado de ese profesional que lo incluye, con acceso de Entrenamiento vigente; la foto de una comida, su titular y el profesional del plan con vínculo, B2 y A3 vigentes. Cada acceso queda auditado. Lo ajeno o inexistente: 404.`,
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: AccesoAMedioResponseSchema }],
@@ -2298,6 +2425,10 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-TRN-19',
   'API-TRN-21',
   'API-TRN-23',
+  'API-SER-01',
+  'API-SER-02',
+  'API-TIE-02',
+  'API-TIE-03',
   'API-FRM-04',
   'API-FRM-05',
   'API-FRM-06',
@@ -2305,7 +2436,8 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-ING-03',
 ]);
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-CON-04', 'API-CON-08', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05', 'API-MED-02']);
+// API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05', 'API-MED-02']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };
