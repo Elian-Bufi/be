@@ -309,6 +309,9 @@ function DetalleDeEjecucion({
           </>
         ) : null}
         <h4>{COPY_ENTRENAMIENTO.planificado}</h4>
+        {/* DL-122: estas líneas dicen lo general de cada prescripción; con objetivos por serie, una serie puede tener los
+            suyos, y la tabla de arriba dice el de cada una. */}
+        {plan ? <p className="nota">Lo general de cada prescripción. El objetivo de cada serie, heredado o propio, está en «Planificado frente a registrado».</p> : null}
         {/* La prescripción de la versión que rigió esta sesión (su instantánea), completa: no la de la versión vigente hoy. */}
         {x.plannedSession.instructions ? (
           <p className="nota">
