@@ -3,7 +3,8 @@
 // tiempos con su certeza. Los valores esperados salen de lo que el recorrido de la APK dejó en apk.json, calculados con
 // el guion del reloj y el paquete; ninguno se escribe a mano acá.
 // - «Piernas A»: todo medido (el guion de DECISIONES_Y_TIEMPOS.md).
-// - «Recuperación de prueba»: estimado e incompleto, porque la app se cerró con un descanso abierto.
+// - «Recuperación de prueba» y «Recuperación con el reloj del arranque»: la app se cerró con un descanso abierto, que queda
+//   incompleto; el total queda estimado con el reloj del proceso y medido con el del arranque.
 // Uso: node recorrido-web-ejecuciones.mjs   (lee estado.json y apk.json; escribe recorrido-web-ejecuciones.json)
 import { REPO, enTrabajo } from './rutas.mjs';
 import fs from 'node:fs';
@@ -89,20 +90,18 @@ try {
   for (const [etiqueta, valor] of Object.entries(apk.piernas.tiemposEsperados)) control(`«${apk.piernas.sesion}» · ${etiqueta}: «${valor}»`, piernas.tiempos[etiqueta] === valor, JSON.stringify(piernas.tiempos));
   await page.screenshot({ path: fileURLToPath(new URL('07-ejecucion-piernas-a-por-serie-y-tiempos.png', dir)), fullPage: true });
 
-  // ─── «Recuperación de prueba»: lo que cruzó un cierre de la app no se muestra como medido ─────────
-  const recuperacion = await leerEjecucion(apk.recuperacion.sesion);
-  for (const r of apk.recuperacion.descansos) control(`${r.ejercicio} · descanso que quedó abierto al cerrarse la app: «${r.texto}»`, fila(recuperacion.tablas, r.ejercicio, r.setIndex)?.[4] === r.texto, JSON.stringify(fila(recuperacion.tablas, r.ejercicio, r.setIndex)));
-  // Cruzó un cierre de la app: estimado con el reloj civil, que siguió corriendo mientras estaba cerrada. Se exige la
-  // calidad y el piso del guion; los segundos reales entre una carga y otra también cuentan, y no se fijan de antemano.
-  const segundos = (texto) => {
-    const m = /^(?:(\d+):)?(\d{2}):(\d{2})/.exec(texto ?? '');
-    return m ? Number(m[1] ?? 0) * 3600 + Number(m[2]) * 60 + Number(m[3]) : null;
-  };
-  for (const [etiqueta, { segundos: piso, calidad }] of Object.entries(apk.recuperacion.tiemposMinimos)) {
-    const valor = recuperacion.tiempos[etiqueta];
-    control(`«${apk.recuperacion.sesion}» · ${etiqueta}: ${calidad}, de al menos ${piso} s`, (valor ?? '').endsWith(` · ${calidad}`) && (segundos(valor) ?? -1) >= piso, valor);
+  // ─── Las dos recuperaciones: lo que cruzó un cierre de la app ─────────────────────────────────
+  // Con el reloj del proceso queda estimado; con el del arranque, medido. El valor esperado es el que calculó la API, que el
+  // recorrido de la APK ya comparó con sus propias anclas (a no más de `toleranciaMs`): acá se exige que el profesional vea
+  // exactamente eso, con su calidad. Precierre del 2026-10-06, §3: ya no hay pisos.
+  for (const [i, r] of [apk.recuperacion, apk.recuperacionDelArranque].entries()) {
+    const ejecucion = await leerEjecucion(r.sesion);
+    for (const x of r.descansos) control(`«${r.sesion}» · ${x.ejercicio} · el descanso que quedó abierto al cerrarse la app: «${x.texto}»`, fila(ejecucion.tablas, x.ejercicio, x.setIndex)?.[4] === x.texto, JSON.stringify(fila(ejecucion.tablas, x.ejercicio, x.setIndex)));
+    for (const [etiqueta, valor] of Object.entries(r.tiemposEsperados)) {
+      control(`«${r.sesion}» · ${etiqueta}: «${valor}» (el cálculo de la API, a ${r.anclas.calculadoMs - r.anclas.esperadoMs} ms de las anclas del recorrido)`, ejecucion.tiempos[etiqueta] === valor, JSON.stringify(ejecucion.tiempos));
+    }
+    await page.screenshot({ path: fileURLToPath(new URL(`${String(8 + i).padStart(2, '0')}-ejecucion-${r.reloj === 'arranque' ? 'recuperacion-medida-con-el-reloj-del-arranque' : 'recuperacion-estimada-e-incompleta'}.png`, dir)), fullPage: true });
   }
-  await page.screenshot({ path: fileURLToPath(new URL('08-ejecucion-recuperacion-estimada-e-incompleta.png', dir)), fullPage: true });
 } catch (e) {
   control('el recorrido terminó sin errores', false, e.stack ?? String(e));
   await page.screenshot({ path: fileURLToPath(new URL('error-ejecuciones.png', dir)), fullPage: true }).catch(() => {});

@@ -10,7 +10,7 @@ const BASE = process.argv[2] ?? 'https://be-api-hndp.onrender.com';
 const SALIDA = process.argv[3] ?? null;
 const ID = '00000000-0000-4000-8000-000000000000';
 
-/** Una lectura de cada operación nueva de #147 y #149, más dos rutas para calibrar la respuesta. */
+/** Una lectura de cada familia nueva de #147 y #149 (también EVI, de EVIDENCIA_VISUAL), más dos rutas para calibrar. */
 const SONDAS = [
   { id: 'calibracion: ruta existente (API-ACC-05)', pr: 'main', ruta: '/api/v1/me' },
   { id: 'calibracion: ruta inexistente', pr: '—', ruta: '/api/v1/ruta-que-no-existe' },
@@ -25,6 +25,8 @@ const SONDAS = [
   { id: 'API-TIE-03', pr: '#149', ruta: `/api/v1/training/executions/${ID}/timing` },
   { id: 'API-TIE-04', pr: '#149', ruta: '/api/v1/me/training/session-in-progress' },
   { id: 'API-EJE-01', pr: '#149', ruta: '/api/v1/training/own-exercises' },
+  { id: 'API-EVI-01', pr: '#149 (EVIDENCIA_VISUAL)', ruta: `/api/v1/relationships/${ID}/visual-evidence-requirement` },
+  { id: 'API-EVI-03', pr: '#149 (EVIDENCIA_VISUAL)', ruta: '/api/v1/me/visual-evidence-consents' },
 ];
 
 async function pedir(ruta) {

@@ -3,8 +3,11 @@
 // pantalla bloqueada y la muerte del proceso en Android se prueban en el teléfono.
 // El reloj de la sesión es el inyectable del arnés (shims/reloj-controlado.ts): el recorrido lo adelanta con el guion de
 // DECISIONES_Y_TIEMPOS.md, así los tiempos son exactos sin esperar. React y la red siguen con el reloj real.
-// 1. «Recuperación de prueba»: iniciar, abrir un descanso y recargar la página (un proceso nuevo, como cuando el sistema
-//    cierra la APK). Al volver, la APK pregunta qué pasó; se deja incompleto, se registra la serie y se finaliza.
+// 1. La recuperación, dos veces: «Recuperación de prueba» con el reloj del proceso y «Recuperación con el reloj del
+//    arranque» con el del arranque simulado (precierre del 2026-10-06, §3). Iniciar, abrir un descanso y recargar la página
+//    (un proceso nuevo, como cuando el sistema cierra la APK). Al volver, la APK pregunta qué pasó; se deja incompleto, se
+//    registra la serie y se finaliza. Lo calculado por la API se compara con las anclas del recorrido. En la segunda, la
+//    imagen del ejercicio no baja nunca: un acceso, una renovación y el respaldo, y la serie se registra igual (§5).
 // 2. «Piernas A»: iniciar, cronometrar las series A1 y A2 (40 s), descansos de 90 y 135 s ligados a su serie, registrar
 //    A1 a A3 (A3 sin cronometrar), pasar al peso muerto, pausar 120 s, registrar B1 y finalizar a los 900 s.
 // Escribe apk.json con lo que tiene que ver el profesional después (recorrido-web-ejecuciones.mjs).
@@ -107,10 +110,156 @@ async function abrir() {
   await page.waitForFunction(() => document.body.dataset.lista === '1', { timeout: 60000 });
   await esperarTexto(demo.name, 60000);
 }
-/** Espera a que el teléfono haya mandado todo: ni series ni eventos pendientes. */
-const sinPendientes = () => esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.enviada, 60000).catch(() => {});
+/**
+ * Espera a que el teléfono haya mandado todo: la línea del envío dice que está guardado en BE. El texto es el de la APK
+ * (`apps/mobile/src/textos-del-guardado.ts`, precierre del 2026-10-06, §1), leído de su fuente. Devuelve si lo vio.
+ */
+const ENVIADO = /enviadoAlServicio: '([^']+)'/.exec(fs.readFileSync(`${REPO}/apps/mobile/src/textos-del-guardado.ts`, 'utf8'))[1];
+const sinPendientes = () => esperarTexto(ENVIADO, 60000).then(() => true, () => false);
 
-const resultado = { recuperacion: {}, piernas: {} };
+/** Lo que la API guardó y calculó de un borrador (API-TIE-02), con la sesión del asesorado. */
+async function tiemposDelBorrador(draftId) {
+  const r = await fetch(`${ORIGEN}/api/v1/training/execution-drafts/${encodeURIComponent(draftId)}/timing`, { headers: { Authorization: `Bearer ${token}`, 'X-BE-Surface': 'APK' } });
+  if (r.status !== 200) throw new Error(`API-TIE-02: ${r.status}`);
+  return d.TiemposDeSesionResponseSchema.parse(await r.json()).data;
+}
+const TOLERANCIA_MS = 1000;
+const DURACION_ABSURDA_MS = 6 * 60 * 60 * 1000;
+const leerAdelanto = () => page.evaluate(() => Number(localStorage.getItem('recorrido:adelanto-del-reloj') ?? '0'));
+
+/**
+ * Una sesión corta que se cierra con un descanso abierto, en una base del reloj:
+ * - `proceso` (el navegador, Expo Go o una APK sin el módulo): cada carga es otro proceso, con otra ancla. Lo que cruza el
+ *   cierre se estima con el reloj civil.
+ * - `arranque` (la APK con el módulo nativo): el tiempo desde el arranque sigue contando entre cargas, con la misma ancla. Lo
+ *   que cruza el cierre se mide. Igual no se puede afirmar cuándo terminó el descanso abandonado: la APK pregunta.
+ * Con `fallarImagen`, la descarga de la imagen del ejercicio falla siempre (la ruta firmada, no el acceso): la APK pide un
+ * acceso nuevo una sola vez, deja el respaldo con su texto, y la serie se registra igual (§5).
+ */
+async function recuperacion({ sesion, reloj, fallarImagen }) {
+  const etiqueta = `[${reloj}]`;
+  const borradores = new Set();
+  const accesos = [];
+  const descargas = [];
+  const alPedir = (req) => {
+    const u = req.url();
+    const borrador = /\/api\/v1\/training\/execution-drafts\/([^/?]+)\/timing-events/.exec(u);
+    if (borrador) borradores.add(decodeURIComponent(borrador[1]));
+    if (/\/api\/v1\/media\/[^/]+\/access/.test(u)) accesos.push(Date.now());
+    if (u.includes('/api/v1/media/content/')) descargas.push(Date.now());
+    if (!fallarImagen) return;
+    if (u.includes('/api/v1/media/content/')) return void req.abort('failed');
+    void req.continue();
+  };
+  if (fallarImagen) await page.setRequestInterception(true);
+  page.on('request', alPedir);
+  try {
+    await page.goto(`${url}&reloj=${reloj}`, { waitUntil: 'networkidle0', timeout: 120000 });
+    await page.waitForFunction(() => document.body.dataset.lista === '1', { timeout: 60000 });
+    await esperarTexto(sesion, 60000);
+    control(`${etiqueta} la página usa el reloj pedido`, (await page.evaluate(() => window.__baseDelReloj)) === reloj);
+    // Las anclas del recorrido: el civil de esta carga y el adelanto acumulado, antes de iniciar.
+    const civilDeLaCarga1 = await page.evaluate(() => window.__civilAlCargar);
+    const adelantoAlIniciar = await leerAdelanto();
+    accesos.length = 0;
+    descargas.length = 0;
+    await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.iniciarEntrenamiento, sesion);
+    await esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.explicacionDeTiempos, 8000)
+      .then(async () => {
+        control('la primera vez, la APK explica qué tiempos guarda y quién los ve', true);
+        await capturar('apk-02-primera-vez');
+        await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.entendido);
+      })
+      .catch(() => undefined);
+    await esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.iniciarDescanso, 60000);
+    if (fallarImagen) {
+      await esperarTexto(d.COPY_REGISTRO_DE_COMIDAS.imagenNoDisponible, 30000);
+      // Lo que decide la APK son los accesos (API-MED-03): uno y una sola renovación. Las descargas no se cuentan contra un
+      // número fijo: el navegador puede pedir dos veces la misma ruta (react-native-web la precarga) y dos accesos en el mismo
+      // segundo firman la misma ruta (el vencimiento va al segundo). Lo que se exige es que, con el respaldo a la vista, no
+      // haya ni un pedido más.
+      const enLaCarga = { accesos: accesos.length, descargas: descargas.length };
+      await pausa(5000);
+      control(
+        `${etiqueta} la imagen que no baja: un acceso y una sola renovación, ningún pedido más en los 5 s siguientes, y queda el respaldo con su texto`,
+        enLaCarga.accesos === 2 && accesos.length === 2 && descargas.length === enLaCarga.descargas && enLaCarga.descargas >= 2,
+        `al ver el respaldo: ${enLaCarga.accesos} accesos y ${enLaCarga.descargas} descargas intentadas; 5 s después: ${accesos.length} y ${descargas.length}`,
+      );
+      await capturar(`apk-03-${reloj}-imagen-que-no-baja`);
+    }
+    await adelantar(30);
+    await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.iniciarDescanso);
+    await esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.finalizarDescanso, 30000);
+    await adelantar(60);
+    await pausa(1500);
+    // El proceso «muere»: recargar es otra carga del módulo del reloj. Lo guardado sigue en el teléfono (localStorage hace
+    // de AsyncStorage) y el civil no vuelve atrás: suma el tiempo real entre las dos cargas.
+    await page.reload({ waitUntil: 'networkidle0', timeout: 120000 });
+    await page.waitForFunction(() => document.body.dataset.lista === '1', { timeout: 60000 });
+    const civilDeLaCarga2 = await page.evaluate(() => window.__civilAlCargar);
+    await esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.continuarEntrenamiento, 60000);
+    control(`${etiqueta} después de cerrar la app, Hoy ofrece «Continuar entrenamiento»`, true);
+    await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.continuarEntrenamiento, sesion);
+    await esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.laSesionQuedoAbierta, 60000);
+    control(`${etiqueta} al volver, la APK no cierra el descanso sola: pregunta qué pasó`, true);
+    await capturar(`apk-04-${reloj}-medicion-abierta-tras-cerrar-la-app`);
+    await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.dejarIncompleta);
+    await escribir('Repeticiones de la serie 1', '11');
+    await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.registrarSerie(1));
+    const enviada = await sinPendientes();
+    control(`${etiqueta} la serie registrada se envía: «${ENVIADO}»${fallarImagen ? ', con la imagen sin bajar' : ''}`, enviada);
+    await adelantar(110);
+    const adelantoAlFinalizar = await leerAdelanto();
+    await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.finalizarEntrenamiento);
+    await esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.resumenAntesDeFinalizar, 30000);
+    await tocar('Realizada');
+    await pausa(800);
+    await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.finalizarEntrenamiento);
+    await page.waitForFunction(() => document.body.dataset.ruta !== 'sesion-de-entrenamiento' || document.body.innerText.includes('Registrada'), { timeout: 90000 });
+    control(`${etiqueta} «${sesion}» quedó registrada`, true);
+
+    // Lo esperado, de las anclas del recorrido; lo calculado, de la API.
+    const adelantoMs = adelantoAlFinalizar - adelantoAlIniciar;
+    const esperadoMs = civilDeLaCarga2 - civilDeLaCarga1 + adelantoMs;
+    control(`${etiqueta} el recorrido adelantó 200 s de reloj entre el inicio y el fin (30 + 60 + 110)`, adelantoMs === 200_000, adelantoMs);
+    control(`${etiqueta} un solo borrador para esta sesión`, borradores.size === 1, [...borradores].join(', '));
+    const t = await tiemposDelBorrador([...borradores][0]);
+    const calidad = reloj === 'arranque' ? 'MEASURED' : 'ESTIMATED';
+    const { elapsed, pauses, withoutPauses } = t.session;
+    control(
+      `${etiqueta} tiempo transcurrido ${calidad === 'MEASURED' ? 'medido' : 'estimado'}, a no más de ${TOLERANCIA_MS} ms de las anclas del recorrido`,
+      elapsed.quality === calidad && elapsed.ms !== null && Math.abs(elapsed.ms - esperadoMs) <= TOLERANCIA_MS,
+      `API ${elapsed.ms} ms ${elapsed.quality} · esperado ${esperadoMs} ms (${civilDeLaCarga2 - civilDeLaCarga1} ms entre las cargas + ${adelantoMs})`,
+    );
+    control(`${etiqueta} sin pausas declaradas: pausas en 0 y «sin pausas» igual al total`, pauses.ms === 0 && withoutPauses.ms === elapsed.ms, JSON.stringify(t.session));
+    control(`${etiqueta} el descanso que quedó abierto es incompleto, sin duración`, t.rests.length === 1 && t.rests[0].duration.quality === 'INCOMPLETE' && t.rests[0].duration.ms === null, JSON.stringify(t.rests));
+    const ids = t.events.map((e) => e.event.eventId);
+    control(`${etiqueta} ningún evento repetido`, new Set(ids).size === ids.length, `${ids.length} eventos`);
+    const porTipo = (tipo) => t.events.filter((e) => e.event.type === tipo).length;
+    control(`${etiqueta} un inicio y un fin de la sesión`, porTipo('SESSION_STARTED') === 1 && porTipo('SESSION_FINISHED') === 1, JSON.stringify(t.events.map((e) => e.event.type)));
+    const monotonicos = t.events.map((e) => e.event.at.monotonic).filter(Boolean);
+    const bases = new Set(monotonicos.map((m) => m.clock));
+    const anclas = new Set(monotonicos.map((m) => m.anchor));
+    const baseEsperada = reloj === 'arranque' ? 'ELAPSED_SINCE_BOOT' : 'PROCESS_MONOTONIC';
+    control(`${etiqueta} cada evento lleva la base de su reloj (${baseEsperada}), sin mezclar`, bases.size === 1 && bases.has(baseEsperada), [...bases].join(', '));
+    control(`${etiqueta} ${reloj === 'arranque' ? 'una sola ancla: el arranque no cambió' : 'dos anclas: una por proceso'}`, anclas.size === (reloj === 'arranque' ? 1 : 2), `${anclas.size} anclas`);
+    const duraciones = [elapsed, pauses, withoutPauses, t.unassigned, ...t.exercises.map((e) => e.duration), ...t.rests.map((r) => r.duration), ...t.timedSets.map((x) => x.duration)];
+    control(`${etiqueta} ninguna duración absurda (todas entre 0 y 6 h)`, duraciones.every((x) => x.ms === null || (x.ms >= 0 && x.ms <= DURACION_ABSURDA_MS)), JSON.stringify(duraciones));
+    return {
+      sesion,
+      reloj,
+      descansos: [{ ejercicio: nombreDe(demo.exercises[2].catalogFixtureKey), setIndex: 1, texto: 'Incompleto · 01:30 recomendado' }],
+      // Lo que tiene que ver el profesional: lo que la API calculó, ya comparado con las anclas del recorrido.
+      tiemposEsperados: { 'Tiempo transcurrido': d.textoDeDuracion(elapsed), Pausas: d.textoDeDuracion(pauses), 'Sin pausas': d.textoDeDuracion(withoutPauses) },
+      anclas: { cargasMs: [civilDeLaCarga1, civilDeLaCarga2], adelantoMs, esperadoMs, calculadoMs: elapsed.ms, toleranciaMs: TOLERANCIA_MS },
+    };
+  } finally {
+    page.off('request', alPedir);
+    if (fallarImagen) await page.setRequestInterception(false);
+  }
+}
+
+const resultado = { recuperacion: {}, recuperacionDelArranque: {}, piernas: {} };
 try {
   // El reloj de la sesión arranca sin adelanto: se borra una sola vez, antes de la primera carga de la APK.
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 });
@@ -119,50 +268,13 @@ try {
   await capturar('apk-01-hoy');
   control('Hoy muestra «Piernas A» con 3 ejercicios y 9 series', (await page.evaluate(() => document.body.innerText)).includes('3 ejercicios · 9 series'));
 
-  // ─── 1. Recuperación de prueba: el proceso se cierra con un descanso abierto ──────────────────
-  await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.iniciarEntrenamiento, 'Recuperación de prueba');
-  await esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.explicacionDeTiempos, 30000)
-    .then(async () => {
-      control('la primera vez, la APK explica qué tiempos guarda y quién los ve', true);
-      await capturar('apk-02-primera-vez');
-      await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.entendido);
-    })
-    .catch(() => control('la primera vez, la APK explica qué tiempos guarda y quién los ve', false));
-  await esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.iniciarDescanso, 60000);
-  await adelantar(30);
-  await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.iniciarDescanso);
-  await esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.finalizarDescanso, 30000);
-  await adelantar(60);
-  await pausa(1500);
-  // El proceso «muere»: recargar es otra carga del módulo del reloj, con otra ancla, y lo guardado sigue en el teléfono
-  // (localStorage hace de AsyncStorage). El reloj civil sigue donde estaba: el adelanto acumulado no se pierde.
-  await page.reload({ waitUntil: 'networkidle0', timeout: 120000 });
-  await page.waitForFunction(() => document.body.dataset.lista === '1', { timeout: 60000 });
-  await esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.continuarEntrenamiento, 60000);
-  control('después de cerrar la app, Hoy ofrece «Continuar entrenamiento»', true);
-  await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.continuarEntrenamiento, 'Recuperación de prueba');
-  await esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.laSesionQuedoAbierta, 60000);
-  control('al volver, la APK no cierra el descanso sola: pregunta qué pasó', true);
-  await capturar('apk-03-medicion-abierta-tras-cerrar-la-app');
-  await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.dejarIncompleta);
-  await escribir('Repeticiones de la serie 1', '11');
-  await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.registrarSerie(1));
-  await sinPendientes();
-  await adelantar(110);
-  await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.finalizarEntrenamiento);
-  await esperarTexto(d.COPY_ENTRENAMIENTO_POR_SERIE.resumenAntesDeFinalizar, 30000);
-  await tocar('Realizada');
-  await pausa(800);
-  await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.finalizarEntrenamiento);
-  await page.waitForFunction(() => document.body.dataset.ruta !== 'sesion-de-entrenamiento' || document.body.innerText.includes('Registrada'), { timeout: 90000 });
-  control('«Recuperación de prueba» quedó registrada', true);
-  resultado.recuperacion = {
-    sesion: 'Recuperación de prueba',
-    descansos: [{ ejercicio: nombreDe(demo.exercises[2].catalogFixtureKey), setIndex: 1, texto: 'Incompleto · 01:30 recomendado' }],
-    // Cruza un cierre de la app: se estima con el reloj civil, que siguió corriendo mientras estaba cerrada. Por eso se
-    // exige la calidad y el piso del guion (200 s), no un valor exacto: los segundos reales entre cargas también cuentan.
-    tiemposMinimos: { 'Tiempo transcurrido': { segundos: 200, calidad: 'estimado' }, Pausas: { segundos: 0, calidad: 'estimado' }, 'Sin pausas': { segundos: 200, calidad: 'estimado' } },
-  };
+  // ─── 1. La recuperación después de que se cierra la app, en las dos bases del reloj ───────────
+  // Precierre del 2026-10-06, §3: un piso («al menos 200 s») no prueba nada. El recorrido anota sus propias anclas (el
+  // instante civil de cada carga de la página, que lee del arnés, y cada adelanto que aplica), calcula lo esperado y lo
+  // compara con lo que la API calculó de los eventos de la APK, con una tolerancia acotada. También exige que ningún evento
+  // esté repetido, que cada uno lleve la base de su reloj y que ninguna duración sea absurda.
+  resultado.recuperacion = await recuperacion({ sesion: 'Recuperación de prueba', reloj: 'proceso', fallarImagen: false });
+  resultado.recuperacionDelArranque = await recuperacion({ sesion: 'Recuperación con el reloj del arranque', reloj: 'arranque', fallarImagen: true });
 
   // ─── 2. «Piernas A»: el guion de DECISIONES_Y_TIEMPOS.md ─────────────────────────────────────
   await abrir();
@@ -219,7 +331,7 @@ try {
   await adelantar(30);
   const b1 = B.sets[0];
   await serie(1, { carga: b1.suggestedLoad.value, reps: b1.plannedRepetitions.max, rir: b1.plannedRir });
-  await sinPendientes();
+  control(`«${demo.name}»: lo registrado quedó enviado antes de finalizar («${ENVIADO}»)`, await sinPendientes());
   // t = 900: finalizar. La condición la declara la persona: no registró todas las series.
   await adelantar(250);
   await tocar(d.COPY_ENTRENAMIENTO_POR_SERIE.finalizarEntrenamiento);

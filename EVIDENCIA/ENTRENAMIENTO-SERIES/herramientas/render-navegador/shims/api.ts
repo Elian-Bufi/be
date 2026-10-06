@@ -8,6 +8,10 @@
 // - Cada respuesta se valida con el esquema estricto de su contrato en @be/domain: si no cumpliera, el render falla.
 import {
   AccesoAMedioResponseSchema,
+  ETIQUETA_DE_ALCANCE,
+  ListaDeEvidenciaVisualResponseSchema,
+  RequisitoDeEvidenciaVisualResponseSchema,
+  VERSION_VIGENTE,
   aplicarEventos,
   BorradorDeEjecucionResponseSchema,
   calcularTiempos,
@@ -169,7 +173,7 @@ let borrador: any = {
 // ─── Los tiempos de cada escena ─────────────────────────────────────────────────────────────────
 
 /** Un instante medido por el «proceso» del render, `segundos` antes de ahora. */
-const antes = (segundos: number) => ({ civil: new Date(AHORA_CIVIL - segundos * 1000).toISOString(), monotonic: { anchor: ANCLA_DEL_PROCESO, ms: AHORA_MONOTONICO - segundos * 1000 }, source: 'MONOTONIC' as const });
+const antes = (segundos: number) => ({ civil: new Date(AHORA_CIVIL - segundos * 1000).toISOString(), monotonic: { anchor: ANCLA_DEL_PROCESO, ms: AHORA_MONOTONICO - segundos * 1000, clock: 'PROCESS_MONOTONIC' as const }, source: 'MONOTONIC' as const });
 
 function corrida(pasos: Record<string, unknown>[]) {
   return pasos.map((p, i) => ({ compoundActionId: null, ...p, eventId: `evento-del-render-${String(i + 1).padStart(3, '0')}`, runId: 'corrida-del-render', sequence: i + 1 }));
@@ -248,6 +252,47 @@ function hoy() {
   });
 }
 
+// ─── EVIDENCIA_VISUAL (DL-125): el texto propuesto del catálogo, tal cual, y dos actos sintéticos ─────────────
+const TEXTO_DE_FOTOS = VERSION_VIGENTE.EVIDENCIA_VISUAL;
+const VINCULO_DE_NUTRICION = 'vinculo-de-nutricion-sintetico';
+const PROFESIONAL_DE_NUTRICION = { identityId: 'profesional-de-nutricion-sintetico', displayName: 'Lic. Demo Nutrición' };
+const NUTRICION = { code: 'NUTRICION', label: ETIQUETA_DE_ALCANCE.NUTRICION };
+function requisitoDeFotos() {
+  return RequisitoDeEvidenciaVisualResponseSchema.parse({
+    data: {
+      relationshipId: VINCULO_DE_NUTRICION,
+      professional: PROFESIONAL_DE_NUTRICION,
+      scope: NUTRICION,
+      category: 'MEAL_PHOTOS',
+      consentVersion: { id: TEXTO_DE_FOTOS.id, title: TEXTO_DE_FOTOS.titulo, text: TEXTO_DE_FOTOS.texto, textHash: TEXTO_DE_FOTOS.hash, effectiveFrom: TEXTO_DE_FOTOS.vigenteDesde },
+      textApproval: 'PENDING_APPROVAL',
+      enforced: true,
+      currentConsent: null,
+    },
+  });
+}
+function actosDeFotos() {
+  const acto = (consentId: string, profesional: typeof PROFESIONAL_DE_NUTRICION, vinculo: string, aceptado: string, revocado: string | null) => ({
+    consentId,
+    type: 'VISUAL_EVIDENCE',
+    relationshipId: vinculo,
+    professional: profesional,
+    scope: NUTRICION,
+    category: 'MEAL_PHOTOS',
+    consentVersionId: TEXTO_DE_FOTOS.id,
+    state: revocado ? 'REVOKED' : 'ACTIVE',
+    acceptedAt: aceptado,
+    revokedAt: revocado,
+  });
+  return ListaDeEvidenciaVisualResponseSchema.parse({
+    data: [
+      acto('acto-de-fotos-sintetico-2', PROFESIONAL_DE_NUTRICION, VINCULO_DE_NUTRICION, '2026-10-06T14:05:00.000Z', null),
+      acto('acto-de-fotos-sintetico-1', { identityId: 'otro-profesional-sintetico', displayName: 'Lic. Otra Nutrición' }, 'otro-vinculo-sintetico', '2026-09-28T12:40:00.000Z', '2026-10-02T09:15:00.000Z'),
+    ],
+    page: { limit: 20, nextCursor: null, hasMore: false },
+  });
+}
+
 /** Cada medio, con el archivo que lo dibuja en el render. La ruta firmada es sintética. */
 const ARCHIVO: Record<string, string> = Object.fromEntries(catalogo.assets.map((a) => [`imagen-${a.fixtureKey}`, `fotos/${a.image.split('/').pop()}`]));
 
@@ -289,6 +334,10 @@ export const api = {
   misEjecucionesDeEntrenamiento: (): R => nunca(),
   listarPlanesDeEntrenamiento: (): R => nunca(),
   consultarCuenta: (): R => nunca(),
+  consultarRequisitoDeEvidenciaVisual: (): R => ok(requisitoDeFotos()),
+  otorgarEvidenciaVisual: (): R => nunca(),
+  consultarEvidenciasVisuales: (): R => ok(actosDeFotos()),
+  revocarEvidenciaVisual: (): R => nunca(),
 };
 export const apiConfigurada = true;
 export const extra = {};

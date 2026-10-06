@@ -43,15 +43,15 @@ done
 # ─── Entrenamiento: Hoy y Plan ───
 captura 02-hoy entrenamiento-hoy azul-noche 390 1 800 entera "Entrenamiento · Hoy: la sesión con «N ejercicios · M series» e «Iniciar entrenamiento»"
 captura 03-hoy-claro-letra-1-3 entrenamiento-hoy claro 360 1.3 800 entera "Entrenamiento · Hoy, Claro, letra ×1,3"
-captura 04-plan entrenamiento-plan azul-noche 390 1 800 entera "Entrenamiento · Plan: la sesión abierta, con imágenes y objetivos por serie (sin calendario)"
-captura 05-plan-claro entrenamiento-plan claro 412 1 800 entera "Entrenamiento · Plan, Claro"
+captura 04-plan entrenamiento-plan azul-noche 390 1 800 entera "Entrenamiento · Plan: la sesión abierta, con objetivos por serie y cada ilustración entera, sin recortar (sin calendario)"
+captura 05-plan-claro entrenamiento-plan claro 412 1 800 entera "Entrenamiento · Plan, Claro: las ilustraciones enteras, sobre el blanco de la imagen"
 
 # ─── La sesión enfocada: escribir, descansar, la técnica y la rutina ───
 captura 06-serie-escrita sesion-escrita azul-noche 390 1 800 entera "Sesión enfocada · 14 repeticiones y RIR 2,5 escritos: la banda del plan sigue a la vista"
 captura 07-descanso-en-curso sesion-descanso azul-noche 390 1 800 entera "Descanso en curso · la serie 1 guardada, el aro y «Al terminar, seguís con la serie 2»"
 captura 08-descanso-en-curso-claro sesion-descanso claro 360 1 800 entera "Descanso en curso · Claro, 360 dp"
-captura 09-tecnica sesion-tecnica azul-noche 390 1 800 fija "Ver técnica · la imagen, su texto alternativo, su rol, procedencia, autoría, licencia y revisión"
-captura 10-tecnica-claro-letra-1-3 sesion-tecnica claro 412 1.3 800 fija "Ver técnica · Claro, letra ×1,3"
+captura 09-tecnica sesion-tecnica azul-noche 390 1 800 fija "Ver técnica · la imagen entera, su descripción, su rol, procedencia, autoría, licencia y revisión"
+captura 10-tecnica-claro-letra-1-3 sesion-tecnica claro 412 1.3 800 fija "Ver técnica · Claro, letra ×1,3: la imagen entera"
 captura 11-rutina sesion-rutina azul-noche 390 1 800 fija "Ver rutina · los ejercicios; ver la técnica de otro no cambia el activo"
 captura 12-sin-objetivo sesion-sin-objetivo claro 390 1 800 entera "Zancada estática · sin RIR planificado («Sin objetivo»), carga 0 kg y repeticiones por lado"
 captura 13-primera-vez sesion-primera-vez azul-noche 390 1 800 entera "La primera vez · «Guardamos los tiempos que marcás…», una vez por cuenta"
@@ -63,6 +63,13 @@ captura 15-resumen-claro-letra-1-3 sesion-resumen claro 412 1.3 800 entera "Ante
 # ─── La recuperación de la sesión (referencia 02) ───
 captura 16-recuperacion-comprobando recuperacion-comprobando azul-noche 390 1 800 fija "Recuperación · comprobando la sesión guardada"
 captura 17-recuperacion-comprobando-claro recuperacion-comprobando claro 360 1 800 fija "Recuperación · comprobando, Claro"
-captura 18-recuperacion-tardando recuperacion-tardando azul-noche 390 1 800 fija "Recuperación · a los 5 s: «Está tardando más de lo habitual» y «Reintentar»"
+captura 18-recuperacion-tardando recuperacion-tardando azul-noche 390 1 800 fija "Recuperación · a los 5 s: «Está tardando más de lo habitual», que sigue esperando el mismo pedido (sin «Reintentar»)"
 captura 19-recuperacion-tardando-claro-letra-2 recuperacion-tardando claro 412 2 800 entera "Recuperación · tardando, Claro, letra ×2"
 captura 20-recuperacion-sin-conexion recuperacion-sin-conexion azul-noche 390 1 800 fija "Recuperación · sin conexión: la credencial sigue guardada"
+captura 21-recuperacion-tiempo-agotado recuperacion-tiempo-agotado azul-noche 390 1 800 fija "Recuperación · más de un minuto sin respuesta: tiempo agotado, distinto de sin conexión, y la credencial sigue guardada"
+
+# ─── EVIDENCIA_VISUAL (DL-125): el texto propuesto antes de la primera foto, y «Fotos de tus comidas» en Privacidad ───
+captura 22-fotos-antes-de-la-primera fotos-antes-de-la-primera azul-noche 390 1 800 entera "Antes de tu primera foto · el texto propuesto entero, «pendiente de aprobación», «Ahora no» y aceptar"
+captura 23-fotos-antes-de-la-primera-claro-letra-1-3 fotos-antes-de-la-primera claro 360 1.3 800 entera "Antes de tu primera foto · Claro, 360 dp, letra ×1,3"
+captura 24-privacidad-fotos privacidad-fotos azul-noche 390 1 800 entera "Privacidad · «Fotos de tus comidas»: un acto vigente, con «Revocar fotos para …», y uno revocado"
+captura 25-privacidad-fotos-claro privacidad-fotos claro 412 1 800 entera "Privacidad · «Fotos de tus comidas», Claro"

@@ -51,6 +51,12 @@ const reemplazos = {
       if (normal(resolve(args.resolveDir, args.path)) === normal(join(MOVIL, 'reloj-de-sesion'))) return { path: join(AQUI, API_REAL ? 'shims/reloj-controlado.ts' : 'shims/reloj-de-sesion.ts') };
       return undefined;
     });
+    // El reloj del teléfono (precierre del 2026-10-06, §3): sin módulo nativo en el navegador, el del recorrido (del
+    // proceso, o del arranque simulado con `?reloj=arranque`) o el detenido de las capturas.
+    b.onResolve({ filter: /^(\.\.?\/)+reloj-del-telefono$/ }, (args) => {
+      if (normal(resolve(args.resolveDir, args.path)) === normal(join(MOVIL, 'reloj-del-telefono'))) return { path: join(AQUI, API_REAL ? 'shims/reloj-del-telefono-real.ts' : 'shims/reloj-del-telefono-detenido.ts') };
+      return undefined;
+    });
   },
 };
 
@@ -77,7 +83,7 @@ await build({
     'react-native-web': modulo('react-native-web'),
     'expo-constants': join(AQUI, 'shims/expo-constants.js'),
     'expo-status-bar': join(AQUI, 'shims/vacio.js'),
-    'expo-secure-store': join(AQUI, 'shims/vacio.js'),
+    'expo-secure-store': join(AQUI, 'shims/expo-secure-store.js'),
     'expo-crypto': join(AQUI, 'shims/expo-crypto.js'),
     'react-native-safe-area-context': join(AQUI, 'shims/safe-area.js'),
     '@react-native-async-storage/async-storage': join(AQUI, API_REAL ? 'shims/async-storage-local.js' : 'shims/async-storage.js'),

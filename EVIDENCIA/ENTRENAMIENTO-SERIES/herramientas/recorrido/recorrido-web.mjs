@@ -4,7 +4,8 @@
 //    pendiente → «Guardar imagen». La imagen guardada vuelve de la API (recodificada) y se ve bajo la CSP real.
 // 2. Plan: crea el plan y arma «Piernas A» con los tres ejercicios y los objetivos de sesion_demo.json. Lo común va en la
 //    prescripción y lo distinto en cada serie. «Así lo ve tu asesorado» tiene que decir exactamente lo del paquete; se
-//    guarda, se valida y se activa.
+//    guarda y se valida. Con objetivos distintos por serie, no se puede activar mientras el asesorado no use la APK nueva
+//    (precierre del 2026-10-06, §2): el editor lo explica; el asesorado abre Entrenamiento con la APK nueva y se activa.
 // 3. Plan activo: «Lo que recibe tu asesorado» dice lo mismo, ya leído de API-SER-01.
 // Uso: node recorrido-web.mjs [--solo-plan-activo]   (lee estado.json; escribe recorrido-web.json y capturas-web/)
 // Con --solo-plan-activo repite solo el paso 3, que es de lectura: no crea nada.
@@ -98,6 +99,27 @@ async function entrar(destino) {
   await page.waitForFunction(() => !location.pathname.startsWith('/login'), { timeout: 60000 });
 }
 const ir = (ruta) => page.evaluate((u) => window.next.router.push(u), ruta);
+
+/**
+ * El asesorado abre Entrenamiento con la APK nueva (precierre del 2026-10-06, §2): la lectura de «Hoy» con la capacidad
+ * declarada queda registrada para su cuenta, y desde ahí un plan con objetivos por serie se puede activar. La sesión del
+ * asesorado se guarda en la carpeta de trabajo, como en el recorrido de la APK, para no gastar el límite de inicios.
+ */
+async function declararLaApkNueva() {
+  const SESIONES = enTrabajo('.sesiones.json');
+  const sesiones = fs.existsSync(SESIONES) ? JSON.parse(fs.readFileSync(SESIONES, 'utf8')) : {};
+  const apk = dominio.crearClienteBe({ baseUrl: 'http://localhost:3001/api/v1', superficie: 'APK', capacidades: [dominio.CAPACIDAD_OBJETIVOS_POR_SERIE] });
+  let token = sesiones[estado.aseCorreo]?.token;
+  if (!token || Date.parse(sesiones[estado.aseCorreo].expira) - Date.now() < 20 * 60 * 1000) {
+    const r = await apk.iniciarSesion(estado.aseCorreo, CRED);
+    if (!r.ok) throw new Error(`sesión del asesorado: ${r.tipo === 'API' ? r.status : 'sin respuesta'}`);
+    token = r.datos.data.session.accessToken;
+    sesiones[estado.aseCorreo] = { token, expira: r.datos.data.session.expiresAt };
+    fs.writeFileSync(SESIONES, JSON.stringify(sesiones));
+  }
+  const hoy = await apk.hoyDeEntrenamiento(token);
+  control('el asesorado abre Entrenamiento con la APK nueva (API-TRN-14 con la capacidad declarada)', hoy.ok, hoy.ok ? hoy.datos.data.planState : JSON.stringify(hoy));
+}
 
 const SOLO_PLAN_ACTIVO = process.argv.includes('--solo-plan-activo');
 const resultado = { ejercicios: {} };
@@ -250,31 +272,55 @@ try {
   }
   await capturar('04-editor-piernas-a');
   await capturar('05-asi-lo-ve-sentadilla', 'li.fila-de-item table.tabla--objetivos');
-  // Una segunda sesión, corta, para probar en la APK la recuperación después de que se cierra la app (T06): no es parte
-  // de la demostración de «Piernas A», y sus tiempos quedan estimados e incompletos a propósito.
+  // Dos sesiones cortas para probar en la APK la recuperación después de que se cierra la app (T06), una con cada base del
+  // reloj (precierre del 2026-10-06, §3). No son parte de la demostración de «Piernas A», y sus tiempos quedan incompletos
+  // a propósito.
   const recuperacion = catalogo.find((c) => c.fixtureKey === demo.exercises[2].catalogFixtureKey);
-  await clic('Agregar sesión');
-  await page.waitForSelector('#b0-s1-nombre', { timeout: 30000 });
-  await escribir('#b0-s1-nombre', 'Recuperación de prueba');
-  await clic('Agregar ejercicio', 1);
-  await escribir('#b0-s1-buscar-texto', recuperacion.name);
-  await clic('Buscar');
-  await page.waitForFunction((b) => [...document.querySelectorAll('button')].some((x) => x.textContent.replace(/\s+/g, ' ').trim() === b), { timeout: 30000 }, `Elegir ${recuperacion.name}`);
-  await clic(`Elegir ${recuperacion.name}`);
-  await page.waitForSelector('#b0-s1-p0-serie-0', { timeout: 30000 });
-  await escribir('#b0-s1-p0-serie-0', '10-12');
-  await escribir('#b0-s1-p0-descanso', '90');
+  for (const [i, nombre] of ['Recuperación de prueba', 'Recuperación con el reloj del arranque'].entries()) {
+    const n = i + 1;
+    await clic('Agregar sesión');
+    await page.waitForSelector(`#b0-s${n}-nombre`, { timeout: 30000 });
+    await escribir(`#b0-s${n}-nombre`, nombre);
+    await clic('Agregar ejercicio', n);
+    await escribir(`#b0-s${n}-buscar-texto`, recuperacion.name);
+    await clic('Buscar');
+    await page.waitForFunction((b) => [...document.querySelectorAll('button')].some((x) => x.textContent.replace(/\s+/g, ' ').trim() === b), { timeout: 30000 }, `Elegir ${recuperacion.name}`);
+    await clic(`Elegir ${recuperacion.name}`);
+    await page.waitForSelector(`#b0-s${n}-p0-serie-0`, { timeout: 30000 });
+    await escribir(`#b0-s${n}-p0-serie-0`, '10-12');
+    await escribir(`#b0-s${n}-p0-descanso`, '90');
+  }
   await clic('Guardar borrador');
   await esperarTexto('Guardado.', 60000);
   // Después de guardar, el editor se vuelve a leer con API-SER-01: el tri-estado tiene que volver igual.
   await pausa(500);
   const releido = await page.evaluate(() => [...document.querySelectorAll('table.tabla--objetivos tbody tr')].map((tr) => tr.innerText.replace(/\s+/g, ' ').trim()));
-  control('después de guardar, el editor releído (API-SER-01) muestra las 9 series de «Piernas A» y la de la sesión de prueba', releido.length === 10, releido.join(' | '));
-  const aviso = await texto('body');
-  control('el editor avisa que la APK 0.13.2 muestra solo los valores generales', aviso.includes('La APK 0.13.2 muestra solo los valores generales'));
+  control('después de guardar, el editor releído (API-SER-01) muestra las 9 series de «Piernas A» y la de cada sesión de prueba', releido.length === 11, releido.join(' | '));
   await clic('Validar plan');
   await esperarTexto(dominio.COPY_ENTRENAMIENTO.sinProblemas, 60000);
   control('validar: el borrador no tiene problemas de estructura', true);
+  // §2: el asesorado todavía no abrió una APK que muestre los objetivos de cada serie. El plan no se puede activar, y el
+  // editor dice por qué y qué hacer: las APK instaladas mostrarían los valores generales.
+  const COMPATIBILIDAD = dominio.COPY_COMPATIBILIDAD_DE_CLIENTES;
+  const sinPoderActivar = await texto('body');
+  control('el editor explica que todavía no se puede activar: el asesorado no usó una versión de BE que muestre los objetivos de cada serie', sinPoderActivar.includes(COMPATIBILIDAD.activacionBloqueadaTitulo) && sinPoderActivar.includes(COMPATIBILIDAD.activacionBloqueada) && sinPoderActivar.includes(COMPATIBILIDAD.queHacer));
+  const activar = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === 'Activar plan');
+    return { deshabilitado: b?.disabled === true, motivo: b ? document.getElementById(b.getAttribute('aria-describedby') ?? '')?.innerText ?? null : null };
+  });
+  control('«Activar plan» queda deshabilitado, con el motivo asociado para el lector de pantalla', activar.deshabilitado && (activar.motivo ?? '').includes(COMPATIBILIDAD.queHacer), JSON.stringify(activar));
+  await capturar('05b-editor-sin-poder-activar');
+  // El asesorado abre Entrenamiento con la APK nueva: su lectura de «Hoy» (API-TRN-14) declara la capacidad, como lo hace la
+  // APK con `X-BE-Capabilities`. Es la misma llamada del cliente compartido, con la cuenta sintética del asesorado.
+  await declararLaApkNueva();
+  // El website guarda la sesión solo en memoria (DL-012): recargar la página la cierra. Se sale a otra página de la app y se
+  // vuelve al plan, y el editor se vuelve a leer con API-SER-01.
+  await ir('/pro/exercises');
+  await esperarTexto('Tus ejercicios', 60000);
+  await ir(`/pro/advisees/training?id=${estado.aseId}&vista=plan`);
+  await esperarTexto(COMPATIBILIDAD.listoParaActivar, 90000);
+  control('después de que el asesorado abrió la APK nueva, el editor dice que ya se puede activar', !(await texto('body')).includes(COMPATIBILIDAD.activacionBloqueadaTitulo));
+  await capturar('05c-editor-listo-para-activar');
   await clic('Activar plan');
   await page.waitForFunction(() => [...document.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Activar esta versión'), { timeout: 30000 });
   await clic('Activar esta versión');
@@ -291,11 +337,11 @@ try {
     return ex.sets.map((s) => [String(s.setIndex), dominio.textoDeCarga(s.suggestedLoad), dominio.textoDeRepeticiones(s.plannedRepetitions), ...(conRir ? [dominio.textoDeRir(s.plannedRir) ?? 'Sin objetivo'] : []), dominio.textoDeSegundos(s.recommendedRestSeconds) ?? 'Sin objetivo']);
   });
   control('el plan activo dice lo mismo que el paquete para las 9 series de «Piernas A» (lo que recibe el teléfono)', JSON.stringify(activas.slice(0, 3)) === JSON.stringify(esperadasTodas), JSON.stringify(activas));
-  control('la sesión de prueba hereda el descanso de su prescripción', JSON.stringify(activas[3]) === JSON.stringify([['1', 'Sin objetivo', '10–12 rep.', '01:30']]), JSON.stringify(activas[3]));
+  control('cada sesión de prueba hereda el descanso de su prescripción', [3, 4].every((i) => JSON.stringify(activas[i]) === JSON.stringify([['1', 'Sin objetivo', '10–12 rep.', '01:30']])), JSON.stringify(activas.slice(3)));
   // Las imágenes llegan aparte (acceso firmado y descarga): se espera a que estén, con un tope.
-  await page.waitForFunction(() => document.querySelectorAll('img.imagen-de-ejercicio[src^="data:image/jpeg"]').length >= 4, { timeout: 60000 }).catch(() => {});
+  await page.waitForFunction(() => document.querySelectorAll('img.imagen-de-ejercicio[src^="data:image/jpeg"]').length >= 5, { timeout: 60000 }).catch(() => {});
   const conImagen = await page.$$eval('img.imagen-de-ejercicio', (is) => is.filter((i) => i.src.startsWith('data:image/jpeg')).length);
-  control('el plan activo muestra la imagen de cada ejercicio (tres en «Piernas A» y uno en la sesión de prueba)', conImagen === 4, conImagen);
+  control('el plan activo muestra la imagen de cada ejercicio (tres en «Piernas A» y uno en cada sesión de prueba)', conImagen === 5, conImagen);
   await capturar('06-plan-activo');
   resultado.planActivo = true;
 } catch (e) {

@@ -4,6 +4,9 @@
 // - P03 · el asesorado del plan lee las tres imágenes (API-MED-03) y las descarga en JPEG.
 // - P05 · el otro asesorado no lee las imágenes; el otro profesional no lee el plan, ni las imágenes, ni puede asociar.
 // - C01 · lo que lee la APK 0.13.2 (API-TRN-14) conserva su forma estricta: ninguna clave nueva.
+// - Compatibilidad (precierre del 2026-10-06, §2): una APK que no declara la capacidad (la 0.13.2 y las dos candidatas no
+//   declaran nada) no recibe un plan con objetivos por serie: «no disponible», sin plan ni ocurrencias, y nunca los valores
+//   generales como si fueran los de cada serie. La APK nueva, que la declara, recibe el plan y los objetivos exactos.
 // Uso: node recorrido-api.mjs [origen de la API]   (lee estado.json; escribe recorrido-api.json)
 import { REPO, enTrabajo } from './rutas.mjs';
 import fs from 'node:fs';
@@ -18,7 +21,9 @@ const catalogo = JSON.parse(fs.readFileSync(`${PAQUETE}/ejercicios/CATALOGO.json
 const estado = JSON.parse(fs.readFileSync(enTrabajo('estado.json'), 'utf8'));
 const CRED = 'clave-sintetica-de-prueba-01';
 const web = d.crearClienteBe({ baseUrl: `${origen}/api/v1`, superficie: 'WEB' });
-const apk = d.crearClienteBe({ baseUrl: `${origen}/api/v1`, superficie: 'APK' });
+// La APK nueva declara que muestra los objetivos de cada serie (X-BE-Capabilities); la vieja no declara nada.
+const apk = d.crearClienteBe({ baseUrl: `${origen}/api/v1`, superficie: 'APK', capacidades: [d.CAPACIDAD_OBJETIVOS_POR_SERIE] });
+const apkVieja = d.crearClienteBe({ baseUrl: `${origen}/api/v1`, superficie: 'APK' });
 const clave = () => `e2e-${crypto.randomUUID()}`;
 const controles = [];
 const control = (nombre, ok, detalle = '') => {
@@ -47,10 +52,22 @@ try {
   const otro = await sesion(apk, estado.otroCorreo);
   const otroPro = await sesion(web, estado.otroProCorreo);
 
-  // ─── C01 y la ocurrencia de hoy ─────────────────────────────────────────────────────────────
+  // ─── Compatibilidad (§2): la APK que no declara la capacidad no recibe este plan ───────────────
+  const crudoViejo = await fetch(`${origen}/api/v1/me/training/today`, { headers: { Authorization: `Bearer ${ase}`, 'X-BE-Surface': 'APK' } }).then((r) => r.json());
+  control('C01 · para la APK sin la capacidad, API-TRN-14 conserva la forma estricta que valida la 0.13.2', d.HoyDeEntrenamientoResponseSchema.safeParse(crudoViejo).success);
+  control(
+    'la APK sin la capacidad (0.13.2 y candidatas) recibe «no disponible», sin plan ni ocurrencias: no ve valores generales como si fueran los de cada serie',
+    crudoViejo.data?.planState === 'NOT_AVAILABLE' && crudoViejo.data.activePlan === null && crudoViejo.data.occurrences.length === 0,
+    JSON.stringify({ planState: crudoViejo.data?.planState, activePlan: crudoViejo.data?.activePlan, ocurrencias: crudoViejo.data?.occurrences?.length }),
+  );
+  const conElCliente = await apkVieja.hoyDeEntrenamiento(ase);
+  control('el cliente compartido sin la capacidad lee lo mismo', conElCliente.ok && conElCliente.datos.data.planState === 'NOT_AVAILABLE', conElCliente.ok ? conElCliente.datos.data.planState : JSON.stringify(conElCliente));
+
+  // ─── C01 y la ocurrencia de hoy, con la APK nueva ──────────────────────────────────────────────
   const hoy = exigir(await apk.hoyDeEntrenamiento(ase), 'Hoy (API-TRN-14)').data;
-  const crudo = await fetch(`${origen}/api/v1/me/training/today`, { headers: { Authorization: `Bearer ${ase}`, 'X-BE-Surface': 'APK' } }).then((r) => r.json());
-  control('C01 · API-TRN-14 conserva la forma estricta que lee la APK 0.13.2', d.HoyDeEntrenamientoResponseSchema.safeParse(crudo).success);
+  control('la APK nueva, que declara la capacidad, recibe el plan disponible con sus sesiones de hoy', hoy.planState === 'AVAILABLE' && hoy.occurrences.length > 0, `${hoy.planState} · ${hoy.occurrences.length} sesiones`);
+  const crudo = await fetch(`${origen}/api/v1/me/training/today`, { headers: { Authorization: `Bearer ${ase}`, 'X-BE-Surface': 'APK', [d.HEADER_DE_CAPACIDADES]: d.CAPACIDAD_OBJETIVOS_POR_SERIE } }).then((r) => r.json());
+  control('C01 · API-TRN-14 conserva la forma estricta que lee la APK 0.13.2 también para la nueva', d.HoyDeEntrenamientoResponseSchema.safeParse(crudo).success);
   const vieja = crudo.data.occurrences?.[0]?.plannedSession?.prescriptions?.[0] ?? {};
   control('C01 · la prescripción de la lectura vieja no trae claves nuevas', !('restSeconds' in vieja) && !('loadBasis' in vieja) && !(vieja.sets ?? []).some((s) => 'rir' in s || 'restSeconds' in s), Object.keys(vieja).join(','));
   const ocurrencia = hoy.occurrences.find((o) => o.plannedSession.label === demo.name);

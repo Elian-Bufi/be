@@ -11,7 +11,10 @@
 // - sesion-sin-objetivo: la zancada estática, sin RIR planificado y con carga 0 kg;
 // - sesion-primera-vez: la explicación de los tiempos, la primera vez de la cuenta;
 // - sesion-resumen: «Antes de finalizar», con series y tiempos;
-// - recuperacion-comprobando, recuperacion-tardando, recuperacion-sin-conexion: la recuperación de la sesión.
+// - recuperacion-comprobando, recuperacion-tardando, recuperacion-sin-conexion, recuperacion-tiempo-agotado: la
+//   recuperación de la sesión;
+// - fotos-antes-de-la-primera: el texto propuesto de EVIDENCIA_VISUAL antes de la primera foto (DL-125);
+// - privacidad-fotos: «Fotos de tus comidas» en Privacidad, con un acto vigente y uno revocado (DL-125).
 // Algunas escenas tocan la pantalla como lo haría la persona (abrir la técnica, escribir): lo hace `acciones()`.
 import { useEffect, useRef, useState } from 'react';
 import { AppRegistry, ScrollView, View } from 'react-native';
@@ -24,6 +27,9 @@ import { memoria } from '@movil/lecturas';
 import { anterior, esRaiz, pestanaActiva, sinBarraInferior, type Ruta } from '@movil/navegacion';
 import { PantallaDeEntrenamiento, PantallaDeSesion } from '@movil/pantallas/entrenamiento';
 import { PantallaDeRecuperacion, type FaseDeLaRecuperacion } from '@movil/pantallas/recuperacion';
+import { FotosDeTusComidas, InformacionDeFotos } from '@movil/evidencia-visual';
+import { Seccion } from '@movil/ui';
+import { COPY_EVIDENCIA_VISUAL, VERSION_VIGENTE } from '@be/domain';
 import { COLOR, fijarTema, type Tema } from '@movil/tema';
 import { DATOS } from './shims/api';
 
@@ -38,7 +44,7 @@ const TOKEN = 'token-de-maqueta';
 const nada = () => undefined;
 
 function rutaDeLaEscena(): Ruta | null {
-  if (escena.startsWith('recuperacion')) return null;
+  if (escena.startsWith('recuperacion') || escena.startsWith('fotos-') || escena.startsWith('privacidad-')) return null;
   if (escena.startsWith('entrenamiento-')) {
     memoria.recordarSeleccion(TOKEN, 'entrenamiento:vista', escena === 'entrenamiento-plan' ? 'PLAN' : 'HOY');
     return { nombre: 'entrenamiento' };
@@ -50,6 +56,7 @@ const FASES: Record<string, FaseDeLaRecuperacion> = {
   'recuperacion-comprobando': { tipo: 'comprobando' },
   'recuperacion-tardando': { tipo: 'tardando' },
   'recuperacion-sin-conexion': { tipo: 'sin-verificar', causa: 'sin-conexion' },
+  'recuperacion-tiempo-agotado': { tipo: 'sin-verificar', causa: 'tiempo-agotado' },
 };
 
 // ─── Lo que hace la persona en algunas escenas ──────────────────────────────────────────────────
@@ -131,7 +138,15 @@ function Maqueta() {
       <View style={{ flex: 1, backgroundColor: COLOR.fondo }}>
         <Cabecera volverA={ruta && !raiz ? anterior(ruta) : null} conMenu={raiz} conAvatar={ruta !== null} actualizando={false} volver={nada} abrirMenu={nada} abrirCuenta={nada} />
         <ScrollView ref={desplazamiento} contentContainerStyle={{ padding: 20, paddingBottom: espacio }} keyboardShouldPersistTaps="handled">
-          {ruta === null ? <PantallaDeRecuperacion fase={FASES[escena] ?? { tipo: 'comprobando' }} reintentar={nada} iniciarDeNuevo={nada} /> : null}
+          {ruta === null && escena.startsWith('recuperacion') ? <PantallaDeRecuperacion fase={FASES[escena] ?? { tipo: 'comprobando' }} reintentar={nada} iniciarDeNuevo={nada} /> : null}
+          {escena === 'fotos-antes-de-la-primera' ? (
+            <InformacionDeFotos token={TOKEN} detalle={{ relationshipId: 'vinculo-de-nutricion-sintetico', consentVersionId: VERSION_VIGENTE.EVIDENCIA_VISUAL.id }} sesionPerdida={() => false} alAceptar={nada} alCerrar={nada} />
+          ) : null}
+          {escena === 'privacidad-fotos' ? (
+            <Seccion titulo={COPY_EVIDENCIA_VISUAL.titulo}>
+              <FotosDeTusComidas token={TOKEN} sesionPerdida={() => false} />
+            </Seccion>
+          ) : null}
           {lista && ruta?.nombre === 'entrenamiento' ? <PantallaDeEntrenamiento token={TOKEN} identidadId="cuenta-sintetica" salir={nada} ir={nada} /> : null}
           {lista && ruta?.nombre === 'sesion-de-entrenamiento' ? (
             <PantallaDeSesion token={TOKEN} draftId={ruta.draftId} occurrenceId={ruta.occurrenceId} sesion={ruta.sesion} fechaDeLaSesion={ruta.fecha} modo={ruta.modo} etiqueta={ruta.etiqueta} salir={nada} ir={nada} subir={nada} />
