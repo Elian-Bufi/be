@@ -9,6 +9,7 @@ import type { INestApplication } from '@nestjs/common';
 import {
   AccesoAMedioResponseSchema,
   ActivacionDePlanDeEntrenamientoResponseSchema,
+  BASE_DEL_RELOJ_DESDE_LA_API,
   BorradorDeEjecucionResponseSchema,
   ConfirmacionDeEjecucionResponseSchema,
   ContextoDeRevisionDeEntrenamientoResponseSchema,
@@ -56,6 +57,7 @@ import {
   baseDeRepeticiones,
   borradorDeLaDemo,
   caso,
+  conLaApk,
   corrida,
   cuerpoDeImagen,
   ejerciciosDeLaDemo,
@@ -73,6 +75,7 @@ import {
   SESION_DEMO,
   SESION_ID,
   subirImagenDeEjercicio,
+  usarLaApk,
   type EjercicioDeLaDemo,
   type ImagenDelPaquete,
   type PlanDeLaDemo,
@@ -322,7 +325,9 @@ describe('C01 · lo que lee la APK 0.13.2 no cambia (DL-122 §8)', () => {
   it('C01 · TRN-07 a 10, 12, 14, 14-PERIODO, 15 a 21 y 19-LISTA, del profesional y del titular, pasan los esquemas estrictos con la prescripción de siempre, aunque el plan tenga objetivos por serie', async () => {
     const plan = await borradorDeLaDemo(app, etiqueta('c01'));
     const pro = conSesion(app, plan.pro.token);
-    const ase = conSesion(app, plan.ase.token);
+    // El titular lee con la APK que muestra los objetivos por serie y lo declara: a un cliente que no lo declara, este plan
+    // no se le entrega (compatibilidad-de-clientes.int-spec.ts). Las formas que valida son las mismas.
+    const ase = conLaApk(app, plan.ase.token);
     const vistas: [string, unknown][] = [];
     const ver = (nombre: string, esquema: { parse: (v: unknown) => unknown }, cuerpo: unknown) => {
       esquema.parse(cuerpo);
@@ -627,6 +632,8 @@ const CALIDAD_DEL_PAQUETE: Readonly<Record<string, string>> = { medido: 'MEASURE
  */
 async function planActivadoParaTiempos(nombre: string): Promise<PlanDeLaDemo> {
   const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta(nombre));
+  // El titular ya usó la APK que muestra los objetivos por serie: sin eso, «Piernas A» no se activa (DL-122).
+  await usarLaApk(app, c.ase);
   const ejercicios = await ejerciciosDeLaDemo(app, c.pro);
   const segunda = { sessionId: 'piernas-b', label: 'Piernas B', prescriptions: [{ ...prescripcionDeLaDemo(EJ_C, ejercicios.get(EJ_C.catalogFixtureKey)!.versionId), prescriptionId: 'rx-c-b' }] };
   const creado = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/training/plans`).send({ objectiveVersionId: c.objectiveVersionId, initialStructure: estructuraDeLaDemo(ejercicios, [segunda]) }).expect(201);
@@ -867,6 +874,65 @@ describe('DL-124 · tiempos de la sesión (T01 a T05, T08, M04)', () => {
     await expect(prisma.$executeRawUnsafe(`UPDATE "evento_de_tiempo_de_entrenamiento" SET "secuencia" = 9 WHERE "borrador_id" = '${d1}'`)).rejects.toThrow(/append-only/);
     await expect(prisma.$executeRawUnsafe(`DELETE FROM "evento_de_tiempo_de_entrenamiento" WHERE "borrador_id" = '${d1}'`)).rejects.toThrow(/append-only/);
     await expect(prisma.$executeRawUnsafe('TRUNCATE "evento_de_tiempo_de_entrenamiento"')).rejects.toThrow(/append-only/);
+  });
+
+  it('T03 · la base sostiene la base del reloj aunque el código se equivoque: un instante con ancla y sin base, una base sin ancla o una base distinta de la del contenido se rechazan', async () => {
+    const plan = await planActivadoParaTiempos('tie-base-del-reloj');
+    const d1 = (await abrirBorrador(app, plan.ase, await ocurrenciaDeHoy(app, plan.ase))).draftId;
+    /** El inicio de la corrida, con el instante que se pida: el ancla y la base en sus columnas, y `reloj` en el contenido. */
+    const fila = (c: { ancla: string | null; base: string | null; reloj: string | null }) => {
+      const monotonic = c.ancla ? { anchor: c.ancla, ms: 5_000, ...(c.reloj ? { clock: c.reloj } : {}) } : null;
+      const contenido = { eventId: 'base-1', runId: 'corrida-base-del-reloj', sequence: 1, type: 'SESSION_STARTED', at: { civil: new Date().toISOString(), monotonic } };
+      return `INSERT INTO "evento_de_tiempo_de_entrenamiento" ("borrador_id","asesorado_id","corrida_id","secuencia","evento_id","tipo","contenido","instante_civil","ancla_monotonica","ms_monotonicos","base_del_reloj","origen_del_instante","procedencia")
+              VALUES ('${d1}','${plan.ase.id}','corrida-base-del-reloj',1,'base-1','SESION_INICIADA','${JSON.stringify(contenido)}', now(),
+                      ${c.ancla ? `'${c.ancla}'` : 'NULL'},${c.ancla ? '5000' : 'NULL'},${c.base ? `'${c.base}'` : 'NULL'},'${c.ancla ? 'MONOTONICO' : 'RELOJ_CIVIL_RECUPERADO'}',${PROCEDENCIA_SQL})`;
+    };
+    const rechazada = (sql: string, motivo: RegExp) => expect(prisma.$executeRawUnsafe(sql)).rejects.toThrow(motivo);
+    const BASE_DEL_RELOJ = /evento_de_tiempo_base_del_reloj/;
+    await rechazada(fila({ ancla: 'arranque-1', base: null, reloj: 'ELAPSED_SINCE_BOOT' }), BASE_DEL_RELOJ); // con ancla y sin base
+    await rechazada(fila({ ancla: null, base: 'DESDE_EL_ARRANQUE', reloj: null }), BASE_DEL_RELOJ); // una base sin ancla
+    await rechazada(fila({ ancla: 'arranque-1', base: 'DEL_PROCESO', reloj: 'ELAPSED_SINCE_BOOT' }), BASE_DEL_RELOJ); // la columna dice otra base que el contenido
+    await rechazada(fila({ ancla: 'arranque-1', base: 'DESDE_EL_ARRANQUE', reloj: null }), BASE_DEL_RELOJ); // el contenido no dice su base
+    await rechazada(fila({ ancla: 'arranque-1', base: 'OTRO_RELOJ', reloj: 'ELAPSED_SINCE_BOOT' }), /invalid input value for enum/); // una base que no existe
+    expect(await prisma.eventoDeTiempoDeEntrenamiento.count({ where: { borradorId: d1 } })).toBe(0);
+    // La que vale entra. Las bases admitidas son exactamente las del dominio.
+    await prisma.$executeRawUnsafe(fila({ ancla: 'arranque-1', base: 'DESDE_EL_ARRANQUE', reloj: 'ELAPSED_SINCE_BOOT' }));
+    expect(await prisma.eventoDeTiempoDeEntrenamiento.count({ where: { borradorId: d1, baseDelReloj: 'DESDE_EL_ARRANQUE' } })).toBe(1);
+    const valores = await prisma.$queryRaw<{ valor: string }[]>`
+      SELECT e.enumlabel AS valor FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'BaseDelReloj' ORDER BY e.enumsortorder`;
+    expect(valores.map((v) => v.valor)).toEqual(Object.values(BASE_DEL_RELOJ_DESDE_LA_API));
+  });
+
+  it('T03 · TIE-01 con el reloj desde el arranque: la sesión sigue medida aunque la app se reinicie entre dos pedidos (la misma ancla); si el teléfono se reinició (otra ancla), es estimada', async () => {
+    const plan = await planActivadoParaTiempos('tie-arranque');
+    const d1 = (await abrirBorrador(app, plan.ase, await ocurrenciaDeHoy(app, plan.ase))).draftId;
+    const d2 = (await abrirBorrador(app, plan.ase, await ocurrenciaDeHoy(app, plan.ase, 'piernas-b'))).draftId;
+    const base = Date.now() - 60 * 60 * 1000;
+    const a = prescripcionIdDe(EJ_A);
+    // Antes de que la app se reinicie: el inicio y el ejercicio. Después, el proceso es otro, pero el arranque del teléfono
+    // es el mismo: la misma ancla, y el reloj siguió contando.
+    await registrar(plan, d1, corrida([{ s: 0, evento: { type: 'SESSION_STARTED' } }, { s: 10, evento: { type: 'EXERCISE_ACTIVATED', prescriptionId: a } }], base, 'corrida-arranque', 1, 'arranque-1', 'ELAPSED_SINCE_BOOT'));
+    const medida = (await registrar(plan, d1, corrida([{ s: 600, evento: { type: 'SESSION_FINISHED', resolution: 'FINISHED' } }], base, 'corrida-arranque', 3, 'arranque-1', 'ELAPSED_SINCE_BOOT'))).timing;
+    expect([medida.session.elapsed, medida.unassigned]).toEqual([
+      { ms: 600_000, quality: 'MEASURED' },
+      { ms: 10_000, quality: 'MEASURED' },
+    ]);
+    expect(medida.exercises).toEqual([{ prescriptionId: a, duration: { ms: 590_000, quality: 'MEASURED' } }]);
+    // El teléfono se reinició entre los dos pedidos: otro arranque, otra ancla. No se restan, y la sesión sale del reloj civil.
+    await registrar(plan, d2, corrida([{ s: 700, evento: { type: 'SESSION_STARTED' } }], base, 'corrida-reinicio', 1, 'arranque-1', 'ELAPSED_SINCE_BOOT'));
+    const estimada = (await registrar(plan, d2, corrida([{ s: 1300, evento: { type: 'SESSION_FINISHED', resolution: 'FINISHED' } }], base, 'corrida-reinicio', 2, 'arranque-2', 'ELAPSED_SINCE_BOOT'))).timing;
+    expect(estimada.session.elapsed).toEqual({ ms: 600_000, quality: 'ESTIMATED' });
+    // Lo leído después es lo mismo, y cada evento guardó su ancla y su base.
+    expect((await tiemposDelBorrador(plan, d1)).session.elapsed).toEqual(medida.session.elapsed);
+    expect((await tiemposDelBorrador(plan, d2)).session.elapsed).toEqual(estimada.session.elapsed);
+    const filas = await prisma.eventoDeTiempoDeEntrenamiento.findMany({ where: { borradorId: { in: [d1, d2] } }, orderBy: [{ momentoDeRecepcion: 'asc' }, { secuencia: 'asc' }] });
+    expect(filas.map((f) => [f.borradorId === d1 ? 'd1' : 'd2', f.secuencia, f.anclaMonotonica, f.baseDelReloj])).toEqual([
+      ['d1', 1, 'arranque-1', 'DESDE_EL_ARRANQUE'],
+      ['d1', 2, 'arranque-1', 'DESDE_EL_ARRANQUE'],
+      ['d1', 3, 'arranque-1', 'DESDE_EL_ARRANQUE'],
+      ['d2', 1, 'arranque-1', 'DESDE_EL_ARRANQUE'],
+      ['d2', 2, 'arranque-2', 'DESDE_EL_ARRANQUE'],
+    ]);
   });
 });
 

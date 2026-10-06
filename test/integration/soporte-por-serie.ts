@@ -3,9 +3,13 @@
  * del paquete de Dirección `BE_Entrenamiento_Autonomo_2026-10-06`, leídos del repositorio: la sesión «Piernas A» con sus
  * objetivos por serie (`sesion_demo.json`), las tres imágenes con su catálogo (`ejercicios/`) y los casos de tiempos
  * (`casos_tiempos.json`). Los números salen del paquete, no de estas pruebas.
+ *
+ * El titular usa la APK que muestra el objetivo de cada serie y lo declara (`X-BE-Capabilities`; DL-122, precierre del
+ * 2026-10-06): sin eso, «Piernas A» no se activa ni se le entrega. Las APK instaladas, que no lo declaran, se prueban en
+ * `compatibilidad-de-clientes.int-spec.ts`.
  */
 import type { INestApplication } from '@nestjs/common';
-import type { EventoDeTiempo, InstanteDeEventoApi } from '@be/domain';
+import { CAPACIDAD_OBJETIVOS_POR_SERIE, HEADER_DE_CAPACIDADES, valorDeCapacidades, type BaseDelRelojApi, type EventoDeTiempo, type InstanteDeEventoApi } from '@be/domain';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import request from 'supertest';
@@ -173,9 +177,14 @@ export interface PlanDeLaDemo extends CircuitoParaPlanificar {
   readonly version: string;
 }
 
-/** El borrador de «Piernas A»: TRN-07 sin estructura y TRN-10 con los objetivos por serie, como guarda el editor. */
-export async function borradorDeLaDemo(app: INestApplication, etiqueta: string, extra: Record<string, unknown>[] = []): Promise<PlanDeLaDemo> {
+/**
+ * El borrador de «Piernas A»: TRN-07 sin estructura y TRN-10 con los objetivos por serie, como guarda el editor. Antes, el
+ * titular abre «Hoy» con la APK que muestra los objetivos de cada serie (`usarLaApk`), como en la demostración: sin eso el
+ * plan no se activa. `apk: false` deja al titular sin haberla usado (las pruebas de compatibilidad).
+ */
+export async function borradorDeLaDemo(app: INestApplication, etiqueta: string, extra: Record<string, unknown>[] = [], opciones: { apk?: boolean } = {}): Promise<PlanDeLaDemo> {
   const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta);
+  if (opciones.apk !== false) await usarLaApk(app, c.ase);
   const ejercicios = await ejerciciosDeLaDemo(app, c.pro);
   const creado = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/training/plans`).send({ objectiveVersionId: c.objectiveVersionId }).expect(201);
   const guardado = await conSesion(app, c.pro.token)
@@ -186,21 +195,46 @@ export async function borradorDeLaDemo(app: INestApplication, etiqueta: string, 
 }
 
 /** La activación por la API (API-TRN-12). */
-export function activar(app: INestApplication, plan: PlanDeLaDemo, version = plan.version) {
-  return conSesion(app, plan.pro.token).post(`/api/v1/training/plans/${plan.planId}/activate`, claveDeIdempotencia()).send({ expectedVersion: version });
+export function activar(app: INestApplication, plan: PlanDeLaDemo, version = plan.version, clave = claveDeIdempotencia()) {
+  return conSesion(app, plan.pro.token).post(`/api/v1/training/plans/${plan.planId}/activate`, clave).send({ expectedVersion: version });
 }
 
-/** La ocurrencia de hoy de una sesión del plan (API-TRN-14). */
+// ─── La APK que muestra los objetivos por serie (DL-122, precierre del 2026-10-06) ──────────────────────
+
+/** El valor de `X-BE-Capabilities` de la APK que muestra el objetivo de cada serie. */
+export const CAPACIDADES_DE_LA_APK = valorDeCapacidades([CAPACIDAD_OBJETIVOS_POR_SERIE]);
+
+/**
+ * Los pedidos del titular desde la APK que muestra el objetivo de cada serie: los de `conSesion`, con la capacidad
+ * declarada. `capacidades` cambia el valor de la cabecera (por ejemplo, solo capacidades que la API no conoce).
+ */
+export function conLaApk(app: INestApplication, token: string, capacidades = CAPACIDADES_DE_LA_APK) {
+  const s = conSesion(app, token);
+  return {
+    get: (ruta: string) => s.get(ruta).set(HEADER_DE_CAPACIDADES, capacidades),
+    delete: (ruta: string) => s.delete(ruta).set(HEADER_DE_CAPACIDADES, capacidades),
+    post: (ruta: string, clave?: string) => s.post(ruta, clave).set(HEADER_DE_CAPACIDADES, capacidades),
+    patch: (ruta: string) => s.patch(ruta).set(HEADER_DE_CAPACIDADES, capacidades),
+    put: (ruta: string, clave?: string) => s.put(ruta, clave).set(HEADER_DE_CAPACIDADES, capacidades),
+  };
+}
+
+/** El titular abre «Hoy» (API-TRN-14) con esa APK: la API registra que usa un cliente que muestra los objetivos por serie. */
+export async function usarLaApk(app: INestApplication, ase: Parte): Promise<void> {
+  await conLaApk(app, ase.token).get('/api/v1/me/training/today').expect(200);
+}
+
+/** La ocurrencia de hoy de una sesión del plan (API-TRN-14), como la lee la APK que muestra los objetivos por serie. */
 export async function ocurrenciaDeHoy(app: INestApplication, ase: Parte, sesionId = SESION_ID): Promise<string> {
-  const hoy = await conSesion(app, ase.token).get('/api/v1/me/training/today').expect(200);
+  const hoy = await conLaApk(app, ase.token).get('/api/v1/me/training/today').expect(200);
   const o = (hoy.body.data.occurrences as { occurrenceId: string; plannedSession: { sessionId: string } }[]).find((x) => x.plannedSession.sessionId === sesionId);
   if (!o) throw new Error(`sin ocurrencia de hoy para ${sesionId}`);
   return o.occurrenceId;
 }
 
-/** El borrador de la ocurrencia (API-TRN-15). */
+/** El borrador de la ocurrencia (API-TRN-15), abierto desde la APK que muestra los objetivos por serie. */
 export async function abrirBorrador(app: INestApplication, ase: Parte, occurrenceId: string): Promise<{ draftId: string; version: string }> {
-  const r = await conSesion(app, ase.token).put(`/api/v1/training/occurrences/${occurrenceId}/execution-draft`).send({});
+  const r = await conLaApk(app, ase.token).put(`/api/v1/training/occurrences/${occurrenceId}/execution-draft`).send({});
   if (r.status !== 200 && r.status !== 201) throw new Error(`TRN-15 respondió ${r.status}: ${JSON.stringify(r.body)}`);
   return { draftId: r.body.data.draftId as string, version: r.body.data.version as string };
 }
@@ -263,10 +297,14 @@ export function retirarImagen(app: INestApplication, pro: Parte, exerciseId: str
 
 // ─── Tiempos (DL-124) ────────────────────────────────────────────────────────────────────────────
 
-/** Un instante monotónico del proceso `ancla`, `s` segundos después de `base`; el civil avanza igual. */
-export const monotonico = (base: number, s: number, ancla = 'proceso-de-la-prueba'): InstanteDeEventoApi => ({
+/**
+ * Un instante monotónico de `ancla`, `s` segundos después de `base`; el civil avanza igual. Por defecto, con el reloj del
+ * proceso (`PROCESS_MONOTONIC`), el que tenían estos instantes antes de que el contrato pidiera la base: con él, el
+ * dominio calcula exactamente como antes. `reloj` pide el reloj desde el arranque (`ELAPSED_SINCE_BOOT`).
+ */
+export const monotonico = (base: number, s: number, ancla = 'proceso-de-la-prueba', reloj: BaseDelRelojApi = 'PROCESS_MONOTONIC'): InstanteDeEventoApi => ({
   civil: new Date(base + s * 1000).toISOString(),
-  monotonic: { anchor: ancla, ms: 5_000 + s * 1000 },
+  monotonic: { anchor: ancla, ms: 5_000 + s * 1000, clock: reloj },
   source: 'MONOTONIC',
 });
 
@@ -275,9 +313,9 @@ type SinIdentidad<E> = E extends unknown ? Omit<E, 'eventId' | 'runId' | 'sequen
 export type Paso = { s: number; evento: SinIdentidad<EventoDeTiempo> };
 
 /** Arma eventos con secuencia e identificadores correlativos desde `primera`; cada dispositivo genera los suyos. */
-export function corrida(pasos: readonly Paso[], base: number, runId: string, primera = 1, ancla?: string): EventoDeTiempo[] {
+export function corrida(pasos: readonly Paso[], base: number, runId: string, primera = 1, ancla?: string, reloj?: BaseDelRelojApi): EventoDeTiempo[] {
   return pasos.map(
-    (p, i) => ({ ...p.evento, eventId: `${runId}-${String(primera + i).padStart(3, '0')}`, runId, sequence: primera + i, compoundActionId: null, at: monotonico(base, p.s, ancla) }) as EventoDeTiempo,
+    (p, i) => ({ ...p.evento, eventId: `${runId}-${String(primera + i).padStart(3, '0')}`, runId, sequence: primera + i, compoundActionId: null, at: monotonico(base, p.s, ancla, reloj) }) as EventoDeTiempo,
   );
 }
 

@@ -79,6 +79,7 @@ import {
   retirarImagen,
   SESION_DEMO,
   subirImagenDeEjercicio,
+  usarLaApk,
 } from './soporte-por-serie';
 
 interface Observada {
@@ -1243,7 +1244,8 @@ it('TEST-CT (WP-NUTRICION-RECETAS): las 18 operaciones REC, MED e ING, con éxit
 });
 
 it('TEST-CT (WP-ENTRENAMIENTO-SERIES): las 9 operaciones SER, TIE y EJE, y MED con la imagen de un ejercicio, con éxitos y errores declarados', async () => {
-  const plan = await borradorDeLaDemo(app, 'contrato-series');
+  // El titular todavía no usó la APK que muestra los objetivos por serie: TRN-12 responde su 409 declarado (DL-122).
+  const plan = await borradorDeLaDemo(app, 'contrato-series', [], { apk: false });
   const pro = conSesion(app, plan.pro.token);
   const ase = conSesion(app, plan.ase.token);
   const servidor = app.getHttpServer();
@@ -1280,6 +1282,8 @@ it('TEST-CT (WP-ENTRENAMIENTO-SERIES): las 9 operaciones SER, TIE y EJE, y MED c
   await ase.get(`/api/v1/training/plans/${plan.planId}/detail`).expect(404);
   await request(servidor).get(`/api/v1/training/plans/${plan.planId}/detail`).expect(401);
   // SER-02 y MED-03 de la imagen de un ejercicio, con el plan activado
+  await activarLaDemo(app, plan).expect(409); // CLIENT_CAPABILITY_REQUIRED
+  await usarLaApk(app, plan.ase);
   await activarLaDemo(app, plan).expect(200);
   const ocurrencia = await ocurrenciaDeHoy(app, plan.ase);
   await ase.get(`/api/v1/training/occurrences/${ocurrencia}/session`).expect(200);

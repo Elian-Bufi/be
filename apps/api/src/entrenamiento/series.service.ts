@@ -17,6 +17,7 @@ import { ZONA_POR_DEFECTO, fechaLocalEn } from '../nutricion/zona';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
+import { CompatibilidadDeClientesService, exigeObjetivosPorSerie } from './compatibilidad-de-clientes';
 import { EjecucionesDeEntrenamientoService } from './ejecuciones.service';
 import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { contenidoDeLaVersion, INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, resolverDeInstantanea, seguimientoAbierto, versionDePlanApi } from './lectura-entrenamiento';
@@ -36,6 +37,8 @@ const comoFecha = (f: string): Date => new Date(`${f}T00:00:00.000Z`);
  * - Una versión ACTIVADA se lee desde su instantánea (REG-06-112): el objetivo histórico de una serie (versión del plan,
  *   prescripción e índice) no cambia aunque el profesional edite después.
  * - La imagen de cada ejercicio es la de su historia de solo agregar (DL-123): la vigente, o la vigente al registrar.
+ * - Si el plan se le puede entregar a la app de su titular (`setTargetsDelivery`; DL-122, precierre del 2026-10-06): un plan
+ *   con objetivos distintos por serie se activa solo cuando el titular ya usó una app que los muestra.
  */
 @Injectable()
 export class ObjetivosPorSerieService {
@@ -44,6 +47,7 @@ export class ObjetivosPorSerieService {
     private readonly pdp: PdpService,
     private readonly catalogo: CatalogoDeEjerciciosService,
     private readonly ejecuciones: EjecucionesDeEntrenamientoService,
+    private readonly compatibilidad: CompatibilidadDeClientesService,
   ) {}
 
   // ─── API-SER-01 ────────────────────────────────────────────────────────────────────────────
@@ -51,6 +55,9 @@ export class ObjetivosPorSerieService {
    * La versión de plan como API-TRN-09 para el profesional, con los objetivos por serie, las bases de carga y de
    * repeticiones y la imagen de cada ejercicio. El PDP es el de API-TRN-09 para el profesional del plan; cualquier otro,
    * también el titular (que lee su sesión con API-SER-02), recibe el mismo 404 que lo inexistente.
+   *
+   * `setTargetsDelivery` dice si esta versión exige objetivos por serie (con la misma estructura que se lee: la instantánea
+   * si está activada) y si su titular ya usó una app que los muestra, lo que registran API-TRN-14 y API-SER-02.
    */
   consultarPlan(actor: ActorAutenticado, planId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<{ data: PlanConObjetivos }> {
     sinParametrosDeQuery(query);
@@ -81,6 +88,7 @@ export class ObjetivosPorSerieService {
             ...cabecera,
             templateOrigin: (v.origenDePlantilla as OrigenDePlanEnPlantilla | null) ?? null,
             blocks: bloquesConObjetivosApi(contenido, resolver, imagenes),
+            setTargetsDelivery: { required: exigeObjetivosPorSerie(contenido), adviseeClientCapable: await this.compatibilidad.titularCapaz(tx, titular) },
           },
         };
       },
@@ -96,11 +104,14 @@ export class ObjetivosPorSerieService {
    * - **sin borrador:** la que puede ejecutar ahora, con las reglas de API-TRN-15 (PDP, plan vigente, versión que rige
    *   ese día y fecha no futura).
    * Lo demás, también una ocurrencia ajena o alterada, es el mismo 404: esta lectura no declara 422.
+   *
+   * Solo la lee la APK que muestra los objetivos de cada serie: las instaladas no la conocen. Si el pedido lo declara,
+   * después de responder queda registrado, como en API-TRN-14 (`registrarDeclaracion`).
    */
-  consultarSesion(actor: ActorAutenticado, occurrenceId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<{ data: SesionParaRegistrar }> {
+  async consultarSesion(actor: ActorAutenticado, occurrenceId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<{ data: SesionParaRegistrar }> {
     sinParametrosDeQuery(query);
     const recurso = { tipo: 'Ocurrencia', id: occurrenceId };
-    return this.ejecutor.leer({
+    const respuesta = await this.ejecutor.leer<{ data: SesionParaRegistrar }>({
       operacion: 'API-SER-02',
       casoDeUso: 'UC-P17',
       actor,
@@ -150,6 +161,8 @@ export class ObjetivosPorSerieService {
         };
       },
     });
+    await this.compatibilidad.registrarDeclaracion(actor.identidadId, ctx);
+    return respuesta;
   }
 
   /**

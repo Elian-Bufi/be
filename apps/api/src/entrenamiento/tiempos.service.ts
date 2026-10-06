@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   aplicarEventos,
+  BASE_DEL_RELOJ_DESDE_LA_API,
   codificarOcurrencia,
   estadoDeLaCorrida,
   RegistrarEventosDeTiempoRequestSchema,
@@ -64,6 +65,9 @@ const cierraSinAfirmar = (e: EventoDeTiempo): boolean => (e.type === 'SESSION_FI
  *   pendientes. Lo que llega tarde conserva su secuencia y sus instantes: `receivedAt` no reemplaza al reloj de la sesión.
  * - **Quién ve los tiempos:** el borrador, solo su titular (como API-TRN-16); la ejecución, su titular con su A3 y el
  *   profesional del plan, como API-TRN-19.
+ * - **La base del reloj:** un instante monotónico se guarda con su ancla y su base (`base_del_reloj`; precierre del
+ *   2026-10-06, §3). Con el reloj desde el arranque, la misma ancla se resta aunque la app se haya reiniciado; dos bases
+ *   distintas nunca se restan. Lo decide el dominio, y PostgreSQL exige que la base del reloj acompañe al ancla.
  */
 @Injectable()
 export class TiemposDeSesionService {
@@ -113,6 +117,8 @@ export class TiemposDeSesionService {
               instanteCivil: new Date(ev.at.civil),
               anclaMonotonica: ev.at.monotonic?.anchor ?? null,
               msMonotonicos: ev.at.monotonic?.ms ?? null,
+              // La base del monotónico, con su ancla: el enum de la base tiene los valores de `BaseDelReloj` del dominio.
+              baseDelReloj: ev.at.monotonic ? BASE_DEL_RELOJ_DESDE_LA_API[ev.at.monotonic.clock] : null,
               origenDelInstante: ORIGEN_EN_LA_BASE[ev.at.source],
               // El recomendado histórico: el de la instantánea para esa prescripción y esa serie, que no cambia después.
               descansoRecomendadoSegundos: ev.type === 'REST_STARTED' ? descansoRecomendado(sesion, ev.prescriptionId, ev.setIndex) : null,

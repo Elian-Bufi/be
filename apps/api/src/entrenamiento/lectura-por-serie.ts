@@ -3,6 +3,7 @@ import {
   codificarOcurrencia,
   objetivosEfectivos,
   sesionesDelPlan,
+  type BaseDelRelojApi,
   type ContenidoDePlanDeEntrenamiento,
   type EjercicioCitable,
   type EjercicioPropio,
@@ -235,11 +236,26 @@ export interface FilaDeEventoDeTiempo {
 }
 
 export async function eventosDeTiempo(tx: Tx, borradorId: string): Promise<FilaDeEventoDeTiempo[]> {
-  return tx.eventoDeTiempoDeEntrenamiento.findMany({
+  const filas = await tx.eventoDeTiempoDeEntrenamiento.findMany({
     where: { borradorId },
     orderBy: { secuencia: 'asc' },
     select: { contenido: true, descansoRecomendadoSegundos: true, momentoDeRecepcion: true },
   });
+  return filas.map((f) => ({ ...f, contenido: conBaseDelReloj(f.contenido) }));
+}
+
+/**
+ * Un evento guardado antes de que el instante declarara la base de su reloj (solo en bases locales: la tabla todavía no se
+ * desplegó) se tomó con `performance.now()`, el reloj del proceso. Se lee con esa base: así cumple el contrato vigente
+ * (`clock` es obligatorio) y conserva la tolerancia con la que se midió, sin pasar por un reloj que cuenta el reposo. Lo
+ * guardado no se toca: la tabla es de solo agregar (migración 20261006130100).
+ */
+function conBaseDelReloj(contenido: Prisma.JsonValue): Prisma.JsonValue {
+  const evento = contenido as { at?: { monotonic?: Record<string, unknown> | null } };
+  const monotonic = evento.at?.monotonic;
+  if (!monotonic || Object.hasOwn(monotonic, 'clock')) return contenido;
+  const clock: BaseDelRelojApi = 'PROCESS_MONOTONIC';
+  return { ...evento, at: { ...evento.at, monotonic: { ...monotonic, clock } } } as Prisma.JsonValue;
 }
 
 /**

@@ -191,6 +191,9 @@ model Identidad {
   recetas Receta[] @relation("RecetaDelProfesional")
   medios  Medio[]  @relation("MedioDelPropietario")
 
+  // Precierre del 2026-10-06, §2 (DL-122)
+  capacidadesDeCliente CapacidadDeClienteDeclarada[] @relation("CapacidadDeClienteDeLaIdentidad")
+
   @@map("identidad")
 }
 
@@ -2684,6 +2687,14 @@ enum OrigenDelInstante {
   DECLARADO
 }
 
+/// DL-124 (precierre del 2026-10-06, §3): la base del reloj monotónico de un instante, la de `BaseDelReloj` del dominio.
+/// DESDE_EL_ARRANQUE cuenta el reposo del teléfono y su ancla nombra el arranque; DEL_PROCESO es el de la app
+/// (`performance.now()`) y su ancla nombra el proceso. Dos instantes de bases distintas nunca se restan.
+enum BaseDelReloj {
+  DESDE_EL_ARRANQUE
+  DEL_PROCESO
+}
+
 /// DL-123 — Cada cambio de la imagen de un ejercicio propio (asociar, reemplazar o retirar) es una fila nueva, con número
 /// correlativo por ejercicio; la vigente es la de mayor `numero`. Se asocia por identidad y versión, nunca por nombre, y
 /// solo a un ejercicio PROFESSIONAL_MANUAL de quien asocia (REG-06-135). Al asociar lleva el medio (REFERENCIA_DE_EJERCICIO,
@@ -2719,7 +2730,8 @@ model AsociacionDeImagenDeEjercicio {
 /// repiten lo que se consulta: la corrida, la secuencia sin huecos, el identificador del cliente, el tipo y el instante con
 /// sus dos relojes. `descanso_recomendado_segundos` es el recomendado histórico de la serie al iniciar un descanso (la
 /// instantánea del plan); `null` en cualquier otro evento. `momento_de_recepcion` no reemplaza al reloj de la sesión.
-/// Append-only.
+/// `base_del_reloj` es la base del monotónico, con el ancla (migración 20261006130100). Las filas anteriores no la
+/// tienen: se tomaron con `performance.now()` y se leen con la base del proceso. Append-only.
 model EventoDeTiempoDeEntrenamiento {
   id                          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   borradorId                  String               @map("borrador_id") @db.Uuid
@@ -2732,6 +2744,7 @@ model EventoDeTiempoDeEntrenamiento {
   instanteCivil               DateTime             @map("instante_civil") @db.Timestamptz(3)
   anclaMonotonica             String?              @map("ancla_monotonica")
   msMonotonicos               Float?               @map("ms_monotonicos")
+  baseDelReloj                BaseDelReloj?        @map("base_del_reloj")
   origenDelInstante           OrigenDelInstante    @map("origen_del_instante")
   descansoRecomendadoSegundos Int?                 @map("descanso_recomendado_segundos")
   procedencia                 Json
@@ -2743,4 +2756,27 @@ model EventoDeTiempoDeEntrenamiento {
   @@unique([borradorId, eventoId])
   @@index([asesoradoId, tipo])
   @@map("evento_de_tiempo_de_entrenamiento")
+}
+
+// ─── Compatibilidad de clientes (precierre del 2026-10-06, §2; DL-122) ───────────────────────────────────────────────
+// packages/domain/src/compatibilidad-de-clientes.ts. Las garantías que Prisma no modela (las capacidades conocidas y el
+// orden de las dos fechas) están en la migración 20261006130000.
+
+/// Que una identidad usó un cliente que declara una capacidad (`X-BE-Capabilities`). Lo registra la API cuando el titular
+/// abre «Hoy» (API-TRN-14) o una sesión para registrar (API-SER-02) con la capacidad declarada, a lo sumo una vez por hora:
+/// la primera vez y la última, con la superficie de esa última. Habilita activar un plan que exige objetivos por serie
+/// (API-TRN-12) y lo informa API-SER-01. Nada más: ni el dispositivo, ni la versión, ni la red.
+model CapacidadDeClienteDeclarada {
+  id                          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId                 String      @map("identidad_id") @db.Uuid
+  /// Una de `CAPACIDADES_CONOCIDAS` del dominio.
+  capacidad                   String
+  superficie                  Superficie?
+  momentoDePrimeraDeclaracion DateTime    @default(now()) @map("momento_de_primera_declaracion") @db.Timestamptz(3)
+  momentoDeUltimaDeclaracion  DateTime    @default(now()) @map("momento_de_ultima_declaracion") @db.Timestamptz(3)
+
+  identidad Identidad @relation("CapacidadDeClienteDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([identidadId, capacidad])
+  @@map("capacidad_de_cliente_declarada")
 }

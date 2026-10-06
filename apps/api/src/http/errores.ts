@@ -10,6 +10,12 @@ export class ErrorDeApi extends Error {
     readonly code: CodigoDeError,
     readonly mensajeSeguro: string,
     readonly details?: Record<string, unknown>,
+    /**
+     * El motivo que queda en la auditoría cuando no es `code`. Nunca se serializa (09v7 T16). Lo lleva un rechazo que se
+     * responde idéntico a otro para no revelar nada, como el 404 de lo inexistente, pero cuyo motivo real tiene que poder
+     * reconstruirse (`EjecutorDeDominio` lo audita también en una lectura).
+     */
+    readonly motivoDeAuditoria?: string,
   ) {
     super(code);
   }
