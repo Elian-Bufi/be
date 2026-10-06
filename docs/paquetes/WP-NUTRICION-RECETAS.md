@@ -1,6 +1,7 @@
 # WP-NUTRICION-RECETAS — Recetas con foto, opciones con macros verificables y registro con fotos privadas · definición del paquete
 
-> **Estado:** DEFINIDO el 2026-10-05, antes del primer commit de código.
+> **Estado:** DEFINIDO el 2026-10-05, antes del primer commit de código. **IMPLEMENTADO** el 2026-10-06 en la rama, sin
+> integrar (§13); evidencia en `EVIDENCIA/NUTRICION-RECETAS/`. No se publicó una APK ni se desplegó.
 > - Rama: `wp-nutricion-recetas`. El prefijo `wp-` hace que la CI corra en cada push.
 > - PR en borrador contra `apk/navegacion` (#146).
 >
@@ -397,3 +398,27 @@ lo probado localmente, lo probado contra `test`, que no se hace porque no hay de
   - Define los estados de las cantidades.
   - Resuelve DL-050 con la anulación y la rectificación de solo agregar, que el 06:1422-1462 admite en el inciso 4.
   - Cambia la clave natural (DL-049), que pasa a llevar una secuencia.
+
+## 13. Estado de la implementación (2026-10-06)
+
+**Commits:**
+
+| Commit | Contenido |
+|---|---|
+| `3a0ae66` | Dominio |
+| `fd259e4` | API |
+| `2a6a942` | Website |
+| `744a26f` | APK |
+| `c618508` | Correcciones que encontró el recorrido |
+
+Lo probado, dónde y con qué resultado está en `EVIDENCIA/NUTRICION-RECETAS/LEEME.md`, separado en local, integración,
+CI y Android, que queda pendiente.
+
+**Lo que cambió respecto de esta definición, y por qué.** El detalle está en DEUDA_LEGAJO, DL-119 a DL-121, «Implementación».
+- **En el catálogo, «global» es lo que no tiene creador:** si no, los alimentos de USDA sembrados no se veían.
+- **El acceso a una foto de comida se audita con el recurso `EVIDENCIA_VISUAL`,** sin una fila de acto registrable. A
+  ratificar.
+- **Una comida diferente con su comida del plan ocupa esa comida en la APK,** con un registro por comida y día. En el
+  contraste sigue fuera de la prescripción (CONS:599-612). A ratificar.
+- **La APK manda una foto por comida diferente,** aunque el contrato admite tres. «Plan» sigue leyendo API-NUT-14.
+- **sharp es la 0.35.4,** la misma que Next: con otra versión, la imagen OCI de la API no la encontraba.

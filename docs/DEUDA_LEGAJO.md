@@ -123,9 +123,9 @@
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección |
 | DL-117 | Decisión de Dirección · 2026-10-04 | B10-10 §9 · 08 §33 · DL-113 · DL-049 · DL-077 · DL-115 | La APK no tiene un Inicio que reúna lo disponible de los módulos, y Cuenta ocupa un lugar de la barra | **DECIDIDA** 2026-10-04 · Inicio personal y barra Inicio, Nutrición, Entrenamiento, Evolución, Información; Cuenta en el avatar. Implementación sin integrar |
 | DL-118 | Decisión de Dirección · 2026-10-05 | DL-117 · DL-111 · DL-113 · REG-06-162/165/166 · TEST-PRJ-009 | «Mi evolución» de la APK tiene cuatro vistas con mucho desplazamiento, gráficos ilegibles y vistas vacías; la lectura del asesorado es más técnica de lo necesario | **DECIDIDA** 2026-10-05 · tres vistas (Mapa corporal, Progreso por Torso y Piernas, Indicadores); Comparar sale como apartado móvil. Implementación sin integrar |
-| DL-119 | Encargo de Dirección · 2026-10-05 | REG-06-135 (inciso 2) · 06:4228-4394, 4554-4621 · RF-027 | Recetas como preparaciones propias del profesional, catálogo de referencia USDA y método de cálculo de energía y macros | **DECIDIDA** 2026-10-05 · familia REC, método `SUM_SOURCE_PER_100G_V1`. Implementación en `wp-nutricion-recetas`, sin integrar |
-| DL-120 | Encargo de Dirección · 2026-10-05 | 08 §21 (08:519-531, 395, 451) · 07 §25 (07:939-965) · 09v12 §24 · 09v9 §28 · REG-06-133 · T-06-65 | Medios privados activados en el MVP sintético; almacenamiento en PostgreSQL detrás de una interfaz, en lugar de S3 | **DECIDIDA** 2026-10-05 la activación, con persistencia en la base existente. S3 (07 §25) queda abierto hasta que haya un servicio contratado |
-| DL-121 | Encargo de Dirección · 2026-10-05 | DL-049 · DL-050 · 06:1422-1462 · CONS:564-630 | Registro v2 de comidas: estado de las cantidades, anulación y rectificación del titular, y clave natural con secuencia | **DECIDIDA** 2026-10-05 · familia ING, endpoints nuevos. Resuelve DL-050; lo que lee la APK instalada no cambia |
+| DL-119 | Encargo de Dirección · 2026-10-05 | REG-06-135 (inciso 2) · 06:4228-4394, 4554-4621 · RF-027 | Recetas como preparaciones propias del profesional, catálogo de referencia USDA y método de cálculo de energía y macros | **DECIDIDA** 2026-10-05 · familia REC, método `SUM_SOURCE_PER_100G_V1`. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` (#147, borrador), sin integrar |
+| DL-120 | Encargo de Dirección · 2026-10-05 | 08 §21 (08:519-531, 395, 451) · 07 §25 (07:939-965) · 09v12 §24 · 09v9 §28 · REG-06-133 · T-06-65 | Medios privados activados en el MVP sintético; almacenamiento en PostgreSQL detrás de una interfaz, en lugar de S3 | **DECIDIDA** 2026-10-05 la activación, con persistencia en la base existente. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas`, sin integrar. S3 (07 §25) queda abierto hasta que haya un servicio contratado |
+| DL-121 | Encargo de Dirección · 2026-10-05 | DL-049 · DL-050 · 06:1422-1462 · CONS:564-630 | Registro v2 de comidas: estado de las cantidades, anulación y rectificación del titular, y clave natural con secuencia | **DECIDIDA** 2026-10-05 · familia ING, endpoints nuevos. Resuelve DL-050; lo que lee la APK instalada no cambia. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas`, sin integrar; la APK nueva no está publicada |
 
 ---
 
@@ -2927,6 +2927,15 @@ calculados desde una fuente identificada.
 - **Fibra:** es opcional en la composición, y ausente quiere decir desconocida. Un nutriente desconocido deja el total
   «incompleto» y nombra los ingredientes que lo deben.
 
+**Implementación (2026-10-06, rama `wp-nutricion-recetas`, sin integrar).** Evidencia: `EVIDENCIA/NUTRICION-RECETAS`.
+- **El cálculo:** los 11 casos del paquete dan exactos en el dominio, en la API y en la pantalla del website.
+- **«Global» en el catálogo** pasó a ser lo que no tiene creador (`creado_por_id IS NULL`). Antes era
+  `BE_SYNTHETIC_SEED`, y los alimentos de USDA, sembrados como `CONTROLLED_IMPORT`, no se veían.
+- **La función `be_importado_con_resolucion`** exime ahora solo lo importado sin creador, que es la siembra. La importación
+  de un profesional sigue exigiendo su resolución. No cambia datos.
+- **En el plan:** una opción de receta es `{label, items: [], recipeVersionId}`, y la API arma los ítems de una porción.
+  Las plantillas y las comidas habituales no la aceptan (422).
+
 **Condición de cierre.** Dirección aprueba el paquete, y el 09 y el 05 incorporan las operaciones de recetas.
 
 ## DL-120 — Medios privados activados; almacenamiento en PostgreSQL en lugar de S3
@@ -2972,6 +2981,21 @@ calculados desde una fuente identificada.
 contratar. La interfaz queda lista para esa implementación. La base de `test` es gratuita, tiene 1 GB y vence antes de la
 entrega (QUE-FALTA §1).
 
+**Implementación (2026-10-06, sin integrar).**
+- **El acto `EVIDENCIA_VISUAL` (08:395)** es una etiqueta de auditoría, y no una fila de `acto_registrable`:
+  - cada acceso a una foto de comida queda en el registro de auditoría y en la decisión del PDP, con ese recurso;
+  - un acto registrable exigiría una versión de texto en el catálogo de textos, y no hay un texto que la persona acepte.
+  - **A ratificar.**
+- **La lectura (API-MED-04)** responde `Cross-Origin-Resource-Policy: cross-origin` solo en esa ruta, y sin caché.
+  - La ruta firmada es la autorización, y vence en 15 minutos como máximo.
+  - El website la descarga con CORS y la muestra como data URL, porque la CSP admite solo `img-src 'self' data:`.
+- **La persistencia:** después de reiniciar la API, las imágenes se leen con el mismo SHA-256. Está probado en la
+  integración y en el recorrido local.
+- **Para la prueba remota, en el ambiente `test`,** no falta ningún servicio: con `BE_MEDIOS_ALMACEN=postgres`, que es el
+  valor por defecto, las imágenes van a la misma base.
+- **La APK nueva suma permisos:** CAMERA y, hasta Android 12, los de almacenamiento, que vienen de `expo-image-picker`.
+  RECORD_AUDIO queda bloqueado.
+
 **Condición de cierre.** Dirección decide entre seguir en PostgreSQL y contratar un almacenamiento S3. El 08 registra la
 activación.
 
@@ -3000,5 +3024,20 @@ por el encargo de Dirección del 2026-10-05
   efectiva por comida y día, y después de deshacer se puede volver a registrar.
 - **Lo anulado deja de contar** en «Hoy», el contraste, la revisión, la cartera y el tablero, y no se devuelve por las
   rutas que lee la APK instalada.
+
+**Implementación (2026-10-06, sin integrar).**
+- **Una comida diferente registrada en una comida del plan ocupa esa comida:** hay un registro efectivo por comida y día,
+  de cualquier clase. Agregar algo más exige deshacer y volver a registrar.
+  - En el contraste y en la revisión, esa comida diferente sigue **fuera de la prescripción**: no marca la comida
+    prescripta como realizada (CONS:599-612).
+  - El website lo explica en el detalle del registro.
+  - **A ratificar por Dirección.**
+- **Lo anulado deja de contar** también en dos lugares que no estaban en la lista: API-NUT-21 responde 404, y la revisión
+  (API-NUT-18) no lo acepta como evidencia.
+- **La forma v1** (lo que lee la APK instalada) usa la vista efectiva:
+  - las porciones del plan confirmadas, o lo informado;
+  - «no lo comí» y lo desconocido no aparecen, porque esa forma exige una cantidad positiva;
+  - una comida diferente con solo foto se proyecta con `description: null`.
+- **La APK nueva** manda una foto por comida diferente, aunque el contrato admite tres.
 
 **Condición de cierre.** Dirección aprueba el paquete, y el 05 y el 09 incorporan estas operaciones.

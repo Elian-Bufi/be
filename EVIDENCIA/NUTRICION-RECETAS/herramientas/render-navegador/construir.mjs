@@ -2,7 +2,9 @@
 // apps/mobile/src, react-native-web en lugar de react-native, y reemplazos para lo nativo (shims/). Uso: node construir.mjs
 // - BE_REPO: la raíz del repo que se compila; por omisión, cuatro carpetas arriba (esta carpeta vive en
 //   EVIDENCIA/NUTRICION-RECETAS/herramientas/render-navegador).
-// - SALIDA: el archivo que se escribe en salida/; por omisión, maqueta.js (telefono.html).
+// - SALIDA: el archivo que se escribe en salida/; por omisión, maqueta.js (telefono.html), o maqueta-real.js con API_REAL.
+// - API_REAL=1: las pantallas hablan con la API local real (shims/api-real.ts) en lugar de los datos sintéticos; la página
+//   es salida/evidencia-real.html, servida por servir-arnes.mjs con /api/* reenviado a la API.
 // Los datos del paquete de Dirección (las tres recetas y los ocho alimentos) se leen del repo con el alias
 // «@paquete-nutricion/...»: el cálculo de sus macros lo hace el dominio, en shims/api.ts. Sus tres fotos se copian a
 // salida/fotos antes de armar: las dibujan las tarjetas y la galería sintética.
@@ -13,7 +15,8 @@ import { fileURLToPath } from 'node:url';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const REPO = process.env.BE_REPO ?? resolve(AQUI, '../../../..');
-const SALIDA = process.env.SALIDA ?? 'maqueta.js';
+const API_REAL = process.env.API_REAL === '1';
+const SALIDA = process.env.SALIDA ?? (API_REAL ? 'maqueta-real.js' : 'maqueta.js');
 const MOVIL = join(REPO, 'apps/mobile/src');
 const PAQUETE = join(REPO, 'docs/fuente_nutricion/BE_Nutricion_Demo_2026-10-05/datos');
 const modulo = (nombre) => join(AQUI, 'node_modules', nombre);
@@ -32,7 +35,7 @@ const reemplazos = {
     b.onResolve({ filter: /^@paquete-nutricion\// }, (args) => ({ path: join(PAQUETE, args.path.slice('@paquete-nutricion/'.length)) }));
     b.onResolve({ filter: /^(\.\.?\/)+api$/ }, (args) => {
       const normal = (ruta) => ruta.split('\\').join('/').toLowerCase();
-      if (normal(resolve(args.resolveDir, args.path)) === normal(join(MOVIL, 'api'))) return { path: join(AQUI, 'shims/api.ts') };
+      if (normal(resolve(args.resolveDir, args.path)) === normal(join(MOVIL, 'api'))) return { path: join(AQUI, API_REAL ? 'shims/api-real.ts' : 'shims/api.ts') };
       return undefined;
     });
   },

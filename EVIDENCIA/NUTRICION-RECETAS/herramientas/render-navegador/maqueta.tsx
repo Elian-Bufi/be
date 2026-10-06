@@ -24,14 +24,23 @@ const alFinal = p.get('final') === '1';
 const bajar = Number(p.get('bajar') ?? '0');
 fijarTema(tema);
 
-const TOKEN = 'token-de-maqueta';
-const HOY = '2026-10-05';
+// Con la API real (modo API_REAL), la sesión del asesorado sintético y la fecha civil que responde la API llegan por la
+// URL; con los datos sintéticos, son fijas.
+const TOKEN = p.get('token') ?? 'token-de-maqueta';
+const HOY = p.get('fecha') ?? '2026-10-05';
 const nada = () => undefined;
 const HOY_RUTA: Ruta = { nombre: 'hoy' };
 
 /** La ruta de cada escena, y lo que la pantalla recuerda antes de dibujarse (pestaña, comida, opción a la vista). */
 function rutaDeLaEscena(): Ruta {
   const recordar = (clave: string, valor: unknown) => memoria.recordarSeleccion(TOKEN, clave, valor);
+  // Con la API real: los identificadores de la comida y de la opción, los de la API.
+  if (escena === 'real-detalle') return { nombre: 'opcion-de-comida', id: p.get('opcion') ?? '', comidaId: p.get('comida') ?? '', desde: HOY_RUTA };
+  if (escena.startsWith('real-')) {
+    recordar('nutricion:vista', 'HOY');
+    if (p.get('comida')) recordar(`nutricion:comida:${HOY}`, p.get('comida'));
+    return HOY_RUTA;
+  }
   if (escena.startsWith('nutricion-detalle')) return { nombre: 'opcion-de-comida', id: 'opcion-pollo', comidaId: 'almuerzo', desde: HOY_RUTA };
   if (escena.startsWith('nutricion-diferente')) return { nombre: 'comida-diferente', comidaId: 'almuerzo', comida: 'Almuerzo', fecha: HOY, planId: 'plan-sintetico-1', diaTipoId: 'dia-tipo-habitual', desde: HOY_RUTA };
   if (escena.startsWith('nutricion-registro-')) return { nombre: 'registro-nutricional', id: 'registro-almuerzo-informado', desde: HOY_RUTA };
@@ -68,6 +77,10 @@ async function acciones() {
   await esperar(1200);
   const campo = (nombre: string) => `${nombre}: lo que comiste (g)`;
   switch (escena) {
+    case 'real-registrar':
+      // Un toque en «Comí esta opción» de la tarjeta a la vista: registra contra la API real.
+      tocar('Comí esta opción');
+      break;
     case 'nutricion-detalle-casilla':
       tocar('Comí las porciones del plan');
       break;

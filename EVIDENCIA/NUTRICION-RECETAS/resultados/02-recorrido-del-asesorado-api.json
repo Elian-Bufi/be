@@ -1,0 +1,229 @@
+{
+  "sha": {
+    "6c44fed7-1e71-4829-a6df-1fe331b95c92": {
+      "sha": "9c3073e6f9a6c966988a2cf15d593755f4687b79f9a69bc889b2b0eb23a2ab42",
+      "que": "la foto de «Pollo con arroz y verduras»",
+      "lector": "ase"
+    },
+    "952c4ca8-1a98-411a-9064-3eed0f4647bd": {
+      "sha": "484b38cb4ffbd82588325940c08fe40800fd6cf976305a120c8c4f99dd0be564",
+      "que": "la foto de «Salmón con papa y brócoli»",
+      "lector": "ase"
+    },
+    "5dcb10ba-05e0-4c68-81e5-1289dc9ee12d": {
+      "sha": "31456ff431e3a8f0229346fe6f4c173504dc8f2915d67cd913a54abeb6769845",
+      "que": "la foto de «Lentejas con arroz y verduras»",
+      "lector": "ase"
+    },
+    "27c641a7-f8f8-4036-9670-5a963173ab51": {
+      "sha": "4a474ac4dde427b6b9765dc080c567eca9d4c527d8f4d8fefb7f0d49f5deb88c",
+      "que": "la foto privada de la comida diferente",
+      "lector": "ase"
+    }
+  },
+  "registros": {
+    "almuerzo": "2f3f0ea7-82bb-4ff3-ae23-c21ebec504bd"
+  },
+  "controles": [
+    {
+      "nombre": "ING-01: el plan está disponible, con la fecha civil y las comidas del plan en su orden",
+      "ok": true,
+      "detalle": "2026-10-06 America/Argentina/Buenos_Aires · Almuerzo, Merienda, Cena"
+    },
+    {
+      "nombre": "Almuerzo: las tres recetas del paquete como opciones, cada una con su imagen de referencia",
+      "ok": true,
+      "detalle": "Pollo con arroz y verduras (con imagen) · Salmón con papa y brócoli (con imagen) · Lentejas con arroz y verduras (con imagen)"
+    },
+    {
+      "nombre": "Pollo con arroz y verduras: los macros de las porciones del plan son exactamente los del paquete",
+      "ok": true,
+      "detalle": "529.22 kcal (paquete 529.220)"
+    },
+    {
+      "nombre": "Pollo con arroz y verduras: los ingredientes con cantidad y estado, y los pasos de la receta",
+      "ok": true,
+      "detalle": "Pechuga de pollo sin piel, asada, parte comestible 120 g · Arroz blanco de grano largo, cocido 160 g · Brócoli hervido y escurrido, sin sal 80 g · Zanahoria hervida y escurrida, sin sal 70 g · Aceite de oliva 8 g"
+    },
+    {
+      "nombre": "Pollo con arroz y verduras: el asesorado lee la foto que cargó la profesional (JPEG sin EXIF, ≤ 1600 px, sin caché)",
+      "ok": true,
+      "detalle": "200 image/jpeg 1254×1254 exif=false vence 2026-10-06T03:50:54.000Z"
+    },
+    {
+      "nombre": "la ruta de lectura vence en 15 minutos como máximo",
+      "ok": true,
+      "detalle": "15.0 min"
+    },
+    {
+      "nombre": "una ruta de lectura alterada responde 404",
+      "ok": true,
+      "detalle": "404"
+    },
+    {
+      "nombre": "Salmón con papa y brócoli: los macros de las porciones del plan son exactamente los del paquete",
+      "ok": true,
+      "detalle": "579.6 kcal (paquete 579.600)"
+    },
+    {
+      "nombre": "Salmón con papa y brócoli: los ingredientes con cantidad y estado, y los pasos de la receta",
+      "ok": true,
+      "detalle": "Salmón atlántico de cultivo, cocido por calor seco 150 g · Papa hervida con piel, solo pulpa comestible, sin sal 220 g · Brócoli hervido y escurrido, sin sal 100 g · Aceite de oliva 5 g"
+    },
+    {
+      "nombre": "Salmón con papa y brócoli: el asesorado lee la foto que cargó la profesional (JPEG sin EXIF, ≤ 1600 px, sin caché)",
+      "ok": true,
+      "detalle": "200 image/jpeg 1254×1254 exif=false vence 2026-10-06T03:50:54.000Z"
+    },
+    {
+      "nombre": "Lentejas con arroz y verduras: los macros de las porciones del plan son exactamente los del paquete",
+      "ok": true,
+      "detalle": "458.52 kcal (paquete 458.520)"
+    },
+    {
+      "nombre": "Lentejas con arroz y verduras: los ingredientes con cantidad y estado, y los pasos de la receta",
+      "ok": true,
+      "detalle": "Lentejas hervidas sin sal 180 g · Arroz blanco de grano largo, cocido 100 g · Brócoli hervido y escurrido, sin sal 80 g · Zanahoria hervida y escurrida, sin sal 60 g · Aceite de oliva 8 g"
+    },
+    {
+      "nombre": "Lentejas con arroz y verduras: el asesorado lee la foto que cargó la profesional (JPEG sin EXIF, ≤ 1600 px, sin caché)",
+      "ok": true,
+      "detalle": "200 image/jpeg 1254×1254 exif=false vence 2026-10-06T03:50:55.000Z"
+    },
+    {
+      "nombre": "Merienda: una sola opción, armada a mano, sin imagen (la APK muestra el ícono)",
+      "ok": true,
+      "detalle": "Brócoli con zanahoria"
+    },
+    {
+      "nombre": "Cena: una sola opción, de receta",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "API-NUT-14 (la APK instalada) responde con su forma de siempre: el esquema estricto la acepta, sin recetas",
+      "ok": true,
+      "detalle": "OK"
+    },
+    {
+      "nombre": "«Comí esta opción» sin cantidades: «Cantidades sin confirmar», sin macros consumidos",
+      "ok": true,
+      "detalle": "OK"
+    },
+    {
+      "nombre": "doble toque o reintento con la misma clave y el mismo cuerpo: el mismo registro",
+      "ok": true,
+      "detalle": "OK"
+    },
+    {
+      "nombre": "otra pantalla u otro intento (otra clave, mismo contenido): devuelve el registro existente, sin duplicar",
+      "ok": true,
+      "detalle": "OK"
+    },
+    {
+      "nombre": "la misma clave con otro cuerpo: 409 IDEMPOTENCY_KEY_REUSED (la APK repite el cuerpo idéntico)",
+      "ok": true,
+      "detalle": "409 IDEMPOTENCY_KEY_REUSED"
+    },
+    {
+      "nombre": "otra opción en la misma comida y día: 409, no se pisa",
+      "ok": true,
+      "detalle": "409 EXECUTION_ALREADY_REGISTERED_INCOMPATIBLY"
+    },
+    {
+      "nombre": "«Comí las porciones del plan», confirmado: lo consumido se calcula con las porciones del plan",
+      "ok": true,
+      "detalle": "529.22"
+    },
+    {
+      "nombre": "«Deshacer registro»: queda la anulación y la comida se libera",
+      "ok": true,
+      "detalle": "2026-10-06T03:35:55.584Z"
+    },
+    {
+      "nombre": "lo deshecho no cuenta en «Hoy» de la APK instalada ni en su lista",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "deshacer dos veces: 409, la anulación es una sola",
+      "ok": true,
+      "detalle": "409 INVALID_STATE_TRANSITION"
+    },
+    {
+      "nombre": "con un ingrediente vacío, la energía consumida queda desconocida y nombra lo que falta (nunca cero)",
+      "ok": true,
+      "detalle": "{\"value\":null,\"missing\":[{\"key\":\"c1d0e946-4f44-51ba-bc10-417a5165b440\",\"reason\":\"SIN_CANTIDAD\"},{\"key\":\"fab1167a-21f7-5c01-b455-30e5646bb60c\",\"reason\":\"SIN_CANTIDAD\"},{\"key\":\"f04b289b-e7c2-53d7-b140-28eeac0708a0\",\"reason\":\"SIN_CANTIDAD\"}]}"
+    },
+    {
+      "nombre": "con todo informado (arroz 200 g, sin aceite), lo consumido coincide con el cálculo del paquete hecho aparte",
+      "ok": true,
+      "detalle": "510.5 vs 510.5"
+    },
+    {
+      "nombre": "la foto de prueba sale de la cámara sintética con EXIF y GPS",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "«Comí algo diferente» con texto y foto: guardado, con la comida de contexto y «Macros sin calcular»",
+      "ok": true,
+      "detalle": "Una tarta de verdura · 2 porciones"
+    },
+    {
+      "nombre": "la foto guardada no tiene EXIF ni GPS (el servidor la recodificó)",
+      "ok": true,
+      "detalle": "200 exif=false"
+    },
+    {
+      "nombre": "la profesional del plan ve la foto (vínculo, B2 y A3 vigentes)",
+      "ok": true,
+      "detalle": "200"
+    },
+    {
+      "nombre": "otro asesorado no puede leer la foto privada: 404, igual que si no existiera",
+      "ok": true,
+      "detalle": "404 RESOURCE_NOT_FOUND"
+    },
+    {
+      "nombre": "otro asesorado no puede ver el registro: 404",
+      "ok": true,
+      "detalle": "404 RESOURCE_NOT_FOUND"
+    },
+    {
+      "nombre": "otro asesorado no puede usar una foto ajena en su registro",
+      "ok": true,
+      "detalle": "404 RESOURCE_NOT_FOUND"
+    },
+    {
+      "nombre": "una foto de una comida no se puede usar como imagen de receta",
+      "ok": true,
+      "detalle": "400 INVALID_REQUEST"
+    },
+    {
+      "nombre": "«Comí algo diferente» solo con foto: guardado",
+      "ok": true,
+      "detalle": "OK"
+    },
+    {
+      "nombre": "sin texto ni foto, no se guarda (400)",
+      "ok": true,
+      "detalle": "400"
+    },
+    {
+      "nombre": "un archivo que no es una imagen se rechaza (422) y no queda disponible",
+      "ok": true,
+      "detalle": "422 FILE_CONTENT_INVALID"
+    },
+    {
+      "nombre": "editar la receta después (arroz 200 g) emite otra versión y no cambia el registro anterior",
+      "ok": true,
+      "detalle": "versión 4; el registro sigue en la 2"
+    },
+    {
+      "nombre": "el plan activado conserva la versión de la receta que tenía",
+      "ok": true,
+      "detalle": "529.22"
+    }
+  ]
+}
