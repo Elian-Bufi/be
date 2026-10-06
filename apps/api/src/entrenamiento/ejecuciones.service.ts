@@ -611,9 +611,10 @@ export class EjecucionesDeEntrenamientoService {
 
   /**
    * Las versiones que rigieron en algún momento de un día local: la que estaba vigente cuando empezó y la que se
-   * activó durante ese día, si la hubo. Se corta en hora local, no en UTC (la lección de WP-05).
+   * activó durante ese día, si la hubo. Se corta en hora local, no en UTC (la lección de WP-05). La usa también la
+   * sesión para registrar (API-SER-02), con las mismas reglas que abrir el borrador.
    */
-  private versionesPertinentes(versiones: readonly VersionActivada[], fecha: string, zona: string): VersionActivada[] {
+  versionesPertinentes(versiones: readonly VersionActivada[], fecha: string, zona: string): VersionActivada[] {
     const inicio = inicioDelDiaLocal(fecha, zona);
     const fin = finDelDiaLocal(fecha, zona);
     return versiones.filter((v, i) => {
@@ -686,8 +687,14 @@ export class EjecucionesDeEntrenamientoService {
     }
   }
 
-  /** El borrador de su titular, con la sesión de su instantánea. De otro, o inexistente: el mismo 404. */
-  private async borradorDelTitular(tx: Tx, operacion: string, actor: ActorAutenticado, draftId: string, ctx: ContextoDeSolicitud, bloquear = false) {
+  /**
+   * El borrador de su titular, con la sesión de su instantánea y la instantánea misma (los tiempos de la sesión resuelven
+   * el descanso recomendado desde lo guardado, DL-124). De otro, o inexistente: el mismo 404.
+   *
+   * Con `conPdp: false` no se decide sobre su profesional: solo para lo que es del titular y no opera con él (dejar
+   * incompleta una corrida, API-TIE-01), y quien llama exige antes su A3 vigente. Todo lo demás pasa por el PDP.
+   */
+  async borradorDelTitular(tx: Tx, operacion: string, actor: ActorAutenticado, draftId: string, ctx: ContextoDeSolicitud, bloquear = false, conPdp = true) {
     const recurso = { tipo: 'BorradorDeEjecucion', id: draftId };
     const encontrado = esUuid(draftId)
       ? await tx.borradorDeEjecucionDeEntrenamiento.findUnique({ where: { id: draftId }, include: { versionDePlan: { include: { plan: true, instantanea: true } } } })
@@ -697,11 +704,11 @@ export class EjecucionesDeEntrenamientoService {
       throw this.ejecutor.noRevelable({ operacion, actorId: actor.identidadId, recurso, sujetoId: encontrado?.asesoradoId ?? null }, ctx);
     }
     const profesionalId = encontrado.versionDePlan.plan.profesionalId;
-    await this.decidir(tx, operacion, actor, profesionalId, actor.identidadId, recurso, ctx);
+    if (conPdp) await this.decidir(tx, operacion, actor, profesionalId, actor.identidadId, recurso, ctx);
     if (bloquear) await tx.$queryRaw`SELECT 1 FROM "borrador_de_ejecucion_de_entrenamiento" WHERE "id" = ${encontrado.id}::uuid FOR NO KEY UPDATE`;
     const borrador = await tx.borradorDeEjecucionDeEntrenamiento.findUniqueOrThrow({ where: { id: encontrado.id }, include: { ejecucion: { select: { id: true } } } });
     const instantanea = encontrado.versionDePlan.instantanea?.contenido as unknown as InstantaneaDeEntrenamiento;
-    return { borrador, profesionalId, sesion: sesionDeOcurrenciaApi(instantanea, borrador.sesionPlanificadaId) };
+    return { borrador, profesionalId, instantanea, sesion: sesionDeOcurrenciaApi(instantanea, borrador.sesionPlanificadaId) };
   }
 
   /**
@@ -709,10 +716,11 @@ export class EjecucionesDeEntrenamientoService {
    * propiedad: DL-057). Para cualquier otro, el mismo 404 que lo inexistente.
    *
    * Para el titular, lo que se exige depende de qué se hace con la ejecución (DL-089 opción A; 08:199, 08:58, 08:406):
-   * - `HISTORIA` (API-TRN-19): es su historia ya registrada; alcanza con su A3 vigente, como en nutrición.
+   * - `HISTORIA` (API-TRN-19 y los tiempos de una ejecución, API-TIE-03): es su historia ya registrada; alcanza con su
+   *   A3 vigente, como en nutrición.
    * - `OPERACION` (API-TRN-20, corregir): opera sobre el registro; sigue bajo el PDP de su profesional (UC-P17 E03).
    */
-  private async ejecucionRevelable(tx: Tx, operacion: string, actor: ActorAutenticado, executionId: string, ctx: ContextoDeSolicitud, uso: 'HISTORIA' | 'OPERACION' = 'OPERACION') {
+  async ejecucionRevelable(tx: Tx, operacion: string, actor: ActorAutenticado, executionId: string, ctx: ContextoDeSolicitud, uso: 'HISTORIA' | 'OPERACION' = 'OPERACION') {
     const recurso = { tipo: 'EjecucionDeEntrenamiento', id: executionId };
     const x = esUuid(executionId)
       ? await tx.ejecucionDeEntrenamiento.findUnique({ where: { id: executionId }, include: { versionDePlan: { include: { plan: true, instantanea: true } } } })

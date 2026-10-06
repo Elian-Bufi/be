@@ -5,13 +5,16 @@ import {
   LIMITES_DE_MEDIO,
   TipoDeImagenSchema,
   type AccesoAMedioResponse,
+  type Alcance,
+  type FinalidadDeMedio as FinalidadApi,
   type IntencionDeSubidaResponse,
   type Medio,
 } from '@be/domain';
-import type { Medio as FilaDeMedio, Prisma } from '@prisma/client';
+import type { FinalidadDeMedio, Medio as FilaDeMedio, Prisma } from '@prisma/client';
 import type { IncomingMessage } from 'node:http';
 import { PdpService } from '../autorizacion/pdp.service';
 import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
+import { esProfesionalDeEntrenamiento } from '../entrenamiento/profesional-de-entrenamiento';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { sinParametrosDeQuery } from '../http/validacion';
@@ -29,10 +32,29 @@ import { procesarImagen, sha256, tipoAdmitido } from './procesamiento-de-imagen'
 import { RutasFirmadas } from './rutas-firmadas';
 
 type Tx = Prisma.TransactionClient;
+/** El medio con la ingesta a la que está unido, si es la foto de una comida: lo que lee el acceso (API-MED-03). */
+type MedioConIngesta = FilaDeMedio & { evidenciaVisual: { ingesta: { asesoradoId: string; versionDePlan: { plan: { profesionalId: string } } } } | null };
 
-export const FINALIDAD_HACIA_API = { RECETA_REFERENCIA: 'RECIPE_REFERENCE', EVIDENCIA_DE_INGESTA: 'MEAL_EVIDENCE' } as const;
+export const FINALIDAD_HACIA_API = {
+  RECETA_REFERENCIA: 'RECIPE_REFERENCE',
+  EVIDENCIA_DE_INGESTA: 'MEAL_EVIDENCE',
+  // DL-123 (WP-ENTRENAMIENTO-SERIES): la imagen de un ejercicio propio de un profesional de Entrenamiento.
+  REFERENCIA_DE_EJERCICIO: 'EXERCISE_REFERENCE',
+} as const satisfies Readonly<Record<FinalidadDeMedio, FinalidadApi>>;
+const FINALIDAD_DESDE_API = Object.fromEntries(Object.entries(FINALIDAD_HACIA_API).map(([b, a]) => [a, b])) as Readonly<Record<FinalidadApi, FinalidadDeMedio>>;
 export const PROCEDENCIA_HACIA_API = { GENERADA_POR_IA: 'AI_GENERATED', APORTADA_POR_LA_PERSONA: 'PERSON_PROVIDED' } as const;
 const ESTADO_HACIA_API = { PENDIENTE: 'PENDING', DISPONIBLE: 'AVAILABLE', SUPRIMIDO: 'DELETED' } as const;
+
+/**
+ * El Alcance de cada finalidad, para auditar una denegación con su metadata real: la imagen de un ejercicio es de
+ * Entrenamiento; las otras dos, de Nutrición (el Alcance fijo del ejecutor de medios). Cada regla de acceso decide con el
+ * PDP en el suyo.
+ */
+const ALCANCE_DE_FINALIDAD: Readonly<Record<FinalidadDeMedio, Alcance>> = {
+  RECETA_REFERENCIA: 'NUTRICION',
+  EVIDENCIA_DE_INGESTA: 'NUTRICION',
+  REFERENCIA_DE_EJERCICIO: 'ENTRENAMIENTO',
+};
 
 /** Cómo se audita un acceso: la foto de una comida es evidencia visual (08:395); la imagen de una receta, un medio. */
 const RECURSO_DE_FOTO = 'EVIDENCIA_VISUAL';
@@ -77,6 +99,10 @@ function rechazarTipoOTamanoNoAdmitido(cuerpo: unknown): void {
  * - **Quién lee qué** (§6): la imagen de una receta, su profesional y el asesorado con un plan (vigente o histórico) que
  *   ofrece esa receta; la foto de una comida, su titular y el profesional del plan de esa ingesta, con vínculo, B2 y A3
  *   vigentes; un medio sin asociar, solo quien lo subió. Lo demás es el mismo 404 que lo inexistente.
+ * - **La imagen de un ejercicio** (DL-123, WP-ENTRENAMIENTO-SERIES): la sube un profesional de Entrenamiento con su
+ *   autoría declarada, y la leen él y el asesorado con un plan activado suyo que incluye ese ejercicio, con el acceso de
+ *   Entrenamiento vigente: el criterio con el que ese asesorado ve el catálogo del profesional. Las reglas de las otras
+ *   dos finalidades no cambian.
  * - **Suprimir** (MED-05) es un derecho del titular sobre la foto de su comida (08:451): se borran los bytes y queda el
  *   registro, en el registro de supresiones.
  * Ninguna foto se manda a una IA ni agrega cantidades (09v9 §28).
@@ -95,10 +121,11 @@ export class MediosService {
   // ─── API-MED-01 ────────────────────────────────────────────────────────────────────────────
   crearIntencion(actor: ActorAutenticado, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
     rechazarTipoOTamanoNoAdmitido(cuerpo);
-    const deUnaComida = (cuerpo as { purpose?: unknown } | null)?.purpose === 'MEAL_EVIDENCE';
+    const declarada = (cuerpo as { purpose?: unknown } | null)?.purpose;
     return this.ejecutor.escribirIdempotente({
       operacion: 'API-MED-01',
-      casoDeUso: deUnaComida ? 'UC-P12' : 'UC-P10',
+      // La receta es UC-P10, la comida UC-P12 y el ejercicio, que se prescribe en el plan, UC-P15.
+      casoDeUso: declarada === 'MEAL_EVIDENCE' ? 'UC-P12' : declarada === 'EXERCISE_REFERENCE' ? 'UC-P15' : 'UC-P10',
       actor,
       ctx,
       recursoIntentado: null,
@@ -107,7 +134,8 @@ export class MediosService {
       cuerpo,
       huellaExtra: {},
       efecto: async (tx, pedido, procedencia) => {
-        const foto = pedido.purpose === 'MEAL_EVIDENCE';
+        const finalidad = FINALIDAD_DESDE_API[pedido.purpose];
+        const foto = finalidad === 'EVIDENCIA_DE_INGESTA';
         if (foto) {
           // La foto de una comida es un dato de salud del titular: sin A3 vigente no se sube (08:406). Antes que cualquier
           // otra regla (09 §36).
@@ -115,13 +143,18 @@ export class MediosService {
           if (pedido.provenance !== 'PERSON_PROVIDED') {
             throw errores.validacionFallida([{ code: 'MEAL_EVIDENCE_IS_PERSON_PROVIDED', path: 'provenance' }]);
           }
+        } else if (finalidad === 'REFERENCIA_DE_EJERCICIO') {
+          // DL-123: la imagen de un ejercicio propio, de un profesional de Entrenamiento verificado y habilitado (RF-037), con
+          // su autoría declarada: un recurso didáctico sin autoría no se acepta (REG-06-134). La base también lo exige.
+          if (!(await esProfesionalDeEntrenamiento(tx, actor.identidadId))) throw errores.accionNoPermitida();
+          if (pedido.authorship === null) throw errores.validacionFallida([{ code: 'EXERCISE_REFERENCE_AUTHORSHIP_REQUIRED', path: 'authorship' }]);
         } else if (!(await esProfesionalDeNutricion(tx, actor.identidadId))) {
           throw errores.accionNoPermitida();
         }
         const medio = await tx.medio.create({
           data: {
             propietarioId: actor.identidadId,
-            finalidad: foto ? 'EVIDENCIA_DE_INGESTA' : 'RECETA_REFERENCIA',
+            finalidad,
             procedenciaDeImagen: pedido.provenance === 'AI_GENERATED' ? 'GENERADA_POR_IA' : 'APORTADA_POR_LA_PERSONA',
             autoria: pedido.authorship,
             tipoDeclarado: pedido.contentType,
@@ -248,10 +281,10 @@ export class MediosService {
               include: { evidenciaVisual: { include: { ingesta: { select: { asesoradoId: true, versionDePlan: { select: { plan: { select: { profesionalId: true } } } } } } } } },
             })
           : null;
-        if (!medio || medio.estado !== 'DISPONIBLE') throw this.ejecutor.noRevelable({ operacion: 'API-MED-03', actorId: actor.identidadId, recurso }, ctx);
-        const sujetoId = await (medio.finalidad === 'RECETA_REFERENCIA'
-          ? this.decidirImagenDeReceta(tx, actor, medio.id, medio.propietarioId, ctx)
-          : this.decidirFotoDeComida(tx, actor, medio, ctx));
+        if (!medio || medio.estado !== 'DISPONIBLE') {
+          throw this.ejecutor.noRevelable({ operacion: 'API-MED-03', actorId: actor.identidadId, recurso, ...(medio ? { alcance: ALCANCE_DE_FINALIDAD[medio.finalidad] } : {}) }, ctx);
+        }
+        const sujetoId = await this.decidirSegunFinalidad(tx, actor, medio, ctx);
         const vence = this.rutas.vencimiento('LECTURA');
         // 08 §21.5: el acceso a la evidencia visual es un acceso sensible auditable; queda con su acto (08:395).
         await this.auditoria.registrar(
@@ -271,6 +304,50 @@ export class MediosService {
         return { data: { mediaId: medio.id, path: `/media/content/${this.rutas.firmar(medio.id, 'LECTURA', vence)}`, expiresAt: vence.toISOString() } };
       },
     });
+  }
+
+  /**
+   * Cada finalidad tiene su regla, y ninguna cae en la de otra: la foto de una comida no es la regla por defecto. Devuelve
+   * el sujeto de la auditoría: el titular de lo leído, o `null` si quien lee es el profesional dueño de la imagen.
+   */
+  private decidirSegunFinalidad(tx: Tx, actor: ActorAutenticado, medio: MedioConIngesta, ctx: ContextoDeSolicitud): Promise<string | null> {
+    switch (medio.finalidad) {
+      case 'RECETA_REFERENCIA':
+        return this.decidirImagenDeReceta(tx, actor, medio.id, medio.propietarioId, ctx);
+      case 'REFERENCIA_DE_EJERCICIO':
+        return this.decidirImagenDeEjercicio(tx, actor, medio.id, medio.propietarioId, ctx);
+      case 'EVIDENCIA_DE_INGESTA':
+        return this.decidirFotoDeComida(tx, actor, medio, ctx);
+    }
+  }
+
+  /**
+   * La imagen de un ejercicio (DL-123), con alcance ENTRENAMIENTO: su profesional, o el asesorado con un plan activado
+   * (vigente o histórico) de ese profesional cuya instantánea incluye el ejercicio de este medio, en cualquiera de sus
+   * asociaciones (la vigente o una pasada: lo registrado conserva la imagen de entonces), con el acceso de Entrenamiento
+   * que decide el PDP. Es el criterio con el que ese asesorado ve el catálogo del profesional (RF-037) y el de la imagen
+   * de una receta. Lo demás, el mismo 404 que lo inexistente.
+   */
+  private async decidirImagenDeEjercicio(tx: Tx, actor: ActorAutenticado, medioId: string, propietarioId: string, ctx: ContextoDeSolicitud): Promise<string | null> {
+    if (propietarioId === actor.identidadId) return null;
+    const [plan] = await tx.$queryRaw<{ profesionalId: string }[]>`
+      SELECT e."creado_por_id"::text AS "profesionalId"
+        FROM "asociacion_de_imagen_de_ejercicio" a
+        JOIN "ejercicio_de_catalogo" e ON e."id" = a."ejercicio_id"
+        JOIN "plan_de_entrenamiento" p ON p."profesional_id" = e."creado_por_id" AND p."asesorado_id" = ${actor.identidadId}::uuid
+        JOIN "version_de_plan_de_entrenamiento" v ON v."plan_id" = p."id" AND v."estado" = 'ACTIVADA'
+        JOIN "instantanea_de_plan_de_entrenamiento" i ON i."version_de_plan_id" = v."id"
+       WHERE a."medio_id" = ${medioId}::uuid
+         AND jsonb_path_exists(i."contenido", '$.ejercicios.* ? (@.exerciseId == $ejercicio)', jsonb_build_object('ejercicio', e."id"::text))
+       LIMIT 1`;
+    const recurso = { tipo: RECURSO_DE_MEDIO, id: medioId };
+    if (!plan) throw this.ejecutor.noRevelable({ operacion: 'API-MED-03', actorId: actor.identidadId, recurso, alcance: 'ENTRENAMIENTO' }, ctx);
+    await this.pdp.decidirEnTransaccion(
+      tx,
+      { operacion: 'API-MED-03', actorDeLaDecision: actor.identidadId, profesionalId: plan.profesionalId, titularId: actor.identidadId, alcance: 'ENTRENAMIENTO', recurso },
+      ctx,
+    );
+    return actor.identidadId;
   }
 
   /**
@@ -303,12 +380,7 @@ export class MediosService {
    * La foto de una comida: unida a una ingesta, la leen su titular y el profesional del plan de esa ingesta, con el mismo
    * PDP que API-NUT-16; sin asociar, solo quien la subió y con su A3 vigente.
    */
-  private async decidirFotoDeComida(
-    tx: Tx,
-    actor: ActorAutenticado,
-    medio: FilaDeMedio & { evidenciaVisual: { ingesta: { asesoradoId: string; versionDePlan: { plan: { profesionalId: string } } } } | null },
-    ctx: ContextoDeSolicitud,
-  ): Promise<string> {
+  private async decidirFotoDeComida(tx: Tx, actor: ActorAutenticado, medio: MedioConIngesta, ctx: ContextoDeSolicitud): Promise<string> {
     const recurso = { tipo: RECURSO_DE_FOTO, id: medio.id };
     const ingesta = medio.evidenciaVisual?.ingesta;
     if (!ingesta) {
@@ -384,11 +456,12 @@ export class MediosService {
     });
   }
 
-  // ─── Para recetas y registro (REC-05, ING-02) ──────────────────────────────────────────────
+  // ─── Para recetas, registro e imágenes de ejercicio (REC-05, ING-02, EJE-02) ───────────────────
 
   /**
    * Los medios que un cuerpo cita, si cada uno es propio, está DISPONIBLE y es de esa finalidad. Devuelve las rutas de los
-   * que no cumplen (quien llama responde MEDIA_REFERENCE_INVALID): nunca dice si un medio ajeno existe.
+   * que no cumplen (quien llama responde MEDIA_REFERENCE_INVALID): nunca dice si un medio ajeno existe. La autoría de una
+   * imagen de ejercicio no hace falta mirarla acá: sin ella no hay medio de esa finalidad (API-MED-01 y la base).
    */
   async problemasDeReferencia(tx: Tx, propietarioId: string, ids: readonly string[], finalidad: FilaDeMedio['finalidad'], ruta: (i: number) => string): Promise<{ code: string; path: string }[]> {
     const validos = ids.filter(esUuid);

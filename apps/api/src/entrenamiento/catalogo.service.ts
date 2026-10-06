@@ -12,6 +12,7 @@ import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { EjecutorDeEntrenamiento } from './ejecutor';
 import { registrarEventoDeEntrenamiento } from './eventos';
 import { ejercicioApi, type FilaDeEjercicio } from './lectura-entrenamiento';
+import { esProfesionalDeEntrenamiento } from './profesional-de-entrenamiento';
 
 type Cliente = Prisma.TransactionClient | PrismaService;
 
@@ -144,14 +145,12 @@ export class CatalogoDeEjerciciosService {
     return new Map(filas.map((f) => [f.versionId, f]));
   }
 
-  /** Solo un profesional con Entrenamiento verificado y habilitado carga ejercicios (RF-037). */
-  async esProfesionalDeEntrenamiento(cliente: Cliente, identidadId: string): Promise<boolean> {
-    const [fila] = await cliente.$queryRaw<{ ok: boolean }[]>`
-      SELECT EXISTS (
-        SELECT 1 FROM "verificacion_profesional" vp
-          JOIN "habilitacion" h ON h."identidad_id" = vp."identidad_id" AND h."alcance" = vp."alcance" AND h."estado" = 'CONCEDIDA'
-         WHERE vp."identidad_id" = ${identidadId}::uuid AND vp."alcance" = 'ENTRENAMIENTO' AND vp."estado" = 'VERIFICADO') AS "ok"`;
-    return fila?.ok === true;
+  /**
+   * Solo un profesional con Entrenamiento verificado y habilitado carga ejercicios (RF-037). El criterio vive en
+   * `profesional-de-entrenamiento.ts`: la intención de subida de una imagen de ejercicio (DL-123) usa el mismo.
+   */
+  esProfesionalDeEntrenamiento(cliente: Cliente, identidadId: string): Promise<boolean> {
+    return esProfesionalDeEntrenamiento(cliente, identidadId);
   }
 
   /**

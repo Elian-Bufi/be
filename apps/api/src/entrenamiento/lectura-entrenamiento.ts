@@ -132,10 +132,16 @@ export function resolverDeCatalogo(catalogo: ReadonlyMap<string, EjercicioCitabl
  * En una versión activada no puede pasar —la instantánea no se construye si falta una—; en un borrador, validar lo
  * informa como problema.
  */
-function ejercicioDe(resolver: ResolverDeEjercicio, versionId: string): EjercicioCongelado {
+export function ejercicioDe(resolver: ResolverDeEjercicio, versionId: string): EjercicioCongelado {
   return resolver(versionId) ?? { exerciseId: versionId, exerciseName: 'Ejercicio no disponible' };
 }
 
+/**
+ * La prescripción en la forma que lee la APK 0.13.2 (API-TRN-09, 14 a 20, 14-PERIODO y 19-LISTA). Los campos se eligen
+ * uno por uno: lo que DL-122 suma a lo guardado (el RIR, la carga y el descanso de cada serie; el descanso y las bases de
+ * la prescripción) no sale por acá. Esa APK valida con esquemas estrictos y rechazaría un campo que no conoce; lo nuevo
+ * se lee con API-SER-01 y 02 (`lectura-por-serie.ts`).
+ */
 export function prescripcionApi(p: PrescripcionGuardada, orden: number, resolver: ResolverDeEjercicio): Prescripcion {
   const e = ejercicioDe(resolver, p.exerciseVersionId);
   return {
@@ -191,15 +197,27 @@ export async function seguimientoAbierto(tx: Prisma.TransactionClient, profesion
   return (await tx.procesoOperativo.count({ where: { profesionalId, asesoradoId, alcance: 'ENTRENAMIENTO', estado: 'ABIERTO' } })) > 0;
 }
 
+/**
+ * Lo que se lee de una versión: la activada, desde su instantánea; el borrador, desde su contenido y el catálogo vivo.
+ * Lo comparten esta lectura y la de los objetivos por serie (API-SER-01), para que las dos nombren igual cada ejercicio.
+ */
+export function contenidoDeLaVersion(
+  v: VersionConPlan,
+  catalogoDeBorrador: ReadonlyMap<string, EjercicioCitable>,
+): { readonly contenido: ContenidoDePlanDeEntrenamiento; readonly resolver: ResolverDeEjercicio } {
+  const instantanea = v.estado === 'ACTIVADA' && v.instantanea ? (v.instantanea.contenido as unknown as InstantaneaDeEntrenamiento) : null;
+  return instantanea
+    ? { contenido: instantanea.contenido, resolver: resolverDeInstantanea(instantanea) }
+    : { contenido: v.contenido as unknown as ContenidoDePlanDeEntrenamiento, resolver: resolverDeCatalogo(catalogoDeBorrador) };
+}
+
 export function versionDePlanApi(
   v: VersionConPlan,
   nombreProfesional: string,
   catalogoDeBorrador: ReadonlyMap<string, EjercicioCitable>,
   seguimientoAbierto: boolean,
 ): VersionDePlanDeEntrenamiento {
-  const instantanea = v.estado === 'ACTIVADA' && v.instantanea ? (v.instantanea.contenido as unknown as InstantaneaDeEntrenamiento) : null;
-  const contenido = instantanea ? instantanea.contenido : (v.contenido as unknown as ContenidoDePlanDeEntrenamiento);
-  const resolver = instantanea ? resolverDeInstantanea(instantanea) : resolverDeCatalogo(catalogoDeBorrador);
+  const { contenido, resolver } = contenidoDeLaVersion(v, catalogoDeBorrador);
   return {
     planId: v.id,
     trainingPlanId: v.planId,
