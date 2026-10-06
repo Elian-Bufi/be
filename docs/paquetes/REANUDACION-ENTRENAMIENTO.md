@@ -25,10 +25,10 @@ rama que corresponda. Mientras tanto muestra solo su delta sobre Nutrición.
 | 2 | Seguridad `source-map-js`: #146 (`6004c32`) y PR #148 contra `main` | Hecho | `6004c32` y `a9b8406` |
 | 3 | Relevamiento de Entrenamiento y definición del paquete (`WP-ENTRENAMIENTO-SERIES.md`, DL-122 a 124) | Hecho | ver el log de la rama |
 | 4 | Dominio: objetivos por serie, contratos SER/TIE/EJE, eventos y cálculo de tiempos, textos y formas congeladas de la APK 0.13.2 | Hecho: 499 pruebas del dominio y la guardia de trazabilidad | ver el log de la rama |
-| 5 | API: migración, medios de ejercicios y eventos de tiempo | Pendiente | — |
-| 6 | Website: editor por serie, imagen del ejercicio y vista de la ejecución | Pendiente | — |
-| 7 | APK: Hoy, Plan e Historial, sesión enfocada, series, descanso y recuperación | Pendiente | — |
-| 8 | Recorrido, evidencia y PR | Pendiente | — |
+| 5 | API: migración, medios de ejercicios y eventos de tiempo | Hecho | `033bfa1` |
+| 6 | Website: editor por serie con vista previa, «Mis ejercicios» con imagen, plan activo y ejecuciones con tiempos | Hecho | `65a7d6a` |
+| 7 | APK: Hoy, Plan e Historial, sesión enfocada, series, descanso y recuperación | Hecho | `e6bd769` |
+| 8 | Recorrido, evidencia y PR | Hecho: 101/101 controles; PR en borrador apilado sobre #147 | ver el log de la rama |
 
 ## Cómo levantar los servicios locales
 
@@ -37,7 +37,7 @@ rama que corresponda. Mientras tanto muestra solo su delta sobre Nutrición.
   levantar.
 - **Bases:**
   - `be_test_nutricion_rev`: integración de Nutrición;
-  - `be_test_entrenamiento`: integración de Entrenamiento, que se crea en el hito 5;
+  - `be_test_entrenamiento`: integración de Entrenamiento (creada el 2026-10-06 con scratchpad/pg/crear-bases.cjs);
   - `be_test_entrenamiento_web`: el recorrido.
 - **API y website del recorrido:** los mismos scripts de `EVIDENCIA/NUTRICION-RECETAS/herramientas/recorrido/`, con
   `BE_E2E_DATABASE_URL`. Usan la API en el puerto 3001, la web en el 3000 y el arnés en el 3002, y **se apagan al

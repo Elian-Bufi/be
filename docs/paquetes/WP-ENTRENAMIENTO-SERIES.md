@@ -1,7 +1,7 @@
 # WP-ENTRENAMIENTO-SERIES — Entrenamiento por serie: objetivos por serie, imagen del ejercicio y tiempos con certeza · definición del paquete
 
-> **Estado:** DEFINIDO el 2026-10-06, con el dominio escrito y probado. La API, la web y la APK se implementan sobre
-> esta definición (§13).
+> **Estado:** DEFINIDO e **IMPLEMENTADO** el 2026-10-06 en la rama, sin integrar (§14). La evidencia está en
+> `EVIDENCIA/ENTRENAMIENTO-SERIES/`. No se construyó ni se publicó una APK, y no hubo merge ni despliegue.
 >
 > **Encargo:** «BE · Cierre de Nutrición y Entrenamiento por serie», de Dirección, del 2026-10-06, con el paquete
 > `BE_Entrenamiento_Autonomo_2026-10-06`.
@@ -541,8 +541,10 @@ Las tres están decididas por el encargo. Las decisiones que quedan para Direcci
 
 | Parte | Estado |
 |---|---|
-| Dominio: contratos, resolución, eventos, cálculo, textos y formas congeladas | Hecho el 2026-10-06; 499 pruebas del dominio y la guardia de trazabilidad, verdes |
-| API: migraciones, servicios, endpoints e integración | En curso |
-| Web: editor por serie, «Mis ejercicios» y vista de ejecuciones | En curso |
-| APK: pestañas, sesión enfocada, tiempos, persistencia, recuperación y brillo | En curso |
-| Recorrido y evidencia | Pendiente |
+| Dominio: contratos, resolución, eventos, cálculo, textos y formas congeladas | Hecho (`ffd42af`, `ce4c1b1`): 503 pruebas y la guardia de trazabilidad, verdes |
+| API: migraciones, servicios, endpoints e integración | Hecho (`033bfa1`): integración 24/24, 93/93 y 14/14, además de las de medios, recetas, schema, plantillas y A3 |
+| Web: editor por serie, «Mis ejercicios», plan activo y vista de ejecuciones | Hecho (`65a7d6a` y el commit de la evidencia): typecheck y export estático sin errores |
+| APK: pestañas, sesión enfocada, tiempos, persistencia, recuperación y superficies | Hecho (`e6bd769`): scripts 245/245 y typecheck sin errores; 37 renders de componentes |
+| Recorrido y evidencia | Hecho: 101/101 controles de punta a punta (`EVIDENCIA/ENTRENAMIENTO-SERIES/LEEME.md`) |
+| CI | En verde en `e6bd769`, con las cuatro tareas |
+| Teléfono | **Pendiente:** no hay una APK nueva. Los pasos están en la evidencia |

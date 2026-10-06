@@ -1,0 +1,106 @@
+{
+  "ejercicios": {},
+  "planActivo": true,
+  "controles": [
+    {
+      "nombre": "Sentadilla goblet: la imagen quedó guardada en JPEG y dice procedencia IA, autoría, sin licencia externa y revisión pendiente",
+      "ok": true,
+      "detalle": "Generada por IA · Generada por IA para BE (image_gen integrado) · Sin licencia externa · Contenido original aportado para cargar mediante el flujo real en la demostración BE. Ilustración de reconocimiento; no certifica técnica ni sustituye instrucciones profesionales. · Pendiente de revisión profesional · 6 oct 2026, 9:20 a. m."
+    },
+    {
+      "nombre": "Sentadilla goblet: el texto alternativo es el declarado",
+      "ok": true,
+      "detalle": "Persona adulta sosteniendo una mancuerna frente al pecho en posición de sentadilla."
+    },
+    {
+      "nombre": "Peso muerto rumano con mancuernas: la imagen quedó guardada en JPEG y dice procedencia IA, autoría, sin licencia externa y revisión pendiente",
+      "ok": true,
+      "detalle": "Generada por IA · Generada por IA para BE (image_gen integrado) · Sin licencia externa · Contenido original aportado para cargar mediante el flujo real en la demostración BE. Ilustración de reconocimiento; no certifica técnica ni sustituye instrucciones profesionales. · Pendiente de revisión profesional · 6 oct 2026, 9:20 a. m."
+    },
+    {
+      "nombre": "Peso muerto rumano con mancuernas: el texto alternativo es el declarado",
+      "ok": true,
+      "detalle": "Persona adulta en bisagra de cadera sosteniendo una mancuerna en cada mano."
+    },
+    {
+      "nombre": "Zancada estática: la imagen quedó guardada en JPEG y dice procedencia IA, autoría, sin licencia externa y revisión pendiente",
+      "ok": true,
+      "detalle": "Generada por IA · Generada por IA para BE (image_gen integrado) · Sin licencia externa · Contenido original aportado para cargar mediante el flujo real en la demostración BE. Ilustración de reconocimiento; no certifica técnica ni sustituye instrucciones profesionales. · Pendiente de revisión profesional · 6 oct 2026, 9:20 a. m."
+    },
+    {
+      "nombre": "Zancada estática: el texto alternativo es el declarado",
+      "ok": true,
+      "detalle": "Persona adulta en zancada estática, con manos en la cintura y rodilla posterior baja."
+    },
+    {
+      "nombre": "Sentadilla goblet: reemplazar la imagen por el flujo real (otra subida y otra asociación) responde «Imagen guardada.»",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "Sentadilla goblet: retirar deja el ejercicio sin imagen, sin borrar el medio",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "Sentadilla goblet: se vuelve a cargar y queda con su imagen para el plan",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "después de recargar, los tres ejercicios siguen con su imagen",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "Sentadilla goblet: «Así lo ve tu asesorado» coincide con sesion_demo.json serie por serie",
+      "ok": true,
+      "detalle": "[[\"1\",\"16 kg\",\"12–16 rep.\",\"RIR 3\",\"01:30\"],[\"2\",\"18 kg\",\"10–12 rep.\",\"RIR 2\",\"02:00\"],[\"3\",\"20 kg\",\"8–10 rep.\",\"RIR 1\",\"02:30\"]] | esperado [[\"1\",\"16 kg\",\"12–16 rep.\",\"RIR 3\",\"01:30\"],[\"2\",\"18 kg\",\"10–12 rep.\",\"RIR 2\",\"02:00\"],[\"3\",\"20 kg\",\"8–10 rep.\",\"RIR 1\",\"02:30\"]]"
+    },
+    {
+      "nombre": "Peso muerto rumano con mancuernas: «Así lo ve tu asesorado» coincide con sesion_demo.json serie por serie",
+      "ok": true,
+      "detalle": "[[\"1\",\"10 kg\",\"10–12 rep.\",\"RIR 3\",\"01:30\"],[\"2\",\"12 kg\",\"10–12 rep.\",\"RIR 2\",\"02:00\"],[\"3\",\"12 kg\",\"8–10 rep.\",\"RIR 2\",\"02:00\"]] | esperado [[\"1\",\"10 kg\",\"10–12 rep.\",\"RIR 3\",\"01:30\"],[\"2\",\"12 kg\",\"10–12 rep.\",\"RIR 2\",\"02:00\"],[\"3\",\"12 kg\",\"8–10 rep.\",\"RIR 2\",\"02:00\"]]"
+    },
+    {
+      "nombre": "Zancada estática: «Así lo ve tu asesorado» coincide con sesion_demo.json serie por serie",
+      "ok": true,
+      "detalle": "[[\"1\",\"0 kg\",\"10–12 rep.\",\"01:30\"],[\"2\",\"0 kg\",\"10–12 rep.\",\"01:30\"],[\"3\",\"0 kg\",\"8–10 rep.\",\"Sin objetivo\"]] | esperado [[\"1\",\"0 kg\",\"10–12 rep.\",\"01:30\"],[\"2\",\"0 kg\",\"10–12 rep.\",\"01:30\"],[\"3\",\"0 kg\",\"8–10 rep.\",\"Sin objetivo\"]]"
+    },
+    {
+      "nombre": "después de guardar, el editor releído (API-SER-01) muestra las 9 series de «Piernas A» y la de la sesión de prueba",
+      "ok": true,
+      "detalle": "1 16 kg · de la prescripción 12–16 rep. RIR 3 · de la prescripción 01:30 · de la prescripción | 2 18 kg 10–12 rep. RIR 2 02:00 | 3 20 kg 8–10 rep. RIR 1 02:30 | 1 10 kg · de la prescripción 10–12 rep. RIR 3 · de la prescripción 01:30 · de la prescripción | 2 12 kg 10–12 rep. RIR 2 02:00 | 3 12 kg 8–10 rep. RIR 2 02:00 | 1 0 kg · de la prescripción 10–12 rep. 01:30 · de la prescripción | 2 0 kg · de la prescripción 10–12 rep. 01:30 · de la prescripción | 3 0 kg · de la prescripción 8–10 rep. Sin objetivo | 1 Sin objetivo 10–12 rep. 01:30 · de la prescripción"
+    },
+    {
+      "nombre": "el editor avisa que la APK 0.13.2 muestra solo los valores generales",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "validar: el borrador no tiene problemas de estructura",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "el plan activo dice lo mismo que el paquete para las 9 series de «Piernas A» (lo que recibe el teléfono)",
+      "ok": true,
+      "detalle": "[[[\"1\",\"16 kg\",\"12–16 rep.\",\"RIR 3\",\"01:30\"],[\"2\",\"18 kg\",\"10–12 rep.\",\"RIR 2\",\"02:00\"],[\"3\",\"20 kg\",\"8–10 rep.\",\"RIR 1\",\"02:30\"]],[[\"1\",\"10 kg\",\"10–12 rep.\",\"RIR 3\",\"01:30\"],[\"2\",\"12 kg\",\"10–12 rep.\",\"RIR 2\",\"02:00\"],[\"3\",\"12 kg\",\"8–10 rep.\",\"RIR 2\",\"02:00\"]],[[\"1\",\"0 kg\",\"10–12 rep.\",\"01:30\"],[\"2\",\"0 kg\",\"10–12 rep.\",\"01:30\"],[\"3\",\"0 kg\",\"8–10 rep.\",\"Sin objetivo\"]],[[\"1\",\"Sin objetivo\",\"10–12 rep.\",\"01:30\"]]]"
+    },
+    {
+      "nombre": "la sesión de prueba hereda el descanso de su prescripción",
+      "ok": true,
+      "detalle": "[[\"1\",\"Sin objetivo\",\"10–12 rep.\",\"01:30\"]]"
+    },
+    {
+      "nombre": "el plan activo muestra la imagen de cada ejercicio (tres en «Piernas A» y uno en la sesión de prueba)",
+      "ok": true,
+      "detalle": "4"
+    },
+    {
+      "nombre": "sin errores de página ni de CSP",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

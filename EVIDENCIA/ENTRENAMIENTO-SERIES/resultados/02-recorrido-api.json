@@ -1,0 +1,136 @@
+{
+  "occurrenceId": "occ_MTlhM2U3ZWQtNTc0MC00MzEwLTlhNTktNmEwYzg2NzA1MjJlLmU2YTdkOGMzLTAwZDUtNDM2Yy05MjY4LTZlNjYxZGJkMGJiMS4yMDI2LTEwLTA2",
+  "planId": "19a3e7ed-5740-4310-9a59-6a0c8670522e",
+  "controles": [
+    {
+      "nombre": "C01 · API-TRN-14 conserva la forma estricta que lee la APK 0.13.2",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "C01 · la prescripción de la lectura vieja no trae claves nuevas",
+      "ok": true,
+      "detalle": "prescriptionId,order,exerciseId,exerciseVersionId,exerciseName,sets,intensity,suggestedLoad,professionalParameters,note"
+    },
+    {
+      "nombre": "«Piernas A» está entre las sesiones de hoy",
+      "ok": true,
+      "detalle": "Piernas A, Recuperación de prueba"
+    },
+    {
+      "nombre": "Sentadilla goblet: el ejercicio 1 de la sesión es el del plan",
+      "ok": true,
+      "detalle": "Sentadilla goblet"
+    },
+    {
+      "nombre": "P01 · Sentadilla goblet: las 3 series llegan exactamente como en sesion_demo.json",
+      "ok": true,
+      "detalle": "[{\"setIndex\":1,\"repetitions\":{\"min\":12,\"max\":16},\"suggestedLoad\":{\"value\":16,\"unit\":\"kg\"},\"rir\":3,\"restSeconds\":90},{\"setIndex\":2,\"repetitions\":{\"min\":10,\"max\":12},\"suggestedLoad\":{\"value\":18,\"unit\":\"kg\"},\"rir\":2,\"restSeconds\":120},{\"setIndex\":3,\"repetitions\":{\"min\":8,\"max\":10},\"suggestedLoad\":{\"value\":20,\"unit\":\"kg\"},\"rir\":1,\"restSeconds\":150}]"
+    },
+    {
+      "nombre": "Sentadilla goblet: imagen asociada, generada por IA, sin licencia externa y con revisión pendiente",
+      "ok": true,
+      "detalle": "{\"mediaId\":\"85b88e6e-9806-4295-911a-ba6e2743304c\",\"imageVersion\":4,\"exerciseVersionId\":\"6dcaa3fa-afb0-472e-bf85-12713b79acac\",\"provenance\":\"AI_GENERATED\",\"authorship\":\"Generada por IA para BE (image_gen integrado)\",\"license\":{\"kind\":\"NO_EXTERNAL_LICENSE\",\"usage\":\"Contenido original aportado para cargar mediante el flujo real en la demostración BE. Ilustración de reconocimiento; no certifica técnica ni sustituye instrucciones profesionales.\"},\"technicalReview\":\"PENDING_PROFESSIONAL_REVIEW\",\"altText\":\"Persona adulta sosteniendo una mancuerna frente al pecho en posición de sentadilla.\",\"associate"
+    },
+    {
+      "nombre": "P03 · Sentadilla goblet: el asesorado del plan descarga la imagen en JPEG",
+      "ok": true,
+      "detalle": "{\"tipo\":\"image/jpeg\",\"largo\":104647}"
+    },
+    {
+      "nombre": "P05 · Sentadilla goblet: otro asesorado no la lee (404)",
+      "ok": true,
+      "detalle": "404"
+    },
+    {
+      "nombre": "P05 · Sentadilla goblet: otro profesional no la lee (404)",
+      "ok": true,
+      "detalle": "404"
+    },
+    {
+      "nombre": "P05 · Sentadilla goblet: otro profesional no puede cambiar la imagen",
+      "ok": true,
+      "detalle": "404 RESOURCE_NOT_FOUND"
+    },
+    {
+      "nombre": "Peso muerto rumano con mancuernas: el ejercicio 2 de la sesión es el del plan",
+      "ok": true,
+      "detalle": "Peso muerto rumano con mancuernas"
+    },
+    {
+      "nombre": "P01 · Peso muerto rumano con mancuernas: las 3 series llegan exactamente como en sesion_demo.json",
+      "ok": true,
+      "detalle": "[{\"setIndex\":1,\"repetitions\":{\"min\":10,\"max\":12},\"suggestedLoad\":{\"value\":10,\"unit\":\"kg\"},\"rir\":3,\"restSeconds\":90},{\"setIndex\":2,\"repetitions\":{\"min\":10,\"max\":12},\"suggestedLoad\":{\"value\":12,\"unit\":\"kg\"},\"rir\":2,\"restSeconds\":120},{\"setIndex\":3,\"repetitions\":{\"min\":8,\"max\":10},\"suggestedLoad\":{\"value\":12,\"unit\":\"kg\"},\"rir\":2,\"restSeconds\":120}]"
+    },
+    {
+      "nombre": "Peso muerto rumano con mancuernas: imagen asociada, generada por IA, sin licencia externa y con revisión pendiente",
+      "ok": true,
+      "detalle": "{\"mediaId\":\"dfb0999d-ac3e-4187-9b8a-724c3be065db\",\"imageVersion\":1,\"exerciseVersionId\":\"1f1d147c-b3e9-4659-b2bd-3627648c2505\",\"provenance\":\"AI_GENERATED\",\"authorship\":\"Generada por IA para BE (image_gen integrado)\",\"license\":{\"kind\":\"NO_EXTERNAL_LICENSE\",\"usage\":\"Contenido original aportado para cargar mediante el flujo real en la demostración BE. Ilustración de reconocimiento; no certifica técnica ni sustituye instrucciones profesionales.\"},\"technicalReview\":\"PENDING_PROFESSIONAL_REVIEW\",\"altText\":\"Persona adulta en bisagra de cadera sosteniendo una mancuerna en cada mano.\",\"associatedAt\":\"20"
+    },
+    {
+      "nombre": "P03 · Peso muerto rumano con mancuernas: el asesorado del plan descarga la imagen en JPEG",
+      "ok": true,
+      "detalle": "{\"tipo\":\"image/jpeg\",\"largo\":82772}"
+    },
+    {
+      "nombre": "P05 · Peso muerto rumano con mancuernas: otro asesorado no la lee (404)",
+      "ok": true,
+      "detalle": "404"
+    },
+    {
+      "nombre": "P05 · Peso muerto rumano con mancuernas: otro profesional no la lee (404)",
+      "ok": true,
+      "detalle": "404"
+    },
+    {
+      "nombre": "P05 · Peso muerto rumano con mancuernas: otro profesional no puede cambiar la imagen",
+      "ok": true,
+      "detalle": "404 RESOURCE_NOT_FOUND"
+    },
+    {
+      "nombre": "Zancada estática: el ejercicio 3 de la sesión es el del plan",
+      "ok": true,
+      "detalle": "Zancada estática"
+    },
+    {
+      "nombre": "P01 · Zancada estática: las 3 series llegan exactamente como en sesion_demo.json",
+      "ok": true,
+      "detalle": "[{\"setIndex\":1,\"repetitions\":{\"min\":10,\"max\":12},\"suggestedLoad\":{\"value\":0,\"unit\":\"kg\"},\"rir\":null,\"restSeconds\":90},{\"setIndex\":2,\"repetitions\":{\"min\":10,\"max\":12},\"suggestedLoad\":{\"value\":0,\"unit\":\"kg\"},\"rir\":null,\"restSeconds\":90},{\"setIndex\":3,\"repetitions\":{\"min\":8,\"max\":10},\"suggestedLoad\":{\"value\":0,\"unit\":\"kg\"},\"rir\":null,\"restSeconds\":null}]"
+    },
+    {
+      "nombre": "Zancada estática: imagen asociada, generada por IA, sin licencia externa y con revisión pendiente",
+      "ok": true,
+      "detalle": "{\"mediaId\":\"e3531da9-6178-4296-a1d2-16f18a1f4bf5\",\"imageVersion\":1,\"exerciseVersionId\":\"7c79ca95-4d02-4fbe-a7ed-395f2289eca2\",\"provenance\":\"AI_GENERATED\",\"authorship\":\"Generada por IA para BE (image_gen integrado)\",\"license\":{\"kind\":\"NO_EXTERNAL_LICENSE\",\"usage\":\"Contenido original aportado para cargar mediante el flujo real en la demostración BE. Ilustración de reconocimiento; no certifica técnica ni sustituye instrucciones profesionales.\"},\"technicalReview\":\"PENDING_PROFESSIONAL_REVIEW\",\"altText\":\"Persona adulta en zancada estática, con manos en la cintura y rodilla posterior baja.\",\"associa"
+    },
+    {
+      "nombre": "P03 · Zancada estática: el asesorado del plan descarga la imagen en JPEG",
+      "ok": true,
+      "detalle": "{\"tipo\":\"image/jpeg\",\"largo\":91507}"
+    },
+    {
+      "nombre": "P05 · Zancada estática: otro asesorado no la lee (404)",
+      "ok": true,
+      "detalle": "404"
+    },
+    {
+      "nombre": "P05 · Zancada estática: otro profesional no la lee (404)",
+      "ok": true,
+      "detalle": "404"
+    },
+    {
+      "nombre": "P05 · Zancada estática: otro profesional no puede cambiar la imagen",
+      "ok": true,
+      "detalle": "404 RESOURCE_NOT_FOUND"
+    },
+    {
+      "nombre": "P05 · otro profesional no lee el plan con sus objetivos (API-SER-01: 404)",
+      "ok": true,
+      "detalle": "404"
+    },
+    {
+      "nombre": "el titular tampoco lee API-SER-01: es del profesional (404)",
+      "ok": true,
+      "detalle": "404"
+    }
+  ]
+}

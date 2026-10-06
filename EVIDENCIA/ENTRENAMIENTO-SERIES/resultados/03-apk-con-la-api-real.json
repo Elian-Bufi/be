@@ -1,0 +1,155 @@
+{
+  "recuperacion": {
+    "sesion": "Recuperación de prueba",
+    "descansos": [
+      {
+        "ejercicio": "Zancada estática",
+        "setIndex": 1,
+        "texto": "Incompleto · 01:30 recomendado"
+      }
+    ],
+    "tiemposMinimos": {
+      "Tiempo transcurrido": {
+        "segundos": 200,
+        "calidad": "estimado"
+      },
+      "Pausas": {
+        "segundos": 0,
+        "calidad": "estimado"
+      },
+      "Sin pausas": {
+        "segundos": 200,
+        "calidad": "estimado"
+      }
+    },
+    "notaDelCriterio": "Corregido después de la corrida: la estimación civil incluye los segundos reales entre la carga que se cerró y la nueva."
+  },
+  "piernas": {
+    "sesion": "Piernas A",
+    "series": [
+      {
+        "ejercicio": "Sentadilla goblet",
+        "setIndex": 1,
+        "plan": "16 kg · 12–16 rep. · RIR 3",
+        "carga": {
+          "value": 16,
+          "unit": "kg"
+        },
+        "repeticiones": 14,
+        "rir": 3
+      },
+      {
+        "ejercicio": "Sentadilla goblet",
+        "setIndex": 2,
+        "plan": "18 kg · 10–12 rep. · RIR 2",
+        "carga": {
+          "value": 18,
+          "unit": "kg"
+        },
+        "repeticiones": 11,
+        "rir": 2
+      },
+      {
+        "ejercicio": "Sentadilla goblet",
+        "setIndex": 3,
+        "plan": "20 kg · 8–10 rep. · RIR 1",
+        "carga": {
+          "value": 20,
+          "unit": "kg"
+        },
+        "repeticiones": 9,
+        "rir": null
+      },
+      {
+        "ejercicio": "Peso muerto rumano con mancuernas",
+        "setIndex": 1,
+        "plan": "10 kg · 10–12 rep. · RIR 3",
+        "carga": {
+          "value": 10,
+          "unit": "kg"
+        },
+        "repeticiones": 12,
+        "rir": 3
+      }
+    ],
+    "descansos": [
+      {
+        "ejercicio": "Sentadilla goblet",
+        "setIndex": 1,
+        "texto": "01:30 registrado · 01:30 recomendado · ±00:00"
+      },
+      {
+        "ejercicio": "Sentadilla goblet",
+        "setIndex": 2,
+        "texto": "02:15 registrado · 02:00 recomendado · +00:15"
+      }
+    ],
+    "seriesCronometradas": [
+      {
+        "ejercicio": "Sentadilla goblet",
+        "setIndex": 1,
+        "texto": "Duración medida 00:40"
+      },
+      {
+        "ejercicio": "Sentadilla goblet",
+        "setIndex": 2,
+        "texto": "Duración medida 00:40"
+      },
+      {
+        "ejercicio": "Sentadilla goblet",
+        "setIndex": 3,
+        "texto": "Duración desconocida"
+      }
+    ],
+    "tiemposEsperados": {
+      "Tiempo transcurrido": "15:00 · medido",
+      "Pausas": "02:00 · medido",
+      "Sin pausas": "13:00 · medido",
+      "Sentadilla goblet": "07:30 · medido",
+      "Peso muerto rumano con mancuernas": "05:30 · medido",
+      "Sin ejercicio asignado": "00:00 · medido"
+    }
+  },
+  "controles": [
+    {
+      "nombre": "Hoy muestra «Piernas A» con 3 ejercicios y 9 series",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "la primera vez, la APK explica qué tiempos guarda y quién los ve",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "después de cerrar la app, Hoy ofrece «Continuar entrenamiento»",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "al volver, la APK no cierra el descanso sola: pregunta qué pasó",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "«Recuperación de prueba» quedó registrada",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "el resumen antes de finalizar dice cuántas series se registraron de cada ejercicio",
+      "ok": true,
+      "detalle": "RENDER DE COMPONENTES EN NAVEGADOR (react-native-web) · NO ES LA APK NI UNA CAPTURA NATIVA · API LOCAL REAL · CUENTAS SINTÉTICAS\nRecorrido contra la API local real\nAzul noche · 390 dp · letra ×1\nVolver\nBE\nAmbiente de prueba · solo datos sintéticos\nAntes de finalizar\nPiernas A · 6 oct 2026\nSeries\nSentadilla goblet\n3 de 3 series registradas\nPeso muerto rumano con mancuernas\n1 de 3 series registradas"
+    },
+    {
+      "nombre": "«Piernas A» quedó registrada",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "sin errores de página",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}
