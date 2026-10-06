@@ -1,0 +1,7 @@
+# El arnés se versiona sin lo que se instala ni lo que se genera: las dependencias, el bundle, las imágenes copiadas del
+# paquete y el perfil de Chrome. Las plantillas HTML de salida/ sí se versionan: las abre cdp.mjs.
+node_modules/
+package-lock.json
+salida/*.js
+salida/fotos/
+perfil-cdp/

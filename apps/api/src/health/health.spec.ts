@@ -26,6 +26,7 @@ const ENTORNO = {
   demoProfesionales: [],
   proveedores: { openFoodFactsUrl: 'http://127.0.0.1:9', wgerUrl: 'http://127.0.0.1:9', presupuestoMs: 1000 },
   mediosAlmacen: 'postgres' as const,
+  evidenciaVisualExigida: false,
 };
 
 function directorioCon(migraciones: string[]): string {

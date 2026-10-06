@@ -106,12 +106,15 @@ export function crearReceta(app: INestApplication, pro: Parte, cuerpo: Record<st
   return conSesion(app, pro.token).post('/api/v1/nutrition/recipes', clave).send(cuerpo);
 }
 
-/** API-MED-01 y API-MED-02: la intención y la subida de los bytes a la ruta firmada. */
+/**
+ * API-MED-01 y API-MED-02: la intención y la subida de los bytes a la ruta firmada. La finalidad es una de las tres: la
+ * imagen de una receta, la foto de una comida o, desde WP-ENTRENAMIENTO-SERIES (DL-123), la imagen de un ejercicio.
+ */
 export async function subirImagen(
   app: INestApplication,
   parte: Parte,
   bytes: Buffer,
-  opciones: { contentType?: string; purpose?: 'RECIPE_REFERENCE' | 'MEAL_EVIDENCE'; provenance?: 'AI_GENERATED' | 'PERSON_PROVIDED'; authorship?: string | null } = {},
+  opciones: { contentType?: string; purpose?: 'RECIPE_REFERENCE' | 'MEAL_EVIDENCE' | 'EXERCISE_REFERENCE'; provenance?: 'AI_GENERATED' | 'PERSON_PROVIDED'; authorship?: string | null } = {},
 ): Promise<{ mediaId: string; uploadPath: string; medio: Record<string, unknown> }> {
   const contentType = opciones.contentType ?? 'image/png';
   const purpose = opciones.purpose ?? 'RECIPE_REFERENCE';

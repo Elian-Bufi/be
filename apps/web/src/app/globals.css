@@ -2386,6 +2386,77 @@ html:has(.acciones--fijas) {
   color: var(--tenue);
 }
 
+/* Objetivos por serie (DL-122): cada serie en su grupo, con sus campos alineados que bajan de fila si no entran. */
+.serie-del-editor {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem 0.4rem;
+  margin: 0 0 0.75rem;
+}
+
+.serie-del-editor legend {
+  font-weight: 700;
+  padding: 0 0.25rem;
+}
+
+.campos-de-la-serie {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+  gap: 0.5rem 0.75rem;
+  align-items: start;
+}
+
+.campos-de-la-serie .campo {
+  margin: 0;
+}
+
+/* «Sin objetivo en esta serie»: la casilla va debajo del campo, con su propio renglón. */
+.campo__casilla {
+  display: block;
+  margin-top: 0.3rem;
+  font-weight: 400;
+  font-size: 0.92rem;
+}
+
+/* Los tiempos de una sesión (DL-124): cada tiempo con su valor y su certeza, en dos columnas que bajan en el teléfono. */
+.datos-de-tiempo {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3rem 1rem;
+  margin: 0.5rem 0;
+}
+
+.datos-de-tiempo dt {
+  font-weight: 700;
+}
+
+.datos-de-tiempo dd {
+  margin: 0;
+}
+
+@media (max-width: 30rem) {
+  .datos-de-tiempo {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tabla--objetivos caption {
+  text-align: left;
+  font-weight: 700;
+  padding-bottom: 0.25rem;
+}
+
+/* La imagen de un ejercicio (DL-123): vertical, entera y sin recortar la postura. */
+.imagen-de-ejercicio {
+  max-width: 18rem;
+  aspect-ratio: 5 / 6;
+  object-fit: contain;
+}
+
+.imagen-de-ejercicio.imagen-de-receta--chica {
+  width: 5rem;
+}
+
 .figura-de-receta {
   margin: 0.5rem 0;
 }

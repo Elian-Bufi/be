@@ -11,7 +11,8 @@
  * Cada tarjeta lleva el valor con su unidad, el cambio respecto de la anterior comparable con su fecha y, con dos
  * observaciones comparables o más, sus puntos sobre las fechas reales. Con una sola, solo el valor. Elegida, ocupa todo
  * el ancho y abre su detalle: el gráfico grande, la procedencia y la lista (`ProgresoDeUnaMedida`). Las tarjetas son de
- * vidrio: un filo finísimo, un brillo contenido y la sombra, sin borde fuerte; la elegida lleva el borde de acento.
+ * vidrio: una superficie mate, un filo finísimo y la sombra, sin borde fuerte ni brillo interno (WP-ENTRENAMIENTO-SERIES
+ * §7.7); la elegida lleva el borde de acento.
  *
  * Nada califica (TEST-PRJ-009) y nada se inventa: no hay umbrales, diagnósticos ni totales, y no se recalcula nada en el
  * teléfono.
@@ -22,7 +23,7 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { anchoDelValorEstimado, bloquesDeIndicadores, columnasDeIndicadores, RELLENO_DE_INDICADOR, SEPARACION_DE_INDICADORES } from '../disposicion-de-la-toma';
 import { indiceDeLaToma, serieDeLaMedida } from '../serie-de-la-medida';
 import { COLOR, Desplegable, estilosPorTema, Rotulo } from '../ui';
-import { BrilloDeVidrio, sombraDeVidrio } from '../vidrio';
+import { sombraDeVidrio } from '../vidrio';
 import { fraseDeLaSerie, GraficoCompacto, ProgresoDeUnaMedida, textoDeLaClase, textoDelCambio, ValorYCambio } from './progreso-de-una-medida';
 
 type Datos = EvolucionResponse['data'];
@@ -127,7 +128,6 @@ function Indicador({
   const frase = [medida.nombre, valor, cambio, marca, fraseDeLaSerie(serie.observaciones, indice)].filter(Boolean).join('. ');
   return (
     <View style={[estilos.tarjeta, elegida && estilos.tarjetaElegida, { width: ancho }]}>
-      <BrilloDeVidrio color={COLOR.vidrioBrillo} radio={16} />
       <Pressable onPress={alTocar} accessibilityRole="button" accessibilityState={{ selected: elegida, expanded: elegida }} accessibilityLabel={frase} style={({ pressed }) => [estilos.toque, pressed && estilos.presionado]}>
         <Text style={[estilos.nombre, elegida && estilos.nombreElegido]}>{medida.nombre}</Text>
         <ValorYCambio medida={medida} tamano={LETRA_DEL_VALOR} angosta={ancho < ANCHO_DE_LA_CABECERA_AL_COSTADO} />
@@ -141,7 +141,7 @@ function Indicador({
 
 const estilos = estilosPorTema((COLOR) => ({
   grilla: { flexDirection: 'row', flexWrap: 'wrap', gap: SEPARACION_DE_INDICADORES, marginBottom: 8 },
-  // Vidrio: la superficie, un filo finísimo, la sombra y, adentro, el brillo. Sin borde fuerte; la elegida lleva el de acento.
+  // Vidrio: la superficie mate, un filo finísimo y la sombra, sin brillo interno (§7.7). La elegida lleva el borde de acento.
   tarjeta: {
     borderRadius: 16,
     overflow: 'hidden',

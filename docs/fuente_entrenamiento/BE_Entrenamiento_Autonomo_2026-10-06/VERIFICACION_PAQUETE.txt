@@ -1,0 +1,12 @@
+BE · Verificación del paquete · 06/10/2026
+
+Integridad SHA-256: OK
+3 recursos de ejercicios PNG con alfa y 3 referencias PNG: OK
+Sesión sintética de 3 ejercicios y 9 series: OK
+20/20 casos de series: OK
+16/16 casos de tiempos: OK
+Esta verificación comprueba el paquete; NO prueba la implementación de BE.
+
+Revisión visual: maqueta y tres ilustraciones inspeccionadas.
+Los tres ejercicios incluyen transparencia real (alfa entre 0 y 255).
+No se ejecutó BE, no se cambió GitHub y no se probó Android.

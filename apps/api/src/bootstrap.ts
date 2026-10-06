@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { INestApplication, RequestMethod } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { HEADER_DE_SUPERFICIE, HEADER_IDEMPOTENCY_KEY, HEADER_REQUEST_ID } from '@be/domain';
+import { HEADER_DE_CAPACIDADES, HEADER_DE_SUPERFICIE, HEADER_IDEMPOTENCY_KEY, HEADER_REQUEST_ID } from '@be/domain';
 import helmet from 'helmet';
 import { AppModule, OpcionesApp } from './app.module';
 import { requestId } from './http/request-id';
@@ -28,7 +28,8 @@ export async function crearApp(opciones: OpcionesApp): Promise<INestApplication>
   if (opciones.entorno.corsAllowedOrigins.length > 0) {
     app.enableCors({
       origin: [...opciones.entorno.corsAllowedOrigins],
-      allowedHeaders: ['authorization', 'content-type', HEADER_IDEMPOTENCY_KEY, HEADER_DE_SUPERFICIE],
+      // Los nombres de cabecera no distinguen mayúsculas: la de capacidades va en minúsculas, como las demás de la lista.
+      allowedHeaders: ['authorization', 'content-type', HEADER_IDEMPOTENCY_KEY, HEADER_DE_SUPERFICIE, HEADER_DE_CAPACIDADES.toLowerCase()],
       exposedHeaders: [HEADER_REQUEST_ID],
     });
   }

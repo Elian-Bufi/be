@@ -6,8 +6,10 @@ import { IdempotenciaService } from '../plataforma/idempotencia.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
- * El esqueleto común (idempotencia, transacción, PDP y auditoría) para la familia MED (DL-120). Las dos finalidades de un
- * medio son de Nutrición: la imagen de una receta y la foto de una comida.
+ * El esqueleto común (idempotencia, transacción, PDP y auditoría) para la familia MED (DL-120). Dos finalidades de un
+ * medio son de Nutrición (la imagen de una receta y la foto de una comida), y ese es el Alcance fijo. La tercera, la imagen
+ * de un ejercicio (DL-123), es de Entrenamiento: el servicio ramifica el Alcance según la finalidad, en la decisión del PDP
+ * y en cada denegación que audita (`noRevelable` con su `alcance`).
  */
 @Injectable()
 export class EjecutorDeMedios extends EjecutorDeDominio {

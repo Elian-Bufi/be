@@ -1,0 +1,32 @@
+{
+  "caso": "4 · una base restaurada de un respaldo como el de test hoy (sin las migraciones de esta rama) se migra hasta el head y la API arranca contra ella",
+  "estadoAntes": "Following migrations have not yet been applied:",
+  "migracionesAplicadas": 5,
+  "segundos": {
+    "migrar": 4,
+    "hastaLista": 3
+  },
+  "healthReady": {
+    "data": {
+      "estado": "OK",
+      "ambiente": "development",
+      "version": {
+        "aplicacion": "0.11.1",
+        "commit": null,
+        "construidoEn": null
+      },
+      "dependencias": {
+        "baseDeDatos": "OK",
+        "migraciones": "OK"
+      }
+    }
+  },
+  "resultado": "LISTA",
+  "migraciones": [
+    "20261006130000_capacidades_de_cliente",
+    "20261006130100_base_del_reloj_de_los_tiempos",
+    "20261006150000_funcion_de_finalidad_restaurable",
+    "20261006160000_texto_de_evidencia_visual",
+    "20261006160100_acto_de_evidencia_visual"
+  ]
+}

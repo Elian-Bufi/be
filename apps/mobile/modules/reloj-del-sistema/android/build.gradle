@@ -1,0 +1,17 @@
+// Módulo local de BE (precierre del 2026-10-06, §3): el reloj desde el arranque de Android. Lo enlaza solo el
+// autolinking de Expo desde apps/mobile/modules, como cualquier módulo de Expo; no agrega dependencias.
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.elianbufi.be'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.relojdelsistema"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+}

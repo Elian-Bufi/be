@@ -11,11 +11,14 @@
  *   duplicar (la misma clave), o guardado. No se anuncia nada guardado hasta que la API lo confirma. Si la foto no sube, el
  *   texto queda y se puede guardar sin ella.
  * - **La foto es privada:** la ven la persona y el profesional que la acompaña en Nutrición. No se reusa en recetas.
+ * - **Antes de la primera foto para un profesional** (`EVIDENCIA_VISUAL`, 08 §12.4 y §21.3; DL-125), si la API exige el
+ *   acto, la intención de subida responde 403 con el vínculo y la versión: se muestra el texto (`InformacionDeFotos`) y,
+ *   al aceptar, la subida sigue sola. «Ahora no» deja la foto y lo escrito, y la comida se puede guardar sin la foto.
  * - **Si Android cierra la app con la cámara abierta** (pasa en teléfonos con poca memoria), al volver se recupera lo
  *   escrito y la foto tomada (`getPendingResultAsync`). Lo escrito se guarda en la memoria del proceso solo mientras la
  *   cámara o la galería están abiertas; nunca va a disco.
  */
-import { COPY_NUTRICION, COPY_REGISTRO_DE_COMIDAS, type Resultado } from '@be/domain';
+import { COPY_EVIDENCIA_VISUAL, COPY_NUTRICION, COPY_REGISTRO_DE_COMIDAS, type DetalleDeEvidenciaVisualRequerida, type Resultado } from '@be/domain';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Image, Pressable, Text, useWindowDimensions, View } from 'react-native';
@@ -38,6 +41,7 @@ import {
 } from '../borrador-de-comida-diferente';
 import { preguntarAntesDeSalir, useCambiosSinGuardar } from '../cambios-sin-guardar';
 import { intentoDeLaComida } from '../comando-de-registro';
+import { InformacionDeFotos } from '../evidencia-visual';
 import { fechaLarga } from '../formato';
 import { IconoDeCamara, IconoDeGaleria } from '../iconos-de-nutricion';
 import { esIncierto, useClaveDeIntento } from '../intento';
@@ -59,7 +63,9 @@ const OPCIONES_DEL_SELECTOR: ImagePicker.ImagePickerOptions = {
   exif: false,
 };
 
-type ResultadoDeLaSubida = { readonly ok: true; readonly mediaId: string } | { readonly ok: false; readonly invalida: boolean };
+type ResultadoDeLaSubida =
+  | { readonly ok: true; readonly mediaId: string }
+  | { readonly ok: false; readonly invalida: boolean; readonly evidenciaVisual?: DetalleDeEvidenciaVisualRequerida };
 
 export function PantallaDeComidaDiferente({
   token,
@@ -102,6 +108,9 @@ export function PantallaDeComidaDiferente({
   const [avisoDeFoto, setAvisoDeFoto] = useState<string | null>(null);
   const [faltaContenido, setFaltaContenido] = useState(false);
   const [estado, setEstado] = useState<EstadoDelGuardado>(EDITANDO);
+  // DL-125: el texto de las fotos, mientras se muestra; y si la persona eligió «Ahora no».
+  const [informacionDeFotos, setInformacionDeFotos] = useState<DetalleDeEvidenciaVisualRequerida | null>(null);
+  const [sinAceptarFotos, setSinAceptarFotos] = useState(false);
   const subida = useRef<SubidaDeLaFoto | null>(null);
   const claveDeLaRuta = useClaveDeIntento();
   const montada = useRef(true);
@@ -168,6 +177,7 @@ export function PantallaDeComidaDiferente({
 
   const quitarFoto = () => {
     setFoto(null);
+    setSinAceptarFotos(false);
     subida.current = null;
     claveDeLaRuta.descartar();
     setReemplazando(false);
@@ -215,6 +225,8 @@ export function PantallaDeComidaDiferente({
       );
       claveDeLaRuta.registrar(r);
       if (sesionPerdida(r)) return { ok: false, invalida: false };
+      // DL-125: falta la información destacada para el profesional de Nutrición. No es un error de la foto.
+      if (!r.ok && r.tipo === 'API' && r.codigo === 'VISUAL_EVIDENCE_ACT_REQUIRED' && r.evidenciaVisual) return { ok: false, invalida: false, evidenciaVisual: r.evidenciaVisual };
       if (!r.ok) return { ok: false, invalida: fotoRechazada(r) };
       const venceMs = Date.parse(r.datos.data.expiresAt);
       subida.current = { uri: elegida.uri, mediaId: r.datos.data.mediaId, uploadPath: r.datos.data.uploadPath, venceMs: Number.isFinite(venceMs) ? venceMs : 0, subida: false };
@@ -253,6 +265,11 @@ export function PantallaDeComidaDiferente({
       setEstado({ tipo: 'subiendo' });
       const s = await subirLaFoto(fotoQueVa);
       if (!montada.current) return;
+      if (!s.ok && s.evidenciaVisual) {
+        setSinAceptarFotos(false);
+        setInformacionDeFotos(s.evidenciaVisual);
+        return setEstado(EDITANDO);
+      }
       if (!s.ok) return setEstado(s.invalida ? EDITANDO : { tipo: 'error-de-la-foto' });
       mediaIds = [s.mediaId];
     }
@@ -360,10 +377,26 @@ export function PantallaDeComidaDiferente({
       <CajaInformativa titulo={COPY_REGISTRO_DE_COMIDAS.macrosSinCalcular} texto={COPY_REGISTRO_DE_COMIDAS.macrosSinCalcularDetalle} />
 
       {estado.tipo === 'error-de-la-foto' ? <Aviso tipo="error" titulo={COPY_REGISTRO_DE_COMIDAS.fotoNoSubio} /> : null}
+      {sinAceptarFotos && foto ? <Aviso tipo="info" titulo={COPY_EVIDENCIA_VISUAL.sinLaFoto} /> : null}
       {estado.tipo === 'error-al-guardar' ? <Aviso tipo="error" titulo={estado.mensaje} /> : null}
       <Boton texto={textoDelBotonDeGuardar(estado, comida)} onPress={() => void guardar(true)} ocupado={estaOcupado(estado)} deshabilitado={eligiendo} />
-      {estado.tipo === 'error-de-la-foto' && descripcion.trim() ? <Boton texto={COPY_REGISTRO_DE_COMIDAS.guardarSinLaFoto} tipo="secundario" onPress={() => void guardar(false)} /> : null}
+      {(estado.tipo === 'error-de-la-foto' || (sinAceptarFotos && foto)) && descripcion.trim() ? <Boton texto={COPY_REGISTRO_DE_COMIDAS.guardarSinLaFoto} tipo="secundario" onPress={() => void guardar(false)} /> : null}
       <Boton texto={COPY_REGISTRO_DE_COMIDAS.volverAlPlan} tipo="secundario" onPress={volverAlPlan} deshabilitado={estaOcupado(estado)} />
+      {informacionDeFotos ? (
+        <InformacionDeFotos
+          token={token}
+          detalle={informacionDeFotos}
+          sesionPerdida={sesionPerdida}
+          alAceptar={() => {
+            setInformacionDeFotos(null);
+            void guardar(true);
+          }}
+          alCerrar={() => {
+            setInformacionDeFotos(null);
+            setSinAceptarFotos(true);
+          }}
+        />
+      ) : null}
     </View>
   );
 }

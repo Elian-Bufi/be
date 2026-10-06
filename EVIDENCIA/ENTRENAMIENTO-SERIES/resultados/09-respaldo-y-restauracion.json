@@ -1,0 +1,439 @@
+{
+  "prueba": "Respaldo y restauración locales con pg_dump y pg_restore 16.11 (precierre del 2026-10-06, §6)",
+  "origen": "be_test_entrenamiento_web: la base local del recorrido de punta a punta, con cuentas, planes, ejecuciones e imágenes sintéticas",
+  "herramienta": "EVIDENCIA/ENTRENAMIENTO-SERIES/herramientas/precierre/respaldo-y-restauracion.sh",
+  "casos": [
+    {
+      "caso": "1 · restauración directa de un respaldo con el esquema de hoy (sin la migración 20261006150000)",
+      "resultado": "FALLA",
+      "detalle": [
+        "pg_restore: error: COPY failed for table \"alcance_de_vinculo\": ERROR:  type \"Finalidad\" does not exist\r"
+      ],
+      "causa": "pg_restore carga los datos con search_path vacío; el CHECK de finalidad llama a be_finalidad_de_alcance, que nombra el tipo \"Finalidad\" sin esquema"
+    },
+    {
+      "caso": "2 · restauración por secciones: esquema, ALTER FUNCTION be_finalidad_de_alcance SET search_path, datos y lo demás",
+      "resultado": "IGUAL AL ORIGEN",
+      "procedimiento": "pg_dump -Fc → CREATE DATABASE → pg_restore --section=pre-data → ALTER FUNCTION be_finalidad_de_alcance SET search_path → --section=data → --section=post-data",
+      "modo": "secciones",
+      "baseRestaurada": "be_restaurada_130009",
+      "tamanoDelRespaldoBytes": 1641757,
+      "segundos": {
+        "respaldo": 2,
+        "restauracion": 9
+      },
+      "tablas": 94,
+      "filas": 1071,
+      "imagenes": 10,
+      "bytesDeImagenes": 976440,
+      "migraciones": 27,
+      "ultimaMigracion": "20261006100100_imagen_y_tiempos_de_entrenamiento",
+      "disparadores": 235,
+      "funciones": 65,
+      "restricciones": 361,
+      "origenIgualADestino": true,
+      "diferencias": []
+    },
+    {
+      "caso": "3 · restauración directa de un respaldo de una base con la corrección (lo que pasa después de desplegar la migración)",
+      "resultado": "IGUAL AL ORIGEN",
+      "procedimiento": "pg_dump -Fc --no-owner --no-acl → CREATE DATABASE → pg_restore --no-owner --no-acl --exit-on-error",
+      "modo": "directo",
+      "baseRestaurada": "be_restaurada_130142",
+      "tamanoDelRespaldoBytes": 1641719,
+      "segundos": {
+        "respaldo": 3,
+        "restauracion": 10
+      },
+      "tablas": 94,
+      "filas": 1071,
+      "imagenes": 10,
+      "bytesDeImagenes": 976440,
+      "migraciones": 27,
+      "ultimaMigracion": "20261006100100_imagen_y_tiempos_de_entrenamiento",
+      "disparadores": 235,
+      "funciones": 65,
+      "restricciones": 361,
+      "origenIgualADestino": true,
+      "diferencias": []
+    }
+  ],
+  "porTabla": {
+    "_prisma_migrations": {
+      "origen": 27,
+      "destino": 27
+    },
+    "acto_registrable": {
+      "origen": 18,
+      "destino": 18
+    },
+    "alcance_de_vinculo": {
+      "origen": 2,
+      "destino": 2
+    },
+    "alimento_habitual": {
+      "origen": 0,
+      "destino": 0
+    },
+    "anulacion_de_ingesta": {
+      "origen": 0,
+      "destino": 0
+    },
+    "anulacion_de_medicion": {
+      "origen": 0,
+      "destino": 0
+    },
+    "aplicacion_de_revision": {
+      "origen": 0,
+      "destino": 0
+    },
+    "aplicacion_de_revision_de_entrenamiento": {
+      "origen": 0,
+      "destino": 0
+    },
+    "asociacion_de_imagen_de_ejercicio": {
+      "origen": 12,
+      "destino": 12
+    },
+    "asociacion_de_imagen_de_receta": {
+      "origen": 0,
+      "destino": 0
+    },
+    "borrador_de_ejecucion_de_entrenamiento": {
+      "origen": 4,
+      "destino": 4
+    },
+    "candidato_de_importacion": {
+      "origen": 0,
+      "destino": 0
+    },
+    "capacidad_profesional": {
+      "origen": 0,
+      "destino": 0
+    },
+    "cita_de_respuesta_en_evaluacion_de_entrenamiento": {
+      "origen": 0,
+      "destino": 0
+    },
+    "comida_habitual": {
+      "origen": 0,
+      "destino": 0
+    },
+    "consentimiento": {
+      "origen": 2,
+      "destino": 2
+    },
+    "contenido_de_medio": {
+      "origen": 10,
+      "destino": 10
+    },
+    "control_de_sesion": {
+      "origen": 8,
+      "destino": 8
+    },
+    "correccion_de_ejecucion_de_entrenamiento": {
+      "origen": 0,
+      "destino": 0
+    },
+    "correccion_de_ingesta": {
+      "origen": 0,
+      "destino": 0
+    },
+    "correccion_de_medicion": {
+      "origen": 0,
+      "destino": 0
+    },
+    "credencial_local": {
+      "origen": 8,
+      "destino": 8
+    },
+    "decision_de_acceso": {
+      "origen": 228,
+      "destino": 228
+    },
+    "ejecucion_de_calculo": {
+      "origen": 0,
+      "destino": 0
+    },
+    "ejecucion_de_entrenamiento": {
+      "origen": 4,
+      "destino": 4
+    },
+    "ejercicio_de_catalogo": {
+      "origen": 18,
+      "destino": 18
+    },
+    "ejercicio_habitual": {
+      "origen": 0,
+      "destino": 0
+    },
+    "elemento_de_catalogo_nutricional": {
+      "origen": 48,
+      "destino": 48
+    },
+    "entrada_de_calculo": {
+      "origen": 0,
+      "destino": 0
+    },
+    "especificacion_antropometrica": {
+      "origen": 48,
+      "destino": 48
+    },
+    "evaluacion_antropometrica": {
+      "origen": 0,
+      "destino": 0
+    },
+    "evaluacion_de_entrenamiento": {
+      "origen": 2,
+      "destino": 2
+    },
+    "evaluacion_nutricional": {
+      "origen": 0,
+      "destino": 0
+    },
+    "evento_de_antropometria": {
+      "origen": 0,
+      "destino": 0
+    },
+    "evento_de_dominio": {
+      "origen": 18,
+      "destino": 18
+    },
+    "evento_de_entrenamiento": {
+      "origen": 38,
+      "destino": 38
+    },
+    "evento_de_formulario": {
+      "origen": 0,
+      "destino": 0
+    },
+    "evento_de_nutricion": {
+      "origen": 0,
+      "destino": 0
+    },
+    "evento_de_proceso": {
+      "origen": 2,
+      "destino": 2
+    },
+    "evento_de_tiempo_de_entrenamiento": {
+      "origen": 38,
+      "destino": 38
+    },
+    "evento_de_verificacion": {
+      "origen": 16,
+      "destino": 16
+    },
+    "evento_de_vinculo": {
+      "origen": 8,
+      "destino": 8
+    },
+    "evidencia_visual_de_ingesta": {
+      "origen": 0,
+      "destino": 0
+    },
+    "habilitacion": {
+      "origen": 4,
+      "destino": 4
+    },
+    "identidad": {
+      "origen": 8,
+      "destino": 8
+    },
+    "ingesta_nutricional": {
+      "origen": 0,
+      "destino": 0
+    },
+    "instantanea_de_plan_de_entrenamiento": {
+      "origen": 2,
+      "destino": 2
+    },
+    "instantanea_de_plan_nutricional": {
+      "origen": 0,
+      "destino": 0
+    },
+    "medicion_antropometrica": {
+      "origen": 0,
+      "destino": 0
+    },
+    "medio": {
+      "origen": 10,
+      "destino": 10
+    },
+    "metodo_de_acceso": {
+      "origen": 8,
+      "destino": 8
+    },
+    "objetivo_de_entrenamiento": {
+      "origen": 2,
+      "destino": 2
+    },
+    "objetivo_nutricional": {
+      "origen": 0,
+      "destino": 0
+    },
+    "perfil_profesional": {
+      "origen": 4,
+      "destino": 4
+    },
+    "perfil_propio": {
+      "origen": 8,
+      "destino": 8
+    },
+    "plan_de_entrenamiento": {
+      "origen": 2,
+      "destino": 2
+    },
+    "plan_nutricional": {
+      "origen": 0,
+      "destino": 0
+    },
+    "plantilla_de_formulario": {
+      "origen": 3,
+      "destino": 3
+    },
+    "plantilla_de_plan_de_entrenamiento": {
+      "origen": 0,
+      "destino": 0
+    },
+    "plantilla_de_plan_nutricional": {
+      "origen": 0,
+      "destino": 0
+    },
+    "proceso_operativo": {
+      "origen": 2,
+      "destino": 2
+    },
+    "proxima_revision": {
+      "origen": 0,
+      "destino": 0
+    },
+    "receta": {
+      "origen": 0,
+      "destino": 0
+    },
+    "rectificacion_de_cantidades": {
+      "origen": 0,
+      "destino": 0
+    },
+    "rectificacion_de_respuesta_de_formulario": {
+      "origen": 0,
+      "destino": 0
+    },
+    "referencia_de_calculo": {
+      "origen": 0,
+      "destino": 0
+    },
+    "registro_de_auditoria": {
+      "origen": 221,
+      "destino": 221
+    },
+    "registro_de_idempotencia": {
+      "origen": 56,
+      "destino": 56
+    },
+    "registro_de_supresion": {
+      "origen": 0,
+      "destino": 0
+    },
+    "resolucion_de_candidato": {
+      "origen": 0,
+      "destino": 0
+    },
+    "respuesta_de_formulario": {
+      "origen": 0,
+      "destino": 0
+    },
+    "retiro_de_especificacion": {
+      "origen": 23,
+      "destino": 23
+    },
+    "revision_de_entrenamiento": {
+      "origen": 0,
+      "destino": 0
+    },
+    "revision_nutricional": {
+      "origen": 0,
+      "destino": 0
+    },
+    "sesion": {
+      "origen": 21,
+      "destino": 21
+    },
+    "sesion_habitual": {
+      "origen": 0,
+      "destino": 0
+    },
+    "solicitud_de_cierre_de_cuenta": {
+      "origen": 0,
+      "destino": 0
+    },
+    "solicitud_de_formulario": {
+      "origen": 0,
+      "destino": 0
+    },
+    "solicitud_de_vinculo": {
+      "origen": 2,
+      "destino": 2
+    },
+    "verificacion_profesional": {
+      "origen": 4,
+      "destino": 4
+    },
+    "version_de_consentimiento": {
+      "origen": 2,
+      "destino": 2
+    },
+    "version_de_ejercicio": {
+      "origen": 18,
+      "destino": 18
+    },
+    "version_de_elemento_nutricional": {
+      "origen": 48,
+      "destino": 48
+    },
+    "version_de_especificacion_antropometrica": {
+      "origen": 49,
+      "destino": 49
+    },
+    "version_de_objetivo_de_entrenamiento": {
+      "origen": 2,
+      "destino": 2
+    },
+    "version_de_objetivo_nutricional": {
+      "origen": 0,
+      "destino": 0
+    },
+    "version_de_plan_de_entrenamiento": {
+      "origen": 2,
+      "destino": 2
+    },
+    "version_de_plan_nutricional": {
+      "origen": 0,
+      "destino": 0
+    },
+    "version_de_plantilla_de_formulario": {
+      "origen": 3,
+      "destino": 3
+    },
+    "version_de_plantilla_de_plan_de_entrenamiento": {
+      "origen": 0,
+      "destino": 0
+    },
+    "version_de_plantilla_de_plan_nutricional": {
+      "origen": 0,
+      "destino": 0
+    },
+    "version_de_receta": {
+      "origen": 0,
+      "destino": 0
+    },
+    "version_de_texto": {
+      "origen": 6,
+      "destino": 6
+    },
+    "vinculo": {
+      "origen": 2,
+      "destino": 2
+    }
+  }
+}

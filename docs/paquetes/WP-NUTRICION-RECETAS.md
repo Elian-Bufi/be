@@ -417,8 +417,11 @@ CI y Android, que queda pendiente.
 **Lo que cambió respecto de esta definición, y por qué.** El detalle está en DEUDA_LEGAJO, DL-119 a DL-121, «Implementación».
 - **En el catálogo, «global» es lo que no tiene creador:** si no, los alimentos de USDA sembrados no se veían.
 - **El acceso a una foto de comida se audita con el recurso `EVIDENCIA_VISUAL`,** sin una fila de acto registrable. A
-  ratificar.
+  ratificar. Desde el precierre del 2026-10-06 hay un acto registrable propuesto, con su texto y su mapeo a MED-01 y
+  MED-03, sin activar (#149, DL-125).
 - **Una comida diferente con su comida del plan ocupa esa comida en la APK,** con un registro por comida y día. En el
   contraste sigue fuera de la prescripción (CONS:599-612). A ratificar.
 - **La APK manda una foto por comida diferente,** aunque el contrato admite tres. «Plan» sigue leyendo API-NUT-14.
-- **sharp es la 0.35.4,** la misma que Next: con otra versión, la imagen OCI de la API no la encontraba.
+- **sharp es la 0.35.4,** la misma que Next: con otra versión, la imagen OCI de la API no la encontraba. En #149 pasa a la
+  0.35.5 en la API y en Next a la vez, por el aviso GHSA-wq5f-xc86-pv6w del 2026-10-06; la imagen de la API se probó en
+  la CI con esa versión.

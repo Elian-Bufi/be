@@ -11,21 +11,28 @@ import { errores } from '../http/errores';
  *   criterio de `nutricion/ingestas.service.ts:listarPropias` y de la historia de entrenamiento (DL-089). Una lectura
  *   que ya empezó cuando se confirma la revocación puede terminar.
  * - **Con bloqueo** (`bloquear: true`): toma el acto A3 en modo compartido, como el PDP. Lo usa una escritura propia que
- *   no pasa por el PDP (rectificar una respuesta, API-FRM-08): una revocación en curso la hace esperar y, al confirmarse,
- *   la deniega. El acto A3 es el último del orden único de bloqueos (prisma/concurrencia.ts) y la revocación solo
- *   bloquea ese acto, así que tomarlo primero no invierte el orden con nadie.
+ *   no pasa por el PDP (rectificar una respuesta, API-FRM-08; dejar incompleta una corrida, API-TIE-01): una revocación en
+ *   curso la hace esperar y, al confirmarse, la deniega. El acto A3 es el último del orden único de bloqueos
+ *   (prisma/concurrencia.ts) y la revocación solo bloquea ese acto, así que tomarlo primero no invierte el orden con nadie.
  *
  * DL-089 (entrenamiento) y DL-115 (antropometría y formularios).
  */
 export async function exigirA3Vigente(tx: Prisma.TransactionClient, identidadId: string, opciones: { readonly bloquear?: boolean } = {}): Promise<void> {
+  if (!(await tieneA3Vigente(tx, identidadId, opciones))) throw errores.accionNoPermitida();
+}
+
+/**
+ * Lo mismo, sin lanzar: para la operación que, sin A3, no responde un error sino otra cosa (la sesión en curso, API-TIE-04,
+ * no ofrece ninguna) o sigue por otro camino (dejar incompleta una corrida, API-TIE-01, vuelve al PDP de su profesional).
+ */
+export async function tieneA3Vigente(tx: Prisma.TransactionClient, identidadId: string, opciones: { readonly bloquear?: boolean } = {}): Promise<boolean> {
   if (opciones.bloquear) {
     const filas = await tx.$queryRaw<{ id: string }[]>`
       SELECT "id"::text FROM "acto_registrable"
        WHERE "identidad_id" = ${identidadId}::uuid AND "tipo" = 'DATOS_SALUD_BE' AND "estado" = 'VIGENTE' FOR SHARE`;
-    if (filas.length === 0) throw errores.accionNoPermitida();
-    return;
+    return filas.length > 0;
   }
   const [a3] = await tx.$queryRaw<{ vigente: boolean }[]>`
     SELECT EXISTS (SELECT 1 FROM "acto_registrable" WHERE "identidad_id" = ${identidadId}::uuid AND "tipo" = 'DATOS_SALUD_BE' AND "estado" = 'VIGENTE') AS "vigente"`;
-  if (!a3?.vigente) throw errores.accionNoPermitida();
+  return a3?.vigente === true;
 }

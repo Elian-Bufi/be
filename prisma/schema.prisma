@@ -67,6 +67,8 @@ enum TipoDeTexto {
   /// B2 por perfil profesional (08 §12.3). WP-03.
   CONSENTIMIENTO_PROFESIONAL_SANITARIO
   CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO
+  /// La información destacada de las fotos de comidas (08 §12.4, §21.3). Precierre del 2026-10-06: una propuesta (DL-125).
+  EVIDENCIA_VISUAL
 }
 
 /// 08 §12.4 — actos registrables tipificados de la Relación A (A1, A2, A3).
@@ -190,6 +192,9 @@ model Identidad {
   // WP-NUTRICION-RECETAS (DL-119, DL-120)
   recetas Receta[] @relation("RecetaDelProfesional")
   medios  Medio[]  @relation("MedioDelPropietario")
+
+  // Precierre del 2026-10-06, §2 (DL-122)
+  capacidadesDeCliente CapacidadDeClienteDeclarada[] @relation("CapacidadDeClienteDeLaIdentidad")
 
   @@map("identidad")
 }
@@ -323,11 +328,16 @@ model ActoRegistrable {
   momentoDeOcurrencia DateTime                @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro   DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
   momentoDeRevocacion DateTime?               @map("momento_de_revocacion") @db.Timestamptz(3)
+  /// DL-125: el alcance de vínculo de Nutrición de un acto `EVIDENCIA_VISUAL` (08 §12.2, «B2 reforzado»). Solo ese tipo lo
+  /// lleva, y siempre (CHECK); como máximo uno vigente por alcance (índice parcial). Inmutable, como el resto de la evidencia.
+  alcanceDeVinculoId  String?                 @map("alcance_de_vinculo_id") @db.Uuid
 
-  identidad      Identidad      @relation(fields: [identidadId], references: [id], onDelete: Restrict)
-  versionDeTexto VersionDeTexto @relation(fields: [versionDeTextoId], references: [id], onDelete: Restrict)
+  identidad        Identidad         @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  versionDeTexto   VersionDeTexto    @relation(fields: [versionDeTextoId], references: [id], onDelete: Restrict)
+  alcanceDeVinculo AlcanceDeVinculo? @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([identidadId, tipo, estado])
+  @@index([alcanceDeVinculoId])
   @@map("acto_registrable")
 }
 
@@ -618,6 +628,8 @@ model AlcanceDeVinculo {
   consentimientos   Consentimiento[]
   eventos           EventoDeVinculo[]
   decisiones        DecisionDeAcceso[]
+  /// DL-125: los actos `EVIDENCIA_VISUAL` de este alcance.
+  actosDeEvidenciaVisual ActoRegistrable[]
 
   @@index([vinculoId, alcance])
   @@map("alcance_de_vinculo")
@@ -1718,10 +1730,12 @@ model EjercicioDeCatalogo {
   creadoPorId       String?               @map("creado_por_id") @db.Uuid
   momentoDeRegistro DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  creadoPor    Identidad?              @relation("EjercicioCreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  creadoPor    Identidad?                      @relation("EjercicioCreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   versiones    VersionDeEjercicio[]
-  importadoPor ResolucionDeCandidato[] @relation("EjercicioImportado")
-  habitualesDe EjercicioHabitual[]     @relation("EjercicioHabitualDelCatalogo")
+  importadoPor ResolucionDeCandidato[]         @relation("EjercicioImportado")
+  habitualesDe EjercicioHabitual[]             @relation("EjercicioHabitualDelCatalogo")
+  /// DL-123: la historia de su imagen (solo los cargados a mano por un profesional la tienen).
+  imagenes     AsociacionDeImagenDeEjercicio[]
 
   @@map("ejercicio_de_catalogo")
 }
@@ -1735,9 +1749,11 @@ model VersionDeEjercicio {
   procedencia       Json
   momentoDeRegistro DateTime                 @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  ejercicio   EjercicioDeCatalogo @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  predecesora VersionDeEjercicio? @relation("CadenaDeEjercicio", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  sucesora    VersionDeEjercicio? @relation("CadenaDeEjercicio")
+  ejercicio   EjercicioDeCatalogo             @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora VersionDeEjercicio?             @relation("CadenaDeEjercicio", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora    VersionDeEjercicio?             @relation("CadenaDeEjercicio")
+  /// DL-123: las imágenes asociadas a esta versión (REG-06-134: la versión a la que resulta aplicable).
+  imagenes    AsociacionDeImagenDeEjercicio[]
 
   @@index([ejercicioId])
   @@map("version_de_ejercicio")
@@ -1922,9 +1938,11 @@ model BorradorDeEjecucionDeEntrenamiento {
   momentoDeRegistro      DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
   momentoDeActualizacion DateTime                @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
 
-  asesorado     Identidad                    @relation("BorradorDeEjecucionDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  versionDePlan VersionDePlanDeEntrenamiento @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  ejecucion     EjecucionDeEntrenamiento?
+  asesorado       Identidad                       @relation("BorradorDeEjecucionDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDePlan   VersionDePlanDeEntrenamiento    @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ejecucion       EjecucionDeEntrenamiento?
+  /// DL-124: los eventos de tiempo de su corrida, de solo agregar.
+  eventosDeTiempo EventoDeTiempoDeEntrenamiento[]
 
   @@unique([asesoradoId, versionDePlanId, sesionPlanificadaId, fechaLocal])
   @@map("borrador_de_ejecucion_de_entrenamiento")
@@ -2442,9 +2460,12 @@ enum MetodoDeCalculoNutricional {
 }
 
 /// DL-120: para qué es el medio. Una foto de una comida es del titular y nunca se reusa como imagen de receta.
+/// DL-123 (WP-ENTRENAMIENTO-SERIES): REFERENCIA_DE_EJERCICIO, la imagen de un ejercicio propio de un profesional de
+/// Entrenamiento. Entró en su propia migración: PostgreSQL no usa un valor de enum en la transacción que lo crea.
 enum FinalidadDeMedio {
   RECETA_REFERENCIA
   EVIDENCIA_DE_INGESTA
+  REFERENCIA_DE_EJERCICIO
 }
 
 /// DL-120: PENDIENTE (intención sin bytes) → DISPONIBLE (subido y recodificado) → SUPRIMIDO (bytes borrados). Trigger.
@@ -2543,10 +2564,11 @@ model Medio {
   momentoDeSupresion  DateTime?           @map("momento_de_supresion") @db.Timestamptz(3)
   motivoDeSupresion   String?             @map("motivo_de_supresion")
 
-  propietario     Identidad                    @relation("MedioDelPropietario", fields: [propietarioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  contenido       ContenidoDeMedio?
-  imagenDeRecetas AsociacionDeImagenDeReceta[]
-  evidenciaVisual EvidenciaVisualDeIngesta?
+  propietario        Identidad                       @relation("MedioDelPropietario", fields: [propietarioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  contenido          ContenidoDeMedio?
+  imagenDeRecetas    AsociacionDeImagenDeReceta[]
+  evidenciaVisual    EvidenciaVisualDeIngesta?
+  imagenDeEjercicios AsociacionDeImagenDeEjercicio[]
 
   @@index([propietarioId, finalidad, estado])
   @@map("medio")
@@ -2634,4 +2656,136 @@ model RectificacionDeCantidades {
 
   @@index([ingestaId])
   @@map("rectificacion_de_cantidades")
+}
+
+// ─── WP-ENTRENAMIENTO-SERIES (DL-123, DL-124) ────────────────────────────────────────────────────────────────────────
+// docs/paquetes/WP-ENTRENAMIENTO-SERIES.md §9. Todo es aditivo: el plan no cambia de tablas (los objetivos por serie de
+// DL-122 viajan en su JSON). Las garantías que Prisma no modela (listas blancas, solo agregar, una corrida por borrador y
+// una sesión en curso por titular) están en la migración 20261006100100.
+
+/// DL-123: cada cambio de la imagen de un ejercicio: asociar un medio (también para reemplazar la vigente) o retirarla.
+enum CambioDeImagenDeEjercicio {
+  ASOCIAR
+  RETIRAR
+}
+
+/// DL-123: la revisión técnica de la imagen. Ilustra para reconocer el ejercicio; no certifica la técnica.
+enum RevisionTecnicaDeImagen {
+  PENDIENTE_DE_REVISION_PROFESIONAL
+  REVISADA_POR_PROFESIONAL
+}
+
+/// DL-124: el tipo de un evento de tiempo (`EventoDeTiempoSchema`). Abrir la técnica de un ejercicio no es ninguno.
+enum TipoDeEventoDeTiempo {
+  SESION_INICIADA
+  SESION_PAUSADA
+  SESION_REANUDADA
+  SESION_FINALIZADA
+  EJERCICIO_ACTIVADO
+  DESCANSO_INICIADO
+  DESCANSO_FINALIZADO
+  SERIE_CRONOMETRADA_INICIADA
+  SERIE_CRONOMETRADA_FINALIZADA
+  MEDICION_DEJADA_INCOMPLETA
+}
+
+/// DL-124: cómo se tomó el instante de un evento: con el reloj monotónico de la app, reconstruido con el civil o declarado.
+enum OrigenDelInstante {
+  MONOTONICO
+  RELOJ_CIVIL_RECUPERADO
+  DECLARADO
+}
+
+/// DL-124 (precierre del 2026-10-06, §3): la base del reloj monotónico de un instante, la de `BaseDelReloj` del dominio.
+/// DESDE_EL_ARRANQUE cuenta el reposo del teléfono y su ancla nombra el arranque; DEL_PROCESO es el de la app
+/// (`performance.now()`) y su ancla nombra el proceso. Dos instantes de bases distintas nunca se restan.
+enum BaseDelReloj {
+  DESDE_EL_ARRANQUE
+  DEL_PROCESO
+}
+
+/// DL-123 — Cada cambio de la imagen de un ejercicio propio (asociar, reemplazar o retirar) es una fila nueva, con número
+/// correlativo por ejercicio; la vigente es la de mayor `numero`. Se asocia por identidad y versión, nunca por nombre, y
+/// solo a un ejercicio PROFESSIONAL_MANUAL de quien asocia (REG-06-135). Al asociar lleva el medio (REFERENCIA_DE_EJERCICIO,
+/// propio y disponible), el texto alternativo, la licencia (obligatoria, REG-06-134) y la revisión técnica; al retirar, nada
+/// de eso: el medio no se borra. Append-only.
+model AsociacionDeImagenDeEjercicio {
+  id                   String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ejercicioId          String                    @map("ejercicio_id") @db.Uuid
+  versionDeEjercicioId String                    @map("version_de_ejercicio_id") @db.Uuid
+  numero               Int
+  cambio               CambioDeImagenDeEjercicio
+  medioId              String?                   @map("medio_id") @db.Uuid
+  textoAlternativo     String?                   @map("texto_alternativo")
+  /// `{ kind: 'NO_EXTERNAL_LICENSE', usage }` o `{ kind: 'EXTERNAL', id, label, url }` (LicenciaDeImagenSchema).
+  licencia             Json?
+  revisionTecnica      RevisionTecnicaDeImagen?  @map("revision_tecnica")
+  autorId              String                    @map("autor_id") @db.Uuid
+  procedencia          Json
+  momentoDeRegistro    DateTime                  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ejercicio          EjercicioDeCatalogo @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeEjercicio VersionDeEjercicio  @relation(fields: [versionDeEjercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  medio              Medio?              @relation(fields: [medioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([ejercicioId, numero])
+  @@index([medioId])
+  @@index([versionDeEjercicioId])
+  @@map("asociacion_de_imagen_de_ejercicio")
+}
+
+/// DL-124 — Un evento de tiempo de la sesión en curso, colgado del borrador de ejecución. `contenido` es el evento tal
+/// como se validó (EventoDeTiempoSchema): es lo que se compara para decidir un duplicado o un conflicto. Las columnas
+/// repiten lo que se consulta: la corrida, la secuencia sin huecos, el identificador del cliente, el tipo y el instante con
+/// sus dos relojes. `descanso_recomendado_segundos` es el recomendado histórico de la serie al iniciar un descanso (la
+/// instantánea del plan); `null` en cualquier otro evento. `momento_de_recepcion` no reemplaza al reloj de la sesión.
+/// `base_del_reloj` es la base del monotónico, con el ancla (migración 20261006130100). Las filas anteriores no la
+/// tienen: se tomaron con `performance.now()` y se leen con la base del proceso. Append-only.
+model EventoDeTiempoDeEntrenamiento {
+  id                          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  borradorId                  String               @map("borrador_id") @db.Uuid
+  asesoradoId                 String               @map("asesorado_id") @db.Uuid
+  corridaId                   String               @map("corrida_id")
+  secuencia                   Int
+  eventoId                    String               @map("evento_id")
+  tipo                        TipoDeEventoDeTiempo
+  contenido                   Json
+  instanteCivil               DateTime             @map("instante_civil") @db.Timestamptz(3)
+  anclaMonotonica             String?              @map("ancla_monotonica")
+  msMonotonicos               Float?               @map("ms_monotonicos")
+  baseDelReloj                BaseDelReloj?        @map("base_del_reloj")
+  origenDelInstante           OrigenDelInstante    @map("origen_del_instante")
+  descansoRecomendadoSegundos Int?                 @map("descanso_recomendado_segundos")
+  procedencia                 Json
+  momentoDeRecepcion          DateTime             @default(now()) @map("momento_de_recepcion") @db.Timestamptz(3)
+
+  borrador BorradorDeEjecucionDeEntrenamiento @relation(fields: [borradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([borradorId, secuencia])
+  @@unique([borradorId, eventoId])
+  @@index([asesoradoId, tipo])
+  @@map("evento_de_tiempo_de_entrenamiento")
+}
+
+// ─── Compatibilidad de clientes (precierre del 2026-10-06, §2; DL-122) ───────────────────────────────────────────────
+// packages/domain/src/compatibilidad-de-clientes.ts. Las garantías que Prisma no modela (las capacidades conocidas y el
+// orden de las dos fechas) están en la migración 20261006130000.
+
+/// Que una identidad usó un cliente que declara una capacidad (`X-BE-Capabilities`). Lo registra la API cuando el titular
+/// abre «Hoy» (API-TRN-14) o una sesión para registrar (API-SER-02) con la capacidad declarada, a lo sumo una vez por hora:
+/// la primera vez y la última, con la superficie de esa última. Habilita activar un plan que exige objetivos por serie
+/// (API-TRN-12) y lo informa API-SER-01. Nada más: ni el dispositivo, ni la versión, ni la red.
+model CapacidadDeClienteDeclarada {
+  id                          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId                 String      @map("identidad_id") @db.Uuid
+  /// Una de `CAPACIDADES_CONOCIDAS` del dominio.
+  capacidad                   String
+  superficie                  Superficie?
+  momentoDePrimeraDeclaracion DateTime    @default(now()) @map("momento_de_primera_declaracion") @db.Timestamptz(3)
+  momentoDeUltimaDeclaracion  DateTime    @default(now()) @map("momento_de_ultima_declaracion") @db.Timestamptz(3)
+
+  identidad Identidad @relation("CapacidadDeClienteDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([identidadId, capacidad])
+  @@map("capacidad_de_cliente_declarada")
 }

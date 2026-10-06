@@ -60,7 +60,18 @@ export type Ruta =
   | { readonly nombre: 'historial-de-entrenamiento'; readonly desde?: Ruta }
   | { readonly nombre: 'plan-de-entrenamiento'; readonly id: string; readonly desde?: Ruta }
   | { readonly nombre: 'mi-solicitud'; readonly id: string; readonly desde?: Ruta }
-  | { readonly nombre: 'sesion-de-entrenamiento'; readonly draftId: string; readonly sesion: SesionDeOcurrencia; readonly fecha: string; readonly desde?: Ruta }
+  // WP-ENTRENAMIENTO-SERIES: la sesión enfocada. `sesion` es la de «Hoy» (API-TRN-14), que se muestra mientras llega
+  // API-SER-02; `modo` dice si lleva cronómetros (hoy) o no (otro día: el pasado no se cronometra).
+  | {
+      readonly nombre: 'sesion-de-entrenamiento';
+      readonly draftId: string;
+      readonly sesion?: SesionDeOcurrencia;
+      readonly fecha: string;
+      readonly occurrenceId?: string;
+      readonly modo?: 'en-vivo' | 'otro-dia';
+      readonly etiqueta?: string;
+      readonly desde?: Ruta;
+    }
   | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string; readonly desde?: Ruta };
 
 /** Por qué termina la sesión en el APK; cada motivo tiene su aviso en App.tsx. */
@@ -108,6 +119,15 @@ export function alIniciarSesion(login: Ruta): Ruta {
 /** Si la pantalla es una raíz: la abre la barra, no tiene origen y no lleva volver en la cabecera, sino el menú. */
 export function esRaiz(ruta: Ruta): boolean {
   return ZONAS.some((z) => z.ruta.nombre === ruta.nombre);
+}
+
+/**
+ * Las pantallas que no muestran la barra inferior (WP-ENTRENAMIENTO-SERIES §7.2): la sesión enfocada, para que la tabla,
+ * el descanso y sus acciones tengan la pantalla entera. Se sale con «Volver» de la cabecera o con el botón atrás, que
+ * conservan el estado: el entrenamiento sigue guardado en el teléfono.
+ */
+export function sinBarraInferior(ruta: Ruta): boolean {
+  return ruta.nombre === 'sesion-de-entrenamiento';
 }
 
 /** Si una raíz trae un pedido de una sola vez (una acción, una vista, una medida): abre arriba, no donde se la dejó. */
@@ -318,7 +338,7 @@ export function textoDeVolverA(destino: Ruta): string {
     case 'hoy':
       return 'Volver a Nutrición';
     case 'entrenamiento':
-      return 'Volver a Entrenamiento de hoy';
+      return 'Volver a Entrenamiento';
     case 'registros-nutricionales':
       return 'Volver a Registros';
     case 'registro-nutricional':

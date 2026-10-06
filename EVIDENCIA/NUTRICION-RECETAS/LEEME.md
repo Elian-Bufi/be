@@ -172,5 +172,6 @@ pruebas que tocaba el cambio de este cierre.
 - **DL-119 a DL-121:** implementadas y probadas localmente. Sin integrar, y pendientes la prueba remota y en Android.
 - **DL-120** documenta límites, respaldo, retención, borrado autorizado y cómo cambiar de proveedor. Deja aislados dos
   pendientes:
-  - el acto `EVIDENCIA_VISUAL` del 08 §12.4 no tiene texto versionado;
+  - el acto `EVIDENCIA_VISUAL` del 08 §12.4 no tenía texto versionado; desde el precierre del 2026-10-06 hay uno
+    **propuesto**, con su aceptación y revocación, en #149 (DL-125), sin activar;
   - la base de `test` vence cerca del 2026-10-18, y seguir con ella es una decisión de servicio.

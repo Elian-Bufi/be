@@ -1,0 +1,129 @@
+{
+  "controles": [
+    {
+      "nombre": "después del login vuelve a la pestaña Entrenamiento del asesorado",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "Sentadilla goblet · serie 1: el plan histórico «16 kg · 12–16 rep. · RIR 3» y lo registrado «16 kg · 14 rep. · RIR 3»",
+      "ok": true,
+      "detalle": "[\"1\",\"16 kg · 12–16 rep. · RIR 3\",\"16 kg · 14 rep. · RIR 3\",\"Rep.: dentro del rango · RIR: igual · Carga: igual\",\"01:30 registrado · 01:30 recomendado · ±00:00\",\"Duración medida 00:40\"]"
+    },
+    {
+      "nombre": "Sentadilla goblet · serie 2: el plan histórico «18 kg · 10–12 rep. · RIR 2» y lo registrado «18 kg · 11 rep. · RIR 2»",
+      "ok": true,
+      "detalle": "[\"2\",\"18 kg · 10–12 rep. · RIR 2\",\"18 kg · 11 rep. · RIR 2\",\"Rep.: dentro del rango · RIR: igual · Carga: igual\",\"02:15 registrado · 02:00 recomendado · +00:15\",\"Duración medida 00:40\"]"
+    },
+    {
+      "nombre": "Sentadilla goblet · serie 3: el plan histórico «20 kg · 8–10 rep. · RIR 1» y lo registrado «20 kg · 9 rep.»",
+      "ok": true,
+      "detalle": "[\"3\",\"20 kg · 8–10 rep. · RIR 1\",\"20 kg · 9 rep.\",\"Rep.: dentro del rango · RIR: sin dato · Carga: igual\",\"—\",\"Duración desconocida\"]"
+    },
+    {
+      "nombre": "Peso muerto rumano con mancuernas · serie 1: el plan histórico «10 kg · 10–12 rep. · RIR 3» y lo registrado «10 kg · 12 rep. · RIR 3»",
+      "ok": true,
+      "detalle": "[\"1\",\"10 kg · 10–12 rep. · RIR 3\",\"10 kg · 12 rep. · RIR 3\",\"Rep.: dentro del rango · RIR: igual · Carga: igual\",\"—\",\"Duración desconocida\"]"
+    },
+    {
+      "nombre": "Sentadilla goblet · descanso de la serie 1: «01:30 registrado · 01:30 recomendado · ±00:00»",
+      "ok": true,
+      "detalle": "[\"1\",\"16 kg · 12–16 rep. · RIR 3\",\"16 kg · 14 rep. · RIR 3\",\"Rep.: dentro del rango · RIR: igual · Carga: igual\",\"01:30 registrado · 01:30 recomendado · ±00:00\",\"Duración medida 00:40\"]"
+    },
+    {
+      "nombre": "Sentadilla goblet · descanso de la serie 2: «02:15 registrado · 02:00 recomendado · +00:15»",
+      "ok": true,
+      "detalle": "[\"2\",\"18 kg · 10–12 rep. · RIR 2\",\"18 kg · 11 rep. · RIR 2\",\"Rep.: dentro del rango · RIR: igual · Carga: igual\",\"02:15 registrado · 02:00 recomendado · +00:15\",\"Duración medida 00:40\"]"
+    },
+    {
+      "nombre": "Sentadilla goblet · serie 1: «Duración medida 00:40»",
+      "ok": true,
+      "detalle": "[\"1\",\"16 kg · 12–16 rep. · RIR 3\",\"16 kg · 14 rep. · RIR 3\",\"Rep.: dentro del rango · RIR: igual · Carga: igual\",\"01:30 registrado · 01:30 recomendado · ±00:00\",\"Duración medida 00:40\"]"
+    },
+    {
+      "nombre": "Sentadilla goblet · serie 2: «Duración medida 00:40»",
+      "ok": true,
+      "detalle": "[\"2\",\"18 kg · 10–12 rep. · RIR 2\",\"18 kg · 11 rep. · RIR 2\",\"Rep.: dentro del rango · RIR: igual · Carga: igual\",\"02:15 registrado · 02:00 recomendado · +00:15\",\"Duración medida 00:40\"]"
+    },
+    {
+      "nombre": "Sentadilla goblet · serie 3: «Duración desconocida»",
+      "ok": true,
+      "detalle": "[\"3\",\"20 kg · 8–10 rep. · RIR 1\",\"20 kg · 9 rep.\",\"Rep.: dentro del rango · RIR: sin dato · Carga: igual\",\"—\",\"Duración desconocida\"]"
+    },
+    {
+      "nombre": "«Piernas A» · Tiempo transcurrido: «15:00 · medido»",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"15:00 · medido\",\"Pausas\":\"02:00 · medido\",\"Sin pausas\":\"13:00 · medido\",\"Sentadilla goblet\":\"07:30 · medido\",\"Peso muerto rumano con mancuernas\":\"05:30 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
+    },
+    {
+      "nombre": "«Piernas A» · Pausas: «02:00 · medido»",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"15:00 · medido\",\"Pausas\":\"02:00 · medido\",\"Sin pausas\":\"13:00 · medido\",\"Sentadilla goblet\":\"07:30 · medido\",\"Peso muerto rumano con mancuernas\":\"05:30 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
+    },
+    {
+      "nombre": "«Piernas A» · Sin pausas: «13:00 · medido»",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"15:00 · medido\",\"Pausas\":\"02:00 · medido\",\"Sin pausas\":\"13:00 · medido\",\"Sentadilla goblet\":\"07:30 · medido\",\"Peso muerto rumano con mancuernas\":\"05:30 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
+    },
+    {
+      "nombre": "«Piernas A» · Sentadilla goblet: «07:30 · medido»",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"15:00 · medido\",\"Pausas\":\"02:00 · medido\",\"Sin pausas\":\"13:00 · medido\",\"Sentadilla goblet\":\"07:30 · medido\",\"Peso muerto rumano con mancuernas\":\"05:30 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
+    },
+    {
+      "nombre": "«Piernas A» · Peso muerto rumano con mancuernas: «05:30 · medido»",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"15:00 · medido\",\"Pausas\":\"02:00 · medido\",\"Sin pausas\":\"13:00 · medido\",\"Sentadilla goblet\":\"07:30 · medido\",\"Peso muerto rumano con mancuernas\":\"05:30 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
+    },
+    {
+      "nombre": "«Piernas A» · Sin ejercicio asignado: «00:00 · medido»",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"15:00 · medido\",\"Pausas\":\"02:00 · medido\",\"Sin pausas\":\"13:00 · medido\",\"Sentadilla goblet\":\"07:30 · medido\",\"Peso muerto rumano con mancuernas\":\"05:30 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
+    },
+    {
+      "nombre": "«Recuperación de prueba» · Zancada estática · el descanso que quedó abierto al cerrarse la app: «Incompleto · 01:30 recomendado»",
+      "ok": true,
+      "detalle": "[\"1\",\"10–12 rep.\",\"carga no registrada · 11 rep.\",\"Rep.: dentro del rango\",\"Incompleto · 01:30 recomendado\",\"Duración desconocida\"]"
+    },
+    {
+      "nombre": "«Recuperación de prueba» · Tiempo transcurrido: «03:23 · estimado» (el cálculo de la API, a 0 ms de las anclas del recorrido)",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"03:23 · estimado\",\"Pausas\":\"00:00 · estimado\",\"Sin pausas\":\"03:23 · estimado\",\"Zancada estática\":\"03:23 · estimado\",\"Sin ejercicio asignado\":\"00:00 · estimado\"}"
+    },
+    {
+      "nombre": "«Recuperación de prueba» · Pausas: «00:00 · estimado» (el cálculo de la API, a 0 ms de las anclas del recorrido)",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"03:23 · estimado\",\"Pausas\":\"00:00 · estimado\",\"Sin pausas\":\"03:23 · estimado\",\"Zancada estática\":\"03:23 · estimado\",\"Sin ejercicio asignado\":\"00:00 · estimado\"}"
+    },
+    {
+      "nombre": "«Recuperación de prueba» · Sin pausas: «03:23 · estimado» (el cálculo de la API, a 0 ms de las anclas del recorrido)",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"03:23 · estimado\",\"Pausas\":\"00:00 · estimado\",\"Sin pausas\":\"03:23 · estimado\",\"Zancada estática\":\"03:23 · estimado\",\"Sin ejercicio asignado\":\"00:00 · estimado\"}"
+    },
+    {
+      "nombre": "«Recuperación con el reloj del arranque» · Zancada estática · el descanso que quedó abierto al cerrarse la app: «Incompleto · 01:30 recomendado»",
+      "ok": true,
+      "detalle": "[\"1\",\"10–12 rep.\",\"carga no registrada · 11 rep.\",\"Rep.: dentro del rango\",\"Incompleto · 01:30 recomendado\",\"Duración desconocida\"]"
+    },
+    {
+      "nombre": "«Recuperación con el reloj del arranque» · Tiempo transcurrido: «03:36 · medido» (el cálculo de la API, a 0 ms de las anclas del recorrido)",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"03:36 · medido\",\"Pausas\":\"00:00 · medido\",\"Sin pausas\":\"03:36 · medido\",\"Zancada estática\":\"03:36 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
+    },
+    {
+      "nombre": "«Recuperación con el reloj del arranque» · Pausas: «00:00 · medido» (el cálculo de la API, a 0 ms de las anclas del recorrido)",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"03:36 · medido\",\"Pausas\":\"00:00 · medido\",\"Sin pausas\":\"03:36 · medido\",\"Zancada estática\":\"03:36 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
+    },
+    {
+      "nombre": "«Recuperación con el reloj del arranque» · Sin pausas: «03:36 · medido» (el cálculo de la API, a 0 ms de las anclas del recorrido)",
+      "ok": true,
+      "detalle": "{\"Tiempo transcurrido\":\"03:36 · medido\",\"Pausas\":\"00:00 · medido\",\"Sin pausas\":\"03:36 · medido\",\"Zancada estática\":\"03:36 · medido\",\"Sin ejercicio asignado\":\"00:00 · medido\"}"
+    },
+    {
+      "nombre": "sin errores de página ni de CSP",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}
