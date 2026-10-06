@@ -8,6 +8,8 @@
  *   actual · Registros → Detalle de registro.
  * - WP-05 (docs/paquetes/WP-05.md §5): Cuenta → Antropometría: Mi evolución (RF-049, RF-065), de solo lectura y con
  *   los días sin medición vigente a la vista como «Sin dato».
+ * - WP-NUTRICION-RECETAS (docs/paquetes/WP-NUTRICION-RECETAS.md §9): Nutrición con pestañas Hoy · Plan · Registros; en
+ *   Hoy, el carrusel de opciones de cada comida → el detalle de una opción («¿Cuánto comiste?») y «Comí algo diferente».
  * Desde DL-117 (Dirección, 2026-10-04), con sesión se navega con la barra inferior: Inicio, Nutrición, Entrenamiento,
  * Evolución e Información (src/barra-de-zonas.tsx). Cuenta se abre desde el avatar de la cabecera única
  * (src/cabecera.tsx), y el menú auxiliar lleva a funciones que no tienen lugar en la barra (src/menu-auxiliar.tsx). Al
@@ -41,6 +43,7 @@ import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lectur
 import { MenuAuxiliar } from './src/menu-auxiliar';
 import { alIniciarSesion, anterior, esRaiz, mismaPantalla, navegar, pestanaActiva, requiereSesion, traePedido, type ModoDeNavegacion, type Ruta, type Salida } from './src/navegacion';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
+import { PantallaDeComidaDiferente } from './src/pantallas/comida-diferente';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
 import { PantallaDeCuenta } from './src/pantallas/cuenta';
 import { PantallaDeEjecucionDeEntrenamiento, PantallaDeEntrenamiento, PantallaDeSesion } from './src/pantallas/entrenamiento';
@@ -49,6 +52,7 @@ import { PantallaDeHistorial, PantallaDePlanDeEntrenamiento } from './src/pantal
 import { PantallaDeInicio } from './src/pantallas/inicio';
 import { PantallaDeLogin } from './src/pantallas/login';
 import { PantallaDeHoy, PantallaDePlanActual, PantallaDeRegistroNutricional, PantallaDeRegistros } from './src/pantallas/nutricion';
+import { PantallaDeOpcionDeComida } from './src/pantallas/opcion-de-comida';
 import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRegistro } from './src/pantallas/registro';
 import { PantallaDeVinculo } from './src/pantallas/vinculo';
@@ -418,7 +422,33 @@ function Contenido() {
               {ruta.nombre === 'hoy' ? <PantallaDeHoy token={sesion.token} salir={salir} ir={ir} subir={subir} accion={ruta.accion} llevarA={llevarA} /> : null}
               {ruta.nombre === 'plan-actual' ? <PantallaDePlanActual token={sesion.token} salir={salir} /> : null}
               {ruta.nombre === 'registros-nutricionales' ? <PantallaDeRegistros token={sesion.token} salir={salir} ir={ir} /> : null}
-              {ruta.nombre === 'registro-nutricional' ? <PantallaDeRegistroNutricional key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
+              {ruta.nombre === 'registro-nutricional' ? <PantallaDeRegistroNutricional key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'opcion-de-comida' ? (
+                <PantallaDeOpcionDeComida
+                  key={`${ruta.id}:${ruta.registroId ?? ''}`}
+                  token={sesion.token}
+                  opcionId={ruta.id}
+                  comidaId={ruta.comidaId}
+                  registroId={ruta.registroId}
+                  salir={salir}
+                  ir={ir}
+                  volver={volver}
+                />
+              ) : null}
+              {ruta.nombre === 'comida-diferente' ? (
+                <PantallaDeComidaDiferente
+                  key={ruta.comidaId}
+                  token={sesion.token}
+                  planId={ruta.planId}
+                  diaTipoId={ruta.diaTipoId}
+                  comidaId={ruta.comidaId}
+                  comida={ruta.comida}
+                  fecha={ruta.fecha}
+                  salir={salir}
+                  ir={ir}
+                  volver={volver}
+                />
+              ) : null}
               {ruta.nombre === 'mi-evolucion' ? <PantallaDeMiEvolucion token={sesion.token} salir={salir} ir={ir} vista={ruta.vista} metrica={ruta.metrica} /> : null}
               {ruta.nombre === 'entrenamiento' ? <PantallaDeEntrenamiento token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'sesion-de-entrenamiento' ? (

@@ -343,6 +343,39 @@ Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Ini
 - **Los resultados calculados siempre llevan su método.** Dos métodos no se comparan entre sí, y ninguno se marca
   como «el bueno» (REG-06-205).
 
+## 7 bis. Opciones de comida, recetas e imágenes
+
+Vale desde WP-NUTRICION-RECETAS (encargo de Dirección del 2026-10-05; DL-119 a DL-121).
+
+- **Carrusel manual de opciones (APK):**
+  - una tarjeta por opción, con 24 dp de la siguiente a la vista; cada gesto se detiene en una tarjeta;
+  - el contador «Opción n de m» y las flechas son accesibles, y las flechas se deshabilitan en los extremos;
+  - no avanza solo, y con una sola opción no hay ni contador ni flechas;
+  - **deslizar no registra:** registrar es un botón, «Comí esta opción»;
+  - el lector de pantalla recorre solo la tarjeta a la vista.
+- **La franja de macros:**
+  - Calorías, Carbohidratos, Grasas y Proteínas, con las etiquetas completas;
+  - en el teléfono va en dos por dos con letra ×1 y ×1,3, y en una columna con ×2 (`franja-de-macros.ts`, con los
+    anchos medidos);
+  - debajo dice «Estimación para las porciones del plan».
+- **Un valor desconocido dice «Sin dato»**, nunca 0. Se redondea solo al mostrar, con `nutrienteParaMostrar` del dominio,
+  igual en el website y en la APK.
+- **Lo previsto y lo consumido no se mezclan:**
+  - «Porciones del plan» se muestra en lectura y no parece un campo completado;
+  - «¿Cuánto comiste?» va aparte, con «Comí las porciones del plan» desmarcada;
+  - hay un campo por ingrediente: vacío no es cero, y el cero se dice con «No lo comí».
+- **Las imágenes privadas:**
+  - se piden con su acceso firmado, que vence en 15 minutos como máximo, y no se guardan en disco;
+  - si la descarga falla, queda el ícono de respaldo, el resto sigue a la vista y se puede registrar igual;
+  - el rótulo «Imagen de referencia» va con la foto de una receta, porque no mide la porción ni demuestra lo que se
+    comió;
+  - en el website, la CSP admite imágenes `self` y `data:`: la imagen se descarga con su acceso y se muestra como data
+    URL.
+- **«Mis recetas» en el website:**
+  - el cálculo se ve mientras se edita (lo hace la API) y nombra lo que falta;
+  - la imagen se elige, se ve antes de cargarla, se le declara la procedencia y se carga;
+  - guardar una receta existente crea otra versión, y los planes ya activados conservan la suya.
+
 ## 8. Estados
 
 Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx` (website y APK):

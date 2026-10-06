@@ -32,7 +32,19 @@ const config: ExpoConfig = {
   },
   // DL-012 (decisión del 2026-10-03): la credencial de la sesión va al almacenamiento seguro. El plugin la deja fuera
   // del respaldo automático de Android. No se usa biometría: sin el permiso de Face ID.
-  plugins: [['expo-secure-store', { configureAndroidBackup: true, faceIDPermission: false }]],
+  // WP-NUTRICION-RECETAS (DL-120): la foto de «Comí algo diferente», con la cámara o la galería. El permiso se pide al
+  // tocar «Cámara» o «Galería», no al abrir la app. Sin micrófono: no se graban videos, y el permiso queda bloqueado.
+  plugins: [
+    ['expo-secure-store', { configureAndroidBackup: true, faceIDPermission: false }],
+    [
+      'expo-image-picker',
+      {
+        cameraPermission: 'BE usa la cámara solo cuando tocás «Cámara», para sacar la foto de una comida que registrás. La foto es privada.',
+        photosPermission: 'BE abre tus fotos solo cuando tocás «Galería», para que elijas la foto de una comida que registrás. La foto es privada.',
+        microphonePermission: false,
+      },
+    ],
+  ],
   extra: {
     appEnv: process.env.APP_ENV ?? 'development',
     apiBaseUrl: process.env.API_BASE_URL ?? null,
