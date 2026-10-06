@@ -9,7 +9,7 @@
  * - Una comida fuera del plan se estructura como «Estimación profesional»: la descripción original queda en solo
  *   lectura y se conserva (INV-06-131). El botón dice «Agregar estimación», no «Corregir lo que comió».
  */
-import { cantidad, COPY_NUTRICION, ETIQUETA_DE_UNIDAD, leerNumero, motivoDeNumeroIlegible, type ContextoDeRevisionResponse, type ElementoDeCatalogo, type Ingesta } from '@be/domain';
+import { cantidad, COPY_NUTRICION, COPY_REGISTRO_PARA_EL_PROFESIONAL, ETIQUETA_DE_UNIDAD, leerNumero, motivoDeNumeroIlegible, type ContextoDeRevisionResponse, type ElementoDeCatalogo, type Ingesta } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
 import { Aviso, Campo } from '../../../../components/formulario';
@@ -17,6 +17,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { FiltroDePeriodo, type Periodo } from '../periodo';
+import { VerRegistro } from './detalle-de-registro';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 
 type Contexto = ContextoDeRevisionResponse['data'];
@@ -86,6 +87,7 @@ function Contraste({ contexto, onCambio }: { contexto: Contexto; onCambio: () =>
                           <>
                             {COPY_NUTRICION.registrado}
                             {ingesta?.observation ? <span className="nota"> · «{ingesta.observation}»</span> : null}
+                            {m.executionId ? <VerRegistro registroId={m.executionId} /> : null}
                           </>
                         ) : (
                           COPY_NUTRICION.sinRegistro
@@ -187,7 +189,7 @@ function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () =
         <span className="insignia">{COPY_NUTRICION.fueraDelPlan}</span> {fecha(ingesta.occurredAt)}
       </p>
       <p>
-        <strong>{COPY_NUTRICION.registroOriginal}:</strong> «{ingesta.description}»
+        <strong>{COPY_NUTRICION.registroOriginal}:</strong> {ingesta.description ? `«${ingesta.description}»` : COPY_REGISTRO_PARA_EL_PROFESIONAL.sinDescripcion}
         {ingesta.portionDescription ? ` · porción: ${ingesta.portionDescription}` : ''}
       </p>
       {efectiva ? (
@@ -201,6 +203,7 @@ function RegistroLibre({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () =
         </p>
       ) : null}
       {ultima && !efectiva ? <p className="nota">La historia de estimaciones no se puede resolver.</p> : null}
+      <VerRegistro registroId={ingesta.executionId} />
       {abierto ? (
         <fieldset className="grupo">
           <legend>{COPY_NUTRICION.agregarEstimacion}</legend>

@@ -7,7 +7,17 @@
  * - Las opciones de una comida no se presentan como equivalentes nutricionales.
  * La prueba de términos prohibidos de nutrición también recorre este copy.
  */
-import type { NutrienteCalculado } from './calculo-nutricional';
+import { DECIMALES_DE_PRESENTACION, redondeoDePresentacion, type NutrienteCalculado } from './calculo-nutricional';
+import { numeroConPrecision } from './formato-numeros';
+
+/**
+ * Un nutriente para mostrar: se redondea HALF_UP solo acá (kcal a entero, gramos a un decimal), con coma decimal y punto
+ * de miles. `null` si el valor es desconocido: la pantalla dice «Sin dato», nunca 0.
+ */
+export function nutrienteParaMostrar(valor: { readonly value: string | null }, nutriente: NutrienteCalculado): string | null {
+  if (valor.value === null) return null;
+  return numeroConPrecision(Number(redondeoDePresentacion(valor.value, nutriente)), DECIMALES_DE_PRESENTACION[nutriente]);
+}
 
 /** Los nombres de los nutrientes, en el orden de la franja (sin la fibra, que va en el detalle). */
 export const ETIQUETA_DE_NUTRIENTE: Readonly<Record<NutrienteCalculado, string>> = {
@@ -46,7 +56,8 @@ export const COPY_RECETAS = {
   quitarIngrediente: 'Quitar',
   cantidad: 'Cantidad',
   estadoDePreparacion: 'Estado de preparación',
-  avisoDeCantidades: 'Cada cantidad es del estado indicado: por ejemplo, gramos de arroz cocido. BE no convierte entre crudo y cocido ni entre mililitros y gramos.',
+  avisoDeCantidades:
+    'Cada cantidad es el peso comestible en el estado indicado: por ejemplo, gramos de arroz cocido, o de pollo sin piel ni hueso. BE no descuenta desperdicio ni convierte entre crudo y cocido, ni entre mililitros y gramos.',
   pasos: 'Preparación (opcional)',
   agregarPaso: 'Agregar paso',
   quitarPaso: 'Quitar paso',
@@ -83,6 +94,53 @@ export const COPY_RECETAS = {
   opcionDeReceta: (nombre: string, version: number) => `Receta «${nombre}», versión ${version}`,
   avisoDeOpciones: 'Las opciones de una comida no son equivalencias nutricionales: cada una muestra su propia estimación.',
   porcionDeLaOpcion: 'La opción lleva los ingredientes de una porción de la receta.',
+  ingredientesAlGuardar: 'Los ingredientes de una porción se cargan al guardar el borrador.',
+  recetaEnPlantilla: 'Las opciones que vienen de una receta no se guardan en plantillas ni en comidas habituales. Quitalas antes, o guardá la plantilla desde un plan sin recetas.',
+  soloNutricion: 'Las recetas son del área de Nutrición, y tu cuenta no la tiene habilitada.',
+  abrir: 'Abrir',
+  volverALaLista: 'Volver a Mis recetas',
+  porcionesYEnergia: (porciones: number, kcal: string | null) => `${porciones === 1 ? '1 porción' : `${porciones} porciones`} · ${kcal === null ? 'kcal sin calcular' : `${kcal} kcal por porción`}`,
+  guardaAntesDeLaImagen: 'Guardá la receta para poder cargar su imagen de referencia.',
+  elegirProcedencia: 'Elegí la procedencia',
+  faltaLaProcedencia: 'Elegí de dónde viene la imagen.',
+  confirmarRetiro: '¿Retirar la imagen de referencia? Los ingredientes, las versiones y los registros no cambian.',
+  nutriente: 'Nutriente',
+  noSePudoCalcular: 'No pudimos calcular. Revisá los ingredientes y probá de nuevo.',
+  completaParaCalcular: 'Agregá al menos un ingrediente con su cantidad para ver el cálculo.',
+  faltaElEstado: 'Elegí el estado de preparación.',
+  cantidadInvalida: 'La cantidad tiene que ser un número mayor que cero.',
+  sinIngredientes: 'Agregá al menos un ingrediente.',
+  porcionesInvalidas: 'Las porciones son un número entero de 1 a 50.',
+  faltaElNombre: 'Falta el nombre de la receta.',
+  ingredienteNoDisponible: 'Un ingrediente ya no está disponible en el catálogo: quitalo o elegilo de nuevo.',
+  buscarIngrediente: 'Buscar un alimento del catálogo',
+  cada100: (kcal: string, referencia: '100g' | '100ml') => `${kcal} kcal cada ${referencia === '100ml' ? '100 ml' : '100 g'}`,
+  sinRecetasParaElegir: 'Todavía no tenés recetas. Crealas en «Mis recetas» y después agregalas acá.',
+  irAMisRecetas: 'Ir a Mis recetas',
+} as const;
+
+/** Lo que ve el profesional de un registro de comida (API-ING-03): describe, no califica. */
+export const COPY_REGISTRO_PARA_EL_PROFESIONAL = {
+  verRegistro: 'Ver registro',
+  ocultarRegistro: 'Ocultar registro',
+  estadoDeCantidades: {
+    UNCONFIRMED: 'Cantidades sin confirmar',
+    PLAN_PORTIONS: 'Confirmó las porciones del plan',
+    REPORTED: 'Informó lo que comió de cada ingrediente',
+  },
+  rectificado: (fecha: string) => `Cantidades completadas o corregidas el ${fecha}.`,
+  opcionRegistrada: 'Opción registrada',
+  algoDiferente: 'Comió algo diferente',
+  cantidadAproximada: 'Cantidad aproximada',
+  fotos: 'Fotos del registro',
+  fotoDelAsesorado: (n: number) => `Foto ${n} del asesorado`,
+  fotoNoDisponible: 'La foto no se pudo mostrar.',
+  fotoPrivada: 'Las fotos son privadas: las ven el asesorado y el profesional que lo acompaña en Nutrición.',
+  estimacionDeLoConsumido: 'Estimación de lo consumido',
+  sinDescripcion: 'Sin descripción',
+  noLoComio: 'no lo comió',
+  sinCantidad: 'sin cantidad',
+  deshecho: (fecha: string) => `El asesorado deshizo este registro el ${fecha}.`,
 } as const;
 
 /** El participio que concuerda con el nombre de la comida, que viene del plan: «Almuerzo registrado», «Merienda registrada». */
@@ -149,4 +207,52 @@ export const COPY_REGISTRO_DE_COMIDAS = {
   permisoDeCamara: 'Para sacar una foto, BE necesita permiso para usar la cámara. Podés darlo en los ajustes del teléfono.',
   permisoDeGaleria: 'Para elegir una foto, BE necesita permiso para ver tus fotos. Podés darlo en los ajustes del teléfono.',
   fotoPrivada: 'La foto es privada: la ven vos y el profesional que te acompaña en Nutrición.',
+  // ─── APK (WP-NUTRICION-RECETAS §9): Hoy, el detalle de una opción, la comida diferente y Registros ───
+  queVer: 'Qué ver en Nutrición',
+  diaDelPlan: (dia: string) => `Día del plan: ${dia}`,
+  cambiarElDia: 'Cambiar el día del plan',
+  comidasDelDia: 'Comidas del día',
+  comidaSinRegistro: (comida: string) => `${comida}, sin registro`,
+  sinComidas: 'El plan no tiene comidas para este día.',
+  opcionesDe: (comida: string) => `Opciones de ${comida}`,
+  sinOpciones: 'Esta comida no tiene opciones en el plan. Podés registrar lo que comiste con «Comí algo diferente».',
+  imagenNoDisponible: 'La imagen no se pudo mostrar.',
+  irAVinculos: 'Ir a Vínculos',
+  enElPlan: (cantidad: string) => `En el plan: ${cantidad}`,
+  loQueComisteDe: (ingrediente: string, unidad: string) => `${ingrediente}: lo que comiste (${unidad})`,
+  ceroNoEsCantidad: 'Si no lo comiste, marcá «No lo comí».',
+  sinCantidadDelPlan: 'El plan no le da una cantidad: podés marcar «No lo comí» o dejarlo sin confirmar.',
+  nadaParaCompletar: 'Marcá «Comí las porciones del plan» o informá lo que comiste de cada ingrediente.',
+  guardarCantidades: 'Guardar cantidades',
+  corregirCantidades: 'Corregir cantidades',
+  actualizar: 'Actualizar',
+  yaRegistradaConOtraOpcion: 'Esta comida ya está registrada con otra opción. Para cambiarla, deshacé ese registro.',
+  estadoDeCantidades: {
+    UNCONFIRMED: 'Cantidades sin confirmar',
+    PLAN_PORTIONS: 'Confirmaste las porciones del plan',
+    REPORTED: 'Informaste lo que comiste de cada ingrediente',
+  },
+  sinConfirmar: 'Sin confirmar',
+  ingredienteDelPlan: 'Ingrediente del plan',
+  rectificadoEl: (fecha: string) => `Completaste o corregiste las cantidades el ${fecha}.`,
+  estimacionDeLoQueComiste: 'Estimación de lo que comiste',
+  seCalculanAlConfirmar: 'Se calculan cuando confirmás cuánto comiste.',
+  comisteAlgoDiferente: 'Comiste algo diferente',
+  algoDiferente: 'Algo diferente',
+  cantidadAproximadaInformada: 'Cantidad aproximada',
+  tuFoto: 'Tu foto',
+  fotos: (n: number) => (n === 1 ? '1 foto' : `${n} fotos`),
+  guardarSinLaFoto: 'Guardar sin la foto',
+  fotoNoSeAbrio: 'No pudimos abrir la cámara o la galería. Probá de nuevo.',
+  deshaciendo: 'Deshaciendo…',
+  deshechoInsignia: 'Deshecho',
+  deshechoEl: (fecha: string) => `Deshiciste este registro el ${fecha}. Queda anotado, y la comida se puede volver a registrar.`,
+  paso: (n: number) => `Paso ${n}`,
+  ayer: 'Ayer',
+  sinRegistros: 'Todavía no registraste comidas.',
+  detalleDeRegistro: 'Detalle de registro',
+  comida: 'Comida',
+  cuando: 'Cuándo',
+  observacion: 'Observación',
+  estimacionDelProfesionalDe: (autor: string, fecha: string) => `${autor} · ${fecha}. Es una estimación: tu descripción original se conserva.`,
 } as const;

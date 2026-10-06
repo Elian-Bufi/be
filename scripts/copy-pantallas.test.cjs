@@ -34,7 +34,16 @@ const INICIO_COMUN = ['inicio.tsx', 'tarjeta-de-inicio.tsx', 'inicio-informacion
 const DOMINIOS = [
   {
     nombre: 'nutrición',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition')), join(RAIZ, 'apps/mobile/src/pantallas/nutricion.tsx'), inicio('inicio-nutricion.tsx'), movil('lecturas-de-inicio.ts'), ...INICIO_COMUN],
+    // WP-NUTRICION-RECETAS: «Mis recetas» del website y las pantallas nuevas de la APK (carrusel, detalle, comida diferente).
+    archivos: [
+      ...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition')),
+      ...tsx(join(RAIZ, 'apps/web/src/app/pro/recipes')),
+      ...['nutricion.tsx', 'nutricion-hoy.tsx', 'opcion-de-comida.tsx', 'comida-diferente.tsx'].map(inicio),
+      ...['piezas-de-nutricion.tsx', 'imagen-de-medio.tsx', 'registro-de-comidas.tsx', 'franja-de-macros.ts', 'consumo-de-la-opcion.ts', 'borrador-de-comida-diferente.ts'].map(movil),
+      inicio('inicio-nutricion.tsx'),
+      movil('lecturas-de-inicio.ts'),
+      ...INICIO_COMUN,
+    ],
     prohibidos: terminosProhibidosEn,
     minimo: 8,
   },

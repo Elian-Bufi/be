@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { terminosProhibidosEn } from './copy-nutricion';
-import { COPY_RECETAS, COPY_REGISTRO_DE_COMIDAS, ETIQUETA_DE_FALTANTE, ETIQUETA_DE_NUTRIENTE, ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN, textoDeComidaRegistrada } from './copy-recetas';
+import { COPY_RECETAS, COPY_REGISTRO_DE_COMIDAS, COPY_REGISTRO_PARA_EL_PROFESIONAL, ETIQUETA_DE_FALTANTE, ETIQUETA_DE_NUTRIENTE, ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN, nutrienteParaMostrar, textoDeComidaRegistrada } from './copy-recetas';
 import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO } from './contratos-medios';
 import { CalcularRecetaRequestSchema, CrearRecetaRequestSchema, nutrientesDelResultado } from './contratos-recetas';
 import { ConsumoEntradaSchema, ItemInformadoSchema, RegistrarComidaRequestSchema, RegistroDiferenteRequestSchema } from './contratos-registro-de-comidas';
@@ -20,15 +20,17 @@ const ID = '0b6a7f52-3c1d-4e8f-9a2b-5c6d7e8f9a01';
 const OTRO_ID = '1c7b8a63-4d2e-4f9a-8b3c-6d7e8f9a0b12';
 const AHORA = '2026-10-05T12:30:00.000Z';
 
-/** Los textos de un objeto de copy, con las funciones evaluadas con argumentos de muestra. */
+/** Los textos de un objeto de copy, con las funciones evaluadas con argumentos de muestra y los objetos recorridos. */
 function textos(o: Readonly<Record<string, unknown>>): string[] {
-  return Object.values(o).map((v) => (typeof v === 'function' ? String((v as (...a: string[]) => unknown)('Almuerzo', '2')) : String(v)));
+  return Object.values(o).flatMap((v) =>
+    typeof v === 'function' ? [String((v as (...a: string[]) => unknown)('Almuerzo', '2'))] : v !== null && typeof v === 'object' ? textos(v as Record<string, unknown>) : [String(v)],
+  );
 }
 
 // ─── Copy ───────────────────────────────────────────────────────────────────────────────────────
 
 test('el copy de recetas y del registro no usa ningún término prohibido de nutrición (T13; B10-05)', () => {
-  const todos = [COPY_RECETAS, COPY_REGISTRO_DE_COMIDAS, ETIQUETA_DE_NUTRIENTE, ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN, ETIQUETA_DE_FALTANTE].flatMap(textos);
+  const todos = [COPY_RECETAS, COPY_REGISTRO_DE_COMIDAS, COPY_REGISTRO_PARA_EL_PROFESIONAL, ETIQUETA_DE_NUTRIENTE, ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN, ETIQUETA_DE_FALTANTE].flatMap(textos);
   assert.ok(todos.length > 100, `se revisaron ${todos.length} textos`);
   const hallazgos = todos.flatMap((t) => terminosProhibidosEn(t).map((p) => `${p} en «${t}»`));
   assert.deepEqual(hallazgos, []);
@@ -63,6 +65,15 @@ test('el participio concuerda con la comida, que viene del plan', () => {
   assert.equal(textoDeComidaRegistrada('Media mañana'), 'Media mañana registrada');
   assert.equal(textoDeComidaRegistrada('Pre entreno'), 'Pre entreno registrado');
   assert.equal(textoDeComidaRegistrada('  Almuerzo '), 'Almuerzo registrado');
+});
+
+test('un nutriente se redondea solo al mostrar, con coma decimal; el desconocido no se muestra como cero', () => {
+  assert.equal(nutrienteParaMostrar({ value: '529.22' }, 'energyKcal'), '529');
+  assert.equal(nutrienteParaMostrar({ value: '1234.5' }, 'energyKcal'), '1.235');
+  assert.equal(nutrienteParaMostrar({ value: '44.05' }, 'proteinG'), '44,1');
+  assert.equal(nutrienteParaMostrar({ value: '44' }, 'carbohydrateG'), '44,0');
+  assert.equal(nutrienteParaMostrar({ value: '0.04' }, 'fatG'), '0,0');
+  assert.equal(nutrienteParaMostrar({ value: null }, 'fiberG'), null);
 });
 
 // ─── Recetas ────────────────────────────────────────────────────────────────────────────────────

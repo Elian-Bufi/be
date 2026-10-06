@@ -2357,3 +2357,87 @@ html:has(.acciones--fijas) {
 .estado-vacio .acciones {
   margin-bottom: 0;
 }
+
+/* ─── Recetas (DL-119) y fotos de un registro (DL-120) ─────────────────────────────────────────────── */
+
+/* La imagen de referencia: el ancho de la columna, con la proporción de la foto, sin estirarla. */
+.imagen-de-receta {
+  display: block;
+  width: 100%;
+  max-width: 28rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--borde);
+  background: var(--fondo-suave);
+}
+
+.imagen-de-receta--chica {
+  width: 6.5rem;
+  max-width: none;
+  flex: none;
+}
+
+/* Sin imagen o si la descarga falla: el ícono ocupa el mismo lugar y el resto sigue a la vista. */
+.imagen-de-receta--respaldo {
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  color: var(--tenue);
+}
+
+.figura-de-receta {
+  margin: 0.5rem 0;
+}
+
+.figura-de-receta figcaption {
+  margin-top: 0.35rem;
+}
+
+.vista-previa {
+  border: 1px dashed var(--borde-control);
+  border-radius: 10px;
+  padding: 0.85rem;
+  margin: 0.5rem 0;
+}
+
+.tarjeta-de-receta {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.ingredientes-de-receta,
+.pasos-de-receta {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.tabla--calculo td {
+  white-space: nowrap;
+}
+
+/* Las fotos de un registro, en grilla: se adaptan al ancho del teléfono. */
+.fotos-del-registro {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(9rem, 100%), 1fr));
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.fotos-del-registro .imagen-de-receta {
+  max-width: none;
+}
+
+@media (max-width: 40rem) {
+  .tarjeta-de-receta {
+    flex-direction: column;
+  }
+
+  .imagen-de-receta--chica {
+    width: 100%;
+  }
+}
