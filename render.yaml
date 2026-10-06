@@ -56,6 +56,12 @@ services:
       # misma identidad no lo cambia.
       - key: BE_DEMO_PROFESIONALES
         value: "9172fae6-13b8-4d34-8139-711b89d460c4|NUTRICION|SANITARIO|Lic. Demo Nutrición;81e11918-19f7-4f56-ac5c-1420a3da77bb|ENTRENAMIENTO|NO_SANITARIO|Prof. Demo Entrenamiento;9172fae6-13b8-4d34-8139-711b89d460c4|ANTROPOMETRIA|SANITARIO|Lic. Demo Nutrición;c837438d-b72f-413c-a433-9ab9ae010e4c|ANTROPOMETRIA|NO_SANITARIO|Prof. Demo Antropometría"
+      # DL-125 (precierre del 2026-10-06, §6): el acto EVIDENCIA_VISUAL del 08 §12.4. Con "true", subir la foto de una
+      # comida exige haber registrado la información destacada para el profesional de Nutrición, y ese profesional ve las
+      # fotos solo con el acto vigente. El texto es una PROPUESTA, pendiente de aprobación de Dirección y de validación
+      # jurídica: pasar a "true" es una decisión de Dirección, aun con cuentas sintéticas.
+      - key: BE_EVIDENCIA_VISUAL_EXIGIDA
+        value: "false"
 
   - type: web
     name: be-web

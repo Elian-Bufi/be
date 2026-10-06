@@ -67,6 +67,8 @@ enum TipoDeTexto {
   /// B2 por perfil profesional (08 §12.3). WP-03.
   CONSENTIMIENTO_PROFESIONAL_SANITARIO
   CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO
+  /// La información destacada de las fotos de comidas (08 §12.4, §21.3). Precierre del 2026-10-06: una propuesta (DL-125).
+  EVIDENCIA_VISUAL
 }
 
 /// 08 §12.4 — actos registrables tipificados de la Relación A (A1, A2, A3).
@@ -326,11 +328,16 @@ model ActoRegistrable {
   momentoDeOcurrencia DateTime                @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro   DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
   momentoDeRevocacion DateTime?               @map("momento_de_revocacion") @db.Timestamptz(3)
+  /// DL-125: el alcance de vínculo de Nutrición de un acto `EVIDENCIA_VISUAL` (08 §12.2, «B2 reforzado»). Solo ese tipo lo
+  /// lleva, y siempre (CHECK); como máximo uno vigente por alcance (índice parcial). Inmutable, como el resto de la evidencia.
+  alcanceDeVinculoId  String?                 @map("alcance_de_vinculo_id") @db.Uuid
 
-  identidad      Identidad      @relation(fields: [identidadId], references: [id], onDelete: Restrict)
-  versionDeTexto VersionDeTexto @relation(fields: [versionDeTextoId], references: [id], onDelete: Restrict)
+  identidad        Identidad         @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  versionDeTexto   VersionDeTexto    @relation(fields: [versionDeTextoId], references: [id], onDelete: Restrict)
+  alcanceDeVinculo AlcanceDeVinculo? @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([identidadId, tipo, estado])
+  @@index([alcanceDeVinculoId])
   @@map("acto_registrable")
 }
 
@@ -621,6 +628,8 @@ model AlcanceDeVinculo {
   consentimientos   Consentimiento[]
   eventos           EventoDeVinculo[]
   decisiones        DecisionDeAcceso[]
+  /// DL-125: los actos `EVIDENCIA_VISUAL` de este alcance.
+  actosDeEvidenciaVisual ActoRegistrable[]
 
   @@index([vinculoId, alcance])
   @@map("alcance_de_vinculo")

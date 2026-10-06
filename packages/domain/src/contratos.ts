@@ -130,6 +130,12 @@ export const CodigoDeError = {
   FILE_CONTENT_INVALID: 'FILE_CONTENT_INVALID',
   /** Un medio citado en el cuerpo no es propio, no está disponible o no es de esa finalidad (DL-119, DL-121). */
   MEDIA_REFERENCE_INVALID: 'MEDIA_REFERENCE_INVALID',
+  /**
+   * Falta el acto `EVIDENCIA_VISUAL` (08 §12.4) del vínculo de Nutrición para subir la foto de una comida. Solo con la
+   * exigencia activa (`BE_EVIDENCIA_VISUAL_EXIGIDA`). `details` dice el vínculo y la versión del texto a mostrar
+   * (precierre del 2026-10-06, §6; DL-125).
+   */
+  VISUAL_EVIDENCE_ACT_REQUIRED: 'VISUAL_EVIDENCE_ACT_REQUIRED',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 

@@ -42,6 +42,8 @@ export function entornoDePrueba(cambios: Partial<Entorno> = {}): Entorno {
     proveedores: { openFoodFactsUrl: 'http://127.0.0.1:9', wgerUrl: 'http://127.0.0.1:9', presupuestoMs: 2_000 },
     // DL-120: los bytes de los medios, en la misma base de la prueba.
     mediosAlmacen: 'postgres',
+    // DL-125: como el despliegue, sin exigir el acto EVIDENCIA_VISUAL. Su prueba levanta su propia app con la exigencia.
+    evidenciaVisualExigida: false,
     ...cambios,
   };
 }

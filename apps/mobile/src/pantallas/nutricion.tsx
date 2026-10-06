@@ -18,6 +18,7 @@
  */
 import {
   cantidad,
+  COPY_EVIDENCIA_VISUAL,
   COPY_NUTRICION,
   COPY_REGISTRO_DE_COMIDAS,
   ETIQUETA_DE_PREPARACION,
@@ -32,6 +33,7 @@ import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { Cargando, ErrorConReintento, EstadoDeCarga, VerMas } from '../estados';
+import { useBorrarFoto } from '../evidencia-visual';
 import { fecha, fechaCivil, hora } from '../formato';
 import { Flecha } from '../iconos-de-nutricion';
 import { ImagenDeMedio } from '../imagen-de-medio';
@@ -284,6 +286,10 @@ export function PantallaDeRegistroNutricional({ token, id, salir, ir }: { token:
         setAviso(COPY_REGISTRO_DE_COMIDAS.deshecho);
         void cargar({ desdeCero: true });
       }}
+      alBorrarFoto={() => {
+        setAviso(COPY_EVIDENCIA_VISUAL.fotoBorrada);
+        void cargar({ desdeCero: true });
+      }}
       alActualizar={() => void cargar({ desdeCero: true })}
     />
   );
@@ -296,6 +302,7 @@ function DetalleDeRegistro({
   sesionPerdida,
   ir,
   alDeshacer,
+  alBorrarFoto,
   alActualizar,
 }: {
   token: string;
@@ -304,10 +311,12 @@ function DetalleDeRegistro({
   sesionPerdida: AlPerderLaSesion;
   ir: Ir;
   alDeshacer: () => void;
+  alBorrarFoto: () => void;
   alActualizar: () => void;
 }) {
   const vigente = registro.annulment === null;
   const deshacer = useDeshacer({ token, registro: vigente ? registro : null, sesionPerdida, alDeshacer, alActualizar });
+  const borrarFoto = useBorrarFoto({ token, sesionPerdida, alBorrar: alBorrarFoto, alActualizar });
   const deUnaOpcion = registro.kind === 'PLAN_OPTION';
   return (
     <View>
@@ -322,7 +331,11 @@ function DetalleDeRegistro({
       <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.cuando} valor={fecha(registro.occurredAt)} />
       <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.registrado} valor={fecha(registro.recordedAt)} />
       {registro.observation ? <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.observacion} valor={registro.observation} /> : null}
-      {deUnaOpcion ? <OpcionRegistrada token={token} registro={registro} sesionPerdida={sesionPerdida} /> : <ComidaDiferenteRegistrada token={token} registro={registro} sesionPerdida={sesionPerdida} />}
+      {deUnaOpcion ? (
+        <OpcionRegistrada token={token} registro={registro} sesionPerdida={sesionPerdida} />
+      ) : (
+        <ComidaDiferenteRegistrada token={token} registro={registro} sesionPerdida={sesionPerdida} onBorrarFoto={borrarFoto.abrir} />
+      )}
       {vigente && deUnaOpcion && registro.option ? (
         <Boton
           texto={registro.consumption?.status === 'UNCONFIRMED' ? COPY_REGISTRO_DE_COMIDAS.completarCantidades : COPY_REGISTRO_DE_COMIDAS.corregirCantidades}
@@ -332,6 +345,7 @@ function DetalleDeRegistro({
       ) : null}
       {vigente ? <Boton texto={COPY_REGISTRO_DE_COMIDAS.deshacer} tipo="peligroSecundario" onPress={deshacer.abrir} /> : null}
       {deshacer.dialogo}
+      {borrarFoto.dialogo}
     </View>
   );
 }
@@ -374,8 +388,21 @@ function OpcionRegistrada({ token, registro, sesionPerdida }: { token: string; r
   );
 }
 
-/** Una comida diferente: el texto original, la cantidad aproximada y las fotos. Los macros quedan sin calcular. */
-function ComidaDiferenteRegistrada({ token, registro, sesionPerdida }: { token: string; registro: RegistroDeComida; sesionPerdida: AlPerderLaSesion }) {
+/**
+ * Una comida diferente: el texto original, la cantidad aproximada y las fotos. Los macros quedan sin calcular. Cada foto se
+ * puede borrar (API-MED-05; 08:451): se borra la imagen, queda la constancia y el registro sigue, sin esa foto.
+ */
+function ComidaDiferenteRegistrada({
+  token,
+  registro,
+  sesionPerdida,
+  onBorrarFoto,
+}: {
+  token: string;
+  registro: RegistroDeComida;
+  sesionPerdida: AlPerderLaSesion;
+  onBorrarFoto: (mediaId: string) => void;
+}) {
   return (
     <View>
       <Seccion titulo={COPY_REGISTRO_DE_COMIDAS.comisteAlgoDiferente}>
@@ -384,6 +411,7 @@ function ComidaDiferenteRegistrada({ token, registro, sesionPerdida }: { token: 
         {registro.evidence.map((foto) => (
           <View key={foto.mediaId} style={s.foto}>
             <ImagenDeMedio token={token} mediaId={foto.mediaId} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.tuFoto} proporcion={4 / 3} />
+            <Boton texto={COPY_EVIDENCIA_VISUAL.borrarFoto} tipo="peligroSecundario" onPress={() => onBorrarFoto(foto.mediaId)} />
           </View>
         ))}
         {registro.evidence.length > 0 ? <Parrafo tenue>{COPY_REGISTRO_DE_COMIDAS.fotoPrivada}</Parrafo> : null}

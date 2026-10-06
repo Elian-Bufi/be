@@ -111,6 +111,12 @@ export const errores = {
    * que ya los tiene. El recurso es revelable para el actor: es suyo.
    */
   estadoEnConflicto: (mensaje: string) => new ErrorDeApi(409, CodigoDeError.INVALID_STATE_TRANSITION, mensaje),
+  // ─── EVIDENCIA_VISUAL (08 §12.4; DL-125), solo con la exigencia activa ─────────────────────────────────────────
+  /** API-MED-01: falta el acto del vínculo de Nutrición del plan vigente. `details` dice el vínculo y la versión a mostrar. */
+  evidenciaVisualRequerida: (detalle: { relationshipId: string; consentVersionId: string }) =>
+    new ErrorDeApi(403, CodigoDeError.VISUAL_EVIDENCE_ACT_REQUIRED, 'Antes de tu primera foto, leé la información sobre las fotos de tus comidas.', detalle),
+  /** API-MED-01: la foto de una comida sin un plan de Nutrición vigente: no hay un profesional al que se le informe. */
+  planDeNutricionRequerido: () => new ErrorDeApi(422, CodigoDeError.ACTIVE_PLAN_REQUIRED, 'Para subir la foto de una comida hace falta un plan de Nutrición vigente.'),
   /** 09v7:185 — falla no clasificada (DEUDA_LEGAJO DL-005). */
   interno: () => new ErrorDeApi(500, CodigoDeError.INTERNAL_ERROR, 'Ocurrió un error inesperado.'),
 };

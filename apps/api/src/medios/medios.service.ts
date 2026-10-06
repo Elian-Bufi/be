@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   CuerpoVacioSchema,
+  FINALIDAD_DE_ALCANCE,
   IntencionDeSubidaRequestSchema,
   LIMITES_DE_MEDIO,
   TipoDeImagenSchema,
@@ -12,8 +13,11 @@ import {
 } from '@be/domain';
 import type { FinalidadDeMedio, Medio as FilaDeMedio, Prisma } from '@prisma/client';
 import type { IncomingMessage } from 'node:http';
-import { PdpService } from '../autorizacion/pdp.service';
+import { DenegacionDelPdp, PdpService } from '../autorizacion/pdp.service';
+import type { Entorno } from '../config/entorno';
+import { ENTORNO } from '../config/tokens';
 import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
+import { alcanceDeNutricion, alcancesDeLosPlanesVigentes, tieneEvidenciaVisualVigente, versionDeEvidenciaVisual } from '../consentimiento/evidencia-visual-del-alcance';
 import { esProfesionalDeEntrenamiento } from '../entrenamiento/profesional-de-entrenamiento';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
@@ -105,6 +109,11 @@ function rechazarTipoOTamanoNoAdmitido(cuerpo: unknown): void {
  *   dos finalidades no cambian.
  * - **Suprimir** (MED-05) es un derecho del titular sobre la foto de su comida (08:451): se borran los bytes y queda el
  *   registro, en el registro de supresiones.
+ * - **El acto `EVIDENCIA_VISUAL`** (08 §12.4, «obligatorio para subir y ver fotos»; DL-125): con la exigencia activa
+ *   (`BE_EVIDENCIA_VISUAL_EXIGIDA`), subir la foto de una comida pide el acto vigente del vínculo de Nutrición de cada plan
+ *   vigente del titular, y el profesional ve una foto solo con el acto vigente de su vínculo. El titular ve las suyas
+ *   siempre, con su A3. Sin la exigencia, todo queda como en DL-120: la información se muestra al subir y cada acceso se
+ *   audita con ese recurso.
  * Ninguna foto se manda a una IA ni agrega cantidades (09v9 §28).
  */
 @Injectable()
@@ -116,6 +125,7 @@ export class MediosService {
     private readonly auditoria: AuditoriaService,
     private readonly rutas: RutasFirmadas,
     @Inject(ALMACEN_DE_MEDIOS) private readonly almacen: AlmacenDeMedios,
+    @Inject(ENTORNO) private readonly entorno: Entorno,
   ) {}
 
   // ─── API-MED-01 ────────────────────────────────────────────────────────────────────────────
@@ -143,6 +153,7 @@ export class MediosService {
           if (pedido.provenance !== 'PERSON_PROVIDED') {
             throw errores.validacionFallida([{ code: 'MEAL_EVIDENCE_IS_PERSON_PROVIDED', path: 'provenance' }]);
           }
+          if (this.entorno.evidenciaVisualExigida) await this.exigirEvidenciaVisual(tx, actor.identidadId);
         } else if (finalidad === 'REFERENCIA_DE_EJERCICIO') {
           // DL-123: la imagen de un ejercicio propio, de un profesional de Entrenamiento verificado y habilitado (RF-037), con
           // su autoría declarada: un recurso didáctico sin autoría no se acepta (REG-06-134). La base también lo exige.
@@ -174,6 +185,22 @@ export class MediosService {
         return { estadoHttp: 201, cuerpo: { data }, sujetoId: foto ? actor.identidadId : null, recurso: { tipo: foto ? RECURSO_DE_FOTO : RECURSO_DE_MEDIO, id: medio.id } };
       },
     });
+  }
+
+  /**
+   * DL-125 · antes de subir la foto de una comida, el titular recibió la información destacada para el profesional que la
+   * va a ver (08 §21.3): el de su plan vigente. Sin plan vigente no hay a quién informarle. Si falta el acto, el 403 dice el
+   * vínculo y la versión a mostrar (API-EVI-01 y 02). El acto se toma en modo compartido: una revocación en curso espera.
+   */
+  private async exigirEvidenciaVisual(tx: Tx, asesoradoId: string): Promise<void> {
+    const alcances = await alcancesDeLosPlanesVigentes(tx, asesoradoId);
+    if (alcances.length === 0) throw errores.planDeNutricionRequerido();
+    for (const alcanceId of alcances) {
+      if (await tieneEvidenciaVisualVigente(tx, alcanceId, { bloquear: true })) continue;
+      const version = await versionDeEvidenciaVisual(tx);
+      if (!version) throw errores.interno();
+      throw errores.evidenciaVisualRequerida({ relationshipId: alcanceId, consentVersionId: version.id });
+    }
   }
 
   // ─── API-MED-02 ────────────────────────────────────────────────────────────────────────────
@@ -378,7 +405,8 @@ export class MediosService {
 
   /**
    * La foto de una comida: unida a una ingesta, la leen su titular y el profesional del plan de esa ingesta, con el mismo
-   * PDP que API-NUT-16; sin asociar, solo quien la subió y con su A3 vigente.
+   * PDP que API-NUT-16 y, con la exigencia de DL-125, el acto EVIDENCIA_VISUAL vigente de su vínculo; sin asociar, solo
+   * quien la subió y con su A3 vigente.
    */
   private async decidirFotoDeComida(tx: Tx, actor: ActorAutenticado, medio: MedioConIngesta, ctx: ContextoDeSolicitud): Promise<string> {
     const recurso = { tipo: RECURSO_DE_FOTO, id: medio.id };
@@ -400,6 +428,28 @@ export class MediosService {
     );
     if (!esTitular && profesionalDelPlan !== actor.identidadId) {
       throw this.ejecutor.noRevelable({ operacion: 'API-MED-03', actorId: actor.identidadId, recurso, sujetoId: ingesta.asesoradoId }, ctx);
+    }
+    if (!esTitular && this.entorno.evidenciaVisualExigida) {
+      // DL-125 · el profesional ve la foto solo con el acto EVIDENCIA_VISUAL vigente de su vínculo (08 §12.4). Sin él, el
+      // mismo 404, y la decisión denegada queda registrada en la dimensión del consentimiento (08:491: el titular puede
+      // saber quién intentó acceder).
+      const alcanceId = await alcanceDeNutricion(tx, actor.identidadId, ingesta.asesoradoId);
+      if (!alcanceId || !(await tieneEvidenciaVisualVigente(tx, alcanceId, { bloquear: true }))) {
+        throw new DenegacionDelPdp({
+          operacion: 'API-MED-03',
+          resultado: 'DENEGADA',
+          actorId: actor.identidadId,
+          sujetoId: ingesta.asesoradoId,
+          alcance: 'NUTRICION',
+          finalidad: FINALIDAD_DE_ALCANCE.NUTRICION,
+          dimensionesDesfavorables: ['CONSENTIMIENTO'],
+          recursoTipo: recurso.tipo,
+          recursoId: medio.id,
+          superficie: ctx.superficie,
+          requestId: ctx.requestId,
+          momentoDeOcurrencia: new Date(),
+        });
+      }
     }
     return ingesta.asesoradoId;
   }

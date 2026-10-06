@@ -64,6 +64,16 @@ import {
 } from './contratos-vinculo';
 import { CarteraResponseSchema, type CarteraResponse, type FiltroDeCartera } from './contratos-cartera';
 import {
+  DetalleDeEvidenciaVisualRequeridaSchema,
+  EvidenciaVisualOtorgadaResponseSchema,
+  ListaDeEvidenciaVisualResponseSchema,
+  RequisitoDeEvidenciaVisualResponseSchema,
+  type DetalleDeEvidenciaVisualRequerida,
+  type EvidenciaVisualOtorgadaResponse,
+  type ListaDeEvidenciaVisualResponse,
+  type RequisitoDeEvidenciaVisualResponse,
+} from './contratos-evidencia-visual';
+import {
   ListaDePlantillasDeEntrenamientoResponseSchema,
   PlantillaDeEntrenamientoResponseSchema,
   type CrearPlantillaDeEntrenamientoRequest,
@@ -228,7 +238,18 @@ export type Resultado<T> =
       readonly fechaDelServidor?: string;
     }
   /** La API respondió con un ErrorEnvelope. `codigo` decide la UI; nunca se muestra en pantalla (10-B01:1146-1189). */
-  | { readonly ok: false; readonly tipo: 'API'; readonly status: number; readonly codigo: string; readonly issues: readonly ValidationIssue[] }
+  | {
+      readonly ok: false;
+      readonly tipo: 'API';
+      readonly status: number;
+      readonly codigo: string;
+      readonly issues: readonly ValidationIssue[];
+      /**
+       * Con `VISUAL_EVIDENCE_ACT_REQUIRED` (API-MED-01; DL-125): el vínculo y la versión del texto a mostrar, validados
+       * contra su schema. Sin ellos, la pantalla no tiene qué mostrar y lo trata como cualquier otro rechazo.
+       */
+      readonly evidenciaVisual?: DetalleDeEvidenciaVisualRequerida;
+    }
   /** Sin respuesta: no se sabe si la acción ocurrió (10-B10:430-438). */
   | { readonly ok: false; readonly tipo: 'RED' };
 
@@ -287,7 +308,8 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       const error = ErrorEnvelopeSchema.safeParse(json);
       if (!error.success) return { ok: false, tipo: 'API', status: respuesta.status, codigo: 'RESPUESTA_NO_RECONOCIDA', issues: [] };
       const issues = (error.data.error.details as { issues?: ValidationIssue[] } | undefined)?.issues ?? [];
-      return { ok: false, tipo: 'API', status: respuesta.status, codigo: error.data.error.code, issues };
+      const evidenciaVisual = error.data.error.code === 'VISUAL_EVIDENCE_ACT_REQUIRED' ? DetalleDeEvidenciaVisualRequeridaSchema.safeParse(error.data.error.details) : null;
+      return { ok: false, tipo: 'API', status: respuesta.status, codigo: error.data.error.code, issues, ...(evidenciaVisual?.success ? { evidenciaVisual: evidenciaVisual.data } : {}) };
     }
     const fecha = respuesta.headers?.get?.('date');
     const conFecha = fecha ? { fechaDelServidor: fecha } : {};
@@ -510,6 +532,33 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-CON-08. Idempotente por semántica. */
     revocarA3(token: string, consentimientoId: string): Promise<Resultado<ConsentimientoRevocadoResponse>> {
       return llamar('POST', `/me/health-data-consents/${encodeURIComponent(consentimientoId)}/revoke`, {
+        token,
+        esquema: ConsentimientoRevocadoResponseSchema,
+        cuerpo: {},
+      });
+    },
+
+    // ─── EVIDENCIA_VISUAL (08 §12.4 y §21.3; DL-125) ──────────────────────────────────────────────
+    /** API-EVI-01. El texto a mostrar antes de la primera foto para el profesional de ese vínculo. */
+    consultarRequisitoDeEvidenciaVisual(token: string, vinculoId: string): Promise<Resultado<RequisitoDeEvidenciaVisualResponse>> {
+      return llamar('GET', `/relationships/${encodeURIComponent(vinculoId)}/visual-evidence-requirement`, { token, esquema: RequisitoDeEvidenciaVisualResponseSchema });
+    },
+    /** API-EVI-02. La versión enviada es la que la pantalla mostró; lo demás es del servidor. */
+    otorgarEvidenciaVisual(token: string, vinculoId: string, versionMostrada: string, claveDeIdempotencia: string): Promise<Resultado<EvidenciaVisualOtorgadaResponse>> {
+      return llamar('POST', `/relationships/${encodeURIComponent(vinculoId)}/visual-evidence-consents`, {
+        token,
+        claveDeIdempotencia,
+        esquema: EvidenciaVisualOtorgadaResponseSchema,
+        cuerpo: { consentVersionId: versionMostrada },
+      });
+    },
+    /** API-EVI-03. */
+    consultarEvidenciasVisuales(token: string, filtro: { cursor?: string } = {}): Promise<Resultado<ListaDeEvidenciaVisualResponse>> {
+      return llamar('GET', `/me/visual-evidence-consents${query(filtro)}`, { token, esquema: ListaDeEvidenciaVisualResponseSchema });
+    },
+    /** API-EVI-04. Idempotente por semántica: sin Idempotency-Key; reintentar repite el POST. */
+    revocarEvidenciaVisual(token: string, actoId: string): Promise<Resultado<ConsentimientoRevocadoResponse>> {
+      return llamar('POST', `/me/visual-evidence-consents/${encodeURIComponent(actoId)}/revoke`, {
         token,
         esquema: ConsentimientoRevocadoResponseSchema,
         cuerpo: {},

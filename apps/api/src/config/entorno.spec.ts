@@ -28,7 +28,24 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
       demoProfesionales: [],
       proveedores: { openFoodFactsUrl: 'https://world.openfoodfacts.org', wgerUrl: 'https://wger.de', presupuestoMs: 5000 },
       mediosAlmacen: 'postgres',
+      evidenciaVisualExigida: false,
     });
+  });
+
+  it('DL-125 · BE_EVIDENCIA_VISUAL_EXIGIDA: false por defecto; true la activa; otro valor no arranca, y el mensaje no repite el valor', () => {
+    expect(leerEntorno({ ...BASE, BE_EVIDENCIA_VISUAL_EXIGIDA: 'true' }).evidenciaVisualExigida).toBe(true);
+    expect(leerEntorno({ ...BASE, BE_EVIDENCIA_VISUAL_EXIGIDA: 'false' }).evidenciaVisualExigida).toBe(false);
+    expect(leerEntorno({ ...BASE, BE_EVIDENCIA_VISUAL_EXIGIDA: '' }).evidenciaVisualExigida).toBe(false);
+    for (const otro of ['activada', 'yes', 'TRUE', 'exigida-sintetica']) {
+      let mensaje = '';
+      try {
+        leerEntorno({ ...BASE, BE_EVIDENCIA_VISUAL_EXIGIDA: otro });
+      } catch (e) {
+        mensaje = (e as Error).message;
+      }
+      expect(mensaje).toMatch(/BE_EVIDENCIA_VISUAL_EXIGIDA solo admite «true» o «false»/);
+      expect(mensaje).not.toContain(otro);
+    }
   });
 
   it('DL-120 · BE_MEDIOS_ALMACEN: postgres por defecto; S3 u otro valor no arranca, y el mensaje no repite el valor', () => {

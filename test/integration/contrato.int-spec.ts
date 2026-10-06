@@ -9,6 +9,8 @@
  * - WP-08: TEST-CT-INT-NUT-02/03 y TEST-CT-INT-TRN-02/03, contra un proveedor falso local (D-H).
  * - WP-NUTRICION-RECETAS: las familias REC (DL-119), MED (DL-120) e ING (DL-121), con las rutas firmadas de MED-02 y 04.
  * - WP-ENTRENAMIENTO-SERIES: las familias SER (DL-122), TIE (DL-124) y EJE (DL-123), y MED con la imagen de un ejercicio.
+ * - Precierre del 2026-10-06: EVIDENCIA_VISUAL (EVI-01 a 04, DL-125), y MED-01 con la exigencia activa, en una segunda app
+ *   con el mismo observador.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -45,6 +47,7 @@ import {
   cuerpoDeObjetivo,
   cuerpoDeRevision,
   estructura,
+  circuitoConPlanActivo,
   patchConSesion,
   registrarComida,
   registrarLibre,
@@ -94,20 +97,23 @@ const prisma = new PrismaClient();
 let app: INestApplication;
 let proveedor: ProveedorFalso;
 
+/** El observador: cada respuesta real, con su método, su ruta, su status y su código. */
+function observar(a: INestApplication): void {
+  a.use((req: Request, res: Response, next: NextFunction) => {
+    let codigo: string | null = null;
+    const json = res.json.bind(res);
+    res.json = (cuerpo: unknown) => {
+      codigo = (cuerpo as { error?: { code?: string } } | null)?.error?.code ?? null;
+      return json(cuerpo);
+    };
+    res.on('finish', () => observadas.push({ metodo: req.method.toLowerCase(), ruta: req.originalUrl.split('?')[0], status: res.statusCode, codigo }));
+    next();
+  });
+}
+
 beforeAll(async () => {
   proveedor = await levantarProveedorFalso();
-  app = await appDePrueba({ proveedores: { openFoodFactsUrl: proveedor.url, wgerUrl: proveedor.url, presupuestoMs: 1_500 } }, (a) => {
-    a.use((req: Request, res: Response, next: NextFunction) => {
-      let codigo: string | null = null;
-      const json = res.json.bind(res);
-      res.json = (cuerpo: unknown) => {
-        codigo = (cuerpo as { error?: { code?: string } } | null)?.error?.code ?? null;
-        return json(cuerpo);
-      };
-      res.on('finish', () => observadas.push({ metodo: req.method.toLowerCase(), ruta: req.originalUrl.split('?')[0], status: res.statusCode, codigo }));
-      next();
-    });
-  });
+  app = await appDePrueba({ proveedores: { openFoodFactsUrl: proveedor.url, wgerUrl: proveedor.url, presupuestoMs: 1_500 } }, observar);
 });
 afterAll(async () => {
   await app.close();
@@ -1339,6 +1345,51 @@ it('TEST-CT (WP-ENTRENAMIENTO-SERIES): las 9 operaciones SER, TIE y EJE, y MED c
   expect((await ase.get('/api/v1/me/training/session-in-progress').expect(200)).body.data.inProgress).toBeNull();
   const cierre = corrida([{ s: 950, evento: { type: 'SESSION_FINISHED', resolution: 'LEFT_INCOMPLETE' } }], Date.now() - 60 * 60 * 1000, 'corrida-del-contrato', eventos.length + 1);
   await mandarEventos(app, plan.ase, borrador.draftId, cierre).expect(404);
+});
+
+it('TEST-CT (DL-125): EVIDENCIA_VISUAL — EVI-01 a 04, y MED-01 con la exigencia activa', async () => {
+  const c = await circuitoListoParaPlanificar(app, 'contrato-ev');
+  const ase = conSesion(app, c.ase.token);
+  const pro = conSesion(app, c.pro.token);
+  const servidor = app.getHttpServer();
+  const version = VERSION_VIGENTE.EVIDENCIA_VISUAL.id;
+  const requisito = `/api/v1/relationships/${c.vinculoId}/visual-evidence-requirement`;
+  const actos = `/api/v1/relationships/${c.vinculoId}/visual-evidence-consents`;
+  // EVI-01
+  await ase.get(requisito).expect(200);
+  await ase.get(`${requisito}?x=1`).expect(400);
+  await pro.get(requisito).expect(404);
+  await request(servidor).get(requisito).expect(401);
+  // EVI-02
+  const clave = claveDeIdempotencia();
+  const acto = (await ase.post(actos, clave).send({ consentVersionId: version }).expect(201)).body.data;
+  await ase.post(actos, clave).send({ consentVersionId: 'otra-version' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await ase.post(actos).send({ consentVersionId: version }).expect(200); // ya vigente con esa versión
+  await ase.post(actos).send({ consentVersionId: 'acceso-profesional-sanitario-2026-09-demo' }).expect(409); // CONSENT_VERSION_STALE
+  await ase.post(actos).send({ consentVersionId: version, professionalId: c.pro.id }).expect(400); // UNKNOWN_FIELD
+  await pro.post(actos).send({ consentVersionId: version }).expect(404);
+  // EVI-03
+  await ase.get('/api/v1/me/visual-evidence-consents?limit=5').expect(200);
+  await ase.get('/api/v1/me/visual-evidence-consents?cursor=basura').expect(400); // INVALID_CURSOR
+  // EVI-04
+  await pro.post(`/api/v1/me/visual-evidence-consents/${acto.consentId}/revoke`).send({}).expect(404);
+  await ase.post(`/api/v1/me/visual-evidence-consents/${acto.consentId}/revoke`).send({ extra: 1 }).expect(400);
+  await ase.post(`/api/v1/me/visual-evidence-consents/${acto.consentId}/revoke`).send({}).expect(200);
+  // Sin B2 vigente no se registra: 422.
+  await ase.post(`/api/v1/me/consents/${c.consentId}/revoke`).send({}).expect(200);
+  await ase.post(actos).send({ consentVersionId: version }).expect(422); // RELATIONSHIP_NOT_READY_FOR_CONSENT
+  // MED-01 con la exigencia activa: sin plan vigente, 422; con plan y sin el acto, 403 con su detalle.
+  const conExigencia = await appDePrueba({ evidenciaVisualExigida: true }, observar);
+  try {
+    const intencion = (token: string) =>
+      conSesion(conExigencia, token).post('/api/v1/me/media/upload-intents').send({ purpose: 'MEAL_EVIDENCE', contentType: 'image/jpeg', byteSize: 20_000, provenance: 'PERSON_PROVIDED', authorship: null });
+    const sinPlan = await prepararAsesorado(conExigencia, 'contrato-ev-sin-plan', { a3: true });
+    await intencion(sinPlan.token).expect(422); // ACTIVE_PLAN_REQUIRED
+    const conPlan = await circuitoConPlanActivo(conExigencia, 'contrato-ev-plan');
+    await intencion(conPlan.ase.token).expect(403); // VISUAL_EVIDENCE_ACT_REQUIRED
+  } finally {
+    await conExigencia.close();
+  }
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

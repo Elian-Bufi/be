@@ -25,6 +25,8 @@ export * from './nutricion';
 export * from './copy-nutricion';
 export * from './calculo-nutricional';
 export * from './contratos-medios';
+export * from './contratos-evidencia-visual';
+export * from './copy-evidencia-visual';
 export * from './contratos-recetas';
 export * from './contratos-registro-de-comidas';
 export * from './copy-recetas';

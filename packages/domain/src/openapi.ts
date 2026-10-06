@@ -49,6 +49,13 @@ import {
 } from './contratos-vinculo';
 import { CarteraResponseSchema } from './contratos-cartera';
 import {
+  DetalleDeEvidenciaVisualRequeridaSchema,
+  EvidenciaVisualOtorgadaResponseSchema,
+  ListaDeEvidenciaVisualResponseSchema,
+  OtorgarEvidenciaVisualRequestSchema,
+  RequisitoDeEvidenciaVisualResponseSchema,
+} from './contratos-evidencia-visual';
+import {
   CrearPlantillaDeEntrenamientoRequestSchema,
   EditarPlantillaRequestSchema,
   ListaDePlantillasDeEntrenamientoResponseSchema,
@@ -244,6 +251,8 @@ export interface Operacion {
    * cambiarlo para las demás operaciones.
    */
   readonly detalleDe422?: { readonly codigo: Codigo; readonly schema: z.ZodType; readonly descripcion: string };
+  /** Lo mismo para un 403 que trae `details`: el de API-MED-01 sin el acto `EVIDENCIA_VISUAL` (DL-125). */
+  readonly detalleDe403?: { readonly codigo: Codigo; readonly schema: z.ZodType; readonly descripcion: string };
   readonly fuente: string;
 }
 
@@ -585,6 +594,64 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: ConsentimientoRevocadoResponseSchema }],
     errores: ESCRITURA_REVELABLE,
     fuente: '09:2558-2621 · 08:406 (paso 1) · DEUDA_LEGAJO DL-021',
+  },
+  // ─── EVI: EVIDENCIA_VISUAL (08 §12.4 y §21.3; precierre del 2026-10-06, §6; DL-125). Familia propia de BE: el 09 no las
+  // define, y sus números no se toman de la familia CON del 09 (DL-116). Tienen la forma de CON-01, 02, 07 y 08 ─────
+  {
+    id: 'API-EVI-01',
+    metodo: 'get',
+    ruta: '/relationships/{relationshipId}/visual-evidence-requirement',
+    resumen:
+      'La información destacada de las fotos de comidas para un vínculo de Nutrición propio (solo el asesorado titular): el texto versionado a mostrar, si es una propuesta (`textApproval`), si la API ya exige el acto (`enforced`) y el acto vigente, si hay uno. Otro alcance, ajeno o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: RequisitoDeEvidenciaVisualResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '08 §12.4 (08:395) · 08 §21.3 · forma de API-CON-01 · DEUDA_LEGAJO DL-125',
+  },
+  {
+    id: 'API-EVI-02',
+    metodo: 'post',
+    ruta: '/relationships/{relationshipId}/visual-evidence-consents',
+    resumen:
+      'Registrar el acto EVIDENCIA_VISUAL de un vínculo de Nutrición propio, con la versión mostrada, que es la aceptada (solo el asesorado titular, con el vínculo aceptado y su B2 vigente). 201 al registrarlo; 200 si ya estaba vigente con esa versión. No es un consentimiento por foto.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: OtorgarEvidenciaVisualRequestSchema,
+    exitos: [
+      { status: 201, schema: EvidenciaVisualOtorgadaResponseSchema },
+      { status: 200, schema: EvidenciaVisualOtorgadaResponseSchema },
+    ],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['CONSENT_VERSION_STALE', 'CONSENT_ALREADY_ACTIVE', 'IDEMPOTENCY_KEY_REUSED'],
+      422: ['RELATIONSHIP_NOT_READY_FOR_CONSENT'],
+    },
+    fuente: '08 §12.2 · 08 §12.4 (08:395) · forma de API-CON-02 · DEUDA_LEGAJO DL-125',
+  },
+  {
+    id: 'API-EVI-03',
+    metodo: 'get',
+    ruta: '/me/visual-evidence-consents',
+    resumen: 'Los actos EVIDENCIA_VISUAL propios, vigentes y revocados, con su profesional y su versión. Sin IP ni user-agent.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeEvidenciaVisualResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: '08 §12.4 (08:395) · forma de API-CON-07 · DEUDA_LEGAJO DL-125',
+  },
+  {
+    id: 'API-EVI-04',
+    metodo: 'post',
+    ruta: '/me/visual-evidence-consents/{consentId}/revoke',
+    resumen:
+      'Revocar un acto EVIDENCIA_VISUAL. Idempotente por semántica, sin Idempotency-Key. Con la exigencia activa, corta las fotos nuevas para ese profesional (API-MED-01) y su acceso a las fotos (API-MED-03) en la operación siguiente. No borra fotos ni registros, y el titular sigue viendo las suyas.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ConsentimientoRevocadoResponseSchema }],
+    errores: ESCRITURA_REVELABLE,
+    fuente: '08 §12.4 (08:395) · 08 §13 · forma de API-CON-08 · DEUDA_LEGAJO DL-125',
   },
   // ─── WP-03 · DSH-03 mínimo (09v11 §15; DL-031) ───────────────────────────────────────────────
   {
@@ -2236,13 +2303,24 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-MED-01',
     metodo: 'post',
     ruta: '/me/media/upload-intents',
-    resumen: `Intención de subida: finalidad, tipo y bytes declarados. Crea el medio pendiente y devuelve una ruta firmada de subida que vence a los ${LIMITES_DE_MEDIO.vigenciaDeSubidaSegundos / 60} minutos. RECIPE_REFERENCE: un profesional de Nutrición verificado y habilitado; EXERCISE_REFERENCE: uno de Entrenamiento verificado y habilitado, con autoría declarada; MEAL_EVIDENCE: un asesorado con A3 vigente, siempre PERSON_PROVIDED. Crear la intención no es subir.`,
+    resumen: `Intención de subida: finalidad, tipo y bytes declarados. Crea el medio pendiente y devuelve una ruta firmada de subida que vence a los ${LIMITES_DE_MEDIO.vigenciaDeSubidaSegundos / 60} minutos. RECIPE_REFERENCE: un profesional de Nutrición verificado y habilitado; EXERCISE_REFERENCE: uno de Entrenamiento verificado y habilitado, con autoría declarada; MEAL_EVIDENCE: un asesorado con A3 vigente, siempre PERSON_PROVIDED; con la exigencia de EVIDENCIA_VISUAL activa, además, con un plan de Nutrición vigente y el acto de ese vínculo vigente (si falta, 403 VISUAL_EVIDENCE_ACT_REQUIRED con el vínculo y la versión a mostrar). Crear la intención no es subir.`,
     autenticacion: 'SESSION',
     idempotencia: true,
     request: IntencionDeSubidaRequestSchema,
     exitos: [{ status: 201, schema: IntencionDeSubidaResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED', 'FILE_TYPE_NOT_ALLOWED', 'FILE_SIZE_NOT_ALLOWED'] },
-    fuente: '09v12 §24 · 09v8 API-PRO-04 · 08 §21 · DEUDA_LEGAJO DL-120',
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN', 'VISUAL_EVIDENCE_ACT_REQUIRED'],
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['VALIDATION_FAILED', 'FILE_TYPE_NOT_ALLOWED', 'FILE_SIZE_NOT_ALLOWED', 'ACTIVE_PLAN_REQUIRED'],
+    },
+    detalleDe403: {
+      codigo: 'VISUAL_EVIDENCE_ACT_REQUIRED',
+      schema: DetalleDeEvidenciaVisualRequeridaSchema,
+      descripcion: 'el vínculo de Nutrición del plan vigente y la versión del texto a mostrar antes de registrar el acto (API-EVI-01 y 02). ACTION_FORBIDDEN no trae details.',
+    },
+    fuente: '09v12 §24 · 09v8 API-PRO-04 · 08 §21 · 08:395 · DEUDA_LEGAJO DL-120 y DL-125',
   },
   {
     id: 'API-MED-02',
@@ -2260,12 +2338,12 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-MED-03',
     metodo: 'get',
     ruta: '/media/{mediaId}/access',
-    resumen: `Ruta temporal de lectura de un medio disponible, que vence en ${LIMITES_DE_MEDIO.vigenciaDeLecturaSegundos / 60} minutos como máximo. Decide el PDP: la imagen de una receta, su profesional y el asesorado con un plan que la ofrece; la de un ejercicio, su profesional y el asesorado con un plan activado de ese profesional que lo incluye, con acceso de Entrenamiento vigente; la foto de una comida, su titular y el profesional del plan con vínculo, B2 y A3 vigentes. Cada acceso queda auditado. Lo ajeno o inexistente: 404.`,
+    resumen: `Ruta temporal de lectura de un medio disponible, que vence en ${LIMITES_DE_MEDIO.vigenciaDeLecturaSegundos / 60} minutos como máximo. Decide el PDP: la imagen de una receta, su profesional y el asesorado con un plan que la ofrece; la de un ejercicio, su profesional y el asesorado con un plan activado de ese profesional que lo incluye, con acceso de Entrenamiento vigente; la foto de una comida, su titular y el profesional del plan con vínculo, B2 y A3 vigentes y, con la exigencia de EVIDENCIA_VISUAL activa, el acto de ese vínculo vigente. Cada acceso queda auditado. Lo ajeno o inexistente: 404.`,
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: AccesoAMedioResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
-    fuente: '09v12 §24 · 08 §21 · 08:395 · DEUDA_LEGAJO DL-120',
+    fuente: '09v12 §24 · 08 §21 · 08:395 · DEUDA_LEGAJO DL-120 y DL-125',
   },
   {
     id: 'API-MED-04',
@@ -2409,6 +2487,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-CAL-03',
   'API-REL-06',
   'API-CON-01',
+  'API-EVI-01',
   'API-NUT-02',
   'API-NUT-03',
   'API-NUT-05',
@@ -2439,7 +2518,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
 ]);
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05', 'API-MED-02']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05', 'API-MED-02']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };
@@ -2498,7 +2577,7 @@ export function documentoOpenApi(): Record<string, unknown> {
           : { description: 'Éxito, sin cuerpo' };
     }
     for (const [status, codigos] of Object.entries(conComunes(op.errores))) {
-      const detalle = status === '422' ? op.detalleDe422 : undefined;
+      const detalle = status === '422' ? op.detalleDe422 : status === '403' ? op.detalleDe403 : undefined;
       const envelope = { $ref: '#/components/schemas/ErrorEnvelope' };
       respuestas[status] = {
         description: `ErrorEnvelope: ${(codigos ?? []).join(' | ')}${detalle ? `. ${detalle.codigo}: ${detalle.descripcion}` : ''}`,
