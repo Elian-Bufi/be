@@ -14,8 +14,8 @@
 | Seguridad | PR #148 (borrador) contra `main`: `source-map-js` 1.2.2. #146 tiene el mismo cambio en `6004c32` |
 | Paquete de Dirección | `docs/fuente_entrenamiento/BE_Entrenamiento_Autonomo_2026-10-06/` |
 
-**Cambio de base futuro:** cuando #147 se integre (o #146 y después #147), el PR de Entrenamiento cambia su base a la
-rama que corresponda. Mientras tanto muestra solo su delta sobre Nutrición.
+**Cambio de base futuro:** cuando #147 se integre (o #146 y después #147), el PR de Entrenamiento (#149) cambia su base
+a la rama que corresponda. Mientras tanto muestra solo su delta sobre Nutrición.
 
 ## Hitos
 
@@ -28,7 +28,7 @@ rama que corresponda. Mientras tanto muestra solo su delta sobre Nutrición.
 | 5 | API: migración, medios de ejercicios y eventos de tiempo | Hecho | `033bfa1` |
 | 6 | Website: editor por serie con vista previa, «Mis ejercicios» con imagen, plan activo y ejecuciones con tiempos | Hecho | `65a7d6a` |
 | 7 | APK: Hoy, Plan e Historial, sesión enfocada, series, descanso y recuperación | Hecho | `e6bd769` |
-| 8 | Recorrido, evidencia y PR | Hecho: 101/101 controles; PR en borrador apilado sobre #147 | ver el log de la rama |
+| 8 | Recorrido, evidencia y PR | Hecho: 101/101 controles; PR #149 en borrador, apilado sobre #147 | `4badaaa` |
 
 ## Cómo levantar los servicios locales
 

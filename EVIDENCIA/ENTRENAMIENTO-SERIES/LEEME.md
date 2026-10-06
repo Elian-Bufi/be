@@ -4,7 +4,7 @@
 > `BE_Entrenamiento_Autonomo_2026-10-06`. La entrega prevista es el 2026-10-20.
 > - Definición: [`docs/paquetes/WP-ENTRENAMIENTO-SERIES.md`](../../docs/paquetes/WP-ENTRENAMIENTO-SERIES.md).
 > - Deudas: DL-122, DL-123 y DL-124.
-> - Rama `wp-entrenamiento-series`. El PR en borrador va apilado sobre `wp-nutricion-recetas` (#147).
+> - Rama `wp-entrenamiento-series`, PR #149 en borrador, apilado sobre `wp-nutricion-recetas` (#147).
 >
 > **Datos:** todos sintéticos.
 > - Las cuentas son `@example.invalid`, creadas por la API pública en una base local.
