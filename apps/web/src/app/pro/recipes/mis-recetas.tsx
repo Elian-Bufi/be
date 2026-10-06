@@ -91,7 +91,7 @@ export function MisRecetas() {
     <div className="secciones">
       {avisoFlotante}
       <section className="seccion" aria-labelledby="titulo-recetas">
-        <h2 id="titulo-recetas">{COPY_RECETAS.misRecetas}</h2>
+        <h2 id="titulo-recetas">Tus recetas</h2>
         <Ayuda titulo="Qué es una receta">
           <p>{COPY_RECETAS.sinRecetas}</p>
           <p>{COPY_RECETAS.avisoDeImagen}</p>

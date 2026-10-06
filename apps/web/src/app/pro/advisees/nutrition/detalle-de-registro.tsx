@@ -93,6 +93,7 @@ function DetalleDeRegistro({ registroId }: { registroId: string }) {
           <p>
             <strong>{COPY_REGISTRO_PARA_EL_PROFESIONAL.algoDiferente}:</strong> {registro.description ? `«${registro.description}»` : COPY_REGISTRO_PARA_EL_PROFESIONAL.sinDescripcion}
           </p>
+          {registro.meal ? <p className="nota">{COPY_REGISTRO_PARA_EL_PROFESIONAL.comidaDeContexto(registro.meal.label)}</p> : null}
           {registro.approximateQuantity ? (
             <p>
               {COPY_REGISTRO_PARA_EL_PROFESIONAL.cantidadAproximada}: {registro.approximateQuantity}

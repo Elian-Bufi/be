@@ -273,15 +273,17 @@ export function EditorDeReceta({
           {ingredientes.length > 0 ? (
             <ol className="ingredientes-de-receta">
               {ingredientes.map((i, n) => (
-                <li key={i.clave} className="fila-de-item">
-                  <p className="lista__titulo">
+                <li key={i.clave}>
+                  {/* Un grupo por ingrediente: el lector de pantalla anuncia su nombre con cada campo, y las etiquetas quedan cortas. */}
+                  <fieldset className="ingrediente-de-receta">
+                  <legend>
                     {n + 1}. {i.nombre}
-                  </p>
+                  </legend>
                   {i.fuente ? <p className="nota">{i.fuente}</p> : null}
-                  <div className="fila-de-dato">
+                  <div className="campos-del-ingrediente">
                     <Campo
                       id={`${i.clave}-cantidad`}
-                      etiqueta={`${COPY_RECETAS.cantidad} de ${i.nombre}`}
+                      etiqueta={COPY_RECETAS.cantidad}
                       inputMode="decimal"
                       value={i.cantidad}
                       error={porCampo[`${i.clave}-cantidad`] ?? null}
@@ -328,6 +330,7 @@ export function EditorDeReceta({
                   >
                     {COPY_RECETAS.quitarIngrediente} {i.nombre}
                   </button>
+                  </fieldset>
                 </li>
               ))}
             </ol>
@@ -410,8 +413,7 @@ export function EditorDeReceta({
       </form>
 
       {cargada ? (
-        <section className="seccion" aria-labelledby="receta-imagen">
-          <h3 id="receta-imagen">{COPY_RECETAS.imagenDeReferencia}</h3>
+        <section className="seccion" aria-label={COPY_RECETAS.imagenDeReferencia}>
           {avisoDeImagen ? (
             <Aviso tipo="exito">
               <p>{avisoDeImagen}</p>
