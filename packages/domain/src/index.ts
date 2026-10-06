@@ -70,6 +70,7 @@ export * from './evolucion-antropometrica';
 export * from './tiempos-de-entrenamiento';
 export * from './relacion-con-el-objetivo';
 export * from './objetivos-por-serie';
+export * from './compatibilidad-de-clientes';
 export * from './contratos-entrenamiento-por-serie';
 export * from './sesion-de-entrenamiento';
 export * from './copy-entrenamiento-por-serie';

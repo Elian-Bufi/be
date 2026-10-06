@@ -13,6 +13,7 @@
  * Es lógica pura y sin reloj propio: quien llama pasa los instantes.
  */
 import type {
+  BaseDelRelojApi,
   CalculoDeTiempos,
   CalidadDeTiempoApi,
   DuracionApi,
@@ -21,7 +22,17 @@ import type {
   MotivoDeEvento,
   ResultadoDeEvento,
 } from './contratos-entrenamiento-por-serie';
-import { descansoCalculado, duracionDeIntervalo, resumenDeSesion, TOLERANCIA_ENTRE_RELOJES_MS, type CalidadDeTiempo, type DuracionCalculada, type InstanteDeEvento } from './tiempos-de-entrenamiento';
+import {
+  descansoCalculado,
+  duracionDeIntervalo,
+  mismoRelojMonotonico,
+  resumenDeSesion,
+  TOLERANCIA_ENTRE_RELOJES_MS,
+  type BaseDelReloj,
+  type CalidadDeTiempo,
+  type DuracionCalculada,
+  type InstanteDeEvento,
+} from './tiempos-de-entrenamiento';
 
 export const CALIDAD_HACIA_API: Readonly<Record<CalidadDeTiempo, CalidadDeTiempoApi>> = {
   MEDIDO: 'MEASURED',
@@ -31,11 +42,16 @@ export const CALIDAD_HACIA_API: Readonly<Record<CalidadDeTiempo, CalidadDeTiempo
   INVALIDO: 'INVALID',
 };
 
+export const BASE_DEL_RELOJ_DESDE_LA_API: Readonly<Record<BaseDelRelojApi, BaseDelReloj>> = {
+  ELAPSED_SINCE_BOOT: 'DESDE_EL_ARRANQUE',
+  PROCESS_MONOTONIC: 'DEL_PROCESO',
+};
+
 /** El instante de un evento, en la forma de `tiempos-de-entrenamiento.ts`. */
 export function instanteDelEvento(at: InstanteDeEventoApi): InstanteDeEvento {
   return {
     civilMs: Date.parse(at.civil),
-    monotonico: at.monotonic ? { ancla: at.monotonic.anchor, ms: at.monotonic.ms } : null,
+    monotonico: at.monotonic ? { ancla: at.monotonic.anchor, ms: at.monotonic.ms, base: BASE_DEL_RELOJ_DESDE_LA_API[at.monotonic.clock] } : null,
     origen: at.source === 'MONOTONIC' ? 'MONOTONICO' : at.source === 'DECLARED' ? 'DECLARADO' : 'RELOJ_CIVIL_RECUPERADO',
   };
 }
@@ -223,20 +239,21 @@ const TIPOS_DE_LA_SESION: ReadonlySet<EventoDeTiempo['type']> = new Set(['SESSIO
 
 /**
  * La línea de tiempo de la corrida para los totales de la sesión, hecha solo con sus eventos (`TIPOS_DE_LA_SESION`). Es
- * monotónica si todos se tomaron en el mismo proceso y el reloj civil no se adelantó al monotónico. Si no, es civil y la
- * calidad es `ESTIMADO`. Un descanso o una serie cerrados por declaración («Terminó ahora») afectan solo su medición.
+ * monotónica si todos se tomaron con el mismo reloj monotónico (misma base y misma ancla) y, con el reloj del proceso,
+ * si además el civil no se le adelantó (el teléfono pudo haber dormido). Si no, es civil y la calidad es `ESTIMADO`. Con
+ * el reloj desde el arranque, la sesión sigue medida aunque la app se haya cerrado y vuelto a abrir en el mismo arranque.
+ * Un descanso o una serie cerrados por declaración («Terminó ahora») afectan solo su medición.
  * Los valores se redondean al milisegundo antes de sumar: así la suma de los ejercicios y de lo no asignado da
  * exactamente la sesión sin pausas.
  */
 function lineaDeTiempo(eventos: readonly EventoDeTiempo[]): { t: (e: EventoDeTiempo) => number; calidad: CalidadDeTiempo } {
-  const primero = eventos[0]!;
-  const ultimo = eventos[eventos.length - 1]!;
-  const ancla = primero.at.monotonic?.anchor;
-  const monotonica =
-    ancla !== undefined &&
-    eventos.every((e) => e.at.source === 'MONOTONIC' && e.at.monotonic?.anchor === ancla) &&
-    Date.parse(ultimo.at.civil) - Date.parse(primero.at.civil) - (ultimo.at.monotonic!.ms - primero.at.monotonic!.ms) <= TOLERANCIA_ENTRE_RELOJES_MS;
-  return monotonica ? { t: (e) => Math.round(e.at.monotonic!.ms), calidad: 'MEDIDO' } : { t: (e) => Math.round(Date.parse(e.at.civil)), calidad: 'ESTIMADO' };
+  const instantes = eventos.map((e) => instanteDelEvento(e.at));
+  const primero = instantes[0]!;
+  const ultimo = instantes[instantes.length - 1]!;
+  const unSoloReloj = instantes.every((i) => mismoRelojMonotonico(primero, i));
+  const pudoDormir =
+    unSoloReloj && primero.monotonico!.base === 'DEL_PROCESO' && ultimo.civilMs - primero.civilMs - (ultimo.monotonico!.ms - primero.monotonico!.ms) > TOLERANCIA_ENTRE_RELOJES_MS;
+  return unSoloReloj && !pudoDormir ? { t: (e) => Math.round(e.at.monotonic!.ms), calidad: 'MEDIDO' } : { t: (e) => Math.round(Date.parse(e.at.civil)), calidad: 'ESTIMADO' };
 }
 
 const SIN = (calidad: CalidadDeTiempo): DuracionApi => ({ ms: null, quality: CALIDAD_HACIA_API[calidad] });

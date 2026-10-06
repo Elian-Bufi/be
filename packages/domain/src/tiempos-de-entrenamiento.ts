@@ -10,10 +10,11 @@
  * - **Serie:** solo un par válido de inicio y fin da una «duración medida». Sin ese par, la duración es desconocida,
  *   aunque la serie tenga datos registrados.
  * - **Calidad:**
- *   - `MEDIDO`: los dos extremos se tomaron con el reloj monotónico del mismo proceso, con la misma ancla, y el reloj
- *     civil no avanzó bastante más que él (ver `TOLERANCIA_ENTRE_RELOJES_MS`);
- *   - `ESTIMADO`: se reconstruyó con el reloj civil, por ejemplo después de reiniciar la app, o uno de los extremos lo
- *     declaró la persona al resolver una medición abierta;
+ *   - `MEDIDO`: los dos extremos se tomaron con el mismo reloj monotónico, con la misma base y la misma ancla. Con el
+ *     reloj desde el arranque, que cuenta el reposo, cambiar la hora del teléfono no altera la duración. Con el del
+ *     proceso, además, el reloj civil no avanzó bastante más que él (ver `TOLERANCIA_ENTRE_RELOJES_MS`);
+ *   - `ESTIMADO`: se reconstruyó con el reloj civil, por ejemplo después de reiniciar el teléfono o de cerrar una app
+ *     que medía con el reloj del proceso, o uno de los extremos lo declaró la persona al resolver una medición abierta;
  *   - `INCOMPLETO`: hay inicio pero no fin. Nunca se cierra a la hora de reapertura;
  *   - `SIN_DATO`: no hay inicio;
  *   - `INVALIDO`: el fin es anterior al inicio.
@@ -27,7 +28,7 @@ export type CalidadDeTiempo = 'MEDIDO' | 'ESTIMADO' | 'INCOMPLETO' | 'SIN_DATO' 
 
 /**
  * Cómo se tomó el instante de un evento:
- * - `MONOTONICO`: en el proceso de la app, con su reloj monotónico;
+ * - `MONOTONICO`: con un reloj monotónico de la app, el que dice su base (`BaseDelReloj`);
  * - `RELOJ_CIVIL_RECUPERADO`: reconstruido con el reloj civil, sin un monotónico confiable;
  * - `DECLARADO`: la persona declaró ese momento al resolver una medición que quedó abierta («terminó ahora»). Es una
  *   declaración, no una medición.
@@ -35,23 +36,38 @@ export type CalidadDeTiempo = 'MEDIDO' | 'ESTIMADO' | 'INCOMPLETO' | 'SIN_DATO' 
 export type OrigenDelInstante = 'MONOTONICO' | 'RELOJ_CIVIL_RECUPERADO' | 'DECLARADO';
 
 /**
- * Cuánto puede adelantarse el reloj civil al monotónico dentro de una misma medición sin que deje de ser «medida».
- * En Android, el reloj monotónico que lee la app (CLOCK_MONOTONIC) no avanza mientras el teléfono duerme. Si el civil
- * avanzó bastante más, pudo haber pasado eso o alguien adelantó la hora: no se puede saber cuál, así que la duración
- * sale del reloj civil y es `ESTIMADO`. Si el civil avanzó menos (alguien atrasó la hora), el monotónico sigue siendo
- * válido y la duración es `MEDIDO`.
+ * Cuánto puede adelantarse el reloj civil al monotónico **del proceso** dentro de una misma medición sin que deje de
+ * ser «medida». En Android, `performance.now()` es CLOCK_MONOTONIC, que no avanza mientras el teléfono duerme. Si el
+ * civil avanzó bastante más, pudo haber pasado eso o alguien adelantó la hora: no se puede saber cuál, así que la
+ * duración sale del reloj civil y es `ESTIMADO`. Si el civil avanzó menos (alguien atrasó la hora), el monotónico sigue
+ * siendo válido y la duración es `MEDIDO`.
+ *
+ * El reloj desde el arranque (`DESDE_EL_ARRANQUE`) no usa esta tolerancia: cuenta el reposo, así que una diferencia con
+ * el civil solo puede venir de un cambio de hora, y la duración es la del monotónico.
  */
 export const TOLERANCIA_ENTRE_RELOJES_MS = 2000;
 
 /**
+ * La base de un reloj monotónico (`BaseDelRelojApi`):
+ * - `DESDE_EL_ARRANQUE`: el tiempo desde el arranque del teléfono, con el reposo incluido. El ancla nombra el arranque;
+ * - `DEL_PROCESO`: el monotónico del proceso de la app, que no cuenta el reposo. El ancla nombra el proceso.
+ * Dos instantes se restan solo si tienen la misma base y la misma ancla: nunca se mezclan relojes.
+ */
+export type BaseDelReloj = 'DESDE_EL_ARRANQUE' | 'DEL_PROCESO';
+
+/**
  * Un instante de un evento de tiempo. `civilMs` es el reloj civil, que sirve para recuperar y sincronizar. Si el evento
- * se midió en el proceso de la app, `monotonico` lleva el reloj monotónico con el ancla de ese proceso, que cambia al
- * reiniciar.
+ * se midió con un reloj monotónico de la app, `monotonico` lleva su valor, su base y su ancla.
  */
 export interface InstanteDeEvento {
   readonly civilMs: number;
-  readonly monotonico: { readonly ancla: string; readonly ms: number } | null;
+  readonly monotonico: { readonly ancla: string; readonly ms: number; readonly base: BaseDelReloj } | null;
   readonly origen: OrigenDelInstante;
+}
+
+/** Si dos instantes se tomaron con el mismo reloj monotónico: los dos medidos, con la misma base y la misma ancla. */
+export function mismoRelojMonotonico(a: InstanteDeEvento, b: InstanteDeEvento): boolean {
+  return a.origen === 'MONOTONICO' && b.origen === 'MONOTONICO' && a.monotonico !== null && b.monotonico !== null && a.monotonico.ancla === b.monotonico.ancla && a.monotonico.base === b.monotonico.base;
 }
 
 export interface DuracionCalculada {
@@ -64,22 +80,20 @@ export interface DuracionCalculada {
  * La duración entre dos instantes, con su calidad.
  * - Sin inicio: `SIN_DATO`, aunque haya un registro al final, como la serie A3 del ejemplo.
  * - Sin fin: `INCOMPLETO`. No se inventa un fin fisiológico ni se cierra al reabrir la app.
- * - Si los dos tienen monotónico con la misma ancla, la duración es monotónica y `MEDIDO`, aunque el reloj civil haya
- *   retrocedido entre los dos. Si el civil se adelantó más que la tolerancia, el teléfono pudo haber dormido: la
- *   duración sale del civil y es `ESTIMADO`.
+ * - Si los dos tienen el mismo reloj monotónico (misma base y misma ancla), la duración es monotónica y `MEDIDO`, aunque
+ *   el reloj civil haya retrocedido o avanzado entre los dos. Con el reloj del proceso hay una excepción: si el civil se
+ *   adelantó más que la tolerancia, el teléfono pudo haber dormido, así que la duración sale del civil y es `ESTIMADO`.
  * - Si no, la duración sale del reloj civil y es `ESTIMADO`.
  * - Una duración negativa es `INVALIDO`.
  */
 export function duracionDeIntervalo(inicio: InstanteDeEvento | null, fin: InstanteDeEvento | null): DuracionCalculada {
   if (!inicio) return { ms: null, calidad: 'SIN_DATO' };
   if (!fin) return { ms: null, calidad: 'INCOMPLETO' };
-  const mismoProceso =
-    inicio.origen === 'MONOTONICO' && fin.origen === 'MONOTONICO' && inicio.monotonico !== null && fin.monotonico !== null && inicio.monotonico.ancla === fin.monotonico.ancla;
   const civil = fin.civilMs - inicio.civilMs;
-  if (mismoProceso) {
+  if (mismoRelojMonotonico(inicio, fin)) {
     const monotonico = fin.monotonico!.ms - inicio.monotonico!.ms;
     if (!Number.isFinite(monotonico) || monotonico < 0) return { ms: null, calidad: 'INVALIDO' };
-    if (Number.isFinite(civil) && civil - monotonico > TOLERANCIA_ENTRE_RELOJES_MS) return { ms: civil, calidad: 'ESTIMADO' };
+    if (inicio.monotonico!.base === 'DEL_PROCESO' && Number.isFinite(civil) && civil - monotonico > TOLERANCIA_ENTRE_RELOJES_MS) return { ms: civil, calidad: 'ESTIMADO' };
     return { ms: monotonico, calidad: 'MEDIDO' };
   }
   if (!Number.isFinite(civil) || civil < 0) return { ms: null, calidad: 'INVALIDO' };

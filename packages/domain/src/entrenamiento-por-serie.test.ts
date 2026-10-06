@@ -223,7 +223,13 @@ const INICIO_CIVIL = Date.parse('2026-10-06T13:00:00.000-03:00');
 /** Un instante monotónico del proceso `ancla`, `s` segundos después del inicio; el civil avanza igual salvo que se diga. */
 const mono = (s: number, ancla = 'proceso-uno', civilS = s): InstanteDeEventoApi => ({
   civil: new Date(INICIO_CIVIL + civilS * 1000).toISOString(),
-  monotonic: { anchor: ancla, ms: 5_000 + s * 1000 },
+  monotonic: { anchor: ancla, ms: 5_000 + s * 1000, clock: 'PROCESS_MONOTONIC' },
+  source: 'MONOTONIC',
+});
+/** Un instante del reloj desde el arranque `ancla` (cuenta el reposo): `s` segundos después del inicio. */
+const arranque = (s: number, ancla = 'arranque-uno', civilS = s): InstanteDeEventoApi => ({
+  civil: new Date(INICIO_CIVIL + civilS * 1000).toISOString(),
+  monotonic: { anchor: ancla, ms: 3_600_000 + s * 1000, clock: 'ELAPSED_SINCE_BOOT' },
   source: 'MONOTONIC',
 });
 const declarado = (s: number): InstanteDeEventoApi => ({ civil: new Date(INICIO_CIVIL + s * 1000).toISOString(), monotonic: null, source: 'DECLARED' });
@@ -418,6 +424,83 @@ test('T06 · si el reloj civil se adelanta al monotónico (el teléfono durmió)
   assert.deepEqual(descanso(mono(150, 'proceso-uno', -3450)), { ms: 90_000, quality: 'MEASURED' });
 });
 
+test('con el reloj desde el arranque, cambiar la hora del teléfono no altera la duración: ni adelantarla ni atrasarla', () => {
+  const descanso = (fin: InstanteDeEventoApi) =>
+    calcularTiempos(
+      aplicarEventos(
+        [],
+        corrida([
+          { type: 'SESSION_STARTED', at: arranque(0) },
+          { type: 'REST_STARTED', restId: 'descanso-a1', prescriptionId: 'pA', setIndex: 1, at: arranque(60) },
+          { type: 'REST_FINISHED', restId: 'descanso-a1', at: fin },
+        ]),
+        CONTEXTO,
+      ).aRegistrar,
+      RECOMENDADO,
+    ).rests[0]!.duration;
+  // El monotónico contó 90 s, también si el teléfono durmió: la hora adelantada una hora no cambia nada.
+  assert.deepEqual(descanso(arranque(150, 'arranque-uno', 3750)), { ms: 90_000, quality: 'MEASURED' });
+  assert.deepEqual(descanso(arranque(150, 'arranque-uno', -3450)), { ms: 90_000, quality: 'MEASURED' });
+});
+
+test('con el reloj desde el arranque, la sesión sigue medida si la app se cerró y se abrió en el mismo arranque; reiniciar el teléfono la vuelve estimada', () => {
+  const sesion = (fin: InstanteDeEventoApi) =>
+    calcularTiempos(
+      aplicarEventos(
+        [],
+        corrida([
+          { type: 'SESSION_STARTED', at: arranque(0) },
+          { type: 'EXERCISE_ACTIVATED', prescriptionId: 'pA', at: arranque(0) },
+          // El sistema cerró la app acá. Al volver (otro proceso, el mismo arranque), la persona finaliza.
+          { type: 'SESSION_FINISHED', resolution: 'FINISHED', at: fin },
+        ]),
+        CONTEXTO,
+      ).aRegistrar,
+      RECOMENDADO,
+    ).session.elapsed;
+  assert.deepEqual(sesion(arranque(1200)), { ms: 1_200_000, quality: 'MEASURED' });
+  // Otro arranque: los dos relojes ya no se pueden restar. Queda el civil, como estimado.
+  assert.deepEqual(sesion({ ...arranque(1200, 'arranque-dos'), monotonic: { anchor: 'arranque-dos', ms: 40_000, clock: 'ELAPSED_SINCE_BOOT' } }), { ms: 1_200_000, quality: 'ESTIMATED' });
+});
+
+test('dos relojes de base distinta nunca se restan, aunque tengan la misma ancla', () => {
+  const r = calcularTiempos(
+    aplicarEventos(
+      [],
+      corrida([
+        { type: 'SESSION_STARTED', at: arranque(0, 'misma-ancla') },
+        { type: 'REST_STARTED', restId: 'descanso-a1', prescriptionId: 'pA', setIndex: 1, at: arranque(60, 'misma-ancla') },
+        { type: 'REST_FINISHED', restId: 'descanso-a1', at: { ...mono(150, 'misma-ancla') } },
+        { type: 'SESSION_FINISHED', resolution: 'FINISHED', at: mono(200, 'misma-ancla') },
+      ]),
+      CONTEXTO,
+    ).aRegistrar,
+    RECOMENDADO,
+  );
+  assert.deepEqual(r.rests[0]!.duration, { ms: 90_000, quality: 'ESTIMATED' });
+  assert.deepEqual(r.session.elapsed, { ms: 200_000, quality: 'ESTIMATED' });
+});
+
+test('una medición abierta al cerrarse la app no se cierra sola aunque el reloj desde el arranque siga: «Terminó ahora» es una declaración', () => {
+  const eventos = aplicarEventos(
+    [],
+    corrida([
+      { type: 'SESSION_STARTED', at: arranque(0) },
+      { type: 'REST_STARTED', restId: 'descanso-a1', prescriptionId: 'pA', setIndex: 1, at: arranque(60) },
+      // La app se cerró con el descanso abierto. Al volver, la persona eligió «Terminó ahora».
+      { type: 'REST_FINISHED', restId: 'descanso-a1', at: declarado(400), compoundActionId: 'recuperacion' },
+      { type: 'SESSION_FINISHED', resolution: 'FINISHED', at: arranque(400), compoundActionId: 'cierre' },
+    ]),
+    CONTEXTO,
+  ).aRegistrar;
+  const t = calcularTiempos(eventos, RECOMENDADO);
+  assert.deepEqual(t.rests[0]!.duration, { ms: 340_000, quality: 'ESTIMATED' });
+  assert.deepEqual(t.session.elapsed, { ms: 400_000, quality: 'MEASURED' });
+  // Sin declaración, el descanso sigue abierto: incompleto, nunca cerrado a la hora de volver.
+  const abierto = calcularTiempos(eventos.slice(0, 2), RECOMENDADO);
+  assert.deepEqual(abierto.rests[0]!.duration, { ms: null, quality: 'INCOMPLETE' });
+});
+
 test('un descanso cerrado por declaración es estimado, y no vuelve estimados los totales de la sesión medidos', () => {
   const eventos = aplicarEventos(
     [],
@@ -445,10 +528,13 @@ test('mientras corre: la sesión sin pausas y el descanso se recalculan desde lo
   assert.equal(vivo.pausada, false);
 });
 
-test('el contrato de eventos es estricto: el instante monotónico lleva su ancla y un pedido tiene hasta 30 eventos', () => {
+test('el contrato de eventos es estricto: el instante monotónico lleva su ancla y su base, y un pedido tiene hasta 30 eventos', () => {
   const ev = EJEMPLO[0]!;
   assert.equal(EventoDeTiempoSchema.safeParse(ev).success, true);
+  assert.equal(EventoDeTiempoSchema.safeParse({ ...ev, at: arranque(0) }).success, true);
   assert.equal(EventoDeTiempoSchema.safeParse({ ...ev, at: { ...ev.at, monotonic: null } }).success, false);
+  assert.equal(EventoDeTiempoSchema.safeParse({ ...ev, at: { ...ev.at, monotonic: { anchor: 'proceso-uno', ms: 5_000 } } }).success, false);
+  assert.equal(EventoDeTiempoSchema.safeParse({ ...ev, at: { ...ev.at, monotonic: { anchor: 'proceso-uno', ms: 5_000, clock: 'UPTIME' } } }).success, false);
   assert.equal(EventoDeTiempoSchema.safeParse({ ...ev, at: { ...ev.at, source: 'DECLARED' } }).success, false);
   assert.equal(EventoDeTiempoSchema.safeParse({ ...ev, extra: 1 }).success, false);
   assert.equal(RegistrarEventosDeTiempoRequestSchema.safeParse({ events: Array.from({ length: 31 }, () => ev) }).success, false);

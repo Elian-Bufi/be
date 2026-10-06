@@ -176,8 +176,27 @@ const BloqueConObjetivosSchema = z.strictObject({
   sessions: z.array(SesionConObjetivosSchema),
 });
 
-/** API-SER-01: la versión de plan como API-TRN-09, con los objetivos por serie y las imágenes. Solo el profesional. */
-export const PlanConObjetivosSchema = VersionDePlanDeEntrenamientoSchema.omit({ blocks: true }).extend({ blocks: z.array(BloqueConObjetivosSchema) });
+/**
+ * Si un plan puede llegar a la app de su titular (`compatibilidad-de-clientes.ts`; precierre del 2026-10-06, §2). Las APK
+ * instaladas muestran solo los objetivos generales: un plan con objetivos distintos por serie no se activa mientras el
+ * titular no haya usado una app que los muestre.
+ */
+export const EntregaDeObjetivosPorSerieSchema = z.strictObject({
+  /** Alguna serie tiene un RIR o una carga efectivos distintos de los generales de su prescripción. */
+  required: z.boolean(),
+  /** El titular ya usó una APK que declara que muestra los objetivos de cada serie. */
+  adviseeClientCapable: z.boolean(),
+});
+export type EntregaDeObjetivosPorSerie = z.infer<typeof EntregaDeObjetivosPorSerieSchema>;
+
+/**
+ * API-SER-01: la versión de plan como API-TRN-09, con los objetivos por serie, las imágenes y si se le puede entregar a
+ * la app de su titular. Solo el profesional.
+ */
+export const PlanConObjetivosSchema = VersionDePlanDeEntrenamientoSchema.omit({ blocks: true }).extend({
+  blocks: z.array(BloqueConObjetivosSchema),
+  setTargetsDelivery: EntregaDeObjetivosPorSerieSchema,
+});
 export type PlanConObjetivos = z.infer<typeof PlanConObjetivosSchema>;
 export const PlanConObjetivosResponseSchema = z.strictObject({ data: PlanConObjetivosSchema });
 
@@ -199,16 +218,26 @@ export const SesionParaRegistrarResponseSchema = z.strictObject({ data: SesionPa
 
 /**
  * Cómo se tomó un instante:
- * - `MONOTONIC`: con el reloj monotónico de la app, en el proceso que dice `anchor`;
+ * - `MONOTONIC`: con un reloj monotónico de la app, el que dice `clock`, en la base que nombra `anchor`;
  * - `RECOVERED_WALL_CLOCK`: reconstruido con el reloj civil, sin un monotónico confiable;
  * - `DECLARED`: lo declaró la persona al resolver una medición abierta. Es una declaración, no una medición.
  */
 export const OrigenDelInstanteApiSchema = z.enum(['MONOTONIC', 'RECOVERED_WALL_CLOCK', 'DECLARED']);
+/**
+ * La base del reloj monotónico, para no mezclar instantes de relojes distintos (DL-124, precierre del 2026-10-06):
+ * - `ELAPSED_SINCE_BOOT`: el tiempo desde el arranque del teléfono, que sigue contando mientras duerme (en Android,
+ *   `SystemClock.elapsedRealtimeNanos()`). `anchor` nombra ese arranque: dos instantes con la misma ancla se restan
+ *   aunque la app se haya cerrado entre los dos. Después de reiniciar el teléfono, el ancla es otra;
+ * - `PROCESS_MONOTONIC`: el monotónico del proceso de la app (`performance.now()`), que en Android no avanza mientras
+ *   el teléfono duerme. `anchor` nombra el proceso: si el sistema cierra la app, el proceso nuevo tiene otra.
+ */
+export const BaseDelRelojApiSchema = z.enum(['ELAPSED_SINCE_BOOT', 'PROCESS_MONOTONIC']);
+export type BaseDelRelojApi = z.infer<typeof BaseDelRelojApiSchema>;
 export const InstanteDeEventoApiSchema = z
   .strictObject({
     /** El reloj civil del teléfono. Ordena y recupera, pero no mide si hay monotónico. */
     civil: Instante,
-    monotonic: z.strictObject({ anchor: IdDeClienteSchema, ms: z.number().finite().min(0) }).nullable(),
+    monotonic: z.strictObject({ anchor: IdDeClienteSchema, ms: z.number().finite().min(0), clock: BaseDelRelojApiSchema }).nullable(),
     source: OrigenDelInstanteApiSchema,
   })
   .refine((i) => (i.source === 'MONOTONIC') === (i.monotonic !== null), {

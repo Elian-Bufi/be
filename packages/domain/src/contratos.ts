@@ -106,6 +106,11 @@ export const CodigoDeError = {
   EXECUTION_GRANULARITY_INVALID: 'EXECUTION_GRANULARITY_INVALID',
   SESSION_CONDITION_INVALID: 'SESSION_CONDITION_INVALID',
   EXECUTION_VALUE_INVALID: 'EXECUTION_VALUE_INVALID',
+  /**
+   * Un plan con objetivos distintos por serie no se activa mientras su titular no haya usado una APK que los muestre: las
+   * instaladas mostrarían los generales (DL-122, precierre del 2026-10-06, §2; `compatibilidad-de-clientes.ts`).
+   */
+  CLIENT_CAPABILITY_REQUIRED: 'CLIENT_CAPABILITY_REQUIRED',
   // FRM (09v16.1 §22). Solicitar y completar información profesional pertinente (RF-071; WP-07).
   FORM_TEMPLATE_NOT_SELECTABLE: 'FORM_TEMPLATE_NOT_SELECTABLE',
   FORM_REQUEST_NOT_ALLOWED: 'FORM_REQUEST_NOT_ALLOWED',

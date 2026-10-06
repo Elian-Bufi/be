@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { descansoCalculado, deduplicarEventos, diferenciaParaMostrar, duracionDeIntervalo, duracionParaMostrar, resumenDeSesion, type CalidadDeTiempo, type InstanteDeEvento } from './tiempos-de-entrenamiento';
+import { descansoCalculado, deduplicarEventos, diferenciaParaMostrar, duracionDeIntervalo, duracionParaMostrar, resumenDeSesion, type BaseDelReloj, type CalidadDeTiempo, type InstanteDeEvento } from './tiempos-de-entrenamiento';
 import { hayDatosRealizados, relacionDeCarga, relacionDeRepeticiones, relacionDeRir, type RelacionConElObjetivo } from './relacion-con-el-objetivo';
 
 const DATOS = join(__dirname, '..', '..', '..', 'docs', 'fuente_entrenamiento', 'BE_Entrenamiento_Autonomo_2026-10-06', 'datos');
@@ -16,12 +16,16 @@ const leer = <T>(archivo: string): T => JSON.parse(readFileSync(join(DATOS, arch
 const CALIDAD: Readonly<Record<string, CalidadDeTiempo>> = { medido: 'MEDIDO', estimado: 'ESTIMADO', incompleto: 'INCOMPLETO', sin_dato: 'SIN_DATO', invalido: 'INVALIDO' };
 const S = 1000;
 
-/** Un instante de la fixture: monotónico en el mismo proceso (ancla «proceso-1»), o recuperado por reloj civil. */
-function instante(offset: number | null, source: string | undefined, civil?: number): InstanteDeEvento | null {
+/**
+ * Un instante de la fixture: monotónico con una sola ancla, en la base que se pida, o recuperado por reloj civil. Los
+ * oráculos no dicen la base: valen para las dos, y la prueba los corre con cada una.
+ */
+function instante(offset: number | null, source: string | undefined, civil?: number, base: BaseDelReloj = 'DEL_PROCESO'): InstanteDeEvento | null {
   if (offset === null) return null;
   if (source === 'recovered_wall_clock') return { civilMs: offset * S, monotonico: null, origen: 'RELOJ_CIVIL_RECUPERADO' };
-  return { civilMs: (civil ?? offset) * S, monotonico: { ancla: 'proceso-1', ms: offset * S }, origen: 'MONOTONICO' };
+  return { civilMs: (civil ?? offset) * S, monotonico: { ancla: base === 'DEL_PROCESO' ? 'proceso-1' : 'arranque-1', ms: offset * S, base }, origen: 'MONOTONICO' };
 }
+const BASES: readonly BaseDelReloj[] = ['DEL_PROCESO', 'DESDE_EL_ARRANQUE'];
 
 interface CasoDeTiempo {
   id: string;
@@ -40,16 +44,16 @@ interface CasoDeTiempo {
 
 const casosDeTiempo = leer<{ cases: CasoDeTiempo[] }>('casos_tiempos.json').cases;
 
-test('los 16 casos de tiempos del paquete', () => {
+test('los 16 casos de tiempos del paquete, con el reloj del proceso y con el reloj desde el arranque', () => {
   assert.equal(casosDeTiempo.length, 16);
-  for (const c of casosDeTiempo) {
+  for (const base of BASES) for (const c of casosDeTiempo) {
     const e = c.expected as Record<string, unknown>;
     if (c.kind === 'interval') {
-      const d = duracionDeIntervalo(instante(c.start ?? null, c.source, c.civilStart), instante(c.end ?? null, c.source, c.civilEnd));
-      assert.deepEqual({ segundos: d.ms === null ? null : d.ms / S, calidad: d.calidad }, { segundos: e.seconds, calidad: CALIDAD[e.quality as string] }, c.id);
+      const d = duracionDeIntervalo(instante(c.start ?? null, c.source, c.civilStart, base), instante(c.end ?? null, c.source, c.civilEnd, base));
+      assert.deepEqual({ segundos: d.ms === null ? null : d.ms / S, calidad: d.calidad }, { segundos: e.seconds, calidad: CALIDAD[e.quality as string] }, `${c.id} · ${base}`);
     } else if (c.kind === 'rest') {
-      const d = descansoCalculado(instante(c.start ?? null, c.source), instante(c.end ?? null, c.source), c.target ?? null);
-      assert.deepEqual({ seconds: d.ms === null ? null : d.ms / S, differenceSeconds: d.diferenciaMs === null ? null : d.diferenciaMs / S }, e, c.id);
+      const d = descansoCalculado(instante(c.start ?? null, c.source, undefined, base), instante(c.end ?? null, c.source, undefined, base), c.target ?? null);
+      assert.deepEqual({ seconds: d.ms === null ? null : d.ms / S, differenceSeconds: d.diferenciaMs === null ? null : d.diferenciaMs / S }, e, `${c.id} · ${base}`);
     } else if (c.kind === 'session') {
       const r = resumenDeSesion({
         inicio: c.start! * S,

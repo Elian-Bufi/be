@@ -84,6 +84,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -296,6 +306,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -484,6 +504,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -556,6 +586,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -627,6 +667,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -785,6 +835,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -964,6 +1024,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -1158,6 +1228,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -1524,6 +1604,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -1779,6 +1869,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -1996,6 +2096,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -2203,6 +2313,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -2458,6 +2578,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -2805,6 +2935,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -3099,6 +3239,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -3396,6 +3546,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -3683,6 +3843,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -3940,6 +4110,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -4320,6 +4500,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -4559,6 +4749,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -4697,6 +4897,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -4877,6 +5087,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -5050,6 +5270,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -5207,6 +5437,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -5992,6 +6232,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -6322,6 +6572,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -6623,6 +6883,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -6913,6 +7183,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -7182,6 +7462,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -7688,6 +7978,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -8030,6 +8330,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -8367,6 +8677,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -9090,6 +9410,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -9376,6 +9706,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -9846,6 +10186,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -10535,6 +10885,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -10725,6 +11085,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -10963,6 +11333,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -11285,6 +11665,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -11666,6 +12056,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -12028,6 +12428,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -12375,6 +12785,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -13225,6 +13645,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -14242,6 +14672,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -14721,6 +15161,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -15202,6 +15652,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -16729,6 +17189,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -17501,6 +17971,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -18004,6 +18484,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -18235,6 +18725,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -18843,6 +19343,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -19038,6 +19548,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -19833,6 +20353,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -20081,6 +20611,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -20883,6 +21423,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -21122,6 +21672,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -21764,6 +22324,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -22414,6 +22984,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -23215,6 +23795,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -23907,6 +24497,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -24379,6 +24979,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -24891,6 +25501,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -25279,6 +25899,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -25661,6 +26291,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -25996,6 +26636,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -26312,6 +26962,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -26773,6 +27433,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -27167,6 +27837,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -27549,6 +28229,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -27901,6 +28591,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -28226,6 +28926,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -28582,6 +29292,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -28917,6 +29637,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -29226,6 +29956,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -29475,6 +30215,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -29719,6 +30469,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -31454,6 +32214,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -31723,7 +32493,7 @@
     "/training/plans/{planId}": {
       "get": {
         "operationId": "API-TRN-09",
-        "summary": "Una versión de plan con su jerarquía. Si está activada, se reconstruye desde la instantánea, no desde el catálogo actual.",
+        "summary": "Una versión de plan con su jerarquía. Si está activada, se reconstruye desde la instantánea, no desde el catálogo actual. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: 404 como lo inexistente (DL-122, precierre del 2026-10-06).",
         "description": "Fuente: 09v10:700-706 · REG-06-112. AuthN: SESSION.",
         "security": [
           {
@@ -31750,6 +32520,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -32638,6 +33418,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -34339,6 +35129,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -34493,8 +35293,8 @@
     "/training/plans/{planId}/activate": {
       "post": {
         "operationId": "API-TRN-12",
-        "summary": "Activar: en una transacción, versión esperada, PDP, capacidad, validación, instantánea inmutable, cambio de versión efectiva y apertura del Proceso si es nuevo. La anterior se conserva.",
-        "description": "Fuente: 09v10:788-834 · REG-06-104, 105 · 06:5164 · DEUDA_LEGAJO DL-087. AuthN: SESSION.",
+        "summary": "Activar: en una transacción, versión esperada, PDP, capacidad, validación, instantánea inmutable, cambio de versión efectiva y apertura del Proceso si es nuevo. La anterior se conserva. Un plan con objetivos distintos por serie no se activa mientras su titular no haya usado una APK que los muestre (409 CLIENT_CAPABILITY_REQUIRED): las instaladas mostrarían los generales.",
+        "description": "Fuente: 09v10:788-834 · REG-06-104, 105 · 06:5164 · DEUDA_LEGAJO DL-087 · DL-122 (precierre del 2026-10-06, §2). AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -34529,6 +35329,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -34662,7 +35472,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: VERSION_CONFLICT | ACTIVE_PLAN_CONFLICT | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "description": "ErrorEnvelope: VERSION_CONFLICT | ACTIVE_PLAN_CONFLICT | IDEMPOTENCY_KEY_REUSED | CLIENT_CAPABILITY_REQUIRED | RESOURCE_CONFLICT",
             "content": {
               "application/json": {
                 "schema": {
@@ -34756,6 +35566,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -35073,6 +35893,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -35463,6 +36293,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -37326,6 +38166,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -37549,6 +38399,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -38554,6 +39414,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -39617,6 +40487,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -40266,6 +41146,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -40489,6 +41379,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -40885,6 +41785,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -41346,6 +42256,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -41979,6 +42899,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -43809,6 +44739,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -44091,6 +45031,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -44271,6 +45221,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -44821,6 +45781,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -45748,6 +46718,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -46314,6 +47294,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -46601,6 +47591,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -46781,6 +47781,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -47114,6 +48124,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -47612,6 +48632,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -47970,6 +49000,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -48304,6 +49344,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -48551,7 +49601,7 @@
     "/me/training/today": {
       "get": {
         "operationId": "API-TRN-14",
-        "summary": "«Hoy» del asesorado: las sesiones de la instantánea vigente como ocurrencias del día, con el estado de su registro. La ausencia de registro no se convierte en NOT_COMPLETED.",
+        "summary": "«Hoy» del asesorado: las sesiones de la instantánea vigente como ocurrencias del día, con el estado de su registro. La ausencia de registro no se convierte en NOT_COMPLETED. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: planState NOT_AVAILABLE, sin plan ni ocurrencias. Con la capacidad, queda registrada para la activación (DL-122, precierre del 2026-10-06).",
         "description": "Fuente: 09v10:858-915 · H-09-TRN-01 · DEUDA_LEGAJO DL-077, DL-079. AuthN: SESSION.",
         "security": [
           {
@@ -48570,6 +49620,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -49090,7 +50150,7 @@
     "/me/training/occurrences": {
       "get": {
         "operationId": "API-TRN-14-PERIODO",
-        "summary": "Ocurrencias de un período pasado, para registrar en diferido. Sin esta lectura, la sesión de anteayer no se podría registrar y la ausencia de registro se volvería permanente. Hasta 31 días, nunca después de hoy.",
+        "summary": "Ocurrencias de un período pasado, para registrar en diferido. Sin esta lectura, la sesión de anteayer no se podría registrar y la ausencia de registro se volvería permanente. Hasta 31 días, nunca después de hoy. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: planState NOT_AVAILABLE, sin ocurrencias (DL-122, precierre del 2026-10-06).",
         "description": "Fuente: DEUDA_LEGAJO DL-078 (diferencia con el 09, decidida por Dirección) · 09v10:188-189, 915. AuthN: SESSION.",
         "security": [
           {
@@ -49129,6 +50189,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -49666,6 +50736,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -50690,7 +51770,7 @@
     "/training/occurrences/{occurrenceId}/execution-draft": {
       "put": {
         "operationId": "API-TRN-15",
-        "summary": "Crear u obtener el borrador singular de una ocurrencia: 201 si lo creó, 200 si ya existía. Tocar «Comenzar» dos veces da el mismo borrador.",
+        "summary": "Crear u obtener el borrador singular de una ocurrencia: 201 si lo creó, 200 si ya existía. Tocar «Comenzar» dos veces da el mismo borrador. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: 404 como lo inexistente, sin crear nada (DL-122, precierre del 2026-10-06).",
         "description": "Fuente: 09v10:919-965 · CAND-09-TRN-E · S10-TRN-01. AuthN: SESSION.",
         "security": [
           {
@@ -50717,6 +51797,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -51478,6 +52568,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -51882,6 +52982,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -52559,6 +53669,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -52733,6 +53853,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -53775,6 +54905,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -55057,6 +56197,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -57015,6 +58165,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -57581,6 +58741,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -57981,6 +59151,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -58176,7 +59356,7 @@
     "/training/plans/{planId}/detail": {
       "get": {
         "operationId": "API-SER-01",
-        "summary": "La versión de plan de API-TRN-09 con los objetivos por serie (RIR, carga sugerida y descanso, con herencia desde la prescripción), la base de carga y de repeticiones y la imagen de cada ejercicio. Solo para el profesional del plan: el titular lee API-SER-02.",
+        "summary": "La versión de plan de API-TRN-09 con los objetivos por serie (RIR, carga sugerida y descanso, con herencia desde la prescripción), la base de carga y de repeticiones, la imagen de cada ejercicio y si el plan se le puede entregar a la app del titular (`setTargetsDelivery`). Solo para el profesional del plan: el titular lee API-SER-02.",
         "description": "Fuente: DEUDA_LEGAJO DL-122 · REG-06-111, 112, 128. AuthN: SESSION.",
         "security": [
           {
@@ -58203,6 +59383,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -59577,6 +60767,22 @@
                             ],
                             "additionalProperties": false
                           }
+                        },
+                        "setTargetsDelivery": {
+                          "type": "object",
+                          "properties": {
+                            "required": {
+                              "type": "boolean"
+                            },
+                            "adviseeClientCapable": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "required",
+                            "adviseeClientCapable"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
@@ -59593,7 +60799,8 @@
                         "activatedAt",
                         "snapshotDigest",
                         "nextReviewAt",
-                        "blocks"
+                        "blocks",
+                        "setTargetsDelivery"
                       ],
                       "additionalProperties": false
                     }
@@ -59699,6 +60906,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -60446,6 +61663,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -60498,11 +61725,19 @@
                                         "ms": {
                                           "type": "number",
                                           "minimum": 0
+                                        },
+                                        "clock": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ELAPSED_SINCE_BOOT",
+                                            "PROCESS_MONOTONIC"
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "anchor",
-                                        "ms"
+                                        "ms",
+                                        "clock"
                                       ],
                                       "additionalProperties": false
                                     },
@@ -60589,11 +61824,19 @@
                                         "ms": {
                                           "type": "number",
                                           "minimum": 0
+                                        },
+                                        "clock": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ELAPSED_SINCE_BOOT",
+                                            "PROCESS_MONOTONIC"
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "anchor",
-                                        "ms"
+                                        "ms",
+                                        "clock"
                                       ],
                                       "additionalProperties": false
                                     },
@@ -60680,11 +61923,19 @@
                                         "ms": {
                                           "type": "number",
                                           "minimum": 0
+                                        },
+                                        "clock": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ELAPSED_SINCE_BOOT",
+                                            "PROCESS_MONOTONIC"
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "anchor",
-                                        "ms"
+                                        "ms",
+                                        "clock"
                                       ],
                                       "additionalProperties": false
                                     },
@@ -60771,11 +62022,19 @@
                                         "ms": {
                                           "type": "number",
                                           "minimum": 0
+                                        },
+                                        "clock": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ELAPSED_SINCE_BOOT",
+                                            "PROCESS_MONOTONIC"
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "anchor",
-                                        "ms"
+                                        "ms",
+                                        "clock"
                                       ],
                                       "additionalProperties": false
                                     },
@@ -60870,11 +62129,19 @@
                                         "ms": {
                                           "type": "number",
                                           "minimum": 0
+                                        },
+                                        "clock": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ELAPSED_SINCE_BOOT",
+                                            "PROCESS_MONOTONIC"
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "anchor",
-                                        "ms"
+                                        "ms",
+                                        "clock"
                                       ],
                                       "additionalProperties": false
                                     },
@@ -60966,11 +62233,19 @@
                                         "ms": {
                                           "type": "number",
                                           "minimum": 0
+                                        },
+                                        "clock": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ELAPSED_SINCE_BOOT",
+                                            "PROCESS_MONOTONIC"
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "anchor",
-                                        "ms"
+                                        "ms",
+                                        "clock"
                                       ],
                                       "additionalProperties": false
                                     },
@@ -61073,11 +62348,19 @@
                                         "ms": {
                                           "type": "number",
                                           "minimum": 0
+                                        },
+                                        "clock": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ELAPSED_SINCE_BOOT",
+                                            "PROCESS_MONOTONIC"
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "anchor",
-                                        "ms"
+                                        "ms",
+                                        "clock"
                                       ],
                                       "additionalProperties": false
                                     },
@@ -61169,11 +62452,19 @@
                                         "ms": {
                                           "type": "number",
                                           "minimum": 0
+                                        },
+                                        "clock": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ELAPSED_SINCE_BOOT",
+                                            "PROCESS_MONOTONIC"
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "anchor",
-                                        "ms"
+                                        "ms",
+                                        "clock"
                                       ],
                                       "additionalProperties": false
                                     },
@@ -61276,11 +62567,19 @@
                                         "ms": {
                                           "type": "number",
                                           "minimum": 0
+                                        },
+                                        "clock": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ELAPSED_SINCE_BOOT",
+                                            "PROCESS_MONOTONIC"
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "anchor",
-                                        "ms"
+                                        "ms",
+                                        "clock"
                                       ],
                                       "additionalProperties": false
                                     },
@@ -61372,11 +62671,19 @@
                                         "ms": {
                                           "type": "number",
                                           "minimum": 0
+                                        },
+                                        "clock": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ELAPSED_SINCE_BOOT",
+                                            "PROCESS_MONOTONIC"
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "anchor",
-                                        "ms"
+                                        "ms",
+                                        "clock"
                                       ],
                                       "additionalProperties": false
                                     },
@@ -62054,11 +63361,19 @@
                                                       "ms": {
                                                         "type": "number",
                                                         "minimum": 0
+                                                      },
+                                                      "clock": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "ELAPSED_SINCE_BOOT",
+                                                          "PROCESS_MONOTONIC"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
                                                       "anchor",
-                                                      "ms"
+                                                      "ms",
+                                                      "clock"
                                                     ],
                                                     "additionalProperties": false
                                                   },
@@ -62145,11 +63460,19 @@
                                                       "ms": {
                                                         "type": "number",
                                                         "minimum": 0
+                                                      },
+                                                      "clock": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "ELAPSED_SINCE_BOOT",
+                                                          "PROCESS_MONOTONIC"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
                                                       "anchor",
-                                                      "ms"
+                                                      "ms",
+                                                      "clock"
                                                     ],
                                                     "additionalProperties": false
                                                   },
@@ -62236,11 +63559,19 @@
                                                       "ms": {
                                                         "type": "number",
                                                         "minimum": 0
+                                                      },
+                                                      "clock": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "ELAPSED_SINCE_BOOT",
+                                                          "PROCESS_MONOTONIC"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
                                                       "anchor",
-                                                      "ms"
+                                                      "ms",
+                                                      "clock"
                                                     ],
                                                     "additionalProperties": false
                                                   },
@@ -62327,11 +63658,19 @@
                                                       "ms": {
                                                         "type": "number",
                                                         "minimum": 0
+                                                      },
+                                                      "clock": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "ELAPSED_SINCE_BOOT",
+                                                          "PROCESS_MONOTONIC"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
                                                       "anchor",
-                                                      "ms"
+                                                      "ms",
+                                                      "clock"
                                                     ],
                                                     "additionalProperties": false
                                                   },
@@ -62426,11 +63765,19 @@
                                                       "ms": {
                                                         "type": "number",
                                                         "minimum": 0
+                                                      },
+                                                      "clock": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "ELAPSED_SINCE_BOOT",
+                                                          "PROCESS_MONOTONIC"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
                                                       "anchor",
-                                                      "ms"
+                                                      "ms",
+                                                      "clock"
                                                     ],
                                                     "additionalProperties": false
                                                   },
@@ -62522,11 +63869,19 @@
                                                       "ms": {
                                                         "type": "number",
                                                         "minimum": 0
+                                                      },
+                                                      "clock": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "ELAPSED_SINCE_BOOT",
+                                                          "PROCESS_MONOTONIC"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
                                                       "anchor",
-                                                      "ms"
+                                                      "ms",
+                                                      "clock"
                                                     ],
                                                     "additionalProperties": false
                                                   },
@@ -62629,11 +63984,19 @@
                                                       "ms": {
                                                         "type": "number",
                                                         "minimum": 0
+                                                      },
+                                                      "clock": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "ELAPSED_SINCE_BOOT",
+                                                          "PROCESS_MONOTONIC"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
                                                       "anchor",
-                                                      "ms"
+                                                      "ms",
+                                                      "clock"
                                                     ],
                                                     "additionalProperties": false
                                                   },
@@ -62725,11 +64088,19 @@
                                                       "ms": {
                                                         "type": "number",
                                                         "minimum": 0
+                                                      },
+                                                      "clock": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "ELAPSED_SINCE_BOOT",
+                                                          "PROCESS_MONOTONIC"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
                                                       "anchor",
-                                                      "ms"
+                                                      "ms",
+                                                      "clock"
                                                     ],
                                                     "additionalProperties": false
                                                   },
@@ -62832,11 +64203,19 @@
                                                       "ms": {
                                                         "type": "number",
                                                         "minimum": 0
+                                                      },
+                                                      "clock": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "ELAPSED_SINCE_BOOT",
+                                                          "PROCESS_MONOTONIC"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
                                                       "anchor",
-                                                      "ms"
+                                                      "ms",
+                                                      "clock"
                                                     ],
                                                     "additionalProperties": false
                                                   },
@@ -62928,11 +64307,19 @@
                                                       "ms": {
                                                         "type": "number",
                                                         "minimum": 0
+                                                      },
+                                                      "clock": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "ELAPSED_SINCE_BOOT",
+                                                          "PROCESS_MONOTONIC"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
                                                       "anchor",
-                                                      "ms"
+                                                      "ms",
+                                                      "clock"
                                                     ],
                                                     "additionalProperties": false
                                                   },
@@ -63134,6 +64521,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -63688,11 +65085,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -63779,11 +65184,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -63870,11 +65283,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -63961,11 +65382,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -64060,11 +65489,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -64156,11 +65593,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -64263,11 +65708,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -64359,11 +65812,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -64466,11 +65927,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -64562,11 +66031,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -64761,6 +66238,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -65315,11 +66802,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -65406,11 +66901,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -65497,11 +67000,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -65588,11 +67099,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -65687,11 +67206,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -65783,11 +67310,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -65890,11 +67425,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -65986,11 +67529,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -66093,11 +67644,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -66189,11 +67748,19 @@
                                                   "ms": {
                                                     "type": "number",
                                                     "minimum": 0
+                                                  },
+                                                  "clock": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "ELAPSED_SINCE_BOOT",
+                                                      "PROCESS_MONOTONIC"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
                                                   "anchor",
-                                                  "ms"
+                                                  "ms",
+                                                  "clock"
                                                 ],
                                                 "additionalProperties": false
                                               },
@@ -66390,6 +67957,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -66549,6 +68126,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -66827,6 +68414,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -67249,6 +68846,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -67583,6 +69190,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -67779,6 +69396,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -68049,6 +69676,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -68312,6 +69949,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -68578,6 +70225,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -69091,6 +70748,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -69345,6 +71012,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -69668,6 +71345,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -69999,6 +71686,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -70925,6 +72622,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -71742,6 +73449,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -72581,6 +74298,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -73521,6 +75248,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -74382,6 +76119,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -75183,6 +76930,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -75877,6 +77634,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "requestBody": {
@@ -76101,6 +77868,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -76342,6 +78119,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -76476,6 +78263,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -76572,6 +78369,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -76790,6 +78597,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -78407,6 +80224,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -80716,6 +82543,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -81792,6 +83629,16 @@
                 "APK"
               ]
             }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -82857,6 +84704,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],
@@ -84061,6 +85918,16 @@
                 "WEB",
                 "APK"
               ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
             }
           }
         ],

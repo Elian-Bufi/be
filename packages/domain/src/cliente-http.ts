@@ -213,6 +213,7 @@ import {
 } from './contratos-formularios';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
+import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } from './compatibilidad-de-clientes';
 import type { Superficie } from './procedencia';
 import { VERSION_VIGENTE } from './textos';
 
@@ -243,12 +244,18 @@ export interface OpcionesDeCliente {
   /** Base con el prefijo de versión, sin barra final: `/api/v1` o `https://…/api/v1`. */
   readonly baseUrl: string;
   readonly superficie: Superficie;
+  /**
+   * Lo que este cliente sabe mostrar, en `X-BE-Capabilities` (`compatibilidad-de-clientes.ts`). Solo lo declara quien lo
+   * dibuja: la APK que muestra los objetivos de cada serie. Sin capacidades, la cabecera no va.
+   */
+  readonly capacidades?: readonly CapacidadDeCliente[];
   /** fetch de la plataforma (inyectable en pruebas). */
   readonly fetch?: typeof fetch;
 }
 
 export function crearClienteBe(opciones: OpcionesDeCliente) {
   const hacerFetch = opciones.fetch ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
+  const capacidades = opciones.capacidades && opciones.capacidades.length > 0 ? valorDeCapacidades(opciones.capacidades) : null;
 
   async function llamar<S extends EsquemaDeContrato | null>(
     metodo: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
@@ -256,6 +263,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     extra: { token?: string; cuerpo?: unknown; claveDeIdempotencia?: string; esquema: S },
   ): Promise<Resultado<S extends EsquemaDeContrato ? SalidaDe<S> : null>> {
     const encabezados: Record<string, string> = { Accept: 'application/json', 'X-BE-Surface': opciones.superficie };
+    if (capacidades) encabezados[HEADER_DE_CAPACIDADES] = capacidades;
     if (extra.cuerpo !== undefined) encabezados['Content-Type'] = 'application/json';
     if (extra.token) encabezados.Authorization = `Bearer ${extra.token}`;
     if (extra.claveDeIdempotencia) encabezados['Idempotency-Key'] = extra.claveDeIdempotencia;
