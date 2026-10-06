@@ -12,10 +12,19 @@ import { Instante } from './contratos';
 export const ProveedorExternoSchema = z.enum(['OPEN_FOOD_FACTS', 'WGER']);
 export type ProveedorExterno = z.infer<typeof ProveedorExternoSchema>;
 
+/**
+ * DL-119: los proveedores de un alimento del catálogo suman `USDA_FDC_SR_LEGACY`, la fuente de referencia de los
+ * alimentos sembrados para las recetas. No es una importación. Va aparte para que el catálogo de ejercicios, que la APK
+ * instalada lee con un esquema estricto, no cambie de forma.
+ */
+export const ProveedorDeAlimentoSchema = z.enum([...ProveedorExternoSchema.options, 'USDA_FDC_SR_LEGACY']);
+export type ProveedorDeAlimento = z.infer<typeof ProveedorDeAlimentoSchema>;
+
 /** Cómo se nombra cada proveedor en pantalla. Es un nombre propio: no se traduce. */
-export const ETIQUETA_DE_PROVEEDOR: Readonly<Record<ProveedorExterno, string>> = {
+export const ETIQUETA_DE_PROVEEDOR: Readonly<Record<ProveedorDeAlimento, string>> = {
   OPEN_FOOD_FACTS: 'Open Food Facts',
   WGER: 'wger',
+  USDA_FDC_SR_LEGACY: 'USDA FoodData Central · SR Legacy',
 };
 
 /**
@@ -30,6 +39,17 @@ export const LicenciaExternaSchema = z.strictObject({
 });
 export type LicenciaExterna = z.infer<typeof LicenciaExternaSchema>;
 
+/** Lo que identifica un registro de USDA FoodData Central: el conjunto, el NDB, la descripción original y la publicación. */
+export const ReferenciaUsdaSchema = z.strictObject({
+  dataset: z.string().min(1),
+  ndbNumber: z.string().min(1),
+  originalDescription: z.string().min(1),
+  publishedOn: z.string().min(1),
+  /** El estado de preparación del registro, en castellano («cocido, hervido y escurrido»). */
+  preparationDescription: z.string().min(1),
+});
+export type ReferenciaUsda = z.infer<typeof ReferenciaUsdaSchema>;
+
 /** De dónde vino un elemento importado: proveedor, identificador, cuándo se recibió y con qué licencia. */
 export const FuenteExternaSchema = z.strictObject({
   provider: ProveedorExternoSchema,
@@ -38,3 +58,11 @@ export const FuenteExternaSchema = z.strictObject({
   license: LicenciaExternaSchema,
 });
 export type FuenteExterna = z.infer<typeof FuenteExternaSchema>;
+
+/** DL-119: la procedencia de un alimento del catálogo; con USDA, también la referencia del registro. */
+export const FuenteExternaDeAlimentoSchema = FuenteExternaSchema.extend({
+  provider: ProveedorDeAlimentoSchema,
+  /** Solo en `USDA_FDC_SR_LEGACY`. */
+  usdaReference: ReferenciaUsdaSchema.optional(),
+});
+export type FuenteExternaDeAlimento = z.infer<typeof FuenteExternaDeAlimentoSchema>;

@@ -60,7 +60,7 @@ resultado. Todo con cuentas y datos sintéticos.
 |---|---|---|
 | D1 | **El profesional crea y edita una receta en la web.** Es una preparación propia (REG-06-135, inciso 2), con: <ul><li>ingredientes del catálogo por identidad y versión;</li><li>gramos del estado indicado;</li><li>porciones;</li><li>preparación;</li><li>imagen de referencia.</li></ul> | Integración de la API y recorrido en la web |
 | D2 | **La foto entra por el flujo real:** intención, subida, validación, recodificación y asociación. Se recupera después de recargar la página y de reiniciar la API. Se puede reemplazar o retirar sin tocar los ingredientes ni la historia | Integración, recorrido en la web y reinicio |
-| D3 | **El cálculo sale del servidor** con el método `SUMA_FUENTE_POR_100G_V1` y reproduce, sin redondeo intermedio, los 11 casos del paquete. Un dato ausente es desconocido, no cero, y el total lo dice | Pruebas del dominio y de integración |
+| D3 | **El cálculo sale del servidor** con el método `SUM_SOURCE_PER_100G_V1` y reproduce, sin redondeo intermedio, los 11 casos del paquete. Un dato ausente es desconocido, no cero, y el total lo dice | Pruebas del dominio y de integración |
 | D4 | **La receta se ofrece como opción de una comida del plan.** El plan activado conserva la versión de la receta, y cambiar la receta después no reescribe planes ni registros | Integración |
 | D5 | **En la APK, la comida muestra sus opciones en un carrusel manual:** foto o ícono, nombre y macros de las porciones del plan. El detalle se abre desde la tarjeta, y al volver queda la misma opción | Pruebas puras y render |
 | D6 | **«Comí esta opción» registra de tres maneras:** <ul><li>con las cantidades sin confirmar;</li><li>con las porciones del plan, confirmadas de forma explícita;</li><li>con las cantidades que la persona informa.</li></ul>Nunca convierte lo previsto en consumido, y un doble toque o un reintento no duplica | Integración y pruebas puras |
@@ -75,7 +75,7 @@ resultado. Todo con cuentas y datos sintéticos.
 |---|---|
 | No hay recetas: una opción es `{label, items}` | **Receta** (preparación propia), versionada: nombre, descripción, porciones, ingredientes con versión de catálogo, gramos y estado, pasos e imagen. Una opción se puede **generar desde una versión de receta**: sus ítems son los ingredientes de esa versión |
 | La composición del catálogo exige kcal, proteínas, carbohidratos y grasas, sin fibra ni fuente identificada | Ocho alimentos de **USDA FoodData Central · SR Legacy**, sembrados por migración con FDC, NDB, descripción original, fecha y licencia CC0. La fibra es opcional, y ausente significa desconocida, no cero |
-| No se calculan totales | **El cálculo lo hace la API**, con `SUMA_FUENTE_POR_100G_V1`: aritmética exacta, redondeo solo para mostrar y faltantes declarados |
+| No se calculan totales | **El cálculo lo hace la API**, con `SUM_SOURCE_PER_100G_V1`: aritmética exacta, redondeo solo para mostrar y faltantes declarados |
 | No hay archivos | **Medios privados**, según 09v12 §24: intención de subida, subida firmada, acceso con URL temporal, EXIF depurado y supresión a pedido. El almacenamiento es PostgreSQL, detrás de una interfaz |
 | `visualEvidenceUploadIds` se rechaza, y la comida libre exige descripción | **Registro v2:** la comida diferente lleva texto, fotos o los dos (REG-06-133) |
 | Una cantidad ausente es «no informada», sin estado | **Estado de las cantidades:** sin confirmar, porciones del plan confirmadas o informadas. Un ingrediente que no se comió se marca así, no con cero |
@@ -148,11 +148,32 @@ pasan por el ejecutor y el PDP, con alcance `NUTRICION` y finalidad `ACOMPANAMIE
 
 **Cambios en lo existente, solo para el profesional:** API-NUT-10 acepta en una opción `{label, recipeVersionId}`, y sus
 ítems salen de la receta en el servidor. API-NUT-09 devuelve esa referencia. La web se despliega con la API.
+- La versión de plan usa `DiaTipoDelProfesionalSchema`, cuya opción suma `recipe`. «Hoy» (API-NUT-14) sigue con
+  `DiaTipoSchema`, sin `recipe`.
+- La procedencia de un alimento usa `FuenteExternaDeAlimentoSchema`, que suma el proveedor `USDA_FDC_SR_LEGACY` y la
+  referencia del registro de USDA. La de un ejercicio no cambia: la búsqueda de ejercicios la lee la APK instalada.
+
+**Errores nuevos.** Los dos primeros son los del 09 para una subida (09v8 API-PRO-04):
+- `FILE_TYPE_NOT_ALLOWED` (422): el tipo declarado o el real no es JPEG, PNG ni WebP;
+- `FILE_SIZE_NOT_ALLOWED` (422): más de 10 MB;
+- `FILE_CONTENT_INVALID` (422): los bytes no se decodifican como el tipo declarado, o la imagen sale de las dimensiones
+  admitidas;
+- `MEDIA_REFERENCE_INVALID` (422): un medio citado en el cuerpo no es propio, no está disponible o no es de esa finalidad.
+
+Lo demás reusa códigos que ya existen:
+- `CATALOG_REFERENCE_INVALID` para un ingrediente;
+- `VERSION_CONFLICT` para `expectedVersion`;
+- `INVALID_STATE_TRANSITION` para anular dos veces, rectificar algo anulado o volver a subir otros bytes;
+- `EXECUTION_ALREADY_REGISTERED_INCOMPATIBLY`, `ACTIVE_PLAN_REQUIRED` y `NUTRITION_EXECUTION_INVALID` para el registro.
+
+**Autenticación de la ruta firmada.** API-MED-02 y API-MED-04 se declaran `SIGNED_URL`: no llevan sesión, porque las
+autoriza la ruta firmada que emitió otra operación con sesión. Una ruta vencida, alterada o de un medio suprimido responde
+404.
 
 **Lo que no cambia:** API-NUT-14, 15, 16 y 16-LISTA, que lee la APK instalada. Su forma es la misma. Además, una ingesta
 anulada no se lista ni se devuelve por esas rutas, y nada que la APK vieja no conozca entra en sus respuestas.
 
-## 5. Cálculo: `SUMA_FUENTE_POR_100G_V1`
+## 5. Cálculo: `SUM_SOURCE_PER_100G_V1`
 
 - **Fórmula:** para cada nutriente, la suma de (gramos ÷ 100 × valor cada 100 g del alimento).
   - Las kcal salen de la energía de la fuente, sin reemplazarla por 4/4/9.
@@ -175,7 +196,7 @@ anulada no se lista ni se devuelve por esas rutas, y nada que la APK vieja no co
   - con cantidades informadas, con esas cantidades;
   - un ingrediente sin cantidad lo deja incompleto;
   - uno marcado «no lo comí» aporta cero de verdad, porque así se declaró.
-- **El método va versionado:** cada versión de receta y cada cálculo guardan `SUMA_FUENTE_POR_100G_V1`. BE no tenía un
+- **El método va versionado:** cada versión de receta y cada cálculo guardan `SUM_SOURCE_PER_100G_V1`. BE no tenía un
   método canónico de totales, así que no se cambia ningún resultado anterior.
 - **El cliente no manda totales.** La API recalcula cada vez que se guarda y no acepta un total recibido.
 
@@ -252,6 +273,15 @@ anulada no se lista ni se devuelve por esas rutas, y nada que la APK vieja no co
 - **La APK nueva usa API-ING y API-MED, y suma `expo-image-picker`.** Necesita una APK nueva, que no se publica en este
   paquete.
 - **Las validaciones estrictas no se aflojan en ninguna parte.** Cada endpoint nuevo tiene su esquema estricto.
+- **La forma de lo que lee la APK instalada queda congelada.** Está en
+  `packages/domain/fixtures/respuestas-que-lee-la-apk-instalada.json`:
+  - son los esquemas de pedido y de respuesta de API-NUT-14, 15, 16 y 16-LISTA;
+  - se generaron desde `9021c47`, y esos contratos no cambiaron desde la 0.13.2;
+  - una prueba del dominio exige que sigan iguales.
+
+  La comparación operación por operación contra la base da que solo cambian lecturas del profesional:
+  - la estructura del plan, en API-NUT-07, 09, 10 y 13;
+  - la composición y la procedencia de un alimento, en API-INT-NUT-01, TPN y HAN.
 
 ## 9. UX
 
@@ -354,7 +384,7 @@ lo probado localmente, lo probado contra `test`, que no se hace porque no hay de
 - **DL-119 · Recetas como preparaciones propias, catálogo USDA y método de cálculo.**
   - Declara la familia REC.
   - La receta instancia REG-06-135, inciso 2.
-  - El método `SUMA_FUENTE_POR_100G_V1` es nuevo y está versionado.
+  - El método `SUM_SOURCE_PER_100G_V1` es nuevo y está versionado.
   - La procedencia `USDA_FDC_SR_LEGACY` es CC0.
 - **DL-120 · Medios privados activados.**
   - Declara la familia MED.

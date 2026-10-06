@@ -123,7 +123,7 @@
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección |
 | DL-117 | Decisión de Dirección · 2026-10-04 | B10-10 §9 · 08 §33 · DL-113 · DL-049 · DL-077 · DL-115 | La APK no tiene un Inicio que reúna lo disponible de los módulos, y Cuenta ocupa un lugar de la barra | **DECIDIDA** 2026-10-04 · Inicio personal y barra Inicio, Nutrición, Entrenamiento, Evolución, Información; Cuenta en el avatar. Implementación sin integrar |
 | DL-118 | Decisión de Dirección · 2026-10-05 | DL-117 · DL-111 · DL-113 · REG-06-162/165/166 · TEST-PRJ-009 | «Mi evolución» de la APK tiene cuatro vistas con mucho desplazamiento, gráficos ilegibles y vistas vacías; la lectura del asesorado es más técnica de lo necesario | **DECIDIDA** 2026-10-05 · tres vistas (Mapa corporal, Progreso por Torso y Piernas, Indicadores); Comparar sale como apartado móvil. Implementación sin integrar |
-| DL-119 | Encargo de Dirección · 2026-10-05 | REG-06-135 (inciso 2) · 06:4228-4394, 4554-4621 · RF-027 | Recetas como preparaciones propias del profesional, catálogo de referencia USDA y método de cálculo de energía y macros | **DECIDIDA** 2026-10-05 · familia REC, método `SUMA_FUENTE_POR_100G_V1`. Implementación en `wp-nutricion-recetas`, sin integrar |
+| DL-119 | Encargo de Dirección · 2026-10-05 | REG-06-135 (inciso 2) · 06:4228-4394, 4554-4621 · RF-027 | Recetas como preparaciones propias del profesional, catálogo de referencia USDA y método de cálculo de energía y macros | **DECIDIDA** 2026-10-05 · familia REC, método `SUM_SOURCE_PER_100G_V1`. Implementación en `wp-nutricion-recetas`, sin integrar |
 | DL-120 | Encargo de Dirección · 2026-10-05 | 08 §21 (08:519-531, 395, 451) · 07 §25 (07:939-965) · 09v12 §24 · 09v9 §28 · REG-06-133 · T-06-65 | Medios privados activados en el MVP sintético; almacenamiento en PostgreSQL detrás de una interfaz, en lugar de S3 | **DECIDIDA** 2026-10-05 la activación, con persistencia en la base existente. S3 (07 §25) queda abierto hasta que haya un servicio contratado |
 | DL-121 | Encargo de Dirección · 2026-10-05 | DL-049 · DL-050 · 06:1422-1462 · CONS:564-630 | Registro v2 de comidas: estado de las cantidades, anulación y rectificación del titular, y clave natural con secuencia | **DECIDIDA** 2026-10-05 · familia ING, endpoints nuevos. Resuelve DL-050; lo que lee la APK instalada no cambia |
 
@@ -2915,7 +2915,7 @@ calculados desde una fuente identificada.
 **Decisiones del ejecutor, reversibles:**
 - **Familia de operaciones REC:** API-REC-01 a 07, extensión de BE que el 09 no tiene. Se declara en
   `docs/paquetes/WP-NUTRICION-RECETAS.md` §4.
-- **Método `SUMA_FUENTE_POR_100G_V1`:**
+- **Método `SUM_SOURCE_PER_100G_V1`:**
   - la suma de gramos ÷ 100 × valor cada 100 g, con aritmética exacta;
   - las kcal salen de la fuente, sin 4/4/9;
   - se redondea solo al mostrar.

@@ -118,6 +118,13 @@ export const CodigoDeError = {
   REVIEWED_CONTENT_INVALID: 'REVIEWED_CONTENT_INVALID',
   /** El proveedor respondió que no conoce ese identificador: no es una caída (WP-08 D-E; DL-097). */
   IMPORT_SOURCE_NOT_FOUND: 'IMPORT_SOURCE_NOT_FOUND',
+  // MED (09v8 API-PRO-04; 09v12 §24; DL-120). Los dos primeros son los del 09 para una subida.
+  FILE_TYPE_NOT_ALLOWED: 'FILE_TYPE_NOT_ALLOWED',
+  FILE_SIZE_NOT_ALLOWED: 'FILE_SIZE_NOT_ALLOWED',
+  /** Los bytes no se decodifican como el tipo declarado, o la imagen sale de las dimensiones admitidas (DL-120). */
+  FILE_CONTENT_INVALID: 'FILE_CONTENT_INVALID',
+  /** Un medio citado en el cuerpo no es propio, no está disponible o no es de esa finalidad (DL-119, DL-121). */
+  MEDIA_REFERENCE_INVALID: 'MEDIA_REFERENCE_INVALID',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 

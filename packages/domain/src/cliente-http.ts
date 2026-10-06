@@ -116,6 +116,30 @@ import {
   type RegistrarRevisionRequest,
 } from './contratos-nutricion';
 import {
+  AccesoAMedioResponseSchema,
+  IntencionDeSubidaResponseSchema,
+  MedioResponseSchema,
+  type IntencionDeSubidaRequest,
+} from './contratos-medios';
+import {
+  CalculoDeRecetaResponseSchema,
+  DetalleDeRecetaResponseSchema,
+  ListaDeRecetasResponseSchema,
+  RecetaResponseSchema,
+  type AsociarImagenDeRecetaRequest,
+  type CalcularRecetaRequest,
+  type CrearRecetaRequest,
+  type EditarRecetaRequest,
+} from './contratos-recetas';
+import {
+  HoyConOpcionesResponseSchema,
+  ListaDeRegistrosDeComidaResponseSchema,
+  RegistroDeComidaResponseSchema,
+  type AnularRegistroRequest,
+  type RectificarCantidadesRequest,
+  type RegistrarComidaRequest,
+} from './contratos-registro-de-comidas';
+import {
   AnularMedicionResponseSchema,
   EvaluacionAntropometricaResponseSchema,
   EvolucionResponseSchema,
@@ -254,7 +278,41 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     return { ok: true, datos: datos.data as never, ...conFecha };
   }
 
+  /**
+   * API-MED-02: sube los bytes de una imagen a la ruta firmada de la intención, con su tipo. No lleva sesión: la ruta
+   * firmada es la autorización, y vence a los 10 minutos. La respuesta se valida como cualquier otra.
+   */
+  async function subirBytes(rutaDeSubida: string, cuerpo: Blob | ArrayBuffer | Uint8Array, tipo: string): Promise<Resultado<SalidaDe<typeof MedioResponseSchema>>> {
+    let respuesta: Response;
+    try {
+      respuesta = await hacerFetch(`${opciones.baseUrl}${rutaDeSubida}`, {
+        method: 'PUT',
+        headers: { Accept: 'application/json', 'Content-Type': tipo, 'X-BE-Surface': opciones.superficie },
+        body: cuerpo as BodyInit,
+        credentials: 'omit',
+        cache: 'no-store',
+      });
+    } catch {
+      return { ok: false, tipo: 'RED' };
+    }
+    const texto = await respuesta.text().catch(() => '');
+    const json = texto ? leerJson(texto) : null;
+    if (!respuesta.ok) {
+      const error = ErrorEnvelopeSchema.safeParse(json);
+      if (!error.success) return { ok: false, tipo: 'API', status: respuesta.status, codigo: 'RESPUESTA_NO_RECONOCIDA', issues: [] };
+      const issues = (error.data.error.details as { issues?: ValidationIssue[] } | undefined)?.issues ?? [];
+      return { ok: false, tipo: 'API', status: respuesta.status, codigo: error.data.error.code, issues };
+    }
+    const datos = MedioResponseSchema.safeParse(json);
+    if (!datos.success) return { ok: false, tipo: 'API', status: respuesta.status, codigo: 'RESPUESTA_NO_RECONOCIDA', issues: [] };
+    return { ok: true, datos: datos.data };
+  }
+
   return {
+    /** La URL absoluta de una ruta de la API (la de una imagen con su acceso firmado, por ejemplo). */
+    urlDe(ruta: string): string {
+      return `${opciones.baseUrl}${ruta}`;
+    },
     /** API-ACC-01. A1 y A2 viajan como dos actos separados con la versión que la UI mostró. Nunca A3. */
     registrar(datos: { correo: string; contrasena: string }, claveDeIdempotencia: string): Promise<Resultado<RegistrarIdentidadResponse>> {
       return llamar('POST', '/registrations', {
@@ -618,6 +676,78 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     corregirIngesta(token: string, ingestaId: string, cuerpo: CorregirIngestaRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/nutrition/executions/${encodeURIComponent(ingestaId)}/corrections`, { token, claveDeIdempotencia, esquema: IngestaResponseSchema, cuerpo });
     },
+    // ─── REC · recetas (DL-119) ──────────────────────────────────────────────────────────────
+    /** API-REC-01. */
+    crearReceta(token: string, cuerpo: CrearRecetaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/nutrition/recipes', { token, claveDeIdempotencia, esquema: RecetaResponseSchema, cuerpo });
+    },
+    /** API-REC-02. */
+    listarRecetas(token: string, filtro: { cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/nutrition/recipes${query(filtro)}`, { token, esquema: ListaDeRecetasResponseSchema });
+    },
+    /** API-REC-03. */
+    consultarReceta(token: string, recetaId: string) {
+      return llamar('GET', `/nutrition/recipes/${encodeURIComponent(recetaId)}`, { token, esquema: DetalleDeRecetaResponseSchema });
+    },
+    /** API-REC-04: emite una versión nueva. */
+    editarReceta(token: string, recetaId: string, cuerpo: EditarRecetaRequest, claveDeIdempotencia: string) {
+      return llamar('PATCH', `/nutrition/recipes/${encodeURIComponent(recetaId)}`, { token, claveDeIdempotencia, esquema: RecetaResponseSchema, cuerpo });
+    },
+    /** API-REC-05: asocia o reemplaza la imagen de referencia. */
+    asociarImagenDeReceta(token: string, recetaId: string, cuerpo: AsociarImagenDeRecetaRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', `/nutrition/recipes/${encodeURIComponent(recetaId)}/image`, { token, claveDeIdempotencia, esquema: RecetaResponseSchema, cuerpo });
+    },
+    /** API-REC-06: retira la imagen; el medio no se borra y la historia queda. */
+    retirarImagenDeReceta(token: string, recetaId: string, expectedVersion: string, claveDeIdempotencia: string) {
+      return llamar('DELETE', `/nutrition/recipes/${encodeURIComponent(recetaId)}/image${query({ expectedVersion })}`, { token, claveDeIdempotencia, esquema: RecetaResponseSchema });
+    },
+    /** API-REC-07: calcula sin guardar, para ver el cálculo mientras se edita. */
+    calcularReceta(token: string, cuerpo: CalcularRecetaRequest) {
+      return llamar('POST', '/nutrition/recipe-calculations', { token, esquema: CalculoDeRecetaResponseSchema, cuerpo });
+    },
+
+    // ─── MED · medios privados (DL-120) ─────────────────────────────────────────────────────
+    /** API-MED-01: la intención de subida, con su ruta firmada. */
+    crearIntencionDeSubida(token: string, cuerpo: IntencionDeSubidaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/media/upload-intents', { token, claveDeIdempotencia, esquema: IntencionDeSubidaResponseSchema, cuerpo });
+    },
+    /** API-MED-02. */
+    subirMedio: subirBytes,
+    /** API-MED-03: la ruta de lectura firmada, que vence en 15 minutos como máximo. */
+    accederAMedio(token: string, medioId: string) {
+      return llamar('GET', `/media/${encodeURIComponent(medioId)}/access`, { token, esquema: AccesoAMedioResponseSchema });
+    },
+    /** API-MED-05: supresión a pedido de una foto propia de una comida. */
+    suprimirMedio(token: string, medioId: string, claveDeIdempotencia: string) {
+      return llamar('DELETE', `/me/media/${encodeURIComponent(medioId)}`, { token, claveDeIdempotencia, esquema: MedioResponseSchema });
+    },
+
+    // ─── ING · registro de comidas v2 (DL-121) ──────────────────────────────────────────────
+    /** API-ING-01: «Hoy» con las opciones, sus imágenes y los macros de las porciones del plan. */
+    hoyConOpciones(token: string, diaTipoId?: string) {
+      return llamar('GET', `/me/nutrition/today/options${query({ dayTypeId: diaTipoId })}`, { token, esquema: HoyConOpcionesResponseSchema });
+    },
+    /** API-ING-02: el mismo comando desde el carrusel y desde el detalle, con la misma clave por intento. */
+    registrarComida(token: string, cuerpo: RegistrarComidaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/nutrition/meal-records', { token, claveDeIdempotencia, esquema: RegistroDeComidaResponseSchema, cuerpo });
+    },
+    /** API-ING-03. */
+    consultarRegistroDeComida(token: string, registroId: string) {
+      return llamar('GET', `/nutrition/meal-records/${encodeURIComponent(registroId)}`, { token, esquema: RegistroDeComidaResponseSchema });
+    },
+    /** API-ING-04. */
+    listarMisRegistrosDeComida(token: string, filtro: { from?: string; to?: string; cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/me/nutrition/meal-records${query(filtro)}`, { token, esquema: ListaDeRegistrosDeComidaResponseSchema });
+    },
+    /** API-ING-05: completar o corregir las cantidades, como una rectificación. */
+    rectificarCantidades(token: string, registroId: string, cuerpo: RectificarCantidadesRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/meal-records/${encodeURIComponent(registroId)}/consumed-quantities`, { token, claveDeIdempotencia, esquema: RegistroDeComidaResponseSchema, cuerpo });
+    },
+    /** API-ING-06: deshacer, como una anulación auditable. */
+    deshacerRegistroDeComida(token: string, registroId: string, cuerpo: AnularRegistroRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/meal-records/${encodeURIComponent(registroId)}/annulment`, { token, claveDeIdempotencia, esquema: RegistroDeComidaResponseSchema, cuerpo });
+    },
+
     /** API-NUT-17. Ver no es revisar. */
     contextoDeRevision(token: string, asesoradoId: string, periodo: { periodStart?: string; periodEnd?: string } = {}) {
       return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/review-context${query(periodo)}`, { token, esquema: ContextoDeRevisionResponseSchema });
