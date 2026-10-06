@@ -54,6 +54,9 @@ export interface SerieLocal {
   readonly enConflicto: boolean;
 }
 
+/** Dónde está una serie registrada que todavía no se envió: en el teléfono, guardándose, o solo en la app. */
+export type ProteccionDeSerie = 'en-el-telefono' | 'guardando' | 'solo-en-la-app';
+
 /** El máximo de series de un ejercicio que admite el contrato (`SerieEjecutadaSchema.setIndex`). */
 export const MAXIMO_DE_SERIES = 50;
 
@@ -106,9 +109,18 @@ export function ejerciciosYSeries(prescripciones: readonly { readonly sets: read
   return `${numero(ejercicios, 0)} ${ejercicios === 1 ? 'ejercicio' : 'ejercicios'} · ${numero(series, 0)} ${series === 1 ? 'serie' : 'series'}`;
 }
 
+/** Lo que dice la pantalla mientras usa la sesión de respaldo (`sesionDesdeLaOcurrencia`). */
+export const AVISO_SIN_PLAN_POR_SERIE =
+  'No pudimos leer el plan de cada serie. Hasta poder leerlo, no mostramos la carga ni el RIR objetivo: podrían no ser los de esa serie. Podés registrar igual.';
+
 /**
- * La sesión con los objetivos generales de cada prescripción, armada desde «Hoy» (API-TRN-14) cuando API-SER-02 no se
- * pudo leer: sin imágenes, sin descanso estructurado y con el mismo objetivo en todas las series. La pantalla lo avisa.
+ * La sesión armada desde «Hoy» (API-TRN-14) cuando API-SER-02 no se pudo leer (precierre del 2026-10-06, §2).
+ *
+ * «Hoy» trae la forma de siempre: las repeticiones de cada serie, y la intensidad y la carga **generales** de cada
+ * prescripción. Con objetivos por serie, esas generales pueden no ser las de una serie, y desde «Hoy» no se puede saber:
+ * por eso no se muestran como objetivo de ninguna serie, ni como dato del ejercicio. Quedan las repeticiones de cada
+ * serie, que sí son de esa serie, el ejercicio, sus series y las notas. Sin imágenes ni descanso estructurado. La
+ * pantalla lo avisa y deja registrar igual: lo que se registra nunca sale de un objetivo.
  */
 export function sesionDesdeLaOcurrencia(s: SesionDeOcurrencia): SesionConObjetivos {
   return {
@@ -116,28 +128,27 @@ export function sesionDesdeLaOcurrencia(s: SesionDeOcurrencia): SesionConObjetiv
     label: s.label,
     order: s.order,
     instructions: s.instructions,
-    prescriptions: s.prescriptions.map((p) => {
-      const objetivos = objetivosEfectivos({ intensity: p.intensity, suggestedLoad: p.suggestedLoad, restSeconds: null, sets: p.sets.map((x) => ({ repetitions: x.repetitions })) });
-      return {
-        prescriptionId: p.prescriptionId,
-        order: p.order,
-        exerciseId: p.exerciseId,
-        exerciseVersionId: p.exerciseVersionId,
-        exerciseName: p.exerciseName,
-        image: null,
-        sets: p.sets.map((x, i) => {
-          const o = objetivos[i]!;
-          return { setIndex: x.setIndex, note: x.note, target: { repetitions: o.repetitions, rir: o.rir, suggestedLoad: o.suggestedLoad, restSeconds: o.restSeconds }, targetOrigin: o.origin };
-        }),
-        intensity: p.intensity,
-        suggestedLoad: p.suggestedLoad,
-        restSeconds: null,
-        loadBasis: null,
-        repetitionBasis: null,
-        professionalParameters: p.professionalParameters,
-        note: p.note,
-      };
-    }),
+    prescriptions: s.prescriptions.map((p) => ({
+      prescriptionId: p.prescriptionId,
+      order: p.order,
+      exerciseId: p.exerciseId,
+      exerciseVersionId: p.exerciseVersionId,
+      exerciseName: p.exerciseName,
+      image: null,
+      sets: p.sets.map((x) => ({
+        setIndex: x.setIndex,
+        note: x.note,
+        target: { repetitions: x.repetitions, rir: null, suggestedLoad: null, restSeconds: null },
+        targetOrigin: { rir: 'NONE', suggestedLoad: 'NONE', restSeconds: 'NONE' },
+      })),
+      intensity: null,
+      suggestedLoad: null,
+      restSeconds: null,
+      loadBasis: null,
+      repetitionBasis: null,
+      professionalParameters: p.professionalParameters,
+      note: p.note,
+    })),
   };
 }
 
@@ -203,6 +214,11 @@ export interface FilaDeLaTabla {
   readonly nota: string | null;
   readonly planificada: boolean;
   readonly estado: EstadoDeFila;
+  /**
+   * Una serie pendiente de enviar: si ya está guardada en el teléfono, si se está guardando o si está solo en la app
+   * (la escritura falló o no se pudo leer lo guardado). `null` en las demás.
+   */
+  readonly proteccion: ProteccionDeSerie | null;
   /** Lo registrado (en el servidor o en el teléfono), o `null`. */
   readonly registrada: SerieEjecutadaApi | null;
 }
@@ -214,19 +230,27 @@ export function guardadasDe(borrador: Pick<BorradorDeEjecucion, 'exercises'> | n
 
 /**
  * Las filas de la tabla de un ejercicio: las series planificadas, más las registradas de más y las que la persona sumó
- * (`extra`). Cada una con su estado: guardada en el servidor, pendiente en el teléfono, en conflicto o sin registrar.
+ * (`extra`). Cada una con su estado: guardada en el servidor, pendiente de enviar, en conflicto o sin registrar. Una
+ * pendiente dice además dónde está (`proteccion`, del almacén): «guardada en el teléfono» solo si la escritura que la
+ * incluye terminó bien.
  */
-export function filasDelEjercicio(p: Pick<PrescripcionConObjetivos, 'prescriptionId' | 'sets'>, guardadas: readonly SerieEjecutadaApi[], locales: readonly SerieLocal[], extra = 0): FilaDeLaTabla[] {
+export function filasDelEjercicio(
+  p: Pick<PrescripcionConObjetivos, 'prescriptionId' | 'sets'>,
+  guardadas: readonly SerieEjecutadaApi[],
+  locales: readonly SerieLocal[],
+  extra = 0,
+  proteccion: (l: SerieLocal) => ProteccionDeSerie = () => 'guardando',
+): FilaDeLaTabla[] {
   const propias = locales.filter((l) => l.prescriptionId === p.prescriptionId);
   const filas = new Map<number, FilaDeLaTabla>();
-  for (const s of p.sets) filas.set(s.setIndex, { setIndex: s.setIndex, objetivo: s.target, nota: s.note, planificada: true, estado: 'sin-registrar', registrada: null });
-  const sinPlan = (setIndex: number): FilaDeLaTabla => ({ setIndex, objetivo: null, nota: null, planificada: false, estado: 'sin-registrar', registrada: null });
-  for (const g of guardadas) filas.set(g.setIndex, { ...(filas.get(g.setIndex) ?? sinPlan(g.setIndex)), estado: 'guardada', registrada: g });
+  for (const s of p.sets) filas.set(s.setIndex, { setIndex: s.setIndex, objetivo: s.target, nota: s.note, planificada: true, estado: 'sin-registrar', proteccion: null, registrada: null });
+  const sinPlan = (setIndex: number): FilaDeLaTabla => ({ setIndex, objetivo: null, nota: null, planificada: false, estado: 'sin-registrar', proteccion: null, registrada: null });
+  for (const g of guardadas) filas.set(g.setIndex, { ...(filas.get(g.setIndex) ?? sinPlan(g.setIndex)), estado: 'guardada', proteccion: null, registrada: g });
   for (const l of propias) {
     const previa = filas.get(l.serie.setIndex) ?? sinPlan(l.serie.setIndex);
     // Lo que ya guardó el servidor manda; la del teléfono con el mismo número queda en conflicto.
     if (previa.estado === 'guardada') filas.set(l.serie.setIndex, previa);
-    else filas.set(l.serie.setIndex, { ...previa, estado: l.enConflicto ? 'en-conflicto' : 'pendiente-de-enviar', registrada: l.serie });
+    else filas.set(l.serie.setIndex, { ...previa, estado: l.enConflicto ? 'en-conflicto' : 'pendiente-de-enviar', proteccion: proteccion(l), registrada: l.serie });
   }
   const maximo = Math.max(0, ...filas.keys());
   for (let i = 1; i <= extra && maximo + i <= MAXIMO_DE_SERIES; i++) filas.set(maximo + i, sinPlan(maximo + i));

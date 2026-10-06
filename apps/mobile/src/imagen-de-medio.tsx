@@ -1,24 +1,28 @@
 /**
- * Una imagen privada de BE (DL-120; WP-NUTRICION-RECETAS §6): la de referencia de una receta o la foto de una comida.
- * - **La identidad del medio no es su URL.** La pantalla pide el acceso (API-MED-03) y recibe una ruta firmada que vence
- *   en 15 minutos como máximo. La ruta no lleva la sesión: la imagen se descarga sin credenciales.
- * - **El acceso se recuerda mientras dure,** para no pedirlo de nuevo en cada dibujo: cada acceso queda en el registro de
- *   actos de la API. Vive en el proceso, por sesión, y nunca va a disco. Dos imágenes del mismo medio a la vez comparten
- *   el pedido.
- * - **Si la descarga falla,** se pide un acceso nuevo una vez (la ruta pudo vencer con la pantalla abierta); si vuelve a
- *   fallar, queda el ícono de respaldo con «La imagen no se pudo mostrar.». El contenido de alrededor sigue a la vista, y
- *   nada se bloquea: se puede registrar igual.
- * - **Sin imagen,** el ícono y «Sin imagen de referencia».
+ * Una imagen privada de BE (DL-120; WP-NUTRICION-RECETAS §6; WP-ENTRENAMIENTO-SERIES §7.2): la de referencia de una
+ * receta, la foto de una comida o la ilustración de un ejercicio. La carga es la de `cargador-de-imagen.ts`, sin React:
+ * - **La identidad del medio no es su URL.** Se pide el acceso (API-MED-03) y se recibe una ruta firmada que vence en 15
+ *   minutos como máximo. La ruta no lleva la sesión: la imagen se descarga sin credenciales. El acceso se recuerda
+ *   mientras dura, en el proceso y nunca en disco: cada acceso queda en el registro de actos de la API.
+ * - **Si la descarga falla,** se pide un acceso nuevo una sola vez (la ruta pudo vencer con la pantalla abierta); si
+ *   vuelve a fallar, queda el ícono de respaldo con «La imagen no se pudo mostrar.». El contenido de alrededor sigue a la
+ *   vista, y nada se bloquea: se puede registrar igual.
+ * - **Sin imagen,** el ícono y «Sin imagen de referencia» (o «Sin imagen del ejercicio»): no es una descarga fallida.
+ * - **Una respuesta tardía no reaparece** (precierre del 2026-10-06, §5): si cambia el ejercicio, el medio o la cuenta
+ *   mientras se pide o se renueva un acceso, lo que llega tarde se descarta.
+ * - **El ajuste** (`ajuste`): una foto llena el marco (`cubrir`); la ilustración de un ejercicio se ve entera, con el
+ *   cuerpo y el material sin recortar (`contener`), sobre blanco, que es el fondo con el que el servidor guarda una
+ *   imagen con transparencia. Igual en los dos temas.
  * - **El rótulo** («Imagen de referencia», «Tu foto») va debajo de la imagen, solo mientras hay imagen: la foto de una
  *   receta no mide la porción ni demuestra lo que se comió.
- * - **El respaldo es de quien la usa** (WP-ENTRENAMIENTO-SERIES §7.2): por omisión, el plato y los textos de Nutrición;
- *   la imagen de un ejercicio usa la mancuerna de la app y «Sin imagen del ejercicio». Con `tamano`, el marco es un
- *   cuadrado fijo (la imagen de 112 dp de la sesión enfocada) en lugar de ocupar el ancho.
+ * - **El respaldo es de quien la usa:** por omisión, el plato y los textos de Nutrición; la imagen de un ejercicio usa la
+ *   mancuerna de la app. Con `tamano`, el marco es un cuadrado fijo (la imagen de 112 dp de la sesión enfocada).
  */
 import { COPY_REGISTRO_DE_COMIDAS, type Resultado } from '@be/domain';
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { Image, Text, View } from 'react-native';
 import { api } from './api';
+import { crearAccesoAMedios, crearCargadorDeImagen, type EstadoDeLaImagen } from './cargador-de-imagen';
 import { IconoDePlato } from './iconos-de-nutricion';
 import { relojDelServidor } from './reloj-del-servidor';
 import { COLOR, estilosPorTema } from './tema';
@@ -37,40 +41,8 @@ export const RESPALDO_DE_COMIDA: RespaldoDeImagen = {
   noDisponible: COPY_REGISTRO_DE_COMIDAS.imagenNoDisponible,
 };
 
-/** Un acceso que vence en menos de esto no se usa: se pide otro. */
-const MARGEN_DEL_ACCESO_MS = 60_000;
-
-const accesos = new Map<string, { readonly url: string; readonly venceMs: number }>();
-const pedidos = new Map<string, Promise<string | null>>();
-
-/**
- * La URL de lectura del medio: la recordada si todavía vale, o una nueva. `null` si la API no la dio (sin red, sin
- * acceso, un medio suprimido): la pantalla muestra el respaldo.
- */
-function urlDelMedio(token: string, mediaId: string, sesionPerdida: (r: Resultado<unknown>) => boolean, renovar: boolean): Promise<string | null> {
-  const clave = `${token}|${mediaId}`;
-  const guardado = accesos.get(clave);
-  if (!renovar && guardado && guardado.venceMs - MARGEN_DEL_ACCESO_MS > relojDelServidor.ahora()) return Promise.resolve(guardado.url);
-  if (renovar) accesos.delete(clave);
-  const enCurso = pedidos.get(clave);
-  if (enCurso) return enCurso;
-  const pedido = api.accederAMedio(token, mediaId).then((r) => {
-    pedidos.delete(clave);
-    if (sesionPerdida(r) || !r.ok) return null;
-    const url = api.urlDe(r.datos.data.path);
-    const venceMs = Date.parse(r.datos.data.expiresAt);
-    if (Number.isFinite(venceMs)) accesos.set(clave, { url, venceMs });
-    return url;
-  });
-  pedidos.set(clave, pedido);
-  return pedido;
-}
-
-type EstadoDeLaImagen =
-  | { readonly tipo: 'sin-imagen' }
-  | { readonly tipo: 'cargando' }
-  | { readonly tipo: 'lista'; readonly url: string; readonly renovada: boolean }
-  | { readonly tipo: 'fallo' };
+/** Un solo acceso por proceso, compartido por todas las imágenes. */
+const accesoAMedios = crearAccesoAMedios({ acceder: (token, mediaId) => api.accederAMedio(token, mediaId), urlDe: (ruta) => api.urlDe(ruta), ahoraMs: () => relojDelServidor.ahora() });
 
 export function ImagenDeMedio({
   token,
@@ -83,6 +55,7 @@ export function ImagenDeMedio({
   respaldo = RESPALDO_DE_COMIDA,
   tamano,
   rotuloVisible = true,
+  ajuste = 'cubrir',
 }: {
   token: string;
   mediaId: string | null;
@@ -101,40 +74,34 @@ export function ImagenDeMedio({
   tamano?: number;
   /** `false`: el rótulo no se ve debajo (lo sigue diciendo el lector de pantalla). Para una miniatura al lado de su nombre. */
   rotuloVisible?: boolean;
+  /** `cubrir`: una foto llena el marco. `contener`: una ilustración se ve entera, sin recortar el cuerpo ni el material. */
+  ajuste?: 'cubrir' | 'contener';
 }) {
   const [estado, setEstado] = useState<EstadoDeLaImagen>(mediaId ? { tipo: 'cargando' } : { tipo: 'sin-imagen' });
+  const [cargador] = useState(() => crearCargadorDeImagen(accesoAMedios, setEstado));
 
   useEffect(() => {
-    if (!mediaId) {
-      setEstado({ tipo: 'sin-imagen' });
-      return;
-    }
-    if (!cargar) return;
-    let vigente = true;
-    setEstado({ tipo: 'cargando' });
-    void urlDelMedio(token, mediaId, sesionPerdida, false).then((url) => {
-      if (vigente) setEstado(url ? { tipo: 'lista', url, renovada: false } : { tipo: 'fallo' });
-    });
-    return () => {
-      vigente = false;
-    };
-  }, [token, mediaId, sesionPerdida, cargar]);
+    cargador.mostrar(token, mediaId, cargar, sesionPerdida);
+    return () => cargador.soltar();
+  }, [cargador, token, mediaId, sesionPerdida, cargar]);
 
-  // La descarga falló: puede ser una ruta vencida. Se pide un acceso nuevo una vez; si vuelve a fallar, el respaldo.
-  const alFallar = useCallback(() => {
-    if (estado.tipo !== 'lista' || !mediaId) return;
-    if (estado.renovada) return setEstado({ tipo: 'fallo' });
-    void urlDelMedio(token, mediaId, sesionPerdida, true).then((url) => setEstado(url ? { tipo: 'lista', url, renovada: true } : { tipo: 'fallo' }));
-  }, [estado, token, mediaId, sesionPerdida]);
-
+  const contener = ajuste === 'contener';
   const texto = estado.tipo === 'sin-imagen' ? respaldo.sinImagen : respaldo.noDisponible;
   return (
     <View>
-      <View style={[estilos.marco, tamano === undefined ? { aspectRatio: proporcion } : { width: tamano, height: tamano, alignSelf: 'flex-start' }]}>
+      <View style={[estilos.marco, tamano === undefined ? { aspectRatio: proporcion } : { width: tamano, height: tamano, alignSelf: 'flex-start' }, contener && estado.tipo !== 'fallo' && estado.tipo !== 'sin-imagen' ? estilos.fondoDeIlustracion : null]}>
         {estado.tipo === 'lista' ? (
-          <Image source={{ uri: estado.url }} style={estilos.imagen} resizeMode="cover" onError={alFallar} accessible accessibilityRole="image" accessibilityLabel={rotulo} />
+          <Image
+            source={{ uri: estado.url }}
+            style={[estilos.imagen, contener ? estilos.fondoDeIlustracion : null]}
+            resizeMode={contener ? 'contain' : 'cover'}
+            onError={() => cargador.alFallarLaDescarga()}
+            accessible
+            accessibilityRole="image"
+            accessibilityLabel={rotulo}
+          />
         ) : estado.tipo === 'cargando' ? (
-          <View style={estilos.imagen} accessible accessibilityRole="image" accessibilityLabel={rotulo} />
+          <View style={[estilos.imagen, contener ? estilos.fondoDeIlustracion : null]} accessible accessibilityRole="image" accessibilityLabel={rotulo} />
         ) : (
           <View style={estilos.respaldo} accessible accessibilityRole="image" accessibilityLabel={texto}>
             {respaldo.icono({ color: COLOR.tenue, tamano: respaldoCompacto ? 32 : 44 })}
@@ -158,6 +125,8 @@ export function ImagenDeMedio({
 const estilos = estilosPorTema((COLOR) => ({
   marco: { alignSelf: 'stretch', borderRadius: 12, overflow: 'hidden', backgroundColor: COLOR.superficieElevada, borderWidth: 1, borderColor: COLOR.borde },
   imagen: { flex: 1, alignSelf: 'stretch', backgroundColor: COLOR.superficieElevada },
+  // El blanco con el que el servidor aplana la transparencia (token `fondoDeIlustracion`, igual en los dos temas).
+  fondoDeIlustracion: { backgroundColor: COLOR.fondoDeIlustracion },
   respaldo: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6, padding: 8 },
   textoDeRespaldo: { fontSize: 14, lineHeight: 19, color: COLOR.tenue, textAlign: 'center' },
   rotulo: { fontSize: 12, lineHeight: 16, color: COLOR.tenue, marginTop: 4 },

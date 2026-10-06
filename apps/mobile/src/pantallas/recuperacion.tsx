@@ -5,8 +5,9 @@
  * - **Mientras comprueba:** la identidad real de BE (el isotipo del repositorio y «BE»; la cabecera dice «Ambiente de
  *   prueba»), «Preparando tu espacio», «Comprobando tu sesión», un indicador de actividad y «Un momento, por favor.». Sin
  *   porcentajes ni mensajes de éxito antes de confirmar. Con movimiento reducido, el indicador queda quieto.
- * - **A los 5 s** (`UMBRAL_DE_DEMORA_MS`): «Está tardando más de lo habitual», «Reintentar» y «Si continúa, revisá tu
- *   conexión.». El pedido sigue hasta su tope de 10 s.
+ * - **A los 5 s** (`UMBRAL_DE_DEMORA_MS`): «Está tardando más de lo habitual» y que sigue esperando el mismo pedido,
+ *   que puede tardar alrededor de un minuto si el servicio estaba en reposo (`ESPERA_MAXIMA_DE_VERIFICACION_MS`). Sin
+ *   «Reintentar»: mientras hay un pedido en curso, otro se le superpondría (precierre del 2026-10-06, §5).
  * - **Si no se pudo comprobar,** la causa con su texto: sin conexión, tiempo agotado, servicio no disponible u otra
  *   respuesta (`causaDeLaFalla`). La credencial sigue guardada: ninguna de esas causas cierra la sesión. Solo la
  *   credencial inválida o vencida lleva a Iniciar sesión (la raíz, con `decidirRecuperacion`).
@@ -31,7 +32,8 @@ export const TEXTOS_DE_LA_RECUPERACION = {
   comprobando: 'Comprobando tu sesión',
   unMomento: 'Un momento, por favor.',
   tardando: 'Está tardando más de lo habitual',
-  todaviaNo: 'Todavía no pudimos comprobar tu sesión.',
+  todaviaNo: 'Si el servicio estaba en reposo, puede tardar alrededor de un minuto en responder.',
+  seguimosEsperando: 'Seguimos esperando la respuesta: no hace falta que hagas nada.',
   podesReintentar: 'Podés volver a intentarlo sin cerrar la app.',
   siContinua: 'Si continúa, revisá tu conexión.',
   noPudimos: 'No pudimos comprobar tu sesión',
@@ -43,7 +45,7 @@ export const TEXTOS_DE_LA_RECUPERACION = {
 /** La causa, dicha para la persona. Ninguna es «la sesión no sirve»: esa va a Iniciar sesión con su propio aviso. */
 export const TEXTO_DE_LA_CAUSA: Readonly<Record<CausaDeLaFalla, string>> = {
   'sin-conexion': 'Parece que no hay conexión.',
-  'tiempo-agotado': 'El servicio tardó demasiado en responder.',
+  'tiempo-agotado': 'El servicio no respondió en más de un minuto.',
   'servicio-no-disponible': 'El servicio no está disponible en este momento.',
   otra: 'El servicio no respondió como esperábamos.',
 };
@@ -63,22 +65,35 @@ export function PantallaDeRecuperacion({ fase, reintentar, iniciarDeNuevo }: { f
       </View>
     );
   }
-  const tardando = fase.tipo === 'tardando';
+  // Esperar no es fallar: mientras el pedido sigue en curso no se ofrece otro, y el indicador sigue girando.
+  if (fase.tipo === 'tardando') {
+    return (
+      <View style={estilos.centro} accessibilityLiveRegion="polite">
+        <Emblema />
+        <Text style={estilos.titulo} accessibilityRole="header">
+          {t.tardando}
+        </Text>
+        <Text style={estilos.subtitulo}>{t.todaviaNo}</Text>
+        <Indicador />
+        <Text style={estilos.nota}>{t.seguimosEsperando}</Text>
+      </View>
+    );
+  }
   return (
     <View style={estilos.centro} accessibilityLiveRegion="polite">
       <View style={estilos.circuloDeLaNube}>
         <IconoDeNubeConAviso color={COLOR.acento} aviso={COLOR.peligroFondo} textoDelAviso={COLOR.peligroTexto} />
       </View>
       <Text style={estilos.titulo} accessibilityRole="header">
-        {tardando ? t.tardando : t.noPudimos}
+        {t.noPudimos}
       </Text>
-      <Text style={estilos.subtitulo}>{tardando ? t.todaviaNo : TEXTO_DE_LA_CAUSA[fase.causa]}</Text>
-      <Text style={estilos.nota}>{tardando ? t.podesReintentar : t.sigueGuardada}</Text>
+      <Text style={estilos.subtitulo}>{TEXTO_DE_LA_CAUSA[fase.causa]}</Text>
+      <Text style={estilos.nota}>{t.sigueGuardada}</Text>
       <View style={estilos.acciones}>
         <Boton texto={t.reintentar} onPress={reintentar} />
         <Text style={estilos.nota}>{t.siContinua}</Text>
         {/* Una elección de la persona, después de una falla: borra la credencial guardada y va a Iniciar sesión. */}
-        {tardando ? null : <Boton texto={t.iniciarDeNuevo} tipo="secundario" onPress={iniciarDeNuevo} />}
+        <Boton texto={t.iniciarDeNuevo} tipo="secundario" onPress={iniciarDeNuevo} />
       </View>
     </View>
   );

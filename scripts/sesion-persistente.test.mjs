@@ -330,5 +330,13 @@ test('el token va solo al almacenamiento seguro: la lógica no importa ningún a
   assert.match(app, /void guarda\.guardar\(\{ token, identidadId, expiresAt, vigenciaMs: nueva\.vigenciaMs \}\)/);
   assert.match(app, /if \(alMontar\.estado === 'ninguna'\) void recuperar\(\);/);
   const config = readFileSync(resolve(RAIZ, 'apps/mobile/app.config.ts'), 'utf8');
-  assert.match(config, /\['expo-secure-store', \{ configureAndroidBackup: true, faceIDPermission: false \}\]/);
+  // Cambió con el encargo de Dirección del 2026-10-06 para el precierre, §4: «excluir del respaldo y de las
+  // transferencias de Android los borradores/eventos locales de entrenamiento y mantener las exclusiones existentes de
+  // las credenciales». Las reglas ahora son las de plugins/respaldo-de-android.js, que conservan la exclusión del
+  // almacenamiento seguro; por eso expo-secure-store ya no pone las suyas. Lo que se prueba sigue igual: el almacenamiento
+  // seguro queda fuera del respaldo.
+  assert.match(config, /\['expo-secure-store', \{ configureAndroidBackup: false, faceIDPermission: false \}\]/);
+  assert.match(config, /'\.\/plugins\/respaldo-de-android'/);
+  const reglas = readFileSync(resolve(RAIZ, 'apps/mobile/plugins/respaldo-de-android.js'), 'utf8');
+  assert.match(reglas, /\['sharedpref', 'SecureStore\.xml'\]/);
 });

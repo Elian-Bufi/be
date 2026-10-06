@@ -38,12 +38,15 @@ const { aplicarEventos, calcularTiempos, IdDeClienteSchema, EventoDeTiempoSchema
 
 const INICIO_CIVIL = Date.parse('2026-10-06T16:00:00.000Z');
 
-/** Un reloj de mentira: el monotónico y el civil avanzan cuando la prueba lo dice. */
-function relojDePrueba(ancla = 'proceso-uno') {
+/**
+ * Un reloj de mentira: el monotónico y el civil avanzan cuando la prueba lo dice. Por omisión es el del proceso; con
+ * `base: 'ELAPSED_SINCE_BOOT'` imita el del arranque, que en el teléfono tiene la misma ancla después de reabrir la app.
+ */
+function relojDePrueba(ancla = 'proceso-uno', base = 'PROCESS_MONOTONIC') {
   const r = { mono: 5_000, civil: INICIO_CIVIL };
   return {
     estado: r,
-    reloj: reloj.crearReloj({ ancla, monotonico: () => r.mono, civil: () => r.civil }),
+    reloj: reloj.crearReloj({ base, ancla, monotonico: () => r.mono, civil: () => r.civil }),
     /** Pasa el tiempo; si el teléfono durmió, el civil avanza y el monotónico no. */
     avanzar(segundos, { durmio = false } = {}) {
       if (!durmio) r.mono += segundos * 1000;
@@ -72,7 +75,7 @@ test('1 · el reloj del proceso tiene un ancla aleatoria y los instantes llevan 
   assert.equal(IdDeClienteSchema.safeParse(reloj.ANCLA_DEL_PROCESO).success, true);
   assert.notEqual(reloj.idAleatorio('proceso'), reloj.idAleatorio('proceso'));
   const { reloj: r } = relojDePrueba('proceso-uno');
-  assert.deepEqual(r.ahora(), { civil: '2026-10-06T16:00:00.000Z', monotonic: { anchor: 'proceso-uno', ms: 5000 }, source: 'MONOTONIC' });
+  assert.deepEqual(r.ahora(), { civil: '2026-10-06T16:00:00.000Z', monotonic: { anchor: 'proceso-uno', ms: 5000, clock: 'PROCESS_MONOTONIC' }, source: 'MONOTONIC' });
   assert.deepEqual(r.declarado(), { civil: '2026-10-06T16:00:00.000Z', monotonic: null, source: 'DECLARED' });
 });
 
@@ -344,9 +347,9 @@ test('5 · si el proceso murió con un descanso abierto, se pregunta y nunca se 
   const segundo = nuevoAlmacen({ almacen, t: dos });
   await segundo.a.abrirCuenta('cuenta-a', 'token-a');
   const s = segundo.a.sesion('borrador-1');
-  const abierta = corrida.medicionDeOtroProceso(s.corrida, 'proceso-dos');
+  const abierta = segundo.a.medicionDeOtroProceso('borrador-1');
   assert.deepEqual([abierta.kind, abierta.prescriptionId, abierta.setIndex], ['REST', 'pA', 1]);
-  assert.equal(corrida.medicionDeOtroProceso(s.corrida, 'proceso-uno'), null, 'en el mismo proceso no se pregunta');
+  assert.equal(primero.a.medicionDeOtroProceso('borrador-1'), null, 'en el mismo proceso no se pregunta');
   assert.equal(corrida.estadoLocal(s.corrida).cierre, null, 'la sesión no se cerró sola');
   assert.equal(corrida.estadoLocal(s.corrida).medicionAbierta.measurementId, abierta.measurementId, 'el descanso tampoco');
 
@@ -357,7 +360,35 @@ test('5 · si el proceso murió con un descanso abierto, se pregunta y nunca se 
   assert.deepEqual([fin.type, fin.at.source, fin.at.monotonic], ['REST_FINISHED', 'DECLARED', null]);
   const tiempos = calcularTiempos(corrida.eventosDeLaCorrida(despues), () => 90);
   assert.deepEqual([tiempos.rests[0].duration.ms / 1000, tiempos.rests[0].duration.quality], [600, 'ESTIMATED']);
-  assert.equal(corrida.medicionDeOtroProceso(despues, 'proceso-dos'), null);
+  assert.equal(segundo.a.medicionDeOtroProceso('borrador-1'), null);
+});
+
+test('5 · con el reloj desde el arranque el ancla sigue igual al reabrir la app, y aun así se pregunta: no se sabe cuándo terminó', async () => {
+  const almacen = almacenEnMemoria();
+  const uno = relojDePrueba('arranque-uno', 'ELAPSED_SINCE_BOOT');
+  const primero = nuevoAlmacen({ almacen, t: uno });
+  await primero.a.abrirCuenta('cuenta-a', 'token-a');
+  primero.a.preparar(PREPARAR);
+  primero.a.accion('borrador-1', { tipo: 'iniciar', prescriptionId: 'pA' });
+  uno.avanzar(60);
+  primero.a.accion('borrador-1', { tipo: 'iniciar-descanso', prescriptionId: 'pA', setIndex: 1 });
+  await primero.a.escrituras();
+
+  // El sistema cerró la app. El proceso nuevo, en el mismo arranque, tiene la misma ancla y el reloj siguió contando.
+  const dos = relojDePrueba('arranque-uno', 'ELAPSED_SINCE_BOOT');
+  dos.estado.mono = uno.estado.mono + 600_000;
+  dos.estado.civil = uno.estado.civil + 600_000;
+  const segundo = nuevoAlmacen({ almacen, t: dos });
+  await segundo.a.abrirCuenta('cuenta-a', 'token-a');
+  const abierta = segundo.a.medicionDeOtroProceso('borrador-1');
+  assert.ok(abierta, 'se pregunta aunque el ancla sea la misma');
+  assert.equal(corrida.estadoLocal(segundo.a.sesion('borrador-1').corrida).medicionAbierta.measurementId, abierta.measurementId, 'el descanso no se cerró solo');
+  // «Terminó ahora» sigue siendo una declaración: estimado. La sesión, medida de punta a punta en el mismo arranque.
+  assert.equal(segundo.a.accion('borrador-1', { tipo: 'resolver-medicion', resolucion: 'termino-ahora' }).ok, true);
+  assert.equal(segundo.a.accion('borrador-1', { tipo: 'finalizar' }).ok, true);
+  const tiempos = calcularTiempos(corrida.eventosDeLaCorrida(segundo.a.sesion('borrador-1').corrida), () => 90);
+  assert.deepEqual(tiempos.rests[0].duration, { ms: 600_000, quality: 'ESTIMATED' });
+  assert.deepEqual(tiempos.session.elapsed, { ms: 660_000, quality: 'MEASURED' });
 });
 
 test('5 · «Dejarla incompleta» deja la medición incompleta; dejar la sesión incompleta no afirma cuándo terminó', async () => {

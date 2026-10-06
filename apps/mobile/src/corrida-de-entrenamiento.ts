@@ -10,9 +10,10 @@
  * - **Lo que se muestra mientras corre** sale de `enVivo`, desde los instantes. Nada se cuenta sumando ticks.
  * - **Los eventos viajan en lotes** de hasta 30, en orden (`loteSiguiente`). `RECORDED` y `DUPLICATE` salen de
  *   pendientes; `CONFLICT` y `REJECTED` quedan y se muestran (`aplicarResultadosDelLote`): nada se descarta en silencio.
- * - **Si el proceso murió con una medición abierta**, la medición quedó con el ancla de otro proceso
- *   (`medicionDeOtroProceso`). La app pregunta y nunca la cierra sola: «Terminó ahora» es un instante declarado y
- *   «Dejarla incompleta» no afirma ningún fin.
+ * - **Si el proceso murió con una medición abierta**, la abrió un evento que no creó este proceso
+ *   (`medicionDeOtroProceso` del almacén, que no depende del ancla: con el reloj desde el arranque, el ancla sigue igual
+ *   al reabrir la app). La app pregunta y nunca la cierra sola: «Terminó ahora» es un instante declarado y «Dejarla
+ *   incompleta» no afirma ningún fin.
  *
  * Es lógica pura: el reloj y los identificadores se inyectan.
  */
@@ -25,7 +26,6 @@ import {
   type DuracionApi,
   type EstadoDeLaCorrida,
   type EventoDeTiempo,
-  type MedicionAbierta,
   type MotivoDeEvento,
   type ResultadoDeEvento,
 } from '@be/domain';
@@ -98,16 +98,6 @@ export function corridaAbierta(c: Corrida): boolean {
 /** Lo que se muestra mientras corre: la sesión sin pausas y la medición abierta, recalculadas desde los instantes. */
 export function enVivoDeLaCorrida(c: Corrida, reloj: RelojDeSesion): { readonly sesionSinPausas: DuracionApi; readonly medicionAbierta: DuracionApi | null; readonly pausada: boolean } {
   return enVivo(eventosDeLaCorrida(c), reloj.ahora());
-}
-
-/**
- * La medición abierta que empezó en otro proceso: la app se cerró (o el sistema la cerró) con un descanso o una serie
- * cronometrada en curso. `null` si no hay ninguna abierta o si se abrió en este mismo proceso.
- */
-export function medicionDeOtroProceso(c: Corrida, ancla: string): MedicionAbierta | null {
-  const abierta = estadoLocal(c).medicionAbierta;
-  if (!abierta) return null;
-  return abierta.inicio.at.monotonic?.anchor === ancla ? null : abierta;
 }
 
 /**

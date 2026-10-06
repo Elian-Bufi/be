@@ -7,8 +7,9 @@
  *  1. cada causa es distinta: sin conexión, tiempo agotado, servicio no disponible (5xx o 429) y otra respuesta; solo la
  *     credencial inválida o vencida vuelve a Iniciar sesión;
  *  2. una falla de red, el tiempo agotado o un servicio caído no borran la credencial;
- *  3. a los 5 s se avisa una sola vez que está tardando; el pedido sigue hasta su tope de 10 s; un reintento vuelve a
- *     contar y una respuesta a tiempo cancela el aviso.
+ *  3. a los 5 s se avisa una sola vez que está tardando; el mismo pedido sigue hasta la espera máxima de 75 s (precierre
+ *     del 2026-10-06, §5); un reintento vuelve a contar y una respuesta a tiempo cancela el aviso.
+ * La demora de 25 a 35 s, el corte, los reintentos y la ausencia de pedidos superpuestos: `scripts/reconexion.test.mjs`.
  *
  * **Lo que esto no prueba:** el dibujo de la pantalla con el isotipo, el indicador quieto con movimiento reducido ni
  * TalkBack. El dibujo está en los renders del navegador (EVIDENCIA/ENTRENAMIENTO-SERIES); lo demás, en el teléfono.
@@ -101,10 +102,14 @@ test('2 · sin conexión, con el tiempo agotado o con el servicio caído, la cre
   }
 });
 
-test('2 · el tope del pedido es de 10 s y el umbral de demora, de 5 s', () => {
-  assert.equal(p.TOPE_DE_VERIFICACION_MS, 10_000);
+test('2 · la espera máxima del pedido es de 75 s y el umbral de demora, de 5 s', () => {
+  // Cambió con el encargo de Dirección del 2026-10-06 para el precierre, §5: «el flujo actual agota el pedido a los
+  // 10 s. Probar una demora de 25–35 s y definir recuperación acotada que llegue a buen término». El tope de 10 s pasó a
+  // ser una espera máxima de 75 s para el mismo pedido (la API de prueba tardó 43 s en despertar el 2026-10-06); el aviso
+  // de los 5 s no cambia.
+  assert.equal(p.ESPERA_MAXIMA_DE_VERIFICACION_MS, 75_000);
   assert.equal(p.UMBRAL_DE_DEMORA_MS, 5_000);
-  assert.ok(p.UMBRAL_DE_DEMORA_MS < p.TOPE_DE_VERIFICACION_MS, 'el aviso llega antes del tope: el pedido sigue');
+  assert.ok(p.UMBRAL_DE_DEMORA_MS < p.ESPERA_MAXIMA_DE_VERIFICACION_MS, 'el aviso llega antes del tope: el pedido sigue');
 });
 
 // ─── 3. El umbral de demora ────────────────────────────────────────────────────────────────────

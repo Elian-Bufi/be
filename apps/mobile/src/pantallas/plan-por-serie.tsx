@@ -13,7 +13,7 @@ import { api } from '../api';
 import { Cargando } from '../estados';
 import { ImagenDeMedio } from '../imagen-de-medio';
 import { useLecturaRecordada } from '../lecturas';
-import { bandaDeLaSerie, basesDeLaPrescripcion, ejerciciosYSeries, sesionDesdeLaOcurrencia } from '../series-de-la-sesion';
+import { AVISO_SIN_PLAN_POR_SERIE, bandaDeLaSerie, basesDeLaPrescripcion, ejerciciosYSeries, sesionDesdeLaOcurrencia } from '../series-de-la-sesion';
 import { Aviso, Boton, Dato, Desplegable, estilosPorTema, Parrafo } from '../ui';
 import { RESPALDO_DE_EJERCICIO, TecnicaDelEjercicio } from './sesion-enfocada';
 
@@ -46,7 +46,7 @@ function DetalleDeLaSesion({ ocurrencia, token, sesionPerdida }: { ocurrencia: O
   return (
     <View>
       {r.ok ? null : (
-        <Aviso tipo="info" titulo="No pudimos leer los objetivos de cada serie. Se muestran los generales de cada ejercicio.">
+        <Aviso tipo="info" titulo={AVISO_SIN_PLAN_POR_SERIE}>
           <Boton texto={COPY_ENTRENAMIENTO_POR_SERIE.reintentar} tipo="secundario" onPress={() => void cargar()} />
         </Aviso>
       )}
@@ -65,7 +65,7 @@ function PrescripcionDelPlan({ prescripcion: p, token, sesionPerdida, onVerTecni
   return (
     <View style={estilos.prescripcion}>
       <View style={estilos.cabeza}>
-        <ImagenDeMedio token={token} mediaId={p.image?.mediaId ?? null} sesionPerdida={sesionPerdida} rotulo={p.image?.altText || p.exerciseName} tamano={64} respaldo={RESPALDO_DE_EJERCICIO} respaldoCompacto rotuloVisible={false} />
+        <ImagenDeMedio token={token} mediaId={p.image?.mediaId ?? null} sesionPerdida={sesionPerdida} rotulo={p.image?.altText || p.exerciseName} tamano={64} respaldo={RESPALDO_DE_EJERCICIO} respaldoCompacto rotuloVisible={false} ajuste="contener" />
         <View style={estilos.datos}>
           <Text style={estilos.nombre} accessibilityRole="header">
             {p.exerciseName}

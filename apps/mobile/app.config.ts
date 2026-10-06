@@ -34,8 +34,12 @@ const config: ExpoConfig = {
   // del respaldo automático de Android. No se usa biometría: sin el permiso de Face ID.
   // WP-NUTRICION-RECETAS (DL-120): la foto de «Comí algo diferente», con la cámara o la galería. El permiso se pide al
   // tocar «Cámara» o «Galería», no al abrir la app. Sin micrófono: no se graban videos, y el permiso queda bloqueado.
+  // Precierre del 2026-10-06 (§4): las reglas de respaldo y de transferencia de Android son las de
+  // `plugins/respaldo-de-android.js`, que conservan la exclusión del almacenamiento seguro y suman la base de
+  // AsyncStorage, con el entrenamiento en curso. Por eso expo-secure-store no configura las suyas.
   plugins: [
-    ['expo-secure-store', { configureAndroidBackup: true, faceIDPermission: false }],
+    ['expo-secure-store', { configureAndroidBackup: false, faceIDPermission: false }],
+    './plugins/respaldo-de-android',
     [
       'expo-image-picker',
       {

@@ -20,9 +20,13 @@
  * No hay renovación: la sesión vence cuando la API dice, como siempre (12 h desde que se inició).
  *
  * **Las causas se distinguen** (WP-ENTRENAMIENTO-SERIES §7.6; encargo del 2026-10-06, §8): sin conexión (el pedido
- * falló sin respuesta), tiempo agotado (pasaron los 10 s del tope), servicio no disponible (un 5xx o un 429) y otra
- * respuesta. Solo la credencial inválida vuelve a Iniciar sesión. A los 5 s (`UMBRAL_DE_DEMORA_MS`) la pantalla dice que
- * está tardando y ofrece reintentar; el pedido sigue hasta su tope.
+ * falló sin respuesta), tiempo agotado (la API no respondió dentro de la espera máxima), servicio no disponible (un 5xx o
+ * un 429 que siguió después de reintentar) y otra respuesta. Solo la credencial inválida vuelve a Iniciar sesión.
+ *
+ * **Esperar, agotar y fallar son tres cosas** (precierre del 2026-10-06, §5): a los 5 s (`UMBRAL_DE_DEMORA_MS`) la
+ * pantalla dice que está tardando y que sigue esperando el mismo pedido, sin ofrecer otro; la espera llega hasta
+ * `ESPERA_MAXIMA_DE_VERIFICACION_MS`, que alcanza para que la API de prueba termine de arrancar. «Reintentar» aparece
+ * recién con el tiempo agotado o con un error, cuando ya no queda ningún pedido en curso: nunca hay dos a la vez.
  *
  * **Operaciones en fila.** Las operaciones sobre el almacén se hacen de a una, y cada pedido nuevo deja sin efecto a los
  * anteriores que todavía no empezaron. Así una escritura lenta no puede volver a dejar el token después de un cierre de
@@ -187,17 +191,29 @@ export type Recuperacion =
 /**
  * Por qué no se pudo verificar la credencial:
  * - `sin-conexion`: el pedido falló sin respuesta;
- * - `tiempo-agotado`: la API no respondió antes del tope (`TOPE_DE_VERIFICACION_MS`);
- * - `servicio-no-disponible`: un 5xx o un 429;
+ * - `tiempo-agotado`: la API no respondió dentro de la espera máxima (`ESPERA_MAXIMA_DE_VERIFICACION_MS`);
+ * - `servicio-no-disponible`: un 5xx o un 429 que siguió después de reintentar dentro de la espera;
  * - `otra`: cualquier otra respuesta que no prueba que la sesión no sirva (un 403, una respuesta que no se reconoce).
  * Ninguna borra la credencial.
  */
 export type CausaDeLaFalla = 'sin-conexion' | 'tiempo-agotado' | 'servicio-no-disponible' | 'otra';
 
-/** A los 5 s de comprobar, la pantalla dice que está tardando más de lo habitual y ofrece reintentar. */
+/** A los 5 s de comprobar, la pantalla dice que está tardando más de lo habitual. El pedido sigue. */
 export const UMBRAL_DE_DEMORA_MS = 5_000;
-/** El tope del pedido que verifica la credencial: pasado este tiempo, la causa es «tiempo agotado». */
-export const TOPE_DE_VERIFICACION_MS = 10_000;
+/**
+ * Cuánto se espera, como mucho, la verificación de la credencial al abrir la app (precierre del 2026-10-06, §5).
+ * La API de prueba duerme cuando no se usa. Despertarla llevó 23 s en el primer despliegue (`docs/DESPLIEGUE.md`) y 43 s el
+ * 2026-10-06 (EVIDENCIA/ENTRENAMIENTO-SERIES/resultados/10); Render dice que tarda alrededor de un minuto. Con el tope
+ * anterior de 10 s, la app se rendía antes de que la API terminara de arrancar y el «Reintentar» lanzaba un segundo
+ * pedido encima del primero. Ahora un mismo pedido se espera hasta 75 s: una demora de 25 a 60 s termina bien, sin que la
+ * persona haga nada.
+ */
+export const ESPERA_MAXIMA_DE_VERIFICACION_MS = 75_000;
+/**
+ * Entre un 5xx o un 429 y el reintento automático, siempre de a un pedido y dentro de la espera máxima: un servicio que
+ * está arrancando puede responder un error antes de quedar listo.
+ */
+export const ESPERAS_ENTRE_REINTENTOS_MS: readonly number[] = [2_000, 4_000, 8_000, 15_000];
 
 /** Lo que vuelve de la verificación: la respuesta de la API, o el tope cumplido sin respuesta. */
 export const TIEMPO_AGOTADO = { ok: false, tipo: 'TIEMPO_AGOTADO' } as const;
@@ -270,6 +286,17 @@ export function decidirRecuperacion(credencial: CredencialGuardada, r: Respuesta
   return { tipo: 'sin-verificar', credencial, sinConexion: causa === 'sin-conexion', causa };
 }
 
+/** La verificación de la API: recibe la señal con la que se corta el pedido si se agota la espera. */
+export type VerificarCredencial = (token: string, senal: AbortSignal) => Promise<Resultado<MeResponse>>;
+
+/** El temporizador por omisión, el de la plataforma. */
+const TEMPORIZADOR_REAL: TemporizadorDeDemora = {
+  esperar(ms, alCumplirse) {
+    const t = setTimeout(alCumplirse, ms);
+    return () => clearTimeout(t);
+  },
+};
+
 /**
  * Al abrir la app: lee la credencial guardada y la verifica con la API antes de mostrar nada protegido. Borra la que la
  * API rechaza y conserva la que no se pudo verificar. Con `credencial`, reintenta sin volver a leer.
@@ -277,17 +304,21 @@ export function decidirRecuperacion(credencial: CredencialGuardada, r: Respuesta
  * Si mientras tanto la persona eligió otra cosa (`sigueVigente()` da `false`), devuelve `null` y no toca nada: una
  * respuesta tardía no restaura una sesión.
  *
- * Nada de esto deja la app esperando. La lectura tiene su tope en la guarda. Si la API no responde en
- * `esperaMaximaDeVerificacionMs` (10 s), la causa es «tiempo agotado», distinta de la falta de red (encargo §8): la
- * credencial queda y se puede reintentar. El borrado queda en la fila sin frenar la decisión, y la fila conserva el orden.
+ * La verificación es acotada (`verificarAcotado`): un solo pedido a la vez, esperado hasta
+ * `ESPERA_MAXIMA_DE_VERIFICACION_MS`; un 5xx o un 429 se reintenta solo, de a uno, mientras quede tiempo. Sin respuesta
+ * en la espera, el pedido se corta y la causa es «tiempo agotado», distinta de la falta de red: la credencial queda y se
+ * puede reintentar. El borrado queda en la fila sin frenar la decisión, y la fila conserva el orden.
  */
 export async function recuperarSesion(o: {
   readonly guarda: GuardaDeSesion;
-  readonly verificar: (token: string) => Promise<Resultado<MeResponse>>;
+  readonly verificar: VerificarCredencial;
   readonly credencial?: CredencialGuardada;
   readonly ahora: () => { readonly monotono: number; readonly reloj: number };
   readonly sigueVigente: () => boolean;
   readonly esperaMaximaDeVerificacionMs?: number;
+  readonly temporizador?: TemporizadorDeDemora;
+  /** Un reloj monotónico en milisegundos, para medir la espera. Por omisión, `performance.now()`. */
+  readonly ahoraMs?: () => number;
 }): Promise<Recuperacion | null> {
   let credencial = o.credencial ?? null;
   if (!credencial) {
@@ -296,7 +327,14 @@ export async function recuperarSesion(o: {
     if (leida.tipo !== 'credencial') return { tipo: 'ninguna' };
     credencial = leida.credencial;
   }
-  const r = await verificarConTope(o.verificar(credencial.token), o.esperaMaximaDeVerificacionMs ?? TOPE_DE_VERIFICACION_MS);
+  const r = await verificarAcotado({
+    verificar: o.verificar,
+    token: credencial.token,
+    esperaMaximaMs: o.esperaMaximaDeVerificacionMs ?? ESPERA_MAXIMA_DE_VERIFICACION_MS,
+    temporizador: o.temporizador ?? TEMPORIZADOR_REAL,
+    ahoraMs: o.ahoraMs ?? (() => performance.now()),
+    sigueVigente: o.sigueVigente,
+  });
   if (!o.sigueVigente()) return null;
   const { monotono, reloj } = o.ahora();
   const decision = decidirRecuperacion(credencial, r, monotono, reloj);
@@ -304,22 +342,62 @@ export async function recuperarSesion(o: {
   return decision;
 }
 
+/** Un 5xx o un 429: el servicio puede estar arrancando, y vale reintentar dentro de la espera. */
+const esPasajero = (r: RespuestaDeVerificacion): boolean => !r.ok && r.tipo === 'API' && (r.status >= 500 || r.status === 429);
+
 /**
- * La respuesta de la API, o `TIEMPO_AGOTADO` si no llega a tiempo: la app no se queda esperando una red colgada. Un
- * pedido que falla sin respuesta es «sin red».
+ * La verificación acotada (precierre del 2026-10-06, §5): llega a buen término con una API que tarda en despertar, y
+ * nunca deja dos pedidos superpuestos.
+ * - **Un pedido a la vez.** Se espera hasta lo que quede de la espera máxima. Si no responde, se corta con su señal
+ *   (`AbortController`) y el resultado es `TIEMPO_AGOTADO`.
+ * - **Un 5xx o un 429** se reintenta solo, después de `ESPERAS_ENTRE_REINTENTOS_MS`, si todavía entra en la espera. Si
+ *   no entra, queda esa respuesta: «servicio no disponible».
+ * - **Sin red** (el pedido falla sin respuesta) o cualquier otra respuesta: se devuelve enseguida. Sin red, esperar no
+ *   arregla nada, y la pantalla lo dice.
+ * - Si la persona eligió otra cosa (`sigueVigente`), se deja de reintentar.
  */
-function verificarConTope(pedido: Promise<Resultado<MeResponse>>, ms: number): Promise<RespuestaDeVerificacion> {
+export async function verificarAcotado(o: {
+  readonly verificar: VerificarCredencial;
+  readonly token: string;
+  readonly esperaMaximaMs: number;
+  readonly temporizador: TemporizadorDeDemora;
+  readonly ahoraMs: () => number;
+  readonly sigueVigente: () => boolean;
+}): Promise<RespuestaDeVerificacion> {
+  const limite = o.ahoraMs() + o.esperaMaximaMs;
+  for (let intento = 0; ; intento++) {
+    const restante = limite - o.ahoraMs();
+    if (restante <= 0) return TIEMPO_AGOTADO;
+    const r = await unPedido(o.verificar, o.token, restante, o.temporizador);
+    if (!esPasajero(r) || !o.sigueVigente()) return r;
+    const pausa = ESPERAS_ENTRE_REINTENTOS_MS[Math.min(intento, ESPERAS_ENTRE_REINTENTOS_MS.length - 1)]!;
+    if (o.ahoraMs() + pausa >= limite) return r;
+    await new Promise<void>((listo) => o.temporizador.esperar(pausa, listo));
+    if (!o.sigueVigente()) return r;
+  }
+}
+
+/** Un solo pedido, con su tope: si no responde a tiempo, se corta y es `TIEMPO_AGOTADO`; si falla sin respuesta, `RED`. */
+function unPedido(verificar: VerificarCredencial, token: string, ms: number, temporizador: TemporizadorDeDemora): Promise<RespuestaDeVerificacion> {
+  const controlador = new AbortController();
   return new Promise((resolver) => {
-    const reloj = setTimeout(() => resolver(TIEMPO_AGOTADO), ms);
-    pedido.then(
-      (r) => {
-        clearTimeout(reloj);
-        resolver(r);
-      },
-      () => {
-        clearTimeout(reloj);
-        resolver({ ok: false, tipo: 'RED' });
-      },
-    );
+    let terminado = false;
+    const terminar = (r: RespuestaDeVerificacion) => {
+      if (terminado) return;
+      terminado = true;
+      cancelar();
+      resolver(r);
+    };
+    const cancelar = temporizador.esperar(ms, () => {
+      controlador.abort();
+      terminar(TIEMPO_AGOTADO);
+    });
+    let pedido: Promise<Resultado<MeResponse>>;
+    try {
+      pedido = verificar(token, controlador.signal);
+    } catch {
+      return terminar({ ok: false, tipo: 'RED' });
+    }
+    pedido.then(terminar, () => terminar({ ok: false, tipo: 'RED' }));
   });
 }

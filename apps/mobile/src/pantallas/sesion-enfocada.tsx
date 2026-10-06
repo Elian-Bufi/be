@@ -40,11 +40,12 @@ import {
 import type { ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View, type KeyboardTypeOptions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import type { EstadoDeSincronizacion, ProblemaDeSincronizacion } from '../almacen-de-entrenamiento';
+import type { EstadoDelGuardado, EstadoDeSincronizacion, ProblemaDeSincronizacion } from '../almacen-de-entrenamiento';
 import { useMovimientoReducido } from '../estados';
 import { IconoDeCronometro, IconoDeEjercicio, IconoDeNube, IconoDePlan, IconoDeRutina } from '../iconos-de-entrenamiento';
 import { Flecha, IconoDeInformacion, IconoDeRegistrado } from '../iconos-de-nutricion';
 import { ImagenDeMedio, type RespaldoDeImagen } from '../imagen-de-medio';
+import { avisoDelGuardado as avisoDelGuardadoDe, lineaDelEnvio, TEXTOS_DEL_GUARDADO, textoDeEstadoDeFila } from '../textos-del-guardado';
 import {
   ANCHO_DE_LA_COLUMNA_SERIE,
   placeholdersDeLaSerie,
@@ -149,6 +150,7 @@ export function EjercicioActivo({
         respaldo={RESPALDO_DE_EJERCICIO}
         respaldoCompacto={fontScale > 1.3}
         rotuloVisible={false}
+        ajuste="contener"
       />
       <View style={estilos.datosDelEjercicio}>
         <Text style={estilos.nombreDelEjercicio} accessibilityRole="header">
@@ -168,12 +170,6 @@ export function EjercicioActivo({
 
 // ─── La tabla de series ─────────────────────────────────────────────────────────────────────────
 
-const TEXTO_DE_ESTADO: Readonly<Record<FilaDeLaTabla['estado'], string | null>> = {
-  guardada: COPY_ENTRENAMIENTO_POR_SERIE.guardada,
-  'pendiente-de-enviar': 'Guardada en el teléfono',
-  'en-conflicto': 'En conflicto',
-  'sin-registrar': null,
-};
 
 /** Lo registrado en cada celda: el valor, o «—» si no se informó (no es cero). */
 function textoRegistrado(f: FilaDeLaTabla): { carga: string; repeticiones: string; rir: string } {
@@ -188,7 +184,7 @@ function textoRegistrado(f: FilaDeLaTabla): { carga: string; repeticiones: strin
 }
 
 function fraseDeLaFila(f: FilaDeLaTabla, unidad: Unidad, activa: boolean): string {
-  const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : (TEXTO_DE_ESTADO[f.estado] ?? 'Sin registrar');
+  const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : (textoDeEstadoDeFila(f) ?? 'Sin registrar');
   if (f.registrada) {
     const r = f.registrada;
     const partes = [r.load ? `${numero(r.load.value)} ${r.load.unit}` : 'carga no informada', r.completedRepetitions === null ? 'repeticiones no informadas' : `${numero(r.completedRepetitions, 0)} repeticiones`, r.rir === null ? 'RIR no informado' : `RIR ${numero(r.rir)}`];
@@ -265,7 +261,7 @@ function etiquetaDelCampo(campo: keyof FilaEscrita, setIndex: number, unidad: Un
 
 function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, onEnfocar, onEscribir }: PropsDeFila) {
   const p = placeholdersDeLaSerie(f.objetivo, unidad);
-  const estado = TEXTO_DE_ESTADO[f.estado];
+  const estado = textoDeEstadoDeFila(f);
   if (activa && f.estado === 'sin-registrar') {
     return (
       <View style={estilos.filaActiva}>
@@ -302,7 +298,7 @@ function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, onEnfocar, onE
           </View>
         ))}
       </View>
-      {estado ? <Text style={[estilos.estadoDeFila, f.estado === 'en-conflicto' && estilos.estadoEnConflicto]}>{estado}</Text> : null}
+      {estado ? <Text style={[estilos.estadoDeFila, (f.estado === 'en-conflicto' || f.proteccion === 'solo-en-la-app') && estilos.estadoEnConflicto]}>{estado}</Text> : null}
     </Pressable>
   );
 }
@@ -330,7 +326,7 @@ function CeldaEditable({ valor, placeholder, teclado, error, etiqueta, onCambiar
 /** Con la letra grande: cada serie en su tarjeta, con sus tres campos y sus etiquetas. */
 function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, onEnfocar, onEscribir }: PropsDeFila) {
   const p = placeholdersDeLaSerie(f.objetivo, unidad);
-  const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : TEXTO_DE_ESTADO[f.estado];
+  const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : textoDeEstadoDeFila(f);
   const titulo = `${COPY_ENTRENAMIENTO.serie} ${numero(f.setIndex, 0)}${estado ? ` · ${estado}` : ''}`;
   if (activa && f.estado === 'sin-registrar') {
     return (
@@ -576,66 +572,100 @@ export function explicacionDelConflicto(problema: Extract<ProblemaDeSincronizaci
   }
 }
 
+/**
+ * Dónde está lo registrado en esta sesión: primero el guardado en el teléfono (si no se pudo leer o guardar, lo dice con
+ * su «Reintentar»), después el envío al servicio. Cada texto dice lo que es cierto en ese momento: «guardado en el
+ * teléfono» solo con la escritura confirmada, y «enviado» solo con el servicio.
+ */
 export function EstadoDelEnvio({
   estado,
+  guardado,
   problema,
   conflictos,
   onReintentar,
+  onReintentarGuardado,
+  onReintentarLectura,
   onActualizar,
   onUsarLoDelServidor,
   onDescartarSerie,
 }: {
   estado: EstadoDeSincronizacion;
+  guardado: EstadoDelGuardado;
   problema: ProblemaDeSincronizacion | null;
   conflictos: readonly (SerieLocal & { readonly nombre: string })[];
   onReintentar: () => void;
+  onReintentarGuardado: () => void;
+  onReintentarLectura: () => void;
   onActualizar: () => void;
   onUsarLoDelServidor: () => void;
   onDescartarSerie: (s: SerieLocal) => void;
 }) {
   const e = COPY_ENTRENAMIENTO_POR_SERIE;
-  if (estado === 'sincronizado') {
+  const g = TEXTOS_DEL_GUARDADO;
+  const delGuardado = avisoDelGuardadoDe(guardado, estado);
+  const avisoDelGuardado = delGuardado ? (
+    <Aviso tipo="error" titulo={delGuardado.titulo}>
+      {delGuardado.textos.map((texto) => (
+        <Parrafo key={texto}>{texto}</Parrafo>
+      ))}
+      <Boton texto={delGuardado.boton} tipo="secundario" onPress={delGuardado.accion === 'leer' ? onReintentarLectura : onReintentarGuardado} />
+    </Aviso>
+  ) : null;
+  const linea = lineaDelEnvio(estado, guardado);
+  if (estado === 'sincronizado' && linea) {
     return (
-      <View style={estilos.estadoDelEnvio} accessible accessibilityLabel={e.enviada}>
-        <IconoDeRegistrado color={COLOR.botonTexto} fondo={COLOR.exito} tamano={18} />
-        <Text style={estilos.detalle}>{e.enviada}</Text>
-      </View>
+      <>
+        {avisoDelGuardado}
+        <View style={estilos.estadoDelEnvio} accessible accessibilityLabel={linea}>
+          <IconoDeRegistrado color={COLOR.botonTexto} fondo={COLOR.exito} tamano={18} />
+          <Text style={estilos.detalle}>{linea}</Text>
+        </View>
+      </>
     );
   }
-  if (estado === 'pendiente' || estado === 'enviando') {
+  if ((estado === 'pendiente' || estado === 'enviando') && linea) {
+    if (avisoDelGuardado) return avisoDelGuardado;
+    const texto = linea;
     return (
-      <View style={estilos.estadoDelEnvio} accessible accessibilityLabel={e.pendienteDeEnviar}>
+      <View style={estilos.estadoDelEnvio} accessible accessibilityLabel={texto}>
         <IconoDeNube color={COLOR.tenue} />
-        <Text style={estilos.detalle}>{e.pendienteDeEnviar}</Text>
+        <Text style={estilos.detalle}>{texto}</Text>
       </View>
     );
   }
   if (estado === 'error') {
     return (
-      <Aviso tipo="error" titulo={e.noSePudoEnviar}>
-        {problema?.tipo === 'error' && problema.sinConexion ? <Parrafo>Parece que no hay conexión.</Parrafo> : null}
-        <Boton texto={e.reintentar} tipo="secundario" onPress={onReintentar} />
-      </Aviso>
+      <>
+        {avisoDelGuardado}
+        <Aviso tipo="error" titulo={g.noSePudoEnviar}>
+          {problema?.tipo === 'error' && problema.sinConexion ? <Parrafo>Parece que no hay conexión.</Parrafo> : null}
+          {guardado === 'en-el-telefono' ? <Parrafo>{g.quedaEnElTelefono}</Parrafo> : null}
+          <Boton texto={e.reintentar} tipo="secundario" onPress={onReintentar} />
+        </Aviso>
+      </>
     );
   }
   const conflicto: Extract<ProblemaDeSincronizacion, { tipo: 'conflicto' }> = problema?.tipo === 'conflicto' ? problema : { tipo: 'conflicto', de: 'borrador', motivo: 'SET_ALREADY_REGISTERED' };
   return (
-    <Aviso tipo="error" titulo="Hay un conflicto con lo guardado">
-      <Parrafo>{explicacionDelConflicto(conflicto)}</Parrafo>
-      {conflictos.map((s) => (
-        <View key={`${s.prescriptionId}-${s.serie.setIndex}`}>
-          <Parrafo>{`${s.nombre} · ${COPY_ENTRENAMIENTO.serie} ${s.serie.setIndex}`}</Parrafo>
-          <Boton texto="Descartar la del teléfono" tipo="peligroSecundario" onPress={() => onDescartarSerie(s)} />
-        </View>
-      ))}
-      {conflicto.de === 'borrador' && conflictos.length === 0 ? <Boton texto="Actualizar" tipo="secundario" onPress={onActualizar} /> : null}
-      {conflicto.de === 'tiempos' ? (
-        <>
-          <Boton texto={e.reintentar} tipo="secundario" onPress={onReintentar} />
-          <Boton texto="Usar los tiempos guardados" tipo="peligroSecundario" onPress={onUsarLoDelServidor} />
-        </>
-      ) : null}
-    </Aviso>
+    <>
+      {avisoDelGuardado}
+      <Aviso tipo="error" titulo="Hay un conflicto con lo guardado">
+        <Parrafo>{explicacionDelConflicto(conflicto)}</Parrafo>
+        {conflictos.map((s) => (
+          <View key={`${s.prescriptionId}-${s.serie.setIndex}`}>
+            <Parrafo>{`${s.nombre} · ${COPY_ENTRENAMIENTO.serie} ${s.serie.setIndex}`}</Parrafo>
+            <Boton texto="Descartar la del teléfono" tipo="peligroSecundario" onPress={() => onDescartarSerie(s)} />
+          </View>
+        ))}
+        {conflicto.de === 'borrador' && conflictos.length === 0 ? <Boton texto="Actualizar" tipo="secundario" onPress={onActualizar} /> : null}
+        {conflicto.de === 'tiempos' ? (
+          <>
+            <Boton texto={e.reintentar} tipo="secundario" onPress={onReintentar} />
+            <Boton texto="Usar los tiempos guardados" tipo="peligroSecundario" onPress={onUsarLoDelServidor} />
+          </>
+        ) : null}
+      </Aviso>
+    </>
   );
 }
 
@@ -715,10 +745,12 @@ export function TecnicaDelEjercicio({ visible, prescripcion: p, token, sesionPer
   ];
   return (
     <Dialogo visible={visible} titulo={p.exerciseName} onCerrar={onCerrar}>
-      <ImagenDeMedio token={token} mediaId={p.image?.mediaId ?? null} sesionPerdida={sesionPerdida} rotulo={p.image?.altText || p.exerciseName} proporcion={1} respaldo={RESPALDO_DE_EJERCICIO} />
+      {/* La ilustración, entera. Su texto alternativo describe la imagen: no es una indicación, y se muestra rotulado. */}
+      <ImagenDeMedio token={token} mediaId={p.image?.mediaId ?? null} sesionPerdida={sesionPerdida} rotulo={p.image?.altText || p.exerciseName} proporcion={1} respaldo={RESPALDO_DE_EJERCICIO} rotuloVisible={false} ajuste="contener" />
       <Parrafo tenue>{ROL_DE_LA_IMAGEN}</Parrafo>
       {p.image ? (
         <>
+          <Dato etiqueta="Descripción de la imagen" valor={p.image.altText} />
           <Dato etiqueta="Procedencia" valor={ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN[p.image.provenance]} />
           <Dato etiqueta="Autoría" valor={p.image.authorship} />
           <Dato etiqueta="Licencia" valor={textoDeLicencia(p.image.license)} />

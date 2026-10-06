@@ -36,7 +36,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, BackHandler, Image, KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { api, apiConfigurada, extra } from './src/api';
+import { api, apiConfigurada, consultarCuentaConSenal, extra } from './src/api';
 import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
 import { BarraDeZonas, SEPARACION_DE_LA_BARRA, VeloDeLaBarra } from './src/barra-de-zonas';
 import { almacenSeguro } from './src/almacen-seguro';
@@ -130,6 +130,8 @@ function Contenido() {
   // Sin sesión en el proceso, se busca la credencial guardada y se verifica con la API antes de mostrar nada (DL-012).
   const [recuperacion, setRecuperacion] = useState<EstadoDeRecuperacion | null>(() => (alMontar.estado === 'ninguna' ? { tipo: 'verificando' } : null));
   const intentoDeRecuperacion = useRef(0);
+  /** Si hay una verificación de la credencial en curso: no se lanza otra encima. */
+  const verificando = useRef(false);
   // A los 5 s de comprobar sin respuesta, la pantalla dice que está tardando y ofrece reintentar. El pedido sigue.
   const [tardando, setTardando] = useState(false);
   const [vigiaDeDemora] = useState(() => crearVigiaDeDemora(TEMPORIZADOR_DE_DEMORA, () => setTardando(true)));
@@ -262,18 +264,26 @@ function Contenido() {
    */
   const recuperar = useCallback(
     async (credencial?: CredencialGuardada) => {
+      // Un solo pedido a la vez (precierre del 2026-10-06, §5): mientras una verificación sigue en curso, no se lanza otra.
+      if (verificando.current) return;
+      verificando.current = true;
       const intento = ++intentoDeRecuperacion.current;
       setRecuperacion({ tipo: 'verificando' });
-      // Cada intento vuelve a contar los 5 s; un reintento deja sin efecto la respuesta del anterior.
+      // Cada intento vuelve a contar los 5 s del aviso.
       setTardando(false);
       vigiaDeDemora.reiniciar();
-      const resultado: Recuperacion | null = await recuperarSesion({
-        guarda,
-        verificar: (token) => api.consultarCuenta(token),
-        credencial,
-        ahora: () => ({ monotono: performance.now(), reloj: Date.now() }),
-        sigueVigente: () => intento === intentoDeRecuperacion.current,
-      });
+      let resultado: Recuperacion | null;
+      try {
+        resultado = await recuperarSesion({
+          guarda,
+          verificar: (token, senal) => consultarCuentaConSenal(token, senal),
+          credencial,
+          ahora: () => ({ monotono: performance.now(), reloj: Date.now() }),
+          sigueVigente: () => intento === intentoDeRecuperacion.current,
+        });
+      } finally {
+        verificando.current = false;
+      }
       if (!resultado || intento !== intentoDeRecuperacion.current) return;
       vigiaDeDemora.parar();
       setTardando(false);

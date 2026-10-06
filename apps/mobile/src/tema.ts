@@ -67,6 +67,10 @@ export const AZUL_NOCHE = {
   laminaBrillo: '#FFFFFF14',
   vidrioFilo: '#FFFFFF1C',
   vidrioBrillo: '#FFFFFF10',
+  // El fondo de la ilustración de un ejercicio, ajustada entera (precierre del 2026-10-06, §5): el blanco con el que el
+  // servidor aplana la transparencia al guardar la imagen. Igual en los dos temas, para que la imagen no deje franjas.
+  // No lleva texto encima.
+  fondoDeIlustracion: '#FFFFFF',
 };
 
 export const CLARO: Paleta = {
@@ -112,6 +116,7 @@ export const CLARO: Paleta = {
   laminaBrillo: '#FFFFFF00',
   vidrioFilo: '#0A1F4414',
   vidrioBrillo: '#FFFFFF00',
+  fondoDeIlustracion: '#FFFFFF',
 };
 
 export type Paleta = { readonly [K in keyof typeof AZUL_NOCHE]: string };

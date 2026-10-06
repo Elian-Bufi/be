@@ -9,15 +9,31 @@
  * también adentro: lo de otra cuenta no se lee ni se sincroniza, aunque alguien lo copie a esta clave. Cambiar de cuenta
  * deja de mostrar lo anterior, y una respuesta que llega tarde para la cuenta anterior no se aplica.
  *
- * **Cuatro estados** (`estadoDeSincronizacion`): pendiente en el teléfono, sincronizado, error recuperable con
- * «Reintentar» y conflicto. Un conflicto no se pisa: se muestra y la persona decide.
- * - Las series viajan con API-TRN-17, que reemplaza `exercises` entero con la versión que se vio. Un 409 o un 422 es
- *   conflicto: no se reintenta solo.
- * - Los eventos viajan con API-TIE-01, en lotes de hasta 30 y en orden. `RECORDED` y `DUPLICATE` salen de pendientes;
- *   `CONFLICT` y `REJECTED` quedan y se muestran.
+ * **Dónde está guardado cada dato** (precierre del 2026-10-06, §1). Son dos cosas distintas, y la pantalla dice cuál:
+ * - **El guardado en el teléfono** (`estadoDelGuardado`): leyendo, guardando, en el teléfono, falló al guardar o sin
+ *   leer. «Guardada en el teléfono» se dice solo cuando la escritura que la incluye terminó bien
+ *   (`proteccionDeSerie`). Si una escritura falla, lo escrito sigue en la app, la pantalla dice que todavía no está
+ *   protegido ante un cierre y se puede reintentar; cada cambio nuevo vuelve a intentar.
+ * - **El envío al servicio** (`estadoDeSincronizacion`): pendiente, enviando, sincronizado, error recuperable con
+ *   «Reintentar» y conflicto. Un conflicto no se pisa: se muestra y la persona decide.
+ *   - Las series viajan con API-TRN-17, que reemplaza `exercises` entero con la versión que se vio. Un 409 o un 422 es
+ *     conflicto: no se reintenta solo.
+ *   - Los eventos viajan con API-TIE-01, en lotes de hasta 30 y en orden. `RECORDED` y `DUPLICATE` salen de pendientes;
+ *     `CONFLICT` y `REJECTED` quedan y se muestran.
+ *
+ * **Una lectura fallida no es «no hay nada».**
+ * - Si el almacenamiento no responde (después de reintentar), no se escribe encima: lo nuevo queda solo en la app
+ *   (`sin-leer`) hasta que se pueda leer, y entonces se suma a lo guardado.
+ * - Si hay algo guardado que no se puede leer (otra forma, otra cuenta adentro, una sesión ilegible, o cifrado sin su
+ *   clave), antes de escribir encima se aparta tal cual a una clave de recuperación (`claveDeRecuperacion`) y se
+ *   verifica la copia. Si no se puede apartar, tampoco se escribe. Nunca se borra en silencio ni se imprime.
+ *
+ * **Si el proceso murió con una medición abierta** se pregunta al volver (`medicionDeOtroProceso`): la medición la
+ * abrió un evento que no creó este proceso. No depende de la base del reloj: con el reloj desde el arranque, el ancla
+ * es la misma después de reabrir la app, y aun así no se puede afirmar cuándo terminó.
  *
  * Es lógica pura: el almacenamiento, la API, el reloj y los identificadores se inyectan (`entrenamiento-en-curso.ts`
- * pone AsyncStorage, la API real, el reloj del proceso y expo-crypto). Así se prueba sin teléfono.
+ * pone AsyncStorage cifrado, la API real, el reloj del teléfono y expo-crypto). Así se prueba sin teléfono.
  */
 import {
   aplicarEventos,
@@ -30,12 +46,13 @@ import {
   type ClienteBe,
   type ContextoDeEventos,
   type EventoDeTiempo,
+  type MedicionAbierta,
   type Resultado,
   type SesionConObjetivos,
 } from '@be/domain';
-import { aplicarResultadosDelLote, armarAccion, CORRIDA_VACIA, corridaAbierta, loteSiguiente, type AccionDeTiempo, type Corrida, type ResultadoDeAccion } from './corrida-de-entrenamiento';
+import { aplicarResultadosDelLote, armarAccion, CORRIDA_VACIA, corridaAbierta, estadoLocal, loteSiguiente, type AccionDeTiempo, type Corrida, type ResultadoDeAccion } from './corrida-de-entrenamiento';
 import type { RelojDeSesion } from './reloj-de-sesion';
-import { conciliarSeries, ejerciciosParaGuardar, mismosDatos, type SerieLocal } from './series-de-la-sesion';
+import { conciliarSeries, ejerciciosParaGuardar, mismosDatos, type ProteccionDeSerie, type SerieLocal } from './series-de-la-sesion';
 
 /** En vivo, con los cronómetros; otro día, sin ellos: el pasado no se cronometra. */
 export type ModoDeLaSesion = 'en-vivo' | 'otro-dia';
@@ -82,14 +99,72 @@ export interface AlmacenPlano {
   borrar(clave: string): Promise<void>;
 }
 
+/** Lo que se lee de la clave de una cuenta. */
+export type LecturaGuardada =
+  | { readonly tipo: 'nada' }
+  /** El texto guardado. `enClaro`: lo escribió una versión sin cifrar; la próxima escritura lo cifra (la migración). */
+  | { readonly tipo: 'texto'; readonly texto: string; readonly enClaro: boolean }
+  /** Hay algo guardado que no se puede leer: la clave de cifrado no está, o los bytes no descifran con ella. */
+  | { readonly tipo: 'ilegible'; readonly motivo: 'sin-clave' | 'no-descifra' };
+
+/**
+ * El almacenamiento de la cuenta, como lo usa el almacén (`almacen-cifrado.ts` en el teléfono; `almacenEnClaro` en las
+ * pruebas). `leer` lanza si el almacenamiento no respondió: eso no es «no hay nada».
+ */
+export interface AlmacenDeLaCuenta {
+  leer(clave: string): Promise<LecturaGuardada>;
+  guardar(clave: string, texto: string): Promise<void>;
+  /** Copia lo guardado en `clave`, tal cual (sin descifrarlo), a `destino`, y verifica la copia. Lanza si no pudo. */
+  apartar(clave: string, destino: string): Promise<void>;
+}
+
+/** Un almacenamiento plano usado sin cifrar, en las pruebas: no hay nada que migrar, así que nada es «en claro». */
+export function almacenEnClaro(plano: AlmacenPlano): AlmacenDeLaCuenta {
+  return {
+    async leer(clave) {
+      const texto = await plano.leer(clave);
+      return texto === null ? { tipo: 'nada' } : { tipo: 'texto', texto, enClaro: false };
+    },
+    guardar: (clave, texto) => plano.guardar(clave, texto),
+    apartar: (clave, destino) => apartarTalCual(plano, clave, destino),
+  };
+}
+
+/** Copia el valor crudo de una clave a otra y verifica que la copia sea idéntica. */
+export async function apartarTalCual(plano: AlmacenPlano, clave: string, destino: string): Promise<void> {
+  const crudo = await plano.leer(clave);
+  if (crudo === null) return;
+  await plano.guardar(destino, crudo);
+  if ((await plano.leer(destino)) !== crudo) throw new Error('La copia de recuperación no quedó igual.');
+}
+
 export type ApiDelEntrenamiento = Pick<ClienteBe, 'consultarBorradorDeEjecucion' | 'guardarBorradorDeEjecucion' | 'registrarEventosDeTiempo' | 'tiemposDelBorrador'>;
 
 export interface DependenciasDelAlmacen {
-  readonly almacen: AlmacenPlano;
+  /** El de la cuenta; uno plano se usa sin cifrar (`almacenEnClaro`). */
+  readonly almacen: AlmacenDeLaCuenta | AlmacenPlano;
   readonly api: ApiDelEntrenamiento;
   readonly reloj: RelojDeSesion;
   readonly nuevoId: (prefijo: string) => string;
+  /** Espera entre los reintentos de una lectura que falló. Las pruebas pasan una que no espera. */
+  readonly esperar?: (ms: number) => Promise<void>;
 }
+
+/**
+ * Dónde está lo de la cuenta, además de la memoria de la app:
+ * - `leyendo`: todavía se está leyendo lo guardado;
+ * - `guardando`: hay un cambio que todavía no se confirmó en el teléfono;
+ * - `en-el-telefono`: todo lo que se ve está guardado en el teléfono;
+ * - `fallo-al-guardar`: la última escritura falló. Lo escrito sigue en la app, pero un cierre lo perdería;
+ * - `sin-leer`: no se pudo leer lo guardado, y no se escribe encima. Lo nuevo queda solo en la app.
+ */
+export type EstadoDelGuardado = 'leyendo' | 'guardando' | 'en-el-telefono' | 'fallo-al-guardar' | 'sin-leer';
+
+export type { ProteccionDeSerie };
+
+/** Cuántas veces se intenta leer lo guardado antes de darlo por no leído, y cuánto se espera entre intentos. */
+export const INTENTOS_DE_LECTURA = 3;
+export const ESPERA_ENTRE_LECTURAS_MS = 400;
 
 // ─── Lo guardado ────────────────────────────────────────────────────────────────────────────────
 
@@ -97,6 +172,9 @@ const VERSION = 1;
 export const PREFIJO_DE_LA_CLAVE = 'be-entrenamiento-en-curso:';
 /** La clave de una cuenta: la identidad de la sesión. */
 export const claveDeLaCuenta = (identidadId: string): string => `${PREFIJO_DE_LA_CLAVE}${identidadId}`;
+export const PREFIJO_DE_RECUPERACION = 'be-entrenamiento-recuperacion:';
+/** Adonde se aparta, tal cual, lo guardado que no se pudo leer, antes de escribir encima. Nunca se borra solo. */
+export const claveDeRecuperacion = (identidadId: string, marca: string): string => `${PREFIJO_DE_RECUPERACION}${identidadId}:${marca}`;
 
 export interface DatosDeLaCuenta {
   readonly explicacionVista: boolean;
@@ -167,18 +245,25 @@ function leerSesion(v: unknown): SesionLocal | null {
 }
 
 /**
- * Lo guardado de una cuenta, o `null`. Lo de otra cuenta no se lee aunque esté en esta clave: la identidad va adentro y
- * tiene que coincidir. Una sesión que no se puede leer se descarta: no se usa a medias.
+ * Lo guardado de una cuenta, o `null` si no se puede leer: otra forma, otra versión u otra cuenta adentro. Lo de otra
+ * cuenta no se lee aunque esté en esta clave: la identidad va adentro y tiene que coincidir. Una sesión que no se puede
+ * leer no se usa a medias, y `completa` lo dice: el almacén aparta lo guardado antes de escribir encima.
  */
-export function leerCuenta(guardado: string | null, cuenta: string): DatosDeLaCuenta | null {
-  if (guardado === null) return null;
+export function interpretarCuenta(guardado: string, cuenta: string): { readonly datos: DatosDeLaCuenta; readonly completa: boolean } | null {
   try {
     const o = JSON.parse(guardado) as Record<string, unknown>;
     if (o?.v !== VERSION || o.cuenta !== cuenta || !Array.isArray(o.sesiones)) return null;
-    return { explicacionVista: o.explicacionVista === true, sesiones: (o.sesiones as unknown[]).map(leerSesion).filter((s): s is SesionLocal => s !== null) };
+    const leidas = (o.sesiones as unknown[]).map(leerSesion);
+    const sesiones = leidas.filter((s): s is SesionLocal => s !== null);
+    return { datos: { explicacionVista: o.explicacionVista === true, sesiones }, completa: sesiones.length === leidas.length };
   } catch {
     return null;
   }
+}
+
+/** Lo guardado de una cuenta que se puede usar, o `null` (ver `interpretarCuenta`). */
+export function leerCuenta(guardado: string | null, cuenta: string): DatosDeLaCuenta | null {
+  return guardado === null ? null : (interpretarCuenta(guardado, cuenta)?.datos ?? null);
 }
 
 /** El estado que se le muestra a la persona. Un conflicto se muestra antes que cualquier otra cosa. */
@@ -191,6 +276,11 @@ export function estadoDeSincronizacion(s: SesionLocal, enviando: boolean): Estad
 
 const porSecuencia = (a: EventoDeTiempo, b: EventoDeTiempo) => a.sequence - b.sequence;
 const mismaFila = (a: SerieLocal, b: SerieLocal) => a.prescriptionId === b.prescriptionId && a.serie.setIndex === b.serie.setIndex;
+/** Una serie del teléfono con sus datos: si cambia lo registrado, ya no es la que se guardó. */
+const huellaDeSerie = (l: SerieLocal): string => JSON.stringify([l.prescriptionId, l.performedExerciseVersionId, l.serie]);
+/** Las series del teléfono de cada sesión, como quedaron en una escritura. */
+const huellasDe = (sesiones: readonly SesionLocal[]): ReadonlyMap<string, ReadonlySet<string>> => new Map(sesiones.map((s) => [s.draftId, new Set(s.series.map(huellaDeSerie))] as const));
+const esperarDeVerdad = (ms: number) => new Promise<void>((resolver) => setTimeout(resolver, ms));
 
 type Falla = Extract<Resultado<unknown>, { readonly ok: false }>;
 
@@ -204,6 +294,8 @@ function problemaDe(r: Falla, de: 'borrador' | 'tiempos'): ProblemaDeSincronizac
 // ─── El almacén ─────────────────────────────────────────────────────────────────────────────────
 
 export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
+  const almacen: AlmacenDeLaCuenta = 'apartar' in deps.almacen ? deps.almacen : almacenEnClaro(deps.almacen);
+  const esperar = deps.esperar ?? esperarDeVerdad;
   let cuenta: string | null = null;
   let token: string | null = null;
   let lista = false;
@@ -224,17 +316,115 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
    */
   let esperandoCuenta: (() => void)[] = [];
 
+  // ─── El guardado en el teléfono ───
+  /** Cuántos cambios hubo desde que se abrió la cuenta, y hasta cuál confirmó una escritura. */
+  let cambios = 0;
+  let confirmado = 0;
+  /** La última escritura falló y no hubo una posterior que la cubriera. */
+  let falloAlGuardar = false;
+  /** No se pudo leer lo guardado ni apartarlo: no se escribe encima. Lo nuevo queda solo en la app. */
+  let sinLeer = false;
+  /** Las series del teléfono, por sesión, que están en la última escritura confirmada. */
+  let enElTelefono: ReadonlyMap<string, ReadonlySet<string>> = new Map();
+  /** Los eventos que creó este proceso. Una medición abierta por otro (la app se cerró) se pregunta al volver. */
+  const eventosDelProceso = new Set<string>();
+  /** Lo leído hay que reescribirlo en cuanto la cuenta quede lista (lo sumado, lo apartado, una versión sin cifrar). */
+  let hayQueReescribir = false;
+
   const avisar = () => {
     version++;
     for (const oyente of [...oyentes]) oyente();
   };
 
-  /** Escribe todo lo de la cuenta, en orden: la última escritura es la del último cambio. Nunca antes de haber leído. */
+  /**
+   * Escribe todo lo de la cuenta, en orden: la última escritura es la del último cambio. Nunca antes de haber leído, y
+   * nunca encima de lo que no se pudo leer. El resultado de cada escritura queda en el estado: una que falla no se
+   * esconde, y la siguiente que termina bien la cubre.
+   */
   function persistir(): void {
     if (!cuenta || !lista) return;
+    cambios++;
+    if (sinLeer) return;
     const clave = claveDeLaCuenta(cuenta);
-    const guardado = serializarCuenta(cuenta, { explicacionVista, sesiones: [...sesiones.values()] });
-    escritura = escritura.then(() => deps.almacen.guardar(clave, guardado)).catch(() => undefined);
+    const gen = generacion;
+    const esteCambio = cambios;
+    const instantanea = [...sesiones.values()];
+    const guardado = serializarCuenta(cuenta, { explicacionVista, sesiones: instantanea });
+    escritura = escritura
+      .then(() => almacen.guardar(clave, guardado))
+      .then(
+        () => {
+          if (gen !== generacion) return;
+          if (esteCambio > confirmado) {
+            confirmado = esteCambio;
+            enElTelefono = huellasDe(instantanea);
+          }
+          if (confirmado === cambios) falloAlGuardar = false;
+          avisar();
+        },
+        () => {
+          if (gen !== generacion) return;
+          if (esteCambio > confirmado) falloAlGuardar = true;
+          avisar();
+        },
+      );
+  }
+
+  function estadoDelGuardado(): EstadoDelGuardado {
+    if (!cuenta || !lista) return 'leyendo';
+    if (sinLeer) return 'sin-leer';
+    if (confirmado < cambios) return falloAlGuardar ? 'fallo-al-guardar' : 'guardando';
+    return 'en-el-telefono';
+  }
+
+  /** Lee lo guardado, con reintentos: un almacenamiento que no responde tres veces es una lectura fallida. */
+  async function leerConReintentos(clave: string): Promise<LecturaGuardada | null> {
+    for (let intento = 1; ; intento++) {
+      try {
+        return await almacen.leer(clave);
+      } catch {
+        if (intento >= INTENTOS_DE_LECTURA) return null;
+        await esperar(ESPERA_ENTRE_LECTURAS_MS);
+      }
+    }
+  }
+
+  /**
+   * Lee y aplica lo guardado de la cuenta. Lo que no se puede leer se aparta antes de permitir una escritura; si no se
+   * puede leer ni apartar, la cuenta queda `sin-leer`. Con sesiones ya en la app (las de un `sin-leer` anterior), lo
+   * guardado se suma: lo que está en la app gana, porque es lo último que hizo la persona, y lo guardado queda apartado.
+   */
+  async function cargar(identidadId: string, gen: number): Promise<void> {
+    const clave = claveDeLaCuenta(identidadId);
+    const leido = await leerConReintentos(clave);
+    if (gen !== generacion) return;
+    if (leido === null) {
+      sinLeer = true;
+      return;
+    }
+    const interpretado = leido.tipo === 'texto' ? interpretarCuenta(leido.texto, identidadId) : null;
+    const enLaApp = sesiones.size > 0;
+    const hayQueApartar = leido.tipo === 'ilegible' || (leido.tipo === 'texto' && (interpretado === null || !interpretado.completa || enLaApp));
+    if (hayQueApartar) {
+      try {
+        await almacen.apartar(clave, claveDeRecuperacion(identidadId, deps.nuevoId('recuperacion')));
+      } catch {
+        if (gen !== generacion) return;
+        sinLeer = true;
+        return;
+      }
+      if (gen !== generacion) return;
+    }
+    const datos = interpretado?.datos ?? { explicacionVista: false, sesiones: [] };
+    const guardadas = new Map(datos.sesiones.map((s) => [s.draftId, s] as const));
+    for (const [draftId, s] of sesiones) guardadas.set(draftId, s);
+    sesiones = guardadas;
+    explicacionVista = explicacionVista || datos.explicacionVista;
+    sinLeer = false;
+    // Lo leído ya está en el teléfono. Si hay que reescribirlo (lo que se sumó, lo apartado o una versión sin cifrar),
+    // se escribe en cuanto la cuenta queda lista.
+    enElTelefono = huellasDe(datos.sesiones);
+    hayQueReescribir = enLaApp || hayQueApartar || (leido.tipo === 'texto' && leido.enClaro);
   }
 
   function cambiar(draftId: string, cambio: (s: SesionLocal) => SesionLocal): SesionLocal | null {
@@ -255,6 +445,21 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
     };
   }
 
+  /** Lo de la cuenta en memoria, en blanco: al abrir otra cuenta o al cerrar la sesión. */
+  function enBlanco(): void {
+    lista = false;
+    explicacionVista = false;
+    sesiones = new Map();
+    enVuelo.clear();
+    otraVuelta.clear();
+    cambios = 0;
+    confirmado = 0;
+    falloAlGuardar = false;
+    sinLeer = false;
+    hayQueReescribir = false;
+    enElTelefono = new Map();
+  }
+
   function abrirCuenta(identidadId: string, nuevoToken: string): Promise<void> {
     if (cuenta === identidadId) {
       token = nuevoToken;
@@ -263,26 +468,16 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
     const gen = ++generacion;
     cuenta = identidadId;
     token = nuevoToken;
-    lista = false;
-    explicacionVista = false;
-    sesiones = new Map();
-    enVuelo.clear();
-    otraVuelta.clear();
+    enBlanco();
     avisar();
     // Hasta leer lo guardado no se crea ni se escribe nada (`preparar` y `persistir` lo esperan): así una sesión nueva no
-    // pisa la que estaba guardada.
+    // pisa la que estaba guardada. El reloj del teléfono también tiene que estar listo antes del primer evento.
     lectura = (async () => {
-      let guardado: string | null = null;
-      try {
-        guardado = await deps.almacen.leer(claveDeLaCuenta(identidadId));
-      } catch {
-        guardado = null;
-      }
+      await Promise.all([cargar(identidadId, gen), deps.reloj.listo?.().catch(() => undefined)]);
       if (gen !== generacion) return;
-      const leido = leerCuenta(guardado, identidadId);
-      sesiones = new Map((leido?.sesiones ?? []).map((s) => [s.draftId, s] as const));
-      explicacionVista = leido?.explicacionVista ?? false;
       lista = true;
+      if (hayQueReescribir) persistir();
+      hayQueReescribir = false;
       avisar();
       const esperando = esperandoCuenta;
       esperandoCuenta = [];
@@ -291,16 +486,32 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
     return lectura;
   }
 
+  /**
+   * «Reintentar» cuando no se pudo leer lo guardado: si ahora se lee, se suma a lo que está en la app (lo guardado queda
+   * apartado antes de escribir) y se vuelve a guardar todo.
+   */
+  async function reintentarLectura(): Promise<void> {
+    if (!cuenta || !lista || !sinLeer) return;
+    const gen = generacion;
+    await cargar(cuenta, gen);
+    if (gen !== generacion) return;
+    if (hayQueReescribir) persistir();
+    hayQueReescribir = false;
+    avisar();
+  }
+
+  /** «Reintentar» cuando falló el guardado en el teléfono: se vuelve a escribir todo lo de la cuenta. */
+  function reintentarGuardado(): Promise<unknown> {
+    if (cuenta && lista && !sinLeer && confirmado < cambios) persistir();
+    return escritura;
+  }
+
   /** Al cerrar la sesión o cambiar de cuenta: se deja de mostrar y de sincronizar. Lo guardado queda en su clave. */
   function cerrarCuenta(): void {
     generacion++;
     cuenta = null;
     token = null;
-    lista = false;
-    explicacionVista = false;
-    sesiones = new Map();
-    enVuelo.clear();
-    otraVuelta.clear();
+    enBlanco();
     avisar();
   }
 
@@ -432,6 +643,31 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
     cerrarCuenta,
     sincronizar,
     sincronizarYEsperar,
+    reintentarLectura,
+    reintentarGuardado,
+    /** El reloj con el que se marcan los eventos: el conteo en vivo usa el mismo, para no mezclar bases. */
+    reloj: deps.reloj,
+    /** Dónde está lo de la cuenta además de la memoria: lo que la pantalla dice del guardado en el teléfono. */
+    estadoDelGuardado,
+    /**
+     * Dónde está una serie registrada que todavía no se envió. «En el teléfono» solo si está en la última escritura
+     * confirmada, con los mismos datos.
+     */
+    proteccionDeSerie(draftId: string, serie: SerieLocal): ProteccionDeSerie {
+      if (enElTelefono.get(draftId)?.has(huellaDeSerie(serie))) return 'en-el-telefono';
+      return sinLeer || falloAlGuardar ? 'solo-en-la-app' : 'guardando';
+    },
+    /**
+     * La medición abierta que no abrió este proceso: la app se cerró (o el sistema la cerró) con un descanso o una serie
+     * cronometrada en curso, o la abrió otro dispositivo. `null` si no hay ninguna abierta o si se abrió acá. La app
+     * pregunta y nunca la cierra sola.
+     */
+    medicionDeOtroProceso(draftId: string): MedicionAbierta | null {
+      const s = sesiones.get(draftId);
+      if (!s) return null;
+      const abierta = estadoLocal(s.corrida).medicionAbierta;
+      return abierta && !eventosDelProceso.has(abierta.inicio.eventId) ? abierta : null;
+    },
     lista: (): boolean => lista,
     /** Se cumple cuando hay una cuenta abierta y lo guardado ya se leyó. Sin cuenta, espera a que se abra una. */
     listo: (): Promise<void> => (cuenta ? lectura : new Promise<void>((resolver) => esperandoCuenta.push(resolver))),
@@ -512,6 +748,7 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
       const r = armarAccion(s.corrida, accion, contextoDe(s, accion.tipo === 'iniciar'), { reloj: deps.reloj, nuevoId: deps.nuevoId });
       if (r.ok) {
         const nuevos = r.eventos;
+        for (const e of nuevos) eventosDelProceso.add(e.eventId);
         cambiar(draftId, (x) => ({ ...x, corrida: { registrados: x.corrida.registrados, pendientes: [...x.corrida.pendientes, ...nuevos] } }));
       }
       return r;

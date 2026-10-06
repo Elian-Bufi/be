@@ -49,7 +49,7 @@ import { AccessibilityInfo, Alert, Text, useWindowDimensions, View } from 'react
 import { estadoDeSincronizacion, type SesionLocal } from '../almacen-de-entrenamiento';
 import { api } from '../api';
 import { useCambiosSinGuardar } from '../cambios-sin-guardar';
-import { corridaAbierta, enVivoDeLaCorrida, estadoLocal, eventosDeLaCorrida, medicionDeOtroProceso, type AccionDeTiempo, type MotivoDeRechazoLocal } from '../corrida-de-entrenamiento';
+import { corridaAbierta, enVivoDeLaCorrida, estadoLocal, eventosDeLaCorrida, type AccionDeTiempo, type MotivoDeRechazoLocal } from '../corrida-de-entrenamiento';
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { entrenamientoLocal, useEntrenamientoLocal } from '../entrenamiento-en-curso';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
@@ -58,7 +58,6 @@ import { IconoDeEjercicio } from '../iconos-de-entrenamiento';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
-import { relojDelProceso } from '../reloj-de-sesion';
 import {
   bandaDeLaSerie,
   basesDeLaPrescripcion,
@@ -76,9 +75,11 @@ import {
   puedeRegistrar,
   resumenDelRegistro,
   sesionDesdeLaOcurrencia,
+  AVISO_SIN_PLAN_POR_SERIE,
   unidadDelEjercicio,
   type ErroresDeFila,
   type FilaEscrita,
+  type SerieLocal,
   type Unidad,
 } from '../series-de-la-sesion';
 import { Aviso, Boton, Campo, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
@@ -667,15 +668,16 @@ export function PantallaDeSesion({
   const activoDeLaCorrida = conCorrida ? estado.ejercicioActivo : null;
   const p = prescripciones.find((x) => x.prescriptionId === (activoDeLaCorrida ?? local?.foco?.prescriptionId)) ?? prescripciones[0] ?? null;
   const unidad: Unidad = p ? (unidades[p.prescriptionId] ?? unidadDelEjercicio(p)) : 'kg';
-  const filas = p ? filasDelEjercicio(p, guardadasDe(local?.borrador ?? null, p.prescriptionId), local?.series ?? [], extras[p.prescriptionId] ?? 0) : [];
+  const proteccion = (l: SerieLocal) => almacen.proteccionDeSerie(draftId, l);
+  const filas = p ? filasDelEjercicio(p, guardadasDe(local?.borrador ?? null, p.prescriptionId), local?.series ?? [], extras[p.prescriptionId] ?? 0, proteccion) : [];
   const focoGuardado = local?.foco && p && local.foco.prescriptionId === p.prescriptionId ? local.foco.setIndex : null;
   const filaActiva = filas.find((f) => f.setIndex === focoGuardado) ?? primeraSinRegistrar(filas) ?? filas[filas.length - 1] ?? null;
   const claveDeFila = p && filaActiva ? `${p.prescriptionId}:${filaActiva.setIndex}` : '';
   const escrita = escritas[claveDeFila] ?? FILA_VACIA;
-  const vivo = local ? enVivoDeLaCorrida(local.corrida, relojDelProceso) : null;
+  const vivo = local ? enVivoDeLaCorrida(local.corrida, almacen.reloj) : null;
   const calculo = local ? calcularTiempos(eventosDeLaCorrida(local.corrida), recomendadoDe) : null;
   const abierta = estado?.medicionAbierta ?? null;
-  const deOtroProceso = local && modo === 'en-vivo' ? medicionDeOtroProceso(local.corrida, relojDelProceso.ancla) : null;
+  const deOtroProceso = local && modo === 'en-vivo' ? almacen.medicionDeOtroProceso(draftId) : null;
   const envio = local ? estadoDeSincronizacion(local, almacen.enviando(draftId)) : 'sincronizado';
 
   // Sin pérdidas silenciosas: una serie escrita y sin registrar, o el motivo y la hora del resumen, preguntan al salir.
@@ -753,7 +755,7 @@ export function PantallaDeSesion({
     if (!destino) return;
     // Pasar a otro ejercicio es explícito: con la corrida, marca el ejercicio activo. Ver su técnica no.
     if (conCorrida && estado?.ejercicioActivo !== prescriptionId && !hacer({ tipo: 'activar-ejercicio', prescriptionId })) return;
-    const filasDestino = filasDelEjercicio(destino, guardadasDe(borrador, prescriptionId), local?.series ?? [], extras[prescriptionId] ?? 0);
+    const filasDestino = filasDelEjercicio(destino, guardadasDe(borrador, prescriptionId), local?.series ?? [], extras[prescriptionId] ?? 0, proteccion);
     entrenamientoLocal.enfocar(draftId, { prescriptionId, setIndex: (primeraSinRegistrar(filasDestino) ?? filasDestino[0])?.setIndex ?? 1 });
     setErrores({});
     setDialogo(null);
@@ -938,9 +940,12 @@ export function PantallaDeSesion({
   const estadoDelEnvio = (
     <EstadoDelEnvio
       estado={envio}
+      guardado={almacen.estadoDelGuardado()}
       problema={local.problema}
       conflictos={conflictos}
       onReintentar={() => void entrenamientoLocal.reintentar(draftId)}
+      onReintentarGuardado={() => void entrenamientoLocal.reintentarGuardado()}
+      onReintentarLectura={() => void entrenamientoLocal.reintentarLectura()}
       onActualizar={() => void entrenamientoLocal.actualizarBorrador(draftId)}
       onUsarLoDelServidor={() =>
         void preguntar('Usar los tiempos guardados', 'Se descartan los tiempos marcados en este teléfono que todavía no se guardaron. Lo ya guardado no cambia.', 'Descartar los del teléfono').then((si) => {
@@ -1053,7 +1058,11 @@ export function PantallaDeSesion({
     <View>
       <BarraDeLaSesion nombre={s.label} temporizador={temporizador} onVerRutina={() => setDialogo({ tipo: 'rutina' })} />
       {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
-      {local.objetivosGenerales ? <Aviso tipo="info" titulo="No pudimos leer los objetivos de cada serie. Se muestran los generales de cada ejercicio." /> : null}
+      {local.objetivosGenerales ? (
+        <Aviso tipo="info" titulo={AVISO_SIN_PLAN_POR_SERIE}>
+          <Boton texto={COPY_ENTRENAMIENTO_POR_SERIE.reintentar} tipo="secundario" onPress={() => void leer()} deshabilitado={carga === 'leyendo'} />
+        </Aviso>
+      ) : null}
       {borrador?.granularity === 'EXERCISE_OR_SESSION' ? (
         <Aviso tipo="info" titulo={`Esta sesión se empezó a registrar ${ETIQUETA_DE_GRANULARIDAD.EXERCISE_OR_SESSION.toLowerCase()}.`}>
           <Boton texto="Registrar por serie" tipo="secundario" onPress={() => void cambiarAPorSerie()} deshabilitado={ocupado} />
