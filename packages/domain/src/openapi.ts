@@ -2085,7 +2085,8 @@ const DEFINIDAS: readonly Operacion[] = [
     idempotencia: true,
     query: [{ nombre: 'expectedVersion', descripcion: 'La versión del recurso que se vio.', schema: { type: 'string' }, obligatorio: true }],
     exitos: [{ status: 200, schema: RecetaResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    // El cuerpo es vacío y estricto: un campo de más es UNKNOWN_FIELD, como en cualquier escritura.
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
     fuente: 'DEUDA_LEGAJO DL-119, DL-120',
   },
   {
@@ -2145,7 +2146,8 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SIGNED_URL',
     idempotencia: false,
     exitos: [{ status: 200, binario: 'image/jpeg' }],
-    errores: { 404: ['RESOURCE_NOT_FOUND'] },
+    // 09 §3.1: un parámetro de query desconocido es 400, también en una ruta firmada (la ruta se usa tal como llega).
+    errores: { 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: '09v12 §24 · 08 §21 · DEUDA_LEGAJO DL-120',
   },
   {
@@ -2156,7 +2158,8 @@ const DEFINIDAS: readonly Operacion[] = [
     autenticacion: 'SESSION',
     idempotencia: true,
     exitos: [{ status: 200, schema: MedioResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    // El cuerpo es vacío y estricto: un campo de más es UNKNOWN_FIELD, como en cualquier escritura.
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
     fuente: '08:451 · 08 §21 · DEUDA_LEGAJO DL-120',
   },
   // ─── ING: registro de comidas v2 (DL-121), para la APK nueva ────────────────────────────────────

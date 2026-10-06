@@ -28,6 +28,7 @@ import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoService } from './catalogo.service';
 import { EjecutorNutricional } from './ejecutor';
 import { registrarEventoDeNutricion } from './eventos';
+import { opcionesDeRecetaNoAdmitidas } from './opciones-de-receta';
 
 type Tx = Prisma.TransactionClient;
 const RECURSO_COMIDA = 'ComidaHabitual';
@@ -279,6 +280,9 @@ export class HabitualesNutricionalesService {
    * comida que se guarda: sin identificadores de nodo, y sin cantidades salvo pedido.
    */
   private async comidaVerificada(tx: Tx, profesionalId: string, entrada: ComidaEntrada, conCantidades: boolean): Promise<ComidaEntrada> {
+    // DL-119: una comida habitual no lleva opciones de receta (la porción se arma en el plan): se rechaza, no se descarta.
+    const conReceta = opcionesDeRecetaNoAdmitidas([{ options: entrada.options, ruta: 'structure' }]);
+    if (conReceta.length > 0) throw new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'Una comida habitual no lleva opciones de receta: agregá la receta en el plan.', { issues: conReceta });
     const base = sinIdentificadoresDeComida(entrada);
     const guardar = conCantidades ? base : sinCantidadesDeLaComida(base);
     const contenido = normalizarEstructura({ dayTypes: [{ label: 'Habitual', meals: [guardar] }] }, randomUUID);

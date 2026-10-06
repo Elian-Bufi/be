@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { CrearElementoDeCatalogoRequestSchema, type ElementoDeCatalogo, type ElementoResuelto, type FuenteExterna } from '@be/domain';
+import { CrearElementoDeCatalogoRequestSchema, type ElementoDeCatalogo, type ElementoResuelto, type FuenteExternaDeAlimento } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
-import { errores } from '../http/errores';
 import { escribirCursor, leerConsultaDeLista } from '../http/paginacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
@@ -10,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { EjecutorNutricional } from './ejecutor';
 import { registrarEventoDeNutricion } from './eventos';
+import { exigirProfesionalDeNutricion as exigirNutricion } from './profesional-de-nutricion';
 
 type Cliente = Prisma.TransactionClient | PrismaService;
 
@@ -21,14 +21,18 @@ interface FilaDeCatalogo {
   disponible: boolean;
   procedencia: 'BE_SYNTHETIC_SEED' | 'PROFESSIONAL_MANUAL' | 'CONTROLLED_IMPORT';
   momentoDeRegistro: Date;
-  /** De dónde vino un alimento importado de Open Food Facts (WP-08; RF-060). Vive en la procedencia de su versión. */
-  fuenteExterna: FuenteExterna | null;
+  /**
+   * De dónde vino un alimento importado (WP-08; RF-060) o sembrado de una fuente de referencia (USDA, DL-119). Vive en la
+   * procedencia de su versión.
+   */
+  fuenteExterna: FuenteExternaDeAlimento | null;
 }
 
 /**
  * Catálogo nutricional propio (RF-027; API-NUT-13 y API-INT-NUT-01).
  * - Ítem con identificador estable y versiones inmutables (REG-06-99). La vigente es la terminal de la cadena.
- * - Ámbitos (REG-06-135): el catálogo sembrado es global; lo que carga un profesional es de su ámbito.
+ * - Ámbitos (REG-06-135): lo sembrado por una migración es global (sin profesional que lo cargue: el catálogo sintético de
+ *   WP-04 y los alimentos de referencia de USDA, DL-119); lo que carga o importa un profesional es de su ámbito.
  * - Un cambio del catálogo no toca planes activados: la instantánea guarda su propia copia (REG-06-101).
  * - No es dato de salud (08:168), pero solo lo usa un profesional con Nutrición verificada y habilitada.
  */
@@ -52,7 +56,7 @@ export class CatalogoService {
         JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
        WHERE NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
          AND v."disponibilidad" = 'DISPONIBLE'
-         AND (e."procedencia" = 'BE_SYNTHETIC_SEED' OR e."creado_por_id" = ${actor.identidadId}::uuid)
+         AND (e."creado_por_id" IS NULL OR e."creado_por_id" = ${actor.identidadId}::uuid)
          AND v."nombre" ILIKE ${patron}
          AND (${cursor === null} OR (v."momento_de_registro", v."id") < (${cursor?.momento ?? new Date(0)}, ${cursor?.id ?? '00000000-0000-0000-0000-000000000000'}::uuid))
        ORDER BY v."momento_de_registro" DESC, v."id" DESC
@@ -140,18 +144,51 @@ export class CatalogoService {
        WHERE e."id" = ANY(${validos}::uuid[])
          AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
          AND v."disponibilidad" = 'DISPONIBLE'
-         AND (e."procedencia" = 'BE_SYNTHETIC_SEED' OR e."creado_por_id" = ${profesionalId}::uuid)`;
+         AND (e."creado_por_id" IS NULL OR e."creado_por_id" = ${profesionalId}::uuid)`;
   }
 
   /** Solo un profesional con Nutrición verificada y habilitada usa el catálogo nutricional (también para importar, WP-08). */
   async exigirProfesionalDeNutricion(cliente: Cliente, identidadId: string): Promise<void> {
-    const [fila] = await cliente.$queryRaw<{ ok: boolean }[]>`
-      SELECT EXISTS (
-        SELECT 1 FROM "verificacion_profesional" vp
-          JOIN "habilitacion" h ON h."identidad_id" = vp."identidad_id" AND h."alcance" = vp."alcance" AND h."estado" = 'CONCEDIDA'
-         WHERE vp."identidad_id" = ${identidadId}::uuid AND vp."alcance" = 'NUTRICION' AND vp."estado" = 'VERIFICADO') AS "ok"`;
-    if (!fila?.ok) throw errores.accionNoPermitida();
+    await exigirNutricion(cliente, identidadId);
   }
+
+  /**
+   * DL-119 · las versiones que cita una receta, por elemento **y** versión: la versión es de ese elemento, está
+   * disponible y el elemento es global o propio de este profesional. Las que no cumplen no figuran en el mapa (quien llama
+   * responde CATALOG_REFERENCE_INVALID con la ruta). No exige que sea la versión vigente: una receta conserva la versión
+   * que citó aunque el catálogo emita otra.
+   */
+  async versionesCitables(cliente: Cliente, profesionalId: string, ids: readonly string[]): Promise<Map<string, VersionCitable>> {
+    const validos = [...new Set(ids)].filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+    if (validos.length === 0) return new Map();
+    const filas = await cliente.$queryRaw<VersionCitable[]>`
+      SELECT v."id"::text AS "versionId", e."id"::text AS "elementoId", v."nombre", v."composicion"
+        FROM "version_de_elemento_nutricional" v
+        JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
+       WHERE v."id" = ANY(${validos}::uuid[])
+         AND v."disponibilidad" = 'DISPONIBLE'
+         AND (e."creado_por_id" IS NULL OR e."creado_por_id" = ${profesionalId}::uuid)`;
+    return new Map(filas.map((f) => [f.versionId, f]));
+  }
+
+  /** La composición y el nombre de versiones ya citadas (por una receta o una instantánea), sin filtrar por ámbito. */
+  async versionesPorId(cliente: Cliente, ids: readonly string[]): Promise<Map<string, VersionCitable>> {
+    const validos = [...new Set(ids)].filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+    if (validos.length === 0) return new Map();
+    const filas = await cliente.$queryRaw<VersionCitable[]>`
+      SELECT v."id"::text AS "versionId", v."elemento_id"::text AS "elementoId", v."nombre", v."composicion"
+        FROM "version_de_elemento_nutricional" v
+       WHERE v."id" = ANY(${validos}::uuid[])`;
+    return new Map(filas.map((f) => [f.versionId, f]));
+  }
+}
+
+/** Una versión del catálogo citada por su identidad: de qué elemento es, cómo se llama y su composición. */
+export interface VersionCitable {
+  readonly versionId: string;
+  readonly elementoId: string;
+  readonly nombre: string;
+  readonly composicion: ElementoDeCatalogo['composition'];
 }
 
 function elementoApi(f: FilaDeCatalogo): ElementoDeCatalogo {

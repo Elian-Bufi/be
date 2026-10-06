@@ -7,6 +7,7 @@
  * - WP-06: TEST-CT-TRN por tramos; lo que todavía no tiene servicio figura en EN_CONSTRUCCION.
  * - WP-07: TEST-CT-FRM-01 a 08 (catálogo, Solicitud, Respuesta, rectificación).
  * - WP-08: TEST-CT-INT-NUT-02/03 y TEST-CT-INT-TRN-02/03, contra un proveedor falso local (D-H).
+ * - WP-NUTRICION-RECETAS: las familias REC (DL-119), MED (DL-120) e ING (DL-121), con las rutas firmadas de MED-02 y 04.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -60,6 +61,7 @@ import {
   estructuraDeEntrenamiento,
 } from './soporte-entrenamiento';
 import { levantarProveedorFalso, OFF, WGER, type ProveedorFalso } from './soporte-proveedores';
+import { alimentosUsda, cuerpoDeReceta, estructuraConRecetas, FOTOS, leerContenido, RECETAS, subirBytes, subirImagen } from './soporte-recetas';
 
 interface Observada {
   metodo: string;
@@ -1075,6 +1077,151 @@ it('TEST-CT (PF-02 · DL-100/101/102): «Antecedentes para entrenamiento» — F
   });
   expect((await pro.post(evaluar).send(citando('v1')).expect(409)).body.error.code).toBe('VERSION_CONFLICT');
   await pro.post(evaluar).send(citando('v2')).expect(201);
+});
+
+it('TEST-CT (WP-NUTRICION-RECETAS): las 18 operaciones REC, MED e ING, con éxitos y errores declarados', async () => {
+  const c = await circuitoListoParaPlanificar(app, 'contrato-recetas');
+  const pro = conSesion(app, c.pro.token);
+  const ase = conSesion(app, c.ase.token);
+  const servidor = app.getHttpServer();
+  const ajeno = randomUUID();
+  const alimentos = await alimentosUsda(app, c.pro);
+  const cuerpo = cuerpoDeReceta(RECETAS[0]!, alimentos);
+
+  // REC-01 · REC-07
+  const claveDeReceta = claveDeIdempotencia();
+  const receta = (await pro.post('/api/v1/nutrition/recipes', claveDeReceta).send(cuerpo).expect(201)).body.data;
+  await pro.post('/api/v1/nutrition/recipes', claveDeReceta).send({ ...cuerpo, name: 'Otro nombre' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post('/api/v1/nutrition/recipes').send({ ...cuerpo, total: 1 }).expect(400); // UNKNOWN_FIELD: el cliente no manda totales
+  await request(servidor).post('/api/v1/nutrition/recipes').set('Authorization', `Bearer ${c.pro.token}`).send(cuerpo).expect(400); // sin clave
+  await pro.post('/api/v1/nutrition/recipes').send({ ...cuerpo, ingredients: [{ ...cuerpo.ingredients[0]!, catalogItemVersionId: ajeno }] }).expect(422); // CATALOG_REFERENCE_INVALID
+  await ase.post('/api/v1/nutrition/recipes').send(cuerpo).expect(403);
+  await request(servidor).post('/api/v1/nutrition/recipes').set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo).expect(401);
+  await pro.post('/api/v1/nutrition/recipe-calculations').send({ servings: 2, ingredients: cuerpo.ingredients }).expect(200);
+  await pro.post('/api/v1/nutrition/recipe-calculations').send({ servings: 2 }).expect(400);
+  await pro.post('/api/v1/nutrition/recipe-calculations').send({ servings: 1, ingredients: [{ ...cuerpo.ingredients[0]!, catalogItemId: ajeno }] }).expect(422);
+  await ase.post('/api/v1/nutrition/recipe-calculations').send({ servings: 1, ingredients: cuerpo.ingredients }).expect(403);
+  // REC-02 · REC-03
+  await pro.get('/api/v1/nutrition/recipes?limit=5').expect(200);
+  await pro.get('/api/v1/nutrition/recipes?cursor=basura').expect(400); // INVALID_CURSOR
+  await pro.get('/api/v1/nutrition/recipes?orden=asc').expect(400);
+  await ase.get('/api/v1/nutrition/recipes').expect(403);
+  await pro.get(`/api/v1/nutrition/recipes/${receta.recipeId}`).expect(200);
+  await pro.get(`/api/v1/nutrition/recipes/${ajeno}`).expect(404);
+  await pro.get(`/api/v1/nutrition/recipes/${receta.recipeId}?x=1`).expect(400);
+  await ase.get(`/api/v1/nutrition/recipes/${receta.recipeId}`).expect(403);
+  // REC-04
+  const editar = (id: string, extra: Record<string, unknown>) => request(servidor).patch(`/api/v1/nutrition/recipes/${id}`).set('Authorization', `Bearer ${c.pro.token}`).set('Idempotency-Key', claveDeIdempotencia()).send({ ...cuerpo, ...extra });
+  const editada = (await editar(receta.recipeId, { expectedVersion: receta.version }).expect(200)).body.data;
+  await editar(receta.recipeId, { expectedVersion: receta.version }).expect(409); // VERSION_CONFLICT
+  await editar(ajeno, { expectedVersion: 'v1' }).expect(404);
+  await editar(receta.recipeId, { expectedVersion: editada.version, ingredients: [{ ...cuerpo.ingredients[0]!, catalogItemVersionId: ajeno }] }).expect(422);
+  await editar(receta.recipeId, { expectedVersion: editada.version, extra: true }).expect(400);
+  // MED-01 · MED-02
+  const intencion = (cuerpoDeIntencion: Record<string, unknown>, parte = pro, clave?: string) =>
+    parte.post('/api/v1/me/media/upload-intents', clave).send({ purpose: 'RECIPE_REFERENCE', contentType: 'image/png', byteSize: FOTOS[0]!.length, provenance: 'AI_GENERATED', authorship: null, ...cuerpoDeIntencion });
+  const claveDeIntencion = claveDeIdempotencia();
+  const subida = (await intencion({}, pro, claveDeIntencion).expect(201)).body.data;
+  await intencion({ byteSize: 10 }, pro, claveDeIntencion).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await intencion({ contentType: 'image/gif' }).expect(422); // FILE_TYPE_NOT_ALLOWED
+  await intencion({ byteSize: 10 * 1024 * 1024 + 1 }).expect(422); // FILE_SIZE_NOT_ALLOWED
+  await intencion({ purpose: 'MEAL_EVIDENCE', provenance: 'AI_GENERATED' }, ase).expect(422); // VALIDATION_FAILED
+  await intencion({}, ase).expect(403);
+  await intencion({ extra: 1 }).expect(400);
+  await request(servidor).post('/api/v1/me/media/upload-intents').set('Idempotency-Key', claveDeIdempotencia()).send({}).expect(401);
+  const imagen = (await subirBytes(app, subida.uploadPath, FOTOS[0]!, 'image/png').expect(200)).body.data;
+  await subirBytes(app, subida.uploadPath, FOTOS[0]!, 'image/png').expect(200); // la misma subida: el mismo medio
+  await subirBytes(app, subida.uploadPath, FOTOS[1]!, 'image/png').expect(409); // INVALID_STATE_TRANSITION
+  await subirBytes(app, '/media/uploads/no.es-una-ruta', FOTOS[0]!, 'image/png').expect(404);
+  const otraSubida = (await intencion({}).expect(201)).body.data;
+  await subirBytes(app, otraSubida.uploadPath, FOTOS[0]!, 'image/gif').expect(422); // FILE_TYPE_NOT_ALLOWED
+  await subirBytes(app, otraSubida.uploadPath, Buffer.from('no es una imagen'), 'image/png').expect(422); // FILE_CONTENT_INVALID
+  await subirBytes(app, otraSubida.uploadPath, Buffer.alloc(10 * 1024 * 1024 + 1, 1), 'image/png').expect(422); // FILE_SIZE_NOT_ALLOWED
+  await request(servidor).put(`/api/v1${otraSubida.uploadPath}?x=1`).set('Content-Type', 'image/png').send(FOTOS[0]!).expect(400);
+  // REC-05 · REC-06
+  const asociada = (await pro.put(`/api/v1/nutrition/recipes/${receta.recipeId}/image`).send({ mediaId: imagen.mediaId, expectedVersion: editada.version }).expect(200)).body.data;
+  await pro.put(`/api/v1/nutrition/recipes/${receta.recipeId}/image`).send({ mediaId: imagen.mediaId, expectedVersion: editada.version }).expect(409); // VERSION_CONFLICT
+  await pro.put(`/api/v1/nutrition/recipes/${receta.recipeId}/image`).send({ mediaId: ajeno, expectedVersion: asociada.version }).expect(422); // MEDIA_REFERENCE_INVALID
+  await pro.put(`/api/v1/nutrition/recipes/${ajeno}/image`).send({ mediaId: imagen.mediaId, expectedVersion: 'v1' }).expect(404);
+  await pro.put(`/api/v1/nutrition/recipes/${receta.recipeId}/image`).send({ mediaId: imagen.mediaId, expectedVersion: asociada.version, extra: 1 }).expect(400);
+  const retirar = (id: string, query: string) => request(servidor).delete(`/api/v1/nutrition/recipes/${id}/image${query}`).set('Authorization', `Bearer ${c.pro.token}`).set('Idempotency-Key', claveDeIdempotencia());
+  await retirar(receta.recipeId, '').expect(400);
+  await retirar(receta.recipeId, '?expectedVersion=v1').expect(409);
+  await retirar(ajeno, '?expectedVersion=v1').expect(404);
+  const conImagen = (await pro.put(`/api/v1/nutrition/recipes/${receta.recipeId}/image`).send({ mediaId: imagen.mediaId, expectedVersion: asociada.version }).expect(200)).body.data;
+  await retirar(receta.recipeId, `?expectedVersion=${conImagen.version}`).expect(200);
+  // MED-03 · MED-04
+  const acceso = (await pro.get(`/api/v1/media/${imagen.mediaId}/access`).expect(200)).body.data;
+  await pro.get(`/api/v1/media/${ajeno}/access`).expect(404);
+  await pro.get(`/api/v1/media/${imagen.mediaId}/access?x=1`).expect(400);
+  await leerContenido(app, acceso.path).expect(200);
+  await leerContenido(app, '/media/content/no.es-una-ruta').expect(404);
+  await leerContenido(app, `${acceso.path}?x=1`).expect(400);
+  // El plan con la receta: NUT-10 la acepta como opción y la activación la congela.
+  const borrador = await crearBorrador(app, c);
+  const conReceta = await patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${borrador.planId}`)
+    .send({ expectedVersion: borrador.version, changes: estructuraConRecetas([{ label: conImagen.name, recipeVersionId: conImagen.recipeVersionId }], c.pollo) })
+    .expect(200);
+  await patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${borrador.planId}`)
+    .send({ expectedVersion: conReceta.body.data.version, changes: estructuraConRecetas([{ label: 'Inexistente', recipeVersionId: ajeno }], c.pollo) })
+    .expect(422); // NUTRITION_PLAN_STRUCTURE_INVALID
+  await pro.post('/api/v1/nutrition/plan-templates').send({ name: 'Plantilla con receta', structure: estructuraConRecetas([{ label: 'R', recipeVersionId: conImagen.recipeVersionId }], c.pollo) }).expect(422);
+  await activar(app, c.pro, borrador.planId, conReceta.body.data.version).expect(200);
+  // ING-01
+  const hoy = (await ase.get('/api/v1/me/nutrition/today/options').expect(200)).body.data;
+  await ase.get('/api/v1/me/nutrition/today/options?otro=1').expect(400);
+  const sinA3 = await prepararAsesorado(app, 'contrato-ing-sin-a3');
+  await conSesion(app, sinA3.token).get('/api/v1/me/nutrition/today/options').expect(403);
+  // ING-02
+  const dia = hoy.dayTypes[0].dayTypeId as string;
+  const almuerzo = hoy.meals[0];
+  const ahora = new Date().toISOString();
+  const registro = (extra: Record<string, unknown>, clave?: string) =>
+    ase.post('/api/v1/me/nutrition/meal-records', clave).send({ kind: 'PLAN_OPTION', activePlanId: borrador.planId, dayTypeId: dia, mealId: almuerzo.mealId, optionId: almuerzo.options[0].optionId, occurredAt: ahora, consumption: { status: 'UNCONFIRMED' }, observation: null, ...extra });
+  const claveDeRegistro = claveDeIdempotencia();
+  const registrado = (await registro({}, claveDeRegistro).expect(201)).body.data;
+  await registro({}).expect(200); // equivalente
+  await registro({ consumption: { status: 'PLAN_PORTIONS' } }).expect(409); // EXECUTION_ALREADY_REGISTERED_INCOMPATIBLY
+  await registro({ consumption: { status: 'PLAN_PORTIONS' } }, claveDeRegistro).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await registro({ activePlanId: ajeno }).expect(404);
+  await registro({ optionId: ajeno }).expect(422); // NUTRITION_EXECUTION_INVALID
+  await registro({ kind: 'DIFFERENT', approximateQuantity: null, mediaIds: [ajeno], description: 'x', optionId: undefined, consumption: undefined, observation: undefined, mealId: null, dayTypeId: null }).expect(422); // MEDIA_REFERENCE_INVALID
+  await registro({ kind: 'DIFFERENT', approximateQuantity: null, description: null, mediaIds: [], optionId: undefined, consumption: undefined, observation: undefined, mealId: null, dayTypeId: null }).expect(400);
+  // ING-03 · ING-04
+  await ase.get(`/api/v1/nutrition/meal-records/${registrado.recordId}`).expect(200);
+  await ase.get(`/api/v1/nutrition/meal-records/${ajeno}`).expect(404);
+  await ase.get(`/api/v1/nutrition/meal-records/${registrado.recordId}?x=1`).expect(400);
+  await ase.get('/api/v1/me/nutrition/meal-records?from=2026-01-01').expect(200);
+  await ase.get('/api/v1/me/nutrition/meal-records?from=ayer').expect(400);
+  await ase.get('/api/v1/me/nutrition/meal-records?cursor=zz').expect(400); // INVALID_CURSOR
+  await conSesion(app, sinA3.token).get('/api/v1/me/nutrition/meal-records').expect(403);
+  // ING-05
+  const rectificar = (id: string, extra: Record<string, unknown>) => ase.post(`/api/v1/nutrition/meal-records/${id}/consumed-quantities`).send({ consumption: { status: 'PLAN_PORTIONS' }, expectedVersion: 'v1', ...extra });
+  const rectificado = (await rectificar(registrado.recordId, {}).expect(201)).body.data;
+  await rectificar(registrado.recordId, {}).expect(409); // VERSION_CONFLICT
+  await rectificar(registrado.recordId, { expectedVersion: rectificado.version, consumption: { status: 'REPORTED', items: [{ itemId: ajeno, quantity: null, notEaten: true }] } }).expect(422);
+  await rectificar(ajeno, {}).expect(404);
+  // ING-06
+  const anular = (id: string, expectedVersion: string) => ase.post(`/api/v1/nutrition/meal-records/${id}/annulment`).send({ reason: null, expectedVersion });
+  await anular(registrado.recordId, 'v1').expect(409); // VERSION_CONFLICT
+  const anulado = (await anular(registrado.recordId, rectificado.version).expect(201)).body.data;
+  await anular(registrado.recordId, anulado.version).expect(409); // INVALID_STATE_TRANSITION
+  await rectificar(registrado.recordId, { expectedVersion: anulado.version }).expect(409); // INVALID_STATE_TRANSITION
+  await anular(ajeno, 'v1').expect(404);
+  // ING-02 después de deshacer: 201 otra vez; con un plan que ya no es el vigente, ACTIVE_PLAN_REQUIRED.
+  await registro({ consumption: { status: 'PLAN_PORTIONS' } }).expect(201);
+  // MED-05
+  const foto = (await subirImagen(app, c.ase, FOTOS[2]!, { contentType: 'image/png', purpose: 'MEAL_EVIDENCE' })).mediaId;
+  const claveDeSupresion = claveDeIdempotencia();
+  const suprimir = (id: string, clave = claveDeIdempotencia()) => request(servidor).delete(`/api/v1/me/media/${id}`).set('Authorization', `Bearer ${c.ase.token}`).set('Idempotency-Key', clave);
+  await suprimir(foto, claveDeSupresion).expect(200);
+  await suprimir(ajeno, claveDeSupresion).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await suprimir(ajeno).expect(404);
+  await request(servidor).delete(`/api/v1/me/media/${foto}`).set('Authorization', `Bearer ${c.ase.token}`).expect(400); // sin clave
+  // ACTIVE_PLAN_REQUIRED: el profesional activa una sucesora y el pedido cita la anterior.
+  const sucesora = await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: borrador.planId }).expect(201);
+  await activar(app, c.pro, sucesora.body.data.planId, sucesora.body.data.version).expect(200);
+  await registro({ kind: 'DIFFERENT', approximateQuantity: null, description: 'Con el plan anterior', mediaIds: [], optionId: undefined, consumption: undefined, observation: undefined, mealId: null, dayTypeId: null }).expect(422);
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

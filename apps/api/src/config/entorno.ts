@@ -51,7 +51,16 @@ export interface Entorno {
    * pruebas usen un proveedor falso y la CI nunca dependa de un tercero (docs/paquetes/WP-08.md D-H).
    */
   readonly proveedores: ProveedoresExternos;
+  /**
+   * DL-120 · dónde se guardan los bytes de los medios privados (`BE_MEDIOS_ALMACEN`). Solo `postgres`, la base existente:
+   * sobrevive a un reinicio y no usa el disco del contenedor (07 §25). Un almacenamiento compatible con S3 necesita un
+   * bucket privado y sus credenciales, que no están contratados: pedirlo falla al arrancar.
+   */
+  readonly mediosAlmacen: AlmacenDeMediosConfigurado;
 }
+
+export const ALMACENES_DE_MEDIOS = ['postgres'] as const;
+export type AlmacenDeMediosConfigurado = (typeof ALMACENES_DE_MEDIOS)[number];
 
 export interface ProveedoresExternos {
   /** Origen https de Open Food Facts, sin ruta. Por defecto, el público. */
@@ -148,6 +157,12 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     presupuestoMs: PRESUPUESTO_DEL_PROVEEDOR_MS,
   };
 
+  // DL-120: sin valor, la base existente. Otro valor no se interpreta: el mensaje nombra la variable, nunca el valor.
+  const almacen = (env.BE_MEDIOS_ALMACEN ?? '').trim() || 'postgres';
+  if (!(ALMACENES_DE_MEDIOS as readonly string[]).includes(almacen)) {
+    errores.push('BE_MEDIOS_ALMACEN solo admite «postgres»: el almacenamiento compatible con S3 no está configurado (DL-120)');
+  }
+
   if (errores.length > 0) {
     throw new Error(`Configuración inválida: ${errores.join('; ')}`);
   }
@@ -164,6 +179,7 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     caducidadDeSolicitudMs: (diasDeCaducidad ?? 30) * 24 * 60 * 60 * 1000,
     demoProfesionales,
     proveedores,
+    mediosAlmacen: almacen as AlmacenDeMediosConfigurado,
   };
 }
 

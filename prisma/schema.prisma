@@ -74,6 +74,8 @@ enum TipoDeActoRegistrable {
   TERMINOS
   PRIVACIDAD_INFO
   DATOS_SALUD_BE
+  /// 08:395 — información destacada de la evidencia visual (fotos de una comida), dentro del alcance B2 (DL-120).
+  EVIDENCIA_VISUAL
 }
 
 /// 08 §12.2 «estado (VIGENTE/REVOCADO)». Única transición: VIGENTE → REVOCADO, solo para tipos revocables.
@@ -184,6 +186,10 @@ model Identidad {
   // WP-08
   candidatosDeImportacion CandidatoDeImportacion[] @relation("CandidatoDelProfesional")
   resolucionesDeCandidato ResolucionDeCandidato[]  @relation("ResolucionDelAutor")
+
+  // WP-NUTRICION-RECETAS (DL-119, DL-120)
+  recetas Receta[] @relation("RecetaDelProfesional")
+  medios  Medio[]  @relation("MedioDelPropietario")
 
   @@map("identidad")
 }
@@ -1056,6 +1062,13 @@ enum TipoDeEventoDeNutricion {
   AlimentoHabitualQuitado
   ComidaHabitualGuardada
   ComidaHabitualEditada
+  /// WP-NUTRICION-RECETAS (DL-119, DL-121).
+  RecetaCreada
+  RecetaVersionada
+  ImagenDeRecetaAsociada
+  ImagenDeRecetaRetirada
+  IngestaAnulada
+  CantidadesDeIngestaRectificadas
 }
 
 /// T-06-31 — Elemento de catálogo: identificador BE estable (REG-06-99). Inmutable; el contenido vive en sus versiones.
@@ -1231,7 +1244,8 @@ model InstantaneaDePlanNutricional {
 }
 
 /// T-06-54 — Ingesta registrada: hecho confirmado contra una versión ACTIVADA; nunca modifica la prescripción
-/// (REG-06-106). La prescripta es única por (versión, fecha, comida) (DL-049). Append-only.
+/// (REG-06-106). La prescripta es única por (versión, fecha, comida, secuencia) (DL-049, DL-121): una sola efectiva por
+/// comida y día; anulada, la siguiente usa la secuencia siguiente. Append-only.
 model IngestaNutricional {
   id                   String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   versionDePlanId      String                  @map("version_de_plan_id") @db.Uuid
@@ -1251,10 +1265,23 @@ model IngestaNutricional {
   procedencia          Json
   momentoDeOcurrencia  DateTime                @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro    DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  /// DL-121: la clave natural suma la secuencia. Lo registrado antes de WP-NUTRICION-RECETAS queda en 0.
+  secuencia            Int                     @default(0)
+  /// DL-121: el estado de las cantidades del registro v2 y sus ítems resueltos (`{ status, items }`); `null` en lo anterior.
+  cantidadesConsumidas Json?                   @map("cantidades_consumidas")
+  /// DL-119: la versión de la receta de la opción registrada, si la opción nació de una receta.
+  versionDeRecetaId    String?                 @map("version_de_receta_id") @db.Uuid
+  /// DL-121: la comida del plan en la que se comió algo diferente, como contexto. No marca la comida como prescripta.
+  diaTipoDeContextoId  String?                 @map("dia_tipo_de_contexto_id")
+  comidaDeContextoId   String?                 @map("comida_de_contexto_id")
 
-  versionDePlan VersionDePlanNutricional @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  asesorado     Identidad                @relation("IngestaDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  correcciones  CorreccionDeIngesta[]
+  versionDePlan   VersionDePlanNutricional    @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado       Identidad                   @relation("IngestaDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeReceta VersionDeReceta?            @relation(fields: [versionDeRecetaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  correcciones    CorreccionDeIngesta[]
+  anulacion       AnulacionDeIngesta?
+  rectificaciones RectificacionDeCantidades[]
+  evidencias      EvidenciaVisualDeIngesta[]
 
   @@index([asesoradoId, fechaLocal])
   @@index([versionDePlanId])
@@ -2403,4 +2430,208 @@ model ComidaHabitual {
   @@unique([profesionalId, nombreNormalizado])
   @@index([profesionalId, estado, momentoDeActualizacion])
   @@map("comida_habitual")
+}
+
+// ─── WP-NUTRICION-RECETAS · recetas, medios privados y registro v2 (DL-119, DL-120, DL-121) ─────────────────────────
+// docs/paquetes/WP-NUTRICION-RECETAS.md §3. Todo es aditivo: nada de lo anterior se reescribe. Las garantías que Prisma
+// no modela (listas blancas, solo agregar, cadenas y la siembra de USDA) están en la migración 20261005120000.
+
+/// DL-119: el método de cálculo de energía y macros, versionado. Cada versión de receta guarda el suyo.
+enum MetodoDeCalculoNutricional {
+  SUM_SOURCE_PER_100G_V1
+}
+
+/// DL-120: para qué es el medio. Una foto de una comida es del titular y nunca se reusa como imagen de receta.
+enum FinalidadDeMedio {
+  RECETA_REFERENCIA
+  EVIDENCIA_DE_INGESTA
+}
+
+/// DL-120: PENDIENTE (intención sin bytes) → DISPONIBLE (subido y recodificado) → SUPRIMIDO (bytes borrados). Trigger.
+enum EstadoDeMedio {
+  PENDIENTE
+  DISPONIBLE
+  SUPRIMIDO
+}
+
+/// DL-120: de dónde viene la imagen. Generada por IA (las tres de la demostración) o aportada por una persona.
+enum ProcedenciaDeImagen {
+  GENERADA_POR_IA
+  APORTADA_POR_LA_PERSONA
+}
+
+/// Cada cambio de la imagen de una receta: asociar un medio (también para reemplazar la vigente) o retirarla.
+enum CambioDeImagenDeReceta {
+  ASOCIAR
+  RETIRAR
+}
+
+/// DL-119 — Receta: una preparación propia del profesional (REG-06-135, inciso 2). La identidad es estable; el
+/// contenido vive en sus versiones inmutables y la imagen, en sus asociaciones. `version` es el token de concurrencia:
+/// avanza de a uno con cada versión nueva y con cada cambio de imagen (trigger).
+model Receta {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String   @map("profesional_id") @db.Uuid
+  version                Int      @default(1)
+  momentoDeRegistro      DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad                    @relation("RecetaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones   VersionDeReceta[]
+  imagenes    AsociacionDeImagenDeReceta[]
+
+  @@index([profesionalId, momentoDeActualizacion])
+  @@map("receta")
+}
+
+/// Versión de una receta: nombre, descripción, porciones, pasos, ingredientes por elemento y versión del catálogo (con
+/// cantidad, unidad y estado), y el cálculo con su método. Inmutable; la vigente es la terminal de la cadena, como en el
+/// catálogo. Append-only.
+model VersionDeReceta {
+  id                String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recetaId          String                     @map("receta_id") @db.Uuid
+  predecesoraId     String?                    @unique @map("predecesora_id") @db.Uuid
+  numero            Int
+  nombre            String
+  descripcion       String?
+  porciones         Int
+  pasos             Json
+  ingredientes      Json
+  metodoDeCalculo   MetodoDeCalculoNutricional @map("metodo_de_calculo")
+  resultado         Json
+  autorId           String                     @map("autor_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime                   @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  receta      Receta               @relation(fields: [recetaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora VersionDeReceta?     @relation("CadenaDeReceta", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora    VersionDeReceta?     @relation("CadenaDeReceta")
+  ingestas    IngestaNutricional[]
+
+  @@unique([recetaId, numero])
+  @@map("version_de_receta")
+}
+
+/// DL-120 — Medio privado: los metadatos de una imagen (09v12 §24; 08 §21). Los bytes viven detrás de `AlmacenDeMedios`
+/// (`contenido_de_medio` en la implementación `postgres`). Suprimir borra los bytes y deja este registro, con su momento
+/// y su motivo. Lista blanca por trigger.
+model Medio {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propietarioId       String              @map("propietario_id") @db.Uuid
+  finalidad           FinalidadDeMedio
+  estado              EstadoDeMedio       @default(PENDIENTE)
+  procedenciaDeImagen ProcedenciaDeImagen @map("procedencia_de_imagen")
+  autoria             String?
+  /// Lo declarado en la intención de subida (API-MED-01).
+  tipoDeclarado       String              @map("tipo_declarado")
+  bytesDeclarados     Int                 @map("bytes_declarados")
+  /// Lo recibido en la subida (API-MED-02), antes de recodificar.
+  tipoOriginal        String?             @map("tipo_original")
+  bytesOriginales     Int?                @map("bytes_originales")
+  anchoOriginal       Int?                @map("ancho_original")
+  altoOriginal        Int?                @map("alto_original")
+  sha256Original      String?             @map("sha256_original")
+  /// Lo guardado: JPEG recodificado, sin metadatos.
+  tipoProcesado       String?             @map("tipo_procesado")
+  bytesProcesados     Int?                @map("bytes_procesados")
+  anchoProcesado      Int?                @map("ancho_procesado")
+  altoProcesado       Int?                @map("alto_procesado")
+  sha256Procesado     String?             @map("sha256_procesado")
+  procedencia         Json
+  momentoDeRegistro   DateTime            @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeSubida     DateTime?           @map("momento_de_subida") @db.Timestamptz(3)
+  momentoDeSupresion  DateTime?           @map("momento_de_supresion") @db.Timestamptz(3)
+  motivoDeSupresion   String?             @map("motivo_de_supresion")
+
+  propietario     Identidad                    @relation("MedioDelPropietario", fields: [propietarioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  contenido       ContenidoDeMedio?
+  imagenDeRecetas AsociacionDeImagenDeReceta[]
+  evidenciaVisual EvidenciaVisualDeIngesta?
+
+  @@index([propietarioId, finalidad, estado])
+  @@map("medio")
+}
+
+/// DL-120 — Los bytes procesados de un medio, en `bytea`: la implementación `postgres` de `AlmacenDeMedios`. No se
+/// modifican; se borran solo cuando el medio ya está SUPRIMIDO (trigger).
+model ContenidoDeMedio {
+  medioId           String   @id @map("medio_id") @db.Uuid
+  bytes             Bytes
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  medio Medio @relation(fields: [medioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("contenido_de_medio")
+}
+
+/// DL-119 — Cada cambio de la imagen de una receta (asociar, reemplazar o retirar) es una fila nueva; la vigente es la
+/// de mayor `numero`. Así queda la historia, y el medio retirado no se borra. Append-only.
+model AsociacionDeImagenDeReceta {
+  id                String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recetaId          String                 @map("receta_id") @db.Uuid
+  numero            Int
+  cambio            CambioDeImagenDeReceta
+  medioId           String?                @map("medio_id") @db.Uuid
+  autorId           String                 @map("autor_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime               @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  receta Receta @relation(fields: [recetaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  medio  Medio? @relation(fields: [medioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([recetaId, numero])
+  @@index([medioId])
+  @@map("asociacion_de_imagen_de_receta")
+}
+
+/// REG-06-133 — Una foto de una comida unida a su ingesta, con autoría, momento y procedencia. Un medio se une a una sola
+/// ingesta. Append-only (la supresión a pedido borra los bytes del medio, no esta fila).
+model EvidenciaVisualDeIngesta {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ingestaId         String   @map("ingesta_id") @db.Uuid
+  medioId           String   @unique @map("medio_id") @db.Uuid
+  autorId           String   @map("autor_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ingesta IngestaNutricional @relation(fields: [ingestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  medio   Medio              @relation(fields: [medioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([ingestaId])
+  @@map("evidencia_visual_de_ingesta")
+}
+
+/// DL-121 — «Deshacer registro»: la anulación de una ingesta por su titular, una sola vez, con autor, motivo y momento.
+/// La ingesta no se borra: deja de contar. Append-only.
+model AnulacionDeIngesta {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ingestaId           String   @unique @map("ingesta_id") @db.Uuid
+  autorId             String   @map("autor_id") @db.Uuid
+  motivo              String?
+  procedencia         Json
+  momentoDeOcurrencia DateTime @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ingesta IngestaNutricional @relation(fields: [ingestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("anulacion_de_ingesta")
+}
+
+/// DL-121 — «Completar cantidades»: las rectificaciones de las cantidades consumidas de una ingesta prescripta, en una
+/// cadena lineal hacia la ingesta (como las correcciones, REG-06-15). La vista efectiva es la terminal. Append-only.
+model RectificacionDeCantidades {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ingestaId         String   @map("ingesta_id") @db.Uuid
+  predecesoraId     String?  @unique @map("predecesora_id") @db.Uuid
+  cantidades        Json
+  autorId           String   @map("autor_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ingesta     IngestaNutricional         @relation(fields: [ingestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora RectificacionDeCantidades? @relation("CadenaDeRectificacion", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora    RectificacionDeCantidades? @relation("CadenaDeRectificacion")
+
+  @@index([ingestaId])
+  @@map("rectificacion_de_cantidades")
 }

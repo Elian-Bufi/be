@@ -40,6 +40,8 @@ export function entornoDePrueba(cambios: Partial<Entorno> = {}): Entorno {
     // WP-08 D-H: por defecto, un proveedor que no responde. Una prueba que se olvide del proveedor falso recibe 503;
     // nunca hace una llamada real.
     proveedores: { openFoodFactsUrl: 'http://127.0.0.1:9', wgerUrl: 'http://127.0.0.1:9', presupuestoMs: 2_000 },
+    // DL-120: los bytes de los medios, en la misma base de la prueba.
+    mediosAlmacen: 'postgres',
     ...cambios,
   };
 }

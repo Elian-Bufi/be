@@ -19,6 +19,7 @@ import { VinculoModule } from './vinculo/vinculo.module';
 import { AntropometriaModule } from './antropometria/antropometria.module';
 import { EntrenamientoModule } from './entrenamiento/entrenamiento.module';
 import { FormulariosModule } from './formularios/formularios.module';
+import { MediosModule } from './medios/medios.module';
 import { NutricionModule } from './nutricion/nutricion.module';
 import { ProcesoModule } from './proceso/proceso.module';
 
@@ -50,6 +51,7 @@ class ConfiguracionModule {
  * - WP-02: identidad, sesiones y requisito A3.
  * - WP-03: autorización contextual (PDP único), M-02 mínimo, vínculos, consentimientos A3 y B2, y DSH-03 mínimo.
  * - WP-04: circuito nutricional (evaluación, objetivo, plan versionado, ingesta, revisión), Proceso y capacidad.
+ * - WP-NUTRICION-RECETAS: recetas, medios privados y registro v2 de comidas (DL-119 a DL-121).
  */
 @Module({})
 export class AppModule {
@@ -70,6 +72,7 @@ export class AppModule {
         DashboardModule,
         CarteraModule,
         ProcesoModule,
+        MediosModule,
         NutricionModule,
         AntropometriaModule,
         EntrenamientoModule,

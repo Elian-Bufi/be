@@ -88,6 +88,23 @@ export const errores = {
   /** Lo revisado no alcanza para incorporarlo al catálogo: se dice qué falta, por ruta (D-I). */
   contenidoRevisadoInvalido: (issues: ValidationIssue[]) =>
     new ErrorDeApi(422, CodigoDeError.REVIEWED_CONTENT_INVALID, 'Faltan datos para incorporar el elemento al catálogo.', { issues }),
+  // ─── WP-NUTRICION-RECETAS · medios privados y registro v2 (DL-120, DL-121; 09v8 API-PRO-04) ─────────────────
+  /** El tipo declarado o el real no es JPEG, PNG ni WebP. */
+  tipoDeArchivoNoAdmitido: (issues: ValidationIssue[] = []) =>
+    new ErrorDeApi(422, CodigoDeError.FILE_TYPE_NOT_ALLOWED, 'La imagen tiene que ser JPG, PNG o WebP.', { issues }),
+  /** Más de 10 MB: un 422 del contrato, no un 413 ni un 400 del parser. */
+  tamanoDeArchivoNoAdmitido: () => new ErrorDeApi(422, CodigoDeError.FILE_SIZE_NOT_ALLOWED, 'La imagen supera los 10 MB.', { issues: [{ code: 'FILE_TOO_LARGE', path: '(body)' }] }),
+  /** Los bytes no se decodifican como el tipo declarado, o la imagen sale de las medidas admitidas. */
+  contenidoDeArchivoInvalido: (issues: ValidationIssue[]) =>
+    new ErrorDeApi(422, CodigoDeError.FILE_CONTENT_INVALID, 'La imagen no se puede leer o no tiene las medidas admitidas (de 64 a 8000 píxeles por lado).', { issues }),
+  /** Un medio citado en el cuerpo no es propio, no está disponible o no es de esa finalidad. Se dice cuál, por ruta. */
+  referenciaDeMedioInvalida: (issues: ValidationIssue[]) =>
+    new ErrorDeApi(422, CodigoDeError.MEDIA_REFERENCE_INVALID, 'Hay una imagen que no se puede usar acá.', { issues }),
+  /**
+   * 409 por el estado del recurso (DL-120, DL-121): anular dos veces, rectificar lo anulado o subir otros bytes a un medio
+   * que ya los tiene. El recurso es revelable para el actor: es suyo.
+   */
+  estadoEnConflicto: (mensaje: string) => new ErrorDeApi(409, CodigoDeError.INVALID_STATE_TRANSITION, mensaje),
   /** 09v7:185 — falla no clasificada (DEUDA_LEGAJO DL-005). */
   interno: () => new ErrorDeApi(500, CodigoDeError.INTERNAL_ERROR, 'Ocurrió un error inesperado.'),
 };

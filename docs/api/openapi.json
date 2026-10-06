@@ -64009,7 +64009,7 @@
             }
           },
           "400": {
-            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
             "content": {
               "application/json": {
                 "schema": {
@@ -65409,6 +65409,16 @@
               }
             }
           },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
             "content": {
@@ -65605,7 +65615,7 @@
             }
           },
           "400": {
-            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
             "content": {
               "application/json": {
                 "schema": {

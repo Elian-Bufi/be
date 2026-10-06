@@ -36,6 +36,7 @@ import { EjecutorNutricional, esUuid } from './ejecutor';
 import { EvaluacionesService } from './evaluaciones.service';
 import { registrarEventoDeNutricion } from './eventos';
 import { INCLUIR_PLAN, nombreVisibleDe, nombresDeCatalogo, versionDePlanApi, type VersionConPlan } from './lectura-nutricion';
+import { conOpcionesDeReceta, instantaneaConRecetas, recetasDelBorrador } from './opciones-de-receta';
 
 type Tx = Prisma.TransactionClient;
 
@@ -180,7 +181,8 @@ export class PlanesService {
       const estructurales = problemasDeBorrador(contenido, new Set(idsDeCatalogo(contenido))).filter((i) => i.code !== 'CATALOG_REFERENCE_INVALID');
       if (estructurales.length > 0) throw errorDeBorrador(estructurales);
     } else {
-      contenido = normalizarEstructura(p.estructura ?? { dayTypes: [] }, randomUUID);
+      // DL-119: una opción puede nacer de una versión de receta propia; sus ítems salen de una porción de esa versión.
+      contenido = await conOpcionesDeReceta(tx, p.profesionalId, p.estructura ?? { dayTypes: [] }, normalizarEstructura(p.estructura ?? { dayTypes: [] }, randomUUID));
       const disponibles = await this.catalogo.disponibles(tx, p.profesionalId, idsDeCatalogo(contenido));
       const problemas = problemasDeBorrador(contenido, new Set(disponibles.keys()));
       if (problemas.length > 0) throw errorDeBorrador(problemas);
@@ -303,7 +305,8 @@ export class PlanesService {
         if (!esToken(pedido.expectedVersion, v.version)) throw errores.conflictoDeVersion();
         const objetivo = pedido.objectiveVersionId ?? v.versionDeObjetivoId;
         if (pedido.objectiveVersionId) await this.exigirObjetivoEfectivo(tx, v.profesionalId, v.asesoradoId, objetivo);
-        const contenido = normalizarEstructura(pedido.changes, randomUUID);
+        // DL-119: las opciones de receta se arman en el servidor, con una porción de la versión citada.
+        const contenido = await conOpcionesDeReceta(tx, v.profesionalId, pedido.changes, normalizarEstructura(pedido.changes, randomUUID));
         const disponibles = await this.catalogo.disponibles(tx, v.profesionalId, idsDeCatalogo(contenido));
         const problemas = problemasDeBorrador(contenido, new Set(disponibles.keys()));
         if (problemas.length > 0) throw errorDeBorrador(problemas);
@@ -396,8 +399,10 @@ export class PlanesService {
         const catalogo = await this.catalogo.disponibles(tx, v.profesionalId, ids);
         const issues = problemasParaActivar(v.contenido, new Set(catalogo.keys()));
         if (issues.length > 0) throw noLista(issues);
-        // 6. Preservar la instantánea ANTES de la vigencia (REG-06-104; 06:1391).
-        const instantanea = construirInstantanea(v.contenido, catalogo);
+        // 6. Preservar la instantánea ANTES de la vigencia (REG-06-104; 06:1391). Una opción nacida de una receta congela
+        //    la receta y las versiones del catálogo que ella cita, no las vigentes (DL-119).
+        const base = construirInstantanea(v.contenido, catalogo);
+        const instantanea = base ? await instantaneaConRecetas(tx, this.catalogo, v.contenido, base) : null;
         const evaluacion = evaluarTransicionDePlan(v.estado, {
           transicion: 'ActivarVersion',
           validacionFavorable: true,
@@ -473,8 +478,12 @@ export class PlanesService {
   async leerVersion(tx: Tx, id: string, profesionalId: string, incluirOrigen = false): Promise<VersionDePlan> {
     const v = (await tx.versionDePlanNutricional.findUniqueOrThrow({ where: { id }, include: INCLUIR_PLAN })) as VersionConPlan;
     const catalogo = v.estado === 'BORRADOR' ? await nombresDeCatalogo(tx, v.contenido as unknown as ContenidoDePlan) : new Map();
-    const api = versionDePlanApi(v, await nombreVisibleDe(tx, profesionalId), catalogo);
-    // El origen de plantilla solo lo ve el profesional: la APK instalada valida con esquemas estrictos que no lo conocen.
+    // La receta de cada opción y el origen de plantilla solo los ve el profesional: la APK instalada valida con esquemas
+    // estrictos que no los conocen (DL-108, DL-119).
+    const recetas = incluirOrigen
+      ? { conReceta: true, delBorrador: v.estado === 'BORRADOR' ? await recetasDelBorrador(tx, v.contenido as unknown as ContenidoDePlan) : undefined }
+      : { conReceta: false };
+    const api = versionDePlanApi(v, await nombreVisibleDe(tx, profesionalId), catalogo, true, recetas);
     return incluirOrigen ? { ...api, templateOrigin: (v.origenDePlantilla as OrigenDePlanEnPlantilla | null) ?? null } : api;
   }
 
