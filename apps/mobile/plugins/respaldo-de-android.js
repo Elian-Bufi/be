@@ -15,10 +15,13 @@
  *   posterior `allowBackup="false"` no frena las transferencias entre dispositivos en algunos fabricantes: por eso van
  *   las dos secciones, explícitas.
  * - Solo se incluyen las preferencias de la plataforma (`<include domain="sharedpref" path="."/>`): con un `<include>`,
- *   Android respalda solamente lo incluido, así que la base de AsyncStorage y los archivos de la app quedan fuera.
- * - Igual se excluyen por nombre, porque `<exclude>` manda sobre `<include>` y la documentación no dice si excluir una
- *   base excluye también sus archivos auxiliares: `SecureStore.xml` (y `SecureStore`, como lo nombra expo-secure-store)
- *   y `RKStorage` con sus `-journal`, `-wal` y `-shm`.
+ *   Android respalda solamente lo incluido, así que la base de AsyncStorage (`databases/RKStorage` con sus `-journal`,
+ *   `-wal` y `-shm`) y los archivos de la app quedan fuera: ningún archivo del dominio `database` entra.
+ * - Dentro de lo incluido, se excluye por nombre el almacenamiento seguro: `SecureStore.xml` (y `SecureStore`, como lo
+ *   nombra expo-secure-store).
+ * - **Una exclusión solo puede nombrar algo incluido.** Excluir `RKStorage`, que no está en ningún `<include>`, es el error
+ *   fatal `FullBackupContent` de lint al compilar la versión release (lo encontró la construcción de la 0.15.0-candidata.1):
+ *   la exclusión no hace falta, porque la base ya queda fuera.
  * - No hay `<cross-platform-transfer>`: BE no tiene una app para iOS que reciba datos.
  *
  * Reemplaza las reglas del plugin de expo-secure-store (que en `app.config.ts` va con `configureAndroidBackup: false`)
@@ -32,18 +35,16 @@ const path = require('node:path');
 const ARCHIVO_DE_RESPALDO = 'be_reglas_de_respaldo';
 const ARCHIVO_DE_EXTRACCION = 'be_reglas_de_extraccion';
 
-/** Lo que se excluye por nombre, además de lo que el `<include>` ya deja fuera. */
+/** Lo que se incluye: solo las preferencias de la plataforma. */
+const INCLUSIONES = [['sharedpref', '.']];
+/** Lo que se excluye por nombre dentro de lo incluido: el almacenamiento seguro. */
 const EXCLUSIONES = [
   ['sharedpref', 'SecureStore.xml'],
   ['sharedpref', 'SecureStore'],
-  ['database', 'RKStorage'],
-  ['database', 'RKStorage-journal'],
-  ['database', 'RKStorage-wal'],
-  ['database', 'RKStorage-shm'],
 ];
 
 const reglas = (sangria) =>
-  [`${sangria}<include domain="sharedpref" path="."/>`, ...EXCLUSIONES.map(([dominio, ruta]) => `${sangria}<exclude domain="${dominio}" path="${ruta}"/>`)].join('\n');
+  [...INCLUSIONES.map(([dominio, ruta]) => `${sangria}<include domain="${dominio}" path="${ruta}"/>`), ...EXCLUSIONES.map(([dominio, ruta]) => `${sangria}<exclude domain="${dominio}" path="${ruta}"/>`)].join('\n');
 
 /** Android 11 o anterior. */
 const XML_DE_RESPALDO = `<?xml version="1.0" encoding="utf-8"?>
@@ -88,4 +89,5 @@ function conReglasDeRespaldo(config) {
 module.exports = conReglasDeRespaldo;
 module.exports.XML_DE_RESPALDO = XML_DE_RESPALDO;
 module.exports.XML_DE_EXTRACCION = XML_DE_EXTRACCION;
+module.exports.INCLUSIONES = INCLUSIONES;
 module.exports.EXCLUSIONES = EXCLUSIONES;
