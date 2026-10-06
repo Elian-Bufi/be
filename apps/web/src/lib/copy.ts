@@ -19,9 +19,9 @@ export function avisoDe(valor: string | null): string | null {
 }
 
 /** Rutas propias a las que se puede volver después del login. */
-const RUTAS_DE_RETORNO: ReadonlySet<string> = new Set(['/account', '/account/relationships', '/account/privacy', '/pro', '/pro/templates', '/pro/recipes']);
+const RUTAS_DE_RETORNO: ReadonlySet<string> = new Set(['/account', '/account/relationships', '/account/privacy', '/pro', '/pro/templates', '/pro/recipes', '/pro/exercises']);
 /** Rutas que llevan un identificador opaco en el query (el export estático no admite segmentos dinámicos, DL-041). */
-const RUTAS_CON_ID: ReadonlySet<string> = new Set(['/account/relationships/detail', '/account/relationships/consent', '/pro/advisees', '/pro/advisees/nutrition', '/pro/advisees/anthropometry', '/pro/recipes']);
+const RUTAS_CON_ID: ReadonlySet<string> = new Set(['/account/relationships/detail', '/account/relationships/consent', '/pro/advisees', '/pro/advisees/nutrition', '/pro/advisees/anthropometry', '/pro/advisees/training', '/pro/recipes']);
 /** El nombre del parámetro con el identificador, si no es `id`: «Mis recetas» abre una receta con `?receta=` (DL-119). */
 const PARAMETRO_DEL_ID: Readonly<Record<string, string>> = { '/pro/recipes': 'receta' };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

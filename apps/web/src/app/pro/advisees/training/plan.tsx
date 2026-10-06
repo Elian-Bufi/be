@@ -7,16 +7,21 @@
  *   cambiarla: «Crear nueva versión a partir de esta» (DL-047).
  * - Un solo borrador por plan: si ya hay uno, se sigue sobre ese.
  * - Activar no se hace desde «Guardar» (B10-06:609): es un acto aparte, con su consecuencia a la vista.
+ * - La versión activa se lee con API-SER-01: cada serie muestra el objetivo que recibe el teléfono, heredado o propio
+ *   (DL-122), y «Guardar como plantilla» conserva los objetivos por serie.
  */
 import {
   COPY_ENTRENAMIENTO,
   COPY_PLANTILLAS,
-  estructuraComoEntrada,
+  estructuraConObjetivosComoEntrada,
+  intensidadPlanificada,
   lineasDePrescripcion,
-  type Bloque,
+  numero,
+  type PlanConObjetivos,
   type Prescripcion,
+  type PrescripcionConObjetivos,
   type ResumenDeVersionDePlanDeEntrenamiento,
-  type VersionDePlanDeEntrenamiento,
+  type SesionConObjetivos,
 } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
@@ -27,6 +32,8 @@ import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EditorDePlan } from './editor';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { DialogoGuardarPlantilla, InicioDesdePlantilla } from './plantillas';
+import { filasDeLaRespuesta, TablaDeObjetivos } from './objetivos-por-serie';
+import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 
 /** Número de versión para la persona: el orden de activación. El `version` del 09 es un token de concurrencia. */
 function numerosDeVersion(versiones: readonly ResumenDeVersionDePlanDeEntrenamiento[]): Map<string, number> {
@@ -36,7 +43,7 @@ function numerosDeVersion(versiones: readonly ResumenDeVersionDePlanDeEntrenamie
 
 export function VistaDePlan() {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
-  const [r, setR] = useState<Resultado<{ versiones: ResumenDeVersionDePlanDeEntrenamiento[]; activa: VersionDePlanDeEntrenamiento | null; objetivo: string | null }> | null>(null);
+  const [r, setR] = useState<Resultado<{ versiones: ResumenDeVersionDePlanDeEntrenamiento[]; activa: PlanConObjetivos | null; objetivo: string | null }> | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [creando, setCreando] = useState(false);
   // «Guardar como plantilla» sobre la versión activa (PF-09; DL-108): abre el diálogo con la estructura de esa versión.
@@ -52,9 +59,9 @@ export function VistaDePlan() {
     if (!lista.ok) return setR(lista as Resultado<never>);
     if (!ob.ok) return setR(ob as Resultado<never>);
     const efectiva = lista.datos.data.find((v) => v.isEffective);
-    let activa: VersionDePlanDeEntrenamiento | null = null;
+    let activa: PlanConObjetivos | null = null;
     if (efectiva) {
-      const v = await api.consultarPlanDeEntrenamiento(token, efectiva.planId);
+      const v = await api.planConObjetivos(token, efectiva.planId);
       if (sesionPerdida(v)) return;
       if (!v.ok) return setR(v as Resultado<never>);
       activa = v.datos.data;
@@ -159,7 +166,7 @@ export function VistaDePlan() {
                 <DialogoGuardarPlantilla
                   token={token}
                   abierto={guardarPlantilla}
-                  estructura={{ blocks: estructuraComoEntrada(r.datos.activa) }}
+                  estructura={{ blocks: estructuraConObjetivosComoEntrada(r.datos.activa) }}
                   origen={r.datos.activa.planId}
                   onCerrar={() => setGuardarPlantilla(false)}
                   onGuardada={() => {
@@ -208,7 +215,19 @@ export function LineasDePrescripcion({ prescripcion }: { prescripcion: Prescripc
   );
 }
 
-function SesionSoloLectura({ sesion }: { sesion: Bloque['sessions'][number] }) {
+/**
+ * Lo general de una prescripción, aparte de sus series: la intensidad con su referencia (o que no tiene criterio), los
+ * parámetros con su unidad y la nota. Las series van en la tabla de objetivos.
+ */
+function lineasGenerales(p: PrescripcionConObjetivos): string[] {
+  const lineas = [intensidadPlanificada(p) ?? COPY_ENTRENAMIENTO.sinCriterio];
+  for (const q of p.professionalParameters) lineas.push(`${q.label}: ${typeof q.value === 'number' ? numero(q.value) : q.value}${q.unit ? ` ${q.unit}` : ''}`);
+  if (p.note) lineas.push(`${COPY_ENTRENAMIENTO.notas}: ${p.note}`);
+  return lineas;
+}
+
+function SesionSoloLectura({ sesion }: { sesion: SesionConObjetivos }) {
+  const { token, sesionPerdida } = useEntrenamiento();
   return (
     <div className="nodo nodo--comida">
       <h4>{sesion.label}</h4>
@@ -216,8 +235,21 @@ function SesionSoloLectura({ sesion }: { sesion: Bloque['sessions'][number] }) {
       <ul>
         {sesion.prescriptions.map((p) => (
           <li key={p.prescriptionId}>
-            <strong>{p.exerciseName}</strong>
-            <LineasDePrescripcion prescripcion={p} />
+            <div className="tarjeta-de-receta">
+              {p.image ? <ImagenGuardadaDeEjercicio token={token} medioId={p.image.mediaId} nombre={p.exerciseName} textoAlternativo={p.image.altText} sesionPerdida={sesionPerdida} chica /> : null}
+              <strong>{p.exerciseName}</strong>
+            </div>
+            <ul className="lista-compacta">
+              {lineasGenerales(p).map((l, i) => (
+                <li key={i}>{l}</li>
+              ))}
+            </ul>
+            <TablaDeObjetivos
+              titulo="Lo que recibe tu asesorado"
+              filas={filasDeLaRespuesta(p)}
+              conRir={p.intensity?.criterion === 'RIR' || p.sets.some((x) => x.target.rir !== null)}
+              bases={{ loadBasis: p.loadBasis, repetitionBasis: p.repetitionBasis }}
+            />
           </li>
         ))}
       </ul>
@@ -226,11 +258,11 @@ function SesionSoloLectura({ sesion }: { sesion: Bloque['sessions'][number] }) {
 }
 
 /** La versión activada tal como la ve el asesorado: desde la instantánea, en solo lectura. */
-function PlanSoloLectura({ version, numero }: { version: VersionDePlanDeEntrenamiento; numero: number }) {
+function PlanSoloLectura({ version, numero: numeroDeVersion }: { version: PlanConObjetivos; numero: number }) {
   return (
     <>
       <p>
-        Versión {numero} · activada el {fecha(version.activatedAt as string)}
+        Versión {numeroDeVersion} · activada el {fecha(version.activatedAt as string)}
       </p>
       {version.snapshotDigest ? (
         <p className="nota">

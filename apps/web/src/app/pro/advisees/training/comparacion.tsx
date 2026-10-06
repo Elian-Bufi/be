@@ -48,6 +48,9 @@ import {
   type SerieParaGraficar,
   type ValorPlanificado,
   type ValorRegistrado,
+  COPY_ENTRENAMIENTO_POR_SERIE,
+  textoDelPlanDeLaSerie,
+  type ObjetivosDeLaVersion,
 } from '@be/domain';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Bar, BarChart, CartesianGrid, ComposedChart, LabelList, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -285,6 +288,10 @@ function DetalleDeValores({
   children?: ReactNode;
 }) {
   const nota = fila?.planificada.tipo === 'planificada' ? fila.planificada.nota : null;
+  // DL-122: con el objetivo efectivo de la serie, el plan de esa serie (heredado o propio) se dice entero.
+  const objetivo = fila?.planificada.tipo === 'planificada' ? fila.planificada.objetivo : undefined;
+  const planDeLaSerie =
+    fila && fila.planificada.tipo === 'planificada' && objetivo ? textoDelPlanDeLaSerie({ repetitions: fila.planificada.repeticiones, rir: objetivo.rir, suggestedLoad: objetivo.carga, restSeconds: null }) : null;
   const intensidad = intensidadPlanificada(c.prescripcion);
   const serieRegistrada = fila?.registrada.tipo === 'registrada' ? fila.registrada.serie : null;
   return (
@@ -299,6 +306,12 @@ function DetalleDeValores({
           {textoPlanificado(planificado, medida)}
           {nota ? ` · ${nota}` : ''}
         </dd>
+        {planDeLaSerie ? (
+          <>
+            <dt>{COPY_ENTRENAMIENTO_POR_SERIE.planDeLaSerie(fila!.numero)}</dt>
+            <dd>{planDeLaSerie}</dd>
+          </>
+        ) : null}
         <dt>{COPY_COMPARACION.capaRegistrado} · {etiquetaDeMedida(medida)}</dt>
         <dd>{textoRegistrado(registrado, medida)}</dd>
         <dt>{COPY_COMPARACION.diferencia}</dt>
@@ -371,14 +384,17 @@ export function ComparacionPorSerie({
   ejecucion,
   prescriptionId: inicial,
   identidad,
+  objetivos,
 }: {
   ejecucion: EjecucionDeEntrenamiento;
   prescriptionId?: string;
   /** La identidad de las versiones de todo el período: la misma que usa la evolución, así las dos vistas coinciden. */
   identidad: IdentidadDeVersiones;
+  /** DL-122: los objetivos por serie de la versión que rigió (API-SER-01). Sin ellos, el RIR y la carga son los de la prescripción. */
+  objetivos?: ObjetivosDeLaVersion;
 }) {
   const id = useId();
-  const comparaciones = useMemo(() => compararEjecucion(ejecucion, identidad), [ejecucion, identidad]);
+  const comparaciones = useMemo(() => compararEjecucion(ejecucion, identidad, objetivos), [ejecucion, identidad, objetivos]);
   const [prescriptionId, setPrescriptionId] = useState(inicial ?? comparaciones[0]?.prescriptionId ?? '');
   const [claveMedida, setClaveMedida] = useState('repeticiones');
   const [capas, setCapas] = useState<Capas>(AMBAS);
@@ -689,6 +705,7 @@ export function EvolucionDelEjercicio({
   nombre,
   versiones,
   onAbrir,
+  objetivosPorVersion,
 }: {
   ejecuciones: readonly EjecucionDeEntrenamiento[];
   /** Todas las ejecuciones del período: de ahí sale la identidad de cada versión, aunque `ejecuciones` venga filtrada. */
@@ -698,9 +715,11 @@ export function EvolucionDelEjercicio({
   /** planId → «activada el …», para decir a qué versión pertenece cada punto. */
   versiones: ReadonlyMap<string, string>;
   onAbrir: (executionId: string, prescriptionId: string) => void;
+  /** DL-122: los objetivos por serie de cada versión del período, por `planId`. */
+  objetivosPorVersion?: ReadonlyMap<string, ObjetivosDeLaVersion>;
 }) {
   const id = useId();
-  const observaciones = useMemo(() => observacionesDelEjercicio(ejecuciones, clave, periodo), [ejecuciones, clave, periodo]);
+  const observaciones = useMemo(() => observacionesDelEjercicio(ejecuciones, clave, periodo, objetivosPorVersion), [ejecuciones, clave, periodo, objetivosPorVersion]);
   const numeros = numerosDeSerie(observaciones);
   const [claveMedida, setClaveMedida] = useState('repeticiones');
   const [numeroElegido, setNumeroElegido] = useState<number | null>(null);
@@ -709,7 +728,7 @@ export function EvolucionDelEjercicio({
 
   if (observaciones.length === 0) {
     // Con un filtro de versión, el ejercicio puede estar en el período y no en la versión elegida: se dice eso.
-    const enElPeriodo = ejecuciones.length < periodo.length && observacionesDelEjercicio(periodo, clave, periodo).length > 0;
+    const enElPeriodo = ejecuciones.length < periodo.length && observacionesDelEjercicio(periodo, clave, periodo, objetivosPorVersion).length > 0;
     return <p>{enElPeriodo ? COPY_COMPARACION.sinObservacionesEnLaVersion : COPY_COMPARACION.sinObservaciones}</p>;
   }
   // De cada observación, solo el lado que es de este ejercicio (lo planificado, lo registrado o los dos).
