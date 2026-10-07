@@ -1,0 +1,9 @@
+expo 57.0.23 · camara-horizontal.jpeg (1855810 bytes)
+selección: aceptada, tipo image/jpeg
+lectura: Blob de 1855810 bytes, tipo «»
+validación en el teléfono: pasa
+API-MED-01: 201 · medio c9e1d596…
+API-MED-02: Content-Type enviado "" (la app pidió "image/jpeg")
+API-MED-02: 422 FILE_TYPE_NOT_ALLOWED [{"code":"FILE_TYPE_NOT_ALLOWED","path":"Content-Type"}]
+pantalla: Esa imagen no se puede usar: tiene que ser JPG, PNG o WebP, de hasta 10 MB.
+limpieza: medio DELETED
