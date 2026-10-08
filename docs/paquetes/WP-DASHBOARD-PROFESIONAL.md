@@ -165,7 +165,7 @@ métrica está en `EVIDENCIA/DASHBOARD-PROFESIONAL/DICCIONARIO-DE-METRICAS.md`. 
 | Clave | Métricas | Fuente canónica |
 |---|---|---|
 | `NUTRITION_PRESCRIBED_VS_RECORDED` | Energía, proteínas, carbohidratos, grasas y fibra **registradas**; registros por día; requerimiento energético del objetivo | `consumed` de cada registro efectivo (`calcularNutrientes`, `SUM_SOURCE_PER_100G_V1`): se suma lo conocido y se declara lo que falta |
-| `TRAINING_PROGRESSION_BY_EXERCISE` | Carga de la serie más pesada (kg o lb, sin mezclar), repeticiones por serie, RIR declarado y series registradas, por identidad del ejercicio | Ejecuciones registradas en su vista vigente, con `comparacion-de-entrenamiento.ts` (identidad, objetivo histórico de cada serie) |
+| `TRAINING_PROGRESSION_BY_EXERCISE` | Carga, repeticiones y RIR **de la serie del mismo número** (serie 1, serie 2…) sesión por sesión, en kg o lb sin mezclar, y series registradas del ejercicio, por identidad del ejercicio | Ejecuciones registradas en su vista vigente, con `comparacion-de-entrenamiento.ts` (`evolucion`: identidad, serie del mismo número y objetivo histórico de esa serie). **No hay «serie más pesada»:** el 09 prohíbe promediar, sumar o elegir máximos entre series (09v10:1285-1295) |
 | `ANTHROPOMETRY_LONGITUDINAL` | Cada métrica de ANT-06 (masa corporal, perímetros, pliegues y derivados) | `construirSerie` de API-ANT-06, con grupos de comparabilidad, huecos y estado de corrección |
 
 ### 6.3 Reglas de las series

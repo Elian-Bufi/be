@@ -174,6 +174,28 @@ function redondearHalfUp(q: Racional, decimales: number, recortar: boolean): str
 }
 
 /**
+ * La suma exacta de valores ya calculados (decimales con punto), con la misma aritmética que el cálculo. La usa el
+ * subtotal diario de «Analizar» (WP-DASHBOARD-PROFESIONAL §6): sumar lo conocido de varios registros sin pasar por
+ * números de punto flotante. Una lista vacía no es «cero»: quien llama decide que no hay valor.
+ */
+export function sumaExacta(valores: readonly string[]): string {
+  let total = CERO;
+  for (const v of valores) {
+    const q = decimalExacto(v);
+    if (!q) throw new ValorNoCalculable(`valor no numérico: ${v}`);
+    total = sumar(total, q);
+  }
+  return aDecimal(total);
+}
+
+/** La media exacta de valores ya calculados: su suma dividida por cuántos son. Exige al menos uno. */
+export function mediaExacta(valores: readonly string[]): string {
+  if (valores.length === 0) throw new ValorNoCalculable('la media de ningún valor no existe');
+  const suma = decimalExacto(sumaExacta(valores)) as Racional;
+  return aDecimal(dividir(suma, racional(BigInt(valores.length))));
+}
+
+/**
  * El valor para mostrar: kcal a entero y gramos a un decimal, HALF_UP, con los decimales fijos («44.0»). Se aplica una sola
  * vez, al final, sobre el exacto.
  */

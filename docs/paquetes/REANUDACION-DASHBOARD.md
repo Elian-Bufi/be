@@ -26,9 +26,9 @@
 
 | # | Hito | Estado | Commit |
 |---|---|---|---|
-| 1 | Delta, investigación, especificación y definición del paquete | En curso | — |
-| 2 | Dominio: diccionario de métricas, agregaciones, línea de tiempo y comparación de períodos, con pruebas | Pendiente | — |
-| 3 | API: API-DSH-04 (línea de tiempo), API-PRJ-01 (proyecciones), vistas guardadas, con migración y pruebas de integración | Pendiente | — |
+| 1 | Delta, investigación, especificación y definición del paquete | Hecho | `aa24073` |
+| 2 | Dominio: diccionario de métricas, agregaciones, línea de tiempo y comparación de períodos, con pruebas | Hecho | (este commit) |
+| 3 | API: API-DSH-04 (línea de tiempo), API-PRJ-01 (proyecciones), vistas guardadas, con migración y pruebas de integración | En curso | — |
 | 4 | Datos sintéticos reproducibles de 12 semanas y resultados esperados | Pendiente | — |
 | 5 | Website: Resumen, Línea de tiempo y Analizar dentro de la ficha | Pendiente | — |
 | 6 | Recorridos reales, capturas, accesibilidad, rendimiento y matriz de aceptación | Pendiente | — |
@@ -39,7 +39,26 @@
 - Arquitectura A: tres vistas dentro de la ficha del asesorado (B10-08 §4 y §32), sin un `/dashboard` universal.
 - Línea de tiempo = **API-DSH-04** con la ruta del 09 (`GET /advisees/{id}/timeline`). Proyecciones = **API-PRJ-01**
   (`GET /advisees/{id}/projections/{key}`). La guardia `scripts/trazabilidad-de-operaciones.test.cjs` exige la ruta del 09.
-- Las vistas guardadas son una familia propia de BE, declarada en una DL.
+- Las vistas guardadas son una familia propia de BE (`VAN`, DL-128), declarada en `FAMILIAS_DE_BE` de la guardia de
+  trazabilidad.
+- **Entrenamiento por número de serie:** carga, repeticiones y RIR se comparan serie 1 con serie 1, sesión por sesión.
+  Se descartó «la serie más pesada» porque el 09 prohíbe máximos, sumas y promedios entre series (09v10:1285-1295).
+- **Nutrición:** el día es la suma exacta de lo conocido (subtotal si falta algo); la semana es la media de los días con
+  valor, con su denominador. La anulación queda fuera y la rectificación cuenta una vez.
+- **Antropometría:** cada toma es un punto; los tramos se cortan por grupo de comparabilidad y por
+  `incomparableWithPrevious`. ANT-06 conserva su límite de 92 días; la proyección lee hasta 366.
+- **Línea de tiempo:** orden por fecha del hecho descendente, con hora primero, `recordedAt` y el id; cursor opaco
+  en base64url de esa clave. `q` busca en el período completo.
+- **Captura futura:** solo investigada (F-12 y F-13 en el diccionario); recomendación: circunstancias de la medición,
+  esfuerzo percibido de la sesión y eventos de enfermedad, en ese orden.
+
+## Pruebas al cierre de cada hito
+
+| Hito | Prueba | Resultado |
+|---|---|---|
+| 1 | `verificar-legajo` | Íntegro (207 de 208, como en `main`) |
+| 2 | `analisis-longitudinal.test.ts` (oráculos a mano, con mutaciones: media semanal por suma y anulados contados, las dos detectadas) | 30/30 |
+| 2 | Dominio completo | 546/546 |
 
 ## Próximo paso
 
