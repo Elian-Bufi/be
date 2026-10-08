@@ -92899,6 +92899,16 @@
               }
             }
           },
+          "422": {
+            "description": "ErrorEnvelope: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "ErrorEnvelope: INTERNAL_ERROR",
             "content": {

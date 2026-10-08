@@ -2549,7 +2549,8 @@ const DEFINIDAS: readonly Operacion[] = [
     idempotencia: false,
     request: ReemplazarVistaRequestSchema,
     exitos: [{ status: 200, schema: VistaDeAnalisisResponseSchema }],
-    errores: { ...ESCRITURA_REVELABLE, 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT'] },
+    // 422: una configuración que no es la del uso de la vista (CONFIGURATION_USAGE_MISMATCH en los detalles).
+    errores: { ...ESCRITURA_REVELABLE, 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT'], 422: ['VALIDATION_FAILED'] },
     fuente: 'encargo del 2026-10-08 §8 y §16 · ID propio de BE (familia VAN) · DEUDA_LEGAJO DL-128',
   },
   {
