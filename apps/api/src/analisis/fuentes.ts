@@ -108,6 +108,10 @@ export interface VersionDeObjetivo {
   readonly id: string;
   readonly predecesoraId: string | null;
   readonly vigenteDesde: Date;
+  /**
+   * Hasta cuándo rigió: la fecha declarada o, si no la tiene, el comienzo de su sucesora. Las versiones son de solo
+   * agregar: una reemplazada conserva `vigenteHasta` vacío, y sin este corte dos escalones se superpondrían.
+   */
   readonly vigenteHasta: Date | null;
   readonly autorId: string;
   readonly registradaEl: Date;
@@ -118,6 +122,18 @@ export interface VersionDeObjetivo {
 
 /** Las versiones del objetivo de este profesional con este asesorado (la cadena completa; se filtra al usarla). */
 export async function versionesDeObjetivo(tx: Tx, alcance: AlcanceDelAnalisis, profesionalId: string, asesoradoId: string): Promise<VersionDeObjetivo[]> {
+  return conCorteDeLaSucesora(await leerVersionesDeObjetivo(tx, alcance, profesionalId, asesoradoId));
+}
+
+function conCorteDeLaSucesora(versiones: VersionDeObjetivo[]): VersionDeObjetivo[] {
+  return versiones.map((v) => {
+    const sucesora = versiones.find((s) => s.predecesoraId === v.id);
+    const corte = [v.vigenteHasta, sucesora?.vigenteDesde ?? null].filter((d): d is Date => d !== null).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
+    return { ...v, vigenteHasta: corte };
+  });
+}
+
+async function leerVersionesDeObjetivo(tx: Tx, alcance: AlcanceDelAnalisis, profesionalId: string, asesoradoId: string): Promise<VersionDeObjetivo[]> {
   if (alcance === 'NUTRICION') {
     const filas = await tx.versionDeObjetivoNutricional.findMany({ where: { objetivo: { profesionalId, asesoradoId } }, orderBy: [{ vigenteDesde: 'asc' }, { id: 'asc' }] });
     return filas.map((v) => {

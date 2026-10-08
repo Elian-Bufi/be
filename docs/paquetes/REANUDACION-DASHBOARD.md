@@ -28,9 +28,9 @@
 |---|---|---|---|
 | 1 | Delta, investigación, especificación y definición del paquete | Hecho | `aa24073` |
 | 2 | Dominio: diccionario de métricas, agregaciones, línea de tiempo y comparación de períodos, con pruebas | Hecho | `a1d94ce` |
-| 3 | API: API-DSH-04 (línea de tiempo), API-PRJ-01 (proyecciones), vistas guardadas, con migración y pruebas de integración | Hecho | (este commit) |
-| 4 | Datos sintéticos reproducibles de 12 semanas y resultados esperados | En curso | — |
-| 5 | Website: Resumen, Línea de tiempo y Analizar dentro de la ficha | Pendiente | — |
+| 3 | API: API-DSH-04 (línea de tiempo), API-PRJ-01 (proyecciones), vistas guardadas, con migración y pruebas de integración | Hecho | `a54b769` |
+| 4 | Datos sintéticos reproducibles de 12 semanas y resultados esperados | Hecho | (este commit) |
+| 5 | Website: Resumen, Línea de tiempo y Analizar dentro de la ficha | En curso | — |
 | 6 | Recorridos reales, capturas, accesibilidad, rendimiento y matriz de aceptación | Pendiente | — |
 | 7 | PR en borrador con la CI del head final | Pendiente | — |
 
@@ -56,6 +56,12 @@
   y `leerFilas` son compartidas, con el tope de días como parámetro (92 en ANT-06, 366 en la proyección).
 - **Vistas guardadas:** tabla `vista_de_analisis` (migración 20261008120000), índice único parcial para los
   indicadores del Resumen, CHECK de nombre, versión y configuración. Hard delete auditado; 404 neutral para lo ajeno.
+- **Datos sintéticos (hito 4):** `herramientas/datos/regenerar.sh` arma todo desde cero en `be_test_dashboard`: API
+  real para cuentas, vínculos, borradores y lo reciente; SQL con fechas explícitas para la historia, con los disparadores
+  activos y los hechos en la misma transacción. Un profesional con los tres alcances, el asesorado B con vista parcial y
+  un tercero. `verificar.mjs` compara con valores escritos a mano: 25/25 (y detecta una mutación).
+- **Antropometría en la proyección:** todas las tomas (dos el mismo día son dos puntos); ANT-06 sigue con un punto por
+  día. El objetivo reemplazado rige hasta que empieza su sucesor.
 - **Captura futura:** solo investigada (F-12 y F-13 en el diccionario); recomendación: circunstancias de la medición,
   esfuerzo percibido de la sesión y eventos de enfermedad, en ese orden.
 
@@ -70,6 +76,9 @@
 | 3 | Mutación: el controlador ignora el PDP | La prueba «alcance revocado» falla, como debe; restaurado |
 | 3 | Unitarias: dominio 547, scripts 289, API 79/80 | La que falla es `medios/rutas-firmadas.spec.ts`: intermitente y ajena (ver hallazgos) |
 | 3 | `npm run typecheck` y `generar-openapi --verificar` | Sin errores; OpenAPI al día |
+| 4 | `regenerar.sh` + `verificar.mjs` (valores a mano) | 25/25; con la cena de la etapa 1 alterada, 23/71: detecta |
+| 4 | Dominio completo; integración `analisis` (18), `evolucion-antropometrica` y `schema` | 548/548; 77/77 |
+| 4 | Tiempos locales con 12 semanas (API en Node, PG local) | Línea de tiempo 212 ms; nutrición 110 ms; entrenamiento 166 ms |
 
 ## Hallazgos fuera del paquete
 

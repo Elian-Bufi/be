@@ -43,6 +43,7 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
+const ZONA = 'America/Argentina/Buenos_Aires';
 const haceDias = (n: number) => new Date(Date.now() - n * 86_400_000);
 const fechaCivil = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 
@@ -211,6 +212,23 @@ describe('API-PRJ-01 · nutrición prescripta y registrada', () => {
     expect((await proyeccion(e.c.pro, e.c.ase.id, 'NUTRITION_PRESCRIBED_VS_RECORDED', '?metric=ADHERENCE').expect(400)).body.error.details.issues[0]).toMatchObject({ code: 'INVALID_FILTER', path: 'metric' });
   });
 
+  it('un objetivo reemplazado rige hasta que empieza su sucesor: dos escalones contiguos, sin superponerse', async () => {
+    // Las versiones del objetivo son de solo agregar: la anterior conserva su «vigente hasta» vacío.
+    const v1 = await prisma.versionDeObjetivoNutricional.findUniqueOrThrow({ where: { id: e.c.objectiveVersionId } });
+    const v2 = randomUUID();
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "version_de_objetivo_nutricional" ("id","objetivo_id","predecesora_id","evaluacion_id","vigente_desde","requerimiento_energetico","distribucion_de_macronutrientes","fundamento","autor_id","procedencia")
+       VALUES ('${v2}','${v1.objetivoId}','${v1.id}','${v1.evaluacionId}', now(),'{"value":1950,"unit":"kcal/day"}','{}','Fundamento sintético del ajuste.','${e.c.pro.id}','{"prueba":"dashboard"}')`,
+    );
+    const r = ProyeccionResponseSchema.parse((await proyeccion(e.c.pro, e.c.ase.id, 'NUTRITION_PRESCRIBED_VS_RECORDED').expect(200)).body).data.result!;
+    if (r.kind !== 'NUTRITION_PRESCRIBED_VS_RECORDED') throw new Error('otra clave');
+    const hoy = fechaCivil(new Date());
+    expect(r.prescribed.energyRequirement).toEqual([
+      expect.objectContaining({ objectiveVersionId: v1.id, value: 2200, to: hoy }),
+      expect.objectContaining({ objectiveVersionId: v2, value: 1950, from: hoy, to: null }),
+    ]);
+  });
+
   it('sin registros en el período: NO_DATA con su motivo, nunca una serie de ceros', async () => {
     const r = ProyeccionResponseSchema.parse((await proyeccion(e.c.pro, e.c.ase.id, 'NUTRITION_PRESCRIBED_VS_RECORDED', '?periodStart=2026-01-01&periodEnd=2026-01-31').expect(200)).body);
     expect(r.data).toMatchObject({ dataState: 'NO_DATA', reason: 'NO_RECORDS_IN_PERIOD' });
@@ -273,21 +291,24 @@ describe('API-PRJ-01 y API-DSH-04 · entrenamiento por número de serie', () => 
 // ─── Antropometría: dos tomas a más de 92 días ───────────────────────────────────────────────────
 
 describe('API-PRJ-01 · antropometría longitudinal', () => {
-  it('lee más de 92 días (ANT-06 conserva su límite) y cada toma es un punto del mismo grupo comparable', async () => {
+  it('lee más de 92 días (ANT-06 conserva su límite), cada toma es un punto —dos el mismo día, dos puntos— y del mismo grupo comparable', async () => {
     const c = await circuitoAntropometrico(app, prisma, `ana-ant-${++contador}`);
     const reciente = await borradorSembrado(prisma, c);
     await medicionSembrada(prisma, c, reciente, { valor: 71.4 });
     await registrarBorrador(prisma, reciente);
-    // Una toma de hace 100 días, con su fecha del hecho explícita.
-    const vieja = randomUUID();
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO "evaluacion_antropometrica" ("id","profesional_id","asesorado_id","procedencia","momento_de_ocurrencia") VALUES ('${vieja}','${c.pro.id}','${c.ase.id}','{"prueba":"dashboard"}', now() - interval '100 days')`,
-    );
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO "medicion_antropometrica" ("id","evaluacion_id","metrica","valor","unidad_de_origen","protocolo_version_id","origen","clase","procedencia","momento_de_ocurrencia")
-       VALUES ('${randomUUID()}','${vieja}','peso',73.9,'kg','${c.protocoloVersionId}','CAPTURA_DIRECTA','MEDIDO','{"prueba":"dashboard"}', now() - interval '100 days')`,
-    );
-    await registrarBorrador(prisma, vieja);
+    // Dos tomas de hace 100 días, el mismo día civil (09:00 y 19:00 en Buenos Aires), con su fecha del hecho explícita.
+    const local = (hora: number) => `((date_trunc('day', now() AT TIME ZONE '${ZONA}') - interval '100 days' + interval '${hora} hours') AT TIME ZONE '${ZONA}')`;
+    for (const [hora, valor] of [[9, 73.9], [19, 74.4]] as const) {
+      const vieja = randomUUID();
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO "evaluacion_antropometrica" ("id","profesional_id","asesorado_id","procedencia","momento_de_ocurrencia") VALUES ('${vieja}','${c.pro.id}','${c.ase.id}','{"prueba":"dashboard"}', ${local(hora)})`,
+      );
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO "medicion_antropometrica" ("id","evaluacion_id","metrica","valor","unidad_de_origen","protocolo_version_id","origen","clase","procedencia","momento_de_ocurrencia")
+         VALUES ('${randomUUID()}','${vieja}','peso',${valor},'kg','${c.protocoloVersionId}','CAPTURA_DIRECTA','MEDIDO','{"prueba":"dashboard"}', ${local(hora)})`,
+      );
+      await registrarBorrador(prisma, vieja);
+    }
 
     // Una toma de otro profesional con el mismo asesorado: existe, no se muestra y la proyección lo avisa.
     const otro = await prepararProfesional(app, `ana-ant-otro-${contador}`, ['ANTROPOMETRIA']);
@@ -306,9 +327,12 @@ describe('API-PRJ-01 · antropometría longitudinal', () => {
     const r = ProyeccionResponseSchema.parse((await proyeccion(c.pro, c.ase.id, 'ANTHROPOMETRY_LONGITUDINAL', `?periodStart=${desde}&metric=peso`).expect(200)).body);
     const resultado = r.data.result!;
     if (resultado.kind !== 'ANTHROPOMETRY_LONGITUDINAL') throw new Error('otra clave');
-    expect(resultado.available).toEqual([expect.objectContaining({ metricCode: 'peso', observations: 2, units: ['kg'] })]);
+    expect(resultado.available).toEqual([expect.objectContaining({ metricCode: 'peso', observations: 3, units: ['kg'] })]);
     const peso = resultado.series[0]!;
-    expect(peso.points.map((p) => p.value)).toEqual([73.9, 71.4]);
+    // Dos tomas del mismo día siguen siendo dos (encargo §12): ni un promedio ni la primera sola, como el punto por día de ANT-06.
+    expect(peso.points.map((p) => p.value)).toEqual([73.9, 74.4, 71.4]);
+    expect(peso.points[0]!.date).toBe(peso.points[1]!.date);
+    expect(peso.points[1]!.detail).toEqual(expect.arrayContaining([expect.objectContaining({ value: expect.stringMatching(/2 de 2/) })]));
     expect(new Set(peso.points.map((p) => p.segment)).size).toBe(1);
     expect(resultado.honesty).toEqual({ interpolated: false, imputed: false, carriedForward: false });
     expect(r.data.partialView).toBe(true);

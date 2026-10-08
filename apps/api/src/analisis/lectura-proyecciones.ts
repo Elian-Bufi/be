@@ -145,7 +145,8 @@ export function proyeccionAntropometrica(
   leido: FilasDeEvolucion,
 ): { readonly resultado: ResultadoDeProyeccionAntropometrica; readonly otrasFuentes: boolean } {
   const { desde, hasta } = c.periodo;
-  const { metrics, partialView } = seriesDeEvolucion(leido, desde, hasta, null, DIAS_MAXIMOS_DEL_ANALISIS);
+  // Todas las tomas: dos el mismo día son dos puntos (encargo §12), a diferencia del punto por día de ANT-06.
+  const { metrics, partialView } = seriesDeEvolucion(leido, desde, hasta, null, { maximoDeDias: DIAS_MAXIMOS_DEL_ANALISIS, todasLasTomas: true });
   const porCodigo = new Map(metrics.map((m) => [m.metricCode, m]));
   const available = metrics
     .filter((m) => m.series.length > 0)

@@ -346,6 +346,32 @@ export function construirSerie(metrica: string, fechas: readonly string[], obser
   return { metrica, puntos };
 }
 
+/**
+ * Como `construirSerie`, pero **cada observación vigente es un punto**, también si hay dos el mismo día: «dos tomas del
+ * mismo día siguen siendo dos tomas; conservar identidad y orden» (encargo de Dirección del 2026-10-08, §12). Las
+ * observaciones llegan en el orden del hecho. Un día sin ninguna sigue siendo `SIN_DATO`, y la comparabilidad se evalúa
+ * contra el punto anterior, como en `construirSerie`. La usa la proyección `ANTHROPOMETRY_LONGITUDINAL` (DL-126); API-ANT-06
+ * conserva su punto por día.
+ */
+export function construirSerieDeTomas(metrica: string, fechas: readonly string[], observaciones: readonly ObservacionDeSerie[]): SerieLongitudinal {
+  const vigentes = observaciones.filter((o) => o.metrica === metrica && o.condicion === 'VIGENTE');
+  let anterior: FichaDeComparabilidad | null = null;
+  const puntos: PuntoDeSerie[] = [];
+  for (const fechaLocal of fechas) {
+    const delDia = vigentes.filter((x) => x.fechaLocal === fechaLocal);
+    if (delDia.length === 0) {
+      puntos.push({ fechaLocal, disponibilidad: 'SIN_DATO' });
+      continue;
+    }
+    for (const o of delDia) {
+      const incomparableConElAnterior: readonly MotivoDeIncomparabilidad[] = anterior ? evaluarComparabilidad(anterior, o.ficha) : [];
+      anterior = o.ficha;
+      puntos.push({ fechaLocal, disponibilidad: 'REGISTRADO', magnitud: o.magnitud, clase: o.clase, ficha: o.ficha, origenId: o.origenId, incomparableConElAnterior });
+    }
+  }
+  return { metrica, puntos };
+}
+
 /** Los checkpoints sin dato, para que la superficie los nombre como tales (REG-06-165). */
 export function checkpointsSinDato(serie: SerieLongitudinal): readonly string[] {
   return serie.puntos.filter((p) => p.disponibilidad === 'SIN_DATO').map((p) => p.fechaLocal);

@@ -3386,6 +3386,12 @@ Producirlas sería inventar.
 - Cada clave acepta solo sus filtros; los demás son 400 `NOT_APPLICABLE_QUERY_PARAMETER`. La validación corre en el
   guard, antes del PDP, y por eso recibe también la clave de la ruta (`pdp.guard.ts`).
 - El 09 declara `SESSION_MFA`; se implementa como `SESSION`, igual que en el resto de la demo sintética (DL-088 #17).
+- **Antropometría: todas las tomas.** La proyección conserva cada toma, también dos el mismo día (encargo §12), con
+  `construirSerieDeTomas`. API-ANT-06 no cambia: sigue con un punto por día, la primera toma vigente de su checkpoint
+  (REG-06-165). Es una diferencia declarada entre las dos lecturas, no una corrección de ANT-06.
+- **Escalones del requerimiento:** una versión del objetivo rige hasta su `vigenteHasta` o hasta que empieza su
+  sucesora, lo primero. Las versiones son de solo agregar y una reemplazada conserva `vigenteHasta` vacío: sin este corte,
+  dos escalones se superpondrían.
 
 **Condición de cierre.**
 1. Dirección aprueba el diccionario.

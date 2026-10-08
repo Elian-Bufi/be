@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CLASE_DE_DATO_API, construirSerie, fechasDelPeriodo, type ObservacionDeSerie, type SerieApi } from '@be/domain';
+import { CLASE_DE_DATO_API, construirSerie, construirSerieDeTomas, fechasDelPeriodo, type ObservacionDeSerie, type SerieApi } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
 import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
@@ -128,16 +128,23 @@ export type FilasDeEvolucion = Awaited<ReturnType<typeof leerFilas>>;
 /**
  * Las series de API-ANT-06 a partir de lo leído, sin base: cada punto es una observación vigente con su grupo de
  * comparabilidad, y cada día sin observación cae en un hueco. La comparte la proyección `ANTHROPOMETRY_LONGITUDINAL` de
- * API-PRJ-01 (DL-126), que lee hasta 366 días: por eso el tope de días es un parámetro (ANT-06 conserva sus 92).
+ * API-PRJ-01 (DL-126), con dos diferencias que son parámetros, y por eso ANT-06 no cambia:
+ * - lee hasta 366 días (ANT-06 conserva sus 92);
+ * - `todasLasTomas`: dos tomas del mismo día son dos puntos, en el orden del hecho (encargo del 2026-10-08, §12). ANT-06
+ *   sigue con un punto por día, el de su checkpoint.
  */
 export function seriesDeEvolucion(
   leido: FilasDeEvolucion,
   desde: string,
   hasta: string,
   metricas: readonly string[] | null,
-  maximoDeDias = DIAS_MAXIMOS_DEL_PERIODO,
+  opciones: { readonly maximoDeDias?: number; readonly todasLasTomas?: boolean } = {},
 ): { readonly metrics: SerieApi[]; readonly partialView: boolean } {
-  const { observaciones, fichasPorMedicion, porMedicion, partialView } = observacionesDe(leido, desde, hasta);
+  const { observaciones: leidas, fichasPorMedicion, porMedicion, partialView } = observacionesDe(leido, desde, hasta);
+  const maximoDeDias = opciones.maximoDeDias ?? DIAS_MAXIMOS_DEL_PERIODO;
+  const momento = (o: ObservacionDeSerie): number => porMedicion.get(o.origenId)?.momentoDeOcurrencia.getTime() ?? 0;
+  const observaciones = opciones.todasLasTomas ? [...leidas].sort((a, b) => momento(a) - momento(b) || a.origenId.localeCompare(b.origenId)) : leidas;
+  const construir = opciones.todasLasTomas ? construirSerieDeTomas : construirSerie;
   const fechas = fechasDelPeriodo(desde, hasta, maximoDeDias);
   const pedidas = metricas ?? [...new Set(observaciones.map((o) => o.metrica))].sort();
 
@@ -157,7 +164,7 @@ export function seriesDeEvolucion(
   };
 
   const metrics = pedidas.map((metrica) => {
-    const serie = construirSerie(metrica, fechas, observaciones);
+    const serie = construir(metrica, fechas, observaciones);
     const grupos = new Map<string, ReturnType<typeof grupoDe>>();
     const puntos = serie.puntos
       .filter((p) => p.disponibilidad === 'REGISTRADO')
