@@ -169,7 +169,10 @@ export const VigenciaDePlanSchema = z.strictObject({
   label: z.string(),
   activatedAt: Instante,
   from: FechaLocalSchema,
-  /** El día anterior a la activación de la sucesora; `null` si sigue vigente o si el seguimiento sigue abierto. */
+  /**
+   * El día del corte: la activación de la sucesora o el cierre del seguimiento (06:4297), lo primero. Ese día ya rige la
+   * siguiente, así que dos bandas pueden compartirlo. `null` si sigue vigente.
+   */
   to: FechaLocalSchema.nullable(),
 });
 export type VigenciaDePlan = z.infer<typeof VigenciaDePlanSchema>;
@@ -333,7 +336,7 @@ export type CalidadDeEntrada = z.infer<typeof CalidadDeEntradaSchema>;
  * (11A TEST-TIM-002).
  */
 export const RelacionDeEntradaSchema = z.strictObject({
-  kind: z.enum(['RECTIFIED', 'ANNULLED', 'CORRECTED', 'EXECUTES_PLAN_VERSION', 'SUCCEEDS_VERSION', 'MEASUREMENT_CORRECTED', 'MEASUREMENT_ANNULLED']),
+  kind: z.enum(['RECTIFIED', 'ANNULLED', 'CORRECTED', 'EXECUTES_PLAN_VERSION', 'SUCCEEDS_VERSION', 'MEASUREMENT_CORRECTED', 'MEASUREMENT_ANNULLED', 'REVIEW_APPLIED']),
   at: Instante.nullable(),
   target: OrigenDeDatoSchema.nullable(),
   label: z.string(),

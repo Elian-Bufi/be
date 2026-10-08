@@ -2496,6 +2496,7 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: '09v11:964-1010 · B10-08 §11-§12 · T-06-24 · REG-06-145 · DEUDA_LEGAJO DL-054, DL-116, DL-127',
   },
   {
+    // El 09 declara SESSION_MFA (09 v0.11 §19); se implementa como SESSION en esta demo sintética, igual que DL-088 #17.
     id: 'API-PRJ-01',
     metodo: 'get',
     ruta: '/advisees/{adviseeId}/projections/{projectionKey}',

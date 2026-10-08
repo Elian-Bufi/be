@@ -14,6 +14,8 @@
  */
 import type { EjercicioDelPeriodo, MetricaDeEntrenamiento, PuntoAnalitico, SerieAnalitica } from './contratos-analisis';
 import type { EjecucionDeEntrenamiento } from './contratos-entrenamiento';
+import { objetivosEfectivos } from './objetivos-por-serie';
+import { sesionesDelPlan, type ContenidoDePlanDeEntrenamiento } from './plan-de-entrenamiento';
 import {
   ejerciciosComparables,
   evolucion,
@@ -28,6 +30,29 @@ import {
 import type { DefinicionDeMetrica } from './metricas-del-analisis';
 import { lunesDe, semanasDelPeriodo } from './series-del-analisis';
 import { numero } from './formato-numeros';
+
+/**
+ * DL-122: los objetivos efectivos por serie de una versión de plan (su instantánea), por prescripción. Es lo que el
+ * website arma desde API-SER-01 para «Evolución de un ejercicio», resuelto con la misma `objetivosEfectivos`: así cada
+ * punto se compara con el objetivo de **esa** serie en la versión que rigió ese día.
+ */
+export function objetivosDeLaVersionDelPlan(contenido: ContenidoDePlanDeEntrenamiento): ObjetivosDeLaVersion {
+  return new Map(
+    sesionesDelPlan(contenido).flatMap(({ sesion }) =>
+      sesion.prescriptions.map(
+        (p) =>
+          [
+            p.prescriptionId,
+            objetivosEfectivos(p).map((o) => ({
+              setIndex: o.setIndex,
+              target: { rir: o.rir, suggestedLoad: o.suggestedLoad },
+              targetOrigin: { rir: o.origin.rir, suggestedLoad: o.origin.suggestedLoad },
+            })),
+          ] as const,
+      ),
+    ),
+  );
+}
 
 /** Los ejercicios del período, por identidad, con lo necesario para elegir uno y una serie. */
 export function ejerciciosDelPeriodo(ejecuciones: readonly EjecucionDeEntrenamiento[]): EjercicioDelPeriodo[] {

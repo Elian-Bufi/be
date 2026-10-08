@@ -196,6 +196,9 @@ model Identidad {
   // Precierre del 2026-10-06, §2 (DL-122)
   capacidadesDeCliente CapacidadDeClienteDeclarada[] @relation("CapacidadDeClienteDeLaIdentidad")
 
+  // WP-DASHBOARD-PROFESIONAL (DL-128)
+  vistasDeAnalisis VistaDeAnalisis[] @relation("VistaDeAnalisisDelProfesional")
+
   @@map("identidad")
 }
 
@@ -2788,4 +2791,34 @@ model CapacidadDeClienteDeclarada {
 
   @@unique([identidadId, capacidad])
   @@map("capacidad_de_cliente_declarada")
+}
+
+// ─── Vistas de análisis guardadas (WP-DASHBOARD-PROFESIONAL; DL-128) ─────────────────────────────────────────────────
+// packages/domain/src/contratos-analisis.ts. La garantía que Prisma no modela (a lo sumo una configuración de
+// indicadores del Resumen por profesional) es un índice único parcial de la migración 20261008120000.
+
+enum UsoDeVistaDeAnalisis {
+  ANALISIS
+  INDICADORES_DEL_RESUMEN
+}
+
+/// Una vista de «Analizar» o la configuración de los indicadores del Resumen, del profesional (API-VAN-01 a 04). Es solo
+/// configuración —métricas por identificador, modo, grano, período y capas—, validada por el esquema del dominio: nunca
+/// datos de salud ni un permiso, porque cada lectura de datos vuelve a pasar por el PDP. Mutable, como «Mis habituales»;
+/// cada escritura queda en la auditoría. `version` es el token de concurrencia.
+model VistaDeAnalisis {
+  id                     String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String               @map("profesional_id") @db.Uuid
+  nombre                 String
+  uso                    UsoDeVistaDeAnalisis
+  configuracion          Json
+  version                Int                  @default(1)
+  procedencia            Json
+  momentoDeRegistro      DateTime             @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime             @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad @relation("VistaDeAnalisisDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([profesionalId, momentoDeActualizacion])
+  @@map("vista_de_analisis")
 }

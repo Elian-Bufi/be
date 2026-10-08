@@ -27,9 +27,9 @@
 | # | Hito | Estado | Commit |
 |---|---|---|---|
 | 1 | Delta, investigación, especificación y definición del paquete | Hecho | `aa24073` |
-| 2 | Dominio: diccionario de métricas, agregaciones, línea de tiempo y comparación de períodos, con pruebas | Hecho | (este commit) |
-| 3 | API: API-DSH-04 (línea de tiempo), API-PRJ-01 (proyecciones), vistas guardadas, con migración y pruebas de integración | En curso | — |
-| 4 | Datos sintéticos reproducibles de 12 semanas y resultados esperados | Pendiente | — |
+| 2 | Dominio: diccionario de métricas, agregaciones, línea de tiempo y comparación de períodos, con pruebas | Hecho | `a1d94ce` |
+| 3 | API: API-DSH-04 (línea de tiempo), API-PRJ-01 (proyecciones), vistas guardadas, con migración y pruebas de integración | Hecho | (este commit) |
+| 4 | Datos sintéticos reproducibles de 12 semanas y resultados esperados | En curso | — |
 | 5 | Website: Resumen, Línea de tiempo y Analizar dentro de la ficha | Pendiente | — |
 | 6 | Recorridos reales, capturas, accesibilidad, rendimiento y matriz de aceptación | Pendiente | — |
 | 7 | PR en borrador con la CI del head final | Pendiente | — |
@@ -49,6 +49,13 @@
   `incomparableWithPrevious`. ANT-06 conserva su límite de 92 días; la proyección lee hasta 366.
 - **Línea de tiempo:** orden por fecha del hecho descendente, con hora primero, `recordedAt` y el id; cursor opaco
   en base64url de esa clave. `q` busca en el período completo.
+- **API (hito 3):** módulo `apps/api/src/analisis`. DSH-04 y PRJ-01 usan `PdpGuard` como DSH-03 (decisión por
+  alcance; 404 sin ninguno). La validación de la consulta recibe también los parámetros de ruta (cambio mínimo en
+  `pdp.guard.ts`). PRJ-01 con el alcance de su clave denegado y otro permitido: 200 `NOT_AVAILABLE_TO_VIEW`. Las
+  series se arman después del COMMIT (como ANT-06). ANT-06 se refactorizó sin cambiar su forma: `seriesDeEvolucion`
+  y `leerFilas` son compartidas, con el tope de días como parámetro (92 en ANT-06, 366 en la proyección).
+- **Vistas guardadas:** tabla `vista_de_analisis` (migración 20261008120000), índice único parcial para los
+  indicadores del Resumen, CHECK de nombre, versión y configuración. Hard delete auditado; 404 neutral para lo ajeno.
 - **Captura futura:** solo investigada (F-12 y F-13 en el diccionario); recomendación: circunstancias de la medición,
   esfuerzo percibido de la sesión y eventos de enfermedad, en ese orden.
 
@@ -59,6 +66,17 @@
 | 1 | `verificar-legajo` | Íntegro (207 de 208, como en `main`) |
 | 2 | `analisis-longitudinal.test.ts` (oráculos a mano, con mutaciones: media semanal por suma y anulados contados, las dos detectadas) | 30/30 |
 | 2 | Dominio completo | 546/546 |
+| 3 | `analisis.int-spec.ts` (17) + `schema`, `evolucion-antropometrica` y `dashboard` | 87/87 contra PostgreSQL 16 local (base `be_test_analisis`) |
+| 3 | Mutación: el controlador ignora el PDP | La prueba «alcance revocado» falla, como debe; restaurado |
+| 3 | Unitarias: dominio 547, scripts 289, API 79/80 | La que falla es `medios/rutas-firmadas.spec.ts`: intermitente y ajena (ver hallazgos) |
+| 3 | `npm run typecheck` y `generar-openapi --verificar` | Sin errores; OpenAPI al día |
+
+## Hallazgos fuera del paquete
+
+- **Baja · CI intermitente:** `apps/api/src/medios/rutas-firmadas.spec.ts` altera el último carácter base64url de la
+  firma. Cuando ese carácter es A, B, C o D (1 de cada 16 firmas, porque cambia con la hora de vencimiento) solo cambian
+  bits de relleno y la firma sigue valiendo: la prueba falla sin un defecto real. Se arregla alterando un carácter del
+  medio. No se toca en este paquete.
 
 ## Próximo paso
 

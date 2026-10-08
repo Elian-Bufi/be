@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CLASE_DE_DATO_API, construirSerie, fechasDelPeriodo, type ObservacionDeSerie } from '@be/domain';
+import { CLASE_DE_DATO_API, construirSerie, fechasDelPeriodo, type ObservacionDeSerie, type SerieApi } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
 import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
@@ -51,61 +51,12 @@ export class EvolucionService {
         return { titular, ...(await leerFilas(tx, titular, actor.identidadId, desde, hasta)) };
       },
     });
-    const titular = leido.titular;
-    const { observaciones, fichasPorMedicion, porMedicion, partialView } = observacionesDe(leido, desde, hasta);
-    const fechas = fechasDelPeriodo(desde, hasta);
-    const pedidas = metricas ?? [...new Set(observaciones.map((o) => o.metrica))].sort();
-
-    const gruposPorFicha = new Map<string, { comparabilityGroup: string; protocolVersionId: string; protocolName: string; methodVersionId: string | null; unit: string }>();
-    const grupoDe = (f: ReturnType<typeof fichaDe>): string => {
-      const clave = `${f.protocolVersionId}|${f.methodVersionId ?? ''}|${f.unit}`;
-      if (!gruposPorFicha.has(clave)) {
-        gruposPorFicha.set(clave, {
-          comparabilityGroup: `cmp-${gruposPorFicha.size + 1}`,
-          protocolVersionId: f.protocolVersionId,
-          protocolName: f.protocolName,
-          methodVersionId: f.methodVersionId,
-          unit: f.unit,
-        });
-      }
-      return gruposPorFicha.get(clave)!.comparabilityGroup;
-    };
-
+    const { metrics, partialView } = seriesDeEvolucion(leido, desde, hasta, metricas);
     return {
       data: {
-        adviseeId: titular,
+        adviseeId: leido.titular,
         period: { start: desde, end: hasta, timeZone: ZONA_POR_DEFECTO },
-        metrics: pedidas.map((metrica) => {
-          const serie = construirSerie(metrica, fechas, observaciones);
-          const grupos = new Map<string, ReturnType<typeof grupoDe>>();
-          const puntos = serie.puntos
-            .filter((p) => p.disponibilidad === 'REGISTRADO')
-            .map((p) => {
-              const fuente = porMedicion.get(p.origenId)!;
-              const grupo = grupoDe(fichasPorMedicion.get(p.origenId)!);
-              grupos.set(grupo, grupo);
-              return {
-                occurredAt: fuente.momentoDeOcurrencia.toISOString(),
-                recordedAt: fuente.momentoDeRegistro.toISOString(),
-                value: p.magnitud.valor,
-                unit: p.magnitud.unidad,
-                sourceEvaluationId: fuente.evaluacionId,
-                sourceId: p.origenId,
-                dataClass: CLASE_DE_DATO_API[p.clase],
-                comparabilityGroup: grupo,
-                // La vista efectiva viene de la cadena de correcciones o del original (REG-06-16): se dice cuál.
-                correctionState: fuente.correcciones.length > 0 ? ('CORRECTED' as const) : ('EFFECTIVE' as const),
-                incomparableWithPrevious: p.incomparableConElAnterior.map((m) => MOTIVO_API[m]),
-              };
-            });
-          return {
-            metricCode: metrica,
-            series: puntos,
-            // Los días sin observación vigente, como rangos: un hueco no es una fila con un valor vacío.
-            gaps: huecosDe(serie.puntos.filter((p) => p.disponibilidad === 'SIN_DATO').map((p) => p.fechaLocal)),
-            comparability: { groups: [...gruposPorFicha.values()].filter((g) => grupos.has(g.comparabilityGroup)) },
-          };
-        }),
+        metrics,
         // 09v11:786-796: la vista es parcial cuando el actor ve solo el subconjunto de fuentes que puede
         // consultar. Acá pasa cuando el asesorado tiene evaluaciones registradas de otro profesional en el
         // período: existen, no se muestran, y la respuesta lo dice en vez de parecer completa.
@@ -172,6 +123,73 @@ export class EvolucionService {
   }
 }
 
+export type FilasDeEvolucion = Awaited<ReturnType<typeof leerFilas>>;
+
+/**
+ * Las series de API-ANT-06 a partir de lo leído, sin base: cada punto es una observación vigente con su grupo de
+ * comparabilidad, y cada día sin observación cae en un hueco. La comparte la proyección `ANTHROPOMETRY_LONGITUDINAL` de
+ * API-PRJ-01 (DL-126), que lee hasta 366 días: por eso el tope de días es un parámetro (ANT-06 conserva sus 92).
+ */
+export function seriesDeEvolucion(
+  leido: FilasDeEvolucion,
+  desde: string,
+  hasta: string,
+  metricas: readonly string[] | null,
+  maximoDeDias = DIAS_MAXIMOS_DEL_PERIODO,
+): { readonly metrics: SerieApi[]; readonly partialView: boolean } {
+  const { observaciones, fichasPorMedicion, porMedicion, partialView } = observacionesDe(leido, desde, hasta);
+  const fechas = fechasDelPeriodo(desde, hasta, maximoDeDias);
+  const pedidas = metricas ?? [...new Set(observaciones.map((o) => o.metrica))].sort();
+
+  const gruposPorFicha = new Map<string, { comparabilityGroup: string; protocolVersionId: string; protocolName: string; methodVersionId: string | null; unit: string }>();
+  const grupoDe = (f: ReturnType<typeof fichaDe>): string => {
+    const clave = `${f.protocolVersionId}|${f.methodVersionId ?? ''}|${f.unit}`;
+    if (!gruposPorFicha.has(clave)) {
+      gruposPorFicha.set(clave, {
+        comparabilityGroup: `cmp-${gruposPorFicha.size + 1}`,
+        protocolVersionId: f.protocolVersionId,
+        protocolName: f.protocolName,
+        methodVersionId: f.methodVersionId,
+        unit: f.unit,
+      });
+    }
+    return gruposPorFicha.get(clave)!.comparabilityGroup;
+  };
+
+  const metrics = pedidas.map((metrica) => {
+    const serie = construirSerie(metrica, fechas, observaciones);
+    const grupos = new Map<string, ReturnType<typeof grupoDe>>();
+    const puntos = serie.puntos
+      .filter((p) => p.disponibilidad === 'REGISTRADO')
+      .map((p) => {
+        const fuente = porMedicion.get(p.origenId)!;
+        const grupo = grupoDe(fichasPorMedicion.get(p.origenId)!);
+        grupos.set(grupo, grupo);
+        return {
+          occurredAt: fuente.momentoDeOcurrencia.toISOString(),
+          recordedAt: fuente.momentoDeRegistro.toISOString(),
+          value: p.magnitud.valor,
+          unit: p.magnitud.unidad,
+          sourceEvaluationId: fuente.evaluacionId,
+          sourceId: p.origenId,
+          dataClass: CLASE_DE_DATO_API[p.clase],
+          comparabilityGroup: grupo,
+          // La vista efectiva viene de la cadena de correcciones o del original (REG-06-16): se dice cuál.
+          correctionState: fuente.correcciones.length > 0 ? ('CORRECTED' as const) : ('EFFECTIVE' as const),
+          incomparableWithPrevious: p.incomparableConElAnterior.map((m) => MOTIVO_API[m]),
+        };
+      });
+    return {
+      metricCode: metrica,
+      series: puntos,
+      // Los días sin observación vigente, como rangos: un hueco no es una fila con un valor vacío.
+      gaps: huecosDe(serie.puntos.filter((p) => p.disponibilidad === 'SIN_DATO').map((p) => p.fechaLocal)),
+      comparability: { groups: [...gruposPorFicha.values()].filter((g) => grupos.has(g.comparabilityGroup)) },
+    };
+  });
+  return { metrics, partialView };
+}
+
 /** Los días sin dato, agrupados en rangos consecutivos. Se dicen todos; lo que cambia es que se dicen una sola vez. */
 function huecosDe(fechas: readonly string[]): { from: string; to: string; state: 'NO_DATA'; days: number }[] {
   const rangos: { from: string; to: string; state: 'NO_DATA'; days: number }[] = [];
@@ -193,7 +211,7 @@ function huecosDe(fechas: readonly string[]): { from: string; to: string; state:
  * REGISTRADAS del período, las corridas vigentes y, si el actor no es el titular, cuántas mediciones de otro profesional
  * no puede ver. No calcula nada: el cálculo va después del COMMIT (`observacionesDe`), para no retener la conexión.
  */
-async function leerFilas(tx: Tx, titular: string, actorId: string, desde: string, hasta: string) {
+export async function leerFilas(tx: Tx, titular: string, actorId: string, desde: string, hasta: string) {
   const ventana = { gte: inicioDelDiaLocal(desde, ZONA_POR_DEFECTO), lt: finDelDiaLocal(hasta, ZONA_POR_DEFECTO) };
   // Lo que el actor **no** puede ver: evaluaciones registradas del mismo asesorado, en el mismo período, de otro
   // profesional. Si las hay, la vista es parcial y la respuesta lo declara (09v11:786-796).

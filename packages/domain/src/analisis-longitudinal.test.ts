@@ -13,7 +13,8 @@ import type { SerieApi } from './contratos-antropometria';
 import { EjecucionDeEntrenamientoSchema, type EjecucionDeEntrenamiento, type Prescripcion, type SerieEjecutadaApi } from './contratos-entrenamiento';
 import type { Nutrientes } from './contratos-recetas';
 import { serieAntropometrica } from './antropometria-del-analisis';
-import { ejerciciosDelPeriodo, serieDeEntrenamiento } from './entrenamiento-del-analisis';
+import { ejerciciosDelPeriodo, objetivosDeLaVersionDelPlan, serieDeEntrenamiento } from './entrenamiento-del-analisis';
+import type { ContenidoDePlanDeEntrenamiento } from './plan-de-entrenamiento';
 import { agruparPorDia, codificarCursor, cumpleFiltros, decodificarCursor, ordenarEntradas, paginarEntradas, registradoTarde } from './linea-de-tiempo';
 import { aplicarPreset, definicionAntropometrica, definicionDeMetrica, MAXIMO_DE_METRICAS, METRICAS_DEL_DICCIONARIO, PRESETS_DE_ANALISIS } from './metricas-del-analisis';
 import { coberturaNutricional, diasNutricionales, serieNutricional, type RegistroParaAnalisis } from './nutricion-del-analisis';
@@ -555,4 +556,43 @@ test('filtros combinados y búsqueda sin acentos ni mayúsculas, sobre lo visibl
   assert.equal(cumpleFiltros(e, { dominios: ['NUTRITION'], calidades: ['QUANTITIES_UNCONFIRMED'] }), true);
   assert.equal(cumpleFiltros(e, { estados: ['ANNULLED'] }), false);
   assert.equal(cumpleFiltros(e, { soloTardias: true }), false);
+});
+
+test('los objetivos por serie de una versión: lo propio de la serie, lo heredado de la prescripción o «sin objetivo» (DL-122)', () => {
+  const contenido: ContenidoDePlanDeEntrenamiento = {
+    blocks: [
+      {
+        blockId: 'b1',
+        label: 'Bloque',
+        purpose: null,
+        microcycles: [],
+        sessions: [
+          {
+            sessionId: 's1',
+            label: 'Piernas A',
+            instructions: null,
+            prescriptions: [
+              {
+                prescriptionId: 'rx-a',
+                exerciseVersionId: '00000000-0000-4000-8000-000000000001',
+                // La serie 2 fija su RIR (1) y la 3 lo quita (null): sin objetivo, no el de la prescripción.
+                sets: [{ repetitions: { value: 10 }, note: null }, { repetitions: { value: 10 }, note: null, rir: 1 }, { repetitions: { value: 8 }, note: null, rir: null }],
+                intensity: { criterion: 'RIR', target: { value: 2, reference: null } },
+                suggestedLoad: { value: 20, unit: 'kg' },
+                professionalParameters: [],
+                note: null,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const objetivos = objetivosDeLaVersionDelPlan(contenido);
+  assert.deepEqual([...objetivos.keys()], ['rx-a']);
+  assert.deepEqual(objetivos.get('rx-a'), [
+    { setIndex: 1, target: { rir: 2, suggestedLoad: { value: 20, unit: 'kg' } }, targetOrigin: { rir: 'PRESCRIPTION', suggestedLoad: 'PRESCRIPTION' } },
+    { setIndex: 2, target: { rir: 1, suggestedLoad: { value: 20, unit: 'kg' } }, targetOrigin: { rir: 'SET', suggestedLoad: 'PRESCRIPTION' } },
+    { setIndex: 3, target: { rir: null, suggestedLoad: { value: 20, unit: 'kg' } }, targetOrigin: { rir: 'SET', suggestedLoad: 'PRESCRIPTION' } },
+  ]);
 });

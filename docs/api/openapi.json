@@ -88504,7 +88504,8 @@
                                         "EXECUTES_PLAN_VERSION",
                                         "SUCCEEDS_VERSION",
                                         "MEASUREMENT_CORRECTED",
-                                        "MEASUREMENT_ANNULLED"
+                                        "MEASUREMENT_ANNULLED",
+                                        "REVIEW_APPLIED"
                                       ]
                                     },
                                     "at": {

@@ -3377,8 +3377,15 @@ Producirlas sería inventar.
 - La media semanal de nutrición es sobre los días con cantidades, con el denominador visible. No hay día «completo»: BE
   no tiene ese mecanismo.
 - El RIR es ordinal y se resume con la mediana.
-- La carga de la serie más pesada se informa por sesión, sin mezclar kg con lb ni ejercicios distintos, y no se llama 1RM
-  ni marca.
+- Carga, repeticiones y RIR se comparan **serie del mismo número contra serie del mismo número**, sesión por sesión, sin
+  mezclar kg con lb ni ejercicios distintos. No existe «la serie más pesada»: el 09 prohíbe máximos, sumas y promedios
+  entre series (09v10:1285-1295). Ninguna carga se llama 1RM ni marca.
+- Si el profesional ve al asesorado por otro alcance pero no por el de la clave pedida, la respuesta es 200 con
+  `NOT_AVAILABLE_TO_VIEW`, sin datos ni conteos (09 v0.11 §22: el dominio es legítimo de nombrar). Sin ningún alcance
+  permitido, 404 idéntico a un asesorado inexistente.
+- Cada clave acepta solo sus filtros; los demás son 400 `NOT_APPLICABLE_QUERY_PARAMETER`. La validación corre en el
+  guard, antes del PDP, y por eso recibe también la clave de la ruta (`pdp.guard.ts`).
+- El 09 declara `SESSION_MFA`; se implementa como `SESSION`, igual que en el resto de la demo sintética (DL-088 #17).
 
 **Condición de cierre.**
 1. Dirección aprueba el diccionario.
@@ -3418,6 +3425,25 @@ Producirlas sería inventar.
 - **B.** Implementar solo los filtros del 09 y dejar la búsqueda y los filtros avanzados para después.
 
 **Provisorio en código.** A.
+
+**Decisiones de la implementación** (reversibles):
+- **Actos que BE registra en el momento** (activar un plan, registrar una revisión, abrir o cerrar un seguimiento): la
+  fuente guarda la ocurrencia y el registro, y son el mismo instante. No es copiar uno en el otro. Si una fila vieja no
+  tiene ocurrencia, va `null` y la fecha civil del registro se usa solo para ordenar.
+- **Relaciones:** sucesión de versiones, ejecución de una versión del plan, rectificación, anulación, corrección,
+  medición corregida o anulada y `REVIEW_APPLIED` (la versión del plan que nació de una revisión: «revisión → acción»
+  del 09).
+- **Bandas de vigencia:** `to` es el día del corte (activación de la sucesora o cierre del seguimiento), que ya es de la
+  siguiente. Una activación no es ejecución y la fecha de creación no es vigencia.
+- **Límite de página:** 20 por defecto y 50 como máximo, como el resto de las listas.
+- **`q` y la privacidad:** la búsqueda viaja en la query de la API, no en la URL de la página del website, y la API
+  registra solo la ruta parametrizada, sin query (`http/request-id.ts`). Las bitácoras de la plataforma de hosting
+  pueden registrar URLs con su query: es un riesgo residual que se declara (encargo §14). La alternativa, buscar con
+  POST, se aparta del 09.
+- **`partialView`:** en la línea de tiempo, como en API-DSH-03, es verdadero si algún alcance quedó denegado (también
+  cuando el profesional simplemente no trabaja ese alcance con el asesorado). En una proyección habla solo de su propia
+  área: es verdadero si en el período hay datos de ese dominio que el profesional no ve (los de otro profesional), como
+  API-ANT-06 (09v11:786-796).
 
 **Condición de cierre.** Dirección aprueba la forma de la entrada y las extensiones, y el 09 las incorpora.
 
