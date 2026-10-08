@@ -134,7 +134,7 @@ function Panel({
     const columnas: { clave: string; indice: number }[] = [];
     for (const s of series) {
       const segmentos = [...new Set(s.serie.points.map((pt) => pt.segment))];
-      segmentos.forEach((seg, j) => columnas.push({ clave: `s${s.indice}_${j}`, indice: s.indice }));
+      segmentos.forEach((_, j) => columnas.push({ clave: `s${s.indice}_${j}`, indice: s.indice }));
       for (const pt of s.serie.points) {
         const v = s.valor(pt);
         if (v === null) continue;

@@ -24,11 +24,9 @@ import {
   resumenTextual,
   superposicionPermitida,
   valorConUnidad,
-  type DefinicionDeMetrica,
   type LineaDeTiempoResponse,
   type OrigenDeDato,
   type PuntoAnalitico,
-  type ReferenciaDeMetrica,
   type Referencia,
 } from '@be/domain';
 import dynamic from 'next/dynamic';
