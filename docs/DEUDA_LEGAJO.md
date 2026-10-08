@@ -130,6 +130,9 @@
 | DL-123 | Encargo de Dirección · 2026-10-06 | REG-06-134, 135, 136 · 09v10 §9 · DL-120 | Imagen del ejercicio: medio `EXERCISE_REFERENCE`, asociación de solo agregar, licencia honesta, procedencia y revisión técnica | **DECIDIDA** 2026-10-06 por el encargo · familia EJE. **IMPLEMENTADA** el 2026-10-06 en `wp-entrenamiento-series` y **probada localmente** (las tres imágenes del paquete por el flujo real), con la CI en verde. Sin integrar. API-TRN-13 sigue con `didacticResources` vacío |
 | DL-124 | Encargo de Dirección · 2026-10-06 | REG-06-130, 131 · paquete de Dirección (DECISIONES_Y_TIEMPOS) | Tiempos de la sesión como eventos idempotentes con calidad: medido, estimado, incompleto o sin dato | **DECIDIDA** 2026-10-06 por el encargo · familia TIE. **IMPLEMENTADA** el 2026-10-06 en `wp-entrenamiento-series` y **probada localmente** (el guion de tiempos del paquete, de punta a punta), con la CI en verde. Sin integrar. Pendiente en Android: pantalla bloqueada, muerte del proceso y reloj monotónico durante la suspensión. Precierre del 2026-10-06 (§1, §3, §4): estados honestos del guardado local, cifrado AES-256-GCM con la clave en el almacén seguro y fuera del respaldo de Android; reloj desde el arranque con su base en cada instante (`ELAPSED_SINCE_BOOT`). **IMPLEMENTADO**; Android pendiente |
 | DL-125 | Encargo de Dirección · 2026-10-06 (precierre, §6) | 08 §12.2, §12.4 (08:386, 08:395), §13, §21 · 08:451 · DL-120 · DL-116 | El acto `EVIDENCIA_VISUAL` no tenía texto versionado, ni registro, ni lo exigían MED-01 y MED-03 | **PROPUESTA**, sin activar · texto versionado propuesto (`evidencia-visual-2026-10-propuesta`), acto registrable por alcance de Nutrición, familia propia EVI (API-EVI-01 a 04) y mapeo a MED-01 y MED-03 detrás de `BE_EVIDENCIA_VISUAL_EXIGIDA` (por defecto `false`). **Punto de aprobación pendiente:** Dirección aprueba el texto, con la validación jurídica, y decide activar la exigencia |
+| DL-126 | Encargo de Dirección · 2026-10-08 (entorno profesional) | 09 v0.11 §18-§23 · B10-09 §15-§28 · 11A TEST-PRJ-001 · encargo §8-§13 | «Analizar» con hasta tres métricas sobre API-PRJ-01: el 09 define ocho proyecciones con resultado propio, y solo tres tienen una derivación definida en BE | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · las 8 claves en el contrato; 3 derivadas con el cálculo canónico del dominio; 5 responden `INSUFFICIENT_INFORMATION` con `SPECIFICATION_PENDING`. Diccionario de métricas versionado |
+| DL-127 | Encargo de Dirección · 2026-10-08 (entorno profesional) | 09 v0.11 §16 · B10-08 §11-§12 · T-06-24 · DL-054 · DL-116 | API-DSH-04 (línea de tiempo) sin implementar: fuentes, forma de la entrada y filtros que el 09 no fija | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · ruta del 09; `occurredDate` para los hechos sin hora; extensiones de filtro `state`, `quality`, `planVersionId`, `exerciseId` y `q` |
+| DL-128 | Encargo de Dirección · 2026-10-08 (entorno profesional) | encargo §8 y §16 («guardar una vista personal») · 09 sin operación · 08 (preferencias sin datos de salud) | Vistas de análisis guardadas e indicadores fijados del Resumen: no existen en el 09 ni en el modelo | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · familia propia VAN (API-VAN-01 a 04), tabla aditiva `vista_de_analisis` con configuración sin datos de salud; los permisos se revalidan al abrir |
 
 ---
 
@@ -3329,3 +3332,119 @@ sintéticos (`evidencia-visual` 10/10 y el bloque de `contrato`, con una app con
 3. El 08 registra la activación, y el 05 y el 09 incorporan la familia EVI.
 
 **Condición de cierre.** Los tres pasos anteriores.
+
+## DL-126 — «Analizar» con hasta tres métricas sobre API-PRJ-01: tres de las ocho proyecciones tienen derivación
+
+**Prioridad:** alta · **Documento:** 09 v0.11 §18-§23 (`ProjectionKey`, API-PRJ-01, estados longitudinales y vista
+parcial) · B10-09 §15-§28 · 11A TEST-PRJ-001 a 010 · encargo del 2026-10-08, §8 a §13 · **Estado:** PROPUESTA, sin
+integrar (`wp-dashboard-profesional`)
+
+**Qué dice el legajo.**
+- El 09 cierra la taxonomía en ocho proyecciones y pide que `result` sea una unión discriminada por clave.
+- Cada proyección se produce solo «si existe especificación de derivación trazable» (09 v0.11 §20.1). El 09 no fija qué
+  es una marca personal ni el volumen efectivo, y deja la ponderación por zonas a una especificación futura.
+- 11A TEST-PRJ-001 pide «catálogo = 8/8, 0 extra».
+
+**Qué pide el encargo.**
+- Una pantalla «Analizar» con hasta tres métricas, tres modos de lectura, presets por pregunta profesional, comparación de
+  períodos y vistas guardadas.
+- Un diccionario versionado de métricas que clasifique cada una como disponible, derivable, incompleta o futura.
+- No inventar valores ni pantallas aparentemente operativas.
+
+**Por qué no tal cual.** Cinco claves dependen de especificaciones que BE no tiene:
+- el volumen de carga externa con todas las bases de carga;
+- el mapeo de zonas musculares;
+- el umbral del profesional;
+- la definición de una marca.
+Producirlas sería inventar.
+
+**Opciones.**
+- **A.** API-PRJ-01 con las 8 claves en el contrato (8/8, ninguna extra).
+  - Se derivan las tres que tienen un cálculo canónico en el dominio:
+    - `NUTRITION_PRESCRIBED_VS_RECORDED`, con `calcularNutrientes`, sumando lo conocido y declarando lo que falta;
+    - `TRAINING_PROGRESSION_BY_EXERCISE`, con `comparacion-de-entrenamiento`;
+    - `ANTHROPOMETRY_LONGITUDINAL`, con `construirSerie` de ANT-06.
+  - Las otras cinco responden `INSUFFICIENT_INFORMATION` con `SPECIFICATION_PENDING`.
+  - Las métricas de «Analizar» son vistas de esas tres claves, descritas en un diccionario versionado.
+- **B.** Una operación nueva de BE, «serie de una métrica», paralela a PRJ-01. Duplica el contrato del 09 e introduce un
+  modelo canónico paralelo, que el encargo pide evitar.
+
+**Provisorio en código.** A.
+
+**Decisiones reversibles que toma esta propuesta:**
+- La semana va de lunes a domingo en la zona civil del asesorado, y una semana parcial se marca.
+- El período admite hasta 366 días.
+- La media semanal de nutrición es sobre los días con cantidades, con el denominador visible. No hay día «completo»: BE
+  no tiene ese mecanismo.
+- El RIR es ordinal y se resume con la mediana.
+- La carga de la serie más pesada se informa por sesión, sin mezclar kg con lb ni ejercicios distintos, y no se llama 1RM
+  ni marca.
+
+**Condición de cierre.**
+1. Dirección aprueba el diccionario.
+2. El 09 incorpora la forma de los tres resultados.
+3. Las especificaciones de las otras cinco claves se definen, o se declaran fuera del alcance de la entrega.
+
+## DL-127 — API-DSH-04 en BE: fuentes, forma de la entrada y filtros que el 09 no fija
+
+**Prioridad:** alta · **Documento:** 09 v0.11 §16 (09v11:964-1010) · B10-08 §11-§12 · 06 T-06-24 · DL-054 · DL-116 ·
+**Estado:** PROPUESTA, sin integrar (`wp-dashboard-profesional`)
+
+**Qué dice el legajo.**
+- La entrada tiene `timelineEntryId`, `domain`, `eventType`, `source`, `occurredAt`, `recordedAt`, `author`,
+  `provenance` y `relations`.
+- `occurredAt` y `recordedAt` son independientes; si uno falta, no se copia el otro.
+- Solo hay relaciones reconstruibles (plan → ejecución, original → corrección, revisión → acción).
+- Los filtros son `domain`, `type`, `periodStart` y `periodEnd`.
+
+**Qué falta en el 09.**
+- De qué fuentes sale cada tipo de evento.
+- Cómo se representa un hecho que solo tiene fecha.
+- Cómo se ordenan los empates y cómo se pagina de forma estable.
+- Si hay búsqueda.
+- Los filtros que pide el encargo: estado, calidad, versión de plan, ejercicio y texto.
+
+**Opciones.**
+- **A.**
+  - **Fuentes:** las tablas fuente de cada dominio, acotadas al profesional y a los alcances que el PDP permitió, y los
+    eventos de proceso persistidos (cumple la condición de cierre de DL-054 en esta parte).
+  - **Unidad de la entrada:** una por registro, sesión, toma, activación, revisión o hecho de proceso; nunca una por
+    ítem ni por evento técnico del cronómetro.
+  - **Fecha sin hora:** `occurredDate` acompaña a `occurredAt`, que es `null` cuando el hecho no tiene hora.
+  - **Orden y paginación:** fecha del hecho descendente, después `recordedAt` y el identificador, con un cursor opaco.
+  - **Extensiones de BE**, declaradas: `state`, `quality`, `planVersionId`, `exerciseId` y `q`. `q` busca en el período
+    completo del conjunto autorizado.
+  - **Rectificaciones y anulaciones:** son relaciones de la entrada original, no entradas de consumo nuevas.
+- **B.** Implementar solo los filtros del 09 y dejar la búsqueda y los filtros avanzados para después.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** Dirección aprueba la forma de la entrada y las extensiones, y el 09 las incorpora.
+
+## DL-128 — Vistas de análisis guardadas e indicadores fijados del Resumen
+
+**Prioridad:** media · **Documento:** encargo del 2026-10-08, §6.2 («indicadores fijados por el profesional»), §8
+(«guardar una vista personal y volver a abrirla»), §14 y §16 · 09 sin operación · 08 (los datos de salud no se copian
+en preferencias) · **Estado:** PROPUESTA, sin integrar (`wp-dashboard-profesional`)
+
+**Qué pasa.**
+- El encargo pide guardar vistas de análisis y fijar indicadores en el Resumen, «por cuenta y con el mecanismo
+  adecuado», guardando la configuración y nunca los datos de salud.
+- El 09 no tiene ninguna operación de preferencias del profesional, salvo el umbral de PRJ-02 y 03, que tiene otra
+  semántica.
+- El modelo no tiene preferencias por cuenta.
+
+**Opciones.**
+- **A.** Una familia propia de BE, **VAN** (como TPL, HAB, CAR o EVI):
+  - API-VAN-01 lista, API-VAN-02 crea, API-VAN-03 reemplaza con versión esperada y API-VAN-04 borra;
+  - tabla aditiva `vista_de_analisis`, mutable y del profesional (como «Mis habituales»), con escrituras auditadas;
+  - la configuración se valida con un esquema del dominio y no admite datos de salud: solo identificadores de métricas,
+    período, modo, grano y capas;
+  - abrir una vista vuelve a pasar por el PDP en cada lectura de datos, así que una vista guardada no concede acceso;
+  - a lo sumo una configuración de indicadores del Resumen por profesional.
+- **B.** Guardar las vistas en el `localStorage` del navegador. No sobrevive a otro dispositivo ni a una sesión nueva en
+  otro navegador, y el encargo pide persistencia por cuenta.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** Dirección aprueba la familia y el 09 la incorpora o la declara extensión de BE.
