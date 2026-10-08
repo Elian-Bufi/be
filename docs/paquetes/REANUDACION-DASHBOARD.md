@@ -33,7 +33,8 @@
 | 5a | Website: Resumen, Línea de tiempo y Analizar dentro de la ficha; rendimiento, fallas y día en curso | Hecho | `ec175d8` |
 | 5b | Revisión visual, diseño de escritorio, exportación CSV y recorrido real automatizado (`recorrido.mjs`, 86/86) | Hecho | `a84dd62` |
 | 6 | Conjunto de volumen, rendimiento (memoria de macros), matriz de aceptación, guion de demostración, capturas y resultados versionados | Hecho | `364bb1d` |
-| 7 | PR en borrador con la CI del head final | Hecho: **PR #153** (borrador, contra `main`). El resultado de la CI del head está en el PR | este commit |
+| 7 | PR en borrador con la CI del head final | Hecho: **PR #153** (borrador, contra `main`). El resultado de la CI del head está en el PR | `8b56770`, `fbeb256` |
+| 8 | Corrección de la revisión independiente del head `fbeb256` (cinco hallazgos, reproducidos antes de corregir) | Hecho: ver abajo y `ACEPTACION.md`, «Revisión del head fbeb256». El resultado de la CI del head está en el PR | este commit |
 
 ## Decisiones tomadas (resumen; el detalle está en la definición del paquete)
 
@@ -49,7 +50,8 @@
 - **Antropometría:** cada toma es un punto; los tramos se cortan por grupo de comparabilidad y por
   `incomparableWithPrevious`. ANT-06 conserva su límite de 92 días; la proyección lee hasta 366.
 - **Línea de tiempo:** orden por fecha del hecho descendente, con hora primero, `recordedAt` y el id; cursor opaco
-  en base64url de esa clave. `q` busca en el período completo.
+  en base64url de esa clave. La búsqueda recorre el período completo y va en el cuerpo de **API-DSH-04-BUSQUEDA**
+  (`POST …/timeline/search`), nunca en una URL (hito 8; `q` en la URL de API-DSH-04 es 400).
 - **API (hito 3):** módulo `apps/api/src/analisis`. DSH-04 y PRJ-01 usan `PdpGuard` como DSH-03 (decisión por
   alcance; 404 sin ninguno). La validación de la consulta recibe también los parámetros de ruta (cambio mínimo en
   `pdp.guard.ts`). PRJ-01 con el alcance de su clave denegado y otro permitido: 200 `NOT_AVAILABLE_TO_VIEW`. Las
@@ -101,6 +103,28 @@
   sin red simuladas en el navegador, reflujo a 320 px, texto al 200 %, axe en seis estados y 30 capturas.
   **Antes de correrlo, reiniciar la API** (`entorno.sh parar-api` y `api`): el límite de inicios de sesión (5 cada 15
   minutos) vive en memoria y las corridas seguidas lo agotan.
+
+## Hito 8 · corrección de la revisión del head fbeb256
+
+- **Cómo se trabajó:** cada hallazgo se reprodujo primero con `fbeb256` compilado (`herramientas/revision-fbeb256/`),
+  y se separó lo que era un defecto del producto (2, 3, 4 y parte de 5) de lo que era una insuficiencia de la evidencia
+  (1 y 5).
+- **1 · capturas:** `fullPage` achica la ventana a 1 × 1 y recharts quita el SVG por un instante. Ahora las capturas
+  agrandan la ventana al alto de la página, y `comprobarGraficos` mira lo dibujado y los píxeles de cada color.
+- **2 · grano semanal:** los resúmenes, la comparación y la referencia usan las observaciones del rango exacto
+  (`granoDeObservacion`); con el gráfico por semana, la web pide también los días (`series.ts`, `leerSerie`).
+  `exigirObservaciones` rechaza una serie agrupada.
+- **3 · referencia:** `ReferenciaDelCambioSchema` (`FIRST_DAYS` o `RANGE`), `referenciaElegida` sin el intervalo
+  visible, editor con «Aplicar», `ref` en la URL y `reference` en las vistas guardadas (reemplaza a `referenceDays`).
+- **4 · búsqueda:** API-DSH-04-BUSQUEDA (sufijo `BUSQUEDA` en la guardia de trazabilidad); `validarConsulta` recibe el
+  cuerpo; el cliente arma la query de la línea de tiempo solo con las claves declaradas.
+- **5 · clase y revocación:** `dataClass` en los puntos, con las palabras de la pestaña de Antropometría (Medido,
+  Reportado, Calculado); la exportación y el origen de un punto vuelven a preguntar con el acceso de ese momento.
+  Escenario con cuentas descartables (`datos/generar.mjs descartable-cuentas` y `descartable-datos`, `recorrido.mjs
+  descartable`): la revocación la hace el asesorado desde su web.
+- **Lecciones del arnés:** un `$$` en un texto de reemplazo de `String.replace` se vuelve `$` (rompió `$$eval`): los
+  scripts de edición usan reemplazos literales. Una pestaña nueva de Chrome pasa al frente y la captura de una de fondo no
+  termina: el análisis de píxeles se hace en la misma página.
 
 ## Pruebas al cierre de cada hito
 

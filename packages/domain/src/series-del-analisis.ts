@@ -14,10 +14,22 @@
  * - **Comparar dos períodos** usa la misma regla de resumen en los dos, dice la duración, n y la cobertura de cada uno, y
  *   no compara totales de períodos de distinta duración como si fueran equivalentes (encargo §13).
  */
-import type { PuntoAnalitico, SerieAnalitica } from './contratos-analisis';
-import type { DefinicionDeMetrica, ResumenDePeriodo } from './metricas-del-analisis';
+import type { PuntoAnalitico, ReferenciaDelCambio, SerieAnalitica } from './contratos-analisis';
+import { granoDeObservacion, type DefinicionDeMetrica, type ResumenDePeriodo } from './metricas-del-analisis';
 import { diaSiguiente, diasEntreFechas } from './fechas-civiles';
 import { numero } from './formato-numeros';
+
+/**
+ * Los resúmenes, la comparación y la referencia se calculan sobre las observaciones de la métrica (el día, la sesión o la
+ * toma), nunca sobre puntos agrupados por semana: una media de semanas no pondera los días y una semana que un rango
+ * corta no se puede recortar. Recibir otra serie es un error de programación, y falla en voz alta.
+ */
+function exigirObservaciones(serie: SerieAnalitica, definicion: DefinicionDeMetrica, quien: string): void {
+  const esperado = granoDeObservacion(definicion);
+  if (serie.grain !== esperado) {
+    throw new Error(`${quien}: necesita la serie de observaciones (grano ${esperado}), no la agrupada (grano ${serie.grain}). Agrupar el gráfico no cambia el significado de un resumen.`);
+  }
+}
 
 // ─── Fechas civiles y semanas ───────────────────────────────────────────────────────────────────
 
@@ -110,7 +122,9 @@ export type MotivoSinReferencia =
   /** No hay observaciones con valor en el rango de referencia. */
   | 'SIN_OBSERVACIONES'
   /** La referencia es cero o negativa: el cambio relativo no se puede calcular. */
-  | 'NO_POSITIVA';
+  | 'NO_POSITIVA'
+  /** El rango de referencia elegido no cae entero dentro del período leído: no hay con qué calcularlo. */
+  | 'FUERA_DEL_PERIODO';
 
 export type Referencia =
   | {
@@ -148,6 +162,7 @@ const media = (valores: readonly number[]): number => valores.reduce((s, v) => s
  * valor todavía no es el de un día o una semana completos. La referencia dice cuántos quedaron fuera.
  */
 export function referenciaDeLaSerie(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string): Referencia {
+  exigirObservaciones(serie, definicion, 'referenciaDeLaSerie');
   if (!definicion.cambioRelativo || serie.scale !== 'RATIO') return { tipo: 'invalida', motivo: 'ESCALA_NO_ADMITE', desde, hasta };
   const conValor = serie.points.filter((p) => p.value !== null && p.date >= desde && p.date <= hasta);
   const enRango = conValor.filter((p) => !p.partialBucket);
@@ -172,6 +187,34 @@ export function referenciaDeLaSerie(serie: SerieAnalitica, definicion: Definicio
   }
   if (!(valor > 0)) return { tipo: 'invalida', motivo: 'NO_POSITIVA', desde, hasta };
   return { tipo: 'valida', valor, n: usados.length, desde, hasta, fechas: usados.map((p) => p.date), regla, tramo, parciales: usados.filter((p) => p.quality === 'PARTIAL').length, incompletos };
+}
+
+/**
+ * El rango de fechas de la referencia elegida, para un período de análisis. No depende del intervalo que se ve: acercar,
+ * alejar o restablecer el gráfico no lo mueve (DL-126). `FIRST_DAYS` son los primeros N días del período (sin pasar su
+ * final); `RANGE` es un rango fijo. `dentroDelPeriodo` dice si el rango cae entero en el período leído: si no, no hay
+ * observaciones con qué calcularlo y la pantalla lo dice.
+ */
+export function rangoDeLaReferencia(referencia: ReferenciaDelCambio, periodo: { readonly desde: string; readonly hasta: string }): { readonly desde: string; readonly hasta: string; readonly dentroDelPeriodo: boolean } {
+  if (referencia.kind === 'FIRST_DAYS') {
+    const fin = deUtc(aUtc(periodo.desde) + (referencia.days - 1) * DIA);
+    return { desde: periodo.desde, hasta: fin > periodo.hasta ? periodo.hasta : fin, dentroDelPeriodo: true };
+  }
+  const [desde, hasta] = referencia.start <= referencia.end ? [referencia.start, referencia.end] : [referencia.end, referencia.start];
+  return { desde, hasta, dentroDelPeriodo: desde >= periodo.desde && hasta <= periodo.hasta };
+}
+
+/**
+ * La referencia elegida de una serie para un período: el rango de `rangoDeLaReferencia` y la regla de la métrica, sobre
+ * las observaciones. No recibe el intervalo que se ve, a propósito: acercar, alejar o restablecer el gráfico no la puede
+ * mover. Una métrica que no admite cambio relativo lo dice primero; un rango fuera del período, después.
+ */
+export function referenciaElegida(serie: SerieAnalitica, definicion: DefinicionDeMetrica, referencia: ReferenciaDelCambio, periodo: { readonly desde: string; readonly hasta: string }): Referencia {
+  const rango = rangoDeLaReferencia(referencia, periodo);
+  const r = referenciaDeLaSerie(serie, definicion, rango.desde, rango.hasta);
+  if (r.tipo === 'invalida' && r.motivo === 'ESCALA_NO_ADMITE') return r;
+  if (!rango.dentroDelPeriodo) return { tipo: 'invalida', motivo: 'FUERA_DEL_PERIODO', desde: rango.desde, hasta: rango.hasta };
+  return r;
 }
 
 /** `100 × (valor − referencia) / referencia`. La referencia ya es válida (positiva). */
@@ -235,8 +278,13 @@ export interface ResumenDeUnPeriodo {
   readonly tramo: string | null;
 }
 
-/** El resumen de la serie en un rango, con la regla de la métrica (la misma para los dos períodos). */
+/**
+ * El resumen de la serie en un rango, con la regla de la métrica (la misma para los dos períodos). Recibe las
+ * observaciones (el día, la sesión o la toma) y usa las que caen en el rango exacto: un rango que empieza un miércoles
+ * toma desde el miércoles, aunque el gráfico esté agrupado por semana.
+ */
 export function resumirPeriodo(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string): ResumenDeUnPeriodo {
+  exigirObservaciones(serie, definicion, 'resumirPeriodo');
   const delRango = serie.points.filter((p) => p.date >= desde && p.date <= hasta);
   const conValor = delRango.filter((p) => p.value !== null);
   // La media y la mediana son de días, sesiones o semanas completos: un balde incompleto queda fuera, y se cuenta.
@@ -302,24 +350,34 @@ export const valorConUnidad = (valor: number, unidad: string, decimales: number)
 
 /**
  * El resumen textual de una serie (W3C, imágenes complejas): qué mide, en qué período, cuántas observaciones, la primera
- * y la última con sus fechas, cuántos subtotales y cuántos tramos. No interpreta ni califica.
+ * y la última con sus fechas, cuántos subtotales y cuántos tramos. No interpreta ni califica. Describe lo que dibuja el
+ * gráfico en ese rango: los puntos que lo tocan (una semana que el rango corta se nombra con sus fechas), no los de todo el
+ * período leído.
  */
 export function resumenTextual(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string): string {
-  const conValor = serie.points.filter((p) => p.value !== null);
+  const delRango = serie.points.filter((p) => p.date <= hasta && (p.dateEnd ?? p.date) >= desde);
+  const conValor = delRango.filter((p) => p.value !== null);
   const encabezado = `${serie.label} (${serie.unit}), del ${fechaCorta(desde)} al ${fechaCorta(hasta)}`;
   if (conValor.length === 0) return `${encabezado}: no hay datos en este período.`;
   const primero = conValor[0] as PuntoAnalitico;
   const ultimo = conValor[conValor.length - 1] as PuntoAnalitico;
+  // Agrupada por semana, cada punto es una semana: se dice así, con su rango, para que no se lea como un día.
+  const semanal = serie.grain === 'WEEK';
+  const cuando = (p: PuntoAnalitico) => (semanal && p.dateEnd ? `la semana del ${fechaCorta(p.date)} al ${fechaCorta(p.dateEnd)}` : `el ${fechaCorta(p.date)}`);
   const partes = [
-    `${numero(conValor.length)} ${conValor.length === 1 ? 'observación con valor' : 'observaciones con valor'}`,
-    `la primera, ${valorConUnidad(primero.value as number, serie.unit, definicion.decimales)} el ${fechaCorta(primero.date)}`,
-    ...(conValor.length > 1 ? [`la última, ${valorConUnidad(ultimo.value as number, serie.unit, definicion.decimales)} el ${fechaCorta(ultimo.date)}`] : []),
+    semanal ? `${numero(conValor.length)} ${conValor.length === 1 ? 'semana con valor (media de sus días con valor)' : 'semanas con valor (cada una, la media de sus días con valor)'}` : `${numero(conValor.length)} ${conValor.length === 1 ? 'observación con valor' : 'observaciones con valor'}`,
+    `la primera, ${valorConUnidad(primero.value as number, serie.unit, definicion.decimales)} ${cuando(primero)}`,
+    ...(conValor.length > 1 ? [`la última, ${valorConUnidad(ultimo.value as number, serie.unit, definicion.decimales)} ${cuando(ultimo)}`] : []),
   ];
+  const reportados = conValor.filter((p) => p.dataClass === 'REPORTED').length;
+  if (reportados > 0) partes.push(`${numero(reportados)} ${reportados === 1 ? 'es un valor reportado por la persona, no medido' : 'son valores reportados por la persona, no medidos'}`);
+  const calculados = conValor.filter((p) => p.dataClass === 'DERIVED').length;
+  if (calculados > 0) partes.push(`${numero(calculados)} ${calculados === 1 ? 'es un valor calculado por un método (una estimación)' : 'son valores calculados por un método (estimaciones)'}`);
   const parciales = conValor.filter((p) => p.quality === 'PARTIAL').length;
   if (parciales > 0) partes.push(`${numero(parciales)} ${parciales === 1 ? 'es un subtotal' : 'son subtotales'} de lo registrado`);
   const incompletos = conValor.filter((p) => p.partialBucket).length;
   if (incompletos > 0) partes.push(`${numero(incompletos)} ${incompletos === 1 ? 'es de un día o una semana sin completar' : 'son de días o semanas sin completar'} (el día en curso, o una semana que el período corta)`);
-  const sinValor = serie.points.length - conValor.length;
+  const sinValor = delRango.length - conValor.length;
   if (sinValor > 0) partes.push(`${numero(sinValor)} sin valor conocido`);
   const tramos = new Set(conValor.map((p) => p.segment)).size;
   if (tramos > 1) partes.push(`la línea se corta en ${numero(tramos)} tramos`);

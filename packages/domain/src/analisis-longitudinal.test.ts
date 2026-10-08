@@ -16,9 +16,22 @@ import { serieAntropometrica } from './antropometria-del-analisis';
 import { ejerciciosDelPeriodo, objetivosDeLaVersionDelPlan, serieDeEntrenamiento } from './entrenamiento-del-analisis';
 import type { ContenidoDePlanDeEntrenamiento } from './plan-de-entrenamiento';
 import { agruparPorDia, codificarCursor, conteosDelPeriodo, cumpleFiltros, decodificarCursor, ordenarEntradas, paginarEntradas, registradoTarde } from './linea-de-tiempo';
-import { aplicarPreset, definicionAntropometrica, definicionDeMetrica, MAXIMO_DE_METRICAS, METRICAS_DEL_DICCIONARIO, PRESETS_DE_ANALISIS } from './metricas-del-analisis';
+import { aplicarPreset, definicionAntropometrica, definicionDeMetrica, granoDeObservacion, MAXIMO_DE_METRICAS, METRICAS_DEL_DICCIONARIO, PRESETS_DE_ANALISIS } from './metricas-del-analisis';
 import { coberturaNutricional, diasNutricionales, serieNutricional, type RegistroParaAnalisis } from './nutricion-del-analisis';
-import { compararPeriodos, huecosDelRango, lecturaEnFecha, lunesDe, puntosRelativos, referenciaDeLaSerie, resumenTextual, resumirPeriodo, semanasDelPeriodo, superposicionPermitida } from './series-del-analisis';
+import {
+  compararPeriodos,
+  huecosDelRango,
+  lecturaEnFecha,
+  lunesDe,
+  puntosRelativos,
+  rangoDeLaReferencia,
+  referenciaDeLaSerie,
+  referenciaElegida,
+  resumenTextual,
+  resumirPeriodo,
+  semanasDelPeriodo,
+  superposicionPermitida,
+} from './series-del-analisis';
 import { sumaExacta } from './calculo-nutricional';
 
 const ZONA = 'America/Argentina/Buenos_Aires';
@@ -410,6 +423,7 @@ const serieDe = (valores: [string, number | null, boolean?][], d = definicion('n
     segment: 't1',
     corrected: false,
     partialBucket: incompleto ?? false,
+    dataClass: null,
     coverage: null,
     missing: [],
     detail: [],
@@ -443,7 +457,7 @@ test('sin referencia válida no hay cambio relativo: base cero, sin observacione
   assert.deepEqual(referenciaDeLaSerie(serieDe([['2026-10-01', 0]]), d, '2026-10-01', '2026-10-01'), { tipo: 'invalida', motivo: 'NO_POSITIVA', desde: '2026-10-01', hasta: '2026-10-01' });
   assert.equal((referenciaDeLaSerie(serieDe([['2026-10-05', 10]]), d, '2026-10-01', '2026-10-02') as { motivo: string }).motivo, 'SIN_OBSERVACIONES');
   const rir = definicion('entrenamiento.rir');
-  assert.equal((referenciaDeLaSerie(serieDe([['2026-10-01', 2]], rir), rir, '2026-10-01', '2026-10-01') as { motivo: string }).motivo, 'ESCALA_NO_ADMITE');
+  assert.equal((referenciaDeLaSerie({ ...serieDe([['2026-10-01', 2]], rir), grain: 'ORIGINAL' }, rir, '2026-10-01', '2026-10-01') as { motivo: string }).motivo, 'ESCALA_NO_ADMITE');
 });
 
 test('el cursor no simula simultaneidad: sin observación es «sin dato»; el más cercano solo si se pide, con su distancia (PRO-09)', () => {
@@ -658,4 +672,142 @@ test('los objetivos por serie de una versión: lo propio de la serie, lo heredad
     { setIndex: 2, target: { rir: 1, suggestedLoad: { value: 20, unit: 'kg' } }, targetOrigin: { rir: 'SET', suggestedLoad: 'PRESCRIPTION' } },
     { setIndex: 3, target: { rir: null, suggestedLoad: { value: 20, unit: 'kg' } }, targetOrigin: { rir: 'SET', suggestedLoad: 'PRESCRIPTION' } },
   ]);
+});
+
+// ─── Revisión del head fbeb256: resúmenes sobre observaciones, referencia explícita y clase del dato ──────────
+
+/** Del 7 al 20 de septiembre de 2026 (dos semanas de lunes a domingo): la primera con un solo día de 1.000 kcal, la segunda con siete de 2.000. */
+const DOS_SEMANAS: [string, number][] = [['2026-09-09', 1000], ...[14, 15, 16, 17, 18, 19, 20].map((d) => [`2026-09-${d}`, 2000] as [string, number])];
+
+/** Lo que mostraría el gráfico agrupado por semana: la media de los días con valor de cada semana. */
+const agrupadaPorSemana = (diaria: SerieAnalitica, semanas: [string, string, number, number][]): SerieAnalitica => ({
+  ...diaria,
+  grain: 'WEEK',
+  aggregation: 'MEAN_OF_DAYS_WITH_DATA',
+  points: semanas.map(([lunes, domingo, valor, n]) => ({ ...diaria.points[0]!, pointId: `w:${lunes}`, date: lunes, dateEnd: domingo, value: valor, n })),
+});
+
+test('agrupar por semana no cambia el significado: media, comparación y referencia salen de los días del rango exacto', () => {
+  const d = definicion('nutricion.energia');
+  const dias = serieDe(DOS_SEMANAS);
+  // La media de los ocho días con datos: (1.000 + 7 × 2.000) / 8 = 1.875. La media de dos semanas daría 1.500.
+  assert.deepEqual(
+    (({ valor, n }) => ({ valor, n }))(resumirPeriodo(dias, d, '2026-09-07', '2026-09-20')),
+    { valor: 1875, n: 8 },
+  );
+  // Un rango que empieza un miércoles: los cinco días del 16 al 20, no «sin valor» por filtrar por el lunes.
+  const mitad = resumirPeriodo(dias, d, '2026-09-16', '2026-09-20');
+  assert.deepEqual([mitad.valor, mitad.n, mitad.duracionDias], [2000, 5, 5]);
+  const c = compararPeriodos(dias, d, { desde: '2026-09-07', hasta: '2026-09-13' }, { desde: '2026-09-16', hasta: '2026-09-20' });
+  assert.deepEqual([c.a.valor, c.a.n, c.b.valor, c.b.n, c.diferencia], [1000, 1, 2000, 5, 1000]);
+  // La referencia de jueves a miércoles usa solo los días 14, 15 y 16 (no la media de la semana entera, con días fuera).
+  const ref = referenciaDeLaSerie(dias, d, '2026-09-10', '2026-09-16');
+  assert.equal(ref.tipo, 'valida');
+  if (ref.tipo === 'valida') assert.deepEqual([ref.valor, ref.n, ref.fechas], [2000, 3, ['2026-09-14', '2026-09-15', '2026-09-16']]);
+  // La serie agrupada no se acepta para resumir: daría 1.500 y «sin valor». Falla en voz alta en vez de mentir.
+  const semanas = agrupadaPorSemana(dias, [
+    ['2026-09-07', '2026-09-13', 1000, 1],
+    ['2026-09-14', '2026-09-20', 2000, 7],
+  ]);
+  assert.throws(() => resumirPeriodo(semanas, d, '2026-09-07', '2026-09-20'), /serie de observaciones/);
+  assert.throws(() => compararPeriodos(semanas, d, { desde: '2026-09-07', hasta: '2026-09-13' }, { desde: '2026-09-16', hasta: '2026-09-20' }), /serie de observaciones/);
+  assert.throws(() => referenciaDeLaSerie(semanas, d, '2026-09-10', '2026-09-16'), /serie de observaciones/);
+});
+
+test('coberturas desiguales: el resumen pondera días, no semanas; un día sin valor no entra', () => {
+  const d = definicion('nutricion.energia');
+  // Semana 1: dos días (1.000 y 1.200) y uno con registros sin ninguna cantidad (sin valor). Semana 2: cinco días de 2.000.
+  const dias = serieDe([
+    ['2026-09-08', 1000],
+    ['2026-09-09', 1200],
+    ['2026-09-10', null],
+    ...[14, 15, 16, 17, 18].map((x) => [`2026-09-${x}`, 2000] as [string, number]),
+  ]);
+  const r = resumirPeriodo(dias, d, '2026-09-07', '2026-09-20');
+  // (1.000 + 1.200 + 5 × 2.000) / 7 = 1.742,857…; la media de las dos medias semanales sería (1.100 + 2.000) / 2 = 1.550.
+  assert.ok(Math.abs((r.valor as number) - 12200 / 7) < 1e-9, String(r.valor));
+  assert.deepEqual([r.n, r.observaciones], [7, 8], '7 días con valor de 8 días con registros');
+  // Límite a mitad de semana en los dos extremos: del miércoles 9 al martes 15 → 1.200, sin valor, 2.000 y 2.000.
+  const corte = resumirPeriodo(dias, d, '2026-09-09', '2026-09-15');
+  assert.deepEqual([corte.valor, corte.n, corte.observaciones], [(1200 + 2000 + 2000) / 3, 3, 4]);
+});
+
+test('entrenamiento: un rango que corta semanas cuenta las sesiones del rango, no las semanas que empiezan en él', () => {
+  const d = definicion('entrenamiento.series-registradas');
+  const sesiones = serieDeEntrenamiento(ENTRENO, d, { exerciseKey: EJERCICIO, metrica: 'SETS_RECORDED', serie: null, unidad: 'kg', grano: 'ORIGINAL', ...RANGO });
+  assert.equal(granoDeObservacion(d), 'ORIGINAL');
+  // Del viernes 4 al jueves 10: la sesión del 4 (2 series) y la del 8 (no realizada, 0). Por semanas daría 1 (la del 7).
+  const r = resumirPeriodo(sesiones, d, '2026-09-04', '2026-09-10');
+  assert.deepEqual([r.valor, r.n], [2, 2]);
+  const semanal = serieDeEntrenamiento(ENTRENO, d, { exerciseKey: EJERCICIO, metrica: 'SETS_RECORDED', serie: null, unidad: 'kg', grano: 'WEEK', ...RANGO });
+  assert.throws(() => resumirPeriodo(semanal, d, '2026-09-04', '2026-09-10'), /serie de observaciones/);
+});
+
+test('la referencia es un rango explícito: los primeros días del período o un rango fijo, nunca el intervalo que se ve', () => {
+  const periodo = { desde: '2026-07-11', hasta: '2026-10-08' };
+  assert.deepEqual(rangoDeLaReferencia({ kind: 'FIRST_DAYS', days: 7 }, periodo), { desde: '2026-07-11', hasta: '2026-07-17', dentroDelPeriodo: true });
+  assert.deepEqual(rangoDeLaReferencia({ kind: 'RANGE', start: '2026-09-01', end: '2026-09-07' }, periodo), { desde: '2026-09-01', hasta: '2026-09-07', dentroDelPeriodo: true });
+  // Un rango fijo fuera del período leído no tiene con qué calcularse, y se dice.
+  assert.equal(rangoDeLaReferencia({ kind: 'RANGE', start: '2026-06-01', end: '2026-06-07' }, periodo).dentroDelPeriodo, false);
+  // Los primeros 31 días de un período de 7 no pasan su final; un rango invertido se ordena.
+  assert.deepEqual(rangoDeLaReferencia({ kind: 'FIRST_DAYS', days: 31 }, { desde: '2026-10-02', hasta: '2026-10-08' }), { desde: '2026-10-02', hasta: '2026-10-08', dentroDelPeriodo: true });
+  assert.deepEqual(rangoDeLaReferencia({ kind: 'RANGE', start: '2026-09-07', end: '2026-09-01' }, periodo), { desde: '2026-09-01', hasta: '2026-09-07', dentroDelPeriodo: true });
+});
+
+test('la referencia elegida no depende de lo que se ve: el mismo período da la misma referencia; fuera del período, se dice', () => {
+  const d = definicion('nutricion.energia');
+  const dias = serieDe(DOS_SEMANAS);
+  const periodo = { desde: '2026-09-07', hasta: '2026-09-20' };
+  // Los primeros 10 días del período (7 al 16): el 9 (1.000) y del 14 al 16 (2.000) → (1.000 + 3 × 2.000) / 4 = 1.750.
+  const primeros = referenciaElegida(dias, d, { kind: 'FIRST_DAYS', days: 10 }, periodo);
+  assert.equal(primeros.tipo, 'valida');
+  if (primeros.tipo === 'valida') assert.deepEqual([primeros.valor, primeros.n, primeros.desde, primeros.hasta], [1750, 4, '2026-09-07', '2026-09-16']);
+  // La función no recibe el intervalo visible: no hay forma de que un zoom la mueva. Un rango fijo da lo mismo una y otra vez.
+  const fija = referenciaElegida(dias, d, { kind: 'RANGE', start: '2026-09-16', end: '2026-09-18' }, periodo);
+  assert.deepEqual(fija, referenciaElegida(dias, d, { kind: 'RANGE', start: '2026-09-18', end: '2026-09-16' }, periodo));
+  if (fija.tipo === 'valida') assert.deepEqual([fija.valor, fija.n], [2000, 3]);
+  // Un rango que no cae entero en el período leído no se calcula con lo que haya: se dice.
+  assert.deepEqual(referenciaElegida(dias, d, { kind: 'RANGE', start: '2026-09-01', end: '2026-09-09' }, periodo), { tipo: 'invalida', motivo: 'FUERA_DEL_PERIODO', desde: '2026-09-01', hasta: '2026-09-09' });
+  // Una métrica que no admite cambio relativo lo dice antes que el rango.
+  const rir = definicion('entrenamiento.rir');
+  assert.equal((referenciaElegida({ ...serieDe([['2026-09-08', 2]], rir), grain: 'ORIGINAL' }, rir, { kind: 'RANGE', start: '2026-09-01', end: '2026-09-09' }, periodo) as { motivo: string }).motivo, 'ESCALA_NO_ADMITE');
+});
+
+test('el resumen textual describe el rango que nombra: con el gráfico acercado, no cuenta lo que quedó afuera', () => {
+  const d = definicion('nutricion.energia');
+  const texto = resumenTextual(serieDe(DOS_SEMANAS), d, '2026-09-16', '2026-09-20');
+  assert.match(texto, /del 16\/9\/2026 al 20\/9\/2026: 5 observaciones con valor; la primera, 2\.000 kcal el 16\/9\/2026/);
+  // Agrupada por semana, la semana que el rango corta se nombra entera, con sus fechas.
+  const semanas = agrupadaPorSemana(serieDe(DOS_SEMANAS), [
+    ['2026-09-07', '2026-09-13', 1000, 1],
+    ['2026-09-14', '2026-09-20', 2000, 7],
+  ]);
+  assert.match(resumenTextual(semanas, d, '2026-09-16', '2026-09-20'), /1 semana con valor \(media de sus días con valor\); la primera, 2\.000 kcal la semana del 14\/9\/2026 al 20\/9\/2026/);
+});
+
+test('la clase del dato antropométrico viaja en el punto y en el resumen: medido, reportado por la persona o calculado (PRO-10)', () => {
+  const peso = (sourceId: string, occurredAt: string, value: number, dataClass: 'MEASURED' | 'REPORTED' | 'DERIVED') => ({ ...punto(sourceId, occurredAt, value, 'cmp-1'), unit: 'kg', dataClass });
+  const s = serieAntropometrica(
+    {
+      metricCode: 'peso',
+      series: [peso('p1', '2026-09-01T08:00:00.000-03:00', 80, 'MEASURED'), peso('p2', '2026-09-10T08:00:00.000-03:00', 79, 'REPORTED'), peso('p3', '2026-09-20T08:00:00.000-03:00', 79.5, 'MEASURED')],
+      gaps: [],
+      comparability: { groups: [{ comparabilityGroup: 'cmp-1', protocolVersionId: 'p1', protocolName: 'Perfil', methodVersionId: null, unit: 'kg' }] },
+    },
+    definicionAntropometrica('peso', 'kg'),
+    ZONA,
+  );
+  assert.deepEqual(
+    s.points.map((p) => [p.value, p.dataClass]),
+    [
+      [80, 'MEASURED'],
+      [79, 'REPORTED'],
+      [79.5, 'MEASURED'],
+    ],
+  );
+  assert.ok(s.points[1]!.detail.some((x) => x.label === 'Clase de dato' && x.value === 'Reportado por la persona, no medido'));
+  assert.match(resumenTextual(s, definicionAntropometrica('peso', 'kg'), '2026-09-01', '2026-09-30'), /1 es un valor reportado por la persona, no medido/);
+  const sumatoria = serieAntropometrica(SUMATORIA, definicionAntropometrica('suma-6-pliegues-isak', 'mm'), ZONA);
+  assert.ok(sumatoria.points.every((p) => p.dataClass === 'DERIVED'));
+  assert.match(resumenTextual(sumatoria, definicionAntropometrica('suma-6-pliegues-isak', 'mm'), '2026-07-01', '2026-09-30'), /4 son valores calculados por un método \(estimaciones\)/);
 });

@@ -12,6 +12,7 @@ import {
   type DominioDeAnalisis,
   type EstadoDeEntrada,
   type ReferenciaDeMetrica,
+  type ReferenciaDelCambio,
   type TipoDeEvento,
 } from '@be/domain';
 
@@ -143,8 +144,12 @@ export interface EstadoDeAnalisis {
   readonly grano: GranoElegido;
   readonly bandas: boolean;
   readonly eventos: boolean;
-  /** La referencia del cambio relativo: los primeros N días del período. */
-  readonly diasDeReferencia: number;
+  /**
+   * La referencia del cambio relativo, explícita: los primeros N días del **período** o un rango fijo de fechas. No
+   * depende del intervalo que se ve: acercar, alejar o restablecer el gráfico no la cambia (DL-126). Solo cambia con
+   * una acción explícita («Aplicar» en la referencia), y queda en la URL y en las vistas guardadas.
+   */
+  readonly referencia: ReferenciaDelCambio;
   readonly fecha: string | null;
   readonly comparacion: { readonly a: { readonly desde: string; readonly hasta: string }; readonly b: { readonly desde: string; readonly hasta: string } } | null;
 }
@@ -179,7 +184,6 @@ export function leerAnalisis(params: URLSearchParams): EstadoDeAnalisis {
     .map(decodificarReferencia)
     .filter((r): r is ReferenciaDeMetrica => r !== null)
     .slice(0, 3);
-  const ref = Number(params.get('ref'));
   const cmp = (params.get('cmp') ?? '').split('_');
   const comparacion = cmp.length === 4 && cmp.every(fechaValida) && cmp[0]! <= cmp[1]! && cmp[2]! <= cmp[3]! ? { a: { desde: cmp[0]!, hasta: cmp[1]! }, b: { desde: cmp[2]!, hasta: cmp[3]! } } : null;
   const capas = params.get('capas');
@@ -189,7 +193,7 @@ export function leerAnalisis(params: URLSearchParams): EstadoDeAnalisis {
     grano: GRANOS[params.get('g') ?? ''] ?? 'DAY',
     bandas: capas === null ? true : capas.includes('b'),
     eventos: capas === null ? true : capas.includes('e'),
-    diasDeReferencia: Number.isInteger(ref) && ref >= 1 && ref <= 31 ? ref : 7,
+    referencia: leerReferenciaDelCambio(params.get('ref')),
     fecha: fechaValida(params.get('f')) ? params.get('f') : null,
     comparacion,
   };
@@ -201,10 +205,30 @@ export function parametrosDeAnalisis(a: EstadoDeAnalisis): Record<string, string
     modo: a.modo === 'PANELS' ? null : LETRA_DE_MODO[a.modo],
     g: a.grano === 'DAY' ? null : LETRA_DE_GRANO[a.grano],
     capas: a.bandas && a.eventos ? null : `${a.bandas ? 'b' : ''}${a.eventos ? 'e' : ''}` || '-',
-    ref: a.diasDeReferencia === 7 ? null : String(a.diasDeReferencia),
+    ref: parametroDeReferenciaDelCambio(a.referencia),
     f: a.fecha,
     cmp: a.comparacion ? [a.comparacion.a.desde, a.comparacion.a.hasta, a.comparacion.b.desde, a.comparacion.b.hasta].join('_') : null,
   };
+}
+
+/** La referencia por defecto: los primeros 7 días del período. */
+export const REFERENCIA_POR_DEFECTO: ReferenciaDelCambio = { kind: 'FIRST_DAYS', days: 7 };
+
+/** `ref=N` (los primeros N días, de 1 a 31) o `ref=AAAA-MM-DD_AAAA-MM-DD` (un rango fijo). Si no vale, la de por defecto. */
+export function leerReferenciaDelCambio(v: string | null): ReferenciaDelCambio {
+  if (v === null) return REFERENCIA_POR_DEFECTO;
+  if (/^[0-9]{1,2}$/.test(v)) {
+    const dias = Number(v);
+    return dias >= 1 && dias <= 31 ? { kind: 'FIRST_DAYS', days: dias } : REFERENCIA_POR_DEFECTO;
+  }
+  const partes = v.split('_');
+  const [inicio = null, fin = null] = partes;
+  return partes.length === 2 && fechaValida(inicio) && fechaValida(fin) && inicio <= fin ? { kind: 'RANGE', start: inicio, end: fin } : REFERENCIA_POR_DEFECTO;
+}
+
+export function parametroDeReferenciaDelCambio(r: ReferenciaDelCambio): string | null {
+  if (r.kind === 'RANGE') return `${r.start}_${r.end}`;
+  return r.days === 7 ? null : String(r.days);
 }
 
 /** La clave estable de una referencia elegida (colores, claves de React y comparar selecciones). */

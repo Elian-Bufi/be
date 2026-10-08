@@ -68,12 +68,16 @@ import {
   ListaDeVistasResponseSchema,
   ProyeccionResponseSchema,
   VistaDeAnalisisResponseSchema,
+  type BusquedaEnLineaDeTiempoRequest,
   type ClaveDeProyeccion,
   type CrearVistaRequest,
   type ReemplazarVistaRequest,
 } from './contratos-analisis';
 
-/** Los filtros de API-DSH-04, ya como texto de la consulta (listas separadas por coma). */
+/**
+ * Los filtros de API-DSH-04, ya como texto de la consulta (listas separadas por coma). Sin `q`: la búsqueda va en el
+ * cuerpo de API-DSH-04-BUSQUEDA (`buscarEnLineaDeTiempo`), nunca en una URL (DL-127).
+ */
 export type FiltroDeLineaDeTiempo = {
   readonly periodStart?: string;
   readonly periodEnd?: string;
@@ -84,10 +88,11 @@ export type FiltroDeLineaDeTiempo = {
   readonly late?: 'true';
   readonly planVersionId?: string;
   readonly exerciseId?: string;
-  readonly q?: string;
   readonly limit?: string;
   readonly cursor?: string;
 };
+
+const CLAVES_DE_LA_LINEA_DE_TIEMPO = ['periodStart', 'periodEnd', 'domain', 'type', 'state', 'quality', 'late', 'planVersionId', 'exerciseId', 'limit', 'cursor'] as const satisfies readonly (keyof FiltroDeLineaDeTiempo)[];
 
 /** Los parámetros de API-PRJ-01, ya como texto de la consulta. */
 export type FiltroDeProyeccion = {
@@ -1152,9 +1157,21 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     sesionEnCurso(token: string) {
       return llamar('GET', '/me/training/session-in-progress', { token, esquema: SesionEnCursoResponseSchema });
     },
-    /** API-DSH-04: la línea de tiempo del asesorado (DL-127). Sin ningún alcance permitido: 404. */
+    /**
+     * API-DSH-04: la línea de tiempo del asesorado (DL-127). Sin ningún alcance permitido: 404. Solo las claves declaradas
+     * van a la URL: un objeto con otros campos (por ejemplo, un texto de búsqueda) no los arrastra a la consulta.
+     */
     lineaDeTiempo(token: string, asesoradoId: string, filtro: FiltroDeLineaDeTiempo) {
-      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/timeline${query(filtro)}`, { token, esquema: LineaDeTiempoResponseSchema });
+      const declarados: Record<string, string | undefined> = {};
+      for (const clave of CLAVES_DE_LA_LINEA_DE_TIEMPO) declarados[clave] = filtro[clave];
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/timeline${query(declarados)}`, { token, esquema: LineaDeTiempoResponseSchema });
+    },
+    /**
+     * API-DSH-04-BUSQUEDA: buscar en la línea de tiempo con el texto en el cuerpo (DL-127). Es una lectura: sin clave de
+     * idempotencia. La URL lleva solo el asesorado; el texto no queda en ninguna URL ni bitácora de la API.
+     */
+    buscarEnLineaDeTiempo(token: string, asesoradoId: string, cuerpo: BusquedaEnLineaDeTiempoRequest) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/timeline/search`, { token, esquema: LineaDeTiempoResponseSchema, cuerpo });
     },
     /** API-PRJ-01: una proyección profunda (DL-126). */
     proyeccion(token: string, asesoradoId: string, clave: ClaveDeProyeccion, filtro: FiltroDeProyeccion) {

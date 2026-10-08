@@ -6,9 +6,10 @@
  * PDP decide de nuevo (una vista no concede acceso). Una vista no se ata a un asesorado: se aplica al que se está viendo,
  * y si una métrica no tiene datos con este asesorado, lo dice su serie.
  */
-import { type ConfiguracionDeAnalisis, type VistaDeAnalisis } from '@be/domain';
+import { numero, type ConfiguracionDeAnalisis, type ReferenciaDelCambio, type VistaDeAnalisis } from '@be/domain';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { api, nuevaClaveDeIdempotencia } from '../../../../lib/api';
+import { diaCivil } from '../../../../lib/formato';
 import { motivoDeFalla, textoDeFalla, useSeguimiento, type MotivoDeFalla } from './contexto';
 import { parametrosDeAnalisis, parametrosDePeriodo, PRESETS_DE_PERIODO, type EstadoDeAnalisis } from './estado';
 
@@ -22,10 +23,14 @@ function configuracionDe(estado: EstadoDeAnalisis, periodo: { preset: number | n
     grain: estado.grano,
     period: preset ? { kind: 'LAST_DAYS', days: preset } : { kind: 'RANGE', start: periodo.desde, end: periodo.hasta },
     layers: { planBands: estado.bandas, events: estado.eventos },
-    referenceDays: estado.diasDeReferencia,
+    reference: estado.referencia,
     comparison: estado.comparacion ? { a: { start: estado.comparacion.a.desde, end: estado.comparacion.a.hasta }, b: { start: estado.comparacion.b.desde, end: estado.comparacion.b.hasta } } : null,
   };
 }
+
+/** La referencia del cambio relativo que guarda una vista, en pocas palabras: es parte de la configuración. */
+const referenciaGuardada = (r: ReferenciaDelCambio): string =>
+  r.kind === 'FIRST_DAYS' ? `referencia: los primeros ${numero(r.days)} días` : `referencia: del ${diaCivil(r.start)} al ${diaCivil(r.end)}`;
 
 export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
   const { token, periodo, ir, sesionPerdida } = useSeguimiento();
@@ -75,7 +80,7 @@ export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
           grano: c.grain,
           bandas: c.layers.planBands,
           eventos: c.layers.events,
-          diasDeReferencia: c.referenceDays,
+          referencia: c.reference,
           fecha: null,
           comparacion: c.comparison ? { a: { desde: c.comparison.a.start, hasta: c.comparison.a.end }, b: { desde: c.comparison.b.start, hasta: c.comparison.b.end } } : null,
         }),
@@ -116,7 +121,7 @@ export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
   return (
     <details className="vistas-guardadas">
       <summary>Vistas guardadas{vistas ? ` (${vistas.length})` : ''}</summary>
-      <p className="nota">Se guarda la configuración (métricas, modo, período y capas), nunca los datos. Sirve para cualquier asesorado.</p>
+      <p className="nota">Se guarda la configuración (métricas, modo, período, capas y la referencia del cambio relativo), nunca los datos. Sirve para cualquier asesorado.</p>
       <div className="campo">
         <label htmlFor={`${id}-nombre`}>Nombre de la vista</label>
         <input id={`${id}-nombre`} value={nombre} maxLength={80} onChange={(e) => setNombre(e.target.value)} placeholder="Por ejemplo: Peso y alimentación" />
@@ -148,7 +153,7 @@ export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
           {vistas.map((v) => (
             <li key={v.viewId}>
               <strong>{v.name}</strong>
-              <span className="nota"> · {v.usage === 'ANALYSIS' ? `${v.configuration.metrics.length} ${v.configuration.metrics.length === 1 ? 'métrica' : 'métricas'}` : ''}</span>
+              <span className="nota"> · {v.usage === 'ANALYSIS' ? `${v.configuration.metrics.length} ${v.configuration.metrics.length === 1 ? 'métrica' : 'métricas'} · ${referenciaGuardada(v.configuration.reference)}` : ''}</span>
               <div className="acciones">
                 <button type="button" className="boton boton--enlace" onClick={() => abrir(v)}>
                   Abrir<span className="visualmente-oculto"> {v.name}</span>

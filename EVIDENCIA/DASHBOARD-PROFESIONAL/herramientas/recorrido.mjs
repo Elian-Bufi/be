@@ -1,12 +1,19 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
 // - Las fallas (503, 429, sin red) y la respuesta lenta se simulan interceptando pedidos en el navegador: no se toca la
 //   API ni la base.
+// - Un gráfico no se da por bueno por su título: `comprobarGraficos` mira lo que realmente se dibujó (superficie, ejes,
+//   curvas y marcas), que nada lo tape y, en una captura de la ventana, los píxeles del color de cada métrica.
+// - Las capturas no usan `fullPage`: esa captura achica la ventana a 1 × 1 por un instante, recharts quita el gráfico
+//   (su contenedor mide 0) y la imagen puede salir sin él (revisión de #153, hallazgo 1). Se agranda la ventana al alto
+//   de la página, se espera el dibujo y se captura la ventana tal cual.
+// - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
+//   (valores medidos, informados y estimados; revocación desde la web del asesorado).
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
@@ -26,6 +33,12 @@ const DESCARGAS = fileURLToPath(enTrabajo('recorrido/descargas/'));
 fs.rmSync(DESCARGAS, { recursive: true, force: true });
 fs.mkdirSync(DESCARGAS, { recursive: true });
 const AXE = fs.readFileSync(`${REPO}/node_modules/axe-core/axe.min.js`, 'utf8');
+/** El registro de la API (entorno.sh lo agrega a trabajo/api.log): se mira solo lo que escribió esta corrida. */
+const API_LOG = enTrabajo('api.log');
+const inicioDelLog = fs.existsSync(API_LOG) ? fs.statSync(API_LOG).size : 0;
+const dominio = createRequire(`${REPO}/packages/domain/`)(`${REPO}/packages/domain/dist/index.js`);
+/** «8 sept 2026», como `diaCivil` de la web. */
+const diaCivil = (f) => new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${f}T12:00:00Z`));
 const pausa = (ms) => new Promise((r) => setTimeout(r, ms));
 const hoy = estado.hoy;
 const diaMenos = (fecha, n) => new Date(Date.parse(`${fecha}T12:00:00Z`) - n * 86_400_000).toISOString().slice(0, 10);
@@ -34,6 +47,8 @@ const FICHA_B = `/pro/advisees?id=${estado.aseBId}`;
 const TRES = 'nutricion.energia,nutricion.proteinas,antropometria.peso';
 /** El nombre de la vista guardada de esta corrida (único: una corrida interrumpida puede dejar otra). */
 const VISTA = `Recorrido ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+/** La referencia que guarda esa vista: un rango fijo dentro de sus 30 días. */
+const REF_DE_LA_VISTA = `${diaMenos(estado.hoy, 20)}_${diaMenos(estado.hoy, 14)}`;
 
 // ─── Resultados ───────────────────────────────────────────────────────────────────────────────
 
@@ -61,10 +76,17 @@ async function abrir() {
     defaultViewport: { width: 1440, height: 900 },
   });
   const page = await navegador.newPage();
-  const v = { enVuelo: 0, ultimo: Date.now(), marcas: [], errores: [], malas: [], reglas: [] };
+  // `urls`: todo pedido a la API (también los OPTIONS), para comprobar que ningún texto buscado viaja en una URL;
+  // `cuerpos`: los de API-DSH-04-BUSQUEDA; `token`: la sesión de la página, para leer la API como ella.
+  const v = { enVuelo: 0, ultimo: Date.now(), marcas: [], errores: [], malas: [], reglas: [], urls: [], cuerpos: [], token: null };
   await page.setRequestInterception(true);
   page.on('request', async (req) => {
     const url = req.url();
+    if (url.startsWith(API)) {
+      v.urls.push(`${req.method()} ${url}`);
+      if (req.method() === 'POST' && url.includes('/timeline/search')) v.cuerpos.push(req.postData() ?? '');
+      if (req.headers().authorization) v.token = req.headers().authorization;
+    }
     if (url.startsWith(API) && req.method() !== 'OPTIONS') {
       v.enVuelo++;
       v.ultimo = Date.now();
@@ -130,7 +152,16 @@ async function iniciarSesion(page, v, correo, destino) {
   await page.type('#correo', correo);
   await page.type('#contrasena', CRED);
   await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }).catch(() => {}), page.keyboard.press('Enter')]);
-  await page.waitForFunction(() => location.pathname.startsWith('/pro/advisees'), { timeout: 60_000 });
+  const ruta = destino.split('?')[0];
+  await page.waitForFunction((r) => location.pathname.startsWith(r), { timeout: 60_000 }, ruta);
+}
+
+/** Lee la API como la página (con su sesión), para calcular a mano lo esperado. */
+async function leerApi(v, ruta) {
+  const r = await fetch(`${API}/api/v1${ruta}`, { headers: { Authorization: v.token, 'X-BE-Surface': 'WEB', Accept: 'application/json' } });
+  if (!r.ok) throw new Error(`${ruta}: ${r.status}`);
+  v.marcas.push(Date.now());
+  return r.json();
 }
 
 /** Navega dentro de la aplicación, sin recargar: la sesión vive en memoria. */
@@ -184,6 +215,69 @@ async function abrirDetalles(page, selector) {
   if (cerrado) await page.click(`${selector} > summary`);
 }
 
+/** Lleva un campo de fecha a un valor, como lo haría el selector del navegador (el evento que escucha React). */
+async function fijarFecha(page, selector, valor) {
+  await page.evaluate(
+    (s, v) => {
+      const el = document.querySelector(s);
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    },
+    selector,
+    valor,
+  );
+}
+
+/** El intervalo visible de Analizar, con los campos «Desde» y «Hasta» (el atajo del arrastre hace lo mismo). */
+async function fijarIntervalo(page, v, desde, hasta) {
+  await abrirDetalles(page, 'details.intervalo');
+  await page.evaluate(() => document.querySelectorAll('details.intervalo input[type="date"]').forEach((c, i) => c.setAttribute('data-intervalo', i === 0 ? 'desde' : 'hasta')));
+  await fijarFecha(page, '[data-intervalo="desde"]', desde);
+  await pausa(150);
+  await fijarFecha(page, '[data-intervalo="hasta"]', hasta);
+  await quieto(page, v, { silencio: 300 });
+}
+
+/** Acerca el primer gráfico arrastrando el mouse de la fracción `a` a la `b` de su área de dibujo. */
+async function arrastrar(page, v, a, b) {
+  const caja = await page.evaluate(() => {
+    const s = document.querySelector('.grafico__lienzo svg.recharts-surface');
+    s.scrollIntoView({ block: 'center' });
+    const r = s.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  const y = caja.y + caja.h * 0.5;
+  const x0 = caja.x + 62 + (caja.w - 78) * a;
+  const x1 = caja.x + 62 + (caja.w - 78) * b;
+  await page.mouse.move(x0, y);
+  await page.mouse.down();
+  for (let i = 1; i <= 12; i++) await page.mouse.move(x0 + ((x1 - x0) * i) / 12, y);
+  await page.mouse.up();
+  await quieto(page, v, { silencio: 300 });
+}
+
+/** El primer «±X % contra la referencia» del panel de lectura. */
+const lecturaRelativa = async (page) => /[+-]?[\d.,]+ % contra la referencia/.exec(await texto(page, '.panel-de-lectura'))?.[0] ?? '';
+
+/** La fila de una métrica en la tabla de comparación de dos períodos (sus celdas, sin el nombre). */
+const filaDeComparacion = (page, nombre) =>
+  page.evaluate((n) => {
+    const t = [...document.querySelectorAll('table')].find((x) => x.querySelector('caption')?.textContent.includes('Comparación'));
+    const fila = [...(t?.querySelectorAll('tbody tr') ?? [])].find((r) => r.querySelector('th')?.textContent.startsWith(n));
+    return fila ? [...fila.querySelectorAll('td')].map((c) => c.innerText.replace(/\s+/g, ' ').trim()).join(' | ') : '';
+  }, nombre);
+
+/** Espera el CSV que descargó la página (la carpeta se vacía al empezar cada corrida). */
+async function esperarCsv(anteriores = []) {
+  for (let i = 0; i < 40; i++) {
+    const archivo = fs.readdirSync(DESCARGAS).find((x) => x.endsWith('.csv') && !anteriores.includes(x));
+    if (archivo) return { archivo, csv: fs.readFileSync(`${DESCARGAS}/${archivo}`, 'utf8') };
+    await pausa(250);
+  }
+  return { archivo: null, csv: '' };
+}
+
 async function axe(page) {
   await page.evaluate(AXE);
   return page.evaluate(async () => {
@@ -192,16 +286,175 @@ async function axe(page) {
   });
 }
 
+// ─── Lo que de verdad se dibujó ───────────────────────────────────────────────────────────────
+
 /**
- * Una captura de página completa. La línea de tiempo tiene 50 entradas por página: se recorta a sus primeros 2.400 px
- * (filtros y los primeros días), que es lo que hace falta para ver el diseño; el resto es la misma entrada repetida.
+ * Cada gráfico de la página, después de llevarlo al centro de la ventana: su superficie SVG, las marcas de los dos ejes,
+ * las curvas con trazo, las marcas de los puntos (con su clase de dato), la banda de referencia y, en el centro de cada
+ * marca que está a la vista, si el elemento que hay ahí es del propio gráfico (nada lo tapa).
  */
-async function captura(page, nombre) {
+async function dibujo(page) {
+  const cantidad = await page.$$eval('figure.grafico__figura', (x) => x.length);
+  const figuras = [];
+  for (let i = 0; i < cantidad; i++) {
+    figuras.push(
+      await page.evaluate((i) => {
+        const f = document.querySelectorAll('figure.grafico__figura')[i];
+        f.scrollIntoView({ block: 'center' });
+        const svg = f.querySelector('.grafico__lienzo svg.recharts-surface');
+        const caja = svg?.getBoundingClientRect();
+        const marcas = [...f.querySelectorAll('.grafico__elegible')].filter((m) => m.getBoundingClientRect().width > 0);
+        let visibles = 0;
+        let tapadas = 0;
+        for (const m of marcas) {
+          const b = m.getBoundingClientRect();
+          const x = b.x + b.width / 2;
+          const y = b.y + b.height / 2;
+          if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) continue;
+          const e = document.elementFromPoint(x, y);
+          if (e && f.contains(e)) visibles++;
+          else tapadas++;
+        }
+        return {
+          titulo: f.querySelector('.grafico__titulo')?.textContent ?? '',
+          svg: !!svg,
+          ancho: Math.round(caja?.width ?? 0),
+          alto: Math.round(caja?.height ?? 0),
+          ejeX: f.querySelectorAll('.recharts-xAxis .recharts-cartesian-axis-tick').length,
+          ejeY: f.querySelectorAll('.recharts-yAxis .recharts-cartesian-axis-tick').length,
+          curvas: [...f.querySelectorAll('path.recharts-line-curve')].filter((p) => (p.getAttribute('d') ?? '').length > 10).length,
+          marcas: marcas.length,
+          visibles,
+          tapadas,
+          // recharts 3 dibuja la etiqueta de un área en su propia capa: la banda está si hay un rectángulo de área y la
+          // etiqueta «Referencia» (que solo se dibuja cuando su rectángulo existe).
+          banda: f.querySelectorAll('.recharts-reference-area-rect').length > 0 && [...f.querySelectorAll('svg text')].some((t) => t.textContent.trim() === 'Referencia'),
+          clases: [...new Set(marcas.map((m) => m.dataset.clase).filter(Boolean))],
+        };
+      }, i),
+    );
+  }
+  return figuras;
+}
+
+/**
+ * Los píxeles del gráfico `i` en una captura de la ventana tal como está (sin `fullPage` ni `clip`: no cambia su
+ * tamaño): la fracción de píxeles que no son del fondo y cuántos tienen el color de cada métrica (--metrica-1 a 3).
+ * La captura se decodifica en un canvas de la misma página (la CSP admite imágenes `data:`): una pestaña aparte pasaría
+ * al frente, y la captura de una pestaña de fondo no termina.
+ */
+async function pintura(page, i) {
+  const caja = await page.evaluate((i) => {
+    const f = document.querySelectorAll('figure.grafico__figura .grafico__lienzo')[i];
+    f.scrollIntoView({ block: 'center' });
+    const b = f.getBoundingClientRect();
+    const color = (n) => {
+      const s = document.createElement('span');
+      s.style.color = `var(--metrica-${n})`;
+      document.body.appendChild(s);
+      const c = getComputedStyle(s).color;
+      s.remove();
+      return c;
+    };
+    const x = Math.max(0, b.x);
+    const y = Math.max(0, b.y);
+    return { x, y, ancho: Math.min(b.right, innerWidth) - x, alto: Math.min(b.bottom, innerHeight) - y, colores: [1, 2, 3].map(color) };
+  }, i);
+  await pausa(150);
+  const png = await page.screenshot({ encoding: 'base64' });
+  return page.evaluate(
+    async (png, caja) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${png}`;
+      await img.decode();
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.floor(caja.ancho));
+      c.height = Math.max(1, Math.floor(caja.alto));
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, caja.x, caja.y, c.width, c.height, 0, 0, c.width, c.height);
+      const { data } = ctx.getImageData(0, 0, c.width, c.height);
+      const rgb = (t) => (t.match(/\d+/g) ?? []).slice(0, 3).map(Number);
+      const metricas = caja.colores.map(rgb);
+      const cuenta = new Map();
+      for (let p = 0; p < data.length; p += 4) {
+        const k = (data[p] << 16) | (data[p + 1] << 8) | data[p + 2];
+        cuenta.set(k, (cuenta.get(k) ?? 0) + 1);
+      }
+      const [fondo] = [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0];
+      const lejos = (k, [r, g, b], tolerancia) => Math.abs(((k >> 16) & 255) - r) + Math.abs(((k >> 8) & 255) - g) + Math.abs((k & 255) - b) > tolerancia;
+      const fondoRgb = [(fondo >> 16) & 255, (fondo >> 8) & 255, fondo & 255];
+      let tinta = 0;
+      const porMetrica = metricas.map(() => 0);
+      for (const [k, n] of cuenta) {
+        if (lejos(k, fondoRgb, 30)) tinta += n;
+        metricas.forEach((m, j) => {
+          if (!lejos(k, m, 60)) porMetrica[j] += n;
+        });
+      }
+      return { ancho: c.width, alto: c.height, tinta: Number((tinta / (c.width * c.height)).toFixed(4)), porMetrica };
+    },
+    png,
+    caja,
+  );
+}
+
+/**
+ * Comprueba que los gráficos están dibujados y a la vista, y no solo su título y su leyenda: `figuras` gráficos, cada
+ * uno con superficie, los dos ejes con marcas, al menos `curvas` curvas, marcas a la vista y sin tapar, la banda de
+ * referencia si se pide, y al menos 100 píxeles de cada color de métrica esperado (`colores`: los índices 1 a 3 por
+ * gráfico). Espera hasta 5 s a que el dibujo se complete (después de un cambio de tamaño, recharts lo rearma).
+ */
+async function comprobarGraficos(page, pro, descripcion, { figuras, curvas = 1, banda = false, colores }) {
+  let d = [];
+  for (let i = 0; i < 25; i++) {
+    d = await dibujo(page);
+    if (d.length === figuras && d.every((x) => x.svg && x.curvas >= curvas && x.ejeX > 0 && x.ejeY > 0)) break;
+    await pausa(200);
+  }
+  const p = [];
+  for (let i = 0; i < d.length; i++) p.push(await pintura(page, i));
+  const bien = (x, i) =>
+    x.svg && x.ancho > 100 && x.alto > 80 && x.ejeX > 1 && x.ejeY > 1 && x.curvas >= curvas && x.marcas > 0 && x.visibles > 0 && x.tapadas === 0 && (!banda || x.banda) && p[i].tinta > 0.01 && (colores?.[i] ?? []).every((c) => p[i].porMetrica[c - 1] >= 100);
+  const ok = d.length === figuras && d.every(bien);
+  const detalle = d.map((x, i) => `${x.titulo.slice(0, 28)}: ${x.ancho}×${x.alto}, ejes ${x.ejeX}/${x.ejeY}, curvas ${x.curvas}, marcas ${x.visibles}/${x.marcas}${x.tapadas ? ` (${x.tapadas} tapadas)` : ''}${banda ? `, banda ${x.banda ? 'sí' : 'no'}` : ''}, tinta ${(p[i].tinta * 100).toFixed(1)} %, color ${(colores?.[i] ?? []).map((c) => p[i].porMetrica[c - 1]).join('/')} px`);
+  comprobar(pro, descripcion, ok, `${d.length} gráfico(s) · ${detalle.join(' · ')}`);
+  return { d, p };
+}
+
+/**
+ * Una captura de la página entera **sin** `fullPage`: la ventana se agranda al alto de la página (hasta `tope`), se
+ * espera a que la página quede quieta y los gráficos dibujados, y se captura la ventana tal cual. La línea de tiempo se
+ * corta en sus primeros 2.400 px (filtros y los primeros días): el resto es la misma entrada repetida.
+ */
+async function captura(page, v, nombre, { tope = nombre.startsWith('linea-') ? 2400 : 15_000 } = {}) {
   const path = fileURLToPath(new URL(`${nombre}.png`, DIR));
-  if (!nombre.startsWith('linea-')) return page.screenshot({ path, fullPage: true });
-  const alto = await page.evaluate(() => document.documentElement.scrollHeight);
-  const ancho = page.viewport()?.width ?? 1440;
-  return page.screenshot({ path, clip: { x: 0, y: 0, width: ancho, height: Math.min(alto, 2400) }, captureBeyondViewport: true });
+  const vista = page.viewport();
+  let alto = vista.height;
+  for (let i = 0; i < 4; i++) {
+    const total = Math.min(tope, await page.evaluate(() => document.documentElement.scrollHeight));
+    if (total === alto && i > 0) break;
+    alto = Math.max(total, vista.height);
+    await page.setViewport({ width: vista.width, height: alto });
+    await quieto(page, v, { silencio: 300 });
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
+  // Los gráficos, dibujados en la ventana grande: si alguno no lo está, la captura no se toma por buena.
+  let figuras = [];
+  for (let i = 0; i < 25; i++) {
+    figuras = await page.evaluate(() =>
+      [...document.querySelectorAll('figure.grafico__figura')].map((f) => ({ svg: !!f.querySelector('svg.recharts-surface'), curvas: f.querySelectorAll('path.recharts-line-curve').length })),
+    );
+    if (figuras.every((x) => x.svg && x.curvas > 0)) break;
+    await pausa(200);
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await pausa(200);
+  await page.screenshot({ path });
+  // Después de la captura, el dibujo sigue ahí: la captura no lo alteró.
+  const despues = await page.evaluate(() => [...document.querySelectorAll('figure.grafico__figura')].filter((f) => f.querySelector('svg.recharts-surface')).length);
+  await page.setViewport(vista);
+  await quieto(page, v, { silencio: 300 });
+  return { figuras: figuras.length, dibujadas: figuras.filter((x) => x.svg && x.curvas > 0).length, despues };
 }
 
 // ─── Recorrido funcional ──────────────────────────────────────────────────────────────────────
@@ -290,11 +543,39 @@ async function funcional() {
     // Búsqueda en el período (nunca en la URL) y limpiar.
     await clic(page, 'button', 'Limpiar filtros');
     await quieto(page, v);
+    // El texto no viaja en ninguna URL, ni la de la página ni la de la API: va en el cuerpo de un POST (API-DSH-04-BUSQUEDA),
+    // también al pedir más páginas (revisión de #153, hallazgo 4).
+    const desdeUrl = v.urls.length;
+    const desdeCuerpo = v.cuerpos.length;
     await page.type('input[type="search"]', 'cena');
     await clic(page, '.filtros-de-linea button[type="submit"]', 'Buscar');
     await quieto(page, v);
     const conCena = await textos(page, '.entrada__titulo');
+    const totalCena = Number(/(\d+) hechos coinciden/.exec(await texto(page, 'section p[role="status"]'))?.[1] ?? NaN);
     comprobar('PRO-04', 'La búsqueda recorre el período y no viaja en la URL de la página', !page.url().includes('cena') && conCena.length > 0 && conCena.every((t) => /cena/i.test(t)), `${conCena.length} entradas; URL ${page.url().replace(WEB, '')}`);
+    let paginasCena = 1;
+    for (; paginasCena < 8; paginasCena++) {
+      const hay = await page.evaluate(() => [...document.querySelectorAll('button')].some((b) => b.textContent.startsWith('Ver más')));
+      if (!hay) break;
+      await cupo(v);
+      await clic(page, 'button', 'Ver más');
+      await quieto(page, v);
+    }
+    const idsCena = await page.$$eval('.entrada', (e) => e.map((x) => x.dataset.id));
+    const titulosCena = await textos(page, '.entrada__titulo');
+    comprobar('PRO-04', '«Ver más» con la búsqueda activa completa las coincidencias de todo el período, sin repetir', idsCena.length === totalCena && new Set(idsCena).size === idsCena.length && titulosCena.every((t) => /cena/i.test(t)), `${idsCena.length} de ${totalCena} en ${paginasCena} página(s)`);
+    const urlsDeLaBusqueda = v.urls.slice(desdeUrl);
+    const cuerposDeLaBusqueda = v.cuerpos.slice(desdeCuerpo).map((c) => JSON.parse(c));
+    comprobar(
+      'PRO-04',
+      'El texto buscado viaja en el cuerpo de un POST (API-DSH-04-BUSQUEDA): ninguna URL de la API lo lleva, tampoco la de «Ver más»',
+      urlsDeLaBusqueda.some((u) => u.startsWith('POST') && u.includes('/timeline/search')) &&
+        !urlsDeLaBusqueda.some((u) => /cena/i.test(u)) &&
+        cuerposDeLaBusqueda.length >= paginasCena &&
+        cuerposDeLaBusqueda.every((c) => c.q === 'cena') &&
+        (paginasCena === 1 || cuerposDeLaBusqueda.some((c) => typeof c.cursor === 'string')),
+      `${urlsDeLaBusqueda.length} pedidos a la API durante la búsqueda, ninguno con el texto; ${cuerposDeLaBusqueda.length} POST con el texto en el cuerpo${cuerposDeLaBusqueda.some((c) => c.cursor) ? ' (los de «Ver más», con su cursor)' : ''}`,
+    );
     await clic(page, 'button', 'Limpiar filtros');
     await quieto(page, v);
     const limpio = Number(/(\d+) hechos coinciden/.exec(await texto(page, 'section p[role="status"]'))?.[1] ?? NaN);
@@ -318,6 +599,7 @@ async function funcional() {
     const titulos = await textos(page, '.grafico__titulo');
     comprobar('PRO-06', 'Una pregunta de tres métricas dibuja tres paneles', titulos.length === 3, titulos.join(' | '));
     comprobar('PRO-07', 'Cada panel conserva su unidad (kcal, g, kg)', /kcal/.test(titulos[0]) && /\(g\)/.test(titulos[1]) && /kg/.test(titulos[2]));
+    await comprobarGraficos(page, 'PRO-08', 'Paneles: los tres gráficos están dibujados y a la vista (ejes, curvas, marcas sin tapar y el color de cada métrica)', { figuras: 3, colores: [[1], [2], [3]] });
     const modos = await page.$$eval('.modo-elegible', (m) => m.map((x) => ({ deshabilitado: x.querySelector('input').disabled, texto: x.innerText.replace(/\s+/g, ' ') })));
     comprobar('PRO-08', 'Superponer kcal, g y kg se bloquea y dice por qué', modos[1].deshabilitado && /unidades distintas/.test(modos[1].texto), modos[1].texto);
     comprobar('PRO-08', 'Sin observaciones del peso en la referencia, el cambio relativo se bloquea y lo dice', modos[2].deshabilitado && /Peso: no tiene observaciones/.test(modos[2].texto), modos[2].texto);
@@ -392,6 +674,87 @@ async function funcional() {
     const referencias = await texto(page, '.referencias');
     const relativa = await texto(page, '.panel-de-lectura');
     comprobar('PRO-08', 'El cambio relativo muestra su referencia (regla, rango, valor y n) y la lectura da el % y el valor real', /media de los días con valor del .* \(n = \d+/.test(referencias) && /% contra la referencia · valor real/.test(relativa), `${referencias.slice(0, 160)} || ${relativa.slice(0, 160)}`);
+    await comprobarGraficos(page, 'PRO-08', 'Cambio relativo: el gráfico está dibujado y a la vista, con la banda de la referencia', { figuras: 1, banda: true, colores: [[1]] });
+
+    // La referencia no es el intervalo visible: acercar (arrastre), alejar (fechas) y restablecer no la mueven; solo
+    // «Aplicar» la cambia, y queda en la URL (revisión de #153, hallazgo 3).
+    await cupo(v);
+    const fechaFija = diaMenos(hoy, 10);
+    await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent('nutricion.proteinas')}&modo=R&f=${fechaFija}`);
+    await quieto(page, v);
+    const ref0 = await texto(page, '.referencias');
+    const lec0 = await lecturaRelativa(page);
+    await arrastrar(page, v, 0.55, 0.97);
+    const intervalo1 = /Intervalo: ([^.]*)\./.exec(await texto(page, '.analizar__lienzo'))?.[1] ?? '';
+    const [ref1, lec1, vig1] = [await texto(page, '.referencias'), await lecturaRelativa(page), await texto(page, '.referencia-vigente')];
+    await fijarIntervalo(page, v, diaMenos(hoy, 70), hoy);
+    const intervalo2 = /Intervalo: ([^.]*)\./.exec(await texto(page, '.analizar__lienzo'))?.[1] ?? '';
+    const [ref2, lec2] = [await texto(page, '.referencias'), await lecturaRelativa(page)];
+    await clic(page, '.analizar__lienzo button', 'Restablecer vista');
+    await quieto(page, v, { silencio: 300 });
+    const [ref3, lec3] = [await texto(page, '.referencias'), await lecturaRelativa(page)];
+    comprobar(
+      'PRO-08',
+      'La referencia del cambio relativo y el % de una fecha no cambian al acercar (arrastre), alejar (fechas) ni restablecer el gráfico',
+      ref0.length > 0 && lec0.length > 0 && intervalo1 && intervalo2 && [ref1, ref2, ref3].every((r) => r === ref0) && [lec1, lec2, lec3].every((l) => l === lec0) && /fuera del intervalo visible/.test(vig1) && !parametros(page).get('ref'),
+      `acercado a «${intervalo1}», alejado a «${intervalo2}»: ${[lec0, lec1, lec2, lec3].join(' / ')} · ${ref0.slice(0, 110)}`,
+    );
+    await fijarIntervalo(page, v, diaMenos(hoy, 20), diaMenos(hoy, 1));
+    await clic(page, '.referencia-del-cambio button', 'Cambiar la referencia');
+    await clic(page, '.referencia-del-cambio label', 'Un rango de fechas fijo');
+    await clic(page, '.referencia-del-cambio button', 'Copiar el intervalo visible');
+    const urlSinAplicar = parametros(page).get('ref');
+    await clic(page, '.referencia-del-cambio button', 'Aplicar la referencia');
+    await quieto(page, v);
+    const refElegida = `${diaMenos(hoy, 20)}_${diaMenos(hoy, 1)}`;
+    const [ref4, vig4] = [await texto(page, '.referencias'), await texto(page, '.referencia-vigente')];
+    comprobar(
+      'PRO-08',
+      'Cambiar la referencia es explícito: copiar el intervalo no la cambia hasta «Aplicar»; después queda en la URL y en pantalla, con su rango',
+      urlSinAplicar === null && parametros(page).get('ref') === refElegida && ref4 !== ref0 && ref4.includes(diaCivil(diaMenos(hoy, 20))) && /rango fijo/.test(vig4),
+      `ref=${parametros(page).get('ref')} · ${vig4.slice(0, 120)}`,
+    );
+    await clic(page, '.analizar__lienzo button', 'Restablecer vista');
+    await quieto(page, v, { silencio: 300 });
+    comprobar('PRO-08', 'Restablecer el gráfico no deshace la referencia elegida', parametros(page).get('ref') === refElegida && (await texto(page, '.referencias')) === ref4);
+
+    // Agrupar por semana no cambia la comparación ni la referencia: salen de los días del rango exacto (hallazgo 2).
+    await cupo(v);
+    let miercoles = diaMenos(hoy, 45);
+    while (new Date(`${miercoles}T12:00:00Z`).getUTCDay() !== 3) miercoles = diaMenos(miercoles, -1);
+    const A = { desde: miercoles, hasta: diaMenos(miercoles, -12) }; // de miércoles a lunes: corta tres semanas
+    const B = { desde: diaMenos(miercoles, -15), hasta: diaMenos(miercoles, -24) }; // de jueves a sábado
+    await ir(page, `${FICHA_A}&vista=analizar&m=nutricion.energia&cmp=${A.desde}_${A.hasta}_${B.desde}_${B.hasta}`);
+    await quieto(page, v);
+    const porDia = await filaDeComparacion(page, 'Energía');
+    await clic(page, '.analizar__opciones label', 'Por semana');
+    await quieto(page, v);
+    const porSemana = await filaDeComparacion(page, 'Energía');
+    const lecturaSemanal = await texto(page, '.panel-de-lectura');
+    // Lo esperado, a mano: la media de los días con valor (sin el día en curso) de cada rango, de la serie diaria de la API.
+    const diaria = (await leerApi(v, `/advisees/${estado.aseId}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?metric=ENERGY&grain=DAY&periodStart=${diaMenos(hoy, 89)}&periodEnd=${hoy}`)).data.result.recorded.points;
+    const esperado = (r) => {
+      const delRango = diaria.filter((p) => p.date >= r.desde && p.date <= r.hasta);
+      const dias = delRango.filter((p) => p.value !== null && !p.partialBucket);
+      const media = dias.reduce((t, p) => t + p.value, 0) / dias.length;
+      return `${dominio.nutrienteParaMostrar({ value: String(media) }, dominio.NUTRIENTE_DE_LA_METRICA.ENERGY)} kcal · n = ${dominio.numero(dias.length)} de ${dominio.numero(delRango.length)}`;
+    };
+    const [eA, eB] = [esperado(A), esperado(B)];
+    comprobar(
+      'PRO-18',
+      'Por semana, la comparación de dos rangos que cortan semanas es la misma que por día y coincide con la media de los días calculada a mano',
+      porDia.length > 0 && porDia === porSemana && porDia.includes(eA) && porDia.includes(eB) && /semana del/.test(lecturaSemanal),
+      `esperado A «${eA}», B «${eB}» · por día «${porDia.slice(0, 150)}» · por semana igual: ${porDia === porSemana ? 'sí' : `no («${porSemana.slice(0, 150)}»)`}`,
+    );
+    await comprobarGraficos(page, 'PRO-08', 'Por semana: el gráfico semanal está dibujado y a la vista', { figuras: 1, colores: [[1]] });
+    await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent('nutricion.proteinas')}&modo=R`);
+    await quieto(page, v);
+    const refDia = await texto(page, '.referencias');
+    await clic(page, '.analizar__opciones label', 'Por semana');
+    await quieto(page, v);
+    const refSemana = await texto(page, '.referencias');
+    comprobar('PRO-08', 'Por semana, la referencia del cambio relativo es la misma que por día (los días de su rango, no las semanas)', refDia.length > 0 && refDia === refSemana, refDia.slice(0, 160));
+    await comprobarGraficos(page, 'PRO-08', 'Cambio relativo por semana: dibujado y a la vista, con la banda de la referencia', { figuras: 1, banda: true, colores: [[1]] });
 
     // Superposición compatible: dos macronutrientes en gramos comparten un gráfico, con trazos distintos.
     await cupo(v);
@@ -405,6 +768,7 @@ async function funcional() {
       superpuestas.length === 1 && /Superpuestas en valores reales \(g\)/.test(superpuestas[0]) && /línea continua/.test(leyenda) && /línea rayada/.test(leyenda),
       `${superpuestas.join(' | ')} · ${leyenda.slice(0, 160)}`,
     );
+    await comprobarGraficos(page, 'PRO-08', 'Superpuestas: un gráfico con las dos curvas dibujadas y a la vista, cada una con su color', { figuras: 1, curvas: 2, colores: [[1, 2]] });
 
     // Dos etapas, con el mismo criterio y sin conclusiones causales.
     await abrirDetalles(page, 'details.presets');
@@ -426,14 +790,18 @@ async function funcional() {
     comprobar('PRO-10', 'El CSV distingue calidad y día en curso, con período, zona y generación, sin nombre de persona en el archivo', archivo && /^BE-analisis-\d{4}-\d{2}-\d{2}-a-\d{4}-\d{2}-\d{2}\.csv$/.test(archivo) && csv.startsWith('\uFEFF') && /Zona horaria;/.test(csv) && /Generado;/.test(csv) && filas.length > 10 && filas.some((f) => f.split(';')[8] === 'sí'), `${archivo} · ${filas.length} filas`);
     comprobar('PRO-20', 'El CSV no tiene celdas que una planilla lea como fórmula', !csv.split('\r\n').some((l) => l.split(';').some((c) => /^[=+\-@]/.test(c))));
 
-    // Vista guardada (se reabre en otra sesión, más abajo).
-    await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent(TRES)}&p=30`);
+    // Vista guardada, con una referencia propia (se reabre en otra sesión, más abajo).
+    await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent(TRES)}&p=30&ref=${REF_DE_LA_VISTA}`);
     await quieto(page, v);
     await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
     await page.type('details.vistas-guardadas input', VISTA);
     await clic(page, 'details.vistas-guardadas button', 'Guardar esta vista');
     await page.waitForFunction(() => document.querySelector('details.vistas-guardadas')?.innerText.includes('Guardada:'));
-    comprobar('PRO-19', 'Guardar una vista la suma a la lista', (await texto(page, 'details.vistas-guardadas')).includes(VISTA));
+    // La lista se vuelve a pedir después del aviso: se espera a que la vista nueva esté en ella.
+    await page.waitForFunction((n) => [...document.querySelectorAll('details.vistas-guardadas li strong')].some((e) => e.textContent === n), { timeout: 15_000 }, VISTA);
+    const guardada = await page.evaluate((n) => [...document.querySelectorAll('details.vistas-guardadas li')].find((l) => l.querySelector('strong')?.textContent === n)?.innerText.replace(/\s+/g, ' ') ?? '', VISTA);
+    const [rd, rh] = REF_DE_LA_VISTA.split('_');
+    comprobar('PRO-19', 'Guardar una vista la suma a la lista, que dice su referencia del cambio relativo', guardada.includes(`referencia: del ${diaCivil(rd)} al ${diaCivil(rh)}`), guardada.slice(0, 160));
 
     // 4 · Respuesta tardía ────────────────────────────────────────────────────────────────────
     await cupo(v);
@@ -531,7 +899,13 @@ async function funcional() {
       await clic(page, 'details.vistas-guardadas button', `Abrir ${VISTA}`);
       await quieto(page, v);
       const p = parametros(page);
-      comprobar('PRO-19', 'En una sesión nueva, la vista guardada reabre la misma configuración y vuelve a pedir los datos', p.get('m') === TRES && p.get('p') === '30' && (await page.$$eval('.grafico__lienzo', (g) => g.length)) === 3, page.url().replace(WEB, ''));
+      const referenciaReabierta = await texto(page, '.referencia-del-cambio');
+      comprobar(
+        'PRO-19',
+        'En una sesión nueva, la vista guardada reabre la misma configuración —también su referencia— y vuelve a pedir los datos',
+        p.get('m') === TRES && p.get('p') === '30' && p.get('ref') === REF_DE_LA_VISTA && /Rango fijo, del/.test(referenciaReabierta) && (await page.$$eval('.grafico__lienzo', (g) => g.length)) === 3,
+        `${page.url().replace(WEB, '')} · ${referenciaReabierta.slice(0, 120)}`,
+      );
       await clic(page, 'details.vistas-guardadas button', `Borrar ${VISTA}`);
       const confirmar = await texto(page, 'details.vistas-guardadas');
       await clic(page, 'details.vistas-guardadas button', 'Sí, borrar');
@@ -564,6 +938,15 @@ async function funcional() {
       await navegador.close();
     }
   }
+  // El registro de la API de esta corrida: cada búsqueda como ruta parametrizada y ningún texto buscado (hallazgo 4).
+  const registro = fs.existsSync(API_LOG) ? fs.readFileSync(API_LOG).subarray(inicioDelLog).toString('utf8') : '';
+  const lineasDeBusqueda = registro.split('\n').filter((l) => l.includes('/timeline/search'));
+  comprobar(
+    'PRO-04',
+    'El registro de la API tiene cada búsqueda como ruta parametrizada y nunca el texto buscado',
+    lineasDeBusqueda.length > 0 && lineasDeBusqueda.every((l) => l.includes('/advisees/:adviseeId/timeline/search')) && !/cena/i.test(registro),
+    `${lineasDeBusqueda.length} línea(s) de búsqueda, p. ej. ${(lineasDeBusqueda[0] ?? '').replace(/"requestId":"[^"]+",/, '').slice(0, 140)}; «cena» en el registro: ${/cena/i.test(registro) ? 'sí' : 'no'}`,
+  );
 }
 
 // ─── Capturas: cinco anchos, dos temas y las tres vistas ───────────────────────────────────────
@@ -587,12 +970,31 @@ async function capturas() {
           await ir(page, url);
           await quieto(page, v);
           await page.evaluate(() => window.scrollTo(0, 0));
-          await captura(page, `${vista}-${ancho}-${tema}`);
+          const c = await captura(page, v, `${vista}-${ancho}-${tema}`);
           const acciones = await page.evaluate(() => ({
             pestanas: document.querySelectorAll('nav[aria-label="Vistas del seguimiento"] a').length,
             periodos: document.querySelectorAll('.periodo-del-seguimiento__opciones button').length,
           }));
           comprobar('PRO-23', `${vista} a ${ancho} px en ${tema}: sin desborde de costado, con pestañas y períodos`, (await sinDesborde(page)) && acciones.pestanas === 3 && acciones.periodos === 5);
+          if (vista === 'analizar') comprobar('PRO-08', `La captura de analizar a ${ancho} px en ${tema} tiene los tres gráficos dibujados (y siguen después)`, c.figuras === 3 && c.dibujadas === 3 && c.despues === 3, `${c.dibujadas} de ${c.figuras} dibujados; ${c.despues} después`);
+        }
+        // En escritorio, los tres modos, comprobados en el dibujo y en píxeles, y capturados (revisión de #153, hallazgo 1).
+        if (ancho >= 1280) {
+          await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent(TRES)}`);
+          await quieto(page, v);
+          await comprobarGraficos(page, 'PRO-08', `Paneles a ${ancho} px en ${tema}: los tres dibujados y a la vista`, { figuras: 3, colores: [[1], [2], [3]] });
+          for (const [modo, letra, opciones] of [
+            ['superpuestas', 'S', { figuras: 1, curvas: 2, colores: [[1, 2]] }],
+            ['relativo', 'R', { figuras: 1, curvas: 2, banda: true, colores: [[1, 2]] }],
+          ]) {
+            await cupo(v);
+            await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent('nutricion.proteinas,nutricion.carbohidratos')}&modo=${letra}`);
+            await quieto(page, v);
+            await comprobarGraficos(page, 'PRO-08', `${modo === 'relativo' ? 'Cambio relativo' : 'Superpuestas'} a ${ancho} px en ${tema}: dibujado y a la vista`, opciones);
+            await page.evaluate(() => window.scrollTo(0, 0));
+            const c = await captura(page, v, `analizar-${modo}-${ancho}-${tema}`);
+            comprobar('PRO-08', `La captura analizar-${modo}-${ancho}-${tema} tiene el gráfico dibujado`, c.figuras === 1 && c.dibujadas === 1 && c.despues === 1, `${c.dibujadas} de ${c.figuras}`);
+          }
         }
       }
     }
@@ -609,12 +1011,168 @@ async function capturas() {
   }
 }
 
+// ─── Escenario descartable: valores estimados y revocación desde la interfaz (revisión de #153, hallazgo 5) ─────────
+
+/**
+ * Con las cuentas descartables (`datos/generar.mjs descartable-cuentas` y `descartable-datos`): el profesional ve el peso
+ * (medido, informado por la persona y medido) y el IMC (estimado por un método) en los dos temas; la lectura, la tabla y el
+ * CSV dicen la clase. Después el asesorado revoca desde su web el acceso de Antropometría y, con la pantalla del
+ * profesional todavía abierta, cada consulta nueva (el origen de un punto, la exportación, los gráficos) ya no da nada.
+ */
+async function descartable() {
+  const d = estado.descartable;
+  if (!d?.datos) throw new Error('falta el escenario descartable: datos/generar.mjs descartable-cuentas y descartable-datos');
+  const FICHA_D = `/pro/advisees?id=${d.aseId}`;
+  const URL_D = `${FICHA_D}&vista=analizar&m=${encodeURIComponent('antropometria.peso,antropometria.imc')}`;
+  const pro = await abrir();
+  try {
+    await iniciarSesion(pro.page, pro.v, d.proCorreo, FICHA_D);
+    await quieto(pro.page, pro.v);
+    for (const tema of ['claro', 'azul-noche']) {
+      await pro.page.select('.apariencia select', tema);
+      await pausa(300);
+      await ir(pro.page, URL_D);
+      await quieto(pro.page, pro.v);
+      const { d: dib } = await comprobarGraficos(pro.page, 'PRO-10', `Peso e IMC en ${tema}: los dos gráficos dibujados y a la vista`, { figuras: 2, colores: [[1], [2]] });
+      const leyenda = await texto(pro.page, '.leyenda');
+      comprobar(
+        'PRO-10',
+        `En ${tema}, lo reportado y lo calculado se dibujan distinto (contorno cortado en el peso reportado, un punto adentro en el IMC) y la leyenda lo dice`,
+        dib[0]?.clases.includes('REPORTED') && !dib[0]?.clases.includes('DERIVED') && dib[1]?.clases.includes('DERIVED') && /Contorno cortado: reportado por la persona, no medido/.test(leyenda) && /Con un punto adentro: calculado por un método \(estimación\)/.test(leyenda),
+        `peso: ${dib[0]?.clases.join(',') || 'sin clase'}; IMC: ${dib[1]?.clases.join(',') || 'sin clase'} · ${leyenda.slice(0, 170)}`,
+      );
+      const c = await captura(pro.page, pro.v, `analizar-clases-1440-${tema}`);
+      comprobar('PRO-10', `La captura analizar-clases-1440-${tema} tiene los dos gráficos dibujados`, c.figuras === 2 && c.dibujadas === 2 && c.despues === 2, `${c.dibujadas} de ${c.figuras}`);
+    }
+    await ir(pro.page, `${URL_D}&f=${d.fechas.informada}`);
+    await quieto(pro.page, pro.v);
+    const lectura = await texto(pro.page, '.panel-de-lectura');
+    comprobar('PRO-10', 'La lectura del día de la toma reportada dice «Reportado por la persona, no medido»', /80,5 kg/.test(lectura) && /Clase de dato: Reportado por la persona, no medido/.test(lectura), lectura.slice(0, 220));
+    await abrirDetalles(pro.page, 'details.tabla-de-datos');
+    const tabla = await texto(pro.page, 'details.tabla-de-datos');
+    comprobar('PRO-10', 'La tabla de datos marca el peso reportado y el IMC calculado; lo medido va sin marca', /80,5 kg \(reportado por la persona, no medido\)/.test(tabla) && /\(calculado por un método\)/.test(tabla) && /81,2 kg(?! \()/.test(tabla), tabla.slice(0, 260));
+    await clic(pro.page, 'button', 'Descargar los datos (CSV)');
+    const { archivo, csv } = await esperarCsv();
+    const lineasCsv = csv.split('\r\n');
+    const filasCsv = lineasCsv.slice(lineasCsv.findIndex((l) => l.startsWith('Métrica;Unidad;Método')) + 1).filter((l) => l.length > 0).map((l) => l.split(';'));
+    // Los valores, con los decimales fijos de cada métrica en el archivo (el IMC, con dos: «25,60»).
+    const porClase = (texto) => filasCsv.filter((x) => x[16] === texto).map((x) => x[6]).sort();
+    comprobar(
+      'PRO-10',
+      'El CSV tiene la columna «Clase de dato»: medido, reportado por la persona y calculado por un método',
+      archivo &&
+        porClase('Medido').join(' ') === '79,9 81,2' &&
+        porClase('Reportado por la persona, no medido').join(' ') === '80,5' &&
+        porClase('Calculado por un método (estimación)').join(' ') === d.imc.map((c) => c.valor.toFixed(2).replace('.', ',')).sort().join(' '),
+      `${archivo} · ${filasCsv.map((x) => `${x[6]}: ${x[16]}`).join(' · ')}`,
+    );
+    await clic(pro.page, '.panel-de-lectura button', 'Ver el origen de este dato');
+    await pro.page.waitForSelector('dialog[open]');
+    await quieto(pro.page, pro.v);
+    const origenAntes = await texto(pro.page, 'dialog[open]');
+    await clic(pro.page, 'dialog[open] button', 'Cerrar');
+    await pro.page.waitForFunction(() => !document.querySelector('dialog[open]'));
+    comprobar('PRO-10', 'Antes de revocar, el origen del peso reportado abre su toma, con la clase de cada medición («Reportado», la palabra de la pestaña de Antropometría)', /Toma del/.test(origenAntes) && /Peso\s+80,5 kg\s+Reportado/.test(origenAntes), origenAntes.slice(0, 260));
+
+    // Una segunda pantalla del profesional, cargada antes de revocar: ahí se prueba la exportación con datos viejos en
+    // pantalla (en la primera, la consulta del origen ya vuelve a pedir los gráficos y el botón de descarga se va).
+    const pro2 = await abrir();
+    await iniciarSesion(pro2.page, pro2.v, d.proCorreo, FICHA_D);
+    await quieto(pro2.page, pro2.v);
+    await ir(pro2.page, URL_D);
+    await quieto(pro2.page, pro2.v);
+    const graficosAntes = await pro2.page.$$eval('figure.grafico__figura', (g) => g.length);
+
+    // El asesorado, desde su web y en su propio navegador, revoca el acceso de Antropometría.
+    const ase = await abrir();
+    try {
+      await iniciarSesion(ase.page, ase.v, d.aseCorreo, `/account/relationships/detail?id=${d.vinculos.ANTROPOMETRIA}`);
+      await quieto(ase.page, ase.v);
+      const antes = await texto(ase.page, 'main');
+      await clic(ase.page, 'button', `Revocar acceso de ${d.profesional}`);
+      await ase.page.waitForSelector('dialog[open]');
+      const explicacion = await texto(ase.page, 'dialog[open]');
+      await clic(ase.page, 'dialog[open] button', 'Revocar acceso');
+      await ase.page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 30_000 });
+      await quieto(ase.page, ase.v);
+      const despues = await texto(ase.page, 'body');
+      comprobar(
+        'PRO-20',
+        'El asesorado revoca desde su web el acceso de Antropometría del profesional: explicación, confirmación y aviso',
+        /Antropometr/i.test(antes) && explicacion.length > 40 && /Acceso revocado/.test(despues),
+        `${explicacion.slice(0, 120)} · ${/Acceso revocado[^.]*\./.exec(despues)?.[0] ?? 'sin aviso'}`,
+      );
+      await captura(ase.page, ase.v, 'revocacion-asesorado-1440');
+    } finally {
+      await ase.navegador.close();
+    }
+
+    // El profesional, con las pantallas de antes todavía abiertas: cada consulta nueva decide con el acceso de ahora.
+    // a) La exportación vuelve a preguntar antes de armar el archivo: no sale ninguno, y lo dice.
+    try {
+      const antes = fs.readdirSync(DESCARGAS).filter((x) => x.endsWith('.csv'));
+      await clic(pro2.page, 'button', 'Descargar los datos (CSV)');
+      await pro2.page.waitForFunction(() => /No se descargó ningún archivo|Descargado:/.test(document.querySelector('.exportar')?.innerText ?? ''), { timeout: 20_000 }).catch(() => {});
+      const aviso = await texto(pro2.page, '.exportar');
+      await pausa(1500);
+      const nuevos = fs.readdirSync(DESCARGAS).filter((x) => x.endsWith('.csv') && !antes.includes(x));
+      await quieto(pro2.page, pro2.v);
+      const despuesDeExportar = await texto(pro2.page, '.analizar__lienzo');
+      comprobar(
+        'PRO-20',
+        'Después de revocar, «Descargar los datos» con la pantalla vieja vuelve a consultar: no sale ningún archivo y dice por qué; los gráficos se vuelven a pedir',
+        graficosAntes === 2 && nuevos.length === 0 && /No se descargó ningún archivo/.test(aviso) && /no está disponible con tu acceso actual/.test(aviso) && (await pro2.page.$$eval('figure.grafico__figura', (g) => g.length)) === 0 && /no está disponible con tu acceso actual/.test(despuesDeExportar),
+        `${graficosAntes} gráficos antes · ${nuevos.length} archivo(s) nuevo(s) · aviso: ${aviso.slice(0, 160)}`,
+      );
+      await captura(pro2.page, pro2.v, 'revocado-exportacion-1440');
+    } finally {
+      await pro2.navegador.close();
+    }
+    // b) El origen de un punto que seguía en pantalla: ya no se muestra, y los gráficos se vuelven a pedir.
+    await clic(pro.page, '.panel-de-lectura button', 'Ver el origen de este dato');
+    await pro.page.waitForSelector('dialog[open]');
+    await quieto(pro.page, pro.v);
+    const origenDespues = await texto(pro.page, 'dialog[open]');
+    comprobar('PRO-20', 'Después de revocar, el origen de un punto que seguía en pantalla dice «no está disponible con tu acceso actual» y no repite el valor', /no está disponible con tu acceso actual/.test(origenDespues) && !/80,5|81,2/.test(origenDespues), origenDespues.slice(0, 200));
+    await clic(pro.page, 'dialog[open] button', 'Cerrar');
+    await pro.page.waitForFunction(() => !document.querySelector('dialog[open]'));
+    await quieto(pro.page, pro.v);
+    const lienzoTrasElOrigen = await texto(pro.page, '.analizar__lienzo');
+    comprobar(
+      'PRO-20',
+      'Los gráficos se vuelven a pedir y dicen «no está disponible con tu acceso actual», sin un punto ni un valor de antes',
+      (await pro.page.$$eval('figure.grafico__figura', (g) => g.length)) === 0 && (lienzoTrasElOrigen.match(/no está disponible con tu acceso actual/g) ?? []).length === 2 && !/80,5|81,2|25,6/.test(await texto(pro.page, 'main')),
+      lienzoTrasElOrigen.slice(0, 220),
+    );
+    // c) Una consulta nueva desde cero (abrir Analizar otra vez): lo mismo, y la línea de tiempo no trae tomas.
+    await ir(pro.page, URL_D);
+    await quieto(pro.page, pro.v);
+    const reabierto = await texto(pro.page, '.analizar__lienzo');
+    // La descarga de antes de revocar ya no se anuncia: «Descargado» hablaría de datos que no están en pantalla.
+    const avisoViejo = /Descargado:/.test(await texto(pro.page, 'main'));
+    await captura(pro.page, pro.v, 'revocado-analizar-1440-azul-noche');
+    await ir(pro.page, `${FICHA_D}&vista=linea`);
+    await quieto(pro.page, pro.v);
+    const entradasDeLaLinea = await textos(pro.page, '.entrada');
+    const pestanas = await textos(pro.page, 'nav[aria-label="Vistas del seguimiento"] a');
+    comprobar(
+      'PRO-20',
+      'Al volver a abrir Analizar y la línea de tiempo, no hay gráficos, valores ni tomas de Antropometría, ni el aviso de una descarga anterior; el resto del vínculo sigue',
+      (reabierto.match(/no está disponible con tu acceso actual/g) ?? []).length === 2 && !avisoViejo && !entradasDeLaLinea.some((e) => /Toma|kg/.test(e)) && pestanas.length === 3,
+      `${reabierto.slice(0, 140)} · aviso de una descarga anterior: ${avisoViejo ? 'sí' : 'no'} · ${entradasDeLaLinea.length} entrada(s) en la línea de tiempo, ninguna de Antropometría`,
+    );
+  } finally {
+    await pro.navegador.close();
+  }
+}
+
 // ─── Principal ────────────────────────────────────────────────────────────────────────────────
 
 const inicio = new Date();
 try {
   if (modo === 'funcional' || modo === 'todo') await funcional();
   if (modo === 'capturas' || modo === 'todo') await capturas();
+  if (modo === 'descartable') await descartable();
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {

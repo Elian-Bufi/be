@@ -197,7 +197,15 @@ import {
   TiemposDeSesionResponseSchema,
 } from './contratos-entrenamiento-por-serie';
 import { HEADER_DE_CAPACIDADES } from './compatibilidad-de-clientes';
-import { CrearVistaRequestSchema, LineaDeTiempoResponseSchema, ListaDeVistasResponseSchema, ProyeccionResponseSchema, ReemplazarVistaRequestSchema, VistaDeAnalisisResponseSchema } from './contratos-analisis';
+import {
+  BusquedaEnLineaDeTiempoRequestSchema,
+  CrearVistaRequestSchema,
+  LineaDeTiempoResponseSchema,
+  ListaDeVistasResponseSchema,
+  ProyeccionResponseSchema,
+  ReemplazarVistaRequestSchema,
+  VistaDeAnalisisResponseSchema,
+} from './contratos-analisis';
 import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema } from './contratos-medios';
 import {
   AsociarImagenDeRecetaRequestSchema,
@@ -2487,13 +2495,26 @@ const DEFINIDAS: readonly Operacion[] = [
       { nombre: 'late', descripcion: 'Extensión de BE (DL-127): solo los registrados en un día posterior al del hecho.', schema: { type: 'boolean' } },
       { nombre: 'planVersionId', descripcion: 'Extensión de BE (DL-127): una versión de plan.', schema: { type: 'string' } },
       { nombre: 'exerciseId', descripcion: 'Extensión de BE (DL-127): la identidad de un ejercicio (e:<id>).', schema: { type: 'string' } },
-      { nombre: 'q', descripcion: 'Extensión de BE (DL-127): búsqueda en todo el período del conjunto autorizado (hasta 80 caracteres).', schema: { type: 'string', maxLength: 80 } },
+      // Sin `q`: el texto buscado no viaja en una URL. La búsqueda es API-DSH-04-BUSQUEDA, con el texto en el cuerpo.
       LIMIT,
       CURSOR,
     ],
     exitos: [{ status: 200, schema: LineaDeTiempoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: '09v11:964-1010 · B10-08 §11-§12 · T-06-24 · REG-06-145 · DEUDA_LEGAJO DL-054, DL-116, DL-127',
+  },
+  {
+    id: 'API-DSH-04-BUSQUEDA',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/timeline/search',
+    resumen:
+      'Búsqueda en la línea de tiempo del asesorado: la misma lectura que API-DSH-04, con el texto a buscar en el cuerpo para que nunca quede en una URL (historiales, proxies, bitácoras). Es una lectura: no crea ni cambia nada y no exige Idempotency-Key. Busca en todo el período del conjunto autorizado, con los mismos filtros, el mismo PDP y la misma paginación. Sin ningún alcance permitido: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: BusquedaEnLineaDeTiempoRequestSchema,
+    exitos: [{ status: 200, schema: LineaDeTiempoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v11:964-1010 · B10-08 §11-§12 · revisión independiente de #153 (hallazgo 4) · ID propio de BE (variante BUSQUEDA de API-DSH-04) · DEUDA_LEGAJO DL-127',
   },
   {
     // El 09 declara SESSION_MFA (09 v0.11 §19); se implementa como SESSION en esta demo sintética, igual que DL-088 #17.
@@ -2575,6 +2596,7 @@ const DEFINIDAS: readonly Operacion[] = [
 const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-DSH-03',
   'API-DSH-04',
+  'API-DSH-04-BUSQUEDA',
   'API-PRJ-01',
   'API-CAR-01',
   'API-ANT-03',

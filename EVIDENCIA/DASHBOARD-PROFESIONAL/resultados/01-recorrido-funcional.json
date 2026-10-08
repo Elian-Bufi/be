@@ -1,9 +1,9 @@
 {
   "modo": "funcional",
-  "inicio": "2026-10-08T19:59:19.886Z",
-  "fin": "2026-10-08T20:01:10.296Z",
+  "inicio": "2026-10-08T23:15:06.792Z",
+  "fin": "2026-10-08T23:17:01.091Z",
   "hoy": "2026-10-08",
-  "total": 57,
+  "total": 70,
   "fallas": 0,
   "resultados": [
     {
@@ -11,7 +11,7 @@
       "descripcion": "Primera carga del Resumen, desde el envío del inicio de sesión hasta la última respuesta (puede incluir el arranque en frío de la API)",
       "ok": true,
       "informativo": true,
-      "detalle": "2938 ms"
+      "detalle": "1858 ms"
     },
     {
       "pro": "PRO-01",
@@ -117,6 +117,18 @@
     },
     {
       "pro": "PRO-04",
+      "descripcion": "«Ver más» con la búsqueda activa completa las coincidencias de todo el período, sin repetir",
+      "ok": true,
+      "detalle": "79 de 79 en 2 página(s)"
+    },
+    {
+      "pro": "PRO-04",
+      "descripcion": "El texto buscado viaja en el cuerpo de un POST (API-DSH-04-BUSQUEDA): ninguna URL de la API lo lleva, tampoco la de «Ver más»",
+      "ok": true,
+      "detalle": "4 pedidos a la API durante la búsqueda, ninguno con el texto; 2 POST con el texto en el cuerpo (los de «Ver más», con su cursor)"
+    },
+    {
+      "pro": "PRO-04",
       "descripcion": "Limpiar recupera la vista completa",
       "ok": true,
       "detalle": "319 de 319"
@@ -125,7 +137,7 @@
       "pro": "PRO-24",
       "descripcion": "El Resumen completo con la API en uso, desde el clic en la pestaña hasta la última respuesta",
       "ok": true,
-      "detalle": "797 ms (presupuesto 2.500 ms)"
+      "detalle": "719 ms (presupuesto 2.500 ms)"
     },
     {
       "pro": "PRO-06",
@@ -138,6 +150,12 @@
       "descripcion": "Cada panel conserva su unidad (kcal, g, kg)",
       "ok": true,
       "detalle": ""
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Paneles: los tres gráficos están dibujados y a la vista (ejes, curvas, marcas sin tapar y el color de cada métrica)",
+      "ok": true,
+      "detalle": "3 gráfico(s) · Energía (kcal): 631×192, ejes 7/5, curvas 2, marcas 80/80, tinta 11.6 %, color 2148 px · Proteínas (g): 631×192, ejes 7/5, curvas 2, marcas 80/80, tinta 15.6 %, color 3408 px · Peso (kg): 631×192, ejes 7/5, curvas 3, marcas 6/6, tinta 6.8 %, color 446 px"
     },
     {
       "pro": "PRO-08",
@@ -207,9 +225,63 @@
     },
     {
       "pro": "PRO-08",
+      "descripcion": "Cambio relativo: el gráfico está dibujado y a la vista, con la banda de la referencia",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 631×270, ejes 7/5, curvas 2, marcas 80/80, banda sí, tinta 14.9 %, color 4171 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La referencia del cambio relativo y el % de una fecha no cambian al acercar (arrastre), alejar (fechas) ni restablecer el gráfico",
+      "ok": true,
+      "detalle": "acercado a «29 ago 2026 al 3 oct 2026», alejado a «30 jul 2026 al 8 oct 2026»: +38,1 % contra la referencia / +38,1 % contra la referencia / +38,1 % contra la referencia / +38,1 % contra la referencia · Proteínas: media de los días con valor del 11 jul 2026 al 17 jul 2026, 76,5 g (n = 1: pocas observaciones, la "
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambiar la referencia es explícito: copiar el intervalo no la cambia hasta «Aplicar»; después queda en la URL y en pantalla, con su rango",
+      "ok": true,
+      "detalle": "ref=2026-09-18_2026-10-07 · Referencia: rango fijo, del 18 sept 2026 al 7 oct 2026. No cambia al acercar, alejar o restablecer el gráfico."
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Restablecer el gráfico no deshace la referencia elegida",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-18",
+      "descripcion": "Por semana, la comparación de dos rangos que cortan semanas es la misma que por día y coincide con la media de los días calculada a mano",
+      "ok": true,
+      "detalle": "esperado A «1.150 kcal · n = 13 de 13», B «1.198 kcal · n = 10 de 10» · por día «Media de los días con valor | 1.150 kcal · n = 13 de 13 · 13 días · 1 subtotal | 1.198 kcal · n = 10 de 10 · 10 días | +48 kcal» · por semana igual: sí"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Por semana: el gráfico semanal está dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Energía (kcal): 631×192, ejes 7/5, curvas 1, marcas 13/13, tinta 9.2 %, color 471 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Por semana, la referencia del cambio relativo es la misma que por día (los días de su rango, no las semanas)",
+      "ok": true,
+      "detalle": "Proteínas: media de los días con valor del 11 jul 2026 al 17 jul 2026, 76,5 g (n = 1: pocas observaciones, la referencia es frágil)"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambio relativo por semana: dibujado y a la vista, con la banda de la referencia",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 631×270, ejes 7/5, curvas 1, marcas 13/13, banda sí, tinta 9.4 %, color 665 px"
+    },
+    {
+      "pro": "PRO-08",
       "descripcion": "Proteínas y carbohidratos (misma familia y unidad) se superponen en un solo gráfico, con trazos distintos",
       "ok": true,
       "detalle": "Superpuestas en valores reales (g) · Proteínas · círculo, línea continua Carbohidratos · cuadrado, línea rayada Hueco: subtotal (falta algún dato), o día o semana sin completar"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Superpuestas: un gráfico con las dos curvas dibujadas y a la vista, cada una con su color",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Superpuestas en valores real: 631×270, ejes 7/5, curvas 4, marcas 160/160, tinta 15.4 %, color 3133/2356 px"
     },
     {
       "pro": "PRO-18",
@@ -231,9 +303,9 @@
     },
     {
       "pro": "PRO-19",
-      "descripcion": "Guardar una vista la suma a la lista",
+      "descripcion": "Guardar una vista la suma a la lista, que dice su referencia del cambio relativo",
       "ok": true,
-      "detalle": ""
+      "detalle": "Recorrido 231506 · 3 métricas · referencia: del 18 sept 2026 al 24 sept 2026 Abrir Recorrido 231506 Guardar lo actual acá (Recorrido 231506) Borrar Recorrido 23"
     },
     {
       "pro": "PRO-21",
@@ -333,9 +405,9 @@
     },
     {
       "pro": "PRO-19",
-      "descripcion": "En una sesión nueva, la vista guardada reabre la misma configuración y vuelve a pedir los datos",
+      "descripcion": "En una sesión nueva, la vista guardada reabre la misma configuración —también su referencia— y vuelve a pedir los datos",
       "ok": true,
-      "detalle": "/pro/advisees?id=abc6216c-057a-40ee-bd52-f774ba9b2284&vista=analizar&p=30&m=nutricion.energia%2Cnutricion.proteinas%2Cantropometria.peso"
+      "detalle": "/pro/advisees?id=abc6216c-057a-40ee-bd52-f774ba9b2284&vista=analizar&p=30&m=nutricion.energia%2Cnutricion.proteinas%2Cantropometria.peso&ref=2026-09-18_2026-09-24 · Referencia del cambio relativo Rango fijo, del 18 sept 2026 al 24 sept 2026. La usa «Cambio relativo». Acercar, alejar o"
     },
     {
       "pro": "PRO-19",
@@ -348,6 +420,12 @@
       "descripcion": "Un tercero ve «no encontramos un recurso disponible»: ni pestañas, ni indicadores, ni gráficos",
       "ok": true,
       "detalle": "Espacio profesional Asesorado Workspace del asesorado Asesorado Estado por área No encontramos un recurso disponible para esta acción. Volver Actualizar Última  · 404 /api/v1/advisees/:id/dashboard"
+    },
+    {
+      "pro": "PRO-04",
+      "descripcion": "El registro de la API tiene cada búsqueda como ruta parametrizada y nunca el texto buscado",
+      "ok": true,
+      "detalle": "2 línea(s) de búsqueda, p. ej. {\"nivel\":\"info\",\"metodo\":\"POST\",\"ruta\":\"/api/v1/advisees/:adviseeId/timeline/search\",\"status\":200,\"duracionMs\":197}; «cena» en el registro: no"
     }
   ]
 }

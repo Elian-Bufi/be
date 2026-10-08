@@ -14,9 +14,10 @@ export interface DeclaracionDeOperacionProtegida {
   /**
    * Validación de la query, ANTES del PDP: schema y payload van primero (09 §3, 09:221). El 400 no depende del recurso,
    * así que no es un oráculo, y una consulta inválida no deja decisiones registradas. Recibe también los parámetros de
-   * ruta: los filtros aplicables de API-PRJ-01 dependen de la clave de proyección (09 v0.11 §19), no del titular.
+   * ruta (los filtros aplicables de API-PRJ-01 dependen de la clave de proyección, 09 v0.11 §19, no del titular) y el
+   * cuerpo: la búsqueda de API-DSH-04-BUSQUEDA viaja en el cuerpo para que el texto no quede en una URL (DL-127).
    */
-  readonly validarConsulta?: (query: Record<string, unknown>, parametros: Record<string, unknown>) => unknown;
+  readonly validarConsulta?: (query: Record<string, unknown>, parametros: Record<string, unknown>, cuerpo: unknown) => unknown;
 }
 
 const METADATO = 'be:operacion-protegida';
@@ -49,7 +50,7 @@ export class PdpGuard implements CanActivate {
     if (!declaracion) throw errores.recursoNoEncontrado();
     const req = contexto.switchToHttp().getRequest<SolicitudAutorizada>();
     const actor = actorDe(req);
-    if (declaracion.validarConsulta) req.consultaValidada = declaracion.validarConsulta((req.query ?? {}) as Record<string, unknown>, (req.params ?? {}) as Record<string, unknown>);
+    if (declaracion.validarConsulta) req.consultaValidada = declaracion.validarConsulta((req.query ?? {}) as Record<string, unknown>, (req.params ?? {}) as Record<string, unknown>, (req as { body?: unknown }).body);
     // Por actor, desde cualquier red.
     this.limitador.consumir('consultaProtegida', null, actor.identidadId);
     const titular = String((req.params as Record<string, unknown>)[declaracion.parametroDelTitular] ?? '');

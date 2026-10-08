@@ -155,6 +155,7 @@ export function serieNutricional(dias: readonly DiaNutricional[], definicion: De
         segment: `t${tramo}`,
         corrected: d.rectificado,
         partialBucket: d.fecha === o.hoy,
+        dataClass: null,
         coverage: cobertura,
         missing: faltantesDe(d.faltan),
         detail: detalleDeCobertura(d.cobertura),
@@ -187,6 +188,7 @@ export function serieNutricional(dias: readonly DiaNutricional[], definicion: De
         segment: 'semanas',
         corrected: delaSemana.some((d) => d.rectificado),
         partialBucket: s.parcial || parcialDeHoy,
+        dataClass: null,
         coverage: { records: registros, recordsWithQuantities: conCantidades, recordsWithoutQuantities: registros - conCantidades, daysWithData: conValor.length, daysInBucket: s.diasEnElPeriodo },
         missing: faltantesDe(faltan),
         detail: [

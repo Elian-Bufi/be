@@ -26,6 +26,7 @@ const punto = (fecha: string, valor: number | null, extra: Partial<PuntoAnalitic
   segment: 't1',
   corrected: false,
   partialBucket: false,
+  dataClass: null,
   coverage: null,
   missing: [],
   detail: [],
@@ -96,6 +97,40 @@ test('desconocido vacío, cero como 0, subtotal y día sin completar en sus colu
   assert.match(csv, /Zona horaria;America\/Argentina\/Buenos_Aires/);
   assert.match(csv, /Generado;2026-10-08T18:00:00.000Z/);
   assert.match(csv, /Valor vacío: sin valor conocido \(nunca es 0\)/);
+  assert.match(csv, /Agrupación;Energía: por día/);
+  assert.ok(filas.every((f) => f[16] === ''), 'en nutrición la clase de dato no aplica: la columna queda vacía');
+});
+
+test('la clase del dato antropométrico se exporta: medido, reportado por la persona o calculado por un método (PRO-10)', () => {
+  const peso = definicionDeMetrica('antropometria.peso', 'kg');
+  if (!peso) throw new Error('sin definición del peso');
+  const csv = csvDelAnalisis({
+    asesorado: 'A',
+    desde: '2026-09-01',
+    hasta: '2026-09-30',
+    zona: 'America/Argentina/Buenos_Aires',
+    generadoEl: '2026-09-30T12:00:00.000Z',
+    series: [
+      {
+        nombre: 'Peso',
+        definicion: peso,
+        serie: {
+          ...serie(peso, [punto('2026-09-01', 80, { dataClass: 'MEASURED' }), punto('2026-09-10', 79, { dataClass: 'REPORTED' }), punto('2026-09-20', 79.4, { dataClass: 'DERIVED' })], 'kg'),
+          grain: 'ORIGINAL',
+          aggregation: 'NONE',
+        },
+      },
+    ],
+  });
+  assert.deepEqual(
+    filasDeDatos(csv).map((f) => [f[3], f[6], f[16]]),
+    [
+      ['2026-09-01', '80,0', 'Medido'],
+      ['2026-09-10', '79,0', 'Reportado por la persona, no medido'],
+      ['2026-09-20', '79,4', 'Calculado por un método (estimación)'],
+    ],
+  );
+  assert.match(csv, /Agrupación;Peso: cada observación \(toma o sesión\)/);
 });
 
 test('gramos a un decimal con coma (HALF_UP sobre el exacto) y la hora en la zona del asesorado', () => {

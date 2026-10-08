@@ -7,6 +7,7 @@
  * - una rectificación cuenta una sola vez y una anulación queda en el historial, fuera de los agregados;
  * - el número de «Analizar» es el mismo que el del registro (encargo §11): la suma exacta de lo conocido;
  * - un alcance denegado no aporta ni una entrada, ni un conteo, ni una coincidencia de búsqueda (TEST-DSH-002);
+ * - el texto buscado viaja en el cuerpo de API-DSH-04-BUSQUEDA: nunca en una URL ni en el registro de requests (DL-127);
  * - un tercero recibe el mismo 404 que un asesorado inexistente;
  * - ocho claves, ninguna extra, y las cinco sin especificación no inventan nada (TEST-PRJ-001);
  * - una vista guardada es solo configuración y no concede acceso.
@@ -50,6 +51,9 @@ const fechaCivil = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Am
 const lineaDeTiempo = (pro: Parte, asesoradoId: string, query = '') => conSesion(app, pro.token).get(`/api/v1/advisees/${asesoradoId}/timeline${query}`);
 const proyeccion = (pro: Parte, asesoradoId: string, clave: string, query = '') => conSesion(app, pro.token).get(`/api/v1/advisees/${asesoradoId}/projections/${clave}${query}`);
 const entradas = async (pro: Parte, asesoradoId: string, query = '') => LineaDeTiempoResponseSchema.parse((await lineaDeTiempo(pro, asesoradoId, query).expect(200)).body);
+/** API-DSH-04-BUSQUEDA: la búsqueda con el texto en el cuerpo (DL-127). */
+const busqueda = (pro: Parte, asesoradoId: string, cuerpo: Record<string, unknown>) => conSesion(app, pro.token).post(`/api/v1/advisees/${asesoradoId}/timeline/search`).send(cuerpo);
+const buscadas = async (pro: Parte, asesoradoId: string, cuerpo: Record<string, unknown>) => LineaDeTiempoResponseSchema.parse((await busqueda(pro, asesoradoId, cuerpo).expect(200)).body);
 
 // ─── Nutrición: comidas con y sin cantidades, rectificada, anulada y cargada tarde ───────────────
 
@@ -155,10 +159,17 @@ describe('API-DSH-04 · línea de tiempo de nutrición', () => {
     expect(anulados.data.periodCounts).toEqual((await entradas(e.c.pro, e.c.ase.id)).data.periodCounts);
     const tardias = await entradas(e.c.pro, e.c.ase.id, '?late=true');
     expect(tardias.data.entries.map((x) => x.timelineEntryId).sort()).toEqual([`meal:${e.completo.recordId}`, `meal:${e.rectificado.recordId}`].sort());
-    // La búsqueda no distingue acentos ni mayúsculas, y encuentra más allá de la primera página.
-    const cenas = await entradas(e.c.pro, e.c.ase.id, `?q=${encodeURIComponent('CENA')}&limit=1`);
+    // La búsqueda no distingue acentos ni mayúsculas, y encuentra más allá de la primera página: la página siguiente se
+    // pide con el mismo texto y el cursor, sin repetir ni perder entradas.
+    const cenas = await buscadas(e.c.pro, e.c.ase.id, { q: 'CENA', limit: 1 });
     expect(cenas.data.totalMatching).toBe(2);
     expect(cenas.page.hasMore).toBe(true);
+    const segunda = await buscadas(e.c.pro, e.c.ase.id, { q: 'CENA', limit: 1, cursor: cenas.page.nextCursor! });
+    expect(segunda.page.hasMore).toBe(false);
+    expect([...cenas.data.entries, ...segunda.data.entries].map((x) => x.timelineEntryId).sort()).toEqual([`meal:${e.completo.recordId}`, `meal:${e.sinCantidades.recordId}`].sort());
+    // Con filtros: el cuerpo los acepta con los mismos valores que la consulta.
+    const cenasTardias = await buscadas(e.c.pro, e.c.ase.id, { q: 'cena', late: true, domain: 'NUTRITION' });
+    expect(cenasTardias.data.entries.map((x) => x.timelineEntryId)).toEqual([`meal:${e.completo.recordId}`]);
     const comidas = await entradas(e.c.pro, e.c.ase.id, '?type=MEAL_RECORDED&quality=QUANTITIES_UNCONFIRMED');
     expect(comidas.data.entries.map((x) => x.timelineEntryId)).toEqual([`meal:${e.sinCantidades.recordId}`]);
   });
@@ -169,6 +180,43 @@ describe('API-DSH-04 · línea de tiempo de nutrición', () => {
     expect((await lineaDeTiempo(e.c.pro, e.c.ase.id, '?periodStart=2025-01-01&periodEnd=2026-01-03').expect(400)).body.error.details.issues[0].code).toBe('PERIOD_TOO_LONG');
     expect((await lineaDeTiempo(e.c.pro, e.c.ase.id, '?periodStart=2026-02-02&periodEnd=2026-02-01').expect(400)).body.error.details.issues[0].code).toBe('INVALID_PERIOD');
     expect((await lineaDeTiempo(e.c.pro, e.c.ase.id, '?domain=FINANZAS').expect(400)).body.error.details.issues[0]).toMatchObject({ code: 'INVALID_FILTER', path: 'domain' });
+  });
+
+  it('el texto buscado viaja en el cuerpo: nunca en una URL ni en el registro de requests (DL-127)', async () => {
+    // En la URL de la consulta, `q` ya no es un parámetro: 400, sin eco del valor.
+    const conQ = await lineaDeTiempo(e.c.pro, e.c.ase.id, `?q=${encodeURIComponent('cena')}`).expect(400);
+    expect(conQ.body.error.details.issues[0]).toEqual({ code: 'UNKNOWN_QUERY_PARAMETER', path: 'q' });
+    expect(JSON.stringify(conQ.body)).not.toMatch(/cena/i);
+    // La búsqueda no acepta nada en la URL (ni filtros ni el texto), ni campos de más, ni un texto vacío.
+    expect((await conSesion(app, e.c.pro.token).post(`/api/v1/advisees/${e.c.ase.id}/timeline/search?q=cena`).send({ q: 'cena' }).expect(400)).body.error.details.issues[0]).toEqual({ code: 'UNKNOWN_QUERY_PARAMETER', path: 'q' });
+    expect((await busqueda(e.c.pro, e.c.ase.id, { q: 'cena', orden: 'asc' }).expect(400)).body.error.code).toBe('UNKNOWN_FIELD');
+    const vacia = await busqueda(e.c.pro, e.c.ase.id, { q: '   ' }).expect(400);
+    expect(vacia.body.error.details.issues[0].path).toBe('q');
+    expect((await busqueda(e.c.pro, e.c.ase.id, { q: 'cena', cursor: 'no-es-un-cursor' }).expect(400)).body.error.code).toBe('INVALID_CURSOR');
+    expect((await busqueda(e.c.pro, e.c.ase.id, { q: 'cena', periodStart: '2025-01-01', periodEnd: '2026-01-03' }).expect(400)).body.error.details.issues[0].code).toBe('PERIOD_TOO_LONG');
+
+    // El registro de requests y el log técnico de una búsqueda (salida estándar y de errores): la ruta parametrizada y
+    // nada del texto, ni del cuerpo, ni en el éxito ni en el 400.
+    const TEXTO = 'Cena con nombre propio';
+    const lineas: string[] = [];
+    const capturar = (flujo: NodeJS.WriteStream) => {
+      const escribir = flujo.write.bind(flujo);
+      return jest.spyOn(flujo, 'write').mockImplementation((trozo: string | Uint8Array, ...resto: unknown[]) => {
+        lineas.push(String(trozo));
+        return escribir(trozo as string, ...(resto as []));
+      });
+    };
+    const espias = [capturar(process.stdout), capturar(process.stderr)];
+    try {
+      await buscadas(e.c.pro, e.c.ase.id, { q: TEXTO });
+      await busqueda(e.c.pro, e.c.ase.id, { q: TEXTO, campoDeMas: 1 }).expect(400);
+    } finally {
+      for (const espia of espias) espia.mockRestore();
+    }
+    const registro = lineas.join('');
+    expect(registro).toContain('/timeline/search"');
+    expect(registro).not.toMatch(/nombre propio/i);
+    expect(registro).not.toContain('campoDeMas');
   });
 });
 
@@ -360,12 +408,12 @@ describe('Permisos del entorno profesional', () => {
     const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta, pro);
     await vinculoCompleto(app, pro, c.ase, 'NUTRICION');
     // Antes de revocar, el objetivo de entrenamiento («Mejorar la fuerza…») está y se encuentra.
-    const antes = await entradas(pro, c.ase.id, '?q=fuerza');
+    const antes = await buscadas(pro, c.ase.id, { q: 'fuerza' });
     expect(antes.data.totalMatching).toBe(1);
     expect(antes.data.entries[0]!.eventType).toBe('TRAINING_OBJECTIVE_SET');
 
     await revocarB2(app, c.ase, c.consentId).expect(200);
-    const despues = await entradas(pro, c.ase.id, '?q=fuerza');
+    const despues = await buscadas(pro, c.ase.id, { q: 'fuerza' });
     expect(despues.data).toMatchObject({ partialView: true, totalMatching: 0, entries: [], sourceDomains: ['NUTRITION'] });
     const todo = await entradas(pro, c.ase.id);
     expect(todo.data.entries.some((x) => x.domain === 'TRAINING')).toBe(false);
@@ -386,6 +434,9 @@ describe('Permisos del entorno profesional', () => {
     const ajeno = await lineaDeTiempo(otro, ase.id).expect(404);
     const inexistente = await lineaDeTiempo(otro, randomUUID()).expect(404);
     expect(ajeno.body.error.code).toBe(inexistente.body.error.code);
+    // La búsqueda decide igual: el mismo 404, y un cuerpo inválido es 400 antes del PDP (no depende del titular).
+    expect((await busqueda(otro, ase.id, { q: 'cena' }).expect(404)).body).toEqual((await busqueda(otro, randomUUID(), { q: 'cena' }).expect(404)).body);
+    expect((await busqueda(otro, ase.id, { q: '' }).expect(400)).body.error.code).toBe((await busqueda(otro, randomUUID(), { q: '' }).expect(400)).body.error.code);
     expect((await proyeccion(otro, ase.id, 'NUTRITION_PRESCRIBED_VS_RECORDED').expect(404)).body.error.code).toBe(inexistente.body.error.code);
     // Con el vínculo, el profesional sí lee (vacío): la diferencia es el vínculo, no la existencia.
     expect((await entradas(pro, ase.id)).data.sourceDomains).toEqual(['NUTRITION']);
@@ -404,7 +455,7 @@ const configuracion = (cambios: Partial<ConfiguracionDeAnalisis> = {}): Configur
   grain: 'DAY',
   period: { kind: 'LAST_DAYS', days: 90 },
   layers: { planBands: true, events: true },
-  referenceDays: 7,
+  reference: { kind: 'FIRST_DAYS', days: 7 },
   comparison: null,
   ...cambios,
 });
@@ -449,6 +500,14 @@ describe('API-VAN-01 a 04 · vistas de análisis guardadas', () => {
     // Más de tres métricas no entra.
     const cuatro = configuracion({ metrics: ['nutricion.energia', 'nutricion.proteinas', 'nutricion.grasas', 'antropometria.peso'].map((metricId) => ({ metricId, exerciseKey: null, setIndex: null, unit: null })) });
     await s.post('/api/v1/me/analysis-views', claveDeIdempotencia()).send({ usage: 'ANALYSIS', name: 'Cuatro', configuration: cuatro }).expect(400);
+    // La referencia del cambio relativo es explícita y se guarda tal cual: los primeros días del período o un rango de
+    // fechas. No depende del zoom, que no se guarda. La forma anterior (`referenceDays`) ya no entra.
+    const rango = { kind: 'RANGE', start: '2026-09-01', end: '2026-09-07' } as const;
+    const conRango = VistaDeAnalisisResponseSchema.parse((await s.post('/api/v1/me/analysis-views', claveDeIdempotencia()).send({ usage: 'ANALYSIS', name: 'Con referencia', configuration: configuracion({ reference: rango }) }).expect(201)).body).data;
+    expect(conRango.configuration).toMatchObject({ reference: rango });
+    const { reference: _referencia, ...sinReferencia } = configuracion();
+    expect((await s.post('/api/v1/me/analysis-views', claveDeIdempotencia()).send({ usage: 'ANALYSIS', name: 'Vieja', configuration: { ...sinReferencia, referenceDays: 7 } }).expect(400)).body.error.code).toBe('UNKNOWN_FIELD');
+    await s.post('/api/v1/me/analysis-views', claveDeIdempotencia()).send({ usage: 'ANALYSIS', name: 'Sin días', configuration: configuracion({ reference: { kind: 'FIRST_DAYS', days: 0 } }) }).expect(400);
     const indicadores = { schemaVersion: 1, metrics: [{ metricId: 'antropometria.peso', exerciseKey: null, setIndex: null, unit: null }] };
     await s.post('/api/v1/me/analysis-views', claveDeIdempotencia()).send({ usage: 'SUMMARY_INDICATORS', name: 'Indicadores', configuration: indicadores }).expect(201);
     expect((await s.post('/api/v1/me/analysis-views', claveDeIdempotencia()).send({ usage: 'SUMMARY_INDICATORS', name: 'Otros', configuration: indicadores }).expect(409)).body.error.code).toBe('RESOURCE_CONFLICT');

@@ -1,9 +1,9 @@
 {
   "modo": "capturas",
-  "inicio": "2026-10-08T19:38:00.975Z",
-  "fin": "2026-10-08T19:39:31.198Z",
+  "inicio": "2026-10-08T23:17:08.953Z",
+  "fin": "2026-10-08T23:19:18.095Z",
   "hoy": "2026-10-08",
-  "total": 30,
+  "total": 60,
   "fallas": 0,
   "resultados": [
     {
@@ -25,6 +25,42 @@
       "detalle": ""
     },
     {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 1440 px en azul-noche tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Paneles a 1440 px en azul-noche: los tres dibujados y a la vista",
+      "ok": true,
+      "detalle": "3 gráfico(s) · Energía (kcal): 631×192, ejes 7/5, curvas 2, marcas 80/80, tinta 11.6 %, color 2148 px · Proteínas (g): 631×192, ejes 7/5, curvas 2, marcas 80/80, tinta 15.6 %, color 3404 px · Peso (kg): 631×192, ejes 7/5, curvas 3, marcas 6/6, tinta 6.8 %, color 446 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Superpuestas a 1440 px en azul-noche: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Superpuestas en valores real: 631×270, ejes 7/5, curvas 4, marcas 160/160, tinta 15.4 %, color 3163/2384 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-superpuestas-1440-azul-noche tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambio relativo a 1440 px en azul-noche: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 631×270, ejes 7/5, curvas 4, marcas 160/160, banda sí, tinta 15.9 %, color 3867/2600 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-relativo-1440-azul-noche tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
       "pro": "PRO-23",
       "descripcion": "resumen a 1280 px en azul-noche: sin desborde de costado, con pestañas y períodos",
       "ok": true,
@@ -41,6 +77,42 @@
       "descripcion": "analizar a 1280 px en azul-noche: sin desborde de costado, con pestañas y períodos",
       "ok": true,
       "detalle": ""
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 1280 px en azul-noche tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Paneles a 1280 px en azul-noche: los tres dibujados y a la vista",
+      "ok": true,
+      "detalle": "3 gráfico(s) · Energía (kcal): 471×171, ejes 7/5, curvas 2, marcas 80/80, tinta 13.9 %, color 2188 px · Proteínas (g): 471×171, ejes 7/5, curvas 2, marcas 80/80, tinta 19.4 %, color 3322 px · Peso (kg): 471×171, ejes 7/5, curvas 3, marcas 6/6, tinta 9.6 %, color 311 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Superpuestas a 1280 px en azul-noche: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Superpuestas en valores real: 471×270, ejes 7/5, curvas 4, marcas 160/160, tinta 18.2 %, color 3312/2395 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-superpuestas-1280-azul-noche tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambio relativo a 1280 px en azul-noche: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 471×270, ejes 7/5, curvas 4, marcas 160/160, banda sí, tinta 20.3 %, color 4048/2166 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-relativo-1280-azul-noche tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
     },
     {
       "pro": "PRO-23",
@@ -61,6 +133,12 @@
       "detalle": ""
     },
     {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 1024 px en azul-noche tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
       "pro": "PRO-23",
       "descripcion": "resumen a 768 px en azul-noche: sin desborde de costado, con pestañas y períodos",
       "ok": true,
@@ -77,6 +155,12 @@
       "descripcion": "analizar a 768 px en azul-noche: sin desborde de costado, con pestañas y períodos",
       "ok": true,
       "detalle": ""
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 768 px en azul-noche tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
     },
     {
       "pro": "PRO-23",
@@ -97,6 +181,12 @@
       "detalle": ""
     },
     {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 390 px en azul-noche tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
       "pro": "PRO-23",
       "descripcion": "resumen a 1440 px en claro: sin desborde de costado, con pestañas y períodos",
       "ok": true,
@@ -113,6 +203,42 @@
       "descripcion": "analizar a 1440 px en claro: sin desborde de costado, con pestañas y períodos",
       "ok": true,
       "detalle": ""
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 1440 px en claro tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Paneles a 1440 px en claro: los tres dibujados y a la vista",
+      "ok": true,
+      "detalle": "3 gráfico(s) · Energía (kcal): 631×192, ejes 7/5, curvas 2, marcas 80/80, tinta 42.4 %, color 2126 px · Proteínas (g): 631×192, ejes 7/5, curvas 2, marcas 80/80, tinta 44.3 %, color 3866 px · Peso (kg): 631×192, ejes 7/5, curvas 3, marcas 6/6, tinta 39.8 %, color 312 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Superpuestas a 1440 px en claro: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Superpuestas en valores real: 631×270, ejes 7/5, curvas 4, marcas 160/160, tinta 46.8 %, color 3070/2635 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-superpuestas-1440-claro tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambio relativo a 1440 px en claro: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 631×270, ejes 7/5, curvas 4, marcas 160/160, banda sí, tinta 47.0 %, color 3649/2766 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-relativo-1440-claro tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
     },
     {
       "pro": "PRO-23",
@@ -133,6 +259,42 @@
       "detalle": ""
     },
     {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 1280 px en claro tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Paneles a 1280 px en claro: los tres dibujados y a la vista",
+      "ok": true,
+      "detalle": "3 gráfico(s) · Energía (kcal): 471×171, ejes 7/5, curvas 2, marcas 80/80, tinta 39.8 %, color 2141 px · Proteínas (g): 471×171, ejes 7/5, curvas 2, marcas 80/80, tinta 43.0 %, color 3798 px · Peso (kg): 471×171, ejes 7/5, curvas 3, marcas 6/6, tinta 39.1 %, color 195 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Superpuestas a 1280 px en claro: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Superpuestas en valores real: 471×270, ejes 7/5, curvas 4, marcas 160/160, tinta 46.1 %, color 3193/2559 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-superpuestas-1280-claro tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambio relativo a 1280 px en claro: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 471×270, ejes 7/5, curvas 4, marcas 160/160, banda sí, tinta 48.1 %, color 3794/2310 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-relativo-1280-claro tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
       "pro": "PRO-23",
       "descripcion": "resumen a 1024 px en claro: sin desborde de costado, con pestañas y períodos",
       "ok": true,
@@ -149,6 +311,12 @@
       "descripcion": "analizar a 1024 px en claro: sin desborde de costado, con pestañas y períodos",
       "ok": true,
       "detalle": ""
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 1024 px en claro tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
     },
     {
       "pro": "PRO-23",
@@ -169,6 +337,12 @@
       "detalle": ""
     },
     {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 768 px en claro tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
       "pro": "PRO-23",
       "descripcion": "resumen a 390 px en claro: sin desborde de costado, con pestañas y períodos",
       "ok": true,
@@ -185,6 +359,12 @@
       "descripcion": "analizar a 390 px en claro: sin desborde de costado, con pestañas y períodos",
       "ok": true,
       "detalle": ""
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 390 px en claro tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
     }
   ]
 }

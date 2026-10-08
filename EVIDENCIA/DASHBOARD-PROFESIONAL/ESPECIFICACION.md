@@ -183,4 +183,23 @@ conserva y solo tiene que no romperse (768, 390 y 320 px se verifican sin desbor
   no se muestra como «sin datos», y lo que cargó bien sigue a la vista (un 503 del peso no borra energía y proteínas).
 - **Hitos:** además de las líneas punteadas, una lista en texto con su fecha.
 - **Exportación:** «Descargar los datos (CSV)» con lo que muestra la tabla (ver `DICCIONARIO-DE-METRICAS.md` §1 y
-  `ACEPTACION.md`, PRO-10). La impresión no se ofrece todavía.
+  `ACEPTACION.md`, PRO-10). La impresión no se ofrece todavía. Antes de armar el archivo se vuelve a consultar con el
+  acceso de ese momento: lo que ya no está disponible no entra, el aviso dice por qué y queda a la vista aunque la
+  pantalla se vuelva a pedir.
+
+**Correcciones de la revisión independiente del head fbeb256** (`ACEPTACION.md`, «Revisión del head fbeb256»):
+- **Referencia del cambio relativo.** Un bloque propio en la columna de opciones, siempre visible: dice la referencia
+  vigente («Los primeros 7 días del período, del … al …» o «Rango fijo, del … al …») y que acercar, alejar o restablecer
+  el gráfico no la cambia. «Cambiar la referencia» abre un editor (los primeros N días o un rango fijo, con «Copiar el
+  intervalo visible») que solo se aplica con «Aplicar la referencia». En el modo «Cambio relativo», el lienzo repite la
+  referencia vigente, dibuja su banda y avisa si quedó fuera del intervalo visible. La lista de vistas guardadas dice la
+  referencia de cada una.
+- **Grano semanal.** «Cómo se calcula» dice qué es cada punto semanal y que los resúmenes, la comparación y la referencia
+  usan los días (o las sesiones) del rango exacto.
+- **Clase del dato.** Contorno cortado: reportado por la persona, no medido. Un punto adentro: calculado por un método
+  (una estimación). Las palabras son las de la pestaña de Antropometría (Medido, Reportado, Calculado). La leyenda los
+  explica solo cuando hay puntos de esa clase; la tabla los nombra entre paréntesis.
+- **Motivo de un modo deshabilitado.** Cada métrica con el suyo («Peso: no tiene observaciones en los días de referencia;
+  Índice de masa corporal: no admite cambio relativo»), no todos los nombres y después todos los motivos.
+- **Origen de un punto con el acceso revocado.** El panel dice «no está disponible con tu acceso actual», no repite el
+  valor que había en pantalla, y los gráficos se vuelven a pedir.

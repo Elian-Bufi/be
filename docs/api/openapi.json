@@ -88174,16 +88174,6 @@
             }
           },
           {
-            "name": "q",
-            "in": "query",
-            "required": false,
-            "description": "Extensión de BE (DL-127): búsqueda en todo el período del conjunto autorizado (hasta 80 caracteres).",
-            "schema": {
-              "type": "string",
-              "maxLength": 80
-            }
-          },
-          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -88786,6 +88776,676 @@
         }
       }
     },
+    "/advisees/{adviseeId}/timeline/search": {
+      "post": {
+        "operationId": "API-DSH-04-BUSQUEDA",
+        "summary": "Búsqueda en la línea de tiempo del asesorado: la misma lectura que API-DSH-04, con el texto a buscar en el cuerpo para que nunca quede en una URL (historiales, proxies, bitácoras). Es una lectura: no crea ni cambia nada y no exige Idempotency-Key. Busca en todo el período del conjunto autorizado, con los mismos filtros, el mismo PDP y la misma paginación. Sin ningún alcance permitido: 404.",
+        "description": "Fuente: 09v11:964-1010 · B10-08 §11-§12 · revisión independiente de #153 (hallazgo 4) · ID propio de BE (variante BUSQUEDA de API-DSH-04) · DEUDA_LEGAJO DL-127. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "adviseeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "q": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "periodStart": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                  },
+                  "periodEnd": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                  },
+                  "domain": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "type": {
+                    "type": "string",
+                    "maxLength": 800
+                  },
+                  "state": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "quality": {
+                    "type": "string",
+                    "maxLength": 400
+                  },
+                  "late": {
+                    "type": "boolean"
+                  },
+                  "planVersionId": {
+                    "type": "string",
+                    "maxLength": 36
+                  },
+                  "exerciseId": {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "maxLength": 400
+                  }
+                },
+                "required": [
+                  "q"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "period": {
+                          "type": "object",
+                          "properties": {
+                            "start": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "end": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "timeZone": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z_]+(?:\\/[A-Za-z0-9_+-]+)+$|^UTC$"
+                            }
+                          },
+                          "required": [
+                            "start",
+                            "end",
+                            "timeZone"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "partialView": {
+                          "type": "boolean"
+                        },
+                        "generatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "sourceDomains": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "NUTRITION",
+                              "TRAINING",
+                              "ANTHROPOMETRY"
+                            ]
+                          }
+                        },
+                        "totalMatching": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "periodCounts": {
+                          "type": "object",
+                          "properties": {
+                            "byEventType": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "eventType": {
+                                    "type": "string",
+                                    "enum": [
+                                      "NUTRITION_PLAN_ACTIVATED",
+                                      "NUTRITION_OBJECTIVE_SET",
+                                      "MEAL_RECORDED",
+                                      "NUTRITION_REVIEW_RECORDED",
+                                      "TRAINING_PLAN_ACTIVATED",
+                                      "TRAINING_OBJECTIVE_SET",
+                                      "TRAINING_SESSION_RECORDED",
+                                      "TRAINING_REVIEW_RECORDED",
+                                      "ANTHROPOMETRIC_EVALUATION_RECORDED",
+                                      "FOLLOW_UP_OPENED",
+                                      "FOLLOW_UP_CLOSED"
+                                    ]
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "eventType",
+                                  "count"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "byQuality": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "quality": {
+                                    "type": "string",
+                                    "enum": [
+                                      "QUANTITIES_UNCONFIRMED",
+                                      "QUANTITIES_FROM_PLAN",
+                                      "QUANTITIES_REPORTED",
+                                      "NUTRIENTS_INCOMPLETE",
+                                      "DIFFERENT_MEAL",
+                                      "SESSION_SUMMARY_ONLY",
+                                      "SESSION_NOT_COMPLETED",
+                                      "SESSION_WITH_DEVIATION"
+                                    ]
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "quality",
+                                  "count"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "recordedLate": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "byEventType",
+                            "byQuality",
+                            "recordedLate"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "searchScope": {
+                          "type": "string",
+                          "const": "WHOLE_PERIOD"
+                        },
+                        "entries": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "timelineEntryId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "domain": {
+                                "type": "string",
+                                "enum": [
+                                  "NUTRITION",
+                                  "TRAINING",
+                                  "ANTHROPOMETRY"
+                                ]
+                              },
+                              "eventType": {
+                                "type": "string",
+                                "enum": [
+                                  "NUTRITION_PLAN_ACTIVATED",
+                                  "NUTRITION_OBJECTIVE_SET",
+                                  "MEAL_RECORDED",
+                                  "NUTRITION_REVIEW_RECORDED",
+                                  "TRAINING_PLAN_ACTIVATED",
+                                  "TRAINING_OBJECTIVE_SET",
+                                  "TRAINING_SESSION_RECORDED",
+                                  "TRAINING_REVIEW_RECORDED",
+                                  "ANTHROPOMETRIC_EVALUATION_RECORDED",
+                                  "FOLLOW_UP_OPENED",
+                                  "FOLLOW_UP_CLOSED"
+                                ]
+                              },
+                              "source": {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "MEAL_RECORD",
+                                      "NUTRITION_PLAN_VERSION",
+                                      "NUTRITION_OBJECTIVE_VERSION",
+                                      "NUTRITION_REVIEW",
+                                      "TRAINING_EXECUTION",
+                                      "TRAINING_PLAN_VERSION",
+                                      "TRAINING_OBJECTIVE_VERSION",
+                                      "TRAINING_REVIEW",
+                                      "ANTHROPOMETRIC_EVALUATION",
+                                      "ANTHROPOMETRIC_MEASUREMENT",
+                                      "CALCULATION_RUN",
+                                      "FOLLOW_UP_PROCESS"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "id"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "occurredAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "occurredDate": {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              },
+                              "recordedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "recordedLate": {
+                                "type": "boolean"
+                              },
+                              "timeZone": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z_]+(?:\\/[A-Za-z0-9_+-]+)+$|^UTC$"
+                              },
+                              "author": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "identityId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "displayName": {
+                                        "type": "string"
+                                      },
+                                      "role": {
+                                        "type": "string",
+                                        "enum": [
+                                          "PROFESSIONAL",
+                                          "ADVISEE"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "identityId",
+                                      "displayName",
+                                      "role"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "title": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "details": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "value": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "label",
+                                    "value"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "EFFECTIVE",
+                                  "RECTIFIED",
+                                  "ANNULLED",
+                                  "CORRECTED"
+                                ]
+                              },
+                              "quality": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "QUANTITIES_UNCONFIRMED",
+                                    "QUANTITIES_FROM_PLAN",
+                                    "QUANTITIES_REPORTED",
+                                    "NUTRIENTS_INCOMPLETE",
+                                    "DIFFERENT_MEAL",
+                                    "SESSION_SUMMARY_ONLY",
+                                    "SESSION_NOT_COMPLETED",
+                                    "SESSION_WITH_DEVIATION"
+                                  ]
+                                }
+                              },
+                              "planVersionId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "exerciseKeys": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "relations": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "RECTIFIED",
+                                        "ANNULLED",
+                                        "CORRECTED",
+                                        "EXECUTES_PLAN_VERSION",
+                                        "SUCCEEDS_VERSION",
+                                        "MEASUREMENT_CORRECTED",
+                                        "MEASUREMENT_ANNULLED",
+                                        "REVIEW_APPLIED"
+                                      ]
+                                    },
+                                    "at": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "format": "date-time",
+                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "target": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "type": "string",
+                                              "enum": [
+                                                "MEAL_RECORD",
+                                                "NUTRITION_PLAN_VERSION",
+                                                "NUTRITION_OBJECTIVE_VERSION",
+                                                "NUTRITION_REVIEW",
+                                                "TRAINING_EXECUTION",
+                                                "TRAINING_PLAN_VERSION",
+                                                "TRAINING_OBJECTIVE_VERSION",
+                                                "TRAINING_REVIEW",
+                                                "ANTHROPOMETRIC_EVALUATION",
+                                                "ANTHROPOMETRIC_MEASUREMENT",
+                                                "CALCULATION_RUN",
+                                                "FOLLOW_UP_PROCESS"
+                                              ]
+                                            },
+                                            "id": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "type",
+                                            "id"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "label": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "at",
+                                    "target",
+                                    "label"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "timelineEntryId",
+                              "domain",
+                              "eventType",
+                              "source",
+                              "occurredAt",
+                              "occurredDate",
+                              "recordedAt",
+                              "recordedLate",
+                              "timeZone",
+                              "author",
+                              "title",
+                              "details",
+                              "state",
+                              "quality",
+                              "planVersionId",
+                              "exerciseKeys",
+                              "relations"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "period",
+                        "partialView",
+                        "generatedAt",
+                        "sourceDomains",
+                        "totalMatching",
+                        "periodCounts",
+                        "searchScope",
+                        "entries"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor",
+                        "hasMore"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | INVALID_CURSOR | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/advisees/{adviseeId}/projections/{projectionKey}": {
       "get": {
         "operationId": "API-PRJ-01",
@@ -89164,6 +89824,21 @@
                                               "partialBucket": {
                                                 "type": "boolean"
                                               },
+                                              "dataClass": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "MEASURED",
+                                                      "REPORTED",
+                                                      "DERIVED"
+                                                    ]
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
                                               "coverage": {
                                                 "anyOf": [
                                                   {
@@ -89315,6 +89990,7 @@
                                               "segment",
                                               "corrected",
                                               "partialBucket",
+                                              "dataClass",
                                               "coverage",
                                               "missing",
                                               "detail",
@@ -89814,6 +90490,21 @@
                                                       "partialBucket": {
                                                         "type": "boolean"
                                                       },
+                                                      "dataClass": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "MEASURED",
+                                                              "REPORTED",
+                                                              "DERIVED"
+                                                            ]
+                                                          },
+                                                          {
+                                                            "type": "null"
+                                                          }
+                                                        ]
+                                                      },
                                                       "coverage": {
                                                         "anyOf": [
                                                           {
@@ -89965,6 +90656,7 @@
                                                       "segment",
                                                       "corrected",
                                                       "partialBucket",
+                                                      "dataClass",
                                                       "coverage",
                                                       "missing",
                                                       "detail",
@@ -90285,6 +90977,21 @@
                                                 "partialBucket": {
                                                   "type": "boolean"
                                                 },
+                                                "dataClass": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "MEASURED",
+                                                        "REPORTED",
+                                                        "DERIVED"
+                                                      ]
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
                                                 "coverage": {
                                                   "anyOf": [
                                                     {
@@ -90436,6 +91143,7 @@
                                                 "segment",
                                                 "corrected",
                                                 "partialBucket",
+                                                "dataClass",
                                                 "coverage",
                                                 "missing",
                                                 "detail",
@@ -90877,10 +91585,53 @@
                                     ],
                                     "additionalProperties": false
                                   },
-                                  "referenceDays": {
-                                    "type": "integer",
-                                    "minimum": 1,
-                                    "maximum": 31
+                                  "reference": {
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "FIRST_DAYS"
+                                          },
+                                          "days": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 31
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "days"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "RANGE"
+                                          },
+                                          "start": {
+                                            "type": "string",
+                                            "format": "date",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                          },
+                                          "end": {
+                                            "type": "string",
+                                            "format": "date",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "start",
+                                          "end"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
                                   },
                                   "comparison": {
                                     "anyOf": [
@@ -90947,7 +91698,7 @@
                                   "grain",
                                   "period",
                                   "layers",
-                                  "referenceDays",
+                                  "reference",
                                   "comparison"
                                 ],
                                 "additionalProperties": false
@@ -91378,10 +92129,53 @@
                             ],
                             "additionalProperties": false
                           },
-                          "referenceDays": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 31
+                          "reference": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "FIRST_DAYS"
+                                  },
+                                  "days": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 31
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "days"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "RANGE"
+                                  },
+                                  "start": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  },
+                                  "end": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "start",
+                                  "end"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
                           },
                           "comparison": {
                             "anyOf": [
@@ -91448,7 +92242,7 @@
                           "grain",
                           "period",
                           "layers",
-                          "referenceDays",
+                          "reference",
                           "comparison"
                         ],
                         "additionalProperties": false
@@ -91745,10 +92539,53 @@
                                   ],
                                   "additionalProperties": false
                                 },
-                                "referenceDays": {
-                                  "type": "integer",
-                                  "minimum": 1,
-                                  "maximum": 31
+                                "reference": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "FIRST_DAYS"
+                                        },
+                                        "days": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 31
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "days"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "RANGE"
+                                        },
+                                        "start": {
+                                          "type": "string",
+                                          "format": "date",
+                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                        },
+                                        "end": {
+                                          "type": "string",
+                                          "format": "date",
+                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "start",
+                                        "end"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ]
                                 },
                                 "comparison": {
                                   "anyOf": [
@@ -91815,7 +92652,7 @@
                                 "grain",
                                 "period",
                                 "layers",
-                                "referenceDays",
+                                "reference",
                                 "comparison"
                               ],
                               "additionalProperties": false
@@ -92276,10 +93113,53 @@
                             ],
                             "additionalProperties": false
                           },
-                          "referenceDays": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 31
+                          "reference": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "FIRST_DAYS"
+                                  },
+                                  "days": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 31
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "days"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "RANGE"
+                                  },
+                                  "start": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  },
+                                  "end": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "start",
+                                  "end"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
                           },
                           "comparison": {
                             "anyOf": [
@@ -92346,7 +93226,7 @@
                           "grain",
                           "period",
                           "layers",
-                          "referenceDays",
+                          "reference",
                           "comparison"
                         ],
                         "additionalProperties": false
@@ -92623,10 +93503,53 @@
                                   ],
                                   "additionalProperties": false
                                 },
-                                "referenceDays": {
-                                  "type": "integer",
-                                  "minimum": 1,
-                                  "maximum": 31
+                                "reference": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "FIRST_DAYS"
+                                        },
+                                        "days": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 31
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "days"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "RANGE"
+                                        },
+                                        "start": {
+                                          "type": "string",
+                                          "format": "date",
+                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                        },
+                                        "end": {
+                                          "type": "string",
+                                          "format": "date",
+                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "start",
+                                        "end"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ]
                                 },
                                 "comparison": {
                                   "anyOf": [
@@ -92693,7 +93616,7 @@
                                 "grain",
                                 "period",
                                 "layers",
-                                "referenceDays",
+                                "reference",
                                 "comparison"
                               ],
                               "additionalProperties": false

@@ -5,6 +5,10 @@
  * vista de una proyección de API-PRJ-01 con el cálculo del dominio:
  * - tres modos: paneles sincronizados (por defecto), superpuestas en valores reales (misma familia y unidad) y cambio
  *   relativo (contra una referencia explícita y positiva). Un modo que no corresponde se deshabilita y dice por qué;
+ * - la referencia del cambio relativo es un rango del período (los primeros N días o un rango fijo), separado del
+ *   intervalo que se ve: acercar, alejar o restablecer el gráfico no la mueve; cambia solo con «Aplicar» (DL-126);
+ * - los resúmenes, la comparación y la referencia usan las observaciones (días, sesiones o tomas) del rango exacto, aunque
+ *   el gráfico esté agrupado por semana;
  * - un panel de lectura persistente para la fecha elegida: el valor exacto nunca depende de pasar el puntero;
  * - «Cómo se calcula», la tabla de datos, el resumen textual y la comparación de dos períodos (sin conclusiones
  *   causales: «coincidencia temporal; no indica causa»);
@@ -14,13 +18,15 @@ import {
   cambioRelativo,
   compararPeriodos,
   csvDelAnalisis,
+  granoDeObservacion,
   lecturaEnFecha,
   nombreDeLaExportacion,
   textoDeFaltante,
   NOMBRE_DE_DOMINIO,
   numero,
   puntosRelativos,
-  referenciaDeLaSerie,
+  rangoDeLaReferencia,
+  referenciaElegida,
   resumenTextual,
   superposicionPermitida,
   valorConUnidad,
@@ -28,9 +34,10 @@ import {
   type OrigenDeDato,
   type PuntoAnalitico,
   type Referencia,
+  type ReferenciaDelCambio,
 } from '@be/domain';
 import dynamic from 'next/dynamic';
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { Cargando } from '../../../../components/estados';
 import { api } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
@@ -38,7 +45,7 @@ import { textoDeFalla, useLectura, useSeguimiento } from './contexto';
 import { leerAnalisis, parametrosDeAnalisis, restarDias, type EstadoDeAnalisis, type GranoElegido, type Modo } from './estado';
 import { ESTILOS, Marca, type SerieParaDibujar } from './lienzo';
 import { nombreDeLaReferencia, PresetsDeAnalisis, SelectorDeMetricas } from './selector';
-import { useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
+import { leerSerie, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
 import { valorParaMostrar } from './valores';
 import { VistasGuardadas } from './vistas-guardadas';
 
@@ -49,6 +56,7 @@ const MOTIVO_SIN_REFERENCIA: Readonly<Record<string, string>> = {
   ESCALA_NO_ADMITE: 'no admite cambio relativo (no es una escala de razón)',
   SIN_OBSERVACIONES: 'no tiene observaciones en los días de referencia',
   NO_POSITIVA: 'su referencia es cero o negativa',
+  FUERA_DEL_PERIODO: 'el rango de referencia no está dentro del período leído',
 };
 const MOTIVO_SIN_SUPERPOSICION: Readonly<Record<string, string>> = {
   UNA_SOLA_METRICA: 'hace falta más de una métrica',
@@ -73,14 +81,27 @@ export function Analizar() {
   const desde = intervalo && intervalo.desde >= periodo.desde ? intervalo.desde : periodo.desde;
   const hasta = intervalo && intervalo.hasta <= periodo.hasta ? intervalo.hasta : periodo.hasta;
   const [aviso, setAviso] = useState<string | null>(null);
-  const [puntoAbierto, setPuntoAbierto] = useState<{ indice: number; punto: PuntoAnalitico; origen: OrigenDeDato | null } | null>(null);
+  // El resultado de la última exportación vive acá y no en su botón: si la exportación descubre que un permiso cambió, las
+  // series se vuelven a pedir, el bloque de la descarga se va con ellas y el aviso tiene que seguir diciendo por qué.
+  // `sinArchivo`: no salió ningún archivo. Solo ese aviso sigue a la vista sin series: «Descargado» habla de datos que
+  // ya no están en pantalla.
+  const [avisoDeExportacion, setAvisoDeExportacion] = useState<AvisoDeExportacion | null>(null);
+  const seleccion = `${JSON.stringify(estado.metricas)}|${periodo.desde}|${periodo.hasta}`;
+  // Otra selección u otro período: el resultado de la exportación anterior ya no habla de lo que se ve.
+  useEffect(() => setAvisoDeExportacion(null), [seleccion]);
+  // `sinAcceso`: el origen ya no se puede leer con el acceso de ahora; el valor que quedó en pantalla no se repite.
+  const [puntoAbierto, setPuntoAbierto] = useState<{ indice: number; punto: PuntoAnalitico; origen: OrigenDeDato | null; sinAcceso?: boolean } | null>(null);
 
   const listas = series.filter((s): s is SerieDelAnalisis & { estado: Extract<SerieDelAnalisis['estado'], { tipo: 'lista' }> } => s.estado.tipo === 'lista');
   const nombres = series.map((s) => nombreDeLaReferencia(s.ref, s.definicion, disponibles.ejercicios));
 
-  // La referencia del cambio relativo: los primeros N días de lo que se ve.
-  const refHasta = restarDias(desde, -(estado.diasDeReferencia - 1));
-  const referencias = new Map<string, Referencia>(listas.map((s) => [s.clave, referenciaDeLaSerie(s.estado.serie, s.definicion, desde, refHasta < hasta ? refHasta : hasta)]));
+  // La referencia del cambio relativo: un rango explícito del período leído (los primeros N días o un rango fijo),
+  // calculado sobre las observaciones. No depende del intervalo que se ve: acercar, alejar o restablecer el gráfico no la
+  // mueve; solo «Aplicar» la cambia (DL-126).
+  const rangoDeReferencia = rangoDeLaReferencia(estado.referencia, periodo);
+  const referencias = new Map<string, Referencia>(listas.map((s) => [s.clave, referenciaElegida(s.estado.observaciones, s.definicion, estado.referencia, periodo)]));
+  const referenciaFueraDeLoVisible = rangoDeReferencia.hasta < desde || rangoDeReferencia.desde > hasta;
+  const clases = new Set(listas.flatMap((s) => s.estado.serie.points.filter((p) => p.value !== null).map((p) => p.dataClass)));
   const superposicion = superposicionPermitida(listas.map((s) => ({ definicion: s.definicion, unidad: s.estado.serie.unit })));
   const sinReferencia = listas.filter((s) => referencias.get(s.clave)?.tipo !== 'valida');
   const relativoPosible = listas.length > 0 && sinReferencia.length === 0;
@@ -173,7 +194,23 @@ export function Analizar() {
                 <li>
                   <Marca indice={0} hueco /> Hueco: subtotal (falta algún dato), o día o semana sin completar
                 </li>
+                {clases.has('REPORTED') ? (
+                  <li>
+                    <Marca indice={0} clase="REPORTED" /> Contorno cortado: reportado por la persona, no medido
+                  </li>
+                ) : null}
+                {clases.has('DERIVED') ? (
+                  <li>
+                    <Marca indice={0} clase="DERIVED" /> Con un punto adentro: calculado por un método (estimación)
+                  </li>
+                ) : null}
               </ul>
+              {modo === 'RELATIVE' ? (
+                <p className="nota referencia-vigente">
+                  <strong>Referencia:</strong> {descripcionDeLaReferencia(estado.referencia, rangoDeReferencia)} No cambia al acercar, alejar o restablecer el gráfico
+                  {referenciaFueraDeLoVisible ? '; ahora queda fuera del intervalo visible, y los porcentajes siguen siendo contra ella' : ''}.
+                </p>
+              ) : null}
               {modo === 'RELATIVE' ? (
                 <ul className="referencias" aria-label="Referencias del cambio relativo">
                   {listas.map((s) => {
@@ -214,7 +251,7 @@ export function Analizar() {
                 onIntervalo={(d, h) => setIntervalo({ desde: d, hasta: h })}
                 bandas={bandas}
                 hitos={hitos}
-                referencia={modo === 'RELATIVE' ? { desde, hasta: refHasta < hasta ? refHasta : hasta } : null}
+                referencia={modo === 'RELATIVE' ? { desde: rangoDeReferencia.desde, hasta: rangoDeReferencia.hasta } : null}
                 descripcion={descripcion}
               />
             </>
@@ -248,7 +285,13 @@ export function Analizar() {
               actual={modo}
               cambiar={(m) => cambiar({ modo: m })}
               texto="Cambio relativo"
-              motivo={relativoPosible ? null : listas.length === 0 ? 'no hay series cargadas' : `${sinReferencia.map((s) => nombres[series.indexOf(s)]).join(', ')}: ${sinReferencia.map((s) => MOTIVO_SIN_REFERENCIA[(referencias.get(s.clave) as { motivo?: string } | undefined)?.motivo ?? ''] ?? '').join('; ')}`}
+              motivo={
+                relativoPosible
+                  ? null
+                  : listas.length === 0
+                    ? 'no hay series cargadas'
+                    : sinReferencia.map((s) => `${nombres[series.indexOf(s)]}: ${MOTIVO_SIN_REFERENCIA[(referencias.get(s.clave) as { motivo?: string } | undefined)?.motivo ?? ''] ?? ''}`).join('; ')
+              }
             />
           </fieldset>
           <fieldset className="capas">
@@ -280,12 +323,15 @@ export function Analizar() {
               Hitos (activaciones, objetivos, revisiones)
             </label>
           </fieldset>
-          {modo === 'RELATIVE' || estado.modo === 'RELATIVE' ? (
-            <div className="campo">
-              <label htmlFor={`${id}-ref`}>Referencia: los primeros días</label>
-              <input id={`${id}-ref`} type="number" min={1} max={31} value={estado.diasDeReferencia} onChange={(e) => cambiar({ diasDeReferencia: Math.min(31, Math.max(1, Number(e.target.value) || 7)) })} />
-            </div>
-          ) : null}
+          <ElegirReferencia
+            // Se rearma si cambia la referencia o su rango (otro período): el editor arranca de lo vigente.
+            key={`${JSON.stringify(estado.referencia)}|${rangoDeReferencia.desde}|${rangoDeReferencia.hasta}`}
+            referencia={estado.referencia}
+            rango={rangoDeReferencia}
+            periodo={periodo}
+            visible={intervalo ? { desde, hasta } : null}
+            onAplicar={(referencia) => cambiar({ referencia })}
+          />
           <VistasGuardadas estado={estado} />
         </div>
       </div>
@@ -294,7 +340,7 @@ export function Analizar() {
         <>
           <ComoSeCalcula series={listas} nombres={nombres} todas={series} />
           <TablaDeDatos series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} />
-          <ExportarCsv series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} />
+          <ExportarCsv series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} aviso={avisoDeExportacion?.texto ?? null} onAviso={setAvisoDeExportacion} onAccesoCambiado={recargar} />
           <section aria-labelledby={`${id}-resumen`}>
             <h3 id={`${id}-resumen`}>Resumen en texto</h3>
             {listas.map((s) => (
@@ -303,14 +349,25 @@ export function Analizar() {
           </section>
           <ComparacionDePeriodos series={listas} nombres={nombres} todas={series} estado={estado} cambiar={cambiar} minimo={periodo.desde} maximo={periodo.hasta} />
         </>
+      ) : avisoDeExportacion?.sinArchivo ? (
+        <div className="exportar">
+          <p className="nota" role="status">
+            {avisoDeExportacion.texto}
+          </p>
+        </div>
       ) : null}
 
       <PanelDeRegistro
         origen={puntoAbierto ? (puntoAbierto.origen ?? puntoAbierto.punto.sources[0] ?? null) : null}
         titulo={puntoAbierto ? `${nombres[puntoAbierto.indice] ?? ''} · ${diaCivil(puntoAbierto.punto.date)}` : ''}
         onCerrar={() => setPuntoAbierto(null)}
+        onNoDisponible={() => {
+          // Un permiso cambió desde que se cargó la pantalla: el punto no se vuelve a mostrar y las series se piden de nuevo.
+          setPuntoAbierto((p) => (p ? { ...p, sinAcceso: true } : p));
+          recargar();
+        }}
       >
-        {puntoAbierto ? <DetalleDelPunto abierto={puntoAbierto} serie={series[puntoAbierto.indice]} onOrigen={(o) => setPuntoAbierto({ ...puntoAbierto, origen: o })} /> : null}
+        {puntoAbierto && !puntoAbierto.sinAcceso ? <DetalleDelPunto abierto={puntoAbierto} serie={series[puntoAbierto.indice]} onOrigen={(o) => setPuntoAbierto({ ...puntoAbierto, origen: o })} /> : null}
       </PanelDeRegistro>
     </section>
   );
@@ -349,6 +406,113 @@ function SeleccionDeIntervalo({ desde, hasta, minimo, maximo, onCambiar }: { des
         </div>
       </div>
     </details>
+  );
+}
+
+/** La referencia en palabras, con su rango efectivo. */
+function descripcionDeLaReferencia(r: ReferenciaDelCambio, rango: { readonly desde: string; readonly hasta: string; readonly dentroDelPeriodo: boolean }): string {
+  if (r.kind === 'FIRST_DAYS') return `los primeros ${numero(r.days)} ${r.days === 1 ? 'día' : 'días'} del período, del ${diaCivil(rango.desde)} al ${diaCivil(rango.hasta)}.`;
+  return `rango fijo, del ${diaCivil(rango.desde)} al ${diaCivil(rango.hasta)}${rango.dentroDelPeriodo ? '' : ' (fuera del período leído: ampliá el período o elegí otra referencia)'}.`;
+}
+
+/**
+ * La referencia del cambio relativo (DL-126): explícita y separada del intervalo que se ve. Se elige en un borrador y se
+ * aplica con un botón; acercar, alejar o restablecer el gráfico no la toca. Queda en la URL y en las vistas guardadas.
+ */
+function ElegirReferencia({
+  referencia,
+  rango,
+  periodo,
+  visible,
+  onAplicar,
+}: {
+  referencia: ReferenciaDelCambio;
+  rango: { readonly desde: string; readonly hasta: string; readonly dentroDelPeriodo: boolean };
+  periodo: { readonly desde: string; readonly hasta: string };
+  /** El intervalo visible, si se acercó el gráfico: se puede copiar como rango, y aun así hay que aplicarlo. */
+  visible: { readonly desde: string; readonly hasta: string } | null;
+  onAplicar: (r: ReferenciaDelCambio) => void;
+}) {
+  const id = useId();
+  const [abierta, setAbierta] = useState(false);
+  const [tipo, setTipo] = useState<ReferenciaDelCambio['kind']>(referencia.kind);
+  const [dias, setDias] = useState(referencia.kind === 'FIRST_DAYS' ? referencia.days : 7);
+  const [inicio, setInicio] = useState(rango.desde);
+  const [fin, setFin] = useState(rango.hasta);
+  const diasValidos = Number.isInteger(dias) && dias >= 1 && dias <= 31;
+  const rangoValido = !!inicio && !!fin && inicio <= fin && inicio >= periodo.desde && fin <= periodo.hasta;
+  const valida = tipo === 'FIRST_DAYS' ? diasValidos : rangoValido;
+  return (
+    <fieldset className="capas referencia-del-cambio">
+      <legend>Referencia del cambio relativo</legend>
+      <p>{descripcionDeLaReferencia(referencia, rango).replace(/^./, (c) => c.toUpperCase())}</p>
+      <p className="nota">La usa «Cambio relativo». Acercar, alejar o restablecer el gráfico no la cambia: solo «Aplicar».</p>
+      {abierta ? (
+        <div className="referencia-del-cambio__editor">
+          <label className="capa">
+            <input type="radio" name={`${id}-tipo`} checked={tipo === 'FIRST_DAYS'} onChange={() => setTipo('FIRST_DAYS')} />
+            Los primeros días del período
+          </label>
+          {tipo === 'FIRST_DAYS' ? (
+            <div className="campo">
+              <label htmlFor={`${id}-dias`}>Cantidad de días (de 1 a 31)</label>
+              <input id={`${id}-dias`} type="number" min={1} max={31} value={Number.isFinite(dias) ? dias : ''} onChange={(e) => setDias(Number(e.target.value))} />
+            </div>
+          ) : null}
+          <label className="capa">
+            <input type="radio" name={`${id}-tipo`} checked={tipo === 'RANGE'} onChange={() => setTipo('RANGE')} />
+            Un rango de fechas fijo
+          </label>
+          {tipo === 'RANGE' ? (
+            <div className="acciones">
+              <div className="campo">
+                <label htmlFor={`${id}-desde`}>Desde</label>
+                <input id={`${id}-desde`} type="date" min={periodo.desde} max={periodo.hasta} value={inicio} onChange={(e) => setInicio(e.target.value)} />
+              </div>
+              <div className="campo">
+                <label htmlFor={`${id}-hasta`}>Hasta</label>
+                <input id={`${id}-hasta`} type="date" min={periodo.desde} max={periodo.hasta} value={fin} onChange={(e) => setFin(e.target.value)} />
+              </div>
+              {visible ? (
+                <button
+                  type="button"
+                  className="boton boton--enlace"
+                  onClick={() => {
+                    setInicio(visible.desde);
+                    setFin(visible.hasta);
+                  }}
+                >
+                  Copiar el intervalo visible
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          {!valida ? (
+            <p className="campo__error">{tipo === 'FIRST_DAYS' ? 'Elegí entre 1 y 31 días.' : 'Elegí un rango dentro del período, con el inicio antes del final.'}</p>
+          ) : null}
+          <div className="acciones">
+            <button
+              type="button"
+              className="boton boton--secundario"
+              disabled={!valida}
+              onClick={() => {
+                onAplicar(tipo === 'FIRST_DAYS' ? { kind: 'FIRST_DAYS', days: dias } : { kind: 'RANGE', start: inicio, end: fin });
+                setAbierta(false);
+              }}
+            >
+              Aplicar la referencia
+            </button>
+            <button type="button" className="boton boton--enlace" onClick={() => setAbierta(false)}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" className="boton boton--enlace" onClick={() => setAbierta(true)}>
+          Cambiar la referencia
+        </button>
+      )}
+    </fieldset>
   );
 }
 
@@ -507,6 +671,12 @@ function DetalleDelPunto({ abierto, serie, onOrigen }: { abierto: { indice: numb
   );
 }
 
+/** Lo que es cada punto cuando el gráfico se agrupa por semana. */
+const PUNTO_SEMANAL: Readonly<Record<string, string>> = {
+  MEAN_OF_DAYS_WITH_DATA: 'la media de los días con valor de su semana',
+  SUM: 'la suma de su semana',
+};
+
 function ComoSeCalcula({ series, nombres, todas }: { series: readonly Lista[]; nombres: readonly string[]; todas: readonly SerieDelAnalisis[] }) {
   return (
     <details className="como-se-calcula">
@@ -516,6 +686,12 @@ function ComoSeCalcula({ series, nombres, todas }: { series: readonly Lista[]; n
           <h4>{nombres[todas.indexOf(s)]}</h4>
           <p>{s.definicion.explicacion}</p>
           <p>{s.definicion.comoSeCalcula}</p>
+          {s.grano !== granoDeObservacion(s.definicion) ? (
+            <p>
+              Agrupada por semana para dibujar: cada punto es {PUNTO_SEMANAL[s.estado.serie.aggregation] ?? 'el resumen de su semana'}. Los resúmenes, la comparación de períodos y la referencia
+              usan {s.definicion.area === 'NUTRICION' ? 'los días' : 'las sesiones'} del rango exacto, no las semanas: agrupar el dibujo no cambia lo que significan.
+            </p>
+          ) : null}
           <p className="nota">{s.definicion.ausencias}</p>
           <ul>
             {[...new Set([...s.definicion.limites, ...s.estado.serie.notes])].map((n) => (
@@ -563,7 +739,9 @@ function TablaDeDatos({ series, nombres, todas, desde, hasta }: { series: readon
                             .map((p) =>
                               p.value === null
                                 ? 'Sin valor conocido'
-                                : `${valorParaMostrar(p.value, s.definicion, s.estado.serie.unit)}${p.quality === 'PARTIAL' ? ' (subtotal)' : ''}${p.partialBucket ? (p.dateEnd ? ' (semana sin completar)' : ' (día en curso)') : ''}`,
+                                : `${valorParaMostrar(p.value, s.definicion, s.estado.serie.unit)}${p.quality === 'PARTIAL' ? ' (subtotal)' : ''}${p.partialBucket ? (p.dateEnd ? ' (semana sin completar)' : ' (día en curso)') : ''}${
+                                    p.dataClass === 'REPORTED' ? ' (reportado por la persona, no medido)' : p.dataClass === 'DERIVED' ? ' (calculado por un método)' : ''
+                                  }`,
                             )
                             .join(' · ')}
                     </td>
@@ -578,21 +756,66 @@ function TablaDeDatos({ series, nombres, todas, desde, hasta }: { series: readon
   );
 }
 
+/** El resultado de la última exportación: su texto y si salió un archivo. */
+interface AvisoDeExportacion {
+  readonly texto: string;
+  readonly sinArchivo: boolean;
+}
+
 /**
- * Descargar lo que se ve (encargo §16): los puntos de la tabla, en CSV, armados en el navegador con lo que la API ya
- * autorizó. Sin operación nueva ni enlace público; el archivo no lleva el nombre de nadie.
+ * Descargar lo que se ve (encargo §16): los puntos de la tabla, en CSV, armados en el navegador. Antes de armar el archivo
+ * se vuelve a preguntar a la API con el acceso de este momento: si un permiso se revocó después de cargar la pantalla, lo
+ * revocado no entra (lo que hay en pantalla puede ser viejo) y la pantalla se vuelve a pedir. Sin operación nueva ni
+ * enlace público; el archivo no lleva el nombre de nadie.
  */
-function ExportarCsv({ series, nombres, todas, desde, hasta }: { series: readonly Lista[]; nombres: readonly string[]; todas: readonly SerieDelAnalisis[]; desde: string; hasta: string }) {
-  const { nombreDelAsesorado } = useSeguimiento();
-  const [aviso, setAviso] = useState<string | null>(null);
-  const descargar = () => {
+function ExportarCsv({
+  series,
+  nombres,
+  todas,
+  desde,
+  hasta,
+  aviso,
+  onAviso: setAviso,
+  onAccesoCambiado,
+}: {
+  series: readonly Lista[];
+  nombres: readonly string[];
+  todas: readonly SerieDelAnalisis[];
+  desde: string;
+  hasta: string;
+  aviso: string | null;
+  onAviso: (aviso: AvisoDeExportacion | null) => void;
+  onAccesoCambiado: () => void;
+}) {
+  const { token, asesoradoId, periodo, nombreDelAsesorado, sesionPerdida } = useSeguimiento();
+  const [ocupado, setOcupado] = useState(false);
+  const nombreDe = (s: Lista) => nombres[todas.indexOf(s)] ?? s.definicion.nombre;
+  const descargar = async () => {
+    setOcupado(true);
+    setAviso(null);
+    const leidas = await Promise.all(series.map((s) => leerSerie(token, asesoradoId, s, periodo)));
+    setOcupado(false);
+    if (leidas.some((l) => l.respuestas.some((r) => sesionPerdida(r)))) return;
+    const incluidas = series.flatMap((s, i) => {
+      const e = leidas[i]?.estado;
+      return e?.tipo === 'lista' ? [{ s, serie: e.serie, zona: e.zona }] : [];
+    });
+    const afuera = series.flatMap((s, i) => {
+      const e = leidas[i]?.estado;
+      return !e || e.tipo === 'lista' ? [] : [`${nombreDe(s)} (${e.tipo === 'sin-acceso' ? 'no está disponible con tu acceso actual' : e.tipo === 'sin-especificacion' ? 'sin especificación' : 'no se pudo leer ahora'})`];
+    });
+    if (incluidas.length === 0) {
+      setAviso({ texto: `No se descargó ningún archivo: ${afuera.join('; ')}.`, sinArchivo: true });
+      onAccesoCambiado();
+      return;
+    }
     const csv = csvDelAnalisis({
       asesorado: nombreDelAsesorado ?? 'Asesorado',
       desde,
       hasta,
-      zona: series[0]?.estado.zona ?? 'America/Argentina/Buenos_Aires',
+      zona: incluidas[0]?.zona ?? 'America/Argentina/Buenos_Aires',
       generadoEl: new Date().toISOString(),
-      series: series.map((s) => ({ nombre: nombres[todas.indexOf(s)] ?? s.definicion.nombre, definicion: s.definicion, serie: s.estado.serie })),
+      series: incluidas.map(({ s, serie }) => ({ nombre: nombreDe(s), definicion: s.definicion, serie })),
     });
     // Con BOM, para que una planilla lea los acentos como UTF-8.
     const url = URL.createObjectURL(new Blob(['﻿', csv], { type: 'text/csv;charset=utf-8' }));
@@ -603,14 +826,18 @@ function ExportarCsv({ series, nombres, todas, desde, hasta }: { series: readonl
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setAviso(`Descargado: ${a.download}.`);
+    setAviso({ texto: `Descargado: ${a.download}.${afuera.length > 0 ? ` No se incluyó: ${afuera.join('; ')}.` : ''}`, sinArchivo: false });
+    if (afuera.length > 0) onAccesoCambiado();
   };
   return (
     <div className="exportar">
-      <button type="button" className="boton boton--secundario" onClick={descargar}>
-        Descargar los datos (CSV)
+      <button type="button" className="boton boton--secundario" disabled={ocupado} onClick={() => void descargar()}>
+        {ocupado ? 'Consultando con tu acceso actual…' : 'Descargar los datos (CSV)'}
       </button>
-      <p className="nota">Lo que ves, del {diaCivil(desde)} al {diaCivil(hasta)}: valores, calidad, cobertura, método y fecha de generación. El archivo queda en tu equipo: cuidalo como un dato de salud.</p>
+      <p className="nota">
+        Lo que ves, del {diaCivil(desde)} al {diaCivil(hasta)}: valores, calidad, clase de dato, cobertura, método y fecha de generación. Antes de descargar se vuelve a consultar con tu acceso actual. El
+        archivo queda en tu equipo: cuidalo como un dato de salud.
+      </p>
       {aviso ? (
         <p className="nota" role="status">
           {aviso}
@@ -687,12 +914,15 @@ function ComparacionDePeriodos({
             </thead>
             <tbody>
               {series.map((s) => {
-                const r = compararPeriodos(s.estado.serie, s.definicion, c.a, c.b);
+                // Sobre las observaciones del rango exacto de cada período, no sobre los puntos que se dibujan.
+                const r = compararPeriodos(s.estado.observaciones, s.definicion, c.a, c.b);
                 const unidad = s.estado.serie.unit;
                 const celda = (x: typeof r.a) =>
                   x.valor === null
-                    ? `Sin valor (${numero(x.duracionDias)} días)`
-                    : `${valorParaMostrar(x.valor, s.definicion, unidad)} · n = ${numero(x.n)} de ${numero(x.observaciones)} · ${numero(x.duracionDias)} días${x.parciales ? ` · ${numero(x.parciales)} subtotales` : ''}${
+                    ? `Sin valor (${numero(x.duracionDias)} ${x.duracionDias === 1 ? 'día' : 'días'})`
+                    : `${valorParaMostrar(x.valor, s.definicion, unidad)} · n = ${numero(x.n)} de ${numero(x.observaciones)} · ${numero(x.duracionDias)} ${x.duracionDias === 1 ? 'día' : 'días'}${
+                        x.parciales ? ` · ${numero(x.parciales)} ${x.parciales === 1 ? 'subtotal' : 'subtotales'}` : ''
+                      }${
                         x.incompletos ? (s.definicion.resumenDePeriodo === 'TOTAL' ? ' · incluye un día o una semana sin completar' : ` · ${numero(x.incompletos)} sin completar, fuera del resumen`) : ''
                       }`;
                 return (

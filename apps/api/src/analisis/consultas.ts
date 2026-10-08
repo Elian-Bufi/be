@@ -1,4 +1,5 @@
 import {
+  BusquedaEnLineaDeTiempoRequestSchema,
   CalidadDeEntradaSchema,
   ClaveDeProyeccionSchema,
   decodificarCursor,
@@ -18,13 +19,14 @@ import {
   type ValidationIssue,
 } from '@be/domain';
 import { errores } from '../http/errores';
+import { sinParametrosDeQuery, validarCuerpo } from '../http/validacion';
 import { ZONA_POR_DEFECTO, fechaLocalEn } from '../nutricion/zona';
 
 /**
  * Las consultas de API-DSH-04 y API-PRJ-01, validadas en el guard **antes** del PDP (09 §3): un 400 no depende del
  * titular, no es un oráculo y no deja decisiones registradas. Parámetro desconocido o no aplicable a la clave → 400
- * (09 v0.11 §19). Los valores van solo como identificadores y enumerados: ningún texto clínico viaja en la URL, salvo `q`,
- * que es la búsqueda del propio profesional y no se registra.
+ * (09 v0.11 §19). Los valores van solo como identificadores y enumerados: ningún texto viaja en la URL. La búsqueda
+ * libre va en el cuerpo de API-DSH-04-BUSQUEDA (DL-127).
  */
 
 /** Hasta un año y un día: el período más largo que lee el entorno profesional (DL-126 y DL-127). */
@@ -119,11 +121,38 @@ export interface ConsultaDeLineaDeTiempo {
   readonly cursor: ClaveDeOrden | null;
 }
 
-const PARAMETROS_DE_LINEA_DE_TIEMPO = ['periodStart', 'periodEnd', 'domain', 'type', 'state', 'quality', 'late', 'planVersionId', 'exerciseId', 'q', 'limit', 'cursor'] as const;
+/**
+ * Los parámetros de la URL de API-DSH-04. **Sin `q`:** el texto que busca el profesional puede nombrar algo de salud, y
+ * una URL queda en historiales y en bitácoras de proxies y de la plataforma. La búsqueda va en el cuerpo de
+ * API-DSH-04-BUSQUEDA (DL-127); `q` en la URL es un parámetro desconocido (400).
+ */
+const PARAMETROS_DE_LINEA_DE_TIEMPO = ['periodStart', 'periodEnd', 'domain', 'type', 'state', 'quality', 'late', 'planVersionId', 'exerciseId', 'limit', 'cursor'] as const;
 
 /** La consulta de la línea de tiempo (09 v0.11 §16 y las extensiones de DL-127). Sin período: los últimos 30 días. */
 export function leerConsultaDeLineaDeTiempo(query: Record<string, unknown>): ConsultaDeLineaDeTiempo {
   sinDesconocidos(query, PARAMETROS_DE_LINEA_DE_TIEMPO);
+  return consultaDeLineaDeTiempo(query);
+}
+
+/**
+ * API-DSH-04-BUSQUEDA: la misma consulta con el texto en el cuerpo. La URL no lleva nada (ni filtros ni el texto); el
+ * cuerpo se valida con su esquema estricto (un campo de más es 400 UNKNOWN_FIELD) y después con las mismas reglas que la
+ * consulta de API-DSH-04, de modo que los filtros, el período y la paginación significan lo mismo en las dos. Todo antes
+ * del PDP.
+ */
+export function leerBusquedaDeLineaDeTiempo(query: Record<string, unknown>, _parametros: Record<string, unknown>, cuerpo: unknown): ConsultaDeLineaDeTiempo {
+  sinParametrosDeQuery(query);
+  const b = validarCuerpo(BusquedaEnLineaDeTiempoRequestSchema, cuerpo);
+  const comoConsulta: Record<string, unknown> = {};
+  for (const clave of ['periodStart', 'periodEnd', 'domain', 'type', 'state', 'quality', 'planVersionId', 'exerciseId', 'cursor'] as const) {
+    if (b[clave] !== undefined) comoConsulta[clave] = b[clave];
+  }
+  if (b.late) comoConsulta.late = 'true';
+  if (b.limit !== undefined) comoConsulta.limit = String(b.limit);
+  return { ...consultaDeLineaDeTiempo(comoConsulta), q: b.q };
+}
+
+function consultaDeLineaDeTiempo(query: Record<string, unknown>): ConsultaDeLineaDeTiempo {
   const periodo = leerPeriodo(query, 30);
   const late = texto(query, 'late');
   if (late !== undefined && late !== 'true') invalida('INVALID_FILTER', 'late');
@@ -131,8 +160,6 @@ export function leerConsultaDeLineaDeTiempo(query: Record<string, unknown>): Con
   if (planVersionId !== null && !UUID.test(planVersionId)) invalida('INVALID_FILTER', 'planVersionId');
   const exerciseKey = texto(query, 'exerciseId') ?? null;
   if (exerciseKey !== null && !CLAVE_DE_EJERCICIO.test(exerciseKey)) invalida('INVALID_FILTER', 'exerciseId');
-  const q = texto(query, 'q');
-  if (q !== undefined && (q.trim().length === 0 || q.length > 100)) invalida('INVALID_FILTER', 'q');
   let limite: number = LIMITE_DE_LINEA_DE_TIEMPO.porDefecto;
   const l = texto(query, 'limit');
   if (l !== undefined) {
@@ -152,7 +179,7 @@ export function leerConsultaDeLineaDeTiempo(query: Record<string, unknown>): Con
     soloTardias: late === 'true',
     planVersionId: planVersionId?.toLowerCase() ?? null,
     exerciseKey: exerciseKey ? `${exerciseKey[0]}:${exerciseKey.slice(2).toLowerCase()}` : null,
-    q: q?.trim() ?? null,
+    q: null,
     limite,
     cursor,
   };

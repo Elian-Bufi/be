@@ -10,6 +10,8 @@
  * - **Color, forma y trazo** por métrica (círculo, cuadrado o triángulo; continuo, rayado o punteado): el color nunca es
  *   el único medio (WCAG 1.4.1). La fecha y el punto elegidos van en el color del texto, no en el del foco: no se
  *   confunden con ninguna métrica.
+ * - **La clase del dato** se ve en el punto: un valor reportado por la persona tiene el contorno cortado, y uno
+ *   calculado por un método (una estimación), un punto adentro. Lo medido es la marca llena de siempre.
  * - **El valor exacto no depende del puntero:** el panel de lectura y la tabla lo dicen; el teclado mueve la fecha
  *   elegida (flechas, Inicio y Fin) y el arrastre sobre un panel es solo un atajo de los campos de fecha (WCAG 2.5.7).
  */
@@ -44,22 +46,45 @@ export function xDe(p: PuntoAnalitico): number {
  * La muestra de una métrica: su color y su forma; el trazo (rayado o punteado) solo cuando las series comparten un gráfico.
  * En paneles separados cada métrica tiene su panel, y una línea rayada con un zigzag diario solo agrega ruido.
  */
-export function Marca({ indice, hueco = false, tamano = 14, conTrazo = true }: { indice: number; hueco?: boolean; tamano?: number; conTrazo?: boolean }) {
+/** La clase de un dato que se dibuja distinto: reportado por la persona o calculado por un método (lo medido, no). */
+export type ClaseDibujada = 'REPORTED' | 'DERIVED';
+
+export function Marca({ indice, hueco = false, tamano = 14, conTrazo = true, clase = null }: { indice: number; hueco?: boolean; tamano?: number; conTrazo?: boolean; clase?: ClaseDibujada | null }) {
   const e = ESTILOS[indice] ?? ESTILOS[0];
   const c = tamano / 2;
   return (
     <svg width={tamano * 2.2} height={tamano} viewBox={`0 0 ${tamano * 2.2} ${tamano}`} aria-hidden="true" className="marca-de-metrica">
       <line x1={1} y1={c} x2={tamano * 2.2 - 1} y2={c} stroke={e.color} strokeWidth={2} strokeDasharray={conTrazo ? e.trazo : undefined} />
-      <Forma forma={e.forma} cx={tamano * 1.1} cy={c} r={tamano * 0.34} color={e.color} hueco={hueco} />
+      <Forma forma={e.forma} cx={tamano * 1.1} cy={c} r={tamano * (clase ? 0.42 : 0.34)} color={e.color} hueco={hueco} clase={clase} />
     </svg>
   );
 }
 
-function Forma({ forma, cx, cy, r, color, hueco, trazo = 2 }: { forma: string; cx: number; cy: number; r: number; color: string; hueco: boolean; trazo?: number }) {
-  const relleno = hueco ? 'var(--superficie)' : color;
-  if (forma === 'cuadrado') return <rect x={cx - r} y={cy - r} width={r * 2} height={r * 2} fill={relleno} stroke={color} strokeWidth={trazo} />;
-  if (forma === 'triangulo') return <polygon points={`${cx},${cy - r * 1.15} ${cx + r * 1.1},${cy + r * 0.85} ${cx - r * 1.1},${cy + r * 0.85}`} fill={relleno} stroke={color} strokeWidth={trazo} />;
-  return <circle cx={cx} cy={cy} r={r} fill={relleno} stroke={color} strokeWidth={trazo} />;
+function Forma({ forma, cx, cy, r, color, hueco, trazo = 2, clase = null }: { forma: string; cx: number; cy: number; r: number; color: string; hueco: boolean; trazo?: number; clase?: ClaseDibujada | null }) {
+  // Informado: contorno cortado y sin relleno. Estimado: sin relleno y con un punto adentro. Medido: la marca llena.
+  const relleno = hueco || clase ? 'var(--superficie)' : color;
+  const corte = clase === 'REPORTED' ? `${Math.max(1.5, r * 0.55)} ${Math.max(1.2, r * 0.4)}` : undefined;
+  const centro = clase === 'DERIVED' ? <circle cx={cx} cy={forma === 'triangulo' ? cy + r * 0.15 : cy} r={Math.max(1.2, r * 0.38)} fill={color} /> : null;
+  if (forma === 'cuadrado')
+    return (
+      <g>
+        <rect x={cx - r} y={cy - r} width={r * 2} height={r * 2} fill={relleno} stroke={color} strokeWidth={trazo} strokeDasharray={corte} />
+        {centro}
+      </g>
+    );
+  if (forma === 'triangulo')
+    return (
+      <g>
+        <polygon points={`${cx},${cy - r * 1.15} ${cx + r * 1.1},${cy + r * 0.85} ${cx - r * 1.1},${cy + r * 0.85}`} fill={relleno} stroke={color} strokeWidth={trazo} strokeDasharray={corte} />
+        {centro}
+      </g>
+    );
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={r} fill={relleno} stroke={color} strokeWidth={trazo} strokeDasharray={corte} />
+      {centro}
+    </g>
+  );
 }
 
 export interface SerieParaDibujar {
@@ -215,11 +240,13 @@ function Panel({
       const e = ESTILOS[info.indice] ?? ESTILOS[0];
       const elegido = fecha !== null && info.punto.date <= fecha && fecha <= (info.punto.dateEnd ?? info.punto.date);
       const hueco = info.punto.quality === 'PARTIAL' || info.punto.partialBucket;
-      const r = hueco ? Math.max(radio + 1, 3.5) : radio;
+      const clase = info.punto.dataClass === 'REPORTED' || info.punto.dataClass === 'DERIVED' ? info.punto.dataClass : null;
+      // Una marca hueca, cortada o con un punto adentro necesita un tamaño mínimo para que se vea como tal.
+      const r = hueco || clase ? Math.max(radio + 1.5, clase ? 5 : 3.5) : radio;
       return (
-        <g className="grafico__elegible" onClick={() => onPunto(info.indice, info.punto)}>
+        <g className="grafico__elegible" data-clase={clase ?? undefined} onClick={() => onPunto(info.indice, info.punto)}>
           {elegido ? <circle cx={cx} cy={cy} r={Math.max(r * 2, 8)} fill="none" stroke="var(--texto)" strokeWidth={2} /> : null}
-          <Forma forma={e.forma} cx={cx} cy={cy} r={r} color={e.color} hueco={hueco} trazo={radio < 5 ? 1.5 : 2} />
+          <Forma forma={e.forma} cx={cx} cy={cy} r={r} color={e.color} hueco={hueco} trazo={radio < 5 ? 1.5 : 2} clase={clase} />
         </g>
       );
     };

@@ -144,6 +144,7 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
         segment: 'sesiones',
         corrected: c.fuente.tipo === 'correccion',
         partialBucket: false,
+        dataClass: null,
         coverage: null,
         missing: [],
         detail: [
@@ -172,6 +173,7 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
             segment: 'semanas',
             corrected: deLaSemana.some((p) => p.corrected),
             partialBucket: s.parcial,
+            dataClass: null,
             coverage: null,
             missing: [],
             detail: [{ label: 'Sesiones registradas', value: String(deLaSemana.length) }],
@@ -209,6 +211,7 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
         segment: `t${p.tramoRegistrado ?? 0}`,
         corrected: p.fila?.corregida ?? false,
         partialBucket: false,
+        dataClass: null,
         coverage: null,
         missing: [],
         detail: [

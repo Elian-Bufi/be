@@ -2913,6 +2913,28 @@ html:has(.acciones--fijas) {
   margin: 0 0 0.25rem 1.75rem;
 }
 
+/* La referencia del cambio relativo: la vigente, qué la cambia y el editor, uno debajo del otro (DL-126). */
+.referencia-del-cambio {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.referencia-del-cambio p {
+  margin: 0.25rem 0 0;
+}
+
+.referencia-del-cambio__editor {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.referencia-vigente {
+  margin: 0.25rem 0;
+}
+
 .paneles-sincronizados {
   display: flex;
   flex-direction: column;

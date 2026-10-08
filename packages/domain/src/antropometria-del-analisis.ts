@@ -13,6 +13,16 @@ import { fechaCivil } from './fechas-civiles';
 import type { DefinicionDeMetrica } from './metricas-del-analisis';
 import { nombreDeMetodo } from './nombres-de-metricas';
 
+/**
+ * Medido, reportado por la persona o calculado por un método: la frontera que no se borra (04:1090), con las palabras de
+ * la pestaña de Antropometría (`ETIQUETA_DE_CLASE_DE_DATO`: Medido, Reportado, Calculado) y lo que hace falta aclarar.
+ */
+export const TEXTO_DE_CLASE: Readonly<Record<'MEASURED' | 'REPORTED' | 'DERIVED', string>> = {
+  MEASURED: 'Medido',
+  REPORTED: 'Reportado por la persona, no medido',
+  DERIVED: 'Calculado por un método (estimación)',
+};
+
 const MOTIVO_DE_CORTE: Readonly<Record<string, string>> = {
   PROTOCOL: 'Cambió el protocolo de medición.',
   METHOD: 'Cambió el método de cálculo.',
@@ -49,10 +59,11 @@ export function serieAntropometrica(serie: SerieApi, definicion: DefinicionDeMet
       segment: tramoActual as string,
       corrected: p.correctionState === 'CORRECTED',
       partialBucket: false,
+      dataClass: p.dataClass,
       coverage: null,
       missing: [],
       detail: [
-        { label: 'Clase de dato', value: p.dataClass === 'DERIVED' ? 'Resultado de un método' : p.dataClass === 'REPORTED' ? 'Informado por la persona' : 'Medición directa' },
+        { label: 'Clase de dato', value: TEXTO_DE_CLASE[p.dataClass] },
         ...(p.correctionState === 'CORRECTED' ? [{ label: 'Valor vigente', value: 'Corregido' }] : []),
       ],
       sources: [{ type: 'ANTHROPOMETRIC_EVALUATION', id: p.sourceEvaluationId }],

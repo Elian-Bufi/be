@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import {
   conteosDelPeriodo,
@@ -19,7 +19,7 @@ import { fechaLocalEn } from '../nutricion/zona';
 import { conReintento, momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import { actorDe, SesionGuard } from '../sesion/sesion.guard';
-import { leerConsultaDeLineaDeTiempo, leerConsultaDeProyeccion, type ConsultaDeLineaDeTiempo, type ConsultaDeProyeccion } from './consultas';
+import { leerBusquedaDeLineaDeTiempo, leerConsultaDeLineaDeTiempo, leerConsultaDeProyeccion, type ConsultaDeLineaDeTiempo, type ConsultaDeProyeccion } from './consultas';
 import { ejecucionesDelPeriodo, hayRegistrosDeOtros, registrosDeComidaDelPeriodo, versionesActivadas, versionesDeObjetivo, ZONA } from './fuentes';
 import {
   entradasDeComidas,
@@ -48,8 +48,8 @@ const ALCANCE_DE_LA_CLAVE: Readonly<Record<ConsultaDeProyeccion['clave'], Alcanc
 const DOMINIO: Readonly<Record<Alcance, DominioDeAnalisis>> = { NUTRICION: 'NUTRITION', ENTRENAMIENTO: 'TRAINING', ANTROPOMETRIA: 'ANTHROPOMETRY' };
 
 /**
- * El entorno profesional de seguimiento (WP-DASHBOARD-PROFESIONAL): API-DSH-04 (línea de tiempo; DL-127) y API-PRJ-01
- * (proyecciones; DL-126). Igual que API-DSH-03:
+ * El entorno profesional de seguimiento (WP-DASHBOARD-PROFESIONAL): API-DSH-04 y API-DSH-04-BUSQUEDA (línea de tiempo y
+ * búsqueda en ella; DL-127) y API-PRJ-01 (proyecciones; DL-126). Igual que API-DSH-03:
  * - `SesionGuard` autentica y `PdpGuard` valida la consulta, consume el límite de lecturas protegidas y decide por
  *   alcance, registrando cada decisión. Sin ningún alcance permitido ya respondió 404, idéntico a un asesorado inexistente.
  * - Este controlador no decide: lee **solo** los alcances permitidos, en una transacción de lectura (una foto), y siempre
@@ -69,6 +69,23 @@ export class AnalisisController {
   @UseGuards(SesionGuard, PdpGuard)
   @OperacionProtegida({ operacion: 'API-DSH-04', parametroDelTitular: 'adviseeId', validarConsulta: leerConsultaDeLineaDeTiempo })
   async lineaDeTiempo(@Param('adviseeId') _adviseeId: string, @Req() req: SolicitudAutorizada): Promise<LineaDeTiempoResponse> {
+    return this.leerLineaDeTiempo(req);
+  }
+
+  /**
+   * API-DSH-04-BUSQUEDA: la línea de tiempo con un texto a buscar. Es una lectura (no crea ni cambia nada, por eso 200 y
+   * sin Idempotency-Key); usa POST solo para que el texto viaje en el cuerpo y nunca en una URL, que queda en historiales,
+   * proxies y bitácoras (DL-127). Mismo PDP, mismos filtros, misma paginación y la búsqueda sobre todo el período.
+   */
+  @Post('advisees/:adviseeId/timeline/search')
+  @HttpCode(200)
+  @UseGuards(SesionGuard, PdpGuard)
+  @OperacionProtegida({ operacion: 'API-DSH-04-BUSQUEDA', parametroDelTitular: 'adviseeId', validarConsulta: leerBusquedaDeLineaDeTiempo })
+  async busquedaEnLineaDeTiempo(@Param('adviseeId') _adviseeId: string, @Req() req: SolicitudAutorizada): Promise<LineaDeTiempoResponse> {
+    return this.leerLineaDeTiempo(req);
+  }
+
+  private async leerLineaDeTiempo(req: SolicitudAutorizada): Promise<LineaDeTiempoResponse> {
     const consulta = req.consultaValidada as ConsultaDeLineaDeTiempo;
     const decisiones = decisionesDe(req);
     const titularId = decisiones.titularId as string;

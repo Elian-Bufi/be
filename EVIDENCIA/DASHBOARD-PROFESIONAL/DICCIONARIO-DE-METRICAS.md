@@ -15,6 +15,7 @@ versión del diccionario.
 | **Fuente y permiso** | Cada métrica pertenece a una clave de proyección, y cada clave a un alcance de la PDP: `NUTRITION_PRESCRIBED_VS_RECORDED` → Nutrición, `TRAINING_PROGRESSION_BY_EXERCISE` → Entrenamiento, `ANTHROPOMETRY_LONGITUDINAL` → Antropometría. El servidor decide el permiso **antes** de leer: sin el alcance, la proyección responde 404 como un asesorado inexistente, y el selector no ofrece esas métricas. Solo se leen los planes, procesos y evaluaciones del profesional que consulta. |
 | **Fecha aplicable** | La **fecha civil del hecho** en la zona del asesorado (`America/Argentina/Buenos_Aires` por defecto, DL-009): `localDate` del registro de comida, la fecha local de la sesión registrada y la fecha civil de `occurredAt` de la toma. **Nunca la fecha de carga** (`recordedAt`), que se muestra aparte (T-06-24). |
 | **Semana** | De lunes a domingo, en la zona del asesorado. Una semana cortada por el período se marca como parcial (`partialBucket`) y dice cuántos días tuvo. |
+| **Observaciones y grano de dibujo** | Cada métrica tiene un grano de **observación**: el día en Nutrición, la sesión en Entrenamiento y la toma en Antropometría (`granoDeObservacion`). El resumen de un período, la comparación de dos períodos y la referencia del cambio relativo se calculan siempre sobre esas observaciones, **en el rango exacto**. La semana es solo un grano de dibujo: agrupar el gráfico no cambia lo que significa un resumen. Una media de medias semanales no pondera los días, y una semana que un rango corta no se puede recortar. Ejemplo: del 7 al 20 de septiembre, con un día de 1.000 kcal en la primera semana y siete de 2.000 en la segunda, la media es 1.875 kcal (n = 8), no 1.500; del 16 al 20 es 2.000 (n = 5), no «sin valor». |
 | **Día o semana sin completar** | El día de hoy, que sigue en curso, y una semana que el período corta son baldes incompletos (`partialBucket`). Se dibujan huecos y la lectura lo dice. No entran en la media ni en la mediana de un período, ni en una referencia: con el desayuno de hoy adentro, la media de siete días bajaría unas 240 kcal. El total sí los cuenta, porque lo registrado es real, y avisa que el período no terminó; dos totales no se restan si alguno está incompleto. |
 | **Huecos** | No se interpola, imputa ni arrastra. La línea se corta en cada hueco (F-02) y al cambiar de tramo comparable. |
 | **Lo desconocido** | `null` con su motivo, nunca 0. El 0 registrado es un dato. |
@@ -23,6 +24,8 @@ versión del diccionario.
 | **Enlace al origen** | Cada punto lista sus registros de origen (`sources`, hasta 60 con aviso de recorte), y cada uno abre su registro en la pestaña de su dominio con retorno al análisis. |
 | **Superposición** | Dos métricas comparten un gráfico en valores reales solo si tienen la **misma familia y la misma unidad**. Si no, van en paneles sincronizados (F-01: sin doble eje). |
 | **Cambio relativo** | `100 × (valor − referencia) / referencia`, solo en escalas de razón, con una referencia explícita (rango, agregador y n) y positiva. Un porcentaje se compara en puntos porcentuales; el RIR, en sus valores. |
+| **Referencia del cambio relativo** | Un rango del **período leído**, nunca el intervalo que se ve: los primeros N días del período (1 a 31; 7 por defecto) o un rango fijo de fechas. Acercar, alejar o restablecer el gráfico no la mueve; cambia solo con «Aplicar». Queda en la URL (`ref`) y en las vistas guardadas. La regla es la de la métrica (media de los días con valor, mediana de las sesiones o primera toma del rango), sobre las observaciones. Un rango que no cae entero en el período no se calcula: no hay con qué. |
+| **Clase del dato** | Cada punto dice su clase (`dataClass`), con las palabras de la pestaña de Antropometría: **Medido**, **Reportado** por la persona (no medido) o **Calculado** por un método (una estimación). Hoy solo Antropometría tiene las tres; en Nutrición y Entrenamiento no aplica. El gráfico dibuja con contorno cortado lo reportado y con un punto adentro lo calculado; la lectura, la tabla, el resumen en texto y el CSV (columna «Clase de dato») lo dicen en palabras. |
 
 **Lo que esta versión no calcula, a propósito:** puntajes de adherencia, semáforos, rankings, correlaciones, rezagos,
 promedios móviles e intervalos de confianza. Un promedio móvil exigiría declarar ventana, alineación hacia atrás, mínimo
@@ -136,7 +139,7 @@ del asesorado: `antropometria.<código>` para cada código del catálogo que ten
 - **Un cambio de protocolo, método o unidad corta la línea** y abre otro tramo, y se rotula. No hay diferencia ni cambio
   relativo entre tramos.
 - **Un sitio faltante no es cero.** Si falta un sitio, el método no produce resultado.
-- **La clase del dato se muestra:** medición directa, informado por la persona o resultado de un método.
+- **La clase del dato se muestra:** medido, reportado por la persona o calculado por un método (§1, «Clase del dato»).
 
 **Límites de interpretación:**
 - Sin el error técnico de medición documentado (F-09) no se dibujan intervalos ni se califica un cambio como

@@ -23,8 +23,11 @@ const { OPERACIONES } = require(path.join(RAIZ, 'packages/domain/dist/openapi.js
 
 /** Las familias propias de BE, cada una con la DL que la declara. */
 const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128' };
-/** Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período). */
-const SUFIJOS_DE_BE = ['LISTA', 'PROPIA', 'PERIODO'];
+/**
+ * Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período, y la
+ * búsqueda con el texto en el cuerpo, DL-127).
+ */
+const SUFIJOS_DE_BE = ['LISTA', 'PROPIA', 'PERIODO', 'BUSQUEDA'];
 
 const normalizar = (ruta) => ruta.replace(/^\/api\/v1/, '').replace(/\?.*$/, '').replace(/\{[^}]+\}/g, '{}').replace(/\/$/, '');
 

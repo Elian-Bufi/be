@@ -7,8 +7,9 @@
  * - **Una rectificación es una relación** de la entrada original, no un consumo nuevo; una anulación deja la entrada,
  *   marcada (PRO-16).
  * - **Filtros en la URL** (área, tipo, estado, calidad, carga tardía, plan y ejercicio); la búsqueda libre, no: la
- *   escribe el profesional y puede nombrar algo de salud (DL-127). La búsqueda y los conteos recorren el período completo
- *   del conjunto autorizado, no solo lo cargado (PRO-04).
+ *   escribe el profesional y puede nombrar algo de salud (DL-127). Tampoco viaja en la URL de la API: va en el cuerpo de
+ *   un POST (API-DSH-04-BUSQUEDA), con los mismos filtros, el mismo PDP y la misma paginación. La búsqueda y los conteos
+ *   recorren el período completo del conjunto autorizado, no solo lo cargado (PRO-04).
  * - **Paginación con cursor estable** y «Ver más»; un cambio de filtro descarta las páginas viejas, y una respuesta
  *   tardía de otro filtro no se pinta (PRO-21).
  * - **Estados distintos:** sin datos en el período, sin coincidencias y error (no se ve como vacío).
@@ -20,6 +21,7 @@ import {
   NOMBRE_DE_TIPO_DE_EVENTO,
   TIPOS_DE_EVENTO,
   agruparPorDia,
+  type BusquedaEnLineaDeTiempoRequest,
   type CalidadDeEntrada,
   type DominioDeAnalisis,
   type EntradaDeLineaDeTiempo,
@@ -40,6 +42,37 @@ import { leerFiltrosDeLaLinea, parametrosDeFiltros, SIN_FILTROS, type FiltrosDeL
 const PanelDeRegistro = dynamic(() => import('./registro-original').then((m) => m.PanelDeRegistro), { ssr: false });
 
 const POR_PAGINA = 50;
+
+type ConsultaDeLaLinea = {
+  readonly periodStart: string;
+  readonly periodEnd: string;
+  readonly domain?: string;
+  readonly type?: string;
+  readonly state?: string;
+  readonly quality?: string;
+  readonly late?: 'true';
+  readonly planVersionId?: string;
+  readonly exerciseId?: string;
+  readonly limit: string;
+};
+
+/** El cuerpo de API-DSH-04-BUSQUEDA: el texto y los mismos filtros de la consulta, con sus tipos (no como texto de URL). */
+function cuerpoDeBusqueda(c: ConsultaDeLaLinea, q: string, cursor: string | null): BusquedaEnLineaDeTiempoRequest {
+  return {
+    q,
+    periodStart: c.periodStart,
+    periodEnd: c.periodEnd,
+    ...(c.domain ? { domain: c.domain } : {}),
+    ...(c.type ? { type: c.type } : {}),
+    ...(c.state ? { state: c.state } : {}),
+    ...(c.quality ? { quality: c.quality } : {}),
+    ...(c.late ? { late: true } : {}),
+    ...(c.planVersionId ? { planVersionId: c.planVersionId } : {}),
+    ...(c.exerciseId ? { exerciseId: c.exerciseId } : {}),
+    limit: Number(c.limit),
+    ...(cursor ? { cursor } : {}),
+  };
+}
 
 const ESTADOS: readonly { readonly clave: EstadoDeEntrada; readonly texto: string }[] = [
   { clave: 'EFFECTIVE', texto: 'Vigente' },
@@ -73,7 +106,7 @@ export function LineaDeTiempo() {
   const filtros = useMemo(() => leerFiltrosDeLaLinea(parametros), [parametros]);
   const [q, setQ] = useState('');
   const [busqueda, setBusqueda] = useState('');
-  const consulta = useMemo(
+  const consulta = useMemo<ConsultaDeLaLinea>(
     () => ({
       periodStart: periodo.desde,
       periodEnd: periodo.hasta,
@@ -84,13 +117,18 @@ export function LineaDeTiempo() {
       late: filtros.soloTardias ? ('true' as const) : undefined,
       planVersionId: filtros.planVersionId ?? undefined,
       exerciseId: filtros.exerciseKey ?? undefined,
-      q: busqueda || undefined,
       limit: String(POR_PAGINA),
     }),
-    [periodo, filtros, busqueda],
+    [periodo, filtros],
   );
-  const clave = `${asesoradoId}|${JSON.stringify(consulta)}`;
-  const { lectura, recargar } = useLectura<LineaDeTiempoResponse>(clave, () => api.lineaDeTiempo(token, asesoradoId, consulta));
+  // Con texto, la lectura es API-DSH-04-BUSQUEDA (el texto en el cuerpo); sin texto, API-DSH-04. La clave es solo de memoria.
+  const leerPagina = useCallback(
+    (cursor: string | null) =>
+      busqueda ? api.buscarEnLineaDeTiempo(token, asesoradoId, cuerpoDeBusqueda(consulta, busqueda, cursor)) : api.lineaDeTiempo(token, asesoradoId, cursor ? { ...consulta, cursor } : consulta),
+    [token, asesoradoId, consulta, busqueda],
+  );
+  const clave = `${asesoradoId}|${JSON.stringify(consulta)}|${busqueda}`;
+  const { lectura, recargar } = useLectura<LineaDeTiempoResponse>(clave, () => leerPagina(null));
 
   // Las páginas siguientes: se descartan si la clave cambió mientras llegaban.
   const [mas, setMas] = useState<{ clave: string; entradas: EntradaDeLineaDeTiempo[]; cursor: string | null; cargando: boolean; error: MotivoDeFalla | null }>({ clave, entradas: [], cursor: null, cargando: false, error: null });
@@ -103,11 +141,11 @@ export function LineaDeTiempo() {
     if (!cursor) return;
     const pedida = clave;
     setMas((m) => ({ ...(m.clave === pedida ? m : { clave: pedida, entradas: [], cursor: null }), cargando: true, error: null }));
-    const r = await api.lineaDeTiempo(token, asesoradoId, { ...consulta, cursor });
+    const r = await leerPagina(cursor);
     if (claveActual.current !== pedida || sesionPerdida(r)) return;
     if (!r.ok) return setMas((m) => ({ ...m, cargando: false, error: motivoDeFalla(r) }));
     setMas((m) => ({ clave: pedida, entradas: [...(m.clave === pedida ? m.entradas : []), ...r.datos.data.entries], cursor: r.datos.page.nextCursor, cargando: false, error: null }));
-  }, [cursor, clave, token, asesoradoId, consulta, sesionPerdida]);
+  }, [cursor, clave, leerPagina, sesionPerdida]);
 
   const [abierta, setAbierta] = useState<{ origen: OrigenDeDato; titulo: string } | null>(null);
   const cambiar = (f: FiltrosDeLaLinea) => ir(parametrosDeFiltros(f));

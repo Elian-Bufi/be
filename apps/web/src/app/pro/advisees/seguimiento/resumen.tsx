@@ -124,7 +124,7 @@ function Indicadores({
                   </button>
                 </p>
               ) : null}
-              {s.estado.tipo === 'lista' ? <ValorDelIndicador serie={s.estado.serie} definicion={s.definicion} desde={periodo.desde} hasta={periodo.hasta} /> : null}
+              {s.estado.tipo === 'lista' ? <ValorDelIndicador serie={s.estado.observaciones} definicion={s.definicion} desde={periodo.desde} hasta={periodo.hasta} /> : null}
               <Link className="boton boton--enlace" href={href({ vista: 'analizar', m: codificarReferencia(s.ref), modo: null, f: null })}>
                 Analizar<span className="visualmente-oculto"> {nombre}</span>
               </Link>

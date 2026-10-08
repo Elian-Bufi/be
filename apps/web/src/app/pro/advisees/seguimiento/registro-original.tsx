@@ -6,6 +6,8 @@
  * toma—, que vuelve a decidir con el PDP. Se abre en un `<dialog>` modal: retiene el foco, Esc lo cierra y el foco vuelve
  * al disparador. Al cerrarlo, la vista sigue como estaba (período, filtros, métricas y posición), porque nada navegó.
  * La pestaña del dominio sigue a un clic, para ver el registro en su contexto completo.
+ * Si el PDP ya no deja leer el registro (un permiso revocado después de cargar la pantalla), el panel lo dice y avisa a
+ * quien lo abrió (`onNoDisponible`): lo que hay en pantalla puede ser viejo y se vuelve a pedir.
  */
 import {
   cantidad,
@@ -40,7 +42,19 @@ const DESTINO: Readonly<Partial<Record<OrigenDeDato['type'], { readonly ruta: st
   FOLLOW_UP_PROCESS: { ruta: '/pro/advisees', vista: '', texto: 'Ver el resumen' },
 };
 
-export function PanelDeRegistro({ origen, titulo, onCerrar, children }: { origen: OrigenDeDato | null; titulo: string; onCerrar: () => void; children?: ReactNode }) {
+export function PanelDeRegistro({
+  origen,
+  titulo,
+  onCerrar,
+  onNoDisponible,
+  children,
+}: {
+  origen: OrigenDeDato | null;
+  titulo: string;
+  onCerrar: () => void;
+  onNoDisponible?: () => void;
+  children?: ReactNode;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
   const { asesoradoId } = useSeguimiento();
@@ -68,7 +82,7 @@ export function PanelDeRegistro({ origen, titulo, onCerrar, children }: { origen
         </button>
       </div>
       {children}
-      {origen ? <ContenidoDelRegistro origen={origen} /> : null}
+      {origen ? <ContenidoDelRegistro origen={origen} onNoDisponible={onNoDisponible} /> : null}
       {origen && destino ? (
         <p>
           <Link href={`${destino.ruta}?id=${encodeURIComponent(asesoradoId)}${destino.vista ? `&vista=${destino.vista}` : ''}`}>{destino.texto}</Link>
@@ -78,17 +92,27 @@ export function PanelDeRegistro({ origen, titulo, onCerrar, children }: { origen
   );
 }
 
-function ContenidoDelRegistro({ origen }: { origen: OrigenDeDato }) {
+function ContenidoDelRegistro({ origen, onNoDisponible }: { origen: OrigenDeDato; onNoDisponible?: () => void }) {
   const { token, sesionPerdida } = useSeguimiento();
   if (origen.type === 'MEAL_RECORD') return <DetalleDeRegistroDeComida registroId={origen.id} token={token} sesionPerdida={sesionPerdida} />;
-  if (origen.type === 'TRAINING_EXECUTION') return <SesionRegistrada executionId={origen.id} />;
-  if (origen.type === 'ANTHROPOMETRIC_EVALUATION') return <TomaRegistrada evaluationId={origen.id} />;
+  if (origen.type === 'TRAINING_EXECUTION') return <SesionRegistrada executionId={origen.id} onNoDisponible={onNoDisponible} />;
+  if (origen.type === 'ANTHROPOMETRIC_EVALUATION') return <TomaRegistrada evaluationId={origen.id} onNoDisponible={onNoDisponible} />;
   return <p className="nota">Este hecho no tiene un registro propio para abrir acá: el enlace lleva a su pestaña.</p>;
 }
 
-function SesionRegistrada({ executionId }: { executionId: string }) {
+/** Avisa una vez cuando la lectura dice «no disponible» (el PDP denegó con el acceso de ahora). */
+function useAvisoDeNoDisponible(tipo: string, onNoDisponible?: () => void) {
+  const aviso = useRef(onNoDisponible);
+  aviso.current = onNoDisponible;
+  useEffect(() => {
+    if (tipo === 'no-disponible') aviso.current?.();
+  }, [tipo]);
+}
+
+function SesionRegistrada({ executionId, onNoDisponible }: { executionId: string; onNoDisponible?: () => void }) {
   const { token } = useSeguimiento();
   const { lectura, recargar } = useLectura<{ data: EjecucionDeEntrenamiento }>(`sesion|${executionId}`, () => api.consultarEjecucionDeEntrenamiento(token, executionId));
+  useAvisoDeNoDisponible(lectura.tipo, onNoDisponible);
   if (lectura.tipo === 'cargando') return <Cargando />;
   if (lectura.tipo === 'no-disponible') return <p className="nota">Este registro no está disponible con tu acceso actual.</p>;
   if (lectura.tipo === 'error') return <ErrorConReintento mensaje={textoDeFalla(lectura.motivo, 'la sesión registrada')} onReintentar={recargar} />;
@@ -111,9 +135,10 @@ function SesionRegistrada({ executionId }: { executionId: string }) {
   );
 }
 
-function TomaRegistrada({ evaluationId }: { evaluationId: string }) {
+function TomaRegistrada({ evaluationId, onNoDisponible }: { evaluationId: string; onNoDisponible?: () => void }) {
   const { token } = useSeguimiento();
   const { lectura, recargar } = useLectura<{ data: EvaluacionAntropometricaApi }>(`toma|${evaluationId}`, () => api.consultarEvaluacionAntropometrica(token, evaluationId));
+  useAvisoDeNoDisponible(lectura.tipo, onNoDisponible);
   if (lectura.tipo === 'cargando') return <Cargando />;
   if (lectura.tipo === 'no-disponible') return <p className="nota">Esta toma no está disponible con tu acceso actual.</p>;
   if (lectura.tipo === 'error') return <ErrorConReintento mensaje={textoDeFalla(lectura.motivo, 'la toma registrada')} onReintentar={recargar} />;

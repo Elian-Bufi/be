@@ -14,6 +14,12 @@
 //   volumen    el asesorado C, para medir (PRO-24): cuenta, vínculos y planes por la API; un año de comidas (4 por día),
 //              sesiones (3 por semana) y tomas (cada dos semanas) por SQL, con los mismos disparadores. No se verifica
 //              contra valores a mano: es volumen, no un caso de lectura.
+//   descartable-cuentas  (revisión de #153, hallazgo 5) cuentas sintéticas SEPARADAS y DESCARTABLES, nuevas en cada
+//              corrida: un profesional con Nutrición y Antropometría y un asesorado. Las de A, B y C no se tocan. Escribe
+//              trabajo/demo-profesionales-descartable.txt: hay que reiniciar la API con ese BE_DEMO_PROFESIONALES.
+//   descartable-datos    por la API, hoy: vínculos de Nutrición y Antropometría, una toma medida, una informada por la
+//              persona (SELF_REPORTED) y otra medida, y dos corridas del IMC (be/imc@1): valores medidos, informados y
+//              estimados en la misma serie de evolución. La revocación la hace el asesorado desde su web, en el recorrido.
 //
 // Uso: node datos/generar.mjs <fase> [origen de la API]   (BE_E2E_DATABASE_URL para otra base local)
 import { REPO, enTrabajo } from '../rutas.mjs';
@@ -601,9 +607,69 @@ async function volumen() {
   console.log('volumen listo: el asesorado C con un año de comidas, sesiones y tomas');
 }
 
-const FASES = { cuentas, base, historia, recientes, verificar, volumen };
+/** El nombre del profesional descartable (BE_DEMO_PROFESIONALES); el asesorado lo ve en su vínculo. */
+const PROFESIONAL_DESCARTABLE = 'Lic. Descartable (sintética)';
+/** El IMC del catálogo de BE (DL-111): peso en kg y talla en cm, de captura directa o reportados por la persona. */
+const REGLA_DEL_IMC = 'be/imc@1';
+
+async function descartableCuentas() {
+  const sufijo = Date.now().toString(36);
+  const proCorreo = `pro-descartable-${sufijo}@example.invalid`;
+  const aseCorreo = `ase-descartable-${sufijo}@example.invalid`;
+  const proId = await registrarCuenta(proCorreo, 'WEB');
+  const aseId = await registrarCuenta(aseCorreo, 'APK');
+  guardarEstado({ descartable: { proCorreo, proId, aseCorreo, aseId, profesional: PROFESIONAL_DESCARTABLE, creado: new Date().toISOString() } });
+  const actual = /BE_DEMO_PROFESIONALES=(.*)/.exec(fs.readFileSync(enTrabajo('demo-profesionales.txt'), 'utf8'))?.[1]?.trim() ?? '';
+  const extendido = [actual, `${proId}|NUTRICION|SANITARIO|${PROFESIONAL_DESCARTABLE}`, `${proId}|ANTROPOMETRIA|SANITARIO|${PROFESIONAL_DESCARTABLE}`].filter(Boolean).join(';');
+  fs.writeFileSync(enTrabajo('demo-profesionales-descartable.txt'), `BE_DEMO_PROFESIONALES=${extendido}\n`);
+  console.log('cuentas descartables listas: reiniciá la API con trabajo/demo-profesionales-descartable.txt y seguí con descartable-datos');
+}
+
+async function descartableDatos() {
+  const e = leerEstado();
+  const d = e.descartable;
+  if (!d?.proId) throw new Error('primero: descartable-cuentas');
+  const hoy = hoyCivil();
+  const pro = await sesion(d.proCorreo);
+  const ase = await sesion(d.aseCorreo, 'APK');
+  await pedir('POST', '/me/health-data-consents', { token: ase, superficie: 'APK', cuerpo: { consentVersionId: dominio.VERSION_VIGENTE.DATOS_SALUD_BE.id } });
+  const vinculos = {};
+  for (const alcance of ['NUTRICION', 'ANTROPOMETRIA']) vinculos[alcance] = await vincular(pro, ase, d.aseId, alcance);
+
+  const metodos = (await pedir('GET', '/professional-methods?limit=50', { token: pro })).data;
+  const imc = metodos.find((m) => m.ruleId === REGLA_DEL_IMC);
+  if (!imc) throw new Error(`el catálogo no ofrece ${REGLA_DEL_IMC}`);
+  /** Una toma por el flujo de la web (borrador y registro, API-ANT-07 y 11): devuelve la medición de cada métrica. */
+  const toma = async (fecha, origen, mediciones) => {
+    const creada = (
+      await pedir('POST', `/advisees/${d.aseId}/anthropometry/evaluation-drafts`, {
+        token: pro,
+        cuerpo: { occurredAt: instante(fecha, '08:30').toISOString(), specificationVersionId: PROTOCOLOS.perfil.version, source: { type: origen }, directMeasurements: mediciones.map(([metricCode, value, unit]) => ({ metricCode, value, unit })) },
+      })
+    ).data;
+    const registrada = (await pedir('POST', `/anthropometry/evaluation-drafts/${creada.evaluationId}/register`, { token: pro, cuerpo: { expectedVersion: creada.version } })).data;
+    return { evaluationId: registrada.evaluationId, porMetrica: Object.fromEntries(registrada.measurements.map((m) => [m.metric, m.measurementId])) };
+  };
+  // Medido, reportado por la persona y medido otra vez; el IMC, calculado por un método, de las dos tomas medidas.
+  const fechas = { primera: diaMenos(hoy, 20), informada: diaMenos(hoy, 12), segunda: diaMenos(hoy, 4) };
+  const primera = await toma(fechas.primera, 'DIRECT_CAPTURE', [['peso', 81.2, 'kg'], ['talla', 178.0, 'cm']]);
+  const informada = await toma(fechas.informada, 'SELF_REPORTED', [['peso', 80.5, 'kg']]);
+  const segunda = await toma(fechas.segunda, 'DIRECT_CAPTURE', [['peso', 79.9, 'kg'], ['talla', 178.0, 'cm']]);
+  const corridas = [];
+  for (const t of [primera, segunda]) {
+    const r = await pedir('POST', `/advisees/${d.aseId}/calculations`, {
+      token: pro,
+      cuerpo: { purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: imc.methodVersionId, inputBindings: [{ inputCode: 'PESO', sourceRef: t.porMetrica.peso }, { inputCode: 'TALLA', sourceRef: t.porMetrica.talla }] },
+    });
+    corridas.push({ valor: r.data.result.magnitude.value, unidad: r.data.result.magnitude.unit });
+  }
+  guardarEstado({ descartable: { ...d, hoy, vinculos, fechas, evaluaciones: { primera: primera.evaluationId, informada: informada.evaluationId, segunda: segunda.evaluationId }, imc: corridas, datos: true } });
+  console.log(`datos descartables listos: tres tomas de peso (medida, reportada por la persona y medida) y dos IMC calculados por un método (${corridas.map((c) => `${c.valor} ${c.unidad}`).join(', ')})`);
+}
+
+const FASES = { cuentas, base, historia, recientes, verificar, volumen, 'descartable-cuentas': descartableCuentas, 'descartable-datos': descartableDatos };
 if (!FASES[fase]) {
-  console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar [origen de la API]');
+  console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar|volumen|descartable-cuentas|descartable-datos [origen de la API]');
   process.exit(2);
 }
 try {

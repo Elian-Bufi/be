@@ -97,6 +97,7 @@ arquitecturas está en `EVIDENCIA/DASHBOARD-PROFESIONAL/INVESTIGACION.md` §3.
 |---|---|---|---|
 | API-DSH-03 | `GET /advisees/{adviseeId}/dashboard` | Resumen por dominio | Existe; **no cambia de forma** |
 | **API-DSH-04** | `GET /advisees/{adviseeId}/timeline` | Línea de tiempo longitudinal (09 v0.11 §16) | **Nueva** (DL-127) |
+| **API-DSH-04-BUSQUEDA** | `POST /advisees/{adviseeId}/timeline/search` | La misma lectura con un texto a buscar, que viaja en el cuerpo y nunca en una URL | **Nueva** (variante de BE, DL-127; revisión de #153) |
 | **API-PRJ-01** | `GET /advisees/{adviseeId}/projections/{projectionKey}` | Proyección profunda (09 v0.11 §19 y §20) | **Nueva**, con 3 claves derivadas y 5 que responden `INSUFFICIENT_INFORMATION` (DL-126) |
 | **API-VAN-01** | `GET /me/analysis-views` | Vistas de análisis propias del profesional | **Nueva** (familia de BE, DL-128) |
 | **API-VAN-02** | `POST /me/analysis-views` | Guardar una vista (solo configuración, nunca datos de salud) | **Nueva** |
@@ -140,8 +141,14 @@ arquitecturas está en `EVIDENCIA/DASHBOARD-PROFESIONAL/INVESTIGACION.md` §3.
   tampoco: la línea de tiempo dice «recibido por BE».
 - **Filtros del 09:** `domain`, `type`, `periodStart` y `periodEnd`.
 - **Extensiones de BE** (DL-127): `state` (vigente, rectificado o anulado), `quality` (cantidades sin confirmar o
-  parciales), `planVersionId`, `exerciseId` y `q`. `q` busca en el **período completo** del conjunto autorizado, no solo
-  en lo cargado.
+  parciales), `planVersionId`, `exerciseId` y la búsqueda. La búsqueda recorre el **período completo** del conjunto
+  autorizado, no solo lo cargado.
+- **La búsqueda no viaja en ninguna URL** (revisión del head fbeb256, hallazgo 4): el texto lo escribe el profesional y
+  puede nombrar algo de salud, y una URL queda en historiales, proxies y bitácoras. Va en el cuerpo de
+  API-DSH-04-BUSQUEDA (`POST …/timeline/search`), con los mismos filtros, el mismo PDP y la misma paginación (el cursor
+  también va en el cuerpo). Es una lectura: 200 y sin Idempotency-Key. `q` en la URL de API-DSH-04 es un parámetro
+  desconocido (400). El registro de requests guarda solo la ruta parametrizada, nunca el cuerpo, y un error de
+  validación dice `{code, path}`, nunca el valor.
 - **Conteos** solo de fuentes autorizadas: un alcance denegado no aporta ni un número (TEST-DSH-002).
 - **`periodCounts`** (extensión de BE, DL-127): cuántas entradas hay por tipo y por rasgo de calidad, y cuántas se
   cargaron otro día, en el período completo del conjunto autorizado y antes de los filtros. El Resumen arma la cobertura
@@ -191,9 +198,20 @@ métrica está en `EVIDENCIA/DASHBOARD-PROFESIONAL/DICCIONARIO-DE-METRICAS.md`. 
   - sin el error de medición documentado no hay intervalos ni «cambio significativo».
 - **Granos:** original, día o semana, solo si la métrica los admite. La semana va de lunes a domingo en la zona civil del
   asesorado, y una semana parcial se marca como tal.
+- **Observaciones y grano de dibujo** (revisión del head fbeb256, hallazgo 2): los resúmenes de un período, la
+  comparación de dos períodos y la referencia del cambio relativo se calculan sobre las **observaciones** de la métrica
+  (el día en nutrición, la sesión en entrenamiento, la toma en antropometría) del **rango exacto**. La semana es solo un
+  grano de dibujo: con el gráfico por semana, el website pide además las observaciones. El dominio rechaza una serie
+  agrupada en esas funciones (falla en voz alta, no devuelve un número equivocado).
 - **Cambio relativo:** `100 × (valor − referencia) / referencia`, con una referencia explícita (rango, agregador y n).
-  Si la referencia es ≤ 0 o falta, no se calcula y se dice por qué.
+  Si la referencia es ≤ 0 o falta, no se calcula y se dice por qué. La referencia es `{kind: 'FIRST_DAYS', days}` (los
+  primeros N días del período leído) o `{kind: 'RANGE', start, end}`; **no depende del intervalo que se ve** (acercar,
+  alejar o restablecer el gráfico no la mueve), cambia solo con «Aplicar», queda en la URL y en las vistas guardadas, y
+  un rango fuera del período leído no se calcula (hallazgo 3).
 - **Comparación de dos períodos:** duración, n, cobertura y el mismo resumen por métrica, sin conclusiones causales.
+- **Clase del dato antropométrico** (hallazgo 5): cada punto dice si es medido, reportado por la persona o calculado
+  por un método (`dataClass`), con las palabras de la pestaña de Antropometría. El gráfico los dibuja distinto
+  (contorno cortado e interior con un punto), y la lectura, la tabla y el CSV lo dicen en palabras.
 
 ### 6.4 Claves sin especificación
 

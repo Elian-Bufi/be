@@ -383,6 +383,17 @@ export function agregacionPara(definicion: DefinicionDeMetrica, grano: Grano): A
   return definicion.granos.find((g) => g.grano === grano)?.agregacion ?? null;
 }
 
+/**
+ * El grano de las **observaciones** de una métrica: el día en nutrición (la suma de lo conocido del día), la sesión en
+ * entrenamiento y la toma en antropometría. Los resúmenes de un período, la comparación de dos períodos y la referencia
+ * del cambio relativo se calculan siempre sobre estas observaciones, en el rango exacto. Agrupar el gráfico por semana
+ * cambia lo que se dibuja, no el significado de un resumen: una semana partida por un rango no se puede recortar, y una
+ * media de semanas no pondera los días (encargo §13).
+ */
+export function granoDeObservacion(definicion: Pick<DefinicionDeMetrica, 'area'>): 'DAY' | 'ORIGINAL' {
+  return definicion.area === 'NUTRICION' ? 'DAY' : 'ORIGINAL';
+}
+
 /** Hasta tres métricas. Este número no es negociable: un preset no puede esconder una cuarta (encargo §8). */
 export const MAXIMO_DE_METRICAS = 3;
 

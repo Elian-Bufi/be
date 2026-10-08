@@ -145,8 +145,8 @@ cada día afectado. Se restauró el valor; no se tocan valores esperados para qu
 
 - **Descansos medidos, estimados y sin dato (§17):** no están. La métrica de descanso es derivable pero no entra en esta
   versión del diccionario, y cargar datos que ninguna pantalla consume no prueba nada. Queda para cuando se implemente.
-- **Resultados de métodos** (sumatorias, porcentaje de grasa): no se generan. Exigen corridas de cálculo con sus
-  entradas, y el análisis de esta versión no las necesita para los casos del encargo.
+- **Resultados de métodos** (sumatorias, porcentaje de grasa): no están en A, B ni C. Los valores estimados por un
+  método y los reportados por la persona se prueban en el escenario descartable (§8), con sus propias cuentas.
 - **Fotos:** la comida diferente de los sábados es solo texto. No se suben imágenes al conjunto: las fotos privadas se
   prueban en el paquete de Nutrición con recetas.
 - **Revisiones:** no hay revisiones registradas. Tampoco hay una revisión que dé origen a la etapa 2: el objetivo de la
@@ -169,4 +169,32 @@ El encargo pide medir con el conjunto de 12 semanas **y con otro de mayor volume
 
 Es volumen, no un caso de lectura: no tiene resultados esperados a mano (esos son los de A) y la demostración no lo
 usa. Se mide con `herramientas/tiempos.mjs 366 7 C` (período máximo de 366 días); ver `ACEPTACION.md`, PRO-24.
+
+## 8. Escenario descartable: valores estimados y revocación desde la interfaz
+
+La revisión independiente del head fbeb256 pidió dos pruebas que A, B y C no podían cubrir sin alterarse: valores
+antropométricos estimados y una revocación hecha por el asesorado desde su web. Se hacen con **cuentas sintéticas
+separadas y descartables**, nuevas en cada corrida. Las de A, B y C, la demostración de DEMO-A01 y la base de test no se
+tocan.
+
+```bash
+node datos/generar.mjs descartable-cuentas     # profesional y asesorado nuevos; escribe trabajo/demo-profesionales-descartable.txt
+./entorno.sh parar-api
+./entorno.sh api "$(sed -n 's/^BE_DEMO_PROFESIONALES=//p' trabajo/demo-profesionales-descartable.txt)"
+node datos/generar.mjs descartable-datos       # vínculos, tres tomas y dos corridas del IMC, por la API
+node recorrido.mjs descartable                 # gráficos, lectura, tabla, CSV y la revocación desde la web
+```
+
+| Qué | Cómo se carga | Resultado esperado |
+|---|---|---|
+| Cuentas | `descartable-cuentas`, por la API: `pro-descartable-<sufijo>` y `ase-descartable-<sufijo>` en `example.invalid`. El profesional, «Lic. Descartable (sintética)», se verifica con `BE_DEMO_PROFESIONALES` en Nutrición y Antropometría | — |
+| Vínculos | `descartable-datos`: Nutrición y Antropometría, con B2 y A3 | Dos vínculos activos |
+| Peso medido | Toma de D-20 (captura directa): peso 81,2 kg y talla 178,0 cm | Punto lleno; «Medido» |
+| Peso reportado | Toma de D-12 con origen `SELF_REPORTED`: peso 80,5 kg | Contorno cortado; «Reportado por la persona, no medido» en la lectura, la tabla y el CSV; «Reportado» en la toma |
+| Peso medido | Toma de D-4 (captura directa): peso 79,9 kg y talla 178,0 cm | Punto lleno |
+| IMC calculado | Dos corridas de `be/imc@1` (API-CAL-01) sobre las tomas medidas | 25,6 y 25,2 kg/m² (25,60 y 25,20 en el CSV, con los decimales fijos de la métrica); un punto adentro; «Calculado por un método (estimación)» |
+| Revocación | La hace el asesorado en el recorrido, desde `/account/relationships/detail` (Antropometría): «Revocar acceso de Lic. Descartable (sintética)» → «Revocar acceso» | Después, el origen de un punto, la exportación y los gráficos dicen «no está disponible con tu acceso actual», sin un valor de antes |
+
+Cada corrida crea cuentas nuevas: las de corridas anteriores quedan en la base local (`be_test_dashboard`), revocadas,
+y se descartan con ella (`regenerar.sh` crea una base nueva).
 

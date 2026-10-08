@@ -3,10 +3,16 @@
 /**
  * Las series de «Analizar»: una lectura de API-PRJ-01 por métrica elegida, con la clave de su proyección y sus
  * parámetros (DL-126). El cálculo es del servidor y del dominio; acá no se suma, promedia ni interpola nada.
+ *
+ * Cada serie trae también sus **observaciones** (el día en nutrición, la sesión o la toma): los resúmenes, la
+ * comparación de períodos y la referencia del cambio relativo se calculan sobre ellas, en el rango exacto. Si el gráfico
+ * se agrupa por semana, las observaciones se piden aparte (una segunda lectura, con el mismo PDP): agrupar el dibujo no
+ * cambia el significado de un resumen, y una semana que un rango corta no se puede recortar.
  */
 import {
   agregacionPara,
   definicionDeMetrica,
+  granoDeObservacion,
   type DefinicionDeMetrica,
   type EjercicioDelPeriodo,
   type FiltroDeProyeccion,
@@ -23,7 +29,17 @@ import { claveDeLaReferencia, type GranoElegido, type Periodo } from './estado';
 
 export type EstadoDeSerie =
   | { readonly tipo: 'cargando' }
-  | { readonly tipo: 'lista'; readonly serie: SerieAnalitica; readonly bandas: readonly VigenciaDePlan[]; readonly parcial: boolean; readonly generada: string; readonly zona: string }
+  | {
+      readonly tipo: 'lista';
+      /** Lo que se dibuja, en el grano elegido. */
+      readonly serie: SerieAnalitica;
+      /** Las observaciones de la métrica (grano DAY u ORIGINAL), para resumir, comparar y referenciar. */
+      readonly observaciones: SerieAnalitica;
+      readonly bandas: readonly VigenciaDePlan[];
+      readonly parcial: boolean;
+      readonly generada: string;
+      readonly zona: string;
+    }
   | { readonly tipo: 'sin-acceso' }
   | { readonly tipo: 'sin-especificacion' }
   | { readonly tipo: 'error'; readonly motivo: MotivoDeFalla };
@@ -68,13 +84,62 @@ function pedidoDe(ref: ReferenciaDeMetrica, definicion: DefinicionDeMetrica, gra
   return { clave: 'ANTHROPOMETRY_LONGITUDINAL', filtro: { ...base, metric: String(definicion.parametro) } };
 }
 
+type Respuesta = Awaited<ReturnType<typeof api.proyeccion>>;
+
+/** La serie que trae una respuesta de API-PRJ-01, si la trae. */
+function serieDe(r: Respuesta): SerieAnalitica | null {
+  if (!r.ok || !r.datos.data.result) return null;
+  const res = r.datos.data.result;
+  return res.kind === 'NUTRITION_PRESCRIBED_VS_RECORDED' ? res.recorded : res.kind === 'TRAINING_PROGRESSION_BY_EXERCISE' ? (res.progression?.series ?? null) : (res.series[0] ?? null);
+}
+
+/** El estado de una serie a partir de sus respuestas: la del dibujo y, si el grano es otro, la de las observaciones. */
+function estadoDe(r: Respuesta, deObservaciones: Respuesta | null): EstadoDeSerie {
+  // Las dos lecturas pasan por el mismo PDP: si una no está disponible o falla, la serie entera tampoco.
+  for (const x of deObservaciones ? [r, deObservaciones] : [r]) {
+    if (!x.ok) return x.tipo === 'API' && x.codigo === 'RESOURCE_NOT_FOUND' ? { tipo: 'sin-acceso' } : { tipo: 'error', motivo: motivoDeFalla(x) };
+    if (x.datos.data.dataState === 'NOT_AVAILABLE_TO_VIEW') return { tipo: 'sin-acceso' };
+    if (x.datos.data.dataState === 'INSUFFICIENT_INFORMATION') return { tipo: 'sin-especificacion' };
+  }
+  const serie = serieDe(r);
+  const observaciones = deObservaciones ? serieDe(deObservaciones) : serie;
+  if (!r.ok || !serie || !observaciones) return { tipo: 'error', motivo: 'OTRO' };
+  const d = r.datos.data;
+  const res = d.result;
+  const bandas = !res || res.kind === 'ANTHROPOMETRY_LONGITUDINAL' ? [] : res.planVersions;
+  return { tipo: 'lista', serie, observaciones, bandas, parcial: d.partialView, generada: d.generatedAt, zona: d.period.timeZone };
+}
+
+export interface SeriePedida {
+  readonly ref: ReferenciaDeMetrica;
+  readonly clave: string;
+  readonly definicion: DefinicionDeMetrica;
+  readonly grano: GranoElegido;
+}
+
+/**
+ * Lee una serie ahora, con el acceso de este momento: la del dibujo y, si el grano no es el de las observaciones, también
+ * las observaciones. La usan la pantalla y la exportación, que vuelve a preguntar antes de armar el archivo.
+ */
+export async function leerSerie(token: string, asesoradoId: string, p: SeriePedida, periodo: Periodo): Promise<{ readonly estado: EstadoDeSerie; readonly respuestas: readonly Respuesta[] }> {
+  const pedido = pedidoDe(p.ref, p.definicion, p.grano, periodo);
+  if (!pedido) return { estado: { tipo: 'error', motivo: 'OTRO' }, respuestas: [] };
+  const grano = granoDeObservacion(p.definicion);
+  const deObservaciones = p.grano !== grano ? pedidoDe(p.ref, p.definicion, grano, periodo) : null;
+  const [r, o] = await Promise.all([
+    api.proyeccion(token, asesoradoId, pedido.clave, pedido.filtro),
+    deObservaciones ? api.proyeccion(token, asesoradoId, deObservaciones.clave, deObservaciones.filtro) : Promise.resolve(null),
+  ]);
+  return { estado: estadoDe(r, o), respuestas: o ? [r, o] : [r] };
+}
+
 /** Las series de las métricas elegidas. Una respuesta tardía de otra selección se descarta. */
 export function useSeriesDelAnalisis(metricas: readonly ReferenciaDeMetrica[], grano: GranoElegido): { readonly series: readonly SerieDelAnalisis[]; readonly recargar: () => void } {
   const { token, asesoradoId, periodo, sesionPerdida } = useSeguimiento();
   const [estados, setEstados] = useState<Readonly<Record<string, EstadoDeSerie>>>({});
   const [vuelta, setVuelta] = useState(0);
   const generacion = useRef(0);
-  const pedidas = useMemo(
+  const pedidas = useMemo<readonly SeriePedida[]>(
     () =>
       metricas.flatMap((ref) => {
         const definicion = definicionDe(ref);
@@ -88,27 +153,8 @@ export function useSeriesDelAnalisis(metricas: readonly ReferenciaDeMetrica[], g
     const esta = ++generacion.current;
     setEstados({});
     for (const p of pedidas) {
-      const pedido = pedidoDe(p.ref, p.definicion, p.grano, periodo);
-      if (!pedido) {
-        setEstados((e) => ({ ...e, [p.clave]: { tipo: 'error', motivo: 'OTRO' } }));
-        continue;
-      }
-      void api.proyeccion(token, asesoradoId, pedido.clave, pedido.filtro).then((r) => {
-        if (esta !== generacion.current || sesionPerdida(r)) return;
-        let estado: EstadoDeSerie = { tipo: 'error', motivo: 'OTRO' };
-        if (!r.ok) estado = r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND' ? { tipo: 'sin-acceso' } : { tipo: 'error', motivo: motivoDeFalla(r) };
-        else {
-          const d = r.datos.data;
-          if (d.dataState === 'NOT_AVAILABLE_TO_VIEW') estado = { tipo: 'sin-acceso' };
-          else if (d.dataState === 'INSUFFICIENT_INFORMATION') estado = { tipo: 'sin-especificacion' };
-          else if (d.result) {
-            const res = d.result;
-            const serie =
-              res.kind === 'NUTRITION_PRESCRIBED_VS_RECORDED' ? res.recorded : res.kind === 'TRAINING_PROGRESSION_BY_EXERCISE' ? (res.progression?.series ?? null) : (res.series[0] ?? null);
-            const bandas = res.kind === 'ANTHROPOMETRY_LONGITUDINAL' ? [] : res.planVersions;
-            if (serie) estado = { tipo: 'lista', serie, bandas, parcial: d.partialView, generada: d.generatedAt, zona: d.period.timeZone };
-          }
-        }
+      void leerSerie(token, asesoradoId, p, periodo).then(({ estado, respuestas }) => {
+        if (esta !== generacion.current || respuestas.some((r) => sesionPerdida(r))) return;
         setEstados((e) => ({ ...e, [p.clave]: estado }));
       });
     }

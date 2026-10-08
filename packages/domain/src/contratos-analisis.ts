@@ -126,6 +126,12 @@ export const PuntoAnaliticoSchema = z.strictObject({
   corrected: z.boolean(),
   /** El balde no está completo dentro del período (una semana partida, o el día de hoy). */
   partialBucket: z.boolean(),
+  /**
+   * De dónde sale el valor, en antropometría: medido, reportado por la persona o calculado por un método (una
+   * estimación). La frontera no se borra (04:1090): el gráfico, la lectura, la tabla y la exportación la dicen. `null` en
+   * nutrición y entrenamiento, donde no aplica.
+   */
+  dataClass: z.enum(['MEASURED', 'REPORTED', 'DERIVED']).nullable(),
   coverage: CoberturaDelPuntoSchema.nullable(),
   missing: z.array(FaltanteDelPuntoSchema),
   detail: z.array(DetalleFactualSchema),
@@ -395,6 +401,28 @@ export const LineaDeTiempoResponseSchema = z.strictObject({
 });
 export type LineaDeTiempoResponse = z.infer<typeof LineaDeTiempoResponseSchema>;
 
+/**
+ * API-DSH-04-BUSQUEDA (DL-127): la búsqueda en la línea de tiempo con el texto en el **cuerpo**, nunca en una URL (la de
+ * la página ni la de la API, que pueden quedar en historiales, bitácoras de proxies o de la plataforma). Los demás
+ * filtros son los de API-DSH-04, con el mismo formato (listas separadas por coma). La respuesta es la de API-DSH-04: la
+ * búsqueda recorre todo el período del conjunto autorizado y pagina con el mismo cursor.
+ */
+export const BusquedaEnLineaDeTiempoRequestSchema = z.strictObject({
+  q: z.string().trim().min(1).max(100),
+  periodStart: FechaLocalSchema.optional(),
+  periodEnd: FechaLocalSchema.optional(),
+  domain: z.string().max(200).optional(),
+  type: z.string().max(800).optional(),
+  state: z.string().max(200).optional(),
+  quality: z.string().max(400).optional(),
+  late: z.boolean().optional(),
+  planVersionId: z.string().max(36).optional(),
+  exerciseId: z.string().max(40).optional(),
+  limit: z.number().int().min(1).max(50).optional(),
+  cursor: z.string().max(400).optional(),
+});
+export type BusquedaEnLineaDeTiempoRequest = z.infer<typeof BusquedaEnLineaDeTiempoRequestSchema>;
+
 // ─── API-VAN-01 a 04 · vistas de análisis guardadas ─────────────────────────────────────────────
 
 /** Una métrica elegida: identificadores opacos y parámetros de la proyección. Ningún dato de salud. */
@@ -411,6 +439,18 @@ export type ReferenciaDeMetrica = z.infer<typeof ReferenciaDeMetricaSchema>;
 
 const RangoCivilSchema = z.strictObject({ start: FechaLocalSchema, end: FechaLocalSchema });
 
+/**
+ * La referencia del cambio relativo (DL-126): explícita e independiente del intervalo que se ve. Acercar, alejar o
+ * restablecer el gráfico no la mueve; solo cambia con una acción explícita.
+ * - `FIRST_DAYS`: los primeros N días del período de análisis (la regla se dice en pantalla, con sus fechas).
+ * - `RANGE`: un rango fijo de fechas civiles, que no se mueve aunque cambie el período.
+ */
+export const ReferenciaDelCambioSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('FIRST_DAYS'), days: z.number().int().min(1).max(31) }),
+  z.strictObject({ kind: z.literal('RANGE'), start: FechaLocalSchema, end: FechaLocalSchema }),
+]);
+export type ReferenciaDelCambio = z.infer<typeof ReferenciaDelCambioSchema>;
+
 export const ConfiguracionDeAnalisisSchema = z.strictObject({
   schemaVersion: z.literal(1),
   metrics: z.array(ReferenciaDeMetricaSchema).min(1).max(3),
@@ -421,8 +461,8 @@ export const ConfiguracionDeAnalisisSchema = z.strictObject({
     z.strictObject({ kind: z.literal('RANGE'), start: FechaLocalSchema, end: FechaLocalSchema }),
   ]),
   layers: z.strictObject({ planBands: z.boolean(), events: z.boolean() }),
-  /** La referencia del cambio relativo: los primeros N días del período. */
-  referenceDays: z.number().int().min(1).max(31),
+  /** La referencia del cambio relativo, explícita (DL-126). */
+  reference: ReferenciaDelCambioSchema,
   comparison: z.strictObject({ a: RangoCivilSchema, b: RangoCivilSchema }).nullable(),
 });
 export type ConfiguracionDeAnalisis = z.infer<typeof ConfiguracionDeAnalisisSchema>;

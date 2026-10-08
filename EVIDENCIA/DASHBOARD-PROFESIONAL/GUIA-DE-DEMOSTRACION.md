@@ -30,8 +30,8 @@ Al terminar: `./entorno.sh parar-web` y `./entorno.sh parar-api`.
    - «Lo último que pasó», con las cargas tardías marcadas.
 3. **Línea de tiempo: ¿qué pasó y cuándo?**
    - Filtrar: chip **Nutrición** y tipo **Comida registrada**. Los filtros quedan en la dirección de la página; la
-     búsqueda no (puede nombrar algo de salud).
-   - Buscar «cena»: recorre todo el período, no solo lo cargado.
+     búsqueda no (puede nombrar algo de salud), y tampoco viaja en la dirección de la API: va en el cuerpo del pedido.
+   - Buscar «cena»: recorre todo el período, no solo lo cargado; «Ver más» sigue con la misma búsqueda.
    - El día de ayer: la merienda **anulada** sigue en la historia; el almuerzo **rectificado** es una sola entrada.
    - «Abrir registro»: se abre a la derecha, con la lista a la vista. Esc lo cierra y la lista queda donde estaba.
 4. **Analizar: tres métricas.**
@@ -43,6 +43,11 @@ Al terminar: `./entorno.sh parar-web` y `./entorno.sh parar-api`.
    - El peso de fines de agosto queda **suelto**: es otro protocolo. La línea se corta y no se calcula una diferencia a
      través del corte, aunque parezca un salto.
    - «Superpuestas» está deshabilitado y dice por qué (unidades distintas). Proteínas con carbohidratos sí se superponen.
+   - **Cambio relativo:** con proteínas y carbohidratos, la referencia se lee arriba del gráfico («los primeros 7 días
+     del período…») y en su bloque de la izquierda. Arrastrar sobre el gráfico para acercar no la cambia, y los % de la
+     lectura tampoco; «Cambiar la referencia» permite elegir otros días o un rango, y solo cuenta con «Aplicar».
+   - **Por semana:** el gráfico se agrupa, pero la comparación de períodos y la referencia siguen saliendo de los días
+     del rango exacto («Cómo se calcula» lo dice).
    - **Abrir el origen de un dato:** en la lectura, «Ver el origen de este dato» abre el registro de comida que sostiene
      ese punto.
 5. **Comparar períodos.** «¿Qué cambió entre dos etapas?» llena dos rangos. La tabla dice el criterio, cuántas
@@ -51,6 +56,11 @@ Al terminar: `./entorno.sh parar-web` y `./entorno.sh parar-api`.
    abrirla los permisos se vuelven a validar.
 7. **Permisos (opcional).** El asesorado B muestra un solo aviso de vista parcial y no ofrece Entrenamiento. El otro
    profesional sintético (`terceroCorreo`) no ve nada de A.
+8. **Valores reportados y calculados, y una revocación (opcional, con cuentas descartables).** Con
+   `DATOS-SINTETICOS.md` §8: el peso reportado por la persona tiene el contorno cortado y el IMC, calculado por un
+   método, un punto adentro; la lectura, la tabla y el CSV lo dicen. Si el asesorado revoca el acceso desde su web, la
+   pantalla que el profesional tenía abierta ya no exporta, no abre el origen de un punto y, al volver a pedir, no
+   muestra nada de Antropometría.
 
 ## Lo que hay que tener presente al interpretar
 

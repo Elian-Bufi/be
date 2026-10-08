@@ -5,8 +5,9 @@
  * operación nueva ni un enlace que compartir, y el archivo no lleva el nombre de nadie.
  *
  * - **Separador `;` y decimales con coma**, en UTF-8 con BOM: así lo abre una planilla en castellano.
- * - **Lo desconocido queda vacío y el cero es 0**; el subtotal, el día o la semana sin completar y la corrección van en
- *   columnas propias. El valor se redondea como en la tabla (una sola vez, al mostrar).
+ * - **Lo desconocido queda vacío y el cero es 0**; el subtotal, el día o la semana sin completar, la corrección y la
+ *   clase del dato (medido, reportado por la persona o calculado por un método) van en columnas propias. El valor se
+ *   redondea como en la tabla (una sola vez, al mostrar).
  * - **Sin fórmulas:** una celda de texto que empieza con `=`, `+`, `-`, `@`, tabulación o retorno lleva un apóstrofo
  *   adelante (OWASP, inyección en CSV). Los nombres de ejercicios los escribe una persona: son texto, nunca fórmula.
  */
@@ -14,6 +15,10 @@ import { redondeoDePresentacion } from './calculo-nutricional';
 import type { MetricaNutricional, PuntoAnalitico, SerieAnalitica } from './contratos-analisis';
 import { VERSION_DEL_DICCIONARIO, type DefinicionDeMetrica } from './metricas-del-analisis';
 import { NUTRIENTE_DE_LA_METRICA } from './nutricion-del-analisis';
+import { TEXTO_DE_CLASE } from './antropometria-del-analisis';
+
+/** Cómo se agrupó cada métrica: un punto por día, por semana o por observación (toma o sesión). */
+const AGRUPACION: Readonly<Record<SerieAnalitica['grain'], string>> = { DAY: 'por día', WEEK: 'por semana (el método de cada fila dice si es media o suma)', ORIGINAL: 'cada observación (toma o sesión)' };
 
 export interface SerieParaExportar {
   /** El nombre como lo muestra la pantalla (con el ejercicio, la serie y la unidad cuando corresponde). */
@@ -96,6 +101,7 @@ export const COLUMNAS_DE_LA_EXPORTACION = [
   'Con cantidades',
   'Sin cantidades',
   'Falta',
+  'Clase de dato',
 ] as const;
 
 /**
@@ -117,6 +123,7 @@ export function csvDelAnalisis(p: PedidoDeExportacion): string {
         'Valor vacío: sin valor conocido (nunca es 0). 0: cero registrado. Subtotal: falta algún dato de ese día o semana. Sin completar: el día en curso o una semana que el período corta. Coincidencia temporal: no indica causa.',
       ),
     ]),
+    fila(['Agrupación', celdaDeTexto(p.series.map((s) => `${s.nombre}: ${AGRUPACION[s.serie.grain]}`).join(' · '))]),
     fila(['Formato', 'separador punto y coma; decimales con coma']),
     '',
     fila(COLUMNAS_DE_LA_EXPORTACION),
@@ -143,6 +150,7 @@ export function csvDelAnalisis(p: PedidoDeExportacion): string {
           pt.coverage ? String(pt.coverage.recordsWithQuantities) : '',
           pt.coverage ? String(pt.coverage.recordsWithoutQuantities) : '',
           celdaDeTexto(pt.missing.map((m) => `${m.count} ${textoDeFaltante(m.reason)}`).join(', ')),
+          pt.dataClass ? TEXTO_DE_CLASE[pt.dataClass] : '',
         ]),
       );
     }

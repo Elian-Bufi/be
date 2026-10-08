@@ -1392,7 +1392,7 @@ it('TEST-CT (DL-125): EVIDENCIA_VISUAL — EVI-01 a 04, y MED-01 con la exigenci
   }
 });
 
-it('TEST-CT (WP-DASHBOARD-PROFESIONAL): DSH-04, PRJ-01 y VAN-01 a 04, con éxitos y errores declarados', async () => {
+it('TEST-CT (WP-DASHBOARD-PROFESIONAL): DSH-04, DSH-04-BUSQUEDA, PRJ-01 y VAN-01 a 04, con éxitos y errores declarados', async () => {
   const c = await circuitoConPlanActivo(app, 'contrato-dash');
   const pro = conSesion(app, c.pro.token);
   const tercero = conSesion(app, (await prepararProfesional(app, 'contrato-dash-tercero', ['NUTRICION'])).token);
@@ -1403,8 +1403,17 @@ it('TEST-CT (WP-DASHBOARD-PROFESIONAL): DSH-04, PRJ-01 y VAN-01 a 04, con éxito
   await pro.get(`${linea}?x=1`).expect(400); // INVALID_REQUEST: parámetro desconocido
   await pro.get(`${linea}?periodStart=2026-10-09&periodEnd=2026-10-01`).expect(400); // INVALID_REQUEST: período invertido
   await pro.get(`${linea}?cursor=basura`).expect(400); // INVALID_CURSOR
+  await pro.get(`${linea}?q=cena`).expect(400); // INVALID_REQUEST: el texto ya no va en la URL (DL-127)
   await tercero.get(linea).expect(404);
   await request(servidor).get(linea).expect(401);
+  // DSH-04-BUSQUEDA: la búsqueda con el texto en el cuerpo; mismos errores que la consulta, y UNKNOWN_FIELD.
+  const busqueda = `${linea}/search`;
+  await pro.post(busqueda).send({ q: 'cena', limit: 5 }).expect(200);
+  await pro.post(busqueda).send({ q: 'cena', orden: 'asc' }).expect(400); // UNKNOWN_FIELD
+  await pro.post(busqueda).send({ q: '' }).expect(400); // INVALID_REQUEST: texto vacío
+  await pro.post(busqueda).send({ q: 'cena', cursor: 'basura' }).expect(400); // INVALID_CURSOR
+  await tercero.post(busqueda).send({ q: 'cena' }).expect(404);
+  await request(servidor).post(busqueda).send({ q: 'cena' }).expect(401);
   // PRJ-01: una clave derivada, una sin especificación (200 con INSUFFICIENT_INFORMATION) y una de un alcance que este
   // profesional no tiene con el asesorado (200 con NOT_AVAILABLE_TO_VIEW).
   const proyeccion = (clave: string) => `/api/v1/advisees/${c.ase.id}/projections/${clave}`;
@@ -1424,7 +1433,7 @@ it('TEST-CT (WP-DASHBOARD-PROFESIONAL): DSH-04, PRJ-01 y VAN-01 a 04, con éxito
     grain: 'DAY',
     period: { kind: 'LAST_DAYS', days: 30 },
     layers: { planBands: true, events: false },
-    referenceDays: 7,
+    reference: { kind: 'FIRST_DAYS', days: 7 },
     comparison: null,
   };
   const indicadores = { schemaVersion: 1, metrics: [{ metricId: 'nutricion.energia', exerciseKey: null, setIndex: null, unit: null }] };
