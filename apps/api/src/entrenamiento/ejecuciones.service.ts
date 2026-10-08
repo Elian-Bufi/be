@@ -883,47 +883,68 @@ export class EjecucionesDeEntrenamientoService {
 
   /** La ejecución con su original, la cadena de correcciones y la vista efectiva por relación (09v10:1205-1217). */
   async ejecucionApi(tx: Tx, id: string): Promise<EjecucionDeEntrenamiento> {
-    const x = await tx.ejecucionDeEntrenamiento.findUniqueOrThrow({
-      where: { id },
+    const [x] = await this.ejecucionesApi(tx, [id]);
+    // Sin la fila, el mismo error que antes (`findUniqueOrThrow`): quien llama ya verificó que existe.
+    if (!x) await tx.ejecucionDeEntrenamiento.findUniqueOrThrow({ where: { id }, select: { id: true } });
+    return x as EjecucionDeEntrenamiento;
+  }
+
+  /**
+   * Varias ejecuciones con la forma de API-TRN-19, leídas en lote: una consulta para las filas (con sus correcciones e
+   * instantáneas), una para los nombres de todos los ejercicios realizados y una por autor de corrección. El entorno
+   * profesional (DSH-04 y PRJ-01) lee así las sesiones de un período, sin una consulta por sesión. El orden es el de `ids`.
+   */
+  async ejecucionesApi(tx: Tx, ids: readonly string[]): Promise<EjecucionDeEntrenamiento[]> {
+    if (ids.length === 0) return [];
+    const filas = await tx.ejecucionDeEntrenamiento.findMany({
+      where: { id: { in: [...ids] } },
       include: { correcciones: { orderBy: [{ momentoDeRegistro: 'asc' }, { id: 'asc' }] }, versionDePlan: { include: { instantanea: true } } },
     });
-    const instantanea = x.versionDePlan.instantanea?.contenido as unknown as InstantaneaDeEntrenamiento;
-    const sesion = sesionDeOcurrenciaApi(instantanea, x.sesionPlanificadaId);
-    const original = x.contenido as unknown as ContenidoDeRegistro;
-    const correcciones = x.correcciones.map((c) => ({ fila: c, contenido: c.contenido as unknown as ContenidoDeCorreccion }));
-    const nombres = await nombresDeEjercicios(tx, versionesRealizadas(original, ...correcciones.map((c) => c.contenido)));
+    const porId = new Map(filas.map((x) => [x.id, x]));
+    const leidas = ids.flatMap((id) => {
+      const x = porId.get(id);
+      if (!x) return [];
+      return [{ x, original: x.contenido as unknown as ContenidoDeRegistro, correcciones: x.correcciones.map((c) => ({ fila: c, contenido: c.contenido as unknown as ContenidoDeCorreccion })) }];
+    });
+    const nombres = await nombresDeEjercicios(tx, versionesRealizadas(...leidas.flatMap((l) => [l.original, ...l.correcciones.map((c) => c.contenido)])));
     const autores = new Map<string, string>();
-    for (const { fila } of correcciones) {
-      if (!autores.has(fila.autorId)) autores.set(fila.autorId, fila.autorId === x.asesoradoId ? nombreDeAsesorado(fila.autorId) : await nombreVisibleDe(tx, fila.autorId));
+    for (const { x, correcciones } of leidas) {
+      for (const { fila } of correcciones) {
+        if (!autores.has(fila.autorId)) autores.set(fila.autorId, fila.autorId === x.asesoradoId ? nombreDeAsesorado(fila.autorId) : await nombreVisibleDe(tx, fila.autorId));
+      }
     }
-    const vista = resolverVistaEfectiva(
-      x.id,
-      correcciones.map(({ fila }) => ({ id: fila.id, originalId: x.id, correccionPreviaId: fila.correccionPreviaId })),
-    );
-    return {
-      executionId: x.id,
-      state: 'REGISTERED',
-      adviseeId: x.asesoradoId,
-      planId: x.versionDePlanId,
-      snapshotDigest: x.versionDePlan.instantanea?.huella as string,
-      occurrenceId: codificarOcurrencia({ versionDePlanId: x.versionDePlanId, sesionPlanificadaId: x.sesionPlanificadaId, fechaLocal: fechaDe(x.fechaLocal) }),
-      date: fechaDe(x.fechaLocal),
-      timeZone: x.zonaHoraria,
-      plannedSession: sesion as SesionDeOcurrencia,
-      original: registroApi({ granularidad: x.granularidad, condicion: x.condicion, motivo: x.motivo, contenido: original }, sesion, nombres),
-      corrections: correcciones.map(({ fila, contenido }) => ({
-        correctionId: fila.id,
-        previousCorrectionId: fila.correccionPreviaId,
-        reason: fila.motivo,
-        correction: registroApi({ granularidad: contenido.granularidad, condicion: contenido.condicion, motivo: contenido.motivo, contenido }, sesion, nombres),
-        author: { identityId: fila.autorId, displayName: autores.get(fila.autorId) as string },
-        authorRole: fila.autorId === x.asesoradoId ? ('ADVISEE' as const) : ('PROFESSIONAL' as const),
-        recordedAt: fila.momentoDeRegistro.toISOString(),
-      })),
-      effectiveView: vista.tipo === 'ORIGINAL' ? { kind: 'ORIGINAL' } : vista.tipo === 'CORREGIDA' ? { kind: 'CORRECTED', correctionId: vista.id } : { kind: 'NOT_RESOLVABLE' },
-      occurredAt: x.momentoDeOcurrencia.toISOString(),
-      recordedAt: x.momentoDeRegistro.toISOString(),
-    };
+    return leidas.map(({ x, original, correcciones }) => {
+      const instantanea = x.versionDePlan.instantanea?.contenido as unknown as InstantaneaDeEntrenamiento;
+      const sesion = sesionDeOcurrenciaApi(instantanea, x.sesionPlanificadaId);
+      const vista = resolverVistaEfectiva(
+        x.id,
+        correcciones.map(({ fila }) => ({ id: fila.id, originalId: x.id, correccionPreviaId: fila.correccionPreviaId })),
+      );
+      return {
+        executionId: x.id,
+        state: 'REGISTERED' as const,
+        adviseeId: x.asesoradoId,
+        planId: x.versionDePlanId,
+        snapshotDigest: x.versionDePlan.instantanea?.huella as string,
+        occurrenceId: codificarOcurrencia({ versionDePlanId: x.versionDePlanId, sesionPlanificadaId: x.sesionPlanificadaId, fechaLocal: fechaDe(x.fechaLocal) }),
+        date: fechaDe(x.fechaLocal),
+        timeZone: x.zonaHoraria,
+        plannedSession: sesion as SesionDeOcurrencia,
+        original: registroApi({ granularidad: x.granularidad, condicion: x.condicion, motivo: x.motivo, contenido: original }, sesion, nombres),
+        corrections: correcciones.map(({ fila, contenido }) => ({
+          correctionId: fila.id,
+          previousCorrectionId: fila.correccionPreviaId,
+          reason: fila.motivo,
+          correction: registroApi({ granularidad: contenido.granularidad, condicion: contenido.condicion, motivo: contenido.motivo, contenido }, sesion, nombres),
+          author: { identityId: fila.autorId, displayName: autores.get(fila.autorId) as string },
+          authorRole: fila.autorId === x.asesoradoId ? ('ADVISEE' as const) : ('PROFESSIONAL' as const),
+          recordedAt: fila.momentoDeRegistro.toISOString(),
+        })),
+        effectiveView: vista.tipo === 'ORIGINAL' ? { kind: 'ORIGINAL' as const } : vista.tipo === 'CORREGIDA' ? { kind: 'CORRECTED' as const, correctionId: vista.id } : { kind: 'NOT_RESOLVABLE' as const },
+        occurredAt: x.momentoDeOcurrencia.toISOString(),
+        recordedAt: x.momentoDeRegistro.toISOString(),
+      };
+    });
   }
 
   /** PDP en la transacción, alcance ENTRENAMIENTO. */

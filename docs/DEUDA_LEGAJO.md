@@ -130,6 +130,9 @@
 | DL-123 | Encargo de Dirección · 2026-10-06 | REG-06-134, 135, 136 · 09v10 §9 · DL-120 | Imagen del ejercicio: medio `EXERCISE_REFERENCE`, asociación de solo agregar, licencia honesta, procedencia y revisión técnica | **DECIDIDA** 2026-10-06 por el encargo · familia EJE. **IMPLEMENTADA** el 2026-10-06 en `wp-entrenamiento-series` y **probada localmente** (las tres imágenes del paquete por el flujo real), con la CI en verde. Sin integrar. API-TRN-13 sigue con `didacticResources` vacío |
 | DL-124 | Encargo de Dirección · 2026-10-06 | REG-06-130, 131 · paquete de Dirección (DECISIONES_Y_TIEMPOS) | Tiempos de la sesión como eventos idempotentes con calidad: medido, estimado, incompleto o sin dato | **DECIDIDA** 2026-10-06 por el encargo · familia TIE. **IMPLEMENTADA** el 2026-10-06 en `wp-entrenamiento-series` y **probada localmente** (el guion de tiempos del paquete, de punta a punta), con la CI en verde. Sin integrar. Pendiente en Android: pantalla bloqueada, muerte del proceso y reloj monotónico durante la suspensión. Precierre del 2026-10-06 (§1, §3, §4): estados honestos del guardado local, cifrado AES-256-GCM con la clave en el almacén seguro y fuera del respaldo de Android; reloj desde el arranque con su base en cada instante (`ELAPSED_SINCE_BOOT`). **IMPLEMENTADO**; Android pendiente |
 | DL-125 | Encargo de Dirección · 2026-10-06 (precierre, §6) | 08 §12.2, §12.4 (08:386, 08:395), §13, §21 · 08:451 · DL-120 · DL-116 | El acto `EVIDENCIA_VISUAL` no tenía texto versionado, ni registro, ni lo exigían MED-01 y MED-03 | **PROPUESTA**, sin activar · texto versionado propuesto (`evidencia-visual-2026-10-propuesta`), acto registrable por alcance de Nutrición, familia propia EVI (API-EVI-01 a 04) y mapeo a MED-01 y MED-03 detrás de `BE_EVIDENCIA_VISUAL_EXIGIDA` (por defecto `false`). **Punto de aprobación pendiente:** Dirección aprueba el texto, con la validación jurídica, y decide activar la exigencia |
+| DL-126 | Encargo de Dirección · 2026-10-08 (entorno profesional) | 09 v0.11 §18-§23 · B10-09 §15-§28 · 11A TEST-PRJ-001 · encargo §8-§13 | «Analizar» con hasta tres métricas sobre API-PRJ-01: el 09 define ocho proyecciones con resultado propio, y solo tres tienen una derivación definida en BE | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · las 8 claves en el contrato; 3 derivadas con el cálculo canónico del dominio; 5 responden `INSUFFICIENT_INFORMATION` con `SPECIFICATION_PENDING`. Diccionario de métricas versionado |
+| DL-127 | Encargo de Dirección · 2026-10-08 (entorno profesional) | 09 v0.11 §16 · B10-08 §11-§12 · T-06-24 · DL-054 · DL-116 | API-DSH-04 (línea de tiempo) sin implementar: fuentes, forma de la entrada y filtros que el 09 no fija | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · ruta del 09; `occurredDate` para los hechos sin hora; extensiones de filtro `state`, `quality`, `planVersionId` y `exerciseId`; búsqueda en el cuerpo de API-DSH-04-BUSQUEDA (`POST …/timeline/search`), nunca en una URL |
+| DL-128 | Encargo de Dirección · 2026-10-08 (entorno profesional) | encargo §8 y §16 («guardar una vista personal») · 09 sin operación · 08 (preferencias sin datos de salud) | Vistas de análisis guardadas e indicadores fijados del Resumen: no existen en el 09 ni en el modelo | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · familia propia VAN (API-VAN-01 a 04), tabla aditiva `vista_de_analisis` con configuración sin datos de salud; los permisos se revalidan al abrir |
 
 ---
 
@@ -3329,3 +3332,206 @@ sintéticos (`evidencia-visual` 10/10 y el bloque de `contrato`, con una app con
 3. El 08 registra la activación, y el 05 y el 09 incorporan la familia EVI.
 
 **Condición de cierre.** Los tres pasos anteriores.
+
+## DL-126 — «Analizar» con hasta tres métricas sobre API-PRJ-01: tres de las ocho proyecciones tienen derivación
+
+**Prioridad:** alta · **Documento:** 09 v0.11 §18-§23 (`ProjectionKey`, API-PRJ-01, estados longitudinales y vista
+parcial) · B10-09 §15-§28 · 11A TEST-PRJ-001 a 010 · encargo del 2026-10-08, §8 a §13 · **Estado:** PROPUESTA, sin
+integrar (`wp-dashboard-profesional`)
+
+**Qué dice el legajo.**
+- El 09 cierra la taxonomía en ocho proyecciones y pide que `result` sea una unión discriminada por clave.
+- Cada proyección se produce solo «si existe especificación de derivación trazable» (09 v0.11 §20.1). El 09 no fija qué
+  es una marca personal ni el volumen efectivo, y deja la ponderación por zonas a una especificación futura.
+- 11A TEST-PRJ-001 pide «catálogo = 8/8, 0 extra».
+
+**Qué pide el encargo.**
+- Una pantalla «Analizar» con hasta tres métricas, tres modos de lectura, presets por pregunta profesional, comparación de
+  períodos y vistas guardadas.
+- Un diccionario versionado de métricas que clasifique cada una como disponible, derivable, incompleta o futura.
+- No inventar valores ni pantallas aparentemente operativas.
+
+**Por qué no tal cual.** Cinco claves dependen de especificaciones que BE no tiene:
+- el volumen de carga externa con todas las bases de carga;
+- el mapeo de zonas musculares;
+- el umbral del profesional;
+- la definición de una marca.
+Producirlas sería inventar.
+
+**Opciones.**
+- **A.** API-PRJ-01 con las 8 claves en el contrato (8/8, ninguna extra).
+  - Se derivan las tres que tienen un cálculo canónico en el dominio:
+    - `NUTRITION_PRESCRIBED_VS_RECORDED`, con `calcularNutrientes`, sumando lo conocido y declarando lo que falta;
+    - `TRAINING_PROGRESSION_BY_EXERCISE`, con `comparacion-de-entrenamiento`;
+    - `ANTHROPOMETRY_LONGITUDINAL`, con `construirSerie` de ANT-06.
+  - Las otras cinco responden `INSUFFICIENT_INFORMATION` con `SPECIFICATION_PENDING`.
+  - Las métricas de «Analizar» son vistas de esas tres claves, descritas en un diccionario versionado.
+- **B.** Una operación nueva de BE, «serie de una métrica», paralela a PRJ-01. Duplica el contrato del 09 e introduce un
+  modelo canónico paralelo, que el encargo pide evitar.
+
+**Provisorio en código.** A.
+
+**Decisiones reversibles que toma esta propuesta:**
+- La semana va de lunes a domingo en la zona civil del asesorado, y una semana parcial se marca.
+- El período admite hasta 366 días.
+- La media semanal de nutrición es sobre los días con cantidades, con el denominador visible. No hay día «completo»: BE
+  no tiene ese mecanismo.
+- El RIR es ordinal y se resume con la mediana.
+- Carga, repeticiones y RIR se comparan **serie del mismo número contra serie del mismo número**, sesión por sesión, sin
+  mezclar kg con lb ni ejercicios distintos. No existe «la serie más pesada»: el 09 prohíbe máximos, sumas y promedios
+  entre series (09v10:1285-1295). Ninguna carga se llama 1RM ni marca.
+- Si el profesional ve al asesorado por otro alcance pero no por el de la clave pedida, la respuesta es 200 con
+  `NOT_AVAILABLE_TO_VIEW`, sin datos ni conteos (09 v0.11 §22: el dominio es legítimo de nombrar). Sin ningún alcance
+  permitido, 404 idéntico a un asesorado inexistente.
+- Cada clave acepta solo sus filtros; los demás son 400 `NOT_APPLICABLE_QUERY_PARAMETER`. La validación corre en el
+  guard, antes del PDP, y por eso recibe también la clave de la ruta (`pdp.guard.ts`).
+- El 09 declara `SESSION_MFA`; se implementa como `SESSION`, igual que en el resto de la demo sintética (DL-088 #17).
+- **Antropometría: todas las tomas.** La proyección conserva cada toma, también dos el mismo día (encargo §12), con
+  `construirSerieDeTomas`. API-ANT-06 no cambia: sigue con un punto por día, la primera toma vigente de su checkpoint
+  (REG-06-165). Es una diferencia declarada entre las dos lecturas, no una corrección de ANT-06.
+- **Escalones del requerimiento:** una versión del objetivo rige hasta su `vigenteHasta` o hasta que empieza su
+  sucesora, lo primero. Las versiones son de solo agregar y una reemplazada conserva `vigenteHasta` vacío: sin este corte,
+  dos escalones se superpondrían.
+
+**Correcciones de la revisión independiente del head fbeb256 de #153** (decisiones técnicas ya resueltas):
+- **Resúmenes sobre observaciones, en el rango exacto (hallazgo 2).** El resumen de un período, la comparación de dos
+  períodos y la referencia del cambio relativo se calculan sobre las observaciones de la métrica (el día en nutrición,
+  la sesión en entrenamiento, la toma en antropometría; `granoDeObservacion`), nunca sobre puntos agrupados por semana.
+  La semana es un grano de dibujo. Con el gráfico por semana, el website pide además la serie de observaciones: una
+  segunda lectura de API-PRJ-01, con el mismo PDP. Recibir una serie agrupada en esas funciones es un error de
+  programación y falla en voz alta (`exigirObservaciones`).
+  - Reproducción de la revisión: del 7 al 20 de septiembre de 2026, con un día de 1.000 kcal la primera semana y siete
+    de 2.000 la segunda. Ahora da 1.875 kcal (n = 8); con puntos semanales daba 1.500. Del 16 al 20 da 2.000 (n = 5);
+    antes, «sin valor».
+  - Ponderar semanas no alcanza: un rango que corta una semana no se puede recortar.
+- **Referencia explícita, separada del zoom (hallazgo 3).** La referencia es `{kind: 'FIRST_DAYS', days}` (los
+  primeros N días del período leído) o `{kind: 'RANGE', start, end}` (`ReferenciaDelCambioSchema`).
+  - Se calcula con `referenciaElegida`, que no recibe el intervalo visible: acercar, alejar o restablecer el gráfico no
+    la puede mover.
+  - Cambia solo con «Aplicar», en un editor que también deja copiar el intervalo visible como rango (y aun así hay que
+    aplicarlo).
+  - Queda en la URL (`ref=N` o `ref=AAAA-MM-DD_AAAA-MM-DD`), en pantalla (texto y banda «Referencia») y en las vistas
+    guardadas. `reference` reemplaza a `referenceDays` en la configuración de DL-128; la rama nunca se publicó, así que
+    no hay vistas viejas que migrar.
+  - Un rango que no cae entero en el período leído no se calcula (`FUERA_DEL_PERIODO`).
+- **Clase del dato antropométrico (hallazgo 5).** Cada punto lleva `dataClass`: `MEASURED`, `REPORTED` o `DERIVED`
+  (`null` fuera de antropometría).
+  - El gráfico dibuja con contorno cortado lo reportado por la persona y con un punto adentro lo calculado por un
+    método.
+  - La lectura, la tabla, el resumen en texto y el CSV (columna «Clase de dato») lo dicen en palabras, con las de la
+    pestaña de Antropometría: «Medido», «Reportado por la persona, no medido» y «Calculado por un método
+    (estimación)».
+- **La exportación pregunta con el acceso de ahora.** Antes de armar el CSV se vuelve a leer cada serie. Lo que ya no
+  está disponible no entra, se dice por qué y la pantalla se vuelve a pedir. Lo mismo pasa al abrir el origen de un
+  punto: si el PDP ya no lo deja leer, el panel no repite el valor y los gráficos se vuelven a pedir.
+
+**Condición de cierre.**
+1. Dirección aprueba el diccionario.
+2. El 09 incorpora la forma de los tres resultados.
+3. Las especificaciones de las otras cinco claves se definen, o se declaran fuera del alcance de la entrega.
+
+## DL-127 — API-DSH-04 en BE: fuentes, forma de la entrada y filtros que el 09 no fija
+
+**Prioridad:** alta · **Documento:** 09 v0.11 §16 (09v11:964-1010) · B10-08 §11-§12 · 06 T-06-24 · DL-054 · DL-116 ·
+**Estado:** PROPUESTA, sin integrar (`wp-dashboard-profesional`)
+
+**Qué dice el legajo.**
+- La entrada tiene `timelineEntryId`, `domain`, `eventType`, `source`, `occurredAt`, `recordedAt`, `author`,
+  `provenance` y `relations`.
+- `occurredAt` y `recordedAt` son independientes; si uno falta, no se copia el otro.
+- Solo hay relaciones reconstruibles (plan → ejecución, original → corrección, revisión → acción).
+- Los filtros son `domain`, `type`, `periodStart` y `periodEnd`.
+
+**Qué falta en el 09.**
+- De qué fuentes sale cada tipo de evento.
+- Cómo se representa un hecho que solo tiene fecha.
+- Cómo se ordenan los empates y cómo se pagina de forma estable.
+- Si hay búsqueda.
+- Los filtros que pide el encargo: estado, calidad, versión de plan, ejercicio y texto.
+
+**Opciones.**
+- **A.**
+  - **Fuentes:** las tablas fuente de cada dominio, acotadas al profesional y a los alcances que el PDP permitió, y los
+    eventos de proceso persistidos (cumple la condición de cierre de DL-054 en esta parte).
+  - **Unidad de la entrada:** una por registro, sesión, toma, activación, revisión o hecho de proceso; nunca una por
+    ítem ni por evento técnico del cronómetro.
+  - **Fecha sin hora:** `occurredDate` acompaña a `occurredAt`, que es `null` cuando el hecho no tiene hora.
+  - **Orden y paginación:** fecha del hecho descendente, después `recordedAt` y el identificador, con un cursor opaco.
+  - **Extensiones de BE**, declaradas: `state`, `quality`, `planVersionId`, `exerciseId` y la búsqueda de texto, que
+    recorre el período completo del conjunto autorizado y viaja en el cuerpo de API-DSH-04-BUSQUEDA (ver abajo).
+  - **Rectificaciones y anulaciones:** son relaciones de la entrada original, no entradas de consumo nuevas.
+- **B.** Implementar solo los filtros del 09 y dejar la búsqueda y los filtros avanzados para después.
+
+**Provisorio en código.** A.
+
+**Decisiones de la implementación** (reversibles):
+- **Actos que BE registra en el momento** (activar un plan, registrar una revisión, abrir o cerrar un seguimiento): la
+  fuente guarda la ocurrencia y el registro, y son el mismo instante. No es copiar uno en el otro. Si una fila vieja no
+  tiene ocurrencia, va `null` y la fecha civil del registro se usa solo para ordenar.
+- **Relaciones:** sucesión de versiones, ejecución de una versión del plan, rectificación, anulación, corrección,
+  medición corregida o anulada y `REVIEW_APPLIED` (la versión del plan que nació de una revisión: «revisión → acción»
+  del 09).
+- **Bandas de vigencia:** `to` es el día del corte (activación de la sucesora o cierre del seguimiento), que ya es de la
+  siguiente. Una activación no es ejecución y la fecha de creación no es vigencia.
+- **Límite de página:** 20 por defecto y 50 como máximo, como el resto de las listas.
+- **`periodCounts`:** la respuesta suma los conteos del período (por tipo de evento, por rasgo de calidad y cargas
+  tardías) del conjunto autorizado, antes de los filtros. Sale de la misma lectura, así que no revela nada que la
+  lectura no muestre; evita que el Resumen pida una página por cada conteo (presupuesto de rendimiento, PRO-24).
+- **La búsqueda va en el cuerpo de un POST, nunca en una URL** (revisión independiente del head fbeb256 de #153,
+  hallazgo 4; reemplaza la decisión anterior, que dejaba `q` en la query de la API y declaraba el riesgo residual).
+  - **Por qué.** Que el texto no esté en la URL de la página no alcanza: viajaba en la URL de la API, que queda en el
+    historial de pedidos del navegador, en proxies y en las bitácoras de la plataforma de hosting, fuera del control de
+    BE. El texto lo escribe el profesional y puede nombrar algo de salud.
+  - **Cómo.** `POST /advisees/{adviseeId}/timeline/search`, con ID `API-DSH-04-BUSQUEDA` (variante de BE de API-DSH-04,
+    sufijo `BUSQUEDA` en la guardia de trazabilidad). El cuerpo (`BusquedaEnLineaDeTiempoRequestSchema`, estricto) lleva
+    `q` (1 a 100 caracteres) y los mismos filtros con sus tipos: período, área, tipo, estado, calidad, carga tardía
+    (booleano), versión de plan, ejercicio, `limit` y `cursor`. La URL lleva solo el asesorado.
+  - **Igual que API-DSH-04:** el mismo PDP por alcance, la misma lectura, la búsqueda en todo el período, el mismo orden
+    y el mismo cursor. Es una lectura: responde 200, no crea nada y no exige Idempotency-Key.
+  - **Antes del PDP:** el cuerpo se valida en el guard (`validarConsulta` recibe también el cuerpo). Un campo de más es
+    400 `UNKNOWN_FIELD`; un texto vacío o largo, 400 `INVALID_REQUEST`; un cursor alterado, 400 `INVALID_CURSOR`. El
+    400 no depende del titular.
+  - **API-DSH-04 ya no acepta `q`:** en la URL es un parámetro desconocido (400 `UNKNOWN_QUERY_PARAMETER`, sin eco del
+    valor). El cliente (`lineaDeTiempo`) arma la query solo con las claves declaradas, así que un objeto con un texto de
+    más tampoco lo lleva a la URL.
+  - **Registros:** el registro de requests guarda la ruta parametrizada (`/api/v1/advisees/:adviseeId/timeline/search`)
+    y nunca el cuerpo; el log técnico de errores guarda tipo y requestId. Lo prueban la integración (salida estándar y de
+    errores durante una búsqueda y un 400) y el recorrido (todas las URL pedidas por el navegador y el registro de la API
+    de la corrida).
+  - **Se aparta del 09** en el método: el 09 no tiene búsqueda en la línea de tiempo, así que la extensión ya era de BE;
+    ahora además usa POST para una lectura, como hacen las APIs que reciben criterios sensibles.
+- **`partialView`:** en la línea de tiempo, como en API-DSH-03, es verdadero si algún alcance quedó denegado (también
+  cuando el profesional simplemente no trabaja ese alcance con el asesorado). En una proyección habla solo de su propia
+  área: es verdadero si en el período hay datos de ese dominio que el profesional no ve (los de otro profesional), como
+  API-ANT-06 (09v11:786-796).
+
+**Condición de cierre.** Dirección aprueba la forma de la entrada, las extensiones y la búsqueda por POST, y el 09 las
+incorpora.
+
+## DL-128 — Vistas de análisis guardadas e indicadores fijados del Resumen
+
+**Prioridad:** media · **Documento:** encargo del 2026-10-08, §6.2 («indicadores fijados por el profesional»), §8
+(«guardar una vista personal y volver a abrirla»), §14 y §16 · 09 sin operación · 08 (los datos de salud no se copian
+en preferencias) · **Estado:** PROPUESTA, sin integrar (`wp-dashboard-profesional`)
+
+**Qué pasa.**
+- El encargo pide guardar vistas de análisis y fijar indicadores en el Resumen, «por cuenta y con el mecanismo
+  adecuado», guardando la configuración y nunca los datos de salud.
+- El 09 no tiene ninguna operación de preferencias del profesional, salvo el umbral de PRJ-02 y 03, que tiene otra
+  semántica.
+- El modelo no tiene preferencias por cuenta.
+
+**Opciones.**
+- **A.** Una familia propia de BE, **VAN** (como TPL, HAB, CAR o EVI):
+  - API-VAN-01 lista, API-VAN-02 crea, API-VAN-03 reemplaza con versión esperada y API-VAN-04 borra;
+  - tabla aditiva `vista_de_analisis`, mutable y del profesional (como «Mis habituales»), con escrituras auditadas;
+  - la configuración se valida con un esquema del dominio y no admite datos de salud: solo identificadores de métricas,
+    período, modo, grano y capas;
+  - abrir una vista vuelve a pasar por el PDP en cada lectura de datos, así que una vista guardada no concede acceso;
+  - a lo sumo una configuración de indicadores del Resumen por profesional.
+- **B.** Guardar las vistas en el `localStorage` del navegador. No sobrevive a otro dispositivo ni a una sesión nueva en
+  otro navegador, y el encargo pide persistencia por cuenta.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** Dirección aprueba la familia y el 09 la incorpora o la declara extensión de BE.

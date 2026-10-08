@@ -1,0 +1,45 @@
+Reproducción de la revisión independiente del head fbeb256 · 2026-10-08 · local, con datos sintéticos
+Scripts y cómo correrlos: herramientas/revision-fbeb256/LEEME.md. Clasificación de cada hallazgo: ACEPTACION.md, «Revisión del head fbeb256».
+
+== Hallazgo 1 · capturas de Analizar (reproducir-1-captura.mjs 1440 claro 5) ==
+La técnica de captura es la misma con fbeb256 y con el head corregido: el producto no cambió en este punto. fullPage es
+la captura que usaba el arnés de fbeb256; ventana-alta, la del arnés corregido.
+fullPage #1: eventos durante la captura ["ventana 1x1","svg quitado","svg quitado","svg quitado","ventana 1440x900"] · píxeles de las métricas en la imagen 0/0/0  ← paneles vacíos en la imagen
+ventana-alta #1: eventos durante la captura [] · píxeles de las métricas en la imagen 2361/3956/1731
+fullPage #2: eventos durante la captura ["ventana 1x1","svg quitado","svg quitado","svg quitado","ventana 1440x900"] · píxeles de las métricas en la imagen 0/0/0  ← paneles vacíos en la imagen
+ventana-alta #2: eventos durante la captura [] · píxeles de las métricas en la imagen 2361/3956/1731
+fullPage #3: eventos durante la captura ["ventana 1440x900"] · píxeles de las métricas en la imagen 2341/3956/1715
+ventana-alta #3: eventos durante la captura [] · píxeles de las métricas en la imagen 2361/3956/1731
+fullPage #4: eventos durante la captura ["ventana 1440x900"] · píxeles de las métricas en la imagen 2341/3956/1715
+ventana-alta #4: eventos durante la captura [] · píxeles de las métricas en la imagen 2361/3956/1731
+fullPage #5: eventos durante la captura ["ventana 1x1","svg quitado","svg quitado","svg quitado","ventana 1440x900"] · píxeles de las métricas en la imagen 0/0/0  ← paneles vacíos en la imagen
+ventana-alta #5: eventos durante la captura [] · píxeles de las métricas en la imagen 2361/3956/1731
+
+== Hallazgo 2 · resúmenes con el grano semanal (reproducir-2-semanas.cjs) ==
+-- Con el dominio de fbeb256 (compilado en un árbol temporal, que después se quitó):
+Media del 7 al 20, serie de días: 1875 · n 8   [esperado: 1875 · n 8]
+Media del 7 al 20, serie semanal: 1500 · n 2   [esperado: 1875 · n 8 (o rechazada)]
+Media del 16 al 20, serie de días: 2000 · n 5   [esperado: 2000 · n 5]
+Media del 16 al 20, serie semanal: sin valor · n 0   [esperado: 2000 · n 5 (o rechazada)]
+Comparar 7-13 con 16-20, serie de días: diferencia 1000   [esperado: diferencia 1000]
+Comparar 7-13 con 16-20, serie semanal: diferencia SIN_VALOR_EN_ALGUNO   [esperado: diferencia 1000 (o rechazada)]
+-- Con el dominio corregido:
+Media del 7 al 20, serie de días: 1875 · n 8   [esperado: 1875 · n 8]
+Media del 7 al 20, serie semanal: rechazada: resumirPeriodo: necesita la serie de observaciones (grano DAY), no la agrupada (grano WEEK…   [esperado: 1875 · n 8 (o rechazada)]
+Media del 16 al 20, serie de días: 2000 · n 5   [esperado: 2000 · n 5]
+Media del 16 al 20, serie semanal: rechazada: resumirPeriodo: necesita la serie de observaciones (grano DAY), no la agrupada (grano WEEK…   [esperado: 2000 · n 5 (o rechazada)]
+Comparar 7-13 con 16-20, serie de días: diferencia 1000   [esperado: diferencia 1000]
+Comparar 7-13 con 16-20, serie semanal: rechazada: resumirPeriodo: necesita la serie de observaciones (grano DAY), no la agrupada (grano WEEK…   [esperado: diferencia 1000 (o rechazada)]
+
+== Hallazgos 3 y 4 · referencia y zoom; texto buscado en las URL (reproducir-3-y-4.mjs) ==
+-- Con fbeb256 (reproducido antes de corregir, con fbeb256 compilado y en marcha): la búsqueda «cena» viajaba en
+   «GET /api/v1/advisees/:id/timeline?…&q=cena…» y en su OPTIONS previo; la referencia del cambio relativo pasaba a
+   calcularse con los primeros 7 días del intervalo visible al acercar desde el 1/9, y volvía al restablecer.
+-- Con el head corregido:
+4 · URL de la página: /pro/advisees?id=:id&vista=linea
+4 · pedidos a la API durante la búsqueda: ["OPTIONS /api/v1/advisees/:id/timeline/search","POST /api/v1/advisees/:id/timeline/search"]
+4 · URL de la API con el texto buscado: []
+4 · cuerpos con el texto buscado: ["POST /api/v1/advisees/:id/timeline/search {\"q\":\"cena\",\"periodStart\":\"2026-07-11\",\"periodEnd\":\"2026-10-08\",\"limit\":50}"]
+3 · referencia con el período entero:  Proteínas: media de los días con valor del 11 jul 2026 al 17 jul 2026, 76,5 g (n = 1: pocas observaciones, la referencia es frágil)
+3 · referencia después de acercar desde el 1/9:  Proteínas: media de los días con valor del 11 jul 2026 al 17 jul 2026, 76,5 g (n = 1: pocas observaciones, la referencia es frágil)
+3 · referencia después de restablecer:  Proteínas: media de los días con valor del 11 jul 2026 al 17 jul 2026, 76,5 g (n = 1: pocas observaciones, la referencia es frágil)

@@ -1,0 +1,63 @@
+{
+  "asesorado": "C",
+  "dias": 366,
+  "desde": "2025-10-08",
+  "vueltas": 7,
+  "lecturas": {
+    "DSH-03 resumen por dominio": {
+      "mediana": 44,
+      "min": 37,
+      "max": 50
+    },
+    "DSH-04 línea de tiempo (6, con conteos)": {
+      "mediana": 379,
+      "min": 352,
+      "max": 447
+    },
+    "DSH-04 línea de tiempo (50)": {
+      "mediana": 384,
+      "min": 336,
+      "max": 449
+    },
+    "DSH-04 búsqueda en el período": {
+      "mediana": 372,
+      "min": 361,
+      "max": 428
+    },
+    "PRJ nutrición: registros por día": {
+      "mediana": 230,
+      "min": 208,
+      "max": 251
+    },
+    "PRJ nutrición: energía por semana": {
+      "mediana": 228,
+      "min": 208,
+      "max": 241
+    },
+    "PRJ entrenamiento: lista de ejercicios": {
+      "mediana": 112,
+      "min": 100,
+      "max": 133
+    },
+    "PRJ entrenamiento: carga de la serie 1": {
+      "mediana": 131,
+      "min": 92,
+      "max": 158
+    },
+    "PRJ antropometría: peso": {
+      "mediana": 112,
+      "min": 94,
+      "max": 147
+    },
+    "VAN-01 vistas guardadas": {
+      "mediana": 16,
+      "min": 15,
+      "max": 17
+    }
+  },
+  "resumen": {
+    "mediana": 991,
+    "min": 912,
+    "max": 1081
+  }
+}
