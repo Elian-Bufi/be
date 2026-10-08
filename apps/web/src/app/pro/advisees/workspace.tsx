@@ -87,7 +87,7 @@ export function Workspace() {
   // El resumen de API-DSH-03 en el período, con sus tarjetas por dominio. Sin acceso, es lo único que se ve.
   const seccionDeResumen = (
     <section className="seccion" aria-labelledby="titulo-resumen" aria-live="polite">
-      <h2 id="titulo-resumen">Resumen</h2>
+      <h2 id="titulo-resumen">Estado por área</h2>
       {resumen.tipo === 'cargando' ? <Cargando /> : null}
       {resumen.tipo === 'error' ? <ErrorConReintento onReintentar={consultar} /> : null}
       {resumen.tipo === 'no-disponible' ? (
@@ -145,17 +145,12 @@ export function Workspace() {
       </section>
 
       {token && resumen.tipo !== 'no-disponible' ? (
-        <ProveedorDelSeguimiento token={token} asesoradoId={id} sesionPerdida={sesionPerdida}>
+        <ProveedorDelSeguimiento token={token} asesoradoId={id} nombreDelAsesorado={nombre} sesionPerdida={sesionPerdida}>
           <div className="barra-del-seguimiento">
             <PestanasDelSeguimiento actual={vista} />
             <SelectorDePeriodo />
           </div>
-          {vista === 'resumen' ? (
-            <>
-              {seccionDeResumen}
-              {resumen.tipo === 'listo' ? <ResumenDelSeguimiento /> : null}
-            </>
-          ) : null}
+          {vista === 'resumen' ? resumen.tipo === 'listo' ? <ResumenDelSeguimiento estadoPorArea={seccionDeResumen} /> : seccionDeResumen : null}
           {vista === 'linea' ? <LineaDeTiempo /> : null}
           {vista === 'analizar' ? <Analizar /> : null}
         </ProveedorDelSeguimiento>

@@ -62,6 +62,12 @@ export function SelectorDeMetricas({
   const [antropometrica, setAntropometrica] = useState('');
   const [pendiente, setPendiente] = useState<ReferenciaDeMetrica | null>(null);
   const [repetida, setRepetida] = useState(false);
+  // Sin métricas, agregar es lo primero; con métricas, el gráfico va antes y agregar queda a un clic (en el teléfono, así
+  // no hay que bajar todos los controles para llegar al gráfico).
+  const [agregarAbierto, setAgregarAbierto] = useState(elegidas.length === 0);
+  useEffect(() => {
+    if (elegidas.length === 0) setAgregarAbierto(true);
+  }, [elegidas.length]);
 
   useEffect(() => {
     if (area === '' && areas.length > 0) setArea(areas[0]!);
@@ -111,8 +117,10 @@ export function SelectorDeMetricas({
         ))}
       </ul>
 
+      <details className="agregar" open={agregarAbierto} onToggle={(e) => setAgregarAbierto((e.target as HTMLDetailsElement).open)}>
+      <summary>Agregar una métrica</summary>
       <fieldset className="agregar-metrica">
-        <legend>Agregar una métrica</legend>
+        <legend className="visualmente-oculto">Agregar una métrica</legend>
         {disponibles.cargando ? <p className="nota">Buscando qué hay en el período…</p> : null}
         {disponibles.falla ? (
           <p className="campo__error">
@@ -220,6 +228,7 @@ export function SelectorDeMetricas({
           </>
         ) : null}
       </fieldset>
+      </details>
 
       <details className="no-ofrecidas">
         <summary>Lo que todavía no se ofrece, y por qué</summary>
@@ -303,9 +312,24 @@ function DialogoDeReemplazo({
   );
 }
 
-/** Los presets por pregunta profesional (encargo §9): ofrecen lo que hay y dicen lo que falta. */
-export function PresetsDeAnalisis({ disponibles, onAplicar }: { disponibles: Disponibles; onAplicar: (metricas: readonly ReferenciaDeMetrica[], preset: PresetDeAnalisis, faltantes: readonly string[], comparar: boolean) => void }) {
+/**
+ * Los presets por pregunta profesional (encargo §9): ofrecen lo que hay y dicen lo que falta. Sin métricas elegidas, son
+ * la entrada principal y se ven abiertos; con métricas, quedan plegados debajo del selector.
+ */
+export function PresetsDeAnalisis({
+  disponibles,
+  hayMetricas,
+  onAplicar,
+}: {
+  disponibles: Disponibles;
+  hayMetricas: boolean;
+  onAplicar: (metricas: readonly ReferenciaDeMetrica[], preset: PresetDeAnalisis, faltantes: readonly string[], comparar: boolean) => void;
+}) {
   const id = useId();
+  const [abierto, setAbierto] = useState(!hayMetricas);
+  useEffect(() => {
+    if (!hayMetricas) setAbierto(true);
+  }, [hayMetricas]);
   const ejercicio = disponibles.ejercicios?.[0] ?? null;
   const hay = new Set<string>([
     ...(disponibles.nutricion ? DE_NUTRICION.map((m) => m.id) : []),
@@ -318,8 +342,8 @@ export function PresetsDeAnalisis({ disponibles, onAplicar }: { disponibles: Dis
     return { metricId, exerciseKey: null, setIndex: null, unit: null };
   };
   return (
-    <div className="presets">
-      <h3 id={`${id}-titulo`}>Empezar por una pregunta</h3>
+    <details className="presets" open={abierto} onToggle={(e) => setAbierto((e.target as HTMLDetailsElement).open)}>
+      <summary id={`${id}-titulo`}>Empezar por una pregunta</summary>
       <ul aria-labelledby={`${id}-titulo`}>
         {PRESETS_DE_ANALISIS.map((p) => {
           const { usables, faltantes } = aplicarPreset(p, hay);
@@ -335,6 +359,6 @@ export function PresetsDeAnalisis({ disponibles, onAplicar }: { disponibles: Dis
         })}
       </ul>
       {ejercicio ? <p className="nota">Las preguntas de entrenamiento empiezan por el ejercicio más registrado del período ({ejercicio.name}); se cambia en el selector.</p> : null}
-    </div>
+    </details>
   );
 }

@@ -13,7 +13,10 @@
 import {
   cambioRelativo,
   compararPeriodos,
+  csvDelAnalisis,
   lecturaEnFecha,
+  nombreDeLaExportacion,
+  textoDeFaltante,
   NOMBRE_DE_DOMINIO,
   numero,
   puntosRelativos,
@@ -55,7 +58,7 @@ const MOTIVO_SIN_SUPERPOSICION: Readonly<Record<string, string>> = {
   FAMILIAS_DISTINTAS: 'son medidas de distinta clase, aunque compartan unidad',
   SIN_FAMILIA: 'alguna métrica no se puede superponer con otras',
 };
-const CALIDAD: Readonly<Record<PuntoAnalitico['quality'], string>> = { COMPLETE: 'completo', PARTIAL: 'subtotal de lo registrado', UNKNOWN: 'sin valor conocido' };
+const CALIDAD: Readonly<Record<PuntoAnalitico['quality'], string>> = { COMPLETE: 'sin faltantes', PARTIAL: 'subtotal de lo registrado', UNKNOWN: 'sin valor conocido' };
 /** Un balde incompleto: el día de hoy, que sigue en curso, o una semana que el período corta. */
 const textoDeIncompleto = (p: PuntoAnalitico): string => (p.dateEnd ? 'semana sin completar en el período' : 'día en curso: el valor todavía puede cambiar');
 const calidadDelPunto = (p: PuntoAnalitico): string => (p.partialBucket ? `${CALIDAD[p.quality]} · ${textoDeIncompleto(p)}` : CALIDAD[p.quality]);
@@ -113,17 +116,18 @@ export function Analizar() {
   const hitos = estado.eventos && hitosLeidos.tipo === 'listo' ? hitosLeidos.datos.data.entries.map((e) => ({ fecha: e.occurredDate, texto: e.title })) : [];
 
   const descripcion = listas.map((s) => resumenTextual(s.estado.serie, s.definicion, desde, hasta)).join(' ');
-  const marcas = estado.metricas.map((_, i) => <Marca key={i} indice={i} />);
+  const marcas = estado.metricas.map((_, i) => <Marca key={i} indice={i} conTrazo={modo !== 'PANELS'} />);
 
   return (
     <section className="seccion analizar" aria-labelledby={`${id}-titulo`}>
       <h2 id={`${id}-titulo`}>Analizar</h2>
       <p className="nota">Hasta tres métricas en el mismo tiempo. Coincidencia temporal: no indica causa.</p>
       <div className="analizar__cuerpo">
-        <div className="analizar__controles">
+        <div className="analizar__seleccion">
           <SelectorDeMetricas elegidas={estado.metricas} disponibles={disponibles} onCambiar={(metricas) => cambiar({ metricas, fecha: null })} marcas={marcas} />
           <PresetsDeAnalisis
             disponibles={disponibles}
+            hayMetricas={estado.metricas.length > 0}
             onAplicar={(metricas, preset, faltantes, comparar) => {
               const mitad = restarDias(periodo.hasta, Math.floor((Date.parse(periodo.hasta) - Date.parse(periodo.desde)) / 86_400_000 / 2));
               cambiar({
@@ -141,6 +145,102 @@ export function Analizar() {
               {aviso}
             </p>
           ) : null}
+        </div>
+
+        <div className="analizar__lienzo">
+          {intervalo ? (
+            <p className="nota">
+              Intervalo: {diaCivil(desde)} al {diaCivil(hasta)}.{' '}
+              <button type="button" className="boton boton--enlace" onClick={() => setIntervalo(null)}>
+                Restablecer vista
+              </button>
+            </p>
+          ) : null}
+          <SeleccionDeIntervalo desde={desde} hasta={hasta} minimo={periodo.desde} maximo={periodo.hasta} onCambiar={(d, h) => setIntervalo({ desde: d, hasta: h })} />
+          {estado.metricas.length === 0 ? <p>Elegí una métrica o una pregunta para empezar.</p> : null}
+          {series.map((s, i) =>
+            s.estado.tipo === 'lista' ? null : (
+              <EstadoDeUnaSerie key={s.clave} nombre={nombres[i] ?? s.definicion.nombre} estado={s.estado} onReintentar={recargar} />
+            ),
+          )}
+          {listas.some((s) => s.estado.parcial) ? <p className="nota">Vista parcial: hay datos de esta área que no ves (los de otro profesional).</p> : null}
+          {dibujables.length > 0 ? (
+            <>
+              <ul className="leyenda" aria-label="Leyenda">
+                {dibujables.map((d) => (
+                  <li key={d.indice}>
+                    <Marca indice={d.indice} conTrazo={modo !== 'PANELS'} /> {d.nombre} · {modo === 'PANELS' ? ESTILOS[d.indice]?.nombreDeLaMarca : `${ESTILOS[d.indice]?.nombreDeLaMarca}, ${ESTILOS[d.indice]?.nombreDelTrazo}`}
+                  </li>
+                ))}
+                <li>
+                  <Marca indice={0} hueco /> Hueco: subtotal (falta algún dato), o día o semana sin completar
+                </li>
+              </ul>
+              {modo === 'RELATIVE' ? (
+                <ul className="referencias" aria-label="Referencias del cambio relativo">
+                  {listas.map((s) => {
+                    const r = referencias.get(s.clave);
+                    const indice = series.indexOf(s);
+                    return r?.tipo === 'valida' ? (
+                      <li key={s.clave}>
+                        <Marca indice={indice} /> <strong>{nombres[indice]}</strong>: {textoDeReferencia(r, s)}
+                      </li>
+                    ) : null;
+                  })}
+                </ul>
+              ) : null}
+              {hitos.length > 0 ? (
+                <details className="hitos">
+                  <summary>Hitos del período ({numero(hitos.length)}): las líneas verticales punteadas</summary>
+                  <ul>
+                    {hitos.map((h, i) => (
+                      <li key={`${h.fecha}-${i}`}>
+                        {diaCivil(h.fecha)} · {h.texto}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
+              <Lienzo
+                modo={modo}
+                series={dibujables}
+                desde={desde}
+                hasta={hasta}
+                fecha={fecha}
+                fechasConDato={fechasConDato}
+                onFecha={(f) => cambiar({ fecha: f })}
+                onPunto={(indice, punto) => {
+                  cambiar({ fecha: punto.date });
+                  setPuntoAbierto({ indice, punto, origen: null });
+                }}
+                onIntervalo={(d, h) => setIntervalo({ desde: d, hasta: h })}
+                bandas={bandas}
+                hitos={hitos}
+                referencia={modo === 'RELATIVE' ? { desde, hasta: refHasta < hasta ? refHasta : hasta } : null}
+                descripcion={descripcion}
+              />
+            </>
+          ) : null}
+        </div>
+
+        {/* En escritorio ancho, la lectura queda fija al costado de los gráficos mientras se recorren las fechas. */}
+        {dibujables.length > 0 ? (
+          <div className="analizar__lectura">
+            <PanelDeLectura
+              fecha={fecha}
+              fechasConDato={fechasConDato}
+              series={listas}
+              nombres={nombres}
+              todas={series}
+              referencias={modo === 'RELATIVE' ? referencias : null}
+              conTrazo={modo !== 'PANELS'}
+              onFecha={(f) => cambiar({ fecha: f })}
+              onAbrir={(indice, punto) => setPuntoAbierto({ indice, punto, origen: null })}
+            />
+          </div>
+        ) : null}
+
+        <div className="analizar__opciones">
           <fieldset className="capas">
             <legend>Cómo se leen</legend>
             <ModoElegible modo="PANELS" actual={modo} cambiar={(m) => cambiar({ modo: m })} texto="Paneles sincronizados" motivo={null} />
@@ -188,81 +288,7 @@ export function Analizar() {
               <input id={`${id}-ref`} type="number" min={1} max={31} value={estado.diasDeReferencia} onChange={(e) => cambiar({ diasDeReferencia: Math.min(31, Math.max(1, Number(e.target.value) || 7)) })} />
             </div>
           ) : null}
-          {modo === 'RELATIVE' ? (
-            <ul className="referencias" aria-label="Referencias del cambio relativo">
-              {listas.map((s) => {
-                const r = referencias.get(s.clave);
-                const indice = series.indexOf(s);
-                return r?.tipo === 'valida' ? (
-                  <li key={s.clave}>
-                    <Marca indice={indice} /> <strong>{nombres[indice]}</strong>: {textoDeReferencia(r, s)}
-                  </li>
-                ) : null;
-              })}
-            </ul>
-          ) : null}
           <VistasGuardadas estado={estado} />
-        </div>
-
-        <div className="analizar__lienzo">
-          {intervalo ? (
-            <p className="nota">
-              Intervalo: {diaCivil(desde)} al {diaCivil(hasta)}.{' '}
-              <button type="button" className="boton boton--enlace" onClick={() => setIntervalo(null)}>
-                Restablecer vista
-              </button>
-            </p>
-          ) : null}
-          <SeleccionDeIntervalo desde={desde} hasta={hasta} minimo={periodo.desde} maximo={periodo.hasta} onCambiar={(d, h) => setIntervalo({ desde: d, hasta: h })} />
-          {estado.metricas.length === 0 ? <p>Elegí una métrica o una pregunta para empezar.</p> : null}
-          {series.map((s, i) =>
-            s.estado.tipo === 'lista' ? null : (
-              <EstadoDeUnaSerie key={s.clave} nombre={nombres[i] ?? s.definicion.nombre} estado={s.estado} onReintentar={recargar} />
-            ),
-          )}
-          {listas.some((s) => s.estado.parcial) ? <p className="nota">Vista parcial: hay datos de esta área que no ves (los de otro profesional).</p> : null}
-          {dibujables.length > 0 ? (
-            <>
-              <ul className="leyenda" aria-label="Leyenda">
-                {dibujables.map((d) => (
-                  <li key={d.indice}>
-                    <Marca indice={d.indice} /> {d.nombre} · {ESTILOS[d.indice]?.nombreDeForma}
-                  </li>
-                ))}
-                <li>
-                  <Marca indice={0} hueco /> Hueco: subtotal (falta algún dato), o día o semana sin completar
-                </li>
-              </ul>
-              <Lienzo
-                modo={modo}
-                series={dibujables}
-                desde={desde}
-                hasta={hasta}
-                fecha={fecha}
-                fechasConDato={fechasConDato}
-                onFecha={(f) => cambiar({ fecha: f })}
-                onPunto={(indice, punto) => {
-                  cambiar({ fecha: punto.date });
-                  setPuntoAbierto({ indice, punto, origen: null });
-                }}
-                onIntervalo={(d, h) => setIntervalo({ desde: d, hasta: h })}
-                bandas={bandas}
-                hitos={hitos}
-                referencia={modo === 'RELATIVE' ? { desde, hasta: refHasta < hasta ? refHasta : hasta } : null}
-                descripcion={descripcion}
-              />
-              <PanelDeLectura
-                fecha={fecha}
-                fechasConDato={fechasConDato}
-                series={listas}
-                nombres={nombres}
-                todas={series}
-                referencias={modo === 'RELATIVE' ? referencias : null}
-                onFecha={(f) => cambiar({ fecha: f })}
-                onAbrir={(indice, punto) => setPuntoAbierto({ indice, punto, origen: null })}
-              />
-            </>
-          ) : null}
         </div>
       </div>
 
@@ -270,6 +296,7 @@ export function Analizar() {
         <>
           <ComoSeCalcula series={listas} nombres={nombres} todas={series} />
           <TablaDeDatos series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} />
+          <ExportarCsv series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} />
           <section aria-labelledby={`${id}-resumen`}>
             <h3 id={`${id}-resumen`}>Resumen en texto</h3>
             {listas.map((s) => (
@@ -375,6 +402,7 @@ function PanelDeLectura({
   nombres,
   todas,
   referencias,
+  conTrazo,
   onFecha,
   onAbrir,
 }: {
@@ -385,6 +413,8 @@ function PanelDeLectura({
   todas: readonly SerieDelAnalisis[];
   /** En el modo de cambio relativo: la referencia de cada serie; la lectura dice el cambio y el valor real. */
   referencias: ReadonlyMap<string, Referencia> | null;
+  /** Si la muestra lleva el trazo de la línea (solo cuando las series comparten un gráfico). */
+  conTrazo: boolean;
   onFecha: (f: string) => void;
   onAbrir: (indice: number, punto: PuntoAnalitico) => void;
 }) {
@@ -413,7 +443,7 @@ function PanelDeLectura({
               return (
                 <div key={s.clave} className="panel-de-lectura__metrica">
                   <p>
-                    <Marca indice={indice} /> <strong>{nombres[indice]}</strong>
+                    <Marca indice={indice} conTrazo={conTrazo} /> <strong>{nombres[indice]}</strong>
                   </p>
                   {l.tipo === 'valores' ? (
                     l.puntos.map((p) => (
@@ -448,8 +478,6 @@ function PanelDeLectura({
   );
 }
 
-const textoDeFaltante = (motivo: string): string =>
-  motivo === 'SIN_CANTIDADES' ? 'registro(s) sin cantidades' : motivo === 'COMIDA_DIFERENTE_SIN_CANTIDADES' ? 'comida(s) diferente(s) sin cantidades' : motivo === 'SIN_DATO_DEL_NUTRIENTE' ? 'registro(s) sin el dato del nutriente' : motivo.toLowerCase();
 
 function DetalleDelPunto({ abierto, serie, onOrigen }: { abierto: { indice: number; punto: PuntoAnalitico; origen: OrigenDeDato | null }; serie: SerieDelAnalisis | undefined; onOrigen: (o: OrigenDeDato) => void }) {
   const p = abierto.punto;
@@ -547,6 +575,48 @@ function TablaDeDatos({ series, nombres, todas, desde, hasta }: { series: readon
         </table>
       </div>
     </details>
+  );
+}
+
+/**
+ * Descargar lo que se ve (encargo §16): los puntos de la tabla, en CSV, armados en el navegador con lo que la API ya
+ * autorizó. Sin operación nueva ni enlace público; el archivo no lleva el nombre de nadie.
+ */
+function ExportarCsv({ series, nombres, todas, desde, hasta }: { series: readonly Lista[]; nombres: readonly string[]; todas: readonly SerieDelAnalisis[]; desde: string; hasta: string }) {
+  const { nombreDelAsesorado } = useSeguimiento();
+  const [aviso, setAviso] = useState<string | null>(null);
+  const descargar = () => {
+    const csv = csvDelAnalisis({
+      asesorado: nombreDelAsesorado ?? 'Asesorado',
+      desde,
+      hasta,
+      zona: series[0]?.estado.zona ?? 'America/Argentina/Buenos_Aires',
+      generadoEl: new Date().toISOString(),
+      series: series.map((s) => ({ nombre: nombres[todas.indexOf(s)] ?? s.definicion.nombre, definicion: s.definicion, serie: s.estado.serie })),
+    });
+    // Con BOM, para que una planilla lea los acentos como UTF-8.
+    const url = URL.createObjectURL(new Blob(['﻿', csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombreDeLaExportacion(desde, hasta);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setAviso(`Descargado: ${a.download}.`);
+  };
+  return (
+    <div className="exportar">
+      <button type="button" className="boton boton--secundario" onClick={descargar}>
+        Descargar los datos (CSV)
+      </button>
+      <p className="nota">Lo que ves, del {diaCivil(desde)} al {diaCivil(hasta)}: valores, calidad, cobertura, método y fecha de generación. El archivo queda en tu equipo: cuidalo como un dato de salud.</p>
+      {aviso ? (
+        <p className="nota" role="status">
+          {aviso}
+        </p>
+      ) : null}
+    </div>
   );
 }
 

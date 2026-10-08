@@ -9,7 +9,7 @@
 import { type ConfiguracionDeAnalisis, type VistaDeAnalisis } from '@be/domain';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { api, nuevaClaveDeIdempotencia } from '../../../../lib/api';
-import { useSeguimiento } from './contexto';
+import { motivoDeFalla, textoDeFalla, useSeguimiento, type MotivoDeFalla } from './contexto';
 import { parametrosDeAnalisis, parametrosDePeriodo, PRESETS_DE_PERIODO, type EstadoDeAnalisis } from './estado';
 
 function configuracionDe(estado: EstadoDeAnalisis, periodo: { preset: number | null; desde: string; hasta: string }): ConfiguracionDeAnalisis | null {
@@ -35,13 +35,16 @@ export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
   const [nombre, setNombre] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  // Borrar no se deshace: primero se pide confirmar, en el mismo lugar.
+  const [porBorrar, setPorBorrar] = useState<string | null>(null);
+  const [sinLista, setSinLista] = useState<MotivoDeFalla | null>(null);
   const configuracion = configuracionDe(estado, periodo);
 
   const cargar = useCallback(async () => {
     const r = await api.listarVistasDeAnalisis(token);
     if (sesionPerdida(r)) return;
-    if (!r.ok) return setError('No pudimos leer tus vistas guardadas.');
-    setError(null);
+    if (!r.ok) return setSinLista(motivoDeFalla(r));
+    setSinLista(null);
     setVistas(r.datos.data.filter((v) => v.usage === 'ANALYSIS'));
   }, [token, sesionPerdida]);
   useEffect(() => {
@@ -55,6 +58,7 @@ export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
     setOcupado(false);
     if (sesionPerdida(r)) return;
     if (!r.ok) return setError(r.tipo === 'API' && r.codigo === 'VALIDATION_FAILED' ? 'No se pudo guardar: llegaste al máximo de vistas o la configuración no es válida.' : 'No pudimos guardar la vista. Probá de nuevo.');
+    setError(null);
     setNombre('');
     setAviso(`Guardada: «${r.datos.data.name}».`);
     void cargar();
@@ -86,16 +90,25 @@ export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
     const r = await api.reemplazarVistaDeAnalisis(token, v.viewId, { expectedVersion: v.version, name: v.name, configuration: configuracion });
     setOcupado(false);
     if (sesionPerdida(r)) return;
-    if (!r.ok) return setError(r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT' ? 'La vista cambió en otra pestaña: se volvió a cargar la lista.' : 'No pudimos actualizar la vista.');
+    if (!r.ok) {
+      if (r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') {
+        setError('La vista cambió en otra pestaña: se volvió a cargar la lista. Revisala y guardá de nuevo si hace falta.');
+        void cargar();
+      } else setError('No pudimos actualizar la vista.');
+      return;
+    }
+    setError(null);
     setAviso(`Actualizada: «${v.name}».`);
     void cargar();
   };
   const borrar = async (v: VistaDeAnalisis) => {
+    setPorBorrar(null);
     setOcupado(true);
     const r = await api.borrarVistaDeAnalisis(token, v.viewId, nuevaClaveDeIdempotencia());
     setOcupado(false);
     if (sesionPerdida(r)) return;
     if (!r.ok && !(r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND')) return setError('No pudimos borrar la vista.');
+    setError(null);
     setAviso(`Borrada: «${v.name}».`);
     void cargar();
   };
@@ -117,6 +130,14 @@ export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
           {error}
         </p>
       ) : null}
+      {sinLista ? (
+        <p className="campo__error">
+          {textoDeFalla(sinLista, 'tus vistas guardadas')}{' '}
+          <button type="button" className="boton boton--enlace" onClick={() => void cargar()}>
+            Reintentar
+          </button>
+        </p>
+      ) : null}
       {aviso ? (
         <p className="nota" role="status">
           {aviso}
@@ -135,10 +156,23 @@ export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
                 <button type="button" className="boton boton--enlace" disabled={!configuracion || ocupado} onClick={() => void actualizar(v)}>
                   Guardar lo actual acá<span className="visualmente-oculto"> ({v.name})</span>
                 </button>
-                <button type="button" className="boton boton--enlace" disabled={ocupado} onClick={() => void borrar(v)}>
-                  Borrar<span className="visualmente-oculto"> {v.name}</span>
-                </button>
+                {porBorrar === v.viewId ? null : (
+                  <button type="button" className="boton boton--enlace" disabled={ocupado} onClick={() => setPorBorrar(v.viewId)}>
+                    Borrar<span className="visualmente-oculto"> {v.name}</span>
+                  </button>
+                )}
               </div>
+              {porBorrar === v.viewId ? (
+                <div className="acciones" role="group" aria-label={`Confirmar el borrado de ${v.name}`}>
+                  <span>¿Borrar «{v.name}»? No se puede deshacer.</span>
+                  <button type="button" className="boton boton--secundario" disabled={ocupado} onClick={() => void borrar(v)}>
+                    Sí, borrar
+                  </button>
+                  <button type="button" className="boton boton--enlace" onClick={() => setPorBorrar(null)}>
+                    Cancelar
+                  </button>
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

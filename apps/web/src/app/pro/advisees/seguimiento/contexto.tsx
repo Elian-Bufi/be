@@ -12,6 +12,8 @@ import { hrefConCambios, leerPeriodo, type Periodo } from './estado';
 export interface ContextoDelSeguimiento {
   readonly token: string;
   readonly asesoradoId: string;
+  /** El nombre visible del asesorado en la ficha (el mismo del encabezado), o null si todavía no se leyó. */
+  readonly nombreDelAsesorado: string | null;
   readonly periodo: Periodo;
   readonly parametros: URLSearchParams;
   /** Verdadero si la respuesta cerró la sesión (la UI ya redirige). */
@@ -30,7 +32,19 @@ export function useSeguimiento(): ContextoDelSeguimiento {
   return c;
 }
 
-export function ProveedorDelSeguimiento({ token, asesoradoId, sesionPerdida, children }: { token: string; asesoradoId: string; sesionPerdida: (r: Resultado<unknown>) => boolean; children: ReactNode }) {
+export function ProveedorDelSeguimiento({
+  token,
+  asesoradoId,
+  nombreDelAsesorado,
+  sesionPerdida,
+  children,
+}: {
+  token: string;
+  asesoradoId: string;
+  nombreDelAsesorado: string | null;
+  sesionPerdida: (r: Resultado<unknown>) => boolean;
+  children: ReactNode;
+}) {
   const params = useSearchParams();
   const ruta = usePathname();
   const router = useRouter();
@@ -46,7 +60,7 @@ export function ProveedorDelSeguimiento({ token, asesoradoId, sesionPerdida, chi
     },
     [router, ruta, parametros],
   );
-  const valor = useMemo(() => ({ token, asesoradoId, periodo, parametros, sesionPerdida, href, ir }), [token, asesoradoId, periodo, parametros, sesionPerdida, href, ir]);
+  const valor = useMemo(() => ({ token, asesoradoId, nombreDelAsesorado, periodo, parametros, sesionPerdida, href, ir }), [token, asesoradoId, nombreDelAsesorado, periodo, parametros, sesionPerdida, href, ir]);
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }
 

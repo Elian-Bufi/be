@@ -242,7 +242,7 @@ function Dias({ entradas, zona, onAbrir }: { entradas: readonly EntradaDeLineaDe
   return (
     <div className="linea-de-tiempo">
       {agruparPorDia(entradas).map((d) => (
-        <section key={d.fecha} className="linea-de-tiempo__dia" aria-label={fechaLarga(d.fecha)}>
+        <section key={d.fecha} className="linea-de-tiempo__dia" aria-label={fechaLarga(d.fecha)} data-fecha={d.fecha}>
           <h3>{fechaLarga(d.fecha)}</h3>
           <ul className="linea-de-tiempo__entradas">
             {d.entradas.map((e) => (
@@ -258,7 +258,7 @@ function Dias({ entradas, zona, onAbrir }: { entradas: readonly EntradaDeLineaDe
 function Entrada({ e, zona, onAbrir }: { e: EntradaDeLineaDeTiempo; zona: string; onAbrir: (o: OrigenDeDato, titulo: string) => void }) {
   const anulada = e.state === 'ANNULLED';
   return (
-    <li className={`entrada${anulada ? ' entrada--anulada' : ''}`}>
+    <li className={`entrada${anulada ? ' entrada--anulada' : ''}`} data-id={e.timelineEntryId}>
       <p className="entrada__cabecera">
         <span className="entrada__area">{NOMBRE_DE_DOMINIO[e.domain]}</span>
         <span className="entrada__hora">{e.occurredAt ? horaEnZona(e.occurredAt, zona) : 'sin hora'}</span>

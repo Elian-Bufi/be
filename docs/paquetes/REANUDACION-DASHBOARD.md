@@ -30,8 +30,8 @@
 | 2 | Dominio: diccionario de métricas, agregaciones, línea de tiempo y comparación de períodos, con pruebas | Hecho | `a1d94ce` |
 | 3 | API: API-DSH-04 (línea de tiempo), API-PRJ-01 (proyecciones), vistas guardadas, con migración y pruebas de integración | Hecho | `a54b769` |
 | 4 | Datos sintéticos reproducibles de 12 semanas y resultados esperados | Hecho | `fce8f98` |
-| 5a | Website: Resumen, Línea de tiempo y Analizar dentro de la ficha; rendimiento, fallas y día en curso | Hecho | (este commit) |
-| 5b | Revisión visual de las tres vistas en los anchos y temas, con sus estados incompletos y de error | En curso | — |
+| 5a | Website: Resumen, Línea de tiempo y Analizar dentro de la ficha; rendimiento, fallas y día en curso | Hecho | `ec175d8` |
+| 5b | Revisión visual, diseño de escritorio, exportación CSV y recorrido real automatizado (`recorrido.mjs`, 86/86) | Hecho | (este commit) |
 | 6 | Recorridos reales, capturas, accesibilidad, rendimiento y matriz de aceptación | Pendiente | — |
 | 7 | PR en borrador con la CI del head final | Pendiente | — |
 
@@ -80,6 +80,27 @@
   (`PERIODO_INCOMPLETO`). En el gráfico son puntos huecos; la lectura, el detalle y la tabla dicen «día en curso».
 - **Cambio relativo:** la referencia (regla, rango, valor, n, subtotales e incompletos) se muestra junto al control, y el
   panel de lectura da el cambio y el valor real.
+- **Escritorio primero (Elián, 2026-10-08):** el entorno profesional es para escritorio; lo responsivo se conserva y solo
+  tiene que no romperse. Contenedor de la ficha hasta 100rem; pestañas y período en una fila; Analizar en tres columnas
+  desde 1280 px (selección y opciones | gráficos | lectura fija al costado) y en dos desde 1024 px; Resumen con los
+  indicadores arriba y cobertura y últimos hechos lado a lado; el registro original en un panel lateral derecho.
+- **Gráficos:** marcas según la densidad (con 90 días no se pisan; no se quita ningún punto) y altura según el ancho; en
+  paneles separados la línea es continua (el rayado y el punteado quedan para cuando las series comparten gráfico); los
+  hitos tienen su lista en texto. La calidad completa se dice «sin faltantes» (no choca con «día en curso»).
+- **Exportación CSV (PRO-10 y PRO-20):** `exportacion-del-analisis.ts` en el dominio; arma en el navegador lo que la tabla
+  muestra, con período, zona, método, calidad, cobertura y fecha de generación; `;` y coma decimal, UTF-8 con BOM;
+  celdas de texto protegidas contra fórmulas; el archivo no lleva el nombre de nadie. Sin operación nueva en la API.
+  La impresión no se ofrece: el tema oscuro y los controles exigirían una hoja de impresión propia (pendiente declarado).
+- **Otros arreglos de la revisión:** «Otro rango» arranca del período vigente; borrar una vista guardada pide
+  confirmación; un conflicto de versión recarga la lista de verdad; el día de la línea de tiempo con mayúscula solo al
+  principio; plurales; el aviso de falla no se anida.
+- **Recorrido real (`herramientas/recorrido.mjs`):** Chrome contra la web y la API locales; interactúa con los controles
+  y comprueba resultados: filtros, paginación, búsqueda fuera de la URL, registro original con foco y posición, preset,
+  cuarta métrica, teclado, origen de un punto, vuelta desde Nutrición, cambio relativo, comparación, CSV, vista guardada
+  reabierta en otra sesión y borrada, respuesta tardía (período y asesorado), vista parcial, tercero, fallas 503, 429 y
+  sin red simuladas en el navegador, reflujo a 320 px, texto al 200 %, axe en seis estados y 30 capturas.
+  **Antes de correrlo, reiniciar la API** (`entorno.sh parar-api` y `api`): el límite de inicios de sesión (5 cada 15
+  minutos) vive en memoria y las corridas seguidas lo agotan.
 
 ## Pruebas al cierre de cada hito
 
@@ -99,6 +120,8 @@
 | 5a | Integración `analisis` con `periodCounts` (no cambian con los filtros; un alcance revocado no aporta ni un conteo) | 18/18 (una corrida con un 503 intermitente; ver hallazgos) |
 | 5a | `tiempos.mjs 84 7` (12 semanas, mediana de 7 después de calentar) | Cada lectura ≤ 184 ms (máx.); Resumen completo 409 ms |
 | 5a | Typecheck de la web y de la API; `contraste.test.cjs` | Sin errores; 12/12 |
+| 5b | Dominio completo (con `exportacion-del-analisis.test.ts`: desconocido, cero, subtotal, día en curso, redondeo, zona y fórmulas) | 553/553 |
+| 5b | `recorrido.mjs todo` (funcional + capturas, API recién reiniciada) | 86/86; axe sin violaciones en 6 estados; Resumen con la API en uso 779 ms; primera carga en frío 2.617 ms (dato) |
 
 ## Hallazgos fuera del paquete
 

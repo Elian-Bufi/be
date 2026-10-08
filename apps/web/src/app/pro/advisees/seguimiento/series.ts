@@ -23,7 +23,7 @@ import { claveDeLaReferencia, type GranoElegido, type Periodo } from './estado';
 
 export type EstadoDeSerie =
   | { readonly tipo: 'cargando' }
-  | { readonly tipo: 'lista'; readonly serie: SerieAnalitica; readonly bandas: readonly VigenciaDePlan[]; readonly parcial: boolean; readonly generada: string }
+  | { readonly tipo: 'lista'; readonly serie: SerieAnalitica; readonly bandas: readonly VigenciaDePlan[]; readonly parcial: boolean; readonly generada: string; readonly zona: string }
   | { readonly tipo: 'sin-acceso' }
   | { readonly tipo: 'sin-especificacion' }
   | { readonly tipo: 'error'; readonly motivo: MotivoDeFalla };
@@ -106,7 +106,7 @@ export function useSeriesDelAnalisis(metricas: readonly ReferenciaDeMetrica[], g
             const serie =
               res.kind === 'NUTRITION_PRESCRIBED_VS_RECORDED' ? res.recorded : res.kind === 'TRAINING_PROGRESSION_BY_EXERCISE' ? (res.progression?.series ?? null) : (res.series[0] ?? null);
             const bandas = res.kind === 'ANTHROPOMETRY_LONGITUDINAL' ? [] : res.planVersions;
-            if (serie) estado = { tipo: 'lista', serie, bandas, parcial: d.partialView, generada: d.generatedAt };
+            if (serie) estado = { tipo: 'lista', serie, bandas, parcial: d.partialView, generada: d.generatedAt, zona: d.period.timeZone };
           }
         }
         setEstados((e) => ({ ...e, [p.clave]: estado }));

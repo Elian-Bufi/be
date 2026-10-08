@@ -9,7 +9,7 @@
  */
 import { diaCivil } from '../../../../lib/formato';
 import { Pestanas } from '../../../../components/pestanas';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useSeguimiento } from './contexto';
 import { diasEntre, hoyEn, parametrosDePeriodo, PRESETS_DE_PERIODO, VISTAS_DEL_SEGUIMIENTO, type VistaDelSeguimiento } from './estado';
 
@@ -25,6 +25,12 @@ export function SelectorDePeriodo() {
   const [desde, setDesde] = useState(periodo.desde);
   const [hasta, setHasta] = useState(periodo.hasta);
   const [problema, setProblema] = useState<string | null>(null);
+  // Un preset (o volver atrás) cambia el período: los campos del rango propio arrancan desde él, no desde el anterior.
+  useEffect(() => {
+    setDesde(periodo.desde);
+    setHasta(periodo.hasta);
+    setProblema(null);
+  }, [periodo.desde, periodo.hasta]);
   const hoy = hoyEn();
   const aplicar = () => {
     if (!desde || !hasta) return setProblema('Elegí las dos fechas.');

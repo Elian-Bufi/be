@@ -24,7 +24,7 @@ import {
   type VistaDeAnalisis,
 } from '@be/domain';
 import Link from 'next/link';
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { api, nuevaClaveDeIdempotencia } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
@@ -51,7 +51,11 @@ function indicadoresPorDefecto(d: Disponibles): ReferenciaDeMetrica[] {
   return lista.slice(0, MAXIMO_DE_INDICADORES);
 }
 
-export function ResumenDelSeguimiento() {
+/**
+ * El Resumen de escritorio: los indicadores arriba, lo que pasó en el período (cobertura y últimos hechos, lado a lado),
+ * el estado por área de API-DSH-03 (planes, objetivos y revisiones) y las preguntas que abren Analizar.
+ */
+export function ResumenDelSeguimiento({ estadoPorArea }: { estadoPorArea: ReactNode }) {
   const disponibles = useDisponibles();
   const { token, sesionPerdida } = useSeguimiento();
   const [guardada, setGuardada] = useState<Extract<VistaDeAnalisis, { usage: 'SUMMARY_INDICATORS' }> | null | undefined>(undefined);
@@ -74,6 +78,7 @@ export function ResumenDelSeguimiento() {
       {sinLeerLaEleccion ? <p className="nota">No pudimos leer los indicadores que elegiste: se muestran los de por defecto. Tu elección sigue guardada.</p> : null}
       <Indicadores indicadores={indicadores} disponibles={disponibles} guardada={guardada ?? null} alGuardar={() => void cargar()} cargando={guardada === undefined || disponibles.cargando} />
       <DelPeriodo disponibles={disponibles} />
+      {estadoPorArea}
       <Preguntas disponibles={disponibles} />
     </>
   );
@@ -257,7 +262,7 @@ function DelPeriodo({ disponibles }: { disponibles: Disponibles }) {
   const conCalidad = (calidad: CalidadDeEntrada) => datos?.periodCounts.byQuality.find((x) => x.quality === calidad)?.count ?? 0;
   const c = disponibles.coberturaNutricional;
   return (
-    <>
+    <div className="resumen__periodo">
       <section className="seccion" aria-labelledby={`${id}-cobertura`}>
         <h2 id={`${id}-cobertura`}>Qué se registró en el período</h2>
         <p className="nota">Cobertura del registro, no adherencia: dice qué hay y qué falta, sin calificar.</p>
@@ -325,7 +330,7 @@ function DelPeriodo({ disponibles }: { disponibles: Disponibles }) {
         ) : null}
         <Link href={href({ vista: 'linea' })}>Ver todo en la línea de tiempo</Link>
       </section>
-    </>
+    </div>
   );
 }
 

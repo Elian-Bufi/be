@@ -14,15 +14,15 @@
  *   elegida (flechas, Inicio y Fin) y el arrastre sobre un panel es solo un atajo de los campos de fecha (WCAG 2.5.7).
  */
 import { numero, type PuntoAnalitico, type SerieAnalitica, type VigenciaDePlan } from '@be/domain';
-import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { diaCorto } from '../../../../lib/formato';
 import type { Modo } from './estado';
 
 export const ESTILOS = [
-  { color: 'var(--metrica-1)', forma: 'circulo', trazo: undefined, nombreDeForma: 'círculo, línea continua' },
-  { color: 'var(--metrica-2)', forma: 'cuadrado', trazo: '7 4', nombreDeForma: 'cuadrado, línea rayada' },
-  { color: 'var(--metrica-3)', forma: 'triangulo', trazo: '2 3', nombreDeForma: 'triángulo, línea punteada' },
+  { color: 'var(--metrica-1)', forma: 'circulo', trazo: undefined, nombreDeLaMarca: 'círculo', nombreDelTrazo: 'línea continua' },
+  { color: 'var(--metrica-2)', forma: 'cuadrado', trazo: '7 4', nombreDeLaMarca: 'cuadrado', nombreDelTrazo: 'línea rayada' },
+  { color: 'var(--metrica-3)', forma: 'triangulo', trazo: '2 3', nombreDeLaMarca: 'triángulo', nombreDelTrazo: 'línea punteada' },
 ] as const;
 
 const DIA = 86_400_000;
@@ -40,22 +40,26 @@ export function xDe(p: PuntoAnalitico): number {
   return mediodia(p.date);
 }
 
-export function Marca({ indice, hueco = false, tamano = 14 }: { indice: number; hueco?: boolean; tamano?: number }) {
+/**
+ * La muestra de una métrica: su color y su forma; el trazo (rayado o punteado) solo cuando las series comparten un gráfico.
+ * En paneles separados cada métrica tiene su panel, y una línea rayada con un zigzag diario solo agrega ruido.
+ */
+export function Marca({ indice, hueco = false, tamano = 14, conTrazo = true }: { indice: number; hueco?: boolean; tamano?: number; conTrazo?: boolean }) {
   const e = ESTILOS[indice] ?? ESTILOS[0];
   const c = tamano / 2;
   return (
     <svg width={tamano * 2.2} height={tamano} viewBox={`0 0 ${tamano * 2.2} ${tamano}`} aria-hidden="true" className="marca-de-metrica">
-      <line x1={1} y1={c} x2={tamano * 2.2 - 1} y2={c} stroke={e.color} strokeWidth={2} strokeDasharray={e.trazo} />
+      <line x1={1} y1={c} x2={tamano * 2.2 - 1} y2={c} stroke={e.color} strokeWidth={2} strokeDasharray={conTrazo ? e.trazo : undefined} />
       <Forma forma={e.forma} cx={tamano * 1.1} cy={c} r={tamano * 0.34} color={e.color} hueco={hueco} />
     </svg>
   );
 }
 
-function Forma({ forma, cx, cy, r, color, hueco }: { forma: string; cx: number; cy: number; r: number; color: string; hueco: boolean }) {
+function Forma({ forma, cx, cy, r, color, hueco, trazo = 2 }: { forma: string; cx: number; cy: number; r: number; color: string; hueco: boolean; trazo?: number }) {
   const relleno = hueco ? 'var(--superficie)' : color;
-  if (forma === 'cuadrado') return <rect x={cx - r} y={cy - r} width={r * 2} height={r * 2} fill={relleno} stroke={color} strokeWidth={2} />;
-  if (forma === 'triangulo') return <polygon points={`${cx},${cy - r * 1.15} ${cx + r * 1.1},${cy + r * 0.85} ${cx - r * 1.1},${cy + r * 0.85}`} fill={relleno} stroke={color} strokeWidth={2} />;
-  return <circle cx={cx} cy={cy} r={r} fill={relleno} stroke={color} strokeWidth={2} />;
+  if (forma === 'cuadrado') return <rect x={cx - r} y={cy - r} width={r * 2} height={r * 2} fill={relleno} stroke={color} strokeWidth={trazo} />;
+  if (forma === 'triangulo') return <polygon points={`${cx},${cy - r * 1.15} ${cx + r * 1.1},${cy + r * 0.85} ${cx - r * 1.1},${cy + r * 0.85}`} fill={relleno} stroke={color} strokeWidth={trazo} />;
+  return <circle cx={cx} cy={cy} r={r} fill={relleno} stroke={color} strokeWidth={trazo} />;
 }
 
 export interface SerieParaDibujar {
@@ -154,6 +158,7 @@ function Panel({
     return lista;
   }, [x0, x1, desde, hasta]);
 
+  const idDeDescripcion = useId();
   const [arrastre, setArrastre] = useState<{ desde: number; hasta: number } | null>(null);
   const xActivo = (e: unknown): number | null => {
     const v = (e as { activeLabel?: unknown } | null)?.activeLabel;
@@ -183,6 +188,24 @@ function Panel({
     onFecha(fechasConDato[n]!);
   };
 
+  // El tamaño de la marca depende de cuánto lugar hay por día: con 90 días en un teléfono, marcas grandes se pisan y la
+  // serie se vuelve una mancha. No se quita ningún punto (ni los extremos ni los cortes): solo se achica la marca. El
+  // hueco (subtotal o día sin completar) conserva un tamaño en el que se ve hueco.
+  const [lienzo, setLienzo] = useState<HTMLDivElement | null>(null);
+  const [ancho, setAncho] = useState(0);
+  useEffect(() => {
+    if (!lienzo) return;
+    setAncho(lienzo.clientWidth);
+    if (typeof ResizeObserver === 'undefined') return;
+    const observador = new ResizeObserver(() => setAncho(lienzo.clientWidth));
+    observador.observe(lienzo);
+    return () => observador.disconnect();
+  }, [lienzo]);
+  const espacioPorDia = ancho > 0 ? (ancho - 78) / Math.max(1, Math.round((x1 - x0) / DIA)) : 12;
+  const radio = espacioPorDia >= 12 ? 5 : espacioPorDia >= 7 ? 3.5 : 2.5;
+  // La altura acompaña el ancho (en escritorio hay lugar para leer mejor las diferencias), con un mínimo y un máximo.
+  const altoReal = ancho > 0 ? Math.round(Math.min(alto * 1.4, Math.max(alto * 0.9, ancho * (alto >= 300 ? 0.42 : 0.3)))) : alto;
+
   const punto = (clave: string) =>
     function PuntoDibujado(props: { cx?: number; cy?: number; payload?: Record<string, number> }): ReactNode {
       const { cx, cy, payload } = props;
@@ -191,10 +214,12 @@ function Panel({
       if (!info) return <g />;
       const e = ESTILOS[info.indice] ?? ESTILOS[0];
       const elegido = fecha !== null && info.punto.date <= fecha && fecha <= (info.punto.dateEnd ?? info.punto.date);
+      const hueco = info.punto.quality === 'PARTIAL' || info.punto.partialBucket;
+      const r = hueco ? Math.max(radio + 1, 3.5) : radio;
       return (
         <g className="grafico__elegible" onClick={() => onPunto(info.indice, info.punto)}>
-          {elegido ? <circle cx={cx} cy={cy} r={10} fill="none" stroke="var(--texto)" strokeWidth={2} /> : null}
-          <Forma forma={e.forma} cx={cx} cy={cy} r={5} color={e.color} hueco={info.punto.quality === 'PARTIAL' || info.punto.partialBucket} />
+          {elegido ? <circle cx={cx} cy={cy} r={Math.max(r * 2, 8)} fill="none" stroke="var(--texto)" strokeWidth={2} /> : null}
+          <Forma forma={e.forma} cx={cx} cy={cy} r={r} color={e.color} hueco={hueco} trazo={radio < 5 ? 1.5 : 2} />
         </g>
       );
     };
@@ -203,8 +228,12 @@ function Panel({
   return (
     <figure className="grafico grafico__figura">
       <figcaption className="grafico__titulo">{titulo}</figcaption>
-      <div className="grafico__lienzo" tabIndex={0} role="group" aria-label={`${titulo}. ${descripcion} Flechas: cambiar la fecha elegida.`} onKeyDown={conTeclado}>
-        <ResponsiveContainer width="100%" height={alto}>
+      {/* El nombre es corto; la descripción (el resumen en texto) va aparte, para no leerla entera en cada foco. */}
+      <p id={idDeDescripcion} className="visualmente-oculto">
+        {descripcion}
+      </p>
+      <div ref={setLienzo} className="grafico__lienzo" tabIndex={0} role="group" aria-label={`${titulo}. Flechas: cambiar la fecha elegida; la lectura está debajo.`} aria-describedby={idDeDescripcion} onKeyDown={conTeclado}>
+        <ResponsiveContainer width="100%" height={altoReal}>
           <LineChart
             data={filas}
             margin={{ top: 12, right: 16, bottom: 4, left: 4 }}
@@ -253,7 +282,7 @@ function Panel({
             <YAxis width={58} domain={['auto', 'auto']} tickFormatter={(v: number) => numero(v)} tick={{ fill: 'var(--tenue)', fontSize: 12 }} axisLine={{ stroke: 'var(--borde-control)' }} label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: 12 }} />
             {tramos.map((t) => {
               const e = ESTILOS[t.indice] ?? ESTILOS[0];
-              return <Line key={t.clave} dataKey={t.clave} type="linear" stroke={e.color} strokeWidth={2} strokeDasharray={e.trazo} connectNulls isAnimationActive={false} dot={punto(t.clave)} activeDot={false} />;
+              return <Line key={t.clave} dataKey={t.clave} type="linear" stroke={e.color} strokeWidth={2} strokeDasharray={modo === 'PANELS' ? undefined : e.trazo} connectNulls isAnimationActive={false} dot={punto(t.clave)} activeDot={false} />;
             })}
             {fechaX !== null ? <ReferenceLine x={fechaX} stroke="var(--texto)" strokeWidth={1.5} strokeDasharray="6 3" ifOverflow="hidden" /> : null}
             {arrastre && Math.abs(arrastre.hasta - arrastre.desde) >= DIA ? <ReferenceArea x1={arrastre.desde} x2={arrastre.hasta} fill="var(--fondo-suave)" fillOpacity={0.6} stroke="var(--texto)" /> : null}

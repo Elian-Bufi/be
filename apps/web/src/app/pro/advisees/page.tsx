@@ -12,7 +12,7 @@ export default function PaginaDelAsesorado() {
   return (
     <>
       <Encabezado navegacion={<NavegacionProfesional />} />
-      <main id="contenido" className="contenido contenido--ancho">
+      <main id="contenido" className="contenido contenido--ancho contenido--seguimiento">
         <Migas pasos={[{ texto: 'Espacio profesional', href: '/pro' }, { texto: 'Asesorado' }]} />
         <h1>Workspace del asesorado</h1>
         <Suspense fallback={null}>

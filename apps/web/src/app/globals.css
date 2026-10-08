@@ -332,6 +332,12 @@ code {
   max-width: 76rem;
 }
 
+/* La ficha del asesorado es un tablero de escritorio: en pantallas anchas usa el ancho (el profesional trabaja en una
+   computadora; los anchos chicos solo tienen que no romperse). */
+.contenido--seguimiento {
+  max-width: 100rem;
+}
+
 .nota {
   color: var(--tenue);
   font-size: 0.92rem;
@@ -2550,6 +2556,34 @@ html:has(.acciones--fijas) {
   gap: 0.5rem;
 }
 
+/* En escritorio, las pestañas y el período comparten una fila: el contenido de la vista empieza más arriba. */
+@media (min-width: 64rem) {
+  .barra-del-seguimiento {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    column-gap: 2rem;
+    border-bottom: 1px solid var(--borde);
+    margin-bottom: 0.5rem;
+  }
+
+  .barra-del-seguimiento .pestanas ul {
+    margin: 0;
+    border-bottom: 0;
+  }
+
+  .barra-del-seguimiento .periodo-del-seguimiento {
+    flex: 1 1 32rem;
+    justify-content: flex-end;
+    padding-bottom: 0.45rem;
+  }
+
+  .barra-del-seguimiento .periodo-del-seguimiento__titulo {
+    flex: 1 1 14rem;
+    text-align: right;
+  }
+}
+
 .periodo-del-seguimiento {
   display: flex;
   flex-wrap: wrap;
@@ -2708,12 +2742,27 @@ html:has(.acciones--fijas) {
   font-size: 0.92rem;
 }
 
-/* El registro de origen: un panel a la derecha en escritorio, la pantalla entera en el teléfono. */
+/*
+ * El registro de origen: en escritorio, un panel lateral a la derecha de toda la altura, con la lista o el gráfico a la
+ * vista detrás (el velo los atenúa, no los tapa). Más angosto, un diálogo centrado.
+ */
 .dialogo--panel {
   max-width: min(44rem, calc(100vw - 1rem));
   width: 100%;
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
+}
+
+@media (min-width: 64rem) {
+  .dialogo--panel {
+    margin: 0 0 0 auto;
+    width: min(42rem, 46vw);
+    max-width: none;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    border-width: 0 0 0 1px;
+  }
 }
 
 .dialogo__encabezado {
@@ -2723,28 +2772,79 @@ html:has(.acciones--fijas) {
   gap: 1rem;
 }
 
+/*
+ * Analizar es para escritorio. El orden del documento (y del teclado) es siempre: qué se elige, los gráficos, la lectura y
+ * las opciones; la grilla solo los ubica, sin reordenarlos (WCAG 1.3.2 y 2.4.3).
+ * - Desde 80rem (1280 px): tres columnas; la lectura queda fija al costado de los gráficos mientras se recorren las fechas.
+ * - Desde 64rem (1024 px): dos columnas; la lectura, debajo de los gráficos.
+ * - Más angosto (no es el objetivo): una columna, sin desbordes.
+ */
 .analizar__cuerpo {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'seleccion' 'lienzo' 'lectura' 'opciones';
   gap: 1rem;
+}
+
+@media (min-width: 64rem) {
+  .analizar__cuerpo {
+    grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr);
+    grid-template-areas: 'seleccion lienzo' 'opciones lienzo' 'opciones lectura';
+    grid-template-rows: auto 1fr auto;
+    align-items: start;
+    column-gap: 1.5rem;
+  }
 }
 
 @media (min-width: 80rem) {
   .analizar__cuerpo {
-    grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr);
-    align-items: start;
+    grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr) minmax(16rem, 21rem);
+    grid-template-areas: 'seleccion lienzo lectura' 'opciones lienzo lectura';
+    grid-template-rows: auto 1fr;
+  }
+
+  .analizar__lectura {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
   }
 }
 
-.analizar__controles {
+.analizar__seleccion,
+.analizar__opciones {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   min-width: 0;
 }
 
+.analizar__seleccion {
+  grid-area: seleccion;
+}
+
+.analizar__opciones {
+  grid-area: opciones;
+}
+
 .analizar__lienzo {
+  grid-area: lienzo;
   min-width: 0;
+}
+
+.analizar__lectura {
+  grid-area: lectura;
+  min-width: 0;
+}
+
+.analizar__lectura .panel-de-lectura {
+  margin: 0;
+}
+
+.agregar > summary,
+.presets > summary {
+  font-weight: 700;
+  margin-bottom: 0.4rem;
 }
 
 .metricas-elegidas {
@@ -2884,6 +2984,21 @@ html:has(.acciones--fijas) {
   margin: 0;
 }
 
+/* Lo que pasó en el período: cobertura y últimos hechos, lado a lado en escritorio. */
+.resumen__periodo {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+@media (min-width: 64rem) {
+  .resumen__periodo {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+}
+
 .cobertura div {
   padding: 0.35rem 0;
   border-top: 1px solid var(--borde);
@@ -2903,6 +3018,16 @@ html:has(.acciones--fijas) {
 .vistas-guardadas,
 .no-ofrecidas {
   margin: 0.75rem 0;
+}
+
+.hitos {
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+}
+
+.hitos ul {
+  margin: 0.25rem 0;
+  padding-left: 1.1rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
