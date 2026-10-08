@@ -58,6 +58,7 @@ import { IconoDeEjercicio } from '../iconos-de-entrenamiento';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
+import { enCursoDeLaApi, enCursoEnElTelefono, otraSesionEnCurso, sesionEnCursoParaMostrar, type EnCurso } from '../sesion-en-curso';
 import {
   bandaDeLaSerie,
   basesDeLaPrescripcion,
@@ -223,14 +224,6 @@ export function PantallaDeEntrenamiento({ token, identidadId, salir, ir }: { tok
   );
 }
 
-/** Una sesión con la corrida abierta: la del teléfono o la que informa la API (API-TIE-04). */
-interface EnCurso {
-  readonly draftId: string;
-  readonly occurrenceId: string;
-  readonly fecha: string;
-  readonly etiqueta: string;
-}
-
 function HoyDeEntrenamiento({
   hoy,
   token,
@@ -267,13 +260,9 @@ function HoyDeEntrenamiento({
     setDelDia({ fecha: otroDia, ocurrencias: res.datos.data.occurrences });
   }
 
-  const abiertaLocal = local.sesiones().find((s) => s.modo === 'en-vivo' && corridaAbierta(s.corrida)) ?? null;
   const remota = enCurso.r?.ok ? enCurso.r.datos.data.inProgress : null;
-  const ahora: EnCurso | null = abiertaLocal
-    ? { draftId: abiertaLocal.draftId, occurrenceId: abiertaLocal.occurrenceId, fecha: abiertaLocal.fecha, etiqueta: abiertaLocal.etiqueta }
-    : remota
-      ? { draftId: remota.draftId, occurrenceId: remota.occurrenceId, fecha: remota.date, etiqueta: remota.sessionLabel }
-      : null;
+  // Primero la que informa la API, que es la que impide iniciar otra; después la del teléfono (`sesion-en-curso.ts`).
+  const ahora: EnCurso | null = sesionEnCursoParaMostrar(remota, local.sesiones());
   // Una sesión en curso de otro día (pasó la medianoche): se retoma desde acá, aunque no esté en la lista de hoy.
   const deOtroDia = ahora && !hoy.occurrences.some((o) => o.occurrenceId === ahora.occurrenceId) ? ahora : null;
 
@@ -328,8 +317,25 @@ function HoyDeEntrenamiento({
   );
 }
 
-/** «Tenés un entrenamiento sin finalizar»: continuarlo, o dejarlo incompleto sin afirmar cuándo terminó. */
-function AvisoDeEntrenamientoEnCurso({ enCurso: e, token, sesionPerdida, ir, alTerminar }: { enCurso: EnCurso; token: string; sesionPerdida: AlPerderLaSesion; ir: Ir; alTerminar: () => void }) {
+/**
+ * «Tenés un entrenamiento sin finalizar»: continuarlo, o dejarlo incompleto sin afirmar cuándo terminó. Lo usan
+ * Entrenamiento, Inicio y la sesión enfocada; `motivo` dice por qué aparece (por ejemplo, antes de iniciar otra sesión).
+ */
+export function AvisoDeEntrenamientoEnCurso({
+  enCurso: e,
+  token,
+  sesionPerdida,
+  ir,
+  alTerminar,
+  motivo,
+}: {
+  enCurso: EnCurso;
+  token: string;
+  sesionPerdida: AlPerderLaSesion;
+  ir: Ir;
+  alTerminar: () => void;
+  motivo?: string;
+}) {
   const [dejando, setDejando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 
@@ -356,6 +362,10 @@ function AvisoDeEntrenamientoEnCurso({ enCurso: e, token, sesionPerdida, ir, alT
       setDejando(false);
       return setFallo(textoDelRechazo(r.motivo));
     }
+    // Se manda todo lo pendiente de esa sesión, también si un envío anterior quedó trabado por un conflicto de tiempos
+    // (un inicio rechazado porque había otra en curso): son los mismos eventos, y si siguen sin poder guardarse, el
+    // conflicto vuelve a aparecer en esa sesión sin perder nada.
+    await entrenamientoLocal.reintentar(e.draftId);
     const envio = await entrenamientoLocal.sincronizarYEsperar(e.draftId);
     setDejando(false);
     if (envio && sesionPerdida(envio)) return;
@@ -365,6 +375,7 @@ function AvisoDeEntrenamientoEnCurso({ enCurso: e, token, sesionPerdida, ir, alT
   return (
     <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO_POR_SERIE.sesionSinFinalizar}>
       <Parrafo>{`${e.etiqueta} · ${fechaCivil(e.fecha)}`}</Parrafo>
+      {motivo ? <Parrafo>{motivo}</Parrafo> : null}
       {fallo ? <Parrafo>{fallo}</Parrafo> : null}
       <Boton
         texto={COPY_ENTRENAMIENTO_POR_SERIE.continuarEntrenamiento}
@@ -418,6 +429,8 @@ export function useAbrirOcurrencia({
 }) {
   const [abriendo, setAbriendo] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
+  // La sesión en curso que hay que continuar o dejar incompleta antes de iniciar esta (`sesion-en-curso.ts`).
+  const [otraEnCurso, setOtraEnCurso] = useState<EnCurso | null>(null);
   const hoy = useDiaDeLaApi();
   // Si la persona se fue de la pantalla, o salió de la sesión, mientras se abría el borrador, la respuesta no la mueve:
   // una respuesta tardía no se muestra ni navega (revisión de la candidata). El borrador queda abierto en la API, y
@@ -433,15 +446,24 @@ export function useAbrirOcurrencia({
   async function abrir() {
     const modo = o.date === hoy ? 'en-vivo' : 'otro-dia';
     setFallo(null);
+    setOtraEnCurso(null);
     // Si el entrenamiento de esta sesión ya está en el teléfono, se retoma sin pedir nada: también sin red. Si mientras
     // tanto se registró en otro dispositivo, la sesión enfocada lo ve al leer el borrador y lleva al registro.
     const enElTelefono = entrenamientoLocal.sesiones().find((s) => s.occurrenceId === o.occurrenceId && s.modo === modo);
     if (enElTelefono) {
       return ir({ nombre: 'sesion-de-entrenamiento', draftId: enElTelefono.draftId, occurrenceId: o.occurrenceId, sesion: o.plannedSession, fecha: o.date, modo, etiqueta: o.plannedSession.label });
     }
-    // Una sola sesión en curso por titular: si en este teléfono corre otra, primero se finaliza o se deja incompleta.
-    if (modo === 'en-vivo' && entrenamientoLocal.sesiones().some((s) => s.occurrenceId !== o.occurrenceId && s.modo === 'en-vivo' && corridaAbierta(s.corrida))) {
-      return setFallo(textoDelRechazo('ANOTHER_SESSION_IN_PROGRESS'));
+    // Una sola sesión en curso por titular, de cualquier día y de cualquier dispositivo: antes de abrir el borrador se le
+    // pregunta a la API (API-TIE-04) y se mira el teléfono. Si hay otra, se ofrece continuarla o dejarla incompleta, y no se
+    // abre nada (defecto de la 0.15.0-candidata.1: se abría otro borrador y el rechazo llegaba al registrar una serie).
+    if (modo === 'en-vivo') {
+      setAbriendo(true);
+      const enCurso = await api.sesionEnCurso(token);
+      if (!montada.current) return;
+      setAbriendo(false);
+      if (sesionPerdida(enCurso)) return;
+      const otra = otraSesionEnCurso(o.occurrenceId, enCurso.ok ? enCurso.datos.data.inProgress : undefined, entrenamientoLocal.sesiones());
+      if (otra) return setOtraEnCurso(otra);
     }
     setAbriendo(true);
     const r = await api.abrirBorradorDeEjecucion(token, o.occurrenceId);
@@ -480,7 +502,45 @@ export function useAbrirOcurrencia({
     ir({ nombre: 'sesion-de-entrenamiento', draftId: b.draftId, occurrenceId: o.occurrenceId, sesion: o.plannedSession, fecha: o.date, modo, etiqueta: o.plannedSession.label });
   }
 
-  return { abriendo, fallo, abrir } as const;
+  return { abriendo, fallo, abrir, otraEnCurso } as const;
+}
+
+/** El texto del aviso cuando la persona tocó «Iniciar entrenamiento» con otra sesión en curso. */
+export const MOTIVO_ANTES_DE_INICIAR = 'Para iniciar esta sesión, primero continuá ese entrenamiento o dejalo incompleto. Lo que registraste en sus series se conserva.';
+
+/**
+ * Dentro de una sesión cuyo inicio la API rechazó porque había otra en curso (ANOTHER_SESSION_IN_PROGRESS): cuál es la
+ * otra (API-TIE-04 o el teléfono), para continuarla o dejarla incompleta desde acá. Dejada incompleta, esta sesión vuelve
+ * a enviar sus eventos pendientes, los mismos: lo marcado y lo escrito se conservan, y lo que ya llegó no se repite.
+ */
+function OtraSesionQueBloquea({ draftId, token, sesionPerdida, ir, alTerminar }: { draftId: string; token: string; sesionPerdida: AlPerderLaSesion; ir: Ir; alTerminar: () => Promise<unknown> }) {
+  const [otra, setOtra] = useState<EnCurso | null>(null);
+  const [vuelta, setVuelta] = useState(0);
+  useEffect(() => {
+    let vigente = true;
+    void api.sesionEnCurso(token).then((r) => {
+      if (!vigente || sesionPerdida(r)) return;
+      const remota = r.ok ? r.datos.data.inProgress : null;
+      setOtra(remota && remota.draftId !== draftId ? enCursoDeLaApi(remota) : enCursoEnElTelefono(entrenamientoLocal.sesiones().filter((s) => s.draftId !== draftId)));
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [token, draftId, vuelta]);
+  if (!otra) return null;
+  return (
+    <AvisoDeEntrenamientoEnCurso
+      enCurso={otra}
+      token={token}
+      sesionPerdida={sesionPerdida}
+      ir={ir}
+      motivo="Hasta que lo cierres, los tiempos de esta sesión no se guardan. Lo que registraste acá sigue en el teléfono."
+      alTerminar={() => {
+        setOtra(null);
+        void alTerminar().then(() => setVuelta((v) => v + 1));
+      }}
+    />
+  );
 }
 
 function TarjetaDeOcurrencia({
@@ -500,7 +560,7 @@ function TarjetaDeOcurrencia({
   ir: (r: Ruta) => void;
   enCurso: boolean;
 }) {
-  const { abriendo, fallo, abrir } = useAbrirOcurrencia({ ocurrencia: o, token, sesionPerdida, accesoRetirado, ir });
+  const { abriendo, fallo, abrir, otraEnCurso } = useAbrirOcurrencia({ ocurrencia: o, token, sesionPerdida, accesoRetirado, ir });
   const vista = vistaDeOcurrencia(o, hoy);
   const deHoy = o.date === hoy;
   const continuar = enCurso || o.execution.state === 'DRAFT_IN_PROGRESS';
@@ -527,6 +587,8 @@ function TarjetaDeOcurrencia({
       <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" />
       {/* La acción va arriba, antes de lo planificado: con una sesión larga, al final de la tarjeta quedaba fuera de la vista. */}
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
+      {/* Otra sesión en curso: continuarla o dejarla incompleta; dejada incompleta, se vuelve a intentar iniciar esta. */}
+      {otraEnCurso ? <AvisoDeEntrenamientoEnCurso enCurso={otraEnCurso} token={token} sesionPerdida={sesionPerdida} ir={ir} alTerminar={() => void abrir()} motivo={MOTIVO_ANTES_DE_INICIAR} /> : null}
       {o.execution.state === 'REGISTERED' && o.execution.executionId ? (
         <Boton texto="Ver registro" tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: o.execution.executionId! })} />
       ) : (
@@ -937,7 +999,7 @@ export function PantallaDeSesion({
     />
   );
 
-  const estadoDelEnvio = (
+  const estadoDelEnvioSinBloqueo = (
     <EstadoDelEnvio
       estado={envio}
       guardado={almacen.estadoDelGuardado()}
@@ -958,6 +1020,14 @@ export function PantallaDeSesion({
         })
       }
     />
+  );
+  // El inicio de esta sesión se rechazó porque hay otra en curso: se ofrece resolver la otra desde acá.
+  const bloqueadaPorOtra = local.problema?.tipo === 'conflicto' && local.problema.de === 'tiempos' && local.problema.motivo === 'ANOTHER_SESSION_IN_PROGRESS';
+  const estadoDelEnvio = (
+    <>
+      {estadoDelEnvioSinBloqueo}
+      {bloqueadaPorOtra ? <OtraSesionQueBloquea draftId={draftId} token={token} sesionPerdida={sesionPerdida} ir={ir} alTerminar={() => entrenamientoLocal.reintentar(draftId)} /> : null}
+    </>
   );
 
   if (finalizando) {
