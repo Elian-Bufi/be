@@ -32,8 +32,8 @@
 | 4 | Datos sintéticos reproducibles de 12 semanas y resultados esperados | Hecho | `fce8f98` |
 | 5a | Website: Resumen, Línea de tiempo y Analizar dentro de la ficha; rendimiento, fallas y día en curso | Hecho | `ec175d8` |
 | 5b | Revisión visual, diseño de escritorio, exportación CSV y recorrido real automatizado (`recorrido.mjs`, 86/86) | Hecho | `a84dd62` |
-| 6 | Conjunto de volumen, rendimiento (memoria de macros), matriz de aceptación, guion de demostración, capturas y resultados versionados | Hecho | (este commit) |
-| 7 | PR en borrador con la CI del head final | Pendiente | — |
+| 6 | Conjunto de volumen, rendimiento (memoria de macros), matriz de aceptación, guion de demostración, capturas y resultados versionados | Hecho | `364bb1d` |
+| 7 | PR en borrador con la CI del head final | Hecho: **PR #153** (borrador, contra `main`). El resultado de la CI del head está en el PR | este commit |
 
 ## Decisiones tomadas (resumen; el detalle está en la definición del paquete)
 
@@ -141,4 +141,6 @@
 
 ## Próximo paso
 
-Ver la tabla de hitos: el primero «En curso» o «Pendiente».
+El encargo quedó en el PR #153, en borrador. Lo que sigue depende de Dirección: la revisión visual y del flujo (con un
+lector de pantalla), las decisiones DL-126 a DL-128 y, si se aprueba, el merge y el despliegue, que este encargo deja
+fuera. Si la CI del head falla, se corrige en esta rama y se vuelve a correr.
