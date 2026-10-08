@@ -87,10 +87,8 @@ export async function ejecucionesDelPeriodo(tx: Tx, servicio: EjecucionesDeEntre
     select: { id: true },
     orderBy: [{ fechaLocal: 'asc' }, { momentoDeOcurrencia: 'asc' }, { id: 'asc' }],
   });
-  // En serie: una transacción interactiva usa una sola conexión.
-  const ejecuciones: EjecucionDeEntrenamiento[] = [];
-  for (const f of filas) ejecuciones.push(await servicio.ejecucionApi(tx, f.id));
-  return ejecuciones;
+  // En lote: las filas, los nombres de los ejercicios y los autores, sin una consulta por sesión.
+  return servicio.ejecucionesApi(tx, filas.map((f) => f.id));
 }
 
 /**

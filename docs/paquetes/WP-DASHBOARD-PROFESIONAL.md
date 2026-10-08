@@ -143,6 +143,9 @@ arquitecturas está en `EVIDENCIA/DASHBOARD-PROFESIONAL/INVESTIGACION.md` §3.
   parciales), `planVersionId`, `exerciseId` y `q`. `q` busca en el **período completo** del conjunto autorizado, no solo
   en lo cargado.
 - **Conteos** solo de fuentes autorizadas: un alcance denegado no aporta ni un número (TEST-DSH-002).
+- **`periodCounts`** (extensión de BE, DL-127): cuántas entradas hay por tipo y por rasgo de calidad, y cuántas se
+  cargaron otro día, en el período completo del conjunto autorizado y antes de los filtros. El Resumen arma la cobertura
+  y los hechos recientes con una sola lectura, en vez de una por conteo.
 
 ## 6. Proyecciones y métricas (API-PRJ-01)
 

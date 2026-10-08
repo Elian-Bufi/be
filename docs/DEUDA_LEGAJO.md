@@ -3442,6 +3442,9 @@ Producirlas sería inventar.
 - **Bandas de vigencia:** `to` es el día del corte (activación de la sucesora o cierre del seguimiento), que ya es de la
   siguiente. Una activación no es ejecución y la fecha de creación no es vigencia.
 - **Límite de página:** 20 por defecto y 50 como máximo, como el resto de las listas.
+- **`periodCounts`:** la respuesta suma los conteos del período (por tipo de evento, por rasgo de calidad y cargas
+  tardías) del conjunto autorizado, antes de los filtros. Sale de la misma lectura, así que no revela nada que la
+  lectura no muestre; evita que el Resumen pida una página por cada conteo (presupuesto de rendimiento, PRO-24).
 - **`q` y la privacidad:** la búsqueda viaja en la query de la API, no en la URL de la página del website, y la API
   registra solo la ruta parametrizada, sin query (`http/request-id.ts`). Las bitácoras de la plataforma de hosting
   pueden registrar URLs con su query: es un riesgo residual que se declara (encargo §14). La alternativa, buscar con

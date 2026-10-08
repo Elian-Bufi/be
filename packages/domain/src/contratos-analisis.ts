@@ -367,6 +367,17 @@ export const EntradaDeLineaDeTiempoSchema = z.strictObject({
 });
 export type EntradaDeLineaDeTiempo = z.infer<typeof EntradaDeLineaDeTiempoSchema>;
 
+/**
+ * Cuántas entradas tiene el período en el conjunto autorizado, **antes de los filtros**, por tipo y por rasgo de calidad:
+ * la cobertura del Resumen sale de una sola lectura. Un alcance denegado no aporta a ningún conteo (TEST-DSH-002).
+ */
+export const ConteosDelPeriodoSchema = z.strictObject({
+  byEventType: z.array(z.strictObject({ eventType: TipoDeEventoSchema, count: z.number().int().positive() })),
+  byQuality: z.array(z.strictObject({ quality: CalidadDeEntradaSchema, count: z.number().int().positive() })),
+  recordedLate: z.number().int().nonnegative(),
+});
+export type ConteosDelPeriodo = z.infer<typeof ConteosDelPeriodoSchema>;
+
 export const LineaDeTiempoResponseSchema = z.strictObject({
   data: z.strictObject({
     period: PeriodoCivilSchema,
@@ -375,6 +386,7 @@ export const LineaDeTiempoResponseSchema = z.strictObject({
     sourceDomains: z.array(DominioDeAnalisisSchema),
     /** Cuántas entradas del conjunto autorizado cumplen los filtros en todo el período (no solo en esta página). */
     totalMatching: z.number().int().nonnegative(),
+    periodCounts: ConteosDelPeriodoSchema,
     /** La búsqueda `q` recorre todo el período del conjunto autorizado, no solo lo cargado. */
     searchScope: z.literal('WHOLE_PERIOD'),
     entries: z.array(EntradaDeLineaDeTiempoSchema),

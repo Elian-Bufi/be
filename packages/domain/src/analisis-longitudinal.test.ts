@@ -15,10 +15,10 @@ import type { Nutrientes } from './contratos-recetas';
 import { serieAntropometrica } from './antropometria-del-analisis';
 import { ejerciciosDelPeriodo, objetivosDeLaVersionDelPlan, serieDeEntrenamiento } from './entrenamiento-del-analisis';
 import type { ContenidoDePlanDeEntrenamiento } from './plan-de-entrenamiento';
-import { agruparPorDia, codificarCursor, cumpleFiltros, decodificarCursor, ordenarEntradas, paginarEntradas, registradoTarde } from './linea-de-tiempo';
+import { agruparPorDia, codificarCursor, conteosDelPeriodo, cumpleFiltros, decodificarCursor, ordenarEntradas, paginarEntradas, registradoTarde } from './linea-de-tiempo';
 import { aplicarPreset, definicionAntropometrica, definicionDeMetrica, MAXIMO_DE_METRICAS, METRICAS_DEL_DICCIONARIO, PRESETS_DE_ANALISIS } from './metricas-del-analisis';
 import { coberturaNutricional, diasNutricionales, serieNutricional, type RegistroParaAnalisis } from './nutricion-del-analisis';
-import { compararPeriodos, huecosDelRango, lecturaEnFecha, lunesDe, puntosRelativos, referenciaDeLaSerie, resumenTextual, semanasDelPeriodo, superposicionPermitida } from './series-del-analisis';
+import { compararPeriodos, huecosDelRango, lecturaEnFecha, lunesDe, puntosRelativos, referenciaDeLaSerie, resumenTextual, resumirPeriodo, semanasDelPeriodo, superposicionPermitida } from './series-del-analisis';
 import { sumaExacta } from './calculo-nutricional';
 
 const ZONA = 'America/Argentina/Buenos_Aires';
@@ -391,14 +391,15 @@ test('la diferencia entre etapas no cruza un cambio de método: «no comparables
 
 // ─── Referencia, cambio relativo, lectura y superposición ───────────────────────────────────────
 
-const serieDe = (valores: [string, number | null][], d = definicion('nutricion.energia')): SerieAnalitica => ({
+/** Una serie diaria de prueba; el tercer elemento marca el balde incompleto (el día en curso). */
+const serieDe = (valores: [string, number | null, boolean?][], d = definicion('nutricion.energia')): SerieAnalitica => ({
   metricId: d.id,
   label: d.nombre,
   unit: d.unidad,
   scale: d.escala,
   grain: 'DAY',
   aggregation: 'SUM_OF_KNOWN',
-  points: valores.map(([fecha, v]) => ({
+  points: valores.map(([fecha, v, incompleto]) => ({
     pointId: `d:${fecha}`,
     date: fecha,
     dateEnd: null,
@@ -408,7 +409,7 @@ const serieDe = (valores: [string, number | null][], d = definicion('nutricion.e
     n: 1,
     segment: 't1',
     corrected: false,
-    partialBucket: false,
+    partialBucket: incompleto ?? false,
     coverage: null,
     missing: [],
     detail: [],
@@ -487,6 +488,32 @@ test('dos períodos con el mismo criterio: duración, n y cobertura; los totales
   assert.equal(t.motivoSinDiferencia, 'DURACIONES_DISTINTAS');
 });
 
+test('el día en curso no entra en la media ni en la referencia; el total lo incluye y no se resta contra un período completo', () => {
+  // Siete días: seis completos de 2.000 kcal y hoy, en curso, con el desayuno (300 kcal).
+  const semana: [string, number | null, boolean?][] = [1, 2, 3, 4, 5, 6].map((d) => [`2026-10-0${d}`, 2000] as [string, number]);
+  const d = definicion('nutricion.energia');
+  const conHoy = serieDe([...semana, ['2026-10-07', 300, true]]);
+  const r = resumirPeriodo(conHoy, d, '2026-10-01', '2026-10-07');
+  assert.equal(r.valor, 2000, 'con hoy adentro la media sería 1.757 kcal: un sesgo de 243 kcal en siete días');
+  assert.equal(r.n, 6);
+  assert.equal(r.incompletos, 1);
+  const soloHoy = resumirPeriodo(conHoy, d, '2026-10-07', '2026-10-07');
+  assert.deepEqual([soloHoy.valor, soloHoy.n, soloHoy.incompletos], [null, 0, 1], 'solo el día en curso: no hay media que dar');
+  const ref = referenciaDeLaSerie(conHoy, d, '2026-10-05', '2026-10-07');
+  assert.equal(ref.tipo, 'valida');
+  if (ref.tipo === 'valida') assert.deepEqual([ref.valor, ref.n, ref.incompletos], [2000, 2, 1]);
+  assert.equal((referenciaDeLaSerie(conHoy, d, '2026-10-07', '2026-10-07') as { motivo: string }).motivo, 'SIN_OBSERVACIONES');
+
+  const conteo = definicion('nutricion.registros');
+  const registros = serieDe([['2026-09-24', 4], ['2026-09-30', 4], ['2026-10-01', 4], ['2026-10-07', 1, true]], conteo);
+  const total = resumirPeriodo(registros, conteo, '2026-10-01', '2026-10-07');
+  assert.deepEqual([total.valor, total.incompletos], [5, 1], 'el total cuenta lo registrado hoy, y dice que el período no terminó');
+  const c = compararPeriodos(registros, conteo, { desde: '2026-09-24', hasta: '2026-09-30' }, { desde: '2026-10-01', hasta: '2026-10-07' });
+  assert.equal(c.diferencia, null);
+  assert.equal(c.motivoSinDiferencia, 'PERIODO_INCOMPLETO');
+  assert.match(resumenTextual(conHoy, d, '2026-10-01', '2026-10-07'), /1 es de un día o una semana sin completar/);
+});
+
 test('el resumen textual dice n, la primera y la última con sus fechas, y los subtotales; no califica', () => {
   const texto = resumenTextual(serieDe([['2026-10-01', 2000], ['2026-10-03', 1800]]), definicion('nutricion.energia'), '2026-10-01', '2026-10-07');
   assert.match(texto, /Energía registrada \(kcal\), del 1\/10\/2026 al 7\/10\/2026: 2 observaciones con valor; la primera, 2\.000 kcal el 1\/10\/2026; la última, 1\.800 kcal el 3\/10\/2026/);
@@ -556,6 +583,25 @@ test('filtros combinados y búsqueda sin acentos ni mayúsculas, sobre lo visibl
   assert.equal(cumpleFiltros(e, { dominios: ['NUTRITION'], calidades: ['QUANTITIES_UNCONFIRMED'] }), true);
   assert.equal(cumpleFiltros(e, { estados: ['ANNULLED'] }), false);
   assert.equal(cumpleFiltros(e, { soloTardias: true }), false);
+});
+
+test('los conteos del período: por tipo, por rasgo y cargas tardías, sin tipos ni rasgos en cero (PRO-01)', () => {
+  const conteos = conteosDelPeriodo([
+    entrada('a', '2026-10-05', '13:00', '2026-10-07T15:00:00.000Z', { quality: ['QUANTITIES_UNCONFIRMED', 'DIFFERENT_MEAL'] }),
+    entrada('b', '2026-10-06', '13:00', '2026-10-06T16:05:00.000Z', { quality: ['QUANTITIES_UNCONFIRMED'] }),
+    entrada('c', '2026-10-06', null, null, { domain: 'TRAINING', eventType: 'TRAINING_SESSION_RECORDED', quality: ['SESSION_NOT_COMPLETED'] }),
+  ]);
+  assert.deepEqual(conteos.byEventType, [
+    { eventType: 'MEAL_RECORDED', count: 2 },
+    { eventType: 'TRAINING_SESSION_RECORDED', count: 1 },
+  ]);
+  assert.deepEqual(conteos.byQuality, [
+    { quality: 'QUANTITIES_UNCONFIRMED', count: 2 },
+    { quality: 'DIFFERENT_MEAL', count: 1 },
+    { quality: 'SESSION_NOT_COMPLETED', count: 1 },
+  ]);
+  assert.equal(conteos.recordedLate, 1);
+  assert.deepEqual(conteosDelPeriodo([]), { byEventType: [], byQuality: [], recordedLate: 0 });
 });
 
 test('los objetivos por serie de una versión: lo propio de la serie, lo heredado de la prescripción o «sin objetivo» (DL-122)', () => {

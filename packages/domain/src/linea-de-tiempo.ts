@@ -10,7 +10,7 @@
  * - **La búsqueda** recorre todo el conjunto autorizado del período: título y detalles visibles, sin distinguir
  *   mayúsculas ni acentos.
  */
-import type { CalidadDeEntrada, DominioDeAnalisis, EntradaDeLineaDeTiempo, EstadoDeEntrada, TipoDeEvento } from './contratos-analisis';
+import { CalidadDeEntradaSchema, TIPOS_DE_EVENTO, type CalidadDeEntrada, type ConteosDelPeriodo, type DominioDeAnalisis, type EntradaDeLineaDeTiempo, type EstadoDeEntrada, type TipoDeEvento } from './contratos-analisis';
 import { fechaCivil } from './fechas-civiles';
 
 /** Compara dos entradas en el orden de la línea de tiempo (la primera del resultado es la más reciente). */
@@ -181,3 +181,23 @@ export const DOMINIO_DE_TIPO_DE_EVENTO: Readonly<Record<TipoDeEvento, DominioDeA
 };
 
 export const NOMBRE_DE_DOMINIO: Readonly<Record<DominioDeAnalisis, string>> = { NUTRITION: 'Nutrición', TRAINING: 'Entrenamiento', ANTHROPOMETRY: 'Antropometría' };
+
+/**
+ * Los conteos del período, antes de los filtros: por tipo, por rasgo de calidad y cuántas se cargaron otro día. Solo
+ * figuran los tipos y rasgos presentes, en el orden del contrato (no en el de aparición), para que la respuesta sea estable.
+ */
+export function conteosDelPeriodo(entradas: readonly EntradaDeLineaDeTiempo[]): ConteosDelPeriodo {
+  const porTipo = new Map<TipoDeEvento, number>();
+  const porCalidad = new Map<CalidadDeEntrada, number>();
+  let tardias = 0;
+  for (const e of entradas) {
+    porTipo.set(e.eventType, (porTipo.get(e.eventType) ?? 0) + 1);
+    for (const q of e.quality) porCalidad.set(q, (porCalidad.get(q) ?? 0) + 1);
+    if (e.recordedLate) tardias++;
+  }
+  return {
+    byEventType: TIPOS_DE_EVENTO.filter((t) => porTipo.has(t)).map((eventType) => ({ eventType, count: porTipo.get(eventType) ?? 0 })),
+    byQuality: CalidadDeEntradaSchema.options.filter((q) => porCalidad.has(q)).map((quality) => ({ quality, count: porCalidad.get(quality) ?? 0 })),
+    recordedLate: tardias,
+  };
+}

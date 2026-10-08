@@ -2540,3 +2540,375 @@ html:has(.acciones--fijas) {
     width: 100%;
   }
 }
+
+/* ─── Entorno profesional de seguimiento: Resumen, Línea de tiempo y Analizar (WP-DASHBOARD-PROFESIONAL) ─── */
+/* Escritorio primero (notebook), operable en tablet y teléfono: los controles se apilan, los paneles ocupan el ancho y
+   solo las tablas se desplazan de costado, nunca la página (WCAG 1.4.10). Números tabulares en series y tablas. */
+.barra-del-seguimiento {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.periodo-del-seguimiento {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.periodo-del-seguimiento__titulo {
+  margin: 0;
+  flex: 1 1 18rem;
+}
+
+.periodo-del-seguimiento__opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.periodo-del-seguimiento__rango {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 1rem;
+  width: 100%;
+}
+
+.periodo-del-seguimiento__rango .campo,
+.filtros-de-linea .campo {
+  flex: 0 1 14rem;
+  min-width: 10rem;
+  margin: 0;
+}
+
+.filtros-de-linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.filtros-de-linea .campo--busqueda {
+  flex: 1 1 18rem;
+}
+
+.filtros-avanzados {
+  flex: 1 1 100%;
+}
+
+.filtros-avanzados[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filtros-activos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.filtros-activos ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.linea-de-tiempo__dia {
+  border-top: 1px solid var(--borde);
+  padding-top: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.linea-de-tiempo__dia h3 {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 1rem;
+}
+
+.linea-de-tiempo__entradas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.entrada {
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--borde-control);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  background: var(--superficie);
+}
+
+/* Anulado: la entrada sigue, con su marca de texto y el contenido atenuado (no tachado: tiene que poder leerse). */
+.entrada--anulada {
+  border-left-style: dashed;
+  background: var(--fondo-suave);
+}
+
+.entrada__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
+  margin: 0;
+}
+
+.entrada__area {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tenue);
+}
+
+.entrada__hora {
+  font-variant-numeric: tabular-nums;
+  color: var(--tenue);
+}
+
+.entrada__detalles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.25rem;
+  margin: 0.35rem 0;
+}
+
+.entrada__detalles div {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.entrada__detalles dt {
+  color: var(--tenue);
+}
+
+.entrada__detalles dt::after {
+  content: ':';
+}
+
+.entrada__detalles dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.entrada__relaciones {
+  margin: 0.25rem 0;
+  padding-left: 1.1rem;
+  font-size: 0.92rem;
+}
+
+/* El registro de origen: un panel a la derecha en escritorio, la pantalla entera en el teléfono. */
+.dialogo--panel {
+  max-width: min(44rem, calc(100vw - 1rem));
+  width: 100%;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.dialogo__encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.analizar__cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 80rem) {
+  .analizar__cuerpo {
+    grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.analizar__controles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.analizar__lienzo {
+  min-width: 0;
+}
+
+.metricas-elegidas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.metricas-elegidas li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.marca-de-metrica {
+  flex: none;
+  vertical-align: middle;
+}
+
+.agregar-metrica {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.agregar-metrica .campo {
+  margin: 0;
+}
+
+.presets ul,
+.preguntas,
+.recientes,
+.lista-de-vistas {
+  list-style: none;
+  margin: 0.25rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.boton--pregunta {
+  text-align: left;
+  white-space: normal;
+  width: 100%;
+}
+
+.referencias {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+}
+
+.modo-elegible .nota {
+  margin: 0 0 0.25rem 1.75rem;
+}
+
+.paneles-sincronizados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.grafico__titulo {
+  font-weight: 700;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.panel-de-lectura .acciones {
+  align-items: flex-end;
+}
+
+.panel-de-lectura .campo {
+  margin: 0;
+}
+
+.panel-de-lectura__metrica {
+  border-top: 1px solid var(--borde);
+  padding-top: 0.4rem;
+  margin-top: 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-de-lectura__metrica p {
+  margin: 0.15rem 0;
+}
+
+.tabla--numeros td,
+.cobertura dd,
+.indicador__valor {
+  font-variant-numeric: tabular-nums;
+}
+
+.indicadores {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+}
+
+.indicador {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  background: var(--fondo-suave);
+}
+
+.indicador h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.indicador__valor {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.15rem 0;
+}
+
+.editor-de-indicadores {
+  margin-top: 0.75rem;
+}
+
+.cobertura {
+  margin: 0;
+}
+
+.cobertura div {
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.cobertura dt {
+  font-weight: 700;
+}
+
+.cobertura dd {
+  margin: 0.15rem 0 0;
+}
+
+.como-se-calcula,
+.tabla-de-datos,
+.intervalo,
+.vistas-guardadas,
+.no-ofrecidas {
+  margin: 0.75rem 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paneles-sincronizados *,
+  .linea-de-tiempo * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

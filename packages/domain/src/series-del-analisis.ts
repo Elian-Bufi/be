@@ -126,6 +126,8 @@ export type Referencia =
       readonly tramo: string | null;
       /** Cuántas observaciones de la referencia son subtotales (nutrición). */
       readonly parciales: number;
+      /** Cuántos baldes incompletos del rango quedaron fuera (el día en curso, o una semana que el período corta). */
+      readonly incompletos: number;
     }
   | { readonly tipo: 'invalida'; readonly motivo: MotivoSinReferencia; readonly desde: string; readonly hasta: string };
 
@@ -142,10 +144,14 @@ const media = (valores: readonly number[]): number => valores.reduce((s, v) => s
  * - nutrición: la media de los días con valor (dice cuántos son subtotales);
  * - entrenamiento: la mediana de las sesiones con valor;
  * - antropometría: la primera observación del rango, y solo se comparan contra ella los puntos de su mismo tramo.
+ * Un balde incompleto (el día en curso, o una semana que el período corta) no entra en la media ni en la mediana: su
+ * valor todavía no es el de un día o una semana completos. La referencia dice cuántos quedaron fuera.
  */
 export function referenciaDeLaSerie(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string): Referencia {
   if (!definicion.cambioRelativo || serie.scale !== 'RATIO') return { tipo: 'invalida', motivo: 'ESCALA_NO_ADMITE', desde, hasta };
-  const enRango = serie.points.filter((p) => p.value !== null && p.date >= desde && p.date <= hasta);
+  const conValor = serie.points.filter((p) => p.value !== null && p.date >= desde && p.date <= hasta);
+  const enRango = conValor.filter((p) => !p.partialBucket);
+  const incompletos = conValor.length - enRango.length;
   if (enRango.length === 0) return { tipo: 'invalida', motivo: 'SIN_OBSERVACIONES', desde, hasta };
   let valor: number;
   let usados: readonly PuntoAnalitico[] = enRango;
@@ -165,7 +171,7 @@ export function referenciaDeLaSerie(serie: SerieAnalitica, definicion: Definicio
     regla = 'MEDIA';
   }
   if (!(valor > 0)) return { tipo: 'invalida', motivo: 'NO_POSITIVA', desde, hasta };
-  return { tipo: 'valida', valor, n: usados.length, desde, hasta, fechas: usados.map((p) => p.date), regla, tramo, parciales: usados.filter((p) => p.quality === 'PARTIAL').length };
+  return { tipo: 'valida', valor, n: usados.length, desde, hasta, fechas: usados.map((p) => p.date), regla, tramo, parciales: usados.filter((p) => p.quality === 'PARTIAL').length, incompletos };
 }
 
 /** `100 × (valor − referencia) / referencia`. La referencia ya es válida (positiva). */
@@ -218,6 +224,11 @@ export interface ResumenDeUnPeriodo {
   readonly observaciones: number;
   /** Cuántas de las observaciones con valor son subtotales (nutrición). */
   readonly parciales: number;
+  /**
+   * Baldes incompletos con valor en el rango: el día en curso, o una semana que el período corta. La media y la mediana
+   * los dejan fuera (no son días o semanas completos); el total los incluye, porque lo registrado es real, y lo dice.
+   */
+  readonly incompletos: number;
   /** En antropometría: la primera y la última observación del tramo usado. */
   readonly primero: PuntoAnalitico | null;
   readonly ultimo: PuntoAnalitico | null;
@@ -228,33 +239,38 @@ export interface ResumenDeUnPeriodo {
 export function resumirPeriodo(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string): ResumenDeUnPeriodo {
   const delRango = serie.points.filter((p) => p.date >= desde && p.date <= hasta);
   const conValor = delRango.filter((p) => p.value !== null);
+  // La media y la mediana son de días, sesiones o semanas completos: un balde incompleto queda fuera, y se cuenta.
+  const completos = conValor.filter((p) => !p.partialBucket);
   const base = {
     desde,
     hasta,
     duracionDias: diasEntreFechas(desde, hasta) + 1,
     regla: definicion.resumenDePeriodo,
     observaciones: delRango.length,
-    parciales: conValor.filter((p) => p.quality === 'PARTIAL').length,
+    incompletos: conValor.length - completos.length,
   };
-  if (conValor.length === 0) return { ...base, valor: null, n: 0, primero: null, ultimo: null, tramo: null };
-  const valores = conValor.map((p) => p.value as number);
+  const vacio = { valor: null, n: 0, parciales: 0, primero: null, ultimo: null, tramo: null };
+  if (conValor.length === 0) return { ...base, ...vacio };
+  const deCompletos = { parciales: completos.filter((p) => p.quality === 'PARTIAL').length, primero: null, ultimo: null, tramo: null };
   switch (definicion.resumenDePeriodo) {
     case 'MEDIA_DE_DIAS_CON_DATOS':
-      return { ...base, valor: media(valores), n: conValor.length, primero: null, ultimo: null, tramo: null };
+      if (completos.length === 0) return { ...base, ...vacio };
+      return { ...base, ...deCompletos, valor: media(completos.map((p) => p.value as number)), n: completos.length };
     case 'MEDIANA':
-      return { ...base, valor: mediana(valores), n: conValor.length, primero: null, ultimo: null, tramo: null };
+      if (completos.length === 0) return { ...base, ...vacio };
+      return { ...base, ...deCompletos, valor: mediana(completos.map((p) => p.value as number)), n: completos.length };
     case 'TOTAL':
-      return { ...base, valor: valores.reduce((s, v) => s + v, 0), n: conValor.length, primero: null, ultimo: null, tramo: null };
+      return { ...base, valor: conValor.reduce((s, p) => s + (p.value as number), 0), n: conValor.length, parciales: conValor.filter((p) => p.quality === 'PARTIAL').length, primero: null, ultimo: null, tramo: null };
     case 'PRIMERO_Y_ULTIMO_COMPARABLES': {
       // El último tramo con observaciones en el rango: la diferencia se dice solo dentro de un mismo tramo comparable.
       const ultimo = conValor[conValor.length - 1] as PuntoAnalitico;
       const delTramo = conValor.filter((p) => p.segment === ultimo.segment);
-      return { ...base, valor: ultimo.value, n: delTramo.length, primero: delTramo[0] ?? null, ultimo, tramo: ultimo.segment };
+      return { ...base, valor: ultimo.value, n: delTramo.length, parciales: 0, primero: delTramo[0] ?? null, ultimo, tramo: ultimo.segment };
     }
   }
 }
 
-export type MotivoSinDiferencia = 'SIN_VALOR_EN_ALGUNO' | 'DURACIONES_DISTINTAS' | 'TRAMOS_NO_COMPARABLES';
+export type MotivoSinDiferencia = 'SIN_VALOR_EN_ALGUNO' | 'DURACIONES_DISTINTAS' | 'TRAMOS_NO_COMPARABLES' | 'PERIODO_INCOMPLETO';
 
 export interface ComparacionDePeriodos {
   readonly a: ResumenDeUnPeriodo;
@@ -271,6 +287,8 @@ export function compararPeriodos(serie: SerieAnalitica, definicion: DefinicionDe
   if (ra.valor === null || rb.valor === null) return { a: ra, b: rb, diferencia: null, motivoSinDiferencia: 'SIN_VALOR_EN_ALGUNO' };
   // Dos totales de períodos de distinta duración no se restan como si fueran equivalentes (encargo §13).
   if (definicion.resumenDePeriodo === 'TOTAL' && ra.duracionDias !== rb.duracionDias) return { a: ra, b: rb, diferencia: null, motivoSinDiferencia: 'DURACIONES_DISTINTAS' };
+  // Un total que incluye el día en curso (o una semana cortada) todavía no es el total de su duración.
+  if (definicion.resumenDePeriodo === 'TOTAL' && (ra.incompletos > 0 || rb.incompletos > 0)) return { a: ra, b: rb, diferencia: null, motivoSinDiferencia: 'PERIODO_INCOMPLETO' };
   if (definicion.resumenDePeriodo === 'PRIMERO_Y_ULTIMO_COMPARABLES' && ra.tramo !== rb.tramo) return { a: ra, b: rb, diferencia: null, motivoSinDiferencia: 'TRAMOS_NO_COMPARABLES' };
   return { a: ra, b: rb, diferencia: rb.valor - ra.valor, motivoSinDiferencia: null };
 }
@@ -299,6 +317,8 @@ export function resumenTextual(serie: SerieAnalitica, definicion: DefinicionDeMe
   ];
   const parciales = conValor.filter((p) => p.quality === 'PARTIAL').length;
   if (parciales > 0) partes.push(`${numero(parciales)} ${parciales === 1 ? 'es un subtotal' : 'son subtotales'} de lo registrado`);
+  const incompletos = conValor.filter((p) => p.partialBucket).length;
+  if (incompletos > 0) partes.push(`${numero(incompletos)} ${incompletos === 1 ? 'es de un día o una semana sin completar' : 'son de días o semanas sin completar'} (el día en curso, o una semana que el período corta)`);
   const sinValor = serie.points.length - conValor.length;
   if (sinValor > 0) partes.push(`${numero(sinValor)} sin valor conocido`);
   const tramos = new Set(conValor.map((p) => p.segment)).size;

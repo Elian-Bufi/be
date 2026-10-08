@@ -106,6 +106,11 @@ describe('API-DSH-04 · línea de tiempo de nutrición', () => {
     expect(tipos).toEqual(expect.arrayContaining(['NUTRITION_PLAN_ACTIVATED', 'NUTRITION_OBJECTIVE_SET', 'MEAL_RECORDED']));
     // Una entrada por registro (no por ítem), con los anulados marcados y no borrados.
     expect(r.data.entries.filter((x) => x.eventType === 'MEAL_RECORDED')).toHaveLength(4);
+    // Los conteos del período salen de la misma lectura: por tipo, por rasgo y cargas tardías.
+    expect(r.data.periodCounts.byEventType).toContainEqual({ eventType: 'MEAL_RECORDED', count: 4 });
+    expect(r.data.periodCounts.byEventType.some((x) => x.eventType.startsWith('TRAINING_') || x.eventType.startsWith('ANTHROPOMETRIC_'))).toBe(false);
+    expect(r.data.periodCounts.recordedLate).toBe(r.data.entries.filter((x) => x.recordedLate).length);
+    expect(r.data.periodCounts.byQuality.find((x) => x.quality === 'QUANTITIES_UNCONFIRMED')?.count).toBe(r.data.entries.filter((x) => x.quality.includes('QUANTITIES_UNCONFIRMED')).length);
 
     const tardio = r.data.entries.find((x) => x.timelineEntryId === `meal:${e.rectificado.recordId}`)!;
     expect(tardio.occurredDate).toBe(fechaCivil(haceDias(3)));
@@ -146,6 +151,8 @@ describe('API-DSH-04 · línea de tiempo de nutrición', () => {
     const anulados = await entradas(e.c.pro, e.c.ase.id, '?state=ANNULLED');
     expect(anulados.data.entries.map((x) => x.timelineEntryId)).toEqual([`meal:${e.anulado.recordId}`]);
     expect(anulados.data.totalMatching).toBe(1);
+    // Los conteos del período son anteriores a los filtros: no cambian con ellos.
+    expect(anulados.data.periodCounts).toEqual((await entradas(e.c.pro, e.c.ase.id)).data.periodCounts);
     const tardias = await entradas(e.c.pro, e.c.ase.id, '?late=true');
     expect(tardias.data.entries.map((x) => x.timelineEntryId).sort()).toEqual([`meal:${e.completo.recordId}`, `meal:${e.rectificado.recordId}`].sort());
     // La búsqueda no distingue acentos ni mayúsculas, y encuentra más allá de la primera página.
@@ -362,6 +369,8 @@ describe('Permisos del entorno profesional', () => {
     expect(despues.data).toMatchObject({ partialView: true, totalMatching: 0, entries: [], sourceDomains: ['NUTRITION'] });
     const todo = await entradas(pro, c.ase.id);
     expect(todo.data.entries.some((x) => x.domain === 'TRAINING')).toBe(false);
+    expect(todo.data.periodCounts.byEventType.some((x) => x.eventType.startsWith('TRAINING_'))).toBe(false);
+    expect(antes.data.periodCounts.byEventType.some((x) => x.eventType === 'TRAINING_OBJECTIVE_SET')).toBe(true);
 
     const p = ProyeccionResponseSchema.parse((await proyeccion(pro, c.ase.id, 'TRAINING_PROGRESSION_BY_EXERCISE').expect(200)).body);
     expect(p.data).toMatchObject({ dataState: 'NOT_AVAILABLE_TO_VIEW', partialView: true, result: null, sourceDomains: [] });

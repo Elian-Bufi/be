@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import {
+  conteosDelPeriodo,
   cumpleFiltros,
   ordenarEntradas,
   paginarEntradas,
@@ -122,6 +123,7 @@ export class AnalisisController {
         generatedAt,
         sourceDomains: permitidos.map((a) => DOMINIO[a]),
         totalMatching: coinciden.length,
+        periodCounts: conteosDelPeriodo(entradas),
         searchScope: 'WHOLE_PERIOD',
         entries: [...pagina.entradas],
       },

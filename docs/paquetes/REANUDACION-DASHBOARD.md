@@ -29,8 +29,9 @@
 | 1 | Delta, investigación, especificación y definición del paquete | Hecho | `aa24073` |
 | 2 | Dominio: diccionario de métricas, agregaciones, línea de tiempo y comparación de períodos, con pruebas | Hecho | `a1d94ce` |
 | 3 | API: API-DSH-04 (línea de tiempo), API-PRJ-01 (proyecciones), vistas guardadas, con migración y pruebas de integración | Hecho | `a54b769` |
-| 4 | Datos sintéticos reproducibles de 12 semanas y resultados esperados | Hecho | (este commit) |
-| 5 | Website: Resumen, Línea de tiempo y Analizar dentro de la ficha | En curso | — |
+| 4 | Datos sintéticos reproducibles de 12 semanas y resultados esperados | Hecho | `fce8f98` |
+| 5a | Website: Resumen, Línea de tiempo y Analizar dentro de la ficha; rendimiento, fallas y día en curso | Hecho | (este commit) |
+| 5b | Revisión visual de las tres vistas en los anchos y temas, con sus estados incompletos y de error | En curso | — |
 | 6 | Recorridos reales, capturas, accesibilidad, rendimiento y matriz de aceptación | Pendiente | — |
 | 7 | PR en borrador con la CI del head final | Pendiente | — |
 
@@ -64,6 +65,21 @@
   día. El objetivo reemplazado rige hasta que empieza su sucesor.
 - **Captura futura:** solo investigada (F-12 y F-13 en el diccionario); recomendación: circunstancias de la medición,
   esfuerzo percibido de la sesión y eventos de enfermedad, en ese orden.
+- **Website (hito 5a):** `apps/web/src/app/pro/advisees/seguimiento/`. Pestañas y período en la URL; `q` nunca. Lecturas
+  con guarda de respuesta tardía (contador de generación). recharts con carga diferida.
+- **Rendimiento (PRO-24):** el Resumen hacía unas 15 lecturas y tardaba más de 4 s. Ahora: las sesiones se cargan en
+  lote (`ejecucionesApi`, sin N+1), la línea de tiempo devuelve `periodCounts` (conteos por tipo, rasgo y cargas
+  tardías, antes de los filtros) y la cobertura nutricional sale de la lectura de lo disponible. Resultado: 10 lecturas
+  en dos olas, ~0,4 s.
+- **Límite de lecturas protegidas:** 120 por minuto por profesional (el de siempre). Explorar muy rápido puede tocarlo:
+  la pantalla dice «muchas consultas seguidas, esperá un minuto» con «Reintentar», distinto de la falta de red o de un
+  servicio caído (`motivoDeFalla` y `textoDeFalla` en `contexto.tsx`). Una falla nunca se muestra como «sin datos».
+- **Día en curso:** la serie ya marcaba `partialBucket`, pero ni la media del período ni la referencia lo usaban (con el
+  desayuno de hoy, la media de 7 días bajaba ~240 kcal). Ahora la media y la mediana dejan fuera los baldes incompletos
+  y dicen cuántos; el total los cuenta y lo dice; dos totales no se restan si alguno está incompleto
+  (`PERIODO_INCOMPLETO`). En el gráfico son puntos huecos; la lectura, el detalle y la tabla dicen «día en curso».
+- **Cambio relativo:** la referencia (regla, rango, valor, n, subtotales e incompletos) se muestra junto al control, y el
+  panel de lectura da el cambio y el valor real.
 
 ## Pruebas al cierre de cada hito
 
@@ -79,6 +95,10 @@
 | 4 | `regenerar.sh` + `verificar.mjs` (valores a mano) | 25/25; con la cena de la etapa 1 alterada, 23/71: detecta |
 | 4 | Dominio completo; integración `analisis` (18), `evolucion-antropometrica` y `schema` | 548/548; 77/77 |
 | 4 | Tiempos locales con 12 semanas (API en Node, PG local) | Línea de tiempo 212 ms; nutrición 110 ms; entrenamiento 166 ms |
+| 5a | Dominio: `analisis-longitudinal.test.ts` (conteos del período; día en curso fuera de la media, de la referencia y de la resta de totales) | 33/33 |
+| 5a | Integración `analisis` con `periodCounts` (no cambian con los filtros; un alcance revocado no aporta ni un conteo) | 18/18 (una corrida con un 503 intermitente; ver hallazgos) |
+| 5a | `tiempos.mjs 84 7` (12 semanas, mediana de 7 después de calentar) | Cada lectura ≤ 184 ms (máx.); Resumen completo 409 ms |
+| 5a | Typecheck de la web y de la API; `contraste.test.cjs` | Sin errores; 12/12 |
 
 ## Hallazgos fuera del paquete
 
@@ -86,6 +106,10 @@
   firma. Cuando ese carácter es A, B, C o D (1 de cada 16 firmas, porque cambia con la hora de vencimiento) solo cambian
   bits de relleno y la firma sigue valiendo: la prueba falla sin un defecto real. Se arregla alterando un carácter del
   medio. No se toca en este paquete.
+- **Baja · 503 intermitente en local:** en una de tres corridas de `analisis.int-spec.ts`, la proyección antropométrica
+  de más de 92 días respondió 503 (P2028). Esa corrida tardó 48,7 s contra 21 s de las otras: la máquina estaba cargada
+  justo después de compilar. No se reprodujo aislada ni en la corrida completa siguiente. Es el patrón documentado en
+  EVIDENCIA/P2028 (transacción de lectura con el plazo por defecto). Se vigila en la CI; si aparece allí, se trata.
 
 ## Próximo paso
 

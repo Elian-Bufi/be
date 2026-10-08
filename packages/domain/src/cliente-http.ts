@@ -602,9 +602,12 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     },
 
     // ─── WP-03 · DSH-03 mínimo (DL-031) ────────────────────────────────────────────────────────
-    /** API-DSH-03. 404 = no hay acceso que mostrar: la UI no distingue por qué (UC-I02 E05). */
-    consultarDashboard(token: string, asesoradoId: string): Promise<Resultado<DashboardResponse>> {
-      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/dashboard`, { token, esquema: DashboardResponseSchema });
+    /**
+     * API-DSH-03. 404 = no hay acceso que mostrar: la UI no distingue por qué (UC-I02 E05). El período es opcional
+     * (instantes RFC 3339): sin él, los conteos son de toda la historia, como hasta ahora.
+     */
+    consultarDashboard(token: string, asesoradoId: string, periodo?: { readonly periodStart?: string; readonly periodEnd?: string }): Promise<Resultado<DashboardResponse>> {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/dashboard${query({ periodStart: periodo?.periodStart, periodEnd: periodo?.periodEnd })}`, { token, esquema: DashboardResponseSchema });
     },
     // ─── PF-09 · Plantillas de plan de entrenamiento (DL-108) ─────────────────────────────
     crearPlantillaDeEntrenamiento(token: string, cuerpo: CrearPlantillaDeEntrenamientoRequest, clave: string) {

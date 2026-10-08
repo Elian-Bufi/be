@@ -88288,6 +88288,87 @@
                           "minimum": 0,
                           "maximum": 9007199254740991
                         },
+                        "periodCounts": {
+                          "type": "object",
+                          "properties": {
+                            "byEventType": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "eventType": {
+                                    "type": "string",
+                                    "enum": [
+                                      "NUTRITION_PLAN_ACTIVATED",
+                                      "NUTRITION_OBJECTIVE_SET",
+                                      "MEAL_RECORDED",
+                                      "NUTRITION_REVIEW_RECORDED",
+                                      "TRAINING_PLAN_ACTIVATED",
+                                      "TRAINING_OBJECTIVE_SET",
+                                      "TRAINING_SESSION_RECORDED",
+                                      "TRAINING_REVIEW_RECORDED",
+                                      "ANTHROPOMETRIC_EVALUATION_RECORDED",
+                                      "FOLLOW_UP_OPENED",
+                                      "FOLLOW_UP_CLOSED"
+                                    ]
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "eventType",
+                                  "count"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "byQuality": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "quality": {
+                                    "type": "string",
+                                    "enum": [
+                                      "QUANTITIES_UNCONFIRMED",
+                                      "QUANTITIES_FROM_PLAN",
+                                      "QUANTITIES_REPORTED",
+                                      "NUTRIENTS_INCOMPLETE",
+                                      "DIFFERENT_MEAL",
+                                      "SESSION_SUMMARY_ONLY",
+                                      "SESSION_NOT_COMPLETED",
+                                      "SESSION_WITH_DEVIATION"
+                                    ]
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "quality",
+                                  "count"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "recordedLate": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "byEventType",
+                            "byQuality",
+                            "recordedLate"
+                          ],
+                          "additionalProperties": false
+                        },
                         "searchScope": {
                           "type": "string",
                           "const": "WHOLE_PERIOD"
@@ -88601,6 +88682,7 @@
                         "generatedAt",
                         "sourceDomains",
                         "totalMatching",
+                        "periodCounts",
                         "searchScope",
                         "entries"
                       ],

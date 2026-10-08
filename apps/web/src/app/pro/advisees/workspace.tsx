@@ -11,16 +11,28 @@
  * - 404 = no hay nada que mostrar: el mismo texto neutral para inexistente, ajeno, revocado o finalizado
  *   (UC-I02 E05; 10-B10:407). Es el estado que se ve cuando el asesorado revoca: el corte no espera a la sesión.
  * «Actualizar» vuelve a preguntar a la API y muestra la hora de la última consulta.
+ *
+ * WP-DASHBOARD-PROFESIONAL: la ficha tiene tres vistas —Resumen, Línea de tiempo y Analizar— con el mismo período,
+ * todo en la URL (`vista=`, `p=` o `desde`/`hasta`, y el estado de cada vista). El Resumen de API-DSH-03 cuenta en ese
+ * período; las pestañas de dominio siguen igual y son donde se abre el registro en su contexto completo.
  */
 import { COPY_FORMULARIOS, COPY_VINCULO, estadoParaMostrar, type DashboardResponse, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Cargando, ErrorConReintento } from '../../../components/estados';
 import { Aviso } from '../../../components/formulario';
 import { api } from '../../../lib/api';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
+import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
+import { ProveedorDelSeguimiento } from './seguimiento/contexto';
+import { leerPeriodo, leerVista, periodoEnInstantes } from './seguimiento/estado';
+import { LineaDeTiempo } from './seguimiento/linea-de-tiempo';
+import { ResumenDelSeguimiento } from './seguimiento/resumen';
 import { TarjetaDeAntropometria, TarjetaDeEntrenamiento, TarjetaDeNutricion } from './tarjetas-de-dominio';
+
+const Analizar = dynamic(() => import('./seguimiento/analizar').then((m) => m.Analizar), { ssr: false, loading: () => <Cargando /> });
 
 type Resumen = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'no-disponible' } | { tipo: 'listo'; datos: DashboardResponse['data'] };
 type Encabezado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'listo'; vinculos: readonly Vinculo[] };
@@ -28,7 +40,12 @@ type Encabezado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'listo'; vi
 const hora = new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
 export function Workspace() {
-  const id = useSearchParams().get('id') ?? '';
+  const parametros = useSearchParams();
+  const id = parametros.get('id') ?? '';
+  const vista = leerVista(parametros.get('vista'));
+  const claveDelPeriodo = `${parametros.get('p') ?? ''}|${parametros.get('desde') ?? ''}|${parametros.get('hasta') ?? ''}`;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const periodo = useMemo(() => leerPeriodo(new URLSearchParams(parametros.toString())), [claveDelPeriodo]);
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees?id=${id}`);
   const [resumen, setResumen] = useState<Resumen>({ tipo: 'cargando' });
   const [encabezado, setEncabezado] = useState<Encabezado>({ tipo: 'cargando' });
@@ -42,7 +59,7 @@ export function Workspace() {
     setResumen({ tipo: 'cargando' });
     setEncabezado({ tipo: 'cargando' });
     const [panel, lista] = await Promise.all([
-      id ? api.consultarDashboard(token, id) : Promise.resolve(null),
+      id ? api.consultarDashboard(token, id, periodoEnInstantes(periodo)) : Promise.resolve(null),
       api.consultarVinculos(token),
     ]);
     if (esta !== generacion.current) return;
@@ -53,7 +70,7 @@ export function Workspace() {
     setEncabezado(
       lista.ok ? { tipo: 'listo', vinculos: lista.datos.data.filter((v) => v.professional.identityId === yoId && v.advisee.identityId === id) } : { tipo: 'error' },
     );
-  }, [token, yoId, id, sesionPerdida]);
+  }, [token, yoId, id, sesionPerdida, periodo]);
 
   useEffect(() => {
     void consultar();
@@ -66,6 +83,44 @@ export function Workspace() {
 
   const nombre =
     resumen.tipo === 'listo' ? resumen.datos.advisee.displayName : encabezado.tipo === 'listo' && encabezado.vinculos[0] ? encabezado.vinculos[0].advisee.displayName : null;
+
+  // El resumen de API-DSH-03 en el período, con sus tarjetas por dominio. Sin acceso, es lo único que se ve.
+  const seccionDeResumen = (
+    <section className="seccion" aria-labelledby="titulo-resumen" aria-live="polite">
+      <h2 id="titulo-resumen">Resumen</h2>
+      {resumen.tipo === 'cargando' ? <Cargando /> : null}
+      {resumen.tipo === 'error' ? <ErrorConReintento onReintentar={consultar} /> : null}
+      {resumen.tipo === 'no-disponible' ? (
+        <Aviso tipo="info">
+          <p>{COPY_VINCULO.recursoNoDisponible}</p>
+          <p>
+            <Link href="/pro">{COPY_VINCULO.volver}</Link>
+          </p>
+        </Aviso>
+      ) : null}
+      {resumen.tipo === 'listo' ? (
+        <>
+          {/* Un aviso único, sin listar qué falta ni por qué (B10-08 §8.4; 10-B04 §41). */}
+          {resumen.datos.partialView ? <p className="nota">{COPY_VINCULO.vistaParcial}</p> : null}
+          <div className="tarjetas-de-dominio">
+            <TarjetaDeNutricion entrada={resumen.datos.domains.nutrition} id={id} />
+            <TarjetaDeEntrenamiento entrada={resumen.datos.domains.training} id={id} />
+            <TarjetaDeAntropometria entrada={resumen.datos.domains.anthropometry} id={id} />
+          </div>
+          {/* Transversal a los tres alcances (WP-07): no cuelga de ninguno, así que va fuera de la lista. */}
+          <p>
+            <Link href={`/pro/advisees/forms?id=${encodeURIComponent(id)}`}>{COPY_FORMULARIOS.pedirInformacion}</Link>
+          </p>
+        </>
+      ) : null}
+      <div className="acciones">
+        <button type="button" className="boton boton--secundario" onClick={() => void consultar()} disabled={resumen.tipo === 'cargando'}>
+          Actualizar
+        </button>
+      </div>
+      {consultadoEn ? <p className="nota">Última consulta: {hora.format(consultadoEn)}</p> : null}
+    </section>
+  );
 
   return (
     <div className="secciones">
@@ -89,41 +144,24 @@ export function Workspace() {
         ) : null}
       </section>
 
-      <section className="seccion" aria-labelledby="titulo-resumen" aria-live="polite">
-        <h2 id="titulo-resumen">Resumen</h2>
-        {resumen.tipo === 'cargando' ? <Cargando /> : null}
-        {resumen.tipo === 'error' ? <ErrorConReintento onReintentar={consultar} /> : null}
-        {resumen.tipo === 'no-disponible' ? (
-          <Aviso tipo="info">
-            <p>{COPY_VINCULO.recursoNoDisponible}</p>
-            <p>
-              <Link href="/pro">{COPY_VINCULO.volver}</Link>
-            </p>
-          </Aviso>
-        ) : null}
-        {resumen.tipo === 'listo' ? (
-          <>
-            {/* Un aviso único, sin listar qué falta ni por qué (B10-08 §8.4; 10-B04 §41). */}
-            {resumen.datos.partialView ? <p className="nota">{COPY_VINCULO.vistaParcial}</p> : null}
-            <div className="tarjetas-de-dominio">
-              <TarjetaDeNutricion entrada={resumen.datos.domains.nutrition} id={id} />
-              <TarjetaDeEntrenamiento entrada={resumen.datos.domains.training} id={id} />
-              <TarjetaDeAntropometria entrada={resumen.datos.domains.anthropometry} id={id} />
-            </div>
-            {/* Transversal a los tres alcances (WP-07): no cuelga de ninguno, así que va fuera de la lista. */}
-            <p>
-              <Link href={`/pro/advisees/forms?id=${encodeURIComponent(id)}`}>{COPY_FORMULARIOS.pedirInformacion}</Link>
-            </p>
-          </>
-        ) : null}
-        <div className="acciones">
-          <button type="button" className="boton boton--secundario" onClick={() => void consultar()} disabled={resumen.tipo === 'cargando'}>
-            Actualizar
-          </button>
-        </div>
-        {consultadoEn ? <p className="nota">Última consulta: {hora.format(consultadoEn)}</p> : null}
-      </section>
-
+      {token && resumen.tipo !== 'no-disponible' ? (
+        <ProveedorDelSeguimiento token={token} asesoradoId={id} sesionPerdida={sesionPerdida}>
+          <div className="barra-del-seguimiento">
+            <PestanasDelSeguimiento actual={vista} />
+            <SelectorDePeriodo />
+          </div>
+          {vista === 'resumen' ? (
+            <>
+              {seccionDeResumen}
+              {resumen.tipo === 'listo' ? <ResumenDelSeguimiento /> : null}
+            </>
+          ) : null}
+          {vista === 'linea' ? <LineaDeTiempo /> : null}
+          {vista === 'analizar' ? <Analizar /> : null}
+        </ProveedorDelSeguimiento>
+      ) : (
+        seccionDeResumen
+      )}
     </div>
   );
 }
