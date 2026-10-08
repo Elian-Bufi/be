@@ -314,4 +314,18 @@ entorno, la evidencia y lo pendiente.
 
 ## 14. Estado de la implementación
 
-Se completa al cerrar cada hito; mientras tanto, ver `REANUDACION-DASHBOARD.md`.
+**Implementado en la rama** (sin merge ni despliegue): las tres vistas dentro de la ficha, API-DSH-04 con
+`periodCounts`, API-PRJ-01 (3 claves con derivación, 5 con `INSUFFICIENT_INFORMATION`), la familia API-VAN con su
+migración, la exportación CSV de Analizar (en el navegador, sin operación nueva), los datos sintéticos de 12 semanas y
+el conjunto de volumen de un año.
+
+**Diseño:** escritorio primero (pedido de Dirección del 2026-10-08); lo responsivo se conserva sin desbordes. Ver
+`EVIDENCIA/DASHBOARD-PROFESIONAL/ESPECIFICACION.md` §6.
+
+**Verificado en local:** dominio (incluido el análisis y la exportación), integración contra PostgreSQL 16, el
+verificador de los datos sintéticos (25 de 25) y el recorrido real en Chrome (57 comprobaciones funcionales, 30 de anchos
+y temas, axe sin violaciones automáticas). Rendimiento dentro del presupuesto declarado, con el límite de la línea de
+tiempo de un año explicado. Todo en `EVIDENCIA/DASHBOARD-PROFESIONAL/ACEPTACION.md`.
+
+**Pendiente:** la CI del head del PR, la revisión humana (incluido un lector de pantalla), la decisión de Dirección
+sobre DL-126 a DL-128 y la impresión del análisis (no se ofrece).

@@ -1,12 +1,13 @@
 // Tiempos de las lecturas del entorno profesional contra la API local, para el presupuesto de PRO-24 (ACEPTACION.md).
-// Uso: node tiempos.mjs [días=84] [vueltas=7]   (lee trabajo/estado.json; escribe trabajo/tiempos-<días>.json)
+// Uso: node tiempos.mjs [días=84] [vueltas=7] [A|C]   (lee trabajo/estado.json; escribe trabajo/tiempos-<asesorado>-<días>.json)
+// A es el asesorado de 12 semanas; C, el de volumen (un año: 1.460 comidas, 157 sesiones y 26 tomas).
 // Inicia una sola sesión por corrida: el límite de inicios es 5 cada 15 minutos.
 import fs from 'node:fs';
 import { enTrabajo } from './rutas.mjs';
 
 const e = JSON.parse(fs.readFileSync(enTrabajo('estado.json'), 'utf8'));
 const O = 'http://localhost:3001/api/v1';
-const [dias = '84', vueltas = '7'] = process.argv.slice(2);
+const [dias = '84', vueltas = '7', quien = 'A'] = process.argv.slice(2);
 const N = Number(vueltas);
 const sesion = await (
   await fetch(`${O}/auth/sessions`, {
@@ -17,10 +18,15 @@ const sesion = await (
 ).json();
 const token = sesion.data.session.accessToken;
 
-const pedir = async (ruta) => {
+const pedir = async (ruta, reintento = true) => {
   const t0 = performance.now();
   const r = await fetch(`${O}${ruta}`, { headers: { Authorization: `Bearer ${token}` } });
   const cuerpo = await r.text();
+  // El cupo de lecturas protegidas es de 120 por minuto: si se agota, se espera a la ventana siguiente y se repite.
+  if (r.status === 429 && reintento) {
+    await new Promise((x) => setTimeout(x, 61_000));
+    return pedir(ruta, false);
+  }
   return { ms: performance.now() - t0, status: r.status, cuerpo };
 };
 const resumir = (t) => {
@@ -43,7 +49,9 @@ const medir = async (nombre, ruta) => {
 
 const desde = new Date(Date.now() - (Number(dias) - 1) * 86400000).toISOString().slice(0, 10);
 const q = `periodStart=${desde}`;
-const a = `/advisees/${e.aseId}`;
+const asesoradoId = quien === 'C' ? e.aseCId : e.aseId;
+if (!asesoradoId) throw new Error('falta el asesorado de volumen: node datos/generar.mjs volumen');
+const a = `/advisees/${asesoradoId}`;
 // Si una corrida anterior agotó el cupo de lecturas, se espera a que venza la ventana.
 let primera = await pedir(`${a}/projections/TRAINING_PROGRESSION_BY_EXERCISE?${q}`);
 if (primera.status === 429) {
@@ -53,7 +61,7 @@ if (primera.status === 429) {
 }
 const lista = JSON.parse(primera.cuerpo);
 const ejercicio = encodeURIComponent([...lista.data.result.exercises].sort((x, y) => y.sessions - x.sessions)[0].exerciseKey);
-console.log(`Período de ${dias} días desde ${desde}; ${N} vueltas secuenciales después de una de calentamiento.`);
+console.log(`Asesorado ${quien}; período de ${dias} días desde ${desde}; ${N} vueltas secuenciales después de una de calentamiento.`);
 
 const lecturas = {
   'DSH-03 resumen por dominio': `${a}/dashboard`,
@@ -100,4 +108,4 @@ for (let i = 0; i < N; i++) {
 }
 const resumen = resumir(vueltasDelResumen);
 fila(`Resumen completo (${ola1.length} + ${ola2.length} lecturas)`, resumen);
-fs.writeFileSync(enTrabajo(`tiempos-${dias}.json`), JSON.stringify({ dias: Number(dias), desde, vueltas: N, lecturas: resultados, resumen }, null, 2));
+fs.writeFileSync(enTrabajo(`tiempos-${quien}-${dias}.json`), JSON.stringify({ asesorado: quien, dias: Number(dias), desde, vueltas: N, lecturas: resultados, resumen }, null, 2));

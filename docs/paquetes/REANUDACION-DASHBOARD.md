@@ -31,8 +31,8 @@
 | 3 | API: API-DSH-04 (línea de tiempo), API-PRJ-01 (proyecciones), vistas guardadas, con migración y pruebas de integración | Hecho | `a54b769` |
 | 4 | Datos sintéticos reproducibles de 12 semanas y resultados esperados | Hecho | `fce8f98` |
 | 5a | Website: Resumen, Línea de tiempo y Analizar dentro de la ficha; rendimiento, fallas y día en curso | Hecho | `ec175d8` |
-| 5b | Revisión visual, diseño de escritorio, exportación CSV y recorrido real automatizado (`recorrido.mjs`, 86/86) | Hecho | (este commit) |
-| 6 | Recorridos reales, capturas, accesibilidad, rendimiento y matriz de aceptación | Pendiente | — |
+| 5b | Revisión visual, diseño de escritorio, exportación CSV y recorrido real automatizado (`recorrido.mjs`, 86/86) | Hecho | `a84dd62` |
+| 6 | Conjunto de volumen, rendimiento (memoria de macros), matriz de aceptación, guion de demostración, capturas y resultados versionados | Hecho | (este commit) |
 | 7 | PR en borrador con la CI del head final | Pendiente | — |
 
 ## Decisiones tomadas (resumen; el detalle está en la definición del paquete)
@@ -122,6 +122,11 @@
 | 5a | Typecheck de la web y de la API; `contraste.test.cjs` | Sin errores; 12/12 |
 | 5b | Dominio completo (con `exportacion-del-analisis.test.ts`: desconocido, cero, subtotal, día en curso, redondeo, zona y fórmulas) | 553/553 |
 | 5b | `recorrido.mjs todo` (funcional + capturas, API recién reiniciada) | 86/86; axe sin violaciones en 6 estados; Resumen con la API en uso 779 ms; primera carga en frío 2.617 ms (dato) |
+| 6 | Dominio con la prueba de zonas (PRO-17), también con el proceso en Tokio y en UTC | 34/34 del análisis; 37/37 con la exportación en cada zona |
+| 6 | `datos/generar.mjs volumen` + verificador de A | C: 1.460 comidas, 157 sesiones, 26 tomas; A sigue 25/25 |
+| 6 | `tiempos.mjs` (A 84 días y C 366 días) con la memoria de macros | A: lecturas ≤ 177 ms, Resumen 405 ms. C: línea de tiempo ~380 ms, nutrición ~230 ms, Resumen 991 ms |
+| 6 | Perfil de CPU de la API (línea de tiempo de un año) | 48 % esperando a PostgreSQL, 18 % Prisma; sin N+1 (escala lineal) |
+| 6 | `recorrido.mjs funcional` con la superposición compatible | 57/57 |
 
 ## Hallazgos fuera del paquete
 

@@ -329,3 +329,70 @@ export function tomasHistoricas(hoy) {
 
 /** La toma de ayer, que el profesional carga hoy por la API (API-ANT-02). */
 export const tomaReciente = (hoy) => ({ fecha: diaMenos(hoy, 1), hora: '08:00', protocolo: 'perfil', mediciones: [['peso', 79.8, 'kg'], ['perimetro-cintura', 88.2, 'cm']] });
+
+// ─── Volumen (PRO-24): un año denso para medir, no para leer ────────────────────────────────────────────────────────
+
+/** Los días del conjunto de volumen: D-365..D-1 (un año entero, más que el período máximo de 366 días con hoy). */
+export const DIAS_DE_VOLUMEN = 365;
+
+/**
+ * Las comidas del asesorado C, para medir con volumen: cuatro por día durante un año, con la etapa 1 del plan. Variación
+ * suficiente para que las consultas recorran todos los caminos (opciones, subtotales, cantidades informadas), sin
+ * pretender una historia: los resultados esperados a mano son los del asesorado A.
+ */
+export function comidasDeVolumen(hoy) {
+  const salida = [];
+  for (let k = DIAS_DE_VOLUMEN; k >= 1; k--) {
+    const fecha = diaMenos(hoy, k);
+    for (const comida of ['Desayuno', 'Almuerzo', 'Merienda', 'Cena']) {
+      const ocurrio = instante(fecha, HORA_DE_COMIDA[comida]);
+      const r = { fecha, comida, plan: 'v1', opcion: comida === 'Almuerzo' ? k % 2 : 0, consumo: { status: 'PLAN_PORTIONS' }, ocurrio, registrado: new Date(ocurrio.getTime() + 10 * 60 * 1000), rectificacion: null, anulacion: null, diferente: null };
+      if (comida === 'Merienda' && k % 9 === 0) r.consumo = { status: 'UNCONFIRMED' };
+      if (comida === 'Cena' && k % 13 === 0) r.consumo = { status: 'REPORTED', informado: { salmon: 120, papa: 150, aceite: 'NO_COMIDO' } };
+      salida.push(r);
+    }
+  }
+  return salida;
+}
+
+/** Las sesiones del asesorado C: lunes y viernes A, miércoles B, a las 18:30; la carga sube 2,5 kg por semana en ciclos de 8. */
+export function sesionesDeVolumen(hoy) {
+  const salida = [];
+  for (let k = DIAS_DE_VOLUMEN; k >= 1; k--) {
+    const fecha = diaMenos(hoy, k);
+    const dds = diaDeLaSemana(fecha);
+    if (dds !== 0 && dds !== 2 && dds !== 4) continue;
+    const ciclo = Math.floor((DIAS_DE_VOLUMEN - k) / 7) % 8;
+    const sesion = dds === 2 ? 'ses-b' : 'ses-a';
+    const s = { fecha, plan: 'v1', sesion, ocurrio: instante(fecha, '18:30'), registrado: instante(fecha, '19:45'), condicion: 'REALIZADA', granularidad: 'SERIE', motivo: null, resumen: null, correccion: null };
+    s.ejercicios =
+      sesion === 'ses-a'
+        ? [
+            { prescriptionId: 'rx-sentadilla', ejercicio: 'sentadilla', sets: [1, 2, 3].map((i) => serie(i, 60 + 2.5 * ciclo, 8, i === 3 ? 1 : 2)) },
+            { prescriptionId: 'rx-peso-muerto', ejercicio: 'pesoMuerto', sets: [1, 2, 3].map((i) => serie(i, 70 + 2.5 * ciclo, 6, 2)) },
+            { prescriptionId: 'rx-zancadas', ejercicio: 'zancadas', sets: [1, 2, 3].map((i) => serie(i, null, 10, null)) },
+          ]
+        : [
+            { prescriptionId: 'rx-banca', ejercicio: 'banca', sets: [1, 2, 3].map((i) => serie(i, 50 + 1.25 * ciclo, 8, 2)) },
+            { prescriptionId: 'rx-remo', ejercicio: 'remo', sets: [1, 2, 3].map((i) => serie(i, 40 + 1.25 * ciclo, 10, 2)) },
+            { prescriptionId: 'rx-dominadas', ejercicio: 'dominadas', sets: [1, 2, 3].map((i) => serie(i, null, 6, null)) },
+          ];
+    salida.push(s);
+  }
+  return salida;
+}
+
+/** Las tomas del asesorado C: una cada dos semanas, con el perfil completo. */
+export function tomasDeVolumen(hoy) {
+  const salida = [];
+  for (let k = DIAS_DE_VOLUMEN - 1; k >= 1; k -= 14) {
+    const i = Math.floor((DIAS_DE_VOLUMEN - k) / 14);
+    salida.push({
+      fecha: diaMenos(hoy, k),
+      hora: '08:00',
+      protocolo: 'perfil',
+      mediciones: [['peso', Number((84 - 0.15 * i).toFixed(1)), 'kg'], ['perimetro-cintura', Number((94 - 0.2 * i).toFixed(1)), 'cm'], ...pliegues(14, 16.5, 13, 24, 18, 9.5)],
+    });
+  }
+  return salida;
+}

@@ -1,0 +1,190 @@
+{
+  "modo": "capturas",
+  "inicio": "2026-10-08T19:38:00.975Z",
+  "fin": "2026-10-08T19:39:31.198Z",
+  "hoy": "2026-10-08",
+  "total": 30,
+  "fallas": 0,
+  "resultados": [
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 1440 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 1440 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 1440 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 1280 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 1280 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 1280 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 1024 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 1024 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 1024 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 768 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 768 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 768 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 390 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 390 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 390 px en azul-noche: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 1440 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 1440 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 1440 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 1280 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 1280 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 1280 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 1024 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 1024 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 1024 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 768 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 768 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 768 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 390 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 390 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 390 px en claro: sin desborde de costado, con pestañas y períodos",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

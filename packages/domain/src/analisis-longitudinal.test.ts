@@ -585,6 +585,23 @@ test('filtros combinados y búsqueda sin acentos ni mayúsculas, sobre lo visibl
   assert.equal(cumpleFiltros(e, { soloTardias: true }), false);
 });
 
+test('fechas civiles en otra zona: el día del hecho y la carga tardía no se corren por UTC (PRO-17)', () => {
+  // 23:30 del 5/10 en Buenos Aires son las 02:30 UTC del 6/10: para el asesorado sigue siendo el 5/10.
+  assert.equal(registradoTarde('2026-10-05', '2026-10-06T02:30:00.000Z', 'America/Argentina/Buenos_Aires'), false);
+  // En Tokio, ese instante ya es el 6/10 a las 11:30: es una carga del día siguiente.
+  assert.equal(registradoTarde('2026-10-05', '2026-10-06T02:30:00.000Z', 'Asia/Tokyo'), true);
+  // La semana va de lunes a domingo en fechas civiles: no depende de la zona del proceso.
+  assert.equal(lunesDe('2026-10-04'), '2026-09-28', 'un domingo es de la semana que empezó el lunes anterior');
+  assert.equal(lunesDe('2026-10-05'), '2026-10-05');
+  assert.deepEqual(
+    semanasDelPeriodo('2026-10-01', '2026-10-08').map((s) => [s.lunes, s.diasEnElPeriodo, s.parcial]),
+    [
+      ['2026-09-28', 4, true],
+      ['2026-10-05', 4, true],
+    ],
+  );
+});
+
 test('los conteos del período: por tipo, por rasgo y cargas tardías, sin tipos ni rasgos en cero (PRO-01)', () => {
   const conteos = conteosDelPeriodo([
     entrada('a', '2026-10-05', '13:00', '2026-10-07T15:00:00.000Z', { quality: ['QUANTITIES_UNCONFIRMED', 'DIFFERENT_MEAL'] }),

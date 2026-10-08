@@ -192,7 +192,17 @@ async function axe(page) {
   });
 }
 
-const captura = (page, nombre) => page.screenshot({ path: fileURLToPath(new URL(`${nombre}.png`, DIR)), fullPage: true });
+/**
+ * Una captura de página completa. La línea de tiempo tiene 50 entradas por página: se recorta a sus primeros 2.400 px
+ * (filtros y los primeros días), que es lo que hace falta para ver el diseño; el resto es la misma entrada repetida.
+ */
+async function captura(page, nombre) {
+  const path = fileURLToPath(new URL(`${nombre}.png`, DIR));
+  if (!nombre.startsWith('linea-')) return page.screenshot({ path, fullPage: true });
+  const alto = await page.evaluate(() => document.documentElement.scrollHeight);
+  const ancho = page.viewport()?.width ?? 1440;
+  return page.screenshot({ path, clip: { x: 0, y: 0, width: ancho, height: Math.min(alto, 2400) }, captureBeyondViewport: true });
+}
 
 // ─── Recorrido funcional ──────────────────────────────────────────────────────────────────────
 
@@ -382,6 +392,19 @@ async function funcional() {
     const referencias = await texto(page, '.referencias');
     const relativa = await texto(page, '.panel-de-lectura');
     comprobar('PRO-08', 'El cambio relativo muestra su referencia (regla, rango, valor y n) y la lectura da el % y el valor real', /media de los días con valor del .* \(n = \d+/.test(referencias) && /% contra la referencia · valor real/.test(relativa), `${referencias.slice(0, 160)} || ${relativa.slice(0, 160)}`);
+
+    // Superposición compatible: dos macronutrientes en gramos comparten un gráfico, con trazos distintos.
+    await cupo(v);
+    await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent('nutricion.proteinas,nutricion.carbohidratos')}&modo=S`);
+    await quieto(page, v);
+    const superpuestas = await textos(page, '.grafico__titulo');
+    const leyenda = await texto(page, '.leyenda');
+    comprobar(
+      'PRO-08',
+      'Proteínas y carbohidratos (misma familia y unidad) se superponen en un solo gráfico, con trazos distintos',
+      superpuestas.length === 1 && /Superpuestas en valores reales \(g\)/.test(superpuestas[0]) && /línea continua/.test(leyenda) && /línea rayada/.test(leyenda),
+      `${superpuestas.join(' | ')} · ${leyenda.slice(0, 160)}`,
+    );
 
     // Dos etapas, con el mismo criterio y sin conclusiones causales.
     await abrirDetalles(page, 'details.presets');

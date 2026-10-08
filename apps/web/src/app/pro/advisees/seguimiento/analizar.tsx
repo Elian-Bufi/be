@@ -379,7 +379,9 @@ const REGLA_DE_REFERENCIA: Readonly<Record<Extract<Referencia, { tipo: 'valida' 
 /** La referencia explícita del cambio relativo: regla, rango, valor y n (encargo §12; DICCIONARIO §1). */
 function textoDeReferencia(r: Extract<Referencia, { tipo: 'valida' }>, s: Lista): string {
   const extras = [
-    `n = ${numero(r.n)}`,
+    // Con menos de 3 observaciones la referencia es frágil (un día atípico mueve todo el cambio relativo): se dice, sin
+    // bloquear. La primera toma de antropometría es una sola por definición.
+    `n = ${numero(r.n)}${r.regla !== 'PRIMERA' && r.n < 3 ? ': pocas observaciones, la referencia es frágil' : ''}`,
     ...(r.parciales ? [`${numero(r.parciales)} ${r.parciales === 1 ? 'subtotal' : 'subtotales'}`] : []),
     ...(r.incompletos ? [`${numero(r.incompletos)} sin completar, fuera de la referencia`] : []),
     ...(r.tramo !== null ? ['solo se compara con su mismo tramo comparable'] : []),

@@ -150,3 +150,37 @@ estado) y la acción «Abrir registro», que vuelve con el mismo estado.
 - **Animaciones** mínimas, desactivadas con `prefers-reduced-motion`.
 - **Anchos objetivo:** 1440, 1280, 1024, 768 y 390 px. En 390, los controles se apilan y los paneles ocupan el ancho,
   sin desplazamiento en dos direcciones (1.4.10).
+
+## 6. Lo implementado frente a esta especificación (hitos 5a y 5b)
+
+**Escritorio primero.** Dirección pidió el 2026-10-08 pensar el entorno profesional para escritorio; lo responsivo se
+conserva y solo tiene que no romperse (768, 390 y 320 px se verifican sin desbordes). En consecuencia:
+
+| Pantalla | Escritorio (1440 y 1280 px) | 1024 px | Más angosto |
+|---|---|---|---|
+| Ficha | Contenedor de hasta 100rem; pestañas y período en una fila | Igual, con el período en dos renglones | Apilado |
+| Resumen | Indicadores arriba (cuatro en fila); cobertura y últimos hechos lado a lado; después el estado por área (API-DSH-03) y las preguntas | Igual | Una columna |
+| Línea de tiempo | Filtros en una fila; el registro original en un **panel lateral derecho** de toda la altura, con la lista atenuada detrás | Igual | Diálogo centrado |
+| Analizar | **Tres columnas:** selección y opciones · gráficos · lectura fija al costado mientras se recorren las fechas | Dos columnas; la lectura debajo de los gráficos | Una columna: métricas, gráficos, lectura y opciones |
+
+**Cambios respecto del diseño de §2 a §5:**
+- **Orden del Resumen:** los indicadores van primero y el bloque de API-DSH-03 se llama «Estado por área» (antes
+  «Resumen», que repetía el nombre de la pestaña). «Desde la última revisión» no es un bloque aparte: la última revisión
+  de cada área está en su tarjeta, con su fecha, y nunca se inventa.
+- **Anulación:** la entrada no se tacha (tiene que poder leerse); lleva la insignia «Anulado», el borde rayado y la
+  relación con su fecha.
+- **Selector de métricas:** área y métrica en dos listas, sin búsqueda de texto (con 6 métricas de nutrición, las de
+  entrenamiento por ejercicio y las antropométricas del período, una búsqueda no ayuda). «Agregar una métrica» y
+  «Empezar por una pregunta» se pliegan cuando ya hay métricas elegidas.
+- **Trazo:** en paneles separados la línea es continua (cada métrica tiene su panel); el rayado y el punteado se usan
+  cuando las series comparten gráfico. Color y forma de la marca se conservan siempre.
+- **Marcas según la densidad:** con 90 días o más se achican para no pisarse; no se quita ningún punto, ni los extremos
+  ni los cortes. Los huecos (subtotal, día en curso o semana sin completar) conservan un tamaño en el que se ven huecos.
+- **Día en curso:** la serie lo marca (`partialBucket`); el gráfico lo dibuja hueco, la lectura y la tabla lo nombran, y
+  la media, la mediana y la referencia del cambio relativo lo dejan fuera (lo dicen). El total lo cuenta y lo avisa.
+- **Calidad:** «sin faltantes» en lugar de «completo», para no chocar con «día en curso».
+- **Fallas:** límite de consultas, sin red, servicio no disponible u otra, cada una con su texto y «Reintentar». Una falla
+  no se muestra como «sin datos», y lo que cargó bien sigue a la vista (un 503 del peso no borra energía y proteínas).
+- **Hitos:** además de las líneas punteadas, una lista en texto con su fecha.
+- **Exportación:** «Descargar los datos (CSV)» con lo que muestra la tabla (ver `DICCIONARIO-DE-METRICAS.md` §1 y
+  `ACEPTACION.md`, PRO-10). La impresión no se ofrece todavía.

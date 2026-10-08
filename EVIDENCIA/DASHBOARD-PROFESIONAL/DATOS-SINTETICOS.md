@@ -1,4 +1,4 @@
-# Datos sintéticos · 12 semanas
+# Datos sintéticos · 12 semanas y un año de volumen
 
 **Encargo:** §17. **Herramientas:** `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/` (escenario, generador y
 verificador). **Base:** solo local (`be_test_dashboard` en el PostgreSQL 16 de la máquina). Nunca `test` ni producción:
@@ -13,10 +13,10 @@ Ningún dato es de una persona real. Las cuentas son `@example.invalid`, los ase
 # Node 22 en el PATH; PostgreSQL 16 local en :55442 (usuario be_test)
 cd EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas
 ./entorno.sh compilar-api        # dominio + API (apps/api/dist)
-./datos/regenerar.sh             # base nueva, cuentas, historia, recientes y verificación
+./datos/regenerar.sh             # base nueva, cuentas, historia, recientes, verificación y volumen
 ```
 
-`regenerar.sh` deja la API local corriendo en `:3001`, con los profesionales sintéticos verificados. Corre cinco fases:
+`regenerar.sh` deja la API local corriendo en `:3001`, con los profesionales sintéticos verificados. Corre seis fases:
 
 | Fase | Por dónde | Qué hace |
 |---|---|---|
@@ -25,6 +25,7 @@ cd EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas
 | `historia` | SQL documentado | Activa las dos etapas en el pasado y escribe 12 semanas de comidas, sesiones y tomas |
 | `recientes` | API real, hoy | Comidas de ayer y de hoy, la toma de ayer cargada hoy, la sesión de hoy y el asesorado B |
 | `verificar` | API real, como el profesional | Compara con los resultados esperados (§5) |
+| `volumen` | API real (cuenta, vínculos y planes) y SQL documentado (historia) | El asesorado C, con un año denso para medir (§7). Termina reiniciando la API: las fases inician sesión varias veces y el límite (5 cada 15 minutos) vive en memoria |
 
 **Por qué hay una fase por SQL.** La API registra todo en el instante en que ocurre: una activación siempre queda «ahora»
 y el momento de registro sale de la base. Para tener 12 semanas de historia con fechas reales, la fase `historia`
@@ -45,6 +46,7 @@ escribe con fechas explícitas, igual que los soportes de las pruebas de integra
 | Lic. Sofía Paz (sintética) | Nutrición, Entrenamiento y Antropometría | El profesional de la demostración: el análisis entre áreas es legítimo porque tiene los tres vínculos con consentimiento |
 | Asesorado A | Los tres, con este profesional | La historia de 12 semanas |
 | Asesorado B | Nutrición y Antropometría | **Vista parcial** sin revocar nada: este profesional no trabaja Entrenamiento con B |
+| Asesorado C | Los tres, con este profesional | **Volumen** para medir (§7): un año, no una historia para leer |
 | Lic. Tercera (sintética) | Nutrición, sin vínculos | **Tercero sin acceso:** recibe 404, igual que con un asesorado inexistente |
 
 La **revocación** de un consentimiento se prueba en `test/integration/analisis.int-spec.ts`, en un escenario aparte,
@@ -153,3 +155,18 @@ cada día afectado. Se restauró el valor; no se tocan valores esperados para qu
   de BE (DL-009).
 - **Reproducibilidad:** el escenario es relativo al día de la generación. Generado otro día, cambian las fechas y los
   días de la semana, pero no las reglas ni los valores por opción. El verificador recalcula lo esperado para ese día.
+
+## 7. Conjunto de volumen (PRO-24)
+
+El encargo pide medir con el conjunto de 12 semanas **y con otro de mayor volumen**. El asesorado C tiene un año entero
+(D-365 a D-1), con la etapa 1 de los dos planes activada en D-366:
+
+| Área | Qué hay | Cuánto |
+|---|---|---|
+| Nutrición | Cuatro comidas por día con las porciones del plan; la merienda de cada noveno día sin confirmar y la cena de cada decimotercero informada | 1.460 registros |
+| Entrenamiento | A los lunes y viernes, B los miércoles; la carga sube 2,5 kg por semana en ciclos de 8 semanas | 157 sesiones, cada una con 9 series |
+| Antropometría | Una toma cada dos semanas, con el perfil completo | 26 tomas |
+
+Es volumen, no un caso de lectura: no tiene resultados esperados a mano (esos son los de A) y la demostración no lo
+usa. Se mide con `herramientas/tiempos.mjs 366 7 C` (período máximo de 366 días); ver `ACEPTACION.md`, PRO-24.
+

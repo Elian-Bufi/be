@@ -11,6 +11,9 @@
 //   recientes  por la API, hoy: comidas (con rectificación, anulación y una comida diferente), la toma de ayer y la
 //              sesión de hoy. El asesorado B: su plan, dos comidas y una toma.
 //   verificar  lee por la API (como el profesional) y compara con los resultados esperados escritos a mano.
+//   volumen    el asesorado C, para medir (PRO-24): cuenta, vínculos y planes por la API; un año de comidas (4 por día),
+//              sesiones (3 por semana) y tomas (cada dos semanas) por SQL, con los mismos disparadores. No se verifica
+//              contra valores a mano: es volumen, no un caso de lectura.
 //
 // Uso: node datos/generar.mjs <fase> [origen de la API]   (BE_E2E_DATABASE_URL para otra base local)
 import { REPO, enTrabajo } from '../rutas.mjs';
@@ -24,11 +27,14 @@ import {
   PLANES_NUTRICIONALES,
   PROTOCOLOS,
   ZONA,
+  comidasDeVolumen,
   comidasHistoricas,
   diaMenos,
   instante,
+  sesionesDeVolumen,
   sesionesHistoricas,
   tomaReciente,
+  tomasDeVolumen,
   tomasHistoricas,
 } from './escenario.mjs';
 
@@ -322,16 +328,15 @@ async function historia() {
   const instT2 = await activarEnElPasado('ENTRENAMIENTO', t2.planId, instante(diaMenos(hoy, 35), '10:00'), e.proId, e.aseId);
   guardarEstado({ nutricion: { ...e.nutricion, objetivoV2, planV2: n2.planId }, entrenamiento: { ...e.entrenamiento, planV2: t2.planId } });
 
-  await comidas(e, hoy, { v1: { id: e.nutricion.planV1, inst: instN1 }, v2: { id: n2.planId, inst: instN2 } });
-  await sesiones(e, hoy, { v1: e.entrenamiento.planV1, v2: t2.planId }, { v1: instT1, v2: instT2 });
+  await comidas(e, comidasHistoricas(hoy), { v1: { id: e.nutricion.planV1, inst: instN1 }, v2: { id: n2.planId, inst: instN2 } });
+  await sesiones(e, sesionesHistoricas(hoy), { v1: e.entrenamiento.planV1, v2: t2.planId });
   await tomas(e, hoy);
   console.log('historia lista: etapas 1 y 2 activadas en el pasado, comidas, sesiones y tomas de 12 semanas');
 }
 
 const claveDeAlimento = Object.fromEntries(Object.entries(ALIMENTOS).map(([k, a]) => [a.id, k]));
 
-async function comidas(e, hoy, planes) {
-  const lista = comidasHistoricas(hoy);
+async function comidas(e, lista, planes, asesoradoId = e.aseId) {
   await en(async (tx) => {
     for (const c of lista) {
       const plan = planes[c.plan];
@@ -343,7 +348,7 @@ async function comidas(e, hoy, planes) {
           tx,
           `INSERT INTO "ingesta_nutricional" ("id","version_de_plan_id","asesorado_id","origen","modo","fecha_local","zona_horaria","descripcion","descripcion_de_porcion","dia_tipo_de_contexto_id","comida_de_contexto_id","secuencia","procedencia","momento_de_ocurrencia","momento_de_registro")
            VALUES ($1::uuid,$2::uuid,$3::uuid,'FUERA_DE_PRESCRIPCION','DESCRIPCION_LIBRE',$4::date,$5,$6,$7,$8,$9,0,$10::jsonb,$11,$12)`,
-          id, plan.id, e.aseId, c.fecha, ZONA, c.diferente.descripcion, c.diferente.aproximada, dayTypeId, comida.mealId, PROCEDENCIA, c.ocurrio, c.registrado,
+          id, plan.id, asesoradoId, c.fecha, ZONA, c.diferente.descripcion, c.diferente.aproximada, dayTypeId, comida.mealId, PROCEDENCIA, c.ocurrio, c.registrado,
         );
       } else {
         const opcion = comida.options[c.opcion];
@@ -352,17 +357,17 @@ async function comidas(e, hoy, planes) {
           tx,
           `INSERT INTO "ingesta_nutricional" ("id","version_de_plan_id","asesorado_id","origen","modo","fecha_local","zona_horaria","dia_tipo_id","comida_id","opcion_id","cantidades_consumidas","secuencia","procedencia","momento_de_ocurrencia","momento_de_registro")
            VALUES ($1::uuid,$2::uuid,$3::uuid,'PRESCRIPTA','OPCIONES_DE_PLATO',$4::date,$5,$6,$7,$8,$9::jsonb,0,$10::jsonb,$11,$12)`,
-          id, plan.id, e.aseId, c.fecha, ZONA, dayTypeId, comida.mealId, opcion.optionId, JSON.stringify(cantidades), PROCEDENCIA, c.ocurrio, c.registrado,
+          id, plan.id, asesoradoId, c.fecha, ZONA, dayTypeId, comida.mealId, opcion.optionId, JSON.stringify(cantidades), PROCEDENCIA, c.ocurrio, c.registrado,
         );
         if (c.rectificacion) {
-          await sql(tx, `INSERT INTO "rectificacion_de_cantidades" ("id","ingesta_id","cantidades","autor_id","procedencia","momento_de_registro") VALUES ($1::uuid,$2::uuid,$3::jsonb,$4::uuid,$5::jsonb,$6)`, randomUUID(), id, JSON.stringify(cantidadesDe(c.rectificacion.consumo, opcion)), e.aseId, PROCEDENCIA, c.rectificacion.momento);
-          await eventoDeIngesta(tx, e, id, 'CantidadesDeIngestaRectificadas', c.rectificacion.momento);
+          await sql(tx, `INSERT INTO "rectificacion_de_cantidades" ("id","ingesta_id","cantidades","autor_id","procedencia","momento_de_registro") VALUES ($1::uuid,$2::uuid,$3::jsonb,$4::uuid,$5::jsonb,$6)`, randomUUID(), id, JSON.stringify(cantidadesDe(c.rectificacion.consumo, opcion)), asesoradoId, PROCEDENCIA, c.rectificacion.momento);
+          await eventoDeIngesta(tx, e, id, 'CantidadesDeIngestaRectificadas', c.rectificacion.momento, undefined, asesoradoId);
         }
       }
-      await eventoDeIngesta(tx, e, id, 'IngestaRegistrada', c.ocurrio, c.registrado);
+      await eventoDeIngesta(tx, e, id, 'IngestaRegistrada', c.ocurrio, c.registrado, asesoradoId);
       if (c.anulacion) {
-        await sql(tx, `INSERT INTO "anulacion_de_ingesta" ("id","ingesta_id","autor_id","motivo","procedencia","momento_de_ocurrencia","momento_de_registro") VALUES ($1::uuid,$2::uuid,$3::uuid,$4,$5::jsonb,$6,$6)`, randomUUID(), id, e.aseId, c.anulacion.motivo, PROCEDENCIA, c.anulacion.momento);
-        await eventoDeIngesta(tx, e, id, 'IngestaAnulada', c.anulacion.momento);
+        await sql(tx, `INSERT INTO "anulacion_de_ingesta" ("id","ingesta_id","autor_id","motivo","procedencia","momento_de_ocurrencia","momento_de_registro") VALUES ($1::uuid,$2::uuid,$3::uuid,$4,$5::jsonb,$6,$6)`, randomUUID(), id, asesoradoId, c.anulacion.motivo, PROCEDENCIA, c.anulacion.momento);
+        await eventoDeIngesta(tx, e, id, 'IngestaAnulada', c.anulacion.momento, undefined, asesoradoId);
       }
     }
   });
@@ -381,17 +386,16 @@ function cantidadesDe(consumo, opcion) {
   };
 }
 
-const eventoDeIngesta = (tx, e, ingestaId, tipo, ocurrio, registrado = ocurrio) =>
+const eventoDeIngesta = (tx, e, ingestaId, tipo, ocurrio, registrado = ocurrio, asesoradoId = e.aseId) =>
   sql(
     tx,
     `INSERT INTO "evento_de_nutricion" ("tipo","profesional_id","asesorado_id","recurso_tipo","recurso_id","actor_id","procedencia","momento_de_ocurrencia","momento_de_registro") VALUES ($1::"TipoDeEventoDeNutricion",$2::uuid,$3::uuid,'IngestaNutricional',$4::uuid,$3::uuid,$5::jsonb,$6,$7)`,
-    tipo, e.proId, e.aseId, ingestaId, PROCEDENCIA, ocurrio, registrado,
+    tipo, e.proId, asesoradoId, ingestaId, PROCEDENCIA, ocurrio, registrado,
   );
 
 const GRANULARIDAD = { SERIE: 'SERIE', EJERCICIO_O_SESION: 'EJERCICIO_O_SESION' };
 
-async function sesiones(e, hoy, versiones) {
-  const lista = sesionesHistoricas(hoy);
+async function sesiones(e, lista, versiones, asesoradoId = e.aseId) {
   await en(async (tx) => {
     for (const s of lista) {
       const versionId = versiones[s.plan];
@@ -414,18 +418,18 @@ async function sesiones(e, hoy, versiones) {
         tx,
         `INSERT INTO "borrador_de_ejecucion_de_entrenamiento" ("id","asesorado_id","version_de_plan_id","sesion_planificada_id","fecha_local","zona_horaria","granularidad","condicion","motivo","contenido","momento_de_ocurrencia","momento_de_registro","momento_de_actualizacion")
          VALUES ($1::uuid,$2::uuid,$3::uuid,$4,$5::date,$6,$7::"GranularidadDeRegistro",$8::"CondicionDeSesion",$9,$10::jsonb,$11,$11,$12)`,
-        borradorId, e.aseId, versionId, s.sesion, s.fecha, ZONA, granularidad, s.condicion, s.motivo, JSON.stringify(original), s.ocurrio, s.registrado,
+        borradorId, asesoradoId, versionId, s.sesion, s.fecha, ZONA, granularidad, s.condicion, s.motivo, JSON.stringify(original), s.ocurrio, s.registrado,
       );
       await sql(
         tx,
         `INSERT INTO "ejecucion_de_entrenamiento" ("id","asesorado_id","version_de_plan_id","sesion_planificada_id","fecha_local","zona_horaria","borrador_id","granularidad","condicion","motivo","contenido","procedencia","momento_de_ocurrencia","momento_de_registro")
          VALUES ($1::uuid,$2::uuid,$3::uuid,$4,$5::date,$6,$7::uuid,$8::"GranularidadDeRegistro",$9::"CondicionDeSesion",$10,$11::jsonb,$12::jsonb,$13,$14)`,
-        ejecucionId, e.aseId, versionId, s.sesion, s.fecha, ZONA, borradorId, granularidad, s.condicion, s.motivo, JSON.stringify(original), PROCEDENCIA, s.ocurrio, s.registrado,
+        ejecucionId, asesoradoId, versionId, s.sesion, s.fecha, ZONA, borradorId, granularidad, s.condicion, s.motivo, JSON.stringify(original), PROCEDENCIA, s.ocurrio, s.registrado,
       );
       await sql(
         tx,
         `INSERT INTO "evento_de_entrenamiento" ("tipo","profesional_id","asesorado_id","recurso_tipo","recurso_id","estado_previo","estado_posterior","actor_id","procedencia","momento_de_ocurrencia","momento_de_registro") VALUES ('EjecucionRegistrada',$1::uuid,$2::uuid,'EjecucionDeEntrenamiento',$3::uuid,'BORRADOR','REGISTRADA',$2::uuid,$4::jsonb,$5,$6)`,
-        e.proId, e.aseId, ejecucionId, PROCEDENCIA, s.ocurrio, s.registrado,
+        e.proId, asesoradoId, ejecucionId, PROCEDENCIA, s.ocurrio, s.registrado,
       );
       if (s.correccion) {
         const correccionId = randomUUID();
@@ -437,7 +441,7 @@ async function sesiones(e, hoy, versiones) {
         await sql(
           tx,
           `INSERT INTO "evento_de_entrenamiento" ("tipo","profesional_id","asesorado_id","recurso_tipo","recurso_id","actor_id","procedencia","momento_de_ocurrencia","momento_de_registro") VALUES ('EjecucionCorregida',$1::uuid,$2::uuid,'EjecucionDeEntrenamiento',$3::uuid,$1::uuid,$4::jsonb,$5,$5)`,
-          e.proId, e.aseId, ejecucionId, PROCEDENCIA, s.correccion.momento,
+          e.proId, asesoradoId, ejecucionId, PROCEDENCIA, s.correccion.momento,
         );
       }
     }
@@ -569,7 +573,35 @@ async function verificar() {
   if (resultado.fallas.length) process.exitCode = 1;
 }
 
-const FASES = { cuentas, base, historia, recientes, verificar };
+
+/** El asesorado C (volumen, PRO-24): un año denso con la etapa 1 de los dos planes, activada en D-366. */
+async function volumen() {
+  const e = leerEstado();
+  const hoy = e.hoy;
+  if (hoy !== hoyCivil()) throw new Error(`el escenario se armó para ${hoy}; hoy es ${hoyCivil()}`);
+  const aseCCorreo = `ase-c-volumen-${Date.now().toString(36)}@example.invalid`;
+  const aseCId = await registrarCuenta(aseCCorreo, 'APK');
+  const pro = await sesion(e.proCorreo);
+  const aseC = await sesion(aseCCorreo, 'APK');
+  await pedir('POST', '/me/health-data-consents', { token: aseC, superficie: 'APK', cuerpo: { consentVersionId: dominio.VERSION_VIGENTE.DATOS_SALUD_BE.id } });
+  for (const alcance of ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']) await vincular(pro, aseC, aseCId, alcance);
+  const inicio = instante(diaMenos(hoy, 366), '09:00');
+  const evN = (await pedir('POST', `/advisees/${aseCId}/nutrition/evaluations`, { token: pro, cuerpo: cuerpoDeEvaluacionNutricional(inicio) })).data.evaluationId;
+  const obN = (await pedir('POST', `/advisees/${aseCId}/nutrition/objectives`, { token: pro, cuerpo: cuerpoDeObjetivoNutricional(evN, inicio, 2100) })).data;
+  const planN = (await pedir('POST', `/advisees/${aseCId}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: obN.versionId, initialStructure: PLANES_NUTRICIONALES.v1 } })).data;
+  const evT = (await pedir('POST', `/advisees/${aseCId}/training/evaluations`, { token: pro, cuerpo: { occurredAt: inicio.toISOString(), assessment: { entries: [{ concept: 'Experiencia', value: 'Sintética', source: 'REPORTED' }] }, evidenceReferences: [], professionalNotes: 'Volumen sintético.' } })).data.evaluationId;
+  const obT = (await pedir('POST', `/advisees/${aseCId}/training/objectives`, { token: pro, cuerpo: { evaluationId: evT, effectiveFrom: inicio.toISOString(), effectiveUntil: null, objective: { statement: 'Objetivo sintético de volumen.' }, rationale: 'Fundamento sintético.' } })).data;
+  const planT = (await pedir('POST', `/advisees/${aseCId}/training/plans`, { token: pro, cuerpo: { objectiveVersionId: obT.versionId, initialStructure: PLANES_DE_ENTRENAMIENTO.v1 } })).data;
+  const instN = await activarEnElPasado('NUTRICION', planN.planId, instante(diaMenos(hoy, 366), '09:30'), e.proId, aseCId);
+  await activarEnElPasado('ENTRENAMIENTO', planT.planId, instante(diaMenos(hoy, 366), '10:00'), e.proId, aseCId);
+  await comidas(e, comidasDeVolumen(hoy), { v1: { id: planN.planId, inst: instN } }, aseCId);
+  await sesiones(e, sesionesDeVolumen(hoy), { v1: planT.planId }, aseCId);
+  await tomas(e, hoy, tomasDeVolumen(hoy), aseCId);
+  guardarEstado({ aseCCorreo, aseCId });
+  console.log('volumen listo: el asesorado C con un año de comidas, sesiones y tomas');
+}
+
+const FASES = { cuentas, base, historia, recientes, verificar, volumen };
 if (!FASES[fase]) {
   console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar [origen de la API]');
   process.exit(2);

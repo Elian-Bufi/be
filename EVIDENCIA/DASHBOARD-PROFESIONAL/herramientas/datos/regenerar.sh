@@ -18,3 +18,9 @@ node datos/generar.mjs base
 node datos/generar.mjs historia
 node datos/generar.mjs recientes
 node datos/generar.mjs verificar
+# El asesorado C (volumen, PRO-24): un año de comidas, sesiones y tomas, para medir.
+node datos/generar.mjs volumen
+# Las fases inician sesión varias veces y el límite de inicios (5 cada 15 minutos) vive en memoria: se reinicia la API
+# para que el recorrido pueda iniciar sesión enseguida.
+./entorno.sh parar-api >/dev/null
+./entorno.sh api "$(sed -n 's/^BE_DEMO_PROFESIONALES=//p' trabajo/demo-profesionales.txt)"
