@@ -10,12 +10,14 @@
  *   el alcance es «En el período seleccionado». Abrir la ficha nunca crea una revisión.
  * - **Ocurrió no es lo mismo que se incorporó o se corrigió:** las novedades separan lo que pasó después del corte de lo
  *   que se cargó o corrigió después sobre hechos anteriores (instantes de registro y de cada relación, nunca `updatedAt`).
- * - **Prioridad:** 1, pendientes explícitos; 2, cambios de planificación o de comparabilidad; 3, información nueva; 4,
- *   cobertura. Dentro de una prioridad, Nutrición, Entrenamiento y Antropometría.
+ * - **Prioridad:** 1, lo que no se pudo leer («No pudimos completar esta parte») y los pendientes explícitos; 2, cambios
+ *   de planificación o de comparabilidad; 3, información nueva; 4, cobertura. Dentro de una prioridad, Nutrición,
+ *   Entrenamiento y Antropometría. Una parte que falta va primero: escondida detrás de «Ver todas», la síntesis parecía
+ *   completa.
  * - **Un área no autorizada no aporta nada**, ni un conteo: la síntesis recibe solo lo que el PDP dejó leer.
  * - **Una lectura que falló** se dice («No pudimos completar esta parte»), nunca se completa con supuestos.
  */
-import type { DominioDeAnalisis, NovedadesDesde, OrigenDeDato, ResultadoDeProyeccionNutricional } from './contratos-analisis';
+import type { DominioDeAnalisis, NovedadesDesde, OrigenDeDato, ResultadoDeProyeccionNutricional, VigenciaDePlan } from './contratos-analisis';
 import type { ResumenDeAntropometria, ResumenDeEntrenamiento, ResumenDeNutricion } from './contratos-vinculo';
 import { diasEntreFechas, fechaCivil } from './fechas-civiles';
 import { numero } from './formato-numeros';
@@ -54,11 +56,14 @@ export interface DatosDeLaSintesis {
     readonly resumen: ResumenDeNutricion | null;
     readonly novedades: LecturaDeLaSintesis<NovedadesDeUnArea>;
     readonly cobertura: LecturaDeLaSintesis<ResultadoDeProyeccionNutricional['coverage']>;
+    /** Las vigencias del período (API-PRJ-01): dicen desde cuándo hubo un plan en el que registrar. */
+    readonly vigencias?: readonly VigenciaDePlan[];
   } | null;
   readonly entrenamiento: {
     readonly resumen: ResumenDeEntrenamiento | null;
     readonly novedades: LecturaDeLaSintesis<NovedadesDeUnArea>;
     readonly cobertura: LecturaDeLaSintesis<CoberturaDeEntrenamiento>;
+    readonly vigencias?: readonly VigenciaDePlan[];
   } | null;
   readonly antropometria: {
     readonly resumen: ResumenDeAntropometria | null;
@@ -98,7 +103,7 @@ interface Base {
 export type ObservacionDelResumen =
   | (Base & { readonly regla: 'REVISION_SIN_APLICAR'; readonly args: { readonly reviewId: string; readonly registradaEl: string } })
   | (Base & { readonly regla: 'PROXIMA_REVISION'; readonly args: { readonly fecha: string; readonly dias: number } })
-  | (Base & { readonly regla: 'BORRADOR_SIN_ACTIVAR'; readonly args: { readonly planVersionId: string; readonly version: number; readonly registradoEl: string; readonly deLaRevision: boolean } })
+  | (Base & { readonly regla: 'BORRADOR_SIN_ACTIVAR'; readonly args: { readonly planVersionId: string; readonly registradoEl: string; readonly deLaRevision: boolean } })
   | (Base & { readonly regla: 'PLAN_ACTIVADO_DESPUES_DEL_CORTE'; readonly args: { readonly planVersionId: string; readonly activadoEl: string } })
   | (Base & { readonly regla: 'OBJETIVO_NUEVO_DESPUES_DEL_CORTE'; readonly args: { readonly objectiveVersionId: string; readonly rigeDesde: string; readonly porLaRevision: boolean } })
   | (Base & { readonly regla: 'CAMBIO_DE_COMPARABILIDAD'; readonly args: { readonly medidas: readonly MedidaConCambioDeComparabilidad[] } })
@@ -107,8 +112,8 @@ export type ObservacionDelResumen =
       readonly args: { readonly ocurrieron: number; readonly incorporadas: number; readonly corregidas: number; readonly nombreDelRegistro: readonly [string, string]; readonly leidoDesde: string; readonly recortado: boolean };
     })
   | (Base & { readonly regla: 'ULTIMA_TOMA'; readonly args: { readonly evaluationId: string; readonly ocurrioEl: string; readonly autor: string; readonly enElPeriodo: number } })
-  | (Base & { readonly regla: 'COBERTURA_NUTRICIONAL'; readonly args: ResultadoDeProyeccionNutricional['coverage'] })
-  | (Base & { readonly regla: 'COBERTURA_DE_ENTRENAMIENTO'; readonly args: CoberturaDeEntrenamiento })
+  | (Base & { readonly regla: 'COBERTURA_NUTRICIONAL'; readonly args: ResultadoDeProyeccionNutricional['coverage'] & { readonly primerPlanDesde: string | null } })
+  | (Base & { readonly regla: 'COBERTURA_DE_ENTRENAMIENTO'; readonly args: CoberturaDeEntrenamiento & { readonly primerPlanDesde: string | null } })
   | (Base & { readonly regla: 'PARTE_NO_DISPONIBLE'; readonly args: { readonly parte: 'NOVEDADES' | 'COBERTURA' | 'COMPARABILIDAD' } });
 
 export type ReglaDelResumen = ObservacionDelResumen['regla'];
@@ -192,7 +197,7 @@ function delArea(
       alcance: { tipo: 'HOY' },
       origen: [{ type: tipoDeVersion, id: borrador.planVersionId }],
       accion: { tipo: 'PLANIFICACION', area, planVersionId: borrador.planVersionId },
-      args: { planVersionId: borrador.planVersionId, version: borrador.version, registradoEl: borrador.recordedAt, deLaRevision: borrador.fromReviewId !== null },
+      args: { planVersionId: borrador.planVersionId, registradoEl: borrador.recordedAt, deLaRevision: borrador.fromReviewId !== null },
     });
   }
 
@@ -227,7 +232,7 @@ function delArea(
   // 3 · Información nueva desde el corte (solo si hay corte).
   if (corte) {
     if (novedades.estado === 'FALLO') {
-      salida.push({ regla: 'PARTE_NO_DISPONIBLE', area, prioridad: 3, alcance: desdeElCorte as AlcanceDeObservacion, origen: [], accion: null, args: { parte: 'NOVEDADES' } });
+      salida.push({ regla: 'PARTE_NO_DISPONIBLE', area, prioridad: 1, alcance: desdeElCorte as AlcanceDeObservacion, origen: [], accion: null, args: { parte: 'NOVEDADES' } });
     } else if (novedades.estado === 'LISTA') {
       const dominio = DOMINIO_DEL_AREA[area];
       const registro = REGISTRO_DEL_AREA[area];
@@ -254,6 +259,20 @@ function delArea(
   return salida;
 }
 
+/**
+ * El día desde el que rige el primer plan del período, si empezó después de su inicio: los días anteriores no tenían un
+ * plan de este seguimiento en el que registrar, y la cobertura lo dice para que «1 de 90 días» no se lea como 89 días sin
+ * registrar. Es un hecho de las vigencias, no una pausa deducida de la ausencia de registros.
+ */
+export function primerPlanDelPeriodo(vigencias: readonly VigenciaDePlan[] | undefined, desde: string): string | null {
+  if (!vigencias || vigencias.length === 0) return null;
+  const primero = vigencias.reduce((m, v) => (v.from < m ? v.from : m), (vigencias[0] as VigenciaDePlan).from);
+  return primero > desde ? primero : null;
+}
+
+/** La aclaración de la cobertura cuando el plan empezó a regir dentro del período («El plan rige desde el 9/10…»). */
+export const textoDelPrimerPlan = (desde: string, f: FormatoDeLaSintesis): string => `El plan rige desde el ${f.fecha(desde)}: antes, en el período, no había un plan de este seguimiento.`;
+
 /** Las observaciones de la síntesis, ordenadas por prioridad. La web muestra las primeras y ofrece «Ver todas». */
 export function sintesisDelResumen(d: DatosDeLaSintesis): ObservacionDelResumen[] {
   const salida: ObservacionDelResumen[] = [];
@@ -262,20 +281,36 @@ export function sintesisDelResumen(d: DatosDeLaSintesis): ObservacionDelResumen[
   if (d.nutricion) {
     salida.push(...delArea('NUTRICION', d.nutricion.resumen, d.nutricion.novedades, d));
     const c = d.nutricion.cobertura;
-    if (c.estado === 'FALLO') salida.push({ regla: 'PARTE_NO_DISPONIBLE', area: 'NUTRICION', prioridad: 4, alcance: periodo, origen: [], accion: null, args: { parte: 'COBERTURA' } });
+    if (c.estado === 'FALLO') salida.push({ regla: 'PARTE_NO_DISPONIBLE', area: 'NUTRICION', prioridad: 1, alcance: periodo, origen: [], accion: null, args: { parte: 'COBERTURA' } });
     else if (c.estado === 'LISTA')
-      salida.push({ regla: 'COBERTURA_NUTRICIONAL', area: 'NUTRICION', prioridad: 4, alcance: periodo, origen: [], accion: { tipo: 'PREGUNTA', pregunta: 'informacion-para-revisar', area: 'NUTRICION' }, args: c.valor });
+      salida.push({
+        regla: 'COBERTURA_NUTRICIONAL',
+        area: 'NUTRICION',
+        prioridad: 4,
+        alcance: periodo,
+        origen: [],
+        accion: { tipo: 'PREGUNTA', pregunta: 'informacion-para-revisar', area: 'NUTRICION' },
+        args: { ...c.valor, primerPlanDesde: primerPlanDelPeriodo(d.nutricion.vigencias, d.periodo.desde) },
+      });
   }
   if (d.entrenamiento) {
     salida.push(...delArea('ENTRENAMIENTO', d.entrenamiento.resumen, d.entrenamiento.novedades, d));
     const c = d.entrenamiento.cobertura;
-    if (c.estado === 'FALLO') salida.push({ regla: 'PARTE_NO_DISPONIBLE', area: 'ENTRENAMIENTO', prioridad: 4, alcance: periodo, origen: [], accion: null, args: { parte: 'COBERTURA' } });
+    if (c.estado === 'FALLO') salida.push({ regla: 'PARTE_NO_DISPONIBLE', area: 'ENTRENAMIENTO', prioridad: 1, alcance: periodo, origen: [], accion: null, args: { parte: 'COBERTURA' } });
     else if (c.estado === 'LISTA')
-      salida.push({ regla: 'COBERTURA_DE_ENTRENAMIENTO', area: 'ENTRENAMIENTO', prioridad: 4, alcance: periodo, origen: [], accion: { tipo: 'PREGUNTA', pregunta: 'informacion-para-revisar', area: 'ENTRENAMIENTO' }, args: c.valor });
+      salida.push({
+        regla: 'COBERTURA_DE_ENTRENAMIENTO',
+        area: 'ENTRENAMIENTO',
+        prioridad: 4,
+        alcance: periodo,
+        origen: [],
+        accion: { tipo: 'PREGUNTA', pregunta: 'informacion-para-revisar', area: 'ENTRENAMIENTO' },
+        args: { ...c.valor, primerPlanDesde: primerPlanDelPeriodo(d.entrenamiento.vigencias, d.periodo.desde) },
+      });
   }
   if (d.antropometria) {
     const c = d.antropometria.comparabilidad;
-    if (c.estado === 'FALLO') salida.push({ regla: 'PARTE_NO_DISPONIBLE', area: 'ANTROPOMETRIA', prioridad: 2, alcance: periodo, origen: [], accion: null, args: { parte: 'COMPARABILIDAD' } });
+    if (c.estado === 'FALLO') salida.push({ regla: 'PARTE_NO_DISPONIBLE', area: 'ANTROPOMETRIA', prioridad: 1, alcance: periodo, origen: [], accion: null, args: { parte: 'COMPARABILIDAD' } });
     else if (c.estado === 'LISTA' && c.valor.some((m) => m.grupos > 1))
       salida.push({
         regla: 'CAMBIO_DE_COMPARABILIDAD',
@@ -342,7 +377,7 @@ export function textoDeObservacion(o: ObservacionDelResumen, f: FormatoDeLaSinte
       return `La próxima revisión acordada era el ${f.fecha(fecha)} (hace ${cuenta(-dias, ['día', 'días'])}).`;
     }
     case 'BORRADOR_SIN_ACTIVAR':
-      return `Hay un borrador del plan (versión ${numero(o.args.version)}) sin activar, ${o.args.deLaRevision ? 'creado al aplicar una revisión' : 'creado'} el ${f.dia(o.args.registradoEl)}. No rige hasta que se active.`;
+      return `Hay una versión nueva del plan en borrador, ${o.args.deLaRevision ? 'creada al aplicar una revisión' : 'creada'} el ${f.dia(o.args.registradoEl)}. No rige hasta que se active.`;
     case 'PLAN_ACTIVADO_DESPUES_DEL_CORTE':
       return `El plan vigente se activó el ${f.dia(o.args.activadoEl)}, después de la última revisión.`;
     case 'OBJETIVO_NUEVO_DESPUES_DEL_CORTE':
@@ -367,23 +402,40 @@ export function textoDeObservacion(o: ObservacionDelResumen, f: FormatoDeLaSinte
       return `Última toma: ${f.dia(o.args.ocurrioEl)} (${o.args.autor}). ${o.args.enElPeriodo === 0 ? 'Ninguna en el período.' : `${cuenta(o.args.enElPeriodo, ['toma', 'tomas'])} en el período.`}`;
     case 'COBERTURA_NUTRICIONAL': {
       const c = o.args;
-      if (c.records === 0) return `Sin registros de comida en el período (${cuenta(c.daysInPeriod, ['día', 'días'])}).`;
-      return `${numero(c.daysWithRecords)} de ${cuenta(c.daysInPeriod, ['día', 'días'])} con algún registro; ${cuenta(c.records, ['registro', 'registros'])}: ${numero(c.recordsWithQuantities)} con cantidades y ${numero(c.recordsWithoutQuantities)} sin cantidades.`;
+      const plan = c.primerPlanDesde ? ` ${textoDelPrimerPlan(c.primerPlanDesde, f)}` : '';
+      if (c.records === 0) return `Sin registros de comida en el período (${cuenta(c.daysInPeriod, ['día', 'días'])}).${plan}`;
+      return `${numero(c.daysWithRecords)} de ${cuenta(c.daysInPeriod, ['día', 'días'])} con algún registro; ${cuenta(c.records, ['registro', 'registros'])}: ${numero(c.recordsWithQuantities)} con cantidades y ${numero(c.recordsWithoutQuantities)} sin cantidades.${plan}`;
     }
     case 'COBERTURA_DE_ENTRENAMIENTO': {
       const c = o.args;
-      if (c.sesiones === 0) return 'Sin sesiones registradas en el período.';
+      const plan = c.primerPlanDesde ? ` ${textoDelPrimerPlan(c.primerPlanDesde, f)}` : '';
+      if (c.sesiones === 0) return `Sin sesiones registradas en el período.${plan}`;
       const extras = [
         ...(c.conCambios > 0 ? [`${numero(c.conCambios)} con cambios`] : []),
         ...(c.noRealizadas > 0 ? [`${numero(c.noRealizadas)} ${c.noRealizadas === 1 ? 'registrada' : 'registradas'} como no ${c.noRealizadas === 1 ? 'realizada' : 'realizadas'}`] : []),
         ...(c.resumidas > 0 ? [`${numero(c.resumidas)} ${c.resumidas === 1 ? 'resumida' : 'resumidas'}, sin series`] : []),
       ];
-      return `${cuenta(c.sesiones, ['sesión registrada', 'sesiones registradas'])}${extras.length > 0 ? ` (${extras.join(', ')})` : ''}.`;
+      return `${cuenta(c.sesiones, ['sesión registrada', 'sesiones registradas'])}${extras.length > 0 ? ` (${extras.join(', ')})` : ''}.${plan}`;
     }
     case 'PARTE_NO_DISPONIBLE':
       return `No pudimos completar esta parte (${{ NOVEDADES: 'lo nuevo desde la revisión', COBERTURA: 'la cobertura del período', COMPARABILIDAD: 'los cambios de comparabilidad' }[o.args.parte]}).`;
   }
 }
+
+/** De dónde sale cada observación: la regla y sus datos de origen, en palabras (se muestra junto a la observación). */
+export const FUENTE_DE_LA_REGLA: Readonly<Record<ReglaDelResumen, string>> = {
+  REVISION_SIN_APLICAR: 'la última revisión registrada del área y su aplicación',
+  PROXIMA_REVISION: 'la próxima revisión acordada en el plan vigente',
+  BORRADOR_SIN_ACTIVAR: 'la versión del plan en preparación',
+  PLAN_ACTIVADO_DESPUES_DEL_CORTE: 'la activación del plan vigente y la última revisión',
+  OBJETIVO_NUEVO_DESPUES_DEL_CORTE: 'la versión vigente del objetivo y la última revisión',
+  CAMBIO_DE_COMPARABILIDAD: 'los grupos de comparabilidad de las tomas del período (protocolo, método y unidad)',
+  NOVEDADES_DESDE_EL_CORTE: 'la línea de tiempo del área: cuándo ocurrió cada hecho, cuándo se registró y cuándo se corrigió',
+  ULTIMA_TOMA: 'las tomas registradas del área',
+  COBERTURA_NUTRICIONAL: 'los registros de comida del período, con y sin cantidades',
+  COBERTURA_DE_ENTRENAMIENTO: 'las sesiones registradas del período',
+  PARTE_NO_DISPONIBLE: 'una lectura que no respondió',
+};
 
 /** Una clave estable de la observación (para React y para las pruebas). */
 export const claveDeObservacion = (o: ObservacionDelResumen): string => `${o.area}:${o.regla}${o.regla === 'PARTE_NO_DISPONIBLE' ? `:${o.args.parte}` : ''}`;

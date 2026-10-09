@@ -16,7 +16,7 @@ import { claseEnPalabras, naturalezaDelMetodo, serieAntropometrica } from './ant
 import { ejerciciosDelPeriodo, objetivosDeLaVersionDelPlan, serieDeEntrenamiento } from './entrenamiento-del-analisis';
 import type { ContenidoDePlanDeEntrenamiento } from './plan-de-entrenamiento';
 import { agruparPorDia, codificarCursor, conteosDelPeriodo, cumpleFiltros, decodificarCursor, ordenarEntradas, paginarEntradas, registradoTarde } from './linea-de-tiempo';
-import { aplicarPreset, definicionAntropometrica, definicionDeMetrica, granoDeObservacion, MAXIMO_DE_METRICAS, METRICAS_DEL_DICCIONARIO, PRESETS_DE_ANALISIS } from './metricas-del-analisis';
+import { definicionAntropometrica, definicionDeMetrica, granoDeObservacion, MAXIMO_DE_METRICAS, METRICAS_DEL_DICCIONARIO } from './metricas-del-analisis';
 import { coberturaNutricional, diasNutricionales, serieNutricional, type RegistroParaAnalisis } from './nutricion-del-analisis';
 import {
   compararPeriodos,
@@ -61,9 +61,8 @@ test('el contrato de la proyección no tiene dónde poner un puntaje, una adhere
   assert.doesNotMatch(claves, /score|compliance|adherence|grade|percent|cumplimiento|adherencia/i);
 });
 
-test('el diccionario: tres métricas como máximo, presets sin una cuarta escondida, y lo que no se ofrece lo dice', () => {
+test('el diccionario: tres métricas como máximo (las preguntas tampoco esconden una cuarta), y lo que no se ofrece lo dice', () => {
   assert.equal(MAXIMO_DE_METRICAS, 3);
-  for (const p of PRESETS_DE_ANALISIS) assert.ok(p.metricas.length <= 3, `${p.id} tiene más de tres métricas`);
   for (const m of METRICAS_DEL_DICCIONARIO) assert.ok(m.explicacion.length > 0 && m.comoSeCalcula.length > 0 && m.ausencias.length > 0, m.id);
   // El volumen no se ofrece sin una convención de carga externa: es futuro, no un cálculo inventado (encargo §12).
   const volumen = definicion('entrenamiento.volumen-carga-externa');
@@ -75,13 +74,6 @@ test('el diccionario: tres métricas como máximo, presets sin una cuarta escond
   // El RIR es ordinal: no admite cambio relativo.
   assert.equal(definicion('entrenamiento.rir').cambioRelativo, false);
   assert.equal(definicion('entrenamiento.rir').escala, 'ORDINAL');
-});
-
-test('un preset con una métrica que falta dice cuál falta y no la reemplaza por un sustituto', () => {
-  const preset = PRESETS_DE_ANALISIS.find((p) => p.id === 'medidas-corporales')!;
-  const r = aplicarPreset(preset, new Set(['antropometria.peso', 'antropometria.perimetro-cintura']));
-  assert.deepEqual(r.usables, ['antropometria.peso', 'antropometria.perimetro-cintura']);
-  assert.deepEqual(r.faltantes, ['antropometria.suma-6-pliegues-isak']);
 });
 
 test('las antropométricas: un porcentaje no admite cambio relativo ni se superpone; peso, masa y perímetro sí', () => {

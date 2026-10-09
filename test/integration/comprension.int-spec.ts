@@ -6,7 +6,8 @@
  *   el objetivo dice desde cuándo rige.
  * - API-DSH-04 con `since`: lo que ocurrió después del corte, lo que se cargó después sobre días anteriores y lo que se
  *   corrigió después se cuentan por separado; la revisión misma no es una novedad; el filtro deja solo lo nuevo.
- * - API-PRJ-01: cada punto dice la versión del plan que ejecutan sus registros; la vigencia dice su instante de corte.
+ * - API-PRJ-01: cada punto dice la versión del plan que ejecutan sus registros; la vigencia dice su instante de corte, y
+ *   su número es el orden de activación (no el token de concurrencia).
  * - API-NUT-13-BUSQUEDA y API-TRN-13-BUSQUEDA: la misma lectura que el GET, con el texto en el cuerpo y fuera de todo
  *   registro.
  */
@@ -109,6 +110,13 @@ describe('API-PRJ-01: la versión que ejecuta cada punto y el corte de cada vige
     for (const p of res.recorded.points) expect(p.planVersionIds).toEqual([c.planId]);
     expect(res.recorded.points.every((p) => p.method === null)).toBe(true);
     expect(res.planVersions).toEqual([expect.objectContaining({ planVersionId: c.planId, to: null, endedAt: null, endReason: null })]);
+    // La versión para la persona es el orden de activación, como en la pestaña Plan: la primera activada es la 1, aunque el
+    // token de concurrencia de la fila ya avanzó al activarla (09:255-257). La línea de tiempo dice lo mismo.
+    expect(res.planVersions[0]?.label).toBe('v1');
+    const linea = LineaDeTiempoResponseSchema.parse((await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/timeline?domain=NUTRITION&limit=50`).expect(200)).body).data;
+    const activacion = linea.entries.find((e) => e.eventType === 'NUTRITION_PLAN_ACTIVATED');
+    expect(activacion?.title).toMatch(/activado · versión 1$/);
+    expect(activacion?.details).toContainEqual({ label: 'Versión', value: '1' });
   });
 });
 

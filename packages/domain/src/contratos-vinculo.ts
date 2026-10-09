@@ -297,8 +297,10 @@ const UltimaRevisionSchema = z.strictObject({
 /**
  * Extensión aditiva (WP-DASHBOARD-COMPRENSION): la versión del plan en preparación, todavía sin activar, al final de la
  * cadena. Un borrador no inicia una etapa ni rige nada: se muestra para ir a editarlo o activarlo, nunca como vigente.
+ * No lleva número de versión: el `version` del recurso es su token de concurrencia (09:255-257), que avanza con cada
+ * guardado, y la versión que ve la persona es el orden de activación, que un borrador todavía no tiene.
  */
-const BorradorDePlanSchema = z.strictObject({ planVersionId: IdOpaco, version: z.number().int().positive(), recordedAt: Instante, fromReviewId: IdOpaco.nullable() });
+const BorradorDePlanSchema = z.strictObject({ planVersionId: IdOpaco, recordedAt: Instante, fromReviewId: IdOpaco.nullable() });
 
 export const ResumenDeNutricionSchema = z.strictObject({
   activePlan: PlanVigenteSchema.nullable(),

@@ -88,11 +88,13 @@ export type FiltroDeLineaDeTiempo = {
   readonly late?: 'true';
   readonly planVersionId?: string;
   readonly exerciseId?: string;
+  /** El instante de un corte (la última revisión de un área): lo nuevo desde entonces (WP-DASHBOARD-COMPRENSION). */
+  readonly since?: string;
   readonly limit?: string;
   readonly cursor?: string;
 };
 
-const CLAVES_DE_LA_LINEA_DE_TIEMPO = ['periodStart', 'periodEnd', 'domain', 'type', 'state', 'quality', 'late', 'planVersionId', 'exerciseId', 'limit', 'cursor'] as const satisfies readonly (keyof FiltroDeLineaDeTiempo)[];
+const CLAVES_DE_LA_LINEA_DE_TIEMPO = ['periodStart', 'periodEnd', 'domain', 'type', 'state', 'quality', 'late', 'planVersionId', 'exerciseId', 'since', 'limit', 'cursor'] as const satisfies readonly (keyof FiltroDeLineaDeTiempo)[];
 
 /** Los parámetros de API-PRJ-01, ya como texto de la consulta. */
 export type FiltroDeProyeccion = {

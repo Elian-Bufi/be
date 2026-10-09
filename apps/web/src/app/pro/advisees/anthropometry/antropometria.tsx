@@ -19,6 +19,7 @@ import { MigasDelAsesorado } from '../../../../components/migas';
 import { Aviso } from '../../../../components/formulario';
 import type { Resultado } from '../../../../lib/api';
 import { SinEspacioProfesional, useEspacioProfesional } from '../../espacio-profesional';
+import { conVolver, EnlaceDeRetorno, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { VistaDeEvaluaciones } from './evaluaciones';
 import { VistaDeEvolucion } from './evolucion';
 import { VistaDePreparacion } from './preparacion';
@@ -80,9 +81,11 @@ export function Antropometria() {
   const router = useRouter();
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees/anthropometry?id=${id}`);
 
+  const retorno = useRetornoALaFicha(id);
   const irA = useCallback(
-    (v: Vista, evaluacionId?: string) => router.replace(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}${evaluacionId ? `&evaluacion=${encodeURIComponent(evaluacionId)}` : ''}`),
-    [router, ruta, id],
+    (v: Vista, evaluacionId?: string) =>
+      router.replace(conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}${evaluacionId ? `&evaluacion=${encodeURIComponent(evaluacionId)}` : ''}`, retorno.valor)),
+    [router, ruta, id, retorno.valor],
   );
   const [retirado, setRetirado] = useState(false);
   const accesoRetirado = useCallback((r: Resultado<unknown>) => {
@@ -99,17 +102,18 @@ export function Antropometria() {
 
   return (
     <Contexto.Provider value={contexto}>
-      <MigasDelAsesorado id={id} pestana={COPY_ANTROPOMETRIA.pestana} />
+      <MigasDelAsesorado id={id} pestana={COPY_ANTROPOMETRIA.pestana} volver={retorno.href} />
       <h1>{COPY_ANTROPOMETRIA.pestana}</h1>
-      {retirado ? <NoDisponible /> : <Secciones ruta={ruta} id={id} vista={vista} />}
+      <EnlaceDeRetorno href={retorno.href} />
+      {retirado ? <NoDisponible /> : <Secciones ruta={ruta} id={id} vista={vista} volver={retorno.valor} />}
     </Contexto.Provider>
   );
 }
 
-function Secciones({ ruta, id, vista }: { ruta: string; id: string; vista: Vista }) {
+function Secciones({ ruta, id, vista, volver }: { ruta: string; id: string; vista: Vista; volver: string | null }) {
   return (
     <>
-      <Pestanas etiqueta="Secciones de Antropometría" vistas={VISTAS} actual={vista} href={(clave) => `${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`} />
+      <Pestanas etiqueta="Secciones de Antropometría" vistas={VISTAS} actual={vista} href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, volver)} />
       {vista === 'evaluaciones' ? <VistaDeEvaluaciones /> : null}
       {vista === 'preparacion' ? <VistaDePreparacion /> : null}
       {vista === 'evolucion' ? <VistaDeEvolucion /> : null}

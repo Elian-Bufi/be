@@ -216,16 +216,17 @@ const SELECCION_DE_REVISION = {
 
 /**
  * El borrador del plan, si lo hay: la versión BORRADOR más reciente del Plan de ese profesional con ese asesorado. No
- * rige nada ni inicia una etapa; se informa para poder ir a editarlo o activarlo (WP-DASHBOARD-COMPRENSION).
+ * rige nada ni inicia una etapa; se informa para poder ir a editarlo o activarlo (WP-DASHBOARD-COMPRENSION). Sin su
+ * `version`: es el token de concurrencia del recurso, no un número para mostrar.
  */
 async function borradorDelPlan(tx: Tx, profesionalId: string, asesoradoId: string, alcance: 'NUTRICION' | 'ENTRENAMIENTO'): Promise<ResumenDeNutricion['draftPlan']> {
   const donde = { estado: 'BORRADOR' as const, plan: { profesionalId, asesoradoId } };
-  const seleccion = { id: true, version: true, momentoDeRegistro: true, revisionDeOrigenId: true } as const;
+  const seleccion = { id: true, momentoDeRegistro: true, revisionDeOrigenId: true } as const;
   const fila =
     alcance === 'NUTRICION'
       ? await tx.versionDePlanNutricional.findFirst({ where: donde, orderBy: [{ momentoDeRegistro: 'desc' }, { id: 'desc' }], select: seleccion })
       : await tx.versionDePlanDeEntrenamiento.findFirst({ where: donde, orderBy: [{ momentoDeRegistro: 'desc' }, { id: 'desc' }], select: seleccion });
-  return fila ? { planVersionId: fila.id, version: fila.version, recordedAt: fila.momentoDeRegistro.toISOString(), fromReviewId: fila.revisionDeOrigenId } : null;
+  return fila ? { planVersionId: fila.id, recordedAt: fila.momentoDeRegistro.toISOString(), fromReviewId: fila.revisionDeOrigenId } : null;
 }
 
 /** El enunciado del objetivo de entrenamiento, que el 09 deja libre: se cita lo que hay, sin inventar. */

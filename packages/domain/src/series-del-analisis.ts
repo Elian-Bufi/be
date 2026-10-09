@@ -351,8 +351,14 @@ export function compararResumenes(ra: ResumenDeUnPeriodo, rb: ResumenDeUnPeriodo
 
 const fechaCorta = (f: string): string => `${Number(f.slice(8, 10))}/${Number(f.slice(5, 7))}/${f.slice(0, 4)}`;
 
+/** Las unidades que son palabras contables, en singular: «1 registro», no «1 registros». */
+const SINGULAR_DE_LA_UNIDAD: Readonly<Record<string, string>> = { registros: 'registro', series: 'serie', sesiones: 'sesión', tomas: 'toma' };
+
 /** Un número con la unidad de la métrica y sus decimales. */
-export const valorConUnidad = (valor: number, unidad: string, decimales: number): string => `${numero(Number(valor.toFixed(decimales)))} ${unidad}`;
+export const valorConUnidad = (valor: number, unidad: string, decimales: number): string => {
+  const redondeado = Number(valor.toFixed(decimales));
+  return `${numero(redondeado)} ${redondeado === 1 ? (SINGULAR_DE_LA_UNIDAD[unidad] ?? unidad) : unidad}`;
+};
 
 /** Qué son los valores calculados de un resumen, si comparten la naturaleza de su método: calculado no es siempre estimado. */
 const NATURALEZA_EN_PLURAL: Readonly<Record<Exclude<NaturalezaDelMetodo, 'UNSPECIFIED'>, readonly [string, string]>> = {
@@ -377,10 +383,19 @@ function naturalezaEnElResumen(calculados: readonly PuntoAnalitico[]): string {
  * período leído.
  */
 export function resumenTextual(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string): string {
+  const { encabezado, partes } = partesDelResumenTextual(serie, definicion, desde, hasta);
+  return partes.length === 0 ? `${encabezado}: no hay datos en este período.` : `${encabezado}: ${partes.join('; ')}.`;
+}
+
+/**
+ * El mismo resumen en partes (WP-DASHBOARD-COMPRENSION, eje 6): un encabezado y una lista corta, para leerlo sin un
+ * párrafo largo. Sin partes, no hay datos en el rango.
+ */
+export function partesDelResumenTextual(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string): { readonly encabezado: string; readonly partes: readonly string[] } {
   const delRango = serie.points.filter((p) => p.date <= hasta && (p.dateEnd ?? p.date) >= desde);
   const conValor = delRango.filter((p) => p.value !== null);
   const encabezado = `${serie.label} (${serie.unit}), del ${fechaCorta(desde)} al ${fechaCorta(hasta)}`;
-  if (conValor.length === 0) return `${encabezado}: no hay datos en este período.`;
+  if (conValor.length === 0) return { encabezado, partes: [] };
   const primero = conValor[0] as PuntoAnalitico;
   const ultimo = conValor[conValor.length - 1] as PuntoAnalitico;
   // Agrupada por semana, cada punto es una semana: se dice así, con su rango, para que no se lea como un día.
@@ -403,5 +418,5 @@ export function resumenTextual(serie: SerieAnalitica, definicion: DefinicionDeMe
   if (sinValor > 0) partes.push(`${numero(sinValor)} sin valor conocido`);
   const tramos = new Set(conValor.map((p) => p.segment)).size;
   if (tramos > 1) partes.push(`la línea se corta en ${numero(tramos)} tramos`);
-  return `${encabezado}: ${partes.join('; ')}.`;
+  return { encabezado, partes };
 }

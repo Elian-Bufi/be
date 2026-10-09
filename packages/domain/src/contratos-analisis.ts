@@ -519,13 +519,15 @@ export type IdDePregunta = z.infer<typeof IdDePreguntaSchema>;
 /**
  * Los parámetros de una pregunta: **solo identificadores y enumerados** (viajan en la URL y en las vistas guardadas).
  * Algunos son del asesorado (la versión del plan, las etapas, el ejercicio): en otro asesorado no aplican y se piden de
- * nuevo, nunca se sustituyen.
+ * nuevo, nunca se sustituyen. Las versiones de plan son UUID: con `IdOpaco` (cualquier texto) un texto libre podía viajar
+ * en la URL o quedar en una vista guardada.
  */
+const IdDeVersionDePlan = z.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/);
 export const ParametrosDePreguntaSchema = z.strictObject({
   area: z.enum(['NUTRICION', 'ENTRENAMIENTO']).optional(),
-  planVersionId: IdOpaco.optional(),
-  stageA: IdOpaco.optional(),
-  stageB: IdOpaco.optional(),
+  planVersionId: IdDeVersionDePlan.optional(),
+  stageA: IdDeVersionDePlan.optional(),
+  stageB: IdDeVersionDePlan.optional(),
   bodyMetric: z.string().regex(/^antropometria\.[a-z0-9-]+$/).optional(),
   exerciseKey: z.string().regex(/^[ev]:[0-9a-fA-F-]{36}$/).optional(),
   setIndex: z.number().int().min(1).max(30).optional(),

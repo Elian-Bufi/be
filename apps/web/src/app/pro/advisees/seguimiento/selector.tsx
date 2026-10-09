@@ -5,19 +5,16 @@
  * - **Hasta tres métricas.** Al pedir una cuarta aparece «Elegí cuál reemplazar»: nada se reemplaza en silencio (PRO-06).
  * - **Por área, con lo que hay:** las de Nutrición son fijas; las de Entrenamiento piden ejercicio, número de serie y
  *   unidad (kg y lb nunca se mezclan); las de Antropometría salen de las tomas del período.
- * - **Presets por pregunta profesional:** llenan el selector, que sigue editable; si falta una métrica, lo dicen y no la
- *   reemplazan por una «parecida».
+ * - **Las preguntas profesionales** (preguntas.tsx) llenan el selector, que sigue editable: cambiar una métrica a mano deja la
+ *   pregunta y pasa a ser un análisis personalizado.
  * - Lo que no se ofrece todavía se ve, con el motivo (diccionario: incompleta o futura).
  */
 import {
-  aplicarPreset,
   definicionDeMetrica,
   MAXIMO_DE_METRICAS,
   METRICAS_DEL_DICCIONARIO,
-  PRESETS_DE_ANALISIS,
   type DefinicionDeMetrica,
   type EjercicioDelPeriodo,
-  type PresetDeAnalisis,
   type ReferenciaDeMetrica,
 } from '@be/domain';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
@@ -65,8 +62,15 @@ export function SelectorDeMetricas({
   // Sin métricas, agregar es lo primero; con métricas, el gráfico va antes y agregar queda a un clic (en el teléfono, así
   // no hay que bajar todos los controles para llegar al gráfico).
   const [agregarAbierto, setAgregarAbierto] = useState(elegidas.length === 0);
+  // Si las métricas llegan de otro lado (una pregunta, una vista guardada, la URL), agregar se pliega: el formulario abierto
+  // con tres métricas ya elegidas era ruido. Si llegan desde este formulario, queda como la persona lo dejó.
+  const anteriores = useRef(elegidas.length);
+  const desdeElFormulario = useRef(false);
   useEffect(() => {
     if (elegidas.length === 0) setAgregarAbierto(true);
+    else if (anteriores.current === 0 && !desdeElFormulario.current) setAgregarAbierto(false);
+    anteriores.current = elegidas.length;
+    desdeElFormulario.current = false;
   }, [elegidas.length]);
 
   useEffect(() => {
@@ -94,6 +98,7 @@ export function SelectorDeMetricas({
     if (elegidas.some((e) => claveDeLaReferencia(e) === claveDeLaReferencia(c))) return setRepetida(true);
     setRepetida(false);
     if (elegidas.length >= MAXIMO_DE_METRICAS) return setPendiente(c);
+    desdeElFormulario.current = true;
     onCambiar([...elegidas, c]);
   };
   const definicionCandidata = (() => {
@@ -309,56 +314,5 @@ function DialogoDeReemplazo({
         </button>
       </div>
     </dialog>
-  );
-}
-
-/**
- * Los presets por pregunta profesional (encargo §9): ofrecen lo que hay y dicen lo que falta. Sin métricas elegidas, son
- * la entrada principal y se ven abiertos; con métricas, quedan plegados debajo del selector.
- */
-export function PresetsDeAnalisis({
-  disponibles,
-  hayMetricas,
-  onAplicar,
-}: {
-  disponibles: Disponibles;
-  hayMetricas: boolean;
-  onAplicar: (metricas: readonly ReferenciaDeMetrica[], preset: PresetDeAnalisis, faltantes: readonly string[], comparar: boolean) => void;
-}) {
-  const id = useId();
-  const [abierto, setAbierto] = useState(!hayMetricas);
-  useEffect(() => {
-    if (!hayMetricas) setAbierto(true);
-  }, [hayMetricas]);
-  const ejercicio = disponibles.ejercicios?.[0] ?? null;
-  const hay = new Set<string>([
-    ...(disponibles.nutricion ? DE_NUTRICION.map((m) => m.id) : []),
-    ...(ejercicio ? MEDIDAS_DE_ENTRENAMIENTO.map((m) => m.id) : []),
-    ...(disponibles.antropometria ?? []).map((m) => `antropometria.${m.metricCode}`),
-  ]);
-  const aReferencia = (metricId: string): ReferenciaDeMetrica => {
-    const d = definicionDeMetrica(metricId, '');
-    if (d?.area === 'ENTRENAMIENTO' && ejercicio) return { metricId, exerciseKey: ejercicio.exerciseKey, setIndex: d.requiereSerie ? (ejercicio.setNumbers[0] ?? 1) : null, unit: d.parametro === 'LOAD' ? (ejercicio.loadUnits[0] ?? 'kg') : null };
-    return { metricId, exerciseKey: null, setIndex: null, unit: null };
-  };
-  return (
-    <details className="presets" open={abierto} onToggle={(e) => setAbierto((e.target as HTMLDetailsElement).open)}>
-      <summary id={`${id}-titulo`}>Empezar por una pregunta</summary>
-      <ul aria-labelledby={`${id}-titulo`}>
-        {PRESETS_DE_ANALISIS.map((p) => {
-          const { usables, faltantes } = aplicarPreset(p, hay);
-          const sinNada = !p.comparaPeriodos && usables.length === 0;
-          return (
-            <li key={p.id}>
-              <button type="button" className="boton boton--secundario boton--pregunta" disabled={disponibles.cargando || sinNada} onClick={() => onAplicar(usables.map(aReferencia), p, faltantes, p.comparaPeriodos)}>
-                {p.pregunta}
-              </button>
-              {sinNada && !disponibles.cargando && !disponibles.falla ? <span className="nota"> Sin datos para esta pregunta en el período.</span> : null}
-            </li>
-          );
-        })}
-      </ul>
-      {ejercicio ? <p className="nota">Las preguntas de entrenamiento empiezan por el ejercicio más registrado del período ({ejercicio.name}); se cambia en el selector.</p> : null}
-    </details>
   );
 }

@@ -5,19 +5,24 @@
  * período y capas—, por cuenta y en la API. Nunca datos de salud: al abrir una vista, los datos se vuelven a pedir y el
  * PDP decide de nuevo (una vista no concede acceso). Una vista no se ata a un asesorado: se aplica al que se está viendo,
  * y si una métrica no tiene datos con este asesorado, lo dice su serie.
+ *
+ * WP-DASHBOARD-COMPRENSION: la vista guarda también la pregunta y sus datos (solo identificadores). La versión del plan,
+ * las etapas y el ejercicio son selecciones de un asesorado: al guardar se avisa, y al abrir la vista en otro asesorado
+ * la pregunta dice que no aplican y las pide de nuevo; nunca las reemplaza por otras.
  */
-import { numero, type ConfiguracionDeAnalisis, type ReferenciaDelCambio, type VistaDeAnalisis } from '@be/domain';
+import { numero, preguntaProfesional, traeSeleccionesDelAsesorado, type ConfiguracionDeAnalisis, type PreguntaElegida, type ReferenciaDelCambio, type VistaDeAnalisis } from '@be/domain';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { api, nuevaClaveDeIdempotencia } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
 import { motivoDeFalla, textoDeFalla, useSeguimiento, type MotivoDeFalla } from './contexto';
-import { parametrosDeAnalisis, parametrosDePeriodo, PRESETS_DE_PERIODO, type EstadoDeAnalisis } from './estado';
+import { parametrosDeAnalisis, parametrosDePeriodo, parametrosDePregunta, PRESETS_DE_PERIODO, type EstadoDeAnalisis } from './estado';
 
-function configuracionDe(estado: EstadoDeAnalisis, periodo: { preset: number | null; desde: string; hasta: string }): ConfiguracionDeAnalisis | null {
+function configuracionDe(estado: EstadoDeAnalisis, periodo: { preset: number | null; desde: string; hasta: string }, pregunta: PreguntaElegida | null): ConfiguracionDeAnalisis | null {
   if (estado.metricas.length === 0) return null;
   const preset = PRESETS_DE_PERIODO.find((p) => p.dias === periodo.preset)?.dias;
   return {
     schemaVersion: 1,
+    ...(pregunta ? { question: pregunta } : {}),
     metrics: [...estado.metricas],
     mode: estado.modo,
     grain: estado.grano,
@@ -32,7 +37,7 @@ function configuracionDe(estado: EstadoDeAnalisis, periodo: { preset: number | n
 const referenciaGuardada = (r: ReferenciaDelCambio): string =>
   r.kind === 'FIRST_DAYS' ? `referencia: los primeros ${numero(r.days)} días` : `referencia: del ${diaCivil(r.start)} al ${diaCivil(r.end)}`;
 
-export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
+export function VistasGuardadas({ estado, pregunta }: { estado: EstadoDeAnalisis; pregunta: PreguntaElegida | null }) {
   const { token, periodo, ir, sesionPerdida } = useSeguimiento();
   const id = useId();
   const [vistas, setVistas] = useState<readonly VistaDeAnalisis[] | null>(null);
@@ -43,7 +48,7 @@ export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
   // Borrar no se deshace: primero se pide confirmar, en el mismo lugar.
   const [porBorrar, setPorBorrar] = useState<string | null>(null);
   const [sinLista, setSinLista] = useState<MotivoDeFalla | null>(null);
-  const configuracion = configuracionDe(estado, periodo);
+  const configuracion = configuracionDe(estado, periodo, pregunta);
 
   const cargar = useCallback(async () => {
     const r = await api.listarVistasDeAnalisis(token);
@@ -84,6 +89,7 @@ export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
           fecha: null,
           comparacion: c.comparison ? { a: { desde: c.comparison.a.start, hasta: c.comparison.a.end }, b: { desde: c.comparison.b.start, hasta: c.comparison.b.end } } : null,
         }),
+        ...parametrosDePregunta(c.question ?? null),
       },
       { agregarAlHistorial: true },
     );
@@ -121,7 +127,10 @@ export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
   return (
     <details className="vistas-guardadas">
       <summary>Vistas guardadas{vistas ? ` (${vistas.length})` : ''}</summary>
-      <p className="nota">Se guarda la configuración (métricas, modo, período, capas y la referencia del cambio relativo), nunca los datos. Sirve para cualquier asesorado.</p>
+      <p className="nota">Se guarda la configuración (la pregunta, las métricas, el modo, el período, las capas y la referencia del cambio relativo), nunca los datos. Sirve para cualquier asesorado.</p>
+      {pregunta && traeSeleccionesDelAsesorado(pregunta.params) ? (
+        <p className="nota">Esta vista lleva selecciones de este asesorado (la versión del plan, las etapas o el ejercicio): en otro asesorado se te van a pedir de nuevo.</p>
+      ) : null}
       <div className="campo">
         <label htmlFor={`${id}-nombre`}>Nombre de la vista</label>
         <input id={`${id}-nombre`} value={nombre} maxLength={80} onChange={(e) => setNombre(e.target.value)} placeholder="Por ejemplo: Peso y alimentación" />
@@ -153,7 +162,10 @@ export function VistasGuardadas({ estado }: { estado: EstadoDeAnalisis }) {
           {vistas.map((v) => (
             <li key={v.viewId}>
               <strong>{v.name}</strong>
-              <span className="nota"> · {v.usage === 'ANALYSIS' ? `${v.configuration.metrics.length} ${v.configuration.metrics.length === 1 ? 'métrica' : 'métricas'} · ${referenciaGuardada(v.configuration.reference)}` : ''}</span>
+              <span className="nota">
+                {' '}
+                · {v.usage === 'ANALYSIS' ? `${v.configuration.question ? `${preguntaProfesional(v.configuration.question.id).pregunta} · ` : ''}${v.configuration.metrics.length} ${v.configuration.metrics.length === 1 ? 'métrica' : 'métricas'} · ${referenciaGuardada(v.configuration.reference)}` : ''}
+              </span>
               <div className="acciones">
                 <button type="button" className="boton boton--enlace" onClick={() => abrir(v)}>
                   Abrir<span className="visualmente-oculto"> {v.name}</span>

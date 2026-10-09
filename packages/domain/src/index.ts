@@ -87,3 +87,4 @@ export * from './exportacion-del-analisis';
 export * from './etapas-de-planificacion';
 export * from './preguntas-profesionales';
 export * from './sintesis-del-resumen';
+export * from './contraste-de-comida';

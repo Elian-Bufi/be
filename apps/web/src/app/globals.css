@@ -913,6 +913,18 @@ details summary {
   }
 }
 
+/* Dentro de una sección o de un panel, las tapas llevan el color de esa superficie: con el del fondo de la página se
+   veían dos franjas oscuras a los lados de cada tabla, aunque no hubiera nada que desplazar. */
+.seccion .desplazable-x {
+  --tapa-izquierda: var(--superficie);
+  --tapa-derecha: var(--superficie);
+}
+
+.panel .desplazable-x {
+  --tapa-izquierda: var(--fondo-suave);
+  --tapa-derecha: var(--fondo-suave);
+}
+
 /* ─── Pestañas del workspace (B10-01: tabs como revelación) ───────────── */
 .pestanas ul {
   display: flex;
@@ -3057,5 +3069,456 @@ html:has(.acciones--fijas) {
   .linea-de-tiempo * {
     transition: none !important;
     animation: none !important;
+  }
+}
+
+/* ─── Ficha del asesorado: comprender, investigar y actuar (WP-DASHBOARD-COMPRENSION) ─── */
+/* Escritorio primero (1440, 1280 y 1024): tres zonas en Analizar, dos en el Resumen. Más angosto no es el objetivo,
+   pero no se rompe: todo se apila y solo las tablas se desplazan de costado. Superficies mates: color plano, borde fino,
+   sin brillo, vidrio ni degradé (los degradés son de la cara pública y de la barra de marca). */
+
+.ficha__cabecera {
+  display: grid;
+  gap: 0.25rem 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0.25rem 0 0.75rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+@media (min-width: 64rem) {
+  .ficha__cabecera {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+
+  .ficha__cabecera > .nota {
+    grid-column: 1 / -1;
+  }
+}
+
+.ficha__cabecera h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  grid-column: 1;
+}
+
+.ficha__acceso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+  grid-column: 1 / -1;
+}
+
+.ficha__acceso-titulo {
+  margin: 0;
+}
+
+.ficha__acceso .estados-de-vinculo,
+.ficha__acceso-areas {
+  margin: 0;
+}
+
+.ficha__consulta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Objetivo y planificación del Resumen: una fila por área, con las mismas columnas en todas. Para que la síntesis entre
+   en la primera pantalla cambió la composición (textos de una línea, sin metadatos repetidos), no la letra (GUIA I.5). */
+.tabla-de-planificacion {
+  margin: 0.25rem 0 0;
+}
+
+/* En la fila de Antropometría, lo secundario sigue en la misma línea: es una sola toma, no una lista. */
+.tabla-de-planificacion .dato-secundario--en-linea {
+  display: inline;
+}
+
+/* La ficha: menos aire entre secciones que en el resto del website, para que lo principal entre sin desplazarse. */
+.ficha.secciones {
+  gap: 1rem;
+}
+
+.tabla-de-planificacion th,
+.tabla-de-planificacion td {
+  padding: 0.45rem 0.6rem;
+}
+
+.tabla-de-planificacion th[scope='row'] {
+  white-space: nowrap;
+  width: 7.5rem;
+}
+
+/* La planificación lleva más texto (lo vigente, lo que rigió antes y el borrador): un poco más de ancho. */
+.tabla-de-planificacion td:nth-of-type(1),
+.tabla-de-planificacion td:nth-of-type(3) {
+  width: 29%;
+}
+
+.tabla-de-planificacion td:nth-of-type(2) {
+  width: 36%;
+}
+
+.tabla-de-planificacion tbody tr:last-child th,
+.tabla-de-planificacion tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* La información para revisar: una columna por área en escritorio. */
+.planificacion-por-area {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 1.5rem;
+}
+
+@media (min-width: 64rem) {
+  .planificacion-por-area {
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  }
+
+  .planificacion-por-area > .subseccion {
+    margin-top: 0.25rem;
+    padding-top: 0.75rem;
+  }
+}
+
+.planificacion-por-area .datos dt {
+  min-width: 0;
+  flex-basis: 100%;
+  font-size: 0.9rem;
+  color: var(--tenue);
+  font-weight: 600;
+}
+
+.planificacion-por-area .datos div {
+  gap: 0.1rem;
+}
+
+/* Lo que acompaña a un dato en su misma entrada (lo que rigió en el período, la próxima revisión): a la vista, en su
+   propio renglón y con menos peso. No es una explicación plegable: es contexto para decidir (GUIA-UX-UI I.2). */
+.dato-secundario {
+  display: block;
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+/* «Para tu próxima revisión» y las acciones, lado a lado en escritorio. */
+.resumen__revision {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+@media (min-width: 64rem) {
+  .resumen__revision {
+    grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+    align-items: start;
+  }
+}
+
+.observaciones {
+  list-style: none;
+  margin: 0.5rem 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  counter-reset: observacion;
+}
+
+.observacion {
+  border-left: 3px solid var(--borde-control);
+  padding: 0.15rem 0 0.15rem 0.85rem;
+}
+
+.observacion[data-prioridad='1'] {
+  border-left-color: var(--texto);
+}
+
+.observacion p {
+  margin: 0.1rem 0;
+}
+
+.observacion__alcance {
+  font-size: 0.9rem;
+  color: var(--tenue);
+}
+
+.observacion__texto {
+  font-size: 1.02rem;
+}
+
+.observacion__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
+.observaciones__fallas {
+  margin: 0.5rem 0;
+}
+
+.acciones-del-resumen__lista {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.acciones-del-resumen__lista .boton {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.acciones-del-resumen__lista .nota {
+  margin: 0.25rem 0 0;
+}
+
+/* La entrada por preguntas en el Resumen: enlaces en lista, con el alto táctil del website. */
+.preguntas-del-resumen {
+  margin-top: 1rem;
+}
+
+.preguntas-del-resumen h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.preguntas-del-resumen__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.preguntas-del-resumen__lista a,
+.preguntas-del-resumen p a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+.preguntas-del-resumen p {
+  margin: 0;
+}
+
+/* Preguntas profesionales: tarjetas que se eligen con un botón (todo el bloque es el objetivo). */
+.preguntas-profesionales__lista {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 64rem) {
+  .preguntas-profesionales__lista {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tarjeta-de-pregunta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  min-height: 2.75rem;
+  text-align: left;
+  font: inherit;
+  color: var(--texto);
+  background: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+}
+
+.tarjeta-de-pregunta:hover {
+  border-color: var(--borde-control);
+}
+
+.tarjeta-de-pregunta:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.tarjeta-de-pregunta__pregunta {
+  font-weight: 700;
+  color: var(--enlace);
+}
+
+.tarjeta-de-pregunta__muestra {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+.preguntas-profesionales__mas > summary {
+  font-weight: 700;
+  margin: 0.25rem 0;
+}
+
+.pregunta-activa {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.pregunta-activa p {
+  margin: 0.15rem 0;
+}
+
+.pregunta-activa__rotulo {
+  display: inline-block;
+  margin-right: 0.35rem;
+  color: var(--tenue);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Un formulario corto no ocupa todo el ancho del escritorio: un desplegable de 1300 px se recorre mal con la vista. */
+.parametros-de-pregunta {
+  max-width: 56rem;
+}
+
+.parametros-de-pregunta .fila-de-dato {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.parametros-de-pregunta .fila-de-dato > .campo {
+  flex: 1 1 18rem;
+}
+
+/* Etapas: dos tarjetas A y B, y la tabla con el mismo criterio. */
+.etapas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+@media (min-width: 64rem) {
+  .etapas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.etapa {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+  padding: 0.75rem 1rem;
+}
+
+.etapa h4 {
+  margin: 0.1rem 0 0.4rem;
+}
+
+.etapa__rotulo {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.etapa .datos dt {
+  min-width: 6rem;
+}
+
+.tabla-de-etapas td strong {
+  display: block;
+}
+
+.celda__detalle {
+  display: block;
+  color: var(--tenue);
+  font-size: 0.88rem;
+}
+
+.etapas-del-grafico {
+  margin: 0.5rem 0;
+}
+
+.etapas-del-periodo {
+  list-style: none;
+  margin: 0.35rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* Contraste con lo indicado: en nutrición, una fila por comida (el escritorio permite leer muchas de un vistazo). */
+.contraste .capas {
+  margin: 0.25rem 0 0.75rem;
+}
+
+.tabla-del-contraste th[scope='row'] {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.tabla-del-contraste td:last-child {
+  white-space: nowrap;
+}
+
+.tabla-del-contraste .insignia {
+  margin-left: 0.35rem;
+  font-size: 0.8rem;
+}
+
+/* Una comida anulada sigue en la lista (queda en el historial), atenuada y con su insignia: no solo por el color. */
+.tabla-del-contraste__anulada td,
+.tabla-del-contraste__anulada th {
+  color: var(--tenue);
+}
+
+.agrupar-por__motivos {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.resumen-en-texto ul {
+  margin: 0.15rem 0 0.75rem;
+  padding-left: 1.1rem;
+}
+
+.resumen-en-texto p {
+  margin: 0.5rem 0 0.15rem;
+}
+
+.aviso-de-filtro {
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+  padding: 0.6rem 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.aviso-de-filtro p {
+  margin: 0 0 0.25rem;
+}
+
+.retorno-a-la-ficha {
+  margin: -0.25rem 0 0.75rem;
+}
+
+/* El panel de lectura de Analizar no tiene desplazamiento propio: no hay doble desplazamiento. */
+@media (min-width: 80rem) {
+  .analizar__lectura {
+    position: static;
+    max-height: none;
+    overflow: visible;
   }
 }

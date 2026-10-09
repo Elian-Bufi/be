@@ -24,6 +24,7 @@ import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { SinEspacioProfesional, useEspacioProfesional } from '../../espacio-profesional';
+import { conVolver, EnlaceDeRetorno, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { VistaDePedido } from './pedir';
 
 export const VISTAS = [
@@ -80,7 +81,8 @@ export function Formularios() {
   const router = useRouter();
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees/forms?id=${id}`);
 
-  const irA = useCallback((v: Vista) => router.replace(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`), [router, ruta, id]);
+  const retorno = useRetornoALaFicha(id);
+  const irA = useCallback((v: Vista) => router.replace(conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`, retorno.valor)), [router, ruta, id, retorno.valor]);
   const [exito, setExito] = useState<string | null>(null);
   const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, irA, avisar: setExito } : null), [token, id, sesionPerdida, irA]);
 
@@ -91,12 +93,18 @@ export function Formularios() {
 
   return (
     <Contexto.Provider value={contexto}>
-      <MigasDelAsesorado id={id} pestana={COPY_FORMULARIOS.pestana} />
+      <MigasDelAsesorado id={id} pestana={COPY_FORMULARIOS.pestana} volver={retorno.href} />
       <h1>{COPY_FORMULARIOS.pestana}</h1>
-      <Pestanas etiqueta="Secciones de Información" vistas={VISTAS} actual={vista} href={(clave) => `${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`} />
+      <EnlaceDeRetorno href={retorno.href} />
+      <Pestanas etiqueta="Secciones de Información" vistas={VISTAS} actual={vista} href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, retorno.valor)} />
       {exito ? (
-        <AvisoFlotante onCerrar={() => setExito(null)}>
+        <AvisoFlotante onCerrar={() => setExito(null)} seQueda={!!retorno.href}>
           <p>{exito}</p>
+          {retorno.href ? (
+            <p>
+              <a href={retorno.href}>Volver a la ficha, donde estabas</a>
+            </p>
+          ) : null}
         </AvisoFlotante>
       ) : null}
       {vista === 'solicitudes' ? <VistaDeSolicitudes /> : null}

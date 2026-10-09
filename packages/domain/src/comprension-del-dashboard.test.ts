@@ -27,12 +27,14 @@ import {
   TEXTO_SIN_DIFERENCIA_DE_ETAPAS,
   type EtapaDePlanificacion,
 } from './etapas-de-planificacion';
+import { contrasteDeLaComida, filaEnPalabras } from './contraste-de-comida';
 import { conteosDesde, cumpleFiltros, novedadDesde } from './linea-de-tiempo';
 import { definicionAntropometrica, definicionDeMetrica, MAXIMO_DE_METRICAS, type DefinicionDeMetrica } from './metricas-del-analisis';
 import { PREGUNTAS_PROFESIONALES, requisitosDe, resolverPregunta, traeSeleccionesDelAsesorado, type ContextoDeLaPregunta } from './preguntas-profesionales';
 import {
   claveDeObservacion,
   PALABRAS_QUE_CALIFICAN,
+  primerPlanDelPeriodo,
   sintesisDelResumen,
   textoDeObservacion,
   textoDelAlcance,
@@ -356,6 +358,9 @@ test('cada pregunta lista arma hasta tres métricas, con la etapa como período 
 test('los parámetros de una pregunta son identificadores: el texto libre y las claves desconocidas se rechazan; las vistas viejas siguen valiendo', () => {
   assert.equal(ParametrosDePreguntaSchema.safeParse({ bodyMetric: 'peso de la persona' }).success, false);
   assert.equal(ParametrosDePreguntaSchema.safeParse({ nota: 'texto' }).success, false);
+  // Una versión de plan es un UUID: un texto no viaja en la URL ni queda en una vista guardada.
+  for (const campo of ['planVersionId', 'stageA', 'stageB']) assert.equal(ParametrosDePreguntaSchema.safeParse({ [campo]: 'texto libre de la persona' }).success, false, campo);
+  assert.equal(ParametrosDePreguntaSchema.safeParse({ area: 'NUTRICION', stageA: '11111111-1111-4111-8111-111111111111', stageB: '22222222-2222-4222-8222-222222222222' }).success, true);
   assert.equal(ParametrosDePreguntaSchema.safeParse({ exerciseKey: SENTADILLA, setIndex: 1, unit: 'kg' }).success, true);
   const vieja = {
     schemaVersion: 1,
@@ -467,7 +472,7 @@ test('pendientes explícitos: revisión sin aplicar, próxima revisión cercana 
         lastReview: { reviewId: REVISION, recordedAt: CORTE, author: PRO, application: null },
         activePlan: { planVersionId: V3, activatedAt: '2026-09-01T13:00:00.000Z', nextReviewAt: '2026-10-05' },
         objective: null,
-        draftPlan: { planVersionId: BORRADOR, version: 4, recordedAt: '2026-10-07T12:00:00.000Z', fromReviewId: null },
+        draftPlan: { planVersionId: BORRADOR, recordedAt: '2026-10-07T12:00:00.000Z', fromReviewId: null },
       }),
     },
   });
@@ -475,17 +480,46 @@ test('pendientes explícitos: revisión sin aplicar, próxima revisión cercana 
   assert.deepEqual(pendientes, ['REVISION_SIN_APLICAR', 'PROXIMA_REVISION', 'BORRADOR_SIN_ACTIVAR']);
   assert.equal(textoDeObservacion(s[0]!, FORMATO), 'La revisión del 20/9 está registrada y su resultado todavía no se aplicó.');
   assert.equal(textoDeObservacion(s[1]!, FORMATO), 'La próxima revisión acordada era el 5/10 (hace 4 días).');
-  assert.match(textoDeObservacion(s[2]!, FORMATO), /borrador del plan \(versión 4\) sin activar.*No rige hasta que se active/);
+  assert.equal(textoDeObservacion(s[2]!, FORMATO), 'Hay una versión nueva del plan en borrador, creada el 7/10. No rige hasta que se active.');
+  // Sin número: el `version` del borrador es su token de concurrencia, y el número para la persona es el orden de activación.
+  assert.doesNotMatch(textoDeObservacion(s[2]!, FORMATO), /versión \d/);
   assert.deepEqual(s[2]!.accion, { tipo: 'PLANIFICACION', area: 'NUTRICION', planVersionId: BORRADOR });
   // Una revisión acordada para dentro de un mes todavía no es un pendiente.
   const lejos = sintesisDelResumen({ ...DATOS, nutricion: { ...DATOS.nutricion!, resumen: nutricion({ activePlan: { planVersionId: V3, activatedAt: '2026-09-25T13:00:00.000Z', nextReviewAt: '2026-11-20' } }) } });
   assert.equal(lejos.some((o) => o.regla === 'PROXIMA_REVISION'), false);
 });
 
+test('la cobertura dice desde cuándo rige el plan si empezó dentro del período: «1 de 90 días» no son 89 días sin registrar', () => {
+  const vigencia = (from: string, to: string | null) => ({ domain: 'NUTRITION' as const, planVersionId: V3, label: 'v1', activatedAt: `${from}T06:01:00.000Z`, from, to, endedAt: null, endReason: null });
+  const conPlanDeHoy = sintesisDelResumen({
+    ...DATOS,
+    nutricion: {
+      ...DATOS.nutricion!,
+      vigencias: [vigencia(HOY, null)],
+      cobertura: { estado: 'LISTA', valor: { daysInPeriod: 90, daysWithRecords: 1, records: 2, recordsWithQuantities: 1, recordsWithoutQuantities: 1, differentMealsWithoutQuantities: 0, annulledExcluded: 0, rectifiedCountedOnce: 0 } },
+    },
+  });
+  const cobertura = conPlanDeHoy.find((o) => o.regla === 'COBERTURA_NUTRICIONAL')!;
+  assert.equal(
+    textoDeObservacion(cobertura, FORMATO),
+    '1 de 90 días con algún registro; 2 registros: 1 con cantidades y 1 sin cantidades. El plan rige desde el 9/10: antes, en el período, no había un plan de este seguimiento.',
+  );
+  // Un plan que ya regía al empezar el período (aunque después lo sucediera otro) no agrega nada.
+  assert.equal(primerPlanDelPeriodo([vigencia('2026-06-01', '2026-09-25'), vigencia('2026-09-25', null)], '2026-07-12'), null);
+  assert.equal(primerPlanDelPeriodo([vigencia('2026-09-25', null), vigencia('2026-08-01', '2026-09-25')], '2026-07-12'), '2026-08-01');
+  assert.equal(primerPlanDelPeriodo([], '2026-07-12'), null);
+  assert.equal(primerPlanDelPeriodo(undefined, '2026-07-12'), null);
+  // Sin vigencias en los datos (como antes), el texto no cambia.
+  assert.doesNotMatch(textoDeObservacion(sintesisDelResumen(DATOS).find((o) => o.regla === 'COBERTURA_NUTRICIONAL')!, FORMATO), /rige desde/);
+});
+
 test('una lectura que falló se dice y un área no autorizada no aporta nada', () => {
   const s = sintesisDelResumen({ ...DATOS, nutricion: { ...DATOS.nutricion!, novedades: { estado: 'FALLO' }, cobertura: { estado: 'FALLO' } }, entrenamiento: null });
   const fallas = s.filter((o) => o.regla === 'PARTE_NO_DISPONIBLE');
   assert.deepEqual(fallas.map((o) => textoDeObservacion(o, FORMATO)), ['No pudimos completar esta parte (lo nuevo desde la revisión).', 'No pudimos completar esta parte (la cobertura del período).']);
+  // Lo que falta va primero, entre las cuatro a la vista: escondido detrás de «Ver todas», la síntesis parecía completa.
+  assert.deepEqual(s.slice(0, 2).map((o) => o.regla), ['PARTE_NO_DISPONIBLE', 'PARTE_NO_DISPONIBLE']);
+  assert.ok(fallas.every((o) => o.prioridad === 1));
   assert.equal(s.some((o) => o.area === 'ENTRENAMIENTO'), false);
 });
 
@@ -501,7 +535,7 @@ test('un corte anterior a lo que se pudo leer se dice; sin novedades, también',
 test('ninguna plantilla califica a la persona ni a su desempeño', () => {
   const variantes: DatosDeLaSintesis[] = [
     DATOS,
-    { ...DATOS, nutricion: { ...DATOS.nutricion!, resumen: nutricion({ lastReview: { reviewId: REVISION, recordedAt: CORTE, author: PRO, application: null }, draftPlan: { planVersionId: BORRADOR, version: 4, recordedAt: '2026-10-07T12:00:00.000Z', fromReviewId: REVISION }, activePlan: { planVersionId: V3, activatedAt: '2026-09-25T13:00:00.000Z', nextReviewAt: HOY } }), novedades: { estado: 'FALLO' } } },
+    { ...DATOS, nutricion: { ...DATOS.nutricion!, resumen: nutricion({ lastReview: { reviewId: REVISION, recordedAt: CORTE, author: PRO, application: null }, draftPlan: { planVersionId: BORRADOR, recordedAt: '2026-10-07T12:00:00.000Z', fromReviewId: REVISION }, activePlan: { planVersionId: V3, activatedAt: '2026-09-25T13:00:00.000Z', nextReviewAt: HOY } }), novedades: { estado: 'FALLO' } } },
     { ...DATOS, entrenamiento: { ...DATOS.entrenamiento!, cobertura: { estado: 'LISTA', valor: { sesiones: 0, conCambios: 0, noRealizadas: 0, resumidas: 0 } } }, antropometria: { resumen: { lastEvaluation: antropometria.lastEvaluation, registeredEvaluations: 0 }, comparabilidad: { estado: 'FALLO' } } },
   ];
   for (const d of variantes) {
@@ -510,4 +544,56 @@ test('ninguna plantilla califica a la persona ni a su desempeño', () => {
       assert.doesNotMatch(texto, PALABRAS_QUE_CALIFICAN, `${claveDeObservacion(o)}: ${texto}`);
     }
   }
+});
+
+// ─── Contraste de una comida con lo indicado (eje 2) ────────────────────────────────────────────
+
+test('una comida contra su opción indicada: sin confirmar sigue sin confirmar, una diferente queda afuera y la diferencia es una resta', () => {
+  const opcion = {
+    optionId: '10000000-0000-4000-8000-000000000001',
+    label: 'Arroz con pollo',
+    order: 1,
+    recipe: null,
+    image: null,
+    items: [
+      { itemId: '10000000-0000-4000-8000-0000000000a1', catalogItemVersionId: '10000000-0000-4000-8000-0000000000b1', name: 'Arroz', quantity: { value: 120, unit: 'g' as const }, preparationState: null, note: null },
+      { itemId: '10000000-0000-4000-8000-0000000000a2', catalogItemVersionId: '10000000-0000-4000-8000-0000000000b2', name: 'Pollo', quantity: { value: 150, unit: 'g' as const }, preparationState: null, note: null },
+      { itemId: '10000000-0000-4000-8000-0000000000a3', catalogItemVersionId: '10000000-0000-4000-8000-0000000000b3', name: 'Aceite', quantity: null, preparationState: null, note: null },
+    ],
+    planned: { energyKcal: { value: null, missing: [] }, carbohydrateG: { value: null, missing: [] }, fatG: { value: null, missing: [] }, proteinG: { value: null, missing: [] }, fiberG: { value: null, missing: [] } },
+  };
+  const sinConfirmar = contrasteDeLaComida({ kind: 'PLAN_OPTION', option: opcion, consumption: { status: 'UNCONFIRMED', items: [], source: 'ORIGINAL', rectifiedAt: null }, description: null });
+  if (sinConfirmar.tipo !== 'CON_LA_OPCION') throw new Error('con la opción');
+  assert.ok(sinConfirmar.filas.every((f) => f.estado === 'SIN_CONFIRMAR' && f.registrado === 'sin confirmar'));
+  const informada = contrasteDeLaComida({
+    kind: 'PLAN_OPTION',
+    option: opcion,
+    consumption: {
+      status: 'REPORTED',
+      items: [
+        { itemId: '10000000-0000-4000-8000-0000000000a1', quantity: { value: 100, unit: 'g' }, notEaten: false },
+        { itemId: '10000000-0000-4000-8000-0000000000a2', quantity: null, notEaten: true },
+        { itemId: '10000000-0000-4000-8000-0000000000a3', quantity: { value: 5, unit: 'ml' }, notEaten: false },
+      ],
+      source: 'ORIGINAL',
+      rectifiedAt: null,
+    },
+    description: null,
+  });
+  if (informada.tipo !== 'CON_LA_OPCION') throw new Error('con la opción');
+  assert.deepEqual(informada.filas.map(filaEnPalabras), [
+    'Arroz: indicado 120 g · registrado 100 g (−20 g)',
+    'Pollo: indicado 150 g · registrado no lo comió',
+    'Aceite: indicado sin cantidad indicada · registrado 5 ml',
+  ]);
+  assert.deepEqual(contrasteDeLaComida({ kind: 'DIFFERENT', option: null, consumption: null, description: 'Una pizza' }), { tipo: 'FUERA_DE_LO_INDICADO', descripcion: 'Una pizza' });
+  for (const f of informada.filas) assert.doesNotMatch(filaEnPalabras(f), /%|cumpl|adherencia/i);
+});
+
+test('comparar dos etapas arma las métricas del área: en entrenamiento pide el ejercicio, la serie y la unidad', () => {
+  const nut = resolverPregunta('comparar-etapas', { area: 'NUTRICION', stageA: V1, stageB: V3, bodyMetric: 'antropometria.peso' }, CONTEXTO);
+  if (nut.estado !== 'LISTA' || nut.destino.tipo !== 'ETAPAS') throw new Error('debía comparar etapas');
+  assert.deepEqual(nut.destino.metricas.map((m) => m.metricId), ['nutricion.energia', 'nutricion.proteinas', 'antropometria.peso']);
+  const trn = resolverPregunta('comparar-etapas', { area: 'ENTRENAMIENTO', stageA: V1, stageB: V3 }, { ...CONTEXTO, etapas: { NUTRITION: [], TRAINING: etapasDelArea(VIGENCIAS.map((v) => ({ ...v, domain: 'TRAINING' as const })), 'TRAINING', HOY, AHORA) } });
+  assert.deepEqual(trn, { estado: 'FALTA_ELEGIR', requisitos: ['EJERCICIO'], noAplican: [] });
 });

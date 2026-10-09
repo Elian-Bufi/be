@@ -258,7 +258,7 @@ function SesionSoloLectura({ sesion }: { sesion: SesionConObjetivos }) {
 }
 
 /** La versión activada tal como la ve el asesorado: desde la instantánea, en solo lectura. */
-function PlanSoloLectura({ version, numero: numeroDeVersion }: { version: PlanConObjetivos; numero: number }) {
+export function PlanSoloLectura({ version, numero: numeroDeVersion }: { version: PlanConObjetivos; numero: number }) {
   return (
     <>
       <p>

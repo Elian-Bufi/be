@@ -27,6 +27,7 @@ import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { FiltroDePeriodo, type Periodo } from '../periodo';
+import { AvisoDePreparacion, periodoPreparado, usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
 type ResultadoApi = keyof typeof ETIQUETA_DE_RESULTADO;
@@ -34,8 +35,13 @@ const RESULTADOS = Object.keys(ETIQUETA_DE_RESULTADO) as ResultadoApi[];
 
 export function VistaDeRevisiones() {
   const { token, asesoradoId, sesionPerdida, irA } = useEntrenamiento();
+  // WP-DASHBOARD-COMPRENSION (eje 5): «Preparar la revisión» desde la ficha abre el formulario con el período desde la
+  // última revisión, dicho como preparado por BE. Ver no es revisar: nada se registra hasta «Registrar revisión».
+  const preparar = usePreparar();
+  const retorno = useRetornoALaFicha(asesoradoId);
+  const [preparado, setPreparado] = useState<{ desdeLaRevision: string | null; periodo: Periodo | null } | null>(null);
   const [r, setR] = useState<Resultado<{ contexto: Contexto; evaluaciones: EvaluacionDeEntrenamiento[] }> | null>(null);
-  const [aviso, setAviso] = useState<{ texto: string; alPlan?: boolean } | null>(null);
+  const [aviso, setAviso] = useState<{ texto: string; alPlan?: boolean; volver?: string | null } | null>(null);
   const [periodo, setPeriodo] = useState<Periodo>({});
 
   const cargar = useCallback(async () => {
@@ -50,18 +56,30 @@ export function VistaDeRevisiones() {
   useEffect(() => {
     void cargar();
   }, [cargar]);
+  // La primera lectura dice cuándo fue la última revisión: con eso se prepara el período, una sola vez.
+  useEffect(() => {
+    if (!preparar || preparado || !r?.ok) return;
+    const p = periodoPreparado(r.datos.contexto.previousReviews);
+    setPreparado(p ? { desdeLaRevision: p.desdeLaRevision, periodo: p.periodo } : { desdeLaRevision: null, periodo: null });
+    if (p) setPeriodo(p.periodo);
+  }, [preparar, preparado, r]);
 
   return (
     <div className="secciones">
-    <FiltroDePeriodo id="trn-revision-periodo" onAplicar={setPeriodo} />
+    <FiltroDePeriodo key={preparado?.periodo?.periodStart ?? 'sin-preparar'} id="trn-revision-periodo" onAplicar={setPeriodo} inicial={preparado?.periodo ?? undefined} />
     <EstadoDeLectura r={r} onReintentar={cargar}>
       {r?.ok ? (
         <div className="secciones">
           <p className="nota">{COPY_ENTRENAMIENTO.contextoNoEsRevision}</p>
           {/* DL-113: el atajo al borrador va en el aviso, que por eso se queda hasta que se cierra. */}
           {aviso ? (
-            <AvisoFlotante onCerrar={() => setAviso(null)} seQueda={!!aviso.alPlan}>
+            <AvisoFlotante onCerrar={() => setAviso(null)} seQueda={!!aviso.alPlan || !!aviso.volver}>
               <p>{aviso.texto}</p>
+              {aviso.volver ? (
+                <p>
+                  <a href={aviso.volver}>Volver a la ficha, donde estabas</a>
+                </p>
+              ) : null}
               {aviso.alPlan ? (
                 <p>
                   <button type="button" className="boton boton--enlace" onClick={() => irA('plan')}>
@@ -78,10 +96,12 @@ export function VistaDeRevisiones() {
           ) : null}
           {r.datos.contexto.process?.state === 'ABIERTO' ? (
             <FormularioDeRevision
+              abiertoAlEntrar={preparar}
+              preparado={preparado}
               contexto={r.datos.contexto}
               evaluaciones={r.datos.evaluaciones}
               onRegistrada={() => {
-                setAviso({ texto: 'Revisión registrada. Todavía no se aplicó: aplicala desde la lista.' });
+                setAviso({ texto: 'Revisión registrada. Todavía no se aplicó: aplicala desde la lista.', volver: retorno.href });
                 void cargar();
               }}
             />
@@ -113,10 +133,22 @@ export function VistaDeRevisiones() {
   );
 }
 
-function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contexto: Contexto; evaluaciones: readonly EvaluacionDeEntrenamiento[]; onRegistrada: () => void }) {
+function FormularioDeRevision({
+  abiertoAlEntrar = false,
+  preparado = null,
+  contexto,
+  evaluaciones,
+  onRegistrada,
+}: {
+  abiertoAlEntrar?: boolean;
+  preparado?: { desdeLaRevision: string | null; periodo: Periodo | null } | null;
+  contexto: Contexto;
+  evaluaciones: readonly EvaluacionDeEntrenamiento[];
+  onRegistrada: () => void;
+}) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
-  const [abierto, setAbierto] = useState(false);
+  const [abierto, setAbierto] = useState(abiertoAlEntrar);
   const [evidencia, setEvidencia] = useState<Set<string>>(new Set());
   const [interpretacion, setInterpretacion] = useState('');
   const [resultado, setResultado] = useState<ResultadoApi | ''>('');
@@ -204,6 +236,7 @@ function FormularioDeRevision({ contexto, evaluaciones, onRegistrada }: { contex
   return (
     <form className="formulario seccion" onSubmit={enviar} noValidate>
       <h2>{COPY_ENTRENAMIENTO.registrarRevision}</h2>
+      {preparado ? <AvisoDePreparacion desdeLaRevision={preparado.desdeLaRevision} periodo={preparado.periodo} /> : null}
       <p>
         Período: {dia(`${contexto.period.start}T12:00:00Z`)} a {dia(`${contexto.period.end}T12:00:00Z`)}
       </p>

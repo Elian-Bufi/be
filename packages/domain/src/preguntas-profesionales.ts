@@ -99,7 +99,7 @@ export function requisitosDe(id: IdDePregunta, p: ParametrosDePregunta): Requisi
     case 'progreso-de-un-ejercicio':
       return ['EJERCICIO', 'SERIE', 'UNIDAD'];
     case 'comparar-etapas':
-      return ['AREA', 'ETAPAS'];
+      return ['AREA', 'ETAPAS', ...(p.area === 'ENTRENAMIENTO' ? (['EJERCICIO', 'SERIE', 'UNIDAD'] as const) : [])];
     case 'informacion-para-revisar':
       return [];
   }
@@ -126,7 +126,14 @@ export type DestinoDePregunta =
       readonly etapa: EtapaDePlanificacion | null;
     }
   | { readonly tipo: 'CONTRASTE'; readonly area: AreaDePregunta; readonly exerciseKey: string | null }
-  | { readonly tipo: 'ETAPAS'; readonly area: AreaDePregunta; readonly a: EtapaDePlanificacion; readonly b: EtapaDePlanificacion }
+  | {
+      readonly tipo: 'ETAPAS';
+      readonly area: AreaDePregunta;
+      readonly a: EtapaDePlanificacion;
+      readonly b: EtapaDePlanificacion;
+      /** Hasta tres métricas: las del área (y, en nutrición, una medida corporal si se eligió). */
+      readonly metricas: readonly ReferenciaDeMetrica[];
+    }
   | { readonly tipo: 'INFORMACION'; readonly area: AreaDePregunta | null };
 
 export type ResolucionDePregunta =
@@ -212,7 +219,12 @@ export function resolverPregunta(id: IdDePregunta, p: ParametrosDePregunta, ctx:
     case 'comparar-etapas': {
       // A es la más antigua de las dos: la diferencia se lee siempre como «la etapa posterior menos la anterior».
       const [primera, segunda] = [a as EtapaDePlanificacion, b as EtapaDePlanificacion].sort((x, y) => x.activadaEl.localeCompare(y.activadaEl));
-      return { estado: 'LISTA', destino: { tipo: 'ETAPAS', area: area as AreaDePregunta, a: primera as EtapaDePlanificacion, b: segunda as EtapaDePlanificacion } };
+      const medida = p.bodyMetric && ctx.medidas.has(p.bodyMetric) ? p.bodyMetric : null;
+      const metricas =
+        area === 'NUTRICION'
+          ? [metrica('nutricion.energia'), metrica('nutricion.proteinas'), metrica(medida ?? 'nutricion.registros')]
+          : [metrica('entrenamiento.series-registradas', delEjercicio), metrica('entrenamiento.carga', { ...conSerie, unit: p.unit ?? null }), metrica('entrenamiento.repeticiones', conSerie)];
+      return { estado: 'LISTA', destino: { tipo: 'ETAPAS', area: area as AreaDePregunta, a: primera as EtapaDePlanificacion, b: segunda as EtapaDePlanificacion, metricas } };
     }
     case 'informacion-para-revisar':
       return { estado: 'LISTA', destino: { tipo: 'INFORMACION', area: p.area && ctx.areas.has(p.area) ? p.area : null } };

@@ -13,10 +13,25 @@
  * - «Cómo se calcula», la tabla de datos, el resumen textual y la comparación de dos períodos (sin conclusiones
  *   causales: «coincidencia temporal; no indica causa»);
  * - todo el estado en la URL; un punto abre su registro de origen y al cerrarlo la vista sigue igual.
+ *
+ * WP-DASHBOARD-COMPRENSION (encargo del 2026-10-09):
+ * - **Preguntas primero** (eje 2): sin pregunta ni métricas, se ofrecen las preguntas profesionales antes que la
+ *   configuración; una pregunta arma las métricas (o abre el contraste, las etapas o la información) y su encabezado dice
+ *   la pregunta, sus datos y su límite. «Análisis personalizado» sigue disponible; cambiar métricas a mano deja la pregunta.
+ * - **Agrupar por** (eje 6) reemplaza «Grano»: dice qué admite cada métrica y por qué.
+ * - **La referencia del cambio relativo** se muestra solo en ese modo; las bandas de los planes tienen su lista de
+ *   etapas, que abre la planificación o compara con la anterior (eje 4).
+ * - **La clase del dato** dice la naturaleza del método (eje 3): un índice no es una estimación.
  */
 import {
   cambioRelativo,
+  claseEnPalabras,
   compararPeriodos,
+  etapasDelArea,
+  partesDelResumenTextual,
+  periodoDeLasEtapas,
+  resolverPregunta,
+  type EtapaDePlanificacion,
   csvDelAnalisis,
   granoDeObservacion,
   lecturaEnFecha,
@@ -42,15 +57,26 @@ import { Cargando } from '../../../../components/estados';
 import { api } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
 import { textoDeFalla, useLectura, useSeguimiento } from './contexto';
-import { leerAnalisis, parametrosDeAnalisis, restarDias, type EstadoDeAnalisis, type GranoElegido, type Modo } from './estado';
+import { codificarReferencia, hoyEn, leerAnalisis, leerPregunta, parametrosDeAnalisis, parametrosDePeriodo, parametrosDePregunta, type EstadoDeAnalisis, type GranoElegido, type Modo } from './estado';
 import { ESTILOS, Marca, type SerieParaDibujar } from './lienzo';
-import { nombreDeLaReferencia, PresetsDeAnalisis, SelectorDeMetricas } from './selector';
+import { contextoDeLaPregunta, ElegirParametros, ListaDePreguntas, PreguntaActiva, useEtapasDelAno } from './preguntas';
+import { nombreDeLaReferencia, SelectorDeMetricas } from './selector';
 import { leerSerie, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
 import { valorParaMostrar } from './valores';
 import { VistasGuardadas } from './vistas-guardadas';
 
 const Lienzo = dynamic(() => import('./lienzo').then((m) => m.Lienzo), { ssr: false, loading: () => <Cargando /> });
 const PanelDeRegistro = dynamic(() => import('./registro-original').then((m) => m.PanelDeRegistro), { ssr: false });
+const ComparacionDeEtapas = dynamic(() => import('./etapas').then((m) => m.ComparacionDeEtapas), { ssr: false, loading: () => <Cargando /> });
+const EtapasDelPeriodo = dynamic(() => import('./etapas').then((m) => m.EtapasDelPeriodo), { ssr: false });
+const ContrasteConLoIndicado = dynamic(() => import('./contraste').then((m) => m.ContrasteConLoIndicado), { ssr: false, loading: () => <Cargando /> });
+const InformacionParaRevisar = dynamic(() => import('./informacion').then((m) => m.InformacionParaRevisar), { ssr: false, loading: () => <Cargando /> });
+
+/** El máximo que lee el análisis en la web (un año, con el día de hoy): el de la comparación de etapas. */
+const DIAS_MAXIMOS_DEL_ANALISIS = 366;
+
+/** Qué es cada punto según cómo se agrupa: lo dice el título del panel. */
+const AGRUPADA: Readonly<Record<GranoElegido, string>> = { ORIGINAL: 'cada registro', DAY: 'por día', WEEK: 'por semana' };
 
 const MOTIVO_SIN_REFERENCIA: Readonly<Record<string, string>> = {
   ESCALA_NO_ADMITE: 'no admite cambio relativo (no es una escala de razón)',
@@ -71,24 +97,75 @@ const calidadDelPunto = (p: PuntoAnalitico): string => (p.partialBucket ? `${CAL
 const HITOS = 'NUTRITION_PLAN_ACTIVATED,TRAINING_PLAN_ACTIVATED,NUTRITION_OBJECTIVE_SET,TRAINING_OBJECTIVE_SET,NUTRITION_REVIEW_RECORDED,TRAINING_REVIEW_RECORDED,FOLLOW_UP_OPENED,FOLLOW_UP_CLOSED';
 
 export function Analizar() {
-  const { token, asesoradoId, periodo, parametros, ir } = useSeguimiento();
+  const { token, asesoradoId, periodo, parametros, ir, panel } = useSeguimiento();
   const id = useId();
   const estado = useMemo(() => leerAnalisis(parametros), [parametros]);
   const cambiar = (c: Partial<EstadoDeAnalisis>) => ir(parametrosDeAnalisis({ ...estado, ...c }));
   const disponibles = useDisponibles();
+
+  // La pregunta (eje 2): se resuelve con el dominio y con lo que hay de este asesorado.
+  const pregunta = useMemo(() => leerPregunta(parametros), [parametros]);
+  const necesitaEtapas = pregunta?.id === 'cambio-desde-el-plan' || pregunta?.id === 'comparar-etapas' || estado.bandas;
+  const etapasDelAno = useEtapasDelAno(necesitaEtapas);
+  const areasConPlan = useMemo(() => {
+    if (panel.tipo !== 'listo') return new Set<'NUTRICION' | 'ENTRENAMIENTO'>();
+    const d = panel.datos.domains;
+    return new Set([...(d.nutrition.available ? (['NUTRICION'] as const) : []), ...(d.training.available ? (['ENTRENAMIENTO'] as const) : [])]);
+  }, [panel]);
+  const contexto = useMemo(() => contextoDeLaPregunta(disponibles, etapasDelAno.etapas, areasConPlan), [disponibles, etapasDelAno.etapas, areasConPlan]);
+  const resolucion = pregunta && !disponibles.cargando && !etapasDelAno.cargando && panel.tipo === 'listo' ? resolverPregunta(pregunta.id, pregunta.params, contexto) : null;
+  const destino = resolucion?.estado === 'LISTA' ? resolucion.destino : null;
+  const [cambiandoPregunta, setCambiandoPregunta] = useState(false);
+  const [personalizado, setPersonalizado] = useState(false);
+  useEffect(() => setCambiandoPregunta(false), [pregunta?.id]);
+  // Una pregunta que arma métricas las pone en la URL (y, si fija la etapa, su período): así el resto de «Analizar», la
+  // vuelta atrás y las vistas guardadas funcionan igual que con una selección a mano. Comparar dos etapas también: debajo
+  // de la tabla A/B quedan sus gráficos, con el período que cubre las dos (encargo §8, recorrido 4). Agrupar, acercar o
+  // cambiar la referencia mueven el gráfico, no la tabla: la tabla resume las observaciones originales.
+  const etapaA = destino?.tipo === 'ETAPAS' ? destino.a : null;
+  const etapaB = destino?.tipo === 'ETAPAS' ? destino.b : null;
+  const periodoDeLasDosEtapas = useMemo(() => (etapaA && etapaB ? periodoDeLasEtapas(etapaA, etapaB, hoyEn(), DIAS_MAXIMOS_DEL_ANALISIS) : null), [etapaA, etapaB]);
+  const metricasDeLaPregunta = destino?.tipo === 'ANALIZAR' || destino?.tipo === 'ETAPAS' ? destino.metricas.map(codificarReferencia).join(',') : null;
+  const periodoDeLaPregunta = destino?.tipo === 'ANALIZAR' ? destino.periodo : periodoDeLasDosEtapas;
+  useEffect(() => {
+    if (metricasDeLaPregunta === null) return;
+    const cambios: Record<string, string | null> = {};
+    if (parametros.get('m') !== metricasDeLaPregunta) cambios.m = metricasDeLaPregunta;
+    if (periodoDeLaPregunta && (periodo.desde !== periodoDeLaPregunta.desde || periodo.hasta !== periodoDeLaPregunta.hasta))
+      Object.assign(cambios, parametrosDePeriodo({ preset: null, desde: periodoDeLaPregunta.desde, hasta: periodoDeLaPregunta.hasta }));
+    if (Object.keys(cambios).length > 0) ir({ ...cambios, f: null });
+  }, [metricasDeLaPregunta, periodoDeLaPregunta, parametros, periodo.desde, periodo.hasta, ir]);
+  /** Cambiar las métricas a mano deja la pregunta: pasa a ser un análisis personalizado. */
+  const cambiarMetricas = (metricas: EstadoDeAnalisis['metricas']) => ir({ ...parametrosDeAnalisis({ ...estado, metricas, fecha: null }), ...parametrosDePregunta(null) });
+  const mostrarVista =
+    !destino || destino.tipo === 'ANALIZAR' || destino.tipo === 'ETAPAS'
+      ? (pregunta !== null && (destino?.tipo === 'ANALIZAR' || destino?.tipo === 'ETAPAS')) || estado.metricas.length > 0 || personalizado
+      : false;
+  const sinEntrada = pregunta === null && estado.metricas.length === 0 && !personalizado;
   const { series, recargar } = useSeriesDelAnalisis(estado.metricas, estado.grano);
   const [intervalo, setIntervalo] = useState<{ desde: string; hasta: string } | null>(null);
   const desde = intervalo && intervalo.desde >= periodo.desde ? intervalo.desde : periodo.desde;
   const hasta = intervalo && intervalo.hasta <= periodo.hasta ? intervalo.hasta : periodo.hasta;
-  const [aviso, setAviso] = useState<string | null>(null);
   // El resultado de la última exportación vive acá y no en su botón: si la exportación descubre que un permiso cambió, las
   // series se vuelven a pedir, el bloque de la descarga se va con ellas y el aviso tiene que seguir diciendo por qué.
   // `sinArchivo`: no salió ningún archivo. Solo ese aviso sigue a la vista sin series: «Descargado» habla de datos que
   // ya no están en pantalla.
   const [avisoDeExportacion, setAvisoDeExportacion] = useState<AvisoDeExportacion | null>(null);
   const seleccion = `${JSON.stringify(estado.metricas)}|${periodo.desde}|${periodo.hasta}`;
-  // Otra selección u otro período: el resultado de la exportación anterior ya no habla de lo que se ve.
-  useEffect(() => setAvisoDeExportacion(null), [seleccion]);
+  // Otra selección u otro período: el resultado de la exportación anterior ya no habla de lo que se ve, y el acercamiento
+  // se suelta. El intervalo no está en la URL: si sobreviviera a otro análisis, la pantalla mostraría un recorte que nada
+  // dice (pasaba al ir de una comparación de etapas acercada al IMC: no se veía ningún punto). Agrupar no lo suelta.
+  useEffect(() => {
+    setAvisoDeExportacion(null);
+    setIntervalo(null);
+  }, [seleccion, pregunta?.id]);
+  /** Un solo «Reintentar» trae todo lo que falló: las series y, si falló, qué hay en el período. */
+  const reintentar = () => {
+    recargar();
+    if (disponibles.falla) disponibles.recargar();
+  };
+  // La planificación de una etapa abierta desde la lista de etapas del gráfico (eje 4).
+  const [planAbierto, setPlanAbierto] = useState<EtapaDePlanificacion | null>(null);
   // `sinAcceso`: el origen ya no se puede leer con el acceso de ahora; el valor que quedó en pantalla no se repite.
   const [puntoAbierto, setPuntoAbierto] = useState<{ indice: number; punto: PuntoAnalitico; origen: OrigenDeDato | null; sinAcceso?: boolean } | null>(null);
 
@@ -114,6 +191,7 @@ export function Analizar() {
     return {
       indice,
       nombre: nombres[indice] ?? s.definicion.nombre,
+      titulo: `${tituloDeLaMetrica(nombres[indice] ?? s.definicion.nombre, s.definicion.nombre, s.definicion.nombreCorto)} · ${AGRUPADA[s.grano] === 'cada registro' ? (s.definicion.area === 'ANTROPOMETRIA' ? 'cada toma' : 'cada sesión') : AGRUPADA[s.grano]}`,
       unidad: s.estado.serie.unit,
       serie: s.estado.serie,
       valor: (p) => (relativos ? (relativos.get(p.pointId) ?? null) : p.value),
@@ -140,28 +218,37 @@ export function Analizar() {
   return (
     <section className="seccion analizar" aria-labelledby={`${id}-titulo`}>
       <h2 id={`${id}-titulo`}>Analizar</h2>
-      <p className="nota">Hasta tres métricas en el mismo tiempo. Coincidencia temporal: no indica causa.</p>
+      <p className="metadatos">Hasta tres métricas en el mismo tiempo. Coincidencia temporal: no indica causa.</p>
+      {sinEntrada ? <ListaDePreguntas onPersonalizado={() => setPersonalizado(true)} /> : null}
+      {pregunta && resolucion === null ? <Cargando /> : null}
+      {pregunta && resolucion && (resolucion.estado === 'FALTA_ELEGIR' || cambiandoPregunta) ? (
+        <ElegirParametros
+          key={JSON.stringify(pregunta)}
+          pregunta={pregunta}
+          resolucion={resolucion.estado === 'FALTA_ELEGIR' ? resolucion : null}
+          contexto={contexto}
+          disponibles={disponibles}
+          cargando={etapasDelAno.cargando}
+          falla={etapasDelAno.falla}
+          onListo={() => setCambiandoPregunta(false)}
+        />
+      ) : null}
+      {pregunta && destino && !cambiandoPregunta ? <PreguntaActiva pregunta={pregunta} parametros={parametrosEnPalabras(pregunta.params, destino, disponibles)} onCambiar={() => setCambiandoPregunta(true)} /> : null}
+      {destino?.tipo === 'CONTRASTE' && !cambiandoPregunta ? <ContrasteConLoIndicado area={destino.area} exerciseKey={destino.exerciseKey} /> : null}
+      {destino?.tipo === 'ETAPAS' && !cambiandoPregunta ? (
+        <ComparacionDeEtapas area={destino.area} a={destino.a} b={destino.b} metricas={destino.metricas} etapas={etapasDelAno.etapas[destino.area === 'NUTRICION' ? 'NUTRITION' : 'TRAINING']} disponibles={disponibles} />
+      ) : null}
+      {destino?.tipo === 'INFORMACION' && !cambiandoPregunta ? <InformacionParaRevisar area={destino.area} disponibles={disponibles} /> : null}
+      {mostrarVista ? (
+      <>
       <div className="analizar__cuerpo">
         <div className="analizar__seleccion">
-          <SelectorDeMetricas elegidas={estado.metricas} disponibles={disponibles} onCambiar={(metricas) => cambiar({ metricas, fecha: null })} marcas={marcas} />
-          <PresetsDeAnalisis
-            disponibles={disponibles}
-            hayMetricas={estado.metricas.length > 0}
-            onAplicar={(metricas, preset, faltantes, comparar) => {
-              const mitad = restarDias(periodo.hasta, Math.floor((Date.parse(periodo.hasta) - Date.parse(periodo.desde)) / 86_400_000 / 2));
-              cambiar({
-                metricas: preset.comparaPeriodos && metricas.length === 0 ? estado.metricas : metricas,
-                fecha: null,
-                comparacion: comparar ? { a: { desde: periodo.desde, hasta: restarDias(mitad, 1) }, b: { desde: mitad, hasta: periodo.hasta } } : estado.comparacion,
-              });
-              setAviso(
-                [preset.limite, faltantes.length > 0 ? `Sin datos en el período para: ${faltantes.map((f) => f.replace(/^[a-z]+\./, '').replace(/-/g, ' ')).join(', ')}. Elegí otra métrica si querés.` : ''].filter(Boolean).join(' '),
-              );
-            }}
-          />
-          {aviso ? (
-            <p className="nota" role="status">
-              {aviso}
+          <SelectorDeMetricas elegidas={estado.metricas} disponibles={disponibles} onCambiar={cambiarMetricas} marcas={marcas} />
+          {pregunta === null ? (
+            <p>
+              <button type="button" className="boton boton--enlace" onClick={() => ir(parametrosDePregunta({ id: 'cambio-desde-el-plan', params: {} }), { agregarAlHistorial: true })}>
+                Empezar por una pregunta
+              </button>
             </p>
           ) : null}
         </div>
@@ -179,7 +266,7 @@ export function Analizar() {
           {estado.metricas.length === 0 ? <p>Elegí una métrica o una pregunta para empezar.</p> : null}
           {series.map((s, i) =>
             s.estado.tipo === 'lista' ? null : (
-              <EstadoDeUnaSerie key={s.clave} nombre={nombres[i] ?? s.definicion.nombre} estado={s.estado} onReintentar={recargar} />
+              <EstadoDeUnaSerie key={s.clave} nombre={nombres[i] ?? s.definicion.nombre} estado={s.estado} onReintentar={reintentar} />
             ),
           )}
           {listas.some((s) => s.estado.parcial) ? <p className="nota">Vista parcial: hay datos de esta área que no ves (los de otro profesional).</p> : null}
@@ -201,7 +288,7 @@ export function Analizar() {
                 ) : null}
                 {clases.has('DERIVED') ? (
                   <li>
-                    <Marca indice={0} clase="DERIVED" /> Con un punto adentro: calculado por un método (estimación)
+                    <Marca indice={0} clase="DERIVED" /> Con un punto adentro: calculado por un método (la lectura dice si es un índice, una suma o una estimación)
                   </li>
                 ) : null}
               </ul>
@@ -254,6 +341,31 @@ export function Analizar() {
                 referencia={modo === 'RELATIVE' ? { desde: rangoDeReferencia.desde, hasta: rangoDeReferencia.hasta } : null}
                 descripcion={descripcion}
               />
+              {estado.bandas && bandas.length > 0 ? (
+                <details className="etapas-del-grafico">
+                  <summary>Etapas de los planes en el período: abrir la planificación o comparar</summary>
+                  {(['NUTRICION', 'ENTRENAMIENTO'] as const).map((area) => {
+                    const dominio = area === 'NUTRICION' ? 'NUTRITION' : 'TRAINING';
+                    const deLasBandas = etapasDelArea(
+                      bandas.filter((b) => b.domain === dominio),
+                      dominio,
+                      hoyEn(),
+                      listas[0]?.estado.generada ?? new Date().toISOString(),
+                    );
+                    return (
+                      <EtapasDelPeriodo
+                        key={area}
+                        etapas={deLasBandas}
+                        area={area}
+                        onVerPlan={(e: EtapaDePlanificacion) => setPlanAbierto(e)}
+                        onComparar={(a: EtapaDePlanificacion, b: EtapaDePlanificacion) =>
+                          ir(parametrosDePregunta({ id: 'comparar-etapas', params: { area, stageA: a.planVersionId, stageB: b.planVersionId } }), { agregarAlHistorial: true })
+                        }
+                      />
+                    );
+                  })}
+                </details>
+              ) : null}
             </>
           ) : null}
         </div>
@@ -295,21 +407,23 @@ export function Analizar() {
             />
           </fieldset>
           <fieldset className="capas">
-            <legend>Grano</legend>
+            <legend>Agrupar por</legend>
             {(['ORIGINAL', 'DAY', 'WEEK'] as const).map((g) => (
               <label key={g} className="capa">
                 <input type="radio" name={`${id}-grano`} checked={estado.grano === g} onChange={() => cambiar({ grano: g as GranoElegido })} />
-                {g === 'ORIGINAL' ? 'Cada registro' : g === 'DAY' ? 'Por día' : 'Por semana'}
+                {g === 'ORIGINAL' ? 'Cada registro' : g === 'DAY' ? 'Día' : 'Semana'}
               </label>
             ))}
             {series.some((s) => s.grano !== estado.grano) ? (
-              <p className="nota">
+              <ul className="nota agrupar-por__motivos">
                 {series
                   .filter((s) => s.grano !== estado.grano)
-                  .map((s) => `${nombres[series.indexOf(s)]}: ${s.grano === 'ORIGINAL' ? 'cada toma o sesión' : s.grano === 'DAY' ? 'por día' : 'por semana'} (el grano pedido no aplica)`)
-                  .join('. ')}
-                .
-              </p>
+                  .map((s) => (
+                    <li key={s.clave}>
+                      {nombres[series.indexOf(s)]}: {s.grano === 'ORIGINAL' ? (s.definicion.area === 'ANTROPOMETRIA' ? 'cada toma (las tomas no se agrupan)' : 'cada sesión (las series no se agrupan entre sesiones)') : s.grano === 'DAY' ? 'por día' : 'por semana'}.
+                    </li>
+                  ))}
+              </ul>
             ) : null}
           </fieldset>
           <fieldset className="capas">
@@ -323,6 +437,7 @@ export function Analizar() {
               Hitos (activaciones, objetivos, revisiones)
             </label>
           </fieldset>
+          {modo === 'RELATIVE' ? (
           <ElegirReferencia
             // Se rearma si cambia la referencia o su rango (otro período): el editor arranca de lo vigente.
             key={`${JSON.stringify(estado.referencia)}|${rangoDeReferencia.desde}|${rangoDeReferencia.hasta}`}
@@ -332,7 +447,8 @@ export function Analizar() {
             visible={intervalo ? { desde, hasta } : null}
             onAplicar={(referencia) => cambiar({ referencia })}
           />
-          <VistasGuardadas estado={estado} />
+          ) : null}
+          <VistasGuardadas estado={estado} pregunta={pregunta} />
         </div>
       </div>
 
@@ -341,11 +457,26 @@ export function Analizar() {
           <ComoSeCalcula series={listas} nombres={nombres} todas={series} />
           <TablaDeDatos series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} />
           <ExportarCsv series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} aviso={avisoDeExportacion?.texto ?? null} onAviso={setAvisoDeExportacion} onAccesoCambiado={recargar} />
-          <section aria-labelledby={`${id}-resumen`}>
-            <h3 id={`${id}-resumen`}>Resumen en texto</h3>
-            {listas.map((s) => (
-              <p key={s.clave}>{resumenTextual(s.estado.serie, s.definicion, desde, hasta)}</p>
-            ))}
+          <section aria-labelledby={`${id}-resumen`} className="resumen-en-texto">
+            <h3 id={`${id}-resumen`}>Resumen en texto de lo que se ve</h3>
+            {listas.map((s) => {
+              const r = partesDelResumenTextual(s.estado.serie, s.definicion, desde, hasta);
+              return (
+                <div key={s.clave}>
+                  <p>
+                    <strong>{r.encabezado}</strong>
+                    {r.partes.length === 0 ? ': no hay datos en este rango.' : null}
+                  </p>
+                  {r.partes.length > 0 ? (
+                    <ul>
+                      {r.partes.map((x) => (
+                        <li key={x}>{x.charAt(0).toUpperCase() + x.slice(1)}.</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              );
+            })}
           </section>
           <ComparacionDePeriodos series={listas} nombres={nombres} todas={series} estado={estado} cambiar={cambiar} minimo={periodo.desde} maximo={periodo.hasta} />
         </>
@@ -356,7 +487,15 @@ export function Analizar() {
           </p>
         </div>
       ) : null}
+      </>
+      ) : null}
 
+      <PanelDeRegistro
+        origen={planAbierto ? { type: planAbierto.dominio === 'NUTRITION' ? 'NUTRITION_PLAN_VERSION' : 'TRAINING_PLAN_VERSION', id: planAbierto.planVersionId } : null}
+        titulo={planAbierto ? `${planAbierto.dominio === 'NUTRITION' ? 'Nutrición' : 'Entrenamiento'} · versión ${planAbierto.etiqueta.replace(/^v/, '')}` : ''}
+        numeroDeVersion={planAbierto ? Number(planAbierto.etiqueta.replace(/^v/, '')) || undefined : undefined}
+        onCerrar={() => setPlanAbierto(null)}
+      />
       <PanelDeRegistro
         origen={puntoAbierto ? (puntoAbierto.origen ?? puntoAbierto.punto.sources[0] ?? null) : null}
         titulo={puntoAbierto ? `${nombres[puntoAbierto.indice] ?? ''} · ${diaCivil(puntoAbierto.punto.date)}` : ''}
@@ -740,7 +879,7 @@ function TablaDeDatos({ series, nombres, todas, desde, hasta }: { series: readon
                               p.value === null
                                 ? 'Sin valor conocido'
                                 : `${valorParaMostrar(p.value, s.definicion, s.estado.serie.unit)}${p.quality === 'PARTIAL' ? ' (subtotal)' : ''}${p.partialBucket ? (p.dateEnd ? ' (semana sin completar)' : ' (día en curso)') : ''}${
-                                    p.dataClass === 'REPORTED' ? ' (reportado por la persona, no medido)' : p.dataClass === 'DERIVED' ? ' (calculado por un método)' : ''
+                                    p.dataClass === 'REPORTED' || p.dataClass === 'DERIVED' ? ` (${claseEnPalabras(p.dataClass, p.method).replace(/^./, (c) => c.toLowerCase())})` : ''
                                   }`,
                             )
                             .join(' · ')}
@@ -955,3 +1094,21 @@ const MOTIVO_SIN_DIFERENCIA: Readonly<Record<string, string>> = {
   TRAMOS_NO_COMPARABLES: 'No se calcula: cambió el método o el protocolo entre los dos',
   PERIODO_INCOMPLETO: 'No se calcula: un total incluye el día en curso o una semana sin completar',
 };
+
+/** El nombre completo de la métrica para el título de su panel: «Energía registrada» en vez de «Energía». */
+function tituloDeLaMetrica(nombreElegido: string, nombre: string, nombreCorto: string): string {
+  return nombreElegido.startsWith(nombreCorto) ? `${nombre}${nombreElegido.slice(nombreCorto.length)}` : nombreElegido;
+}
+
+/** Los datos de una pregunta resuelta, en una línea: «Nutrición · versión 3 (desde el 4 sept 2026)», «Sentadilla · serie 1 · kg». */
+function parametrosEnPalabras(p: import('@be/domain').ParametrosDePregunta, destino: import('@be/domain').DestinoDePregunta, disponibles: { readonly ejercicios: readonly { exerciseKey: string; name: string }[] | null; readonly antropometria: readonly { metricCode: string; name: string }[] | null }): string {
+  const partes: string[] = [];
+  if (p.area) partes.push(p.area === 'NUTRICION' ? 'Nutrición' : 'Entrenamiento');
+  if (destino.tipo === 'ANALIZAR' && destino.etapa) partes.push(`versión ${destino.etapa.etiqueta.replace(/^v/, '')} (${destino.periodo ? `del ${diaCivil(destino.periodo.desde)} al ${diaCivil(destino.periodo.hasta)}` : ''}${destino.periodo?.recortado ? ', recortada al máximo de un año' : ''})`);
+  if (destino.tipo === 'ETAPAS') partes.push(`${destino.a.etiqueta} y ${destino.b.etiqueta}`);
+  if (p.bodyMetric) partes.push(disponibles.antropometria?.find((m) => `antropometria.${m.metricCode}` === p.bodyMetric)?.name ?? 'medida corporal');
+  if (p.exerciseKey) partes.push(disponibles.ejercicios?.find((e) => e.exerciseKey === p.exerciseKey)?.name ?? 'ejercicio');
+  if (p.setIndex) partes.push(`serie ${p.setIndex}`);
+  if (p.unit) partes.push(p.unit);
+  return partes.join(' · ');
+}

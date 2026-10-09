@@ -13,6 +13,9 @@
  * - **Paginación con cursor estable** y «Ver más»; un cambio de filtro descarta las páginas viejas, y una respuesta
  *   tardía de otro filtro no se pinta (PRO-21).
  * - **Estados distintos:** sin datos en el período, sin coincidencias y error (no se ve como vacío).
+ * - **Desde la síntesis del Resumen** (WP-DASHBOARD-COMPRENSION, eje 6): `novedades=<instante>` muestra solo lo nuevo
+ *   desde la última revisión de un área (lo que ocurrió después, lo cargado después y lo corregido después), con la misma
+ *   ventana que contó el Resumen (hasta un año) y un aviso que lo explica y se puede quitar.
  */
 import {
   COPY_VINCULO,
@@ -35,9 +38,9 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { api } from '../../../../lib/api';
-import { fechaEnZona } from '../../../../lib/formato';
+import { diaCivil, fechaEnZona } from '../../../../lib/formato';
 import { motivoDeFalla, textoDeFalla, useLectura, useSeguimiento, type MotivoDeFalla } from './contexto';
-import { leerFiltrosDeLaLinea, parametrosDeFiltros, SIN_FILTROS, type FiltrosDeLaLinea } from './estado';
+import { hoyEn, leerCorte, leerFiltrosDeLaLinea, parametrosDeFiltros, restarDias, SIN_FILTROS, type FiltrosDeLaLinea } from './estado';
 
 const PanelDeRegistro = dynamic(() => import('./registro-original').then((m) => m.PanelDeRegistro), { ssr: false });
 
@@ -53,6 +56,7 @@ type ConsultaDeLaLinea = {
   readonly late?: 'true';
   readonly planVersionId?: string;
   readonly exerciseId?: string;
+  readonly since?: string;
   readonly limit: string;
 };
 
@@ -69,6 +73,7 @@ function cuerpoDeBusqueda(c: ConsultaDeLaLinea, q: string, cursor: string | null
     ...(c.late ? { late: true } : {}),
     ...(c.planVersionId ? { planVersionId: c.planVersionId } : {}),
     ...(c.exerciseId ? { exerciseId: c.exerciseId } : {}),
+    ...(c.since ? { since: c.since } : {}),
     limit: Number(c.limit),
     ...(cursor ? { cursor } : {}),
   };
@@ -104,12 +109,16 @@ export function LineaDeTiempo() {
   const { token, asesoradoId, periodo, parametros, ir, sesionPerdida } = useSeguimiento();
   const id = useId();
   const filtros = useMemo(() => leerFiltrosDeLaLinea(parametros), [parametros]);
+  const corte = useMemo(() => leerCorte(parametros), [parametros]);
+  // Con un corte, la ventana es la del Resumen (hasta un año hacia atrás): así el conteo es el mismo que se vio allí.
+  const hoy = hoyEn();
+  const periodoDeLaConsulta = corte ? { desde: restarDias(hoy, 365), hasta: hoy } : { desde: periodo.desde, hasta: periodo.hasta };
   const [q, setQ] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const consulta = useMemo<ConsultaDeLaLinea>(
     () => ({
-      periodStart: periodo.desde,
-      periodEnd: periodo.hasta,
+      periodStart: periodoDeLaConsulta.desde,
+      periodEnd: periodoDeLaConsulta.hasta,
       domain: filtros.dominios.length ? filtros.dominios.join(',') : undefined,
       type: filtros.tipos.length ? filtros.tipos.join(',') : undefined,
       state: filtros.estados.length ? filtros.estados.join(',') : undefined,
@@ -117,9 +126,10 @@ export function LineaDeTiempo() {
       late: filtros.soloTardias ? ('true' as const) : undefined,
       planVersionId: filtros.planVersionId ?? undefined,
       exerciseId: filtros.exerciseKey ?? undefined,
+      since: corte ?? undefined,
       limit: String(POR_PAGINA),
     }),
-    [periodo, filtros],
+    [periodoDeLaConsulta.desde, periodoDeLaConsulta.hasta, filtros, corte],
   );
   // Con texto, la lectura es API-DSH-04-BUSQUEDA (el texto en el cuerpo); sin texto, API-DSH-04. La clave es solo de memoria.
   const leerPagina = useCallback(
@@ -158,6 +168,18 @@ export function LineaDeTiempo() {
     <section className="seccion" aria-labelledby={`${id}-titulo`}>
       <h2 id={`${id}-titulo`}>Línea de tiempo</h2>
       <p className="nota">Cada hecho una vez, en el día en que ocurrió. Lo que se cargó otro día lo dice; una corrección no es un registro nuevo.</p>
+      {corte ? (
+        <div className="aviso-de-filtro" role="status">
+          <p>
+            <strong>Lo nuevo desde la revisión del {fechaEnZona(corte, 'America/Argentina/Buenos_Aires')}</strong>
+            {filtros.dominios.length === 1 ? ` (${NOMBRE_DE_DOMINIO[filtros.dominios[0] as DominioDeAnalisis]})` : ''}: lo que ocurrió después, lo que se cargó después sobre días anteriores y lo que se corrigió
+            después. Se lee del {diaCivil(periodoDeLaConsulta.desde)} a hoy, como la cuenta del Resumen.
+          </p>
+          <button type="button" className="boton boton--enlace" onClick={() => ir({ novedades: null })}>
+            Ver todo el período elegido
+          </button>
+        </div>
+      ) : null}
 
       <form
         className="filtros-de-linea"

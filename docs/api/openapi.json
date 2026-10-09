@@ -6772,11 +6772,6 @@
                                                       "type": "string",
                                                       "minLength": 1
                                                     },
-                                                    "version": {
-                                                      "type": "integer",
-                                                      "exclusiveMinimum": 0,
-                                                      "maximum": 9007199254740991
-                                                    },
                                                     "recordedAt": {
                                                       "type": "string",
                                                       "format": "date-time",
@@ -6796,7 +6791,6 @@
                                                   },
                                                   "required": [
                                                     "planVersionId",
-                                                    "version",
                                                     "recordedAt",
                                                     "fromReviewId"
                                                   ],
@@ -7066,11 +7060,6 @@
                                                       "type": "string",
                                                       "minLength": 1
                                                     },
-                                                    "version": {
-                                                      "type": "integer",
-                                                      "exclusiveMinimum": 0,
-                                                      "maximum": 9007199254740991
-                                                    },
                                                     "recordedAt": {
                                                       "type": "string",
                                                       "format": "date-time",
@@ -7090,7 +7079,6 @@
                                                   },
                                                   "required": [
                                                     "planVersionId",
-                                                    "version",
                                                     "recordedAt",
                                                     "fromReviewId"
                                                   ],
@@ -92719,15 +92707,15 @@
                                           },
                                           "planVersionId": {
                                             "type": "string",
-                                            "minLength": 1
+                                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                           },
                                           "stageA": {
                                             "type": "string",
-                                            "minLength": 1
+                                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                           },
                                           "stageB": {
                                             "type": "string",
-                                            "minLength": 1
+                                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                           },
                                           "bodyMetric": {
                                             "type": "string",
@@ -93329,15 +93317,15 @@
                                   },
                                   "planVersionId": {
                                     "type": "string",
-                                    "minLength": 1
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                   },
                                   "stageA": {
                                     "type": "string",
-                                    "minLength": 1
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                   },
                                   "stageB": {
                                     "type": "string",
-                                    "minLength": 1
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                   },
                                   "bodyMetric": {
                                     "type": "string",
@@ -93805,15 +93793,15 @@
                                         },
                                         "planVersionId": {
                                           "type": "string",
-                                          "minLength": 1
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                         },
                                         "stageA": {
                                           "type": "string",
-                                          "minLength": 1
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                         },
                                         "stageB": {
                                           "type": "string",
-                                          "minLength": 1
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                         },
                                         "bodyMetric": {
                                           "type": "string",
@@ -94445,15 +94433,15 @@
                                   },
                                   "planVersionId": {
                                     "type": "string",
-                                    "minLength": 1
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                   },
                                   "stageA": {
                                     "type": "string",
-                                    "minLength": 1
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                   },
                                   "stageB": {
                                     "type": "string",
-                                    "minLength": 1
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                   },
                                   "bodyMetric": {
                                     "type": "string",
@@ -94901,15 +94889,15 @@
                                         },
                                         "planVersionId": {
                                           "type": "string",
-                                          "minLength": 1
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                         },
                                         "stageA": {
                                           "type": "string",
-                                          "minLength": 1
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                         },
                                         "stageB": {
                                           "type": "string",
-                                          "minLength": 1
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                                         },
                                         "bodyMetric": {
                                           "type": "string",
