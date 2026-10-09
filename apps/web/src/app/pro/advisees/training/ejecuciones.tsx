@@ -249,12 +249,12 @@ export function Registro({ registro, planificado = [] }: { registro: RegistroDeE
 }
 
 /** Los objetivos por serie de una versión, por prescripción: lo que necesita la comparación del dominio. */
-function objetivosDe(plan: PlanConObjetivos): ObjetivosDeLaVersion {
+export function objetivosDe(plan: PlanConObjetivos): ObjetivosDeLaVersion {
   return new Map(plan.blocks.flatMap((b) => [...b.sessions, ...b.microcycles.flatMap((m) => m.sessions)]).flatMap((s) => s.prescriptions.map((p) => [p.prescriptionId, p.sets] as const)));
 }
 
 /** Cómo se ofrece un ejercicio para elegir: su nombre y, si otra entrada que no se puede identificar como la misma se llama igual, cuál es. */
-function nombreParaElegir(e: { clave: string; nombre: string; homonimo: boolean }, todos: readonly { clave: string; nombre: string }[]): string {
+export function nombreParaElegir(e: { clave: string; nombre: string; homonimo: boolean }, todos: readonly { clave: string; nombre: string }[]): string {
   if (!e.homonimo) return e.nombre;
   const iguales = todos.filter((o) => o.nombre === e.nombre);
   return `${e.nombre} (${iguales.findIndex((o) => o.clave === e.clave) + 1} de ${iguales.length} con este nombre)`;

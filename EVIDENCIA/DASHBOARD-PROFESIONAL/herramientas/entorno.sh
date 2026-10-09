@@ -10,6 +10,13 @@ REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
 AQUI="${BE_TRABAJO:-$(cd "$(dirname "$0")" && pwd)/trabajo}"
 mkdir -p "$AQUI"
 # La base de estas herramientas: un PostgreSQL 16 local y una base propia (nunca la de otro trabajo ni la de test).
+# La base por omisión es la de este paquete (be_test_dashboard). Con otra carpeta de trabajo, la base se declara: si no,
+# la API de otro paquete se conectaba a esta (pasó el 2026-10-09 con WP-DASHBOARD-COMPRENSION: dos inicios de sesión
+# rechazados quedaron auditados acá).
+if [ -n "${BE_TRABAJO:-}" ] && [ "$(basename "$BE_TRABAJO")" != "trabajo" ] && [ -z "${BE_E2E_DATABASE_URL:-}" ]; then
+  echo "entorno.sh: con BE_TRABAJO=$BE_TRABAJO hay que declarar BE_E2E_DATABASE_URL (la base por omisión es be_test_dashboard)." >&2
+  exit 1
+fi
 BASE="${BE_E2E_DATABASE_URL:-postgresql://be_test:be_test@localhost:55442/be_test_dashboard}"
 SECRETO="$AQUI/.secreto"
 

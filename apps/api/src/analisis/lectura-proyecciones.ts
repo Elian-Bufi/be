@@ -150,7 +150,13 @@ export function proyeccionAntropometrica(
   const porCodigo = new Map(metrics.map((m) => [m.metricCode, m]));
   const available = metrics
     .filter((m) => m.series.length > 0)
-    .map((m) => ({ metricCode: m.metricCode, name: nombreDeMetrica(m.metricCode), observations: m.series.length, units: [...new Set(m.series.map((p) => p.unit))] }));
+    .map((m) => ({
+      metricCode: m.metricCode,
+      name: nombreDeMetrica(m.metricCode),
+      observations: m.series.length,
+      units: [...new Set(m.series.map((p) => p.unit))],
+      comparabilityGroups: new Set(m.series.map((p) => p.comparabilityGroup)).size,
+    }));
   const series = (c.metricas ?? []).map((codigo) => {
     const serie = porCodigo.get(codigo) ?? serieVacia(codigo, desde, hasta);
     return serieAntropometrica(serie, definicionAntropometrica(codigo, serie.series[0]?.unit ?? ''), ZONA);

@@ -25,6 +25,11 @@ export type AlcanceDelAnalisis = 'NUTRICION' | 'ENTRENAMIENTO';
 
 export interface VersionActivada {
   readonly id: string;
+  /**
+   * El número para la persona: el orden de activación (1, 2, 3…), el mismo que la pestaña Plan del website
+   * (`numerosDeVersion`). No es el `version` de la fila, que es el token de concurrencia del recurso (09:255-257) y avanza
+   * con cada guardado.
+   */
   readonly numero: number;
   readonly predecesoraId: string | null;
   readonly activadaEl: Date;
@@ -33,6 +38,9 @@ export interface VersionActivada {
   readonly desde: string;
   /** El día del corte (activación de la sucesora o cierre del seguimiento), que ya es de la siguiente; `null` si sigue. */
   readonly hasta: string | null;
+  /** El instante del corte y su motivo; `null` si sigue vigente. */
+  readonly corteEl: Date | null;
+  readonly motivoDelCorte: 'SUCCESSOR_ACTIVATED' | 'FOLLOW_UP_CLOSED' | null;
 }
 
 /**
@@ -41,7 +49,7 @@ export interface VersionActivada {
  * es vigencia y una activación no es ejecución (encargo §10).
  */
 export async function versionesActivadas(tx: Tx, alcance: AlcanceDelAnalisis, profesionalId: string, asesoradoId: string): Promise<VersionActivada[]> {
-  const seleccion = { id: true, version: true, predecesoraId: true, momentoDeActivacion: true, autorId: true } as const;
+  const seleccion = { id: true, predecesoraId: true, momentoDeActivacion: true, autorId: true } as const;
   const filas =
     alcance === 'NUTRICION'
       ? await tx.versionDePlanNutricional.findMany({ where: { plan: { profesionalId, asesoradoId }, estado: 'ACTIVADA' }, select: seleccion, orderBy: [{ momentoDeActivacion: 'asc' }, { id: 'asc' }] })
@@ -51,12 +59,14 @@ export async function versionesActivadas(tx: Tx, alcance: AlcanceDelAnalisis, pr
     .sort((a, b) => a.getTime() - b.getTime());
   return filas
     .filter((v) => v.momentoDeActivacion !== null)
-    .map((v) => {
+    .map((v, indice) => {
       const activadaEl = v.momentoDeActivacion as Date;
       const sucesora = filas.find((s) => s.predecesoraId === v.id)?.momentoDeActivacion ?? null;
       const cierre = cierres.find((c) => c > activadaEl) ?? null;
       const corte = [sucesora, cierre].filter((m): m is Date => m !== null).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
-      return { id: v.id, numero: v.version, predecesoraId: v.predecesoraId, activadaEl, autorId: v.autorId, desde: fechaLocalEn(activadaEl, ZONA), hasta: corte ? fechaLocalEn(corte, ZONA) : null };
+      // Si la sucesora y el cierre coinciden en el instante, el motivo es la sucesora: es la que empieza a regir.
+      const motivoDelCorte = corte === null ? null : sucesora !== null && sucesora.getTime() === corte.getTime() ? ('SUCCESSOR_ACTIVATED' as const) : ('FOLLOW_UP_CLOSED' as const);
+      return { id: v.id, numero: indice + 1, predecesoraId: v.predecesoraId, activadaEl, autorId: v.autorId, desde: fechaLocalEn(activadaEl, ZONA), hasta: corte ? fechaLocalEn(corte, ZONA) : null, corteEl: corte, motivoDelCorte };
     });
 }
 
@@ -64,7 +74,7 @@ export async function versionesActivadas(tx: Tx, alcance: AlcanceDelAnalisis, pr
 export function vigenciasEnElPeriodo(versiones: readonly VersionActivada[], dominio: VigenciaDePlan['domain'], desde: string, hasta: string): VigenciaDePlan[] {
   return versiones
     .filter((v) => v.desde <= hasta && (v.hasta === null || v.hasta >= desde))
-    .map((v) => ({ domain: dominio, planVersionId: v.id, label: `v${v.numero}`, activatedAt: v.activadaEl.toISOString(), from: v.desde, to: v.hasta }));
+    .map((v) => ({ domain: dominio, planVersionId: v.id, label: `v${v.numero}`, activatedAt: v.activadaEl.toISOString(), from: v.desde, to: v.hasta, endedAt: v.corteEl?.toISOString() ?? null, endReason: v.motivoDelCorte }));
 }
 
 /**

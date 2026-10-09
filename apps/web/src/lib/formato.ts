@@ -26,6 +26,15 @@ export function fechaEnZona(iso: string, zonaHoraria: string): string {
   }
 }
 
+/** Solo la hora de un instante en una zona dada, cuando el día ya lo dice su grupo. Si la zona no se reconoce, la del navegador. */
+export function horaEnZona(iso: string, zonaHoraria: string): string {
+  try {
+    return new Intl.DateTimeFormat('es-AR', { timeStyle: 'short', timeZone: zonaHoraria }).format(new Date(iso));
+  } catch {
+    return new Intl.DateTimeFormat('es-AR', { timeStyle: 'short' }).format(new Date(iso));
+  }
+}
+
 /**
  * Un número **dentro de un campo de entrada**: coma decimal, sin punto de miles (DL-091 punto 4). Para mostrar, se usa
  * `numero`/`cantidad` de `@be/domain`; acá no, porque el punto de miles que agregan volvería a leerse como decimal

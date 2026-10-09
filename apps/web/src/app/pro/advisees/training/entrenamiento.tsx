@@ -20,6 +20,7 @@ import { MigasDelAsesorado } from '../../../../components/migas';
 import { Aviso } from '../../../../components/formulario';
 import type { Resultado } from '../../../../lib/api';
 import { SinEspacioProfesional, useEspacioProfesional } from '../../espacio-profesional';
+import { conVolver, EnlaceDeRetorno, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { VistaDeEjecuciones } from './ejecuciones';
 import { VistaDePlan } from './plan';
 import { VistaDeResumen } from './resumen';
@@ -78,7 +79,8 @@ export function Entrenamiento() {
   const router = useRouter();
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees/training?id=${id}`);
 
-  const irA = useCallback((v: Vista) => router.replace(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`), [router, ruta, id]);
+  const retorno = useRetornoALaFicha(id);
+  const irA = useCallback((v: Vista) => router.replace(conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`, retorno.valor)), [router, ruta, id, retorno.valor]);
   const [retirado, setRetirado] = useState(false);
   const accesoRetirado = useCallback((r: Resultado<unknown>) => {
     if (r.ok || r.tipo !== 'API' || r.codigo !== 'RESOURCE_NOT_FOUND') return false;
@@ -94,17 +96,18 @@ export function Entrenamiento() {
 
   return (
     <Contexto.Provider value={contexto}>
-      <MigasDelAsesorado id={id} pestana={COPY_ENTRENAMIENTO.pestana} />
+      <MigasDelAsesorado id={id} pestana={COPY_ENTRENAMIENTO.pestana} volver={retorno.href} />
       <h1>{COPY_ENTRENAMIENTO.pestana}</h1>
-      {retirado ? <NoDisponible /> : <Secciones ruta={ruta} id={id} vista={vista} />}
+      <EnlaceDeRetorno href={retorno.href} />
+      {retirado ? <NoDisponible /> : <Secciones ruta={ruta} id={id} vista={vista} volver={retorno.valor} />}
     </Contexto.Provider>
   );
 }
 
-function Secciones({ ruta, id, vista }: { ruta: string; id: string; vista: Vista }) {
+function Secciones({ ruta, id, vista, volver }: { ruta: string; id: string; vista: Vista; volver: string | null }) {
   return (
     <>
-      <Pestanas etiqueta="Secciones de Entrenamiento" vistas={VISTAS} actual={vista} href={(clave) => `${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`} />
+      <Pestanas etiqueta="Secciones de Entrenamiento" vistas={VISTAS} actual={vista} href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, volver)} />
       {vista === 'resumen' ? <VistaDeResumen /> : null}
       {vista === 'plan' ? <VistaDePlan /> : null}
       {vista === 'ejecuciones' ? <VistaDeEjecuciones /> : null}

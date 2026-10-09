@@ -1,0 +1,13 @@
+{
+  "name": "postgres-local-dashboard-profesional",
+  "private": true,
+  "type": "module",
+  "description": "PostgreSQL 16 local, sin Docker, para la demostración y los recorridos del dashboard profesional (:55442, usuario be_test)",
+  "scripts": {
+    "iniciar": "node iniciar.mjs",
+    "parar": "node parar.mjs"
+  },
+  "dependencies": {
+    "embedded-postgres": "16.14.0-beta.17"
+  }
+}

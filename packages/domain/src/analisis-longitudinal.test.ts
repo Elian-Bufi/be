@@ -12,11 +12,11 @@ import { CLAVES_DE_PROYECCION, ProyeccionResponseSchema, type EntradaDeLineaDeTi
 import type { SerieApi } from './contratos-antropometria';
 import { EjecucionDeEntrenamientoSchema, type EjecucionDeEntrenamiento, type Prescripcion, type SerieEjecutadaApi } from './contratos-entrenamiento';
 import type { Nutrientes } from './contratos-recetas';
-import { serieAntropometrica } from './antropometria-del-analisis';
+import { claseEnPalabras, naturalezaDelMetodo, serieAntropometrica } from './antropometria-del-analisis';
 import { ejerciciosDelPeriodo, objetivosDeLaVersionDelPlan, serieDeEntrenamiento } from './entrenamiento-del-analisis';
 import type { ContenidoDePlanDeEntrenamiento } from './plan-de-entrenamiento';
 import { agruparPorDia, codificarCursor, conteosDelPeriodo, cumpleFiltros, decodificarCursor, ordenarEntradas, paginarEntradas, registradoTarde } from './linea-de-tiempo';
-import { aplicarPreset, definicionAntropometrica, definicionDeMetrica, granoDeObservacion, MAXIMO_DE_METRICAS, METRICAS_DEL_DICCIONARIO, PRESETS_DE_ANALISIS } from './metricas-del-analisis';
+import { definicionAntropometrica, definicionDeMetrica, granoDeObservacion, MAXIMO_DE_METRICAS, METRICAS_DEL_DICCIONARIO } from './metricas-del-analisis';
 import { coberturaNutricional, diasNutricionales, serieNutricional, type RegistroParaAnalisis } from './nutricion-del-analisis';
 import {
   compararPeriodos,
@@ -61,9 +61,8 @@ test('el contrato de la proyección no tiene dónde poner un puntaje, una adhere
   assert.doesNotMatch(claves, /score|compliance|adherence|grade|percent|cumplimiento|adherencia/i);
 });
 
-test('el diccionario: tres métricas como máximo, presets sin una cuarta escondida, y lo que no se ofrece lo dice', () => {
+test('el diccionario: tres métricas como máximo (las preguntas tampoco esconden una cuarta), y lo que no se ofrece lo dice', () => {
   assert.equal(MAXIMO_DE_METRICAS, 3);
-  for (const p of PRESETS_DE_ANALISIS) assert.ok(p.metricas.length <= 3, `${p.id} tiene más de tres métricas`);
   for (const m of METRICAS_DEL_DICCIONARIO) assert.ok(m.explicacion.length > 0 && m.comoSeCalcula.length > 0 && m.ausencias.length > 0, m.id);
   // El volumen no se ofrece sin una convención de carga externa: es futuro, no un cálculo inventado (encargo §12).
   const volumen = definicion('entrenamiento.volumen-carga-externa');
@@ -75,13 +74,6 @@ test('el diccionario: tres métricas como máximo, presets sin una cuarta escond
   // El RIR es ordinal: no admite cambio relativo.
   assert.equal(definicion('entrenamiento.rir').cambioRelativo, false);
   assert.equal(definicion('entrenamiento.rir').escala, 'ORDINAL');
-});
-
-test('un preset con una métrica que falta dice cuál falta y no la reemplaza por un sustituto', () => {
-  const preset = PRESETS_DE_ANALISIS.find((p) => p.id === 'medidas-corporales')!;
-  const r = aplicarPreset(preset, new Set(['antropometria.peso', 'antropometria.perimetro-cintura']));
-  assert.deepEqual(r.usables, ['antropometria.peso', 'antropometria.perimetro-cintura']);
-  assert.deepEqual(r.faltantes, ['antropometria.suma-6-pliegues-isak']);
 });
 
 test('las antropométricas: un porcentaje no admite cambio relativo ni se superpone; peso, masa y perímetro sí', () => {
@@ -109,6 +101,7 @@ function registro(fecha: string, opciones: { kcal?: string | null; sinCantidades
   return {
     recordId: `r-${++id}`,
     kind: opciones.diferente ? 'DIFFERENT' : 'PLAN_OPTION',
+    planId: '00000000-0000-4000-8000-0000000000a1',
     localDate: fecha,
     occurredAt: `${fecha}T${opciones.hora ?? '13:00'}:00.000-03:00`,
     consumption: sinCantidades ? { status: 'UNCONFIRMED', items: [], source: 'ORIGINAL', rectifiedAt: null } : { status: 'REPORTED', items: [], source: opciones.rectificado ? 'RECTIFIED' : 'ORIGINAL', rectifiedAt: opciones.rectificado ? `${fecha}T20:00:00.000-03:00` : null },
@@ -326,6 +319,17 @@ test('RIR nulo no es un punto y RIR 0 sí lo es (PRO-13)', () => {
   assert.deepEqual(serie3.points.map((p) => [p.date, p.value]), [['2026-09-01', 0]], 'RIR 0 es una respuesta válida');
 });
 
+test('cada punto guarda la versión del plan que ejecutan sus registros, también agrupado por semana (eje 4)', () => {
+  const s = serieDeEntrenamiento(ENTRENO, definicion('entrenamiento.series-registradas'), { exerciseKey: EJERCICIO, metrica: 'SETS_RECORDED', serie: null, unidad: 'kg', grano: 'ORIGINAL', ...RANGO });
+  assert.ok(s.points.length > 0 && s.points.every((p) => p.planVersionIds.length === 1 && p.planVersionIds[0] === 'plan-v1' && p.method === null));
+  const semanal = serieDeEntrenamiento(ENTRENO, definicion('entrenamiento.series-registradas'), { exerciseKey: EJERCICIO, metrica: 'SETS_RECORDED', serie: null, unidad: 'kg', grano: 'WEEK', ...RANGO });
+  assert.deepEqual(semanal.points.map((p) => p.planVersionIds), [['plan-v1'], ['plan-v1']]);
+  const dias = diasNutricionales([registro('2026-10-01'), registro('2026-10-02')], OPC.desde, OPC.hasta);
+  const n = serieNutricional(dias, definicion('nutricion.energia'), 'ENERGY', 'DAY', OPC);
+  assert.deepEqual(n.points.map((p) => p.planVersionIds), [['00000000-0000-4000-8000-0000000000a1'], ['00000000-0000-4000-8000-0000000000a1']]);
+  assert.deepEqual(serieNutricional(dias, definicion('nutricion.energia'), 'ENERGY', 'WEEK', OPC).points.map((p) => p.planVersionIds), [['00000000-0000-4000-8000-0000000000a1']]);
+});
+
 test('series registradas: una sesión «no realizada» aporta 0 y lo dice; nunca se suma entre ejercicios', () => {
   const s = serieDeEntrenamiento(ENTRENO, definicion('entrenamiento.series-registradas'), { exerciseKey: EJERCICIO, metrica: 'SETS_RECORDED', serie: null, unidad: 'kg', grano: 'ORIGINAL', ...RANGO });
   assert.deepEqual(s.points.map((p) => [p.date, p.value]), [
@@ -424,6 +428,8 @@ const serieDe = (valores: [string, number | null, boolean?][], d = definicion('n
     corrected: false,
     partialBucket: incompleto ?? false,
     dataClass: null,
+    method: null,
+    planVersionIds: [],
     coverage: null,
     missing: [],
     detail: [],
@@ -809,5 +815,43 @@ test('la clase del dato antropométrico viaja en el punto y en el resumen: medid
   assert.match(resumenTextual(s, definicionAntropometrica('peso', 'kg'), '2026-09-01', '2026-09-30'), /1 es un valor reportado por la persona, no medido/);
   const sumatoria = serieAntropometrica(SUMATORIA, definicionAntropometrica('suma-6-pliegues-isak', 'mm'), ZONA);
   assert.ok(sumatoria.points.every((p) => p.dataClass === 'DERIVED'));
-  assert.match(resumenTextual(sumatoria, definicionAntropometrica('suma-6-pliegues-isak', 'mm'), '2026-07-01', '2026-09-30'), /4 son valores calculados por un método \(estimaciones\)/);
+  // Los métodos de esta prueba no están en el catálogo: se dice «calculado por un método», sin afirmar que estima.
+  const texto = resumenTextual(sumatoria, definicionAntropometrica('suma-6-pliegues-isak', 'mm'), '2026-07-01', '2026-09-30');
+  assert.match(texto, /4 son valores calculados por un método;/);
+  assert.doesNotMatch(texto, /estimaci/);
+});
+
+test('calculado no es siempre estimado: el IMC es un índice, una suma de pliegues no estima y una ecuación de grasa sí (eje 3)', () => {
+  const IMC = '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f01';
+  const SUMA_6 = '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f05';
+  const DW = '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f08';
+  const ENDOMORFIA = '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f26';
+  assert.equal(naturalezaDelMetodo(IMC), 'INDEX');
+  assert.equal(naturalezaDelMetodo(SUMA_6), 'SKINFOLD_SUM');
+  assert.equal(naturalezaDelMetodo(DW), 'ESTIMATE');
+  assert.equal(naturalezaDelMetodo(ENDOMORFIA), 'SOMATOTYPE_RATING');
+  assert.equal(naturalezaDelMetodo('m-desconocido'), 'UNSPECIFIED');
+  assert.equal(naturalezaDelMetodo(null), 'UNSPECIFIED');
+  const d = definicionAntropometrica('suma-6-pliegues-isak', 'mm');
+  const conMetodo = (metodo: string) =>
+    serieAntropometrica(
+      {
+        ...SUMATORIA,
+        series: SUMATORIA.series.slice(0, 2),
+        comparability: { groups: [{ comparabilityGroup: 'cmp-1', protocolVersionId: 'p1', protocolName: 'Perfil ISAK', methodVersionId: metodo, unit: 'mm' }] },
+      },
+      d,
+      ZONA,
+    );
+  const suma = conMetodo(SUMA_6);
+  assert.deepEqual(suma.points[0]!.method, { methodVersionId: SUMA_6, name: 'Suma de 6 pliegues (ISAK)', nature: 'SKINFOLD_SUM' });
+  assert.ok(suma.points[0]!.detail.some((x) => x.label === 'Clase de dato' && x.value === 'Calculado: una suma de pliegues medidos, no una estimación'));
+  assert.ok(suma.points[0]!.detail.some((x) => x.label === 'Método' && x.value === 'Suma de 6 pliegues (ISAK)'));
+  assert.match(resumenTextual(suma, d, '2026-07-01', '2026-09-30'), /2 son valores calculados por un método \(sumas de pliegues medidos, no estimaciones\)/);
+  assert.match(resumenTextual(conMetodo(DW), d, '2026-07-01', '2026-09-30'), /\(estimaciones con una ecuación de predicción\)/);
+  assert.match(resumenTextual(conMetodo(IMC), d, '2026-07-01', '2026-09-30'), /\(índices, no estimaciones\)/);
+  // Lo medido y lo reportado no llevan método; sin método identificado, tampoco se afirma que estime.
+  assert.equal(claseEnPalabras('MEASURED', null), 'Medido');
+  assert.equal(claseEnPalabras('DERIVED', null), 'Calculado por un método');
+  assert.equal(suma.points.every((p) => p.planVersionIds.length === 0), true, 'la antropometría no ejecuta un plan');
 });

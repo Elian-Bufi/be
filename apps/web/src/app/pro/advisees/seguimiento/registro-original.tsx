@@ -17,6 +17,8 @@ import {
   type EjecucionDeEntrenamiento,
   type EvaluacionAntropometricaApi,
   type OrigenDeDato,
+  type PlanConObjetivos,
+  type VersionDePlan,
   type RegistroDeEjecucion,
 } from '@be/domain';
 import Link from 'next/link';
@@ -25,8 +27,11 @@ import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { api } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { DetalleDeRegistroDeComida } from '../nutrition/detalle-de-registro';
+import { VersionSoloLectura } from '../nutrition/plan';
 import { Registro } from '../training/ejecuciones';
+import { PlanSoloLectura } from '../training/plan';
 import { textoDeFalla, useLectura, useSeguimiento } from './contexto';
+import { conRetorno, valorDeRetorno } from './estado';
 
 const DESTINO: Readonly<Partial<Record<OrigenDeDato['type'], { readonly ruta: string; readonly vista: string; readonly texto: string }>>> = {
   MEAL_RECORD: { ruta: '/pro/advisees/nutrition', vista: 'registros', texto: 'Ver en Nutrición · Registros' },
@@ -47,17 +52,23 @@ export function PanelDeRegistro({
   titulo,
   onCerrar,
   onNoDisponible,
+  numeroDeVersion,
   children,
 }: {
   origen: OrigenDeDato | null;
   titulo: string;
   onCerrar: () => void;
   onNoDisponible?: () => void;
+  /** El número de la versión del plan, si el origen es una versión (la etapa lo sabe por su etiqueta). */
+  numeroDeVersion?: number;
   children?: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
-  const { asesoradoId } = useSeguimiento();
+  const { asesoradoId, parametros } = useSeguimiento();
+  // La pestaña del dominio lleva `volver`: desde ahí, «Volver a la ficha, donde estabas» trae la misma vista, período,
+  // pregunta y métricas (eje 5). Sin esto, ir al origen completo hacía perder el análisis armado.
+  const volver = valorDeRetorno(parametros);
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -82,19 +93,23 @@ export function PanelDeRegistro({
         </button>
       </div>
       {children}
-      {origen ? <ContenidoDelRegistro origen={origen} onNoDisponible={onNoDisponible} /> : null}
+      {origen ? <ContenidoDelRegistro origen={origen} onNoDisponible={onNoDisponible} numeroDeVersion={numeroDeVersion} /> : null}
       {origen && destino ? (
         <p>
-          <Link href={`${destino.ruta}?id=${encodeURIComponent(asesoradoId)}${destino.vista ? `&vista=${destino.vista}` : ''}`}>{destino.texto}</Link>
+          <Link href={destino.ruta === '/pro/advisees' ? `${destino.ruta}?id=${encodeURIComponent(asesoradoId)}` : conRetorno(`${destino.ruta}?id=${encodeURIComponent(asesoradoId)}${destino.vista ? `&vista=${destino.vista}` : ''}`, volver)}>
+            {destino.texto}
+          </Link>
         </p>
       ) : null}
     </dialog>
   );
 }
 
-function ContenidoDelRegistro({ origen, onNoDisponible }: { origen: OrigenDeDato; onNoDisponible?: () => void }) {
+function ContenidoDelRegistro({ origen, onNoDisponible, numeroDeVersion }: { origen: OrigenDeDato; onNoDisponible?: () => void; numeroDeVersion?: number }) {
   const { token, sesionPerdida } = useSeguimiento();
-  if (origen.type === 'MEAL_RECORD') return <DetalleDeRegistroDeComida registroId={origen.id} token={token} sesionPerdida={sesionPerdida} />;
+  if (origen.type === 'NUTRITION_PLAN_VERSION') return <VersionDeNutricion planId={origen.id} numero={numeroDeVersion} onNoDisponible={onNoDisponible} />;
+  if (origen.type === 'TRAINING_PLAN_VERSION') return <VersionDeEntrenamiento planId={origen.id} numero={numeroDeVersion} onNoDisponible={onNoDisponible} />;
+  if (origen.type === 'MEAL_RECORD') return <DetalleDeRegistroDeComida registroId={origen.id} token={token} sesionPerdida={sesionPerdida} onNoDisponible={onNoDisponible} />;
   if (origen.type === 'TRAINING_EXECUTION') return <SesionRegistrada executionId={origen.id} onNoDisponible={onNoDisponible} />;
   if (origen.type === 'ANTHROPOMETRIC_EVALUATION') return <TomaRegistrada evaluationId={origen.id} onNoDisponible={onNoDisponible} />;
   return <p className="nota">Este hecho no tiene un registro propio para abrir acá: el enlace lleva a su pestaña.</p>;
@@ -176,4 +191,32 @@ function TomaRegistrada({ evaluationId, onNoDisponible }: { evaluationId: string
       <p className="nota">Protocolo: {e.measurements[0]?.protocol.protocolName ?? 'sin dato'}</p>
     </div>
   );
+}
+
+/**
+ * La planificación de una etapa (eje 4): la versión activada tal como rigió, desde su instantánea y en solo lectura. Es
+ * la referencia histórica de la etapa: si después hubo otras versiones, esta no cambia. Un borrador no es una etapa.
+ */
+function VersionDeNutricion({ planId, numero, onNoDisponible }: { planId: string; numero?: number; onNoDisponible?: () => void }) {
+  const { token } = useSeguimiento();
+  const { lectura, recargar } = useLectura<{ data: VersionDePlan }>(`plan-nut|${planId}`, () => api.consultarPlan(token, planId), 'NUTRITION');
+  useAvisoDeNoDisponible(lectura.tipo, onNoDisponible);
+  if (lectura.tipo === 'cargando') return <Cargando />;
+  if (lectura.tipo === 'no-disponible') return <p className="nota">Esta planificación no está disponible con tu acceso actual.</p>;
+  if (lectura.tipo === 'error') return <ErrorConReintento mensaje={textoDeFalla(lectura.motivo, 'la planificación')} onReintentar={recargar} />;
+  const v = lectura.datos.data;
+  if (!v.activatedAt) return <p className="nota">Es un borrador: todavía no rige ni forma una etapa. Se edita en la pestaña Nutrición.</p>;
+  return <VersionSoloLectura version={v} numero={numero ?? 0} />;
+}
+
+function VersionDeEntrenamiento({ planId, numero, onNoDisponible }: { planId: string; numero?: number; onNoDisponible?: () => void }) {
+  const { token } = useSeguimiento();
+  const { lectura, recargar } = useLectura<{ data: PlanConObjetivos }>(`plan-trn|${planId}`, () => api.planConObjetivos(token, planId), 'TRAINING');
+  useAvisoDeNoDisponible(lectura.tipo, onNoDisponible);
+  if (lectura.tipo === 'cargando') return <Cargando />;
+  if (lectura.tipo === 'no-disponible') return <p className="nota">Esta planificación no está disponible con tu acceso actual.</p>;
+  if (lectura.tipo === 'error') return <ErrorConReintento mensaje={textoDeFalla(lectura.motivo, 'la planificación')} onReintentar={recargar} />;
+  const v = lectura.datos.data;
+  if (!v.activatedAt) return <p className="nota">Es un borrador: todavía no rige ni forma una etapa. Se edita en la pestaña Entrenamiento.</p>;
+  return <PlanSoloLectura version={v} numero={numero ?? 0} />;
 }

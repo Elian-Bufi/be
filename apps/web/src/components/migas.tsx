@@ -20,6 +20,7 @@ export function Migas({ pasos }: { pasos: readonly { texto: string; href?: strin
 }
 
 /** Las migas de una pestaña del workspace: el espacio profesional, el asesorado y la pestaña. */
-export function MigasDelAsesorado({ id, pestana }: { id: string; pestana: string }) {
-  return <Migas pasos={[{ texto: 'Espacio profesional', href: '/pro' }, { texto: 'Asesorado', href: `/pro/advisees?id=${encodeURIComponent(id)}` }, { texto: pestana }]} />;
+/** Las migas de una pestaña de área. Si se llegó desde la ficha, «Ficha del asesorado» vuelve a donde se estaba. */
+export function MigasDelAsesorado({ id, pestana, volver = null }: { id: string; pestana: string; volver?: string | null }) {
+  return <Migas pasos={[{ texto: 'Espacio profesional', href: '/pro' }, { texto: 'Ficha del asesorado', href: volver ?? `/pro/advisees?id=${encodeURIComponent(id)}` }, { texto: pestana }]} />;
 }

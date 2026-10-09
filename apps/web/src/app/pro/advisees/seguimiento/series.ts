@@ -14,6 +14,7 @@ import {
   definicionDeMetrica,
   granoDeObservacion,
   type DefinicionDeMetrica,
+  type DominioDeAnalisis,
   type EjercicioDelPeriodo,
   type FiltroDeProyeccion,
   type ProyeccionResponse,
@@ -24,7 +25,7 @@ import {
 } from '@be/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../../lib/api';
-import { motivoDeFalla, useSeguimiento, type MotivoDeFalla } from './contexto';
+import { limitarLectura, motivoDeFalla, useSeguimiento, type MotivoDeFalla } from './contexto';
 import { claveDeLaReferencia, type GranoElegido, type Periodo } from './estado';
 
 export type EstadoDeSerie =
@@ -127,15 +128,21 @@ export async function leerSerie(token: string, asesoradoId: string, p: SeriePedi
   const grano = granoDeObservacion(p.definicion);
   const deObservaciones = p.grano !== grano ? pedidoDe(p.ref, p.definicion, grano, periodo) : null;
   const [r, o] = await Promise.all([
-    api.proyeccion(token, asesoradoId, pedido.clave, pedido.filtro),
-    deObservaciones ? api.proyeccion(token, asesoradoId, deObservaciones.clave, deObservaciones.filtro) : Promise.resolve(null),
+    limitarLectura(() => api.proyeccion(token, asesoradoId, pedido.clave, pedido.filtro)),
+    deObservaciones ? limitarLectura(() => api.proyeccion(token, asesoradoId, deObservaciones.clave, deObservaciones.filtro)) : Promise.resolve(null),
   ]);
   return { estado: estadoDe(r, o), respuestas: o ? [r, o] : [r] };
 }
 
 /** Las series de las métricas elegidas. Una respuesta tardía de otra selección se descarta. */
-export function useSeriesDelAnalisis(metricas: readonly ReferenciaDeMetrica[], grano: GranoElegido): { readonly series: readonly SerieDelAnalisis[]; readonly recargar: () => void } {
-  const { token, asesoradoId, periodo, sesionPerdida } = useSeguimiento();
+export function useSeriesDelAnalisis(
+  metricas: readonly ReferenciaDeMetrica[],
+  grano: GranoElegido,
+  /** Otro período que el de la ficha (por ejemplo, el que cubre dos etapas). */
+  periodoPropio?: Periodo,
+): { readonly series: readonly SerieDelAnalisis[]; readonly recargar: () => void } {
+  const { token, asesoradoId, periodo: periodoDeLaFicha, sesionPerdida, avisarSinAcceso, versionDeAcceso } = useSeguimiento();
+  const periodo = periodoPropio ?? periodoDeLaFicha;
   const [estados, setEstados] = useState<Readonly<Record<string, EstadoDeSerie>>>({});
   const [vuelta, setVuelta] = useState(0);
   const generacion = useRef(0);
@@ -148,7 +155,7 @@ export function useSeriesDelAnalisis(metricas: readonly ReferenciaDeMetrica[], g
       }),
     [metricas, grano],
   );
-  const clave = `${asesoradoId}|${periodo.desde}|${periodo.hasta}|${pedidas.map((p) => `${p.clave}@${p.grano}`).join(',')}|${vuelta}`;
+  const clave = `${asesoradoId}|${periodo.desde}|${periodo.hasta}|${pedidas.map((p) => `${p.clave}@${p.grano}`).join(',')}|${vuelta}|${versionDeAcceso}`;
   useEffect(() => {
     const esta = ++generacion.current;
     setEstados({});
@@ -156,6 +163,8 @@ export function useSeriesDelAnalisis(metricas: readonly ReferenciaDeMetrica[], g
       void leerSerie(token, asesoradoId, p, periodo).then(({ estado, respuestas }) => {
         if (esta !== generacion.current || respuestas.some((r) => sesionPerdida(r))) return;
         setEstados((e) => ({ ...e, [p.clave]: estado }));
+        // §3.A: el encabezado no puede seguir diciendo «Activo» si la serie dice que el área no está disponible.
+        if (estado.tipo === 'sin-acceso') avisarSinAcceso(DOMINIO_DEL_AREA[p.definicion.area]);
       });
     }
     // `clave` resume lo que cambia la lectura; `pedidas` y `periodo` están dentro.
@@ -170,23 +179,41 @@ export function useSeriesDelAnalisis(metricas: readonly ReferenciaDeMetrica[], g
   return { series, recargar: () => setVuelta((v) => v + 1) };
 }
 
+const DOMINIO_DEL_AREA: Readonly<Record<DefinicionDeMetrica['area'], DominioDeAnalisis>> = { NUTRICION: 'NUTRITION', ENTRENAMIENTO: 'TRAINING', ANTROPOMETRIA: 'ANTHROPOMETRY' };
+
 /** Lo que el selector puede ofrecer con los datos y permisos de este asesorado en el período. */
 export interface Disponibles {
   readonly nutricion: boolean;
   readonly ejercicios: readonly EjercicioDelPeriodo[] | null;
-  readonly antropometria: readonly { readonly metricCode: string; readonly name: string; readonly observations: number; readonly units: readonly string[] }[] | null;
+  readonly antropometria: readonly { readonly metricCode: string; readonly name: string; readonly observations: number; readonly units: readonly string[]; readonly comparabilityGroups: number }[] | null;
   /** La cobertura nutricional del período, de la misma lectura: días, registros con y sin cantidades, anulados. */
   readonly coberturaNutricional: ResultadoDeProyeccionNutricional['coverage'] | null;
+  /** Las vigencias de los planes que tocan el período, por área (las bandas y las etapas). */
+  readonly vigencias: { readonly nutricion: readonly VigenciaDePlan[]; readonly entrenamiento: readonly VigenciaDePlan[] };
+  /** El instante de la lectura (para la duración de una etapa abierta). */
+  readonly leidoEl: string | null;
   /** Si alguna de las tres lecturas falló: lo que falta no es «sin datos», y la pantalla lo dice. */
   readonly falla: MotivoDeFalla | null;
+  /** Qué lectura falló, por área: la síntesis dice qué parte no se pudo completar. */
+  readonly fallas: { readonly nutricion: MotivoDeFalla | null; readonly entrenamiento: MotivoDeFalla | null; readonly antropometria: MotivoDeFalla | null };
   readonly cargando: boolean;
   readonly recargar: () => void;
 }
 
-const SIN_DISPONIBLES = { nutricion: false, ejercicios: null, antropometria: null, coberturaNutricional: null, falla: null, cargando: true } as const;
+const SIN_DISPONIBLES = {
+  nutricion: false,
+  ejercicios: null,
+  antropometria: null,
+  coberturaNutricional: null,
+  vigencias: { nutricion: [], entrenamiento: [] },
+  leidoEl: null,
+  falla: null,
+  fallas: { nutricion: null, entrenamiento: null, antropometria: null },
+  cargando: true,
+} as const;
 
 export function useDisponibles(): Disponibles {
-  const { token, asesoradoId, periodo, sesionPerdida } = useSeguimiento();
+  const { token, asesoradoId, periodo, sesionPerdida, avisarSinAcceso, versionDeAcceso } = useSeguimiento();
   const [d, setD] = useState<Omit<Disponibles, 'recargar'>>(SIN_DISPONIBLES);
   const [vuelta, setVuelta] = useState(0);
   const recargar = useCallback(() => setVuelta((v) => v + 1), []);
@@ -196,16 +223,32 @@ export function useDisponibles(): Disponibles {
     setD(SIN_DISPONIBLES);
     const base = { periodStart: periodo.desde, periodEnd: periodo.hasta };
     void Promise.all([
-      api.proyeccion(token, asesoradoId, 'NUTRITION_PRESCRIBED_VS_RECORDED', { ...base, metric: 'RECORDS' }),
-      api.proyeccion(token, asesoradoId, 'TRAINING_PROGRESSION_BY_EXERCISE', base),
-      api.proyeccion(token, asesoradoId, 'ANTHROPOMETRY_LONGITUDINAL', base),
+      limitarLectura(() => api.proyeccion(token, asesoradoId, 'NUTRITION_PRESCRIBED_VS_RECORDED', { ...base, metric: 'RECORDS' })),
+      limitarLectura(() => api.proyeccion(token, asesoradoId, 'TRAINING_PROGRESSION_BY_EXERCISE', base)),
+      limitarLectura(() => api.proyeccion(token, asesoradoId, 'ANTHROPOMETRY_LONGITUDINAL', base)),
     ]).then(([n, t, a]) => {
       if (esta !== generacion.current || sesionPerdida(n) || sesionPerdida(t) || sesionPerdida(a)) return;
       const visible = (r: typeof n) => r.ok && r.datos.data.dataState !== 'NOT_AVAILABLE_TO_VIEW';
       // Un 404 es «sin acceso» (anti-enumeración); cualquier otra falla se declara.
-      const fallida = [n, t, a].find((r) => !r.ok && !(r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND'));
+      const fallo = (r: typeof n): MotivoDeFalla | null => (!r.ok && !(r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') ? motivoDeFalla(r) : null);
+      const fallida = [n, t, a].find((r) => fallo(r) !== null);
+      // Un área que dice «no disponible» se avisa: si el encabezado la mostraba activa, se vuelve a preguntar el acceso.
+      const sinAcceso = (r: typeof n) => (r.ok ? r.datos.data.dataState === 'NOT_AVAILABLE_TO_VIEW' : r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND');
+      ([
+        [n, 'NUTRITION'],
+        [t, 'TRAINING'],
+        [a, 'ANTHROPOMETRY'],
+      ] as const).forEach(([r, dominio]) => {
+        if (sinAcceso(r)) avisarSinAcceso(dominio);
+      });
+      const vigencias = (r: typeof n): readonly VigenciaDePlan[] =>
+        visible(r) && r.ok && r.datos.data.result && r.datos.data.result.kind !== 'ANTHROPOMETRY_LONGITUDINAL' ? r.datos.data.result.planVersions : [];
+      const leida = [n, t, a].find((r): r is Extract<typeof n, { ok: true }> => r.ok);
       setD({
         falla: fallida ? motivoDeFalla(fallida) : null,
+        fallas: { nutricion: fallo(n), entrenamiento: fallo(t), antropometria: fallo(a) },
+        vigencias: { nutricion: vigencias(n), entrenamiento: vigencias(t) },
+        leidoEl: leida ? leida.datos.data.generatedAt : null,
         nutricion: visible(n),
         ejercicios: visible(t) && t.ok && t.datos.data.result?.kind === 'TRAINING_PROGRESSION_BY_EXERCISE' ? [...t.datos.data.result.exercises].sort((x, y) => y.sessions - x.sessions) : null,
         antropometria: visible(a) && a.ok && a.datos.data.result?.kind === 'ANTHROPOMETRY_LONGITUDINAL' ? a.datos.data.result.available : null,
@@ -213,6 +256,8 @@ export function useDisponibles(): Disponibles {
         cargando: false,
       });
     });
-  }, [token, asesoradoId, periodo.desde, periodo.hasta, sesionPerdida, vuelta]);
+    // `avisarSinAcceso` no cambia la lectura.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, asesoradoId, periodo.desde, periodo.hasta, sesionPerdida, vuelta, versionDeAcceso]);
   return useMemo(() => ({ ...d, recargar }), [d, recargar]);
 }

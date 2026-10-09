@@ -15,7 +15,7 @@ import { redondeoDePresentacion } from './calculo-nutricional';
 import type { MetricaNutricional, PuntoAnalitico, SerieAnalitica } from './contratos-analisis';
 import { VERSION_DEL_DICCIONARIO, type DefinicionDeMetrica } from './metricas-del-analisis';
 import { NUTRIENTE_DE_LA_METRICA } from './nutricion-del-analisis';
-import { TEXTO_DE_CLASE } from './antropometria-del-analisis';
+import { claseEnPalabras } from './antropometria-del-analisis';
 
 /** Cómo se agrupó cada métrica: un punto por día, por semana o por observación (toma o sesión). */
 const AGRUPACION: Readonly<Record<SerieAnalitica['grain'], string>> = { DAY: 'por día', WEEK: 'por semana (el método de cada fila dice si es media o suma)', ORIGINAL: 'cada observación (toma o sesión)' };
@@ -150,7 +150,7 @@ export function csvDelAnalisis(p: PedidoDeExportacion): string {
           pt.coverage ? String(pt.coverage.recordsWithQuantities) : '',
           pt.coverage ? String(pt.coverage.recordsWithoutQuantities) : '',
           celdaDeTexto(pt.missing.map((m) => `${m.count} ${textoDeFaltante(m.reason)}`).join(', ')),
-          pt.dataClass ? TEXTO_DE_CLASE[pt.dataClass] : '',
+          pt.dataClass ? celdaDeTexto(`${claseEnPalabras(pt.dataClass, pt.method)}${pt.method?.name ? ` (${pt.method.name})` : ''}`) : '',
         ]),
       );
     }

@@ -1,0 +1,62 @@
+OK    PRO-23 · resumen a 1440 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · linea a 1440 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · analizar a 1440 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-08 · La captura de analizar a 1440 px en azul-noche tiene los tres gráficos dibujados (y siguen después) — 3 de 3 dibujados; 3 después
+OK    PRO-08 · Paneles a 1440 px en azul-noche: los tres dibujados y a la vista — 3 gráfico(s) · Energía (kcal): 631×192, ejes 7/5, curvas 2, marcas 80/80, tinta 11.7 %, color 2171 px · Proteínas (g): 631×192, ejes 7/5, curvas 2, marcas 80/80
+OK    PRO-08 · Superpuestas a 1440 px en azul-noche: dibujado y a la vista — 1 gráfico(s) · Superpuestas en valores real: 631×270, ejes 7/5, curvas 4, marcas 160/160, tinta 15.6 %, color 3225/2369 px
+OK    PRO-08 · La captura analizar-superpuestas-1440-azul-noche tiene el gráfico dibujado — 1 de 1
+OK    PRO-08 · Cambio relativo a 1440 px en azul-noche: dibujado y a la vista — 1 gráfico(s) · Cambio relativo contra la re: 631×270, ejes 7/5, curvas 4, marcas 160/160, banda sí, tinta 16.1 %, color 3968/2619 px
+OK    PRO-08 · La captura analizar-relativo-1440-azul-noche tiene el gráfico dibujado — 1 de 1
+OK    PRO-23 · resumen a 1280 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · linea a 1280 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · analizar a 1280 px en azul-noche: sin desborde de costado, con pestañas y períodos
+FALLA PRO-08 · La captura de analizar a 1280 px en azul-noche tiene los tres gráficos dibujados (y siguen después) — 2 de 2 dibujados; 2 después
+FALLA PRO-08 · Paneles a 1280 px en azul-noche: los tres dibujados y a la vista — 2 gráfico(s) · Energía (kcal): 471×171, ejes 7/5, curvas 2, marcas 80/80, tinta 15.4 %, color 2051 px · Proteínas (g): 471×171, ejes 7/5, curvas 2, marcas 80/80
+OK    PRO-08 · Superpuestas a 1280 px en azul-noche: dibujado y a la vista — 1 gráfico(s) · Superpuestas en valores real: 471×270, ejes 7/5, curvas 4, marcas 160/160, tinta 18.3 %, color 3379/2451 px
+OK    PRO-08 · La captura analizar-superpuestas-1280-azul-noche tiene el gráfico dibujado — 1 de 1
+OK    PRO-08 · Cambio relativo a 1280 px en azul-noche: dibujado y a la vista — 1 gráfico(s) · Cambio relativo contra la re: 471×270, ejes 7/5, curvas 4, marcas 160/160, banda sí, tinta 20.6 %, color 4113/2202 px
+OK    PRO-08 · La captura analizar-relativo-1280-azul-noche tiene el gráfico dibujado — 1 de 1
+OK    PRO-23 · resumen a 1024 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · linea a 1024 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · analizar a 1024 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-08 · La captura de analizar a 1024 px en azul-noche tiene los tres gráficos dibujados (y siguen después) — 3 de 3 dibujados; 3 después
+OK    PRO-23 · resumen a 768 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · linea a 768 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · analizar a 768 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-08 · La captura de analizar a 768 px en azul-noche tiene los tres gráficos dibujados (y siguen después) — 3 de 3 dibujados; 3 después
+OK    PRO-23 · resumen a 390 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · linea a 390 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · analizar a 390 px en azul-noche: sin desborde de costado, con pestañas y períodos
+OK    PRO-08 · La captura de analizar a 390 px en azul-noche tiene los tres gráficos dibujados (y siguen después) — 3 de 3 dibujados; 3 después
+OK    PRO-23 · resumen a 1440 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · linea a 1440 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · analizar a 1440 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-08 · La captura de analizar a 1440 px en claro tiene los tres gráficos dibujados (y siguen después) — 3 de 3 dibujados; 3 después
+OK    PRO-08 · Paneles a 1440 px en claro: los tres dibujados y a la vista — 3 gráfico(s) · Energía (kcal): 631×192, ejes 7/5, curvas 2, marcas 80/80, tinta 42.4 %, color 2143 px · Proteínas (g): 631×192, ejes 7/5, curvas 2, marcas 80/80
+OK    PRO-08 · Superpuestas a 1440 px en claro: dibujado y a la vista — 1 gráfico(s) · Superpuestas en valores real: 631×270, ejes 7/5, curvas 4, marcas 160/160, tinta 46.8 %, color 3128/2611 px
+OK    PRO-08 · La captura analizar-superpuestas-1440-claro tiene el gráfico dibujado — 1 de 1
+OK    PRO-08 · Cambio relativo a 1440 px en claro: dibujado y a la vista — 1 gráfico(s) · Cambio relativo contra la re: 631×270, ejes 7/5, curvas 4, marcas 160/160, banda sí, tinta 47.0 %, color 3721/2774 px
+OK    PRO-08 · La captura analizar-relativo-1440-claro tiene el gráfico dibujado — 1 de 1
+OK    PRO-23 · resumen a 1280 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · linea a 1280 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · analizar a 1280 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-08 · La captura de analizar a 1280 px en claro tiene los tres gráficos dibujados (y siguen después) — 3 de 3 dibujados; 3 después
+OK    PRO-08 · Paneles a 1280 px en claro: los tres dibujados y a la vista — 3 gráfico(s) · Energía (kcal): 471×171, ejes 7/5, curvas 2, marcas 80/80, tinta 39.9 %, color 2142 px · Proteínas (g): 471×171, ejes 7/5, curvas 2, marcas 80/80
+OK    PRO-08 · Superpuestas a 1280 px en claro: dibujado y a la vista — 1 gráfico(s) · Superpuestas en valores real: 471×270, ejes 7/5, curvas 4, marcas 160/160, tinta 46.1 %, color 3243/2629 px
+OK    PRO-08 · La captura analizar-superpuestas-1280-claro tiene el gráfico dibujado — 1 de 1
+OK    PRO-08 · Cambio relativo a 1280 px en claro: dibujado y a la vista — 1 gráfico(s) · Cambio relativo contra la re: 471×270, ejes 7/5, curvas 4, marcas 160/160, banda sí, tinta 48.1 %, color 3848/2322 px
+OK    PRO-08 · La captura analizar-relativo-1280-claro tiene el gráfico dibujado — 1 de 1
+OK    PRO-23 · resumen a 1024 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · linea a 1024 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · analizar a 1024 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-08 · La captura de analizar a 1024 px en claro tiene los tres gráficos dibujados (y siguen después) — 3 de 3 dibujados; 3 después
+OK    PRO-23 · resumen a 768 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · linea a 768 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · analizar a 768 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-08 · La captura de analizar a 768 px en claro tiene los tres gráficos dibujados (y siguen después) — 3 de 3 dibujados; 3 después
+OK    PRO-23 · resumen a 390 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · linea a 390 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-23 · analizar a 390 px en claro: sin desborde de costado, con pestañas y períodos
+OK    PRO-08 · La captura de analizar a 390 px en claro tiene los tres gráficos dibujados (y siguen después) — 3 de 3 dibujados; 3 después
+
+58/60 comprobaciones bien; fallan: PRO-08, PRO-08

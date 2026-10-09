@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
-import { HEADER_IDEMPOTENCY_KEY } from '@be/domain';
+import { Body, Controller, Get, Headers, HttpCode, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { BusquedaEnCatalogoRequestSchema, HEADER_IDEMPOTENCY_KEY } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
-import { sinParametrosDeQuery } from '../http/validacion';
+import { comoConsultaDeLista } from '../http/paginacion';
+import { sinParametrosDeQuery, validarCuerpo } from '../http/validacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { LimitadorService } from '../plataforma/limitador.service';
 import { actorDe, SesionGuard, type SolicitudAutenticada } from '../sesion/sesion.guard';
@@ -122,10 +123,22 @@ export class NutricionController {
   }
 
   // ─── Catálogo ───────────────────────────────────────────────────────────────────────────────
-  /** API-NUT-13. */
+  /** API-NUT-13. Contrato legado: `q` en la URL. La web busca con API-NUT-13-BUSQUEDA. */
   @Get('nutrition/catalog-items')
   listarCatalogo(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
     return this.catalogo.listar(actorDe(req), query);
+  }
+
+  /**
+   * API-NUT-13-BUSQUEDA (DL-130): la misma lectura con el texto en el cuerpo. Es una lectura: 200, sin Idempotency-Key.
+   * El registro de requests guarda solo la ruta, nunca el cuerpo.
+   */
+  @Post('nutrition/catalog-items/search')
+  @HttpCode(200)
+  buscarEnCatalogo(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    const b = validarCuerpo(BusquedaEnCatalogoRequestSchema, cuerpo);
+    return this.catalogo.listar(actorDe(req), comoConsultaDeLista(b));
   }
 
   /** API-INT-NUT-01. */
