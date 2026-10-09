@@ -38,6 +38,13 @@ const referenciaGuardada = (r: ReferenciaDelCambio): string =>
   r.kind === 'FIRST_DAYS' ? `referencia: los primeros ${numero(r.days)} días` : `referencia: del ${diaCivil(r.start)} al ${diaCivil(r.end)}`;
 
 /**
+ * Lo que sobrevive a que el panel cambie de lugar: abrir una vista desde el comienzo de Analizar arma el análisis y el
+ * panel pasa a la columna de opciones (otro componente). Sin esto, aparecía plegado y sin el aviso «Abierta: …». Solo
+ * para esa transición, y se consume una vez: no es una preferencia que siga a la persona por otras fichas.
+ */
+const recuerdo: { abierto: boolean; aviso: string | null } = { abierto: false, aviso: null };
+
+/**
  * `soloAbrir`: al comienzo de Analizar (sin métricas ni pregunta) no hay nada que guardar: se listan las vistas para
  * retomarlas, sin el formulario de guardar ni «Guardar lo actual acá».
  */
@@ -48,7 +55,13 @@ export function VistasGuardadas({ estado, pregunta, soloAbrir = false }: { estad
   const [error, setError] = useState<string | null>(null);
   const [nombre, setNombre] = useState('');
   const [ocupado, setOcupado] = useState(false);
-  const [aviso, setAviso] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(recuerdo.aviso);
+  const [abierto, setAbierto] = useState(recuerdo.abierto);
+  // Lo que traía el panel anterior se usa una vez.
+  useEffect(() => {
+    recuerdo.aviso = null;
+    recuerdo.abierto = false;
+  }, []);
   // Borrar no se deshace: primero se pide confirmar, en el mismo lugar.
   const [porBorrar, setPorBorrar] = useState<string | null>(null);
   const [sinLista, setSinLista] = useState<MotivoDeFalla | null>(null);
@@ -97,7 +110,13 @@ export function VistasGuardadas({ estado, pregunta, soloAbrir = false }: { estad
       },
       { agregarAlHistorial: true },
     );
-    setAviso(`Abierta: «${v.name}». Los datos se pidieron de nuevo con tu acceso actual.`);
+    const texto = `Abierta: «${v.name}». Los datos se pidieron de nuevo con tu acceso actual.`;
+    setAviso(texto);
+    // Si el panel se va a otro lugar (desde el comienzo de Analizar), el nuevo lo muestra abierto y con el aviso.
+    if (soloAbrir) {
+      recuerdo.abierto = true;
+      recuerdo.aviso = texto;
+    }
   };
   const actualizar = async (v: VistaDeAnalisis) => {
     if (!configuracion) return;
@@ -129,7 +148,11 @@ export function VistasGuardadas({ estado, pregunta, soloAbrir = false }: { estad
   };
 
   return (
-    <details className="vistas-guardadas">
+    <details
+      className="vistas-guardadas"
+      open={abierto}
+      onToggle={(e) => setAbierto((e.target as HTMLDetailsElement).open)}
+    >
       <summary>Vistas guardadas{vistas ? ` (${vistas.length})` : ''}</summary>
       <p className="nota">Se guarda la configuración (la pregunta, las métricas, el modo, el período, las capas y la referencia del cambio relativo), nunca los datos. Sirve para cualquier asesorado.</p>
       {pregunta && traeSeleccionesDelAsesorado(pregunta.params) ? (
