@@ -28,6 +28,7 @@ import {
   claseEnPalabras,
   compararPeriodos,
   etapasDelArea,
+  partesDeLaCobertura,
   partesDelResumenTextual,
   periodoDeLasEtapas,
   resolverPregunta,
@@ -214,6 +215,28 @@ export function Analizar() {
 
   const descripcion = listas.map((s) => resumenTextual(s.estado.serie, s.definicion, desde, hasta)).join(' ');
   const marcas = estado.metricas.map((_, i) => <Marca key={i} indice={i} conTrazo={modo !== 'PANELS'} />);
+  // Con la pregunta de etapas, lo principal es la tabla A/B: la comparación a mano pasa a ser una opción secundaria
+  // (plegada, debajo de la tabla), el resumen en texto se pliega como la tabla de datos y no se repiten las acciones de
+  // las tarjetas de las etapas. Resultados, cobertura y límites de interpretación quedan a la vista.
+  const conEtapas = destino?.tipo === 'ETAPAS' && !cambiandoPregunta;
+  const resumenEnTexto = listas.map((s) => {
+    const r = partesDelResumenTextual(s.estado.serie, s.definicion, desde, hasta);
+    return (
+      <div key={s.clave}>
+        <p>
+          <strong>{r.encabezado}</strong>
+          {r.partes.length === 0 ? ': no hay datos en este rango.' : null}
+        </p>
+        {r.partes.length > 0 ? (
+          <ul>
+            {r.partes.map((x) => (
+              <li key={x}>{x.charAt(0).toUpperCase() + x.slice(1)}.</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    );
+  });
 
   return (
     <section className="seccion analizar" aria-labelledby={`${id}-titulo`}>
@@ -239,6 +262,9 @@ export function Analizar() {
       {destino?.tipo === 'CONTRASTE' && !cambiandoPregunta ? <ContrasteConLoIndicado area={destino.area} exerciseKey={destino.exerciseKey} /> : null}
       {destino?.tipo === 'ETAPAS' && !cambiandoPregunta ? (
         <ComparacionDeEtapas area={destino.area} a={destino.a} b={destino.b} metricas={destino.metricas} etapas={etapasDelAno.etapas[destino.area === 'NUTRICION' ? 'NUTRITION' : 'TRAINING']} disponibles={disponibles} />
+      ) : null}
+      {conEtapas && listas.length > 0 ? (
+        <ComparacionDePeriodos series={listas} nombres={nombres} todas={series} estado={estado} cambiar={cambiar} minimo={periodo.desde} maximo={periodo.hasta} secundaria />
       ) : null}
       {destino?.tipo === 'INFORMACION' && !cambiandoPregunta ? <InformacionParaRevisar area={destino.area} disponibles={disponibles} /> : null}
       {mostrarVista ? (
@@ -343,7 +369,8 @@ export function Analizar() {
                 referencia={modo === 'RELATIVE' ? { desde: rangoDeReferencia.desde, hasta: rangoDeReferencia.hasta } : null}
                 descripcion={descripcion}
               />
-              {estado.bandas && bandas.length > 0 ? (
+              {/* Con la pregunta de etapas, las tarjetas A y B ya abren cada planificación y «Cambiar los datos» elige otras. */}
+              {estado.bandas && bandas.length > 0 && !conEtapas ? (
                 <details className="etapas-del-grafico">
                   <summary>Etapas de los planes en el período: abrir la planificación o comparar</summary>
                   {(['NUTRICION', 'ENTRENAMIENTO'] as const).map((area) => {
@@ -459,28 +486,18 @@ export function Analizar() {
           <ComoSeCalcula series={listas} nombres={nombres} todas={series} />
           <TablaDeDatos series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} />
           <ExportarCsv series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} aviso={avisoDeExportacion?.texto ?? null} onAviso={setAvisoDeExportacion} onAccesoCambiado={recargar} />
-          <section aria-labelledby={`${id}-resumen`} className="resumen-en-texto">
-            <h3 id={`${id}-resumen`}>Resumen en texto de lo que se ve</h3>
-            {listas.map((s) => {
-              const r = partesDelResumenTextual(s.estado.serie, s.definicion, desde, hasta);
-              return (
-                <div key={s.clave}>
-                  <p>
-                    <strong>{r.encabezado}</strong>
-                    {r.partes.length === 0 ? ': no hay datos en este rango.' : null}
-                  </p>
-                  {r.partes.length > 0 ? (
-                    <ul>
-                      {r.partes.map((x) => (
-                        <li key={x}>{x.charAt(0).toUpperCase() + x.slice(1)}.</li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </div>
-              );
-            })}
-          </section>
-          <ComparacionDePeriodos series={listas} nombres={nombres} todas={series} estado={estado} cambiar={cambiar} minimo={periodo.desde} maximo={periodo.hasta} />
+          {conEtapas ? (
+            <details className="resumen-en-texto resumen-en-texto--plegado">
+              <summary>Resumen en texto de los gráficos</summary>
+              {resumenEnTexto}
+            </details>
+          ) : (
+            <section aria-labelledby={`${id}-resumen`} className="resumen-en-texto">
+              <h3 id={`${id}-resumen`}>Resumen en texto de lo que se ve</h3>
+              {resumenEnTexto}
+            </section>
+          )}
+          {conEtapas ? null : <ComparacionDePeriodos series={listas} nombres={nombres} todas={series} estado={estado} cambiar={cambiar} minimo={periodo.desde} maximo={periodo.hasta} />}
         </>
       ) : avisoDeExportacion?.sinArchivo ? (
         <div className="exportar">
@@ -996,6 +1013,7 @@ function ComparacionDePeriodos({
   cambiar,
   minimo,
   maximo,
+  secundaria = false,
 }: {
   series: readonly Lista[];
   nombres: readonly string[];
@@ -1004,6 +1022,11 @@ function ComparacionDePeriodos({
   cambiar: (c: Partial<EstadoDeAnalisis>) => void;
   minimo: string;
   maximo: string;
+  /**
+   * Con la pregunta de etapas, la comparación a mano es una opción secundaria: plegada debajo de la tabla de etapas (abierta
+   * si ya hay una comparación en la URL), sin un segundo título que repita su rótulo.
+   */
+  secundaria?: boolean;
 }) {
   const id = useId();
   const c = estado.comparacion;
@@ -1012,10 +1035,52 @@ function ComparacionDePeriodos({
     const base = c ?? { a: { desde: minimo, hasta: minimo }, b: { desde: maximo, hasta: maximo } };
     cambiar({ comparacion: { ...base, [lado]: { ...base[lado], [campo]: valor } } });
   };
+  const contenido = (
+    <>
+      {/* «Coincidencia temporal: no indica causa» ya está, una vez, en el encabezado de Analizar. */}
+      <p className="nota">El mismo criterio de resumen en los dos, con la cobertura de cada uno.</p>
+      <ContenidoDeLaComparacion id={id} series={series} nombres={nombres} todas={todas} c={c} cambiar={cambiar} poner={poner} minimo={minimo} maximo={maximo} />
+    </>
+  );
+  if (secundaria) {
+    return (
+      <details className="comparar-a-mano" open={c !== null}>
+        <summary>Comparar otros dos períodos, con fechas elegidas a mano</summary>
+        {contenido}
+      </details>
+    );
+  }
   return (
     <section aria-labelledby={`${id}-titulo`}>
       <h3 id={`${id}-titulo`}>Comparar dos períodos</h3>
-      <p className="nota">El mismo criterio de resumen en los dos; cada uno dice su duración, cuántas observaciones tiene y su cobertura. Coincidencia temporal; no indica causa.</p>
+      {contenido}
+    </section>
+  );
+}
+
+function ContenidoDeLaComparacion({
+  id,
+  series,
+  nombres,
+  todas,
+  c,
+  cambiar,
+  poner,
+  minimo,
+  maximo,
+}: {
+  id: string;
+  series: readonly Lista[];
+  nombres: readonly string[];
+  todas: readonly SerieDelAnalisis[];
+  c: EstadoDeAnalisis['comparacion'];
+  cambiar: (c: Partial<EstadoDeAnalisis>) => void;
+  poner: (lado: 'a' | 'b', campo: 'desde' | 'hasta', valor: string) => void;
+  minimo: string;
+  maximo: string;
+}) {
+  return (
+    <>
       <div className="acciones">
         {(['a', 'b'] as const).map((lado) => (
           <fieldset key={lado} className="capas">
@@ -1055,17 +1120,16 @@ function ComparacionDePeriodos({
             </thead>
             <tbody>
               {series.map((s) => {
-                // Sobre las observaciones del rango exacto de cada período, no sobre los puntos que se dibujan.
-                const r = compararPeriodos(s.estado.observaciones, s.definicion, c.a, c.b);
+                // Sobre las observaciones del rango exacto de cada período, no sobre los puntos que se dibujan. La
+                // cobertura es la misma de la tabla de etapas: en nutrición, los días del rango por categoría.
+                const r = compararPeriodos(s.estado.observaciones, s.definicion, c.a, c.b, hoyEn());
                 const unidad = s.estado.serie.unit;
-                const celda = (x: typeof r.a) =>
-                  x.valor === null
-                    ? `Sin valor (${numero(x.duracionDias)} ${x.duracionDias === 1 ? 'día' : 'días'})`
-                    : `${valorParaMostrar(x.valor, s.definicion, unidad)} · n = ${numero(x.n)} de ${numero(x.observaciones)} · ${numero(x.duracionDias)} ${x.duracionDias === 1 ? 'día' : 'días'}${
-                        x.parciales ? ` · ${numero(x.parciales)} ${x.parciales === 1 ? 'subtotal' : 'subtotales'}` : ''
-                      }${
-                        x.incompletos ? (s.definicion.resumenDePeriodo === 'TOTAL' ? ' · incluye un día o una semana sin completar' : ` · ${numero(x.incompletos)} sin completar, fuera del resumen`) : ''
-                      }`;
+                const celda = (x: typeof r.a) => (
+                  <>
+                    <strong>{x.valor === null ? 'Sin valor' : valorParaMostrar(x.valor, s.definicion, unidad)}</strong>
+                    <span className="celda__detalle">{partesDeLaCobertura(x).join(' · ')}</span>
+                  </>
+                );
                 return (
                   <tr key={s.clave}>
                     <th scope="row">{nombres[todas.indexOf(s)]}</th>
@@ -1080,7 +1144,7 @@ function ComparacionDePeriodos({
           </table>
         </div>
       ) : null}
-    </section>
+    </>
   );
 }
 

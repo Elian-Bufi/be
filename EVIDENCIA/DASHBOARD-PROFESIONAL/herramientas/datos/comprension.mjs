@@ -49,6 +49,9 @@ export function agregadosDelEscenarioD(hoy) {
     comidas: [
       // Una merienda de D-45 (etapa 1) que se carga en D-6: la API la asocia a la versión vigente al cargarla (v2).
       { fecha: diaMenos(hoy, 45), comida: 'Merienda', plan: 'v2', opcion: 0, consumo: { status: 'PLAN_PORTIONS' }, ocurrio: instante(diaMenos(hoy, 45), '17:00'), registrado: instante(diaMenos(hoy, 6), '20:00'), rectificacion: null, anulacion: null, diferente: null },
+      // Una merienda de D-48 (etapa 1, semanas sin merienda base) informada a mano con las cantidades de la opción: el modo
+      // es «informadas a mano» y no hay diferencia con lo indicado (pasada del 2026-10-09).
+      { fecha: diaMenos(hoy, 48), comida: 'Merienda', plan: 'v1', opcion: 0, consumo: { status: 'REPORTED', informado: 'COMO_INDICADO' }, ocurrio: instante(diaMenos(hoy, 48), '17:00'), registrado: instante(diaMenos(hoy, 48), '17:10'), rectificacion: null, anulacion: null, diferente: null },
       // Una merienda de D-41 sin confirmar, registrada ese día y rectificada en D-3.
       {
         fecha: diaMenos(hoy, 41),

@@ -20,8 +20,10 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
-import { dia, fecha } from '../../../../lib/formato';
+import { dia, fecha, horaEnZona } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { referenciasMarcadas } from '../evidencia';
+import { SeleccionDeEvidencia, type CandidataDeEvidencia } from '../evidencia-de-revision';
 import { FiltroDePeriodo, type Periodo } from '../periodo';
 import { AvisoDePreparacion, periodoPreparado, usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { CamposDeObjetivo, aObjetivo, erroresDeObjetivo, objetivoVacio } from './formularios';
@@ -167,14 +169,16 @@ function FormularioDeRevision({
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 
-  const candidatas = [
+  // Las comidas, por su día civil (lo dice el grupo) con la hora y el tipo; la planificación y el objetivo, aparte.
+  const candidatas: CandidataDeEvidencia[] = [
     ...contexto.registeredIntakes.map((i) => ({
-      tipo: 'EXECUTION',
+      tipo: 'EXECUTION' as const,
       id: i.executionId,
-      texto: `${i.origin === 'PRESCRIBED' ? 'Comida del plan' : 'Comida fuera del plan'} · ${fecha(i.occurredAt)}${i.description ? ` · «${i.description}»` : ''}`,
+      dia: i.localDate,
+      texto: `${horaEnZona(i.occurredAt, i.timeZone)} · ${i.origin === 'PRESCRIBED' ? 'Comida del plan' : 'Comida fuera del plan'}${i.description ? ` · «${i.description}»` : ''}`,
     })),
-    ...contexto.activePlanVersions.map((v) => ({ tipo: 'PLAN_VERSION', id: v.planId, texto: `Plan activado el ${fecha(v.activatedAt as string)}` })),
-    ...(contexto.objective ? [{ tipo: 'OBJECTIVE_VERSION', id: contexto.objective.versionId, texto: 'Objetivo vigente' }] : []),
+    ...contexto.activePlanVersions.map((v) => ({ tipo: 'PLAN_VERSION' as const, id: v.planId, dia: null, texto: `Plan activado el ${fecha(v.activatedAt as string)}` })),
+    ...(contexto.objective ? [{ tipo: 'OBJECTIVE_VERSION' as const, id: contexto.objective.versionId, dia: null, texto: 'Objetivo vigente' }] : []),
   ];
 
   async function enviar(e: FormEvent) {
@@ -197,7 +201,8 @@ function FormularioDeRevision({
       asesoradoId,
       {
         period: contexto.period,
-        evidenceReferences: candidatas.filter((c) => evidencia.has(c.id)).map((c) => ({ type: c.tipo as 'EXECUTION', id: c.id })),
+        // Cada referencia, una por una: marcar un día marca sus registros, y el contrato no cambia.
+        evidenceReferences: referenciasMarcadas(candidatas, evidencia),
         interpretation: interpretacion.trim(),
         result: resultado,
         rationale: fundamento.trim(),
@@ -251,33 +256,15 @@ function FormularioDeRevision({
         Período: {dia(`${contexto.period.start}T12:00:00Z`)} a {dia(`${contexto.period.end}T12:00:00Z`)}
       </p>
       <ResumenDeErrores titulo="Para registrar la revisión falta:" errores={errores} intento={envios} />
-      <fieldset className={`grupo${evidencia_.texto ? ' campo--error' : ''}`} id="revision-evidencia" tabIndex={-1} {...evidencia_.atributos}>
-        <legend>Evidencia que examinaste</legend>
-        {evidencia_.texto ? (
-          <p id="revision-evidencia-error" className="campo__error">
-            <span aria-hidden="true">⚠ </span>
-            {evidencia_.texto}
-          </p>
-        ) : null}
-        {candidatas.length === 0 ? <p>No hay registros en el período.</p> : null}
-        {candidatas.map((c) => (
-          <label key={c.id} className="acto">
-            <input
-              type="checkbox"
-              checked={evidencia.has(c.id)}
-              onChange={(e) =>
-                setEvidencia((s) => {
-                  const n = new Set(s);
-                  if (e.target.checked) n.add(c.id);
-                  else n.delete(c.id);
-                  return n;
-                })
-              }
-            />{' '}
-            {c.texto}
-          </label>
-        ))}
-      </fieldset>
+      <SeleccionDeEvidencia
+        id="revision-evidencia"
+        candidatas={candidatas}
+        elegidas={evidencia}
+        onCambiar={setEvidencia}
+        registros={['comida', 'comidas']}
+        sinRegistros="No hay comidas registradas en el período."
+        error={evidencia_.texto ?? null}
+      />
       <div className={interpretacion_.contenedor}>
         <label htmlFor="revision-interpretacion">Interpretación</label>
         <p id="revision-interpretacion-ayuda" className="campo__ayuda">

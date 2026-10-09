@@ -26,6 +26,8 @@ import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
+import { referenciasMarcadas } from '../evidencia';
+import { SeleccionDeEvidencia, type CandidataDeEvidencia } from '../evidencia-de-revision';
 import { FiltroDePeriodo, type Periodo } from '../periodo';
 import { AvisoDePreparacion, periodoPreparado, usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
 
@@ -162,14 +164,16 @@ function FormularioDeRevision({
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 
-  const candidatas = [
+  // Las sesiones, por su día (lo dice el grupo); la planificación y el objetivo, aparte.
+  const candidatas: CandidataDeEvidencia[] = [
     ...contexto.registeredExecutions.map((x) => ({
       tipo: 'EXECUTION' as const,
       id: x.executionId,
-      texto: `${x.plannedSession.label} · ${dia(`${x.date}T12:00:00Z`)} · ${etiquetaDeCondicionRegistrada(registroVigente(x))}`,
+      dia: x.date,
+      texto: `${x.plannedSession.label} · ${etiquetaDeCondicionRegistrada(registroVigente(x))}`,
     })),
-    ...contexto.activePlanVersions.map((v) => ({ tipo: 'PLAN_VERSION' as const, id: v.planId, texto: `Plan activado el ${fecha(v.activatedAt as string)}` })),
-    ...(contexto.objective ? [{ tipo: 'OBJECTIVE_VERSION' as const, id: contexto.objective.versionId, texto: 'Objetivo vigente' }] : []),
+    ...contexto.activePlanVersions.map((v) => ({ tipo: 'PLAN_VERSION' as const, id: v.planId, dia: null, texto: `Plan activado el ${fecha(v.activatedAt as string)}` })),
+    ...(contexto.objective ? [{ tipo: 'OBJECTIVE_VERSION' as const, id: contexto.objective.versionId, dia: null, texto: 'Objetivo vigente' }] : []),
   ];
 
   async function enviar(e: FormEvent) {
@@ -194,7 +198,7 @@ function FormularioDeRevision({
       asesoradoId,
       {
         period: contexto.period,
-        evidenceReferences: candidatas.filter((c) => evidencia.has(c.id)).map((c) => ({ type: c.tipo, id: c.id })),
+        evidenceReferences: referenciasMarcadas(candidatas, evidencia),
         interpretation: interpretacion.trim(),
         result: resultado,
         rationale: fundamento.trim(),
@@ -241,28 +245,16 @@ function FormularioDeRevision({
         Período: {dia(`${contexto.period.start}T12:00:00Z`)} a {dia(`${contexto.period.end}T12:00:00Z`)}
       </p>
       <ResumenDeErrores titulo="Para registrar la revisión falta:" errores={errores} intento={envios} />
-      <fieldset className="grupo" id="trn-revision-evidencia" tabIndex={-1}>
-        <legend>Evidencia que examinaste</legend>
-        {candidatas.length === 0 ? <p>No hay sesiones registradas en el período.</p> : null}
-        {candidatas.map((c) => (
-          <label key={c.id} className="acto">
-            <input
-              type="checkbox"
-              checked={evidencia.has(c.id)}
-              onChange={(e) =>
-                setEvidencia((s) => {
-                  const n = new Set(s);
-                  if (e.target.checked) n.add(c.id);
-                  else n.delete(c.id);
-                  return n;
-                })
-              }
-            />{' '}
-            {c.texto}
-          </label>
-        ))}
-        {contexto.missingData.length > 0 ? <p className="nota">Días sin registro en el período: {contexto.missingData.length}. No hay dato de esos días.</p> : null}
-      </fieldset>
+      <SeleccionDeEvidencia
+        id="trn-revision-evidencia"
+        candidatas={candidatas}
+        elegidas={evidencia}
+        onCambiar={setEvidencia}
+        registros={['sesión', 'sesiones']}
+        sinRegistros="No hay sesiones registradas en el período."
+        error={errores.find((x) => x.id === 'trn-revision-evidencia')?.texto ?? null}
+      />
+      {contexto.missingData.length > 0 ? <p className="nota">Días sin registro en el período: {contexto.missingData.length}. No hay dato de esos días.</p> : null}
       <div className="campo">
         <label htmlFor="trn-revision-interpretacion">Interpretación</label>
         <textarea id="trn-revision-interpretacion" rows={3} value={interpretacion} onChange={(e) => setInterpretacion(e.target.value)} maxLength={4000} />

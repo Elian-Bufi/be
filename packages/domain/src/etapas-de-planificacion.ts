@@ -170,7 +170,8 @@ export function resumirEtapa(serie: SerieAnalitica, definicion: DefinicionDeMetr
     ...base,
     rango,
     recortada: rango.desde !== etapa.desde || rango.hasta !== etapa.ultimoDia,
-    resumen: resumirPeriodo(serie, definicion, rango.desde, rango.hasta),
+    // Una etapa abierta termina hoy, que sigue en curso: no es un día sin registros aunque todavía no tenga ninguno.
+    resumen: resumirPeriodo(serie, definicion, rango.desde, rango.hasta, etapa.abierta ? etapa.ultimoDia ?? undefined : undefined),
     motivoSinResumen: null,
     // Solo nutrición guarda versión en el punto; la antropometría no ejecuta un plan (lista vacía).
     deOtraVersion: delRango.filter((p) => p.planVersionIds.some((v) => v !== etapa.planVersionId)).length,
@@ -204,13 +205,6 @@ export const TEXTO_SIN_DIFERENCIA_DE_ETAPAS: Readonly<Record<MotivoSinDiferencia
   TRAMOS_NO_COMPARABLES: 'Entre las dos etapas cambió el protocolo, el método o la unidad: los valores no se restan.',
   SIN_DIA_ENTERO: 'Una etapa duró menos de un día (se activó otra versión el mismo día): no tiene días enteros para resumir.',
   FUERA_DE_LO_LEIDO: 'Una etapa queda fuera del período que se puede leer (hasta un año).',
-};
-
-/** Qué cuenta `n` en cada área: el tipo de observación del resumen. */
-export const OBSERVACION_DEL_AREA: Readonly<Record<AreaDeMetrica, readonly [string, string]>> = {
-  NUTRICION: ['día con valor', 'días con valor'],
-  ENTRENAMIENTO: ['sesión', 'sesiones'],
-  ANTROPOMETRIA: ['toma', 'tomas'],
 };
 
 /** La duración de una etapa en palabras: días enteros, o horas si no llegó a un día. */

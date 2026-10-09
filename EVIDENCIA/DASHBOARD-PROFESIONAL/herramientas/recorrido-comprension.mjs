@@ -369,10 +369,15 @@ async function mirar() {
     });
     await pantalla('pregunta-cambio-nutricion', () => ir(page, conPregunta(`pregunta=cambio-desde-el-plan&area=NUTRICION&version=${e.nutricion.planV2}`)));
     await pantalla('pregunta-etapas-nutricion', () => ir(page, conPregunta(`pregunta=comparar-etapas&area=NUTRICION&etapaA=${e.nutricion.planV1}&etapaB=${e.nutricion.planV2}`)));
+    // La comparación a mano, secundaria: plegada debajo de la tabla de etapas, se abre y sigue accesible.
+    await pantalla('pregunta-etapas-nutricion-a-mano', async () => {
+      await page.evaluate(() => document.querySelector('details.comparar-a-mano')?.setAttribute('open', ''));
+    });
     await pantalla('pregunta-etapas-entrenamiento-falta', () => ir(page, conPregunta('pregunta=comparar-etapas&area=ENTRENAMIENTO')));
     await pantalla('pregunta-contraste-nutricion', () => ir(page, conPregunta('pregunta=registrado-vs-indicado&area=NUTRICION')));
-    await pantalla('pregunta-contraste-nutricion-sin-porciones', async () => {
-      await clic(page, '.contraste .capa', 'Solo las que no registraron');
+    // Pasada del 2026-10-09: el filtro separa el modo de registro de la diferencia comprobada.
+    await pantalla('pregunta-contraste-nutricion-distintas', async () => {
+      await clic(page, '.contraste .capa', 'Distintas de lo indicado');
     });
     await pantalla('pregunta-contraste-entrenamiento-falta', () => ir(page, conPregunta('pregunta=registrado-vs-indicado&area=ENTRENAMIENTO')));
     await pantalla('pregunta-informacion', () => ir(page, conPregunta('pregunta=informacion-para-revisar&area=NUTRICION')));
@@ -382,6 +387,20 @@ async function mirar() {
       await ir(page, FICHA_A);
       await quieto(page, v);
       await clic(page, '.acciones-del-resumen a', 'Preparar la revisión de Nutrición');
+    });
+    // La evidencia con un día marcado entero y otro en parte (casilla mixta), con «Lo que marcaste» abierto.
+    await pantalla('preparar-revision-nutricion-marcada', async () => {
+      await page.evaluate(() => {
+        const dias = [...document.querySelectorAll('#revision-evidencia .evidencia__dia')];
+        dias[0]?.querySelector('.evidencia__grupo-casilla input')?.click();
+        dias[1]?.querySelector('.evidencia__ver')?.click();
+      });
+      await pausa(200);
+      await page.evaluate(() => {
+        document.querySelectorAll('#revision-evidencia .evidencia__dia')[1]?.querySelector('.evidencia__registros label input')?.click();
+      });
+      await pausa(200);
+      await page.evaluate(() => document.querySelector('#revision-evidencia details.evidencia__marcadas')?.setAttribute('open', ''));
     });
     await pantalla('nutricion-volver-a-la-ficha', async () => {
       await clic(page, '.retorno-a-la-ficha a', 'Volver a la ficha');
@@ -417,7 +436,12 @@ async function capturas() {
     await clic(page, '.parametros-de-pregunta button[type="submit"]', '');
     await quieto(page, v);
     const preguntaDelEjercicio = page.url().replace(WEB, '');
+    // La revisión de Nutrición preparada desde la ficha: la evidencia agrupada por día (pasada del 2026-10-09).
+    await ir(page, FICHA_A);
+    await quieto(page, v);
+    const prepararNutricion = await page.evaluate(() => [...document.querySelectorAll('.acciones-del-resumen a')].find((a) => a.textContent.includes('Preparar la revisión de Nutrición'))?.getAttribute('href') ?? null);
     const vistas = [
+      ...(prepararNutricion ? [['revision-nutricion', prepararNutricion]] : []),
       ['resumen', FICHA_A],
       ['linea', `${FICHA_A}&vista=linea`],
       ['analizar', `${FICHA_A}&vista=analizar&m=${encodeURIComponent(TRES)}`],
@@ -535,7 +559,9 @@ async function funcional() {
     await parte('R1', 'Recorrido 1 (preparar una consulta)', () => recorridoConsulta(page, v, cortes, carpeta));
     if (FICHA_E) await parte('CP-04', 'Escenario E (una sola área, sin revisión)', () => escenarioUnaArea(page, v, carpeta));
     await parte('R3', 'Recorrido 3 (nutrición)', () => recorridoNutricion(page, v, carpeta));
+    await parte('R3', 'Evidencia de la revisión de Nutrición (pasada del 2026-10-09)', () => evidenciaDeLaRevision(page, v, carpeta));
     await parte('R4', 'Recorrido 4 (comparar etapas)', () => recorridoEtapas(page, v, carpeta));
+    await parte('CP-18', 'Cobertura con huecos (pasada del 2026-10-09)', () => coberturaConHuecos(page, v, carpeta));
     await parte('CP-11', 'Clases del dato', () => clasesDelDato(page, v, descargas, carpeta));
     await parte('CP-25', 'Búsqueda en los catálogos', () => busquedaEnCatalogos(page, v));
     await parte('R6', 'Recorrido 6 (recuperación)', () => recorridoRecuperacion(page, v, carpeta));
@@ -726,16 +752,47 @@ async function recorridoNutricion(page, v, carpeta) {
   await cupo(v);
   await ir(page, `${FICHA_A}&vista=analizar&pregunta=registrado-vs-indicado&area=NUTRICION`);
   await quieto(page, v);
-  await clic(page, '.contraste .capa', 'Solo las que no registraron');
+  // Pasada del 2026-10-09: el modo de registro (cómo se cargaron las cantidades) y la diferencia comprobada con la opción
+  // van en columnas y filtros separados. Columnas: Día, Comida, Lo registrado, Modo de registro, Frente a lo indicado,
+  // Versión del plan, Detalle. Lo esperado sale de la API, con el mismo rasgo de calidad de cada filtro.
+  const filasDe = () => page.$$eval('.tabla-del-contraste tbody tr', (rs) => rs.map((r) => [...r.querySelectorAll('th, td')].map((c) => c.innerText.replace(/\s+/g, ' ').trim())));
+  const cuantasHay = async (calidad) => (await leerApi(v, `/advisees/${estado.aseId}/timeline?periodStart=${diaMenos(hoy, 89)}&periodEnd=${hoy}&domain=NUTRITION&type=MEAL_RECORDED&quality=${calidad}&limit=1`)).data.totalMatching;
+  await clic(page, '.contraste .capa', 'Distintas de lo indicado');
   await quieto(page, v);
-  const filas = await page.$$eval('.tabla-del-contraste tbody tr', (rs) => rs.map((r) => [...r.querySelectorAll('th, td')].map((c) => c.innerText.replace(/\s+/g, ' ').trim())));
-  const meta = await texto(page, '.contraste .metadatos');
-  // Lo esperado, de la API: las comidas con cantidades informadas, sin confirmar o diferentes del período.
-  const lista = (await leerApi(v, `/advisees/${estado.aseId}/timeline?periodStart=${diaMenos(hoy, 89)}&periodEnd=${hoy}&domain=NUTRITION&type=MEAL_RECORDED&quality=QUANTITIES_REPORTED,QUANTITIES_UNCONFIRMED,DIFFERENT_MEAL&limit=1`)).data;
-  comprobar('R3', 'El filtro deja solo las comidas que no registraron las porciones del plan, las mismas que cuenta la API', filas.length === Math.min(50, lista.totalMatching) && new RegExp(`${lista.totalMatching} comidas? que no registraron`).test(meta), `${filas.length} filas · ${meta}`);
-  const sinConfirmar = filas.find((f) => f[3] === 'sin confirmar');
-  const diferente = filas.find((f) => /comida diferente/.test(f[2]));
-  comprobar('CP-09', 'Sin confirmar sigue sin confirmar y una comida diferente queda fuera de lo indicado', !!sinConfirmar && !!diferente, `${sinConfirmar?.join(' | ')} · ${diferente?.join(' | ')}`);
+  const distintas = await filasDe();
+  const metaDistintas = await texto(page, '.contraste .metadatos');
+  const totalDistintas = await cuantasHay('QUANTITIES_DIFFER_FROM_PLAN');
+  comprobar(
+    'R3',
+    '«Distintas de lo indicado» deja solo las comidas con una diferencia comprobada (las mismas que cuenta la API), informadas a mano, y cada una dice en cuántos ingredientes',
+    totalDistintas > 0 && distintas.length === Math.min(50, totalDistintas) && distintas.every((f) => f[3] === 'Informó las cantidades a mano' && /^Distinta de lo indicado en \d+ de \d+ ingredientes?$/.test(f[4])) && new RegExp(`${totalDistintas} comidas? distintas de lo indicado`).test(metaDistintas),
+    `${distintas.length} filas de ${totalDistintas} · ${metaDistintas} · ${distintas[0]?.join(' | ')}`,
+  );
+  await captura(page, v, carpeta, 'r3-contraste-distintas-de-lo-indicado');
+  await clic(page, '.contraste .capa', 'Con cantidades informadas a mano');
+  await quieto(page, v);
+  const informadas = await filasDe();
+  const totalInformadas = await cuantasHay('QUANTITIES_REPORTED');
+  const igualAMano = informadas.find((f) => f[4] === 'Igual a lo indicado');
+  const distintaAMano = informadas.find((f) => /^Distinta de lo indicado/.test(f[4]));
+  comprobar(
+    'R3',
+    'Con cantidades informadas a mano: una igual a la opción dice «Igual a lo indicado» (el modo no es una diferencia) y una distinta, en cuántos ingredientes',
+    informadas.length === Math.min(50, totalInformadas) && informadas.every((f) => f[3] === 'Informó las cantidades a mano') && !!igualAMano && !!distintaAMano,
+    `${informadas.length} filas de ${totalInformadas} · igual: ${igualAMano?.join(' | ')} · distinta: ${distintaAMano?.join(' | ')}`,
+  );
+  await clic(page, '.contraste .capa', 'Sin confirmar o comidas diferentes');
+  await quieto(page, v);
+  const filas = await filasDe();
+  const totalSinComparar = await cuantasHay('QUANTITIES_UNCONFIRMED,DIFFERENT_MEAL');
+  const sinConfirmar = filas.find((f) => f[3] === 'Sin confirmar las cantidades' && f[4] === 'No se puede comprobar: sin confirmar');
+  const diferente = filas.find((f) => f[3] === 'Una comida diferente' && f[4] === 'No se compara: fuera de lo indicado');
+  comprobar(
+    'CP-09',
+    'Sin confirmar sigue sin confirmar y una comida diferente queda fuera de lo indicado: ninguna se presenta como distinta',
+    filas.length === Math.min(50, totalSinComparar) && !!sinConfirmar && !!diferente && !filas.some((f) => /^Distinta/.test(f[4])),
+    `${filas.length} filas de ${totalSinComparar} · ${sinConfirmar?.join(' | ')} · ${diferente?.join(' | ')}`,
+  );
   // El detalle de una comida sin confirmar: lo indicado al costado, sin cantidades consumidas inventadas.
   const fila = filas.indexOf(sinConfirmar);
   await page.evaluate((i) => document.querySelectorAll('.tabla-del-contraste tbody tr')[i].querySelector('button').setAttribute('data-recorrido', 'comida'), fila);
@@ -774,6 +831,130 @@ async function recorridoNutricion(page, v, carpeta) {
   comprobar('R3', '«Solicitar contexto» abre el flujo de formularios con su retorno; salir sin enviar no crea ninguna solicitud', /Volver a la ficha/.test(pedido) && antes === despues && escrituras(v, desde).length === 0, `${antes} → ${despues} solicitudes · ${escrituras(v, desde).join(' · ') || 'sin escrituras'}`);
 }
 
+/**
+ * Pasada del 2026-10-09: la evidencia de una revisión de Nutrición (decenas de comidas) agrupada por día. Nada viene
+ * marcado; marcar un día marca cada una de sus comidas; se ve y se cambia lo marcado; nada se escribe sin registrar.
+ */
+async function evidenciaDeLaRevision(page, v, carpeta) {
+  const desde = v.urls.length;
+  await cupo(v);
+  await ir(page, FICHA_A);
+  await quieto(page, v);
+  await clic(page, '.acciones-del-resumen a', 'Preparar la revisión de Nutrición');
+  await page.waitForFunction(() => location.pathname === '/pro/advisees/nutrition', { timeout: 20_000 });
+  await quieto(page, v);
+  const leer = () =>
+    page.evaluate(() => {
+      const f = document.querySelector('#revision-evidencia');
+      if (!f) return null;
+      const casilla = (d) => d.querySelector('.evidencia__grupo-casilla input');
+      return {
+        resumen: f.querySelector('.evidencia__resumen')?.textContent ?? '',
+        dias: [...f.querySelectorAll('.evidencia__dia')].map((d) => ({ texto: d.querySelector('.evidencia__grupo-casilla')?.textContent.replace(/\s+/g, ' ').trim() ?? '', marcado: casilla(d)?.checked ?? false, mixto: casilla(d)?.indeterminate ?? false })),
+        alto: Math.round(f.getBoundingClientRect().height),
+        altoDeUnaCasilla: Math.round(f.querySelector('.evidencia__seccion .acto')?.getBoundingClientRect().height ?? 0),
+        otras: f.querySelectorAll('.evidencia__seccion:first-of-type > .acto').length,
+      };
+    });
+  const marcadasEn = (resumen) => Number(/^Marcaste (\d+) de/.exec(resumen)?.[1] ?? 0);
+  const inicial = await leer();
+  // Cuántas comidas tiene cada día, del rótulo de su casilla («marcar las 4 comidas»).
+  const porDia = (inicial?.dias ?? []).map((d) => Number(/las (\d+) comidas/.exec(d.texto)?.[1] ?? (/marcar la comida/.test(d.texto) ? 1 : 0)));
+  const comidas = porDia.reduce((s, n) => s + n, 0);
+  comprobar(
+    'R3',
+    'La evidencia de la revisión de Nutrición se abre sin nada marcado y agrupada por día: una casilla por día, no una por comida',
+    inicial !== null && inicial.resumen === 'Todavía no marcaste nada.' && inicial.dias.every((d) => !d.marcado && !d.mixto) && inicial.dias.length > 1 && inicial.dias.length < comidas,
+    `${inicial?.dias.length} días para ${comidas} comidas · ${inicial?.resumen}`,
+  );
+  // El alto de la lista, contra una casilla por registro (como antes): se mide, no se estima a ojo.
+  const antes = (comidas + (inicial?.otras ?? 0)) * ((inicial?.altoDeUnaCasilla ?? 0) + 8);
+  informar('R3', 'Alto de la evidencia de Nutrición: ahora y con una casilla por registro', `${inicial?.alto} px · ${antes} px (${comidas} comidas y ${inicial?.otras} de planificación y objetivo, a ${inicial?.altoDeUnaCasilla} px cada una)`);
+  comprobar('R3', 'La evidencia ocupa menos de la mitad que una casilla por registro', (inicial?.alto ?? Infinity) < antes / 2, `${inicial?.alto} de ${antes} px`);
+  // Marcar el primer día marca cada una de sus comidas; el resumen dice lo marcado (no «examinado»).
+  await page.evaluate(() => document.querySelector('#revision-evidencia .evidencia__dia .evidencia__grupo-casilla input')?.click());
+  await pausa(150);
+  const conUnDia = await leer();
+  comprobar(
+    'R3',
+    'Marcar un día marca, una por una, sus comidas, y el resumen lo dice como marcado',
+    marcadasEn(conUnDia.resumen) === porDia[0] && new RegExp(`${porDia[0]} comidas? de 1 día`).test(conUnDia.resumen) && conUnDia.dias[0].marcado && !/examin/i.test(conUnDia.resumen),
+    conUnDia.resumen,
+  );
+  // Se cambia uno por uno: desplegar el día y desmarcar una comida deja la casilla del día en estado mixto.
+  await page.evaluate(() => document.querySelector('#revision-evidencia .evidencia__dia .evidencia__ver')?.click());
+  await pausa(150);
+  await page.evaluate(() => document.querySelector('#revision-evidencia .evidencia__dia .evidencia__registros label input')?.click());
+  await pausa(150);
+  const sinUna = await leer();
+  comprobar('R3', 'Desmarcar una comida del día la saca de lo marcado y deja el día en estado mixto', marcadasEn(sinUna.resumen) === porDia[0] - 1 && (porDia[0] === 1 || sinUna.dias[0].mixto), sinUna.resumen);
+  // «Lo que marcaste» lista lo marcado y «Quitar» lo saca.
+  await page.evaluate(() => document.querySelector('#revision-evidencia details.evidencia__marcadas')?.setAttribute('open', ''));
+  await pausa(100);
+  const listadas = await page.$$eval('#revision-evidencia .evidencia__lista li', (ls) => ls.length);
+  await captura(page, v, carpeta, 'r3-evidencia-de-la-revision-agrupada');
+  await page.evaluate(() => document.querySelector('#revision-evidencia .evidencia__lista button')?.click());
+  await pausa(150);
+  const quitada = await leer();
+  comprobar('R3', '«Lo que marcaste» lista lo marcado y «Quitar» lo saca', listadas === porDia[0] - 1 && marcadasEn(quitada.resumen) === Math.max(0, porDia[0] - 2), `${listadas} listadas · ${quitada.resumen}`);
+  await clic(page, 'form button', 'Cancelar');
+  await quieto(page, v);
+  comprobar('R3', 'Abrir, marcar y cancelar la revisión no escribe nada', escrituras(v, desde).length === 0, escrituras(v, desde).join(' · ') || 'sin escrituras');
+}
+
+/**
+ * Pasada del 2026-10-09 (revisión de 643c603): la cobertura de un resumen de nutrición con huecos, en la pantalla. Un
+ * rango con un hueco de días sin registros dice los días del rango y cuántos no tienen registros; nunca «N de N días».
+ * Lo esperado se calcula a mano con los puntos diarios de la API, sin el dominio.
+ */
+async function coberturaConHuecos(page, v, carpeta) {
+  const desdeLeido = diaMenos(hoy, 99);
+  const puntos = (await leerApi(v, `/advisees/${estado.aseId}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?metric=ENERGY&grain=DAY&periodStart=${desdeLeido}&periodEnd=${hoy}`)).data.result;
+  const diaria = puntos.recorded.points;
+  const huecos = puntos.recorded.gaps;
+  const esperado = (r) => {
+    const delRango = diaria.filter((p) => p.date >= r.desde && p.date <= r.hasta);
+    const conValor = delRango.filter((p) => p.value !== null && !p.partialBucket && p.date !== hoy);
+    const duracion = Math.round((Date.parse(`${r.hasta}T12:00:00Z`) - Date.parse(`${r.desde}T12:00:00Z`)) / 86_400_000) + 1;
+    const hoyAdentro = r.desde <= hoy && hoy <= r.hasta;
+    const terminados = delRango.filter((p) => p.date !== hoy && !p.partialBucket);
+    const sinRegistros = duracion - new Set(terminados.map((p) => p.date)).size - (hoyAdentro ? 1 : 0);
+    // Los días sin registros del rango, según los huecos que declara la API (sin hoy): tienen que ser los mismos.
+    const deLosHuecos = huecos.flatMap((h) => {
+      const dias = [];
+      for (let d = h.from; d <= h.to; d = diaMenos(d, -1)) if (d >= r.desde && d <= r.hasta && d !== hoy) dias.push(d);
+      return dias;
+    }).length;
+    return { duracion, n: conValor.length, sinRegistros, deLosHuecos, media: conValor.reduce((s, p) => s + p.value, 0) / Math.max(1, conValor.length) };
+  };
+  // A: 14 días alrededor del hueco de cuatro días de la base (D-62 a D-59); B: los últimos 14 días terminados.
+  const A = { desde: diaMenos(hoy, 65), hasta: diaMenos(hoy, 52) };
+  const B = { desde: diaMenos(hoy, 14), hasta: diaMenos(hoy, 1) };
+  const [eA, eB] = [esperado(A), esperado(B)];
+  await cupo(v);
+  await ir(page, `${FICHA_A}&vista=analizar&m=nutricion.energia&desde=${desdeLeido}&hasta=${hoy}&cmp=${A.desde}_${A.hasta}_${B.desde}_${B.hasta}`);
+  await quieto(page, v);
+  const fila = await page.evaluate(() => {
+    const t = [...document.querySelectorAll('table')].find((x) => x.querySelector('caption')?.textContent.includes('Comparación de los dos períodos'));
+    const f = [...(t?.querySelectorAll('tbody tr') ?? [])].find((r) => r.querySelector('th')?.textContent.startsWith('Energía'));
+    return f ? [...f.querySelectorAll('td')].map((c) => c.innerText.replace(/\s+/g, ' ').trim()) : [];
+  });
+  const kcal = (t) => Number((/^([\d.]+(?:,\d+)?) kcal/.exec(t ?? '')?.[1] ?? 'NaN').replace(/\./g, '').replace(',', '.'));
+  comprobar(
+    'CP-18',
+    'Con huecos, «Comparar dos períodos» dice los días del rango, cuántos tienen valor y cuántos no tienen registros (los mismos huecos que declara la API), con la media de los valores disponibles',
+    eA.sinRegistros > 0 &&
+      eA.sinRegistros === eA.deLosHuecos &&
+      (fila[1] ?? '').includes(`${eA.duracion} días: ${eA.n} con valor`) &&
+      (fila[1] ?? '').includes(`${eA.sinRegistros} sin registros`) &&
+      Math.abs(kcal(fila[1]) - eA.media) <= 1 &&
+      (fila[2] ?? '').includes(`${eB.duracion} días: ${eB.n} con valor`) &&
+      !/\b(\d+) de \1 días/.test(fila.join(' ')),
+    `A esperado: ${eA.duracion} días, ${eA.n} con valor, ${eA.sinRegistros} sin registros (huecos de la API: ${eA.deLosHuecos}), media ${eA.media.toFixed(1)} · tabla: ${fila.join(' | ').slice(0, 300)}`,
+  );
+  await captura(page, v, carpeta, 'cp18-comparar-dos-periodos-con-huecos');
+}
+
 /** Recorrido 4: etapas A/B → valores a mano → agrupar → acercar → referencia conservada → guardar y reabrir (CP-14, CP-17, CP-18, CP-26). */
 async function recorridoEtapas(page, v, carpeta) {
   const e = estado;
@@ -792,12 +973,18 @@ async function recorridoEtapas(page, v, carpeta) {
     vA && vB && vA.to === vB.from && tarjetas[0]?.includes(`Desde ${diaDe(vA.activatedAt)}`) && tarjetas[0]?.includes(diaDe(`${diaMenos(vA.to, 1)}T15:00:00Z`)) && /Sigue vigente/.test(tarjetas[1] ?? ''),
     tarjetas.map((t) => t.slice(0, 140)).join(' || '),
   );
-  // CP-18: la tabla con el mismo criterio; los valores calculados aparte con los puntos diarios de la API.
+  // CP-18: la tabla con el mismo criterio; los valores y la cobertura en días de cada etapa, calculados aparte con los
+  // puntos diarios de la API. Pasada del 2026-10-09: «48 días: 44 con valor · 4 sin registros», nunca «44 de 44 días».
   const puntos = vig.recorded.points;
   const media = (d1, d2) => {
-    const xs = puntos.filter((pt) => pt.date >= d1 && pt.date <= d2 && pt.value !== null && !pt.partialBucket).map((pt) => pt.value);
-    return { n: xs.length, media: xs.reduce((s, x) => s + x, 0) / xs.length };
+    const delRango = puntos.filter((pt) => pt.date >= d1 && pt.date <= d2);
+    const xs = delRango.filter((pt) => pt.value !== null && !pt.partialBucket && pt.date !== hoy).map((pt) => pt.value);
+    const dias = Math.round((Date.parse(`${d2}T12:00:00Z`) - Date.parse(`${d1}T12:00:00Z`)) / 86_400_000) + 1;
+    const hoyAdentro = d1 <= hoy && hoy <= d2;
+    const terminados = delRango.filter((pt) => pt.date !== hoy && !pt.partialBucket);
+    return { n: xs.length, media: xs.reduce((s, x) => s + x, 0) / xs.length, dias, hoyAdentro, sinRegistros: dias - new Set(terminados.map((pt) => pt.date)).size - (hoyAdentro ? 1 : 0) };
   };
+  const coberturaAMano = (x) => [`${x.dias} días: ${x.n} con valor`, ...(x.sinRegistros > 0 ? [`${x.sinRegistros} sin registros`] : []), ...(x.hoyAdentro ? ['hoy, en curso: fuera de la media'] : [])];
   const esperadoA = media(vA.from, diaMenos(vA.to, 1));
   const esperadoB = media(vB.from, hoy);
   const fila = async () => page.evaluate(() => {
@@ -809,10 +996,44 @@ async function recorridoEtapas(page, v, carpeta) {
   const diferencia = Number((/([−-]?[\d.]+) kcal/.exec(energia[3] ?? '')?.[1] ?? 'NaN').replace('−', '-').replace(/\./g, ''));
   comprobar(
     'CP-18',
-    'Energía por etapa: la media de los días con valor, calculada a mano con los puntos de la API, coincide con la tabla (y la diferencia también)',
-    Math.round(esperadoA.media) === numeroDe(energia[1]) && Math.round(esperadoB.media) === numeroDe(energia[2]) && Math.abs(diferencia - (esperadoB.media - esperadoA.media)) <= 1 && energia[1].includes(`${esperadoA.n} de`) && energia[2].includes(`${esperadoB.n} de`),
-    `tabla: ${energia.join(' | ').slice(0, 220)} · a mano: A ${esperadoA.media.toFixed(1)} (n ${esperadoA.n}), B ${esperadoB.media.toFixed(1)} (n ${esperadoB.n})`,
+    'Energía por etapa: la media de los días con valor y la cobertura en días de la etapa, calculadas a mano con los puntos de la API, coinciden con la tabla (y la diferencia también)',
+    Math.round(esperadoA.media) === numeroDe(energia[1]) &&
+      Math.round(esperadoB.media) === numeroDe(energia[2]) &&
+      Math.abs(diferencia - (esperadoB.media - esperadoA.media)) <= 1 &&
+      coberturaAMano(esperadoA).every((x) => energia[1].includes(x)) &&
+      coberturaAMano(esperadoB).every((x) => energia[2].includes(x)) &&
+      !/\b(\d+) de \1 días/.test(energia.join(' ')),
+    `tabla: ${energia.join(' | ').slice(0, 300)} · a mano: A ${esperadoA.media.toFixed(1)} (${coberturaAMano(esperadoA).join(' · ')}), B ${esperadoB.media.toFixed(1)} (${coberturaAMano(esperadoB).join(' · ')})`,
   );
+  comprobar('CP-18', 'El hueco de cuatro días de la etapa A queda en la cobertura como días sin registros: no sale del denominador', esperadoA.sinRegistros >= 4 && energia[1].includes(`${esperadoA.sinRegistros} sin registros`), energia[1]);
+  // Analizar según la pregunta (pasada del 2026-10-09): con la pregunta de etapas, la comparación a mano es secundaria y
+  // plegada debajo de la tabla, el resumen en texto se pliega, no se repite la lista de etapas, cada límite se dice una vez
+  // y la letra no se achica.
+  const vista = await page.evaluate(() => {
+    const etapas = document.querySelector('.comparacion-de-etapas');
+    const aMano = document.querySelector('details.comparar-a-mano');
+    const visible = document.querySelector('.analizar')?.innerText ?? '';
+    const veces = (re) => (visible.match(re) ?? []).length;
+    return {
+      aMano: aMano ? { abierta: aMano.open, justoDebajo: etapas?.nextElementSibling === aMano, rotulo: aMano.querySelector('summary')?.textContent ?? '' } : null,
+      seccionAlFinal: [...document.querySelectorAll('.analizar h3')].some((h) => h.textContent === 'Comparar dos períodos'),
+      resumenPlegado: !!document.querySelector('details.resumen-en-texto--plegado') && !document.querySelector('section.resumen-en-texto'),
+      listaDeEtapas: !!document.querySelector('details.etapas-del-grafico'),
+      causa: veces(/no indica causa/g),
+      noSeRestan: veces(/No se restan totales/g),
+      letraDeLaCobertura: parseFloat(getComputedStyle(document.querySelector('.tabla-de-etapas .celda__detalle')).fontSize),
+      raiz: parseFloat(getComputedStyle(document.documentElement).fontSize),
+    };
+  });
+  comprobar('R4', 'Con la pregunta de etapas, «Comparar otros dos períodos» es una opción plegada, justo debajo de la tabla de etapas, y no una sección más al final', !!vista.aMano && !vista.aMano.abierta && vista.aMano.justoDebajo && /Comparar otros dos períodos/.test(vista.aMano.rotulo) && !vista.seccionAlFinal, JSON.stringify(vista.aMano));
+  comprobar('R4', 'Sin repetir: el resumen en texto plegado, sin la lista de etapas que repetía las tarjetas, y cada límite de interpretación a la vista una sola vez', vista.resumenPlegado && !vista.listaDeEtapas && vista.causa === 1 && vista.noSeRestan === 1, `causa ×${vista.causa} · no se restan ×${vista.noSeRestan} · resumen plegado: ${vista.resumenPlegado} · lista de etapas: ${vista.listaDeEtapas}`);
+  comprobar('R4', 'La letra no se achicó: la cobertura de la tabla de etapas tiene el tamaño de un dato secundario (0,95 rem)', vista.letraDeLaCobertura >= 0.95 * vista.raiz - 0.05, `${vista.letraDeLaCobertura} px · raíz ${vista.raiz} px`);
+  // La comparación a mano sigue accesible: se abre, y elegir fechas arma su tabla con la misma cobertura.
+  await page.evaluate(() => document.querySelector('details.comparar-a-mano summary')?.click());
+  await pausa(150);
+  const camposAMano = await page.$$eval('details.comparar-a-mano input[type="date"]', (cs) => cs.length);
+  comprobar('R4', '«Comparar otros dos períodos» se abre con un toque y tiene sus cuatro fechas', camposAMano === 4, `${camposAMano} campos de fecha`);
+  await page.evaluate(() => document.querySelector('details.comparar-a-mano summary')?.click());
   const registros = await page.evaluate(() => [...document.querySelectorAll('.tabla-de-etapas tbody tr')].find((r) => r.querySelector('th')?.textContent.startsWith('Registros'))?.innerText.replace(/\s+/g, ' ') ?? '');
   comprobar('CP-18', 'Dos totales de duraciones distintas no se restan, y se dice por qué', /duraciones distintas no se restan/.test(registros), registros.slice(0, 200));
   const graficosEtapas = await graficos(page);
@@ -1086,14 +1307,44 @@ async function recorridoEntrenamiento(page, v, cortes, carpeta) {
   comprobar('CP-19', '«Preparar la revisión» abre el formulario con el período desde la última revisión, dicho como preparado por BE, y no escribe nada', /Preparado por BE para esta revisión/.test(preparado) && preparado.includes(diaDe(cortes.TRAINING.recordedAt)) && escrituras(v, desde).length === 0, escrituras(v, desde).join(' · ') || 'sin escrituras');
   // Registrar una revisión sintética: una sola escritura, y el resumen se actualiza.
   const listaAntes = (await textos(page, '.revisiones li, .revision')).length;
-  await page.evaluate(() => document.querySelector('#trn-revision-evidencia input[type="checkbox"]')?.click());
+  // Pasada del 2026-10-09: nada viene marcado; se marca la versión del plan y un día entero de sesiones, y viaja una
+  // referencia por registro marcado (el contrato no cambia).
+  const resumenAlAbrir = await texto(page, '#trn-revision-evidencia .evidencia__resumen');
+  const marcadasAlAbrir = await page.$$eval('#trn-revision-evidencia input[type="checkbox"]', (cs) => cs.filter((c) => c.checked || c.indeterminate).length);
+  comprobar('CP-19', 'La evidencia de la revisión de Entrenamiento se abre sin nada marcado', resumenAlAbrir === 'Todavía no marcaste nada.' && marcadasAlAbrir === 0, `${resumenAlAbrir} · ${marcadasAlAbrir} casillas marcadas`);
+  await page.evaluate(() => {
+    document.querySelector('#trn-revision-evidencia .evidencia__seccion > .acto input')?.click();
+    document.querySelector('#trn-revision-evidencia .evidencia__dia .evidencia__grupo-casilla input')?.click();
+  });
+  await pausa(150);
+  const resumenMarcado = await texto(page, '#trn-revision-evidencia .evidencia__resumen');
+  const marcadas = Number(/^Marcaste (\d+) de/.exec(resumenMarcado)?.[1] ?? 0);
   await page.type('#trn-revision-interpretacion', 'Interpretación sintética del recorrido 2.');
   await clic(page, '#trn-revision-resultado label', 'Mantener');
   await page.type('#trn-revision-fundamento', 'Fundamento sintético.');
   await page.type('#trn-revision-accion', 'Seguir con el plan vigente.');
   const desdeEnvio = v.urls.length;
+  const cuerpos = [];
+  const oyente = (req) => {
+    if (req.method() === 'POST' && /\/training\/reviews$/.test(new URL(req.url()).pathname)) cuerpos.push(req.postData() ?? '');
+  };
+  page.on('request', oyente);
   await clic(page, 'form button[type="submit"]', 'Registrar revisión');
   await quieto(page, v);
+  page.off('request', oyente);
+  const referencias = (() => {
+    try {
+      return JSON.parse(cuerpos[0] ?? '{}').evidenceReferences ?? [];
+    } catch {
+      return [];
+    }
+  })();
+  comprobar(
+    'CP-20',
+    'La revisión envía una referencia por registro marcado: el día marcado como grupo viaja como sus sesiones, una por una, con la versión del plan',
+    marcadas >= 2 && referencias.length === marcadas && new Set(referencias.map((r) => r.id)).size === referencias.length && referencias.some((r) => r.type === 'PLAN_VERSION') && referencias.some((r) => r.type === 'EXECUTION'),
+    `${resumenMarcado} · ${referencias.length} referencias: ${referencias.map((r) => r.type).join(', ')}`,
+  );
   const posts = escrituras(v, desdeEnvio).filter((u) => /\/training\/reviews$/.test(new URL(u.split(' ')[1]).pathname));
   const tras = await texto(page, 'main');
   const aviso = await texto(page, '[role="status"]');

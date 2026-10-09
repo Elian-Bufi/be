@@ -472,7 +472,9 @@ async function funcional() {
     comprobar('PRO-01', 'La ficha tiene las pestañas Resumen, Línea de tiempo y Analizar', (await textos(page, 'nav[aria-label="Vistas del seguimiento"] a')).join(',') === 'Resumen,Línea de tiempo,Analizar');
     const ind = await textos(page, '.indicador');
     comprobar('PRO-02', 'Cuatro indicadores con unidad, fecha y cobertura', ind.length === 4 && /kcal/.test(ind[0]) && /registros/.test(ind[1]) && /kg/.test(ind[2]) && /Última toma: \d/.test(ind[2]) && /series/.test(ind[3]), ind.join(' | '));
-    comprobar('PRO-11', 'La media de energía no cuenta el día en curso y dice sus subtotales', /sin contar hoy/.test(ind[0]) && /subtotal/.test(ind[0]), ind[0]);
+    // WP-DASHBOARD-COMPRENSION (pasada del 2026-10-09): la cobertura de los indicadores es la misma de las tablas
+    // (`partesDeLaCobertura`): «hoy, en curso: fuera de la media» y «de ellos, N son subtotales (falta algún dato)».
+    comprobar('PRO-11', 'La media de energía no cuenta el día en curso y dice sus subtotales', /hoy, en curso: fuera de la media/.test(ind[0]) && /subtotal/.test(ind[0]), ind[0]);
     comprobar('PRO-15', 'El peso compara solo dentro de su tramo comparable', /tomas comparables|no hay con qué comparar/.test(ind[2]), ind[2]);
     const cob = await texto(page, '.cobertura');
     comprobar('PRO-12', 'La cobertura por área dice su denominador y no da porcentajes', /\d+ días de \d+ con algún registro/.test(cob) && !/%/.test(cob), cob.slice(0, 220));
@@ -738,20 +740,26 @@ async function funcional() {
     await quieto(page, v);
     const porSemana = await filaDeComparacion(page, 'Energía');
     const lecturaSemanal = await texto(page, '.panel-de-lectura');
-    // Lo esperado, a mano: la media de los días con valor (sin el día en curso) de cada rango, de la serie diaria de la API.
+    // Lo esperado, a mano: la media de los días con valor (sin el día en curso) de cada rango, de la serie diaria de la API,
+    // y su cobertura en días del rango. WP-DASHBOARD-COMPRENSION (pasada del 2026-10-09): el denominador son los días del
+    // rango, no los días con registros («n = 8 de 8» escondía los días sin registros).
     const diaria = (await leerApi(v, `/advisees/${estado.aseId}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?metric=ENERGY&grain=DAY&periodStart=${diaMenos(hoy, 89)}&periodEnd=${hoy}`)).data.result.recorded.points;
     const esperado = (r) => {
       const delRango = diaria.filter((p) => p.date >= r.desde && p.date <= r.hasta);
       const dias = delRango.filter((p) => p.value !== null && !p.partialBucket);
       const media = dias.reduce((t, p) => t + p.value, 0) / dias.length;
-      return `${dominio.nutrienteParaMostrar({ value: String(media) }, dominio.NUTRIENTE_DE_LA_METRICA.ENERGY)} kcal · n = ${dominio.numero(dias.length)} de ${dominio.numero(delRango.length)}`;
+      const duracion = Math.round((Date.parse(`${r.hasta}T12:00:00Z`) - Date.parse(`${r.desde}T12:00:00Z`)) / 86_400_000) + 1;
+      const hoyAdentro = r.desde <= hoy && hoy <= r.hasta;
+      const terminados = delRango.filter((p) => p.date !== hoy && !p.partialBucket);
+      const sinRegistros = duracion - new Set(terminados.map((p) => p.date)).size - (hoyAdentro ? 1 : 0);
+      return [`${dominio.nutrienteParaMostrar({ value: String(media) }, dominio.NUTRIENTE_DE_LA_METRICA.ENERGY)} kcal`, `${duracion} días: ${dias.length} con valor`, ...(sinRegistros > 0 ? [`${sinRegistros} sin registros`] : [])];
     };
     const [eA, eB] = [esperado(A), esperado(B)];
     comprobar(
       'PRO-18',
-      'Por semana, la comparación de dos rangos que cortan semanas es la misma que por día y coincide con la media de los días calculada a mano',
-      porDia.length > 0 && porDia === porSemana && porDia.includes(eA) && porDia.includes(eB) && /semana del/.test(lecturaSemanal),
-      `esperado A «${eA}», B «${eB}» · por día «${porDia.slice(0, 150)}» · por semana igual: ${porDia === porSemana ? 'sí' : `no («${porSemana.slice(0, 150)}»)`}`,
+      'Por semana, la comparación de dos rangos que cortan semanas es la misma que por día y coincide con la media de los días calculada a mano, con la cobertura en días del rango',
+      porDia.length > 0 && porDia === porSemana && [...eA, ...eB].every((x) => porDia.includes(x)) && /semana del/.test(lecturaSemanal),
+      `esperado A «${eA.join(' · ')}», B «${eB.join(' · ')}» · por día «${porDia.slice(0, 220)}» · por semana igual: ${porDia === porSemana ? 'sí' : `no («${porSemana.slice(0, 150)}»)`}`,
     );
     await comprobarGraficos(page, 'PRO-08', 'Por semana: el gráfico semanal está dibujado y a la vista', { figuras: 1, colores: [[1]] });
     await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent('nutricion.proteinas')}&modo=R`);
@@ -786,7 +794,8 @@ async function funcional() {
     comprobar(
       'PRO-18',
       'La comparación de dos etapas dice criterio, cobertura, duración y diferencia, sin causas',
-      /B − A/.test(comparacion) && /\d+ de \d+ días con valor/.test(comparacion) && /Duración/.test(comparacion) && !/mejor|peor|gracias a|provoc|causó/i.test(comparacion),
+      // La cobertura en días de la etapa (pasada del 2026-10-09): «48 días: 44 con valor», nunca «44 de 44 días».
+      /B − A/.test(comparacion) && /\d+ días: \d+ con valor/.test(comparacion) && !/\b(\d+) de \1 días/.test(comparacion) && /Duración/.test(comparacion) && !/mejor|peor|gracias a|provoc|causó/i.test(comparacion),
       comparacion.slice(0, 260),
     );
     // La exportación es de lo que se ve en el lienzo: se vuelve a las tres métricas.

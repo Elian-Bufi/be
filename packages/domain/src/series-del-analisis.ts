@@ -254,6 +254,22 @@ export function superposicionPermitida(series: readonly { readonly definicion: D
 
 // ─── Comparación de dos períodos ────────────────────────────────────────────────────────────────
 
+/**
+ * Los días de un rango en una métrica por día (nutrición), cada uno en una sola categoría y sin completar nada con cero.
+ * Junto con los días con valor (`n` del resumen; sus subtotales, en `parciales`) suman los días del rango. Hoy va aparte:
+ * no es un día sin registros ni un día terminado.
+ */
+export interface DiasDelResumen {
+  /** Días terminados sin ningún registro: un hueco, nunca un cero. */
+  readonly sinRegistros: number;
+  /** Días terminados con registros, pero sin ningún valor conocido porque a sus registros les faltan las cantidades. */
+  readonly sinCantidades: number;
+  /** Días terminados con registros con cantidades, pero sin dato de este nutriente en lo registrado. */
+  readonly sinDatoDelNutriente: number;
+  /** Hoy cae en el rango y todavía no terminó, con o sin registros: la media lo deja fuera; el total, no. */
+  readonly hoyEnCurso: boolean;
+}
+
 export interface ResumenDeUnPeriodo {
   readonly desde: string;
   readonly hasta: string;
@@ -263,8 +279,15 @@ export interface ResumenDeUnPeriodo {
   readonly valor: number | null;
   /** Observaciones con valor que sostienen el resumen (días, sesiones o tomas). */
   readonly n: number;
-  /** Observaciones del período (con o sin valor): la cobertura es `n` de `observaciones`. */
+  /**
+   * Observaciones del período, con o sin valor: días con registros, sesiones o tomas. **No es un denominador de días:**
+   * un día sin registros no es una observación, es un hueco. Los días del rango están en `duracionDias` y `dias`.
+   */
   readonly observaciones: number;
+  /** Observaciones del período sin un valor conocido de la métrica (una sesión sin esa serie, un día sin cantidades). */
+  readonly sinValor: number;
+  /** En nutrición, los días del rango por categoría; `null` en sesiones y tomas, que no se cuentan en días. */
+  readonly dias: DiasDelResumen | null;
   /** Cuántas de las observaciones con valor son subtotales (nutrición). */
   readonly parciales: number;
   /**
@@ -278,12 +301,35 @@ export interface ResumenDeUnPeriodo {
   readonly tramo: string | null;
 }
 
+/** Los motivos de un día sin valor que son falta de cantidades (y no un nutriente sin dato en lo registrado). */
+const MOTIVOS_SIN_CANTIDADES: ReadonlySet<string> = new Set(['SIN_CANTIDADES', 'COMIDA_DIFERENTE_SIN_CANTIDADES']);
+
+/**
+ * Los días del rango por categoría, desde los puntos del rango: un día sin punto no tiene registros (es un hueco); un
+ * punto sin valor tiene registros sin cantidades o sin el nutriente. Hoy lo dice la serie (un punto incompleto) o quien
+ * la lee, aunque todavía no tenga registros: así no se cuenta como un día sin registros.
+ */
+function diasDelResumen(delRango: readonly PuntoAnalitico[], desde: string, hasta: string, hoy: string | undefined): DiasDelResumen {
+  const hoyEnCurso = (hoy !== undefined && desde <= hoy && hoy <= hasta) || delRango.some((p) => p.partialBucket);
+  const terminados = delRango.filter((p) => !p.partialBucket && p.date !== hoy);
+  const sinValor = terminados.filter((p) => p.value === null);
+  const sinCantidades = sinValor.filter((p) => p.missing.every((m) => MOTIVOS_SIN_CANTIDADES.has(m.reason))).length;
+  return {
+    sinRegistros: diasEntreFechas(desde, hasta) + 1 - new Set(terminados.map((p) => p.date)).size - (hoyEnCurso ? 1 : 0),
+    sinCantidades,
+    sinDatoDelNutriente: sinValor.length - sinCantidades,
+    hoyEnCurso,
+  };
+}
+
 /**
  * El resumen de la serie en un rango, con la regla de la métrica (la misma para los dos períodos). Recibe las
  * observaciones (el día, la sesión o la toma) y usa las que caen en el rango exacto: un rango que empieza un miércoles
- * toma desde el miércoles, aunque el gráfico esté agrupado por semana.
+ * toma desde el miércoles, aunque el gráfico esté agrupado por semana. La media es la de los valores disponibles: un
+ * día sin registros o sin cantidades no entra, y tampoco se cuenta como cero. `hoy` (la fecha civil de hoy) separa el
+ * día en curso de los días sin registros cuando todavía no tiene ninguno.
  */
-export function resumirPeriodo(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string): ResumenDeUnPeriodo {
+export function resumirPeriodo(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string, hoy?: string): ResumenDeUnPeriodo {
   exigirObservaciones(serie, definicion, 'resumirPeriodo');
   const delRango = serie.points.filter((p) => p.date >= desde && p.date <= hasta);
   const conValor = delRango.filter((p) => p.value !== null);
@@ -295,6 +341,9 @@ export function resumirPeriodo(serie: SerieAnalitica, definicion: DefinicionDeMe
     duracionDias: diasEntreFechas(desde, hasta) + 1,
     regla: definicion.resumenDePeriodo,
     observaciones: delRango.length,
+    sinValor: delRango.length - conValor.length,
+    // Solo nutrición se resume por días (`exigirObservaciones` ya pidió su grano); sesiones y tomas no tienen días.
+    dias: serie.grain === 'DAY' ? diasDelResumen(delRango, desde, hasta, hoy) : null,
     incompletos: conValor.length - completos.length,
   };
   const vacio = { valor: null, n: 0, parciales: 0, primero: null, ultimo: null, tramo: null };
@@ -329,8 +378,8 @@ export interface ComparacionDePeriodos {
 }
 
 /** Dos períodos explícitos con el mismo criterio de resumen. No produce conclusiones causales. */
-export function compararPeriodos(serie: SerieAnalitica, definicion: DefinicionDeMetrica, a: { desde: string; hasta: string }, b: { desde: string; hasta: string }): ComparacionDePeriodos {
-  return compararResumenes(resumirPeriodo(serie, definicion, a.desde, a.hasta), resumirPeriodo(serie, definicion, b.desde, b.hasta), definicion);
+export function compararPeriodos(serie: SerieAnalitica, definicion: DefinicionDeMetrica, a: { desde: string; hasta: string }, b: { desde: string; hasta: string }, hoy?: string): ComparacionDePeriodos {
+  return compararResumenes(resumirPeriodo(serie, definicion, a.desde, a.hasta, hoy), resumirPeriodo(serie, definicion, b.desde, b.hasta, hoy), definicion);
 }
 
 /**
@@ -341,10 +390,48 @@ export function compararResumenes(ra: ResumenDeUnPeriodo, rb: ResumenDeUnPeriodo
   if (ra.valor === null || rb.valor === null) return { a: ra, b: rb, diferencia: null, motivoSinDiferencia: 'SIN_VALOR_EN_ALGUNO' };
   // Dos totales de períodos de distinta duración no se restan como si fueran equivalentes (encargo §13).
   if (definicion.resumenDePeriodo === 'TOTAL' && ra.duracionDias !== rb.duracionDias) return { a: ra, b: rb, diferencia: null, motivoSinDiferencia: 'DURACIONES_DISTINTAS' };
-  // Un total que incluye el día en curso (o una semana cortada) todavía no es el total de su duración.
-  if (definicion.resumenDePeriodo === 'TOTAL' && (ra.incompletos > 0 || rb.incompletos > 0)) return { a: ra, b: rb, diferencia: null, motivoSinDiferencia: 'PERIODO_INCOMPLETO' };
+  // Un total que incluye el día en curso (o una semana cortada) todavía no es el total de su duración, aunque hoy no
+  // tenga registros todavía.
+  const enCurso = (r: ResumenDeUnPeriodo) => r.incompletos > 0 || r.dias?.hoyEnCurso === true;
+  if (definicion.resumenDePeriodo === 'TOTAL' && (enCurso(ra) || enCurso(rb))) return { a: ra, b: rb, diferencia: null, motivoSinDiferencia: 'PERIODO_INCOMPLETO' };
   if (definicion.resumenDePeriodo === 'PRIMERO_Y_ULTIMO_COMPARABLES' && ra.tramo !== rb.tramo) return { a: ra, b: rb, diferencia: null, motivoSinDiferencia: 'TRAMOS_NO_COMPARABLES' };
   return { a: ra, b: rb, diferencia: rb.valor - ra.valor, motivoSinDiferencia: null };
+}
+
+const contar = (n: number, uno: string, varios: string): string => `${numero(n)} ${n === 1 ? uno : varios}`;
+
+/**
+ * La cobertura de un resumen en partes cortas: la misma en la tabla de etapas, en «Comparar dos períodos» y en los
+ * indicadores del Resumen, para que no digan cosas distintas.
+ * - En nutrición se cuenta en días del rango, cada uno una sola vez: con valor (lo que sostiene el resumen, con cuántos
+ *   son subtotales), sin registros, con registros sin cantidades o sin el nutriente, y hoy, en curso. Nunca «2 de 2 días»
+ *   en un rango de 14: los días sin registros no desaparecen del denominador.
+ * - En entrenamiento y antropometría se cuenta en sesiones o tomas: nunca en días.
+ */
+export function partesDeLaCobertura(r: ResumenDeUnPeriodo): string[] {
+  const total = r.regla === 'TOTAL';
+  if (r.dias !== null) {
+    const d = r.dias;
+    return [
+      `${contar(r.duracionDias, 'día', 'días')}: ${numero(r.n)} ${total ? 'con registros' : 'con valor'}`,
+      ...(r.parciales > 0 ? [`de ellos, ${r.parciales === 1 ? '1 es un subtotal' : `${numero(r.parciales)} son subtotales`} (falta algún dato)`] : []),
+      ...(d.sinRegistros > 0 ? [`${numero(d.sinRegistros)} sin registros`] : []),
+      ...(d.sinCantidades > 0 ? [`${numero(d.sinCantidades)} con registros sin cantidades`] : []),
+      ...(d.sinDatoDelNutriente > 0 ? [`${numero(d.sinDatoDelNutriente)} con registros sin dato de este nutriente`] : []),
+      ...(d.hoyEnCurso ? [total ? 'hoy, en curso: el total incluye lo registrado hasta ahora' : 'hoy, en curso: fuera de la media'] : []),
+    ];
+  }
+  const conValor = r.observaciones - r.sinValor;
+  if (r.regla === 'PRIMERO_Y_ULTIMO_COMPARABLES') {
+    return [
+      `${contar(conValor, 'toma', 'tomas')}${conValor > r.n ? `: ${numero(r.n)} del último tramo comparable` : ''}`,
+      ...(r.sinValor > 0 ? [`${contar(r.sinValor, 'toma sin valor', 'tomas sin valor')}`] : []),
+    ];
+  }
+  return [
+    total ? contar(r.observaciones, 'sesión', 'sesiones') : `${contar(r.observaciones, 'sesión', 'sesiones')}: ${numero(r.n)} con valor`,
+    ...(r.sinValor > 0 && total ? [`${numero(r.sinValor)} sin valor registrado`] : []),
+  ];
 }
 
 // ─── Resumen textual (alternativa al gráfico) ───────────────────────────────────────────────────

@@ -358,11 +358,16 @@ export type TipoDeEvento = z.infer<typeof TipoDeEventoSchema>;
 export const EstadoDeEntradaSchema = z.enum(['EFFECTIVE', 'RECTIFIED', 'ANNULLED', 'CORRECTED']);
 export type EstadoDeEntrada = z.infer<typeof EstadoDeEntradaSchema>;
 
-/** Rasgos operativos del dato, para filtrar y avisar: nunca alertas clínicas. */
+/**
+ * Rasgos operativos del dato, para filtrar y avisar: nunca alertas clínicas. Los tres primeros son el modo de registro
+ * de las cantidades; `QUANTITIES_DIFFER_FROM_PLAN` es otra cosa: una diferencia comprobada, ingrediente por ingrediente,
+ * entre las cantidades informadas y la opción indicada (unas cantidades informadas pueden coincidir con el plan).
+ */
 export const CalidadDeEntradaSchema = z.enum([
   'QUANTITIES_UNCONFIRMED',
   'QUANTITIES_FROM_PLAN',
   'QUANTITIES_REPORTED',
+  'QUANTITIES_DIFFER_FROM_PLAN',
   'NUTRIENTS_INCOMPLETE',
   'DIFFERENT_MEAL',
   'SESSION_SUMMARY_ONLY',

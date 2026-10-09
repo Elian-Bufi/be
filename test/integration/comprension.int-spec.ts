@@ -10,6 +10,8 @@
  *   su número es el orden de activación (no el token de concurrencia).
  * - API-NUT-13-BUSQUEDA y API-TRN-13-BUSQUEDA: la misma lectura que el GET, con el texto en el cuerpo y fuera de todo
  *   registro.
+ * - API-DSH-04 (pasada del 2026-10-09): el modo de registro de las cantidades no es una diferencia; la diferencia con la
+ *   opción indicada se comprueba ingrediente por ingrediente y tiene su propio rasgo de calidad.
  */
 import type { INestApplication } from '@nestjs/common';
 import { DashboardResponseSchema, LineaDeTiempoResponseSchema, ListaDeCatalogoResponseSchema, ProyeccionResponseSchema } from '@be/domain';
@@ -117,6 +119,62 @@ describe('API-PRJ-01: la versión que ejecuta cada punto y el corte de cada vige
     const activacion = linea.entries.find((e) => e.eventType === 'NUTRITION_PLAN_ACTIVATED');
     expect(activacion?.title).toMatch(/activado · versión 1$/);
     expect(activacion?.details).toContainEqual({ label: 'Versión', value: '1' });
+  });
+});
+
+describe('API-DSH-04: el modo de registro no es una diferencia con lo indicado (pasada del 2026-10-09)', () => {
+  it('cantidades a mano iguales a la opción no son «distintas»; la diferencia se comprueba ingrediente por ingrediente y se filtra aparte', async () => {
+    const c = await circuitoConPlanActivo(app, 'comprension-modo');
+    const hoy = (await conSesion(app, c.ase.token).get('/api/v1/me/nutrition/today/options').expect(200)).body.data;
+    type Opcion = { optionId: string; items: { itemId: string; quantity: { value: number; unit: 'g' | 'ml' | 'unit' } | null }[] };
+    const [almuerzo, cena] = hoy.meals as { mealId: string; options: Opcion[] }[];
+    const opcion = almuerzo!.options[0]!;
+    const conCantidad = opcion.items.filter((i) => i.quantity !== null);
+    expect(conCantidad.length).toBeGreaterThan(0);
+    const registrar = (comida: { mealId: string; options: Opcion[] }, ocurrio: Date, consumption: Record<string, unknown>) =>
+      conSesion(app, c.ase.token)
+        .post('/api/v1/me/nutrition/meal-records', claveDeIdempotencia())
+        .send({ kind: 'PLAN_OPTION', activePlanId: c.planId, dayTypeId: hoy.dayTypes[0].dayTypeId, mealId: comida.mealId, optionId: comida.options[0]!.optionId, occurredAt: ocurrio.toISOString(), consumption, observation: null })
+        .expect(201);
+    const comoIndicado = conCantidad.map((i) => ({ itemId: i.itemId, quantity: i.quantity, notEaten: false }));
+    const masTreinta = comoIndicado.map((i, k) => (k === 0 ? { ...i, quantity: { ...i.quantity!, value: i.quantity!.value + 30 } } : i));
+    const igual = (await registrar(almuerzo!, haceDias(3), { status: 'REPORTED', items: comoIndicado })).body.data;
+    const distinta = (await registrar(almuerzo!, haceDias(2), { status: 'REPORTED', items: masTreinta })).body.data;
+    const sinConfirmar = (await registrar(cena!, haceDias(2), { status: 'UNCONFIRMED' })).body.data;
+    const diferente = (
+      await conSesion(app, c.ase.token)
+        .post('/api/v1/me/nutrition/meal-records', claveDeIdempotencia())
+        .send({ kind: 'DIFFERENT', activePlanId: c.planId, dayTypeId: null, mealId: null, occurredAt: haceDias(1).toISOString(), description: 'Un sándwich', approximateQuantity: null, mediaIds: [] })
+        .expect(201)
+    ).body.data;
+
+    const leer = async (quality?: string) =>
+      LineaDeTiempoResponseSchema.parse((await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/timeline?domain=NUTRITION&type=MEAL_RECORDED&limit=50${quality ? `&quality=${quality}` : ''}`).expect(200)).body).data;
+    const todas = await leer();
+    const entrada = (id: string) => todas.entries.find((e) => e.source.id === id);
+    const frente = (id: string) => entrada(id)?.details.find((d) => d.label === 'Frente a lo indicado')?.value;
+    // A mano e iguales: el modo es «informadas a mano»; la comparación dice que coinciden, y no hay rasgo de diferencia.
+    expect(entrada(igual.recordId)?.quality).toContain('QUANTITIES_REPORTED');
+    expect(entrada(igual.recordId)?.quality).not.toContain('QUANTITIES_DIFFER_FROM_PLAN');
+    expect(entrada(igual.recordId)?.details).toContainEqual({ label: 'Cantidades', value: 'informadas a mano' });
+    expect(frente(igual.recordId)).toBe(conCantidad.length === opcion.items.length ? 'Igual a lo indicado' : `Igual en lo que se puede comparar; ${opcion.items.length - conCantidad.length} ${opcion.items.length - conCantidad.length === 1 ? 'ingrediente' : 'ingredientes'} sin comparar`);
+    // A mano y distintas: la diferencia está comprobada y se dice cuántos ingredientes.
+    expect(entrada(distinta.recordId)?.quality).toEqual(expect.arrayContaining(['QUANTITIES_REPORTED', 'QUANTITIES_DIFFER_FROM_PLAN']));
+    expect(frente(distinta.recordId)).toBe(`Distinta de lo indicado en 1 de ${opcion.items.length} ${opcion.items.length === 1 ? 'ingrediente' : 'ingredientes'}`);
+    // Sin confirmar y comida diferente: no hay qué comparar, y no se afirma ninguna diferencia.
+    for (const id of [sinConfirmar.recordId, diferente.recordId]) {
+      expect(entrada(id)?.quality).not.toContain('QUANTITIES_DIFFER_FROM_PLAN');
+      expect(frente(id)).toBeUndefined();
+    }
+    expect(entrada(sinConfirmar.recordId)?.quality).toContain('QUANTITIES_UNCONFIRMED');
+    expect(entrada(diferente.recordId)?.quality).toContain('DIFFERENT_MEAL');
+
+    // El filtro por diferencia comprobada deja solo la distinta; el del modo, las dos informadas a mano.
+    const distintas = await leer('QUANTITIES_DIFFER_FROM_PLAN');
+    expect(distintas.entries.map((e) => e.source.id)).toEqual([distinta.recordId]);
+    expect(distintas.totalMatching).toBe(1);
+    expect((await leer('QUANTITIES_REPORTED')).entries.map((e) => e.source.id).sort()).toEqual([igual.recordId, distinta.recordId].sort());
+    expect(todas.periodCounts.byQuality).toContainEqual({ quality: 'QUANTITIES_DIFFER_FROM_PLAN', count: 1 });
   });
 });
 

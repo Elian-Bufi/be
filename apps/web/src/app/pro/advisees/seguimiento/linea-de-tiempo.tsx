@@ -86,9 +86,11 @@ const ESTADOS: readonly { readonly clave: EstadoDeEntrada; readonly texto: strin
   { clave: 'ANNULLED', texto: 'Anulado' },
 ];
 const CALIDADES: readonly { readonly clave: CalidadDeEntrada; readonly texto: string }[] = [
+  // El modo de registro de las cantidades, y aparte una diferencia comprobada: informadas a mano no es «distintas».
   { clave: 'QUANTITIES_UNCONFIRMED', texto: 'Cantidades sin confirmar' },
-  { clave: 'QUANTITIES_FROM_PLAN', texto: 'Cantidades del plan' },
-  { clave: 'QUANTITIES_REPORTED', texto: 'Cantidades informadas' },
+  { clave: 'QUANTITIES_FROM_PLAN', texto: 'Porciones del plan, confirmadas' },
+  { clave: 'QUANTITIES_REPORTED', texto: 'Cantidades informadas a mano' },
+  { clave: 'QUANTITIES_DIFFER_FROM_PLAN', texto: 'Distintas de lo indicado (comprobado)' },
   { clave: 'NUTRIENTS_INCOMPLETE', texto: 'Falta algún nutriente' },
   { clave: 'DIFFERENT_MEAL', texto: 'Comida diferente' },
   { clave: 'SESSION_SUMMARY_ONLY', texto: 'Sesión resumida, sin series' },

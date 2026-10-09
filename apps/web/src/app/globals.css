@@ -552,6 +552,78 @@ input[type='radio'] {
   font-size: 0.9rem;
 }
 
+/* ─── La evidencia de una revisión: por tipo y por día, con lo marcado a la vista (pasada del 2026-10-09) ─── */
+.evidencia__resumen {
+  margin: 0.5rem 0 0;
+  font-weight: 650;
+}
+
+.evidencia__seccion {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.evidencia__titulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.evidencia__dias {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.evidencia__dia {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* Un día en una fila: su casilla de grupo (con el estado en la misma línea) y «Ver las 4» al costado. */
+.evidencia__fila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.evidencia__fila > .acto {
+  flex: 1 1 auto;
+}
+
+.evidencia__estado {
+  color: var(--tenue);
+}
+
+.evidencia__ver {
+  flex: none;
+  min-height: 2.75rem;
+  white-space: nowrap;
+}
+
+.evidencia__registros {
+  display: grid;
+  gap: 0.5rem;
+  margin-left: 2.15rem;
+}
+
+.evidencia__marcadas {
+  margin-top: 1rem;
+}
+
+.evidencia__lista {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.25rem;
+}
+
+/* «Quitar» es un control suelto en cada renglón: lleva el alto de un objetivo (GUIA-UX-UI I.5). */
+.evidencia__lista .boton--enlace,
+.evidencia__marcadas > .boton--enlace {
+  min-height: 2.75rem;
+}
+
 /* ─── Avisos ─────────────────────────────────────────────────────────── */
 .aviso {
   border-radius: 10px;
@@ -3050,8 +3122,52 @@ html:has(.acciones--fijas) {
 .tabla-de-datos,
 .intervalo,
 .vistas-guardadas,
-.no-ofrecidas {
+.no-ofrecidas,
+.resumen-en-texto--plegado,
+.comparar-a-mano {
   margin: 0.75rem 0;
+}
+
+/*
+ * Plegables nuevos de la pasada del 2026-10-09 (la comparación a mano y el resumen en texto con la pregunta de etapas; lo
+ * marcado como evidencia): el alto de un objetivo (I.5) y la misma marca ▸ que `Ayuda`, que `display: flex` borraría.
+ */
+.resumen-en-texto--plegado > summary,
+.comparar-a-mano > summary,
+.evidencia__marcadas > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  list-style: none;
+}
+
+.resumen-en-texto--plegado > summary::-webkit-details-marker,
+.comparar-a-mano > summary::-webkit-details-marker,
+.evidencia__marcadas > summary::-webkit-details-marker {
+  display: none;
+}
+
+.resumen-en-texto--plegado > summary::before,
+.comparar-a-mano > summary::before,
+.evidencia__marcadas > summary::before {
+  content: '▸';
+  display: inline-block;
+  transition: transform 120ms ease;
+}
+
+.resumen-en-texto--plegado[open] > summary::before,
+.comparar-a-mano[open] > summary::before,
+.evidencia__marcadas[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resumen-en-texto--plegado > summary::before,
+  .comparar-a-mano > summary::before,
+  .evidencia__marcadas > summary::before {
+    transition: none;
+  }
 }
 
 .hitos {
@@ -3440,10 +3556,11 @@ html:has(.acciones--fijas) {
   display: block;
 }
 
+/* La cobertura de un valor es contexto para decidir (GUIA-UX-UI II.4): el tamaño de un dato secundario, no menos. */
 .celda__detalle {
   display: block;
   color: var(--tenue);
-  font-size: 0.88rem;
+  font-size: 0.95rem;
 }
 
 .etapas-del-grafico {
@@ -3462,6 +3579,12 @@ html:has(.acciones--fijas) {
 /* Contraste con lo indicado: en nutrición, una fila por comida (el escritorio permite leer muchas de un vistazo). */
 .contraste .capas {
   margin: 0.25rem 0 0.75rem;
+}
+
+/* Opciones con una explicación cada una: una por renglón, para leerlas enteras sin que se partan entre sí. */
+.capas--en-columna {
+  flex-direction: column;
+  flex-wrap: nowrap;
 }
 
 .tabla-del-contraste th[scope='row'] {

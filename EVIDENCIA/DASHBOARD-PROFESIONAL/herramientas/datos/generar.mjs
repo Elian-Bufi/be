@@ -387,6 +387,9 @@ async function comidas(e, lista, planes, asesoradoId = e.aseId) {
 function cantidadesDe(consumo, opcion) {
   if (consumo.status === 'UNCONFIRMED') return { status: 'UNCONFIRMED', items: [] };
   if (consumo.status === 'PLAN_PORTIONS') return { status: 'PLAN_PORTIONS', items: opcion.items.map((it) => ({ itemId: it.itemId, quantity: it.quantity, notEaten: false })) };
+  // Informadas a mano con las mismas cantidades de la opción: el modo es «informadas» y no hay diferencia (WP-DASHBOARD-
+  // COMPRENSION, pasada del 2026-10-09: el modo de registro no es una diferencia).
+  if (consumo.informado === 'COMO_INDICADO') return { status: 'REPORTED', items: opcion.items.map((it) => ({ itemId: it.itemId, quantity: it.quantity, notEaten: false })) };
   return {
     status: 'REPORTED',
     items: opcion.items.map((it) => {

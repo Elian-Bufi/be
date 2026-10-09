@@ -6,18 +6,22 @@
  * - **Entrenamiento:** cada serie registrada frente a la prescripción de la versión que esa sesión ejecutó («Plan: 10 a
  *   12; registrado: 11»), con la misma lógica y el mismo componente que la pestaña Entrenamiento (`EvolucionDelEjercicio`).
  *   La lectura es la del contexto de revisión (API-TRN-21), que abarca hasta 92 días: se toman los últimos del período.
- * - **Nutrición:** una fila por comida registrada, con la opción que la persona eligió, el estado de sus cantidades y la
- *   versión del plan; el contraste ingrediente por ingrediente se abre al costado (`contrasteDeLaComida`, del dominio).
- *   Un filtro de hechos deja solo las que no registraron las porciones del plan. Sin confirmar sigue sin confirmar; una
- *   comida diferente queda fuera de lo indicado; las alternativas de una comida no se suman.
+ * - **Nutrición:** una fila por comida registrada, con la opción que la persona eligió, el modo de registro de sus
+ *   cantidades, lo que se comprobó frente a lo indicado y la versión del plan; el contraste ingrediente por ingrediente se
+ *   abre al costado (`contrasteDeLaComida`, del dominio). El modo no es una diferencia: unas cantidades informadas a mano
+ *   pueden coincidir con la opción, y solo una diferencia comprobada se filtra como «distinta». Sin confirmar sigue sin
+ *   confirmar; una comida diferente queda fuera de lo indicado; las alternativas de una comida no se suman.
  */
 import {
   COPY_COMPARACION,
   COPY_ENTRENAMIENTO,
   ejerciciosComparables,
+  frenteALoIndicadoEnPalabras,
+  TEXTO_DEL_MODO_DE_REGISTRO,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EntradaDeLineaDeTiempo,
   type LineaDeTiempoResponse,
+  type ModoDeRegistro,
   type OrigenDeDato,
   type PlanConObjetivos,
 } from '@be/domain';
@@ -100,24 +104,68 @@ function ContrasteDeEntrenamiento({ exerciseKey }: { exerciseKey: string | null 
 }
 
 const POR_PAGINA = 50;
+
 /**
- * Las comidas que no registraron las porciones del plan: con cantidades informadas por la persona, sin confirmar o una
- * comida diferente. Es un filtro de hechos, no una calificación: unas cantidades informadas pueden coincidir con el plan.
+ * Qué comidas ver. El modo de registro y la diferencia comprobada son cosas distintas: unas cantidades informadas a mano
+ * pueden coincidir con la opción indicada, así que «informadas» no se presenta como «distintas». Cada opción es un
+ * filtro de hechos de la API (los rasgos de calidad de API-DSH-04), no una calificación.
  */
-const SIN_LAS_PORCIONES_DEL_PLAN = 'QUANTITIES_REPORTED,QUANTITIES_UNCONFIRMED,DIFFERENT_MEAL';
+const QUE_VER = {
+  TODAS: { calidad: null, rotulo: 'Todas', enLaCuenta: 'registradas', vacio: 'Sin comidas registradas en el período' },
+  DISTINTAS: {
+    calidad: 'QUANTITIES_DIFFER_FROM_PLAN',
+    rotulo: 'Distintas de lo indicado: cantidades informadas que no coinciden con la opción, comprobado ingrediente por ingrediente',
+    enLaCuenta: 'distintas de lo indicado',
+    vacio: 'Ninguna comida del período tiene una diferencia comprobada con lo indicado',
+  },
+  INFORMADAS: {
+    calidad: 'QUANTITIES_REPORTED',
+    rotulo: 'Con cantidades informadas a mano, coincidan o no con lo indicado',
+    enLaCuenta: 'con cantidades informadas a mano',
+    vacio: 'Ninguna comida del período tiene cantidades informadas a mano',
+  },
+  SIN_COMPARAR: {
+    calidad: 'QUANTITIES_UNCONFIRMED,DIFFERENT_MEAL',
+    rotulo: 'Sin confirmar o comidas diferentes: no se pueden comparar con lo indicado',
+    enLaCuenta: 'sin confirmar o diferentes',
+    vacio: 'Ninguna comida del período quedó sin confirmar ni fue una comida diferente',
+  },
+} as const;
+type QueVer = keyof typeof QUE_VER;
 const ESTADO_DE_LA_COMIDA: Readonly<Partial<Record<EntradaDeLineaDeTiempo['state'], string>>> = { ANNULLED: 'Anulado', RECTIFIED: 'Rectificado', CORRECTED: 'Corregido' };
+
+/** El modo de registro de una entrada, desde sus rasgos de calidad: cómo se registró, sin decir si difiere. */
+function modoDeLaEntrada(e: EntradaDeLineaDeTiempo): ModoDeRegistro | null {
+  if (e.quality.includes('DIFFERENT_MEAL')) return 'COMIDA_DIFERENTE';
+  if (e.quality.includes('QUANTITIES_FROM_PLAN')) return 'PORCIONES_DEL_PLAN';
+  if (e.quality.includes('QUANTITIES_REPORTED')) return 'INFORMADAS';
+  if (e.quality.includes('QUANTITIES_UNCONFIRMED')) return 'SIN_CONFIRMAR';
+  return null;
+}
+
+/**
+ * Lo que se sabe frente a lo indicado: con cantidades informadas, lo que comprobó la API ingrediente por ingrediente
+ * (`comidaFrenteALoIndicado`); en los otros modos, por qué no hay diferencia que comprobar.
+ */
+function frenteDeLaEntrada(e: EntradaDeLineaDeTiempo, modo: ModoDeRegistro | null): string {
+  const comprobado = e.details.find((x) => x.label === 'Frente a lo indicado')?.value;
+  if (comprobado) return comprobado;
+  if (modo === null || modo === 'INFORMADAS') return 'Sin dato';
+  return frenteALoIndicadoEnPalabras({ modo, resultado: modo === 'PORCIONES_DEL_PLAN' ? 'LAS_DEL_PLAN' : 'NO_SE_COMPRUEBA', ingredientes: 0, distintos: 0, sinComparar: 0 });
+}
 
 type PaginasExtra = { readonly clave: string; readonly entradas: readonly EntradaDeLineaDeTiempo[]; readonly cursor: string | null; readonly cargando: boolean; readonly falla: boolean };
 
 function ContrasteDeNutricion() {
   const { token, asesoradoId, periodo, sesionPerdida } = useSeguimiento();
   const id = useId();
-  const [soloSinPorciones, setSoloSinPorciones] = useState(false);
+  const [ver, setVer] = useState<QueVer>('TODAS');
+  const calidad = QUE_VER[ver].calidad;
   const filtro = useMemo(
-    () => ({ periodStart: periodo.desde, periodEnd: periodo.hasta, domain: 'NUTRITION', type: 'MEAL_RECORDED', ...(soloSinPorciones ? { quality: SIN_LAS_PORCIONES_DEL_PLAN } : {}), limit: String(POR_PAGINA) }),
-    [periodo.desde, periodo.hasta, soloSinPorciones],
+    () => ({ periodStart: periodo.desde, periodEnd: periodo.hasta, domain: 'NUTRITION', type: 'MEAL_RECORDED', ...(calidad ? { quality: calidad } : {}), limit: String(POR_PAGINA) }),
+    [periodo.desde, periodo.hasta, calidad],
   );
-  const clave = `contraste-nut|${asesoradoId}|${periodo.desde}|${periodo.hasta}|${soloSinPorciones ? 'sin-porciones' : 'todas'}`;
+  const clave = `contraste-nut|${asesoradoId}|${periodo.desde}|${periodo.hasta}|${ver}`;
   const { lectura, recargar } = useLectura<LineaDeTiempoResponse>(clave, () => api.lineaDeTiempo(token, asesoradoId, filtro), 'NUTRITION');
   const [abierto, setAbierto] = useState<{ origen: OrigenDeDato; titulo: string } | null>(null);
   // «Ver más»: las páginas siguientes de esta misma consulta. Si la consulta cambia, las páginas viejas no se muestran.
@@ -143,30 +191,21 @@ function ContrasteDeNutricion() {
       <h3 id={`${id}-titulo`}>Cada comida registrada frente a su opción del plan</h3>
       <p className="metadatos">
         Del {diaCivil(periodo.desde)} al {diaCivil(periodo.hasta)}
-        {primera
-          ? ` · ${total === 1 ? 'una comida' : `${total} comidas`}${soloSinPorciones ? ' que no registraron las porciones del plan' : ' registradas'}${entradas.length < total ? `; se ven las últimas ${entradas.length}` : ''}`
-          : ''}
-        .
+        {primera ? ` · ${total === 1 ? 'una comida' : `${total} comidas`} ${QUE_VER[ver].enLaCuenta}${entradas.length < total ? `; se ven las últimas ${entradas.length}` : ''}` : ''}.
       </p>
-      <fieldset className="capas">
+      <fieldset className="capas capas--en-columna">
         <legend>Qué comidas ver</legend>
-        <label className="capa">
-          <input type="radio" name={`${id}-ver`} checked={!soloSinPorciones} onChange={() => setSoloSinPorciones(false)} />
-          Todas
-        </label>
-        <label className="capa">
-          <input type="radio" name={`${id}-ver`} checked={soloSinPorciones} onChange={() => setSoloSinPorciones(true)} />
-          Solo las que no registraron las porciones del plan (cantidades informadas, sin confirmar o una comida diferente)
-        </label>
+        {(Object.keys(QUE_VER) as QueVer[]).map((clave) => (
+          <label key={clave} className="capa">
+            <input type="radio" name={`${id}-ver`} checked={ver === clave} onChange={() => setVer(clave)} />
+            {QUE_VER[clave].rotulo}
+          </label>
+        ))}
       </fieldset>
       {lectura.tipo === 'cargando' ? <Cargando /> : null}
       {lectura.tipo === 'error' ? <ErrorConReintento mensaje={textoDeFalla(lectura.motivo, 'las comidas registradas')} onReintentar={recargar} /> : null}
       {lectura.tipo === 'no-disponible' ? <p className="nota">Nutrición no está disponible con tu acceso actual.</p> : null}
-      {primera && entradas.length === 0 ? (
-        <EstadoVacio titulo={soloSinPorciones ? 'Todas las comidas del período registraron las porciones del plan' : 'Sin comidas registradas en el período'}>
-          {soloSinPorciones ? 'No hay cantidades informadas, sin confirmar ni comidas diferentes en estas fechas.' : 'Sin registros no hay qué contrastar.'}
-        </EstadoVacio>
-      ) : null}
+      {primera && entradas.length === 0 ? <EstadoVacio titulo={QUE_VER[ver].vacio}>{ver === 'TODAS' ? 'Sin registros no hay qué contrastar.' : 'Probá con otro filtro o con otro período.'}</EstadoVacio> : null}
       {entradas.length > 0 ? (
         <div className="desplazable-x">
           <table className="tabla tabla-del-contraste">
@@ -176,7 +215,8 @@ function ContrasteDeNutricion() {
                 <th scope="col">Día</th>
                 <th scope="col">Comida</th>
                 <th scope="col">Lo registrado</th>
-                <th scope="col">Cantidades</th>
+                <th scope="col">Modo de registro</th>
+                <th scope="col">Frente a lo indicado</th>
                 <th scope="col">Versión del plan</th>
                 <th scope="col">
                   <span className="visualmente-oculto">Detalle</span>
@@ -211,6 +251,7 @@ function ContrasteDeNutricion() {
 function FilaDeComida({ e, primeraDelDia, onAbrir }: { e: EntradaDeLineaDeTiempo; primeraDelDia: boolean; onAbrir: () => void }) {
   const dato = (etiqueta: string) => e.details.find((x) => x.label === etiqueta)?.value ?? null;
   const diferente = e.quality.includes('DIFFERENT_MEAL');
+  const modo = modoDeLaEntrada(e);
   // «Comida registrada · Desayuno» → «Desayuno»: el tipo de hecho ya lo dice la columna «Lo registrado».
   const [, ...nombre] = e.title.split(' · ');
   const estado = ESTADO_DE_LA_COMIDA[e.state];
@@ -224,8 +265,9 @@ function FilaDeComida({ e, primeraDelDia, onAbrir }: { e: EntradaDeLineaDeTiempo
         {nombre.join(' · ') || e.title}
         {estado ? <span className="insignia"> {estado}</span> : null}
       </td>
-      <td>{diferente ? 'Una comida diferente: fuera de lo indicado' : dato('Opción') ? `Opción ${dato('Opción')}` : 'Opción del plan'}</td>
-      <td>{diferente ? (dato('Cantidad aproximada') ? `aproximada: ${dato('Cantidad aproximada')}` : 'no aplica (comida diferente)') : (dato('Cantidades') ?? 'sin dato')}</td>
+      <td>{diferente ? `Una comida diferente${dato('Cantidad aproximada') ? ` (aproximada: ${dato('Cantidad aproximada')})` : ''}` : dato('Opción') ? `Opción ${dato('Opción')}` : 'Opción del plan'}</td>
+      <td>{modo ? TEXTO_DEL_MODO_DE_REGISTRO[modo] : 'Sin dato'}</td>
+      <td>{frenteDeLaEntrada(e, modo)}</td>
       <td>{dato('Plan') ?? 'sin dato'}</td>
       <td>
         <button type="button" className="boton boton--enlace" onClick={onAbrir}>

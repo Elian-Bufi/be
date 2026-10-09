@@ -22,6 +22,7 @@ import {
   NOMBRE_DEL_AREA,
   numero,
   cantidad,
+  partesDeLaCobertura,
   primerPlanDelPeriodo,
   PREGUNTAS_PROFESIONALES,
   resumirPeriodo,
@@ -672,7 +673,7 @@ function Indicadores({
 }
 
 function ValorDelIndicador({ serie, definicion, desde, hasta }: { serie: Parameters<typeof resumirPeriodo>[0]; definicion: NonNullable<ReturnType<typeof definicionDeMetrica>>; desde: string; hasta: string }) {
-  const r = resumirPeriodo(serie, definicion, desde, hasta);
+  const r = resumirPeriodo(serie, definicion, desde, hasta, hoyEn());
   if (r.valor === null) return <p>{r.incompletos > 0 ? 'Solo hay datos de hoy, que sigue en curso: todavía no hay un día completo que resumir.' : 'Sin datos en el período.'}</p>;
   if (definicion.resumenDePeriodo === 'PRIMERO_Y_ULTIMO_COMPARABLES') {
     const ultimo = r.ultimo;
@@ -692,16 +693,10 @@ function ValorDelIndicador({ serie, definicion, desde, hasta }: { serie: Paramet
       </>
     );
   }
-  // Qué es un subtotal se dice en el lugar: es parte de la cobertura que hace falta para leer la media (GUIA-UX-UI I.2).
-  const subtotales = r.parciales ? `; ${r.parciales === 1 ? 'en 1, el valor es un subtotal' : `en ${numero(r.parciales)}, el valor es un subtotal`} (falta algún dato)` : '';
-  // El día en curso no entra en la media ni en la mediana; el total sí lo cuenta, y lo dice (DICCIONARIO §1).
-  const enCurso = r.incompletos > 0 ? (definicion.resumenDePeriodo === 'TOTAL' ? ' · incluye hoy, que sigue en curso' : ' · sin contar hoy, que sigue en curso') : '';
-  const texto =
-    definicion.resumenDePeriodo === 'MEDIA_DE_DIAS_CON_DATOS'
-      ? `media de ${numero(r.n)} de ${numero(r.duracionDias)} días con valor${subtotales}${enCurso}`
-      : definicion.resumenDePeriodo === 'MEDIANA'
-        ? `mediana de ${numero(r.n)} ${r.n === 1 ? 'sesión' : 'sesiones'}${enCurso}`
-        : `en ${numero(r.duracionDias)} días${enCurso}`;
+  // La cobertura que hace falta para leer el valor, dicha en el lugar (GUIA-UX-UI I.2) y con las mismas partes que la
+  // tabla de etapas y «Comparar dos períodos»: en nutrición, los días del período por categoría; el día en curso aparte.
+  const regla = definicion.resumenDePeriodo === 'MEDIA_DE_DIAS_CON_DATOS' ? 'Media' : definicion.resumenDePeriodo === 'MEDIANA' ? 'Mediana' : 'Total';
+  const texto = `${regla} · ${partesDeLaCobertura(r).join(' · ')}`;
   return (
     <>
       <p className="indicador__valor">{valorParaMostrar(r.valor, definicion, serie.unit)}</p>

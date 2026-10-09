@@ -17,7 +17,7 @@ import {
   etapaAnterior,
   LENTE_DEL_AREA,
   numero,
-  OBSERVACION_DEL_AREA,
+  partesDeLaCobertura,
   periodoDeLasEtapas,
   TEXTO_SIN_DIFERENCIA_DE_ETAPAS,
   valorConUnidad,
@@ -189,7 +189,8 @@ export function ComparacionDeEtapas({
           El día de una activación es de la versión nueva, así ningún día se cuenta dos veces. Si dos versiones se activaron el mismo día, la primera no tiene un día entero: se dice su duración en horas y
           no se resume por días.
         </p>
-        <p>No se restan totales de etapas de distinta duración, ni valores de métodos, protocolos, unidades o ejercicios distintos. Coincidencia temporal: no indica causa.</p>
+        {/* Qué no se resta y que la coincidencia no indica causa ya están a la vista: en la pregunta y en el encabezado. */}
+        <p>En nutrición, la cobertura cuenta los días de cada etapa: los que tienen valor, los que no tienen registros, los que tienen registros sin cantidades y hoy, que sigue en curso.</p>
       </Ayuda>
       <PanelDeRegistro origen={plan?.origen ?? null} titulo={plan?.titulo ?? ''} numeroDeVersion={plan?.numero} onCerrar={() => setPlan(null)} />
     </section>
@@ -197,14 +198,12 @@ export function ComparacionDeEtapas({
 }
 
 function CeldaDeEtapa({ r, s, unidad }: { r: ResumenDeEtapa; s: { definicion: Parameters<typeof valorParaMostrar>[1] }; unidad: string }) {
-  const [uno, varios] = OBSERVACION_DEL_AREA[s.definicion.area];
   if (r.resumen === null) return <>{r.motivoSinResumen === 'SIN_DIA_ENTERO' ? 'Sin un día entero' : 'Fuera de lo leído'}</>;
   const x = r.resumen;
   const partes = [
-    `${numero(x.n)} de ${numero(x.observaciones)} ${x.observaciones === 1 ? uno : varios}`,
     `${r.rango ? `del ${diaCivil(r.rango.desde)} al ${diaCivil(r.rango.hasta)}` : ''}`,
-    ...(x.parciales ? [`${numero(x.parciales)} ${x.parciales === 1 ? 'subtotal' : 'subtotales'}`] : []),
-    ...(x.incompletos ? [s.definicion.resumenDePeriodo === 'TOTAL' ? 'incluye hoy, en curso' : `${numero(x.incompletos)} sin completar, fuera del resumen`] : []),
+    // La misma cobertura que «Comparar dos períodos» y los indicadores: en nutrición, los días del rango por categoría.
+    ...partesDeLaCobertura(x),
     ...(r.deOtraVersion ? [`${numero(r.deOtraVersion)} ${r.deOtraVersion === 1 ? 'día con registros asociados' : 'días con registros asociados'} a otra versión`] : []),
     ...(r.fueraDeLasFechas ? [`${numero(r.fueraDeLasFechas)} fuera de las fechas de la etapa`] : []),
     ...(r.recortada ? ['la lectura no cubre la etapa entera'] : []),

@@ -35,10 +35,24 @@ Cuando una regla de acá choca con el legajo, gana el legajo y se anota en `docs
 2. **Plegar no es borrar.** Ningún texto que el legajo exige decir se elimina para simplificar: se pliega. Hay una
    excepción. Lo que la persona tiene que leer **antes** de un acto queda a la vista, por ejemplo consentir, revocar,
    cerrar la cuenta, anular o registrar algo que no se deshace.
-3. **Ubicar, nunca calificar** (TEST-PRJ-009, RF-048):
-   - ni verde para «mejoró» ni rojo para «empeoró», ni semáforos, ni rangos;
+3. **Ubicar, nunca calificar** (TEST-PRJ-009, RF-048). Calificar es decir si un valor está bien o mal, si mejoró o
+   empeoró, o si la persona cumplió. BE no lo hace:
+   - ni verde para «mejoró» ni rojo para «empeoró», ni semáforos, ni porcentajes de cumplimiento o adherencia;
+   - **ni rangos normativos:** bandas de «normal», «saludable» o «ideal» que clasifican el valor de la persona (por
+     ejemplo, las categorías del IMC). Esos términos los prohíbe el dominio, con prueba
+     (`TERMINOS_PROHIBIDOS_DE_ANTROPOMETRIA`, `TERMINOS_PROHIBIDOS_DE_ENTRENAMIENTO`, `PALABRAS_QUE_CALIFICAN`);
    - una diferencia es una resta con signo, y solo entre valores comparables (mismo protocolo, método y unidad);
    - un hueco es «Sin dato» y un resultado que falta es «Sin calcular»; nunca cero, y nunca «—» sin explicación.
+
+   **No es calificar, y se muestra como dato** (aclaración del 2026-10-09):
+   - **un rango prescrito**, el que el profesional fijó en el plan, con su versión: «Plan: 10 a 12 repeticiones»,
+     «RIR 1 a 2». Lo registrado va al lado, y su posición se dice como un hecho con signo: «dentro del rango», «−1 del
+     mínimo», «+2 del máximo» (`textoDeDiferencia`), sin color de acierto o error y sin «cumplió»;
+   - **un intervalo descriptivo** de lo observado o de lo leído: las fechas de un período o una etapa, la primera y la
+     última observación, la banda de vigencia de un plan, el intervalo visible de un gráfico, el rango de la referencia
+     del cambio relativo. Va con su n y su cobertura, y no se interpreta.
+   Lo que separa las dos cosas es de dónde sale el rango: si lo fijó el profesional o lo describe el dato, se muestra;
+   si clasifica a la persona contra una norma, no.
 4. **Un solo lugar para cada texto.** El copy vive en el dominio (`packages/domain/src/copy-*.ts` y los módulos que
    arman texto, como `sintesis-del-resumen.ts`) y lo comparten website y APK. Se escribe en español rioplatense, con
    voseo y sin anglicismos innecesarios. Los textos que una sola pantalla usa pueden quedar en ella.
@@ -220,10 +234,17 @@ Es el principio I.1.6 en el espacio profesional. En la ficha:
 - **Cada observación del Resumen** dice su área, su alcance («Desde la revisión del 20 sept» o «En el período
   seleccionado»), el hecho, de dónde sale («Sale de…») y la acción que lo profundiza. La hora de los datos se dice una
   vez para todo el bloque.
-- **Cada valor** dice su cobertura con su denominador («media de 79 de 90 días con valor»; «n = 8 de 14 días con
-  valor») y qué cuenta n (días, sesiones o tomas). Una cobertura no es una adherencia y no lleva porcentaje. Lo que
-  hace falta para leerla va con ella: qué es un subtotal («falta algún dato») y, si el plan empezó a regir dentro del
-  período, desde cuándo («El plan rige desde el 9 oct…»): sin eso, «1 de 90 días» se lee como 89 días sin registrar.
+- **Cada valor** dice su cobertura en las unidades de su métrica, con un denominador que no esconde nada
+  (`partesDeLaCobertura`, la misma en la tabla de etapas, «Comparar dos períodos» y los indicadores):
+  - en nutrición, en días del rango, cada uno en una sola categoría: «14 días: 8 con valor · 5 sin registros · 1 con
+    registros sin cantidades», cuántos de los días con valor son subtotales («de ellos, 2 son subtotales (falta algún
+    dato)») y hoy, en curso, aparte («fuera de la media», o lo registrado hasta ahora si es un total). Un día sin
+    registros nunca sale del denominador ni se cuenta como cero: «2 de 2 días con valor» en un rango de 14 era un
+    defecto;
+  - en entrenamiento y antropometría, en sesiones o tomas («6 sesiones: 5 con valor»; «3 tomas: 2 del último tramo
+    comparable»), nunca en días.
+  Una cobertura no es una adherencia y no lleva porcentaje. Si el plan empezó a regir dentro del período, se dice desde
+  cuándo («El plan rige desde el 9 oct…»): sin eso, «1 de 90 días» se lee como 89 días sin registrar.
 - **Lo vigente hoy y lo que rigió** se distinguen: «Objetivo vigente hoy · rige desde…» no es «Plan que rigió en el
   período».
 - **Lo que no se compara dice por qué**, en palabras: otra unidad, otro método o protocolo, totales de duraciones
@@ -245,6 +266,12 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   abre el formulario con el período desde la última revisión, marcado «Preparado por BE» (`AvisoDePreparacion`); la
   evidencia, la interpretación y el resultado los elige el profesional, y nada se registra hasta «Registrar revisión».
   Registrar, aplicar y activar son actos distintos y nunca se juntan.
+- **La evidencia de una revisión** (`SeleccionDeEvidencia`) se marca agrupada: la planificación y el objetivo aparte, y
+  los registros por día, con una casilla explícita por día y otra por el período. Nada viene marcado; el resumen dice
+  lo marcado («Marcaste 12 de 73: 10 comidas de 3 días…»), cada día se abre para cambiar sus registros uno por uno y
+  «Lo que marcaste» los lista con «Quitar». Marcar no es haber examinado: la casilla es la declaración del profesional,
+  el texto le pide dejar marcado solo lo que miró y ningún rótulo dice «examinado». Viajan las referencias individuales
+  de siempre.
 - **Después de una acción:** el aviso de éxito ofrece volver a la ficha, y la ficha vuelve a leer lo afectado. Una
   escritura usa su clave de intento (idempotencia) y su versión esperada (conflicto).
 
@@ -267,14 +294,24 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   en ese modo; el título de cada panel dice la métrica completa y qué es cada punto; la lectura no depende del puntero;
   el punto elegido conserva su clase a la vista (el aro de selección rodea la marca sin taparla); el resumen en texto
   describe el intervalo visible en una lista corta.
+- **Analizar según la pregunta:** con la pregunta de etapas, lo principal es la tabla A/B. La comparación a mano de dos
+  períodos es una opción secundaria, plegada debajo de esa tabla («Comparar otros dos períodos, con fechas elegidas a
+  mano», abierta si ya hay una en la URL); el resumen en texto se pliega como la tabla de datos, y las acciones de las
+  tarjetas no se repiten debajo del gráfico. Resultados, cobertura y límites de interpretación quedan a la vista, cada
+  límite una vez: el de la pregunta en su encabezado y «Coincidencia temporal: no indica causa» en el de Analizar. La
+  letra no se achica.
 - **Etapas** (`etapas.tsx`): dos tarjetas (A y B) con versión, fechas, duración y cómo terminaron, «Etapa anterior» y
-  «Ver la planificación de esta etapa»; una tabla por métrica con el mismo criterio de resumen, sus observaciones y
-  cobertura, y el motivo cuando no se resta. Las bandas del gráfico tienen su lista de etapas, que abre la planificación
-  o compara con la anterior.
+  «Ver la planificación de esta etapa»; una tabla por métrica con el mismo criterio de resumen, su cobertura (II.4) y el
+  motivo cuando no se resta. Fuera de la pregunta de etapas, las bandas del gráfico tienen su lista de etapas, que abre
+  la planificación o compara con la anterior.
 - **Contraste con lo indicado** (`contraste.tsx`): por serie en entrenamiento, con la prescripción de la versión que
-  ejecutó cada sesión; en nutrición, una fila por comida (opción, cantidades, versión del plan) con un filtro de hechos
-  («Solo las que no registraron las porciones del plan») y el contraste ingrediente por ingrediente al costado
-  (`contrasteDeLaComida`). Sin porcentaje global.
+  ejecutó cada sesión; en nutrición, una fila por comida con la opción, **el modo de registro** (confirmó las porciones
+  del plan, informó las cantidades a mano, sin confirmar o una comida diferente), **lo que se comprobó frente a lo
+  indicado** («Igual a lo indicado», «Distinta de lo indicado en 1 de 4 ingredientes», «No se puede comprobar: sin
+  confirmar») y la versión del plan, con el contraste ingrediente por ingrediente al costado (`contrasteDeLaComida`).
+  El modo no es una diferencia: unas cantidades informadas a mano pueden coincidir con la opción. Los filtros lo
+  respetan: «Distintas de lo indicado» deja solo la diferencia comprobada (`QUANTITIES_DIFFER_FROM_PLAN`), y «Con
+  cantidades informadas a mano» dice que pueden coincidir o no. Sin porcentaje global.
 - **Línea de tiempo** (`linea-de-tiempo.tsx`): una entrada por hecho, filtros en la URL, búsqueda en el cuerpo, y desde
   la síntesis, «lo nuevo desde la revisión» con su aviso.
 - **Vistas guardadas** (`vistas-guardadas.tsx`): guardan la configuración y la pregunta, nunca datos. Si llevan
@@ -318,6 +355,9 @@ usa uno de estos.
 | `PanelDeRegistro` | El origen de un dato al costado, con su propia lectura | La comida de un punto; la planificación de una etapa |
 | `ListaDePreguntas` · `ElegirParametros` · `PreguntaActiva` | Entrar por preguntas, pedir lo que falta y decir la pregunta en curso | «¿Cómo viene progresando este ejercicio?» |
 | `ComparacionDeEtapas` · `EtapasDelPeriodo` | Comparar dos etapas del plan y ofrecerlas desde el gráfico | «v2 y v3» con su tabla |
+| `partesDeLaCobertura` (dominio) | La cobertura de un valor resumido, la misma en todas las tablas: días por categoría en nutrición; sesiones o tomas en lo demás | «48 días: 44 con valor · de ellos, 7 son subtotales (falta algún dato) · 4 sin registros» |
+| `SeleccionDeEvidencia` | La evidencia de una revisión: por día y por tipo, con casillas de grupo, lo marcado a la vista y nada marcado al abrir | «Registrar revisión» de Nutrición y de Entrenamiento |
+| `.capas--en-columna` | Opciones con una explicación cada una, una por renglón | «Qué comidas ver» en el contraste de Nutrición |
 | `.observacion` | Un hecho de la síntesis: área y alcance, el hecho, de dónde sale y su acción | «Nutrición · Desde la revisión del 20 sept» |
 | `.tarjeta-de-pregunta` | Una pregunta como botón entero, con lo que muestra | Las preguntas principales de Analizar |
 | `.aviso-de-filtro` | Un filtro que viene de otra vista, explicado y con su salida | «Lo nuevo desde la revisión…» + «Ver todo el período elegido» |
@@ -645,7 +685,11 @@ Se copia en la descripción del PR y se marca. Se marcan los puntos generales y 
 - [ ] El contexto para decidir está a la vista junto al dato: alcance o corte, fuente, cobertura, clase y método,
   estado y motivo de lo que no se compara.
 - [ ] Ningún texto exigido por el legajo se borró; lo que se lee antes de actuar está a la vista.
-- [ ] Ningún número está calificado; los huecos dicen «Sin dato» y los cálculos que faltan, «Sin calcular».
+- [ ] Ningún número está calificado: ni semáforos, ni cumplimiento, ni rangos normativos. Un rango prescrito o un
+  intervalo descriptivo se muestra como dato (I.1.3). Los huecos dicen «Sin dato» y los cálculos que faltan, «Sin
+  calcular».
+- [ ] Toda cobertura cuenta en las unidades de la métrica: en nutrición, los días del rango, sin sacar del denominador
+  los días sin registros; en sesiones y tomas, nunca días (II.4).
 - [ ] Pasa `node --test scripts/copy-pantallas.test.cjs`: ninguna palabra prohibida.
 - [ ] Español rioplatense, con voseo.
 
@@ -721,6 +765,16 @@ cambios, y las del website profesional se ampliaron.
 | Objetivos táctiles de 44 px | Website, para todo objetivo. | Se conservan en el profesional aunque sea de escritorio; una acción de fila usa `.boton--compacto`, que conserva el alto. Un enlace dentro de un texto o de una celda sigue la excepción «en línea» de WCAG 2.5.8 (ya era así en las pantallas; la regla no lo decía) (I.5). | Aclarada |
 | Números de versión | No había regla: la ficha numeraba con el token de concurrencia y la pestaña Plan, por orden de activación. | El número para la persona es el orden de activación, el mismo en todas las pantallas; un borrador no tiene número (II.6). | Nueva |
 | No achicar la letra | En §5, con ejemplos de la APK (tarjetas, píldoras, figura). | La misma regla en I.5, con un caso del website: para que la síntesis entre en la primera pantalla cambió la composición de la tabla de objetivo y planificación, no la letra. | Sin cambio de fondo |
+
+**Pasada de corrección y usabilidad del 2026-10-09 (pedido de Dirección sobre el PR #154):**
+
+| Pauta | Antes | Ahora | Tipo |
+|---|---|---|---|
+| Ubicar, nunca calificar | «Ni semáforos, ni rangos»: se podía leer como que no se muestra ningún rango, aunque el dominio ya decía «dentro del rango» o «−1 del mínimo» frente a lo prescrito. | Prohibido: semáforos, cumplimiento y rangos normativos que clasifican a la persona («normal», «ideal»). Se muestran como dato: el rango prescrito por el profesional, con la posición de lo registrado dicha con signo, y los intervalos descriptivos de lo observado o leído (I.1.3). Las garantías del dominio no cambian. | Aclarada |
+| Cobertura de un valor | «n = 8 de 14 días con valor»; en nutrición, el denominador de la tabla de etapas y de «Comparar dos períodos» eran los días con registros. | Los días del rango, cada uno en una categoría (con valor, sin registros, con registros sin cantidades, hoy en curso) y los subtotales entre los días con valor; en sesiones y tomas, nunca días (II.4). | Corregida |
+| Evidencia de una revisión | Una casilla por registro (70 en un período de nutrición). | Por día y por tipo, con casillas de grupo, lo marcado a la vista, nada marcado al abrir; marcar no es haber examinado (II.5). | Nueva |
+| Contraste de Nutrición | Un filtro «que no registraron las porciones del plan» que mezclaba el modo con una diferencia. | El modo de registro y la diferencia comprobada, en columnas y filtros separados (II.6). | Aclarada |
+| Analizar con la pregunta de etapas | La comparación a mano, el resumen en texto y la lista de etapas, todo abierto debajo de los gráficos; tres veces el mismo límite. | La tabla A/B primero; la comparación a mano, plegada debajo de ella; el resumen en texto plegado; cada límite, una vez (II.6). | Ampliada |
 
 ### V.2 Dónde quedó cada sección de la versión anterior
 

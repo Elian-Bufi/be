@@ -27,10 +27,11 @@ import {
   TEXTO_SIN_DIFERENCIA_DE_ETAPAS,
   type EtapaDePlanificacion,
 } from './etapas-de-planificacion';
-import { contrasteDeLaComida, filaEnPalabras } from './contraste-de-comida';
+import { comidaFrenteALoIndicado, contrasteDeLaComida, filaEnPalabras, frenteALoIndicadoEnPalabras, TEXTO_DEL_MODO_DE_REGISTRO } from './contraste-de-comida';
 import { conteosDesde, cumpleFiltros, novedadDesde } from './linea-de-tiempo';
 import { definicionAntropometrica, definicionDeMetrica, MAXIMO_DE_METRICAS, type DefinicionDeMetrica } from './metricas-del-analisis';
 import { PREGUNTAS_PROFESIONALES, requisitosDe, resolverPregunta, traeSeleccionesDelAsesorado, type ContextoDeLaPregunta } from './preguntas-profesionales';
+import { compararPeriodos, huecosDelRango, partesDeLaCobertura, resumirPeriodo } from './series-del-analisis';
 import {
   claveDeObservacion,
   PALABRAS_QUE_CALIFICAN,
@@ -278,6 +279,105 @@ test('el período que lee dos etapas cubre las dos y se recorta al máximo de un
   // Lo leído no llega al principio de la etapa: se marca recortada.
   const energia = def('nutricion.energia');
   assert.equal(resumirEtapa(serie(energia, [punto('2025-12-01', 2000)]), energia, vieja, { desde: p.desde, hasta: p.hasta }).recortada, true);
+});
+
+// ─── Cobertura de los resúmenes en días (pasada del 2026-10-09, revisión de 643c603) ───────────
+
+/** Una serie diaria con los huecos que declara la API: los días del rango sin ningún punto. */
+const conHuecos = (d: DefinicionDeMetrica, puntos: PuntoAnalitico[], desde: string, hasta: string): SerieAnalitica => ({
+  ...serie(d, puntos),
+  gaps: huecosDelRango(desde, hasta, new Set(puntos.map((p) => p.date))),
+});
+const diasDeLosHuecos = (s: SerieAnalitica): number => s.gaps.reduce((t, h) => t + h.days, 0);
+
+test('cobertura con huecos: 14 días con dos valores son «14 días: 2 con valor · 12 sin registros», nunca «2 de 2 días con valor»', () => {
+  const energia = def('nutricion.energia');
+  const s = conHuecos(energia, [punto('2026-09-03', 1000), punto('2026-09-10', 2000)], '2026-09-01', '2026-09-14');
+  const r = resumirPeriodo(s, energia, '2026-09-01', '2026-09-14');
+  assert.equal(r.valor, 1500, 'la media de los valores disponibles: los días sin registros no se completan con cero');
+  assert.deepEqual([r.n, r.observaciones, r.duracionDias], [2, 2, 14]);
+  assert.deepEqual(r.dias, { sinRegistros: 12, sinCantidades: 0, sinDatoDelNutriente: 0, hoyEnCurso: false });
+  assert.equal(r.dias?.sinRegistros, diasDeLosHuecos(s), 'los días sin registros son los huecos que declara la serie');
+  assert.deepEqual(partesDeLaCobertura(r), ['14 días: 2 con valor', '12 sin registros']);
+
+  // Lo que muestra la tabla de etapas: una etapa cerrada con esos 14 días, contra la siguiente.
+  const etapas = etapasDelArea(
+    [vigencia(V1, 'v1', '2026-09-01T12:00:00.000Z', '2026-09-01', '2026-09-15', '2026-09-15T12:00:00.000Z', 'SUCCESSOR_ACTIVATED'), vigencia(V3, 'v2', '2026-09-15T12:00:00.000Z', '2026-09-15', null, null, null)],
+    'NUTRITION',
+    HOY,
+    AHORA,
+  );
+  const c = compararEtapas(s, energia, etapas[0]!, etapas[1]!, { desde: '2026-09-01', hasta: HOY });
+  assert.equal(c.a.resumen?.valor, 1500);
+  const enLaTabla = partesDeLaCobertura(c.a.resumen!).join(' · ');
+  assert.equal(enLaTabla, '14 días: 2 con valor · 12 sin registros');
+  assert.doesNotMatch(enLaTabla, /\b(\d+) de \1 días/, 'el denominador no son los días con registros');
+  // La etapa abierta termina hoy: hoy no es un día sin registros, y la media no lo toma.
+  assert.deepEqual(c.b.resumen?.dias, { sinRegistros: 24, sinCantidades: 0, sinDatoDelNutriente: 0, hoyEnCurso: true });
+  assert.deepEqual(partesDeLaCobertura(c.b.resumen!), ['25 días: 0 con valor', '24 sin registros', 'hoy, en curso: fuera de la media']);
+  assert.equal(c.motivoSinDiferencia, 'SIN_VALOR_EN_ALGUNO');
+});
+
+test('cada día del rango cuenta una vez: con valor (y cuántos son subtotales), sin registros, sin cantidades, sin el nutriente y hoy en curso', () => {
+  const energia = def('nutricion.energia');
+  const puntos = [
+    punto('2026-10-02', 2000),
+    punto('2026-10-03', 1500, { quality: 'PARTIAL', missing: [{ reason: 'SIN_CANTIDADES', count: 1 }] }),
+    punto('2026-10-04', null, { missing: [{ reason: 'SIN_CANTIDADES', count: 2 }] }),
+    punto('2026-10-05', null, { missing: [{ reason: 'SIN_DATO_DEL_NUTRIENTE', count: 1 }] }),
+    punto('2026-10-07', 1800),
+    punto(HOY, 300, { partialBucket: true }),
+  ];
+  const s = conHuecos(energia, puntos, '2026-10-02', HOY);
+  const r = resumirPeriodo(s, energia, '2026-10-02', HOY, HOY);
+  assert.equal(r.valor, (2000 + 1500 + 1800) / 3, 'ni los días sin valor ni hoy entran en la media');
+  assert.deepEqual([r.n, r.parciales, r.incompletos, r.sinValor], [3, 1, 1, 2]);
+  assert.deepEqual(r.dias, { sinRegistros: 2, sinCantidades: 1, sinDatoDelNutriente: 1, hoyEnCurso: true });
+  const d = r.dias!;
+  assert.equal(r.n + d.sinRegistros + d.sinCantidades + d.sinDatoDelNutriente + (d.hoyEnCurso ? 1 : 0), r.duracionDias, 'cada día del rango está en una sola categoría');
+  assert.deepEqual(partesDeLaCobertura(r), [
+    '8 días: 3 con valor',
+    'de ellos, 1 es un subtotal (falta algún dato)',
+    '2 sin registros',
+    '1 con registros sin cantidades',
+    '1 con registros sin dato de este nutriente',
+    'hoy, en curso: fuera de la media',
+  ]);
+});
+
+test('hoy sin registros todavía es el día en curso, no un día sin registros; un total que lo incluye no se resta', () => {
+  const energia = def('nutricion.energia');
+  const seis = ['2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07', '2026-10-08'].map((f) => punto(f, 2000));
+  const s = conHuecos(energia, seis, '2026-10-03', HOY);
+  const r = resumirPeriodo(s, energia, '2026-10-03', HOY, HOY);
+  assert.deepEqual([r.valor, r.n, r.dias?.sinRegistros, r.dias?.hoyEnCurso], [2000, 6, 0, true]);
+  assert.deepEqual(partesDeLaCobertura(r), ['7 días: 6 con valor', 'hoy, en curso: fuera de la media']);
+  // Sin saber qué día es hoy, la serie no lo distingue de un día sin registros (por eso la pantalla le pasa hoy).
+  assert.equal(resumirPeriodo(s, energia, '2026-10-03', HOY).dias?.sinRegistros, 1);
+
+  const conteo = def('nutricion.registros');
+  const fechas = ['2026-09-26', '2026-09-27', '2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02', ...seis.map((p) => p.date)];
+  const registros = conHuecos(conteo, fechas.map((f) => punto(f, 4)), '2026-09-26', HOY);
+  const c = compararPeriodos(registros, conteo, { desde: '2026-09-26', hasta: '2026-10-02' }, { desde: '2026-10-03', hasta: HOY }, HOY);
+  assert.equal(c.diferencia, null);
+  assert.equal(c.motivoSinDiferencia, 'PERIODO_INCOMPLETO', 'hoy no terminó, aunque todavía no tenga registros');
+  assert.deepEqual(partesDeLaCobertura(c.a), ['7 días: 7 con registros']);
+  assert.deepEqual(partesDeLaCobertura(c.b), ['7 días: 6 con registros', 'hoy, en curso: el total incluye lo registrado hasta ahora']);
+});
+
+test('sesiones y tomas no se cuentan en días: la cobertura dice sesiones o tomas', () => {
+  const carga = def('entrenamiento.carga');
+  const sesiones = serie(carga, [punto('2026-09-01', 50), punto('2026-09-05', null), punto('2026-09-09', 55)], 'ORIGINAL');
+  const r = resumirPeriodo(sesiones, carga, '2026-09-01', '2026-09-30');
+  assert.deepEqual([r.dias, r.n, r.sinValor], [null, 2, 1]);
+  assert.deepEqual(partesDeLaCobertura(r), ['3 sesiones: 2 con valor']);
+  const seriesRegistradas = def('entrenamiento.series-registradas');
+  const total = resumirPeriodo(serie(seriesRegistradas, [punto('2026-09-01', 4), punto('2026-09-05', 0)], 'ORIGINAL'), seriesRegistradas, '2026-09-01', '2026-09-30');
+  assert.deepEqual(partesDeLaCobertura(total), ['2 sesiones'], 'una sesión «no realizada» aporta 0 series: es un valor');
+  const suma = definicionAntropometrica('suma-6-pliegues-isak', 'mm');
+  const tomas = serie(suma, [punto('2026-09-02', 74, { segment: 'cmp-1#0' }), punto('2026-09-10', 72, { segment: 'cmp-1#1' }), punto('2026-09-20', 70, { segment: 'cmp-1#1' })], 'ORIGINAL');
+  assert.deepEqual(partesDeLaCobertura(resumirPeriodo(tomas, suma, '2026-09-01', '2026-09-30')), ['3 tomas: 2 del último tramo comparable']);
+  for (const parte of [...partesDeLaCobertura(r), ...partesDeLaCobertura(total)]) assert.doesNotMatch(parte, /día/);
 });
 
 // ─── Preguntas profesionales (eje 2) ────────────────────────────────────────────────────────────
@@ -588,6 +688,54 @@ test('una comida contra su opción indicada: sin confirmar sigue sin confirmar, 
   ]);
   assert.deepEqual(contrasteDeLaComida({ kind: 'DIFFERENT', option: null, consumption: null, description: 'Una pizza' }), { tipo: 'FUERA_DE_LO_INDICADO', descripcion: 'Una pizza' });
   for (const f of informada.filas) assert.doesNotMatch(filaEnPalabras(f), /%|cumpl|adherencia/i);
+});
+
+test('el modo de registro no es una diferencia: cantidades a mano iguales, distintas, sin confirmar y comida diferente (pasada del 2026-10-09)', () => {
+  const arroz = '20000000-0000-4000-8000-0000000000a1';
+  const pollo = '20000000-0000-4000-8000-0000000000a2';
+  const aceite = '20000000-0000-4000-8000-0000000000a3';
+  const item = (itemId: string, name: string, quantity: { value: number; unit: 'g' | 'ml' } | null) => ({ itemId, catalogItemVersionId: itemId.replace('a', 'b'), name, quantity, preparationState: null, note: null });
+  const opcion = {
+    optionId: '20000000-0000-4000-8000-000000000001',
+    label: 'Arroz con pollo',
+    order: 1,
+    recipe: null,
+    image: null,
+    items: [item(arroz, 'Arroz', { value: 120, unit: 'g' }), item(pollo, 'Pollo', { value: 150, unit: 'g' })],
+    planned: { energyKcal: { value: null, missing: [] }, carbohydrateG: { value: null, missing: [] }, fatG: { value: null, missing: [] }, proteinG: { value: null, missing: [] }, fiberG: { value: null, missing: [] } },
+  };
+  const consumo = (status: 'UNCONFIRMED' | 'PLAN_PORTIONS' | 'REPORTED', items: { itemId: string; quantity: { value: number; unit: 'g' | 'ml' } | null; notEaten: boolean }[] = []) => ({ status, items, source: 'ORIGINAL' as const, rectifiedAt: null });
+  const delPlan = (consumption: ReturnType<typeof consumo>, option = opcion) => comidaFrenteALoIndicado({ kind: 'PLAN_OPTION', option, consumption, description: null });
+
+  // A mano, iguales a lo indicado: el modo es «informadas», y no hay diferencia.
+  const iguales = delPlan(consumo('REPORTED', [{ itemId: arroz, quantity: { value: 120, unit: 'g' }, notEaten: false }, { itemId: pollo, quantity: { value: 150, unit: 'g' }, notEaten: false }]));
+  assert.deepEqual([iguales.modo, iguales.resultado], ['INFORMADAS', 'IGUAL']);
+  assert.equal(frenteALoIndicadoEnPalabras(iguales), 'Igual a lo indicado');
+  // A mano, distintas: la diferencia está comprobada, ingrediente por ingrediente.
+  const distintas = delPlan(consumo('REPORTED', [{ itemId: arroz, quantity: { value: 100, unit: 'g' }, notEaten: false }, { itemId: pollo, quantity: { value: 150, unit: 'g' }, notEaten: false }]));
+  assert.deepEqual([distintas.modo, distintas.resultado, distintas.distintos, distintas.ingredientes], ['INFORMADAS', 'DIFERENCIA_COMPROBADA', 1, 2]);
+  assert.equal(frenteALoIndicadoEnPalabras(distintas), 'Distinta de lo indicado en 1 de 2 ingredientes');
+  // No comer un ingrediente indicado también es una diferencia comprobada.
+  assert.equal(delPlan(consumo('REPORTED', [{ itemId: arroz, quantity: { value: 120, unit: 'g' }, notEaten: false }, { itemId: pollo, quantity: null, notEaten: true }])).resultado, 'DIFERENCIA_COMPROBADA');
+  // Iguales en lo que se puede comparar, con un ingrediente sin cantidad indicada: no se afirma más de lo comprobado.
+  const conAceite = { ...opcion, items: [...opcion.items, item(aceite, 'Aceite', null)] };
+  const parcial = delPlan(consumo('REPORTED', [{ itemId: arroz, quantity: { value: 120, unit: 'g' }, notEaten: false }, { itemId: pollo, quantity: { value: 150, unit: 'g' }, notEaten: false }, { itemId: aceite, quantity: { value: 5, unit: 'ml' }, notEaten: false }]), conAceite);
+  assert.deepEqual([parcial.resultado, parcial.sinComparar], ['IGUAL_EN_LO_COMPARABLE', 1]);
+  assert.equal(frenteALoIndicadoEnPalabras(parcial), 'Igual en lo que se puede comparar; 1 ingrediente sin comparar');
+  // Sin confirmar: no hay qué comparar, y no se completa con las porciones del plan.
+  const sinConfirmar = delPlan(consumo('UNCONFIRMED'));
+  assert.deepEqual([sinConfirmar.modo, sinConfirmar.resultado], ['SIN_CONFIRMAR', 'NO_SE_COMPRUEBA']);
+  assert.equal(frenteALoIndicadoEnPalabras(sinConfirmar), 'No se puede comprobar: sin confirmar');
+  // Las porciones del plan, confirmadas: son las del plan.
+  const porciones = delPlan(consumo('PLAN_PORTIONS'));
+  assert.deepEqual([porciones.modo, porciones.resultado], ['PORCIONES_DEL_PLAN', 'LAS_DEL_PLAN']);
+  // Una comida diferente queda fuera de lo indicado.
+  const diferente = comidaFrenteALoIndicado({ kind: 'DIFFERENT', option: null, consumption: null, description: 'Una pizza' });
+  assert.deepEqual([diferente.modo, diferente.resultado], ['COMIDA_DIFERENTE', 'NO_SE_COMPRUEBA']);
+  assert.equal(frenteALoIndicadoEnPalabras(diferente), 'No se compara: fuera de lo indicado');
+  // El modo dice cómo se registró; ninguna etiqueta del modo afirma una diferencia, y nada califica.
+  for (const texto of Object.values(TEXTO_DEL_MODO_DE_REGISTRO)) assert.doesNotMatch(texto, /distint|difer(?!ente)|no coincide/i);
+  for (const c of [iguales, distintas, parcial, sinConfirmar, porciones, diferente]) assert.doesNotMatch(frenteALoIndicadoEnPalabras(c), PALABRAS_QUE_CALIFICAN);
 });
 
 test('comparar dos etapas arma las métricas del área: en entrenamiento pide el ejercicio, la serie y la unidad', () => {
