@@ -17,6 +17,10 @@
 //   descartable-cuentas  (revisión de #153, hallazgo 5) cuentas sintéticas SEPARADAS y DESCARTABLES, nuevas en cada
 //              corrida: un profesional con Nutrición y Antropometría y un asesorado. Las de A, B y C no se tocan. Escribe
 //              trabajo/demo-profesionales-descartable.txt: hay que reiniciar la API con ese BE_DEMO_PROFESIONALES.
+//   comprension · comprension-e · verificar-comprension   los escenarios D y E de WP-DASHBOARD-COMPRENSION
+//              (datos/comprension.mjs): revisiones por área en fechas distintas, cargas y correcciones después del corte,
+//              borrador sin activar, sesión del plan anterior cargada después, tomas medida, reportada y calculada, y un
+//              asesorado con una sola área y sin revisiones. Corren después de «verificar».
 //   descartable-datos    por la API, hoy: vínculos de Nutrición y Antropometría, una toma medida, una informada por la
 //              persona (SELF_REPORTED) y otra medida, y dos corridas del IMC (be/imc@1): valores medidos, informados y
 //              estimados en la misma serie de evolución. La revocación la hace el asesorado desde su web, en el recorrido.
@@ -667,9 +671,74 @@ async function descartableDatos() {
   console.log(`datos descartables listos: tres tomas de peso (medida, reportada por la persona y medida) y dos IMC calculados por un método (${corridas.map((c) => `${c.valor} ${c.unidad}`).join(', ')})`);
 }
 
-const FASES = { cuentas, base, historia, recientes, verificar, volumen, 'descartable-cuentas': descartableCuentas, 'descartable-datos': descartableDatos };
+// ─── WP-DASHBOARD-COMPRENSION: escenarios D y E ────────────────────────────────────────────────────────────────────
+
+async function comprension() {
+  const e = leerEstado();
+  const hoy = e.hoy;
+  if (hoy !== hoyCivil()) throw new Error(`el escenario se armó para ${hoy}; hoy es ${hoyCivil()}`);
+  const { escenarioD } = await import('./comprension.mjs');
+  const instantanea = async (versionId) => (await en((tx) => filas(tx, `SELECT "contenido" FROM "instantanea_de_plan_nutricional" WHERE "version_de_plan_id" = $1::uuid`, versionId)))[0].contenido;
+  const planesInstantaneas = { v1: { id: e.nutricion.planV1, inst: await instantanea(e.nutricion.planV1) }, v2: { id: e.nutricion.planV2, inst: await instantanea(e.nutricion.planV2) } };
+  const r = await escenarioD({ e, hoy, pedir, sesion, en, sql, filas, comidas, sesiones, PROCEDENCIA, dominio, planesInstantaneas });
+  guardarEstado({ comprension: r });
+  console.log('escenario D listo: revisiones de Nutrición (D-20, aplicada) y de Entrenamiento (D-9, sin aplicar), borrador v3, cargas y correcciones después de los cortes, toma reportada e IMC');
+}
+
+async function comprensionE() {
+  const e = leerEstado();
+  const { escenarioE } = await import('./comprension.mjs');
+  const r = await escenarioE({ e, pedir, sesion, registrarCuenta, vincular, dominio, cuerpoDeEvaluacionNutricional, cuerpoDeObjetivoNutricional });
+  guardarEstado({ escenarioE: r });
+  console.log('escenario E listo: un asesorado con solo Nutrición, sin revisiones y con dos registros de hoy');
+}
+
+async function verificarComprension() {
+  const { esperadoDelEscenarioD } = await import('./comprension.mjs');
+  const e = leerEstado();
+  const pro = await sesion(e.proCorreo);
+  const { d, nut, trn } = esperadoDelEscenarioD(e.hoy);
+  const comprobaciones = [];
+  const comprobar = (que, obtenido, esperado) => comprobaciones.push({ que, obtenido, esperado, ok: JSON.stringify(obtenido) === JSON.stringify(esperado) });
+  const panel = (await pedir('GET', `/advisees/${e.aseId}/dashboard`, { token: pro })).data.domains;
+  comprobar('Nutrición: la última revisión es la de D-20', panel.nutrition.summary?.lastReview?.recordedAt, d.corteDeNutricion.toISOString());
+  comprobar('Nutrición: la revisión está aplicada', panel.nutrition.summary?.lastReview?.application?.appliedAt, d.aplicacionDeNutricion.toISOString());
+  comprobar('Nutrición: la próxima revisión acordada', panel.nutrition.summary?.activePlan?.nextReviewAt, d.proximaRevision);
+  comprobar('Entrenamiento: la última revisión es la de D-9', panel.training.summary?.lastReview?.recordedAt, d.corteDeEntrenamiento.toISOString());
+  comprobar('Entrenamiento: la revisión no está aplicada', panel.training.summary?.lastReview?.application ?? null, null);
+  comprobar('Entrenamiento: el borrador v3 no rige', panel.training.summary?.draftPlan?.planVersionId ?? null, e.comprension?.borradorT ?? 'sin borrador');
+  const linea = async (corte, dominio) =>
+    (await pedir('GET', `/advisees/${e.aseId}/timeline?periodStart=${diaMenos(e.hoy, 365)}&periodEnd=${e.hoy}&domain=${dominio}&since=${encodeURIComponent(corte.toISOString())}&limit=1`, { token: pro })).data;
+  const porClase = (datos, dominio, tipo) =>
+    Object.fromEntries(['OCURRIO_DESPUES', 'INCORPORADO_DESPUES', 'CORREGIDO_DESPUES'].map((k) => [k, datos.sinceCounts.counts.filter((c) => c.domain === dominio && c.kind === k && c.eventType === tipo).reduce((n, c) => n + c.count, 0)]));
+  comprobar('Nutrición: comidas nuevas desde la revisión, por clase', porClase(await linea(d.corteDeNutricion, 'NUTRITION'), 'NUTRITION', 'MEAL_RECORDED'), nut);
+  comprobar('Entrenamiento: sesiones nuevas desde la revisión, por clase', porClase(await linea(d.corteDeEntrenamiento, 'TRAINING'), 'TRAINING', 'TRAINING_SESSION_RECORDED'), trn);
+  if (e.escenarioE) {
+    const deE = (await pedir('GET', `/advisees/${e.escenarioE.aseEId}/dashboard`, { token: pro })).data;
+    comprobar('Escenario E: solo Nutrición disponible', [deE.domains.nutrition.available, deE.domains.training.available, deE.domains.anthropometry.available], [true, false, false]);
+    comprobar('Escenario E: sin revisiones', deE.domains.nutrition.summary?.lastReview ?? null, null);
+  }
+  const resultado = { total: comprobaciones.length, ok: comprobaciones.filter((c) => c.ok).length, comprobaciones };
+  fs.writeFileSync(enTrabajo('verificacion-comprension.json'), JSON.stringify(resultado, null, 2));
+  console.log(`verificación de comprensión: ${resultado.ok} de ${resultado.total}${comprobaciones.some((c) => !c.ok) ? `; fallan: ${comprobaciones.filter((c) => !c.ok).map((c) => c.que).join(' · ')}` : ''}`);
+  if (comprobaciones.some((c) => !c.ok)) process.exitCode = 1;
+}
+
+const FASES = {
+  cuentas,
+  base,
+  historia,
+  recientes,
+  verificar,
+  volumen,
+  comprension,
+  'comprension-e': comprensionE,
+  'verificar-comprension': verificarComprension,
+  'descartable-cuentas': descartableCuentas,
+  'descartable-datos': descartableDatos,
+};
 if (!FASES[fase]) {
-  console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar|volumen|descartable-cuentas|descartable-datos [origen de la API]');
+  console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar|volumen|comprension|comprension-e|verificar-comprension|descartable-cuentas|descartable-datos [origen de la API]');
   process.exit(2);
 }
 try {

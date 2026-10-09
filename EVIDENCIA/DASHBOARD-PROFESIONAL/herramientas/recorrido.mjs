@@ -594,7 +594,13 @@ async function funcional() {
     await cupo(v);
     await clic(page, 'nav[aria-label="Vistas del seguimiento"] a', 'Analizar');
     await quieto(page, v);
-    await clic(page, '.presets button', '¿Cómo evoluciona el peso junto con la alimentación registrada?');
+    // WP-DASHBOARD-COMPRENSION: los presets se retiraron; la misma lectura es la pregunta de alimentación y medidas, con la
+    // medida corporal elegida de forma explícita (nunca se sustituye por la primera disponible).
+    await abrirDetalles(page, 'details.preguntas-profesionales__mas');
+    await clic(page, '.tarjeta-de-pregunta', 'la alimentación y las medidas corporales');
+    await quieto(page, v);
+    await elegir(page, '.parametros-de-pregunta', 'Medida corporal', 'antropometria.peso');
+    await clic(page, '.parametros-de-pregunta button[type="submit"]', 'Ver la respuesta');
     await quieto(page, v);
     const titulos = await textos(page, '.grafico__titulo');
     comprobar('PRO-06', 'Una pregunta de tres métricas dibuja tres paneles', titulos.length === 3, titulos.join(' | '));
@@ -727,7 +733,8 @@ async function funcional() {
     await ir(page, `${FICHA_A}&vista=analizar&m=nutricion.energia&cmp=${A.desde}_${A.hasta}_${B.desde}_${B.hasta}`);
     await quieto(page, v);
     const porDia = await filaDeComparacion(page, 'Energía');
-    await clic(page, '.analizar__opciones label', 'Por semana');
+    // WP-DASHBOARD-COMPRENSION: «Grano» pasó a «Agrupar por» y sus opciones a «Cada registro», «Día» y «Semana».
+    await clic(page, '.analizar__opciones label', 'Semana');
     await quieto(page, v);
     const porSemana = await filaDeComparacion(page, 'Energía');
     const lecturaSemanal = await texto(page, '.panel-de-lectura');
@@ -750,7 +757,8 @@ async function funcional() {
     await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent('nutricion.proteinas')}&modo=R`);
     await quieto(page, v);
     const refDia = await texto(page, '.referencias');
-    await clic(page, '.analizar__opciones label', 'Por semana');
+    // WP-DASHBOARD-COMPRENSION: «Grano» pasó a «Agrupar por» y sus opciones a «Cada registro», «Día» y «Semana».
+    await clic(page, '.analizar__opciones label', 'Semana');
     await quieto(page, v);
     const refSemana = await texto(page, '.referencias');
     comprobar('PRO-08', 'Por semana, la referencia del cambio relativo es la misma que por día (los días de su rango, no las semanas)', refDia.length > 0 && refDia === refSemana, refDia.slice(0, 160));
@@ -770,12 +778,20 @@ async function funcional() {
     );
     await comprobarGraficos(page, 'PRO-08', 'Superpuestas: un gráfico con las dos curvas dibujadas y a la vista, cada una con su color', { figuras: 1, curvas: 2, colores: [[1, 2]] });
 
-    // Dos etapas, con el mismo criterio y sin conclusiones causales.
-    await abrirDetalles(page, 'details.presets');
-    await clic(page, '.presets button', '¿Qué cambió entre dos etapas?');
+    // Dos etapas, con el mismo criterio y sin conclusiones causales. Desde WP-DASHBOARD-COMPRENSION son las etapas reales
+    // del plan (las versiones activadas), con la pregunta «¿Qué cambió entre dos etapas?».
+    await ir(page, `${FICHA_A}&vista=analizar&pregunta=comparar-etapas&area=NUTRICION&etapaA=${estado.nutricion.planV1}&etapaB=${estado.nutricion.planV2}`);
     await quieto(page, v);
-    const comparacion = await page.evaluate(() => [...document.querySelectorAll('table')].find((t) => t.querySelector('caption')?.textContent.includes('Comparación'))?.innerText.replace(/\s+/g, ' ') ?? '');
-    comprobar('PRO-18', 'La comparación de dos etapas dice criterio, n, duración y diferencia, sin causas', /B − A/.test(comparacion) && /n = \d+ de \d+ · \d+ días/.test(comparacion) && !/mejor|peor|gracias a|provoc|causó/i.test(comparacion), comparacion.slice(0, 260));
+    const comparacion = await texto(page, '.comparacion-de-etapas');
+    comprobar(
+      'PRO-18',
+      'La comparación de dos etapas dice criterio, cobertura, duración y diferencia, sin causas',
+      /B − A/.test(comparacion) && /\d+ de \d+ días con valor/.test(comparacion) && /Duración/.test(comparacion) && !/mejor|peor|gracias a|provoc|causó/i.test(comparacion),
+      comparacion.slice(0, 260),
+    );
+    // La exportación es de lo que se ve en el lienzo: se vuelve a las tres métricas.
+    await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent(TRES)}`);
+    await quieto(page, v);
 
     // Exportación de lo que se ve.
     await clic(page, 'button', 'Descargar los datos (CSV)');
@@ -833,6 +849,9 @@ async function funcional() {
     const parcialB = await texto(page, 'main');
     comprobar('PRO-20', 'Asesorado B: un solo aviso de vista parcial, sin nombrar lo oculto', /Vista parcial según tu acceso actual/.test(parcialB));
     await ir(page, `${FICHA_B}&vista=analizar`);
+    await quieto(page, v);
+    // WP-DASHBOARD-COMPRENSION: Analizar empieza por las preguntas; el selector de métricas está en «Análisis personalizado».
+    await clic(page, 'button', 'Análisis personalizado');
     await quieto(page, v);
     const areasB = await page.evaluate(() => {
       const label = [...document.querySelectorAll('.agregar-metrica label')].find((l) => l.textContent === 'Área');
@@ -899,12 +918,13 @@ async function funcional() {
       await clic(page, 'details.vistas-guardadas button', `Abrir ${VISTA}`);
       await quieto(page, v);
       const p = parametros(page);
-      const referenciaReabierta = await texto(page, '.referencia-del-cambio');
+      // WP-DASHBOARD-COMPRENSION: la referencia detallada se muestra en el modo «Cambio relativo» (encargo §10, «los
+      // controles avanzados se revelan cuando ayudan»); en paneles, la vista la conserva en la URL (`ref`).
       comprobar(
         'PRO-19',
         'En una sesión nueva, la vista guardada reabre la misma configuración —también su referencia— y vuelve a pedir los datos',
-        p.get('m') === TRES && p.get('p') === '30' && p.get('ref') === REF_DE_LA_VISTA && /Rango fijo, del/.test(referenciaReabierta) && (await page.$$eval('.grafico__lienzo', (g) => g.length)) === 3,
-        `${page.url().replace(WEB, '')} · ${referenciaReabierta.slice(0, 120)}`,
+        p.get('m') === TRES && p.get('p') === '30' && p.get('ref') === REF_DE_LA_VISTA && (await page.$$eval('.grafico__lienzo', (g) => g.length)) === 3,
+        `${page.url().replace(WEB, '')}`,
       );
       await clic(page, 'details.vistas-guardadas button', `Borrar ${VISTA}`);
       const confirmar = await texto(page, 'details.vistas-guardadas');
@@ -1038,7 +1058,7 @@ async function descartable() {
       comprobar(
         'PRO-10',
         `En ${tema}, lo reportado y lo calculado se dibujan distinto (contorno cortado en el peso reportado, un punto adentro en el IMC) y la leyenda lo dice`,
-        dib[0]?.clases.includes('REPORTED') && !dib[0]?.clases.includes('DERIVED') && dib[1]?.clases.includes('DERIVED') && /Contorno cortado: reportado por la persona, no medido/.test(leyenda) && /Con un punto adentro: calculado por un método \(estimación\)/.test(leyenda),
+        dib[0]?.clases.includes('REPORTED') && !dib[0]?.clases.includes('DERIVED') && dib[1]?.clases.includes('DERIVED') && /Contorno cortado: reportado por la persona, no medido/.test(leyenda) && /Con un punto adentro: calculado por un método/.test(leyenda) && !/\(estimación\)/.test(leyenda),
         `peso: ${dib[0]?.clases.join(',') || 'sin clase'}; IMC: ${dib[1]?.clases.join(',') || 'sin clase'} · ${leyenda.slice(0, 170)}`,
       );
       const c = await captura(pro.page, pro.v, `analizar-clases-1440-${tema}`);
@@ -1050,7 +1070,8 @@ async function descartable() {
     comprobar('PRO-10', 'La lectura del día de la toma reportada dice «Reportado por la persona, no medido»', /80,5 kg/.test(lectura) && /Clase de dato: Reportado por la persona, no medido/.test(lectura), lectura.slice(0, 220));
     await abrirDetalles(pro.page, 'details.tabla-de-datos');
     const tabla = await texto(pro.page, 'details.tabla-de-datos');
-    comprobar('PRO-10', 'La tabla de datos marca el peso reportado y el IMC calculado; lo medido va sin marca', /80,5 kg \(reportado por la persona, no medido\)/.test(tabla) && /\(calculado por un método\)/.test(tabla) && /81,2 kg(?! \()/.test(tabla), tabla.slice(0, 260));
+    // WP-DASHBOARD-COMPRENSION: calculado no es siempre estimado; el IMC es un índice y la tabla lo dice.
+    comprobar('PRO-10', 'La tabla de datos marca el peso reportado y el IMC calculado (un índice, no una estimación); lo medido va sin marca', /80,5 kg \(reportado por la persona, no medido\)/.test(tabla) && /\(calculado: un índice calculado sobre medidas, no una estimación\)/.test(tabla) && /81,2 kg(?! \()/.test(tabla), tabla.slice(0, 260));
     await clic(pro.page, 'button', 'Descargar los datos (CSV)');
     const { archivo, csv } = await esperarCsv();
     const lineasCsv = csv.split('\r\n');
@@ -1063,7 +1084,7 @@ async function descartable() {
       archivo &&
         porClase('Medido').join(' ') === '79,9 81,2' &&
         porClase('Reportado por la persona, no medido').join(' ') === '80,5' &&
-        porClase('Calculado por un método (estimación)').join(' ') === d.imc.map((c) => c.valor.toFixed(2).replace('.', ',')).sort().join(' '),
+        filasCsv.filter((x) => x[16].startsWith('Calculado: un índice calculado sobre medidas, no una estimación')).map((x) => x[6]).sort().join(' ') === d.imc.map((c) => c.valor.toFixed(2).replace('.', ',')).sort().join(' '),
       `${archivo} · ${filasCsv.map((x) => `${x[6]}: ${x[16]}`).join(' · ')}`,
     );
     await clic(pro.page, '.panel-de-lectura button', 'Ver el origen de este dato');

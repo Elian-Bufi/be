@@ -1,0 +1,331 @@
+RootWebArea: Ficha del asesorado · BE
+    StaticText: Ficha del asesorado · BE
+    link: Saltar al contenido
+      StaticText: Saltar al contenido
+    link: BE, ir al inicio
+    navigation: Espacio profesional
+      link: Espacio profesional
+        StaticText: Espacio profesional
+      link: Plantillas y habituales
+        StaticText: Plantillas y habituales
+      link: Mis recetas
+        StaticText: Mis recetas
+      link: Mis ejercicios
+        StaticText: Mis ejercicios
+      link: Cuenta
+        StaticText: Cuenta
+    StaticText: Apariencia
+    combobox: Apariencia
+      option: Azul noche
+      option: Claro
+    StaticText: Se guarda en este navegador, no en tu cuenta.
+    StaticText: Ambiente de prueba · solo datos sintéticos
+    navigation: Ubicación
+      link: Espacio profesional
+        StaticText: Espacio profesional
+      StaticText: ›
+      StaticText: Ficha del asesorado
+    heading 1: Asesorado · 42f8d0
+    StaticText: Acceso actual
+    StaticText: Antropometría, Entrenamiento y Nutrición
+    StaticText: : 
+    StaticText: Activo · acceso contextual
+    button: Actualizar
+    StaticText: Consultado a las 
+    StaticText: 05:28:58 a. m.
+    navigation: Vistas del seguimiento
+      link: Resumen
+        StaticText: Resumen
+      link: Línea de tiempo
+        StaticText: Línea de tiempo
+      link: Analizar
+        StaticText: Analizar
+    StaticText: Período:
+    StaticText:  
+    StaticText: 12 jul 2026
+    StaticText:  al 
+    StaticText: 9 oct 2026
+    StaticText:  · incluye hoy, que todavía está en curso
+    button: 7 días
+    button: 30 días
+    button: 90 días
+    button: 1 año
+    button: Otro rango
+    region: Objetivo y planificación
+      heading 2: Objetivo y planificación
+      StaticText: Objetivo, planificación y revisiones de cada área
+      StaticText: Área
+      StaticText: Objetivo vigente hoy
+      StaticText: Plan vigente hoy
+      StaticText: Revisiones
+      StaticText: Nutrición
+      StaticText: 1.950 kcal por día (requerimiento energético estimado)
+      StaticText: Desde el 
+      StaticText: 4 sept 2026
+      StaticText:  · 
+      StaticText: Lic. Sofía Paz (sintética)
+      StaticText: Versión 2
+      StaticText: , desde el 
+      StaticText: 4 sept 2026
+      StaticText:  ·
+      StaticText:  
+      link: Ver la planificación
+        StaticText: Ver la planificación
+      StaticText: Antes, en el período
+      StaticText: : 
+      StaticText: v1 (del 18 jul 2026 al 3 sept 2026)
+      StaticText: Última: 
+      StaticText: 19 sept 2026
+      StaticText:  · 
+      StaticText: Lic. Sofía Paz (sintética)
+      StaticText:  ·
+      StaticText:  
+      StaticText: aplicada
+      StaticText:  
+      StaticText: · 
+      link: Ver revisiones
+        StaticText: Ver revisiones
+      StaticText: Próxima acordada: 
+      StaticText: 12 oct 2026
+      StaticText: Entrenamiento
+      StaticText: Ganar fuerza en los básicos con técnica estable (objetivo sintético).
+      StaticText: Desde el 
+      StaticText: 17 jul 2026
+      StaticText:  · 
+      StaticText: Lic. Sofía Paz (sintética)
+      StaticText: Versión 2
+      StaticText: , desde el 
+      StaticText: 4 sept 2026
+      StaticText:  ·
+      StaticText:  
+      link: Ver la planificación
+        StaticText: Ver la planificación
+      StaticText: Antes, en el período
+      StaticText: : 
+      StaticText: v1 (del 18 jul 2026 al 3 sept 2026)
+      StaticText: Borrador del 
+      StaticText: 9 oct 2026
+      StaticText: : todavía no rige · 
+      link: Ir al borrador
+        StaticText: Ir al borrador
+      StaticText: Última: 
+      StaticText: 30 sept 2026
+      StaticText:  · 
+      StaticText: Lic. Sofía Paz (sintética)
+      StaticText:  ·
+      StaticText:  
+      StaticText: registrada, sin aplicar
+      StaticText:  
+      StaticText: · 
+      link: Ver revisiones
+        StaticText: Ver revisiones
+      StaticText: Próxima acordada: 
+      StaticText: sin fecha acordada
+      StaticText: Antropometría
+      StaticText: Última toma: 
+      StaticText: 8 oct 2026, 8:00 a. m.
+      StaticText:  · 
+      StaticText: Lic. Sofía Paz (sintética)
+      StaticText:  ·
+      button: Ver la toma
+      StaticText:  · 
+      StaticText: 8 tomas en el período
+      StaticText:  ·
+      StaticText:  
+      link: Abrir Antropometría
+        StaticText: Abrir Antropometría
+      StaticText: No tiene revisiones en BE
+    region: Para tu próxima revisión
+      heading 2: Para tu próxima revisión
+      button: Ver todas (9)
+      StaticText: Hechos por área, desde su última revisión o, si no tiene, en el período elegido
+      StaticText:  (datos consultados a las 05:29 a. m.)
+      StaticText: .
+      StaticText: Nutrición
+      StaticText:  · 
+      StaticText: Hoy
+      StaticText: La próxima revisión acordada es el 12 oct 2026 (en 3 días).
+      StaticText: Sale de 
+      StaticText: la próxima revisión acordada en el plan vigente
+      StaticText: .
+      link: Ver la información disponible (Nutrición)
+        StaticText: Ver la información disponible
+        StaticText: (
+        StaticText: Nutrición
+        StaticText: )
+      StaticText: Entrenamiento
+      StaticText:  · 
+      StaticText: Hoy
+      StaticText: La revisión del 30 sept 2026 está registrada y su resultado todavía no se aplicó.
+      StaticText: Sale de 
+      StaticText: la última revisión registrada del área y su aplicación
+      StaticText: .
+      link: Abrir las revisiones (Entrenamiento)
+        StaticText: Abrir las revisiones
+        StaticText: (
+        StaticText: Entrenamiento
+        StaticText: )
+      StaticText: Entrenamiento
+      StaticText:  · 
+      StaticText: Hoy
+      StaticText: Hay una versión nueva del plan en borrador, creada el 9 oct 2026. No rige hasta que se active.
+      StaticText: Sale de 
+      StaticText: la versión del plan en preparación
+      StaticText: .
+      link: Ir a la planificación (Entrenamiento)
+        StaticText: Ir a la planificación
+        StaticText: (
+        StaticText: Entrenamiento
+        StaticText: )
+      StaticText: Antropometría
+      StaticText:  · 
+      StaticText: En el período seleccionado
+      StaticText: Una medida cambió de protocolo, método o unidad en el período (Peso): su serie se corta donde cambia.
+      StaticText: Sale de 
+      StaticText: los grupos de comparabilidad de las tomas del período (protocolo, método y unidad)
+      StaticText: .
+      link: Abrir Antropometría (Antropometría)
+        StaticText: Abrir Antropometría
+        StaticText: (
+        StaticText: Antropometría
+        StaticText: )
+      DisclosureTriangle: ▸ Cómo se arma esta lista
+    region: Acciones
+      heading 2: Acciones
+      link: Preparar la revisión de Nutrición
+        StaticText: Preparar la revisión de 
+        StaticText: Nutrición
+      StaticText: Abre el formulario con el período desde la última revisión. No registra nada hasta que lo confirmes.
+      link: Preparar la revisión de Entrenamiento
+        StaticText: Preparar la revisión de 
+        StaticText: Entrenamiento
+      StaticText: Abre el formulario con el período desde la última revisión. No registra nada hasta que lo confirmes.
+      link: Analizar un cambio
+        StaticText: Analizar un cambio
+      StaticText: Desde que empezó un plan, con sus etapas e hitos.
+      link: Solicitar contexto
+        StaticText: Solicitar contexto
+      StaticText: Un formulario para que la persona complete; vuelve acá al enviarlo.
+      heading 3: Empezar por una pregunta
+      link: ¿Lo registrado coincide con lo indicado?
+        StaticText: ¿Lo registrado coincide con lo indicado?
+      link: ¿Cómo viene progresando este ejercicio?
+        StaticText: ¿Cómo viene progresando este ejercicio?
+      link: ¿Con qué información cuento para revisar el objetivo?
+        StaticText: ¿Con qué información cuento para revisar el objetivo?
+      link: Más preguntas o análisis personalizado
+        StaticText: Más preguntas o análisis personalizado
+    region: Indicadores
+      heading 2: Indicadores
+      button: Elegir indicadores
+      StaticText: Del 
+      StaticText: 12 jul 2026
+      StaticText:  al 
+      StaticText: 9 oct 2026
+      StaticText: . 
+      StaticText: Los de por defecto: podés elegir otros.
+      StaticText:  Describen lo registrado, sin calificar.
+      heading 3: Energía
+      StaticText: 1.205 kcal
+      StaticText: media de 79 de 90 días con valor; en 8, el valor es un subtotal (falta algún dato) · sin contar hoy, que sigue en curso
+      link: Analizar Energía
+        StaticText: Analizar
+        StaticText: Energía
+      heading 3: Registros
+      StaticText: 282 registros
+      StaticText: en 90 días · incluye hoy, que sigue en curso
+      link: Analizar Registros
+        StaticText: Analizar
+        StaticText: Registros
+      heading 3: Peso
+      StaticText: 79,8 kg
+      StaticText: Última toma: 
+      StaticText: 8 oct 2026
+      StaticText: Primera comparable del período: 
+      StaticText: 80,2 kg
+      StaticText:  el 
+      StaticText: 20 sept 2026
+      StaticText:  · diferencia 
+      StaticText: −0,4
+      StaticText:  
+      StaticText: kg
+      StaticText:  (
+      StaticText: 5
+      StaticText:  tomas comparables)
+      link: Analizar Peso
+        StaticText: Analizar
+        StaticText: Peso
+      heading 3: Series registradas · Peso muerto
+      StaticText: 36 series
+      StaticText: en 90 días
+      link: Analizar Series registradas · Peso muerto
+        StaticText: Analizar
+        StaticText: Series registradas · Peso muerto
+    region: Qué se registró en el período
+      heading 2: Qué se registró en el período
+      StaticText: Cobertura del registro, no adherencia: qué hay y qué falta, sin calificar.
+      StaticText: Nutrición
+      StaticText: 80 días
+      StaticText:  de 
+      StaticText: 90
+      StaticText:  con algún registro · 
+      StaticText: 282 registros
+      StaticText: : 
+      StaticText: 274
+      StaticText:  con cantidades y 
+      StaticText: 8
+      StaticText:  sin cantidades
+      StaticText:  (4 comidas diferentes)
+      StaticText:  · 2 anulados fuera de los totales
+      StaticText:  · 3 rectificados, contados una vez
+      StaticText:  · El plan rige desde el 18 jul 2026: antes, en el período, no había un plan de este seguimiento.
+      StaticText: Entrenamiento
+      StaticText: 26 sesiones registradas
+      StaticText:  · 1 con cambios
+      StaticText:  · 1 registrada como no realizada
+      StaticText:  · 1 resumida, sin series
+      StaticText: . Sin calendario prescripto, no hay «sesiones esperadas».
+      StaticText:  El plan rige desde el 18 jul 2026: antes, en el período, no había un plan de este seguimiento.
+      StaticText: Antropometría
+      StaticText: 8 tomas registradas
+      StaticText: Cargado otro día
+      StaticText: 31 hechos se registraron un día posterior al que ocurrieron
+      StaticText:  (carga tardía).
+    region: Lo último que pasó
+      heading 2: Lo último que pasó
+      StaticText: 9 oct 2026
+      StaticText:  · 
+      StaticText: Entrenamiento
+      StaticText:  · 
+      StaticText: Sesión registrada · A · Tren inferior
+      StaticText: 9 oct 2026
+      StaticText:  · 
+      StaticText: Nutrición
+      StaticText:  · 
+      StaticText: Comida registrada · Desayuno
+      StaticText: 8 oct 2026
+      StaticText:  · 
+      StaticText: Nutrición
+      StaticText:  · 
+      StaticText: Comida diferente · Cena
+      StaticText:  · carga tardía
+      StaticText: 8 oct 2026
+      StaticText:  · 
+      StaticText: Entrenamiento
+      StaticText:  · 
+      StaticText: Sesión registrada · B · Tren superior
+      StaticText: 8 oct 2026
+      StaticText:  · 
+      StaticText: Nutrición
+      StaticText:  · 
+      StaticText: Comida registrada · Merienda
+      StaticText:  (anulado)
+      StaticText:  · carga tardía
+      StaticText: 8 oct 2026
+      StaticText:  · 
+      StaticText: Nutrición
+      StaticText:  · 
+      StaticText: Comida registrada · Almuerzo
+      StaticText:  · carga tardía
+      link: Ver todo en la línea de tiempo
+        StaticText: Ver todo en la línea de tiempo
