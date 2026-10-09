@@ -105,3 +105,5 @@ en `docs/DEUDA_LEGAJO.md` (DL-129 y DL-130).
 | 6 | Recorridos finales y revisión propia | Hecho: capturas, `funcional`, `revocacion` y regresión de #153 sobre una sola compilación y una sola generación de datos; crítica en la evidencia |
 | 7 | Entrega en borrador | Hecho: PR #154 en borrador contra `wp-dashboard-profesional`, sin merge ni despliegue |
 | — | Pasada de corrección y usabilidad (pedido de Dirección del 2026-10-09) | Hecha: D-28 a D-32 en `269d930`; verificación en `ACEPTACION.md` (P-1 a P-5) |
+| — | Demostración local y su disponibilidad (pedidos de Elián del 2026-10-09) | Preparada en `1c02264` (D-33): materiales en `EVIDENCIA/DASHBOARD-COMPRENSION/demostracion/`, PostgreSQL en una terminal propia |
+| — | Continuidad: cambio de proceso de Claude Code (pedido de Elián del 2026-10-09) | Servicios apagados, clúster copiado a una carpeta persistente fuera de Temp (idéntico, con apagado limpio), medición de memoria y nota de reanudación al día; falta el primer arranque de la copia en la sesión nueva |
