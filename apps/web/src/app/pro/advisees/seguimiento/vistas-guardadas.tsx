@@ -37,7 +37,11 @@ function configuracionDe(estado: EstadoDeAnalisis, periodo: { preset: number | n
 const referenciaGuardada = (r: ReferenciaDelCambio): string =>
   r.kind === 'FIRST_DAYS' ? `referencia: los primeros ${numero(r.days)} días` : `referencia: del ${diaCivil(r.start)} al ${diaCivil(r.end)}`;
 
-export function VistasGuardadas({ estado, pregunta }: { estado: EstadoDeAnalisis; pregunta: PreguntaElegida | null }) {
+/**
+ * `soloAbrir`: al comienzo de Analizar (sin métricas ni pregunta) no hay nada que guardar: se listan las vistas para
+ * retomarlas, sin el formulario de guardar ni «Guardar lo actual acá».
+ */
+export function VistasGuardadas({ estado, pregunta, soloAbrir = false }: { estado: EstadoDeAnalisis; pregunta: PreguntaElegida | null; soloAbrir?: boolean }) {
   const { token, periodo, ir, sesionPerdida } = useSeguimiento();
   const id = useId();
   const [vistas, setVistas] = useState<readonly VistaDeAnalisis[] | null>(null);
@@ -131,14 +135,18 @@ export function VistasGuardadas({ estado, pregunta }: { estado: EstadoDeAnalisis
       {pregunta && traeSeleccionesDelAsesorado(pregunta.params) ? (
         <p className="nota">Esta vista lleva selecciones de este asesorado (la versión del plan, las etapas o el ejercicio): en otro asesorado se te van a pedir de nuevo.</p>
       ) : null}
-      <div className="campo">
-        <label htmlFor={`${id}-nombre`}>Nombre de la vista</label>
-        <input id={`${id}-nombre`} value={nombre} maxLength={80} onChange={(e) => setNombre(e.target.value)} placeholder="Por ejemplo: Peso y alimentación" />
-      </div>
-      <button type="button" className="boton boton--secundario" disabled={!configuracion || !nombre.trim() || ocupado} onClick={() => void guardar()}>
-        Guardar esta vista
-      </button>
-      {!configuracion ? <p className="nota">Elegí al menos una métrica para guardar una vista.</p> : null}
+      {soloAbrir ? null : (
+        <>
+          <div className="campo">
+            <label htmlFor={`${id}-nombre`}>Nombre de la vista</label>
+            <input id={`${id}-nombre`} value={nombre} maxLength={80} onChange={(e) => setNombre(e.target.value)} placeholder="Por ejemplo: Peso y alimentación" />
+          </div>
+          <button type="button" className="boton boton--secundario" disabled={!configuracion || !nombre.trim() || ocupado} onClick={() => void guardar()}>
+            Guardar esta vista
+          </button>
+          {!configuracion ? <p className="nota">Elegí al menos una métrica para guardar una vista.</p> : null}
+        </>
+      )}
       {error ? (
         <p className="campo__error" role="alert">
           {error}
@@ -170,9 +178,11 @@ export function VistasGuardadas({ estado, pregunta }: { estado: EstadoDeAnalisis
                 <button type="button" className="boton boton--enlace" onClick={() => abrir(v)}>
                   Abrir<span className="visualmente-oculto"> {v.name}</span>
                 </button>
-                <button type="button" className="boton boton--enlace" disabled={!configuracion || ocupado} onClick={() => void actualizar(v)}>
-                  Guardar lo actual acá<span className="visualmente-oculto"> ({v.name})</span>
-                </button>
+                {soloAbrir ? null : (
+                  <button type="button" className="boton boton--enlace" disabled={!configuracion || ocupado} onClick={() => void actualizar(v)}>
+                    Guardar lo actual acá<span className="visualmente-oculto"> ({v.name})</span>
+                  </button>
+                )}
                 {porBorrar === v.viewId ? null : (
                   <button type="button" className="boton boton--enlace" disabled={ocupado} onClick={() => setPorBorrar(v.viewId)}>
                     Borrar<span className="visualmente-oculto"> {v.name}</span>

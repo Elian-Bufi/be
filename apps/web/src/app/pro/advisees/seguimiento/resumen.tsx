@@ -444,13 +444,7 @@ function ParaTuProximaRevision({
       {observaciones !== null && hechos.length === 0 && fallas.length === 0 ? (
         <EstadoVacio titulo="Nada para preparar con tu acceso actual">No hay áreas disponibles o todavía no hay datos ni planificación.</EstadoVacio>
       ) : null}
-      {visibles.length > 0 ? (
-        <ol id={`${id}-lista`} className="observaciones">
-          {visibles.map((o) => (
-            <Observacion key={claveDeObservacion(o)} o={o} enlace={o.accion ? enlaceDe(o.accion) : null} onAbrir={onAbrir} />
-          ))}
-        </ol>
-      ) : null}
+      {/* Lo que falta va primero (GUIA II.7): debajo de la lista, la síntesis parecía completa al leerla de arriba abajo. */}
       {fallas.length > 0 ? (
         <div className="observaciones__fallas" role="status">
           {fallas.map((o) => (
@@ -462,6 +456,13 @@ function ParaTuProximaRevision({
             Reintentar
           </button>
         </div>
+      ) : null}
+      {visibles.length > 0 ? (
+        <ol id={`${id}-lista`} className="observaciones">
+          {visibles.map((o) => (
+            <Observacion key={claveDeObservacion(o)} o={o} enlace={o.accion ? enlaceDe(o.accion) : null} onAbrir={onAbrir} />
+          ))}
+        </ol>
       ) : null}
       <Ayuda titulo="Cómo se arma esta lista">
         <p>

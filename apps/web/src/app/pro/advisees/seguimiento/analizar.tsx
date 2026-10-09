@@ -220,6 +220,8 @@ export function Analizar() {
       <h2 id={`${id}-titulo`}>Analizar</h2>
       <p className="metadatos">Hasta tres métricas en el mismo tiempo. Coincidencia temporal: no indica causa.</p>
       {sinEntrada ? <ListaDePreguntas onPersonalizado={() => setPersonalizado(true)} /> : null}
+      {/* Retomar una vista guardada también desde el comienzo: antes había que armar un análisis cualquiera para verlas. */}
+      {sinEntrada ? <VistasGuardadas estado={estado} pregunta={null} soloAbrir /> : null}
       {pregunta && resolucion === null ? <Cargando /> : null}
       {pregunta && resolucion && (resolucion.estado === 'FALTA_ELEGIR' || cambiandoPregunta) ? (
         <ElegirParametros
