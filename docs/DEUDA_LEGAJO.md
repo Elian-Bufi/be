@@ -3561,7 +3561,9 @@ DL-126, DL-127, DL-128 · encargo del 2026-10-09, §3 a §9 · **Estado:** PROPU
     rige) y `objective.effectiveFrom`. Solo lo lee la web.
   - **API-DSH-04:** `since` (un instante, en la consulta y en el cuerpo de la búsqueda) filtra a lo nuevo desde ese corte, y
     `sinceCounts` lo cuenta por clase (ocurrió después, se incorporó después o se corrigió después), dominio y tipo, con
-    los instantes de registro y de cada relación, nunca con un `updatedAt`.
+    los instantes de registro y de cada relación, nunca con un `updatedAt`. Desde la pasada del 2026-10-09, el rasgo de
+    calidad `QUANTITIES_DIFFER_FROM_PLAN` (una diferencia comprobada, ingrediente por ingrediente, entre las cantidades
+    informadas y la opción indicada) y el detalle «Frente a lo indicado»: el modo de registro no es una diferencia.
   - **API-PRJ-01:** en cada punto, el método con su naturaleza (índice, suma de pliegues, estimación, componente del
     somatotipo o sin especificar, desde la categoría de su ficha, DL-111) y las versiones del plan que ejecutan sus
     registros; en cada vigencia, el instante y el motivo del corte; en las métricas antropométricas disponibles, cuántos

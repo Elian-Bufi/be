@@ -1,7 +1,7 @@
 {
   "modo": "funcional",
-  "inicio": "2026-10-09T08:32:51.218Z",
-  "fin": "2026-10-09T08:35:03.832Z",
+  "inicio": "2026-10-09T13:45:22.111Z",
+  "fin": "2026-10-09T13:47:46.923Z",
   "hoy": "2026-10-09",
   "total": 70,
   "fallas": 0,
@@ -11,7 +11,7 @@
       "descripcion": "Primera carga del Resumen, desde el envío del inicio de sesión hasta la última respuesta (puede incluir el arranque en frío de la API)",
       "ok": true,
       "informativo": true,
-      "detalle": "1702 ms"
+      "detalle": "2527 ms"
     },
     {
       "pro": "PRO-01",
@@ -23,13 +23,13 @@
       "pro": "PRO-02",
       "descripcion": "Cuatro indicadores con unidad, fecha y cobertura",
       "ok": true,
-      "detalle": "Energía 1.205 kcal media de 79 de 90 días con valor; en 8, el valor es un subtotal (falta algún dato) · sin contar hoy, que sigue en curso Analizar Energía | Registros 282 registros en 90 días · incluye hoy, que sigue en curso Analizar Registros | Peso 79,8 kg Última toma: 8 oct 2026 Primera comparable del período: 80,2 kg el 20 sept 2026 · diferencia −0,4 kg (5 tomas comparables) Analizar Peso | "
+      "detalle": "Energía 1.208 kcal Media · 90 días: 79 con valor · de ellos, 8 son subtotales (falta algún dato) · 10 sin registros · hoy, en curso: fuera de la media Analizar Energía | Registros 283 registros Total · 90 días: 80 con registros · 10 sin registros · hoy, en curso: el total incluye lo registrado hasta ahora Analizar Registros | Peso 79,8 kg Última toma: 8 oct 2026 Primera comparable del período: 80,"
     },
     {
       "pro": "PRO-11",
       "descripcion": "La media de energía no cuenta el día en curso y dice sus subtotales",
       "ok": true,
-      "detalle": "Energía 1.205 kcal media de 79 de 90 días con valor; en 8, el valor es un subtotal (falta algún dato) · sin contar hoy, que sigue en curso Analizar Energía"
+      "detalle": "Energía 1.208 kcal Media · 90 días: 79 con valor · de ellos, 8 son subtotales (falta algún dato) · 10 sin registros · hoy, en curso: fuera de la media Analizar Energía"
     },
     {
       "pro": "PRO-15",
@@ -41,7 +41,7 @@
       "pro": "PRO-12",
       "descripcion": "La cobertura por área dice su denominador y no da porcentajes",
       "ok": true,
-      "detalle": "Nutrición 80 días de 90 con algún registro · 282 registros: 274 con cantidades y 8 sin cantidades (4 comidas diferentes) · 2 anulados fuera de los totales · 3 rectificados, contados una vez · El plan rige desde el 18 jul"
+      "detalle": "Nutrición 80 días de 90 con algún registro · 283 registros: 275 con cantidades y 8 sin cantidades (4 comidas diferentes) · 2 anulados fuera de los totales · 3 rectificados, contados una vez · El plan rige desde el 18 jul"
     },
     {
       "pro": "PRO-02",
@@ -71,13 +71,13 @@
       "pro": "PRO-03",
       "descripcion": "La toma de ayer cargada hoy queda en el día de ayer, marcada como carga tardía",
       "ok": true,
-      "detalle": "ANTROPOMETRÍA 08:00 a. m. Toma antropométrica registrada Carga tardía Mediciones vigentes 2 Protocolo Perfil antropométrico completo Registrado el 9 oct 2026, 5:19 a. m. · Lic. Sofía Paz (sintética) Abrir registro : Toma antropométrica registrada"
+      "detalle": "ANTROPOMETRÍA 08:00 a. m. Toma antropométrica registrada Carga tardía Mediciones vigentes 2 Protocolo Perfil antropométrico completo Registrado el 9 oct 2026, 10:15 a. m. · Lic. Sofía Paz (sintética) Abrir registro : Toma antropométrica registrada"
     },
     {
       "pro": "PRO-16",
       "descripcion": "El almuerzo rectificado es una sola entrada, marcada «Rectificado»",
       "ok": true,
-      "detalle": "NUTRICIÓN 01:00 p. m. Comida registrada · Almuerzo Rectificado Carga tardía Opción 1 · Arroz con pollo y brócoli Cantidades las del plan Energía registrada 440 kcal Plan versión 2 Registrado el 9 oct 2026, 5:19 a. m. · Asesorado · 42f8d0 Cantidades rectificadas: cuenta una sola vez, en su versión vigente (9 oct 2026, 5:19 a. m.) Registrado sobre la versión 2 del plan Abrir registro : Comida regist"
+      "detalle": "NUTRICIÓN 01:00 p. m. Comida registrada · Almuerzo Rectificado Carga tardía Opción 1 · Arroz con pollo y brócoli Cantidades las del plan, confirmadas Energía registrada 440 kcal Plan versión 2 Registrado el 9 oct 2026, 10:15 a. m. · Asesorado · 84c841 Cantidades rectificadas: cuenta una sola vez, en su versión vigente (9 oct 2026, 10:15 a. m.) Registrado sobre la versión 2 del plan Abrir registro "
     },
     {
       "pro": "PRO-16",
@@ -89,13 +89,13 @@
       "pro": "PRO-04",
       "descripcion": "Área y tipo combinados quedan en la URL y reducen el conjunto",
       "ok": true,
-      "detalle": "284 de 330"
+      "detalle": "285 de 331"
     },
     {
       "pro": "PRO-04",
       "descripcion": "«Ver más» completa el conjunto sin repetir ni perder entradas",
       "ok": true,
-      "detalle": "284 entradas, 284 distintas"
+      "detalle": "285 entradas, 285 distintas"
     },
     {
       "pro": "PRO-05",
@@ -107,13 +107,13 @@
       "pro": "PRO-05",
       "descripcion": "Al cerrar con Esc vuelve a la misma posición, con el foco en el disparador y la URL igual",
       "ok": true,
-      "detalle": "scroll 57416 → 57416, foco ultimo"
+      "detalle": "scroll 57633 → 57633, foco ultimo"
     },
     {
       "pro": "PRO-04",
       "descripcion": "La búsqueda recorre el período y no viaja en la URL de la página",
       "ok": true,
-      "detalle": "50 entradas; URL /pro/advisees?id=1ba6e88c-95a2-4da5-91e5-1785d542f8d0&vista=linea"
+      "detalle": "50 entradas; URL /pro/advisees?id=b564625e-9021-466e-a725-86e4b084c841&vista=linea"
     },
     {
       "pro": "PRO-04",
@@ -131,13 +131,13 @@
       "pro": "PRO-04",
       "descripcion": "Limpiar recupera la vista completa",
       "ok": true,
-      "detalle": "330 de 330"
+      "detalle": "331 de 331"
     },
     {
       "pro": "PRO-24",
       "descripcion": "El Resumen completo con la API en uso, desde el clic en la pestaña hasta la última respuesta",
       "ok": true,
-      "detalle": "804 ms (presupuesto 2.500 ms)"
+      "detalle": "1069 ms (presupuesto 2.500 ms)"
     },
     {
       "pro": "PRO-06",
@@ -155,7 +155,7 @@
       "pro": "PRO-08",
       "descripcion": "Paneles: los tres gráficos están dibujados y a la vista (ejes, curvas, marcas sin tapar y el color de cada métrica)",
       "ok": true,
-      "detalle": "3 gráfico(s) · Energía registrada · por día: 631×192, ejes 7/5, curvas 3, marcas 80/80, tinta 11.7 %, color 2175 px · Proteínas registradas · por : 631×192, ejes 7/5, curvas 3, marcas 80/80, tinta 16.0 %, color 3433 px · Peso · cada toma (kg): 631×192, ejes 7/5, curvas 3, marcas 8/8, tinta 7.2 %, color 473 px"
+      "detalle": "3 gráfico(s) · Energía registrada · por día: 631×192, ejes 7/5, curvas 3, marcas 80/80, tinta 11.7 %, color 2153 px · Proteínas registradas · por : 631×192, ejes 7/5, curvas 3, marcas 80/80, tinta 15.9 %, color 3421 px · Peso · cada toma (kg): 631×192, ejes 7/5, curvas 3, marcas 8/8, tinta 7.2 %, color 473 px"
     },
     {
       "pro": "PRO-08",
@@ -215,7 +215,7 @@
       "pro": "PRO-05",
       "descripcion": "Desde la pestaña de Nutrición, «Atrás» devuelve el análisis tal como estaba",
       "ok": true,
-      "detalle": "/pro/advisees?id=1ba6e88c-95a2-4da5-91e5-1785d542f8d0&vista=analizar&pregunta=alimentacion-y-medidas&medida=antropometria.peso&m=nutricion.energia%2Cnutricion.proteinas%2Cantropometria.peso&f=2026-10-09"
+      "detalle": "/pro/advisees?id=b564625e-9021-466e-a725-86e4b084c841&vista=analizar&pregunta=alimentacion-y-medidas&medida=antropometria.peso&m=nutricion.energia%2Cnutricion.proteinas%2Cantropometria.peso&f=2026-10-09"
     },
     {
       "pro": "PRO-08",
@@ -227,7 +227,7 @@
       "pro": "PRO-08",
       "descripcion": "Cambio relativo: el gráfico está dibujado y a la vista, con la banda de la referencia",
       "ok": true,
-      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 631×270, ejes 7/5, curvas 3, marcas 80/80, banda sí, tinta 15.8 %, color 4202 px"
+      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 631×270, ejes 7/5, curvas 3, marcas 80/80, banda sí, tinta 15.8 %, color 4190 px"
     },
     {
       "pro": "PRO-08",
@@ -249,15 +249,15 @@
     },
     {
       "pro": "PRO-18",
-      "descripcion": "Por semana, la comparación de dos rangos que cortan semanas es la misma que por día y coincide con la media de los días calculada a mano",
+      "descripcion": "Por semana, la comparación de dos rangos que cortan semanas es la misma que por día y coincide con la media de los días calculada a mano, con la cobertura en días del rango",
       "ok": true,
-      "detalle": "esperado A «1.165 kcal · n = 13 de 13», B «1.240 kcal · n = 10 de 10» · por día «Media de los días con valor | 1.165 kcal · n = 13 de 13 · 13 días · 1 subtotal | 1.240 kcal · n = 10 de 10 · 10 días | +75 kcal» · por semana igual: sí"
+      "detalle": "esperado A «1.165 kcal · 13 días: 13 con valor», B «1.240 kcal · 10 días: 10 con valor» · por día «Media de los días con valor | 1.165 kcal 13 días: 13 con valor · de ellos, 1 es un subtotal (falta algún dato) | 1.240 kcal 10 días: 10 con valor | +75 kcal» · por semana igual: sí"
     },
     {
       "pro": "PRO-08",
       "descripcion": "Por semana: el gráfico semanal está dibujado y a la vista",
       "ok": true,
-      "detalle": "1 gráfico(s) · Energía registrada · por sem: 631×192, ejes 7/5, curvas 2, marcas 13/13, tinta 8.6 %, color 549 px"
+      "detalle": "1 gráfico(s) · Energía registrada · por sem: 631×192, ejes 7/5, curvas 2, marcas 13/13, tinta 8.6 %, color 554 px"
     },
     {
       "pro": "PRO-08",
@@ -269,7 +269,7 @@
       "pro": "PRO-08",
       "descripcion": "Cambio relativo por semana: dibujado y a la vista, con la banda de la referencia",
       "ok": true,
-      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 631×270, ejes 7/5, curvas 2, marcas 13/13, banda sí, tinta 9.6 %, color 701 px"
+      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 631×270, ejes 7/5, curvas 2, marcas 13/13, banda sí, tinta 9.6 %, color 681 px"
     },
     {
       "pro": "PRO-08",
@@ -281,7 +281,7 @@
       "pro": "PRO-08",
       "descripcion": "Superpuestas: un gráfico con las dos curvas dibujadas y a la vista, cada una con su color",
       "ok": true,
-      "detalle": "1 gráfico(s) · Superpuestas en valores real: 631×270, ejes 7/5, curvas 6, marcas 160/160, tinta 14.9 %, color 3205/2487 px"
+      "detalle": "1 gráfico(s) · Superpuestas en valores real: 631×270, ejes 7/5, curvas 6, marcas 160/160, tinta 14.8 %, color 3196/2499 px"
     },
     {
       "pro": "PRO-18",
@@ -305,19 +305,19 @@
       "pro": "PRO-19",
       "descripcion": "Guardar una vista la suma a la lista, que dice su referencia del cambio relativo",
       "ok": true,
-      "detalle": "Recorrido 083251 · 3 métricas · referencia: del 19 sept 2026 al 25 sept 2026 Abrir Recorrido 083251 Guardar lo actual acá (Recorrido 083251) Borrar Recorrido 08"
+      "detalle": "Recorrido 134522 · 3 métricas · referencia: del 19 sept 2026 al 25 sept 2026 Abrir Recorrido 134522 Guardar lo actual acá (Recorrido 134522) Borrar Recorrido 13"
     },
     {
       "pro": "PRO-21",
       "descripcion": "La respuesta lenta de «7 días» no pisa la de «90 días» elegida después",
       "ok": true,
-      "detalle": "330 hechos (esperado 330)"
+      "detalle": "331 hechos (esperado 331)"
     },
     {
       "pro": "PRO-21",
       "descripcion": "Al cambiar de asesorado durante una respuesta lenta, no aparece nada del anterior",
       "ok": true,
-      "detalle": "Asesorado · 2189b7 · Energía Solo hay datos de hoy, que sigue en curso: todavía no hay un día completo que resumir. Analizar Energía | Registros 2 registros en 90 días · incluye hoy, que sigue en curso Analizar Registros | Peso 64,3 kg Última toma: 29 sept 2026 Una sola observación comparable: no hay con qué comparar. Analizar Peso"
+      "detalle": "Asesorado · a79505 · Energía Solo hay datos de hoy, que sigue en curso: todavía no hay un día completo que resumir. Analizar Energía | Registros 2 registros Total · 90 días: 1 con registros · 89 sin registros · hoy, en curso: el total incluye lo registrado hasta ahora Analizar Registros | Peso 64,3 kg Última toma: 29 sept 2026 Una sola observación comparable: no hay con qué comparar. Analizar Peso"
     },
     {
       "pro": "PRO-20",
@@ -353,7 +353,7 @@
       "pro": "PRO-21",
       "descripcion": "Sin red, el Resumen dice «no hay conexión con BE» y no muestra ceros",
       "ok": true,
-      "detalle": "Espacio profesional Ficha del asesorado Asesorado · 42f8d0 Acceso actual Antropometría, Entrenamiento y Nutrición: Activo · acceso contextual Actualizar Consultado a las 05:34:28 a. m. Resumen Línea d"
+      "detalle": "Espacio profesional Ficha del asesorado Asesorado · 84c841 Acceso actual Antropometría, Entrenamiento y Nutrición: Activo · acceso contextual Actualizar Consultado a las 10:47:04 a. m. Resumen Línea d"
     },
     {
       "pro": "PRO-23",
@@ -407,7 +407,7 @@
       "pro": "PRO-19",
       "descripcion": "En una sesión nueva, la vista guardada reabre la misma configuración —también su referencia— y vuelve a pedir los datos",
       "ok": true,
-      "detalle": "/pro/advisees?id=1ba6e88c-95a2-4da5-91e5-1785d542f8d0&vista=analizar&p=30&m=nutricion.energia%2Cnutricion.proteinas%2Cantropometria.peso&ref=2026-09-19_2026-09-25"
+      "detalle": "/pro/advisees?id=b564625e-9021-466e-a725-86e4b084c841&vista=analizar&p=30&m=nutricion.energia%2Cnutricion.proteinas%2Cantropometria.peso&ref=2026-09-19_2026-09-25"
     },
     {
       "pro": "PRO-19",
@@ -419,13 +419,13 @@
       "pro": "PRO-20",
       "descripcion": "Un tercero ve «no encontramos un recurso disponible»: ni pestañas, ni indicadores, ni gráficos",
       "ok": true,
-      "detalle": "Espacio profesional Ficha del asesorado Asesorado Acceso actual Actualizar Consultado a las 05:35:01 a. m. No encontramos un recurso disponible para esta acción · 404 /api/v1/advisees/:id/projections/NUTRITION_PRESCRIBED_VS_RECORDED, 404 /api/v1/advisees/:id/projections/TRAINING_PROGRESSION_BY_EXERCISE, 404 /api/v1/advisees/:id/projections/ANTHROPOMETRY_LONGITUDINAL"
+      "detalle": "Espacio profesional Ficha del asesorado Asesorado Acceso actual Actualizar Consultado a las 10:47:44 a. m. No encontramos un recurso disponible para esta acción · 404 /api/v1/advisees/:id/projections/NUTRITION_PRESCRIBED_VS_RECORDED, 404 /api/v1/advisees/:id/projections/ANTHROPOMETRY_LONGITUDINAL, 404 /api/v1/advisees/:id/projections/TRAINING_PROGRESSION_BY_EXERCISE"
     },
     {
       "pro": "PRO-04",
       "descripcion": "El registro de la API tiene cada búsqueda como ruta parametrizada y nunca el texto buscado",
       "ok": true,
-      "detalle": "2 línea(s) de búsqueda, p. ej. {\"nivel\":\"info\",\"metodo\":\"POST\",\"ruta\":\"/api/v1/advisees/:adviseeId/timeline/search\",\"status\":200,\"duracionMs\":167}; «cena» en el registro: no"
+      "detalle": "2 línea(s) de búsqueda, p. ej. {\"nivel\":\"info\",\"metodo\":\"POST\",\"ruta\":\"/api/v1/advisees/:adviseeId/timeline/search\",\"status\":200,\"duracionMs\":362}; «cena» en el registro: no"
     }
   ]
 }

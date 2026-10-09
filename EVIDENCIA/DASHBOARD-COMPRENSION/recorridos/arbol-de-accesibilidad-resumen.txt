@@ -25,14 +25,14 @@ RootWebArea: Ficha del asesorado · BE
         StaticText: Espacio profesional
       StaticText: ›
       StaticText: Ficha del asesorado
-    heading 1: Asesorado · 42f8d0
+    heading 1: Asesorado · 84c841
     StaticText: Acceso actual
     StaticText: Antropometría, Entrenamiento y Nutrición
     StaticText: : 
     StaticText: Activo · acceso contextual
     button: Actualizar
     StaticText: Consultado a las 
-    StaticText: 05:28:58 a. m.
+    StaticText: 10:40:29 a. m.
     navigation: Vistas del seguimiento
       link: Resumen
         StaticText: Resumen
@@ -139,7 +139,7 @@ RootWebArea: Ficha del asesorado · BE
       heading 2: Para tu próxima revisión
       button: Ver todas (9)
       StaticText: Hechos por área, desde su última revisión o, si no tiene, en el período elegido
-      StaticText:  (datos consultados a las 05:29 a. m.)
+      StaticText:  (datos consultados a las 10:40 a. m.)
       StaticText: .
       StaticText: Nutrición
       StaticText:  · 
@@ -226,14 +226,14 @@ RootWebArea: Ficha del asesorado · BE
       StaticText: Los de por defecto: podés elegir otros.
       StaticText:  Describen lo registrado, sin calificar.
       heading 3: Energía
-      StaticText: 1.205 kcal
-      StaticText: media de 79 de 90 días con valor; en 8, el valor es un subtotal (falta algún dato) · sin contar hoy, que sigue en curso
+      StaticText: 1.208 kcal
+      StaticText: Media · 90 días: 79 con valor · de ellos, 8 son subtotales (falta algún dato) · 10 sin registros · hoy, en curso: fuera de la media
       link: Analizar Energía
         StaticText: Analizar
         StaticText: Energía
       heading 3: Registros
-      StaticText: 282 registros
-      StaticText: en 90 días · incluye hoy, que sigue en curso
+      StaticText: 283 registros
+      StaticText: Total · 90 días: 80 con registros · 10 sin registros · hoy, en curso: el total incluye lo registrado hasta ahora
       link: Analizar Registros
         StaticText: Analizar
         StaticText: Registros
@@ -257,7 +257,7 @@ RootWebArea: Ficha del asesorado · BE
         StaticText: Peso
       heading 3: Series registradas · Peso muerto
       StaticText: 36 series
-      StaticText: en 90 días
+      StaticText: Total · 12 sesiones
       link: Analizar Series registradas · Peso muerto
         StaticText: Analizar
         StaticText: Series registradas · Peso muerto
@@ -269,9 +269,9 @@ RootWebArea: Ficha del asesorado · BE
       StaticText:  de 
       StaticText: 90
       StaticText:  con algún registro · 
-      StaticText: 282 registros
+      StaticText: 283 registros
       StaticText: : 
-      StaticText: 274
+      StaticText: 275
       StaticText:  con cantidades y 
       StaticText: 8
       StaticText:  sin cantidades

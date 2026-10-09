@@ -20,7 +20,7 @@ un lector de pantalla:
   botones, regiones. Queda en `recorridos/arbol-de-accesibilidad-resumen.txt` (recorrido `funcional`, CP-28): ningún
   enlace ni botón sin nombre, y los encabezados «Objetivo y planificación», «Para tu próxima revisión», «Acciones»,
   «Indicadores».
-- **axe** (WCAG 2.0 a 2.2, A y AA) en las 18 pantallas nuevas a 1440 px (`mirar`): sin violaciones.
+- **axe** (WCAG 2.0 a 2.2, A y AA) en las 20 pantallas nuevas o cambiadas a 1440 px (`mirar`, compilación `269d930`): sin violaciones.
 - **Teclado:** con Tab se alcanzan las acciones de las observaciones y las preguntas del Resumen, con el foco visible;
   el panel de origen se cierra con Esc y devuelve el foco al disparador (CP-21).
 - **Nombres accesibles hechos para el lector:** cada enlace de una observación dice su área («Ver en la línea de tiempo

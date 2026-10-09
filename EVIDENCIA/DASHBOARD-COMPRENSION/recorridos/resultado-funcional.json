@@ -1,9 +1,9 @@
 {
   "modo": "funcional",
-  "inicio": "2026-10-09T08:25:41.474Z",
-  "fin": "2026-10-09T08:30:08.758Z",
+  "inicio": "2026-10-09T13:37:00.382Z",
+  "fin": "2026-10-09T13:41:33.585Z",
   "hoy": "2026-10-09",
-  "total": 59,
+  "total": 75,
   "fallas": 0,
   "resultados": [
     {
@@ -11,13 +11,13 @@
       "descripcion": "Primera carga del Resumen después de iniciar sesión, hasta la última respuesta",
       "ok": true,
       "informativo": true,
-      "detalle": "802 ms"
+      "detalle": "1896 ms"
     },
     {
       "clave": "CP-01",
       "descripcion": "El Resumen presenta la persona, el objetivo y la síntesis, en ese orden y sin gráficos",
       "ok": true,
-      "detalle": "Asesorado · 42f8d0 · Objetivo y planificación › Para tu próxima revisión › Acciones › Indicadores › Qué se registró en el período › Lo último que pasó › "
+      "detalle": "Asesorado · 84c841 · Objetivo y planificación › Para tu próxima revisión › Acciones › Indicadores › Qué se registró en el período › Lo último que pasó › "
     },
     {
       "clave": "CP-01",
@@ -77,7 +77,7 @@
       "clave": "R1",
       "descripcion": "«Ver todo el período elegido» quita el corte y deja los demás filtros",
       "ok": true,
-      "detalle": "/pro/advisees?id=1ba6e88c-95a2-4da5-91e5-1785d542f8d0&vista=linea&areas=NUTRITION"
+      "detalle": "/pro/advisees?id=b564625e-9021-466e-a725-86e4b084c841&vista=linea&areas=NUTRITION"
     },
     {
       "clave": "CP-07",
@@ -123,15 +123,21 @@
     },
     {
       "clave": "R3",
-      "descripcion": "El filtro deja solo las comidas que no registraron las porciones del plan, las mismas que cuenta la API",
+      "descripcion": "«Distintas de lo indicado» deja solo las comidas con una diferencia comprobada (las mismas que cuenta la API), informadas a mano, y cada una dice en cuántos ingredientes",
       "ok": true,
-      "detalle": "11 filas · Del 12 jul 2026 al 9 oct 2026 · 11 comidas que no registraron las porciones del plan."
+      "detalle": "3 filas de 3 · Del 12 jul 2026 al 9 oct 2026 · 3 comidas distintas de lo indicado. · 1 sept 2026 | Cena | Opción 1 · Salmón con papa | Informó las cantidades a mano | Distinta de lo indicado en 2 de 3 ingredientes | versión 1 | Ver lo indicado y lo registrado : Comida registrada · Cena, 1 sept 2026"
+    },
+    {
+      "clave": "R3",
+      "descripcion": "Con cantidades informadas a mano: una igual a la opción dice «Igual a lo indicado» (el modo no es una diferencia) y una distinta, en cuántos ingredientes",
+      "ok": true,
+      "detalle": "4 filas de 4 · igual: 22 ago 2026 | Merienda | Opción 1 · Yogur con manzana | Informó las cantidades a mano | Igual a lo indicado | versión 1 | Ver lo indicado y lo registrado : Comida registrada · Merienda, 22 ago 2026 · distinta: 1 sept 2026 | Cena | Opción 1 · Salmón con papa | Informó las cantidades a mano | Distinta de lo indicado en 2 de 3 ingredientes | versión 1 | Ver lo indicado y lo registrado : Comida registrada · Cena, 1 sept 2026"
     },
     {
       "clave": "CP-09",
-      "descripcion": "Sin confirmar sigue sin confirmar y una comida diferente queda fuera de lo indicado",
+      "descripcion": "Sin confirmar sigue sin confirmar y una comida diferente queda fuera de lo indicado: ninguna se presenta como distinta",
       "ok": true,
-      "detalle": "12 ago 2026 | Merienda | Opción 1 · Yogur con manzana | sin confirmar | versión 1 | Ver lo indicado y lo registrado : Comida registrada · Merienda, 12 ago 2026 · 8 oct 2026 | Cena | Una comida diferente: fuera de lo indicado | aproximada: Un plato | versión 2 | Ver lo indicado y lo registrado : Comida diferente · Cena, 8 oct 2026"
+      "detalle": "8 filas de 8 · 12 ago 2026 | Merienda | Opción 1 · Yogur con manzana | Sin confirmar las cantidades | No se puede comprobar: sin confirmar | versión 1 | Ver lo indicado y lo registrado : Comida registrada · Merienda, 12 ago 2026 · 8 oct 2026 | Cena | Una comida diferente (aproximada: Un plato) | Una comida diferente | No se compara: fuera de lo indicado | versión 2 | Ver lo indicado y lo registrado : Comida diferente · Cena, 8 oct 2026"
     },
     {
       "clave": "CP-09",
@@ -152,6 +158,49 @@
       "detalle": "0 → 0 solicitudes · sin escrituras"
     },
     {
+      "clave": "R3",
+      "descripcion": "La evidencia de la revisión de Nutrición se abre sin nada marcado y agrupada por día: una casilla por día, no una por comida",
+      "ok": true,
+      "detalle": "21 días para 65 comidas · Todavía no marcaste nada."
+    },
+    {
+      "clave": "R3",
+      "descripcion": "Alto de la evidencia de Nutrición: ahora y con una casilla por registro",
+      "ok": true,
+      "informativo": true,
+      "detalle": "1707 px · 4154 px (65 comidas y 2 de planificación y objetivo, a 54 px cada una)"
+    },
+    {
+      "clave": "R3",
+      "descripcion": "La evidencia ocupa menos de la mitad que una casilla por registro",
+      "ok": true,
+      "detalle": "1707 de 4154 px"
+    },
+    {
+      "clave": "R3",
+      "descripcion": "Marcar un día marca, una por una, sus comidas, y el resumen lo dice como marcado",
+      "ok": true,
+      "detalle": "Marcaste 2 de 67: 2 comidas de 1 día."
+    },
+    {
+      "clave": "R3",
+      "descripcion": "Desmarcar una comida del día la saca de lo marcado y deja el día en estado mixto",
+      "ok": true,
+      "detalle": "Marcaste 1 de 67: 1 comida de 1 día."
+    },
+    {
+      "clave": "R3",
+      "descripcion": "«Lo que marcaste» lista lo marcado y «Quitar» lo saca",
+      "ok": true,
+      "detalle": "1 listadas · Todavía no marcaste nada."
+    },
+    {
+      "clave": "R3",
+      "descripcion": "Abrir, marcar y cancelar la revisión no escribe nada",
+      "ok": true,
+      "detalle": "sin escrituras"
+    },
+    {
       "clave": "CP-14",
       "descripcion": "Las etapas salen de las activaciones reales: A termina el día anterior al corte y B sigue vigente; sin doble conteo del día del corte",
       "ok": true,
@@ -159,15 +208,45 @@
     },
     {
       "clave": "CP-18",
-      "descripcion": "Energía por etapa: la media de los días con valor, calculada a mano con los puntos de la API, coincide con la tabla (y la diferencia también)",
+      "descripcion": "Energía por etapa: la media de los días con valor y la cobertura en días de la etapa, calculadas a mano con los puntos de la API, coinciden con la tabla (y la diferencia también)",
       "ok": true,
-      "detalle": "tabla: Media de los días con valor | 1.234 kcal 44 de 44 días con valor · del 18 jul 2026 al 3 sept 2026 · 7 subtotales · 1 día con registros asociados a otra versión | 1.170 kcal 35 de 36 días con valor · del 4 sept 2026 al 9  · a mano: A 1233.5 (n 44), B 1169.8 (n 35)"
+      "detalle": "tabla: Media de los días con valor | 1.238 kcal del 18 jul 2026 al 3 sept 2026 · 48 días: 44 con valor · de ellos, 7 son subtotales (falta algún dato) · 4 sin registros · 1 día con registros asociados a otra versión | 1.170 kcal del 4 sept 2026 al 9 oct 2026 · 36 días: 35 con valor · de ellos, 1 es un subt · a mano: A 1238.1 (48 días: 44 con valor · 4 sin registros), B 1169.8 (36 días: 35 con valor · hoy, en curso: fuera de la media)"
+    },
+    {
+      "clave": "CP-18",
+      "descripcion": "El hueco de cuatro días de la etapa A queda en la cobertura como días sin registros: no sale del denominador",
+      "ok": true,
+      "detalle": "1.238 kcal del 18 jul 2026 al 3 sept 2026 · 48 días: 44 con valor · de ellos, 7 son subtotales (falta algún dato) · 4 sin registros · 1 día con registros asociados a otra versión"
+    },
+    {
+      "clave": "R4",
+      "descripcion": "Con la pregunta de etapas, «Comparar otros dos períodos» es una opción plegada, justo debajo de la tabla de etapas, y no una sección más al final",
+      "ok": true,
+      "detalle": "{\"abierta\":false,\"justoDebajo\":true,\"rotulo\":\"Comparar otros dos períodos, con fechas elegidas a mano\"}"
+    },
+    {
+      "clave": "R4",
+      "descripcion": "Sin repetir: el resumen en texto plegado, sin la lista de etapas que repetía las tarjetas, y cada límite de interpretación a la vista una sola vez",
+      "ok": true,
+      "detalle": "causa ×1 · no se restan ×1 · resumen plegado: true · lista de etapas: false"
+    },
+    {
+      "clave": "R4",
+      "descripcion": "La letra no se achicó: la cobertura de la tabla de etapas tiene el tamaño de un dato secundario (0,95 rem)",
+      "ok": true,
+      "detalle": "15.2 px · raíz 16 px"
+    },
+    {
+      "clave": "R4",
+      "descripcion": "«Comparar otros dos períodos» se abre con un toque y tiene sus cuatro fechas",
+      "ok": true,
+      "detalle": "4 campos de fecha"
     },
     {
       "clave": "CP-18",
       "descripcion": "Dos totales de duraciones distintas no se restan, y se dice por qué",
       "ok": true,
-      "detalle": "Registros Total 158 registros 44 de 44 días con valor · del 18 jul 2026 al 3 sept 2026 · 1 día con registros asociados a otra versión 124 registros 36 de 36 días con valor · del 4 sept 2026 al 9 oct 2"
+      "detalle": "Registros Total 159 registros del 18 jul 2026 al 3 sept 2026 · 48 días: 44 con registros · 4 sin registros · 1 día con registros asociados a otra versión 124 registros del 4 sept 2026 al 9 oct 2026 · "
     },
     {
       "clave": "R4",
@@ -185,19 +264,25 @@
       "clave": "CP-26",
       "descripcion": "La vista guardada lleva la pregunta y sus parámetros como identificadores, sin resultados",
       "ok": true,
-      "detalle": "{\"id\":\"comparar-etapas\",\"params\":{\"area\":\"NUTRICION\",\"stageA\":\"00c2c630-d012-4e08-9daf-f607add605ac\",\"stageB\":\"ac954089-c827-4127-a035-8064f92213d0\"}}"
+      "detalle": "{\"id\":\"comparar-etapas\",\"params\":{\"area\":\"NUTRICION\",\"stageA\":\"c963e03e-f439-4ef4-88e2-f0fb24d219f8\",\"stageB\":\"80accbb0-147b-4157-af4e-f6045bb30e90\"}}"
     },
     {
       "clave": "CP-26",
       "descripcion": "Reabierta en el mismo asesorado, vuelve la comparación de las mismas etapas",
       "ok": true,
-      "detalle": "/pro/advisees?id=1ba6e88c-95a2-4da5-91e5-1785d542f8d0&vista=analizar&m=nutricion.energia%2Cnutricion.proteinas%2Cnutricion.registros&desde=2026-07-18&hasta=2026-10-09&g=W&ref=14&pregunta=comparar-etap"
+      "detalle": "/pro/advisees?id=b564625e-9021-466e-a725-86e4b084c841&vista=analizar&m=nutricion.energia%2Cnutricion.proteinas%2Cnutricion.registros&desde=2026-07-18&hasta=2026-10-09&g=W&ref=14&pregunta=comparar-etap"
     },
     {
       "clave": "CP-26",
       "descripcion": "Abierta en otro asesorado, las etapas del primero no aplican: se dice y se piden de nuevo, sin sustituirlas",
       "ok": true,
       "detalle": "Analizar Hasta tres métricas en el mismo tiempo. Coincidencia temporal: no indica causa. ¿Qué cambió entre dos etapas? Dos etapas del plan con sus fechas, duración, observaciones y cobertura, resumidas con el mismo crite"
+    },
+    {
+      "clave": "CP-18",
+      "descripcion": "Con huecos, «Comparar dos períodos» dice los días del rango, cuántos tienen valor y cuántos no tienen registros (los mismos huecos que declara la API), con la media de los valores disponibles",
+      "ok": true,
+      "detalle": "A esperado: 14 días, 10 con valor, 4 sin registros (huecos de la API: 4), media 1192.6 · tabla: Media de los días con valor | 1.193 kcal 14 días: 10 con valor · de ellos, 3 son subtotales (falta algún dato) · 4 sin registros | 1.198 kcal 14 días: 14 con valor · de ellos, 1 es un subtotal (falta algún dato) | +6 kcal"
     },
     {
       "clave": "CP-11",
@@ -240,19 +325,19 @@
       "clave": "CP-25",
       "descripcion": "El registro de la API no tiene el texto buscado",
       "ok": true,
-      "detalle": "1361945 caracteres revisados"
+      "detalle": "1905332 caracteres revisados"
     },
     {
       "clave": "CP-22",
       "descripcion": "La respuesta lenta del asesorado anterior llega después de cambiar de persona y no se muestra: solo los datos de la persona elegida",
       "ok": true,
-      "detalle": "Asesorado · 0b2e02 · Energía registrada · por día (kcal)"
+      "detalle": "Asesorado · ed3a8b · Energía registrada · por día (kcal)"
     },
     {
       "clave": "CP-06",
       "descripcion": "Si falla la lectura de lo nuevo, la síntesis dice «No pudimos completar esta parte» antes que las observaciones, nunca «No hay registros nuevos»",
       "ok": true,
-      "detalle": "Para tu próxima revisión Ver menos Hechos por área, desde su última revisión o, si no tiene, en el período elegido (datos consultados a las 05:28 a. m.). Nutrición: No pudimos completar esta parte (lo nuevo desde la revisión). Entrenamiento: No pudimos complet"
+      "detalle": "Para tu próxima revisión Ver menos Hechos por área, desde su última revisión o, si no tiene, en el período elegido (datos consultados a las 10:40 a. m.). Nutrición: No pudimos completar esta parte (lo nuevo desde la revisión). Entrenamiento: No pudimos complet"
     },
     {
       "clave": "R6",
@@ -302,34 +387,34 @@
       "descripcion": "Resumen: desde la navegación hasta la última respuesta",
       "ok": true,
       "informativo": true,
-      "detalle": "526 ms · 9 pedidos a la API"
+      "detalle": "646 ms · 9 pedidos a la API"
     },
     {
       "clave": "CP-29",
       "descripcion": "El Resumen con la API en uso, dentro del presupuesto del paquete anterior (2,5 s)",
       "ok": true,
-      "detalle": "526 ms"
+      "detalle": "646 ms"
     },
     {
       "clave": "CP-29",
       "descripcion": "Analizar con tres métricas: desde la navegación hasta la última respuesta",
       "ok": true,
       "informativo": true,
-      "detalle": "649 ms · 12 pedidos a la API"
+      "detalle": "746 ms · 12 pedidos a la API"
     },
     {
       "clave": "CP-29",
       "descripcion": "Comparar dos etapas: desde la navegación hasta la última respuesta",
       "ok": true,
       "informativo": true,
-      "detalle": "837 ms · 15 pedidos a la API"
+      "detalle": "880 ms · 15 pedidos a la API"
     },
     {
       "clave": "CP-29",
       "descripcion": "Línea de tiempo con lo nuevo desde la revisión: desde la navegación hasta la última respuesta",
       "ok": true,
       "informativo": true,
-      "detalle": "249 ms · 3 pedidos a la API"
+      "detalle": "257 ms · 3 pedidos a la API"
     },
     {
       "clave": "CP-09",
@@ -342,6 +427,18 @@
       "descripcion": "«Preparar la revisión» abre el formulario con el período desde la última revisión, dicho como preparado por BE, y no escribe nada",
       "ok": true,
       "detalle": "sin escrituras"
+    },
+    {
+      "clave": "CP-19",
+      "descripcion": "La evidencia de la revisión de Entrenamiento se abre sin nada marcado",
+      "ok": true,
+      "detalle": "Todavía no marcaste nada. · 0 casillas marcadas"
+    },
+    {
+      "clave": "CP-20",
+      "descripcion": "La revisión envía una referencia por registro marcado: el día marcado como grupo viaja como sus sesiones, una por una, con la versión del plan",
+      "ok": true,
+      "detalle": "Marcaste 2 de 6: 1 sesión de 1 día y 1 versión del plan. · 2 referencias: EXECUTION, PLAN_VERSION"
     },
     {
       "clave": "CP-20",
@@ -366,7 +463,7 @@
       "clave": "CP-25",
       "descripcion": "Ningún pedido a la API llevó texto de búsqueda en la URL durante el recorrido",
       "ok": true,
-      "detalle": "886 pedidos"
+      "detalle": "918 pedidos"
     }
   ]
 }

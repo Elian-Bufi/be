@@ -11,7 +11,7 @@ Detectado al recorrer las pantallas; cada uno está en el código, en la guía d
 |---|---|
 | **Un mismo plan, un mismo número** en la ficha, las etapas, la línea de tiempo y la pestaña Plan (D-20) | La API numeraba con el token de concurrencia: un plan activado sin cambios era «v2» en la ficha y «Versión 1» en la pestaña Plan. Era un defecto de la base. |
 | **El primer pantallazo** con la tabla de objetivo y planificación y la primera observación (D-14) | Con tres columnas angostas, la síntesis quedaba debajo del pliegue. Se cambió la composición, no la letra. |
-| **El contraste de nutrición en una tabla con un filtro de hechos** (D-16) | 50 tarjetas ocupaban 5.500 px; ahora se ven las 11 comidas que no registraron las porciones del plan en una pantalla. |
+| **El contraste de nutrición en una tabla con filtros de hechos** (D-16; corregido en la pasada del 2026-10-09, D-30) | 50 tarjetas ocupaban 5.500 px. El primer filtro, «que no registraron las porciones del plan», mezclaba el modo de registro con una diferencia (unas cantidades a mano pueden coincidir con el plan): la revisión de Dirección lo marcó, y ahora el modo y la diferencia comprobada van en columnas y filtros separados. |
 | **La cobertura dice desde cuándo hubo plan** (D-15) | «1 de 90 días» de un plan activado hoy se leía como 89 días sin registrar. |
 | **Lo que falla en la síntesis va primero** y **un solo «Reintentar» trae todo** | Escondido detrás de «Ver todas», un faltante parecía «nada pendiente»; con dos «Reintentar», uno no traía los gráficos. |
 | **El conflicto al guardar los indicadores conserva la elección** (D-22) | El aviso prometía «se volvieron a leer» sin hacerlo y cada intento chocaba otra vez. |
@@ -36,6 +36,12 @@ Detectado al recorrer las pantallas; cada uno está en el código, en la guía d
 - **Cómo se comprueba:** tiempo hasta abrir la ficha de quien tiene la revisión más próxima, con y sin la columna.
 
 ### 2. Registrar una revisión obliga a tildar decenas de evidencias
+
+> **Hecho en la pasada del 2026-10-09 (D-29), a pedido de Dirección:** la evidencia se marca agrupada por día y por
+> tipo, con una casilla explícita por día y otra por el período, lo marcado a la vista («Marcaste 12 de 73…», «Lo que
+> marcaste» con «Quitar») y nada marcado al abrir. No se hicieron las selecciones preparadas por BE que proponía esta
+> ficha («Marcar lo nuevo desde la revisión anterior»): el pedido fue selección explícita por grupo, y marcar no es
+> examinar. Queda como posibilidad, si Dirección la quiere.
 
 - **Observado:** «Preparar la revisión» abre bien el período, pero «Evidencia que examinaste» lista 70 casillas, una por
   comida (se ve al seguir «Preparar la revisión de Nutrición» en la guía de demostración).
@@ -90,6 +96,10 @@ Detectado al recorrer las pantallas; cada uno está en el código, en la guía d
 
 ### 8. Analizar sigue siendo largo con una pregunta en curso
 
+> **Hecho en parte en la pasada del 2026-10-09 (D-31), solo para la pregunta de etapas:** la comparación a mano quedó
+> plegada debajo de la tabla A/B, el resumen en texto plegado, sin la lista de etapas repetida y con cada límite una
+> vez. Con las demás preguntas, lo de abajo sigue igual: la pasada no se amplió.
+
 - **Observado:** con una pregunta, la columna izquierda despliega «Cómo se leen», «Agrupar por» y «Capas» completos, y
   debajo de los gráficos siguen «Comparar dos períodos», la tabla y el resumen en texto.
 - **Propuesta:** con una pregunta en curso, plegar «Capas» y «Comparar dos períodos» (que con las etapas pierde sentido),
@@ -109,8 +119,8 @@ Detectado al recorrer las pantallas; cada uno está en el código, en la guía d
 
 - **¿Qué sigue obligando a recordar o reunir a mano?** Qué cambió entre dos versiones del plan (3) y a quién mirar
   primero en la cartera (1).
-- **¿Qué se entiende técnicamente pero resulta incómodo?** Marcar la evidencia de una revisión (2) y la longitud de
-  Analizar con una pregunta en curso (8).
+- **¿Qué se entiende técnicamente pero resulta incómodo?** Marcar la evidencia de una revisión (2, resuelto en la pasada
+  del 2026-10-09) y la longitud de Analizar con una pregunta en curso (8, resuelto solo para las etapas).
 - **¿Qué relación entre áreas todavía no se puede explorar?** Proteínas por kilo de peso (5) y el volumen de entrenamiento
   junto a medidas que no sean el peso (hoy se puede superponer en paneles, no relacionar).
 - **¿Qué dato faltante justificaría pedirlo?** Las cantidades de las comidas «sin confirmar»: con la cita del registro (4),

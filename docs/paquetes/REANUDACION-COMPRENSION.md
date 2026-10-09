@@ -8,7 +8,7 @@
 | Qué | Dónde |
 |---|---|
 | Rama | `wp-dashboard-comprension`, desde `wp-dashboard-profesional` en `6c8e0b4`, en el árbol `../BE-Best-entrenamiento` |
-| Definición y decisiones | `docs/paquetes/WP-DASHBOARD-COMPRENSION.md` (§1 mapa de integración, §2 decisiones D-01 a D-27, §3 hitos); DL-129 y DL-130 en `docs/DEUDA_LEGAJO.md` |
+| Definición y decisiones | `docs/paquetes/WP-DASHBOARD-COMPRENSION.md` (§1 mapa de integración, §2 decisiones D-01 a D-32, §3 hitos); DL-129 y DL-130 en `docs/DEUDA_LEGAJO.md` |
 | Guía de UX | `docs/ux/GUIA-UX-UI.md`, reorganizada en este encargo (Parte V: qué cambió) |
 | Base local | `be_test_comprension` en PostgreSQL 16 :55442 (embebido de la sesión, `scratchpad/pg/iniciar.mjs`); la de #153 (`be_test_dashboard`) no se toca. Integración: `be_test_integ_comprension` |
 | Trabajo local | `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/trabajo-comprension/` (ignorado): estado, secreto, registros, capturas, resultados de los recorridos |
@@ -38,14 +38,32 @@ hitos 0 a 7 están en `WP-DASHBOARD-COMPRENSION.md` §3; los resultados, en `EVI
 |---|---|
 | `c1a23aa` | Dominio y lecturas (hito 2) |
 | `cc17ba2`, `96cbb49` | Web: Resumen, preguntas, análisis, etapas y acciones (hitos 3 y 4) |
-| `1661c69` | Código final, el verificado: `capturas` 73/73, `funcional` 59/59, `revocacion` 6/6, regresión de #153 70/70, `mirar` 18/18; dominio 585, scripts 297, API 80, integración 49 |
-| `ea50bb2` y siguientes | Solo documentos: guía de UX, evidencia, crítica, esta nota |
+| `1661c69` | Código del encargo, verificado entonces: `capturas` 73/73, `funcional` 59/59, `revocacion` 6/6, regresión de #153 70/70, `mirar` 18/18; dominio 585, scripts 297, API 80, integración 49 |
+| `ea50bb2`, `6afa526`, `643c603` | Documentos, la nota de reanudación y el lanzador de PostgreSQL (D-27) |
+| `269d930` | La pasada de corrección y usabilidad (D-28 a D-32), el código verificado ahora: `capturas` 79/79, `funcional` 75/75, regresión de #153 70/70, `mirar` 20/20; dominio 590, scripts 301, API 80, integración 50 |
+| el siguiente | La evidencia y la matriz de la pasada |
+
+## Pasada de corrección y usabilidad (pedido de Dirección del 2026-10-09): hecha
+
+Sobre el PR #154, sin merge, despliegue ni APK, y nada más de `CRITICA.md`. Los cinco puntos están hechos (D-28 a
+D-32, en `WP-DASHBOARD-COMPRENSION.md`; la verificación, en `ACEPTACION.md`, tabla P-1 a P-5):
+
+| # | Qué | Estado |
+|---|---|---|
+| 1 | Cobertura de los resúmenes de nutrición en días del rango (defecto) | Corregido (D-28) |
+| 2 | Evidencia de la revisión agrupada por día y por tipo | Hecho (D-29) |
+| 3 | Filtro de Nutrición: modo de registro y diferencia comprobada | Hecho (D-30) |
+| 4 | Analizar con la pregunta de etapas | Hecho (D-31) |
+| 5 | Guía: el alcance de «no calificar» | Hecho (D-32) |
+
+Durante la pasada, un error mío: la API reiniciada sin `BE_E2E_DATABASE_URL` apuntó a `be_test_dashboard` (la base de
+#153) y dejó dos rechazos de inicio de sesión en su auditoría, que no se borran (ver la evidencia). `entorno.sh` ya no
+lo permite. **Al reiniciar la API de este paquete, exportar siempre `BE_TRABAJO` y `BE_E2E_DATABASE_URL`.**
 
 ## Próximo paso exacto
 
-Ninguno de código: esperar la revisión de Dirección (D-01 a D-27, DL-129 y DL-130, la guía de UX y las ocho
-oportunidades de `CRITICA.md`) y la prueba con lector de pantalla (`LECTOR-DE-PANTALLA.md`). No se arranca otra tanda
-sin su pedido.
+Ninguno de código: esperar la revisión de Dirección (D-01 a D-32, DL-129 y DL-130, la guía de UX) y la prueba con lector
+de pantalla (`LECTOR-DE-PANTALLA.md`).
 
 - **Si Dirección pide cambios:** levantar la base y los servicios (arriba), cambiar, y repetir solo los recorridos que
   toca el cambio; el recorrido `funcional` registra una revisión sintética, así que las capturas van antes.

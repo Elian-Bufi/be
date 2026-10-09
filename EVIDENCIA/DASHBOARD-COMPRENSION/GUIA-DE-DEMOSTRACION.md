@@ -37,19 +37,28 @@ personas reales ni se escribe nada en `test` ni en producción. Lleva unos 25 mi
    sesión aparece con lo que indicaba la versión del plan que ejecutó, aunque después se haya activado otra.
 2. En el Resumen, «Preparar la revisión de Entrenamiento». El formulario se abre con el período desde la última revisión
    y dice «Preparado por BE para esta revisión». **Todavía no se registró nada.**
-3. Marcá una evidencia, escribí una interpretación sintética, elegí «Mantener», completá el fundamento y la próxima
-   acción, y «Registrar revisión». Aparece un aviso con «Volver a la ficha, donde estabas».
-4. En la ficha, la fila de Entrenamiento ya dice la revisión de hoy, «registrada, sin aplicar», y lo nuevo se cuenta desde
+3. **La evidencia viene sin nada marcado y agrupada:** la planificación y el objetivo arriba, y las sesiones por día, una
+   fila por día. Marcá la versión del plan y un día entero («marcar las 2 sesiones»): el resumen dice «Marcaste 3 de…».
+   Con «Ver las 2» desmarcás una sesión sola, y «Lo que marcaste» lista lo marcado con «Quitar». Marcar no es haber
+   examinado: dejá marcado solo lo que miraste.
+4. Escribí una interpretación sintética, elegí «Mantener», completá el fundamento y la próxima acción, y «Registrar
+   revisión». Aparece un aviso con «Volver a la ficha, donde estabas».
+5. En la ficha, la fila de Entrenamiento ya dice la revisión de hoy, «registrada, sin aplicar», y lo nuevo se cuenta desde
    ella. No hace falta recargar.
 
-## 3 · Nutrición: detectar un faltante y pedir contexto (4 minutos)
+## 3 · Nutrición: detectar un faltante y pedir contexto (5 minutos)
 
-1. «¿Lo registrado coincide con lo indicado?», área Nutrición. Es una tabla: una fila por comida, con la opción, las
-   cantidades y la versión del plan. Elegí «Solo las que no registraron las porciones del plan»: quedan las comidas con
-   cantidades informadas, sin confirmar o diferentes.
-2. En una «sin confirmar», «Ver lo indicado y lo registrado»: lo indicado por la opción, ingrediente por ingrediente, y
-   las cantidades siguen sin confirmar (no se completan con las del plan).
-3. Para preguntarle a la persona, en el Resumen, «Solicitar contexto»: abre el flujo de formularios. Podés salir con
+1. «¿Lo registrado coincide con lo indicado?», área Nutrición. Es una tabla: una fila por comida, con la opción, **cómo
+   se registraron las cantidades** (el modo) y **qué se comprobó frente a lo indicado**, y la versión del plan.
+2. Elegí «Distintas de lo indicado»: quedan solo las comidas cuyas cantidades informadas no coinciden con la opción, y
+   cada una dice en cuántos ingredientes. Elegí «Con cantidades informadas a mano»: aparece también una merienda
+   informada a mano con las mismas cantidades de la opción, que dice «Igual a lo indicado». El modo no es una diferencia.
+3. Elegí «Sin confirmar o comidas diferentes»: no se pueden comparar, y lo dicen («No se puede comprobar: sin
+   confirmar», «No se compara: fuera de lo indicado»). En una sin confirmar, «Ver lo indicado y lo registrado»: lo
+   indicado por la opción, ingrediente por ingrediente, y las cantidades siguen sin confirmar.
+4. En el Resumen, «Preparar la revisión de Nutrición»: las comidas del período aparecen por día (una fila por día, no
+   una casilla por comida), sin nada marcado. No hace falta registrar: «Cancelar» no escribe nada.
+5. Para preguntarle a la persona, en el Resumen, «Solicitar contexto»: abre el flujo de formularios. Podés salir con
    «Volver a la ficha, donde estabas» sin enviar nada: no se crea ninguna solicitud.
 
 ## 4 · Comparar etapas (5 minutos)
@@ -57,11 +66,15 @@ personas reales ni se escribe nada en `test` ni en producción. Lleva unos 25 mi
 1. «Más preguntas» → «¿Qué cambió entre dos etapas?», área Nutrición. La pantalla sugiere las dos últimas versiones;
    confirmalas con «Ver la respuesta».
 2. Las tarjetas A y B dicen desde y hasta cuándo rigió cada versión (el día del cambio es de la nueva), su duración y
-   cómo terminó. La tabla resume cada métrica con el mismo criterio en las dos etapas, con su cobertura; los registros
-   son totales de duraciones distintas y no se restan: lo dice.
-3. Debajo están los gráficos. Cambiá «Agrupar por» a «Semana» y acercá un tramo arrastrando sobre un gráfico: el gráfico
+   cómo terminó. La tabla resume cada métrica con el mismo criterio en las dos etapas, con su cobertura **en días de la
+   etapa**: la etapa A dice cuántos de sus días tienen valor y cuántos no tienen registros (hay un hueco de cuatro días),
+   y la B dice que hoy sigue en curso y queda fuera de la media. Los registros son totales de duraciones distintas y no
+   se restan: lo dice.
+3. Justo debajo de la tabla, «Comparar otros dos períodos, con fechas elegidas a mano» está plegado: es una opción
+   secundaria con esta pregunta. Abrilo si querés comparar otras fechas.
+4. Debajo están los gráficos. Cambiá «Agrupar por» a «Semana» y acercá un tramo arrastrando sobre un gráfico: el gráfico
    cambia, la tabla no (resume las observaciones originales).
-4. En «Vistas guardadas», guardá la vista. Abrila en otro asesorado: las etapas del primero no aplican, la pantalla lo
+5. En «Vistas guardadas», guardá la vista. Abrila en otro asesorado: las etapas del primero no aplican, la pantalla lo
    dice y te las pide de nuevo.
 
 ## 5 · Revocación (con las cuentas descartables, 3 minutos)

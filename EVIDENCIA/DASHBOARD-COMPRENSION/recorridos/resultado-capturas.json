@@ -1,11 +1,17 @@
 {
   "modo": "capturas",
-  "inicio": "2026-10-09T08:20:27.142Z",
-  "fin": "2026-10-09T08:25:40.711Z",
+  "inicio": "2026-10-09T13:30:08.480Z",
+  "fin": "2026-10-09T13:36:18.108Z",
   "hoy": "2026-10-09",
-  "total": 73,
+  "total": 79,
   "fallas": 0,
   "resultados": [
+    {
+      "clave": "CP-27",
+      "descripcion": "revision-nutricion a 1440 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
     {
       "clave": "CP-27",
       "descripcion": "resumen a 1440 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
@@ -68,6 +74,12 @@
     },
     {
       "clave": "CP-27",
+      "descripcion": "revision-nutricion a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
       "descripcion": "resumen a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
       "ok": true,
       "detalle": "0 de 0 gráficos"
@@ -117,6 +129,12 @@
     {
       "clave": "CP-27",
       "descripcion": "linea-novedades a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "revision-nutricion a 1024 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
       "ok": true,
       "detalle": "0 de 0 gráficos"
     },
@@ -200,6 +218,12 @@
     },
     {
       "clave": "CP-27",
+      "descripcion": "revision-nutricion a 1440 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
       "descripcion": "resumen a 1440 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
       "ok": true,
       "detalle": "0 de 0 gráficos"
@@ -260,6 +284,12 @@
     },
     {
       "clave": "CP-27",
+      "descripcion": "revision-nutricion a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
       "descripcion": "resumen a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
       "ok": true,
       "detalle": "0 de 0 gráficos"
@@ -309,6 +339,12 @@
     {
       "clave": "CP-27",
       "descripcion": "linea-novedades a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "revision-nutricion a 1024 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
       "ok": true,
       "detalle": "0 de 0 gráficos"
     },
