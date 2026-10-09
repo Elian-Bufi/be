@@ -86,4 +86,4 @@ en `docs/DEUDA_LEGAJO.md` (DL-129 y DL-130).
 | 4 | Análisis, etapas y acciones | Hecho (cc17ba2, 1661c69) |
 | 5 | Acabado visual y accesibilidad | Hecho: axe sin violaciones en 18 pantallas (compilación final), teclado, zoom al 200 %, dos temas; el lector de pantalla con una persona queda pendiente |
 | 6 | Recorridos finales y revisión propia | Hecho: capturas, `funcional`, `revocacion` y regresión de #153 sobre una sola compilación y una sola generación de datos; crítica en la evidencia |
-| 7 | Entrega en borrador | PR en borrador contra `wp-dashboard-profesional` |
+| 7 | Entrega en borrador | Hecho: PR #154 en borrador contra `wp-dashboard-profesional`, sin merge ni despliegue |

@@ -22,20 +22,30 @@
   `entorno.sh api "$(sed -n 's/^BE_DEMO_PROFESIONALES=//p' trabajo-comprension/demo-profesionales.txt)"`. Compilar el
   website con la API apagada (poca memoria). Se apagan al terminar.
 - Para apagar PostgreSQL sin dejar procesos: `pg_ctl -D datos stop -m fast` en `scratchpad/pg` y después detener la tarea.
+- Al cerrar el encargo (2026-10-09) quedaron los tres apagados, sin procesos sueltos. La base `be_test_comprension`
+  quedó en `scratchpad/pg/datos` (se vuelve a levantar con `node iniciar.mjs` en esa carpeta); si ya no está, se
+  regenera entera con `datos/regenerar-comprension.sh`.
 
 ## Estado
 
-| Hito | Estado |
+Encargo terminado y entregado en borrador: **PR #154** contra `wp-dashboard-profesional`, sin merge ni despliegue. Los
+hitos 0 a 7 están en `WP-DASHBOARD-COMPRENSION.md` §3; los resultados, en `EVIDENCIA/DASHBOARD-COMPRENSION/LEEME.md`.
+
+| Commit | Qué |
 |---|---|
-| 0 · Base y mapa | Hecho. Capturas «antes» (compilación `6c8e0b4`, datos del 9/10) en `EVIDENCIA/DASHBOARD-COMPRENSION/antes/` |
-| 2 · Dominio y lecturas | Hecho (commit `c1a23aa`) y corregido después: versión = orden de activación (D-20), borrador sin número, parámetros UUID (D-21), cobertura con el primer plan (D-15) |
-| 3 · Resumen y preguntas | Hecho en la web: cabecera compacta, tabla de objetivo y planificación, síntesis, acciones y preguntas, indicadores |
-| 4 · Análisis, etapas y acciones | Hecho: preguntas con parámetros, etapas con tabla y gráficos, contraste, información, retorno y preparación de la revisión |
-| 5 · Acabado y accesibilidad | Revisado en pantalla a 1440 (`mirar`, compilación final): 18/18 pantallas sin desborde, sin axe y sin doble desplazamiento |
-| 6 · Recorridos finales | En curso: `capturas`, `funcional`, `revocacion` y la regresión `recorrido.mjs funcional` |
+| `c1a23aa` | Dominio y lecturas (hito 2) |
+| `cc17ba2`, `96cbb49` | Web: Resumen, preguntas, análisis, etapas y acciones (hitos 3 y 4) |
+| `1661c69` | Código final, el verificado: `capturas` 73/73, `funcional` 59/59, `revocacion` 6/6, regresión de #153 70/70, `mirar` 18/18; dominio 585, scripts 297, API 80, integración 49 |
+| `ea50bb2` y siguientes | Solo documentos: guía de UX, evidencia, crítica, esta nota |
 
 ## Próximo paso exacto
 
-Correr `funcional` y corregir lo que falle; después `capturas` («después»), la regresión `recorrido.mjs funcional` y, con
-las cuentas descartables, `revocacion`. Luego: evidencia (LEEME, ACEPTACION con CP-01 a CP-30, guía de demostración,
-crítica), commits, push y PR en borrador contra `wp-dashboard-profesional`, CI del head final.
+Ninguno de código: esperar la revisión de Dirección (D-01 a D-26, DL-129 y DL-130, la guía de UX y las ocho
+oportunidades de `CRITICA.md`) y la prueba con lector de pantalla (`LECTOR-DE-PANTALLA.md`). No se arranca otra tanda
+sin su pedido.
+
+- **Si Dirección pide cambios:** levantar la base y los servicios (arriba), cambiar, y repetir solo los recorridos que
+  toca el cambio; el recorrido `funcional` registra una revisión sintética, así que las capturas van antes.
+- **Cuando #153 se integre:** cambiar la base de #154 a `main` (`gh pr edit 154 --base main`). Si #153 entró con
+  squash, traer `main` a la rama con un merge y resolver los conflictos en la rama: no se rebasa ni se reescribe lo
+  publicado.
