@@ -86,6 +86,12 @@ en `docs/DEUDA_LEGAJO.md` (DL-129 y DL-130).
 | D-31 | **Analizar según la pregunta de etapas:** la comparación a mano de dos períodos pasa a una opción plegada justo debajo de la tabla A/B (abierta si ya hay una en la URL), el resumen en texto se pliega como la tabla de datos, la lista de etapas del gráfico no se repite (las tarjetas ya abren la planificación y «Cambiar los datos» elige otras) y cada límite se dice una vez (la ayuda de etapas y la nota de la comparación repetían «no se restan» y «no indica causa»). La cobertura de las tablas sube de 0,88 a 0,95 rem: nada se achica. | Pedido de la pasada: lo principal con la pregunta de etapas es la tabla A/B; lo demás repetía controles y explicaciones. |
 | D-32 | **La guía precisa «no calificar»** (I.1.3): prohibidos los semáforos, el cumplimiento y los rangos normativos que clasifican a la persona; se muestran como dato el rango prescrito por el profesional (con la posición de lo registrado dicha con signo, como ya hacía el dominio: «dentro del rango», «−1 del mínimo») y los intervalos descriptivos de lo observado o leído. Las garantías del dominio no cambian. | «Ni rangos», sin más, contradecía lo implementado y probado en el contraste de entrenamiento. |
 
+**Disponibilidad de la demostración (pedido de Dirección del 2026-10-09, sin cambios en el producto):**
+
+| # | Decisión | Por qué |
+|---|---|---|
+| D-33 | **El lanzador de PostgreSQL no crea nada sin pedirlo y usa un clúster existente:** `BE_PG_DATOS` indica el directorio de datos; sin `--crear`, un clúster o una base que faltan son un error (no una base vacía nueva); antes de arrancar o apagar pregunta a `pg_ctl status`, así un `postmaster.pid` viejo no lo confunde. La demostración corre PostgreSQL en una terminal propia, fuera de las tareas de Claude Code. | Claude Code cortó por falta de memoria la tarea que tenía PostgreSQL (la base se recuperó sola al volver a arrancar). El lanzador anterior no podía apuntar al clúster existente y, ante un directorio equivocado, creaba uno nuevo en silencio. La terminal propia evita ese corte; no resuelve la falta de RAM. |
+
 ## 3. Hitos
 
 | # | Hito | Estado |

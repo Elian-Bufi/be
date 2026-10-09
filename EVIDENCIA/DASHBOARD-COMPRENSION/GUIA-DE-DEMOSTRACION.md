@@ -99,14 +99,19 @@ y un solo «Reintentar» trae todo; un conflicto al guardar los indicadores cons
 ## Comando técnico mínimo
 
 En el repositorio con sus dependencias (`npm ci` en la raíz), Node 22 y Git Bash. **PostgreSQL 16 local, sin Docker**,
-en una terminal aparte que queda abierta (la primera vez, `npm ci` descarga PostgreSQL; los datos quedan en
-`postgres-local/datos` y sobreviven al apagado):
+en una terminal aparte que queda abierta. El lanzador no crea nada sin pedirlo: un clúster nuevo se crea con `--crear`
+(en `postgres-local/datos`), y uno que ya existe se indica con `BE_PG_DATOS`; si falta el clúster o la base, no arranca y
+lo dice (D-33):
 
 ```sh
 cd EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/postgres-local
-npm ci              # una vez
-node iniciar.mjs    # PostgreSQL en :55442 con la base be_test_comprension; Ctrl+C lo apaga
+npm ci                                                   # una vez: descarga PostgreSQL 16
+node iniciar.mjs --crear                                 # desde cero: crea el clúster y la base be_test_comprension
+BE_PG_DATOS=<directorio del clúster> node iniciar.mjs    # o un clúster que ya existe (no crea nada)
 ```
+
+La demostración preparada del 2026-10-09 usa un clúster que ya existe: sus comandos exactos, en PowerShell, están en
+`demostracion/LEEME.md`.
 
 En otra terminal, desde `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas`:
 
@@ -123,5 +128,5 @@ node datos/generar.mjs descartable-datos
 ```
 
 Para terminar: `./entorno.sh parar-web && ./entorno.sh parar-api`, y Ctrl+C en la terminal de PostgreSQL (o, desde
-cualquier terminal, `node postgres-local/parar.mjs`). Los datos quedan; `./datos/regenerar-comprension.sh` los vuelve a
-armar para el día.
+cualquier terminal y con el mismo `BE_PG_DATOS`, `node postgres-local/parar.mjs`). Los datos quedan;
+`./datos/regenerar-comprension.sh` los vuelve a armar para el día.
