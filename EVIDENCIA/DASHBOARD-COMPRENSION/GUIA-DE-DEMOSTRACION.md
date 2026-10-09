@@ -85,7 +85,17 @@ y un solo «Reintentar» trae todo; un conflicto al guardar los indicadores cons
 
 ## Comando técnico mínimo
 
-Desde `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas`, con Node 22 y el PostgreSQL local de la sesión en :55442:
+En el repositorio con sus dependencias (`npm ci` en la raíz), Node 22 y Git Bash. **PostgreSQL 16 local, sin Docker**,
+en una terminal aparte que queda abierta (la primera vez, `npm ci` descarga PostgreSQL; los datos quedan en
+`postgres-local/datos` y sobreviven al apagado):
+
+```sh
+cd EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/postgres-local
+npm ci              # una vez
+node iniciar.mjs    # PostgreSQL en :55442 con la base be_test_comprension; Ctrl+C lo apaga
+```
+
+En otra terminal, desde `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas`:
 
 ```sh
 export BE_TRABAJO="$PWD/trabajo-comprension"
@@ -98,3 +108,7 @@ node datos/generar.mjs descartable-cuentas
 ./entorno.sh parar-api && ./entorno.sh api "$(sed -n 's/^BE_DEMO_PROFESIONALES=//p' trabajo-comprension/demo-profesionales-descartable.txt)"
 node datos/generar.mjs descartable-datos
 ```
+
+Para terminar: `./entorno.sh parar-web && ./entorno.sh parar-api`, y Ctrl+C en la terminal de PostgreSQL (o, desde
+cualquier terminal, `node postgres-local/parar.mjs`). Los datos quedan; `./datos/regenerar-comprension.sh` los vuelve a
+armar para el día.
