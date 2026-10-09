@@ -33,6 +33,9 @@ export interface VersionActivada {
   readonly desde: string;
   /** El día del corte (activación de la sucesora o cierre del seguimiento), que ya es de la siguiente; `null` si sigue. */
   readonly hasta: string | null;
+  /** El instante del corte y su motivo; `null` si sigue vigente. */
+  readonly corteEl: Date | null;
+  readonly motivoDelCorte: 'SUCCESSOR_ACTIVATED' | 'FOLLOW_UP_CLOSED' | null;
 }
 
 /**
@@ -56,7 +59,9 @@ export async function versionesActivadas(tx: Tx, alcance: AlcanceDelAnalisis, pr
       const sucesora = filas.find((s) => s.predecesoraId === v.id)?.momentoDeActivacion ?? null;
       const cierre = cierres.find((c) => c > activadaEl) ?? null;
       const corte = [sucesora, cierre].filter((m): m is Date => m !== null).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
-      return { id: v.id, numero: v.version, predecesoraId: v.predecesoraId, activadaEl, autorId: v.autorId, desde: fechaLocalEn(activadaEl, ZONA), hasta: corte ? fechaLocalEn(corte, ZONA) : null };
+      // Si la sucesora y el cierre coinciden en el instante, el motivo es la sucesora: es la que empieza a regir.
+      const motivoDelCorte = corte === null ? null : sucesora !== null && sucesora.getTime() === corte.getTime() ? ('SUCCESSOR_ACTIVATED' as const) : ('FOLLOW_UP_CLOSED' as const);
+      return { id: v.id, numero: v.version, predecesoraId: v.predecesoraId, activadaEl, autorId: v.autorId, desde: fechaLocalEn(activadaEl, ZONA), hasta: corte ? fechaLocalEn(corte, ZONA) : null, corteEl: corte, motivoDelCorte };
     });
 }
 
@@ -64,7 +69,7 @@ export async function versionesActivadas(tx: Tx, alcance: AlcanceDelAnalisis, pr
 export function vigenciasEnElPeriodo(versiones: readonly VersionActivada[], dominio: VigenciaDePlan['domain'], desde: string, hasta: string): VigenciaDePlan[] {
   return versiones
     .filter((v) => v.desde <= hasta && (v.hasta === null || v.hasta >= desde))
-    .map((v) => ({ domain: dominio, planVersionId: v.id, label: `v${v.numero}`, activatedAt: v.activadaEl.toISOString(), from: v.desde, to: v.hasta }));
+    .map((v) => ({ domain: dominio, planVersionId: v.id, label: `v${v.numero}`, activatedAt: v.activadaEl.toISOString(), from: v.desde, to: v.hasta, endedAt: v.corteEl?.toISOString() ?? null, endReason: v.motivoDelCorte }));
 }
 
 /**

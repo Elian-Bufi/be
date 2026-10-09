@@ -282,8 +282,23 @@ export type HistorialDeConsentimientoDeSaludResponse = z.infer<typeof HistorialD
 /** El plan vigente de un dominio: la versión ACTIVADA efectiva, con el momento en que lo fue. */
 const PlanVigenteSchema = z.strictObject({ planVersionId: IdOpaco, activatedAt: Instante, nextReviewAt: z.string().nullable() });
 
-/** La última revisión **visible para quien consulta**, sin su contenido: el dashboard no es la revisión (09v11 §15). */
-const UltimaRevisionSchema = z.strictObject({ reviewId: IdOpaco, recordedAt: Instante, author: ResumenDeActorSchema });
+/**
+ * La última revisión **visible para quien consulta**, sin su contenido: el dashboard no es la revisión (09v11 §15).
+ * `application` (extensión aditiva, WP-DASHBOARD-COMPRENSION) dice si su resultado ya se aplicó (API-NUT-20 o API-TRN-24),
+ * cuándo y qué creó; `null` es «registrada y sin aplicar», un pendiente explícito. Registrar no es aplicar.
+ */
+const UltimaRevisionSchema = z.strictObject({
+  reviewId: IdOpaco,
+  recordedAt: Instante,
+  author: ResumenDeActorSchema,
+  application: z.strictObject({ appliedAt: Instante, createdPlanId: IdOpaco.nullable(), createdObjectiveVersionId: IdOpaco.nullable() }).nullable(),
+});
+
+/**
+ * Extensión aditiva (WP-DASHBOARD-COMPRENSION): la versión del plan en preparación, todavía sin activar, al final de la
+ * cadena. Un borrador no inicia una etapa ni rige nada: se muestra para ir a editarlo o activarlo, nunca como vigente.
+ */
+const BorradorDePlanSchema = z.strictObject({ planVersionId: IdOpaco, version: z.number().int().positive(), recordedAt: Instante, fromReviewId: IdOpaco.nullable() });
 
 export const ResumenDeNutricionSchema = z.strictObject({
   activePlan: PlanVigenteSchema.nullable(),
@@ -291,8 +306,11 @@ export const ResumenDeNutricionSchema = z.strictObject({
     objectiveVersionId: IdOpaco,
     estimatedEnergyRequirement: z.strictObject({ value: z.number().positive().finite(), unit: z.literal('kcal/day') }),
     authoredBy: ResumenDeActorSchema,
+    /** Desde cuándo rige (extensión aditiva, WP-DASHBOARD-COMPRENSION): «objetivo vigente hoy», con su fecha. */
+    effectiveFrom: Instante,
   }).nullable(),
   lastReview: UltimaRevisionSchema.nullable(),
+  draftPlan: BorradorDePlanSchema.nullable(),
   /** Ingestas registradas por el asesorado dentro del período consultado. Un conteo de registros, no una adherencia. */
   registeredIntakes: z.number().int().nonnegative(),
   lastIntakeAt: Instante.nullable(),
@@ -301,8 +319,9 @@ export type ResumenDeNutricion = z.infer<typeof ResumenDeNutricionSchema>;
 
 export const ResumenDeEntrenamientoSchema = z.strictObject({
   activePlan: PlanVigenteSchema.nullable(),
-  objective: z.strictObject({ objectiveVersionId: IdOpaco, statement: z.string(), authoredBy: ResumenDeActorSchema }).nullable(),
+  objective: z.strictObject({ objectiveVersionId: IdOpaco, statement: z.string(), authoredBy: ResumenDeActorSchema, effectiveFrom: Instante }).nullable(),
   lastReview: UltimaRevisionSchema.nullable(),
+  draftPlan: BorradorDePlanSchema.nullable(),
   /** Ejecuciones registradas por el asesorado dentro del período. Un conteo de registros, no un cumplimiento. */
   registeredExecutions: z.number().int().nonnegative(),
   lastExecutionAt: Instante.nullable(),

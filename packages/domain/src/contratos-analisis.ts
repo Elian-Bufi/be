@@ -107,6 +107,19 @@ export const CoberturaDelPuntoSchema = z.strictObject({
 });
 export type CoberturaDelPunto = z.infer<typeof CoberturaDelPuntoSchema>;
 
+/**
+ * La naturaleza de un método del catálogo, desde la categoría de su ficha (DL-111): `INDEX` (un índice sobre medidas,
+ * como el IMC), `SKINFOLD_SUM` (una suma de pliegues medidos), `ESTIMATE` (una ecuación de predicción de grasa corporal o
+ * de masas: una estimación), `SOMATOTYPE_RATING` (un componente del somatotipo, una calificación) o `UNSPECIFIED` cuando
+ * el catálogo no lo dice: entonces se presenta como «calculado por un método», sin afirmar ni negar que estime.
+ */
+export const NaturalezaDelMetodoSchema = z.enum(['INDEX', 'SKINFOLD_SUM', 'ESTIMATE', 'SOMATOTYPE_RATING', 'UNSPECIFIED']);
+export type NaturalezaDelMetodo = z.infer<typeof NaturalezaDelMetodoSchema>;
+
+/** El método de un valor calculado. `name` es `null` si BE no conoce esa versión: se dice sin inventarle un nombre. */
+export const MetodoDelPuntoSchema = z.strictObject({ methodVersionId: IdOpaco, name: z.string().nullable(), nature: NaturalezaDelMetodoSchema });
+export type MetodoDelPunto = z.infer<typeof MetodoDelPuntoSchema>;
+
 export const PuntoAnaliticoSchema = z.strictObject({
   /** Identificador estable del punto dentro de la serie: sirve para elegirlo y volver a él. */
   pointId: z.string().min(1),
@@ -127,11 +140,21 @@ export const PuntoAnaliticoSchema = z.strictObject({
   /** El balde no está completo dentro del período (una semana partida, o el día de hoy). */
   partialBucket: z.boolean(),
   /**
-   * De dónde sale el valor, en antropometría: medido, reportado por la persona o calculado por un método (una
-   * estimación). La frontera no se borra (04:1090): el gráfico, la lectura, la tabla y la exportación la dicen. `null` en
-   * nutrición y entrenamiento, donde no aplica.
+   * De dónde sale el valor, en antropometría: medido, reportado por la persona o calculado por un método. La frontera no
+   * se borra (04:1090): el gráfico, la lectura, la tabla y la exportación la dicen. `null` en nutrición y entrenamiento,
+   * donde no aplica.
    */
   dataClass: z.enum(['MEASURED', 'REPORTED', 'DERIVED']).nullable(),
+  /**
+   * El método que produjo un valor calculado, con su naturaleza: calculado no es siempre estimado (el IMC es un índice;
+   * una ecuación de grasa corporal sí estima). `null` si el valor no es calculado.
+   */
+  method: MetodoDelPuntoSchema.nullable(),
+  /**
+   * Las versiones del plan que ejecutan los registros del punto (el día, la sesión o la semana): la referencia histórica
+   * de cada registro, que no se reatribuye cuando cambia la versión vigente. Vacío en antropometría, que no ejecuta un plan.
+   */
+  planVersionIds: z.array(IdOpaco),
   coverage: CoberturaDelPuntoSchema.nullable(),
   missing: z.array(FaltanteDelPuntoSchema),
   detail: z.array(DetalleFactualSchema),
@@ -180,6 +203,12 @@ export const VigenciaDePlanSchema = z.strictObject({
    * siguiente, así que dos bandas pueden compartirlo. `null` si sigue vigente.
    */
   to: FechaLocalSchema.nullable(),
+  /**
+   * Extensión aditiva (WP-DASHBOARD-COMPRENSION): el instante del corte y su motivo. Con dos activaciones el mismo día, el
+   * instante separa las etapas sin contar dos veces el día del corte. `null` si sigue vigente.
+   */
+  endedAt: Instante.nullable(),
+  endReason: z.enum(['SUCCESSOR_ACTIVATED', 'FOLLOW_UP_CLOSED']).nullable(),
 });
 export type VigenciaDePlan = z.infer<typeof VigenciaDePlanSchema>;
 
@@ -268,6 +297,11 @@ export const MetricaAntropometricaDisponibleSchema = z.strictObject({
   name: z.string(),
   observations: z.number().int().nonnegative(),
   units: z.array(z.string()),
+  /**
+   * Extensión aditiva (WP-DASHBOARD-COMPRENSION): cuántos grupos de comparabilidad (protocolo, método y unidad) tiene la
+   * métrica en el período. Más de uno es un cambio de comparabilidad: la serie se corta donde cambia.
+   */
+  comparabilityGroups: z.number().int().nonnegative(),
 });
 
 export const ResultadoDeProyeccionAntropometricaSchema = z.strictObject({
@@ -384,6 +418,26 @@ export const ConteosDelPeriodoSchema = z.strictObject({
 });
 export type ConteosDelPeriodo = z.infer<typeof ConteosDelPeriodoSchema>;
 
+/**
+ * Qué trae de nuevo una entrada respecto de un corte (la última revisión de un área), sin mirar `updatedAt`:
+ * - `OCURRIO_DESPUES`: el hecho ocurrió y se registró después del corte.
+ * - `INCORPORADO_DESPUES`: el hecho es anterior al corte, pero se registró después (una carga tardía que la revisión no vio).
+ * - `CORREGIDO_DESPUES`: la entrada se registró antes del corte y una rectificación, anulación o corrección posterior la
+ *   cambió (el instante de la relación).
+ */
+export const NovedadDesdeSchema = z.enum(['OCURRIO_DESPUES', 'INCORPORADO_DESPUES', 'CORREGIDO_DESPUES']);
+export type NovedadDesde = z.infer<typeof NovedadDesdeSchema>;
+
+/**
+ * Los conteos de novedades desde el corte `since`, en el conjunto autorizado y en el período, antes de los demás filtros
+ * (como `periodCounts`). Solo se informan si la consulta pidió un corte.
+ */
+export const NovedadesDesdeSchema = z.strictObject({
+  since: Instante,
+  counts: z.array(z.strictObject({ kind: NovedadDesdeSchema, domain: DominioDeAnalisisSchema, eventType: TipoDeEventoSchema, count: z.number().int().positive() })),
+});
+export type NovedadesDesde = z.infer<typeof NovedadesDesdeSchema>;
+
 export const LineaDeTiempoResponseSchema = z.strictObject({
   data: z.strictObject({
     period: PeriodoCivilSchema,
@@ -393,6 +447,11 @@ export const LineaDeTiempoResponseSchema = z.strictObject({
     /** Cuántas entradas del conjunto autorizado cumplen los filtros en todo el período (no solo en esta página). */
     totalMatching: z.number().int().nonnegative(),
     periodCounts: ConteosDelPeriodoSchema,
+    /**
+     * Extensión aditiva (WP-DASHBOARD-COMPRENSION): con `since`, las novedades desde ese corte y las entradas filtradas a
+     * las que traen una. `null` si la consulta no pidió corte. Los clientes instalados no la piden ni la leen.
+     */
+    sinceCounts: NovedadesDesdeSchema.nullable(),
     /** La búsqueda `q` recorre todo el período del conjunto autorizado, no solo lo cargado. */
     searchScope: z.literal('WHOLE_PERIOD'),
     entries: z.array(EntradaDeLineaDeTiempoSchema),
@@ -418,6 +477,7 @@ export const BusquedaEnLineaDeTiempoRequestSchema = z.strictObject({
   late: z.boolean().optional(),
   planVersionId: z.string().max(36).optional(),
   exerciseId: z.string().max(40).optional(),
+  since: Instante.optional(),
   limit: z.number().int().min(1).max(50).optional(),
   cursor: z.string().max(400).optional(),
 });
@@ -451,8 +511,38 @@ export const ReferenciaDelCambioSchema = z.discriminatedUnion('kind', [
 ]);
 export type ReferenciaDelCambio = z.infer<typeof ReferenciaDelCambioSchema>;
 
+/** Las seis preguntas profesionales (encargo del 2026-10-09, eje 2): identificadores estables. */
+export const ID_DE_PREGUNTAS = ['cambio-desde-el-plan', 'registrado-vs-indicado', 'alimentacion-y-medidas', 'progreso-de-un-ejercicio', 'comparar-etapas', 'informacion-para-revisar'] as const;
+export const IdDePreguntaSchema = z.enum(ID_DE_PREGUNTAS);
+export type IdDePregunta = z.infer<typeof IdDePreguntaSchema>;
+
+/**
+ * Los parámetros de una pregunta: **solo identificadores y enumerados** (viajan en la URL y en las vistas guardadas).
+ * Algunos son del asesorado (la versión del plan, las etapas, el ejercicio): en otro asesorado no aplican y se piden de
+ * nuevo, nunca se sustituyen.
+ */
+export const ParametrosDePreguntaSchema = z.strictObject({
+  area: z.enum(['NUTRICION', 'ENTRENAMIENTO']).optional(),
+  planVersionId: IdOpaco.optional(),
+  stageA: IdOpaco.optional(),
+  stageB: IdOpaco.optional(),
+  bodyMetric: z.string().regex(/^antropometria\.[a-z0-9-]+$/).optional(),
+  exerciseKey: z.string().regex(/^[ev]:[0-9a-fA-F-]{36}$/).optional(),
+  setIndex: z.number().int().min(1).max(30).optional(),
+  unit: z.enum(['kg', 'lb']).optional(),
+});
+export type ParametrosDePregunta = z.infer<typeof ParametrosDePreguntaSchema>;
+
+export const PreguntaElegidaSchema = z.strictObject({ id: IdDePreguntaSchema, params: ParametrosDePreguntaSchema });
+export type PreguntaElegida = z.infer<typeof PreguntaElegidaSchema>;
+
 export const ConfiguracionDeAnalisisSchema = z.strictObject({
   schemaVersion: z.literal(1),
+  /**
+   * Extensión aditiva (WP-DASHBOARD-COMPRENSION): la pregunta con la que se armó la vista y sus parámetros. Una vista sin
+   * pregunta es un «Análisis personalizado».
+   */
+  question: PreguntaElegidaSchema.optional(),
   metrics: z.array(ReferenciaDeMetricaSchema).min(1).max(3),
   mode: z.enum(['PANELS', 'OVERLAY', 'RELATIVE']),
   grain: GranoSchema,

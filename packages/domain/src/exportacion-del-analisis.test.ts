@@ -27,6 +27,8 @@ const punto = (fecha: string, valor: number | null, extra: Partial<PuntoAnalitic
   corrected: false,
   partialBucket: false,
   dataClass: null,
+  method: null,
+  planVersionIds: [],
   coverage: null,
   missing: [],
   detail: [],
@@ -127,10 +129,39 @@ test('la clase del dato antropométrico se exporta: medido, reportado por la per
     [
       ['2026-09-01', '80,0', 'Medido'],
       ['2026-09-10', '79,0', 'Reportado por la persona, no medido'],
-      ['2026-09-20', '79,4', 'Calculado por un método (estimación)'],
+      // Sin método identificado no se afirma que sea una estimación (encargo del 2026-10-09, eje 3).
+      ['2026-09-20', '79,4', 'Calculado por un método'],
     ],
   );
   assert.match(csv, /Agrupación;Peso: cada observación \(toma o sesión\)/);
+});
+
+test('calculado no es siempre estimado: la exportación dice la naturaleza del método y su nombre (eje 3)', () => {
+  const peso = definicionDeMetrica('antropometria.peso', 'kg') as DefinicionDeMetrica;
+  const indice = { methodVersionId: '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f01', name: 'Índice de masa corporal (IMC)', nature: 'INDEX' as const };
+  const ecuacion = { methodVersionId: '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f08', name: 'Durnin y Womersley, hombres · Siri', nature: 'ESTIMATE' as const };
+  const csv = csvDelAnalisis({
+    asesorado: 'A',
+    desde: '2026-09-01',
+    hasta: '2026-09-30',
+    zona: 'America/Argentina/Buenos_Aires',
+    generadoEl: '2026-09-30T12:00:00.000Z',
+    series: [
+      {
+        nombre: 'Calculados',
+        definicion: peso,
+        serie: {
+          ...serie(peso, [punto('2026-09-01', 24.1, { dataClass: 'DERIVED', method: indice }), punto('2026-09-20', 18.2, { dataClass: 'DERIVED', method: ecuacion })], 'kg'),
+          grain: 'ORIGINAL',
+          aggregation: 'NONE',
+        },
+      },
+    ],
+  });
+  assert.deepEqual(
+    filasDeDatos(csv).map((f) => f[16]),
+    ['Calculado: un índice calculado sobre medidas, no una estimación (Índice de masa corporal (IMC))', 'Calculado: una estimación con una ecuación de predicción (Durnin y Womersley, hombres · Siri)'],
+  );
 });
 
 test('gramos a un decimal con coma (HALF_UP sobre el exacto) y la hora en la zona del asesorado', () => {

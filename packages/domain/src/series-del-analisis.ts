@@ -14,7 +14,7 @@
  * - **Comparar dos períodos** usa la misma regla de resumen en los dos, dice la duración, n y la cobertura de cada uno, y
  *   no compara totales de períodos de distinta duración como si fueran equivalentes (encargo §13).
  */
-import type { PuntoAnalitico, ReferenciaDelCambio, SerieAnalitica } from './contratos-analisis';
+import type { NaturalezaDelMetodo, PuntoAnalitico, ReferenciaDelCambio, SerieAnalitica } from './contratos-analisis';
 import { granoDeObservacion, type DefinicionDeMetrica, type ResumenDePeriodo } from './metricas-del-analisis';
 import { diaSiguiente, diasEntreFechas } from './fechas-civiles';
 import { numero } from './formato-numeros';
@@ -330,8 +330,14 @@ export interface ComparacionDePeriodos {
 
 /** Dos períodos explícitos con el mismo criterio de resumen. No produce conclusiones causales. */
 export function compararPeriodos(serie: SerieAnalitica, definicion: DefinicionDeMetrica, a: { desde: string; hasta: string }, b: { desde: string; hasta: string }): ComparacionDePeriodos {
-  const ra = resumirPeriodo(serie, definicion, a.desde, a.hasta);
-  const rb = resumirPeriodo(serie, definicion, b.desde, b.hasta);
+  return compararResumenes(resumirPeriodo(serie, definicion, a.desde, a.hasta), resumirPeriodo(serie, definicion, b.desde, b.hasta), definicion);
+}
+
+/**
+ * Si dos resúmenes con la misma regla se pueden restar, y la diferencia descriptiva (B − A). La comparten la de dos
+ * períodos y la de dos etapas de planificación: el criterio es uno solo.
+ */
+export function compararResumenes(ra: ResumenDeUnPeriodo, rb: ResumenDeUnPeriodo, definicion: DefinicionDeMetrica): ComparacionDePeriodos {
   if (ra.valor === null || rb.valor === null) return { a: ra, b: rb, diferencia: null, motivoSinDiferencia: 'SIN_VALOR_EN_ALGUNO' };
   // Dos totales de períodos de distinta duración no se restan como si fueran equivalentes (encargo §13).
   if (definicion.resumenDePeriodo === 'TOTAL' && ra.duracionDias !== rb.duracionDias) return { a: ra, b: rb, diferencia: null, motivoSinDiferencia: 'DURACIONES_DISTINTAS' };
@@ -347,6 +353,22 @@ const fechaCorta = (f: string): string => `${Number(f.slice(8, 10))}/${Number(f.
 
 /** Un número con la unidad de la métrica y sus decimales. */
 export const valorConUnidad = (valor: number, unidad: string, decimales: number): string => `${numero(Number(valor.toFixed(decimales)))} ${unidad}`;
+
+/** Qué son los valores calculados de un resumen, si comparten la naturaleza de su método: calculado no es siempre estimado. */
+const NATURALEZA_EN_PLURAL: Readonly<Record<Exclude<NaturalezaDelMetodo, 'UNSPECIFIED'>, readonly [string, string]>> = {
+  INDEX: ['un índice, no una estimación', 'índices, no estimaciones'],
+  SKINFOLD_SUM: ['una suma de pliegues medidos, no una estimación', 'sumas de pliegues medidos, no estimaciones'],
+  ESTIMATE: ['una estimación con una ecuación de predicción', 'estimaciones con una ecuación de predicción'],
+  SOMATOTYPE_RATING: ['un componente del somatotipo', 'componentes del somatotipo'],
+};
+
+function naturalezaEnElResumen(calculados: readonly PuntoAnalitico[]): string {
+  const naturalezas = new Set(calculados.map((p) => p.method?.nature ?? 'UNSPECIFIED'));
+  if (naturalezas.size > 1) return ' (de métodos de distinta naturaleza: la lectura de cada punto dice cuál)';
+  const [n] = [...naturalezas];
+  if (n === undefined || n === 'UNSPECIFIED') return '';
+  return ` (${NATURALEZA_EN_PLURAL[n][calculados.length === 1 ? 0 : 1]})`;
+}
 
 /**
  * El resumen textual de una serie (W3C, imágenes complejas): qué mide, en qué período, cuántas observaciones, la primera
@@ -371,8 +393,8 @@ export function resumenTextual(serie: SerieAnalitica, definicion: DefinicionDeMe
   ];
   const reportados = conValor.filter((p) => p.dataClass === 'REPORTED').length;
   if (reportados > 0) partes.push(`${numero(reportados)} ${reportados === 1 ? 'es un valor reportado por la persona, no medido' : 'son valores reportados por la persona, no medidos'}`);
-  const calculados = conValor.filter((p) => p.dataClass === 'DERIVED').length;
-  if (calculados > 0) partes.push(`${numero(calculados)} ${calculados === 1 ? 'es un valor calculado por un método (una estimación)' : 'son valores calculados por un método (estimaciones)'}`);
+  const calculados = conValor.filter((p) => p.dataClass === 'DERIVED');
+  if (calculados.length > 0) partes.push(`${numero(calculados.length)} ${calculados.length === 1 ? 'es un valor calculado por un método' : 'son valores calculados por un método'}${naturalezaEnElResumen(calculados)}`);
   const parciales = conValor.filter((p) => p.quality === 'PARTIAL').length;
   if (parciales > 0) partes.push(`${numero(parciales)} ${parciales === 1 ? 'es un subtotal' : 'son subtotales'} de lo registrado`);
   const incompletos = conValor.filter((p) => p.partialBucket).length;

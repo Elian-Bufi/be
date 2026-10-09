@@ -7,21 +7,60 @@
  *   dice que un punto no es comparable con el anterior (REG-06-164). La línea nunca une tramos.
  * - Sin el error técnico de medición documentado no hay intervalos ni «cambio significativo» (Perini 2005; encargo §12).
  */
-import type { PuntoAnalitico, SerieAnalitica } from './contratos-analisis';
+import type { MetodoDelPunto, NaturalezaDelMetodo, PuntoAnalitico, SerieAnalitica } from './contratos-analisis';
+import type { CategoriaDeMetodo } from './calculo';
 import type { SerieApi } from './contratos-antropometria';
 import { fechaCivil } from './fechas-civiles';
 import type { DefinicionDeMetrica } from './metricas-del-analisis';
-import { nombreDeMetodo } from './nombres-de-metricas';
+import { CATEGORIA_DE_METODO, nombreDeMetodo } from './nombres-de-metricas';
 
 /**
  * Medido, reportado por la persona o calculado por un método: la frontera que no se borra (04:1090), con las palabras de
  * la pestaña de Antropometría (`ETIQUETA_DE_CLASE_DE_DATO`: Medido, Reportado, Calculado) y lo que hace falta aclarar.
+ * «Calculado» no dice por sí solo si es una estimación: lo dice la naturaleza del método (`claseEnPalabras`).
  */
 export const TEXTO_DE_CLASE: Readonly<Record<'MEASURED' | 'REPORTED' | 'DERIVED', string>> = {
   MEASURED: 'Medido',
   REPORTED: 'Reportado por la persona, no medido',
-  DERIVED: 'Calculado por un método (estimación)',
+  DERIVED: 'Calculado por un método',
 };
+
+const NATURALEZA_DE_LA_CATEGORIA: Readonly<Record<CategoriaDeMetodo, NaturalezaDelMetodo>> = {
+  INDICES: 'INDEX',
+  SUMAS_DE_PLIEGUES: 'SKINFOLD_SUM',
+  GRASA_CORPORAL: 'ESTIMATE',
+  MASAS: 'ESTIMATE',
+  SOMATOTIPO: 'SOMATOTYPE_RATING',
+};
+
+/** La naturaleza de una versión de método, desde la categoría de su ficha; `UNSPECIFIED` si el catálogo no la dice. */
+export function naturalezaDelMetodo(methodVersionId: string | null): NaturalezaDelMetodo {
+  const categoria = methodVersionId ? CATEGORIA_DE_METODO[methodVersionId] : undefined;
+  return categoria ? NATURALEZA_DE_LA_CATEGORIA[categoria] : 'UNSPECIFIED';
+}
+
+/** El método de un valor calculado, con su nombre y su naturaleza, o `null` si no hay versión identificada. */
+export function metodoDelPunto(methodVersionId: string | null): MetodoDelPunto | null {
+  return methodVersionId ? { methodVersionId, name: nombreDeMetodo(methodVersionId), nature: naturalezaDelMetodo(methodVersionId) } : null;
+}
+
+/** Qué es un valor calculado, según la naturaleza del método. Nunca dice «estimación» de un índice ni de una suma. */
+export const TEXTO_DE_NATURALEZA: Readonly<Record<NaturalezaDelMetodo, string>> = {
+  INDEX: 'un índice calculado sobre medidas, no una estimación',
+  SKINFOLD_SUM: 'una suma de pliegues medidos, no una estimación',
+  ESTIMATE: 'una estimación con una ecuación de predicción',
+  SOMATOTYPE_RATING: 'un componente del somatotipo (una calificación calculada)',
+  UNSPECIFIED: 'calculado por un método',
+};
+
+/**
+ * La clase de un dato en palabras, con la naturaleza del método cuando es calculado: «Calculado: un índice calculado
+ * sobre medidas, no una estimación». Sin método identificado queda «Calculado por un método», sin afirmar que estima.
+ */
+export function claseEnPalabras(dataClass: 'MEASURED' | 'REPORTED' | 'DERIVED', metodo: MetodoDelPunto | null): string {
+  if (dataClass !== 'DERIVED' || metodo === null || metodo.nature === 'UNSPECIFIED') return TEXTO_DE_CLASE[dataClass];
+  return `Calculado: ${TEXTO_DE_NATURALEZA[metodo.nature]}`;
+}
 
 const MOTIVO_DE_CORTE: Readonly<Record<string, string>> = {
   PROTOCOL: 'Cambió el protocolo de medición.',
@@ -48,6 +87,7 @@ export function serieAntropometrica(serie: SerieApi, definicion: DefinicionDeMet
         breakReason: tramos.length === 0 ? null : p.incomparableWithPrevious.map((m) => MOTIVO_DE_CORTE[m] ?? m).join(' ') || 'Otro grupo comparable.',
       });
     }
+    const metodo = p.dataClass === 'DERIVED' ? metodoDelPunto(grupos.get(p.comparabilityGroup)?.methodVersionId ?? null) : null;
     puntos.push({
       pointId: `m:${p.sourceId}`,
       date: fechaCivil(p.occurredAt, zonaHoraria),
@@ -60,10 +100,13 @@ export function serieAntropometrica(serie: SerieApi, definicion: DefinicionDeMet
       corrected: p.correctionState === 'CORRECTED',
       partialBucket: false,
       dataClass: p.dataClass,
+      method: metodo,
+      planVersionIds: [],
       coverage: null,
       missing: [],
       detail: [
-        { label: 'Clase de dato', value: TEXTO_DE_CLASE[p.dataClass] },
+        { label: 'Clase de dato', value: claseEnPalabras(p.dataClass, metodo) },
+        ...(metodo ? [{ label: 'Método', value: metodo.name ?? 'Método identificado, sin nombre en BE' }] : []),
         ...(p.correctionState === 'CORRECTED' ? [{ label: 'Valor vigente', value: 'Corregido' }] : []),
       ],
       sources: [{ type: 'ANTHROPOMETRIC_EVALUATION', id: p.sourceEvaluationId }],

@@ -84,3 +84,6 @@ export * from './entrenamiento-del-analisis';
 export * from './antropometria-del-analisis';
 export * from './linea-de-tiempo';
 export * from './exportacion-del-analisis';
+export * from './etapas-de-planificacion';
+export * from './preguntas-profesionales';
+export * from './sintesis-del-resumen';

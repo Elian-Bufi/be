@@ -742,9 +742,12 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         cuerpo: { expectedVersion: versionMostrada },
       });
     },
-    /** API-NUT-13. */
+    /**
+     * API-NUT-13-BUSQUEDA (DL-130): buscar en el catálogo con el texto en el cuerpo, nunca en una URL. Es una lectura: sin
+     * clave de idempotencia. API-NUT-13 (`q` en la URL) queda como contrato legado de la API.
+     */
     buscarEnCatalogo(token: string, texto: string) {
-      return llamar('GET', `/nutrition/catalog-items${query({ q: texto, limit: '20' })}`, { token, esquema: ListaDeCatalogoResponseSchema });
+      return llamar('POST', '/nutrition/catalog-items/search', { token, esquema: ListaDeCatalogoResponseSchema, cuerpo: { q: texto, limit: 20 } });
     },
     /** API-INT-NUT-01. */
     crearElementoDeCatalogo(token: string, cuerpo: CrearElementoDeCatalogoRequest, claveDeIdempotencia: string) {
@@ -1047,9 +1050,12 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         cuerpo: { expectedVersion: versionMostrada },
       });
     },
-    /** API-TRN-13. */
+    /**
+     * API-TRN-13-BUSQUEDA (DL-130): buscar ejercicios con el texto en el cuerpo, nunca en una URL. Es una lectura: sin
+     * clave de idempotencia. API-TRN-13 (`q` en la URL) queda como contrato legado de la API.
+     */
     buscarEjercicios(token: string, texto: string) {
-      return llamar('GET', `/training/exercises${query({ q: texto, limit: '20' })}`, { token, esquema: ListaDeEjerciciosResponseSchema });
+      return llamar('POST', '/training/exercises/search', { token, esquema: ListaDeEjerciciosResponseSchema, cuerpo: { q: texto, limit: 20 } });
     },
     /** API-INT-TRN-01: carga manual, con cero zonas hasta WP-07. */
     crearEjercicio(token: string, nombre: string, claveDeIdempotencia: string) {

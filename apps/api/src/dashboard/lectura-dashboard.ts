@@ -47,10 +47,11 @@ export async function resumenDeNutricion(tx: Tx, procesos: ProcesoService, profe
   });
   const efectiva = plan?.versionEfectiva ?? null;
 
-  const [activePlan, objetivoFila, ultima] = await Promise.all([
+  const [activePlan, objetivoFila, ultima, borrador] = await Promise.all([
     planVigente(tx, procesos, profesionalId, asesoradoId, 'NUTRICION', efectiva),
     objetivoEfectivoDeNutricion(tx, profesionalId, asesoradoId),
     ultimaRevision(tx, profesionalId, asesoradoId, 'NUTRICION'),
+    borradorDelPlan(tx, profesionalId, asesoradoId, 'NUTRICION'),
   ]);
 
   // DL-121: una ingesta anulada por su titular deja de contar.
@@ -67,9 +68,11 @@ export async function resumenDeNutricion(tx: Tx, procesos: ProcesoService, profe
           objectiveVersionId: objetivoFila.id,
           estimatedEnergyRequirement: objetivoFila.requerimientoEnergetico as { value: number; unit: 'kcal/day' },
           authoredBy: actor(objetivoFila.autorId, await nombreVisibleDe(tx, objetivoFila.autorId)),
+          effectiveFrom: objetivoFila.vigenteDesde.toISOString(),
         }
       : null,
     lastReview: ultima,
+    draftPlan: borrador,
     registeredIntakes: ingestas._count._all,
     lastIntakeAt: ingestas._max.momentoDeOcurrencia?.toISOString() ?? null,
   };
@@ -83,10 +86,11 @@ export async function resumenDeEntrenamiento(tx: Tx, procesos: ProcesoService, p
   });
   const efectiva = plan?.versionEfectiva ?? null;
 
-  const [activePlan, objetivoFila, ultima] = await Promise.all([
+  const [activePlan, objetivoFila, ultima, borrador] = await Promise.all([
     planVigente(tx, procesos, profesionalId, asesoradoId, 'ENTRENAMIENTO', efectiva),
     objetivoEfectivoDeEntrenamiento(tx, profesionalId, asesoradoId),
     ultimaRevision(tx, profesionalId, asesoradoId, 'ENTRENAMIENTO'),
+    borradorDelPlan(tx, profesionalId, asesoradoId, 'ENTRENAMIENTO'),
   ]);
 
   const ejecuciones = await tx.ejecucionDeEntrenamiento.aggregate({
@@ -103,9 +107,11 @@ export async function resumenDeEntrenamiento(tx: Tx, procesos: ProcesoService, p
           // «El contenido concreto del objetivo no se fija en 09» (09v10:228): el enunciado es lo único citable.
           statement: enunciadoDeObjetivo(objetivoFila.objetivo),
           authoredBy: actor(objetivoFila.autorId, await nombreVisibleDe(tx, objetivoFila.autorId)),
+          effectiveFrom: objetivoFila.vigenteDesde.toISOString(),
         }
       : null,
     lastReview: ultima,
+    draftPlan: borrador,
     registeredExecutions: ejecuciones._count._all,
     lastExecutionAt: ejecuciones._max.momentoDeOcurrencia?.toISOString() ?? null,
   };
@@ -136,7 +142,7 @@ async function planVigente(
 async function objetivoEfectivoDeNutricion(tx: Tx, profesionalId: string, asesoradoId: string) {
   const objetivo = await tx.objetivoNutricional.findUnique({ where: { profesionalId_asesoradoId: { profesionalId, asesoradoId } }, select: { id: true } });
   if (!objetivo) return null;
-  const versiones = await tx.versionDeObjetivoNutricional.findMany({ where: { objetivoId: objetivo.id }, select: { id: true, objetivoId: true, predecesoraId: true, requerimientoEnergetico: true, autorId: true } });
+  const versiones = await tx.versionDeObjetivoNutricional.findMany({ where: { objetivoId: objetivo.id }, select: { id: true, objetivoId: true, predecesoraId: true, requerimientoEnergetico: true, autorId: true, vigenteDesde: true } });
   const terminal = resolverVersionTerminal(versiones.map((v) => ({ id: v.id, objetoId: v.objetivoId, predecesoraId: v.predecesoraId })));
   return terminal.tipo === 'TERMINAL' ? (versiones.find((v) => v.id === terminal.terminalId) ?? null) : null;
 }
@@ -145,7 +151,7 @@ async function objetivoEfectivoDeNutricion(tx: Tx, profesionalId: string, asesor
 async function objetivoEfectivoDeEntrenamiento(tx: Tx, profesionalId: string, asesoradoId: string) {
   const objetivo = await tx.objetivoDeEntrenamiento.findUnique({ where: { profesionalId_asesoradoId: { profesionalId, asesoradoId } }, select: { id: true } });
   if (!objetivo) return null;
-  const versiones = await tx.versionDeObjetivoDeEntrenamiento.findMany({ where: { objetivoId: objetivo.id }, select: { id: true, objetivoId: true, predecesoraId: true, objetivo: true, autorId: true } });
+  const versiones = await tx.versionDeObjetivoDeEntrenamiento.findMany({ where: { objetivoId: objetivo.id }, select: { id: true, objetivoId: true, predecesoraId: true, objetivo: true, autorId: true, vigenteDesde: true } });
   const terminal = resolverVersionTerminal(versiones.map((v) => ({ id: v.id, objetoId: v.objetivoId, predecesoraId: v.predecesoraId })));
   return terminal.tipo === 'TERMINAL' ? (versiones.find((v) => v.id === terminal.terminalId) ?? null) : null;
 }
@@ -182,16 +188,44 @@ async function ultimaRevision(
   profesionalId: string,
   asesoradoId: string,
   alcance: 'NUTRICION' | 'ENTRENAMIENTO',
-): Promise<{ reviewId: string; recordedAt: string; author: { identityId: string; displayName: string } } | null> {
+): Promise<ResumenDeNutricion['lastReview']> {
   const procesos = await tx.procesoOperativo.findMany({ where: { profesionalId, asesoradoId, alcance }, select: { id: true } });
   if (procesos.length === 0) return null;
   const ids = procesos.map((p) => p.id);
   const fila =
     alcance === 'NUTRICION'
-      ? await tx.revisionNutricional.findFirst({ where: { procesoId: { in: ids } }, orderBy: { momentoDeRegistro: 'desc' }, select: { id: true, momentoDeRegistro: true, autorId: true } })
-      : await tx.revisionDeEntrenamiento.findFirst({ where: { procesoId: { in: ids } }, orderBy: { momentoDeRegistro: 'desc' }, select: { id: true, momentoDeRegistro: true, autorId: true } });
+      ? await tx.revisionNutricional.findFirst({ where: { procesoId: { in: ids } }, orderBy: { momentoDeRegistro: 'desc' }, select: SELECCION_DE_REVISION })
+      : await tx.revisionDeEntrenamiento.findFirst({ where: { procesoId: { in: ids } }, orderBy: { momentoDeRegistro: 'desc' }, select: SELECCION_DE_REVISION });
   if (!fila) return null;
-  return { reviewId: fila.id, recordedAt: fila.momentoDeRegistro.toISOString(), author: actor(fila.autorId, await nombreVisibleDe(tx, fila.autorId)) };
+  return {
+    reviewId: fila.id,
+    recordedAt: fila.momentoDeRegistro.toISOString(),
+    author: actor(fila.autorId, await nombreVisibleDe(tx, fila.autorId)),
+    application: fila.aplicacion
+      ? { appliedAt: fila.aplicacion.momentoDeRegistro.toISOString(), createdPlanId: fila.aplicacion.versionDePlanCreadaId, createdObjectiveVersionId: fila.aplicacion.versionDeObjetivoCreadaId }
+      : null,
+  };
+}
+
+const SELECCION_DE_REVISION = {
+  id: true,
+  momentoDeRegistro: true,
+  autorId: true,
+  aplicacion: { select: { momentoDeRegistro: true, versionDePlanCreadaId: true, versionDeObjetivoCreadaId: true } },
+} as const;
+
+/**
+ * El borrador del plan, si lo hay: la versión BORRADOR más reciente del Plan de ese profesional con ese asesorado. No
+ * rige nada ni inicia una etapa; se informa para poder ir a editarlo o activarlo (WP-DASHBOARD-COMPRENSION).
+ */
+async function borradorDelPlan(tx: Tx, profesionalId: string, asesoradoId: string, alcance: 'NUTRICION' | 'ENTRENAMIENTO'): Promise<ResumenDeNutricion['draftPlan']> {
+  const donde = { estado: 'BORRADOR' as const, plan: { profesionalId, asesoradoId } };
+  const seleccion = { id: true, version: true, momentoDeRegistro: true, revisionDeOrigenId: true } as const;
+  const fila =
+    alcance === 'NUTRICION'
+      ? await tx.versionDePlanNutricional.findFirst({ where: donde, orderBy: [{ momentoDeRegistro: 'desc' }, { id: 'desc' }], select: seleccion })
+      : await tx.versionDePlanDeEntrenamiento.findFirst({ where: donde, orderBy: [{ momentoDeRegistro: 'desc' }, { id: 'desc' }], select: seleccion });
+  return fila ? { planVersionId: fila.id, version: fila.version, recordedAt: fila.momentoDeRegistro.toISOString(), fromReviewId: fila.revisionDeOrigenId } : null;
 }
 
 /** El enunciado del objetivo de entrenamiento, que el 09 deja libre: se cita lo que hay, sin inventar. */
