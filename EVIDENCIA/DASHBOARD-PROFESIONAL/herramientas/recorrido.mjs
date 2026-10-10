@@ -391,6 +391,11 @@ async function dibujo(page) {
  * tamaño): la fracción de píxeles que no son del fondo y cuántos tienen el color de cada métrica (--metrica-1 a 3).
  * La captura se decodifica en un canvas de la misma página (la CSP admite imágenes `data:`): una pestaña aparte pasaría
  * al frente, y la captura de una pestaña de fondo no termina.
+ *
+ * Se mide **sin los textos del gráfico** (los rótulos de los ejes y de las bandas) y sin la línea de lo planificado, que
+ * lleva el color de su métrica. En Azul noche, el color de los textos secundarios queda a un paso del de la primera
+ * métrica: los bordes suavizados de las letras entraban en la tolerancia y sumaban píxeles «de la métrica» aunque no
+ * hubiera serie (126 en un gráfico de tres marcas). Lo destapó la prueba de la prueba (`laMedicionDetectaUnGraficoVacio`).
  */
 async function pintura(page, i) {
   const caja = await page.evaluate((i) => {
@@ -409,8 +414,10 @@ async function pintura(page, i) {
     const y = Math.max(0, b.y);
     return { x, y, ancho: Math.min(b.right, innerWidth) - x, alto: Math.min(b.bottom, innerHeight) - y, colores: [1, 2, 3].map(color) };
   }, i);
+  const soloElDibujo = await page.addStyleTag({ content: 'figure.grafico__figura svg text, figure.grafico__figura .grafico__plan { visibility: hidden !important; }' });
   await pausa(150);
   const png = await page.screenshot({ encoding: 'base64' });
+  await soloElDibujo.evaluate((e) => e.remove());
   return page.evaluate(
     async (png, caja) => {
       const img = new Image();
