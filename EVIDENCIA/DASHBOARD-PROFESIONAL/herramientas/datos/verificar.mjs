@@ -111,11 +111,20 @@ export async function verificarContraLoEsperado({ pedir, e, pro, tercero }) {
 
   // ─── Antropometría ─────────────────────────────────────────────────────────────────────────────────────────────
   const antro = (await pedir('GET', `/advisees/${e.aseId}/projections/ANTHROPOMETRY_LONGITUDINAL?periodStart=${diaMenos(hoy, 83)}&periodEnd=${hoy}&metric=peso,perimetro-cintura,pliegue-biceps`, { token: pro })).data.result;
-  const [peso, cintura, biceps] = antro.series;
-  exigir('peso: seis tomas, dos el mismo día', JSON.stringify(peso.points.map((p) => p.value)) === JSON.stringify([82.4, 81.6, 79.4, 80.2, 80.9, 79.8]), JSON.stringify(peso.points.map((p) => p.value)));
+  // Cada serie se busca por su medida, no por su posición: una medida sin observaciones vigentes en el período no arma
+  // serie (su unidad sale de los datos; antes llegaba una serie sin unidad, que no cumplía el contrato).
+  const serieDe = (codigo) => antro.series.find((s) => s.metricId === `antropometria.${codigo}`);
+  const peso = serieDe('peso');
+  const cintura = serieDe('perimetro-cintura');
+  exigir('peso y cintura: cada una con su serie', peso !== undefined && cintura !== undefined, antro.series.map((s) => s.metricId).join(', '));
+  exigir('peso: seis tomas, dos el mismo día',JSON.stringify(peso.points.map((p) => p.value)) === JSON.stringify([82.4, 81.6, 79.4, 80.2, 80.9, 79.8]), JSON.stringify(peso.points.map((p) => p.value)));
   exigir('peso: el protocolo de laboratorio abre otro tramo (tres tramos)', new Set(peso.points.map((p) => p.segment)).size === 3, JSON.stringify(peso.points.map((p) => p.segment)));
   exigir('cintura: la corrección vigente (90,5, no 95)', JSON.stringify(cintura.points.map((p) => p.value)) === JSON.stringify([92, 90.5, 89, 88.2]) && cintura.points[1].corrected === true, JSON.stringify(cintura.points.map((p) => p.value)));
-  exigir('pliegue del bíceps: anulado, sin punto', biceps.points.length === 0, `${biceps.points.length}`);
+  exigir(
+    'pliegue del bíceps: anulado, sin punto (no arma serie ni figura entre las medidas con observaciones)',
+    serieDe('pliegue-biceps') === undefined && antro.series.length === 2 && !antro.available.some((m) => m.metricCode === 'pliegue-biceps'),
+    `series: ${antro.series.map((s) => s.metricId).join(', ')} · disponibles: ${antro.available.map((m) => m.metricCode).join(', ')}`,
+  );
   exigir('las tomas históricas y la reciente son de este profesional: sin vista parcial', (await pedir('GET', `/advisees/${e.aseId}/projections/ANTHROPOMETRY_LONGITUDINAL`, { token: pro })).data.partialView === false, '');
 
   // ─── Línea de tiempo y permisos ────────────────────────────────────────────────────────────────────────────────

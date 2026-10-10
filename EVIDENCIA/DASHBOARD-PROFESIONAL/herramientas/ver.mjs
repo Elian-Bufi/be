@@ -6,7 +6,9 @@
 //   convierte en ruta de Windows un argumento que la lleva después del signo igual. Ejemplo:
 //   node ver.mjs "$BE_TRABAJO/ver" 1440 "tres=pro/advisees?id={a}&vista=analizar&m=nutricion.energia,antropometria.peso"
 //   Para mirar algo desplegado, la ruta puede terminar en `#clic:Texto|Otro texto`: antes de capturar se toca, en orden,
-//   el primer botón, resumen o enlace a la vista que contiene cada texto.
+//   el primer botón, resumen, enlace o rótulo de casilla a la vista que contiene cada texto.
+//   Para mirar una falla, `#falla:fragmento`: mientras se captura esa ruta, los pedidos a la API cuya dirección contiene
+//   el fragmento reciben un 503 simulado en el navegador (la API y la base no se tocan). Ejemplo: `#falla:metric=PROTEIN`.
 //   Inicia sesión una sola vez y navega dentro de la aplicación (recargar cierra la sesión).
 //   Escribe <salida>/<nombre>-<ancho>-<tema>.png. Necesita la API en :3001 y el website en :3000 (`entorno.sh`).
 import { enTrabajo } from './rutas.mjs';
@@ -40,8 +42,10 @@ const rutas = pedidos.map((p) => {
     console.error(`«${p.slice(0, corte)}»: la ruta llegó como una ruta de Windows (${ruta.slice(0, 40)}…). Escribila sin la barra inicial.`);
     process.exit(2);
   }
-  const [destino, clics = ''] = ruta.split('#clic:');
-  return [p.slice(0, corte), destino.startsWith('/') ? destino : `/${destino}`, clics.split('|').filter(Boolean)];
+  // Después de la ruta van, en cualquier orden, `#clic:Texto|Otro` y `#falla:fragmento de una dirección de la API`.
+  const [destino, ...extras] = ruta.split('#');
+  const de = (prefijo) => extras.find((x) => x.startsWith(prefijo))?.slice(prefijo.length) ?? '';
+  return [p.slice(0, corte), destino.startsWith('/') ? destino : `/${destino}`, de('clic:').split('|').filter(Boolean), de('falla:')];
 });
 fs.mkdirSync(salida, { recursive: true });
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -55,6 +59,19 @@ const browser = await puppeteer.launch({
 const page = await browser.newPage();
 const errores = [];
 page.on('pageerror', (e) => errores.push(String(e)));
+
+// `#falla:fragmento`: mientras se captura esa ruta, los pedidos a la API que lo contienen reciben un 503 simulado.
+const API = 'http://localhost:3001';
+const CORS = { 'Access-Control-Allow-Origin': WEB, 'Access-Control-Expose-Headers': 'x-request-id', Vary: 'Origin' };
+let fallaSimulada = '';
+await page.setRequestInterception(true);
+page.on('request', (req) => {
+  if (!fallaSimulada || !req.url().startsWith(API) || !req.url().includes(fallaSimulada)) return req.continue();
+  if (req.method() === 'OPTIONS') return req.respond({ status: 204, headers: { ...CORS, 'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS', 'Access-Control-Allow-Headers': '*', 'Access-Control-Max-Age': '5' } });
+  return req.respond({ status: 503, headers: CORS, contentType: 'application/json; charset=utf-8', body: JSON.stringify({ error: { code: 'DB_UNAVAILABLE', message: 'Falla simulada para una captura.' } }) });
+});
+/** Los botones, resúmenes, enlaces y rótulos de casilla que se pueden tocar con `#clic:`. */
+const TOCABLES = 'main button, main summary, main a, main label';
 
 async function asentar() {
   await page.waitForNetworkIdle({ idleTime: 700, timeout: 25000 }).catch(() => {});
@@ -88,8 +105,11 @@ try {
   await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }).catch(() => {}), page.keyboard.press('Enter')]);
   await page.waitForFunction(() => location.pathname.startsWith('/pro/advisees'), { timeout: 240_000 });
   await page.waitForFunction(() => typeof window.next?.router?.push === 'function', { timeout: 240_000 });
-  for (const [nombre, ruta, clics] of rutas) {
+  for (const [nombre, ruta, clics, falla] of rutas) {
     await page.setViewport({ width: ANCHO, height: ALTO, deviceScaleFactor: 1 });
+    // Un diálogo que quedó abierto de la ruta anterior (una ayuda) se cierra antes de ir a la siguiente.
+    await page.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+    fallaSimulada = falla;
     // Se espera a que la dirección cambie (contra `next dev` la página puede tardar en compilarse) y a que se asiente.
     const antes = await page.evaluate(() => location.pathname + location.search);
     await page.evaluate((u) => window.next.router.push(u), ruta);
@@ -98,13 +118,17 @@ try {
     for (const texto of clics) {
       // Lo que se va a tocar puede tardar en aparecer (la vista se arma después de leer los datos).
       await page
-        .waitForFunction((t) => [...document.querySelectorAll('main button, main summary, main a')].some((e) => e.textContent.replace(/\s+/g, ' ').includes(t) && e.getClientRects().length > 0), { timeout: 30_000 }, texto)
+        .waitForFunction((s, t) => [...document.querySelectorAll(s)].some((e) => e.textContent.replace(/\s+/g, ' ').includes(t) && e.getClientRects().length > 0), { timeout: 30_000 }, TOCABLES, texto)
         .catch(() => {});
-      const tocado = await page.evaluate((t) => {
-        const el = [...document.querySelectorAll('main button, main summary, main a')].find((e) => e.textContent.replace(/\s+/g, ' ').includes(t) && e.getClientRects().length > 0);
-        el?.click();
-        return !!el;
-      }, texto);
+      const tocado = await page.evaluate(
+        (s, t) => {
+          const el = [...document.querySelectorAll(s)].find((e) => e.textContent.replace(/\s+/g, ' ').includes(t) && e.getClientRects().length > 0);
+          el?.click();
+          return !!el;
+        },
+        TOCABLES,
+        texto,
+      );
       if (!tocado) console.log(`${nombre}: no encontré «${texto}» para tocar`);
       await asentar();
     }
@@ -119,6 +143,7 @@ try {
       await esperar(250);
       if (tema === 'claro') console.log(`${nombre}: ${alto} px de alto (${(alto / ALTO).toFixed(1)} pantallas de ${ALTO})`);
     }
+    fallaSimulada = '';
   }
 } finally {
   console.log(`errores de la página: ${errores.length ? errores.slice(0, 6).join(' | ') : 'ninguno'}`);
