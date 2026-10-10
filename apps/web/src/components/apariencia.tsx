@@ -28,7 +28,7 @@ export function SelectorDeApariencia() {
       <label htmlFor={id}>
         {/* El dibujo acompaña a la palabra: el sol en Claro y la luna en Azul noche. */}
         <Icono nombre={tema} tamano={18} />
-        Apariencia
+        <span className="apariencia__palabra">Apariencia</span>
       </label>
       <select
         id={id}

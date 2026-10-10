@@ -21,19 +21,26 @@
  *   repiten con el acceso nuevo. Una falla de red no es una revocación (solo avisan las respuestas explícitas). Al volver
  *   a la pestaña del navegador después de un rato, el acceso se vuelve a preguntar: un evento, no un sondeo. Nunca se
  *   dice quién retiró el acceso ni por qué.
+ *
+ * WP-ESCRITORIO-AMABLE (parte 1): **el marco de la ficha.** Lo que no cambia al pasar de una vista a otra va en una
+ * franja de lado a lado, pegada a la barra de marca, en tres renglones: quién es, con «Solicitar contexto» y «Actualizar»
+ * con la hora; el acceso actual; y las tres vistas con el período. Siempre se sabe dónde se está sin desplazarse. La miga se retiró: la barra
+ * de marca ya vuelve al Espacio profesional.
  */
 import { COPY_VINCULO, estadoParaMostrar, type DashboardResponse, type DominioDeAnalisis, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Cargando, ErrorConReintento } from '../../../components/estados';
 import { Aviso } from '../../../components/formulario';
+import { Icono } from '../../../components/icono';
 import { api } from '../../../lib/api';
+import { horaDelDia } from '../../../lib/formato';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
 import { ProveedorDelSeguimiento, type PanelDelResumen } from './seguimiento/contexto';
-import { leerPeriodo, leerVista, periodoEnInstantes } from './seguimiento/estado';
+import { conRetorno, leerPeriodo, leerVista, periodoEnInstantes, valorDeRetorno } from './seguimiento/estado';
 import { LineaDeTiempo } from './seguimiento/linea-de-tiempo';
 import { ResumenDelSeguimiento } from './seguimiento/resumen';
 
@@ -41,10 +48,14 @@ const Analizar = dynamic(() => import('./seguimiento/analizar').then((m) => m.An
 
 type Encabezado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'listo'; vinculos: readonly Vinculo[] };
 
-const hora = new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
 const DOMINIO_DEL_ALCANCE: Readonly<Record<string, DominioDeAnalisis>> = { NUTRICION: 'NUTRITION', ENTRENAMIENTO: 'TRAINING', ANTROPOMETRIA: 'ANTHROPOMETRY' };
 const CLAVE_DEL_DOMINIO: Readonly<Record<DominioDeAnalisis, keyof DashboardResponse['data']['domains']>> = { NUTRITION: 'nutrition', TRAINING: 'training', ANTHROPOMETRY: 'anthropometry' };
+/** Las áreas van siempre en el mismo orden, el de todo BE: Nutrición, Entrenamiento, Antropometría. */
+const ORDEN_DE_LAS_AREAS: readonly string[] = ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'];
+const lugarDelArea = (v: Vinculo): number => {
+  const i = ORDEN_DE_LAS_AREAS.indexOf(v.scope.code);
+  return i < 0 ? ORDEN_DE_LAS_AREAS.length : i;
+};
 
 /** Cada cuánto, como mucho, se vuelve a preguntar el acceso por un aviso de «no disponible». */
 const ESPERA_ENTRE_REVALIDACIONES_MS = 5_000;
@@ -130,75 +141,115 @@ export function Workspace() {
     return () => document.removeEventListener('visibilitychange', alVolver);
   }, [leer]);
 
-  if (!token) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
-  if (yo.tipo === 'cargando') return <Cargando />;
-  if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
-  if (yo.tipo === 'sin-espacio') return <SinEspacioProfesional />;
+  if (!token) return <p className="nota ficha__cuerpo">Redirigiendo a Iniciar sesión…</p>;
+  if (yo.tipo === 'cargando') return <div className="ficha__cuerpo"><Cargando /></div>;
+  if (yo.tipo === 'error') return <div className="ficha__cuerpo"><ErrorConReintento onReintentar={cargarYo} /></div>;
+  if (yo.tipo === 'sin-espacio') return <div className="ficha__cuerpo"><SinEspacioProfesional /></div>;
 
   const nombre = panel.tipo === 'listo' ? panel.datos.advisee.displayName : encabezado.tipo === 'listo' && encabezado.vinculos[0] ? encabezado.vinculos[0].advisee.displayName : null;
+  const disponible = panel.tipo !== 'no-disponible';
 
-  return (
-    <div className="secciones ficha">
-      {/* Encabezado de la ficha (B10-01): quién es, el acceso actual por área y cuándo se consultó. Nada de ficha clínica. */}
-      {/* La miga ya dice «Ficha del asesorado»: el título es la persona, sin un rótulo que lo repita. */}
-      <header className="ficha__cabecera" aria-labelledby="titulo-asesorado">
-        <h1 id="titulo-asesorado">{nombre ?? 'Asesorado'}</h1>
-        <div className="ficha__acceso">
-          <p className="ficha__acceso-titulo">
-            <strong>Acceso actual</strong>
-          </p>
-          {encabezado.tipo === 'cargando' ? <Cargando /> : null}
-          {encabezado.tipo === 'error' ? <ErrorConReintento onReintentar={consultar} /> : null}
-          {encabezado.tipo === 'listo' && encabezado.vinculos.length > 0 ? <AccesoPorArea vinculos={encabezado.vinculos} panel={panel} /> : null}
+  /**
+   * El marco (B10-01): quién es, el acceso actual por área y cuándo se consultó; nada de ficha clínica. Con la ficha
+   * disponible suma «Solicitar contexto» y, debajo, las tres vistas y el período, que necesitan el contexto de la ficha.
+   */
+  const marco = (vistas: ReactNode) => (
+    <header className="marco-de-la-ficha" aria-labelledby="titulo-asesorado">
+      <div className="marco-de-la-ficha__ancho">
+        <div className="marco-de-la-ficha__persona">
+          <h1 id="titulo-asesorado">{nombre ?? 'Asesorado'}</h1>
+          {disponible ? (
+            // Vuelve a esta misma vista de la ficha al enviar o al salir sin enviar (retorno validado).
+            <Link className="boton boton--quieto boton--compacto" href={conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, valorDeRetorno(new URLSearchParams(parametros.toString())))}>
+              <Icono nombre="solicitar" tamano={18} />
+              Solicitar contexto
+            </Link>
+          ) : null}
+          {/* «Actualizar» vuelve a preguntar todo lo de la ficha, no solo el acceso: va con la hora, a la derecha. */}
           <div className="ficha__consulta">
-            <button type="button" className="boton boton--secundario boton--compacto" onClick={consultar} disabled={panel.tipo === 'cargando'}>
+            <button type="button" className="boton boton--quieto boton--compacto" onClick={consultar} disabled={panel.tipo === 'cargando'}>
+              <Icono nombre="actualizar" tamano={18} />
               Actualizar
             </button>
-            {consultadoEn ? <span className="nota">Consultado a las {hora.format(consultadoEn)}</span> : null}
+            {consultadoEn ? <span className="nota">Consultado a las {horaDelDia(consultadoEn)}</span> : null}
           </div>
         </div>
-        {/* Un aviso único, sin listar qué falta ni por qué (B10-08 §8.4; 10-B04 §41). */}
-        {panel.tipo === 'listo' && panel.datos.partialView ? <p className="nota">{COPY_VINCULO.vistaParcial}</p> : null}
-      </header>
-
-      {panel.tipo === 'no-disponible' ? (
-        <Aviso tipo="info">
-          <p>{COPY_VINCULO.recursoNoDisponible}</p>
-          <p>
-            <Link href="/pro">{COPY_VINCULO.volver}</Link>
-          </p>
-        </Aviso>
-      ) : (
-        <ProveedorDelSeguimiento
-          token={token}
-          asesoradoId={id}
-          nombreDelAsesorado={nombre}
-          sesionPerdida={sesionPerdida}
-          avisarSinAcceso={avisarSinAcceso}
-          panel={panel}
-          recargarPanel={consultar}
-          versionDeAcceso={versionDeAcceso}
-        >
-          <div className="barra-del-seguimiento">
-            <PestanasDelSeguimiento actual={vista} />
-            <SelectorDePeriodo />
+        <div className="marco-de-la-ficha__estado">
+          <div className="ficha__acceso">
+            <p className="ficha__acceso-titulo">
+              <Icono nombre="acceso" tamano={18} />
+              <strong>Acceso actual</strong>
+            </p>
+            {encabezado.tipo === 'cargando' ? <Cargando /> : null}
+            {encabezado.tipo === 'error' ? <ErrorConReintento onReintentar={consultar} /> : null}
+            {encabezado.tipo === 'listo' && encabezado.vinculos.length > 0 ? <AccesoPorArea vinculos={encabezado.vinculos} panel={panel} /> : null}
           </div>
+          {/* Un aviso único, sin listar qué falta ni por qué (B10-08 §8.4; 10-B04 §41). */}
+          {panel.tipo === 'listo' && panel.datos.partialView ? (
+            <p className="nota marco-de-la-ficha__aviso">
+              <Icono nombre="oculto" tamano={18} />
+              {COPY_VINCULO.vistaParcial}
+            </p>
+          ) : null}
+        </div>
+        {vistas}
+      </div>
+    </header>
+  );
+
+  if (!disponible) {
+    return (
+      <div className="ficha">
+        {marco(null)}
+        <div className="ficha__cuerpo">
+          <Aviso tipo="info">
+            <p>{COPY_VINCULO.recursoNoDisponible}</p>
+            <p>
+              <Link href="/pro">{COPY_VINCULO.volver}</Link>
+            </p>
+          </Aviso>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ficha">
+      <ProveedorDelSeguimiento
+        token={token}
+        asesoradoId={id}
+        nombreDelAsesorado={nombre}
+        sesionPerdida={sesionPerdida}
+        avisarSinAcceso={avisarSinAcceso}
+        panel={panel}
+        recargarPanel={consultar}
+        versionDeAcceso={versionDeAcceso}
+      >
+        {marco(
+          <div className="marco-de-la-ficha__vistas">
+            <PestanasDelSeguimiento actual={vista} />
+            <div className="marco-de-la-ficha__derecha">
+              <SelectorDePeriodo />
+            </div>
+          </div>,
+        )}
+        <div className="ficha__cuerpo secciones">
           {vista === 'resumen' ? <ResumenDelSeguimiento /> : null}
           {vista === 'linea' ? <LineaDeTiempo /> : null}
           {vista === 'analizar' ? <Analizar /> : null}
-        </ProveedorDelSeguimiento>
-      )}
+        </div>
+      </ProveedorDelSeguimiento>
     </div>
   );
 }
 
 /**
- * El acceso actual por área. Si todas las áreas están en el mismo estado, se dice una vez («Antropometría, Entrenamiento
- * y Nutrición: Activo · acceso contextual»): repetir tres veces el mismo estado ocupaba una línea más de identidad técnica
- * (encargo §10). Si difieren, cada área con el suyo.
+ * El acceso actual por área. Si todas las áreas están en el mismo estado, se dice una vez («Nutrición, Entrenamiento y
+ * Antropometría: Activo · acceso contextual»): repetir tres veces el mismo estado ocupaba una línea más de identidad
+ * técnica (encargo §10). Si difieren, cada área con el suyo.
  */
 function AccesoPorArea({ vinculos, panel }: { vinculos: readonly Vinculo[]; panel: PanelDelResumen }) {
-  const filas = vinculos.map((v) => ({ v, e: estadoDelArea(v, panel) }));
+  const filas = [...vinculos].sort((a, b) => lugarDelArea(a) - lugarDelArea(b)).map((v) => ({ v, e: estadoDelArea(v, panel) }));
   const primero = filas[0];
   if (primero && filas.length > 1 && filas.every((f) => f.e.estado === primero.e.estado && !f.e.detalle)) {
     const nombres = filas.map((f) => f.v.scope.label);

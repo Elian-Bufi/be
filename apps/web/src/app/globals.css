@@ -141,6 +141,19 @@ code {
   gap: 0.35rem;
 }
 
+/* Cuando el encabezado se queda sin lugar, la palabra se oculta a la vista: quedan el sol o la luna y el tema elegido.
+   Sigue siendo el nombre del selector para el lector de pantalla. */
+@media (max-width: 85rem) {
+  .apariencia__palabra {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
 .apariencia select {
   min-height: 36px;
   padding: 0.25rem 0.5rem;
@@ -343,12 +356,6 @@ code {
 /* El espacio de trabajo profesional: densidad alta permitida (B10-10 §9, «PRO desktop»). */
 .contenido--ancho {
   max-width: 76rem;
-}
-
-/* La ficha del asesorado es un tablero de escritorio: en pantallas anchas usa el ancho (el profesional trabaja en una
-   computadora; los anchos chicos solo tienen que no romperse). */
-.contenido--seguimiento {
-  max-width: 100rem;
 }
 
 .nota {
@@ -2647,50 +2654,68 @@ html:has(.acciones--fijas) {
 /* ─── Entorno profesional de seguimiento: Resumen, Línea de tiempo y Analizar (WP-DASHBOARD-PROFESIONAL) ─── */
 /* Escritorio primero (notebook), operable en tablet y teléfono: los controles se apilan, los paneles ocupan el ancho y
    solo las tablas se desplazan de costado, nunca la página (WCAG 1.4.10). Números tabulares en series y tablas. */
-.barra-del-seguimiento {
+/* El período que comparten las tres vistas: un solo control (WP-ESCRITORIO-AMABLE, C-02). A la vista dice qué período es
+   y cuántos días tiene; al abrirlo están los atajos y el rango propio. */
+.periodo-del-seguimiento {
+  position: relative;
+}
+
+.periodo-del-seguimiento__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.35rem 0.85rem;
+  border-radius: 10px;
+  border: 2px solid var(--borde-control);
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.periodo-del-seguimiento__boton strong {
+  font-weight: 650;
+}
+
+.periodo-del-seguimiento__boton:hover {
+  background: var(--fondo-suave);
+}
+
+/* El panel se abre debajo del botón, alineado a su derecha: en escritorio el período va al final de la franja. */
+.periodo-del-seguimiento__panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  width: min(34rem, calc(100vw - 2rem));
+  padding: 1rem 1.1rem 1.1rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra);
 }
 
-/* En escritorio, las pestañas y el período comparten una fila: el contenido de la vista empieza más arriba. */
-@media (min-width: 64rem) {
-  .barra-del-seguimiento {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    column-gap: 2rem;
-    border-bottom: 1px solid var(--borde);
-    margin-bottom: 0.5rem;
-  }
-
-  .barra-del-seguimiento .pestanas ul {
-    margin: 0;
-    border-bottom: 0;
-  }
-
-  .barra-del-seguimiento .periodo-del-seguimiento {
-    flex: 1 1 32rem;
-    justify-content: flex-end;
-    padding-bottom: 0.45rem;
-  }
-
-  .barra-del-seguimiento .periodo-del-seguimiento__titulo {
-    flex: 1 1 14rem;
-    text-align: right;
+/* En una ventana angosta el botón queda a la izquierda: el panel se abre desde ese lado para no salirse. */
+@media (max-width: 63.99rem) {
+  .periodo-del-seguimiento__panel {
+    right: auto;
+    left: 0;
   }
 }
 
-.periodo-del-seguimiento {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1rem;
-}
-
-.periodo-del-seguimiento__titulo {
+.periodo-del-seguimiento__titulo,
+.periodo-del-seguimiento__otro {
   margin: 0;
-  flex: 1 1 18rem;
+}
+
+.periodo-del-seguimiento__otro {
+  flex: 1 0 100%;
+  font-weight: 650;
 }
 
 .periodo-del-seguimiento__opciones {
@@ -3206,40 +3231,74 @@ html:has(.acciones--fijas) {
    pero no se rompe: todo se apila y solo las tablas se desplazan de costado. Superficies mates: color plano, borde fino,
    sin brillo, vidrio ni degradé (los degradés son de la cara pública y de la barra de marca). */
 
-.ficha__cabecera {
-  display: grid;
-  gap: 0.25rem 1.5rem;
-  grid-template-columns: minmax(0, 1fr);
-  padding: 0.25rem 0 0.75rem;
+/* El marco de la ficha (WP-ESCRITORIO-AMABLE, parte 1): una franja de lado a lado, pegada a la barra de marca, con lo
+   que no cambia al pasar de una vista a otra: quién es, el acceso actual, las tres vistas y el período. El cuerpo de cada
+   vista va debajo, sobre el fondo de la página. */
+.contenido--ficha {
+  max-width: none;
+  padding: 0 0 4rem;
+}
+
+.marco-de-la-ficha {
+  background: var(--superficie);
   border-bottom: 1px solid var(--borde);
 }
 
-@media (min-width: 64rem) {
-  .ficha__cabecera {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-  }
-
-  .ficha__cabecera > .nota {
-    grid-column: 1 / -1;
-  }
+.marco-de-la-ficha__ancho,
+.ficha__cuerpo {
+  width: 100%;
+  max-width: 100rem;
+  margin: 0 auto;
+  padding-inline: clamp(1rem, 3vw, 2rem);
 }
 
-.ficha__cabecera h1 {
+.ficha__cuerpo {
+  padding-top: 1.25rem;
+}
+
+/* Primer renglón: quién es, pedir contexto y, a la derecha, «Actualizar» con la hora de la consulta. Con un nombre largo
+   o una ventana angosta, lo que no entra baja: nada se corta ni se achica. */
+.marco-de-la-ficha__persona {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 1rem;
+  padding-top: 0.55rem;
+}
+
+/* Segundo renglón: el acceso actual y, si corresponde, el aviso de vista parcial. */
+.marco-de-la-ficha__estado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1.5rem;
+  min-height: 2rem;
+  padding-block: 0.25rem 0.3rem;
+}
+
+.marco-de-la-ficha h1 {
   margin: 0;
   font-size: 1.6rem;
-  grid-column: 1;
+  line-height: 1.2;
 }
 
 .ficha__acceso {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.35rem 1rem;
-  grid-column: 1 / -1;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.94rem;
+}
+
+.ficha__acceso .insignia {
+  font-size: inherit;
 }
 
 .ficha__acceso-titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   margin: 0;
 }
 
@@ -3248,11 +3307,74 @@ html:has(.acciones--fijas) {
   margin: 0;
 }
 
+/* «Actualizar» y la hora ocupan lo que queda del primer renglón, contra la derecha. Si el lugar no alcanza (una tablet
+   de pie, un nombre largo), el grupo no baja entero: la hora pasa debajo del botón. */
 .ficha__consulta {
+  display: flex;
+  flex: 1 1 9.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.15rem 0.75rem;
+}
+
+.marco-de-la-ficha__aviso {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+/* Las tres vistas y, a la derecha, el período. Las pestañas tocan el borde de la franja. */
+.marco-de-la-ficha__vistas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.25rem 1.5rem;
+}
+
+/* Las pestañas se achican hasta el ancho que haya y, si no entran, se desplazan de costado dentro de su línea. */
+.marco-de-la-ficha__vistas .pestanas {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.marco-de-la-ficha__vistas .pestanas ul {
+  margin: 0;
+  border-bottom: 0;
+  gap: 0 1.9rem;
+}
+
+.marco-de-la-ficha .desplazable-x {
+  --tapa-izquierda: var(--superficie);
+  --tapa-derecha: var(--superficie);
+}
+
+.marco-de-la-ficha__vistas .pestanas a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0 0.7rem;
+}
+
+.marco-de-la-ficha__derecha {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.5rem 1.25rem;
+  padding-bottom: 0.35rem;
+}
+
+/* Una acción secundaria sin acento: contorno y texto del color del texto. El acento queda para lo que se elige. */
+.boton--quieto {
+  background: var(--superficie);
+  color: var(--texto);
+  border-color: var(--borde-control);
+}
+
+.boton--quieto:hover:not(:disabled) {
+  background: var(--fondo-suave);
 }
 
 /* Objetivo y planificación del Resumen: una fila por área, con las mismas columnas en todas. Para que la síntesis entre
@@ -3267,7 +3389,7 @@ html:has(.acciones--fijas) {
 }
 
 /* La ficha: menos aire entre secciones que en el resto del website, para que lo principal entre sin desplazarse. */
-.ficha.secciones {
+.ficha__cuerpo.secciones {
   gap: 1rem;
 }
 

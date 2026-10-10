@@ -237,14 +237,21 @@ Información).
 
 ### II.3 Navegación transversal
 
-- **La ficha del asesorado** (`workspace.tsx`): el nombre visible es el título (la miga ya dice «Ficha del asesorado»)
-  y la identidad técnica ocupa una sola línea: el **acceso actual por área**, dicho una vez si todas las áreas están
-  en el mismo estado, con «Actualizar» y la hora de la consulta.
+- **El marco de la ficha** (`workspace.tsx`; WP-ESCRITORIO-AMABLE): una franja de lado a lado, pegada a la barra de
+  marca, con lo que no cambia al pasar de una vista a otra. Tiene tres renglones fijos, sin depender del largo del
+  nombre: (1) el nombre visible como título, «Solicitar contexto» y, a la derecha, «Actualizar» con la hora de la
+  consulta; (2) el **acceso actual por área**, dicho una vez si todas las áreas están en el mismo estado, y el aviso
+  de vista parcial; (3) las tres vistas y el período. La ficha no lleva miga: la barra de marca ya vuelve al Espacio
+  profesional.
+- **El período es un solo control.** A la vista dice qué período es, cuántos días tiene y si incluye hoy. Al abrirlo
+  están los atajos (7, 30 y 90 días, y un año) y el rango propio, con dos campos de fecha. Elegir cierra el control;
+  Escape también, y devuelve el foco al botón.
 - **El primer pantallazo responde** con quién se trabaja, qué se busca, qué cambió y qué requiere la revisión: a
   1440 × 900, el objetivo y la planificación por área (una fila por área) y la primera observación de «Para tu próxima
   revisión» se ven sin desplazarse.
-- **Tres vistas en pestañas** (Resumen, Línea de tiempo, Analizar) que comparten el período, y **pestañas de área**
-  para trabajar sobre el registro completo. Las migas dicen «Ficha del asesorado».
+- **Tres vistas en pestañas** (Resumen, Línea de tiempo, Analizar), cada una con su ícono, que comparten el período, y
+  **pestañas de área** para trabajar sobre el registro completo. En las pestañas de área, las migas dicen «Ficha del
+  asesorado».
 - **La dirección dice dónde se está:** se navega con el router (`ir`, `irA`), no cambiando un estado escondido. La URL
   guarda la vista, el período, los filtros, las métricas, la pregunta y la fecha elegida, **solo como identificadores,
   enumerados y fechas**. El texto que escribe la persona (una búsqueda) y los borradores no van en la URL. Atrás vuelve
@@ -837,6 +844,10 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | Paletas | El website tenía sus propios valores para «Claro» y «Azul noche», distintos de los de la APK. | Las paletas medidas el 2026-09-30, las mismas de la APK; cuatro colores de texto de Claro, un punto más oscuros por el velo de la cara pública (I.6). | Sustituida | 0 |
 | Texto en cian | El lema de la portada y los íconos de sus tarjetas iban en cian también en Claro: 1,4:1 sobre el fondo. | El cian no es color de texto sobre fondo claro; el acento de texto es el color de los enlaces (I.6). | Corregida | 0 |
 | Íconos | El website casi no tenía: tres dibujos propios en la portada y signos de texto. | Una familia de 105, con reglas de uso (I.8). La portada usa los de la familia. | Nueva | 0 |
+| El marco de la ficha | Una miga, el título, una línea de acceso con «Actualizar», y debajo las pestañas con cinco botones de período. La primera tarjeta empezaba a los 305 px (1440 × 900). | Una franja de tres renglones fijos, sin miga; la primera tarjeta empieza a los 224 px (II.3). | Sustituida | 1 |
+| El período | Cinco botones siempre a la vista (cuatro atajos y «Otro rango»). | Un solo control que dice el período y, abierto, ofrece los atajos y el rango propio (II.3). | Sustituida | 1 |
+| «Solicitar contexto» | Una de las acciones del Resumen. | En el marco, a la vista en las tres vistas. | Ampliada | 1 |
+| Las horas | En 12 horas, con «a. m.» y «p. m.». | En 24 horas («18:10»), en todo el website (`lib/formato.ts`). | Sustituida | 1 |
 
 ---
 

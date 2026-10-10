@@ -171,6 +171,38 @@ const texto = (page, s) => page.evaluate((s) => document.querySelector(s)?.inner
 const textos = (page, s) => page.evaluate((s) => [...document.querySelectorAll(s)].map((e) => e.innerText.replace(/\s+/g, ' ').trim()), s);
 const sinDesborde = (page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth <= 1);
 
+/**
+ * El período de la ficha es un solo control (WP-ESCRITORIO-AMABLE, C-02): se abre y adentro están los atajos. Elegir uno
+ * lo cierra, así que cada elección vuelve a abrirlo.
+ */
+async function elegirPeriodo(page, atajo) {
+  if (!(await page.$('.periodo-del-seguimiento__panel'))) await clic(page, '.periodo-del-seguimiento__boton', 'Período');
+  await page.waitForSelector('.periodo-del-seguimiento__opciones button', { timeout: 5_000 });
+  await clic(page, '.periodo-del-seguimiento__opciones button', atajo);
+}
+
+/**
+ * Abre el control de período y dice qué ofrece y si el panel entra en la ventana; después lo cierra con Escape.
+ * Es lo que antes se contaba a la vista (cuatro atajos y «Otro rango»), ahora a un clic.
+ */
+async function mirarPeriodo(page) {
+  if (!(await page.$('.periodo-del-seguimiento__boton'))) return { boton: 0, atajos: 0, fechas: 0, entra: false, cierra: false };
+  await page.evaluate(() => document.querySelector('.periodo-del-seguimiento__boton').click());
+  await page.waitForSelector('.periodo-del-seguimiento__panel', { timeout: 5_000 });
+  const dentro = await page.evaluate(() => {
+    const r = document.querySelector('.periodo-del-seguimiento__panel').getBoundingClientRect();
+    return {
+      boton: document.querySelectorAll('.periodo-del-seguimiento__boton').length,
+      atajos: document.querySelectorAll('.periodo-del-seguimiento__opciones button').length,
+      fechas: document.querySelectorAll('.periodo-del-seguimiento__rango input[type="date"]').length,
+      entra: r.left >= -1 && r.right <= document.documentElement.clientWidth + 1,
+    };
+  });
+  await page.keyboard.press('Escape');
+  const cierra = await page.waitForFunction(() => !document.querySelector('.periodo-del-seguimiento__panel'), { timeout: 3_000 }).then(() => true, () => false);
+  return { ...dentro, cierra };
+}
+
 /** Hace clic (de verdad, con el mouse) en el primer elemento visible y habilitado que contiene el texto. */
 async function clic(page, selector, contiene) {
   const marca = `r${Math.random().toString(36).slice(2)}`;
@@ -403,7 +435,28 @@ async function pintura(page, i) {
  * uno con superficie, los dos ejes con marcas, al menos `curvas` curvas, marcas a la vista y sin tapar, la banda de
  * referencia si se pide, y al menos 100 píxeles de cada color de métrica esperado (`colores`: los índices 1 a 3 por
  * gráfico). Espera hasta 5 s a que el dibujo se complete (después de un cambio de tamaño, recharts lo rearma).
+ *
+ * En una serie de pocos puntos el mínimo es de 30 píxeles por marca: dos marcas huecas unidas por una línea fina no
+ * llegan a 100 sobre una superficie oscura (89 en Azul noche, con la paleta de WP-ESCRITORIO-AMABLE). Que esto sigue
+ * distinguiendo un gráfico dibujado de uno vacío lo comprueba `laMedicionDetectaUnGraficoVacio`.
  */
+const minimoDeColor = (marcas) => Math.min(100, 30 * marcas);
+
+/**
+ * La prueba de la prueba: oculta el dibujo de las series (curvas y marcas) y vuelve a medir. Sin dibujo, ningún gráfico
+ * puede llegar al mínimo de píxeles de su métrica; si llegara, la medición no estaría mirando el gráfico.
+ */
+async function laMedicionDetectaUnGraficoVacio(page, pro, descripcion, colores) {
+  const d = await dibujo(page);
+  const estilo = await page.addStyleTag({ content: 'figure.grafico__figura path.recharts-line-curve, figure.grafico__figura .grafico__elegible { visibility: hidden !important; }' });
+  await pausa(150);
+  const sinDibujo = [];
+  for (let i = 0; i < d.length; i++) sinDibujo.push(await pintura(page, i));
+  await estilo.evaluate((e) => e.remove());
+  await pausa(150);
+  const fallaria = d.length > 0 && d.every((x, i) => (colores[i] ?? []).every((c) => sinDibujo[i].porMetrica[c - 1] < minimoDeColor(x.marcas)));
+  comprobar(pro, descripcion, fallaria, d.map((x, i) => `${x.titulo.slice(0, 24)}: ${(colores[i] ?? []).map((c) => sinDibujo[i].porMetrica[c - 1]).join('/')} px sin dibujo (mínimo ${minimoDeColor(x.marcas)})`).join(' · '));
+}
 async function comprobarGraficos(page, pro, descripcion, { figuras, curvas = 1, banda = false, colores }) {
   let d = [];
   for (let i = 0; i < 25; i++) {
@@ -414,7 +467,7 @@ async function comprobarGraficos(page, pro, descripcion, { figuras, curvas = 1, 
   const p = [];
   for (let i = 0; i < d.length; i++) p.push(await pintura(page, i));
   const bien = (x, i) =>
-    x.svg && x.ancho > 100 && x.alto > 80 && x.ejeX > 1 && x.ejeY > 1 && x.curvas >= curvas && x.marcas > 0 && x.visibles > 0 && x.tapadas === 0 && (!banda || x.banda) && p[i].tinta > 0.01 && (colores?.[i] ?? []).every((c) => p[i].porMetrica[c - 1] >= 100);
+    x.svg && x.ancho > 100 && x.alto > 80 && x.ejeX > 1 && x.ejeY > 1 && x.curvas >= curvas && x.marcas > 0 && x.visibles > 0 && x.tapadas === 0 && (!banda || x.banda) && p[i].tinta > 0.01 && (colores?.[i] ?? []).every((c) => p[i].porMetrica[c - 1] >= minimoDeColor(x.marcas));
   const ok = d.length === figuras && d.every(bien);
   const detalle = d.map((x, i) => `${x.titulo.slice(0, 28)}: ${x.ancho}×${x.alto}, ejes ${x.ejeX}/${x.ejeY}, curvas ${x.curvas}, marcas ${x.visibles}/${x.marcas}${x.tapadas ? ` (${x.tapadas} tapadas)` : ''}${banda ? `, banda ${x.banda ? 'sí' : 'no'}` : ''}, tinta ${(p[i].tinta * 100).toFixed(1)} %, color ${(colores?.[i] ?? []).map((c) => p[i].porMetrica[c - 1]).join('/')} px`);
   comprobar(pro, descripcion, ok, `${d.length} gráfico(s) · ${detalle.join(' · ')}`);
@@ -834,9 +887,9 @@ async function funcional() {
     await quieto(page, v);
     const desde7 = diaMenos(hoy, 6);
     v.reglas = [{ coincide: (u) => u.includes('/timeline') && u.includes(`periodStart=${desde7}`), accion: 'demorar', ms: 3000 }];
-    await clic(page, '.periodo-del-seguimiento__opciones button', '7 días');
+    await elegirPeriodo(page, '7 días');
     await pausa(150);
-    await clic(page, '.periodo-del-seguimiento__opciones button', '90 días');
+    await elegirPeriodo(page, '90 días');
     await pausa(3600);
     await quieto(page, v);
     v.reglas = [];
@@ -1000,11 +1053,15 @@ async function capturas() {
           await quieto(page, v);
           await page.evaluate(() => window.scrollTo(0, 0));
           const c = await captura(page, v, `${vista}-${ancho}-${tema}`);
-          const acciones = await page.evaluate(() => ({
-            pestanas: document.querySelectorAll('nav[aria-label="Vistas del seguimiento"] a').length,
-            periodos: document.querySelectorAll('.periodo-del-seguimiento__opciones button').length,
-          }));
-          comprobar('PRO-23', `${vista} a ${ancho} px en ${tema}: sin desborde de costado, con pestañas y períodos`, (await sinDesborde(page)) && acciones.pestanas === 3 && acciones.periodos === 5);
+          const pestanas = await page.evaluate(() => document.querySelectorAll('nav[aria-label="Vistas del seguimiento"] a').length);
+          // El período: un solo control que, abierto, ofrece los cuatro atajos y el rango propio sin salirse de la ventana.
+          const periodo = await mirarPeriodo(page);
+          comprobar(
+            'PRO-23',
+            `${vista} a ${ancho} px en ${tema}: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)`,
+            (await sinDesborde(page)) && pestanas === 3 && periodo.boton === 1 && periodo.atajos === 4 && periodo.fechas === 2 && periodo.entra && periodo.cierra,
+            JSON.stringify({ pestanas, ...periodo }),
+          );
           if (vista === 'analizar') comprobar('PRO-08', `La captura de analizar a ${ancho} px en ${tema} tiene los tres gráficos dibujados (y siguen después)`, c.figuras === 3 && c.dibujadas === 3 && c.despues === 3, `${c.dibujadas} de ${c.figuras} dibujados; ${c.despues} después`);
         }
         // En escritorio, los tres modos, comprobados en el dibujo y en píxeles, y capturados (revisión de #153, hallazgo 1).
@@ -1063,6 +1120,7 @@ async function descartable() {
       await ir(pro.page, URL_D);
       await quieto(pro.page, pro.v);
       const { d: dib } = await comprobarGraficos(pro.page, 'PRO-10', `Peso e IMC en ${tema}: los dos gráficos dibujados y a la vista`, { figuras: 2, colores: [[1], [2]] });
+      await laMedicionDetectaUnGraficoVacio(pro.page, 'PRO-10', `En ${tema}, con las series ocultas la medición de píxeles no da por dibujado ningún gráfico (prueba de la prueba)`, [[1], [2]]);
       const leyenda = await texto(pro.page, '.leyenda');
       comprobar(
         'PRO-10',

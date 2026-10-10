@@ -52,7 +52,7 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
 import { Cargando, ErrorConReintento, EstadoVacio } from '../../../../components/estados';
 import { api, nuevaClaveDeIdempotencia } from '../../../../lib/api';
-import { diaCivil, fecha } from '../../../../lib/formato';
+import { diaCivil, fecha, horaEnZona } from '../../../../lib/formato';
 import { valorParaMostrar } from './valores';
 import { textoDeFalla, useLectura, useSeguimiento, type Lectura } from './contexto';
 import { claveDeLaReferencia, codificarReferencia, conRetorno, hoyEn, parametrosDePregunta, restarDias, valorDeRetorno } from './estado';
@@ -64,7 +64,6 @@ const PanelDeRegistro = dynamic(() => import('./registro-original').then((m) => 
 const MAXIMO_DE_INDICADORES = 4;
 const OBSERVACIONES_A_LA_VISTA = 4;
 const ZONA = 'America/Argentina/Buenos_Aires';
-const hora = new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: ZONA });
 
 /** «1 sesión registrada», «3 sesiones registradas». */
 const contar = (n: number, uno: string, varios: string): string => `${numero(n)} ${n === 1 ? uno : varios}`;
@@ -436,10 +435,10 @@ function ParaTuProximaRevision({
           </button>
         ) : null}
       </div>
-      {/* Una línea: el alcance y la hora de los datos, dichos una vez para todo el bloque (la hora termina en «a. m.»). */}
+      {/* Una línea: el alcance y la hora de los datos, dichos una vez para todo el bloque. */}
       <p className="metadatos">
         Hechos por área, desde su última revisión o, si no tiene, en el período elegido
-        {consultado ? ` (datos consultados a las ${hora.format(new Date(consultado))})` : ''}.
+        {consultado ? ` (datos consultados a las ${horaEnZona(consultado, ZONA)})` : ''}.
       </p>
       {observaciones === null ? <Cargando /> : null}
       {observaciones !== null && hechos.length === 0 && fallas.length === 0 ? (
@@ -537,12 +536,7 @@ function Acciones() {
           </Link>
           <p className="nota">Desde que empezó un plan, con sus etapas e hitos.</p>
         </li>
-        <li>
-          <Link className="boton boton--secundario" href={conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(asesoradoId)}&vista=pedir`, volver)}>
-            Solicitar contexto
-          </Link>
-          <p className="nota">Un formulario para que la persona complete; vuelve acá al enviarlo.</p>
-        </li>
+        {/* «Solicitar contexto» está en el marco de la ficha, a la vista en las tres vistas (WP-ESCRITORIO-AMABLE). */}
       </ul>
       {/* La entrada por preguntas también desde el Resumen (eje 2). «Analizar un cambio» ya es la primera. */}
       <div className="subseccion preguntas-del-resumen">

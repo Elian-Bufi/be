@@ -820,7 +820,8 @@ async function recorridoNutricion(page, v, carpeta) {
   await cupo(v);
   await ir(page, FICHA_A);
   await quieto(page, v);
-  await clic(page, '.acciones-del-resumen a', 'Solicitar contexto');
+  // «Solicitar contexto» está en el marco de la ficha, a la vista en las tres vistas (WP-ESCRITORIO-AMABLE, parte 1).
+  await clic(page, '.marco-de-la-ficha a', 'Solicitar contexto');
   await page.waitForFunction(() => location.pathname === '/pro/advisees/forms', { timeout: 20_000 });
   await quieto(page, v);
   const pedido = await texto(page, 'main');

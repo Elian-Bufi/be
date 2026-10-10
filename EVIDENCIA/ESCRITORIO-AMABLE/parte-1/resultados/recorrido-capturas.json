@@ -1,0 +1,370 @@
+{
+  "modo": "capturas",
+  "inicio": "2026-10-10T17:45:12.692Z",
+  "fin": "2026-10-10T17:47:47.973Z",
+  "hoy": "2026-10-10",
+  "total": 60,
+  "fallas": 0,
+  "resultados": [
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 1440 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 1440 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 1440 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 1440 px en azul-noche tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Paneles a 1440 px en azul-noche: los tres dibujados y a la vista",
+      "ok": true,
+      "detalle": "3 gráfico(s) · Energía registrada · por día: 631×192, ejes 7/5, curvas 3, marcas 80/80, tinta 14.3 %, color 2258 px · Proteínas registradas · por : 631×192, ejes 7/5, curvas 3, marcas 80/80, tinta 18.6 %, color 3544 px · Peso · cada toma (kg): 631×192, ejes 7/5, curvas 3, marcas 8/8, tinta 9.2 %, color 489 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Superpuestas a 1440 px en azul-noche: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Superpuestas en valores real: 631×270, ejes 7/5, curvas 6, marcas 160/160, tinta 18.5 %, color 3250/2394 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-superpuestas-1440-azul-noche tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambio relativo a 1440 px en azul-noche: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 631×270, ejes 7/5, curvas 6, marcas 160/160, banda sí, tinta 19.3 %, color 4098/2663 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-relativo-1440-azul-noche tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 1280 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 1280 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 1280 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 1280 px en azul-noche tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Paneles a 1280 px en azul-noche: los tres dibujados y a la vista",
+      "ok": true,
+      "detalle": "3 gráfico(s) · Energía registrada · por día: 471×171, ejes 7/5, curvas 3, marcas 80/80, tinta 17.4 %, color 2194 px · Proteínas registradas · por : 471×171, ejes 7/5, curvas 3, marcas 80/80, tinta 21.1 %, color 3509 px · Peso · cada toma (kg): 471×171, ejes 7/5, curvas 3, marcas 8/8, tinta 11.7 %, color 372 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Superpuestas a 1280 px en azul-noche: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Superpuestas en valores real: 471×270, ejes 7/5, curvas 6, marcas 160/160, tinta 21.9 %, color 3317/2418 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-superpuestas-1280-azul-noche tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambio relativo a 1280 px en azul-noche: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 471×270, ejes 7/5, curvas 6, marcas 160/160, banda sí, tinta 23.0 %, color 4091/2248 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-relativo-1280-azul-noche tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 1024 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 1024 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 1024 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 1024 px en azul-noche tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 768 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 768 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 768 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 768 px en azul-noche tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 390 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 390 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 390 px en azul-noche: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 390 px en azul-noche tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 1440 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 1440 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 1440 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 1440 px en claro tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Paneles a 1440 px en claro: los tres dibujados y a la vista",
+      "ok": true,
+      "detalle": "3 gráfico(s) · Energía registrada · por día: 631×192, ejes 7/5, curvas 3, marcas 80/80, tinta 13.4 %, color 2175 px · Proteínas registradas · por : 631×192, ejes 7/5, curvas 3, marcas 80/80, tinta 17.3 %, color 4001 px · Peso · cada toma (kg): 631×192, ejes 7/5, curvas 3, marcas 8/8, tinta 7.9 %, color 397 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Superpuestas a 1440 px en claro: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Superpuestas en valores real: 631×270, ejes 7/5, curvas 6, marcas 160/160, tinta 17.8 %, color 3108/2647 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-superpuestas-1440-claro tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambio relativo a 1440 px en claro: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 631×270, ejes 7/5, curvas 6, marcas 160/160, banda sí, tinta 17.8 %, color 3601/2836 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-relativo-1440-claro tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 1280 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 1280 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 1280 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 1280 px en claro tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Paneles a 1280 px en claro: los tres dibujados y a la vista",
+      "ok": true,
+      "detalle": "3 gráfico(s) · Energía registrada · por día: 471×171, ejes 7/5, curvas 3, marcas 80/80, tinta 16.4 %, color 2098 px · Proteínas registradas · por : 471×171, ejes 7/5, curvas 3, marcas 80/80, tinta 19.9 %, color 4068 px · Peso · cada toma (kg): 471×171, ejes 7/5, curvas 3, marcas 8/8, tinta 10.2 %, color 242 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Superpuestas a 1280 px en claro: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Superpuestas en valores real: 471×270, ejes 7/5, curvas 6, marcas 160/160, tinta 20.7 %, color 3184/2697 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-superpuestas-1280-claro tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambio relativo a 1280 px en claro: dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Cambio relativo contra la re: 471×270, ejes 7/5, curvas 6, marcas 160/160, banda sí, tinta 21.8 %, color 3740/2398 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura analizar-relativo-1280-claro tiene el gráfico dibujado",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 1024 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 1024 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 1024 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 1024 px en claro tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 768 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 768 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 768 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 768 px en claro tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "resumen a 390 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "linea a 390 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "analizar a 390 px en claro: sin desborde de costado, con las tres vistas y el período (cuatro atajos y un rango propio, a un clic)",
+      "ok": true,
+      "detalle": "{\"pestanas\":3,\"boton\":1,\"atajos\":4,\"fechas\":2,\"entra\":true,\"cierra\":true}"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La captura de analizar a 390 px en claro tiene los tres gráficos dibujados (y siguen después)",
+      "ok": true,
+      "detalle": "3 de 3 dibujados; 3 después"
+    }
+  ]
+}
