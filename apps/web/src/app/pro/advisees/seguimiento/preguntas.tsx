@@ -7,7 +7,8 @@
  *   personalizado» para elegir métricas a mano.
  * - Con una pregunta: lo que falta elegir se pide (nunca se elige por la persona: ni el ejercicio, ni la medida, ni la
  *   versión, ni las etapas) y lo que venía de otro asesorado se dice y se vuelve a pedir.
- * - Resuelta, el encabezado dice la pregunta, sus parámetros y su límite de interpretación, y deja cambiarla.
+ * - Resuelta, la pregunta es el título de la vista, con sus parámetros y la salida para cambiarla (lo arma `analizar.tsx`);
+ *   su límite de interpretación va al pie de los gráficos.
  * La resolución es la del dominio (`resolverPregunta`); acá solo se piden los datos y se dibuja.
  */
 import {
@@ -118,29 +119,6 @@ export function ListaDePreguntas({ onPersonalizado }: { onPersonalizado: () => v
   );
 }
 
-/** El encabezado de una pregunta resuelta: la pregunta, sus parámetros y su límite, con las salidas. */
-export function PreguntaActiva({ pregunta, parametros, onCambiar }: { pregunta: PreguntaElegida; parametros: string; onCambiar: () => void }) {
-  const { ir } = useSeguimiento();
-  const p = preguntaProfesional(pregunta.id);
-  return (
-    <div className="pregunta-activa" role="region" aria-label="Pregunta en curso">
-      <p className="pregunta-activa__titulo">
-        <span className="pregunta-activa__rotulo">Pregunta</span> <strong>{p.pregunta}</strong>
-      </p>
-      {parametros ? <p className="metadatos">{parametros}</p> : null}
-      <p className="nota">{p.limite}</p>
-      <div className="acciones">
-        <button type="button" className="boton boton--secundario boton--compacto" onClick={onCambiar}>
-          Cambiar los datos
-        </button>
-        <button type="button" className="boton boton--enlace" onClick={() => ir(parametrosDePregunta(null), { agregarAlHistorial: true })}>
-          Otra pregunta o análisis personalizado
-        </button>
-      </div>
-    </div>
-  );
-}
-
 /**
  * Lo que falta elegir para responder. Lo que se ofrece sale de lo que hay con este asesorado; lo que venía elegido y no
  * aplica se dice. Las opciones por defecto, si las hay, quedan a la vista y se confirman con el botón.
@@ -182,7 +160,8 @@ export function ElegirParametros({
   };
   return (
     <form className="panel parametros-de-pregunta" onSubmit={enviar} aria-labelledby={`${id}-titulo`} noValidate>
-      <h3 id={`${id}-titulo`}>{p.pregunta}</h3>
+      {/* La pregunta ya es el título de la vista (WP-ESCRITORIO-AMABLE): acá va qué se pide para responderla. */}
+      <h3 id={`${id}-titulo`}>Datos para responder</h3>
       <p className="metadatos">{p.muestra}</p>
       {resolucion && resolucion.noAplican.length > 0 ? (
         <p className="nota" role="status">

@@ -3013,73 +3013,551 @@ html:has(.acciones--fijas) {
   gap: 1rem;
 }
 
-/*
- * Analizar es para escritorio. El orden del documento (y del teclado) es siempre: qué se elige, los gráficos, la lectura y
- * las opciones; la grilla solo los ubica, sin reordenarlos (WCAG 1.3.2 y 2.4.3).
- * - Desde 80rem (1280 px): tres columnas; la lectura queda fija al costado de los gráficos mientras se recorren las fechas.
- * - Desde 64rem (1024 px): dos columnas; la lectura, debajo de los gráficos.
- * - Más angosto (no es el objetivo): una columna, sin desbordes.
- */
-.analizar__cuerpo {
+/* ─── Analizar, recompuesto (WP-ESCRITORIO-AMABLE, parte 2) ─────────────────────── */
+/* La configuración es una barra de tres renglones cortos (la pregunta, las métricas y los modos); debajo, dos tarjetas:
+   los gráficos y la lectura de la fecha elegida. Lo demás queda a un clic: en «Más acciones» y en el pie de los
+   gráficos. El orden del documento es el que se ve: pregunta, métricas, modos, gráficos, lectura (WCAG 1.3.2 y 2.4.3).
+   Son clases nuevas (E-02): las de la composición anterior (`.analizar__cuerpo` y sus zonas) ya no se usan. */
+
+/* Con gráficos, la vista deja de ser una sola tarjeta: su título es la pregunta, sobre el fondo de la página, y los
+   gráficos y la lectura son dos tarjetas. La entrada y las respuestas sin gráficos siguen en su tarjeta. */
+.seccion.analizar--sin-tarjeta {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.pregunta-en-curso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  min-height: 3rem;
+}
+
+.pregunta-en-curso h2 {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.25;
+}
+
+/* La bajada (los datos de la pregunta, o qué es una comparación libre) va al lado del título; si no entra, baja. */
+.pregunta-en-curso__detalle {
+  flex: 1 1 14rem;
+  min-width: 0;
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.94rem;
+}
+
+.pregunta-en-curso__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+/* Las métricas elegidas, que también son la leyenda: la muestra, el nombre y quitar. */
+.metricas-elegidas.metricas-elegidas--amable {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.metricas-elegidas.metricas-elegidas--amable li {
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 0.2rem 0 0.75rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  font-weight: 600;
+}
+
+.metricas-elegidas--amable .quitar-metrica {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--tenue);
+  cursor: pointer;
+}
+
+.metricas-elegidas--amable .quitar-metrica:hover {
+  background: var(--fondo-suave);
+  color: var(--texto);
+}
+
+.metricas-elegidas__cupo {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+/* Los modos: dos grupos de opciones, dibujados como controles segmentados, y a la derecha el motivo si algo no está. */
+.modos-de-analizar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.modos-de-analizar__aviso {
+  flex: 1 1 18rem;
+  min-width: 0;
+  margin: 0 0 0 auto;
+  color: var(--tenue);
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+/* Un control segmentado: un grupo de opciones nativas (una elegida), dibujado como una fila de segmentos. La elegida va
+   llena, con el color del texto: se distingue por su relleno, no por un matiz. La que no está disponible se apaga y dice
+   por qué al lado. */
+.segmentos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.6rem;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.segmentos > legend {
+  float: left;
+  padding: 0;
+  margin-right: 0.1rem;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.segmentos__fila {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+}
+
+.segmento {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 41px;
+  padding: 0 0.9rem;
+  border-left: 1.5px solid var(--borde-control);
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.segmento:first-child {
+  border-left: 0;
+}
+
+/* La opción nativa cubre el segmento entero, invisible: el teclado, el lector de pantalla y el clic son los de siempre. */
+.segmento input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmento:has(input:checked) {
+  background: var(--texto);
+  color: var(--superficie);
+}
+
+.segmento:has(input:disabled) {
+  background: var(--fondo-suave);
+  color: var(--tenue);
+  font-weight: 500;
+}
+
+.segmento:has(input:disabled) input {
+  cursor: not-allowed;
+}
+
+.segmento:has(input:focus-visible) {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+/* Los gráficos y la lectura. Desde 1024 px, al costado; más angosto, la lectura debajo. */
+.analizar__dos-columnas {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'seleccion' 'lienzo' 'lectura' 'opciones';
   gap: 1rem;
+  align-items: start;
+  margin-top: 0.7rem;
 }
 
 @media (min-width: 64rem) {
-  .analizar__cuerpo {
-    grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr);
-    grid-template-areas: 'seleccion lienzo' 'opciones lienzo' 'opciones lectura';
-    grid-template-rows: auto 1fr auto;
-    align-items: start;
-    column-gap: 1.5rem;
+  .analizar__dos-columnas {
+    grid-template-columns: minmax(0, 1fr) 20rem;
   }
 }
 
 @media (min-width: 80rem) {
-  .analizar__cuerpo {
-    grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr) minmax(16rem, 21rem);
-    grid-template-areas: 'seleccion lienzo lectura' 'opciones lienzo lectura';
-    grid-template-rows: auto 1fr;
-  }
-
-  .analizar__lectura {
-    position: sticky;
-    top: 1rem;
-    max-height: calc(100vh - 2rem);
-    overflow-y: auto;
+  .analizar__dos-columnas {
+    grid-template-columns: minmax(0, 1fr) 21rem;
   }
 }
 
-.analizar__seleccion,
-.analizar__opciones {
+.tarjeta-de-graficos,
+.tarjeta-de-lectura {
+  min-width: 0;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.tarjeta-de-graficos {
+  padding: 0.5rem 1rem 0.4rem;
+}
+
+/* Dentro de la tarjeta, los paneles no llevan su propio recuadro: los separa una línea. */
+.tarjeta-de-graficos .grafico__lienzo {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+.tarjeta-de-graficos .paneles-sincronizados {
+  gap: 0;
+}
+
+.tarjeta-de-graficos .paneles-sincronizados .grafico + .grafico {
+  margin-top: 0.15rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid var(--borde);
+}
+
+.pie-de-graficos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 1.4rem;
+  min-height: 2.5rem;
+  margin-top: 0.15rem;
+}
+
+.pie-de-graficos .boton--enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+}
+
+.pie-de-graficos__limite {
+  margin: 0 0 0 auto;
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+/* Lo que abre un enlace del pie (la tabla, el resumen en texto, los hitos, las etapas) va debajo de la tarjeta. */
+.bajo-los-graficos {
+  margin-top: 0.75rem;
+  padding: 0.8rem 1rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.tarjeta-de-lectura {
+  padding: 0.85rem 1.1rem 1rem;
+}
+
+.tarjeta-de-lectura h3 {
+  margin: 0;
+}
+
+.lectura__paso {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.lectura__paso .boton {
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 0.2rem;
+  padding-inline: 0.35rem;
+  justify-content: center;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.dato-de-lectura {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.dato-de-lectura p {
+  margin: 0;
+}
+
+.dato-de-lectura__nombre {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.dato-de-lectura__valor {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.dato-de-lectura__valor small {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--tenue);
+}
+
+.dato-de-lectura__nota {
+  color: var(--tenue);
+  font-size: 0.94rem;
+}
+
+.dato-de-lectura__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.5rem;
+  margin-top: 0.15rem;
+}
+
+.dato-de-lectura__pie .boton--enlace {
+  margin-left: auto;
+}
+
+/* «Ir a una fecha»: la alternativa a elegirla sobre un gráfico o con las flechas (WCAG 2.5.7), en un renglón. */
+.tarjeta-de-lectura .lectura__fecha {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+}
+
+.tarjeta-de-lectura .lectura__fecha label {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tarjeta-de-lectura .lectura__fecha input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 40px;
+}
+
+.dato-de-lectura__punto + .dato-de-lectura__punto {
+  margin-top: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px dashed var(--borde);
+}
+
+.dato-de-lectura__clase {
+  color: var(--tenue);
+  font-size: 0.9rem;
+}
+
+/* Una etiqueta con ícono: la clase de un dato («Medido», «Reportado», «Calculado»). No es un botón ni un estado. */
+.etiqueta-de-dato {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 6px;
+  background: var(--fondo-suave);
+  font-size: 0.86rem;
+  line-height: 1.45rem;
+  white-space: nowrap;
+}
+
+/* «Más acciones»: un panel que se despliega bajo la barra, con lo que se usa de vez en cuando. */
+.mas-acciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin-top: 0.6rem;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.mas-acciones > * {
+  min-width: 0;
+}
+
+/* Cada grupo arranca a la misma altura y se lee de arriba abajo: sin los márgenes de cuando estaban apilados, y con
+   los plegables y los enlaces del alto de un objetivo (I.5). */
+.mas-acciones > .vistas-guardadas,
+.mas-acciones .intervalo,
+.mas-acciones p {
+  margin: 0;
+}
+
+.mas-acciones .vistas-guardadas > summary,
+.mas-acciones .intervalo > summary {
+  padding: 0.625rem 0;
+}
+
+.mas-acciones .exportar .nota {
+  margin-top: 0.5rem;
+}
+
+.mas-acciones .boton--enlace {
+  min-height: 44px;
+  text-align: left;
+}
+
+/* Las capas, sin su recuadro: adentro de un panel, un recuadro más era ruido. */
+.mas-acciones .capas {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 0;
+  padding: 0;
+  border: 0;
+}
+
+.mas-acciones .capas legend {
+  padding: 0.625rem 0 0;
+}
+
+/* Mientras su panel está abierto, el botón queda marcado por el borde (más grueso), no solo por el color. */
+.pregunta-en-curso__acciones .boton[aria-expanded='true'] {
+  border-color: var(--texto);
+  background: var(--fondo-suave);
+  box-shadow: inset 0 0 0 1px var(--texto);
+}
+
+/* El aro de la fecha elegida no recibe el puntero: rodea a la marca, que es la que se toca. */
+.grafico__aro {
+  pointer-events: none;
+}
+
+/* Los datos de una pregunta que ya tiene gráficos («Cambiar los datos»): sobre el fondo de la página, son una tarjeta. */
+.analizar--sin-tarjeta > .parametros-de-pregunta {
+  margin: 0.6rem 0 0.4rem;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+/* La respuesta que va arriba de los gráficos (las dos etapas y su tabla) es una tarjeta más, sobre el fondo. */
+.tarjeta-de-respuesta {
+  margin-top: 0.6rem;
+  padding: 0.6rem 1rem 0.5rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+/* La barra: las métricas elegidas con «Agregar una métrica» al final de su fila, y debajo los modos. */
+.barra-de-analizar {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  min-width: 0;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
 }
 
-.analizar__seleccion {
-  grid-area: seleccion;
+.barra-de-analizar .selector-de-metricas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
 }
 
-.analizar__opciones {
-  grid-area: opciones;
-}
-
-.analizar__lienzo {
-  grid-area: lienzo;
-  min-width: 0;
-}
-
-.analizar__lectura {
-  grid-area: lectura;
-  min-width: 0;
-}
-
-.analizar__lectura .panel-de-lectura {
+.barra-de-analizar .metricas-elegidas--amable,
+.barra-de-analizar .modos-de-analizar,
+.barra-de-analizar .agregar {
   margin: 0;
+}
+
+/* «Agregar una métrica» es un lugar vacío más de la fila: por eso el borde discontinuo. Abierto, ocupa su renglón. */
+.barra-de-analizar .agregar > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 0.8rem;
+  border: 1.5px dashed var(--borde-control);
+  border-radius: 10px;
+  color: var(--enlace);
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.barra-de-analizar .agregar > summary::-webkit-details-marker {
+  display: none;
+}
+
+.barra-de-analizar .agregar[open] {
+  flex: 1 0 100%;
+}
+
+.barra-de-analizar .agregar[open] > summary {
+  margin-bottom: 0.5rem;
+}
+
+/* Por qué un modo no está disponible o qué métrica no admite la agrupación: una lista corta, al final de la barra. */
+ul.modos-de-analizar__aviso {
+  list-style: none;
+  padding: 0;
+  text-align: right;
+}
+
+/* La pregunta en curso no es un recuadro: es el título de la vista (`.pregunta-activa` solo la señala). */
+.pregunta-en-curso p {
+  margin: 0;
+}
+
+.pregunta-en-curso__limite {
+  margin: 0.35rem 0 0.5rem;
+}
+
+.pregunta-en-curso .boton {
+  gap: 0.4rem;
+}
+
+.tarjeta-de-graficos > .nota:first-child,
+.tarjeta-de-graficos > p:first-child {
+  margin-top: 0.35rem;
+}
+
+.tarjeta-de-graficos .leyenda {
+  margin: 0.2rem 0 0;
 }
 
 .agregar > summary,
@@ -3154,22 +3632,46 @@ html:has(.acciones--fijas) {
   margin: 0 0 0.25rem 1.75rem;
 }
 
-/* La referencia del cambio relativo: la vigente, qué la cambia y el editor, uno debajo del otro (DL-126). */
+/* La referencia del cambio relativo (DL-126): un renglón bajo los modos, con la vigente y «Cambiar la referencia»; el
+   editor se abre debajo. */
 .referencia-del-cambio {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.75rem;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .referencia-del-cambio p {
-  margin: 0.25rem 0 0;
+  margin: 0;
+}
+
+.referencia-del-cambio .referencia-vigente {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.94rem;
+}
+
+.referencia-del-cambio .referencia-vigente strong {
+  color: var(--texto);
 }
 
 .referencia-del-cambio__editor {
-  align-self: stretch;
+  flex: 1 0 100%;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+/* La base de cada métrica, debajo del gráfico del cambio relativo. */
+.tarjeta-de-graficos .referencias {
+  margin: 0.3rem 0 0;
+  color: var(--tenue);
+  font-size: 0.9rem;
 }
 
 .referencia-vigente {
@@ -3185,6 +3687,78 @@ html:has(.acciones--fijas) {
 .grafico__titulo {
   font-weight: 700;
   margin: 0.5rem 0 0.25rem;
+}
+
+/* ─── El encabezado de un gráfico de «Analizar» (WP-ESCRITORIO-AMABLE, parte 2) ─────────── */
+/* En una línea: la muestra y el nombre de la métrica, qué es cada punto y su unidad, la muestra de lo planificado y, a la
+   derecha, la cobertura. Si no entra, la cobertura baja a su propia línea: su texto es del dominio y no se recorta. */
+.grafico__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 1.1rem;
+  margin: 0.25rem 0 0.1rem;
+}
+
+.grafico__encabezado .grafico__titulo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 0.45rem;
+  margin: 0;
+  font-weight: 400;
+}
+
+.grafico__encabezado .grafico__titulo strong {
+  font-weight: 700;
+}
+
+.grafico__detalle,
+.grafico__muestra,
+.grafico__cobertura {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+.grafico__muestra {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.grafico__muestras {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 1rem;
+}
+
+.grafico__cobertura {
+  margin-left: auto;
+  text-align: right;
+}
+
+/* La muestra de «sin registros»: el mismo gris leve que sombrea esos días en el gráfico, con un borde para que se vea
+   aunque sea chica. */
+.muestra-de-hueco {
+  display: inline-block;
+  flex: none;
+  width: 0.65rem;
+  height: 0.95rem;
+  margin-right: 0.3rem;
+  vertical-align: -0.15em;
+  border: 1px solid var(--borde-control);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--grafico-hueco) 30%, transparent);
+}
+
+/* El nombre al final de una línea, cuando varias métricas comparten el gráfico: no se elige ni tapa el puntero. */
+.grafico__nombre-de-linea {
+  pointer-events: none;
+}
+
+/* Paneles apilados con un solo eje de fechas: van pegados, para leerse como un mismo gráfico. */
+.paneles-sincronizados .grafico {
+  margin: 0;
 }
 
 .panel-de-lectura .acciones {
@@ -3741,27 +4315,6 @@ html:has(.acciones--fijas) {
   margin: 0.25rem 0;
 }
 
-.pregunta-activa {
-  border: 1px solid var(--borde);
-  border-radius: 10px;
-  background: var(--fondo-suave);
-  padding: 0.75rem 1rem;
-  margin: 0.5rem 0 1rem;
-}
-
-.pregunta-activa p {
-  margin: 0.15rem 0;
-}
-
-.pregunta-activa__rotulo {
-  display: inline-block;
-  margin-right: 0.35rem;
-  color: var(--tenue);
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 /* Un formulario corto no ocupa todo el ancho del escritorio: un desplegable de 1300 px se recorre mal con la vista. */
 .parametros-de-pregunta {
   max-width: 56rem;
@@ -3897,13 +4450,4 @@ html:has(.acciones--fijas) {
 
 .retorno-a-la-ficha {
   margin: -0.25rem 0 0.75rem;
-}
-
-/* El panel de lectura de Analizar no tiene desplazamiento propio: no hay doble desplazamiento. */
-@media (min-width: 80rem) {
-  .analizar__lectura {
-    position: static;
-    max-height: none;
-    overflow: visible;
-  }
 }

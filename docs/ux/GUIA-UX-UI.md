@@ -176,6 +176,16 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
   sí, y ninguno se marca como «el bueno» (REG-06-205).
 - **Medido, reportado por la persona o calculado** se distinguen en el dato, en el gráfico (por forma, no solo por
   color), en la lectura, en la tabla y en la exportación.
+- **Todas las marcas de un gráfico son puntos.** La métrica se reconoce por su color **y por su nombre:** en el
+  encabezado de su gráfico o, cuando varias comparten uno, al final de su línea. La forma del punto dice el estado del
+  dato (lleno, hueco, de contorno cortado, con un punto adentro), no la métrica.
+- **Lo planificado y lo registrado van en el mismo gráfico cuando están en la misma unidad.** Lo registrado, con línea
+  continua y puntos; lo planificado, con línea discontinua del mismo color, sin puntos. Sin porcentajes, sin un área
+  entre las dos y sin una diferencia calculada. Lo que el gráfico dibuja está también en la lectura, en la tabla y en
+  el resumen en texto.
+- **Un día sin registros lleva un gris leve** en un gráfico diario, y la línea se corta ahí. No es un cero. El día en
+  curso no se sombrea. Si varias métricas comparten el gráfico, se sombrean los días sin registros en todas. La
+  muestra del gris acompaña a la cuenta («4 sin registros») solo donde el gráfico sombrea.
 - **No se inventan puntos:** no se interpola, imputa ni arrastra; un hueco se dibuja como hueco; una línea no une tramos
   no comparables (cambio de protocolo, método o unidad).
 - **Lo planificado no es lo registrado.** Lo previsto de un plan nunca se muestra como consumido o hecho, y una
@@ -219,9 +229,12 @@ Información).
   primeros hechos. A 1440 × 900, el Resumen muestra además la primera observación de «Para tu próxima revisión» (II.3).
   Si no entra, cambia la composición, no la letra (I.5). La regla de los 390 px de ancho vale para el website del
   asesorado y para la pestaña Antropometría (II.9 y II.10).
-- **Zonas con sentido, no columnas porque sí.** En Analizar, tres zonas desde 1280 px (lo que se elige, los gráficos y
-  la lectura) y dos desde 1024 px; en el Resumen, «Para tu próxima revisión» y las acciones lado a lado. La grilla
-  ubica; el orden del documento y del teclado no cambia (WCAG 1.3.2 y 2.4.3).
+- **Zonas con sentido, no columnas porque sí.** En Analizar, una barra arriba (la pregunta, las métricas y los modos)
+  y, debajo, los gráficos y la lectura lado a lado desde 1024 px; en el Resumen, «Para tu próxima revisión» y las
+  acciones lado a lado. La grilla ubica; el orden del documento y del teclado es el que se ve (WCAG 1.3.2 y 2.4.3).
+- **A la vista, lo que se usa siempre; a un clic, lo que se usa a veces.** Una vista no muestra todas sus opciones
+  abiertas: las de uso ocasional van en un panel que se despliega («Más acciones») o en un pie de enlaces que abre una
+  cosa a la vez. Nada se quita: se decide dónde queda.
 - **Sin doble desplazamiento.** Un panel no tiene su propio desplazamiento dentro de la página: el panel de lectura
   acompaña a los gráficos sin barra propia.
 
@@ -331,26 +344,41 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
 - **Preguntas antes que configuración** (`preguntas.tsx`): sin pregunta ni métricas, Analizar ofrece las preguntas
   principales y «Más preguntas». Lo que falta elegir se pide: el ejercicio, la medida y la versión nunca se eligen por
   la persona; la serie, la unidad y las dos últimas etapas se sugieren a la vista y se confirman con «Ver la respuesta».
-  Lo que venía elegido y no aplica a este asesorado se dice. La pregunta resuelta tiene su encabezado con sus datos y su
-  límite de interpretación. «Análisis personalizado» sigue disponible.
+  Lo que venía elegido y no aplica a este asesorado se dice. La pregunta resuelta es el título de la vista, con sus
+  datos al lado («Cambiar los datos») y su límite de interpretación al pie de los gráficos. «Cambiar la pregunta»
+  vuelve al comienzo de Analizar. Sin pregunta, el título es «Comparación libre».
 - **Números de versión:** la versión de un plan que ve la persona es su orden de activación (1, 2, 3…), el mismo en la
   ficha, las etapas, la línea de tiempo y la pestaña Plan. El `version` de un recurso es su token de concurrencia: no se
   muestra. Un borrador no tiene número hasta activarse («una versión nueva en borrador»).
-- **Analizar** (`analizar.tsx`, `lienzo.tsx`): hasta tres métricas; paneles sincronizados por defecto; «Agrupar por»
-  (cada registro, día o semana) dice qué admite cada métrica y por qué; la referencia del cambio relativo se muestra solo
-  en ese modo; el título de cada panel dice la métrica completa y qué es cada punto; la lectura no depende del puntero;
-  el punto elegido conserva su clase a la vista (el aro de selección rodea la marca sin taparla); el resumen en texto
-  describe el intervalo visible en una lista corta.
-- **Analizar según la pregunta:** con la pregunta de etapas, lo principal es la tabla A/B. La comparación a mano de dos
+- **Analizar** (`analizar.tsx`, `lienzo.tsx`; recompuesto en WP-ESCRITORIO-AMABLE): hasta tres métricas.
+  - **La barra,** en tres renglones cortos: la pregunta, que es el título de la vista, con «Cambiar la pregunta» y «Más
+    acciones»; las métricas elegidas, que son también la leyenda (la muestra de su color, el nombre y quitar), con
+    «Agregar una métrica» al final; y los modos, en controles segmentados: «Ver como» (Separadas, Juntas o Cambio
+    relativo) y «Agrupar por» (Registro, Día o Semana). El motivo de un modo apagado se dice al costado. En «Cambio
+    relativo», la referencia va en un renglón debajo, con «Cambiar la referencia».
+  - **Los gráficos,** en una tarjeta: en «Separadas», uno por métrica, con las fechas una sola vez debajo del último.
+    El encabezado de cada uno dice el nombre, qué es cada punto y su unidad, la muestra de lo planificado y cuántos
+    días, sesiones o tomas tienen valor. Las etapas del plan van como bandas, con su nombre arriba del dibujo si entra
+    en el ancho de la banda (si no, corto: «v2»; una etapa que no llega a verse no lleva nombre).
+  - **La lectura,** en otra tarjeta, al costado: el valor grande y, debajo, cómo leerlo (la calidad, cuántos registros
+    lo sostienen, lo planificado, la clase del dato y «Ver origen»). No depende del puntero.
+  - **A un clic:** «Más acciones» (vistas guardadas, descarga, capas, intervalo con fechas, comparar dos períodos) y el
+    pie de los gráficos (tabla de datos, resumen en texto, hitos, etapas y «Cómo se calcula»), que abre una cosa a la
+    vez debajo de ellos. Los hitos se dibujan mientras su lista está abierta. Lo desplegado es del análisis que se
+    mira: se cierra al volver al comienzo de Analizar, no al cambiar una métrica o el período.
+  - El punto elegido conserva su clase a la vista (el aro de selección rodea la marca sin taparla, y se ve entero
+    también en el borde del gráfico); la leyenda dice solo los estados que están dibujados.
+- **Analizar según la pregunta:** con la pregunta de etapas, lo principal es la tabla A/B, en su tarjeta, arriba de la
+  barra (los gráficos y la lectura siguen en las suyas: una tarjeta no va adentro de otra). La comparación a mano de dos
   períodos es una opción secundaria, plegada debajo de esa tabla («Comparar otros dos períodos, con fechas elegidas a
-  mano», abierta si ya hay una en la URL); el resumen en texto se pliega como la tabla de datos, y las acciones de las
-  tarjetas no se repiten debajo del gráfico. Resultados, cobertura y límites de interpretación quedan a la vista, cada
-  límite una vez: el de la pregunta en su encabezado y «Coincidencia temporal: no indica causa» en el de Analizar. La
-  letra no se achica.
+  mano», abierta si ya hay una en la URL); el resumen en texto se abre desde el pie de los gráficos, como la tabla de
+  datos, y las acciones de las tarjetas no se repiten debajo del gráfico. Resultados, cobertura y límites de
+  interpretación quedan a la vista, cada límite una vez: el de la pregunta y «Coincidencia temporal: no indica causa»
+  van juntos, al pie de los gráficos (o bajo el título, si la respuesta no tiene gráficos). La letra no se achica.
 - **Etapas** (`etapas.tsx`): dos tarjetas (A y B) con versión, fechas, duración y cómo terminaron, «Etapa anterior» y
   «Ver la planificación de esta etapa»; una tabla por métrica con el mismo criterio de resumen, su cobertura (II.4) y el
-  motivo cuando no se resta. Fuera de la pregunta de etapas, las bandas del gráfico tienen su lista de etapas, que abre
-  la planificación o compara con la anterior.
+  motivo cuando no se resta. Fuera de la pregunta de etapas, «Comparar etapas», en el pie de los gráficos, abre la lista
+  de etapas de las bandas: desde ahí se ve la planificación de cada una o se la compara con la anterior.
 - **Contraste con lo indicado** (`contraste.tsx`): por serie en entrenamiento, con la prescripción de la versión que
   ejecutó cada sesión; en nutrición, una fila por comida con la opción, **el modo de registro** (confirmó las porciones
   del plan, informó las cantidades a mano, sin confirmar o una comida diferente), **lo que se comprobó frente a lo
@@ -362,8 +390,9 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
 - **Línea de tiempo** (`linea-de-tiempo.tsx`): una entrada por hecho, filtros en la URL, búsqueda en el cuerpo, y desde
   la síntesis, «lo nuevo desde la revisión» con su aviso.
 - **Vistas guardadas** (`vistas-guardadas.tsx`): guardan la configuración y la pregunta, nunca datos. Si llevan
-  selecciones de un asesorado, lo avisan al guardar y las piden de nuevo en otro. Se retoman también desde el comienzo
-  de Analizar, debajo de las preguntas, sin el formulario de guardar (no hay nada que guardar todavía).
+  selecciones de un asesorado, lo avisan al guardar y las piden de nuevo en otro. En un análisis están en «Más
+  acciones», que se abre solo cuando se acaba de retomar una, para que su aviso se vea. Se retoman también desde el
+  comienzo de Analizar, debajo de las preguntas, sin el formulario de guardar (no hay nada que guardar todavía).
 
 ### II.7 Estados del website profesional
 
@@ -867,6 +896,16 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | «Cuenta» | El quinto enlace de la navegación del profesional. | El botón de la esquina: abre los datos de la cuenta, la apariencia y «Cerrar sesión» (II.3). | Sustituida | 1 bis |
 | Paneles que se despliegan | Escape y tocar fuera cerraban el control de período. | Además, salir del panel con el teclado lo cierra; vale para el período y para el menú de la cuenta (II.3). | Ampliada | 1 bis |
 | Tarjetas de «Empezar por una pregunta» | Cada una tenía el alto de su texto: la de descripción más corta quedaba más baja que su vecina. | Las cuatro miden lo mismo. | Corregida | 1 bis |
+| Analizar | Tres zonas: la configuración abierta a la izquierda, los gráficos y la lectura; debajo, todo desplegado. Con tres métricas, 2.368 px de alto a 1440 px de ancho. | Una barra, los gráficos y la lectura; lo ocasional, en «Más acciones» y en el pie de los gráficos. 1.093 px, y los tres gráficos entran en una ventana de 900 px (II.1, II.6). | Sustituida | 2 |
+| El gráfico: la métrica | Color, forma (círculo, cuadrado o triángulo) y trazo por métrica. | Todas las marcas son puntos; la métrica se reconoce por su color y por su nombre (I.7). | Sustituida | 2 |
+| El gráfico: lo planificado | En Analizar, el objetivo estaba solo en texto. | El objetivo de calorías, como línea discontinua del mismo color; también en la lectura, la tabla y el resumen en texto (I.7). | Ampliada | 2 |
+| El gráfico: días sin registros | Un corte en la línea. | El corte y, además, un gris leve de fondo (I.7). | Ampliada | 2 |
+| Los modos | «Paneles sincronizados», «Superpuestas en valores reales» y «Cambio relativo»; «Cada registro». | «Separadas», «Juntas» y «Cambio relativo»; «Registro». Los valores de la URL no cambian. | Sustituida | 2 |
+| «Energía» | El nombre de la métrica y de la etiqueta de un registro en la línea de tiempo. | «Calorías». El objetivo sigue siendo el «requerimiento energético estimado». | Sustituida | 2 |
+| Los hitos en el gráfico | Líneas punteadas siempre dibujadas, con su lista plegada aparte. | Se dibujan mientras su lista está abierta. | Aclarada | 2 |
+| El aro de la fecha elegida | Iba con los puntos de la línea: con 90 días a la vista, el de la última fecha salía cortado contra el borde del gráfico. | Va en una capa propia, alrededor de la marca, y se ve entero (II.6). | Corregida | 2 |
+| Lo desplegado en Analizar | Cada cosa era un plegable suelto, que quedaba como se lo dejara. | Lo que abren «Más acciones» y el pie de los gráficos es del análisis que se mira: se cierra al volver al comienzo de Analizar (II.6). | Nueva | 2 |
+| Tarjetas | La comparación de etapas dejaba los gráficos y la lectura adentro de la tarjeta de la vista. | Una tarjeta no va adentro de otra: la respuesta es una, y los gráficos y la lectura, las suyas (II.6). | Corregida | 2 |
 | Aviso de ambiente de prueba | «Ambiente de prueba · solo datos sintéticos», fijo en la barra de todas las pantallas del website; la guía decía que el 08 §33 lo «exige» siempre a la vista. | Sale de la barra (decisión de Dirección del 2026-10-10). Queda en el pie de la cara pública y en el registro (II.10). El 08 §33 fija la política de datos por ambiente; no pide mostrarlo en cada pantalla. La APK no cambia. | Sustituida | 1 bis |
 
 ---

@@ -1,7 +1,7 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
@@ -14,6 +14,8 @@
 //   de la página, se espera el dibujo y se captura la ventana tal cual.
 // - El encabezado, el menú de la cuenta y las tarjetas de preguntas (WP-ESCRITORIO-AMABLE, E-17 y E-18) se comprueban al
 //   final del modo funcional, en una sesión propia porque termina cerrándola. `menu` corre solo esa parte.
+// - La composición de Analizar y el lenguaje de sus gráficos (WP-ESCRITORIO-AMABLE, parte 2) se comprueban en
+//   `analizarRecompuesto`, también en una sesión propia, antes del encabezado. `analizar` corre solo esa parte.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
 //   (valores medidos, informados y estimados; revocación desde la web del asesorado).
 import fs from 'node:fs';
@@ -220,6 +222,25 @@ async function ponerTema(page, tema) {
   await page.evaluate(() => document.querySelector('.menu-de-cuenta__boton').click());
   await page.waitForFunction(() => !document.querySelector('.menu-de-cuenta__panel'), { timeout: 3_000 });
 }
+/**
+ * «Más acciones» guarda lo que se usa de vez en cuando en Analizar (WP-ESCRITORIO-AMABLE, C-08): las vistas guardadas, la
+ * descarga, las capas, el intervalo con fechas y la comparación de dos períodos. Lo abre si está cerrado.
+ */
+async function abrirMasAcciones(page) {
+  if (await page.$('.mas-acciones')) return;
+  await clic(page, '.pregunta-en-curso__acciones button', 'Más acciones');
+  await page.waitForSelector('.mas-acciones', { timeout: 5_000 });
+}
+
+/**
+ * El pie de los gráficos abre, debajo de ellos, la tabla de datos, el resumen en texto, los hitos, las etapas o «Cómo se
+ * calcula»: una cosa a la vez. Abre la que se pide, si no está, y espera a que aparezca.
+ */
+async function abrirDelPie(page, texto, selector) {
+  if (await page.$(selector)) return;
+  await clic(page, '.pie-de-graficos button', texto);
+  await page.waitForSelector(selector, { timeout: 5_000 });
+}
 /** Hace clic (de verdad, con el mouse) en el primer elemento visible y habilitado que contiene el texto. */
 async function clic(page, selector, contiene) {
   const marca = `r${Math.random().toString(36).slice(2)}`;
@@ -280,6 +301,7 @@ async function fijarFecha(page, selector, valor) {
 
 /** El intervalo visible de Analizar, con los campos «Desde» y «Hasta» (el atajo del arrastre hace lo mismo). */
 async function fijarIntervalo(page, v, desde, hasta) {
+  await abrirMasAcciones(page);
   await abrirDetalles(page, 'details.intervalo');
   await page.evaluate(() => document.querySelectorAll('details.intervalo input[type="date"]').forEach((c, i) => c.setAttribute('data-intervalo', i === 0 ? 'desde' : 'hasta')));
   await fijarFecha(page, '[data-intervalo="desde"]', desde);
@@ -683,11 +705,13 @@ async function funcional() {
     await quieto(page, v);
     const titulos = await textos(page, '.grafico__titulo');
     comprobar('PRO-06', 'Una pregunta de tres métricas dibuja tres paneles', titulos.length === 3, titulos.join(' | '));
-    comprobar('PRO-07', 'Cada panel conserva su unidad (kcal, g, kg)', /kcal/.test(titulos[0]) && /\(g\)/.test(titulos[1]) && /kg/.test(titulos[2]));
-    await comprobarGraficos(page, 'PRO-08', 'Paneles: los tres gráficos están dibujados y a la vista (ejes, curvas, marcas sin tapar y el color de cada métrica)', { figuras: 3, colores: [[1], [2], [3]] });
-    const modos = await page.$$eval('.modo-elegible', (m) => m.map((x) => ({ deshabilitado: x.querySelector('input').disabled, texto: x.innerText.replace(/\s+/g, ' ') })));
-    comprobar('PRO-08', 'Superponer kcal, g y kg se bloquea y dice por qué', modos[1].deshabilitado && /unidades distintas/.test(modos[1].texto), modos[1].texto);
-    comprobar('PRO-08', 'Sin observaciones del peso en la referencia, el cambio relativo se bloquea y lo dice', modos[2].deshabilitado && /Peso: no tiene observaciones/.test(modos[2].texto), modos[2].texto);
+    comprobar('PRO-07', 'Cada panel conserva su unidad (kcal, g, kg)', /· kcal$/.test(titulos[0]) && /· g$/.test(titulos[1]) && /· kg$/.test(titulos[2]), titulos.join(' | '));
+    await comprobarGraficos(page, 'PRO-08', 'Separadas: los tres gráficos están dibujados y a la vista (ejes, curvas, marcas sin tapar y el color de cada métrica)', { figuras: 3, colores: [[1], [2], [3]] });
+    // Cada modo es un segmento con su opción adentro; el motivo de uno apagado se dice al costado, y la opción lo referencia.
+    const modos = await page.$$eval('.modo-elegible', (m) => m.map((x) => ({ nombre: x.innerText.replace(/\s+/g, ' ').trim(), deshabilitado: x.querySelector('input').disabled, descrito: !!document.getElementById(x.querySelector('input').getAttribute('aria-describedby') ?? '') })));
+    const motivos = await textos(page, '.modos-de-analizar__aviso .modo-no-disponible');
+    comprobar('PRO-08', 'Juntar kcal, g y kg se bloquea y dice por qué', modos[1].nombre === 'Juntas' && modos[1].deshabilitado && modos[1].descrito && motivos.some((t) => /«Juntas» pide métricas con la misma unidad/.test(t)), `${JSON.stringify(modos[1])} · ${motivos.join(' | ')}`);
+    comprobar('PRO-08', 'Sin observaciones del peso en la referencia, el cambio relativo se bloquea y lo dice', modos[2].nombre === 'Cambio relativo' && modos[2].deshabilitado && modos[2].descrito && motivos.some((t) => /«Cambio relativo»: Peso no tiene observaciones/.test(t)), `${JSON.stringify(modos[2])} · ${motivos.join(' | ')}`);
 
     // La cuarta métrica pide reemplazo y no pierde la selección.
     const mAntes = parametros(page).get('m');
@@ -726,7 +750,7 @@ async function funcional() {
 
     // El origen del punto, y la vuelta sin perder nada.
     const urlAnalisis = page.url();
-    await clic(page, '.panel-de-lectura button', 'Ver el origen de este dato');
+    await clic(page, '.panel-de-lectura button', 'Ver origen');
     await page.waitForSelector('dialog[open]');
     await quieto(page, v);
     const origen = await texto(page, 'dialog[open]');
@@ -736,7 +760,7 @@ async function funcional() {
     comprobar('PRO-05', 'Al cerrar el origen, la vista sigue igual (período, métricas, modo y fecha)', page.url() === urlAnalisis);
 
     // A la pestaña del dominio y de vuelta con «Atrás».
-    await clic(page, '.panel-de-lectura button', 'Ver el origen de este dato');
+    await clic(page, '.panel-de-lectura button', 'Ver origen');
     await page.waitForSelector('dialog[open]');
     await quieto(page, v);
     await clic(page, 'dialog[open] a', 'Ver en Nutrición');
@@ -811,11 +835,11 @@ async function funcional() {
     const B = { desde: diaMenos(miercoles, -15), hasta: diaMenos(miercoles, -24) }; // de jueves a sábado
     await ir(page, `${FICHA_A}&vista=analizar&m=nutricion.energia&cmp=${A.desde}_${A.hasta}_${B.desde}_${B.hasta}`);
     await quieto(page, v);
-    const porDia = await filaDeComparacion(page, 'Energía');
+    const porDia = await filaDeComparacion(page, 'Calorías');
     // WP-DASHBOARD-COMPRENSION: «Grano» pasó a «Agrupar por» y sus opciones a «Cada registro», «Día» y «Semana».
-    await clic(page, '.analizar__opciones label', 'Semana');
+    await clic(page, '.modos-de-analizar label', 'Semana');
     await quieto(page, v);
-    const porSemana = await filaDeComparacion(page, 'Energía');
+    const porSemana = await filaDeComparacion(page, 'Calorías');
     const lecturaSemanal = await texto(page, '.panel-de-lectura');
     // Lo esperado, a mano: la media de los días con valor (sin el día en curso) de cada rango, de la serie diaria de la API,
     // y su cobertura en días del rango. WP-DASHBOARD-COMPRENSION (pasada del 2026-10-09): el denominador son los días del
@@ -843,25 +867,27 @@ async function funcional() {
     await quieto(page, v);
     const refDia = await texto(page, '.referencias');
     // WP-DASHBOARD-COMPRENSION: «Grano» pasó a «Agrupar por» y sus opciones a «Cada registro», «Día» y «Semana».
-    await clic(page, '.analizar__opciones label', 'Semana');
+    await clic(page, '.modos-de-analizar label', 'Semana');
     await quieto(page, v);
     const refSemana = await texto(page, '.referencias');
     comprobar('PRO-08', 'Por semana, la referencia del cambio relativo es la misma que por día (los días de su rango, no las semanas)', refDia.length > 0 && refDia === refSemana, refDia.slice(0, 160));
     await comprobarGraficos(page, 'PRO-08', 'Cambio relativo por semana: dibujado y a la vista, con la banda de la referencia', { figuras: 1, banda: true, colores: [[1]] });
 
-    // Superposición compatible: dos macronutrientes en gramos comparten un gráfico, con trazos distintos.
+    // «Juntas»: dos macronutrientes en gramos comparten un gráfico. Todas las marcas son puntos, así que cada línea lleva su
+    // nombre al final: el color no es lo único que las distingue (WCAG 1.4.1; WP-ESCRITORIO-AMABLE, C-16 y C-33).
     await cupo(v);
     await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent('nutricion.proteinas,nutricion.carbohidratos')}&modo=S`);
     await quieto(page, v);
     const superpuestas = await textos(page, '.grafico__titulo');
-    const leyenda = await texto(page, '.leyenda');
+    const alFinal = await page.$$eval('.grafico__nombre-de-linea', (t) => t.map((x) => x.textContent.trim()).sort());
+    const muestras = await textos(page, '.grafico__muestras .grafico__muestra');
     comprobar(
       'PRO-08',
-      'Proteínas y carbohidratos (misma familia y unidad) se superponen en un solo gráfico, con trazos distintos',
-      superpuestas.length === 1 && /Superpuestas en valores reales \(g\)/.test(superpuestas[0]) && /línea continua/.test(leyenda) && /línea rayada/.test(leyenda),
-      `${superpuestas.join(' | ')} · ${leyenda.slice(0, 160)}`,
+      'Proteínas y carbohidratos (misma familia y unidad) van juntas en un solo gráfico, con su unidad, y cada línea lleva su nombre al final',
+      superpuestas.length === 1 && /^Proteínas y carbohidratos registrados por día · g$/.test(superpuestas[0]) && alFinal.join(',') === 'Carbohidratos,Proteínas' && muestras.length === 2,
+      `${superpuestas.join(' | ')} · al final de cada línea: ${alFinal.join(', ')} · en el encabezado: ${muestras.join(', ')}`,
     );
-    await comprobarGraficos(page, 'PRO-08', 'Superpuestas: un gráfico con las dos curvas dibujadas y a la vista, cada una con su color', { figuras: 1, curvas: 2, colores: [[1, 2]] });
+    await comprobarGraficos(page, 'PRO-08', 'Juntas: un gráfico con las dos curvas dibujadas y a la vista, cada una con su color', { figuras: 1, curvas: 2, colores: [[1, 2]] });
 
     // Dos etapas, con el mismo criterio y sin conclusiones causales. Desde WP-DASHBOARD-COMPRENSION son las etapas reales
     // del plan (las versiones activadas), con la pregunta «¿Qué cambió entre dos etapas?».
@@ -880,6 +906,7 @@ async function funcional() {
     await quieto(page, v);
 
     // Exportación de lo que se ve.
+    await abrirMasAcciones(page);
     await clic(page, 'button', 'Descargar los datos (CSV)');
     let archivo = null;
     for (let i = 0; i < 40 && !archivo; i++) {
@@ -895,6 +922,7 @@ async function funcional() {
     // Vista guardada, con una referencia propia (se reabre en otra sesión, más abajo).
     await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent(TRES)}&p=30&ref=${REF_DE_LA_VISTA}`);
     await quieto(page, v);
+    await abrirMasAcciones(page);
     await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
     await page.type('details.vistas-guardadas input', VISTA);
     await clic(page, 'details.vistas-guardadas button', 'Guardar esta vista');
@@ -1044,6 +1072,7 @@ async function funcional() {
       await navegador.close();
     }
   }
+  await analizarRecompuesto();
   await encabezadoYMenu();
   // El registro de la API de esta corrida: cada búsqueda como ruta parametrizada y ningún texto buscado (hallazgo 4).
   const registro = fs.existsSync(API_LOG) ? fs.readFileSync(API_LOG).subarray(inicioDelLog).toString('utf8') : '';
@@ -1054,6 +1083,576 @@ async function funcional() {
     lineasDeBusqueda.length > 0 && lineasDeBusqueda.every((l) => l.includes('/advisees/:adviseeId/timeline/search')) && !/cena/i.test(registro),
     `${lineasDeBusqueda.length} línea(s) de búsqueda, p. ej. ${(lineasDeBusqueda[0] ?? '').replace(/"requestId":"[^"]+",/, '').slice(0, 140)}; «cena» en el registro: ${/cena/i.test(registro) ? 'sí' : 'no'}`,
   );
+}
+
+// ─── Analizar, recompuesto (WP-ESCRITORIO-AMABLE, parte 2: E-24 a E-36, E-38 y E-39) ───────────────────────────────
+
+/**
+ * La composición de Analizar y el lenguaje de sus gráficos. Lo esperado (el objetivo de calorías, los días sin
+ * registros, las etapas y los cortes) se calcula a mano con lo que devuelve la API, sin el dominio. Cada comprobación
+ * negativa («no lleva…») mira con el mismo selector que una positiva de la misma pantalla: con el selector mal, la
+ * positiva fallaría. En una sesión propia; el modo funcional la corre antes del encabezado y también va sola, con
+ * `node recorrido.mjs analizar`.
+ */
+async function analizarRecompuesto() {
+  const { navegador, page, v } = await abrir();
+  try {
+    await iniciarSesion(page, v, estado.proCorreo, FICHA_A);
+    await quieto(page, v);
+    const desde90 = diaMenos(hoy, 89);
+    const diasEntre = (a, b) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
+    /** «17 ago», como `diaYMesCivil` de la web. */
+    const diaYMes = (f) => new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${f}T12:00:00Z`));
+    const abrirAnalisis = async (consulta) => {
+      await cupo(v);
+      await ir(page, `${FICHA_A}&vista=analizar&${consulta}`);
+      await quieto(page, v);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await pausa(350);
+    };
+    const figuras = (fn) => page.evaluate(fn);
+    const nut = (await leerApi(v, `/advisees/${estado.aseId}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?metric=ENERGY&grain=DAY&periodStart=${desde90}&periodEnd=${hoy}`)).data.result;
+    const peso = (await leerApi(v, `/advisees/${estado.aseId}/projections/ANTHROPOMETRY_LONGITUDINAL?metric=peso&periodStart=${desde90}&periodEnd=${hoy}`)).data.result.series[0];
+
+    // E-24 · La composición: una barra, los gráficos y la lectura ───────────────────────────────────────
+    await page.setViewport({ width: 1440, height: 900 });
+    await abrirAnalisis(`m=${encodeURIComponent(TRES)}&p=90`);
+    const medirComposicion = () =>
+      page.evaluate(() => {
+        const partes = ['.pregunta-en-curso', '.selector-de-metricas', '.modos-de-analizar', '.tarjeta-de-graficos', '.tarjeta-de-lectura'].map((s) => document.querySelector(s));
+        const todas = [...document.querySelectorAll('figure.grafico__figura')];
+        // recharts 3 escribe las fechas del eje en una capa aparte de la línea del eje: se mide el texto, que es lo que se lee.
+        const fechas = todas.at(-1)?.querySelector('.recharts-xAxis-tick-labels')?.getBoundingClientRect();
+        const g = partes[3]?.getBoundingClientRect();
+        const l = partes[4]?.getBoundingClientRect();
+        return {
+          estan: partes.every(Boolean),
+          enOrden: partes.every((e, i) => i === 0 || (!!e && !!partes[i - 1] && (partes[i - 1].compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0)),
+          figuras: todas.length,
+          finDeLasFechas: fechas ? Math.round(fechas.bottom + scrollY) : null,
+          lecturaAlCostado: !!g && !!l && l.left >= g.right - 1 && Math.abs(l.top - g.top) <= 4,
+          alto: document.documentElement.scrollHeight,
+          desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+    const enUnaPantalla = (m) => m.estan && m.enOrden && m.figuras === 3 && m.lecturaAlCostado && m.finDeLasFechas !== null && m.finDeLasFechas <= 900 && m.desborde <= 1;
+    const composicion = await medirComposicion();
+    // La prueba de la prueba: una barra alta, como la configuración de antes, saca los gráficos de la primera pantalla.
+    const empujar = await page.addStyleTag({ content: '.barra-de-analizar { padding-bottom: 20rem !important; }' });
+    await pausa(350);
+    const empujada = await medirComposicion();
+    await empujar.evaluate((e) => e.remove());
+    await pausa(350);
+    comprobar(
+      'E-24',
+      'A 1440 × 900 y con tres métricas, la pregunta, las métricas, los modos, los gráficos y la lectura van en ese orden, la lectura queda al costado y los tres gráficos, con sus fechas, entran en la primera pantalla',
+      enUnaPantalla(composicion),
+      JSON.stringify(composicion),
+    );
+    comprobar('E-24', 'La medición detecta una barra que saca los gráficos de la primera pantalla (la prueba de la prueba)', !enUnaPantalla(empujada) && (empujada.finDeLasFechas ?? 0) > 900, JSON.stringify(empujada));
+    // Otras ventanas, sin umbral: se informa dónde terminan las fechas del último gráfico (una portátil de 1366 × 768
+    // es más baja que los tres gráficos).
+    for (const [ancho, alto] of [[1280, 900], [1024, 900], [1366, 768]]) {
+      await page.setViewport({ width: ancho, height: alto });
+      await pausa(600);
+      informar('E-24', `La composición a ${ancho} × ${alto} (se informa; la primera pantalla se exige a 1440 × 900)`, JSON.stringify(await medirComposicion()));
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(600);
+
+    // E-25 · «Más acciones» y el pie de los gráficos ────────────────────────────────────────────────────
+    const masAcciones = () =>
+      page.evaluate(() => {
+        const b = [...document.querySelectorAll('.pregunta-en-curso__acciones button')].find((x) => x.textContent.includes('Más acciones'));
+        const p = document.querySelector('.mas-acciones');
+        return {
+          expandido: b?.getAttribute('aria-expanded') ?? null,
+          controla: !!b && !!p && b.getAttribute('aria-controls') === p.id,
+          panel: !!p,
+          vistas: !!p?.querySelector('details.vistas-guardadas'),
+          descarga: !!p && [...p.querySelectorAll('button')].some((x) => x.textContent.includes('Descargar los datos (CSV)')),
+          capas: p ? [...p.querySelectorAll('fieldset.capas input[type="checkbox"]')].map((i) => i.closest('label').innerText.replace(/\s+/g, ' ').trim()) : [],
+          intervalo: !!p?.querySelector('details.intervalo'),
+          comparar: !!p && [...p.querySelectorAll('button')].some((x) => x.textContent.includes('Comparar dos períodos')),
+        };
+      });
+    const masAlEntrar = await masAcciones();
+    await clic(page, '.pregunta-en-curso__acciones button', 'Más acciones');
+    await page.waitForSelector('.mas-acciones', { timeout: 5_000 });
+    const masAbierto = await masAcciones();
+    await clic(page, '.pregunta-en-curso__acciones button', 'Más acciones');
+    await page.waitForFunction(() => !document.querySelector('.mas-acciones'), { timeout: 5_000 });
+    const masCerrado = await masAcciones();
+    comprobar(
+      'E-25',
+      '«Más acciones» está cerrado al entrar; abierto, tiene las vistas guardadas, la descarga, las dos capas, el intervalo con fechas y la comparación de dos períodos; el botón dice su estado y lo vuelve a cerrar',
+      masAlEntrar.expandido === 'false' &&
+        !masAlEntrar.panel &&
+        masAbierto.expandido === 'true' &&
+        masAbierto.controla &&
+        masAbierto.vistas &&
+        masAbierto.descarga &&
+        masAbierto.capas.length === 2 &&
+        /^Etapas de los planes/.test(masAbierto.capas[0]) &&
+        /^Hitos/.test(masAbierto.capas[1]) &&
+        masAbierto.intervalo &&
+        masAbierto.comparar &&
+        masCerrado.expandido === 'false' &&
+        !masCerrado.panel,
+      JSON.stringify({ alEntrar: { expandido: masAlEntrar.expandido, panel: masAlEntrar.panel }, abierto: masAbierto, cerrado: { expandido: masCerrado.expandido, panel: masCerrado.panel } }),
+    );
+    const pie = () =>
+      page.evaluate(() => ({
+        botones: [...document.querySelectorAll('.pie-de-graficos button')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()),
+        abiertos: [...document.querySelectorAll('.pie-de-graficos button[aria-expanded="true"]')].map((b) => b.innerText.replace(/\s+/g, ' ').trim()),
+        regiones: [...(document.querySelector('.bajo-los-graficos')?.children ?? [])].map((e) => e.className),
+      }));
+    const pieAlEntrar = await pie();
+    await clic(page, '.pie-de-graficos button', 'Tabla de datos');
+    await page.waitForSelector('.bajo-los-graficos .tabla-de-datos', { timeout: 5_000 });
+    const pieConTabla = await pie();
+    await clic(page, '.pie-de-graficos button', 'Resumen en texto');
+    await page.waitForSelector('.bajo-los-graficos .resumen-en-texto', { timeout: 5_000 });
+    const pieConResumen = await pie();
+    await clic(page, '.pie-de-graficos button', 'Resumen en texto');
+    await page.waitForFunction(() => !document.querySelector('.bajo-los-graficos'), { timeout: 5_000 });
+    const pieCerrado = await pie();
+    const ORDEN_DEL_PIE = [/^Tabla de datos \(\d+ fechas?\)$/, /^Resumen en texto$/, /^Hitos \(\d+\)$/, /^Comparar etapas$/, /^Cómo se calcula$/];
+    comprobar(
+      'E-25',
+      'El pie de los gráficos ofrece la tabla de datos, el resumen en texto, los hitos, las etapas y «Cómo se calcula», y abre debajo una cosa a la vez: abrir el resumen cierra la tabla, y volver a tocarlo lo cierra',
+      pieAlEntrar.botones.length === ORDEN_DEL_PIE.length &&
+        ORDEN_DEL_PIE.every((r, i) => r.test(pieAlEntrar.botones[i])) &&
+        pieAlEntrar.abiertos.length === 0 &&
+        pieAlEntrar.regiones.length === 0 &&
+        pieConTabla.abiertos.length === 1 &&
+        /^Tabla de datos/.test(pieConTabla.abiertos[0]) &&
+        pieConTabla.regiones.join() === 'tabla-de-datos' &&
+        pieConResumen.abiertos.join() === 'Resumen en texto' &&
+        pieConResumen.regiones.join() === 'resumen-en-texto' &&
+        pieCerrado.abiertos.length === 0 &&
+        pieCerrado.regiones.length === 0,
+      JSON.stringify({ alEntrar: pieAlEntrar, conTabla: { abiertos: pieConTabla.abiertos, regiones: pieConTabla.regiones }, conResumen: { abiertos: pieConResumen.abiertos, regiones: pieConResumen.regiones }, cerrado: pieCerrado.regiones }),
+    );
+
+    // E-38 · Lo desplegado es del análisis que se mira ──────────────────────────────────────────────────
+    await abrirMasAcciones(page);
+    await abrirDelPie(page, 'Tabla de datos', '.tabla-de-datos');
+    const desplegado = () => page.evaluate(() => ({ mas: !!document.querySelector('.mas-acciones'), tabla: !!document.querySelector('.bajo-los-graficos .tabla-de-datos') }));
+    await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia,nutricion.proteinas')}&p=90`);
+    const trasOtraSeleccion = await desplegado();
+    await clic(page, '.pregunta-en-curso__acciones button', 'Empezar por una pregunta');
+    await page.waitForSelector('.preguntas-profesionales', { timeout: 10_000 });
+    await quieto(page, v);
+    const enLaEntrada = await page.evaluate(() => ({ preguntas: document.querySelectorAll('.tarjeta-de-pregunta').length, mas: !!document.querySelector('.mas-acciones'), graficos: document.querySelectorAll('figure.grafico__figura').length }));
+    await abrirAnalisis(`m=${encodeURIComponent(TRES)}&p=90`);
+    const trasLaEntrada = await desplegado();
+    comprobar(
+      'E-38',
+      'Lo desplegado (el panel de «Más acciones» y la tabla de datos) sigue abierto al cambiar las métricas y vuelve cerrado después de pasar por la entrada de Analizar',
+      trasOtraSeleccion.mas && trasOtraSeleccion.tabla && enLaEntrada.preguntas >= 4 && enLaEntrada.graficos === 0 && !trasLaEntrada.mas && !trasLaEntrada.tabla && (await page.$$eval('figure.grafico__figura', (f) => f.length)) === 3,
+      JSON.stringify({ trasOtraSeleccion, enLaEntrada, trasLaEntrada }),
+    );
+
+    // E-26, E-34 y E-33 · Las marcas, los nombres y los modos (con las tres métricas a la vista) ─────────────
+    const marcas = await figuras(() => {
+      const grupos = [...document.querySelectorAll('figure.grafico__figura g.grafico__elegible')];
+      const formas = (raiz) => [...new Set([...raiz.querySelectorAll('*')].map((e) => e.tagName.toLowerCase()))];
+      return {
+        porGrafico: [...document.querySelectorAll('figure.grafico__figura')].map((f) => f.querySelectorAll('g.grafico__elegible').length),
+        formas: [...new Set(grupos.flatMap(formas))].sort(),
+        muestras: [...new Set([...document.querySelectorAll('svg.marca-de-metrica')].flatMap(formas))].sort(),
+        colores: [...document.querySelectorAll('figure.grafico__figura')].map((f) => [...new Set([...f.querySelectorAll('g.grafico__elegible circle')].map((c) => c.getAttribute('stroke')))].join()),
+      };
+    });
+    comprobar(
+      'E-26',
+      'Todas las marcas de los tres gráficos son puntos (círculos), cada gráfico con el color de su métrica, y las muestras de las métricas son una línea con un punto',
+      marcas.porGrafico.length === 3 && marcas.porGrafico.every((n) => n > 0) && marcas.formas.join() === 'circle,g' && marcas.muestras.join() === 'circle,g,line' && marcas.colores.join(' ') === 'var(--metrica-1) var(--metrica-2) var(--metrica-3)',
+      JSON.stringify(marcas),
+    );
+    const nombres = await page.evaluate(() => ({
+      etiquetas: [...document.querySelectorAll('.metricas-elegidas--amable li > span')].map((s) => s.innerText.trim()),
+      titulos: [...document.querySelectorAll('figure.grafico__figura .grafico__titulo')].map((t) => t.innerText.replace(/\s+/g, ' ').trim()),
+      lectura: [...document.querySelectorAll('.panel-de-lectura__metrica strong')].map((s) => s.innerText.trim()).slice(0, 3),
+      energia: /Energ[ií]a/.test(document.querySelector('section.analizar').innerText),
+      opciones: [...document.querySelectorAll('details.agregar select[id$="-nut"] option')].map((o) => o.textContent.trim()),
+      modos: [...document.querySelectorAll('.modos-de-analizar fieldset')].map((f) => `${f.querySelector('legend')?.innerText.trim()}: ${[...f.querySelectorAll('label')].map((l) => l.innerText.replace(/\s+/g, ' ').trim()).join(', ')}`),
+    }));
+    comprobar(
+      'E-34',
+      'Analizar dice «Calorías» (en la etiqueta, en el título de su gráfico y entre las métricas que se pueden agregar) y no «Energía»; las métricas de Nutrición van en un solo orden: calorías, carbohidratos, grasas y proteínas',
+      nombres.etiquetas.join() === 'Calorías,Proteínas,Peso' &&
+        /^Calorías registradas por día · kcal$/.test(nombres.titulos[0]) &&
+        !nombres.energia &&
+        ['Calorías', 'Carbohidratos', 'Grasas', 'Proteínas'].every((n, i) => (nombres.opciones[i] ?? '').startsWith(n)),
+      JSON.stringify({ etiquetas: nombres.etiquetas, titulos: nombres.titulos, energia: nombres.energia, opciones: nombres.opciones }),
+    );
+    await abrirAnalisis(`m=${encodeURIComponent('nutricion.proteinas,nutricion.carbohidratos')}&p=30`);
+    await clic(page, '.modos-de-analizar label', 'Juntas');
+    await quieto(page, v);
+    const conJuntas = parametros(page).get('modo');
+    await clic(page, '.modos-de-analizar label', 'Semana');
+    await quieto(page, v);
+    const conSemana = parametros(page).get('g');
+    await clic(page, '.modos-de-analizar label', 'Separadas');
+    await quieto(page, v);
+    const conSeparadas = parametros(page).get('modo');
+    comprobar(
+      'E-33',
+      'Los modos se llaman «Separadas», «Juntas» y «Cambio relativo», y la agrupación, «Registro», «Día» y «Semana»; en la URL siguen las mismas letras de antes (S para juntas, W para semana, y nada para separadas)',
+      nombres.modos.join(' | ') === 'Ver como: Separadas, Juntas, Cambio relativo | Agrupar por: Registro, Día, Semana' && conJuntas === 'S' && conSemana === 'W' && conSeparadas === null,
+      `${nombres.modos.join(' | ')} · modo=${conJuntas} · g=${conSemana} · al volver: modo=${conSeparadas}`,
+    );
+
+    // E-27 · Lo planificado y lo registrado: el objetivo de calorías ────────────────────────────────────
+    // Lo esperado, a mano: cada escalón del requerimiento rige hasta el día anterior al siguiente, recortado al período.
+    const escalones = [...nut.prescribed.energyRequirement].sort((a, b) => a.from.localeCompare(b.from));
+    const tramos = escalones.flatMap((e, i) => {
+      const siguiente = escalones[i + 1];
+      const fin = siguiente ? diaMenos(siguiente.from, 1) : (e.to ?? hoy);
+      const inicio = e.from < desde90 ? desde90 : e.from;
+      return inicio <= hoy && fin >= desde90 && inicio <= fin ? [{ desde: inicio, valor: e.value }] : [];
+    });
+    const objetivoDe = (fecha) => {
+      const t = [...tramos].reverse().find((x) => x.desde <= fecha);
+      return t ? dominio.numero(t.valor) : 'Sin objetivo';
+    };
+    await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia,nutricion.proteinas')}&p=90`);
+    const plan = await figuras(() =>
+      [...document.querySelectorAll('figure.grafico__figura')].map((f) => ({
+        titulo: f.querySelector('.grafico__titulo')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+        muestras: [...f.querySelectorAll('.grafico__encabezado > .grafico__muestra')].map((m) => m.innerText.trim()),
+        lineas: [...f.querySelectorAll('g.grafico__plan line')]
+          .map((l) => ({ x1: Number(l.getAttribute('x1')), x2: Number(l.getAttribute('x2')), y1: Number(l.getAttribute('y1')), y2: Number(l.getAttribute('y2')), corte: l.getAttribute('stroke-dasharray'), color: l.getAttribute('stroke') }))
+          .sort((a, b) => a.x1 - b.x1),
+        descripcion: f.querySelector('p.visualmente-oculto')?.textContent ?? '',
+      })),
+    );
+    const [deCalorias, deProteinas] = plan;
+    // Un escalón más alto se dibuja más arriba (una y menor); dos iguales, a la misma altura.
+    const alturasEnOrden = (deCalorias?.lineas ?? []).every((l, i, todas) => i === 0 || Math.sign(tramos[i].valor - tramos[i - 1].valor) === Math.sign(todas[i - 1].y1 - l.y1));
+    comprobar(
+      'E-27',
+      'El gráfico de calorías dibuja el objetivo: un tramo horizontal y discontinuo, del color de la métrica, por cada escalón del requerimiento que devuelve la API, con la muestra «Objetivo» en su encabezado; el de proteínas no lleva ninguno',
+      tramos.length > 0 &&
+        deCalorias.lineas.length === tramos.length &&
+        deCalorias.lineas.every((l) => Math.abs(l.y1 - l.y2) < 0.5 && l.x2 > l.x1 && !!l.corte && l.color === 'var(--metrica-1)') &&
+        alturasEnOrden &&
+        deCalorias.muestras.join() === 'Objetivo' &&
+        deProteinas.lineas.length === 0 &&
+        deProteinas.muestras.length === 0,
+      `API: ${tramos.map((t) => `${t.valor} kcal desde ${t.desde}`).join('; ')} · calorías: ${deCalorias.lineas.length} tramo(s) ${JSON.stringify(deCalorias.lineas.map((l) => [Math.round(l.x1), Math.round(l.x2), Math.round(l.y1), l.corte]))}, muestra «${deCalorias.muestras.join()}» · proteínas: ${deProteinas.lineas.length} tramo(s)`,
+    );
+    const lecturas = await page.evaluate(() => [...document.querySelectorAll('.panel-de-lectura__metrica')].map((m) => m.innerText.replace(/\s+/g, ' ').trim()));
+    comprobar(
+      'E-27',
+      'La lectura dice el objetivo que rige en la fecha elegida, con el valor de la API, sin calcular una diferencia ni un porcentaje; la de proteínas no dice ninguno',
+      lecturas.length === 2 && lecturas[0].includes(`Objetivo: ${objetivoDe(hoy)} kcal por día`) && !/diferencia|cumpl|%/i.test(lecturas[0]) && !/Objetivo/.test(lecturas[1]),
+      lecturas.map((l) => l.slice(0, 150)).join(' · '),
+    );
+    await abrirDelPie(page, 'Tabla de datos', '.tabla-de-datos');
+    const tabla = await page.evaluate(() => {
+      const t = document.querySelector('.tabla-de-datos table');
+      const limpio = (e) => e.innerText.replace(/\s+/g, ' ').trim();
+      return { columnas: [...t.querySelectorAll('thead th')].map(limpio), filas: [...t.querySelectorAll('tbody tr')].map((r) => [...r.children].map(limpio)) };
+    });
+    const fechaDe = new Map();
+    for (let d = desde90; d <= hoy; d = diaMenos(d, -1)) fechaDe.set(diaCivil(d), d);
+    const columna = tabla.columnas.indexOf('Objetivo de calorías (kcal por día)');
+    const filasMal = tabla.filas.filter((f) => !fechaDe.has(f[0]) || f[columna] !== objetivoDe(fechaDe.get(f[0])));
+    comprobar(
+      'E-27',
+      'La tabla de datos tiene la columna del objetivo, una sola vez y al lado de las calorías, y en cada fecha dice el que regía ese día según la API',
+      columna === 2 && tabla.columnas.filter((c) => /Objetivo/.test(c)).length === 1 && tabla.filas.length > 0 && filasMal.length === 0,
+      `${tabla.columnas.join(' | ')} · ${tabla.filas.length} filas, ${filasMal.length} distintas de lo esperado${filasMal.length ? `: ${JSON.stringify(filasMal.slice(0, 2))}` : ''} · primera: ${JSON.stringify(tabla.filas[0])}`,
+    );
+    await clic(page, '.pie-de-graficos button', 'Resumen en texto');
+    await page.waitForSelector('.bajo-los-graficos .resumen-en-texto', { timeout: 5_000 });
+    const resumen = await texto(page, '.bajo-los-graficos .resumen-en-texto');
+    const frase = `Objetivo de calorías (requerimiento energético estimado): ${tramos.map((t) => `${dominio.numero(t.valor)} kcal por día desde el ${diaCivil(t.desde)}`).join('; ')}.`;
+    comprobar(
+      'E-27',
+      'El resumen en texto y la descripción del gráfico dicen el objetivo con sus fechas, una vez: lo que el gráfico dibuja se puede leer sin verlo',
+      resumen.split(frase).length === 2 && resumen.split('Objetivo de calorías').length === 2 && deCalorias.descripcion.split(frase).length === 2,
+      `esperado: «${frase}» · en el resumen: ${resumen.includes(frase) ? 'sí' : 'no'} · en la descripción: ${deCalorias.descripcion.includes(frase) ? 'sí' : 'no'}`,
+    );
+    await clic(page, '.pie-de-graficos button', 'Resumen en texto');
+    await page.waitForFunction(() => !document.querySelector('.bajo-los-graficos'), { timeout: 5_000 });
+
+    // E-28 · Los días sin registros, en gris ────────────────────────────────────────────────────────
+    // Lo esperado, a mano: los huecos que declara la API, sin el día en curso.
+    const huecos = nut.recorded.gaps.flatMap((h) => {
+      const desde = h.from < desde90 ? desde90 : h.from;
+      const hasta = h.to >= hoy ? diaMenos(hoy, 1) : h.to;
+      return hasta >= desde ? [{ desde, hasta }] : [];
+    });
+    const diasSinRegistros = huecos.reduce((s, h) => s + diasEntre(h.desde, h.hasta) + 1, 0);
+    const gris = () =>
+      figuras(() =>
+        [...document.querySelectorAll('figure.grafico__figura')].map((f) => ({
+          titulo: f.querySelector('.grafico__titulo')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+          zonas: f.querySelectorAll('g.grafico__sin-registros').length,
+          cobertura: f.querySelector('.grafico__cobertura')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+          muestra: !!f.querySelector('.grafico__cobertura .muestra-de-hueco'),
+        })),
+      );
+    await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia,antropometria.peso')}&p=90`);
+    const grisPorDia = await gris();
+    await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia,antropometria.peso')}&p=90&g=W`);
+    const grisPorSemana = await gris();
+    // Dos métricas de Nutrición juntas comparten los días sin registros (salen de los mismos registros): el mismo gris.
+    await abrirAnalisis(`m=${encodeURIComponent('nutricion.proteinas,nutricion.carbohidratos')}&modo=S&p=90`);
+    const grisJuntas = await gris();
+    comprobar(
+      'E-28',
+      'Por día, el gráfico de calorías sombrea los días sin registros que declara la API (sin el día en curso) y su encabezado los cuenta, con la muestra gris; en «Juntas», dos métricas de Nutrición llevan el mismo sombreado; por semana no hay sombreado ni muestra, y el peso (cada toma) nunca lo lleva',
+      huecos.length > 0 &&
+        grisPorDia[0].zonas === huecos.length &&
+        grisPorDia[0].cobertura.includes(`${dominio.numero(diasSinRegistros)} sin registros`) &&
+        grisPorDia[0].muestra &&
+        grisPorDia[1].zonas === 0 &&
+        !grisPorDia[1].muestra &&
+        grisPorSemana[0].zonas === 0 &&
+        !grisPorSemana[0].muestra &&
+        grisJuntas.length === 1 &&
+        grisJuntas[0].zonas === huecos.length,
+      `API: ${huecos.map((h) => `${h.desde}..${h.hasta}`).join(', ')} (${diasSinRegistros} días) · por día: ${JSON.stringify(grisPorDia)} · por semana: ${JSON.stringify(grisPorSemana[0])} · juntas: ${JSON.stringify(grisJuntas)}`,
+    );
+
+    // E-29 · Las etapas de cada área, con el rótulo arriba y una vez por área ───────────────────────────
+    // Lo esperado, a mano: las versiones del plan de Nutrición que se ven al menos 20 días en el período (con lugar
+    // de sobra para su rótulo entero a 1440 px).
+    const diasVisibles = (b) => diasEntre(b.from < desde90 ? desde90 : b.from, b.to && b.to <= hoy ? b.to : diaMenos(hoy, -1));
+    const rotulosEsperados = nut.planVersions.filter((b) => diasVisibles(b) >= 20).map((b) => `Nutrición · ${b.label.replace(/^v(\d+)$/, 'versión $1')}`);
+    const etapas = () =>
+      figuras(() =>
+        [...document.querySelectorAll('figure.grafico__figura')].map((f) => {
+          const rects = [...f.querySelectorAll('g.grafico__banda .recharts-reference-area-rect')].map((r) => r.getBoundingClientRect());
+          const techo = Math.min(...rects.map((r) => r.top));
+          const textos = [...f.querySelectorAll('svg text.recharts-label')].filter((t) => /versión \d+$|^v\d+$/.test(t.textContent.trim()));
+          return { bandas: rects.filter((r) => r.width >= 1).length, rotulos: textos.map((t) => t.textContent.trim()), arriba: textos.every((t) => t.getBoundingClientRect().bottom <= techo + 1) };
+        }),
+      );
+    await abrirAnalisis(`m=${encodeURIComponent(TRES)}&p=90`);
+    const etapasEnTres = await etapas();
+    comprobar(
+      'E-29',
+      'Con calorías, proteínas y peso, las etapas de Nutrición están en los tres gráficos (el peso lleva las de las otras métricas) y su rótulo va una sola vez, en el primero, arriba del dibujo',
+      rotulosEsperados.length > 0 &&
+        etapasEnTres.length === 3 &&
+        etapasEnTres.every((e) => e.bandas === etapasEnTres[0].bandas && e.bandas >= rotulosEsperados.length) &&
+        etapasEnTres[0].rotulos.join(' | ') === rotulosEsperados.join(' | ') &&
+        etapasEnTres[0].arriba &&
+        etapasEnTres[1].rotulos.length === 0 &&
+        etapasEnTres[2].rotulos.length === 0,
+      `esperado: ${rotulosEsperados.join(' | ')} · ${JSON.stringify(etapasEnTres)}`,
+    );
+    // Una etapa que no llega a verse en el período no lleva rótulo: la pregunta del plan empieza el día de su activación,
+    // y la versión anterior termina justo ahí.
+    await abrirAnalisis(`pregunta=cambio-desde-el-plan&area=NUTRICION&version=${estado.nutricion.planV2}`);
+    const etapasDelPlan = await etapas();
+    comprobar(
+      'E-29',
+      'En la pregunta del plan (que empieza el día de la activación), el gráfico rotula la versión elegida y no la anterior, que ya no se ve',
+      etapasDelPlan.length > 0 && etapasDelPlan[0].rotulos.join() === 'Nutrición · versión 2' && etapasDelPlan[0].arriba,
+      JSON.stringify(etapasDelPlan),
+    );
+
+    // E-30 · Los cortes del peso: cambio de protocolo, método o unidad ────────────────────────────────
+    // Lo esperado, a mano: cada tramo que la API declara no comparable con el anterior empieza un corte, en la fecha de
+    // su primera toma (el primer tramo de un período no tiene anterior: no lleva corte).
+    const cortesEsperados = (serie, desde) =>
+      serie.segments
+        .filter((t) => t.breakReason)
+        .map((t) => ({ fecha: serie.points.find((p) => p.segment === t.segment)?.date ?? '', motivo: t.breakReason.replace(/\.$/, '') }))
+        .filter((c) => c.fecha > desde && c.fecha <= hoy)
+        .sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const cortes = () =>
+      page.evaluate(() => ({
+        porGrafico: [...document.querySelectorAll('figure.grafico__figura')].map((f) => ({
+          lineas: f.querySelectorAll('g.grafico__corte').length,
+          rotulos: [...f.querySelectorAll('svg text.recharts-label')].map((t) => t.textContent.trim()).filter((t) => !/versión \d+$|^v\d+$|^Referencia$/.test(t)),
+        })),
+        leyenda: [...document.querySelectorAll('.leyenda li')].map((l) => l.innerText.replace(/\s+/g, ' ').trim()),
+      }));
+    const enMinuscula = (t) => t.charAt(0).toLowerCase() + t.slice(1);
+    const todos = cortesEsperados(peso, desde90);
+    await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia,antropometria.peso')}&p=90`);
+    const cortesEn90 = await cortes();
+    if (todos.length >= 2) {
+      comprobar(
+        'E-30',
+        'Con varios cambios de protocolo en el período, el gráfico del peso marca cada uno con un número y la leyenda dice su fecha y su motivo; el de calorías no marca cortes (sus tramos son huecos)',
+        cortesEn90.porGrafico[1].lineas === todos.length &&
+          cortesEn90.porGrafico[1].rotulos.join() === todos.map((_, i) => String(i + 1)).join() &&
+          todos.every((c, i) => cortesEn90.leyenda.includes(`${i + 1} ${diaCivil(c.fecha)}: ${enMinuscula(c.motivo)} (no se compara con lo anterior)`)) &&
+          cortesEn90.porGrafico[0].lineas === 0,
+        `API: ${todos.map((c) => `${c.fecha} ${c.motivo}`).join('; ')} · ${JSON.stringify(cortesEn90)}`,
+      );
+      // Con uno solo a la vista, el motivo va escrito en el gráfico. El período empieza el día anterior a la toma que
+      // precede al último corte: así ese corte tiene un tramo anterior adentro del período, y es el único. Lo esperado
+      // sale de la misma lectura que hace la página, para ese período.
+      const tomas = [...peso.points].sort((a, b) => a.date.localeCompare(b.date));
+      const previa = tomas[tomas.findIndex((p) => p.date === todos.at(-1).fecha) - 1];
+      const desdeElUltimo = diaMenos(previa.date, 1);
+      const pesoDelTramo = (await leerApi(v, `/advisees/${estado.aseId}/projections/ANTHROPOMETRY_LONGITUDINAL?metric=peso&periodStart=${desdeElUltimo}&periodEnd=${hoy}`)).data.result.series[0];
+      const unoSolo = cortesEsperados(pesoDelTramo, desdeElUltimo);
+      await abrirAnalisis(`m=${encodeURIComponent('antropometria.peso')}&desde=${desdeElUltimo}&hasta=${hoy}`);
+      const cortesConUno = await cortes();
+      comprobar(
+        'E-30',
+        'Con un solo cambio de protocolo a la vista, el gráfico lo marca con su motivo y su fecha escritos, y la leyenda no lo repite',
+        unoSolo.length === 1 && cortesConUno.porGrafico[0].lineas === 1 && cortesConUno.porGrafico[0].rotulos.join() === `${unoSolo[0].motivo} · ${diaYMes(unoSolo[0].fecha)}` && !cortesConUno.leyenda.some((l) => /no se compara con lo anterior/.test(l)),
+        `del ${desdeElUltimo} al ${hoy} · API: ${unoSolo.map((c) => `${c.fecha} ${c.motivo}`).join('; ')} · ${JSON.stringify(cortesConUno)}`,
+      );
+    } else {
+      informar('E-30', 'Los cortes del peso en el escenario', `${todos.length} en 90 días: no alcanzan para comprobar los dos casos`);
+    }
+
+    // E-31 · Las líneas de los hitos, solo con su lista abierta ─────────────────────────────────────────
+    await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia,nutricion.proteinas')}&p=90`);
+    const lineasDeHitos = () => figuras(() => [...document.querySelectorAll('figure.grafico__figura')].map((f) => [...f.querySelectorAll('.recharts-reference-line-line')].filter((l) => l.getAttribute('stroke-dasharray') === '2 4').length));
+    const hitosCerrados = await lineasDeHitos();
+    await clic(page, '.pie-de-graficos button', 'Hitos (');
+    await page.waitForSelector('.bajo-los-graficos .hitos li', { timeout: 5_000 });
+    await pausa(300);
+    const listados = await page.$$eval('.bajo-los-graficos .hitos li', (l) => l.length);
+    const hitosAbiertos = await lineasDeHitos();
+    await clic(page, '.pie-de-graficos button', 'Hitos (');
+    await page.waitForFunction(() => !document.querySelector('.bajo-los-graficos'), { timeout: 5_000 });
+    await pausa(300);
+    const hitosVueltosACerrar = await lineasDeHitos();
+    comprobar(
+      'E-31',
+      'Las líneas de los hitos no se dibujan con su lista cerrada; al abrir «Hitos», cada gráfico dibuja una por hito de la lista, y al cerrarla se van',
+      listados > 0 && hitosCerrados.every((n) => n === 0) && hitosAbiertos.length === 2 && hitosAbiertos.every((n) => n === listados) && hitosVueltosACerrar.every((n) => n === 0),
+      `${listados} hitos en la lista · líneas por gráfico: cerrada ${hitosCerrados.join('/')}, abierta ${hitosAbiertos.join('/')}, cerrada otra vez ${hitosVueltosACerrar.join('/')}`,
+    );
+
+    // E-35 · La lectura: el valor grande y, debajo, cómo leerlo ─────────────────────────────────────────
+    // Un día terminado y completo de la API (no el día en curso, ni un subtotal).
+    const completo = [...nut.recorded.points].reverse().find((p) => p.date !== hoy && p.value !== null && !p.partialBucket && p.quality !== 'PARTIAL');
+    if (completo) {
+      await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia')}&p=90&f=${completo.date}`);
+      const lectura = await page.evaluate(() => ({
+        titulo: document.querySelector('.panel-de-lectura h3')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+        valor: document.querySelector('.dato-de-lectura__valor')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+        grande: Number.parseFloat(getComputedStyle(document.querySelector('.dato-de-lectura__valor')).fontSize) > Number.parseFloat(getComputedStyle(document.querySelector('.panel-de-lectura__metrica')).fontSize) * 1.3,
+        origen: [...document.querySelectorAll('.panel-de-lectura__metrica button')].map((b) => b.textContent.replace(/\s+/g, ' ').trim()),
+        irAUnaFecha: document.querySelector('.lectura__fecha input[type="date"]')?.value ?? '',
+      }));
+      comprobar(
+        'E-35',
+        'La lectura de un día completo dice su fecha, el valor de la API en grande con su unidad, «Ver origen» con el nombre de la métrica y el campo «Ir a una fecha» con esa fecha',
+        lectura.titulo.includes(diaCivil(completo.date)) && lectura.valor === `${dominio.numero(Math.round(completo.value))} kcal` && lectura.grande && lectura.origen.join() === 'Ver origen de Calorías' && lectura.irAUnaFecha === completo.date,
+        `API: ${completo.date} = ${completo.value} kcal · ${JSON.stringify(lectura)}`,
+      );
+    } else {
+      informar('E-35', 'La lectura de un día completo', 'el escenario no tiene un día terminado y completo en 90 días');
+    }
+
+    // E-36 · La leyenda dice solo lo que está dibujado ──────────────────────────────────────────────────
+    // Una semana terminada, con valor todos los días y sin subtotales: ahí no hay nada que explicar.
+    const dias = nut.recorded.points.filter((p) => p.date !== hoy);
+    const limpio = (p) => p.value !== null && !p.partialBucket && p.quality !== 'PARTIAL';
+    let semanaLimpia = null;
+    for (let fin = diaMenos(hoy, 1); fin >= diaMenos(desde90, -6) && !semanaLimpia; fin = diaMenos(fin, 1)) {
+      const inicio = diaMenos(fin, 6);
+      const deLaSemana = dias.filter((p) => p.date >= inicio && p.date <= fin);
+      if (deLaSemana.length === 7 && deLaSemana.every(limpio)) semanaLimpia = { desde: inicio, hasta: fin };
+    }
+    await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia')}&p=90`);
+    const leyendaEn90 = await textos(page, '.tarjeta-de-graficos .leyenda li');
+    if (semanaLimpia) {
+      await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia')}&desde=${semanaLimpia.desde}&hasta=${semanaLimpia.hasta}`);
+      const sinLeyenda = await page.evaluate(() => ({ leyenda: document.querySelectorAll('.tarjeta-de-graficos .leyenda').length, marcas: document.querySelectorAll('figure.grafico__figura g.grafico__elegible').length }));
+      comprobar(
+        'E-36',
+        'Con el día en curso a la vista, la leyenda explica el punto hueco; en una semana terminada y completa (siete puntos llenos) no hay leyenda: un estado que no aparece no ocupa lugar',
+        leyendaEn90.some((l) => /^Hueco: subtotal/.test(l)) && sinLeyenda.leyenda === 0 && sinLeyenda.marcas === 7,
+        `90 días: ${leyendaEn90.join(' | ')} · del ${semanaLimpia.desde} al ${semanaLimpia.hasta}: ${JSON.stringify(sinLeyenda)}`,
+      );
+    } else {
+      informar('E-36', 'La leyenda en una semana completa', 'el escenario no tiene siete días seguidos completos en 90 días');
+    }
+
+    // El aro de la fecha elegida, entero ────────────────────────────────────────────────────────────
+    // Con 90 días a la vista, el último punto queda a medio día del borde derecho del gráfico: el aro tiene que verse
+    // entero (antes iba adentro del grupo de puntos de la línea, que recharts recorta al área de dibujo).
+    await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia,nutricion.proteinas')}&p=90`);
+    const aros = () =>
+      figuras(() =>
+        [...document.querySelectorAll('figure.grafico__figura')].map((f) => {
+          const svg = f.querySelector('svg.recharts-surface').getBoundingClientRect();
+          const marca = f.querySelector('g.grafico__elegible[data-elegido] circle')?.getBoundingClientRect();
+          return [...f.querySelectorAll('g.grafico__aro circle')].map((c) => {
+            const r = c.getBoundingClientRect();
+            let recortado = false;
+            for (let e = c; e && e.tagName.toLowerCase() !== 'svg'; e = e.parentElement) if (e.hasAttribute('clip-path') || getComputedStyle(e).clipPath !== 'none') recortado = true;
+            return {
+              entero: r.left >= svg.left - 0.5 && r.right <= svg.right + 0.5 && r.top >= svg.top - 0.5 && r.bottom <= svg.bottom + 0.5,
+              recortado,
+              rodea: !!marca && r.left < marca.left && r.right > marca.right && r.top < marca.top && r.bottom > marca.bottom,
+            };
+          });
+        }),
+      );
+    const enteros = (a) => a.length === 2 && a.every((x) => x.length === 1 && x[0].entero && !x[0].recortado && x[0].rodea);
+    const arosVistos = await aros();
+    const recortar = await page.addStyleTag({ content: 'figure.grafico__figura g.grafico__aro { clip-path: inset(0 60% 0 0); }' });
+    await pausa(200);
+    const arosRecortados = await aros();
+    await recortar.evaluate((e) => e.remove());
+    comprobar('E-39', 'Con 90 días a la vista, el aro de la fecha elegida (la última) rodea su marca y se ve entero en cada gráfico: nada lo recorta contra el borde', enteros(arosVistos), JSON.stringify(arosVistos));
+    comprobar('E-39', 'La medición detecta un aro recortado (la prueba de la prueba)', !enteros(arosRecortados) && arosRecortados.every((x) => x.every((a) => a.recortado)), JSON.stringify(arosRecortados));
+
+    // E-32 · El encabezado de cada gráfico y las fechas, una sola vez ───────────────────────────────────
+    await abrirAnalisis(`m=${encodeURIComponent(TRES)}&p=90`);
+    const encabezados = await figuras(() =>
+      [...document.querySelectorAll('figure.grafico__figura')].map((f) => ({
+        titulo: f.querySelector('.grafico__titulo strong')?.innerText.trim() ?? '',
+        detalle: f.querySelector('.grafico__detalle')?.innerText.trim() ?? '',
+        cobertura: f.querySelector('.grafico__cobertura')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+        fechas: f.querySelectorAll('.recharts-xAxis-tick-labels text').length,
+        marcasDelEje: f.querySelectorAll('.recharts-xAxis .recharts-cartesian-axis-tick-line').length,
+      })),
+    );
+    comprobar(
+      'E-32',
+      'Cada gráfico dice en su encabezado el nombre, qué es cada punto y su unidad, y la cobertura; las fechas se escriben una sola vez, bajo el último, y los demás conservan las marcas del eje',
+      encabezados.length === 3 &&
+        encabezados.map((e) => `${e.titulo} ${e.detalle}`).join(' | ') === 'Calorías registradas por día · kcal | Proteínas registradas por día · g | Peso cada toma · kg' &&
+        /^90 días: \d+ con valor/.test(encabezados[0].cobertura) &&
+        /^\d+ tomas?/.test(encabezados[2].cobertura) &&
+        encabezados[0].fechas === 0 &&
+        encabezados[1].fechas === 0 &&
+        encabezados[2].fechas > 1 &&
+        encabezados.every((e) => e.marcasDelEje > 1 && e.marcasDelEje === encabezados[2].marcasDelEje),
+      JSON.stringify(encabezados),
+    );
+
+    // Accesibilidad con todo desplegado, en los dos temas: los controles nuevos (segmentos, etiquetas, paneles).
+    await abrirMasAcciones(page);
+    await abrirDelPie(page, 'Tabla de datos', '.tabla-de-datos');
+    const temaInicial = await page.evaluate(() => document.documentElement.dataset.tema);
+    const violaciones = {};
+    for (const tema of ['claro', 'azul-noche']) {
+      await ponerTema(page, tema);
+      await pausa(300);
+      violaciones[tema] = await axe(page);
+    }
+    await ponerTema(page, temaInicial);
+    comprobar(
+      'PRO-22',
+      'Analizar recompuesto, con «Más acciones» y la tabla de datos abiertos: axe no encuentra faltas de WCAG 2.2 AA en ninguno de los dos temas',
+      violaciones.claro.length === 0 && violaciones['azul-noche'].length === 0,
+      JSON.stringify(violaciones),
+    );
+    comprobar('PRO-25', 'Sin errores de JavaScript ni respuestas con error de la API durante el recorrido de Analizar recompuesto', v.errores.length === 0 && v.malas.length === 0, [...v.errores, ...v.malas].slice(0, 4).join(' · ') || 'ninguno');
+  } finally {
+    await navegador.close();
+  }
 }
 
 // ─── El encabezado, el menú de la cuenta y las tarjetas de preguntas (WP-ESCRITORIO-AMABLE, E-17 y E-18) ─────────────
@@ -1295,7 +1894,7 @@ async function capturas() {
         if (ancho >= 1280) {
           await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent(TRES)}`);
           await quieto(page, v);
-          await comprobarGraficos(page, 'PRO-08', `Paneles a ${ancho} px en ${tema}: los tres dibujados y a la vista`, { figuras: 3, colores: [[1], [2], [3]] });
+          await comprobarGraficos(page, 'PRO-08', `Separadas a ${ancho} px en ${tema}: los tres dibujados y a la vista`, { figuras: 3, colores: [[1], [2], [3]] });
           for (const [modo, letra, opciones] of [
             ['superpuestas', 'S', { figuras: 1, curvas: 2, colores: [[1, 2]] }],
             ['relativo', 'R', { figuras: 1, curvas: 2, banda: true, colores: [[1, 2]] }],
@@ -1303,7 +1902,7 @@ async function capturas() {
             await cupo(v);
             await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent('nutricion.proteinas,nutricion.carbohidratos')}&modo=${letra}`);
             await quieto(page, v);
-            await comprobarGraficos(page, 'PRO-08', `${modo === 'relativo' ? 'Cambio relativo' : 'Superpuestas'} a ${ancho} px en ${tema}: dibujado y a la vista`, opciones);
+            await comprobarGraficos(page, 'PRO-08', `${modo === 'relativo' ? 'Cambio relativo' : 'Juntas'} a ${ancho} px en ${tema}: dibujado y a la vista`, opciones);
             await page.evaluate(() => window.scrollTo(0, 0));
             const c = await captura(page, v, `analizar-${modo}-${ancho}-${tema}`);
             comprobar('PRO-08', `La captura analizar-${modo}-${ancho}-${tema} tiene el gráfico dibujado`, c.figuras === 1 && c.dibujadas === 1 && c.despues === 1, `${c.dibujadas} de ${c.figuras}`);
@@ -1362,10 +1961,11 @@ async function descartable() {
     await quieto(pro.page, pro.v);
     const lectura = await texto(pro.page, '.panel-de-lectura');
     comprobar('PRO-10', 'La lectura del día de la toma reportada dice «Reportado por la persona, no medido»', /80,5 kg/.test(lectura) && /Clase de dato: Reportado por la persona, no medido/.test(lectura), lectura.slice(0, 220));
-    await abrirDetalles(pro.page, 'details.tabla-de-datos');
-    const tabla = await texto(pro.page, 'details.tabla-de-datos');
+    await abrirDelPie(pro.page, 'Tabla de datos', '.tabla-de-datos');
+    const tabla = await texto(pro.page, '.tabla-de-datos');
     // WP-DASHBOARD-COMPRENSION: calculado no es siempre estimado; el IMC es un índice y la tabla lo dice.
     comprobar('PRO-10', 'La tabla de datos marca el peso reportado y el IMC calculado (un índice, no una estimación); lo medido va sin marca', /80,5 kg \(reportado por la persona, no medido\)/.test(tabla) && /\(calculado: un índice calculado sobre medidas, no una estimación\)/.test(tabla) && /81,2 kg(?! \()/.test(tabla), tabla.slice(0, 260));
+    await abrirMasAcciones(pro.page);
     await clic(pro.page, 'button', 'Descargar los datos (CSV)');
     const { archivo, csv } = await esperarCsv();
     const lineasCsv = csv.split('\r\n');
@@ -1381,7 +1981,7 @@ async function descartable() {
         filasCsv.filter((x) => x[16].startsWith('Calculado: un índice calculado sobre medidas, no una estimación')).map((x) => x[6]).sort().join(' ') === d.imc.map((c) => c.valor.toFixed(2).replace('.', ',')).sort().join(' '),
       `${archivo} · ${filasCsv.map((x) => `${x[6]}: ${x[16]}`).join(' · ')}`,
     );
-    await clic(pro.page, '.panel-de-lectura button', 'Ver el origen de este dato');
+    await clic(pro.page, '.panel-de-lectura button', 'Ver origen');
     await pro.page.waitForSelector('dialog[open]');
     await quieto(pro.page, pro.v);
     const origenAntes = await texto(pro.page, 'dialog[open]');
@@ -1426,6 +2026,7 @@ async function descartable() {
     // a) La exportación vuelve a preguntar antes de armar el archivo: no sale ninguno, y lo dice.
     try {
       const antes = fs.readdirSync(DESCARGAS).filter((x) => x.endsWith('.csv'));
+      await abrirMasAcciones(pro2.page);
       await clic(pro2.page, 'button', 'Descargar los datos (CSV)');
       await pro2.page.waitForFunction(() => /No se descargó ningún archivo|Descargado:/.test(document.querySelector('.exportar')?.innerText ?? ''), { timeout: 20_000 }).catch(() => {});
       const aviso = await texto(pro2.page, '.exportar');
@@ -1444,7 +2045,7 @@ async function descartable() {
       await pro2.navegador.close();
     }
     // b) El origen de un punto que seguía en pantalla: ya no se muestra, y los gráficos se vuelven a pedir.
-    await clic(pro.page, '.panel-de-lectura button', 'Ver el origen de este dato');
+    await clic(pro.page, '.panel-de-lectura button', 'Ver origen');
     await pro.page.waitForSelector('dialog[open]');
     await quieto(pro.page, pro.v);
     const origenDespues = await texto(pro.page, 'dialog[open]');
@@ -1489,6 +2090,7 @@ try {
   if (modo === 'capturas' || modo === 'todo') await capturas();
   if (modo === 'descartable') await descartable();
   if (modo === 'menu') await encabezadoYMenu();
+  if (modo === 'analizar') await analizarRecompuesto();
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {

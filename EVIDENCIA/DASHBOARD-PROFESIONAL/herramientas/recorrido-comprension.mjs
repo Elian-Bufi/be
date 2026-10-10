@@ -182,6 +182,25 @@ async function ponerTema(page, tema) {
   await page.evaluate(() => document.querySelector('.menu-de-cuenta__boton').click());
   await page.waitForFunction(() => !document.querySelector('.menu-de-cuenta__panel'), { timeout: 3_000 });
 }
+/**
+ * «Más acciones» guarda lo que se usa de vez en cuando en Analizar (WP-ESCRITORIO-AMABLE, C-08): las vistas guardadas, la
+ * descarga, las capas, el intervalo con fechas y la comparación de dos períodos. Lo abre si está cerrado.
+ */
+async function abrirMasAcciones(page) {
+  if (await page.$('.mas-acciones')) return;
+  await clic(page, '.pregunta-en-curso__acciones button', 'Más acciones');
+  await page.waitForSelector('.mas-acciones', { timeout: 5_000 });
+}
+
+/**
+ * El pie de los gráficos abre, debajo de ellos, la tabla de datos, el resumen en texto, los hitos, las etapas o «Cómo se
+ * calcula»: una cosa a la vez. Abre la que se pide, si no está, y espera a que aparezca.
+ */
+async function abrirDelPie(page, texto, selector) {
+  if (await page.$(selector)) return;
+  await clic(page, '.pie-de-graficos button', texto);
+  await page.waitForSelector(selector, { timeout: 5_000 });
+}
 /** Hace clic (con el mouse) en el primer elemento visible y habilitado que contiene el texto. */
 async function clic(page, selector, contiene) {
   const marca = `r${Math.random().toString(36).slice(2)}`;
@@ -703,7 +722,7 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   // La evidencia: el origen del punto elegido, al costado, y la vuelta sin perder nada (CP-21).
   const urlAntes = page.url();
   const yAntes = await page.evaluate(() => window.scrollY);
-  const marca = await clic(page, '.panel-de-lectura button', 'Ver el origen de este dato');
+  const marca = await clic(page, '.panel-de-lectura button', 'Ver origen');
   await page.waitForSelector('dialog[open]');
   await quieto(page, v);
   const dialogo = await texto(page, 'dialog[open]');
@@ -712,7 +731,7 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   const foco = await page.evaluate(() => document.activeElement?.getAttribute('data-recorrido'));
   comprobar('CP-21', 'El origen del punto se abre al costado (la sesión) y al cerrarlo con Esc la vista sigue igual, con el foco en el disparador', /Sesión|sesión/.test(dialogo) && page.url() === urlAntes && foco === marca, `foco ${foco === marca ? 'en el disparador' : foco} · scroll ${yAntes} · ${dialogo.slice(0, 120)}`);
   // Ir al registro completo y volver con la configuración (la pestaña del área lleva `volver`).
-  await clic(page, '.panel-de-lectura button', 'Ver el origen de este dato');
+  await clic(page, '.panel-de-lectura button', 'Ver origen');
   await page.waitForSelector('dialog[open]');
   await quieto(page, v);
   await clic(page, 'dialog[open] a', 'Ver en Entrenamiento');
@@ -952,7 +971,7 @@ async function coberturaConHuecos(page, v, carpeta) {
   await quieto(page, v);
   const fila = await page.evaluate(() => {
     const t = [...document.querySelectorAll('table')].find((x) => x.querySelector('caption')?.textContent.includes('Comparación de los dos períodos'));
-    const f = [...(t?.querySelectorAll('tbody tr') ?? [])].find((r) => r.querySelector('th')?.textContent.startsWith('Energía'));
+    const f = [...(t?.querySelectorAll('tbody tr') ?? [])].find((r) => r.querySelector('th')?.textContent.startsWith('Calorías'));
     return f ? [...f.querySelectorAll('td')].map((c) => c.innerText.replace(/\s+/g, ' ').trim()) : [];
   });
   const kcal = (t) => Number((/^([\d.]+(?:,\d+)?) kcal/.exec(t ?? '')?.[1] ?? 'NaN').replace(/\./g, '').replace(',', '.'));
@@ -1004,7 +1023,7 @@ async function recorridoEtapas(page, v, carpeta) {
   const esperadoA = media(vA.from, diaMenos(vA.to, 1));
   const esperadoB = media(vB.from, hoy);
   const fila = async () => page.evaluate(() => {
-    const f = [...document.querySelectorAll('.tabla-de-etapas tbody tr')].find((r) => r.querySelector('th')?.textContent.startsWith('Energía'));
+    const f = [...document.querySelectorAll('.tabla-de-etapas tbody tr')].find((r) => r.querySelector('th')?.textContent.startsWith('Calorías'));
     return f ? [...f.querySelectorAll('td')].map((c) => c.innerText.replace(/\s+/g, ' ').trim()) : [];
   });
   const energia = await fila();
@@ -1012,7 +1031,7 @@ async function recorridoEtapas(page, v, carpeta) {
   const diferencia = Number((/([−-]?[\d.]+) kcal/.exec(energia[3] ?? '')?.[1] ?? 'NaN').replace('−', '-').replace(/\./g, ''));
   comprobar(
     'CP-18',
-    'Energía por etapa: la media de los días con valor y la cobertura en días de la etapa, calculadas a mano con los puntos de la API, coinciden con la tabla (y la diferencia también)',
+    'Calorías por etapa: la media de los días con valor y la cobertura en días de la etapa, calculadas a mano con los puntos de la API, coinciden con la tabla (y la diferencia también)',
     Math.round(esperadoA.media) === numeroDe(energia[1]) &&
       Math.round(esperadoB.media) === numeroDe(energia[2]) &&
       Math.abs(diferencia - (esperadoB.media - esperadoA.media)) <= 1 &&
@@ -1033,8 +1052,8 @@ async function recorridoEtapas(page, v, carpeta) {
     return {
       aMano: aMano ? { abierta: aMano.open, justoDebajo: etapas?.nextElementSibling === aMano, rotulo: aMano.querySelector('summary')?.textContent ?? '' } : null,
       seccionAlFinal: [...document.querySelectorAll('.analizar h3')].some((h) => h.textContent === 'Comparar dos períodos'),
-      resumenPlegado: !!document.querySelector('details.resumen-en-texto--plegado') && !document.querySelector('section.resumen-en-texto'),
-      listaDeEtapas: !!document.querySelector('details.etapas-del-grafico'),
+      resumenPlegado: [...document.querySelectorAll('.pie-de-graficos button')].some((b) => b.textContent.includes('Resumen en texto') && b.getAttribute('aria-expanded') === 'false') && !document.querySelector('section.resumen-en-texto'),
+      listaDeEtapas: !!document.querySelector('.etapas-del-grafico') || [...document.querySelectorAll('.pie-de-graficos button')].some((b) => b.textContent.includes('Comparar etapas')),
       causa: veces(/no indica causa/g),
       noSeRestan: veces(/No se restan totales/g),
       letraDeLaCobertura: parseFloat(getComputedStyle(document.querySelector('.tabla-de-etapas .celda__detalle')).fontSize),
@@ -1057,9 +1076,10 @@ async function recorridoEtapas(page, v, carpeta) {
   await captura(page, v, carpeta, 'r4-etapas-con-graficos');
   // CP-17: agrupar por semana y acercar no cambian la tabla ni la referencia fija.
   const tablaAntes = await texto(page, '.tabla-de-etapas');
-  await clic(page, '.capa', 'Semana');
+  await clic(page, '.modos-de-analizar label', 'Semana');
   await quieto(page, v);
   const conSemana = await texto(page, '.tabla-de-etapas');
+  await abrirMasAcciones(page);
   await abrirDetalles(page, 'details.intervalo');
   await page.evaluate(() => document.querySelectorAll('details.intervalo input[type="date"]').forEach((c, i) => c.setAttribute('data-intervalo', i === 0 ? 'desde' : 'hasta')));
   await fijarFecha(page, '[data-intervalo="desde"]', diaMenos(hoy, 40));
@@ -1070,6 +1090,7 @@ async function recorridoEtapas(page, v, carpeta) {
   comprobar('CP-17', 'Agrupar por semana y acercar el gráfico no cambian la tabla A/B (resume las observaciones originales) ni la referencia fija', tablaAntes === conSemana && conSemana === conZoom && parametros(page).get('ref') === '14' && parametros(page).get('g') === 'W', `g=${parametros(page).get('g')} · ref=${parametros(page).get('ref')}`);
   // CP-26: guardar la vista con la pregunta, reabrirla, y en otro asesorado las etapas se piden de nuevo.
   const nombre = `Etapas ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+  await abrirMasAcciones(page);
   await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
   await page.type('details.vistas-guardadas input', nombre);
   await clic(page, 'details.vistas-guardadas button', 'Guardar esta vista');
@@ -1082,7 +1103,8 @@ async function recorridoEtapas(page, v, carpeta) {
   await quieto(page, v);
   await ir(page, `${FICHA_A}&vista=analizar&m=nutricion.energia`);
   await quieto(page, v);
-  await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
+  await abrirMasAcciones(page);
+  if (!(await page.$('details.vistas-guardadas[open]'))) await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
   await quieto(page, v);
   await clic(page, 'details.vistas-guardadas button', `Abrir ${nombre}`);
   await quieto(page, v);
@@ -1092,7 +1114,9 @@ async function recorridoEtapas(page, v, carpeta) {
     await cupo(v);
     await ir(page, `${FICHA_E}&vista=analizar&m=nutricion.energia`);
     await quieto(page, v);
-    await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
+    await abrirMasAcciones(page);
+    // El plegable puede haber quedado abierto del asesorado anterior (el panel no se desarma al cambiar de ficha).
+    if (!(await page.$('details.vistas-guardadas[open]'))) await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
     await quieto(page, v);
     await clic(page, 'details.vistas-guardadas button', `Abrir ${nombre}`);
     await quieto(page, v);
@@ -1118,29 +1142,43 @@ async function clasesDelDato(page, v, descargas, carpeta = null) {
   await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent('antropometria.peso,antropometria.imc')}&g=O&f=${fechaReportada}`);
   await quieto(page, v);
   const lectura = await texto(page, '.panel-de-lectura');
-  // El punto elegido lleva un aro (un círculo sin relleno, en el color del texto) dibujado DEBAJO de su marca: el grupo
-  // conserva la clase (`data-clase`) y la forma de la clase sigue encima del aro.
-  const elegido = await page.evaluate(() => {
-    const grupos = [...document.querySelectorAll('figure.grafico__figura g.grafico__elegible')];
-    const g = grupos.find((x) => x.querySelector('circle[fill="none"][stroke="var(--texto)"]'));
-    const aro = g?.querySelector('circle[fill="none"][stroke="var(--texto)"]');
-    return { hay: !!g, clase: g?.getAttribute('data-clase') ?? null, marcas: g ? g.children.length : 0, aroPrimero: g ? g.firstElementChild === aro : false };
-  });
+  // El punto elegido lleva un aro (un círculo sin relleno, en el color del texto) ALREDEDOR de su marca, en una capa
+  // aparte de las líneas (WP-ESCRITORIO-AMABLE: adentro del grupo de la marca se recortaba contra el borde del gráfico).
+  // Lo que se protege es lo mismo: el grupo conserva la clase (`data-clase`) y su forma, y el aro no la tapa: tiene el
+  // mismo centro que la marca y un radio mayor (un aro de menos radio, o relleno, taparía el contorno cortado).
+  const marcaElegida = () =>
+    page.evaluate(() => {
+      const g = document.querySelector('figure.grafico__figura g.grafico__elegible[data-elegido][data-clase="REPORTED"]') ?? document.querySelector('figure.grafico__figura g.grafico__elegible[data-elegido]');
+      const figura = g?.closest('figure.grafico__figura');
+      const circulo = (c) => ({ x: Number(c.getAttribute('cx')), y: Number(c.getAttribute('cy')), r: Number(c.getAttribute('r')), relleno: c.getAttribute('fill') });
+      const marca = g?.querySelector('circle') ? circulo(g.querySelector('circle')) : null;
+      const aros = figura ? [...figura.querySelectorAll('.grafico__aro circle')].filter((c) => getComputedStyle(c).visibility !== 'hidden').map(circulo) : [];
+      const aro = marca ? (aros.find((a) => Math.abs(a.x - marca.x) < 0.75 && Math.abs(a.y - marca.y) < 0.75) ?? null) : null;
+      return { hay: !!g, clase: g?.getAttribute('data-clase') ?? null, formas: g ? g.querySelectorAll('circle').length : 0, radioDeLaMarca: marca?.r ?? null, aro: aro ? { r: aro.r, relleno: aro.relleno } : null };
+    });
+  const rodeaSinTapar = (e) => e.hay && e.clase === 'REPORTED' && e.formas >= 1 && e.aro !== null && e.aro.relleno === 'none' && e.aro.r > (e.radioDeLaMarca ?? Infinity) + 1;
+  const elegido = await marcaElegida();
   comprobar(
     'CP-12',
-    'Al elegir el punto reportado, la lectura dice «Reportado por la persona, no medido» y el punto conserva su clase: el aro va debajo de la marca de la clase',
-    /Reportado por la persona, no medido/.test(lectura) && elegido.hay && elegido.clase === 'REPORTED' && elegido.marcas >= 2 && elegido.aroPrimero,
+    'Al elegir el punto reportado, la lectura dice «Reportado por la persona, no medido» y el punto conserva su clase: el aro rodea la marca de la clase sin taparla',
+    /Reportado por la persona, no medido/.test(lectura) && rodeaSinTapar(elegido),
     `${lectura.slice(0, 160)} · marca elegida: ${JSON.stringify(elegido)}`,
   );
+  // La prueba de la prueba: sin el aro, la comprobación anterior tiene que fallar (si no, no estaría mirando el aro).
+  const sinAro = await page.addStyleTag({ content: 'figure.grafico__figura .grafico__aro circle { visibility: hidden !important; }' });
+  const elegidoSinAro = await marcaElegida();
+  await sinAro.evaluate((e) => e.remove());
+  comprobar('CP-12', 'La prueba de la prueba: con el aro oculto, la comprobación del punto elegido falla', !rodeaSinTapar(elegidoSinAro) && elegidoSinAro.hay, `sin el aro: ${JSON.stringify(elegidoSinAro)}`);
   if (carpeta) await captura(page, v, carpeta, 'cp12-punto-elegido-reportado');
   // CP-13: el IMC es un índice, no una estimación; el método se nombra.
   await ir(page, `${FICHA_A}&vista=analizar&m=antropometria.imc&g=O`);
   await quieto(page, v);
   const lecturaImc = await texto(page, '.panel-de-lectura');
-  await abrirDetalles(page, 'details.tabla-de-datos');
-  const tabla = await texto(page, 'details.tabla-de-datos');
+  await abrirDelPie(page, 'Tabla de datos', '.tabla-de-datos');
+  const tabla = await texto(page, '.tabla-de-datos');
   comprobar('CP-13', 'El IMC se dice calculado (un índice, no una estimación), con su método, en la lectura y en la tabla', /Calculado: un índice calculado sobre medidas, no una estimación/.test(lecturaImc) && /Índice de masa corporal \(IMC\)/.test(lecturaImc) && /un índice calculado sobre medidas, no una estimación/.test(tabla) && !/estimación\)/.test(tabla.replaceAll('no una estimación', '')), lecturaImc.slice(0, 220));
   const anteriores = fs.readdirSync(descargas).filter((x) => x.endsWith('.csv'));
+  await abrirMasAcciones(page);
   await clic(page, 'button', 'Descargar los datos (CSV)');
   const { archivo, csv } = await esperarCsv(descargas, anteriores);
   const lineas = csv.split('\r\n');
@@ -1425,7 +1463,7 @@ async function revocacion() {
       await ase.navegador.close();
     }
     // Primera pestaña: abrir el origen de un punto descubre la revocación; la cabecera y la ficha se actualizan solas.
-    await clic(pro.page, '.panel-de-lectura button', 'Ver el origen de este dato');
+    await clic(pro.page, '.panel-de-lectura button', 'Ver origen');
     await pro.page.waitForSelector('dialog[open]');
     await quieto(pro.page, pro.v);
     const origen = await texto(pro.page, 'dialog[open]');
@@ -1447,6 +1485,7 @@ async function revocacion() {
     await captura(pro.page, pro.v, carpeta, 'r5-revocado-resumen');
     // Segunda pestaña, con los datos viejos en pantalla: exportar vuelve a consultar y no sale ningún archivo.
     const antes = fs.readdirSync(descargas).filter((x) => x.endsWith('.csv'));
+    await abrirMasAcciones(pro2.page);
     await clic(pro2.page, 'button', 'Descargar los datos (CSV)');
     await pro2.page.waitForFunction(() => /No se descargó ningún archivo|Descargado:/.test(document.querySelector('.exportar')?.innerText ?? ''), { timeout: 20_000 }).catch(() => {});
     await pausa(1500);

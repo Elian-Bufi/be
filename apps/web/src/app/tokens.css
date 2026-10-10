@@ -66,9 +66,10 @@
   --grafico-registrado: #c2410c;
   --grafico-hueco: #6b7a90;
   /* Las tres métricas de «Analizar» (WP-DASHBOARD-PROFESIONAL): azul, violeta y verde azulado. Ni rojo ni verde, que se
-     leerían como juicio, ni el ámbar del foco (`scripts/contraste.test.cjs` mide la diferencia perceptual). Además del
-     color, cada una tiene forma (círculo, cuadrado o triángulo), trazo (continuo, rayado o punteado) y su nombre en la
-     leyenda y la tabla (WCAG 1.4.1). */
+     leerían como juicio, ni el ámbar del foco (`scripts/contraste.test.cjs` mide la diferencia perceptual). Todas las
+     marcas son puntos (WP-ESCRITORIO-AMABLE, C-16): además del color, cada métrica lleva su nombre en el encabezado de
+     su gráfico, al final de su línea cuando comparten uno, en la lectura y en la tabla (WCAG 1.4.1). El gris de los
+     días sin registros de «Analizar» es `--grafico-hueco`, con transparencia. */
   --metrica-1: #0b62a4;
   --metrica-2: #7b3fb5;
   --metrica-3: #00708a;

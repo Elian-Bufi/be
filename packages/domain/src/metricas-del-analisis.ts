@@ -98,10 +98,12 @@ function nutricional(id: string, nombre: string, nombreCorto: string, parametro:
 }
 
 const DE_NUTRICION: readonly DefinicionDeMetrica[] = [
-  nutricional('nutricion.energia', 'Energía registrada', 'Energía', 'ENERGY', 'kcal', 0, 'energia-kcal'),
-  nutricional('nutricion.proteinas', 'Proteínas registradas', 'Proteínas', 'PROTEIN', 'g', 1, 'macronutriente-g'),
+  // A la vista se llaman «Calorías» (WP-ESCRITORIO-AMABLE, C-28); el identificador y el parámetro no cambian. El orden
+  // es el de la APK: calorías, carbohidratos, grasas y proteínas (C-30).
+  nutricional('nutricion.energia', 'Calorías registradas', 'Calorías', 'ENERGY', 'kcal', 0, 'energia-kcal'),
   nutricional('nutricion.carbohidratos', 'Carbohidratos registrados', 'Carbohidratos', 'CARBOHYDRATE', 'g', 1, 'macronutriente-g'),
   nutricional('nutricion.grasas', 'Grasas registradas', 'Grasas', 'FAT', 'g', 1, 'macronutriente-g'),
+  nutricional('nutricion.proteinas', 'Proteínas registradas', 'Proteínas', 'PROTEIN', 'g', 1, 'macronutriente-g'),
   nutricional('nutricion.fibra', 'Fibra registrada', 'Fibra', 'FIBER', 'g', 1, 'macronutriente-g'),
   {
     id: 'nutricion.registros',
@@ -133,8 +135,8 @@ const DE_NUTRICION: readonly DefinicionDeMetrica[] = [
   {
     id: 'nutricion.energia-prevista-del-dia',
     area: 'NUTRICION',
-    nombre: 'Energía prevista del día',
-    nombreCorto: 'Energía prevista',
+    nombre: 'Calorías previstas del día',
+    nombreCorto: 'Calorías previstas',
     unidad: 'kcal',
     escala: 'RATIO',
     clase: 'INCOMPLETA',

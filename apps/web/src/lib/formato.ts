@@ -26,6 +26,8 @@ export const diaCivil = (fechaCivil: string) => (fechaCivil ? diaEnUtc.format(ne
  * distintos, cada fecha lleva el suyo («20 dic 2025 – 10 ene 2026»).
  */
 const diaYMesCortos = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+/** «17 ago»: una fecha civil sin el año, para el eje de un gráfico o un título que ya dice el período. */
+export const diaYMesCivil = (fechaCivil: string) => (fechaCivil ? diaYMesCortos.format(new Date(`${fechaCivil}T12:00:00Z`)) : '');
 export function rangoCivil(desde: string, hasta: string): string {
   if (!desde || !hasta) return '';
   if (desde.slice(0, 4) !== hasta.slice(0, 4)) return `${diaCivil(desde)} – ${diaCivil(hasta)}`;

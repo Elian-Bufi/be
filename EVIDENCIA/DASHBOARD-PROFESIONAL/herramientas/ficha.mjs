@@ -1,7 +1,8 @@
 // Mira la ficha del asesorado mientras se la rediseña (WP-ESCRITORIO-AMABLE): la primera pantalla de cada vista, en los
 // dos temas y a los tres anchos del escritorio (más 768 y 390 px, para ver que no se rompe), el control de período
 // abierto y el menú de la cuenta abierto. No comprueba nada: deja las imágenes y las medidas del encabezado y del marco.
-// Uso: node ficha.mjs <carpeta de salida> [vistas separadas por coma: resumen,linea,analizar]
+// Uso: node ficha.mjs <carpeta de salida> [vistas separadas por coma: resumen,linea,analizar,analizar-metricas,
+//      analizar-juntas,analizar-relativo]
 //   Lee BE_TRABAJO/estado.json e inicia sesión una sola vez. Necesita la API en :3001 y el website en :3000.
 import { enTrabajo } from './rutas.mjs';
 import fs from 'node:fs';
@@ -19,7 +20,17 @@ const WEB = 'http://localhost:3000';
 const ALTO = 900;
 const estado = JSON.parse(fs.readFileSync(enTrabajo('estado.json'), 'utf8'));
 const ficha = `/pro/advisees?id=${estado.aseId}`;
-const RUTA = { resumen: ficha, linea: `${ficha}&vista=linea`, analizar: `${ficha}&vista=analizar` };
+const TRES = encodeURIComponent('nutricion.energia,nutricion.proteinas,antropometria.peso');
+const DOS = encodeURIComponent('nutricion.proteinas,nutricion.carbohidratos');
+const RUTA = {
+  resumen: ficha,
+  linea: `${ficha}&vista=linea`,
+  analizar: `${ficha}&vista=analizar`,
+  // Analizar con gráficos: tres métricas separadas, dos juntas y dos en cambio relativo.
+  'analizar-metricas': `${ficha}&vista=analizar&m=${TRES}`,
+  'analizar-juntas': `${ficha}&vista=analizar&m=${DOS}&modo=S`,
+  'analizar-relativo': `${ficha}&vista=analizar&m=${DOS}&modo=R`,
+};
 const vistas = vistasPedidas.split(',').filter((v) => RUTA[v]);
 fs.mkdirSync(salida, { recursive: true });
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -64,6 +75,11 @@ const medidas = () =>
     cuerpoEmpiezaEn: Math.round(document.querySelector('.ficha__cuerpo')?.getBoundingClientRect().top ?? -1),
     altoDelMarco: Math.round(document.querySelector('.marco-de-la-ficha')?.getBoundingClientRect().height ?? -1),
     desbordeHorizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    // En Analizar con gráficos: hasta dónde llegan los gráficos y la lectura, y cuántos gráficos hay dibujados.
+    finDeLosGraficos: Math.round(document.querySelector('.tarjeta-de-graficos')?.getBoundingClientRect().bottom ?? -1),
+    finDelUltimoGrafico: Math.round([...document.querySelectorAll('figure.grafico__figura')].pop()?.getBoundingClientRect().bottom ?? -1),
+    finDeLaLectura: Math.round(document.querySelector('.tarjeta-de-lectura')?.getBoundingClientRect().bottom ?? -1),
+    graficos: document.querySelectorAll('figure.grafico__figura svg.recharts-surface').length,
   }));
 
 try {
@@ -90,6 +106,10 @@ try {
     // La sesión vive en memoria: se navega dentro de la aplicación, sin recargar.
     await page.evaluate((u) => window.next.router.push(u), RUTA[vista]);
     await asentar();
+    if (vista.startsWith('analizar-')) {
+      await page.waitForSelector('figure.grafico__figura svg.recharts-surface', { timeout: 20000 }).catch(() => {});
+      await esperar(600);
+    }
     for (const tema of ['claro', 'azul-noche']) {
       await ponerTema(tema);
       await foto(`${vista}-1440-${tema}`);

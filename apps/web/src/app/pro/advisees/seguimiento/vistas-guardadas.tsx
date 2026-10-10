@@ -45,6 +45,12 @@ const referenciaGuardada = (r: ReferenciaDelCambio): string =>
 const recuerdo: { abierto: boolean; aviso: string | null } = { abierto: false, aviso: null };
 
 /**
+ * Si se acaba de abrir una vista desde el comienzo de Analizar y su aviso todavía no se mostró: quien arma la pantalla
+ * abre «Más acciones», donde vive este panel, para que «Abierta: …» se vea (WP-ESCRITORIO-AMABLE).
+ */
+export const vistaRecienAbierta = (): boolean => recuerdo.abierto;
+
+/**
  * `soloAbrir`: al comienzo de Analizar (sin métricas ni pregunta) no hay nada que guardar: se listan las vistas para
  * retomarlas, sin el formulario de guardar ni «Guardar lo actual acá».
  */

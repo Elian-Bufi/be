@@ -129,7 +129,10 @@ describe('API-DSH-04 · línea de tiempo de nutrición', () => {
     expect(anulado.relations.find((x) => x.kind === 'ANNULLED')).toBeTruthy();
     const sinCantidades = r.data.entries.find((x) => x.timelineEntryId === `meal:${e.sinCantidades.recordId}`)!;
     expect(sinCantidades.quality).toContain('QUANTITIES_UNCONFIRMED');
-    expect(sinCantidades.details.find((d) => d.label === 'Energía registrada')).toBeUndefined();
+    // La etiqueta existe en un registro con cantidades: así la ausencia de abajo no pasa por un nombre que cambió.
+    const completo = r.data.entries.find((x) => x.timelineEntryId === `meal:${e.completo.recordId}`)!;
+    expect(completo.details.find((d) => d.label === 'Calorías registradas')?.value).toMatch(/ kcal$/);
+    expect(sinCantidades.details.find((d) => d.label === 'Calorías registradas')).toBeUndefined();
 
     // Sin puntajes, cumplimiento ni adherencia en ninguna parte de la respuesta.
     expect(clavesProhibidas(r)).toEqual([]);
