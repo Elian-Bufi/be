@@ -3269,6 +3269,12 @@ html:has(.acciones--fijas) {
   min-height: 44px;
 }
 
+/* El enlace de lo que está abierto debajo queda marcado: color del texto y subrayado más grueso. */
+.pie-de-graficos .boton--enlace[aria-expanded='true'] {
+  color: var(--texto);
+  text-decoration-thickness: 2px;
+}
+
 .pie-de-graficos__limite {
   margin: 0 0 0 auto;
   color: var(--tenue);
@@ -4251,15 +4257,62 @@ ul.modos-de-analizar__aviso {
   margin: 0;
 }
 
-/* Preguntas profesionales: tarjetas que se eligen con un botón (todo el bloque es el objetivo). */
-/* Todas del mismo tamaño: las filas miden lo mismo y cada tarjeta llena su celda (una descripción de una sola línea
-   dejaba una tarjeta más baja que su vecina). */
+/* ─── La entrada de Analizar: «¿Qué querés mirar?» (WP-ESCRITORIO-AMABLE, C-19) ───────────────── */
+/* Dos caminos, los dos a la vista: a la izquierda, las preguntas y las vistas guardadas; a la derecha, las métricas
+   para comparar sin pregunta. Cada camino es una tarjeta sobre el fondo de la página. Más angosto que 1024 px, una
+   debajo de la otra, en el orden del documento. */
+.entrada-de-analizar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  margin-top: 0.7rem;
+}
+
+@media (min-width: 64rem) {
+  .entrada-de-analizar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.entrada-de-analizar__columna {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.tarjeta-de-entrada {
+  min-width: 0;
+  padding: 0.9rem 1.2rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.tarjeta-de-entrada > h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* La bajada se alinea con el texto del título, después de su ícono. */
+.tarjeta-de-entrada__bajada {
+  margin: 0.2rem 0 0 calc(20px + 0.6rem);
+  color: var(--tenue);
+  font-size: 0.94rem;
+}
+
+/* Preguntas profesionales: una fila por pregunta, y toda la fila es el botón. */
+/* Todas del mismo tamaño (E-18): las filas de la lista miden lo mismo y cada botón llena la suya (una descripción de
+   una sola línea dejaba una más baja que su vecina). */
 .preguntas-profesionales__lista {
   list-style: none;
-  margin: 0.5rem 0;
+  margin: 0.4rem 0 0;
   padding: 0;
   display: grid;
-  gap: 0.75rem;
   grid-template-columns: minmax(0, 1fr);
   grid-auto-rows: 1fr;
 }
@@ -4268,36 +4321,44 @@ ul.modos-de-analizar__aviso {
   display: flex;
 }
 
-@media (min-width: 64rem) {
-  .preguntas-profesionales__lista {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+/* El separador es una sombra, que no ocupa lugar: con un borde, las filas siguientes medían un píxel menos. */
+.preguntas-profesionales__lista > li + li {
+  box-shadow: 0 -1px 0 var(--borde);
 }
 
+/* El color del botón es el de sus íconos; la pregunta y su bajada llevan el suyo. */
 .tarjeta-de-pregunta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.75rem;
   width: 100%;
   height: 100%;
-  min-height: 2.75rem;
-  text-align: left;
+  min-height: 4rem;
+  padding: 0.55rem 0.4rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--tenue);
   font: inherit;
-  color: var(--texto);
-  background: var(--fondo-suave);
-  border: 1px solid var(--borde);
-  border-radius: 10px;
-  padding: 0.75rem 0.9rem;
+  text-align: left;
   cursor: pointer;
 }
 
 .tarjeta-de-pregunta:hover {
-  border-color: var(--borde-control);
+  background: var(--fondo-suave);
 }
 
 .tarjeta-de-pregunta:focus-visible {
   outline: 3px solid var(--foco);
-  outline-offset: 2px;
+  outline-offset: -3px;
+}
+
+.tarjeta-de-pregunta__textos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
 .tarjeta-de-pregunta__pregunta {
@@ -4310,9 +4371,305 @@ ul.modos-de-analizar__aviso {
   font-size: 0.92rem;
 }
 
+.preguntas-profesionales__mas {
+  margin-top: 0.3rem;
+}
+
 .preguntas-profesionales__mas > summary {
+  padding: 0.6rem 0.4rem;
   font-weight: 700;
-  margin: 0.25rem 0;
+}
+
+/* Las vistas guardadas, para retomar: una etiqueta por vista, que la abre. */
+.vistas-para-retomar__lista {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.vistas-para-retomar > .nota,
+.vistas-para-retomar > .campo__error {
+  margin: 0.5rem 0 0 calc(20px + 0.6rem);
+}
+
+.etiqueta-de-vista {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.3rem 1rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.etiqueta-de-vista:hover {
+  background: var(--fondo-suave);
+}
+
+.etiqueta-de-vista:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.etiqueta-de-vista__detalle {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+/* Las métricas para comparar, por área: casillas a la vista. La marcada se reconoce por su tilde y por su borde más
+   grueso, no solo por el color; la que no se puede marcar (ya hay tres), por el borde discontinuo. */
+.grupo-de-metricas {
+  min-width: 0;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.grupo-de-metricas__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.grupo-de-metricas__casillas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.casilla-de-metrica {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 0.85rem 0 0.7rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  cursor: pointer;
+}
+
+.casilla-de-metrica input {
+  flex: none;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: 0;
+}
+
+.casilla-de-metrica--marcada {
+  border-color: var(--enlace);
+  box-shadow: inset 0 0 0 1px var(--enlace);
+  font-weight: 600;
+}
+
+.casilla-de-metrica:has(input:disabled) {
+  border-style: dashed;
+  color: var(--tenue);
+  cursor: default;
+}
+
+.casilla-de-metrica:has(input:focus-visible) {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.casilla-de-metrica__detalle {
+  color: var(--tenue);
+  font-size: 0.88rem;
+  font-weight: 400;
+}
+
+/* El título de Entrenamiento y, en su renglón, de qué ejercicio, qué serie y en qué unidad son sus casillas. */
+.grupo-de-metricas__de {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.grupo-de-metricas__de .campo {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.grupo-de-metricas__de .campo:first-of-type {
+  flex: 0 1 19rem;
+}
+
+.grupo-de-metricas__de select {
+  width: 100%;
+}
+
+.grupo-de-metricas__mas {
+  margin-top: 0.3rem;
+}
+
+.grupo-de-metricas__mas > summary {
+  padding: 0.6rem 0;
+}
+
+.elegir-metricas__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--borde);
+}
+
+.elegir-metricas__cupo {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.elegir-metricas .no-ofrecidas {
+  margin: 0.5rem 0 0;
+}
+
+.elegir-metricas .no-ofrecidas > summary {
+  padding: 0.6rem 0;
+}
+
+/* ─── El estado de una métrica que no es un gráfico (WP-ESCRITORIO-AMABLE, pantalla 15) ─────────── */
+/* Cargando, sin acceso, sin especificación, una falla o sin puntos en las fechas a la vista: un bloque en el lugar
+   del gráfico, con el nombre y el color de la métrica. Se reconoce por el ícono y por el título, no por un color. */
+.grafico--sin-dibujo {
+  display: flex;
+  flex-direction: column;
+}
+
+.estado-de-grafico {
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+  margin: 0.2rem 0 0.6rem;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  background: var(--fondo-suave);
+  color: var(--tenue);
+}
+
+.estado-de-grafico--cargando {
+  justify-content: center;
+  border: 1.5px dashed var(--borde-control);
+  background: none;
+}
+
+.estado-de-grafico__texto {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.estado-de-grafico--cargando .estado-de-grafico__texto {
+  flex: 0 1 auto;
+}
+
+.estado-de-grafico__texto p {
+  margin: 0;
+}
+
+.estado-de-grafico__titulo {
+  color: var(--texto);
+  font-weight: 700;
+}
+
+.estado-de-grafico .boton {
+  gap: 0.4rem;
+}
+
+/* ─── «Cómo se lee esta vista» (WP-ESCRITORIO-AMABLE, C-04) ────────────────────────────── */
+/* Una sola ayuda por vista, que se abre desde el marco de la ficha, al lado del período. En una ventana angosta el
+   botón queda con su ícono solo (su nombre sigue estando para el lector de pantalla). */
+.como-se-lee__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+}
+
+@media (max-width: 79.99rem) {
+  .como-se-lee__palabras {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .como-se-lee__boton {
+    min-width: 44px;
+    justify-content: center;
+  }
+}
+
+/* En el escritorio, los renglones van en dos columnas: así la ayuda entra entera en una ventana de 900 px de alto. */
+.dialogo.como-se-lee {
+  max-width: min(64rem, calc(100vw - 2rem));
+}
+
+.como-se-lee h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.2rem;
+}
+
+.como-se-lee > .nota {
+  margin: 0 0 0.9rem;
+}
+
+.como-se-lee__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+@media (min-width: 64rem) {
+  .como-se-lee__lista {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.7rem 2rem;
+  }
+}
+
+.como-se-lee__lista > li {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  column-gap: 0.75rem;
+  align-items: start;
+}
+
+.como-se-lee__muestra {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.25rem;
+  color: var(--tenue);
+}
+
+.como-se-lee__lista p {
+  margin: 0;
+}
+
+.como-se-lee .acciones {
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
 /* Un formulario corto no ocupa todo el ancho del escritorio: un desplegable de 1300 px se recorre mal con la vista. */

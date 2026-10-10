@@ -399,6 +399,14 @@ describe('API-PRJ-01 · antropometría longitudinal', () => {
     const lista = ProyeccionResponseSchema.parse((await proyeccion(c.pro, c.ase.id, 'ANTHROPOMETRY_LONGITUDINAL').expect(200)).body).data.result!;
     if (lista.kind !== 'ANTHROPOMETRY_LONGITUDINAL') throw new Error('otra clave');
     expect(lista.series).toEqual([]);
+    // Una medida pedida sin tomas en el período: `NO_DATA` y ninguna serie. Antes llegaba una serie sin unidad, que no
+    // cumple el contrato (este `parse` fallaba), y el website la mostraba como una falla en lugar de una ausencia.
+    const sinTomas = ProyeccionResponseSchema.parse((await proyeccion(c.pro, c.ase.id, 'ANTHROPOMETRY_LONGITUDINAL', '?periodStart=2026-01-01&periodEnd=2026-01-31&metric=peso').expect(200)).body);
+    expect(sinTomas.data).toMatchObject({ dataState: 'NO_DATA', reason: 'NO_RECORDS_IN_PERIOD' });
+    const vacio = sinTomas.data.result!;
+    if (vacio.kind !== 'ANTHROPOMETRY_LONGITUDINAL') throw new Error('otra clave');
+    expect(vacio.available).toEqual([]);
+    expect(vacio.series).toEqual([]);
   });
 });
 

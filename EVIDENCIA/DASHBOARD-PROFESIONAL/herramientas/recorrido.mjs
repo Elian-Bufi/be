@@ -964,14 +964,9 @@ async function funcional() {
     comprobar('PRO-20', 'Asesorado B: un solo aviso de vista parcial, sin nombrar lo oculto', /Vista parcial según tu acceso actual/.test(parcialB));
     await ir(page, `${FICHA_B}&vista=analizar`);
     await quieto(page, v);
-    // WP-DASHBOARD-COMPRENSION: Analizar empieza por las preguntas; el selector de métricas está en «Análisis personalizado».
-    await clic(page, 'button', 'Análisis personalizado');
-    await quieto(page, v);
-    const areasB = await page.evaluate(() => {
-      const label = [...document.querySelectorAll('.agregar-metrica label')].find((l) => l.textContent === 'Área');
-      return label ? [...document.getElementById(label.htmlFor).options].map((o) => o.value) : [];
-    });
-    comprobar('PRO-20', 'Asesorado B: el selector ofrece solo las áreas permitidas', areasB.length > 0 && !areasB.includes('ENTRENAMIENTO'), areasB.join(', '));
+    // WP-ESCRITORIO-AMABLE (C-19): las métricas para comparar están a la vista en la entrada de Analizar, un grupo por área.
+    const areasB = await page.$$eval('.elegir-metricas .grupo-de-metricas__titulo', (t) => t.map((x) => x.textContent.trim()));
+    comprobar('PRO-20', 'Asesorado B: la entrada de Analizar ofrece solo las áreas permitidas', areasB.length > 0 && !areasB.includes('Entrenamiento'), areasB.join(', '));
 
     // 6 · Fallas: cada una con su texto, y lo que cargó bien sigue ───────────────────────────
     await cupo(v);
@@ -1027,9 +1022,9 @@ async function funcional() {
       await quieto(page, v);
       await ir(page, `${FICHA_A}&vista=analizar`);
       await quieto(page, v);
-      await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
-      await page.waitForFunction((n) => document.querySelector('details.vistas-guardadas')?.innerText.includes(n), {}, VISTA);
-      await clic(page, 'details.vistas-guardadas button', `Abrir ${VISTA}`);
+      // En la entrada de Analizar, cada vista guardada es una etiqueta que la abre (WP-ESCRITORIO-AMABLE, C-19).
+      await page.waitForFunction((n) => document.querySelector('.vistas-para-retomar')?.textContent.includes(n), {}, VISTA);
+      await clic(page, '.vistas-para-retomar button', `Abrir ${VISTA}`);
       await quieto(page, v);
       const p = parametros(page);
       // WP-DASHBOARD-COMPRENSION: la referencia detallada se muestra en el modo «Cambio relativo» (encargo §10, «los
@@ -1085,10 +1080,11 @@ async function funcional() {
   );
 }
 
-// ─── Analizar, recompuesto (WP-ESCRITORIO-AMABLE, parte 2: E-24 a E-36, E-38 y E-39) ───────────────────────────────
+// ─── Analizar, recompuesto (WP-ESCRITORIO-AMABLE, parte 2: E-24 a E-47) ───────────────────────────────
 
 /**
- * La composición de Analizar y el lenguaje de sus gráficos. Lo esperado (el objetivo de calorías, los días sin
+ * La composición de Analizar, el lenguaje de sus gráficos, la entrada («¿Qué querés mirar?»), el estado de cada métrica
+ * en el lugar de su gráfico y la ayuda de la vista. Lo esperado (el objetivo de calorías, los días sin
  * registros, las etapas y los cortes) se calcula a mano con lo que devuelve la API, sin el dominio. Cada comprobación
  * negativa («no lleva…») mira con el mismo selector que una positiva de la misma pantalla: con el selector mal, la
  * positiva fallaría. En una sesión propia; el modo funcional la corre antes del encabezado y también va sola, con
@@ -1632,6 +1628,254 @@ async function analizarRecompuesto() {
       JSON.stringify(encabezados),
     );
 
+    // E-41 a E-44 · La entrada: «¿Qué querés mirar?» (C-19) ───────────────────────────────────────────────────
+    // Lo esperado, a mano: lo que la API dice que hay en el período, en el orden en que la entrada lo ofrece (los
+    // ejercicios, por sesiones; las medidas, por tomas; las cuatro más medidas, a la vista).
+    const ejercicios = [...(await leerApi(v, `/advisees/${estado.aseId}/projections/TRAINING_PROGRESSION_BY_EXERCISE?periodStart=${desde90}&periodEnd=${hoy}`)).data.result.exercises].sort((a, b) => b.sessions - a.sessions);
+    const medidas = [...(await leerApi(v, `/advisees/${estado.aseId}/projections/ANTHROPOMETRY_LONGITUDINAL?periodStart=${desde90}&periodEnd=${hoy}`)).data.result.available].sort((a, b) => b.observations - a.observations);
+    const primero = ejercicios[0];
+    const cargaEsperada = primero ? `Carga · ${primero.name} · serie ${primero.setNumbers.includes(1) ? 1 : primero.setNumbers[0]} (${primero.loadUnits.includes('kg') ? 'kg' : primero.loadUnits[0]})` : '';
+    await abrirAnalisis('p=90');
+    const leerEntrada = () =>
+      page.evaluate(() => {
+        const limpio = (e) => (e ? e.textContent.replace(/\s+/g, ' ').trim() : '');
+        const tarjetas = [...document.querySelectorAll('.entrada-de-analizar .tarjeta-de-entrada')];
+        const cajas = tarjetas.map((t) => t.getBoundingClientRect());
+        const ver = [...document.querySelectorAll('.elegir-metricas__pie button')].find((b) => b.textContent.includes('Ver los gráficos'));
+        const casillas = [...document.querySelectorAll('.elegir-metricas .casilla-de-metrica input')];
+        return {
+          titulo: limpio(document.querySelector('.pregunta-en-curso h2')),
+          tarjetas: tarjetas.map((t) => limpio(t.querySelector('h3'))),
+          alCostado: cajas.length === 3 && cajas[2].left > cajas[0].right - 1 && Math.abs(cajas[2].top - cajas[0].top) <= 2,
+          preguntas: document.querySelectorAll('.preguntas-profesionales > .preguntas-profesionales__lista .tarjeta-de-pregunta').length,
+          masPreguntas: limpio(document.querySelector('.preguntas-profesionales__mas > summary')),
+          grupos: [...document.querySelectorAll('.elegir-metricas .grupo-de-metricas')].map((g) => ({
+            titulo: limpio(g.querySelector('.grupo-de-metricas__titulo')),
+            aLaVista: [...g.querySelectorAll(':scope > .grupo-de-metricas__casillas .casilla-de-metrica > span:not(.casilla-de-metrica__detalle)')].map(limpio),
+            mas: limpio(g.querySelector('.grupo-de-metricas__mas > summary')) || null,
+            ejercicio: g.querySelector('select[id$="-ej"]') ? limpio(g.querySelector('select[id$="-ej"]').selectedOptions[0]) : null,
+          })),
+          cupo: limpio(document.querySelector('.elegir-metricas__cupo')),
+          marcadas: casillas.filter((c) => c.checked).length,
+          sinMarcarApagadas: casillas.filter((c) => !c.checked).every((c) => c.disabled),
+          sinMarcarEncendidas: casillas.filter((c) => !c.checked).every((c) => !c.disabled),
+          verApagado: ver ? ver.disabled : null,
+          finDeVer: ver ? Math.round(ver.getBoundingClientRect().bottom + scrollY) : null,
+          graficos: document.querySelectorAll('figure.grafico__figura').length,
+        };
+      });
+    const entrada = await leerEntrada();
+    const gruposEsperados = [
+      { titulo: 'Nutrición', aLaVista: ['Calorías', 'Carbohidratos', 'Grasas', 'Proteínas', 'Fibra', 'Registros'], mas: null },
+      { titulo: 'Entrenamiento', aLaVista: ['Carga', 'Repeticiones', 'RIR', 'Series registradas'], mas: null },
+      { titulo: 'Antropometría', aLaVista: medidas.slice(0, 4).map((m) => m.name), mas: medidas.length > 4 ? `Más medidas (${medidas.length - 4})` : null },
+    ];
+    comprobar(
+      'E-41',
+      'La entrada de Analizar se llama «¿Qué querés mirar?» y tiene los dos caminos a la vista: las cuatro preguntas (y «Más preguntas») con las vistas guardadas debajo, y al costado las métricas para comparar, sin ningún gráfico todavía',
+      entrada.titulo === '¿Qué querés mirar?' &&
+        entrada.tarjetas.join(' | ') === 'Empezar por una pregunta | Retomar una vista guardada | Comparar métricas, sin pregunta' &&
+        entrada.alCostado &&
+        entrada.preguntas === 4 &&
+        entrada.masPreguntas === 'Más preguntas (2)' &&
+        entrada.graficos === 0,
+      JSON.stringify({ titulo: entrada.titulo, tarjetas: entrada.tarjetas, alCostado: entrada.alCostado, preguntas: entrada.preguntas, masPreguntas: entrada.masPreguntas, finDeVer: entrada.finDeVer }),
+    );
+    comprobar(
+      'E-41',
+      'Las métricas se ofrecen por área, con lo que la API dice que hay en el período: las seis de Nutrición en su orden, las cuatro de Entrenamiento con el ejercicio más registrado elegido a la vista, y las cuatro medidas corporales con más tomas (las demás, en «Más medidas»)',
+      primero !== undefined &&
+        medidas.length > 0 &&
+        entrada.grupos.length === 3 &&
+        entrada.grupos.every((g, i) => g.titulo === gruposEsperados[i].titulo && g.aLaVista.join(' | ') === gruposEsperados[i].aLaVista.join(' | ') && g.mas === gruposEsperados[i].mas) &&
+        entrada.grupos[1].ejercicio.startsWith(`${primero.name} · ${primero.sessions} `) &&
+        entrada.cupo === 'Elegiste 0 de 3. Marcá al menos una.' &&
+        entrada.verApagado === true,
+      `API: ${ejercicios.length} ejercicios (el primero, ${primero?.name}, ${primero?.sessions} sesiones); medidas: ${medidas.map((m) => `${m.name} ${m.observations}`).join(', ')} · pantalla: ${JSON.stringify(entrada.grupos)} · ${entrada.cupo}`,
+    );
+    // Hasta tres: la cuarta no se puede marcar, y se dice por qué. El orden en que se marcan es el de los gráficos.
+    const marcar = (texto) => clic(page, '.elegir-metricas .casilla-de-metrica', texto);
+    await marcar('Proteínas');
+    await marcar(medidas[0].name);
+    await marcar('Calorías');
+    const conTres = await leerEntrada();
+    await marcar(medidas[0].name);
+    const conDos = await leerEntrada();
+    await marcar('Carga');
+    const conCarga = await leerEntrada();
+    comprobar(
+      'E-42',
+      'Con tres métricas marcadas, las demás casillas quedan apagadas y el pie dice cuáles son y que para sumar otra hay que sacar una; al sacar una se vuelven a poder marcar. Una de Entrenamiento se nombra con su ejercicio, su serie y su unidad',
+      conTres.marcadas === 3 &&
+        conTres.sinMarcarApagadas &&
+        conTres.cupo === `Elegiste 3 de 3: Proteínas; ${medidas[0].name}; Calorías. Para sumar otra, sacá una.` &&
+        conDos.marcadas === 2 &&
+        conDos.sinMarcarEncendidas &&
+        conDos.cupo === 'Elegiste 2 de 3: Proteínas; Calorías.' &&
+        conCarga.cupo === `Elegiste 3 de 3: Proteínas; Calorías; ${cargaEsperada}. Para sumar otra, sacá una.` &&
+        conCarga.verApagado === false,
+      `con tres: ${conTres.cupo} · con dos: ${conDos.cupo} · con la carga: ${conCarga.cupo}`,
+    );
+    await clic(page, '.elegir-metricas__pie button', 'Ver los gráficos');
+    await quieto(page, v);
+    const armado = await page.evaluate(() => ({
+      titulo: document.querySelector('.pregunta-en-curso h2')?.textContent.trim() ?? '',
+      etiquetas: [...document.querySelectorAll('.metricas-elegidas--amable li > span')].map((s) => s.textContent.trim()),
+      lugares: document.querySelectorAll('.paneles-sincronizados > *').length,
+      entrada: !!document.querySelector('.entrada-de-analizar'),
+    }));
+    const mArmado = parametros(page).get('m') ?? '';
+    comprobar(
+      'E-41',
+      '«Ver los gráficos» arma la comparación libre con las tres métricas, en el orden en que se marcaron, y recién ahí las escribe en la URL',
+      armado.titulo === 'Comparación libre' &&
+        armado.etiquetas.join(' | ') === `Proteínas | Calorías | ${cargaEsperada}` &&
+        armado.lugares === 3 &&
+        !armado.entrada &&
+        mArmado.split(',').length === 3 &&
+        mArmado.startsWith('nutricion.proteinas,nutricion.energia,entrenamiento.carga') &&
+        parametros(page).get('pregunta') === null,
+      `${JSON.stringify(armado)} · m=${mArmado}`,
+    );
+    // Quitar la última métrica de una comparación libre vuelve a la entrada.
+    for (let i = 0; i < 3; i++) {
+      await page.evaluate(() => document.querySelector('.metricas-elegidas--amable .quitar-metrica')?.click());
+      await quieto(page, v, { silencio: 300 });
+    }
+    const deVuelta = await leerEntrada();
+    comprobar('E-41', 'Al quitar la última métrica de una comparación libre, Analizar vuelve a la entrada, con nada marcado', deVuelta.titulo === '¿Qué querés mirar?' && deVuelta.grupos.length === 3 && deVuelta.marcadas === 0 && parametros(page).get('m') === null, `${deVuelta.titulo} · ${deVuelta.cupo} · m=${parametros(page).get('m')}`);
+
+    // E-45 y E-46 · El estado de cada métrica, en el lugar de su gráfico (pantalla 15) ─────────────────────────
+    const lugares = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('.tarjeta-de-graficos .paneles-sincronizados > *, .tarjeta-de-graficos > .grafico--sin-dibujo')].map((e) => ({
+          grafico: e.matches('figure.grafico__figura'),
+          nombre: e.querySelector('.grafico__titulo strong')?.textContent.trim() ?? '',
+          clase: [...(e.querySelector('.estado-de-grafico')?.classList ?? [])].find((c) => c.startsWith('estado-de-grafico--')) ?? null,
+          titulo: e.querySelector('.estado-de-grafico__titulo')?.textContent.trim() ?? null,
+          texto: e.querySelector('.estado-de-grafico .nota')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+          reintentar: !!e.querySelector('.estado-de-grafico button'),
+          fechas: e.querySelectorAll('.recharts-xAxis-tick-labels text').length,
+        })),
+      );
+    // Una falla (503) en la serie del medio: su bloque queda entre los dos gráficos, con el motivo y «Reintentar».
+    const malasAntes = v.malas.length;
+    v.reglas = [{ coincide: (u) => u.includes('/projections/NUTRITION_PRESCRIBED_VS_RECORDED') && u.includes('metric=PROTEIN'), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' }];
+    await abrirAnalisis(`m=${encodeURIComponent(TRES)}&p=90`);
+    const conFalla = await lugares();
+    const lecturaConFalla = await texto(page, '.tarjeta-de-lectura');
+    v.reglas = [];
+    // Las respuestas con error de este paso son las que el recorrido simuló: se apartan, para que la comprobación del
+    // final (ninguna respuesta con error) siga valiendo para todo lo demás.
+    const simuladas = v.malas.splice(malasAntes);
+    await clic(page, '.analizar__lienzo .estado-de-grafico button', 'Reintentar');
+    await quieto(page, v);
+    const trasReintentar = await lugares();
+    comprobar(
+      'E-45',
+      'Si falla una de tres métricas, su bloque queda en su lugar, entre los dos gráficos, con el nombre de la métrica, «No pudimos completar esta parte», el motivo y «Reintentar»; las fechas siguen bajo el último gráfico, y «Reintentar» trae el gráfico que faltaba',
+      conFalla.length === 3 &&
+        conFalla[0].grafico &&
+        !conFalla[1].grafico &&
+        conFalla[2].grafico &&
+        conFalla[1].nombre === 'Proteínas' &&
+        conFalla[1].clase === 'estado-de-grafico--error' &&
+        conFalla[1].titulo === 'No pudimos completar esta parte' &&
+        /BE no está disponible en este momento\. .*Las otras métricas siguen\./.test(conFalla[1].texto ?? '') &&
+        conFalla[1].reintentar &&
+        conFalla[0].fechas === 0 &&
+        conFalla[2].fechas > 1 &&
+        simuladas.length > 0 &&
+        simuladas.every((m) => m.startsWith('503 ')) &&
+        trasReintentar.length === 3 &&
+        trasReintentar.every((l) => l.grafico),
+      `${JSON.stringify(conFalla)} · respuestas simuladas: ${simuladas.length} (503) · después: ${trasReintentar.map((l) => (l.grafico ? 'gráfico' : 'bloque')).join(', ')} · lectura: ${lecturaConFalla.slice(0, 60)}`,
+    );
+    // Una respuesta lenta: mientras tanto, «Cargando…» en su lugar, y los otros dos ya dibujados.
+    v.reglas = [{ coincide: (u) => u.includes('/projections/ANTHROPOMETRY_LONGITUDINAL') && u.includes('metric='), accion: 'demorar', ms: 3500 }];
+    await cupo(v);
+    await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent('nutricion.energia,antropometria.peso,nutricion.proteinas')}&p=30`);
+    const llegoAVerse = await page.waitForFunction(() => document.querySelectorAll('figure.grafico__figura').length === 2 && !!document.querySelector('.estado-de-grafico--cargando'), { timeout: 15_000 }).then(() => true, () => false);
+    const mientrasCarga = llegoAVerse ? await lugares() : [];
+    v.reglas = [];
+    await quieto(page, v);
+    const yaCargado = await lugares();
+    comprobar(
+      'E-45',
+      'Mientras una métrica tarda en llegar, las otras dos ya están dibujadas y la que falta dice «Cargando…» en su lugar (la del medio); cuando llega, es su gráfico',
+      mientrasCarga.length === 3 && mientrasCarga[0].grafico && !mientrasCarga[1].grafico && mientrasCarga[2].grafico && mientrasCarga[1].nombre === 'Peso' && mientrasCarga[1].clase === 'estado-de-grafico--cargando' && mientrasCarga[1].texto === 'Cargando Peso…' && yaCargado.length === 3 && yaCargado.every((l) => l.grafico),
+      `mientras: ${JSON.stringify(mientrasCarga.map((l) => (l.grafico ? `gráfico ${l.nombre}` : `${l.clase}: ${l.texto}`)))} · después: ${yaCargado.map((l) => (l.grafico ? 'gráfico' : 'bloque')).join(', ')}`,
+    );
+    // Fechas sin nada (antes del primer registro y de la primera toma): no es una falla ni un cero, y se dice.
+    const primerRegistro = nut.recorded.points.map((p) => p.date).sort()[0];
+    const primeraToma = peso.points.map((p) => p.date).sort()[0];
+    const finSinNada = diaMenos([primerRegistro, primeraToma].sort()[0], 1);
+    if (finSinNada >= desde90) {
+      await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia,antropometria.peso')}&desde=${desde90}&hasta=${finSinNada}`);
+      const sinNada = await lugares();
+      const lecturaSinNada = await texto(page, '.tarjeta-de-lectura');
+      const tarjetaSinNada = await texto(page, '.tarjeta-de-graficos');
+      const rango = `del ${diaCivil(desde90)} al ${diaCivil(finSinNada)}`;
+      comprobar(
+        'E-46',
+        'En fechas sin registros ni tomas, cada métrica lo dice en su lugar («no es un cero»), sin gráfico vacío, sin «Reintentar» y sin presentarlo como una falla; la lectura dice para qué sirve',
+        sinNada.length === 2 &&
+          sinNada.every((l) => !l.grafico && l.clase === 'estado-de-grafico--sin-puntos' && !l.reintentar) &&
+          sinNada[0].nombre === 'Calorías' &&
+          sinNada[0].titulo === 'Sin registros de comida en estas fechas' &&
+          sinNada[0].texto === `No es un cero: no hay registros de comida ${rango}. Probá con un período más largo.` &&
+          sinNada[1].nombre === 'Peso' &&
+          sinNada[1].titulo === 'Sin tomas en estas fechas' &&
+          sinNada[1].texto === `No es un cero: no hay tomas registradas con esta medida ${rango}. Probá con un período más largo.` &&
+          !/No pudimos/.test(tarjetaSinNada) &&
+          /Cuando un gráfico tenga datos, elegí una fecha y sus valores se leen acá\./.test(lecturaSinNada),
+        `${rango} · ${JSON.stringify(sinNada)} · lectura: ${lecturaSinNada}`,
+      );
+    } else {
+      informar('E-46', 'Fechas sin registros ni tomas', 'el escenario tiene registros desde el primer día de los 90: no hay un rango vacío para probar');
+    }
+
+    // E-47 · «Cómo se lee esta vista» (C-04) ────────────────────────────────────────────────────────
+    await abrirAnalisis(`m=${encodeURIComponent(TRES)}&p=90`);
+    const marco = {};
+    for (const ancho of [1440, 1280, 1024]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(500);
+      marco[ancho] = await page.evaluate(() => {
+        const b = document.querySelector('.marco-de-la-ficha .como-se-lee__boton');
+        return { alto: Math.round(document.querySelector('.marco-de-la-ficha').getBoundingClientRect().height), boton: b ? b.textContent.replace(/\s+/g, ' ').trim() : null, anchoDelBoton: b ? Math.round(b.getBoundingClientRect().width) : 0, desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+      });
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(500);
+    await clic(page, '.marco-de-la-ficha button', 'Cómo se lee esta vista');
+    await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 5_000 });
+    const ayuda = await page.evaluate(() => {
+      const d = document.querySelector('dialog.como-se-lee[open]');
+      return { titulo: d.querySelector('h2').textContent.trim(), renglones: d.querySelectorAll('.como-se-lee__lista > li').length, muestras: d.querySelectorAll('.como-se-lee__lista svg').length, focoAdentro: d.contains(document.activeElement), texto: d.textContent.replace(/\s+/g, ' ') };
+    });
+    const axeConLaAyuda = await axe(page);
+    await page.keyboard.press('Escape');
+    const cerro = await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 3_000 }).then(() => true, () => false);
+    const focoDespues = await page.evaluate(() => document.activeElement?.textContent.replace(/\s+/g, ' ').trim() ?? '');
+    await cupo(v);
+    await ir(page, FICHA_A);
+    await quieto(page, v);
+    const enElResumen = await page.evaluate(() => ({ boton: !!document.querySelector('.como-se-lee__boton'), periodo: !!document.querySelector('.periodo-del-seguimiento__boton') }));
+    comprobar(
+      'E-47',
+      'En Analizar, el marco de la ficha ofrece «Cómo se lee esta vista» sin crecer (143 px a 1440, 1280 y 1024; a 1024, el botón queda con su ícono y conserva su nombre); en el Resumen todavía no está',
+      [1440, 1280, 1024].every((a) => marco[a].alto === 143 && marco[a].boton === 'Cómo se lee esta vista' && marco[a].desborde <= 1) && marco[1024].anchoDelBoton < 60 && marco[1440].anchoDelBoton > 120 && !enElResumen.boton && enElResumen.periodo,
+      `${JSON.stringify(marco)} · Resumen: ${JSON.stringify(enElResumen)}`,
+    );
+    comprobar(
+      'E-47',
+      'La ayuda de Analizar se abre como un diálogo con su título, toma el foco, explica cada marca con su muestra y lo que la vista no dice; axe no encuentra faltas con ella abierta; Escape la cierra y el foco vuelve al botón',
+      ayuda.titulo === 'Cómo se lee Analizar' && ayuda.renglones >= 10 && ayuda.muestras >= 10 && ayuda.focoAdentro && /No son ceros/.test(ayuda.texto) && /no indica que una cause la otra/.test(ayuda.texto) && /no se resta ni se califica/.test(ayuda.texto) && axeConLaAyuda.length === 0 && cerro && focoDespues === 'Cómo se lee esta vista',
+      `${ayuda.titulo} · ${ayuda.renglones} renglones, ${ayuda.muestras} muestras · foco adentro: ${ayuda.focoAdentro} · axe: ${JSON.stringify(axeConLaAyuda)} · Escape la cierra: ${cerro} · foco después: «${focoDespues}»`,
+    );
+    await abrirAnalisis(`m=${encodeURIComponent(TRES)}&p=90`);
+
     // Accesibilidad con todo desplegado, en los dos temas: los controles nuevos (segmentos, etiquetas, paneles).
     await abrirMasAcciones(page);
     await abrirDelPie(page, 'Tabla de datos', '.tabla-de-datos');
@@ -1780,28 +2024,29 @@ async function encabezadoYMenu() {
         const cajas = [...lista.querySelectorAll('.tarjeta-de-pregunta')].map((t) => t.getBoundingClientRect());
         return { cantidad: cajas.length, anchos: [...new Set(cajas.map((c) => Math.round(c.width)))], altos: [...new Set(cajas.map((c) => Math.round(c.height)))], columnas: new Set(cajas.map((c) => Math.round(c.left))).size };
       });
-    const iguales = (m) => m.cantidad === 4 && m.columnas === 2 && m.anchos.length === 1 && m.altos.length === 1;
+    // Desde la parte 2 son filas, una debajo de otra (C-19): una sola columna, y todas con el mismo ancho y alto.
+    const iguales = (m) => m.cantidad === 4 && m.columnas === 1 && m.anchos.length === 1 && m.altos.length === 1;
     const tarjetas = {};
     for (const ancho of [1440, 1280, 1024]) {
       await page.setViewport({ width: ancho, height: 900 });
       await pausa(400);
       tarjetas[ancho] = await medirTarjetas();
     }
-    await page.setViewport({ width: 1440, height: 900 });
-    await pausa(400);
-    // La prueba de la prueba: sin el arreglo (cada tarjeta con el alto de su texto), la medición encuentra una más baja.
-    const soltar = await page.addStyleTag({ content: '.preguntas-profesionales__lista { grid-auto-rows: auto !important; } .preguntas-profesionales__lista > li { display: block !important; } .tarjeta-de-pregunta { height: auto !important; }' });
+    // La prueba de la prueba: sin el arreglo (cada fila con el alto de su texto), la medición encuentra una más baja.
+    // Se hace a 1024 px, donde las bajadas de las preguntas ocupan distinta cantidad de renglones.
+    const soltar = await page.addStyleTag({ content: '.preguntas-profesionales__lista { grid-auto-rows: auto !important; } .preguntas-profesionales__lista > li { display: block !important; } .tarjeta-de-pregunta { height: auto !important; min-height: 0 !important; }' });
     await pausa(300);
     const sueltas = await medirTarjetas();
     await soltar.evaluate((e) => e.remove());
-    await pausa(200);
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(400);
     comprobar(
       'E-18',
-      'Las cuatro tarjetas de «Empezar por una pregunta» miden lo mismo, en dos columnas, a 1440, 1280 y 1024 px',
+      'Las cuatro filas de «Empezar por una pregunta» miden lo mismo, una debajo de otra, a 1440, 1280 y 1024 px',
       Object.values(tarjetas).every(iguales),
       JSON.stringify(tarjetas),
     );
-    comprobar('E-18', 'La medición de las tarjetas detecta una más baja que las otras, como estaban antes (la prueba de la prueba)', !iguales(sueltas) && sueltas.altos.length > 1, JSON.stringify(sueltas));
+    comprobar('E-18', 'La medición de las filas detecta una más baja que las otras, como estaban antes (la prueba de la prueba)', !iguales(sueltas) && sueltas.altos.length > 1, JSON.stringify(sueltas));
 
     // «Datos de la cuenta» abre la cuenta sin cerrar la sesión; estando ahí, el menú ya no ofrece ese enlace.
     await page.click('.menu-de-cuenta__boton');

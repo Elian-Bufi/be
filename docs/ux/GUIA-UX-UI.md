@@ -266,8 +266,12 @@ Información).
   marca, con lo que no cambia al pasar de una vista a otra. Tiene tres renglones fijos, sin depender del largo del
   nombre: (1) el nombre visible como título, «Solicitar contexto» y, a la derecha, «Actualizar» con la hora de la
   consulta; (2) el **acceso actual por área**, dicho una vez si todas las áreas están en el mismo estado, y el aviso
-  de vista parcial; (3) las tres vistas y el período. La ficha no lleva miga: la barra de marca ya vuelve al Espacio
-  profesional.
+  de vista parcial; (3) las tres vistas y, a la derecha, «Cómo se lee esta vista» y el período. La ficha no lleva
+  miga: la barra de marca ya vuelve al Espacio profesional.
+- **«Cómo se lee esta vista»** (`como-se-lee.tsx`) es **una sola ayuda por vista,** siempre en el mismo lugar del
+  marco. Es un diálogo: explica cada marca con su muestra al lado, qué se dibuja y qué no dice la pantalla. No
+  reemplaza lo que depende de los datos que se miran («Cómo se calcula», la cobertura, el límite de una pregunta), que
+  sigue en su lugar. Cada vista suma la suya con su parte del paquete; a 1024 px el botón queda con su ícono solo.
 - **El período es un solo control.** A la vista dice qué período es, cuántos días tiene y si incluye hoy. Al abrirlo
   están los atajos (7, 30 y 90 días, y un año) y el rango propio, con dos campos de fecha. Elegir cierra el control;
   Escape también, y devuelve el foco al botón.
@@ -341,10 +345,16 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   del dominio, `sintesisDelResumen`: reglas fijas, sin IA, sin calificar, cuatro a la vista y «Ver todas» con el total
   autorizado) con las acciones al lado (preparar la revisión de cada área, analizar un cambio, solicitar contexto y
   «Empezar por una pregunta»); indicadores (hasta cuatro, por cuenta); cobertura del período y últimos hechos.
-- **Preguntas antes que configuración** (`preguntas.tsx`): sin pregunta ni métricas, Analizar ofrece las preguntas
-  principales y «Más preguntas». Lo que falta elegir se pide: el ejercicio, la medida y la versión nunca se eligen por
-  la persona; la serie, la unidad y las dos últimas etapas se sugieren a la vista y se confirman con «Ver la respuesta».
-  Lo que venía elegido y no aplica a este asesorado se dice. La pregunta resuelta es el título de la vista, con sus
+- **La entrada de Analizar: «¿Qué querés mirar?»** (`preguntas.tsx`, `entrada.tsx`). Sin pregunta ni métricas, los dos
+  caminos están a la vista, cada uno en su tarjeta: a la izquierda, las preguntas (una fila por pregunta, con su
+  ícono; las demás en «Más preguntas») y, debajo, las vistas guardadas para retomar (una etiqueta por vista); a la
+  derecha, las métricas para comparar sin pregunta, con casillas por área. Se ofrece lo que hay en el período. Marcar
+  no arma nada: «Ver los gráficos» escribe las métricas en la URL. Con tres marcadas, las demás quedan apagadas y el
+  pie dice por qué y qué se va a ver, con el ejercicio, la serie y la unidad. Quitar la última métrica de una
+  comparación libre vuelve a la entrada.
+- **Preguntas antes que configuración** (`preguntas.tsx`): lo que falta elegir en una pregunta se pide. El ejercicio,
+  la medida y la versión nunca se eligen por la persona; la serie, la unidad y las dos últimas etapas se sugieren a la
+  vista y se confirman con «Ver la respuesta». Lo que venía elegido y no aplica a este asesorado se dice. La pregunta resuelta es el título de la vista, con sus
   datos al lado («Cambiar los datos») y su límite de interpretación al pie de los gráficos. «Cambiar la pregunta»
   vuelve al comienzo de Analizar. Sin pregunta, el título es «Comparación libre».
 - **Números de versión:** la versión de un plan que ve la persona es su orden de activación (1, 2, 3…), el mismo en la
@@ -368,6 +378,10 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
     mira: se cierra al volver al comienzo de Analizar, no al cambiar una métrica o el período.
   - El punto elegido conserva su clase a la vista (el aro de selección rodea la marca sin taparla, y se ve entero
     también en el borde del gráfico); la leyenda dice solo los estados que están dibujados.
+  - **El estado de una métrica va en el lugar de su gráfico:** cargando, sin acceso, sin especificación, una falla (con
+    su motivo y «Reintentar») o sin nada en las fechas a la vista («no es un cero»). Lleva el nombre y el color de la
+    métrica, y se reconoce por su ícono y su título, no por un color. Sin ningún gráfico todavía, la lectura dice para
+    qué sirve.
 - **Analizar según la pregunta:** con la pregunta de etapas, lo principal es la tabla A/B, en su tarjeta, arriba de la
   barra (los gráficos y la lectura siguen en las suyas: una tarjeta no va adentro de otra). La comparación a mano de dos
   períodos es una opción secundaria, plegada debajo de esa tabla («Comparar otros dos períodos, con fechas elegidas a
@@ -405,6 +419,9 @@ Además de los de I.4:
 - **Una parte que falta va primero:** en «Para tu próxima revisión», «No pudimos completar esta parte» tiene la prioridad
   más alta; escondida detrás de «Ver todas», la síntesis parecía completa.
 - **Un solo «Reintentar» trae todo lo que falló** por la misma lectura (las series y lo que hay en el período).
+- **Sin datos no es una falla, y una falla no es sin datos.** Una métrica que se leyó bien y no tiene nada en el
+  período (una medida sin tomas, un ejercicio sin sesiones) dice «Sin tomas en estas fechas… No es un cero», sin
+  «Reintentar». Una lectura que no llegó dice «No pudimos completar esta parte», con su motivo y «Reintentar».
 - **El acercamiento de un gráfico se suelta** al cambiar las métricas, el período o la pregunta: no está en la URL y no
   debe sobrevivir a otro análisis. Agrupar no lo suelta.
 - **Actualizar** vuelve a leer y dice la hora de la consulta.
@@ -906,6 +923,10 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | El aro de la fecha elegida | Iba con los puntos de la línea: con 90 días a la vista, el de la última fecha salía cortado contra el borde del gráfico. | Va en una capa propia, alrededor de la marca, y se ve entero (II.6). | Corregida | 2 |
 | Lo desplegado en Analizar | Cada cosa era un plegable suelto, que quedaba como se lo dejara. | Lo que abren «Más acciones» y el pie de los gráficos es del análisis que se mira: se cierra al volver al comienzo de Analizar (II.6). | Nueva | 2 |
 | Tarjetas | La comparación de etapas dejaba los gráficos y la lectura adentro de la tarjeta de la vista. | Una tarjeta no va adentro de otra: la respuesta es una, y los gráficos y la lectura, las suyas (II.6). | Corregida | 2 |
+| La entrada de Analizar | Las preguntas en una grilla de tarjetas; elegir métricas a mano estaba detrás del enlace «Análisis personalizado», que abría un análisis vacío con desplegables. | «¿Qué querés mirar?»: las preguntas en filas, las vistas guardadas para retomar y las métricas con casillas, todo a la vista (II.6). | Sustituida | 2 |
+| El estado de una métrica | Un renglón suelto arriba de los gráficos («Cargando…», «No pudimos cargar…»). | Un bloque en el lugar de su gráfico, con ícono, título, motivo y acción (II.6). | Sustituida | 2 |
+| Sin datos en el período | Una medida sin tomas (o un ejercicio sin sesiones) en el período decía «No pudimos cargar… No es una ausencia de datos: reintentá». | «Sin tomas en estas fechas… No es un cero», sin «Reintentar»; también en los indicadores del Resumen y en la tabla de etapas (II.7). | Corregida | 2 |
+| La ayuda de una vista | Notas y plegables repartidos por la pantalla. | «Cómo se lee esta vista», una por vista, en el marco de la ficha (II.3). Hoy la tiene Analizar. | Nueva | 2 |
 | Aviso de ambiente de prueba | «Ambiente de prueba · solo datos sintéticos», fijo en la barra de todas las pantallas del website; la guía decía que el 08 §33 lo «exige» siempre a la vista. | Sale de la barra (decisión de Dirección del 2026-10-10). Queda en el pie de la cara pública y en el registro (II.10). El 08 §33 fija la política de datos por ambiente; no pide mostrarlo en cada pantalla. La APK no cambia. | Sustituida | 1 bis |
 
 ---

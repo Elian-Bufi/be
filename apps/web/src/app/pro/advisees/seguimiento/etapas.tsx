@@ -152,6 +152,7 @@ export function ComparacionDeEtapas({
                       {s.estado.tipo === 'cargando' ? 'Cargando…' : null}
                       {s.estado.tipo === 'sin-acceso' ? 'No está disponible con tu acceso actual.' : null}
                       {s.estado.tipo === 'sin-especificacion' ? 'BE no tiene todavía una especificación para calcularla.' : null}
+                      {s.estado.tipo === 'sin-datos' ? 'Sin registros en las fechas leídas: no es un cero.' : null}
                       {s.estado.tipo === 'error' ? (
                         <>
                           {textoDeFalla(s.estado.motivo, nombre)}{' '}

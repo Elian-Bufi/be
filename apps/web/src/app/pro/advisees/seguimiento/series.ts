@@ -49,6 +49,8 @@ export type EstadoDeSerie =
     }
   | { readonly tipo: 'sin-acceso' }
   | { readonly tipo: 'sin-especificacion' }
+  /** La lectura respondió bien y no trae serie: en el período no hay tomas de esa medida ni sesiones de ese ejercicio. */
+  | { readonly tipo: 'sin-datos' }
   | { readonly tipo: 'error'; readonly motivo: MotivoDeFalla };
 
 export interface SerieDelAnalisis {
@@ -110,7 +112,9 @@ function estadoDe(r: Respuesta, deObservaciones: Respuesta | null): EstadoDeSeri
   }
   const serie = serieDe(r);
   const observaciones = deObservaciones ? serieDe(deObservaciones) : serie;
-  if (!r.ok || !serie || !observaciones) return { tipo: 'error', motivo: 'OTRO' };
+  if (!r.ok) return { tipo: 'error', motivo: 'OTRO' };
+  // Respondió bien y sin serie: no hay nada de esa métrica en el período. Es una ausencia, no una falla.
+  if (!serie || !observaciones) return { tipo: 'sin-datos' };
   const d = r.datos.data;
   const res = d.result;
   const bandas = !res || res.kind === 'ANTHROPOMETRY_LONGITUDINAL' ? [] : res.planVersions;

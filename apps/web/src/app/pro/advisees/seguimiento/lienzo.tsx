@@ -28,9 +28,7 @@ import { useEffect, useId, useMemo, useState, type KeyboardEvent, type ReactNode
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceDot, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { diaYMesCivil } from '../../../../lib/formato';
 import type { Modo } from './estado';
-
-/** El color de cada métrica elegida. Ni rojo ni verde, que se leerían como juicio (`tokens.css`). */
-export const ESTILOS = [{ color: 'var(--metrica-1)' }, { color: 'var(--metrica-2)' }, { color: 'var(--metrica-3)' }] as const;
+import { ESTILOS, Marca, Punto } from './marca';
 
 const DIA = 86_400_000;
 /** La letra más chica de un gráfico (el criterio de diseño pide 12,5 px como mínimo). */
@@ -47,37 +45,6 @@ export function xDe(p: PuntoAnalitico): number {
     return Math.abs(x - mediodia(p.date)) < DIA / 2 ? x : mediodia(p.date);
   }
   return mediodia(p.date);
-}
-
-/** La clase de un dato que se dibuja distinto: reportado por la persona o calculado por un método (lo medido, no). */
-export type ClaseDibujada = 'REPORTED' | 'DERIVED';
-
-/**
- * La muestra de una métrica, para un encabezado, una leyenda o la lectura: una línea de su color con un punto. Con
- * `plan`, la de lo planificado: la misma línea, discontinua y sin punto.
- */
-export function Marca({ indice, hueco = false, tamano = 14, clase = null, plan = false }: { indice: number; hueco?: boolean; tamano?: number; clase?: ClaseDibujada | null; plan?: boolean }) {
-  const e = ESTILOS[indice] ?? ESTILOS[0];
-  const c = tamano / 2;
-  const ancho = tamano * 2.2;
-  return (
-    <svg width={ancho} height={tamano} viewBox={`0 0 ${ancho} ${tamano}`} aria-hidden="true" className="marca-de-metrica">
-      <line x1={1} y1={c} x2={ancho - 1} y2={c} stroke={e.color} strokeWidth={2} strokeDasharray={plan ? '5 4' : undefined} />
-      {plan ? null : <Punto cx={ancho / 2} cy={c} r={tamano * (clase ? 0.42 : 0.34)} color={e.color} hueco={hueco} clase={clase} />}
-    </svg>
-  );
-}
-
-/** Un punto: lleno (medido y completo), hueco (subtotal o sin completar), de contorno cortado (reportado) o con un punto adentro (calculado). */
-function Punto({ cx, cy, r, color, hueco, trazo = 2, clase = null }: { cx: number; cy: number; r: number; color: string; hueco: boolean; trazo?: number; clase?: ClaseDibujada | null }) {
-  const relleno = hueco || clase ? 'var(--superficie)' : color;
-  const corte = clase === 'REPORTED' ? `${Math.max(1.5, r * 0.55)} ${Math.max(1.2, r * 0.4)}` : undefined;
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={r} fill={relleno} stroke={color} strokeWidth={trazo} strokeDasharray={corte} />
-      {clase === 'DERIVED' ? <circle cx={cx} cy={cy} r={Math.max(1.2, r * 0.38)} fill={color} /> : null}
-    </g>
-  );
 }
 
 /** Una vigencia de plan que acompaña a un gráfico, con el nombre de su área. */
@@ -138,6 +105,11 @@ interface PropsDelLienzo {
   /** El título de un gráfico compartido («Carbohidratos, grasas y proteínas registrados»). */
   readonly tituloCompartido?: string;
   readonly descripcion: string;
+  /**
+   * En «Separadas»: lo que una métrica elegida muestra cuando todavía no es un gráfico (cargando, sin acceso, una falla,
+   * sin puntos). Va en el lugar de su gráfico, según el orden de las métricas (`indice`).
+   */
+  readonly estados?: readonly { readonly indice: number; readonly nodo: ReactNode }[];
 }
 
 /**
@@ -155,12 +127,22 @@ const ALTO_COMPARTIDO = 300;
 
 export function Lienzo(p: PropsDelLienzo) {
   if (p.modo === 'PANELS') {
-    const alto = ALTO_DEL_PANEL[Math.min(p.series.length, 3)] ?? 136;
+    // Cada métrica elegida tiene su lugar, sea un gráfico o un bloque de estado: el alto se reparte entre todos, así
+    // nada salta cuando lo que estaba cargando pasa a ser un gráfico. Las fechas van bajo el último gráfico.
+    const lugares = [...p.series.map((serie) => ({ indice: serie.indice, serie, nodo: null as ReactNode })), ...(p.estados ?? []).map((e) => ({ indice: e.indice, serie: null, nodo: e.nodo }))].sort((a, b) => a.indice - b.indice);
+    const alto = ALTO_DEL_PANEL[Math.min(lugares.length, 3)] ?? 136;
+    const ultimo = p.series[p.series.length - 1]?.indice;
     return (
       <div className="paneles-sincronizados">
-        {p.series.map((s, i) => (
-          <Panel key={s.indice} {...p} series={[s]} bandas={s.bandas ?? p.bandas} rotularBandas={s.rotularBandas ?? true} unidad={s.unidad} alto={alto} conFechas={i === p.series.length - 1} />
-        ))}
+        {lugares.map((l) =>
+          l.serie ? (
+            <Panel key={l.indice} {...p} series={[l.serie]} bandas={l.serie.bandas ?? p.bandas} rotularBandas={l.serie.rotularBandas ?? true} unidad={l.serie.unidad} alto={alto} conFechas={l.indice === ultimo} />
+          ) : (
+            <div key={`estado-${l.indice}`} className="grafico grafico--sin-dibujo" style={{ minHeight: alto }}>
+              {l.nodo}
+            </div>
+          ),
+        )}
       </div>
     );
   }

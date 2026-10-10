@@ -1252,7 +1252,7 @@ async function recorridoRecuperacion(page, v, carpeta) {
   v.reglas = [];
   comprobar('R6', 'Con la nutrición sin responder, el peso se dibuja y las partes que faltan lo dicen con su reintento, sin ceros', dibujados.length === 1 && /Peso/.test(dibujados[0]?.titulo ?? '') && /Reintentar/.test(analizar), `${dibujados.map((g) => g.titulo).join(' | ')}`);
   // El «Reintentar» de una serie (no el de lo que hay en el período): trae también lo demás que falló.
-  await clic(page, '.analizar__lienzo .campo__error button', 'Reintentar');
+  await clic(page, '.analizar__lienzo .estado-de-grafico button', 'Reintentar');
   await quieto(page, v);
   comprobar('R6', 'Reintentar, con la API de nuevo disponible, trae los tres gráficos', (await graficos(page)).length === 3, '');
   // Conflicto de escritura: guardar los indicadores choca con otra versión; lo elegido no se pierde.

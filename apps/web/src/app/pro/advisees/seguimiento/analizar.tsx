@@ -55,6 +55,7 @@ import {
   resumirPeriodo,
   superposicionPermitida,
   valorConUnidad,
+  type DefinicionDeMetrica,
   type LineaDeTiempoResponse,
   type NombreDeIcono,
   type OrigenDeDato,
@@ -68,9 +69,11 @@ import { Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
-import { textoDeFalla, useLectura, useSeguimiento } from './contexto';
+import { razonDeFalla, useLectura, useSeguimiento, type MotivoDeFalla } from './contexto';
 import { codificarReferencia, hoyEn, leerAnalisis, leerPregunta, parametrosDeAnalisis, parametrosDePeriodo, parametrosDePregunta, type EstadoDeAnalisis, type GranoElegido, type Modo } from './estado';
-import { Marca, type BandaDePlan, type SerieParaDibujar } from './lienzo';
+import { mediodia, xDe, type BandaDePlan, type SerieParaDibujar } from './lienzo';
+import { Marca } from './marca';
+import { ElegirMetricasDeEntrada } from './entrada';
 import { contextoDeLaPregunta, ElegirParametros, ListaDePreguntas, useEtapasDelAno } from './preguntas';
 import { nombreDeLaReferencia, SelectorDeMetricas } from './selector';
 import { leerSerie, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
@@ -108,6 +111,7 @@ const CALIDAD: Readonly<Record<PuntoAnalitico['quality'], string>> = { COMPLETE:
 /** Un balde incompleto: el día de hoy, que sigue en curso, o una semana que el período corta. */
 const textoDeIncompleto = (p: PuntoAnalitico): string => (p.dateEnd ? 'semana sin completar en el período' : 'día en curso: el valor todavía puede cambiar');
 const calidadDelPunto = (p: PuntoAnalitico): string => (p.partialBucket ? `${CALIDAD[p.quality]} · ${textoDeIncompleto(p)}` : CALIDAD[p.quality]);
+const MEDIO_DIA = 43_200_000;
 const HITOS = 'NUTRITION_PLAN_ACTIVATED,TRAINING_PLAN_ACTIVATED,NUTRITION_OBJECTIVE_SET,TRAINING_OBJECTIVE_SET,NUTRITION_REVIEW_RECORDED,TRAINING_REVIEW_RECORDED,FOLLOW_UP_OPENED,FOLLOW_UP_CLOSED';
 
 export function Analizar() {
@@ -130,7 +134,6 @@ export function Analizar() {
   const resolucion = pregunta && !disponibles.cargando && !etapasDelAno.cargando && panel.tipo === 'listo' ? resolverPregunta(pregunta.id, pregunta.params, contexto) : null;
   const destino = resolucion?.estado === 'LISTA' ? resolucion.destino : null;
   const [cambiandoPregunta, setCambiandoPregunta] = useState(false);
-  const [personalizado, setPersonalizado] = useState(false);
   useEffect(() => setCambiandoPregunta(false), [pregunta?.id]);
   // Una pregunta que arma métricas las pone en la URL (y, si fija la etapa, su período): así el resto de «Analizar», la
   // vuelta atrás y las vistas guardadas funcionan igual que con una selección a mano. Comparar dos etapas también: debajo
@@ -153,9 +156,10 @@ export function Analizar() {
   const cambiarMetricas = (metricas: EstadoDeAnalisis['metricas']) => ir({ ...parametrosDeAnalisis({ ...estado, metricas, fecha: null }), ...parametrosDePregunta(null) });
   const mostrarVista =
     !destino || destino.tipo === 'ANALIZAR' || destino.tipo === 'ETAPAS'
-      ? (pregunta !== null && (destino?.tipo === 'ANALIZAR' || destino?.tipo === 'ETAPAS')) || estado.metricas.length > 0 || personalizado
+      ? (pregunta !== null && (destino?.tipo === 'ANALIZAR' || destino?.tipo === 'ETAPAS')) || estado.metricas.length > 0
       : false;
-  const sinEntrada = pregunta === null && estado.metricas.length === 0 && !personalizado;
+  // La entrada de Analizar: sin pregunta ni métricas. Quitar la última métrica de una comparación libre vuelve acá.
+  const sinEntrada = pregunta === null && estado.metricas.length === 0;
   const { series, recargar } = useSeriesDelAnalisis(estado.metricas, estado.grano);
   const [intervalo, setIntervalo] = useState<{ desde: string; hasta: string } | null>(null);
   const desde = intervalo && intervalo.desde >= periodo.desde ? intervalo.desde : periodo.desde;
@@ -206,7 +210,10 @@ export function Analizar() {
   const conPlan = listas.filter((s) => s.definicion.area !== 'ANTROPOMETRIA');
   const bandasPrestadas = new Set(conPlan.map((s) => s.definicion.area)).size === 1 && conPlan[0] ? bandasDe(conPlan[0]) : [];
   const areasRotuladas = new Set<string>();
-  const dibujables: SerieParaDibujar[] = listas.map((s) => {
+  // Una métrica sin ningún punto en las fechas a la vista no se dibuja como un gráfico vacío: lo dice un bloque, en su
+  // lugar («no es un cero»). Sigue en la lectura, en la tabla y en la descarga, que dicen lo mismo.
+  const tienePuntos = (s: Lista): boolean => s.estado.serie.points.some((p) => p.value !== null && xDe(p) >= mediodia(desde) - MEDIO_DIA && xDe(p) <= mediodia(hasta) + MEDIO_DIA);
+  const dibujables: SerieParaDibujar[] = listas.filter(tienePuntos).map((s) => {
     const indice = series.indexOf(s);
     const ref = referencias.get(s.clave);
     const relativos = modo === 'RELATIVE' && ref?.tipo === 'valida' ? new Map(puntosRelativos(s.estado.serie, ref).map((p) => [p.pointId, p.relativo])) : null;
@@ -310,16 +317,21 @@ export function Analizar() {
     (abajo === 'hitos' && hitos.length === 0) || (abajo === 'etapas' && (!estado.bandas || bandas.length === 0 || conEtapas)) || (abajo === 'comparar' && conEtapas) ? null : abajo;
   const alternar = (que: DebajoDeLosGraficos) => setAbajo(abierto === que ? null : que);
 
+  // Lo que una métrica elegida muestra cuando no es un gráfico, en su lugar (pantalla 15 del diseño).
+  const bloques = series.flatMap((s, i) => {
+    const sinPuntos = { tipo: 'sin-puntos', area: s.definicion.area, desde, hasta } as const;
+    const sinGrafico: EstadoSinGrafico | null = s.estado.tipo === 'sin-datos' ? sinPuntos : s.estado.tipo !== 'lista' ? s.estado : tienePuntos(s as Lista) ? null : sinPuntos;
+    return sinGrafico ? [{ indice: i, nodo: <EstadoDeUnaSerie indice={i} nombre={nombres[i] ?? s.definicion.nombre} estado={sinGrafico} onReintentar={reintentar} /> }] : [];
+  });
   const laPregunta = pregunta ? preguntaProfesional(pregunta.id) : null;
   const enCurso = pregunta !== null && destino !== null && !cambiandoPregunta;
   const conGraficos = mostrarVista && dibujables.length > 0;
   // Con la composición de gráficos y lectura, la vista no es una tarjeta: son dos, sobre el fondo de la página (y, en la
-  // comparación de etapas, una más arriba, con las dos etapas y su tabla). La entrada y las respuestas sin gráficos
-  // siguen en la suya.
-  const sinTarjeta = mostrarVista;
+  // comparación de etapas, una más arriba, con las dos etapas y su tabla). La entrada tampoco: son tres tarjetas, una
+  // por camino. Las respuestas sin gráficos siguen en la suya.
+  const sinTarjeta = mostrarVista || sinEntrada;
   /** Vuelve a la entrada de Analizar, a elegir otra pregunta o las métricas a mano. Atrás recupera lo que había. */
   const volverALaEntrada = () => {
-    setPersonalizado(false);
     ir({ ...parametrosDeAnalisis({ ...estado, metricas: [], fecha: null, comparacion: null }), ...parametrosDePregunta(null) }, { agregarAlHistorial: true });
   };
   const motivoDeJuntas = superposicion.permitida ? null : (MOTIVO_SIN_SUPERPOSICION[superposicion.motivo ?? ''] ?? null);
@@ -348,8 +360,8 @@ export function Analizar() {
   return (
     <section className={sinTarjeta ? 'seccion analizar analizar--sin-tarjeta' : 'seccion analizar'} aria-labelledby={`${id}-titulo`}>
       <div className={enCurso ? 'pregunta-en-curso pregunta-activa' : 'pregunta-en-curso'}>
-        <h2 id={`${id}-titulo`}>{laPregunta ? laPregunta.pregunta : sinEntrada ? 'Analizar' : 'Comparación libre'}</h2>
-        {sinEntrada ? <p className="pregunta-en-curso__detalle">Hasta tres métricas en el mismo tiempo. Coincidencia temporal: no indica causa.</p> : null}
+        <h2 id={`${id}-titulo`}>{laPregunta ? laPregunta.pregunta : sinEntrada ? '¿Qué querés mirar?' : 'Comparación libre'}</h2>
+        {sinEntrada ? <p className="pregunta-en-curso__detalle">Dos caminos para lo mismo: una pregunta que ya trae los gráficos armados, o las métricas que elijas.</p> : null}
         {!sinEntrada && !laPregunta ? <p className="pregunta-en-curso__detalle">Sin pregunta: las métricas las elegís vos, de cualquier área.</p> : null}
         {enCurso && pregunta && destino ? (
           <p className="pregunta-en-curso__detalle">
@@ -374,9 +386,19 @@ export function Analizar() {
           </div>
         )}
       </div>
-      {sinEntrada ? <ListaDePreguntas onPersonalizado={() => setPersonalizado(true)} /> : null}
-      {/* Retomar una vista guardada también desde el comienzo: antes había que armar un análisis cualquiera para verlas. */}
-      {sinEntrada ? <VistasGuardadas estado={estado} pregunta={null} soloAbrir /> : null}
+      {sinEntrada ? (
+        <div className="entrada-de-analizar">
+          <div className="entrada-de-analizar__columna">
+            <ListaDePreguntas />
+            {/* Retomar una vista guardada también desde el comienzo: antes había que armar un análisis cualquiera para verlas. */}
+            <VistasGuardadas estado={estado} pregunta={null} soloAbrir />
+          </div>
+          <ElegirMetricasDeEntrada
+            disponibles={disponibles}
+            onVer={(metricas) => ir({ ...parametrosDeAnalisis({ ...estado, metricas, fecha: null, comparacion: null }), ...parametrosDePregunta(null) }, { agregarAlHistorial: true })}
+          />
+        </div>
+      ) : null}
       {pregunta && resolucion === null ? <Cargando /> : null}
       {pregunta && resolucion && (resolucion.estado === 'FALTA_ELEGIR' || cambiandoPregunta) ? (
         <ElegirParametros
@@ -494,11 +516,15 @@ export function Analizar() {
                 </p>
               ) : null}
               {estado.metricas.length === 0 ? <p>Elegí una métrica o una pregunta para empezar.</p> : null}
-              {series.map((s, i) =>
-                s.estado.tipo === 'lista' ? null : (
-                  <EstadoDeUnaSerie key={s.clave} nombre={nombres[i] ?? s.definicion.nombre} estado={s.estado} onReintentar={reintentar} />
-                ),
-              )}
+              {/* En «Separadas», cada bloque va entre los gráficos, en su lugar (lo acomoda el lienzo). Con las métricas en
+                  un solo gráfico, o sin ninguno todavía, van acá arriba. */}
+              {modo === 'PANELS' && dibujables.length > 0
+                ? null
+                : bloques.map((b) => (
+                    <div key={b.indice} className="grafico grafico--sin-dibujo">
+                      {b.nodo}
+                    </div>
+                  ))}
               {listas.some((s) => s.estado.parcial) ? <p className="nota">Vista parcial: hay datos de esta área que no ves (los de otro profesional).</p> : null}
               {dibujables.length > 0 ? (
                 <>
@@ -520,6 +546,7 @@ export function Analizar() {
                     referencia={modo === 'RELATIVE' ? { desde: rangoDeReferencia.desde, hasta: rangoDeReferencia.hasta } : null}
                     tituloCompartido={modo === 'OVERLAY' ? tituloConjunto(dibujables.map((d) => d.nombre)) : undefined}
                     descripcion={descripcion}
+                    estados={modo === 'PANELS' ? bloques : undefined}
                   />
                   {/* La base de cada métrica en el cambio relativo: su regla, su rango, su valor y cuántas observaciones tiene. */}
                   {modo === 'RELATIVE' ? (
@@ -575,7 +602,16 @@ export function Analizar() {
               ) : null}
             </div>
 
-            {/* La lectura queda al costado de los gráficos mientras se recorren las fechas. */}
+            {/* La lectura queda al costado de los gráficos mientras se recorren las fechas. Sin ningún gráfico todavía,
+                dice para qué sirve: la columna no aparece y desaparece. */}
+            {dibujables.length === 0 && estado.metricas.length > 0 ? (
+              <div className="tarjeta-de-lectura analizar__lectura">
+                <section className="panel-de-lectura" aria-label="Lectura">
+                  <h3>Lectura</h3>
+                  <p className="nota">Cuando un gráfico tenga datos, elegí una fecha y sus valores se leen acá.</p>
+                </section>
+              </div>
+            ) : null}
             {dibujables.length > 0 ? (
               <div className="tarjeta-de-lectura analizar__lectura">
                 <PanelDeLectura
@@ -850,17 +886,54 @@ function ElegirReferencia({
   );
 }
 
-function EstadoDeUnaSerie({ nombre, estado, onReintentar }: { nombre: string; estado: Exclude<SerieDelAnalisis['estado'], { tipo: 'lista' }>; onReintentar: () => void }) {
-  if (estado.tipo === 'cargando') return <p className="nota">Cargando {nombre}…</p>;
-  if (estado.tipo === 'sin-acceso') return <p className="nota">{nombre}: no está disponible con tu acceso actual.</p>;
-  if (estado.tipo === 'sin-especificacion') return <p className="nota">{nombre}: BE no tiene todavía una especificación para calcularla.</p>;
+/** `sin-puntos`: una métrica que se leyó bien y no tiene ningún punto en las fechas a la vista (o no tiene nada en el período). */
+type EstadoSinGrafico = Exclude<SerieDelAnalisis['estado'], { tipo: 'lista' } | { tipo: 'sin-datos' }> | { readonly tipo: 'sin-puntos'; readonly area: DefinicionDeMetrica['area']; readonly desde: string; readonly hasta: string };
+
+/** Qué es lo que no hay cuando una métrica no tiene puntos, según su área. */
+const SIN_PUNTOS: Readonly<Record<DefinicionDeMetrica['area'], { readonly titulo: string; readonly que: string }>> = {
+  NUTRICION: { titulo: 'Sin registros de comida en estas fechas', que: 'registros de comida' },
+  ENTRENAMIENTO: { titulo: 'Sin sesiones en estas fechas', que: 'sesiones registradas con este ejercicio' },
+  ANTROPOMETRIA: { titulo: 'Sin tomas en estas fechas', que: 'tomas registradas con esta medida' },
+};
+const ICONO_DE_FALLA: Readonly<Record<MotivoDeFalla, NombreDeIcono>> = { LIMITE: 'espera', RED: 'sin-conexion', SERVICIO: 'servicio', OTRO: 'aviso' };
+
+/**
+ * Lo que una métrica elegida muestra cuando no es un gráfico (WP-ESCRITORIO-AMABLE, pantalla 15): va en el lugar de su
+ * gráfico, con su nombre y su color, y dice qué pasa y qué se puede hacer. El estado se reconoce por su ícono y por su
+ * título, no por un color. Una falla nunca se presenta como ausencia de datos, y una ausencia nunca como un cero.
+ */
+function EstadoDeUnaSerie({ indice, nombre, estado, onReintentar }: { indice: number; nombre: string; estado: EstadoSinGrafico; onReintentar: () => void }) {
+  const c: { readonly icono: NombreDeIcono; readonly titulo: string | null; readonly texto: string } =
+    estado.tipo === 'cargando'
+      ? { icono: 'cargando', titulo: null, texto: `Cargando ${nombre}…` }
+      : estado.tipo === 'sin-acceso'
+        ? { icono: 'candado', titulo: 'No se puede ver', texto: `${nombre}: no está disponible con tu acceso actual.` }
+        : estado.tipo === 'sin-especificacion'
+          ? { icono: 'info', titulo: 'Todavía no se calcula', texto: `${nombre}: BE no tiene todavía una especificación para calcularla.` }
+          : estado.tipo === 'sin-puntos'
+            ? { icono: 'sin-datos', titulo: SIN_PUNTOS[estado.area].titulo, texto: `No es un cero: no hay ${SIN_PUNTOS[estado.area].que} del ${diaCivil(estado.desde)} al ${diaCivil(estado.hasta)}. Probá con un período más largo.` }
+            : { icono: ICONO_DE_FALLA[estado.motivo], titulo: 'No pudimos completar esta parte', texto: `${razonDeFalla(estado.motivo)} Las otras métricas siguen.` };
   return (
-    <p className="campo__error">
-      {textoDeFalla(estado.motivo, nombre)} Las otras métricas siguen.{' '}
-      <button type="button" className="boton boton--enlace" onClick={onReintentar}>
-        Reintentar
-      </button>
-    </p>
+    <>
+      <p className="grafico__encabezado">
+        <span className="grafico__titulo">
+          <Marca indice={indice} /> <strong>{nombre}</strong>
+        </span>
+      </p>
+      <div className={`estado-de-grafico estado-de-grafico--${estado.tipo}`} role={estado.tipo === 'cargando' ? 'status' : undefined}>
+        <Icono nombre={c.icono} tamano={24} />
+        <div className="estado-de-grafico__texto">
+          {c.titulo ? <p className="estado-de-grafico__titulo">{c.titulo}</p> : null}
+          <p className="nota">{c.texto}</p>
+        </div>
+        {estado.tipo === 'error' ? (
+          <button type="button" className="boton boton--secundario boton--compacto" onClick={onReintentar}>
+            <Icono nombre="actualizar" tamano={18} />
+            Reintentar
+          </button>
+        ) : null}
+      </div>
+    </>
   );
 }
 

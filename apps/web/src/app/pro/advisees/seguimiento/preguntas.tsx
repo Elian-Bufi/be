@@ -3,8 +3,8 @@
 /**
  * Entrar por preguntas profesionales (WP-DASHBOARD-COMPRENSION, eje 2). La pregunta y sus parámetros viven en la URL
  * (`pregunta`, `area`, `version`, `etapaA`, `etapaB`, `medida`, `ejercicio`, `serie`, `unidad`): solo identificadores.
- * - Sin pregunta ni métricas: las preguntas principales a la vista, las demás en «Más preguntas», y «Análisis
- *   personalizado» para elegir métricas a mano.
+ * - Sin pregunta ni métricas (la entrada de Analizar, «¿Qué querés mirar?»): las preguntas principales a la vista, en
+ *   filas, y las demás en «Más preguntas». Al lado, las métricas para comparar sin pregunta (`entrada.tsx`).
  * - Con una pregunta: lo que falta elegir se pide (nunca se elige por la persona: ni el ejercicio, ni la medida, ni la
  *   versión, ni las etapas) y lo que venía de otro asesorado se dice y se vuelve a pedir.
  * - Resuelta, la pregunta es el título de la vista, con sus parámetros y la salida para cambiarla (lo arma `analizar.tsx`);
@@ -22,6 +22,7 @@ import {
   type ContextoDeLaPregunta,
   type EtapaDePlanificacion,
   type IdDePregunta,
+  type NombreDeIcono,
   type ParametrosDePregunta,
   type PreguntaElegida,
   type ProyeccionResponse,
@@ -29,6 +30,7 @@ import {
 } from '@be/domain';
 import { useId, useMemo, useState, type FormEvent } from 'react';
 import { Cargando } from '../../../../components/estados';
+import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
 import { textoDeFalla, useLectura, useSeguimiento } from './contexto';
@@ -77,44 +79,48 @@ export function etapaEnPalabras(e: EtapaDePlanificacion): string {
   return `${e.etiqueta} · del ${diaCivil(e.desde)} al ${diaCivil(e.ultimoDia)} (${duracionDeLaEtapa(e)})`;
 }
 
-/** Las preguntas, cuando todavía no se eligió ninguna. */
-export function ListaDePreguntas({ onPersonalizado }: { onPersonalizado: () => void }) {
+/** El ícono de cada pregunta: acompaña al texto, no lo reemplaza. */
+const ICONO_DE_PREGUNTA: Readonly<Record<IdDePregunta, NombreDeIcono>> = {
+  'cambio-desde-el-plan': 'plan',
+  'registrado-vs-indicado': 'distinto',
+  'progreso-de-un-ejercicio': 'carga',
+  'informacion-para-revisar': 'revision',
+  'alimentacion-y-medidas': 'nutricion',
+  'comparar-etapas': 'comparar',
+};
+
+/**
+ * Las preguntas, cuando todavía no se eligió ninguna: una fila por pregunta, con su ícono, lo que muestra y una flecha.
+ * Las filas de una lista miden lo mismo (E-18).
+ */
+export function ListaDePreguntas() {
   const { ir } = useSeguimiento();
   const id = useId();
   const elegir = (p: IdDePregunta) => ir(parametrosDePregunta({ id: p, params: {} }), { agregarAlHistorial: true });
   const principales = PREGUNTAS_PROFESIONALES.filter((p) => p.principal);
   const otras = PREGUNTAS_PROFESIONALES.filter((p) => !p.principal);
+  const fila = (p: (typeof PREGUNTAS_PROFESIONALES)[number]) => (
+    <li key={p.id}>
+      <button type="button" className="tarjeta-de-pregunta" onClick={() => elegir(p.id)}>
+        <Icono nombre={ICONO_DE_PREGUNTA[p.id]} tamano={20} />
+        <span className="tarjeta-de-pregunta__textos">
+          <span className="tarjeta-de-pregunta__pregunta">{p.pregunta}</span>
+          <span className="tarjeta-de-pregunta__muestra">{p.muestra}</span>
+        </span>
+        <Icono nombre="derecha" tamano={18} />
+      </button>
+    </li>
+  );
   return (
-    <section className="preguntas-profesionales" aria-labelledby={`${id}-titulo`}>
-      <h3 id={`${id}-titulo`}>Empezar por una pregunta</h3>
-      <ul className="preguntas-profesionales__lista">
-        {principales.map((p) => (
-          <li key={p.id}>
-            <button type="button" className="tarjeta-de-pregunta" onClick={() => elegir(p.id)}>
-              <span className="tarjeta-de-pregunta__pregunta">{p.pregunta}</span>
-              <span className="tarjeta-de-pregunta__muestra">{p.muestra}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+    <section className="tarjeta-de-entrada preguntas-profesionales" aria-labelledby={`${id}-titulo`}>
+      <h3 id={`${id}-titulo`}>
+        <Icono nombre="pregunta" tamano={20} /> Empezar por una pregunta
+      </h3>
+      <ul className="preguntas-profesionales__lista">{principales.map(fila)}</ul>
       <details className="preguntas-profesionales__mas">
-        <summary>Más preguntas</summary>
-        <ul className="preguntas-profesionales__lista">
-          {otras.map((p) => (
-            <li key={p.id}>
-              <button type="button" className="tarjeta-de-pregunta" onClick={() => elegir(p.id)}>
-                <span className="tarjeta-de-pregunta__pregunta">{p.pregunta}</span>
-                <span className="tarjeta-de-pregunta__muestra">{p.muestra}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <summary>Más preguntas ({otras.length})</summary>
+        <ul className="preguntas-profesionales__lista">{otras.map(fila)}</ul>
       </details>
-      <p>
-        <button type="button" className="boton boton--enlace" onClick={onPersonalizado}>
-          Análisis personalizado: elegir las métricas a mano
-        </button>
-      </p>
     </section>
   );
 }

@@ -39,6 +39,7 @@ import { api } from '../../../lib/api';
 import { horaDelDia } from '../../../lib/formato';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
+import { ComoSeLeeEstaVista } from './seguimiento/como-se-lee';
 import { ProveedorDelSeguimiento, type PanelDelResumen } from './seguimiento/contexto';
 import { conRetorno, leerPeriodo, leerVista, periodoEnInstantes, valorDeRetorno } from './seguimiento/estado';
 import { LineaDeTiempo } from './seguimiento/linea-de-tiempo';
@@ -229,6 +230,8 @@ export function Workspace() {
           <div className="marco-de-la-ficha__vistas">
             <PestanasDelSeguimiento actual={vista} />
             <div className="marco-de-la-ficha__derecha">
+              {/* La ayuda de la vista que se está mirando: una sola, siempre en el mismo lugar (C-04). */}
+              <ComoSeLeeEstaVista vista={vista} />
               <SelectorDePeriodo />
             </div>
           </div>,

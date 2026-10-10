@@ -12,6 +12,7 @@
  */
 import { numero, preguntaProfesional, traeSeleccionesDelAsesorado, type ConfiguracionDeAnalisis, type PreguntaElegida, type ReferenciaDelCambio, type VistaDeAnalisis } from '@be/domain';
 import { useCallback, useEffect, useId, useState } from 'react';
+import { Icono } from '../../../../components/icono';
 import { api, nuevaClaveDeIdempotencia } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
 import { motivoDeFalla, textoDeFalla, useSeguimiento, type MotivoDeFalla } from './contexto';
@@ -51,8 +52,9 @@ const recuerdo: { abierto: boolean; aviso: string | null } = { abierto: false, a
 export const vistaRecienAbierta = (): boolean => recuerdo.abierto;
 
 /**
- * `soloAbrir`: al comienzo de Analizar (sin métricas ni pregunta) no hay nada que guardar: se listan las vistas para
- * retomarlas, sin el formulario de guardar ni «Guardar lo actual acá».
+ * `soloAbrir`: al comienzo de Analizar (sin métricas ni pregunta) no hay nada que guardar: es una tarjeta, «Retomar una
+ * vista guardada», con una etiqueta por vista que la abre. Guardar, actualizar y borrar están adentro de un análisis,
+ * en «Más acciones».
  */
 export function VistasGuardadas({ estado, pregunta, soloAbrir = false }: { estado: EstadoDeAnalisis; pregunta: PreguntaElegida | null; soloAbrir?: boolean }) {
   const { token, periodo, ir, sesionPerdida } = useSeguimiento();
@@ -153,6 +155,44 @@ export function VistasGuardadas({ estado, pregunta, soloAbrir = false }: { estad
     void cargar();
   };
 
+  if (soloAbrir) {
+    return (
+      <section className="tarjeta-de-entrada vistas-para-retomar" aria-labelledby={`${id}-titulo`}>
+        <h3 id={`${id}-titulo`}>
+          <Icono nombre="guardar" tamano={20} /> Retomar una vista guardada
+        </h3>
+        <p className="tarjeta-de-entrada__bajada">Guardan qué mirar, no los datos. Sirven para cualquier asesorado.</p>
+        {sinLista ? (
+          <p className="campo__error">
+            {textoDeFalla(sinLista, 'tus vistas guardadas')}{' '}
+            <button type="button" className="boton boton--enlace" onClick={() => void cargar()}>
+              Reintentar
+            </button>
+          </p>
+        ) : null}
+        {vistas && vistas.length > 0 ? (
+          <ul className="vistas-para-retomar__lista">
+            {vistas.map((v) => (
+              <li key={v.viewId}>
+                <button type="button" className="etiqueta-de-vista" onClick={() => abrir(v)}>
+                  <span className="visualmente-oculto">Abrir </span>
+                  <strong>{v.name}</strong>
+                  {v.usage === 'ANALYSIS' ? (
+                    <span className="etiqueta-de-vista__detalle">
+                      {' '}
+                      {v.configuration.metrics.length} {v.configuration.metrics.length === 1 ? 'métrica' : 'métricas'}
+                    </span>
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : vistas ? (
+          <p className="nota">Todavía no guardaste vistas. Se guardan desde un análisis, en «Más acciones».</p>
+        ) : null}
+      </section>
+    );
+  }
   return (
     <details
       className="vistas-guardadas"

@@ -631,6 +631,7 @@ function Indicadores({
               <h3>{nombre}</h3>
               {s.estado.tipo === 'cargando' ? <p className="nota">Cargando…</p> : null}
               {s.estado.tipo === 'sin-acceso' ? <p className="nota">No disponible con tu acceso actual.</p> : null}
+              {s.estado.tipo === 'sin-datos' ? <p className="nota">Sin registros en este período: no es un cero.</p> : null}
               {s.estado.tipo === 'error' ? (
                 <p className="campo__error">
                   {textoDeFalla(s.estado.motivo, 'este indicador')}{' '}
