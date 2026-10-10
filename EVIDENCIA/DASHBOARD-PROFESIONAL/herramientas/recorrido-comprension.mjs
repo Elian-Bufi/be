@@ -201,6 +201,26 @@ async function abrirDelPie(page, texto, selector) {
   await clic(page, '.pie-de-graficos button', texto);
   await page.waitForSelector(selector, { timeout: 5_000 });
 }
+/**
+ * La revisión de Nutrición preparada desde la ficha se arma en dos lecturas: primero llega la lista de revisiones y
+ * recién entonces BE fija el período desde la última y vuelve a leer la evidencia. Hasta ahí la pantalla muestra el
+ * período por defecto de la API (los últimos 7 días). Se espera a que diga el período preparado y a que la evidencia
+ * sea la de ese período: leerla antes era leer otra pantalla (pasó el 2026-10-10, con la máquina cargada: la
+ * comprobación de la evidencia encontró 7 días en lugar de los 21 que había desde la última revisión).
+ */
+async function revisionPreparada(page, v) {
+  await page.waitForFunction(
+    () => {
+      const t = document.querySelector('main')?.innerText ?? '';
+      const desde = /Preparado por BE para esta revisión: el período va del (\d{1,2} \S+ \d{4})/.exec(t)?.[1];
+      // Sin revisiones previas no hay período preparado: vale el que propone la API.
+      return desde ? t.includes(`Período: ${desde} a`) : /Preparado por BE para esta revisión: todavía no hay revisiones registradas/.test(t);
+    },
+    { timeout: 30_000 },
+  );
+  await quieto(page, v);
+}
+
 /** Hace clic (con el mouse) en el primer elemento visible y habilitado que contiene el texto. */
 async function clic(page, selector, contiene) {
   const marca = `r${Math.random().toString(36).slice(2)}`;
@@ -421,6 +441,7 @@ async function mirar() {
       await ir(page, FICHA_A);
       await quieto(page, v);
       await clic(page, '.acciones-del-resumen a', 'Preparar la revisión de Nutrición');
+      await revisionPreparada(page, v);
     });
     // La evidencia con un día marcado entero y otro en parte (casilla mixta), con «Lo que marcaste» abierto.
     await pantalla('preparar-revision-nutricion-marcada', async () => {
@@ -878,6 +899,7 @@ async function evidenciaDeLaRevision(page, v, carpeta) {
   await clic(page, '.acciones-del-resumen a', 'Preparar la revisión de Nutrición');
   await page.waitForFunction(() => location.pathname === '/pro/advisees/nutrition', { timeout: 20_000 });
   await quieto(page, v);
+  await revisionPreparada(page, v);
   const leer = () =>
     page.evaluate(() => {
       const f = document.querySelector('#revision-evidencia');

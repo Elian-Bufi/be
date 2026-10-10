@@ -218,6 +218,95 @@ siempre (antes del arreglo falla; después, 81 de 81). No se cambió la prueba q
 - El lector de pantalla con una persona: pendiente, como en los paquetes anteriores. Se verificaron axe, los nombres
   de los controles nuevos (`aria-expanded`, `aria-controls`, el grupo de cada segmentado) y la descripción del gráfico.
 
+## Parte 2, segundo tramo · Analizar: la entrada, el estado de cada métrica y la ayuda de la vista (2026-10-10)
+
+Tres cosas que el primer tramo había dejado como estaban. La entrada de Analizar muestra ahora los dos caminos a la
+vez: una pregunta, o las métricas que se elijan. Lo que una métrica no puede mostrar todavía (está cargando, falló, no
+hay acceso o no hay nada en esas fechas) se dice en el lugar de su gráfico. Y la vista tiene una sola ayuda, «Cómo se
+lee esta vista», en el marco de la ficha. Sobre la base propia (`be_test_escritorio`, regenerada antes de la pasada) y
+la compilación estática del commit de código (af7f984).
+
+**Medido en la página real, a 1440 × 900:** en la entrada, «Ver los gráficos» termina a los 860 px: los dos
+caminos y el botón entran en la primera pantalla. El marco de la ficha sigue midiendo 143 px a 1440, 1280 y 1024 px con
+el botón de la ayuda adentro (a 1024, con su ícono solo: 44 px de ancho).
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| La entrada se llama «¿Qué querés mirar?» y tiene los dos caminos a la vista: las cuatro preguntas (y «Más preguntas») con las vistas guardadas debajo, y al costado las métricas, sin ningún gráfico todavía (E-41) | `recorrido.mjs funcional`, comprobaciones E-41 | Pasa | Verificado automáticamente |
+| Las métricas se ofrecen por área con lo que la API dice que hay: las seis de Nutrición en su orden, las cuatro de Entrenamiento con el ejercicio más registrado a la vista, y las cuatro medidas con más tomas (E-41, E-43) | Lo mismo, contra la lista de ejercicios y de medidas de la API, a mano | Pasa: 7 ejercicios (el más registrado, Peso muerto, con 14 sesiones) y 11 medidas corporales | Verificado automáticamente |
+| Con tres marcadas, las demás casillas se apagan y el pie dice cuáles son y por qué; al sacar una se vuelven a poder marcar; una de Entrenamiento se nombra con su ejercicio, su serie y su unidad (E-42, E-43) | Lo mismo, E-42 | Pasa: «Elegiste 3 de 3: Proteínas; Calorías; Carga · Peso muerto · serie 1 (kg). Para sumar otra, sacá una.» | Verificado automáticamente |
+| «Ver los gráficos» arma la comparación libre en el orden en que se marcaron, y recién ahí escribe las métricas en la URL (E-41) | Lo mismo | Pasa | Verificado automáticamente |
+| Quitar la última métrica de una comparación libre vuelve a la entrada, con nada marcado (E-41) | Lo mismo | Pasa | Verificado automáticamente |
+| Una vista guardada se retoma desde la entrada, en una sesión nueva, y abre «Más acciones» con su aviso (E-44) | `recorrido.mjs funcional`, PRO-19 | Pasa | Verificado automáticamente |
+| Al asesorado con vista parcial, la entrada le ofrece solo las áreas permitidas | `recorrido.mjs funcional`, PRO-20 | Pasa | Verificado automáticamente |
+| Las cuatro filas de preguntas miden lo mismo a 1440, 1280 y 1024 px (E-18) | `recorrido.mjs funcional`, E-18, con su prueba de la prueba a 1024 px | Pasa | Verificado automáticamente |
+| Si falla una de tres métricas, su bloque queda entre los dos gráficos, con su nombre, «No pudimos completar esta parte», el motivo y «Reintentar», que trae el gráfico que faltaba (E-45) | E-45, con un 503 simulado en el navegador para una sola serie | Pasa | Verificado automáticamente |
+| Mientras una métrica tarda, las otras dos ya están dibujadas y la que falta dice «Cargando…» en su lugar (E-45) | E-45, demorando 3,5 s una sola respuesta | Pasa | Verificado automáticamente |
+| En fechas sin registros ni tomas, cada métrica dice «no es un cero» en su lugar, sin gráfico vacío, sin «Reintentar» y sin presentarlo como una falla; la lectura dice para qué sirve (E-46) | E-46, en un rango anterior al primer registro y a la primera toma que devuelve la API | Pasa | Verificado automáticamente |
+| La API, para una medida sin tomas en el período, responde `NO_DATA` sin serie, y la respuesta cumple el contrato (E-46) | `test/integration/analisis.int-spec.ts`, en la CI: antes del arreglo, el `parse` del contrato fallaba | En verde (corrida 38091948121): el legajo, la batería completa, la integración y la imagen de la API | Verificado automáticamente |
+| «Cómo se lee esta vista» está en el marco de Analizar sin hacerlo crecer; en el Resumen todavía no está (E-47) | E-47, midiendo el marco a los tres anchos | Pasa: 143 px en los tres | Verificado automáticamente |
+| La ayuda se abre como un diálogo con su título, toma el foco, explica cada marca con su muestra, y Escape la cierra y devuelve el foco al botón; axe no encuentra faltas con ella abierta (E-47) | E-47 | Pasa: 11 renglones, 10 muestras | Verificado automáticamente |
+| La ficha sigue funcionando | Los siete recorridos, sobre la compilación del commit de código | `recorrido.mjs`: capturas 60 de 60, funcional 122 de 122 (las 112 del primer tramo y 10 nuevas), descartable 17 de 17. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 79 de 79, funcional 76 de 76 (en la repetición: ver abajo), revocación 6 de 6. Pasada del 2026-10-10, de 19:52 a 20:19, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10) | Verificado automáticamente |
+| Toda la batería de la CI | La CI de GitHub sobre el commit de código (af7f984) | En verde (corrida 38091948121): el legajo, la batería completa, la integración y la imagen de la API | Verificado automáticamente |
+| Contraste: ningún par ni mínimo cambió | `node --test scripts/contraste.test.cjs` | 12 de 12 | Verificado automáticamente |
+| La entrada a 1440, 1024 y 768 px y en los dos temas; con tres métricas marcadas; la ayuda abierta; una falla, y fechas sin nada, en el lugar de sus gráficos | `ver.mjs` (que ahora puede simular una falla y tocar una casilla) | 11 capturas en `parte-2b/` | Observado en una captura real |
+
+**Comprobaciones que cambiaron, y lo que protegen (E-06):**
+
+| Comprobación | Antes | Ahora | Qué protege |
+|---|---|---|---|
+| E-41, E-42 y E-45 a E-47, 10 nuevas (`recorrido.mjs funcional`; solas, con `recorrido.mjs analizar`) | — | La entrada, los estados en su lugar y la ayuda, con lo esperado calculado a mano desde la API y con una falla y una demora simuladas | Las decisiones de este tramo |
+| PRO-20, las áreas del asesorado con vista parcial | Abría «Análisis personalizado» y leía el desplegable de áreas | Lee los títulos de los grupos de métricas de la entrada | Que no se ofrezca un área que el profesional no puede ver |
+| PRO-19, retomar una vista en una sesión nueva | Abría el plegable de vistas guardadas de la entrada | Toca la etiqueta de la vista en «Retomar una vista guardada» | Que una vista guardada se pueda retomar sin armar antes un análisis, y vuelva a pedir los datos |
+| E-18, las preguntas del mismo tamaño | Cuatro tarjetas iguales, en dos columnas | Cuatro filas iguales, una debajo de otra; la prueba de la prueba se hace a 1024 px, donde las bajadas ocupan distinta cantidad de renglones | El pedido de Dirección del 10/10: que ninguna quede más baja que las otras |
+| R6 (`recorrido-comprension.mjs`), el «Reintentar» de una serie que falló | Lo buscaba adentro del renglón de error | Lo busca en el bloque de estado de esa métrica | Que reintentar una serie traiga también lo demás que falló |
+
+Ninguna comprobación negativa cambió de texto. Las nuevas («no hay ningún gráfico», «no dice "No pudimos"», «en el
+Resumen no está el botón») miran con el mismo selector que una positiva de la misma función.
+
+**Lo que encontraron las comprobaciones, y qué se hizo.**
+
+- **Un defecto de la API, que ya estaba** (E-46). La comprobación de las fechas sin nada falló la primera vez: el
+  peso seguía diciendo «No pudimos completar esta parte». La API respondía 200, pero con una serie sin unidad, que no
+  cumple su contrato; el cliente rechazaba la respuesta entera y la pantalla la mostraba como una falla, con un
+  «Reintentar» que nunca iba a servir. Se corrigió en la API (no arma una serie sin datos) y en el website (un estado
+  propio para «respondió bien y no hay nada»). Los indicadores del Resumen y la tabla de etapas usan la misma lectura y
+  reciben el mismo estado; ahí el error no se vio en pantalla (los indicadores por defecto se arman con lo que hay en
+  el período), así que queda cubierto por el código, sin una comprobación propia.
+- **Un píxel** (E-18). Con las preguntas en filas, la primera medía un píxel más que las otras tres: el separador era
+  un borde, que le sacaba ese píxel al botón de las filas siguientes. Se corrigió la pantalla (el separador es una
+  sombra, que no ocupa lugar), no la comprobación.
+- **Un defecto del instrumento.** La comprobación final («ninguna respuesta con error») contaba el 503 que el propio
+  recorrido había simulado. Ahora aparta las respuestas simuladas, y exige que sean las que simuló.
+- **La primera pasada completa se detuvo antes de empezar,** en la regeneración de los datos. El verificador de los
+  datos de prueba pedía tres medidas y leía sus series por posición; la tercera (el pliegue del bíceps, con su única
+  medición anulada) antes llegaba como una serie vacía y, con el arreglo de la API, ya no llega. Se corrigió el
+  verificador (busca cada serie por su medida y comprueba que la anulada no arme serie ni figure entre las medidas con
+  observaciones: 26 de 26) y se dejó dicho en el comentario del contrato (8bfaf33). La pasada de la tabla es la segunda,
+  completa.
+- **En esa pasada completa, `recorrido-comprension.mjs funcional` dio 71 de 73,** con dos fallas en la evidencia de la
+  revisión de Nutrición, una pantalla que este paquete no toca. Era una carrera del recorrido, que ya existía. Esa
+  pantalla se arma en dos lecturas (primero las revisiones, después la evidencia del período desde la última) y,
+  mientras tanto, muestra los últimos 7 días. Con la máquina cargada (en ese momento corría además un agente leyendo el
+  repositorio), el recorrido la leyó a mitad de camino: encontró 7 días y 24 comidas en lugar de 21 días y 65, y la
+  parte se cortó. Abierta a mano un minuto después, la pantalla decía lo correcto. Se corrigió la espera del recorrido
+  (ahora espera a que la pantalla diga el período preparado y a que la evidencia sea la de ese período) y se repitió
+  esa pasada, sobre los mismos datos: 76 de 76. La pasada que falló no se toma como aprobación: queda contada acá y en
+  `parte-2b/resumen-de-la-pasada-final.txt`. Queda anotado para el paquete de las pestañas de área: quien abre
+  «Preparar la revisión» ve por un instante el período por defecto antes del preparado.
+
+**Lo que este tramo no comprueba:**
+
+- El uso real: falta que Dirección entre a Analizar y elija qué mirar.
+- El bloque de «sin acceso» se comprueba por su texto en otros recorridos (PRO-20 y CP-23), sin captura en este tramo.
+  El de «sin especificación» no tiene comprobación ni captura: hoy ninguna métrica que se ofrece cae ahí.
+- La ayuda de Resumen y de Línea de tiempo: entra con cada vista (partes 3 y 4).
+- La composición propia de la comparación de etapas, del progreso de un ejercicio y del origen del dato: siguen como
+  en el primer tramo.
+- La entrada a 390 px: se ve una tarjeta debajo de la otra; sin comprobaciones propias.
+- El lector de pantalla con una persona: pendiente, como en los paquetes anteriores. Se verificaron axe, el nombre de
+  cada grupo de casillas, el pie que anuncia lo elegido (`aria-live`) y el diálogo de la ayuda.
+
 ## Lo que falta de la parte 2, y las partes 3 a 5
 
 Pendientes.

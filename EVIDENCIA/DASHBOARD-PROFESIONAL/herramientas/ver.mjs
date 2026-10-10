@@ -117,18 +117,15 @@ try {
     await asentar();
     for (const texto of clics) {
       // Lo que se va a tocar puede tardar en aparecer (la vista se arma después de leer los datos).
-      await page
-        .waitForFunction((s, t) => [...document.querySelectorAll(s)].some((e) => e.textContent.replace(/\s+/g, ' ').includes(t) && e.getClientRects().length > 0), { timeout: 30_000 }, TOCABLES, texto)
-        .catch(() => {});
-      const tocado = await page.evaluate(
-        (s, t) => {
-          const el = [...document.querySelectorAll(s)].find((e) => e.textContent.replace(/\s+/g, ' ').includes(t) && e.getClientRects().length > 0);
-          el?.click();
-          return !!el;
-        },
-        TOCABLES,
-        texto,
-      );
+      // «A la vista» no es «tiene caja»: lo que está adentro de un plegable cerrado tiene caja y no se ve
+      // (`checkVisibility` lo sabe). Si hay uno con ese texto exacto, es ese; si no, el primero que lo contiene.
+      const elegir = (s, t) => {
+        const aLaVista = [...document.querySelectorAll(s)].filter((e) => (e.checkVisibility ? e.checkVisibility() : e.getClientRects().length > 0));
+        const limpio = (e) => e.textContent.replace(/\s+/g, ' ').trim();
+        return aLaVista.find((e) => limpio(e) === t) ?? aLaVista.find((e) => limpio(e).includes(t)) ?? null;
+      };
+      await page.waitForFunction(`(${elegir})(${JSON.stringify(TOCABLES)}, ${JSON.stringify(texto)}) !== null`, { timeout: 30_000 }).catch(() => {});
+      const tocado = await page.evaluate(`(() => { const el = (${elegir})(${JSON.stringify(TOCABLES)}, ${JSON.stringify(texto)}); el?.click(); return !!el; })()`);
       if (!tocado) console.log(`${nombre}: no encontré «${texto}» para tocar`);
       await asentar();
     }
