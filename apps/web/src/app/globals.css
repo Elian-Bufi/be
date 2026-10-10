@@ -101,6 +101,13 @@ code {
   top: 0.75rem;
 }
 
+/* Un ícono de la familia (`components/icono.tsx`): toma el color del texto, no se achica en una fila flexible y queda
+   alineado con la línea de base. */
+.icono {
+  flex: none;
+  vertical-align: -0.2em;
+}
+
 /* ─── Cara pública ────────────────────────────────────────────────────── */
 /* Landing, acceso, registro y legales: un degradé moderado sobre el fondo del tema elegido. En Claro es apenas un
    velo azul; en Azul noche, el degradé navy de la referencia. Los colores salen de los tokens del tema. */
@@ -126,6 +133,12 @@ code {
   margin-left: auto;
   color: var(--encabezado-texto);
   font-size: 0.9rem;
+}
+
+.apariencia label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .apariencia select {
@@ -1241,7 +1254,7 @@ details summary {
   font-weight: 800;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--cian);
+  color: var(--enlace);
 }
 
 .portada h1 {
@@ -1328,7 +1341,7 @@ details summary {
   margin-bottom: 0.75rem;
   border-radius: 12px;
   border: 1px solid var(--borde);
-  color: var(--cian);
+  color: var(--enlace);
 }
 
 .tarjeta__icono svg {

@@ -7,49 +7,53 @@
  * esa prueba, o no entra.
  *
  * Dos apariencias con la misma marca, que la persona elige (Dirección, 2026-09-30; antes eran una por superficie,
- * docs/paquetes/WP-IDENTIDAD-VISUAL.md, tramo A):
- * - «Claro»: claro y azul, el de trabajo con datos de la decisión del 2026-09-20;
- * - «Azul noche»: fondo azul profundo, superficies navy, acentos cian y azul; la predeterminada, inspirada en las
- *   referencias de Dirección del 2026-09-21 y del 2026-09-30.
- * El tema se aplica con `data-tema` en `<html>` (`apps/web/src/lib/apariencia.ts`); el encabezado es navy en los dos.
- * `:root` tiene el claro y `[data-tema='azul-noche']` redefine todo lo que cambia (figura y gráficos incluidos); los tokens
- * del encabezado, `--navy` y `--cian` son comunes a las dos apariencias y se heredan de `:root`.
+ * docs/paquetes/WP-IDENTIDAD-VISUAL.md, tramo A). Desde WP-ESCRITORIO-AMABLE (C-11) son **las paletas medidas el
+ * 2026-09-30,** las mismas de la APK (`apps/mobile/src/tema.ts`):
+ * - «Claro»: la del compositor de Dirección, fondo #f2f6fc, tarjetas blancas y azul #1e6bf2;
+ * - «Azul noche»: la de las pantallas de referencia de Dirección, fondo #011325, tarjetas #052238 y cian #27d5f9; es
+ *   la predeterminada.
+ * En Claro, cuatro colores de texto (secundario, enlace, error y éxito) van un punto más oscuros que los medidos: el
+ * website los pone también sobre el velo azul de la cara pública, y con el valor medido no llegaban a 4,5:1.
+ * El tema se aplica con `data-tema` en `<html>` (`apps/web/src/lib/apariencia.ts`). El encabezado es azul profundo en
+ * los dos; en Azul noche va un tono más oscuro que la página. `:root` tiene el claro y `[data-tema='azul-noche']`
+ * redefine todo lo que cambia (figura y gráficos incluidos); `--navy`, `--cian` y el texto del encabezado son comunes
+ * y se heredan de `:root`.
  */
 :root {
   /* Superficies y texto */
-  --fondo: #f4f7fb;
-  --fondo-suave: #eef3fa;
+  --fondo: #f2f6fc;
+  --fondo-suave: #f4f7fc;
   --superficie: #ffffff;
-  --texto: #0b1b2e;
-  --tenue: #475569;
+  --texto: #0a1f44;
+  --tenue: #566881;
   /* Marca */
-  --azul: #1f5bc4;
-  --azul-oscuro: #17459a;
-  --navy: #04213f;
-  --cian: #5ee0fb;
+  --azul: #1e6bf2;
+  --azul-oscuro: #1453c9;
+  --navy: #011325;
+  --cian: #27d5f9;
   /* Interacción */
-  --enlace: #17459a;
-  --boton-fondo: #1f5bc4;
-  --boton-fondo-activo: #17459a;
+  --enlace: #135ddf;
+  --boton-fondo: #1e6bf2;
+  --boton-fondo-activo: #1453c9;
   --boton-texto: #ffffff;
-  --boton-secundario-texto: #17459a;
-  --boton-secundario-borde: #1f5bc4;
-  --peligro-fondo: #b42318;
+  --boton-secundario-texto: #135ddf;
+  --boton-secundario-borde: #1e6bf2;
+  --peligro-fondo: #ad471a;
   --peligro-texto: #ffffff;
   /* Bordes: el decorativo separa; el de control delimita un campo y necesita 3:1 (WCAG 1.4.11) */
-  --borde: #d5deea;
-  --borde-control: #6b7a90;
+  --borde: #dce6f4;
+  --borde-control: #7b8ea8;
   --foco: #b45309;
   /* Estados: siempre con texto o forma además del color (B10-10 §1, §12) */
-  --error: #b42318;
-  --error-fondo: #fef3f2;
-  --exito: #067647;
-  --exito-fondo: #ecfdf3;
-  /* Encabezado de marca: navy en los dos temas */
-  --encabezado-fondo: #04213f;
-  --encabezado-fondo-2: #0a2e52;
+  --error: #ad471a;
+  --error-fondo: #fff4f0;
+  --exito: #0f7640;
+  --exito-fondo: #eef8f2;
+  /* Encabezado de marca: azul profundo en los dos temas (Azul noche redefine los dos fondos) */
+  --encabezado-fondo: #011325;
+  --encabezado-fondo-2: #052238;
   --encabezado-texto: #f2f7fc;
-  --encabezado-tenue: #a9c1da;
+  --encabezado-tenue: #8dcae5;
   --encabezado-foco: #fbbf24;
   /* Figura de la toma antropométrica (tramo D): el azul de la referencia de Dirección, sobre una tarjeta blanca */
   --figura-relleno: #eaf3ff;
@@ -69,33 +73,36 @@
   --metrica-2: #7b3fb5;
   --metrica-3: #00708a;
   /* Sombras y velo: no son texto ni bordes de control */
-  --sombra-suave: 0 1px 2px rgb(4 33 63 / 6%), 0 1px 1px rgb(4 33 63 / 4%);
-  --sombra: 0 20px 50px rgb(4 33 63 / 30%);
-  --velo: rgb(4 33 63 / 55%);
+  --sombra-suave: 0 1px 2px rgb(10 31 68 / 6%), 0 1px 1px rgb(10 31 68 / 4%);
+  --sombra: 0 20px 50px rgb(10 31 68 / 30%);
+  --velo: rgb(1 19 37 / 55%);
   /* La sombra que avisa que una línea sigue de costado (`.desplazable-x`): oscura sobre fondo claro, cian sobre navy */
-  --sombra-desplazamiento: rgb(4 33 63 / 28%);
-  --sombra-desplazamiento-sobre-navy: rgb(94 224 251 / 55%);
+  --sombra-desplazamiento: rgb(10 31 68 / 28%);
+  --sombra-desplazamiento-sobre-navy: rgb(39 213 249 / 55%);
   color-scheme: light;
 }
 
 [data-tema='azul-noche'] {
-  --fondo: #04213f;
-  --fondo-suave: #07284a;
-  --superficie: #0a2e52;
-  --texto: #f2f7fc;
-  --tenue: #a9c1da;
-  --azul: #2e8fff;
-  --azul-oscuro: #5ee0fb;
-  --enlace: #5ee0fb;
-  --boton-fondo: #5ee0fb;
-  --boton-fondo-activo: #a5f0ff;
-  --boton-texto: #04213f;
-  --boton-secundario-texto: #5ee0fb;
-  --boton-secundario-borde: #5ee0fb;
+  /* El encabezado va un tono más profundo que la página: si no, solo lo separaría la línea cian. */
+  --encabezado-fondo: #000f1b;
+  --encabezado-fondo-2: #011325;
+  --fondo: #011325;
+  --fondo-suave: #0a2c47;
+  --superficie: #052238;
+  --texto: #ffffff;
+  --tenue: #8dcae5;
+  --azul: #1d98de;
+  --azul-oscuro: #46e2f3;
+  --enlace: #46e2f3;
+  --boton-fondo: #27d5f9;
+  --boton-fondo-activo: #8ae9fb;
+  --boton-texto: #011325;
+  --boton-secundario-texto: #46e2f3;
+  --boton-secundario-borde: #27d5f9;
   --peligro-fondo: #ff9b8f;
-  --peligro-texto: #04213f;
-  --borde: #1e4470;
-  --borde-control: #7fa3c8;
+  --peligro-texto: #011325;
+  --borde: #173d5b;
+  --borde-control: #87a5bd;
   --foco: #fbbf24;
   --error: #ff9b8f;
   --error-fondo: #3b1a25;
@@ -103,14 +110,14 @@
   --exito-fondo: #0b3a3a;
   /* Figura de la toma sobre una tarjeta navy: relleno apenas más claro, trazo y punto en cian, halo azul claro. Los
      puntos siguen sin conocer el valor: un solo color por estado de carga. */
-  --figura-relleno: #123a66;
-  --figura-trazo: #5ee0fb;
+  --figura-relleno: #0c3558;
+  --figura-trazo: #27d5f9;
   --punto: #a5f0ff;
   --punto-halo: #1f5bc4;
   /* Gráficos: planificado en cian, registrado en naranja claro, hueco en gris azulado; rayado y forma siguen igual. */
-  --grafico-planificado: #5ee0fb;
+  --grafico-planificado: #27d5f9;
   --grafico-registrado: #ff9b5c;
-  --grafico-hueco: #7fa3c8;
+  --grafico-hueco: #87a5bd;
   /* Las tres métricas sobre navy: las mismas familias, más claras, lejos del cian de los enlaces, del menta del éxito, del
      salmón del error y del amarillo del foco. */
   --metrica-1: #7cb8ff;
@@ -118,7 +125,7 @@
   --metrica-3: #2bb3a3;
   --sombra-suave: none;
   --sombra: 0 20px 50px rgb(0 0 0 / 45%);
-  --sombra-desplazamiento: rgb(94 224 251 / 40%);
+  --sombra-desplazamiento: rgb(39 213 249 / 40%);
   --velo: rgb(0 0 0 / 60%);
   color-scheme: dark;
 }

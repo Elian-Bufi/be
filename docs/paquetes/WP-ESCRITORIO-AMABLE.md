@@ -84,14 +84,14 @@ Cada parte deja la rama en un estado que se puede integrar: si el plazo corta el
 
 | # | Parte | Pantallas del diseño | Cambios del criterio | Dónde está hoy |
 |---|---|---|---|---|
-| 0 | **La base visual,** en todo el website: las dos paletas medidas; la familia de íconos como datos y componente; las piezas que comparten las pantallas nuevas (control segmentado, etiqueta con ícono, chip con cantidad, bloque de estado) | Todas | C-11, C-23, C-29, C-32, C-43, C-44, C-45, C-47 | `tokens.css`, `globals.css`, `components/` |
+| 0 | **La base visual,** en todo el website: las dos paletas medidas y la familia de íconos, como datos y componente. Las piezas que comparten las pantallas nuevas (control segmentado, etiqueta con ícono, chip con cantidad, bloque de estado) entran con la primera parte que usa cada una | Todas | C-11, C-23, C-29, C-32, C-44, C-45, C-47 | `tokens.css`, `globals.css`, `components/` |
 | 1 | **El marco de la ficha:** persona, acceso, «Solicitar contexto», «Actualizar» y la hora en una franja; las tres vistas con su ícono; un solo control de período con los atajos adentro; una ayuda por vista | 01 a 12, 14 y 15 | C-02, C-04, C-10 | `advisees/workspace.tsx`, `seguimiento/barra.tsx` |
 | 2 | **Analizar:** la configuración en una barra, los gráficos y la lectura; «¿Qué querés mirar?»; todos puntos y la métrica por color y nombre; lo planificado y lo registrado en el mismo gráfico; los días sin registros, sombreados; «Separadas», «Juntas» y «Cambio relativo»; el origen del dato en el lugar de la lectura; comparar etapas | 03 a 05, 07 a 12 y 15 | C-08, C-12, C-13, C-16 a C-22, C-28, C-30, C-33 | `seguimiento/analizar.tsx`, `lienzo.tsx`, `selector.tsx`, `preguntas.tsx`, `etapas.tsx`, `contraste.tsx` |
 | 3 | **Resumen:** una tarjeta por área, con su acción; cuatro preguntas; cuatro indicadores; la tira del objetivo del día | 01 y 14 | C-03, C-05, C-26, C-28, C-30, C-31 | `seguimiento/resumen.tsx` |
 | 4 | **Línea de tiempo:** lo rutinario agrupado por día; vistas con nombre y cantidad; un día sin novedades, en un renglón; el detalle al costado | 02 | C-06, C-07, C-25 | `seguimiento/linea-de-tiempo.tsx`, `registro-original.tsx` |
 | 5 | **Espacio profesional:** vistas con cantidad, el último registro debajo de cada pendiente y el directorio al costado | 13 | C-34 | `pro/espacio-profesional.tsx`, `pro/pendientes.tsx` |
 
-Los estados de página (pantalla 19) entran con la parte que los muestra. C-18 (se mantienen las tres métricas) y C-24
+Los estados de página (pantalla 19, C-43) entran con la parte que los muestra. C-18 (se mantienen las tres métricas) y C-24
 (el isotipo real) ya se cumplen: no piden trabajo.
 
 ## 4. Decisiones
@@ -106,6 +106,14 @@ Se completan a medida que se implementa. Cada una dice qué se eligió y qué ot
 | E-04 | **Los íconos van como datos en el dominio** (`packages/domain/src/iconos.ts`) **y el website los dibuja con un componente.** La APK sigue con los suyos hasta su propio paquete. Desde que entran al repositorio, ese archivo es la fuente: un dibujo se cambia ahí. | Es lo que comparten los dos productos: cada dibujo queda escrito una vez. Se descartó dejarlos solo en el website (habría que mudarlos al unificar la APK) y traer el generador del taller (necesita un navegador y rutas de una máquina). |
 | E-05 | **Los textos que cambian quedan donde están hoy:** en la pantalla, si son de una sola; en el dominio, si ya vivían ahí. La prueba de palabras prohibidas (`scripts/copy-pantallas.test.cjs`) se extiende a la ficha, que hoy no cubre. | Mudar todos los textos de la ficha al dominio era otro trabajo. Extender la prueba cuesta poco y evita que entre una palabra que califica. |
 | E-06 | **Cada comprobación de los recorridos conserva lo que protege.** Si cambia un texto o un selector, se actualiza la comprobación y se anota la equivalencia. Una comprobación negativa («la pantalla no dice X») se actualiza **en el mismo cambio** que el texto que niega. | Hay unas 25 comprobaciones negativas: si el texto cambia y la comprobación no, sigue pasando sin proteger nada. |
+
+**De la Parte 0:**
+
+| # | Decisión | Por qué, y qué se descartó |
+|---|---|---|
+| E-07 | **En Claro, cuatro colores de texto van un punto más oscuros que los medidos:** secundario `#566881` (medido `#5e728d`), enlace `#135ddf` (`#1465f1`), error `#ad471a` (`#bb4d1c`) y éxito `#0f7640` (`#107f45`). | La prueba de contraste no se tocó: mide los mismos pares que antes, incluido el velo azul de la cara pública. Con los valores medidos, esos cuatro quedaban entre 4,0 y 4,4 sobre el velo; el mínimo es 4,5. Se descartó quitar el velo (cambiaba la portada) y sumar excepciones a la prueba. En Azul noche los valores medidos pasan sin cambios. |
+| E-08 | **Hallazgo corregido en la portada:** el lema y los íconos de las tarjetas iban en cian también en Claro (1,4:1 sobre el fondo; ese par no estaba declarado en la prueba). Pasan al color de los enlaces, que sí se mide, y la portada usa los íconos de la familia en lugar de tres dibujos propios. | Era un defecto anterior a este paquete; quedó a la vista al revisar las 28 páginas con las paletas nuevas. Severidad baja: es un texto decorativo de una página pública. |
+| E-09 | **En Azul noche el encabezado va un tono más profundo que la página** (`#000f1b` sobre `#011325`). | Con la paleta medida, el fondo de la página pasó a ser el azul que antes era del encabezado: sin el tono más profundo, solo los separaba la línea cian. |
 
 ## 5. Pruebas y evidencia
 
@@ -159,7 +167,7 @@ se anota en `docs/DEUDA_LEGAJO.md` antes de tocar los gráficos.
 | # | Parte | Estado |
 |---|---|---|
 | — | Definición, referencia de diseño, relevamientos y capturas del «antes» | Hecho el 2026-10-10 |
-| 0 | La base visual | En curso |
+| 0 | La base visual | Hecho el 2026-10-10: paletas medidas (prueba de contraste 12/12, sin tocarla), familia de íconos en el dominio (4/4) y componente del website; 28 páginas capturadas en los dos temas, con el mismo alto que antes y sin errores de página |
 | 1 | El marco de la ficha | Pendiente |
 | 2 | Analizar | Pendiente |
 | 3 | Resumen | Pendiente |

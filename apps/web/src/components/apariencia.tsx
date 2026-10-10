@@ -7,6 +7,7 @@
  */
 import { useEffect, useId, useState } from 'react';
 import { aplicarTema, leerTema, NOMBRE_DEL_TEMA, sePuedeGuardar, TEMA_PREDETERMINADO, TEMAS, temaValido, type Tema } from '../lib/apariencia';
+import { Icono } from './icono';
 
 export function SelectorDeApariencia() {
   const id = useId();
@@ -24,7 +25,11 @@ export function SelectorDeApariencia() {
   }, []);
   return (
     <div className="apariencia">
-      <label htmlFor={id}>Apariencia</label>
+      <label htmlFor={id}>
+        {/* El dibujo acompaña a la palabra: el sol en Claro y la luna en Azul noche. */}
+        <Icono nombre={tema} tamano={18} />
+        Apariencia
+      </label>
       <select
         id={id}
         value={tema}

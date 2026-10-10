@@ -1,7 +1,8 @@
 # Guía de UX y UI de BE
 
 **Estado:** vigente desde el 2026-10-01 (DL-113), ampliada el 2026-10-03 con la candidata 0.13.2 y reorganizada el
-2026-10-09 con WP-DASHBOARD-COMPRENSION (en borrador, en la rama de ese paquete). A ratificar por Dirección.
+2026-10-09 con WP-DASHBOARD-COMPRENSION (en borrador, en la rama de ese paquete). Desde el 2026-10-10 la amplía
+WP-ESCRITORIO-AMABLE, también en borrador (V.3). A ratificar por Dirección.
 **Alcance:** el website del profesional y del asesorado (`apps/web`) y la APK del asesorado (`apps/mobile`).
 **Cuándo se usa:** en cada pantalla nueva y en cada cambio de una pantalla existente. Antes de abrir el PR se recorre la
 [lista de control](#parte-iv--verificación-y-lista-de-control).
@@ -14,7 +15,7 @@
   se aplican al website profesional.
 - [Parte IV · Verificación y lista de control](#parte-iv--verificación-y-lista-de-control).
 - [Parte V · Qué cambió el 2026-10-09](#parte-v--qué-cambió-el-2026-10-09): lo que se amplió, lo que se sustituyó y dónde
-  quedó cada sección de la versión anterior.
+  quedó cada sección de la versión anterior. En V.3, lo que cambia con WP-ESCRITORIO-AMABLE.
 - [Lo que se sabe que falta](#lo-que-se-sabe-que-falta).
 
 Las reglas del legajo están por encima de esta guía. Las más citadas son:
@@ -156,6 +157,12 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
     escrito en un formulario;
   - APK: «Azul noche» y «Claro», elegibles en Cuenta;
   - la lámina tiene sus tres temas propios, que no cambian la apariencia del website.
+- **Una sola paleta por apariencia, la misma en el website y en la APK:** las medidas el 2026-09-30. «Claro» es fondo
+  `#f2f6fc`, tarjetas blancas y azul `#1e6bf2`; «Azul noche», fondo `#011325`, tarjetas `#052238` y cian `#27d5f9`.
+  En Claro, el website lleva cuatro colores de texto (secundario, enlace, error y éxito) un punto más oscuros que los
+  medidos: los pone también sobre el velo azul de la cara pública, donde el valor medido no llegaba a 4,5:1.
+- **El cian no es color de texto sobre fondo claro.** Marca el encabezado y lo elegido sobre azul profundo; un texto
+  de acento usa el color de los enlaces, que sí está medido.
 - **El significado no va solo en el color.** Se dice también con forma, trazo, texto o estado accesible.
 
 ### I.7 Datos, cálculos y gráficos
@@ -173,6 +180,27 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
   no comparables (cambio de protocolo, método o unidad).
 - **Lo planificado no es lo registrado.** Lo previsto de un plan nunca se muestra como consumido o hecho, y una
   cantidad sin confirmar sigue sin confirmar.
+
+### I.8 Íconos
+
+Desde WP-ESCRITORIO-AMABLE hay una sola familia: 105 dibujos de un solo trazo, datos del dominio
+(`packages/domain/src/iconos.ts`). El website los dibuja con `Icono` (`apps/web/src/components/icono.tsx`); la APK
+todavía usa los suyos. Qué simboliza cada uno y dónde va está en
+`EVIDENCIA/ESCRITORIO-AMABLE/diseno/iconos/CATALOGO.md`.
+
+- **Un ícono acompaña a una palabra; no la reemplaza.** Con su texto al lado es decorativo y el lector de pantalla no
+  lo recorre. Si va solo (un botón que es solo el ícono), lleva un nombre que dice lo que hace, no lo que se ve:
+  «Quitar Pollo», no «cruz».
+- **No tiene color propio.** Toma el del texto que acompaña, y es el mismo dibujo en Claro y en Azul noche. Ningún
+  ícono dice un estado por su color.
+- **Un dibujo quiere decir una sola cosa.** La manzana es Nutrición y los cubiertos son una comida; la gota queda
+  reservada para el agua. Antes de usar uno para algo nuevo se mira el catálogo.
+- **Ninguno califica:** no hay estrellas, medallas, pulgares, caritas ni rachas (lo cuida `iconos.test.ts`), y una
+  tilde no va al lado de un dato, porque se leería como «cumplió».
+- **Tamaños:** 24 px en un título de área, 20 en filas y botones, 18 en pestañas y enlaces, 15 dentro de una
+  etiqueta. El objetivo táctil lo da el control, no el dibujo.
+- **Se elige mirándolo en su lugar:** dentro del control donde va a vivir, a su tamaño real y en los dos temas. Suelto
+  y grande, casi cualquier dibujo parece correcto.
 
 ---
 
@@ -704,6 +732,8 @@ Se copia en la descripción del PR y se marca. Se marcan los puntos generales y 
 - [ ] El lector de pantalla anuncia nombre, rol y estado: expandido, seleccionada, deshabilitado.
 - [ ] Usa solo tokens: pasa `node --test scripts/contraste.test.cjs`.
 - [ ] Los dos temas se ven bien.
+- [ ] Los íconos son de la familia (`Icono`): van con su palabra o tienen nombre, no llevan color propio y ninguno
+  califica (I.8).
 
 **Website profesional**
 - [ ] Se ve bien a 1440, 1280 y 1024 px; a 768 y 390 no se rompe ni desplaza la página de costado.
@@ -796,6 +826,17 @@ Para las citas a esta guía por número de sección en otros documentos:
 | §10 Componentes y patrones del website | II.8 (y II.9 para `.tomas` y `.mediciones`) |
 | §11 Cómo se verifica | IV.2 |
 | §12 Lo que se sabe que falta | Lo que se sabe que falta |
+
+### V.3 Lo que cambia con WP-ESCRITORIO-AMABLE (desde el 2026-10-10)
+
+Se anota parte por parte, a medida que cambia la pantalla (`docs/paquetes/WP-ESCRITORIO-AMABLE.md`, §7). Ninguna
+garantía de accesibilidad, permisos, integridad de datos o manejo de errores se quita.
+
+| Pauta | Antes | Ahora | Tipo | Parte |
+|---|---|---|---|---|
+| Paletas | El website tenía sus propios valores para «Claro» y «Azul noche», distintos de los de la APK. | Las paletas medidas el 2026-09-30, las mismas de la APK; cuatro colores de texto de Claro, un punto más oscuros por el velo de la cara pública (I.6). | Sustituida | 0 |
+| Texto en cian | El lema de la portada y los íconos de sus tarjetas iban en cian también en Claro: 1,4:1 sobre el fondo. | El cian no es color de texto sobre fondo claro; el acento de texto es el color de los enlaces (I.6). | Corregida | 0 |
+| Íconos | El website casi no tenía: tres dibujos propios en la portada y signos de texto. | Una familia de 105, con reglas de uso (I.8). La portada usa los de la familia. | Nueva | 0 |
 
 ---
 
