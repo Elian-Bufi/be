@@ -1,0 +1,167 @@
+# WP-ESCRITORIO-AMABLE — el escritorio del profesional, amable de usar · definición del paquete
+
+> **Estado:** DEFINIDO el 2026-10-10. La implementación avanza por partes en la rama `wp-escritorio-amable`, sin
+> integrar. El estado de cada parte está en §8 y lo probado, en `EVIDENCIA/ESCRITORIO-AMABLE/`.
+>
+> **Encargo:** pedidos de Dirección del 2026-10-09 y del 2026-10-10, en la conversación de trabajo. El escritorio del
+> profesional «tiene mucha información», con «los filtros y tantas opciones» a la vista: «primero hagamos amable el uso
+> de la plataforma». Dirección delegó la dirección de UX en el ejecutor, devolvió correcciones sobre cuatro versiones
+> de las maquetas y eligió los dos últimos íconos. El 2026-10-10 dijo que lo que no corrigió le parece correcto y
+> aclaró que eso es confianza en el criterio del ejecutor, no una revisión pantalla por pantalla. A la propuesta de
+> implementar por partes, empezando por la ficha del asesorado, respondió «Correcto en todo».
+>
+> **Autorización:**
+> - **Sí:** desarrollar en una rama aislada, apilada sobre `wp-dashboard-comprension`; cambios de presentación y de
+>   textos de pantalla en el website; pruebas y recorridos locales con datos sintéticos; un PR en borrador.
+> - **No:** merge, despliegue, publicación de una APK, gastos ni servicios externos. Tampoco funciones nuevas, cambios
+>   de permisos, de contratos, de la base o del legajo: lo que los pediría queda fuera (§6), con su motivo.
+>
+> **Base:** `wp-dashboard-comprension` en `ab90860` (PR #154, en borrador, apilado sobre #153 `wp-dashboard-profesional`).
+> No incluye #151 ni #152. Cuando #154 se integre, la base de este PR pasa a la que corresponda, sin reescribir historia.
+>
+> **Datos:** solo sintéticos, en una base local propia (`be_test_escritorio`, PostgreSQL 16 en :55442) con su carpeta de
+> trabajo `herramientas/trabajo-escritorio/`, que git ignora. Las bases `be_test_dashboard` (#153) y
+> `be_test_comprension` (#154) no se regeneran: quedan para comparar.
+
+## 0. Fuentes leídas
+
+- **Pedidos y devoluciones de Dirección** del 9 y del 10 de octubre. Están resumidos, con la devolución que originó
+  cada cambio, en `EVIDENCIA/ESCRITORIO-AMABLE/diseno/CRITERIO-Y-AUDITORIA.md` (§4: los 81 cambios respecto de hoy).
+  En este documento, **C-17** quiere decir «el cambio 17 de esa lista».
+- **Diseño** (`EVIDENCIA/ESCRITORIO-AMABLE/diseno/`): el criterio (ocho criterios, el mapa de qué queda a la vista y
+  qué a un clic, las reglas para 1280 y 1024 px), las 29 pantallas en Claro y en Azul noche, y el catálogo de los 105
+  íconos con lo que simboliza cada uno.
+- **04:** RNF-ACC-001 (accesibilidad en los recorridos núcleo, con WCAG 2.2 AA como marco: teclado, foco visible,
+  etiquetas, contraste, estados que no dependen solo del color), RNF-ACC-002 (lenguaje claro, no diagnóstico y no
+  causal), RNF-ACC-003 (operable en las superficies objetivo sin perder acciones esenciales) y RNF-PERF-002 (estado
+  visible sin bloqueo prolongado). RF-034, RF-053 y RF-054 son los requisitos de la ficha: no cambian.
+- **Paquetes anteriores:** `WP-DASHBOARD-PROFESIONAL.md` (matriz PRO-01 a PRO-26) y `WP-DASHBOARD-COMPRENSION.md`
+  (D-01 a D-33, CP-01 a CP-30). Sus decisiones siguen valiendo; §7 dice cuáles cambian de forma.
+- **Guía de UX** (`docs/ux/GUIA-UX-UI.md`): se actualiza dentro de este paquete (§7).
+- **Repositorio:** dos relevamientos del 2026-10-10, en `EVIDENCIA/ESCRITORIO-AMABLE/relevamientos/`:
+  `ficha-y-estilos.md` (cómo está hecha hoy la ficha, la hoja de estilos, los temas y los gráficos) y
+  `pruebas-y-evidencia.md` (qué comprobaciones dependen de los textos y de la estructura de las pantallas). Los otros
+  tres (`antropometria.md`, `entrenamiento.md`, `informacion-y-nutricion.md`) son la base del segundo paquete (§6).
+  Lectura directa de `tokens.css`, `scripts/contraste.test.cjs`, `apps/mobile/src/tema.ts` y las herramientas de
+  recorrido.
+- **Pendiente de leer antes de la Parte 2:** el 10 (B10-10, sistema visual y gráficos), por la tensión que anota §7.
+
+## 1. Objetivo y demostrables
+
+Que el profesional encuentre lo que vino a mirar sin desplazarse ni configurar. BE no tiene opciones de más: tiene
+demasiadas a la vista al mismo tiempo, y todas con el mismo peso. **No se quita ninguna función:** se decide qué queda
+a la vista y qué a un clic.
+
+Medido hoy con `herramientas/paginas.mjs`, a 1440 × 900, con el asesorado A y el período de 90 días:
+
+| Vista | Hoy | Al cerrar su parte |
+|---|---|---|
+| Resumen | 2.313 px de alto (2,6 pantallas) | Objetivo, plan, pendientes y la acción de cada área, las preguntas y los indicadores, sin desplazarse |
+| Línea de tiempo | 10.728 px (11,9 pantallas) para los primeros 50 hechos | Una semana a la vista; lo rutinario agrupado por día; el detalle, al costado |
+| Analizar, con una pregunta en curso | 2,7 pantallas (medido el 9/10; se vuelve a medir al empezar la Parte 2) | La barra, los gráficos y la lectura, sin desplazarse; los gráficos ocupan la mayor parte del ancho |
+| Espacio profesional | 2.634 px (2,9 pantallas) | Los pendientes y el directorio de asesorados, a la vista |
+
+En todas: los dos temas con las paletas medidas el 30/9, una sola familia de íconos, y a 1280 y 1024 px las reglas
+escritas en el criterio (§3, «En 1280 y en 1024 de ancho»). A 768 y 390 px no se rompe (RNF-ACC-003).
+
+## 2. Lo que no cambia
+
+- **Las funciones, las operaciones y los permisos.** No hay ninguna operación nueva ni cambia qué ve cada quien.
+- **Los contratos.** Los parámetros de la URL y sus letras (`vista`, `p`, `m`, `modo`, `g`, `ref`, `cmp`…) y los
+  enumerados que guarda el servidor (`PANELS|OVERLAY|RELATIVE`, `ORIGINAL|DAY|WEEK`) quedan igual: una vista guardada
+  o un enlace de hoy se abren igual después. Cambia el nombre que se lee, no el valor que viaja.
+- **Las reglas de BE:** ubicar, nunca calificar (sin verde ni rojo de juicio, sin porcentaje de cumplimiento, sin
+  semáforos); un hueco es un hueco, nunca un cero; cada dato dice de dónde sale; ver no es revisar.
+- **Los textos que son garantías.** Los que arma el dominio con prueba propia (la síntesis, la cobertura, «frente a
+  lo indicado», los efectos de cada resultado de una revisión) no se reescriben para que entren en una composición.
+- **La accesibilidad ya lograda:** «Saltar al contenido», un título principal por página, foco visible, teclado en el
+  gráfico con su tabla equivalente, objetivos de 44 px, `prefers-reduced-motion`, y el orden del documento igual al
+  orden visual.
+
+## 3. Partes
+
+Cada parte deja la rama en un estado que se puede integrar: si el plazo corta el paquete, lo hecho sirve.
+
+| # | Parte | Pantallas del diseño | Cambios del criterio | Dónde está hoy |
+|---|---|---|---|---|
+| 0 | **La base visual,** en todo el website: las dos paletas medidas; la familia de íconos como datos y componente; las piezas que comparten las pantallas nuevas (control segmentado, etiqueta con ícono, chip con cantidad, bloque de estado) | Todas | C-11, C-23, C-29, C-32, C-43, C-44, C-45, C-47 | `tokens.css`, `globals.css`, `components/` |
+| 1 | **El marco de la ficha:** persona, acceso, «Solicitar contexto», «Actualizar» y la hora en una franja; las tres vistas con su ícono; un solo control de período con los atajos adentro; una ayuda por vista | 01 a 12, 14 y 15 | C-02, C-04, C-10 | `advisees/workspace.tsx`, `seguimiento/barra.tsx` |
+| 2 | **Analizar:** la configuración en una barra, los gráficos y la lectura; «¿Qué querés mirar?»; todos puntos y la métrica por color y nombre; lo planificado y lo registrado en el mismo gráfico; los días sin registros, sombreados; «Separadas», «Juntas» y «Cambio relativo»; el origen del dato en el lugar de la lectura; comparar etapas | 03 a 05, 07 a 12 y 15 | C-08, C-12, C-13, C-16 a C-22, C-28, C-30, C-33 | `seguimiento/analizar.tsx`, `lienzo.tsx`, `selector.tsx`, `preguntas.tsx`, `etapas.tsx`, `contraste.tsx` |
+| 3 | **Resumen:** una tarjeta por área, con su acción; cuatro preguntas; cuatro indicadores; la tira del objetivo del día | 01 y 14 | C-03, C-05, C-26, C-28, C-30, C-31 | `seguimiento/resumen.tsx` |
+| 4 | **Línea de tiempo:** lo rutinario agrupado por día; vistas con nombre y cantidad; un día sin novedades, en un renglón; el detalle al costado | 02 | C-06, C-07, C-25 | `seguimiento/linea-de-tiempo.tsx`, `registro-original.tsx` |
+| 5 | **Espacio profesional:** vistas con cantidad, el último registro debajo de cada pendiente y el directorio al costado | 13 | C-34 | `pro/espacio-profesional.tsx`, `pro/pendientes.tsx` |
+
+Los estados de página (pantalla 19) entran con la parte que los muestra. C-18 (se mantienen las tres métricas) y C-24
+(el isotipo real) ya se cumplen: no piden trabajo.
+
+## 4. Decisiones
+
+Se completan a medida que se implementa. Cada una dice qué se eligió y qué otra opción había.
+
+| # | Decisión | Por qué, y qué se descartó |
+|---|---|---|
+| E-01 | **Se rediseña en el lugar,** sin una versión paralela ni un interruptor. | La rama está aislada y en borrador: lo que hay se compara con las capturas del «antes». Una segunda versión detrás de un interruptor duplicaba el código y las pruebas. |
+| E-02 | **Lo nuevo entra con clases nuevas; las compartidas solo cambian de piel.** `.pestanas`, `.chip`, `.tabla`, `.seccion` y `.dialogo` las usan también las pestañas de área, la cuenta y la cara pública: en este paquete reciben las paletas y nada más. | Recomponerlas ahora cambiaba pantallas que no están en el alcance. El costo: hasta el segundo paquete, la ficha y las pestañas de área comparten colores e íconos, pero no la disposición. |
+| E-03 | **Los nombres cambian en la pantalla, no en el contrato** (§2). | Un enlace o una vista guardada de hoy tienen que seguir abriendo. |
+| E-04 | **Los íconos van como datos en el dominio** (`packages/domain/src/iconos.ts`) **y el website los dibuja con un componente.** La APK sigue con los suyos hasta su propio paquete. Desde que entran al repositorio, ese archivo es la fuente: un dibujo se cambia ahí. | Es lo que comparten los dos productos: cada dibujo queda escrito una vez. Se descartó dejarlos solo en el website (habría que mudarlos al unificar la APK) y traer el generador del taller (necesita un navegador y rutas de una máquina). |
+| E-05 | **Los textos que cambian quedan donde están hoy:** en la pantalla, si son de una sola; en el dominio, si ya vivían ahí. La prueba de palabras prohibidas (`scripts/copy-pantallas.test.cjs`) se extiende a la ficha, que hoy no cubre. | Mudar todos los textos de la ficha al dominio era otro trabajo. Extender la prueba cuesta poco y evita que entre una palabra que califica. |
+| E-06 | **Cada comprobación de los recorridos conserva lo que protege.** Si cambia un texto o un selector, se actualiza la comprobación y se anota la equivalencia. Una comprobación negativa («la pantalla no dice X») se actualiza **en el mismo cambio** que el texto que niega. | Hay unas 25 comprobaciones negativas: si el texto cambia y la comprobación no, sigue pasando sin proteger nada. |
+
+## 5. Pruebas y evidencia
+
+- **En la CI** (push a `wp-*`): typecheck y compilación del website; `contraste.test.cjs` con los pares de las paletas
+  nuevas (4,5:1 para texto, 3:1 para bordes de control, foco y gráficos; ningún color fuera de los tokens);
+  `copy-pantallas.test.cjs`, extendida a la ficha (E-05); las pruebas del dominio, con la de la familia de íconos.
+- **Recorridos con navegador** (locales, fuera de la CI): `recorrido.mjs` y `recorrido-comprension.mjs` se actualizan
+  parte por parte (E-06). La tabla de equivalencias queda en `EVIDENCIA/ESCRITORIO-AMABLE/ACEPTACION.md`, con lo que
+  protege cada comprobación tocada.
+- **Antes y después:** `herramientas/paginas.mjs` captura las 28 páginas del website en los dos temas y mide su alto.
+  El «antes» es del 2026-10-10, sobre la compilación de `269d930`.
+- **Accesibilidad:** axe sin violaciones en las pantallas tocadas, en los dos temas; teclado y foco; cada ícono que va
+  solo tiene nombre, y el que acompaña a un texto no se lee dos veces.
+- **Estados de la evidencia,** separados como siempre: implementado, verificado automáticamente, observado en una
+  captura real, solo en maqueta, pendiente de prueba manual. Una maqueta sola no cierra una parte.
+
+## 6. Fuera de alcance
+
+| Qué | Por qué | Dónde queda |
+|---|---|---|
+| El alias del asesorado (C-01) | Es una decisión del legajo | DL-040, abierta |
+| La clase del dato en comidas y series (C-09) | Es un dato nuevo del dominio | Para decidir |
+| La línea del objetivo en los macronutrientes dentro de Analizar (C-27 y parte de C-17) | La lectura de series trae hoy solo las calorías del objetivo; se confirma al empezar la Parte 2. Si es así, pide ampliar API-PRJ-01 | Para decidir |
+| Los rangos de macros por día tipo y por comida | Datos nuevos: legajo, contrato y base | Criterio §5; sin DL todavía |
+| Preparar revisión (C-14, C-15) | La pantalla vive en las pestañas de Nutrición y de Entrenamiento | Segundo paquete |
+| Nutrición, Entrenamiento, Antropometría, Información y la biblioteca (C-35 a C-42, C-49 a C-53, C-58 a C-81) | Son otras 15 pantallas, con dos editores de 800 a 1.000 líneas | Segundo paquete, con su propia definición |
+| La estimación de cada opción en el website (C-36) | Pide ampliar una lectura de la API | Segundo paquete, si se decide |
+| Unificar los 20 íconos propios de la APK | Toca pantallas validadas en el teléfono y pide una APK nueva | Otro paquete |
+| Componer para 768 y 390 px | El profesional trabaja en escritorio: ahí solo no se rompe | — |
+
+## 7. Lo que cambia en la guía de UX y la tensión con el legajo
+
+La guía (`docs/ux/GUIA-UX-UI.md`) se ajusta en la misma parte que cambia la pantalla, y la Parte V dice qué cambió:
+
+| Regla de hoy | Cómo queda | Parte |
+|---|---|---|
+| II.3: la miga «Ficha del asesorado» | Sin miga: la barra ya vuelve al Espacio profesional | 1 |
+| II.4: cada observación dice «Sale de…» | La fila nombra su fuente; «Sale de…» no se repite en cada una (C-05) | 3 |
+| II.1 y II.6: Analizar en «tres zonas»; «paneles sincronizados» | Las mismas tres cosas, acomodadas como barra, gráficos y lectura; los modos se llaman «Separadas», «Juntas» y «Cambio relativo» (C-08, C-20) | 2 |
+| I.7: la métrica se distingue por forma y trazo | Todos puntos; la métrica, por color **y por su nombre** en el título de cada gráfico o al final de cada línea. El estado del punto (completo, subtotal, reportado, calculado) sigue yendo por la forma (C-16) | 2 |
+| — | Sección nueva: la familia de íconos, sus tamaños y cuándo llevan nombre | 0 |
+
+**Tensión para registrar antes de la Parte 2.** El 10 (B10-10) pide que lo planificado y lo registrado se distingan
+además por forma (cuadrados y círculos). Dirección decidió el 2026-10-09 que todas las marcas sean puntos: lo
+planificado es una línea discontinua del mismo color, sin marcas, y lo registrado, una línea continua con puntos. La
+diferencia sigue sin depender solo del color (WCAG 1.4.1), pero el texto del 10 dice otra cosa: se lee el documento y
+se anota en `docs/DEUDA_LEGAJO.md` antes de tocar los gráficos.
+
+## 8. Estado
+
+| # | Parte | Estado |
+|---|---|---|
+| — | Definición, referencia de diseño, relevamientos y capturas del «antes» | Hecho el 2026-10-10 |
+| 0 | La base visual | En curso |
+| 1 | El marco de la ficha | Pendiente |
+| 2 | Analizar | Pendiente |
+| 3 | Resumen | Pendiente |
+| 4 | Línea de tiempo | Pendiente |
+| 5 | Espacio profesional | Pendiente |
