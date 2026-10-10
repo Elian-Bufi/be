@@ -127,6 +127,97 @@ La pasada que falló no se guardó como evidencia de aprobación: queda contada 
 - El retrato: el botón tiene el lugar, pero BE todavía no tiene imagen de perfil ni muestra el nombre de la cuenta en
   el menú (la sesión del website guarda solo el token).
 
-## Partes 2 a 5
+## Parte 2, primer tramo · Analizar: el lenguaje del gráfico y la composición (2026-10-10)
+
+Analizar se recompuso sin quitar ninguna función y sin cambiar ningún parámetro de la URL: una barra corta (la pregunta,
+las métricas y los modos), los gráficos y la lectura; lo que se usa de vez en cuando, a un clic. Los gráficos dicen más
+con menos: todas las marcas son puntos, el objetivo de calorías se dibuja junto a lo registrado y los días sin registros
+se ven. Sobre la base propia (`be_test_escritorio`, regenerada antes de la pasada) y la compilación estática del
+commit de código (780ca8d). Quedan para el tramo siguiente la entrada «¿Qué querés mirar?», los estados por gráfico, el origen en el lugar
+de la lectura, la composición propia de las etapas y del ejercicio, y «Cómo se lee esta vista».
+
+**Medido en la página real, a 1440 × 900 y con tres métricas (calorías, proteínas y peso, 90 días):** la vista pasó de
+2.368 a 1.093 px de alto (`parte-2/analizar-antes-y-ahora.png`), y las fechas del tercer gráfico terminan a los
+887 px: los tres entran en la primera pantalla. A 1280 × 900 terminan a los 900 px y a 1024 × 900, a
+los 957 (la barra ocupa un renglón más): se informa, no se exige. En una ventana de 1366 × 768 terminan a los
+887 px, 119 por debajo del borde: ahí el tercer gráfico no entra entero. La comparación de etapas, con la tabla de
+datos que había quedado abierta de otro análisis, medía 5.733 px; mide 1.961.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| La barra, los gráficos y la lectura en ese orden, la lectura al costado y los tres gráficos con sus fechas en la primera pantalla (E-24) | `recorrido.mjs funcional`, comprobaciones E-24, midiendo la página; con su prueba de la prueba (una barra alta saca los gráficos de la pantalla y la medición lo dice) | Pasa | Verificado automáticamente |
+| «Más acciones» cerrado al entrar; abierto, con las vistas guardadas, la descarga, las dos capas, el intervalo y la comparación; el botón dice su estado (E-25) | Lo mismo, E-25 | Pasa | Verificado automáticamente |
+| El pie de los gráficos abre una cosa a la vez: abrir el resumen cierra la tabla (E-25) | Lo mismo | Pasa | Verificado automáticamente |
+| Lo desplegado sigue al cambiar las métricas y se cierra al pasar por la entrada (E-38) | Lo mismo, E-38 | Pasa | Verificado automáticamente |
+| Todas las marcas son puntos, cada gráfico con el color de su métrica (E-26) | Lo mismo, E-26: las formas que hay adentro de cada marca y de cada muestra | Pasa | Verificado automáticamente |
+| En «Juntas», el nombre de cada métrica al final de su línea (E-26) | `recorrido.mjs funcional`, PRO-08 | Pasa | Verificado automáticamente |
+| El objetivo de calorías, dibujado: un tramo discontinuo por cada escalón que devuelve la API; ninguno en proteínas (E-27) | E-27, contra `prescribed.energyRequirement` de la API, a mano | Pasa: dos tramos, 2.100 kcal desde el 18 jul 2026 y 1.950 desde el 5 sept 2026 | Verificado automáticamente |
+| El objetivo en la lectura, en cada fila de la tabla y en el resumen en texto, con los valores de la API; sin diferencia ni porcentaje (E-27) | E-27, tres comprobaciones | Pasa: 80 filas de la tabla, ninguna distinta de lo esperado | Verificado automáticamente |
+| Los días sin registros, en gris: las zonas que declara la API, sin el día en curso; el mismo sombreado con dos métricas de Nutrición en «Juntas»; por semana y en el peso, ninguno (E-28) | E-28, contra `recorded.gaps` de la API, a mano | Pasa: dos zonas, 10 días (del 13 al 18 jul y del 9 al 12 ago) | Verificado automáticamente |
+| Las etapas en cada gráfico, con el rótulo arriba y una vez por área; sin rótulo para una etapa que no se ve (E-29) | E-29, dos comprobaciones, contra `planVersions` de la API | Pasa | Verificado automáticamente |
+| Los cambios de protocolo del peso: numerados con su leyenda si hay varios, con el motivo escrito si hay uno (E-30) | E-30, dos comprobaciones, contra los tramos de la API | Pasa: el 31 ago y el 21 sept 2026 | Verificado automáticamente |
+| Las líneas de los hitos, solo con su lista abierta (E-31) | E-31 | Pasa: 0 líneas con la lista cerrada, 11 por gráfico con la lista abierta | Verificado automáticamente |
+| El encabezado de cada gráfico y las fechas una sola vez (E-32) | E-32 | Pasa | Verificado automáticamente |
+| Los nombres de los modos y las mismas letras en la URL (E-33) | E-33 | Pasa | Verificado automáticamente |
+| «Calorías» y no «Energía» en Analizar; un solo orden de las métricas de Nutrición (E-34) | E-34; en el dominio, `analisis-longitudinal.test.ts`; en la API, `analisis.int-spec.ts` (la etiqueta del registro en la línea de tiempo, ahora con comprobación positiva) | Pasa | Verificado automáticamente |
+| La lectura de un día completo: su fecha, el valor de la API en grande, «Ver origen» con el nombre de la métrica (E-35) | E-35 | Pasa | Verificado automáticamente |
+| La leyenda, solo con lo dibujado: en una semana completa no hay leyenda (E-36) | E-36 | Pasa | Verificado automáticamente |
+| El aro de la fecha elegida se ve entero con 90 días a la vista (E-39) | E-39, con su prueba de la prueba (un aro recortado se detecta) | Pasa | Verificado automáticamente |
+| Accesibilidad con «Más acciones» y la tabla abiertos, en los dos temas | axe (WCAG 2.2 A y AA), dentro del mismo recorrido | Sin violaciones | Verificado automáticamente |
+| La ficha sigue funcionando con Analizar recompuesto | Los siete recorridos, sobre la compilación de este commit | `recorrido.mjs`: capturas 60 de 60, funcional 112 de 112 (las 84 de antes y 28 nuevas), descartable 17 de 17. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 79 de 79, funcional 76 de 76 (las 75 de antes y la prueba de la prueba de CP-12), revocación 6 de 6. Pasada del 2026-10-10, de 18:15 a 18:41 (`parte-2/resumen-de-la-pasada-final.txt`; empezó antes del commit, por eso su primer renglón dice c94a76c más 21 cambios sin confirmar: son los de 780ca8d) | Verificado automáticamente |
+| Toda la batería de la CI | `npm test` en la raíz y, después, la CI de GitHub sobre el commit | La CI de GitHub sobre el commit de código (780ca8d, corrida 38087004854): en verde el legajo, la batería completa (typecheck, dominio, scripts y API), la integración y la imagen de la API, después de repetir un trabajo (ver abajo). En la máquina: los scripts, 301 de 301; la API, 81 de 81 con el arreglo | Verificado automáticamente |
+| Contraste: ningún par ni mínimo cambió | `node --test scripts/contraste.test.cjs` | 12 de 12 | Verificado automáticamente |
+| Analizar a los cinco anchos, en los dos temas; «Juntas» y «Cambio relativo»; «Más acciones» y la tabla abiertos; la pregunta del plan, la comparación de etapas y la entrada | `ficha.mjs` y `ver.mjs` | 21 capturas en `parte-2/` | Observado en una captura real |
+
+**Comprobaciones que cambiaron, y lo que protegen (E-06):**
+
+| Comprobación | Antes | Ahora | Qué protege |
+|---|---|---|---|
+| E-24 a E-36, E-38 y E-39, 28 nuevas (`recorrido.mjs funcional`; solas, con `recorrido.mjs analizar`) | — | La composición y el lenguaje del gráfico, con lo esperado calculado a mano desde la API, y tres pruebas de la prueba | Las decisiones de este tramo |
+| PRO-08, los modos (`recorrido.mjs funcional`) | Leía el texto del motivo adentro de cada opción («unidades distintas») | Lee que la opción está apagada, que referencia su aviso, y el motivo en el aviso del costado («"Juntas" pide métricas con la misma unidad») | Que un modo que no se puede usar esté apagado y diga por qué |
+| PRO-07 y PRO-08, los títulos | «Energía registrada · por día (kcal)» | «Calorías registradas por día · kcal»; en «Juntas», «Proteínas y carbohidratos registrados por día · g» y el nombre al final de cada línea | Que cada gráfico diga qué métrica es, qué es cada punto y en qué unidad |
+| PRO-10, PRO-19 y PRO-20; CP-11, CP-17, CP-23 y CP-26: las vistas guardadas, la descarga y el intervalo con fechas | Buscaban cada cosa a la vista | Abren antes «Más acciones» (`abrirMasAcciones`) | Lo mismo que antes: guardar y retomar una vista, descargar con el acceso actual, acercar con fechas |
+| PRO-10 y CP-13: la tabla de datos | Abrían un plegable | La abren desde el pie de los gráficos (`abrirDelPie`) | Que la tabla diga lo mismo que el gráfico |
+| PRO-05, PRO-10, PRO-20 y PRO-26; CP-21 y CP-23: el origen | Botón «Ver el origen de este dato» | Botón «Ver origen», con el nombre de la métrica para el lector de pantalla | Que cada valor lleve a su registro original |
+| D-31 (`recorrido-comprension.mjs`), con la pregunta de etapas | El resumen en texto, plegado, y la lista de etapas, ausentes del cuerpo | El resumen en texto es un enlace del pie, sin abrir; la lista de etapas no se ofrece ahí | Que la tabla A/B sea lo principal y nada se repita |
+| CP-12, el punto elegido | El aro, dibujado debajo de la marca, adentro de su grupo | El aro rodea la marca desde su propia capa: mismo centro, radio mayor, sin relleno; con su prueba de la prueba | Que elegir un punto no tape la forma que dice la clase del dato |
+
+Las comprobaciones negativas que cambiaron con su texto: «Analizar no dice "Energía"» (E-34, nueva) y, en la prueba de
+integración de la API (`analisis.int-spec.ts`, que corre en la CI), «un registro sin cantidades no lleva la etiqueta
+"Calorías registradas"»: antes negaba «Energía registrada», y ahora afirma además que un registro con cantidades sí la
+lleva, con su valor en kcal (si no, la ausencia pasaría también por un nombre mal escrito). Las demás no cambiaron.
+
+**Lo que encontraron las comprobaciones nuevas, y qué se hizo.** La primera vez que corrieron (25 de 27) fallaron
+dos. Una encontró un defecto de la pantalla: agrupando por semana, el encabezado mostraba la muestra gris de «sin
+registros» aunque el gráfico semanal no sombrea nada; se corrigió la pantalla (la muestra acompaña a la cuenta solo
+donde hay sombreado), no la comprobación. La otra era un defecto del instrumento: contaba las fechas del eje adentro
+del grupo del eje, y la biblioteca de gráficos las escribe en una capa aparte; se corrigió qué se mide, y de paso la
+medición de la primera pantalla, que por lo mismo daba 873 px en lugar de 887. En una pasada suelta de
+`recorrido-comprension.mjs funcional`, antes de la pasada final, el recorrido 4 se detuvo (74 de 75): dos pasos que
+retoman una vista guardada buscaban el plegable a la vista y ahora está en «Más acciones»; se actualizaron esos dos
+pasos (E-06). La pasada final, completa y con datos generados de nuevo, es la de la tabla.
+
+**La CI del commit de código (780ca8d).** El primer intento falló en una prueba unitaria de la API que no es de este
+paquete (`rutas-firmadas.spec.ts`, las rutas firmadas de las fotos de comida). No era un cambio de este tramo: esa
+prueba fallaba sola una de cada 16 veces. Altera el último carácter de una firma y espera que deje de valer, pero el
+último carácter lleva bits de relleno, y cuando la firma terminaba en «A» el texto alterado decodificaba a los mismos
+bytes y la API lo aceptaba. Se repitió el trabajo que había fallado y la corrida quedó en verde (38087004854). El
+arreglo va en un commit aparte (9569086): la API acepta la firma solo escrita como la emitió, con una prueba que lo comprueba
+siempre (antes del arreglo falla; después, 81 de 81). No se cambió la prueba que fallaba.
+
+**Lo que este tramo no comprueba:**
+
+- El uso real: falta que Dirección recorra Analizar. Una captura no muestra si algo cuesta encontrarlo.
+- Pantallas bajas: en una ventana de 768 px de alto (una portátil de 1366 × 768) entran dos gráficos y parte del
+  tercero. La barra de marca, el marco de la ficha y la barra de Analizar suman 390 px antes del primer gráfico. La
+  primera pantalla se exige a 1440 × 900; la pantalla de Dirección es de 1920 × 1080 (`analizar-metricas-1920-entera-claro.png`).
+- La exportación (CSV) no lleva el objetivo de calorías: su formato es del dominio y tiene sus pruebas. Anotado en E-27.
+- El objetivo de los macronutrientes y el plan de entrenamiento como número: no llegan en la lectura de series (§6).
+- La pestaña Nutrición y «Mis recetas» todavía dicen «Energía» (segundo paquete).
+- El teléfono (390 px) y la tablet de pie (768): se miraron en capturas; las comprobaciones nuevas son a 1440 px.
+- El lector de pantalla con una persona: pendiente, como en los paquetes anteriores. Se verificaron axe, los nombres
+  de los controles nuevos (`aria-expanded`, `aria-controls`, el grupo de cada segmentado) y la descripción del gráfico.
+
+## Lo que falta de la parte 2, y las partes 3 a 5
 
 Pendientes.
