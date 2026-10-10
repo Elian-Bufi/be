@@ -68,11 +68,20 @@ async function asentar() {
   await esperar(500);
 }
 
-/** El tema se cambia con el selector del encabezado, como lo hace una persona: no recarga ni cierra la sesión. */
+/**
+ * El tema se elige en el menú de la cuenta, en la esquina del encabezado (WP-ESCRITORIO-AMABLE): se abre, se marca la
+ * opción y se cierra con el mismo botón. Todo sin teclado y sin mover el foco: Escape cerraría también otro panel
+ * abierto (el del período) y dejaría el aro de foco en las capturas. No recarga la página ni cierra la sesión.
+ */
 async function ponerTema(tema) {
-  await page.waitForSelector('.apariencia select', { timeout: 15000 });
-  await page.select('.apariencia select', tema);
-  await page.waitForFunction((t) => document.documentElement.dataset.tema === t, { timeout: 5000 }, tema);
+  if ((await page.evaluate(() => document.documentElement.dataset.tema)) === tema) return;
+  await page.waitForSelector('.menu-de-cuenta__boton', { timeout: 15_000 });
+  await page.evaluate(() => document.querySelector('.menu-de-cuenta__boton').click());
+  await page.waitForSelector('.menu-de-cuenta__panel input[type="radio"]', { timeout: 5_000 });
+  await page.evaluate((t) => document.querySelector(`.menu-de-cuenta__panel input[type="radio"][value="${t}"]`).click(), tema);
+  await page.waitForFunction((t) => document.documentElement.dataset.tema === t, { timeout: 5_000 }, tema);
+  await page.evaluate(() => document.querySelector('.menu-de-cuenta__boton').click());
+  await page.waitForFunction(() => !document.querySelector('.menu-de-cuenta__panel'), { timeout: 3_000 });
   await esperar(250);
 }
 

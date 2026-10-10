@@ -125,48 +125,152 @@ code {
   flex: 1 0 auto;
 }
 
-/* ─── Selector de apariencia (encabezado) ─────────────────────────────── */
-.apariencia {
+/* ─── El menú de la cuenta (encabezado) ───────────────────────────────── */
+/* Un solo botón en la esquina, con el lugar del retrato, que abre las opciones de la persona: los datos de la cuenta, la
+   apariencia y cerrar sesión. Sin sesión abre solo la apariencia. Reemplaza al selector suelto, que en una tablet de pie
+   le sumaba un renglón al encabezado (WP-ESCRITORIO-AMABLE; pedido de Dirección del 2026-10-10). */
+.menu-de-cuenta {
+  position: relative;
+}
+
+.menu-de-cuenta__boton {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-left: auto;
-  color: var(--encabezado-texto);
-  font-size: 0.9rem;
-}
-
-.apariencia label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-/* Cuando el encabezado se queda sin lugar, la palabra se oculta a la vista: quedan el sol o la luna y el tema elegido.
-   Sigue siendo el nombre del selector para el lector de pantalla. */
-@media (max-width: 85rem) {
-  .apariencia__palabra {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-}
-
-.apariencia select {
-  min-height: 36px;
-  padding: 0.25rem 0.5rem;
-  border-radius: 8px;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.25rem 0.65rem 0.25rem 0.3rem;
   border: 1px solid var(--encabezado-tenue);
-  background: var(--encabezado-fondo-2);
+  border-radius: 999px;
+  background: transparent;
   color: var(--encabezado-texto);
   font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.apariencia select:focus-visible {
-  outline: 3px solid var(--encabezado-foco);
-  outline-offset: 2px;
+.menu-de-cuenta__boton:hover,
+.menu-de-cuenta__boton[aria-expanded='true'] {
+  background: var(--encabezado-fondo-2);
+}
+
+/* El lugar del retrato: un círculo con un dibujo, hasta que BE tenga imagen de perfil. */
+.menu-de-cuenta__retrato {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--encabezado-tenue);
+  border-radius: 50%;
+}
+
+/* El panel se abre debajo del botón, sobre la página: lleva los colores de una superficie, no los del encabezado. */
+.menu-de-cuenta__panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: min(19rem, calc(100vw - 2rem));
+  padding: 0.6rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 14px;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+
+.menu-de-cuenta__panel :focus-visible {
+  outline-color: var(--foco);
+}
+
+.menu-de-cuenta__opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu-de-cuenta__opcion:hover:not(:disabled) {
+  background: var(--fondo-suave);
+}
+
+.menu-de-cuenta__opcion:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.menu-de-cuenta__opcion .nota {
+  display: block;
+  font-weight: 400;
+}
+
+.menu-de-cuenta__apariencia {
+  margin: 0;
+  padding: 0.35rem 0.6rem;
+  border: 0;
+}
+
+/* Una línea separa la apariencia de lo que tenga arriba y abajo; sola (sin sesión), no lleva líneas. */
+.menu-de-cuenta__apariencia:not(:first-child) {
+  margin-top: 0.25rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.menu-de-cuenta__apariencia:not(:last-child) {
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+/* La leyenda flota para comportarse como un título dentro del grupo, sin montarse sobre la línea de arriba. */
+.menu-de-cuenta__apariencia legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.menu-de-cuenta__tema {
+  clear: both;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Las opciones son las nativas del navegador, con el color de acento de todo el sitio. */
+.menu-de-cuenta__tema input {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+}
+
+.menu-de-cuenta__apariencia .nota {
+  margin: 0.1rem 0 0;
+}
+
+.menu-de-cuenta__panel .campo__error {
+  margin: 0.25rem 0.6rem;
 }
 
 /* ─── Encabezado de marca: navy en los dos temas ──────────────────────── */
@@ -203,12 +307,6 @@ code {
   height: 2.25rem;
 }
 
-.encabezado__ambiente {
-  margin: 0 0 0 auto;
-  font-size: 0.85rem;
-  color: var(--encabezado-tenue);
-}
-
 /* La navegación de la sección, dentro del encabezado (B10-10 §9: navegación superior). */
 .encabezado .navegacion ul {
   display: flex;
@@ -239,19 +337,57 @@ code {
   border-bottom-color: var(--cian);
 }
 
+/* El menú de la cuenta va contra la derecha de la barra, en todas las páginas, tengan o no navegación. */
+.encabezado .menu-de-cuenta {
+  margin-left: auto;
+}
+
+/* Tablet de pie (641 a 1023 px): la marca, los lugares y el menú de la cuenta en un solo renglón. Para que entren, el
+   botón de la cuenta va sin su palabra (quedan el retrato y la flecha; la palabra sigue siendo su nombre para el lector
+   de pantalla) y los lugares van un poco más juntos. Si aun así no entran, se desplazan de costado dentro de su línea:
+   la barra no se parte en dos. */
+@media (min-width: 40.0625rem) and (max-width: 63.99rem) {
+  .encabezado {
+    column-gap: 1.1rem;
+  }
+
+  .encabezado .navegacion {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .encabezado .navegacion ul {
+    flex-wrap: nowrap;
+    gap: 0 1rem;
+  }
+
+  .encabezado .navegacion a {
+    white-space: nowrap;
+  }
+
+  .menu-de-cuenta__palabra {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
 /*
  * DL-113 · en el teléfono el encabezado ocupaba cinco renglones (unos 220 px): marca, la navegación partida en dos, la
- * apariencia y el aviso de ambiente. Ahora son tres: marca y apariencia; la navegación en una sola línea, que se
- * desplaza de costado si no entra; y el aviso de ambiente, que el 08 §33 exige siempre a la vista.
+ * apariencia y el aviso de ambiente. Ahora son dos: la marca con el menú de la cuenta, y la navegación en una sola
+ * línea, que se desplaza de costado si no entra. El aviso de ambiente salió de la barra por decisión de Dirección del
+ * 2026-10-10 (WP-ESCRITORIO-AMABLE, E-19): sigue en el pie de la cara pública y en el formulario de registro.
  */
 @media (max-width: 40rem) {
   .encabezado {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
-      'marca apariencia'
-      'navegacion navegacion'
-      'ambiente ambiente';
+      'marca cuenta'
+      'navegacion navegacion';
     gap: 0.15rem 0.75rem;
     padding: 0.45rem 1rem 0.4rem;
   }
@@ -266,19 +402,9 @@ code {
     height: 2rem;
   }
 
-  .encabezado .apariencia {
-    grid-area: apariencia;
+  .encabezado .menu-de-cuenta {
+    grid-area: cuenta;
     justify-self: end;
-  }
-
-  /* La etiqueta sigue siendo el nombre accesible del selector; a la vista alcanza con el tema elegido. */
-  .encabezado .apariencia label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
   }
 
   .encabezado .navegacion {
@@ -293,13 +419,6 @@ code {
 
   .encabezado .navegacion a {
     white-space: nowrap;
-  }
-
-  .encabezado__ambiente {
-    grid-area: ambiente;
-    margin: 0;
-    font-size: 0.8rem;
-    line-height: 1.3;
   }
 
   .contenido {
@@ -991,14 +1110,14 @@ details summary {
   display: none;
 }
 
-/* En el encabezado (un degradado de izquierda a derecha) la línea solo se desplaza en el teléfono. */
+/* En el encabezado (un degradado de izquierda a derecha) la línea solo se desplaza en el teléfono y en la tablet de pie. */
 .encabezado .desplazable-x {
   --tapa-izquierda: var(--encabezado-fondo);
   --tapa-derecha: var(--encabezado-fondo-2);
   --sombra-desplazamiento: var(--sombra-desplazamiento-sobre-navy);
 }
 
-@media (min-width: 40.0625rem) {
+@media (min-width: 64rem) {
   .encabezado .desplazable-x {
     overflow-x: visible;
     background: none;
@@ -3559,6 +3678,8 @@ html:has(.acciones--fijas) {
 }
 
 /* Preguntas profesionales: tarjetas que se eligen con un botón (todo el bloque es el objetivo). */
+/* Todas del mismo tamaño: las filas miden lo mismo y cada tarjeta llena su celda (una descripción de una sola línea
+   dejaba una tarjeta más baja que su vecina). */
 .preguntas-profesionales__lista {
   list-style: none;
   margin: 0.5rem 0;
@@ -3566,6 +3687,11 @@ html:has(.acciones--fijas) {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: 1fr;
+}
+
+.preguntas-profesionales__lista > li {
+  display: flex;
 }
 
 @media (min-width: 64rem) {
@@ -3579,6 +3705,7 @@ html:has(.acciones--fijas) {
   flex-direction: column;
   gap: 0.3rem;
   width: 100%;
+  height: 100%;
   min-height: 2.75rem;
   text-align: left;
   font: inherit;

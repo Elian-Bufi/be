@@ -152,9 +152,9 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
   - 4,5:1 para el texto;
   - 3:1 para los bordes de los controles y los íconos que comunican.
 - **Temas:**
-  - website: «Azul noche», que es el predeterminado, y «Claro». Se eligen en el encabezado. La preferencia vive en el
-    navegador (`localStorage`): no se guarda en la cuenta ni pasa a otros dispositivos. Cambiar de apariencia no toca lo
-    escrito en un formulario;
+  - website: «Azul noche», que es el predeterminado, y «Claro». Se eligen en el menú de la cuenta, en la esquina del
+    encabezado (II.3). La preferencia vive en el navegador (`localStorage`): no se guarda en la cuenta ni pasa a otros
+    dispositivos, y el menú lo dice. Cambiar de apariencia no toca lo escrito en un formulario;
   - APK: «Azul noche» y «Claro», elegibles en Cuenta;
   - la lámina tiene sus tres temas propios, que no cambian la apariencia del website.
 - **Una sola paleta por apariencia, la misma en el website y en la APK:** las medidas el 2026-09-30. «Claro» es fondo
@@ -237,6 +237,18 @@ Información).
 
 ### II.3 Navegación transversal
 
+- **La barra de marca** (`encabezado.tsx`) ocupa **un renglón** (65 px a 1440, 1280, 1024 y 768): la marca, los lugares
+  de trabajo y, en la esquina, el menú de la cuenta. En una tablet de pie (641 a 1023 px) el botón de la cuenta va sin
+  su palabra y, si los lugares no entran, se desplazan de costado dentro de su línea. La navegación nunca se parte en
+  dos. La barra no lleva avisos fijos: el de ambiente de prueba salió por decisión de Dirección del 2026-10-10 y se
+  dice donde alguien puede cargar datos por primera vez (II.10).
+- **El menú de la cuenta** (`menu-de-cuenta.tsx`) es **el lugar de las opciones de la persona.** Un solo botón, con el
+  lugar del retrato, abre «Datos de la cuenta», la apariencia y «Cerrar sesión». Sin sesión, el botón dice
+  «Apariencia» y abre solo eso. Una opción nueva de configuración entra ahí: no se le suma otro control a la barra.
+  «Cuenta» no es un lugar de trabajo: por eso no está en la navegación del profesional.
+- **Un panel que se despliega** (el período, el menú de la cuenta) se abre con su botón, que dice si está abierto
+  (`aria-expanded`). Lo cierran Escape, que devuelve el foco al botón; tocar fuera; y salir de él con el teclado: el
+  foco no puede quedar detrás de un panel (WCAG 2.2, 2.4.11).
 - **El marco de la ficha** (`workspace.tsx`; WP-ESCRITORIO-AMABLE): una franja de lado a lado, pegada a la barra de
   marca, con lo que no cambia al pasar de una vista a otra. Tiene tres renglones fijos, sin depender del largo del
   nombre: (1) el nombre visible como título, «Solicitar contexto» y, a la derecha, «Actualizar» con la hora de la
@@ -427,9 +439,12 @@ otras pestañas.
 
 ### II.10 Website del asesorado y cara pública
 
-- **En el teléfono, el encabezado tiene tres renglones, no cinco:** la marca y la apariencia (la etiqueta «Apariencia»
-  queda oculta a la vista, pero sigue siendo el nombre accesible); la navegación, en una sola línea; y el aviso de
-  ambiente, que el 08 §33 exige siempre a la vista.
+- **En el teléfono, el encabezado tiene dos renglones, no cinco:** la marca con el menú de la cuenta, y la navegación
+  en una sola línea, que se desplaza de costado si no entra.
+- **El aviso de ambiente de prueba** («usá solo datos sintéticos; no ingreses datos reales de personas») va en el pie
+  de la cara pública y en el formulario de registro: donde alguien puede cargar datos por primera vez. Ya no va en la
+  barra de cada pantalla (decisión de Dirección del 2026-10-10). El 08 §33 fija que en `test` solo hay datos
+  sintéticos; no pide mostrarlo en todas las pantallas. La APK conserva su franja.
 - **La acción principal de cada vista va arriba, visible sin desplazarse en 390 px de ancho.**
 - **Con el teclado del teléfono abierto:** la ventana se achica (`interactive-widget=resizes-content`, en `layout.tsx`),
   una barra fija queda arriba del teclado, no detrás, y el campo enfocado se lleva por encima de la barra
@@ -848,6 +863,11 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | El período | Cinco botones siempre a la vista (cuatro atajos y «Otro rango»). | Un solo control que dice el período y, abierto, ofrece los atajos y el rango propio (II.3). | Sustituida | 1 |
 | «Solicitar contexto» | Una de las acciones del Resumen. | En el marco, a la vista en las tres vistas. | Ampliada | 1 |
 | Las horas | En 12 horas, con «a. m.» y «p. m.». | En 24 horas («18:10»), en todo el website (`lib/formato.ts`). | Sustituida | 1 |
+| La apariencia | Una lista desplegable suelta en la barra de marca. En una tablet de pie bajaba a un segundo renglón junto con el aviso de ambiente (103 px). | Dentro del menú de la cuenta (I.6, II.3). La barra ocupa un renglón (65 px), también en la tablet de pie. | Sustituida | 1 bis |
+| «Cuenta» | El quinto enlace de la navegación del profesional. | El botón de la esquina: abre los datos de la cuenta, la apariencia y «Cerrar sesión» (II.3). | Sustituida | 1 bis |
+| Paneles que se despliegan | Escape y tocar fuera cerraban el control de período. | Además, salir del panel con el teclado lo cierra; vale para el período y para el menú de la cuenta (II.3). | Ampliada | 1 bis |
+| Tarjetas de «Empezar por una pregunta» | Cada una tenía el alto de su texto: la de descripción más corta quedaba más baja que su vecina. | Las cuatro miden lo mismo. | Corregida | 1 bis |
+| Aviso de ambiente de prueba | «Ambiente de prueba · solo datos sintéticos», fijo en la barra de todas las pantallas del website; la guía decía que el 08 §33 lo «exige» siempre a la vista. | Sale de la barra (decisión de Dirección del 2026-10-10). Queda en el pie de la cara pública y en el registro (II.10). El 08 §33 fija la política de datos por ambiente; no pide mostrarlo en cada pantalla. La APK no cambia. | Sustituida | 1 bis |
 
 ---
 

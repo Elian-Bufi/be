@@ -72,7 +72,15 @@ export function SelectorDePeriodo() {
     elegir(parametrosDePeriodo({ preset: null, desde, hasta }));
   };
   return (
-    <div ref={raiz} className="periodo-del-seguimiento">
+    <div
+      ref={raiz}
+      className="periodo-del-seguimiento"
+      onBlur={(e) => {
+        // El foco pasó a otro lugar de la página (no a otra ventana, que no trae destino): el panel se cierra, para
+        // que no quede tapando lo que está debajo (WCAG 2.2, 2.4.11).
+        if (e.relatedTarget instanceof Node && !e.currentTarget.contains(e.relatedTarget)) setAbierto(false);
+      }}
+    >
       <button ref={boton} type="button" className="periodo-del-seguimiento__boton" aria-expanded={abierto} aria-controls={`${id}-panel`} onClick={() => setAbierto(!abierto)}>
         <Icono nombre="calendario" />
         <span>

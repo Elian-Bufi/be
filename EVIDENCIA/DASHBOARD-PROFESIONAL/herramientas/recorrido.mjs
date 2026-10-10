@@ -1,7 +1,7 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo|descartable]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
@@ -12,6 +12,8 @@
 // - Las capturas no usan `fullPage`: esa captura achica la ventana a 1 × 1 por un instante, recharts quita el gráfico
 //   (su contenedor mide 0) y la imagen puede salir sin él (revisión de #153, hallazgo 1). Se agranda la ventana al alto
 //   de la página, se espera el dibujo y se captura la ventana tal cual.
+// - El encabezado, el menú de la cuenta y las tarjetas de preguntas (WP-ESCRITORIO-AMABLE, E-17 y E-18) se comprueban al
+//   final del modo funcional, en una sesión propia porque termina cerrándola. `menu` corre solo esa parte.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
 //   (valores medidos, informados y estimados; revocación desde la web del asesorado).
 import fs from 'node:fs';
@@ -203,6 +205,21 @@ async function mirarPeriodo(page) {
   return { ...dentro, cierra };
 }
 
+/**
+ * El tema se elige en el menú de la cuenta, en la esquina del encabezado (WP-ESCRITORIO-AMABLE): se abre, se marca la
+ * opción y se cierra con el mismo botón. Todo sin teclado y sin mover el foco: Escape cerraría también otro panel
+ * abierto (el del período) y dejaría el aro de foco en las capturas. No recarga la página ni cierra la sesión.
+ */
+async function ponerTema(page, tema) {
+  if ((await page.evaluate(() => document.documentElement.dataset.tema)) === tema) return;
+  await page.waitForSelector('.menu-de-cuenta__boton', { timeout: 15_000 });
+  await page.evaluate(() => document.querySelector('.menu-de-cuenta__boton').click());
+  await page.waitForSelector('.menu-de-cuenta__panel input[type="radio"]', { timeout: 5_000 });
+  await page.evaluate((t) => document.querySelector(`.menu-de-cuenta__panel input[type="radio"][value="${t}"]`).click(), tema);
+  await page.waitForFunction((t) => document.documentElement.dataset.tema === t, { timeout: 5_000 }, tema);
+  await page.evaluate(() => document.querySelector('.menu-de-cuenta__boton').click());
+  await page.waitForFunction(() => !document.querySelector('.menu-de-cuenta__panel'), { timeout: 3_000 });
+}
 /** Hace clic (de verdad, con el mouse) en el primer elemento visible y habilitado que contiene el texto. */
 async function clic(page, selector, contiene) {
   const marca = `r${Math.random().toString(36).slice(2)}`;
@@ -1020,6 +1037,7 @@ async function funcional() {
       await navegador.close();
     }
   }
+  await encabezadoYMenu();
   // El registro de la API de esta corrida: cada búsqueda como ruta parametrizada y ningún texto buscado (hallazgo 4).
   const registro = fs.existsSync(API_LOG) ? fs.readFileSync(API_LOG).subarray(inicioDelLog).toString('utf8') : '';
   const lineasDeBusqueda = registro.split('\n').filter((l) => l.includes('/timeline/search'));
@@ -1031,6 +1049,208 @@ async function funcional() {
   );
 }
 
+// ─── El encabezado, el menú de la cuenta y las tarjetas de preguntas (WP-ESCRITORIO-AMABLE, E-17 y E-18) ─────────────
+
+/**
+ * En una sesión propia, porque termina cerrándola. El modo funcional la corre al final; también va sola, con
+ * `node recorrido.mjs menu`.
+ */
+async function encabezadoYMenu() {
+  const { navegador, page, v } = await abrir();
+  try {
+    await iniciarSesion(page, v, estado.proCorreo, FICHA_A);
+    await quieto(page, v);
+    const lugares = await textos(page, '.encabezado .navegacion a');
+    const palabra = await texto(page, '.menu-de-cuenta__boton');
+    const medirEncabezado = () =>
+      page.evaluate(() => {
+        const enlaces = [...document.querySelectorAll('.encabezado .navegacion a')].map((a) => Math.round(a.getBoundingClientRect().top));
+        const boton = document.querySelector('.menu-de-cuenta__boton').getBoundingClientRect();
+        return {
+          alto: Math.round(document.querySelector('.encabezado').getBoundingClientRect().height),
+          lineasDeNavegacion: new Set(enlaces).size,
+          conAviso: /Ambiente de prueba/.test(document.querySelector('.encabezado').innerText),
+          botonEnLaEsquina: Math.round(document.documentElement.clientWidth - boton.right) <= 34 && boton.top < 20,
+          desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+    // Un renglón: 65 px medidos; el tope deja margen para un cambio de letra, no para un segundo renglón (más de 100).
+    const enOrden = (m) => m.alto <= 70 && m.lineasDeNavegacion === 1 && m.botonEnLaEsquina && m.desborde <= 1 && !m.conAviso;
+    const encabezado = {};
+    for (const ancho of [1440, 1280, 1024, 768]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(400);
+      encabezado[ancho] = await medirEncabezado();
+    }
+    // La prueba de la prueba, en la tablet de pie: con la navegación partida en dos líneas, como quedaba antes, la
+    // medición lo dice. La hoja que lo provoca se quita enseguida.
+    const partir = await page.addStyleTag({ content: '.encabezado .navegacion { flex: 0 1 20rem !important; } .encabezado .navegacion ul { flex-wrap: wrap !important; overflow: visible !important; }' });
+    await pausa(300);
+    const partido = await medirEncabezado();
+    await partir.evaluate((e) => e.remove());
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(400);
+    comprobar('E-17', 'La navegación del profesional tiene sus cuatro lugares; «Cuenta» ya no está ahí: es el botón de la esquina', lugares.join(',') === 'Espacio profesional,Plantillas y habituales,Mis recetas,Mis ejercicios' && palabra === 'Cuenta', `${lugares.join(' · ')} + botón «${palabra}»`);
+    comprobar(
+      'E-17',
+      'La barra de marca ocupa un solo renglón a 1440, 1280 y 1024 px y en la tablet de pie (768), con la navegación sin partir, el botón en la esquina y sin el aviso de ambiente (E-19)',
+      [1440, 1280, 1024, 768].every((a) => enOrden(encabezado[a])),
+      JSON.stringify(encabezado),
+    );
+    comprobar('E-17', 'La medición del encabezado detecta una navegación partida en dos líneas (la prueba de la prueba)', !enOrden(partido) && partido.lineasDeNavegacion > 1, JSON.stringify(partido));
+
+    // Con el teclado: se abre con Enter, y adentro están los datos de la cuenta, la apariencia y cerrar sesión.
+    await page.focus('.menu-de-cuenta__boton');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.menu-de-cuenta__panel', { timeout: 5_000 });
+    const abierto = await page.evaluate(() => {
+      const p = document.querySelector('.menu-de-cuenta__panel');
+      const r = p.getBoundingClientRect();
+      const b = document.querySelector('.menu-de-cuenta__boton');
+      return {
+        expandido: b.getAttribute('aria-expanded'),
+        controla: b.getAttribute('aria-controls') === p.id,
+        opciones: [...p.querySelectorAll('a, button')].map((e) => e.innerText.replace(/\s+/g, ' ').trim()),
+        grupo: p.querySelector('fieldset legend')?.innerText.trim() ?? '',
+        temas: [...p.querySelectorAll('input[type="radio"]')].map((i) => `${i.closest('label').innerText.trim()}${i.checked ? ' (elegido)' : ''}`),
+        elegido: p.querySelector('input[type="radio"]:checked')?.value ?? '',
+        tema: document.documentElement.dataset.tema,
+        entra: r.left >= 0 && r.right <= document.documentElement.clientWidth && r.bottom <= window.innerHeight,
+      };
+    });
+    comprobar(
+      'E-17',
+      'El menú de la cuenta se abre con el teclado y ofrece los datos de la cuenta, la apariencia (dos opciones; la elegida es la que se ve) y cerrar sesión',
+      abierto.expandido === 'true' && abierto.controla && abierto.opciones.length === 2 && /^Datos de la cuenta/.test(abierto.opciones[0]) && abierto.opciones[1] === 'Cerrar sesión' && abierto.grupo === 'Apariencia' && abierto.temas.length === 2 && abierto.elegido === abierto.tema && abierto.entra,
+      JSON.stringify(abierto),
+    );
+    const axeDelMenu = { [abierto.tema]: await axe(page) };
+
+    // Elegir el otro tema lo aplica en el momento y lo guarda en el navegador. No pide nada a la API ni sale de la ficha.
+    const otro = abierto.tema === 'claro' ? 'azul-noche' : 'claro';
+    const pedidosAntes = v.urls.length;
+    const urlAntes = page.url();
+    await page.click(`.menu-de-cuenta__panel input[type="radio"][value="${otro}"]`);
+    await page.waitForFunction((t) => document.documentElement.dataset.tema === t, { timeout: 5_000 }, otro);
+    await pausa(400);
+    const elegido = await page.evaluate(() => ({ tema: document.documentElement.dataset.tema, guardado: localStorage.getItem('be-apariencia'), panel: !!document.querySelector('.menu-de-cuenta__panel'), ficha: !!document.querySelector('.marco-de-la-ficha') }));
+    comprobar(
+      'E-17',
+      'Elegir el otro tema lo aplica en el momento y lo guarda en el navegador, sin pedir nada a la API, sin salir de la ficha y sin cerrar el menú',
+      elegido.tema === otro && elegido.guardado === otro && elegido.ficha && elegido.panel && v.urls.length === pedidosAntes && page.url() === urlAntes,
+      JSON.stringify({ ...elegido, pedidos: v.urls.length - pedidosAntes }),
+    );
+    axeDelMenu[otro] = await axe(page);
+    await page.screenshot({ path: fileURLToPath(new URL(`menu-de-cuenta-1440-${otro}.png`, DIR)) });
+    for (const [tema, violaciones] of Object.entries(axeDelMenu)) comprobar('E-17', `axe (WCAG 2.2 A/AA) con el menú de la cuenta abierto, en ${tema}: sin violaciones automáticas`, violaciones.length === 0, violaciones.map((x) => `${x.id}×${x.nodos} (${x.ejemplo})`).join('; '));
+
+    // Escape lo cierra y devuelve el foco al botón; salir de él con Tab también lo cierra.
+    await page.keyboard.press('Escape');
+    await pausa(200);
+    const conEscape = await page.evaluate(() => ({ panel: !!document.querySelector('.menu-de-cuenta__panel'), foco: document.activeElement?.classList.contains('menu-de-cuenta__boton') ?? false, expandido: document.querySelector('.menu-de-cuenta__boton').getAttribute('aria-expanded') }));
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.menu-de-cuenta__panel', { timeout: 5_000 });
+    const paradas = [];
+    for (let i = 0; i < 8 && (await page.$('.menu-de-cuenta__panel')); i++) {
+      await page.keyboard.press('Tab');
+      await pausa(100);
+      paradas.push(await page.evaluate(() => (document.activeElement?.closest('.menu-de-cuenta__panel') ? (document.activeElement.innerText || document.activeElement.closest('label')?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 22) : 'fuera')));
+    }
+    const conTab = await page.evaluate(() => ({ panel: !!document.querySelector('.menu-de-cuenta__panel'), focoFuera: !document.activeElement?.closest('.menu-de-cuenta') }));
+    comprobar(
+      'E-17',
+      'Escape cierra el menú y devuelve el foco a su botón; salir de él con Tab también lo cierra, así el foco no queda detrás del panel',
+      !conEscape.panel && conEscape.foco && conEscape.expandido === 'false' && !conTab.panel && conTab.focoFuera && paradas.length === 4 && paradas[3] === 'fuera',
+      JSON.stringify({ conEscape, paradas, conTab }),
+    );
+
+    // Las tarjetas de «Empezar por una pregunta», todas del mismo tamaño (E-18), a los tres anchos del escritorio.
+    await cupo(v);
+    await ir(page, `${FICHA_A}&vista=analizar`);
+    await quieto(page, v);
+    const medirTarjetas = () =>
+      page.evaluate(() => {
+        const lista = document.querySelector('.preguntas-profesionales > .preguntas-profesionales__lista');
+        const cajas = [...lista.querySelectorAll('.tarjeta-de-pregunta')].map((t) => t.getBoundingClientRect());
+        return { cantidad: cajas.length, anchos: [...new Set(cajas.map((c) => Math.round(c.width)))], altos: [...new Set(cajas.map((c) => Math.round(c.height)))], columnas: new Set(cajas.map((c) => Math.round(c.left))).size };
+      });
+    const iguales = (m) => m.cantidad === 4 && m.columnas === 2 && m.anchos.length === 1 && m.altos.length === 1;
+    const tarjetas = {};
+    for (const ancho of [1440, 1280, 1024]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(400);
+      tarjetas[ancho] = await medirTarjetas();
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(400);
+    // La prueba de la prueba: sin el arreglo (cada tarjeta con el alto de su texto), la medición encuentra una más baja.
+    const soltar = await page.addStyleTag({ content: '.preguntas-profesionales__lista { grid-auto-rows: auto !important; } .preguntas-profesionales__lista > li { display: block !important; } .tarjeta-de-pregunta { height: auto !important; }' });
+    await pausa(300);
+    const sueltas = await medirTarjetas();
+    await soltar.evaluate((e) => e.remove());
+    await pausa(200);
+    comprobar(
+      'E-18',
+      'Las cuatro tarjetas de «Empezar por una pregunta» miden lo mismo, en dos columnas, a 1440, 1280 y 1024 px',
+      Object.values(tarjetas).every(iguales),
+      JSON.stringify(tarjetas),
+    );
+    comprobar('E-18', 'La medición de las tarjetas detecta una más baja que las otras, como estaban antes (la prueba de la prueba)', !iguales(sueltas) && sueltas.altos.length > 1, JSON.stringify(sueltas));
+
+    // «Datos de la cuenta» abre la cuenta sin cerrar la sesión; estando ahí, el menú ya no ofrece ese enlace.
+    await page.click('.menu-de-cuenta__boton');
+    await page.waitForSelector('.menu-de-cuenta__panel a', { timeout: 5_000 });
+    await clic(page, '.menu-de-cuenta__panel a', 'Datos de la cuenta');
+    await page.waitForFunction(() => location.pathname.startsWith('/account'), { timeout: 15_000 });
+    await quieto(page, v);
+    const enCuenta = await page.evaluate(() => ({ titulo: document.querySelector('h1')?.innerText.trim() ?? '', panel: !!document.querySelector('.menu-de-cuenta__panel'), conDatos: !!document.querySelector('#titulo-estado'), tema: document.documentElement.dataset.tema }));
+    await page.click('.menu-de-cuenta__boton');
+    await page.waitForSelector('.menu-de-cuenta__panel', { timeout: 5_000 });
+    const opcionesEnCuenta = await textos(page, '.menu-de-cuenta__panel a, .menu-de-cuenta__panel button');
+    comprobar(
+      'E-17',
+      '«Datos de la cuenta» abre la cuenta sin cerrar la sesión, con el tema elegido, y el menú se cierra al cambiar de página; estando ahí, ya no ofrece ese enlace',
+      enCuenta.titulo === 'Cuenta' && enCuenta.conDatos && !enCuenta.panel && enCuenta.tema === otro && opcionesEnCuenta.join() === 'Cerrar sesión',
+      JSON.stringify({ ...enCuenta, opcionesEnCuenta }),
+    );
+
+    // «Cerrar sesión» la cierra en la API y lleva a «Iniciar sesión» con su aviso; el token viejo ya no sirve.
+    const tokenViejo = v.token;
+    const desde = v.urls.length;
+    await clic(page, '.menu-de-cuenta__panel button', 'Cerrar sesión');
+    await page.waitForFunction(() => location.pathname.startsWith('/login'), { timeout: 20_000 });
+    await page.waitForSelector('.menu-de-cuenta__boton', { timeout: 15_000 });
+    await pausa(600);
+    const cierre = v.urls.slice(desde).filter((u) => /^DELETE .*\/auth\/sessions\/current$/.test(u));
+    const despues = await fetch(`${API}/api/v1/me`, { headers: { Authorization: tokenViejo, 'X-BE-Surface': 'WEB', Accept: 'application/json' } }).then((r) => r.status, () => 0);
+    const enLogin = await page.evaluate(() => ({ aviso: document.querySelector('main')?.innerText.includes('Cerraste la sesión.') ?? false, boton: document.querySelector('.menu-de-cuenta__boton').innerText.replace(/\s+/g, ' ').trim(), tema: document.documentElement.dataset.tema, ruta: location.pathname + location.search }));
+    await page.click('.menu-de-cuenta__boton');
+    await page.waitForSelector('.menu-de-cuenta__panel', { timeout: 5_000 });
+    const sinSesion = await page.evaluate(() => {
+      const p = document.querySelector('.menu-de-cuenta__panel');
+      return { enlacesYBotones: p.querySelectorAll('a, button').length, temas: p.querySelectorAll('input[type="radio"]').length, elegido: p.querySelector('input[type="radio"]:checked')?.value ?? '' };
+    });
+    comprobar(
+      'E-17',
+      '«Cerrar sesión» cierra la sesión en la API (el token deja de servir) y lleva a «Iniciar sesión» con su aviso; la apariencia elegida sigue después de la recarga',
+      cierre.length === 1 && despues === 401 && enLogin.aviso && enLogin.tema === otro && /^\/login\/?\?aviso=sesion-cerrada$/.test(enLogin.ruta),
+      JSON.stringify({ cierre: cierre.map((u) => u.replace(API, '')), tokenViejo: despues, ...enLogin }),
+    );
+    comprobar('E-17', 'Sin sesión, el botón de la esquina dice «Apariencia» y abre solo las dos opciones de apariencia', enLogin.boton === 'Apariencia' && sinSesion.enlacesYBotones === 0 && sinSesion.temas === 2 && sinSesion.elegido === otro, JSON.stringify({ boton: enLogin.boton, ...sinSesion }));
+    // El aviso de ambiente salió de la barra (E-19): queda en el pie de la cara pública, y esta comprobación lo cuida.
+    const pie = await texto(page, 'footer.pie');
+    const barra = await texto(page, '.encabezado');
+    comprobar(
+      'E-19',
+      'El aviso de ambiente de prueba no está en la barra y sigue en el pie de la cara pública, donde se inicia sesión y se crea la cuenta',
+      !/Ambiente de prueba/.test(barra) && /Ambiente de prueba: usá solo datos sintéticos\. No ingreses datos reales de personas\./.test(pie),
+      `barra: «${barra.slice(0, 60)}» · pie: «${pie.slice(0, 170)}»`,
+    );
+  } finally {
+    await navegador.close();
+  }
+}
+
 // ─── Capturas: cinco anchos, dos temas y las tres vistas ───────────────────────────────────────
 
 async function capturas() {
@@ -1039,7 +1259,7 @@ async function capturas() {
     await iniciarSesion(page, v, estado.proCorreo, FICHA_A);
     await quieto(page, v);
     for (const tema of ['azul-noche', 'claro']) {
-      await page.select('.apariencia select', tema);
+      await ponerTema(page, tema);
       await pausa(300);
       for (const ancho of [1440, 1280, 1024, 768, 390]) {
         await page.setViewport({ width: ancho, height: 900 });
@@ -1115,7 +1335,7 @@ async function descartable() {
     await iniciarSesion(pro.page, pro.v, d.proCorreo, FICHA_D);
     await quieto(pro.page, pro.v);
     for (const tema of ['claro', 'azul-noche']) {
-      await pro.page.select('.apariencia select', tema);
+      await ponerTema(pro.page, tema);
       await pausa(300);
       await ir(pro.page, URL_D);
       await quieto(pro.page, pro.v);
@@ -1261,6 +1481,7 @@ try {
   if (modo === 'funcional' || modo === 'todo') await funcional();
   if (modo === 'capturas' || modo === 'todo') await capturas();
   if (modo === 'descartable') await descartable();
+  if (modo === 'menu') await encabezadoYMenu();
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {

@@ -242,7 +242,7 @@ controles.
 
 | Pantalla | En 1280 | En 1024 |
 |---|---|---|
-| Barra | Igual | El aviso de ambiente de prueba se acorta |
+| Barra | Igual | Igual. El aviso de ambiente de prueba ya no va en la barra (decisión de Dirección del 2026-10-10; definición del paquete, E-19) |
 | Encabezado de la ficha | El acceso actual baja a su propio renglón (como en la pantalla 14) | Igual que en 1280 |
 | Resumen | Tres áreas y cuatro indicadores por fila; se desplaza un poco | Dos áreas por fila y la tercera debajo; indicadores y preguntas de a dos |
 | Línea de tiempo | El buscador y «Más filtros» pasan a un segundo renglón | El detalle se abre encima de la lista, desde la derecha, y se cierra para seguir |

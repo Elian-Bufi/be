@@ -167,6 +167,21 @@ const sinDesborde = (page) => page.evaluate(() => document.documentElement.scrol
 const escrituras = (v, desde = 0) =>
   v.urls.slice(desde).filter((u) => /^(POST|PUT|PATCH|DELETE) /.test(u) && !/\/search(\?|$)/.test(u) && !/\/auth\/sessions/.test(u));
 
+/**
+ * El tema se elige en el menú de la cuenta, en la esquina del encabezado (WP-ESCRITORIO-AMABLE): se abre, se marca la
+ * opción y se cierra con el mismo botón. Todo sin teclado y sin mover el foco: Escape cerraría también otro panel
+ * abierto (el del período) y dejaría el aro de foco en las capturas. No recarga la página ni cierra la sesión.
+ */
+async function ponerTema(page, tema) {
+  if ((await page.evaluate(() => document.documentElement.dataset.tema)) === tema) return;
+  await page.waitForSelector('.menu-de-cuenta__boton', { timeout: 15_000 });
+  await page.evaluate(() => document.querySelector('.menu-de-cuenta__boton').click());
+  await page.waitForSelector('.menu-de-cuenta__panel input[type="radio"]', { timeout: 5_000 });
+  await page.evaluate((t) => document.querySelector(`.menu-de-cuenta__panel input[type="radio"][value="${t}"]`).click(), tema);
+  await page.waitForFunction((t) => document.documentElement.dataset.tema === t, { timeout: 5_000 }, tema);
+  await page.evaluate(() => document.querySelector('.menu-de-cuenta__boton').click());
+  await page.waitForFunction(() => !document.querySelector('.menu-de-cuenta__panel'), { timeout: 3_000 });
+}
 /** Hace clic (con el mouse) en el primer elemento visible y habilitado que contiene el texto. */
 async function clic(page, selector, contiene) {
   const marca = `r${Math.random().toString(36).slice(2)}`;
@@ -340,7 +355,7 @@ async function mirar() {
   try {
     await iniciarSesion(page, estado.proCorreo, FICHA_A);
     await quieto(page, v);
-    await page.select('.apariencia select', temaPedido);
+    await ponerTema(page, temaPedido);
     await pausa(300);
     const e = estado;
     const conPregunta = (q) => `${FICHA_A}&vista=analizar&${q}`;
@@ -453,7 +468,7 @@ async function capturas() {
       ['linea-novedades', `${FICHA_A}&vista=linea&areas=NUTRITION&novedades=${encodeURIComponent(corteN)}`],
     ];
     for (const tema of ['azul-noche', 'claro']) {
-      await page.select('.apariencia select', tema);
+      await ponerTema(page, tema);
       await pausa(300);
       for (const ancho of [1440, 1280, 1024, 768, 390]) {
         await page.setViewport({ width: ancho, height: 900 });
@@ -479,7 +494,7 @@ async function capturas() {
       }
     }
     // A 1280 × 800 (GUIA II.1): lo principal de cada vista empieza en la primera pantalla.
-    await page.select('.apariencia select', 'azul-noche');
+    await ponerTema(page, 'azul-noche');
     await page.setViewport({ width: 1280, height: 800 });
     for (const [nombre, url, selector] of [
       ['Resumen: el objetivo y la planificación', FICHA_A, '.tabla-de-planificacion tbody tr'],
@@ -500,7 +515,7 @@ async function capturas() {
     // Los tres modos del gráfico en los dos temas, con lo que se dibujó comprobado (CP-27).
     await page.setViewport({ width: 1440, height: 900 });
     for (const tema of ['azul-noche', 'claro']) {
-      await page.select('.apariencia select', tema);
+      await ponerTema(page, tema);
       await pausa(300);
       for (const [nombre, letra, metricas, esperadas] of [
         ['paneles', 'P', TRES, 3],
@@ -515,7 +530,7 @@ async function capturas() {
       }
     }
     // Estados críticos, a 1440 en Azul noche.
-    await page.select('.apariencia select', 'azul-noche');
+    await ponerTema(page, 'azul-noche');
     await pausa(300);
     // Error de una sola parte: la proyección nutricional falla; el peso se dibuja y la parte que falta lo dice.
     v.reglas = [{ coincide: (u) => u.includes('/projections/NUTRITION'), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' }];
@@ -552,7 +567,7 @@ async function funcional() {
     await iniciarSesion(page, estado.proCorreo, FICHA_A);
     const tPrimera = await quieto(page, v);
     informar('CP-29', 'Primera carga del Resumen después de iniciar sesión, hasta la última respuesta', `${tPrimera} ms`);
-    await page.select('.apariencia select', 'azul-noche');
+    await ponerTema(page, 'azul-noche');
     await pausa(300);
     const panel = (await leerApi(v, `/advisees/${estado.aseId}/dashboard`)).data.domains;
     const cortes = { NUTRITION: panel.nutrition.summary.lastReview, TRAINING: panel.training.summary.lastReview };
