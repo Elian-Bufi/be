@@ -9,7 +9,7 @@
  * Es un diálogo: se abre a pedido, toma el foco, Escape lo cierra y el foco vuelve al botón. Cada vista suma la suya
  * con su parte del paquete; la que todavía no la tiene no muestra el botón.
  */
-import { FUENTE_DE_LA_REGLA, type ReglaDelResumen } from '@be/domain';
+import { FUENTE_DE_LA_REGLA, VISTAS_DE_LA_LINEA, type ReglaDelResumen } from '@be/domain';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
 import type { VistaDelSeguimiento } from './estado';
@@ -66,8 +66,8 @@ function DeAnalizar() {
           la vista.
         </Renglon>
         <Renglon muestra={<Icono nombre="menu" tamano={20} />}>
-          <strong>Lo demás está a un clic:</strong> en «Más acciones», las vistas guardadas, la descarga, las capas y la comparación de dos períodos; al pie de los gráficos, la tabla de datos, el resumen en texto, los hitos y
-          cómo se calcula cada métrica.
+          <strong>Lo demás está a un clic:</strong> en «Más acciones», las vistas guardadas, la descarga, las capas y la comparación de dos períodos; al pie de los gráficos, la tabla de datos, el resumen en texto, los hitos de
+          planificación (activaciones, objetivos y revisiones: las tomas no, porque en un gráfico ya son puntos) y cómo se calcula cada métrica.
         </Renglon>
       </ul>
     </>
@@ -157,9 +157,80 @@ function DeResumen() {
   );
 }
 
+function DeLinea() {
+  return (
+    <>
+      <p className="nota">Qué pasó y cuándo: cada hecho una vez, en el día en que ocurrió. Describe lo registrado: no califica ni dice si alcanza.</p>
+      <ul className="como-se-lee__lista">
+        <Renglon muestra={<Icono nombre="calendario" tamano={20} />}>
+          <strong>El día es la unidad.</strong> Los días van del más nuevo al más viejo. Dentro de cada día, primero los hitos, después las sesiones y al final las comidas; cada clase, en el orden en que ocurrió.
+        </Renglon>
+        <Renglon muestra={<Icono nombre="hito" tamano={20} />}>
+          <strong>Un hito</strong> lleva una barra a la izquierda: un plan activado, un objetivo, una revisión, una toma antropométrica o un seguimiento que se abre o se cierra. Es todo lo que no se registra todos los días.
+        </Renglon>
+        <Renglon muestra={<Icono nombre="nutricion" tamano={20} />}>
+          <strong>«Comidas»</strong> junta las comidas del día en un renglón, que dice cuántas son y cuántas tienen algo distinto de lo de siempre. Se abre en el lugar, del desayuno a la cena. Una sola comida va en su propio
+          renglón.
+        </Renglon>
+        <Renglon muestra={<Icono nombre="sin-confirmar" tamano={20} />}>
+          <strong>Las etiquetas</strong> dicen cómo se registró un hecho o qué le pasó después: sin confirmar, distinta de lo indicado, comida diferente, sesión con cambios, no realizada o resumida, rectificado, corregido,
+          anulado y cargado otro día. Son datos, no calificaciones. «Falta algún nutriente» depende del alimento: se ve en el detalle y se filtra en «Más filtros».
+        </Renglon>
+        <Renglon muestra={<Icono nombre="cargado-otro-dia" tamano={20} />}>
+          <strong>Cargado otro día:</strong> el hecho está en el día en que ocurrió, no en el que se cargó. Una corrección no es un registro nuevo y no lo mueve; un registro anulado sigue en la historia, con su etiqueta.
+        </Renglon>
+        <Renglon muestra={<Icono nombre="lista" tamano={20} />}>
+          <strong>Un día en una tarjeta</strong> tiene una sesión, un hito o alguna etiqueta. <strong>Un día liso</strong> tiene solo sus comidas, sin nada distinto de lo de siempre. Es para ubicar qué mirar: no dice nada
+          más del día.
+        </Renglon>
+        <Renglon muestra={<span className="muestra-de-hueco" />}>
+          <strong>Gris:</strong> días sin hechos registrados entre dos días de la lista. No son ceros: BE no tiene hechos de esos días en las áreas que podés ver. Se dicen solo cuando mirás «Todo».
+        </Renglon>
+        <Renglon muestra={<Icono nombre="ver" tamano={20} />}>
+          <strong>Las vistas</strong> son filtros con nombre. El número es la cantidad de hechos del período que trae cada una. Elegir una reemplaza lo que estaba elegido; volver a tocarla deja «Todo».
+        </Renglon>
+        <Renglon muestra={<Icono nombre="buscar" tamano={20} />}>
+          <strong>Buscar</strong> recorre todo el período, no solo los días a la vista: el nombre de cada hecho y sus datos, sin distinguir mayúsculas ni acentos (por ejemplo, «cena» o «sentadilla»). Si un hecho coincide
+          en un dato que su renglón no muestra, el renglón lo dice debajo. Lo que escribís no queda en la dirección de la página.
+        </Renglon>
+        <Renglon muestra={<Icono nombre="filtros" tamano={20} />}>
+          <strong>«Más filtros»</strong> combina área, tipo de hecho, ejercicio, estado, calidad del dato y lo cargado otro día. Con un filtro que recorta dentro del día (una calidad, un estado, la búsqueda, lo nuevo
+          desde una revisión), cada hecho va en su renglón, sin agrupar.
+        </Renglon>
+        <Renglon muestra={<Icono nombre="derecha" tamano={20} />}>
+          <strong>Cada renglón abre su detalle:</strong> cuándo ocurrió, cuándo se cargó y quién, qué le pasó después y el registro completo, con el camino a su pestaña. En una ventana ancha se abre al costado y acompaña
+          mientras recorrés la lista; en una angosta, encima. Escape lo cierra.
+        </Renglon>
+        <Renglon muestra={<Icono nombre="abajo" tamano={20} />}>
+          <strong>«Ver días anteriores»</strong> trae más días. Se muestran días enteros: un día aparece cuando están todos sus hechos.
+        </Renglon>
+      </ul>
+      <details className="como-se-lee__fuentes">
+        <summary>Qué trae cada vista ({VISTAS_DE_LA_LINEA.length + 1})</summary>
+        <dl>
+          {VISTAS_DE_LA_LINEA.map((v) => (
+            <div key={v.clave} data-vista={v.clave}>
+              <dt>{v.nombre}</dt>
+              <dd>{v.queTrae}</dd>
+            </div>
+          ))}
+          <div data-vista="LO_NUEVO">
+            <dt>Lo nuevo desde la revisión</dt>
+            <dd>
+              Desde la última revisión registrada de un área: lo que ocurrió después, lo que se cargó después sobre días anteriores y lo que se corrigió después. Mira hasta un año hacia atrás, como la cuenta del Resumen.
+              Sin una revisión registrada, no está.
+            </dd>
+          </div>
+        </dl>
+      </details>
+    </>
+  );
+}
+
 /** El título y el contenido de la ayuda de cada vista. Sin entrada, la vista todavía no tiene la suya. */
 const AYUDA: Readonly<Partial<Record<VistaDelSeguimiento, { readonly titulo: string; readonly contenido: () => ReactNode }>>> = {
   resumen: { titulo: 'Cómo se lee el Resumen', contenido: DeResumen },
+  linea: { titulo: 'Cómo se lee la Línea de tiempo', contenido: DeLinea },
   analizar: { titulo: 'Cómo se lee Analizar', contenido: DeAnalizar },
 };
 

@@ -1,7 +1,7 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
@@ -14,9 +14,10 @@
 //   de la página, se espera el dibujo y se captura la ventana tal cual.
 // - El encabezado, el menú de la cuenta y las tarjetas de preguntas (WP-ESCRITORIO-AMABLE, E-17 y E-18) se comprueban al
 //   final del modo funcional, en una sesión propia porque termina cerrándola. `menu` corre solo esa parte.
-// - El Resumen por área (WP-ESCRITORIO-AMABLE, parte 3) y la composición de Analizar con el lenguaje de sus gráficos
-//   (parte 2) se comprueban en `resumenPorArea` y `analizarRecompuesto`, las dos en una misma sesión propia
-//   (`fichaRecompuesta`), antes del encabezado. `resumen` y `analizar` corren una sola de las dos partes.
+// - El Resumen por área (WP-ESCRITORIO-AMABLE, parte 3), la Línea de tiempo por día (parte 4) y la composición de
+//   Analizar con el lenguaje de sus gráficos (parte 2) se comprueban en `resumenPorArea`, `lineaPorDia` y
+//   `analizarRecompuesto`, las tres en una misma sesión propia (`fichaRecompuesta`), antes del encabezado. `resumen`,
+//   `linea` y `analizar` corren una sola de las tres partes.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
 //   (valores medidos, informados y estimados; revocación desde la web del asesorado).
 import fs from 'node:fs';
@@ -177,6 +178,44 @@ const parametros = (page) => new URL(page.url()).searchParams;
 const texto = (page, s) => page.evaluate((s) => document.querySelector(s)?.innerText.replace(/\s+/g, ' ').trim() ?? '', s);
 const textos = (page, s) => page.evaluate((s) => [...document.querySelectorAll(s)].map((e) => e.innerText.replace(/\s+/g, ' ').trim()), s);
 const sinDesborde = (page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth <= 1);
+
+/**
+ * La línea de tiempo por día (WP-ESCRITORIO-AMABLE, parte 4). La cuenta de la cabecera dice «N hechos en el período» sin
+ * filtros y «N hechos coinciden» con ellos; desde mil lleva punto de miles.
+ */
+const cuentaDeLaLinea = async (page) => {
+  const escrito = await texto(page, 'section.linea p[role="status"]');
+  if (/^Un hecho /.test(escrito)) return 1;
+  const leido = /^([\d.]+) hechos (?:en el período|coinciden)/.exec(escrito);
+  return leido ? Number(leido[1].replace(/\./g, '')) : NaN;
+};
+/**
+ * Los hechos de la lista. Las comidas de un grupo cerrado están en el documento, ocultas: se cuentan por su
+ * identificador. `anunciados` es lo que se ve sin abrir nada (un renglón por hecho suelto y la cantidad que dice cada
+ * grupo): tiene que sumar lo mismo.
+ */
+const hechosDeLaLinea = (page) =>
+  page.evaluate(() => {
+    const filas = [...document.querySelectorAll('.linea-de-tiempo .entrada')];
+    const grupos = [...document.querySelectorAll('.grupo-de-hechos')];
+    return {
+      ids: filas.map((e) => e.dataset.id),
+      areas: filas.map((e) => e.dataset.area),
+      anunciados: document.querySelectorAll('.linea-de-tiempo__hechos > .entrada').length + grupos.reduce((n, g) => n + Number(/(\d+) registradas/.exec(g.querySelector('.grupo-de-hechos__cabecera').innerText)?.[1] ?? NaN), 0),
+    };
+  });
+/** Toca «Ver días anteriores» hasta que no queden tandas. Devuelve cuántas tandas se leyeron. */
+async function verTodosLosDias(page, v, maximo = 12) {
+  let tandas = 1;
+  for (; tandas < maximo; tandas++) {
+    const hay = await page.evaluate(() => [...document.querySelectorAll('.linea__mas button')].some((b) => b.textContent.startsWith('Ver días anteriores')));
+    if (!hay) break;
+    await cupo(v);
+    await clic(page, '.linea__mas button', 'Ver días anteriores');
+    await quieto(page, v);
+  }
+  return tandas;
+}
 
 /**
  * El período de la ficha es un solo control (WP-ESCRITORIO-AMABLE, C-02): se abre y adentro están los atajos. Elegir uno
@@ -606,59 +645,107 @@ async function funcional() {
     const p1 = parametros(page);
     comprobar('PRO-01', 'La línea de tiempo conserva el asesorado y el período', p1.get('id') === estado.aseId && p1.get('vista') === 'linea' && p1.get('p') === null);
     // WP-ESCRITORIO-AMABLE (parte 3): «Lo último que pasó» ya no se repite en el Resumen: es esta pestaña, a un clic.
-    // Lo que protegía esa comprobación (los últimos hechos del período, a mano) se mira acá: hay al menos seis.
-    comprobar('PRO-02', 'Los últimos hechos del período están a un clic del Resumen: la línea de tiempo muestra al menos seis', (await page.$$eval('.entrada', (e) => e.length)) >= 6);
-    const estadoLinea = await texto(page, 'section p[role="status"]');
-    const total = Number(/(\d+) hechos coinciden/.exec(estadoLinea)?.[1] ?? NaN);
+    // Parte 4: los hechos se leen por día y las comidas de un día van en un renglón. Lo que protegía esta comprobación
+    // (los últimos hechos del período, a mano) se mira en lo que la lista anuncia sin abrir nada, que tiene que ser lo
+    // mismo que tiene adentro.
+    const alLlegar = await hechosDeLaLinea(page);
+    comprobar(
+      'PRO-02',
+      'Los últimos hechos del período están a un clic del Resumen: la línea de tiempo anuncia al menos seis, y son los que tiene',
+      alLlegar.anunciados >= 6 && alLlegar.anunciados === alLlegar.ids.length,
+      `${alLlegar.anunciados} hechos anunciados en la primera lectura; ${alLlegar.ids.length} en la lista`,
+    );
+    const total = await cuentaDeLaLinea(page);
     const dias = await page.$$eval('.linea-de-tiempo__dia', (d) => d.map((x) => x.dataset.fecha));
     comprobar('PRO-03', 'Los días van por la fecha del hecho, del más reciente al más viejo', dias.length > 3 && dias.every((d, i) => i === 0 || d < dias[i - 1]) && dias[0] === hoy, `${dias.slice(0, 4).join(', ')}…`);
-    const encabezado = await texto(page, '.linea-de-tiempo__dia h3');
-    comprobar('PRO-17', 'El día se nombra en castellano, con mayúscula solo al principio', /^[A-ZÁÉÍÓÚ][a-záéíóú]+, \d{1,2} de [a-z]+ de \d{4}$/.test(encabezado), encabezado);
+    // El día se escribe corto a la vista («10 oct», «sábado») y entero para el lector de pantalla, en el mismo título.
+    const encabezado = await page.evaluate(() => {
+      const h = document.querySelector('.linea-de-tiempo__dia h3');
+      return { paraElLector: h?.querySelector('.visualmente-oculto')?.textContent ?? '', aLaVista: [...(h?.querySelectorAll('[aria-hidden="true"] > span') ?? [])].map((s) => s.textContent) };
+    });
+    comprobar(
+      'PRO-17',
+      'El día se nombra en castellano, con mayúscula solo al principio: entero para el lector de pantalla, y corto a la vista',
+      /^[A-ZÁÉÍÓÚ][a-záéíóú]+, \d{1,2} de [a-z]+ de \d{4}$/.test(encabezado.paraElLector) && /^\d{1,2} [a-z]{3,4}$/.test(encabezado.aLaVista[0] ?? '') && /^[a-záéíóú]+$/.test(encabezado.aLaVista[1] ?? ''),
+      `${encabezado.paraElLector} · ${encabezado.aLaVista.join(' / ')}`,
+    );
     const tardia = await page.evaluate(() => {
-      const e = [...document.querySelectorAll('.entrada')].find((x) => x.innerText.includes('Carga tardía') && x.innerText.includes('Toma'));
+      const e = [...document.querySelectorAll('.linea-de-tiempo__hechos > .entrada')].find((x) => x.innerText.includes('Cargado otro día') && x.innerText.includes('Toma'));
       return e ? { dia: e.closest('.linea-de-tiempo__dia').dataset.fecha, texto: e.innerText.replace(/\s+/g, ' ') } : null;
     });
-    comprobar('PRO-03', 'La toma de ayer cargada hoy queda en el día de ayer, marcada como carga tardía', tardia?.dia === diaMenos(hoy, 1), tardia?.texto ?? 'no está');
-    const ayer = await page.evaluate((f) => [...document.querySelectorAll(`.linea-de-tiempo__dia[data-fecha="${f}"] .entrada`)].map((e) => e.innerText.replace(/\s+/g, ' ')), diaMenos(hoy, 1));
+    comprobar('PRO-03', 'La toma de ayer cargada hoy queda en el día de ayer, con su etiqueta «Cargado otro día»', tardia?.dia === diaMenos(hoy, 1), tardia?.texto ?? 'no está');
+    // Las comidas de ayer van en un renglón, que anuncia lo que tiene adentro; abierto, cada una dice lo suyo.
+    const deAyer = `.linea-de-tiempo__dia[data-fecha="${diaMenos(hoy, 1)}"]`;
+    const grupoDeAyer = await texto(page, `${deAyer} .grupo-de-hechos__cabecera`);
+    const aLaVistaCerrado = await page.evaluate((s) => [...document.querySelectorAll(`${s} .grupo-de-hechos .entrada`)].filter((e) => e.getClientRects().length > 0).length, deAyer);
+    await page.click(`${deAyer} .grupo-de-hechos__cabecera`);
+    await pausa(200);
+    const ayer = await page.evaluate((s) => [...document.querySelectorAll(`${s} .grupo-de-hechos .entrada`)].filter((e) => e.getClientRects().length > 0).map((e) => e.innerText.replace(/\s+/g, ' ')), deAyer);
+    const horasDeAyer = ayer.map((t) => /^\d{2}:\d{2}/.exec(t)?.[0] ?? '');
+    comprobar(
+      'E-66',
+      'Las comidas de ayer van en un renglón que dice cuántas son y lo que tienen de distinto (una anulada, una rectificada); cerrado no muestra ninguna, y abierto las muestra todas, del desayuno a la cena',
+      /Comidas 4 registradas/.test(grupoDeAyer) && /1 anulada/.test(grupoDeAyer) && /1 rectificada/.test(grupoDeAyer) && aLaVistaCerrado === 0 && ayer.length === 4 && horasDeAyer.every((h, i) => h !== '' && (i === 0 || h >= horasDeAyer[i - 1])),
+      `${grupoDeAyer} · cerrado: ${aLaVistaCerrado} a la vista · abierto: ${horasDeAyer.join(', ')}`,
+    );
     const almuerzos = ayer.filter((t) => /Almuerzo/.test(t));
     comprobar('PRO-16', 'El almuerzo rectificado es una sola entrada, marcada «Rectificado»', almuerzos.length === 1 && /Rectificado/.test(almuerzos[0]), almuerzos.join(' || '));
     comprobar('PRO-16', 'La merienda anulada sigue en la historia, marcada «Anulado»', ayer.filter((t) => /Merienda/.test(t) && /Anulado/.test(t)).length === 1);
 
-    // Filtros combinados y paginación completa y estable.
+    // Filtros combinados y paginación completa y estable. La combinación libre está en «Más filtros».
+    await clic(page, '.vistas-de-la-linea button', 'Más filtros');
+    await page.waitForSelector('.filtros-de-linea fieldset button.chip', { timeout: 5_000 });
     await clic(page, '.filtros-de-linea fieldset button.chip', 'Nutrición');
     await quieto(page, v);
     await elegir(page, '.filtros-de-linea', 'Tipo de hecho', 'MEAL_RECORDED');
     await quieto(page, v);
     const p2 = parametros(page);
-    const filtrado = Number(/(\d+) hechos coinciden/.exec(await texto(page, 'section p[role="status"]'))?.[1] ?? NaN);
+    const filtrado = await cuentaDeLaLinea(page);
     comprobar('PRO-04', 'Área y tipo combinados quedan en la URL y reducen el conjunto', p2.get('areas') === 'NUTRITION' && p2.get('tipos') === 'MEAL_RECORDED' && filtrado > 50 && filtrado < total, `${filtrado} de ${total}`);
-    for (let i = 0; i < 12; i++) {
-      const hay = await page.evaluate(() => [...document.querySelectorAll('button')].some((b) => b.textContent.startsWith('Ver más')));
-      if (!hay) break;
-      await cupo(v);
-      await clic(page, 'button', 'Ver más');
-      await quieto(page, v);
-    }
-    const ids = await page.$$eval('.entrada', (e) => e.map((x) => x.dataset.id));
-    const areas = await textos(page, '.entrada__area');
-    comprobar('PRO-04', '«Ver más» completa el conjunto sin repetir ni perder entradas', ids.length === filtrado && new Set(ids).size === ids.length && areas.every((a) => a === 'NUTRICIÓN' || a === 'Nutrición'), `${ids.length} entradas, ${new Set(ids).size} distintas`);
+    await verTodosLosDias(page, v);
+    const completo = await hechosDeLaLinea(page);
+    comprobar(
+      'PRO-04',
+      '«Ver días anteriores» completa el conjunto sin repetir ni perder entradas, todas de Nutrición, y lo que anuncian los renglones suma lo mismo',
+      completo.ids.length === filtrado && new Set(completo.ids).size === completo.ids.length && completo.areas.length > 0 && completo.areas.every((a) => a === 'NUTRITION') && completo.anunciados === filtrado,
+      `${completo.ids.length} entradas, ${new Set(completo.ids).size} distintas, ${completo.anunciados} anunciadas`,
+    );
 
-    // El registro original, y la vuelta con la posición.
+    // El detalle, al costado, y la vuelta con la posición. El renglón entero abre: no hay un «Abrir registro» aparte.
     const yAntes = await page.evaluate(() => {
-      const botones = [...document.querySelectorAll('.entrada button')].filter((b) => b.textContent.startsWith('Abrir registro'));
-      botones[botones.length - 1].scrollIntoView({ block: 'center' });
-      botones[botones.length - 1].setAttribute('data-recorrido', 'ultimo');
+      const filas = [...document.querySelectorAll('.entrada__fila')].filter((b) => b.getClientRects().length > 0);
+      const ultima = filas[filas.length - 1];
+      ultima.scrollIntoView({ block: 'center' });
+      ultima.setAttribute('data-recorrido', 'ultimo');
       return window.scrollY;
     });
     const urlAntes = page.url();
     await page.click('[data-recorrido="ultimo"]');
-    await page.waitForSelector('dialog[open]');
+    await page.waitForSelector('.detalle-del-hecho');
     await quieto(page, v);
-    const dialogo = await texto(page, 'dialog[open]');
-    comprobar('PRO-05', '«Abrir registro» muestra el registro de comida de esa entrada', /Ver en Nutrición/.test(dialogo) && dialogo.length > 80, dialogo.slice(0, 160));
+    const detalle = await texto(page, '.detalle-del-hecho');
+    const conElDetalle = await page.evaluate(() => {
+      const lista = document.querySelector('.linea-de-tiempo').getBoundingClientRect();
+      const panel = document.querySelector('.detalle-del-hecho').getBoundingClientRect();
+      return {
+        modal: !!document.querySelector('dialog[open]'),
+        alCostado: panel.left >= lista.right,
+        elegido: document.querySelector('[data-recorrido="ultimo"]').getAttribute('aria-current'),
+        focoEnElDetalle: !!document.activeElement?.closest('.detalle-del-hecho'),
+        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    });
+    comprobar('PRO-05', 'Un renglón abre el registro de comida de esa entrada, con cuándo ocurrió y cuándo se cargó', /Ver en Nutrición/.test(detalle) && /Ocurrió/.test(detalle) && /Se cargó/.test(detalle) && detalle.length > 80, detalle.slice(0, 160));
+    comprobar(
+      'E-70',
+      'A 1440, el detalle se abre al costado y no tapa la lista: no es un diálogo, el renglón queda marcado, el foco pasa al detalle y la página no desborda',
+      !conElDetalle.modal && conElDetalle.alCostado && conElDetalle.elegido === 'true' && conElDetalle.focoEnElDetalle && conElDetalle.desborde <= 1,
+      JSON.stringify(conElDetalle),
+    );
     a11y.registro = await axe(page);
     await page.keyboard.press('Escape');
-    await page.waitForFunction(() => !document.querySelector('dialog[open]'));
+    await page.waitForFunction(() => !document.querySelector('.detalle-del-hecho'));
+    await pausa(200);
     const yDespues = await page.evaluate(() => window.scrollY);
     const foco = await page.evaluate(() => document.activeElement?.getAttribute('data-recorrido'));
     comprobar('PRO-05', 'Al cerrar con Esc vuelve a la misma posición, con el foco en el disparador y la URL igual', Math.abs(yDespues - yAntes) < 4 && foco === 'ultimo' && page.url() === urlAntes, `scroll ${yAntes} → ${yDespues}, foco ${foco}`);
@@ -670,38 +757,38 @@ async function funcional() {
     // también al pedir más páginas (revisión de #153, hallazgo 4).
     const desdeUrl = v.urls.length;
     const desdeCuerpo = v.cuerpos.length;
-    await page.type('input[type="search"]', 'cena');
-    await clic(page, '.filtros-de-linea button[type="submit"]', 'Buscar');
+    await page.type('.buscador-de-la-linea input[type="search"]', 'cena');
+    // El botón de buscar es la lupa (su nombre, «Buscar», lo lleva el ícono): se toca, como lo haría una persona.
+    const nombreDeLaLupa = await page.$eval('.buscador-de-la-linea button[type="submit"] svg', (s) => s.getAttribute('aria-label'));
+    await page.click('.buscador-de-la-linea button[type="submit"]');
     await quieto(page, v);
     const conCena = await textos(page, '.entrada__titulo');
-    const totalCena = Number(/(\d+) hechos coinciden/.exec(await texto(page, 'section p[role="status"]'))?.[1] ?? NaN);
-    comprobar('PRO-04', 'La búsqueda recorre el período y no viaja en la URL de la página', !page.url().includes('cena') && conCena.length > 0 && conCena.every((t) => /cena/i.test(t)), `${conCena.length} entradas; URL ${page.url().replace(WEB, '')}`);
-    let paginasCena = 1;
-    for (; paginasCena < 8; paginasCena++) {
-      const hay = await page.evaluate(() => [...document.querySelectorAll('button')].some((b) => b.textContent.startsWith('Ver más')));
-      if (!hay) break;
-      await cupo(v);
-      await clic(page, 'button', 'Ver más');
-      await quieto(page, v);
-    }
-    const idsCena = await page.$$eval('.entrada', (e) => e.map((x) => x.dataset.id));
+    const totalCena = await cuentaDeLaLinea(page);
+    comprobar('PRO-04', 'La búsqueda recorre el período y no viaja en la URL de la página', nombreDeLaLupa === 'Buscar' && !page.url().includes('cena') && conCena.length > 0 && conCena.every((t) => /cena/i.test(t)), `${conCena.length} entradas; URL ${page.url().replace(WEB, '')}`);
+    const paginasCena = await verTodosLosDias(page, v, 8);
+    const deCena = await hechosDeLaLinea(page);
     const titulosCena = await textos(page, '.entrada__titulo');
-    comprobar('PRO-04', '«Ver más» con la búsqueda activa completa las coincidencias de todo el período, sin repetir', idsCena.length === totalCena && new Set(idsCena).size === idsCena.length && titulosCena.every((t) => /cena/i.test(t)), `${idsCena.length} de ${totalCena} en ${paginasCena} página(s)`);
+    comprobar(
+      'PRO-04',
+      '«Ver días anteriores» con la búsqueda activa completa las coincidencias de todo el período, sin repetir, y cada una a la vista en su renglón',
+      deCena.ids.length === totalCena && new Set(deCena.ids).size === deCena.ids.length && titulosCena.length === totalCena && titulosCena.every((t) => /cena/i.test(t)),
+      `${deCena.ids.length} de ${totalCena} en ${paginasCena} página(s)`,
+    );
     const urlsDeLaBusqueda = v.urls.slice(desdeUrl);
     const cuerposDeLaBusqueda = v.cuerpos.slice(desdeCuerpo).map((c) => JSON.parse(c));
     comprobar(
       'PRO-04',
-      'El texto buscado viaja en el cuerpo de un POST (API-DSH-04-BUSQUEDA): ninguna URL de la API lo lleva, tampoco la de «Ver más»',
+      'El texto buscado viaja en el cuerpo de un POST (API-DSH-04-BUSQUEDA): ninguna URL de la API lo lleva, tampoco la de «Ver días anteriores»',
       urlsDeLaBusqueda.some((u) => u.startsWith('POST') && u.includes('/timeline/search')) &&
         !urlsDeLaBusqueda.some((u) => /cena/i.test(u)) &&
         cuerposDeLaBusqueda.length >= paginasCena &&
         cuerposDeLaBusqueda.every((c) => c.q === 'cena') &&
         (paginasCena === 1 || cuerposDeLaBusqueda.some((c) => typeof c.cursor === 'string')),
-      `${urlsDeLaBusqueda.length} pedidos a la API durante la búsqueda, ninguno con el texto; ${cuerposDeLaBusqueda.length} POST con el texto en el cuerpo${cuerposDeLaBusqueda.some((c) => c.cursor) ? ' (los de «Ver más», con su cursor)' : ''}`,
+      `${urlsDeLaBusqueda.length} pedidos a la API durante la búsqueda, ninguno con el texto; ${cuerposDeLaBusqueda.length} POST con el texto en el cuerpo${cuerposDeLaBusqueda.some((c) => c.cursor) ? ' (los de «Ver días anteriores», con su cursor)' : ''}`,
     );
     await clic(page, 'button', 'Limpiar filtros');
     await quieto(page, v);
-    const limpio = Number(/(\d+) hechos coinciden/.exec(await texto(page, 'section p[role="status"]'))?.[1] ?? NaN);
+    const limpio = await cuentaDeLaLinea(page);
     comprobar('PRO-04', 'Limpiar recupera la vista completa', limpio === total && !parametros(page).get('areas'), `${limpio} de ${total}`);
     a11y.linea = await axe(page);
 
@@ -967,7 +1054,7 @@ async function funcional() {
     await pausa(3600);
     await quieto(page, v);
     v.reglas = [];
-    const tras = Number(/(\d+) hechos coinciden/.exec(await texto(page, 'section p[role="status"]'))?.[1] ?? NaN);
+    const tras = await cuentaDeLaLinea(page);
     comprobar('PRO-21', 'La respuesta lenta de «7 días» no pisa la de «90 días» elegida después', tras === total && parametros(page).get('p') === '90', `${tras} hechos (esperado ${total})`);
 
     await cupo(v);
@@ -1229,7 +1316,7 @@ async function analizarRecompuesto(page, v) {
         masAbierto.descarga &&
         masAbierto.capas.length === 2 &&
         /^Etapas de los planes/.test(masAbierto.capas[0]) &&
-        /^Hitos/.test(masAbierto.capas[1]) &&
+        /^Hitos de planificación \(activaciones, objetivos, revisiones\)$/.test(masAbierto.capas[1]) &&
         masAbierto.intervalo &&
         masAbierto.comparar &&
         masCerrado.expandido === 'false' &&
@@ -1252,7 +1339,7 @@ async function analizarRecompuesto(page, v) {
     await clic(page, '.pie-de-graficos button', 'Resumen en texto');
     await page.waitForFunction(() => !document.querySelector('.bajo-los-graficos'), { timeout: 5_000 });
     const pieCerrado = await pie();
-    const ORDEN_DEL_PIE = [/^Tabla de datos \(\d+ fechas?\)$/, /^Resumen en texto$/, /^Hitos \(\d+\)$/, /^Comparar etapas$/, /^Cómo se calcula$/];
+    const ORDEN_DEL_PIE = [/^Tabla de datos \(\d+ fechas?\)$/, /^Resumen en texto$/, /^Hitos de planificación \(\d+\)$/, /^Comparar etapas$/, /^Cómo se calcula$/];
     comprobar(
       'E-25',
       'El pie de los gráficos ofrece la tabla de datos, el resumen en texto, los hitos, las etapas y «Cómo se calcula», y abre debajo una cosa a la vez: abrir el resumen cierra la tabla, y volver a tocarlo lo cierra',
@@ -1549,20 +1636,25 @@ async function analizarRecompuesto(page, v) {
     await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia,nutricion.proteinas')}&p=90`);
     const lineasDeHitos = () => figuras(() => [...document.querySelectorAll('figure.grafico__figura')].map((f) => [...f.querySelectorAll('.recharts-reference-line-line')].filter((l) => l.getAttribute('stroke-dasharray') === '2 4').length));
     const hitosCerrados = await lineasDeHitos();
-    await clic(page, '.pie-de-graficos button', 'Hitos (');
+    await clic(page, '.pie-de-graficos button', 'Hitos de planificación (');
     await page.waitForSelector('.bajo-los-graficos .hitos li', { timeout: 5_000 });
     await pausa(300);
     const listados = await page.$$eval('.bajo-los-graficos .hitos li', (l) => l.length);
     const hitosAbiertos = await lineasDeHitos();
-    await clic(page, '.pie-de-graficos button', 'Hitos (');
+    await clic(page, '.pie-de-graficos button', 'Hitos de planificación (');
     await page.waitForFunction(() => !document.querySelector('.bajo-los-graficos'), { timeout: 5_000 });
     await pausa(300);
     const hitosVueltosACerrar = await lineasDeHitos();
+    // WP-ESCRITORIO-AMABLE, parte 4: son los hitos de planificación. La línea de tiempo llama «hitos» también a las tomas
+    // (que en un gráfico ya son puntos): acá no se listan, y la cantidad es la de la API sin ellas.
+    const delPeriodo = (await leerApi(v, `/advisees/${estado.aseId}/timeline?periodStart=${diaMenos(hoy, 89)}&periodEnd=${hoy}&limit=1`)).data.periodCounts.byEventType;
+    const dePlanificacion = delPeriodo.filter((x) => !['MEAL_RECORDED', 'TRAINING_SESSION_RECORDED', 'ANTHROPOMETRIC_EVALUATION_RECORDED'].includes(x.eventType)).reduce((n, x) => n + x.count, 0);
+    const tomasDelPeriodo = delPeriodo.find((x) => x.eventType === 'ANTHROPOMETRIC_EVALUATION_RECORDED')?.count ?? 0;
     comprobar(
       'E-31',
-      'Las líneas de los hitos no se dibujan con su lista cerrada; al abrir «Hitos», cada gráfico dibuja una por hito de la lista, y al cerrarla se van',
-      listados > 0 && hitosCerrados.every((n) => n === 0) && hitosAbiertos.length === 2 && hitosAbiertos.every((n) => n === listados) && hitosVueltosACerrar.every((n) => n === 0),
-      `${listados} hitos en la lista · líneas por gráfico: cerrada ${hitosCerrados.join('/')}, abierta ${hitosAbiertos.join('/')}, cerrada otra vez ${hitosVueltosACerrar.join('/')}`,
+      'Las líneas de los hitos de planificación no se dibujan con su lista cerrada; al abrirla, cada gráfico dibuja una por hito de la lista, y al cerrarla se van; son los de la API sin las tomas',
+      listados > 0 && listados === dePlanificacion && tomasDelPeriodo > 0 && hitosCerrados.every((n) => n === 0) && hitosAbiertos.length === 2 && hitosAbiertos.every((n) => n === listados) && hitosVueltosACerrar.every((n) => n === 0),
+      `${listados} hitos de planificación en la lista (la API: ${dePlanificacion}, y ${tomasDelPeriodo} tomas que no se listan) · líneas por gráfico: cerrada ${hitosCerrados.join('/')}, abierta ${hitosAbiertos.join('/')}, cerrada otra vez ${hitosVueltosACerrar.join('/')}`,
     );
 
     // E-35 · La lectura: el valor grande y, debajo, cómo leerlo ─────────────────────────────────────────
@@ -1897,16 +1989,20 @@ async function analizarRecompuesto(page, v) {
     await page.keyboard.press('Escape');
     const cerro = await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 3_000 }).then(() => true, () => false);
     const focoDespues = await page.evaluate(() => document.activeElement?.textContent.replace(/\s+/g, ' ').trim() ?? '');
-    // El botón aparece solo en las vistas que tienen su ayuda. WP-ESCRITORIO-AMABLE, parte 3: el Resumen ya tiene la
-    // suya (se comprueba en `resumenPorArea`); la Línea de tiempo todavía no, y ahí el botón no está.
+    // El botón aparece solo en las vistas que tienen su ayuda. Desde la parte 4 la tienen las tres: la del Resumen se
+    // comprueba en `resumenPorArea` y la de la Línea de tiempo en `lineaPorDia`. Acá, que el marco tampoco crece allí.
     await cupo(v);
     await ir(page, `${FICHA_A}&vista=linea`);
     await quieto(page, v);
-    const enLaLinea = await page.evaluate(() => ({ boton: !!document.querySelector('.como-se-lee__boton'), periodo: !!document.querySelector('.periodo-del-seguimiento__boton') }));
+    const enLaLinea = await page.evaluate(() => ({
+      boton: document.querySelector('.marco-de-la-ficha .como-se-lee__boton')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+      periodo: !!document.querySelector('.periodo-del-seguimiento__boton'),
+      alto: Math.round(document.querySelector('.marco-de-la-ficha').getBoundingClientRect().height),
+    }));
     comprobar(
       'E-47',
-      'En Analizar, el marco de la ficha ofrece «Cómo se lee esta vista» sin crecer (143 px a 1440, 1280 y 1024; a 1024, el botón queda con su ícono y conserva su nombre); en la Línea de tiempo, que todavía no tiene su ayuda, el botón no está',
-      [1440, 1280, 1024].every((a) => marco[a].alto === 143 && marco[a].boton === 'Cómo se lee esta vista' && marco[a].desborde <= 1) && marco[1024].anchoDelBoton < 60 && marco[1440].anchoDelBoton > 120 && !enLaLinea.boton && enLaLinea.periodo,
+      'En Analizar, el marco de la ficha ofrece «Cómo se lee esta vista» sin crecer (143 px a 1440, 1280 y 1024; a 1024, el botón queda con su ícono y conserva su nombre); en la Línea de tiempo el botón también está, y el marco mide lo mismo',
+      [1440, 1280, 1024].every((a) => marco[a].alto === 143 && marco[a].boton === 'Cómo se lee esta vista' && marco[a].desborde <= 1) && marco[1024].anchoDelBoton < 60 && marco[1440].anchoDelBoton > 120 && enLaLinea.boton === 'Cómo se lee esta vista' && enLaLinea.periodo && enLaLinea.alto === 143,
       `${JSON.stringify(marco)} · Línea de tiempo: ${JSON.stringify(enLaLinea)}`,
     );
     comprobar(
@@ -2570,12 +2666,668 @@ async function resumenPorArea(page, v, guiones) {
   }
 }
 
+// ─── La Línea de tiempo por día (WP-ESCRITORIO-AMABLE, parte 4: E-65 a E-78) ─────────────────────────
+
 /**
- * El Resumen por área y Analizar recompuesto, en una misma sesión (una sola entrada de la cuenta: el límite es de cinco
- * cada quince minutos). La parte del Resumen va primero, con la ficha recién abierta: ahí se mira qué guiones cargó.
- * El modo funcional corre las dos antes del encabezado; `resumen` y `analizar` corren una sola.
+ * La línea de tiempo con el día como unidad: los días con su tarjeta o lisos, el grupo de comidas, los hitos, las vistas
+ * con nombre y su cantidad, el detalle al costado, los días enteros, los días sin hechos y la ayuda de la vista. Lo
+ * esperado (qué hechos tiene cada día, cuántos de cada rasgo, las cantidades de las vistas, los instantes del detalle)
+ * se calcula a mano con lo que devuelve la API, sin el dominio. Cada comprobación negativa («no hay…») mira con el mismo
+ * selector que una positiva de la misma pantalla. Corre en la sesión de `fichaRecompuesta`; sola, con
+ * `node recorrido.mjs linea`.
  */
-async function fichaRecompuesta({ resumen = true, analizar = true } = {}) {
+async function lineaPorDia(page, v) {
+  const desde90 = diaMenos(hoy, 89);
+  const consulta = `periodStart=${desde90}&periodEnd=${hoy}`;
+  const num = (n) => new Intl.NumberFormat('es-AR').format(n);
+  const ZONA = 'America/Argentina/Buenos_Aires';
+  /** «20 sept», como escribe la línea una fecha del año en curso; con el año si es de otro. */
+  const fechaBreve = (f) => (f.slice(0, 4) === hoy.slice(0, 4) ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${f}T12:00:00Z`)) : diaCivil(f));
+  /** «24 sept, 13:30»: un instante en la zona del hecho. */
+  const momento = (instante) => {
+    const fecha = new Intl.DateTimeFormat('en-CA', { timeZone: ZONA }).format(new Date(instante));
+    return `${fechaBreve(fecha)}, ${new Intl.DateTimeFormat('es-AR', { timeStyle: 'short', hourCycle: 'h23', timeZone: ZONA }).format(new Date(instante))}`;
+  };
+  const linea = (extra = '') => leerApi(v, `/advisees/${estado.aseId}/timeline?${consulta}${extra}`);
+  const abrirLinea = async (extra = '') => {
+    await cupo(v, 60);
+    // Pasar por otra vista vuelve a montar la línea: empieza sin grupos abiertos ni detalle.
+    await ir(page, FICHA_A);
+    await quieto(page, v);
+    await ir(page, `${FICHA_A}&vista=linea${extra}`);
+    await quieto(page, v);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await pausa(300);
+  };
+  const DE_TODOS_LOS_DIAS = new Set(['MEAL_RECORDED', 'TRAINING_SESSION_RECORDED']);
+  /** Los rasgos de un hecho, a mano desde los campos de la API. */
+  const rasgosDe = (e) =>
+    [
+      e.quality.includes('QUANTITIES_UNCONFIRMED') && 'SIN_CONFIRMAR',
+      e.quality.includes('QUANTITIES_DIFFER_FROM_PLAN') && 'DISTINTO_DE_LO_INDICADO',
+      e.quality.includes('DIFFERENT_MEAL') && 'COMIDA_DIFERENTE',
+      e.quality.includes('SESSION_WITH_DEVIATION') && 'SESION_CON_CAMBIOS',
+      e.quality.includes('SESSION_NOT_COMPLETED') && 'SESION_NO_REALIZADA',
+      e.quality.includes('SESSION_SUMMARY_ONLY') && 'SESION_RESUMIDA',
+      e.state === 'ANNULLED' && 'ANULADO',
+      e.state === 'RECTIFIED' && 'RECTIFICADO',
+      e.state === 'CORRECTED' && 'CORREGIDO',
+      e.recordedLate && 'CARGADO_OTRO_DIA',
+    ].filter(Boolean);
+  /** Cada día de la lista, tal como se ve. */
+  const diasEnPantalla = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('.linea-de-tiempo__dia')].map((d) => {
+        const lista = d.querySelector('.linea-de-tiempo__hechos');
+        const estilo = getComputedStyle(lista);
+        const grupo = d.querySelector('.grupo-de-hechos');
+        const cabecera = grupo?.querySelector('.grupo-de-hechos__cabecera');
+        return {
+          fecha: d.dataset.fecha,
+          novedades: d.dataset.novedades,
+          fin: Math.round(d.getBoundingClientRect().bottom + scrollY),
+          tarjeta: estilo.borderTopWidth !== '0px' && estilo.borderTopStyle !== 'none' && estilo.backgroundColor !== 'rgba(0, 0, 0, 0)',
+          sueltos: [...d.querySelectorAll('.linea-de-tiempo__hechos > .entrada')].map((e) => ({ id: e.dataset.id, hito: e.dataset.hito === 'si', rasgos: [...e.querySelectorAll('[data-rasgo]')].map((r) => r.dataset.rasgo), texto: e.innerText.replace(/\s+/g, ' ').trim() })),
+          grupo: grupo
+            ? {
+                cabecera: cabecera.innerText.replace(/\s+/g, ' ').trim(),
+                abierto: cabecera.getAttribute('aria-expanded'),
+                rasgos: Object.fromEntries([...cabecera.querySelectorAll('[data-rasgo]')].map((r) => [r.dataset.rasgo, Number(/^\d+/.exec(r.innerText.trim())?.[0] ?? NaN)])),
+                ids: [...grupo.querySelectorAll('.entrada')].map((e) => e.dataset.id),
+                aLaVista: [...grupo.querySelectorAll('.entrada')].filter((e) => e.getClientRects().length > 0).length,
+              }
+            : null,
+        };
+      }),
+    );
+  await page.setViewport({ width: 1440, height: 900 });
+  await abrirLinea();
+
+  // Lo esperado: todas las tandas de la API, por fecha.
+  const tandas = [];
+  for (let cursor = null; tandas.length < 12; ) {
+    const r = await linea(`&limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+    tandas.push(r);
+    cursor = r.page.nextCursor;
+    if (!cursor) break;
+  }
+  const entradasApi = tandas.flatMap((r) => r.data.entries);
+  const conteos = tandas[0].data.periodCounts;
+  const totalDelPeriodo = conteos.byEventType.reduce((n, t) => n + t.count, 0);
+  const porDia = new Map();
+  for (const e of entradasApi) porDia.set(e.occurredDate, [...(porDia.get(e.occurredDate) ?? []), e]);
+  const esperadoDe = (fecha) => {
+    const hechos = porDia.get(fecha) ?? [];
+    const comidas = hechos.filter((e) => e.eventType === 'MEAL_RECORDED');
+    const otros = hechos.filter((e) => e.eventType !== 'MEAL_RECORDED');
+    const rasgos = {};
+    for (const c of comidas) for (const r of rasgosDe(c)) rasgos[r] = (rasgos[r] ?? 0) + 1;
+    return {
+      hechos: hechos.length,
+      comidas: comidas.length,
+      agrupadas: comidas.length >= 2,
+      sueltos: otros.length + (comidas.length >= 2 ? 0 : comidas.length),
+      hitos: otros.filter((e) => !DE_TODOS_LOS_DIAS.has(e.eventType)).map((e) => e.timelineEntryId).sort(),
+      novedades: otros.length > 0 || comidas.some((c) => rasgosDe(c).length > 0) ? 'si' : 'no',
+      rasgos,
+    };
+  };
+  const igual = (a, b) => JSON.stringify(Object.entries(a).sort()) === JSON.stringify(Object.entries(b).sort());
+
+  // E-65 · Cada día, como lo arma la API ──────────────────────────────────────────────────────────────────
+  const enPantalla = await diasEnPantalla();
+  const diferencias = enPantalla.flatMap((d) => {
+    const e = esperadoDe(d.fecha);
+    const faltas = [];
+    if (d.novedades !== e.novedades) faltas.push(`novedades ${d.novedades}, esperado ${e.novedades}`);
+    if (d.tarjeta !== (e.novedades === 'si')) faltas.push(`tarjeta ${d.tarjeta}`);
+    if (!!d.grupo !== e.agrupadas) faltas.push(`grupo ${!!d.grupo}, esperado ${e.agrupadas}`);
+    if (d.grupo && !new RegExp(`^Comidas ${e.comidas} registradas`).test(d.grupo.cabecera)) faltas.push(`cabecera «${d.grupo.cabecera}», esperado ${e.comidas}`);
+    if (d.grupo && !igual(d.grupo.rasgos, e.rasgos)) faltas.push(`rasgos ${JSON.stringify(d.grupo.rasgos)}, esperado ${JSON.stringify(e.rasgos)}`);
+    if (d.grupo && (d.grupo.ids.length !== e.comidas || d.grupo.aLaVista !== 0 || d.grupo.abierto !== 'false')) faltas.push(`grupo con ${d.grupo.ids.length} (${d.grupo.aLaVista} a la vista, abierto ${d.grupo.abierto})`);
+    if (d.sueltos.length !== e.sueltos) faltas.push(`${d.sueltos.length} renglones, esperado ${e.sueltos}`);
+    if (JSON.stringify(d.sueltos.filter((s) => s.hito).map((s) => s.id).sort()) !== JSON.stringify(e.hitos)) faltas.push('los hitos no son los de la API');
+    // Los hitos van primero: ningún renglón que no es un hito queda antes de uno que sí.
+    if (d.sueltos.some((s, i) => s.hito && d.sueltos.slice(0, i).some((x) => !x.hito))) faltas.push('un hito no va primero');
+    return faltas.length ? [`${d.fecha}: ${faltas.join('; ')}`] : [];
+  });
+  const conTarjeta = enPantalla.filter((d) => d.tarjeta).length;
+  comprobar(
+    'E-65',
+    'Cada día se arma con lo que entrega la API: los hitos primero, las comidas en un renglón que dice cuántas son y cuántas tienen cada rasgo, y la tarjeta solo si hay una sesión, un hito o un rasgo; hay días de las dos clases',
+    diferencias.length === 0 && enPantalla.length >= 5 && conTarjeta > 0 && conTarjeta < enPantalla.length,
+    diferencias.length ? diferencias.slice(0, 4).join(' · ') : `${enPantalla.length} días a la vista: ${conTarjeta} con tarjeta y ${enPantalla.length - conTarjeta} lisos`,
+  );
+
+  // E-71 · Días enteros: el último día leído espera ─────────────────────────────────────────────────────
+  const fechasDeLaPrimera = [...new Set(tandas[0].data.entries.map((e) => e.occurredDate))];
+  const fechasEsperadas = tandas[0].page.nextCursor ? fechasDeLaPrimera.slice(0, -1) : fechasDeLaPrimera;
+  const ultimoDeLaPrimera = fechasDeLaPrimera[fechasDeLaPrimera.length - 1];
+  const cortado = tandas[0].data.entries.filter((e) => e.occurredDate === ultimoDeLaPrimera).length < (porDia.get(ultimoDeLaPrimera)?.length ?? 0);
+  const hechosDe = (d) => d.sueltos.length + (d.grupo?.ids.length ?? 0);
+  const incompletos = enPantalla.filter((d) => hechosDe(d) !== esperadoDe(d.fecha).hechos).map((d) => d.fecha);
+  const aLaVista = enPantalla.reduce((n, d) => n + hechosDe(d), 0);
+  const pie = await texto(page, '.linea__mas');
+  comprobar(
+    'E-71',
+    'Se muestran días enteros: de la primera tanda de 50 hechos, el último día (que la tanda cortó) espera a «Ver días anteriores»; cada día a la vista tiene todos sus hechos, y el pie dice cuántos se ven y hasta qué día',
+    JSON.stringify(enPantalla.map((d) => d.fecha)) === JSON.stringify(fechasEsperadas) && incompletos.length === 0 && pie.includes(`Se ven ${num(aLaVista)} de ${num(totalDelPeriodo)} hechos, hasta el ${fechaBreve(fechasEsperadas[fechasEsperadas.length - 1])}.`),
+    `${fechasEsperadas.length} días · el ${ultimoDeLaPrimera} ${cortado ? 'quedó cortado por la tanda y espera' : 'entró entero en la tanda, y espera igual: no se puede saber sin leer más'} · ${pie}`,
+  );
+  // La prueba de la prueba: si la lista mostrara también el día cortado, la comparación lo vería.
+  if (cortado) {
+    const conElCortado = [...enPantalla.map((d) => ({ fecha: d.fecha, hechos: hechosDe(d) })), { fecha: ultimoDeLaPrimera, hechos: tandas[0].data.entries.filter((e) => e.occurredDate === ultimoDeLaPrimera).length }];
+    comprobar('E-71', 'Si se mostrara el día cortado por la tanda, la comparación con la API lo detecta (prueba de la prueba)', conElCortado.some((d) => d.hechos !== esperadoDe(d.fecha).hechos), `${ultimoDeLaPrimera}: ${conElCortado[conElCortado.length - 1].hechos} de ${esperadoDe(ultimoDeLaPrimera).hechos} hechos en la primera tanda`);
+  } else {
+    informar('E-71', 'El último día de la primera tanda', 'entró entero: el escenario no tiene un día cortado para la prueba de la prueba');
+  }
+
+  // E-72 · La primera pantalla ───────────────────────────────────────────────────────────────────────────
+  const enteros = (alto, dias = enPantalla) => dias.filter((d) => d.fin <= alto).length;
+  const altoDeLaPagina = await page.evaluate(() => document.documentElement.scrollHeight);
+  // Con la densidad de antes (una tarjeta de cinco renglones por hecho), la misma medición tiene que dar menos días.
+  await page.addStyleTag({ content: '.entrada__fila, .grupo-de-hechos__cabecera { min-height: 215px !important; }' }).then((h) => h.evaluate((s) => s.setAttribute('data-recorrido', 'densidad-de-antes')));
+  await pausa(200);
+  const conLaDensidadDeAntes = enteros(900, await diasEnPantalla());
+  await page.evaluate(() => document.querySelector('style[data-recorrido="densidad-de-antes"]').remove());
+  await pausa(200);
+  const otrosAnchos = {};
+  for (const [ancho, alto] of [
+    [1920, 950],
+    [1280, 900],
+  ]) {
+    await page.setViewport({ width: ancho, height: alto });
+    await pausa(400);
+    otrosAnchos[`${ancho}×${alto}`] = enteros(alto, await diasEnPantalla());
+  }
+  await page.setViewport({ width: 1440, height: 900 });
+  await pausa(400);
+  comprobar(
+    'E-72',
+    'A 1440 × 900, la primera pantalla muestra enteros al menos cinco días con todos sus hechos (antes, los primeros 50 hechos ocupaban casi doce pantallas); con la densidad de antes la misma medición da menos (prueba de la prueba)',
+    enteros(900) >= 5 && conLaDensidadDeAntes < 5 && altoDeLaPagina < 2400,
+    `${enteros(900)} días enteros en 900 px (el séptimo termina en ${enPantalla[6]?.fin ?? '—'} px) · ${JSON.stringify(otrosAnchos)} · la página con la primera tanda mide ${altoDeLaPagina} px · con renglones de 215 px: ${conLaDensidadDeAntes}`,
+  );
+
+  // E-66 · El grupo, abierto: todas sus comidas, en el orden en que ocurrieron ──────────────────────────
+  const conGrupo = enPantalla.find((d) => d.grupo && Object.keys(d.grupo.rasgos).length > 0) ?? enPantalla.find((d) => d.grupo);
+  const delGrupo = `.linea-de-tiempo__dia[data-fecha="${conGrupo.fecha}"] .grupo-de-hechos`;
+  await page.click(`${delGrupo} .grupo-de-hechos__cabecera`);
+  await pausa(250);
+  const abierto = await page.evaluate(
+    (s) => ({
+      expandido: document.querySelector(`${s} .grupo-de-hechos__cabecera`).getAttribute('aria-expanded'),
+      filas: [...document.querySelectorAll(`${s} .entrada`)].filter((e) => e.getClientRects().length > 0).map((e) => ({ id: e.dataset.id, rasgos: [...e.querySelectorAll('[data-rasgo]')].map((r) => r.dataset.rasgo), texto: e.innerText.replace(/\s+/g, ' ').trim() })),
+    }),
+    delGrupo,
+  );
+  const comidasDelDia = (porDia.get(conGrupo.fecha) ?? []).filter((e) => e.eventType === 'MEAL_RECORDED').sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt));
+  comprobar(
+    'E-66',
+    'Un grupo abierto muestra todas las comidas del día, de la más temprana a la más tardía, cada una con los rasgos que le da la API; el botón dice que está abierto',
+    abierto.expandido === 'true' && JSON.stringify(abierto.filas.map((f) => f.id)) === JSON.stringify(comidasDelDia.map((e) => e.timelineEntryId)) && abierto.filas.every((f, i) => JSON.stringify(f.rasgos) === JSON.stringify(rasgosDe(comidasDelDia[i]))),
+    `${conGrupo.fecha}: ${abierto.filas.map((f) => f.texto.slice(0, 44)).join(' | ')}`,
+  );
+  // Lo que se mudó al detalle no está en el renglón; la positiva (que el detalle sí lo dice) va con E-70.
+  const renglones = abierto.filas.map((f) => f.texto).join(' | ');
+  const sinLoQueSeMudo = !/Registrado el|Plan: versión|versión \d+ del plan|Abrir registro/.test(renglones);
+
+  // E-70 · El detalle, con lo que el renglón ya no repite ───────────────────────────────────────────────
+  const comida = comidasDelDia[comidasDelDia.length > 1 ? 1 : 0];
+  await page.click(`${delGrupo} .entrada[data-id="${comida.timelineEntryId}"] .entrada__fila`);
+  await page.waitForSelector('.detalle-del-hecho', { timeout: 5_000 });
+  await quieto(page, v);
+  const detalle = await page.evaluate(() => {
+    const d = document.querySelector('.detalle-del-hecho');
+    const dato = (rotulo) => [...d.querySelectorAll('.datos-del-hecho__tiempos > div')].find((x) => x.querySelector('dt').innerText.trim() === rotulo)?.querySelector('dd').innerText.trim() ?? null;
+    return {
+      titulo: d.querySelector('h3').innerText.trim(),
+      focoEnElTitulo: document.activeElement === d.querySelector('h3'),
+      ocurrio: dato('Ocurrió'),
+      seCargo: dato('Se cargó'),
+      relaciones: [...d.querySelectorAll('.datos-del-hecho__relaciones li')].map((l) => l.innerText.trim()),
+      datosPlegados: d.querySelector('details.datos-del-hecho__todos') ? !d.querySelector('details.datos-del-hecho__todos').open : null,
+      datos: [...d.querySelectorAll('.datos-del-hecho__datos > div')].map((x) => `${x.querySelector('dt').textContent.trim()}: ${x.querySelector('dd').textContent.trim()}`),
+      enlace: d.querySelector('.enlace-al-area a')?.innerText.trim() ?? null,
+      pegado: getComputedStyle(d).position,
+    };
+  });
+  comprobar(
+    'E-70',
+    'El detalle dice lo que el renglón ya no repite: cuándo ocurrió y cuándo se cargó (los instantes de la API, con quién lo cargó), sus relaciones, todos los datos de la entrada a un clic y el camino a su pestaña; el renglón no los repite',
+    detalle.focoEnElTitulo &&
+      detalle.ocurrio === momento(comida.occurredAt) &&
+      detalle.seCargo === `${momento(comida.recordedAt)}${comida.author ? ` · ${comida.author.displayName}` : ''}` &&
+      comida.relations.every((r) => detalle.relaciones.includes(r.label)) &&
+      detalle.datosPlegados === true &&
+      JSON.stringify(detalle.datos) === JSON.stringify(comida.details.map((x) => `${x.label}: ${x.value}`)) &&
+      detalle.enlace === 'Ver en Nutrición · Registros' &&
+      detalle.pegado === 'sticky' &&
+      sinLoQueSeMudo,
+    `${detalle.titulo} · ocurrió ${detalle.ocurrio} · se cargó ${detalle.seCargo} · ${detalle.relaciones.length} relación(es) · ${detalle.datos.length} datos a un clic · el renglón no los repite: ${sinLoQueSeMudo}`,
+  );
+
+  // E-73 · La carrera: tocar otro hecho mientras el primero todavía carga ──────────────────────────────────
+  const otra = comidasDelDia.find((e) => e.timelineEntryId !== comida.timelineEntryId && e.source.id !== comida.source.id);
+  if (otra) {
+    const nombreDe = (e) => (e.details.find((x) => x.label === 'Opción')?.value.replace(/^\d+ · /, '') ?? e.details.find((x) => x.label === 'Descripción')?.value ?? '');
+    v.reglas = [{ coincide: (u) => u.includes(`/nutrition/meal-records/${otra.source.id}`), accion: 'demorar', ms: 3000 }];
+    await page.click(`${delGrupo} .entrada[data-id="${otra.timelineEntryId}"] .entrada__fila`);
+    await pausa(250);
+    await page.click(`${delGrupo} .entrada[data-id="${comida.timelineEntryId}"] .entrada__fila`);
+    await pausa(3600);
+    await quieto(page, v);
+    v.reglas = [];
+    const trasLaCarrera = await page.evaluate(() => ({ titulo: document.querySelector('.detalle-del-hecho h3').innerText.trim(), texto: document.querySelector('.detalle-del-hecho').innerText.replace(/\s+/g, ' '), elegidos: [...document.querySelectorAll('.entrada__fila[aria-current="true"]')].map((b) => b.closest('.entrada').dataset.id) }));
+    comprobar(
+      'E-73',
+      'Al tocar otro hecho mientras el primero todavía carga, el detalle queda con el segundo: la respuesta lenta del primero no lo pinta, y un solo renglón queda marcado',
+      trasLaCarrera.titulo.includes(nombreDe(comida)) && (nombreDe(otra) === nombreDe(comida) || !trasLaCarrera.texto.includes(nombreDe(otra))) && JSON.stringify(trasLaCarrera.elegidos) === JSON.stringify([comida.timelineEntryId]),
+      `demorado: «${nombreDe(otra)}» · queda: «${trasLaCarrera.titulo}»`,
+    );
+  } else {
+    informar('E-73', 'La carrera entre dos hechos', 'el día elegido no tiene dos comidas distintas');
+  }
+
+  // E-70 · Escape: desde la lista cierra y deja el foco; desde el detalle lo devuelve al renglón ────────────
+  const elegidoAhora = `${delGrupo} .entrada[data-id="${comida.timelineEntryId}"] .entrada__fila`;
+  await page.focus(`${delGrupo} .grupo-de-hechos__cabecera`);
+  await page.keyboard.press('Escape');
+  await pausa(250);
+  const trasEscapeEnLaLista = await page.evaluate((s) => ({ detalle: !!document.querySelector('.detalle-del-hecho'), focoEnElGrupo: document.activeElement === document.querySelector(s) }), `${delGrupo} .grupo-de-hechos__cabecera`);
+  await page.click(elegidoAhora);
+  await page.waitForSelector('.detalle-del-hecho', { timeout: 5_000 });
+  await quieto(page, v);
+  await page.click('.detalle-del-hecho__cabecera button');
+  await pausa(250);
+  const trasCerrar = await page.evaluate((s) => ({ detalle: !!document.querySelector('.detalle-del-hecho'), focoEnElRenglon: document.activeElement === document.querySelector(s) }), elegidoAhora);
+  // Con el grupo cerrado mientras el detalle sigue abierto, el foco vuelve al renglón del grupo, que es lo que se ve.
+  await page.click(elegidoAhora);
+  await page.waitForSelector('.detalle-del-hecho', { timeout: 5_000 });
+  await quieto(page, v);
+  await page.click(`${delGrupo} .grupo-de-hechos__cabecera`);
+  await pausa(250);
+  const conElGrupoCerrado = await page.evaluate((s) => ({ detalle: !!document.querySelector('.detalle-del-hecho'), expandido: document.querySelector(`${s} .grupo-de-hechos__cabecera`).getAttribute('aria-expanded') }), delGrupo);
+  await page.click('.detalle-del-hecho__cabecera button');
+  await pausa(250);
+  const focoTrasCerrarElGrupo = await page.evaluate((s) => document.activeElement === document.querySelector(`${s} .grupo-de-hechos__cabecera`), delGrupo);
+  comprobar(
+    'E-70',
+    'Escape desde la lista cierra el detalle y deja el foco donde estaba; «Cerrar» lo devuelve al renglón del hecho; y si el grupo se cerró con el detalle abierto (se puede), al renglón del grupo',
+    !trasEscapeEnLaLista.detalle && trasEscapeEnLaLista.focoEnElGrupo && !trasCerrar.detalle && trasCerrar.focoEnElRenglon && conElGrupoCerrado.detalle && conElGrupoCerrado.expandido === 'false' && focoTrasCerrarElGrupo,
+    JSON.stringify({ trasEscapeEnLaLista, trasCerrar, conElGrupoCerrado, focoTrasCerrarElGrupo }),
+  );
+
+  // E-70 · En 1024 el detalle se abre encima, como un panel que retiene el foco ───────────────────────────
+  await page.setViewport({ width: 1024, height: 900 });
+  await abrirLinea();
+  await page.evaluate(() => [...document.querySelectorAll('.linea-de-tiempo__hechos > .entrada .entrada__fila')][0].setAttribute('data-recorrido', 'primero'));
+  await page.click('[data-recorrido="primero"]');
+  const abrioElPanel = await page.waitForSelector('dialog.dialogo--panel[open]', { timeout: 5_000 }).then(() => true, () => false);
+  await quieto(page, v);
+  const enElPanel = await page.evaluate(() => {
+    const d = document.querySelector('dialog.dialogo--panel[open]');
+    return { alCostado: !!document.querySelector('.detalle-del-hecho'), texto: d?.innerText.replace(/\s+/g, ' ') ?? '', focoAdentro: !!d?.contains(document.activeElement), desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+  });
+  const axeConElPanel = await axe(page);
+  await page.keyboard.press('Escape');
+  const cerroElPanel = await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 3_000 }).then(() => true, () => false);
+  const focoTrasElPanel = await page.evaluate(() => document.activeElement?.getAttribute('data-recorrido'));
+  comprobar(
+    'E-70',
+    'A 1024 px el detalle no entra al costado: se abre encima, en un panel que retiene el foco, con los mismos datos del hecho; Escape lo cierra y el foco vuelve al renglón; axe no encuentra faltas',
+    abrioElPanel && !enElPanel.alCostado && /Ocurrió/.test(enElPanel.texto) && /Se cargó/.test(enElPanel.texto) && enElPanel.focoAdentro && enElPanel.desborde <= 1 && axeConElPanel.length === 0 && cerroElPanel && focoTrasElPanel === 'primero',
+    `panel: ${abrioElPanel} · al costado: ${enElPanel.alCostado} · foco adentro: ${enElPanel.focoAdentro} · axe: ${JSON.stringify(axeConElPanel)} · foco después: ${focoTrasElPanel}`,
+  );
+  await page.setViewport({ width: 1440, height: 900 });
+
+  // E-67 · Las vistas con nombre: cada una dice cuántos hechos trae, y los trae ─────────────────────────
+  await abrirLinea();
+  const deCalidad = (q) => conteos.byQuality.find((x) => x.quality === q)?.count ?? 0;
+  const HITOS = ['NUTRITION_PLAN_ACTIVATED', 'NUTRITION_OBJECTIVE_SET', 'NUTRITION_REVIEW_RECORDED', 'TRAINING_PLAN_ACTIVATED', 'TRAINING_OBJECTIVE_SET', 'TRAINING_REVIEW_RECORDED', 'ANTHROPOMETRIC_EVALUATION_RECORDED', 'FOLLOW_UP_OPENED', 'FOLLOW_UP_CLOSED'];
+  const VISTAS = {
+    TODO: { cuenta: totalDelPeriodo, filtro: '', tipos: null, calidad: null },
+    HITOS: { cuenta: conteos.byEventType.filter((t) => !DE_TODOS_LOS_DIAS.has(t.eventType)).reduce((n, t) => n + t.count, 0), filtro: `&type=${HITOS.join(',')}`, tipos: HITOS, calidad: null },
+    DISTINTO_DE_LO_INDICADO: { cuenta: deCalidad('QUANTITIES_DIFFER_FROM_PLAN') + deCalidad('SESSION_WITH_DEVIATION'), filtro: '&quality=QUANTITIES_DIFFER_FROM_PLAN,SESSION_WITH_DEVIATION', tipos: null, calidad: ['QUANTITIES_DIFFER_FROM_PLAN', 'SESSION_WITH_DEVIATION'] },
+    SIN_CONFIRMAR: { cuenta: deCalidad('QUANTITIES_UNCONFIRMED'), filtro: '&quality=QUANTITIES_UNCONFIRMED', tipos: null, calidad: ['QUANTITIES_UNCONFIRMED'] },
+  };
+  const vistas = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('.vistas-de-la-linea__vistas .vista-de-la-linea')].map((b) => {
+        const cuenta = b.querySelector('.vista-de-la-linea__cuenta');
+        return { vista: b.dataset.vista, cuenta: cuenta ? Number(cuenta.firstChild.textContent.replace(/\./g, '')) : null, elegida: b.getAttribute('aria-pressed') };
+      }),
+    );
+  const alEntrar = await vistas();
+  comprobar(
+    'E-67',
+    'Las vistas con nombre están en un renglón, en su orden, cada una con la cantidad de hechos del período que trae (las de la API); «Lo nuevo desde la revisión» no lleva número; al entrar está elegida «Todo»',
+    JSON.stringify(alEntrar.map((x) => x.vista)) === JSON.stringify(['TODO', 'HITOS', 'LO_NUEVO', 'DISTINTO_DE_LO_INDICADO', 'SIN_CONFIRMAR']) &&
+      alEntrar.every((x) => (x.vista === 'LO_NUEVO' ? x.cuenta === null : x.cuenta === VISTAS[x.vista].cuenta)) &&
+      alEntrar.every((x) => (x.vista === 'TODO' ? x.elegida === 'true' : x.vista === 'LO_NUEVO' || x.elegida === 'false')),
+    alEntrar.map((x) => `${x.vista} ${x.cuenta ?? ''}`.trim()).join(' · '),
+  );
+  const porVista = {};
+  for (const clave of ['HITOS', 'DISTINTO_DE_LO_INDICADO', 'SIN_CONFIRMAR']) {
+    await cupo(v, 60);
+    await page.click(`.vista-de-la-linea[data-vista="${clave}"]`);
+    await quieto(page, v);
+    const p = parametros(page);
+    const filas = await page.$$eval('.linea-de-tiempo .entrada', (e) => e.map((x) => ({ hito: x.dataset.hito === 'si', rasgos: [...x.querySelectorAll('[data-rasgo]')].map((r) => r.dataset.rasgo), aLaVista: x.getClientRects().length > 0 })));
+    porVista[clave] = {
+      cuenta: await cuentaDeLaLinea(page),
+      // El número que dice el botón, leído de la pantalla en este momento (no el esperado).
+      boton: (await vistas()).find((x) => x.vista === clave)?.cuenta ?? null,
+      api: (await linea(`${VISTAS[clave].filtro}&limit=1`)).data.totalMatching,
+      tipos: p.get('tipos'),
+      calidad: p.get('calidad'),
+      otros: ['areas', 'estados', 'tardias', 'plan', 'ej', 'novedades'].filter((k) => p.get(k) !== null),
+      elegidas: (await vistas()).filter((x) => x.elegida === 'true').map((x) => x.vista),
+      filas,
+      grupos: await page.$$eval('.grupo-de-hechos', (g) => g.length),
+      huecos: await page.$$eval('.linea-de-tiempo__hueco', (h) => h.length),
+      filtrosALaVista: await page.$$eval('.filtros-activos', (f) => f.length),
+    };
+  }
+  const traeLoQueDice = {
+    HITOS: (f) => f.hito,
+    DISTINTO_DE_LO_INDICADO: (f) => f.rasgos.includes('DISTINTO_DE_LO_INDICADO') || f.rasgos.includes('SESION_CON_CAMBIOS'),
+    SIN_CONFIRMAR: (f) => f.rasgos.includes('SIN_CONFIRMAR'),
+  };
+  for (const [clave, x] of Object.entries(porVista)) {
+    comprobar(
+      'E-67',
+      `«${clave === 'HITOS' ? 'Hitos' : clave === 'SIN_CONFIRMAR' ? 'Sin confirmar' : 'Distinto de lo indicado'}» trae los hechos que anuncia: la cantidad del botón, la de la cabecera y la de la API con ese filtro son la misma; la URL lleva solo ese filtro; cada renglón a la vista es de la vista, y no hay otra elegida`,
+      VISTAS[clave].cuenta > 0 &&
+        x.boton === VISTAS[clave].cuenta &&
+        x.cuenta === VISTAS[clave].cuenta &&
+        x.api === VISTAS[clave].cuenta &&
+        JSON.stringify((x.tipos ?? '').split(',').filter(Boolean).sort()) === JSON.stringify([...(VISTAS[clave].tipos ?? [])].sort()) &&
+        JSON.stringify((x.calidad ?? '').split(',').filter(Boolean).sort()) === JSON.stringify([...(VISTAS[clave].calidad ?? [])].sort()) &&
+        x.otros.length === 0 &&
+        JSON.stringify(x.elegidas) === JSON.stringify([clave]) &&
+        x.filas.length === Math.min(x.cuenta, 50) &&
+        x.filas.every((f) => f.aLaVista && traeLoQueDice[clave](f)) &&
+        x.filtrosALaVista === 0,
+      `botón ${x.boton} · cabecera ${x.cuenta} · API ${x.api} · conteos del período ${VISTAS[clave].cuenta} · ${x.filas.length} renglones · elegidas: ${x.elegidas.join(', ')}`,
+    );
+  }
+  comprobar(
+    'E-68',
+    'Con una vista que recorta dentro del día («Sin confirmar»), cada hecho va en su renglón: no hay grupos de comidas ni días sin hechos',
+    porVista.SIN_CONFIRMAR.grupos === 0 && porVista.SIN_CONFIRMAR.huecos === 0 && porVista.SIN_CONFIRMAR.filas.length > 0,
+    `${porVista.SIN_CONFIRMAR.filas.length} renglones, ${porVista.SIN_CONFIRMAR.grupos} grupos`,
+  );
+  // Volver a tocar la vista elegida deja «Todo».
+  await page.click('.vista-de-la-linea[data-vista="SIN_CONFIRMAR"]');
+  await quieto(page, v);
+  const deVuelta = { elegidas: (await vistas()).filter((x) => x.elegida === 'true').map((x) => x.vista), cuenta: await cuentaDeLaLinea(page), calidad: parametros(page).get('calidad') };
+  comprobar('E-67', 'Volver a tocar la vista elegida deja «Todo», con todos los hechos del período', JSON.stringify(deVuelta.elegidas) === '["TODO"]' && deVuelta.cuenta === totalDelPeriodo && deVuelta.calidad === null, JSON.stringify(deVuelta));
+
+  // E-69 · «Lo nuevo desde la revisión»: de qué área, y las cantidades siguen siendo las del período ────────
+  const resumen = (await leerApi(v, `/advisees/${estado.aseId}/dashboard`)).data.domains;
+  const cortes = { NUTRITION: resumen.nutrition.summary?.lastReview?.recordedAt ?? null, TRAINING: resumen.training.summary?.lastReview?.recordedAt ?? null };
+  if (cortes.NUTRITION && cortes.TRAINING) {
+    await page.click('.vista-de-la-linea[data-vista="LO_NUEVO"]');
+    await page.waitForSelector('.vista-de-la-linea__areas', { timeout: 5_000 });
+    const opciones = await textos(page, '.vista-de-la-linea__areas button');
+    await clic(page, '.vista-de-la-linea__areas button', 'Nutrición');
+    await quieto(page, v);
+    const p = parametros(page);
+    const conElCorte = { aviso: await texto(page, '.aviso-de-filtro'), boton: await texto(page, '.vista-de-la-linea[data-vista="LO_NUEVO"]'), vistas: await vistas(), cuenta: await cuentaDeLaLinea(page), grupos: await page.$$eval('.grupo-de-hechos', (g) => g.length) };
+    const diaDe = (instante) => new Intl.DateTimeFormat('en-CA', { timeZone: ZONA }).format(new Date(instante));
+    const delCorte = (await leerApi(v, `/advisees/${estado.aseId}/timeline?periodStart=${diaMenos(hoy, 365)}&periodEnd=${hoy}&domain=NUTRITION&since=${encodeURIComponent(cortes.NUTRITION)}&limit=1`)).data.totalMatching;
+    comprobar(
+      'E-69',
+      '«Lo nuevo desde la revisión» ofrece cada área con la fecha de su revisión; elegida Nutrición, la URL lleva su instante y su área (la misma que escribe el Resumen), el aviso lo explica, la cantidad es la de la API, y las demás vistas siguen diciendo las cantidades del período elegido',
+      JSON.stringify(opciones) === JSON.stringify([`Nutrición · revisión del ${fechaBreve(diaDe(cortes.NUTRITION))}`, `Entrenamiento · revisión del ${fechaBreve(diaDe(cortes.TRAINING))}`]) &&
+        p.get('novedades') === new Date(cortes.NUTRITION).toISOString() &&
+        p.get('areas') === 'NUTRITION' &&
+        /Lo nuevo desde la revisión del/.test(conElCorte.aviso) &&
+        /· Nutrición$/.test(conElCorte.boton.trim()) &&
+        conElCorte.cuenta === delCorte &&
+        conElCorte.grupos === 0 &&
+        conElCorte.vistas.every((x) => x.vista === 'LO_NUEVO' || x.cuenta === VISTAS[x.vista].cuenta) &&
+        conElCorte.vistas.every((x) => x.vista === 'LO_NUEVO' || x.elegida === 'false'),
+      `${opciones.join(' | ')} · ${conElCorte.cuenta} hechos (la API cuenta ${delCorte}) · ${conElCorte.vistas.map((x) => `${x.vista} ${x.cuenta ?? ''}`.trim()).join(' · ')}`,
+    );
+    await clic(page, '.vista-de-la-linea[data-vista="TODO"]', 'Todo');
+    await quieto(page, v);
+  } else {
+    informar('E-69', '«Lo nuevo desde la revisión»', 'el escenario no tiene una revisión registrada en cada área');
+  }
+
+  // E-74 · Una activación de plan se abre con su número de versión ──────────────────────────────────────
+  const activacion = entradasApi.find((e) => e.eventType === 'NUTRITION_PLAN_ACTIVATED' && e.details.some((x) => x.label === 'Versión'));
+  if (activacion) {
+    const numeroDeVersion = activacion.details.find((x) => x.label === 'Versión').value;
+    await cupo(v, 60);
+    await page.click('.vista-de-la-linea[data-vista="HITOS"]');
+    await quieto(page, v);
+    await page.click(`.entrada[data-id="${activacion.timelineEntryId}"] .entrada__fila`);
+    await page.waitForSelector('.detalle-del-hecho', { timeout: 5_000 });
+    await quieto(page, v);
+    const delPlan = await texto(page, '.detalle-del-hecho');
+    comprobar(
+      'E-74',
+      'El detalle de un plan activado abre su planificación con su número de versión (antes decía «Versión 0»)',
+      new RegExp(`Versión ${numeroDeVersion} · activada el`).test(delPlan) && !/Versión 0 ·/.test(delPlan) && /Ver en Nutrición · Plan/.test(delPlan),
+      /Versión \d+ · activada el[^.]{0,30}/.exec(delPlan)?.[0] ?? delPlan.slice(0, 160),
+    );
+    await page.click('.detalle-del-hecho__cabecera button');
+    await clic(page, '.vista-de-la-linea[data-vista="TODO"]', 'Todo');
+    await quieto(page, v);
+  } else {
+    informar('E-74', 'El número de versión de un plan activado', 'el período no tiene una activación de plan de Nutrición');
+  }
+
+  // E-75 · Buscar dice por qué coincide, cuando el renglón no lo muestra ────────────────────────────────
+  const conMotivo = entradasApi.find((e) => e.eventType === 'TRAINING_SESSION_RECORDED' && e.details.some((x) => x.label === 'Motivo'));
+  if (conMotivo) {
+    const motivo = conMotivo.details.find((x) => x.label === 'Motivo').value;
+    const palabra = motivo.split(/\s+/).find((w) => w.length >= 5 && !new RegExp(w, 'i').test(conMotivo.title)) ?? motivo.split(/\s+/)[0];
+    await page.type('.buscador-de-la-linea input[type="search"]', palabra);
+    await page.keyboard.press('Enter');
+    await quieto(page, v);
+    const conElMotivo = await page.evaluate((id) => {
+      const e = document.querySelector(`.entrada[data-id="${id}"]`);
+      return { coincide: e?.querySelector('.entrada__coincide')?.innerText.replace(/\s+/g, ' ').trim() ?? null, filas: document.querySelectorAll('.linea-de-tiempo .entrada').length, grupos: document.querySelectorAll('.grupo-de-hechos').length };
+    }, conMotivo.timelineEntryId);
+    // La otra mitad: buscando algo que el renglón ya dice, no se agrega nada.
+    await clic(page, 'button', 'Limpiar filtros');
+    await quieto(page, v);
+    await page.type('.buscador-de-la-linea input[type="search"]', 'cena');
+    await page.keyboard.press('Enter');
+    await quieto(page, v);
+    const conCena = await page.evaluate(() => ({ filas: document.querySelectorAll('.linea-de-tiempo .entrada').length, coinciden: document.querySelectorAll('.entrada__coincide').length }));
+    await clic(page, 'button', 'Limpiar filtros');
+    await quieto(page, v);
+    comprobar(
+      'E-75',
+      'Al buscar una palabra que está en un dato que el renglón no muestra (el motivo de una sesión), el renglón dice dónde coincide; al buscar lo que el renglón ya dice («cena»), no agrega nada',
+      conElMotivo.coincide === `Coincide en: Motivo: ${motivo}` && conElMotivo.grupos === 0 && conCena.filas > 0 && conCena.coinciden === 0,
+      `«${palabra}» → ${conElMotivo.coincide} (${conElMotivo.filas} renglón/es) · «cena» → ${conCena.filas} renglones, ${conCena.coinciden} con aclaración`,
+    );
+  } else {
+    informar('E-75', 'Buscar en un dato que el renglón no muestra', 'el período no tiene una sesión con motivo');
+  }
+
+  // E-76 · «Actualizar» con dos tandas leídas vuelve a leer todo: ni repite ni pierde ──────────────────────
+  await abrirLinea();
+  await clic(page, '.linea__mas button', 'Ver días anteriores');
+  await quieto(page, v);
+  const conDosTandas = await hechosDeLaLinea(page);
+  const desdePedidos = v.urls.length;
+  await clic(page, '.marco-de-la-ficha button', 'Actualizar');
+  await quieto(page, v);
+  await pausa(300);
+  const trasActualizar = await hechosDeLaLinea(page);
+  const releidas = v.urls.slice(desdePedidos).filter((u) => /\/timeline\?/.test(u));
+  const idsEsperados = entradasApi.filter((e) => fechasEsperadas.includes(e.occurredDate)).map((e) => e.timelineEntryId).sort();
+  comprobar(
+    'E-76',
+    '«Actualizar» con dos tandas leídas vuelve a leer la línea desde la primera: quedan los días enteros de la primera tanda, sin repetir ni perder hechos (antes le pegaba a la lectura nueva las tandas de la anterior)',
+    conDosTandas.ids.length > trasActualizar.ids.length && releidas.length >= 1 && new Set(trasActualizar.ids).size === trasActualizar.ids.length && JSON.stringify([...trasActualizar.ids].sort()) === JSON.stringify(idsEsperados),
+    `${conDosTandas.ids.length} hechos con dos tandas → ${trasActualizar.ids.length} después de «Actualizar» (esperados ${idsEsperados.length}) · ${releidas.length} lectura(s) de la línea`,
+  );
+
+  // E-77 · Los días sin hechos, entre dos días de la lista ───────────────────────────────────────────────
+  const conHechos = [...porDia.keys()].sort().reverse();
+  const huecosDeLaApi = [];
+  for (let i = 1; i < conHechos.length; i++) {
+    const dias = Math.round((Date.parse(`${conHechos[i - 1]}T12:00:00Z`) - Date.parse(`${conHechos[i]}T12:00:00Z`)) / 86_400_000) - 1;
+    if (dias >= 1) huecosDeLaApi.push({ desde: diaMenos(conHechos[i - 1], dias), hasta: diaMenos(conHechos[i - 1], 1), dias });
+  }
+  if (huecosDeLaApi.length > 0) {
+    // Un período propio alrededor de los huecos: se ven sin pedir tandas.
+    const desde = diaMenos(huecosDeLaApi[huecosDeLaApi.length - 1].desde, 3);
+    const hasta = diaMenos(huecosDeLaApi[0].hasta, -3);
+    const enElRango = huecosDeLaApi.filter((h) => h.desde > desde && h.hasta < hasta);
+    const textoDe = (h) => {
+      const primero = h.desde.slice(0, 7) === h.hasta.slice(0, 7) ? String(Number(h.desde.slice(8, 10))) : fechaBreve(h.desde);
+      return h.dias === 1 ? `${fechaBreve(h.desde)}: sin hechos registrados` : h.dias === 2 ? `${primero} y ${fechaBreve(h.hasta)}: sin hechos registrados` : `Del ${primero} al ${fechaBreve(h.hasta)}: ${h.dias} días sin hechos registrados`;
+    };
+    await abrirLinea(`&desde=${desde}&hasta=${hasta}`);
+    await verTodosLosDias(page, v, 4);
+    const huecos = await textos(page, '.linea-de-tiempo__hueco');
+    // Con un filtro, un día sin coincidencias no es un hueco: no se dice ninguno, aunque haya días a la vista.
+    await clic(page, '.vistas-de-la-linea button', 'Más filtros');
+    await page.waitForSelector('.filtros-de-linea fieldset button.chip', { timeout: 5_000 });
+    await clic(page, '.filtros-de-linea fieldset button.chip', 'Nutrición');
+    await quieto(page, v);
+    const conFiltro = { huecos: await page.$$eval('.linea-de-tiempo__hueco', (h) => h.length), dias: await page.$$eval('.linea-de-tiempo__dia', (d) => d.length) };
+    comprobar(
+      'E-77',
+      'Entre dos días de la lista, los días sin ningún hecho se dicen con sus fechas (los de la API), nunca como un cero; con un filtro puesto no se dice ninguno',
+      JSON.stringify(huecos) === JSON.stringify(enElRango.map(textoDe)) && enElRango.length > 0 && conFiltro.huecos === 0 && conFiltro.dias > 0,
+      `del ${desde} al ${hasta}: ${huecos.join(' | ')} · con el filtro de Nutrición: ${conFiltro.huecos} en ${conFiltro.dias} días`,
+    );
+  } else {
+    informar('E-77', 'Los días sin hechos', 'el escenario tiene hechos todos los días del período: no hay un hueco para probar');
+  }
+
+  // E-78 · La ayuda de la Línea de tiempo ───────────────────────────────────────────────────────────────
+  await abrirLinea();
+  await clic(page, '.marco-de-la-ficha button', 'Cómo se lee esta vista');
+  await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 5_000 });
+  await pausa(250);
+  const ayuda = await page.evaluate(() => {
+    const d = document.querySelector('dialog.como-se-lee[open]');
+    const h = d.querySelector('h2').getBoundingClientRect();
+    return {
+      titulo: d.querySelector('h2').textContent.trim(),
+      renglones: d.querySelectorAll('.como-se-lee__lista > li').length,
+      muestras: d.querySelectorAll('.como-se-lee__lista .como-se-lee__muestra > *').length,
+      focoEnElTitulo: document.activeElement === d.querySelector('h2'),
+      tituloALaVista: h.top >= 0 && h.bottom <= innerHeight && d.scrollTop === 0,
+      vistasPlegadas: d.querySelector('details.como-se-lee__fuentes') ? !d.querySelector('details.como-se-lee__fuentes').open : null,
+      texto: d.innerText.replace(/\s+/g, ' '),
+    };
+  });
+  const axeConLaAyuda = await axe(page);
+  await page.click('dialog.como-se-lee[open] details.como-se-lee__fuentes > summary');
+  await pausa(200);
+  const queTrae = await page.$$eval('dialog.como-se-lee[open] .como-se-lee__fuentes [data-vista]', (f) => f.map((x) => ({ vista: x.dataset.vista, texto: x.innerText.replace(/\s+/g, ' ').trim(), aLaVista: x.checkVisibility() })));
+  const axeConLasVistas = await axe(page);
+  await page.keyboard.press('Escape');
+  const cerroLaAyuda = await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 3_000 }).then(() => true, () => false);
+  const focoDespues = await page.evaluate(() => document.activeElement?.textContent.replace(/\s+/g, ' ').trim() ?? '');
+  comprobar(
+    'E-78',
+    'La ayuda de la Línea de tiempo se abre desde el marco como un diálogo, por el principio, explica cada parte con su muestra y lo que la vista no dice; qué trae cada vista está a un clic, con las cinco; axe no encuentra faltas; Escape la cierra y el foco vuelve al botón',
+    ayuda.titulo === 'Cómo se lee la Línea de tiempo' &&
+      ayuda.renglones >= 10 &&
+      ayuda.muestras >= 10 &&
+      ayuda.focoEnElTitulo &&
+      ayuda.tituloALaVista &&
+      /No son ceros/.test(ayuda.texto) &&
+      /Son datos, no calificaciones/.test(ayuda.texto) &&
+      /no califica ni dice si alcanza/.test(ayuda.texto) &&
+      ayuda.vistasPlegadas === true &&
+      JSON.stringify(queTrae.map((x) => x.vista)) === JSON.stringify(['TODO', 'HITOS', 'DISTINTO_DE_LO_INDICADO', 'SIN_CONFIRMAR', 'LO_NUEVO']) &&
+      queTrae.every((x) => x.aLaVista && x.texto.length > 30) &&
+      axeConLaAyuda.length === 0 &&
+      axeConLasVistas.length === 0 &&
+      cerroLaAyuda &&
+      focoDespues === 'Cómo se lee esta vista',
+    `${ayuda.titulo} · ${ayuda.renglones} renglones, ${ayuda.muestras} muestras · foco en el título: ${ayuda.focoEnElTitulo} · ${queTrae.length} vistas explicadas · axe: ${JSON.stringify([...axeConLaAyuda, ...axeConLasVistas])} · Escape la cierra: ${cerroLaAyuda}`,
+  );
+
+  // El teclado: de las vistas a los días, sin trampas ───────────────────────────────────────────────────
+  await page.click('#titulo-asesorado');
+  const recorridoConTab = [];
+  for (let i = 0; i < 40 && recorridoConTab.filter((x) => x.clase === 'fila').length < 2; i++) {
+    await page.keyboard.press('Tab');
+    recorridoConTab.push(
+      await page.evaluate(() => {
+        const a = document.activeElement;
+        const clase = a?.matches('.vista-de-la-linea') ? 'vista' : a?.matches('.buscador-de-la-linea input') ? 'buscar' : a?.matches('.buscador-de-la-linea__boton') ? 'lupa' : a?.matches('.vistas-de-la-linea__mas') ? 'filtros' : a?.matches('.entrada__fila, .grupo-de-hechos__cabecera') ? 'fila' : 'otro';
+        const caja = a?.getBoundingClientRect();
+        return { clase, alto: caja ? Math.round(caja.height) : 0, contorno: a ? getComputedStyle(a).outlineStyle : 'none' };
+      }),
+    );
+  }
+  const ordenDelFoco = recorridoConTab.map((x) => x.clase).filter((c) => c !== 'otro');
+  const primeraFila = `.linea-de-tiempo .grupo-de-hechos__cabecera`;
+  await page.focus(primeraFila);
+  await page.keyboard.press('Enter');
+  await pausa(200);
+  const abiertoConEnter = await page.$eval(primeraFila, (b) => b.getAttribute('aria-expanded'));
+  await page.keyboard.press('Enter');
+  await pausa(200);
+  comprobar(
+    'PRO-22',
+    'Con el teclado se llega, en orden, a las vistas con nombre, el buscador, la lupa, «Más filtros» y los renglones de los días; cada uno mide 44 px o más y muestra el foco; Enter abre y cierra un grupo',
+    JSON.stringify(ordenDelFoco.slice(0, 8)) === JSON.stringify(['vista', 'vista', 'vista', 'vista', 'vista', 'buscar', 'lupa', 'filtros']) &&
+      ordenDelFoco.filter((c) => c === 'fila').length === 2 &&
+      recorridoConTab.filter((x) => x.clase !== 'otro').every((x) => x.alto >= 44 && x.contorno !== 'none') &&
+      abiertoConEnter === 'true' &&
+      (await page.$eval(primeraFila, (b) => b.getAttribute('aria-expanded'))) === 'false',
+    `${ordenDelFoco.join(' → ')} · altos: ${[...new Set(recorridoConTab.filter((x) => x.clase !== 'otro').map((x) => x.alto))].join(', ')} px · Enter: ${abiertoConEnter}`,
+  );
+
+  // Accesibilidad y palabras, con un grupo y el detalle abiertos, en los dos temas ──────────────────────
+  await page.click(primeraFila);
+  await pausa(200);
+  await page.evaluate(() => [...document.querySelectorAll('.grupo-de-hechos .entrada__fila')].find((b) => b.getClientRects().length > 0).click());
+  await page.waitForSelector('.detalle-del-hecho', { timeout: 5_000 });
+  await quieto(page, v);
+  const temaInicial = await page.evaluate(() => document.documentElement.dataset.tema);
+  const violaciones = {};
+  for (const tema of ['claro', 'azul-noche']) {
+    await ponerTema(page, tema);
+    await pausa(300);
+    violaciones[tema] = await axe(page);
+  }
+  await ponerTema(page, temaInicial);
+  comprobar('PRO-22', 'La línea de tiempo por día, con un grupo y el detalle abiertos: axe no encuentra faltas de WCAG 2.2 AA en ninguno de los dos temas', violaciones.claro.length === 0 && violaciones['azul-noche'].length === 0, JSON.stringify(violaciones));
+  const todaLaVista = await texto(page, 'section.linea');
+  comprobar(
+    'E-65',
+    'La vista entera, con un grupo y el detalle abiertos, no tiene porcentajes ni palabras que califiquen: describe lo registrado',
+    todaLaVista.length > 600 && !/%/.test(todaLaVista) && !/\b(cumpli[óo]|incumpli|adherencia|correcto|incorrecto|bien|mal|alerta|riesgo|excelente|insuficiente)\b/i.test(todaLaVista),
+    `${todaLaVista.length} caracteres`,
+  );
+  await page.click('.detalle-del-hecho__cabecera button');
+  // Sin desborde de costado a los tres anchos de escritorio.
+  const desbordes = {};
+  for (const ancho of [1440, 1280, 1024]) {
+    await page.setViewport({ width: ancho, height: 900 });
+    await pausa(400);
+    desbordes[ancho] = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  }
+  await page.setViewport({ width: 1440, height: 900 });
+  comprobar('PRO-23', 'La línea de tiempo por día no desborda de costado a 1440, 1280 ni 1024 px', Object.values(desbordes).every((d) => d <= 1), JSON.stringify(desbordes));
+  comprobar('PRO-25', 'Sin errores de JavaScript ni respuestas con error de la API durante el recorrido de la línea de tiempo por día', v.errores.length === 0 && v.malas.length === 0, [...v.errores, ...v.malas].slice(0, 4).join(' · ') || 'ninguno');
+}
+
+/**
+ * El Resumen por área, la Línea de tiempo por día y Analizar recompuesto, en una misma sesión (una sola entrada de la
+ * cuenta: el límite es de cinco cada quince minutos). La parte del Resumen va primero, con la ficha recién abierta: ahí
+ * se mira qué guiones cargó. El modo funcional corre las tres antes del encabezado; `resumen`, `linea` y `analizar`
+ * corren una sola.
+ */
+async function fichaRecompuesta({ resumen = true, linea = true, analizar = true } = {}) {
   const { navegador, page, v } = await abrir();
   // Los guiones que pide la página, desde antes de entrar: para saber con qué se cargó la ficha.
   const guiones = [];
@@ -2585,13 +3337,20 @@ async function fichaRecompuesta({ resumen = true, analizar = true } = {}) {
   try {
     await iniciarSesion(page, v, estado.proCorreo, FICHA_A);
     await quieto(page, v);
-    if (resumen) await resumenPorArea(page, v, guiones);
-    if (resumen && analizar) {
-      // Cada parte responde por sus propios errores.
+    // Cada parte responde por sus propios errores.
+    const empezarDeCero = () => {
       v.errores.length = 0;
       v.malas.length = 0;
+    };
+    if (resumen) await resumenPorArea(page, v, guiones);
+    if (linea) {
+      empezarDeCero();
+      await lineaPorDia(page, v);
     }
-    if (analizar) await analizarRecompuesto(page, v);
+    if (analizar) {
+      empezarDeCero();
+      await analizarRecompuesto(page, v);
+    }
   } finally {
     await navegador.close();
   }
@@ -2857,7 +3616,7 @@ async function capturas() {
     await page.setViewport({ width: 390, height: 900 });
     await ir(page, `${FICHA_A}&vista=linea`);
     await quieto(page, v);
-    await clic(page, '.entrada button', 'Abrir registro');
+    await page.evaluate(() => [...document.querySelectorAll('.linea-de-tiempo__hechos > .entrada .entrada__fila')][0].click());
     await page.waitForSelector('dialog[open]');
     await quieto(page, v);
     await page.screenshot({ path: fileURLToPath(new URL('registro-390-claro.png', DIR)) });
@@ -2883,6 +3642,10 @@ async function descartable() {
   try {
     await iniciarSesion(pro.page, pro.v, d.proCorreo, FICHA_D);
     await quieto(pro.page, pro.v);
+    // La positiva de la negativa del final: antes de revocar, la línea de tiempo trae las tomas, con el mismo selector.
+    await ir(pro.page, `${FICHA_D}&vista=linea`);
+    await quieto(pro.page, pro.v);
+    const tomasAntesDeRevocar = (await textos(pro.page, '.linea-de-tiempo__hechos > .entrada')).filter((e) => /Toma/.test(e)).length;
     for (const tema of ['claro', 'azul-noche']) {
       await ponerTema(pro.page, tema);
       await pausa(300);
@@ -3012,13 +3775,13 @@ async function descartable() {
     await captura(pro.page, pro.v, 'revocado-analizar-1440-azul-noche');
     await ir(pro.page, `${FICHA_D}&vista=linea`);
     await quieto(pro.page, pro.v);
-    const entradasDeLaLinea = await textos(pro.page, '.entrada');
+    const entradasDeLaLinea = await textos(pro.page, '.linea-de-tiempo__hechos > .entrada');
     const pestanas = await textos(pro.page, 'nav[aria-label="Vistas del seguimiento"] a');
     comprobar(
       'PRO-20',
-      'Al volver a abrir Analizar y la línea de tiempo, no hay gráficos, valores ni tomas de Antropometría, ni el aviso de una descarga anterior; el resto del vínculo sigue',
-      (reabierto.match(/no está disponible con tu acceso actual/g) ?? []).length === 2 && !avisoViejo && !entradasDeLaLinea.some((e) => /Toma|kg/.test(e)) && pestanas.length === 3,
-      `${reabierto.slice(0, 140)} · aviso de una descarga anterior: ${avisoViejo ? 'sí' : 'no'} · ${entradasDeLaLinea.length} entrada(s) en la línea de tiempo, ninguna de Antropometría`,
+      'Al volver a abrir Analizar y la línea de tiempo, no hay gráficos, valores ni tomas de Antropometría (antes de revocar, la línea las traía), ni el aviso de una descarga anterior; el resto del vínculo sigue',
+      (reabierto.match(/no está disponible con tu acceso actual/g) ?? []).length === 2 && !avisoViejo && tomasAntesDeRevocar > 0 && !entradasDeLaLinea.some((e) => /Toma|kg/.test(e)) && pestanas.length === 3,
+      `${reabierto.slice(0, 140)} · aviso de una descarga anterior: ${avisoViejo ? 'sí' : 'no'} · antes de revocar, ${tomasAntesDeRevocar} toma(s) en la línea de tiempo; después, ${entradasDeLaLinea.length} renglón/es y ninguno de Antropometría`,
     );
   } finally {
     await pro.navegador.close();
@@ -3033,8 +3796,9 @@ try {
   if (modo === 'capturas' || modo === 'todo') await capturas();
   if (modo === 'descartable') await descartable();
   if (modo === 'menu') await encabezadoYMenu();
-  if (modo === 'analizar') await fichaRecompuesta({ resumen: false });
-  if (modo === 'resumen') await fichaRecompuesta({ analizar: false });
+  if (modo === 'analizar') await fichaRecompuesta({ resumen: false, linea: false });
+  if (modo === 'resumen') await fichaRecompuesta({ linea: false, analizar: false });
+  if (modo === 'linea') await fichaRecompuesta({ resumen: false, analizar: false });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {

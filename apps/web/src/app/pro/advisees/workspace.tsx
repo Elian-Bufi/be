@@ -40,7 +40,7 @@ import { horaDelDia } from '../../../lib/formato';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
 import { ComoSeLeeEstaVista } from './seguimiento/como-se-lee';
-import { ProveedorDelSeguimiento, type PanelDelResumen } from './seguimiento/contexto';
+import { motivoDeFalla, ProveedorDelSeguimiento, type PanelDelResumen } from './seguimiento/contexto';
 import { conRetorno, leerPeriodo, leerVista, periodoEnInstantes, valorDeRetorno } from './seguimiento/estado';
 import { LineaDeTiempo } from './seguimiento/linea-de-tiempo';
 import { ResumenDelSeguimiento } from './seguimiento/resumen';
@@ -98,7 +98,7 @@ export function Workspace() {
           ? { tipo: 'no-disponible' }
           : respuesta.ok
             ? { tipo: 'listo', datos: respuesta.datos.data }
-            : { tipo: 'error' };
+            : { tipo: 'error', motivo: motivoDeFalla(respuesta) };
       setPanel((anterior) => {
         // Si cambió lo que se puede leer, se repiten las lecturas de la ficha (sin esperar a que alguien recargue).
         if (silencioso && huellaDeAcceso(anterior) !== huellaDeAcceso(nuevo)) setVersionDeAcceso((v) => v + 1);

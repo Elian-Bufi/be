@@ -549,7 +549,9 @@ async function capturas() {
       // WP-ESCRITORIO-AMABLE (parte 3): el objetivo y el plan están en el contexto de la tarjeta de cada área.
       ['Resumen: el objetivo y la planificación', FICHA_A, '.area .area__contexto'],
       ['Analizar: las preguntas', `${FICHA_A}&vista=analizar`, '.tarjeta-de-pregunta'],
-      ['Línea de tiempo: el primer hecho', `${FICHA_A}&vista=linea`, '.entrada'],
+      // WP-ESCRITORIO-AMABLE (parte 4): el primer día, no la primera `.entrada` del documento (puede ser una comida de un
+      // grupo cerrado, que no ocupa lugar y mediría 0).
+      ['Línea de tiempo: el primer día', `${FICHA_A}&vista=linea`, '.linea-de-tiempo__dia'],
     ]) {
       await cupo(v);
       await ir(page, url);
@@ -559,7 +561,7 @@ async function capturas() {
         const el = document.querySelector(s);
         return el ? Math.round(el.getBoundingClientRect().top) : null;
       }, selector);
-      comprobar('GUIA-II.1', `A 1280 × 800, ${nombre} empieza en la primera pantalla`, y !== null && y < 800, `y = ${y}`);
+      comprobar('GUIA-II.1', `A 1280 × 800, ${nombre} empieza en la primera pantalla`, y !== null && y > 0 && y < 800, `y = ${y}`);
       await page.screenshot({ path: fileURLToPath(new URL(`primera-pantalla-1280x800-${nombre.split(':')[0].toLowerCase().replace(/[^a-záéíóú]+/g, '-')}.png`, carpeta)) });
     }
     // Los tres modos del gráfico en los dos temas, con lo que se dibujó comprobado (CP-27).
@@ -768,13 +770,16 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   await quieto(page, v);
   const p = parametros(page);
   const aviso = await texto(page, '.aviso-de-filtro');
-  const totalLinea = Number(/(\d+) hechos? coincid/.exec(await texto(page, 'section p[role="status"]'))?.[1] ?? NaN);
-  const areas = [...new Set(await textos(page, '.entrada__area'))];
+  // WP-ESCRITORIO-AMABLE (parte 4): la cuenta lleva punto de miles; el área de cada renglón se lee de su atributo (a la
+  // vista la dice su ícono); y «Lo nuevo desde la revisión» queda elegido, con su área, al llegar desde el Resumen.
+  const totalLinea = Number((/^([\d.]+) hechos? coincid/.exec(await texto(page, 'section.linea p[role="status"]'))?.[1] ?? 'NaN').replace(/\./g, ''));
+  const areas = await page.$$eval('.linea-de-tiempo .entrada', (e) => [...new Set(e.map((x) => x.dataset.area))]);
+  const vistaElegida = await page.$eval('.vista-de-la-linea[data-vista="LO_NUEVO"]', (b) => ({ elegida: b.dataset.elegida ?? null, texto: b.innerText.replace(/\s+/g, ' ').trim() }));
   comprobar(
     'R1',
     'La observación abre la línea de tiempo filtrada a lo nuevo desde la revisión de Nutrición, con un aviso que lo explica; en la URL solo el instante y el área',
-    p.get('novedades') === new Date(cortes.NUTRITION.recordedAt).toISOString() && p.get('areas') === 'NUTRITION' && /Lo nuevo desde la revisión del/.test(aviso) && totalLinea === esperados.NUTRITION.todas && areas.every((a) => /nutrici/i.test(a)),
-    `${totalLinea} hechos (la API cuenta ${esperados.NUTRITION.todas}) · ${aviso.slice(0, 140)}`,
+    p.get('novedades') === new Date(cortes.NUTRITION.recordedAt).toISOString() && p.get('areas') === 'NUTRITION' && /Lo nuevo desde la revisión del/.test(aviso) && totalLinea === esperados.NUTRITION.todas && areas.length === 1 && areas[0] === 'NUTRITION' && vistaElegida.elegida === 'si' && /· Nutrición$/.test(vistaElegida.texto),
+    `${totalLinea} hechos (la API cuenta ${esperados.NUTRITION.todas}) · áreas de los renglones: ${areas.join(', ') || 'ninguno'} · ${vistaElegida.texto} · ${aviso.slice(0, 140)}`,
   );
   await clic(page, '.aviso-de-filtro button', 'Ver todo el período elegido');
   await quieto(page, v);

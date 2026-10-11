@@ -17,8 +17,15 @@ import type { DashboardResponse, DominioDeAnalisis } from '@be/domain';
 import type { Resultado } from '../../../../lib/api';
 import { hrefConCambios, leerPeriodo, type Periodo } from './estado';
 
-/** El resumen por dominio de API-DSH-03, tal como lo leyó la ficha: también es el acceso actual por área. */
-export type PanelDelResumen = { readonly tipo: 'cargando' } | { readonly tipo: 'error' } | { readonly tipo: 'no-disponible' } | { readonly tipo: 'listo'; readonly datos: DashboardResponse['data'] };
+/**
+ * El resumen por dominio de API-DSH-03, tal como lo leyó la ficha: también es el acceso actual por área. Si la lectura
+ * falló, guarda por qué: «esperá un minuto» no es lo mismo que «revisá la conexión», y la ficha lo dice.
+ */
+export type PanelDelResumen =
+  | { readonly tipo: 'cargando' }
+  | { readonly tipo: 'error'; readonly motivo: MotivoDeFalla }
+  | { readonly tipo: 'no-disponible' }
+  | { readonly tipo: 'listo'; readonly datos: DashboardResponse['data'] };
 
 export interface ContextoDelSeguimiento {
   readonly token: string;

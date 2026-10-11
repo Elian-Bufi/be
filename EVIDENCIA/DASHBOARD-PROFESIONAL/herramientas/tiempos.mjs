@@ -18,14 +18,18 @@ const sesion = await (
 ).json();
 const token = sesion.data.session.accessToken;
 
-const pedir = async (ruta, reintento = true) => {
+/** Una lectura. Con `envio`, es un POST con ese cuerpo (la búsqueda de la línea de tiempo: el texto no viaja en la URL). */
+const pedir = async (ruta, reintento = true, envio = null) => {
   const t0 = performance.now();
-  const r = await fetch(`${O}${ruta}`, { headers: { Authorization: `Bearer ${token}` } });
+  const r = await fetch(
+    `${O}${ruta}`,
+    envio ? { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(envio) } : { headers: { Authorization: `Bearer ${token}` } },
+  );
   const cuerpo = await r.text();
   // El cupo de lecturas protegidas es de 120 por minuto: si se agota, se espera a la ventana siguiente y se repite.
   if (r.status === 429 && reintento) {
     await new Promise((x) => setTimeout(x, 61_000));
-    return pedir(ruta, false);
+    return pedir(ruta, false, envio);
   }
   return { ms: performance.now() - t0, status: r.status, cuerpo };
 };
@@ -34,11 +38,11 @@ const resumir = (t) => {
   return { mediana: Math.round(s[Math.floor(s.length / 2)]), min: Math.round(s[0]), max: Math.round(s[s.length - 1]) };
 };
 const fila = (nombre, r) => console.log(`${nombre.padEnd(44)} mediana ${String(r.mediana).padStart(5)} ms (mín ${r.min}, máx ${r.max})`);
-const medir = async (nombre, ruta) => {
-  await pedir(ruta); // calentamiento
+const medir = async (nombre, ruta, envio = null) => {
+  await pedir(ruta, true, envio); // calentamiento
   const t = [];
   for (let i = 0; i < N; i++) {
-    const r = await pedir(ruta);
+    const r = await pedir(ruta, true, envio);
     if (r.status !== 200) throw new Error(`${nombre}: respondió ${r.status}`);
     t.push(r.ms);
   }
@@ -67,7 +71,8 @@ const lecturas = {
   'DSH-03 resumen por dominio': `${a}/dashboard`,
   'DSH-04 línea de tiempo (6, con conteos)': `${a}/timeline?${q}&limit=6`,
   'DSH-04 línea de tiempo (50)': `${a}/timeline?${q}&limit=50`,
-  'DSH-04 búsqueda en el período': `${a}/timeline?${q}&q=cena&limit=20`,
+  // La búsqueda es API-DSH-04-BUSQUEDA: un POST con el texto en el cuerpo (DL-127). Con `q` en la URL, la API responde 400.
+  'DSH-04 búsqueda en el período': [`${a}/timeline/search`, { q: 'cena', periodStart: desde, limit: 20 }],
   'PRJ nutrición: registros por día': `${a}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?${q}&metric=RECORDS`,
   'PRJ nutrición: energía por semana': `${a}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?${q}&metric=ENERGY&grain=WEEK`,
   'PRJ entrenamiento: lista de ejercicios': `${a}/projections/TRAINING_PROGRESSION_BY_EXERCISE?${q}`,
@@ -76,7 +81,7 @@ const lecturas = {
   'VAN-01 vistas guardadas': `/me/analysis-views`,
 };
 const resultados = {};
-for (const [nombre, ruta] of Object.entries(lecturas)) resultados[nombre] = await medir(nombre, ruta);
+for (const [nombre, lectura] of Object.entries(lecturas)) resultados[nombre] = Array.isArray(lectura) ? await medir(nombre, lectura[0], lectura[1]) : await medir(nombre, lectura);
 
 // El límite de lecturas protegidas es de 120 por minuto por actor: se espera a que venza la ventana antes de seguir.
 await new Promise((r) => setTimeout(r, 61_000));

@@ -83,6 +83,7 @@ export * from './nutricion-del-analisis';
 export * from './entrenamiento-del-analisis';
 export * from './antropometria-del-analisis';
 export * from './linea-de-tiempo';
+export * from './dia-de-la-linea';
 export * from './exportacion-del-analisis';
 export * from './etapas-de-planificacion';
 export * from './preguntas-profesionales';

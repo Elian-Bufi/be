@@ -65,17 +65,12 @@ export function PanelDeRegistro({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
-  const { asesoradoId, parametros } = useSeguimiento();
-  // La pestaña del dominio lleva `volver`: desde ahí, «Volver a la ficha, donde estabas» trae la misma vista, período,
-  // pregunta y métricas (eje 5). Sin esto, ir al origen completo hacía perder el análisis armado.
-  const volver = valorDeRetorno(parametros);
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
     if (origen && !d.open) d.showModal();
     if (!origen && d.open) d.close();
   }, [origen]);
-  const destino = origen ? DESTINO[origen.type] : undefined;
   return (
     <dialog
       ref={ref}
@@ -94,18 +89,32 @@ export function PanelDeRegistro({
       </div>
       {children}
       {origen ? <ContenidoDelRegistro origen={origen} onNoDisponible={onNoDisponible} numeroDeVersion={numeroDeVersion} /> : null}
-      {origen && destino ? (
-        <p>
-          <Link href={destino.ruta === '/pro/advisees' ? `${destino.ruta}?id=${encodeURIComponent(asesoradoId)}` : conRetorno(`${destino.ruta}?id=${encodeURIComponent(asesoradoId)}${destino.vista ? `&vista=${destino.vista}` : ''}`, volver)}>
-            {destino.texto}
-          </Link>
-        </p>
-      ) : null}
+      {origen ? <EnlaceAlArea origen={origen} /> : null}
     </dialog>
   );
 }
 
-function ContenidoDelRegistro({ origen, onNoDisponible, numeroDeVersion }: { origen: OrigenDeDato; onNoDisponible?: () => void; numeroDeVersion?: number }) {
+/**
+ * El camino al registro en su pestaña de área, para verlo en su contexto completo. Lleva `volver`: desde ahí, «Volver a
+ * la ficha, donde estabas» trae la misma vista, período, pregunta y métricas (eje 5). Sin esto, ir al origen completo
+ * hacía perder el análisis armado.
+ */
+export function EnlaceAlArea({ origen }: { origen: OrigenDeDato }) {
+  const { asesoradoId, parametros } = useSeguimiento();
+  const destino = DESTINO[origen.type];
+  if (!destino) return null;
+  const volver = valorDeRetorno(parametros);
+  return (
+    <p className="enlace-al-area">
+      <Link href={destino.ruta === '/pro/advisees' ? `${destino.ruta}?id=${encodeURIComponent(asesoradoId)}` : conRetorno(`${destino.ruta}?id=${encodeURIComponent(asesoradoId)}${destino.vista ? `&vista=${destino.vista}` : ''}`, volver)}>
+        {destino.texto}
+      </Link>
+    </p>
+  );
+}
+
+/** El registro de origen, leído por su propia operación. Lo usan el panel y el detalle al costado de la línea de tiempo. */
+export function ContenidoDelRegistro({ origen, onNoDisponible, numeroDeVersion }: { origen: OrigenDeDato; onNoDisponible?: () => void; numeroDeVersion?: number }) {
   const { token, sesionPerdida } = useSeguimiento();
   if (origen.type === 'NUTRITION_PLAN_VERSION') return <VersionDeNutricion planId={origen.id} numero={numeroDeVersion} onNoDisponible={onNoDisponible} />;
   if (origen.type === 'TRAINING_PLAN_VERSION') return <VersionDeEntrenamiento planId={origen.id} numero={numeroDeVersion} onNoDisponible={onNoDisponible} />;

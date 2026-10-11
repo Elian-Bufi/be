@@ -54,6 +54,7 @@ import {
   resumenTextual,
   resumirPeriodo,
   superposicionPermitida,
+  TIPOS_DE_HITO_DE_PLANIFICACION,
   valorConUnidad,
   type DefinicionDeMetrica,
   type LineaDeTiempoResponse,
@@ -114,10 +115,14 @@ const CALIDAD: Readonly<Record<PuntoAnalitico['quality'], string>> = { COMPLETE:
 const textoDeIncompleto = (p: PuntoAnalitico): string => (p.dateEnd ? 'semana sin completar en el período' : 'día en curso: el valor todavía puede cambiar');
 const calidadDelPunto = (p: PuntoAnalitico): string => (p.partialBucket ? `${CALIDAD[p.quality]} · ${textoDeIncompleto(p)}` : CALIDAD[p.quality]);
 const MEDIO_DIA = 43_200_000;
-const HITOS = 'NUTRITION_PLAN_ACTIVATED,TRAINING_PLAN_ACTIVATED,NUTRITION_OBJECTIVE_SET,TRAINING_OBJECTIVE_SET,NUTRITION_REVIEW_RECORDED,TRAINING_REVIEW_RECORDED,FOLLOW_UP_OPENED,FOLLOW_UP_CLOSED';
+/**
+ * Los hitos que se dibujan como líneas verticales: los de planificación (`dia-de-la-linea.ts`, del dominio). Son los
+ * hitos de la línea de tiempo menos las tomas, que en un gráfico ya son puntos.
+ */
+const HITOS = TIPOS_DE_HITO_DE_PLANIFICACION.join(',');
 
 export function Analizar() {
-  const { token, asesoradoId, periodo, parametros, ir, panel } = useSeguimiento();
+  const { token, asesoradoId, periodo, parametros, ir, panel, recargarPanel } = useSeguimiento();
   const id = useId();
   const estado = useMemo(() => leerAnalisis(parametros), [parametros]);
   const cambiar = (c: Partial<EstadoDeAnalisis>) => ir(parametrosDeAnalisis({ ...estado, ...c }));
@@ -401,7 +406,16 @@ export function Analizar() {
           />
         </div>
       ) : null}
-      {pregunta && resolucion === null ? <Cargando /> : null}
+      {/* La pregunta se arma con lo que el resumen por área deja leer: si esa lectura falló, se dice (no es una carga que no termina). */}
+      {pregunta && resolucion === null ? (
+        panel.tipo === 'error' ? (
+          <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[panel.motivo]} titulo="No pudimos armar la pregunta" onReintentar={recargarPanel}>
+            {razonDeFalla(panel.motivo)} Hace falta saber qué áreas se pueden leer.
+          </BloqueDeEstado>
+        ) : (
+          <Cargando />
+        )
+      ) : null}
       {pregunta && resolucion && (resolucion.estado === 'FALTA_ELEGIR' || cambiandoPregunta) ? (
         <ElegirParametros
           key={JSON.stringify(pregunta)}
@@ -491,7 +505,7 @@ export function Analizar() {
                 </label>
                 <label className="capa">
                   <input type="checkbox" checked={estado.eventos} onChange={() => cambiar({ eventos: !estado.eventos })} />
-                  Hitos (activaciones, objetivos, revisiones)
+                  Hitos de planificación (activaciones, objetivos, revisiones)
                 </label>
               </fieldset>
               <div>
@@ -592,7 +606,7 @@ export function Analizar() {
                   <div className="pie-de-graficos">
                     <BotonDelPie que="tabla" abierto={abierto} alternar={alternar} controla={`${id}-abajo`} icono="tabla" texto={`Tabla de datos (${numero(fechasDeLaTabla)} ${fechasDeLaTabla === 1 ? 'fecha' : 'fechas'})`} />
                     <BotonDelPie que="texto" abierto={abierto} alternar={alternar} controla={`${id}-abajo`} icono="texto" texto="Resumen en texto" />
-                    {hitos.length > 0 ? <BotonDelPie que="hitos" abierto={abierto} alternar={alternar} controla={`${id}-abajo`} icono="hito" texto={`Hitos (${numero(hitos.length)})`} /> : null}
+                    {hitos.length > 0 ? <BotonDelPie que="hitos" abierto={abierto} alternar={alternar} controla={`${id}-abajo`} icono="hito" texto={`Hitos de planificación (${numero(hitos.length)})`} /> : null}
                     {/* Con la pregunta de etapas, las tarjetas A y B ya abren cada planificación y «Cambiar los datos» elige otras. */}
                     {estado.bandas && bandas.length > 0 && !conEtapas ? <BotonDelPie que="etapas" abierto={abierto} alternar={alternar} controla={`${id}-abajo`} icono="comparar" texto="Comparar etapas" /> : null}
                     <BotonDelPie que="calculo" abierto={abierto} alternar={alternar} controla={`${id}-abajo`} icono="info" texto="Cómo se calcula" />
@@ -642,7 +656,7 @@ export function Analizar() {
               ) : null}
               {abierto === 'hitos' ? (
                 <section aria-labelledby={`${id}-hitos`} className="hitos">
-                  <h3 id={`${id}-hitos`}>Hitos del período ({numero(hitos.length)}): las líneas verticales punteadas</h3>
+                  <h3 id={`${id}-hitos`}>Hitos de planificación del período ({numero(hitos.length)}): las líneas verticales punteadas</h3>
                   <ul>
                     {hitos.map((h, i) => (
                       <li key={`${h.fecha}-${i}`}>

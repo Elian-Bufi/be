@@ -36,12 +36,13 @@ import {
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useId, useMemo, useState } from 'react';
-import { Cargando, ErrorConReintento, EstadoVacio } from '../../../../components/estados';
+import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { diaDelAnioEnCurso } from '../../../../lib/formato';
-import { useLectura, useSeguimiento, type Lectura } from './contexto';
+import { razonDeFalla, useLectura, useSeguimiento, type Lectura } from './contexto';
 import { hoyEn, parametrosDePregunta, restarDias } from './estado';
+import { ICONO_DE_FALLA } from './iconos-de-metrica';
 import { TarjetasDeArea } from './resumen-area';
 import { IndicadoresDelResumen } from './resumen-indicadores';
 import { useDisponibles, type Disponibles } from './series';
@@ -76,7 +77,14 @@ export function ResumenDelSeguimiento() {
   const observaciones = useSintesis(disponibles, delPeriodo, { NUTRICION: novedadesDeNutricion, ENTRENAMIENTO: novedadesDeEntrenamiento });
 
   if (panel.tipo === 'cargando') return <Cargando />;
-  if (panel.tipo === 'error') return <ErrorConReintento mensaje="No pudimos leer el resumen por área. No es una ausencia de datos: reintentá." onReintentar={recargarPanel} />;
+  // Con su motivo, como cualquier otra lectura de la ficha: «esperá un minuto» no es lo mismo que «revisá la conexión».
+  if (panel.tipo === 'error') {
+    return (
+      <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[panel.motivo]} titulo="No pudimos cargar el resumen por área" onReintentar={recargarPanel}>
+        {razonDeFalla(panel.motivo)}
+      </BloqueDeEstado>
+    );
+  }
   if (panel.tipo !== 'listo') return null;
 
   const d = panel.datos.domains;

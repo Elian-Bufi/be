@@ -9,6 +9,7 @@
 //   el primer botón, resumen, enlace o rótulo de casilla a la vista que contiene cada texto.
 //   Para mirar una falla, `#falla:fragmento`: mientras se captura esa ruta, los pedidos a la API cuya dirección contiene
 //   el fragmento reciben un 503 simulado en el navegador (la API y la base no se tocan). Ejemplo: `#falla:metric=PROTEIN`.
+//   Para mirar una búsqueda, `#buscar:texto`: antes de los clics, lo escribe en el buscador de la vista y lo envía.
 //   Inicia sesión una sola vez y navega dentro de la aplicación (recargar cierra la sesión).
 //   Escribe <salida>/<nombre>-<ancho>-<tema>.png. Necesita la API en :3001 y el website en :3000 (`entorno.sh`).
 import { enTrabajo } from './rutas.mjs';
@@ -42,10 +43,11 @@ const rutas = pedidos.map((p) => {
     console.error(`«${p.slice(0, corte)}»: la ruta llegó como una ruta de Windows (${ruta.slice(0, 40)}…). Escribila sin la barra inicial.`);
     process.exit(2);
   }
-  // Después de la ruta van, en cualquier orden, `#clic:Texto|Otro` y `#falla:fragmento de una dirección de la API`.
+  // Después de la ruta van, en cualquier orden, `#clic:Texto|Otro`, `#falla:fragmento de una dirección de la API` y
+  // `#buscar:texto`.
   const [destino, ...extras] = ruta.split('#');
   const de = (prefijo) => extras.find((x) => x.startsWith(prefijo))?.slice(prefijo.length) ?? '';
-  return [p.slice(0, corte), destino.startsWith('/') ? destino : `/${destino}`, de('clic:').split('|').filter(Boolean), de('falla:')];
+  return [p.slice(0, corte), destino.startsWith('/') ? destino : `/${destino}`, de('clic:').split('|').filter(Boolean), de('falla:'), de('buscar:')];
 });
 fs.mkdirSync(salida, { recursive: true });
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -105,7 +107,7 @@ try {
   await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }).catch(() => {}), page.keyboard.press('Enter')]);
   await page.waitForFunction(() => location.pathname.startsWith('/pro/advisees'), { timeout: 240_000 });
   await page.waitForFunction(() => typeof window.next?.router?.push === 'function', { timeout: 240_000 });
-  for (const [nombre, ruta, clics, falla] of rutas) {
+  for (const [nombre, ruta, clics, falla, buscado] of rutas) {
     await page.setViewport({ width: ANCHO, height: ALTO, deviceScaleFactor: 1 });
     // Un diálogo que quedó abierto de la ruta anterior (una ayuda) se cierra antes de ir a la siguiente.
     await page.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
@@ -115,6 +117,16 @@ try {
     await page.evaluate((u) => window.next.router.push(u), ruta);
     if (antes !== ruta) await page.waitForFunction((a) => location.pathname + location.search !== a, {}, antes).catch(() => {});
     await asentar();
+    if (buscado) {
+      // `#buscar:texto`: lo escribe en el buscador de la vista (reemplazando lo que hubiera) y lo envía con Enter.
+      const campo = await page.waitForSelector('main input[type="search"]', { timeout: 30_000 }).catch(() => null);
+      if (campo) {
+        await campo.click({ clickCount: 3 });
+        await page.keyboard.type(buscado);
+        await page.keyboard.press('Enter');
+        await asentar();
+      } else console.log(`${nombre}: no encontré un buscador para escribir «${buscado}»`);
+    }
     for (const texto of clics) {
       // Lo que se va a tocar puede tardar en aparecer (la vista se arma después de leer los datos).
       // «A la vista» no es «tiene caja»: lo que está adentro de un plegable cerrado tiene caja y no se ve
