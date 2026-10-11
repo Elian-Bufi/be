@@ -7,19 +7,20 @@
  * - Una **escritura** denegada retira el contenido de toda la pestaña, no solo la acción: «siguiente operación deny →
  *   UI limpia contenido» (B10-06:1145-1148; DL-091 punto 1).
  * - La vista activa vive en la URL (`vista=`).
+ *
+ * WP-ESCRITORIO-AREAS (parte 0): el encabezado es el marco del área, común a las cuatro (`MarcoDelArea`). La primera
+ * sección se lee «Tomas», que es como la llaman su propia lista, el botón y el teléfono (C-58); su clave en la URL sigue
+ * siendo `evaluaciones` (F-03). «En preparación» sigue siendo una sección hasta que se recomponga «Tomas» (parte 3).
  */
-import { COPY_ANTROPOMETRIA, COPY_VINCULO } from '@be/domain';
+import { COPY_ANTROPOMETRIA } from '@be/domain';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import { Cargando, ErrorConReintento } from '../../../../components/estados';
-import { Pestanas } from '../../../../components/pestanas';
-import { MigasDelAsesorado } from '../../../../components/migas';
-import { Aviso } from '../../../../components/formulario';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { Cargando } from '../../../../components/estados';
 import type { Resultado } from '../../../../lib/api';
-import { SinEspacioProfesional, useEspacioProfesional } from '../../espacio-profesional';
-import { conVolver, EnlaceDeRetorno, useRetornoALaFicha } from '../retorno-y-preparacion';
+import { useEspacioProfesional } from '../../espacio-profesional';
+import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../marco-del-area';
+import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { VistaDeEvaluaciones } from './evaluaciones';
 import { VistaDeEvolucion } from './evolucion';
 import { VistaDePreparacion } from './preparacion';
@@ -28,10 +29,10 @@ import { VistaDePreparacion } from './preparacion';
 const VistaDeLamina = dynamic(() => import('./lamina').then((m) => m.VistaDeLamina), { ssr: false, loading: () => <Cargando /> });
 
 export const VISTAS = [
-  { clave: 'evaluaciones', texto: 'Evaluaciones' },
-  { clave: 'preparacion', texto: 'En preparación' },
-  { clave: 'evolucion', texto: COPY_ANTROPOMETRIA.evolucion },
-  { clave: 'lamina', texto: COPY_ANTROPOMETRIA.lamina },
+  { clave: 'evaluaciones', texto: 'Tomas', icono: 'lista' },
+  { clave: 'preparacion', texto: 'En preparación', icono: 'borrador' },
+  { clave: 'evolucion', texto: COPY_ANTROPOMETRIA.evolucion, icono: 'analizar' },
+  { clave: 'lamina', texto: COPY_ANTROPOMETRIA.lamina, icono: 'imagen' },
 ] as const;
 export type Vista = (typeof VISTAS)[number]['clave'];
 
@@ -53,24 +54,14 @@ export function useAntropometria(): ContextoDeAntropometria {
   return c;
 }
 
-/** Texto neutral del 404 del profesional (10-B10:407): el mismo para lo ajeno y para lo inexistente. */
-export function NoDisponible() {
-  return (
-    <Aviso tipo="info">
-      <p>{COPY_VINCULO.recursoNoDisponible}</p>
-      <p>
-        <Link href="/pro">{COPY_VINCULO.volver}</Link>
-      </p>
-    </Aviso>
-  );
-}
+/**
+ * Texto neutral del 404 del profesional (10-B10:407): el mismo para lo ajeno y para lo inexistente. Es el del marco del
+ * área, que vuelve a preguntar el acceso.
+ */
+export const NoDisponible = NoDisponibleEnElArea;
 
-export function EstadoDeLectura({ r, onReintentar, children }: { r: Resultado<unknown> | null; onReintentar: () => void; children: ReactNode }) {
-  if (!r) return <Cargando />;
-  if (!r.ok && r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') return <NoDisponible />;
-  if (!r.ok) return <ErrorConReintento onReintentar={onReintentar} />;
-  return <>{children}</>;
-}
+/** Resultado de una lectura de la vista: 404 → neutral; otra falla → su motivo y «Reintentar». */
+export const EstadoDeLectura = EstadoDeLecturaDelArea;
 
 export function Antropometria() {
   const parametros = useSearchParams();
@@ -79,7 +70,8 @@ export function Antropometria() {
   const vista: Vista = VISTAS.some((v) => v.clave === vistaPedida) ? (vistaPedida as Vista) : 'evaluaciones';
   const ruta = usePathname();
   const router = useRouter();
-  const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees/anthropometry?id=${id}`);
+  const sesion = useEspacioProfesional(`/pro/advisees/anthropometry?id=${id}`);
+  const { token, sesionPerdida } = sesion;
 
   const retorno = useRetornoALaFicha(id);
   const irA = useCallback(
@@ -93,31 +85,31 @@ export function Antropometria() {
     setRetirado(true);
     return true;
   }, []);
+  const volverALeer = useCallback(() => setRetirado(false), []);
   const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, accesoRetirado, irA } : null), [token, id, sesionPerdida, accesoRetirado, irA]);
 
-  if (!token || !contexto) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
-  if (yo.tipo === 'cargando') return <Cargando />;
-  if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
-  if (yo.tipo === 'sin-espacio') return <SinEspacioProfesional />;
-
   return (
-    <Contexto.Provider value={contexto}>
-      <MigasDelAsesorado id={id} pestana={COPY_ANTROPOMETRIA.pestana} volver={retorno.href} />
-      <h1>{COPY_ANTROPOMETRIA.pestana}</h1>
-      <EnlaceDeRetorno href={retorno.href} />
-      {retirado ? <NoDisponible /> : <Secciones ruta={ruta} id={id} vista={vista} volver={retorno.valor} />}
-    </Contexto.Provider>
-  );
-}
-
-function Secciones({ ruta, id, vista, volver }: { ruta: string; id: string; vista: Vista; volver: string | null }) {
-  return (
-    <>
-      <Pestanas etiqueta="Secciones de Antropometría" vistas={VISTAS} actual={vista} href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, volver)} />
-      {vista === 'evaluaciones' ? <VistaDeEvaluaciones /> : null}
-      {vista === 'preparacion' ? <VistaDePreparacion /> : null}
-      {vista === 'evolucion' ? <VistaDeEvolucion /> : null}
-      {vista === 'lamina' ? <VistaDeLamina /> : null}
-    </>
+    <MarcoDelArea
+      alcance="ANTROPOMETRIA"
+      titulo={COPY_ANTROPOMETRIA.pestana}
+      etiqueta="Secciones de Antropometría"
+      id={id}
+      sesion={sesion}
+      retorno={retorno}
+      vistas={VISTAS}
+      vista={vista}
+      href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, retorno.valor)}
+      retirado={retirado}
+      onActualizar={volverALeer}
+    >
+      {contexto ? (
+        <Contexto.Provider value={contexto}>
+          {vista === 'evaluaciones' ? <VistaDeEvaluaciones /> : null}
+          {vista === 'preparacion' ? <VistaDePreparacion /> : null}
+          {vista === 'evolucion' ? <VistaDeEvolucion /> : null}
+          {vista === 'lamina' ? <VistaDeLamina /> : null}
+        </Contexto.Provider>
+      ) : null}
+    </MarcoDelArea>
   );
 }

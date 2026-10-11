@@ -40,6 +40,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { EstadoVacio } from '../../../../components/estados';
+import { useCambiosSinGuardar } from '../marco-del-area';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 import { BloqueDeCalculos } from './calculos';
 
@@ -278,6 +279,7 @@ function FilaDeMedicion({
   const [valor, setValor] = useState('');
   /** Lo que no se entiende como número se señala en el campo, no en un aviso suelto (B10-10:164-165). */
   const [errorDeValor, setErrorDeValor] = useState<string | null>(null);
+  useCambiosSinGuardar(accion !== null && (motivo.trim() !== '' || valor.trim() !== ''), accion === 'anular' ? 'la anulación de una medición' : 'la corrección de una medición');
   const [enviando, setEnviando] = useState(false);
   const anulada = medicion.condition === 'ANNULLED';
 

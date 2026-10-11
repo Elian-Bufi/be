@@ -41,6 +41,7 @@ import { api } from '../../../../lib/api';
 import { numeroEnCampo } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { ImportacionDeOpenFoodFacts, procedenciaDeElemento } from './importacion';
+import { useCambiosSinGuardar } from '../marco-del-area';
 import { NoDisponible, useNutricion } from './nutricion';
 import { DialogoGuardarPlantillaNutricional, NotaDeOrigenNutricional } from './plantillas';
 import { COPY_HABITUALES, COPY_PLANTILLAS } from '@be/domain';
@@ -126,6 +127,7 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   const [recetas, setRecetas] = useState<Record<string, RecetaDeOpcion>>({});
   const [eligiendoReceta, setEligiendoReceta] = useState<{ i: number; j: number } | null>(null);
   const [sucio, setSucio] = useState(false);
+  useCambiosSinGuardar(sucio, 'el plan en preparación');
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);

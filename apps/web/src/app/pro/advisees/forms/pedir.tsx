@@ -25,6 +25,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { useCambiosSinGuardar } from '../marco-del-area';
 import { EstadoDeLectura, useFormularios } from './formularios';
 
 /** Los rechazos de FRM-03 que dependen de lo elegido: se dicen, en vez de «el servicio no está disponible». */
@@ -48,6 +49,8 @@ export function VistaDePedido() {
   const parametros = useSearchParams();
   const router = useRouter();
   const desdeEntrenamiento = parametros.get('volver') === 'entrenamiento';
+  // Lo precargado al llegar desde Entrenamiento no es algo escrito: se vuelve a precargar igual.
+  useCambiosSinGuardar(proposito.trim() !== '' || (!desdeEntrenamiento && pedidos.length > 0), 'el pedido de información');
   const precargar = desdeEntrenamiento && parametros.get('plantilla') === CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla;
   const precargada = useRef(false);
   const rutaDeEntrenamiento = `/pro/advisees/training?id=${encodeURIComponent(asesoradoId)}`;

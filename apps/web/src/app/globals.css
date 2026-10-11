@@ -6165,8 +6165,34 @@ a.observacion__fila:focus-visible {
   margin: 0 0 0.25rem;
 }
 
+/* ─── El marco de una pestaña de área (WP-ESCRITORIO-AREAS, parte 0) ─────────────── */
+/* Es el marco de la ficha llevado a Nutrición, Entrenamiento, Antropometría e Información: los mismos tres renglones
+   (de quién es y «Actualizar»; el acceso actual; las secciones), a la misma altura, para que pasar de la ficha a un
+   área no mueva nada de lugar. Delante del título va el camino de vuelta a la ficha. */
 .retorno-a-la-ficha {
-  margin: -0.25rem 0 0.75rem;
+  margin: 0;
+}
+
+.retorno-a-la-ficha a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* La referencia de la persona, al lado del área: dice de quién es la pestaña sin competir con el título. */
+.marco-del-area__persona {
+  margin: 0;
+  color: var(--tenue);
+}
+
+/* La sección que se mira. Las que todavía no se recompusieron conservan el ancho para el que se hicieron (72 rem, el
+   que les dejaba la página de antes), alineadas con el marco por la izquierda. Una recompuesta usa todo el ancho. */
+.seccion-del-area {
+  max-width: 72rem;
+}
+
+.seccion-del-area--ancha {
+  max-width: none;
 }
 
 /* ─── El Espacio profesional (WP-ESCRITORIO-AMABLE, parte 5) ─────────────────────── */

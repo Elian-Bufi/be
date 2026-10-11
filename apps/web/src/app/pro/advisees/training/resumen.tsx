@@ -223,7 +223,7 @@ function Estado({ datos, onIrA }: { datos: Datos; onIrA: (v: 'plan' | 'ejecucion
           <dd>
             {ultima ? `${ultima.plannedSession.label} · ${dia(`${ultima.date}T12:00:00Z`)} · ${etiquetaDeCondicionRegistrada(registroVigente(ultima))}` : COPY_ENTRENAMIENTO.sinEjecuciones}{' '}
             <button type="button" className="boton boton--enlace" onClick={() => onIrA('ejecuciones')}>
-              Ver ejecuciones
+              Ver registros
             </button>
           </dd>
         </div>

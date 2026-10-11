@@ -18,6 +18,7 @@ import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { FiltroDePeriodo, type Periodo } from '../periodo';
 import { VerRegistro } from './detalle-de-registro';
+import { useCambiosSinGuardar } from '../marco-del-area';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 
 type Contexto = ContextoDeRevisionResponse['data'];
@@ -150,6 +151,7 @@ function RegistroLibre({ ingesta, comida, onCambio }: { ingesta: Ingesta; comida
   const [gramos, setGramos] = useState('');
   const [alimento, setAlimento] = useState<ElementoDeCatalogo | null>(null);
   const [busqueda, setBusqueda] = useState('');
+  useCambiosSinGuardar(abierto && (descripcion.trim() !== '' || gramos.trim() !== '' || alimento !== null), 'la estimación de una comida');
   const [opciones, setOpciones] = useState<ElementoDeCatalogo[]>([]);
   /** El mismo error que se avisa arriba se marca en su campo (B10-10:164-165; DL-091 punto 3). */
   const [errores, setErrores] = useState<{ descripcion?: string; gramos?: string }>({});

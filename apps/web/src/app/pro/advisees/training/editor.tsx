@@ -44,6 +44,7 @@ import { Aviso, Campo } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
 import { numeroEnCampo } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { useCambiosSinGuardar } from '../marco-del-area';
 import { NoDisponible, useEntrenamiento } from './entrenamiento';
 import { ImportacionDeWger, procedenciaDeEjercicio } from './importacion';
 import { DialogoGuardarPlantilla, NotaDeOrigen } from './plantillas';
@@ -126,6 +127,7 @@ export function EditorDePlan({ planId, onActivado }: { planId: string; onActivad
   const [imagenes, setImagenes] = useState<Record<string, ImagenDeEjercicio | null>>({});
   const [proximaRevision, setProximaRevision] = useState('');
   const [sucio, setSucio] = useState(false);
+  useCambiosSinGuardar(sucio, 'el plan en preparación');
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);

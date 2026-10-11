@@ -68,7 +68,7 @@ export const COPY_ENTRENAMIENTO = {
   pestana: 'Entrenamiento',
   resumen: 'Resumen',
   plan: 'Plan',
-  ejecuciones: 'Ejecuciones',
+  ejecuciones: 'Registros',
   revisiones: 'Revisiones',
   sinEvaluacion: 'Todavía no hay una evaluación de entrenamiento.',
   sinObjetivo: 'Todavía no hay un objetivo de entrenamiento.',

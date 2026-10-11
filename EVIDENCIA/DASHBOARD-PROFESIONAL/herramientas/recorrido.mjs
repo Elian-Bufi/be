@@ -1,7 +1,7 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio|areas]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
@@ -22,6 +22,9 @@
 //   `espacioProfesional`, al final de esa misma sesión; sola, con `espacio`. Los tipos de pendiente que el escenario no
 //   tiene se miran con una respuesta simulada en el navegador (`cartera-simulada.mjs`). Una cuenta sin asesorados se
 //   mira en la sesión del tercero; el envío de una solicitud y el aviso de vista parcial real, en `descartable`.
+// - El marco de las pestañas de área (WP-ESCRITORIO-AREAS, parte 0: Nutrición, Entrenamiento, Antropometría e
+//   Información) se comprueba en `marcoDeLasAreas`, al final de esa misma sesión; solo, con `areas`. Un área que deja
+//   de poder leerse se mira ahí con respuestas simuladas en el navegador, y con una revocación real en `descartable`.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
 //   (valores medidos, informados y estimados; revocación desde la web del asesorado).
 import fs from 'node:fs';
@@ -4251,7 +4254,421 @@ async function espacioProfesional(page, v) {
  * se mira qué guiones cargó. El modo funcional corre las tres antes del encabezado; `resumen`, `linea` y `analizar`
  * corren una sola. El Espacio profesional va al final, en la misma sesión; solo, con `espacio`.
  */
-async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true } = {}) {
+// ─── El marco de las pestañas de área (WP-ESCRITORIO-AREAS, parte 0) ─────────────────────────────────────────────
+
+/** Lo que dice el marco de una pestaña de área, y dónde está cada renglón. */
+const marcoEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const caja = (e) => {
+      if (!e) return null;
+      const r = e.getBoundingClientRect();
+      return { arriba: Math.round(r.top + scrollY), abajo: Math.round(r.bottom + scrollY), izquierda: Math.round(r.left), derecha: Math.round(r.right) };
+    };
+    const marco = document.querySelector('header.marco-del-area');
+    if (!marco) return null;
+    const vuelta = marco.querySelector('.retorno-a-la-ficha a');
+    return {
+      titulos: [...document.querySelectorAll('h1')].map(t),
+      volver: vuelta ? { texto: t(vuelta), href: vuelta.getAttribute('href'), caja: caja(vuelta) } : null,
+      persona: t(marco.querySelector('.marco-del-area__persona')),
+      acceso: t(marco.querySelector('.ficha__acceso')),
+      hora: t(marco.querySelector('.ficha__consulta .nota')),
+      actualizar: !!marco.querySelector('.ficha__consulta button'),
+      etiqueta: marco.querySelector('nav.pestanas')?.getAttribute('aria-label') ?? null,
+      pestanas: [...marco.querySelectorAll('nav.pestanas a')].map((a) => ({ texto: t(a), href: a.getAttribute('href'), actual: a.getAttribute('aria-current'), icono: !!a.querySelector('svg') })),
+      migas: document.querySelectorAll('nav.migas').length,
+      caja: caja(marco),
+      renglones: [...marco.querySelectorAll('.marco-de-la-ficha__persona, .marco-de-la-ficha__estado, .marco-de-la-ficha__vistas')].map(caja),
+      seccion: caja(document.querySelector('.seccion-del-area')),
+      primerTitulo: t(document.querySelector('.seccion-del-area h2')),
+      cuerpo: t(document.querySelector('.seccion-del-area')),
+    };
+  });
+
+/**
+ * El marco común de Nutrición, Entrenamiento, Antropometría e Información (F-01). Lo esperado se calcula a mano con lo
+ * que devuelve la API: los vínculos del profesional con el asesorado A. Va dentro de `funcional`; solo, con
+ * `node recorrido.mjs areas`.
+ */
+async function marcoDeLasAreas(page, v) {
+  const A = estado.aseId;
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  /** Las secciones de cada área, escritas a mano: la clave que viaja en la dirección y el nombre que se lee. */
+  const AREAS = [
+    { clave: 'nutrition', alcance: 'NUTRICION', titulo: 'Nutrición', secciones: [['resumen', 'Resumen'], ['plan', 'Plan'], ['registros', 'Registros'], ['revisiones', 'Revisiones']] },
+    { clave: 'training', alcance: 'ENTRENAMIENTO', titulo: 'Entrenamiento', secciones: [['resumen', 'Resumen'], ['plan', 'Plan'], ['ejecuciones', 'Registros'], ['revisiones', 'Revisiones']] },
+    { clave: 'anthropometry', alcance: 'ANTROPOMETRIA', titulo: 'Antropometría', secciones: [['evaluaciones', 'Tomas'], ['preparacion', 'En preparación'], ['evolucion', 'Evolución'], ['lamina', 'Lámina']] },
+    { clave: 'forms', alcance: null, titulo: 'Información', secciones: [['solicitudes', 'Solicitudes'], ['pedir', 'Pedir información']] },
+  ];
+  const ACTIVO = 'Activo · acceso contextual';
+  const ORDEN = ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'];
+  const destino = (href) => {
+    const u = new URL(href || '/', WEB);
+    return { ruta: u.pathname.replace(/\/$/, ''), q: Object.fromEntries(u.searchParams) };
+  };
+  const BOTON = 'header.marco-del-area .ficha__consulta button';
+  const HORA = 'header.marco-del-area .ficha__consulta .nota';
+  /** Entra a una dirección de un área y espera a que el marco diga la hora de su consulta. Devuelve la marca de los pedidos. */
+  const entrar = async (ruta) => {
+    await cupo(v, 60);
+    const desde = v.urls.length;
+    await ir(page, ruta);
+    await page.waitForSelector('header.marco-del-area', { timeout: 30_000 });
+    await quieto(page, v);
+    await page.waitForSelector(HORA, { timeout: 30_000 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    return desde;
+  };
+  /** Las lecturas de la página desde una marca, sin la de la cuenta (que se hace al abrir la página, no al actualizar). */
+  const lecturas = (desde) =>
+    v.urls
+      .slice(desde)
+      .filter((u) => u.startsWith('GET ') && !/\/api\/v1\/me$/.test(u))
+      .map((u) => u.replace(`GET ${API}/api/v1`, ''))
+      .sort();
+  const actualizar = async () => {
+    await cupo(v, 60);
+    const desde = v.urls.length;
+    await clic(page, BOTON, 'Actualizar');
+    return desde;
+  };
+  /** La hora del marco es la de ahora (o la del minuto anterior), en el reloj de esta máquina. */
+  const esDeAhora = (dice) => {
+    const leida = /^Consultado a las (\d{2}):(\d{2})$/.exec(dice ?? '');
+    if (!leida) return false;
+    const ahora = new Date();
+    const minutos = ahora.getHours() * 60 + ahora.getMinutes();
+    const dichos = Number(leida[1]) * 60 + Number(leida[2]);
+    return [0, 1, 1439].includes((minutos - dichos + 1440) % 1440);
+  };
+
+  // Lo esperado: los vínculos del profesional con A, como los da la API.
+  await cupo(v, 60);
+  const yo = (await leerApi(v, '/me')).data;
+  const todos = [];
+  let cursor = null;
+  do {
+    const r = await leerApi(v, `/me/relationships${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`);
+    todos.push(...r.data);
+    cursor = r.page.hasMore ? r.page.nextCursor : null;
+  } while (cursor);
+  const vinculos = todos.filter((x) => x.professional.identityId === yo.identityId && x.advisee.identityId === A).sort((a, b) => ORDEN.indexOf(a.scope.code) - ORDEN.indexOf(b.scope.code));
+  const activo = (x) => x.relationshipState === 'ACEPTADO' && x.consentState === 'ACTIVE' && x.accessMode === 'CONTEXTUAL';
+  /** «Acceso actual Nutrición: Activo · acceso contextual». Si el escenario cambió (un vínculo no activo), `null`. */
+  const accesoEsperado = (alcance) => {
+    const suyos = vinculos.filter((x) => !alcance || x.scope.code === alcance);
+    if (suyos.length === 0 || !suyos.every(activo)) return null;
+    const nombres = suyos.map((x) => x.scope.label);
+    return `Acceso actual ${nombres.length > 1 ? `${nombres.slice(0, -1).join(', ')} y ${nombres.at(-1)}` : nombres[0]}: ${ACTIVO}`;
+  };
+  const persona = vinculos[0]?.advisee.displayName ?? null;
+
+  // La ficha, para comparar: los tres renglones de su marco.
+  await ir(page, FICHA_A);
+  await page.waitForSelector('header.marco-de-la-ficha .ficha__consulta .nota', { timeout: 30_000 });
+  await quieto(page, v);
+  const ficha = await page.evaluate(() => {
+    const alto = (e) => Math.round(e.getBoundingClientRect().height);
+    const marco = document.querySelector('header.marco-de-la-ficha');
+    return { alto: alto(marco), renglones: [...marco.querySelectorAll('.marco-de-la-ficha__persona, .marco-de-la-ficha__estado, .marco-de-la-ficha__vistas')].map(alto) };
+  });
+
+  // F-01 · El marco, en las cuatro áreas ─────────────────────────────────────────────────────────────────
+  const medidas = [];
+  const sinVolver = [];
+  let resumenDeEntrenamiento = null;
+  for (const area of AREAS) {
+    await entrar(`/pro/advisees/${area.clave}?id=${A}`);
+    const m = await marcoEnPantalla(page);
+    if (area.clave === 'training') resumenDeEntrenamiento = m.primerTitulo;
+    medidas.push({ area: area.titulo, alto: m.caja.abajo - m.caja.arriba, renglones: m.renglones.map((r) => r.abajo - r.arriba), izquierda: m.volver?.caja.izquierda, seccion: m.seccion });
+    const pestanasBien =
+      igual(m.pestanas.map((p) => p.texto), area.secciones.map((s) => s[1])) &&
+      igual(m.pestanas.map((p) => p.actual), area.secciones.map((_, i) => (i === 0 ? 'page' : null))) &&
+      m.pestanas.every((p, i) => {
+        const d = destino(p.href);
+        return p.icono && d.ruta === `/pro/advisees/${area.clave}` && igual(d.q, { id: A, vista: area.secciones[i][0] });
+      });
+    comprobar(
+      'F-01',
+      `${area.titulo}: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada una con su ícono y su dirección de siempre; no hay miga`,
+      igual(m.titulos, [area.titulo]) &&
+        persona !== null &&
+        m.persona === persona &&
+        accesoEsperado(area.alcance) !== null &&
+        m.acceso === accesoEsperado(area.alcance) &&
+        m.actualizar &&
+        esDeAhora(m.hora) &&
+        m.etiqueta === `Secciones de ${area.titulo}` &&
+        pestanasBien &&
+        m.migas === 0,
+      `${m.titulos.join(' | ')} · ${m.persona} · ${m.acceso} (la API: ${accesoEsperado(area.alcance)}) · ${m.hora} · ${m.pestanas.map((p) => `${p.texto}${p.icono ? '' : ' (sin ícono)'}${p.actual ? '*' : ''}`).join(', ')} · migas: ${m.migas}`,
+    );
+    const d = destino(m.volver?.href);
+    sinVolver.push({ area: area.titulo, texto: m.volver?.texto ?? null, migas: m.migas, bien: m.volver?.texto === 'Volver a la ficha' && d.ruta === '/pro/advisees' && igual(d.q, { id: A }) });
+  }
+  await ir(page, '/pro/templates');
+  await page.waitForSelector('nav.migas', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const migasDeLaBiblioteca = await page.evaluate(() => document.querySelectorAll('nav.migas').length);
+  comprobar(
+    'F-07',
+    'Sin haber llegado desde la ficha (como desde un pendiente), el camino de vuelta de las cuatro áreas dice «Volver a la ficha» y lleva a la ficha de esa persona. Reemplaza a la miga, que ya no está en ninguna de las cuatro (la misma consulta encuentra la de «Plantillas y habituales»)',
+    sinVolver.length === 4 && sinVolver.every((x) => x.bien) && sinVolver.every((x) => x.migas === 0) && migasDeLaBiblioteca === 1,
+    `${sinVolver.map((x) => `${x.area}: ${x.texto}, ${x.migas} migas`).join(' · ')} · «Plantillas y habituales»: ${migasDeLaBiblioteca}`,
+  );
+
+  // F-06 · Los mismos tres renglones que la ficha ───────────────────────────────────────────────────────────
+  informar('F-06', 'El alto del marco y de sus tres renglones, a 1440 px', `ficha ${ficha.alto} px (${ficha.renglones.join(' + ')}) · ${medidas.map((x) => `${x.area} ${x.alto} (${x.renglones.join(' + ')})`).join(' · ')}`);
+  comprobar(
+    'F-06',
+    'El marco tiene tres renglones y mide lo mismo en las cuatro áreas y en la ficha: al pasar de la ficha a un área, o de un área a otra, las secciones y lo que está debajo quedan a la misma altura',
+    medidas.every((x) => x.renglones.length === 3 && x.alto === ficha.alto && igual(x.renglones, ficha.renglones)),
+    `ficha ${ficha.alto} · ${medidas.map((x) => `${x.area} ${x.alto}`).join(' · ')}`,
+  );
+  // F-10 · La sección conserva su ancho y arranca donde arranca el marco ────────────────────────────────────
+  comprobar(
+    'F-10',
+    'La sección arranca en la misma vertical que el marco y, mientras no se recomponga, conserva el ancho para el que se hizo (1.152 px a 1440)',
+    medidas.every((x) => x.seccion && x.seccion.izquierda === x.izquierda && x.seccion.derecha - x.seccion.izquierda === 1152),
+    medidas.map((x) => `${x.area}: marco desde ${x.izquierda}, sección de ${x.seccion?.izquierda} a ${x.seccion?.derecha}`).join(' · '),
+  );
+
+  // C-58 y C-65 · Cambian los nombres que se leen; las direcciones, no ──────────────────────────────────────
+  await entrar(`/pro/advisees/training?id=${A}&vista=ejecuciones`);
+  const entrenamiento = await marcoEnPantalla(page);
+  await entrar(`/pro/advisees/anthropometry?id=${A}&vista=preparacion`);
+  const antropometria = await marcoEnPantalla(page);
+  const elegida = (m) => m.pestanas.find((p) => p.actual === 'page')?.texto ?? null;
+  comprobar(
+    'C-65',
+    '«vista=ejecuciones» sigue abriendo los registros de Entrenamiento, que se leen «Registros» (y no el Resumen); «vista=preparacion» sigue abriendo la toma en preparación, y la primera sección de Antropometría se lee «Tomas». Ninguna sección dice «Ejecuciones» ni «Evaluaciones»',
+    elegida(entrenamiento) === 'Registros' &&
+      entrenamiento.primerTitulo !== null &&
+      entrenamiento.primerTitulo !== resumenDeEntrenamiento &&
+      elegida(antropometria) === 'En preparación' &&
+      antropometria.pestanas[0]?.texto === 'Tomas' &&
+      ![...entrenamiento.pestanas, ...antropometria.pestanas].some((p) => /Ejecuciones|Evaluaciones/.test(p.texto)),
+    `Entrenamiento: ${elegida(entrenamiento)} («${entrenamiento.primerTitulo}»; el Resumen empieza con «${resumenDeEntrenamiento}») · Antropometría: ${antropometria.pestanas.map((p) => p.texto).join(', ')}, elegida ${elegida(antropometria)}`,
+  );
+
+  // F-07 · El camino de vuelta, llegando desde la ficha y desde Entrenamiento ───────────────────────────────
+  const VOLVER = 'vista=analizar&m=nutricion.energia';
+  await entrar(`/pro/advisees/nutrition?id=${A}&vista=registros&volver=${encodeURIComponent(VOLVER)}`);
+  const desdeLaFicha = await marcoEnPantalla(page);
+  const aLaFicha = destino(desdeLaFicha.volver?.href);
+  const loConservan = desdeLaFicha.pestanas.length === 4 && desdeLaFicha.pestanas.every((p) => destino(p.href).q.volver === VOLVER);
+  await clic(page, 'header.marco-del-area .retorno-a-la-ficha a', 'Volver a la ficha');
+  await page.waitForSelector('header.marco-de-la-ficha .ficha__consulta .nota', { timeout: 30_000 });
+  await quieto(page, v);
+  const llegada = { ruta: new URL(page.url()).pathname.replace(/\/$/, ''), q: Object.fromEntries(parametros(page)) };
+  comprobar(
+    'F-07',
+    'Llegando desde la ficha, el camino de vuelta dice «Volver a la ficha, donde estabas», las cuatro secciones lo conservan y lleva a esa vista de la ficha, con su métrica',
+    desdeLaFicha.volver?.texto === 'Volver a la ficha, donde estabas' &&
+      aLaFicha.ruta === '/pro/advisees' &&
+      aLaFicha.q.id === A &&
+      aLaFicha.q.vista === 'analizar' &&
+      aLaFicha.q.m === 'nutricion.energia' &&
+      loConservan &&
+      llegada.ruta === '/pro/advisees' &&
+      llegada.q.id === A &&
+      llegada.q.vista === 'analizar' &&
+      llegada.q.m === 'nutricion.energia',
+    `${desdeLaFicha.volver?.texto} → ${desdeLaFicha.volver?.href} · las secciones lo conservan: ${loConservan} · llegó a ${llegada.ruta}?vista=${llegada.q.vista}&m=${llegada.q.m}`,
+  );
+  await entrar(`/pro/advisees/forms?id=${A}&vista=pedir&plantilla=FRM-ENTRENAMIENTO&volver=entrenamiento`);
+  const desdeEntrenamiento = await marcoEnPantalla(page);
+  const aEntrenamiento = destino(desdeEntrenamiento.volver?.href);
+  comprobar(
+    'F-07',
+    'Llegando a «Pedir información» desde Entrenamiento, el camino de vuelta dice «Volver a Entrenamiento» y lleva ahí: no dice «donde estabas» de un lugar de la ficha donde la persona no estaba',
+    desdeEntrenamiento.volver?.texto === 'Volver a Entrenamiento' && aEntrenamiento.ruta === '/pro/advisees/training' && aEntrenamiento.q.id === A && aEntrenamiento.q.vista === 'resumen',
+    `${desdeEntrenamiento.volver?.texto} → ${desdeEntrenamiento.volver?.href}`,
+  );
+
+  // F-08 · «Actualizar» vuelve a leer todo lo que la sección muestra ───────────────────────────────────────
+  const alEntrar = await entrar(`/pro/advisees/nutrition?id=${A}&vista=resumen`);
+  const deEntrada = lecturas(alEntrar);
+  const alActualizar = await actualizar();
+  await quieto(page, v);
+  await page.waitForSelector(HORA, { timeout: 30_000 });
+  const deNuevo = lecturas(alActualizar);
+  const trasActualizar = await marcoEnPantalla(page);
+  comprobar(
+    'F-08',
+    '«Actualizar» vuelve a pedir todo lo que la sección leyó al entrar (las mismas lecturas, una vez cada una, con los vínculos) y no abre ninguna pregunta; la hora es la de esa consulta',
+    deEntrada.length >= 3 && deEntrada.some((u) => u.startsWith('/me/relationships')) && igual(deNuevo, deEntrada) && esDeAhora(trasActualizar.hora) && !(await page.$('dialog.dialogo[open]')),
+    `al entrar (${deEntrada.length}): ${deEntrada.map((u) => u.replace(A, ':a').split('?')[0]).join(' · ')} — al actualizar (${deNuevo.length}): ${igual(deNuevo, deEntrada) ? 'las mismas' : deNuevo.map((u) => u.replace(A, ':a').split('?')[0]).join(' · ')} — ${trasActualizar.hora}`,
+  );
+
+  // F-08 · Con algo escrito sin guardar, «Actualizar» pregunta antes ───────────────────────────────────────
+  const ESCRITO = 'Texto del recorrido, sin guardar.';
+  await entrar(`/pro/advisees/nutrition?id=${A}&vista=revisiones&preparar=1`);
+  await page.waitForSelector('#revision-interpretacion', { timeout: 30_000 });
+  await page.type('#revision-interpretacion', ESCRITO);
+  const alPreguntar = await actualizar();
+  await page.waitForSelector('dialog.dialogo[open]', { timeout: 10_000 });
+  const pregunta = await texto(page, 'dialog.dialogo[open]');
+  await pausa(600);
+  const leyoAlPreguntar = lecturas(alPreguntar).length;
+  await clic(page, 'dialog.dialogo[open] button', 'Seguir editando');
+  await page.waitForFunction(() => !document.querySelector('dialog.dialogo[open]'), { timeout: 10_000 });
+  const sigueEscrito = await page.$eval('#revision-interpretacion', (e) => e.value);
+  await actualizar();
+  await page.waitForSelector('dialog.dialogo[open]', { timeout: 10_000 });
+  const alDescartar = v.urls.length;
+  await clic(page, 'dialog.dialogo[open] button', 'Actualizar y descartar');
+  await quieto(page, v);
+  await page.waitForSelector('#revision-interpretacion', { timeout: 30_000 });
+  const trasDescartar = await page.$eval('#revision-interpretacion', (e) => e.value);
+  const leyoAlDescartar = lecturas(alDescartar).length;
+  comprobar(
+    'F-08',
+    'Con algo escrito sin guardar, «Actualizar» pregunta antes: dice qué se pierde y no lee nada; «Seguir editando» deja lo escrito como estaba; «Actualizar y descartar» vuelve a leer la sección',
+    /Tenés cambios sin guardar/.test(pregunta) && /la revisión/.test(pregunta) && leyoAlPreguntar === 0 && sigueEscrito === ESCRITO && trasDescartar === '' && leyoAlDescartar >= 2,
+    `«${pregunta.slice(0, 150)}» · lecturas mientras pregunta: ${leyoAlPreguntar} · tras «Seguir editando»: «${sigueEscrito}» · tras descartar: «${trasDescartar}», ${leyoAlDescartar} lecturas`,
+  );
+
+  // C-43 · Una falla dice su motivo, y no es una revocación ─────────────────────────────────────────────────
+  const delArea = (u) => u.includes(`/advisees/${A}/nutrition/`);
+  const falla = { coincide: delArea, accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+  await entrar(`/pro/advisees/training?id=${A}`);
+  v.reglas.push(falla);
+  const alFallar = await entrar(`/pro/advisees/nutrition?id=${A}&vista=resumen`);
+  const conFalla = await marcoEnPantalla(page);
+  const bloque = await texto(page, '.seccion-del-area .estado-de-grafico--error');
+  const preguntoPorLaFalla = lecturas(alFallar).filter((u) => u.includes('/dashboard')).length;
+  v.reglas.splice(v.reglas.indexOf(falla), 1);
+  await cupo(v, 60);
+  await clic(page, '.seccion-del-area .estado-de-grafico--error button', 'Reintentar');
+  await quieto(page, v);
+  const trasReintentar = await marcoEnPantalla(page);
+  comprobar(
+    'C-43',
+    'Si la sección no se puede leer por una falla (un 503 simulado en el navegador), lo dice en su lugar con el motivo y «Reintentar»; el marco sigue diciendo el acceso del vínculo y no pregunta nada más: una falla no es una revocación. «Reintentar» trae la sección',
+    /No pudimos cargar esta vista/.test(bloque) &&
+      /BE no está disponible en este momento/.test(bloque) &&
+      /Reintentar/.test(bloque) &&
+      conFalla.acceso === accesoEsperado('NUTRICION') &&
+      preguntoPorLaFalla === 0 &&
+      !(await page.$('.seccion-del-area .estado-de-grafico--error')) &&
+      trasReintentar.primerTitulo !== null,
+    `«${bloque}» · el marco: ${conFalla.acceso} · lecturas del resumen del asesorado: ${preguntoPorLaFalla} · tras reintentar: «${trasReintentar.primerTitulo}»`,
+  );
+
+  // F-09 · Si una lectura dice «no disponible», el marco vuelve a preguntar el acceso ────────────────────────
+  // Con respuestas simuladas en el navegador (la API y la base no se tocan). La revocación real se comprueba en el
+  // escenario descartable.
+  const NEUTRAL = 'No encontramos un recurso disponible para esta acción.';
+  const noDisponible = { coincide: delArea, accion: 'responder', status: 404, codigo: 'RESOURCE_NOT_FOUND' };
+  await entrar(`/pro/advisees/training?id=${A}`);
+  v.reglas.push(noDisponible);
+  const alNoEncontrar = await entrar(`/pro/advisees/nutrition?id=${A}&vista=resumen`);
+  await page.waitForFunction((s) => document.querySelector('.seccion-del-area')?.innerText.includes(s), { timeout: 30_000 }, NEUTRAL);
+  await quieto(page, v);
+  const conRecursoAusente = await marcoEnPantalla(page);
+  const preguntas = lecturas(alNoEncontrar).filter((u) => u.includes('/dashboard'));
+  comprobar(
+    'F-09',
+    'Si las lecturas de la sección responden «no disponible» (simulado), la sección dice el texto neutral de siempre y el marco pregunta una sola vez qué deja leer el resumen del asesorado; como el área se puede leer, sigue diciendo el acceso del vínculo',
+    conRecursoAusente.cuerpo.includes(NEUTRAL) && preguntas.length === 1 && preguntas[0].startsWith(`/advisees/${A}/dashboard`) && conRecursoAusente.acceso === accesoEsperado('NUTRICION'),
+    `la sección: «${conRecursoAusente.cuerpo.slice(0, 80)}» · preguntas al resumen: ${preguntas.length} · el marco: ${conRecursoAusente.acceso}`,
+  );
+  // El resumen real, con Nutrición marcada como no disponible: es lo único que cambia.
+  const real = await leerApi(v, `/advisees/${A}/dashboard`);
+  const sinNutricion = { coincide: (u) => u.includes(`/advisees/${A}/dashboard`), accion: 'entregar', cuerpo: { ...real, data: { ...real.data, domains: { ...real.data.domains, nutrition: { available: false, reason: 'NOT_AVAILABLE_TO_VIEW' } } } } };
+  v.reglas.push(sinNutricion);
+  await entrar(`/pro/advisees/training?id=${A}`);
+  const deEntrenamiento = await marcoEnPantalla(page);
+  await entrar(`/pro/advisees/nutrition?id=${A}&vista=resumen`);
+  await page.waitForFunction(() => /Acceso no disponible/.test(document.querySelector('header.marco-del-area .ficha__acceso')?.innerText ?? ''), { timeout: 30_000 }).catch(() => {});
+  const sinAcceso = await marcoEnPantalla(page);
+  v.reglas.splice(v.reglas.indexOf(sinNutricion), 1);
+  v.reglas.splice(v.reglas.indexOf(noDisponible), 1);
+  comprobar(
+    'F-09',
+    'Si además el resumen dice que Nutrición ya no se puede leer (simulado), el marco de Nutrición dice «Acceso no disponible» y deja de decir «Activo»; el de Entrenamiento, que no recibió ningún «no disponible», sigue diciendo el suyo. No dice quién lo retiró ni por qué',
+    sinAcceso.acceso === 'Acceso actual Nutrición: Acceso no disponible' && !/Activo/.test(sinAcceso.acceso) && deEntrenamiento.acceso === accesoEsperado('ENTRENAMIENTO') && !/revoc|retir|motivo/i.test(sinAcceso.acceso),
+    `Nutrición: ${sinAcceso.acceso} · Entrenamiento: ${deEntrenamiento.acceso}`,
+  );
+  // Sin las respuestas simuladas, «Actualizar» devuelve la sección y el acceso del vínculo.
+  const alVolverALeer = await actualizar();
+  await quieto(page, v);
+  await page.waitForFunction((s) => !document.querySelector('.seccion-del-area')?.innerText.includes(s), { timeout: 30_000 }, NEUTRAL).catch(() => {});
+  await quieto(page, v);
+  const repuesto = await marcoEnPantalla(page);
+  comprobar(
+    'F-09',
+    'Cuando las lecturas vuelven a responder, «Actualizar» trae la sección y el marco vuelve a decir el acceso del vínculo (vuelve a preguntar también el resumen, porque ya había tenido que preguntarlo)',
+    !repuesto.cuerpo.includes(NEUTRAL) && repuesto.primerTitulo !== null && repuesto.acceso === accesoEsperado('NUTRICION') && lecturas(alVolverALeer).filter((u) => u.includes('/dashboard')).length === 1,
+    `la sección empieza con «${repuesto.primerTitulo}» · el marco: ${repuesto.acceso} · preguntas al resumen: ${lecturas(alVolverALeer).filter((u) => u.includes('/dashboard')).length}`,
+  );
+
+  // Los estados conservan el título y el camino de vuelta ───────────────────────────────────────────────────
+  const sinCuenta = { coincide: (u) => /\/api\/v1\/me$/.test(u), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+  v.reglas.push(sinCuenta);
+  await cupo(v, 60);
+  await ir(page, `/pro/advisees/anthropometry?id=${A}`);
+  await page.waitForSelector('header.marco-del-area', { timeout: 30_000 });
+  await quieto(page, v);
+  const sinSaberQuienEs = await marcoEnPantalla(page);
+  v.reglas.splice(v.reglas.indexOf(sinCuenta), 1);
+  await clic(page, '.seccion-del-area button', 'Reintentar');
+  await quieto(page, v);
+  await page.waitForSelector(HORA, { timeout: 30_000 });
+  const repuestoElMarco = await marcoEnPantalla(page);
+  comprobar(
+    'F-01',
+    'Si no se puede leer la cuenta (un 503 simulado), la página conserva el título del área y el camino de vuelta, y la falla va en el lugar de la sección, con «Reintentar»; no hay secciones ni acceso que mostrar. «Reintentar» trae el marco entero',
+    igual(sinSaberQuienEs.titulos, ['Antropometría']) &&
+      sinSaberQuienEs.volver?.texto === 'Volver a la ficha' &&
+      sinSaberQuienEs.pestanas.length === 0 &&
+      sinSaberQuienEs.acceso === null &&
+      /Reintentar/.test(sinSaberQuienEs.cuerpo) &&
+      repuestoElMarco.pestanas.length === 4 &&
+      repuestoElMarco.acceso === accesoEsperado('ANTROPOMETRIA'),
+    `con la falla: ${sinSaberQuienEs.titulos.join(' | ')} · ${sinSaberQuienEs.volver?.texto} · ${sinSaberQuienEs.pestanas.length} secciones · «${sinSaberQuienEs.cuerpo.slice(0, 60)}» — después: ${repuestoElMarco.pestanas.length} secciones · ${repuestoElMarco.acceso}`,
+  );
+
+  // Teclado y accesibilidad ───────────────────────────────────────────────────────────────────────────────
+  await entrar(`/pro/advisees/nutrition?id=${A}&vista=resumen`);
+  await page.click('#titulo-del-area');
+  const orden = [];
+  for (let i = 0; i < 6; i++) {
+    await page.keyboard.press('Tab');
+    orden.push(await page.evaluate(() => document.activeElement?.innerText.replace(/\s+/g, ' ').trim() ?? ''));
+  }
+  const faltas = await axe(page);
+  comprobar(
+    'F-01',
+    'Con el teclado, después del título se llega a «Actualizar» y después a las cuatro secciones, en su orden; axe no encuentra faltas en la página con el marco',
+    igual(orden.slice(0, 5), ['Actualizar', 'Resumen', 'Plan', 'Registros', 'Revisiones']) && faltas.length === 0,
+    `Tab: ${orden.join(' → ')} · axe: ${faltas.length === 0 ? 'sin faltas' : faltas.map((f) => f.id).join(', ')}`,
+  );
+
+  // El marco a 1280 y a 1024 px ───────────────────────────────────────────────────────────────────────────
+  const anchos = [];
+  for (const ancho of [1280, 1024]) {
+    await page.setViewport({ width: ancho, height: 900 });
+    for (const area of [AREAS[2], AREAS[3]]) {
+      await entrar(`/pro/advisees/${area.clave}?id=${A}`);
+      const m = await marcoEnPantalla(page);
+      anchos.push({ ancho, area: area.titulo, alto: m.caja.abajo - m.caja.arriba, renglones: m.renglones.map((r) => r.abajo - r.arriba), desborda: !(await sinDesborde(page)) });
+    }
+  }
+  await page.setViewport({ width: 1440, height: 900 });
+  comprobar(
+    'F-06',
+    'A 1280 y a 1024 px el marco de Antropometría y el de Información (los de textos más largos) conservan sus tres renglones con el alto de 1440: nada baja de renglón ni desborda la página',
+    anchos.every((x) => !x.desborda && x.alto === ficha.alto && igual(x.renglones, ficha.renglones)),
+    anchos.map((x) => `${x.ancho} · ${x.area}: ${x.alto} px (${x.renglones.join(' + ')})${x.desborda ? ' DESBORDA' : ''}`).join(' — '),
+  );
+  comprobar('—', 'El marco de las áreas no produjo errores de página ni respuestas con error fuera de las simuladas', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true } = {}) {
   const { navegador, page, v } = await abrir();
   // Los guiones que pide la página, desde antes de entrar: para saber con qué se cargó la ficha.
   const guiones = [];
@@ -4278,6 +4695,10 @@ async function fichaRecompuesta({ resumen = true, linea = true, analizar = true,
     if (espacio) {
       empezarDeCero();
       await espacioProfesional(page, v);
+    }
+    if (areas) {
+      empezarDeCero();
+      await marcoDeLasAreas(page, v);
     }
   } finally {
     await navegador.close();
@@ -4826,6 +5247,38 @@ async function descartable() {
         (personaDespues?.conAcceso ?? '').length > 0,
       `antes: ${espacioAntes.pantalla.personas.find((p) => p.id === d.aseId)?.conAcceso} · después: ${personaDespues?.conAcceso} · ${personaDespues?.sinAcceso.join('; ')}`,
     );
+    // e) El marco de un área, después de revocar (WP-ESCRITORIO-AREAS, parte 0), con respuestas reales de la API: el de
+    // Antropometría dice el estado de su vínculo con las palabras de BE y no «Activo», y su sección, el texto neutral.
+    // El de un área que sigue con acceso, mirado con el mismo selector, dice «Activo».
+    const RUTA_DEL_ALCANCE = { NUTRICION: 'nutrition', ENTRENAMIENTO: 'training', ANTROPOMETRIA: 'anthropometry' };
+    const conAcceso = (await leerApi(pro.v, '/me/relationships')).data.find(
+      (x) => x.advisee.identityId === d.aseId && x.scope.code !== 'ANTROPOMETRIA' && x.relationshipState === 'ACEPTADO' && x.consentState === 'ACTIVE' && x.accessMode === 'CONTEXTUAL',
+    );
+    const abrirArea = async (clave) => {
+      await cupo(pro.v, 60);
+      await ir(pro.page, `/pro/advisees/${clave}?id=${d.aseId}`);
+      await pro.page.waitForSelector('header.marco-del-area .ficha__consulta .nota', { timeout: 30_000 });
+      await quieto(pro.page, pro.v);
+    };
+    await abrirArea(RUTA_DEL_ALCANCE[conAcceso?.scope.code] ?? 'nutrition');
+    const marcoConAcceso = await marcoEnPantalla(pro.page);
+    await abrirArea('anthropometry');
+    await pro.page.waitForFunction(() => /No encontramos un recurso disponible/.test(document.querySelector('.seccion-del-area')?.innerText ?? ''), { timeout: 30_000 }).catch(() => {});
+    await quieto(pro.page, pro.v);
+    const marcoRevocado = await marcoEnPantalla(pro.page);
+    comprobar(
+      'F-09',
+      'Después de una revocación real, el marco de Antropometría dice «Consentimiento revocado» y «Acceso no disponible», no «Activo», y su sección dice el texto neutral de siempre; el de un área que sigue con acceso dice «Activo · acceso contextual»',
+      !!conAcceso &&
+        marcoRevocado?.acceso === 'Acceso actual Antropometría: Consentimiento revocado Acceso no disponible' &&
+        !/Activo/.test(marcoRevocado.acceso) &&
+        marcoRevocado.cuerpo.includes('No encontramos un recurso disponible para esta acción.') &&
+        marcoRevocado.pestanas.length === 4 &&
+        marcoConAcceso?.acceso === `Acceso actual ${conAcceso.scope.label}: Activo · acceso contextual`,
+      `Antropometría: ${marcoRevocado?.acceso} · «${(marcoRevocado?.cuerpo ?? '').slice(0, 70)}» · ${conAcceso?.scope.label ?? 'sin otra área con acceso'}: ${marcoConAcceso?.acceso}`,
+    );
+    // La imagen del marco con el área revocada (el tema claro quedó puesto en el paso anterior).
+    await captura(pro.page, pro.v, 'area-despues-de-revocar-1440-claro');
   } finally {
     await pro.navegador.close();
   }
@@ -4839,10 +5292,11 @@ try {
   if (modo === 'capturas' || modo === 'todo') await capturas();
   if (modo === 'descartable') await descartable();
   if (modo === 'menu') await encabezadoYMenu();
-  if (modo === 'analizar') await fichaRecompuesta({ resumen: false, linea: false, espacio: false });
-  if (modo === 'resumen') await fichaRecompuesta({ linea: false, analizar: false, espacio: false });
-  if (modo === 'linea') await fichaRecompuesta({ resumen: false, analizar: false, espacio: false });
-  if (modo === 'espacio') await fichaRecompuesta({ resumen: false, linea: false, analizar: false });
+  if (modo === 'analizar') await fichaRecompuesta({ resumen: false, linea: false, espacio: false, areas: false });
+  if (modo === 'resumen') await fichaRecompuesta({ linea: false, analizar: false, espacio: false, areas: false });
+  if (modo === 'linea') await fichaRecompuesta({ resumen: false, analizar: false, espacio: false, areas: false });
+  if (modo === 'espacio') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, areas: false });
+  if (modo === 'areas') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {

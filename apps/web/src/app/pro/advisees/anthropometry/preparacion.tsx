@@ -39,6 +39,7 @@ import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { fecha, numeroEnCampo } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { useCambiosSinGuardar } from '../marco-del-area';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 import { Figura } from './figura';
 
@@ -183,11 +184,15 @@ function Preparacion({
   const [confirmando, setConfirmando] = useState(false);
   const [activa, setActiva] = useState<string | null>(null);
   const [errores, setErrores] = useState<Record<string, string>>({});
+  // Algo se escribió desde la última vez que se leyó el borrador: «Actualizar» pregunta antes de volver a leerlo.
+  const [tocado, setTocado] = useState(false);
+  useCambiosSinGuardar(tocado, 'la toma en preparación');
 
   /** Las métricas que declara el protocolo elegido (B10-07 §18): lo que la figura y la lista ofrecen. */
   const metricas = useMemo(() => metricasDelProtocolo(especificaciones.find((e) => e.versionId === protocolo)?.content), [especificaciones, protocolo]);
 
   useEffect(() => {
+    setTocado(false);
     setProtocolo((p) => p || protocoloPorDefecto);
     if (!borrador) {
       setEscritos({});
@@ -380,7 +385,7 @@ function Preparacion({
   const guardado = borrador ? ultimoGuardado(borrador) : null;
 
   return (
-    <div className="secciones">
+    <div className="secciones" onChange={() => setTocado(true)}>
       {aviso && aviso.tipo === 'exito' ? (
         <AvisoFlotante onCerrar={() => onAviso(null)}>
           <p>{aviso.texto}</p>

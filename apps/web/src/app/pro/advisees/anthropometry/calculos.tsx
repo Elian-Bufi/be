@@ -23,6 +23,7 @@ import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { api } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { useCambiosSinGuardar } from '../marco-del-area';
 import { useAntropometria } from './antropometria';
 
 type Estado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'listo'; metodos: MetodoApi[]; corridas: CorridaDeCalculoApi[] };
@@ -111,6 +112,7 @@ function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; 
   const intento = useClaveDeIntento();
   const [adoptando, setAdoptando] = useState(false);
   const [fundamento, setFundamento] = useState('');
+  useCambiosSinGuardar(adoptando && fundamento.trim() !== '', 'el fundamento de un resultado');
   const [enviando, setEnviando] = useState(false);
 
   /** El token de la referencia vigente viaja en la corrida: sin él, reemplazarla pisaría la decisión anterior. */

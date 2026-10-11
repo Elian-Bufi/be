@@ -11,25 +11,27 @@
  *
  * Cada lectura pasa por el PDP, sin caché (08 §27.3): una solicitud que dejó de ser revelable simplemente deja de
  * listarse, y el detalle responde el mismo 404 neutral que lo inexistente (10-B10:407).
+ *
+ * WP-ESCRITORIO-AREAS (parte 0): el encabezado es el marco del área, común a las cuatro (`MarcoDelArea`). Como
+ * Información es de las tres áreas, el acceso actual las nombra a las tres. Si se llegó desde Entrenamiento
+ * (`volver=entrenamiento`), el camino de vuelta lleva a Entrenamiento y lo dice: antes decía «donde estabas» y llevaba
+ * al Resumen de la ficha.
  */
-import { COPY_FORMULARIOS, COPY_VINCULO, type RespuestaDeFormulario, type SolicitudDeFormulario } from '@be/domain';
-import Link from 'next/link';
+import { COPY_FORMULARIOS, type RespuestaDeFormulario, type SolicitudDeFormulario } from '@be/domain';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
-import { Pestanas } from '../../../../components/pestanas';
-import { Cargando, ErrorConReintento } from '../../../../components/estados';
-import { MigasDelAsesorado } from '../../../../components/migas';
 import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
-import { SinEspacioProfesional, useEspacioProfesional } from '../../espacio-profesional';
-import { conVolver, EnlaceDeRetorno, useRetornoALaFicha } from '../retorno-y-preparacion';
+import { useEspacioProfesional } from '../../espacio-profesional';
+import { EstadoDeLecturaDelArea, MarcoDelArea } from '../marco-del-area';
+import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { VistaDePedido } from './pedir';
 
 export const VISTAS = [
-  { clave: 'solicitudes', texto: COPY_FORMULARIOS.solicitudes },
-  { clave: 'pedir', texto: COPY_FORMULARIOS.pedirInformacion },
+  { clave: 'solicitudes', texto: COPY_FORMULARIOS.solicitudes, icono: 'lista' },
+  { clave: 'pedir', texto: COPY_FORMULARIOS.pedirInformacion, icono: 'solicitar' },
 ] as const;
 export type Vista = (typeof VISTAS)[number]['clave'];
 
@@ -53,24 +55,8 @@ export function useFormularios(): ContextoDeFormularios {
   return c;
 }
 
-/** El 404 del profesional, con el mismo texto neutral de siempre (10-B10:407). */
-function NoDisponible() {
-  return (
-    <Aviso tipo="info">
-      <p>{COPY_VINCULO.recursoNoDisponible}</p>
-      <p>
-        <Link href="/pro">{COPY_VINCULO.volver}</Link>
-      </p>
-    </Aviso>
-  );
-}
-
-export function EstadoDeLectura({ r, onReintentar, children }: { r: Resultado<unknown> | null; onReintentar: () => void; children: ReactNode }) {
-  if (!r) return <Cargando />;
-  if (!r.ok && r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') return <NoDisponible />;
-  if (!r.ok) return <ErrorConReintento onReintentar={onReintentar} />;
-  return <>{children}</>;
-}
+/** Resultado de una lectura de la vista: 404 → el texto neutral de siempre (10-B10:407); otra falla → su motivo y «Reintentar». */
+export const EstadoDeLectura = EstadoDeLecturaDelArea;
 
 export function Formularios() {
   const parametros = useSearchParams();
@@ -79,37 +65,46 @@ export function Formularios() {
   const vista: Vista = VISTAS.some((v) => v.clave === vistaPedida) ? (vistaPedida as Vista) : 'solicitudes';
   const ruta = usePathname();
   const router = useRouter();
-  const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees/forms?id=${id}`);
+  const sesion = useEspacioProfesional(`/pro/advisees/forms?id=${id}`);
+  const { token, sesionPerdida } = sesion;
 
   const retorno = useRetornoALaFicha(id);
+  // Desde Entrenamiento se llega con `volver=entrenamiento`, que no es una dirección de la ficha: la vuelta es a Entrenamiento.
+  const vuelta = parametros.get('volver') === 'entrenamiento' ? { href: `/pro/advisees/training?id=${encodeURIComponent(id)}&vista=resumen`, texto: 'Volver a Entrenamiento' } : null;
   const irA = useCallback((v: Vista) => router.replace(conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`, retorno.valor)), [router, ruta, id, retorno.valor]);
   const [exito, setExito] = useState<string | null>(null);
   const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, irA, avisar: setExito } : null), [token, id, sesionPerdida, irA]);
 
-  if (!token || !contexto) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
-  if (yo.tipo === 'cargando') return <Cargando />;
-  if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
-  if (yo.tipo === 'sin-espacio') return <SinEspacioProfesional />;
-
   return (
-    <Contexto.Provider value={contexto}>
-      <MigasDelAsesorado id={id} pestana={COPY_FORMULARIOS.pestana} volver={retorno.href} />
-      <h1>{COPY_FORMULARIOS.pestana}</h1>
-      <EnlaceDeRetorno href={retorno.href} />
-      <Pestanas etiqueta="Secciones de Información" vistas={VISTAS} actual={vista} href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, retorno.valor)} />
-      {exito ? (
-        <AvisoFlotante onCerrar={() => setExito(null)} seQueda={!!retorno.href}>
-          <p>{exito}</p>
-          {retorno.href ? (
-            <p>
-              <a href={retorno.href}>Volver a la ficha, donde estabas</a>
-            </p>
+    <MarcoDelArea
+      alcance={null}
+      titulo={COPY_FORMULARIOS.pestana}
+      etiqueta="Secciones de Información"
+      id={id}
+      sesion={sesion}
+      retorno={retorno}
+      vuelta={vuelta}
+      vistas={VISTAS}
+      vista={vista}
+      href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, retorno.valor)}
+    >
+      {contexto ? (
+        <Contexto.Provider value={contexto}>
+          {exito ? (
+            <AvisoFlotante onCerrar={() => setExito(null)} seQueda={!!retorno.href}>
+              <p>{exito}</p>
+              {retorno.href && !vuelta ? (
+                <p>
+                  <a href={retorno.href}>Volver a la ficha, donde estabas</a>
+                </p>
+              ) : null}
+            </AvisoFlotante>
           ) : null}
-        </AvisoFlotante>
+          {vista === 'solicitudes' ? <VistaDeSolicitudes /> : null}
+          {vista === 'pedir' ? <VistaDePedido /> : null}
+        </Contexto.Provider>
       ) : null}
-      {vista === 'solicitudes' ? <VistaDeSolicitudes /> : null}
-      {vista === 'pedir' ? <VistaDePedido /> : null}
-    </Contexto.Provider>
+    </MarcoDelArea>
   );
 }
 

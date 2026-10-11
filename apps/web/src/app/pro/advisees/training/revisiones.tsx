@@ -25,6 +25,7 @@ import { Aviso, Campo, ResumenDeErrores } from '../../../../components/formulari
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { useCambiosSinGuardar } from '../marco-del-area';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { referenciasMarcadas } from '../evidencia';
 import { SeleccionDeEvidencia, type CandidataDeEvidencia } from '../evidencia-de-revision';
@@ -161,6 +162,10 @@ function FormularioDeRevision({
   const [fundamentoDelObjetivo, setFundamentoDelObjetivo] = useState('');
   const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
   const [envios, setEnvios] = useState(0);
+  useCambiosSinGuardar(
+    abierto && (evidencia.size > 0 || resultado !== '' || [interpretacion, fundamento, accion, proxima, nuevoObjetivo, fundamentoDelObjetivo].some((t) => t.trim() !== '')),
+    'la revisión',
+  );
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 

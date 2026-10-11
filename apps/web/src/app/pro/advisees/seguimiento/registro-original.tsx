@@ -38,12 +38,12 @@ const DESTINO: Readonly<Partial<Record<OrigenDeDato['type'], { readonly ruta: st
   NUTRITION_PLAN_VERSION: { ruta: '/pro/advisees/nutrition', vista: 'plan', texto: 'Ver en Nutrición · Plan' },
   NUTRITION_OBJECTIVE_VERSION: { ruta: '/pro/advisees/nutrition', vista: 'resumen', texto: 'Ver en Nutrición' },
   NUTRITION_REVIEW: { ruta: '/pro/advisees/nutrition', vista: 'revisiones', texto: 'Ver en Nutrición · Revisiones' },
-  TRAINING_EXECUTION: { ruta: '/pro/advisees/training', vista: 'ejecuciones', texto: 'Ver en Entrenamiento · Ejecuciones' },
+  TRAINING_EXECUTION: { ruta: '/pro/advisees/training', vista: 'ejecuciones', texto: 'Ver en Entrenamiento · Registros' },
   TRAINING_PLAN_VERSION: { ruta: '/pro/advisees/training', vista: 'plan', texto: 'Ver en Entrenamiento · Plan' },
   TRAINING_OBJECTIVE_VERSION: { ruta: '/pro/advisees/training', vista: 'resumen', texto: 'Ver en Entrenamiento' },
   TRAINING_REVIEW: { ruta: '/pro/advisees/training', vista: 'revisiones', texto: 'Ver en Entrenamiento · Revisiones' },
-  ANTHROPOMETRIC_EVALUATION: { ruta: '/pro/advisees/anthropometry', vista: 'evaluaciones', texto: 'Ver en Antropometría · Evaluaciones' },
-  ANTHROPOMETRIC_MEASUREMENT: { ruta: '/pro/advisees/anthropometry', vista: 'evaluaciones', texto: 'Ver en Antropometría · Evaluaciones' },
+  ANTHROPOMETRIC_EVALUATION: { ruta: '/pro/advisees/anthropometry', vista: 'evaluaciones', texto: 'Ver en Antropometría · Tomas' },
+  ANTHROPOMETRIC_MEASUREMENT: { ruta: '/pro/advisees/anthropometry', vista: 'evaluaciones', texto: 'Ver en Antropometría · Tomas' },
   FOLLOW_UP_PROCESS: { ruta: '/pro/advisees', vista: '', texto: 'Ver el resumen' },
 };
 
