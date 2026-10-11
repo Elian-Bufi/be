@@ -1,0 +1,27 @@
+DETECTADA     una revisión sin fecha no entra en «Revisiones» → falla: las vistas de «Pendientes» reparten los siete tipos: cada uno está en  | la cantidad que anuncia cada vista es la cantidad de filas que trae, y | filtrar no reordena: las filas salen en el orden en que llegaron, y la | una selección es una vista con nombre solo si son exactamente sus tipo
+DETECTADA     «Sin plan activo» está en dos vistas → falla: las vistas de «Pendientes» reparten los siete tipos: cada uno está en  | la cantidad que anuncia cada vista es la cantidad de filas que trae, y | una selección es una vista con nombre solo si son exactamente sus tipo
+DETECTADA     filtrar por área no filtra → falla: filtrar no reordena: las filas salen en el orden en que llegaron, y la
+DETECTADA     con un área elegida, la vista sigue marcada → falla: una selección es una vista con nombre solo si son exactamente sus tipo
+DETECTADA     una parte de una vista se toma por la vista → falla: una selección es una vista con nombre solo si son exactamente sus tipo
+DETECTADA     las cantidades de «Planes» son las de «Revisiones» → falla: la cantidad que anuncia cada vista es la cantidad de filas que trae, y
+DETECTADA     se lee solo la primera página → falla: una lista de varias páginas se lee siguiendo el cursor, sin repetir ni | con más páginas que el tope, la lista queda marcada como incompleta: s | si el cursor vence a mitad de camino, se empieza de nuevo una vez y no | un cursor que vence dos veces es una falla: no se reintenta sin fin | una falla corta la lectura y es el resultado: con una parte de la list
+DETECTADA     con páginas sin leer, la lista se da por completa → falla: con más páginas que el tope, la lista queda marcada como incompleta: s
+DETECTADA     un cursor vencido es una falla, sin empezar de nuevo → falla: si el cursor vence a mitad de camino, se empieza de nuevo una vez y no | un cursor que vence dos veces es una falla: no se reintenta sin fin
+DETECTADA     un cursor vencido se reintenta sin fin → falla: un cursor que vence dos veces es una falla: no se reintenta sin fin
+DETECTADA     un «cursor vencido» en la primera página también vuelve a empezar → falla: una falla corta la lectura y es el resultado: con una parte de la list
+DETECTADA     después de una falla se sigue con lo leído → falla: un cursor que vence dos veces es una falla: no se reintenta sin fin | una falla corta la lectura y es el resultado: con una parte de la list
+DETECTADA     la «primera» página es la última leída → falla: una lista de varias páginas se lee siguiendo el cursor, sin repetir ni
+DETECTADA     las áreas, en el orden de la lista → falla: una persona, un renglón: sus áreas con acceso van en el orden de BE, n
+DETECTADA     los vínculos de la cuenta como asesorada entran al directorio → falla: los vínculos donde la cuenta es la asesorada no son de este directorio
+DETECTADA     un vínculo pausado cuenta como acceso → falla: un área sin acceso se dice con las palabras de BE, las mismas de `esta | «con acceso» es exactamente lo que BE llama «Activo · acceso contextua | con varios vínculos en un área, el resumen dice uno: el que da acceso;
+DETECTADA     el estado sin su detalle → falla: un área sin acceso se dice con las palabras de BE, las mismas de `esta
+DETECTADA     un vínculo terminado tapa al pausado → falla: con varios vínculos en un área, el resumen dice uno: el que da acceso;
+DETECTADA     la búsqueda distingue mayúsculas y signos → falla: se busca por la referencia: sin acentos ni signos, con todas las palab
+DETECTADA     alcanza con una de las palabras buscadas → falla: se busca por la referencia: sin acentos ni signos, con todas las palab
+DETECTADA     sin registros, siempre «en el período» → falla: el último registro es el día en que ocurrió, en la zona de la respuest
+DETECTADA     el día del último registro, en UTC → falla: el último registro es el día en que ocurrió, en la zona de la respuest
+DETECTADA     un formulario se abre en la pestaña de su área → falla: «Abrir» lleva a la vista que resuelve el pendiente, la que dice la API
+DETECTADA     «Revisión hoy» dicha como «en 0 días» → falla: cada tipo de pendiente se dice con la frase de BE; la fecha, sin el añ
+DETECTADA     un pendiente sin fecha inventa «hoy» → falla: cada tipo de pendiente se dice con la frase de BE; la fecha, sin el añ
+
+25 de 25 mutaciones detectadas

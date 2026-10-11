@@ -226,10 +226,11 @@ Información).
   la página no se desplaza de costado y solo las tablas se desplazan dentro de su caja.
 - **Lo principal de cada vista empieza en la primera pantalla a 1280 × 800:** en el Resumen, las tarjetas por área, con
   su objetivo y su plan; en Analizar, las preguntas o la pregunta en curso; en la línea de tiempo, las vistas con nombre
-  y los primeros días. A 1440 × 900, el Resumen muestra las tres tarjetas enteras y el valor de cada indicador (II.3),
-  y la línea de tiempo, seis días enteros con todos sus hechos (II.6). Si no entra, cambia la composición, no la letra
-  (I.5). La regla de los 390 px de ancho vale para el website del asesorado y para la pestaña Antropometría (II.9 y
-  II.10).
+  y los primeros días; en el Espacio profesional, los pendientes y el directorio. A 1440 × 900, el Resumen muestra las
+  tres tarjetas enteras y el valor de cada indicador (II.3); la línea de tiempo, seis días enteros con todos sus hechos;
+  y el Espacio profesional, sus dos tarjetas enteras con siete pendientes (II.6). Si no entra, cambia la composición,
+  no la letra (I.5). La regla de los 390 px de ancho vale para el website del asesorado y para la pestaña Antropometría
+  (II.9 y II.10).
 - **Zonas con sentido, no columnas porque sí.** En Analizar, una barra arriba (la pregunta, las métricas y los modos)
   y, debajo, los gráficos y la lectura lado a lado desde 1024 px; en el Resumen, una tarjeta por área, lado a lado, y
   debajo los indicadores. La grilla ubica; el orden del documento y del teclado es el que se ve (WCAG 1.3.2 y 2.4.3).
@@ -463,6 +464,30 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   selecciones de un asesorado, lo avisan al guardar y las piden de nuevo en otro. En un análisis están en «Más
   acciones», que se abre solo cuando se acaba de retomar una, para que su aviso se vea. Se retoman también desde el
   comienzo de Analizar, debajo de las preguntas, sin el formulario de guardar (no hay nada que guardar todavía).
+- **Espacio profesional** (`pro/espacio-profesional.tsx`; las vistas de «Pendientes», en `cartera.ts` del dominio):
+  **primero lo que hay que hacer y, al lado, a quién abrir.** Dos tarjetas; el formulario para pedir un vínculo y la
+  lista de solicitudes enviadas se abren cuando hacen falta.
+  - **El encabezado** dice el título, «Hoy» (la fecha con que la API clasificó las revisiones, con su día de la semana
+    y su año) y «Solicitar vínculo».
+  - **«Pendientes»** tiene vistas con nombre, como la línea de tiempo: «Todo», «Revisiones», «Planes», «Formularios» y
+    «Evaluaciones», cada una con la cantidad que trae. La cartera se lee entera al entrar y se cuenta en el navegador:
+    elegir una vista no le pide nada a la API. Una vista en cero se muestra con su cero. «Más filtros» guarda la
+    combinación libre: un área, un tipo exacto y el período.
+  - **Cada pendiente es una fila:** la persona, el área, lo pendiente con la frase de BE y, debajo, el último registro
+    como dato; «Abrir» lleva a la vista que lo resuelve. El orden es el de la urgencia, que fija la API: ningún color
+    por tipo, ningún «urgente», y el último registro nunca ordena ni resalta.
+  - **El período acota solo el último registro,** y lo dice. Sin período se mira toda la historia: sin ningún registro,
+    «Sin registros todavía»; con período, «Sin registros en el período».
+  - **El aviso de vista parcial** va debajo de las vistas: dice cómo leer sus cantidades. Al pie, la hora de la
+    consulta y «Actualizar», que vuelve a leer las tres listas de la página.
+  - **«Tus asesorados» es un directorio:** una persona por renglón, con su referencia y sus áreas en el orden de BE. Un
+    área sin acceso lleva el candado y las palabras de BE para ese estado, no un «no disponible» para todo. Tocar a la
+    persona abre el detalle de cada vínculo (finalidad, estado y desde cuándo); «Abrir» lleva a su ficha. Se busca por
+    la referencia, mientras se escribe.
+  - **Un diálogo con un formulario** (pedir un vínculo): el foco entra por el primer campo; Escape cierra, salvo
+    mientras se envía; al enviarse se cierra y la página dice qué pasó. Un aviso que queda adentro de un diálogo
+    cerrado no lo lee nadie.
+  - **`/pro` no lleva parámetros:** la vista elegida, los filtros y la búsqueda son de la visita.
 
 ### II.7 Estados del website profesional
 
@@ -485,11 +510,17 @@ Además de los de I.4:
   pregunta de Analizar que no se puede armar sin él. La vista parcial se avisa una sola vez, en el marco.
 - **Actualizar** vuelve a leer todo lo que la vista muestra (en la línea de tiempo, desde la primera tanda) y dice la
   hora de la consulta.
+- **En el Espacio profesional, cada lista falla por separado.** Si no llegan los pendientes, el bloque de estado lo
+  dice con su motivo, las vistas quedan sin número y «hoy» no se dice; el directorio sigue. Una vista sin filas dice
+  «Ningún pendiente coincide con lo elegido» y cuántos hay en total: «Nada pendiente con lo que BE puede saber…»
+  queda para la cartera vacía.
+- **Una cantidad se dice sobre una lista leída entera.** Si quedaron páginas sin leer, es «al menos» («200+»); si la
+  lectura falló, no hay número.
 
 ### II.8 Componentes y patrones del website
 
-Viven en `apps/web/src/components/`, en `apps/web/src/app/pro/advisees/` y en `globals.css`. Antes de crear otro, se
-usa uno de estos.
+Viven en `apps/web/src/components/`, en `apps/web/src/lib/`, en `apps/web/src/app/pro/` y en `globals.css`. Antes de
+crear otro, se usa uno de estos.
 
 | Pieza | Para qué | Ejemplo |
 |---|---|---|
@@ -518,11 +549,16 @@ usa uno de estos.
 | `BloqueDeEstado` | Un estado dicho en el lugar de lo que falta: ícono, qué pasó, por qué y qué se puede hacer | «No pudimos completar esta parte» + «Reintentar» |
 | `.tarjeta-de-pregunta` | Una pregunta como botón entero, con lo que muestra | Las preguntas principales de Analizar |
 | `.aviso-de-filtro` | Un filtro que viene de otra vista, explicado y con su salida | «Lo nuevo desde la revisión…» + «Ver todo el período elegido» |
-| `.vista-de-la-linea` | Una vista con nombre: un filtro con el nombre de lo que se busca y la cantidad de hechos que trae. La elegida va llena | «Hitos 19» |
+| `BotonDeVista` · `.vista-de-la-linea` | Una vista con nombre: un filtro con el nombre de lo que se busca y la cantidad que trae. La elegida va llena. La usan la línea de tiempo y «Pendientes» | «Hitos 19», «Revisiones 3» |
 | `.entrada` | Un hecho en un renglón que se abre entero: ícono o hora, nombre, lo que lo distingue, sus rasgos y la flecha | «Almuerzo · Arroz con pollo y brócoli · Rectificado» |
 | `.grupo-de-hechos` | Lo de todos los días, junto en un renglón que dice cuánto hay y lo que tiene de distinto; se abre en el lugar | «Comidas · 4 registradas · 1 anulada» |
 | `.detalle-del-hecho` | El detalle de lo elegido, al costado de su lista, sin taparla; acompaña el desplazamiento | El de un hecho de la línea de tiempo |
 | `renglonDelHecho` (website) · `rasgosDeUnHecho` (dominio) | Cómo se escribe un hecho en un renglón, y qué rasgos lleva. Sale de la entrada de la API; no calcula ni completa | «Sesión A · Tren inferior · 7 series con datos» |
+| `.tarjeta-del-espacio` | Una tarjeta del Espacio profesional: el ícono, el título y lo que lo acompaña, en un renglón | «Pendientes», «Tus asesorados» |
+| `.persona` | Una persona del directorio: su referencia y sus áreas abren el detalle de sus vínculos; al lado, «Abrir» | «Asesorado · a9be23 · Nutrición · Entrenamiento · Antropometría» |
+| `todasLasPaginas` (dominio) · `useListaCompleta` | Una lista leída entera, para contarla o buscar en ella: dice si quedó incompleta y, si falló, por qué | Los pendientes de la cartera; los vínculos de la ficha |
+| `motivoDeFalla` · `razonDeFalla` · `ICONO_DE_FALLA` (`lib/fallas.ts`) | Por qué falló una lectura, con sus palabras y su ícono, en todo el website profesional | «Hubo muchas consultas seguidas. Esperá un minuto y reintentá.» |
+| `.dialogo--formulario` | Un formulario corto en un diálogo: el foco en el primer campo, «Volver» y la acción | «Solicitar vínculo» |
 
 **Reglas que salieron de este trabajo:**
 - **La fecha que importa nombra al registro.** La fecha de ocurrencia es lo principal. La de registro es un metadato:
@@ -1019,6 +1055,16 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | «Actualizar» en la línea de tiempo | Volvía a leer la primera tanda y le pegaba las siguientes de la lectura anterior. | Vuelve a leer desde la primera tanda (II.7). | Corregida | 4 |
 | El registro de un plan activado | Desde la línea de tiempo, su planificación decía «Versión 0». | Dice su número de versión. | Corregida | 4 |
 | La ayuda de una vista | La tenían el Resumen y Analizar. | Las tres vistas de la ficha tienen la suya. | Ampliada | 4 |
+| El Espacio profesional | Cuatro tarjetas abiertas: pendientes, asesorados, solicitudes y el formulario. 2.697 px a 1440 px de ancho: tres pantallas. | Dos tarjetas (los pendientes y el directorio) y dos diálogos. Entra en la primera pantalla, también con siete pendientes (II.6). | Sustituida | 5 |
+| Los filtros de «Pendientes» | «Dominio» y «Tipo de pendiente», a la vista; cada cambio era una lectura. | Vistas con nombre y cantidad; el área y el tipo exacto, en «Más filtros». Elegir no le pide nada a la API (II.6). | Sustituida | 5 |
+| «Sin registros en el período» | Se decía también sin un período elegido. | Sin período, «Sin registros todavía»; el período dice qué acota (II.6). | Corregida | 5 |
+| El último registro de un pendiente | Una columna, con el día y la hora. | Debajo de lo pendiente, con el día. | Sustituida | 5 |
+| «Tus asesorados» | Una tarjeta por persona, con un renglón por vínculo; las áreas, en el orden de la lista. | Un directorio: una persona por renglón, con sus áreas en el orden de BE y el detalle de cada vínculo a un clic; con buscador (II.6). | Sustituida | 5 |
+| Una falla en el Espacio profesional | «No pudimos cargar esta vista», sin motivo. | El bloque de estado, con su motivo, en cada lista (II.7). | Corregida | 5 |
+| Una vista o un filtro sin filas | «Nada pendiente con lo que BE puede saber…», como si la cartera estuviera vacía. | «Ningún pendiente coincide con lo elegido», con el total y «Ver todo» (II.7). | Corregida | 5 |
+| «Solicitar vínculo» y «Solicitudes enviadas» | Dos tarjetas, siempre abiertas. | A un clic, cada una en su diálogo (II.6). | Sustituida | 5 |
+| «Dominio» | El nombre del filtro y de la columna de «Pendientes». | «Área», como en el resto del website profesional. | Sustituida | 5 |
+| Una cantidad sobre una lista paginada | «Pendientes: 20+». | La lista se lee entera; si no, la cantidad dice «al menos» (II.7). | Nueva | 5 |
 
 ---
 
@@ -1050,7 +1096,6 @@ Son las mejoras de UX detectadas que todavía no entraron. Cada una entra en un 
   siempre, a 11,5 sp (un 4 % menos); dos filas desde ×1,15, enteras hasta ×1,8; con ×2, la fila de arriba queda a 21,8 sp
   en vez de 24 (`EVIDENCIA/INICIO-Y-NAVEGACION`). Falta mirarlo en un teléfono chico, y con la letra del fabricante (por
   ejemplo, la de Samsung), que puede ser más ancha que Roboto.
-- **Los filtros de «Pendientes» en el teléfono** ocupan una pantalla antes del primer pendiente.
 - **Un 503 intermitente de la API** (`P2028`: la transacción no pudo empezar a tiempo) con lecturas concurrentes y poca
   memoria. La pantalla lo muestra con su reintento. Es de la API, no de la interfaz. La mejora medida y el límite que
   queda están en `EVIDENCIA/P2028`; la ficha profesional lee de a cuatro (II.7).

@@ -597,6 +597,137 @@ con una positiva que usa el mismo selector.
   nombre de cada renglón y de la lupa, y el título de cada día.
 - La prueba de palabras prohibidas extendida a la ficha (E-05): sigue pendiente.
 
-## Lo que falta de la parte 2, y la parte 5
+## Parte 5 · Espacio profesional: los pendientes y el directorio (2026-10-11)
 
-Pendientes.
+El Espacio profesional mostraba cuatro tarjetas abiertas, una debajo de otra: los pendientes, los asesorados (un
+renglón por vínculo), las solicitudes enviadas y, al costado, el formulario para pedir un vínculo. Ahora son **dos
+tarjetas: primero lo que hay que hacer y, al lado, a quién abrir.** Los pendientes tienen vistas con nombre, que dicen
+cuántos traen; «Tus asesorados» es un directorio con buscador; el formulario y la lista de solicitudes se abren cuando
+hacen falta. No se quitó ninguna función ni cambió ningún parámetro: `/pro` sigue sin llevar ninguno. Sobre la base
+propia (`be_test_escritorio`, regenerada antes de la pasada) y la compilación estática del commit de código
+(4b84714).
+
+**Medido en la página real,** a 1440 px de ancho:
+
+| Qué | Antes | Ahora |
+|---|---|---|
+| Con los datos de prueba (dos pendientes, cuatro personas, nueve solicitudes) | 2.697 px de alto: tres pantallas (medido el 2026-10-11, antes de tocarla) | La última tarjeta termina en 606 px: entra en la primera pantalla |
+| Con siete pendientes, uno de cada tipo (respuesta simulada) y las mismas cuatro personas | — | Los pendientes terminan en 854 px y el directorio en 606: las dos tarjetas enteras en 900 px |
+| En otras ventanas, con esos siete pendientes | — | A 1920 × 950, lo mismo: 854 y 606 px. A 1280 × 900, los pendientes terminan en 980 px (las frases largas ocupan dos renglones) y el directorio, en 606: la última fila queda a medias |
+| Lecturas protegidas (las que cuentan para el límite de 120 por minuto) | Una al entrar y una más por cada cambio de «Dominio», de «Tipo» o de período | Una al entrar; ninguna al elegir una vista, un área o un tipo; una al cambiar el período y una en «Actualizar» |
+
+La imagen `parte-5/espacio-antes-y-ahora.png` compara las dos versiones a 1440 px, con el mismo escenario de datos (los
+identificadores cambian en cada generación).
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| El encabezado dice el título (el único de la página), «Hoy» con el día de la semana y el año de la fecha de la API, y «Solicitar vínculo» (E-93) | `recorrido.mjs funcional` (solas: `recorrido.mjs espacio`), E-93, contra `today` de la API | Pasa: «Hoy, domingo 11 oct 2026» | Verificado automáticamente |
+| Al entrar, los pendientes se leen una sola vez y de a 50; las otras dos listas, una vez cada una (E-83) | E-83, mirando los pedidos que hace la página | Pasa | Verificado automáticamente |
+| Las cinco vistas, en su orden, cada una con la cantidad que trae; las cuatro suman «Todo»; una vista en cero se muestra (E-84) | E-84, con las cantidades contadas a mano sobre la lista de la API | Pasa: Todo 2 · Revisiones 1 · Planes 1 · Formularios 0 · Evaluaciones 0 | Verificado automáticamente |
+| Cada vista trae lo que anuncia, queda elegida ella sola y elegirla no le pide nada a la API; volver a tocarla deja «Todo» (E-84) | E-84, una por vista | Pasa: ningún pedido | Verificado automáticamente |
+| Cada pendiente es una fila, en el orden de la API: la persona, el área, la frase de BE, el último registro (el día, en la zona de la respuesta) y «Abrir», con su destino y un nombre distinto en cada fila (E-87) | E-87, con la frase, el día y el destino escritos a mano por tipo | Pasa: «Revisión en 3 días · Último registro: 11 oct» y «Plan en borrador desde el 11 oct» | Verificado automáticamente |
+| Los siete tipos de pendiente, con su frase, su ícono, su último registro («Sin registros todavía» donde no hay) y su destino (E-98) | E-98, con una respuesta simulada en el navegador (`cartera-simulada.mjs`); la pantalla la valida con el contrato, como a una real | Pasa: 7, 3, 2, 1 y 1 | Verificado automáticamente, **sobre una respuesta simulada** |
+| «Más filtros»: con un área, las filas son las de esa área, ninguna vista queda elegida, lo puesto se lista con su salida y se dice cuántos coinciden; con un tipo exacto, acota más; las cantidades de las vistas no cambian; nada se le pide a la API (E-85) | E-85 | Pasa: «Un pendiente coincide, de 2.» | Verificado automáticamente |
+| El período se le pide a la API y no cambia qué está pendiente: las mismas filas, con el último registro de ese período; al quitarlo, vuelve el de toda la historia (E-86) | E-86, contra la API con el mismo período (anterior a todo lo registrado) | Pasa: «Sin registros en el período» con período; «Último registro: 11 oct» sin él | Verificado automáticamente |
+| «Actualizar» vuelve a leer las tres listas y dice la hora de la consulta (E-88) | E-88, mirando los pedidos | Pasa: una lectura de cada una | Verificado automáticamente |
+| El aviso de vista parcial está debajo de las vistas y arriba de la tabla, con el texto de BE, solo cuando la API lo dice (E-88) | Con los datos principales no está (la API dice que no); con la respuesta simulada, está; y **con una respuesta real**, en `recorrido.mjs descartable`: después de que la persona revoca un área, la API lo dice y la pantalla lo avisa | Pasa en los tres | Verificado automáticamente |
+| Una vista sin filas dice «Ningún pendiente coincide con lo elegido» y cuántos hay en total; no dice «Nada pendiente» (E-96) | E-96, con «Formularios» y «Evaluaciones», que en el escenario están en cero | Pasa | Verificado automáticamente |
+| Si falla la lectura de los pendientes, el bloque dice qué pasó, por qué y «Reintentar»; las vistas quedan sin número, «hoy» no se dice y el directorio sigue (E-96) | E-96, simulando en el navegador un 429 y un corte de red | Pasa: «Hubo muchas consultas seguidas. Esperá un minuto y reintentá.»; «No hay conexión con BE…» | Verificado automáticamente |
+| Si falla la lectura de los asesorados, el directorio lo dice con su motivo y los pendientes siguen (E-96) | E-96, simulando un 503 | Pasa | Verificado automáticamente |
+| Una cuenta profesional sin asesorados: «Nada pendiente con lo que BE puede saber…», las cinco vistas en cero, «Todavía no tenés asesorados activos en este contexto» (E-96) | E-96, en la sesión del tercero de `recorrido.mjs funcional` | Pasa: las cinco vistas en cero y «Solicitudes enviadas (0)» | Verificado automáticamente |
+| El directorio: una persona por renglón, en el orden de la API; el título cuenta personas; cada una, con su referencia y sus áreas en el orden de BE; «Abrir» lleva a su ficha (E-89) | E-89, contra los vínculos de la API | Pasa: 4 personas, «Nutrición · Entrenamiento · Antropometría» | Verificado automáticamente |
+| Tocar a una persona abre el detalle de cada vínculo: el área con su finalidad, el estado con las palabras de BE y desde cuándo (E-89) | E-89 | Pasa | Verificado automáticamente |
+| Un área sin acceso lleva el candado y las palabras de BE (E-89) | En `recorrido.mjs descartable`, después de revocar: «Antropometría: Consentimiento revocado · Acceso no disponible»; antes, estaba entre las áreas con acceso. Los seis estados, en la prueba de la función | Pasa | Verificado automáticamente |
+| El buscador se llama «Buscar por referencia» y filtra mientras se escribe, sin pedirle nada a la API; sin coincidencias lo dice y ofrece quitar la búsqueda (E-90) | E-90 | Pasa: «1 de 4» | Verificado automáticamente |
+| «Solicitudes enviadas (N)» cuenta las que envió el profesional y abre un diálogo que retiene el foco, se abre por su título y tiene una fila por solicitud; Escape lo cierra y devuelve el foco (E-92) | E-92, contra la API; con su prueba de la prueba (con un título que no puede recibir el foco, la medición lo dice) | Pasa: 9 filas | Verificado automáticamente |
+| «Solicitar vínculo» abre el formulario de siempre en un diálogo, con el foco en el primer campo; enviado vacío marca los dos campos y no le pide nada a la API; Escape lo cierra y devuelve el foco (E-91) | E-91 | Pasa | Verificado automáticamente |
+| Con un identificador que no es de nadie, dice lo mismo que por cualquier otro rechazo, sin revelar si la persona existe (E-91) | E-91 | Pasa: «No pudimos enviar la solicitud con esos datos. Revisá el identificador y el alcance.» | Verificado automáticamente |
+| Enviar una solicitud la crea: el diálogo se cierra, la página lo dice y el pie cuenta una más; pedir de nuevo lo mismo no crea otra y abre la lista, que la muestra (E-91) | En `recorrido.mjs descartable`, con cuentas que se crean para esa corrida, contra la API | Pasa: «Solicitud enviada. El asesorado decide si la acepta.»; «Ya hay una solicitud pendiente igual. Te mostramos esa.» | Verificado automáticamente |
+| La dirección sigue siendo `/pro`, sin parámetros (E-95) | E-95 | Pasa | Verificado automáticamente |
+| A 1440 × 900, con siete pendientes, las dos tarjetas terminan dentro de la primera pantalla (E-94) | E-94, sobre la respuesta simulada; con su prueba de la prueba (con filas de 215 px, la misma medición da que no entran) | Pasa | Verificado automáticamente, **sobre una respuesta simulada** |
+| A 1440 y a 1280 px el directorio va al lado; a 1024, debajo; sin desborde de costado a 1440, 1280, 1024, 768 ni 390 px (E-94) | E-94 | Pasa | Verificado automáticamente |
+| Con el teclado se llega, en el orden en que se ven, a cada control; cada uno mide 44 px o más y muestra el foco | PRO-22 | Pasa | Verificado automáticamente |
+| Sin faltas de accesibilidad con «Más filtros» y una persona abiertos, en los dos temas, y en los dos diálogos | axe (WCAG 2.2 A y AA) | Pasa | Verificado automáticamente |
+| La página entera no tiene porcentajes ni palabras que califiquen a nadie (E-87) | E-87; y `scripts/copy-pantallas.test.cjs`, que ahora recorre los textos de las pantallas de `/pro` con la lista de la cartera | Pasa | Verificado automáticamente |
+| Las vistas reparten los siete tipos, la cantidad que anuncia cada una es la de las filas que trae, filtrar no reordena (E-84, E-85) | `packages/domain`: 4 pruebas nuevas en `cartera.test.ts` | 617 de 617 (las 607 de antes, estas 4 y las 6 de la lectura de una lista) | Verificado automáticamente |
+| Leer una lista entera: sin repetir ni perder, incompleta si pasa del tope, de nuevo una vez si el cursor vence, y una falla es el resultado (E-83, E-97) | `packages/domain`: 6 pruebas nuevas (`todas-las-paginas.test.ts`). La función ya existía, sin pruebas | 6 de 6 | Verificado automáticamente |
+| El directorio (las áreas en el orden de BE, los seis estados con las palabras de BE, varios vínculos en un área, la búsqueda) y la fila de un pendiente (cada frase, el día en la zona de la respuesta, el destino) | `scripts/espacio-profesional.test.mjs`, en la batería | 11 de 11 | Verificado automáticamente |
+| Las pruebas nuevas detectan lo que protegen | `mutaciones-unitarias.mjs`: 25 reglas rotas de a una (6 de las vistas, 7 de la lectura de una lista, 7 del directorio y 5 de la fila); y los dos recorridos sobre una compilación rota a propósito en 16 puntos | 25 de 25 detectadas, ninguna por una prueba colgada. Sobre la compilación rota, las 16 roturas se detectaron: `espacio` falló en 17 comprobaciones (las que protegen esos puntos y dos que comparan las mismas filas) y pasó las otras 13; `descartable` falló en las 2 que protegen el envío repetido y el aviso de vista parcial real, y pasó las otras 19 (`resultados/prueba-de-la-prueba-de-los-recorridos.txt`) | Verificado automáticamente |
+| El resto de la ficha sigue funcionando | Los siete recorridos, sobre la compilación del commit de código | `recorrido.mjs`: capturas 60 de 60, funcional 213 de 213 (las 182 de antes y 31 nuevas), descartable 21 de 21 (las 17 de antes y 4 nuevas). `recorrido-comprension.mjs`: mirar 20 de 20, capturas 80 de 80, funcional 76 de 76, revocación 6 de 6. Una sola pasada, el 2026-10-11 de 02:56 a 03:25, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10), sin fallas. Los tres cambios sin commit que anota el resumen eran dos guías de demostración y la carpeta de imágenes: ningún código | Verificado automáticamente |
+| Toda la batería de la CI | La CI de GitHub sobre el commit de código (4b84714) | En verde (corrida 38116113620): el legajo, la batería completa, la integración y la imagen de la API. La batería, corrida también en esta máquina antes del commit: dominio 617, guiones 330 y API 81 | Verificado automáticamente |
+| El Espacio profesional a 1440, 1280, 1024, 768 y 390 px y en los dos temas; los siete tipos; «Más filtros»; una vista en cero; una persona abierta; la búsqueda; los dos diálogos; las dos fallas; y después de una revocación | `ver.mjs` y `recorrido.mjs descartable` | 23 imágenes en `parte-5/`: 21 capturas de `ver.mjs`, la de después de una revocación (`recorrido.mjs descartable`, con datos reales) y antes y ahora. Se miraron una por una | Observado en una captura real (la de los siete tipos, sobre una respuesta simulada) |
+
+**Comprobaciones que cambiaron, y lo que protegen (E-06):**
+
+Ningún recorrido miraba `/pro`: no había comprobaciones que adaptar. Son todas nuevas.
+
+| Comprobación | Dónde | Qué protege |
+|---|---|---|
+| E-83 a E-98, con las de teclado y accesibilidad (PRO-22) y errores (PRO-25): 30, en `recorrido.mjs funcional`; solas, con `recorrido.mjs espacio` | `espacioProfesional`, al final de la sesión de `fichaRecompuesta` (no suma un inicio de sesión) | Las decisiones de esta parte, con lo esperado calculado a mano desde la API |
+| E-96, la cuenta sin asesorados | La sesión del tercero de `funcional` | Que una lista vacía se diga como tal, y no como una falla |
+| E-91 (dos), E-88 y E-89, en `recorrido.mjs descartable` | Antes y después de la revocación | El envío real de una solicitud, y el aviso de vista parcial y el área sin acceso con respuestas reales |
+
+Cada negativa va con una positiva que usa el mismo selector: «no hay aviso de vista parcial» (datos principales) y «hay»
+(simulada y descartable); «no dice Nada pendiente» y «las filas están»; «no dice que no hay asesorados» y «las
+personas están».
+
+**Lo que se encontró al implementar, y qué se hizo.**
+
+- **Un relevamiento en paralelo, otra vez.** Un agente leyó la pantalla, la API, la maqueta y los recorridos mientras
+  se cerraba la parte 4 (`relevamientos/espacio-profesional-plan-de-implementacion.md`). De ahí salieron los defectos de
+  antes que esta parte corrige:
+  - **«Sin registros en el período» se decía sin que hubiera un período elegido** (E-86).
+  - **Una falla no decía su motivo,** y una vista o un filtro sin filas decía «Nada pendiente…», como si la cartera
+    estuviera vacía (E-96).
+  - **Contar y agrupar sobre listas leídas de a 20:** una persona partida entre dos páginas mostraba parte de sus
+    áreas, y «Todavía no tenés asesorados» podía aparecer con páginas sin leer (E-83).
+  - **Las áreas de una persona salían en el orden de la lista,** no en el de BE (E-89).
+  - **Ningún recorrido miraba esta página** (E-98).
+- **Una pieza repetida, que se sacó.** La primera versión de esta parte traía su propia lectura de páginas en el
+  website. El dominio ya tenía una (`todasLasPaginas`), sin pruebas: se usó esa, se le sumó lo que faltaba y se le
+  escribieron sus pruebas (E-97).
+- **Un defecto vecino, del mismo origen:** la ficha y la lámina de Antropometría leían solo los primeros 20 vínculos
+  (de todos los estados y de los dos roles de la cuenta). Con más, un asesorado antiguo abría su ficha sin «Acceso
+  actual». Ahora los leen todos. Con los datos de prueba (9 vínculos) no se veía ni se puede mostrar: lo cubre la
+  prueba de la lectura.
+- **Una prueba que se colgaba en vez de fallar.** La prueba de la prueba rompió la regla «un cursor vencido se
+  reintenta una sola vez»: la prueba unitaria no falló, quedó dando vueltas. Una prueba que se cuelga no avisa: ahora
+  tiene su propio tope y falla.
+- **Una rotura que el recorrido no detectaba.** En una primera corrida sobre la compilación rota, quitar el pedido de
+  foco del título de la lista de solicitudes no cambió nada: este navegador ya enfoca el primer elemento enfocable de
+  un diálogo. No era la comprobación la que estaba floja: la rotura no rompía nada acá. La comprobación ahora trae su
+  propia prueba (con un título que no puede recibir el foco, lo dice), en la corrida final la rotura fue esa y se
+  detectó, y el pedido de foco se dejó: otros navegadores no hacen lo mismo.
+- **El escenario descartable no podía pedir un vínculo:** su profesional estaba habilitado en dos áreas y tenía
+  vínculo en las dos. Quedó habilitado en las tres, con vínculo en dos (E-98).
+- **Lo que mostró la pantalla al mirarla,** y se ajustó: las áreas de una persona se partían en dos renglones (el
+  directorio pasó de 27 a 28 rem y las áreas van un punto más chicas); la referencia y las áreas quedaban separadas
+  cuando había una sola área (ahora son un solo bloque, que abre el detalle); el período de «Más filtros» dejaba su
+  botón solo en un renglón (ahora ocupa el suyo, con las dos fechas y el botón juntos).
+
+**Lo que esta parte no comprueba:**
+
+- El uso real: falta que Dirección entre al Espacio profesional en su pantalla.
+- Los tipos de pendiente que el escenario principal no tiene (revisión vencida y sin fecha, sin plan activo,
+  formulario sin responder y evaluación en preparación) se vieron **con una respuesta simulada**: la pantalla es la
+  real, los datos no salieron de la API. «Sin plan activo» y la vista parcial sí se ven con datos reales en el
+  escenario descartable.
+- Más de 200 pendientes («200+» y «Ver más») y más de 200 vínculos: sin datos para probarlo en pantalla. La lectura
+  incompleta está en la prueba del dominio.
+- Un cursor que vence mientras se lee (la lista cambió): en la prueba del dominio, no en pantalla.
+- Una persona con un área pausada, finalizada o pendiente de autorización: en la prueba de la función (los seis
+  estados); en pantalla se vio el de consentimiento revocado.
+- El resultado incierto de un envío (sin respuesta de red) y el conflicto («Ya tenés un vínculo vigente…»): el
+  código es el de antes, y no se ejercitó en esta parte.
+- El Espacio profesional a 768 y 390 px: se comprueba que no desborda y se miró una captura; no tiene una composición
+  propia.
+- El lector de pantalla con una persona: pendiente, como en los paquetes anteriores. Se verificaron axe, el teclado, el
+  nombre de cada «Abrir» y el foco de los dos diálogos.
+- `scripts/auditoria-accesibilidad.mjs` (fuera de la CI) sigue vieja: toca el primer «Abrir» de `/pro`, que desde que
+  existen los pendientes no es el de una ficha (definición, §6).
+
+## Lo que falta de la parte 2
+
+Pendiente, para después de las cinco partes: la composición propia de «comparar etapas» (C-12) y del ejercicio (C-21),
+el origen de un dato en el lugar de la lectura (C-13) y extender la prueba de palabras prohibidas a la ficha (E-05; en
+la parte 5 se extendió al Espacio profesional).

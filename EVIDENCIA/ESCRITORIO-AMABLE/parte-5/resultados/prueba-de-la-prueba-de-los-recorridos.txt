@@ -1,0 +1,79 @@
+Los dos recorridos del Espacio profesional sobre una compilación rota a propósito en 16 puntos (2026-10-11).
+Tienen que fallar donde cada rotura está protegida, y pasar en lo demás.
+
+Lo que se rompió (mutante.cjs), y la comprobación que lo protege:
+- «Todo» cuenta uno de más (lo protege E-84 (cantidades) y E-98)
+- las filas salen en el orden inverso al de la API (lo protege E-87, E-98 y E-86)
+- el aviso de vista parcial no se muestra (lo protege E-88 (simulada) y E-88 (descartable))
+- una falla dice lo mismo que una lista vacía (lo protege E-96 (pendientes))
+- la cartera se lee de a 20 (la página por omisión) (lo protege E-83)
+- «Actualizar» no vuelve a leer las solicitudes (lo protege E-88 (Actualizar))
+- un envío repetido no abre la lista de solicitudes (lo protege E-91 (descartable, segunda))
+- sin registros, siempre «en el período» (lo protege E-98 y E-87)
+- las áreas de una persona, en el orden de la lista (lo protege E-89)
+- la búsqueda distingue mayúsculas (lo protege E-90)
+- el título cuenta vínculos, no personas (lo protege E-89 (cuenta))
+- el título de la lista de solicitudes no puede recibir el foco (lo protege E-92)
+- enviado vacío, no marca los campos (lo protege E-91 (vacío))
+- «Abrir» de un pendiente mide menos de 44 px (lo protege PRO-22 (teclado))
+- el directorio va al lado recién desde 1440 px (lo protege E-94 (composición))
+- «hoy», sin el día de la semana (lo protege E-93)
+
+== r-espacio-mutante: 12 bien · 17 fallas
+Fallaron:
+E-93 · El encabezado dice «Espacio profesional» (el único título de la página), «Hoy» con el día de la semana y el año de la fecha con que la API clasificó las revisiones, y «Solicitar ví
+E-83 · Al entrar, la página lee los pendientes una sola vez y de a 50 (la cartera entera, para poder contarla), y una vez cada una de las otras dos listas — GET /api/v1/me/portfolio?limit=20 · v�
+E-84 · Las cinco vistas están en su orden, cada una con la cantidad de pendientes que trae (contada a mano sobre la lista de la API); las cuatro suman «Todo», una vista en cero se muestra con su c
+E-87 · Cada pendiente es una fila, en el orden de la API: la persona, el área y lo pendiente con su ícono y la frase de BE, debajo el último registro (el día en que ocurrió, en la zona de la res
+E-85 · «Más filtros» guarda el área, el tipo exacto y el período del último registro. Con un área elegida las filas son las de esa área, ninguna vista queda elegida, lo puesto se lista con su
+E-86 · El período se le pide a la API (una lectura, con sus dos fechas) y no cambia qué está pendiente: las filas son las mismas, y su último registro es el de ese período («Sin registros en el
+E-88 · «Actualizar», al pie de los pendientes, vuelve a leer las tres listas (una vez cada una) y dice a qué hora se consultó — /me/portfolio?limit=20 · /me/relationships · Consultado a las 0
+E-98 · Con una respuesta simulada que trae los siete tipos (la API y la base no se tocan), cada tipo se dice con su frase de BE, su ícono, su último registro («Sin registros todavía» donde no ha
+E-88 · Cuando la respuesta dice que hay datos fuera del alcance del profesional (respuesta simulada), el aviso de vista parcial está debajo de las vistas y arriba de la tabla, con el texto de BE: es
+E-96 · Si la lectura de los pendientes falla, el bloque dice qué pasó, por qué y qué hacer («muchas consultas seguidas… Esperá un minuto»; sin red, «no hay conexión»): las vistas quedan s
+E-96 · Si falla la lectura de los asesorados, el directorio lo dice con su motivo («BE no está disponible») y no dice que no hay asesorados; los pendientes siguen. «Reintentar» lo trae — No pu
+E-89 · El directorio tiene una persona por renglón, tantas como asesorados distintos tiene el profesional en la API y en su orden; el título las cuenta; cada una dice su referencia, sus áreas con 
+E-90 · El buscador se llama «Buscar por referencia» (también para el lector de pantalla) y filtra mientras se escribe, sin pedirle nada a la API: con el final de una referencia, en mayúsculas, qu
+E-92 · «Solicitudes enviadas (N)», al pie del directorio, dice cuántas envió el profesional (las de la API) y, si alguna espera respuesta, lo dice aparte. Abre un diálogo que retiene el foco y s
+E-91 · «Solicitar vínculo» abre el formulario de siempre en un diálogo que retiene el foco, con el foco en el primer campo: el identificador con su ayuda, el alcance, la finalidad que sale del al
+PRO-22 · Con el teclado se llega, en el orden en que se ven, a «Solicitar vínculo», las cinco vistas, «Más filtros», el «Abrir» de cada pendiente, «Actualizar», el buscador, cada persona co
+E-94 · A 1440 y a 1280 px el directorio va al lado de los pendientes; a 1024, debajo. La página no desborda de costado a 1440, 1280, 1024, 768 ni 390 px — 390: debajo, termina en 1568 px · 768: d
+Pasaron:
+E-88 · Con datos que el profesional puede ver enteros, el aviso de vista parcial no está (la API dice que no hay nada fuera de su alcance) — partialView: false · aviso: no está
+E-84 · Cada vista trae lo que anuncia: queda elegida ella sola, sus filas son las de sus tipos en el orden de la API, y elegirla no le pide nada a la API — REVISIONES: 1 · PLANES: 1 · FORMULARIOS
+E-96 · Una vista sin filas dice «Ningún pendiente coincide con lo elegido» y cuántos hay en total, con «Ver todo»: no dice que no hay nada pendiente (con «Todo» elegido, las filas están, con
+E-84 · Volver a tocar la vista elegida deja «Todo», con todos los pendientes — 2 filas
+E-85 · «Limpiar filtros» vuelve a «Todo», sin nada puesto — 2 filas · Más filtros
+E-94 · A 1440 × 900, con siete pendientes (respuesta simulada) y los asesorados del escenario, los pendientes y el directorio terminan dentro de la primera pantalla (antes la página medía tres); c
+E-89 · Tocar a una persona abre, en el lugar, el detalle de cada uno de sus vínculos: el área con su finalidad, el estado con las palabras de BE y desde cuándo. Volver a tocarla lo cierra — Ases
+E-91 · Con un identificador que no es de nadie, el formulario lo pide una vez y dice lo mismo que diría por cualquier otro rechazo, sin revelar si la persona existe; queda abierto para corregir, y �
+E-95 · Después de elegir vistas, filtrar, buscar y abrir los dos diálogos, la dirección sigue siendo `/pro`, sin parámetros: lo elegido es de la visita — /pro
+PRO-22 · El Espacio profesional, con «Más filtros» y el detalle de una persona abiertos: axe no encuentra faltas de WCAG 2.2 AA en ninguno de los dos temas — {"claro":[],"azul-noche":[]}
+E-87 · La página entera, con «Más filtros» y el detalle de una persona abiertos, no tiene porcentajes ni palabras que califiquen a nadie: describe lo que está pendiente — 1609 caracteres
+PRO-25 · Sin errores de JavaScript ni respuestas con error de la API durante el recorrido del Espacio profesional (fuera de las fallas y del rechazo pedidos a propósito) — ninguno
+
+== r-descartable-mutante: 19 bien · 2 fallas
+Fallaron:
+E-91 · Pedir de nuevo lo mismo no crea otra solicitud: el diálogo se cierra y se abre la lista de solicitudes, que arriba dice «Ya hay una solicitud pendiente igual. Te mostramos esa.» y la muestr
+E-88 · Después de revocar, la API dice que hay datos fuera del alcance del profesional y el Espacio profesional lo avisa debajo de las vistas, con el texto de BE (antes de revocar no había aviso ni
+Pasaron:
+E-91 · Enviar una solicitud desde el diálogo la crea (la API la tiene, pendiente): el diálogo se cierra, la página dice «Solicitud enviada. El asesorado decide si la acepta.», y el pie del direc
+PRO-10 · Peso e IMC en claro: los dos gráficos dibujados y a la vista — 2 gráfico(s) · Peso cada toma · kg: 990×192, ejes 7/5, curvas 1, marcas 3/3, tinta 4.4 %, color 321 px · Índice de mas
+PRO-10 · En claro, con las series ocultas la medición de píxeles no da por dibujado ningún gráfico (prueba de la prueba) — Peso cada toma · kg: 0 px sin dibujo (mínimo 90) · Índice de masa 
+PRO-10 · En claro, lo reportado y lo calculado se dibujan distinto (contorno cortado en el peso reportado, un punto adentro en el IMC) y la leyenda lo dice — peso: REPORTED; IMC: DERIVED · Contorn
+PRO-10 · La captura analizar-clases-1440-claro tiene los dos gráficos dibujados — 2 de 2
+PRO-10 · Peso e IMC en azul-noche: los dos gráficos dibujados y a la vista — 2 gráfico(s) · Peso cada toma · kg: 990×192, ejes 7/5, curvas 1, marcas 3/3, tinta 5.2 %, color 321 px · Índice d
+PRO-10 · En azul-noche, con las series ocultas la medición de píxeles no da por dibujado ningún gráfico (prueba de la prueba) — Peso cada toma · kg: 0 px sin dibujo (mínimo 90) · Índice de 
+PRO-10 · En azul-noche, lo reportado y lo calculado se dibujan distinto (contorno cortado en el peso reportado, un punto adentro en el IMC) y la leyenda lo dice — peso: REPORTED; IMC: DERIVED · Co
+PRO-10 · La captura analizar-clases-1440-azul-noche tiene los dos gráficos dibujados — 2 de 2
+PRO-10 · La lectura del día de la toma reportada dice «Reportado por la persona, no medido» — Lectura del 29 sept 2026 Fecha anterior con datos Fecha siguiente con datos Ir a una fecha Peso 80,5
+PRO-10 · La tabla de datos marca el peso reportado y el IMC calculado (un índice, no una estimación); lo medido va sin marca — Tabla de datos (3 fechas) Valores por fecha de las métricas elegida
+PRO-10 · El CSV tiene la columna «Clase de dato»: medido, reportado por la persona y calculado por un método — BE-analisis-2026-07-14-a-2026-10-11.csv · 81,2: Medido · 80,5: Reportado por la p
+PRO-10 · Antes de revocar, el origen del peso reportado abre su toma, con la clase de cada medición («Reportado», la palabra de la pestaña de Antropometría) — Peso · 29 sept 2026 Cerrar 80,5 
+PRO-20 · El asesorado revoca desde su web el acceso de Antropometría del profesional: explicación, confirmación y aviso — Revocar acceso de Lic. Descartable (sintética) Este consentimiento deja
+PRO-20 · Después de revocar, «Descargar los datos» con la pantalla vieja vuelve a consultar: no sale ningún archivo y dice por qué; los gráficos se vuelven a pedir — 2 gráficos antes · 0 ar
+PRO-20 · Después de revocar, el origen de un punto que seguía en pantalla dice «no está disponible con tu acceso actual» y no repite el valor — Peso · 29 sept 2026 Cerrar Esta toma no está d
+PRO-20 · Los gráficos se vuelven a pedir y dicen «no está disponible con tu acceso actual», sin un punto ni un valor de antes — Peso No se puede ver Peso: no está disponible con tu acceso actu
+PRO-20 · Al volver a abrir Analizar y la línea de tiempo, no hay gráficos, valores ni tomas de Antropometría (antes de revocar, la línea las traía), ni el aviso de una descarga anterior; el rest
+E-89 · Después de revocar, el directorio dice el área sin acceso con el candado y las palabras de BE («Consentimiento revocado · Acceso no disponible»), y las otras siguen nombradas; antes de re
+

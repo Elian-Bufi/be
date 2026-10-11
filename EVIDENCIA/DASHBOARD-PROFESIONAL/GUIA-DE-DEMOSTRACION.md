@@ -19,9 +19,9 @@ Al terminar: `./entorno.sh parar-web` y `./entorno.sh parar-api`.
 
 ## El recorrido
 
-1. **Entrar como profesional.** `http://localhost:3000/login` → Espacio profesional → en «Tus asesorados», el asesorado
-   A. Se reconoce por su seudónimo, «Asesorado · » seguido de los últimos seis caracteres de `aseId` en `estado.json`
-   (B y C son la vista parcial y el conjunto de volumen).
+1. **Entrar como profesional.** `http://localhost:3000/login` → Espacio profesional → en «Tus asesorados», «Abrir» del
+   asesorado A. Se reconoce por su referencia, «Asesorado · » seguido de los últimos seis caracteres de `aseId` en
+   `estado.json`, y se puede buscar por ese final (B y C son la vista parcial y el conjunto de volumen).
 2. **Resumen: ¿qué necesito revisar?**
    - Arriba, cuatro indicadores: energía (media de los días con valor, **sin contar hoy**, que sigue en curso), registros,
      peso (con la primera toma **comparable**: el cambio de protocolo no se cruza) y series de un ejercicio.
