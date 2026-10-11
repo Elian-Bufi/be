@@ -576,7 +576,18 @@ function LoNuevoDesdeLaRevision({ revisiones, elegida, hoy, onElegir }: { revisi
     >
       <button ref={boton} type="button" className="vista-de-la-linea" data-vista="LO_NUEVO" data-elegida={elegida ? 'si' : undefined} aria-expanded={abierto} aria-controls={`${id}-areas`} onClick={() => setAbierto(!abierto)}>
         <Icono nombre="revision" tamano={18} />
-        Lo nuevo desde la revisión{elegida ? ` · ${NOMBRE_DE_DOMINIO[elegida.dominio]}` : ''}
+        {/* Elegida, dice de qué área y deja «desde la revisión» para quien no ve la pantalla: el aviso de abajo lo dice
+            entero, con su fecha, y así el renglón no se alarga al elegir. */}
+        <span>
+          Lo nuevo
+          {elegida ? (
+            <>
+              <span className="visualmente-oculto"> desde la revisión</span> · {NOMBRE_DE_DOMINIO[elegida.dominio]}
+            </>
+          ) : (
+            ' desde la revisión'
+          )}
+        </span>
         <Icono nombre={abierto ? 'arriba' : 'abajo'} tamano={18} />
       </button>
       {abierto ? (

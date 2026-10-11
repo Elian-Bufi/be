@@ -2860,10 +2860,12 @@ html:has(.acciones--fijas) {
 }
 
 /* El buscador y «Más filtros» van juntos: al lado de las vistas si entran y, si no, los dos en el renglón siguiente,
-   con el buscador a la izquierda y «Más filtros» a la derecha. */
+   con el buscador a la izquierda y «Más filtros» a la derecha. Su ancho de base es el del buscador con su texto entero
+   más el botón con su cuenta («Más filtros (2)»): con menos lugar que ese bajan los dos, en vez de apretarse. */
 .vistas-de-la-linea__buscar {
   display: flex;
-  flex: 1 1 21rem;
+  flex: 1 1 24.5rem;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.55rem;
   min-width: 0;
@@ -2967,8 +2969,8 @@ html:has(.acciones--fijas) {
 /* El buscador: un campo con su botón adentro. Ocupa el lugar que queda, hasta un ancho cómodo de leer. */
 .buscador-de-la-linea {
   position: relative;
-  flex: 1 1 13rem;
-  min-width: 11rem;
+  flex: 1 1 13.5rem;
+  min-width: min(13.5rem, 100%);
   max-width: 22rem;
 }
 
@@ -3008,7 +3010,9 @@ html:has(.acciones--fijas) {
 }
 
 .vistas-de-la-linea__mas {
+  flex: none;
   margin-left: auto;
+  white-space: nowrap;
 }
 
 /* «Más filtros»: la combinación libre, en un panel que se abre debajo del renglón. */

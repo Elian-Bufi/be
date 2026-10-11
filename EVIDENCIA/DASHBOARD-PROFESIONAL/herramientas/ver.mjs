@@ -10,7 +10,8 @@
 //   Para mirar una falla, `#falla:fragmento`: mientras se captura esa ruta, los pedidos a la API cuya dirección contiene
 //   el fragmento reciben un 503 simulado en el navegador (la API y la base no se tocan). Ejemplo: `#falla:metric=PROTEIN`.
 //   Para mirar una búsqueda, `#buscar:texto`: antes de los clics, lo escribe en el buscador de la vista y lo envía.
-//   Inicia sesión una sola vez y navega dentro de la aplicación (recargar cierra la sesión).
+//   Inicia sesión una sola vez y navega dentro de la aplicación (recargar cierra la sesión). Cada ruta se captura con
+//   la pantalla recién abierta: entre dos rutas de la misma página sale a otra y vuelve, así no queda nada de la anterior.
 //   Escribe <salida>/<nombre>-<ancho>-<tema>.png. Necesita la API en :3001 y el website en :3000 (`entorno.sh`).
 import { enTrabajo } from './rutas.mjs';
 import fs from 'node:fs';
@@ -111,6 +112,16 @@ try {
     await page.setViewport({ width: ANCHO, height: ALTO, deviceScaleFactor: 1 });
     // Un diálogo que quedó abierto de la ruta anterior (una ayuda) se cierra antes de ir a la siguiente.
     await page.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+    // Cada captura arranca de la pantalla recién abierta. Si la ruta anterior era de la misma página, lo que dejó
+    // abierto (un detalle, un menú, los filtros) y lo que ya leyó siguen ahí: la captura mostraría eso, y una falla
+    // simulada no llegaría a pedirse. Entonces se sale a otra página y se vuelve a entrar.
+    const pagina = ruta.split('?')[0].replace(/\/$/, '');
+    if ((await page.evaluate(() => location.pathname.replace(/\/$/, ''))) === pagina) {
+      const otra = pagina === '/pro' ? entrada : '/pro';
+      await page.evaluate((u) => window.next.router.push(u), otra);
+      await page.waitForFunction((p) => location.pathname.replace(/\/$/, '') !== p, {}, pagina).catch(() => {});
+      await asentar();
+    }
     fallaSimulada = falla;
     // Se espera a que la dirección cambie (contra `next dev` la página puede tardar en compilarse) y a que se asiente.
     const antes = await page.evaluate(() => location.pathname + location.search);
