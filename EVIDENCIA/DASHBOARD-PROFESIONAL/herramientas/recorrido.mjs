@@ -1,7 +1,7 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
@@ -18,11 +18,16 @@
 //   Analizar con el lenguaje de sus gráficos (parte 2) se comprueban en `resumenPorArea`, `lineaPorDia` y
 //   `analizarRecompuesto`, las tres en una misma sesión propia (`fichaRecompuesta`), antes del encabezado. `resumen`,
 //   `linea` y `analizar` corren una sola de las tres partes.
+// - El Espacio profesional (parte 5: los pendientes con sus vistas, el directorio y los dos diálogos) se comprueba en
+//   `espacioProfesional`, al final de esa misma sesión; sola, con `espacio`. Los tipos de pendiente que el escenario no
+//   tiene se miran con una respuesta simulada en el navegador (`cartera-simulada.mjs`). Una cuenta sin asesorados se
+//   mira en la sesión del tercero; el envío de una solicitud y el aviso de vista parcial real, en `descartable`.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
 //   (valores medidos, informados y estimados; revocación desde la web del asesorado).
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { carteraSimulada } from './cartera-simulada.mjs';
 import { enTrabajo, REPO } from './rutas.mjs';
 
 const require = createRequire(import.meta.url);
@@ -109,6 +114,8 @@ async function abrir() {
       return req.continue();
     }
     if (regla.accion === 'cortar') return req.abort('internetdisconnected');
+    // Una respuesta armada por el recorrido, para mirar una pantalla con datos que el escenario no tiene.
+    if (regla.accion === 'entregar') return req.respond({ status: 200, headers: CORS, contentType: 'application/json; charset=utf-8', body: JSON.stringify(regla.cuerpo) });
     return req.respond({ status: regla.status, headers: CORS, contentType: 'application/json; charset=utf-8', body: JSON.stringify({ error: { code: regla.codigo, message: 'Falla simulada por el recorrido.' } }) });
   });
   const fin = (r) => {
@@ -1192,6 +1199,36 @@ async function funcional() {
       const ajeno = await texto(page, 'main');
       const pedidos = v.malas.filter((m) => m.startsWith('404'));
       comprobar('PRO-20', 'Un tercero ve «no encontramos un recurso disponible»: ni pestañas, ni indicadores, ni gráficos', /No encontramos un recurso disponible/.test(ajeno) && !/Analizar|kcal|Peso muerto/.test(ajeno) && pedidos.length > 0, `${ajeno.slice(0, 160)} · ${pedidos.slice(0, 3).join(', ')}`);
+      // El Espacio profesional de esa cuenta (WP-ESCRITORIO-AMABLE, parte 5): sin asesorados, cada lista dice que está
+      // vacía con sus palabras. Lo que tiene la cuenta se le pregunta a la API con su sesión.
+      const cuenta = (await leerApi(v, '/me')).data;
+      const suyos = (await leerApi(v, '/me/relationships')).data.filter((x) => x.professional.identityId === cuenta.identityId);
+      const susEnvios = (await leerApi(v, '/me/relationship-requests')).data.filter((x) => x.professional.identityId === cuenta.identityId && x.initiatedBy === 'PROFESSIONAL');
+      if (cuenta.actorCapabilities.includes('PROFESSIONAL_WORKSPACE') && suyos.length === 0) {
+        await ir(page, '/pro');
+        await page.waitForSelector('section.pendientes', { timeout: 30_000 });
+        await quieto(page, v);
+        const sinNadie = await espacioEnPantalla(page);
+        const susPendientes = (await leerApi(v, '/me/portfolio?limit=50')).data.items.length;
+        comprobar(
+          'E-96',
+          'Una cuenta profesional sin asesorados: «Nada pendiente con lo que BE puede saber…», las cinco vistas en cero, «Todavía no tenés asesorados activos en este contexto» y las solicitudes enviadas que dice la API. Cada lista dice que está vacía; ninguna es una falla',
+          susPendientes === 0 &&
+            sinNadie.vacio === 'Nada pendiente con lo que BE puede saber. Lo que no está registrado, no está acá.' &&
+            sinNadie.vistas.length === 5 &&
+            sinNadie.vistas.every((x) => x.cuenta === '0') &&
+            sinNadie.filas.length === 0 &&
+            sinNadie.falla === null &&
+            sinNadie.sinCoincidencias === null &&
+            sinNadie.directorioVacio === 'Todavía no tenés asesorados activos en este contexto.' &&
+            sinNadie.personas.length === 0 &&
+            sinNadie.fallaDelDirectorio === null &&
+            sinNadie.solicitudes === `Solicitudes enviadas (${susEnvios.length})`,
+          `${sinNadie.vacio} · ${sinNadie.vistas.map((x) => `${x.vista} ${x.cuenta}`).join(' · ')} · ${sinNadie.directorioVacio} · ${sinNadie.solicitudes}`,
+        );
+      } else {
+        informar('E-96', 'Una cuenta profesional sin asesorados', `el tercero del escenario tiene ${suyos.length} vínculo(s) como profesional`);
+      }
     } finally {
       await navegador.close();
     }
@@ -3321,13 +3358,732 @@ async function lineaPorDia(page, v) {
   comprobar('PRO-25', 'Sin errores de JavaScript ni respuestas con error de la API durante el recorrido de la línea de tiempo por día', v.errores.length === 0 && v.malas.length === 0, [...v.errores, ...v.malas].slice(0, 4).join(' · ') || 'ninguno');
 }
 
+// ─── El Espacio profesional (WP-ESCRITORIO-AMABLE, parte 5: E-83 a E-98) ──────────────────────────────
+
+/** Lo que el Espacio profesional muestra de los pendientes, del directorio y del encabezado, tal como se ve. */
+const espacioEnPantalla = (page) =>
+  page.evaluate(() => {
+    const limpio = (e) => (e ? e.innerText.replace(/\s+/g, ' ').trim() : null);
+    const ruta = (a) => {
+      const u = new URL(a.getAttribute('href'), location.origin);
+      return `${u.pathname.replace(/\/$/, '')}${u.search}`;
+    };
+    return {
+      titulos: [...document.querySelectorAll('h1')].map(limpio),
+      hoy: limpio(document.querySelector('.espacio-profesional__hoy')),
+      solicitar: limpio(document.querySelector('.espacio-profesional__solicitar')),
+      vistas: [...document.querySelectorAll('section.pendientes .vista-de-la-linea')].map((b) => {
+        const c = b.querySelector('.vista-de-la-linea__cuenta');
+        return { vista: b.dataset.vista, elegida: b.getAttribute('aria-pressed'), cuenta: c ? c.firstChild.textContent.trim() : null, dice: c ? c.textContent.replace(/\s+/g, ' ').trim() : null };
+      }),
+      masFiltros: limpio(document.querySelector('section.pendientes .vistas-de-la-linea__mas')),
+      filas: [...document.querySelectorAll('section.pendientes tr.pendiente')].map((f) => ({
+        tipo: f.dataset.tipo,
+        area: f.dataset.area,
+        persona: limpio(f.querySelector('th')),
+        nombreDelArea: limpio(f.querySelector('.pendiente__area')),
+        texto: limpio(f.querySelector('.pendiente__texto')),
+        ultimo: limpio(f.querySelector('.pendiente__ultimo')),
+        destino: ruta(f.querySelector('a.pendiente__enlace')),
+        nombreDelEnlace: f.querySelector('a.pendiente__enlace').getAttribute('aria-label'),
+        iconos: f.querySelectorAll('svg.icono').length,
+      })),
+      parcial: limpio(document.querySelector('section.pendientes .pendientes__parcial')),
+      etiquetas: [...document.querySelectorAll('section.pendientes .filtros-activos .chip')].map((c) => limpio(c).replace(/ ×.*$/, '')),
+      coinciden: limpio(document.querySelector('section.pendientes .pendientes__coinciden')),
+      vacio: limpio(document.querySelector('section.pendientes .pendientes__vacio')),
+      sinCoincidencias: limpio(document.querySelector('section.pendientes .estado-vacio')),
+      falla: limpio(document.querySelector('section.pendientes .estado-de-grafico--error')),
+      consulta: limpio(document.querySelector('section.pendientes .pendientes__consulta')),
+      cuentaDelDirectorio: limpio(document.querySelector('section.directorio .directorio__cuenta')),
+      personas: [...document.querySelectorAll('section.directorio li.persona')].map((p) => ({
+        id: p.dataset.persona,
+        nombre: limpio(p.querySelector('.persona__nombre')),
+        conAcceso: limpio(p.querySelector('.persona__con-acceso')),
+        sinAcceso: [...p.querySelectorAll('.persona__sin-acceso')].map(limpio),
+        abierta: p.querySelector('.persona__datos').getAttribute('aria-expanded'),
+        vinculos: [...p.querySelectorAll('.persona__vinculos li')].map(limpio),
+        destino: ruta(p.querySelector('a.persona__abrir')),
+        nombreDelEnlace: p.querySelector('a.persona__abrir').getAttribute('aria-label'),
+      })),
+      fallaDelDirectorio: limpio(document.querySelector('section.directorio .estado-de-grafico--error')),
+      directorioVacio: limpio(document.querySelector('section.directorio .directorio__vacio')),
+      sinReferencias: limpio(document.querySelector('section.directorio .estado-vacio')),
+      solicitudes: limpio(document.querySelector('.directorio__solicitudes')),
+      sinResponder: limpio(document.querySelector('.directorio__sin-responder')),
+    };
+  });
+
+/**
+ * El Espacio profesional: «Pendientes» con sus vistas con nombre, el directorio de asesorados y los dos diálogos. Lo
+ * esperado se calcula a mano con lo que devuelve la API (`/me/portfolio`, `/me/relationships`,
+ * `/me/relationship-requests` y `/me`), sin el dominio: qué tipos junta cada vista, la frase de cada pendiente y las
+ * palabras de cada estado de vínculo están escritas acá de nuevo. Los cinco tipos de pendiente que el escenario no
+ * tiene se miran con una respuesta simulada en el navegador (`cartera-simulada.mjs`), y lo dice cada comprobación.
+ * Cada negativa («no dice…») mira con el mismo selector que una positiva de la misma pantalla. Corre en la sesión de
+ * `fichaRecompuesta`, al final; sola, con `node recorrido.mjs espacio`.
+ */
+async function espacioProfesional(page, v) {
+  const num = (n) => new Intl.NumberFormat('es-AR').format(n);
+  const fechaBreve = (f) => (f.slice(0, 4) === hoy.slice(0, 4) ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${f}T12:00:00Z`)) : diaCivil(f));
+  const AREA = { nutrition: 'Nutrición', training: 'Entrenamiento', anthropometry: 'Antropometría' };
+  const ORDEN_DE_LAS_VISTAS = ['TODO', 'REVISIONES', 'PLANES', 'FORMULARIOS', 'EVALUACIONES'];
+  /** Qué tipos junta cada vista, escrito a mano (no se lee del dominio). */
+  const TIPOS_DE = { REVISIONES: ['REVIEW_OVERDUE', 'REVIEW_DUE_SOON', 'REVIEW_UNDATED'], PLANES: ['PLAN_DRAFT_PENDING', 'NO_ACTIVE_PLAN'], FORMULARIOS: ['FORM_REQUEST_OPEN'], EVALUACIONES: ['ANTHRO_DRAFT_PENDING'] };
+  const dias = (n) => `${n} ${n === 1 ? 'día' : 'días'}`;
+  const frase = (p) =>
+    ({
+      REVIEW_OVERDUE: `Revisión vencida hace ${dias(p.daysOverdue)}`,
+      REVIEW_DUE_SOON: p.daysUntil === 0 ? 'Revisión hoy' : `Revisión en ${dias(p.daysUntil)}`,
+      REVIEW_UNDATED: `Revisión pendiente desde el ${p.since ? fechaBreve(p.since) : '—'}`,
+      PLAN_DRAFT_PENDING: `Plan en borrador desde el ${p.since ? fechaBreve(p.since) : '—'}`,
+      NO_ACTIVE_PLAN: 'Sin plan activo',
+      FORM_REQUEST_OPEN: `Formulario sin responder desde el ${p.since ? fechaBreve(p.since) : '—'}`,
+      ANTHRO_DRAFT_PENDING: `Evaluación en preparación desde el ${p.since ? fechaBreve(p.since) : '—'}`,
+    })[p.kind];
+  const diaEn = (instante, zona) => new Intl.DateTimeFormat('en-CA', { timeZone: zona }).format(new Date(instante));
+  const ultimoDe = (p, zona, conPeriodo) => (p.lastActivityAt ? `Último registro: ${fechaBreve(diaEn(p.lastActivityAt, zona))}` : conPeriodo ? 'Sin registros en el período' : 'Sin registros todavía');
+  const destinoDe = (p) => (p.open.view === 'solicitudes' ? `/pro/advisees/forms?id=${p.advisee.identityId}&vista=solicitudes` : `/pro/advisees/${p.domain}?id=${p.advisee.identityId}&vista=${p.open.view}`);
+  /** Una fila, como tiene que verse. */
+  const filaDe = (p, zona, conPeriodo) => ({ tipo: p.kind, area: p.domain, persona: p.advisee.displayName, nombreDelArea: AREA[p.domain], texto: frase(p), ultimo: ultimoDe(p, zona, conPeriodo), destino: destinoDe(p), nombreDelEnlace: `Abrir: ${p.advisee.displayName}, ${AREA[p.domain]}, ${frase(p)}`, iconos: 3 });
+  const cuentasDe = (items) => ({ TODO: items.length, ...Object.fromEntries(Object.entries(TIPOS_DE).map(([vista, tipos]) => [vista, items.filter((p) => tipos.includes(p.kind)).length])) });
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const leerCartera = async (extra = '') => {
+    const items = [];
+    let cursor = null;
+    let meta = null;
+    do {
+      const r = await leerApi(v, `/me/portfolio?limit=50${extra}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+      meta ??= r.data;
+      items.push(...r.data.items);
+      cursor = r.page.hasMore ? r.page.nextCursor : null;
+    } while (cursor);
+    return { ...meta, items };
+  };
+  const leerLista = async (ruta) => {
+    const items = [];
+    let cursor = null;
+    do {
+      const r = await leerApi(v, `${ruta}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`);
+      items.push(...r.data);
+      cursor = r.page.hasMore ? r.page.nextCursor : null;
+    } while (cursor);
+    return items;
+  };
+  /** Los pedidos de la página (no los del recorrido) a una dirección de la API, desde una marca. */
+  const pedidos = (fragmento, desde, metodo = 'GET') => v.urls.slice(desde).filter((u) => u.startsWith(`${metodo} `) && u.includes(fragmento));
+  const vista = (clave) => `section.pendientes .vista-de-la-linea[data-vista="${clave}"]`;
+  const actualizar = async () => {
+    await cupo(v, 60);
+    await page.click('section.pendientes .pendientes__actualizar');
+    await quieto(page, v);
+  };
+
+  await cupo(v, 60);
+  const alEntrar = v.urls.length;
+  await ir(page, '/pro');
+  await page.waitForSelector('section.pendientes', { timeout: 30_000 });
+  await quieto(page, v);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const yo = (await leerApi(v, '/me')).data;
+  const cartera = await leerCartera();
+  const vinculos = (await leerLista('/me/relationships')).filter((x) => x.professional.identityId === yo.identityId);
+  const enviadas = (await leerLista('/me/relationship-requests')).filter((x) => x.professional.identityId === yo.identityId && x.initiatedBy === 'PROFESSIONAL');
+  const zona = cartera.timeZone;
+  const cuentas = cuentasDe(cartera.items);
+  const inicial = await espacioEnPantalla(page);
+
+  // E-93 · El encabezado ────────────────────────────────────────────────────────────────────────────────
+  const hoyEscrito = `Hoy, ${new Intl.DateTimeFormat('es-AR', { weekday: 'long', timeZone: 'UTC' }).format(new Date(`${cartera.today}T12:00:00Z`))} ${diaCivil(cartera.today)}`;
+  comprobar(
+    'E-93',
+    'El encabezado dice «Espacio profesional» (el único título de la página), «Hoy» con el día de la semana y el año de la fecha con que la API clasificó las revisiones, y «Solicitar vínculo»',
+    igual(inicial.titulos, ['Espacio profesional']) && inicial.hoy === hoyEscrito && inicial.solicitar === 'Solicitar vínculo',
+    `${inicial.titulos.join(' | ')} · ${inicial.hoy} (la API dice ${cartera.today}) · ${inicial.solicitar}`,
+  );
+
+  // E-83 · Una sola lectura protegida al entrar, y con toda la cartera ───────────────────────────────────────
+  const alAbrir = pedidos('/me/portfolio', alEntrar);
+  comprobar(
+    'E-83',
+    'Al entrar, la página lee los pendientes una sola vez y de a 50 (la cartera entera, para poder contarla), y una vez cada una de las otras dos listas',
+    alAbrir.length === 1 && /[?&]limit=50(&|$)/.test(alAbrir[0]) && !/periodStart|domain=|kind=/.test(alAbrir[0]) && pedidos('/me/relationships', alEntrar).length === 1 && pedidos('/me/relationship-requests', alEntrar).length === 1,
+    `${alAbrir.map((u) => u.replace(API, '')).join(' · ')} · vínculos: ${pedidos('/me/relationships', alEntrar).length} · solicitudes: ${pedidos('/me/relationship-requests', alEntrar).length}`,
+  );
+
+  // E-84 · Las vistas con nombre y sus cantidades ────────────────────────────────────────────────────────
+  comprobar(
+    'E-84',
+    'Las cinco vistas están en su orden, cada una con la cantidad de pendientes que trae (contada a mano sobre la lista de la API); las cuatro suman «Todo», una vista en cero se muestra con su cero, y al entrar está elegida «Todo»',
+    igual(inicial.vistas.map((x) => x.vista), ORDEN_DE_LAS_VISTAS) &&
+      inicial.vistas.every((x) => x.cuenta === num(cuentas[x.vista]) && x.dice === `${num(cuentas[x.vista])} ${cuentas[x.vista] === 1 ? 'pendiente' : 'pendientes'}`) &&
+      cuentas.REVISIONES + cuentas.PLANES + cuentas.FORMULARIOS + cuentas.EVALUACIONES === cuentas.TODO &&
+      cuentas.TODO > 0 &&
+      inicial.vistas.every((x) => x.elegida === (x.vista === 'TODO' ? 'true' : 'false')),
+    inicial.vistas.map((x) => `${x.vista} ${x.cuenta}`).join(' · '),
+  );
+
+  // E-87 · Cada fila, con lo que dice la API ──────────────────────────────────────────────────────────────
+  const esperadas = cartera.items.map((p) => filaDe(p, zona, false));
+  comprobar(
+    'E-87',
+    'Cada pendiente es una fila, en el orden de la API: la persona, el área y lo pendiente con su ícono y la frase de BE, debajo el último registro (el día en que ocurrió, en la zona de la respuesta) y «Abrir», que lleva a la vista que lo resuelve y se llama distinto en cada fila',
+    inicial.filas.length > 0 && igual(inicial.filas, esperadas) && new Set(inicial.filas.map((f) => f.nombreDelEnlace)).size === inicial.filas.length,
+    inicial.filas.map((f) => `${f.persona} · ${f.nombreDelArea} · ${f.texto} · ${f.ultimo} → ${f.destino.replace(/id=[^&]+/, 'id=…')}`).join(' | ') || 'sin filas',
+  );
+  comprobar('E-88', 'Con datos que el profesional puede ver enteros, el aviso de vista parcial no está (la API dice que no hay nada fuera de su alcance)', cartera.partialView === false && inicial.parcial === null, `partialView: ${cartera.partialView} · aviso: ${inicial.parcial ?? 'no está'}`);
+
+  // E-84 · Elegir cada vista no le pide nada a la API ─────────────────────────────────────────────────────
+  const antesDeElegir = v.urls.length;
+  const porVista = {};
+  for (const clave of ORDEN_DE_LAS_VISTAS.slice(1)) {
+    await page.click(vista(clave));
+    await pausa(250);
+    const e = await espacioEnPantalla(page);
+    const delTipo = cartera.items.filter((p) => TIPOS_DE[clave].includes(p.kind)).map((p) => filaDe(p, zona, false));
+    porVista[clave] = {
+      elegidas: e.vistas.filter((x) => x.elegida === 'true').map((x) => x.vista),
+      filas: igual(e.filas, delTipo),
+      cuantas: e.filas.length,
+      // Una vista sin filas dice que nada coincide y cuántos hay en total: no dice que no hay nada pendiente.
+      vacia: delTipo.length > 0 ? null : { texto: e.sinCoincidencias, nadaPendiente: e.vacio },
+    };
+  }
+  const enCero = Object.entries(porVista).filter(([, x]) => x.vacia);
+  const totalEscrito = cuentas.TODO === 1 ? 'Hay un pendiente en total.' : `Hay ${num(cuentas.TODO)} pendientes en total.`;
+  comprobar(
+    'E-84',
+    'Cada vista trae lo que anuncia: queda elegida ella sola, sus filas son las de sus tipos en el orden de la API, y elegirla no le pide nada a la API',
+    Object.entries(porVista).every(([clave, x]) => igual(x.elegidas, [clave]) && x.filas && x.cuantas === cuentas[clave]) && pedidos('/me/', antesDeElegir).length === 0,
+    `${Object.entries(porVista).map(([clave, x]) => `${clave}: ${x.cuantas}`).join(' · ')} · pedidos a la API al elegir: ${pedidos('/me/', antesDeElegir).length}`,
+  );
+  if (enCero.length > 0) {
+    comprobar(
+      'E-96',
+      'Una vista sin filas dice «Ningún pendiente coincide con lo elegido» y cuántos hay en total, con «Ver todo»: no dice que no hay nada pendiente (con «Todo» elegido, las filas están, con el mismo selector)',
+      enCero.every(([, x]) => x.vacia.texto === `Ningún pendiente coincide con lo elegido. ${totalEscrito} Ver todo` && x.vacia.nadaPendiente === null) && inicial.sinCoincidencias === null && inicial.filas.length === cuentas.TODO,
+      `${enCero.map(([clave, x]) => `${clave}: ${x.vacia.texto}`).join(' | ')}`,
+    );
+    await clic(page, 'section.pendientes .estado-vacio button', 'Ver todo');
+    await pausa(250);
+  } else {
+    informar('E-96', 'Una vista sin filas', 'el escenario tiene pendientes en las cuatro vistas');
+    await page.click(vista('TODO'));
+    await pausa(250);
+  }
+  // Volver a tocar la vista elegida deja «Todo».
+  await page.click(vista('REVISIONES'));
+  await pausa(200);
+  await page.click(vista('REVISIONES'));
+  await pausa(250);
+  const deVuelta = await espacioEnPantalla(page);
+  comprobar('E-84', 'Volver a tocar la vista elegida deja «Todo», con todos los pendientes', igual(deVuelta.vistas.filter((x) => x.elegida === 'true').map((x) => x.vista), ['TODO']) && deVuelta.filas.length === cuentas.TODO, `${deVuelta.filas.length} filas`);
+
+  // E-85 · «Más filtros»: un área y un tipo exacto, a medida ──────────────────────────────────────────────
+  const conArea = cartera.items.find((p) => cartera.items.some((q) => q.domain !== p.domain))?.domain ?? cartera.items[0].domain;
+  const tipoSuelto = cartera.items.find((p) => p.domain === conArea).kind;
+  const NOMBRE_DEL_TIPO = { REVIEW_OVERDUE: 'Revisión vencida', REVIEW_DUE_SOON: 'Revisión próxima', REVIEW_UNDATED: 'Revisión sin fecha', PLAN_DRAFT_PENDING: 'Plan en borrador', NO_ACTIVE_PLAN: 'Sin plan activo', FORM_REQUEST_OPEN: 'Formulario sin responder', ANTHRO_DRAFT_PENDING: 'Evaluación en preparación' };
+  const antesDeFiltrar = v.urls.length;
+  await clic(page, 'section.pendientes .vistas-de-la-linea__mas', 'Más filtros');
+  await page.waitForSelector('section.pendientes .pendientes__filtros select', { timeout: 5_000 });
+  const camposDeFiltros = await textos(page, 'section.pendientes .pendientes__filtros label');
+  await elegir(page, 'section.pendientes .pendientes__filtros', 'Área', conArea);
+  await pausa(250);
+  const porArea = await espacioEnPantalla(page);
+  const delArea = cartera.items.filter((p) => p.domain === conArea);
+  await elegir(page, 'section.pendientes .pendientes__filtros', 'Tipo de pendiente', tipoSuelto);
+  await pausa(250);
+  const porAreaYTipo = await espacioEnPantalla(page);
+  const delAreaYTipo = delArea.filter((p) => p.kind === tipoSuelto);
+  const coincidenEscrito = (n) => `${n === 1 ? 'Un pendiente coincide' : `${num(n)} pendientes coinciden`}, de ${num(cuentas.TODO)}.`;
+  comprobar(
+    'E-85',
+    '«Más filtros» guarda el área, el tipo exacto y el período del último registro. Con un área elegida las filas son las de esa área, ninguna vista queda elegida, lo puesto se lista con su salida y se dice cuántos coinciden de cuántos; sumar un tipo exacto acota más. Las cantidades de las vistas no cambian, y nada de esto le pide algo a la API',
+    igual(camposDeFiltros.slice(0, 2), ['Área', 'Tipo de pendiente']) &&
+      camposDeFiltros.includes('Desde') &&
+      camposDeFiltros.includes('Hasta') &&
+      /Período del último registro/.test(await texto(page, 'section.pendientes .pendientes__periodo')) &&
+      /Acota solo el último registro de cada fila\. Los pendientes no cambian\./.test(await texto(page, 'section.pendientes .pendientes__periodo')) &&
+      igual(porArea.filas, delArea.map((p) => filaDe(p, zona, false))) &&
+      porArea.vistas.every((x) => x.elegida === 'false' && x.cuenta === num(cuentas[x.vista])) &&
+      igual(porArea.etiquetas, [`Área: ${AREA[conArea]}`]) &&
+      porArea.coinciden === coincidenEscrito(delArea.length) &&
+      porArea.masFiltros === 'Más filtros (1)' &&
+      igual(porAreaYTipo.filas, delAreaYTipo.map((p) => filaDe(p, zona, false))) &&
+      igual(porAreaYTipo.etiquetas, [`Área: ${AREA[conArea]}`, `Tipo: ${NOMBRE_DEL_TIPO[tipoSuelto]}`]) &&
+      porAreaYTipo.coinciden === coincidenEscrito(delAreaYTipo.length) &&
+      porAreaYTipo.masFiltros === 'Más filtros (2)' &&
+      pedidos('/me/', antesDeFiltrar).length === 0,
+    `${AREA[conArea]}: ${porArea.filas.length} de ${cuentas.TODO} · ${porArea.etiquetas.join(', ')} · «${porArea.coinciden}» · con ${NOMBRE_DEL_TIPO[tipoSuelto]}: ${porAreaYTipo.filas.length} · ${porAreaYTipo.masFiltros}`,
+  );
+  await clic(page, 'section.pendientes .filtros-activos button', 'Limpiar filtros');
+  await pausa(250);
+  const limpio = await espacioEnPantalla(page);
+  comprobar('E-85', '«Limpiar filtros» vuelve a «Todo», sin nada puesto', igual(limpio.vistas.filter((x) => x.elegida === 'true').map((x) => x.vista), ['TODO']) && limpio.etiquetas.length === 0 && limpio.filas.length === cuentas.TODO && limpio.masFiltros === 'Más filtros', `${limpio.filas.length} filas · ${limpio.masFiltros}`);
+
+  // E-86 · El período acota solo el último registro ───────────────────────────────────────────────────────
+  // Un período anterior a todo lo registrado: los pendientes siguen y su último registro pasa a «sin registros en el período».
+  const desde = diaMenos(hoy, 400);
+  const hasta = diaMenos(hoy, 370);
+  const antesDelPeriodo = v.urls.length;
+  await cupo(v, 60);
+  await fijarFecha(page, 'section.pendientes .pendientes__periodo input[type="date"]', desde);
+  await page.evaluate(
+    (valor) => {
+      const el = document.querySelectorAll('section.pendientes .pendientes__periodo input[type="date"]')[1];
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, valor);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    },
+    hasta,
+  );
+  await clic(page, 'section.pendientes .pendientes__periodo button', 'Ver período');
+  await quieto(page, v);
+  const conPeriodo = await espacioEnPantalla(page);
+  const carteraDelPeriodo = await leerCartera(`&periodStart=${desde}&periodEnd=${hasta}`);
+  const delPeriodo = pedidos('/me/portfolio', antesDelPeriodo);
+  await page.evaluate(() => [...document.querySelectorAll('section.pendientes .filtros-activos .chip')].find((c) => c.innerText.startsWith('Último registro'))?.click());
+  await quieto(page, v);
+  const sinPeriodo = await espacioEnPantalla(page);
+  comprobar(
+    'E-86',
+    'El período se le pide a la API (una lectura, con sus dos fechas) y no cambia qué está pendiente: las filas son las mismas, y su último registro es el de ese período («Sin registros en el período» donde no hay). Lo puesto se lista con su salida; al quitarlo, el último registro vuelve a ser el de toda la historia',
+    delPeriodo.length === 1 &&
+      delPeriodo[0].includes(`periodStart=${desde}`) &&
+      delPeriodo[0].includes(`periodEnd=${hasta}`) &&
+      igual(conPeriodo.filas, carteraDelPeriodo.items.map((p) => filaDe(p, zona, true))) &&
+      igual(conPeriodo.filas.map((f) => `${f.persona}|${f.area}|${f.tipo}`), inicial.filas.map((f) => `${f.persona}|${f.area}|${f.tipo}`)) &&
+      conPeriodo.filas.some((f) => f.ultimo === 'Sin registros en el período') &&
+      igual(conPeriodo.etiquetas, [`Último registro: ${diaCivil(desde)} – ${diaCivil(hasta)}`]) &&
+      conPeriodo.vistas.find((x) => x.vista === 'TODO').elegida === 'true' &&
+      igual(sinPeriodo.filas, esperadas) &&
+      sinPeriodo.etiquetas.length === 0 &&
+      !sinPeriodo.filas.some((f) => f.ultimo === 'Sin registros en el período'),
+    `${delPeriodo.map((u) => u.replace(API, '').slice(0, 90)).join(' · ')} · con período: ${[...new Set(conPeriodo.filas.map((f) => f.ultimo))].join(', ')} · sin período: ${[...new Set(sinPeriodo.filas.map((f) => f.ultimo))].join(', ')}`,
+  );
+  await clic(page, 'section.pendientes .vistas-de-la-linea__mas', 'Más filtros');
+  await pausa(200);
+
+  // E-88 · «Actualizar» vuelve a leer todo lo que la página muestra ─────────────────────────────────────────
+  const antesDeActualizar = v.urls.length;
+  await actualizar();
+  const actualizado = await espacioEnPantalla(page);
+  comprobar(
+    'E-88',
+    '«Actualizar», al pie de los pendientes, vuelve a leer las tres listas (una vez cada una) y dice a qué hora se consultó',
+    pedidos('/me/portfolio', antesDeActualizar).length === 1 && pedidos('/me/relationships', antesDeActualizar).length === 1 && pedidos('/me/relationship-requests', antesDeActualizar).length === 1 && /^Consultado a las \d{2}:\d{2}$/.test(actualizado.consulta ?? '') && igual(actualizado.filas, esperadas),
+    `${pedidos('/me/', antesDeActualizar).map((u) => u.replace(`${API}/api/v1`, '').slice(4, 40)).join(' · ')} · ${actualizado.consulta}`,
+  );
+
+  // E-98 · Los siete tipos y el aviso de vista parcial, con una respuesta simulada en el navegador ────────────────────
+  const simulada = carteraSimulada(estado);
+  v.reglas = [{ coincide: (u) => u.includes('/me/portfolio'), accion: 'entregar', cuerpo: simulada }];
+  await actualizar();
+  const conSiete = await espacioEnPantalla(page);
+  const cuentasSimuladas = cuentasDe(simulada.data.items);
+  const cajas = () =>
+    page.evaluate(() => {
+      const fin = (s) => Math.round(document.querySelector(s).getBoundingClientRect().bottom + window.scrollY);
+      return { pendientes: fin('section.pendientes'), directorio: fin('section.directorio'), pagina: document.documentElement.scrollHeight };
+    });
+  const medidas = await cajas();
+  // Con filas del alto de las tarjetas de antes, la misma medición tiene que dar que no entra.
+  await page.addStyleTag({ content: 'section.pendientes tr.pendiente { height: 215px !important; }' }).then((h) => h.evaluate((s) => s.setAttribute('data-recorrido', 'filas-altas')));
+  await pausa(200);
+  const conFilasAltas = await cajas();
+  await page.evaluate(() => document.querySelector('style[data-recorrido="filas-altas"]').remove());
+  await pausa(200);
+  // Lo mismo, medido en otras dos ventanas (se informa; no se exige): la de Dirección, estimada, y la más angosta de
+  // las de escritorio con dos columnas.
+  const otrasVentanas = {};
+  for (const [ancho, alto] of [
+    [1920, 950],
+    [1280, 900],
+  ]) {
+    await page.setViewport({ width: ancho, height: alto });
+    await pausa(400);
+    const c = await cajas();
+    otrasVentanas[`${ancho} × ${alto}`] = `${c.pendientes} y ${c.directorio} px`;
+  }
+  await page.setViewport({ width: 1440, height: 900 });
+  await pausa(400);
+  comprobar(
+    'E-98',
+    'Con una respuesta simulada que trae los siete tipos (la API y la base no se tocan), cada tipo se dice con su frase de BE, su ícono, su último registro («Sin registros todavía» donde no hay) y el destino de su «Abrir»; las vistas cuentan 7, 3, 2, 1 y 1',
+    igual(conSiete.filas, simulada.data.items.map((p) => filaDe(p, simulada.data.timeZone, false))) &&
+      new Set(conSiete.filas.map((f) => f.tipo)).size === 7 &&
+      igual(conSiete.vistas.map((x) => x.cuenta), ORDEN_DE_LAS_VISTAS.map((x) => num(cuentasSimuladas[x]))) &&
+      igual(Object.values(cuentasSimuladas), [7, 3, 2, 1, 1]) &&
+      conSiete.filas.filter((f) => f.ultimo === 'Sin registros todavía').length === 2,
+    conSiete.filas.map((f) => `${f.texto} (${f.ultimo}) → ${f.destino.replace(/id=[^&]+/, 'id=…')}`).join(' | '),
+  );
+  comprobar(
+    'E-88',
+    'Cuando la respuesta dice que hay datos fuera del alcance del profesional (respuesta simulada), el aviso de vista parcial está debajo de las vistas y arriba de la tabla, con el texto de BE: es el mismo lugar donde con los datos reales no hay nada',
+    simulada.data.partialView === true &&
+      conSiete.parcial === 'Hay datos de algún asesorado que no podés ver desde tu alcance: no se cuentan acá.' &&
+      (await page.evaluate(() => {
+        const y = (s) => document.querySelector(s).getBoundingClientRect().top;
+        return y('section.pendientes .vistas-de-la-linea') < y('section.pendientes .pendientes__parcial') && y('section.pendientes .pendientes__parcial') < y('section.pendientes table');
+      })),
+    conSiete.parcial ?? 'no está',
+  );
+  comprobar(
+    'E-94',
+    'A 1440 × 900, con siete pendientes (respuesta simulada) y los asesorados del escenario, los pendientes y el directorio terminan dentro de la primera pantalla (antes la página medía tres); con filas del alto de las tarjetas de antes, la misma medición da que no entran (prueba de la prueba)',
+    medidas.pendientes <= 900 && medidas.directorio <= 900 && conFilasAltas.pendientes > 900,
+    `los pendientes terminan en ${medidas.pendientes} px y el directorio en ${medidas.directorio} px; la página mide ${medidas.pagina} px · con filas de 215 px: ${conFilasAltas.pendientes} px · en otras ventanas: ${Object.entries(otrasVentanas).map(([ventana, fin]) => `${ventana}, ${fin}`).join('; ')}`,
+  );
+  v.reglas = [];
+  await actualizar();
+
+  // E-96 · Una falla dice su motivo, y no esconde lo que sí se pudo leer ────────────────────────────────────
+  v.reglas = [{ coincide: (u) => u.includes('/me/portfolio'), accion: 'responder', status: 429, codigo: 'RATE_LIMITED' }];
+  await actualizar();
+  const conLimite = await espacioEnPantalla(page);
+  v.reglas = [{ coincide: (u) => u.includes('/me/portfolio'), accion: 'cortar' }];
+  await clic(page, 'section.pendientes .estado-de-grafico--error button', 'Reintentar');
+  await quieto(page, v);
+  const sinRed = await espacioEnPantalla(page);
+  v.reglas = [];
+  await clic(page, 'section.pendientes .estado-de-grafico--error button', 'Reintentar');
+  await quieto(page, v);
+  const recuperado = await espacioEnPantalla(page);
+  comprobar(
+    'E-96',
+    'Si la lectura de los pendientes falla, el bloque dice qué pasó, por qué y qué hacer («muchas consultas seguidas… Esperá un minuto»; sin red, «no hay conexión»): las vistas quedan sin número, «hoy» no se dice, no aparece «Nada pendiente», y el directorio sigue a la vista. «Reintentar» lo trae',
+    /^No pudimos cargar los pendientes Hubo muchas consultas seguidas\. Esperá un minuto y reintentá\. Reintentar/.test(conLimite.falla ?? '') &&
+      conLimite.vistas.every((x) => x.cuenta === null) &&
+      conLimite.hoy === null &&
+      conLimite.vacio === null &&
+      conLimite.filas.length === 0 &&
+      conLimite.personas.length === inicial.personas.length &&
+      /^No pudimos cargar los pendientes No hay conexión con BE\. Revisá la conexión y reintentá\./.test(sinRed.falla ?? '') &&
+      recuperado.falla === null &&
+      igual(recuperado.filas, esperadas) &&
+      recuperado.hoy === hoyEscrito,
+    `${conLimite.falla} | ${sinRed.falla} | después: ${recuperado.filas.length} filas`,
+  );
+  v.reglas = [{ coincide: (u) => u.includes('/me/relationships'), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' }];
+  await actualizar();
+  const sinDirectorio = await espacioEnPantalla(page);
+  v.reglas = [];
+  await clic(page, 'section.directorio .estado-de-grafico--error button', 'Reintentar');
+  await quieto(page, v);
+  const conDirectorio = await espacioEnPantalla(page);
+  comprobar(
+    'E-96',
+    'Si falla la lectura de los asesorados, el directorio lo dice con su motivo («BE no está disponible») y no dice que no hay asesorados; los pendientes siguen. «Reintentar» lo trae',
+    /^No pudimos cargar tus asesorados BE no está disponible en este momento\. Reintentá en unos minutos\./.test(sinDirectorio.fallaDelDirectorio ?? '') && sinDirectorio.directorioVacio === null && sinDirectorio.personas.length === 0 && sinDirectorio.cuentaDelDirectorio === null && igual(sinDirectorio.filas, esperadas) && conDirectorio.fallaDelDirectorio === null && conDirectorio.personas.length === inicial.personas.length,
+    `${sinDirectorio.fallaDelDirectorio} · pendientes a la vista: ${sinDirectorio.filas.length} · después: ${conDirectorio.personas.length} personas`,
+  );
+  // Las fallas de arriba fueron simuladas: lo que sigue responde por los errores reales.
+  v.errores.length = 0;
+  v.malas.length = 0;
+
+  // E-89 · El directorio ─────────────────────────────────────────────────────────────────────────────────
+  const ORDEN_DE_LAS_AREAS = ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'];
+  const FINALIDAD = { ACOMPANAMIENTO_NUTRICIONAL: 'Acompañamiento nutricional', PLANIFICACION_DEL_ENTRENAMIENTO: 'Planificación del entrenamiento', EVALUACION_ANTROPOMETRICA: 'Evaluación antropométrica' };
+  /** Las palabras de cada estado de vínculo, para el profesional (10-B04 §28; H10-04-04): seis casos, escritos a mano. */
+  const estadoDe = (x) => {
+    if (x.relationshipState === 'FINALIZADO') return ['Finalizado', null];
+    if (x.relationshipState === 'PAUSADO') return ['Pausado · sin acceso', null];
+    if (x.consentState === 'REQUIRED') return ['Vínculo activo', 'Acceso pendiente de autorización del asesorado'];
+    if (x.consentState === 'REVOKED') return ['Consentimiento revocado', 'Acceso no disponible'];
+    if (x.accessMode === 'CONTEXTUAL') return ['Activo · acceso contextual', null];
+    return ['Vínculo activo', 'Acceso no disponible'];
+  };
+  const conAccesoDe = (x) => estadoDe(x)[0] === 'Activo · acceso contextual';
+  const PESO = { ACEPTADO: 0, PAUSADO: 1, FINALIZADO: 2 };
+  const personasEsperadas = [...new Set(vinculos.map((x) => x.advisee.identityId))].map((id) => {
+    const suyos = vinculos.filter((x) => x.advisee.identityId === id).sort((a, b) => ORDEN_DE_LAS_AREAS.indexOf(a.scope.code) - ORDEN_DE_LAS_AREAS.indexOf(b.scope.code) || b.acceptedAt.localeCompare(a.acceptedAt));
+    const conAcceso = [];
+    const sinAcceso = [];
+    for (const alcance of ORDEN_DE_LAS_AREAS) {
+      const delArea = suyos.filter((x) => x.scope.code === alcance);
+      if (delArea.length === 0) continue;
+      const activo = delArea.find(conAccesoDe);
+      if (activo) conAcceso.push(activo.scope.label);
+      else {
+        const [elQueMasDice] = [...delArea].sort((a, b) => PESO[a.relationshipState] - PESO[b.relationshipState]);
+        sinAcceso.push(`${elQueMasDice.scope.label}: ${estadoDe(elQueMasDice).filter(Boolean).join(' · ')}`);
+      }
+    }
+    return { id, nombre: suyos[0].advisee.displayName, conAcceso: conAcceso.length ? conAcceso.join(' · ') : null, sinAcceso, destino: `/pro/advisees?id=${id}`, nombreDelEnlace: `Abrir la ficha de ${suyos[0].advisee.displayName}`, vinculos: suyos };
+  });
+  const sinDetalle = ({ vinculos: _vinculos, ...resto }) => resto;
+  const directorio = conDirectorio.personas.map(({ abierta: _abierta, vinculos: _vinculos, ...resto }) => resto);
+  comprobar(
+    'E-89',
+    'El directorio tiene una persona por renglón, tantas como asesorados distintos tiene el profesional en la API y en su orden; el título las cuenta; cada una dice su referencia, sus áreas con acceso en el orden de BE (y las que no lo tienen, con las palabras de BE), y «Abrir», que lleva a su ficha y la nombra',
+    personasEsperadas.length > 0 && igual(directorio, personasEsperadas.map(sinDetalle)) && conDirectorio.cuentaDelDirectorio === `${num(personasEsperadas.length)} ${personasEsperadas.length === 1 ? 'persona' : 'personas'}` && conDirectorio.personas.every((p) => p.abierta === 'false' && p.vinculos.length === 0),
+    `${conDirectorio.cuentaDelDirectorio} · ${conDirectorio.personas.map((p) => `${p.nombre}: ${p.conAcceso ?? '—'}${p.sinAcceso.length ? ` (${p.sinAcceso.join('; ')})` : ''}`).join(' | ')}`,
+  );
+  // El detalle de una persona: cada vínculo con su finalidad, su estado y desde cuándo (lo que antes estaba a la vista).
+  const conVarias = personasEsperadas.reduce((a, b) => (b.vinculos.length > a.vinculos.length ? b : a));
+  const deEsaPersona = `section.directorio li.persona[data-persona="${conVarias.id}"]`;
+  await page.click(`${deEsaPersona} .persona__datos`);
+  await pausa(250);
+  const abierta = (await espacioEnPantalla(page)).personas.find((p) => p.id === conVarias.id);
+  const diaDelNavegador = (instante) => new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(new Date(instante));
+  const detalleEsperado = conVarias.vinculos.map((x) => `${x.scope.label} · ${FINALIDAD[x.purpose]} ${estadoDe(x).filter(Boolean).join(' ')} Desde el ${diaDelNavegador(x.acceptedAt)}`);
+  await page.click(`${deEsaPersona} .persona__datos`);
+  await pausa(200);
+  const cerrada = (await espacioEnPantalla(page)).personas.find((p) => p.id === conVarias.id);
+  comprobar(
+    'E-89',
+    'Tocar a una persona abre, en el lugar, el detalle de cada uno de sus vínculos: el área con su finalidad, el estado con las palabras de BE y desde cuándo. Volver a tocarla lo cierra',
+    abierta.abierta === 'true' && igual(abierta.vinculos, detalleEsperado) && detalleEsperado.length > 0 && cerrada.abierta === 'false' && cerrada.vinculos.length === 0,
+    `${abierta.nombre}: ${abierta.vinculos.join(' | ')}`,
+  );
+
+  // E-90 · El buscador ───────────────────────────────────────────────────────────────────────────────────
+  const buscador = 'section.directorio .buscador-del-directorio input[type="search"]';
+  const rotuloDelBuscador = await page.evaluate((s) => {
+    const campo = document.querySelector(s);
+    return { rotulo: document.querySelector(`label[for="${campo.id}"]`)?.textContent.trim() ?? null, ejemplo: campo.placeholder };
+  }, buscador);
+  const antesDeBuscar = v.urls.length;
+  const laDeA = personasEsperadas.find((p) => p.id === estado.aseId) ?? personasEsperadas[0];
+  // El final de una referencia, en mayúsculas: quiénes la tienen se calcula a mano sobre los nombres de la API.
+  const buscado = laDeA.nombre.slice(-4).toUpperCase();
+  const lasQueCoinciden = personasEsperadas.filter((p) => p.nombre.toLowerCase().includes(buscado.toLowerCase())).map((p) => p.id);
+  await page.type(buscador, buscado);
+  await pausa(300);
+  const buscada = await espacioEnPantalla(page);
+  // Se reemplaza lo escrito con el teclado (seleccionar todo y escribir): tres clics no seleccionan un texto sin espacios.
+  await page.focus(buscador);
+  await page.keyboard.down('Control');
+  await page.keyboard.press('a');
+  await page.keyboard.up('Control');
+  await page.keyboard.type('zzzz');
+  await pausa(300);
+  const sinNadie = await espacioEnPantalla(page);
+  await clic(page, 'section.directorio .estado-vacio button', 'Quitar la búsqueda');
+  await pausa(300);
+  const otraVezTodas = await espacioEnPantalla(page);
+  comprobar(
+    'E-90',
+    'El buscador se llama «Buscar por referencia» (también para el lector de pantalla) y filtra mientras se escribe, sin pedirle nada a la API: con el final de una referencia, en mayúsculas, quedan las personas que la tienen y el título dice cuántas de cuántas; con algo que no coincide dice que ninguna referencia coincide (no que no hay asesorados) y ofrece quitar la búsqueda, que las trae a todas',
+    rotuloDelBuscador.rotulo === 'Buscar por referencia' &&
+      rotuloDelBuscador.ejemplo === 'Buscar por referencia' &&
+      lasQueCoinciden.length >= 1 &&
+      lasQueCoinciden.length < personasEsperadas.length &&
+      igual(buscada.personas.map((p) => p.id), lasQueCoinciden) &&
+      buscada.cuentaDelDirectorio === `${num(lasQueCoinciden.length)} de ${num(personasEsperadas.length)} personas` &&
+      sinNadie.personas.length === 0 &&
+      sinNadie.sinReferencias === 'Ninguna referencia coincide con «zzzz». Quitar la búsqueda' &&
+      sinNadie.directorioVacio === null &&
+      sinNadie.cuentaDelDirectorio === `0 de ${num(personasEsperadas.length)} personas` &&
+      otraVezTodas.personas.length === personasEsperadas.length &&
+      pedidos('/me/', antesDeBuscar).length === 0,
+    `«${buscado}»: ${buscada.personas.map((p) => p.nombre).join(', ')} (${buscada.cuentaDelDirectorio}) · «zzzz»: ${sinNadie.sinReferencias} · pedidos: ${pedidos('/me/', antesDeBuscar).length}`,
+  );
+
+  // E-92 · Las solicitudes enviadas, a un clic ─────────────────────────────────────────────────────────────
+  const ESTADO_DE_SOLICITUD = { PENDIENTE: 'Pendiente', ACEPTADA: 'Aceptada', RECHAZADA: 'Rechazada', CADUCADA: 'Caducada', INVALIDADA: 'Sin efecto' };
+  const sinResponder = enviadas.filter((s) => s.state === 'PENDIENTE').length;
+  await page.click('.directorio__solicitudes');
+  await page.waitForSelector('dialog.dialogo--solicitudes[open]', { timeout: 5_000 });
+  await pausa(300);
+  const listaAbierta = await page.evaluate(() => {
+    const d = document.querySelector('dialog.dialogo--solicitudes');
+    return {
+      modal: d.matches(':modal'),
+      titulo: d.querySelector('h2').innerText.trim(),
+      focoEnElTitulo: document.activeElement === d.querySelector('h2'),
+      columnas: [...d.querySelectorAll('thead th')].map((x) => x.innerText.trim()),
+      filas: [...d.querySelectorAll('tbody tr')].map((f) => [...f.querySelectorAll('td')].slice(0, 3).map((c) => c.innerText.replace(/\s+/g, ' ').trim()).join(' | ')),
+    };
+  });
+  const axeDeLaLista = await axe(page);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 5_000 });
+  const focoAlCerrarLaLista = await page.evaluate(() => document.activeElement?.matches('.directorio__solicitudes') ?? false);
+  // La prueba de la prueba del foco: si el título no pudiera recibirlo, el diálogo se abriría con el foco en otro lado
+  // (en «Cerrar», al final) y esta misma medición tiene que decirlo. Este navegador ya enfoca el primer elemento
+  // enfocable al abrir un diálogo, y por eso quitar solo el pedido de foco de la pantalla no cambia nada acá.
+  await page.evaluate(() => document.querySelector('dialog.dialogo--solicitudes h2').removeAttribute('tabindex'));
+  await page.click('.directorio__solicitudes');
+  await page.waitForSelector('dialog.dialogo--solicitudes[open]', { timeout: 5_000 });
+  await pausa(300);
+  const sinTituloEnfocable = await page.evaluate(() => document.activeElement === document.querySelector('dialog.dialogo--solicitudes h2'));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 5_000 });
+  await page.evaluate(() => document.querySelector('dialog.dialogo--solicitudes h2').setAttribute('tabindex', '-1'));
+  comprobar(
+    'E-92',
+    '«Solicitudes enviadas (N)», al pie del directorio, dice cuántas envió el profesional (las de la API) y, si alguna espera respuesta, lo dice aparte. Abre un diálogo que retiene el foco y se abre por su título, con una fila por solicitud (la persona, el área con su finalidad y el estado con la palabra de BE). Escape lo cierra y devuelve el foco. Con un título que no puede recibir el foco, la misma medición dice que el foco no está en él (prueba de la prueba)',
+    conDirectorio.solicitudes === `Solicitudes enviadas (${num(enviadas.length)})` &&
+      conDirectorio.sinResponder === (sinResponder > 0 ? `${num(sinResponder)} ${sinResponder === 1 ? 'pendiente de respuesta' : 'pendientes de respuesta'}` : null) &&
+      listaAbierta.modal &&
+      listaAbierta.titulo === 'Solicitudes enviadas' &&
+      listaAbierta.focoEnElTitulo &&
+      !sinTituloEnfocable &&
+      igual(listaAbierta.columnas, ['Asesorado', 'Alcance', 'Estado', 'Enviada']) &&
+      enviadas.length > 0 &&
+      igual(listaAbierta.filas, enviadas.map((s) => `${s.advisee.displayName} | ${s.scope.label} · ${FINALIDAD[s.purpose]} | ${ESTADO_DE_SOLICITUD[s.state]}`)) &&
+      axeDeLaLista.length === 0 &&
+      focoAlCerrarLaLista,
+    `${conDirectorio.solicitudes}${conDirectorio.sinResponder ? ` · ${conDirectorio.sinResponder}` : ''} · ${listaAbierta.filas.length} filas · estados: ${[...new Set(enviadas.map((s) => ESTADO_DE_SOLICITUD[s.state]))].join(', ')} · axe: ${axeDeLaLista.length} · foco en el título: ${listaAbierta.focoEnElTitulo}; con el título sin foco posible: ${sinTituloEnfocable} · foco al cerrar: ${focoAlCerrarLaLista}`,
+  );
+
+  // E-91 · «Solicitar vínculo», a un clic ─────────────────────────────────────────────────────────────────
+  const formulario = 'dialog.dialogo--formulario';
+  await page.click('.espacio-profesional__solicitar');
+  await page.waitForSelector(`${formulario}[open]`, { timeout: 5_000 });
+  await pausa(300);
+  const alAbrirElFormulario = await page.evaluate((s) => {
+    const d = document.querySelector(s);
+    return {
+      modal: d.matches(':modal'),
+      titulo: d.querySelector('h2').innerText.trim(),
+      focoEnElPrimerCampo: document.activeElement === d.querySelector('input'),
+      campos: [...d.querySelectorAll('label')].map((l) => l.innerText.trim()),
+      finalidad: [...d.querySelectorAll('p')].map((p) => p.innerText.trim()).find((t) => t.startsWith('Finalidad')) ?? null,
+      botones: [...d.querySelectorAll('.acciones button')].map((b) => b.innerText.trim()),
+    };
+  }, formulario);
+  const axeDelFormulario = await axe(page);
+  const antesDeEnviar = v.urls.length;
+  await clic(page, `${formulario} .acciones button`, 'Solicitar vínculo');
+  await pausa(300);
+  const vacio = await page.evaluate((s) => [...document.querySelectorAll(`${s} .campo__error`)].map((e) => e.innerText.replace(/\s+/g, ' ').trim()), formulario);
+  const enviosVacios = pedidos('/relationship-requests', antesDeEnviar, 'POST').length;
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 5_000 });
+  const focoAlCerrarElFormulario = await page.evaluate(() => document.activeElement?.matches('.espacio-profesional__solicitar') ?? false);
+  comprobar(
+    'E-91',
+    '«Solicitar vínculo» abre el formulario de siempre en un diálogo que retiene el foco, con el foco en el primer campo: el identificador con su ayuda, el alcance, la finalidad que sale del alcance, y «Volver» y «Solicitar vínculo». Enviado vacío marca los dos campos y no le pide nada a la API. Escape lo cierra y devuelve el foco al botón',
+    alAbrirElFormulario.modal &&
+      alAbrirElFormulario.titulo === 'Solicitar vínculo' &&
+      alAbrirElFormulario.focoEnElPrimerCampo &&
+      igual(alAbrirElFormulario.campos, ['Identificador BE del asesorado', 'Alcance']) &&
+      alAbrirElFormulario.finalidad === 'Finalidad: —' &&
+      igual(alAbrirElFormulario.botones, ['Volver', 'Solicitar vínculo']) &&
+      igual(vacio, ['⚠ Ingresá el identificador BE del asesorado.', '⚠ Elegí un alcance.']) &&
+      enviosVacios === 0 &&
+      axeDelFormulario.length === 0 &&
+      focoAlCerrarElFormulario,
+    `${alAbrirElFormulario.campos.join(', ')} · ${alAbrirElFormulario.finalidad} · vacío: ${vacio.join(' ')} · envíos: ${enviosVacios} · axe: ${axeDelFormulario.length} · foco al cerrar: ${focoAlCerrarElFormulario}`,
+  );
+  // Con un identificador que no existe: el mensaje neutro, que no dice si la persona existe. No crea nada.
+  await page.click('.espacio-profesional__solicitar');
+  await page.waitForSelector(`${formulario}[open]`, { timeout: 5_000 });
+  await page.type(`${formulario} input`, '00000000-0000-4000-8000-000000000000');
+  await page.select(`${formulario} select`, 'NUTRICION');
+  await pausa(200);
+  const finalidadElegida = await page.evaluate((s) => [...document.querySelectorAll(`${s} p`)].map((p) => p.innerText.trim()).find((t) => t.startsWith('Finalidad')) ?? null, formulario);
+  const antesDelRechazo = v.urls.length;
+  await clic(page, `${formulario} .acciones button`, 'Solicitar vínculo');
+  await quieto(page, v);
+  const rechazo = await page.evaluate((s) => ({ abierto: document.querySelector(s).open, aviso: document.querySelector(`${s} .aviso`)?.innerText.replace(/\s+/g, ' ').trim() ?? null }), formulario);
+  const enviosRechazados = pedidos('/relationship-requests', antesDelRechazo, 'POST').length;
+  await clic(page, `${formulario} .acciones button`, 'Volver');
+  await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 5_000 });
+  comprobar(
+    'E-91',
+    'Con un identificador que no es de nadie, el formulario lo pide una vez y dice lo mismo que diría por cualquier otro rechazo, sin revelar si la persona existe; queda abierto para corregir, y «Volver» lo cierra. La finalidad acompaña al alcance elegido',
+    finalidadElegida === 'Finalidad: Acompañamiento nutricional' && enviosRechazados === 1 && rechazo.abierto && /No pudimos enviar la solicitud con esos datos\. Revisá el identificador y el alcance\./.test(rechazo.aviso ?? '') && !/no existe|no encontr/i.test(rechazo.aviso ?? ''),
+    `${finalidadElegida} · envíos: ${enviosRechazados} · ${rechazo.aviso}`,
+  );
+  // El rechazo fue pedido a propósito: no es un error del recorrido.
+  v.errores.length = 0;
+  v.malas.length = 0;
+
+  // E-95 · La dirección no cambia ────────────────────────────────────────────────────────────────────────
+  comprobar('E-95', 'Después de elegir vistas, filtrar, buscar y abrir los dos diálogos, la dirección sigue siendo `/pro`, sin parámetros: lo elegido es de la visita', new URL(page.url()).pathname.replace(/\/$/, '') === '/pro' && new URL(page.url()).search === '' && new URL(page.url()).hash === '', page.url().replace(WEB, ''));
+
+  // PRO-22 · El teclado ─────────────────────────────────────────────────────────────────────────────────
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.click('.espacio-profesional h1');
+  const conTab = [];
+  for (let i = 0; i < 60 && conTab.at(-1)?.clase !== 'solicitudes'; i++) {
+    await page.keyboard.press('Tab');
+    conTab.push(
+      await page.evaluate(() => {
+        const a = document.activeElement;
+        const CLASES = [
+          ['.espacio-profesional__solicitar', 'solicitar'],
+          ['section.pendientes .vista-de-la-linea', 'vista'],
+          ['section.pendientes .vistas-de-la-linea__mas', 'filtros'],
+          ['a.pendiente__enlace', 'abrir-pendiente'],
+          ['.pendientes__actualizar', 'actualizar'],
+          ['.buscador-del-directorio input', 'buscar'],
+          ['.persona__datos', 'persona'],
+          ['a.persona__abrir', 'abrir-persona'],
+          ['.directorio__solicitudes', 'solicitudes'],
+        ];
+        const clase = CLASES.find(([s]) => a?.matches(s))?.[1] ?? 'otro';
+        const caja = a?.getBoundingClientRect();
+        return { clase, alto: caja ? Math.round(caja.height) : 0, contorno: a ? getComputedStyle(a).outlineStyle : 'none' };
+      }),
+    );
+  }
+  const ordenDelFoco = conTab.map((x) => x.clase);
+  const ordenEsperado = ['solicitar', 'vista', 'vista', 'vista', 'vista', 'vista', 'filtros', ...cartera.items.map(() => 'abrir-pendiente'), 'actualizar', 'buscar', ...personasEsperadas.flatMap(() => ['persona', 'abrir-persona']), 'solicitudes'];
+  comprobar(
+    'PRO-22',
+    'Con el teclado se llega, en el orden en que se ven, a «Solicitar vínculo», las cinco vistas, «Más filtros», el «Abrir» de cada pendiente, «Actualizar», el buscador, cada persona con su «Abrir» y las solicitudes; cada uno mide 44 px o más y muestra el foco',
+    igual(ordenDelFoco, ordenEsperado) && conTab.every((x) => x.alto >= 44 && x.contorno !== 'none'),
+    `${ordenDelFoco.join(' → ')} · altos: ${[...new Set(conTab.map((x) => x.alto))].join(', ')} px`,
+  );
+
+  // PRO-22 · Accesibilidad y palabras, con «Más filtros» y una persona abiertos, en los dos temas ─────────────────
+  await clic(page, 'section.pendientes .vistas-de-la-linea__mas', 'Más filtros');
+  await page.click(`${deEsaPersona} .persona__datos`);
+  await pausa(300);
+  const temaInicial = await page.evaluate(() => document.documentElement.dataset.tema);
+  const violaciones = {};
+  for (const tema of ['claro', 'azul-noche']) {
+    await ponerTema(page, tema);
+    await pausa(300);
+    violaciones[tema] = await axe(page);
+  }
+  await ponerTema(page, temaInicial);
+  comprobar('PRO-22', 'El Espacio profesional, con «Más filtros» y el detalle de una persona abiertos: axe no encuentra faltas de WCAG 2.2 AA en ninguno de los dos temas', violaciones.claro.length === 0 && violaciones['azul-noche'].length === 0, JSON.stringify(violaciones));
+  const todaLaPagina = await texto(page, 'main');
+  comprobar(
+    'E-87',
+    'La página entera, con «Más filtros» y el detalle de una persona abiertos, no tiene porcentajes ni palabras que califiquen a nadie: describe lo que está pendiente',
+    todaLaPagina.length > 500 && !/%/.test(todaLaPagina) && !/\b(inactiv[oa]|abandon|riesgo|alerta|urgente|cumpli[óo]|incumpli|adherencia|correcto|incorrecto|excelente|insuficiente|atrasad[oa])\b/i.test(todaLaPagina),
+    `${todaLaPagina.length} caracteres`,
+  );
+  await clic(page, 'section.pendientes .vistas-de-la-linea__mas', 'Más filtros');
+  await page.click(`${deEsaPersona} .persona__datos`);
+
+  // E-94 · La composición a cada ancho ───────────────────────────────────────────────────────────────────
+  const composicion = {};
+  for (const ancho of [1440, 1280, 1024, 768, 390]) {
+    await page.setViewport({ width: ancho, height: 900 });
+    await pausa(400);
+    composicion[ancho] = await page.evaluate(() => {
+      const p = document.querySelector('section.pendientes').getBoundingClientRect();
+      const d = document.querySelector('section.directorio').getBoundingClientRect();
+      // Dónde termina la última de las dos tarjetas: el alto de la página no baja del de la ventana, y no diría nada.
+      return { alLado: d.left >= p.right && d.top < p.bottom, debajo: d.top >= p.bottom, desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth, fin: Math.round(Math.max(p.bottom, d.bottom) + window.scrollY) };
+    });
+  }
+  await page.setViewport({ width: 1440, height: 900 });
+  await pausa(400);
+  comprobar(
+    'E-94',
+    'A 1440 y a 1280 px el directorio va al lado de los pendientes; a 1024, debajo. La página no desborda de costado a 1440, 1280, 1024, 768 ni 390 px',
+    composicion[1440].alLado && composicion[1280].alLado && composicion[1024].debajo && Object.values(composicion).every((c) => c.desborde <= 1),
+    Object.entries(composicion).map(([ancho, c]) => `${ancho}: ${c.alLado ? 'al lado' : 'debajo'}, termina en ${c.fin} px${c.desborde > 1 ? `, desborda ${c.desborde} px` : ''}`).join(' · '),
+  );
+  informar('E-94', 'Dónde termina la última tarjeta a 1440 px con los datos del escenario (antes de esta parte la página medía 2.697 px, con las cuatro tarjetas abiertas)', `${composicion[1440].fin} px`);
+  comprobar('PRO-25', 'Sin errores de JavaScript ni respuestas con error de la API durante el recorrido del Espacio profesional (fuera de las fallas y del rechazo pedidos a propósito)', v.errores.length === 0 && v.malas.length === 0, [...v.errores, ...v.malas].slice(0, 4).join(' · ') || 'ninguno');
+}
+
 /**
  * El Resumen por área, la Línea de tiempo por día y Analizar recompuesto, en una misma sesión (una sola entrada de la
  * cuenta: el límite es de cinco cada quince minutos). La parte del Resumen va primero, con la ficha recién abierta: ahí
  * se mira qué guiones cargó. El modo funcional corre las tres antes del encabezado; `resumen`, `linea` y `analizar`
- * corren una sola.
+ * corren una sola. El Espacio profesional va al final, en la misma sesión; solo, con `espacio`.
  */
-async function fichaRecompuesta({ resumen = true, linea = true, analizar = true } = {}) {
+async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true } = {}) {
   const { navegador, page, v } = await abrir();
   // Los guiones que pide la página, desde antes de entrar: para saber con qué se cargó la ficha.
   const guiones = [];
@@ -3350,6 +4106,10 @@ async function fichaRecompuesta({ resumen = true, linea = true, analizar = true 
     if (analizar) {
       empezarDeCero();
       await analizarRecompuesto(page, v);
+    }
+    if (espacio) {
+      empezarDeCero();
+      await espacioProfesional(page, v);
     }
   } finally {
     await navegador.close();
@@ -3633,6 +4393,91 @@ async function capturas() {
  * CSV dicen la clase. Después el asesorado revoca desde su web el acceso de Antropometría y, con la pantalla del
  * profesional todavía abierta, cada consulta nueva (el origen de un punto, la exportación, los gráficos) ya no da nada.
  */
+/**
+ * En el escenario descartable, antes de revocar: pedir un vínculo desde el diálogo del Espacio profesional (un área que
+ * el profesional todavía no tiene con esa persona) y volver a pedirlo. La primera vez la solicitud se crea: el diálogo
+ * se cierra y la página lo dice. La segunda ya hay una igual pendiente: se abre la lista de solicitudes, que la
+ * muestra. Devuelve lo que se veía y lo que decía la API, para comparar después de revocar.
+ */
+async function solicitarDesdeElEspacio(pro, d) {
+  const { page, v } = pro;
+  const formulario = 'dialog.dialogo--formulario';
+  await cupo(v, 60);
+  await ir(page, '/pro');
+  await page.waitForSelector('section.pendientes', { timeout: 30_000 });
+  await quieto(page, v);
+  const pantalla = await espacioEnPantalla(page);
+  const parcialDeLaApi = (await leerApi(v, '/me/portfolio?limit=50')).data.partialView;
+  const yo = (await leerApi(v, '/me')).data;
+  const enviadas = async () => (await leerApi(v, '/me/relationship-requests')).data.filter((x) => x.professional.identityId === yo.identityId && x.initiatedBy === 'PROFESSIONAL');
+  const AREAS = { NUTRICION: 'Nutrición · Acompañamiento nutricional', ENTRENAMIENTO: 'Entrenamiento · Planificación del entrenamiento', ANTROPOMETRIA: 'Antropometría · Evaluación antropométrica' };
+  const libre = Object.keys(AREAS).find((a) => !Object.keys(d.vinculos).includes(a));
+  if (!libre) {
+    informar('E-91', 'El envío de una solicitud desde el diálogo', 'el escenario descartable ya tiene vínculo en las tres áreas');
+    return { pantalla, parcialDeLaApi };
+  }
+  const antes = await enviadas();
+  const pedir = async () => {
+    await page.click('.espacio-profesional__solicitar');
+    await page.waitForSelector(`${formulario}[open]`, { timeout: 5_000 });
+    await page.click(`${formulario} input`, { clickCount: 3 });
+    await page.type(`${formulario} input`, d.aseId);
+    await page.select(`${formulario} select`, libre);
+    await clic(page, `${formulario} .acciones button`, 'Solicitar vínculo');
+    await page.waitForFunction((s) => !document.querySelector(s).open, { timeout: 20_000 }, formulario).catch(() => {});
+    await quieto(page, v);
+    await pausa(400);
+  };
+  await pedir();
+  const primera = {
+    formularioAbierto: await page.evaluate((s) => document.querySelector(s).open, formulario),
+    aviso: await texto(page, '.aviso-flotante'),
+    listaAbierta: await page.evaluate(() => document.querySelector('dialog.dialogo--solicitudes').open),
+    pantalla: await espacioEnPantalla(page),
+    enLaApi: await enviadas(),
+  };
+  const creada = primera.enLaApi.find((s) => s.advisee.identityId === d.aseId && s.scope.code === libre && s.state === 'PENDIENTE');
+  const pendientes = (lista) => lista.filter((s) => s.state === 'PENDIENTE').length;
+  comprobar(
+    'E-91',
+    'Enviar una solicitud desde el diálogo la crea (la API la tiene, pendiente): el diálogo se cierra, la página dice «Solicitud enviada. El asesorado decide si la acepta.», y el pie del directorio cuenta una más y dice cuántas esperan respuesta',
+    Boolean(creada) &&
+      primera.enLaApi.length === antes.length + 1 &&
+      !primera.formularioAbierto &&
+      !primera.listaAbierta &&
+      /Solicitud enviada\. El asesorado decide si la acepta\./.test(primera.aviso) &&
+      primera.pantalla.solicitudes === `Solicitudes enviadas (${primera.enLaApi.length})` &&
+      primera.pantalla.sinResponder === `${pendientes(primera.enLaApi)} ${pendientes(primera.enLaApi) === 1 ? 'pendiente de respuesta' : 'pendientes de respuesta'}` &&
+      pantalla.solicitudes === `Solicitudes enviadas (${antes.length})`,
+    `${pantalla.solicitudes} → ${primera.pantalla.solicitudes} · ${primera.pantalla.sinResponder} · aviso: ${primera.aviso.slice(0, 80)}`,
+  );
+  await pedir();
+  const segunda = {
+    formularioAbierto: await page.evaluate((s) => document.querySelector(s).open, formulario),
+    lista: await page.evaluate(() => {
+      const l = document.querySelector('dialog.dialogo--solicitudes');
+      return { abierta: l.open, aviso: l.querySelector('.aviso')?.innerText.replace(/\s+/g, ' ').trim() ?? null, filas: [...l.querySelectorAll('tbody tr')].map((f) => [...f.querySelectorAll('td')].slice(0, 3).map((c) => c.innerText.replace(/\s+/g, ' ').trim()).join(' | ')) };
+    }),
+    enLaApi: await enviadas(),
+  };
+  comprobar(
+    'E-91',
+    'Pedir de nuevo lo mismo no crea otra solicitud: el diálogo se cierra y se abre la lista de solicitudes, que arriba dice «Ya hay una solicitud pendiente igual. Te mostramos esa.» y la muestra, pendiente',
+    segunda.enLaApi.length === primera.enLaApi.length &&
+      !segunda.formularioAbierto &&
+      segunda.lista.abierta &&
+      segunda.lista.aviso === 'Ya hay una solicitud pendiente igual. Te mostramos esa.' &&
+      segunda.lista.filas.length === segunda.enLaApi.length &&
+      segunda.lista.filas.some((f) => f.endsWith(`${AREAS[libre]} | Pendiente`)),
+    `${segunda.lista.aviso} · ${segunda.lista.filas.join(' ; ')}`,
+  );
+  if (segunda.lista.abierta) {
+    await clic(page, 'dialog.dialogo--solicitudes .acciones button', 'Cerrar');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 5_000 });
+  }
+  return { pantalla, parcialDeLaApi };
+}
+
 async function descartable() {
   const d = estado.descartable;
   if (!d?.datos) throw new Error('falta el escenario descartable: datos/generar.mjs descartable-cuentas y descartable-datos');
@@ -3642,6 +4487,9 @@ async function descartable() {
   try {
     await iniciarSesion(pro.page, pro.v, d.proCorreo, FICHA_D);
     await quieto(pro.page, pro.v);
+    // El Espacio profesional, antes de revocar (WP-ESCRITORIO-AMABLE, parte 5): el envío de una solicitud desde su
+    // diálogo, que acá no cambia los datos de los otros recorridos, y el punto de partida del aviso de vista parcial.
+    const espacioAntes = await solicitarDesdeElEspacio(pro, d);
     // La positiva de la negativa del final: antes de revocar, la línea de tiempo trae las tomas, con el mismo selector.
     await ir(pro.page, `${FICHA_D}&vista=linea`);
     await quieto(pro.page, pro.v);
@@ -3783,6 +4631,37 @@ async function descartable() {
       (reabierto.match(/no está disponible con tu acceso actual/g) ?? []).length === 2 && !avisoViejo && tomasAntesDeRevocar > 0 && !entradasDeLaLinea.some((e) => /Toma|kg/.test(e)) && pestanas.length === 3,
       `${reabierto.slice(0, 140)} · aviso de una descarga anterior: ${avisoViejo ? 'sí' : 'no'} · antes de revocar, ${tomasAntesDeRevocar} toma(s) en la línea de tiempo; después, ${entradasDeLaLinea.length} renglón/es y ninguno de Antropometría`,
     );
+    // d) El Espacio profesional, después de revocar: el aviso de vista parcial, con una respuesta real de la API, y el
+    // área revocada dicha con las palabras de BE. Antes de revocar, con el mismo selector, no había nada.
+    await cupo(pro.v, 60);
+    await ir(pro.page, '/pro');
+    await pro.page.waitForSelector('section.pendientes', { timeout: 30_000 });
+    await quieto(pro.page, pro.v);
+    const espacioDespues = await espacioEnPantalla(pro.page);
+    // La imagen del aviso real y del área revocada, en el tema claro (la de la respuesta simulada es otra).
+    await ponerTema(pro.page, 'claro');
+    await pausa(300);
+    await captura(pro.page, pro.v, 'espacio-despues-de-revocar-1440-claro');
+    const carteraDespues = (await leerApi(pro.v, '/me/portfolio?limit=50')).data;
+    const revocado = (await leerApi(pro.v, '/me/relationships')).data.find((x) => x.relationshipId === d.vinculos.ANTROPOMETRIA);
+    const personaDespues = espacioDespues.personas.find((p) => p.id === d.aseId);
+    comprobar(
+      'E-88',
+      'Después de revocar, la API dice que hay datos fuera del alcance del profesional y el Espacio profesional lo avisa debajo de las vistas, con el texto de BE (antes de revocar no había aviso ni la API lo decía); ningún pendiente es de Antropometría',
+      espacioAntes.parcialDeLaApi === false && espacioAntes.pantalla.parcial === null && carteraDespues.partialView === true && espacioDespues.parcial === 'Hay datos de algún asesorado que no podés ver desde tu alcance: no se cuentan acá.' && !espacioDespues.filas.some((f) => f.area === 'anthropometry') && !carteraDespues.items.some((p) => p.domain === 'anthropometry'),
+      `antes: partialView ${espacioAntes.parcialDeLaApi}, aviso ${espacioAntes.pantalla.parcial ?? 'no está'} · después: partialView ${carteraDespues.partialView}, «${espacioDespues.parcial ?? 'no está'}» · filas: ${espacioDespues.filas.map((f) => `${f.nombreDelArea} · ${f.texto}`).join(' | ') || 'ninguna'}`,
+    );
+    comprobar(
+      'E-89',
+      'Después de revocar, el directorio dice el área sin acceso con el candado y las palabras de BE («Consentimiento revocado · Acceso no disponible»), y las otras siguen nombradas; antes de revocar, Antropometría estaba entre las áreas con acceso',
+      revocado?.consentState === 'REVOKED' &&
+        (espacioAntes.pantalla.personas.find((p) => p.id === d.aseId)?.conAcceso ?? '').includes('Antropometría') &&
+        espacioAntes.pantalla.personas.find((p) => p.id === d.aseId)?.sinAcceso.length === 0 &&
+        personaDespues?.sinAcceso.includes('Antropometría: Consentimiento revocado · Acceso no disponible') &&
+        !(personaDespues?.conAcceso ?? '').includes('Antropometría') &&
+        (personaDespues?.conAcceso ?? '').length > 0,
+      `antes: ${espacioAntes.pantalla.personas.find((p) => p.id === d.aseId)?.conAcceso} · después: ${personaDespues?.conAcceso} · ${personaDespues?.sinAcceso.join('; ')}`,
+    );
   } finally {
     await pro.navegador.close();
   }
@@ -3796,9 +4675,10 @@ try {
   if (modo === 'capturas' || modo === 'todo') await capturas();
   if (modo === 'descartable') await descartable();
   if (modo === 'menu') await encabezadoYMenu();
-  if (modo === 'analizar') await fichaRecompuesta({ resumen: false, linea: false });
-  if (modo === 'resumen') await fichaRecompuesta({ linea: false, analizar: false });
-  if (modo === 'linea') await fichaRecompuesta({ resumen: false, analizar: false });
+  if (modo === 'analizar') await fichaRecompuesta({ resumen: false, linea: false, espacio: false });
+  if (modo === 'resumen') await fichaRecompuesta({ linea: false, analizar: false, espacio: false });
+  if (modo === 'linea') await fichaRecompuesta({ resumen: false, analizar: false, espacio: false });
+  if (modo === 'espacio') await fichaRecompuesta({ resumen: false, linea: false, analizar: false });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {

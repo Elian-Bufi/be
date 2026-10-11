@@ -67,6 +67,7 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
+import { BotonDeVista } from '../../../../components/vista-con-nombre';
 import { api } from '../../../../lib/api';
 import { diaCivil, diaDelAnioEnCurso, fechaEnZona, horaEnZona } from '../../../../lib/formato';
 import { motivoDeFalla, razonDeFalla, textoDeFalla, useLectura, useSeguimiento, type MotivoDeFalla } from './contexto';
@@ -136,6 +137,8 @@ const CALIDADES: readonly { readonly clave: CalidadDeEntrada; readonly texto: st
 ];
 const NOMBRE_DE_ESTADO: Readonly<Record<EstadoDeEntrada, string>> = { EFFECTIVE: 'Vigente', RECTIFIED: 'Rectificado', CORRECTED: 'Corregido', ANNULLED: 'Anulado' };
 const ICONO_DE_LA_VISTA: Readonly<Record<VistaDeLaLinea['clave'], NombreDeIcono | null>> = { TODO: null, HITOS: 'hito', DISTINTO_DE_LO_INDICADO: 'distinto', SIN_CONFIRMAR: 'sin-confirmar' };
+/** Qué cuenta cada vista, para el lector de pantalla. */
+const HECHOS = ['hecho', 'hechos'] as const;
 const ICONO_DEL_DOMINIO: Readonly<Record<DominioDeAnalisis, NombreDeIcono>> = { NUTRITION: 'nutricion', TRAINING: 'entrenamiento', ANTHROPOMETRY: 'antropometria' };
 
 const diaLargo = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
@@ -365,11 +368,11 @@ export function LineaDeTiempo() {
             Ver
           </span>
           {VISTAS_DE_LA_LINEA.slice(0, 2).map((v) => (
-            <BotonDeVista key={v.clave} vista={v} elegida={vistaElegida === v.clave} cuenta={delPeriodo ? cuentaDeLaVista(v, delPeriodo.conteos) : null} onElegir={() => elegirVista(v)} />
+            <BotonDeVista key={v.clave} clave={v.clave} nombre={v.nombre} icono={ICONO_DE_LA_VISTA[v.clave]} unidad={HECHOS} elegida={vistaElegida === v.clave} cuenta={delPeriodo ? cuentaDeLaVista(v, delPeriodo.conteos) : null} onElegir={() => elegirVista(v)} />
           ))}
           <LoNuevoDesdeLaRevision revisiones={revisiones} elegida={nuevoElegido} hoy={hoy} onElegir={elegirLoNuevo} />
           {VISTAS_DE_LA_LINEA.slice(2).map((v) => (
-            <BotonDeVista key={v.clave} vista={v} elegida={vistaElegida === v.clave} cuenta={delPeriodo ? cuentaDeLaVista(v, delPeriodo.conteos) : null} onElegir={() => elegirVista(v)} />
+            <BotonDeVista key={v.clave} clave={v.clave} nombre={v.nombre} icono={ICONO_DE_LA_VISTA[v.clave]} unidad={HECHOS} elegida={vistaElegida === v.clave} cuenta={delPeriodo ? cuentaDeLaVista(v, delPeriodo.conteos) : null} onElegir={() => elegirVista(v)} />
           ))}
         </div>
         {/* El buscador y «Más filtros» van juntos: si no entran al lado de las vistas, bajan los dos a su renglón. */}
@@ -512,22 +515,7 @@ export function LineaDeTiempo() {
 }
 
 // ─── Las vistas con nombre ──────────────────────────────────────────────────────────────────────
-
-function BotonDeVista({ vista, elegida, cuenta, onElegir }: { vista: VistaDeLaLinea; elegida: boolean; cuenta: number | null; onElegir: () => void }) {
-  const icono = ICONO_DE_LA_VISTA[vista.clave];
-  return (
-    <button type="button" className="vista-de-la-linea" data-vista={vista.clave} aria-pressed={elegida} onClick={onElegir}>
-      {icono ? <Icono nombre={icono} tamano={18} /> : null}
-      {vista.nombre}
-      {cuenta !== null ? (
-        <span className="vista-de-la-linea__cuenta">
-          {numero(cuenta)}
-          <span className="visualmente-oculto"> {cuenta === 1 ? 'hecho' : 'hechos'}</span>
-        </span>
-      ) : null}
-    </button>
-  );
-}
+// El botón de una vista es una pieza compartida (`components/vista-con-nombre.tsx`): la usa también «Pendientes».
 
 /**
  * «Lo nuevo desde la revisión»: cada área con plan tiene su propia revisión, así que con dos se elige de cuál. Sin

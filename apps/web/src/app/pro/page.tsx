@@ -5,13 +5,15 @@ import { EspacioProfesional } from './espacio-profesional';
 
 export const metadata: Metadata = { title: 'Espacio profesional · BE' };
 
-/** Website `/pro` — lista mínima de vínculos y solicitudes enviadas, sin Cartera (DL-041 A). */
+/**
+ * Website `/pro` — el Espacio profesional: los pendientes de la cartera (DL-107) y el directorio de asesorados. El
+ * título de la página lo escribe el componente, junto a «hoy» y a «Solicitar vínculo».
+ */
 export default function PaginaProfesional() {
   return (
     <>
       <Encabezado navegacion={<NavegacionProfesional />} />
-      <main id="contenido" className="contenido contenido--ancho">
-        <h1>Espacio profesional</h1>
+      <main id="contenido" className="contenido contenido--espacio">
         <EspacioProfesional />
       </main>
     </>

@@ -79,6 +79,9 @@ const lecturas = {
   'PRJ entrenamiento: carga de la serie 1': `${a}/projections/TRAINING_PROGRESSION_BY_EXERCISE?${q}&exerciseId=${ejercicio}&metric=LOAD&setIndex=1&unit=kg`,
   'PRJ antropometría: peso': `${a}/projections/ANTHROPOMETRY_LONGITUDINAL?${q}&metric=peso`,
   'VAN-01 vistas guardadas': `/me/analysis-views`,
+  // El Espacio profesional (WP-ESCRITORIO-AMABLE, parte 5): los pendientes de toda la cartera, de a 50, como los pide la
+  // página al entrar. No depende del asesorado ni del período elegidos acá.
+  'CAR-01 pendientes de la cartera (50)': `/me/portfolio?limit=50`,
 };
 const resultados = {};
 for (const [nombre, lectura] of Object.entries(lecturas)) resultados[nombre] = Array.isArray(lectura) ? await medir(nombre, lectura[0], lectura[1]) : await medir(nombre, lectura);

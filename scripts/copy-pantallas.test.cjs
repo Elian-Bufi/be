@@ -14,7 +14,7 @@ const { readdirSync, readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const test = require('node:test');
 const ts = require('typescript');
-const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeEntrenamientoEn } = require('../packages/domain/dist/index.js');
+const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeCarteraEn, terminosProhibidosDeEntrenamientoEn } = require('../packages/domain/dist/index.js');
 
 const RAIZ = join(__dirname, '..');
 /** Los textos también viven en módulos sin JSX (`.ts`): se leen como TypeScript, no como TSX. */
@@ -64,6 +64,14 @@ const DOMINIOS = [
     archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), inicio('inicio-entrenamiento.tsx'), movil('lecturas-de-inicio.ts'), ...INICIO_COMUN],
     prohibidos: terminosProhibidosDeEntrenamientoEn,
     minimo: 7,
+  },
+  {
+    // WP-ESCRITORIO-AMABLE, parte 5: el Espacio profesional (los pendientes de la cartera y el directorio). Una lista de
+    // personas no califica a nadie: ni «inactivo», ni «riesgo», ni un porcentaje (TEST-PRJ-009; DL-107).
+    nombre: 'el espacio profesional',
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro')), ...['directorio.ts', 'pendiente-en-una-fila.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro', archivo))],
+    prohibidos: terminosProhibidosDeCarteraEn,
+    minimo: 8,
   },
 ];
 

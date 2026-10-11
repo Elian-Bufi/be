@@ -27,7 +27,7 @@
  * con la hora; el acceso actual; y las tres vistas con el período. Siempre se sabe dónde se está sin desplazarse. La miga se retiró: la barra
  * de marca ya vuelve al Espacio profesional.
  */
-import { COPY_VINCULO, estadoParaMostrar, type DashboardResponse, type DominioDeAnalisis, type Vinculo } from '@be/domain';
+import { COPY_VINCULO, estadoParaMostrar, todasLasPaginas, type DashboardResponse, type DominioDeAnalisis, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -88,7 +88,11 @@ export function Workspace() {
         setPanel({ tipo: 'cargando' });
         setEncabezado({ tipo: 'cargando' });
       }
-      const [respuesta, lista] = await Promise.all([id ? api.consultarDashboard(token, id, periodoEnInstantes(periodo)) : Promise.resolve(null), api.consultarVinculos(token)]);
+      const [respuesta, lista] = await Promise.all([
+        id ? api.consultarDashboard(token, id, periodoEnInstantes(periodo)) : Promise.resolve(null),
+        // Todos los vínculos, no los primeros 20: la lista trae los de todos los estados y de los dos roles de la cuenta.
+        todasLasPaginas((filtro) => api.consultarVinculos(token, { cursor: filtro.cursor })),
+      ]);
       if (esta !== generacion.current) return;
       if ((respuesta && sesionPerdida(respuesta)) || sesionPerdida(lista)) return;
       ultimaConsulta.current = Date.now();

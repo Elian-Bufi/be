@@ -4,7 +4,6 @@
  * su palabra: nunca va solo ni dice algo que el texto no diga.
  */
 import type { AreaDelResumen, DefinicionDeMetrica, NombreDeIcono, ReferenciaDeMetrica } from '@be/domain';
-import type { MotivoDeFalla } from './contexto';
 
 /** El ícono de cada métrica fija. */
 export const ICONO_DE_METRICA: Readonly<Record<string, NombreDeIcono>> = {
@@ -36,5 +35,5 @@ export const ICONO_DEL_AREA: Readonly<Record<AreaDelResumen, NombreDeIcono>> = {
 /** El ícono de la clase de un dato: medido, reportado por la persona o calculado por un método. */
 export const ICONO_DE_CLASE: Readonly<Record<'MEASURED' | 'REPORTED' | 'DERIVED', NombreDeIcono>> = { MEASURED: 'medido', REPORTED: 'reportado', DERIVED: 'calculado' };
 
-/** El ícono de una falla, por su motivo: se reconoce sin depender de un color. */
-export const ICONO_DE_FALLA: Readonly<Record<MotivoDeFalla, NombreDeIcono>> = { LIMITE: 'espera', RED: 'sin-conexion', SERVICIO: 'servicio', OTRO: 'aviso' };
+/** El ícono de una falla, por su motivo: vive con las fallas, en `lib/fallas`. */
+export { ICONO_DE_FALLA } from '../../../../lib/fallas';

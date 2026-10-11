@@ -949,58 +949,6 @@ details summary {
   font-weight: 600;
 }
 
-/* La lista de asesorados es lo principal; pedir un vínculo va al costado en pantallas anchas (B10-10 §9). */
-.espacio {
-  display: grid;
-  gap: 1.25rem;
-  align-items: start;
-}
-
-@media (min-width: 64rem) {
-  .espacio {
-    grid-template-columns: minmax(0, 1.65fr) minmax(19rem, 1fr);
-  }
-
-  .espacio__lateral {
-    position: sticky;
-    top: 1rem;
-  }
-}
-
-.asesorado__cabecera {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-}
-
-.asesorado__cabecera .lista__titulo {
-  font-size: 1.08rem;
-}
-
-.alcances {
-  list-style: none;
-  margin: 0.5rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.4rem;
-}
-
-.alcances li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 1rem;
-  padding: 0.45rem 0;
-  border-top: 1px solid var(--borde);
-}
-
-.alcances__nombre {
-  flex: 1 1 16rem;
-  font-weight: 600;
-}
-
 /* El header contextual del workspace: nombre y un estado por alcance, en una línea cuando entra. */
 .contexto h2 {
   margin-bottom: 0.4rem;
@@ -5738,4 +5686,468 @@ a.observacion__fila:focus-visible {
 
 .retorno-a-la-ficha {
   margin: -0.25rem 0 0.75rem;
+}
+
+/* ─── El Espacio profesional (WP-ESCRITORIO-AMABLE, parte 5) ─────────────────────── */
+/* Primero lo que hay que hacer y, al lado, a quién abrir: dos tarjetas. Usa el ancho de la ficha (hasta 100 rem); el
+   formulario y la lista de solicitudes, que antes ocupaban dos tarjetas más, se abren cuando hacen falta. */
+.contenido--espacio {
+  max-width: 100rem;
+  padding-top: 1.1rem;
+}
+
+.espacio-profesional {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+/* El título, «hoy» y, contra la derecha, pedir un vínculo. Lo que no entra baja entero. */
+.espacio-profesional__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 1rem;
+  min-height: 44px;
+}
+
+.espacio-profesional h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.espacio-profesional__hoy {
+  margin: 0;
+  color: var(--tenue);
+}
+
+.espacio-profesional__solicitar {
+  margin-left: auto;
+}
+
+/* Dos columnas desde 75 rem (1200 px), el mismo corte que el detalle de la línea de tiempo: a 1280 el directorio va al
+   costado y a 1024, debajo. El directorio no se pega arriba: puede ser más alto que la ventana. */
+.espacio-profesional__cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+}
+
+@media (min-width: 75rem) {
+  .espacio-profesional__cuerpo {
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 28rem);
+  }
+}
+
+.tarjeta-del-espacio {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 1rem 1.25rem 1.1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+/* El ícono, el título y, si entra en el renglón, lo que lo acompaña (la bajada o la cantidad). */
+.tarjeta-del-espacio__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.75rem;
+}
+
+.tarjeta-del-espacio__cabecera > .icono {
+  align-self: center;
+}
+
+.tarjeta-del-espacio h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.tarjeta-del-espacio__cabecera .nota,
+.tarjeta-del-espacio .cargando {
+  margin: 0;
+}
+
+/* «Pendientes»: las vistas son las piezas de la línea de tiempo (`.vistas-de-la-linea`, `.vista-de-la-linea`). */
+.pendientes__filtros .campo {
+  min-width: 12rem;
+  margin: 0;
+}
+
+/* El período va en su renglón: qué acota, dicho al lado de su nombre, y debajo las dos fechas con su botón. */
+.pendientes__periodo {
+  display: flex;
+  flex: 1 1 100%;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pendientes__periodo-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.75rem;
+}
+
+.pendientes__rotulo {
+  margin: 0;
+  font-weight: 600;
+}
+
+.pendientes__periodo .filtro-de-periodo,
+.pendientes__periodo .nota {
+  margin: 0;
+}
+
+/* El aviso de vista parcial va debajo de las vistas: dice cómo leer sus cantidades. */
+.pendientes__parcial,
+.pendientes__vacio {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.pendientes__parcial {
+  color: var(--tenue);
+  font-size: 0.94rem;
+}
+
+.pendientes__parcial .icono,
+.pendientes__vacio .icono {
+  margin-top: 0.15rem;
+}
+
+.pendientes__vacio {
+  padding: 0.5rem 0;
+}
+
+.pendientes__coinciden {
+  margin: 0;
+  color: var(--tenue);
+}
+
+/* La tabla: una fila por pendiente. La persona, en negrita; el área y lo pendiente, con su ícono; debajo de lo
+   pendiente, el último registro, como dato; «Abrir», contra la derecha. Ningún color por tipo: el orden ya lo dice. */
+.tabla-de-pendientes {
+  margin: 0;
+}
+
+.tabla-de-pendientes th,
+.tabla-de-pendientes td {
+  padding: 0.5rem 0.6rem;
+  vertical-align: middle;
+}
+
+.tabla-de-pendientes thead th {
+  font-weight: 600;
+}
+
+.tabla-de-pendientes thead th:nth-child(1) {
+  width: 24%;
+}
+
+.tabla-de-pendientes thead th:nth-child(2) {
+  width: 21%;
+}
+
+.tabla-de-pendientes thead th:nth-child(4) {
+  width: 6rem;
+}
+
+.tabla-de-pendientes tbody tr:last-child th,
+.tabla-de-pendientes tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tabla-de-pendientes[aria-busy='true'] {
+  opacity: 0.6;
+}
+
+.pendiente__area,
+.pendiente__que {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.pendiente__area .icono,
+.pendiente__que .icono {
+  margin-top: 0.12rem;
+}
+
+.pendiente__texto,
+.pendiente__ultimo {
+  display: block;
+}
+
+.pendiente__ultimo {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+.pendiente__abrir {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pendiente__enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-height: 44px;
+  padding-inline: 0.25rem;
+  color: var(--enlace);
+  font-weight: 600;
+  text-underline-offset: 0.18em;
+}
+
+/* El pie: cuándo se consultó y «Actualizar», que vuelve a leer toda la página. */
+.pendientes__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem 1rem;
+}
+
+.pendientes__incompleta {
+  margin: 0 auto 0 0;
+}
+
+.pendientes__consulta {
+  margin: 0;
+}
+
+.pendientes__actualizar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+/* «Tus asesorados»: un directorio. Cada persona, con su referencia y sus áreas; «Abrir» lleva a su ficha. */
+.directorio__cuenta {
+  margin: 0;
+  color: var(--tenue);
+  font-variant-numeric: tabular-nums;
+}
+
+.directorio__vacio {
+  margin: 0;
+}
+
+.buscador-del-directorio {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.buscador-del-directorio .icono {
+  position: absolute;
+  left: 0.8rem;
+  color: var(--tenue);
+  pointer-events: none;
+}
+
+.buscador-del-directorio input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.3rem 0.9rem 0.3rem 2.6rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.buscador-del-directorio input::placeholder {
+  color: var(--tenue);
+  opacity: 1;
+}
+
+.directorio__personas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Una persona: a la izquierda, su referencia y sus áreas, que abren el detalle de sus vínculos; a la derecha, «Abrir»,
+   que lleva a su ficha. El detalle se abre debajo, a todo el ancho. */
+.persona {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'datos abrir'
+    'vinculos vinculos';
+  align-items: center;
+  column-gap: 0.6rem;
+  padding: 0.2rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.persona:first-child {
+  border-top: 0;
+}
+
+/* El bloque sobresale medio renglón a la izquierda: su fondo, al pasar por encima, no deja el texto pegado al borde,
+   y la referencia queda alineada con el buscador. */
+.persona__datos {
+  grid-area: datos;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: calc(100% + 0.5rem);
+  min-height: 44px;
+  margin-left: -0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.persona__datos:hover {
+  background: var(--fondo-suave);
+}
+
+.persona__datos > .icono {
+  color: var(--tenue);
+}
+
+.persona__resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.persona__nombre {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.persona__con-acceso {
+  font-size: 0.94rem;
+}
+
+/* Un área sin acceso: el candado y las palabras de BE. El candado nunca va solo. */
+.persona__sin-acceso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  color: var(--tenue);
+  font-size: 0.94rem;
+}
+
+.persona__sin-acceso .icono {
+  margin-top: 0.2rem;
+}
+
+.persona__abrir {
+  grid-area: abrir;
+}
+
+.persona__vinculos:not([hidden]) {
+  grid-area: vinculos;
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.15rem 0 0.45rem;
+  padding: 0.6rem 0.8rem;
+  list-style: none;
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.persona__vinculos li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.persona__vinculo {
+  font-weight: 600;
+}
+
+.directorio__incompleta {
+  margin: 0;
+}
+
+.directorio__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--borde);
+}
+
+.directorio__solicitudes {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+}
+
+/* Debajo de los pendientes y a todo el ancho, las personas van de a dos. */
+@media (min-width: 48rem) and (max-width: 74.99rem) {
+  .directorio__personas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 2rem;
+    align-items: start;
+  }
+
+  .persona:nth-child(2) {
+    border-top: 0;
+  }
+}
+
+/* Los dos diálogos: el formulario, angosto; la lista de solicitudes, del ancho de su tabla. */
+.dialogo--formulario {
+  width: min(32rem, calc(100vw - 2rem));
+}
+
+.dialogo--formulario .formulario {
+  margin: 0;
+}
+
+.dialogo--solicitudes {
+  width: min(52rem, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.dialogo--solicitudes h2:focus {
+  outline: none;
+}
+
+/* En una ventana angosta la tabla pasa a tarjetas (`.tabla`): «Abrir» va a la izquierda, con lo demás, y cada dato
+   sigue en el renglón de su rótulo si entra. */
+@media (max-width: 40rem) {
+  .pendiente__abrir {
+    text-align: left;
+  }
+
+  .pendiente__area,
+  .pendiente__que {
+    display: inline-flex;
+    vertical-align: top;
+  }
+
+  .espacio-profesional__solicitar {
+    margin-left: 0;
+  }
 }

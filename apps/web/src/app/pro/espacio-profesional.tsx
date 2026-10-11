@@ -3,34 +3,40 @@
 /**
  * Website `/pro` — espacio profesional:
  * - «Pendientes» (API-CAR-01; PF-07, DL-107): a quién mirar hoy, con hechos fechados y sin juicios (`pendientes.tsx`).
- * - «Solicitar vínculo» (REL-01): el asesorado se identifica por su identificador BE (DL-035) y la finalidad es la del
- *   alcance (DL-039). Cualquier rechazo semántico se muestra con el mismo mensaje neutral: la pantalla no revela si el
- *   identificador existe ni por qué no es elegible (09v7:151-157).
- * - «Tus asesorados» (REL-05) con el estado mínimo de 10-B04 §28-§29, y «Solicitudes enviadas» (REL-02).
+ * - «Tus asesorados» (REL-05), un directorio para entrar a la ficha de cada persona, con el estado mínimo de 10-B04
+ *   §28-§29 (`asesorados.tsx`).
+ * - «Solicitar vínculo» (REL-01) y «Solicitudes enviadas» (REL-02), cada una a un clic (`solicitar-vinculo.tsx`,
+ *   `solicitudes-enviadas.tsx`).
  * Solo cuentas con la capacidad PROFESSIONAL_WORKSPACE que informa la API entran a este espacio (criterio 11A n.º 1);
  * la capacidad no autoriza nada: cada operación la decide la API.
+ *
+ * WP-ESCRITORIO-AMABLE, parte 5 (la pantalla 13 de las maquetas):
+ * - **Primero lo que hay que hacer y, al lado, a quién abrir.** Dos tarjetas: los pendientes y el directorio. El
+ *   formulario y la lista de solicitudes, que antes ocupaban dos tarjetas más, se abren cuando hacen falta.
+ * - **Las tres listas se leen enteras** (`lista-completa.ts`, con `todasLasPaginas` del dominio): así se pueden contar y
+ *   se puede buscar en ellas. La de
+ *   pendientes es la única lectura protegida de la página: una al entrar, y ninguna al elegir una vista.
+ * - **«Hoy» es la fecha con que la API clasificó las revisiones** (`today`), no la del navegador: sin esa lectura, no
+ *   se dice.
+ * - **`/pro` no lleva parámetros:** la vista elegida, los filtros y la búsqueda son de la visita (el retorno del inicio
+ *   de sesión admite `/pro` a secas).
  */
-import {
-  ALCANCES,
-  COPY,
-  COPY_VINCULO,
-  ETIQUETA_DE_ALCANCE,
-  ETIQUETA_DE_FINALIDAD,
-  FINALIDAD_DE_ALCANCE,
-  estadoParaMostrar,
-  type Alcance,
-} from '@be/domain';
+import { COPY_VINCULO, numero } from '@be/domain';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Ayuda, AvisoFlotante } from '../../components/ayuda';
-import { Cargando, ErrorConReintento, VerMas } from '../../components/estados';
-import { Aviso, Campo } from '../../components/formulario';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { AvisoFlotante } from '../../components/ayuda';
+import { Cargando, ErrorConReintento } from '../../components/estados';
+import { Aviso } from '../../components/formulario';
+import { Icono } from '../../components/icono';
 import { api, type Resultado } from '../../lib/api';
-import { dia, fecha } from '../../lib/formato';
-import { esIncierto, useClaveDeIntento } from '../../lib/intento';
-import { useListaPaginada } from '../../lib/lista';
+import { diaConSuSemana } from '../../lib/formato';
+import { useListaCompleta } from '../../lib/lista-completa';
 import { useSesionRequerida } from '../../lib/sesion-requerida';
-import { Pendientes } from './pendientes';
+import type { Periodo } from './advisees/periodo';
+import { Asesorados } from './asesorados';
+import { Pendientes, type PaginaDeCartera } from './pendientes';
+import { SolicitarVinculo } from './solicitar-vinculo';
+import { SolicitudesEnviadas, solicitudesEnviadasPor } from './solicitudes-enviadas';
 
 type Yo = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-espacio' } | { tipo: 'listo'; id: string };
 
@@ -64,237 +70,143 @@ export function SinEspacioProfesional() {
   );
 }
 
-export function EspacioProfesional() {
-  const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional('/pro');
-  const id = yo.tipo === 'listo' ? yo.id : null;
-  const vinculos = useListaPaginada(
-    useMemo(() => (token && id ? (cursor?: string) => api.consultarVinculos(token, { cursor }) : null), [token, id]),
-    sesionPerdida,
-  );
-  const enviadas = useListaPaginada(
-    useMemo(() => (token && id ? (cursor?: string) => api.consultarSolicitudes(token, { cursor }) : null), [token, id]),
-    sesionPerdida,
-  );
+/** De a cuántos se lee y cuántas páginas de una vez: 200 pendientes (de a 50) y 200 vínculos o solicitudes (de a 20). */
+const DE_LA_CARTERA = { limite: 50, paginas: 4 } as const;
+/** Los vínculos y las solicitudes llegan de a 20: su lectura no admite otro tamaño de página. */
+const DE_UNA_LISTA = { limite: 20, paginas: 10 } as const;
 
-  if (!token) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
-  if (yo.tipo === 'cargando') return <Cargando />;
-  if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
-  if (yo.tipo === 'sin-espacio') return <SinEspacioProfesional />;
-
-  const esMio = (p: { professional: { identityId: string } }) => p.professional.identityId === yo.id;
-
+/** El título de la página está en todos sus estados: sin sesión, cargando, con una falla o sin espacio profesional. */
+function Pagina({ children, alLado }: { children: ReactNode; alLado?: ReactNode }) {
   return (
-    <div className="espacio">
-      <div className="espacio__principal secciones">
-        {/* Primero lo que hay que hacer (API-CAR-01, DL-107); debajo, la lista de siempre. */}
-        <Pendientes token={token} sesionPerdida={sesionPerdida} />
-        <section className="seccion" aria-labelledby="titulo-asesorados">
-          <h2 id="titulo-asesorados">Tus asesorados</h2>
-          {vinculos.estado.tipo === 'cargando' ? <Cargando /> : null}
-          {vinculos.estado.tipo === 'error' ? <ErrorConReintento onReintentar={vinculos.recargar} /> : null}
-          {vinculos.estado.tipo === 'listo'
-            ? (() => {
-                const propios = vinculos.estado.items.filter(esMio);
-                if (propios.length === 0) return <p>{COPY_VINCULO.sinAsesorados}</p>;
-                // Una persona, una tarjeta: el vínculo es por alcance (DL-039), pero el workspace es uno por asesorado.
-                const porAsesorado = new Map<string, typeof propios>();
-                for (const v of propios) porAsesorado.set(v.advisee.identityId, [...(porAsesorado.get(v.advisee.identityId) ?? []), v]);
-                return (
-                  <ul className="lista">
-                    {[...porAsesorado.entries()].map(([asesoradoId, deLaPersona]) => {
-                      const nombre = deLaPersona[0]!.advisee.displayName;
-                      return (
-                        <li key={asesoradoId} className="lista__item asesorado">
-                          <div className="asesorado__cabecera">
-                            <p className="lista__titulo">{nombre}</p>
-                            <Link className="boton boton--secundario" href={`/pro/advisees?id=${encodeURIComponent(asesoradoId)}`} aria-label={`Abrir el workspace de ${nombre}`}>
-                              Abrir
-                            </Link>
-                          </div>
-                          <ul className="alcances">
-                            {deLaPersona.map((v) => {
-                              const e = estadoParaMostrar(v, 'PROFESSIONAL');
-                              return (
-                                <li key={v.relationshipId}>
-                                  <span className="alcances__nombre">
-                                    {v.scope.label} · {ETIQUETA_DE_FINALIDAD[v.purpose]}
-                                  </span>
-                                  <span>
-                                    <span className="insignia">{e.estado}</span> {e.detalle}
-                                  </span>
-                                  <span className="nota">Desde el {dia(v.acceptedAt)}</span>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                );
-              })()
-            : null}
-          <VerMas estado={vinculos.estado} onVerMas={vinculos.verMas} />
-          <p>
-            <button type="button" className="boton boton--enlace" onClick={() => void vinculos.recargar()}>
-              Actualizar
-            </button>
-          </p>
-        </section>
-
-        <section className="seccion" aria-labelledby="titulo-enviadas">
-          <h2 id="titulo-enviadas">Solicitudes enviadas</h2>
-          {enviadas.estado.tipo === 'cargando' ? <Cargando /> : null}
-          {enviadas.estado.tipo === 'error' ? <ErrorConReintento onReintentar={enviadas.recargar} /> : null}
-          {enviadas.estado.tipo === 'listo'
-            ? (() => {
-                const propias = enviadas.estado.items.filter((s) => esMio(s) && s.initiatedBy === 'PROFESSIONAL');
-                if (propias.length === 0) return <p>{COPY_VINCULO.sinSolicitudes}</p>;
-                return (
-                  <table className="tabla">
-                    <caption className="visualmente-oculto">Solicitudes de vínculo que enviaste</caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Asesorado</th>
-                        <th scope="col">Alcance</th>
-                        <th scope="col">Estado</th>
-                        <th scope="col">Enviada</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {propias.map((s) => (
-                        <tr key={s.relationshipRequestId}>
-                          <td data-etiqueta="Asesorado">{s.advisee.displayName}</td>
-                          <td data-etiqueta="Alcance">
-                            {s.scope.label} · {ETIQUETA_DE_FINALIDAD[s.purpose]}
-                          </td>
-                          <td data-etiqueta="Estado">{COPY_VINCULO.estadoDeSolicitud[s.state]}</td>
-                          <td data-etiqueta="Enviada">{fecha(s.createdAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                );
-              })()
-            : null}
-          <VerMas estado={enviadas.estado} onVerMas={enviadas.verMas} />
-        </section>
+    <div className="espacio-profesional">
+      <div className="espacio-profesional__encabezado">
+        <h1>Espacio profesional</h1>
+        {alLado}
       </div>
-
-      <div className="espacio__lateral">
-        <SolicitarVinculo token={token} sesionPerdida={sesionPerdida} alEnviar={() => void enviadas.recargar()} />
-      </div>
+      {children}
     </div>
   );
 }
 
-type Envio = { tipo: 'editando' } | { tipo: 'enviando' } | { tipo: 'enviada'; texto: string } | { tipo: 'error'; texto: string; incierto: boolean };
+export function EspacioProfesional() {
+  const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional('/pro');
+  const id = yo.tipo === 'listo' ? yo.id : null;
+  const [periodo, setPeriodo] = useState<Periodo>({});
 
-function SolicitarVinculo({ token, sesionPerdida, alEnviar }: { token: string; sesionPerdida: (r: Resultado<unknown>) => boolean; alEnviar: () => void }) {
-  const intento = useClaveDeIntento();
-  const [asesorado, setAsesorado] = useState('');
-  const [alcance, setAlcance] = useState<Alcance | ''>('');
-  const [errores, setErrores] = useState<{ asesorado?: string; alcance?: string }>({});
-  const [envio, setEnvio] = useState<Envio>({ tipo: 'editando' });
+  // Los pendientes: la cartera entera, de a 50. A la API va solo el período; la vista y los filtros se resuelven acá.
+  const cartera = useListaCompleta(
+    useMemo(
+      () =>
+        token && id
+          ? (filtro: { cursor?: string; limit: string }): Promise<Resultado<PaginaDeCartera>> =>
+              api.consultarCartera(token, { ...periodo, ...filtro }).then((r) => {
+                if (!r.ok) return r;
+                const { items, ...meta } = r.datos.data;
+                return { ...r, datos: { data: items, page: r.datos.page, meta } };
+              })
+          : null,
+      [token, id, periodo],
+    ),
+    sesionPerdida,
+    DE_LA_CARTERA,
+  );
+  const vinculos = useListaCompleta(
+    useMemo(() => (token && id ? (filtro: { cursor?: string }) => api.consultarVinculos(token, { cursor: filtro.cursor }) : null), [token, id]),
+    sesionPerdida,
+    DE_UNA_LISTA,
+  );
+  const enviadas = useListaCompleta(
+    useMemo(() => (token && id ? (filtro: { cursor?: string }) => api.consultarSolicitudes(token, { cursor: filtro.cursor }) : null), [token, id]),
+    sesionPerdida,
+    DE_UNA_LISTA,
+  );
 
-  // Cambiar los datos es otro intento lógico: la key de un intento incierto no se reusa con datos distintos.
-  function editar(cambio: () => void) {
-    cambio();
-    intento.descartar();
-    if (envio.tipo !== 'enviando') setEnvio({ tipo: 'editando' });
+  const [formulario, setFormulario] = useState(false);
+  const [solicitudes, setSolicitudes] = useState<{ abiertas: boolean; aviso: string | null }>({ abiertas: false, aviso: null });
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  if (!token) {
+    return (
+      <Pagina>
+        <p className="nota">Redirigiendo a Iniciar sesión…</p>
+      </Pagina>
+    );
+  }
+  if (yo.tipo !== 'listo') {
+    return (
+      <Pagina>
+        {yo.tipo === 'cargando' ? <Cargando /> : null}
+        {yo.tipo === 'error' ? <ErrorConReintento onReintentar={cargarYo} /> : null}
+        {yo.tipo === 'sin-espacio' ? <SinEspacioProfesional /> : null}
+      </Pagina>
+    );
   }
 
-  async function enviar(evento: FormEvent) {
-    evento.preventDefault();
-    if (envio.tipo === 'enviando') return;
-    const encontrados: typeof errores = {};
-    if (!asesorado.trim()) encontrados.asesorado = 'Ingresá el identificador BE del asesorado.';
-    if (!alcance) encontrados.alcance = 'Elegí un alcance.';
-    setErrores(encontrados);
-    if (Object.keys(encontrados).length > 0 || !alcance) return;
-
-    setEnvio({ tipo: 'enviando' });
-    const r = await api.solicitarVinculo(token, { asesoradoId: asesorado.trim(), alcance }, intento.actual());
-    intento.registrar(r);
-    if (r.ok) {
-      const deduplicada = 'deduplicated' in r.datos.data;
-      setEnvio({ tipo: 'enviada', texto: deduplicada ? COPY_VINCULO.solicitudYaPendiente : COPY_VINCULO.solicitudEnviada });
-      if (!deduplicada) setAsesorado('');
-      alEnviar();
-      return;
-    }
-    if (sesionPerdida(r)) return;
-    if (esIncierto(r)) return setEnvio({ tipo: 'error', texto: COPY.resultadoIncierto, incierto: true });
-    if (r.tipo === 'API' && r.codigo === 'RESOURCE_CONFLICT') {
-      return setEnvio({ tipo: 'error', texto: 'Ya tenés un vínculo vigente con esta persona para ese alcance.', incierto: false });
-    }
-    // 404, 422 y validación: el mismo mensaje, sin revelar existencia ni elegibilidad (09v7:151-157; RF-015).
-    const neutral = r.tipo === 'API' && r.status >= 400 && r.status < 500;
-    setEnvio({ tipo: 'error', texto: neutral ? COPY_VINCULO.solicitudNoDisponible : COPY.noDisponible, incierto: false });
-  }
-
-  const finalidad = alcance ? ETIQUETA_DE_FINALIDAD[FINALIDAD_DE_ALCANCE[alcance]] : '—';
-  const enviando = envio.tipo === 'enviando';
+  const actualizar = () => {
+    void cartera.recargar();
+    void vinculos.recargar();
+    void enviadas.recargar();
+  };
+  const propias = enviadas.estado.tipo === 'listo' ? solicitudesEnviadasPor(enviadas.estado.items, yo.id) : null;
+  const sinResponder = propias ? propias.filter((s) => s.state === 'PENDIENTE').length : 0;
+  const hoy = cartera.estado.tipo === 'listo' ? cartera.estado.primera.meta.today : null;
 
   return (
-    <section className="seccion" aria-labelledby="titulo-solicitar">
-      <h2 id="titulo-solicitar">{COPY_VINCULO.solicitarVinculo}</h2>
-      <form className="formulario" onSubmit={enviar} noValidate>
-        {envio.tipo === 'enviada' ? (
-          <AvisoFlotante onCerrar={() => setEnvio({ tipo: 'editando' })}>
-            <p>{envio.texto}</p>
-          </AvisoFlotante>
-        ) : null}
-        {envio.tipo === 'error' ? (
-          <Aviso tipo="error" enfocar>
-            <p>{envio.texto}</p>
-          </Aviso>
-        ) : null}
-        <Campo
-          id="asesorado"
-          etiqueta={COPY_VINCULO.identificadorDelAsesorado}
-          ayuda={COPY_VINCULO.ayudaIdentificador}
-          error={errores.asesorado}
-          value={asesorado}
-          onChange={(e) => editar(() => setAsesorado(e.target.value))}
-          autoComplete="off"
-          spellCheck={false}
-        />
-        <div className={`campo${errores.alcance ? ' campo--error' : ''}`}>
-          <label htmlFor="alcance">{COPY_VINCULO.alcance}</label>
-          <select
-            id="alcance"
-            value={alcance}
-            aria-invalid={errores.alcance ? true : undefined}
-            aria-describedby={errores.alcance ? 'alcance-error' : undefined}
-            onChange={(e) => editar(() => setAlcance(e.target.value as Alcance | ''))}
-          >
-            <option value="">Elegí un alcance</option>
-            {ALCANCES.map((a) => (
-              <option key={a} value={a}>
-                {ETIQUETA_DE_ALCANCE[a]}
-              </option>
-            ))}
-          </select>
-          {errores.alcance ? (
-            <p id="alcance-error" className="campo__error">
-              <span aria-hidden="true">⚠ </span>
-              {errores.alcance}
-            </p>
-          ) : null}
-        </div>
-        <p>
-          <strong>{COPY_VINCULO.finalidad}:</strong> {finalidad}
-        </p>
-        <Ayuda titulo="Qué decide el asesorado">
-          <p>La finalidad es la del alcance. El asesorado decide si acepta el vínculo y, por separado, si autoriza el acceso.</p>
-        </Ayuda>
-        <div className="acciones">
-          <button type="submit" className="boton boton--primario" disabled={enviando} aria-busy={enviando}>
-            {enviando ? COPY_VINCULO.enviando : envio.tipo === 'error' && envio.incierto ? COPY.reintentar : COPY_VINCULO.solicitarVinculo}
+    <Pagina
+      alLado={
+        <>
+          {hoy ? <p className="espacio-profesional__hoy">Hoy, {diaConSuSemana(hoy)}</p> : null}
+          <button type="button" className="boton boton--secundario espacio-profesional__solicitar" aria-haspopup="dialog" onClick={() => setFormulario(true)}>
+            <Icono nombre="solicitud" tamano={20} />
+            {COPY_VINCULO.solicitarVinculo}
           </button>
-        </div>
-      </form>
-    </section>
+        </>
+      }
+    >
+      {/* Primero lo que hay que hacer (API-CAR-01, DL-107); al lado, a quién abrir. */}
+      <div className="espacio-profesional__cuerpo">
+        <Pendientes cartera={cartera.estado} periodo={periodo} onPeriodo={setPeriodo} onActualizar={actualizar} onVerMas={() => void cartera.verMas()} />
+        <Asesorados vinculos={vinculos.estado} profesionalId={yo.id} onReintentar={() => void vinculos.recargar()} onVerMas={() => void vinculos.verMas()}>
+          <button type="button" className="boton boton--enlace directorio__solicitudes" aria-haspopup="dialog" onClick={() => setSolicitudes({ abiertas: true, aviso: null })}>
+            <Icono nombre="solicitar" tamano={18} />
+            Solicitudes enviadas{propias ? ` (${numero(propias.length)}${enviadas.estado.tipo === 'listo' && !enviadas.estado.completa ? '+' : ''})` : ''}
+          </button>
+          {/* «Pendiente» es la palabra de BE para una solicitud que el asesorado todavía no respondió (10-B04). */}
+          {sinResponder > 0 ? (
+            <span className="directorio__sin-responder nota">
+              {numero(sinResponder)} {sinResponder === 1 ? 'pendiente de respuesta' : 'pendientes de respuesta'}
+            </span>
+          ) : null}
+        </Asesorados>
+      </div>
+
+      <SolicitarVinculo
+        abierto={formulario}
+        token={token}
+        sesionPerdida={sesionPerdida}
+        onCerrar={() => setFormulario(false)}
+        alEnviar={({ texto, deduplicada }) => {
+          setFormulario(false);
+          void enviadas.recargar();
+          // «Te mostramos esa»: si ya había una igual pendiente, se abre la lista, que lo dice arriba.
+          if (deduplicada) setSolicitudes({ abiertas: true, aviso: texto });
+          else setAviso(texto);
+        }}
+      />
+      <SolicitudesEnviadas
+        abierto={solicitudes.abiertas}
+        aviso={solicitudes.aviso}
+        solicitudes={enviadas.estado}
+        profesionalId={yo.id}
+        onCerrar={() => setSolicitudes({ abiertas: false, aviso: null })}
+        onReintentar={() => void enviadas.recargar()}
+        onVerMas={() => void enviadas.verMas()}
+      />
+      {aviso ? (
+        <AvisoFlotante onCerrar={() => setAviso(null)}>
+          <p>{aviso}</p>
+        </AvisoFlotante>
+      ) : null}
+    </Pagina>
   );
 }
