@@ -460,6 +460,143 @@ nada, la positiva fallaría.
 - El lector de pantalla con una persona: pendiente, como en los paquetes anteriores. Se verificaron axe, el árbol de
   accesibilidad, el teclado, el nombre de cada renglón-enlace y la descripción de cada minigráfico.
 
-## Lo que falta de la parte 2, y las partes 4 y 5
+## Parte 4 · Línea de tiempo: el día como unidad (2026-10-11)
+
+La línea de tiempo mostraba una tarjeta de cinco renglones por hecho: una comida ocupaba lo mismo que un plan activado, y
+para ver una semana había que desplazarse varias pantallas. Ahora **el día es la unidad**: cada hecho es un renglón que
+se abre entero; los hitos van primero y pesan más; las comidas de un día van en un renglón que dice cuántas son y lo que
+tienen de distinto, y se abre en el lugar; un día sin novedades va liso. Arriba, las vistas con nombre dicen cuántos
+hechos traen. El detalle se abre al costado, sin tapar la lista. No se quitó ninguna función ni cambió ningún parámetro
+de la URL. Sobre la base propia (`be_test_escritorio`, regenerada antes de la pasada) y la compilación estática del
+commit de código (837d0e1).
+
+**Medido en la página real,** con el asesorado A y 90 días (330 hechos):
+
+| Ventana | Antes | Ahora |
+|---|---|---|
+| 1440 px de ancho, alto de la página con la primera tanda de 50 hechos | 10.728 px (casi doce pantallas), medidos el 2026-10-10 antes del marco nuevo, que es 81 px más bajo | 1.398 px (1,6 pantallas), con once días enteros |
+| 1440 × 900, sin desplazarse | El buscador, los filtros y los dos primeros hechos | Seis días enteros, con todos sus hechos (el séptimo termina en 972 px) |
+| 1920 × 950 (la pantalla de Dirección, estimada) | — | Seis días enteros |
+| 1280 × 900 | — | Cinco días enteros (el buscador y «Más filtros» bajan a un segundo renglón) |
+
+Un día liso ocupa 53 px; uno con una sesión y sus comidas, 98; uno con una toma, una sesión y sus comidas, 143. La
+semana más reciente del asesorado A es de las cargadas (tomas en tres de sus últimos seis días): una semana con dos o
+tres sesiones y sin tomas entra entera en 900 px. La imagen `parte-4/linea-antes-y-ahora.png` compara las dos versiones
+a 1440 px: la de antes es la captura de la pasada final de la parte 3 (recortada a 2.400 px, donde entran dos días), y
+la de ahora, la primera tanda entera.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Cada día se arma con lo que entrega la API: los hitos primero, las comidas en un renglón que dice cuántas son y cuántas tienen cada rasgo, y la tarjeta solo si hay una sesión, un hito o un rasgo (E-65, E-66) | `recorrido.mjs funcional` (solas: `recorrido.mjs linea`), E-65: lo esperado de cada día, calculado a mano desde todas las tandas de la API, contra cada día en pantalla | Pasa: once días a la vista, ocho con tarjeta y tres lisos | Verificado automáticamente |
+| Se muestran días enteros: el día que la tanda cortó espera a «Ver días anteriores», y el pie dice cuántos hechos se ven y hasta qué día (E-71) | E-71, contra la primera tanda de la API; con su prueba de la prueba (con el día cortado en la lista, la comparación lo detecta) | Pasa: «Se ven 49 de 330 hechos, hasta el 1 oct.» | Verificado automáticamente |
+| A 1440 × 900 entran, sin desplazarse, al menos cinco días enteros (E-72) | E-72, midiendo la página con los datos recién generados; con su prueba de la prueba (con renglones de 215 px, como las tarjetas de antes, la misma medición da un día) | Pasa: seis días | Verificado automáticamente |
+| Un grupo abierto muestra todas las comidas del día, de la más temprana a la más tardía, cada una con sus rasgos (E-66) | E-66, contra la API, por identificador | Pasa | Verificado automáticamente |
+| Las comidas de ayer: un renglón que anuncia una anulada y una rectificada; cerrado no muestra ninguna y abierto, las cuatro (E-66, PRO-16) | E-66 y PRO-16, en `recorrido.mjs funcional` | Pasa | Verificado automáticamente |
+| El detalle dice lo que el renglón ya no repite: cuándo ocurrió y cuándo se cargó (los instantes de la API, con quién), sus relaciones, todos los datos de la entrada a un clic y el camino a su pestaña (E-70) | E-70, contra la entrada de la API | Pasa | Verificado automáticamente |
+| A 1440 el detalle se abre al costado, sin diálogo, con el renglón marcado y el foco en el detalle; Escape lo cierra y vuelve a la misma posición (E-70, PRO-05) | E-70 y PRO-05, en `recorrido.mjs funcional` | Pasa | Verificado automáticamente |
+| Escape desde la lista cierra el detalle y deja el foco; «Cerrar» lo devuelve al renglón; con el grupo cerrado, al renglón del grupo (E-70) | E-70 | Pasa | Verificado automáticamente |
+| A 1024 px el detalle se abre encima, en un panel que retiene el foco; axe sin faltas (E-70) | E-70 | Pasa | Verificado automáticamente |
+| Al tocar otro hecho mientras el primero carga, el detalle queda con el segundo (E-73) | E-73, demorando tres segundos la lectura del primero en el navegador | Pasa | Verificado automáticamente |
+| Las vistas con nombre, en su orden, cada una con la cantidad de la API; «Lo nuevo desde la revisión», sin número (E-67) | E-67, contra los conteos del período de la API | Pasa: Todo 330 · Hitos 19 · Distinto de lo indicado 4 · Sin confirmar 3 | Verificado automáticamente |
+| Cada vista trae lo que anuncia: la cantidad del botón, la de la cabecera y la de la API con ese filtro son la misma; la URL lleva solo ese filtro; cada renglón es de la vista (E-67) | E-67, una por vista, con una lectura de la API por cada una | Pasa: 19, 4 y 3 | Verificado automáticamente |
+| Con una vista que recorta dentro del día, cada hecho va en su renglón: sin grupos ni días sin hechos (E-68) | E-68 | Pasa | Verificado automáticamente |
+| «Lo nuevo desde la revisión» ofrece cada área con la fecha de su revisión; elegida una, la URL es la que escribe el Resumen, la cantidad es la de la API y las demás vistas siguen diciendo las cantidades del período (E-69) | E-69, contra el resumen de la ficha y la API con ese corte | Pasa: 70 hechos nuevos en Nutrición | Verificado automáticamente |
+| Un plan activado se abre con su número de versión (E-74) | E-74 | Pasa: «Versión 2 · activada el…» | Verificado automáticamente |
+| Al buscar una palabra que está en un dato que el renglón no muestra, el renglón dice dónde coincide; si ya lo dice, no agrega nada (E-75) | E-75, con el motivo de una sesión y con «cena» | Pasa: «Coincide en: Motivo: Viaje laboral» | Verificado automáticamente |
+| «Actualizar» con dos tandas leídas vuelve a leer desde la primera, sin repetir ni perder hechos (E-76) | E-76, contra los identificadores de la API | Pasa: 98 hechos con dos tandas, 49 después | Verificado automáticamente |
+| Entre dos días de la lista, los días sin ningún hecho se dicen con sus fechas; con un filtro, ninguno (E-77) | E-77, contra las fechas de la API, en un período alrededor del hueco | Pasa: «12 ago: sin hechos registrados» | Verificado automáticamente |
+| La ayuda de la vista se abre por el principio, explica cada parte con su muestra y, a un clic, qué trae cada vista; axe sin faltas (E-78) | E-78 | Pasa: 12 renglones, 12 muestras, 5 vistas | Verificado automáticamente |
+| Con el teclado se llega, en orden, a las vistas, el buscador, la lupa, «Más filtros» y los renglones; cada uno mide 44 px y muestra el foco; Enter abre y cierra un grupo | PRO-22 | Pasa | Verificado automáticamente |
+| Sin faltas de accesibilidad con un grupo y el detalle abiertos, en los dos temas | axe (WCAG 2.2 A y AA) | Pasa | Verificado automáticamente |
+| La vista entera, con un grupo y el detalle abiertos, no tiene porcentajes ni palabras que califiquen (E-65) | E-65 | Pasa | Verificado automáticamente |
+| Sin desborde de costado a 1440, 1280 y 1024 px | PRO-23 | Pasa | Verificado automáticamente |
+| En Analizar, los hitos que se dibujan son los de planificación, y son los de la API sin las tomas (E-79) | E-31 y E-25, en `recorrido.mjs funcional` | Pasa: 11 de planificación; las 8 tomas no se listan | Verificado automáticamente |
+| Las reglas del día, de los rasgos y de las vistas (E-65 a E-68, E-71, E-77, E-79) | `packages/domain`: 12 pruebas nuevas (`dia-de-la-linea.test.ts`); una comprueba que la cantidad que anuncia cada vista es la de los hechos que cumplen sus filtros | 607 de 607 (las 595 de antes y 12 nuevas) | Verificado automáticamente |
+| Cómo se escribe un hecho en un renglón, con los títulos y rótulos reales de la API (E-65, E-74, E-75, E-82) | `scripts/hecho-en-un-renglon.test.mjs`, en la batería | 11 de 11 | Verificado automáticamente |
+| Las pruebas nuevas detectan lo que protegen | `mutaciones-unitarias.mjs`: 14 reglas rotas de a una (7 del dominio y 7 del renglón); y `recorrido.mjs linea` sobre una compilación rota a propósito en ocho puntos | 14 de 14 detectadas; sobre la compilación rota, `linea` falló en las 11 comprobaciones que protegen esos puntos (E-65, E-67, E-68, E-69, E-70, E-71, E-73, E-74, E-75, E-76 y E-77) y pasó las otras 15. Después se reforzó una, que decía mirar el número del botón de cada vista y miraba el esperado | Verificado automáticamente |
+| La ficha sigue funcionando | Los siete recorridos, sobre la compilación del commit de código | `recorrido.mjs`: capturas 60 de 60, funcional 182 de 182 (las 154 de antes y 28 nuevas), descartable 17 de 17. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 80 de 80, funcional 76 de 76, revocación 6 de 6. Una sola pasada, el 2026-10-11 de 00:35 a 01:02, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10), sin fallas | Verificado automáticamente |
+| El arreglo del renglón de las vistas, hecho después de esa pasada (d56d485) | Los tres recorridos que miran ese renglón, sobre la compilación del arreglo y los datos del día: `recorrido.mjs linea` y `capturas`, y `recorrido-comprension.mjs mirar` | 26 de 26, 60 de 60 y 20 de 20. Los otros cuatro recorridos no se repitieron sobre esta compilación: la pasada completa se vuelve a hacer al cerrar la parte 5 | Verificado automáticamente, en lo que cambió |
+| Toda la batería de la CI | La CI de GitHub sobre el commit de código (837d0e1) | En verde (corrida 38108865346): el legajo, la batería completa, la integración y la imagen de la API. La batería, corrida también en esta máquina antes del commit: dominio 607, guiones 318 y API 81 | Verificado automáticamente |
+| La línea a 1440, 1280 y 1024 px y en los dos temas; un grupo abierto; el detalle de una comida, de una sesión, de una toma y de un plan; «Hitos», «Sin confirmar» y «Lo nuevo»; «Más filtros»; una búsqueda; los días sin hechos; la ayuda | `ver.mjs` | 28 imágenes en `parte-4/`: 25 capturas, la primera pantalla a 1440 × 900 y a 1920 × 950, y antes y ahora. Son de la compilación del commit de código, salvo «Lo nuevo» de Nutrición, que es de la del arreglo | Observado en una captura real |
+
+**Comprobaciones que cambiaron, y lo que protegen (E-06):**
+
+| Comprobación | Antes | Ahora | Qué protege |
+|---|---|---|---|
+| E-65 a E-78, con las de teclado y accesibilidad (PRO-22), desborde (PRO-23) y errores (PRO-25) de la línea: 26 nuevas, en `recorrido.mjs funcional`; solas, con `recorrido.mjs linea` | — | La línea de tiempo por día, con lo esperado calculado a mano desde la API | Las decisiones de esta parte |
+| PRO-02, los últimos hechos | Contaba seis `.entrada` (habría contado también las ocultas) | Lo que la lista anuncia sin abrir nada (renglones sueltos y la cantidad de cada grupo) es al menos seis, y es lo mismo que tiene adentro | Que los últimos hechos del período estén a mano |
+| PRO-01, PRO-04, PRO-21: la cuenta de la cabecera | «(\d+) hechos coinciden» | «N hechos en el período» sin filtros y «N hechos coinciden» con ellos, con punto de miles | El total, lo filtrado y que una respuesta lenta no pise a otra |
+| PRO-17, el nombre del día | El título del día, largo | El título dice el día entero para el lector de pantalla y, a la vista, corto («10 oct», «sábado») | Que el día se nombre en castellano |
+| PRO-03, la toma cargada otro día | «Carga tardía» | «Cargado otro día», en el renglón de la toma | Que el hecho quede en el día en que ocurrió |
+| PRO-16, lo rectificado y lo anulado | Las tarjetas del día de ayer | Abre el grupo de comidas de ayer y lee sus renglones; antes, que el grupo cerrado lo anuncie | Que una rectificación no sea otra entrada y una anulación no borre |
+| PRO-04, los filtros combinados | Los chips de área y el tipo, a la vista | Abre «Más filtros» y usa los mismos controles | Que los filtros queden en la URL y reduzcan el conjunto |
+| PRO-04, «Ver más» | «Ver más» hasta el final: tantos identificadores como la cuenta; las áreas, por un texto de cada tarjeta | «Ver días anteriores» hasta el final: tantos identificadores como la cuenta (las comidas de un grupo cerrado están en el documento), todos de Nutrición por su atributo, y lo que anuncian los renglones suma lo mismo | Que la paginación complete sin repetir ni perder. La parte de las áreas ya no puede pasar sin mirar nada |
+| PRO-05, abrir un registro | El último «Abrir registro»; un diálogo | El último renglón a la vista; el detalle al costado, con «Ocurrió» y «Se cargó» | Que se abra el registro de esa entrada y se vuelva a la misma posición |
+| PRO-04, la búsqueda | El botón «Buscar» | La lupa, que se llama «Buscar» | Que el texto buscado no viaje en ninguna URL |
+| E-47, dónde aparece la ayuda | «En la Línea de tiempo, que todavía no tiene la suya, no está» | Está en las tres vistas, y el marco mide lo mismo | Que el marco no crezca |
+| E-25 y E-31, los hitos de Analizar | «Hitos (N)» | «Hitos de planificación (N)», y N es el de la API sin las tomas | Que las líneas dibujadas sean las de la lista |
+| La captura del registro en el teléfono | «Abrir registro» | El primer renglón; ahí sigue siendo un panel | La captura |
+| PRO-20, después de revocar Antropometría (descartable) | Negaba «Toma» y «kg» en las entradas | Lo mismo, y antes de revocar comprueba que la línea traía tomas, con el mismo selector | Que el área revocada no aporte nada. La negativa ahora va con su positiva |
+| GUIA-II.1, a 1280 × 800 | La primera `.entrada` del documento | El primer día, con una posición real (una comida de un grupo cerrado mediría 0 y pasaría sola) | Que la línea empiece en la primera pantalla |
+| R1, lo nuevo en la línea de tiempo | La cuenta sin punto de miles; las áreas, por un texto de cada tarjeta | La cuenta con punto de miles; el área de cada renglón por su atributo, con al menos uno; y «Lo nuevo desde la revisión» elegido, con su área | Que el hecho del Resumen abra la línea filtrada |
+
+Las comprobaciones negativas que cambiaron (PRO-20, y la parte de las áreas de PRO-04 y de R1, que eran un «todas son de
+Nutrición» sobre un texto que ya no está en cada renglón) cambiaron en el mismo commit que la pantalla, y cada una va
+con una positiva que usa el mismo selector.
+
+**Lo que se encontró al implementar, y qué se hizo.**
+
+- **Un relevamiento en paralelo, y lo que encontró.** Mientras se escribía la pantalla, un agente relevó el código, la
+  API, la maqueta y los recorridos (`relevamientos/linea-de-tiempo-plan-de-implementacion.md`). Encontró cosas que la
+  implementación no había visto, y se corrigieron antes de la pasada:
+  - **Dos defectos de antes,** que seguían: desde la línea de tiempo, la planificación de un plan activado decía
+    «Versión 0» (E-74), y «Actualizar» le pegaba a la lectura nueva las tandas de la anterior (E-76).
+  - **«Hitos» nombraba dos conjuntos** en la misma ficha: 19 en la línea de tiempo (con las tomas) y 11 en Analizar
+    (E-79).
+  - **Datos de la entrada que ya no se veían en ningún lado** («Frente a lo indicado», «Rigió hasta», las cuentas de una
+    toma), y una búsqueda que podía traer renglones sin decir por qué (E-70, E-75).
+  - **Tres textos y un ícono:** «7 series» por «7 series con datos», «Sesión Sesión…» si el nombre ya empezaba así, y
+    los cubiertos donde el catálogo pone el desvío (E-82).
+  - **Una herramienta que medía mal:** `tiempos.mjs` medía la búsqueda con el texto en la URL, que la API rechaza con un
+    400 desde que la búsqueda va en el cuerpo. Se corrigió.
+- **El motivo de una falla del resumen por área** (el pendiente de la parte 3) y, al seguirlo, otro: con esa lectura
+  fallada, una pregunta de Analizar quedaba en «Cargando…» para siempre. Las dos dicen ahora qué pasó, por qué y
+  «Reintentar» (E-81).
+- **Una regla que no hacía nada.** La prueba de la prueba rompió catorce reglas de a una; una no se detectó porque la
+  línea que se quitaba era redundante (el resultado era el mismo sin ella). Se sacó del código y se probó otra
+  mutación, que sí cambia el resultado.
+- **Lo que mostró la pantalla al mirarla,** y se ajustó: en Azul noche el color tenue es un celeste, y un registro
+  anulado quedaba resaltado en vez de atenuado (ahora se atenúa por opacidad); el registro, dentro del detalle, era una
+  caja con barra adentro de otra tarjeta (ahora va liso); con poco ancho, la flecha del grupo bajaba al segundo renglón;
+  a 1280, «Más filtros» bajaba solo y ocupaba un renglón entero (ahora baja con el buscador).
+- **Lo que mostraron las capturas de evidencia, después de la pasada.** A 1440, con «Lo nuevo desde la revisión»
+  elegido, el botón decía también el área y el renglón ya no entraba: el buscador se achicaba hasta cortar su texto y
+  «Más filtros» se partía en dos renglones. Se corrigió (d56d485): elegido, el botón dice «Lo nuevo · Nutrición» (el
+  aviso de abajo dice la revisión entera, con su fecha, y el lector de pantalla sigue oyendo «desde la revisión»), el
+  buscador no baja de su texto y «Más filtros» no se parte; si no entran, bajan los dos juntos.
+- **Una herramienta que mostraba otra cosa.** `ver.mjs` capturaba una ruta sin salir de la pantalla anterior cuando
+  las dos eran de la misma página: quedaba abierto lo de la captura anterior (un detalle, un menú, los filtros) y una
+  falla simulada no llegaba a pedirse. Cinco de las 25 capturas no mostraban lo que decía su nombre (la del plan, la de
+  «Lo nuevo» de Nutrición, la búsqueda, la ayuda y la de «no se pudo leer»). Ahora cada ruta se captura con la pantalla
+  recién abierta, y esas cinco se repitieron. Se detectó mirando las imágenes una por una, no por una comprobación:
+  dos archivos pesaban exactamente lo mismo.
+
+**Lo que esta parte no comprueba:**
+
+- El uso real: falta que Dirección abra una ficha y recorra una semana.
+- El peso y la clase de la toma en su renglón: no llegan en la entrada (definición, §6).
+- Los días sin hechos de dos o más días seguidos en pantalla: el escenario de hoy tiene un hueco de un día. Las tres
+  formas del texto están en la prueba de la función.
+- Un día con más de 50 hechos (que no entra en una tanda): se muestra sin agrupar y lo dice; sin datos para probarlo en
+  pantalla. La regla está en la prueba del dominio.
+- Una sola área con revisión («Lo nuevo desde la revisión» sin desplegar) y ninguna (el botón no está): el escenario
+  tiene las dos.
+- Una toma con decenas de mediciones corregidas en el detalle: la regla que las junta está en la prueba de la función.
+- La línea a 768 y 390 px: se comprueba que no desborda; no tiene una composición propia.
+- El lector de pantalla con una persona: pendiente, como en los paquetes anteriores. Se verificaron axe, el teclado, el
+  nombre de cada renglón y de la lupa, y el título de cada día.
+- La prueba de palabras prohibidas extendida a la ficha (E-05): sigue pendiente.
+
+## Lo que falta de la parte 2, y la parte 5
 
 Pendientes.

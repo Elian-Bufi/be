@@ -225,10 +225,11 @@ Información).
 - Se diseña para **1440, 1280 y 1024 px** de ancho. A 768 y 390 px no es el objetivo, pero no se rompe: todo se apila,
   la página no se desplaza de costado y solo las tablas se desplazan dentro de su caja.
 - **Lo principal de cada vista empieza en la primera pantalla a 1280 × 800:** en el Resumen, las tarjetas por área, con
-  su objetivo y su plan; en Analizar, las preguntas o la pregunta en curso; en la línea de tiempo, los filtros y los
-  primeros hechos. A 1440 × 900, el Resumen muestra las tres tarjetas enteras y el valor de cada indicador (II.3).
-  Si no entra, cambia la composición, no la letra (I.5). La regla de los 390 px de ancho vale para el website del
-  asesorado y para la pestaña Antropometría (II.9 y II.10).
+  su objetivo y su plan; en Analizar, las preguntas o la pregunta en curso; en la línea de tiempo, las vistas con nombre
+  y los primeros días. A 1440 × 900, el Resumen muestra las tres tarjetas enteras y el valor de cada indicador (II.3),
+  y la línea de tiempo, seis días enteros con todos sus hechos (II.6). Si no entra, cambia la composición, no la letra
+  (I.5). La regla de los 390 px de ancho vale para el website del asesorado y para la pestaña Antropometría (II.9 y
+  II.10).
 - **Zonas con sentido, no columnas porque sí.** En Analizar, una barra arriba (la pregunta, las métricas y los modos)
   y, debajo, los gráficos y la lectura lado a lado desde 1024 px; en el Resumen, una tarjeta por área, lado a lado, y
   debajo los indicadores. La grilla ubica; el orden del documento y del teclado es el que se ve (WCAG 1.3.2 y 2.4.3).
@@ -236,7 +237,10 @@ Información).
   abiertas: las de uso ocasional van en un panel que se despliega («Más acciones») o en un pie de enlaces que abre una
   cosa a la vez. Nada se quita: se decide dónde queda.
 - **Sin doble desplazamiento.** Un panel no tiene su propio desplazamiento dentro de la página: el panel de lectura
-  acompaña a los gráficos sin barra propia.
+  acompaña a los gráficos sin barra propia. **Una excepción, escrita:** el detalle de un hecho de la línea de tiempo.
+  Se abre al costado y acompaña mientras la lista se desplaza; si es más alto que la ventana (la planificación entera de
+  una versión, una toma con todas sus mediciones), se desplaza adentro. Sin eso, al tocar un hecho de abajo el detalle
+  quedaba fuera de la vista. Es lo que ya hacía el panel que se abría encima.
 
 ### II.2 Superficies mates
 
@@ -401,8 +405,9 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   - **La lectura,** en otra tarjeta, al costado: el valor grande y, debajo, cómo leerlo (la calidad, cuántos registros
     lo sostienen, lo planificado, la clase del dato y «Ver origen»). No depende del puntero.
   - **A un clic:** «Más acciones» (vistas guardadas, descarga, capas, intervalo con fechas, comparar dos períodos) y el
-    pie de los gráficos (tabla de datos, resumen en texto, hitos, etapas y «Cómo se calcula»), que abre una cosa a la
-    vez debajo de ellos. Los hitos se dibujan mientras su lista está abierta. Lo desplegado es del análisis que se
+    pie de los gráficos (tabla de datos, resumen en texto, hitos de planificación, etapas y «Cómo se calcula»), que abre
+    una cosa a la vez debajo de ellos. Los hitos de planificación (activaciones, objetivos y revisiones; las tomas no,
+    porque en un gráfico ya son puntos) se dibujan mientras su lista está abierta. Lo desplegado es del análisis que se
     mira: se cierra al volver al comienzo de Analizar, no al cambiar una métrica o el período.
   - El punto elegido conserva su clase a la vista (el aro de selección rodea la marca sin taparla, y se ve entero
     también en el borde del gráfico); la leyenda dice solo los estados que están dibujados.
@@ -429,8 +434,31 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   El modo no es una diferencia: unas cantidades informadas a mano pueden coincidir con la opción. Los filtros lo
   respetan: «Distintas de lo indicado» deja solo la diferencia comprobada (`QUANTITIES_DIFFER_FROM_PLAN`), y «Con
   cantidades informadas a mano» dice que pueden coincidir o no. Sin porcentaje global.
-- **Línea de tiempo** (`linea-de-tiempo.tsx`): una entrada por hecho, filtros en la URL, búsqueda en el cuerpo, y desde
-  la síntesis, «lo nuevo desde la revisión» con su aviso.
+- **Línea de tiempo** (`linea-de-tiempo.tsx`; las reglas, en `dia-de-la-linea.ts` del dominio): **el día es la
+  unidad.** Los hechos, los filtros de la URL y la búsqueda en el cuerpo son los de siempre; cambia cómo se leen juntos.
+  - **Arriba, un renglón para elegir qué ver:** las vistas con nombre («Todo», «Hitos», «Lo nuevo desde la revisión»,
+    «Distinto de lo indicado» y «Sin confirmar»), cada una con la cantidad de hechos del período que trae; el buscador;
+    y «Más filtros», con la combinación libre (área, tipo de hecho, ejercicio, estado, calidad del dato y lo cargado
+    otro día). Una vista con nombre es una combinación de esos filtros: elegirla reemplaza lo elegido, y la elegida va
+    llena, como el segmento elegido de Analizar. Los filtros activos se listan solo si lo elegido no es una vista.
+  - **Cada hecho es un renglón que se abre entero.** En el día van primero los hitos, con una barra a la izquierda;
+    después las sesiones; y al final las comidas, que con dos o más van en un renglón («Comidas · 4 registradas») que
+    dice cuántas tienen cada rasgo y se abre en el lugar, del desayuno a la cena. Agrupar no esconde.
+  - **Un rasgo es una etiqueta con ícono y palabra,** nunca un color: sin confirmar, distinta de lo indicado, comida
+    diferente, con cambios, no realizada, resumida, anulado, rectificado, corregido y cargado otro día. El modo de
+    registro de siempre (porciones del plan, cantidades informadas) va como texto al final del renglón.
+  - **Un día sin novedades** (solo sus comidas, sin ningún rasgo) va liso; la tarjeta queda para los días con una
+    sesión, un hito o un rasgo. Entre dos días de la lista, los días sin ningún hecho se dicen con sus fechas y la
+    muestra gris de los gráficos: un hueco no es un cero. Solo al mirar «Todo».
+  - **Con un filtro que recorta dentro del día** (una calidad, un estado, la búsqueda, lo nuevo desde una revisión),
+    cada hecho va en su renglón: un grupo no puede decir una cantidad que no es la del día. Con un texto buscado, el
+    renglón dice dónde coincide si no está a la vista.
+  - **El detalle** se abre al costado desde 1200 px de ancho, sin tapar la lista; más angosto, encima. Dice lo que el
+    renglón ya no repite: cuándo ocurrió, cuándo se cargó y quién, qué le pasó después, sus relaciones, sus datos y el
+    registro completo, con el camino a su pestaña. El foco va a su título; «Cerrar» y Escape lo devuelven.
+  - **Días enteros:** la API entrega de a 50 hechos, y el último día leído espera a «Ver días anteriores».
+  - **«Hito»** es todo lo que no se registra todos los días, con las tomas. Analizar dibuja los hitos de planificación
+    (los mismos, sin las tomas). Los dos conjuntos salen del dominio.
 - **Vistas guardadas** (`vistas-guardadas.tsx`): guardan la configuración y la pregunta, nunca datos. Si llevan
   selecciones de un asesorado, lo avisan al guardar y las piden de nuevo en otro. En un análisis están en «Más
   acciones», que se abre solo cuando se acaba de retomar una, para que su aviso se vea. Se retoman también desde el
@@ -452,7 +480,11 @@ Además de los de I.4:
   «Reintentar». Una lectura que no llegó dice «No pudimos completar esta parte», con su motivo y «Reintentar».
 - **El acercamiento de un gráfico se suelta** al cambiar las métricas, el período o la pregunta: no está en la URL y no
   debe sobrevivir a otro análisis. Agrupar no lo suelta.
-- **Actualizar** vuelve a leer y dice la hora de la consulta.
+- **Una vista que no se pudo leer** lo dice con el bloque de estado: el ícono del motivo, qué pasó («No pudimos cargar
+  la línea de tiempo»), por qué y «Reintentar». Vale para la línea de tiempo, para el resumen por área y para una
+  pregunta de Analizar que no se puede armar sin él. La vista parcial se avisa una sola vez, en el marco.
+- **Actualizar** vuelve a leer todo lo que la vista muestra (en la línea de tiempo, desde la primera tanda) y dice la
+  hora de la consulta.
 
 ### II.8 Componentes y patrones del website
 
@@ -486,6 +518,11 @@ usa uno de estos.
 | `BloqueDeEstado` | Un estado dicho en el lugar de lo que falta: ícono, qué pasó, por qué y qué se puede hacer | «No pudimos completar esta parte» + «Reintentar» |
 | `.tarjeta-de-pregunta` | Una pregunta como botón entero, con lo que muestra | Las preguntas principales de Analizar |
 | `.aviso-de-filtro` | Un filtro que viene de otra vista, explicado y con su salida | «Lo nuevo desde la revisión…» + «Ver todo el período elegido» |
+| `.vista-de-la-linea` | Una vista con nombre: un filtro con el nombre de lo que se busca y la cantidad de hechos que trae. La elegida va llena | «Hitos 19» |
+| `.entrada` | Un hecho en un renglón que se abre entero: ícono o hora, nombre, lo que lo distingue, sus rasgos y la flecha | «Almuerzo · Arroz con pollo y brócoli · Rectificado» |
+| `.grupo-de-hechos` | Lo de todos los días, junto en un renglón que dice cuánto hay y lo que tiene de distinto; se abre en el lugar | «Comidas · 4 registradas · 1 anulada» |
+| `.detalle-del-hecho` | El detalle de lo elegido, al costado de su lista, sin taparla; acompaña el desplazamiento | El de un hecho de la línea de tiempo |
+| `renglonDelHecho` (website) · `rasgosDeUnHecho` (dominio) | Cómo se escribe un hecho en un renglón, y qué rasgos lleva. Sale de la entrada de la API; no calcula ni completa | «Sesión A · Tren inferior · 7 series con datos» |
 
 **Reglas que salieron de este trabajo:**
 - **La fecha que importa nombra al registro.** La fecha de ocurrencia es lo principal. La de registro es un metadato:
@@ -970,6 +1007,18 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | Las fechas en el Resumen | Siempre con el año. | Sin el año si es del año en curso; el período, con su año, está en el marco. | Aclarada | 3 |
 | «Actualizar» | Volvía a leer el acceso y el resumen por área; la cobertura del período y lo disponible quedaban con los datos de antes, debajo de una hora nueva. | Vuelve a leer todo lo que la vista muestra (II.4). | Corregida | 3 |
 | La ayuda de una vista, al abrirse | El foco iba a «Cerrar», al final: una ayuda más alta que la ventana se abría mostrando su último renglón. | Se abre por el principio: el foco va al título. El Resumen tiene la suya. | Corregida | 3 |
+| La línea de tiempo | Una tarjeta de cinco renglones por hecho. Los primeros 50 hechos ocupaban 10.728 px a 1440 px de ancho: casi doce pantallas. | Por día: cada hecho, un renglón; las comidas de un día, en uno que se abre. La misma tanda mide 1.398 px, y a 1440 × 900 entran seis días enteros (II.6). | Sustituida | 4 |
+| Los filtros de la línea de tiempo | Área, tipo y búsqueda a la vista; estado, calidad, carga tardía y ejercicio en un plegable. | Vistas con nombre y cantidad, el buscador y «Más filtros», con la combinación libre entera (II.6). La URL no cambió. | Sustituida | 4 |
+| «Abrir registro» | Un enlace en cada tarjeta, que abría un panel encima de la vista. | El renglón entero abre el detalle, al costado desde 1200 px (II.6). | Sustituida | 4 |
+| Lo que decía cada tarjeta de un hecho | Todos sus datos, «Registrado el…», quién lo cargó y sus relaciones, siempre a la vista. | En el renglón, lo que lo nombra y sus rasgos; lo demás, en el detalle. Con un texto buscado, el renglón dice dónde coincide. | Sustituida | 4 |
+| «Carga tardía» | La etiqueta de un hecho cargado otro día. | «Cargado otro día», como en el Resumen. El filtro conserva «(carga tardía)», que es el término del legajo. | Sustituida | 4 |
+| Los días sin hechos | No se decían: en la lista faltaba el día. | Entre dos días de la lista, con sus fechas y la muestra gris de los gráficos, al mirar «Todo» (II.6). | Nueva | 4 |
+| «Hitos» | La misma palabra nombraba dos conjuntos: en la línea de tiempo, con las tomas; en Analizar, sin ellas. | Una definición, en el dominio, y dos alcances con nombre: «hitos» en la línea de tiempo e «hitos de planificación» en Analizar (II.6). | Aclarada | 4 |
+| Sin doble desplazamiento | Sin excepciones escritas (el panel que se abría encima ya se desplazaba adentro). | Una excepción escrita: el detalle de un hecho, al costado (II.1). | Aclarada | 4 |
+| Una vista que no se pudo leer | Un renglón de aviso. Si fallaba el resumen por área, no decía el motivo, y una pregunta de Analizar quedaba en «Cargando…». | El bloque de estado, con su motivo y «Reintentar», en las tres vistas (II.7). | Corregida | 4 |
+| «Actualizar» en la línea de tiempo | Volvía a leer la primera tanda y le pegaba las siguientes de la lectura anterior. | Vuelve a leer desde la primera tanda (II.7). | Corregida | 4 |
+| El registro de un plan activado | Desde la línea de tiempo, su planificación decía «Versión 0». | Dice su número de versión. | Corregida | 4 |
+| La ayuda de una vista | La tenían el Resumen y Analizar. | Las tres vistas de la ficha tienen la suya. | Ampliada | 4 |
 
 ---
 
