@@ -81,21 +81,26 @@ for (const [nombre, ruta] of Object.entries(lecturas)) resultados[nombre] = awai
 // El límite de lecturas protegidas es de 120 por minuto por actor: se espera a que venza la ventana antes de seguir.
 await new Promise((r) => setTimeout(r, 61_000));
 
-// El Resumen tal como lo pide la página: una primera ola (lo disponible, el resumen por dominio, las vistas guardadas y
-// el período) y una segunda (los cuatro indicadores por defecto), cada una en paralelo.
+// El Resumen tal como lo pide la página: una primera ola (lo disponible, el resumen por dominio, las vistas guardadas, los
+// conteos del período y los macros del objetivo) y una segunda (los cuatro indicadores por defecto), cada una en paralelo.
+// WP-ESCRITORIO-AMABLE (parte 3): se suma la lectura de los macros (API-NUT-06); la línea de tiempo se pide con un solo
+// hecho, porque el Resumen usa sus conteos y ya no lista los últimos; y los indicadores por defecto son calorías,
+// proteínas, la carga de la serie 1 del ejercicio más registrado y el peso. No incluye las dos lecturas de lo nuevo
+// desde cada revisión, que dependen del corte de cada área.
 const ola1 = [
   `${a}/dashboard`,
   `/me/analysis-views`,
   `${a}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?${q}&metric=RECORDS`,
   `${a}/projections/TRAINING_PROGRESSION_BY_EXERCISE?${q}`,
   `${a}/projections/ANTHROPOMETRY_LONGITUDINAL?${q}`,
-  `${a}/timeline?${q}&limit=6`,
+  `${a}/timeline?${q}&limit=1`,
+  `${a}/nutrition/objectives/effective`,
 ];
 const ola2 = [
   `${a}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?${q}&metric=ENERGY&grain=DAY`,
-  `${a}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?${q}&metric=RECORDS&grain=DAY`,
+  `${a}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?${q}&metric=PROTEIN&grain=DAY`,
+  `${a}/projections/TRAINING_PROGRESSION_BY_EXERCISE?${q}&exerciseId=${ejercicio}&metric=LOAD&setIndex=1&unit=kg&grain=ORIGINAL`,
   `${a}/projections/ANTHROPOMETRY_LONGITUDINAL?${q}&metric=peso`,
-  `${a}/projections/TRAINING_PROGRESSION_BY_EXERCISE?${q}&exerciseId=${ejercicio}&metric=SETS_RECORDED&grain=ORIGINAL`,
 ];
 const vueltasDelResumen = [];
 for (let i = 0; i < N; i++) {

@@ -28,6 +28,11 @@ export const diaCivil = (fechaCivil: string) => (fechaCivil ? diaEnUtc.format(ne
 const diaYMesCortos = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 /** «17 ago»: una fecha civil sin el año, para el eje de un gráfico o un título que ya dice el período. */
 export const diaYMesCivil = (fechaCivil: string) => (fechaCivil ? diaYMesCortos.format(new Date(`${fechaCivil}T12:00:00Z`)) : '');
+/**
+ * «20 sept» si la fecha es del año en curso; «20 sept 2025» si no. Para una pantalla que ya dice el período con su año
+ * (el Resumen de la ficha): el año se escribe solo cuando hace falta para no confundir.
+ */
+export const diaDelAnioEnCurso = (fechaCivil: string, hoy: string) => (fechaCivil.slice(0, 4) === hoy.slice(0, 4) ? diaYMesCivil(fechaCivil) : diaCivil(fechaCivil));
 export function rangoCivil(desde: string, hasta: string): string {
   if (!desde || !hasta) return '';
   if (desde.slice(0, 4) !== hasta.slice(0, 4)) return `${diaCivil(desde)} – ${diaCivil(hasta)}`;

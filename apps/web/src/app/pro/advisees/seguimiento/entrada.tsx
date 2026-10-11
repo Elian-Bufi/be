@@ -12,10 +12,11 @@
  * - **Las de Entrenamiento** son de un ejercicio, una serie y una unidad, que se eligen arriba de sus casillas (kg y lb
  *   nunca se mezclan). Lo que se va a ver se dice entero al pie, antes de confirmar.
  */
-import { definicionDeMetrica, MAXIMO_DE_METRICAS, METRICAS_DEL_DICCIONARIO, numero, type DefinicionDeMetrica, type NombreDeIcono, type ReferenciaDeMetrica } from '@be/domain';
+import { definicionDeMetrica, MAXIMO_DE_METRICAS, METRICAS_DEL_DICCIONARIO, numero, type NombreDeIcono, type ReferenciaDeMetrica } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { Icono } from '../../../../components/icono';
 import { textoDeFalla } from './contexto';
+import { ICONO_DE_METRICA, iconoDeLaMedida } from './iconos-de-metrica';
 import { nombreDeLaReferencia } from './selector';
 import type { Disponibles } from './series';
 
@@ -24,28 +25,6 @@ const DE_ENTRENAMIENTO = METRICAS_DEL_DICCIONARIO.filter((m) => m.area === 'ENTR
 const NO_OFRECIDAS = METRICAS_DEL_DICCIONARIO.filter((m) => !m.implementada);
 /** Cuántas medidas corporales van a la vista; las demás, en «Más medidas». */
 const MEDIDAS_A_LA_VISTA = 4;
-
-/** El ícono de cada métrica fija. Acompaña al nombre: nunca va solo. */
-const ICONO_DE_METRICA: Readonly<Record<string, NombreDeIcono>> = {
-  'nutricion.energia': 'calorias',
-  'nutricion.carbohidratos': 'carbohidratos',
-  'nutricion.grasas': 'grasas',
-  'nutricion.proteinas': 'proteinas',
-  'nutricion.fibra': 'fibra',
-  'nutricion.registros': 'comida',
-  'entrenamiento.carga': 'carga',
-  'entrenamiento.repeticiones': 'repetir',
-  'entrenamiento.series-registradas': 'series',
-};
-
-/** El ícono de una medida corporal, por lo que mide: una masa, un pliegue, un perímetro; lo demás es un resultado calculado. */
-function iconoDeLaMedida(d: DefinicionDeMetrica | null): NombreDeIcono {
-  const familia = d?.familia ?? '';
-  if (familia.startsWith('masa')) return 'peso';
-  if (familia.startsWith('pliegue') || familia.startsWith('sumatoria')) return 'pliegue';
-  if (familia.startsWith('perimetro')) return 'perimetro';
-  return 'calculado';
-}
 
 export function ElegirMetricasDeEntrada({ disponibles, onVer }: { disponibles: Disponibles; onVer: (metricas: readonly ReferenciaDeMetrica[]) => void }) {
   const id = useId();

@@ -39,6 +39,8 @@ const ZONA = 'America/Argentina/Buenos_Aires';
 /** «19 sept 2026»: la fecha civil de un instante en la zona del asesorado, como la ficha. */
 const diaDe = (instante) => new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeZone: ZONA }).format(new Date(instante));
 const fechaCivilDe = (instante) => new Intl.DateTimeFormat('en-CA', { timeZone: ZONA, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(instante));
+/** «19 sept»: como escribe el Resumen una fecha del año en curso (WP-ESCRITORIO-AMABLE, E-57); con el año si es de otro. */
+const diaBreveDe = (instante) => (fechaCivilDe(instante).slice(0, 4) === hoy.slice(0, 4) ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: ZONA }).format(new Date(instante)) : diaDe(instante));
 
 // ─── Resultados ───────────────────────────────────────────────────────────────────────────────
 
@@ -400,15 +402,18 @@ async function mirar() {
     const conPregunta = (q) => `${FICHA_A}&vista=analizar&${q}`;
 
     await pantalla('resumen', () => ir(page, FICHA_A));
+    // WP-ESCRITORIO-AMABLE (parte 3): la síntesis ya no es una lista con «Ver todas»: está en las tarjetas de cada área,
+    // y lo único plegado es la cobertura del período de las áreas con revisión. «Todas» es con eso abierto.
     await pantalla('resumen-todas', async () => {
       await ir(page, FICHA_A);
       await quieto(page, v);
-      await clic(page, '.encabezado-de-bloque button, .encabezado-de-bloque a', 'Ver todas');
+      const plegados = await page.$$eval('.area details.area__periodo > summary', (s) => s.map((x) => x.click()).length);
+      if (plegados === 0) throw new Error('no hay nada plegado en las tarjetas del Resumen');
     });
     await pantalla('linea-novedades', async () => {
       await ir(page, FICHA_A);
       await quieto(page, v);
-      await clic(page, '.observacion[data-regla="NOVEDADES_DESDE_EL_CORTE"] a', '');
+      await clic(page, '.area[data-area="NUTRICION"] .observacion[data-regla="NOVEDADES_DESDE_EL_CORTE"] a', '');
     });
     await pantalla('analizar-preguntas', () => ir(page, `${FICHA_A}&vista=analizar`));
     await pantalla('pregunta-ejercicio-falta', async () => {
@@ -440,7 +445,7 @@ async function mirar() {
     await pantalla('preparar-revision-nutricion', async () => {
       await ir(page, FICHA_A);
       await quieto(page, v);
-      await clic(page, '.acciones-del-resumen a', 'Preparar la revisión de Nutrición');
+      await clic(page, '.area[data-area="NUTRICION"] .area__accion a', 'Preparar la revisión de Nutrición');
       await revisionPreparada(page, v);
     });
     // La evidencia con un día marcado entero y otro en parte (casilla mixta), con «Lo que marcaste» abierto.
@@ -494,7 +499,10 @@ async function capturas() {
     // La revisión de Nutrición preparada desde la ficha: la evidencia agrupada por día (pasada del 2026-10-09).
     await ir(page, FICHA_A);
     await quieto(page, v);
-    const prepararNutricion = await page.evaluate(() => [...document.querySelectorAll('.acciones-del-resumen a')].find((a) => a.textContent.includes('Preparar la revisión de Nutrición'))?.getAttribute('href') ?? null);
+    const prepararNutricion = await page.evaluate(() => [...document.querySelectorAll('.area[data-area="NUTRICION"] .area__accion a')].find((a) => a.textContent.includes('Preparar la revisión de Nutrición'))?.getAttribute('href') ?? null);
+    // WP-ESCRITORIO-AMABLE (parte 3): si el enlace no se encuentra, la pantalla de la revisión sale de la lista y sus seis
+    // comprobaciones dejarían de correr sin que nada falle. Ahora, que el enlace esté se comprueba.
+    comprobar('CP-27', 'El Resumen ofrece «Preparar la revisión de Nutrición» en la tarjeta de su área: de ese enlace sale la pantalla de la revisión que se captura', prepararNutricion !== null && /vista=revisiones&preparar=1/.test(prepararNutricion ?? ''), prepararNutricion ?? 'no está');
     const vistas = [
       ...(prepararNutricion ? [['revision-nutricion', prepararNutricion]] : []),
       ['resumen', FICHA_A],
@@ -527,7 +535,8 @@ async function capturas() {
               const o = document.querySelector('.observacion');
               return o ? Math.round(o.getBoundingClientRect().bottom + scrollY) : null;
             });
-            comprobar('CP-01', `A 1440 × 900 en ${tema}, la primera observación de la síntesis se ve sin desplazarse`, yPrimera !== null && yPrimera <= 900, `termina en y = ${yPrimera}`);
+            // WP-ESCRITORIO-AMABLE (parte 3): la síntesis está en las tarjetas por área. El primer hecho es el de la primera.
+            comprobar('CP-01', `A 1440 × 900 en ${tema}, el primer hecho de la síntesis (en la tarjeta de la primera área) se ve sin desplazarse`, yPrimera !== null && yPrimera <= 900, `termina en y = ${yPrimera}`);
             await page.screenshot({ path: fileURLToPath(new URL(`resumen-1440-${tema}-primera-pantalla.png`, carpeta)) });
           }
         }
@@ -537,7 +546,8 @@ async function capturas() {
     await ponerTema(page, 'azul-noche');
     await page.setViewport({ width: 1280, height: 800 });
     for (const [nombre, url, selector] of [
-      ['Resumen: el objetivo y la planificación', FICHA_A, '.tabla-de-planificacion tbody tr'],
+      // WP-ESCRITORIO-AMABLE (parte 3): el objetivo y el plan están en el contexto de la tarjeta de cada área.
+      ['Resumen: el objetivo y la planificación', FICHA_A, '.area .area__contexto'],
       ['Analizar: las preguntas', `${FICHA_A}&vista=analizar`, '.tarjeta-de-pregunta'],
       ['Línea de tiempo: el primer hecho', `${FICHA_A}&vista=linea`, '.entrada'],
     ]) {
@@ -636,43 +646,92 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   await ir(page, FICHA_A);
   await quieto(page, v);
   const desde = v.urls.length;
+  // WP-ESCRITORIO-AMABLE (parte 3): el Resumen se organiza por área. El objetivo y la síntesis de cada área están en su
+  // tarjeta, antes que los indicadores. «Sin gráficos» protegía que nadie tuviera que explorar un gráfico para enterarse
+  // de lo pendiente: sigue valiendo así: las tarjetas no dibujan nada, no hay ningún gráfico de la biblioteca, y los
+  // únicos dibujos son los minigráficos de los indicadores, que van después.
   const orden = await page.evaluate(() => {
-    const h2 = [...document.querySelectorAll('main h2')].map((h) => h.textContent.trim());
-    const sintesis = [...document.querySelectorAll('main h2')].find((h) => h.textContent.includes('Para tu próxima revisión'));
-    const primera = document.querySelector('.observacion');
-    return { nombre: document.querySelector('h1')?.textContent ?? '', h2, ySintesis: sintesis ? Math.round(sintesis.getBoundingClientRect().top + scrollY) : null, yPrimera: primera ? Math.round(primera.getBoundingClientRect().bottom + scrollY) : null, graficos: document.querySelectorAll('figure.grafico__figura').length };
+    const h2 = [...document.querySelectorAll('main h2')].filter((h) => h.checkVisibility()).map((h) => h.textContent.trim());
+    const tarjetas = [...document.querySelectorAll('.area')];
+    const indicadores = document.querySelector('.indicadores-del-resumen');
+    const primera = document.querySelector('.area .observacion');
+    return {
+      nombre: document.querySelector('h1')?.textContent ?? '',
+      h2,
+      tarjetasAntes: !!indicadores && tarjetas.length > 0 && tarjetas.every((t) => (t.compareDocumentPosition(indicadores) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0),
+      conObjetivo: tarjetas.filter((t) => [...t.querySelectorAll('.area__contexto dt')].some((d) => d.textContent.trim() === 'Objetivo')).length,
+      conHechos: tarjetas.filter((t) => t.querySelector('.observacion')).length,
+      yPrimera: primera ? Math.round(primera.getBoundingClientRect().bottom + scrollY) : null,
+      deLaBiblioteca: document.querySelectorAll('figure.grafico__figura, .recharts-surface').length,
+      minigraficos: document.querySelectorAll('.indicadores-del-resumen .minigrafico').length,
+      dibujosEnLasTarjetas: document.querySelectorAll('.area .minigrafico, .area figure').length,
+    };
   });
-  const iObjetivo = orden.h2.indexOf('Objetivo y planificación');
-  const iSintesis = orden.h2.indexOf('Para tu próxima revisión');
-  comprobar('CP-01', 'El Resumen presenta la persona, el objetivo y la síntesis, en ese orden y sin gráficos', orden.nombre.length > 0 && iObjetivo >= 0 && iSintesis > iObjetivo && orden.graficos === 0, `${orden.nombre} · ${orden.h2.join(' › ')}`);
-  comprobar('CP-01', 'A 1440 × 900, la primera observación de «Para tu próxima revisión» se ve sin desplazarse', orden.yPrimera !== null && orden.yPrimera <= 900, `síntesis en y = ${orden.ySintesis}; la primera observación termina en y = ${orden.yPrimera}`);
+  const iPrimeraArea = orden.h2.indexOf('Nutrición');
+  const iIndicadores = orden.h2.indexOf('Indicadores');
+  comprobar(
+    'CP-01',
+    'El Resumen presenta la persona y, por área, el objetivo y la síntesis, antes que los indicadores; no hay gráficos que explorar: las tarjetas no dibujan nada y los únicos dibujos son los minigráficos de los indicadores, después',
+    orden.nombre.length > 0 && iPrimeraArea === 0 && iIndicadores > iPrimeraArea && orden.tarjetasAntes && orden.conObjetivo >= 2 && orden.conHechos >= 2 && orden.deLaBiblioteca === 0 && orden.dibujosEnLasTarjetas === 0 && orden.minigraficos > 0,
+    `${orden.nombre} · ${orden.h2.join(' › ')} · ${orden.conObjetivo} tarjetas con objetivo, ${orden.conHechos} con hechos · ${orden.minigraficos} minigráficos, todos en los indicadores`,
+  );
+  comprobar('CP-01', 'A 1440 × 900, el primer hecho de la síntesis (en la tarjeta de la primera área) se ve sin desplazarse', orden.yPrimera !== null && orden.yPrimera <= 900, `el primer hecho termina en y = ${orden.yPrimera}`);
 
-  const etiquetaVerTodas = (await textos(page, '.encabezado-de-bloque button, .encabezado-de-bloque a')).find((t) => /Ver todas/.test(t)) ?? '';
-  const total = Number(/Ver todas \((\d+)\)/.exec(etiquetaVerTodas)?.[1] ?? NaN);
-  await clic(page, '.encabezado-de-bloque button, .encabezado-de-bloque a', 'Ver todas');
-  const obs = await page.$$eval('.observacion', (xs) =>
+  // La síntesis entera: lo que cada tarjeta tiene a la vista y lo que guarda plegado (la cobertura del período de un
+  // área con revisión), que dice cuántos hechos son. Reemplaza a «Ver todas (N)».
+  const anunciados = await page.$$eval('.area details.area__periodo > summary', (s) => s.map((x) => Number(/\((\d+)\)\s*$/.exec(x.textContent.trim())?.[1] ?? NaN)));
+  const aLaVistaAntes = await page.$$eval('.area .observacion', (xs) => xs.filter((o) => o.checkVisibility()).length);
+  await page.$$eval('.area details.area__periodo > summary', (s) => s.forEach((x) => x.click()));
+  await pausa(250);
+  const NOMBRE_DEL_AREA = { NUTRICION: 'Nutrición', ENTRENAMIENTO: 'Entrenamiento', ANTROPOMETRIA: 'Antropometría' };
+  const obs = await page.$$eval('.area .observacion', (xs) =>
     xs.map((o) => ({
       regla: o.dataset.regla,
-      alcance: o.querySelector('.observacion__alcance')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+      area: o.closest('.area').dataset.area,
+      alcance: o.querySelector('.observacion__alcance')?.textContent.replace(/\s+/g, ' ').trim() ?? '',
       texto: o.querySelector('.observacion__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
-      fuente: /Sale de /.test(o.querySelector('.observacion__pie')?.innerText ?? ''),
-      acciones: o.querySelectorAll('.observacion__pie a, .observacion__pie button').length,
+      acciones: o.querySelectorAll('a.observacion__fila').length,
+      destino: o.querySelector('.observacion__fila > .visualmente-oculto')?.textContent.replace(/\s+/g, ' ').trim() ?? '',
+      aLaVista: o.checkVisibility(),
     })),
   );
-  comprobar('CP-02', 'Cada observación dice su área y alcance, el hecho, de dónde sale y cómo profundizarlo', obs.length > 0 && obs.every((o) => o.alcance && o.texto && o.fuente && (o.acciones > 0 || o.regla === 'PARTE_NO_DISPONIBLE')), obs.map((o) => `${o.regla}(${o.acciones})`).join(' '));
-  comprobar('CP-02', '«Ver todas» dice cuántas hay y las muestra todas', obs.length === total, `${obs.length} de ${total}`);
+  // «De dónde sale» cada hecho ya no se repite en cada renglón (C-05): está en «Cómo se lee esta vista», una vez por regla.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await clic(page, '.marco-de-la-ficha button', 'Cómo se lee esta vista');
+  await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 5_000 });
+  await page.click('dialog.como-se-lee[open] details.como-se-lee__fuentes > summary');
+  await pausa(200);
+  const fuentes = await page.$$eval('dialog.como-se-lee[open] .como-se-lee__fuentes [data-regla]', (f) => Object.fromEntries(f.filter((x) => x.checkVisibility()).map((x) => [x.dataset.regla, x.innerText.replace(/\s+/g, ' ').trim()])));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 3_000 });
+  comprobar(
+    'CP-02',
+    'Cada hecho dice su área y alcance y el hecho, y el renglón abre cómo profundizarlo; de dónde sale cada uno está en «Cómo se lee esta vista», una vez por regla',
+    obs.length > 0 && obs.every((o) => o.alcance.startsWith(`${NOMBRE_DEL_AREA[o.area]} · `) && o.alcance.endsWith(':') && o.texto && /Sale de .+\.$/.test(fuentes[o.regla] ?? '') && (o.regla === 'OBJETIVO_NUEVO_DESPUES_DEL_CORTE' ? true : o.acciones === 1 && o.destino.length > 5)),
+    `${obs.map((o) => `${o.regla}(${o.acciones})`).join(' ')} · fuentes en la ayuda: ${Object.keys(fuentes).length}`,
+  );
+  comprobar(
+    'CP-02',
+    'La síntesis se muestra entera: lo plegado dice cuántos hechos guarda y, abierto, están todos (los que había a la vista más los anunciados)',
+    anunciados.length > 0 && anunciados.every(Number.isFinite) && obs.length === aLaVistaAntes + anunciados.reduce((s, n) => s + n, 0) && obs.every((o) => o.aLaVista),
+    `${aLaVistaAntes} a la vista + ${anunciados.join(' + ')} plegados = ${obs.length} hechos`,
+  );
   const palabras = ['mejoró', 'empeoró', 'no cumplió', 'adherencia', 'bien', 'mal'];
-  comprobar('CP-02', 'Ninguna observación califica a la persona', !obs.some((o) => palabras.some((p) => new RegExp(`\\b${p}\\b`, 'i').test(o.texto))), '');
+  comprobar('CP-02', 'Ningún hecho califica a la persona', obs.length > 0 && !obs.some((o) => palabras.some((p) => new RegExp(`\\b${p}\\b`, 'i').test(o.texto))), `${obs.length} hechos leídos`);
 
-  // CP-03: un corte por área, el de su última revisión.
+  // CP-03: un corte por área, el de su última revisión. Lo dice el alcance de cada hecho y, a la vista, la línea del
+  // corte de cada tarjeta. Las fechas del año en curso van sin el año (E-57).
   const alcances = obs.filter((o) => o.regla === 'NOVEDADES_DESDE_EL_CORTE').map((o) => o.alcance);
+  const cortesALaVista = await page.$$eval('.area', (as) => Object.fromEntries(as.map((a) => [a.dataset.area, a.querySelector('.area__corte')?.innerText.replace(/\s+/g, ' ').trim() ?? ''])));
   comprobar(
     'CP-03',
     'Cada área tiene su propio corte: la última revisión de Nutrición y la de Entrenamiento, en fechas distintas',
-    alcances.some((a) => a.startsWith('Nutrición') && a.includes(`Desde la revisión del ${diaDe(cortes.NUTRITION.recordedAt)}`)) &&
-      alcances.some((a) => a.startsWith('Entrenamiento') && a.includes(`Desde la revisión del ${diaDe(cortes.TRAINING.recordedAt)}`)) &&
+    alcances.some((a) => a.startsWith('Nutrición') && a.includes(`Desde la revisión del ${diaBreveDe(cortes.NUTRITION.recordedAt)}`)) &&
+      alcances.some((a) => a.startsWith('Entrenamiento') && a.includes(`Desde la revisión del ${diaBreveDe(cortes.TRAINING.recordedAt)}`)) &&
+      cortesALaVista.NUTRICION.startsWith(`Desde la revisión del ${diaBreveDe(cortes.NUTRITION.recordedAt)}`) &&
+      cortesALaVista.ENTRENAMIENTO.startsWith(`Desde la revisión del ${diaBreveDe(cortes.TRAINING.recordedAt)}`) &&
       cortes.NUTRITION.recordedAt !== cortes.TRAINING.recordedAt,
-    alcances.join(' | '),
+    `${alcances.join(' | ')} · a la vista: ${cortesALaVista.NUTRICION} | ${cortesALaVista.ENTRENAMIENTO}`,
   );
   // CP-05: lo que ocurrió después, lo cargado después y lo corregido después, como lo cuenta la API (registros que
   // ocurrieron; hechos anteriores de cualquier tipo cargados o corregidos después).
@@ -704,7 +763,8 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   );
 
   // Las novedades de Nutrición en la línea de tiempo, ya filtradas y explicadas.
-  await clic(page, '.observacion[data-regla="NOVEDADES_DESDE_EL_CORTE"] a', '(Nutrición)');
+  // El renglón entero de lo nuevo es el enlace (WP-ESCRITORIO-AMABLE, parte 3): el de la tarjeta de Nutrición.
+  await clic(page, '.area[data-area="NUTRICION"] .observacion[data-regla="NOVEDADES_DESDE_EL_CORTE"] a', 'Ver en la línea de tiempo');
   await quieto(page, v);
   const p = parametros(page);
   const aviso = await texto(page, '.aviso-de-filtro');
@@ -777,22 +837,30 @@ async function escenarioUnaArea(page, v, carpeta) {
   await cupo(v);
   await ir(page, FICHA_E);
   await quieto(page, v);
-  await clic(page, '.encabezado-de-bloque button, .encabezado-de-bloque a', 'Ver todas').catch(() => {});
-  const obs = await page.$$eval('.observacion', (xs) => xs.map((o) => ({ regla: o.dataset.regla, alcance: o.querySelector('.observacion__alcance')?.innerText.replace(/\s+/g, ' ').trim() ?? '', texto: o.querySelector('.observacion__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? '' })));
-  const fila = await page.evaluate(() => [...document.querySelectorAll('.tabla-de-planificacion tbody tr')].map((r) => r.innerText.replace(/\s+/g, ' ')).join(' | '));
+  // WP-ESCRITORIO-AMABLE (parte 3): el objetivo, el plan y los hechos de un área están en su tarjeta. Sin revisión no hay
+  // nada plegado: la cobertura del período está a la vista, debajo de la línea que dice el alcance.
+  const obs = await page.$$eval('.area .observacion', (xs) =>
+    xs.map((o) => ({
+      regla: o.dataset.regla,
+      alcance: o.querySelector('.observacion__alcance')?.textContent.replace(/\s+/g, ' ').trim() ?? '',
+      texto: o.querySelector('.observacion__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+      aLaVista: o.checkVisibility(),
+    })),
+  );
+  const tarjetas = await page.$$eval('.area', (as) => as.map((a) => ({ area: a.dataset.area, corte: a.querySelector('.area__corte')?.innerText.replace(/\s+/g, ' ').trim() ?? '', texto: a.innerText.replace(/\s+/g, ' '), plegados: a.querySelectorAll('details.area__periodo').length })));
   const cobertura = obs.find((o) => o.regla === 'COBERTURA_NUTRICIONAL');
   comprobar(
     'CP-04',
-    'Sin revisión previa, la síntesis habla del período seleccionado y lo dice; la cobertura aclara desde cuándo rige el plan',
-    obs.length > 0 && obs.every((o) => !/Desde la revisión/.test(o.alcance)) && /En el período seleccionado/.test(cobertura?.alcance ?? '') && /El plan rige desde el/.test(cobertura?.texto ?? '') && /Sin revisiones registradas/.test(fila),
-    `${cobertura?.alcance ?? 'sin cobertura'} · ${cobertura?.texto ?? ''}`,
+    'Sin revisión previa, la síntesis habla del período seleccionado y lo dice (en la línea del alcance y en cada hecho); la cobertura está a la vista y aclara desde cuándo rige el plan',
+    obs.length > 0 && obs.every((o) => !/Desde la revisión/.test(o.alcance)) && /En el período seleccionado/.test(cobertura?.alcance ?? '') && /El plan rige desde el/.test(cobertura?.texto ?? '') && cobertura?.aLaVista === true && tarjetas[0]?.plegados === 0 && /^En el período seleccionado · sin revisiones registradas/.test(tarjetas[0]?.corte ?? ''),
+    `«${tarjetas[0]?.corte ?? 'sin línea de alcance'}» · ${cobertura?.alcance ?? 'sin cobertura'} ${cobertura?.texto ?? ''}`,
   );
   const main = await texto(page, 'main');
   comprobar(
     'CP-08',
-    'Con una sola área autorizada, la ficha no muestra nada de las otras: ni filas, ni observaciones, ni conteos de sesiones o tomas',
-    obs.every((o) => /^Nutrición/.test(o.alcance)) && !/Entrenamiento ·|Antropometría ·|sesi(ón|ones) registradas?|tomas? (registradas?|en el período)/.test(main) && !/Entrenamiento|Antropometría/.test(fila),
-    fila.slice(0, 200),
+    'Con una sola área autorizada, la ficha no muestra nada de las otras: ni tarjetas, ni hechos, ni conteos de sesiones o tomas',
+    tarjetas.map((t) => t.area).join() === 'NUTRICION' && obs.length > 0 && obs.every((o) => /^Nutrición/.test(o.alcance)) && !/Entrenamiento ·|Antropometría ·|sesi(ón|ones) registradas?|tomas? (registradas?|en el período)|Preparar una toma/.test(main) && !/Entrenamiento|Antropometría/.test(tarjetas.map((t) => t.texto).join(' ')),
+    `tarjetas: ${tarjetas.map((t) => t.area).join(', ')} · ${(tarjetas[0]?.texto ?? '').slice(0, 160)}`,
   );
   await cupo(v);
   await ir(page, `${FICHA_E}&vista=analizar&pregunta=informacion-para-revisar&area=NUTRICION`);
@@ -896,7 +964,8 @@ async function evidenciaDeLaRevision(page, v, carpeta) {
   await cupo(v);
   await ir(page, FICHA_A);
   await quieto(page, v);
-  await clic(page, '.acciones-del-resumen a', 'Preparar la revisión de Nutrición');
+  // La acción de cada área está al pie de su tarjeta (WP-ESCRITORIO-AMABLE, parte 3).
+  await clic(page, '.area[data-area="NUTRICION"] .area__accion a', 'Preparar la revisión de Nutrición');
   await page.waitForFunction(() => location.pathname === '/pro/advisees/nutrition', { timeout: 20_000 });
   await quieto(page, v);
   await revisionPreparada(page, v);
@@ -1253,16 +1322,31 @@ async function recorridoRecuperacion(page, v, carpeta) {
   await cupo(v);
   await ir(page, `${FICHA_A}&p=30`);
   await quieto(page, v);
-  await clic(page, '.encabezado-de-bloque button, .encabezado-de-bloque a', 'Ver todas').catch(() => {});
-  const sintesis = await texto(page, '.para-tu-revision');
-  // Lo que falta va primero: el aviso está antes de la primera observación.
-  const primero = await page.evaluate(() => {
-    const f = document.querySelector('.para-tu-revision .observaciones__fallas');
-    const o = document.querySelector('.para-tu-revision .observacion');
-    return f && o ? Boolean(f.compareDocumentPosition(o) & Node.DOCUMENT_POSITION_FOLLOWING) : false;
-  });
+  // WP-ESCRITORIO-AMABLE (parte 3): la síntesis está en las tarjetas. La parte que falta se dice en la tarjeta de su
+  // área —las dos que tienen revisión—, primero (antes que sus hechos) y con «Reintentar»; la de Antropometría, que no
+  // depende de esa lectura, sigue completa.
+  const conFalla = await page.$$eval('.area', (as) =>
+    as.map((a) => {
+      const f = a.querySelector('.observaciones__fallas');
+      const o = a.querySelector('.observacion');
+      return {
+        area: a.dataset.area,
+        falla: f ? f.innerText.replace(/\s+/g, ' ').trim() : '',
+        reintentar: !!f?.querySelector('button'),
+        // Lo que falta va primero: el aviso está antes del primer hecho de la tarjeta.
+        antes: !!f && !!o && Boolean(f.compareDocumentPosition(o) & Node.DOCUMENT_POSITION_FOLLOWING),
+        texto: a.innerText.replace(/\s+/g, ' '),
+      };
+    }),
+  );
+  const tarjetaDe = (area) => conFalla.find((a) => a.area === area) ?? { falla: '', reintentar: false, antes: false, texto: '' };
   v.reglas = [];
-  comprobar('CP-06', 'Si falla la lectura de lo nuevo, la síntesis dice «No pudimos completar esta parte» antes que las observaciones, nunca «No hay registros nuevos»', /No pudimos completar esta parte \(lo nuevo desde la revisión\)/.test(sintesis) && !/No hay registros nuevos/.test(sintesis) && primero, sintesis.slice(0, 260));
+  comprobar(
+    'CP-06',
+    'Si falla la lectura de lo nuevo, la tarjeta de cada área con revisión dice «No pudimos completar esta parte» antes que sus hechos y con «Reintentar», nunca «No hay registros nuevos»; la de Antropometría sigue completa',
+    ['NUTRICION', 'ENTRENAMIENTO'].every((area) => /No pudimos completar esta parte \(lo nuevo desde la revisión\)/.test(tarjetaDe(area).falla) && tarjetaDe(area).reintentar && tarjetaDe(area).antes && !/No hay registros nuevos/.test(tarjetaDe(area).texto)) && conFalla.length === 3 && tarjetaDe('ANTROPOMETRIA').falla === '',
+    conFalla.map((a) => `${a.area}: «${a.falla.slice(0, 90)}»`).join(' · '),
+  );
   await captura(page, v, carpeta, 'r6-sintesis-con-una-parte-que-falla');
   // Error de una sola área en Analizar: la nutrición falla y el peso se dibuja; la parte que falta tiene reintento.
   v.reglas = [{ coincide: (u, m) => m === 'GET' && u.includes('/projections/NUTRITION'), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' }];
@@ -1302,21 +1386,33 @@ async function accesibilidad(page, v, carpeta) {
   await cupo(v);
   await ir(page, FICHA_A);
   await quieto(page, v);
-  // Teclado: desde el encabezado, con Tab se llega a la primera observación y a las preguntas; el foco se ve.
-  await page.focus('h1').catch(() => {});
+  // Teclado: desde el encabezado, con Tab se llega a los hechos, a las acciones y a las preguntas; el foco se ve.
+  // WP-ESCRITORIO-AMABLE (parte 3): `page.focus('h1')` nunca enfocó nada (un título no recibe el foco) y el recorrido
+  // seguía desde donde lo había dejado el paso anterior («Cerrar» en los indicadores): llegaba a las preguntas dando la
+  // vuelta. Un clic en el título fija ahí el punto de partida de Tab, que es lo que el comentario decía.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.click('#titulo-asesorado');
   const recorridos = [];
   for (let i = 0; i < 60; i++) {
     await page.keyboard.press('Tab');
     const f = await page.evaluate(() => {
       const a = document.activeElement;
       const cs = a ? getComputedStyle(a) : null;
-      return { texto: a?.textContent?.replace(/\s+/g, ' ').trim().slice(0, 60) ?? '', visible: !!cs && (cs.outlineStyle !== 'none' || cs.boxShadow !== 'none'), dentro: !!a?.closest('.observacion, .preguntas-del-resumen, .acciones-del-resumen') };
+      // WP-ESCRITORIO-AMABLE (parte 3): cada hecho es un renglón-enlace de su tarjeta; la acción va al pie de la tarjeta.
+      const donde = a?.closest('.observacion') ? 'hecho' : a?.closest('.area__accion') ? 'accion' : a?.closest('.preguntas-del-resumen') ? 'pregunta' : null;
+      return { texto: a?.textContent?.replace(/\s+/g, ' ').trim().slice(0, 60) ?? '', visible: !!cs && (cs.outlineStyle !== 'none' || cs.boxShadow !== 'none'), dentro: donde !== null, donde };
     });
     recorridos.push(f);
-    if (f.dentro && /pregunta|progresando|registrado coincide|información cuento/i.test(f.texto)) break;
+    if (f.donde === 'pregunta' && /pregunta|progresando|registrado coincide|información cuento/i.test(f.texto)) break;
   }
   const llegados = recorridos.filter((f) => f.dentro);
-  comprobar('CP-28', 'Con el teclado se alcanzan las acciones de las observaciones y las preguntas del Resumen, con el foco visible', llegados.length > 0 && llegados.every((f) => f.visible), `${recorridos.length} Tab · ${llegados.map((f) => f.texto).slice(0, 4).join(' | ')}`);
+  const alcanzados = new Set(llegados.map((f) => f.donde));
+  comprobar(
+    'CP-28',
+    'Con el teclado se alcanzan los hechos de las tarjetas, la acción de cada área y las preguntas del Resumen, con el foco visible',
+    ['hecho', 'accion', 'pregunta'].every((d) => alcanzados.has(d)) && llegados.every((f) => f.visible),
+    `${recorridos.length} Tab · ${llegados.length} dentro (${[...alcanzados].join(', ')}) · ${llegados.map((f) => f.texto).slice(0, 4).join(' | ')}`,
+  );
   // Zoom al 200 %: la ventana de 1440 px vale 720 px de CSS. Sin desborde de la página.
   await page.setViewport({ width: 720, height: 900, deviceScaleFactor: 2 });
   await quieto(page, v, { silencio: 300 });
@@ -1335,7 +1431,14 @@ async function accesibilidad(page, v, carpeta) {
   recorrer(arbol, 0);
   fs.writeFileSync(fileURLToPath(new URL('arbol-de-accesibilidad-resumen.txt', carpeta)), planos.join('\n'));
   const sinNombre = planos.filter((l) => /^(\s*)(link|button): $/.test(l));
-  comprobar('CP-28', 'En el árbol de accesibilidad del Resumen, los encabezados están y ningún enlace o botón queda sin nombre', planos.some((l) => /heading 2: Para tu próxima revisión/.test(l)) && sinNombre.length === 0, `${planos.length} nodos · sin nombre: ${sinNombre.length}`);
+  // WP-ESCRITORIO-AMABLE (parte 3): los encabezados del Resumen son las áreas, «Indicadores» y las preguntas.
+  const encabezados = ['Nutrición', 'Entrenamiento', 'Antropometría', 'Indicadores', 'Empezar por una pregunta'];
+  comprobar(
+    'CP-28',
+    'En el árbol de accesibilidad del Resumen, los encabezados están (una por área, los indicadores y las preguntas) y ningún enlace o botón queda sin nombre',
+    encabezados.every((e) => planos.some((l) => new RegExp(`heading 2: ${e}$`).test(l))) && planos.filter((l) => /^\s*(link|button): ./.test(l)).length > 20 && sinNombre.length === 0,
+    `${planos.length} nodos · sin nombre: ${sinNombre.length}`,
+  );
   informar('CP-28', 'Lector de pantalla', 'No se probó con NVDA, JAWS ni Narrador: no están instalados (NVDA, JAWS) o no se pueden manejar ni escuchar de forma automática (Narrador). Se deja el árbol de accesibilidad y el guion para la prueba con una persona.');
 }
 
@@ -1376,7 +1479,8 @@ async function recorridoEntrenamiento(page, v, cortes, carpeta) {
   await cupo(v);
   await ir(page, FICHA_A);
   await quieto(page, v);
-  await clic(page, '.acciones-del-resumen a', 'Preparar la revisión de Entrenamiento');
+  // La acción de cada área está al pie de su tarjeta (WP-ESCRITORIO-AMABLE, parte 3).
+  await clic(page, '.area[data-area="ENTRENAMIENTO"] .area__accion a', 'Preparar la revisión de Entrenamiento');
   await page.waitForFunction(() => location.pathname === '/pro/advisees/training', { timeout: 20_000 });
   await quieto(page, v);
   const preparado = await texto(page, 'main');
@@ -1431,13 +1535,28 @@ async function recorridoEntrenamiento(page, v, cortes, carpeta) {
   await page.waitForFunction(() => location.pathname === '/pro/advisees', { timeout: 20_000 });
   await quieto(page, v);
   const nuevo = (await leerApi(v, `/advisees/${estado.aseId}/dashboard`)).data.domains.training.summary.lastReview;
-  const filaEntrenamiento = await page.evaluate(() => [...document.querySelectorAll('.tabla-de-planificacion tbody tr')].find((r) => r.querySelector('th')?.textContent === 'Entrenamiento')?.innerText.replace(/\s+/g, ' ') ?? '');
-  const sintesis = await texto(page, '.observaciones');
+  // WP-ESCRITORIO-AMABLE (parte 3): la última revisión de un área es el corte de su tarjeta («Desde la revisión del…»),
+  // y «registrada, sin aplicar» es un pendiente de esa misma tarjeta, con la frase del dominio. Antes eran una celda de
+  // la tabla («Última: … · registrada, sin aplicar»).
+  const deEntrenamiento = await page.evaluate(() => {
+    const a = document.querySelector('.area[data-area="ENTRENAMIENTO"]');
+    return {
+      corte: a?.querySelector('.area__corte')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+      sinAplicar: [...(a?.querySelectorAll('.observacion[data-regla="REVISION_SIN_APLICAR"]') ?? [])].map((o) => o.querySelector('.observacion__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? ''),
+      novedades: a?.querySelector('.observacion[data-regla="NOVEDADES_DESDE_EL_CORTE"] .observacion__alcance')?.textContent.replace(/\s+/g, ' ').trim() ?? '',
+    };
+  });
   comprobar(
     'CP-20',
     'La ficha ya dice la revisión nueva (hoy, sin aplicar) y lo nuevo de Entrenamiento se cuenta desde ella: sin recargar ni duplicar',
-    nuevo.reviewId !== cortes.TRAINING.reviewId && fechaCivilDe(nuevo.recordedAt) === hoy && filaEntrenamiento.includes(`Última: ${diaDe(nuevo.recordedAt)}`) && /registrada, sin aplicar/.test(filaEntrenamiento),
-    `${filaEntrenamiento.slice(0, 200)} · ${sintesis.slice(0, 120)}`,
+    nuevo.reviewId !== cortes.TRAINING.reviewId &&
+      fechaCivilDe(nuevo.recordedAt) === hoy &&
+      deEntrenamiento.corte.startsWith(`Desde la revisión del ${diaBreveDe(nuevo.recordedAt)}`) &&
+      !/aplicada/.test(deEntrenamiento.corte) &&
+      deEntrenamiento.sinAplicar.length === 1 &&
+      deEntrenamiento.sinAplicar[0] === `La revisión del ${diaBreveDe(nuevo.recordedAt)} está registrada y su resultado todavía no se aplicó.` &&
+      deEntrenamiento.novedades.includes(`Desde la revisión del ${diaBreveDe(nuevo.recordedAt)}`),
+    `«${deEntrenamiento.corte}» · ${deEntrenamiento.sinAplicar.join(' | ')} · ${deEntrenamiento.novedades}`,
   );
   await captura(page, v, carpeta, 'r2-ficha-despues-de-registrar');
 }
@@ -1503,7 +1622,15 @@ async function revocacion() {
     await ir(pro.page, FICHA_D);
     await quieto(pro.page, pro.v);
     const resumen = await texto(pro.page, 'main');
-    comprobar('CP-23', 'En el Resumen, Antropometría ya no aporta valores ni acciones; el resto del vínculo sigue', !/Abrir Antropometría|Ver la toma/.test(resumen) && /Nutrición/.test(resumen), resumen.slice(0, 260));
+    // WP-ESCRITORIO-AMABLE (parte 3): un área sin acceso no tiene tarjeta. La negativa va con su positiva: la tarjeta de
+    // Nutrición está, con su «Abrir Nutrición», leída con el mismo selector.
+    const tarjetasDespues = await pro.page.$$eval('.area', (as) => as.map((a) => ({ area: a.dataset.area, abrir: a.querySelector('.area__abrir')?.textContent.trim() ?? '' })));
+    comprobar(
+      'CP-23',
+      'En el Resumen, Antropometría ya no aporta valores ni acciones (no tiene tarjeta, ni su toma, ni «Preparar una toma»); el resto del vínculo sigue',
+      !/Abrir Antropometría|Ver la toma|Preparar una toma|tomas? en el período/.test(resumen) && !tarjetasDespues.some((t) => t.area === 'ANTROPOMETRIA') && tarjetasDespues.some((t) => t.area === 'NUTRICION' && t.abrir === 'Abrir Nutrición') && /Nutrición/.test(resumen),
+      `tarjetas: ${tarjetasDespues.map((t) => t.area).join(', ')} · ${resumen.slice(0, 200)}`,
+    );
     await captura(pro.page, pro.v, carpeta, 'r5-revocado-resumen');
     // Segunda pestaña, con los datos viejos en pantalla: exportar vuelve a consultar y no sale ningún archivo.
     const antes = fs.readdirSync(descargas).filter((x) => x.endsWith('.csv'));

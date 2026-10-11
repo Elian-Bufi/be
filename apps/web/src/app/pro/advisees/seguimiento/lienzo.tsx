@@ -28,24 +28,12 @@ import { useEffect, useId, useMemo, useState, type KeyboardEvent, type ReactNode
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceDot, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { diaYMesCivil } from '../../../../lib/formato';
 import type { Modo } from './estado';
+// Dónde cae un punto en el eje de fechas: lo comparte con el minigráfico del Resumen, que no carga esta biblioteca.
+import { DIA, fechaDeX, mediodia, xDe } from './geometria';
 import { ESTILOS, Marca, Punto } from './marca';
 
-const DIA = 86_400_000;
 /** La letra más chica de un gráfico (el criterio de diseño pide 12,5 px como mínimo). */
 const LETRA = 12.5;
-export const mediodia = (fecha: string): number => Date.parse(`${fecha}T12:00:00Z`);
-export const fechaDeX = (x: number): string => new Date(x).toISOString().slice(0, 10);
-
-/** Dónde va un punto en el eje: la hora del hecho si la tiene (dos tomas del mismo día no se pisan); si no, el mediodía. */
-export function xDe(p: PuntoAnalitico): number {
-  if (p.dateEnd) return mediodia(p.date) + 3 * DIA; // la mitad de la semana
-  if (p.at) {
-    const x = Date.parse(p.at);
-    // La hora se respeta solo si cae en el día civil del punto; si no, el mediodía de ese día.
-    return Math.abs(x - mediodia(p.date)) < DIA / 2 ? x : mediodia(p.date);
-  }
-  return mediodia(p.date);
-}
 
 /** Una vigencia de plan que acompaña a un gráfico, con el nombre de su área. */
 export type BandaDePlan = VigenciaDePlan & { readonly area: string };

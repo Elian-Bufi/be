@@ -25,7 +25,7 @@ export interface ContextoDelSeguimiento {
   /** API-DSH-03 de la ficha (planes, objetivos, revisiones y disponibilidad por área). */
   readonly panel: PanelDelResumen;
   readonly recargarPanel: () => void;
-  /** Sube cuando cambió lo que se puede leer: las lecturas de la ficha se repiten con el acceso nuevo. */
+  /** Sube cuando cambió lo que se puede leer, y cuando se pide «Actualizar»: las lecturas de la ficha se repiten. */
   readonly versionDeAcceso: number;
   readonly asesoradoId: string;
   /**

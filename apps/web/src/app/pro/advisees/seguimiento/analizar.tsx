@@ -65,13 +65,15 @@ import {
 } from '@be/domain';
 import dynamic from 'next/dynamic';
 import { useEffect, useId, useMemo, useState } from 'react';
-import { Cargando } from '../../../../components/estados';
+import { BloqueDeEstado, Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
-import { razonDeFalla, useLectura, useSeguimiento, type MotivoDeFalla } from './contexto';
+import { razonDeFalla, useLectura, useSeguimiento } from './contexto';
 import { codificarReferencia, hoyEn, leerAnalisis, leerPregunta, parametrosDeAnalisis, parametrosDePeriodo, parametrosDePregunta, type EstadoDeAnalisis, type GranoElegido, type Modo } from './estado';
-import { mediodia, xDe, type BandaDePlan, type SerieParaDibujar } from './lienzo';
+import { diaAnterior, diasSinRegistros, mediodia, xDe } from './geometria';
+import { ICONO_DE_CLASE, ICONO_DE_FALLA } from './iconos-de-metrica';
+import type { BandaDePlan, SerieParaDibujar } from './lienzo';
 import { Marca } from './marca';
 import { ElegirMetricasDeEntrada } from './entrada';
 import { contextoDeLaPregunta, ElegirParametros, ListaDePreguntas, useEtapasDelAno } from './preguntas';
@@ -895,7 +897,6 @@ const SIN_PUNTOS: Readonly<Record<DefinicionDeMetrica['area'], { readonly titulo
   ENTRENAMIENTO: { titulo: 'Sin sesiones en estas fechas', que: 'sesiones registradas con este ejercicio' },
   ANTROPOMETRIA: { titulo: 'Sin tomas en estas fechas', que: 'tomas registradas con esta medida' },
 };
-const ICONO_DE_FALLA: Readonly<Record<MotivoDeFalla, NombreDeIcono>> = { LIMITE: 'espera', RED: 'sin-conexion', SERVICIO: 'servicio', OTRO: 'aviso' };
 
 /**
  * Lo que una métrica elegida muestra cuando no es un gráfico (WP-ESCRITORIO-AMABLE, pantalla 15): va en el lugar de su
@@ -920,19 +921,9 @@ function EstadoDeUnaSerie({ indice, nombre, estado, onReintentar }: { indice: nu
           <Marca indice={indice} /> <strong>{nombre}</strong>
         </span>
       </p>
-      <div className={`estado-de-grafico estado-de-grafico--${estado.tipo}`} role={estado.tipo === 'cargando' ? 'status' : undefined}>
-        <Icono nombre={c.icono} tamano={24} />
-        <div className="estado-de-grafico__texto">
-          {c.titulo ? <p className="estado-de-grafico__titulo">{c.titulo}</p> : null}
-          <p className="nota">{c.texto}</p>
-        </div>
-        {estado.tipo === 'error' ? (
-          <button type="button" className="boton boton--secundario boton--compacto" onClick={onReintentar}>
-            <Icono nombre="actualizar" tamano={18} />
-            Reintentar
-          </button>
-        ) : null}
-      </div>
+      <BloqueDeEstado tipo={estado.tipo} icono={c.icono} titulo={c.titulo} onReintentar={estado.tipo === 'error' ? onReintentar : null}>
+        {c.texto}
+      </BloqueDeEstado>
     </>
   );
 }
@@ -965,9 +956,6 @@ function relativoDelPunto(p: PuntoAnalitico, r: Referencia | undefined): string 
   const v = cambioRelativo(p.value, r.valor);
   return `${v > 0 ? '+' : ''}${numero(Number(v.toFixed(1)))} % contra la referencia`;
 }
-
-/** El ícono de la clase de un dato: medido, reportado por la persona o calculado por un método. */
-const ICONO_DE_CLASE: Readonly<Record<'MEASURED' | 'REPORTED' | 'DERIVED', NombreDeIcono>> = { MEASURED: 'medido', REPORTED: 'reportado', DERIVED: 'calculado' };
 
 /**
  * La lectura de la fecha elegida (WP-ESCRITORIO-AMABLE, parte 2): un bloque por métrica, con el valor grande y, debajo,
@@ -1528,20 +1516,6 @@ function objetivoEnTexto(escalones: readonly EscalonDelObjetivo[], desde: string
   const tramos = escalonesEn(escalones, desde, hasta);
   if (tramos.length === 0) return '';
   return `Objetivo de calorías (requerimiento energético estimado): ${tramos.map((e) => `${numero(e.valor)} kcal por día desde el ${diaCivil(e.desde)}`).join('; ')}.`;
-}
-
-/** El día anterior a una fecha civil. */
-const diaAnterior = (fecha: string): string => new Date(Date.parse(`${fecha}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
-
-/**
- * Los días sin registros que se sombrean en un gráfico diario: los huecos de la serie, sin el día en curso, que todavía
- * puede tener registros (el dominio también lo separa de «sin registros» al contar la cobertura).
- */
-function diasSinRegistros(huecos: readonly { readonly from: string; readonly to: string }[], hoy: string): { desde: string; hasta: string }[] {
-  return huecos.flatMap((h) => {
-    const hasta = h.to >= hoy ? diaAnterior(hoy) : h.to;
-    return hasta >= h.from ? [{ desde: h.from, hasta }] : [];
-  });
 }
 
 /** Los datos de una pregunta resuelta, en una línea: «Nutrición · versión 3 (desde el 4 sept 2026)», «Sentadilla · serie 1 · kg». */

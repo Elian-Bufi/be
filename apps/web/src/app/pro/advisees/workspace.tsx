@@ -74,7 +74,7 @@ export function Workspace() {
   const [panel, setPanel] = useState<PanelDelResumen>({ tipo: 'cargando' });
   const [encabezado, setEncabezado] = useState<Encabezado>({ tipo: 'cargando' });
   const [consultadoEn, setConsultadoEn] = useState<Date | null>(null);
-  // Sube cuando cambia lo que se puede leer: las lecturas de la ficha se repiten con el acceso nuevo.
+  // Sube cuando cambia lo que se puede leer, y cuando se pide «Actualizar»: las lecturas de la ficha se repiten.
   const [versionDeAcceso, setVersionDeAcceso] = useState(0);
   const generacion = useRef(0);
   const ultimaConsulta = useRef(0);
@@ -109,6 +109,14 @@ export function Workspace() {
     [token, yoId, id, sesionPerdida, periodo],
   );
   const consultar = useCallback(() => void leer(false), [leer]);
+  // «Actualizar» vuelve a preguntar todo lo que la ficha muestra: el acceso y el resumen por área (`consultar`) y,
+  // subiendo la versión, las lecturas de la vista abierta. Antes se repetían solo las que se desmontaban mientras el
+  // resumen cargaba: la cobertura del período y lo que hay disponible quedaban con los datos de la consulta anterior,
+  // debajo de una hora nueva.
+  const actualizar = useCallback(() => {
+    setVersionDeAcceso((v) => v + 1);
+    consultar();
+  }, [consultar]);
 
   useEffect(() => {
     consultar();
@@ -168,7 +176,7 @@ export function Workspace() {
           ) : null}
           {/* «Actualizar» vuelve a preguntar todo lo de la ficha, no solo el acceso: va con la hora, a la derecha. */}
           <div className="ficha__consulta">
-            <button type="button" className="boton boton--quieto boton--compacto" onClick={consultar} disabled={panel.tipo === 'cargando'}>
+            <button type="button" className="boton boton--quieto boton--compacto" onClick={actualizar} disabled={panel.tipo === 'cargando'}>
               <Icono nombre="actualizar" tamano={18} />
               Actualizar
             </button>

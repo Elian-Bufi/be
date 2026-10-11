@@ -1320,44 +1320,6 @@ details summary {
   }
 }
 
-/* Tarjetas de dominio del Resumen (B10-08 §10). Sin color de estado: el legajo prohíbe semáforo y color de riesgo. */
-/*
- * Las grillas que reparten columnas («repeat(auto-fit, minmax(Nrem, 1fr))») usan min(Nrem, 100%): con la letra grande,
- * una columna mínima en rem pasaba el ancho del teléfono y la página se desplazaba de costado (tanda del 2026-10-03).
- */
-.tarjetas-de-dominio {
-  display: grid;
-  gap: 1rem;
-  margin: 0.5rem 0 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
-}
-
-.tarjeta-de-dominio {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--borde);
-  border-top: 4px solid var(--azul);
-  border-radius: 12px;
-  padding: 0.85rem 1.1rem 1rem;
-  background: var(--superficie);
-}
-
-.tarjeta-de-dominio h3 {
-  margin: 0 0 0.5rem;
-  font-size: 1.08rem;
-}
-
-.tarjeta-de-dominio .datos dt {
-  min-width: 100%;
-  font-size: 0.88rem;
-  color: var(--tenue);
-  font-weight: 600;
-}
-
-.tarjeta-de-dominio > :last-child {
-  margin-top: auto;
-}
-
 /* ─── Landing (B10-02 §3: el estado PUBLIC) ──────────────────────────── */
 .landing {
   width: 100%;
@@ -3608,7 +3570,6 @@ ul.modos-de-analizar__aviso {
 
 .presets ul,
 .preguntas,
-.recientes,
 .lista-de-vistas {
   list-style: none;
   margin: 0.25rem 0;
@@ -3786,73 +3747,8 @@ ul.modos-de-analizar__aviso {
   margin: 0.15rem 0;
 }
 
-.tabla--numeros td,
-.cobertura dd,
-.indicador__valor {
+.tabla--numeros td {
   font-variant-numeric: tabular-nums;
-}
-
-.indicadores {
-  list-style: none;
-  margin: 0.5rem 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: 0.75rem;
-}
-
-.indicador {
-  border: 1px solid var(--borde);
-  border-radius: 10px;
-  padding: 0.6rem 0.85rem;
-  background: var(--fondo-suave);
-}
-
-.indicador h3 {
-  margin: 0 0 0.25rem;
-  font-size: 1rem;
-}
-
-.indicador__valor {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0.15rem 0;
-}
-
-.editor-de-indicadores {
-  margin-top: 0.75rem;
-}
-
-.cobertura {
-  margin: 0;
-}
-
-/* Lo que pasó en el período: cobertura y últimos hechos, lado a lado en escritorio. */
-.resumen__periodo {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-@media (min-width: 64rem) {
-  .resumen__periodo {
-    display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    align-items: start;
-  }
-}
-
-.cobertura div {
-  padding: 0.35rem 0;
-  border-top: 1px solid var(--borde);
-}
-
-.cobertura dt {
-  font-weight: 700;
-}
-
-.cobertura dd {
-  margin: 0.15rem 0 0;
 }
 
 .como-se-calcula,
@@ -4076,45 +3972,9 @@ ul.modos-de-analizar__aviso {
   background: var(--fondo-suave);
 }
 
-/* Objetivo y planificación del Resumen: una fila por área, con las mismas columnas en todas. Para que la síntesis entre
-   en la primera pantalla cambió la composición (textos de una línea, sin metadatos repetidos), no la letra (GUIA I.5). */
-.tabla-de-planificacion {
-  margin: 0.25rem 0 0;
-}
-
-/* En la fila de Antropometría, lo secundario sigue en la misma línea: es una sola toma, no una lista. */
-.tabla-de-planificacion .dato-secundario--en-linea {
-  display: inline;
-}
-
 /* La ficha: menos aire entre secciones que en el resto del website, para que lo principal entre sin desplazarse. */
 .ficha__cuerpo.secciones {
   gap: 1rem;
-}
-
-.tabla-de-planificacion th,
-.tabla-de-planificacion td {
-  padding: 0.45rem 0.6rem;
-}
-
-.tabla-de-planificacion th[scope='row'] {
-  white-space: nowrap;
-  width: 7.5rem;
-}
-
-/* La planificación lleva más texto (lo vigente, lo que rigió antes y el borrador): un poco más de ancho. */
-.tabla-de-planificacion td:nth-of-type(1),
-.tabla-de-planificacion td:nth-of-type(3) {
-  width: 29%;
-}
-
-.tabla-de-planificacion td:nth-of-type(2) {
-  width: 36%;
-}
-
-.tabla-de-planificacion tbody tr:last-child th,
-.tabla-de-planificacion tbody tr:last-child td {
-  border-bottom: none;
 }
 
 /* La información para revisar: una columna por área en escritorio. */
@@ -4147,114 +4007,676 @@ ul.modos-de-analizar__aviso {
   gap: 0.1rem;
 }
 
-/* Lo que acompaña a un dato en su misma entrada (lo que rigió en el período, la próxima revisión): a la vista, en su
-   propio renglón y con menos peso. No es una explicación plegable: es contexto para decidir (GUIA-UX-UI I.2). */
-.dato-secundario {
-  display: block;
-  color: var(--tenue);
-  font-size: 0.95rem;
+/* ─── El Resumen por área (WP-ESCRITORIO-AMABLE, parte 3; C-03) ───────────────────────────────── */
+/* Una tarjeta por área, las preguntas y los indicadores, con poco aire entre bloques: lo que entra en la primera
+   pantalla es lo que el profesional encuentra sin desplazarse. Más angosto que 1024 px, todo en una columna, en el
+   orden del documento. */
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
-/* «Para tu próxima revisión» y las acciones, lado a lado en escritorio. */
-.resumen__revision {
+.areas {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 1.25rem;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
+/* En 1024: dos áreas por fila y la tercera debajo, de lado a lado (es la más corta: no deja un hueco a su costado). Con
+   dos áreas, las preguntas van en su propio renglón. */
 @media (min-width: 64rem) {
-  .resumen__revision {
-    grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  .areas:not([data-areas='1']) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .areas[data-areas='3'] > .area:last-child,
+  .areas[data-areas='2'] > .preguntas-del-resumen {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Desde 1280: tres columnas. Con dos áreas, las preguntas ocupan la tercera. */
+@media (min-width: 80rem) {
+  .areas:not([data-areas='1']) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .areas[data-areas='3'] > .area:last-child,
+  .areas[data-areas='2'] > .preguntas-del-resumen {
+    grid-column: auto;
+  }
+}
+
+/* Una sola área: su tarjeta a la izquierda; los indicadores y las preguntas, al costado. */
+@media (min-width: 64rem) {
+  .resumen--una-area {
+    display: grid;
+    grid-template-columns: minmax(0, 28rem) minmax(0, 1fr);
     align-items: start;
   }
 }
 
-.observaciones {
-  list-style: none;
-  margin: 0.5rem 0 0.75rem;
-  padding: 0;
+.resumen__costado {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  counter-reset: observacion;
+  min-width: 0;
 }
 
-.observacion {
-  border-left: 3px solid var(--borde-control);
-  padding: 0.15rem 0 0.15rem 0.85rem;
+/* La tarjeta de un área. La acción va siempre al pie: en una fila de tarjetas, los botones quedan a la misma altura. */
+.area {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0.7rem 1.15rem 0.85rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
 }
 
-.observacion[data-prioridad='1'] {
-  border-left-color: var(--texto);
+.area__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 0.75rem;
+  margin-bottom: 0.2rem;
 }
 
-.observacion p {
-  margin: 0.1rem 0;
+.area__cabecera h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-size: 1.2rem;
 }
 
-.observacion__alcance {
-  font-size: 0.9rem;
+/* El enlace conserva sus 44 px para tocar; el margen negativo deja el renglón del alto de su título. */
+.area__abrir {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.75rem;
+  margin: -0.45rem 0;
+  font-weight: 600;
+}
+
+/* Con qué se trabaja: el rótulo a la izquierda (todos del ancho del más largo de la tarjeta) y el dato a su derecha.
+   Cada par es un grupo de la lista; la grilla es una sola, para que los datos empiecen en la misma columna. */
+.area__contexto {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.3rem 0.75rem;
+  align-items: baseline;
+  margin: 0;
+}
+
+.area__contexto > div {
+  display: contents;
+}
+
+/* Los cuatro números del objetivo van de lado a lado de la tarjeta, debajo de su rótulo. */
+.area__tira > dd {
+  grid-column: 1 / -1;
+}
+
+.area__contexto dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   color: var(--tenue);
+  font-weight: 600;
 }
 
-.observacion__texto {
-  font-size: 1.02rem;
+.area__contexto dt .icono {
+  flex: none;
 }
 
-.observacion__pie {
+.area__contexto dd {
+  min-width: 0;
+  margin: 0;
+}
+
+.area__contexto .boton--enlace {
+  vertical-align: baseline;
+}
+
+/* Un enunciado largo no empuja lo demás fuera de la pantalla: tres renglones a la vista; entero, al abrir el área. */
+.area__enunciado {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.area__desde {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.area__sin-datos {
+  margin: 0.25rem 0 0.5rem;
+}
+
+/* La tira del objetivo del día: calorías y macros, de a dos por renglón. El número pesa; la palabra lo nombra. */
+.tira-del-objetivo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.15rem 1rem;
+  margin: 0;
+}
+
+.tira-del-objetivo > div {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.25rem 0.75rem;
+  gap: 0 0.45rem;
+  min-width: 0;
 }
 
-.observaciones__fallas {
-  margin: 0.5rem 0;
+.tira-del-objetivo dt {
+  color: var(--texto);
+  font-weight: 400;
 }
 
-.acciones-del-resumen__lista {
+.tira-del-objetivo dd {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tira-del-objetivo__falla {
+  margin: 0.3rem 0 0;
+}
+
+/* Los hechos del área: lo pendiente, lo nuevo desde su revisión y lo del período. */
+.area__hechos {
+  margin-top: 0.45rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--borde);
+}
+
+/* Sobre qué alcance hablan los renglones que siguen («Desde la revisión del 20 sept · aplicada») y, a la derecha, la
+   próxima revisión acordada cuando no es un pendiente: el ciclo de revisiones del área, en una línea si entra. */
+.area__corte {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 1rem;
+  margin: 0.3rem 0 0.05rem;
+  font-size: 0.95rem;
+}
+
+.observaciones {
   list-style: none;
-  margin: 0.25rem 0 0;
+  margin: 0;
   padding: 0;
+}
+
+/* El separador es una sombra, que no ocupa lugar. */
+.observacion + .observacion {
+  box-shadow: 0 -1px 0 var(--borde);
+}
+
+/* Un hecho: el renglón entero abre su evidencia. */
+.observacion__fila {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.3rem;
+  border-radius: 8px;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+a.observacion__fila:hover {
+  background: var(--fondo-suave);
+}
+
+a.observacion__fila:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+.observacion__fila > .icono {
+  flex: none;
+  color: var(--tenue);
+}
+
+.observacion__cuerpo {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.observacion__texto,
+.observacion__detalles,
+.observacion__cuenta,
+.observacion__frase {
+  display: block;
+}
+
+/* La cifra adelante, siempre en la misma columna: las cuentas de una tarjeta se leen de un vistazo. */
+.observacion .cifra {
+  display: inline-block;
+  min-width: 2.1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.observacion__cuenta ~ .observacion__frase {
+  padding-left: calc(2.1rem + 0.27em);
+}
+
+/* Lo pendiente se reconoce por su ícono y por su peso, no por un color. */
+.observacion[data-prioridad='1'] .observacion__frase {
+  font-weight: 650;
+}
+
+.observacion__detalles {
+  margin-top: 0.15rem;
+}
+
+.observacion__detalle {
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+.observacion__detalle .cifra {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Una parte que no se pudo leer: primero, y en la tarjeta de su área. */
+.observaciones__fallas {
+  margin: 0.3rem 0 0.2rem;
+}
+
+.observaciones__fallas .estado-de-grafico {
+  margin: 0;
+}
+
+.observaciones__falla {
+  display: block;
+  color: var(--texto);
+  font-weight: 650;
+}
+
+/* Lo del período, plegado cuando hay revisión: el título del grupo es lo que se toca para verlo. */
+.area__periodo > summary {
+  padding: 0.7rem 0.3rem;
+  border-radius: 8px;
+  color: var(--enlace);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.area__periodo > summary:hover {
+  background: var(--fondo-suave);
+}
+
+.area__accion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.9rem;
+  margin-top: auto;
+  padding-top: 0.55rem;
+}
+
+.area__accion .boton {
+  gap: 0.5rem;
+}
+
+/* ─── Empezar por una pregunta, desde el Resumen ─────────────────────────────────────────────── */
+/* Según el ancho que le toque: angosta (el lugar libre al lado de una tarjeta, o una ventana chica), es una tarjeta con
+   las preguntas una debajo de la otra; ancha, una franja de un solo renglón sobre el fondo de la página. */
+.preguntas-del-resumen {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.preguntas-del-resumen__caja {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.4rem;
+  height: 100%;
+  padding: 0.85rem 1.15rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
 }
 
-.acciones-del-resumen__lista .boton {
-  width: 100%;
-  justify-content: flex-start;
+.preguntas-del-resumen h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.15rem;
+  font-size: 1.05rem;
+  line-height: 1.25;
 }
 
-.acciones-del-resumen__lista .nota {
-  margin: 0.25rem 0 0;
-}
-
-/* La entrada por preguntas en el Resumen: enlaces en lista, con el alto táctil del website. */
-.preguntas-del-resumen {
-  margin-top: 1rem;
-}
-
-.preguntas-del-resumen h3 {
-  margin: 0 0 0.25rem;
-  font-size: 1rem;
+.preguntas-del-resumen h2 .icono {
+  flex: none;
+  color: var(--tenue);
 }
 
 .preguntas-del-resumen__lista {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
 }
 
-.preguntas-del-resumen__lista a,
-.preguntas-del-resumen p a {
+.preguntas-del-resumen__lista > li {
+  display: flex;
+}
+
+.preguntas-del-resumen__lista a {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--enlace);
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.preguntas-del-resumen__lista a:hover {
+  background: var(--fondo-suave);
+}
+
+.preguntas-del-resumen__mas {
+  align-self: flex-start;
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
+  font-weight: 600;
 }
 
-.preguntas-del-resumen p {
+@container (min-width: 36rem) {
+  .preguntas-del-resumen__lista {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 66rem) {
+  .preguntas-del-resumen__caja {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .preguntas-del-resumen h2 {
+    flex: none;
+    max-width: 9.5rem;
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .preguntas-del-resumen__lista {
+    flex: 1 1 auto;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+
+  .preguntas-del-resumen__mas {
+    flex: none;
+    align-self: center;
+  }
+}
+
+/* ─── Los indicadores del Resumen ────────────────────────────────────────────────────────────── */
+.indicadores-del-resumen {
+  min-width: 0;
+}
+
+.indicadores-del-resumen > .encabezado-de-bloque {
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 0 0.9rem;
+  margin-bottom: 0.3rem;
+}
+
+.indicadores-del-resumen h2 {
   margin: 0;
+  font-size: 1.2rem;
+}
+
+.indicadores-del-resumen .metadatos {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+/* El enlace es chico a la vista y cómodo de tocar: el relleno agranda lo que se toca sin mover lo demás. */
+.indicadores-del-resumen > .encabezado-de-bloque > .boton--enlace {
+  margin: -0.6rem 0;
+  padding: 0.6rem 0;
+}
+
+.indicadores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 48rem) {
+  .indicadores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 80rem) {
+  .resumen:not(.resumen--una-area) .indicadores {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.indicador {
+  min-width: 0;
+  padding: 0.65rem 1rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.indicador h3 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+/* El nombre del indicador abre su gráfico en «Analizar»: el renglón entero se toca y la flecha lo dice. */
+.indicador__analizar {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: -0.3rem -0.4rem 0;
+  padding: 0.3rem 0.4rem;
+  border-radius: 8px;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.indicador__analizar:hover {
+  background: var(--fondo-suave);
+}
+
+.indicador__analizar:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+.indicador__analizar .icono {
+  flex: none;
+  margin-top: 0.05rem;
+}
+
+.indicador__analizar .icono:last-child {
+  color: var(--tenue);
+}
+
+.indicador__nombre {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.indicador__dato {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.1rem 0.5rem;
+  margin-top: 0.1rem;
+}
+
+.indicador__valor {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.indicador__valor small {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.indicador__regla,
+.indicador__cobertura,
+.indicador__nota {
+  margin: 0.15rem 0 0;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.indicador__cobertura {
+  margin-top: 0.3rem;
+  color: var(--texto);
+  font-variant-numeric: tabular-nums;
+}
+
+.minigrafico {
+  margin-top: 0.35rem;
+}
+
+.minigrafico svg {
+  display: block;
+}
+
+.indicador .estado-de-grafico {
+  margin: 0.5rem 0 0;
+}
+
+/* La muestra de la línea punteada que marca, en el gráfico chico, desde cuándo rige el plan. */
+.muestra-de-inicio {
+  display: inline-block;
+  flex: none;
+  width: 0;
+  height: 0.95rem;
+  margin: 0 0.45rem 0 0.2rem;
+  vertical-align: -0.15em;
+  border-left: 2px dashed var(--borde-control);
+}
+
+.indicadores__sin-mas {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 0.6rem 0 0;
+  color: var(--tenue);
+}
+
+.indicadores__sin-mas .icono {
+  flex: none;
+}
+
+.indicadores__sin-mas strong {
+  color: var(--texto);
+}
+
+.editor-de-indicadores {
+  margin-top: 0.75rem;
+  background: var(--superficie);
+}
+
+/* Lo que no es de un área sola, al final y sin peso. */
+.resumen__tardias {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.resumen__tardias .icono {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+/* En «Cómo se lee esta vista», de dónde sale cada hecho del Resumen: una vez por regla, no en cada renglón. Es
+   material de consulta: va plegado, para que la ayuda entre en la ventana. */
+.como-se-lee__fuentes {
+  margin-top: 0.75rem;
+}
+
+.como-se-lee__fuentes > summary {
+  padding: 0.6rem 0.2rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.como-se-lee__fuentes > dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem 2rem;
+  margin: 0.2rem 0 0;
+}
+
+@media (min-width: 64rem) {
+  .como-se-lee__fuentes > dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* El título recibe el foco al abrir, para que la ayuda se lea desde el principio: no es un control y no lleva aro. */
+.como-se-lee h2:focus {
+  outline: none;
+}
+
+.como-se-lee__fuentes dt {
+  font-weight: 650;
+}
+
+.como-se-lee__fuentes dd {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.94rem;
 }
 
 /* ─── La entrada de Analizar: «¿Qué querés mirar?» (WP-ESCRITORIO-AMABLE, C-19) ───────────────── */

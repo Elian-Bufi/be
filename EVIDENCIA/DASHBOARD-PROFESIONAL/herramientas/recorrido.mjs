@@ -1,7 +1,7 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
@@ -14,8 +14,9 @@
 //   de la página, se espera el dibujo y se captura la ventana tal cual.
 // - El encabezado, el menú de la cuenta y las tarjetas de preguntas (WP-ESCRITORIO-AMABLE, E-17 y E-18) se comprueban al
 //   final del modo funcional, en una sesión propia porque termina cerrándola. `menu` corre solo esa parte.
-// - La composición de Analizar y el lenguaje de sus gráficos (WP-ESCRITORIO-AMABLE, parte 2) se comprueban en
-//   `analizarRecompuesto`, también en una sesión propia, antes del encabezado. `analizar` corre solo esa parte.
+// - El Resumen por área (WP-ESCRITORIO-AMABLE, parte 3) y la composición de Analizar con el lenguaje de sus gráficos
+//   (parte 2) se comprueban en `resumenPorArea` y `analizarRecompuesto`, las dos en una misma sesión propia
+//   (`fichaRecompuesta`), antes del encabezado. `resumen` y `analizar` corren una sola de las dos partes.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
 //   (valores medidos, informados y estimados; revocación desde la web del asesorado).
 import fs from 'node:fs';
@@ -48,6 +49,8 @@ const hoy = estado.hoy;
 const diaMenos = (fecha, n) => new Date(Date.parse(`${fecha}T12:00:00Z`) - n * 86_400_000).toISOString().slice(0, 10);
 const FICHA_A = `/pro/advisees?id=${estado.aseId}`;
 const FICHA_B = `/pro/advisees?id=${estado.aseBId}`;
+/** El escenario E (una sola área, sin revisiones), si el juego de datos lo tiene. */
+const FICHA_E = estado.escenarioE?.aseEId ? `/pro/advisees?id=${estado.escenarioE.aseEId}` : null;
 const TRES = 'nutricion.energia,nutricion.proteinas,antropometria.peso';
 /** El nombre de la vista guardada de esta corrida (único: una corrida interrumpida puede dejar otra). */
 const VISTA = `Recorrido ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
@@ -570,14 +573,30 @@ async function funcional() {
     informar('PRO-24', 'Primera carga del Resumen, desde el envío del inicio de sesión hasta la última respuesta (puede incluir el arranque en frío de la API)', `${tResumen} ms`);
     comprobar('PRO-01', 'La ficha tiene las pestañas Resumen, Línea de tiempo y Analizar', (await textos(page, 'nav[aria-label="Vistas del seguimiento"] a')).join(',') === 'Resumen,Línea de tiempo,Analizar');
     const ind = await textos(page, '.indicador');
-    comprobar('PRO-02', 'Cuatro indicadores con unidad, fecha y cobertura', ind.length === 4 && /kcal/.test(ind[0]) && /registros/.test(ind[1]) && /kg/.test(ind[2]) && /Última toma: \d/.test(ind[2]) && /series/.test(ind[3]), ind.join(' | '));
+    // WP-ESCRITORIO-AMABLE (parte 3, E-53): los indicadores por defecto son calorías y proteínas registradas, la carga
+    // de la primera serie del ejercicio más registrado y el peso, en el orden de las áreas (antes: energía, registros,
+    // peso y series registradas). Cada uno dice su unidad, su regla y su cobertura; el peso, la fecha de su última toma.
+    comprobar(
+      'PRO-02',
+      'Cuatro indicadores con unidad, regla, fecha y cobertura',
+      ind.length === 4 &&
+        /kcal por día/.test(ind[0]) && /Media de los días con valor/.test(ind[0]) && /\d+ días: \d+ con valor/.test(ind[0]) &&
+        /g por día/.test(ind[1]) && /Media de los días con valor/.test(ind[1]) &&
+        /kg/.test(ind[2]) && /Mediana de las sesiones/.test(ind[2]) && /\d+ sesiones?: \d+ con valor/.test(ind[2]) &&
+        /kg/.test(ind[3]) && /Última toma: \d/.test(ind[3]) && /\d+ tomas?/.test(ind[3]),
+      ind.join(' | '),
+    );
     // WP-DASHBOARD-COMPRENSION (pasada del 2026-10-09): la cobertura de los indicadores es la misma de las tablas
     // (`partesDeLaCobertura`): «hoy, en curso: fuera de la media» y «de ellos, N son subtotales (falta algún dato)».
-    comprobar('PRO-11', 'La media de energía no cuenta el día en curso y dice sus subtotales', /hoy, en curso: fuera de la media/.test(ind[0]) && /subtotal/.test(ind[0]), ind[0]);
-    comprobar('PRO-15', 'El peso compara solo dentro de su tramo comparable', /tomas comparables|no hay con qué comparar/.test(ind[2]), ind[2]);
-    const cob = await texto(page, '.cobertura');
-    comprobar('PRO-12', 'La cobertura por área dice su denominador y no da porcentajes', /\d+ días de \d+ con algún registro/.test(cob) && !/%/.test(cob), cob.slice(0, 220));
-    comprobar('PRO-02', 'Lo último que pasó: seis hechos del período', (await textos(page, '.recientes li')).length === 6);
+    comprobar('PRO-11', 'La media de calorías no cuenta el día en curso y dice sus subtotales', /hoy, en curso: fuera de la media/.test(ind[0]) && /subtotal/.test(ind[0]), ind[0]);
+    comprobar('PRO-15', 'El peso compara solo dentro de su tramo comparable', /tomas comparables|no hay con qué comparar/.test(ind[3]), ind[3]);
+    // La cobertura del área está en su tarjeta, plegada cuando el área tiene una revisión (E-51): se abre y se lee. La
+    // frase es la del dominio («80 de 90 días con algún registro»; antes la pantalla la escribía «80 días de 90…»). El
+    // «sin porcentajes» se mira ahora sobre todo el Resumen, con la cobertura abierta.
+    await abrirDetalles(page, '.area[data-area="NUTRICION"] details.area__periodo');
+    const cob = await texto(page, '.area[data-area="NUTRICION"] .observacion[data-regla="COBERTURA_NUTRICIONAL"]');
+    const todoElResumen = await texto(page, 'main');
+    comprobar('PRO-12', 'La cobertura por área dice su denominador y el Resumen no da porcentajes', /\d+ de \d+ días con algún registro/.test(cob) && /\d+ registros?: \d+ con cantidades y \d+ sin cantidades/.test(cob) && todoElResumen.length > 400 && !/%/.test(todoElResumen), cob.slice(0, 220));
     a11y.resumen = await axe(page);
 
     // 2 · Línea de tiempo ───────────────────────────────────────────────────────────────────────
@@ -586,6 +605,9 @@ async function funcional() {
     await quieto(page, v);
     const p1 = parametros(page);
     comprobar('PRO-01', 'La línea de tiempo conserva el asesorado y el período', p1.get('id') === estado.aseId && p1.get('vista') === 'linea' && p1.get('p') === null);
+    // WP-ESCRITORIO-AMABLE (parte 3): «Lo último que pasó» ya no se repite en el Resumen: es esta pestaña, a un clic.
+    // Lo que protegía esa comprobación (los últimos hechos del período, a mano) se mira acá: hay al menos seis.
+    comprobar('PRO-02', 'Los últimos hechos del período están a un clic del Resumen: la línea de tiempo muestra al menos seis', (await page.$$eval('.entrada', (e) => e.length)) >= 6);
     const estadoLinea = await texto(page, 'section p[role="status"]');
     const total = Number(/(\d+) hechos coinciden/.exec(estadoLinea)?.[1] ?? NaN);
     const dias = await page.$$eval('.linea-de-tiempo__dia', (d) => d.map((x) => x.dataset.fecha));
@@ -956,8 +978,20 @@ async function funcional() {
     await pausa(3600);
     await quieto(page, v);
     v.reglas = [];
-    const deB = await page.evaluate(() => ({ titulo: document.querySelector('#titulo-asesorado')?.textContent ?? '', indicadores: [...document.querySelectorAll('.indicador')].map((e) => e.innerText.replace(/\s+/g, ' ')) }));
-    comprobar('PRO-21', 'Al cambiar de asesorado durante una respuesta lenta, no aparece nada del anterior', !deB.indicadores.some((t) => /Peso muerto|Sentadilla/.test(t)) && parametros(page).get('id') === estado.aseBId, `${deB.titulo} · ${deB.indicadores.join(' | ')}`);
+    // La negativa («nada del anterior») va con sus positivas: B tiene indicadores y tarjetas propios, leídos con los
+    // mismos selectores. Sin ellas, un selector que no encuentra nada la daría por buena (WP-ESCRITORIO-AMABLE, parte 3).
+    const deB = await page.evaluate(() => ({
+      titulo: document.querySelector('#titulo-asesorado')?.textContent ?? '',
+      indicadores: [...document.querySelectorAll('.indicador')].map((e) => e.innerText.replace(/\s+/g, ' ')),
+      tarjetas: [...document.querySelectorAll('.area')].map((e) => e.dataset.area),
+      enLasTarjetas: [...document.querySelectorAll('.area')].map((e) => e.innerText.replace(/\s+/g, ' ')).join(' | '),
+    }));
+    comprobar(
+      'PRO-21',
+      'Al cambiar de asesorado durante una respuesta lenta, no aparece nada del anterior: ni sus ejercicios en los indicadores, ni su tarjeta de Entrenamiento',
+      deB.indicadores.length > 0 && !deB.indicadores.some((t) => /Peso muerto|Sentadilla/.test(t)) && deB.tarjetas.length > 0 && !deB.tarjetas.includes('ENTRENAMIENTO') && !/sesi[oó]n|Entrenamiento/.test(deB.enLasTarjetas) && parametros(page).get('id') === estado.aseBId,
+      `${deB.titulo} · tarjetas: ${deB.tarjetas.join(', ')} · ${deB.indicadores.join(' | ')}`,
+    );
 
     // 5 · Vista parcial (asesorado B) ─────────────────────────────────────────────────────────
     const parcialB = await texto(page, 'main');
@@ -990,7 +1024,15 @@ async function funcional() {
     await ir(page, FICHA_A);
     await quieto(page, v);
     const sinRed = await texto(page, 'main');
-    comprobar('PRO-21', 'Sin red, el Resumen dice «no hay conexión con BE» y no muestra ceros', /no hay conexión con BE/.test(sinRed) && !/No hay datos de ninguna área/.test(sinRed), sinRed.slice(0, 200));
+    // WP-ESCRITORIO-AMABLE (parte 3): la negativa miraba un texto de «Analizar» («No hay datos de ninguna área»), que el
+    // Resumen nunca escribe. Ahora niega los «sin datos» del propio Resumen, y pide además que cada tarjeta diga qué
+    // parte no pudo completar: una falla nunca es ausencia de datos, ni en los indicadores ni en las tarjetas.
+    comprobar(
+      'PRO-21',
+      'Sin red, el Resumen dice «no hay conexión con BE» y qué parte no se pudo completar, y no muestra ceros ni «sin datos»',
+      /no hay conexión con BE/.test(sinRed) && /No pudimos completar esta parte \(la cobertura del período\)/.test(sinRed) && !/Sin indicadores con datos|Sin registros en este período|Sin datos en el período|Sin registros de comida en el período/.test(sinRed) && !/\b0 (kcal|g|kg|registros)\b/.test(sinRed),
+      sinRed.slice(0, 260),
+    );
     v.reglas = [];
     a11y.errores = await axe(page);
 
@@ -1067,7 +1109,7 @@ async function funcional() {
       await navegador.close();
     }
   }
-  await analizarRecompuesto();
+  await fichaRecompuesta();
   await encabezadoYMenu();
   // El registro de la API de esta corrida: cada búsqueda como ruta parametrizada y ningún texto buscado (hallazgo 4).
   const registro = fs.existsSync(API_LOG) ? fs.readFileSync(API_LOG).subarray(inicioDelLog).toString('utf8') : '';
@@ -1087,14 +1129,11 @@ async function funcional() {
  * en el lugar de su gráfico y la ayuda de la vista. Lo esperado (el objetivo de calorías, los días sin
  * registros, las etapas y los cortes) se calcula a mano con lo que devuelve la API, sin el dominio. Cada comprobación
  * negativa («no lleva…») mira con el mismo selector que una positiva de la misma pantalla: con el selector mal, la
- * positiva fallaría. En una sesión propia; el modo funcional la corre antes del encabezado y también va sola, con
+ * positiva fallaría. Corre en la sesión de `fichaRecompuesta`, después de la parte del Resumen; sola, con
  * `node recorrido.mjs analizar`.
  */
-async function analizarRecompuesto() {
-  const { navegador, page, v } = await abrir();
-  try {
-    await iniciarSesion(page, v, estado.proCorreo, FICHA_A);
-    await quieto(page, v);
+async function analizarRecompuesto(page, v) {
+  {
     const desde90 = diaMenos(hoy, 89);
     const diasEntre = (a, b) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
     /** «17 ago», como `diaYMesCivil` de la web. */
@@ -1858,15 +1897,17 @@ async function analizarRecompuesto() {
     await page.keyboard.press('Escape');
     const cerro = await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 3_000 }).then(() => true, () => false);
     const focoDespues = await page.evaluate(() => document.activeElement?.textContent.replace(/\s+/g, ' ').trim() ?? '');
+    // El botón aparece solo en las vistas que tienen su ayuda. WP-ESCRITORIO-AMABLE, parte 3: el Resumen ya tiene la
+    // suya (se comprueba en `resumenPorArea`); la Línea de tiempo todavía no, y ahí el botón no está.
     await cupo(v);
-    await ir(page, FICHA_A);
+    await ir(page, `${FICHA_A}&vista=linea`);
     await quieto(page, v);
-    const enElResumen = await page.evaluate(() => ({ boton: !!document.querySelector('.como-se-lee__boton'), periodo: !!document.querySelector('.periodo-del-seguimiento__boton') }));
+    const enLaLinea = await page.evaluate(() => ({ boton: !!document.querySelector('.como-se-lee__boton'), periodo: !!document.querySelector('.periodo-del-seguimiento__boton') }));
     comprobar(
       'E-47',
-      'En Analizar, el marco de la ficha ofrece «Cómo se lee esta vista» sin crecer (143 px a 1440, 1280 y 1024; a 1024, el botón queda con su ícono y conserva su nombre); en el Resumen todavía no está',
-      [1440, 1280, 1024].every((a) => marco[a].alto === 143 && marco[a].boton === 'Cómo se lee esta vista' && marco[a].desborde <= 1) && marco[1024].anchoDelBoton < 60 && marco[1440].anchoDelBoton > 120 && !enElResumen.boton && enElResumen.periodo,
-      `${JSON.stringify(marco)} · Resumen: ${JSON.stringify(enElResumen)}`,
+      'En Analizar, el marco de la ficha ofrece «Cómo se lee esta vista» sin crecer (143 px a 1440, 1280 y 1024; a 1024, el botón queda con su ícono y conserva su nombre); en la Línea de tiempo, que todavía no tiene su ayuda, el botón no está',
+      [1440, 1280, 1024].every((a) => marco[a].alto === 143 && marco[a].boton === 'Cómo se lee esta vista' && marco[a].desborde <= 1) && marco[1024].anchoDelBoton < 60 && marco[1440].anchoDelBoton > 120 && !enLaLinea.boton && enLaLinea.periodo,
+      `${JSON.stringify(marco)} · Línea de tiempo: ${JSON.stringify(enLaLinea)}`,
     );
     comprobar(
       'E-47',
@@ -1894,6 +1935,663 @@ async function analizarRecompuesto() {
       JSON.stringify(violaciones),
     );
     comprobar('PRO-25', 'Sin errores de JavaScript ni respuestas con error de la API durante el recorrido de Analizar recompuesto', v.errores.length === 0 && v.malas.length === 0, [...v.errores, ...v.malas].slice(0, 4).join(' · ') || 'ninguno');
+  }
+}
+
+// ─── El Resumen por área (WP-ESCRITORIO-AMABLE, parte 3: E-49 a E-64) ────────────────────────────────
+
+/**
+ * El Resumen organizado por área: las tarjetas, la tira del objetivo, los hechos con su alcance, la acción y el botón
+ * lleno, los indicadores con su minigráfico, la primera pantalla, «Actualizar» y la ayuda de la vista. Lo esperado (los
+ * números del objetivo, el corte de cada área, la cobertura, el valor de cada indicador, los puntos de cada minigráfico)
+ * se calcula a mano con lo que devuelve la API, sin el dominio. Cada comprobación negativa («no hay…») mira con el mismo
+ * selector que una positiva de la misma pantalla. Corre en la sesión de `fichaRecompuesta`, recién iniciada: lo primero
+ * que mira es qué guiones cargó la ficha. Sola, con `node recorrido.mjs resumen`.
+ */
+async function resumenPorArea(page, v, guiones) {
+  {
+    const desde90 = diaMenos(hoy, 89);
+    /** «20 sept», como escribe el Resumen una fecha del año en curso; con el año si es de otro. */
+    const fechaBreve = (f) => (f.slice(0, 4) === hoy.slice(0, 4) ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${f}T12:00:00Z`)) : diaCivil(f));
+    /** La fecha civil de un instante en la zona de la demostración (UTC−3, sin horario de verano). */
+    const diaDe = (instante) => new Date(Date.parse(instante) - 3 * 3_600_000).toISOString().slice(0, 10);
+    const num = (n, decimales = 0) => new Intl.NumberFormat('es-AR', { maximumFractionDigits: decimales }).format(n);
+    const contar = (n, uno, varios) => `${num(n)} ${n === 1 ? uno : varios}`;
+    const diasEntre = (a, b) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
+    const consulta = `periodStart=${desde90}&periodEnd=${hoy}`;
+    const proy = async (clave, extra = '') => (await leerApi(v, `/advisees/${estado.aseId}/projections/${clave}?${consulta}${extra}`)).data.result;
+    /** Vuelve a montar el Resumen (pasando por la línea de tiempo): todas sus lecturas se repiten. */
+    const abrirResumen = async (ficha = FICHA_A) => {
+      await cupo(v, 60);
+      await ir(page, `${ficha}&vista=linea`);
+      await quieto(page, v);
+      await ir(page, ficha);
+      await quieto(page, v);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await pausa(350);
+    };
+
+    // E-54 · La ficha se carga sin la biblioteca de gráficos ──────────────────────────────────────────────
+    // Lo primero, antes de abrir «Analizar» en esta sesión: qué guiones pidió la ficha para mostrar el Resumen. La
+    // biblioteca de gráficos está en los archivos de la compilación que contienen su código; ninguno tiene que estar.
+    const carpetaDeGuiones = `${REPO}/apps/web/out/_next/static/chunks`;
+    const conLaBiblioteca = fs
+      .readdirSync(carpetaDeGuiones, { recursive: true })
+      .map(String)
+      .filter((f) => f.endsWith('.js') && fs.readFileSync(`${carpetaDeGuiones}/${f}`, 'utf8').includes('recharts-surface'))
+      .map((f) => f.split(/[\\/]/).pop());
+    const cargadosEnElResumen = [...guiones];
+    const minigraficosAlEntrar = await page.$$eval('.minigrafico svg', (g) => g.length);
+
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(400);
+    const panel = (await leerApi(v, `/advisees/${estado.aseId}/dashboard?periodStart=${encodeURIComponent(`${desde90}T00:00:00.000-03:00`)}&periodEnd=${encodeURIComponent(`${hoy}T23:59:59.999-03:00`)}`)).data.domains;
+
+    // E-49 · Una tarjeta por área ─────────────────────────────────────────────────────────────────────────
+    const tarjetas = await page.evaluate(() =>
+      [...document.querySelectorAll('.resumen .area')].map((a) => ({
+        area: a.dataset.area,
+        titulo: a.querySelector('h2')?.textContent.trim() ?? '',
+        abrir: a.querySelector('.area__abrir')?.textContent.trim() ?? '',
+        destino: a.querySelector('.area__abrir')?.getAttribute('href') ?? '',
+        contexto: [...a.querySelectorAll('.area__contexto > div > dt')].map((d) => d.textContent.trim()),
+        accion: a.querySelector('.area__accion a')?.textContent.trim() ?? '',
+      })),
+    );
+    const titulos = await page.evaluate(() => [...document.querySelectorAll('main h2')].filter((h) => h.checkVisibility()).map((h) => h.textContent.trim()));
+    const deAntes = await page.evaluate(() => ['.tabla-de-planificacion', '.para-tu-revision', '.acciones-del-resumen', '.cobertura', '.recientes'].filter((s) => document.querySelector(s)));
+    comprobar(
+      'E-49',
+      'Una tarjeta por área, en el orden de BE, cada una con su título, «Abrir …» con retorno a la ficha, su contexto y su acción; después van los indicadores y las preguntas; no queda nada de la tabla, la lista ni «Acciones» de antes',
+      tarjetas.map((t) => t.area).join() === 'NUTRICION,ENTRENAMIENTO,ANTROPOMETRIA' &&
+        tarjetas.every((t) => t.abrir === `Abrir ${t.titulo}` && t.destino.includes(`id=${estado.aseId}`) && /[?&]volver=/.test(t.destino)) &&
+        /\/pro\/advisees\/nutrition\?/.test(tarjetas[0].destino) &&
+        /\/pro\/advisees\/training\?/.test(tarjetas[1].destino) &&
+        /\/pro\/advisees\/anthropometry\?/.test(tarjetas[2].destino) &&
+        JSON.stringify(tarjetas.map((t) => t.contexto)) === JSON.stringify([['Objetivo', 'Objetivo del día, en números', 'Plan'], ['Objetivo', 'Plan'], ['Tomas', 'Revisiones']]) &&
+        tarjetas.map((t) => t.accion).join('|') === 'Preparar la revisión de Nutrición|Preparar la revisión de Entrenamiento|Preparar una toma' &&
+        titulos.join('|') === 'Nutrición|Entrenamiento|Antropometría|Indicadores|Empezar por una pregunta' &&
+        deAntes.length === 0,
+      `${titulos.join(' › ')} · ${JSON.stringify(tarjetas.map((t) => [t.area, t.contexto.length, t.accion]))} · de antes: ${deAntes.join(', ') || 'nada'}`,
+    );
+
+    // E-55 · La primera pantalla, medida ──────────────────────────────────────────────────────────────────
+    const medir = () =>
+      page.evaluate(() => {
+        const fin = (s) => {
+          const e = [...document.querySelectorAll(s)];
+          return e.length ? Math.round(Math.max(...e.map((x) => x.getBoundingClientRect().bottom + scrollY))) : null;
+        };
+        return {
+          tarjetas: document.querySelectorAll('.area').length,
+          finDeLasTarjetas: fin('.area'),
+          finDeLasAcciones: fin('.area__accion'),
+          tituloDeIndicadores: Math.round((document.querySelector('.indicadores-del-resumen h2')?.getBoundingClientRect().top ?? -1) + scrollY),
+          indicadores: document.querySelectorAll('.indicador').length,
+          finDeLosNombres: fin('.indicador h3'),
+          finDeLosValores: fin('.indicador__valor'),
+          finDeLasReglas: fin('.indicador__regla'),
+          finDeLosGraficos: fin('.minigrafico'),
+          finDeLosIndicadores: fin('.indicador'),
+          finDeLasPreguntas: fin('.preguntas-del-resumen'),
+          alto: document.documentElement.scrollHeight,
+          desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+    // Lo que se exige: las tarjetas enteras y, de cada indicador, el nombre y el valor. El alto de una tarjeta depende de
+    // cuántos hechos tenga el área: se mide con el asesorado A recién generado, y lo que sigue (la regla, el minigráfico,
+    // la cobertura) se informa con su medida. La primera versión de esta comprobación exigía también la regla, medida
+    // sobre datos que `recorrido-comprension.mjs funcional` ya había cambiado (una revisión de Entrenamiento de hoy, sin
+    // nada nuevo): con los datos recién generados esa tarjeta tiene un renglón más y la regla quedaba 7 px debajo del borde.
+    const enLaPrimeraPantalla = (m) => m.tarjetas === 3 && m.indicadores === 4 && m.finDeLasTarjetas !== null && m.finDeLasTarjetas <= 900 && m.finDeLosNombres !== null && m.finDeLosNombres <= 900 && m.finDeLosValores !== null && m.finDeLosValores <= 900 && m.desborde <= 1;
+    const primera = await medir();
+    // La prueba de la prueba: un contexto alto, como la tabla de antes, saca los indicadores de la primera pantalla.
+    const empujar = await page.addStyleTag({ content: '.area__contexto { padding-bottom: 12rem !important; }' });
+    await pausa(350);
+    const empujada = await medir();
+    await empujar.evaluate((e) => e.remove());
+    await pausa(350);
+    comprobar('E-55', 'A 1440 × 900 entran, sin desplazarse, las tres tarjetas enteras (con su acción) y el nombre y el valor de los cuatro indicadores', enLaPrimeraPantalla(primera), JSON.stringify(primera));
+    comprobar('E-55', 'La medición detecta un contexto alto que saca los indicadores de la primera pantalla (la prueba de la prueba)', !enLaPrimeraPantalla(empujada) && (empujada.finDeLosValores ?? 0) > 900, JSON.stringify(empujada));
+    informar('E-55', 'A 1440 × 900, dónde termina lo que sigue al valor de cada indicador (el borde de la ventana está en 900)', `la regla, en ${primera.finDeLasReglas}; el minigráfico, en ${primera.finDeLosGraficos}; la cobertura, en ${primera.finDeLosIndicadores}; las preguntas, en ${primera.finDeLasPreguntas}`);
+    // Otras ventanas, sin umbral: se informa dónde termina cada cosa (una portátil de 1366 × 768 es más baja que las tarjetas).
+    const otras = {};
+    for (const [ancho, alto] of [[1920, 950], [1280, 900], [1366, 768]]) {
+      await page.setViewport({ width: ancho, height: alto });
+      await pausa(500);
+      const m = await medir();
+      otras[`${ancho}×${alto}`] = { tarjetas: m.finDeLasTarjetas, valores: m.finDeLosValores, reglas: m.finDeLasReglas, graficos: m.finDeLosGraficos, indicadores: m.finDeLosIndicadores, alto: m.alto };
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(500);
+    informar('E-55', 'Otras ventanas (ancho × alto): dónde terminan las tarjetas, los valores, las reglas, los minigráficos y los indicadores', JSON.stringify(otras));
+    informar('E-55', 'El alto del Resumen a 1440 px, con el asesorado A y 90 días (antes de esta parte, con el marco de hoy: 2.130 px)', `${primera.alto} px`);
+
+    // E-59 · La tira del objetivo ─────────────────────────────────────────────────────────────────────────
+    const efectivo = (await leerApi(v, `/advisees/${estado.aseId}/nutrition/objectives/effective`)).data.objective;
+    const tira = () => page.$$eval('.area[data-area="NUTRICION"] .tira-del-objetivo > div', (d) => d.map((x) => x.innerText.replace(/\s+/g, ' ').trim()));
+    const macro = (m) => (m.unit === 'g/day' ? `${num(m.value, 2)} g` : `${num(m.value, 4)} de las calorías (proporción)`);
+    const tiraEsperada = [
+      `Calorías (requerimiento energético estimado) ${num(panel.nutrition.summary.objective.estimatedEnergyRequirement.value, 2)} kcal`,
+      `Carbohidratos ${macro(efectivo.macronutrientDistribution.carbohydrate)}`,
+      `Grasas ${macro(efectivo.macronutrientDistribution.fat)}`,
+      `Proteínas ${macro(efectivo.macronutrientDistribution.protein)}`,
+    ];
+    const tiraEnPantalla = await tira();
+    const delObjetivo = await texto(page, '.area[data-area="NUTRICION"] .area__contexto > div:first-child dd');
+    comprobar(
+      'E-59',
+      'La tira del objetivo dice las calorías del resumen de la ficha y los tres macros del objetivo efectivo (API-NUT-06, la misma versión), en el orden de la APK, cada uno con su palabra; arriba, «por día» y desde cuándo rige',
+      efectivo.versionId === panel.nutrition.summary.objective.objectiveVersionId && JSON.stringify(tiraEnPantalla) === JSON.stringify(tiraEsperada) && delObjetivo === `por día · desde el ${fechaBreve(diaDe(panel.nutrition.summary.objective.effectiveFrom))}`,
+      `pantalla: ${tiraEnPantalla.join(' · ')} («${delObjetivo}») · esperado: ${tiraEsperada.join(' · ')}`,
+    );
+    const malasAntesDeLosMacros = v.malas.length;
+    v.reglas = [{ coincide: (u) => u.includes('/nutrition/objectives/effective'), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' }];
+    await abrirResumen();
+    const sinMacros = { tira: await tira(), aviso: await texto(page, '.area[data-area="NUTRICION"] .tira-del-objetivo__falla') };
+    v.reglas = [];
+    await clic(page, '.area[data-area="NUTRICION"] .tira-del-objetivo__falla button', 'Reintentar');
+    await quieto(page, v);
+    const tiraRecuperada = await tira();
+    // El 503 fue simulado en el navegador: no es una respuesta con error de la API.
+    v.malas = [...v.malas.slice(0, malasAntesDeLosMacros), ...v.malas.slice(malasAntesDeLosMacros).filter((m) => !m.includes('objectives/effective'))];
+    comprobar(
+      'E-59',
+      'Si la lectura de los macros falla (503 simulado), quedan las calorías, se dice que no se pudieron cargar —no que falten— y «Reintentar» los trae; nunca un cero',
+      sinMacros.tira.length === 1 && sinMacros.tira[0] === tiraEsperada[0] && /No pudimos cargar los macros del objetivo\. No es que falten/.test(sinMacros.aviso) && JSON.stringify(tiraRecuperada) === JSON.stringify(tiraEsperada),
+      `con la falla: ${sinMacros.tira.join(' · ')} · «${sinMacros.aviso}» · después de reintentar: ${tiraRecuperada.join(' · ')}`,
+    );
+
+    // E-51 · Los hechos de cada tarjeta, con su alcance ──────────────────────────────────────────────────────────
+    const leerHechos = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('.resumen .area')].map((a) => {
+          const corte = a.querySelector('.area__corte');
+          const plegado = a.querySelector('details.area__periodo');
+          return {
+            area: a.dataset.area,
+            corte: corte ? corte.innerText.replace(/\s+/g, ' ').trim() : '',
+            yDelCorte: corte ? Math.round(corte.getBoundingClientRect().top + scrollY) : null,
+            proxima: a.querySelector('.area__proxima')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+            plegado: plegado ? { abierto: plegado.open, titulo: plegado.querySelector('summary').textContent.replace(/\s+/g, ' ').trim(), adentro: plegado.querySelectorAll('.observacion').length, aLaVista: [...plegado.querySelectorAll('.observacion')].some((o) => o.checkVisibility()) } : null,
+            tomaEnElContexto: a.querySelector('.area__contexto button')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+            filas: [...a.querySelectorAll('.observacion')].map((o) => {
+              const fila = o.querySelector('.observacion__fila');
+              return {
+                regla: o.dataset.regla,
+                prioridad: o.dataset.prioridad,
+                alcance: o.querySelector('.observacion__alcance')?.textContent.replace(/\s+/g, ' ').trim() ?? '',
+                // Lo que está adentro de un plegable cerrado no se dibuja y su `innerText` viene vacío: ahí se lee el texto del documento.
+                texto: ((t) => (t ? t.innerText || t.textContent : ''))(o.querySelector('.observacion__texto')).replace(/\s+/g, ' ').trim(),
+                entero: o.innerText.replace(/\s+/g, ' ').trim(),
+                enlace: fila?.tagName === 'A' ? fila.getAttribute('href') : null,
+                destino: o.querySelector('.observacion__fila > .visualmente-oculto')?.textContent.replace(/\s+/g, ' ').trim() ?? '',
+                icono: fila?.firstElementChild?.tagName.toLowerCase() === 'svg',
+                peso: Number(getComputedStyle(o.querySelector('.observacion__frase, .observacion__cuenta')).fontWeight),
+                y: Math.round(o.getBoundingClientRect().top + scrollY),
+                plegada: !!o.closest('details.area__periodo'),
+              };
+            }),
+          };
+        }),
+      );
+    const hechos = await leerHechos();
+    const todasLasFilas = hechos.flatMap((a) => a.filas.map((f) => ({ ...f, area: a.area })));
+    const NOMBRE = { NUTRICION: 'Nutrición', ENTRENAMIENTO: 'Entrenamiento', ANTROPOMETRIA: 'Antropometría' };
+    const SIN_ENLACE = ['OBJETIVO_NUEVO_DESPUES_DEL_CORTE'];
+    const filaBien = (f) => new RegExp(`^${NOMBRE[f.area]} · (Hoy|Desde la revisión del \\d{1,2} [a-z]{3,4}|En el período seleccionado):$`).test(f.alcance) && f.texto.length > 10 && (SIN_ENLACE.includes(f.regla) ? f.enlace === null : !!f.enlace && f.destino.length > 5);
+    const filasMal = todasLasFilas.filter((f) => !filaBien(f));
+    comprobar(
+      'E-51',
+      'Cada hecho es un renglón que dice su área y su alcance (también para el lector de pantalla), el hecho, y abre su evidencia; la última toma no se repite como hecho: está en el contexto de su tarjeta, con el botón que la abre',
+      todasLasFilas.length >= 6 && filasMal.length === 0 && !todasLasFilas.some((f) => f.regla === 'ULTIMA_TOMA') && /^Ver la toma: la última, el \d{1,2} [a-z]{3,4}$/.test(hechos[2].tomaEnElContexto ?? ''),
+      filasMal.length
+        ? `no cumplen: ${filasMal.map((f) => JSON.stringify({ regla: f.regla, alcance: f.alcance, texto: f.texto.slice(0, 40), enlace: !!f.enlace, destino: f.destino })).join(' ')}`
+        : `${todasLasFilas.map((f) => `${f.area.slice(0, 3)}:${f.regla}${f.enlace ? '→' : ''}`).join(' ')} · toma: «${hechos[2].tomaEnElContexto}»`,
+    );
+    const pendientes = todasLasFilas.filter((f) => f.prioridad === '1');
+    const cuentas = todasLasFilas.filter((f) => f.regla === 'NOVEDADES_DESDE_EL_CORTE' && /^\d/.test(f.texto));
+    comprobar(
+      'E-51',
+      'Lo pendiente va primero en su tarjeta (antes del corte) y se reconoce por su ícono y su peso, no por un color; las cuentas no llevan ícono ni negrita',
+      pendientes.length >= 2 &&
+        pendientes.every((f) => f.icono && f.peso >= 600 && !f.plegada && f.y < (hechos.find((a) => a.area === f.area).yDelCorte ?? Infinity)) &&
+        cuentas.length >= 1 &&
+        cuentas.every((f) => !f.icono && f.peso < 600),
+      `pendientes: ${pendientes.map((f) => `${f.regla} (ícono ${f.icono}, peso ${f.peso})`).join(', ')} · cuentas: ${cuentas.map((f) => `${f.area} (ícono ${f.icono}, peso ${f.peso})`).join(', ')}`,
+    );
+    // El corte de cada área: su última revisión, con su fecha y si ya se aplicó; Antropometría no tiene revisiones.
+    const corteEsperado = (resumen) => {
+      const r = resumen.lastReview;
+      const base = `Desde la revisión del ${fechaBreve(diaDe(r.recordedAt))}`;
+      if (!r.application) return { empieza: base, aplicada: false };
+      return { empieza: base, aplicada: true, sufijo: diaDe(r.application.appliedAt) === diaDe(r.recordedAt) ? ' · aplicada' : ` · aplicada el ${fechaBreve(diaDe(r.application.appliedAt))}` };
+    };
+    const cortes = { NUTRICION: corteEsperado(panel.nutrition.summary), ENTRENAMIENTO: corteEsperado(panel.training.summary) };
+    const corteBien = (area) => {
+      const h = hechos.find((a) => a.area === area);
+      const c = cortes[area];
+      const sinAplicar = h.filas.some((f) => f.regla === 'REVISION_SIN_APLICAR');
+      return h.corte.startsWith(c.empieza) && (c.aplicada ? h.corte.includes(c.sufijo) && !sinAplicar : !/aplicada/.test(h.corte) && sinAplicar);
+    };
+    comprobar(
+      'E-51',
+      'Cada área dice su propio corte: la fecha de su última revisión y si ya se aplicó (si no, es un pendiente de esa tarjeta); Antropometría dice que no tiene revisiones y mira el período elegido',
+      corteBien('NUTRICION') && corteBien('ENTRENAMIENTO') && cortes.NUTRICION.empieza !== cortes.ENTRENAMIENTO.empieza && hechos[2].corte === 'En el período seleccionado' && /No tiene revisiones en BE/.test(await texto(page, '.area[data-area="ANTROPOMETRIA"] .area__contexto')),
+      hechos.map((a) => `${a.area}: «${a.corte}»`).join(' · '),
+    );
+    // E-56 · La próxima revisión acordada está siempre en la tarjeta, una sola vez: como pendiente (a una semana o menos,
+    // o ya pasada) o junto al corte.
+    const proximaBien = (area, resumen) => {
+      const h = hechos.find((a) => a.area === area);
+      const fecha = resumen.activePlan?.nextReviewAt ?? null;
+      const pendiente = h.filas.find((f) => f.regla === 'PROXIMA_REVISION');
+      if (fecha !== null && diasEntre(hoy, fecha) <= 7) return !!pendiente && pendiente.texto.includes(fechaBreve(fecha)) && h.proxima === null;
+      return !pendiente && h.proxima === `Próxima revisión acordada: ${fecha ? fechaBreve(fecha) : 'sin fecha acordada'}`;
+    };
+    comprobar(
+      'E-56',
+      'La próxima revisión acordada de cada área está en su tarjeta una sola vez: como pendiente si falta una semana o menos (o ya pasó); si no, junto al corte, con su fecha o «sin fecha acordada»',
+      proximaBien('NUTRICION', panel.nutrition.summary) && proximaBien('ENTRENAMIENTO', panel.training.summary) && hechos[2].proxima === null,
+      `API: Nutrición ${panel.nutrition.summary.activePlan?.nextReviewAt ?? 'sin fecha'}, Entrenamiento ${panel.training.summary.activePlan?.nextReviewAt ?? 'sin fecha'} · pantalla: ${hechos.map((a) => `${a.area}: ${a.proxima ?? (a.filas.find((f) => f.regla === 'PROXIMA_REVISION')?.texto ?? '—')}`).join(' · ')}`,
+    );
+    // La cobertura del período, plegada cuando el área tiene una revisión: se abre y dice lo que decía «Qué se registró
+    // en el período», con los números de la API.
+    const plegados = hechos.filter((a) => a.plegado).map((a) => ({ area: a.area, ...a.plegado }));
+    await abrirDetalles(page, '.area[data-area="NUTRICION"] details.area__periodo');
+    await abrirDetalles(page, '.area[data-area="ENTRENAMIENTO"] details.area__periodo');
+    await pausa(200);
+    const abiertos = await leerHechos();
+    const cob = (await proy('NUTRITION_PRESCRIBED_VS_RECORDED', '&metric=RECORDS')).coverage;
+    const linea = (await leerApi(v, `/advisees/${estado.aseId}/timeline?${consulta}&limit=1`)).data.periodCounts;
+    const deTipo = (t) => linea.byEventType.find((x) => x.eventType === t)?.count ?? 0;
+    const coberturaN = abiertos[0].filas.find((f) => f.regla === 'COBERTURA_NUTRICIONAL');
+    const coberturaE = abiertos[1].filas.find((f) => f.regla === 'COBERTURA_DE_ENTRENAMIENTO');
+    const partesDeNutricion = [
+      `${num(cob.daysWithRecords)} de ${contar(cob.daysInPeriod, 'día', 'días')} con algún registro`,
+      `${contar(cob.records, 'registro', 'registros')}: ${num(cob.recordsWithQuantities)} con cantidades y ${num(cob.recordsWithoutQuantities)} sin cantidades`,
+      ...(cob.differentMealsWithoutQuantities ? [contar(cob.differentMealsWithoutQuantities, 'comida diferente, entre los registros sin cantidades', 'comidas diferentes, entre los registros sin cantidades')] : []),
+      ...(cob.annulledExcluded ? [contar(cob.annulledExcluded, 'anulado, fuera de los totales', 'anulados, fuera de los totales')] : []),
+      ...(cob.rectifiedCountedOnce ? [contar(cob.rectifiedCountedOnce, 'rectificado, contado una vez', 'rectificados, contados una vez')] : []),
+    ];
+    comprobar(
+      'E-51',
+      'La cobertura del período queda plegada en la tarjeta de un área con revisión (su título dice el alcance y cuántos hechos guarda); abierta, dice los días y los registros de la API, los anulados, los rectificados y las comidas diferentes, y que en Entrenamiento no hay «sesiones esperadas»',
+      plegados.map((p) => p.area).join() === 'NUTRICION,ENTRENAMIENTO' &&
+        plegados.every((p) => !p.abierto && !p.aLaVista && p.adentro === 1 && p.titulo === 'En el período seleccionado: cobertura del registro (1)') &&
+        !!coberturaN && partesDeNutricion.every((p) => coberturaN.entero.includes(p)) && coberturaN.alcance === 'Nutrición · En el período seleccionado:' &&
+        !!coberturaE && coberturaE.entero.includes(contar(deTipo('TRAINING_SESSION_RECORDED'), 'sesión registrada', 'sesiones registradas')) && coberturaE.entero.includes('Sin calendario prescripto, no hay «sesiones esperadas».'),
+      `Nutrición: «${coberturaN?.entero ?? 'no está'}» (esperado: ${partesDeNutricion.join(' | ')}) · Entrenamiento: «${coberturaE?.entero ?? 'no está'}»`,
+    );
+    const tardias = await page.evaluate(() => ({ texto: document.querySelector('.resumen__tardias')?.innerText.replace(/\s+/g, ' ').trim() ?? '', destino: document.querySelector('.resumen__tardias a')?.getAttribute('href') ?? '' }));
+    comprobar(
+      'E-51',
+      '«Cargado otro día» es del período entero, no de un área: va al pie con el número de la API y lleva a esos hechos en la línea de tiempo',
+      linea.recordedLate > 0 && tardias.texto.includes(`${num(linea.recordedLate)} hechos del período se registraron un día posterior al que ocurrieron (carga tardía)`) && /vista=linea/.test(tardias.destino) && /tardias=1/.test(tardias.destino),
+      `API: ${linea.recordedLate} · «${tardias.texto}» → ${tardias.destino}`,
+    );
+
+    // E-56 · Un solo botón lleno ──────────────────────────────────────────────────────────────────────────
+    const acciones = await page.$$eval('.resumen .area', (as) => as.map((a) => ({ area: a.dataset.area, botones: [...a.querySelectorAll('.area__accion a')].map((b) => ({ texto: b.textContent.trim(), lleno: b.classList.contains('boton--primario'), contorno: b.classList.contains('boton--secundario'), destino: b.getAttribute('href') ?? '' })) })));
+    const conFecha = [['NUTRICION', panel.nutrition], ['ENTRENAMIENTO', panel.training]].filter(([, e]) => e.available && e.summary?.activePlan?.nextReviewAt).map(([area, e]) => ({ area, fecha: e.summary.activePlan.nextReviewAt })).sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const llenos = acciones.flatMap((a) => a.botones.filter((b) => b.lleno).map(() => a.area));
+    const boton = (area) => acciones.find((a) => a.area === area).botones[0];
+    comprobar(
+      'E-56',
+      'Un solo botón lleno en todo el Resumen: el del área con la próxima revisión acordada más cercana según el resumen de la ficha; los demás, con contorno. «Preparar la revisión…» lleva a su formulario preparado y «Preparar una toma», a la toma en preparación, los dos con retorno',
+      conFecha.length > 0 && llenos.join() === conFecha[0].area && acciones.every((a) => a.botones.length === 1 && a.botones[0].lleno !== a.botones[0].contorno) &&
+        new RegExp(`/pro/advisees/nutrition\\?id=${estado.aseId}&vista=revisiones&preparar=1&volver=`).test(boton('NUTRICION').destino) &&
+        new RegExp(`/pro/advisees/training\\?id=${estado.aseId}&vista=revisiones&preparar=1&volver=`).test(boton('ENTRENAMIENTO').destino) &&
+        new RegExp(`/pro/advisees/anthropometry\\?id=${estado.aseId}&vista=preparacion&volver=`).test(boton('ANTROPOMETRIA').destino),
+      `fechas de la API: ${conFecha.map((c) => `${c.area} ${c.fecha}`).join(', ') || 'ninguna'} · lleno: ${llenos.join(', ') || 'ninguno'}`,
+    );
+
+    // E-60 · Las preguntas ────────────────────────────────────────────────────────────────────────────────
+    const preguntas = await page.evaluate(() => ({ lista: [...document.querySelectorAll('.preguntas-del-resumen__lista a')].map((a) => ({ texto: a.textContent.trim(), destino: a.getAttribute('href') ?? '' })), mas: document.querySelector('.preguntas-del-resumen__mas')?.getAttribute('href') ?? '' }));
+    comprobar(
+      'E-60',
+      'Las cuatro preguntas principales, con las palabras del dominio y en su orden; cada una arma «Analizar» desde cero (sin métricas ni fecha de un análisis anterior) y «Más preguntas» lleva a la entrada de Analizar',
+      preguntas.lista.map((p) => p.texto).join('|') === dominio.PREGUNTAS_PROFESIONALES.filter((p) => p.principal).map((p) => p.pregunta).join('|') &&
+        preguntas.lista.length === 4 &&
+        preguntas.lista.every((p) => /vista=analizar/.test(p.destino) && /pregunta=[a-z-]+/.test(p.destino) && !/[?&](m|f)=/.test(p.destino)) &&
+        /vista=analizar/.test(preguntas.mas) && !/pregunta=|[?&]m=/.test(preguntas.mas),
+      preguntas.lista.map((p) => p.texto).join(' · '),
+    );
+
+    // E-53 · Los indicadores por defecto y su valor, calculado a mano ───────────────────────────────────────────
+    await cupo(v, 60);
+    const nut = await proy('NUTRITION_PRESCRIBED_VS_RECORDED', '&metric=ENERGY&grain=DAY');
+    const prot = await proy('NUTRITION_PRESCRIBED_VS_RECORDED', '&metric=PROTEIN&grain=DAY');
+    const deEntrenamiento = await proy('TRAINING_PROGRESSION_BY_EXERCISE');
+    const ej = [...deEntrenamiento.exercises].sort((a, b) => b.sessions - a.sessions)[0];
+    const serieDeCarga = ej.setNumbers[0] ?? 1;
+    const carga = (await proy('TRAINING_PROGRESSION_BY_EXERCISE', `&exerciseId=${encodeURIComponent(ej.exerciseKey)}&metric=LOAD&setIndex=${serieDeCarga}&unit=${ej.loadUnits[0]}&grain=ORIGINAL`)).progression.series;
+    const peso = (await proy('ANTHROPOMETRY_LONGITUDINAL', '&metric=peso')).series[0];
+    const enElPeriodo = (s) => s.points.filter((p) => p.date >= desde90 && p.date <= hoy);
+    const completos = (s) => enElPeriodo(s).filter((p) => p.value !== null && !p.partialBucket);
+    const media = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const mediana = (xs) => {
+      const o = [...xs].sort((a, b) => a - b);
+      const m = Math.floor(o.length / 2);
+      return o.length % 2 ? o[m] : (o[m - 1] + o[m]) / 2;
+    };
+    /** Redondeo «mitad hacia arriba» sobre el número escrito en decimal, como la pantalla de registro (no el del binario). */
+    const mitadArriba = (x, decimales) => {
+      const [entera, decimal = ''] = String(x).split('.');
+      const cifras = decimal.padEnd(decimales + 1, '0');
+      const base = Number(decimales ? `${entera}.${cifras.slice(0, decimales)}` : entera);
+      return cifras[decimales] >= '5' ? Number((base + 10 ** -decimales).toFixed(decimales)) : base;
+    };
+    const conValorDelPeso = enElPeriodo(peso).filter((p) => p.value !== null);
+    const ultimaToma = conValorDelPeso.at(-1);
+    const sesiones = completos(carga);
+    const ultimaSesion = enElPeriodo(carga).filter((p) => p.value !== null).at(-1);
+    const esperados = [
+      { metrica: 'nutricion.energia', nombre: 'Calorías registradas', valor: `${num(mitadArriba(media(completos(nut.recorded).map((p) => p.value)), 0))} kcal por día`, regla: 'Media de los días con valor' },
+      { metrica: 'nutricion.proteinas', nombre: 'Proteínas registradas', valor: `${num(mitadArriba(media(completos(prot.recorded).map((p) => p.value)), 1), 1)} g por día`, regla: 'Media de los días con valor' },
+      { metrica: 'entrenamiento.carga', nombre: `Carga · ${ej.name} · serie ${serieDeCarga}`, valor: `${num(Number(mediana(sesiones.map((p) => p.value)).toFixed(1)), 1)} ${ej.loadUnits[0]}`, regla: 'Mediana de las sesiones' },
+      { metrica: 'antropometria.peso', nombre: 'Peso', valor: `${num(Number(ultimaToma.value.toFixed(2)), 2)} ${peso.unit}`, regla: `Última toma: ${fechaBreve(ultimaToma.date)}` },
+    ];
+    const leerIndicadores = () =>
+      page.$$eval('.indicador', (is) =>
+        is.map((i) => {
+          const g = i.querySelector('.minigrafico');
+          const tramo = g?.querySelector('.minigrafico__tramo');
+          const muestra = document.createElement('span');
+          muestra.style.color = 'var(--metrica-1)';
+          i.appendChild(muestra);
+          const colorDeLaMetrica = getComputedStyle(muestra).color;
+          muestra.remove();
+          return {
+            metrica: i.dataset.metrica,
+            nombre: i.querySelector('.indicador__nombre')?.firstChild?.textContent.trim() ?? '',
+            valor: i.querySelector('.indicador__valor')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+            regla: i.querySelector('.indicador__regla')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+            cobertura: i.querySelector('.indicador__cobertura')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+            muestraGris: !!i.querySelector('.indicador__cobertura .muestra-de-hueco'),
+            notas: [...i.querySelectorAll('.indicador__nota')].map((n) => n.innerText.replace(/\s+/g, ' ').trim()),
+            clase: i.querySelector('.etiqueta-de-dato')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
+            analizar: i.querySelector('h3 a.indicador__analizar')?.getAttribute('href') ?? '',
+            nombreDelEnlace: i.querySelector('h3 a.indicador__analizar')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+            flecha: i.querySelector('h3 a.indicador__analizar')?.lastElementChild?.tagName.toLowerCase() === 'svg',
+            grafico: g
+              ? {
+                  rol: g.getAttribute('role'),
+                  descripcion: g.getAttribute('aria-label') ?? '',
+                  puntos: g.querySelectorAll('.minigrafico__punto').length,
+                  huecos: g.querySelectorAll('.minigrafico__punto[data-hueco="si"]').length,
+                  tramos: g.querySelectorAll('.minigrafico__tramo').length,
+                  grises: g.querySelectorAll('.minigrafico__sin-registros').length,
+                  marcas: [...g.querySelectorAll('.minigrafico__marca text')].map((t) => t.textContent.trim()),
+                  plan: g.querySelectorAll('.minigrafico__plan').length,
+                  delColorDeLaMetrica: tramo ? getComputedStyle(tramo).stroke === colorDeLaMetrica : null,
+                  conFoco: g.matches('[tabindex]') || !!g.querySelector('[tabindex], a, button'),
+                }
+              : null,
+          };
+        }),
+      );
+    const indicadores = await leerIndicadores();
+    comprobar(
+      'E-53',
+      'Los cuatro indicadores por defecto son calorías y proteínas registradas, la carga de la primera serie del ejercicio más registrado y el peso, en el orden de las áreas; el valor de cada uno es el que sale de la API con su regla (media de los días con valor, mediana de las sesiones, última toma)',
+      indicadores.length === 4 && esperados.every((e, i) => indicadores[i].metrica === e.metrica && indicadores[i].nombre === e.nombre && indicadores[i].valor === e.valor && indicadores[i].regla === e.regla),
+      `pantalla: ${indicadores.map((i) => `${i.nombre} = ${i.valor} (${i.regla})`).join(' · ')} · esperado: ${esperados.map((e) => `${e.nombre} = ${e.valor} (${e.regla})`).join(' · ')}`,
+    );
+    const diasConRegistros = new Set(enElPeriodo(nut.recorded).filter((p) => !p.partialBucket && p.date !== hoy).map((p) => p.date)).size;
+    const sinRegistros = 90 - diasConRegistros - 1;
+    const CLASE = { MEASURED: 'Medido', REPORTED: 'Reportado', DERIVED: 'Calculado' };
+    comprobar(
+      'E-53',
+      'Cada indicador dice su cobertura con las palabras del dominio (los días con valor y sin registros, las sesiones, las tomas del tramo comparable); la carga dice además su última sesión, y el peso, la clase de su última toma, que es el único dato que la trae',
+      indicadores[0].cobertura.startsWith(`90 días: ${num(completos(nut.recorded).length)} con valor`) &&
+        (sinRegistros > 0 ? indicadores[0].cobertura.includes(`${num(sinRegistros)} sin registros`) && indicadores[0].muestraGris : true) &&
+        indicadores[2].cobertura === `${contar(enElPeriodo(carga).length, 'sesión', 'sesiones')}: ${num(sesiones.length)} con valor` &&
+        indicadores[2].notas.includes(`Última sesión: ${fechaBreve(ultimaSesion.date)} · ${num(Number(ultimaSesion.value.toFixed(1)), 1)} ${ej.loadUnits[0]}`) &&
+        indicadores[3].cobertura.startsWith(contar(conValorDelPeso.length, 'toma', 'tomas')) &&
+        indicadores[3].notas.some((n) => /^Primera comparable del período: [\d.,]+ kg el \d{1,2} [a-z]{3,4} · diferencia [+−-]?[\d.,]+ kg \(\d+ tomas comparables\)$|^Una sola observación comparable: no hay con qué comparar\.$/.test(n)) &&
+        indicadores[3].clase === `Clase de dato: ${CLASE[ultimaToma.dataClass]}` &&
+        indicadores.slice(0, 3).every((i) => i.clase === null),
+      indicadores.map((i) => `${i.nombre}: ${i.cobertura} [${i.notas.join(' | ')}]${i.clase ? ` {${i.clase}}` : ''}`).join(' · '),
+    );
+    comprobar(
+      'E-64',
+      'El nombre de cada indicador es un enlace que abre su gráfico en «Analizar» (con su métrica y sin la fecha ni la pregunta de un análisis anterior), con una flecha y un nombre que lo dice',
+      indicadores.every((i) => /vista=analizar/.test(i.analizar) && new RegExp(`[?&]m=${encodeURIComponent(i.metrica).replace(/[.]/g, '\\.')}`).test(i.analizar) && !/[?&](f|pregunta)=/.test(i.analizar) && i.flecha && i.nombreDelEnlace === `${i.nombre} · analizar`),
+      indicadores.map((i) => `${i.nombreDelEnlace} → ${i.analizar.replace(/^[^?]+\?id=[^&]+/, '…')}`).join(' · '),
+    );
+
+    // E-54 · El minigráfico dibuja lo mismo que la serie de la API ──────────────────────────────────────────────
+    const delGrafico = (serie) => {
+      const dibujados = enElPeriodo(serie).filter((p) => p.value !== null);
+      const porTramo = new Map();
+      for (const p of dibujados) if (!p.partialBucket) porTramo.set(p.segment, (porTramo.get(p.segment) ?? 0) + 1);
+      // Se sombrean los días sin registros de una serie diaria, sin el día en curso.
+      const grises = serie.grain === 'DAY' ? serie.gaps.filter((h) => (h.to >= hoy ? diaMenos(hoy, 1) : h.to) >= h.from).length : 0;
+      return { puntos: dibujados.length, huecos: dibujados.filter((p) => p.quality === 'PARTIAL' || p.partialBucket).length, tramos: [...porTramo.values()].filter((n) => n >= 2).length, grises, minimo: Math.min(...dibujados.map((p) => p.value)), maximo: Math.max(...dibujados.map((p) => p.value)) };
+    };
+    const series = [nut.recorded, prot.recorded, carga, peso];
+    const graficosEsperados = series.map(delGrafico);
+    const aNumero = (t) => Number(t.replace(/\./g, '').replace(',', '.').replace('−', '-'));
+    const graficoBien = (i, e) => !!i.grafico && i.grafico.puntos === e.puntos && i.grafico.huecos === e.huecos && i.grafico.tramos === e.tramos && i.grafico.grises === e.grises && i.grafico.marcas.length === 2 && aNumero(i.grafico.marcas[0]) >= e.maximo && aNumero(i.grafico.marcas[1]) <= e.minimo;
+    const sinBiblioteca = await page.evaluate(() => ({ deLaBiblioteca: document.querySelectorAll('.recharts-surface, .recharts-wrapper, figure.grafico__figura').length, propios: document.querySelectorAll('.minigrafico svg').length }));
+    comprobar(
+      'E-54',
+      'Cada minigráfico dibuja lo mismo que su serie de la API: un punto por día, sesión o toma con valor (los subtotales y el día en curso, huecos), una línea por tramo comparable, el gris de los días sin registros, y dos marcas en el eje que encierran todos los valores',
+      indicadores.every((i, n) => graficoBien(i, graficosEsperados[n])) && graficosEsperados[0].puntos > 30 && graficosEsperados[0].grises > 0 && graficosEsperados[3].tramos >= 1,
+      indicadores.map((i, n) => `${i.nombre}: ${JSON.stringify({ puntos: i.grafico?.puntos, huecos: i.grafico?.huecos, tramos: i.grafico?.tramos, grises: i.grafico?.grises, marcas: i.grafico?.marcas })} · API ${JSON.stringify(graficosEsperados[n])}`).join(' · '),
+    );
+    // Desde cuándo rige el primer plan del período: se marca en el gráfico y se dice debajo, solo si empezó adentro.
+    const primerPlan = (vigencias) => {
+      if (!vigencias || vigencias.length === 0) return null;
+      const primero = vigencias.map((x) => x.from).sort()[0];
+      return primero > desde90 ? primero : null;
+    };
+    const planes = [primerPlan(nut.planVersions), primerPlan(prot.planVersions), primerPlan(deEntrenamiento.planVersions), null];
+    comprobar(
+      'E-54',
+      'El inicio del primer plan del período se marca en el minigráfico y se dice debajo («El plan rige desde el…») solo cuando empezó adentro del período, con la fecha de la API; el del peso, que no se registra contra un plan, no lo lleva',
+      indicadores.every((i, n) => (planes[n] ? i.grafico.plan === 1 && i.notas.includes(`El plan rige desde el ${fechaBreve(planes[n])}`) : i.grafico.plan === 0 && !i.notas.some((x) => /El plan rige/.test(x)))) && planes.some(Boolean),
+      `API: ${planes.map((p) => p ?? '—').join(', ')} · pantalla: ${indicadores.map((i) => `${i.grafico?.plan} ${i.notas.find((x) => /El plan rige/.test(x)) ?? '—'}`).join(' · ')}`,
+    );
+    comprobar(
+      'E-54',
+      'El minigráfico es un dibujo propio, con el color de las métricas, sin foco ni nada para tocar, y con su descripción para el lector de pantalla; el Resumen no dibuja ningún gráfico de la biblioteca',
+      sinBiblioteca.propios === 4 && sinBiblioteca.deLaBiblioteca === 0 && indicadores.every((i) => i.grafico.rol === 'img' && i.grafico.descripcion.startsWith(`Gráfico de ${i.nombre}. `) && i.grafico.descripcion.length > 60 && i.grafico.delColorDeLaMetrica === true && !i.grafico.conFoco),
+      `${sinBiblioteca.propios} propios, ${sinBiblioteca.deLaBiblioteca} de la biblioteca · ${indicadores[0].grafico?.descripcion.slice(0, 140)}…`,
+    );
+    comprobar(
+      'E-54',
+      'La ficha se abre y muestra el Resumen, con sus cuatro minigráficos, sin haber cargado la biblioteca de gráficos',
+      conLaBiblioteca.length > 0 && cargadosEnElResumen.length > 5 && !cargadosEnElResumen.some((g) => conLaBiblioteca.includes(g)) && minigraficosAlEntrar === 4,
+      `${cargadosEnElResumen.length} guiones cargados, ninguno de ${conLaBiblioteca.join(', ') || '(no encontré la biblioteca en la compilación)'} · minigráficos al entrar: ${minigraficosAlEntrar}`,
+    );
+
+    // E-58 · «Actualizar» vuelve a leer todo lo que el Resumen muestra ──────────────────────────────────────────
+    await cupo(v, 50);
+    const antesDeActualizar = v.urls.length;
+    await clic(page, '.ficha__consulta button', 'Actualizar');
+    await quieto(page, v);
+    const pedidos = v.urls.slice(antesDeActualizar).filter((u) => u.startsWith('GET '));
+    const LECTURAS = [
+      ['el resumen por área', /\/dashboard\?/],
+      ['los vínculos', /\/me\/relationships/],
+      ['qué hay de Nutrición y su cobertura', /NUTRITION_PRESCRIBED_VS_RECORDED\?[^ ]*metric=RECORDS/],
+      ['qué ejercicios hay', /TRAINING_PROGRESSION_BY_EXERCISE\?(?![^ ]*exerciseId)/],
+      ['qué medidas hay', /ANTHROPOMETRY_LONGITUDINAL\?(?![^ ]*metric=)/],
+      ['los conteos del período', /\/timeline\?(?![^ ]*since=)/],
+      ['lo nuevo desde la revisión de Nutrición', /\/timeline\?[^ ]*domain=NUTRITION[^ ]*since=|\/timeline\?[^ ]*since=[^ ]*domain=NUTRITION/],
+      ['lo nuevo desde la revisión de Entrenamiento', /\/timeline\?[^ ]*domain=TRAINING[^ ]*since=|\/timeline\?[^ ]*since=[^ ]*domain=TRAINING/],
+      ['los macros del objetivo', /\/nutrition\/objectives\/effective/],
+      ['los indicadores elegidos', /\/me\/analysis-views/],
+      ['la serie de calorías', /metric=ENERGY/],
+      ['la serie de proteínas', /metric=PROTEIN/],
+      ['la serie de la carga', /metric=LOAD/],
+      ['la serie del peso', /ANTHROPOMETRY_LONGITUDINAL\?[^ ]*metric=peso/],
+    ];
+    const faltan = LECTURAS.filter(([, re]) => !pedidos.some((u) => re.test(u))).map(([nombre]) => nombre);
+    comprobar(
+      'E-58',
+      '«Actualizar» vuelve a leer todo lo que el Resumen muestra, no solo el acceso: el resumen por área, lo que hay en el período y su cobertura, lo nuevo desde cada revisión, los macros del objetivo y las series de los cuatro indicadores',
+      faltan.length === 0 && (await page.$$eval('.indicador__valor', (x) => x.length)) === 4,
+      faltan.length ? `no se volvió a leer: ${faltan.join(', ')} (de ${pedidos.length} lecturas)` : `${pedidos.length} lecturas después del clic`,
+    );
+
+    // E-62 · La ayuda del Resumen ─────────────────────────────────────────────────────────────────────────
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await clic(page, '.marco-de-la-ficha button', 'Cómo se lee esta vista');
+    await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 5_000 });
+    await pausa(250);
+    const ayuda = await page.evaluate(() => {
+      const d = document.querySelector('dialog.como-se-lee[open]');
+      const h = d.querySelector('h2').getBoundingClientRect();
+      return {
+        titulo: d.querySelector('h2').textContent.trim(),
+        renglones: d.querySelectorAll('.como-se-lee__lista > li').length,
+        muestras: d.querySelectorAll('.como-se-lee__lista .como-se-lee__muestra > *').length,
+        focoEnElTitulo: document.activeElement === d.querySelector('h2'),
+        tituloALaVista: h.top >= 0 && h.bottom <= innerHeight && d.scrollTop === 0,
+        fuentesPlegadas: d.querySelector('details.como-se-lee__fuentes') ? !d.querySelector('details.como-se-lee__fuentes').open : null,
+        texto: d.innerText.replace(/\s+/g, ' '),
+      };
+    });
+    const axeConLaAyuda = await axe(page);
+    await page.click('dialog.como-se-lee[open] details.como-se-lee__fuentes > summary');
+    await pausa(200);
+    const fuentes = await page.$$eval('dialog.como-se-lee[open] .como-se-lee__fuentes [data-regla]', (f) => f.map((x) => ({ regla: x.dataset.regla, texto: x.innerText.replace(/\s+/g, ' ').trim(), aLaVista: x.checkVisibility() })));
+    const axeConLasFuentes = await axe(page);
+    await page.keyboard.press('Escape');
+    const cerroLaAyuda = await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 3_000 }).then(() => true, () => false);
+    const focoDespues = await page.evaluate(() => document.activeElement?.textContent.replace(/\s+/g, ' ').trim() ?? '');
+    comprobar(
+      'E-62',
+      'La ayuda del Resumen se abre desde el marco como un diálogo, por el principio (el foco va al título, que queda a la vista), explica cada parte con su muestra y lo que la vista no dice; axe no encuentra faltas con ella abierta; Escape la cierra y el foco vuelve al botón',
+      ayuda.titulo === 'Cómo se lee el Resumen' && ayuda.renglones >= 10 && ayuda.muestras >= 10 && ayuda.focoEnElTitulo && ayuda.tituloALaVista && /No son ceros/.test(ayuda.texto) && /sin calificar/.test(ayuda.texto) && /BE no decide qué es urgente/.test(ayuda.texto) && /No registra nada hasta que lo confirmes/.test(ayuda.texto) && axeConLaAyuda.length === 0 && axeConLasFuentes.length === 0 && cerroLaAyuda && focoDespues === 'Cómo se lee esta vista',
+      `${ayuda.titulo} · ${ayuda.renglones} renglones, ${ayuda.muestras} muestras · foco en el título: ${ayuda.focoEnElTitulo}, a la vista: ${ayuda.tituloALaVista} · axe: ${JSON.stringify([...axeConLaAyuda, ...axeConLasFuentes])} · Escape la cierra: ${cerroLaAyuda} · foco después: «${focoDespues}»`,
+    );
+    const reglasEnPantalla = [...new Set(todasLasFilas.map((f) => f.regla))];
+    comprobar(
+      'E-62',
+      '«De dónde sale» cada hecho está en la ayuda, plegado y una vez por regla: todas las reglas de los hechos que hay en pantalla tienen su fuente («Sale de…»), y ningún renglón de las tarjetas la repite',
+      ayuda.fuentesPlegadas === true && reglasEnPantalla.length >= 4 && reglasEnPantalla.every((r) => fuentes.some((f) => f.regla === r && f.aLaVista && /Sale de .+\.$/.test(f.texto))) && new Set(fuentes.map((f) => f.regla)).size === fuentes.length && !todasLasFilas.some((f) => /Sale de /.test(f.entero)),
+      `en pantalla: ${reglasEnPantalla.join(', ')} · en la ayuda: ${fuentes.length} fuentes, p. ej. «${fuentes[0]?.texto ?? ''}»`,
+    );
+
+    // E-63 · La composición en otros anchos y con menos áreas ───────────────────────────────────────────────────
+    const composicion = () =>
+      page.evaluate(() => {
+        const cajas = (s) => [...document.querySelectorAll(s)].map((e) => e.getBoundingClientRect()).map((r) => ({ x: Math.round(r.left), y: Math.round(r.top + scrollY), ancho: Math.round(r.width), fin: Math.round(r.bottom + scrollY) }));
+        const porFila = (c) => {
+          const filas = new Map();
+          for (const e of c) filas.set(e.y, (filas.get(e.y) ?? 0) + 1);
+          return [...filas.values()];
+        };
+        const [tarjetas, indicadores, preguntas] = [cajas('.area'), cajas('.indicador'), cajas('.preguntas-del-resumen__lista > li')];
+        const caja = (s) => cajas(s)[0] ?? null;
+        return { tarjetas: porFila(tarjetas), indicadores: porFila(indicadores), preguntas: porFila(preguntas), cajaDeTarjetas: tarjetas, cajaDeIndicadores: caja('.indicadores-del-resumen'), cajaDePreguntas: caja('.preguntas-del-resumen'), desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+      });
+    const porAncho = {};
+    for (const ancho of [1440, 1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(500);
+      porAncho[ancho] = await composicion();
+    }
+    const filas = (c) => `${c.tarjetas.join('+')} tarjetas · ${c.indicadores.join('+')} indicadores · ${c.preguntas.join('+')} preguntas · desborde ${c.desborde}`;
+    comprobar(
+      'E-63',
+      'A 1440 y 1280 px van tres áreas y cuatro indicadores por fila, y las preguntas en un renglón; a 1024, dos áreas y la tercera debajo de lado a lado, y los indicadores y las preguntas de a dos; a 768 y 390 nada desborda (una tarjeta por fila)',
+      [1440, 1280].every((a) => porAncho[a].tarjetas.join() === '3' && porAncho[a].indicadores.join() === '4' && porAncho[a].preguntas.join() === '4') &&
+        porAncho[1024].tarjetas.join() === '2,1' && porAncho[1024].cajaDeTarjetas[2].ancho > porAncho[1024].cajaDeTarjetas[0].ancho * 1.8 && porAncho[1024].indicadores.join() === '2,2' && porAncho[1024].preguntas.join() === '2,2' &&
+        porAncho[768].tarjetas.join() === '1,1,1' && porAncho[390].tarjetas.join() === '1,1,1' && porAncho[390].indicadores.join() === '1,1,1,1' &&
+        Object.values(porAncho).every((c) => c.desborde <= 1 && c.cajaDeIndicadores.y >= c.cajaDeTarjetas.at(-1).fin && c.cajaDePreguntas.y >= c.cajaDeIndicadores.fin),
+      Object.entries(porAncho).map(([a, c]) => `${a}: ${filas(c)}`).join(' | '),
+    );
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(400);
+    // Lo que pasó con el asesorado A, antes de mirar otras fichas (un área sin acceso responde «no disponible» a propósito).
+    const erroresConA = [...v.errores];
+    const malasConA = [...v.malas];
+
+    // Accesibilidad con la cobertura abierta, en los dos temas, y el minigráfico en Azul noche.
+    await abrirDetalles(page, '.area[data-area="NUTRICION"] details.area__periodo');
+    const temaInicial = await page.evaluate(() => document.documentElement.dataset.tema);
+    const violaciones = {};
+    const enCadaTema = {};
+    for (const tema of ['claro', 'azul-noche']) {
+      await ponerTema(page, tema);
+      await pausa(300);
+      violaciones[tema] = await axe(page);
+      enCadaTema[tema] = (await leerIndicadores()).map((i) => ({ puntos: i.grafico?.puntos, delColor: i.grafico?.delColorDeLaMetrica }));
+    }
+    await ponerTema(page, temaInicial);
+    comprobar(
+      'PRO-22',
+      'El Resumen por área, con la cobertura abierta: axe no encuentra faltas de WCAG 2.2 AA en ninguno de los dos temas, y los minigráficos se dibujan igual, con el color de las métricas de cada tema',
+      violaciones.claro.length === 0 && violaciones['azul-noche'].length === 0 && JSON.stringify(enCadaTema.claro) === JSON.stringify(enCadaTema['azul-noche']) && enCadaTema.claro.every((g, n) => g.puntos === graficosEsperados[n].puntos && g.delColor === true),
+      JSON.stringify(violaciones),
+    );
+
+    // E-63 · Con dos áreas y con una ──────────────────────────────────────────────────────────────────────
+    await abrirResumen(FICHA_B);
+    const deB = { ...(await composicion()), areas: await page.$$eval('.area', (a) => a.map((x) => x.dataset.area)), preguntas: await textos(page, '.preguntas-del-resumen__lista a') };
+    comprobar(
+      'E-63',
+      'Con dos áreas (el asesorado B, sin Entrenamiento): dos tarjetas y, en la columna que queda libre a su lado, las preguntas; debajo, los indicadores. No hay tarjeta de Entrenamiento ni se ofrece la pregunta del ejercicio (E-60)',
+      deB.areas.join() === 'NUTRICION,ANTROPOMETRIA' && deB.tarjetas.join() === '2' && !!deB.cajaDePreguntas && deB.cajaDePreguntas.y === deB.cajaDeTarjetas[0].y && deB.cajaDePreguntas.x > deB.cajaDeTarjetas[1].x && deB.cajaDeIndicadores.y >= deB.cajaDeTarjetas[0].fin && deB.preguntas.length === 3 && !deB.preguntas.some((p) => /ejercicio/.test(p)) && deB.desborde <= 1,
+      `${deB.areas.join(', ')} · preguntas: ${deB.preguntas.join(' · ')} · ${JSON.stringify({ tarjetas: deB.cajaDeTarjetas.map((c) => [c.x, c.y]), preguntas: deB.cajaDePreguntas, indicadores: deB.cajaDeIndicadores })}`,
+    );
+    if (FICHA_E) {
+      await abrirResumen(FICHA_E);
+      const deE = { ...(await composicion()), areas: await page.$$eval('.area', (a) => a.map((x) => x.dataset.area)), sinMas: await texto(page, '.indicadores__sin-mas'), corte: await texto(page, '.area .area__corte') };
+      comprobar(
+        'E-63',
+        'Con una sola área (el escenario E): su tarjeta a la izquierda y, a su costado, los indicadores y debajo las preguntas; se dice que no hay más indicadores con datos; sin revisiones, el alcance es el período y la cobertura está a la vista',
+        deE.areas.join() === 'NUTRICION' && deE.cajaDeIndicadores.x > deE.cajaDeTarjetas[0].x + deE.cajaDeTarjetas[0].ancho - 1 && Math.abs(deE.cajaDeIndicadores.y - deE.cajaDeTarjetas[0].y) <= 4 && deE.cajaDePreguntas.y >= deE.cajaDeIndicadores.fin && deE.cajaDePreguntas.x >= deE.cajaDeIndicadores.x - 1 && /Sin más indicadores con datos en este período\./.test(deE.sinMas) && deE.corte.startsWith('En el período seleccionado · sin revisiones registradas') && (await page.$$eval('.area details.area__periodo', (d) => d.length)) === 0 && (await page.$$eval('.area .observacion[data-regla="COBERTURA_NUTRICIONAL"]', (o) => o.filter((x) => x.checkVisibility()).length)) === 1 && deE.desborde <= 1,
+        `${deE.areas.join(', ')} · «${deE.corte}» · «${deE.sinMas}» · ${JSON.stringify({ tarjeta: deE.cajaDeTarjetas[0], indicadores: deE.cajaDeIndicadores, preguntas: deE.cajaDePreguntas })}`,
+      );
+    } else {
+      informar('E-63', 'Una sola área', 'este juego de datos no tiene el escenario E');
+    }
+    // La prueba de la prueba de «sin la biblioteca de gráficos»: al abrir Analizar con una métrica, sus guiones sí se
+    // piden, y la misma lista los detecta.
+    await cupo(v, 60);
+    await ir(page, `${FICHA_A}&vista=analizar&m=nutricion.energia&p=30`);
+    await quieto(page, v);
+    await page.waitForSelector('figure.grafico__figura .recharts-surface', { timeout: 20_000 }).catch(() => {});
+    const despuesDeAnalizar = guiones.filter((g) => conLaBiblioteca.includes(g));
+    comprobar('E-54', 'La misma medición detecta la biblioteca de gráficos cuando se abre «Analizar» (la prueba de la prueba)', despuesDeAnalizar.length > 0, despuesDeAnalizar.join(', ') || 'no se cargó ninguno');
+    await abrirResumen(FICHA_A);
+    comprobar(
+      'PRO-25',
+      'Sin errores de JavaScript durante el recorrido del Resumen por área, ni respuestas con error de la API con el asesorado A',
+      v.errores.length === 0 && malasConA.length === 0,
+      [...new Set([...erroresConA, ...v.errores, ...malasConA])].slice(0, 4).join(' · ') || 'ninguno',
+    );
+  }
+}
+
+/**
+ * El Resumen por área y Analizar recompuesto, en una misma sesión (una sola entrada de la cuenta: el límite es de cinco
+ * cada quince minutos). La parte del Resumen va primero, con la ficha recién abierta: ahí se mira qué guiones cargó.
+ * El modo funcional corre las dos antes del encabezado; `resumen` y `analizar` corren una sola.
+ */
+async function fichaRecompuesta({ resumen = true, analizar = true } = {}) {
+  const { navegador, page, v } = await abrir();
+  // Los guiones que pide la página, desde antes de entrar: para saber con qué se cargó la ficha.
+  const guiones = [];
+  page.on('request', (r) => {
+    if (r.resourceType() === 'script') guiones.push(new URL(r.url()).pathname.split('/').pop());
+  });
+  try {
+    await iniciarSesion(page, v, estado.proCorreo, FICHA_A);
+    await quieto(page, v);
+    if (resumen) await resumenPorArea(page, v, guiones);
+    if (resumen && analizar) {
+      // Cada parte responde por sus propios errores.
+      v.errores.length = 0;
+      v.malas.length = 0;
+    }
+    if (analizar) await analizarRecompuesto(page, v);
   } finally {
     await navegador.close();
   }
@@ -2335,7 +3033,8 @@ try {
   if (modo === 'capturas' || modo === 'todo') await capturas();
   if (modo === 'descartable') await descartable();
   if (modo === 'menu') await encabezadoYMenu();
-  if (modo === 'analizar') await analizarRecompuesto();
+  if (modo === 'analizar') await fichaRecompuesta({ resumen: false });
+  if (modo === 'resumen') await fichaRecompuesta({ analizar: false });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {
