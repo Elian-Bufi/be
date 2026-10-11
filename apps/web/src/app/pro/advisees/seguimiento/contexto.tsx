@@ -25,7 +25,7 @@ export interface ContextoDelSeguimiento {
   /** API-DSH-03 de la ficha (planes, objetivos, revisiones y disponibilidad por área). */
   readonly panel: PanelDelResumen;
   readonly recargarPanel: () => void;
-  /** Sube cuando cambió lo que se puede leer: las lecturas de la ficha se repiten con el acceso nuevo. */
+  /** Sube cuando cambió lo que se puede leer, y cuando se pide «Actualizar»: las lecturas de la ficha se repiten. */
   readonly versionDeAcceso: number;
   readonly asesoradoId: string;
   /**
@@ -109,19 +109,21 @@ export function motivoDeFalla(r: Resultado<unknown>): MotivoDeFalla {
   return r.status >= 500 ? 'SERVICIO' : 'OTRO';
 }
 
+/** Por qué falló una lectura y qué se puede hacer, como va después de «No pudimos cargar X». */
+const RAZON_DE_FALLA: Readonly<Record<MotivoDeFalla, string>> = {
+  LIMITE: 'hubo muchas consultas seguidas. Esperá un minuto y reintentá.',
+  RED: 'no hay conexión con BE. Revisá la conexión y reintentá.',
+  SERVICIO: 'BE no está disponible en este momento. Reintentá en unos minutos.',
+  OTRO: 'No es una ausencia de datos: reintentá.',
+};
+
 /** El texto de una falla, con lo que se puede hacer. Una falla nunca se presenta como ausencia de datos. */
 export function textoDeFalla(motivo: MotivoDeFalla, que: string): string {
-  switch (motivo) {
-    case 'LIMITE':
-      return `No pudimos cargar ${que}: hubo muchas consultas seguidas. Esperá un minuto y reintentá.`;
-    case 'RED':
-      return `No pudimos cargar ${que}: no hay conexión con BE. Revisá la conexión y reintentá.`;
-    case 'SERVICIO':
-      return `No pudimos cargar ${que}: BE no está disponible en este momento. Reintentá en unos minutos.`;
-    default:
-      return `No pudimos cargar ${que}. No es una ausencia de datos: reintentá.`;
-  }
+  return motivo === 'OTRO' ? `No pudimos cargar ${que}. ${RAZON_DE_FALLA.OTRO}` : `No pudimos cargar ${que}: ${RAZON_DE_FALLA[motivo]}`;
 }
+
+/** La misma razón, en una frase que se lee sola: para un bloque que ya dice arriba qué es lo que no cargó. */
+export const razonDeFalla = (motivo: MotivoDeFalla): string => RAZON_DE_FALLA[motivo].replace(/^./, (c) => c.toUpperCase());
 
 // ─── Lecturas de a pocas ───────────────────────────────────────────────────────────────────────
 

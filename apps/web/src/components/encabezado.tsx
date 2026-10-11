@@ -1,12 +1,16 @@
 import Link from 'next/link';
-import { SelectorDeApariencia } from './apariencia';
+import { MenuDeCuenta } from './menu-de-cuenta';
 import type { ReactNode } from 'react';
 import isotipo from '../marca/isotipo-96.png';
 
 /**
  * Encabezado de marca, el mismo en el tema claro y en el oscuro: el isotipo, «BE», la navegación de la sección cuando
- * hay sesión (B10-10 §9: navegación superior) y el aviso permanente de ambiente de prueba con datos sintéticos (08 §33).
- * «Saltar al contenido» es el primer foco de cada página (B10-10 §7): lleva al `<main id="contenido">`.
+ * hay sesión (B10-10 §9: navegación superior) y, en la esquina, el menú de la cuenta (`MenuDeCuenta`), con la apariencia
+ * adentro. «Saltar al contenido» es el primer foco de cada página (B10-10 §7): lleva al `<main id="contenido">`.
+ *
+ * WP-ESCRITORIO-AMABLE (E-19; decisión de Dirección del 2026-10-10): el aviso «Ambiente de prueba · solo datos
+ * sintéticos» ya no va en la barra. Que en `test` solo haya datos sintéticos (08 §33) se sigue diciendo donde alguien
+ * puede cargar datos por primera vez: en el pie de la cara pública (`Pie`) y en el formulario de registro.
  */
 export function Encabezado({ navegacion }: { navegacion?: ReactNode }) {
   return (
@@ -21,8 +25,7 @@ export function Encabezado({ navegacion }: { navegacion?: ReactNode }) {
         <span aria-hidden="true">BE</span>
       </Link>
       {navegacion}
-      <SelectorDeApariencia />
-      <p className="encabezado__ambiente">Ambiente de prueba · solo datos sintéticos</p>
+      <MenuDeCuenta />
     </header>
   );
 }

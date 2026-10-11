@@ -101,6 +101,13 @@ code {
   top: 0.75rem;
 }
 
+/* Un ícono de la familia (`components/icono.tsx`): toma el color del texto, no se achica en una fila flexible y queda
+   alineado con la línea de base. */
+.icono {
+  flex: none;
+  vertical-align: -0.2em;
+}
+
 /* ─── Cara pública ────────────────────────────────────────────────────── */
 /* Landing, acceso, registro y legales: un degradé moderado sobre el fondo del tema elegido. En Claro es apenas un
    velo azul; en Azul noche, el degradé navy de la referencia. Los colores salen de los tokens del tema. */
@@ -118,29 +125,152 @@ code {
   flex: 1 0 auto;
 }
 
-/* ─── Selector de apariencia (encabezado) ─────────────────────────────── */
-.apariencia {
+/* ─── El menú de la cuenta (encabezado) ───────────────────────────────── */
+/* Un solo botón en la esquina, con el lugar del retrato, que abre las opciones de la persona: los datos de la cuenta, la
+   apariencia y cerrar sesión. Sin sesión abre solo la apariencia. Reemplaza al selector suelto, que en una tablet de pie
+   le sumaba un renglón al encabezado (WP-ESCRITORIO-AMABLE; pedido de Dirección del 2026-10-10). */
+.menu-de-cuenta {
+  position: relative;
+}
+
+.menu-de-cuenta__boton {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-left: auto;
-  color: var(--encabezado-texto);
-  font-size: 0.9rem;
-}
-
-.apariencia select {
-  min-height: 36px;
-  padding: 0.25rem 0.5rem;
-  border-radius: 8px;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.25rem 0.65rem 0.25rem 0.3rem;
   border: 1px solid var(--encabezado-tenue);
-  background: var(--encabezado-fondo-2);
+  border-radius: 999px;
+  background: transparent;
   color: var(--encabezado-texto);
   font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.apariencia select:focus-visible {
-  outline: 3px solid var(--encabezado-foco);
-  outline-offset: 2px;
+.menu-de-cuenta__boton:hover,
+.menu-de-cuenta__boton[aria-expanded='true'] {
+  background: var(--encabezado-fondo-2);
+}
+
+/* El lugar del retrato: un círculo con un dibujo, hasta que BE tenga imagen de perfil. */
+.menu-de-cuenta__retrato {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--encabezado-tenue);
+  border-radius: 50%;
+}
+
+/* El panel se abre debajo del botón, sobre la página: lleva los colores de una superficie, no los del encabezado. */
+.menu-de-cuenta__panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: min(19rem, calc(100vw - 2rem));
+  padding: 0.6rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 14px;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+
+.menu-de-cuenta__panel :focus-visible {
+  outline-color: var(--foco);
+}
+
+.menu-de-cuenta__opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu-de-cuenta__opcion:hover:not(:disabled) {
+  background: var(--fondo-suave);
+}
+
+.menu-de-cuenta__opcion:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.menu-de-cuenta__opcion .nota {
+  display: block;
+  font-weight: 400;
+}
+
+.menu-de-cuenta__apariencia {
+  margin: 0;
+  padding: 0.35rem 0.6rem;
+  border: 0;
+}
+
+/* Una línea separa la apariencia de lo que tenga arriba y abajo; sola (sin sesión), no lleva líneas. */
+.menu-de-cuenta__apariencia:not(:first-child) {
+  margin-top: 0.25rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.menu-de-cuenta__apariencia:not(:last-child) {
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+/* La leyenda flota para comportarse como un título dentro del grupo, sin montarse sobre la línea de arriba. */
+.menu-de-cuenta__apariencia legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.menu-de-cuenta__tema {
+  clear: both;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Las opciones son las nativas del navegador, con el color de acento de todo el sitio. */
+.menu-de-cuenta__tema input {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+}
+
+.menu-de-cuenta__apariencia .nota {
+  margin: 0.1rem 0 0;
+}
+
+.menu-de-cuenta__panel .campo__error {
+  margin: 0.25rem 0.6rem;
 }
 
 /* ─── Encabezado de marca: navy en los dos temas ──────────────────────── */
@@ -177,12 +307,6 @@ code {
   height: 2.25rem;
 }
 
-.encabezado__ambiente {
-  margin: 0 0 0 auto;
-  font-size: 0.85rem;
-  color: var(--encabezado-tenue);
-}
-
 /* La navegación de la sección, dentro del encabezado (B10-10 §9: navegación superior). */
 .encabezado .navegacion ul {
   display: flex;
@@ -213,19 +337,57 @@ code {
   border-bottom-color: var(--cian);
 }
 
+/* El menú de la cuenta va contra la derecha de la barra, en todas las páginas, tengan o no navegación. */
+.encabezado .menu-de-cuenta {
+  margin-left: auto;
+}
+
+/* Tablet de pie (641 a 1023 px): la marca, los lugares y el menú de la cuenta en un solo renglón. Para que entren, el
+   botón de la cuenta va sin su palabra (quedan el retrato y la flecha; la palabra sigue siendo su nombre para el lector
+   de pantalla) y los lugares van un poco más juntos. Si aun así no entran, se desplazan de costado dentro de su línea:
+   la barra no se parte en dos. */
+@media (min-width: 40.0625rem) and (max-width: 63.99rem) {
+  .encabezado {
+    column-gap: 1.1rem;
+  }
+
+  .encabezado .navegacion {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .encabezado .navegacion ul {
+    flex-wrap: nowrap;
+    gap: 0 1rem;
+  }
+
+  .encabezado .navegacion a {
+    white-space: nowrap;
+  }
+
+  .menu-de-cuenta__palabra {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
 /*
  * DL-113 · en el teléfono el encabezado ocupaba cinco renglones (unos 220 px): marca, la navegación partida en dos, la
- * apariencia y el aviso de ambiente. Ahora son tres: marca y apariencia; la navegación en una sola línea, que se
- * desplaza de costado si no entra; y el aviso de ambiente, que el 08 §33 exige siempre a la vista.
+ * apariencia y el aviso de ambiente. Ahora son dos: la marca con el menú de la cuenta, y la navegación en una sola
+ * línea, que se desplaza de costado si no entra. El aviso de ambiente salió de la barra por decisión de Dirección del
+ * 2026-10-10 (WP-ESCRITORIO-AMABLE, E-19): sigue en el pie de la cara pública y en el formulario de registro.
  */
 @media (max-width: 40rem) {
   .encabezado {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
-      'marca apariencia'
-      'navegacion navegacion'
-      'ambiente ambiente';
+      'marca cuenta'
+      'navegacion navegacion';
     gap: 0.15rem 0.75rem;
     padding: 0.45rem 1rem 0.4rem;
   }
@@ -240,19 +402,9 @@ code {
     height: 2rem;
   }
 
-  .encabezado .apariencia {
-    grid-area: apariencia;
+  .encabezado .menu-de-cuenta {
+    grid-area: cuenta;
     justify-self: end;
-  }
-
-  /* La etiqueta sigue siendo el nombre accesible del selector; a la vista alcanza con el tema elegido. */
-  .encabezado .apariencia label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
   }
 
   .encabezado .navegacion {
@@ -267,13 +419,6 @@ code {
 
   .encabezado .navegacion a {
     white-space: nowrap;
-  }
-
-  .encabezado__ambiente {
-    grid-area: ambiente;
-    margin: 0;
-    font-size: 0.8rem;
-    line-height: 1.3;
   }
 
   .contenido {
@@ -330,12 +475,6 @@ code {
 /* El espacio de trabajo profesional: densidad alta permitida (B10-10 §9, «PRO desktop»). */
 .contenido--ancho {
   max-width: 76rem;
-}
-
-/* La ficha del asesorado es un tablero de escritorio: en pantallas anchas usa el ancho (el profesional trabaja en una
-   computadora; los anchos chicos solo tienen que no romperse). */
-.contenido--seguimiento {
-  max-width: 100rem;
 }
 
 .nota {
@@ -971,14 +1110,14 @@ details summary {
   display: none;
 }
 
-/* En el encabezado (un degradado de izquierda a derecha) la línea solo se desplaza en el teléfono. */
+/* En el encabezado (un degradado de izquierda a derecha) la línea solo se desplaza en el teléfono y en la tablet de pie. */
 .encabezado .desplazable-x {
   --tapa-izquierda: var(--encabezado-fondo);
   --tapa-derecha: var(--encabezado-fondo-2);
   --sombra-desplazamiento: var(--sombra-desplazamiento-sobre-navy);
 }
 
-@media (min-width: 40.0625rem) {
+@media (min-width: 64rem) {
   .encabezado .desplazable-x {
     overflow-x: visible;
     background: none;
@@ -1181,44 +1320,6 @@ details summary {
   }
 }
 
-/* Tarjetas de dominio del Resumen (B10-08 §10). Sin color de estado: el legajo prohíbe semáforo y color de riesgo. */
-/*
- * Las grillas que reparten columnas («repeat(auto-fit, minmax(Nrem, 1fr))») usan min(Nrem, 100%): con la letra grande,
- * una columna mínima en rem pasaba el ancho del teléfono y la página se desplazaba de costado (tanda del 2026-10-03).
- */
-.tarjetas-de-dominio {
-  display: grid;
-  gap: 1rem;
-  margin: 0.5rem 0 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
-}
-
-.tarjeta-de-dominio {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--borde);
-  border-top: 4px solid var(--azul);
-  border-radius: 12px;
-  padding: 0.85rem 1.1rem 1rem;
-  background: var(--superficie);
-}
-
-.tarjeta-de-dominio h3 {
-  margin: 0 0 0.5rem;
-  font-size: 1.08rem;
-}
-
-.tarjeta-de-dominio .datos dt {
-  min-width: 100%;
-  font-size: 0.88rem;
-  color: var(--tenue);
-  font-weight: 600;
-}
-
-.tarjeta-de-dominio > :last-child {
-  margin-top: auto;
-}
-
 /* ─── Landing (B10-02 §3: el estado PUBLIC) ──────────────────────────── */
 .landing {
   width: 100%;
@@ -1241,7 +1342,7 @@ details summary {
   font-weight: 800;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--cian);
+  color: var(--enlace);
 }
 
 .portada h1 {
@@ -1328,7 +1429,7 @@ details summary {
   margin-bottom: 0.75rem;
   border-radius: 12px;
   border: 1px solid var(--borde);
-  color: var(--cian);
+  color: var(--enlace);
 }
 
 .tarjeta__icono svg {
@@ -2634,50 +2735,68 @@ html:has(.acciones--fijas) {
 /* ─── Entorno profesional de seguimiento: Resumen, Línea de tiempo y Analizar (WP-DASHBOARD-PROFESIONAL) ─── */
 /* Escritorio primero (notebook), operable en tablet y teléfono: los controles se apilan, los paneles ocupan el ancho y
    solo las tablas se desplazan de costado, nunca la página (WCAG 1.4.10). Números tabulares en series y tablas. */
-.barra-del-seguimiento {
+/* El período que comparten las tres vistas: un solo control (WP-ESCRITORIO-AMABLE, C-02). A la vista dice qué período es
+   y cuántos días tiene; al abrirlo están los atajos y el rango propio. */
+.periodo-del-seguimiento {
+  position: relative;
+}
+
+.periodo-del-seguimiento__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.35rem 0.85rem;
+  border-radius: 10px;
+  border: 2px solid var(--borde-control);
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.periodo-del-seguimiento__boton strong {
+  font-weight: 650;
+}
+
+.periodo-del-seguimiento__boton:hover {
+  background: var(--fondo-suave);
+}
+
+/* El panel se abre debajo del botón, alineado a su derecha: en escritorio el período va al final de la franja. */
+.periodo-del-seguimiento__panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  width: min(34rem, calc(100vw - 2rem));
+  padding: 1rem 1.1rem 1.1rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra);
 }
 
-/* En escritorio, las pestañas y el período comparten una fila: el contenido de la vista empieza más arriba. */
-@media (min-width: 64rem) {
-  .barra-del-seguimiento {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    column-gap: 2rem;
-    border-bottom: 1px solid var(--borde);
-    margin-bottom: 0.5rem;
-  }
-
-  .barra-del-seguimiento .pestanas ul {
-    margin: 0;
-    border-bottom: 0;
-  }
-
-  .barra-del-seguimiento .periodo-del-seguimiento {
-    flex: 1 1 32rem;
-    justify-content: flex-end;
-    padding-bottom: 0.45rem;
-  }
-
-  .barra-del-seguimiento .periodo-del-seguimiento__titulo {
-    flex: 1 1 14rem;
-    text-align: right;
+/* En una ventana angosta el botón queda a la izquierda: el panel se abre desde ese lado para no salirse. */
+@media (max-width: 63.99rem) {
+  .periodo-del-seguimiento__panel {
+    right: auto;
+    left: 0;
   }
 }
 
-.periodo-del-seguimiento {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1rem;
-}
-
-.periodo-del-seguimiento__titulo {
+.periodo-del-seguimiento__titulo,
+.periodo-del-seguimiento__otro {
   margin: 0;
-  flex: 1 1 18rem;
+}
+
+.periodo-del-seguimiento__otro {
+  flex: 1 0 100%;
+  font-weight: 650;
 }
 
 .periodo-del-seguimiento__opciones {
@@ -2856,73 +2975,557 @@ html:has(.acciones--fijas) {
   gap: 1rem;
 }
 
-/*
- * Analizar es para escritorio. El orden del documento (y del teclado) es siempre: qué se elige, los gráficos, la lectura y
- * las opciones; la grilla solo los ubica, sin reordenarlos (WCAG 1.3.2 y 2.4.3).
- * - Desde 80rem (1280 px): tres columnas; la lectura queda fija al costado de los gráficos mientras se recorren las fechas.
- * - Desde 64rem (1024 px): dos columnas; la lectura, debajo de los gráficos.
- * - Más angosto (no es el objetivo): una columna, sin desbordes.
- */
-.analizar__cuerpo {
+/* ─── Analizar, recompuesto (WP-ESCRITORIO-AMABLE, parte 2) ─────────────────────── */
+/* La configuración es una barra de tres renglones cortos (la pregunta, las métricas y los modos); debajo, dos tarjetas:
+   los gráficos y la lectura de la fecha elegida. Lo demás queda a un clic: en «Más acciones» y en el pie de los
+   gráficos. El orden del documento es el que se ve: pregunta, métricas, modos, gráficos, lectura (WCAG 1.3.2 y 2.4.3).
+   Son clases nuevas (E-02): las de la composición anterior (`.analizar__cuerpo` y sus zonas) ya no se usan. */
+
+/* Con gráficos, la vista deja de ser una sola tarjeta: su título es la pregunta, sobre el fondo de la página, y los
+   gráficos y la lectura son dos tarjetas. La entrada y las respuestas sin gráficos siguen en su tarjeta. */
+.seccion.analizar--sin-tarjeta {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.pregunta-en-curso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  min-height: 3rem;
+}
+
+.pregunta-en-curso h2 {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.25;
+}
+
+/* La bajada (los datos de la pregunta, o qué es una comparación libre) va al lado del título; si no entra, baja. */
+.pregunta-en-curso__detalle {
+  flex: 1 1 14rem;
+  min-width: 0;
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.94rem;
+}
+
+.pregunta-en-curso__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+/* Las métricas elegidas, que también son la leyenda: la muestra, el nombre y quitar. */
+.metricas-elegidas.metricas-elegidas--amable {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.metricas-elegidas.metricas-elegidas--amable li {
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 0.2rem 0 0.75rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  font-weight: 600;
+}
+
+.metricas-elegidas--amable .quitar-metrica {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--tenue);
+  cursor: pointer;
+}
+
+.metricas-elegidas--amable .quitar-metrica:hover {
+  background: var(--fondo-suave);
+  color: var(--texto);
+}
+
+.metricas-elegidas__cupo {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+/* Los modos: dos grupos de opciones, dibujados como controles segmentados, y a la derecha el motivo si algo no está. */
+.modos-de-analizar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.modos-de-analizar__aviso {
+  flex: 1 1 18rem;
+  min-width: 0;
+  margin: 0 0 0 auto;
+  color: var(--tenue);
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+/* Un control segmentado: un grupo de opciones nativas (una elegida), dibujado como una fila de segmentos. La elegida va
+   llena, con el color del texto: se distingue por su relleno, no por un matiz. La que no está disponible se apaga y dice
+   por qué al lado. */
+.segmentos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.6rem;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.segmentos > legend {
+  float: left;
+  padding: 0;
+  margin-right: 0.1rem;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.segmentos__fila {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+}
+
+.segmento {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 41px;
+  padding: 0 0.9rem;
+  border-left: 1.5px solid var(--borde-control);
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.segmento:first-child {
+  border-left: 0;
+}
+
+/* La opción nativa cubre el segmento entero, invisible: el teclado, el lector de pantalla y el clic son los de siempre. */
+.segmento input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmento:has(input:checked) {
+  background: var(--texto);
+  color: var(--superficie);
+}
+
+.segmento:has(input:disabled) {
+  background: var(--fondo-suave);
+  color: var(--tenue);
+  font-weight: 500;
+}
+
+.segmento:has(input:disabled) input {
+  cursor: not-allowed;
+}
+
+.segmento:has(input:focus-visible) {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+/* Los gráficos y la lectura. Desde 1024 px, al costado; más angosto, la lectura debajo. */
+.analizar__dos-columnas {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'seleccion' 'lienzo' 'lectura' 'opciones';
   gap: 1rem;
+  align-items: start;
+  margin-top: 0.7rem;
 }
 
 @media (min-width: 64rem) {
-  .analizar__cuerpo {
-    grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr);
-    grid-template-areas: 'seleccion lienzo' 'opciones lienzo' 'opciones lectura';
-    grid-template-rows: auto 1fr auto;
-    align-items: start;
-    column-gap: 1.5rem;
+  .analizar__dos-columnas {
+    grid-template-columns: minmax(0, 1fr) 20rem;
   }
 }
 
 @media (min-width: 80rem) {
-  .analizar__cuerpo {
-    grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr) minmax(16rem, 21rem);
-    grid-template-areas: 'seleccion lienzo lectura' 'opciones lienzo lectura';
-    grid-template-rows: auto 1fr;
-  }
-
-  .analizar__lectura {
-    position: sticky;
-    top: 1rem;
-    max-height: calc(100vh - 2rem);
-    overflow-y: auto;
+  .analizar__dos-columnas {
+    grid-template-columns: minmax(0, 1fr) 21rem;
   }
 }
 
-.analizar__seleccion,
-.analizar__opciones {
+.tarjeta-de-graficos,
+.tarjeta-de-lectura {
+  min-width: 0;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.tarjeta-de-graficos {
+  padding: 0.5rem 1rem 0.4rem;
+}
+
+/* Dentro de la tarjeta, los paneles no llevan su propio recuadro: los separa una línea. */
+.tarjeta-de-graficos .grafico__lienzo {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+.tarjeta-de-graficos .paneles-sincronizados {
+  gap: 0;
+}
+
+.tarjeta-de-graficos .paneles-sincronizados .grafico + .grafico {
+  margin-top: 0.15rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid var(--borde);
+}
+
+.pie-de-graficos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 1.4rem;
+  min-height: 2.5rem;
+  margin-top: 0.15rem;
+}
+
+.pie-de-graficos .boton--enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+}
+
+/* El enlace de lo que está abierto debajo queda marcado: color del texto y subrayado más grueso. */
+.pie-de-graficos .boton--enlace[aria-expanded='true'] {
+  color: var(--texto);
+  text-decoration-thickness: 2px;
+}
+
+.pie-de-graficos__limite {
+  margin: 0 0 0 auto;
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+/* Lo que abre un enlace del pie (la tabla, el resumen en texto, los hitos, las etapas) va debajo de la tarjeta. */
+.bajo-los-graficos {
+  margin-top: 0.75rem;
+  padding: 0.8rem 1rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.tarjeta-de-lectura {
+  padding: 0.85rem 1.1rem 1rem;
+}
+
+.tarjeta-de-lectura h3 {
+  margin: 0;
+}
+
+.lectura__paso {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.lectura__paso .boton {
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 0.2rem;
+  padding-inline: 0.35rem;
+  justify-content: center;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.dato-de-lectura {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.dato-de-lectura p {
+  margin: 0;
+}
+
+.dato-de-lectura__nombre {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.dato-de-lectura__valor {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.dato-de-lectura__valor small {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--tenue);
+}
+
+.dato-de-lectura__nota {
+  color: var(--tenue);
+  font-size: 0.94rem;
+}
+
+.dato-de-lectura__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.5rem;
+  margin-top: 0.15rem;
+}
+
+.dato-de-lectura__pie .boton--enlace {
+  margin-left: auto;
+}
+
+/* «Ir a una fecha»: la alternativa a elegirla sobre un gráfico o con las flechas (WCAG 2.5.7), en un renglón. */
+.tarjeta-de-lectura .lectura__fecha {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+}
+
+.tarjeta-de-lectura .lectura__fecha label {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tarjeta-de-lectura .lectura__fecha input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 40px;
+}
+
+.dato-de-lectura__punto + .dato-de-lectura__punto {
+  margin-top: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px dashed var(--borde);
+}
+
+.dato-de-lectura__clase {
+  color: var(--tenue);
+  font-size: 0.9rem;
+}
+
+/* Una etiqueta con ícono: la clase de un dato («Medido», «Reportado», «Calculado»). No es un botón ni un estado. */
+.etiqueta-de-dato {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 6px;
+  background: var(--fondo-suave);
+  font-size: 0.86rem;
+  line-height: 1.45rem;
+  white-space: nowrap;
+}
+
+/* «Más acciones»: un panel que se despliega bajo la barra, con lo que se usa de vez en cuando. */
+.mas-acciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin-top: 0.6rem;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.mas-acciones > * {
+  min-width: 0;
+}
+
+/* Cada grupo arranca a la misma altura y se lee de arriba abajo: sin los márgenes de cuando estaban apilados, y con
+   los plegables y los enlaces del alto de un objetivo (I.5). */
+.mas-acciones > .vistas-guardadas,
+.mas-acciones .intervalo,
+.mas-acciones p {
+  margin: 0;
+}
+
+.mas-acciones .vistas-guardadas > summary,
+.mas-acciones .intervalo > summary {
+  padding: 0.625rem 0;
+}
+
+.mas-acciones .exportar .nota {
+  margin-top: 0.5rem;
+}
+
+.mas-acciones .boton--enlace {
+  min-height: 44px;
+  text-align: left;
+}
+
+/* Las capas, sin su recuadro: adentro de un panel, un recuadro más era ruido. */
+.mas-acciones .capas {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 0;
+  padding: 0;
+  border: 0;
+}
+
+.mas-acciones .capas legend {
+  padding: 0.625rem 0 0;
+}
+
+/* Mientras su panel está abierto, el botón queda marcado por el borde (más grueso), no solo por el color. */
+.pregunta-en-curso__acciones .boton[aria-expanded='true'] {
+  border-color: var(--texto);
+  background: var(--fondo-suave);
+  box-shadow: inset 0 0 0 1px var(--texto);
+}
+
+/* El aro de la fecha elegida no recibe el puntero: rodea a la marca, que es la que se toca. */
+.grafico__aro {
+  pointer-events: none;
+}
+
+/* Los datos de una pregunta que ya tiene gráficos («Cambiar los datos»): sobre el fondo de la página, son una tarjeta. */
+.analizar--sin-tarjeta > .parametros-de-pregunta {
+  margin: 0.6rem 0 0.4rem;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+/* La respuesta que va arriba de los gráficos (las dos etapas y su tabla) es una tarjeta más, sobre el fondo. */
+.tarjeta-de-respuesta {
+  margin-top: 0.6rem;
+  padding: 0.6rem 1rem 0.5rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+/* La barra: las métricas elegidas con «Agregar una métrica» al final de su fila, y debajo los modos. */
+.barra-de-analizar {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  min-width: 0;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
 }
 
-.analizar__seleccion {
-  grid-area: seleccion;
+.barra-de-analizar .selector-de-metricas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
 }
 
-.analizar__opciones {
-  grid-area: opciones;
-}
-
-.analizar__lienzo {
-  grid-area: lienzo;
-  min-width: 0;
-}
-
-.analizar__lectura {
-  grid-area: lectura;
-  min-width: 0;
-}
-
-.analizar__lectura .panel-de-lectura {
+.barra-de-analizar .metricas-elegidas--amable,
+.barra-de-analizar .modos-de-analizar,
+.barra-de-analizar .agregar {
   margin: 0;
+}
+
+/* «Agregar una métrica» es un lugar vacío más de la fila: por eso el borde discontinuo. Abierto, ocupa su renglón. */
+.barra-de-analizar .agregar > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 0.8rem;
+  border: 1.5px dashed var(--borde-control);
+  border-radius: 10px;
+  color: var(--enlace);
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.barra-de-analizar .agregar > summary::-webkit-details-marker {
+  display: none;
+}
+
+.barra-de-analizar .agregar[open] {
+  flex: 1 0 100%;
+}
+
+.barra-de-analizar .agregar[open] > summary {
+  margin-bottom: 0.5rem;
+}
+
+/* Por qué un modo no está disponible o qué métrica no admite la agrupación: una lista corta, al final de la barra. */
+ul.modos-de-analizar__aviso {
+  list-style: none;
+  padding: 0;
+  text-align: right;
+}
+
+/* La pregunta en curso no es un recuadro: es el título de la vista (`.pregunta-activa` solo la señala). */
+.pregunta-en-curso p {
+  margin: 0;
+}
+
+.pregunta-en-curso__limite {
+  margin: 0.35rem 0 0.5rem;
+}
+
+.pregunta-en-curso .boton {
+  gap: 0.4rem;
+}
+
+.tarjeta-de-graficos > .nota:first-child,
+.tarjeta-de-graficos > p:first-child {
+  margin-top: 0.35rem;
+}
+
+.tarjeta-de-graficos .leyenda {
+  margin: 0.2rem 0 0;
 }
 
 .agregar > summary,
@@ -2967,7 +3570,6 @@ html:has(.acciones--fijas) {
 
 .presets ul,
 .preguntas,
-.recientes,
 .lista-de-vistas {
   list-style: none;
   margin: 0.25rem 0;
@@ -2997,22 +3599,46 @@ html:has(.acciones--fijas) {
   margin: 0 0 0.25rem 1.75rem;
 }
 
-/* La referencia del cambio relativo: la vigente, qué la cambia y el editor, uno debajo del otro (DL-126). */
+/* La referencia del cambio relativo (DL-126): un renglón bajo los modos, con la vigente y «Cambiar la referencia»; el
+   editor se abre debajo. */
 .referencia-del-cambio {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.75rem;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .referencia-del-cambio p {
-  margin: 0.25rem 0 0;
+  margin: 0;
+}
+
+.referencia-del-cambio .referencia-vigente {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.94rem;
+}
+
+.referencia-del-cambio .referencia-vigente strong {
+  color: var(--texto);
 }
 
 .referencia-del-cambio__editor {
-  align-self: stretch;
+  flex: 1 0 100%;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+/* La base de cada métrica, debajo del gráfico del cambio relativo. */
+.tarjeta-de-graficos .referencias {
+  margin: 0.3rem 0 0;
+  color: var(--tenue);
+  font-size: 0.9rem;
 }
 
 .referencia-vigente {
@@ -3028,6 +3654,78 @@ html:has(.acciones--fijas) {
 .grafico__titulo {
   font-weight: 700;
   margin: 0.5rem 0 0.25rem;
+}
+
+/* ─── El encabezado de un gráfico de «Analizar» (WP-ESCRITORIO-AMABLE, parte 2) ─────────── */
+/* En una línea: la muestra y el nombre de la métrica, qué es cada punto y su unidad, la muestra de lo planificado y, a la
+   derecha, la cobertura. Si no entra, la cobertura baja a su propia línea: su texto es del dominio y no se recorta. */
+.grafico__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 1.1rem;
+  margin: 0.25rem 0 0.1rem;
+}
+
+.grafico__encabezado .grafico__titulo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 0.45rem;
+  margin: 0;
+  font-weight: 400;
+}
+
+.grafico__encabezado .grafico__titulo strong {
+  font-weight: 700;
+}
+
+.grafico__detalle,
+.grafico__muestra,
+.grafico__cobertura {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+.grafico__muestra {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.grafico__muestras {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 1rem;
+}
+
+.grafico__cobertura {
+  margin-left: auto;
+  text-align: right;
+}
+
+/* La muestra de «sin registros»: el mismo gris leve que sombrea esos días en el gráfico, con un borde para que se vea
+   aunque sea chica. */
+.muestra-de-hueco {
+  display: inline-block;
+  flex: none;
+  width: 0.65rem;
+  height: 0.95rem;
+  margin-right: 0.3rem;
+  vertical-align: -0.15em;
+  border: 1px solid var(--borde-control);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--grafico-hueco) 30%, transparent);
+}
+
+/* El nombre al final de una línea, cuando varias métricas comparten el gráfico: no se elige ni tapa el puntero. */
+.grafico__nombre-de-linea {
+  pointer-events: none;
+}
+
+/* Paneles apilados con un solo eje de fechas: van pegados, para leerse como un mismo gráfico. */
+.paneles-sincronizados .grafico {
+  margin: 0;
 }
 
 .panel-de-lectura .acciones {
@@ -3049,73 +3747,8 @@ html:has(.acciones--fijas) {
   margin: 0.15rem 0;
 }
 
-.tabla--numeros td,
-.cobertura dd,
-.indicador__valor {
+.tabla--numeros td {
   font-variant-numeric: tabular-nums;
-}
-
-.indicadores {
-  list-style: none;
-  margin: 0.5rem 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: 0.75rem;
-}
-
-.indicador {
-  border: 1px solid var(--borde);
-  border-radius: 10px;
-  padding: 0.6rem 0.85rem;
-  background: var(--fondo-suave);
-}
-
-.indicador h3 {
-  margin: 0 0 0.25rem;
-  font-size: 1rem;
-}
-
-.indicador__valor {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0.15rem 0;
-}
-
-.editor-de-indicadores {
-  margin-top: 0.75rem;
-}
-
-.cobertura {
-  margin: 0;
-}
-
-/* Lo que pasó en el período: cobertura y últimos hechos, lado a lado en escritorio. */
-.resumen__periodo {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-@media (min-width: 64rem) {
-  .resumen__periodo {
-    display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    align-items: start;
-  }
-}
-
-.cobertura div {
-  padding: 0.35rem 0;
-  border-top: 1px solid var(--borde);
-}
-
-.cobertura dt {
-  font-weight: 700;
-}
-
-.cobertura dd {
-  margin: 0.15rem 0 0;
 }
 
 .como-se-calcula,
@@ -3193,40 +3826,74 @@ html:has(.acciones--fijas) {
    pero no se rompe: todo se apila y solo las tablas se desplazan de costado. Superficies mates: color plano, borde fino,
    sin brillo, vidrio ni degradé (los degradés son de la cara pública y de la barra de marca). */
 
-.ficha__cabecera {
-  display: grid;
-  gap: 0.25rem 1.5rem;
-  grid-template-columns: minmax(0, 1fr);
-  padding: 0.25rem 0 0.75rem;
+/* El marco de la ficha (WP-ESCRITORIO-AMABLE, parte 1): una franja de lado a lado, pegada a la barra de marca, con lo
+   que no cambia al pasar de una vista a otra: quién es, el acceso actual, las tres vistas y el período. El cuerpo de cada
+   vista va debajo, sobre el fondo de la página. */
+.contenido--ficha {
+  max-width: none;
+  padding: 0 0 4rem;
+}
+
+.marco-de-la-ficha {
+  background: var(--superficie);
   border-bottom: 1px solid var(--borde);
 }
 
-@media (min-width: 64rem) {
-  .ficha__cabecera {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-  }
-
-  .ficha__cabecera > .nota {
-    grid-column: 1 / -1;
-  }
+.marco-de-la-ficha__ancho,
+.ficha__cuerpo {
+  width: 100%;
+  max-width: 100rem;
+  margin: 0 auto;
+  padding-inline: clamp(1rem, 3vw, 2rem);
 }
 
-.ficha__cabecera h1 {
+.ficha__cuerpo {
+  padding-top: 1.25rem;
+}
+
+/* Primer renglón: quién es, pedir contexto y, a la derecha, «Actualizar» con la hora de la consulta. Con un nombre largo
+   o una ventana angosta, lo que no entra baja: nada se corta ni se achica. */
+.marco-de-la-ficha__persona {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 1rem;
+  padding-top: 0.55rem;
+}
+
+/* Segundo renglón: el acceso actual y, si corresponde, el aviso de vista parcial. */
+.marco-de-la-ficha__estado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1.5rem;
+  min-height: 2rem;
+  padding-block: 0.25rem 0.3rem;
+}
+
+.marco-de-la-ficha h1 {
   margin: 0;
   font-size: 1.6rem;
-  grid-column: 1;
+  line-height: 1.2;
 }
 
 .ficha__acceso {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.35rem 1rem;
-  grid-column: 1 / -1;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.94rem;
+}
+
+.ficha__acceso .insignia {
+  font-size: inherit;
 }
 
 .ficha__acceso-titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   margin: 0;
 }
 
@@ -3235,52 +3902,79 @@ html:has(.acciones--fijas) {
   margin: 0;
 }
 
+/* «Actualizar» y la hora ocupan lo que queda del primer renglón, contra la derecha. Si el lugar no alcanza (una tablet
+   de pie, un nombre largo), el grupo no baja entero: la hora pasa debajo del botón. */
 .ficha__consulta {
+  display: flex;
+  flex: 1 1 9.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.15rem 0.75rem;
+}
+
+.marco-de-la-ficha__aviso {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+/* Las tres vistas y, a la derecha, el período. Las pestañas tocan el borde de la franja. */
+.marco-de-la-ficha__vistas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.25rem 1.5rem;
+}
+
+/* Las pestañas se achican hasta el ancho que haya y, si no entran, se desplazan de costado dentro de su línea. */
+.marco-de-la-ficha__vistas .pestanas {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.marco-de-la-ficha__vistas .pestanas ul {
+  margin: 0;
+  border-bottom: 0;
+  gap: 0 1.9rem;
+}
+
+.marco-de-la-ficha .desplazable-x {
+  --tapa-izquierda: var(--superficie);
+  --tapa-derecha: var(--superficie);
+}
+
+.marco-de-la-ficha__vistas .pestanas a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0 0.7rem;
+}
+
+.marco-de-la-ficha__derecha {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.5rem 1.25rem;
+  padding-bottom: 0.35rem;
 }
 
-/* Objetivo y planificación del Resumen: una fila por área, con las mismas columnas en todas. Para que la síntesis entre
-   en la primera pantalla cambió la composición (textos de una línea, sin metadatos repetidos), no la letra (GUIA I.5). */
-.tabla-de-planificacion {
-  margin: 0.25rem 0 0;
+/* Una acción secundaria sin acento: contorno y texto del color del texto. El acento queda para lo que se elige. */
+.boton--quieto {
+  background: var(--superficie);
+  color: var(--texto);
+  border-color: var(--borde-control);
 }
 
-/* En la fila de Antropometría, lo secundario sigue en la misma línea: es una sola toma, no una lista. */
-.tabla-de-planificacion .dato-secundario--en-linea {
-  display: inline;
+.boton--quieto:hover:not(:disabled) {
+  background: var(--fondo-suave);
 }
 
 /* La ficha: menos aire entre secciones que en el resto del website, para que lo principal entre sin desplazarse. */
-.ficha.secciones {
+.ficha__cuerpo.secciones {
   gap: 1rem;
-}
-
-.tabla-de-planificacion th,
-.tabla-de-planificacion td {
-  padding: 0.45rem 0.6rem;
-}
-
-.tabla-de-planificacion th[scope='row'] {
-  white-space: nowrap;
-  width: 7.5rem;
-}
-
-/* La planificación lleva más texto (lo vigente, lo que rigió antes y el borrador): un poco más de ancho. */
-.tabla-de-planificacion td:nth-of-type(1),
-.tabla-de-planificacion td:nth-of-type(3) {
-  width: 29%;
-}
-
-.tabla-de-planificacion td:nth-of-type(2) {
-  width: 36%;
-}
-
-.tabla-de-planificacion tbody tr:last-child th,
-.tabla-de-planificacion tbody tr:last-child td {
-  border-bottom: none;
 }
 
 /* La información para revisar: una columna por área en escritorio. */
@@ -3313,155 +4007,780 @@ html:has(.acciones--fijas) {
   gap: 0.1rem;
 }
 
-/* Lo que acompaña a un dato en su misma entrada (lo que rigió en el período, la próxima revisión): a la vista, en su
-   propio renglón y con menos peso. No es una explicación plegable: es contexto para decidir (GUIA-UX-UI I.2). */
-.dato-secundario {
-  display: block;
-  color: var(--tenue);
-  font-size: 0.95rem;
+/* ─── El Resumen por área (WP-ESCRITORIO-AMABLE, parte 3; C-03) ───────────────────────────────── */
+/* Una tarjeta por área, las preguntas y los indicadores, con poco aire entre bloques: lo que entra en la primera
+   pantalla es lo que el profesional encuentra sin desplazarse. Más angosto que 1024 px, todo en una columna, en el
+   orden del documento. */
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
-/* «Para tu próxima revisión» y las acciones, lado a lado en escritorio. */
-.resumen__revision {
+.areas {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 1.25rem;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
+/* En 1024: dos áreas por fila y la tercera debajo, de lado a lado (es la más corta: no deja un hueco a su costado). Con
+   dos áreas, las preguntas van en su propio renglón. */
 @media (min-width: 64rem) {
-  .resumen__revision {
-    grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  .areas:not([data-areas='1']) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .areas[data-areas='3'] > .area:last-child,
+  .areas[data-areas='2'] > .preguntas-del-resumen {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Desde 1280: tres columnas. Con dos áreas, las preguntas ocupan la tercera. */
+@media (min-width: 80rem) {
+  .areas:not([data-areas='1']) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .areas[data-areas='3'] > .area:last-child,
+  .areas[data-areas='2'] > .preguntas-del-resumen {
+    grid-column: auto;
+  }
+}
+
+/* Una sola área: su tarjeta a la izquierda; los indicadores y las preguntas, al costado. */
+@media (min-width: 64rem) {
+  .resumen--una-area {
+    display: grid;
+    grid-template-columns: minmax(0, 28rem) minmax(0, 1fr);
     align-items: start;
   }
 }
 
-.observaciones {
-  list-style: none;
-  margin: 0.5rem 0 0.75rem;
-  padding: 0;
+.resumen__costado {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  counter-reset: observacion;
+  min-width: 0;
 }
 
-.observacion {
-  border-left: 3px solid var(--borde-control);
-  padding: 0.15rem 0 0.15rem 0.85rem;
+/* La tarjeta de un área. La acción va siempre al pie: en una fila de tarjetas, los botones quedan a la misma altura. */
+.area {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0.7rem 1.15rem 0.85rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
 }
 
-.observacion[data-prioridad='1'] {
-  border-left-color: var(--texto);
+.area__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 0.75rem;
+  margin-bottom: 0.2rem;
 }
 
-.observacion p {
-  margin: 0.1rem 0;
+.area__cabecera h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-size: 1.2rem;
 }
 
-.observacion__alcance {
-  font-size: 0.9rem;
+/* El enlace conserva sus 44 px para tocar; el margen negativo deja el renglón del alto de su título. */
+.area__abrir {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.75rem;
+  margin: -0.45rem 0;
+  font-weight: 600;
+}
+
+/* Con qué se trabaja: el rótulo a la izquierda (todos del ancho del más largo de la tarjeta) y el dato a su derecha.
+   Cada par es un grupo de la lista; la grilla es una sola, para que los datos empiecen en la misma columna. */
+.area__contexto {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.3rem 0.75rem;
+  align-items: baseline;
+  margin: 0;
+}
+
+.area__contexto > div {
+  display: contents;
+}
+
+/* Los cuatro números del objetivo van de lado a lado de la tarjeta, debajo de su rótulo. */
+.area__tira > dd {
+  grid-column: 1 / -1;
+}
+
+.area__contexto dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   color: var(--tenue);
+  font-weight: 600;
 }
 
-.observacion__texto {
-  font-size: 1.02rem;
+.area__contexto dt .icono {
+  flex: none;
 }
 
-.observacion__pie {
+.area__contexto dd {
+  min-width: 0;
+  margin: 0;
+}
+
+.area__contexto .boton--enlace {
+  vertical-align: baseline;
+}
+
+/* Un enunciado largo no empuja lo demás fuera de la pantalla: tres renglones a la vista; entero, al abrir el área. */
+.area__enunciado {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.area__desde {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.area__sin-datos {
+  margin: 0.25rem 0 0.5rem;
+}
+
+/* La tira del objetivo del día: calorías y macros, de a dos por renglón. El número pesa; la palabra lo nombra. */
+.tira-del-objetivo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.15rem 1rem;
+  margin: 0;
+}
+
+.tira-del-objetivo > div {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.25rem 0.75rem;
+  gap: 0 0.45rem;
+  min-width: 0;
 }
 
-.observaciones__fallas {
-  margin: 0.5rem 0;
+.tira-del-objetivo dt {
+  color: var(--texto);
+  font-weight: 400;
 }
 
-.acciones-del-resumen__lista {
+.tira-del-objetivo dd {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tira-del-objetivo__falla {
+  margin: 0.3rem 0 0;
+}
+
+/* Los hechos del área: lo pendiente, lo nuevo desde su revisión y lo del período. */
+.area__hechos {
+  margin-top: 0.45rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--borde);
+}
+
+/* Sobre qué alcance hablan los renglones que siguen («Desde la revisión del 20 sept · aplicada») y, a la derecha, la
+   próxima revisión acordada cuando no es un pendiente: el ciclo de revisiones del área, en una línea si entra. */
+.area__corte {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 1rem;
+  margin: 0.3rem 0 0.05rem;
+  font-size: 0.95rem;
+}
+
+.observaciones {
   list-style: none;
-  margin: 0.25rem 0 0;
+  margin: 0;
   padding: 0;
+}
+
+/* El separador es una sombra, que no ocupa lugar. */
+.observacion + .observacion {
+  box-shadow: 0 -1px 0 var(--borde);
+}
+
+/* Un hecho: el renglón entero abre su evidencia. */
+.observacion__fila {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.3rem;
+  border-radius: 8px;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+a.observacion__fila:hover {
+  background: var(--fondo-suave);
+}
+
+a.observacion__fila:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+.observacion__fila > .icono {
+  flex: none;
+  color: var(--tenue);
+}
+
+.observacion__cuerpo {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.observacion__texto,
+.observacion__detalles,
+.observacion__cuenta,
+.observacion__frase {
+  display: block;
+}
+
+/* La cifra adelante, siempre en la misma columna: las cuentas de una tarjeta se leen de un vistazo. */
+.observacion .cifra {
+  display: inline-block;
+  min-width: 2.1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.observacion__cuenta ~ .observacion__frase {
+  padding-left: calc(2.1rem + 0.27em);
+}
+
+/* Lo pendiente se reconoce por su ícono y por su peso, no por un color. */
+.observacion[data-prioridad='1'] .observacion__frase {
+  font-weight: 650;
+}
+
+.observacion__detalles {
+  margin-top: 0.15rem;
+}
+
+.observacion__detalle {
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+.observacion__detalle .cifra {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Una parte que no se pudo leer: primero, y en la tarjeta de su área. */
+.observaciones__fallas {
+  margin: 0.3rem 0 0.2rem;
+}
+
+.observaciones__fallas .estado-de-grafico {
+  margin: 0;
+}
+
+.observaciones__falla {
+  display: block;
+  color: var(--texto);
+  font-weight: 650;
+}
+
+/* Lo del período, plegado cuando hay revisión: el título del grupo es lo que se toca para verlo. */
+.area__periodo > summary {
+  padding: 0.7rem 0.3rem;
+  border-radius: 8px;
+  color: var(--enlace);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.area__periodo > summary:hover {
+  background: var(--fondo-suave);
+}
+
+.area__accion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.9rem;
+  margin-top: auto;
+  padding-top: 0.55rem;
+}
+
+.area__accion .boton {
+  gap: 0.5rem;
+}
+
+/* ─── Empezar por una pregunta, desde el Resumen ─────────────────────────────────────────────── */
+/* Según el ancho que le toque: angosta (el lugar libre al lado de una tarjeta, o una ventana chica), es una tarjeta con
+   las preguntas una debajo de la otra; ancha, una franja de un solo renglón sobre el fondo de la página. */
+.preguntas-del-resumen {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.preguntas-del-resumen__caja {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.4rem;
+  height: 100%;
+  padding: 0.85rem 1.15rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
 }
 
-.acciones-del-resumen__lista .boton {
-  width: 100%;
-  justify-content: flex-start;
+.preguntas-del-resumen h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.15rem;
+  font-size: 1.05rem;
+  line-height: 1.25;
 }
 
-.acciones-del-resumen__lista .nota {
-  margin: 0.25rem 0 0;
-}
-
-/* La entrada por preguntas en el Resumen: enlaces en lista, con el alto táctil del website. */
-.preguntas-del-resumen {
-  margin-top: 1rem;
-}
-
-.preguntas-del-resumen h3 {
-  margin: 0 0 0.25rem;
-  font-size: 1rem;
+.preguntas-del-resumen h2 .icono {
+  flex: none;
+  color: var(--tenue);
 }
 
 .preguntas-del-resumen__lista {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
 }
 
-.preguntas-del-resumen__lista a,
-.preguntas-del-resumen p a {
+.preguntas-del-resumen__lista > li {
+  display: flex;
+}
+
+.preguntas-del-resumen__lista a {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--enlace);
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.preguntas-del-resumen__lista a:hover {
+  background: var(--fondo-suave);
+}
+
+.preguntas-del-resumen__mas {
+  align-self: flex-start;
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
+  font-weight: 600;
 }
 
-.preguntas-del-resumen p {
-  margin: 0;
-}
-
-/* Preguntas profesionales: tarjetas que se eligen con un botón (todo el bloque es el objetivo). */
-.preguntas-profesionales__lista {
-  list-style: none;
-  margin: 0.5rem 0;
-  padding: 0;
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: minmax(0, 1fr);
-}
-
-@media (min-width: 64rem) {
-  .preguntas-profesionales__lista {
+@container (min-width: 36rem) {
+  .preguntas-del-resumen__lista {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-.tarjeta-de-pregunta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  width: 100%;
-  min-height: 2.75rem;
-  text-align: left;
-  font: inherit;
-  color: var(--texto);
-  background: var(--fondo-suave);
+@container (min-width: 66rem) {
+  .preguntas-del-resumen__caja {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .preguntas-del-resumen h2 {
+    flex: none;
+    max-width: 9.5rem;
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .preguntas-del-resumen__lista {
+    flex: 1 1 auto;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+
+  .preguntas-del-resumen__mas {
+    flex: none;
+    align-self: center;
+  }
+}
+
+/* ─── Los indicadores del Resumen ────────────────────────────────────────────────────────────── */
+.indicadores-del-resumen {
+  min-width: 0;
+}
+
+.indicadores-del-resumen > .encabezado-de-bloque {
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 0 0.9rem;
+  margin-bottom: 0.3rem;
+}
+
+.indicadores-del-resumen h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.indicadores-del-resumen .metadatos {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+/* El enlace es chico a la vista y cómodo de tocar: el relleno agranda lo que se toca sin mover lo demás. */
+.indicadores-del-resumen > .encabezado-de-bloque > .boton--enlace {
+  margin: -0.6rem 0;
+  padding: 0.6rem 0;
+}
+
+.indicadores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 48rem) {
+  .indicadores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 80rem) {
+  .resumen:not(.resumen--una-area) .indicadores {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.indicador {
+  min-width: 0;
+  padding: 0.65rem 1rem 0.8rem;
   border: 1px solid var(--borde);
-  border-radius: 10px;
-  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.indicador h3 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+/* El nombre del indicador abre su gráfico en «Analizar»: el renglón entero se toca y la flecha lo dice. */
+.indicador__analizar {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: -0.3rem -0.4rem 0;
+  padding: 0.3rem 0.4rem;
+  border-radius: 8px;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.indicador__analizar:hover {
+  background: var(--fondo-suave);
+}
+
+.indicador__analizar:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+.indicador__analizar .icono {
+  flex: none;
+  margin-top: 0.05rem;
+}
+
+.indicador__analizar .icono:last-child {
+  color: var(--tenue);
+}
+
+.indicador__nombre {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.indicador__dato {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.1rem 0.5rem;
+  margin-top: 0.1rem;
+}
+
+.indicador__valor {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.indicador__valor small {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.indicador__regla,
+.indicador__cobertura,
+.indicador__nota {
+  margin: 0.15rem 0 0;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.indicador__cobertura {
+  margin-top: 0.3rem;
+  color: var(--texto);
+  font-variant-numeric: tabular-nums;
+}
+
+.minigrafico {
+  margin-top: 0.35rem;
+}
+
+.minigrafico svg {
+  display: block;
+}
+
+.indicador .estado-de-grafico {
+  margin: 0.5rem 0 0;
+}
+
+/* La muestra de la línea punteada que marca, en el gráfico chico, desde cuándo rige el plan. */
+.muestra-de-inicio {
+  display: inline-block;
+  flex: none;
+  width: 0;
+  height: 0.95rem;
+  margin: 0 0.45rem 0 0.2rem;
+  vertical-align: -0.15em;
+  border-left: 2px dashed var(--borde-control);
+}
+
+.indicadores__sin-mas {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 0.6rem 0 0;
+  color: var(--tenue);
+}
+
+.indicadores__sin-mas .icono {
+  flex: none;
+}
+
+.indicadores__sin-mas strong {
+  color: var(--texto);
+}
+
+.editor-de-indicadores {
+  margin-top: 0.75rem;
+  background: var(--superficie);
+}
+
+/* Lo que no es de un área sola, al final y sin peso. */
+.resumen__tardias {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.resumen__tardias .icono {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+/* En «Cómo se lee esta vista», de dónde sale cada hecho del Resumen: una vez por regla, no en cada renglón. Es
+   material de consulta: va plegado, para que la ayuda entre en la ventana. */
+.como-se-lee__fuentes {
+  margin-top: 0.75rem;
+}
+
+.como-se-lee__fuentes > summary {
+  padding: 0.6rem 0.2rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.como-se-lee__fuentes > dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem 2rem;
+  margin: 0.2rem 0 0;
+}
+
+@media (min-width: 64rem) {
+  .como-se-lee__fuentes > dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* El título recibe el foco al abrir, para que la ayuda se lea desde el principio: no es un control y no lleva aro. */
+.como-se-lee h2:focus {
+  outline: none;
+}
+
+.como-se-lee__fuentes dt {
+  font-weight: 650;
+}
+
+.como-se-lee__fuentes dd {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.94rem;
+}
+
+/* ─── La entrada de Analizar: «¿Qué querés mirar?» (WP-ESCRITORIO-AMABLE, C-19) ───────────────── */
+/* Dos caminos, los dos a la vista: a la izquierda, las preguntas y las vistas guardadas; a la derecha, las métricas
+   para comparar sin pregunta. Cada camino es una tarjeta sobre el fondo de la página. Más angosto que 1024 px, una
+   debajo de la otra, en el orden del documento. */
+.entrada-de-analizar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  margin-top: 0.7rem;
+}
+
+@media (min-width: 64rem) {
+  .entrada-de-analizar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.entrada-de-analizar__columna {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.tarjeta-de-entrada {
+  min-width: 0;
+  padding: 0.9rem 1.2rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.tarjeta-de-entrada > h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* La bajada se alinea con el texto del título, después de su ícono. */
+.tarjeta-de-entrada__bajada {
+  margin: 0.2rem 0 0 calc(20px + 0.6rem);
+  color: var(--tenue);
+  font-size: 0.94rem;
+}
+
+/* Preguntas profesionales: una fila por pregunta, y toda la fila es el botón. */
+/* Todas del mismo tamaño (E-18): las filas de la lista miden lo mismo y cada botón llena la suya (una descripción de
+   una sola línea dejaba una más baja que su vecina). */
+.preguntas-profesionales__lista {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: 1fr;
+}
+
+.preguntas-profesionales__lista > li {
+  display: flex;
+}
+
+/* El separador es una sombra, que no ocupa lugar: con un borde, las filas siguientes medían un píxel menos. */
+.preguntas-profesionales__lista > li + li {
+  box-shadow: 0 -1px 0 var(--borde);
+}
+
+/* El color del botón es el de sus íconos; la pregunta y su bajada llevan el suyo. */
+.tarjeta-de-pregunta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.75rem;
+  width: 100%;
+  height: 100%;
+  min-height: 4rem;
+  padding: 0.55rem 0.4rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--tenue);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
 .tarjeta-de-pregunta:hover {
-  border-color: var(--borde-control);
+  background: var(--fondo-suave);
 }
 
 .tarjeta-de-pregunta:focus-visible {
   outline: 3px solid var(--foco);
-  outline-offset: 2px;
+  outline-offset: -3px;
+}
+
+.tarjeta-de-pregunta__textos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
 .tarjeta-de-pregunta__pregunta {
@@ -3474,30 +4793,305 @@ html:has(.acciones--fijas) {
   font-size: 0.92rem;
 }
 
-.preguntas-profesionales__mas > summary {
-  font-weight: 700;
-  margin: 0.25rem 0;
+.preguntas-profesionales__mas {
+  margin-top: 0.3rem;
 }
 
-.pregunta-activa {
-  border: 1px solid var(--borde);
+.preguntas-profesionales__mas > summary {
+  padding: 0.6rem 0.4rem;
+  font-weight: 700;
+}
+
+/* Las vistas guardadas, para retomar: una etiqueta por vista, que la abre. */
+.vistas-para-retomar__lista {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.vistas-para-retomar > .nota,
+.vistas-para-retomar > .campo__error {
+  margin: 0.5rem 0 0 calc(20px + 0.6rem);
+}
+
+.etiqueta-de-vista {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.3rem 1rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.etiqueta-de-vista:hover {
+  background: var(--fondo-suave);
+}
+
+.etiqueta-de-vista:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.etiqueta-de-vista__detalle {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+/* Las métricas para comparar, por área: casillas a la vista. La marcada se reconoce por su tilde y por su borde más
+   grueso, no solo por el color; la que no se puede marcar (ya hay tres), por el borde discontinuo. */
+.grupo-de-metricas {
+  min-width: 0;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.grupo-de-metricas__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.grupo-de-metricas__casillas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.casilla-de-metrica {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 0.85rem 0 0.7rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  cursor: pointer;
+}
+
+.casilla-de-metrica input {
+  flex: none;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: 0;
+}
+
+.casilla-de-metrica--marcada {
+  border-color: var(--enlace);
+  box-shadow: inset 0 0 0 1px var(--enlace);
+  font-weight: 600;
+}
+
+.casilla-de-metrica:has(input:disabled) {
+  border-style: dashed;
+  color: var(--tenue);
+  cursor: default;
+}
+
+.casilla-de-metrica:has(input:focus-visible) {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.casilla-de-metrica__detalle {
+  color: var(--tenue);
+  font-size: 0.88rem;
+  font-weight: 400;
+}
+
+/* El título de Entrenamiento y, en su renglón, de qué ejercicio, qué serie y en qué unidad son sus casillas. */
+.grupo-de-metricas__de {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.grupo-de-metricas__de .campo {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.grupo-de-metricas__de .campo:first-of-type {
+  flex: 0 1 19rem;
+}
+
+.grupo-de-metricas__de select {
+  width: 100%;
+}
+
+.grupo-de-metricas__mas {
+  margin-top: 0.3rem;
+}
+
+.grupo-de-metricas__mas > summary {
+  padding: 0.6rem 0;
+}
+
+.elegir-metricas__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--borde);
+}
+
+.elegir-metricas__cupo {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.elegir-metricas .no-ofrecidas {
+  margin: 0.5rem 0 0;
+}
+
+.elegir-metricas .no-ofrecidas > summary {
+  padding: 0.6rem 0;
+}
+
+/* ─── El estado de una métrica que no es un gráfico (WP-ESCRITORIO-AMABLE, pantalla 15) ─────────── */
+/* Cargando, sin acceso, sin especificación, una falla o sin puntos en las fechas a la vista: un bloque en el lugar
+   del gráfico, con el nombre y el color de la métrica. Se reconoce por el ícono y por el título, no por un color. */
+.grafico--sin-dibujo {
+  display: flex;
+  flex-direction: column;
+}
+
+.estado-de-grafico {
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+  margin: 0.2rem 0 0.6rem;
+  padding: 0.8rem 1rem;
   border-radius: 10px;
   background: var(--fondo-suave);
-  padding: 0.75rem 1rem;
-  margin: 0.5rem 0 1rem;
-}
-
-.pregunta-activa p {
-  margin: 0.15rem 0;
-}
-
-.pregunta-activa__rotulo {
-  display: inline-block;
-  margin-right: 0.35rem;
   color: var(--tenue);
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+}
+
+.estado-de-grafico--cargando {
+  justify-content: center;
+  border: 1.5px dashed var(--borde-control);
+  background: none;
+}
+
+.estado-de-grafico__texto {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.estado-de-grafico--cargando .estado-de-grafico__texto {
+  flex: 0 1 auto;
+}
+
+.estado-de-grafico__texto p {
+  margin: 0;
+}
+
+.estado-de-grafico__titulo {
+  color: var(--texto);
+  font-weight: 700;
+}
+
+.estado-de-grafico .boton {
+  gap: 0.4rem;
+}
+
+/* ─── «Cómo se lee esta vista» (WP-ESCRITORIO-AMABLE, C-04) ────────────────────────────── */
+/* Una sola ayuda por vista, que se abre desde el marco de la ficha, al lado del período. En una ventana angosta el
+   botón queda con su ícono solo (su nombre sigue estando para el lector de pantalla). */
+.como-se-lee__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+}
+
+@media (max-width: 79.99rem) {
+  .como-se-lee__palabras {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .como-se-lee__boton {
+    min-width: 44px;
+    justify-content: center;
+  }
+}
+
+/* En el escritorio, los renglones van en dos columnas: así la ayuda entra entera en una ventana de 900 px de alto. */
+.dialogo.como-se-lee {
+  max-width: min(64rem, calc(100vw - 2rem));
+}
+
+.como-se-lee h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.2rem;
+}
+
+.como-se-lee > .nota {
+  margin: 0 0 0.9rem;
+}
+
+.como-se-lee__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+@media (min-width: 64rem) {
+  .como-se-lee__lista {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.7rem 2rem;
+  }
+}
+
+.como-se-lee__lista > li {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  column-gap: 0.75rem;
+  align-items: start;
+}
+
+.como-se-lee__muestra {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.25rem;
+  color: var(--tenue);
+}
+
+.como-se-lee__lista p {
+  margin: 0;
+}
+
+.como-se-lee .acciones {
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
 /* Un formulario corto no ocupa todo el ancho del escritorio: un desplegable de 1300 px se recorre mal con la vista. */
@@ -3635,13 +5229,4 @@ html:has(.acciones--fijas) {
 
 .retorno-a-la-ficha {
   margin: -0.25rem 0 0.75rem;
-}
-
-/* El panel de lectura de Analizar no tiene desplazamiento propio: no hay doble desplazamiento. */
-@media (min-width: 80rem) {
-  .analizar__lectura {
-    position: static;
-    max-height: none;
-    overflow: visible;
-  }
 }

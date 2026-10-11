@@ -38,7 +38,7 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { api } from '../../../../lib/api';
-import { diaCivil, fechaEnZona } from '../../../../lib/formato';
+import { diaCivil, fechaEnZona, horaEnZona } from '../../../../lib/formato';
 import { motivoDeFalla, textoDeFalla, useLectura, useSeguimiento, type MotivoDeFalla } from './contexto';
 import { hoyEn, leerCorte, leerFiltrosDeLaLinea, parametrosDeFiltros, restarDias, SIN_FILTROS, type FiltrosDeLaLinea } from './estado';
 
@@ -105,7 +105,6 @@ const fechaLarga = (civil: string) => {
   const texto = diaLargo.format(new Date(`${civil}T12:00:00Z`));
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 };
-const horaEnZona = (iso: string, zona: string) => new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: zona }).format(new Date(iso));
 
 export function LineaDeTiempo() {
   const { token, asesoradoId, periodo, parametros, ir, sesionPerdida } = useSeguimiento();

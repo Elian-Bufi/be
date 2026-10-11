@@ -270,8 +270,14 @@ export function primerPlanDelPeriodo(vigencias: readonly VigenciaDePlan[] | unde
   return primero > desde ? primero : null;
 }
 
+/**
+ * El comienzo de esa aclaración, para un rótulo corto junto a un gráfico («El plan rige desde el 9/10»): las mismas
+ * palabras con las que empieza la frase completa, que queda en la cobertura del área.
+ */
+export const inicioDelPrimerPlan = (desde: string, f: FormatoDeLaSintesis): string => `El plan rige desde el ${f.fecha(desde)}`;
+
 /** La aclaración de la cobertura cuando el plan empezó a regir dentro del período («El plan rige desde el 9/10…»). */
-export const textoDelPrimerPlan = (desde: string, f: FormatoDeLaSintesis): string => `El plan rige desde el ${f.fecha(desde)}: antes, en el período, no había un plan de este seguimiento.`;
+export const textoDelPrimerPlan = (desde: string, f: FormatoDeLaSintesis): string => `${inicioDelPrimerPlan(desde, f)}: antes, en el período, no había un plan de este seguimiento.`;
 
 /** Las observaciones de la síntesis, ordenadas por prioridad. La web muestra las primeras y ofrece «Ver todas». */
 export function sintesisDelResumen(d: DatosDeLaSintesis): ObservacionDelResumen[] {
@@ -419,6 +425,63 @@ export function textoDeObservacion(o: ObservacionDelResumen, f: FormatoDeLaSinte
     }
     case 'PARTE_NO_DISPONIBLE':
       return `No pudimos completar esta parte (${{ NOVEDADES: 'lo nuevo desde la revisión', COBERTURA: 'la cobertura del período', COMPARABILIDAD: 'los cambios de comparabilidad' }[o.args.parte]}).`;
+  }
+}
+
+/**
+ * Una parte de una observación, para dibujarla en renglones: una cuenta (la cifra y lo que cuenta) o una frase.
+ * `cifra` es el número ya escrito («44»); `null` si la parte es una frase entera.
+ */
+export interface ParteDeObservacion {
+  readonly cifra: string | null;
+  readonly texto: string;
+}
+
+const frase = (texto: string): ParteDeObservacion => ({ cifra: null, texto });
+const parteDeCuenta = (n: number, [uno, varios]: readonly [string, string]): ParteDeObservacion => ({ cifra: numero(n), texto: n === 1 ? uno : varios });
+
+/**
+ * La misma observación en partes (WP-ESCRITORIO-AMABLE, parte 3), para escribirla en renglones con la cifra adelante en
+ * lugar de una frase con comas. **Las palabras son las de `textoDeObservacion`:** cada cuenta («44 comidas registradas»)
+ * y cada frase están tal cual en el texto completo, y una prueba lo comprueba regla por regla. Una observación que no
+ * es una lista de cuentas (un pendiente, un cambio de planificación) tiene una sola parte: su frase entera.
+ */
+export function partesDeObservacion(o: ObservacionDelResumen, f: FormatoDeLaSintesis): ParteDeObservacion[] {
+  switch (o.regla) {
+    case 'NOVEDADES_DESDE_EL_CORTE': {
+      const { ocurrieron, incorporadas, corregidas, nombreDelRegistro } = o.args;
+      const cuentas = [
+        ...(ocurrieron > 0 ? [parteDeCuenta(ocurrieron, nombreDelRegistro)] : []),
+        ...(incorporadas > 0 ? [parteDeCuenta(incorporadas, ['hecho anterior cargado después', 'hechos anteriores cargados después'])] : []),
+        ...(corregidas > 0 ? [parteDeCuenta(corregidas, ['registro anterior corregido o anulado', 'registros anteriores corregidos o anulados'])] : []),
+      ];
+      const recorte = o.args.recortado ? [frase(`Se revisó desde el ${f.fecha(o.args.leidoDesde)}: el máximo de lectura es un año.`)] : [];
+      return cuentas.length === 0 ? [frase('No hay registros nuevos, cargas tardías ni correcciones.'), ...recorte] : [...cuentas, ...recorte];
+    }
+    case 'COBERTURA_NUTRICIONAL': {
+      const c = o.args;
+      const plan = c.primerPlanDesde ? [frase(textoDelPrimerPlan(c.primerPlanDesde, f))] : [];
+      if (c.records === 0) return [frase(`Sin registros de comida en el período (${cuenta(c.daysInPeriod, ['día', 'días'])}).`), ...plan];
+      return [
+        { cifra: numero(c.daysWithRecords), texto: `de ${cuenta(c.daysInPeriod, ['día', 'días'])} con algún registro` },
+        { cifra: numero(c.records), texto: `${c.records === 1 ? 'registro' : 'registros'}: ${numero(c.recordsWithQuantities)} con cantidades y ${numero(c.recordsWithoutQuantities)} sin cantidades` },
+        ...plan,
+      ];
+    }
+    case 'COBERTURA_DE_ENTRENAMIENTO': {
+      const c = o.args;
+      const plan = c.primerPlanDesde ? [frase(textoDelPrimerPlan(c.primerPlanDesde, f))] : [];
+      if (c.sesiones === 0) return [frase('Sin sesiones registradas en el período.'), ...plan];
+      return [
+        parteDeCuenta(c.sesiones, ['sesión registrada', 'sesiones registradas']),
+        ...(c.conCambios > 0 ? [{ cifra: numero(c.conCambios), texto: 'con cambios' }] : []),
+        ...(c.noRealizadas > 0 ? [parteDeCuenta(c.noRealizadas, ['registrada como no realizada', 'registradas como no realizadas'])] : []),
+        ...(c.resumidas > 0 ? [parteDeCuenta(c.resumidas, ['resumida, sin series', 'resumidas, sin series'])] : []),
+        ...plan,
+      ];
+    }
+    default:
+      return [frase(textoDeObservacion(o, f))];
   }
 }
 

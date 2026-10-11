@@ -18,6 +18,7 @@ import {
   type ReferenciaDeMetrica,
 } from '@be/domain';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Icono } from '../../../../components/icono';
 import { textoDeFalla } from './contexto';
 import { claveDeLaReferencia } from './estado';
 import type { Disponibles } from './series';
@@ -45,7 +46,7 @@ export function SelectorDeMetricas({
   elegidas: readonly ReferenciaDeMetrica[];
   disponibles: Disponibles;
   onCambiar: (metricas: readonly ReferenciaDeMetrica[]) => void;
-  /** La muestra de color, forma y trazo de cada métrica elegida (la misma del gráfico, la leyenda y la tabla). */
+  /** La muestra del color de cada métrica elegida (la misma del gráfico, la lectura y la tabla). */
   marcas: readonly ReactNode[];
 }) {
   const id = useId();
@@ -108,142 +109,149 @@ export function SelectorDeMetricas({
 
   return (
     <div className="selector-de-metricas">
-      <h3 id={`${id}-elegidas`}>Métricas ({elegidas.length} de {MAXIMO_DE_METRICAS})</h3>
-      {elegidas.length === 0 ? <p className="nota">Todavía no elegiste ninguna. Empezá por una pregunta o agregá una métrica.</p> : null}
-      <ul className="metricas-elegidas" aria-labelledby={`${id}-elegidas`}>
-        {elegidas.map((ref, i) => (
-          <li key={claveDeLaReferencia(ref)}>
-            {marcas[i]}
-            <span>{nombreDeLaReferencia(ref, definicionDeMetrica(ref.metricId, ''), disponibles.ejercicios)}</span>
-            <button type="button" className="boton boton--enlace" onClick={() => onCambiar(elegidas.filter((_, j) => j !== i))}>
-              Quitar<span className="visualmente-oculto"> {nombreDeLaReferencia(ref, definicionDeMetrica(ref.metricId, ''), disponibles.ejercicios)}</span>
-            </button>
-          </li>
-        ))}
+      {/* Las métricas elegidas son también la leyenda de los gráficos: la muestra de su color, el nombre y quitar. */}
+      <ul className="metricas-elegidas metricas-elegidas--amable" aria-label={`Métricas elegidas: ${elegidas.length} de ${MAXIMO_DE_METRICAS}`}>
+        {elegidas.map((ref, i) => {
+          const nombre = nombreDeLaReferencia(ref, definicionDeMetrica(ref.metricId, ''), disponibles.ejercicios);
+          return (
+            <li key={claveDeLaReferencia(ref)}>
+              {marcas[i]}
+              <span>{nombre}</span>
+              <button type="button" className="quitar-metrica" onClick={() => onCambiar(elegidas.filter((_, j) => j !== i))}>
+                <Icono nombre="cerrar" tamano={18} />
+                <span className="visualmente-oculto">Quitar {nombre}</span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
+      <span className="metricas-elegidas__cupo">
+        {elegidas.length === 0 ? 'Todavía no elegiste ninguna métrica: empezá por una pregunta o agregá una.' : `${elegidas.length} de ${MAXIMO_DE_METRICAS} métricas`}
+      </span>
 
       <details className="agregar" open={agregarAbierto} onToggle={(e) => setAgregarAbierto((e.target as HTMLDetailsElement).open)}>
-      <summary>Agregar una métrica</summary>
-      <fieldset className="agregar-metrica">
-        <legend className="visualmente-oculto">Agregar una métrica</legend>
-        {disponibles.cargando ? <p className="nota">Buscando qué hay en el período…</p> : null}
-        {disponibles.falla ? (
-          <p className="campo__error">
-            {textoDeFalla(disponibles.falla, 'qué datos hay en el período')}{' '}
-            <button type="button" className="boton boton--enlace" onClick={disponibles.recargar}>
-              Reintentar
-            </button>
-          </p>
-        ) : null}
-        {!disponibles.cargando && !disponibles.falla && areas.length === 0 ? <p className="nota">No hay datos de ninguna área en este período con tu acceso actual.</p> : null}
-        {areas.length > 0 ? (
-          <>
-            <div className="campo">
-              <label htmlFor={`${id}-area`}>Área</label>
-              <select id={`${id}-area`} value={area} onChange={(e) => setArea(e.target.value as Area)}>
-                {areas.map((a) => (
-                  <option key={a} value={a}>
-                    {a === 'NUTRICION' ? 'Nutrición' : a === 'ENTRENAMIENTO' ? 'Entrenamiento' : 'Antropometría'}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {area === 'NUTRICION' ? (
+        <summary>
+          <Icono nombre="mas" tamano={18} /> Agregar una métrica
+        </summary>
+        <fieldset className="agregar-metrica">
+          <legend className="visualmente-oculto">Agregar una métrica</legend>
+          {disponibles.cargando ? <p className="nota">Buscando qué hay en el período…</p> : null}
+          {disponibles.falla ? (
+            <p className="campo__error">
+              {textoDeFalla(disponibles.falla, 'qué datos hay en el período')}{' '}
+              <button type="button" className="boton boton--enlace" onClick={disponibles.recargar}>
+                Reintentar
+              </button>
+            </p>
+          ) : null}
+          {!disponibles.cargando && !disponibles.falla && areas.length === 0 ? <p className="nota">No hay datos de ninguna área en este período con tu acceso actual.</p> : null}
+          {areas.length > 0 ? (
+            <>
               <div className="campo">
-                <label htmlFor={`${id}-nut`}>Métrica</label>
-                <select id={`${id}-nut`} value={nutricional} onChange={(e) => setNutricional(e.target.value)}>
-                  {DE_NUTRICION.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.nombre}
+                <label htmlFor={`${id}-area`}>Área</label>
+                <select id={`${id}-area`} value={area} onChange={(e) => setArea(e.target.value as Area)}>
+                  {areas.map((a) => (
+                    <option key={a} value={a}>
+                      {a === 'NUTRICION' ? 'Nutrición' : a === 'ENTRENAMIENTO' ? 'Entrenamiento' : 'Antropometría'}
                     </option>
                   ))}
                 </select>
               </div>
-            ) : null}
-            {area === 'ENTRENAMIENTO' && disponibles.ejercicios ? (
-              <>
+              {area === 'NUTRICION' ? (
                 <div className="campo">
-                  <label htmlFor={`${id}-ej`}>Ejercicio</label>
-                  <select id={`${id}-ej`} value={ej?.exerciseKey ?? ''} onChange={(e) => setEjercicio(e.target.value)}>
-                    {disponibles.ejercicios.map((x) => (
-                      <option key={x.exerciseKey} value={x.exerciseKey}>
-                        {x.name}
-                        {x.homonym ? ' (otro con el mismo nombre)' : ''} · {x.sessions} {x.sessions === 1 ? 'sesión' : 'sesiones'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="campo">
-                  <label htmlFor={`${id}-medida`}>Qué se mide</label>
-                  <select id={`${id}-medida`} value={medida} onChange={(e) => setMedida(e.target.value)}>
-                    {MEDIDAS_DE_ENTRENAMIENTO.map((m) => (
+                  <label htmlFor={`${id}-nut`}>Métrica</label>
+                  <select id={`${id}-nut`} value={nutricional} onChange={(e) => setNutricional(e.target.value)}>
+                    {DE_NUTRICION.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.nombre}
                       </option>
                     ))}
                   </select>
                 </div>
-                {definicionDeMetrica(medida)?.requiereSerie && ej ? (
+              ) : null}
+              {area === 'ENTRENAMIENTO' && disponibles.ejercicios ? (
+                <>
                   <div className="campo">
-                    <label htmlFor={`${id}-serie`}>Serie</label>
-                    <select id={`${id}-serie`} value={serie} onChange={(e) => setSerie(Number(e.target.value))}>
-                      {ej.setNumbers.map((n) => (
-                        <option key={n} value={n}>
-                          Serie {n}
+                    <label htmlFor={`${id}-ej`}>Ejercicio</label>
+                    <select id={`${id}-ej`} value={ej?.exerciseKey ?? ''} onChange={(e) => setEjercicio(e.target.value)}>
+                      {disponibles.ejercicios.map((x) => (
+                        <option key={x.exerciseKey} value={x.exerciseKey}>
+                          {x.name}
+                          {x.homonym ? ' (otro con el mismo nombre)' : ''} · {x.sessions} {x.sessions === 1 ? 'sesión' : 'sesiones'}
                         </option>
                       ))}
                     </select>
                   </div>
-                ) : null}
-                {definicionDeMetrica(medida)?.parametro === 'LOAD' && ej && ej.loadUnits.length > 1 ? (
                   <div className="campo">
-                    <label htmlFor={`${id}-unidad`}>Unidad (no se mezclan)</label>
-                    <select id={`${id}-unidad`} value={unidad} onChange={(e) => setUnidad(e.target.value as 'kg' | 'lb')}>
-                      {ej.loadUnits.map((u) => (
-                        <option key={u} value={u}>
-                          {u}
+                    <label htmlFor={`${id}-medida`}>Qué se mide</label>
+                    <select id={`${id}-medida`} value={medida} onChange={(e) => setMedida(e.target.value)}>
+                      {MEDIDAS_DE_ENTRENAMIENTO.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.nombre}
                         </option>
                       ))}
                     </select>
                   </div>
-                ) : null}
-              </>
-            ) : null}
-            {area === 'ANTROPOMETRIA' && disponibles.antropometria ? (
-              <div className="campo">
-                <label htmlFor={`${id}-ant`}>Medición</label>
-                <select id={`${id}-ant`} value={codigo} onChange={(e) => setAntropometrica(e.target.value)}>
-                  {disponibles.antropometria.map((m) => (
-                    <option key={m.metricCode} value={m.metricCode}>
-                      {m.name} · {m.observations} {m.observations === 1 ? 'toma' : 'tomas'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
-            {definicionCandidata ? <p className="nota">{definicionCandidata.explicacion}</p> : null}
-            <button type="button" className="boton boton--secundario" onClick={agregar}>
-              Agregar
-            </button>
-            {repetida ? (
-              <p className="campo__error" role="alert">
-                Esa métrica ya está elegida.
-              </p>
-            ) : null}
-          </>
-        ) : null}
-      </fieldset>
-      </details>
-
-      <details className="no-ofrecidas">
-        <summary>Lo que todavía no se ofrece, y por qué</summary>
-        <ul>
-          {NO_OFRECIDAS.map((m) => (
-            <li key={m.id}>
-              <strong>{m.nombre}:</strong> {m.explicacion}
-            </li>
-          ))}
-        </ul>
+                  {definicionDeMetrica(medida)?.requiereSerie && ej ? (
+                    <div className="campo">
+                      <label htmlFor={`${id}-serie`}>Serie</label>
+                      <select id={`${id}-serie`} value={serie} onChange={(e) => setSerie(Number(e.target.value))}>
+                        {ej.setNumbers.map((n) => (
+                          <option key={n} value={n}>
+                            Serie {n}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                  {definicionDeMetrica(medida)?.parametro === 'LOAD' && ej && ej.loadUnits.length > 1 ? (
+                    <div className="campo">
+                      <label htmlFor={`${id}-unidad`}>Unidad (no se mezclan)</label>
+                      <select id={`${id}-unidad`} value={unidad} onChange={(e) => setUnidad(e.target.value as 'kg' | 'lb')}>
+                        {ej.loadUnits.map((u) => (
+                          <option key={u} value={u}>
+                            {u}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+              {area === 'ANTROPOMETRIA' && disponibles.antropometria ? (
+                <div className="campo">
+                  <label htmlFor={`${id}-ant`}>Medición</label>
+                  <select id={`${id}-ant`} value={codigo} onChange={(e) => setAntropometrica(e.target.value)}>
+                    {disponibles.antropometria.map((m) => (
+                      <option key={m.metricCode} value={m.metricCode}>
+                        {m.name} · {m.observations} {m.observations === 1 ? 'toma' : 'tomas'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+              {definicionCandidata ? <p className="nota">{definicionCandidata.explicacion}</p> : null}
+              <button type="button" className="boton boton--secundario" onClick={agregar}>
+                Agregar
+              </button>
+              {repetida ? (
+                <p className="campo__error" role="alert">
+                  Esa métrica ya está elegida.
+                </p>
+              ) : null}
+            </>
+          ) : null}
+        </fieldset>
+        <details className="no-ofrecidas">
+          <summary>Lo que todavía no se ofrece, y por qué</summary>
+          <ul>
+            {NO_OFRECIDAS.map((m) => (
+              <li key={m.id}>
+                <strong>{m.nombre}:</strong> {m.explicacion}
+              </li>
+            ))}
+          </ul>
+        </details>
       </details>
 
       <DialogoDeReemplazo

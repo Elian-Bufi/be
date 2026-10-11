@@ -34,11 +34,14 @@ import { PREGUNTAS_PROFESIONALES, requisitosDe, resolverPregunta, traeSeleccione
 import { compararPeriodos, huecosDelRango, partesDeLaCobertura, resumirPeriodo } from './series-del-analisis';
 import {
   claveDeObservacion,
+  inicioDelPrimerPlan,
   PALABRAS_QUE_CALIFICAN,
+  partesDeObservacion,
   primerPlanDelPeriodo,
   sintesisDelResumen,
   textoDeObservacion,
   textoDelAlcance,
+  textoDelPrimerPlan,
   type DatosDeLaSintesis,
   type FormatoDeLaSintesis,
 } from './sintesis-del-resumen';
@@ -644,6 +647,72 @@ test('ninguna plantilla califica a la persona ni a su desempeño', () => {
       assert.doesNotMatch(texto, PALABRAS_QUE_CALIFICAN, `${claveDeObservacion(o)}: ${texto}`);
     }
   }
+});
+
+test('las partes de una observación dicen las mismas palabras que su frase, con la cifra adelante', () => {
+  const s = sintesisDelResumen(DATOS);
+  const de = (regla: string) => s.find((o) => o.regla === regla)!;
+  // Las cuentas, una por renglón: lo que ocurrió, lo que se cargó después y lo que se corrigió.
+  assert.deepEqual(partesDeObservacion(de('NOVEDADES_DESDE_EL_CORTE'), FORMATO), [
+    { cifra: '34', texto: 'comidas registradas' },
+    { cifra: '3', texto: 'hechos anteriores cargados después' },
+    { cifra: '2', texto: 'registros anteriores corregidos o anulados' },
+  ]);
+  assert.deepEqual(partesDeObservacion(de('COBERTURA_NUTRICIONAL'), FORMATO), [
+    { cifra: '52', texto: 'de 90 días con algún registro' },
+    { cifra: '280', texto: 'registros: 272 con cantidades y 8 sin cantidades' },
+  ]);
+  assert.deepEqual(partesDeObservacion(de('COBERTURA_DE_ENTRENAMIENTO'), FORMATO), [
+    { cifra: '23', texto: 'sesiones registradas' },
+    { cifra: '1', texto: 'con cambios' },
+    { cifra: '1', texto: 'registrada como no realizada' },
+    { cifra: '1', texto: 'resumida, sin series' },
+  ]);
+  // Un pendiente o un cambio de planificación no es una lista de cuentas: una sola parte, su frase entera.
+  for (const regla of ['PROXIMA_REVISION', 'PLAN_ACTIVADO_DESPUES_DEL_CORTE', 'OBJETIVO_NUEVO_DESPUES_DEL_CORTE', 'CAMBIO_DE_COMPARABILIDAD', 'ULTIMA_TOMA']) {
+    assert.deepEqual(partesDeObservacion(de(regla), FORMATO), [{ cifra: null, texto: textoDeObservacion(de(regla), FORMATO) }], regla);
+  }
+
+  // La garantía: cada parte está, palabra por palabra, en la frase completa. Vale para todas las variantes, incluidas
+  // las que no tienen nada que contar, las que aclaran desde cuándo rige el plan y las que dicen qué no se pudo leer.
+  const sinNada = { daysInPeriod: 90, daysWithRecords: 0, records: 0, recordsWithQuantities: 0, recordsWithoutQuantities: 0, differentMealsWithoutQuantities: 0, annulledExcluded: 0, rectifiedCountedOnce: 0 };
+  // Un plan que empezó a regir hoy, adentro del período: la cobertura lo aclara.
+  const desdeHoy = (domain: 'NUTRITION' | 'TRAINING') => ({ domain, planVersionId: V3, label: 'v1', activatedAt: `${HOY}T06:01:00.000Z`, from: HOY, to: null, endedAt: null, endReason: null });
+  const variantes: DatosDeLaSintesis[] = [
+    DATOS,
+    { ...DATOS, nutricion: { ...DATOS.nutricion!, vigencias: [desdeHoy('NUTRITION')], novedades: novedades([]), cobertura: { estado: 'LISTA', valor: { ...sinNada, daysWithRecords: 1, records: 1, recordsWithQuantities: 1 } } } },
+    { ...DATOS, nutricion: { ...DATOS.nutricion!, vigencias: [desdeHoy('NUTRITION')], novedades: { estado: 'FALLO' }, cobertura: { estado: 'LISTA', valor: sinNada } } },
+    { ...DATOS, nutricion: { ...DATOS.nutricion!, resumen: nutricion({ lastReview: { reviewId: REVISION, recordedAt: '2025-06-01T12:00:00.000Z', author: PRO, application: null } }), novedades: novedades([{ kind: 'INCORPORADO_DESPUES', domain: 'NUTRITION', eventType: 'MEAL_RECORDED', count: 1 }]) } },
+    { ...DATOS, entrenamiento: { ...DATOS.entrenamiento!, vigencias: [desdeHoy('TRAINING')], cobertura: { estado: 'LISTA', valor: { sesiones: 1, conCambios: 0, noRealizadas: 2, resumidas: 3 } } } },
+    { ...DATOS, entrenamiento: { ...DATOS.entrenamiento!, cobertura: { estado: 'LISTA', valor: { sesiones: 0, conCambios: 0, noRealizadas: 0, resumidas: 0 } } }, antropometria: { resumen: antropometria, comparabilidad: { estado: 'FALLO' } } },
+  ];
+  let cuentas = 0;
+  for (const d of variantes) {
+    for (const o of sintesisDelResumen(d)) {
+      const completa = textoDeObservacion(o, FORMATO).toLowerCase();
+      const partes = partesDeObservacion(o, FORMATO);
+      assert.ok(partes.length > 0, claveDeObservacion(o));
+      for (const p of partes) {
+        const escrita = (p.cifra === null ? p.texto : `${p.cifra} ${p.texto}`).toLowerCase();
+        assert.ok(completa.includes(escrita), `${claveDeObservacion(o)}: «${escrita}» no está en «${completa}»`);
+        if (p.cifra !== null) cuentas++;
+      }
+      // Y no sobra nada: sin las partes, de la frase quedan solo comas, puntos, paréntesis, «y» y espacios.
+      const resto = partes.reduce((t, p) => t.replace((p.cifra === null ? p.texto : `${p.cifra} ${p.texto}`).toLowerCase(), ''), completa);
+      assert.match(resto, /^[\s.,;()y]*$/, `${claveDeObservacion(o)}: queda «${resto}»`);
+    }
+  }
+  assert.ok(cuentas >= 15, `se recorrieron ${cuentas} cuentas`);
+  // La aclaración del plan es la última parte de la cobertura, entera.
+  const conPlan = partesDeObservacion(sintesisDelResumen(variantes[1]!).find((o) => o.regla === 'COBERTURA_NUTRICIONAL')!, FORMATO);
+  assert.deepEqual(conPlan, [
+    { cifra: '1', texto: 'de 90 días con algún registro' },
+    { cifra: '1', texto: 'registro: 1 con cantidades y 0 sin cantidades' },
+    { cifra: null, texto: 'El plan rige desde el 9/10: antes, en el período, no había un plan de este seguimiento.' },
+  ]);
+  // El rótulo corto del plan es el comienzo de la aclaración completa, no otra frase.
+  assert.equal(inicioDelPrimerPlan(HOY, FORMATO), 'El plan rige desde el 9/10');
+  assert.ok(textoDelPrimerPlan(HOY, FORMATO).startsWith(`${inicioDelPrimerPlan(HOY, FORMATO)}: `));
 });
 
 // ─── Contraste de una comida con lo indicado (eje 2) ────────────────────────────────────────────

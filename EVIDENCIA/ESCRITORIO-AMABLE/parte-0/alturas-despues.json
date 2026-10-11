@@ -1,0 +1,204 @@
+{
+  "ancho": 1440,
+  "alto": 900,
+  "hoy": "2026-10-10",
+  "paginas": [
+    {
+      "pagina": "inicio",
+      "ruta": "/",
+      "claro": 2095,
+      "azul-noche": 2095,
+      "pantallas": 2.3
+    },
+    {
+      "pagina": "ingresar",
+      "ruta": "/login",
+      "claro": 900,
+      "azul-noche": 900,
+      "pantallas": 1
+    },
+    {
+      "pagina": "registro",
+      "ruta": "/register",
+      "claro": 1368,
+      "azul-noche": 1368,
+      "pantallas": 1.5
+    },
+    {
+      "pagina": "privacidad",
+      "ruta": "/legal/privacidad",
+      "claro": 1168,
+      "azul-noche": 1168,
+      "pantallas": 1.3
+    },
+    {
+      "pagina": "terminos",
+      "ruta": "/legal/terminos",
+      "claro": 900,
+      "azul-noche": 900,
+      "pantallas": 1
+    },
+    {
+      "pagina": "espacio-profesional",
+      "ruta": "/pro",
+      "claro": 2634,
+      "azul-noche": 2634,
+      "pantallas": 2.9
+    },
+    {
+      "pagina": "ficha-resumen",
+      "ruta": "/pro/advisees?id={asesorado}",
+      "claro": 2313,
+      "azul-noche": 2313,
+      "pantallas": 2.6
+    },
+    {
+      "pagina": "ficha-linea-de-tiempo",
+      "ruta": "/pro/advisees?id={asesorado}&vista=linea",
+      "claro": 10728,
+      "azul-noche": 10728,
+      "pantallas": 11.9
+    },
+    {
+      "pagina": "ficha-analizar",
+      "ruta": "/pro/advisees?id={asesorado}&vista=analizar",
+      "claro": 900,
+      "azul-noche": 900,
+      "pantallas": 1
+    },
+    {
+      "pagina": "nutricion-resumen",
+      "ruta": "/pro/advisees/nutrition?id={asesorado}&vista=resumen",
+      "claro": 906,
+      "azul-noche": 906,
+      "pantallas": 1
+    },
+    {
+      "pagina": "nutricion-plan",
+      "ruta": "/pro/advisees/nutrition?id={asesorado}&vista=plan",
+      "claro": 2268,
+      "azul-noche": 2268,
+      "pantallas": 2.5
+    },
+    {
+      "pagina": "nutricion-registros",
+      "ruta": "/pro/advisees/nutrition?id={asesorado}&vista=registros",
+      "claro": 3922,
+      "azul-noche": 3922,
+      "pantallas": 4.4
+    },
+    {
+      "pagina": "nutricion-revisiones",
+      "ruta": "/pro/advisees/nutrition?id={asesorado}&vista=revisiones",
+      "claro": 900,
+      "azul-noche": 900,
+      "pantallas": 1
+    },
+    {
+      "pagina": "entrenamiento-resumen",
+      "ruta": "/pro/advisees/training?id={asesorado}&vista=resumen",
+      "claro": 1099,
+      "azul-noche": 1099,
+      "pantallas": 1.2
+    },
+    {
+      "pagina": "entrenamiento-plan",
+      "ruta": "/pro/advisees/training?id={asesorado}&vista=plan",
+      "claro": 22719,
+      "azul-noche": 22719,
+      "pantallas": 25.2
+    },
+    {
+      "pagina": "entrenamiento-ejecuciones",
+      "ruta": "/pro/advisees/training?id={asesorado}&vista=ejecuciones",
+      "claro": 1298,
+      "azul-noche": 1298,
+      "pantallas": 1.4
+    },
+    {
+      "pagina": "entrenamiento-revisiones",
+      "ruta": "/pro/advisees/training?id={asesorado}&vista=revisiones",
+      "claro": 900,
+      "azul-noche": 900,
+      "pantallas": 1
+    },
+    {
+      "pagina": "antropometria-evaluaciones",
+      "ruta": "/pro/advisees/anthropometry?id={asesorado}&vista=evaluaciones",
+      "claro": 1174,
+      "azul-noche": 1174,
+      "pantallas": 1.3
+    },
+    {
+      "pagina": "antropometria-preparacion",
+      "ruta": "/pro/advisees/anthropometry?id={asesorado}&vista=preparacion",
+      "claro": 3016,
+      "azul-noche": 3016,
+      "pantallas": 3.4
+    },
+    {
+      "pagina": "antropometria-evolucion",
+      "ruta": "/pro/advisees/anthropometry?id={asesorado}&vista=evolucion",
+      "claro": 1569,
+      "azul-noche": 1569,
+      "pantallas": 1.7
+    },
+    {
+      "pagina": "antropometria-lamina",
+      "ruta": "/pro/advisees/anthropometry?id={asesorado}&vista=lamina",
+      "claro": 1382,
+      "azul-noche": 1382,
+      "pantallas": 1.5
+    },
+    {
+      "pagina": "informacion-solicitudes",
+      "ruta": "/pro/advisees/forms?id={asesorado}&vista=solicitudes",
+      "claro": 900,
+      "azul-noche": 900,
+      "pantallas": 1
+    },
+    {
+      "pagina": "informacion-pedir",
+      "ruta": "/pro/advisees/forms?id={asesorado}&vista=pedir",
+      "claro": 932,
+      "azul-noche": 932,
+      "pantallas": 1
+    },
+    {
+      "pagina": "plantillas-y-habituales",
+      "ruta": "/pro/templates",
+      "claro": 1334,
+      "azul-noche": 1334,
+      "pantallas": 1.5
+    },
+    {
+      "pagina": "mis-recetas",
+      "ruta": "/pro/recipes",
+      "claro": 900,
+      "azul-noche": 900,
+      "pantallas": 1
+    },
+    {
+      "pagina": "mis-ejercicios",
+      "ruta": "/pro/exercises",
+      "claro": 900,
+      "azul-noche": 900,
+      "pantallas": 1
+    },
+    {
+      "pagina": "cuenta",
+      "ruta": "/account",
+      "claro": 1495,
+      "azul-noche": 1495,
+      "pantallas": 1.7
+    },
+    {
+      "pagina": "cuenta-privacidad",
+      "ruta": "/account/privacy",
+      "claro": 900,
+      "azul-noche": 900,
+      "pantallas": 1
+    }
+  ],
+  "errores": []
+}

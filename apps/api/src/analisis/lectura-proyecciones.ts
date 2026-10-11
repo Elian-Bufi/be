@@ -20,7 +20,6 @@ import {
   type ResultadoDeProyeccionAntropometrica,
   type ResultadoDeProyeccionDeEntrenamiento,
   type ResultadoDeProyeccionNutricional,
-  type SerieApi,
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { seriesDeEvolucion, type FilasDeEvolucion } from '../antropometria/evolucion.service';
@@ -133,13 +132,6 @@ export function proyeccionDeEntrenamiento(
 
 // ─── ANTHROPOMETRY_LONGITUDINAL ─────────────────────────────────────────────────────────────────
 
-const serieVacia = (metricCode: string, desde: string, hasta: string): SerieApi => ({
-  metricCode,
-  series: [],
-  gaps: [{ from: desde, to: hasta, state: 'NO_DATA', days: Math.round((Date.parse(`${hasta}T00:00:00Z`) - Date.parse(`${desde}T00:00:00Z`)) / 86_400_000) + 1 }],
-  comparability: { groups: [] },
-});
-
 export function proyeccionAntropometrica(
   c: Extract<ConsultaDeProyeccion, { clave: 'ANTHROPOMETRY_LONGITUDINAL' }>,
   leido: FilasDeEvolucion,
@@ -157,9 +149,13 @@ export function proyeccionAntropometrica(
       units: [...new Set(m.series.map((p) => p.unit))],
       comparabilityGroups: new Set(m.series.map((p) => p.comparabilityGroup)).size,
     }));
-  const series = (c.metricas ?? []).map((codigo) => {
-    const serie = porCodigo.get(codigo) ?? serieVacia(codigo, desde, hasta);
-    return serieAntropometrica(serie, definicionAntropometrica(codigo, serie.series[0]?.unit ?? ''), ZONA);
+  // Una medida pedida sin tomas en el período no arma una serie: su unidad sale de los datos, y sin datos no hay unidad
+  // que decir (una serie sin unidad no cumple el contrato, y quien la leía la tomaba por una falla). Que no hay nada lo
+  // dicen `available`, que no la lista, y el `dataState` de la respuesta.
+  const series = (c.metricas ?? []).flatMap((codigo) => {
+    const serie = porCodigo.get(codigo);
+    const unidad = serie?.series[0]?.unit;
+    return serie && unidad ? [serieAntropometrica(serie, definicionAntropometrica(codigo, unidad), ZONA)] : [];
   });
   return {
     resultado: { kind: 'ANTHROPOMETRY_LONGITUDINAL', available, series, honesty: { interpolated: false, imputed: false, carriedForward: false } },

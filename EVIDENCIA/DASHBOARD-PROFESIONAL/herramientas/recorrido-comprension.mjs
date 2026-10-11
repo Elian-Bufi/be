@@ -39,6 +39,8 @@ const ZONA = 'America/Argentina/Buenos_Aires';
 /** «19 sept 2026»: la fecha civil de un instante en la zona del asesorado, como la ficha. */
 const diaDe = (instante) => new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeZone: ZONA }).format(new Date(instante));
 const fechaCivilDe = (instante) => new Intl.DateTimeFormat('en-CA', { timeZone: ZONA, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(instante));
+/** «19 sept»: como escribe el Resumen una fecha del año en curso (WP-ESCRITORIO-AMABLE, E-57); con el año si es de otro. */
+const diaBreveDe = (instante) => (fechaCivilDe(instante).slice(0, 4) === hoy.slice(0, 4) ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: ZONA }).format(new Date(instante)) : diaDe(instante));
 
 // ─── Resultados ───────────────────────────────────────────────────────────────────────────────
 
@@ -166,6 +168,60 @@ const sinDesborde = (page) => page.evaluate(() => document.documentElement.scrol
 /** Las escrituras que hizo la página (las búsquedas por cuerpo y el inicio de sesión no escriben nada). */
 const escrituras = (v, desde = 0) =>
   v.urls.slice(desde).filter((u) => /^(POST|PUT|PATCH|DELETE) /.test(u) && !/\/search(\?|$)/.test(u) && !/\/auth\/sessions/.test(u));
+
+/**
+ * El tema se elige en el menú de la cuenta, en la esquina del encabezado (WP-ESCRITORIO-AMABLE): se abre, se marca la
+ * opción y se cierra con el mismo botón. Todo sin teclado y sin mover el foco: Escape cerraría también otro panel
+ * abierto (el del período) y dejaría el aro de foco en las capturas. No recarga la página ni cierra la sesión.
+ */
+async function ponerTema(page, tema) {
+  if ((await page.evaluate(() => document.documentElement.dataset.tema)) === tema) return;
+  await page.waitForSelector('.menu-de-cuenta__boton', { timeout: 15_000 });
+  await page.evaluate(() => document.querySelector('.menu-de-cuenta__boton').click());
+  await page.waitForSelector('.menu-de-cuenta__panel input[type="radio"]', { timeout: 5_000 });
+  await page.evaluate((t) => document.querySelector(`.menu-de-cuenta__panel input[type="radio"][value="${t}"]`).click(), tema);
+  await page.waitForFunction((t) => document.documentElement.dataset.tema === t, { timeout: 5_000 }, tema);
+  await page.evaluate(() => document.querySelector('.menu-de-cuenta__boton').click());
+  await page.waitForFunction(() => !document.querySelector('.menu-de-cuenta__panel'), { timeout: 3_000 });
+}
+/**
+ * «Más acciones» guarda lo que se usa de vez en cuando en Analizar (WP-ESCRITORIO-AMABLE, C-08): las vistas guardadas, la
+ * descarga, las capas, el intervalo con fechas y la comparación de dos períodos. Lo abre si está cerrado.
+ */
+async function abrirMasAcciones(page) {
+  if (await page.$('.mas-acciones')) return;
+  await clic(page, '.pregunta-en-curso__acciones button', 'Más acciones');
+  await page.waitForSelector('.mas-acciones', { timeout: 5_000 });
+}
+
+/**
+ * El pie de los gráficos abre, debajo de ellos, la tabla de datos, el resumen en texto, los hitos, las etapas o «Cómo se
+ * calcula»: una cosa a la vez. Abre la que se pide, si no está, y espera a que aparezca.
+ */
+async function abrirDelPie(page, texto, selector) {
+  if (await page.$(selector)) return;
+  await clic(page, '.pie-de-graficos button', texto);
+  await page.waitForSelector(selector, { timeout: 5_000 });
+}
+/**
+ * La revisión de Nutrición preparada desde la ficha se arma en dos lecturas: primero llega la lista de revisiones y
+ * recién entonces BE fija el período desde la última y vuelve a leer la evidencia. Hasta ahí la pantalla muestra el
+ * período por defecto de la API (los últimos 7 días). Se espera a que diga el período preparado y a que la evidencia
+ * sea la de ese período: leerla antes era leer otra pantalla (pasó el 2026-10-10, con la máquina cargada: la
+ * comprobación de la evidencia encontró 7 días en lugar de los 21 que había desde la última revisión).
+ */
+async function revisionPreparada(page, v) {
+  await page.waitForFunction(
+    () => {
+      const t = document.querySelector('main')?.innerText ?? '';
+      const desde = /Preparado por BE para esta revisión: el período va del (\d{1,2} \S+ \d{4})/.exec(t)?.[1];
+      // Sin revisiones previas no hay período preparado: vale el que propone la API.
+      return desde ? t.includes(`Período: ${desde} a`) : /Preparado por BE para esta revisión: todavía no hay revisiones registradas/.test(t);
+    },
+    { timeout: 30_000 },
+  );
+  await quieto(page, v);
+}
 
 /** Hace clic (con el mouse) en el primer elemento visible y habilitado que contiene el texto. */
 async function clic(page, selector, contiene) {
@@ -340,21 +396,24 @@ async function mirar() {
   try {
     await iniciarSesion(page, estado.proCorreo, FICHA_A);
     await quieto(page, v);
-    await page.select('.apariencia select', temaPedido);
+    await ponerTema(page, temaPedido);
     await pausa(300);
     const e = estado;
     const conPregunta = (q) => `${FICHA_A}&vista=analizar&${q}`;
 
     await pantalla('resumen', () => ir(page, FICHA_A));
+    // WP-ESCRITORIO-AMABLE (parte 3): la síntesis ya no es una lista con «Ver todas»: está en las tarjetas de cada área,
+    // y lo único plegado es la cobertura del período de las áreas con revisión. «Todas» es con eso abierto.
     await pantalla('resumen-todas', async () => {
       await ir(page, FICHA_A);
       await quieto(page, v);
-      await clic(page, '.encabezado-de-bloque button, .encabezado-de-bloque a', 'Ver todas');
+      const plegados = await page.$$eval('.area details.area__periodo > summary', (s) => s.map((x) => x.click()).length);
+      if (plegados === 0) throw new Error('no hay nada plegado en las tarjetas del Resumen');
     });
     await pantalla('linea-novedades', async () => {
       await ir(page, FICHA_A);
       await quieto(page, v);
-      await clic(page, '.observacion[data-regla="NOVEDADES_DESDE_EL_CORTE"] a', '');
+      await clic(page, '.area[data-area="NUTRICION"] .observacion[data-regla="NOVEDADES_DESDE_EL_CORTE"] a', '');
     });
     await pantalla('analizar-preguntas', () => ir(page, `${FICHA_A}&vista=analizar`));
     await pantalla('pregunta-ejercicio-falta', async () => {
@@ -386,7 +445,8 @@ async function mirar() {
     await pantalla('preparar-revision-nutricion', async () => {
       await ir(page, FICHA_A);
       await quieto(page, v);
-      await clic(page, '.acciones-del-resumen a', 'Preparar la revisión de Nutrición');
+      await clic(page, '.area[data-area="NUTRICION"] .area__accion a', 'Preparar la revisión de Nutrición');
+      await revisionPreparada(page, v);
     });
     // La evidencia con un día marcado entero y otro en parte (casilla mixta), con «Lo que marcaste» abierto.
     await pantalla('preparar-revision-nutricion-marcada', async () => {
@@ -439,7 +499,10 @@ async function capturas() {
     // La revisión de Nutrición preparada desde la ficha: la evidencia agrupada por día (pasada del 2026-10-09).
     await ir(page, FICHA_A);
     await quieto(page, v);
-    const prepararNutricion = await page.evaluate(() => [...document.querySelectorAll('.acciones-del-resumen a')].find((a) => a.textContent.includes('Preparar la revisión de Nutrición'))?.getAttribute('href') ?? null);
+    const prepararNutricion = await page.evaluate(() => [...document.querySelectorAll('.area[data-area="NUTRICION"] .area__accion a')].find((a) => a.textContent.includes('Preparar la revisión de Nutrición'))?.getAttribute('href') ?? null);
+    // WP-ESCRITORIO-AMABLE (parte 3): si el enlace no se encuentra, la pantalla de la revisión sale de la lista y sus seis
+    // comprobaciones dejarían de correr sin que nada falle. Ahora, que el enlace esté se comprueba.
+    comprobar('CP-27', 'El Resumen ofrece «Preparar la revisión de Nutrición» en la tarjeta de su área: de ese enlace sale la pantalla de la revisión que se captura', prepararNutricion !== null && /vista=revisiones&preparar=1/.test(prepararNutricion ?? ''), prepararNutricion ?? 'no está');
     const vistas = [
       ...(prepararNutricion ? [['revision-nutricion', prepararNutricion]] : []),
       ['resumen', FICHA_A],
@@ -453,7 +516,7 @@ async function capturas() {
       ['linea-novedades', `${FICHA_A}&vista=linea&areas=NUTRITION&novedades=${encodeURIComponent(corteN)}`],
     ];
     for (const tema of ['azul-noche', 'claro']) {
-      await page.select('.apariencia select', tema);
+      await ponerTema(page, tema);
       await pausa(300);
       for (const ancho of [1440, 1280, 1024, 768, 390]) {
         await page.setViewport({ width: ancho, height: 900 });
@@ -472,17 +535,19 @@ async function capturas() {
               const o = document.querySelector('.observacion');
               return o ? Math.round(o.getBoundingClientRect().bottom + scrollY) : null;
             });
-            comprobar('CP-01', `A 1440 × 900 en ${tema}, la primera observación de la síntesis se ve sin desplazarse`, yPrimera !== null && yPrimera <= 900, `termina en y = ${yPrimera}`);
+            // WP-ESCRITORIO-AMABLE (parte 3): la síntesis está en las tarjetas por área. El primer hecho es el de la primera.
+            comprobar('CP-01', `A 1440 × 900 en ${tema}, el primer hecho de la síntesis (en la tarjeta de la primera área) se ve sin desplazarse`, yPrimera !== null && yPrimera <= 900, `termina en y = ${yPrimera}`);
             await page.screenshot({ path: fileURLToPath(new URL(`resumen-1440-${tema}-primera-pantalla.png`, carpeta)) });
           }
         }
       }
     }
     // A 1280 × 800 (GUIA II.1): lo principal de cada vista empieza en la primera pantalla.
-    await page.select('.apariencia select', 'azul-noche');
+    await ponerTema(page, 'azul-noche');
     await page.setViewport({ width: 1280, height: 800 });
     for (const [nombre, url, selector] of [
-      ['Resumen: el objetivo y la planificación', FICHA_A, '.tabla-de-planificacion tbody tr'],
+      // WP-ESCRITORIO-AMABLE (parte 3): el objetivo y el plan están en el contexto de la tarjeta de cada área.
+      ['Resumen: el objetivo y la planificación', FICHA_A, '.area .area__contexto'],
       ['Analizar: las preguntas', `${FICHA_A}&vista=analizar`, '.tarjeta-de-pregunta'],
       ['Línea de tiempo: el primer hecho', `${FICHA_A}&vista=linea`, '.entrada'],
     ]) {
@@ -500,7 +565,7 @@ async function capturas() {
     // Los tres modos del gráfico en los dos temas, con lo que se dibujó comprobado (CP-27).
     await page.setViewport({ width: 1440, height: 900 });
     for (const tema of ['azul-noche', 'claro']) {
-      await page.select('.apariencia select', tema);
+      await ponerTema(page, tema);
       await pausa(300);
       for (const [nombre, letra, metricas, esperadas] of [
         ['paneles', 'P', TRES, 3],
@@ -515,7 +580,7 @@ async function capturas() {
       }
     }
     // Estados críticos, a 1440 en Azul noche.
-    await page.select('.apariencia select', 'azul-noche');
+    await ponerTema(page, 'azul-noche');
     await pausa(300);
     // Error de una sola parte: la proyección nutricional falla; el peso se dibuja y la parte que falta lo dice.
     v.reglas = [{ coincide: (u) => u.includes('/projections/NUTRITION'), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' }];
@@ -552,7 +617,7 @@ async function funcional() {
     await iniciarSesion(page, estado.proCorreo, FICHA_A);
     const tPrimera = await quieto(page, v);
     informar('CP-29', 'Primera carga del Resumen después de iniciar sesión, hasta la última respuesta', `${tPrimera} ms`);
-    await page.select('.apariencia select', 'azul-noche');
+    await ponerTema(page, 'azul-noche');
     await pausa(300);
     const panel = (await leerApi(v, `/advisees/${estado.aseId}/dashboard`)).data.domains;
     const cortes = { NUTRITION: panel.nutrition.summary.lastReview, TRAINING: panel.training.summary.lastReview };
@@ -581,43 +646,92 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   await ir(page, FICHA_A);
   await quieto(page, v);
   const desde = v.urls.length;
+  // WP-ESCRITORIO-AMABLE (parte 3): el Resumen se organiza por área. El objetivo y la síntesis de cada área están en su
+  // tarjeta, antes que los indicadores. «Sin gráficos» protegía que nadie tuviera que explorar un gráfico para enterarse
+  // de lo pendiente: sigue valiendo así: las tarjetas no dibujan nada, no hay ningún gráfico de la biblioteca, y los
+  // únicos dibujos son los minigráficos de los indicadores, que van después.
   const orden = await page.evaluate(() => {
-    const h2 = [...document.querySelectorAll('main h2')].map((h) => h.textContent.trim());
-    const sintesis = [...document.querySelectorAll('main h2')].find((h) => h.textContent.includes('Para tu próxima revisión'));
-    const primera = document.querySelector('.observacion');
-    return { nombre: document.querySelector('h1')?.textContent ?? '', h2, ySintesis: sintesis ? Math.round(sintesis.getBoundingClientRect().top + scrollY) : null, yPrimera: primera ? Math.round(primera.getBoundingClientRect().bottom + scrollY) : null, graficos: document.querySelectorAll('figure.grafico__figura').length };
+    const h2 = [...document.querySelectorAll('main h2')].filter((h) => h.checkVisibility()).map((h) => h.textContent.trim());
+    const tarjetas = [...document.querySelectorAll('.area')];
+    const indicadores = document.querySelector('.indicadores-del-resumen');
+    const primera = document.querySelector('.area .observacion');
+    return {
+      nombre: document.querySelector('h1')?.textContent ?? '',
+      h2,
+      tarjetasAntes: !!indicadores && tarjetas.length > 0 && tarjetas.every((t) => (t.compareDocumentPosition(indicadores) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0),
+      conObjetivo: tarjetas.filter((t) => [...t.querySelectorAll('.area__contexto dt')].some((d) => d.textContent.trim() === 'Objetivo')).length,
+      conHechos: tarjetas.filter((t) => t.querySelector('.observacion')).length,
+      yPrimera: primera ? Math.round(primera.getBoundingClientRect().bottom + scrollY) : null,
+      deLaBiblioteca: document.querySelectorAll('figure.grafico__figura, .recharts-surface').length,
+      minigraficos: document.querySelectorAll('.indicadores-del-resumen .minigrafico').length,
+      dibujosEnLasTarjetas: document.querySelectorAll('.area .minigrafico, .area figure').length,
+    };
   });
-  const iObjetivo = orden.h2.indexOf('Objetivo y planificación');
-  const iSintesis = orden.h2.indexOf('Para tu próxima revisión');
-  comprobar('CP-01', 'El Resumen presenta la persona, el objetivo y la síntesis, en ese orden y sin gráficos', orden.nombre.length > 0 && iObjetivo >= 0 && iSintesis > iObjetivo && orden.graficos === 0, `${orden.nombre} · ${orden.h2.join(' › ')}`);
-  comprobar('CP-01', 'A 1440 × 900, la primera observación de «Para tu próxima revisión» se ve sin desplazarse', orden.yPrimera !== null && orden.yPrimera <= 900, `síntesis en y = ${orden.ySintesis}; la primera observación termina en y = ${orden.yPrimera}`);
+  const iPrimeraArea = orden.h2.indexOf('Nutrición');
+  const iIndicadores = orden.h2.indexOf('Indicadores');
+  comprobar(
+    'CP-01',
+    'El Resumen presenta la persona y, por área, el objetivo y la síntesis, antes que los indicadores; no hay gráficos que explorar: las tarjetas no dibujan nada y los únicos dibujos son los minigráficos de los indicadores, después',
+    orden.nombre.length > 0 && iPrimeraArea === 0 && iIndicadores > iPrimeraArea && orden.tarjetasAntes && orden.conObjetivo >= 2 && orden.conHechos >= 2 && orden.deLaBiblioteca === 0 && orden.dibujosEnLasTarjetas === 0 && orden.minigraficos > 0,
+    `${orden.nombre} · ${orden.h2.join(' › ')} · ${orden.conObjetivo} tarjetas con objetivo, ${orden.conHechos} con hechos · ${orden.minigraficos} minigráficos, todos en los indicadores`,
+  );
+  comprobar('CP-01', 'A 1440 × 900, el primer hecho de la síntesis (en la tarjeta de la primera área) se ve sin desplazarse', orden.yPrimera !== null && orden.yPrimera <= 900, `el primer hecho termina en y = ${orden.yPrimera}`);
 
-  const etiquetaVerTodas = (await textos(page, '.encabezado-de-bloque button, .encabezado-de-bloque a')).find((t) => /Ver todas/.test(t)) ?? '';
-  const total = Number(/Ver todas \((\d+)\)/.exec(etiquetaVerTodas)?.[1] ?? NaN);
-  await clic(page, '.encabezado-de-bloque button, .encabezado-de-bloque a', 'Ver todas');
-  const obs = await page.$$eval('.observacion', (xs) =>
+  // La síntesis entera: lo que cada tarjeta tiene a la vista y lo que guarda plegado (la cobertura del período de un
+  // área con revisión), que dice cuántos hechos son. Reemplaza a «Ver todas (N)».
+  const anunciados = await page.$$eval('.area details.area__periodo > summary', (s) => s.map((x) => Number(/\((\d+)\)\s*$/.exec(x.textContent.trim())?.[1] ?? NaN)));
+  const aLaVistaAntes = await page.$$eval('.area .observacion', (xs) => xs.filter((o) => o.checkVisibility()).length);
+  await page.$$eval('.area details.area__periodo > summary', (s) => s.forEach((x) => x.click()));
+  await pausa(250);
+  const NOMBRE_DEL_AREA = { NUTRICION: 'Nutrición', ENTRENAMIENTO: 'Entrenamiento', ANTROPOMETRIA: 'Antropometría' };
+  const obs = await page.$$eval('.area .observacion', (xs) =>
     xs.map((o) => ({
       regla: o.dataset.regla,
-      alcance: o.querySelector('.observacion__alcance')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+      area: o.closest('.area').dataset.area,
+      alcance: o.querySelector('.observacion__alcance')?.textContent.replace(/\s+/g, ' ').trim() ?? '',
       texto: o.querySelector('.observacion__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
-      fuente: /Sale de /.test(o.querySelector('.observacion__pie')?.innerText ?? ''),
-      acciones: o.querySelectorAll('.observacion__pie a, .observacion__pie button').length,
+      acciones: o.querySelectorAll('a.observacion__fila').length,
+      destino: o.querySelector('.observacion__fila > .visualmente-oculto')?.textContent.replace(/\s+/g, ' ').trim() ?? '',
+      aLaVista: o.checkVisibility(),
     })),
   );
-  comprobar('CP-02', 'Cada observación dice su área y alcance, el hecho, de dónde sale y cómo profundizarlo', obs.length > 0 && obs.every((o) => o.alcance && o.texto && o.fuente && (o.acciones > 0 || o.regla === 'PARTE_NO_DISPONIBLE')), obs.map((o) => `${o.regla}(${o.acciones})`).join(' '));
-  comprobar('CP-02', '«Ver todas» dice cuántas hay y las muestra todas', obs.length === total, `${obs.length} de ${total}`);
+  // «De dónde sale» cada hecho ya no se repite en cada renglón (C-05): está en «Cómo se lee esta vista», una vez por regla.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await clic(page, '.marco-de-la-ficha button', 'Cómo se lee esta vista');
+  await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 5_000 });
+  await page.click('dialog.como-se-lee[open] details.como-se-lee__fuentes > summary');
+  await pausa(200);
+  const fuentes = await page.$$eval('dialog.como-se-lee[open] .como-se-lee__fuentes [data-regla]', (f) => Object.fromEntries(f.filter((x) => x.checkVisibility()).map((x) => [x.dataset.regla, x.innerText.replace(/\s+/g, ' ').trim()])));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 3_000 });
+  comprobar(
+    'CP-02',
+    'Cada hecho dice su área y alcance y el hecho, y el renglón abre cómo profundizarlo; de dónde sale cada uno está en «Cómo se lee esta vista», una vez por regla',
+    obs.length > 0 && obs.every((o) => o.alcance.startsWith(`${NOMBRE_DEL_AREA[o.area]} · `) && o.alcance.endsWith(':') && o.texto && /Sale de .+\.$/.test(fuentes[o.regla] ?? '') && (o.regla === 'OBJETIVO_NUEVO_DESPUES_DEL_CORTE' ? true : o.acciones === 1 && o.destino.length > 5)),
+    `${obs.map((o) => `${o.regla}(${o.acciones})`).join(' ')} · fuentes en la ayuda: ${Object.keys(fuentes).length}`,
+  );
+  comprobar(
+    'CP-02',
+    'La síntesis se muestra entera: lo plegado dice cuántos hechos guarda y, abierto, están todos (los que había a la vista más los anunciados)',
+    anunciados.length > 0 && anunciados.every(Number.isFinite) && obs.length === aLaVistaAntes + anunciados.reduce((s, n) => s + n, 0) && obs.every((o) => o.aLaVista),
+    `${aLaVistaAntes} a la vista + ${anunciados.join(' + ')} plegados = ${obs.length} hechos`,
+  );
   const palabras = ['mejoró', 'empeoró', 'no cumplió', 'adherencia', 'bien', 'mal'];
-  comprobar('CP-02', 'Ninguna observación califica a la persona', !obs.some((o) => palabras.some((p) => new RegExp(`\\b${p}\\b`, 'i').test(o.texto))), '');
+  comprobar('CP-02', 'Ningún hecho califica a la persona', obs.length > 0 && !obs.some((o) => palabras.some((p) => new RegExp(`\\b${p}\\b`, 'i').test(o.texto))), `${obs.length} hechos leídos`);
 
-  // CP-03: un corte por área, el de su última revisión.
+  // CP-03: un corte por área, el de su última revisión. Lo dice el alcance de cada hecho y, a la vista, la línea del
+  // corte de cada tarjeta. Las fechas del año en curso van sin el año (E-57).
   const alcances = obs.filter((o) => o.regla === 'NOVEDADES_DESDE_EL_CORTE').map((o) => o.alcance);
+  const cortesALaVista = await page.$$eval('.area', (as) => Object.fromEntries(as.map((a) => [a.dataset.area, a.querySelector('.area__corte')?.innerText.replace(/\s+/g, ' ').trim() ?? ''])));
   comprobar(
     'CP-03',
     'Cada área tiene su propio corte: la última revisión de Nutrición y la de Entrenamiento, en fechas distintas',
-    alcances.some((a) => a.startsWith('Nutrición') && a.includes(`Desde la revisión del ${diaDe(cortes.NUTRITION.recordedAt)}`)) &&
-      alcances.some((a) => a.startsWith('Entrenamiento') && a.includes(`Desde la revisión del ${diaDe(cortes.TRAINING.recordedAt)}`)) &&
+    alcances.some((a) => a.startsWith('Nutrición') && a.includes(`Desde la revisión del ${diaBreveDe(cortes.NUTRITION.recordedAt)}`)) &&
+      alcances.some((a) => a.startsWith('Entrenamiento') && a.includes(`Desde la revisión del ${diaBreveDe(cortes.TRAINING.recordedAt)}`)) &&
+      cortesALaVista.NUTRICION.startsWith(`Desde la revisión del ${diaBreveDe(cortes.NUTRITION.recordedAt)}`) &&
+      cortesALaVista.ENTRENAMIENTO.startsWith(`Desde la revisión del ${diaBreveDe(cortes.TRAINING.recordedAt)}`) &&
       cortes.NUTRITION.recordedAt !== cortes.TRAINING.recordedAt,
-    alcances.join(' | '),
+    `${alcances.join(' | ')} · a la vista: ${cortesALaVista.NUTRICION} | ${cortesALaVista.ENTRENAMIENTO}`,
   );
   // CP-05: lo que ocurrió después, lo cargado después y lo corregido después, como lo cuenta la API (registros que
   // ocurrieron; hechos anteriores de cualquier tipo cargados o corregidos después).
@@ -649,7 +763,8 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   );
 
   // Las novedades de Nutrición en la línea de tiempo, ya filtradas y explicadas.
-  await clic(page, '.observacion[data-regla="NOVEDADES_DESDE_EL_CORTE"] a', '(Nutrición)');
+  // El renglón entero de lo nuevo es el enlace (WP-ESCRITORIO-AMABLE, parte 3): el de la tarjeta de Nutrición.
+  await clic(page, '.area[data-area="NUTRICION"] .observacion[data-regla="NOVEDADES_DESDE_EL_CORTE"] a', 'Ver en la línea de tiempo');
   await quieto(page, v);
   const p = parametros(page);
   const aviso = await texto(page, '.aviso-de-filtro');
@@ -688,7 +803,7 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   // La evidencia: el origen del punto elegido, al costado, y la vuelta sin perder nada (CP-21).
   const urlAntes = page.url();
   const yAntes = await page.evaluate(() => window.scrollY);
-  const marca = await clic(page, '.panel-de-lectura button', 'Ver el origen de este dato');
+  const marca = await clic(page, '.panel-de-lectura button', 'Ver origen');
   await page.waitForSelector('dialog[open]');
   await quieto(page, v);
   const dialogo = await texto(page, 'dialog[open]');
@@ -697,7 +812,7 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   const foco = await page.evaluate(() => document.activeElement?.getAttribute('data-recorrido'));
   comprobar('CP-21', 'El origen del punto se abre al costado (la sesión) y al cerrarlo con Esc la vista sigue igual, con el foco en el disparador', /Sesión|sesión/.test(dialogo) && page.url() === urlAntes && foco === marca, `foco ${foco === marca ? 'en el disparador' : foco} · scroll ${yAntes} · ${dialogo.slice(0, 120)}`);
   // Ir al registro completo y volver con la configuración (la pestaña del área lleva `volver`).
-  await clic(page, '.panel-de-lectura button', 'Ver el origen de este dato');
+  await clic(page, '.panel-de-lectura button', 'Ver origen');
   await page.waitForSelector('dialog[open]');
   await quieto(page, v);
   await clic(page, 'dialog[open] a', 'Ver en Entrenamiento');
@@ -722,22 +837,30 @@ async function escenarioUnaArea(page, v, carpeta) {
   await cupo(v);
   await ir(page, FICHA_E);
   await quieto(page, v);
-  await clic(page, '.encabezado-de-bloque button, .encabezado-de-bloque a', 'Ver todas').catch(() => {});
-  const obs = await page.$$eval('.observacion', (xs) => xs.map((o) => ({ regla: o.dataset.regla, alcance: o.querySelector('.observacion__alcance')?.innerText.replace(/\s+/g, ' ').trim() ?? '', texto: o.querySelector('.observacion__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? '' })));
-  const fila = await page.evaluate(() => [...document.querySelectorAll('.tabla-de-planificacion tbody tr')].map((r) => r.innerText.replace(/\s+/g, ' ')).join(' | '));
+  // WP-ESCRITORIO-AMABLE (parte 3): el objetivo, el plan y los hechos de un área están en su tarjeta. Sin revisión no hay
+  // nada plegado: la cobertura del período está a la vista, debajo de la línea que dice el alcance.
+  const obs = await page.$$eval('.area .observacion', (xs) =>
+    xs.map((o) => ({
+      regla: o.dataset.regla,
+      alcance: o.querySelector('.observacion__alcance')?.textContent.replace(/\s+/g, ' ').trim() ?? '',
+      texto: o.querySelector('.observacion__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+      aLaVista: o.checkVisibility(),
+    })),
+  );
+  const tarjetas = await page.$$eval('.area', (as) => as.map((a) => ({ area: a.dataset.area, corte: a.querySelector('.area__corte')?.innerText.replace(/\s+/g, ' ').trim() ?? '', texto: a.innerText.replace(/\s+/g, ' '), plegados: a.querySelectorAll('details.area__periodo').length })));
   const cobertura = obs.find((o) => o.regla === 'COBERTURA_NUTRICIONAL');
   comprobar(
     'CP-04',
-    'Sin revisión previa, la síntesis habla del período seleccionado y lo dice; la cobertura aclara desde cuándo rige el plan',
-    obs.length > 0 && obs.every((o) => !/Desde la revisión/.test(o.alcance)) && /En el período seleccionado/.test(cobertura?.alcance ?? '') && /El plan rige desde el/.test(cobertura?.texto ?? '') && /Sin revisiones registradas/.test(fila),
-    `${cobertura?.alcance ?? 'sin cobertura'} · ${cobertura?.texto ?? ''}`,
+    'Sin revisión previa, la síntesis habla del período seleccionado y lo dice (en la línea del alcance y en cada hecho); la cobertura está a la vista y aclara desde cuándo rige el plan',
+    obs.length > 0 && obs.every((o) => !/Desde la revisión/.test(o.alcance)) && /En el período seleccionado/.test(cobertura?.alcance ?? '') && /El plan rige desde el/.test(cobertura?.texto ?? '') && cobertura?.aLaVista === true && tarjetas[0]?.plegados === 0 && /^En el período seleccionado · sin revisiones registradas/.test(tarjetas[0]?.corte ?? ''),
+    `«${tarjetas[0]?.corte ?? 'sin línea de alcance'}» · ${cobertura?.alcance ?? 'sin cobertura'} ${cobertura?.texto ?? ''}`,
   );
   const main = await texto(page, 'main');
   comprobar(
     'CP-08',
-    'Con una sola área autorizada, la ficha no muestra nada de las otras: ni filas, ni observaciones, ni conteos de sesiones o tomas',
-    obs.every((o) => /^Nutrición/.test(o.alcance)) && !/Entrenamiento ·|Antropometría ·|sesi(ón|ones) registradas?|tomas? (registradas?|en el período)/.test(main) && !/Entrenamiento|Antropometría/.test(fila),
-    fila.slice(0, 200),
+    'Con una sola área autorizada, la ficha no muestra nada de las otras: ni tarjetas, ni hechos, ni conteos de sesiones o tomas',
+    tarjetas.map((t) => t.area).join() === 'NUTRICION' && obs.length > 0 && obs.every((o) => /^Nutrición/.test(o.alcance)) && !/Entrenamiento ·|Antropometría ·|sesi(ón|ones) registradas?|tomas? (registradas?|en el período)|Preparar una toma/.test(main) && !/Entrenamiento|Antropometría/.test(tarjetas.map((t) => t.texto).join(' ')),
+    `tarjetas: ${tarjetas.map((t) => t.area).join(', ')} · ${(tarjetas[0]?.texto ?? '').slice(0, 160)}`,
   );
   await cupo(v);
   await ir(page, `${FICHA_E}&vista=analizar&pregunta=informacion-para-revisar&area=NUTRICION`);
@@ -820,7 +943,8 @@ async function recorridoNutricion(page, v, carpeta) {
   await cupo(v);
   await ir(page, FICHA_A);
   await quieto(page, v);
-  await clic(page, '.acciones-del-resumen a', 'Solicitar contexto');
+  // «Solicitar contexto» está en el marco de la ficha, a la vista en las tres vistas (WP-ESCRITORIO-AMABLE, parte 1).
+  await clic(page, '.marco-de-la-ficha a', 'Solicitar contexto');
   await page.waitForFunction(() => location.pathname === '/pro/advisees/forms', { timeout: 20_000 });
   await quieto(page, v);
   const pedido = await texto(page, 'main');
@@ -840,9 +964,11 @@ async function evidenciaDeLaRevision(page, v, carpeta) {
   await cupo(v);
   await ir(page, FICHA_A);
   await quieto(page, v);
-  await clic(page, '.acciones-del-resumen a', 'Preparar la revisión de Nutrición');
+  // La acción de cada área está al pie de su tarjeta (WP-ESCRITORIO-AMABLE, parte 3).
+  await clic(page, '.area[data-area="NUTRICION"] .area__accion a', 'Preparar la revisión de Nutrición');
   await page.waitForFunction(() => location.pathname === '/pro/advisees/nutrition', { timeout: 20_000 });
   await quieto(page, v);
+  await revisionPreparada(page, v);
   const leer = () =>
     page.evaluate(() => {
       const f = document.querySelector('#revision-evidencia');
@@ -936,7 +1062,7 @@ async function coberturaConHuecos(page, v, carpeta) {
   await quieto(page, v);
   const fila = await page.evaluate(() => {
     const t = [...document.querySelectorAll('table')].find((x) => x.querySelector('caption')?.textContent.includes('Comparación de los dos períodos'));
-    const f = [...(t?.querySelectorAll('tbody tr') ?? [])].find((r) => r.querySelector('th')?.textContent.startsWith('Energía'));
+    const f = [...(t?.querySelectorAll('tbody tr') ?? [])].find((r) => r.querySelector('th')?.textContent.startsWith('Calorías'));
     return f ? [...f.querySelectorAll('td')].map((c) => c.innerText.replace(/\s+/g, ' ').trim()) : [];
   });
   const kcal = (t) => Number((/^([\d.]+(?:,\d+)?) kcal/.exec(t ?? '')?.[1] ?? 'NaN').replace(/\./g, '').replace(',', '.'));
@@ -988,7 +1114,7 @@ async function recorridoEtapas(page, v, carpeta) {
   const esperadoA = media(vA.from, diaMenos(vA.to, 1));
   const esperadoB = media(vB.from, hoy);
   const fila = async () => page.evaluate(() => {
-    const f = [...document.querySelectorAll('.tabla-de-etapas tbody tr')].find((r) => r.querySelector('th')?.textContent.startsWith('Energía'));
+    const f = [...document.querySelectorAll('.tabla-de-etapas tbody tr')].find((r) => r.querySelector('th')?.textContent.startsWith('Calorías'));
     return f ? [...f.querySelectorAll('td')].map((c) => c.innerText.replace(/\s+/g, ' ').trim()) : [];
   });
   const energia = await fila();
@@ -996,7 +1122,7 @@ async function recorridoEtapas(page, v, carpeta) {
   const diferencia = Number((/([−-]?[\d.]+) kcal/.exec(energia[3] ?? '')?.[1] ?? 'NaN').replace('−', '-').replace(/\./g, ''));
   comprobar(
     'CP-18',
-    'Energía por etapa: la media de los días con valor y la cobertura en días de la etapa, calculadas a mano con los puntos de la API, coinciden con la tabla (y la diferencia también)',
+    'Calorías por etapa: la media de los días con valor y la cobertura en días de la etapa, calculadas a mano con los puntos de la API, coinciden con la tabla (y la diferencia también)',
     Math.round(esperadoA.media) === numeroDe(energia[1]) &&
       Math.round(esperadoB.media) === numeroDe(energia[2]) &&
       Math.abs(diferencia - (esperadoB.media - esperadoA.media)) <= 1 &&
@@ -1017,8 +1143,8 @@ async function recorridoEtapas(page, v, carpeta) {
     return {
       aMano: aMano ? { abierta: aMano.open, justoDebajo: etapas?.nextElementSibling === aMano, rotulo: aMano.querySelector('summary')?.textContent ?? '' } : null,
       seccionAlFinal: [...document.querySelectorAll('.analizar h3')].some((h) => h.textContent === 'Comparar dos períodos'),
-      resumenPlegado: !!document.querySelector('details.resumen-en-texto--plegado') && !document.querySelector('section.resumen-en-texto'),
-      listaDeEtapas: !!document.querySelector('details.etapas-del-grafico'),
+      resumenPlegado: [...document.querySelectorAll('.pie-de-graficos button')].some((b) => b.textContent.includes('Resumen en texto') && b.getAttribute('aria-expanded') === 'false') && !document.querySelector('section.resumen-en-texto'),
+      listaDeEtapas: !!document.querySelector('.etapas-del-grafico') || [...document.querySelectorAll('.pie-de-graficos button')].some((b) => b.textContent.includes('Comparar etapas')),
       causa: veces(/no indica causa/g),
       noSeRestan: veces(/No se restan totales/g),
       letraDeLaCobertura: parseFloat(getComputedStyle(document.querySelector('.tabla-de-etapas .celda__detalle')).fontSize),
@@ -1041,9 +1167,10 @@ async function recorridoEtapas(page, v, carpeta) {
   await captura(page, v, carpeta, 'r4-etapas-con-graficos');
   // CP-17: agrupar por semana y acercar no cambian la tabla ni la referencia fija.
   const tablaAntes = await texto(page, '.tabla-de-etapas');
-  await clic(page, '.capa', 'Semana');
+  await clic(page, '.modos-de-analizar label', 'Semana');
   await quieto(page, v);
   const conSemana = await texto(page, '.tabla-de-etapas');
+  await abrirMasAcciones(page);
   await abrirDetalles(page, 'details.intervalo');
   await page.evaluate(() => document.querySelectorAll('details.intervalo input[type="date"]').forEach((c, i) => c.setAttribute('data-intervalo', i === 0 ? 'desde' : 'hasta')));
   await fijarFecha(page, '[data-intervalo="desde"]', diaMenos(hoy, 40));
@@ -1054,6 +1181,7 @@ async function recorridoEtapas(page, v, carpeta) {
   comprobar('CP-17', 'Agrupar por semana y acercar el gráfico no cambian la tabla A/B (resume las observaciones originales) ni la referencia fija', tablaAntes === conSemana && conSemana === conZoom && parametros(page).get('ref') === '14' && parametros(page).get('g') === 'W', `g=${parametros(page).get('g')} · ref=${parametros(page).get('ref')}`);
   // CP-26: guardar la vista con la pregunta, reabrirla, y en otro asesorado las etapas se piden de nuevo.
   const nombre = `Etapas ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+  await abrirMasAcciones(page);
   await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
   await page.type('details.vistas-guardadas input', nombre);
   await clic(page, 'details.vistas-guardadas button', 'Guardar esta vista');
@@ -1066,7 +1194,8 @@ async function recorridoEtapas(page, v, carpeta) {
   await quieto(page, v);
   await ir(page, `${FICHA_A}&vista=analizar&m=nutricion.energia`);
   await quieto(page, v);
-  await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
+  await abrirMasAcciones(page);
+  if (!(await page.$('details.vistas-guardadas[open]'))) await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
   await quieto(page, v);
   await clic(page, 'details.vistas-guardadas button', `Abrir ${nombre}`);
   await quieto(page, v);
@@ -1076,7 +1205,9 @@ async function recorridoEtapas(page, v, carpeta) {
     await cupo(v);
     await ir(page, `${FICHA_E}&vista=analizar&m=nutricion.energia`);
     await quieto(page, v);
-    await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
+    await abrirMasAcciones(page);
+    // El plegable puede haber quedado abierto del asesorado anterior (el panel no se desarma al cambiar de ficha).
+    if (!(await page.$('details.vistas-guardadas[open]'))) await clic(page, 'details.vistas-guardadas summary', 'Vistas guardadas');
     await quieto(page, v);
     await clic(page, 'details.vistas-guardadas button', `Abrir ${nombre}`);
     await quieto(page, v);
@@ -1102,29 +1233,43 @@ async function clasesDelDato(page, v, descargas, carpeta = null) {
   await ir(page, `${FICHA_A}&vista=analizar&m=${encodeURIComponent('antropometria.peso,antropometria.imc')}&g=O&f=${fechaReportada}`);
   await quieto(page, v);
   const lectura = await texto(page, '.panel-de-lectura');
-  // El punto elegido lleva un aro (un círculo sin relleno, en el color del texto) dibujado DEBAJO de su marca: el grupo
-  // conserva la clase (`data-clase`) y la forma de la clase sigue encima del aro.
-  const elegido = await page.evaluate(() => {
-    const grupos = [...document.querySelectorAll('figure.grafico__figura g.grafico__elegible')];
-    const g = grupos.find((x) => x.querySelector('circle[fill="none"][stroke="var(--texto)"]'));
-    const aro = g?.querySelector('circle[fill="none"][stroke="var(--texto)"]');
-    return { hay: !!g, clase: g?.getAttribute('data-clase') ?? null, marcas: g ? g.children.length : 0, aroPrimero: g ? g.firstElementChild === aro : false };
-  });
+  // El punto elegido lleva un aro (un círculo sin relleno, en el color del texto) ALREDEDOR de su marca, en una capa
+  // aparte de las líneas (WP-ESCRITORIO-AMABLE: adentro del grupo de la marca se recortaba contra el borde del gráfico).
+  // Lo que se protege es lo mismo: el grupo conserva la clase (`data-clase`) y su forma, y el aro no la tapa: tiene el
+  // mismo centro que la marca y un radio mayor (un aro de menos radio, o relleno, taparía el contorno cortado).
+  const marcaElegida = () =>
+    page.evaluate(() => {
+      const g = document.querySelector('figure.grafico__figura g.grafico__elegible[data-elegido][data-clase="REPORTED"]') ?? document.querySelector('figure.grafico__figura g.grafico__elegible[data-elegido]');
+      const figura = g?.closest('figure.grafico__figura');
+      const circulo = (c) => ({ x: Number(c.getAttribute('cx')), y: Number(c.getAttribute('cy')), r: Number(c.getAttribute('r')), relleno: c.getAttribute('fill') });
+      const marca = g?.querySelector('circle') ? circulo(g.querySelector('circle')) : null;
+      const aros = figura ? [...figura.querySelectorAll('.grafico__aro circle')].filter((c) => getComputedStyle(c).visibility !== 'hidden').map(circulo) : [];
+      const aro = marca ? (aros.find((a) => Math.abs(a.x - marca.x) < 0.75 && Math.abs(a.y - marca.y) < 0.75) ?? null) : null;
+      return { hay: !!g, clase: g?.getAttribute('data-clase') ?? null, formas: g ? g.querySelectorAll('circle').length : 0, radioDeLaMarca: marca?.r ?? null, aro: aro ? { r: aro.r, relleno: aro.relleno } : null };
+    });
+  const rodeaSinTapar = (e) => e.hay && e.clase === 'REPORTED' && e.formas >= 1 && e.aro !== null && e.aro.relleno === 'none' && e.aro.r > (e.radioDeLaMarca ?? Infinity) + 1;
+  const elegido = await marcaElegida();
   comprobar(
     'CP-12',
-    'Al elegir el punto reportado, la lectura dice «Reportado por la persona, no medido» y el punto conserva su clase: el aro va debajo de la marca de la clase',
-    /Reportado por la persona, no medido/.test(lectura) && elegido.hay && elegido.clase === 'REPORTED' && elegido.marcas >= 2 && elegido.aroPrimero,
+    'Al elegir el punto reportado, la lectura dice «Reportado por la persona, no medido» y el punto conserva su clase: el aro rodea la marca de la clase sin taparla',
+    /Reportado por la persona, no medido/.test(lectura) && rodeaSinTapar(elegido),
     `${lectura.slice(0, 160)} · marca elegida: ${JSON.stringify(elegido)}`,
   );
+  // La prueba de la prueba: sin el aro, la comprobación anterior tiene que fallar (si no, no estaría mirando el aro).
+  const sinAro = await page.addStyleTag({ content: 'figure.grafico__figura .grafico__aro circle { visibility: hidden !important; }' });
+  const elegidoSinAro = await marcaElegida();
+  await sinAro.evaluate((e) => e.remove());
+  comprobar('CP-12', 'La prueba de la prueba: con el aro oculto, la comprobación del punto elegido falla', !rodeaSinTapar(elegidoSinAro) && elegidoSinAro.hay, `sin el aro: ${JSON.stringify(elegidoSinAro)}`);
   if (carpeta) await captura(page, v, carpeta, 'cp12-punto-elegido-reportado');
   // CP-13: el IMC es un índice, no una estimación; el método se nombra.
   await ir(page, `${FICHA_A}&vista=analizar&m=antropometria.imc&g=O`);
   await quieto(page, v);
   const lecturaImc = await texto(page, '.panel-de-lectura');
-  await abrirDetalles(page, 'details.tabla-de-datos');
-  const tabla = await texto(page, 'details.tabla-de-datos');
+  await abrirDelPie(page, 'Tabla de datos', '.tabla-de-datos');
+  const tabla = await texto(page, '.tabla-de-datos');
   comprobar('CP-13', 'El IMC se dice calculado (un índice, no una estimación), con su método, en la lectura y en la tabla', /Calculado: un índice calculado sobre medidas, no una estimación/.test(lecturaImc) && /Índice de masa corporal \(IMC\)/.test(lecturaImc) && /un índice calculado sobre medidas, no una estimación/.test(tabla) && !/estimación\)/.test(tabla.replaceAll('no una estimación', '')), lecturaImc.slice(0, 220));
   const anteriores = fs.readdirSync(descargas).filter((x) => x.endsWith('.csv'));
+  await abrirMasAcciones(page);
   await clic(page, 'button', 'Descargar los datos (CSV)');
   const { archivo, csv } = await esperarCsv(descargas, anteriores);
   const lineas = csv.split('\r\n');
@@ -1177,16 +1322,31 @@ async function recorridoRecuperacion(page, v, carpeta) {
   await cupo(v);
   await ir(page, `${FICHA_A}&p=30`);
   await quieto(page, v);
-  await clic(page, '.encabezado-de-bloque button, .encabezado-de-bloque a', 'Ver todas').catch(() => {});
-  const sintesis = await texto(page, '.para-tu-revision');
-  // Lo que falta va primero: el aviso está antes de la primera observación.
-  const primero = await page.evaluate(() => {
-    const f = document.querySelector('.para-tu-revision .observaciones__fallas');
-    const o = document.querySelector('.para-tu-revision .observacion');
-    return f && o ? Boolean(f.compareDocumentPosition(o) & Node.DOCUMENT_POSITION_FOLLOWING) : false;
-  });
+  // WP-ESCRITORIO-AMABLE (parte 3): la síntesis está en las tarjetas. La parte que falta se dice en la tarjeta de su
+  // área —las dos que tienen revisión—, primero (antes que sus hechos) y con «Reintentar»; la de Antropometría, que no
+  // depende de esa lectura, sigue completa.
+  const conFalla = await page.$$eval('.area', (as) =>
+    as.map((a) => {
+      const f = a.querySelector('.observaciones__fallas');
+      const o = a.querySelector('.observacion');
+      return {
+        area: a.dataset.area,
+        falla: f ? f.innerText.replace(/\s+/g, ' ').trim() : '',
+        reintentar: !!f?.querySelector('button'),
+        // Lo que falta va primero: el aviso está antes del primer hecho de la tarjeta.
+        antes: !!f && !!o && Boolean(f.compareDocumentPosition(o) & Node.DOCUMENT_POSITION_FOLLOWING),
+        texto: a.innerText.replace(/\s+/g, ' '),
+      };
+    }),
+  );
+  const tarjetaDe = (area) => conFalla.find((a) => a.area === area) ?? { falla: '', reintentar: false, antes: false, texto: '' };
   v.reglas = [];
-  comprobar('CP-06', 'Si falla la lectura de lo nuevo, la síntesis dice «No pudimos completar esta parte» antes que las observaciones, nunca «No hay registros nuevos»', /No pudimos completar esta parte \(lo nuevo desde la revisión\)/.test(sintesis) && !/No hay registros nuevos/.test(sintesis) && primero, sintesis.slice(0, 260));
+  comprobar(
+    'CP-06',
+    'Si falla la lectura de lo nuevo, la tarjeta de cada área con revisión dice «No pudimos completar esta parte» antes que sus hechos y con «Reintentar», nunca «No hay registros nuevos»; la de Antropometría sigue completa',
+    ['NUTRICION', 'ENTRENAMIENTO'].every((area) => /No pudimos completar esta parte \(lo nuevo desde la revisión\)/.test(tarjetaDe(area).falla) && tarjetaDe(area).reintentar && tarjetaDe(area).antes && !/No hay registros nuevos/.test(tarjetaDe(area).texto)) && conFalla.length === 3 && tarjetaDe('ANTROPOMETRIA').falla === '',
+    conFalla.map((a) => `${a.area}: «${a.falla.slice(0, 90)}»`).join(' · '),
+  );
   await captura(page, v, carpeta, 'r6-sintesis-con-una-parte-que-falla');
   // Error de una sola área en Analizar: la nutrición falla y el peso se dibuja; la parte que falta tiene reintento.
   v.reglas = [{ coincide: (u, m) => m === 'GET' && u.includes('/projections/NUTRITION'), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' }];
@@ -1198,7 +1358,7 @@ async function recorridoRecuperacion(page, v, carpeta) {
   v.reglas = [];
   comprobar('R6', 'Con la nutrición sin responder, el peso se dibuja y las partes que faltan lo dicen con su reintento, sin ceros', dibujados.length === 1 && /Peso/.test(dibujados[0]?.titulo ?? '') && /Reintentar/.test(analizar), `${dibujados.map((g) => g.titulo).join(' | ')}`);
   // El «Reintentar» de una serie (no el de lo que hay en el período): trae también lo demás que falló.
-  await clic(page, '.analizar__lienzo .campo__error button', 'Reintentar');
+  await clic(page, '.analizar__lienzo .estado-de-grafico button', 'Reintentar');
   await quieto(page, v);
   comprobar('R6', 'Reintentar, con la API de nuevo disponible, trae los tres gráficos', (await graficos(page)).length === 3, '');
   // Conflicto de escritura: guardar los indicadores choca con otra versión; lo elegido no se pierde.
@@ -1226,21 +1386,33 @@ async function accesibilidad(page, v, carpeta) {
   await cupo(v);
   await ir(page, FICHA_A);
   await quieto(page, v);
-  // Teclado: desde el encabezado, con Tab se llega a la primera observación y a las preguntas; el foco se ve.
-  await page.focus('h1').catch(() => {});
+  // Teclado: desde el encabezado, con Tab se llega a los hechos, a las acciones y a las preguntas; el foco se ve.
+  // WP-ESCRITORIO-AMABLE (parte 3): `page.focus('h1')` nunca enfocó nada (un título no recibe el foco) y el recorrido
+  // seguía desde donde lo había dejado el paso anterior («Cerrar» en los indicadores): llegaba a las preguntas dando la
+  // vuelta. Un clic en el título fija ahí el punto de partida de Tab, que es lo que el comentario decía.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.click('#titulo-asesorado');
   const recorridos = [];
   for (let i = 0; i < 60; i++) {
     await page.keyboard.press('Tab');
     const f = await page.evaluate(() => {
       const a = document.activeElement;
       const cs = a ? getComputedStyle(a) : null;
-      return { texto: a?.textContent?.replace(/\s+/g, ' ').trim().slice(0, 60) ?? '', visible: !!cs && (cs.outlineStyle !== 'none' || cs.boxShadow !== 'none'), dentro: !!a?.closest('.observacion, .preguntas-del-resumen, .acciones-del-resumen') };
+      // WP-ESCRITORIO-AMABLE (parte 3): cada hecho es un renglón-enlace de su tarjeta; la acción va al pie de la tarjeta.
+      const donde = a?.closest('.observacion') ? 'hecho' : a?.closest('.area__accion') ? 'accion' : a?.closest('.preguntas-del-resumen') ? 'pregunta' : null;
+      return { texto: a?.textContent?.replace(/\s+/g, ' ').trim().slice(0, 60) ?? '', visible: !!cs && (cs.outlineStyle !== 'none' || cs.boxShadow !== 'none'), dentro: donde !== null, donde };
     });
     recorridos.push(f);
-    if (f.dentro && /pregunta|progresando|registrado coincide|información cuento/i.test(f.texto)) break;
+    if (f.donde === 'pregunta' && /pregunta|progresando|registrado coincide|información cuento/i.test(f.texto)) break;
   }
   const llegados = recorridos.filter((f) => f.dentro);
-  comprobar('CP-28', 'Con el teclado se alcanzan las acciones de las observaciones y las preguntas del Resumen, con el foco visible', llegados.length > 0 && llegados.every((f) => f.visible), `${recorridos.length} Tab · ${llegados.map((f) => f.texto).slice(0, 4).join(' | ')}`);
+  const alcanzados = new Set(llegados.map((f) => f.donde));
+  comprobar(
+    'CP-28',
+    'Con el teclado se alcanzan los hechos de las tarjetas, la acción de cada área y las preguntas del Resumen, con el foco visible',
+    ['hecho', 'accion', 'pregunta'].every((d) => alcanzados.has(d)) && llegados.every((f) => f.visible),
+    `${recorridos.length} Tab · ${llegados.length} dentro (${[...alcanzados].join(', ')}) · ${llegados.map((f) => f.texto).slice(0, 4).join(' | ')}`,
+  );
   // Zoom al 200 %: la ventana de 1440 px vale 720 px de CSS. Sin desborde de la página.
   await page.setViewport({ width: 720, height: 900, deviceScaleFactor: 2 });
   await quieto(page, v, { silencio: 300 });
@@ -1259,7 +1431,14 @@ async function accesibilidad(page, v, carpeta) {
   recorrer(arbol, 0);
   fs.writeFileSync(fileURLToPath(new URL('arbol-de-accesibilidad-resumen.txt', carpeta)), planos.join('\n'));
   const sinNombre = planos.filter((l) => /^(\s*)(link|button): $/.test(l));
-  comprobar('CP-28', 'En el árbol de accesibilidad del Resumen, los encabezados están y ningún enlace o botón queda sin nombre', planos.some((l) => /heading 2: Para tu próxima revisión/.test(l)) && sinNombre.length === 0, `${planos.length} nodos · sin nombre: ${sinNombre.length}`);
+  // WP-ESCRITORIO-AMABLE (parte 3): los encabezados del Resumen son las áreas, «Indicadores» y las preguntas.
+  const encabezados = ['Nutrición', 'Entrenamiento', 'Antropometría', 'Indicadores', 'Empezar por una pregunta'];
+  comprobar(
+    'CP-28',
+    'En el árbol de accesibilidad del Resumen, los encabezados están (una por área, los indicadores y las preguntas) y ningún enlace o botón queda sin nombre',
+    encabezados.every((e) => planos.some((l) => new RegExp(`heading 2: ${e}$`).test(l))) && planos.filter((l) => /^\s*(link|button): ./.test(l)).length > 20 && sinNombre.length === 0,
+    `${planos.length} nodos · sin nombre: ${sinNombre.length}`,
+  );
   informar('CP-28', 'Lector de pantalla', 'No se probó con NVDA, JAWS ni Narrador: no están instalados (NVDA, JAWS) o no se pueden manejar ni escuchar de forma automática (Narrador). Se deja el árbol de accesibilidad y el guion para la prueba con una persona.');
 }
 
@@ -1300,7 +1479,8 @@ async function recorridoEntrenamiento(page, v, cortes, carpeta) {
   await cupo(v);
   await ir(page, FICHA_A);
   await quieto(page, v);
-  await clic(page, '.acciones-del-resumen a', 'Preparar la revisión de Entrenamiento');
+  // La acción de cada área está al pie de su tarjeta (WP-ESCRITORIO-AMABLE, parte 3).
+  await clic(page, '.area[data-area="ENTRENAMIENTO"] .area__accion a', 'Preparar la revisión de Entrenamiento');
   await page.waitForFunction(() => location.pathname === '/pro/advisees/training', { timeout: 20_000 });
   await quieto(page, v);
   const preparado = await texto(page, 'main');
@@ -1355,13 +1535,28 @@ async function recorridoEntrenamiento(page, v, cortes, carpeta) {
   await page.waitForFunction(() => location.pathname === '/pro/advisees', { timeout: 20_000 });
   await quieto(page, v);
   const nuevo = (await leerApi(v, `/advisees/${estado.aseId}/dashboard`)).data.domains.training.summary.lastReview;
-  const filaEntrenamiento = await page.evaluate(() => [...document.querySelectorAll('.tabla-de-planificacion tbody tr')].find((r) => r.querySelector('th')?.textContent === 'Entrenamiento')?.innerText.replace(/\s+/g, ' ') ?? '');
-  const sintesis = await texto(page, '.observaciones');
+  // WP-ESCRITORIO-AMABLE (parte 3): la última revisión de un área es el corte de su tarjeta («Desde la revisión del…»),
+  // y «registrada, sin aplicar» es un pendiente de esa misma tarjeta, con la frase del dominio. Antes eran una celda de
+  // la tabla («Última: … · registrada, sin aplicar»).
+  const deEntrenamiento = await page.evaluate(() => {
+    const a = document.querySelector('.area[data-area="ENTRENAMIENTO"]');
+    return {
+      corte: a?.querySelector('.area__corte')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+      sinAplicar: [...(a?.querySelectorAll('.observacion[data-regla="REVISION_SIN_APLICAR"]') ?? [])].map((o) => o.querySelector('.observacion__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? ''),
+      novedades: a?.querySelector('.observacion[data-regla="NOVEDADES_DESDE_EL_CORTE"] .observacion__alcance')?.textContent.replace(/\s+/g, ' ').trim() ?? '',
+    };
+  });
   comprobar(
     'CP-20',
     'La ficha ya dice la revisión nueva (hoy, sin aplicar) y lo nuevo de Entrenamiento se cuenta desde ella: sin recargar ni duplicar',
-    nuevo.reviewId !== cortes.TRAINING.reviewId && fechaCivilDe(nuevo.recordedAt) === hoy && filaEntrenamiento.includes(`Última: ${diaDe(nuevo.recordedAt)}`) && /registrada, sin aplicar/.test(filaEntrenamiento),
-    `${filaEntrenamiento.slice(0, 200)} · ${sintesis.slice(0, 120)}`,
+    nuevo.reviewId !== cortes.TRAINING.reviewId &&
+      fechaCivilDe(nuevo.recordedAt) === hoy &&
+      deEntrenamiento.corte.startsWith(`Desde la revisión del ${diaBreveDe(nuevo.recordedAt)}`) &&
+      !/aplicada/.test(deEntrenamiento.corte) &&
+      deEntrenamiento.sinAplicar.length === 1 &&
+      deEntrenamiento.sinAplicar[0] === `La revisión del ${diaBreveDe(nuevo.recordedAt)} está registrada y su resultado todavía no se aplicó.` &&
+      deEntrenamiento.novedades.includes(`Desde la revisión del ${diaBreveDe(nuevo.recordedAt)}`),
+    `«${deEntrenamiento.corte}» · ${deEntrenamiento.sinAplicar.join(' | ')} · ${deEntrenamiento.novedades}`,
   );
   await captura(page, v, carpeta, 'r2-ficha-despues-de-registrar');
 }
@@ -1409,7 +1604,7 @@ async function revocacion() {
       await ase.navegador.close();
     }
     // Primera pestaña: abrir el origen de un punto descubre la revocación; la cabecera y la ficha se actualizan solas.
-    await clic(pro.page, '.panel-de-lectura button', 'Ver el origen de este dato');
+    await clic(pro.page, '.panel-de-lectura button', 'Ver origen');
     await pro.page.waitForSelector('dialog[open]');
     await quieto(pro.page, pro.v);
     const origen = await texto(pro.page, 'dialog[open]');
@@ -1427,10 +1622,19 @@ async function revocacion() {
     await ir(pro.page, FICHA_D);
     await quieto(pro.page, pro.v);
     const resumen = await texto(pro.page, 'main');
-    comprobar('CP-23', 'En el Resumen, Antropometría ya no aporta valores ni acciones; el resto del vínculo sigue', !/Abrir Antropometría|Ver la toma/.test(resumen) && /Nutrición/.test(resumen), resumen.slice(0, 260));
+    // WP-ESCRITORIO-AMABLE (parte 3): un área sin acceso no tiene tarjeta. La negativa va con su positiva: la tarjeta de
+    // Nutrición está, con su «Abrir Nutrición», leída con el mismo selector.
+    const tarjetasDespues = await pro.page.$$eval('.area', (as) => as.map((a) => ({ area: a.dataset.area, abrir: a.querySelector('.area__abrir')?.textContent.trim() ?? '' })));
+    comprobar(
+      'CP-23',
+      'En el Resumen, Antropometría ya no aporta valores ni acciones (no tiene tarjeta, ni su toma, ni «Preparar una toma»); el resto del vínculo sigue',
+      !/Abrir Antropometría|Ver la toma|Preparar una toma|tomas? en el período/.test(resumen) && !tarjetasDespues.some((t) => t.area === 'ANTROPOMETRIA') && tarjetasDespues.some((t) => t.area === 'NUTRICION' && t.abrir === 'Abrir Nutrición') && /Nutrición/.test(resumen),
+      `tarjetas: ${tarjetasDespues.map((t) => t.area).join(', ')} · ${resumen.slice(0, 200)}`,
+    );
     await captura(pro.page, pro.v, carpeta, 'r5-revocado-resumen');
     // Segunda pestaña, con los datos viejos en pantalla: exportar vuelve a consultar y no sale ningún archivo.
     const antes = fs.readdirSync(descargas).filter((x) => x.endsWith('.csv'));
+    await abrirMasAcciones(pro2.page);
     await clic(pro2.page, 'button', 'Descargar los datos (CSV)');
     await pro2.page.waitForFunction(() => /No se descargó ningún archivo|Descargado:/.test(document.querySelector('.exportar')?.innerText ?? ''), { timeout: 20_000 }).catch(() => {});
     await pausa(1500);

@@ -308,7 +308,12 @@ export const ResultadoDeProyeccionAntropometricaSchema = z.strictObject({
   kind: z.literal('ANTHROPOMETRY_LONGITUDINAL'),
   /** Las métricas con observaciones en el período (para el selector). */
   available: z.array(MetricaAntropometricaDisponibleSchema),
-  /** Las series pedidas, una por métrica, con un tramo por grupo de comparabilidad (09 v0.11 §10-§11). */
+  /**
+   * Las series pedidas, una por métrica **con observaciones en el período**, con un tramo por grupo de comparabilidad
+   * (09 v0.11 §10-§11). Una métrica pedida sin observaciones vigentes no arma serie: su unidad sale de los datos, y una
+   * serie sin unidad no cumple este contrato. Que no hay nada lo dicen `available`, que no la lista, y `dataState`.
+   * Cada serie se reconoce por su `metricId`, no por su posición.
+   */
   series: z.array(SerieAnaliticaSchema),
   honesty: z.strictObject({ interpolated: z.literal(false), imputed: z.literal(false), carriedForward: z.literal(false) }),
 });
