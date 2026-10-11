@@ -5956,12 +5956,17 @@ a.observacion__fila:focus-visible {
   outline: none;
 }
 
+/* La muestra de la métrica queda al lado de su nombre aunque el nombre ocupe dos renglones. */
 .origen-del-dato__metrica {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.1rem 0.45rem;
+  align-items: baseline;
+  gap: 0.45rem;
   margin: 0;
+}
+
+.origen-del-dato__metrica > svg {
+  flex: none;
+  align-self: center;
 }
 
 .origen-del-dato__valor {

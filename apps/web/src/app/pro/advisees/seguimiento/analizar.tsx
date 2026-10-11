@@ -71,7 +71,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { BloqueDeEstado, Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
-import { diaCivil } from '../../../../lib/formato';
+import { diaCivil, rangoCivil } from '../../../../lib/formato';
 import { useDetalleAlCostado } from './al-costado';
 import { razonDeFalla, useLectura, useSeguimiento } from './contexto';
 import { codificarReferencia, hoyEn, leerAnalisis, leerPregunta, parametrosDeAnalisis, parametrosDePeriodo, parametrosDePregunta, type EstadoDeAnalisis, type GranoElegido, type Modo } from './estado';
@@ -453,6 +453,8 @@ export function Analizar() {
   // De dónde sale el dato abierto: lo mismo al costado y en el panel. Si un permiso cambió desde que se cargó la
   // pantalla, el valor que había quedado a la vista no se repite y las series se piden de nuevo.
   const serieDelOrigen = puntoAbierto ? series[puntoAbierto.indice] : undefined;
+  // Un punto agrupado por semana no es un día: se dice la semana entera.
+  const fechaDelOrigen = !puntoAbierto ? '' : puntoAbierto.punto.dateEnd ? `semana del ${rangoCivil(puntoAbierto.punto.date, puntoAbierto.punto.dateEnd)}` : diaCivil(puntoAbierto.punto.date);
   const contenidoDelOrigen = !puntoAbierto ? null : puntoAbierto.sinAcceso ? (
     <p className="nota">Este registro no está disponible con tu acceso actual.</p>
   ) : (
@@ -463,7 +465,7 @@ export function Analizar() {
       nombre={serieDelOrigen ? tituloDeLaMetrica(nombres[puntoAbierto.indice] ?? serieDelOrigen.definicion.nombre, serieDelOrigen.definicion.nombre, serieDelOrigen.definicion.nombreCorto) : (nombres[puntoAbierto.indice] ?? '')}
       indice={puntoAbierto.indice}
       conEncabezado={alCostado}
-      fecha={diaCivil(puntoAbierto.punto.date)}
+      fecha={fechaDelOrigen}
       calidad={calidadDelPunto(puntoAbierto.punto)}
       elegido={puntoAbierto.origen}
       onElegir={(o: OrigenDeDato) => setPuntoAbierto({ ...puntoAbierto, origen: o })}
@@ -867,7 +869,7 @@ export function Analizar() {
       {/* En una ventana angosta el origen no entra al costado: se abre encima, en el panel que retiene el foco. */}
       <PanelDeRegistro
         origen={puntoAbierto && !alCostado ? (puntoAbierto.origen ?? puntoAbierto.punto.sources[0] ?? null) : null}
-        titulo={puntoAbierto ? `${nombres[puntoAbierto.indice] ?? ''} · ${diaCivil(puntoAbierto.punto.date)}` : ''}
+        titulo={puntoAbierto ? `${nombres[puntoAbierto.indice] ?? ''} · ${fechaDelOrigen}` : ''}
         onCerrar={() => setPuntoAbierto(null)}
         soloLoDeAdentro
       >
