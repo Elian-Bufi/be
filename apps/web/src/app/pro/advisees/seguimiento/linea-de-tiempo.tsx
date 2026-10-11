@@ -70,6 +70,7 @@ import { Icono } from '../../../../components/icono';
 import { BotonDeVista } from '../../../../components/vista-con-nombre';
 import { api } from '../../../../lib/api';
 import { diaCivil, diaDelAnioEnCurso, fechaEnZona, horaEnZona } from '../../../../lib/formato';
+import { useDetalleAlCostado } from './al-costado';
 import { motivoDeFalla, razonDeFalla, textoDeFalla, useLectura, useSeguimiento, type MotivoDeFalla } from './contexto';
 import { hoyEn, leerCorte, leerFiltrosDeLaLinea, parametrosDeFiltros, restarDias, SIN_FILTROS, type FiltrosDeLaLinea } from './estado';
 import { cambiosDelRegistro, dondeCoincide, frenteALoIndicadoDe, ICONO_DEL_RASGO, numeroDeVersionDe, relacionesEnPalabras, renglonDelHecho, textoDelHueco, tituloDelHecho } from './hecho-en-un-renglon';
@@ -82,7 +83,6 @@ const EnlaceAlArea = dynamic(() => import('./registro-original').then((m) => m.E
 const POR_PAGINA = 50;
 const ZONA = 'America/Argentina/Buenos_Aires';
 /** Desde este ancho (1200 px) el detalle entra al costado de la lista: vale para 1280 y más. Más angosto, se abre encima. */
-const DETALLE_AL_COSTADO = '(min-width: 75rem)';
 
 type ConsultaDeLaLinea = {
   readonly periodStart: string;
@@ -152,19 +152,6 @@ const diaDeLaSemana = (civil: string) => soloDiaDeLaSemana.format(new Date(`${ci
 /** «24 sept, 13:30»: un instante en la zona del hecho, sin el año si es el año en curso. */
 const momento = (instante: string, zona: string, hoy: string) => `${diaDelAnioEnCurso(fechaCivil(instante, zona), hoy)}, ${horaEnZona(instante, zona)}`;
 const mismosTipos = (a: readonly TipoDeEvento[], b: readonly TipoDeEvento[]) => a.length === b.length && b.every((t) => a.includes(t));
-
-/** Si la ventana tiene lugar para el detalle al costado. En el primer dibujo no se sabe: se supone que no. */
-function useDetalleAlCostado(): boolean {
-  const [entra, setEntra] = useState(false);
-  useEffect(() => {
-    const consulta = window.matchMedia(DETALLE_AL_COSTADO);
-    const actualizar = () => setEntra(consulta.matches);
-    actualizar();
-    consulta.addEventListener('change', actualizar);
-    return () => consulta.removeEventListener('change', actualizar);
-  }, []);
-  return entra;
-}
 
 interface Revision {
   readonly dominio: 'NUTRITION' | 'TRAINING';

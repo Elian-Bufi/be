@@ -207,7 +207,8 @@ test('el objetivo se dibuja por escalones que no se pisan, y entra en el eje aun
     ...BASE,
     puntos,
     plan: [
-      { desde: '2026-08-15', hasta: dia(14), valor: 2100 },
+      // Como lo manda la API: el primero termina el día en que empieza el segundo. Ese día tiene un solo valor, el nuevo.
+      { desde: '2026-08-15', hasta: dia(15), valor: 2100 },
       // Sigue vigente: llega hasta el final de lo leído.
       { desde: dia(15), hasta: null, valor: 1950 },
     ],

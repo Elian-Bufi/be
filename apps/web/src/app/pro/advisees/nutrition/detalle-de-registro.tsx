@@ -86,7 +86,14 @@ export function DetalleDeRegistroDeComida({
   if (r === null) return <Cargando />;
   if (sinAcceso) return <p className="nota">Este registro no está disponible con tu acceso actual.</p>;
   if (!r.ok) return <ErrorConReintento mensaje={textoDeFalla(motivoDeFalla(r), 'el registro de comida')} onReintentar={() => void cargar()} />;
-  const registro = r.datos.data;
+  return <CuerpoDelRegistroDeComida registro={r.datos.data} token={token} sesionPerdida={sesionPerdida} />;
+}
+
+/**
+ * El registro ya leído, tal cual: lo usa el detalle de arriba y también «De dónde sale este dato» de Analizar, que lee
+ * todas las comidas de un día para decir qué aporta cada una y no las vuelve a pedir al abrir una.
+ */
+export function CuerpoDelRegistroDeComida({ registro, token, sesionPerdida }: { registro: RegistroDeComida; token: string; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
   const nombreDeItem = new Map((registro.option?.items ?? []).map((i) => [i.itemId, i.name]));
   return (
     <div className="detalle-de-valores">

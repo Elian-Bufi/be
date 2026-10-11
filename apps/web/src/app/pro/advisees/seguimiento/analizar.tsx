@@ -67,11 +67,12 @@ import {
   type ReferenciaDelCambio,
 } from '@be/domain';
 import dynamic from 'next/dynamic';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { BloqueDeEstado, Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
+import { useDetalleAlCostado } from './al-costado';
 import { razonDeFalla, useLectura, useSeguimiento } from './contexto';
 import { codificarReferencia, hoyEn, leerAnalisis, leerPregunta, parametrosDeAnalisis, parametrosDePeriodo, parametrosDePregunta, type EstadoDeAnalisis, type GranoElegido, type Modo } from './estado';
 import { diaAnterior, diasSinRegistros, mediodia, xDe } from './geometria';
@@ -87,6 +88,7 @@ import { VistasGuardadas, vistaRecienAbierta } from './vistas-guardadas';
 
 const Lienzo = dynamic(() => import('./lienzo').then((m) => m.Lienzo), { ssr: false, loading: () => <Cargando /> });
 const PanelDeRegistro = dynamic(() => import('./registro-original').then((m) => m.PanelDeRegistro), { ssr: false });
+const OrigenDelDato = dynamic(() => import('./origen-del-dato').then((m) => m.OrigenDelDato), { ssr: false, loading: () => <Cargando /> });
 const ComparacionDeEtapas = dynamic(() => import('./etapas').then((m) => m.ComparacionDeEtapas), { ssr: false, loading: () => <Cargando /> });
 const EtapasDelPeriodo = dynamic(() => import('./etapas').then((m) => m.EtapasDelPeriodo), { ssr: false });
 const ContrasteConLoIndicado = dynamic(() => import('./contraste').then((m) => m.ContrasteConLoIndicado), { ssr: false, loading: () => <Cargando /> });
@@ -185,6 +187,7 @@ export function Analizar() {
   useEffect(() => {
     setAvisoDeExportacion(null);
     setIntervalo(null);
+    setPuntoAbierto(null);
   }, [seleccion, pregunta?.id]);
   /** Un solo «Reintentar» trae todo lo que falló: las series y, si falló, qué hay en el período. */
   const reintentar = () => {
@@ -195,6 +198,29 @@ export function Analizar() {
   const [planAbierto, setPlanAbierto] = useState<EtapaDePlanificacion | null>(null);
   // `sinAcceso`: el origen ya no se puede leer con el acceso de ahora; el valor que quedó en pantalla no se repite.
   const [puntoAbierto, setPuntoAbierto] = useState<{ indice: number; punto: PuntoAnalitico; origen: OrigenDeDato | null; sinAcceso?: boolean } | null>(null);
+  // El origen de un dato va en el lugar de la lectura, al costado de los gráficos, si la ventana tiene lugar (C-13); si
+  // no, encima, en el panel. Al abrirlo el foco va a su título, y al volver, a lo que lo abrió.
+  const alCostado = useDetalleAlCostado();
+  const tituloDelOrigen = useRef<HTMLHeadingElement>(null);
+  const disparador = useRef<HTMLElement | null>(null);
+  const devolverElFoco = useRef(false);
+  const abrirOrigen = (indice: number, punto: PuntoAnalitico) => {
+    if (puntoAbierto === null) disparador.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setPuntoAbierto({ indice, punto, origen: null });
+  };
+  const volverALaLectura = () => {
+    devolverElFoco.current = true;
+    setPuntoAbierto(null);
+  };
+  const idDelPuntoAbierto = puntoAbierto?.punto.pointId ?? null;
+  useEffect(() => {
+    if (idDelPuntoAbierto !== null && alCostado) tituloDelOrigen.current?.focus({ preventScroll: true });
+    if (idDelPuntoAbierto === null && devolverElFoco.current) {
+      devolverElFoco.current = false;
+      // La lectura vuelve a estar a la vista en este mismo dibujo: lo que abrió el origen sigue ahí.
+      if (disparador.current?.isConnected) disparador.current.focus({ preventScroll: true });
+    }
+  }, [idDelPuntoAbierto, alCostado]);
 
   const listas = series.filter((s): s is SerieDelAnalisis & { estado: Extract<SerieDelAnalisis['estado'], { tipo: 'lista' }> } => s.estado.tipo === 'lista');
   const nombres = series.map((s) => nombreDeLaReferencia(s.ref, s.definicion, disponibles.ejercicios));
@@ -424,6 +450,30 @@ export function Analizar() {
     </div>
   );
 
+  // De dónde sale el dato abierto: lo mismo al costado y en el panel. Si un permiso cambió desde que se cargó la
+  // pantalla, el valor que había quedado a la vista no se repite y las series se piden de nuevo.
+  const serieDelOrigen = puntoAbierto ? series[puntoAbierto.indice] : undefined;
+  const contenidoDelOrigen = !puntoAbierto ? null : puntoAbierto.sinAcceso ? (
+    <p className="nota">Este registro no está disponible con tu acceso actual.</p>
+  ) : (
+    <OrigenDelDato
+      key={puntoAbierto.punto.pointId}
+      punto={puntoAbierto.punto}
+      serie={serieDelOrigen}
+      nombre={serieDelOrigen ? tituloDeLaMetrica(nombres[puntoAbierto.indice] ?? serieDelOrigen.definicion.nombre, serieDelOrigen.definicion.nombre, serieDelOrigen.definicion.nombreCorto) : (nombres[puntoAbierto.indice] ?? '')}
+      indice={puntoAbierto.indice}
+      conEncabezado={alCostado}
+      fecha={diaCivil(puntoAbierto.punto.date)}
+      calidad={calidadDelPunto(puntoAbierto.punto)}
+      elegido={puntoAbierto.origen}
+      onElegir={(o: OrigenDeDato) => setPuntoAbierto({ ...puntoAbierto, origen: o })}
+      onNoDisponible={() => {
+        setPuntoAbierto((p) => (p ? { ...p, sinAcceso: true } : p));
+        recargar();
+      }}
+    />
+  );
+
   // El cuerpo de los gráficos: la barra de métricas y modos, los gráficos con la lectura y lo que abre su pie. En la
   // comparación de etapas va adentro de la respuesta, debajo de «Las mismas métricas, en el tiempo» (C-12); en el resto
   // de «Analizar», donde estuvo siempre.
@@ -490,7 +540,7 @@ export function Analizar() {
           {masAcciones && !conEtapas ? panelDeMasAcciones : null}
 
           {cuerpoALaVista ? (
-          <div className="analizar__dos-columnas">
+          <div className="analizar__dos-columnas" data-con-origen={puntoAbierto && alCostado ? 'si' : undefined}>
             <div className="tarjeta-de-graficos analizar__lienzo">
               {intervalo ? (
                 <p className="nota">
@@ -523,7 +573,7 @@ export function Analizar() {
                     onFecha={(f) => cambiar({ fecha: f })}
                     onPunto={(indice, punto) => {
                       cambiar({ fecha: punto.date });
-                      setPuntoAbierto({ indice, punto, origen: null });
+                      abrirOrigen(indice, punto);
                     }}
                     onIntervalo={(d, h) => setIntervalo({ desde: d, hasta: h })}
                     bandas={bandas}
@@ -588,28 +638,51 @@ export function Analizar() {
             </div>
 
             {/* La lectura queda al costado de los gráficos mientras se recorren las fechas. Sin ningún gráfico todavía,
-                dice para qué sirve: la columna no aparece y desaparece. */}
-            {dibujables.length === 0 && estado.metricas.length > 0 ? (
+                dice para qué sirve: la columna no aparece y desaparece. Con el origen de un dato abierto, el origen
+                ocupa su lugar (C-13); la lectura sigue en el documento, oculta: lo que abrió el origen recibe el foco al
+                volver. Si mientras tanto un permiso cambió y ya no queda ningún gráfico, el origen sigue ahí para decirlo. */}
+            {estado.metricas.length > 0 ? (
               <div className="tarjeta-de-lectura analizar__lectura">
-                <section className="panel-de-lectura" aria-label="Lectura">
-                  <h3>Lectura</h3>
-                  <p className="nota">Cuando un gráfico tenga datos, elegí una fecha y sus valores se leen acá.</p>
-                </section>
-              </div>
-            ) : null}
-            {dibujables.length > 0 ? (
-              <div className="tarjeta-de-lectura analizar__lectura">
-                <PanelDeLectura
-                  fecha={fecha}
-                  fechasConDato={fechasConDato}
-                  series={listas}
-                  nombres={nombresALaVista}
-                  todas={series}
-                  deUnaSerie={delEjercicio}
-                  referencias={modo === 'RELATIVE' ? referencias : null}
-                  onFecha={(f) => cambiar({ fecha: f })}
-                  onAbrir={(indice, punto) => setPuntoAbierto({ indice, punto, origen: null })}
-                />
+                {puntoAbierto && alCostado ? (
+                  <aside
+                    className="origen-del-dato"
+                    aria-labelledby={`${id}-origen`}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Escape') return;
+                      e.stopPropagation();
+                      volverALaLectura();
+                    }}
+                  >
+                    <button type="button" className="boton boton--enlace origen-del-dato__volver" onClick={volverALaLectura}>
+                      <Icono nombre="volver" tamano={18} />
+                      Volver a la lectura{fecha ? ` del ${diaCivil(fecha)}` : ''}
+                    </button>
+                    <h3 id={`${id}-origen`} ref={tituloDelOrigen} tabIndex={-1}>
+                      De dónde sale este dato
+                    </h3>
+                    {contenidoDelOrigen}
+                  </aside>
+                ) : null}
+                <div hidden={puntoAbierto !== null && alCostado}>
+                  {dibujables.length > 0 ? (
+                    <PanelDeLectura
+                      fecha={fecha}
+                      fechasConDato={fechasConDato}
+                      series={listas}
+                      nombres={nombresALaVista}
+                      todas={series}
+                      deUnaSerie={delEjercicio}
+                      referencias={modo === 'RELATIVE' ? referencias : null}
+                      onFecha={(f) => cambiar({ fecha: f })}
+                      onAbrir={abrirOrigen}
+                    />
+                  ) : (
+                    <section className="panel-de-lectura" aria-label="Lectura">
+                      <h3>Lectura</h3>
+                      <p className="nota">Cuando un gráfico tenga datos, elegí una fecha y sus valores se leen acá.</p>
+                    </section>
+                  )}
+                </div>
               </div>
             ) : null}
           </div>
@@ -791,17 +864,14 @@ export function Analizar() {
         numeroDeVersion={planAbierto ? Number(planAbierto.etiqueta.replace(/^v/, '')) || undefined : undefined}
         onCerrar={() => setPlanAbierto(null)}
       />
+      {/* En una ventana angosta el origen no entra al costado: se abre encima, en el panel que retiene el foco. */}
       <PanelDeRegistro
-        origen={puntoAbierto ? (puntoAbierto.origen ?? puntoAbierto.punto.sources[0] ?? null) : null}
+        origen={puntoAbierto && !alCostado ? (puntoAbierto.origen ?? puntoAbierto.punto.sources[0] ?? null) : null}
         titulo={puntoAbierto ? `${nombres[puntoAbierto.indice] ?? ''} · ${diaCivil(puntoAbierto.punto.date)}` : ''}
         onCerrar={() => setPuntoAbierto(null)}
-        onNoDisponible={() => {
-          // Un permiso cambió desde que se cargó la pantalla: el punto no se vuelve a mostrar y las series se piden de nuevo.
-          setPuntoAbierto((p) => (p ? { ...p, sinAcceso: true } : p));
-          recargar();
-        }}
+        soloLoDeAdentro
       >
-        {puntoAbierto && !puntoAbierto.sinAcceso ? <DetalleDelPunto abierto={puntoAbierto} serie={series[puntoAbierto.indice]} onOrigen={(o) => setPuntoAbierto({ ...puntoAbierto, origen: o })} /> : null}
+        {puntoAbierto && !alCostado ? contenidoDelOrigen : null}
       </PanelDeRegistro>
     </section>
   );
@@ -1195,34 +1265,6 @@ function PanelDeLectura({
         )}
       </div>
     </section>
-  );
-}
-
-function DetalleDelPunto({ abierto, serie, onOrigen }: { abierto: { indice: number; punto: PuntoAnalitico; origen: OrigenDeDato | null }; serie: SerieDelAnalisis | undefined; onOrigen: (o: OrigenDeDato) => void }) {
-  const p = abierto.punto;
-  const actual = abierto.origen ?? p.sources[0] ?? null;
-  return (
-    <div>
-      <p>
-        {p.value === null || !serie ? 'Sin valor conocido' : valorParaMostrar(p.value, serie.definicion, serie.estado.tipo === 'lista' ? serie.estado.serie.unit : serie.definicion.unidad)} · {calidadDelPunto(p)} · n = {numero(p.n)}
-      </p>
-      {p.sources.length > 1 ? (
-        <>
-          <p className="nota">
-            Este dato sale de {numero(p.sources.length)} registros{p.sourcesTruncated ? ' (y más, que no se listan)' : ''}. Elegí cuál abrir:
-          </p>
-          <ul className="selector-de-series">
-            {p.sources.map((o, i) => (
-              <li key={o.id}>
-                <button type="button" className="chip" aria-pressed={actual?.id === o.id} onClick={() => onOrigen(o)}>
-                  Registro {i + 1}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : null}
-    </div>
   );
 }
 

@@ -130,6 +130,9 @@ test('cada tarjeta ofrece las etapas que dejan a A como la más antigua, y nunca
   // Con A = v1 y B = v3: A puede pasar a v2; B puede volver a v2.
   assert.deepEqual(ids(etapasElegibles(todas, V1, V3, 'A')), ['v1', 'v2']);
   assert.deepEqual(ids(etapasElegibles(todas, V3, V1, 'B')), ['v2', 'v3']);
+  // Con A = v2 y B = v3: A puede pasar a v1, y B no tiene otra (v1 es anterior a A: la dejaría de ser la más antigua).
+  assert.deepEqual(ids(etapasElegibles(todas, V2, V3, 'A')), ['v1', 'v2']);
+  assert.deepEqual(ids(etapasElegibles(todas, V3, V2, 'B')), ['v3']);
   // Con dos etapas en el área no hay nada para elegir: la pantalla escribe el nombre, sin selector.
   assert.deepEqual(ids(etapasElegibles([V1, V2], V1, V2, 'A')), ['v1']);
   assert.deepEqual(ids(etapasElegibles([V1, V2], V2, V1, 'B')), ['v2']);

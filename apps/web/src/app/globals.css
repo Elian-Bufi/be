@@ -5929,6 +5929,160 @@ a.observacion__fila:focus-visible {
   color: var(--tenue);
 }
 
+/* ─── De dónde sale un dato, en el lugar de la lectura (WP-ESCRITORIO-AMABLE, C-13) ────────── */
+/* Con el origen abierto, la columna de la derecha se ensancha: adentro va el registro, con sus tablas. Los gráficos
+   siguen a la vista, más angostos. Vale desde 75rem, donde el origen va al costado; más angosto, se abre en el panel. */
+@media (min-width: 75rem) {
+  .analizar__dos-columnas[data-con-origen] {
+    grid-template-columns: minmax(0, 1fr) clamp(25rem, 36%, 31rem);
+  }
+}
+
+.origen-del-dato__volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+}
+
+.origen-del-dato h3 {
+  margin: 0.1rem 0 0.4rem;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+/* El título recibe el foco al abrir (para el teclado y el lector de pantalla): no es un control y no lleva contorno. */
+.origen-del-dato h3:focus {
+  outline: none;
+}
+
+.origen-del-dato__metrica {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 0.45rem;
+  margin: 0;
+}
+
+.origen-del-dato__valor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.75rem;
+  margin: 0.1rem 0 0;
+}
+
+.origen-del-dato__que {
+  margin: 0.35rem 0 0;
+}
+
+.origen-del-dato__nota {
+  margin: 0.2rem 0 0;
+  color: var(--tenue);
+  font-size: 0.94rem;
+}
+
+/* Las fuentes: una fila por comida, con su hora, qué fue y lo que aporta. Cada fila abre su registro debajo. */
+.fuentes-del-dato {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.fuentes-del-dato__titulo {
+  margin: 0.6rem 0 0.2rem;
+  font-size: 1rem;
+}
+
+.fuentes-del-dato__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fuente {
+  border-bottom: 1px solid var(--borde);
+}
+
+.fuente--sin-leer {
+  padding: 0.7rem 0.25rem;
+  color: var(--tenue);
+}
+
+.fuente__fila {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.45rem 0.25rem;
+  border: 0;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fuente__fila:hover {
+  background: var(--fondo-suave);
+}
+
+.fuente__hora {
+  flex: none;
+  color: var(--tenue);
+  font-variant-numeric: tabular-nums;
+}
+
+.fuente__que {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
+  min-width: 0;
+}
+
+.fuente__aporte {
+  flex: none;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.fuente__fila > svg {
+  flex: none;
+  color: var(--tenue);
+}
+
+/* Un registro dentro del origen: liso, sin la barra de color. Ya está adentro de una tarjeta. */
+.origen-del-dato__cuerpo .detalle-de-valores {
+  margin: 0.5rem 0 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-left-width: 1px;
+  border-radius: 8px;
+}
+
+.fuente__registro .detalle-de-valores {
+  margin-top: 0;
+}
+
+.fuentes-del-dato__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  padding: 0.6rem 0.25rem 0;
+  font-weight: 600;
+}
+
+.fuentes-del-dato__total strong {
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.origen-del-dato__cuerpo .enlace-al-area {
+  margin: 0.75rem 0 0;
+}
+
 /* La cobertura de un valor es contexto para decidir (GUIA-UX-UI II.4): el tamaño de un dato secundario, no menos. */
 .celda__detalle {
   display: block;

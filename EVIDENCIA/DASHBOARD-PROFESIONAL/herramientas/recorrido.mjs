@@ -290,6 +290,25 @@ async function abrirDelPie(page, texto, selector) {
   await clic(page, '.pie-de-graficos button', texto);
   await page.waitForSelector(selector, { timeout: 5_000 });
 }
+/**
+ * El origen de un dato de Analizar (WP-ESCRITORIO-AMABLE, C-13). En una ventana ancha va al costado, en el lugar de la
+ * lectura (`aside.origen-del-dato`); en una angosta, encima, en el panel de siempre (`dialog.dialogo--panel[open]`).
+ * Estas piezas abren, leen y cierran el que haya: así cada comprobación sigue protegiendo lo suyo a cualquier ancho.
+ */
+const ORIGEN = 'aside.origen-del-dato, dialog.dialogo--panel[open]';
+const enElOrigen = (s) => ORIGEN.split(', ').map((o) => `${o} ${s}`).join(', ');
+async function abrirOrigen(page) {
+  const marca = await clic(page, '.panel-de-lectura button', 'Ver origen');
+  await page.waitForSelector(ORIGEN, { timeout: 15_000 });
+  return marca;
+}
+/** Vuelve del origen a la lectura: «Volver a la lectura» si está al costado; «Cerrar» si es el panel. */
+async function cerrarOrigen(page) {
+  const alCostado = !!(await page.$('aside.origen-del-dato'));
+  await clic(page, enElOrigen('button'), alCostado ? 'Volver a la lectura' : 'Cerrar');
+  await page.waitForFunction((s) => !document.querySelector(s), { timeout: 10_000 }, ORIGEN);
+}
+
 /** Hace clic (de verdad, con el mouse) en el primer elemento visible y habilitado que contiene el texto. */
 async function clic(page, selector, contiene) {
   const marca = `r${Math.random().toString(36).slice(2)}`;
@@ -307,6 +326,8 @@ async function clic(page, selector, contiene) {
   );
   if (!ok) throw new Error(`no encontré «${contiene}» en ${selector}`);
   await page.click(`[data-recorrido="${marca}"]`);
+  // La marca que quedó en el elemento: sirve para comprobar después que el foco volvió a él.
+  return marca;
 }
 
 /** Elige una opción del `<select>` cuya etiqueta contiene el texto, dentro del contenedor. */
@@ -866,20 +887,17 @@ async function funcional() {
 
     // El origen del punto, y la vuelta sin perder nada.
     const urlAnalisis = page.url();
-    await clic(page, '.panel-de-lectura button', 'Ver origen');
-    await page.waitForSelector('dialog[open]');
+    await abrirOrigen(page);
     await quieto(page, v);
-    const origen = await texto(page, 'dialog[open]');
+    const origen = await texto(page, ORIGEN);
     comprobar('PRO-26', 'El punto de energía de hoy abre su registro de comida', /n = 1/.test(origen) && /Ver en Nutrición/.test(origen), origen.slice(0, 200));
-    await clic(page, 'dialog[open] button', 'Cerrar');
-    await page.waitForFunction(() => !document.querySelector('dialog[open]'));
+    await cerrarOrigen(page);
     comprobar('PRO-05', 'Al cerrar el origen, la vista sigue igual (período, métricas, modo y fecha)', page.url() === urlAnalisis);
 
     // A la pestaña del dominio y de vuelta con «Atrás».
-    await clic(page, '.panel-de-lectura button', 'Ver origen');
-    await page.waitForSelector('dialog[open]');
+    await abrirOrigen(page);
     await quieto(page, v);
-    await clic(page, 'dialog[open] a', 'Ver en Nutrición');
+    await clic(page, enElOrigen('a'), 'Ver en Nutrición');
     await page.waitForFunction(() => location.pathname.startsWith('/pro/advisees/nutrition'));
     await quieto(page, v);
     await page.goBack();
@@ -2048,6 +2066,156 @@ async function analizarRecompuesto(page, v) {
       ayuda.titulo === 'Cómo se lee Analizar' && ayuda.renglones >= 10 && ayuda.muestras >= 10 && ayuda.focoAdentro && /No son ceros/.test(ayuda.texto) && /no indica que una cause la otra/.test(ayuda.texto) && /no se resta ni se califica/.test(ayuda.texto) && axeConLaAyuda.length === 0 && cerro && focoDespues === 'Cómo se lee esta vista',
       `${ayuda.titulo} · ${ayuda.renglones} renglones, ${ayuda.muestras} muestras · foco adentro: ${ayuda.focoAdentro} · axe: ${JSON.stringify(axeConLaAyuda)} · Escape la cierra: ${cerro} · foco después: «${focoDespues}»`,
     );
+    // C-13 · De dónde sale un dato: en el lugar de la lectura, con lo que aporta cada comida ─────────────────
+    // Un día terminado y completo que salga de varias comidas (entre 2 y 8 registros): sus fuentes las dice la API. Lo
+    // que aporta cada una se lee aparte, registro por registro, con la misma operación que usa la pantalla.
+    const conComidas = [...nut.recorded.points].reverse().find((p) => p.date !== hoy && p.value !== null && !p.partialBucket && p.quality !== 'PARTIAL' && p.sources.length >= 2 && p.sources.length <= 8 && !p.sourcesTruncated && p.sources.every((s) => s.type === 'MEAL_RECORD'));
+    if (conComidas) {
+      await page.setViewport({ width: 1440, height: 900 });
+      await abrirAnalisis(`m=${encodeURIComponent(TRES)}&p=90&f=${conComidas.date}`);
+      const registros = [];
+      for (const s of conComidas.sources) registros.push((await leerApi(v, `/nutrition/meal-records/${s.id}`)).data);
+      registros.sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+      const kcalDe = (r) => (r.consumed && r.consumed.energyKcal.value !== null ? Number(r.consumed.energyKcal.value) : null);
+      const suma = registros.reduce((t, r) => t + (kcalDe(r) ?? 0), 0);
+      const opcionDe = (r) => (r.kind === 'PLAN_OPTION' && r.option ? r.option.label : `Comió algo diferente${r.description ? `: «${r.description}»` : ''}`);
+      const filasEsperadas = registros.map((r) => `${r.meal?.label ?? ''}|${opcionDe(r)}|${kcalDe(r) === null ? '' : `${dominio.numero(Math.round(kcalDe(r)))} kcal`}`);
+      const leerElOrigen = () =>
+        page.evaluate(() => {
+          const a = document.querySelector('aside.origen-del-dato');
+          const d = document.querySelector('dialog.dialogo--panel[open]');
+          const donde = a ?? d;
+          const g = document.querySelector('.tarjeta-de-graficos')?.getBoundingClientRect();
+          const r = a?.getBoundingClientRect();
+          return {
+            alCostado: !!a && !!g && !!r && r.left >= g.right - 1 && r.width >= 380,
+            panel: !!d,
+            graficos: [...document.querySelectorAll('figure.grafico__figura')].filter((f) => f.getClientRects().length > 0).length,
+            lecturaALaVista: (document.querySelector('.panel-de-lectura')?.getClientRects().length ?? 0) > 0,
+            titulo: a?.querySelector('h3')?.textContent.trim() ?? '',
+            focoEnElTitulo: !!a && document.activeElement === a.querySelector('h3'),
+            metrica: donde?.querySelector('.origen-del-dato__metrica')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+            valor: donde?.querySelector('.origen-del-dato__valor .dato-de-lectura__valor')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+            filas: [...(donde?.querySelectorAll('.fuente__fila') ?? [])].map((f) => ({
+              hora: f.querySelector('.fuente__hora')?.textContent.trim() ?? '',
+              comida: f.querySelector('.fuente__que strong')?.textContent.trim() ?? '',
+              opcion: f.querySelector('.fuente__que > span')?.textContent.trim() ?? '',
+              aporte: f.querySelector('.fuente__aporte')?.textContent.trim() ?? '',
+            })),
+            sinLeer: donde?.querySelectorAll('.fuente--sin-leer').length ?? 0,
+            total: donde?.querySelector('.fuentes-del-dato__total')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+            chips: donde?.querySelectorAll('.selector-de-series .chip').length ?? 0,
+            volver: a?.querySelector('.origen-del-dato__volver')?.textContent.replace(/\s+/g, ' ').trim() ?? '',
+            enlace: donde?.querySelector('.enlace-al-area a')?.textContent.trim() ?? '',
+            abiertas: donde?.querySelectorAll('.fuente__registro').length ?? 0,
+            desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          };
+        });
+      const lecturasDeComidas = (desde) => v.urls.slice(desde).filter((u) => /^GET .*\/nutrition\/meal-records\//.test(u)).length;
+      let pedidosAntes = v.urls.length;
+      const marcaDelOrigen = await clic(page, '.panel-de-lectura__metrica button', 'Ver origen');
+      await page.waitForSelector('aside.origen-del-dato .fuente__fila', { timeout: 20_000 });
+      await quieto(page, v);
+      const lecturasAlAbrir = lecturasDeComidas(pedidosAntes);
+      const origen = await leerElOrigen();
+      comprobar(
+        'C-13',
+        'El origen de un dato va en el lugar de la lectura, al costado de los gráficos, que siguen a la vista: con su título (que recibe el foco), la métrica y la fecha, el valor de la API y «Volver a la lectura»; no se abre un panel encima',
+        origen.alCostado &&
+          !origen.panel &&
+          origen.graficos === 3 &&
+          !origen.lecturaALaVista &&
+          origen.titulo === 'De dónde sale este dato' &&
+          origen.focoEnElTitulo &&
+          origen.metrica === `Calorías registradas · ${diaCivil(conComidas.date)}` &&
+          origen.valor === `${dominio.numero(Math.round(conComidas.value))} kcal` &&
+          origen.volver === `Volver a la lectura del ${diaCivil(conComidas.date)}` &&
+          origen.desborde <= 1,
+        JSON.stringify({ ...origen, filas: origen.filas.length }),
+      );
+      comprobar(
+        'C-13',
+        'El origen lista cada comida de ese día en el orden en que ocurrió, con su hora, su comida, la opción y lo que aporta, como lo dice cada registro leído aparte; lo que aportan suma el valor del punto, y el total es ese valor',
+        origen.filas.length === conComidas.sources.length &&
+          origen.sinLeer === 0 &&
+          origen.filas.map((f) => `${f.comida}|${f.opcion}|${f.aporte}`).join(' ‖ ') === filasEsperadas.join(' ‖ ') &&
+          origen.filas.every((f) => /^\d{2}:\d{2}$/.test(f.hora)) &&
+          Math.abs(suma - conComidas.value) <= 1 &&
+          origen.total === `Total del día ${dominio.numero(Math.round(conComidas.value))} kcal`,
+        `API: ${conComidas.date} = ${conComidas.value} kcal de ${conComidas.sources.length} registros (suman ${suma.toFixed(1)}) · esperado: ${filasEsperadas.join(' ‖ ')} · pantalla: ${origen.filas.map((f) => `${f.hora} ${f.comida}|${f.opcion}|${f.aporte}`).join(' ‖ ')} · ${origen.total}`,
+      );
+      // Abrir una comida muestra su registro sin pedirlo de nuevo: se leyó una vez, al abrir el origen.
+      pedidosAntes = v.urls.length;
+      await page.evaluate(() => document.querySelector('aside.origen-del-dato .fuente__fila')?.setAttribute('data-recorrido', 'primera-comida'));
+      await page.click('[data-recorrido="primera-comida"]');
+      await page.waitForSelector('aside.origen-del-dato .fuente__registro', { timeout: 5_000 });
+      await quieto(page, v, { silencio: 400 });
+      const abierta = await page.evaluate(() => ({
+        expandida: document.querySelector('[data-recorrido="primera-comida"]')?.getAttribute('aria-expanded'),
+        registro: document.querySelector('aside.origen-del-dato .fuente__registro')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+        abiertas: document.querySelectorAll('aside.origen-del-dato .fuente__registro').length,
+      }));
+      comprobar(
+        'C-13',
+        'Se lee un registro por comida al abrir el origen, y ninguno más al desplegar una: la fila abre su registro (la opción, cómo informó las cantidades y la estimación) con lo ya leído',
+        lecturasAlAbrir === conComidas.sources.length && lecturasDeComidas(pedidosAntes) === 0 && abierta.expandida === 'true' && abierta.abiertas === 1 && abierta.registro.includes(registros[0].kind === 'PLAN_OPTION' && registros[0].option ? registros[0].option.label : 'Comió algo diferente') && /Estimación de lo consumido/.test(abierta.registro),
+        `${lecturasAlAbrir} lecturas al abrir (${conComidas.sources.length} fuentes) · ${lecturasDeComidas(pedidosAntes)} al desplegar · ${abierta.registro.slice(0, 160)}`,
+      );
+      const axeConElOrigen = await axe(page);
+      // Escape vuelve a la lectura: la vista sigue igual y el foco vuelve a «Ver origen».
+      const urlConElOrigen = page.url();
+      await page.keyboard.press('Escape');
+      const cerroElOrigen = await page.waitForFunction(() => !document.querySelector('aside.origen-del-dato'), { timeout: 5_000 }).then(() => true, () => false);
+      const trasCerrar = await page.evaluate(() => ({ foco: document.activeElement?.getAttribute('data-recorrido') ?? '', lectura: (document.querySelector('.panel-de-lectura')?.getClientRects().length ?? 0) > 0, graficos: document.querySelectorAll('figure.grafico__figura').length }));
+      comprobar(
+        'C-13',
+        'Escape cierra el origen y vuelve a la lectura: la dirección no cambió, los tres gráficos siguen y el foco vuelve a «Ver origen»; con el origen abierto, axe no encuentra faltas',
+        cerroElOrigen && page.url() === urlConElOrigen && trasCerrar.foco === marcaDelOrigen && trasCerrar.lectura && trasCerrar.graficos === 3 && axeConElOrigen.length === 0,
+        `cerró: ${cerroElOrigen} · foco: ${trasCerrar.foco === marcaDelOrigen ? 'en «Ver origen»' : trasCerrar.foco || 'en otro lado'} · axe: ${JSON.stringify(axeConElOrigen)}`,
+      );
+      // Con más fuentes de las que se leen de una vez (una semana entera), no se leen todas: se elige cuál abrir, como
+      // antes. Es la misma consulta que arriba: ahí había filas y ningún botón para elegir; acá, al revés.
+      const semanas =(await leerApi(v, `/advisees/${estado.aseId}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?metric=ENERGY&grain=WEEK&periodStart=${desde90}&periodEnd=${hoy}`)).data.result.recorded.points;
+      const semana = [...semanas].reverse().find((p) => p.value !== null && !p.partialBucket && p.sources.length > 8);
+      if (semana) {
+        await abrirAnalisis(`m=${encodeURIComponent('nutricion.energia')}&p=90&g=W&f=${semana.date}`);
+        pedidosAntes = v.urls.length;
+        await clic(page, '.panel-de-lectura__metrica button', 'Ver origen');
+        await page.waitForSelector('aside.origen-del-dato .selector-de-series .chip', { timeout: 20_000 });
+        await quieto(page, v);
+        const deLaSemana = await leerElOrigen();
+        comprobar(
+          'C-13',
+          'Un punto que sale de más de ocho registros (una semana) no los lee todos: ofrece elegir cuál abrir, y abre uno',
+          deLaSemana.chips === semana.sources.length && deLaSemana.filas.length === 0 && lecturasDeComidas(pedidosAntes) === 1 && deLaSemana.alCostado,
+          `${semana.sources.length} fuentes en la API · ${deLaSemana.chips} para elegir · ${deLaSemana.filas.length} filas · ${lecturasDeComidas(pedidosAntes)} lectura al abrir`,
+        );
+        await clic(page, 'aside.origen-del-dato button', 'Volver a la lectura');
+        await page.waitForFunction(() => !document.querySelector('aside.origen-del-dato'), { timeout: 5_000 });
+      } else {
+        informar('C-13', 'Un punto con más de ocho registros', 'el escenario no tiene una semana terminada con más de ocho registros');
+      }
+      // A 1024 px no hay lugar al costado: el origen se abre encima, en el panel que retiene el foco, con lo mismo.
+      await page.setViewport({ width: 1024, height: 900 });
+      await abrirAnalisis(`m=${encodeURIComponent(TRES)}&p=90&f=${conComidas.date}`);
+      await clic(page, '.panel-de-lectura__metrica button', 'Ver origen');
+      const abrioElPanel = await page.waitForSelector('dialog.dialogo--panel[open] .fuente__fila', { timeout: 20_000 }).then(() => true, () => false);
+      await quieto(page, v);
+      const enElPanel = await leerElOrigen();
+      const focoEnElPanel = await page.evaluate(() => !!document.querySelector('dialog.dialogo--panel[open]')?.contains(document.activeElement));
+      await page.keyboard.press('Escape');
+      const cerroElPanel = await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 5_000 }).then(() => true, () => false);
+      comprobar(
+        'C-13',
+        'A 1024 px el origen se abre encima, en el panel que retiene el foco, con la misma lista de comidas y el mismo total; no hay nada al costado, y Escape lo cierra',
+        abrioElPanel && enElPanel.panel && !enElPanel.alCostado && enElPanel.titulo === '' && focoEnElPanel && enElPanel.filas.map((f) => `${f.comida}|${f.opcion}|${f.aporte}`).join(' ‖ ') === filasEsperadas.join(' ‖ ') && enElPanel.total === origen.total && enElPanel.desborde <= 1 && cerroElPanel,
+        `panel: ${enElPanel.panel} · al costado: ${enElPanel.alCostado} · foco adentro: ${focoEnElPanel} · ${enElPanel.filas.length} filas · ${enElPanel.total} · desborde ${enElPanel.desborde} · Escape lo cierra: ${cerroElPanel}`,
+      );
+      await page.setViewport({ width: 1440, height: 900 });
+    } else {
+      informar('C-13', 'El origen de un dato con varias comidas', 'el escenario no tiene un día terminado y completo con entre 2 y 8 registros de comida');
+    }
+
     await abrirAnalisis(`m=${encodeURIComponent(TRES)}&p=90`);
 
     // Accesibilidad con todo desplegado, en los dos temas: los controles nuevos (segmentos, etiquetas, paneles).
@@ -4535,12 +4703,10 @@ async function descartable() {
         filasCsv.filter((x) => x[16].startsWith('Calculado: un índice calculado sobre medidas, no una estimación')).map((x) => x[6]).sort().join(' ') === d.imc.map((c) => c.valor.toFixed(2).replace('.', ',')).sort().join(' '),
       `${archivo} · ${filasCsv.map((x) => `${x[6]}: ${x[16]}`).join(' · ')}`,
     );
-    await clic(pro.page, '.panel-de-lectura button', 'Ver origen');
-    await pro.page.waitForSelector('dialog[open]');
+    await abrirOrigen(pro.page);
     await quieto(pro.page, pro.v);
-    const origenAntes = await texto(pro.page, 'dialog[open]');
-    await clic(pro.page, 'dialog[open] button', 'Cerrar');
-    await pro.page.waitForFunction(() => !document.querySelector('dialog[open]'));
+    const origenAntes = await texto(pro.page, ORIGEN);
+    await cerrarOrigen(pro.page);
     comprobar('PRO-10', 'Antes de revocar, el origen del peso reportado abre su toma, con la clase de cada medición («Reportado», la palabra de la pestaña de Antropometría)', /Toma del/.test(origenAntes) && /Peso\s+80,5 kg\s+Reportado/.test(origenAntes), origenAntes.slice(0, 260));
 
     // Una segunda pantalla del profesional, cargada antes de revocar: ahí se prueba la exportación con datos viejos en
@@ -4599,13 +4765,11 @@ async function descartable() {
       await pro2.navegador.close();
     }
     // b) El origen de un punto que seguía en pantalla: ya no se muestra, y los gráficos se vuelven a pedir.
-    await clic(pro.page, '.panel-de-lectura button', 'Ver origen');
-    await pro.page.waitForSelector('dialog[open]');
+    await abrirOrigen(pro.page);
     await quieto(pro.page, pro.v);
-    const origenDespues = await texto(pro.page, 'dialog[open]');
+    const origenDespues = await texto(pro.page, ORIGEN);
     comprobar('PRO-20', 'Después de revocar, el origen de un punto que seguía en pantalla dice «no está disponible con tu acceso actual» y no repite el valor', /no está disponible con tu acceso actual/.test(origenDespues) && !/80,5|81,2/.test(origenDespues), origenDespues.slice(0, 200));
-    await clic(pro.page, 'dialog[open] button', 'Cerrar');
-    await pro.page.waitForFunction(() => !document.querySelector('dialog[open]'));
+    await cerrarOrigen(pro.page);
     await quieto(pro.page, pro.v);
     const lienzoTrasElOrigen = await texto(pro.page, '.analizar__lienzo');
     comprobar(

@@ -53,12 +53,15 @@ export function PanelDeRegistro({
   onCerrar,
   onNoDisponible,
   numeroDeVersion,
+  soloLoDeAdentro = false,
   children,
 }: {
   origen: OrigenDeDato | null;
   titulo: string;
   onCerrar: () => void;
   onNoDisponible?: () => void;
+  /** El panel muestra solo lo que se le pasa: quien lo abre ya trae el registro y su enlace (el origen de un dato). */
+  soloLoDeAdentro?: boolean;
   /** El número de la versión del plan, si el origen es una versión (la etapa lo sabe por su etiqueta). */
   numeroDeVersion?: number;
   children?: ReactNode;
@@ -88,8 +91,8 @@ export function PanelDeRegistro({
         </button>
       </div>
       {children}
-      {origen ? <ContenidoDelRegistro origen={origen} onNoDisponible={onNoDisponible} numeroDeVersion={numeroDeVersion} /> : null}
-      {origen ? <EnlaceAlArea origen={origen} /> : null}
+      {origen && !soloLoDeAdentro ? <ContenidoDelRegistro origen={origen} onNoDisponible={onNoDisponible} numeroDeVersion={numeroDeVersion} /> : null}
+      {origen && !soloLoDeAdentro ? <EnlaceAlArea origen={origen} /> : null}
     </dialog>
   );
 }

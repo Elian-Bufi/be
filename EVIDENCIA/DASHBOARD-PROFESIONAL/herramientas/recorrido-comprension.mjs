@@ -223,6 +223,25 @@ async function revisionPreparada(page, v) {
   await quieto(page, v);
 }
 
+/**
+ * El origen de un dato de Analizar (WP-ESCRITORIO-AMABLE, C-13). En una ventana ancha va al costado, en el lugar de la
+ * lectura (`aside.origen-del-dato`); en una angosta, encima, en el panel de siempre (`dialog.dialogo--panel[open]`).
+ * Estas piezas abren, leen y cierran el que haya: así cada comprobación sigue protegiendo lo suyo a cualquier ancho.
+ */
+const ORIGEN = 'aside.origen-del-dato, dialog.dialogo--panel[open]';
+const enElOrigen = (s) => ORIGEN.split(', ').map((o) => `${o} ${s}`).join(', ');
+async function abrirOrigen(page) {
+  const marca = await clic(page, '.panel-de-lectura button', 'Ver origen');
+  await page.waitForSelector(ORIGEN, { timeout: 15_000 });
+  return marca;
+}
+/** Vuelve del origen a la lectura: «Volver a la lectura» si está al costado; «Cerrar» si es el panel. */
+async function cerrarOrigen(page) {
+  const alCostado = !!(await page.$('aside.origen-del-dato'));
+  await clic(page, enElOrigen('button'), alCostado ? 'Volver a la lectura' : 'Cerrar');
+  await page.waitForFunction((s) => !document.querySelector(s), { timeout: 10_000 }, ORIGEN);
+}
+
 /** Hace clic (con el mouse) en el primer elemento visible y habilitado que contiene el texto. */
 async function clic(page, selector, contiene) {
   const marca = `r${Math.random().toString(36).slice(2)}`;
@@ -800,6 +819,16 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   const ejercicio = await elegir(page, '.parametros-de-pregunta', 'Ejercicio', { textoDeOpcion: 'Peso muerto' });
   await quieto(page, v, { silencio: 300 });
   await clic(page, '.parametros-de-pregunta button[type="submit"]', 'Ver la respuesta');
+  // La respuesta se arma en dos pasos (la pregunta en la dirección y, después, sus tres métricas y sus series): se espera
+  // a que estén dibujadas, no solo a que la red se calle. Cuánto tardó queda dicho, para que una demora se note.
+  const alEnviar = Date.now();
+  const llegoLaRespuesta = await page
+    .waitForFunction(() => document.querySelectorAll('figure.grafico__figura svg.recharts-surface').length >= 3 && !/Cargando/.test(document.querySelector('.analizar')?.innerText ?? ''), { timeout: 30_000 })
+    .then(
+      () => true,
+      () => false,
+    );
+  informar('CP-07', 'La respuesta del ejercicio, desde «Ver la respuesta» hasta sus tres gráficos dibujados', `${Date.now() - alEnviar} ms${llegoLaRespuesta ? '' : ' (no llegaron en 30 s)'}`);
   await quieto(page, v);
   // WP-ESCRITORIO-AMABLE (C-21): el ejercicio, la serie y la unidad están en la barra, para elegirlos en el lugar; antes
   // eran una frase al lado del título. La comprobación protege lo mismo: la respuesta es la del ejercicio que se eligió.
@@ -854,13 +883,30 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   });
   if (otro) {
     await page.select('.parametros-en-el-lugar select', otro.valor);
+    // La respuesta del otro ejercicio se arma en dos pasos: la dirección nueva y, después, sus tres series. Se espera a que
+    // la pantalla lo diga, no solo a que la red se calle (en la primera pasada completa del 2026-10-11, con la máquina
+    // cargada, esta comprobación leyó la pantalla entre un paso y el otro y contó cero gráficos).
+    const llego = await page
+      .waitForFunction(
+        (clave) => {
+          const p = new URL(location.href).searchParams;
+          const vista = document.querySelector('.analizar');
+          return p.get('ejercicio') === clave && (p.get('m') ?? '').includes(clave) && !!vista && !/Cargando/.test(vista.innerText) && vista.querySelectorAll('figure.grafico__figura svg.recharts-surface').length >= 1;
+        },
+        { timeout: 30_000 },
+        otro.valor,
+      )
+      .then(
+        () => true,
+        () => false,
+      );
     await quieto(page, v);
     const tras = await page.evaluate(() => ({ formulario: !!document.querySelector('.parametros-de-pregunta'), graficos: document.querySelectorAll('figure.grafico__figura').length }));
     const elegido = await enElLugar();
     comprobar(
       'C-21',
       'Cambiar de ejercicio en el lugar trae su respuesta sin pasar por el formulario, con la serie y la unidad que estaban elegidas',
-      parametros(page).get('ejercicio') === otro.valor && parametros(page).get('serie') === elegidos.serie && parametros(page).get('unidad') === elegidos.unidad && !tras.formulario && elegido.includes(`Ejercicio: ${otro.nombre}`) && tras.graficos >= 1,
+      llego && parametros(page).get('ejercicio') === otro.valor && parametros(page).get('serie') === elegidos.serie && parametros(page).get('unidad') === elegidos.unidad && !tras.formulario && elegido.includes(`Ejercicio: ${otro.nombre}`) && tras.graficos >= 1,
       `${elegido} · ${tras.graficos} gráficos · formulario: ${tras.formulario}`,
     );
     await page.select('.parametros-en-el-lugar select', ejercicio);
@@ -872,19 +918,31 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   // La evidencia: el origen del punto elegido, al costado, y la vuelta sin perder nada (CP-21).
   const urlAntes = page.url();
   const yAntes = await page.evaluate(() => window.scrollY);
-  const marca = await clic(page, '.panel-de-lectura button', 'Ver origen');
-  await page.waitForSelector('dialog[open]');
+  const marca = await abrirOrigen(page);
   await quieto(page, v);
-  const dialogo = await texto(page, 'dialog[open]');
+  const dialogo = await texto(page, ORIGEN);
+  // WP-ESCRITORIO-AMABLE (C-13): a 1440 px el origen va en el lugar de la lectura, sin tapar nada. Antes era un panel
+  // encima de los gráficos. La comprobación protege lo mismo —se abre, dice la sesión y al cerrarlo nada cambió— y suma
+  // que los tres gráficos siguen a la vista.
+  const lugar = await page.evaluate(() => ({
+    alCostado: !!document.querySelector('aside.origen-del-dato'),
+    panel: !!document.querySelector('dialog[open]'),
+    graficos: [...document.querySelectorAll('figure.grafico__figura')].filter((f) => f.getClientRects().length > 0).length,
+    focoEnElTitulo: document.activeElement === document.querySelector('aside.origen-del-dato h3'),
+  }));
   await page.keyboard.press('Escape');
-  await page.waitForFunction(() => !document.querySelector('dialog[open]'));
+  await page.waitForFunction((s) => !document.querySelector(s), {}, ORIGEN);
   const foco = await page.evaluate(() => document.activeElement?.getAttribute('data-recorrido'));
-  comprobar('CP-21', 'El origen del punto se abre al costado (la sesión) y al cerrarlo con Esc la vista sigue igual, con el foco en el disparador', /Sesión|sesión/.test(dialogo) && page.url() === urlAntes && foco === marca, `foco ${foco === marca ? 'en el disparador' : foco} · scroll ${yAntes} · ${dialogo.slice(0, 120)}`);
+  comprobar(
+    'CP-21',
+    'El origen del punto se abre al costado, en el lugar de la lectura y con los tres gráficos a la vista (la sesión), y al cerrarlo con Esc la vista sigue igual, con el foco en el disparador',
+    /Sesión|sesión/.test(dialogo) && lugar.alCostado && !lugar.panel && lugar.graficos === 3 && lugar.focoEnElTitulo && page.url() === urlAntes && foco === marca,
+    `foco ${foco === marca ? 'en el disparador' : foco} · ${JSON.stringify(lugar)} · scroll ${yAntes} · ${dialogo.slice(0, 160)}`,
+  );
   // Ir al registro completo y volver con la configuración (la pestaña del área lleva `volver`).
-  await clic(page, '.panel-de-lectura button', 'Ver origen');
-  await page.waitForSelector('dialog[open]');
+  await abrirOrigen(page);
   await quieto(page, v);
-  await clic(page, 'dialog[open] a', 'Ver en Entrenamiento');
+  await clic(page, enElOrigen('a'), 'Ver en Entrenamiento');
   await page.waitForFunction(() => location.pathname === '/pro/advisees/training', { timeout: 20_000 });
   await quieto(page, v);
   const conVolver = parametros(page).get('volver') ?? '';
@@ -1778,18 +1836,29 @@ async function revocacion() {
       await ase.navegador.close();
     }
     // Primera pestaña: abrir el origen de un punto descubre la revocación; la cabecera y la ficha se actualizan solas.
-    await clic(pro.page, '.panel-de-lectura button', 'Ver origen');
-    await pro.page.waitForSelector('dialog[open]');
+    // El valor que quedó a la vista en la lectura es de antes de revocar: el origen no lo puede repetir. Se compara con
+    // ese número, no con «N,N kg»: sin acceso la unidad ya no se conoce, y el número viejo quedaría solo (lo mostró la
+    // compilación rota a propósito del 2026-10-11, que esta comprobación no detectaba).
+    const valorViejo = await pro.page.evaluate(() => {
+      const boton = [...document.querySelectorAll('.panel-de-lectura button')].find((b) => b.textContent.includes('Ver origen') && b.getClientRects().length > 0);
+      return boton?.closest('.dato-de-lectura__punto')?.querySelector('.dato-de-lectura__valor')?.innerText.replace(/\s+/g, ' ').trim() ?? '';
+    });
+    const numeroViejo = /^[\d.]+,\d+/.exec(valorViejo)?.[0] ?? '';
+    await abrirOrigen(pro.page);
     await quieto(pro.page, pro.v);
-    const origen = await texto(pro.page, 'dialog[open]');
-    await clic(pro.page, 'dialog[open] button', 'Cerrar');
-    await pro.page.waitForFunction(() => !document.querySelector('dialog[open]'));
+    const origen = await texto(pro.page, ORIGEN);
+    await cerrarOrigen(pro.page);
     // El aviso de «no disponible» vuelve a preguntar el acceso (como mucho cada 5 s) sin vaciar la pantalla.
     await pro.page.waitForFunction(() => /Antropometría: (?!Activo)/.test(document.querySelector('.ficha__acceso')?.innerText ?? ''), { timeout: 15_000 }).catch(() => {});
     await quieto(pro.page, pro.v);
     const cabeceraDespues = await texto(pro.page, '.ficha__acceso');
     const lienzo = await texto(pro.page, '.analizar');
-    comprobar('CP-23', 'Después de revocar, el origen dice «no está disponible» sin valores', /no está disponible/.test(origen) && !/\d+,\d kg/.test(origen), origen.slice(0, 300));
+    comprobar(
+      'CP-23',
+      'Después de revocar, el origen dice «no está disponible» y no repite el valor que había quedado a la vista',
+      /no está disponible/.test(origen) && !/\d+,\d kg/.test(origen) && numeroViejo !== '' && !origen.includes(numeroViejo),
+      `${origen.slice(0, 260)} · a la vista, antes de abrirlo: ${valorViejo || 'ningún valor'}`,
+    );
     comprobar('CP-23', 'La cabecera deja de decir «Activo» para Antropometría sin recargar; Nutrición sigue activa', /Antropometría: (?!Activo)/.test(cabeceraDespues) && /Nutrición: Activo/.test(cabeceraDespues), `antes: ${cabeceraAntes} · después: ${cabeceraDespues}`);
     comprobar('CP-23', 'Los gráficos de Antropometría se retiran y dicen por qué, sin valores viejos', (await graficos(pro.page)).length === 0 && /no está disponible con tu acceso actual/.test(lienzo), lienzo.slice(0, 200));
     await captura(pro.page, pro.v, carpeta, 'r5-revocado-analizar');
