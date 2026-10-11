@@ -801,9 +801,73 @@ async function recorridoConsulta(page, v, cortes, carpeta) {
   await quieto(page, v, { silencio: 300 });
   await clic(page, '.parametros-de-pregunta button[type="submit"]', 'Ver la respuesta');
   await quieto(page, v);
-  const activa = await texto(page, '.pregunta-activa');
+  // WP-ESCRITORIO-AMABLE (C-21): el ejercicio, la serie y la unidad están en la barra, para elegirlos en el lugar; antes
+  // eran una frase al lado del título. La comprobación protege lo mismo: la respuesta es la del ejercicio que se eligió.
+  const enElLugar = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('.parametros-en-el-lugar .parametro-en-el-lugar')]
+        .map((p) => {
+          const s = p.querySelector('select');
+          return `${p.querySelector('.parametro-en-el-lugar__nombre')?.textContent ?? ''} ${s ? (s.selectedOptions[0]?.textContent.trim() ?? '') : (p.querySelector('strong')?.textContent ?? '')}`;
+        })
+        .join(' · '),
+    );
+  const activa = await enElLugar();
   const dibujados = await graficos(page);
-  comprobar('CP-07', 'La pregunta arma la vista real: carga, repeticiones y RIR de la serie, con su encabezado y su límite', /Peso muerto · serie \d/.test(activa) && dibujados.length === 3 && dibujados.every((g) => g.svg && g.curvas > 0) && parametros(page).get('ejercicio') === ejercicio, `${activa.slice(0, 160)} · ${dibujados.map((g) => g.titulo).join(' | ')}`);
+  comprobar('CP-07', 'La pregunta arma la vista real: carga, repeticiones y RIR de la serie del ejercicio elegido, que se leen arriba, con su límite', /Ejercicio: Peso muerto/.test(activa) && /Serie: \d/.test(activa) && /Unidad: (kg|lb)/.test(activa) && dibujados.length === 3 && dibujados.every((g) => g.svg && g.curvas > 0) && parametros(page).get('ejercicio') === ejercicio, `${activa.slice(0, 160)} · ${dibujados.map((g) => g.titulo).join(' | ')}`);
+  // C-21 · Un control aparece solo si hay algo para elegir. La carga, las repeticiones y el RIR de una serie tienen
+  // unidades distintas y se leen por sesión: no hay «Ver como» ni «Agrupar por», ni etiquetas de métricas para quitar.
+  // (El mismo selector encuentra los dos controles en la comparación de etapas, con los gráficos grandes abiertos: R4.)
+  const delEjercicio = await page.evaluate(() => {
+    const lectura = document.querySelector('.panel-de-lectura')?.innerText ?? '';
+    return {
+      modos: document.querySelectorAll('.barra-de-analizar fieldset.segmentos').length,
+      etiquetas: document.querySelectorAll('.barra-de-analizar .selector-de-metricas').length,
+      detalle: document.querySelector('.pregunta-en-curso__detalle')?.textContent ?? '',
+      titulos: [...document.querySelectorAll('figure.grafico__figura .grafico__titulo strong')].map((s) => s.textContent),
+      sesiones: (lectura.match(/Sesión: /g) ?? []).length,
+      sesionArriba: document.querySelector('.panel-de-lectura__sesion')?.textContent ?? '',
+      repetidos: (lectura.match(/(Carga|Repeticiones) de la serie: |RIR: /g) ?? []).length,
+      objetivos: (lectura.match(/Objetivo de esta serie: /g) ?? []).length,
+      paso: [...document.querySelectorAll('.lectura__paso button')].map((b) => b.textContent.replace(/\s+/g, ' ').trim()),
+    };
+  });
+  comprobar(
+    'C-21',
+    'Con la pregunta del ejercicio no hay «Ver como», «Agrupar por» ni etiquetas de métricas (no hay nada para elegir ahí), y el título de cada gráfico dice solo la métrica: el ejercicio y la serie están una vez, arriba',
+    delEjercicio.modos === 0 && delEjercicio.etiquetas === 0 && delEjercicio.detalle === '' && delEjercicio.titulos.length === 3 && delEjercicio.titulos.every((t) => t.length > 0 && !/Peso muerto|serie \d/.test(t)),
+    JSON.stringify({ modos: delEjercicio.modos, etiquetas: delEjercicio.etiquetas, titulos: delEjercicio.titulos }),
+  );
+  comprobar(
+    'C-21',
+    'La lectura dice la sesión una sola vez, arriba, y cada métrica dice su objetivo sin repetir el valor de las otras dos, que están al lado; se recorre por sesiones',
+    delEjercicio.sesiones === 1 && /^Sesión: \S/.test(delEjercicio.sesionArriba) && delEjercicio.repetidos === 0 && delEjercicio.objetivos >= 1 && delEjercicio.paso.join(' | ') === 'Sesión anterior con datos | Sesión siguiente con datos',
+    JSON.stringify({ sesiones: delEjercicio.sesiones, arriba: delEjercicio.sesionArriba, repetidos: delEjercicio.repetidos, objetivos: delEjercicio.objetivos, paso: delEjercicio.paso }),
+  );
+  // C-21 · Cambiar de ejercicio en el lugar: sin pasar por el formulario, y con la serie y la unidad que estaban elegidas
+  // (el otro ejercicio las tiene). Después se vuelve al primero, para que el recorrido siga como estaba.
+  const elegidos = { serie: parametros(page).get('serie'), unidad: parametros(page).get('unidad') };
+  const otro = await page.evaluate(() => {
+    const s = document.querySelector('.parametros-en-el-lugar select');
+    const o = s ? [...s.options].find((x) => !x.selected) : null;
+    return o ? { valor: o.value, nombre: o.textContent.trim().split(' · ')[0] } : null;
+  });
+  if (otro) {
+    await page.select('.parametros-en-el-lugar select', otro.valor);
+    await quieto(page, v);
+    const tras = await page.evaluate(() => ({ formulario: !!document.querySelector('.parametros-de-pregunta'), graficos: document.querySelectorAll('figure.grafico__figura').length }));
+    const elegido = await enElLugar();
+    comprobar(
+      'C-21',
+      'Cambiar de ejercicio en el lugar trae su respuesta sin pasar por el formulario, con la serie y la unidad que estaban elegidas',
+      parametros(page).get('ejercicio') === otro.valor && parametros(page).get('serie') === elegidos.serie && parametros(page).get('unidad') === elegidos.unidad && !tras.formulario && elegido.includes(`Ejercicio: ${otro.nombre}`) && tras.graficos >= 1,
+      `${elegido} · ${tras.graficos} gráficos · formulario: ${tras.formulario}`,
+    );
+    await page.select('.parametros-en-el-lugar select', ejercicio);
+    await quieto(page, v);
+  } else {
+    comprobar('C-21', 'Cambiar de ejercicio en el lugar: hay otro ejercicio para elegir', false, 'el período tiene un solo ejercicio');
+  }
 
   // La evidencia: el origen del punto elegido, al costado, y la vuelta sin perder nada (CP-21).
   const urlAntes = page.url();
@@ -1086,7 +1150,10 @@ async function coberturaConHuecos(page, v, carpeta) {
   await captura(page, v, carpeta, 'cp18-comparar-dos-periodos-con-huecos');
 }
 
-/** Recorrido 4: etapas A/B → valores a mano → agrupar → acercar → referencia conservada → guardar y reabrir (CP-14, CP-17, CP-18, CP-26). */
+/**
+ * Recorrido 4: etapas A/B → valores y cobertura a mano → la respuesta en una pantalla (C-12) → los gráficos grandes, a un
+ * clic → agrupar → acercar → referencia conservada → guardar y reabrir (CP-14, CP-17, CP-18, CP-26).
+ */
 async function recorridoEtapas(page, v, carpeta) {
   const e = estado;
   const url = `${FICHA_A}&vista=analizar&pregunta=comparar-etapas&area=NUTRICION&etapaA=${e.nutricion.planV1}&etapaB=${e.nutricion.planV2}&ref=14`;
@@ -1098,12 +1165,24 @@ async function recorridoEtapas(page, v, carpeta) {
   const vA = vig.planVersions.find((x) => x.planVersionId === e.nutricion.planV1);
   const vB = vig.planVersions.find((x) => x.planVersionId === e.nutricion.planV2);
   const tarjetas = await textos(page, '.comparacion-de-etapas .etapa');
+  // WP-ESCRITORIO-AMABLE (C-12): las fechas del año en curso van sin el año, y cómo terminó A se dice con la versión que la
+  // reemplazó. La comprobación protege lo mismo que antes: las fechas salen de las activaciones reales.
   comprobar(
     'CP-14',
-    'Las etapas salen de las activaciones reales: A termina el día anterior al corte y B sigue vigente; sin doble conteo del día del corte',
-    vA && vB && vA.to === vB.from && tarjetas[0]?.includes(`Desde ${diaDe(vA.activatedAt)}`) && tarjetas[0]?.includes(diaDe(`${diaMenos(vA.to, 1)}T15:00:00Z`)) && /Sigue vigente/.test(tarjetas[1] ?? ''),
-    tarjetas.map((t) => t.slice(0, 140)).join(' || '),
+    'Las etapas salen de las activaciones reales: A termina el día anterior al corte, y lo dice con la versión que la reemplazó; B sigue vigente; sin doble conteo del día del corte',
+    vA &&
+      vB &&
+      vA.to === vB.from &&
+      tarjetas[0]?.includes(`Desde ${diaBreveDe(vA.activatedAt)}, al activarse`) &&
+      tarjetas[0]?.includes(`Hasta ${diaBreveDe(`${diaMenos(vA.to, 1)}T15:00:00Z`)}, la reemplazó la versión ${vB.label.replace(/^v/, '')}`) &&
+      tarjetas[1]?.includes(`Desde ${diaBreveDe(vB.activatedAt)}, al activarse`) &&
+      /Hasta Sigue vigente/.test(tarjetas[1] ?? ''),
+    tarjetas.map((t) => t.slice(0, 150)).join(' || '),
   );
+  // Con dos etapas en el área no hay otra para elegir: cada tarjeta escribe su versión, sin un selector de una sola opción
+  // (C-21). El selector, con tres o más, tiene su prueba en `scripts/etapas-en-pantalla.test.mjs`: este escenario tiene dos.
+  const versiones = await page.evaluate(() => ({ selectores: document.querySelectorAll('.etapa__selector').length, nombres: [...document.querySelectorAll('.etapa__nombre')].map((n) => n.textContent.trim()), letras: [...document.querySelectorAll('.etapa__letra')].map((n) => n.textContent.trim()).join('') }));
+  comprobar('C-12', 'Cada etapa es una tarjeta con su letra y su versión; con dos etapas en el área no se ofrece un selector de una sola opción', versiones.selectores === 0 && versiones.nombres.join(' | ') === 'Nutrición · versión 1 | Nutrición · versión 2' && versiones.letras === 'AB', JSON.stringify(versiones));
   // CP-18: la tabla con el mismo criterio; los valores y la cobertura en días de cada etapa, calculados aparte con los
   // puntos diarios de la API. Pasada del 2026-10-09: «48 días: 44 con valor · 4 sin registros», nunca «44 de 44 días».
   const puntos = vig.recorded.points;
@@ -1118,47 +1197,112 @@ async function recorridoEtapas(page, v, carpeta) {
   const coberturaAMano = (x) => [`${x.dias} días: ${x.n} con valor`, ...(x.sinRegistros > 0 ? [`${x.sinRegistros} sin registros`] : []), ...(x.hoyAdentro ? ['hoy, en curso: fuera de la media'] : [])];
   const esperadoA = media(vA.from, diaMenos(vA.to, 1));
   const esperadoB = media(vB.from, hoy);
+  // Cada fila: el valor de A, el de B y la diferencia (el criterio va debajo del nombre de la métrica).
   const fila = async () => page.evaluate(() => {
     const f = [...document.querySelectorAll('.tabla-de-etapas tbody tr')].find((r) => r.querySelector('th')?.textContent.startsWith('Calorías'));
     return f ? [...f.querySelectorAll('td')].map((c) => c.innerText.replace(/\s+/g, ' ').trim()) : [];
   });
   const energia = await fila();
+  // C-12: la cobertura se dice una vez por etapa, en su tarjeta, y nombra a qué métricas corresponde.
+  const cobertura = await page.evaluate(() =>
+    [...document.querySelectorAll('.comparacion-de-etapas .etapa .etapa__cobertura')].map((c) => ({ de: c.querySelector('dt')?.innerText.replace(/\s+/g, ' ').trim() ?? '', texto: c.querySelector('dd')?.innerText.replace(/\s+/g, ' ').trim() ?? '' })),
+  );
   const numeroDe = (t) => Number((/^(-?[\d.]+(?:,\d+)?) kcal/.exec(t ?? '')?.[1] ?? 'NaN').replace(/\./g, '').replace(',', '.'));
-  const diferencia = Number((/([−-]?[\d.]+) kcal/.exec(energia[3] ?? '')?.[1] ?? 'NaN').replace('−', '-').replace(/\./g, ''));
+  const diferencia = Number((/([−-]?[\d.]+) kcal/.exec(energia[2] ?? '')?.[1] ?? 'NaN').replace('−', '-').replace(/\./g, ''));
   comprobar(
     'CP-18',
-    'Calorías por etapa: la media de los días con valor y la cobertura en días de la etapa, calculadas a mano con los puntos de la API, coinciden con la tabla (y la diferencia también)',
-    Math.round(esperadoA.media) === numeroDe(energia[1]) &&
-      Math.round(esperadoB.media) === numeroDe(energia[2]) &&
+    'Calorías por etapa: la media de los días con valor (en la tabla) y la cobertura en días de la etapa (en su tarjeta, que dice de qué métricas es), calculadas a mano con los puntos de la API, coinciden; y la diferencia también',
+    Math.round(esperadoA.media) === numeroDe(energia[0]) &&
+      Math.round(esperadoB.media) === numeroDe(energia[1]) &&
       Math.abs(diferencia - (esperadoB.media - esperadoA.media)) <= 1 &&
-      coberturaAMano(esperadoA).every((x) => energia[1].includes(x)) &&
-      coberturaAMano(esperadoB).every((x) => energia[2].includes(x)) &&
-      !/\b(\d+) de \1 días/.test(energia.join(' ')),
-    `tabla: ${energia.join(' | ').slice(0, 300)} · a mano: A ${esperadoA.media.toFixed(1)} (${coberturaAMano(esperadoA).join(' · ')}), B ${esperadoB.media.toFixed(1)} (${coberturaAMano(esperadoB).join(' · ')})`,
+      cobertura.length === 2 &&
+      cobertura.every((c) => /^Cobertura( de .*Calorías.*)?$/.test(c.de)) &&
+      coberturaAMano(esperadoA).every((x) => cobertura[0].texto.includes(x)) &&
+      coberturaAMano(esperadoB).every((x) => cobertura[1].texto.includes(x)) &&
+      !/\b(\d+) de \1 días/.test([...energia, ...cobertura.map((c) => c.texto)].join(' ')),
+    `tabla: ${energia.join(' | ').slice(0, 200)} · tarjetas: ${cobertura.map((c) => `${c.de}: ${c.texto}`).join(' || ').slice(0, 300)} · a mano: A ${esperadoA.media.toFixed(1)} (${coberturaAMano(esperadoA).join(' · ')}), B ${esperadoB.media.toFixed(1)} (${coberturaAMano(esperadoB).join(' · ')})`,
   );
-  comprobar('CP-18', 'El hueco de cuatro días de la etapa A queda en la cobertura como días sin registros: no sale del denominador', esperadoA.sinRegistros >= 4 && energia[1].includes(`${esperadoA.sinRegistros} sin registros`), energia[1]);
-  // Analizar según la pregunta (pasada del 2026-10-09): con la pregunta de etapas, la comparación a mano es secundaria y
-  // plegada debajo de la tabla, el resumen en texto se pliega, no se repite la lista de etapas, cada límite se dice una vez
-  // y la letra no se achica.
-  const vista = await page.evaluate(() => {
-    const etapas = document.querySelector('.comparacion-de-etapas');
-    const aMano = document.querySelector('details.comparar-a-mano');
-    const visible = document.querySelector('.analizar')?.innerText ?? '';
-    const veces = (re) => (visible.match(re) ?? []).length;
-    return {
-      aMano: aMano ? { abierta: aMano.open, justoDebajo: etapas?.nextElementSibling === aMano, rotulo: aMano.querySelector('summary')?.textContent ?? '' } : null,
-      seccionAlFinal: [...document.querySelectorAll('.analizar h3')].some((h) => h.textContent === 'Comparar dos períodos'),
-      resumenPlegado: [...document.querySelectorAll('.pie-de-graficos button')].some((b) => b.textContent.includes('Resumen en texto') && b.getAttribute('aria-expanded') === 'false') && !document.querySelector('section.resumen-en-texto'),
-      listaDeEtapas: !!document.querySelector('.etapas-del-grafico') || [...document.querySelectorAll('.pie-de-graficos button')].some((b) => b.textContent.includes('Comparar etapas')),
-      causa: veces(/no indica causa/g),
-      noSeRestan: veces(/No se restan totales/g),
-      letraDeLaCobertura: parseFloat(getComputedStyle(document.querySelector('.tabla-de-etapas .celda__detalle')).fontSize),
-      raiz: parseFloat(getComputedStyle(document.documentElement).fontSize),
-    };
-  });
-  comprobar('R4', 'Con la pregunta de etapas, «Comparar otros dos períodos» es una opción plegada, justo debajo de la tabla de etapas, y no una sección más al final', !!vista.aMano && !vista.aMano.abierta && vista.aMano.justoDebajo && /Comparar otros dos períodos/.test(vista.aMano.rotulo) && !vista.seccionAlFinal, JSON.stringify(vista.aMano));
-  comprobar('R4', 'Sin repetir: el resumen en texto plegado, sin la lista de etapas que repetía las tarjetas, y cada límite de interpretación a la vista una sola vez', vista.resumenPlegado && !vista.listaDeEtapas && vista.causa === 1 && vista.noSeRestan === 1, `causa ×${vista.causa} · no se restan ×${vista.noSeRestan} · resumen plegado: ${vista.resumenPlegado} · lista de etapas: ${vista.listaDeEtapas}`);
-  comprobar('R4', 'La letra no se achicó: la cobertura de la tabla de etapas tiene el tamaño de un dato secundario (0,95 rem)', vista.letraDeLaCobertura >= 0.95 * vista.raiz - 0.05, `${vista.letraDeLaCobertura} px · raíz ${vista.raiz} px`);
+  comprobar('CP-18', 'El hueco de cuatro días de la etapa A queda en la cobertura como días sin registros: no sale del denominador', esperadoA.sinRegistros >= 4 && (cobertura[0]?.texto ?? '').includes(`${esperadoA.sinRegistros} sin registros`), cobertura[0]?.texto ?? '');
+  // C-12 · La cobertura se dice una vez por etapa. Las calorías y las proteínas salen de los mismos registros: sus celdas
+  // no la repiten. Los registros cuentan otra cosa (días con registros, no con valor): la dicen en su celda. La misma
+  // consulta mira las tres filas, así «no la repiten» no pasa por un selector que no encuentra nada.
+  const celdas = await page.evaluate(() =>
+    Object.fromEntries(
+      [...document.querySelectorAll('.tabla-de-etapas tbody tr')].map((r) => [
+        r.querySelector('.tabla-de-etapas__metrica')?.textContent.trim() ?? '',
+        [...r.querySelectorAll('td')].slice(0, 2).map((c) => c.querySelector('.celda__detalle')?.innerText.replace(/\s+/g, ' ').trim() ?? ''),
+      ]),
+    ),
+  );
+  comprobar(
+    'C-12',
+    'La cobertura se dice una vez por etapa: las celdas de Calorías y de Proteínas no la repiten, y la de Registros, que cuenta días con registros, dice la suya; el criterio de cada métrica va debajo de su nombre',
+    (celdas['Calorías'] ?? ['x']).every((c) => c === '') &&
+      (celdas['Proteínas'] ?? ['x']).every((c) => c === '') &&
+      (celdas['Registros'] ?? []).length === 2 &&
+      celdas['Registros'].every((c) => /\d+ días: \d+ con registros/.test(c)) &&
+      cobertura.every((c) => c.de === 'Cobertura de Calorías y Proteínas') &&
+      /Media de los días con valor/.test(await page.evaluate(() => [...document.querySelectorAll('.tabla-de-etapas tbody th')].map((t) => t.innerText.replace(/\s+/g, ' ')).join(' | '))),
+    `${JSON.stringify(celdas).slice(0, 300)} · ${cobertura.map((c) => c.de).join(' | ')}`,
+  );
+  // La composición (C-12): la respuesta entra en una pantalla. Las tarjetas, la tabla y tres gráficos chicos; los grandes
+  // —con sus métricas para cambiar, sus modos y la lectura— quedan a un clic. La comparación a mano sigue plegada debajo,
+  // no se repite la lista de etapas, cada límite se dice una vez y la letra no se achica.
+  const leerVista = () =>
+    page.evaluate(() => {
+      const etapas = document.querySelector('.comparacion-de-etapas');
+      const aMano = document.querySelector('details.comparar-a-mano');
+      const visible = document.querySelector('.analizar')?.innerText ?? '';
+      const veces = (re) => (visible.match(re) ?? []).length;
+      const tabla = document.querySelector('.tarjeta-de-etapas')?.getBoundingClientRect();
+      const letra = document.querySelector('.etapa__cobertura dd');
+      return {
+        aMano: aMano ? { abierta: aMano.open, justoDebajo: etapas?.nextElementSibling === aMano, rotulo: aMano.querySelector('summary')?.textContent ?? '' } : null,
+        seccionAlFinal: [...document.querySelectorAll('.analizar h3')].some((h) => h.textContent === 'Comparar dos períodos'),
+        chicos: [...document.querySelectorAll('.graficos-de-etapas .grafico-chico')].map((g) => ({
+          titulo: g.querySelector('strong')?.textContent ?? '',
+          puntos: g.querySelectorAll('.minigrafico__punto').length,
+          etapas: [...g.querySelectorAll('.minigrafico__banda')].map((b) => b.getAttribute('data-rotulo')).join(''),
+          fechas: [...g.querySelectorAll('.minigrafico__fecha')].map((f) => f.textContent),
+          objetivo: g.querySelectorAll('.minigrafico__objetivo').length,
+        })),
+        grandes: document.querySelectorAll('figure.grafico__figura').length,
+        modos: document.querySelectorAll('.barra-de-analizar fieldset.segmentos').length,
+        boton: [...document.querySelectorAll('.graficos-de-etapas__abrir')].map((b) => b.textContent.trim()).join('|'),
+        resumenPlegado: [...document.querySelectorAll('.pie-de-graficos button')].some((b) => b.textContent.includes('Resumen en texto') && b.getAttribute('aria-expanded') === 'false'),
+        resumenAbierto: !!document.querySelector('section.resumen-en-texto'),
+        listaDeEtapas: !!document.querySelector('.etapas-del-grafico') || [...document.querySelectorAll('.pie-de-graficos button, .pie-de-etapas button')].some((b) => b.textContent.includes('Comparar etapas')),
+        causa: veces(/no indica causa/g),
+        noSeRestan: veces(/No se restan totales/g),
+        letraDeLaCobertura: letra ? parseFloat(getComputedStyle(letra).fontSize) : 0,
+        raiz: parseFloat(getComputedStyle(document.documentElement).fontSize),
+        finDeLaTabla: tabla ? Math.round(tabla.bottom + window.scrollY) : null,
+        alto: window.innerHeight,
+      };
+    });
+  const vista = await leerVista();
+  comprobar('R4', 'Con la pregunta de etapas, «Comparar otros dos períodos» es una opción plegada, justo debajo de la respuesta de las etapas, y no una sección más al final', !!vista.aMano && !vista.aMano.abierta && vista.aMano.justoDebajo && /Comparar otros dos períodos/.test(vista.aMano.rotulo) && !vista.seccionAlFinal, JSON.stringify(vista.aMano));
+  comprobar(
+    'C-12',
+    'Debajo de la tabla hay un gráfico chico por métrica, con sus puntos, las dos etapas marcadas con su letra y las fechas al pie; el de las calorías dibuja además el objetivo. Los gráficos grandes, con sus modos, no están hasta que se piden',
+    vista.chicos.length === 3 &&
+      vista.chicos.every((g) => g.puntos > 0 && g.etapas === 'AB' && g.fechas.length >= 2) &&
+      /^Calorías/.test(vista.chicos[0]?.titulo ?? '') &&
+      vista.chicos[0].objetivo > 0 &&
+      vista.chicos.slice(1).every((g) => g.objetivo === 0) &&
+      vista.grandes === 0 &&
+      vista.modos === 0 &&
+      vista.boton === 'Abrir estos gráficos en grande',
+    `${JSON.stringify(vista.chicos)} · grandes: ${vista.grandes} · botón: ${vista.boton}`,
+  );
+  comprobar('C-12', 'Las dos tarjetas y la tabla entran en la primera pantalla (1440 × 900): la respuesta se lee sin desplazarse', vista.finDeLaTabla !== null && vista.finDeLaTabla <= vista.alto, `la tabla termina a los ${vista.finDeLaTabla} px; la ventana mide ${vista.alto}`);
+  // La prueba de la prueba: con las tarjetas más altas (como antes, con todo abierto), la misma medición dice que no entra.
+  await page.addStyleTag({ content: '.comparacion-de-etapas .etapa { padding-bottom: 14rem !important; }' }).then((h) => h.evaluate((el) => el.setAttribute('data-prueba', 'etapas-altas')));
+  const alta = await leerVista();
+  await page.evaluate(() => document.querySelector('style[data-prueba="etapas-altas"]')?.remove());
+  comprobar('C-12', 'La medición de la primera pantalla detecta una respuesta que no entra: con las tarjetas más altas, da que la tabla termina fuera de la ventana', alta.finDeLaTabla !== null && alta.finDeLaTabla > alta.alto, `con las tarjetas altas la tabla termina a los ${alta.finDeLaTabla} px; la ventana mide ${alta.alto}`);
+  comprobar('R4', 'Sin repetir: sin el resumen en texto a la vista, sin la lista de etapas que repetía las tarjetas, y cada límite de interpretación a la vista una sola vez', !vista.resumenAbierto && !vista.listaDeEtapas && vista.causa === 1 && vista.noSeRestan === 1, `causa ×${vista.causa} · no se restan ×${vista.noSeRestan} · resumen a la vista: ${vista.resumenAbierto} · lista de etapas: ${vista.listaDeEtapas}`);
+  comprobar('R4', 'La letra no se achicó: la cobertura de cada etapa tiene el tamaño del texto (no menos de 0,95 rem)', vista.letraDeLaCobertura >= 0.95 * vista.raiz - 0.05, `${vista.letraDeLaCobertura} px · raíz ${vista.raiz} px`);
   // La comparación a mano sigue accesible: se abre, y elegir fechas arma su tabla con la misma cobertura.
   await page.evaluate(() => document.querySelector('details.comparar-a-mano summary')?.click());
   await pausa(150);
@@ -1167,8 +1311,28 @@ async function recorridoEtapas(page, v, carpeta) {
   await page.evaluate(() => document.querySelector('details.comparar-a-mano summary')?.click());
   const registros = await page.evaluate(() => [...document.querySelectorAll('.tabla-de-etapas tbody tr')].find((r) => r.querySelector('th')?.textContent.startsWith('Registros'))?.innerText.replace(/\s+/g, ' ') ?? '');
   comprobar('CP-18', 'Dos totales de duraciones distintas no se restan, y se dice por qué', /duraciones distintas no se restan/.test(registros), registros.slice(0, 200));
+  await captura(page, v, carpeta, 'r4-etapas');
+  // Los gráficos grandes, a un clic: en el lugar de los chicos, con las métricas de la pregunta y el período de las dos etapas.
+  await clic(page, '.graficos-de-etapas__abrir', 'Abrir estos gráficos en grande');
+  await quieto(page, v);
   const graficosEtapas = await graficos(page);
-  comprobar('R4', 'Debajo de la tabla, los gráficos de las métricas de la pregunta con el período de las dos etapas', graficosEtapas.length >= 2 && graficosEtapas.every((g) => g.svg && g.curvas > 0) && parametros(page).get('desde') === vA.from, `${graficosEtapas.length} gráficos · desde ${parametros(page).get('desde')} hasta ${parametros(page).get('hasta')}`);
+  const grande = await leerVista();
+  comprobar(
+    'R4',
+    '«Abrir estos gráficos en grande» trae, en el lugar de los chicos, los gráficos de las métricas de la pregunta con el período de las dos etapas, sus modos y su pie; el resumen en texto sigue plegado y ningún límite se repite',
+    graficosEtapas.length >= 2 &&
+      graficosEtapas.every((g) => g.svg && g.curvas > 0) &&
+      parametros(page).get('desde') === vA.from &&
+      grande.chicos.length === 0 &&
+      grande.modos === 2 &&
+      grande.boton === 'Volver a los gráficos chicos' &&
+      grande.resumenPlegado &&
+      !grande.resumenAbierto &&
+      grande.causa === 1 &&
+      grande.noSeRestan === 1 &&
+      !!grande.aMano?.justoDebajo,
+    `${graficosEtapas.length} gráficos · desde ${parametros(page).get('desde')} hasta ${parametros(page).get('hasta')} · modos: ${grande.modos} · botón: ${grande.boton} · causa ×${grande.causa}`,
+  );
   await captura(page, v, carpeta, 'r4-etapas-con-graficos');
   // CP-17: agrupar por semana y acercar no cambian la tabla ni la referencia fija.
   const tablaAntes = await texto(page, '.tabla-de-etapas');
@@ -1184,6 +1348,11 @@ async function recorridoEtapas(page, v, carpeta) {
   await quieto(page, v, { silencio: 300 });
   const conZoom = await texto(page, '.tabla-de-etapas');
   comprobar('CP-17', 'Agrupar por semana y acercar el gráfico no cambian la tabla A/B (resume las observaciones originales) ni la referencia fija', tablaAntes === conSemana && conSemana === conZoom && parametros(page).get('ref') === '14' && parametros(page).get('g') === 'W', `g=${parametros(page).get('g')} · ref=${parametros(page).get('ref')}`);
+  // «Volver a los gráficos chicos» los devuelve, y la tabla sigue igual.
+  await clic(page, '.graficos-de-etapas__abrir', 'Volver a los gráficos chicos');
+  await quieto(page, v, { silencio: 300 });
+  const deVuelta = await leerVista();
+  comprobar('C-12', '«Volver a los gráficos chicos» los devuelve y cierra los grandes; la tabla no cambió', deVuelta.chicos.length === 3 && deVuelta.grandes === 0 && deVuelta.boton === 'Abrir estos gráficos en grande' && (await texto(page, '.tabla-de-etapas')) === tablaAntes, `chicos: ${deVuelta.chicos.length} · grandes: ${deVuelta.grandes}`);
   // CP-26: guardar la vista con la pregunta, reabrirla, y en otro asesorado las etapas se piden de nuevo.
   const nombre = `Etapas ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
   await abrirMasAcciones(page);

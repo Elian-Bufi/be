@@ -31,6 +31,15 @@ export function nombreDeLaReferencia(ref: ReferenciaDeMetrica, definicion: Defin
   return `${base} · ${ejercicio}${ref.setIndex !== null ? ` · serie ${ref.setIndex}` : ''}${ref.unit ? ` (${ref.unit})` : ''}`;
 }
 
+/**
+ * El nombre entero de una métrica elegida, como va en el título de su gráfico: «Calorías registradas» y no «Calorías»,
+ * con el ejercicio, la serie y la unidad si los lleva.
+ */
+export function tituloDeLaReferencia(ref: ReferenciaDeMetrica, definicion: DefinicionDeMetrica | null, ejercicios: readonly EjercicioDelPeriodo[] | null): string {
+  const corto = nombreDeLaReferencia(ref, definicion, ejercicios);
+  return definicion && corto.startsWith(definicion.nombreCorto) ? `${definicion.nombre}${corto.slice(definicion.nombreCorto.length)}` : corto;
+}
+
 const MEDIDAS_DE_ENTRENAMIENTO = METRICAS_DEL_DICCIONARIO.filter((m) => m.area === 'ENTRENAMIENTO' && m.implementada);
 const DE_NUTRICION = METRICAS_DEL_DICCIONARIO.filter((m) => m.area === 'NUTRICION' && m.implementada);
 const NO_OFRECIDAS = METRICAS_DEL_DICCIONARIO.filter((m) => !m.implementada);

@@ -34,6 +34,7 @@ import {
   cambioRelativo,
   claseEnPalabras,
   compararPeriodos,
+  DETALLE_DE_SERIE,
   etapasDelArea,
   partesDeLaCobertura,
   partesDelResumenTextual,
@@ -42,6 +43,7 @@ import {
   resolverPregunta,
   type EtapaDePlanificacion,
   csvDelAnalisis,
+  agregacionPara,
   granoDeObservacion,
   lecturaEnFecha,
   nombreDeLaExportacion,
@@ -77,7 +79,7 @@ import { ICONO_DE_CLASE, ICONO_DE_FALLA } from './iconos-de-metrica';
 import type { BandaDePlan, SerieParaDibujar } from './lienzo';
 import { Marca } from './marca';
 import { ElegirMetricasDeEntrada } from './entrada';
-import { contextoDeLaPregunta, ElegirParametros, ListaDePreguntas, useEtapasDelAno } from './preguntas';
+import { contextoDeLaPregunta, ElegirParametros, ListaDePreguntas, ParametrosDelEjercicio, useEtapasDelAno } from './preguntas';
 import { nombreDeLaReferencia, SelectorDeMetricas } from './selector';
 import { leerSerie, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
 import { valorParaMostrar } from './valores';
@@ -196,6 +198,11 @@ export function Analizar() {
 
   const listas = series.filter((s): s is SerieDelAnalisis & { estado: Extract<SerieDelAnalisis['estado'], { tipo: 'lista' }> } => s.estado.tipo === 'lista');
   const nombres = series.map((s) => nombreDeLaReferencia(s.ref, s.definicion, disponibles.ejercicios));
+  // Con la pregunta del ejercicio (C-21), el ejercicio, la serie y la unidad se eligen y se leen arriba, una sola vez: el
+  // título de cada gráfico y la lectura dicen solo la métrica. La tabla de datos, el resumen en texto y la descarga
+  // siguen con el nombre entero, porque se leen sueltos.
+  const delEjercicio = pregunta?.id === 'progreso-de-un-ejercicio' && destino?.tipo === 'ANALIZAR' && !cambiandoPregunta;
+  const nombresALaVista = delEjercicio ? series.map((s) => s.definicion.nombreCorto) : nombres;
 
   // La referencia del cambio relativo: un rango explícito del período leído (los primeros N días o un rango fijo),
   // calculado sobre las observaciones. No depende del intervalo que se ve: acercar, alejar o restablecer el gráfico no la
@@ -230,8 +237,8 @@ export function Analizar() {
     if (areaDeSusBandas !== null) areasRotuladas.add(areaDeSusBandas);
     return {
       indice,
-      nombre: tituloDeLaMetrica(nombres[indice] ?? s.definicion.nombre, s.definicion.nombre, s.definicion.nombreCorto),
-      nombreCorto: nombres[indice] ?? s.definicion.nombreCorto,
+      nombre: tituloDeLaMetrica(nombresALaVista[indice] ?? s.definicion.nombre, s.definicion.nombre, s.definicion.nombreCorto),
+      nombreCorto: nombresALaVista[indice] ?? s.definicion.nombreCorto,
       cadaPunto: AGRUPADA[s.grano] === 'cada registro' ? (s.definicion.area === 'ANTROPOMETRIA' ? 'cada toma' : 'cada sesión') : AGRUPADA[s.grano],
       unidad: s.estado.serie.unit,
       serie: s.estado.serie,
@@ -277,6 +284,17 @@ export function Analizar() {
   // (plegada, debajo de la tabla), el resumen en texto se pliega como la tabla de datos y no se repiten las acciones de
   // las tarjetas de las etapas. Resultados, cobertura y límites de interpretación quedan a la vista.
   const conEtapas = destino?.tipo === 'ETAPAS' && !cambiandoPregunta;
+  // La respuesta de las etapas entra en una pantalla (C-12): las dos tarjetas, la tabla y tres gráficos chicos. Los
+  // grandes —con las métricas para cambiar, los modos y la lectura de una fecha— se abren desde ahí. Arrancan abiertos
+  // solo si el enlace trae algo que nada más se ve en ellos: otra agrupación, otro modo o una fecha elegida.
+  const pideGrande = estado.grano !== 'DAY' || estado.modo !== 'PANELS' || estado.fecha !== null;
+  const [enGrande, setEnGrande] = useState(pideGrande);
+  useEffect(() => {
+    setEnGrande(pideGrande);
+    // Se decide al entrar a la pregunta: después, abrirlos o cerrarlos es de quien mira.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pregunta?.id]);
+  const cuerpoALaVista = mostrarVista && (!conEtapas || enGrande);
   const resumenEnTexto = listas.map((s) => {
     const r = partesDelResumenTextual(s.estado.serie, s.definicion, desde, hasta);
     return (
@@ -349,7 +367,14 @@ export function Analizar() {
       : `«Cambio relativo»: ${sinReferencia.map((s) => `${nombres[series.indexOf(s)]} ${MOTIVO_SIN_REFERENCIA[(referencias.get(s.clave) as { motivo?: string } | undefined)?.motivo ?? ''] ?? 'no lo admite'}`).join('; ')}.`;
   // Con la agrupación de siempre (por día), que el peso vaya «cada toma» ya lo dice el encabezado de su gráfico.
   const sinAgrupar = estado.grano === 'DAY' ? [] : series.filter((s) => s.grano !== estado.grano);
-  const hayAvisoDeModo = motivoDeJuntas !== null || motivoDeRelativo !== null || sinAgrupar.length > 0;
+  // Un control aparece solo si hay algo para elegir (C-21). Vale donde las métricas están fijas, que es la pregunta del
+  // ejercicio: la carga, las repeticiones y el RIR de una serie tienen unidades distintas y se leen por sesión, así que no
+  // hay «Ver como» ni «Agrupar por». Donde las métricas se pueden cambiar, los controles siguen: un modo apagado, con su
+  // motivo al lado, dice qué métrica hay que cambiar para usarlo. Y si el enlace pide un modo o una agrupación que acá no
+  // corre, el control queda, apagado y con su motivo: no se cambia en silencio lo que alguien pidió.
+  const hayOtroModo = !delEjercicio || superposicion.permitida || relativoPosible || estado.modo !== 'PANELS';
+  const hayOtraAgrupacion = !delEjercicio || estado.grano !== 'DAY' || series.some((s) => (['ORIGINAL', 'DAY', 'WEEK'] as const).filter((g) => agregacionPara(s.definicion, g) !== null).length > 1);
+  const hayAvisoDeModo = (hayOtroModo && (motivoDeJuntas !== null || motivoDeRelativo !== null)) || sinAgrupar.length > 0;
   // La leyenda dice solo lo que hay dibujado: un estado que no aparece no ocupa lugar.
   const puntosDibujados = dibujables.flatMap((d) => d.serie.points.filter((p) => p.value !== null && p.date >= desde && p.date <= hasta));
   const hayHuecos = puntosDibujados.some((p) => p.quality === 'PARTIAL' || p.partialBucket);
@@ -363,88 +388,54 @@ export function Analizar() {
         })
       : [];
   const fechasDeLaTabla = new Set(listas.flatMap((s) => s.estado.serie.points.filter((p) => p.date >= desde && p.date <= hasta).map((p) => p.date))).size;
-
-  return (
-    <section className={sinTarjeta ? 'seccion analizar analizar--sin-tarjeta' : 'seccion analizar'} aria-labelledby={`${id}-titulo`}>
-      <div className={enCurso ? 'pregunta-en-curso pregunta-activa' : 'pregunta-en-curso'}>
-        <h2 id={`${id}-titulo`}>{laPregunta ? laPregunta.pregunta : sinEntrada ? '¿Qué querés mirar?' : 'Comparación libre'}</h2>
-        {sinEntrada ? <p className="pregunta-en-curso__detalle">Dos caminos para lo mismo: una pregunta que ya trae los gráficos armados, o las métricas que elijas.</p> : null}
-        {!sinEntrada && !laPregunta ? <p className="pregunta-en-curso__detalle">Sin pregunta: las métricas las elegís vos, de cualquier área.</p> : null}
-        {enCurso && pregunta && destino ? (
-          <p className="pregunta-en-curso__detalle">
-            {parametrosEnPalabras(pregunta.params, destino, disponibles)}{' '}
-            <button type="button" className="boton boton--enlace" onClick={() => setCambiandoPregunta(true)}>
-              Cambiar los datos
-            </button>
-          </p>
-        ) : null}
-        {sinEntrada ? null : (
-          <div className="pregunta-en-curso__acciones">
-            <button type="button" className="boton boton--secundario boton--compacto" onClick={volverALaEntrada}>
-              <Icono nombre="pregunta" tamano={18} />
-              {laPregunta ? 'Cambiar la pregunta' : 'Empezar por una pregunta'}
-            </button>
-            {mostrarVista ? (
-              <button type="button" className="boton boton--quieto boton--compacto" aria-expanded={masAcciones} aria-controls={`${id}-mas`} onClick={() => setMasAcciones(!masAcciones)}>
-                <Icono nombre="menu" tamano={18} />
-                Más acciones
-              </button>
+  // «Más acciones» va debajo de su botón. Las capas y el intervalo son de los gráficos grandes: con la comparación de
+  // etapas y los grandes cerrados no se ofrecen (no se vería qué cambian); al abrirlos, están.
+  const panelDeMasAcciones = (
+    <div id={`${id}-mas`} className="mas-acciones" role="group" aria-label="Más acciones">
+      <VistasGuardadas estado={estado} pregunta={pregunta} />
+      {listas.length > 0 ? (
+        <ExportarCsv series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} aviso={avisoDeExportacion?.texto ?? null} onAviso={setAvisoDeExportacion} onAccesoCambiado={recargar} />
+      ) : null}
+      {cuerpoALaVista ? (
+        <>
+          <fieldset className="capas">
+            <legend>Capas de los gráficos</legend>
+            <label className="capa">
+              <input type="checkbox" checked={estado.bandas} onChange={() => cambiar({ bandas: !estado.bandas })} />
+              Etapas de los planes
+            </label>
+            <label className="capa">
+              <input type="checkbox" checked={estado.eventos} onChange={() => cambiar({ eventos: !estado.eventos })} />
+              Hitos de planificación (activaciones, objetivos, revisiones)
+            </label>
+          </fieldset>
+          <div>
+            <SeleccionDeIntervalo desde={desde} hasta={hasta} minimo={periodo.desde} maximo={periodo.hasta} onCambiar={(d, h) => setIntervalo({ desde: d, hasta: h })} />
+            {listas.length > 0 && !conEtapas ? (
+              <p>
+                <button type="button" className="boton boton--enlace" aria-expanded={abierto === 'comparar'} aria-controls={`${id}-abajo`} onClick={() => alternar('comparar')}>
+                  Comparar dos períodos, con fechas elegidas a mano
+                </button>
+              </p>
             ) : null}
           </div>
-        )}
-      </div>
-      {sinEntrada ? (
-        <div className="entrada-de-analizar">
-          <div className="entrada-de-analizar__columna">
-            <ListaDePreguntas />
-            {/* Retomar una vista guardada también desde el comienzo: antes había que armar un análisis cualquiera para verlas. */}
-            <VistasGuardadas estado={estado} pregunta={null} soloAbrir />
-          </div>
-          <ElegirMetricasDeEntrada
-            disponibles={disponibles}
-            onVer={(metricas) => ir({ ...parametrosDeAnalisis({ ...estado, metricas, fecha: null, comparacion: null }), ...parametrosDePregunta(null) }, { agregarAlHistorial: true })}
-          />
-        </div>
+        </>
       ) : null}
-      {/* La pregunta se arma con lo que el resumen por área deja leer: si esa lectura falló, se dice (no es una carga que no termina). */}
-      {pregunta && resolucion === null ? (
-        panel.tipo === 'error' ? (
-          <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[panel.motivo]} titulo="No pudimos armar la pregunta" onReintentar={recargarPanel}>
-            {razonDeFalla(panel.motivo)} Hace falta saber qué áreas se pueden leer.
-          </BloqueDeEstado>
-        ) : (
-          <Cargando />
-        )
-      ) : null}
-      {pregunta && resolucion && (resolucion.estado === 'FALTA_ELEGIR' || cambiandoPregunta) ? (
-        <ElegirParametros
-          key={JSON.stringify(pregunta)}
-          pregunta={pregunta}
-          resolucion={resolucion.estado === 'FALTA_ELEGIR' ? resolucion : null}
-          contexto={contexto}
-          disponibles={disponibles}
-          cargando={etapasDelAno.cargando}
-          falla={etapasDelAno.falla}
-          onListo={() => setCambiandoPregunta(false)}
-        />
-      ) : null}
-      {/* El límite de la pregunta va, una sola vez, al pie de los gráficos; si la respuesta no tiene gráficos, acá. */}
-      {enCurso && laPregunta && !conGraficos ? <p className="nota pregunta-en-curso__limite">{laPregunta.limite}</p> : null}
-      {destino?.tipo === 'CONTRASTE' && !cambiandoPregunta ? <ContrasteConLoIndicado area={destino.area} exerciseKey={destino.exerciseKey} /> : null}
-      {destino?.tipo === 'ETAPAS' && !cambiandoPregunta ? (
-        <div className="tarjeta-de-respuesta">
-          <ComparacionDeEtapas area={destino.area} a={destino.a} b={destino.b} metricas={destino.metricas} etapas={etapasDelAno.etapas[destino.area === 'NUTRICION' ? 'NUTRITION' : 'TRAINING']} disponibles={disponibles} />
-          {listas.length > 0 ? (
-            <ComparacionDePeriodos series={listas} nombres={nombres} todas={series} estado={estado} cambiar={cambiar} minimo={periodo.desde} maximo={periodo.hasta} secundaria />
-          ) : null}
-        </div>
-      ) : null}
-      {destino?.tipo === 'INFORMACION' && !cambiandoPregunta ? <InformacionParaRevisar area={destino.area} disponibles={disponibles} /> : null}
-      {mostrarVista ? (
+    </div>
+  );
+
+  // El cuerpo de los gráficos: la barra de métricas y modos, los gráficos con la lectura y lo que abre su pie. En la
+  // comparación de etapas va adentro de la respuesta, debajo de «Las mismas métricas, en el tiempo» (C-12); en el resto
+  // de «Analizar», donde estuvo siempre.
+  const vista = mostrarVista ? (
         <>
+          {cuerpoALaVista ? (
           <div className="barra-de-analizar">
-            <SelectorDeMetricas elegidas={estado.metricas} disponibles={disponibles} onCambiar={cambiarMetricas} marcas={marcas} />
+            {/* Con la pregunta del ejercicio, las métricas son siempre las tres de la serie: en su lugar va qué serie es. */}
+            {delEjercicio && pregunta ? <ParametrosDelEjercicio pregunta={pregunta} contexto={contexto} /> : <SelectorDeMetricas elegidas={estado.metricas} disponibles={disponibles} onCambiar={cambiarMetricas} marcas={marcas} />}
+            {hayOtroModo || hayOtraAgrupacion || hayAvisoDeModo ? (
             <div className="modos-de-analizar">
+              {hayOtroModo ? (
               <fieldset className="segmentos">
                 <legend>Ver como</legend>
                 <div className="segmentos__fila">
@@ -453,6 +444,8 @@ export function Analizar() {
                   <ModoElegible modo="RELATIVE" actual={modo} cambiar={(m) => cambiar({ modo: m })} icono="cambio-relativo" texto="Cambio relativo" motivo={motivoDeRelativo} idDelAviso={`${id}-aviso`} />
                 </div>
               </fieldset>
+              ) : null}
+              {hayOtraAgrupacion ? (
               <fieldset className="segmentos">
                 <legend>Agrupar por</legend>
                 <div className="segmentos__fila">
@@ -464,11 +457,12 @@ export function Analizar() {
                   ))}
                 </div>
               </fieldset>
+              ) : null}
               {/* Por qué un modo no está disponible, o qué métrica no admite la agrupación elegida: dicho al lado. */}
               {hayAvisoDeModo ? (
                 <ul id={`${id}-aviso`} className="modos-de-analizar__aviso">
-                  {motivoDeJuntas !== null ? <li className="modo-no-disponible">{motivoDeJuntas}</li> : null}
-                  {motivoDeRelativo !== null ? <li className="modo-no-disponible">{motivoDeRelativo}</li> : null}
+                  {hayOtroModo && motivoDeJuntas !== null ? <li className="modo-no-disponible">{motivoDeJuntas}</li> : null}
+                  {hayOtroModo && motivoDeRelativo !== null ? <li className="modo-no-disponible">{motivoDeRelativo}</li> : null}
                   {sinAgrupar.map((s) => (
                     <li key={s.clave} className="agrupar-por__motivo">
                       {nombres[series.indexOf(s)]}: {s.grano === 'ORIGINAL' ? (s.definicion.area === 'ANTROPOMETRIA' ? 'cada toma (las tomas no se agrupan)' : 'cada sesión (las series no se agrupan entre sesiones)') : s.grano === 'DAY' ? 'por día' : 'por semana'}.
@@ -477,6 +471,7 @@ export function Analizar() {
                 </ul>
               ) : null}
             </div>
+            ) : null}
             {modo === 'RELATIVE' ? (
               <ElegirReferencia
                 // Se rearma si cambia la referencia o su rango (otro período): el editor arranca de lo vigente.
@@ -490,37 +485,11 @@ export function Analizar() {
               />
             ) : null}
           </div>
-
-          {masAcciones ? (
-            <div id={`${id}-mas`} className="mas-acciones" role="group" aria-label="Más acciones">
-              <VistasGuardadas estado={estado} pregunta={pregunta} />
-              {listas.length > 0 ? (
-                <ExportarCsv series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} aviso={avisoDeExportacion?.texto ?? null} onAviso={setAvisoDeExportacion} onAccesoCambiado={recargar} />
-              ) : null}
-              <fieldset className="capas">
-                <legend>Capas de los gráficos</legend>
-                <label className="capa">
-                  <input type="checkbox" checked={estado.bandas} onChange={() => cambiar({ bandas: !estado.bandas })} />
-                  Etapas de los planes
-                </label>
-                <label className="capa">
-                  <input type="checkbox" checked={estado.eventos} onChange={() => cambiar({ eventos: !estado.eventos })} />
-                  Hitos de planificación (activaciones, objetivos, revisiones)
-                </label>
-              </fieldset>
-              <div>
-                <SeleccionDeIntervalo desde={desde} hasta={hasta} minimo={periodo.desde} maximo={periodo.hasta} onCambiar={(d, h) => setIntervalo({ desde: d, hasta: h })} />
-                {listas.length > 0 && !conEtapas ? (
-                  <p>
-                    <button type="button" className="boton boton--enlace" aria-expanded={abierto === 'comparar'} aria-controls={`${id}-abajo`} onClick={() => alternar('comparar')}>
-                      Comparar dos períodos, con fechas elegidas a mano
-                    </button>
-                  </p>
-                ) : null}
-              </div>
-            </div>
           ) : null}
 
+          {masAcciones && !conEtapas ? panelDeMasAcciones : null}
+
+          {cuerpoALaVista ? (
           <div className="analizar__dos-columnas">
             <div className="tarjeta-de-graficos analizar__lienzo">
               {intervalo ? (
@@ -634,8 +603,9 @@ export function Analizar() {
                   fecha={fecha}
                   fechasConDato={fechasConDato}
                   series={listas}
-                  nombres={nombres}
+                  nombres={nombresALaVista}
                   todas={series}
+                  deUnaSerie={delEjercicio}
                   referencias={modo === 'RELATIVE' ? referencias : null}
                   onFecha={(f) => cambiar({ fecha: f })}
                   onAbrir={(indice, punto) => setPuntoAbierto({ indice, punto, origen: null })}
@@ -643,9 +613,10 @@ export function Analizar() {
               </div>
             ) : null}
           </div>
+          ) : null}
 
           {/* Lo que abre el pie de los gráficos (o «Más acciones», para comparar a mano): una cosa a la vez. */}
-          {listas.length > 0 && abierto !== null ? (
+          {cuerpoALaVista && listas.length > 0 && abierto !== null ? (
             <div id={`${id}-abajo`} className="bajo-los-graficos">
               {abierto === 'tabla' ? <TablaDeDatos series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} /> : null}
               {abierto === 'texto' ? (
@@ -706,7 +677,113 @@ export function Analizar() {
             </div>
           ) : null}
         </>
+      ) : null;
+
+  return (
+    <section className={sinTarjeta ? 'seccion analizar analizar--sin-tarjeta' : 'seccion analizar'} aria-labelledby={`${id}-titulo`}>
+      <div className={enCurso ? 'pregunta-en-curso pregunta-activa' : 'pregunta-en-curso'}>
+        <h2 id={`${id}-titulo`}>{laPregunta ? laPregunta.pregunta : sinEntrada ? '¿Qué querés mirar?' : 'Comparación libre'}</h2>
+        {sinEntrada ? <p className="pregunta-en-curso__detalle">Dos caminos para lo mismo: una pregunta que ya trae los gráficos armados, o las métricas que elijas.</p> : null}
+        {!sinEntrada && !laPregunta ? <p className="pregunta-en-curso__detalle">Sin pregunta: las métricas las elegís vos, de cualquier área.</p> : null}
+        {enCurso && pregunta && destino && !delEjercicio ? (
+          <p className="pregunta-en-curso__detalle">
+            {parametrosEnPalabras(pregunta.params, destino, disponibles)}{' '}
+            <button type="button" className="boton boton--enlace" onClick={() => setCambiandoPregunta(true)}>
+              Cambiar los datos
+            </button>
+          </p>
+        ) : null}
+        {sinEntrada ? null : (
+          <div className="pregunta-en-curso__acciones">
+            <button type="button" className="boton boton--secundario boton--compacto" onClick={volverALaEntrada}>
+              <Icono nombre="pregunta" tamano={18} />
+              {laPregunta ? 'Cambiar la pregunta' : 'Empezar por una pregunta'}
+            </button>
+            {mostrarVista ? (
+              <button type="button" className="boton boton--quieto boton--compacto" aria-expanded={masAcciones} aria-controls={`${id}-mas`} onClick={() => setMasAcciones(!masAcciones)}>
+                <Icono nombre="menu" tamano={18} />
+                Más acciones
+              </button>
+            ) : null}
+          </div>
+        )}
+      </div>
+      {sinEntrada ? (
+        <div className="entrada-de-analizar">
+          <div className="entrada-de-analizar__columna">
+            <ListaDePreguntas />
+            {/* Retomar una vista guardada también desde el comienzo: antes había que armar un análisis cualquiera para verlas. */}
+            <VistasGuardadas estado={estado} pregunta={null} soloAbrir />
+          </div>
+          <ElegirMetricasDeEntrada
+            disponibles={disponibles}
+            onVer={(metricas) => ir({ ...parametrosDeAnalisis({ ...estado, metricas, fecha: null, comparacion: null }), ...parametrosDePregunta(null) }, { agregarAlHistorial: true })}
+          />
+        </div>
       ) : null}
+      {/* La pregunta se arma con lo que el resumen por área deja leer: si esa lectura falló, se dice (no es una carga que no termina). */}
+      {pregunta && resolucion === null ? (
+        panel.tipo === 'error' ? (
+          <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[panel.motivo]} titulo="No pudimos armar la pregunta" onReintentar={recargarPanel}>
+            {razonDeFalla(panel.motivo)} Hace falta saber qué áreas se pueden leer.
+          </BloqueDeEstado>
+        ) : (
+          <Cargando />
+        )
+      ) : null}
+      {pregunta && resolucion && (resolucion.estado === 'FALTA_ELEGIR' || cambiandoPregunta) ? (
+        <ElegirParametros
+          key={JSON.stringify(pregunta)}
+          pregunta={pregunta}
+          resolucion={resolucion.estado === 'FALTA_ELEGIR' ? resolucion : null}
+          contexto={contexto}
+          disponibles={disponibles}
+          cargando={etapasDelAno.cargando}
+          falla={etapasDelAno.falla}
+          onListo={() => setCambiandoPregunta(false)}
+        />
+      ) : null}
+      {/* El límite de la pregunta va, una sola vez, al pie de los gráficos; si la respuesta no tiene gráficos, acá. */}
+      {enCurso && laPregunta && !conGraficos ? <p className="nota pregunta-en-curso__limite">{laPregunta.limite}</p> : null}
+      {destino?.tipo === 'CONTRASTE' && !cambiandoPregunta ? <ContrasteConLoIndicado area={destino.area} exerciseKey={destino.exerciseKey} /> : null}
+      {destino?.tipo === 'ETAPAS' && !cambiandoPregunta ? (
+        <div className="respuesta-de-etapas">
+          {/* «Más acciones» se abre debajo de su botón: acá, antes de las tarjetas (los gráficos pueden estar cerrados). */}
+          {masAcciones ? panelDeMasAcciones : null}
+          <ComparacionDeEtapas
+            area={destino.area}
+            a={destino.a}
+            b={destino.b}
+            metricas={destino.metricas}
+            etapas={etapasDelAno.etapas[destino.area === 'NUTRICION' ? 'NUTRITION' : 'TRAINING']}
+            disponibles={disponibles}
+            enGrande={enGrande}
+            onEnGrande={setEnGrande}
+            pie={
+              <div className="pie-de-etapas">
+                {listas.length > 0 ? (
+                  <BotonDelPie que="tabla" abierto={abierto} alternar={alternar} controla={`${id}-tabla-de-etapas`} icono="tabla" texto={`Tabla de datos (${numero(fechasDeLaTabla)} ${fechasDeLaTabla === 1 ? 'fecha' : 'fechas'})`} />
+                ) : null}
+                {/* Lo que la comparación no dice, una sola vez: con los gráficos grandes abiertos lo dice su pie. */}
+                <p className="pie-de-etapas__limite">{laPregunta ? `${laPregunta.limite} ` : ''}Coincidencia temporal: no indica causa.</p>
+              </div>
+            }
+            debajo={
+              abierto === 'tabla' && listas.length > 0 ? (
+                <div id={`${id}-tabla-de-etapas`} className="bajo-los-graficos">
+                  <TablaDeDatos series={listas} nombres={nombres} todas={series} desde={desde} hasta={hasta} />
+                </div>
+              ) : null
+            }
+            grandes={vista}
+          />
+          {listas.length > 0 ? (
+            <ComparacionDePeriodos series={listas} nombres={nombres} todas={series} estado={estado} cambiar={cambiar} minimo={periodo.desde} maximo={periodo.hasta} secundaria />
+          ) : null}
+        </div>
+      ) : null}
+      {destino?.tipo === 'INFORMACION' && !cambiandoPregunta ? <InformacionParaRevisar area={destino.area} disponibles={disponibles} /> : null}
+      {conEtapas ? null : vista}
 
       <PanelDeRegistro
         origen={planAbierto ? { type: planAbierto.dominio === 'NUTRITION' ? 'NUTRITION_PLAN_VERSION' : 'TRAINING_PLAN_VERSION', id: planAbierto.planVersionId } : null}
@@ -983,6 +1060,7 @@ function PanelDeLectura({
   series,
   nombres,
   todas,
+  deUnaSerie = false,
   referencias,
   onFecha,
   onAbrir,
@@ -992,6 +1070,11 @@ function PanelDeLectura({
   series: readonly Lista[];
   nombres: readonly string[];
   todas: readonly SerieDelAnalisis[];
+  /**
+   * Las métricas son la carga, las repeticiones y el RIR de una misma serie (la pregunta del ejercicio): la sesión se
+   * dice una vez, arriba, y cada métrica no repite el valor de las otras dos, que están al lado.
+   */
+  deUnaSerie?: boolean;
   /** En el modo de cambio relativo: la referencia de cada serie; la lectura dice el cambio y el valor real. */
   referencias: ReadonlyMap<string, Referencia> | null;
   onFecha: (f: string) => void;
@@ -999,16 +1082,21 @@ function PanelDeLectura({
 }) {
   const id = useId();
   const i = fecha ? fechasConDato.indexOf(fecha) : -1;
+  // La sesión de esa fecha, tomada del detalle del dominio. Si hubo dos sesiones ese día, cada punto dice la suya.
+  const sesiones = deUnaSerie && fecha ? [...new Set(series.flatMap((s) => { const l = lecturaEnFecha(s.estado.serie, fecha, true); return l.tipo === 'valores' ? l.puntos.flatMap((p) => p.detail.filter((d) => d.label === DETALLE_DE_SERIE.SESION).map((d) => d.value)) : []; }))] : [];
+  const sesion = sesiones.length === 1 ? (sesiones[0] ?? null) : null;
+  const repetidos: ReadonlySet<string> = new Set(deUnaSerie ? [DETALLE_DE_SERIE.CARGA, DETALLE_DE_SERIE.REPETICIONES, DETALLE_DE_SERIE.RIR, ...(sesion !== null ? [DETALLE_DE_SERIE.SESION] : [])] : []);
   return (
     <section className="panel-de-lectura" aria-labelledby={`${id}-titulo`}>
       <h3 id={`${id}-titulo`}>{fecha ? `Lectura del ${diaCivil(fecha)}` : 'Lectura'}</h3>
+      {sesion !== null ? <p className="panel-de-lectura__sesion">Sesión: {sesion}</p> : null}
       <div className="lectura__paso">
         <button type="button" className="boton boton--quieto boton--compacto" disabled={i <= 0} onClick={() => onFecha(fechasConDato[i - 1]!)}>
           <Icono nombre="izquierda" tamano={18} />
-          Fecha anterior<span className="visualmente-oculto"> con datos</span>
+          {deUnaSerie ? 'Sesión anterior' : 'Fecha anterior'}<span className="visualmente-oculto"> con datos</span>
         </button>
         <button type="button" className="boton boton--quieto boton--compacto" disabled={i < 0 || i >= fechasConDato.length - 1} onClick={() => onFecha(fechasConDato[i + 1]!)}>
-          Fecha siguiente<span className="visualmente-oculto"> con datos</span>
+          {deUnaSerie ? 'Sesión siguiente' : 'Fecha siguiente'}<span className="visualmente-oculto"> con datos</span>
           <Icono nombre="derecha" tamano={18} />
         </button>
       </div>
@@ -1034,7 +1122,7 @@ function PanelDeLectura({
                     const valor = p.value === null ? null : valorParaMostrar(p.value, s.definicion, s.estado.serie.unit);
                     const corte = valor ? valor.lastIndexOf(' ') : -1;
                     const clase = p.detail.find((d) => d.label === 'Clase de dato');
-                    const otros = p.detail.filter((d) => d !== clase);
+                    const otros = p.detail.filter((d) => d !== clase && !repetidos.has(d.label));
                     const objetivos = valor !== null ? objetivosVigentes(s.estado.objetivo, p.date, p.dateEnd ?? p.date) : [];
                     return (
                       <div key={p.pointId} className="dato-de-lectura__punto">

@@ -32,6 +32,21 @@ import { lunesDe, semanasDelPeriodo } from './series-del-analisis';
 import { numero } from './formato-numeros';
 
 /**
+ * Los rótulos del detalle de un punto de una serie (`detail`): qué sesión fue, qué pedía el plan para esa serie y lo
+ * otro que se registró en ella. Son constantes para que quien muestra juntas la carga, las repeticiones y el RIR de una
+ * serie pueda decir la sesión una sola vez y no repetir, en cada métrica, el valor de las otras dos: se comparan estos
+ * nombres y no un texto suelto.
+ */
+export const DETALLE_DE_SERIE = {
+  SESION: 'Sesión',
+  OBJETIVO: 'Objetivo de esta serie',
+  CARGA: 'Carga de la serie',
+  REPETICIONES: 'Repeticiones de la serie',
+  RIR: 'RIR',
+  SESION_DEL_DIA: 'Sesión del día',
+} as const;
+
+/**
  * DL-122: los objetivos efectivos por serie de una versión de plan (su instantánea), por prescripción. Es lo que el
  * website arma desde API-SER-01 para «Evolución de un ejercicio», resuelto con la misma `objetivosEfectivos`: así cada
  * punto se compara con el objetivo de **esa** serie en la versión que rigió ese día.
@@ -156,10 +171,10 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
         coverage: null,
         missing: [],
         detail: [
-          { label: 'Sesión', value: c.sesion },
+          { label: DETALLE_DE_SERIE.SESION, value: c.sesion },
           ...(noRealizada ? [{ label: 'Condición', value: 'Registrada como no realizada' }] : []),
           { label: 'Series planificadas', value: String(c.filas.filter((f) => f.planificada.tipo === 'planificada').length) },
-          ...(x.delDia.total > 1 ? [{ label: 'Sesión del día', value: `${x.delDia.orden} de ${x.delDia.total}` }] : []),
+          ...(x.delDia.total > 1 ? [{ label: DETALLE_DE_SERIE.SESION_DEL_DIA, value: `${x.delDia.orden} de ${x.delDia.total}` }] : []),
         ],
         sources: fuenteDe(x),
         sourcesTruncated: false,
@@ -227,12 +242,12 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
         coverage: null,
         missing: [],
         detail: [
-          { label: 'Sesión', value: c.sesion },
-          ...(planificado ? [{ label: 'Objetivo de esta serie', value: planificado }] : []),
-          ...(o.metrica !== 'LOAD' && serie?.load ? [{ label: 'Carga de la serie', value: `${numero(serie.load.value)} ${serie.load.unit}` }] : []),
-          ...(o.metrica !== 'REPETITIONS' && serie?.completedRepetitions != null ? [{ label: 'Repeticiones de la serie', value: numero(serie.completedRepetitions) }] : []),
-          ...(o.metrica !== 'RIR' ? [{ label: 'RIR', value: serie?.rir == null ? 'sin informar' : numero(serie.rir) }] : []),
-          ...(p.observacion.delDia.total > 1 ? [{ label: 'Sesión del día', value: `${p.observacion.delDia.orden} de ${p.observacion.delDia.total}` }] : []),
+          { label: DETALLE_DE_SERIE.SESION, value: c.sesion },
+          ...(planificado ? [{ label: DETALLE_DE_SERIE.OBJETIVO, value: planificado }] : []),
+          ...(o.metrica !== 'LOAD' && serie?.load ? [{ label: DETALLE_DE_SERIE.CARGA, value: `${numero(serie.load.value)} ${serie.load.unit}` }] : []),
+          ...(o.metrica !== 'REPETITIONS' && serie?.completedRepetitions != null ? [{ label: DETALLE_DE_SERIE.REPETICIONES, value: numero(serie.completedRepetitions) }] : []),
+          ...(o.metrica !== 'RIR' ? [{ label: DETALLE_DE_SERIE.RIR, value: serie?.rir == null ? 'sin informar' : numero(serie.rir) }] : []),
+          ...(p.observacion.delDia.total > 1 ? [{ label: DETALLE_DE_SERIE.SESION_DEL_DIA, value: `${p.observacion.delDia.orden} de ${p.observacion.delDia.total}` }] : []),
         ],
         sources: fuenteDe(p.observacion),
         sourcesTruncated: false,

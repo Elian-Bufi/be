@@ -5566,12 +5566,17 @@ a.observacion__fila:focus-visible {
   flex: 1 1 18rem;
 }
 
-/* Etapas: dos tarjetas A y B, y la tabla con el mismo criterio. */
+/* ─── Comparar dos etapas (WP-ESCRITORIO-AMABLE, C-12) ───────────────────────────────────── */
+/* La respuesta entra en una pantalla: dos tarjetas (A y B), la tabla y tres gráficos chicos. Cada una es una tarjeta,
+   sobre el fondo de la página, como los gráficos y la lectura del resto de «Analizar». */
+.respuesta-de-etapas {
+  margin-top: 0.6rem;
+}
+
 .etapas {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
-  margin: 0.5rem 0;
 }
 
 @media (min-width: 64rem) {
@@ -5580,31 +5585,348 @@ a.observacion__fila:focus-visible {
   }
 }
 
-.etapa {
+.etapa,
+.tarjeta-de-etapas,
+.graficos-de-etapas {
+  min-width: 0;
   border: 1px solid var(--borde);
-  border-radius: 10px;
-  background: var(--fondo-suave);
-  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
 }
 
-.etapa h4 {
-  margin: 0.1rem 0 0.4rem;
+.etapa {
+  padding: 0.7rem 1rem 0.75rem;
 }
 
-.etapa__rotulo {
+/* La letra de la etapa, su versión (un selector si hay otra para elegir) y, a la derecha, su planificación. */
+.etapa__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+}
+
+.etapa__letra {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  background: var(--texto);
+  color: var(--superficie);
+  font-weight: 700;
+}
+
+.etapa__nombre {
   margin: 0;
-  color: var(--tenue);
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 1.05rem;
 }
 
-.etapa .datos dt {
-  min-width: 6rem;
+.etapa__selector {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+}
+
+.etapa__plan {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  margin-left: auto;
+}
+
+/* Desde, hasta y duración en un renglón; la cobertura, debajo y a todo el ancho, separada por una línea. */
+.etapa__datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  margin: 0.45rem 0 0;
+}
+
+/* «Desde» y «Duración» ocupan lo que dicen; «Hasta», que es la frase más larga, el resto. Si la tarjeta es angosta (dos
+   por fila a 1024 px), lo que no entra baja a otro renglón en vez de apretarse. */
+.etapa__datos > div {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.etapa__datos > div:nth-child(2) {
+  flex: 1 1 12rem;
+}
+
+.etapa__datos dt {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+.etapa__datos dd {
+  margin: 0.1rem 0 0;
+}
+
+.etapa__datos .etapa__cobertura {
+  flex: 1 1 100%;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--borde);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 40rem) {
+  .etapa__datos {
+    flex-direction: column;
+  }
+
+  .etapa__plan {
+    margin-left: 0;
+  }
+}
+
+.comparacion-de-etapas__recorte {
+  margin: 0.6rem 0 0;
+}
+
+.tarjeta-de-etapas {
+  margin-top: 0.75rem;
+  padding: 0.25rem 1rem 0.1rem;
+}
+
+.tabla-de-etapas {
+  margin: 0;
+}
+
+/* La métrica y, debajo, su criterio. El valor de cada etapa y la diferencia, del mismo peso. */
+.tabla-de-etapas th[scope='row'] {
+  font-weight: 400;
+}
+
+.tabla-de-etapas thead th:nth-child(1) {
+  width: 27%;
+}
+
+.tabla-de-etapas thead th:nth-child(2),
+.tabla-de-etapas thead th:nth-child(3) {
+  width: 24%;
+}
+
+.tabla-de-etapas tbody tr:last-child th,
+.tabla-de-etapas tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tabla-de-etapas__metrica {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 700;
 }
 
 .tabla-de-etapas td strong {
   display: block;
+  font-size: 1.05rem;
+}
+
+/* Por qué no se resta: una frase del dominio, del tamaño del texto, que no pasa por un número. */
+.tabla-de-etapas__sin-diferencia {
+  display: block;
+  max-width: 24rem;
+}
+
+.graficos-de-etapas {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem 0.5rem;
+}
+
+.graficos-de-etapas__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 0.75rem;
+  min-height: 2.75rem;
+}
+
+.graficos-de-etapas__cabecera h4 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.graficos-de-etapas__nota {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+.graficos-de-etapas__abrir {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  margin-left: auto;
+}
+
+/* Tres gráficos chicos, uno al lado del otro; a 1024 px, dos y uno; en el teléfono, uno debajo del otro. */
+.graficos-de-etapas__lista {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem 1.5rem;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 48rem) {
+  .graficos-de-etapas__lista {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 75rem) {
+  .graficos-de-etapas__lista {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.grafico-chico {
+  min-width: 0;
+}
+
+.grafico-chico__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 0.45rem;
+  margin: 0;
+}
+
+.grafico-chico__detalle,
+.grafico-chico__muestra {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+.grafico-chico__muestra {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.grafico-chico .minigrafico {
+  margin-top: 0.2rem;
+}
+
+/* El pie de la comparación: la tabla de datos y, a la derecha, lo que la comparación no dice (una sola vez). */
+.pie-de-etapas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 1.4rem;
+  min-height: 2.5rem;
+  margin-top: 0.15rem;
+}
+
+.pie-de-etapas .boton--enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+}
+
+.pie-de-etapas .boton--enlace[aria-expanded='true'] {
+  color: var(--texto);
+  text-decoration-thickness: 2px;
+}
+
+.pie-de-etapas__limite {
+  margin: 0 0 0 auto;
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+.graficos-de-etapas .bajo-los-graficos {
+  margin: 0.5rem 0 0.4rem;
+}
+
+.respuesta-de-etapas > .comparacion-de-etapas > .ayuda,
+.respuesta-de-etapas > .comparar-a-mano {
+  margin: 0.35rem 0 0;
+}
+
+/* ─── Los datos de una pregunta, en el lugar (WP-ESCRITORIO-AMABLE, C-21) ────────────────── */
+/* El ejercicio, la serie y la unidad de «¿Cómo viene progresando este ejercicio?»: cada uno es un control con su
+   nombre adentro, del alto de un objetivo. Uno sin nada para elegir va escrito, sin recuadro de control. */
+.parametros-en-el-lugar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.6rem;
+}
+
+.parametro-en-el-lugar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0 0.3rem 0 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+}
+
+.parametro-en-el-lugar:focus-within {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.parametro-en-el-lugar__nombre {
+  flex: none;
+  color: var(--tenue);
+}
+
+/* El control nativo, sin su recuadro: el recuadro es el de la pieza entera, y el foco también. */
+.parametro-en-el-lugar select {
+  min-width: 0;
+  max-width: 22rem;
+  min-height: 42px;
+  padding: 0 0.4rem 0 0.1rem;
+  border: 0;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+  text-overflow: ellipsis;
+}
+
+.parametro-en-el-lugar select:focus-visible {
+  outline: none;
+}
+
+.parametro-en-el-lugar--fijo {
+  padding-right: 0.75rem;
+  border-color: var(--borde);
+  background: transparent;
+}
+
+.parametros-en-el-lugar__nota {
+  margin: 0 0 0 0.4rem;
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+/* La sesión de la fecha elegida, dicha una vez, debajo del título de la lectura. */
+.panel-de-lectura__sesion {
+  margin: 0.15rem 0 0;
+  color: var(--tenue);
 }
 
 /* La cobertura de un valor es contexto para decidir (GUIA-UX-UI II.4): el tamaño de un dato secundario, no menos. */

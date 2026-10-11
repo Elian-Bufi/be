@@ -51,6 +51,17 @@ export interface EntradaDelMinigrafico {
   readonly alto: number;
   /** El día desde el que rige el primer plan del período, si empezó adentro (`primerPlanDelPeriodo`). */
   readonly inicioDelPlan: string | null;
+  /** Tramos del eje de fechas que llevan un rótulo (las dos etapas de una comparación): del primer día al último. */
+  readonly bandas?: readonly { readonly desde: string; readonly hasta: string; readonly rotulo: string }[];
+  /** Fechas que se escriben debajo del dibujo: para eso se reserva un renglón. */
+  readonly fechas?: readonly string[];
+  /** Lo planificado en la unidad de la métrica (el objetivo de calorías), un escalón por versión. Entra en el eje. */
+  readonly plan?: readonly { readonly desde: string; readonly hasta: string | null; readonly valor: number }[];
+  /**
+   * En cuántas partes, por lo menos, se piensa el eje vertical para elegir su paso redondo. Con 2 (lo de siempre), un
+   * gráfico de 60 px de alto tiene dos marcas bien separadas; uno más alto admite 4, que ajusta más el eje a los datos.
+   */
+  readonly divisionesDelEje?: number;
 }
 
 export interface PuntoDelMinigrafico {
@@ -73,29 +84,41 @@ export interface GeometriaDelMinigrafico {
   readonly eje: readonly { readonly y: number; readonly valor: number; readonly texto: string }[];
   /** Dónde empieza a regir el primer plan del período, si empezó adentro. */
   readonly inicioDelPlan: number | null;
+  /** Los tramos rotulados que caen en el período, recortados a él. */
+  readonly bandas: readonly { readonly x: number; readonly ancho: number; readonly rotulo: string }[];
+  /** Dónde va cada fecha del pie: la primera se alinea a la izquierda y la última a la derecha, para que no se corten. */
+  readonly fechas: readonly { readonly x: number; readonly fecha: string; readonly ancla: 'start' | 'middle' | 'end' }[];
+  /** Un tramo horizontal por escalón de lo planificado: cada uno termina donde empieza el siguiente. */
+  readonly plan: readonly { readonly x1: number; readonly x2: number; readonly y: number }[];
   readonly caja: { readonly izquierda: number; readonly derecha: number; readonly arriba: number; readonly abajo: number };
 }
 
 /** El ancho estimado de una cifra del eje (letra de 12,5 px con cifras tabulares). */
 const ANCHO_DE_CIFRA = 7.2;
 const AIRE = 8;
+/** El renglón de las fechas, debajo del dibujo: la letra y su aire. */
+export const PIE_DE_FECHAS = 18;
+/** El ancho que se le reserva a una fecha corta del pie («17 sept»), para saber si dos se pisan. */
+const ANCHO_DE_FECHA = 52;
+/** La franja de arriba donde va la letra de cada etapa: ahí no se dibuja ningún punto, así la letra no pisa a ninguno. */
+export const FRANJA_DE_ROTULOS = 14;
 
 /** Sin el ruido binario de una cuenta con decimales (0,95 / 0,05 no es 18,999999999999996). */
 const sinRuido = (n: number): number => Number(n.toFixed(6));
 
 /** Un paso «redondo» (1, 2 o 5 por una potencia de diez) para que dos marcas abarquen el rango. */
-function pasoRedondo(rango: number): number {
-  const bruto = rango / 2;
+function pasoRedondo(rango: number, divisiones: number): number {
+  const bruto = rango / divisiones;
   const potencia = 10 ** Math.floor(Math.log10(bruto));
   const m = sinRuido(bruto / potencia);
   return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * potencia;
 }
 
 /** Los dos extremos del eje vertical para un mínimo y un máximo: números redondos que encierran todos los valores. */
-export function extremosDelEje(minimo: number, maximo: number): { readonly abajo: number; readonly arriba: number; readonly decimales: number } {
+export function extremosDelEje(minimo: number, maximo: number, divisiones = 2): { readonly abajo: number; readonly arriba: number; readonly decimales: number } {
   // Con un solo valor (o todos iguales) no hay rango: se abre un margen alrededor, para que el punto no quede en un borde.
   const margen = maximo === minimo ? Math.abs(maximo) * 0.05 || 1 : 0;
-  const paso = pasoRedondo(maximo - minimo + 2 * margen);
+  const paso = pasoRedondo(maximo - minimo + 2 * margen, divisiones);
   let abajo = sinRuido(Math.floor(sinRuido((minimo - margen) / paso)) * paso);
   const arriba = sinRuido(Math.ceil(sinRuido((maximo + margen) / paso)) * paso);
   // Una métrica que no baja de cero no muestra una marca negativa.
@@ -117,16 +140,28 @@ export function geometriaDelMinigrafico(e: EntradaDelMinigrafico): GeometriaDelM
   const x0 = mediodia(e.desde) - DIA / 2;
   const x1 = mediodia(e.hasta) + DIA / 2;
   const dibujados = e.puntos.filter((p) => p.value !== null).map((p) => ({ p, x: xDe(p), v: p.value as number })).filter((d) => d.x >= x0 && d.x <= x1);
-  const vacia = { puntos: [], tramos: [], sinRegistros: [], eje: [], inicioDelPlan: null, caja: { izquierda: 0, derecha: e.ancho, arriba: 0, abajo: e.alto } };
+  const vacia = { puntos: [], tramos: [], sinRegistros: [], eje: [], inicioDelPlan: null, bandas: [], fechas: [], plan: [], caja: { izquierda: 0, derecha: e.ancho, arriba: 0, abajo: e.alto } };
   if (dibujados.length === 0 || e.ancho <= 0 || e.alto <= 0) return vacia;
 
-  const { abajo, arriba, decimales } = extremosDelEje(Math.min(...dibujados.map((d) => d.v)), Math.max(...dibujados.map((d) => d.v)));
+  // Lo planificado que se ve en el período: cada escalón termina donde empieza el siguiente (el día del cambio tiene un
+  // solo valor, el nuevo). Sus valores entran en el eje, para que la línea no quede afuera del dibujo.
+  const escalones = [...(e.plan ?? [])]
+    .sort((a, b) => a.desde.localeCompare(b.desde))
+    .flatMap((s, i, todos) => {
+      const siguiente = todos[i + 1];
+      const a = Math.max(x0, mediodia(s.desde) - DIA / 2);
+      const b = Math.min(x1, s.hasta ? mediodia(s.hasta) + DIA / 2 : x1, siguiente ? mediodia(siguiente.desde) - DIA / 2 : x1);
+      return b > a ? [{ a, b, valor: s.valor }] : [];
+    });
+  const valores = [...dibujados.map((d) => d.v), ...escalones.map((s) => s.valor)];
+  const { abajo, arriba, decimales } = extremosDelEje(Math.min(...valores), Math.max(...valores), e.divisionesDelEje ?? 2);
   const textos = [abajo, arriba].map((v) => numeroConPrecision(v, decimales));
+  const conFechas = (e.fechas ?? []).length > 0;
   const caja = {
     izquierda: Math.max(...textos.map((t) => t.length)) * ANCHO_DE_CIFRA + AIRE,
     derecha: e.ancho - AIRE,
-    arriba: AIRE,
-    abajo: e.alto - AIRE,
+    arriba: AIRE + ((e.bandas ?? []).length > 0 ? FRANJA_DE_ROTULOS : 0),
+    abajo: e.alto - AIRE - (conFechas ? PIE_DE_FECHAS : 0),
   };
   const anchoUtil = Math.max(1, caja.derecha - caja.izquierda);
   const altoUtil = Math.max(1, caja.abajo - caja.arriba);
@@ -159,6 +194,27 @@ export function geometriaDelMinigrafico(e: EntradaDelMinigrafico): GeometriaDelM
     return b > a ? [{ x: xEn(a), ancho: sinRuido(xEn(b) - xEn(a)) }] : [];
   });
   const plan = e.inicioDelPlan ? mediodia(e.inicioDelPlan) - DIA / 2 : null;
+  const bandas = (e.bandas ?? []).flatMap((b) => {
+    const a = Math.max(x0, mediodia(b.desde) - DIA / 2);
+    const z = Math.min(x1, mediodia(b.hasta) + DIA / 2);
+    return z > a ? [{ x: xEn(a), ancho: sinRuido(xEn(z) - xEn(a)), rotulo: b.rotulo }] : [];
+  });
+  // Cada fecha va en el mediodía de su día. La primera y la última se alinean hacia adentro (centradas, se cortarían) y
+  // van siempre; una del medio va solo si no pisa a otra.
+  const delPie = [...new Set(e.fechas ?? [])].filter((f) => f >= e.desde && f <= e.hasta).sort();
+  const lugarDe = (x: number, ancla: 'start' | 'middle' | 'end'): readonly [number, number] => (ancla === 'start' ? [x, x + ANCHO_DE_FECHA] : ancla === 'end' ? [x - ANCHO_DE_FECHA, x] : [x - ANCHO_DE_FECHA / 2, x + ANCHO_DE_FECHA / 2]);
+  const candidatas = delPie.map((f, i) => {
+    const ancla = i === 0 ? ('start' as const) : i === delPie.length - 1 ? ('end' as const) : ('middle' as const);
+    return { x: xEn(mediodia(f)), fecha: f, ancla };
+  });
+  const fijas = candidatas.filter((c) => c.ancla !== 'middle').map((c) => lugarDe(c.x, c.ancla));
+  const fechas = candidatas.filter((c) => {
+    if (c.ancla !== 'middle') return true;
+    const [a, b] = lugarDe(c.x, 'middle');
+    const libre = fijas.every(([fa, fb]) => b + AIRE <= fa || a - AIRE >= fb);
+    if (libre) fijas.push([a, b]);
+    return libre;
+  });
 
   return {
     puntos,
@@ -169,6 +225,9 @@ export function geometriaDelMinigrafico(e: EntradaDelMinigrafico): GeometriaDelM
       { y: yEn(abajo), valor: abajo, texto: textos[0] as string },
     ],
     inicioDelPlan: plan !== null && plan > x0 && plan < x1 ? xEn(plan) : null,
+    bandas,
+    fechas,
+    plan: escalones.map((s) => ({ x1: xEn(s.a), x2: xEn(s.b), y: yEn(s.valor) })),
     caja,
   };
 }
