@@ -74,7 +74,7 @@ Cuando una regla de acá choca con el legajo, gana el legajo y se anota en `docs
   cantidades»), la clase y el método, el estado (vigente, sin aplicar, borrador) y el motivo por el que algo no se
   compara. Va junto al dato, en la forma más corta que lo diga entero:
   - lo que vale para todo un bloque, una vez debajo del título (`.metadatos` en el website);
-  - lo que cambia por dato, en su fila, su celda o su línea de origen («Sale de…»).
+  - lo que cambia por dato, en su fila, su celda o su línea de origen.
   Si ese contexto ocupa más que una línea, se acorta la redacción o se parte en una lista corta: no se esconde.
 - **El título de lo plegado dice de qué trata**, por ejemplo «Qué pasa al revocar», «Cómo se arma esta lista» o
   «Con qué se calculó». No sirve «Más información». Por defecto es «Cómo se lee».
@@ -224,14 +224,14 @@ Información).
 
 - Se diseña para **1440, 1280 y 1024 px** de ancho. A 768 y 390 px no es el objetivo, pero no se rompe: todo se apila,
   la página no se desplaza de costado y solo las tablas se desplazan dentro de su caja.
-- **Lo principal de cada vista empieza en la primera pantalla a 1280 × 800:** en el Resumen, el objetivo y la
-  planificación por área; en Analizar, las preguntas o la pregunta en curso; en la línea de tiempo, los filtros y los
-  primeros hechos. A 1440 × 900, el Resumen muestra además la primera observación de «Para tu próxima revisión» (II.3).
+- **Lo principal de cada vista empieza en la primera pantalla a 1280 × 800:** en el Resumen, las tarjetas por área, con
+  su objetivo y su plan; en Analizar, las preguntas o la pregunta en curso; en la línea de tiempo, los filtros y los
+  primeros hechos. A 1440 × 900, el Resumen muestra las tres tarjetas enteras y el valor de cada indicador (II.3).
   Si no entra, cambia la composición, no la letra (I.5). La regla de los 390 px de ancho vale para el website del
   asesorado y para la pestaña Antropometría (II.9 y II.10).
 - **Zonas con sentido, no columnas porque sí.** En Analizar, una barra arriba (la pregunta, las métricas y los modos)
-  y, debajo, los gráficos y la lectura lado a lado desde 1024 px; en el Resumen, «Para tu próxima revisión» y las
-  acciones lado a lado. La grilla ubica; el orden del documento y del teclado es el que se ve (WCAG 1.3.2 y 2.4.3).
+  y, debajo, los gráficos y la lectura lado a lado desde 1024 px; en el Resumen, una tarjeta por área, lado a lado, y
+  debajo los indicadores. La grilla ubica; el orden del documento y del teclado es el que se ve (WCAG 1.3.2 y 2.4.3).
 - **A la vista, lo que se usa siempre; a un clic, lo que se usa a veces.** Una vista no muestra todas sus opciones
   abiertas: las de uso ocasional van en un panel que se despliega («Más acciones») o en un pie de enlaces que abre una
   cosa a la vez. Nada se quita: se decide dónde queda.
@@ -276,8 +276,8 @@ Información).
   están los atajos (7, 30 y 90 días, y un año) y el rango propio, con dos campos de fecha. Elegir cierra el control;
   Escape también, y devuelve el foco al botón.
 - **El primer pantallazo responde** con quién se trabaja, qué se busca, qué cambió y qué requiere la revisión: a
-  1440 × 900, el objetivo y la planificación por área (una fila por área) y la primera observación de «Para tu próxima
-  revisión» se ven sin desplazarse.
+  1440 × 900 se ven sin desplazarse las tarjetas de las tres áreas (el objetivo y el plan, lo pendiente, lo nuevo
+  desde su revisión y la acción) y el valor de cada indicador.
 - **Tres vistas en pestañas** (Resumen, Línea de tiempo, Analizar), cada una con su ícono, que comparten el período, y
   **pestañas de área** para trabajar sobre el registro completo. En las pestañas de área, las migas dicen «Ficha del
   asesorado».
@@ -295,9 +295,14 @@ Información).
 ### II.4 Contexto suficiente para decidir
 
 Es el principio I.1.6 en el espacio profesional. En la ficha:
-- **Cada observación del Resumen** dice su área, su alcance («Desde la revisión del 20 sept» o «En el período
-  seleccionado»), el hecho, de dónde sale («Sale de…») y la acción que lo profundiza. La hora de los datos se dice una
-  vez para todo el bloque.
+- **Cada hecho del Resumen** está en la tarjeta de su área, bajo su alcance («Desde la revisión del 20 sept» o «En el
+  período seleccionado»; lo pendiente es de hoy), y el renglón entero abre lo que lo profundiza. El área y el alcance
+  van también escritos en cada renglón, para el lector de pantalla. De dónde sale un hecho es cómo se arma, no un dato
+  que cambie de un renglón a otro: se dice una vez por regla, en «Cómo se lee esta vista». La hora de los datos es
+  una sola, la del marco, y «Actualizar» vuelve a leer todo lo que la vista muestra.
+- **La cobertura que hace falta para leer un número va junto al número:** cada indicador dice la suya, a la vista. La
+  cobertura del área es un hecho más de su tarjeta, el de menor prioridad: queda plegada cuando el área tiene una
+  revisión, con un título que dice el alcance y cuántos hechos guarda. Sin revisión, está a la vista.
 - **Cada valor** dice su cobertura en las unidades de su métrica, con un denominador que no esconde nada
   (`partesDeLaCobertura`, la misma en la tabla de etapas, «Comparar dos períodos» y los indicadores):
   - en nutrición, en días del rango, cada uno en una sola categoría: «14 días: 8 con valor · 5 sin registros · 1 con
@@ -319,13 +324,15 @@ Es el principio I.1.6 en el espacio profesional. En la ficha:
 ### II.5 Continuidad entre resumen, análisis, origen y acción
 
 El recorrido es: **resumen o pregunta → análisis → origen → acción → resultado → retorno**, sin perder la configuración.
-- **Del Resumen al análisis:** cada observación y cada indicador abren la vista que los explica (la línea de tiempo ya
-  filtrada a lo nuevo desde la revisión, con un aviso que lo dice y se quita; Analizar con la pregunta o la métrica).
+- **Del Resumen al análisis:** cada hecho (su renglón entero) y cada indicador (su nombre) abren la vista que los
+  explica: la línea de tiempo ya filtrada a lo nuevo desde la revisión, con un aviso que lo dice y se quita, o Analizar
+  con la pregunta o la métrica. Un renglón con flecha abre algo; uno sin flecha, no.
 - **Del análisis al origen:** un punto, una entrada o una etapa abren su registro de origen al costado
   (`PanelDeRegistro`): la comida, la sesión, la toma o la planificación de una etapa, en solo lectura y con su propia
   lectura del PDP. Al cerrarlo, la vista sigue como estaba.
-- **Del origen a la acción:** las acciones están en el Resumen y en la pregunta de información («Preparar la revisión»,
-  «Solicitar contexto», «Ir a la planificación»). Llevan a la pestaña del área con `volver`.
+- **Del origen a la acción:** las acciones están al pie de la tarjeta de cada área («Preparar la revisión», «Preparar
+  una toma»), en el marco («Solicitar contexto») y en la pregunta de información. Llevan a la pestaña del área con
+  `volver`.
 - **Ver no es revisar.** Abrir o salir de una pantalla nunca crea una revisión ni una nota. «Preparar la revisión»
   abre el formulario con el período desde la última revisión, marcado «Preparado por BE» (`AvisoDePreparacion`); la
   evidencia, la interpretación y el resultado los elige el profesional, y nada se registra hasta «Registrar revisión».
@@ -341,10 +348,31 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
 
 ### II.6 Patrones del entorno de seguimiento
 
-- **Resumen** (`resumen.tsx`), en este orden: objetivo y planificación por área; «Para tu próxima revisión» (la síntesis
-  del dominio, `sintesisDelResumen`: reglas fijas, sin IA, sin calificar, cuatro a la vista y «Ver todas» con el total
-  autorizado) con las acciones al lado (preparar la revisión de cada área, analizar un cambio, solicitar contexto y
-  «Empezar por una pregunta»); indicadores (hasta cuatro, por cuenta); cobertura del período y últimos hechos.
+- **Resumen** (`resumen.tsx`, `resumen-area.tsx`, `resumen-indicadores.tsx`): se organiza **por área**, no por tipo de
+  información. Una tarjeta por área disponible, en el orden de BE, y en cada una, de arriba abajo:
+  1. con qué se trabaja: el objetivo (en Nutrición, con la tira de calorías y macros, `TiraDelObjetivo`) y el plan
+     vigente con lo que rigió antes en el período; en Antropometría, las tomas;
+  2. lo pendiente, con su ícono y en negrita (una revisión sin aplicar, la próxima revisión acordada a una semana o
+     menos, un borrador sin activar);
+  3. la línea del corte («Desde la revisión del 20 sept · aplicada» y, a la derecha, la próxima acordada si no es un
+     pendiente) y lo nuevo desde entonces, cada cuenta en su renglón con la cifra adelante. Son las observaciones de
+     `sintesisDelResumen` (reglas fijas, sin IA, sin calificar), con sus mismas palabras (`partesDeObservacion`);
+  4. la acción del área. **Un solo botón lleno en todo el Resumen:** el del área con la próxima revisión acordada más
+     cercana. La fecha la fijó el profesional: BE no decide qué es urgente.
+  Debajo, los **indicadores** (hasta cuatro, por cuenta): el nombre, que abre Analizar; el valor con su regla (media de
+  los días con valor, mediana de las sesiones, última toma); el minigráfico; y la cobertura. Las **preguntas** van
+  donde no les quitan lugar a los indicadores: al final con tres áreas, en la columna libre con dos y, con una sola,
+  debajo de los indicadores, al costado de la tarjeta. «Lo último que pasó» es la pestaña «Línea de tiempo».
+- **El minigráfico** (`minigrafico.tsx`, con la geometría en `geometria.ts`) dibuja lo mismo que el gráfico de Analizar,
+  en chico: un punto por día, sesión o toma con valor; la línea solo dentro de un tramo comparable; huecos, los
+  subtotales y el día en curso; gris, los días sin registros; y una línea punteada donde empieza a regir el primer plan
+  del período. No se quita ningún punto por falta de lugar: se achica la marca. No recibe el foco ni tiene nada para
+  tocar: es una imagen con su descripción. Es un dibujo propio: lo que se carga con la ficha no trae la biblioteca de
+  gráficos.
+- **La primera pantalla se mide, no se supone,** y se mide con datos recién generados. A 1440 × 900 entran las tres
+  tarjetas y el nombre y el valor de cada indicador; en 1920 × 950, también los minigráficos, justos. Se promete lo que
+  tiene margen: el alto de una tarjeta depende de cuántos hechos tenga el área. Lo que no entra se decide a propósito
+  (las preguntas quedan debajo) y se anota con su medida.
 - **La entrada de Analizar: «¿Qué querés mirar?»** (`preguntas.tsx`, `entrada.tsx`). Sin pregunta ni métricas, los dos
   caminos están a la vista, cada uno en su tarjeta: a la izquierda, las preguntas (una fila por pregunta, con su
   ícono; las demás en «Más preguntas») y, debajo, las vistas guardadas para retomar (una etiqueta por vista); a la
@@ -416,8 +444,8 @@ Además de los de I.4:
   con el acceso nuevo. Una falla de red no es una revocación. Al volver a la pestaña del navegador después de un rato,
   el acceso se vuelve a preguntar (un evento, no un sondeo).
 - **Lecturas de a pocas:** como mucho cuatro a la vez en la ficha (`limitarLectura`).
-- **Una parte que falta va primero:** en «Para tu próxima revisión», «No pudimos completar esta parte» tiene la prioridad
-  más alta; escondida detrás de «Ver todas», la síntesis parecía completa.
+- **Una parte que falta va primero:** en la tarjeta de su área, «No pudimos completar esta parte» va antes que sus
+  hechos, con «Reintentar». Debajo de ellos, la tarjeta parecía completa al leerla de arriba abajo.
 - **Un solo «Reintentar» trae todo lo que falló** por la misma lectura (las series y lo que hay en el período).
 - **Sin datos no es una falla, y una falla no es sin datos.** Una métrica que se leyó bien y no tiene nada en el
   período (una medida sin tomas, un ejercicio sin sesiones) dice «Sin tomas en estas fechas… No es un cero», sin
@@ -437,9 +465,9 @@ usa uno de estos.
 | `Ayuda` | Una explicación larga, plegada. Es un enlace con su marca ▸, no una caja | «Cómo se arma esta lista», «Con qué se calculó» |
 | `AvisoFlotante` | El éxito de una acción, abajo. Con `seQueda` si trae una acción | «Revisión registrada» + «Volver a la ficha, donde estabas» |
 | `EstadoVacio` | Lo que todavía no hay, con su paso siguiente | «Todavía no hay evaluaciones registradas» → «Preparar una toma» |
-| `.metadatos` | Lo que vale para todo un bloque, dicho una vez debajo del título | «Del 12 jul al 9 oct 2026. Datos consultados a las 01:28.» |
-| `.subseccion` | Un bloque dentro de una sección: un separador, no otra tarjeta | Cada área en «Objetivo y planificación» |
-| `.encabezado-de-bloque` | El título de un bloque con su acción principal al lado | «Para tu próxima revisión» + «Ver todas (8)» |
+| `.metadatos` | Lo que vale para todo un bloque, dicho una vez junto al título | «Del 13 jul al 10 oct · describen lo registrado, sin calificar» |
+| `.subseccion` | Un bloque dentro de una sección: un separador, no otra tarjeta | Cada área en la pregunta de información |
+| `.encabezado-de-bloque` | El título de un bloque con su acción principal al lado | «Indicadores» + «Elegir indicadores» |
 | `.panel` | Un formulario que se abre en el lugar: una sola superficie | Lo que falta elegir de una pregunta |
 | `.acciones--fijas` | Las acciones de un formulario largo, fijas al pie, con el estado de lo guardado | La preparación de una toma: «Todavía no se guardó.» + «Guardar» |
 | `.boton--compacto` | Una acción de fila: el mismo alto táctil (44 px), menos relleno | «Actualizar» en el encabezado de la ficha |
@@ -451,7 +479,11 @@ usa uno de estos.
 | `partesDeLaCobertura` (dominio) | La cobertura de un valor resumido, la misma en todas las tablas: días por categoría en nutrición; sesiones o tomas en lo demás | «48 días: 44 con valor · de ellos, 7 son subtotales (falta algún dato) · 4 sin registros» |
 | `SeleccionDeEvidencia` | La evidencia de una revisión: por día y por tipo, con casillas de grupo, lo marcado a la vista y nada marcado al abrir | «Registrar revisión» de Nutrición y de Entrenamiento |
 | `.capas--en-columna` | Opciones con una explicación cada una, una por renglón | «Qué comidas ver» en el contraste de Nutrición |
-| `.observacion` | Un hecho de la síntesis: área y alcance, el hecho, de dónde sale y su acción | «Nutrición · Desde la revisión del 20 sept» |
+| `.observacion` | Un hecho de la síntesis, en la tarjeta de su área: un renglón entero que abre su evidencia; si es una cuenta, con la cifra adelante | «67 comidas registradas» |
+| `.area` | La tarjeta de un área del Resumen: contexto, pendientes, lo nuevo desde su revisión y la acción | «Nutrición» |
+| `TiraDelObjetivo` | Las calorías y los macros del objetivo del día, en el orden de la APK, cada uno con su ícono y su palabra | «Calorías 1.950 kcal · Carbohidratos 220 g · Grasas 65 g · Proteínas 130 g» |
+| `Minigrafico` | El gráfico chico de un indicador: los mismos puntos y cortes que Analizar, sin interacción | El de «Calorías registradas» |
+| `BloqueDeEstado` | Un estado dicho en el lugar de lo que falta: ícono, qué pasó, por qué y qué se puede hacer | «No pudimos completar esta parte» + «Reintentar» |
 | `.tarjeta-de-pregunta` | Una pregunta como botón entero, con lo que muestra | Las preguntas principales de Analizar |
 | `.aviso-de-filtro` | Un filtro que viene de otra vista, explicado y con su salida | «Lo nuevo desde la revisión…» + «Ver todo el período elegido» |
 
@@ -928,6 +960,16 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | Sin datos en el período | Una medida sin tomas (o un ejercicio sin sesiones) en el período decía «No pudimos cargar… No es una ausencia de datos: reintentá». | «Sin tomas en estas fechas… No es un cero», sin «Reintentar»; también en los indicadores del Resumen y en la tabla de etapas (II.7). | Corregida | 2 |
 | La ayuda de una vista | Notas y plegables repartidos por la pantalla. | «Cómo se lee esta vista», una por vista, en el marco de la ficha (II.3). Hoy la tiene Analizar. | Nueva | 2 |
 | Aviso de ambiente de prueba | «Ambiente de prueba · solo datos sintéticos», fijo en la barra de todas las pantallas del website; la guía decía que el 08 §33 lo «exige» siempre a la vista. | Sale de la barra (decisión de Dirección del 2026-10-10). Queda en el pie de la cara pública y en el registro (II.10). El 08 §33 fija la política de datos por ambiente; no pide mostrarlo en cada pantalla. La APK no cambia. | Sustituida | 1 bis |
+| El Resumen | Por tipo de información: la tabla «Objetivo y planificación», la lista «Para tu próxima revisión», «Acciones», los indicadores, «Qué se registró en el período» y «Lo último que pasó». Con el marco nuevo, 2.130 px de alto a 1440 px de ancho. | Por área: una tarjeta por área con su contexto, sus pendientes, lo nuevo desde su revisión y su acción; debajo, los indicadores y las preguntas (II.6). 1.213 px; a 1440 × 900 entran las tres tarjetas y el valor de cada indicador. | Sustituida | 3 |
+| «Sale de…» en cada hecho | Cada observación de la síntesis decía de dónde salía. | Se dice una vez por regla, en «Cómo se lee esta vista»; el renglón dice el hecho y abre su evidencia (II.4). | Sustituida | 3 |
+| El texto de un hecho | Una frase del dominio por observación, con sus cuentas separadas por comas. | La misma frase, con las mismas palabras, en renglones: cada cuenta con su cifra adelante (`partesDeObservacion`). | Aclarada | 3 |
+| La cobertura del área | En «Qué se registró en el período», al final del Resumen. | En cada indicador, la que hace falta para leer su número; la del área, plegada en su tarjeta cuando tiene revisión (II.4). | Sustituida | 3 |
+| El objetivo de Nutrición en el Resumen | Solo las calorías, en una celda de la tabla. | La tira del objetivo: calorías y macros, en el orden de la APK (II.6). | Ampliada | 3 |
+| Los indicadores | El nombre, un número y un renglón de texto; por defecto, energía, registros, peso y series registradas. | El valor con su regla, un minigráfico y la cobertura; por defecto, calorías, proteínas, la carga de una serie y el peso (II.6). | Ampliada | 3 |
+| El botón de la acción principal | En el Resumen, todos con contorno. | Uno solo va lleno: el del área con la próxima revisión acordada más cercana (II.6). | Nueva | 3 |
+| Las fechas en el Resumen | Siempre con el año. | Sin el año si es del año en curso; el período, con su año, está en el marco. | Aclarada | 3 |
+| «Actualizar» | Volvía a leer el acceso y el resumen por área; la cobertura del período y lo disponible quedaban con los datos de antes, debajo de una hora nueva. | Vuelve a leer todo lo que la vista muestra (II.4). | Corregida | 3 |
+| La ayuda de una vista, al abrirse | El foco iba a «Cerrar», al final: una ayuda más alta que la ventana se abría mostrando su último renglón. | Se abre por el principio: el foco va al título. El Resumen tiene la suya. | Corregida | 3 |
 
 ---
 

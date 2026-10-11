@@ -307,6 +307,159 @@ Resumen no está el botón») miran con el mismo selector que una positiva de la
 - El lector de pantalla con una persona: pendiente, como en los paquetes anteriores. Se verificaron axe, el nombre de
   cada grupo de casillas, el pie que anuncia lo elegido (`aria-live`) y el diálogo de la ayuda.
 
-## Lo que falta de la parte 2, y las partes 3 a 5
+## Parte 3 · Resumen: una tarjeta por área (2026-10-10)
+
+El Resumen estaba ordenado por tipo de información: una tabla con el objetivo y el plan de las tres áreas, una lista con
+los hechos de las tres mezclados, las acciones aparte, los indicadores y, al final, lo registrado en el período y los
+últimos hechos. Para saber cómo estaba Nutrición había que mirar tres bloques. Ahora está ordenado **por área**: una
+tarjeta por área con lo suyo junto (con qué se trabaja, lo pendiente, lo nuevo desde su última revisión y la acción) y,
+debajo, los indicadores, cada uno con su gráfico chico y su cobertura. No se quitó ninguna función. Sobre la base propia
+(`be_test_escritorio`, regenerada antes de la pasada) y la compilación estática del commit de código (e9844c7).
+
+**Medido en la página real,** con el asesorado A y 90 días:
+
+| Ventana | Antes | Ahora |
+|---|---|---|
+| 1440 px de ancho, alto de la página | 2.130 px (2,4 pantallas) | 1.213 px (1,3 pantallas) |
+| 1440 × 900, sin desplazarse | La tabla, dos de los nueve hechos y dos botones de «Acciones»; los indicadores empezaban cerca de los 1.250 px | Las tres tarjetas enteras (terminan en 744) y el nombre y el valor de los cuatro indicadores (857). La regla de cada indicador termina en 879; los minigráficos, en 945; la cobertura, en 1.045; las preguntas, en 1.111 |
+| 1920 × 950 (la pantalla de Dirección, estimada: 1080 menos la barra del navegador) | — | Las tarjetas (744), los valores (857), las reglas (879) y los minigráficos, justos (945). La cobertura de cada indicador termina en 1.045: pide desplazarse |
+| 1280 × 900 | — | Las tarjetas (813). Los valores de los indicadores quedan en 947: piden desplazarse |
+| 1366 × 768 | — | Las tarjetas terminan en 813: no entran enteras |
+
+Con dos áreas (el asesorado B), la página pasó de 1.709 a 1.010 px; con una sola (el escenario E), de 1.598 a
+900: entra entera.
+
+El «antes» se capturó el mismo día, con el marco de la parte 1, sobre los datos que había dejado una pasada anterior de
+los recorridos (con una revisión de Entrenamiento registrada ese día). La imagen `parte-3/resumen-antes-y-ahora.png`
+compara las dos versiones **con esos mismos datos:** 2.130 y 1.185 px. Las medidas de la tabla y las demás capturas son
+sobre datos recién generados, donde la tarjeta de Entrenamiento tiene un renglón más (1.213 px).
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Una tarjeta por área, en el orden de BE, cada una con su título, «Abrir …» con retorno, su contexto y su acción; después, los indicadores y las preguntas; nada de la tabla, la lista ni «Acciones» de antes (E-49) | `recorrido.mjs funcional` (solas: `recorrido.mjs resumen`), E-49 | Pasa | Verificado automáticamente |
+| A 1440 × 900 entran, sin desplazarse, las tres tarjetas con su acción y el nombre y el valor de los cuatro indicadores (E-55) | E-55, midiendo la página con los datos recién generados; con su prueba de la prueba (un contexto alto saca los indicadores de la primera pantalla y la medición lo detecta) | Pasa: tarjetas hasta 744 px, valores hasta 857 | Verificado automáticamente |
+| La tira del objetivo dice las calorías del resumen de la ficha y los tres macros del objetivo efectivo, en el orden de la APK (E-59) | E-59, contra API-DSH-03 y API-NUT-06, a mano | Pasa: Calorías 1.950 kcal · Carbohidratos 220 g · Grasas 65 g · Proteínas 130 g | Verificado automáticamente |
+| Si la lectura de los macros falla, quedan las calorías, se dice que no se pudieron cargar (no que falten) y «Reintentar» los trae (E-59) | E-59, con un 503 simulado en el navegador | Pasa | Verificado automáticamente |
+| Cada hecho es un renglón que dice su área y su alcance (también para el lector de pantalla) y abre su evidencia; la última toma no se repite como hecho (E-51, E-52) | E-51 | Pasa: 8 hechos en las tres tarjetas | Verificado automáticamente |
+| Lo pendiente va primero en su tarjeta y se reconoce por su ícono y su peso, no por un color (E-51) | E-51, midiendo la posición, el ícono y el peso de la letra | Pasa: tres pendientes, con ícono y peso 650; las cuentas, sin ícono y con peso 400 | Verificado automáticamente |
+| Cada área dice su propio corte: la fecha de su última revisión y si ya se aplicó; Antropometría, que no tiene revisiones, mira el período (E-51) | E-51, contra el resumen de la ficha | Pasa: «Desde la revisión del 20 sept · aplicada» y «Desde la revisión del 1 oct» | Verificado automáticamente |
+| La próxima revisión acordada está en su tarjeta una sola vez: como pendiente si falta una semana o menos; si no, junto al corte (E-56) | E-56, contra el resumen de la ficha | Pasa: Nutrición, pendiente («el 13 oct (en 3 días)»); Entrenamiento, «Próxima: sin fecha acordada» | Verificado automáticamente |
+| La cobertura del período queda plegada en la tarjeta de un área con revisión; abierta, dice los días y los registros de la API, los anulados, los rectificados y las comidas diferentes, y que en Entrenamiento no hay «sesiones esperadas» (E-51) | E-51, contra la proyección de registros y los conteos de la línea de tiempo | Pasa: «80 de 90 días con algún registro · 283 registros: 276 con cantidades y 7 sin cantidades · 4 comidas diferentes… · 2 anulados… · 3 rectificados…» | Verificado automáticamente |
+| «Cargado otro día» va al pie, con el número de la API y un enlace a esos hechos (E-51) | E-51 | Pasa: 31 hechos | Verificado automáticamente |
+| Un solo botón lleno: el del área con la próxima revisión acordada más cercana; los demás, con contorno; cada uno lleva a su formulario con retorno (E-56) | E-56, contra las fechas del resumen de la ficha | Pasa: lleno, el de Nutrición (13 oct) | Verificado automáticamente |
+| Las cuatro preguntas principales, con las palabras del dominio; cada una arma Analizar desde cero (E-60) | E-60 | Pasa | Verificado automáticamente |
+| Los indicadores por defecto y su valor, calculado a mano desde la API con la regla de cada uno (E-53) | E-53: la media de los días con valor, la mediana de las sesiones y la última toma, sin usar el dominio | Pasa: 1.211 kcal por día · 83,9 g por día · 83,8 kg · 79,8 kg | Verificado automáticamente |
+| Cada indicador dice su cobertura con las palabras del dominio; la carga, su última sesión; el peso, la clase de su última toma (E-53) | E-53 | Pasa: «90 días: 79 con valor · de ellos, 7 son subtotales (falta algún dato) · 10 sin registros · hoy, en curso: fuera de la media» | Verificado automáticamente |
+| El nombre de cada indicador abre su gráfico en Analizar, con su métrica (E-64) | E-64 | Pasa | Verificado automáticamente |
+| Cada minigráfico dibuja lo mismo que su serie de la API: los puntos, los huecos, los tramos y el gris de los días sin registros, con dos marcas que encierran los valores (E-54) | E-54, contando en el dibujo y en la respuesta de la API | Pasa: en calorías, 80 puntos, 8 huecos, 2 tramos y 2 zonas grises; marcas «2.000» y «0» | Verificado automáticamente |
+| El inicio del primer plan del período se marca y se dice solo cuando empezó adentro (E-54) | E-54, contra las vigencias de la API | Pasa: «El plan rige desde el 19 jul» en los tres que se registran contra un plan; no en el peso | Verificado automáticamente |
+| El minigráfico es un dibujo propio, sin foco, con su descripción; el Resumen no dibuja nada de la biblioteca (E-54) | E-54 | Pasa: 4 propios, 0 de la biblioteca | Verificado automáticamente |
+| La ficha se abre y muestra el Resumen sin haber cargado la biblioteca de gráficos (E-54) | E-54: los guiones que pidió la página, contra los archivos de la compilación que contienen la biblioteca; con su prueba de la prueba (al abrir Analizar, la misma medición la detecta) | Pasa: 29 guiones, ninguno con la biblioteca | Verificado automáticamente |
+| «Actualizar» vuelve a leer todo lo que el Resumen muestra (E-58) | E-58: las lecturas que salen después del clic, contra la lista de lo que la vista muestra | Pasa: 14 lecturas | Verificado automáticamente |
+| La ayuda del Resumen se abre por el principio, con el foco en el título; axe no encuentra faltas con ella abierta; Escape la cierra (E-62) | E-62 | Pasa: 13 renglones, 13 muestras | Verificado automáticamente |
+| «De dónde sale» cada hecho está en la ayuda, una vez por regla, y ningún renglón lo repite (E-62) | E-62 | Pasa: las 7 reglas en pantalla tienen su fuente | Verificado automáticamente |
+| A 1440 y 1280, tres áreas y cuatro indicadores por fila; a 1024, dos áreas y la tercera debajo; a 768 y 390, sin desborde (E-63) | E-63, midiendo la posición de cada caja | Pasa | Verificado automáticamente |
+| Con dos áreas, las preguntas van en la columna libre y no se ofrece la del ejercicio; con una, los indicadores y las preguntas van al costado de la tarjeta (E-60, E-63) | E-63, con el asesorado B y con el escenario E | Pasa | Verificado automáticamente |
+| Sin faltas de accesibilidad, con la cobertura abierta, en los dos temas | axe (WCAG 2.2 A y AA) | Pasa | Verificado automáticamente |
+| Las partes de un hecho dicen las mismas palabras que su frase (E-50) | `packages/domain`: la prueba nueva recorre seis variantes de datos y comprueba que cada parte está en la frase y que no sobra nada | 595 de 595 (594 + 1) | Verificado automáticamente |
+| La geometría del minigráfico (E-54) | `scripts/geometria-del-minigrafico.test.mjs`, en la batería | 6 de 6 | Verificado automáticamente |
+| La ficha sigue funcionando | Los siete recorridos, sobre la compilación del commit de código | `recorrido.mjs`: capturas 60 de 60, funcional 154 de 154 (las 122 de antes y 32 nuevas), descartable 17 de 17. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 80 de 80 (las 79 de antes y una nueva), funcional 76 de 76, revocación 6 de 6. Segunda pasada del 2026-10-10, de 22:34 a 22:58, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10). La primera, de 22:06 a 22:31, no pasó entera: ver abajo | Verificado automáticamente |
+| Toda la batería de la CI | La CI de GitHub sobre el commit de código (e9844c7) | En verde (corrida 38103643766): el legajo, la batería completa, la integración y la imagen de la API | Verificado automáticamente |
+| Contraste: ningún par ni mínimo cambió | `node --test scripts/contraste.test.cjs` | 12 de 12 | Verificado automáticamente |
+| El Resumen a 1920, 1440, 1280, 1024 y 768 px y en los dos temas; con dos áreas y con una; la cobertura abierta; la ayuda; el editor de indicadores; una falla en su tarjeta y los macros sin cargar | `ver.mjs` | 18 imágenes en `parte-3/`: 15 capturas, la primera pantalla a 1440 × 900 y a 1920 × 950, y antes y ahora | Observado en una captura real |
+
+**Comprobaciones que cambiaron, y lo que protegen (E-06):**
+
+| Comprobación | Antes | Ahora | Qué protege |
+|---|---|---|---|
+| E-49 a E-64, con la de accesibilidad (PRO-22) y la de errores (PRO-25) del Resumen: 32 nuevas (29 comprobaciones y 3 mediciones), en `recorrido.mjs funcional`; solas, con `recorrido.mjs resumen` | — | El Resumen por área, con lo esperado calculado a mano desde la API | Las decisiones de esta parte |
+| PRO-02, los cuatro indicadores | kcal, registros, kg con «Última toma» y series | kcal por día, g por día, kg con «Mediana de las sesiones» y kg con «Última toma», cada uno con su regla y su cobertura | Que los indicadores digan unidad, regla, fecha y cobertura. Cambiaron los de por defecto (E-53) |
+| PRO-11 y PRO-15 | Leían el primer y el tercer indicador | Leen el primero (calorías) y el cuarto (peso) | Que la media no cuente el día en curso, y que el peso compare solo dentro de su tramo |
+| PRO-12, la cobertura por área | Leía la sección «Qué se registró en el período» («80 días de 90…») | Abre la cobertura plegada de la tarjeta de Nutrición y lee la frase del dominio («80 de 90 días…»); «sin porcentajes» se mira sobre todo el Resumen | Que la cobertura diga su denominador y que el Resumen no dé porcentajes |
+| PRO-02, «Lo último que pasó» | Contaba seis hechos en el Resumen | Cuenta al menos seis hechos en la pestaña «Línea de tiempo», a un clic | Que los últimos hechos del período estén a mano |
+| PRO-21, al cambiar de asesorado con una respuesta lenta | Negaba los ejercicios del anterior en los indicadores | Lo mismo, y además: B tiene indicadores y tarjetas propios, y no tiene tarjeta de Entrenamiento | Que nada del asesorado anterior aparezca en el nuevo. La negativa ahora va con sus positivas |
+| PRO-21, sin red | Negaba «No hay datos de ninguna área», un texto de Analizar | Niega los «sin datos» del Resumen y pide que las tarjetas digan qué parte no se pudo completar | Que una falla no se presente como ausencia de datos ni como un cero |
+| E-47, dónde aparece la ayuda | «En el Resumen todavía no está» | «En la Línea de tiempo, que todavía no tiene la suya, no está» | Que el botón aparezca solo donde hay ayuda |
+| `mirar`, `resumen-todas` | Tocaba «Ver todas» | Abre lo plegado de cada tarjeta; si no hay nada que abrir, falla | La síntesis entera: sin desborde, sin faltas de axe, sin doble desplazamiento |
+| CP-27, la revisión de Nutrición (una nueva) | Si no encontraba el enlace «Preparar la revisión de Nutrición», la pantalla salía de la lista y sus seis comprobaciones dejaban de correr sin fallar | Que el enlace esté se comprueba | Que la pantalla de la revisión se capture siempre |
+| CP-01, el orden del Resumen | Los títulos «Objetivo y planificación» y «Para tu próxima revisión», en ese orden, y ningún gráfico | La persona; por área, el objetivo y los hechos, antes que los indicadores; las tarjetas no dibujan nada, no hay ningún gráfico de la biblioteca, y los minigráficos están solo en los indicadores | Que lo pendiente se lea sin tener que explorar un gráfico |
+| CP-01, el primer hecho sin desplazarse (tres comprobaciones) | La primera observación de la lista | El primer hecho de la primera tarjeta | Lo mismo |
+| GUIA-II.1, a 1280 × 800 | La primera fila de la tabla | El contexto de la primera tarjeta | Que el objetivo y el plan empiecen en la primera pantalla |
+| CP-02, cada hecho con su contexto | Área y alcance, el hecho, «Sale de…» y una acción en cada observación | Área y alcance, el hecho y el enlace en cada renglón; la fuente de cada regla, en la ayuda | Que cada hecho se pueda rastrear y profundizar |
+| CP-02, la síntesis entera | «Ver todas (N)» coincidía con las observaciones mostradas | Lo que había a la vista más lo que anuncia cada plegado son todos los hechos | Que se diga cuántos hay y se muestren todos |
+| CP-03, un corte por área | El alcance de cada observación, con la fecha con año | El alcance de cada hecho y la línea del corte de cada tarjeta, con la fecha como la escribe el Resumen (E-57) | Que cada área tenga su propio corte |
+| R1, abrir lo nuevo en la línea de tiempo | El enlace «(Nutrición)» de la observación | El renglón de lo nuevo de la tarjeta de Nutrición | Que el hecho abra la línea de tiempo filtrada |
+| CP-04 y CP-08, el escenario de una sola área | La tabla decía «Sin revisiones registradas» y no tenía filas de otras áreas | La línea del alcance dice «En el período seleccionado · sin revisiones registradas», la cobertura está a la vista y no hay tarjetas, hechos ni conteos de otras áreas | Que sin revisión se diga el alcance, y que un área sin acceso no aporte nada |
+| CP-06, una parte que falla | El aviso antes de la lista | El aviso en la tarjeta de cada área con revisión, antes que sus hechos y con «Reintentar»; la de Antropometría, completa | Que una falla se diga primero y no se convierta en «no hay novedades» |
+| CP-28, el teclado | Llegar a una observación, una pregunta o una acción | Llegar a un hecho, a la acción de un área y a una pregunta, las tres | Que todo se alcance con Tab, con el foco visible |
+| CP-28, los encabezados | «Para tu próxima revisión» | Las tres áreas, «Indicadores» y «Empezar por una pregunta» | Que el lector de pantalla encuentre la estructura |
+| CP-19, R3 y `mirar`: los clics en «Preparar la revisión…» | El botón de «Acciones» | El botón al pie de la tarjeta del área | Lo que sigue a ese clic en cada recorrido |
+| CP-20, la ficha después de registrar una revisión | La celda de la tabla: «Última: … · registrada, sin aplicar» | El corte de la tarjeta de Entrenamiento con la fecha de hoy y el pendiente «La revisión del … está registrada y su resultado todavía no se aplicó.» | Que la ficha diga la revisión nueva sin recargar |
+| CP-23, después de revocar Antropometría | Negaba «Abrir Antropometría» y «Ver la toma» | Lo mismo, más «Preparar una toma» y las tomas del período; no hay tarjeta de Antropometría, y la de Nutrición está | Que el área revocada no aporte valores ni acciones |
+
+Las comprobaciones negativas que cambiaron de texto o de selector (PRO-21 ×2, CP-08, CP-06, CP-23, CP-02) cambiaron en el
+mismo commit que la pantalla, y cada una va con una positiva que usa el mismo selector: si el selector no encontrara
+nada, la positiva fallaría.
+
+**Lo que se encontró al implementar, y qué se hizo.**
+
+- **«Actualizar» no volvía a leer todo** (E-58). Se vio leyendo el código, antes de sacar del Resumen la segunda hora
+  («datos consultados a las…»), que lo disimulaba. Se corrigió en el marco, para las tres vistas, y tiene su
+  comprobación.
+- **La ayuda se abría por el final** (E-62). Se vio en la primera captura de la ayuda del Resumen, que es más alta que
+  la ventana: mostraba el último renglón. El foco iba al botón «Cerrar». Se corrigió para toda ayuda de vista.
+- **Una falla real, dicha en su lugar.** En una captura tomada apenas levantada la API después de compilar, la tarjeta
+  de Entrenamiento decía «No pudimos completar esta parte (la cobertura del período)», con «Reintentar». El registro
+  de la API mostró un 503 de la lectura de la línea de tiempo (`P2028`, el intermitente conocido de `EVIDENCIA/P2028`).
+  No es de esta parte, y la pantalla hizo lo que tenía que hacer. No se repitió en las pasadas.
+- **Un defecto del instrumento.** Una comprobación nueva falló la primera vez porque leía el texto de un renglón que
+  está adentro de un plegable cerrado, y ahí el navegador devuelve vacío. La pantalla estaba bien: se corrigió la
+  lectura de la comprobación.
+- **Un error de tipos en la prueba nueva del dominio,** que la compilación marcó antes de correrla (usaba una función
+  auxiliar de otra prueba con otra firma).
+- **La primera pasada completa no pasó entera:** `recorrido.mjs funcional` dio 152 de 153 y
+  `recorrido-comprension.mjs funcional`, 75 de 76 (de 22:06 a 22:31; los otros cinco, sin fallas). Las dos fallas eran
+  de comprobaciones de esta parte, y las dos enseñaron algo:
+  - **E-55, la primera pantalla, por 7 px.** La comprobación exigía que entrara también la regla de cada indicador, y
+    la había medido sobre datos que el otro recorrido ya había modificado: al final de su pasada registra una revisión
+    de Entrenamiento, y con una revisión de hoy esa tarjeta dice «No hay registros nuevos» en dos renglones. Con los
+    datos recién generados, la última revisión de Entrenamiento es del 1 de octubre, la tarjeta cuenta lo nuevo en
+    un renglón más, y la regla quedaba en 907 px. Se hicieron dos cosas. Una, en la pantalla: las tarjetas se
+    apretaron unos 26 px sacando aire entre sus bloques (ni la letra ni el alto de lo que se toca cambiaron). Otra,
+    en la comprobación: exige las tarjetas enteras y el nombre y el valor de cada indicador, y **informa** dónde
+    terminan la regla, el minigráfico y la cobertura. El alto de una tarjeta depende de cuántos hechos tenga el área:
+    prometer un renglón más con unos pocos píxeles de margen era prometer algo que los datos podían desmentir.
+  - **CP-28, el teclado.** La comprobación decía partir del encabezado, pero `page.focus('h1')` nunca enfocó nada (un
+    título no recibe el foco) y seguía desde donde había quedado el paso anterior. Con el Resumen de antes llegaba a
+    las preguntas dando la vuelta a la página, y pasaba. Con la exigencia nueva (llegar a un hecho, a una acción y a
+    una pregunta) quedó a la vista. Ahora parte de un clic en el título. El orden que resulta es el del documento:
+    el marco, cada tarjeta de arriba abajo, los indicadores y las preguntas, con el foco visible en cada paso.
+  La pasada de la tabla es la segunda, completa, sobre datos generados de nuevo. El resumen de la primera queda en
+  `parte-3/resumen-de-la-primera-pasada.txt`.
+- **Las primeras capturas de evidencia no servían, y se repitieron.** Se habían tomado después de la pasada completa,
+  con dos problemas. Los datos ya no eran los recién generados. Y `ver.mjs`, que a diferencia de los recorridos no
+  cuenta sus lecturas, pasó las 120 por minuto: tres capturas mostraban el límite de consultas en lugar de lo que
+  tenían que mostrar (una, la ficha entera con «No pudimos leer el resumen por área»). Se regeneraron los datos y se
+  capturó en cuatro tandas, cada una con la API recién levantada; mientras se capturaba, la API no respondió ningún
+  error. De paso quedó a la vista algo que no es de esta parte: cuando la lectura que falla es la del resumen por
+  área, la ficha no dice el motivo (por ejemplo, que hay que esperar un minuto). Está anotado en la definición (§6),
+  para el comienzo de la parte 4.
+
+**Lo que esta parte no comprueba:**
+
+- El uso real: falta que Dirección abra una ficha y diga si encuentra lo que busca.
+- Un área disponible y todavía sin datos («Sin datos registrados todavía.»): el texto es el de antes; sin comprobación
+  ni captura propias, porque los datos de prueba no tienen ese caso.
+- Un enunciado largo del objetivo de Entrenamiento (E-61): el de los datos de prueba ocupa dos renglones.
+- Un macro declarado como proporción de las calorías: ninguna pantalla lo escribe hoy; la tira lo contempla sin dato
+  para probarlo.
+- Guardar una elección de indicadores que incluya la carga de un ejercicio: el editor la ofrece y el recorrido prueba
+  el conflicto al guardar (R6), no ese guardado.
+- El Resumen a 390 px: se comprueba que no desborda; no tiene una composición propia.
+- La prueba de palabras prohibidas extendida a la ficha (E-05): sigue pendiente.
+- El lector de pantalla con una persona: pendiente, como en los paquetes anteriores. Se verificaron axe, el árbol de
+  accesibilidad, el teclado, el nombre de cada renglón-enlace y la descripción de cada minigráfico.
+
+## Lo que falta de la parte 2, y las partes 4 y 5
 
 Pendientes.
