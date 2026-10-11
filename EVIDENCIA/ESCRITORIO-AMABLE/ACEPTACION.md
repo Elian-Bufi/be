@@ -726,8 +726,27 @@ personas están».
 - `scripts/auditoria-accesibilidad.mjs` (fuera de la CI) sigue vieja: toca el primer «Abrir» de `/pro`, que desde que
   existen los pendientes no es el de una ficha (definición, §6).
 
+## Parte 2 · Lo que quedaba: la prueba de palabras en la ficha (E-05) (2026-10-11)
+
+La prueba que impide puntajes, porcentajes y palabras que califican recorría las pestañas de cada área y, desde la
+parte 5, el Espacio profesional. La ficha (el marco, el Resumen, la Línea de tiempo y Analizar) no estaba.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Los textos de la ficha (30 archivos) no tienen puntajes, juicios ni huecos completados, con las listas de las tres áreas a la vez | `scripts/copy-pantallas.test.cjs`, en la batería | Pasa: 11 de 11 en ese archivo (las 9 de antes y 2 nuevas) | Verificado automáticamente |
+| El único porcentaje de la ficha es el cambio relativo de Analizar, y está contado lugar por lugar | La misma prueba: tres lugares permitidos (la lectura «+3,2 % contra la referencia», la unidad de ese gráfico y el ancho de su caja). Un «%» en cualquier otro texto la hace fallar; un permiso que ya no se usa, también | Pasa | Verificado automáticamente |
+| La prueba detecta lo que protege | Cuatro textos rotos de a uno: la ayuda vuelve a decir «adherencia»; una tarjeta del Resumen dice un porcentaje; el marco dice «cumplimiento»; un porcentaje permitido deja de existir | 4 de 4 detectados | Verificado automáticamente |
+
+**Lo que encontró.** La ayuda del Resumen decía «La cobertura es del registro, no adherencia: qué hay y qué falta, sin
+calificar». La palabra estaba para negarla, pero estaba en pantalla. Ahora dice «es del registro: qué hay y qué
+falta, sin calificar».
+
+**Lo que no se repitió.** La pasada de los siete recorridos es la de la parte 5 (sobre 4b84714). Después cambió esa
+sola frase, dentro del diálogo de ayuda; los recorridos miran la estructura de la ayuda (su título, sus renglones y sus
+muestras), no esa frase.
+
 ## Lo que falta de la parte 2
 
-Pendiente, para después de las cinco partes: la composición propia de «comparar etapas» (C-12) y del ejercicio (C-21),
-el origen de un dato en el lugar de la lectura (C-13) y extender la prueba de palabras prohibidas a la ficha (E-05; en
-la parte 5 se extendió al Espacio profesional).
+Pendiente: la composición propia de «comparar etapas» (C-12) y del ejercicio (C-21), y el origen de un dato en el
+lugar de la lectura (C-13). Las tres cambian comprobaciones de riesgo alto de los recorridos (las de las etapas y las
+del origen): conviene hacerlas después de que Dirección use Analizar como quedó.

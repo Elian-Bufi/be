@@ -114,7 +114,7 @@ function DeResumen() {
           <strong>Cada renglón abre su evidencia:</strong> las revisiones, la planificación, la línea de tiempo con solo lo nuevo, o la información disponible para revisar.
         </Renglon>
         <Renglon muestra={<Icono nombre="lista" tamano={20} />}>
-          <strong>La cobertura</strong> es del registro, no adherencia: qué hay y qué falta, sin calificar. Con una revisión registrada queda plegada en la tarjeta, porque cada indicador ya dice la suya.
+          <strong>La cobertura</strong> es del registro: qué hay y qué falta, sin calificar. Con una revisión registrada queda plegada en la tarjeta, porque cada indicador ya dice la suya.
         </Renglon>
         <Renglon muestra={<Icono nombre="revision" tamano={20} />}>
           <strong>«Preparar la revisión»</strong> abre el formulario con el período desde la última revisión. No registra nada hasta que lo confirmes. El botón va lleno en una sola tarjeta: la del área con la próxima

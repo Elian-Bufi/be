@@ -11,7 +11,7 @@
  */
 const assert = require('node:assert/strict');
 const { readdirSync, readFileSync } = require('node:fs');
-const { join } = require('node:path');
+const { basename, join } = require('node:path');
 const test = require('node:test');
 const ts = require('typescript');
 const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeCarteraEn, terminosProhibidosDeEntrenamientoEn } = require('../packages/domain/dist/index.js');
@@ -113,6 +113,59 @@ for (const dominio of DOMINIOS) {
     assert.deepEqual(hallazgos, []);
   });
 }
+
+/**
+ * La ficha del asesorado (WP-ESCRITORIO-AMABLE, E-05): el marco, el Resumen, la Línea de tiempo y Analizar muestran las
+ * tres áreas, así que sus textos pasan por las tres listas a la vez.
+ *
+ * Un solo porcentaje es de la ficha, y está contado: el **cambio relativo** de Analizar, que compara un valor con otro
+ * del mismo dato (la referencia que elige el profesional). No es un puntaje ni dice cuánto «se cumplió». Los lugares
+ * donde se escribe están en `PORCENTAJES_DE_LA_FICHA`, uno por uno: un «%» en cualquier otro texto hace fallar la
+ * prueba, y si alguno de esos lugares deja de existir, también (la lista no puede quedar con permisos de más).
+ */
+const SEGUIMIENTO = join(RAIZ, 'apps/web/src/app/pro/advisees/seguimiento');
+const LA_FICHA = [
+  ...readdirSync(SEGUIMIENTO).filter((f) => /\.tsx?$/.test(f)).map((f) => join(SEGUIMIENTO, f)),
+  ...['workspace.tsx', 'periodo.tsx'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro/advisees', archivo)),
+];
+const PORCENTAJES_DE_LA_FICHA = [
+  // La lectura de un punto en «Cambio relativo»: «+3,2 % contra la referencia».
+  'analizar.tsx · % contra la referencia',
+  // La unidad del gráfico en «Cambio relativo», y las marcas de su eje.
+  'lienzo.tsx · %',
+  // El ancho del gráfico dentro de su caja: no es un texto para la persona.
+  'lienzo.tsx · 100%',
+];
+
+test('T13 · el copy de la ficha del asesorado no tiene puntajes, juicios ni huecos completados; su único porcentaje es el cambio relativo', () => {
+  assert.ok(LA_FICHA.length >= 20, `se esperaban las pantallas de la ficha, hay ${LA_FICHA.length}`);
+  const prohibidos = (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])];
+  const porcentajes = new Set();
+  const hallazgos = LA_FICHA.flatMap((a) =>
+    textosDe(a).flatMap(({ texto, linea }) =>
+      prohibidos(texto).flatMap((p) => {
+        const lugar = `${basename(a)} · ${texto}`;
+        if (p === '%' && PORCENTAJES_DE_LA_FICHA.includes(lugar)) {
+          porcentajes.add(lugar);
+          return [];
+        }
+        return [`${a.slice(RAIZ.length + 1)}:${linea} «${p}» en ${JSON.stringify(texto)}`];
+      }),
+    ),
+  );
+  assert.deepEqual(hallazgos, []);
+  assert.deepEqual([...porcentajes].sort(), [...PORCENTAJES_DE_LA_FICHA].sort(), 'cada porcentaje permitido sigue existiendo: si se fue, se saca de la lista');
+});
+
+test('T13 · en la ficha, un porcentaje fuera del cambio relativo se detecta (prueba de la prueba)', () => {
+  const prohibidos = (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])];
+  const contenido = 'export const X = () => <p>Registró el 82 % de las comidas</p>;';
+  const [{ texto }] = textosDe('resumen.tsx', contenido);
+  assert.deepEqual(prohibidos(texto), ['%']);
+  assert.equal(PORCENTAJES_DE_LA_FICHA.includes(`resumen.tsx · ${texto}`), false);
+  // Y una palabra que califica, en cualquier pantalla de la ficha.
+  assert.ok(prohibidos('La adherencia de la semana').includes('adherencia'));
+});
 
 test('T13 · el extractor encuentra un término prohibido en el copy e ignora los estilos', () => {
   const contenido = "const s = StyleSheet.create({ w: { width: '100%' } }); export const X = () => <p className=\"a\">Adherencia del 82 %</p>;";
