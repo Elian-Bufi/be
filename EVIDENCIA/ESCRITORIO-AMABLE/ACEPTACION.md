@@ -745,8 +745,115 @@ falta, sin calificar».
 sola frase, dentro del diálogo de ayuda; los recorridos miran la estructura de la ayuda (su título, sus renglones y sus
 muestras), no esa frase.
 
-## Lo que falta de la parte 2
+## Parte 2, tercer tramo · Comparar etapas, el ejercicio y el origen del dato (2026-10-11)
 
-Pendiente: la composición propia de «comparar etapas» (C-12) y del ejercicio (C-21), y el origen de un dato en el
-lugar de la lectura (C-13). Las tres cambian comprobaciones de riesgo alto de los recorridos (las de las etapas y las
-del origen): conviene hacerlas después de que Dirección use Analizar como quedó.
+Las tres composiciones de Analizar que habían quedado como en el primer tramo: la comparación de dos etapas (C-12), la
+pregunta del ejercicio (C-21) y el origen de un dato (C-13). No se quitó ninguna función ni cambió ningún parámetro de
+la URL. Sobre la base propia (`be_test_escritorio`, regenerada antes de cada pasada) y la compilación estática del
+código de este tramo: 24a8b63 (las etapas y el ejercicio), eea7e81 (el origen) y c1ee413 (un ajuste del origen de una
+semana, que salió de mirar las capturas).
+
+**Medido en la página real, a 1440 × 900:**
+
+| Pantalla | Antes | Ahora |
+|---|---|---|
+| Comparar dos etapas | 1.961 px de alto (2,2 pantallas). La cobertura de cada etapa, escrita en cada celda; debajo de la tabla, todo Analizar | 1.258 px. Las dos tarjetas y la tabla entran sin desplazarse: la tabla termina a los 812 px. Debajo, tres gráficos chicos |
+| La pregunta del ejercicio | 1.231 px | 1.028 px |
+| El origen de un dato | Un panel encima de los gráficos; «Registro 1», «Registro 2» | Al costado, en el lugar de la lectura, con los tres gráficos a la vista; cada comida con lo que aporta |
+
+A 1024 px de ancho, la comparación de etapas mide 1.581 px (las dos tarjetas siguen lado a lado; los gráficos
+chicos, dos y uno) y el origen se abre encima, en el panel.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Las etapas salen de las activaciones reales; cada tarjeta dice desde cuándo, cómo terminó («la reemplazó la versión 2») y cuánto duró (C-12; CP-14) | `recorrido-comprension.mjs funcional`, contra las vigencias de la API | Pasa | Verificado automáticamente |
+| El valor de cada etapa (en la tabla) y su cobertura en días (en su tarjeta, que dice de qué métricas es), calculados a mano con los puntos de la API; la diferencia también (CP-18) | Lo mismo | Pasa | Verificado automáticamente |
+| La cobertura se dice una vez por etapa: las celdas de Calorías y de Proteínas no la repiten, y la de Registros, que cuenta otra cosa, dice la suya | Lo mismo, C-12: la misma consulta mira las tres filas | Pasa | Verificado automáticamente |
+| Debajo de la tabla hay un gráfico chico por métrica, con sus puntos, las dos etapas marcadas con su letra y las fechas al pie; el de las calorías dibuja el objetivo; los gráficos grandes no están hasta que se piden | Lo mismo, C-12 | Pasa: 80 puntos en el de calorías | Verificado automáticamente |
+| Las dos tarjetas y la tabla entran en la primera pantalla | Lo mismo, C-12, midiendo la página; con su prueba de la prueba (con las tarjetas más altas, la medición dice que no entra) | Pasa: la tabla termina a los 812 px de 900; con las tarjetas altas, a los 1.024 | Verificado automáticamente |
+| «Abrir estos gráficos en grande» trae, en el lugar de los chicos, los gráficos con sus modos y su pie; el resumen en texto sigue plegado y ningún límite se repite; «Volver a los gráficos chicos» los devuelve | Lo mismo, R4 y C-12 | Pasa | Verificado automáticamente |
+| Agrupar por semana y acercar no cambian la tabla A/B ni la referencia fija (CP-17); la vista guardada lleva la pregunta y se reabre (CP-26) | Lo mismo, con los gráficos grandes abiertos | Pasa | Verificado automáticamente |
+| La pregunta del ejercicio dice arriba su ejercicio, su serie y su unidad, y arma sus tres gráficos (CP-07) | Lo mismo | Pasa | Verificado automáticamente |
+| Con la pregunta del ejercicio no hay «Ver como», «Agrupar por» ni etiquetas de métricas, y el título de cada gráfico dice solo la métrica (C-21) | Lo mismo. El mismo selector encuentra los dos controles en la comparación de etapas, con los grandes abiertos | Pasa | Verificado automáticamente |
+| La lectura dice la sesión una sola vez y cada métrica dice su objetivo sin repetir el valor de las otras dos; se recorre por sesiones (C-21) | Lo mismo | Pasa | Verificado automáticamente |
+| Cambiar de ejercicio en el lugar trae su respuesta sin pasar por el formulario, con la serie y la unidad que estaban elegidas (C-21) | Lo mismo | Pasa | Verificado automáticamente |
+| El origen de un dato va en el lugar de la lectura, con los tres gráficos a la vista: título (que recibe el foco), métrica y fecha, el valor de la API y «Volver a la lectura»; no se abre un panel (C-13) | `recorrido.mjs funcional`, comprobaciones C-13 (solas, con `recorrido.mjs analizar`) | Pasa | Verificado automáticamente |
+| El origen lista cada comida de ese día en el orden en que ocurrió, con su hora, su comida, la opción y lo que aporta, como lo dice cada registro leído aparte; lo que aportan suma el valor del punto, y el total es ese valor | Lo mismo, leyendo cada registro por la API, a mano | Pasa: 4 registros que suman 1.344,8 kcal | Verificado automáticamente |
+| Se lee un registro por comida al abrir el origen, y ninguno más al desplegar una | Lo mismo, contando los pedidos a la API | Pasa: 4 lecturas al abrir, 0 al desplegar | Verificado automáticamente |
+| Escape cierra el origen: la dirección no cambió, los gráficos siguen y el foco vuelve a «Ver origen»; con el origen abierto, axe no encuentra faltas | Lo mismo; y `recorrido-comprension.mjs funcional`, CP-21, con una sesión | Pasa | Verificado automáticamente |
+| Un punto que sale de más de ocho registros (una semana) no los lee todos: ofrece elegir cuál abrir, y abre uno | Lo mismo | Pasa: 27 fuentes, 27 para elegir, 1 lectura | Verificado automáticamente |
+| A 1024 px el origen se abre encima, en el panel que retiene el foco, con la misma lista y el mismo total | Lo mismo | Pasa | Verificado automáticamente |
+| El origen del punto de hoy abre su registro; del origen se va a la pestaña del área y se vuelve con todo igual (PRO-26, PRO-05, CP-21) | Los dos recorridos, que ahora lo abren donde esté | Pasa | Verificado automáticamente |
+| Antes de revocar, el origen del peso reportado abre su toma con la clase de cada medición (PRO-10); después, dice «no está disponible con tu acceso actual» y no repite el valor (PRO-20, CP-23) | `recorrido.mjs descartable` y `recorrido-comprension.mjs revocacion` | Pasa | Verificado automáticamente |
+| Las reglas de la cobertura por etapa, de las etapas que ofrece cada tarjeta y de cómo terminó una etapa | `scripts/etapas-en-pantalla.test.mjs`, en la batería | 7 de 7 | Verificado automáticamente |
+| El gráfico chico: las etapas como bandas, la franja de las letras, las fechas del pie, el objetivo y el eje ajustado | `scripts/geometria-del-minigrafico.test.mjs` | 11 de 11 (las 6 de antes y 5 nuevas) | Verificado automáticamente |
+| La ficha sigue funcionando | Los siete recorridos, sobre la compilación del código que quedó en eea7e81 (al correr la pasada todavía no tenía commit) | `recorrido.mjs`: capturas 60 de 60, funcional 219 de 219 (las 213 de antes y 6 nuevas), descartable 21 de 21. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 80 de 80, funcional 86 de 86 (en la tercera corrida: ver abajo), revocación 6 de 6. Pasada del 2026-10-11, de 17:03 a 17:37, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10). Después del ajuste de c1ee413, que toca solo el origen, se repitió `recorrido.mjs analizar`, que es el que lo mira: 44 de 44. Los otros seis no se repitieron sobre esa compilación | Verificado automáticamente |
+| Toda la batería de la CI | La CI de GitHub sobre los tres commits de código | En verde las tres corridas (38169232828 sobre 24a8b63, 38176743496 sobre eea7e81 y 38178456465 sobre c1ee413): el legajo, la batería completa (typecheck; dominio, 617; guiones, 344; API, 81), la integración (669) y la imagen de la API | Verificado automáticamente |
+| Las tres pantallas a 1440, 1280 y 1024 px, en los dos temas; los gráficos grandes abiertos; la comparación con el peso; una comida abierta; el origen de una toma y el de una semana | `ver.mjs` | 28 capturas y tres imágenes de antes y ahora, en `parte-2c/`. Las del origen se tomaron de nuevo sobre la compilación de c1ee413 | Observado en una captura real |
+
+**Comprobaciones que cambiaron, y lo que protegen (E-06):**
+
+| Comprobación | Antes | Ahora | Qué protege |
+|---|---|---|---|
+| CP-14 (`recorrido-comprension.mjs`, recorrido 4) | «Desde 20 jul 2026», el último día de A y «Sigue vigente» | «Desde 20 jul, al activarse», «Hasta 5 sept, la reemplazó la versión 2» y «Hasta Sigue vigente» | Que las etapas salgan de las activaciones reales, sin doble conteo del día del corte |
+| CP-18, el valor y la cobertura de las calorías | Leía la cobertura en la celda de la tabla | Lee el valor en la celda y la cobertura en la tarjeta de la etapa, que tiene que decir que es la de las calorías | Que el número y su cobertura coincidan con lo que da la API, calculado a mano |
+| R4, la composición con la pregunta de etapas | El resumen en texto, plegado en el pie de los gráficos; la letra de la cobertura, en la tabla | Sin el resumen en texto a la vista y cada límite una sola vez, con los grandes cerrados y con los grandes abiertos; la letra de la cobertura, en la tarjeta | Que nada se repita y que la letra no se achique |
+| R4, «los gráficos de las métricas de la pregunta» | Estaban debajo de la tabla | Se abren con «Abrir estos gráficos en grande» y quedan en el lugar de los chicos | Que los gráficos sean los de la pregunta, con el período de las dos etapas |
+| CP-17 y CP-26 | Usaban los modos y «Más acciones» directamente | Abren antes los gráficos grandes | Que agrupar y acercar no cambien la tabla; que la vista guardada lleve la pregunta |
+| CP-07, la respuesta del ejercicio | Leía «Peso muerto · serie 1» en la frase al lado del título | Lee el ejercicio, la serie y la unidad en los controles de la barra, y espera los tres gráficos dibujados | Que la respuesta sea la del ejercicio que se eligió |
+| CP-21, PRO-05, PRO-10, PRO-20, PRO-26 y CP-23: el origen | Esperaban un panel (`dialog[open]`) y lo cerraban con «Cerrar» | Abren el origen donde esté (`abrirOrigen`, `cerrarOrigen`): al costado a 1440 px, en el panel si la ventana es angosta. CP-21 exige además que esté al costado y con los tres gráficos a la vista | Que cada valor lleve a su registro original, que cerrarlo no cambie nada y que, sin acceso, no repita el valor |
+| C-12 × 6, C-21 × 3 y C-13 × 6, nuevas | — | Lo de la tabla de arriba, con lo esperado calculado a mano desde la API | Las decisiones de este tramo (E-99 a E-114) |
+
+Las comprobaciones negativas nuevas («las celdas no repiten la cobertura», «no hay modos ni etiquetas», «no hay un panel»,
+«ninguna fila», «ningún botón para elegir») miran con el mismo selector que una positiva: la fila de Registros, que sí
+dice su cobertura; la comparación de etapas con los gráficos grandes abiertos, que sí tiene los dos controles; el mismo
+origen a 1024 px, que sí es un panel; y el origen de un día y el de una semana, que tienen filas uno y botones el otro.
+
+**La prueba de la prueba.**
+
+- **Las reglas, de a una:** 25 roturas en las dos funciones puras nuevas (`mutaciones-unitarias.txt`). La primera vez
+  se detectaron 23. Las dos que no, mostraron dos pruebas flojas, que se reforzaron: la que comprueba qué etapas ofrece
+  la tarjeta B no tenía un caso con A distinta de la primera etapa, y la del objetivo usaba dos escalones que no se
+  tocaban (la API manda el primero hasta el día en que empieza el segundo). Con eso, 25 de 25.
+- **Las pantallas, rotas a propósito y compiladas así:** 16 roturas en una misma compilación
+  (`resultados/compilacion-rota-16-roturas.txt`). Fallaron las comprobaciones que tenían que fallar: 6 de
+  `recorrido.mjs analizar` (38 de 44), 12 de `recorrido-comprension.mjs funcional` (74 de 86) y PRO-20 en
+  `recorrido.mjs descartable` (20 de 21). Las 16 roturas quedaron detectadas, pero una —el origen que sigue mostrando
+  el valor después de una revocación— la detectó PRO-20 y no CP-23, que también la protege. CP-23 buscaba «N,N kg» y,
+  sin acceso, la unidad ya no se conoce: el número viejo quedaba solo («79,9») y la comprobación pasaba. Se reforzó
+  (ahora compara con el valor que estaba en la lectura antes de abrir el origen) y se volvió a compilar esa sola
+  rotura: falla, como tiene que fallar (5 de 6; `resultados/compilacion-rota-revocacion.txt`), y sobre la versión buena
+  pasa (6 de 6).
+
+**Lo que encontraron las comprobaciones, y qué se hizo.**
+
+- **Un defecto del instrumento.** La comprobación nueva del foco al cerrar el origen falló la primera vez (43 de 44 en
+  `recorrido.mjs analizar`): comparaba con la marca del botón, y la función que hace clic en ese guion no la devolvía.
+  El foco estaba donde tenía que estar. Se corrigió la función, no la comprobación.
+- **La primera pasada completa no pasó entera: `recorrido-comprension.mjs funcional` dio 83 de 85.** Falló la
+  comprobación nueva de «cambiar de ejercicio en el lugar» (contó cero gráficos) y el tiempo del Resumen (4.089 ms; el
+  presupuesto es 2.500). Mientras corría esa pasada se estaban corriendo, a la vez, las 25 roturas de las pruebas
+  unitarias: la máquina estaba cargada, y eso no se hace. Repetida sola, sobre datos generados de nuevo, dio 82 de 85:
+  el tiempo del Resumen pasó (2.079 ms), pero esta vez la pantalla se leyó antes de tiempo en otro punto, después de
+  «Ver la respuesta». Era una carrera del recorrido, de la misma clase que la de la revisión preparada del segundo
+  tramo: esperaba a que la red se callara, y la respuesta del ejercicio se arma en dos pasos. Se corrigió la espera
+  (ahora espera los gráficos dibujados, y deja dicho cuánto tardaron: 1.245 ms) y la tercera corrida dio 86 de 86. Las
+  dos que fallaron no se toman como aprobación: quedan contadas acá y en `parte-2c/resumen-de-la-pasada-final.txt`.
+- **La máquina respondía más lento que en la pasada de la parte 5,** y eso es lo que destapó la carrera. Con la misma
+  cantidad de pedidos a la API, el Resumen tardó 1.766 ms (717 en la madrugada del 11/10), Analizar con tres métricas
+  2.085 (844) y la comparación de etapas 2.683 (1.082, con los mismos 15 pedidos). El Resumen y la línea de tiempo no se
+  tocaron en este tramo y también tardaron más del doble: es el equipo, no las pantallas. Son tiempos de esta máquina,
+  no se generalizan.
+
+**Lo que este tramo no comprueba:**
+
+- El uso real: falta que Dirección compare dos etapas, cambie de ejercicio y abra el origen de un dato en su pantalla.
+- El selector de etapa de las tarjetas: el escenario de prueba tiene dos etapas por área, y con dos no hay nada para
+  elegir. Su regla tiene una prueba unitaria; en pantalla no se vio.
+- El plan dibujado en los gráficos del ejercicio y «igual» o «dentro del rango»: no se hizo (E-109; el plan llega como
+  texto).
+- La lista de comidas del origen con un registro sin cantidades o con una comida diferente: el día que usa el recorrido
+  es un día completo, con cuatro opciones del plan. Las dos ramas están en el código, sin una comprobación propia.
+- El origen a 390 y a 768 px: se abre en el panel, como antes; sin comprobaciones propias de este tramo.
+- El lector de pantalla con una persona: pendiente, como en los paquetes anteriores. Se verificaron axe, el nombre de
+  cada tarjeta y de cada control, el foco al abrir y al cerrar el origen, y la descripción de cada gráfico chico.

@@ -1,0 +1,84 @@
+roto: las dos tarjetas llevan la letra A (lo protege C-12 (tarjetas con su letra))
+roto: cómo terminó una etapa no dice qué versión la reemplazó (lo protege CP-14)
+roto: la tarjeta de B dice la cobertura de A (lo protege CP-18 (cobertura de cada tarjeta))
+roto: cada celda de la etapa A repite la cobertura (lo protege C-12 (la cobertura, una vez por etapa))
+roto: los gráficos chicos no marcan las etapas (lo protege C-12 (un gráfico chico por métrica))
+roto: la tabla de las etapas queda fuera de la primera pantalla (lo protege C-12 (la primera pantalla))
+roto: con los gráficos grandes abiertos, los chicos siguen ahí (lo protege R4 («Abrir estos gráficos en grande»))
+roto: «Volver a los gráficos chicos» no vuelve (lo protege C-12 («Volver a los gráficos chicos»))
+roto: la pregunta del ejercicio muestra «Ver como», sin nada para elegir (lo protege C-21 (sin modos ni etiquetas))
+roto: la lectura repite la sesión y los valores de las otras métricas (lo protege C-21 (la sesión, una vez))
+roto: elegir otro ejercicio en el lugar no lo cambia (lo protege C-21 (cambiar de ejercicio en el lugar))
+roto: con el origen abierto, la columna no se ensancha (lo protege C-13 (en el lugar de la lectura))
+roto: cada comida dice lo que aporta de proteínas, sea cual sea la métrica (lo protege C-13 (lo que aporta cada comida))
+roto: desplegar una comida vuelve a pedir su registro (lo protege C-13 (un registro por comida, y ninguno más))
+roto: al volver del origen, el foco no vuelve a lo que lo abrió (lo protege CP-21 y C-13 (Escape))
+roto: después de una revocación, el origen sigue mostrando el valor (lo protege PRO-20 y CP-23)
+compilado: web estática (apps/web/out)
+== r-analizar-mutante sobre la versión rota: 35 OK · 6 fallas · 38/44 comprobaciones bien; fallan: C-13, C-13, C-13, C-13, C-13, C-13
+C-13 · El origen de un dato va en el lugar de la lectura, al costado de los gráficos, que siguen a la vista: con su título (que recibe el foco), la métrica y la fecha, el valor de la API
+C-13 · El origen lista cada comida de ese día en el orden en que ocurrió, con su hora, su comida, la opción y lo que aporta, como lo dice cada registro leído aparte; lo que aportan suma
+C-13 · Se lee un registro por comida al abrir el origen, y ninguno más al desplegar una: la fila abre su registro (la opción, cómo informó las cantidades y la estimación) con lo ya le�
+C-13 · Escape cierra el origen y vuelve a la lectura: la dirección no cambió, los tres gráficos siguen y el foco vuelve a «Ver origen»; con el origen abierto, axe no encuentra faltas �
+C-13 · Un punto que sale de más de ocho registros (una semana) no los lee todos: ofrece elegir cuál abrir, y abre uno — 27 fuentes en la API · 27 para elegir · 0 filas · 1 lectura al
+C-13 · A 1024 px el origen se abre encima, en el panel que retiene el foco, con la misma lista de comidas y el mismo total; no hay nada al costado, y Escape lo cierra — panel: true · al 
+--- de lo nuevo, pasaron:
+== rc-funcional-mutante sobre la versión rota: 64 OK · 12 fallas · 74 de 86 bien; con observaciones: C-21 Con la pregunta del ejercicio no hay «Ver como», «Agrupar por» ni etiquetas de métricas (no hay nada para elegir ahí), y el título de cada gráfico dice s
+C-21 · Con la pregunta del ejercicio no hay «Ver como», «Agrupar por» ni etiquetas de métricas (no hay nada para elegir ahí), y el título de cada gráfico dice solo la métrica: el e
+C-21 · La lectura dice la sesión una sola vez, arriba, y cada métrica dice su objetivo sin repetir el valor de las otras dos, que están al lado; se recorre por sesiones — {"sesiones":3
+C-21 · Cambiar de ejercicio en el lugar trae su respuesta sin pasar por el formulario, con la serie y la unidad que estaban elegidas — Ejercicio: Peso muerto · 14 sesiones · Serie: 1 ·
+CP-21 · El origen del punto se abre al costado, en el lugar de la lectura y con los tres gráficos a la vista (la sesión), y al cerrarlo con Esc la vista sigue igual, con el foco en el dis
+CP-14 · Las etapas salen de las activaciones reales: A termina el día anterior al corte, y lo dice con la versión que la reemplazó; B sigue vigente; sin doble conteo del día del corte �
+C-12 · Cada etapa es una tarjeta con su letra y su versión; con dos etapas en el área no se ofrece un selector de una sola opción — {"selectores":0,"nombres":["Nutrición · versión 1
+CP-18 · Calorías por etapa: la media de los días con valor (en la tabla) y la cobertura en días de la etapa (en su tarjeta, que dice de qué métricas es), calculadas a mano con los punt
+C-12 · La cobertura se dice una vez por etapa: las celdas de Calorías y de Proteínas no la repiten, y la de Registros, que cuenta días con registros, dice la suya; el criterio de cada m�
+C-12 · Debajo de la tabla hay un gráfico chico por métrica, con sus puntos, las dos etapas marcadas con su letra y las fechas al pie; el de las calorías dibuja además el objetivo. Los g
+C-12 · Las dos tarjetas y la tabla entran en la primera pantalla (1440 × 900): la respuesta se lee sin desplazarse — la tabla termina a los 1082 px; la ventana mide 900
+R4 · «Abrir estos gráficos en grande» trae, en el lugar de los chicos, los gráficos de las métricas de la pregunta con el período de las dos etapas, sus modos y su pie; el resumen en 
+C-12 · «Volver a los gráficos chicos» los devuelve y cierra los grandes; la tabla no cambió — chicos: 3 · grandes: 3
+--- de lo nuevo, pasaron:
+CP-07 · La pregunta del ejercicio pide el ejercicio: no elige el primero por la persona — Datos para responder Carga, repeticio
+CP-07 · La respuesta del ejercicio, desde «Ver la respuesta» hasta sus tres gráficos dibujados — 752 ms
+CP-07 · La pregunta arma la vista real: carga, repeticiones y RIR de la serie del ejercicio elegido, que se leen arriba, con su l
+CP-21 · Del origen a la pestaña del área y de vuelta: la ficha vuelve con la misma pregunta, ejercicio, serie, métricas y per�
+CP-18 · El hueco de cuatro días de la etapa A queda en la cobertura como días sin registros: no sale del denominador — 48 dí
+R4 · Con la pregunta de etapas, «Comparar otros dos períodos» es una opción plegada, justo debajo de la respuesta de las etap
+C-12 · La medición de la primera pantalla detecta una respuesta que no entra: con las tarjetas más altas, da que la tabla termi
+R4 · Sin repetir: sin el resumen en texto a la vista, sin la lista de etapas que repetía las tarjetas, y cada límite de interpr
+R4 · La letra no se achicó: la cobertura de cada etapa tiene el tamaño del texto (no menos de 0,95 rem) — 16 px · raíz 16 p
+R4 · «Comparar otros dos períodos» se abre con un toque y tiene sus cuatro fechas — 4 campos de fecha
+CP-18 · Dos totales de duraciones distintas no se restan, y se dice por qué — Registros Total 159 registros 48 días: 44 con r
+CP-17 · Agrupar por semana y acercar el gráfico no cambian la tabla A/B (resume las observaciones originales) ni la referencia f
+CP-18 · Con huecos, «Comparar dos períodos» dice los días del rango, cuántos tienen valor y cuántos no tienen registros (lo
+== rc-revocacion-mutante sobre la versión rota: 6 OK · 0 fallas · 6 de 6 bien
+--- de lo nuevo, pasaron:
+CP-23 · Después de revocar, el origen dice «no está disponible» sin valores — Volver a la lectura De dónde sale este dato 
+CP-23 · La cabecera deja de decir «Activo» para Antropometría sin recargar; Nutrición sigue activa — antes: Acceso actual N
+CP-23 · Los gráficos de Antropometría se retiran y dicen por qué, sin valores viejos — Comparación libre Sin pregunta: las 
+CP-23 · En el Resumen, Antropometría ya no aporta valores ni acciones (no tiene tarjeta, ni su toma, ni «Preparar una toma»); 
+CP-23 · En la otra pestaña, exportar con la pantalla vieja vuelve a consultar: no sale ningún archivo y dice por qué — No se
+== r-descartable-mutante sobre la versión rota: 20 OK · 1 fallas · 20/21 comprobaciones bien; fallan: PRO-20
+PRO-20 · Después de revocar, el origen de un punto que seguía en pantalla dice «no está disponible con tu acceso actual» y no repite el valor — Volver a la lectura del 29 sept 2026 D
+--- de lo nuevo, pasaron:
+PRO-10 · Peso e IMC en claro: los dos gráficos dibujados y a la vista — 2 gráfico(s) · Peso cada toma · kg: 990×192, ejes 
+PRO-10 · En claro, con las series ocultas la medición de píxeles no da por dibujado ningún gráfico (prueba de la prueba) — 
+PRO-10 · En claro, lo reportado y lo calculado se dibujan distinto (contorno cortado en el peso reportado, un punto adentro en el
+PRO-10 · La captura analizar-clases-1440-claro tiene los dos gráficos dibujados — 2 de 2
+PRO-10 · Peso e IMC en azul-noche: los dos gráficos dibujados y a la vista — 2 gráfico(s) · Peso cada toma · kg: 990×192, 
+PRO-10 · En azul-noche, con las series ocultas la medición de píxeles no da por dibujado ningún gráfico (prueba de la prueba)
+PRO-10 · En azul-noche, lo reportado y lo calculado se dibujan distinto (contorno cortado en el peso reportado, un punto adentro 
+PRO-10 · La captura analizar-clases-1440-azul-noche tiene los dos gráficos dibujados — 2 de 2
+PRO-10 · La lectura del día de la toma reportada dice «Reportado por la persona, no medido» — Lectura del 29 sept 2026 Fecha
+PRO-10 · La tabla de datos marca el peso reportado y el IMC calculado (un índice, no una estimación); lo medido va sin marca �
+PRO-10 · El CSV tiene la columna «Clase de dato»: medido, reportado por la persona y calculado por un método — BE-analisis-2
+PRO-10 · Antes de revocar, el origen del peso reportado abre su toma, con la clase de cada medición («Reportado», la palabra d
+PRO-20 · El asesorado revoca desde su web el acceso de Antropometría del profesional: explicación, confirmación y aviso — Re
+PRO-20 · Después de revocar, «Descargar los datos» con la pantalla vieja vuelve a consultar: no sale ningún archivo y dice po
+PRO-20 · Los gráficos se vuelven a pedir y dicen «no está disponible con tu acceso actual», sin un punto ni un valor de antes
+PRO-20 · Al volver a abrir Analizar y la línea de tiempo, no hay gráficos, valores ni tomas de Antropometría (antes de revocar
+restaurado: app/pro/advisees/seguimiento/etapas.tsx
+restaurado: app/pro/advisees/seguimiento/etapas-en-pantalla.ts
+restaurado: app/globals.css
+restaurado: app/pro/advisees/seguimiento/analizar.tsx
+restaurado: app/pro/advisees/seguimiento/preguntas.tsx
+restaurado: app/pro/advisees/seguimiento/origen-del-dato.tsx

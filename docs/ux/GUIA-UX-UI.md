@@ -332,9 +332,11 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
 - **Del Resumen al análisis:** cada hecho (su renglón entero) y cada indicador (su nombre) abren la vista que los
   explica: la línea de tiempo ya filtrada a lo nuevo desde la revisión, con un aviso que lo dice y se quita, o Analizar
   con la pregunta o la métrica. Un renglón con flecha abre algo; uno sin flecha, no.
-- **Del análisis al origen:** un punto, una entrada o una etapa abren su registro de origen al costado
-  (`PanelDeRegistro`): la comida, la sesión, la toma o la planificación de una etapa, en solo lectura y con su propia
-  lectura del PDP. Al cerrarlo, la vista sigue como estaba.
+- **Del análisis al origen:** un punto de un gráfico abre «De dónde sale este dato» en el lugar de la lectura, al
+  costado de los gráficos (`OrigenDelDato`); una entrada de la línea de tiempo, su detalle al costado de la lista; una
+  etapa, su planificación, en un panel (`PanelDeRegistro`). Siempre en solo lectura y con su propia lectura del PDP. Al
+  cerrarlo, la vista sigue como estaba y el foco vuelve a lo que lo abrió. En una ventana de menos de 1200 px de ancho,
+  los tres se abren encima, en el panel.
 - **Del origen a la acción:** las acciones están al pie de la tarjeta de cada área («Preparar la revisión», «Preparar
   una toma»), en el marco («Solicitar contexto») y en la pregunta de información. Llevan a la pestaña del área con
   `volver`.
@@ -389,7 +391,10 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   la medida y la versión nunca se eligen por la persona; la serie, la unidad y las dos últimas etapas se sugieren a la
   vista y se confirman con «Ver la respuesta». Lo que venía elegido y no aplica a este asesorado se dice. La pregunta resuelta es el título de la vista, con sus
   datos al lado («Cambiar los datos») y su límite de interpretación al pie de los gráficos. «Cambiar la pregunta»
-  vuelve al comienzo de Analizar. Sin pregunta, el título es «Comparación libre».
+  vuelve al comienzo de Analizar. Sin pregunta, el título es «Comparación libre». En la pregunta del ejercicio, sus
+  datos no van al lado del título: el ejercicio, la serie y la unidad se eligen en el lugar, donde estarían las
+  etiquetas de las métricas (`ParametrosDelEjercicio`). Al cambiar de ejercicio, la serie y la unidad siguen si el otro
+  las tiene registradas; si no, se piden. Un dato sin otra opción va escrito, sin control.
 - **Números de versión:** la versión de un plan que ve la persona es su orden de activación (1, 2, 3…), el mismo en la
   ficha, las etapas, la línea de tiempo y la pestaña Plan. El `version` de un recurso es su token de concurrencia: no se
   muestra. Un borrador no tiene número hasta activarse («una versión nueva en borrador»).
@@ -416,16 +421,30 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
     su motivo y «Reintentar») o sin nada en las fechas a la vista («no es un cero»). Lleva el nombre y el color de la
     métrica, y se reconoce por su ícono y su título, no por un color. Sin ningún gráfico todavía, la lectura dice para
     qué sirve.
-- **Analizar según la pregunta:** con la pregunta de etapas, lo principal es la tabla A/B, en su tarjeta, arriba de la
-  barra (los gráficos y la lectura siguen en las suyas: una tarjeta no va adentro de otra). La comparación a mano de dos
-  períodos es una opción secundaria, plegada debajo de esa tabla («Comparar otros dos períodos, con fechas elegidas a
-  mano», abierta si ya hay una en la URL); el resumen en texto se abre desde el pie de los gráficos, como la tabla de
-  datos, y las acciones de las tarjetas no se repiten debajo del gráfico. Resultados, cobertura y límites de
-  interpretación quedan a la vista, cada límite una vez: el de la pregunta y «Coincidencia temporal: no indica causa»
-  van juntos, al pie de los gráficos (o bajo el título, si la respuesta no tiene gráficos). La letra no se achica.
-- **Etapas** (`etapas.tsx`): dos tarjetas (A y B) con versión, fechas, duración y cómo terminaron, «Etapa anterior» y
-  «Ver la planificación de esta etapa»; una tabla por métrica con el mismo criterio de resumen, su cobertura (II.4) y el
-  motivo cuando no se resta. Fuera de la pregunta de etapas, «Comparar etapas», en el pie de los gráficos, abre la lista
+  - **Un control aparece solo si hay algo para elegir, donde las métricas están fijas.** Con la pregunta del ejercicio
+    no hay «Ver como», «Agrupar por» ni etiquetas de métricas: sus tres métricas tienen unidades distintas y se leen por
+    sesión. El título de cada gráfico y la lectura dicen solo la métrica, y la lectura dice la sesión una vez. Donde las
+    métricas se pueden cambiar, un modo que no corre queda a la vista, apagado y con su motivo.
+  - **El origen de un dato** (`origen-del-dato.tsx`) ocupa el lugar de la lectura, y los gráficos siguen a la vista: la
+    métrica y la fecha, el valor con su clase, qué es ese número (la frase del dominio) y sus fuentes. Las comidas de un
+    día se listan en el orden en que ocurrieron, cada una con lo que aporta a esa métrica; cada fila abre su registro,
+    sin pedirlo de nuevo. El total es el valor del punto. Con más de ocho fuentes (una semana) se elige cuál abrir.
+    «Volver a la lectura» y Escape lo cierran.
+- **Analizar según la pregunta:** con la pregunta de etapas, la respuesta entra en una pantalla: las dos tarjetas, la
+  tabla A/B y un gráfico chico por métrica, cada cosa en su tarjeta (una tarjeta no va adentro de otra). Los gráficos
+  grandes —con las métricas para cambiar, los modos, la lectura y su pie— quedan a un clic («Abrir estos gráficos en
+  grande») y van en el lugar de los chicos; arrancan abiertos si el enlace trae otra agrupación, otro modo o una fecha
+  elegida. La comparación a mano de dos períodos es una opción secundaria, plegada debajo de la respuesta («Comparar
+  otros dos períodos, con fechas elegidas a mano», abierta si ya hay una en la URL). «Más acciones» se abre debajo de su
+  botón. Resultados, cobertura y límites de interpretación quedan a la vista, cada límite una vez: el de la pregunta y
+  «Coincidencia temporal: no indica causa» van juntos, al pie de los gráficos, chicos o grandes (o bajo el título, si
+  la respuesta no tiene gráficos). La letra no se achica.
+- **Etapas** (`etapas.tsx`, `etapas-en-pantalla.ts`): dos tarjetas (A y B), cada una con su letra, su versión (un
+  selector, si el área tiene otra etapa para elegir: A es siempre la más antigua), desde cuándo, cómo terminó («la
+  reemplazó la versión 2»), cuánto duró, su cobertura y «Ver la planificación». **La cobertura se dice una vez por
+  etapa** (II.4): la que comparten más métricas, nombrando cuáles si no son todas; una métrica con otra cobertura la
+  dice en su celda. La tabla tiene una fila por métrica, con el criterio debajo del nombre, el valor de cada etapa y la
+  diferencia, o el motivo cuando no se resta. Fuera de la pregunta de etapas, «Comparar etapas», en el pie de los gráficos, abre la lista
   de etapas de las bandas: desde ahí se ve la planificación de cada una o se la compara con la anterior.
 - **Contraste con lo indicado** (`contraste.tsx`): por serie en entrenamiento, con la prescripción de la versión que
   ejecutó cada sesión; en nutrición, una fila por comida con la opción, **el modo de registro** (confirmó las porciones
@@ -536,7 +555,10 @@ crear otro, se usa uno de estos.
 | `.boton--compacto` | Una acción de fila: el mismo alto táctil (44 px), menos relleno | «Actualizar» en el encabezado de la ficha |
 | `.desplazable-x` | Una tabla ancha que se desplaza de costado dentro de su caja, nunca la página. Las sombras de los bordes aparecen solo si hay más, con el color de la superficie de abajo (`.seccion`, `.panel`) | La tabla de etapas; las comidas del contraste |
 | `MigasDelAsesorado` + `EnlaceDeRetorno` | Volver a la ficha con su configuración | «Ficha del asesorado» y «Volver a la ficha, donde estabas» |
-| `PanelDeRegistro` | El origen de un dato al costado, con su propia lectura | La comida de un punto; la planificación de una etapa |
+| `PanelDeRegistro` | Un registro encima de la vista, en un panel que retiene el foco, con su propia lectura | La planificación de una etapa; el origen de un dato o el detalle de un hecho, en una ventana angosta |
+| `OrigenDelDato` | De dónde sale un punto de Analizar, en el lugar de la lectura: el valor, qué es y sus fuentes, con lo que aporta cada comida | «795 kcal»: Almuerzo, 311 kcal; Cena, 484 kcal |
+| `useDetalleAlCostado` (`al-costado.ts`) | Si la ventana tiene lugar para un detalle al costado (desde 1200 px) | La línea de tiempo y Analizar |
+| `ParametrosDelEjercicio` | Los datos de una pregunta, para elegirlos en el lugar; uno sin otra opción va escrito | «Ejercicio: Peso muerto · Serie: 1 · Unidad: kg» |
 | `ListaDePreguntas` · `ElegirParametros` · `PreguntaActiva` | Entrar por preguntas, pedir lo que falta y decir la pregunta en curso | «¿Cómo viene progresando este ejercicio?» |
 | `ComparacionDeEtapas` · `EtapasDelPeriodo` | Comparar dos etapas del plan y ofrecerlas desde el gráfico | «v2 y v3» con su tabla |
 | `partesDeLaCobertura` (dominio) | La cobertura de un valor resumido, la misma en todas las tablas: días por categoría en nutrición; sesiones o tomas en lo demás | «48 días: 44 con valor · de ellos, 7 son subtotales (falta algún dato) · 4 sin registros» |
@@ -545,7 +567,7 @@ crear otro, se usa uno de estos.
 | `.observacion` | Un hecho de la síntesis, en la tarjeta de su área: un renglón entero que abre su evidencia; si es una cuenta, con la cifra adelante | «67 comidas registradas» |
 | `.area` | La tarjeta de un área del Resumen: contexto, pendientes, lo nuevo desde su revisión y la acción | «Nutrición» |
 | `TiraDelObjetivo` | Las calorías y los macros del objetivo del día, en el orden de la APK, cada uno con su ícono y su palabra | «Calorías 1.950 kcal · Carbohidratos 220 g · Grasas 65 g · Proteínas 130 g» |
-| `Minigrafico` | El gráfico chico de un indicador: los mismos puntos y cortes que Analizar, sin interacción | El de «Calorías registradas» |
+| `Minigrafico` | El gráfico chico de la ficha: los mismos puntos y cortes que Analizar, sin interacción y sin la biblioteca de gráficos; con las etapas como bandas, las fechas al pie y lo planificado, si se le pasan | El de un indicador del Resumen; los tres de la comparación de etapas |
 | `BloqueDeEstado` | Un estado dicho en el lugar de lo que falta: ícono, qué pasó, por qué y qué se puede hacer | «No pudimos completar esta parte» + «Reintentar» |
 | `.tarjeta-de-pregunta` | Una pregunta como botón entero, con lo que muestra | Las preguntas principales de Analizar |
 | `.aviso-de-filtro` | Un filtro que viene de otra vista, explicado y con su salida | «Lo nuevo desde la revisión…» + «Ver todo el período elegido» |
@@ -1065,6 +1087,12 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | «Solicitar vínculo» y «Solicitudes enviadas» | Dos tarjetas, siempre abiertas. | A un clic, cada una en su diálogo (II.6). | Sustituida | 5 |
 | «Dominio» | El nombre del filtro y de la columna de «Pendientes». | «Área», como en el resto del website profesional. | Sustituida | 5 |
 | Una cantidad sobre una lista paginada | «Pendientes: 20+». | La lista se lee entera; si no, la cantidad dice «al menos» (II.7). | Nueva | 5 |
+| La cobertura en «comparar etapas» | En cada celda de la tabla, repetida por métrica. | Una vez por etapa, en su tarjeta; en la celda, solo si es otra (II.6). | Sustituida | 2 |
+| Los gráficos de «comparar etapas» | Los tres grandes, con su barra y su lectura, debajo de la tabla. | Tres chicos, con las etapas marcadas; los grandes, a un clic, en su lugar (II.6). | Sustituida | 2 |
+| Elegir otra etapa | «Etapa anterior», o el formulario de «Cambiar los datos». | Un selector en cada tarjeta, si hay otra para elegir. | Sustituida | 2 |
+| Los datos de la pregunta del ejercicio | Una frase al lado del título y un formulario para cambiarlos. | En el lugar: el ejercicio, la serie y la unidad (II.6). | Sustituida | 2 |
+| Los modos sin nada para elegir | Siempre a la vista, apagados. | No aparecen donde las métricas están fijas (la pregunta del ejercicio); en lo demás siguen, con su motivo (II.6). | Aclarada | 2 |
+| El origen de un dato | Un panel encima de los gráficos; «Registro 1», «Registro 2». | En el lugar de la lectura; las comidas del día, cada una con lo que aporta (II.5, II.6). | Sustituida | 2 |
 
 ---
 
