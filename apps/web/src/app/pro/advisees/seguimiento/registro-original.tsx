@@ -202,7 +202,7 @@ function VersionDeNutricion({ planId, numero, onNoDisponible }: { planId: string
 }
 
 function VersionDeEntrenamiento({ planId, numero, onNoDisponible }: { planId: string; numero?: number; onNoDisponible?: () => void }) {
-  const { token } = useSeguimiento();
+  const { token, sesionPerdida } = useSeguimiento();
   const { lectura, recargar } = useLectura<{ data: PlanConObjetivos }>(`plan-trn|${planId}`, () => api.planConObjetivos(token, planId), 'TRAINING');
   useAvisoDeNoDisponible(lectura.tipo, onNoDisponible);
   if (lectura.tipo === 'cargando') return <Cargando />;
@@ -210,5 +210,5 @@ function VersionDeEntrenamiento({ planId, numero, onNoDisponible }: { planId: st
   if (lectura.tipo === 'error') return <ErrorConReintento mensaje={textoDeFalla(lectura.motivo, 'la planificación')} onReintentar={recargar} />;
   const v = lectura.datos.data;
   if (!v.activatedAt) return <p className="nota">Es un borrador: todavía no rige ni forma una etapa. Se edita en la pestaña Entrenamiento.</p>;
-  return <PlanSoloLectura version={v} numero={numero ?? 0} />;
+  return <PlanSoloLectura version={v} numero={numero ?? 0} acceso={{ token, sesionPerdida }} />;
 }

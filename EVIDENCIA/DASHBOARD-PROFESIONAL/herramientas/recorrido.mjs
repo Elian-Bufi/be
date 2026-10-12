@@ -1,7 +1,7 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio|areas|registros|sesiones|tomas|plan|mediciones|solicitudes|planes|estimacion]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio|areas|registros|sesiones|tomas|plan|plan-entrenamiento|mediciones|solicitudes|planes|entrenamientos|estimacion]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
@@ -47,6 +47,15 @@
 //   escenario no tiene (sin plan, sin objetivo, un objetivo más nuevo, siete días tipo) se miran con respuestas
 //   simuladas en el navegador. ESCRIBE: guarda una plantilla, crea una versión, la edita, la activa y crea otra desde la
 //   plantilla, todo por la pantalla.
+// - Entrenamiento · Plan (WP-ESCRITORIO-AREAS, parte 6) se comprueba en `planesDeEntrenamiento`: corre solo, con
+//   `entrenamientos`, sobre las cuentas descartables con su plan de dos bloques (`datos/generar.mjs
+//   descartable-plan-de-entrenamiento`). Lo esperado sale de la lista de versiones y de la versión vigente con sus
+//   objetivos por serie, calculado a mano (`esperadoDelPlanDeEntrenamiento`). ESCRIBE: guarda una plantilla, crea una
+//   versión, la edita, la activa y crea otra desde la plantilla, por la pantalla. Con el asesorado A (que tiene una
+//   versión en preparación) y la misma pieza dentro de la ficha, en `planDeEntrenamientoDeA`, en la sesión de
+//   `fichaRecompuesta`; solo, con `plan-entrenamiento`. El escenario no tiene ejercicios con imagen: se mira con una
+//   imagen armada acá y sus dos respuestas simuladas (`imagenDeEjercicioSimulada`), en la pestaña y en la ficha; el
+//   acceso simulado se entrega solo si el pedido lleva la sesión de la página.
 // - La estimación del profesional sobre una comida diferente (`estimacionDeUnaComida`) ESCRIBE en el escenario: no va
 //   dentro de `funcional`. Corre sola, con `estimacion`, y última en la pasada completa.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
@@ -133,7 +142,7 @@ async function abrir() {
       v.marcas.push(Date.now());
       if (process.env.RECORRIDO_PEDIDOS) console.log(`  → ${new Date().toISOString().slice(11, 23)} ${req.method()} ${url.replace(API, '').replace(/[0-9a-f-]{36}/g, ':id').slice(0, 110)}`);
     }
-    const regla = v.reglas.find((r) => r.coincide(url));
+    const regla = v.reglas.find((r) => r.coincide(url, req));
     if (!regla) return req.continue();
     if (req.method() === 'OPTIONS') return req.respond({ status: 204, headers: PREFLIGHT });
     if (regla.accion === 'demorar') {
@@ -143,6 +152,7 @@ async function abrir() {
     if (regla.accion === 'cortar') return req.abort('internetdisconnected');
     // Una respuesta armada por el recorrido, para mirar una pantalla con datos que el escenario no tiene.
     if (regla.accion === 'entregar') return req.respond({ status: 200, headers: CORS, contentType: 'application/json; charset=utf-8', body: JSON.stringify(regla.cuerpo) });
+    if (regla.accion === 'entregar-archivo') return req.respond({ status: 200, headers: CORS, contentType: regla.tipo, body: regla.cuerpo });
     return req.respond({ status: regla.status, headers: CORS, contentType: 'application/json; charset=utf-8', body: JSON.stringify({ error: { code: regla.codigo, message: 'Falla simulada por el recorrido.' } }) });
   });
   const fin = (r) => {
@@ -9695,7 +9705,1010 @@ async function planDeNutricionDeA(page, v) {
   comprobar('—', '«Plan», de Nutrición (asesorado A), y su pieza en la ficha no produjeron errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
 }
 
-async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true, registros = true, sesiones = true, tomas = true, plan = true, estimacion = false } = {}) {
+// ─── Entrenamiento · Plan (WP-ESCRITORIO-AREAS, parte 6) ───────────────────────────────────────────────────────
+
+/** Lo que «Plan», de Entrenamiento, tiene a la vista: la versión que se mira, lo que se eligió, los ejercicios y el historial. */
+const planDeEntrenamientoEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const aLaVista = (e) => !!e && e.getClientRects().length > 0;
+    const caja = (e) => {
+      if (!e) return null;
+      const r = e.getBoundingClientRect();
+      return { x: Math.round(r.left), y: Math.round(r.top + window.scrollY), ancho: Math.round(r.width), alto: Math.round(r.height) };
+    };
+    const raiz = document.querySelector('.plan');
+    const selector = raiz?.querySelector('[data-selector-de-version]') ?? null;
+    const activo = raiz?.querySelector('.plan__activo') ?? null;
+    const titulo = raiz?.querySelector('#titulo-borrador') ?? null;
+    // La imagen del ejercicio, en «Lo general»: si es una imagen ya dibujada o el recuadro de respaldo, y si queda dentro de la tarjeta.
+    const imagenDe = (e) => {
+      const i = e.querySelector('.ejercicio-del-plan__general .imagen-de-ejercicio');
+      if (!i) return null;
+      const r = i.getBoundingClientRect();
+      const c = e.getBoundingClientRect();
+      return { dibujada: i.tagName === 'IMG' && i.complete && i.naturalWidth > 0, alt: i.getAttribute('alt') ?? i.getAttribute('aria-label'), ancho: Math.round(r.width), alto: Math.round(r.height), adentro: r.left >= c.left - 1 && r.right <= c.right + 1 && r.top >= c.top - 1 && r.bottom <= c.bottom + 1 };
+    };
+    const nivel = (clave) => {
+      const n = activo?.querySelector(`.nivel-del-plan[data-nivel="${clave}"]`);
+      if (!n) return null;
+      const forma = n.dataset.forma;
+      const segmentos = [...n.querySelectorAll('.segmento')];
+      return {
+        forma,
+        rotulo: t(n.querySelector('legend, .nivel-del-plan__rotulo')),
+        opciones: forma === 'botones' ? segmentos.map((s) => ({ texto: t(s), elegido: s.querySelector('input').checked, caja: caja(s) })) : forma === 'lista' ? [...n.querySelectorAll('option')].map((o) => ({ texto: o.textContent.trim(), elegido: o.selected })) : null,
+        elegido: forma === 'unico' ? t(n.querySelector('strong')) : forma === 'botones' ? t(segmentos.find((s) => s.querySelector('input').checked)) : (n.querySelector('select')?.selectedOptions[0]?.textContent.trim() ?? null),
+        detalle: t(n.querySelector('.nivel-del-plan__detalle')),
+        posicion: t(n.querySelector('.nivel-del-plan__lista .nota')),
+        caja: caja(n),
+      };
+    };
+    return {
+      esta: !!raiz,
+      version: raiz?.dataset.version ?? null,
+      selector: selector ? { rotulo: t(selector.querySelector('legend')), opciones: [...selector.querySelectorAll('.segmento')].map((s) => ({ texto: t(s), elegido: s.querySelector('input').checked })), nota: t(raiz.querySelector('.plan__selector .nota')) } : null,
+      editor: { esta: !!titulo, aLaVista: aLaVista(titulo), estado: t(raiz?.querySelector('.plan__preparacion p[aria-live="polite"]') ?? null) },
+      activo: activo
+        ? {
+            titulo: t(activo.querySelector('h2')),
+            soloLectura: t(activo.querySelector('.plan__encabezado .etiqueta-de-dato')),
+            frase: t(activo.querySelector('.plan__version')),
+            acciones: [...activo.querySelectorAll('.plan__acciones button')].map((b) => t(b)),
+            yaHay: t(activo.querySelector('.plan__ya-hay')),
+            aviso: t(activo.querySelector(':scope > .aviso')),
+            bloque: nivel('bloque'),
+            microciclo: nivel('microciclo'),
+            sesion: nivel('sesion'),
+            sinNada: [...activo.querySelectorAll('.plan__niveles > .nota, .plan__activo > .nota, .ejercicios-del-plan > .nota')].map(t),
+            indicaciones: t(activo.querySelector('.indicaciones-de-la-sesion')),
+            cuenta: t(activo.querySelector('[data-cuenta-de-la-sesion]')),
+            todos: t(activo.querySelector('[data-todos-los-ejercicios]')),
+            ejercicios: [...activo.querySelectorAll('.ejercicio-del-plan')].map((e) => ({
+              orden: Number(e.dataset.ejercicio),
+              abierto: e.hasAttribute('data-abierta'),
+              expandido: e.querySelector('.comida-del-plan__boton').getAttribute('aria-expanded'),
+              nombre: t(e.querySelector('.comida-del-plan__nombre')),
+              resumen: t(e.querySelector('[data-resumen]')),
+              titulo: t(e.querySelector('caption')),
+              columnas: [...e.querySelectorAll('thead th')].map(t),
+              filas: [...e.querySelectorAll('tbody tr')].map((tr) => [...tr.children].map(t)),
+              tenues: [...e.querySelectorAll('tbody td .tenue')].length,
+              general: { titulo: t(e.querySelector('.ejercicio-del-plan__subtitulo')), datos: [...e.querySelectorAll('.lo-general-del-ejercicio > div')].map((d) => [t(d.querySelector('dt')), t(d.querySelector('dd'))]), imagen: imagenDe(e) },
+              caja: caja(e),
+              cajaDeSeries: caja(e.querySelector('.ejercicio-del-plan__series')),
+              cajaDeLoGeneral: caja(e.querySelector('.ejercicio-del-plan__general')),
+            })),
+            historial: {
+              titulo: t(activo.querySelector('.historial-del-plan h3')),
+              versiones: [...activo.querySelectorAll('.historial-del-plan__lista li')].map((li) => ({ numero: Number(li.dataset.version), vigente: li.hasAttribute('data-vigente'), texto: t(li) })),
+              huella: t(activo.querySelector('.historial-del-plan__huella')),
+              caja: caja(activo.querySelector('.historial-del-plan')),
+            },
+          }
+        : null,
+      vacio: raiz?.querySelector('.estado-vacio') ? { texto: t(raiz.querySelector('.estado-vacio')), botones: [...raiz.querySelectorAll('.estado-vacio button')].map((b) => t(b)) } : null,
+      falla: t(document.querySelector('.seccion-del-area .estado-de-grafico--error')),
+      botones: [...document.querySelectorAll('main button')].filter(aLaVista).map((b) => t(b)),
+      main: t(document.querySelector('main')),
+    };
+  });
+
+/**
+ * Una imagen de ejercicio armada por el recorrido, porque el escenario no tiene ejercicios con imagen: lo que la API
+ * diría de ella en una prescripción y las dos respuestas que la pantalla pide para mostrarla (el acceso firmado y el
+ * contenido). El acceso se entrega solo si el pedido lleva la sesión de la página: sin ella, la API de verdad lo rechaza.
+ */
+async function imagenDeEjercicioSimulada(page, v) {
+  const MEDIO = 'medio-simulado-por-el-recorrido';
+  const CONTENIDO = '/media/content/simulado-por-el-recorrido';
+  const ALT = 'Una barra con dos discos de cada lado, de frente (imagen sintética)';
+  // La sesión con la que la página venía leyendo hasta acá: es la que tiene que llevar el pedido del acceso.
+  const SESION = v.token;
+  const png = Buffer.from(
+    await page.evaluate(() => {
+      const c = document.createElement('canvas');
+      c.width = 320;
+      c.height = 240;
+      const x = c.getContext('2d');
+      x.fillStyle = '#d7e0ea';
+      x.fillRect(0, 0, 320, 240);
+      x.fillStyle = '#0b2a4a';
+      x.fillRect(30, 112, 260, 16);
+      for (const [desde, alto] of [[50, 120], [78, 84], [222, 84], [250, 120]]) x.fillRect(desde, 120 - alto / 2, 20, alto);
+      return c.toDataURL('image/png').split(',')[1];
+    }),
+    'base64',
+  );
+  const enLaPrescripcion = (p, cuando) => ({ mediaId: MEDIO, imageVersion: 1, exerciseVersionId: p.exerciseVersionId, provenance: 'PERSON_PROVIDED', authorship: 'Recorrido (sintético)', license: { kind: 'NO_EXTERNAL_LICENSE', usage: 'Imagen sintética, armada por el recorrido' }, technicalReview: 'REVIEWED_BY_PROFESSIONAL', altText: ALT, associatedAt: cuando });
+  const enLaPrimera = (sesion, cuando) => ({ ...sesion, prescriptions: sesion.prescriptions.map((p, i) => (i === 0 ? { ...p, image: enLaPrescripcion(p, cuando) } : p)) });
+  return {
+    alt: ALT,
+    enLaPrescripcion,
+    /** El plan, con la imagen en el primer ejercicio de cada sesión. */
+    enElPlan: (plan) => ({ ...plan, blocks: plan.blocks.map((b) => ({ ...b, sessions: b.sessions.map((x) => enLaPrimera(x, plan.activatedAt)), microcycles: b.microcycles.map((m) => ({ ...m, sessions: m.sessions.map((x) => enLaPrimera(x, plan.activatedAt)) })) })) }),
+    accesosDesde: (desde) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(`/media/${MEDIO}/access`)),
+    reglas: [
+      {
+        coincide: (u, req) => u.includes(`/media/${MEDIO}/access`) && !!SESION && (req?.method() === 'OPTIONS' || req?.headers().authorization === SESION),
+        accion: 'entregar',
+        cuerpo: { data: { mediaId: MEDIO, path: CONTENIDO, expiresAt: new Date(Date.now() + 10 * 60_000).toISOString() } },
+      },
+      { coincide: (u) => u.includes(CONTENIDO), accion: 'entregar-archivo', tipo: 'image/png', cuerpo: png },
+    ],
+  };
+}
+
+/**
+ * Lo que «Plan» tiene que decir de una versión activada de entrenamiento, escrito a mano con lo que devuelve la API (la
+ * lista de versiones y la versión con sus objetivos por serie): no se usa el módulo del dominio que arma la pantalla
+ * (`lectura-del-plan-de-entrenamiento.ts`). Las cantidades del escenario son menores que mil.
+ */
+function esperadoDelPlanDeEntrenamiento({ lista, activa }) {
+  const coma = (n) => String(n).replace('.', ',');
+  const reps = (r) => (r ? ('value' in r ? `${r.value} rep.` : `${r.min}–${r.max} rep.`) : null);
+  const carga = (c) => (c ? `${coma(c.value)} ${c.unit}` : null);
+  const rir = (x) => (x === null ? null : `RIR ${coma(x)}`);
+  const descanso = (s) => (s === null ? null : `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`);
+  const CRITERIO = { RIR: 'RIR', PERCENT_RM: '% RM' };
+  const BASE_DE_CARGA = { SINGLE_IMPLEMENT: 'una sola mancuerna o implemento', PER_IMPLEMENT: 'por mancuerna o implemento', TOTAL_EXTERNAL: 'carga externa total' };
+  const BASE_DE_REPETICIONES = { PER_SET: 'por serie', PER_SIDE: 'por lado; no se duplican' };
+  const series = (n) => `${n} ${n === 1 ? 'serie' : 'series'}`;
+  const enumerar = (x) => (x.length <= 1 ? (x[0] ?? '') : `${x.slice(0, -1).join(', ')} y ${x.at(-1)}`);
+  const enOrden = (x) => [...x].sort((a, b) => a.order - b.order);
+  const ejercicio = (p) => {
+    const sets = [...p.sets].sort((a, b) => a.setIndex - b.setIndex);
+    const o = sets.map((s) => ({ r: reps(s.target.repetitions), c: carga(s.target.suggestedLoad), i: rir(s.target.rir), d: descanso(s.target.restSeconds) }));
+    const igual = (k) => o.every((x) => x[k] === o[0][k]);
+    const criterioRir = p.intensity?.criterion === 'RIR';
+    const cambian = [...(igual('r') ? [] : ['repeticiones']), ...(igual('c') ? [] : ['carga']), ...(criterioRir && !igual('i') ? ['RIR'] : []), ...(igual('d') ? [] : ['descanso'])];
+    const intensidad = !p.intensity ? 'sin criterio de intensidad' : criterioRir ? (igual('i') ? o[0].i : null) : `${coma(p.intensity.target.value)} % RM`;
+    const cerrado =
+      cambian.length === 0
+        ? [o[0].r ? `${sets.length} × ${o[0].r}` : `${series(sets.length)} sin repeticiones fijadas`, o[0].c, intensidad, o[0].d ? `descanso ${o[0].d}` : null]
+        : [series(sets.length), igual('r') ? (o[0].r ?? 'sin repeticiones fijadas') : null, igual('c') ? o[0].c : null, intensidad, `${enumerar(cambian)} por serie`, igual('d') && o[0].d ? `descanso ${o[0].d}` : null];
+    const conRir = criterioRir || o.some((x) => x.i !== null);
+    const conNota = sets.some((s) => s.note);
+    return {
+      orden: p.order,
+      nombre: p.exerciseName,
+      cerrado: cerrado.filter(Boolean).join(' · '),
+      abierto: `${series(sets.length)} · ${p.intensity ? `criterio de intensidad: ${CRITERIO[p.intensity.criterion]}` : 'sin criterio de intensidad'}`,
+      columnas: ['Serie', 'Carga sugerida', 'Rep.', ...(conRir ? ['RIR'] : []), 'Descanso recomendado', ...(conNota ? ['Nota'] : [])],
+      filas: sets.map((s, n) => [String(s.setIndex), o[n].c ?? 'Sin objetivo', o[n].r ?? 'Sin objetivo', ...(conRir ? [o[n].i ?? 'Sin objetivo'] : []), o[n].d ?? 'Sin objetivo', ...(conNota ? [s.note ?? ''] : [])]),
+      general: [
+        ['Intensidad', p.intensity ? `${criterioRir ? `RIR ${coma(p.intensity.target.value)}` : `${coma(p.intensity.target.value)} % RM`}${p.intensity.target.reference ? ` (${p.intensity.target.reference.description})` : ''}` : 'Sin criterio de intensidad'],
+        ...(p.loadBasis ? [['La carga se cuenta', BASE_DE_CARGA[p.loadBasis]]] : []),
+        ...(p.repetitionBasis ? [['Las repeticiones', BASE_DE_REPETICIONES[p.repetitionBasis]]] : []),
+        ...p.professionalParameters.map((q) => [q.label, `${typeof q.value === 'number' ? coma(q.value) : q.value}${q.unit ? ` ${q.unit}` : ''}`]),
+        ...(p.note ? [['Notas', p.note]] : []),
+      ],
+    };
+  };
+  const sesion = (s) => {
+    const ejercicios = enOrden(s.prescriptions).map(ejercicio);
+    const cuantasSeries = s.prescriptions.reduce((n, p) => n + p.sets.length, 0);
+    return { orden: s.order, nombre: s.label, indicaciones: s.instructions, cuenta: `${ejercicios.length === 1 ? '1 ejercicio' : `${ejercicios.length} ejercicios`} · ${series(cuantasSeries)}`, ejercicios };
+  };
+  const activadas = lista.filter((x) => x.activatedAt).sort((a, b) => a.activatedAt.localeCompare(b.activatedAt));
+  const numeroDe = new Map(activadas.map((x, i) => [x.planId, i + 1]));
+  const bloques = enOrden(activa.blocks).map((b) => {
+    const cuantas = b.sessions.length + b.microcycles.reduce((n, m) => n + m.sessions.length, 0);
+    return {
+      orden: b.order,
+      nombre: b.label,
+      detalle: [cuantas === 0 ? 'sin sesiones' : cuantas === 1 ? '1 sesión' : `${cuantas} sesiones`, ...(b.purpose ? [`Propósito: ${b.purpose}`] : [])].join(' · '),
+      microciclos: enOrden(b.microcycles).map((m) => ({ orden: m.order, nombre: m.label, detalle: m.purpose ? `Propósito: ${m.purpose}` : null, sesiones: enOrden(m.sessions).map(sesion) })),
+      sesiones: enOrden(b.sessions).map(sesion),
+    };
+  });
+  return { numeroDe, activadas, bloques, numero: numeroDe.get(activa.planId) };
+}
+
+/** Los ejercicios de la pantalla contra los de la sesión esperada: plegado, su renglón; abierto, su tabla y lo general. */
+const ejerciciosComoLaApi = (enPantalla, sesion, abiertos) =>
+  enPantalla.length === sesion.ejercicios.length &&
+  enPantalla.every((e, i) => {
+    const x = sesion.ejercicios[i];
+    const abierto = abiertos.includes(x.orden);
+    const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    return (
+      e.orden === x.orden &&
+      e.nombre === x.nombre &&
+      e.abierto === abierto &&
+      e.expandido === String(abierto) &&
+      (abierto ? e.resumen === x.abierto && e.titulo === 'Lo que recibe tu asesorado' && igual(e.columnas, x.columnas) && igual(e.filas, x.filas) && e.general.titulo === 'Lo general del ejercicio' && igual(e.general.datos, x.general) : e.resumen === x.cerrado && e.filas.length === 0)
+    );
+  });
+
+async function planesDeEntrenamiento() {
+  const d = estado.descartable;
+  if (!d?.planDeEntrenamiento) throw new Error('faltan las cuentas descartables con su plan de Entrenamiento: datos/generar.mjs descartable-cuentas, descartable-datos y descartable-plan-de-entrenamiento');
+  const { navegador, page, v } = await abrir();
+  try {
+    const A = d.aseId;
+    const BASE = `/pro/advisees/training?id=${A}&vista=plan`;
+    const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const lecturasDesde = (desde, fragmento) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+    const escriturasDesde = (desde, fragmento) => v.urls.slice(desde).filter((u) => /^(POST|PATCH|PUT|DELETE) /.test(u) && u.includes(fragmento));
+    const entrar = async (ruta) => {
+      await cupo(v, 60);
+      const desde = v.urls.length;
+      await ir(page, ruta);
+      await page.waitForSelector('.plan, .seccion-del-area .estado-de-grafico--error, .seccion-del-area > .aviso', { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      return desde;
+    };
+    const salir = async () => {
+      await cupo(v, 60);
+      await ir(page, `/pro/advisees?id=${A}`);
+      await page.waitForFunction(() => !document.querySelector('.plan') && !document.querySelector('header.marco-del-area'), { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+    };
+    /** Entra con respuestas armadas por el recorrido (dichas como tales) y las retira al terminar de leer la pantalla. */
+    const conSimulacion = async (reglas, ruta, esperar = null) => {
+      await salir();
+      v.reglas.push(...reglas);
+      try {
+        await entrar(ruta);
+        if (esperar) {
+          await page.waitForSelector(esperar, { timeout: 15_000 }).catch(() => {});
+          await quieto(page, v, { silencio: 300 });
+        }
+        return await planDeEntrenamientoEnPantalla(page);
+      } finally {
+        v.reglas.length = 0;
+      }
+    };
+    const leerTodo = async () => {
+      const lista = [];
+      let cursor = null;
+      do {
+        const r = await leerApi(v, `/advisees/${A}/training/plans?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+        lista.push(...r.data);
+        cursor = r.page.hasMore ? r.page.nextCursor : null;
+      } while (cursor);
+      const efectiva = lista.find((x) => x.isEffective) ?? null;
+      const activa = efectiva ? (await leerApi(v, `/training/plans/${efectiva.planId}/detail`)).data : null;
+      return { lista, activa, E: activa ? esperadoDelPlanDeEntrenamiento({ lista, activa }) : null };
+    };
+    const enLaPagina = (iso) =>
+      page.evaluate((x) => {
+        const f = new Date(x);
+        const delAnio = f.getFullYear() === new Date().getFullYear();
+        return {
+          dia: delAnio ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(f) : new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(f),
+          hora: new Intl.DateTimeFormat('es-AR', { timeStyle: 'short', hourCycle: 'h23' }).format(f),
+        };
+      }, iso);
+    const historialEsperado = async (E) => {
+      const filas = [];
+      for (const x of [...E.activadas].reverse()) {
+        const f = await enLaPagina(x.activatedAt);
+        filas.push({ numero: E.numeroDe.get(x.planId), vigente: x.isEffective, texto: `Versión ${E.numeroDe.get(x.planId)} · activada el ${f.dia}, ${f.hora} · ${x.isEffective ? 'vigente' : 'anterior, conservada'}` });
+      }
+      return filas;
+    };
+    const prohibidas = (texto) => dominio.terminosProhibidosDeEntrenamientoEn(texto ?? '');
+    const TEXTOS_DEL_PLAN = '.plan__version, .nivel-del-plan__detalle, .indicaciones-de-la-sesion, .comida-del-plan__textos, .lo-general-del-ejercicio dd, .historial-del-plan__lista li, [data-cuenta-de-la-sesion]';
+    const esperarAviso = (empieza) =>
+      page
+        .waitForFunction((t) => [...document.querySelectorAll('.aviso-flotante__texto')].some((e) => e.innerText.trim().startsWith(t)), { timeout: 40_000 }, empieza)
+        .then(() => true)
+        .catch(() => false);
+    const P = () => parametros(page);
+    const direccion = () => Object.fromEntries(P());
+    const tocar = async (nivel, nombre) => {
+      await clic(page, `.plan__activo .nivel-del-plan[data-nivel="${nivel}"] .segmento`, nombre);
+      await quieto(page, v, { silencio: 300 });
+    };
+    const tocarEjercicio = async (nombre) => {
+      await clic(page, '.ejercicio-del-plan .comida-del-plan__boton', nombre);
+      await quieto(page, v, { silencio: 300 });
+    };
+
+    await iniciarSesion(page, v, d.proCorreo, `/pro/advisees?id=${A}`);
+    await quieto(page, v);
+
+    // ── Al entrar ────────────────────────────────────────────────────────────────────────────────────────────────
+    const desde = await entrar(BASE);
+    const inicial = await planDeEntrenamientoEnPantalla(page);
+    const alLeer = v.urls.length;
+    const { lista, activa, E } = await leerTodo();
+    const leidas = v.urls.slice(desde, alLeer).filter((u) => u.startsWith('GET '));
+    const deLaLista = leidas.filter((u) => /\/training\/plans\?/.test(u)).length;
+    const delPlan = leidas.filter((u) => u.includes(`/training/plans/${activa.planId}/detail`)).length;
+    const delObjetivo = leidas.filter((u) => u.includes('/training/objectives/effective')).length;
+    const otras = leidas.filter((u) => u.includes('/training/') && !/\/training\/plans\?/.test(u) && !u.includes(`/training/plans/${activa.planId}/detail`) && !u.includes('/training/objectives/effective'));
+    const fechaDeLaActiva = await enLaPagina(activa.activatedAt);
+    const fraseEsperada = `Versión ${E.numero} · activada el ${fechaDeLaActiva.dia} · es lo que ve el asesorado`;
+    const b1 = E.bloques[0];
+    const b2 = E.bloques[1];
+    const sA = b1.sesiones[0];
+    const sB = b1.sesiones[1];
+    comprobar(
+      'F-71',
+      'El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · es lo que ve el asesorado», con el número que le toca por su orden de activación. Para verlo se leen tres cosas, una vez cada una: la lista de versiones, la versión vigente con sus objetivos por serie y el objetivo vigente. Las plantillas no se leen al entrar',
+      inicial.esta &&
+        inicial.version === 'activa' &&
+        inicial.selector === null &&
+        !inicial.editor.esta &&
+        inicial.activo?.titulo === 'Plan activo' &&
+        inicial.activo.soloLectura === 'Solo lectura' &&
+        inicial.activo.frase === fraseEsperada &&
+        E.numero === 2 &&
+        deLaLista === 1 &&
+        delPlan === 1 &&
+        delObjetivo === 1 &&
+        otras.length === 0 &&
+        igual(inicial.activo.acciones, ['Guardar como plantilla', 'Empezar desde una plantilla', 'Crear nueva versión a partir de esta']),
+      `«${inicial.activo?.frase}» · lecturas: lista ${deLaLista}, versión ${delPlan}, objetivo ${delObjetivo}, otras de Entrenamiento ${otras.length} · ${(inicial.activo?.acciones ?? []).join(' | ')}`,
+    );
+    comprobar(
+      'F-72',
+      'Se mira una sesión por vez. Con dos bloques, un control con el nombre de cada uno y, al lado, cuántas sesiones tiene el elegido y su propósito; el primer bloque no usa microciclos, y no hay renglón de microciclo; con dos sesiones, un control, elegida la primera, y «Sin día asignado: tu asesorado elige cuál hace.». Las indicaciones de la sesión se leen antes de sus ejercicios',
+      E.bloques.length === 2 &&
+        inicial.activo?.bloque?.forma === 'botones' &&
+        inicial.activo.bloque.rotulo === 'Bloque' &&
+        igual(inicial.activo.bloque.opciones.map((o) => [o.texto, o.elegido]), E.bloques.map((b, i) => [b.nombre, i === 0])) &&
+        inicial.activo.bloque.detalle === b1.detalle &&
+        inicial.activo.microciclo === null &&
+        inicial.activo.sesion?.forma === 'botones' &&
+        igual(inicial.activo.sesion.opciones.map((o) => [o.texto, o.elegido]), b1.sesiones.map((s, i) => [s.nombre, i === 0])) &&
+        inicial.activo.sesion.detalle === 'Sin día asignado: tu asesorado elige cuál hace.' &&
+        inicial.activo.indicaciones === `Indicaciones de la sesión ${sA.indicaciones}`,
+      `${inicial.activo?.bloque?.opciones?.map((o) => `${o.texto}${o.elegido ? ' (elegido)' : ''}`).join(' | ')} · «${inicial.activo?.bloque?.detalle}» · ${inicial.activo?.sesion?.opciones?.map((o) => `${o.texto}${o.elegido ? ' (elegida)' : ''}`).join(' | ')} · «${inicial.activo?.sesion?.detalle}»`,
+    );
+    comprobar(
+      'F-73',
+      'Los ejercicios van plegados, cada uno en un renglón con lo que piden sus series («3 × 5 rep. · 85 kg · RIR 2 · descanso 03:00»), calculado a mano con los objetivos que da la API. Al entrar está abierto el primero: dice cuántas series tiene y con qué criterio, y muestra «Lo que recibe tu asesorado», serie por serie, y «Lo general del ejercicio». La sesión dice cuántos ejercicios y cuántas series tiene',
+      ejerciciosComoLaApi(inicial.activo?.ejercicios ?? [], sA, [sA.ejercicios[0].orden]) && inicial.activo.cuenta === sA.cuenta && inicial.activo.todos === 'Abrir todos los ejercicios' && sA.ejercicios.length === 3,
+      `${inicial.activo?.cuenta} · ${(inicial.activo?.ejercicios ?? []).map((e) => `${e.nombre}: ${e.resumen}${e.abierto ? ` (abierto, ${e.filas.length} filas)` : ''}`).join(' | ')}`,
+    );
+    const historial = await historialEsperado(E);
+    const primero = inicial.activo?.ejercicios[0]?.caja;
+    comprobar(
+      'F-76',
+      'El historial va al costado de los ejercicios, a la altura del primero: las versiones activadas, de la más nueva a la más vieja, con su número, su día y su hora, y cuál es la vigente; al pie, la huella de la instantánea. A 1440 × 900 entran el encabezado, lo que se elige, el primer ejercicio abierto entero y el historial',
+      inicial.activo?.historial.titulo === 'Historial' &&
+        igual(inicial.activo.historial.versiones, historial) &&
+        historial.length === 2 &&
+        inicial.activo.historial.huella === `Huella de la instantánea: ${activa.snapshotDigest.slice(0, 16)}…` &&
+        !!primero &&
+        inicial.activo.historial.caja.x >= primero.x + primero.ancho &&
+        Math.abs(inicial.activo.historial.caja.y - primero.y) <= 2 &&
+        primero.y + primero.alto <= 900 &&
+        inicial.activo.historial.caja.y + inicial.activo.historial.caja.alto <= 900 &&
+        (await sinDesborde(page)),
+      `${inicial.activo?.historial.versiones.map((x) => x.texto).join(' | ')} · el primer ejercicio termina a los ${primero ? primero.y + primero.alto : '—'} px; el historial empieza a los ${inicial.activo?.historial.caja?.y} (el ejercicio, a los ${primero?.y})`,
+    );
+    informar('F-80', 'El alto de «Plan», de Entrenamiento, al entrar, a 1440 × 900, con el plan de dos bloques', `${await page.evaluate(() => document.documentElement.scrollHeight)} px · el último ejercicio termina a los ${inicial.activo?.ejercicios.at(-1) ? inicial.activo.ejercicios.at(-1).caja.y + inicial.activo.ejercicios.at(-1).caja.alto : '—'} px`);
+
+    // ── La sesión B: objetivos distintos por serie, una nota y un ejercicio sin criterio ─────────────────────────
+    const antesDeElegir = v.urls.length;
+    await tocar('sesion', sB.nombre);
+    const enB = await planDeEntrenamientoEnPantalla(page);
+    const direccionB = direccion();
+    const banca = enB.activo?.ejercicios[0];
+    const bancaEsperada = sB.ejercicios[0];
+    const sinCriterio = sB.ejercicios.find((x) => x.abierto.endsWith('sin criterio de intensidad'));
+    comprobar(
+      'F-74',
+      'En un ejercicio con objetivos distintos por serie, cada serie muestra el suyo, el que resolvió la API: la carga, las repeticiones, el RIR y el descanso recomendado. Una serie sin descanso recomendado dice «Sin objetivo», no un cero ni un hueco; la nota de una serie se lee en su fila (antes no se mostraba). Los valores heredados ya no llevan «· de la prescripción». «Lo general del ejercicio» dice la intensidad, cómo se cuenta la carga, qué cuentan las repeticiones y las notas',
+      direccionB.sesion === String(sB.orden) &&
+        ejerciciosComoLaApi(enB.activo?.ejercicios ?? [], sB, [bancaEsperada.orden]) &&
+        igual(banca.columnas, ['Serie', 'Carga sugerida', 'Rep.', 'RIR', 'Descanso recomendado', 'Nota']) &&
+        igual(banca.filas.map((f) => f[1]), ['62,5 kg', '62,5 kg', '62,5 kg', '60 kg']) &&
+        igual(banca.filas.map((f) => f[3]), ['RIR 2', 'RIR 2', 'RIR 1', 'RIR 1']) &&
+        igual(banca.filas.map((f) => f[4]), ['02:30', '02:30', '02:30', 'Sin objetivo']) &&
+        igual(banca.filas.map((f) => f[5]), ['', '', '', 'Si se pierde la técnica, cortar la serie.']) &&
+        banca.tenues === 1 &&
+        !/de la prescripción/.test(enB.main) &&
+        igual(banca.general.datos, [['Intensidad', 'RIR 2'], ['La carga se cuenta', 'carga externa total'], ['Las repeticiones', 'por serie'], ['Notas', 'Bajar en 3 segundos y subir en 1.']]),
+      `${banca?.nombre}: ${banca?.filas.map((f) => f.slice(1).join(' / ')).join(' | ')} · ${banca?.general.datos.map((x) => x.join(': ')).join(' · ')}`,
+    );
+    await tocarEjercicio('Dominadas');
+    const dosAbiertos = await planDeEntrenamientoEnPantalla(page);
+    const direccionDos = direccion();
+    await clic(page, '[data-todos-los-ejercicios]', 'Abrir todos los ejercicios');
+    await quieto(page, v, { silencio: 300 });
+    const todosAbiertos = await planDeEntrenamientoEnPantalla(page);
+    const direccionTodos = direccion();
+    await clic(page, '[data-todos-los-ejercicios]', 'Plegar todos');
+    await quieto(page, v, { silencio: 300 });
+    const todosPlegados = await planDeEntrenamientoEnPantalla(page);
+    const direccionNinguno = direccion();
+    const plegados = Object.fromEntries((todosPlegados.activo?.ejercicios ?? []).map((e) => [e.nombre, e.resumen]));
+    comprobar(
+      'F-73',
+      'Plegado, un ejercicio con todas las series iguales se dice entero («4 × 8–10 rep. · 47,5 kg · RIR 2 · descanso 02:00»); uno sin criterio de intensidad lo dice; y el que tiene objetivos distintos no se resume con su primera serie ni con un rango: dice qué cambia «por serie». Abierto, dice cuántas series son y con qué criterio. Los tres textos están escritos a mano en el recorrido',
+      plegados['Remo con barra'] === '4 × 8–10 rep. · 47,5 kg · RIR 2 · descanso 02:00' &&
+        plegados['Dominadas'] === '4 × 6 rep. · sin criterio de intensidad · descanso 02:00' &&
+        plegados['Press de banca'] === '4 series · 6–8 rep. · carga, RIR y descanso por serie' &&
+        !/62,5|RIR \d/.test(plegados['Press de banca'] ?? '') &&
+        !!sinCriterio &&
+        banca.resumen === '4 series · criterio de intensidad: RIR',
+      Object.entries(plegados).map(([nombre, resumen]) => `${nombre}: ${resumen}`).join(' | '),
+    );
+    // El otro bloque usa microciclos: aparece su renglón, y la sesión, que es una sola, se dice por su nombre.
+    await tocar('bloque', b2.nombre);
+    const enB2 = await planDeEntrenamientoEnPantalla(page);
+    const direccionB2 = direccion();
+    await tocar('microciclo', b2.microciclos[1].nombre);
+    const enM2 = await planDeEntrenamientoEnPantalla(page);
+    const direccionM2 = direccion();
+    await tocar('bloque', b1.nombre);
+    const deVuelta = await planDeEntrenamientoEnPantalla(page);
+    const direccionDeVuelta = direccion();
+    const pedidosAlElegir = v.urls.slice(antesDeElegir).filter((u) => !u.startsWith('OPTIONS '));
+    const ordenes = (s) => s.ejercicios.map((x) => x.orden);
+    comprobar(
+      'F-75',
+      'Lo elegido vive en la dirección de la página, por su número de orden. Elegir la segunda sesión escribe «sesion»; abrir otro ejercicio, «ejercicios» con los dos; «Abrir todos los ejercicios» pasa a «Plegar todos», que escribe «ninguno». Elegir otro bloque escribe «bloque» y quita la sesión y los ejercicios, que eran del anterior; ese bloque usa microciclos, y aparece su renglón, con el propósito del elegido; elegir el segundo escribe «micro». Volver al primer bloque limpia la dirección. Nada de eso le pide algo a BE',
+      direccionDos.ejercicios === `${sB.ejercicios[0].orden}.${sB.ejercicios[2].orden}` &&
+        ejerciciosComoLaApi(dosAbiertos.activo?.ejercicios ?? [], sB, [sB.ejercicios[0].orden, sB.ejercicios[2].orden]) &&
+        direccionTodos.ejercicios === ordenes(sB).join('.') &&
+        ejerciciosComoLaApi(todosAbiertos.activo?.ejercicios ?? [], sB, ordenes(sB)) &&
+        todosAbiertos.activo.todos === 'Plegar todos' &&
+        direccionNinguno.ejercicios === 'ninguno' &&
+        ejerciciosComoLaApi(todosPlegados.activo?.ejercicios ?? [], sB, []) &&
+        direccionB2.bloque === String(b2.orden) &&
+        direccionB2.sesion === undefined &&
+        direccionB2.ejercicios === undefined &&
+        enB2.activo?.bloque.elegido === b2.nombre &&
+        enB2.activo.bloque.detalle === b2.detalle &&
+        enB2.activo.microciclo?.forma === 'botones' &&
+        igual(enB2.activo.microciclo.opciones.map((o) => [o.texto, o.elegido]), b2.microciclos.map((m, i) => [m.nombre, i === 0])) &&
+        enB2.activo.microciclo.detalle === b2.microciclos[0].detalle &&
+        enB2.activo.sesion?.forma === 'unico' &&
+        enB2.activo.sesion.elegido === b2.microciclos[0].sesiones[0].nombre &&
+        enB2.activo.sesion.detalle === null &&
+        ejerciciosComoLaApi(enB2.activo.ejercicios, b2.microciclos[0].sesiones[0], [b2.microciclos[0].sesiones[0].ejercicios[0].orden]) &&
+        direccionM2.micro === String(b2.microciclos[1].orden) &&
+        enM2.activo?.microciclo.detalle === null &&
+        ejerciciosComoLaApi(enM2.activo.ejercicios, b2.microciclos[1].sesiones[0], [b2.microciclos[1].sesiones[0].ejercicios[0].orden]) &&
+        ['bloque', 'micro', 'sesion', 'ejercicios'].every((k) => direccionDeVuelta[k] === undefined) &&
+        ejerciciosComoLaApi(deVuelta.activo?.ejercicios ?? [], sA, [sA.ejercicios[0].orden]) &&
+        pedidosAlElegir.length === 0,
+      `sesion=${direccionB.sesion} · ejercicios=${direccionDos.ejercicios} → ${direccionTodos.ejercicios} → ${direccionNinguno.ejercicios} · bloque=${direccionB2.bloque} («${enB2.activo?.microciclo?.opciones?.map((o) => o.texto).join(' | ')}», sesión «${enB2.activo?.sesion?.elegido}») · micro=${direccionM2.micro} · al volver: ${JSON.stringify(direccionDeVuelta)} · pedidos: ${pedidosAlElegir.length}`,
+    );
+
+    // «Actualizar» vuelve a leer y no pierde lo elegido; una dirección con basura no rompe.
+    await entrar(`${BASE}&bloque=${b2.orden}&micro=${b2.microciclos[1].orden}&ejercicios=ninguno`);
+    const desdeActualizar = v.urls.length;
+    await pausa(1100);
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
+    await page.waitForSelector('.plan', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const trasActualizar = await planDeEntrenamientoEnPantalla(page);
+    const releidas = { lista: lecturasDesde(desdeActualizar, '/training/plans?').length, version: lecturasDesde(desdeActualizar, `/training/plans/${activa.planId}/detail`).length, objetivo: lecturasDesde(desdeActualizar, '/training/objectives/effective').length };
+    await salir();
+    await entrar(`${BASE}&bloque=9&micro=9&sesion=7&ejercicios=8.x&version=otra`);
+    const conBasura = await planDeEntrenamientoEnPantalla(page);
+    comprobar(
+      'F-75',
+      '«Actualizar» vuelve a leer las tres cosas y conserva lo elegido (el segundo bloque, su segundo microciclo y todos los ejercicios plegados). Una dirección con valores que el plan no tiene no rompe ni deja la pantalla vacía: se ve el plan activo, en su primer bloque y su primera sesión, con los ejercicios plegados',
+      trasActualizar.activo?.bloque.elegido === b2.nombre &&
+        trasActualizar.activo.microciclo?.elegido === b2.microciclos[1].nombre &&
+        ejerciciosComoLaApi(trasActualizar.activo.ejercicios, b2.microciclos[1].sesiones[0], []) &&
+        releidas.lista === 1 &&
+        releidas.version === 1 &&
+        releidas.objetivo === 1 &&
+        conBasura.version === 'activa' &&
+        conBasura.activo?.bloque?.elegido === b1.nombre &&
+        conBasura.activo.sesion?.elegido === sA.nombre &&
+        ejerciciosComoLaApi(conBasura.activo.ejercicios, sA, []) &&
+        v.errores.length === 0,
+      `después de «Actualizar»: ${trasActualizar.activo?.bloque?.elegido} · ${trasActualizar.activo?.microciclo?.elegido} · ${trasActualizar.activo?.ejercicios.filter((e) => e.abierto).length} abiertos · releídas: ${JSON.stringify(releidas)} · con basura: ${conBasura.activo?.bloque?.elegido} · ${conBasura.activo?.sesion?.elegido}`,
+    );
+
+    // ── Con todo abierto: palabras, cortes, accesibilidad y composición ──────────────────────────────────────────
+    await salir();
+    await entrar(`${BASE}&sesion=${sB.orden}&ejercicios=${ordenes(sB).join('.')}`);
+    const abierto = await planDeEntrenamientoEnPantalla(page);
+    const palabras = prohibidas(abierto.main);
+    const cortes = await cortesMalPuestos(page, TEXTOS_DEL_PLAN);
+    const ladoALado = abierto.activo?.ejercicios[0];
+    comprobar(
+      'F-80',
+      'Con los tres ejercicios de la sesión abiertos, en toda la sección no hay una palabra de la lista de Entrenamiento ni un porcentaje que no sea «% RM»; la misma consulta encuentra el contenido. En cada ejercicio, «Lo general» va al lado de la tabla de series, a su misma altura',
+      palabras.length === 0 &&
+        sB.ejercicios.every((x) => abierto.main.includes(x.nombre)) &&
+        abierto.main.includes('Lo que recibe tu asesorado') &&
+        ejerciciosComoLaApi(abierto.activo?.ejercicios ?? [], sB, ordenes(sB)) &&
+        !!ladoALado &&
+        ladoALado.cajaDeLoGeneral.x >= ladoALado.cajaDeSeries.x + ladoALado.cajaDeSeries.ancho &&
+        Math.abs(ladoALado.cajaDeLoGeneral.y - ladoALado.cajaDeSeries.y) <= 2,
+      palabras.length === 0 ? `sin palabras prohibidas en ${abierto.main.length} caracteres · lo general empieza a los ${ladoALado?.cajaDeLoGeneral.x} px y la tabla termina a los ${ladoALado ? ladoALado.cajaDeSeries.x + ladoALado.cajaDeSeries.ancho : '—'}` : palabras.join(', '),
+    );
+    await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+    await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+    const ayuda = await page.evaluate(() => {
+      const x = document.querySelector('dialog.como-se-lee[open]');
+      if (!x) return { titulo: null, renglones: 0, foco: false, texto: '' };
+      return { titulo: x.querySelector('h2').innerText.trim(), renglones: x.querySelectorAll('.como-se-lee__lista > li').length, foco: document.activeElement === x.querySelector('h2'), texto: x.innerText };
+    });
+    const faltasDeLaAyuda = await axe(page);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+    const focoTrasLaAyuda = await page.evaluate(() => document.activeElement?.classList.contains('como-se-lee__boton') ?? false);
+    comprobar(
+      'F-14',
+      '«Plan», de Entrenamiento, tiene su ayuda en el marco del área: se abre por el título, explica cada cosa que la pantalla escribe, sin palabras de la lista; Escape la cierra y el foco vuelve al botón',
+      ayuda.titulo === 'Cómo se lee el Plan' && ayuda.renglones >= 10 && ayuda.foco && focoTrasLaAyuda && faltasDeLaAyuda.length === 0 && prohibidas(ayuda.texto).length === 0,
+      `«${ayuda.titulo}» · ${ayuda.renglones} renglones · axe: ${faltasDeLaAyuda.length === 0 ? 'sin faltas' : faltasDeLaAyuda.map((f) => f.id).join(', ')}${prohibidas(ayuda.texto).length ? ` · ${prohibidas(ayuda.texto).join(', ')}` : ''}`,
+    );
+    const faltasClaro = await axe(page);
+    await ponerTema(page, 'azul-noche');
+    const faltasNoche = await axe(page);
+    await ponerTema(page, 'claro');
+    comprobar('F-80', 'axe no encuentra faltas en «Plan», de Entrenamiento, con todos los ejercicios abiertos, en los dos temas', faltasClaro.length === 0 && faltasNoche.length === 0, `claro: ${faltasClaro.map((f) => f.id).join(', ') || 'sin faltas'} · azul noche: ${faltasNoche.map((f) => f.id).join(', ') || 'sin faltas'}`);
+    const anchos = [];
+    for (const ancho of [1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await salir();
+      await entrar(`${BASE}&sesion=${sB.orden}`);
+      const p = await planDeEntrenamientoEnPantalla(page);
+      const ultimo = p.activo?.ejercicios.at(-1)?.caja;
+      const elAbierto = p.activo?.ejercicios.find((e) => e.abierto);
+      anchos.push({
+        ancho,
+        desborda: !(await sinDesborde(page)),
+        alCostado: !!ultimo && p.activo.historial.caja.x >= ultimo.x + ultimo.ancho,
+        debajo: !!ultimo && p.activo.historial.caja.y >= ultimo.y + ultimo.alto,
+        loGeneralAlLado: !!elAbierto && elAbierto.cajaDeLoGeneral.x >= elAbierto.cajaDeSeries.x + elAbierto.cajaDeSeries.ancho,
+        loGeneralDebajo: !!elAbierto && elAbierto.cajaDeLoGeneral.y >= elAbierto.cajaDeSeries.y + elAbierto.cajaDeSeries.alto,
+        cortes: await cortesMalPuestos(page, TEXTOS_DEL_PLAN),
+        alto: await page.evaluate(() => document.documentElement.scrollHeight),
+      });
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    const en = (ancho) => anchos.find((x) => x.ancho === ancho);
+    const todosLosCortes = [...cortes.cortes.map((c) => `1440: ${c}`), ...anchos.flatMap((x) => x.cortes.cortes.map((c) => `${x.ancho}: ${c}`))];
+    comprobar(
+      'F-80',
+      'El historial sigue al costado a 1280 px y pasa debajo de los ejercicios a 1024. «Lo general» sigue al lado de la tabla mientras entra, y pasa debajo cuando no (a 390 px). A 1280, 1024, 768 y 390 px la página no desborda de costado, y ningún renglón empieza con el separador « · » ni deja un número lejos de su unidad',
+      anchos.every((x) => !x.desborda && (x.loGeneralAlLado || x.loGeneralDebajo)) && en(1280).alCostado && !en(1280).debajo && en(1024).debajo && !en(1024).alCostado && en(1280).loGeneralAlLado && en(390).loGeneralDebajo && todosLosCortes.length === 0 && cortes.textos > 10,
+      todosLosCortes.length > 0 ? todosLosCortes.slice(0, 4).join(' | ') : anchos.map((x) => `${x.ancho}: ${x.alto} px de alto, historial ${x.alCostado ? 'al costado' : x.debajo ? 'debajo' : '¿?'}, lo general ${x.loGeneralAlLado ? 'al lado' : x.loGeneralDebajo ? 'debajo' : '¿?'}${x.desborda ? ' · DESBORDA' : ''}`).join(' · '),
+    );
+
+    // ── Estados que el escenario no tiene, con respuestas simuladas en el navegador ──────────────────────────────
+    const SIN_PLANES = { coincide: (u) => /\/training\/plans\?/.test(u), accion: 'entregar', cuerpo: { data: [], page: { limit: 50, nextCursor: null, hasMore: false } } };
+    const SIN_OBJETIVO = { coincide: (u) => u.includes('/training/objectives/effective'), accion: 'entregar', cuerpo: { data: { objective: null } } };
+    const sinNada = await conSimulacion([SIN_PLANES, SIN_OBJETIVO], BASE);
+    await captura(page, v, 'plan-de-entrenamiento-sin-plan-ni-objetivo-simulado-1440-claro');
+    const sinPlan = await conSimulacion([SIN_PLANES], BASE);
+    const sinVigente = await conSimulacion([SIN_OBJETIVO], BASE);
+    const conFalla = await conSimulacion([{ coincide: (u) => /\/training\/plans\?/.test(u), status: 503, codigo: 'SERVICE_UNAVAILABLE' }], BASE);
+    comprobar(
+      'F-78',
+      '(Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece «Ir a Resumen», y ninguna acción para crear. Sin plan y con objetivo, «Crear plan», primero, y «Empezar desde una plantilla». Con plan y sin objetivo vigente, el plan se ve, y en lugar de «Crear nueva versión» explica que primero hay que definir el objetivo. Si la lista de versiones no se puede leer, dice la falla con «Reintentar», no que no hay plan',
+      sinNada.activo === null &&
+        (sinNada.vacio?.texto ?? '').startsWith('Todavía no hay un plan activo.') &&
+        sinNada.vacio.texto.includes('Para planificar, primero definí el objetivo') &&
+        igual(sinNada.vacio.botones, ['Ir a Resumen']) &&
+        sinPlan.activo === null &&
+        igual(sinPlan.vacio?.botones, ['Crear plan', 'Empezar desde una plantilla']) &&
+        !/Historial/.test(sinPlan.main) &&
+        igual(sinVigente.activo?.acciones, ['Guardar como plantilla']) &&
+        (sinVigente.activo.aviso ?? '').startsWith('Para planificar, primero definí el objetivo') &&
+        sinVigente.activo.ejercicios.length === sA.ejercicios.length &&
+        !conFalla.esta &&
+        !!conFalla.falla &&
+        /Reintentar/.test(conFalla.falla) &&
+        !/Todavía no hay un plan activo/.test(conFalla.main),
+      `sin objetivo: [${sinNada.vacio?.botones.join(' | ')}] · con objetivo: [${sinPlan.vacio?.botones.join(' | ')}] · con plan y sin objetivo: [${sinVigente.activo?.acciones.join(' | ')}] · falla: «${(conFalla.falla ?? '').slice(0, 90)}»`,
+    );
+    // Una sesión con % RM, su referencia y parámetros del profesional; un bloque con seis sesiones de nombre largo; y uno sin sesiones.
+    const primerBloque = activa.blocks.find((b) => b.order === 1);
+    const modelo = primerBloque.sessions.find((s) => s.order === 1);
+    const imagen = await imagenDeEjercicioSimulada(page, v);
+    const conPorcentaje = {
+      ...modelo.prescriptions[0],
+      image: imagen.enLaPrescripcion(modelo.prescriptions[0], activa.activatedAt),
+      intensity: { criterion: 'PERCENT_RM', target: { value: 72.5, reference: { description: '1RM estimado en la última evaluación' } } },
+      professionalParameters: [
+        { label: 'Tempo', value: '3-1-1' },
+        { label: 'Pausa abajo', value: 1.5, unit: 's' },
+      ],
+      sets: modelo.prescriptions[0].sets.map((s) => ({ ...s, target: { ...s.target, rir: null }, targetOrigin: { ...s.targetOrigin, rir: 'NONE' } })),
+    };
+    const seisSesiones = Array.from({ length: 6 }, (_, i) => ({ ...modelo, sessionId: `ses-simulada-${i + 1}`, order: i + 1, label: `Sesión ${i + 1} · tren superior con énfasis en empuje y tracción`, prescriptions: i === 0 ? [conPorcentaje] : modelo.prescriptions }));
+    const simulado = { ...activa, blocks: [{ ...primerBloque, sessions: seisSesiones }, { ...primerBloque, blockId: 'bloque-simulado-vacio', order: 2, label: 'Bloque sin sesiones', purpose: null, sessions: [] }] };
+    const REGLA_DEL_PLAN = { coincide: (u) => u.includes(`/training/plans/${activa.planId}/detail`), accion: 'entregar', cuerpo: { data: simulado } };
+    await page.setViewport({ width: 1024, height: 900 });
+    const conSeis = await conSimulacion([REGLA_DEL_PLAN], `${BASE}&sesion=4`);
+    const seisDesborda = !(await sinDesborde(page));
+    await page.setViewport({ width: 1440, height: 900 });
+    const antesDeLaImagen = v.urls.length;
+    const conPorciento = await conSimulacion([REGLA_DEL_PLAN, ...imagen.reglas], BASE, '.ejercicio-del-plan__general img.imagen-de-ejercicio');
+    const accesosAbierto = imagen.accesosDesde(antesDeLaImagen).length;
+    await captura(page, v, 'plan-de-entrenamiento-seis-sesiones-y-porcentaje-simulado-1440-claro');
+    const antesDePlegado = v.urls.length;
+    const conImagenPlegado = await conSimulacion([REGLA_DEL_PLAN, ...imagen.reglas], `${BASE}&ejercicios=ninguno`);
+    const accesosPlegado = imagen.accesosDesde(antesDePlegado).length;
+    const bloqueVacio = await conSimulacion([REGLA_DEL_PLAN], `${BASE}&bloque=2`);
+    const elDePorcentaje = conPorciento.activo?.ejercicios[0];
+    comprobar(
+      'F-72',
+      '(Respuesta simulada.) Con seis sesiones para elegir, no hay seis botones: una lista, que dice cuál se mira y cuántas hay («4 de 6»), y elegida la que pide la dirección; a 1024 px la página no desborda. Un bloque sin sesiones lo dice, y no muestra una lista vacía ni un ejercicio',
+      conSeis.activo?.sesion?.forma === 'lista' &&
+        conSeis.activo.sesion.opciones.length === 6 &&
+        conSeis.activo.sesion.opciones.findIndex((o) => o.elegido) === 3 &&
+        conSeis.activo.sesion.posicion === '4 de 6' &&
+        !seisDesborda &&
+        bloqueVacio.activo?.bloque?.elegido === 'Bloque sin sesiones' &&
+        bloqueVacio.activo.sesion === null &&
+        bloqueVacio.activo.sinNada.includes('Acá no hay sesiones.') &&
+        bloqueVacio.activo.ejercicios.length === 0 &&
+        bloqueVacio.activo.bloque.detalle === 'sin sesiones',
+      `${conSeis.activo?.sesion?.forma}: ${conSeis.activo?.sesion?.opciones?.length} opciones, «${conSeis.activo?.sesion?.posicion}»${seisDesborda ? ' · DESBORDA' : ''} · bloque vacío: «${bloqueVacio.activo?.sinNada.join(' | ')}» («${bloqueVacio.activo?.bloque?.detalle}»)`,
+    );
+    comprobar(
+      'F-74',
+      '(Respuesta simulada.) Con el criterio % RM, «Lo general» dice la intensidad con su referencia, y los parámetros del profesional con su unidad (un número, con coma); la tabla no tiene columna de RIR, y la cabecera del ejercicio dice el criterio',
+      elDePorcentaje?.resumen === `${modelo.prescriptions[0].sets.length} series · criterio de intensidad: % RM` &&
+        !elDePorcentaje.columnas.includes('RIR') &&
+        igual(elDePorcentaje.general.datos.slice(0, 1), [['Intensidad', '72,5 % RM (1RM estimado en la última evaluación)']]) &&
+        elDePorcentaje.general.datos.some((x) => igual(x, ['Tempo', '3-1-1'])) &&
+        elDePorcentaje.general.datos.some((x) => igual(x, ['Pausa abajo', '1,5 s'])) &&
+        prohibidas(conPorciento.main).length === 0,
+      `${elDePorcentaje?.resumen} · ${elDePorcentaje?.columnas.join(', ')} · ${elDePorcentaje?.general.datos.map((x) => x.join(': ')).join(' · ')}`,
+    );
+    const laImagen = elDePorcentaje?.general.imagen ?? null;
+    comprobar(
+      'F-74',
+      '(Respuestas simuladas: el escenario no tiene ejercicios con imagen.) Un ejercicio con imagen la muestra en «Lo general», dibujada, con su texto alternativo y dentro de la tarjeta, sin tapar los datos. Su acceso se pide una sola vez, y recién con el ejercicio abierto: plegado, no hay imagen ni pedido',
+      !!laImagen &&
+        laImagen.dibujada &&
+        laImagen.alt === imagen.alt &&
+        laImagen.adentro &&
+        laImagen.ancho >= 48 &&
+        laImagen.alto >= 48 &&
+        accesosAbierto === 1 &&
+        conImagenPlegado.activo?.ejercicios.length === 1 &&
+        conImagenPlegado.activo.ejercicios[0].abierto === false &&
+        conImagenPlegado.activo.ejercicios[0].general.imagen === null &&
+        accesosPlegado === 0,
+      `abierto: ${laImagen ? `${laImagen.dibujada ? 'dibujada' : 'sin dibujar'}, ${laImagen.ancho} × ${laImagen.alto} px, «${laImagen.alt}»${laImagen.adentro ? '' : ' · SE SALE'}` : 'sin imagen'} · ${accesosAbierto} pedido de acceso · plegado: ${accesosPlegado} pedidos`,
+    );
+
+    // ── Las plantillas ───────────────────────────────────────────────────────────────────────────────────────────
+    await salir();
+    await entrar(BASE);
+    const NOMBRE_DE_LA_PLANTILLA = `Plan de entrenamiento del recorrido ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+    const antesDeGuardar = v.urls.length;
+    await clic(page, '[data-guardar-plantilla]', 'Guardar como plantilla');
+    await page.waitForSelector('dialog[open] input', { timeout: 10_000 });
+    await page.type('dialog[open] input', NOMBRE_DE_LA_PLANTILLA);
+    await clic(page, 'dialog[open] .acciones button', 'Guardar la plantilla');
+    const avisoDeGuardada = await esperarAviso('Plantilla guardada.');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const guardadas = escriturasDesde(antesDeGuardar, '/training/plan-templates').length;
+    const abrirPlantillas = async () => {
+      await clic(page, '[data-empezar-desde-plantilla]', 'Empezar desde una plantilla');
+      await page.waitForFunction(() => [...document.querySelectorAll('dialog[open] h2')].some((h) => h.innerText.trim() === 'Empezar desde una plantilla'), { timeout: 10_000 }).catch(() => {});
+      await quieto(page, v);
+      return plantillasEnPantalla(page);
+    };
+    const cerrarPlantillas = async () => {
+      await clic(page, 'dialog[open] .acciones button', 'Cancelar').catch(() => null);
+      await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    };
+    const antesDeAbrir = v.urls.length;
+    const lasPlantillas = await abrirPlantillas();
+    const leidasAlAbrir = lecturasDesde(antesDeAbrir, '/training/plan-templates').length;
+    await captura(page, v, 'plan-de-entrenamiento-empezar-desde-una-plantilla-1440-claro');
+    await cerrarPlantillas();
+    v.reglas.push({ coincide: (u) => u.includes('/training/plan-templates'), status: 503, codigo: 'SERVICE_UNAVAILABLE' });
+    const conFallaDePlantillas = await abrirPlantillas();
+    v.reglas.length = 0;
+    await cerrarPlantillas();
+    const laGuardada = lasPlantillas?.plantillas.find((p) => p.nombre === NOMBRE_DE_LA_PLANTILLA);
+    const sesionesDelPlan = activa.blocks.reduce((n, b) => n + b.sessions.length + b.microcycles.reduce((m, x) => m + x.sessions.length, 0), 0);
+    comprobar(
+      'F-77',
+      '«Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una plantilla» abre el diálogo común, que recién entonces lee las plantillas de entrenamiento, una vez: está la que se guardó, con sus sesiones contadas a mano y «Sin cargas»; ninguna viene elegida y crear el borrador está apagado. Si esa lectura falla (simulado), el diálogo dice la falla con «Reintentar», no «No tenés plantillas activas»',
+      guardadas === 1 &&
+        avisoDeGuardada &&
+        leidasAlAbrir === 1 &&
+        !!laGuardada &&
+        laGuardada.detalle === `${sesionesDelPlan} sesiones · Sin cargas` &&
+        lasPlantillas.plantillas.every((p) => !p.elegida) &&
+        lasPlantillas.confirmar.apagado &&
+        (conFallaDePlantillas?.falla ?? '').startsWith('No pudimos leer tus plantillas') &&
+        conFallaDePlantillas.reintentar &&
+        !/No tenés plantillas/.test(conFallaDePlantillas.texto),
+      `escrituras: ${guardadas} · aviso: ${avisoDeGuardada ? 'sí' : 'no'} · lecturas al abrir: ${leidasAlAbrir} · «${laGuardada?.nombre}»: ${laGuardada?.detalle} · con la falla: «${(conFallaDePlantillas?.falla ?? '').slice(0, 80)}»`,
+    );
+
+    // ── Crear una versión nueva, mirar la activa sin perder lo escrito, y activar ────────────────────────────────
+    const antesDeCrear = v.urls.length;
+    await clic(page, '[data-crear-version]', 'Crear nueva versión a partir de esta');
+    const avisoDeCreada = await esperarAviso('Borrador creado.');
+    await page.waitForSelector('[data-selector-de-version]', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const conBorrador = await planDeEntrenamientoEnPantalla(page);
+    const creadas = escriturasDesde(antesDeCrear, '/training/plans').length;
+    const elBorrador = (await leerTodo()).lista.find((x) => x.state === 'DRAFT');
+    const AJUSTE = ' (ajuste)';
+    const nombreAntes = await page.$eval('#b0-nombre', (e) => e.value);
+    await page.focus('#b0-nombre');
+    await page.keyboard.press('End');
+    await page.type('#b0-nombre', AJUSTE);
+    const conCambios = await planDeEntrenamientoEnPantalla(page);
+    const antesDePasar = v.urls.length;
+    const tocarVersion = async (cual) => {
+      await clic(page, '[data-selector-de-version] .segmento', cual);
+      await quieto(page, v, { silencio: 300 });
+    };
+    await tocarVersion('2 · activa');
+    const enLaActiva = await planDeEntrenamientoEnPantalla(page);
+    const direccionEnLaActiva = P().get('version');
+    await captura(page, v, 'plan-de-entrenamiento-la-activa-con-una-en-preparacion-1440-claro');
+    await tocar('sesion', sB.nombre);
+    const sesionEnLaActiva = P().get('sesion');
+    await tocarVersion('En preparación');
+    const deVueltaAlBorrador = await planDeEntrenamientoEnPantalla(page);
+    const nombreDespues = await page.$eval('#b0-nombre', (e) => e.value).catch(() => null);
+    const pedidosAlPasar = v.urls.slice(antesDePasar).filter((u) => !u.startsWith('OPTIONS '));
+    comprobar(
+      'F-79',
+      '«Crear nueva versión a partir de esta» hace una sola escritura y aparece el selector de versión, con «En preparación» elegida, «El asesorado no la ve.» y la activa como «2 · activa». Con cambios sin guardar, pasar a la activa muestra el plan activo (con «Guardar como plantilla» como única acción y la explicación de por qué no se crea otra) y deja el editor fuera de la vista; volver lo muestra con lo escrito intacto. Ir y volver no le pide nada a BE',
+      creadas === 1 &&
+        !!elBorrador &&
+        elBorrador.predecessorPlanId === activa.planId &&
+        avisoDeCreada &&
+        conBorrador.version === 'preparacion' &&
+        igual(conBorrador.selector?.opciones.map((o) => [o.texto, o.elegido]), [['En preparación', true], ['2 · activa', false]]) &&
+        conBorrador.selector.nota === 'El asesorado no la ve.' &&
+        conBorrador.editor.aLaVista &&
+        conBorrador.activo === null &&
+        !conBorrador.botones.some((b) => /Crear nueva versión|Crear plan|Empezar desde una plantilla/.test(b)) &&
+        conCambios.editor.estado === 'Hay cambios sin guardar.' &&
+        enLaActiva.version === 'activa' &&
+        direccionEnLaActiva === 'activa' &&
+        enLaActiva.activo?.frase === fraseEsperada &&
+        igual(enLaActiva.activo.acciones, ['Guardar como plantilla']) &&
+        enLaActiva.activo.yaHay === 'Ya hay una versión en preparación: se sigue sobre esa.' &&
+        enLaActiva.editor.esta &&
+        !enLaActiva.editor.aLaVista &&
+        sesionEnLaActiva === String(sB.orden) &&
+        deVueltaAlBorrador.version === 'preparacion' &&
+        deVueltaAlBorrador.editor.aLaVista &&
+        deVueltaAlBorrador.editor.estado === 'Hay cambios sin guardar.' &&
+        nombreDespues === `${nombreAntes}${AJUSTE}` &&
+        P().get('version') === null &&
+        pedidosAlPasar.length === 0,
+      `escrituras: ${creadas} · aviso: ${avisoDeCreada ? 'sí' : 'no'} · ${conBorrador.selector?.opciones.map((o) => `${o.texto}${o.elegido ? ' (elegida)' : ''}`).join(' | ')} · «${nombreAntes}» → «${nombreDespues}» · en la activa: [${enLaActiva.activo?.acciones.join(' | ')}] · pedidos al ir y volver: ${pedidosAlPasar.length}`,
+    );
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
+    await page.waitForSelector('dialog[open]', { timeout: 10_000 }).catch(() => {});
+    const pregunta = await page.evaluate(() => document.querySelector('dialog[open]')?.innerText.replace(/\s+/g, ' ').trim() ?? '');
+    await clic(page, 'dialog[open] button', 'Seguir editando').catch(() => null);
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    await quieto(page, v);
+    const hayQueGuardar = await page.evaluate(() => [...document.querySelectorAll('.plan__preparacion .acciones button')].some((b) => b.textContent.trim() === 'Guardar borrador' && !b.disabled));
+    if (hayQueGuardar) await clic(page, '.plan__preparacion .acciones button', 'Guardar borrador');
+    await page.waitForFunction(() => document.querySelector('.plan__preparacion p[aria-live="polite"]')?.innerText.trim() === 'Guardado.', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const antesDeActivar = v.urls.length;
+    await clic(page, '.plan__preparacion .acciones button', 'Activar plan');
+    await page.waitForSelector('dialog[open]', { timeout: 10_000 });
+    await clic(page, 'dialog[open] .acciones button', 'Activar esta versión');
+    const avisoDeActivada = await esperarAviso('Plan activado.');
+    await page.waitForFunction(() => !document.querySelector('[data-selector-de-version]') && !!document.querySelector('.plan__activo'), { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v);
+    const activada = await planDeEntrenamientoEnPantalla(page);
+    const trasActivar = await leerTodo();
+    const historialNuevo = await historialEsperado(trasActivar.E);
+    const fechaDeLaNueva = await enLaPagina(trasActivar.activa.activatedAt);
+    comprobar(
+      'F-79',
+      'Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer. Guardar y activar la versión en preparación la convierte en la vigente: el selector desaparece, el plan dice «Versión 3 · … · es lo que ve el asesorado», su bloque lleva el nombre que se escribió, el historial lista las tres y la dirección queda limpia (traía la segunda sesión: la versión nueva se abre por la primera). El plan tiene objetivos distintos por serie, y se activa porque el titular ya usó una app que los muestra',
+      /Tenés cambios sin guardar/.test(pregunta) &&
+        /el plan en preparación/.test(pregunta) &&
+        hayQueGuardar &&
+        avisoDeActivada &&
+        trasActivar.activa.planId === elBorrador.planId &&
+        trasActivar.activa.setTargetsDelivery.required === true &&
+        trasActivar.E.numero === 3 &&
+        activada.selector === null &&
+        !activada.editor.esta &&
+        activada.activo?.frase === `Versión 3 · activada el ${fechaDeLaNueva.dia} · es lo que ve el asesorado` &&
+        activada.activo.bloque.opciones.find((o) => o.elegido)?.texto === `${nombreAntes}${AJUSTE}` &&
+        activada.activo.sesion.elegido === sA.nombre &&
+        igual(activada.activo.historial.versiones, historialNuevo) &&
+        igual(historialNuevo.map((x) => x.vigente), [true, false, false]) &&
+        ['version', 'bloque', 'micro', 'sesion', 'ejercicios'].every((k) => P().get(k) === null) &&
+        escriturasDesde(antesDeActivar, `/training/plans/${elBorrador.planId}/activate`).length === 1,
+      `«${pregunta.slice(0, 60)}…» · «${activada.activo?.frase}» · bloque: «${activada.activo?.bloque?.opciones?.find((o) => o.elegido)?.texto}» · ${activada.activo?.historial.versiones.map((x) => x.texto).join(' | ')}`,
+    );
+    await captura(page, v, 'plan-de-entrenamiento-version-3-recien-activada-1440-claro');
+
+    // ── Empezar desde una plantilla, de verdad ───────────────────────────────────────────────────────────────────
+    await abrirPlantillas();
+    await clic(page, 'dialog[open] .plantilla-para-empezar', NOMBRE_DE_LA_PLANTILLA);
+    const antesDeAplicar = v.urls.length;
+    await clic(page, 'dialog[open] .acciones button', 'Crear el borrador desde esta plantilla');
+    const avisoDeAplicada = await esperarAviso('Borrador creado desde la plantilla.');
+    await page.waitForSelector('[data-selector-de-version]', { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v);
+    const desdePlantilla = await planDeEntrenamientoEnPantalla(page);
+    const enLaLista = (await leerTodo()).lista.find((x) => x.state === 'DRAFT');
+    const elDeLaPlantilla = enLaLista ? (await leerApi(v, `/training/plans/${enLaLista.planId}/detail`)).data : null;
+    comprobar(
+      'F-77',
+      'Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se cierra, la pantalla lo avisa y queda una versión en preparación que la API reconoce como salida de esa plantilla. El selector vuelve, con «3 · activa»',
+      escriturasDesde(antesDeAplicar, '/training/plans').length === 1 &&
+        !!elDeLaPlantilla?.templateOrigin &&
+        avisoDeAplicada &&
+        (await page.evaluate(() => !document.querySelector('dialog[open]'))) &&
+        desdePlantilla.version === 'preparacion' &&
+        igual(desdePlantilla.selector?.opciones.map((o) => [o.texto, o.elegido]), [['En preparación', true], ['3 · activa', false]]) &&
+        desdePlantilla.editor.aLaVista,
+      `escrituras: ${escriturasDesde(antesDeAplicar, '/training/plans').length} · aviso: ${avisoDeAplicada ? 'sí' : 'no'} · ${desdePlantilla.selector?.opciones.map((o) => o.texto).join(' | ')} · origen en la API: ${elDeLaPlantilla?.templateOrigin ? 'una plantilla' : 'ninguno'}`,
+    );
+    comprobar('—', '«Plan», de Entrenamiento, no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+  } finally {
+    await navegador.close();
+  }
+}
+
+/**
+ * «Plan», de Entrenamiento, con el asesorado A (WP-ESCRITORIO-AREAS, parte 6): A tiene una versión en preparación, así
+ * que el selector de versión se ve de verdad. Solo lee. La misma pieza se mira además dentro de la ficha, en el detalle
+ * de la activación: antes de esta parte, abrir ese detalle rompía la página entera.
+ */
+async function planDeEntrenamientoDeA(page, v) {
+  const A = estado.aseId;
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  await cupo(v, 60);
+  const desde = v.urls.length;
+  await ir(page, `/pro/advisees/training?id=${A}&vista=plan`);
+  await page.waitForSelector('.plan, .seccion-del-area .estado-de-grafico--error', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const alEntrar = await planDeEntrenamientoEnPantalla(page);
+  const lista = (await leerApi(v, `/advisees/${A}/training/plans?limit=50`)).data;
+  const efectiva = lista.find((x) => x.isEffective);
+  const activa = (await leerApi(v, `/training/plans/${efectiva.planId}/detail`)).data;
+  const E = esperadoDelPlanDeEntrenamiento({ lista, activa });
+  const hayBorrador = lista.some((x) => x.state === 'DRAFT');
+  await clic(page, '[data-selector-de-version] .segmento', `${E.numero} · activa`).catch(() => null);
+  await quieto(page, v, { silencio: 300 });
+  const p = await planDeEntrenamientoEnPantalla(page);
+  const sesion = E.bloques[0].sesiones[0];
+  const dia = await page.evaluate((x) => new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(new Date(x)), activa.activatedAt);
+  comprobar(
+    'F-79',
+    'A tiene una versión en preparación: al entrar a «Plan» se ve el selector, con «En preparación» elegida, y el editor; el plan activo no está a la vista. Al elegir «N · activa» se ve el plan activo, de solo lectura, con su versión y la fecha de otro mes sin el año, un solo bloque dicho por su nombre, los ejercicios de la API y «Guardar como plantilla» como única acción. Elegir no lee nada más',
+    hayBorrador &&
+      alEntrar.version === 'preparacion' &&
+      igual(alEntrar.selector?.opciones.map((o) => [o.texto, o.elegido]), [['En preparación', true], [`${E.numero} · activa`, false]]) &&
+      alEntrar.editor.aLaVista &&
+      alEntrar.activo === null &&
+      p.version === 'activa' &&
+      p.activo?.frase === `Versión ${E.numero} · activada el ${dia} · es lo que ve el asesorado` &&
+      !/\d{4}/.test(p.activo.frase) &&
+      p.activo.bloque?.forma === 'unico' &&
+      p.activo.bloque.elegido === E.bloques[0].nombre &&
+      p.activo.bloque.detalle === E.bloques[0].detalle &&
+      ejerciciosComoLaApi(p.activo.ejercicios, sesion, [sesion.ejercicios[0].orden]) &&
+      igual(p.activo.acciones, ['Guardar como plantilla']) &&
+      p.activo.historial.versiones.length === E.activadas.length &&
+      dominio.terminosProhibidosDeEntrenamientoEn(p.activo ? p.main : '').length === 0 &&
+      v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(`/training/plans/${activa.planId}/detail`)).length === 1,
+    `al entrar: ${alEntrar.selector?.opciones.map((o) => `${o.texto}${o.elegido ? ' (elegida)' : ''}`).join(' | ')} · «${p.activo?.frase}» · bloque «${p.activo?.bloque?.elegido}» (${p.activo?.bloque?.forma}) · ${p.activo?.ejercicios.map((e) => `${e.nombre}: ${e.resumen}`).join(' | ')}`,
+  );
+
+  // ── La misma pieza, en la ficha: el detalle de la activación, en la línea de tiempo ──────────────────────────
+  await cupo(v, 60);
+  await ir(page, `/pro/advisees?id=${A}&vista=linea&p=90`);
+  await page.waitForSelector('.vista-de-la-linea[data-vista="HITOS"]', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  await page.click('.vista-de-la-linea[data-vista="HITOS"]').catch(() => {});
+  await quieto(page, v);
+  const fila = `.entrada[data-id="tplan:${activa.planId}"] .entrada__fila`;
+  if ((await page.$(fila)) === null) {
+    informar('F-81', 'La planificación de una etapa de entrenamiento, en la ficha', 'el período de 90 días no tiene la activación del plan vigente de A');
+  } else {
+    await page.click(fila);
+    await page.waitForSelector('.detalle-del-hecho .version-del-plan .ejercicio-del-plan', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const leer = () =>
+      page.evaluate(() => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const d = document.querySelector('.detalle-del-hecho');
+        const pieza = d?.querySelector('.version-del-plan') ?? null;
+        if (!pieza) return null;
+        const caja = d.getBoundingClientRect();
+        // La tabla de series se desplaza dentro de su caja: lo de adentro de esa caja no cuenta como «se sale».
+        const afuera = [...pieza.querySelectorAll('*')].filter((e) => !e.closest('.desplazable-x table') && e.getClientRects().length > 0 && (e.getBoundingClientRect().right > caja.right + 1 || e.getBoundingClientRect().left < caja.left - 1));
+        return {
+          renglon: t(pieza.querySelector(':scope > p')),
+          bloque: t(pieza.querySelector('.nivel-del-plan[data-nivel="bloque"] strong')),
+          sesiones: [...pieza.querySelectorAll('.nivel-del-plan[data-nivel="sesion"] .segmento')].map((s) => ({ texto: t(s), elegida: s.querySelector('input').checked })),
+          ejercicios: [...pieza.querySelectorAll('.ejercicio-del-plan')].map((e) => ({ nombre: t(e.querySelector('.comida-del-plan__nombre')), resumen: t(e.querySelector('[data-resumen]')), abierto: e.hasAttribute('data-abierta'), titulo: e.querySelector('.comida-del-plan__titulo').tagName, filas: e.querySelectorAll('tbody tr').length })),
+          seSale: afuera.length,
+          ancho: Math.round(caja.width),
+          anchoDelEjercicio: Math.round(pieza.querySelector('.ejercicio-del-plan')?.getBoundingClientRect().width ?? 0),
+          enlace: t(d.querySelector('.enlace-al-area a')),
+          sigueLaBarra: !!document.querySelector('.menu-de-cuenta__boton'),
+        };
+      });
+    const enLaFicha = await leer();
+    const direccionAntes = page.url();
+    await page.evaluate(() => document.querySelectorAll('.detalle-del-hecho .nivel-del-plan[data-nivel="sesion"] .segmento input')[1]?.click());
+    await pausa(300);
+    const trasElegir = await leer();
+    const otra = E.bloques[0].sesiones[1];
+    comprobar(
+      'F-81',
+      'En la ficha, el detalle de la activación de un plan de entrenamiento muestra la misma pieza en su columna angosta, **y la página sigue en pie** (antes de esta parte, abrirlo la rompía entera: la pieza pedía el contexto de la pestaña Entrenamiento). Dice la versión, el bloque y las sesiones; los ejercicios son los de la API, con el primero abierto; cada ejercicio ocupa el ancho de la columna y nada se sale, salvo la tabla, que se desplaza dentro de su caja; los títulos bajan un nivel. Elegir otra sesión muestra sus ejercicios y no toca la dirección de la ficha',
+      !!enLaFicha &&
+        enLaFicha.sigueLaBarra &&
+        new RegExp(`^Versión ${E.numero} · activada el`).test(enLaFicha.renglon ?? '') &&
+        enLaFicha.bloque === E.bloques[0].nombre &&
+        igual(enLaFicha.sesiones.map((s) => [s.texto, s.elegida]), E.bloques[0].sesiones.map((s, i) => [s.nombre, i === 0])) &&
+        igual(enLaFicha.ejercicios.map((e) => [e.nombre, e.resumen, e.abierto]), sesion.ejercicios.map((x, i) => [x.nombre, i === 0 ? x.abierto : x.cerrado, i === 0])) &&
+        enLaFicha.ejercicios[0].filas === sesion.ejercicios[0].filas.length &&
+        enLaFicha.ejercicios.every((e) => e.titulo === 'H4') &&
+        enLaFicha.seSale === 0 &&
+        enLaFicha.anchoDelEjercicio >= enLaFicha.ancho * 0.8 &&
+        (await sinDesborde(page)) &&
+        !!otra &&
+        igual(trasElegir.ejercicios.map((e) => e.nombre), otra.ejercicios.map((x) => x.nombre)) &&
+        page.url() === direccionAntes &&
+        enLaFicha.enlace === 'Ver en Entrenamiento · Plan' &&
+        v.errores.length === 0,
+      `columna de ${enLaFicha?.ancho} px (el ejercicio ocupa ${enLaFicha?.anchoDelEjercicio}) · «${enLaFicha?.renglon}» · «${enLaFicha?.bloque}» · ${enLaFicha?.ejercicios.map((e) => `${e.nombre}${e.abierto ? ' (abierto)' : ''}`).join(', ')} · se salen ${enLaFicha?.seSale} · al elegir «${otra?.nombre}»: ${trasElegir?.ejercicios.map((e) => e.nombre).join(', ')} · errores de página: ${v.errores.length}`,
+    );
+    await page.click('.detalle-del-hecho__cabecera button').catch(() => {});
+    await page.waitForFunction(() => !document.querySelector('.detalle-del-hecho .version-del-plan'), { timeout: 10_000 }).catch(() => {});
+
+    // La imagen de un ejercicio, en la ficha: para leerla, la pieza pedía el contexto de la pestaña. Ahora el acceso se lo da quien la usa.
+    const imagen = await imagenDeEjercicioSimulada(page, v);
+    const antesDeLaImagen = v.urls.length;
+    v.reglas.push({ coincide: (u) => u.includes(`/training/plans/${activa.planId}/detail`), accion: 'entregar', cuerpo: { data: imagen.enElPlan(activa) } }, ...imagen.reglas);
+    let conImagen = null;
+    try {
+      await cupo(v, 60);
+      // Si la página se cayó al abrir el detalle anterior, la fila ya no está: la comprobación falla, y el recorrido sigue.
+      if ((await page.$(fila)) !== null) {
+        await page.click(fila);
+        await page.waitForSelector('.detalle-del-hecho .version-del-plan .ejercicio-del-plan__general img.imagen-de-ejercicio', { timeout: 20_000 }).catch(() => {});
+        await quieto(page, v, { silencio: 300 });
+        conImagen = await page.evaluate(() => {
+          const d = document.querySelector('.detalle-del-hecho');
+          const i = d?.querySelector('.version-del-plan .ejercicio-del-plan__general .imagen-de-ejercicio') ?? null;
+          if (!i) return { esta: false, sigueLaBarra: !!document.querySelector('.menu-de-cuenta__boton') };
+          const r = i.getBoundingClientRect();
+          const c = d.getBoundingClientRect();
+          return { esta: true, dibujada: i.tagName === 'IMG' && i.complete && i.naturalWidth > 0, alt: i.getAttribute('alt') ?? i.getAttribute('aria-label'), ancho: Math.round(r.width), adentro: r.left >= c.left - 1 && r.right <= c.right + 1, sigueLaBarra: !!document.querySelector('.menu-de-cuenta__boton') };
+        });
+        // La captura dice el tema que la página tiene en ese momento: acá no se cambia.
+        await captura(page, v, `plan-de-entrenamiento-en-la-ficha-con-imagen-simulada-1440-${await page.evaluate(() => document.documentElement.dataset.tema)}`);
+      }
+    } finally {
+      v.reglas.length = 0;
+    }
+    comprobar(
+      'F-81',
+      '(Respuestas simuladas: el escenario no tiene ejercicios con imagen.) En la ficha, un ejercicio con imagen la muestra, dibujada, con su texto alternativo y dentro de la columna: el acceso que la pieza le pedía al contexto de la pestaña ahora se lo da la ficha, con la sesión de la página. Se pide una vez, y la página sigue en pie',
+      !!conImagen?.esta && conImagen.dibujada && conImagen.alt === imagen.alt && conImagen.adentro && conImagen.sigueLaBarra && imagen.accesosDesde(antesDeLaImagen).length === 1 && (await sinDesborde(page)) && v.errores.length === 0,
+      conImagen?.esta ? `${conImagen.dibujada ? 'dibujada' : 'sin dibujar'}, ${conImagen.ancho} px de ancho, «${conImagen.alt}»${conImagen.adentro ? '' : ' · SE SALE'} · ${imagen.accesosDesde(antesDeLaImagen).length} pedido de acceso` : `sin imagen${conImagen?.sigueLaBarra ? '' : ' · ya no está la barra de la cuenta: la página se cayó o perdió la sesión'}`,
+    );
+    await page.click('.detalle-del-hecho__cabecera button').catch(() => {});
+  }
+  await clic(page, '.vista-de-la-linea[data-vista="TODO"]', 'Todo').catch(() => null);
+  await quieto(page, v);
+  comprobar('—', '«Plan», de Entrenamiento (asesorado A), y su pieza en la ficha no produjeron errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true, registros = true, sesiones = true, tomas = true, plan = true, planDeEntrenamiento = true, estimacion = false } = {}) {
   const { navegador, page, v } = await abrir();
   // Los guiones que pide la página, desde antes de entrar: para saber con qué se cargó la ficha.
   const guiones = [];
@@ -9742,6 +10755,10 @@ async function fichaRecompuesta({ resumen = true, linea = true, analizar = true,
     if (plan) {
       empezarDeCero();
       await planDeNutricionDeA(page, v);
+    }
+    if (planDeEntrenamiento) {
+      empezarDeCero();
+      await planDeEntrenamientoDeA(page, v);
     }
     // Escribe en el escenario: solo cuando se lo pide (`estimacion`), nunca dentro de `funcional`.
     if (estimacion) {
@@ -10340,19 +11357,21 @@ try {
   if (modo === 'capturas' || modo === 'todo') await capturas();
   if (modo === 'descartable') await descartable();
   if (modo === 'menu') await encabezadoYMenu();
-  if (modo === 'analizar') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, espacio: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'resumen') await fichaRecompuesta({ plan: false, tomas: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'linea') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'espacio') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, analizar: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'areas') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, registros: false, sesiones: false });
-  if (modo === 'registros') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, sesiones: false });
-  if (modo === 'sesiones') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false });
-  if (modo === 'tomas') await fichaRecompuesta({ plan: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'plan') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'analizar') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'resumen') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'linea') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'espacio') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, analizar: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'areas') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, registros: false, sesiones: false });
+  if (modo === 'registros') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, sesiones: false });
+  if (modo === 'sesiones') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false });
+  if (modo === 'tomas') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'plan') await fichaRecompuesta({ planDeEntrenamiento: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'plan-entrenamiento') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
   if (modo === 'mediciones') await medicionesDeUnaToma();
   if (modo === 'solicitudes') await solicitudesDeInformacion();
   if (modo === 'planes') await planesDeNutricion();
-  if (modo === 'estimacion') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false, estimacion: true });
+  if (modo === 'entrenamientos') await planesDeEntrenamiento();
+  if (modo === 'estimacion') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false, estimacion: true });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {

@@ -24,6 +24,7 @@ import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../m
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
 import { AyudaDeRegistrosDeEntrenamiento } from './ayuda-de-registros';
+import { AyudaDelPlanDeEntrenamiento } from './ayuda-del-plan';
 import { VistaDeEjecuciones } from './ejecuciones';
 import { VistaDePlan } from './plan';
 import { VistaDeResumen } from './resumen';
@@ -111,8 +112,8 @@ export function Entrenamiento() {
       retirado={retirado}
       onActualizar={volverALeer}
       // Registros ya está recompuesta (parte 2): usa todo el ancho y tiene su ayuda. Las demás, con su parte.
-      ancho={vista === 'ejecuciones'}
-      ayuda={vista === 'ejecuciones' ? <AyudaDeRegistrosDeEntrenamiento /> : null}
+      ancho={vista === 'ejecuciones' || vista === 'plan'}
+      ayuda={vista === 'ejecuciones' ? <AyudaDeRegistrosDeEntrenamiento /> : vista === 'plan' ? <AyudaDelPlanDeEntrenamiento /> : null}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>

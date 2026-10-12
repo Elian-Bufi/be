@@ -26,17 +26,18 @@ import {
   type VersionDeObjetivo,
   type VersionDePlan,
 } from '@be/domain';
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { EnPartes } from '../../../../components/en-partes';
 import { Cargando, EstadoVacio } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api, type Resultado } from '../../../../lib/api';
-import { diaSinElAnioEnCurso, fecha, horaDelDia } from '../../../../lib/formato';
+import { diaSinElAnioEnCurso, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
+import { HistorialDelPlan, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
 import { EditorDeBorrador } from './editor';
 import { ComidasDelPlan, SelectorDeDiaTipo } from './estructura-del-plan';
 import { EstadoDeLectura, useNutricion } from './nutricion';
@@ -57,7 +58,6 @@ interface Datos {
   readonly objetivo: VersionDeObjetivo | null;
 }
 
-type Mostrada = 'preparacion' | 'activa';
 
 export function VistaDePlan() {
   const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir, irA } = useNutricion();
@@ -160,7 +160,7 @@ export function VistaDePlan() {
             const historial = historialDeVersiones(versiones);
             const numeroDeLaActiva = activa ? (historial.find((v) => v.planId === activa.planId)?.numero ?? 1) : null;
             // Con una versión en preparación, es la que se muestra, salvo que la dirección pida la activa y la haya.
-            const mostrada: Mostrada = borrador && !(activa && parametros.get('version') === 'activa') ? 'preparacion' : 'activa';
+            const mostrada: VersionMostrada = borrador && !(activa && parametros.get('version') === 'activa') ? 'preparacion' : 'activa';
             // Las acciones que crean una versión: solo sin borrador, y con un objetivo vigente del que nacer.
             const sePuedeCrear = !borrador && !!objetivo;
             const desdeUnaPlantilla = (
@@ -295,29 +295,6 @@ export function VistaDePlan() {
   );
 }
 
-/** Qué versión se mira (C-39). La que está en preparación no tiene número hasta activarse: se nombra por lo que es. */
-function SelectorDeVersion({ mostrada, numeroDeLaActiva, onElegir }: { mostrada: Mostrada; numeroDeLaActiva: number; onElegir: (cual: Mostrada) => void }) {
-  const nombre = useId();
-  return (
-    <div className="plan__selector">
-      <fieldset className="segmentos" data-selector-de-version>
-        <legend>{COPY_DEL_PLAN.version}</legend>
-        <div className="segmentos__fila">
-          <label className="segmento">
-            <input type="radio" name={nombre} value="preparacion" checked={mostrada === 'preparacion'} onChange={() => onElegir('preparacion')} />
-            {COPY_DEL_PLAN.enPreparacion}
-          </label>
-          <label className="segmento">
-            <input type="radio" name={nombre} value="activa" checked={mostrada === 'activa'} onChange={() => onElegir('activa')} />
-            {COPY_DEL_PLAN.activaConNumero(numeroDeLaActiva)}
-          </label>
-        </div>
-      </fieldset>
-      {mostrada === 'preparacion' ? <p className="nota">{COPY_DEL_PLAN.elAsesoradoNoLaVe}</p> : null}
-    </div>
-  );
-}
-
 /** El objetivo que cita la versión: el vigente, si es ese; si no, se busca entre las versiones del objetivo. */
 type ObjetivoDeLaVersion = { readonly estado: 'cargando' } | { readonly estado: 'listo'; readonly objetivo: VersionDeObjetivo; readonly esElVigente: boolean } | { readonly estado: 'falla' } | { readonly estado: 'no-esta' };
 
@@ -410,36 +387,6 @@ function PlanActivo({
         <HistorialDelPlan historial={historial} huella={version.snapshotDigest} />
       </div>
     </section>
-  );
-}
-
-/** Las versiones activadas, de la más nueva a la más vieja, y al pie la huella de la instantánea que se está leyendo. */
-function HistorialDelPlan({ historial, huella }: { historial: readonly VersionDelHistorial[]; huella: string | null }) {
-  const id = useId();
-  return (
-    <aside className="historial-del-plan" aria-labelledby={`${id}-titulo`}>
-      <h3 id={`${id}-titulo`}>{COPY_DEL_PLAN.historial}</h3>
-      {/* Una sección vacía no dice nada: la ausencia se dice (B10-10 §16). */}
-      {historial.length === 0 ? (
-        <p className="nota">{COPY_DEL_PLAN.sinVersionesActivadas}</p>
-      ) : (
-        <ol className="historial-del-plan__lista">
-          {historial.map((v) => (
-            <li key={v.planId} data-version={v.numero} data-vigente={v.vigente ? '' : undefined}>
-              <strong>
-                {COPY_DEL_PLAN.version} {v.numero}
-              </strong>{' '}
-              <EnPartes texto={`· activada el ${diaSinElAnioEnCurso(v.activadaEl)}, ${horaDelDia(new Date(v.activadaEl))} · ${v.vigente ? COPY_DEL_PLAN.vigente : COPY_DEL_PLAN.anterior}`} />
-            </li>
-          ))}
-        </ol>
-      )}
-      {huella ? (
-        <p className="nota historial-del-plan__huella">
-          {COPY_DEL_PLAN.huella}: <span className="huella">{huella.slice(0, 16)}…</span>
-        </p>
-      ) : null}
-    </aside>
   );
 }
 

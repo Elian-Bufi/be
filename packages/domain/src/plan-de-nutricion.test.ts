@@ -9,7 +9,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { terminosProhibidosEn } from './copy-nutricion';
-import { COPY_DEL_PLAN, NINGUNA_COMIDA, comidasAbiertas, diaTipoElegido, historialDeVersiones, indicadoDelItem, numerosDeVersionDePlan, opcionesEnPalabras, pedidoDeComidas, tituloDeLaOpcion } from './plan-de-nutricion';
+import { COPY_DEL_PLAN, NINGUNA_COMIDA, comidasAbiertas, diaTipoElegido, indicadoDelItem, opcionesEnPalabras, pedidoDeComidas, tituloDeLaOpcion } from './plan-de-nutricion';
+import { historialDeVersiones, numerosDeVersionDePlan } from './versiones-de-plan';
 
 const version = (planId: string, activatedAt: string | null, isEffective = false) => ({ planId, activatedAt, isEffective });
 
@@ -132,4 +133,7 @@ test('los textos del plan: ninguno usa un término prohibido de Nutrición, tamp
   assert.ok(textos.length > 25);
   assert.deepEqual(textos.flatMap((t) => terminosProhibidosEn(t).map((p) => `${p} en «${t}»`)), []);
   assert.equal(COPY_DEL_PLAN.versionActivada(2, '7 oct'), 'Versión 2 · activada el 7 oct');
+  // En el selector de versión, la activa dice su número; la que está en preparación, no tiene.
+  assert.equal(COPY_DEL_PLAN.activaConNumero(2), '2 · activa');
+  assert.equal(/[0-9]/.test(COPY_DEL_PLAN.enPreparacion), false);
 });

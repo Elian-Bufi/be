@@ -8536,7 +8536,8 @@ button.comida-del-dia__fila > .icono:last-child {
 }
 
 @media (min-width: 75rem) {
-  .plan__cuerpo {
+  /* Dos columnas solo si hay historial: en el detalle de la ficha la pieza va sola, en su columna. */
+  .plan__cuerpo:has(> .historial-del-plan) {
     grid-template-columns: minmax(0, 1fr) clamp(17rem, 24vw, 21.25rem);
   }
 
@@ -8819,4 +8820,151 @@ button.comida-del-dia__fila > .icono:last-child {
 .plantilla-para-empezar__detalle {
   grid-column: 2;
   margin: 0;
+}
+
+/* ═══ Entrenamiento · Plan (WP-ESCRITORIO-AREAS, parte 6; maqueta 24) ═══════════════════════════════════════════════
+   Usa el armado de Nutrición · Plan (el encabezado, el selector de versión, el renglón que se abre y el historial) y
+   suma lo propio: los niveles entre los que se elige (bloque, microciclo y sesión) y, en un ejercicio abierto, la tabla
+   de sus series con lo general al lado. La misma pieza va en el detalle de una etapa de la ficha. */
+
+/* El bloque, el microciclo y la sesión: un renglón cada uno, con lo que se dice de lo elegido al lado. */
+.plan__niveles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.nivel-del-plan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+  min-width: 0;
+}
+
+.nivel-del-plan__unico,
+.nivel-del-plan__lista {
+  margin: 0;
+}
+
+.nivel-del-plan__lista {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+}
+
+.nivel-del-plan__lista select {
+  max-width: min(100%, 28rem);
+  min-height: 41px;
+}
+
+.nivel-del-plan__rotulo {
+  margin-right: 0.35rem;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.nivel-del-plan__detalle {
+  flex: 1 1 18rem;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Las indicaciones de la sesión, antes de sus ejercicios: el rótulo y el texto, en el mismo renglón. */
+.indicaciones-de-la-sesion {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Un ejercicio abierto: la tabla de sus series y, al lado, lo general. Si no entran los dos, lo general va debajo. */
+.ejercicio-del-plan__cuerpo:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1.75rem;
+}
+
+.ejercicio-del-plan__series {
+  flex: 3 1 30rem;
+  min-width: 0;
+}
+
+.ejercicio-del-plan__general {
+  flex: 1 1 15rem;
+  min-width: 0;
+}
+
+.ejercicio-del-plan__subtitulo,
+.series-del-plan caption {
+  margin: 0 0 0.35rem;
+  padding: 0;
+  font-weight: 600;
+  text-align: left;
+  caption-side: top;
+}
+
+/* La tabla va dentro de la tarjeta del ejercicio, que es una superficie: las tapas del desplazamiento llevan su color.
+   Con el del fondo de la página se veían dos franjas a los lados aunque no hubiera nada que desplazar. */
+.ejercicio-del-plan .desplazable-x {
+  --tapa-izquierda: var(--superficie);
+  --tapa-derecha: var(--superficie);
+}
+
+/* La tabla de series: los números, alineados entre sí; la nota, que es texto, puede ocupar más de un renglón. */
+.series-del-plan {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.series-del-plan th,
+.series-del-plan td {
+  white-space: nowrap;
+}
+
+/* En una columna angosta (el detalle de la ficha), los títulos de las columnas bajan de renglón antes que la tabla se
+   salga de su caja. */
+.series-del-plan thead th {
+  white-space: normal;
+}
+
+.series-del-plan .series-del-plan__nota {
+  min-width: 10rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Apilada (pantalla angosta), cada serie dice que es una serie y una nota que no hay no ocupa un renglón. */
+@media (max-width: 40rem) {
+  .series-del-plan tbody th[data-etiqueta]::before {
+    content: attr(data-etiqueta) ' ';
+  }
+
+  .series-del-plan td:empty {
+    display: none;
+  }
+}
+
+/* Lo general: el rótulo a la izquierda y el valor a la derecha, cada dato en su renglón. */
+.lo-general-del-ejercicio {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 0.3rem 1rem;
+  margin: 0;
+}
+
+.lo-general-del-ejercicio > div {
+  display: contents;
+}
+
+.lo-general-del-ejercicio dt {
+  color: var(--tenue);
+}
+
+.lo-general-del-ejercicio dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
