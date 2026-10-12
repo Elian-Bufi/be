@@ -1,0 +1,19 @@
+inicio: 2026-10-11 20:23 · commit b8d556f + cambios sin commit: 2
+datos: verificación: 26 de 26 comprobaciones coinciden verificación de comprensión: 10 de 10 
+r-capturas: salida 0 · 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+rc-mirar: salida 0 · 20 OK · 0 datos · 0 fallas · 20 de 20 bien
+rc-capturas: salida 0 · 80 OK · 0 datos · 0 fallas · 80 de 80 bien
+r-funcional: salida 0 · 231 OK · 9 datos · 0 fallas · 240/240 comprobaciones bien
+rc-funcional: salida 1 · 75 OK · 10 datos · 1 fallas · 85 de 86 bien; con observaciones: CP-20 La ficha ya dice la revisión nueva (hoy
+FALLA CP-20 · La ficha ya dice la revisión nueva (hoy, sin aplicar) y lo nuevo de Entrenamiento se cuenta desde ella: sin recargar ni duplicar — «» ·  · 
+rc-revocacion: salida 0 · 6 OK · 0 datos · 0 fallas · 6 de 6 bien
+r-descartable: salida 0 · 22 OK · 0 datos · 0 fallas · 22/22 comprobaciones bien
+fin: 2026-10-11 20:55
+
+La falla de CP-20 mostró un defecto de antes: el enlace «Volver a la ficha, donde estabas» del aviso de una revisión
+recargaba la página y cortaba la sesión. Se corrigió en 50530f2. Sobre esa compilación, con los datos generados de nuevo
+(2026-10-11, 21:00 a 21:09):
+  recorrido.mjs areas: 21/21 comprobaciones bien
+  recorrido-comprension.mjs funcional: 86 de 86 bien
+Los otros cinco recorridos no se repitieron sobre esa compilación, que cambia solo el enlace de tres avisos.
+En resultados/, comprension-funcional.json y recorrido-areas.json son los de esas dos corridas; los demás, los de la pasada.

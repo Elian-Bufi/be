@@ -1,0 +1,137 @@
+{
+  "modo": "areas",
+  "inicio": "2026-10-12T00:01:48.170Z",
+  "fin": "2026-10-12T00:04:07.780Z",
+  "hoy": "2026-10-11",
+  "total": 21,
+  "fallas": 0,
+  "resultados": [
+    {
+      "pro": "F-01",
+      "descripcion": "Nutrición: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada una con su ícono y su dirección de siempre; no hay miga",
+      "ok": true,
+      "detalle": "Nutrición · Asesorado · 855763 · Acceso actual Nutrición: Activo · acceso contextual (la API: Acceso actual Nutrición: Activo · acceso contextual) · Consultado a las 21:01 · Resumen*, Plan, Registros, Revisiones · migas: 0"
+    },
+    {
+      "pro": "F-01",
+      "descripcion": "Entrenamiento: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada una con su ícono y su dirección de siempre; no hay miga",
+      "ok": true,
+      "detalle": "Entrenamiento · Asesorado · 855763 · Acceso actual Entrenamiento: Activo · acceso contextual (la API: Acceso actual Entrenamiento: Activo · acceso contextual) · Consultado a las 21:01 · Resumen*, Plan, Registros, Revisiones · migas: 0"
+    },
+    {
+      "pro": "F-01",
+      "descripcion": "Antropometría: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada una con su ícono y su dirección de siempre; no hay miga",
+      "ok": true,
+      "detalle": "Antropometría · Asesorado · 855763 · Acceso actual Antropometría: Activo · acceso contextual (la API: Acceso actual Antropometría: Activo · acceso contextual) · Consultado a las 21:01 · Tomas*, En preparación, Evolución, Lámina · migas: 0"
+    },
+    {
+      "pro": "F-01",
+      "descripcion": "Información: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada una con su ícono y su dirección de siempre; no hay miga",
+      "ok": true,
+      "detalle": "Información · Asesorado · 855763 · Acceso actual Nutrición, Entrenamiento y Antropometría: Activo · acceso contextual (la API: Acceso actual Nutrición, Entrenamiento y Antropometría: Activo · acceso contextual) · Consultado a las 21:01 · Solicitudes*, Pedir información · migas: 0"
+    },
+    {
+      "pro": "F-07",
+      "descripcion": "Sin haber llegado desde la ficha (como desde un pendiente), el camino de vuelta de las cuatro áreas dice «Volver a la ficha» y lleva a la ficha de esa persona. Reemplaza a la miga, que ya no está en ninguna de las cuatro (la misma consulta encuentra la de «Plantillas y habituales»)",
+      "ok": true,
+      "detalle": "Nutrición: Volver a la ficha, 0 migas · Entrenamiento: Volver a la ficha, 0 migas · Antropometría: Volver a la ficha, 0 migas · Información: Volver a la ficha, 0 migas · «Plantillas y habituales»: 1"
+    },
+    {
+      "pro": "F-06",
+      "descripcion": "El alto del marco y de sus tres renglones, a 1440 px",
+      "ok": true,
+      "informativo": true,
+      "detalle": "ficha 143 px (53 + 39 + 50) · Nutrición 143 (53 + 39 + 50) · Entrenamiento 143 (53 + 39 + 50) · Antropometría 143 (53 + 39 + 50) · Información 143 (53 + 39 + 50)"
+    },
+    {
+      "pro": "F-06",
+      "descripcion": "El marco tiene tres renglones y mide lo mismo en las cuatro áreas y en la ficha: al pasar de la ficha a un área, o de un área a otra, las secciones y lo que está debajo quedan a la misma altura",
+      "ok": true,
+      "detalle": "ficha 143 · Nutrición 143 · Entrenamiento 143 · Antropometría 143 · Información 143"
+    },
+    {
+      "pro": "F-10",
+      "descripcion": "La sección arranca en la misma vertical que el marco y, mientras no se recomponga, conserva el ancho para el que se hizo (1.152 px a 1440)",
+      "ok": true,
+      "detalle": "Nutrición: marco desde 32, sección de 32 a 1184 · Entrenamiento: marco desde 32, sección de 32 a 1184 · Antropometría: marco desde 32, sección de 32 a 1184 · Información: marco desde 32, sección de 32 a 1184"
+    },
+    {
+      "pro": "C-65",
+      "descripcion": "«vista=ejecuciones» sigue abriendo los registros de Entrenamiento, que se leen «Registros» (y no el Resumen); «vista=preparacion» sigue abriendo la toma en preparación, y la primera sección de Antropometría se lee «Tomas». Ninguna sección dice «Ejecuciones» ni «Evaluaciones»",
+      "ok": true,
+      "detalle": "Entrenamiento: Registros («Planificado y registrado»; el Resumen empieza con «Estado del seguimiento») · Antropometría: Tomas, En preparación, Evolución, Lámina, elegida En preparación"
+    },
+    {
+      "pro": "F-07",
+      "descripcion": "Llegando desde la ficha, el camino de vuelta dice «Volver a la ficha, donde estabas», las cuatro secciones lo conservan y lleva a esa vista de la ficha, con su métrica",
+      "ok": true,
+      "detalle": "Volver a la ficha, donde estabas → /pro/advisees?id=ffa4bc7d-c5d2-4e62-8e30-434327855763&vista=analizar&m=nutricion.energia · las secciones lo conservan: true · llegó a /pro/advisees?vista=analizar&m=nutricion.energia"
+    },
+    {
+      "pro": "F-07",
+      "descripcion": "Llegando a «Pedir información» desde Entrenamiento, el camino de vuelta dice «Volver a Entrenamiento» y lleva ahí: no dice «donde estabas» de un lugar de la ficha donde la persona no estaba",
+      "ok": true,
+      "detalle": "Volver a Entrenamiento → /pro/advisees/training?id=ffa4bc7d-c5d2-4e62-8e30-434327855763&vista=resumen"
+    },
+    {
+      "pro": "F-08",
+      "descripcion": "«Actualizar» vuelve a pedir todo lo que la sección leyó al entrar (las mismas lecturas, una vez cada una, con los vínculos) y no abre ninguna pregunta; la hora es la de esa consulta",
+      "ok": true,
+      "detalle": "al entrar (5): /advisees/:a/nutrition/evaluations · /advisees/:a/nutrition/objectives · /advisees/:a/nutrition/plans · /advisees/:a/nutrition/review-context · /me/relationships — al actualizar (5): las mismas — Consultado a las 21:02"
+    },
+    {
+      "pro": "F-08",
+      "descripcion": "Con algo escrito sin guardar, «Actualizar» pregunta antes: dice qué se pierde y no lee nada; «Seguir editando» deja lo escrito como estaba; «Actualizar y descartar» vuelve a leer la sección",
+      "ok": true,
+      "detalle": "«Tenés cambios sin guardar «Actualizar» vuelve a leer todo lo que muestra esta sección. Si seguís, se pierde lo que escribiste y no guardaste en la rev» · lecturas mientras pregunta: 0 · tras «Seguir editando»: «Texto del recorrido, sin guardar.» · tras descartar: «», 5 lecturas"
+    },
+    {
+      "pro": "C-43",
+      "descripcion": "Si la sección no se puede leer por una falla (un 503 simulado en el navegador), lo dice en su lugar con el motivo y «Reintentar»; el marco sigue diciendo el acceso del vínculo y no pregunta nada más: una falla no es una revocación. «Reintentar» trae la sección",
+      "ok": true,
+      "detalle": "«No pudimos cargar esta vista BE no está disponible en este momento. Reintentá en unos minutos. Reintentar» · el marco: Acceso actual Nutrición: Activo · acceso contextual · lecturas del resumen del asesorado: 0 · tras reintentar: «Estado del seguimiento»"
+    },
+    {
+      "pro": "F-09",
+      "descripcion": "Si las lecturas de la sección responden «no disponible» (simulado), la sección dice el texto neutral de siempre y el marco pregunta una sola vez qué deja leer el resumen del asesorado; como el área se puede leer, sigue diciendo el acceso del vínculo",
+      "ok": true,
+      "detalle": "la sección: «No encontramos un recurso disponible para esta acción. Volver» · preguntas al resumen: 1 · el marco: Acceso actual Nutrición: Activo · acceso contextual"
+    },
+    {
+      "pro": "F-09",
+      "descripcion": "Si además el resumen dice que Nutrición ya no se puede leer (simulado), el marco de Nutrición dice «Acceso no disponible» y deja de decir «Activo»; el de Entrenamiento, que no recibió ningún «no disponible», sigue diciendo el suyo. No dice quién lo retiró ni por qué",
+      "ok": true,
+      "detalle": "Nutrición: Acceso actual Nutrición: Acceso no disponible · Entrenamiento: Acceso actual Entrenamiento: Activo · acceso contextual"
+    },
+    {
+      "pro": "F-09",
+      "descripcion": "Cuando las lecturas vuelven a responder, «Actualizar» trae la sección y el marco vuelve a decir el acceso del vínculo (vuelve a preguntar también el resumen, porque ya había tenido que preguntarlo)",
+      "ok": true,
+      "detalle": "la sección empieza con «Estado del seguimiento» · el marco: Acceso actual Nutrición: Activo · acceso contextual · preguntas al resumen: 1"
+    },
+    {
+      "pro": "F-01",
+      "descripcion": "Si no se puede leer la cuenta (un 503 simulado), la página conserva el título del área y el camino de vuelta, y la falla va en el lugar de la sección, con «Reintentar»; no hay secciones ni acceso que mostrar. «Reintentar» trae el marco entero",
+      "ok": true,
+      "detalle": "con la falla: Antropometría · Volver a la ficha · 0 secciones · «No pudimos cargar esta vista. Reintentar» — después: 4 secciones · Acceso actual Antropometría: Activo · acceso contextual"
+    },
+    {
+      "pro": "F-01",
+      "descripcion": "Con el teclado, después del título se llega a «Actualizar» y después a las cuatro secciones, en su orden; axe no encuentra faltas en la página con el marco",
+      "ok": true,
+      "detalle": "Tab: Actualizar → Resumen → Plan → Registros → Revisiones → Ver plan · axe: sin faltas"
+    },
+    {
+      "pro": "F-06",
+      "descripcion": "A 1280 y a 1024 px el marco de Antropometría y el de Información (los de textos más largos) conservan sus tres renglones con el alto de 1440: nada baja de renglón ni desborda la página",
+      "ok": true,
+      "detalle": "1280 · Antropometría: 143 px (53 + 39 + 50) — 1280 · Información: 143 px (53 + 39 + 50) — 1024 · Antropometría: 143 px (53 + 39 + 50) — 1024 · Información: 143 px (53 + 39 + 50)"
+    },
+    {
+      "pro": "—",
+      "descripcion": "El marco de las áreas no produjo errores de página ni respuestas con error fuera de las simuladas",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

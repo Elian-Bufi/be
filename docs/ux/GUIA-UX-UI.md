@@ -284,16 +284,31 @@ Información).
   1440 × 900 se ven sin desplazarse las tarjetas de las tres áreas (el objetivo y el plan, lo pendiente, lo nuevo
   desde su revisión y la acción) y el valor de cada indicador.
 - **Tres vistas en pestañas** (Resumen, Línea de tiempo, Analizar), cada una con su ícono, que comparten el período, y
-  **pestañas de área** para trabajar sobre el registro completo. En las pestañas de área, las migas dicen «Ficha del
-  asesorado».
+  **pestañas de área** para trabajar sobre el registro completo.
+- **El marco de una pestaña de área** (`marco-del-area.tsx`; WP-ESCRITORIO-AREAS) es el de la ficha llevado a
+  Nutrición, Entrenamiento, Antropometría e Información: los mismos tres renglones, a la misma altura (143 px), para
+  que pasar de la ficha a un área no mueva nada de lugar. (1) El camino de vuelta, el área como título, la referencia
+  de la persona y, a la derecha, «Actualizar» con la hora de la consulta; (2) el **acceso actual de esa área** (en
+  Información, el de las tres); (3) las secciones, cada una con su ícono, y la ayuda de la vista cuando la tenga. No
+  lleva miga.
+  - **El camino de vuelta está siempre:** «Volver a la ficha, donde estabas» si se llegó desde la ficha; «Volver a la
+    ficha» si no; «Volver a Entrenamiento» si se llegó desde ahí.
+  - **«Actualizar» vuelve a leer todo lo que la sección muestra.** Si hay algo escrito sin guardar, antes pregunta y
+    dice qué se pierde: quien lo tiene se lo avisa al marco con `useCambiosSinGuardar`. Un formulario nuevo dentro de
+    un área tiene que avisarlo.
+  - **El acceso no dice «Activo» sobre algo que ya no se puede leer:** si una lectura o una escritura responde «no
+    disponible», el marco vuelve a preguntar el acceso, como la ficha. Una falla no es una revocación. Nunca se dice
+    quién retiró el acceso ni por qué.
+  - **Una sección que todavía no se recompuso conserva su ancho** (72 rem), alineada con el marco; una recompuesta usa
+    todo el ancho.
 - **La dirección dice dónde se está:** se navega con el router (`ir`, `irA`), no cambiando un estado escondido. La URL
   guarda la vista, el período, los filtros, las métricas, la pregunta y la fecha elegida, **solo como identificadores,
   enumerados y fechas**. El texto que escribe la persona (una búsqueda) y los borradores no van en la URL. Atrás vuelve
   al estado anterior.
 - **Ir y volver con todo:** de la ficha a una pestaña de área se pasa `volver` con la configuración de la ficha. La
   pestaña la valida con los mismos lectores de la ficha (`retornoALaFicha`: nunca sale de `/pro/advisees` del mismo
-  asesorado), la conserva al cambiar de sección y ofrece «Volver a la ficha, donde estabas» (`EnlaceDeRetorno`) y la
-  miga «Ficha del asesorado» con ese destino.
+  asesorado), la conserva al cambiar de sección y ofrece «Volver a la ficha, donde estabas» en su marco, delante del
+  título.
 - **Las pestañas de cada sección van en una línea** (`Pestanas`). Si no entran, se desplazan de costado, con una sombra
   que avisa que hay más, y la elegida queda a la vista.
 
@@ -554,7 +569,10 @@ crear otro, se usa uno de estos.
 | `.acciones--fijas` | Las acciones de un formulario largo, fijas al pie, con el estado de lo guardado | La preparación de una toma: «Todavía no se guardó.» + «Guardar» |
 | `.boton--compacto` | Una acción de fila: el mismo alto táctil (44 px), menos relleno | «Actualizar» en el encabezado de la ficha |
 | `.desplazable-x` | Una tabla ancha que se desplaza de costado dentro de su caja, nunca la página. Las sombras de los bordes aparecen solo si hay más, con el color de la superficie de abajo (`.seccion`, `.panel`) | La tabla de etapas; las comidas del contraste |
-| `MigasDelAsesorado` + `EnlaceDeRetorno` | Volver a la ficha con su configuración | «Ficha del asesorado» y «Volver a la ficha, donde estabas» |
+| `MarcoDelArea` | El marco de una pestaña de área: el camino de vuelta, de quién es, el acceso actual, «Actualizar» con la hora, las secciones con su ícono y la ayuda | «← Volver a la ficha, donde estabas · Nutrición · Asesorado · 5db647» |
+| `useCambiosSinGuardar` | Avisarle al marco que hay algo escrito sin guardar, con su nombre: «Actualizar» pregunta antes de perderlo | «el plan en preparación», «la revisión» |
+| `EstadoDeLecturaDelArea` · `NoDisponibleEnElArea` | El resultado de leer una sección: cargando, el «no disponible» neutral o la falla con su motivo y «Reintentar» | «No pudimos cargar esta vista · Hubo muchas consultas seguidas…» |
+| `AccesoPorArea` (`acceso-por-area.tsx`) | El acceso actual por área, igual en la ficha y en el marco de un área | «Nutrición: Activo · acceso contextual» |
 | `PanelDeRegistro` | Un registro encima de la vista, en un panel que retiene el foco, con su propia lectura | La planificación de una etapa; el origen de un dato o el detalle de un hecho, en una ventana angosta |
 | `OrigenDelDato` | De dónde sale un punto de Analizar, en el lugar de la lectura: el valor, qué es y sus fuentes, con lo que aporta cada comida | «795 kcal»: Almuerzo, 311 kcal; Cena, 484 kcal |
 | `useDetalleAlCostado` (`al-costado.ts`) | Si la ventana tiene lugar para un detalle al costado (desde 1200 px) | La línea de tiempo y Analizar |
@@ -1093,6 +1111,9 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | Los datos de la pregunta del ejercicio | Una frase al lado del título y un formulario para cambiarlos. | En el lugar: el ejercicio, la serie y la unidad (II.6). | Sustituida | 2 |
 | Los modos sin nada para elegir | Siempre a la vista, apagados. | No aparecen donde las métricas están fijas (la pregunta del ejercicio); en lo demás siguen, con su motivo (II.6). | Aclarada | 2 |
 | El origen de un dato | Un panel encima de los gráficos; «Registro 1», «Registro 2». | En el lugar de la lectura; las comidas del día, cada una con lo que aporta (II.5, II.6). | Sustituida | 2 |
+| El encabezado de una pestaña de área | Una miga, el título y las secciones; el enlace de vuelta, solo si se había llegado desde la ficha. | El marco del área: el de la ficha, con el camino de vuelta siempre, de quién es, el acceso actual y «Actualizar» (II.3). | Sustituida | Áreas, 0 |
+| «Evaluaciones» y «Ejecuciones» | Los nombres de dos secciones. | «Tomas» y «Registros»; las direcciones no cambian. | Sustituida | Áreas, 0 |
+| La falla de la lectura de una sección de área | «No pudimos cargar esta vista. Reintentar». | El bloque de estado, con el motivo y «Reintentar» (II.3). | Sustituida | Áreas, 0 |
 
 ---
 
