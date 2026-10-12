@@ -3622,7 +3622,7 @@ async function espacioProfesional(page, v) {
       PLAN_DRAFT_PENDING: `Plan en borrador desde el ${p.since ? fechaBreve(p.since) : '—'}`,
       NO_ACTIVE_PLAN: 'Sin plan activo',
       FORM_REQUEST_OPEN: `Formulario sin responder desde el ${p.since ? fechaBreve(p.since) : '—'}`,
-      ANTHRO_DRAFT_PENDING: `Evaluación en preparación desde el ${p.since ? fechaBreve(p.since) : '—'}`,
+      ANTHRO_DRAFT_PENDING: `Toma en preparación desde el ${p.since ? fechaBreve(p.since) : '—'}`,
     })[p.kind];
   const diaEn = (instante, zona) => new Intl.DateTimeFormat('en-CA', { timeZone: zona }).format(new Date(instante));
   const ultimoDe = (p, zona, conPeriodo) => (p.lastActivityAt ? `Último registro: ${fechaBreve(diaEn(p.lastActivityAt, zona))}` : conPeriodo ? 'Sin registros en el período' : 'Sin registros todavía');
@@ -3765,7 +3765,7 @@ async function espacioProfesional(page, v) {
   // E-85 · «Más filtros»: un área y un tipo exacto, a medida ──────────────────────────────────────────────
   const conArea = cartera.items.find((p) => cartera.items.some((q) => q.domain !== p.domain))?.domain ?? cartera.items[0].domain;
   const tipoSuelto = cartera.items.find((p) => p.domain === conArea).kind;
-  const NOMBRE_DEL_TIPO = { REVIEW_OVERDUE: 'Revisión vencida', REVIEW_DUE_SOON: 'Revisión próxima', REVIEW_UNDATED: 'Revisión sin fecha', PLAN_DRAFT_PENDING: 'Plan en borrador', NO_ACTIVE_PLAN: 'Sin plan activo', FORM_REQUEST_OPEN: 'Formulario sin responder', ANTHRO_DRAFT_PENDING: 'Evaluación en preparación' };
+  const NOMBRE_DEL_TIPO = { REVIEW_OVERDUE: 'Revisión vencida', REVIEW_DUE_SOON: 'Revisión próxima', REVIEW_UNDATED: 'Revisión sin fecha', PLAN_DRAFT_PENDING: 'Plan en borrador', NO_ACTIVE_PLAN: 'Sin plan activo', FORM_REQUEST_OPEN: 'Formulario sin responder', ANTHRO_DRAFT_PENDING: 'Toma en preparación' };
   const antesDeFiltrar = v.urls.length;
   await clic(page, 'section.pendientes .vistas-de-la-linea__mas', 'Más filtros');
   await page.waitForSelector('section.pendientes .pendientes__filtros select', { timeout: 5_000 });

@@ -149,7 +149,7 @@ test('cada tipo de pendiente se dice con la frase de BE; la fecha, sin el año s
   assert.equal(textoDePendiente(pendiente('PLAN_DRAFT_PENDING', { since: '2025-12-30' }), dia), 'Plan en borrador desde el 30 dic 2025', 'de otro año, con su año');
   assert.equal(textoDePendiente(pendiente('NO_ACTIVE_PLAN'), dia), 'Sin plan activo');
   assert.equal(textoDePendiente(pendiente('FORM_REQUEST_OPEN', { since: '2026-09-22' }), dia), 'Formulario sin responder desde el 22 sept');
-  assert.equal(textoDePendiente(pendiente('ANTHRO_DRAFT_PENDING', { since: '2026-09-25' }), dia), 'Evaluación en preparación desde el 25 sept');
+  assert.equal(textoDePendiente(pendiente('ANTHRO_DRAFT_PENDING', { since: '2026-09-25' }), dia), 'Toma en preparación desde el 25 sept');
   assert.equal(textoDePendiente(pendiente('REVIEW_UNDATED'), dia), 'Revisión pendiente desde el —', 'sin la fecha, no se inventa una');
 });
 
