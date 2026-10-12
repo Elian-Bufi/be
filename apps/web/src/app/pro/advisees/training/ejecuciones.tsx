@@ -54,7 +54,7 @@ import {
 } from '@be/domain';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { Panel } from '../../../../components/panel';
@@ -419,6 +419,26 @@ function Dato({ rotulo, className, children }: { rotulo: string; className?: str
   );
 }
 
+/**
+ * Un dato hecho de partes separadas por « · » («77,5 kg · 6 rep. · RIR 1»). Si no entra en un renglón, baja una parte
+ * entera, con el separador al final del renglón de arriba: no queda «RIR» en un renglón y su número en el otro. Una
+ * parte más ancha que su columna se parte adentro, como cualquier texto. El texto que se lee es el mismo.
+ */
+function EnPartes({ texto }: { texto: string }) {
+  const partes = texto.split(' · ');
+  if (partes.length === 1) return <>{texto}</>;
+  return (
+    <>
+      {partes.map((parte, i) => (
+        <Fragment key={i}>
+          <span className="parte-de-dato">{i < partes.length - 1 ? `${parte} ·` : parte}</span>
+          {i < partes.length - 1 ? ' ' : null}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
 /** La condición con que quedó registrada la sesión. Lo de siempre va en texto; lo que se sale, con su ícono. */
 function Condicion({ fila }: { fila: FilaDeSesion }) {
   if (!fila.condicion) return null;
@@ -452,10 +472,10 @@ function Fila({ fila, hoy, elegida, onAbrir }: { fila: FilaDeSesion; hoy: string
           {fila.fuente.tipo === 'correccion' ? <Corregida /> : null}
         </Dato>
         <Dato rotulo="Series" className="sesion-registrada__series">
-          {fila.series}
+          <EnPartes texto={fila.series} />
         </Dato>
         <Dato rotulo="Frente a lo indicado" className="sesion-registrada__frente">
-          {fila.frente}
+          <EnPartes texto={fila.frente} />
         </Dato>
         <Icono nombre="derecha" tamano={18} />
       </button>
@@ -657,11 +677,11 @@ function TablaDeSeries({ ejercicios }: { ejercicios: readonly EjercicioDeSesion[
               <tr key={s.numero} data-estado={s.estado} data-con-diferencia={s.conDiferencia ? 'si' : undefined}>
                 <th scope="row">{numero(s.numero)}</th>
                 <td>
-                  {s.indicado}
+                  <EnPartes texto={s.indicado} />
                   {s.nota ? <span className="tabla-de-series__nota">Nota: {s.nota}</span> : null}
                 </td>
                 <td>
-                  {s.registrado}
+                  <EnPartes texto={s.registrado} />
                   {s.corregida ? (
                     <>
                       {' '}
@@ -670,7 +690,7 @@ function TablaDeSeries({ ejercicios }: { ejercicios: readonly EjercicioDeSesion[
                   ) : null}
                 </td>
                 <td>
-                  {s.frente}
+                  <EnPartes texto={s.frente} />
                   {/* Lo de la carga va aparte y sin negrita: se dice, y no cuenta como diferencia. */}
                   {s.frenteDeLaCarga ? <span className="tabla-de-series__nota">{s.frenteDeLaCarga}</span> : null}
                 </td>

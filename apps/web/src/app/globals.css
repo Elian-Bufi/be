@@ -6560,6 +6560,12 @@ button.comida-del-dia__fila > .icono:last-child {
   white-space: normal;
 }
 
+/* Cada parte de un dato («77,5 kg ·», «6 rep. ·», «RIR 1») baja entera al renglón siguiente si no entra: el corte cae
+   después de un separador, no en el medio de «RIR 1». Una parte más ancha que su columna se parte adentro. */
+.parte-de-dato {
+  display: inline-block;
+}
+
 .sesion-registrada__tenue {
   color: var(--tenue);
 }

@@ -6106,12 +6106,28 @@ async function sesionesDeEntrenamiento(page, v) {
       const celdas = [...document.querySelectorAll('.sesion-registrada__fila > span')];
       // Un dato está fuera de su columna si su borde derecho pasa el de la celda que lo contiene.
       const fuera = celdas.flatMap((c) => [...c.children].filter((x) => x.getBoundingClientRect().right > c.getBoundingClientRect().right + 1).map(t));
+      // Las partes de un dato de la tabla («77,5 kg ·», «6 rep. ·», «RIR 1»): una parte partida ocupa más de un renglón.
+      const partidas = () => {
+        const partes = [...document.querySelectorAll('aside.detalle-de-sesion .tabla-de-series--frente-a-lo-indicado .parte-de-dato')];
+        const altos = partes.map((p) => p.getBoundingClientRect().height);
+        const unRenglon = Math.min(...altos);
+        return { partes: partes.length, partidas: partes.filter((p, i) => altos[i] > unRenglon + 3).map(t) };
+      };
+      const conLaRegla = partidas();
+      // La misma medida sin la regla que mantiene entera cada parte, quitada en el navegador: dice si la medida ve algo.
+      const estilo = document.createElement('style');
+      estilo.textContent = '.parte-de-dato { display: inline !important; }';
+      document.head.append(estilo);
+      const sinLaRegla = partidas();
+      estilo.remove();
       return {
         celdas: celdas.length,
         fuera,
         marcas: [...document.querySelectorAll('.sesion-registrada__fila .etiqueta-de-dato')].map(t),
         lista: Math.round(document.querySelector('.sesiones__filas')?.getBoundingClientRect().width ?? 0),
         alCostado: !!document.querySelector('aside.detalle-de-sesion'),
+        conLaRegla,
+        sinLaRegla,
       };
     });
     await page.setViewport({ width: 1440, height: 900 });
@@ -6120,6 +6136,12 @@ async function sesionesDeEntrenamiento(page, v) {
       'A 1280 px, con una sesión abierta al costado, la lista queda angosta y ningún dato se sale de su columna: la marca «Realizada con desvío» parte su texto adentro, sin pisar la columna de las series',
       angosta.alCostado && angosta.marcas.includes(CONDICION.COMPLETED_WITH_DEVIATION) && angosta.fuera.length === 0,
       `la lista: ${angosta.lista} px · ${angosta.celdas} datos · marcas: ${angosta.marcas.join(', ') || 'ninguna'} · fuera de su columna: ${angosta.fuera.join(' | ') || 'ninguno'}`,
+    );
+    comprobar(
+      'F-30',
+      'A 1280 px, en la tabla del detalle, lo que no entra en un renglón baja de a una parte entera: ninguna parte de un dato («RIR 1», «6 rep.») queda partida entre dos renglones',
+      angosta.conLaRegla.partes > 0 && angosta.conLaRegla.partidas.length === 0,
+      `${angosta.conLaRegla.partes} partes · partidas: ${angosta.conLaRegla.partidas.join(' | ') || 'ninguna'} · sin la regla (quitada en el navegador, para probar la medida): ${angosta.sinLaRegla.partidas.length} partidas${angosta.sinLaRegla.partidas.length > 0 ? `, la primera «${angosta.sinLaRegla.partidas[0]}»` : ''}`,
     );
   } else {
     informar('F-30', 'Una sesión «Realizada con desvío», a 1280 px', 'el escenario no tiene ninguna en los últimos 90 días: no se pudo mirar');
