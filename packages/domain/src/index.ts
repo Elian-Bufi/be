@@ -89,4 +89,5 @@ export * from './etapas-de-planificacion';
 export * from './preguntas-profesionales';
 export * from './sintesis-del-resumen';
 export * from './contraste-de-comida';
+export * from './registros-de-nutricion';
 export * from './iconos';

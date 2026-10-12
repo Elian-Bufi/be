@@ -1236,10 +1236,6 @@ details summary {
   border-bottom-width: 2px;
 }
 
-.diferencia {
-  display: block;
-}
-
 @media (max-width: 40rem) {
   .tabla thead {
     display: none;
@@ -6193,6 +6189,268 @@ a.observacion__fila:focus-visible {
 
 .seccion-del-area--ancha {
   max-width: none;
+}
+
+/* ─── Nutrición · Registros (WP-ESCRITORIO-AREAS, parte 1; maqueta 20) ───────────── */
+/* El día es la unidad: cada día en un renglón que se abre en el lugar, y cada comida del plan en una fila con lo que se
+   registró en ella. Las vistas con nombre, la fecha del día y el detalle al costado son los de la línea de tiempo de la
+   ficha (las mismas clases). */
+.registros {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+/* El título, lo que la sección dice en una frase y, a la derecha, el período. Lo que no entra, baja. */
+.registros__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+}
+
+.registros__encabezado h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.registros__bajada {
+  flex: 1 1 24rem;
+  margin: 0;
+}
+
+.registros__cuenta {
+  margin: 0;
+}
+
+/* Las columnas de una fila. Las usan los nombres de las columnas, una vez arriba, y cada comida. */
+.registros__lista {
+  --columnas-de-una-comida: minmax(6.5rem, 0.75fr) minmax(0, 1.55fr) minmax(0, 1.05fr) minmax(0, 1.65fr) 1.15rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Los nombres de las columnas van corridos lo que ocupa la fecha del día (su columna y la separación) y el relleno de
+   la fila, para quedar encima de cada dato. */
+.registros__columnas {
+  display: grid;
+  grid-template-columns: var(--columnas-de-una-comida);
+  gap: 0 0.9rem;
+  padding: 0 0.9rem 0.25rem calc(5.75rem + 1rem + 0.9rem);
+  color: var(--tenue);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.dia-de-registros__cuerpo {
+  min-width: 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+/* Un día abierto: una tarjeta, con el renglón del día como cabecera y sus comidas debajo. */
+.dia-de-registros[data-abierto] .dia-de-registros__cuerpo {
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.dia-de-registros[data-abierto] .linea-de-tiempo__numero {
+  font-weight: 700;
+}
+
+.dia-de-registros[data-abierto] .linea-de-tiempo__fecha {
+  padding-top: 0.65rem;
+}
+
+/* El día en un renglón: es el botón que lo abre y lo cierra. */
+.dia-de-registros__resumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.75rem;
+  width: 100%;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.3rem 0.9rem;
+  border: 0;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+}
+
+button.dia-de-registros__resumen {
+  cursor: pointer;
+}
+
+button.dia-de-registros__resumen:hover {
+  background: var(--fondo-suave);
+}
+
+button.dia-de-registros__resumen:focus-visible {
+  outline-offset: -3px;
+}
+
+/* La flecha del renglón queda a la derecha, aunque las notas bajen de línea. */
+.dia-de-registros__resumen > .icono:last-child {
+  margin-left: auto;
+  color: var(--tenue);
+}
+
+.dia-de-registros__nota {
+  color: var(--tenue);
+}
+
+.dia-de-registros__comidas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dia-de-registros__comidas > li {
+  border-top: 1px solid var(--borde);
+}
+
+/* Con una vista elegida el día no lleva renglón propio: la primera comida no necesita la línea de arriba. */
+.dia-de-registros__cuerpo > .dia-de-registros__comidas:first-child > li:first-child {
+  border-top: 0;
+}
+
+/* Una comida: la fila entera es el botón que abre su registro. Sin registro, no abre nada y no es un botón. */
+.comida-del-dia__fila {
+  display: grid;
+  grid-template-columns: var(--columnas-de-una-comida);
+  align-items: center;
+  gap: 0.15rem 0.9rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.9rem;
+  border: 0;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+}
+
+button.comida-del-dia__fila {
+  cursor: pointer;
+}
+
+button.comida-del-dia__fila:hover {
+  background: var(--fondo-suave);
+}
+
+button.comida-del-dia__fila:focus-visible {
+  outline-offset: -3px;
+}
+
+button.comida-del-dia__fila > .icono:last-child {
+  color: var(--tenue);
+}
+
+/* La comida cuyo registro está abierto: un contorno, no solo un color de fondo. */
+.comida-del-dia__fila[aria-current='true'] {
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 2px var(--boton-secundario-borde);
+  border-radius: 10px;
+}
+
+.comida-del-dia__diferencia {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+/* Lo registrado y, a continuación, sus etiquetas (rectificado, cargado otro día): bajan de renglón solo si no entran.
+   Los dos hechos de una comida diferente van cada uno en su renglón. */
+.comida-del-dia__registrado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.5rem;
+  min-width: 0;
+}
+
+.comida-del-dia__registrado > .comida-del-dia__tenue,
+.comida-del-dia__registrado > .comida-del-dia__diferente {
+  flex-basis: 100%;
+}
+
+.comida-del-dia__cantidades,
+.comida-del-dia__diferente {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.comida-del-dia__cantidades > .icono,
+.comida-del-dia__diferente > .icono {
+  flex: none;
+  color: var(--tenue);
+}
+
+.comida-del-dia__tenue {
+  color: var(--tenue);
+}
+
+/* Otra comida diferente registrada en la misma comida: su registro se abre aparte, alineado con «Registrado». */
+.comida-del-dia__otro {
+  margin: 0 0.9rem 0.4rem calc(0.9rem + 6.5rem + 0.9rem);
+}
+
+.comida-del-dia__otro[aria-current='true'] {
+  font-weight: 700;
+}
+
+/* La estimación del profesional, dentro del detalle de una comida diferente. */
+.estimacion-del-profesional {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--borde);
+}
+
+.estimacion-del-profesional > p {
+  margin: 0;
+}
+
+.estimacion-del-profesional > .grupo {
+  width: 100%;
+}
+
+/* En una ventana angosta las cuatro columnas no entran: cada dato de la comida va en su renglón, con su rótulo dicho
+   para el lector de pantalla, y los nombres de las columnas no se muestran. */
+@media (max-width: 60rem) {
+  .registros__columnas {
+    display: none;
+  }
+
+  .comida-del-dia__fila {
+    grid-template-columns: minmax(0, 1fr) 1.15rem;
+  }
+
+  .comida-del-dia__fila > :not(.icono) {
+    grid-column: 1;
+  }
+
+  .comida-del-dia__fila > .icono:last-child {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .comida-del-dia__otro {
+    margin-left: 0.9rem;
+  }
 }
 
 /* ─── El Espacio profesional (WP-ESCRITORIO-AMABLE, parte 5) ─────────────────────── */

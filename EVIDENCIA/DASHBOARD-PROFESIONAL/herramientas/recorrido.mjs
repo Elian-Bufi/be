@@ -1,7 +1,7 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio|areas]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio|areas|registros|estimacion]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
@@ -25,6 +25,10 @@
 // - El marco de las pestañas de área (WP-ESCRITORIO-AREAS, parte 0: Nutrición, Entrenamiento, Antropometría e
 //   Información) se comprueba en `marcoDeLasAreas`, al final de esa misma sesión; solo, con `areas`. Un área que deja
 //   de poder leerse se mira ahí con respuestas simuladas en el navegador, y con una revocación real en `descartable`.
+// - Nutrición · Registros por día (WP-ESCRITORIO-AREAS, parte 1) se comprueba en `registrosDeNutricion`, en esa misma
+//   sesión; solo, con `registros`. Lo esperado sale de las dos lecturas de la API, calculado a mano.
+// - La estimación del profesional sobre una comida diferente (`estimacionDeUnaComida`) ESCRIBE en el escenario: no va
+//   dentro de `funcional`. Corre sola, con `estimacion`, y última en la pasada completa.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
 //   (valores medidos, informados y estimados; revocación desde la web del asesorado).
 import fs from 'node:fs';
@@ -4689,7 +4693,885 @@ async function marcoDeLasAreas(page, v) {
   comprobar('—', 'El marco de las áreas no produjo errores de página ni respuestas con error fuera de las simuladas', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
 }
 
-async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true } = {}) {
+// ─── Nutrición · Registros (WP-ESCRITORIO-AREAS, parte 1) ──────────────────────────────────────────────────────
+
+/** Lo que muestra Nutrición · Registros: las vistas, los días y las filas que están a la vista, y el detalle. */
+const registrosEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const aLaVista = (e) => (e && e.getClientRects().length > 0 ? e : null);
+    const detalle = aLaVista(document.querySelector('aside.detalle-del-hecho'));
+    return {
+      titulo: t(document.querySelector('#titulo-registros')),
+      periodo: t(aLaVista(document.querySelector('.registros .periodo-del-seguimiento__boton'))),
+      vistas: [...document.querySelectorAll('.registros__vistas .vista-de-la-linea')].filter(aLaVista).map((b) => ({
+        vista: b.dataset.vista,
+        cuenta: b.querySelector('.vista-de-la-linea__cuenta')?.firstChild?.textContent?.trim() ?? null,
+        dice: t(b.querySelector('.vista-de-la-linea__cuenta')),
+        elegida: b.getAttribute('aria-pressed'),
+        nombre: [...b.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).join(''),
+      })),
+      cuenta: t(aLaVista(document.querySelector('.registros__cuenta'))),
+      columnas: [...document.querySelectorAll('.registros__columnas span')].map((s) => s.textContent.trim()),
+      dias: [...document.querySelectorAll('.dia-de-registros')].filter(aLaVista).map((d) => ({
+        fecha: d.dataset.fecha,
+        abierto: d.dataset.abierto === 'si',
+        seAbre: d.querySelector('.dia-de-registros__resumen')?.tagName === 'BUTTON',
+        principal: t(d.querySelector('.dia-de-registros__principal')),
+        notas: [...d.querySelectorAll('.dia-de-registros__resumen .etiqueta-de-dato, .dia-de-registros__nota')].map(t),
+        filas: [...d.querySelectorAll('.comida-del-dia')].filter(aLaVista).map((li) => {
+          const fila = li.querySelector('.comida-del-dia__fila');
+          return {
+            estado: li.dataset.estado,
+            comida: t(li.querySelector('.comida-del-dia__comida')),
+            registrado: t(li.querySelector('.comida-del-dia__registrado')),
+            cantidades: t(li.querySelector('.comida-del-dia__cantidades')),
+            diferencia: t(li.querySelector('.comida-del-dia__diferencia')),
+            registro: fila?.dataset.registro ?? null,
+            esBoton: fila?.tagName === 'BUTTON',
+            elegida: fila?.getAttribute('aria-current') === 'true',
+          };
+        }),
+      })),
+      detalle: detalle ? { titulo: t(detalle.querySelector('h3')), texto: t(detalle), conElFoco: document.activeElement === detalle.querySelector('h3') } : null,
+      panel: t(aLaVista(document.querySelector('dialog.dialogo--panel[open]'))),
+      vacio: t(aLaVista(document.querySelector('.registros .estado-vacio'))),
+      falla: t(aLaVista(document.querySelector('.registros .estado-de-grafico--error'))),
+      masDias: t(aLaVista(document.querySelector('.registros .linea__mas'))),
+      alto: document.documentElement.scrollHeight,
+    };
+  });
+
+/**
+ * Nutrición · Registros por día (maqueta 20; C-49, C-50, C-51 y C-53; F-15 a F-22). Lo esperado se calcula a mano con lo
+ * que devuelven las dos lecturas de la API (el contexto de revisión y las comidas de la línea de tiempo del mismo
+ * período): no se usa el módulo del dominio que arma la pantalla. Va dentro de `funcional`; solo, con
+ * `node recorrido.mjs registros`.
+ */
+async function registrosDeNutricion(page, v) {
+  const A = estado.aseId;
+  const BASE = `/pro/advisees/nutrition?id=${A}&vista=registros`;
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const num = (n) => new Intl.NumberFormat('es-AR').format(n);
+  const comidas = (n) => (n === 1 ? 'comida' : 'comidas');
+  /** Los pedidos de la página a una dirección de la API, desde una marca. */
+  const pedidos = (fragmento, desde) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+  const LISTA = '.registros .dia-de-registros, .registros .estado-vacio';
+  /** Entra a una dirección de Registros y espera la lista (o su estado vacío). Devuelve la marca de los pedidos. */
+  const entrar = async (ruta) => {
+    await cupo(v, 60);
+    const desde = v.urls.length;
+    await ir(page, ruta);
+    await page.waitForSelector('#titulo-registros', { timeout: 30_000 });
+    await quieto(page, v);
+    await page.waitForSelector(LISTA, { timeout: 30_000 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    return desde;
+  };
+  /** Sale de Registros a otra sección de Nutrición (ahí no hay lista que esperar). */
+  const salir = async () => {
+    await cupo(v, 60);
+    await ir(page, `/pro/advisees/nutrition?id=${A}&vista=resumen`);
+    await page.waitForFunction(() => !document.querySelector('#titulo-registros'), { timeout: 30_000 });
+    await quieto(page, v);
+  };
+  /** Abre los días que están plegados, para leer todas sus filas. */
+  const abrirLosDias = async () => {
+    for (;;) {
+      const quedaba = await page.evaluate(() => {
+        const plegado = document.querySelector('.dia-de-registros:not([data-abierto]) button.dia-de-registros__resumen');
+        if (!plegado) return false;
+        plegado.click();
+        return true;
+      });
+      if (!quedaba) break;
+      await pausa(60);
+    }
+  };
+  const leerLaLinea = async (desde, hasta) => {
+    const entradas = [];
+    let cursor = null;
+    do {
+      const r = await leerApi(v, `/advisees/${A}/timeline?periodStart=${desde}&periodEnd=${hasta}&domain=NUTRITION&type=MEAL_RECORDED&limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+      entradas.push(...r.data.entries);
+      cursor = r.page.hasMore ? r.page.nextCursor : null;
+    } while (cursor);
+    return entradas;
+  };
+  const dato = (e, rotulo) => e?.details.find((d) => d.label === rotulo)?.value ?? null;
+  /** Lo que se espera ver, escrito a mano desde las dos respuestas: los días, del más nuevo al más viejo, con sus filas. */
+  const esperado = (ctx, entradas) => {
+    const porRegistro = new Map(entradas.map((e) => [e.source.id, e]));
+    const dias = [...ctx.descriptiveContrast.days]
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .map((d) => {
+        const enUnaComida = new Set(d.meals.flatMap((m) => m.differentMealExecutionIds));
+        const descripcion = new Map(d.outsidePrescription.map((o) => [o.executionId, o.description]));
+        const filas = [
+          ...d.meals.map((m) => ({
+            comida: m.label,
+            estado: m.state === 'REGISTERED' ? 'REGISTRADA' : m.differentMealExecutionIds.length > 0 ? 'COMIDA_DIFERENTE' : 'SIN_REGISTRO',
+            opcion: m.state === 'REGISTERED' ? m.executionId : null,
+            entrada: m.state === 'REGISTERED' ? (porRegistro.get(m.executionId) ?? null) : null,
+            diferentes: m.differentMealExecutionIds.map((id) => ({ id, descripcion: descripcion.get(id) ?? null, entrada: porRegistro.get(id) ?? null })),
+            // Una resta que da cero no es una diferencia (así llegan las porciones del plan confirmadas).
+            diferencias: m.quantityDifferences.filter((q) => q.difference !== 0),
+            restasEnCero: m.quantityDifferences.filter((q) => q.difference === 0).length,
+          })),
+          ...d.outsidePrescription.filter((o) => !enUnaComida.has(o.executionId)).map((o) => ({ comida: null, estado: 'COMIDA_DIFERENTE', opcion: null, entrada: null, diferentes: [{ id: o.executionId, descripcion: o.description, entrada: porRegistro.get(o.executionId) ?? null }], diferencias: [] })),
+        ];
+        return { fecha: d.date, sinRegistros: d.dataState === 'NO_DATA', sinComidasDelPlan: d.meals.length === 0, filas };
+      });
+    const filas = dias.flatMap((d) => d.filas);
+    const con = (rasgo) => filas.filter((f) => f.entrada?.quality.includes(rasgo)).length;
+    const cuentas = {
+      TODAS: filas.length,
+      DISTINTAS: con('QUANTITIES_DIFFER_FROM_PLAN'),
+      SIN_CONFIRMAR: con('QUANTITIES_UNCONFIRMED'),
+      COMIDA_DIFERENTE: filas.filter((f) => f.diferentes.length > 0).length,
+      SIN_REGISTRO: filas.filter((f) => f.estado === 'SIN_REGISTRO').length,
+    };
+    return { dias, filas, cuentas };
+  };
+  /** El renglón de un día, a mano: «N de M comidas registradas», «Sin registro» o que no hay una opción del plan. */
+  const principalDe = (d) => {
+    if (d.sinComidasDelPlan) return null; // lo dice con una frase propia: no se compara acá
+    if (d.sinRegistros) return 'Sin registro';
+    const delPlan = d.filas.filter((f) => f.comida !== null);
+    const registradas = delPlan.filter((f) => f.estado === 'REGISTRADA').length;
+    return registradas === 0 ? 'Sin opción del plan registrada' : `${registradas} de ${delPlan.length} ${comidas(delPlan.length)} ${delPlan.length === 1 ? 'registrada' : 'registradas'}`;
+  };
+  /** Lo que tiene que decir cada dato de una fila, a mano, con el rótulo que oye el lector de pantalla. */
+  const MODO = { QUANTITIES_FROM_PLAN: 'Porciones del plan', QUANTITIES_REPORTED: 'Cantidades informadas', QUANTITIES_UNCONFIRMED: 'Sin confirmar' };
+  const SIN_COMPROBAR = { QUANTITIES_FROM_PLAN: 'Sin diferencia: son las porciones del plan', QUANTITIES_UNCONFIRMED: 'No se puede comprobar: sin confirmar' };
+  const textoDeLaFila = (f) => {
+    const e = f.entrada;
+    const modo = e ? Object.keys(MODO).find((q) => e.quality.includes(q)) : null;
+    const opcion = e ? (dato(e, 'Opción') ?? '') : '';
+    const diferentes = f.diferentes.map((d) => `Comida diferente: ${d.descripcion ? `«${d.descripcion}»` : 'sin descripción'}${dato(d.entrada, 'Cantidad aproximada') ? `, ${dato(d.entrada, 'Cantidad aproximada')}` : ''}`);
+    const deLaFila = [e, ...f.diferentes.map((d) => d.entrada)].filter(Boolean);
+    const etiquetas = [deLaFila.some((x) => x.state === 'RECTIFIED') ? 'Rectificado' : null, deLaFila.some((x) => x.state === 'CORRECTED') ? 'Corregido' : null, deLaFila.some((x) => x.recordedLate) ? 'Cargado otro día' : null].filter(Boolean);
+    const registrado =
+      f.estado === 'SIN_REGISTRO'
+        ? ['Sin registro']
+        : [
+            ...(f.opcion ? [/^\d+$/.test(opcion) ? `Opción ${opcion}` : opcion.replace(/^\d+ · /, '')] : []),
+            ...(f.estado === 'COMIDA_DIFERENTE' && f.comida !== null ? ['Sin opción del plan registrada'] : []),
+            ...diferentes,
+            ...etiquetas,
+          ];
+    return {
+      estado: f.estado,
+      comida: f.comida ?? 'Fuera del plan',
+      registrado: `Registrado: ${registrado.join(' ')}`,
+      cantidades: `Cantidades: ${f.opcion ? (modo ? MODO[modo] : 'Sin dato') : 'no corresponde'}`,
+      // Las restas se escriben con el formato de números de la pantalla: acá se comprueba lo que va antes de ellas.
+      diferencia: f.opcion ? `Diferencia observada: ${dato(e, 'Frente a lo indicado') ?? (modo ? (SIN_COMPROBAR[modo] ?? 'Sin dato') : 'Sin dato')}` : f.diferentes.length > 0 ? 'Diferencia observada: No se compara: fuera de lo indicado' : 'Diferencia observada: no corresponde',
+      restas: f.diferencias.map((q) => `${q.name} ${q.difference > 0 ? '+' : q.difference < 0 ? '−' : ''}`),
+      registro: f.opcion ?? f.diferentes[0]?.id ?? null,
+    };
+  };
+  const filaBien = (vista, espera) =>
+    vista.estado === espera.estado &&
+    vista.comida === espera.comida &&
+    vista.registrado === espera.registrado &&
+    vista.cantidades === espera.cantidades &&
+    vista.diferencia.startsWith(espera.diferencia) &&
+    espera.restas.every((r) => vista.diferencia.includes(r)) &&
+    vista.registro === espera.registro &&
+    vista.esBoton === (espera.registro !== null);
+
+  // ── La entrada: el período que propone la API, las dos lecturas y los días ────────────────────────────────────
+  const alEntrar = await entrar(BASE);
+  const ctx = (await leerApi(v, `/advisees/${A}/nutrition/review-context`)).data;
+  const entradas = await leerLaLinea(ctx.period.start, ctx.period.end);
+  const E = esperado(ctx, entradas);
+  const inicial = await registrosEnPantalla(page);
+  const deLaLinea = pedidos(`/advisees/${A}/timeline`, alEntrar);
+  comprobar(
+    'F-15',
+    'Al entrar, Registros hace dos lecturas: el contexto de revisión, sin período (lo propone la API), y las comidas de la línea de tiempo de ese mismo período; el control dice el período que propuso la API',
+    pedidos('/nutrition/review-context', alEntrar).length === 1 &&
+      !/periodStart/.test(pedidos('/nutrition/review-context', alEntrar)[0]) &&
+      deLaLinea.length === 1 &&
+      deLaLinea[0].includes(`periodStart=${ctx.period.start}`) &&
+      deLaLinea[0].includes(`periodEnd=${ctx.period.end}`) &&
+      /domain=NUTRITION/.test(deLaLinea[0]) &&
+      /type=MEAL_RECORDED/.test(deLaLinea[0]) &&
+      (inicial.periodo ?? '').includes(`${E.dias.length} días`),
+    `contexto: ${pedidos('/nutrition/review-context', alEntrar).length} · línea de tiempo: ${deLaLinea.length} · ${inicial.periodo} · la API: ${ctx.period.start} a ${ctx.period.end}`,
+  );
+  comprobar(
+    'C-49',
+    'El día es la unidad: están todos los días del período, del más nuevo al más viejo, cada uno dicho en un renglón con la cuenta calculada a mano («N de M comidas registradas», o «Sin registro» si no hay ninguno); los nombres de las columnas están una vez',
+    inicial.titulo === 'Registros' &&
+      igual(inicial.dias.map((d) => d.fecha), E.dias.map((d) => d.fecha)) &&
+      E.dias.every((d, i) => principalDe(d) === null || inicial.dias[i].principal === principalDe(d)) &&
+      igual(inicial.columnas, ['Comida', 'Registrado', 'Cantidades', 'Diferencia observada']),
+    inicial.dias.map((d, i) => `${d.fecha.slice(5)}: ${d.principal}${principalDe(E.dias[i]) === d.principal ? '' : ` (a mano: ${principalDe(E.dias[i])})`}`).join(' · '),
+  );
+  comprobar(
+    'C-49',
+    'Arrancan abiertos los días con una comida diferente o con algo distinto de lo indicado, y solo esos; los demás van en un renglón que se puede abrir',
+    E.dias.every((d, i) => inicial.dias[i].abierto === d.filas.some((f) => f.diferentes.length > 0 || f.entrada?.quality.includes('QUANTITIES_DIFFER_FROM_PLAN') || f.diferencias.length > 0)) && inicial.dias.every((d) => d.seAbre || d.filas.length === 0),
+    inicial.dias.map((d) => `${d.fecha.slice(5)}${d.abierto ? ' abierto' : ''}`).join(' · '),
+  );
+
+  // ── Las vistas con nombre y su cantidad ─────────────────────────────────────────────────────────────────────
+  const ORDEN = ['TODAS', 'DISTINTAS', 'SIN_CONFIRMAR', 'COMIDA_DIFERENTE', 'SIN_REGISTRO'];
+  const porEstado = (estadoDeLaFila) => E.filas.filter((f) => f.estado === estadoDeLaFila).length;
+  comprobar(
+    'F-16',
+    'Las cinco vistas están en su orden, cada una con la cantidad de comidas que trae (contada a mano sobre las dos respuestas de la API); registradas, con comida diferente y sin registro suman «Todas las comidas»; al entrar está elegida «Todas»',
+    igual(inicial.vistas.map((x) => x.vista), ORDEN) &&
+      inicial.vistas.every((x) => x.cuenta === num(E.cuentas[x.vista]) && x.dice === `${num(E.cuentas[x.vista])} ${comidas(E.cuentas[x.vista])}`) &&
+      porEstado('REGISTRADA') + porEstado('COMIDA_DIFERENTE') + porEstado('SIN_REGISTRO') === E.cuentas.TODAS &&
+      E.cuentas.TODAS > 0 &&
+      inicial.vistas.every((x) => x.elegida === (x.vista === 'TODAS' ? 'true' : 'false')),
+    `${inicial.vistas.map((x) => `${x.nombre} ${x.cuenta}`).join(' · ')} — a mano: ${ORDEN.map((k) => E.cuentas[k]).join(', ')} (${porEstado('REGISTRADA')} registradas + ${porEstado('COMIDA_DIFERENTE')} con comida diferente + ${porEstado('SIN_REGISTRO')} sin registro)`,
+  );
+
+  // ── Cada fila, con las palabras del dominio ─────────────────────────────────────────────────────────────────
+  await abrirLosDias();
+  const abiertos = await registrosEnPantalla(page);
+  const filasALaVista = abiertos.dias.flatMap((d) => d.filas);
+  const filasEsperadas = E.filas.map(textoDeLaFila);
+  const distintas = filasALaVista.map((f, i) => (filasEsperadas[i] && filaBien(f, filasEsperadas[i]) ? null : i)).filter((i) => i !== null);
+  comprobar(
+    'C-53',
+    'Cada comida del plan es una fila, en el orden del plan: lo registrado (la opción, «Sin registro», o los dos hechos de una comida diferente), cómo se informaron las cantidades y la diferencia observada, con las palabras del dominio; una fila sin registro no abre nada',
+    filasALaVista.length === filasEsperadas.length && filasEsperadas.length > 0 && distintas.length === 0,
+    distintas.length === 0
+      ? `${filasALaVista.length} filas, las ${filasEsperadas.length} esperadas`
+      : `${distintas.length} filas distintas; la primera: ${JSON.stringify(filasALaVista[distintas[0]])} — a mano: ${JSON.stringify(filasEsperadas[distintas[0]])}`,
+  );
+  const conDiferente = filasEsperadas.find((f) => f.estado === 'COMIDA_DIFERENTE');
+  const enPantalla = conDiferente ? filasALaVista[filasEsperadas.indexOf(conDiferente)] : null;
+  comprobar(
+    'C-50',
+    'Una comida diferente se lee en la comida donde se registró, con los dos hechos («Sin opción del plan registrada» y la comida diferente, con su descripción); no cuenta como registrada, y la vista «Comida diferente» la trae',
+    !!conDiferente && !!enPantalla && /Sin opción del plan registrada/.test(enPantalla.registrado) && /Comida diferente: «/.test(enPantalla.registrado) && enPantalla.estado === 'COMIDA_DIFERENTE' && /No se compara: fuera de lo indicado/.test(enPantalla.diferencia) && E.cuentas.COMIDA_DIFERENTE >= 1,
+    conDiferente ? `${enPantalla?.comida} · ${enPantalla?.registrado} · ${enPantalla?.diferencia}` : 'el escenario no tiene una comida diferente en este período',
+  );
+  const conPorciones = filasALaVista.filter((f) => /Porciones del plan/.test(f.cantidades));
+  comprobar(
+    'C-51',
+    'Con las porciones del plan confirmadas la fila dice «Sin diferencia: son las porciones del plan», y nada más: no una raya, ni «igual» de algo que BE no comparó, ni las restas en cero que la API manda por cada ítem. Ninguna fila dice una raya suelta ni lista una resta en cero',
+    conPorciones.length > 0 &&
+      conPorciones.every((f) => f.diferencia === 'Diferencia observada: Sin diferencia: son las porciones del plan') &&
+      E.filas.some((f) => f.restasEnCero > 0) &&
+      !filasALaVista.some((f) => /: —$/.test(f.diferencia) || /: —$/.test(f.registrado) || /\s0 (g|ml|unidad)(\s|$)/.test(f.diferencia)),
+    `${conPorciones.length} filas con las porciones del plan · ${conPorciones[0]?.diferencia} · restas en cero que manda la API en el período: ${E.filas.reduce((n, f) => n + (f.restasEnCero ?? 0), 0)}`,
+  );
+
+  // ── Elegir una vista: no le pide nada a la API y deja las filas que cuenta ─────────────────────────────────────
+  const alElegir = v.urls.length;
+  await page.click('.registros__vistas .vista-de-la-linea[data-vista="SIN_REGISTRO"]');
+  await page.waitForFunction(() => new URL(location.href).searchParams.get('ver') === 'sin-registro', { timeout: 10_000 }).catch(() => {});
+  await pausa(300);
+  const sinRegistro = await registrosEnPantalla(page);
+  const filasSinRegistro = sinRegistro.dias.flatMap((d) => d.filas);
+  await page.click('.registros__vistas .vista-de-la-linea[data-vista="SIN_REGISTRO"]');
+  await page.waitForFunction(() => !new URL(location.href).searchParams.has('ver'), { timeout: 10_000 }).catch(() => {});
+  await pausa(300);
+  const deVuelta = await registrosEnPantalla(page);
+  comprobar(
+    'F-16',
+    'Elegir «Sin registro» no le pide nada a la API, queda en la dirección (`ver=sin-registro`) y deja a la vista las filas que cuenta, todas sin registro y ninguna otra; volver a tocarla deja «Todas las comidas»',
+    v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length === 0 &&
+      E.cuentas.SIN_REGISTRO > 0 &&
+      filasSinRegistro.length === E.cuentas.SIN_REGISTRO &&
+      filasSinRegistro.every((f) => f.estado === 'SIN_REGISTRO' && !f.esBoton) &&
+      sinRegistro.vistas.find((x) => x.vista === 'SIN_REGISTRO')?.elegida === 'true' &&
+      (sinRegistro.cuenta ?? '').startsWith(`${num(E.cuentas.SIN_REGISTRO)} de ${num(E.cuentas.TODAS)} ${comidas(E.cuentas.TODAS)}`) &&
+      deVuelta.vistas.find((x) => x.vista === 'TODAS')?.elegida === 'true' &&
+      deVuelta.dias.length === E.dias.length,
+    `${filasSinRegistro.length} filas (a mano: ${E.cuentas.SIN_REGISTRO}) · «${sinRegistro.cuenta}» · pedidos a la API: ${v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length}`,
+  );
+
+  // ── El detalle de un registro, al costado ───────────────────────────────────────────────────────────────────
+  await abrirLosDias();
+  const registrada = E.filas.map(textoDeLaFila).find((f) => f.estado === 'REGISTRADA' && f.registro);
+  await cupo(v, 60);
+  const alAbrir = v.urls.length;
+  await page.click(`.comida-del-dia__fila[data-registro="${registrada.registro}"]`);
+  await page.waitForSelector('aside.detalle-del-hecho .detalle-de-valores', { timeout: 20_000 }).catch(() => {});
+  await quieto(page, v);
+  const conDetalle = await registrosEnPantalla(page);
+  const leido = (await leerApi(v, `/nutrition/meal-records/${registrada.registro}`)).data;
+  const opcionDelDetalle = registrada.registrado.replace(/^Registrado: /, '').replace(/ (Rectificado|Corregido|Cargado otro día)/g, '');
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('aside.detalle-del-hecho'), { timeout: 10_000 }).catch(() => {});
+  await pausa(150);
+  const focoAlCerrar = await page.evaluate(() => document.activeElement?.getAttribute('data-registro') ?? null);
+  comprobar(
+    'F-18',
+    'Tocar una fila abre su registro al costado, sin tapar la lista: el título dice la comida y la opción y recibe el foco, el registro se lee una vez por su propia operación y dice la opción que da la API, y queda en la dirección; Escape lo cierra y el foco vuelve a la fila',
+    pedidos(`/nutrition/meal-records/${registrada.registro}`, alAbrir).length === 1 &&
+      conDetalle.detalle?.titulo === `${registrada.comida} · ${opcionDelDetalle}` &&
+      conDetalle.detalle.conElFoco &&
+      conDetalle.detalle.texto.includes(leido.option.label) &&
+      conDetalle.dias.length === E.dias.length &&
+      conDetalle.dias.flatMap((d) => d.filas).some((f) => f.elegida && f.registro === registrada.registro) &&
+      conDetalle.panel === null &&
+      focoAlCerrar === registrada.registro &&
+      !parametros(page).has('registro'),
+    `«${conDetalle.detalle?.titulo}» · foco en el título: ${conDetalle.detalle?.conElFoco} · lecturas del registro: ${pedidos(`/nutrition/meal-records/${registrada.registro}`, alAbrir).length} · la API: ${leido.option?.label} · al cerrar, el foco en la fila: ${focoAlCerrar === registrada.registro}`,
+  );
+
+  // ── «Actualizar» conserva lo elegido; el período de 30 días ──────────────────────────────────────────────────
+  const hoyDelEscenario = hoy;
+  const alCambiar = await entrar(`${BASE}&p=30&ver=sin-registro`);
+  const treinta = await registrosEnPantalla(page);
+  const ctx30 = (await leerApi(v, `/advisees/${A}/nutrition/review-context?periodStart=${diaMenos(hoyDelEscenario, 29)}&periodEnd=${hoyDelEscenario}`)).data;
+  const E30 = esperado(ctx30, await leerLaLinea(ctx30.period.start, ctx30.period.end));
+  const diasCon = (clave, e) => e.dias.filter((d) => d.filas.some((f) => (clave === 'SIN_REGISTRO' ? f.estado === 'SIN_REGISTRO' : true))).length;
+  await cupo(v, 60);
+  const alActualizar = v.urls.length;
+  await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
+  await quieto(page, v);
+  await page.waitForSelector(LISTA, { timeout: 30_000 });
+  const trasActualizar = await registrosEnPantalla(page);
+  comprobar(
+    'F-17',
+    'El período elegido va en la dirección (`p=30`): las dos lecturas piden esos 30 días, el control lo dice y las cantidades son las de ese período, contadas a mano. «Actualizar» vuelve a leer y conserva el período y la vista elegida',
+    pedidos('/nutrition/review-context', alCambiar).some((u) => u.includes(`periodStart=${diaMenos(hoyDelEscenario, 29)}`) && u.includes(`periodEnd=${hoyDelEscenario}`)) &&
+      pedidos(`/advisees/${A}/timeline`, alCambiar).length >= 1 &&
+      pedidos(`/advisees/${A}/timeline`, alCambiar).every((u) => u.includes(`periodStart=${ctx30.period.start}`) && u.includes(`periodEnd=${ctx30.period.end}`)) &&
+      /30 días/.test(treinta.periodo ?? '') &&
+      treinta.vistas.every((x) => x.cuenta === num(E30.cuentas[x.vista])) &&
+      treinta.vistas.find((x) => x.vista === 'SIN_REGISTRO')?.elegida === 'true' &&
+      pedidos('/nutrition/review-context', alActualizar).length === 1 &&
+      pedidos(`/advisees/${A}/timeline`, alActualizar).length >= 1 &&
+      parametros(page).get('p') === '30' &&
+      parametros(page).get('ver') === 'sin-registro' &&
+      igual(trasActualizar.vistas, treinta.vistas) &&
+      /30 días/.test(trasActualizar.periodo ?? ''),
+    `${treinta.periodo} · ${treinta.vistas.map((x) => `${x.nombre} ${x.cuenta}`).join(' · ')} — a mano: ${ORDEN.map((k) => E30.cuentas[k]).join(', ')} · tras «Actualizar»: p=${parametros(page).get('p')}, ver=${parametros(page).get('ver')}`,
+  );
+  // ── El control de período, usado: los atajos que admite, un rango propio y su tope ─────────────────────────────
+  await entrar(BASE);
+  const RANGO = '.registros .periodo-del-seguimiento__rango';
+  await clic(page, '.registros .periodo-del-seguimiento__boton', 'Período').catch(() => null);
+  await page.waitForSelector('.registros .periodo-del-seguimiento__opciones button', { timeout: 5_000 }).catch(() => {});
+  const atajos = await textos(page, '.registros .periodo-del-seguimiento__opciones button');
+  await cupo(v, 60);
+  const alElegirAtajo = v.urls.length;
+  await clic(page, '.registros .periodo-del-seguimiento__opciones button', '30 días').catch(() => null);
+  await page.waitForFunction(() => new URL(location.href).searchParams.get('p') === '30', { timeout: 10_000 }).catch(() => {});
+  await quieto(page, v);
+  await page.waitForSelector(LISTA, { timeout: 30_000 }).catch(() => {});
+  const conAtajo = await registrosEnPantalla(page);
+  const pidioTreinta = pedidos('/nutrition/review-context', alElegirAtajo).some((u) => u.includes(`periodStart=${diaMenos(hoyDelEscenario, 29)}`) && u.includes(`periodEnd=${hoyDelEscenario}`));
+  // Un rango propio de 100 días no sale: dice el tope y no le pide nada a la API.
+  await clic(page, '.registros .periodo-del-seguimiento__boton', 'Período').catch(() => null);
+  await page.waitForSelector(`${RANGO} input[type="date"]`, { timeout: 5_000 }).catch(() => {});
+  await page.evaluate((r) => document.querySelectorAll(`${r} input[type="date"]`).forEach((c, i) => c.setAttribute('data-rango', i === 0 ? 'desde' : 'hasta')), RANGO);
+  const alPasarse = v.urls.length;
+  await fijarFecha(page, `${RANGO} [data-rango="desde"]`, diaMenos(hoyDelEscenario, 99)).catch(() => {});
+  await fijarFecha(page, `${RANGO} [data-rango="hasta"]`, hoyDelEscenario).catch(() => {});
+  await clic(page, `${RANGO} button`, 'Aplicar').catch(() => null);
+  await pausa(300);
+  const tope = await texto(page, '.registros .periodo-del-seguimiento__panel .campo__error');
+  const pidioAlPasarse = v.urls.slice(alPasarse).filter((u) => u.startsWith('GET ')).length;
+  // Uno que entra: queda en la dirección con sus dos fechas, sin el atajo.
+  const desdePropio = diaMenos(hoyDelEscenario, 20);
+  const hastaPropio = diaMenos(hoyDelEscenario, 10);
+  await cupo(v, 60);
+  const alAplicar = v.urls.length;
+  await fijarFecha(page, `${RANGO} [data-rango="desde"]`, desdePropio).catch(() => {});
+  await fijarFecha(page, `${RANGO} [data-rango="hasta"]`, hastaPropio).catch(() => {});
+  await clic(page, `${RANGO} button`, 'Aplicar').catch(() => null);
+  await page.waitForFunction((d) => new URL(location.href).searchParams.get('desde') === d, { timeout: 10_000 }, desdePropio).catch(() => {});
+  await quieto(page, v);
+  await page.waitForSelector(LISTA, { timeout: 30_000 }).catch(() => {});
+  const conRango = await registrosEnPantalla(page);
+  comprobar(
+    'F-17',
+    'El control de período ofrece los atajos que la lectura admite (7, 30 y 90 días; no «1 año»). Elegir «30 días» deja `p=30` en la dirección y lee esos 30 días. Un rango propio de 100 días no sale: dice el tope (92) y no le pide nada a la API. Uno de 11 días queda en la dirección con sus dos fechas, sin el atajo, y la pantalla lo dice sin «incluye hoy»',
+    igual(atajos, ['7 días', '30 días', '90 días']) &&
+      pidioTreinta &&
+      /30 días/.test(conAtajo.periodo ?? '') &&
+      /hasta 92 días/.test(tope) &&
+      pidioAlPasarse === 0 &&
+      parametros(page).get('desde') === desdePropio &&
+      parametros(page).get('hasta') === hastaPropio &&
+      !parametros(page).has('p') &&
+      pedidos('/nutrition/review-context', alAplicar).some((u) => u.includes(`periodStart=${desdePropio}`) && u.includes(`periodEnd=${hastaPropio}`)) &&
+      /11 días/.test(conRango.periodo ?? '') &&
+      !/incluye hoy/.test(conRango.periodo ?? '') &&
+      conRango.dias.length === 11,
+    `atajos: ${atajos.join(', ') || 'ninguno'} · con el atajo: ${conAtajo.periodo} · con 100 días: «${tope}», ${pidioAlPasarse} pedidos · con el rango propio: ${conRango.periodo} · ${conRango.dias.length} días a la vista`,
+  );
+  // Un período largo no se muestra entero de una vez: catorce días, y los demás a pedido (la lectura ya los trajo).
+  await entrar(`${BASE}&p=30`);
+  const largo = await registrosEnPantalla(page);
+  const alVerMas = v.urls.length;
+  const hayMas = !!largo.masDias;
+  if (hayMas) await clic(page, '.registros .linea__mas button', 'Ver días anteriores');
+  await pausa(300);
+  const masLargo = await registrosEnPantalla(page);
+  comprobar(
+    'F-19',
+    'Con 30 días se muestran catorce y «Ver días anteriores» trae otros catorce sin pedirle nada a la API; cada día dice la cuenta calculada a mano',
+    E30.dias.length === 30 &&
+      largo.dias.length === 14 &&
+      hayMas &&
+      masLargo.dias.length === 28 &&
+      v.urls.slice(alVerMas).filter((u) => u.startsWith('GET ')).length === 0 &&
+      masLargo.dias.every((d, i) => principalDe(E30.dias[i]) === null || d.principal === principalDe(E30.dias[i])),
+    `${largo.dias.length} días al entrar, ${masLargo.dias.length} después · «${largo.masDias}» · ${diasCon('SIN_REGISTRO', E30)} días con alguna comida sin registro`,
+  );
+
+  // ── Noventa días: la línea de tiempo llega en varias páginas, y hay días enteros sin registros ────────────────────
+  const alPedir90 = await entrar(`${BASE}&p=90`);
+  const ctx90 = (await leerApi(v, `/advisees/${A}/nutrition/review-context?periodStart=${diaMenos(hoyDelEscenario, 89)}&periodEnd=${hoyDelEscenario}`)).data;
+  const entradas90 = await leerLaLinea(ctx90.period.start, ctx90.period.end);
+  const E90 = esperado(ctx90, entradas90);
+  const paginas90 = pedidos(`/advisees/${A}/timeline`, alPedir90).length;
+  const noventa = await registrosEnPantalla(page);
+  while (await page.$('.registros .linea__mas button')) {
+    await clic(page, '.registros .linea__mas button', 'Ver días anteriores');
+    await pausa(150);
+  }
+  const todos90 = await registrosEnPantalla(page);
+  const sinNingunRegistro = E90.dias.filter((d) => d.sinRegistros && !d.sinComidasDelPlan).length;
+  comprobar(
+    'F-19',
+    'Con 90 días, la línea de tiempo se lee entera, de a 50 registros (tantas páginas como hagan falta), y las cantidades de las cinco vistas son las del período, contadas a mano; los días enteros sin registros dicen «Sin registro» y ninguno dice «0 de»',
+    entradas90.length > 50 &&
+      paginas90 === Math.ceil(entradas90.length / 50) &&
+      noventa.vistas.every((x) => x.cuenta === num(E90.cuentas[x.vista])) &&
+      todos90.dias.length === E90.dias.length &&
+      sinNingunRegistro > 0 &&
+      todos90.dias.filter((d) => d.principal === 'Sin registro').length === sinNingunRegistro &&
+      todos90.dias.every((d, i) => principalDe(E90.dias[i]) === null || d.principal === principalDe(E90.dias[i])) &&
+      !todos90.dias.some((d) => /\b0 de\b/.test(`${d.principal} ${d.notas.join(' ')}`)),
+    `${entradas90.length} registros en ${paginas90} páginas (a mano: ${Math.ceil(entradas90.length / 50)}) · ${noventa.vistas.map((x) => `${x.nombre} ${x.cuenta}`).join(' · ')} — a mano: ${ORDEN.map((k) => E90.cuentas[k]).join(', ')} · ${todos90.dias.length} días, ${sinNingunRegistro} sin ningún registro`,
+  );
+
+  // ── El registro de una comida con cantidades informadas, abierto por su dirección (C-53) ──────────────────────
+  const informadaE = E90.filas.find((f) => f.opcion && f.entrada?.quality.includes('QUANTITIES_REPORTED')) ?? null;
+  if (informadaE) {
+    await entrar(`${BASE}&p=90&registro=${informadaE.opcion}`);
+    await page.waitForSelector('aside.detalle-del-hecho .detalle-de-valores', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const informada = await page.evaluate(() => {
+      const d = document.querySelector('aside.detalle-del-hecho');
+      return {
+        titulo: d?.querySelector('h3')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
+        texto: d?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+        columnas: [...(d?.querySelectorAll('table thead th') ?? [])].map((th) => th.innerText.trim()),
+      };
+    });
+    const leidaInformada = (await leerApi(v, `/nutrition/meal-records/${informadaE.opcion}`)).data;
+    comprobar(
+      'C-53',
+      'El registro de una comida con cantidades informadas se abre por su dirección (aunque su día esté plegado o más abajo) y usa las palabras de BE: «Informó lo que comió de cada ingrediente», y la tabla de ingredientes con las columnas «Indicado», «Registrado» y «Diferencia»; dice la opción que da la API',
+      parametros(page).get('registro') === informadaE.opcion &&
+        (informada.titulo ?? '').startsWith(`${informadaE.comida} · `) &&
+        informada.texto.includes('Informó lo que comió de cada ingrediente') &&
+        igual(informada.columnas, ['Ingrediente', 'Indicado', 'Registrado', 'Diferencia']) &&
+        informada.texto.includes(leidaInformada.option.label),
+      `«${informada.titulo}» · columnas: ${informada.columnas.join(', ') || 'sin tabla'} · la API: ${leidaInformada.option?.label}`,
+    );
+    // «Actualizar» con el registro abierto: la sección se monta de nuevo con el registro ya en la dirección. Un vigía
+    // anota si el panel de encima llega a abrirse, aunque sea por un instante.
+    await page.evaluate(() => {
+      window.__panelDeEncima = 0;
+      window.__vigiaDelPanel?.disconnect();
+      window.__vigiaDelPanel = new MutationObserver(() => {
+        if (document.querySelector('dialog.dialogo--panel[open]')) window.__panelDeEncima += 1;
+      });
+      window.__vigiaDelPanel.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
+    });
+    await cupo(v, 60);
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+    await quieto(page, v);
+    await page.waitForSelector('aside.detalle-del-hecho .detalle-de-valores', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const trasActualizarElRegistro = await page.evaluate(() => {
+      window.__vigiaDelPanel?.disconnect();
+      const d = document.querySelector('aside.detalle-del-hecho');
+      return { panel: window.__panelDeEncima ?? -1, titulo: d?.querySelector('h3')?.innerText.replace(/\s+/g, ' ').trim() ?? null };
+    });
+    comprobar(
+      'F-18',
+      '«Actualizar» con un registro abierto lo deja abierto al costado, con el registro en la dirección; la sección, que se vuelve a montar, no pasa por el panel de encima ni por un instante (a 1024 px el panel sí se abre: lo mira su comprobación)',
+      trasActualizarElRegistro.panel === 0 && !!informada.titulo && trasActualizarElRegistro.titulo === informada.titulo && parametros(page).get('registro') === informadaE.opcion,
+      `veces que el panel de encima estuvo abierto: ${trasActualizarElRegistro.panel} · al costado: «${trasActualizarElRegistro.titulo}»`,
+    );
+  } else {
+    informar('C-53', 'El registro de una comida con cantidades informadas', 'el escenario no tiene ninguna en los últimos 90 días: no se pudo mirar');
+  }
+
+  // ── Una vista sin ninguna comida ────────────────────────────────────────────────────────────────────────────
+  const enCero = ORDEN.find((k) => E.cuentas[k] === 0);
+  if (enCero) {
+    const PARAMETRO = { DISTINTAS: 'distintas', SIN_CONFIRMAR: 'sin-confirmar', COMIDA_DIFERENTE: 'comida-diferente', SIN_REGISTRO: 'sin-registro' };
+    await entrar(`${BASE}&ver=${PARAMETRO[enCero]}`);
+    const vacia = await registrosEnPantalla(page);
+    comprobar(
+      'F-16',
+      'Una vista sin ninguna comida se muestra con su cero y, al elegirla, dice que ninguna coincide y cuántas hay en el período: no se confunde con un período vacío',
+      vacia.vistas.find((x) => x.vista === enCero)?.cuenta === '0' && /Ninguna comida del período coincide/.test(vacia.vacio ?? '') && (vacia.vacio ?? '').includes(`${num(E.cuentas.TODAS)} ${comidas(E.cuentas.TODAS)}`) && vacia.dias.length === 0,
+      `${enCero}: «${vacia.vacio}»`,
+    );
+  } else {
+    informar('F-16', 'Una vista sin ninguna comida', 'el escenario tiene comidas en las cinco vistas del período de entrada: no se pudo mirar');
+  }
+
+  // ── Si falla la segunda lectura, los días se ven igual y lo que depende de ella lo dice ─────────────────────────
+  const sinLinea = { coincide: (u) => u.includes(`/advisees/${A}/timeline`), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+  await salir();
+  v.reglas.push(sinLinea);
+  await entrar(BASE);
+  const conFalla = await registrosEnPantalla(page);
+  await abrirLosDias();
+  const filasConFalla = (await registrosEnPantalla(page)).dias.flatMap((d) => d.filas);
+  v.reglas.splice(v.reglas.indexOf(sinLinea), 1);
+  await cupo(v, 60);
+  if (conFalla.falla) await clic(page, '.registros .estado-de-grafico--error button', 'Reintentar');
+  await quieto(page, v);
+  await page.waitForFunction(() => !document.querySelector('.registros .estado-de-grafico--error'), { timeout: 30_000 }).catch(() => {});
+  const repuesto = await registrosEnPantalla(page);
+  const sinNumero = (x, clave) => x.vistas.find((y) => y.vista === clave)?.cuenta ?? null;
+  comprobar(
+    'F-15',
+    'Si la línea de tiempo no se puede leer (un 503 simulado), los días y sus comidas siguen a la vista con lo que el contraste sabe; lo dice en su lugar con el motivo y «Reintentar»; las dos vistas que dependen de ella no llevan número (no un cero) y las otras tres sí. «Reintentar» trae lo que faltaba',
+    /No pudimos traer la opción ni las cantidades/.test(conFalla.falla ?? '') &&
+      /BE no está disponible en este momento/.test(conFalla.falla ?? '') &&
+      conFalla.dias.length === E.dias.length &&
+      E.dias.every((d, i) => principalDe(d) === null || conFalla.dias[i].principal === principalDe(d)) &&
+      sinNumero(conFalla, 'DISTINTAS') === null &&
+      sinNumero(conFalla, 'SIN_CONFIRMAR') === null &&
+      sinNumero(conFalla, 'TODAS') === num(E.cuentas.TODAS) &&
+      sinNumero(conFalla, 'SIN_REGISTRO') === num(E.cuentas.SIN_REGISTRO) &&
+      sinNumero(conFalla, 'COMIDA_DIFERENTE') === num(E.cuentas.COMIDA_DIFERENTE) &&
+      filasConFalla.length === E.filas.length &&
+      filasConFalla.filter((f) => f.estado === 'REGISTRADA').every((f) => /No se pudo traer/.test(f.cantidades) && /no se pudo traer/i.test(f.registrado)) &&
+      repuesto.falla === null &&
+      igual(repuesto.vistas.map((x) => x.cuenta), ORDEN.map((k) => num(E.cuentas[k]))),
+    `«${(conFalla.falla ?? '').slice(0, 110)}» · ${conFalla.vistas.map((x) => `${x.nombre} ${x.cuenta ?? 'sin número'}`).join(' · ')} · después: ${repuesto.vistas.map((x) => x.cuenta).join(', ')}`,
+  );
+
+  // ── La primera pantalla, la ayuda, el teclado y axe ─────────────────────────────────────────────────────────
+  await entrar(BASE);
+  const medida = await page.evaluate(() => {
+    const abajo = (s) => {
+      const e = [...document.querySelectorAll(s)].pop();
+      return e ? Math.round(e.getBoundingClientRect().bottom + scrollY) : null;
+    };
+    const todos = [...document.querySelectorAll('.registros .dia-de-registros')];
+    const dias = todos.map((d) => Math.round(d.getBoundingClientRect().bottom + scrollY));
+    // El primer día que arranca abierto (el que tiene algo distinto), y dónde termina.
+    const abierto = todos.findIndex((d) => d.dataset.abierto === 'si');
+    return { alto: document.documentElement.scrollHeight, lista: abajo('.registros .dia-de-registros'), vistas: abajo('.registros__vistas'), columnas: abajo('.registros__columnas'), dias, enteros: dias.filter((y) => y <= 900).length, abierto, finDelAbierto: abierto < 0 ? null : dias[abierto] };
+  });
+  informar('F-20', 'El alto de Registros con el período de entrada, a 1440 × 900', `${medida.alto} px · las vistas terminan a los ${medida.vistas} px, los nombres de las columnas a los ${medida.columnas} y el último de los ${medida.dias.length} días, a los ${medida.lista}`);
+  comprobar(
+    'F-20',
+    'A 1440 × 900, con el período de entrada, entran sin desplazarse las vistas, los nombres de las columnas y, entero, el primer día que tiene algo distinto, con sus comidas abiertas: lo que hay para mirar está en la primera pantalla',
+    medida.columnas !== null && medida.columnas <= 900 && medida.dias.length === E.dias.length && medida.abierto >= 0 && medida.finDelAbierto <= 900,
+    `el día abierto (el ${medida.abierto + 1}.º de la lista) termina a los ${medida.finDelAbierto} px · ${medida.enteros} de ${medida.dias.length} días enteros en los primeros 900 px; el último termina a los ${medida.lista}`,
+  );
+  await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+  await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+  const ayuda = await page.evaluate(() => {
+    const d = document.querySelector('dialog.como-se-lee[open]');
+    if (!d) return { titulo: null, renglones: 0, vistas: [], foco: false };
+    return { titulo: d.querySelector('h2').innerText.trim(), renglones: d.querySelectorAll('.como-se-lee__lista > li').length, vistas: [...d.querySelectorAll('.como-se-lee__fuentes [data-vista]')].map((x) => x.dataset.vista), foco: document.activeElement === d.querySelector('h2') };
+  });
+  const faltasDeLaAyuda = await axe(page);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+  const focoTrasLaAyuda = await page.evaluate(() => document.activeElement?.classList.contains('como-se-lee__boton') ?? false);
+  comprobar(
+    'F-14',
+    'Registros tiene su ayuda en el marco del área («Cómo se lee esta vista»): se abre por el título, explica cada marca y dice qué trae cada una de las cinco vistas; Escape la cierra y el foco vuelve al botón. Las otras secciones de Nutrición todavía no tienen la suya, y no muestran el botón',
+    ayuda.titulo === 'Cómo se leen los Registros' && ayuda.renglones >= 10 && igual(ayuda.vistas, ORDEN) && ayuda.foco && focoTrasLaAyuda && faltasDeLaAyuda.length === 0,
+    `«${ayuda.titulo}» · ${ayuda.renglones} renglones · ${ayuda.vistas.length} vistas · axe: ${faltasDeLaAyuda.length === 0 ? 'sin faltas' : faltasDeLaAyuda.map((f) => f.id).join(', ')}`,
+  );
+  await salir();
+  const sinAyuda = await page.evaluate(() => document.querySelectorAll('header.marco-del-area .como-se-lee__boton').length);
+  comprobar('F-14', 'En Nutrición · Resumen, que todavía no tiene ayuda, el marco no muestra el botón (la misma consulta lo encuentra en Registros)', sinAyuda === 0, `${sinAyuda} botones`);
+  await entrar(BASE);
+  await abrirLosDias();
+  const faltas = await axe(page);
+  await page.click(`.comida-del-dia__fila[data-registro="${registrada.registro}"]`);
+  await page.waitForSelector('aside.detalle-del-hecho .detalle-de-valores', { timeout: 20_000 }).catch(() => {});
+  await quieto(page, v);
+  const faltasConDetalle = await axe(page);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('aside.detalle-del-hecho'), { timeout: 10_000 }).catch(() => {});
+  comprobar('F-18', 'axe no encuentra faltas en Registros con todos los días abiertos, ni con el detalle de un registro al costado', faltas.length === 0 && faltasConDetalle.length === 0, `sin detalle: ${faltas.map((f) => f.id).join(', ') || 'sin faltas'} · con detalle: ${faltasConDetalle.map((f) => f.id).join(', ') || 'sin faltas'}`);
+
+  // ── A 1024 px el detalle se abre encima ─────────────────────────────────────────────────────────────────────
+  await page.setViewport({ width: 1024, height: 900 });
+  await entrar(BASE);
+  await abrirLosDias();
+  await page.click(`.comida-del-dia__fila[data-registro="${registrada.registro}"]`);
+  await page.waitForSelector('dialog.dialogo--panel[open] .detalle-de-valores', { timeout: 20_000 }).catch(() => {});
+  await quieto(page, v);
+  const angosto = await registrosEnPantalla(page);
+  const desborda = !(await sinDesborde(page));
+  if (angosto.panel) await clic(page, 'dialog.dialogo--panel[open] button', 'Cerrar');
+  await pausa(200);
+  await page.setViewport({ width: 1440, height: 900 });
+  comprobar(
+    'F-18',
+    'A 1024 px el registro se abre encima, en un panel que retiene el foco, con el mismo título; la página no desborda de costado',
+    angosto.detalle === null && (angosto.panel ?? '').includes(`${registrada.comida} · ${opcionDelDetalle}`) && (angosto.panel ?? '').includes(leido.option.label) && !desborda,
+    `panel: «${(angosto.panel ?? '').slice(0, 70)}» · al costado: ${angosto.detalle ? 'sí' : 'no'}${desborda ? ' · DESBORDA' : ''}`,
+  );
+  comprobar('—', 'Registros de Nutrición no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+// ─── Nutrición · Registros: la estimación del profesional (WP-ESCRITORIO-AREAS, parte 1) ──────────────────────────
+
+/**
+ * La estimación del profesional sobre una comida diferente (NUT-12; C-50), que se agrega desde el detalle del registro.
+ * **Escribe en el escenario:** le suma una estimación a una comida diferente. Por eso no va dentro de `funcional`: corre
+ * sola (`node recorrido.mjs estimacion`) y última en la pasada completa, para que ningún otro recorrido lea lo que deja.
+ * Una de las comprobaciones mira una falla simulada por el recorrido (un 503 al guardar), y lo dice. Lo esperado sale de
+ * lo que devuelve la API antes y después de escribir.
+ */
+async function estimacionDeUnaComida(page, v) {
+  const A = estado.aseId;
+  const DESCRIPCION = 'Milanesa de carne al horno con ensalada';
+  const GRAMOS = '250';
+  const desde = diaMenos(hoy, 89);
+  const leerElContexto = async () => (await leerApi(v, `/advisees/${A}/nutrition/review-context?periodStart=${desde}&periodEnd=${hoy}`)).data;
+  const ingestaDe = (ctx, id) => ctx.registeredIntakes.find((i) => i.executionId === id) ?? null;
+  const antes = await leerElContexto();
+  const fuera = antes.descriptiveContrast.days.flatMap((d) => d.outsidePrescription.map((o) => ({ ...o, fecha: d.date }))).sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  // Las filas que tiene que traer la vista «Comida diferente», a mano: una por comida del plan con alguna, y las sueltas.
+  const filasDeLaVista = antes.descriptiveContrast.days.reduce((n, d) => {
+    const enUnaComida = new Set(d.meals.flatMap((m) => m.differentMealExecutionIds));
+    return n + d.meals.filter((m) => m.differentMealExecutionIds.length > 0).length + d.outsidePrescription.filter((o) => !enUnaComida.has(o.executionId)).length;
+  }, 0);
+  // La comida diferente más nueva que todavía no tiene una estimación; si todas tienen, la más nueva.
+  const elegida = fuera.find((o) => (ingestaDe(antes, o.executionId)?.corrections.length ?? 0) === 0) ?? fuera[0] ?? null;
+  if (!elegida || !ingestaDe(antes, elegida.executionId)) {
+    informar('C-50', 'La estimación del profesional sobre una comida diferente', 'el escenario no tiene una comida diferente en los últimos 90 días: no se pudo mirar');
+    return;
+  }
+  const id = elegida.executionId;
+  const habia = ingestaDe(antes, id).corrections.length;
+  const POSTS = (desdeDonde) => v.urls.slice(desdeDonde).filter((u) => u.startsWith('POST ') && u.includes(`/nutrition/executions/${id}/corrections`));
+  const ESTIMACION = 'aside.detalle-del-hecho .estimacion-del-profesional';
+  const CAMPO = (sufijo) => `${ESTIMACION} input[id="est-${id}-${sufijo}"]`;
+  const leer = () =>
+    page.evaluate(
+      (estimacionS, registro) => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const d = document.querySelector('aside.detalle-del-hecho');
+        const e = document.querySelector(estimacionS);
+        const valor = (sufijo) => e?.querySelector(`input[id$="-${sufijo}"]`)?.value ?? null;
+        return {
+          titulo: t(d?.querySelector('h3')),
+          texto: t(d) ?? '',
+          rasgos: [...(d?.querySelectorAll('.datos-del-hecho__rasgos .etiqueta-de-dato') ?? [])].map(t),
+          estimacion: t(e) ?? '',
+          formulario: !!e?.querySelector('fieldset'),
+          descripcion: valor('desc'),
+          gramos: valor('g'),
+          errores: [...(e?.querySelectorAll('.campo__error') ?? [])].map(t),
+          aviso: t(e?.querySelector('.aviso--error')),
+          filaElegida: document.querySelector(`.comida-del-dia [data-registro="${registro}"]`)?.getAttribute('aria-current') === 'true',
+          filas: [...document.querySelectorAll('.registros .comida-del-dia')].filter((x) => x.getClientRects().length > 0).length,
+        };
+      },
+      ESTIMACION,
+      id,
+    );
+  const escribir = async (sufijo, valor) => {
+    // Seleccionar todo con el teclado: tres clics no seleccionan el contenido de un campo de una sola palabra.
+    const enfocado = await page.focus(CAMPO(sufijo)).then(
+      () => true,
+      () => false,
+    );
+    if (!enfocado) return;
+    await page.keyboard.down('Control');
+    await page.keyboard.press('KeyA');
+    await page.keyboard.up('Control');
+    await page.keyboard.press('Backspace');
+    if (valor) await page.type(CAMPO(sufijo), valor).catch(() => {});
+  };
+  /** Deja el formulario abierto y con lo escrito: una versión rota puede haberlo cerrado o vaciado, y hay que poder seguir. */
+  const dejarEscrito = async () => {
+    if (!(await leer()).formulario) {
+      await clic(page, `${ESTIMACION} button.boton--secundario`, 'Agregar estimación').catch(() => null);
+      await page.waitForSelector(`${ESTIMACION} fieldset`, { timeout: 10_000 }).catch(() => {});
+    }
+    const hay = await leer();
+    if (hay.descripcion !== DESCRIPCION) await escribir('desc', DESCRIPCION);
+    if (hay.gramos !== GRAMOS) await escribir('g', GRAMOS);
+  };
+  const guardar = () => clic(page, `${ESTIMACION} button.boton--primario`, 'Agregar estimación').catch(() => null);
+  const actualizar = () => clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+  const pregunta = (ms) =>
+    page.waitForSelector('dialog.dialogo[open]:not(.dialogo--panel)', { timeout: ms }).then(
+      () => true,
+      () => false,
+    );
+
+  // ── El registro de la comida diferente, abierto por su dirección ─────────────────────────────────────────────
+  await cupo(v, 60);
+  await ir(page, `/pro/advisees/nutrition?id=${A}&vista=registros&p=90&ver=comida-diferente&registro=${id}`);
+  await page.waitForSelector('#titulo-registros', { timeout: 30_000 });
+  await quieto(page, v);
+  await page.waitForSelector(ESTIMACION, { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const alAbrir = await leer();
+  comprobar(
+    'C-50',
+    'El registro de una comida diferente se abre por su dirección, con la vista «Comida diferente» elegida: su fila queda marcada, el detalle dice «Fuera del plan», la descripción original y que los macros no se calculan, y ofrece «Agregar estimación»',
+    alAbrir.filaElegida &&
+      alAbrir.rasgos.includes('Fuera del plan') &&
+      (elegida.description ? alAbrir.texto.includes(elegida.description) : true) &&
+      /Macros sin calcular/.test(alAbrir.texto) &&
+      /Agregar estimación/.test(alAbrir.estimacion) &&
+      !alAbrir.formulario &&
+      filasDeLaVista > 0 &&
+      alAbrir.filas === filasDeLaVista,
+    `«${alAbrir.titulo}» · ${alAbrir.rasgos.join(', ') || 'sin etiquetas'} · ${alAbrir.filas} filas en la vista (a mano: ${filasDeLaVista}) · estimaciones que ya tenía: ${habia}`,
+  );
+
+  // ── Lo que no sale: sin describir nada, o con una cantidad que no es un número ───────────────────────────────
+  await clic(page, `${ESTIMACION} button.boton--secundario`, 'Agregar estimación').catch(() => null);
+  await page.waitForSelector(`${ESTIMACION} fieldset`, { timeout: 10_000 }).catch(() => {});
+  const alValidar = v.urls.length;
+  await guardar();
+  await pausa(300);
+  const vacio = await leer();
+  await escribir('desc', DESCRIPCION);
+  await escribir('g', 'doscientos');
+  await guardar();
+  await pausa(300);
+  const conLetras = await leer();
+  comprobar(
+    'F-18',
+    'La estimación no sale sin describir nada ni con una cantidad que no es un número: cada error se marca en su campo, con su motivo, y no se le pide nada a la API',
+    vacio.formulario &&
+      vacio.errores.some((e) => e.includes('Describí lo que estimás.')) &&
+      conLetras.errores.length === 1 &&
+      !conLetras.errores[0].includes('Describí') &&
+      conLetras.descripcion === DESCRIPCION &&
+      POSTS(alValidar).length === 0,
+    `sin describir: ${vacio.errores.join(' | ') || 'ningún error marcado'} · con «doscientos»: ${conLetras.errores.join(' | ') || 'ningún error marcado'} · pedidos a la API: ${POSTS(alValidar).length}`,
+  );
+  await escribir('g', GRAMOS);
+
+  // ── Con algo escrito, «Actualizar» pregunta antes ───────────────────────────────────────────────────────────
+  await cupo(v, 60);
+  const alPreguntar = v.urls.length;
+  await actualizar();
+  const pregunto = await pregunta(8_000);
+  let laPregunta = '(no preguntó)';
+  let leyoAlPreguntar = -1;
+  if (pregunto) {
+    laPregunta = await texto(page, 'dialog.dialogo[open]:not(.dialogo--panel)');
+    await pausa(600);
+    leyoAlPreguntar = v.urls.slice(alPreguntar).filter((u) => u.startsWith('GET ')).length;
+    await clic(page, 'dialog.dialogo[open]:not(.dialogo--panel) button', 'Seguir editando').catch(() => null);
+    await page.waitForFunction(() => !document.querySelector('dialog.dialogo[open]:not(.dialogo--panel)'), { timeout: 10_000 }).catch(() => {});
+  } else {
+    await quieto(page, v);
+    await page.waitForSelector(ESTIMACION, { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+  }
+  const trasPreguntar = await leer();
+  comprobar(
+    'F-08',
+    'Con la estimación a medio escribir, «Actualizar» pregunta antes, dice qué se pierde (la estimación de una comida) y no lee nada; «Seguir editando» deja lo escrito y el registro abierto',
+    pregunto && /Tenés cambios sin guardar/.test(laPregunta) && /la estimación de una comida/.test(laPregunta) && leyoAlPreguntar === 0 && trasPreguntar.formulario && trasPreguntar.descripcion === DESCRIPCION && trasPreguntar.gramos === GRAMOS,
+    `«${laPregunta.slice(0, 150)}» · lecturas mientras pregunta: ${leyoAlPreguntar} · tras «Seguir editando»: «${trasPreguntar.descripcion}», «${trasPreguntar.gramos}»`,
+  );
+  await dejarEscrito();
+
+  // ── Si guardar falla, lo dice y no se pierde lo escrito ─────────────────────────────────────────────────────
+  const falla = { coincide: (u) => u.includes(`/nutrition/executions/${id}/corrections`), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+  v.reglas.push(falla);
+  await cupo(v, 60);
+  await guardar();
+  await page.waitForSelector(`${ESTIMACION} .aviso--error`, { timeout: 15_000 }).catch(() => {});
+  await quieto(page, v);
+  const conFalla = await leer();
+  v.reglas.splice(v.reglas.indexOf(falla), 1);
+  const trasLaFalla = ingestaDe(await leerElContexto(), id);
+  comprobar(
+    'F-18',
+    'Si guardar falla (un 503 simulado por el recorrido), lo dice con su motivo, el formulario sigue abierto con lo escrito y el registro queda como estaba',
+    !!conFalla.aviso && conFalla.formulario && conFalla.descripcion === DESCRIPCION && conFalla.gramos === GRAMOS && trasLaFalla?.corrections.length === habia,
+    `«${conFalla.aviso ?? 'sin aviso'}» · lo escrito: «${conFalla.descripcion}», «${conFalla.gramos}» · estimaciones en la API: ${trasLaFalla?.corrections.length} (había ${habia})`,
+  );
+  await dejarEscrito();
+
+  // ── Guardar: por la API, una vez, y la pantalla lo muestra ───────────────────────────────────────────────────
+  await cupo(v, 60);
+  const alGuardar = v.urls.length;
+  await guardar();
+  await page
+    .waitForFunction(
+      (s, d) => {
+        const e = document.querySelector(s);
+        return !!e && !e.querySelector('fieldset') && e.innerText.includes(d);
+      },
+      { timeout: 30_000 },
+      ESTIMACION,
+      DESCRIPCION,
+    )
+    .catch(() => {});
+  await quieto(page, v);
+  const guardado = await leer();
+  const despues = await leerElContexto();
+  const ingesta = ingestaDe(despues, id);
+  const ultima = ingesta?.corrections.at(-1) ?? null;
+  const item = ultima?.structuredEstimate.items[0] ?? null;
+  const original = despues.descriptiveContrast.days.flatMap((d) => d.outsidePrescription).find((o) => o.executionId === id)?.description ?? null;
+  comprobar(
+    'C-50',
+    '«Agregar estimación» guarda por la API con un solo pedido: la estimación queda en la historia del registro con lo escrito (la descripción y 250 g) y pasa a ser la vigente; la descripción original sigue igual. La pantalla la muestra con quién la hizo, sin cerrar el registro',
+    POSTS(alGuardar).length === 1 &&
+      ingesta?.corrections.length === habia + 1 &&
+      item?.description === DESCRIPCION &&
+      item?.quantity?.value === 250 &&
+      item?.quantity?.unit === 'g' &&
+      ingesta?.effectiveView.kind === 'CORRECTED' &&
+      ingesta?.effectiveView.correctionId === ultima?.correctionId &&
+      original === elegida.description &&
+      !guardado.formulario &&
+      guardado.estimacion.includes(DESCRIPCION) &&
+      /250 g/.test(guardado.estimacion) &&
+      guardado.estimacion.includes(ultima?.author.displayName ?? '···') &&
+      (elegida.description ? guardado.texto.includes(elegida.description) : true) &&
+      parametros(page).get('registro') === id &&
+      guardado.filaElegida,
+    `pedidos: ${POSTS(alGuardar).length} · en la API: ${ingesta?.corrections.length} estimaciones (había ${habia}), la última «${item?.description}» · ${item?.quantity ? `${item.quantity.value} ${item.quantity.unit}` : 'sin cantidad'} · original: «${original}» · en pantalla: «${guardado.estimacion.slice(0, 140)}»`,
+  );
+
+  // ── Ya no hay nada sin guardar: «Actualizar» no pregunta ─────────────────────────────────────────────────────
+  await cupo(v, 60);
+  const alActualizar = v.urls.length;
+  await actualizar();
+  const preguntoDeNuevo = await pregunta(2_500);
+  if (preguntoDeNuevo) await clic(page, 'dialog.dialogo[open]:not(.dialogo--panel) button', 'Actualizar y descartar').catch(() => null);
+  await quieto(page, v);
+  await page.waitForSelector(ESTIMACION, { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const trasActualizar = await leer();
+  const releyo = v.urls.slice(alActualizar).filter((u) => u.startsWith('GET ') && u.includes('/nutrition/review-context')).length;
+  comprobar(
+    'F-08',
+    'Con la estimación guardada no queda nada sin guardar: «Actualizar» no pregunta, vuelve a leer y el registro sigue abierto, con la vista elegida y su estimación',
+    !preguntoDeNuevo && releyo === 1 && parametros(page).get('registro') === id && parametros(page).get('ver') === 'comida-diferente' && trasActualizar.estimacion.includes(DESCRIPCION) && !trasActualizar.formulario,
+    `preguntó: ${preguntoDeNuevo ? 'sí' : 'no'} · lecturas del contexto: ${releyo} · «${trasActualizar.estimacion.slice(0, 110)}»`,
+  );
+  comprobar('—', 'La estimación de una comida no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true, registros = true, estimacion = false } = {}) {
   const { navegador, page, v } = await abrir();
   // Los guiones que pide la página, desde antes de entrar: para saber con qué se cargó la ficha.
   const guiones = [];
@@ -4720,6 +5602,15 @@ async function fichaRecompuesta({ resumen = true, linea = true, analizar = true,
     if (areas) {
       empezarDeCero();
       await marcoDeLasAreas(page, v);
+    }
+    if (registros) {
+      empezarDeCero();
+      await registrosDeNutricion(page, v);
+    }
+    // Escribe en el escenario: solo cuando se lo pide (`estimacion`), nunca dentro de `funcional`.
+    if (estimacion) {
+      empezarDeCero();
+      await estimacionDeUnaComida(page, v);
     }
   } finally {
     await navegador.close();
@@ -5313,11 +6204,13 @@ try {
   if (modo === 'capturas' || modo === 'todo') await capturas();
   if (modo === 'descartable') await descartable();
   if (modo === 'menu') await encabezadoYMenu();
-  if (modo === 'analizar') await fichaRecompuesta({ resumen: false, linea: false, espacio: false, areas: false });
-  if (modo === 'resumen') await fichaRecompuesta({ linea: false, analizar: false, espacio: false, areas: false });
-  if (modo === 'linea') await fichaRecompuesta({ resumen: false, analizar: false, espacio: false, areas: false });
-  if (modo === 'espacio') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, areas: false });
-  if (modo === 'areas') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false });
+  if (modo === 'analizar') await fichaRecompuesta({ resumen: false, linea: false, espacio: false, areas: false, registros: false });
+  if (modo === 'resumen') await fichaRecompuesta({ linea: false, analizar: false, espacio: false, areas: false, registros: false });
+  if (modo === 'linea') await fichaRecompuesta({ resumen: false, analizar: false, espacio: false, areas: false, registros: false });
+  if (modo === 'espacio') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, areas: false, registros: false });
+  if (modo === 'areas') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, registros: false });
+  if (modo === 'registros') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false });
+  if (modo === 'estimacion') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, estimacion: true });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {

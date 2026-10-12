@@ -22,8 +22,9 @@ import {
   type RegistroDeEjecucion,
 } from '@be/domain';
 import Link from 'next/link';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
+import { Panel } from '../../../../components/panel';
 import { api } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { DetalleDeRegistroDeComida } from '../nutrition/detalle-de-registro';
@@ -66,34 +67,13 @@ export function PanelDeRegistro({
   numeroDeVersion?: number;
   children?: ReactNode;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const id = useId();
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (origen && !d.open) d.showModal();
-    if (!origen && d.open) d.close();
-  }, [origen]);
+  // El marco es el panel común (`components/panel.tsx`), que también usan las pestañas de área.
   return (
-    <dialog
-      ref={ref}
-      className="dialogo dialogo--panel"
-      aria-labelledby={`${id}-titulo`}
-      onCancel={(e) => {
-        e.preventDefault();
-        onCerrar();
-      }}
-    >
-      <div className="dialogo__encabezado">
-        <h2 id={`${id}-titulo`}>{titulo}</h2>
-        <button type="button" className="boton boton--secundario" onClick={onCerrar}>
-          Cerrar
-        </button>
-      </div>
+    <Panel abierto={origen !== null} titulo={titulo} onCerrar={onCerrar}>
       {children}
       {origen && !soloLoDeAdentro ? <ContenidoDelRegistro origen={origen} onNoDisponible={onNoDisponible} numeroDeVersion={numeroDeVersion} /> : null}
       {origen && !soloLoDeAdentro ? <EnlaceAlArea origen={origen} /> : null}
-    </dialog>
+    </Panel>
   );
 }
 

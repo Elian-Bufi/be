@@ -7,25 +7,15 @@
  * los límites de cada pregunta): eso sigue en su lugar.
  *
  * Es un diálogo: se abre a pedido, toma el foco, Escape lo cierra y el foco vuelve al botón. Cada vista suma la suya
- * con su parte del paquete; la que todavía no la tiene no muestra el botón.
+ * con su parte del paquete; la que todavía no la tiene no muestra el botón. El botón y el diálogo son una pieza común
+ * (`components/ayuda-de-vista.tsx`), que también usan las pestañas de área: acá va lo que dice cada vista de la ficha.
  */
 import { FUENTE_DE_LA_REGLA, VISTAS_DE_LA_LINEA, type ReglaDelResumen } from '@be/domain';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { AyudaDeVista, RenglonDeAyuda as Renglon } from '../../../../components/ayuda-de-vista';
 import { Icono } from '../../../../components/icono';
 import type { VistaDelSeguimiento } from './estado';
 import { Marca } from './marca';
-
-/** Una explicación con su muestra al costado: lo que se ve en la pantalla, al lado de lo que significa. */
-function Renglon({ muestra, children }: { muestra: ReactNode; children: ReactNode }) {
-  return (
-    <li>
-      <span className="como-se-lee__muestra" aria-hidden="true">
-        {muestra}
-      </span>
-      <p>{children}</p>
-    </li>
-  );
-}
 
 function DeAnalizar() {
   return (
@@ -235,40 +225,12 @@ const AYUDA: Readonly<Partial<Record<VistaDelSeguimiento, { readonly titulo: str
 };
 
 export function ComoSeLeeEstaVista({ vista }: { vista: VistaDelSeguimiento }) {
-  const id = useId();
-  const dialogo = useRef<HTMLDialogElement>(null);
-  const titulo = useRef<HTMLHeadingElement>(null);
   const ayuda = AYUDA[vista];
-  // Se abre por el principio: el foco va al título. Si fuera al primer control (el botón «Cerrar», al final), una ayuda
-  // más alta que la ventana se abriría mostrando su último renglón.
-  const abrir = () => {
-    dialogo.current?.showModal();
-    titulo.current?.focus();
-    if (dialogo.current) dialogo.current.scrollTop = 0;
-  };
-  // La ayuda es de la vista que se mira: si la vista cambia con el diálogo abierto (Atrás del navegador), se cierra.
-  useEffect(() => {
-    if (dialogo.current?.open) dialogo.current.close();
-  }, [vista]);
   if (!ayuda) return null;
   const Contenido = ayuda.contenido;
   return (
-    <>
-      <button type="button" className="boton boton--enlace como-se-lee__boton" aria-haspopup="dialog" onClick={abrir}>
-        <Icono nombre="ayuda" tamano={18} />
-        <span className="como-se-lee__palabras">Cómo se lee esta vista</span>
-      </button>
-      <dialog ref={dialogo} className="dialogo como-se-lee" aria-labelledby={`${id}-titulo`}>
-        <h2 id={`${id}-titulo`} ref={titulo} tabIndex={-1}>
-          {ayuda.titulo}
-        </h2>
-        <Contenido />
-        <div className="acciones">
-          <button type="button" className="boton boton--secundario" onClick={() => dialogo.current?.close()}>
-            Cerrar
-          </button>
-        </div>
-      </dialog>
-    </>
+    <AyudaDeVista titulo={ayuda.titulo} deQue={vista}>
+      <Contenido />
+    </AyudaDeVista>
   );
 }

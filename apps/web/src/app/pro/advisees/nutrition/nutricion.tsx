@@ -12,6 +12,8 @@
  *
  * WP-ESCRITORIO-AREAS (parte 0): el encabezado es el marco del área, común a las cuatro (`MarcoDelArea`): el camino de
  * vuelta a la ficha, de quién es, el acceso actual de Nutrición, «Actualizar» con la hora y las secciones con su ícono.
+ * Desde la parte 1, lo que una sección elige (el período, la vista, lo que está abierto) vive en la dirección, como en la
+ * ficha: «Actualizar» vuelve a leer sin perderlo, y volver atrás lo recupera. Al cambiar de sección no se lleva.
  */
 import { COPY_NUTRICION } from '@be/domain';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -20,6 +22,8 @@ import type { Resultado } from '../../../../lib/api';
 import { useEspacioProfesional } from '../../espacio-profesional';
 import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
+import { hrefConCambios } from '../seguimiento/estado';
+import { AyudaDeRegistros } from './ayuda-de-registros';
 import { VistaDePlan } from './plan';
 import { VistaDeRegistros } from './registros';
 import { VistaDeResumen } from './resumen';
@@ -41,6 +45,13 @@ export interface ContextoDeNutricion {
   /** `true` si una escritura recibió el 404 no revelador: la pestaña pasa a «no disponible» entera. */
   readonly accesoRetirado: (r: Resultado<unknown>) => boolean;
   readonly irA: (vista: Vista) => void;
+  /** Los parámetros de la dirección: ahí vive lo que la sección elige. Solo identificadores, enumerados y fechas. */
+  readonly parametros: { get(clave: string): string | null };
+  /**
+   * Cambia parámetros de la dirección sin salir de la sección; `null` quita uno. Por defecto reemplaza la entrada del
+   * historial; con `agregarAlHistorial`, volver atrás recupera el estado anterior.
+   */
+  readonly ir: (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => void;
 }
 
 const Contexto = createContext<ContextoDeNutricion | null>(null);
@@ -76,7 +87,19 @@ export function Nutricion() {
     return true;
   }, []);
   const volverALeer = useCallback(() => setRetirado(false), []);
-  const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, accesoRetirado, irA } : null), [token, id, sesionPerdida, accesoRetirado, irA]);
+  const enLaDireccion = parametros.toString();
+  const ir = useCallback(
+    (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => {
+      const destino = hrefConCambios(ruta, new URLSearchParams(enLaDireccion), cambios);
+      if (opciones?.agregarAlHistorial) router.push(destino, { scroll: false });
+      else router.replace(destino, { scroll: false });
+    },
+    [router, ruta, enLaDireccion],
+  );
+  const contexto = useMemo(
+    () => (token ? { token, asesoradoId: id, sesionPerdida, accesoRetirado, irA, parametros, ir } : null),
+    [token, id, sesionPerdida, accesoRetirado, irA, parametros, ir],
+  );
 
   return (
     <MarcoDelArea
@@ -91,6 +114,9 @@ export function Nutricion() {
       href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, retorno.valor)}
       retirado={retirado}
       onActualizar={volverALeer}
+      // Registros ya está recompuesta: usa todo el ancho y tiene su ayuda. Las demás conservan el suyo hasta su parte.
+      ancho={vista === 'registros'}
+      ayuda={vista === 'registros' ? <AyudaDeRegistros /> : null}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>

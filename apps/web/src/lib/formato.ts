@@ -36,6 +36,8 @@ export const diaDelAnioEnCurso = (fechaCivil: string, hoy: string) => (fechaCivi
 /** «domingo 11 oct 2026»: una fecha civil con su día de la semana y su año, para decir «hoy» una sola vez en la página. */
 const diaDeLaSemana = new Intl.DateTimeFormat('es-AR', { weekday: 'long', timeZone: 'UTC' });
 export const diaConSuSemana = (fechaCivil: string) => (fechaCivil ? `${diaDeLaSemana.format(new Date(`${fechaCivil}T12:00:00Z`))} ${diaCivil(fechaCivil)}` : '');
+/** «domingo»: el día de la semana de una fecha civil, para ponerlo debajo de la fecha de un día de una lista. */
+export const nombreDelDiaDeLaSemana = (fechaCivil: string) => (fechaCivil ? diaDeLaSemana.format(new Date(`${fechaCivil}T12:00:00Z`)) : '');
 export function rangoCivil(desde: string, hasta: string): string {
   if (!desde || !hasta) return '';
   if (desde.slice(0, 4) !== hasta.slice(0, 4)) return `${diaCivil(desde)} – ${diaCivil(hasta)}`;
