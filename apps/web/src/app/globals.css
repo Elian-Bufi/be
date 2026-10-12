@@ -7681,3 +7681,257 @@ button.comida-del-dia__fila > .icono:last-child {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ═══ Información · Solicitudes (WP-ESCRITORIO-AREAS, parte 4; maqueta 26) ═══════════════════════════════════════════
+   La lista de lo pedido, con sus vistas, y el detalle al costado: lo que la persona declaró por pregunta, con la
+   respuesta que rige, y la historia de sus versiones. Reusa el encabezado de los Registros (`.registros__*`), las vistas
+   con nombre, el detalle al costado (`.detalle-del-hecho`) y la historia de una medición (`.historia-de-medicion`). */
+.solicitudes-del-area__pedir {
+  margin-left: auto;
+}
+
+/* Sin nada abierto, la lista no se estira a todo el ancho: un renglón de 1.300 px no se lee. Con una solicitud abierta,
+   la lista queda en su ancho y el detalle toma el resto. */
+.solicitudes__cuerpo {
+  grid-template-columns: minmax(0, 46rem);
+}
+
+.solicitudes__cuerpo[data-con-detalle] {
+  grid-template-columns: minmax(0, 32.5rem) minmax(0, 1fr);
+}
+
+.lista-de-solicitudes {
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.lista-de-solicitudes > li + li {
+  border-top: 1px solid var(--borde);
+}
+
+/* El renglón entero abre la solicitud. La elegida, marcada por forma (un borde), no solo por color. */
+.solicitud-de-la-lista {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem 0.7rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.solicitud-de-la-lista:hover {
+  background: var(--fondo-suave);
+}
+
+.solicitud-de-la-lista:focus-visible {
+  outline-offset: -3px;
+}
+
+.solicitud-de-la-lista[aria-current='true'] {
+  box-shadow: inset 0 0 0 2px var(--boton-secundario-borde);
+}
+
+.solicitud-de-la-lista__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.solicitud-de-la-lista__nombre {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.solicitud-de-la-lista__datos {
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+.solicitudes__al-pie {
+  margin: 0.75rem 0.85rem 0;
+}
+
+/* ─── La solicitud abierta ───────── */
+.detalle-de-solicitud__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+}
+
+.detalle-de-solicitud__estado {
+  margin: 0 0 0.5rem;
+}
+
+.solicitud-abierta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.solicitud-abierta .nota,
+.solicitud-abierta p {
+  margin: 0;
+}
+
+.solicitud-abierta__datos {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.3rem 1.5rem;
+  margin: 0;
+}
+
+.solicitud-abierta__datos > div {
+  display: contents;
+}
+
+.solicitud-abierta__datos dt {
+  color: var(--tenue);
+}
+
+.solicitud-abierta__datos dd {
+  margin: 0;
+}
+
+.solicitud-abierta__bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.solicitud-abierta__titulo-de-bloque {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.75rem;
+}
+
+.solicitud-abierta__titulo-de-bloque h4 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* Lo que declaró: la pregunta a la izquierda y la respuesta que rige a la derecha; los nombres de las columnas, una vez. */
+.lo-declarado__columnas,
+.lo-declarado__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+  gap: 0.2rem 1.5rem;
+}
+
+.lo-declarado__columnas {
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--borde);
+  color: var(--tenue);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.lo-declarado {
+  margin: 0;
+}
+
+.lo-declarado__fila {
+  align-items: start;
+  padding: 0.6rem 0;
+}
+
+.lo-declarado__fila + .lo-declarado__fila {
+  border-top: 1px solid var(--borde);
+}
+
+.lo-declarado__fila dt,
+.lo-declarado__fila dd,
+.preguntas-pedidas li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.6rem;
+  margin: 0;
+}
+
+.lo-declarado__valor {
+  font-weight: 600;
+}
+
+.lo-declarado__sin-responder {
+  color: var(--tenue);
+}
+
+/* «Antes: …» va en su propio renglón, debajo de la respuesta que rige. */
+.lo-declarado__antes {
+  flex-basis: 100%;
+}
+
+.preguntas-pedidas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.preguntas-pedidas li {
+  padding: 0.5rem 0;
+}
+
+.preguntas-pedidas li + li {
+  border-top: 1px solid var(--borde);
+}
+
+.historia-de-respuesta .boton--enlace {
+  align-self: flex-start;
+}
+
+.historia-de-respuesta__respuestas {
+  margin: 0.2rem 0 0;
+}
+
+/* En el panel de encima (una ventana angosta) la pregunta va arriba y su respuesta debajo: la tabla de dos columnas no
+   entra. Los nombres de las columnas dejan de hacer falta. */
+@media (max-width: 75rem) {
+  .solicitudes__cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lo-declarado__columnas {
+    display: none;
+  }
+
+  .lo-declarado__fila {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lo-declarado__fila dt {
+    color: var(--tenue);
+  }
+}
+
+@media (max-width: 40rem) {
+  .solicitudes-del-area__pedir {
+    margin-left: 0;
+  }
+
+  .solicitud-abierta__datos {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+
+  .solicitud-abierta__datos dd {
+    margin-bottom: 0.35rem;
+  }
+}

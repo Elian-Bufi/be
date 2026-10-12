@@ -12,6 +12,12 @@ export const fecha = (iso: string) => `${soloDia.format(new Date(iso))}, ${soloH
 export const dia = (iso: string) => soloDia.format(new Date(iso));
 /** «13:15»: la hora de un momento de esta visita (por ejemplo, cuándo se consultaron los datos), en la zona del navegador. */
 export const horaDelDia = (momento: Date) => soloHora.format(momento);
+/**
+ * «25 sept» si el instante es del año en curso; «25 sept 2025» si no. En la zona del navegador. Para un renglón de una
+ * lista que no dice el período: el año se escribe solo cuando hace falta para no confundir.
+ */
+const diaYMesDeUnInstante = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' });
+export const diaSinElAnioEnCurso = (iso: string, ahora: Date = new Date()) => (new Date(iso).getFullYear() === ahora.getFullYear() ? diaYMesDeUnInstante.format(new Date(iso)) : dia(iso));
 
 /** «08/09»: una fecha civil (`AAAA-MM-DD`) corta, para el eje de un gráfico. La fecha civil no cambia con la zona. */
 const diaYMes = new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' });

@@ -4,11 +4,14 @@
  * «Pedir información» (API-FRM-01, 02 y 03). El profesional elige un formulario del catálogo, marca **qué campos**
  * pide de ese formulario y declara para qué los necesita.
  *
- * Dos cosas que la pantalla no hace, a propósito:
- * - **no pide el formulario entero por defecto**: hay que elegir campo por campo, porque «una plantilla con campos
- *   más amplios no amplía B2» (09:1528) y la minimización es del profesional, no del catálogo;
- * - **no promete el dato**: el aviso dice que pedir no amplía el acceso y que hasta que la persona responda no hay
- *   nada nuevo (05:15098-15099).
+ * **Al elegir un formulario vienen todas sus preguntas marcadas,** y el profesional desmarca las que no necesita
+ * (decisión de Dirección del 2026-10-12; F-05 de WP-ESCRITORIO-AREAS, registrada en `docs/DEUDA_LEGAJO.md`). Hasta
+ * entonces no venía ninguna, y había que marcarlas de a una. La minimización sigue siendo del profesional, no del
+ * catálogo: la cuenta de las elegidas está a la vista, ninguna viene como requerida, y la API sigue evaluando la
+ * pertinencia de cada pregunta al crear la solicitud (FRM-03): marcarlas todas no amplía lo que se puede pedir.
+ *
+ * Lo que la pantalla no hace, a propósito: **no promete el dato.** El aviso dice que pedir no amplía el acceso y que
+ * hasta que la persona responda no hay nada nuevo (05:15098-15099).
  *
  * Con una plantilla transversal (sin dominio) se ofrecen los tres alcances: la UI no adivina cuál está autorizado. Si
  * no lo está, la API responde el mismo 404 neutral que ante un asesorado inexistente, y eso es lo que se muestra. Una
@@ -18,7 +21,7 @@
  * `volver=entrenamiento`), la pantalla precarga la plantilla ratificada, sus campos y el alcance, y al enviar vuelve a
  * Entrenamiento. Es una propuesta editable, no una excepción a la minimización: se puede desmarcar antes de enviar.
  */
-import { ALCANCES, CONTEXTO_DE_ENTRENAMIENTO, COPY_FORMULARIOS, ETIQUETA_DE_ALCANCE, type Alcance, type CampoDePlantilla, type Plantilla, type VersionDePlantilla } from '@be/domain';
+import { ALCANCES, CONTEXTO_DE_ENTRENAMIENTO, COPY_FORMULARIOS, COPY_SOLICITUDES, ETIQUETA_DE_ALCANCE, type Alcance, type CampoDePlantilla, type Plantilla, type VersionDePlantilla } from '@be/domain';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -49,8 +52,10 @@ export function VistaDePedido() {
   const parametros = useSearchParams();
   const router = useRouter();
   const desdeEntrenamiento = parametros.get('volver') === 'entrenamiento';
-  // Lo precargado al llegar desde Entrenamiento no es algo escrito: se vuelve a precargar igual.
-  useCambiosSinGuardar(proposito.trim() !== '' || (!desdeEntrenamiento && pedidos.length > 0), 'el pedido de información');
+  // Lo que viene marcado al elegir un formulario, o precargado al llegar desde Entrenamiento, no es algo escrito: vuelve
+  // a venir igual. Hay algo que perder recién cuando el profesional cambia una casilla, el propósito o el área.
+  const [tocado, setTocado] = useState(false);
+  useCambiosSinGuardar(tocado, 'el pedido de información');
   const precargar = desdeEntrenamiento && parametros.get('plantilla') === CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla;
   const precargada = useRef(false);
   const rutaDeEntrenamiento = `/pro/advisees/training?id=${encodeURIComponent(asesoradoId)}`;
@@ -73,15 +78,18 @@ export function VistaDePedido() {
       if (sesionPerdida(v)) return;
       if (!v.ok) return setAviso({ tipo: 'error', texto: mensajeDeFallo(v) });
       setElegida(v.datos.data);
+      setTocado(false);
       // Una plantilla con dominio se pide solo en su Alcance (FRM-03 lo exige): se fija acá, no se deja elegir otro.
       if (v.datos.data.domain) setAlcance(v.datos.data.domain);
+      const preguntas = v.datos.data.sections.flatMap((s) => s.fields.map((c) => c.fieldCode));
       if (!conPrecarga) {
-        setPedidos([]);
+        // F-05: vienen todas marcadas, y ninguna como requerida. El profesional desmarca lo que no necesita.
+        setPedidos(preguntas);
         setRequeridos([]);
         return;
       }
       // DL-100: solo lo que la versión elegida realmente tiene; si el catálogo cambiara, no se pide un campo inexistente.
-      const disponibles = new Set(v.datos.data.sections.flatMap((s) => s.fields.map((c) => c.fieldCode)));
+      const disponibles = new Set(preguntas);
       setPedidos(CONTEXTO_DE_ENTRENAMIENTO.campos.filter((c) => disponibles.has(c)));
       setRequeridos(CONTEXTO_DE_ENTRENAMIENTO.requeridos.filter((c) => disponibles.has(c)));
       setProposito(COPY_FORMULARIOS.propositoDeContextoDeEntrenamiento);
@@ -99,8 +107,10 @@ export function VistaDePedido() {
     void abrir(plantilla, true);
   }, [precargar, r, abrir]);
 
-  const alternar = (codigo: string, lista: readonly string[], set: (v: readonly string[]) => void) =>
+  const alternar = (codigo: string, lista: readonly string[], set: (v: readonly string[]) => void) => {
+    setTocado(true);
     set(lista.includes(codigo) ? lista.filter((c) => c !== codigo) : [...lista, codigo]);
+  };
 
   async function enviar() {
     if (!elegida) return;
@@ -126,6 +136,7 @@ export function VistaDePedido() {
     if (!r.ok) return setAviso({ tipo: 'error', texto: RECHAZO_DE_SOLICITUD[r.tipo === 'API' ? r.codigo : ''] ?? mensajeDeFallo(r) });
     setElegida(null);
     setProposito('');
+    setTocado(false);
     // DL-113: el éxito lo muestra la pestaña: esta vista pasa enseguida a «Solicitudes» y un aviso suyo se iría con ella.
     avisar(COPY_FORMULARIOS.solicitudEnviada);
     // CA-FOR-06: si el pedido salió de la evaluación, se vuelve a ella para seguir trabajando.
@@ -179,6 +190,10 @@ export function VistaDePedido() {
             <section className="seccion" aria-labelledby="titulo-armar">
               <h2 id="titulo-armar">{elegida.name}</h2>
               <p>{COPY_FORMULARIOS.elegirCampos}</p>
+              {/* Vienen todas marcadas (F-05): la cuenta dice cuántas se van a pedir, y cambia con cada casilla. */}
+              <p className="nota" data-elegidas>
+                {COPY_SOLICITUDES.elegidas(pedidos.length, elegida.sections.reduce((n, s) => n + s.fields.length, 0))} {COPY_SOLICITUDES.vienenTodasElegidas}
+              </p>
               <p className="nota">{COPY_FORMULARIOS.ayudaRequerido}</p>
               {elegida.sections.map((s) => (
                 <fieldset key={s.sectionCode}>
@@ -221,14 +236,24 @@ export function VistaDePedido() {
                 etiqueta={COPY_FORMULARIOS.proposito}
                 ayuda={COPY_FORMULARIOS.ayudaProposito}
                 value={proposito}
-                onChange={(e) => setProposito(e.target.value)}
+                onChange={(e) => {
+                  setTocado(true);
+                  setProposito(e.target.value);
+                }}
                 maxLength={300}
               />
 
               <div className="campo">
                 <label htmlFor="alcance">{COPY_FORMULARIOS.alcance}</label>
                 {elegida.domain ? <p className="campo__ayuda">{COPY_FORMULARIOS.alcanceDeLaPlantilla}</p> : null}
-                <select id="alcance" value={alcance} onChange={(e) => setAlcance(e.target.value as Alcance)}>
+                <select
+                  id="alcance"
+                  value={alcance}
+                  onChange={(e) => {
+                    setTocado(true);
+                    setAlcance(e.target.value as Alcance);
+                  }}
+                >
                   {(elegida.domain ? [elegida.domain] : ALCANCES).map((a) => (
                     <option key={a} value={a}>
                       {ETIQUETA_DE_ALCANCE[a]}

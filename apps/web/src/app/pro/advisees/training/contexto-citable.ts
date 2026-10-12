@@ -9,7 +9,11 @@
  * - **tope de 20 citas** (`formResponseReferences` admite hasta 20): no se puede marcar la 21, se puede desmarcar, y se
  *   valida también antes de enviar. Nunca se descarta una selección en silencio.
  */
-import { numero, type DetalleDeSolicitudResponse, type ListaDeSolicitudesDeFormularioResponse, type Resultado, type VersionDePlantillaResponse } from '@be/domain';
+import { valorDeclarado, type DetalleDeSolicitudResponse, type ListaDeSolicitudesDeFormularioResponse, type Resultado, type VersionDePlantillaResponse } from '@be/domain';
+
+// El valor de una respuesta declarada, con su unidad, es el mismo acá y en Información · Solicitudes: está en el dominio
+// (`solicitudes-de-informacion.ts`), con su prueba. Se vuelve a exportar para quien ya lo tomaba de este archivo.
+export { valorDeclarado };
 
 /** El máximo de citas por evaluación: el mismo tope que el contrato (`formResponseReferences` hasta 20). */
 export const MAXIMO_DE_CITAS = 20;
@@ -28,12 +32,6 @@ export interface Citable {
 }
 
 export const claveDe = (c: { formResponseId: string; fieldCode: string }): string => `${c.formResponseId}#${c.fieldCode}`;
-
-/** Valor de una respuesta declarada, con su unidad: el número con coma (DL-091 punto 4). */
-export function valorDeclarado(valor: string | number | boolean, unidad: string | null): string {
-  const texto = typeof valor === 'number' ? numero(valor) : typeof valor === 'boolean' ? (valor ? 'Sí' : 'No') : valor;
-  return unidad ? `${texto} ${unidad}` : texto;
-}
 
 /** De dónde se lee el contexto. En la pantalla es el cliente de la API; en las pruebas, una fuente falsa. */
 export interface FuenteDeContexto {

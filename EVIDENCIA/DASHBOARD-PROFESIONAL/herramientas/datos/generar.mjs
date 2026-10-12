@@ -29,6 +29,10 @@
 //              días con el perfil completo (30 mediciones, con la cintura mal tipeada a propósito) y ocho resultados
 //              calculados. La usa `recorrido.mjs mediciones`, que corrige, anula, calcula y deja una referencia por la
 //              pantalla. Va después de descartable-datos.
+//   descartable-solicitudes  (WP-ESCRITORIO-AREAS, parte 4) por la API, sobre esas mismas cuentas: el vínculo de
+//              Entrenamiento y tres solicitudes de información (una respondida, una respondida y corregida por la
+//              persona, y una sin responder), en dos áreas. Las usa `recorrido.mjs solicitudes`. Va después de
+//              descartable-datos; ocupa Entrenamiento, así que no va antes de `recorrido.mjs descartable`.
 //
 // Uso: node datos/generar.mjs <fase> [origen de la API]   (BE_E2E_DATABASE_URL para otra base local)
 import { REPO, enTrabajo } from '../rutas.mjs';
@@ -782,6 +786,87 @@ async function descartableTomaCompleta() {
   console.log(`toma completa lista: ${registrada.measurements.length} mediciones y ${corridas.length} resultados calculados (${corridas.map((c) => `${c.metodo}: ${c.valor}`).join('; ')})`);
 }
 
+// ─── WP-ESCRITORIO-AREAS, parte 4: tres solicitudes de información, en las cuentas descartables ──────────────────────
+
+/**
+ * En las cuentas descartables, ya con sus datos (`descartable-datos`): el vínculo de Entrenamiento que les falta y tres
+ * solicitudes de información, todo por la API, como las dibuja la maqueta 26:
+ * - «Antecedentes para entrenamiento», en Entrenamiento: las seis preguntas (cinco requeridas), respondida entera;
+ * - «Antecedentes de salud declarados», en Entrenamiento: dos preguntas (una requerida). La persona respondió una y
+ *   después corrigió: cambió esa respuesta y agregó la otra;
+ * - «Hábitos y contexto», en Nutrición: tres preguntas, sin responder.
+ * Las respuestas y la corrección las hace la cuenta del asesorado (API-FRM-07 y 08), con la superficie de la APK y sin
+ * unidad, como las manda la APK.
+ * Ocupa el área de Entrenamiento: el recorrido que la necesita libre para pedir un vínculo desde la pantalla
+ * (`recorrido.mjs descartable`) corre con cuentas descartables recién generadas y sin esta fase.
+ */
+async function descartableSolicitudes() {
+  const e = leerEstado();
+  const d = e.descartable;
+  if (!d?.datos) throw new Error('primero: descartable-cuentas y descartable-datos');
+  const pro = await sesion(d.proCorreo);
+  const ase = await sesion(d.aseCorreo, 'APK');
+  const vinculoDeEntrenamiento = await vincular(pro, ase, d.aseId, 'ENTRENAMIENTO');
+  const plantillas = (await pedir('GET', '/form-templates?limit=50', { token: pro })).data;
+  const version = async (clave) => {
+    const p = plantillas.find((x) => x.key === clave);
+    if (!p) throw new Error(`el catálogo no tiene el formulario ${clave}`);
+    return (await pedir('GET', `/form-templates/${p.templateId}/versions/${p.latestVersionId}`, { token: pro })).data;
+  };
+  const solicitar = async (v, alcance, proposito, pedidas, requeridas) =>
+    (await pedir('POST', `/advisees/${d.aseId}/form-requests`, { token: pro, cuerpo: { templateVersionId: v.templateVersionId, purpose: proposito, scope: alcance, requestedFieldCodes: pedidas, requiredFieldCodes: requeridas } })).data;
+  const responder = async (solicitud, respuestas) => (await pedir('POST', `/me/form-requests/${solicitud.formRequestId}/responses`, { token: ase, superficie: 'APK', cuerpo: { answers: respuestas } })).data;
+
+  const entrenamiento = await version(dominio.CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla);
+  const salud = await version('FRM-SALUD');
+  const habitos = await version('FRM-HABITOS');
+
+  // 1 · La más vieja: el formulario de Entrenamiento, con lo que precarga la pantalla al llegar desde ahí, respondido entero.
+  const deEntrenamiento = await solicitar(entrenamiento, 'ENTRENAMIENTO', dominio.COPY_FORMULARIOS.propositoDeContextoDeEntrenamiento, [...dominio.CONTEXTO_DE_ENTRENAMIENTO.campos], [...dominio.CONTEXTO_DE_ENTRENAMIENTO.requeridos]);
+  const respuestaDeEntrenamiento = await responder(deEntrenamiento, [
+    { fieldCode: 'trn_objetivo_declarado', value: 'Ganar fuerza en piernas y volver a correr 5 km' },
+    { fieldCode: 'trn_experiencia', value: 'Gimnasio hace dos años, tres veces por semana; un año sin correr' },
+    { fieldCode: 'trn_dias_por_semana', value: 3 },
+    { fieldCode: 'trn_minutos_por_sesion', value: 45 },
+    { fieldCode: 'trn_lugar_y_equipamiento', value: 'Gimnasio del barrio, con barras y máquinas' },
+    { fieldCode: 'trn_preferencias', value: 'Me gusta el trabajo con barra; prefiero evitar la cinta' },
+  ]);
+  // 2 · Salud, dos preguntas: responde una y después corrige (cambia esa respuesta y agrega la otra).
+  const deSalud = await solicitar(salud, 'ENTRENAMIENTO', 'Necesito saber si hay lesiones o condiciones que cambien la carga del plan.', ['condiciones_declaradas', 'dolor_o_lesiones'], ['condiciones_declaradas']);
+  const respuestaDeSalud = await responder(deSalud, [{ fieldCode: 'condiciones_declaradas', value: 'Asma leve, desde hace años.' }]);
+  const correccionDeSalud = (
+    await pedir('POST', `/me/form-responses/${respuestaDeSalud.formResponseId}/rectifications`, {
+      token: ase,
+      superficie: 'APK',
+      cuerpo: {
+        expectedVersion: respuestaDeSalud.version,
+        reason: 'Me olvidé de aclarar que uso inhalador antes de entrenar.',
+        answers: [
+          { fieldCode: 'condiciones_declaradas', value: 'Asma leve. Uso inhalador antes de entrenar.' },
+          { fieldCode: 'dolor_o_lesiones', value: 'Molestia en el hombro derecho desde hace dos semanas.' },
+        ],
+      },
+    })
+  ).data;
+  // 3 · La más nueva: hábitos, en Nutrición, sin responder.
+  const deHabitos = await solicitar(habitos, 'NUTRICION', 'Acompañamiento nutricional', ['horas_de_sueno', 'nivel_de_actividad', 'fuma'], []);
+  guardarEstado({
+    descartable: {
+      ...d,
+      vinculos: { ...d.vinculos, ENTRENAMIENTO: vinculoDeEntrenamiento },
+      solicitudes: {
+        entrenamiento: deEntrenamiento.formRequestId,
+        salud: deSalud.formRequestId,
+        habitos: deHabitos.formRequestId,
+        respuestaDeEntrenamiento: respuestaDeEntrenamiento.formResponseId,
+        respuestaDeSalud: respuestaDeSalud.formResponseId,
+        correccionDeSalud: correccionDeSalud.rectificationId,
+      },
+    },
+  });
+  console.log('solicitudes de información listas: «Antecedentes para entrenamiento» (respondida), «Antecedentes de salud declarados» (respondida y corregida) y «Hábitos y contexto» (sin responder)');
+}
+
 // ─── WP-DASHBOARD-COMPRENSION: escenarios D y E ────────────────────────────────────────────────────────────────────
 
 async function comprension() {
@@ -848,9 +933,10 @@ const FASES = {
   'descartable-cuentas': descartableCuentas,
   'descartable-datos': descartableDatos,
   'descartable-toma-completa': descartableTomaCompleta,
+  'descartable-solicitudes': descartableSolicitudes,
 };
 if (!FASES[fase]) {
-  console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar|volumen|comprension|comprension-e|verificar-comprension|descartable-cuentas|descartable-datos|descartable-toma-completa [origen de la API]');
+  console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar|volumen|comprension|comprension-e|verificar-comprension|descartable-cuentas|descartable-datos|descartable-toma-completa|descartable-solicitudes [origen de la API]');
   process.exit(2);
 }
 try {

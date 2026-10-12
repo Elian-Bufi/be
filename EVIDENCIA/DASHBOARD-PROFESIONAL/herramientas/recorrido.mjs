@@ -35,6 +35,10 @@
 //   calculado a mano (`esperadoDeTomas`). Lo que ESCRIBE —corregir, anular, calcular, dejar una referencia y registrar
 //   una toma desde la carga— va en `medicionesDeUnaToma`: corre solo, con `mediciones`, sobre las cuentas descartables
 //   con la toma del perfil completo (`datos/generar.mjs descartable-toma-completa`), y no toca los datos de A, B ni C.
+// - Información · Solicitudes y el pedido (WP-ESCRITORIO-AREAS, parte 4) se comprueba en `solicitudesDeInformacion`: corre
+//   solo, con `solicitudes`, sobre las cuentas descartables con sus tres solicitudes (`datos/generar.mjs
+//   descartable-solicitudes`). Lo esperado sale de la lista, del detalle de cada solicitud y de la versión de su
+//   formulario, calculado a mano (`esperadoDeSolicitudes`). Al final ESCRIBE: envía una solicitud por la pantalla.
 // - La estimación del profesional sobre una comida diferente (`estimacionDeUnaComida`) ESCRIBE en el escenario: no va
 //   dentro de `funcional`. Corre sola, con `estimacion`, y última en la pasada completa.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
@@ -4315,7 +4319,8 @@ async function marcoDeLasAreas(page, v) {
     { clave: 'nutrition', alcance: 'NUTRICION', titulo: 'Nutrición', secciones: [['resumen', 'Resumen'], ['plan', 'Plan'], ['registros', 'Registros'], ['revisiones', 'Revisiones']] },
     { clave: 'training', alcance: 'ENTRENAMIENTO', titulo: 'Entrenamiento', secciones: [['resumen', 'Resumen'], ['plan', 'Plan'], ['ejecuciones', 'Registros'], ['revisiones', 'Revisiones']] },
     { clave: 'anthropometry', alcance: 'ANTROPOMETRIA', titulo: 'Antropometría', secciones: [['evaluaciones', 'Tomas'], ['evolucion', 'Evolución'], ['lamina', 'Lámina']] },
-    { clave: 'forms', alcance: null, titulo: 'Información', secciones: [['solicitudes', 'Solicitudes'], ['pedir', 'Pedir información']] },
+    // Desde la parte 4, «Pedir información» no es una sección: se abre desde «Solicitudes» (`vista=pedir` sigue abriéndolo).
+    { clave: 'forms', alcance: null, titulo: 'Información', secciones: [['solicitudes', 'Solicitudes']] },
   ];
   const ACTIVO = 'Activo · acceso contextual';
   const ORDEN = ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'];
@@ -4444,11 +4449,15 @@ async function marcoDeLasAreas(page, v) {
     `ficha ${ficha.alto} · ${medidas.map((x) => `${x.area} ${x.alto}`).join(' · ')}`,
   );
   // F-10 · La sección conserva su ancho y arranca donde arranca el marco ────────────────────────────────────
+  // Las áreas cuya sección de entrada ya se recompuso. Se nombran una por una: una sección que cambie de ancho sin
+  // haberse recompuesto tiene que hacer fallar la comprobación.
+  const A_TODO_EL_ANCHO = ['Antropometría', 'Información'];
   comprobar(
     'F-10',
-    'La sección arranca en la misma vertical que el marco. Mientras no se recomponga conserva el ancho para el que se hizo (1.152 px a 1440); la que ya se recompuso usa todo el ancho del marco: de las cuatro que abren al entrar a un área, solo «Tomas», de Antropometría (parte 3)',
+    'La sección arranca en la misma vertical que el marco. Mientras no se recomponga conserva el ancho para el que se hizo (1.152 px a 1440); la que ya se recompuso usa todo el ancho del marco: de las cuatro que abren al entrar a un área, «Tomas», de Antropometría (parte 3), y «Solicitudes», de Información (parte 4)',
     // A 1440 px, «todo el ancho» deja a la derecha el mismo margen que a la izquierda.
-    medidas.every((x) => x.seccion && x.seccion.izquierda === x.izquierda && (x.area === 'Antropometría' ? x.seccion.derecha === 1440 - x.seccion.izquierda : x.seccion.derecha - x.seccion.izquierda === 1152)) && medidas.some((x) => x.area === 'Antropometría'),
+    medidas.every((x) => x.seccion && x.seccion.izquierda === x.izquierda && (A_TODO_EL_ANCHO.includes(x.area) ? x.seccion.derecha === 1440 - x.seccion.izquierda : x.seccion.derecha - x.seccion.izquierda === 1152)) &&
+      A_TODO_EL_ANCHO.every((area) => medidas.some((x) => x.area === area)),
     medidas.map((x) => `${x.area}: marco desde ${x.izquierda}, sección de ${x.seccion?.izquierda} a ${x.seccion?.derecha}`).join(' · '),
   );
 
@@ -7668,6 +7677,616 @@ async function medicionesDeUnaToma() {
   }
 }
 
+// ─── Información · Solicitudes (WP-ESCRITORIO-AREAS, parte 4) ──────────────────────────────────────────────────────
+
+/** Lo que «Solicitudes» tiene a la vista: la lista, las vistas y la solicitud abierta (al costado, o en el panel de encima). */
+const solicitudesEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const aLaVista = (e) => (e && e.getClientRects().length > 0 ? e : null);
+    const alCostado = aLaVista(document.querySelector('aside.detalle-de-solicitud'));
+    const panel = document.querySelector('dialog.dialogo--panel[open]');
+    const marco = alCostado ?? panel;
+    const abierta = marco?.querySelector('.solicitud-abierta') ?? null;
+    return {
+      titulo: t(document.querySelector('#titulo-solicitudes')),
+      bajada: t(document.querySelector('.solicitudes-del-area .registros__bajada')),
+      pedir: t(aLaVista(document.querySelector('.solicitudes-del-area__pedir button'))),
+      vistas: [...document.querySelectorAll('.solicitudes-del-area .vista-de-la-linea')].map((b) => ({ clave: b.dataset.vista, texto: t(b), elegida: b.getAttribute('aria-pressed') === 'true' })),
+      filas: [...document.querySelectorAll('button.solicitud-de-la-lista')].map((b) => ({
+        id: b.dataset.solicitud,
+        nombre: t(b.querySelector('.solicitud-de-la-lista__nombre')),
+        estado: t(b.querySelector('.etiqueta-de-dato')),
+        datos: t(b.querySelector('.solicitud-de-la-lista__datos')),
+        paraQue: t(b.querySelector('.solicitud-de-la-lista__para-que')),
+        elegida: b.getAttribute('aria-current') === 'true',
+      })),
+      alPie: t(document.querySelector('.solicitudes__al-pie')),
+      vacio: t(aLaVista(document.querySelector('.solicitudes-del-area .estado-vacio'))),
+      // Lo que la pantalla de antes tenía y esta no: un botón por renglón.
+      botonesVerDetalle: [...document.querySelectorAll('.solicitudes-del-area button')].filter((b) => /^(Ver detalle|Cerrar)$/.test(b.innerText.trim()) && !b.closest('.detalle-del-hecho, dialog')).length,
+      detalle: abierta
+        ? {
+            alCostado: !!alCostado,
+            id: abierta.dataset.solicitud,
+            titulo: t(marco.querySelector('.detalle-de-solicitud__titulo, .dialogo__encabezado h2')),
+            estado: t(marco.querySelector('.detalle-de-solicitud__titulo .etiqueta-de-dato, .detalle-de-solicitud__estado .etiqueta-de-dato')),
+            conElFoco: marco.contains(document.activeElement),
+            focoEnElTitulo: document.activeElement === marco.querySelector('.detalle-de-solicitud__titulo'),
+            datos: [...abierta.querySelectorAll('.solicitud-abierta__datos > div')].map((d) => [t(d.querySelector('dt')), t(d.querySelector('dd'))]),
+            procedencia: [...abierta.querySelectorAll('[data-procedencia]')].map(t),
+            columnas: aLaVista(abierta.querySelector('.lo-declarado__columnas')) ? [...abierta.querySelectorAll('.lo-declarado__columnas span')].map(t) : null,
+            filas: [...abierta.querySelectorAll('.lo-declarado__fila')].map((f) => ({ codigo: f.dataset.pregunta, pregunta: t(f.querySelector('dt')), respuesta: t(f.querySelector('dd')) })),
+            // En una ventana angosta la respuesta va debajo de su pregunta.
+            respuestaDebajo: [...abierta.querySelectorAll('.lo-declarado__fila')].every((f) => f.querySelector('dd').getBoundingClientRect().top >= f.querySelector('dt').getBoundingClientRect().bottom - 1),
+            pedidas: [...abierta.querySelectorAll('.preguntas-pedidas li')].map(t),
+            sinResponder: t(abierta.querySelector('.solicitud-abierta__sin-responder')),
+            historia: [...abierta.querySelectorAll('.historia-de-respuesta > li')].map((li) => ({
+              tipo: li.dataset.version,
+              rige: li.dataset.rige === 'si',
+              cuando: t(li.querySelector('.historia-de-medicion__cuando')),
+              titulo: t(li.querySelector('.historia-de-medicion__titulo')),
+              notas: [...li.querySelectorAll('p.nota')].map(t),
+              respuestas: [...li.querySelectorAll('.historia-de-respuesta__respuestas > div')].map((d) => [t(d.querySelector('dt')), t(d.querySelector('dd'))]),
+            })),
+            avisos: [...abierta.querySelectorAll('.aviso')].map(t),
+            leyendo: !!abierta.querySelector('.cargando'),
+            texto: t(abierta),
+          }
+        : null,
+      texto: t(document.querySelector('.seccion-del-area')),
+      alto: document.documentElement.scrollHeight,
+    };
+  });
+
+/**
+ * Lo que «Solicitudes» tiene que decir, escrito a mano con lo que devuelve la API (la lista, el detalle de cada solicitud
+ * y la versión de su formulario): no se usa el módulo del dominio que arma la pantalla (`solicitudes-de-informacion.ts`).
+ */
+function esperadoDeSolicitudes({ lista, detalleDe, formularioDe }) {
+  const AREA = { NUTRICION: 'Nutrición', ENTRENAMIENTO: 'Entrenamiento', ANTROPOMETRIA: 'Antropometría' };
+  const medio = (iso) => new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(new Date(iso));
+  const hora = (iso) => new Intl.DateTimeFormat('es-AR', { timeStyle: 'short', hourCycle: 'h23' }).format(new Date(iso));
+  // Sin el año si es del año en curso.
+  const corto = (iso) => (new Date(iso).getFullYear() === new Date().getFullYear() ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(new Date(iso)) : medio(iso));
+  const preguntas = (n) => (n === 1 ? '1 pregunta' : `${n} preguntas`);
+  const solicitudes = lista.map((s) => {
+    const respuesta = detalleDe.get(s.formRequestId)?.response ?? null;
+    const campos = new Map((formularioDe.get(s.templateVersionId)?.sections ?? []).flatMap((x) => x.fields.map((c) => [c.fieldCode, c])));
+    const valor = (a) => {
+      const texto = typeof a.value === 'number' ? String(a.value).replace('.', ',') : typeof a.value === 'boolean' ? (a.value ? 'Sí' : 'No') : a.value;
+      const unidad = a.unit ?? campos.get(a.fieldCode)?.unit ?? null;
+      return unidad ? `${texto} ${unidad}` : texto;
+    };
+    const en = (respuestas, codigo) => {
+      const a = respuestas.find((x) => x.fieldCode === codigo);
+      return a ? valor(a) : null;
+    };
+    // Las correcciones, por su cadena: cada una señala a la anterior.
+    const cadena = [];
+    let anterior = null;
+    for (let i = 0; i < (respuesta?.rectifications.length ?? 0); i++) {
+      const sigue = respuesta.rectifications.find((c) => c.previousRectificationId === anterior && !cadena.includes(c));
+      if (!sigue) break;
+      cadena.push(sigue);
+      anterior = sigue.rectificationId;
+    }
+    const laQueRige = respuesta?.effectiveView.kind === 'RECTIFIED' ? cadena.findIndex((c) => c.rectificationId === respuesta.effectiveView.rectificationId) : -1;
+    const versiones = respuesta ? [respuesta.original.answers, ...cadena.slice(0, laQueRige + 1).map((c) => c.answers)] : [];
+    const pedidas = [...campos.keys()].filter((c) => s.requestedFieldCodes.includes(c));
+    const filas = pedidas.map((codigo) => {
+      const rige = versiones.length > 0 ? en(versiones.at(-1), codigo) : null;
+      const distinto = versiones.slice(0, -1).reverse().map((r) => en(r, codigo)).find((x) => x !== rige);
+      const requerida = s.requiredFieldCodes.includes(codigo);
+      return {
+        codigo,
+        pregunta: `${campos.get(codigo).label}${requerida ? ' Requerida' : ''}`,
+        respuesta: `${rige ?? 'Sin responder'}${distinto !== undefined ? ' Corregida' : ''}${distinto === undefined ? '' : distinto === null ? ' Antes: sin responder.' : ` Antes: «${distinto}»`}`,
+      };
+    });
+    const cuenta = (respuestas) => {
+      const n = pedidas.filter((c) => respuestas.some((a) => a.fieldCode === c)).length;
+      return n >= pedidas.length ? (pedidas.length === 1 ? 'Respondió la pregunta.' : `Respondió las ${pedidas.length} preguntas.`) : `Respondió ${n} de las ${pedidas.length} preguntas.`;
+    };
+    const historia = respuesta
+      ? [
+          ...cadena
+            .map((c, i) => ({
+              tipo: 'CORRECCION',
+              rige: i === laQueRige,
+              cuando: `${corto(c.recordedAt)}, ${hora(c.recordedAt)}`,
+              titulo: `Corrección${i === laQueRige ? ' Vigente' : ''}`,
+              notas: [`Motivo que escribió: «${c.reason}»`, cuenta(c.answers)],
+              respuestas: pedidas.filter((p) => en(c.answers, p) !== null).map((p) => [campos.get(p).label, en(c.answers, p)]),
+            }))
+            .reverse(),
+          {
+            tipo: 'ORIGINAL',
+            rige: respuesta.effectiveView.kind === 'ORIGINAL',
+            cuando: `${corto(respuesta.submittedAt)}, ${hora(respuesta.submittedAt)}`,
+            titulo: `Respuesta original${respuesta.effectiveView.kind === 'ORIGINAL' ? ' Vigente' : ''}`,
+            notas: [cuenta(respuesta.original.answers)],
+            respuestas: pedidas.filter((p) => en(respuesta.original.answers, p) !== null).map((p) => [campos.get(p).label, en(respuesta.original.answers, p)]),
+          },
+        ]
+      : [];
+    const ultima = cadena.at(-1) ?? null;
+    return {
+      id: s.formRequestId,
+      respondida: s.status === 'RESPONDED',
+      corregida: cadena.length > 0,
+      fila: {
+        id: s.formRequestId,
+        nombre: s.templateName,
+        estado: s.status === 'RESPONDED' ? 'Respondida' : 'Sin responder',
+        datos: [`Pedido el ${corto(s.createdAt)}`, AREA[s.scope], preguntas(s.requestedFieldCodes.length), ...(cadena.length > 0 ? ['corrigió su respuesta'] : [])].join(' · '),
+        paraQue: `Para qué: «${s.purpose}»`,
+      },
+      datos: [
+        ['Lo pediste', `El ${medio(s.createdAt)} a las ${hora(s.createdAt)}, en ${AREA[s.scope]}`],
+        ['Para qué', `«${s.purpose}»`],
+        ...(respuesta
+          ? [['Respondió', `El ${corto(respuesta.submittedAt)} a las ${hora(respuesta.submittedAt)}${ultima ? ` y lo corrigió ${medio(ultima.recordedAt) === medio(respuesta.submittedAt) ? '' : `el ${corto(ultima.recordedAt)} `}a las ${hora(ultima.recordedAt)}` : ''}`]]
+          : []),
+      ],
+      filas,
+      pedidas: pedidas.map((c) => `${campos.get(c).label}${s.requiredFieldCodes.includes(c) ? ' Requerida' : ''}`),
+      historia,
+    };
+  });
+  return { solicitudes, de: (id) => solicitudes.find((x) => x.id === id) ?? null };
+}
+
+/**
+ * Información · Solicitudes (maqueta 26; C-70 a C-74; F-05 y F-44 a F-51), sobre las cuentas descartables con sus tres
+ * solicitudes (`datos/generar.mjs descartable-solicitudes`): una respondida, una respondida y corregida por la persona, y
+ * una sin responder. Lo esperado se calcula a mano con lo que devuelve la API. **Escribe al final** (envía una solicitud
+ * por la pantalla): por eso no va dentro de `funcional`. Corre solo (`node recorrido.mjs solicitudes`), con esas cuentas
+ * recién generadas, y no toca los datos de A, B ni C. Tres comprobaciones miran fallas simuladas por el recorrido, y lo dicen.
+ */
+async function solicitudesDeInformacion() {
+  const d = estado.descartable;
+  if (!d?.solicitudes) throw new Error('faltan las cuentas descartables con sus solicitudes: datos/generar.mjs descartable-cuentas, descartable-datos y descartable-solicitudes');
+  const { navegador, page, v } = await abrir();
+  try {
+    const A = d.aseId;
+    const AREA_DE_LA_PAGINA = `/pro/advisees/forms?id=${A}`;
+    const BASE = `${AREA_DE_LA_PAGINA}&vista=solicitudes`;
+    const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const lecturasDesde = (desde, fragmento) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+    const LISTO = 'button.solicitud-de-la-lista, .solicitudes-del-area .estado-vacio, .seccion-del-area .estado-de-grafico--error';
+    const entrar = async (ruta) => {
+      await cupo(v, 60);
+      const desde = v.urls.length;
+      await ir(page, ruta);
+      await page.waitForSelector('#titulo-solicitudes', { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+      await page.waitForSelector(LISTO, { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      return desde;
+    };
+    const salir = async () => {
+      await cupo(v, 60);
+      await ir(page, `/pro/advisees?id=${A}`);
+      await page.waitForFunction(() => !document.querySelector('#titulo-solicitudes'), { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+    };
+    const leerTodo = async () => {
+      const lista = [];
+      let cursor = null;
+      do {
+        const r = await leerApi(v, `/advisees/${A}/form-requests?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+        lista.push(...r.data);
+        cursor = r.page.hasMore ? r.page.nextCursor : null;
+      } while (cursor);
+      const detalleDe = new Map();
+      const formularioDe = new Map();
+      for (const s of lista) {
+        detalleDe.set(s.formRequestId, (await leerApi(v, `/form-requests/${s.formRequestId}`)).data);
+        if (!formularioDe.has(s.templateVersionId)) formularioDe.set(s.templateVersionId, (await leerApi(v, `/form-templates/${s.templateId}/versions/${s.templateVersionId}`)).data);
+      }
+      return { lista, detalleDe, formularioDe, E: esperadoDeSolicitudes({ lista, detalleDe, formularioDe }) };
+    };
+    const abrirSolicitud = async (id) => {
+      await page.click(`button.solicitud-de-la-lista[data-solicitud="${id}"]`).catch(() => {});
+      await page.waitForFunction((x) => document.querySelector('.solicitud-abierta')?.dataset.solicitud === x, { timeout: 15_000 }, id).catch(() => {});
+      await quieto(page, v);
+      return solicitudesEnPantalla(page);
+    };
+    const prohibidas = (texto) => dominio.terminosProhibidosDeFormulariosEn(texto ?? '');
+
+    await iniciarSesion(page, v, d.proCorreo, `/pro/advisees?id=${A}`);
+    await quieto(page, v);
+
+    // ── Al entrar: qué se lee, y cuántas veces ───────────────────────────────────────────────────────────────────
+    const desde = await entrar(BASE);
+    const inicial = await solicitudesEnPantalla(page);
+    const alLeer = v.urls.length;
+    const { lista, E } = await leerTodo();
+    const respondidas = lista.filter((s) => s.status === 'RESPONDED');
+    const sinResponder = lista.filter((s) => s.status === 'PENDING');
+    const deLaPagina = v.urls.slice(desde, alLeer);
+    const lecturas = (fragmento) => deLaPagina.filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+    comprobar(
+      'F-44',
+      'Al entrar, «Solicitudes» lee la lista entera una vez y, una vez, la respuesta de cada solicitud respondida (para decir en la lista cuál se corrigió): ninguna dos veces, y ninguna de las que están sin responder. No lee ningún formulario hasta que se abre una solicitud',
+      lecturas(`/advisees/${A}/form-requests?`).length === 1 &&
+        respondidas.length >= 2 &&
+        sinResponder.length >= 1 &&
+        respondidas.every((s) => lecturas(`/form-requests/${s.formRequestId}`).length === 1) &&
+        sinResponder.every((s) => lecturas(`/form-requests/${s.formRequestId}`).length === 0) &&
+        lecturas('/form-templates/').length === 0,
+      `la lista: ${lecturas(`/advisees/${A}/form-requests?`).length} · respuestas: ${respondidas.map((s) => lecturas(`/form-requests/${s.formRequestId}`).length).join(', ')} (de ${respondidas.length} respondidas) · de las sin responder: ${sinResponder.map((s) => lecturas(`/form-requests/${s.formRequestId}`).length).join(', ')} · formularios: ${lecturas('/form-templates/').length}`,
+    );
+
+    // ── La lista ─────────────────────────────────────────────────────────────────────────────────────────────────
+    const filasALaVista = inicial.filas.map(({ elegida, ...f }) => f);
+    comprobar(
+      'C-72',
+      'La lista tiene todas las solicitudes, en el orden de la API (la más nueva primero); cada renglón dice el formulario, su estado, cuándo se pidió, en qué área, cuántas preguntas tiene, si la persona corrigió su respuesta, y para qué',
+      igual(filasALaVista, E.solicitudes.map((x) => x.fila)) && new Set(lista.map((s) => s.scope)).size >= 2 && E.solicitudes.some((x) => x.corregida) && inicial.detalle === null,
+      igual(filasALaVista, E.solicitudes.map((x) => x.fila)) ? E.solicitudes.map((x) => `${x.fila.nombre} [${x.fila.estado}] ${x.fila.datos}`).join(' | ') : `a la vista: ${JSON.stringify(filasALaVista).slice(0, 260)} — a mano: ${JSON.stringify(E.solicitudes.map((x) => x.fila)).slice(0, 260)}`,
+    );
+    const marco = await marcoEnPantalla(page);
+    comprobar(
+      'C-70',
+      '«Pedir información» es un botón de «Solicitudes», no una sección: el marco tiene una sola, y ningún renglón lleva un botón «Ver detalle» (el renglón entero abre la solicitud)',
+      igual(marco?.pestanas.map((p) => p.texto), ['Solicitudes']) && inicial.pedir === 'Pedir información' && inicial.botonesVerDetalle === 0 && inicial.filas.length > 0,
+      `secciones: ${marco?.pestanas.map((p) => p.texto).join(', ')} · botón: «${inicial.pedir}» · botones «Ver detalle» en la lista: ${inicial.botonesVerDetalle}`,
+    );
+
+    // ── Las vistas con nombre ────────────────────────────────────────────────────────────────────────────────────
+    const cuentasEsperadas = [
+      { clave: 'TODAS', texto: `Todas ${lista.length} ${lista.length === 1 ? 'solicitud' : 'solicitudes'}`, elegida: true },
+      { clave: 'SIN_RESPONDER', texto: `Sin responder ${sinResponder.length} ${sinResponder.length === 1 ? 'solicitud' : 'solicitudes'}`, elegida: false },
+      { clave: 'RESPONDIDAS', texto: `Respondidas ${respondidas.length} ${respondidas.length === 1 ? 'solicitud' : 'solicitudes'}`, elegida: false },
+    ];
+    const alElegir = v.urls.length;
+    await page.click('.solicitudes-del-area .vista-de-la-linea[data-vista="SIN_RESPONDER"]').catch(() => {});
+    await pausa(400);
+    const conLaVista = await solicitudesEnPantalla(page);
+    const pedidosAlElegir = v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length;
+    const parametroDeLaVista = parametros(page).get('ver');
+    await page.click('.solicitudes-del-area .vista-de-la-linea[data-vista="SIN_RESPONDER"]').catch(() => {});
+    await pausa(400);
+    const deVueltaEnTodas = await solicitudesEnPantalla(page);
+    comprobar(
+      'F-45',
+      'Las tres vistas están en su orden, cada una con la cantidad de solicitudes que trae, contada a mano sobre la lista de la API; «Sin responder» y «Respondidas» suman «Todas». Elegir una no le pide nada a la API, queda en la dirección y deja a la vista las que cuenta; volver a tocarla deja «Todas»',
+      igual(inicial.vistas, cuentasEsperadas) &&
+        sinResponder.length + respondidas.length === lista.length &&
+        pedidosAlElegir === 0 &&
+        parametroDeLaVista === 'sin-responder' &&
+        igual(conLaVista.filas.map((f) => f.id), sinResponder.map((s) => s.formRequestId)) &&
+        conLaVista.vistas.find((x) => x.clave === 'SIN_RESPONDER')?.elegida === true &&
+        deVueltaEnTodas.filas.length === lista.length &&
+        !parametros(page).has('ver'),
+      `${inicial.vistas.map((x) => x.texto).join(' · ')} · al elegir «Sin responder»: ${conLaVista.filas.length} a la vista, ${pedidosAlElegir} pedidos, ver=${parametroDeLaVista}`,
+    );
+
+    // ── Una solicitud respondida y corregida: la respuesta que rige ──────────────────────────────────────────────
+    const corregida = E.solicitudes.find((x) => x.corregida) ?? null;
+    const alAbrir = v.urls.length;
+    const conLaCorregida = corregida ? await abrirSolicitud(corregida.id) : inicial;
+    const lecturasAlAbrir = { solicitud: lecturasDesde(alAbrir, '/form-requests/').length, formulario: lecturasDesde(alAbrir, '/form-templates/').length };
+    comprobar(
+      'C-71',
+      'Una solicitud respondida se abre al costado, sin tapar la lista, y el foco va a su título. Dice cuándo se pidió y en qué área, para qué, y cuándo respondió y corrigió la persona. «Declarado por la persona» se dice una vez. De cada pregunta pedida se lee la respuesta que rige —la de la corrección que señala la API—, con «Corregida» y lo que había antes, también si antes estaba sin responder; «Requerida» va junto a su pregunta',
+      !!corregida &&
+        conLaCorregida.detalle?.alCostado === true &&
+        conLaCorregida.detalle.id === corregida.id &&
+        conLaCorregida.detalle.focoEnElTitulo &&
+        conLaCorregida.filas.length === lista.length &&
+        igual(conLaCorregida.filas.filter((f) => f.elegida).map((f) => f.id), [corregida.id]) &&
+        igual(conLaCorregida.detalle.datos, corregida.datos) &&
+        igual(conLaCorregida.detalle.procedencia, ['Declarado por la persona']) &&
+        igual(conLaCorregida.detalle.columnas, ['Pregunta', 'Respuesta que rige']) &&
+        igual(conLaCorregida.detalle.filas, corregida.filas) &&
+        corregida.filas.some((f) => / Antes: «/.test(f.respuesta)) &&
+        corregida.filas.some((f) => / Antes: sin responder\./.test(f.respuesta)) &&
+        corregida.filas.some((f) => / Requerida$/.test(f.pregunta)) &&
+        parametros(page).get('solicitud') === corregida.id,
+      corregida && igual(conLaCorregida.detalle?.filas, corregida.filas)
+        ? `${conLaCorregida.detalle.datos.map((x) => x.join(': ')).join(' · ').slice(0, 170)} — ${corregida.filas.map((f) => `${f.pregunta}: ${f.respuesta}`).join(' | ')}`
+        : `a la vista: ${JSON.stringify(conLaCorregida.detalle?.filas ?? null).slice(0, 280)} — a mano: ${JSON.stringify(corregida?.filas ?? null).slice(0, 280)}`,
+    );
+    comprobar(
+      'F-44',
+      'Abrir una solicitud respondida no vuelve a leerla (su respuesta ya se leyó al entrar): lee una vez la versión de su formulario, de donde salen los textos de las preguntas',
+      lecturasAlAbrir.solicitud === 0 && lecturasAlAbrir.formulario === 1,
+      `al abrir: ${lecturasAlAbrir.solicitud} lecturas de la solicitud y ${lecturasAlAbrir.formulario} del formulario`,
+    );
+
+    // ── La historia de la respuesta: la original se conserva, y cada versión está a un clic ────────────────────────
+    const historiaALaVista = (conLaCorregida.detalle?.historia ?? []).map(({ respuestas, ...h }) => h);
+    await page.evaluate(() => [...document.querySelectorAll('.historia-de-respuesta > li[data-version="ORIGINAL"] button')].find((b) => /Ver lo que respondió/.test(b.innerText))?.click());
+    await pausa(250);
+    const conLaOriginalAbierta = await solicitudesEnPantalla(page);
+    const laOriginal = conLaOriginalAbierta.detalle?.historia.find((h) => h.tipo === 'ORIGINAL') ?? null;
+    comprobar(
+      'C-71',
+      'La historia va de lo más nuevo a lo más viejo: la corrección, marcada «Vigente», con el motivo que escribió la persona; y la respuesta original, que se conserva, con cuántas de las preguntas respondió (una cuenta, nunca una proporción). «Ver lo que respondió» abre, en el lugar, lo que dijo en esa versión',
+      !!corregida &&
+        igual(historiaALaVista, corregida.historia.map(({ respuestas, ...h }) => h)) &&
+        corregida.historia[0]?.tipo === 'CORRECCION' &&
+        corregida.historia[0].rige &&
+        corregida.historia.at(-1).tipo === 'ORIGINAL' &&
+        /^Respondió \d+ de las \d+ preguntas\.$/.test(corregida.historia.at(-1).notas[0]) &&
+        igual(laOriginal?.respuestas, corregida.historia.at(-1).respuestas) &&
+        laOriginal.respuestas.length >= 1,
+      corregida ? `${historiaALaVista.map((h) => `${h.cuando} ${h.titulo}: ${h.notas.join(' ')}`).join(' | ').slice(0, 250)} · en la original: ${JSON.stringify(laOriginal?.respuestas ?? null).slice(0, 110)}` : 'el escenario no tiene una solicitud corregida',
+    );
+
+    // ── Una respondida sin correcciones, con números: la unidad sale de la pregunta ────────────────────────────────
+    const conNumeros = E.solicitudes.find((x) => x.respondida && !x.corregida) ?? null;
+    const conLaDeNumeros = conNumeros ? await abrirSolicitud(conNumeros.id) : inicial;
+    comprobar(
+      'F-46',
+      'Una solicitud respondida y sin correcciones: rige la original, ninguna fila dice «Corregida» ni «Antes», y un número lleva la unidad de su pregunta (la APK no manda unidad)',
+      !!conNumeros &&
+        igual(conLaDeNumeros.detalle?.filas, conNumeros.filas) &&
+        !conNumeros.filas.some((f) => /Corregida|Antes:/.test(f.respuesta)) &&
+        conNumeros.filas.some((f) => /^\d+(,\d+)? \S+/.test(f.respuesta)) &&
+        igual(conLaDeNumeros.detalle.historia.map((h) => [h.tipo, h.rige, h.titulo]), [['ORIGINAL', true, 'Respuesta original Vigente']]),
+      conNumeros ? conNumeros.filas.map((f) => f.respuesta).join(' | ').slice(0, 240) : 'el escenario no tiene una respondida sin correcciones',
+    );
+
+    // ── Una sin responder: se dice, sin tabla, sin historia y sin procedencia (no hay nada declarado) ────────────────
+    const pendiente = E.solicitudes.find((x) => !x.respondida) ?? null;
+    const alAbrirLaPendiente = v.urls.length;
+    const conLaPendiente = pendiente ? await abrirSolicitud(pendiente.id) : inicial;
+    comprobar(
+      'F-47',
+      'Una solicitud sin responder se abre igual, sin leer nada más que su formulario: dice las preguntas pedidas y «Todavía sin responder. No responder también es una opción.». No tiene tabla de respuestas, ni historia, ni «Declarado por la persona» (la misma consulta los encuentra en una respondida), y no hay ningún porcentaje',
+      !!pendiente &&
+        conLaPendiente.detalle?.id === pendiente.id &&
+        conLaPendiente.detalle.estado === 'Sin responder' &&
+        igual(conLaPendiente.detalle.datos, pendiente.datos) &&
+        igual(conLaPendiente.detalle.pedidas, pendiente.pedidas) &&
+        conLaPendiente.detalle.sinResponder === 'Todavía sin responder. No responder también es una opción.' &&
+        conLaPendiente.detalle.filas.length === 0 &&
+        conLaPendiente.detalle.historia.length === 0 &&
+        conLaPendiente.detalle.procedencia.length === 0 &&
+        conLaCorregida.detalle?.procedencia.length === 1 &&
+        lecturasDesde(alAbrirLaPendiente, '/form-requests/').length === 0 &&
+        !/%/.test(conLaPendiente.texto ?? ''),
+      pendiente ? `${conLaPendiente.detalle?.pedidas.join(' | ')} · «${conLaPendiente.detalle?.sinResponder}»` : 'el escenario no tiene una solicitud sin responder',
+    );
+
+    // ── Escape cierra y devuelve el foco; la solicitud abierta vive en la dirección ────────────────────────────────
+    await page.keyboard.press('Escape');
+    await pausa(300);
+    const trasEscape = await solicitudesEnPantalla(page);
+    const focoAlCerrar = await page.evaluate(() => document.activeElement?.dataset?.solicitud ?? null);
+    await entrar(`${BASE}&solicitud=${corregida?.id ?? ''}`);
+    await cupo(v, 60);
+    const alActualizar = v.urls.length;
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+    await quieto(page, v);
+    await page.waitForSelector('.solicitud-abierta', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const trasActualizar = await solicitudesEnPantalla(page);
+    comprobar(
+      'F-48',
+      'Escape cierra el detalle y el foco vuelve al renglón de esa solicitud. La solicitud abierta vive en la dirección (`solicitud=`): se abre al entrar con ella, y «Actualizar» vuelve a leer la lista y la deja abierta',
+      trasEscape.detalle === null &&
+        focoAlCerrar === pendiente?.id &&
+        trasActualizar.detalle?.id === corregida?.id &&
+        parametros(page).get('solicitud') === corregida?.id &&
+        lecturasDesde(alActualizar, `/advisees/${A}/form-requests?`).length === 1,
+      `tras Escape: ${trasEscape.detalle === null ? 'cerrado' : 'abierto'}, foco ${focoAlCerrar === pendiente?.id ? 'en el renglón' : 'en otro lado'} · tras «Actualizar»: «${trasActualizar.detalle?.titulo}», ${lecturasDesde(alActualizar, `/advisees/${A}/form-requests?`).length} lectura de la lista`,
+    );
+
+    // ── Las palabras: lo declarado no es una medición, y no responder no se mide ───────────────────────────────────
+    const textosDeLaSeccion = [inicial.texto, conLaCorregida.texto, conLaDeNumeros.texto, conLaPendiente.texto];
+    comprobar(
+      'F-49',
+      'En ningún estado de «Solicitudes» (la lista, una respondida y corregida, una respondida y una sin responder) el texto afirma una medición ni un diagnóstico, ni usa un porcentaje ni un término prohibido de formularios. La negación sí está: «No es una medición ni un diagnóstico.»',
+      textosDeLaSeccion.every((t) => prohibidas(t).length === 0) && /No es una medición ni un diagnóstico\./.test(conLaCorregida.texto ?? '') && prohibidas('Es una medición del profesional').length > 0,
+      textosDeLaSeccion.flatMap(prohibidas).join(', ') || 'ninguno',
+    );
+
+    // ── Las fallas se dicen, y no pasan por ausencia de datos (respuestas simuladas en el navegador) ───────────────
+    await salir();
+    const sinLista = { coincide: (u) => u.includes(`/advisees/${A}/form-requests?`), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' };
+    v.reglas.push(sinLista);
+    await entrar(BASE);
+    const conLaListaCaida = await solicitudesEnPantalla(page);
+    v.reglas.splice(v.reglas.indexOf(sinLista), 1);
+    await salir();
+    const sinRespuesta = { coincide: (u) => u.includes(`/form-requests/${corregida?.id}`), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' };
+    const sinFormulario = { coincide: (u) => u.includes('/form-templates/'), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' };
+    v.reglas.push(sinRespuesta, sinFormulario);
+    await entrar(`${BASE}&solicitud=${corregida?.id ?? ''}`);
+    await page.waitForSelector('.solicitud-abierta .aviso--error', { timeout: 20_000 }).catch(() => {});
+    const conLasLecturasCaidas = await solicitudesEnPantalla(page);
+    v.reglas.splice(v.reglas.indexOf(sinRespuesta), 1);
+    v.reglas.splice(v.reglas.indexOf(sinFormulario), 1);
+    await cupo(v, 60);
+    for (const texto of ['No pudimos leer esta solicitud.', 'No pudimos leer las preguntas de este formulario.']) {
+      await page.evaluate((t) => [...document.querySelectorAll('.solicitud-abierta .aviso--error')].find((a) => a.innerText.includes(t))?.querySelector('button')?.click(), texto);
+      await quieto(page, v);
+    }
+    await page.waitForSelector('.lo-declarado__fila', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const repuesto = await solicitudesEnPantalla(page);
+    comprobar(
+      'F-50',
+      'Si la lista no se puede leer (un 503 simulado), la sección dice la falla con «Reintentar» y nunca «Todavía no le pediste información». Si lo que no se puede leer es la respuesta de una solicitud o las preguntas de su formulario, el detalle lo dice —no dice «sin responder», ni muestra el código de una pregunta— y cada «Reintentar» trae lo suyo',
+      conLaListaCaida.filas.length === 0 &&
+        conLaListaCaida.vacio === null &&
+        /Reintentar/.test(conLaListaCaida.texto ?? '') &&
+        !/Todavía no le pediste/.test(conLaListaCaida.texto ?? '') &&
+        conLasLecturasCaidas.detalle?.avisos.some((a) => /No pudimos leer esta solicitud\./.test(a)) &&
+        conLasLecturasCaidas.detalle.avisos.some((a) => /No pudimos leer las preguntas de este formulario\./.test(a)) &&
+        conLasLecturasCaidas.detalle.sinResponder === null &&
+        !/sin responder/i.test(conLasLecturasCaidas.detalle.texto) &&
+        !/[a-z]+_[a-z_]+/.test(conLasLecturasCaidas.detalle.texto) &&
+        igual(repuesto.detalle?.filas, corregida?.filas),
+      `sin la lista: «${(conLaListaCaida.texto ?? '').slice(0, 80)}» · sin la respuesta ni el formulario: ${conLasLecturasCaidas.detalle?.avisos.join(' | ').slice(0, 150)} · después de reintentar: ${repuesto.detalle?.filas.length ?? 0} filas`,
+    );
+
+    // ── La ayuda, la accesibilidad y los anchos ───────────────────────────────────────────────────────────────────
+    await entrar(`${BASE}&solicitud=${corregida?.id ?? ''}`);
+    await page.waitForSelector('.lo-declarado__fila', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const medida = await page.evaluate(() => {
+      const ancho = (s) => Math.round(document.querySelector(s)?.getBoundingClientRect().width ?? 0);
+      return { alto: document.documentElement.scrollHeight, lista: ancho('.solicitudes__lista'), detalle: ancho('aside.detalle-de-solicitud') };
+    });
+    informar('F-51', '«Solicitudes», con la solicitud corregida abierta, a 1440 × 900', `${medida.alto} px · la lista mide ${medida.lista} px de ancho y el detalle, ${medida.detalle}`);
+    const faltas = await axe(page);
+    await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+    await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+    const ayuda = await page.evaluate(() => {
+      const dialogo = document.querySelector('dialog.como-se-lee[open]');
+      return dialogo ? { titulo: dialogo.querySelector('h2').innerText.trim(), renglones: dialogo.querySelectorAll('.como-se-lee__lista > li').length, texto: dialogo.innerText } : { titulo: null, renglones: 0, texto: '' };
+    });
+    const faltasDeLaAyuda = await axe(page);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+    comprobar(
+      'F-14',
+      '«Solicitudes» tiene su ayuda en el marco del área: explica los estados, «Declarado por la persona», «Requerida» y la respuesta que rige, sin términos prohibidos',
+      ayuda.titulo === 'Cómo se leen las Solicitudes' && ayuda.renglones >= 7 && prohibidas(ayuda.texto).length === 0,
+      `«${ayuda.titulo}» · ${ayuda.renglones} renglones · prohibidos: ${prohibidas(ayuda.texto).join(', ') || 'ninguno'}`,
+    );
+    const enAncho = async (ancho) => {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(400);
+      const p = await solicitudesEnPantalla(page);
+      return { p, desborda: !(await sinDesborde(page)), cortes: await cortesMalPuestos(page, '.solicitud-de-la-lista__datos'), faltas: await axe(page) };
+    };
+    const a1440 = await enAncho(1440);
+    const a1280 = await enAncho(1280);
+    const a1024 = await enAncho(1024);
+    await page.keyboard.press('Escape');
+    await pausa(300);
+    const cerradoA1024 = await solicitudesEnPantalla(page);
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(300);
+    informar('F-51', 'El alto de «Solicitudes» con esa solicitud abierta, a 1280 y a 1024 px', `${a1280.p.alto} px y ${a1024.p.alto} px`);
+    comprobar(
+      'F-51',
+      'A 1280 px el detalle sigue al costado de la lista. A 1024 px se abre encima, en un panel que retiene el foco, con las mismas filas, la respuesta debajo de su pregunta y sin los nombres de las columnas; Escape lo cierra. En ningún ancho la página desborda de costado, ni un renglón deja un número separado de su palabra o el separador al principio',
+      a1280.p.detalle?.alCostado === true &&
+        a1024.p.detalle?.alCostado === false &&
+        a1024.p.detalle.conElFoco &&
+        igual(a1024.p.detalle.filas, corregida?.filas) &&
+        a1024.p.detalle.respuestaDebajo &&
+        a1024.p.detalle.columnas === null &&
+        a1440.p.detalle?.respuestaDebajo === false &&
+        cerradoA1024.detalle === null &&
+        [a1440, a1280, a1024].every((x) => !x.desborda && x.cortes.cortes.length === 0),
+      `1280: ${a1280.p.detalle?.alCostado ? 'al costado' : 'encima'} · 1024: ${a1024.p.detalle?.alCostado === false ? 'encima' : 'al costado'}, la respuesta ${a1024.p.detalle?.respuestaDebajo ? 'debajo' : 'al lado'} · cortes: ${[a1440, a1280, a1024].flatMap((x) => x.cortes.cortes).join(' | ') || 'ninguno'}${[a1440, a1280, a1024].some((x) => x.desborda) ? ' · DESBORDA' : ''}`,
+    );
+    comprobar(
+      'F-48',
+      'axe no encuentra faltas en «Solicitudes» con una solicitud abierta al costado (1440 y 1280 px), en el panel de encima (1024 px) ni con la ayuda abierta',
+      faltas.length === 0 && faltasDeLaAyuda.length === 0 && [a1440, a1280, a1024].every((x) => x.faltas.length === 0),
+      `al costado: ${faltas.map((f) => f.id).join(', ') || 'sin faltas'} · la ayuda: ${faltasDeLaAyuda.map((f) => f.id).join(', ') || 'sin faltas'} · 1280: ${a1280.faltas.map((f) => f.id).join(', ') || 'sin faltas'} · 1024: ${a1024.faltas.map((f) => f.id).join(', ') || 'sin faltas'}`,
+    );
+
+    // ── El pedido: se abre desde «Solicitudes», y las preguntas vienen todas marcadas (F-05) ─────────────────────────
+    await entrar(BASE);
+    await clic(page, '.solicitudes-del-area__pedir button', 'Pedir información');
+    await page.waitForSelector('#titulo-catalogo', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const marcoDelPedido = await marcoEnPantalla(page);
+    const vueltaDelPedido = await page.evaluate(() => {
+      const a = document.querySelector('.vuelta-a-la-seccion a');
+      return a ? { texto: a.innerText.replace(/\s+/g, ' ').trim(), href: a.getAttribute('href') } : null;
+    });
+    const vistaDelPedido = parametros(page).get('vista');
+    // Se elige «Hábitos y contexto»: no tiene área propia, y tiene tres preguntas.
+    const formularios = (await leerApi(v, '/form-templates?limit=50')).data;
+    const habitos = formularios.find((f) => f.key === 'FRM-HABITOS');
+    const versionDeHabitos = (await leerApi(v, `/form-templates/${habitos.templateId}/versions/${habitos.latestVersionId}`)).data;
+    const codigos = versionDeHabitos.sections.flatMap((s) => s.fields.map((c) => c.fieldCode));
+    await page.evaluate((nombre) => [...document.querySelectorAll('.historial > li')].find((li) => li.innerText.includes(nombre))?.querySelector('button')?.click(), habitos.name);
+    await page.waitForSelector('#titulo-armar', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const casillas = () =>
+      page.evaluate(() => ({
+        pedidas: [...document.querySelectorAll('input[id^="pedir-"]')].map((i) => [i.id.replace('pedir-', ''), i.checked]),
+        requeridas: [...document.querySelectorAll('input[id^="requerido-"]')].map((i) => [i.id.replace('requerido-', ''), i.checked]),
+        cuenta: document.querySelector('[data-elegidas]')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
+        texto: document.querySelector('.seccion-del-area')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+      }));
+    const alElegirFormulario = await casillas();
+    await page.click(`#pedir-${codigos[0]}`).catch(() => {});
+    await pausa(200);
+    const conUnaMenos = await casillas();
+    comprobar(
+      'C-73',
+      '«Pedir información» abre el pedido (`vista=pedir`, que no cambió), con «Solicitudes» marcada en el marco y un enlace para volver. Al elegir un formulario vienen todas sus preguntas marcadas y ninguna como requerida; la cuenta dice cuántas se van a pedir y sigue a las casillas al desmarcar una (decisión de Dirección del 2026-10-12)',
+      vistaDelPedido === 'pedir' &&
+        igual(marcoDelPedido?.pestanas.map((p) => [p.texto, p.actual]), [['Solicitudes', 'page']]) &&
+        vueltaDelPedido?.texto === 'Solicitudes' &&
+        /vista=solicitudes/.test(vueltaDelPedido.href ?? '') &&
+        codigos.length >= 3 &&
+        igual(alElegirFormulario.pedidas, codigos.map((c) => [c, true])) &&
+        alElegirFormulario.requeridas.every(([, marcada]) => !marcada) &&
+        alElegirFormulario.requeridas.length === codigos.length &&
+        (alElegirFormulario.cuenta ?? '').startsWith(`${codigos.length} de ${codigos.length} elegidas.`) &&
+        (conUnaMenos.cuenta ?? '').startsWith(`${codigos.length - 1} de ${codigos.length} elegidas.`) &&
+        igual(conUnaMenos.pedidas[0], [codigos[0], false]),
+      `vista=${vistaDelPedido} · marcada: ${marcoDelPedido?.pestanas.find((p) => p.actual === 'page')?.texto} · al elegir: ${alElegirFormulario.pedidas.filter(([, m]) => m).length} de ${codigos.length} marcadas, ${alElegirFormulario.requeridas.filter(([, m]) => m).length} requeridas · «${alElegirFormulario.cuenta}» · al desmarcar una: «${conUnaMenos.cuenta}»`,
+    );
+    comprobar(
+      'C-74',
+      'La nota de las requeridas dice lo que pasa —si la persona responde, las requeridas no pueden quedar vacías; la solicitud entera sí puede quedar sin responder—, y el pedido no usa «Alcance», «plantilla» ni «campo»: dice «área», «formulario» y «pregunta»',
+      /Si responde, las requeridas no pueden quedar vacías\. La solicitud entera sí puede quedar sin responder\./.test(alElegirFormulario.texto) &&
+        !/igual puede quedar sin responder/.test(alElegirFormulario.texto) &&
+        !/\b(Alcance|plantilla|campos?)\b/i.test(alElegirFormulario.texto) &&
+        /Área/.test(alElegirFormulario.texto) &&
+        prohibidas(alElegirFormulario.texto).length === 0,
+      `${/(Alcance|plantilla|campos?)/i.exec(alElegirFormulario.texto)?.[0] ?? 'sin palabras de antes'} · prohibidos: ${prohibidas(alElegirFormulario.texto).join(', ') || 'ninguno'}`,
+    );
+
+    // ── Enviar (escribe): sale lo elegido, y la lista lo muestra ───────────────────────────────────────────────────
+    const PROPOSITO = 'Ajustar el plan a tu descanso';
+    await page.click(`#requerido-${codigos[1]}`).catch(() => {});
+    await page.type('#proposito', PROPOSITO);
+    await page.select('#alcance', 'NUTRICION');
+    const alEnviar = v.urls.length;
+    await clic(page, '.seccion-del-area .acciones button', 'Enviar solicitud');
+    await page.waitForFunction(() => (document.querySelector('.aviso-flotante__texto')?.innerText.trim() ?? '') !== '', { timeout: 30_000 }).catch(() => {});
+    const avisoDelEnvio = await page.evaluate(() => document.querySelector('.aviso-flotante__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? null);
+    await page.waitForSelector('button.solicitud-de-la-lista', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const despues = await leerTodo();
+    const trasEnviar = await solicitudesEnPantalla(page);
+    const nuevas = despues.lista.filter((s) => !lista.some((x) => x.formRequestId === s.formRequestId));
+    const laNueva = nuevas[0] ?? null;
+    const envios = v.urls.slice(alEnviar).filter((u) => u.startsWith('POST ') && u.includes(`/advisees/${A}/form-requests`)).length;
+    comprobar(
+      'F-05',
+      'Al enviar sale un solo pedido, con lo que quedó elegido: las preguntas marcadas (no la que se desmarcó), la requerida, el propósito y el área. La página vuelve a «Solicitudes» y lo dice; la lista tiene una más, primera y sin responder, y las cantidades de las vistas suben',
+      envios === 1 &&
+        nuevas.length === 1 &&
+        igual([...laNueva.requestedFieldCodes].sort(), codigos.slice(1).sort()) &&
+        igual(laNueva.requiredFieldCodes, [codigos[1]]) &&
+        laNueva.purpose === PROPOSITO &&
+        laNueva.scope === 'NUTRICION' &&
+        laNueva.status === 'PENDING' &&
+        avisoDelEnvio === 'Solicitud enviada.' &&
+        parametros(page).get('vista') === 'solicitudes' &&
+        trasEnviar.filas[0]?.id === laNueva.formRequestId &&
+        igual(trasEnviar.filas.map(({ elegida, ...f }) => f), despues.E.solicitudes.map((x) => x.fila)) &&
+        trasEnviar.vistas.find((x) => x.clave === 'TODAS')?.texto === `Todas ${lista.length + 1} solicitudes` &&
+        trasEnviar.vistas.find((x) => x.clave === 'SIN_RESPONDER')?.texto === `Sin responder ${sinResponder.length + 1} solicitudes`,
+      laNueva
+        ? `pedidos: ${envios} · pedidas: ${laNueva.requestedFieldCodes.join(', ')} · requeridas: ${laNueva.requiredFieldCodes.join(', ')} · ${laNueva.scope} · «${avisoDelEnvio}» · ${trasEnviar.vistas.map((x) => x.texto).join(' · ')}`
+        : `la API tiene ${nuevas.length} solicitudes nuevas · pedidos: ${envios} · «${avisoDelEnvio}»`,
+    );
+    comprobar('—', '«Solicitudes» y el pedido no produjeron errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+  } finally {
+    await navegador.close();
+  }
+}
+
 async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true, registros = true, sesiones = true, tomas = true, estimacion = false } = {}) {
   const { navegador, page, v } = await abrir();
   // Los guiones que pide la página, desde antes de entrar: para saber con qué se cargó la ficha.
@@ -8318,6 +8937,7 @@ try {
   if (modo === 'sesiones') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false });
   if (modo === 'tomas') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
   if (modo === 'mediciones') await medicionesDeUnaToma();
+  if (modo === 'solicitudes') await solicitudesDeInformacion();
   if (modo === 'estimacion') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false, estimacion: true });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));

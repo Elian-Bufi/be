@@ -14,7 +14,7 @@ const { readdirSync, readFileSync } = require('node:fs');
 const { basename, join } = require('node:path');
 const test = require('node:test');
 const ts = require('typescript');
-const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeCarteraEn, terminosProhibidosDeEntrenamientoEn } = require('../packages/domain/dist/index.js');
+const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeCarteraEn, terminosProhibidosDeEntrenamientoEn, terminosProhibidosDeFormulariosEn } = require('../packages/domain/dist/index.js');
 
 const RAIZ = join(__dirname, '..');
 /** Los textos también viven en módulos sin JSX (`.ts`): se leen como TypeScript, no como TSX. */
@@ -72,6 +72,15 @@ const DOMINIOS = [
     archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro')), ...['directorio.ts', 'pendiente-en-una-fila.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro', archivo))],
     prohibidos: terminosProhibidosDeCarteraEn,
     minimo: 8,
+  },
+  {
+    // WP-ESCRITORIO-AREAS, parte 4: Información del profesional (las solicitudes y el pedido). Pedir no es obligar, no
+    // responder no se mide, y lo declarado no es una medición ni un diagnóstico (09 §22.7): negarlo sí se puede decir.
+    // Hasta acá estas pantallas no las miraba ninguna prueba; el texto del dominio sí (`contratos-wp07.test.ts`).
+    nombre: 'información',
+    archivos: tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/forms')),
+    prohibidos: terminosProhibidosDeFormulariosEn,
+    minimo: 4,
   },
 ];
 
