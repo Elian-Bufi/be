@@ -25,6 +25,10 @@
 //   descartable-datos    por la API, hoy: vínculos de Nutrición y Antropometría, una toma medida, una informada por la
 //              persona (SELF_REPORTED) y otra medida, y dos corridas del IMC (be/imc@1): valores medidos, informados y
 //              estimados en la misma serie de evolución. La revocación la hace el asesorado desde su web, en el recorrido.
+//   descartable-toma-completa  (WP-ESCRITORIO-AREAS, parte 3) por la API, sobre esas mismas cuentas: una toma de hace dos
+//              días con el perfil completo (30 mediciones, con la cintura mal tipeada a propósito) y ocho resultados
+//              calculados. La usa `recorrido.mjs mediciones`, que corrige, anula, calcula y deja una referencia por la
+//              pantalla. Va después de descartable-datos.
 //
 // Uso: node datos/generar.mjs <fase> [origen de la API]   (BE_E2E_DATABASE_URL para otra base local)
 import { REPO, enTrabajo } from '../rutas.mjs';
@@ -677,6 +681,107 @@ async function descartableDatos() {
   console.log(`datos descartables listos: tres tomas de peso (medida, reportada por la persona y medida) y dos IMC calculados por un método (${corridas.map((c) => `${c.valor} ${c.unidad}`).join(', ')})`);
 }
 
+// ─── WP-ESCRITORIO-AREAS, parte 3: una toma con el perfil completo, en las cuentas descartables ──────────────────────
+
+/** Las 30 mediciones del «Perfil antropométrico completo», con los valores de la maqueta 22. La cintura va mal tipeada. */
+const PERFIL_COMPLETO = [
+  ['peso', 77.9, 'kg'],
+  ['talla', 168, 'cm'],
+  ['edad', 34, 'años'],
+  ['pliegue-pectoral', 13, 'mm'],
+  ['pliegue-axilar-media', 15.5, 'mm'],
+  ['pliegue-triceps', 22, 'mm'],
+  ['pliegue-subescapular', 18.5, 'mm'],
+  ['pliegue-biceps', 11, 'mm'],
+  ['pliegue-cresta-iliaca', 24, 'mm'],
+  ['pliegue-supraespinal', 19, 'mm'],
+  ['pliegue-abdominal', 27.5, 'mm'],
+  ['pliegue-muslo-frontal', 30, 'mm'],
+  ['pliegue-pantorrilla', 17, 'mm'],
+  ['pliegue-antebrazo', 8, 'mm'],
+  ['perimetro-cuello', 33.5, 'cm'],
+  ['perimetro-hombros', 104, 'cm'],
+  ['perimetro-pecho', 96, 'cm'],
+  ['perimetro-brazo-relajado', 30.5, 'cm'],
+  ['perimetro-brazo-flexionado', 31.5, 'cm'],
+  ['perimetro-antebrazo', 25, 'cm'],
+  ['perimetro-muneca', 15.5, 'cm'],
+  // Mal tipeada a propósito (era 84): el recorrido la corrige por la pantalla, y la API vuelve a calcular lo que la usa.
+  ['perimetro-cintura', 48, 'cm'],
+  ['perimetro-abdomen', 92, 'cm'],
+  ['perimetro-cadera', 104, 'cm'],
+  ['perimetro-muslo', 60.5, 'cm'],
+  ['perimetro-pantorrilla', 37.5, 'cm'],
+  ['perimetro-tobillo', 22, 'cm'],
+  ['diametro-humero', 6.2, 'cm'],
+  ['diametro-biestiloideo', 5, 'cm'],
+  ['diametro-femur', 9.1, 'cm'],
+];
+
+/** Los métodos que se calculan sobre esa toma, por su nombre en el catálogo: índices, sumas de pliegues y grasa corporal. */
+const METODOS_DE_LA_TOMA_COMPLETA = [
+  'Índice de masa corporal (IMC)',
+  'Índice cintura/cadera',
+  'Índice cintura/talla',
+  'Suma de 6 pliegues (ISAK)',
+  'Suma de 7 pliegues (Jackson y Pollock)',
+  'Durnin y Womersley, mujeres · Siri',
+  'Jackson, Pollock y Ward, 7 pliegues, mujeres · Siri',
+  'Masa grasa relativa (RFM), mujeres',
+];
+
+/**
+ * En las cuentas descartables, ya con sus datos (`descartable-datos`): una toma de hace dos días con el perfil completo
+ * y ocho resultados calculados, todo por la API. Es la toma que dibuja la maqueta 22: con ella «Tomas» se ve con sus
+ * tres columnas de mediciones y sus categorías de resultados, y el recorrido que escribe (`recorrido.mjs mediciones`)
+ * corrige la cintura, anula un pliegue, calcula un método y deja una referencia. Cada entrada de un método sale de la
+ * medición de la toma con su misma métrica; un método que el catálogo no ofrece, o al que le falta una entrada, corta.
+ */
+async function descartableTomaCompleta() {
+  const e = leerEstado();
+  const d = e.descartable;
+  if (!d?.datos) throw new Error('primero: descartable-cuentas y descartable-datos');
+  const pro = await sesion(d.proCorreo);
+  const fecha = diaMenos(hoyCivil(), 2);
+  const creada = (
+    await pedir('POST', `/advisees/${d.aseId}/anthropometry/evaluation-drafts`, {
+      token: pro,
+      cuerpo: {
+        occurredAt: instante(fecha, '08:40').toISOString(),
+        specificationVersionId: PROTOCOLOS.perfil.version,
+        source: { type: 'DIRECT_CAPTURE' },
+        professionalNotes: 'En ayunas, antes de entrenar',
+        directMeasurements: PERFIL_COMPLETO.map(([metricCode, value, unit]) => ({ metricCode, value, unit })),
+      },
+    })
+  ).data;
+  const registrada = (await pedir('POST', `/anthropometry/evaluation-drafts/${creada.evaluationId}/register`, { token: pro, cuerpo: { expectedVersion: creada.version } })).data;
+  if (registrada.measurements.length !== PERFIL_COMPLETO.length) throw new Error(`la toma quedó con ${registrada.measurements.length} mediciones, no ${PERFIL_COMPLETO.length}`);
+  const porMetrica = Object.fromEntries(registrada.measurements.map((m) => [m.metric, m.measurementId]));
+
+  const catalogo = [];
+  for (let cursor = null; ; ) {
+    const r = await pedir('GET', `/professional-methods?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { token: pro });
+    catalogo.push(...r.data);
+    if (!r.page.hasMore || !r.page.nextCursor) break;
+    cursor = r.page.nextCursor;
+  }
+  const corridas = [];
+  for (const nombre of METODOS_DE_LA_TOMA_COMPLETA) {
+    const metodo = catalogo.find((m) => m.name === nombre);
+    if (!metodo) throw new Error(`el catálogo no ofrece «${nombre}»`);
+    const sinMedicion = metodo.requiredInputs.filter((x) => !porMetrica[x.metric]).map((x) => x.metric);
+    if (sinMedicion.length > 0) throw new Error(`«${nombre}» pide ${sinMedicion.join(', ')}, que la toma no tiene`);
+    const r = await pedir('POST', `/advisees/${d.aseId}/calculations`, {
+      token: pro,
+      cuerpo: { purpose: metodo.purposes[0], methodVersionId: metodo.methodVersionId, inputBindings: metodo.requiredInputs.map((x) => ({ inputCode: x.inputCode, sourceRef: porMetrica[x.metric] })) },
+    });
+    corridas.push({ id: r.data.calculationRunId, metodo: nombre, valor: r.data.result.magnitude.value, unidad: r.data.result.magnitude.unit });
+  }
+  guardarEstado({ descartable: { ...d, tomaCompleta: { evaluationId: registrada.evaluationId, fecha, porMetrica, corridas } } });
+  console.log(`toma completa lista: ${registrada.measurements.length} mediciones y ${corridas.length} resultados calculados (${corridas.map((c) => `${c.metodo}: ${c.valor}`).join('; ')})`);
+}
+
 // ─── WP-DASHBOARD-COMPRENSION: escenarios D y E ────────────────────────────────────────────────────────────────────
 
 async function comprension() {
@@ -742,9 +847,10 @@ const FASES = {
   'verificar-comprension': verificarComprension,
   'descartable-cuentas': descartableCuentas,
   'descartable-datos': descartableDatos,
+  'descartable-toma-completa': descartableTomaCompleta,
 };
 if (!FASES[fase]) {
-  console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar|volumen|comprension|comprension-e|verificar-comprension|descartable-cuentas|descartable-datos [origen de la API]');
+  console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar|volumen|comprension|comprension-e|verificar-comprension|descartable-cuentas|descartable-datos|descartable-toma-completa [origen de la API]');
   process.exit(2);
 }
 try {

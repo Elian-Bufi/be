@@ -34,11 +34,19 @@ if (!salida || !Number.isFinite(ANCHO) || pedidos.length === 0 || pedidos.some((
 const ALTO = 900;
 const WEB = 'http://localhost:3000';
 const estado = JSON.parse(fs.readFileSync(enTrabajo('estado.json'), 'utf8'));
+// Con BE_VER_CUENTA=descartable se entra con el profesional descartable y `{a}` es su asesorado (las cuentas de
+// `datos/generar.mjs descartable-cuentas`, con la API levantada con `demo-profesionales-descartable.txt`): para mirar lo
+// que solo ese escenario tiene, como la toma con el perfil completo.
+const CUENTA = process.env.BE_VER_CUENTA === 'descartable' ? { correo: estado.descartable?.proCorreo, asesorado: estado.descartable?.aseId } : { correo: estado.proCorreo, asesorado: estado.aseId };
+if (!CUENTA.correo || !CUENTA.asesorado) {
+  console.error('estado.json no tiene las cuentas descartables: corré antes datos/generar.mjs descartable-cuentas.');
+  process.exit(2);
+}
 const rutas = pedidos.map((p) => {
   const corte = p.indexOf('=');
   // `{a}` es el asesorado A; `{nutricion.planV2}` (o cualquier otra clave de estado.json) trae ese identificador.
   const ruta = p.slice(corte + 1).replace(/\{([\w.]+)\}/g, (_, clave) => {
-    const valor = clave === 'a' ? estado.aseId : clave.split('.').reduce((o, parte) => o?.[parte], estado);
+    const valor = clave === 'a' ? CUENTA.asesorado : clave.split('.').reduce((o, parte) => o?.[parte], estado);
     if (typeof valor !== 'string') {
       console.error(`«${p.slice(0, corte)}»: estado.json no tiene «${clave}».`);
       process.exit(2);
@@ -119,13 +127,13 @@ try {
   // Se entra por la ficha (un retorno corto, que el inicio de sesión acepta) y después se navega a cada ruta pedida.
   // Los plazos son largos a propósito: contra `next dev`, la primera vez que se pide una página hay que esperar a que
   // se compile.
-  const entrada = `/pro/advisees?id=${estado.aseId}`;
+  const entrada = `/pro/advisees?id=${CUENTA.asesorado}`;
   page.setDefaultNavigationTimeout(240_000);
   page.setDefaultTimeout(240_000);
   await page.goto(`${WEB}/login?volver=${encodeURIComponent(entrada)}`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#correo');
   await page.waitForNetworkIdle({ idleTime: 500, timeout: 60_000 }).catch(() => {});
-  await page.type('#correo', estado.proCorreo);
+  await page.type('#correo', CUENTA.correo);
   await page.type('#contrasena', 'clave-sintetica-de-prueba-01');
   await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }).catch(() => {}), page.keyboard.press('Enter')]);
   await page.waitForFunction(() => location.pathname.startsWith('/pro/advisees'), { timeout: 240_000 });

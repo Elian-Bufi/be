@@ -1,436 +1,436 @@
 'use client';
 
 /**
- * «Evaluaciones» (B10-07; API-ANT-03/04/05/12): lo que ya es historia, en solo lectura, con los dos actos que el
- * legajo separa (REG-06-219):
- * - **corregir** cambia la vista del valor y conserva el original y su cadena;
- * - **anular** cambia la condición de efectividad, es terminal y no borra nada. El copy lo dice explícitamente,
- *   porque el 08 prohíbe presentarla como una acción destructiva (08 §56.12).
+ * «Tomas» (B10-07; API-ANT-03/04/05/08/12; WP-ESCRITORIO-AREAS, parte 3; maquetas 22 y 29): lo que ya es historia, en
+ * solo lectura. Una toma registrada no se edita: cada medición se corrige o se anula, y queda constancia (REG-06-219).
  *
- * Lo medido, lo informado y lo calculado se muestran distinguidos siempre (04:1090).
+ * - **La lista se lee entera, una vez,** y va por cuándo se tomó cada toma, la más nueva primero, en tramos seguidos del
+ *   mismo protocolo. La lista de la API no trae el protocolo ni las correcciones de cada toma: salen de su detalle, que
+ *   se lee después de la toma abierta, de a tres y hasta veinte. Mientras no llega, la fila dice lo que ya se sabe.
+ * - **Cambiar de toma no vuelve a leer nada** si su detalle ya llegó. La toma elegida va en la dirección (`evaluacion=`).
+ * - **La toma abierta dice una vez lo que vale para toda la toma** (el protocolo, cuándo se registró, la clase del dato)
+ *   y, de cada medición, solo lo que se sale de lo común. El valor de cada fila es el que rige (REG-06-16): lo decide el
+ *   dominio (`medicionesPorFamilia`), no esta pantalla.
+ * - **Corregir y anular están en el panel de cada medición,** con su historia a la vista; ya no en cada fila.
+ * - Después de una escritura se vuelven a leer esa toma y los cálculos: nada más.
  *
- * DL-113 · la pantalla se ordena por lo que el profesional viene a hacer:
- * - cada toma se nombra por **cuándo se tomó**: la fecha de registro es un metadato, y con ella sola las tomas
- *   registradas el mismo día se veían iguales;
- * - en el detalle, los resultados calculados van antes que las mediciones;
- * - las mediciones van en filas compactas por familia, con «Corregir» y «Anular» en cada fila. El protocolo y la
- *   fecha de la toma se dicen una vez, y en una fila solo si difieren.
+ * Las reglas —el orden, los tramos, las cuentas, las marcas, la historia y lo que cambió con una corrección— están en
+ * `tomas-de-antropometria.ts`, con sus pruebas.
  */
 import {
-  cantidad,
   COPY,
-  COPY_ANTROPOMETRIA,
+  COPY_ANTROPOMETRIA as C,
   COPY_EVOLUCION,
-  ETIQUETA_DE_CLASE_DE_DATO,
-  ETIQUETA_DE_CONDICION,
-  ETIQUETA_DE_FAMILIA,
-  FAMILIA_DE_METRICA,
-  leerNumero,
-  motivoDeNumeroIlegible,
+  cuentasDeLaTomaEnPalabras,
+  marcaDeLaClase,
+  medicionesPorFamilia,
   nombreDeMetrica,
+  resumenDeLaToma,
+  todasLasPaginas,
+  tomasDeLaMasNueva,
+  tramosDeProtocolo,
   type EvaluacionAntropometricaApi,
   type FamiliaDeMedicion,
-  type Medicion,
+  type NombreDeIcono,
+  type ResumenDeEvaluacionApi,
+  type ResumenDeLaToma,
+  type TramoDeTomas,
 } from '@be/domain';
-import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
-import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
-import { Aviso, Campo } from '../../../../components/formulario';
-import { api, type Resultado } from '../../../../lib/api';
-import { dia, fecha } from '../../../../lib/formato';
-import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { AvisoFlotante } from '../../../../components/ayuda';
 import { EstadoVacio } from '../../../../components/estados';
-import { useCambiosSinGuardar } from '../marco-del-area';
+import { Aviso } from '../../../../components/formulario';
+import { Icono } from '../../../../components/icono';
+import { Panel } from '../../../../components/panel';
+import { api, type Resultado } from '../../../../lib/api';
+import { dia, fecha, horaDelDia } from '../../../../lib/formato';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
-import { BloqueDeCalculos } from './calculos';
+import { DetalleDeResultado, NuevoCalculo, ResultadosDeLaToma, useCalculosDelAsesorado, type Calculos } from './calculos';
+import { Marca } from './marca';
+import { DetalleDeMedicion } from './medicion';
 
-type Resumen = { evaluationId: string; state: string; occurredAt: string; registeredAt: string | null; summary: { metrics: string[]; measurementCount: number; annulledCount: number } };
+/** De cuántas tomas se lee el detalle para decir su protocolo y sus correcciones en la lista: las más recientes. */
+const TOMAS_CON_DETALLE = 20;
+/** Cuántos detalles se piden a la vez: cada uno es una lectura protegida, y cuenta para el cupo del profesional. */
+const DETALLES_A_LA_VEZ = 3;
 
-/**
- * Las tomas, por cuándo se tomaron: la más reciente primero, y es la que abre. DL-113 nombra cada toma por esa fecha. La
- * API pagina por fecha de registro, así que una toma cargada después quedaba primera aunque fuera más vieja. Pasó en la
- * prueba de Dirección con la 0.13.1: la del 24/9, registrada después, quedaba antes que la del 1/10 y se abría ella.
- * Con la misma fecha, la registrada después va primero.
- */
-const porOcurrencia = (a: Resumen, b: Resumen): number => b.occurredAt.localeCompare(a.occurredAt) || (b.registeredAt ?? '').localeCompare(a.registeredAt ?? '');
+type Lista = {
+  readonly tomas: readonly ResumenDeEvaluacionApi[];
+  /** Falso si la lista llegó cortada: la cantidad es «al menos». */
+  readonly completa: boolean;
+  /** La toma en preparación, si hay una y se pudo leer. */
+  readonly borrador: { readonly mediciones: number } | null;
+};
 
-/**
- * Qué pasó con la evaluación pedida cuando la lista sí se pudo leer: `no-disponible` es el 404 (no existe, o no está
- * autorizada: no se distingue, como en toda la API) y `transitorio` es cualquier otro fallo, que amerita reintentar.
- * En los dos casos la lista válida del asesorado se muestra igual: una evaluación fallida no la tapa.
- */
-type FalloDeDetalle = 'no-disponible' | 'transitorio' | null;
+type Detalle = { readonly tipo: 'cargando' } | { readonly tipo: 'listo'; readonly toma: EvaluacionAntropometricaApi } | { readonly tipo: 'no-disponible' } | { readonly tipo: 'fallo' };
+
+/** «24 sept 2026 · 08:40»: el día y la hora de la toma, como en la lista de la maqueta. */
+const momentoDeLaToma = (iso: string): string => `${dia(iso)} · ${horaDelDia(new Date(iso))}`;
 
 export function VistaDeEvaluaciones() {
-  const { token, asesoradoId, sesionPerdida, irA } = useAntropometria();
-  const [r, setR] = useState<Resultado<{ lista: Resumen[]; abierta: EvaluacionAntropometricaApi | null; fallo: FalloDeDetalle }> | null>(null);
-  // Desde la evolución llega `evaluacion=` en la URL: es la evaluación de origen de una observación (RF-049). Si el
-  // parámetro cambia después (otra observación, o se vuelve a la lista), la evaluación abierta lo sigue.
-  const pedida = useSearchParams().get('evaluacion');
-  const [abiertaId, setAbiertaId] = useState<string | null>(pedida);
-  useEffect(() => {
-    setAbiertaId(pedida);
-  }, [pedida]);
-  const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+  const { token, asesoradoId, sesionPerdida, irA, parametros, avisoDeTomas, avisarEnTomas } = useAntropometria();
+  const pedida = parametros.get('evaluacion');
+  const [lista, setLista] = useState<Resultado<Lista> | null>(null);
+  const [detalles, setDetalles] = useState<ReadonlyMap<string, Detalle>>(() => new Map());
+  /** Las tomas cuyo detalle ya se pidió: ninguna se pide dos veces por haber cambiado de toma. */
+  const pedidos = useRef(new Set<string>());
+  const calculos = useCalculosDelAsesorado();
 
   const cargar = useCallback(async () => {
-    setR(null);
-    const lista = await api.listarEvaluacionesAntropometricas(token, asesoradoId);
-    if (sesionPerdida(lista)) return;
-    if (!lista.ok) return setR(lista as Resultado<never>);
-    const filas = [...(lista.datos.data as Resumen[])].sort(porOcurrencia);
-    const id = abiertaId ?? filas[0]?.evaluationId ?? null;
-    if (!id) return setR({ ok: true, datos: { lista: filas, abierta: null, fallo: null } });
-    const detalle = await api.consultarEvaluacionAntropometrica(token, id);
-    if (sesionPerdida(detalle)) return;
-    if (!detalle.ok) {
-      const noDisponible = detalle.tipo === 'API' && detalle.codigo === 'RESOURCE_NOT_FOUND';
-      return setR({ ok: true, datos: { lista: filas, abierta: null, fallo: noDisponible ? 'no-disponible' : 'transitorio' } });
-    }
-    setR({ ok: true, datos: { lista: filas, abierta: detalle.datos.data, fallo: null } });
-  }, [token, asesoradoId, sesionPerdida, abiertaId]);
+    setLista(null);
+    const [tomas, borradores] = await Promise.all([
+      todasLasPaginas((f) => api.listarEvaluacionesAntropometricas(token, asesoradoId, f)),
+      api.listarBorradoresAntropometricos(token, asesoradoId),
+    ]);
+    if (sesionPerdida(tomas) || sesionPerdida(borradores)) return;
+    if (!tomas.ok) return setLista(tomas as Resultado<never>);
+    // La toma en preparación es un dato aparte: si su lectura falla, la lista se muestra igual y el botón no la anuncia.
+    const borrador = borradores.ok ? (borradores.datos.data[0] ?? null) : null;
+    setLista({
+      ok: true,
+      datos: {
+        tomas: tomasDeLaMasNueva(tomas.datos.data.filter((t) => t.state === 'REGISTERED')),
+        completa: tomas.datos.completa,
+        borrador: borrador ? { mediciones: borrador.summary.measurementCount } : null,
+      },
+    });
+  }, [token, asesoradoId, sesionPerdida]);
 
   useEffect(() => {
     void cargar();
   }, [cargar]);
-  // Vuelve a la lista sin la evaluación pedida: saca el parámetro de la URL y abre la más reciente, como al entrar.
-  const volverALaLista = () => {
-    setAbiertaId(null);
-    irA('evaluaciones');
-  };
 
-  return (
-    <EstadoDeLectura r={r} onReintentar={cargar}>
-      {r?.ok ? (
-        <div className="secciones">
-          {/* DL-113: el éxito aparece donde se está mirando, sin mover la página; un error, arriba y con el foco. */}
-          {aviso && aviso.tipo === 'exito' ? (
-            <AvisoFlotante onCerrar={() => setAviso(null)}>
-              <p>{aviso.texto}</p>
-            </AvisoFlotante>
-          ) : null}
-          {aviso && aviso.tipo === 'error' ? (
-            <Aviso tipo="error" enfocar>
-              <p>{aviso.texto}</p>
-            </Aviso>
-          ) : null}
-          {r.datos.fallo === 'no-disponible' ? (
-            <Aviso tipo="info" enfocar>
-              <p>
-                {COPY_EVOLUCION.evaluacionNoDisponible}{' '}
-                <button type="button" className="boton boton--enlace" onClick={volverALaLista}>
-                  {COPY_EVOLUCION.volverALaLista}
-                </button>
-              </p>
-            </Aviso>
-          ) : null}
-          {r.datos.fallo === 'transitorio' ? (
-            <Aviso tipo="error" enfocar>
-              <p>
-                {COPY_EVOLUCION.evaluacionNoCargo}{' '}
-                <button type="button" className="boton boton--enlace" onClick={() => void cargar()}>
-                  {COPY.reintentar}
-                </button>{' '}
-                ·{' '}
-                <button type="button" className="boton boton--enlace" onClick={volverALaLista}>
-                  {COPY_EVOLUCION.volverALaLista}
-                </button>
-              </p>
-            </Aviso>
-          ) : null}
-
-          {/* En una pantalla ancha, la lista a la izquierda y la toma abierta a la derecha (`.evaluaciones`). */}
-          <div className="evaluaciones">
-          <section className="seccion evaluaciones__lista" aria-labelledby="titulo-registradas">
-            <h2 id="titulo-registradas">Tomas registradas</h2>
-            {r.datos.lista.length === 0 ? (
-              <EstadoVacio
-                titulo={COPY_ANTROPOMETRIA.sinEvaluaciones}
-                accion={
-                  <button type="button" className="boton boton--primario" onClick={() => irA('preparacion')}>
-                    Preparar una toma
-                  </button>
-                }
-              >
-                <p className="nota">Una toma se carga en «En preparación» y pasa a esta lista cuando se registra.</p>
-              </EstadoVacio>
-            ) : null}
-            <ol className="tomas">
-              {r.datos.lista.map((e) => (
-                <li key={e.evaluationId}>
-                  <button type="button" className="tomas__toma" aria-current={e.evaluationId === r.datos.abierta?.evaluationId ? 'true' : undefined} onClick={() => setAbiertaId(e.evaluationId)}>
-                    <span className="tomas__fecha">{fecha(e.occurredAt)}</span>
-                    <span className="tomas__detalle">
-                      {e.summary.measurementCount} mediciones
-                      {e.summary.annulledCount > 0 ? ` · ${e.summary.annulledCount} ${COPY_ANTROPOMETRIA.anulada.toLowerCase()}` : ''}
-                      {e.registeredAt ? ` · registrada el ${dia(e.registeredAt)}` : ''}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ol>
-          </section>
-
-          {r.datos.abierta ? (
-            <Detalle
-              evaluacion={r.datos.abierta}
-              onAviso={setAviso}
-              onHecho={(texto) => {
-                setAviso({ tipo: 'exito', texto });
-                void cargar();
-              }}
-              onError={(texto) => setAviso({ tipo: 'error', texto })}
-            />
-          ) : null}
-          </div>
-        </div>
-      ) : null}
-    </EstadoDeLectura>
+  /** Lee el detalle de una toma. Si ya había uno a la vista, sigue ahí hasta que llega el nuevo: la pantalla no salta. */
+  const leerDetalle = useCallback(
+    async (id: string) => {
+      setDetalles((d) => (d.get(id)?.tipo === 'listo' ? d : new Map(d).set(id, { tipo: 'cargando' })));
+      const r = await api.consultarEvaluacionAntropometrica(token, id);
+      if (sesionPerdida(r)) return;
+      // El 404 es neutral: no existe, o no está autorizada. No se distingue, como en toda la API.
+      const noDisponible = !r.ok && r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND';
+      setDetalles((d) => new Map(d).set(id, r.ok ? { tipo: 'listo', toma: r.datos.data } : { tipo: noDisponible ? 'no-disponible' : 'fallo' }));
+    },
+    [token, sesionPerdida],
   );
-}
+  const pedirDetalle = useCallback(
+    (id: string) => {
+      if (pedidos.current.has(id)) return Promise.resolve();
+      pedidos.current.add(id);
+      return leerDetalle(id);
+    },
+    [leerDetalle],
+  );
 
-function Detalle({
-  evaluacion,
-  onAviso,
-  onHecho,
-  onError,
-}: {
-  evaluacion: EvaluacionAntropometricaApi;
-  onAviso: (a: { tipo: 'exito' | 'error'; texto: string }) => void;
-  onHecho: (t: string) => void;
-  onError: (t: string) => void;
-}) {
-  const { irA } = useAntropometria();
-  const protocolo = protocoloDeLaToma(evaluacion.measurements);
-  const anuladas = evaluacion.measurements.filter((m) => m.condition === 'ANNULLED').length;
-  const metadatos = [
-    protocolo ? `${COPY_ANTROPOMETRIA.protocolo}: ${protocolo}` : null,
-    `${evaluacion.measurements.length} mediciones${anuladas > 0 ? ` (${anuladas} ${COPY_ANTROPOMETRIA.anulada.toLowerCase()})` : ''}`,
-    evaluacion.registeredAt ? `registrada el ${fecha(evaluacion.registeredAt)} por ${evaluacion.author.displayName}` : null,
-  ].filter((p): p is string => p !== null);
+  const tomas = lista?.ok ? lista.datos.tomas : null;
+  // Desde la evolución o la lámina llega `evaluacion=`: es la toma de origen de una observación (RF-049). Sin ese
+  // parámetro abre la más reciente.
+  const abiertaId = pedida ?? tomas?.[0]?.evaluationId ?? null;
+
+  // La toma abierta se lee primero. Las demás, después y de a pocas, para decir en la lista su protocolo y sus
+  // correcciones; al cambiar de toma, la cola sigue con las que faltan.
+  useEffect(() => {
+    if (!tomas) return;
+    let vivo = true;
+    void (async () => {
+      if (abiertaId) await pedirDetalle(abiertaId);
+      const cola = tomas
+        .slice(0, TOMAS_CON_DETALLE)
+        .map((t) => t.evaluationId)
+        .filter((id) => !pedidos.current.has(id));
+      while (vivo && cola.length > 0) await Promise.all(cola.splice(0, DETALLES_A_LA_VEZ).map(pedirDetalle));
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [tomas, abiertaId, pedirDetalle]);
+
+  const resumenes = useMemo(() => {
+    const m = new Map<string, ResumenDeLaToma>();
+    for (const [id, d] of detalles) if (d.tipo === 'listo') m.set(id, resumenDeLaToma(d.toma.measurements));
+    return m;
+  }, [detalles]);
+  const tramos = useMemo(() => tramosDeProtocolo(tomas ?? [], (t) => resumenes.get(t.evaluationId)?.protocolo), [tomas, resumenes]);
+
+  /** Después de corregir, anular, calcular o dejar una referencia: se vuelven a leer esa toma y los cálculos. */
+  const recargarCalculos = calculos.recargar;
+  const volverALeer = useCallback((id: string) => Promise.all([leerDetalle(id), recargarCalculos()]).then(() => undefined), [leerDetalle, recargarCalculos]);
+  // Vuelve a la lista sin la toma pedida: saca el parámetro de la dirección y abre la más reciente, como al entrar.
+  const volverALaLista = () => irA('evaluaciones');
+  const abierta = abiertaId ? detalles.get(abiertaId) : undefined;
+  const cuentasDe = (t: ResumenDeEvaluacionApi): string =>
+    cuentasDeLaTomaEnPalabras(resumenes.get(t.evaluationId)?.cuentas ?? { mediciones: t.summary.measurementCount, corregidas: null, anuladas: t.summary.annulledCount });
+
   return (
-    <section className="seccion" aria-labelledby="titulo-detalle">
-      <h2 id="titulo-detalle">
-        <span className="insignia">{COPY_ANTROPOMETRIA.soloLectura}</span> Toma del {fecha(evaluacion.occurredAt)}
-      </h2>
-      {/* Lo que vale para toda la toma, dicho una vez. */}
-      <p className="metadatos">{metadatos.join(' · ')}</p>
-      {evaluacion.context ? <p>{evaluacion.context}</p> : null}
-      {/* DL-111 · la lámina del compositor con esta toma. */}
-      <div className="acciones">
-        <button type="button" className="boton boton--secundario" onClick={() => irA('lamina', evaluacion.evaluationId)}>
-          {COPY_ANTROPOMETRIA.verLamina}
-        </button>
+    <section className="registros tomas-del-area" aria-labelledby="titulo-tomas">
+      {/* Lo que se acaba de hacer en la carga («Toma registrada…»), dicho donde se está mirando, sin mover la página. */}
+      {avisoDeTomas ? (
+        <AvisoFlotante onCerrar={() => avisarEnTomas(null)}>
+          <p>{avisoDeTomas}</p>
+        </AvisoFlotante>
+      ) : null}
+      <div className="registros__encabezado">
+        <h2 id="titulo-tomas">{C.tomas}</h2>
+        <p className="nota registros__bajada">
+          {tomas && tomas.length > 0 ? (
+            <span data-cuenta-de-tomas>
+              {lista?.ok && !lista.datos.completa ? 'Al menos ' : ''}
+              {C.tomasRegistradas(tomas.length)}{' '}
+            </span>
+          ) : null}
+          {C.unaTomaNoSeEdita}
+        </p>
+        {lista?.ok ? (
+          <div className="tomas-del-area__preparar">
+            {lista.datos.borrador ? <p className="nota">{C.hayUnaTomaEnPreparacion(lista.datos.borrador.mediciones)}</p> : null}
+            <button type="button" className="boton boton--primario" onClick={() => irA('preparacion')}>
+              <Icono nombre={lista.datos.borrador ? 'borrador' : 'mas'} tamano={18} />
+              {lista.datos.borrador ? C.retomarBorrador : C.prepararUnaToma}
+            </button>
+          </div>
+        ) : null}
       </div>
 
-      <BloqueDeCalculos evaluacion={evaluacion} onAviso={onAviso} />
-
-      <section className="subseccion" aria-labelledby="titulo-mediciones">
-        <h3 id="titulo-mediciones">Mediciones</h3>
-        <Ayuda titulo="Medido, reportado o calculado">
-          <p>{COPY_ANTROPOMETRIA.explicacionDeClases}</p>
-        </Ayuda>
-        {FAMILIAS.map((familia) => {
-          const deLaFamilia = evaluacion.measurements.filter((m) => (FAMILIA_DE_METRICA[m.metric] ?? 'OTRAS') === familia);
-          if (deLaFamilia.length === 0) return null;
-          return (
-            <div key={familia} className="familia">
-              <h4>{ETIQUETA_DE_FAMILIA[familia]}</h4>
-              <ul className="mediciones">
-                {deLaFamilia.map((m) => (
-                  <FilaDeMedicion key={m.measurementId} medicion={m} protocoloDeLaToma={protocolo} momentoDeLaToma={evaluacion.occurredAt} onHecho={onHecho} onError={onError} />
+      <EstadoDeLectura r={lista} onReintentar={() => void cargar()}>
+        {tomas ? (
+          tomas.length === 0 ? (
+            <EstadoVacio titulo={C.sinEvaluaciones}>
+              <p className="nota">{C.borradorNoEsHistoria}</p>
+            </EstadoVacio>
+          ) : (
+            <div className="tomas-del-area__cuerpo">
+              <nav className="tomas-del-area__lista" aria-label="Tomas registradas">
+                {tramos.map((tramo, i) => (
+                  <div key={`${i}-${tramo.tomas[0]!.evaluationId}`} className="tramo-de-tomas" data-protocolo={tramo.protocolo ?? ''}>
+                    {tramo.protocolo ? (
+                      <p className="tramo-de-tomas__protocolo">
+                        <Icono nombre="protocolo" tamano={15} />
+                        {tramo.protocolo}
+                      </p>
+                    ) : null}
+                    <ol className="tramo-de-tomas__tomas">
+                      {tramo.tomas.map((t) => (
+                        <li key={t.evaluationId}>
+                          <button type="button" className="toma-de-la-lista" data-toma={t.evaluationId} aria-current={t.evaluationId === abiertaId ? 'true' : undefined} onClick={() => irA('evaluaciones', t.evaluationId)}>
+                            <span className="toma-de-la-lista__fecha">{momentoDeLaToma(t.occurredAt)}</span>
+                            <span className="toma-de-la-lista__cuentas">{cuentasDe(t)}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
                 ))}
-              </ul>
+                {tomas.length > TOMAS_CON_DETALLE ? <p className="nota">El protocolo y las correcciones se leyeron de las {TOMAS_CON_DETALLE} tomas más recientes.</p> : null}
+              </nav>
+
+              {/* En una ventana angosta la lista pasa arriba, como un selector: las mismas tomas, con los mismos datos. */}
+              <SelectorDeToma tramos={tramos} abiertaId={abiertaId} cuentasDe={cuentasDe} onElegir={(id) => irA('evaluaciones', id)} />
+
+              <div className="tomas-del-area__toma">
+                {!abiertaId || !abierta || abierta.tipo === 'cargando' ? (
+                  <p className="cargando" role="status">
+                    {C.leyendoLaToma}
+                  </p>
+                ) : null}
+                {abierta?.tipo === 'no-disponible' ? (
+                  <Aviso tipo="info" enfocar>
+                    <p>
+                      {COPY_EVOLUCION.evaluacionNoDisponible}{' '}
+                      <button type="button" className="boton boton--enlace" onClick={volverALaLista}>
+                        {COPY_EVOLUCION.volverALaLista}
+                      </button>
+                    </p>
+                  </Aviso>
+                ) : null}
+                {abierta?.tipo === 'fallo' && abiertaId ? (
+                  <Aviso tipo="error" enfocar>
+                    <p>
+                      {COPY_EVOLUCION.evaluacionNoCargo}{' '}
+                      <button type="button" className="boton boton--enlace" onClick={() => void leerDetalle(abiertaId)}>
+                        {COPY.reintentar}
+                      </button>
+                      {pedida ? (
+                        <>
+                          {' '}
+                          ·{' '}
+                          <button type="button" className="boton boton--enlace" onClick={volverALaLista}>
+                            {COPY_EVOLUCION.volverALaLista}
+                          </button>
+                        </>
+                      ) : null}
+                    </p>
+                  </Aviso>
+                ) : null}
+                {abierta?.tipo === 'listo' ? <TomaAbierta key={abierta.toma.evaluationId} toma={abierta.toma} calculos={calculos.estado} onReintentarLosCalculos={() => void recargarCalculos()} volverALeer={volverALeer} /> : null}
+              </div>
             </div>
-          );
-        })}
-      </section>
+          )
+        ) : null}
+      </EstadoDeLectura>
     </section>
   );
 }
 
-/** El orden de las familias, el mismo de la toma y de la lámina. */
-const FAMILIAS: readonly FamiliaDeMedicion[] = ['MASA_Y_ESTATURA', 'PERIMETROS', 'PLIEGUES', 'DIAMETROS', 'OTRAS'];
-
-/** El protocolo de la toma: el que declaran sus mediciones (el más frecuente, si hubiera más de uno). */
-function protocoloDeLaToma(mediciones: readonly Medicion[]): string | null {
-  const cuenta = new Map<string, number>();
-  for (const m of mediciones) cuenta.set(m.protocol.protocolName, (cuenta.get(m.protocol.protocolName) ?? 0) + 1);
-  return [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+/** La lista de tomas como un selector, para una ventana donde no entra al costado. */
+function SelectorDeToma({
+  tramos,
+  abiertaId,
+  cuentasDe,
+  onElegir,
+}: {
+  tramos: readonly TramoDeTomas<ResumenDeEvaluacionApi>[];
+  abiertaId: string | null;
+  cuentasDe: (t: ResumenDeEvaluacionApi) => string;
+  onElegir: (id: string) => void;
+}) {
+  const id = useId();
+  const opcion = (t: ResumenDeEvaluacionApi) => (
+    <option key={t.evaluationId} value={t.evaluationId}>
+      {momentoDeLaToma(t.occurredAt)} · {cuentasDe(t)}
+    </option>
+  );
+  return (
+    <div className="campo tomas-del-area__selector">
+      <label htmlFor={id}>{C.elegirToma}</label>
+      <select id={id} value={abiertaId ?? ''} onChange={(e) => onElegir(e.target.value)}>
+        {/* Una toma pedida por la dirección que no está en la lista: el selector la nombra así, sin inventarle una fecha. */}
+        {abiertaId && !tramos.some((tramo) => tramo.tomas.some((t) => t.evaluationId === abiertaId)) ? <option value={abiertaId}>La toma solicitada</option> : null}
+        {tramos.map((tramo, i) =>
+          tramo.protocolo ? (
+            <optgroup key={`${i}-${tramo.tomas[0]!.evaluationId}`} label={tramo.protocolo}>
+              {tramo.tomas.map(opcion)}
+            </optgroup>
+          ) : (
+            tramo.tomas.map(opcion)
+          ),
+        )}
+      </select>
+    </div>
+  );
 }
 
-function FilaDeMedicion({
-  medicion,
-  protocoloDeLaToma,
-  momentoDeLaToma,
-  onHecho,
-  onError,
+type PanelAbierto = { readonly tipo: 'medicion'; readonly id: string } | { readonly tipo: 'resultado'; readonly id: string } | { readonly tipo: 'calcular' } | null;
+
+const ICONO_DE_FAMILIA: Readonly<Partial<Record<FamiliaDeMedicion, NombreDeIcono>>> = { PLIEGUES: 'pliegue', PERIMETROS: 'perimetro' };
+
+/**
+ * La toma elegida: lo que vale para toda la toma, dicho una vez; sus resultados calculados; y sus mediciones, por
+ * familia. Una medición, un resultado y «Calcular con un método» se abren encima, en un panel que retiene el foco.
+ */
+function TomaAbierta({
+  toma,
+  calculos,
+  onReintentarLosCalculos,
+  volverALeer,
 }: {
-  medicion: Medicion;
-  protocoloDeLaToma: string | null;
-  momentoDeLaToma: string;
-  onHecho: (t: string) => void;
-  onError: (t: string) => void;
+  toma: EvaluacionAntropometricaApi;
+  calculos: Calculos;
+  onReintentarLosCalculos: () => void;
+  volverALeer: (id: string) => Promise<void>;
 }) {
-  const { token, sesionPerdida, accesoRetirado } = useAntropometria();
-  const intento = useClaveDeIntento();
-  const [accion, setAccion] = useState<'corregir' | 'anular' | null>(null);
-  const [motivo, setMotivo] = useState('');
-  const [valor, setValor] = useState('');
-  /** Lo que no se entiende como número se señala en el campo, no en un aviso suelto (B10-10:164-165). */
-  const [errorDeValor, setErrorDeValor] = useState<string | null>(null);
-  useCambiosSinGuardar(accion !== null && (motivo.trim() !== '' || valor.trim() !== ''), accion === 'anular' ? 'la anulación de una medición' : 'la corrección de una medición');
-  const [enviando, setEnviando] = useState(false);
-  const anulada = medicion.condition === 'ANNULLED';
+  const { irA } = useAntropometria();
+  const [panel, setPanel] = useState<PanelAbierto>(null);
+  /** Lo que se acaba de hacer en el panel, dicho adentro: un aviso de la página quedaría detrás del diálogo. */
+  const [hecho, setHecho] = useState<string | null>(null);
+  const resumen = useMemo(() => resumenDeLaToma(toma.measurements), [toma.measurements]);
+  const familias = useMemo(() => medicionesPorFamilia(toma.measurements), [toma.measurements]);
+  const corridas = calculos.tipo === 'listo' ? calculos.corridas : null;
 
-  async function corregir() {
-    // `leerNumero` acepta coma o punto y devuelve `null` si no es un número (DL-091 punto 4).
-    const nuevo = leerNumero(valor);
-    if (nuevo === null) return setErrorDeValor(motivoDeNumeroIlegible(valor));
-    setErrorDeValor(null);
-    setEnviando(true);
-    // La corrección es de la evaluación, y la medición es el objetivo declarado en el cuerpo (09v11 §9).
-    const res = await api.corregirMedicion(
-      token,
-      medicion.evaluationId,
-      { targetId: medicion.measurementId, reason: motivo.trim(), magnitude: { value: nuevo, unit: medicion.magnitude.unit } },
-      intento.actual(),
-    );
-    intento.registrar(res);
-    setEnviando(false);
-    // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
-    if (sesionPerdida(res) || accesoRetirado(res)) return;
-    if (!res.ok) return onError(mensajeDeFallo(res));
-    setAccion(null);
-    onHecho(COPY_ANTROPOMETRIA.correccionHecha);
-  }
+  const cerrar = () => {
+    setPanel(null);
+    setHecho(null);
+  };
+  /** Una escritura salió bien: se dice en el panel y se vuelven a leer la toma y los cálculos, con el panel abierto. */
+  const despuesDeEscribir = async (texto: string) => {
+    setHecho(texto);
+    await volverALeer(toma.evaluationId);
+  };
 
-  async function anular() {
-    setEnviando(true);
-    const res = await api.anularMedicion(token, medicion.measurementId, { reason: motivo.trim() }, intento.actual());
-    intento.registrar(res);
-    setEnviando(false);
-    if (sesionPerdida(res) || accesoRetirado(res)) return;
-    if (!res.ok) return onError(mensajeDeFallo(res));
-    setAccion(null);
-    onHecho(res.datos.data.alreadyAnnulled ? COPY_ANTROPOMETRIA.yaAnulada : COPY_ANTROPOMETRIA.anulacionHecha);
-  }
+  const medicion = panel?.tipo === 'medicion' ? (toma.measurements.find((m) => m.measurementId === panel.id) ?? null) : null;
+  const resultado = panel?.tipo === 'resultado' ? (corridas?.find((c) => c.calculationRunId === panel.id) ?? null) : null;
+  const metadatos = [
+    resumen.protocolo,
+    cuentasDeLaTomaEnPalabras(resumen.cuentas),
+    toma.registeredAt ? `${C.registradaEl} ${fecha(toma.registeredAt)} ${C.registradaPor} ${toma.author.displayName}` : null,
+    toma.context ? `${C.contextoDeLaToma}: «${toma.context}»` : null,
+  ].filter((p): p is string => p !== null);
 
-  const nombre = nombreDeMetrica(medicion.metric);
-  // El protocolo y la fecha de la toma ya están arriba: en la fila van solo si esta medición difiere.
-  const otroProtocolo = medicion.protocol.protocolName !== protocoloDeLaToma;
-  const otroMomento = medicion.occurredAt !== momentoDeLaToma;
   return (
-    <li className={`medicion${anulada ? ' medicion--anulada' : ''}`}>
-      {/*
-        El titular es el valor que RIGE, no el que se tomó primero: una corrección cambia la vista efectiva
-        (REG-06-16), y mostrar el original acá lo dejaba contradiciendo al cálculo derivado que ya usa el
-        corregido. El original no se pierde: queda rotulado como tal dentro de «Correcciones», que es lo que
-        REG-06-154 exige conservar. Si la cadena no se puede resolver, no se inventa un titular.
-      */}
-      <div className="medicion__fila">
-        <span className="medicion__nombre">{nombre}</span>
-        <span className="medicion__valor">{cantidad((medicion.effectiveMagnitude ?? medicion.magnitude).value, (medicion.effectiveMagnitude ?? medicion.magnitude).unit)}</span>
-        <span className="medicion__pie">
-        <span className="medicion__estado">
-          {ETIQUETA_DE_CLASE_DE_DATO[medicion.dataClass]} · {anulada ? <strong>{ETIQUETA_DE_CONDICION[medicion.condition]}</strong> : ETIQUETA_DE_CONDICION[medicion.condition]}
-          {medicion.corrections.length > 0 ? ` · ${medicion.effectiveMagnitude ? COPY_ANTROPOMETRIA.corregida : COPY_ANTROPOMETRIA.sinValorVigente}` : ''}
-        </span>
-        {!anulada && accion === null ? (
-          <span className="medicion__acciones">
-            <button type="button" className="boton boton--secundario boton--compacto" aria-label={`${COPY_ANTROPOMETRIA.corregirMedicion}: ${nombre}`} onClick={() => setAccion('corregir')}>
-              Corregir
-            </button>
-            <button type="button" className="boton boton--secundario boton--compacto" aria-label={`${COPY_ANTROPOMETRIA.anularMedicion}: ${nombre}`} onClick={() => setAccion('anular')}>
-              Anular
-            </button>
-          </span>
-        ) : null}
-        </span>
+    <article className="toma-abierta" aria-labelledby="titulo-toma" data-toma={toma.evaluationId}>
+      <div className="toma-abierta__encabezado">
+        <h2 id="titulo-toma">
+          {C.tomaDel} {fecha(toma.occurredAt)}
+        </h2>
+        {/* La clase del dato, una vez, si todas las mediciones la comparten; si no, cada fila dice la suya. */}
+        {resumen.claseComun ? <Marca marca={marcaDeLaClase(resumen.claseComun)} /> : null}
+        {/* DL-111 · la lámina del compositor con esta toma. */}
+        <button type="button" className="boton boton--secundario toma-abierta__lamina" onClick={() => irA('lamina', toma.evaluationId)}>
+          <Icono nombre="imagen" tamano={18} />
+          {C.verLamina}
+        </button>
       </div>
-      {otroProtocolo || otroMomento ? (
-        <p className="nota">
-          {COPY_ANTROPOMETRIA.protocolo}: {medicion.protocol.protocolName} · {fecha(medicion.occurredAt)}
-        </p>
-      ) : null}
+      <p className="metadatos toma-abierta__metadatos">{metadatos.join(' · ')}</p>
 
-      {medicion.corrections.length > 0 ? (
-        <details>
-          <summary>
-            {COPY_ANTROPOMETRIA.historialDeCorrecciones} ({medicion.corrections.length})
-          </summary>
-          <p className="nota">
-            {COPY_ANTROPOMETRIA.valorOriginal}: {cantidad(medicion.magnitude.value, medicion.magnitude.unit)}
-          </p>
-          <ol className="historial">
-            {medicion.corrections.map((c) => (
-              <li key={c.correctionId}>
-                <span className="historial__evento">{cantidad(c.magnitude.value, c.magnitude.unit)}</span>{' '}
-                · {c.reason} · {c.author.displayName} · {fecha(c.recordedAt)}
-              </li>
-            ))}
-          </ol>
-          {medicion.effectiveMagnitude ? (
-            <p>
-              <strong>{COPY_ANTROPOMETRIA.valorVigente}:</strong> {cantidad(medicion.effectiveMagnitude.value, medicion.effectiveMagnitude.unit)}
-            </p>
-          ) : (
-            <Aviso tipo="info">
-              <p>{COPY_ANTROPOMETRIA.cadenaNoResoluble}</p>
-            </Aviso>
-          )}
-        </details>
-      ) : null}
+      <ResultadosDeLaToma toma={toma} calculos={calculos} onReintentar={onReintentarLosCalculos} onAbrir={(id) => setPanel({ tipo: 'resultado', id })} onCalcular={() => setPanel({ tipo: 'calcular' })} />
 
-      {anulada && medicion.annulment ? (
-        <Aviso tipo="info">
-          <p>
-            {COPY_ANTROPOMETRIA.anulacionHecha} {COPY_ANTROPOMETRIA.motivoDeAnulacion}: «{medicion.annulment.reason}» · {medicion.annulment.author.displayName} ·{' '}
-            {fecha(medicion.annulment.recordedAt)}
-          </p>
-          <p className="nota">{COPY_ANTROPOMETRIA.sinReversion}</p>
-        </Aviso>
-      ) : null}
+      <section className="mediciones-de-la-toma" aria-labelledby="titulo-mediciones">
+        <div className="toma-abierta__titulo-de-bloque">
+          <h3 id="titulo-mediciones">{C.mediciones}</h3>
+          <p className="nota">{C.elegiUnaMedicion}</p>
+        </div>
+        <div className="familias-de-la-toma">
+          {familias.map((f) => (
+            <section key={f.familia} className="familia-de-la-toma" data-familia={f.familia} aria-labelledby={`familia-${f.familia}`}>
+              <h4 id={`familia-${f.familia}`}>
+                {ICONO_DE_FAMILIA[f.familia] ? <Icono nombre={ICONO_DE_FAMILIA[f.familia]!} tamano={18} /> : null}
+                {f.titulo}
+                {f.unidad ? <span className="familia-de-la-toma__unidad"> · {f.unidad}</span> : null}
+              </h4>
+              <ul className="mediciones-de-la-familia">
+                {f.filas.map((m) => (
+                  <li key={m.id}>
+                    {/* La fila entera abre la medición. El lector de pantalla oye el nombre completo y el valor con su unidad. */}
+                    <button
+                      type="button"
+                      className="medicion-de-la-toma"
+                      data-medicion={m.id}
+                      data-anulada={m.anulada ? 'si' : undefined}
+                      aria-label={[`${m.nombre}: ${m.valorCompleto}`, ...m.marcas.filter((x) => x.clase !== 'sin-valor').map((x) => x.texto)].join(' · ')}
+                      onClick={() => setPanel({ tipo: 'medicion', id: m.id })}
+                    >
+                      {/* El nombre y sus marcas van juntos: si no entran en un renglón, la marca baja y el valor queda en su lugar. */}
+                      <span className="medicion-de-la-toma__que">
+                        <span className="medicion-de-la-toma__nombre">{m.nombreCorto}</span>
+                        {m.marcas.map((x) => (
+                          <Marca key={x.clase} marca={x} />
+                        ))}
+                      </span>
+                      {m.valor !== null ? <span className="medicion-de-la-toma__valor">{m.valor}</span> : null}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      </section>
 
-      {accion === 'corregir' ? (
-        <div>
-          <Campo
-            id={`corr-valor-${medicion.measurementId}`}
-            etiqueta={`${COPY_ANTROPOMETRIA.valor} (${medicion.magnitude.unit})`}
-            inputMode="decimal"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-            maxLength={12}
-            error={errorDeValor}
+      <Panel abierto={panel !== null} titulo={panel?.tipo === 'calcular' ? C.nuevoCalculo : panel?.tipo === 'resultado' ? C.detalleDelResultado : medicion ? nombreDeMetrica(medicion.metric) : ''} onCerrar={cerrar}>
+        {panel?.tipo === 'medicion' && medicion ? <DetalleDeMedicion key={medicion.measurementId} medicion={medicion} toma={toma} protocoloDeLaToma={resumen.protocolo} corridas={corridas} hecho={hecho} onHecho={despuesDeEscribir} /> : null}
+        {panel?.tipo === 'resultado' && resultado ? <DetalleDeResultado key={resultado.calculationRunId} corrida={resultado} hecho={hecho} onHecho={despuesDeEscribir} /> : null}
+        {panel?.tipo === 'calcular' && calculos.tipo === 'listo' ? (
+          <NuevoCalculo
+            evaluacion={toma}
+            metodos={calculos.metodos}
+            corridas={calculos.corridas.filter((c) => c.evaluationId === toma.evaluationId)}
+            onCerrar={cerrar}
+            onHecho={async (texto, corridaId) => {
+              // El resultado nuevo queda a la vista en el mismo panel, con su método y sus entradas.
+              await despuesDeEscribir(texto);
+              if (corridaId) setPanel({ tipo: 'resultado', id: corridaId });
+            }}
           />
-          <Campo id={`corr-motivo-${medicion.measurementId}`} etiqueta={COPY_ANTROPOMETRIA.motivoDeCorreccion} value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={1000} />
-          <div className="acciones">
-            <button type="button" className="boton boton--secundario" onClick={() => setAccion(null)} disabled={enviando}>
-              Cancelar
-            </button>
-            <button type="button" className="boton boton--primario" onClick={() => void corregir()} disabled={enviando || !motivo.trim() || !valor.trim()}>
-              {COPY_ANTROPOMETRIA.corregirMedicion}
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {accion === 'anular' ? (
-        <div>
-          <Aviso tipo="info">
-            <p>{COPY_ANTROPOMETRIA.explicacionDeAnulacion}</p>
-          </Aviso>
-          <Campo id={`anul-motivo-${medicion.measurementId}`} etiqueta={COPY_ANTROPOMETRIA.motivoDeAnulacion} value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={1000} />
-          <div className="acciones">
-            <button type="button" className="boton boton--secundario" onClick={() => setAccion(null)} disabled={enviando}>
-              Cancelar
-            </button>
-            <button type="button" className="boton boton--secundario" onClick={() => void anular()} disabled={enviando || !motivo.trim()}>
-              {COPY_ANTROPOMETRIA.confirmarAnulacion}
-            </button>
-          </div>
-        </div>
-      ) : null}
-    </li>
+        ) : null}
+      </Panel>
+    </article>
   );
 }

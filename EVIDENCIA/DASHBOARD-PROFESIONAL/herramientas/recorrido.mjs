@@ -30,6 +30,11 @@
 // - Entrenamiento · Registros por sesión (WP-ESCRITORIO-AREAS, parte 2) se comprueba en `sesionesDeEntrenamiento`, en
 //   esa misma sesión; solo, con `sesiones`. Lo esperado sale del contexto de revisión, del plan de cada versión y de la
 //   lista de versiones, calculado a mano.
+// - Antropometría · Tomas (WP-ESCRITORIO-AREAS, parte 3) se comprueba en `tomasDeAntropometria`, en esa misma sesión;
+//   solo, con `tomas`. Lo esperado sale de la lista entera, del detalle de cada toma, de los cálculos y de los métodos,
+//   calculado a mano (`esperadoDeTomas`). Lo que ESCRIBE —corregir, anular, calcular y dejar una referencia— va en
+//   `medicionesDeUnaToma`: corre solo, con `mediciones`, sobre las cuentas descartables con la toma del perfil completo
+//   (`datos/generar.mjs descartable-toma-completa`), y no toca los datos de A, B ni C.
 // - La estimación del profesional sobre una comida diferente (`estimacionDeUnaComida`) ESCRIBE en el escenario: no va
 //   dentro de `funcional`. Corre sola, con `estimacion`, y última en la pasada completa.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
@@ -4309,7 +4314,7 @@ async function marcoDeLasAreas(page, v) {
   const AREAS = [
     { clave: 'nutrition', alcance: 'NUTRICION', titulo: 'Nutrición', secciones: [['resumen', 'Resumen'], ['plan', 'Plan'], ['registros', 'Registros'], ['revisiones', 'Revisiones']] },
     { clave: 'training', alcance: 'ENTRENAMIENTO', titulo: 'Entrenamiento', secciones: [['resumen', 'Resumen'], ['plan', 'Plan'], ['ejecuciones', 'Registros'], ['revisiones', 'Revisiones']] },
-    { clave: 'anthropometry', alcance: 'ANTROPOMETRIA', titulo: 'Antropometría', secciones: [['evaluaciones', 'Tomas'], ['preparacion', 'En preparación'], ['evolucion', 'Evolución'], ['lamina', 'Lámina']] },
+    { clave: 'anthropometry', alcance: 'ANTROPOMETRIA', titulo: 'Antropometría', secciones: [['evaluaciones', 'Tomas'], ['evolucion', 'Evolución'], ['lamina', 'Lámina']] },
     { clave: 'forms', alcance: null, titulo: 'Información', secciones: [['solicitudes', 'Solicitudes'], ['pedir', 'Pedir información']] },
   ];
   const ACTIVO = 'Activo · acceso contextual';
@@ -4441,8 +4446,9 @@ async function marcoDeLasAreas(page, v) {
   // F-10 · La sección conserva su ancho y arranca donde arranca el marco ────────────────────────────────────
   comprobar(
     'F-10',
-    'La sección arranca en la misma vertical que el marco y, mientras no se recomponga, conserva el ancho para el que se hizo (1.152 px a 1440)',
-    medidas.every((x) => x.seccion && x.seccion.izquierda === x.izquierda && x.seccion.derecha - x.seccion.izquierda === 1152),
+    'La sección arranca en la misma vertical que el marco. Mientras no se recomponga conserva el ancho para el que se hizo (1.152 px a 1440); la que ya se recompuso usa todo el ancho del marco: de las cuatro que abren al entrar a un área, solo «Tomas», de Antropometría (parte 3)',
+    // A 1440 px, «todo el ancho» deja a la derecha el mismo margen que a la izquierda.
+    medidas.every((x) => x.seccion && x.seccion.izquierda === x.izquierda && (x.area === 'Antropometría' ? x.seccion.derecha === 1440 - x.seccion.izquierda : x.seccion.derecha - x.seccion.izquierda === 1152)) && medidas.some((x) => x.area === 'Antropometría'),
     medidas.map((x) => `${x.area}: marco desde ${x.izquierda}, sección de ${x.seccion?.izquierda} a ${x.seccion?.derecha}`).join(' · '),
   );
 
@@ -4454,14 +4460,15 @@ async function marcoDeLasAreas(page, v) {
   const elegida = (m) => m.pestanas.find((p) => p.actual === 'page')?.texto ?? null;
   comprobar(
     'C-65',
-    '«vista=ejecuciones» sigue abriendo los registros de Entrenamiento, que se leen «Registros» (y no el Resumen); «vista=preparacion» sigue abriendo la toma en preparación, y la primera sección de Antropometría se lee «Tomas». Ninguna sección dice «Ejecuciones» ni «Evaluaciones»',
+    '«vista=ejecuciones» sigue abriendo los registros de Entrenamiento, que se leen «Registros» (y no el Resumen); «vista=preparacion» sigue abriendo la carga de una toma, que desde la parte 3 no es una sección: queda marcada «Tomas», la primera de Antropometría. Ninguna sección dice «Ejecuciones», «Evaluaciones» ni «En preparación»',
     elegida(entrenamiento) === 'Registros' &&
       entrenamiento.primerTitulo !== null &&
       entrenamiento.primerTitulo !== resumenDeEntrenamiento &&
-      elegida(antropometria) === 'En preparación' &&
+      elegida(antropometria) === 'Tomas' &&
       antropometria.pestanas[0]?.texto === 'Tomas' &&
-      ![...entrenamiento.pestanas, ...antropometria.pestanas].some((p) => /Ejecuciones|Evaluaciones/.test(p.texto)),
-    `Entrenamiento: ${elegida(entrenamiento)} («${entrenamiento.primerTitulo}»; el Resumen empieza con «${resumenDeEntrenamiento}») · Antropometría: ${antropometria.pestanas.map((p) => p.texto).join(', ')}, elegida ${elegida(antropometria)}`,
+      /^(Nueva toma|Toma en preparación)$/.test(antropometria.primerTitulo ?? '') &&
+      ![...entrenamiento.pestanas, ...antropometria.pestanas].some((p) => /Ejecuciones|Evaluaciones|En preparación/.test(p.texto)),
+    `Entrenamiento: ${elegida(entrenamiento)} («${entrenamiento.primerTitulo}»; el Resumen empieza con «${resumenDeEntrenamiento}») · Antropometría: ${antropometria.pestanas.map((p) => p.texto).join(', ')}, elegida ${elegida(antropometria)}, y a la vista «${antropometria.primerTitulo}»`,
   );
 
   // F-07 · El camino de vuelta, llegando desde la ficha y desde Entrenamiento ───────────────────────────────
@@ -4655,7 +4662,7 @@ async function marcoDeLasAreas(page, v) {
       sinSaberQuienEs.pestanas.length === 0 &&
       sinSaberQuienEs.acceso === null &&
       /Reintentar/.test(sinSaberQuienEs.cuerpo ?? '') &&
-      repuestoElMarco.pestanas.length === 4 &&
+      repuestoElMarco.pestanas.length === 3 &&
       repuestoElMarco.acceso === accesoEsperado('ANTROPOMETRIA'),
     `con la falla: ${sinSaberQuienEs.titulos.join(' | ')} · ${sinSaberQuienEs.volver?.texto} · ${sinSaberQuienEs.pestanas.length} secciones · «${sinSaberQuienEs.cuerpo.slice(0, 60)}» — después: ${repuestoElMarco.pestanas.length} secciones · ${repuestoElMarco.acceso}`,
   );
@@ -6405,7 +6412,1051 @@ async function estimacionDeUnaComida(page, v) {
   comprobar('—', 'La estimación de una comida no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
 }
 
-async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true, registros = true, sesiones = true, estimacion = false } = {}) {
+// ─── Antropometría · Tomas (WP-ESCRITORIO-AREAS, parte 3) ──────────────────────────────────────────────────────────
+
+/** Lo que «Tomas» tiene a la vista: la cuenta, la lista por tramos (o el selector), la toma abierta y el panel, si lo hay. */
+const tomasEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const aLaVista = (e) => (e && e.getClientRects().length > 0 ? e : null);
+    const lista = aLaVista(document.querySelector('nav.tomas-del-area__lista'));
+    const selector = aLaVista(document.querySelector('.tomas-del-area__selector select'));
+    const toma = document.querySelector('article.toma-abierta');
+    const panel = document.querySelector('dialog.dialogo--panel[open]');
+    return {
+      cuenta: t(document.querySelector('[data-cuenta-de-tomas]')),
+      bajada: t(document.querySelector('.tomas-del-area .registros__bajada')),
+      preparar: t(aLaVista(document.querySelector('.tomas-del-area__preparar button'))),
+      enPreparacion: t(aLaVista(document.querySelector('.tomas-del-area__preparar .nota'))),
+      tramos: lista
+        ? [...lista.querySelectorAll('.tramo-de-tomas')].map((x) => ({
+            protocolo: t(x.querySelector('.tramo-de-tomas__protocolo')),
+            tomas: [...x.querySelectorAll('button.toma-de-la-lista')].map((b) => ({ id: b.dataset.toma, fecha: t(b.querySelector('.toma-de-la-lista__fecha')), cuentas: t(b.querySelector('.toma-de-la-lista__cuentas')), elegida: b.getAttribute('aria-current') === 'true' })),
+          }))
+        : null,
+      opciones: selector ? [...selector.options].map((o) => ({ id: o.value, texto: o.textContent.replace(/\s+/g, ' ').trim(), elegida: o.selected })) : null,
+      toma: toma
+        ? {
+            id: toma.dataset.toma,
+            titulo: t(toma.querySelector('#titulo-toma')),
+            clase: t(toma.querySelector('.toma-abierta__encabezado .etiqueta-de-dato')),
+            metadatos: t(toma.querySelector('.toma-abierta__metadatos')),
+            categorias: [...toma.querySelectorAll('.categoria-de-resultados')].map((c) => ({
+              titulo: t(c.querySelector('h4')),
+              resultados: [...c.querySelectorAll('button.resultado-de-la-toma')].map((b) => ({ id: b.dataset.resultado, nombre: t(b.querySelector('.resultado-de-la-toma__nombre')), valor: t(b.querySelector('.resultado-de-la-toma__valor')), marcas: [...b.querySelectorAll('.etiqueta-de-dato')].map(t) })),
+            })),
+            sinCalculos: t(toma.querySelector('.resultados-de-la-toma__sin-calculos')),
+            anteriores: t(toma.querySelector('button[aria-controls="anteriores-sin-efecto"]')),
+            sinEfecto: [...toma.querySelectorAll('.anteriores-sin-efecto button.resultado-de-la-toma')].map((b) => ({ id: b.dataset.resultado, nombre: t(b.querySelector('.resultado-de-la-toma__nombre')), valor: t(b.querySelector('.resultado-de-la-toma__valor')) })),
+            fallaDeResultados: t(toma.querySelector('.resultados-de-la-toma .aviso--error')),
+            familias: [...toma.querySelectorAll('.familia-de-la-toma')].map((f) => ({
+              familia: f.dataset.familia,
+              titulo: t(f.querySelector('h4')),
+              filas: [...f.querySelectorAll('button.medicion-de-la-toma')].map((b) => ({ id: b.dataset.medicion, nombre: t(b.querySelector('.medicion-de-la-toma__nombre')), valor: t(b.querySelector('.medicion-de-la-toma__valor')), marcas: [...b.querySelectorAll('.etiqueta-de-dato')].map(t), anulada: b.dataset.anulada === 'si', rotulo: b.getAttribute('aria-label') })),
+            })),
+            // Los botones que hay entre las mediciones, además de las filas: «Corregir» y «Anular» ya no están ahí.
+            botonesSueltos: [...toma.querySelectorAll('.mediciones-de-la-toma button:not(.medicion-de-la-toma)')].map(t),
+          }
+        : null,
+      leyendo: !!aLaVista(document.querySelector('.tomas-del-area__toma .cargando')),
+      aviso: t(aLaVista(document.querySelector('.tomas-del-area__toma .aviso'))),
+      vacio: t(aLaVista(document.querySelector('.tomas-del-area .estado-vacio'))),
+      falla: t(aLaVista(document.querySelector('.seccion-del-area .estado-de-grafico--error, .tomas-del-area .estado-de-grafico--error'))),
+      panel: panel
+        ? {
+            titulo: t(panel.querySelector('.dialogo__encabezado h2')),
+            conElFoco: panel.contains(document.activeElement),
+            deDonde: t(panel.querySelector('.medicion-abierta__de-donde')),
+            valor: t(panel.querySelector('.medicion-abierta__valor')),
+            marcas: [...panel.querySelectorAll('.medicion-abierta__marcas .etiqueta-de-dato')].map(t),
+            datos: [...panel.querySelectorAll('.medicion-abierta__datos > div')].map((d) => [t(d.querySelector('dt')), t(d.querySelector('dd'))]),
+            historia: [...panel.querySelectorAll('.historia-de-medicion__evento')].map((e) => ({ tipo: e.dataset.evento, rige: e.dataset.rige === 'si', titulo: t(e.querySelector('.historia-de-medicion__titulo')), nota: t(e.querySelector('.nota')), cuando: t(e.querySelector('.historia-de-medicion__cuando')) })),
+            cambios: [...panel.querySelectorAll('.cambios-de-resultados')].map((u) => ({ clase: u.dataset.cambios, filas: [...u.querySelectorAll('li')].map((li) => ({ nombre: t(li.querySelector('.cambios-de-resultados__nombre')), valores: t(li.querySelector('.cambios-de-resultados__valores')) })) })),
+            bloques: [...panel.querySelectorAll('.medicion-abierta__bloque')].map((b) => ({ titulo: t(b.querySelector('h3')), texto: t(b) })),
+            entradas: panel.querySelectorAll('.entradas-del-calculo li').length,
+            acciones: [...panel.querySelectorAll('.medicion-abierta__pie button, .nuevo-calculo > .acciones button')].map(t),
+            formulario: panel.querySelector('[data-formulario]')?.dataset.formulario ?? null,
+            metodos: panel.querySelectorAll('#cal-metodo option').length,
+            exito: t(panel.querySelector('.aviso--exito')),
+            error: t(panel.querySelector('.aviso--error')),
+            texto: t(panel),
+          }
+        : null,
+      alto: document.documentElement.scrollHeight,
+    };
+  });
+
+/** El orden del catálogo «Perfil antropométrico completo», escrito a mano: así van las mediciones dentro de su familia. */
+const CATALOGO_DE_MEDICIONES = [
+  'peso', 'talla', 'edad',
+  'pliegue-pectoral', 'pliegue-axilar-media', 'pliegue-triceps', 'pliegue-subescapular', 'pliegue-biceps', 'pliegue-cresta-iliaca', 'pliegue-supraespinal', 'pliegue-abdominal', 'pliegue-muslo-frontal', 'pliegue-pantorrilla', 'pliegue-antebrazo',
+  'perimetro-cuello', 'perimetro-hombros', 'perimetro-pecho', 'perimetro-brazo-relajado', 'perimetro-brazo-flexionado', 'perimetro-antebrazo', 'perimetro-muneca', 'perimetro-cintura', 'perimetro-abdomen', 'perimetro-cadera', 'perimetro-muslo', 'perimetro-pantorrilla', 'perimetro-tobillo',
+  'diametro-humero', 'diametro-biestiloideo', 'diametro-femur',
+];
+
+/**
+ * Lo que «Tomas» tiene que decir, escrito a mano con lo que devuelve la API: no se usa el módulo del dominio que arma la
+ * pantalla (`tomas-de-antropometria.ts`). Sí los nombres de las métricas, que son del catálogo.
+ * `yo` es la identidad de quien mira, para «la corregiste vos».
+ */
+function esperadoDeTomas({ lista, detalleDe, corridas, metodos, yo }) {
+  const dia = (iso) => new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(new Date(iso));
+  const hora = (iso) => new Intl.DateTimeFormat('es-AR', { timeStyle: 'short', hourCycle: 'h23' }).format(new Date(iso));
+  const fecha = (iso) => `${dia(iso)}, ${hora(iso)}`;
+  // Sin miles: ninguna medición del escenario llega a 1.000.
+  const num = (n) => String(n).replace('.', ',');
+  const FAMILIA = (m) => (['peso', 'talla'].includes(m) ? 'MASA_Y_ESTATURA' : m.startsWith('pliegue-') ? 'PLIEGUES' : m.startsWith('perimetro-') ? 'PERIMETROS' : m.startsWith('diametro-') ? 'DIAMETROS' : 'OTRAS');
+  const FAMILIAS = [
+    ['MASA_Y_ESTATURA', 'Masa y estatura', null],
+    ['PLIEGUES', 'Pliegues cutáneos', 'Pliegue'],
+    ['PERIMETROS', 'Perímetros', 'Perímetro'],
+    ['DIAMETROS', 'Diámetros', 'Diámetro'],
+    ['OTRAS', 'Otras mediciones del protocolo', null],
+  ];
+  const CLASE = { MEASURED: 'Medido', REPORTED: 'Reportado' };
+  const orden = (m) => (CATALOGO_DE_MEDICIONES.indexOf(m) < 0 ? 999 : CATALOGO_DE_MEDICIONES.indexOf(m));
+  const corto = (nombre, palabra) => {
+    if (!palabra || !nombre.startsWith(`${palabra} `)) return nombre;
+    const resto = nombre.slice(palabra.length + 1).replace(/^(de la|de los|de las|del|de) /, '');
+    return resto.charAt(0).toUpperCase() + resto.slice(1);
+  };
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  const cuentas = (ms) => {
+    const anuladas = ms.filter((m) => m.condition === 'ANNULLED').length;
+    const corregidas = ms.filter((m) => m.condition !== 'ANNULLED' && m.corrections.length > 0).length;
+    return [plural(ms.length, 'medición', 'mediciones'), corregidas > 0 ? plural(corregidas, 'corregida', 'corregidas') : null, anuladas > 0 ? plural(anuladas, 'anulada', 'anuladas') : null].filter(Boolean).join(' · ');
+  };
+  const protocolo = (ms) => {
+    const cuenta = new Map();
+    for (const m of ms) cuenta.set(m.protocol.protocolName, (cuenta.get(m.protocol.protocolName) ?? 0) + 1);
+    return [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  };
+  const marcasDe = (m) => (m.condition === 'ANNULLED' ? ['Anulada'] : m.effectiveMagnitude === null ? ['Sin valor vigente'] : m.corrections.length > 0 ? ['Corregida'] : []);
+
+  const tomas = lista.map((t) => {
+    const d = detalleDe.get(t.evaluationId);
+    const ms = d.measurements;
+    const unaClase = new Set(ms.map((m) => m.dataClass)).size === 1;
+    const familias = FAMILIAS.flatMap(([clave, titulo, palabra]) => {
+      const suyas = ms.filter((m) => FAMILIA(m.metric) === clave).sort((a, b) => orden(a.metric) - orden(b.metric) || a.recordedAt.localeCompare(b.recordedAt));
+      if (suyas.length === 0) return [];
+      const unidades = new Set(suyas.map((m) => (m.effectiveMagnitude ?? m.magnitude).unit));
+      const unidad = suyas.length > 1 && unidades.size === 1 ? [...unidades][0] : null;
+      return [
+        {
+          familia: clave,
+          titulo: unidad ? `${titulo} · ${unidad}` : titulo,
+          filas: suyas.map((m) => {
+            const rige = m.effectiveMagnitude;
+            const marcas = [...(unaClase ? [] : [CLASE[m.dataClass]]), ...marcasDe(m)];
+            const completo = rige ? `${num(rige.value)} ${rige.unit}` : 'Sin valor vigente';
+            return {
+              id: m.measurementId,
+              nombre: corto(dominio.nombreDeMetrica(m.metric), palabra),
+              valor: rige ? (unidad ? num(rige.value) : `${num(rige.value)} ${rige.unit}`) : null,
+              marcas,
+              anulada: m.condition === 'ANNULLED',
+              rotulo: [`${dominio.nombreDeMetrica(m.metric)}: ${completo}`, ...marcas.filter((x) => x !== 'Sin valor vigente')].join(' · '),
+            };
+          }),
+        },
+      ];
+    });
+    return {
+      id: t.evaluationId,
+      fecha: `${dia(t.occurredAt)} · ${hora(t.occurredAt)}`,
+      titulo: `Toma del ${fecha(t.occurredAt)}`,
+      protocolo: protocolo(ms),
+      cuentas: cuentas(ms),
+      clase: unaClase ? CLASE[ms[0].dataClass] : null,
+      metadatos: [protocolo(ms), cuentas(ms), d.registeredAt ? `registrada el ${fecha(d.registeredAt)} por ${d.author.displayName}` : null, d.context ? `Contexto: «${d.context}»` : null].filter(Boolean).join(' · '),
+      familias,
+      mediciones: ms,
+    };
+  });
+  // Tramos seguidos del mismo protocolo, sin reordenar.
+  const tramos = [];
+  for (const t of tomas) {
+    const ultimo = tramos[tramos.length - 1];
+    if (ultimo && ultimo.protocolo === t.protocolo) ultimo.tomas.push(t);
+    else tramos.push({ protocolo: t.protocolo, tomas: [t] });
+  }
+
+  // Los resultados: por categoría del catálogo y, adentro, por método, versión y nombre. Nunca por «mejor».
+  const CATEGORIAS = [
+    ['INDICES', 'Índices'],
+    ['SUMAS_DE_PLIEGUES', 'Sumas de pliegues'],
+    ['GRASA_CORPORAL', 'Grasa corporal'],
+    ['MASAS', 'Masas corporales'],
+    ['SOMATOTIPO', 'Somatotipo'],
+    [null, 'Otros cálculos'],
+  ];
+  const vigente = (c) => c.effective && c.supersededByRunId === null;
+  const valorDe = (c) => {
+    const n = c.result.magnitude.value.toFixed(c.precision.decimals).replace('.', ',');
+    return c.result.magnitude.unit === 'adimensional' ? n : `${n} ${c.result.magnitude.unit}`;
+  };
+  const categoriaDe = (c) => (metodos.find((m) => m.methodVersionId === c.methodVersionId) ?? metodos.find((m) => m.methodId === c.methodId))?.category ?? null;
+  const resultadosDe = (tomaId) => {
+    const suyas = corridas.filter((c) => c.evaluationId === tomaId);
+    const vigentes = suyas.filter(vigente);
+    const categorias = CATEGORIAS.flatMap(([clave, titulo]) => {
+      const deEsta = vigentes
+        .filter((c) => categoriaDe(c) === clave)
+        .sort((a, b) => a.methodName.localeCompare(b.methodName, 'es') || a.methodVersion.localeCompare(b.methodVersion, 'es') || dominio.nombreDeMetrica(a.result.metric).localeCompare(dominio.nombreDeMetrica(b.result.metric), 'es'));
+      return deEsta.length === 0 ? [] : [{ titulo, resultados: deEsta.map((c) => ({ id: c.calculationRunId, nombre: c.methodName, valor: valorDe(c), marcas: c.referenceForPurpose ? ['Referencia'] : [] })) }];
+    });
+    return { categorias, sinEfecto: suyas.filter((c) => !vigente(c)), todas: suyas };
+  };
+
+  /** La historia de una medición, de lo más nuevo a lo más viejo, con las palabras de la pantalla. */
+  const historiaDe = (m) => {
+    const cadena = [];
+    let anterior = null;
+    for (let i = 0; i < m.corrections.length; i++) {
+      const sigue = m.corrections.find((c) => c.previousCorrectionId === anterior && !cadena.includes(c));
+      if (!sigue) break;
+      cadena.push(sigue);
+      anterior = sigue.correctionId;
+    }
+    const enOrden = cadena.length === m.corrections.length ? cadena : [...m.corrections].sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
+    const hayVigente = m.effectiveMagnitude !== null && m.condition !== 'ANNULLED';
+    const quien = (autor, propio) => (yo && autor.identityId === yo ? propio : `${autor.displayName}.`);
+    const eventos = [];
+    if (m.annulment) eventos.push({ tipo: 'ANULACION', rige: false, titulo: 'Anulación', nota: `Por qué se anuló: «${m.annulment.reason}». ${quien(m.annulment.author, 'La anulaste vos.')}`, cuando: fecha(m.annulment.recordedAt) });
+    enOrden
+      .map((c, i) => ({ c, ultima: i === enOrden.length - 1 }))
+      .reverse()
+      .forEach(({ c, ultima }) =>
+        eventos.push({
+          tipo: 'CORRECCION',
+          rige: ultima && hayVigente,
+          titulo: `Corrección: ${num(c.magnitude.value)} ${c.magnitude.unit}${ultima && hayVigente ? ' Valor vigente' : ''}`,
+          nota: `Por qué se corrigió: «${c.reason}». ${quien(c.author, 'La corregiste vos.')}`,
+          cuando: fecha(c.recordedAt),
+        }),
+      );
+    const rigeElOriginal = enOrden.length === 0 && hayVigente;
+    eventos.push({
+      tipo: 'ORIGINAL',
+      rige: rigeElOriginal,
+      titulo: `Valor original: ${num(m.magnitude.value)} ${m.magnitude.unit}${rigeElOriginal ? ' Valor vigente' : ''}`,
+      nota: enOrden.length > 0 ? 'Se conserva: una corrección no lo borra.' : 'Sin correcciones: es el valor que se tomó.',
+      cuando: fecha(m.recordedAt),
+    });
+    return eventos;
+  };
+  return { tomas, tramos, resultadosDe, historiaDe, valorDe, fecha, num, vigente };
+}
+
+/**
+ * Antropometría · Tomas (maquetas 22 y 29; C-58, C-62 y C-64; F-33 a F-43), en lo que solo lee. Lo esperado se calcula a
+ * mano con lo que devuelve la API (la lista entera, el detalle de cada toma, las corridas y los métodos). Corregir,
+ * anular, calcular y dejar una referencia escriben: van en `medicionesDeUnaToma`, sobre las cuentas descartables. Va
+ * dentro de `funcional`; solo, con `node recorrido.mjs tomas`.
+ */
+async function tomasDeAntropometria(page, v) {
+  const A = estado.aseId;
+  const AREA = `/pro/advisees/anthropometry?id=${A}`;
+  const BASE = `${AREA}&vista=evaluaciones`;
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const pedidos = (fragmento, desde) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+  const LISTO = 'article.toma-abierta, .tomas-del-area .estado-vacio, .tomas-del-area__toma .aviso, .seccion-del-area .estado-de-grafico--error';
+  const entrar = async (ruta) => {
+    await cupo(v, 45);
+    const desde = v.urls.length;
+    await ir(page, ruta);
+    await page.waitForSelector('#titulo-tomas', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    await page.waitForSelector(LISTO, { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    return desde;
+  };
+  const salir = async () => {
+    await cupo(v, 60);
+    await ir(page, `${AREA}&vista=evolucion`);
+    await page.waitForFunction(() => !document.querySelector('#titulo-tomas'), { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+  };
+  const leerTodas = async (ruta) => {
+    const todo = [];
+    let cursor = null;
+    do {
+      const r = await leerApi(v, `${ruta}?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+      todo.push(...r.data);
+      cursor = r.page.hasMore ? r.page.nextCursor : null;
+    } while (cursor);
+    return todo;
+  };
+  const abrirFila = async (selector) => {
+    await page.click(selector).catch(() => {});
+    await page.waitForSelector('dialog.dialogo--panel[open] .medicion-abierta, dialog.dialogo--panel[open] .nuevo-calculo', { timeout: 15_000 }).catch(() => {});
+    await pausa(250);
+    return tomasEnPantalla(page);
+  };
+  const cerrarPanel = async () => {
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.dialogo--panel[open]'), { timeout: 10_000 }).catch(() => {});
+    await pausa(150);
+  };
+
+  // ── Al entrar: qué se lee, y cuántas veces ───────────────────────────────────────────────────────────────────
+  const desde = await entrar(BASE);
+  const inicial = await tomasEnPantalla(page);
+  // Lo esperado, a mano, después de que la página pidió lo suyo (así las lecturas del recorrido no se cuentan con ellas).
+  const alLeer = v.urls.length;
+  const yo = (await leerApi(v, '/me')).data.identityId;
+  const lista = (await leerTodas(`/advisees/${A}/anthropometry/evaluations`))
+    .filter((t) => t.state === 'REGISTERED')
+    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || (b.registeredAt ?? '').localeCompare(a.registeredAt ?? ''));
+  const detalleDe = new Map();
+  for (const t of lista) detalleDe.set(t.evaluationId, (await leerApi(v, `/anthropometry/evaluations/${t.evaluationId}`)).data);
+  const corridas = await leerTodas(`/advisees/${A}/calculations`);
+  const metodos = await leerTodas('/professional-methods');
+  const borradores = (await leerApi(v, `/advisees/${A}/anthropometry/evaluation-drafts`)).data;
+  const E = esperadoDeTomas({ lista, detalleDe, corridas, metodos, yo });
+  const deLaPagina = v.urls.slice(desde, alLeer);
+  const lecturas = (fragmento) => deLaPagina.filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+  const detallesPedidos = lista.map((t) => lecturas(`/anthropometry/evaluations/${t.evaluationId}`).length);
+  comprobar(
+    'F-33',
+    'Al entrar, «Tomas» lee la lista entera una vez, la toma en preparación una vez, y una vez el detalle de cada toma (hasta veinte): ninguno dos veces. Los métodos y los cálculos, una vez cada lista',
+    lecturas(`/advisees/${A}/anthropometry/evaluations?`).length === 1 &&
+      lecturas(`/advisees/${A}/anthropometry/evaluation-drafts`).length === 1 &&
+      lista.length > 1 &&
+      lista.length <= 20 &&
+      detallesPedidos.every((n) => n === 1) &&
+      lecturas('/professional-methods').length === Math.ceil(metodos.length / 50) &&
+      lecturas(`/advisees/${A}/calculations`).length === Math.max(1, Math.ceil(corridas.length / 50)),
+    `la lista: ${lecturas(`/advisees/${A}/anthropometry/evaluations?`).length} · en preparación: ${lecturas('/evaluation-drafts').length} · detalles: ${detallesPedidos.join(', ')} (de ${lista.length} tomas) · métodos: ${lecturas('/professional-methods').length} · cálculos: ${lecturas(`/advisees/${A}/calculations`).length}`,
+  );
+
+  // ── La lista, en tramos del mismo protocolo ──────────────────────────────────────────────────────────────────
+  const tramosALaVista = (inicial.tramos ?? []).map((x) => ({ protocolo: x.protocolo, tomas: x.tomas.map((y) => ({ id: y.id, fecha: y.fecha, cuentas: y.cuentas })) }));
+  const tramosEsperados = E.tramos.map((x) => ({ protocolo: x.protocolo, tomas: x.tomas.map((y) => ({ id: y.id, fecha: y.fecha, cuentas: y.cuentas })) }));
+  comprobar(
+    'C-64',
+    'La lista tiene todas las tomas registradas, por cuándo se tomaron y de la más nueva a la más vieja, en tramos seguidos del mismo protocolo (una toma con otro protocolo en el medio parte el tramo); cada una dice su día y hora y sus cuentas: mediciones, corregidas y anuladas, calculadas a mano con su detalle',
+    igual(tramosALaVista, tramosEsperados) && E.tramos.length >= 2 && E.tomas.some((x) => /corregida/.test(x.cuentas)) && E.tomas.some((x) => /anulada/.test(x.cuentas)),
+    igual(tramosALaVista, tramosEsperados)
+      ? `${E.tomas.length} tomas en ${E.tramos.length} tramos: ${E.tramos.map((x) => `${x.protocolo} (${x.tomas.length})`).join(' · ')}`
+      : `a la vista: ${JSON.stringify(tramosALaVista).slice(0, 260)} — a mano: ${JSON.stringify(tramosEsperados).slice(0, 260)}`,
+  );
+  comprobar(
+    'C-58',
+    'El título dice «Tomas», cuántas hay registradas (la cantidad de la lista entera) y que una toma registrada no se edita; la toma en preparación se anuncia solo si hay una, con sus mediciones',
+    inicial.cuenta === `${lista.length} registradas.` &&
+      /Una toma registrada no se edita: cada medición se corrige o se anula, y queda constancia\./.test(inicial.bajada ?? '') &&
+      inicial.preparar === (borradores.length > 0 ? 'Seguir con la toma en preparación' : 'Preparar una toma') &&
+      (borradores.length > 0 ? /Hay una toma en preparación/.test(inicial.enPreparacion ?? '') : inicial.enPreparacion === null),
+    `«${inicial.cuenta}» · botón: «${inicial.preparar}» · tomas en preparación según la API: ${borradores.length}${inicial.enPreparacion ? ` · «${inicial.enPreparacion}»` : ''}`,
+  );
+
+  // ── La toma que abre: la más reciente, con lo que vale para toda la toma dicho una vez ───────────────────────────
+  const primera = E.tomas[0];
+  comprobar(
+    'F-36',
+    'Sin una toma en la dirección abre la más reciente, marcada en la lista. Su encabezado dice cuándo se tomó, la clase del dato si todas las mediciones la comparten, y en un renglón el protocolo, las cuentas, cuándo se registró y quién',
+    inicial.toma?.id === primera.id &&
+      inicial.toma.titulo === primera.titulo &&
+      inicial.toma.clase === primera.clase &&
+      inicial.toma.metadatos === primera.metadatos &&
+      igual((inicial.tramos ?? []).flatMap((x) => x.tomas).filter((x) => x.elegida).map((x) => x.id), [primera.id]),
+    `«${inicial.toma?.titulo}» · ${inicial.toma?.clase ?? 'sin una clase común'} · «${(inicial.toma?.metadatos ?? '').slice(0, 130)}»`,
+  );
+
+  // ── Elegir otra toma: va a la dirección, y no vuelve a leer nada ─────────────────────────────────────────────────
+  // La más cargada que tenga una medición anulada: es la que más filas y más casos muestra.
+  const rica = [...E.tomas].filter((x) => x.id !== primera.id && x.mediciones.some((m) => m.condition === 'ANNULLED')).sort((a, b) => b.mediciones.length - a.mediciones.length)[0] ?? null;
+  await page.evaluate(() => {
+    window.__cargandoEnTomas = 0;
+    window.__vigiaDeTomas?.disconnect();
+    window.__vigiaDeTomas = new MutationObserver(() => {
+      if (document.querySelector('.tomas-del-area .cargando')) window.__cargandoEnTomas += 1;
+    });
+    window.__vigiaDeTomas.observe(document.body, { subtree: true, childList: true });
+  });
+  const alElegir = v.urls.length;
+  if (rica) await page.click(`button.toma-de-la-lista[data-toma="${rica.id}"]`).catch(() => {});
+  await page.waitForFunction((id) => document.querySelector('article.toma-abierta')?.dataset.toma === id, { timeout: 15_000 }, rica?.id ?? '').catch(() => {});
+  await pausa(400);
+  const cargandoAlElegir = await page.evaluate(() => {
+    window.__vigiaDeTomas?.disconnect();
+    return window.__cargandoEnTomas ?? -1;
+  });
+  const conLaRica = await tomasEnPantalla(page);
+  comprobar(
+    'F-33',
+    'Elegir otra toma la pone en la dirección (`evaluacion=`), la marca en la lista y la muestra sin pedirle nada a la API ni pasar por «Cargando…»: su detalle ya se había leído',
+    !!rica &&
+      parametros(page).get('evaluacion') === rica.id &&
+      conLaRica.toma?.id === rica.id &&
+      conLaRica.toma.titulo === rica.titulo &&
+      v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length === 0 &&
+      cargandoAlElegir === 0 &&
+      igual((conLaRica.tramos ?? []).flatMap((x) => x.tomas).filter((x) => x.elegida).map((x) => x.id), [rica.id]),
+    rica ? `«${conLaRica.toma?.titulo}» · pedidos a la API: ${v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length} · veces que se vio «Cargando…»: ${cargandoAlElegir}` : 'el escenario no tiene otra toma con una medición anulada',
+  );
+
+  // ── Las mediciones, por familia: el valor que rige y solo la excepción marcada ─────────────────────────────────
+  const familiasALaVista = (conLaRica.toma?.familias ?? []).map((f) => ({ familia: f.familia, titulo: f.titulo, filas: f.filas }));
+  comprobar(
+    'F-36',
+    'Las mediciones van por familia, en el orden del dominio y, adentro, en el del catálogo; cada fila dice el nombre corto, el valor que rige y solo lo que se sale de lo común («Anulada», «Corregida»); la unidad va una vez en el título de la familia si todas la comparten, y si no, en cada fila. El lector de pantalla oye el nombre completo y el valor con su unidad',
+    !!rica && igual(familiasALaVista, rica.familias) && rica.familias.some((f) => / · /.test(f.titulo)) && rica.familias.some((f) => f.filas.some((x) => / /.test(x.valor ?? ''))) && rica.familias.some((f) => f.filas.some((x) => x.marcas.includes('Anulada'))),
+    rica && igual(familiasALaVista, rica.familias)
+      ? `${rica.familias.map((f) => `${f.titulo} (${f.filas.length})`).join(' · ')} · ${rica.familias.flatMap((f) => f.filas).find((x) => x.anulada)?.rotulo}`
+      : `a la vista: ${JSON.stringify(familiasALaVista).slice(0, 300)} — a mano: ${JSON.stringify(rica?.familias ?? null).slice(0, 300)}`,
+  );
+
+  // ── Una medición se abre en el panel; corregir y anular están ahí, no en la fila ─────────────────────────────────
+  const comun = rica ? rica.mediciones.find((m) => m.condition === 'EFFECTIVE' && m.corrections.length === 0) : null;
+  const alAbrir = v.urls.length;
+  const conElPanel = comun ? await abrirFila(`button.medicion-de-la-toma[data-medicion="${comun.measurementId}"]`) : conLaRica;
+  const historiaComun = comun ? E.historiaDe(comun) : [];
+  await cerrarPanel();
+  const focoAlCerrar = await page.evaluate(() => document.activeElement?.dataset?.medicion ?? null);
+  comprobar(
+    'C-62',
+    'Entre las mediciones no hay ningún botón «Corregir» ni «Anular»: la fila entera abre la medición en un panel, que retiene el foco, sin pedirle nada a la API. Ahí están su valor que rige, sus marcas, el protocolo, cuándo se tomó, su historia y los dos actos. Escape lo cierra y el foco vuelve a la fila',
+    !!comun &&
+      igual(conLaRica.toma?.botonesSueltos, []) &&
+      conElPanel.panel?.titulo === dominio.nombreDeMetrica(comun.metric) &&
+      conElPanel.panel.conElFoco &&
+      conElPanel.panel.valor === `${E.num(comun.effectiveMagnitude.value)} ${comun.effectiveMagnitude.unit}` &&
+      igual(conElPanel.panel.marcas, [comun.dataClass === 'REPORTED' ? 'Reportado' : 'Medido', 'Vigente']) &&
+      igual(conElPanel.panel.datos, [['Protocolo', comun.protocol.protocolName], ['Se tomó', E.fecha(comun.occurredAt)]]) &&
+      igual(conElPanel.panel.historia, historiaComun) &&
+      igual(conElPanel.panel.acciones, ['Corregir medición', 'Anular esta medición']) &&
+      v.urls.slice(alAbrir).filter((u) => u.startsWith('GET ')).length === 0 &&
+      focoAlCerrar === comun.measurementId,
+    comun
+      ? `«${conElPanel.panel?.titulo}» · ${conElPanel.panel?.valor} · ${conElPanel.panel?.marcas.join(', ')} · historia: ${conElPanel.panel?.historia.map((h) => h.titulo).join(' | ')} · acciones: ${conElPanel.panel?.acciones.join(', ')} · foco al cerrar: ${focoAlCerrar === comun.measurementId ? 'en la fila' : 'en otro lado'}`
+      : 'el escenario no tiene una medición vigente y sin correcciones en esa toma',
+  );
+
+  // ── Una medición anulada: se dice, conserva su valor y su historia, y no ofrece ninguna acción ─────────────────────
+  const anulada = rica ? rica.mediciones.find((m) => m.condition === 'ANNULLED') : null;
+  const conLaAnulada = anulada ? await abrirFila(`button.medicion-de-la-toma[data-medicion="${anulada.measurementId}"]`) : conLaRica;
+  await cerrarPanel();
+  comprobar(
+    'F-37',
+    'Una medición anulada se abre igual: dice «Anulada» y no «Vigente», conserva su valor a la vista, su historia empieza por la anulación con el motivo y quién la hizo, dice que no se reactiva, y no ofrece ni corregir ni anular (la misma consulta los encuentra en una medición vigente)',
+    !!anulada &&
+      conLaAnulada.panel?.marcas.includes('Anulada') &&
+      !conLaAnulada.panel.marcas.includes('Vigente') &&
+      conLaAnulada.panel.valor === `${E.num(anulada.effectiveMagnitude.value)} ${anulada.effectiveMagnitude.unit}` &&
+      igual(conLaAnulada.panel.historia, E.historiaDe(anulada)) &&
+      conLaAnulada.panel.historia[0]?.tipo === 'ANULACION' &&
+      !conLaAnulada.panel.historia.some((h) => h.rige) &&
+      /Una medición anulada no se reactiva\./.test(conLaAnulada.panel.texto) &&
+      igual(conLaAnulada.panel.acciones, []) &&
+      conLaAnulada.panel.bloques.some((b) => b.titulo === 'Lo que pasó con los resultados'),
+    anulada ? `${conLaAnulada.panel?.marcas.join(', ')} · ${conLaAnulada.panel?.valor} · ${conLaAnulada.panel?.historia.map((h) => `${h.titulo}: ${h.nota}`).join(' | ').slice(0, 200)} · acciones: ${conLaAnulada.panel?.acciones.length}` : 'el escenario no tiene una medición anulada',
+  );
+
+  // ── Una medición corregida: rige la corrección, y el original se conserva en la historia ───────────────────────────
+  const tomaCorregida = E.tomas.find((x) => x.mediciones.some((m) => m.condition === 'EFFECTIVE' && m.corrections.length > 0)) ?? null;
+  const corregida = tomaCorregida?.mediciones.find((m) => m.condition === 'EFFECTIVE' && m.corrections.length > 0) ?? null;
+  let conLaCorregida = conLaRica;
+  if (tomaCorregida && corregida) {
+    await page.click(`button.toma-de-la-lista[data-toma="${tomaCorregida.id}"]`).catch(() => {});
+    await page.waitForFunction((id) => document.querySelector('article.toma-abierta')?.dataset.toma === id, { timeout: 15_000 }, tomaCorregida.id).catch(() => {});
+    await pausa(300);
+    conLaCorregida = await abrirFila(`button.medicion-de-la-toma[data-medicion="${corregida.measurementId}"]`);
+    await cerrarPanel();
+  }
+  const filaCorregida = tomaCorregida?.familias.flatMap((f) => f.filas).find((x) => x.id === corregida?.measurementId) ?? null;
+  const usanLaCorregida = corregida ? corridas.filter((c) => c.evaluationId === tomaCorregida.id && c.inputProvenance.some((i) => i.sourceRef === corregida.measurementId)) : [];
+  const bloqueDelCambio = conLaCorregida.panel?.bloques.find((b) => b.titulo === 'Lo que cambió con la corrección') ?? null;
+  comprobar(
+    'F-37',
+    'Una medición corregida muestra en la fila y en el panel el valor que rige, no el que se tomó primero, con la marca «Corregida». Su historia va de lo más nuevo a lo más viejo: la corrección, con su motivo y quién la hizo, marcada como el valor vigente; y el valor original, que se conserva',
+    !!corregida &&
+      corregida.effectiveMagnitude.value !== corregida.magnitude.value &&
+      filaCorregida?.marcas.includes('Corregida') &&
+      conLaCorregida.panel?.valor === `${E.num(corregida.effectiveMagnitude.value)} ${corregida.effectiveMagnitude.unit}` &&
+      conLaCorregida.panel.marcas.includes('Corregida') &&
+      igual(conLaCorregida.panel.historia, E.historiaDe(corregida)) &&
+      conLaCorregida.panel.historia.filter((h) => h.rige).length === 1 &&
+      conLaCorregida.panel.historia[0].tipo === 'CORRECCION' &&
+      conLaCorregida.panel.historia.at(-1).titulo === `Valor original: ${E.num(corregida.magnitude.value)} ${corregida.magnitude.unit}`,
+    corregida ? `${conLaCorregida.panel?.valor} (se tomó ${E.num(corregida.magnitude.value)}) · ${conLaCorregida.panel?.historia.map((h) => `${h.titulo} — ${h.nota}`).join(' | ').slice(0, 260)}` : 'el escenario no tiene una medición corregida y vigente',
+  );
+  // En el escenario principal la corrección se cargó sin cálculos que la usen: el panel lo dice, sin inventar un cambio.
+  // Lo que cambia de verdad en los resultados al corregir se comprueba escribiendo, en `mediciones`.
+  if (corregida && usanLaCorregida.length === 0) {
+    comprobar(
+      'F-38',
+      'Si ningún resultado calculado de la toma usa la medición corregida, «Lo que cambió con la corrección» lo dice con esas palabras: no lista ningún resultado ni un «antes»',
+      !!bloqueDelCambio && /Ningún resultado calculado de esta toma cambió por esta corrección\./.test(bloqueDelCambio.texto) && igual(conLaCorregida.panel.cambios, []),
+      `«${bloqueDelCambio?.texto ?? 'sin el bloque'}»`,
+    );
+  } else {
+    informar('F-38', 'Lo que cambió con la corrección, en el escenario principal', corregida ? `${usanLaCorregida.length} corridas de esa toma usan la medición: «${(bloqueDelCambio?.texto ?? '').slice(0, 160)}»` : 'sin medición corregida: no se pudo mirar');
+  }
+
+  // ── Los resultados calculados: por categoría, cada uno con los decimales de su método ───────────────────────────
+  const conResultados = [...E.tomas].map((x) => ({ toma: x, r: E.resultadosDe(x.id) })).sort((a, b) => b.r.categorias.flatMap((c) => c.resultados).length - a.r.categorias.flatMap((c) => c.resultados).length)[0];
+  const sinResultados = E.tomas.find((x) => E.resultadosDe(x.id).todas.length === 0) ?? null;
+  const irALaToma = async (id) => {
+    await page.click(`button.toma-de-la-lista[data-toma="${id}"]`).catch(() => {});
+    await page.waitForFunction((x) => document.querySelector('article.toma-abierta')?.dataset.toma === x, { timeout: 15_000 }, id).catch(() => {});
+    await pausa(300);
+    return tomasEnPantalla(page);
+  };
+  const laDeResultados = await irALaToma(conResultados.toma.id);
+  const laSinResultados = sinResultados ? await irALaToma(sinResultados.id) : null;
+  const totalDeResultados = conResultados.r.categorias.flatMap((c) => c.resultados).length;
+  comprobar(
+    'F-39',
+    'Los resultados vigentes de la toma van por categoría del catálogo y, adentro, por método: cada uno con el nombre de su método y su valor con los decimales que el método declara. «Ver N anteriores, sin efecto» está solo si hay alguno. Una toma sin cálculos lo dice con sus palabras, y no muestra ninguna categoría',
+    totalDeResultados > 0 &&
+      igual(laDeResultados.toma?.categorias, conResultados.r.categorias) &&
+      (conResultados.r.sinEfecto.length > 0 ? new RegExp(`^Ver (1 anterior|${conResultados.r.sinEfecto.length} anteriores), sin efecto$`).test(laDeResultados.toma.anteriores ?? '') : laDeResultados.toma.anteriores === null) &&
+      laDeResultados.toma.sinCalculos === null &&
+      !!laSinResultados &&
+      laSinResultados.toma?.sinCalculos === 'Todavía no hay cálculos para esta toma.' &&
+      laSinResultados.toma.categorias.length === 0,
+    igual(laDeResultados.toma?.categorias, conResultados.r.categorias)
+      ? `${conResultados.r.categorias.map((c) => `${c.titulo}: ${c.resultados.map((x) => `${x.nombre} ${x.valor}`).join(', ')}`).join(' · ').slice(0, 220)} · sin efecto: ${conResultados.r.sinEfecto.length} · una toma sin cálculos: «${laSinResultados?.toma?.sinCalculos}»`
+      : `a la vista: ${JSON.stringify(laDeResultados.toma?.categorias).slice(0, 260)} — a mano: ${JSON.stringify(conResultados.r.categorias).slice(0, 260)}`,
+  );
+
+  // ── Un resultado y «Calcular con un método» se abren en el panel ────────────────────────────────────────────────
+  await irALaToma(conResultados.toma.id);
+  const unResultado = conResultados.r.categorias[0]?.resultados[0] ?? null;
+  const suCorrida = corridas.find((c) => c.calculationRunId === unResultado?.id) ?? null;
+  const conElResultado = unResultado ? await abrirFila(`button.resultado-de-la-toma[data-resultado="${unResultado.id}"]`) : laDeResultados;
+  await cerrarPanel();
+  const escriturasAntes = v.urls.filter((u) => /^(POST|PUT|DELETE) /.test(u)).length;
+  await clic(page, 'article.toma-abierta .toma-abierta__acciones-de-bloque button', 'Calcular con un método').catch(() => null);
+  await page.waitForSelector('dialog.dialogo--panel[open] .nuevo-calculo', { timeout: 15_000 }).catch(() => {});
+  await pausa(250);
+  const conElCalculo = await tomasEnPantalla(page);
+  await clic(page, 'dialog.dialogo--panel[open] .nuevo-calculo > .acciones button', 'Cancelar').catch(() => null);
+  await page.waitForFunction(() => !document.querySelector('dialog.dialogo--panel[open]'), { timeout: 10_000 }).catch(() => {});
+  const puedeSerReferencia = !!suCorrida && !suCorrida.referenceForPurpose && suCorrida.evaluationContext === 'REGISTERED' && E.vigente(suCorrida);
+  comprobar(
+    'F-39',
+    'Un resultado se abre en el panel: su método, su valor con la precisión declarada, la marca «Calculado», con qué se calculó (la versión, la regla, la precisión y una línea por entrada) y, si está vigente y no es ya la referencia, «Dejar como referencia». «Calcular con un método» se abre en el mismo panel, con todos los métodos del catálogo, y «Cancelar» lo cierra sin escribir nada',
+    !!suCorrida &&
+      conElResultado.panel?.titulo === 'Resultado calculado' &&
+      conElResultado.panel.deDonde === suCorrida.methodName &&
+      conElResultado.panel.valor === E.valorDe(suCorrida) &&
+      conElResultado.panel.marcas.includes('Calculado') &&
+      conElResultado.panel.entradas === suCorrida.inputProvenance.length &&
+      conElResultado.panel.bloques.some((b) => b.titulo === 'Con qué se calculó' && b.texto.includes(`Regla aplicada: ${suCorrida.ruleId}`)) &&
+      igual(conElResultado.panel.acciones, puedeSerReferencia ? ['Dejar como referencia'] : []) &&
+      conElCalculo.panel?.titulo === 'Calcular con un método' &&
+      conElCalculo.panel.metodos === metodos.length &&
+      metodos.length > 0 &&
+      v.urls.filter((u) => /^(POST|PUT|DELETE) /.test(u)).length === escriturasAntes,
+    `«${conElResultado.panel?.deDonde}» ${conElResultado.panel?.valor} · ${conElResultado.panel?.entradas} entradas · acciones: ${conElResultado.panel?.acciones.join(', ') || 'ninguna'} · métodos en el panel: ${conElCalculo.panel?.metodos} (el catálogo: ${metodos.length})`,
+  );
+
+  // ── «En preparación» ya no es una sección: la carga se abre desde «Tomas» ───────────────────────────────────────
+  await clic(page, '.tomas-del-area__preparar button', inicial.preparar ?? 'Preparar una toma').catch(() => null);
+  await page.waitForSelector('#titulo-preparacion', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const enLaCarga = await marcoEnPantalla(page);
+  const vistaDeLaCarga = parametros(page).get('vista');
+  const vuelta = await page.evaluate(() => {
+    const a = document.querySelector('.vuelta-a-la-seccion a');
+    return a ? { texto: a.innerText.replace(/\s+/g, ' ').trim(), href: a.getAttribute('href') } : null;
+  });
+  await clic(page, '.vuelta-a-la-seccion a', 'Tomas').catch(() => null);
+  await page.waitForSelector('#titulo-tomas', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  comprobar(
+    'F-35',
+    '«En preparación» dejó de ser una sección: el marco tiene tres (Tomas, Evolución y Lámina). El botón de «Tomas» abre la carga de una toma (`vista=preparacion`, que no cambió), con «Tomas» marcada y un enlace de la aplicación para volver, que vuelve a la lista',
+    vistaDeLaCarga === 'preparacion' &&
+      igual(enLaCarga?.pestanas.map((p) => p.texto), ['Tomas', 'Evolución', 'Lámina']) &&
+      enLaCarga.pestanas.find((p) => p.actual === 'page')?.texto === 'Tomas' &&
+      /^(Nueva toma|Toma en preparación)$/.test(enLaCarga.primerTitulo ?? '') &&
+      vuelta?.texto === 'Tomas' &&
+      /vista=evaluaciones/.test(vuelta.href ?? '') &&
+      parametros(page).get('vista') === 'evaluaciones',
+    `secciones: ${enLaCarga?.pestanas.map((p) => p.texto).join(', ')} · marcada: ${enLaCarga?.pestanas.find((p) => p.actual === 'page')?.texto} · la carga: «${enLaCarga?.primerTitulo}» · vuelta: «${vuelta?.texto}»`,
+  );
+
+  // ── «Actualizar» conserva la toma elegida y vuelve a leer ───────────────────────────────────────────────────────
+  await entrar(`${BASE}&evaluacion=${rica?.id ?? primera.id}`);
+  await cupo(v, 45);
+  const alActualizar = v.urls.length;
+  await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+  await quieto(page, v);
+  await page.waitForSelector('article.toma-abierta', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const trasActualizar = await tomasEnPantalla(page);
+  comprobar(
+    'F-33',
+    'La toma elegida vive en la dirección: se abre al entrar con ella, y «Actualizar» vuelve a leer la lista y la deja abierta',
+    trasActualizar.toma?.id === (rica?.id ?? primera.id) && parametros(page).get('evaluacion') === (rica?.id ?? primera.id) && pedidos(`/advisees/${A}/anthropometry/evaluations?`, alActualizar).length === 1,
+    `«${trasActualizar.toma?.titulo}» · lecturas de la lista al actualizar: ${pedidos(`/advisees/${A}/anthropometry/evaluations?`, alActualizar).length}`,
+  );
+
+  // ── Una toma pedida que no está: la lista sigue completa ────────────────────────────────────────────────────────
+  await salir();
+  await entrar(`${BASE}&evaluacion=00000000-0000-4000-8000-000000000000`);
+  const pedidaQueNoEsta = await tomasEnPantalla(page);
+  await clic(page, '.tomas-del-area__toma .aviso button', 'Volver a la lista de tomas').catch(() => null);
+  await page.waitForSelector('article.toma-abierta', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const deVueltaEnLaLista = await tomasEnPantalla(page);
+  comprobar(
+    'F-33',
+    'Una toma pedida por la dirección que no está disponible lo dice con el texto neutral, sin tapar la lista, que sigue completa; «Volver a la lista de tomas» saca el parámetro y abre la más reciente',
+    /La toma solicitada no está disponible\. La lista de tomas sigue completa\./.test(pedidaQueNoEsta.aviso ?? '') &&
+      pedidaQueNoEsta.toma === null &&
+      (pedidaQueNoEsta.tramos ?? []).flatMap((x) => x.tomas).length === lista.length &&
+      deVueltaEnLaLista.toma?.id === primera.id &&
+      !parametros(page).has('evaluacion'),
+    `«${(pedidaQueNoEsta.aviso ?? '').slice(0, 90)}» · tomas en la lista: ${(pedidaQueNoEsta.tramos ?? []).flatMap((x) => x.tomas).length} · después: «${deVueltaEnLaLista.toma?.titulo}»`,
+  );
+
+  // ── Las fallas se dicen, y no pasan por ausencia de datos (respuestas simuladas en el navegador) ────────────────────
+  await salir();
+  const sinLista = { coincide: (u) => u.includes(`/advisees/${A}/anthropometry/evaluations?`), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' };
+  v.reglas.push(sinLista);
+  await entrar(BASE);
+  const conLaListaCaida = await tomasEnPantalla(page);
+  v.reglas.splice(v.reglas.indexOf(sinLista), 1);
+  const textoDeLaFalla = await texto(page, '.seccion-del-area');
+  await salir();
+  const sinCalculos = { coincide: (u) => u.includes(`/advisees/${A}/calculations`), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' };
+  v.reglas.push(sinCalculos);
+  await entrar(`${BASE}&evaluacion=${conResultados.toma.id}`);
+  const conLosCalculosCaidos = await tomasEnPantalla(page);
+  v.reglas.splice(v.reglas.indexOf(sinCalculos), 1);
+  await cupo(v, 60);
+  await clic(page, '.resultados-de-la-toma .aviso--error button', 'Reintentar').catch(() => null);
+  await quieto(page, v);
+  await page.waitForSelector('.categoria-de-resultados', { timeout: 20_000 }).catch(() => {});
+  const repuestos = await tomasEnPantalla(page);
+  comprobar(
+    'F-39',
+    'Si la lista de tomas no se puede leer (un 503 simulado), la sección dice la falla con «Reintentar» y nunca «Todavía no hay tomas registradas». Si lo que no se puede leer son los cálculos, la toma y sus mediciones siguen a la vista, el bloque de resultados dice que no pudo leerlos (no «todavía no hay cálculos») y «Reintentar» los trae',
+    conLaListaCaida.toma === null &&
+      conLaListaCaida.tramos === null &&
+      conLaListaCaida.vacio === null &&
+      /Reintentar/.test(textoDeLaFalla) &&
+      !/Todavía no hay tomas/.test(textoDeLaFalla) &&
+      conLosCalculosCaidos.toma?.id === conResultados.toma.id &&
+      conLosCalculosCaidos.toma.familias.length > 0 &&
+      /No pudimos leer los resultados calculados de esta toma\./.test(conLosCalculosCaidos.toma.fallaDeResultados ?? '') &&
+      conLosCalculosCaidos.toma.sinCalculos === null &&
+      conLosCalculosCaidos.toma.categorias.length === 0 &&
+      igual(repuestos.toma?.categorias, conResultados.r.categorias),
+    `sin la lista: «${textoDeLaFalla.slice(0, 90)}» · sin los cálculos: «${conLosCalculosCaidos.toma?.fallaDeResultados}», ${conLosCalculosCaidos.toma?.familias.length} familias a la vista · después de reintentar: ${repuestos.toma?.categorias.flatMap((c) => c.resultados).length} resultados`,
+  );
+
+  // ── La ayuda, la accesibilidad y los anchos ─────────────────────────────────────────────────────────────────────
+  await salir();
+  const sinAyuda = await page.evaluate(() => document.querySelectorAll('header.marco-del-area .como-se-lee__boton').length);
+  await entrar(`${BASE}&evaluacion=${rica?.id ?? primera.id}`);
+  const medida = await page.evaluate(() => {
+    const ancho = (s) => Math.round(document.querySelector(s)?.getBoundingClientRect().width ?? 0);
+    const abajo = (s) => Math.round((document.querySelector(s)?.getBoundingClientRect().bottom ?? 0) + scrollY);
+    return { alto: document.documentElement.scrollHeight, lista: ancho('nav.tomas-del-area__lista'), toma: ancho('article.toma-abierta'), finDeLaToma: abajo('article.toma-abierta') };
+  });
+  informar('F-41', '«Tomas», con la toma más cargada del escenario principal abierta, a 1440 × 900', `${medida.alto} px · la lista mide ${medida.lista} px de ancho y la toma, ${medida.toma}; la toma termina a los ${medida.finDeLaToma} px`);
+  const faltas = await axe(page);
+  if (comun) await abrirFila(`button.medicion-de-la-toma[data-medicion="${comun.measurementId}"]`);
+  const faltasConElPanel = await axe(page);
+  const tapasDelPanel = await page.evaluate(() => document.querySelectorAll('dialog.dialogo--panel[open] .desplazable-x').length);
+  await cerrarPanel();
+  await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+  await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+  const ayuda = await page.evaluate(() => {
+    const d = document.querySelector('dialog.como-se-lee[open]');
+    return d ? { titulo: d.querySelector('h2').innerText.trim(), renglones: d.querySelectorAll('.como-se-lee__lista > li').length, foco: document.activeElement === d.querySelector('h2') } : { titulo: null, renglones: 0, foco: false };
+  });
+  const faltasDeLaAyuda = await axe(page);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+  comprobar(
+    'F-14',
+    '«Tomas» tiene su ayuda en el marco del área: se abre por el título y explica la lista, el valor que rige, las marcas y los resultados; Evolución, que no tiene ayuda, no muestra el botón (la misma consulta lo encuentra en «Tomas»)',
+    ayuda.titulo === 'Cómo se leen las Tomas' && ayuda.renglones >= 8 && ayuda.foco && sinAyuda === 0,
+    `«${ayuda.titulo}» · ${ayuda.renglones} renglones · botones de ayuda en Evolución: ${sinAyuda}`,
+  );
+  comprobar(
+    'F-37',
+    'axe no encuentra faltas en «Tomas», ni con una medición abierta en el panel, ni con la ayuda abierta',
+    faltas.length === 0 && faltasConElPanel.length === 0 && faltasDeLaAyuda.length === 0,
+    `la lista y la toma: ${faltas.map((f) => f.id).join(', ') || 'sin faltas'} · con el panel: ${faltasConElPanel.map((f) => f.id).join(', ') || 'sin faltas'} · la ayuda: ${faltasDeLaAyuda.map((f) => f.id).join(', ') || 'sin faltas'}${tapasDelPanel ? ` · tablas en el panel: ${tapasDelPanel}` : ''}`,
+  );
+
+  // A 1280 px la toma sigue al costado de la lista; a 1024 la lista pasa arriba, como un selector.
+  const enAncho = async (ancho) => {
+    await page.setViewport({ width: ancho, height: 900 });
+    await pausa(300);
+    const p = await tomasEnPantalla(page);
+    return { p, desborda: !(await sinDesborde(page)), alto: p.alto };
+  };
+  const a1280 = await enAncho(1280);
+  const a1024 = await enAncho(1024);
+  const otra = E.tomas.find((x) => x.id !== (rica?.id ?? primera.id)) ?? null;
+  if (otra) await page.select('.tomas-del-area__selector select', otra.id).catch(() => {});
+  await page.waitForFunction((id) => document.querySelector('article.toma-abierta')?.dataset.toma === id, { timeout: 15_000 }, otra?.id ?? '').catch(() => {});
+  await pausa(300);
+  const conElSelector = await tomasEnPantalla(page);
+  await page.setViewport({ width: 1440, height: 900 });
+  await pausa(200);
+  informar('F-41', 'El alto de «Tomas» con esa toma, a 1280 y a 1024 px', `${a1280.alto} px y ${a1024.alto} px`);
+  comprobar(
+    'F-41',
+    'A 1280 px la lista sigue al costado de la toma. A 1024 px la lista pasa arriba, como un selector con las mismas tomas, sus mismas cuentas y sus tramos; elegir otra toma en el selector la abre y la pone en la dirección. En ningún ancho la página desborda de costado',
+    !a1280.desborda &&
+      !a1024.desborda &&
+      a1280.p.tramos !== null &&
+      a1280.p.opciones === null &&
+      a1024.p.tramos === null &&
+      igual(a1024.p.opciones?.map((o) => ({ id: o.id, texto: o.texto })), E.tomas.map((x) => ({ id: x.id, texto: `${x.fecha} · ${x.cuentas}` }))) &&
+      !!otra &&
+      conElSelector.toma?.id === otra.id &&
+      parametros(page).get('evaluacion') === otra.id,
+    `1280: ${a1280.p.tramos ? 'lista al costado' : 'sin lista'}${a1280.desborda ? ' · DESBORDA' : ''} · 1024: ${a1024.p.opciones?.length ?? 0} opciones en el selector (de ${E.tomas.length})${a1024.desborda ? ' · DESBORDA' : ''} · elegida por el selector: «${conElSelector.toma?.titulo}»`,
+  );
+  comprobar('—', '«Tomas» no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+// ─── Antropometría · Tomas: lo que escribe (WP-ESCRITORIO-AREAS, parte 3) ──────────────────────────────────────────
+
+/**
+ * Corregir una medición, anular otra, calcular con un método y dejar un resultado como referencia, por la pantalla
+ * (C-62; F-37 a F-39), sobre la toma del perfil completo de las cuentas descartables (`datos/generar.mjs
+ * descartable-toma-completa`): 30 mediciones y 8 resultados calculados por la API, con la cintura mal tipeada.
+ * **Escribe:** por eso no va dentro de `funcional`. Corre sola (`node recorrido.mjs mediciones`), con esas cuentas recién
+ * generadas, y no toca los datos de A, B ni C. Lo esperado sale de lo que devuelve la API antes y después de cada
+ * escritura; lo que tiene que decir la pantalla, de `esperadoDeTomas`, escrito a mano. Una de las comprobaciones mira
+ * una falla simulada por el recorrido (un 503 al corregir), y lo dice.
+ */
+async function medicionesDeUnaToma() {
+  const d = estado.descartable;
+  const T = d?.tomaCompleta;
+  if (!T) throw new Error('faltan las cuentas descartables con la toma completa: datos/generar.mjs descartable-cuentas, descartable-datos y descartable-toma-completa');
+  const { navegador, page, v } = await abrir();
+  try {
+    const A = d.aseId;
+    const BASE = `/pro/advisees/anthropometry?id=${A}&vista=evaluaciones`;
+    const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const PANEL = 'dialog.dialogo--panel[open]';
+    const escrituras = (fragmento, desde) => v.urls.slice(desde).filter((u) => /^(POST|PUT) /.test(u) && u.includes(fragmento));
+    const leerTodas = async (ruta) => {
+      const todo = [];
+      let cursor = null;
+      do {
+        const r = await leerApi(v, `${ruta}?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+        todo.push(...r.data);
+        cursor = r.page.hasMore ? r.page.nextCursor : null;
+      } while (cursor);
+      return todo;
+    };
+    /** Lo que dice la API ahora, y lo que la pantalla tiene que decir con eso. */
+    const leerTodo = async () => {
+      const yo = (await leerApi(v, '/me')).data.identityId;
+      const lista = (await leerTodas(`/advisees/${A}/anthropometry/evaluations`)).filter((t) => t.state === 'REGISTERED').sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || (b.registeredAt ?? '').localeCompare(a.registeredAt ?? ''));
+      const detalleDe = new Map();
+      for (const t of lista) detalleDe.set(t.evaluationId, (await leerApi(v, `/anthropometry/evaluations/${t.evaluationId}`)).data);
+      const corridas = await leerTodas(`/advisees/${A}/calculations`);
+      const metodos = await leerTodas('/professional-methods');
+      const E = esperadoDeTomas({ lista, detalleDe, corridas, metodos, yo });
+      return { E, corridas, metodos, toma: E.tomas.find((x) => x.id === T.evaluationId), detalle: detalleDe.get(T.evaluationId) };
+    };
+    const fila = (id) => `button.medicion-de-la-toma[data-medicion="${id}"]`;
+    const abrirFila = async (selector) => {
+      await page.click(selector).catch(() => {});
+      await page.waitForSelector(`${PANEL} .medicion-abierta, ${PANEL} .nuevo-calculo`, { timeout: 15_000 }).catch(() => {});
+      await pausa(250);
+      return tomasEnPantalla(page);
+    };
+    const cerrarPanel = async () => {
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.querySelector('dialog.dialogo--panel[open]'), { timeout: 10_000 }).catch(() => {});
+      await pausa(150);
+    };
+    const escribir = async (selector, valor) => {
+      await page.focus(selector);
+      await page.keyboard.down('Control');
+      await page.keyboard.press('KeyA');
+      await page.keyboard.up('Control');
+      await page.keyboard.press('Backspace');
+      if (valor) await page.type(selector, valor);
+    };
+    const apagado = (selector, contiene) => page.evaluate((s, c) => [...document.querySelectorAll(s)].find((b) => b.innerText.includes(c))?.disabled ?? null, selector, contiene);
+
+    await iniciarSesion(page, v, d.proCorreo, `/pro/advisees?id=${A}`);
+    await quieto(page, v);
+    await ir(page, BASE);
+    await page.waitForSelector('article.toma-abierta', { timeout: 30_000 });
+    await quieto(page, v);
+
+    // ── La toma completa, como la dibuja la maqueta 22 ─────────────────────────────────────────────────────────
+    const antes = await leerTodo();
+    const alEntrar = await tomasEnPantalla(page);
+    const resultadosAntes = antes.E.resultadosDe(T.evaluationId);
+    comprobar(
+      'F-36',
+      'La toma del perfil completo abre sola (es la más reciente) y se lee como la maqueta 22: las 30 mediciones en sus cinco familias, en el orden del catálogo, con la unidad en el título de la familia donde todas la comparten; y sus resultados calculados, por categoría',
+      alEntrar.toma?.id === T.evaluationId &&
+        igual(alEntrar.toma.familias.map((f) => ({ familia: f.familia, titulo: f.titulo, filas: f.filas })), antes.toma.familias) &&
+        igual(antes.toma.familias.map((f) => [f.familia, f.filas.length]), [['MASA_Y_ESTATURA', 2], ['PLIEGUES', 11], ['PERIMETROS', 13], ['DIAMETROS', 3], ['OTRAS', 1]]) &&
+        igual(alEntrar.toma.categorias, resultadosAntes.categorias) &&
+        resultadosAntes.categorias.flatMap((c) => c.resultados).length === T.corridas.length &&
+        alEntrar.toma.anteriores === null &&
+        antes.toma.cuentas === '30 mediciones',
+      `${antes.toma.familias.map((f) => `${f.titulo} (${f.filas.length})`).join(' · ')} · ${resultadosAntes.categorias.map((c) => `${c.titulo} (${c.resultados.length})`).join(' · ')} · «${antes.toma.cuentas}»`,
+    );
+
+    // ── Corregir la cintura: primero una falla simulada, después de verdad ────────────────────────────────────────
+    const cintura = antes.detalle.measurements.find((m) => m.metric === 'perimetro-cintura');
+    const VALOR = '84';
+    const MOTIVO = 'Valor tipeado mal: era 84';
+    const FORM = `${PANEL} [data-formulario="corregir"]`;
+    await abrirFila(fila(cintura.measurementId));
+    await clic(page, `${PANEL} .medicion-abierta__pie button`, 'Corregir medición');
+    await page.waitForSelector(FORM, { timeout: 10_000 }).catch(() => {});
+    const sinNada = await apagado(`${FORM} .acciones button`, 'Corregir medición');
+    await escribir(`#corr-valor-${cintura.measurementId}`, '84,5,1');
+    await escribir(`#corr-motivo-${cintura.measurementId}`, MOTIVO);
+    const conAlgo = await apagado(`${FORM} .acciones button`, 'Corregir medición');
+    const alIntentar = v.urls.length;
+    await clic(page, `${FORM} .acciones button`, 'Corregir medición');
+    await pausa(300);
+    const numeroIlegible = await page.evaluate((id) => ({ invalido: document.querySelector(`#corr-valor-${id}`)?.getAttribute('aria-invalid'), texto: document.querySelector('dialog.dialogo--panel[open] [data-formulario="corregir"]')?.innerText.replace(/\s+/g, ' ').trim() ?? '' }), cintura.measurementId);
+    comprobar(
+      'F-37',
+      'Corregir pide el valor y el motivo: sin los dos el botón está apagado (con los dos, la misma consulta lo encuentra encendido). Un valor que no se entiende como número se marca en su campo y no sale ningún pedido',
+      sinNada === true && conAlgo === false && numeroIlegible.invalido === 'true' && escrituras('/corrections', alIntentar).length === 0,
+      `sin nada: ${sinNada ? 'apagado' : 'encendido'} · con valor y motivo: ${conAlgo ? 'apagado' : 'encendido'} · «84,5,1»: ${numeroIlegible.invalido === 'true' ? 'marcado en el campo' : 'sin marcar'} · pedidos: ${escrituras('/corrections', alIntentar).length}`,
+    );
+    await escribir(`#corr-valor-${cintura.measurementId}`, VALOR);
+    // Una falla al guardar (un 503 simulado en el navegador): se dice en el panel, y lo escrito queda.
+    const sinGuardar = { coincide: (u) => u.includes(`/anthropometry/evaluations/${T.evaluationId}/corrections`), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' };
+    v.reglas.push(sinGuardar);
+    await clic(page, `${FORM} .acciones button`, 'Corregir medición');
+    await page.waitForSelector(`${PANEL} .aviso--error`, { timeout: 15_000 }).catch(() => {});
+    await quieto(page, v);
+    v.reglas.splice(v.reglas.indexOf(sinGuardar), 1);
+    const conLaFalla = await tomasEnPantalla(page);
+    const loEscrito = await page.evaluate((id) => [document.querySelector(`#corr-valor-${id}`)?.value ?? null, document.querySelector(`#corr-motivo-${id}`)?.value ?? null], cintura.measurementId);
+    comprobar(
+      'F-37',
+      'Si la corrección no se puede guardar (un 503 simulado), el panel lo dice adentro, sigue abierto con el formulario y lo escrito, y la medición no cambió',
+      !!conLaFalla.panel?.error && conLaFalla.panel.formulario === 'corregir' && igual(loEscrito, [VALOR, MOTIVO]) && conLaFalla.panel.valor === `${antes.E.num(cintura.magnitude.value)} cm` && !conLaFalla.panel.marcas.includes('Corregida'),
+      `«${(conLaFalla.panel?.error ?? '').slice(0, 90)}» · lo escrito: ${loEscrito.join(' | ')} · el valor: ${conLaFalla.panel?.valor}`,
+    );
+    const alCorregir = v.urls.length;
+    await clic(page, `${FORM} .acciones button`, 'Corregir medición');
+    await page.waitForSelector(`${PANEL} .aviso--exito`, { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const corregido = await leerTodo();
+    const trasCorregir = await tomasEnPantalla(page);
+    const cinturaAhora = corregido.detalle.measurements.find((m) => m.measurementId === cintura.measurementId);
+    // Lo que cambió, a mano: las corridas vigentes de la toma que reemplazan a otra y usaron la cintura con otro valor.
+    const entrada = (c) => c.inputProvenance.find((i) => i.sourceRef === cintura.measurementId) ?? null;
+    const recalculadas = corregido.corridas
+      .filter((c) => c.evaluationId === T.evaluationId && corregido.E.vigente(c) && c.supersedesRunId && entrada(c))
+      .map((c) => ({ c, anterior: corregido.corridas.find((x) => x.calculationRunId === c.supersedesRunId) }))
+      .filter(({ c, anterior }) => anterior && entrada(anterior) && entrada(c).magnitude.value !== entrada(anterior).magnitude.value)
+      .sort((a, b) => a.c.methodName.localeCompare(b.c.methodName, 'es'))
+      .map(({ c, anterior }) => ({ nombre: c.methodName, valores: `${corregido.E.valorDe(c)} antes ${corregido.E.valorDe(anterior)}` }));
+    comprobar(
+      'F-37',
+      'Al corregir sale un solo pedido, con el valor, el motivo y la unidad de la medición. El panel sigue abierto y lo dice: el valor que rige es el corregido, con la marca «Corregida», y la historia tiene la corrección (con su motivo, «La corregiste vos» y marcada como el valor vigente) y el valor original, que se conserva',
+      escrituras(`/anthropometry/evaluations/${T.evaluationId}/corrections`, alCorregir).length === 1 &&
+        cinturaAhora.effectiveMagnitude.value === 84 &&
+        cinturaAhora.magnitude.value === cintura.magnitude.value &&
+        trasCorregir.panel?.exito === 'Corrección registrada. El valor original se conserva.' &&
+        trasCorregir.panel.valor === '84 cm' &&
+        trasCorregir.panel.marcas.includes('Corregida') &&
+        trasCorregir.panel.formulario === null &&
+        igual(trasCorregir.panel.historia, corregido.E.historiaDe(cinturaAhora)) &&
+        trasCorregir.panel.historia[0]?.titulo === 'Corrección: 84 cm Valor vigente' &&
+        trasCorregir.panel.historia[0].nota === `Por qué se corrigió: «${MOTIVO}». La corregiste vos.` &&
+        trasCorregir.panel.historia.at(-1).titulo === `Valor original: ${antes.E.num(cintura.magnitude.value)} cm`,
+      `pedidos: ${escrituras('/corrections', alCorregir).length} · «${trasCorregir.panel?.exito}» · ${trasCorregir.panel?.valor} · ${trasCorregir.panel?.historia.map((h) => `${h.titulo} — ${h.nota}`).join(' | ').slice(0, 200)}`,
+    );
+    const bloqueDelCambio = trasCorregir.panel?.bloques.find((b) => b.titulo === 'Lo que cambió con la corrección') ?? null;
+    comprobar(
+      'F-38',
+      '«Lo que cambió con la corrección» lista los resultados que la API volvió a calcular porque usaban la cintura, cada uno con el valor de ahora y el de antes (el de la corrida que reemplaza, según la API): no uno más ni uno menos, y ningún resultado que no la usa',
+      recalculadas.length >= 2 &&
+        !!bloqueDelCambio &&
+        bloqueDelCambio.texto.includes(`Se volvieron a calcular los ${recalculadas.length} resultados que usan esta medición. Los anteriores se conservan, sin efecto.`) &&
+        igual(trasCorregir.panel.cambios, [{ clase: 'recalculados', filas: recalculadas }]) &&
+        !recalculadas.some((r) => /Índice de masa corporal/.test(r.nombre)),
+      `${recalculadas.map((r) => `${r.nombre}: ${r.valores}`).join(' · ')} — a la vista: ${JSON.stringify(trasCorregir.panel?.cambios ?? null).slice(0, 200)}`,
+    );
+    const faltasConElCambio = await axe(page);
+    await cerrarPanel();
+    const conLaCorreccion = await tomasEnPantalla(page);
+    const resultadosCorregidos = corregido.E.resultadosDe(T.evaluationId);
+    comprobar(
+      'F-39',
+      'Cerrado el panel, la toma ya dice lo nuevo sin volver a entrar: la fila de la cintura muestra 84 con «Corregida», la lista dice «1 corregida», los resultados que usaban la cintura muestran su valor nuevo, y los anteriores quedan a un clic («Ver N anteriores, sin efecto»), cada uno con «Sin efecto»',
+      igual(conLaCorreccion.toma?.familias.map((f) => ({ familia: f.familia, titulo: f.titulo, filas: f.filas })), corregido.toma.familias) &&
+        corregido.toma.familias.flatMap((f) => f.filas).find((x) => x.id === cintura.measurementId)?.valor === '84' &&
+        (conLaCorreccion.tramos ?? []).flatMap((x) => x.tomas).find((x) => x.id === T.evaluationId)?.cuentas === '30 mediciones · 1 corregida' &&
+        igual(conLaCorreccion.toma.categorias, resultadosCorregidos.categorias) &&
+        resultadosCorregidos.sinEfecto.length === recalculadas.length &&
+        conLaCorreccion.toma.anteriores === `Ver ${recalculadas.length} anteriores, sin efecto`,
+      `la fila: ${JSON.stringify(conLaCorreccion.toma?.familias.flatMap((f) => f.filas).find((x) => x.id === cintura.measurementId) ?? null).slice(0, 150)} · «${conLaCorreccion.toma?.anteriores}»`,
+    );
+    await clic(page, 'article.toma-abierta button[aria-controls="anteriores-sin-efecto"]', 'anteriores').catch(() => null);
+    await pausa(250);
+    const conLosAnteriores = await tomasEnPantalla(page);
+    const sinEfectoEsperados = resultadosCorregidos.sinEfecto.map((c) => ({ id: c.calculationRunId, nombre: c.methodName, valor: corregido.E.valorDe(c) }));
+    const mismos = (a, b) => igual([...a].sort((x, y) => x.id.localeCompare(y.id)), [...b].sort((x, y) => x.id.localeCompare(y.id)));
+    comprobar(
+      'F-39',
+      'Los cálculos que quedaron sin efecto se abren a pedido, en el lugar: son los que la API da por reemplazados, cada uno con su método y el valor que tenía',
+      sinEfectoEsperados.length > 0 && mismos(conLosAnteriores.toma?.sinEfecto ?? [], sinEfectoEsperados),
+      `${(conLosAnteriores.toma?.sinEfecto ?? []).map((x) => `${x.nombre} ${x.valor}`).join(' · ')}`,
+    );
+
+    // ── Anular un pliegue que alimenta una suma: el resultado queda sin efecto, sin un cero en su lugar ───────────────
+    const pantorrilla = corregido.detalle.measurements.find((m) => m.metric === 'pliegue-pantorrilla');
+    const RAZON = 'El calibre estaba mal apoyado';
+    const ANULAR = `${PANEL} [data-formulario="anular"]`;
+    await abrirFila(fila(pantorrilla.measurementId));
+    await clic(page, `${PANEL} .medicion-abierta__pie button`, 'Anular esta medición');
+    await page.waitForSelector(ANULAR, { timeout: 10_000 }).catch(() => {});
+    const antesDeAnular = await page.evaluate(() => {
+      const f = document.querySelector('dialog.dialogo--panel[open] [data-formulario="anular"]');
+      const aviso = f?.querySelector('.aviso');
+      const boton = [...(f?.querySelectorAll('.acciones button') ?? [])].find((b) => b.innerText.includes('Anular esta medición'));
+      return { aviso: aviso?.innerText.replace(/\s+/g, ' ').trim() ?? '', avisoAntesDelBoton: !!aviso && !!boton && !!(aviso.compareDocumentPosition(boton) & Node.DOCUMENT_POSITION_FOLLOWING), apagado: boton?.disabled ?? null, primario: boton?.classList.contains('boton--primario') ?? null };
+    });
+    await escribir(`#anul-motivo-${pantorrilla.measurementId}`, RAZON);
+    const alAnular = v.urls.length;
+    await clic(page, `${ANULAR} .acciones button`, 'Anular esta medición');
+    await page.waitForSelector(`${PANEL} .aviso--exito`, { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const anulado = await leerTodo();
+    const trasAnular = await tomasEnPantalla(page);
+    const pantorrillaAhora = anulado.detalle.measurements.find((m) => m.measurementId === pantorrilla.measurementId);
+    const quedaronSinEfecto = anulado.corridas
+      .filter((c) => c.evaluationId === T.evaluationId && !c.effective && c.supersededByRunId === null && c.inputProvenance.some((i) => i.sourceRef === pantorrilla.measurementId))
+      .sort((a, b) => a.methodName.localeCompare(b.methodName, 'es'))
+      .map((c) => ({ nombre: c.methodName, valores: `antes ${anulado.E.valorDe(c)}` }));
+    comprobar(
+      'F-37',
+      'Anular dice antes del botón que no borra nada y que no se reactiva, pide el motivo (sin él, el botón está apagado) y su botón no es el principal. Al anular sale un solo pedido; el panel sigue abierto y dice «Anulada», conserva el valor, cuenta la anulación con su motivo («La anulaste vos») y ya no ofrece ninguna acción',
+      /Anular no borra nada/.test(antesDeAnular.aviso) &&
+        /Una medición anulada no se reactiva\./.test(antesDeAnular.aviso) &&
+        antesDeAnular.avisoAntesDelBoton &&
+        antesDeAnular.apagado === true &&
+        antesDeAnular.primario === false &&
+        escrituras(`/anthropometry/measurements/${pantorrilla.measurementId}/annulments`, alAnular).length === 1 &&
+        pantorrillaAhora.condition === 'ANNULLED' &&
+        trasAnular.panel?.exito === 'Medición anulada. Su historia se conserva.' &&
+        trasAnular.panel.marcas.includes('Anulada') &&
+        !trasAnular.panel.marcas.includes('Vigente') &&
+        trasAnular.panel.valor === `${anulado.E.num(pantorrilla.magnitude.value)} mm` &&
+        igual(trasAnular.panel.historia, anulado.E.historiaDe(pantorrillaAhora)) &&
+        trasAnular.panel.historia[0]?.nota === `Por qué se anuló: «${RAZON}». La anulaste vos.` &&
+        igual(trasAnular.panel.acciones, []),
+      `antes: «${antesDeAnular.aviso.slice(0, 60)}…» · pedidos: ${escrituras('/annulments', alAnular).length} · «${trasAnular.panel?.exito}» · ${trasAnular.panel?.marcas.join(', ')} · ${trasAnular.panel?.historia[0]?.nota} · acciones: ${trasAnular.panel?.acciones.length}`,
+    );
+    const bloqueDeLaAnulacion = trasAnular.panel?.bloques.find((b) => b.titulo === 'Lo que pasó con los resultados') ?? null;
+    await cerrarPanel();
+    const conLaAnulacion = await tomasEnPantalla(page);
+    const resultadosTrasAnular = anulado.E.resultadosDe(T.evaluationId);
+    comprobar(
+      'F-38',
+      'Los resultados que usaban la medición anulada quedan sin efecto y sin un cálculo que los reemplace: el panel los nombra con el valor que tenían y dice que no se reemplazan por cero; en la toma dejan de estar entre los vigentes (no aparece un cero ni un resultado vacío) y pasan a los anteriores. La fila queda con «Anulada» y su valor, y la lista dice «1 anulada»',
+      quedaronSinEfecto.length >= 1 &&
+        !!bloqueDeLaAnulacion &&
+        bloqueDeLaAnulacion.texto.includes('No se pudo recalcular: falta una medición vigente. No se reemplaza por cero.') &&
+        igual(trasAnular.panel.cambios, [{ clase: 'sin-recalcular', filas: quedaronSinEfecto }]) &&
+        igual(conLaAnulacion.toma?.categorias, resultadosTrasAnular.categorias) &&
+        !resultadosTrasAnular.categorias.flatMap((c) => c.resultados).some((r) => quedaronSinEfecto.some((q) => q.nombre === r.nombre)) &&
+        igual(conLaAnulacion.toma.familias.map((f) => ({ familia: f.familia, titulo: f.titulo, filas: f.filas })), anulado.toma.familias) &&
+        anulado.toma.familias.flatMap((f) => f.filas).find((x) => x.id === pantorrilla.measurementId)?.anulada === true &&
+        (conLaAnulacion.tramos ?? []).flatMap((x) => x.tomas).find((x) => x.id === T.evaluationId)?.cuentas === '30 mediciones · 1 corregida · 1 anulada',
+      `${quedaronSinEfecto.map((r) => `${r.nombre}: ${r.valores}`).join(' · ')} · «${(bloqueDeLaAnulacion?.texto ?? '').slice(0, 140)}» · vigentes: ${resultadosTrasAnular.categorias.flatMap((c) => c.resultados).length}`,
+    );
+
+    // ── Calcular con un método que la toma cubre y todavía no tiene ───────────────────────────────────────────────
+    const vigentesAhora = new Set(anulado.corridas.filter((c) => c.evaluationId === T.evaluationId && anulado.E.vigente(c)).map((c) => c.methodVersionId));
+    const conValor = new Set(anulado.detalle.measurements.filter((m) => m.condition === 'EFFECTIVE' && m.effectiveMagnitude).map((m) => m.metric));
+    const metodo =
+      anulado.metodos.find((m) => /conicidad/i.test(m.name) && !vigentesAhora.has(m.methodVersionId) && m.requiredInputs.every((x) => conValor.has(x.metric))) ??
+      anulado.metodos.find((m) => !vigentesAhora.has(m.methodVersionId) && m.requiredInputs.every((x) => conValor.has(x.metric)));
+    await clic(page, 'article.toma-abierta .toma-abierta__acciones-de-bloque button', 'Calcular con un método');
+    await page.waitForSelector(`${PANEL} .nuevo-calculo`, { timeout: 15_000 }).catch(() => {});
+    if (metodo) await page.select('#cal-metodo', metodo.methodVersionId);
+    await pausa(300);
+    const fichaDelMetodo = await texto(page, `${PANEL} .ficha-de-metodo`);
+    const alCalcular = v.urls.length;
+    await clic(page, `${PANEL} .nuevo-calculo > .acciones button`, 'Calcular');
+    await page.waitForSelector(`${PANEL} .resultado-abierto .aviso--exito`, { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const calculado = await leerTodo();
+    const trasCalcular = await tomasEnPantalla(page);
+    const nueva = calculado.corridas.find((c) => c.evaluationId === T.evaluationId && c.methodVersionId === metodo?.methodVersionId && calculado.E.vigente(c)) ?? null;
+    await cerrarPanel();
+    const conElNuevo = await tomasEnPantalla(page);
+    comprobar(
+      'F-39',
+      '«Calcular con un método» muestra la ficha del método elegido con lo que pide; al calcular sale un solo pedido y el panel pasa a mostrar el resultado nuevo, con su método, su valor con la precisión declarada y sus entradas. Cerrado el panel, el resultado está en su categoría, sin haber vuelto a entrar',
+      !!metodo &&
+        !!nueva &&
+        fichaDelMetodo.includes(metodo.name) &&
+        escrituras(`/advisees/${A}/calculations`, alCalcular).length === 1 &&
+        trasCalcular.panel?.titulo === 'Resultado calculado' &&
+        trasCalcular.panel.exito === 'Cálculo registrado. Queda con su método, su versión y sus entradas a la vista.' &&
+        trasCalcular.panel.deDonde === nueva.methodName &&
+        trasCalcular.panel.valor === calculado.E.valorDe(nueva) &&
+        trasCalcular.panel.entradas === nueva.inputProvenance.length &&
+        igual(conElNuevo.toma?.categorias, calculado.E.resultadosDe(T.evaluationId).categorias) &&
+        conElNuevo.toma.categorias.flatMap((c) => c.resultados).some((r) => r.id === nueva.calculationRunId),
+      metodo ? `«${metodo.name}» · pedidos: ${escrituras('/calculations', alCalcular).length} · ${trasCalcular.panel?.deDonde} ${trasCalcular.panel?.valor} · ${trasCalcular.panel?.entradas} entradas` : 'no hay un método que la toma cubra y no tenga calculado',
+    );
+
+    // ── Dejar un resultado como referencia: un acto del profesional, dicho antes del botón ─────────────────────────────
+    const paraReferencia = calculado.corridas.find((c) => c.evaluationId === T.evaluationId && calculado.E.vigente(c) && !c.referenceForPurpose && /7 pliegues, mujeres/.test(c.methodName)) ?? calculado.corridas.find((c) => c.evaluationId === T.evaluationId && calculado.E.vigente(c) && !c.referenceForPurpose);
+    await abrirFila(`button.resultado-de-la-toma[data-resultado="${paraReferencia.calculationRunId}"]`);
+    await clic(page, `${PANEL} .medicion-abierta__pie button`, 'Dejar como referencia');
+    await page.waitForSelector(`${PANEL} [data-formulario="referencia"]`, { timeout: 10_000 }).catch(() => {});
+    const antesDeLaReferencia = await texto(page, `${PANEL} [data-formulario="referencia"] .aviso`);
+    await escribir(`#ref-fundamento-${paraReferencia.calculationRunId}`, 'Es el método con que la vengo siguiendo');
+    const alAdoptar = v.urls.length;
+    await clic(page, `${PANEL} [data-formulario="referencia"] .acciones button`, 'Dejar como referencia');
+    await page.waitForSelector(`${PANEL} .aviso--exito`, { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const conReferencia = await leerTodo();
+    const trasAdoptar = await tomasEnPantalla(page);
+    await cerrarPanel();
+    const alFinal = await tomasEnPantalla(page);
+    const referencias = conReferencia.corridas.filter((c) => c.referenceForPurpose && c.purpose === paraReferencia.purpose).map((c) => c.calculationRunId);
+    comprobar(
+      'F-39',
+      '«Dejar como referencia» explica antes del botón que no cambia el cálculo ni borra los otros; al confirmarlo sale un solo pedido, el panel lo dice, el resultado queda marcado «Referencia» en el panel y en la toma, y ya no ofrece dejarlo otra vez. Es el único marcado: BE no marca ninguno por su cuenta',
+      /no cambia el cálculo ni borra los otros/.test(antesDeLaReferencia) &&
+        escrituras(`/advisees/${A}/calculation-references/`, alAdoptar).length === 1 &&
+        igual(referencias, [paraReferencia.calculationRunId]) &&
+        /^Referencia registrada\. Los demás cálculos se conservan\./.test(trasAdoptar.panel?.exito ?? '') &&
+        trasAdoptar.panel.marcas.includes('Referencia') &&
+        igual(trasAdoptar.panel.acciones, []) &&
+        igual(alFinal.toma?.categorias, conReferencia.E.resultadosDe(T.evaluationId).categorias) &&
+        igual(alFinal.toma.categorias.flatMap((c) => c.resultados).filter((r) => r.marcas.includes('Referencia')).map((r) => r.id), [paraReferencia.calculationRunId]),
+      `«${paraReferencia.methodName}» · pedidos: ${escrituras('/calculation-references/', alAdoptar).length} · «${trasAdoptar.panel?.exito}» · con «Referencia» en la toma: ${alFinal.toma?.categorias.flatMap((c) => c.resultados).filter((r) => r.marcas.includes('Referencia')).map((r) => r.nombre).join(', ')}`,
+    );
+    const faltas = await axe(page);
+    comprobar('F-37', 'axe no encuentra faltas en la toma completa, ni en el panel de una medición corregida con lo que cambió', faltas.length === 0 && faltasConElCambio.length === 0, `la toma: ${faltas.map((f) => f.id).join(', ') || 'sin faltas'} · el panel: ${faltasConElCambio.map((f) => f.id).join(', ') || 'sin faltas'}`);
+    comprobar('—', 'Corregir, anular, calcular y dejar una referencia no produjeron errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+  } finally {
+    await navegador.close();
+  }
+}
+
+async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true, registros = true, sesiones = true, tomas = true, estimacion = false } = {}) {
   const { navegador, page, v } = await abrir();
   // Los guiones que pide la página, desde antes de entrar: para saber con qué se cargó la ficha.
   const guiones = [];
@@ -6444,6 +7495,10 @@ async function fichaRecompuesta({ resumen = true, linea = true, analizar = true,
     if (sesiones) {
       empezarDeCero();
       await sesionesDeEntrenamiento(page, v);
+    }
+    if (tomas) {
+      empezarDeCero();
+      await tomasDeAntropometria(page, v);
     }
     // Escribe en el escenario: solo cuando se lo pide (`estimacion`), nunca dentro de `funcional`.
     if (estimacion) {
@@ -7023,7 +8078,7 @@ async function descartable() {
         marcoRevocado?.acceso === 'Acceso actual Antropometría: Consentimiento revocado Acceso no disponible' &&
         !/Activo/.test(marcoRevocado.acceso) &&
         marcoRevocado.cuerpo.includes('No encontramos un recurso disponible para esta acción.') &&
-        marcoRevocado.pestanas.length === 4 &&
+        marcoRevocado.pestanas.length === 3 &&
         marcoConAcceso?.acceso === `Acceso actual ${conAcceso.scope.label}: Activo · acceso contextual`,
       `Antropometría: ${marcoRevocado?.acceso} · «${(marcoRevocado?.cuerpo ?? '').slice(0, 70)}» · ${conAcceso?.scope.label ?? 'sin otra área con acceso'}: ${marcoConAcceso?.acceso}`,
     );
@@ -7042,14 +8097,16 @@ try {
   if (modo === 'capturas' || modo === 'todo') await capturas();
   if (modo === 'descartable') await descartable();
   if (modo === 'menu') await encabezadoYMenu();
-  if (modo === 'analizar') await fichaRecompuesta({ resumen: false, linea: false, espacio: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'resumen') await fichaRecompuesta({ linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'linea') await fichaRecompuesta({ resumen: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'espacio') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'areas') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, registros: false, sesiones: false });
-  if (modo === 'registros') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false, sesiones: false });
-  if (modo === 'sesiones') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false });
-  if (modo === 'estimacion') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false, estimacion: true });
+  if (modo === 'analizar') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'resumen') await fichaRecompuesta({ tomas: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'linea') await fichaRecompuesta({ tomas: false, resumen: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'espacio') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'areas') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, espacio: false, registros: false, sesiones: false });
+  if (modo === 'registros') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, sesiones: false });
+  if (modo === 'sesiones') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false });
+  if (modo === 'tomas') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'mediciones') await medicionesDeUnaToma();
+  if (modo === 'estimacion') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false, estimacion: true });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {

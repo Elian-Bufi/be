@@ -7235,3 +7235,588 @@ button.comida-del-dia__fila > .icono:last-child {
     margin-left: 0;
   }
 }
+
+/* ─── Antropometría · Tomas (WP-ESCRITORIO-AREAS, parte 3; maquetas 22 y 29) ───────── */
+/* La lista de tomas a la izquierda, en tramos del mismo protocolo, y la toma elegida a la derecha: lo que vale para toda
+   la toma, sus resultados calculados y sus mediciones por familia. Una medición o un resultado se abren encima, en un
+   panel. Comparte el encabezado con los Registros (`.registros*`). */
+.tomas-del-area__preparar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem 0.75rem;
+  margin-left: auto;
+}
+
+.tomas-del-area__preparar .nota {
+  margin: 0;
+}
+
+.tomas-del-area__cuerpo {
+  display: grid;
+  grid-template-columns: 17.5rem minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* El selector es la misma lista para una ventana angosta: se muestra uno u otro, nunca los dos. */
+.tomas-del-area__selector {
+  display: none;
+  margin: 0;
+}
+
+.tomas-del-area__toma {
+  min-width: 0;
+}
+
+.tomas-del-area__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.tomas-del-area__lista > .nota {
+  margin: 0 0.6rem;
+}
+
+.tramo-de-tomas + .tramo-de-tomas {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--borde);
+}
+
+.tramo-de-tomas__protocolo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0.25rem 0.6rem 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.tramo-de-tomas__protocolo .icono {
+  flex: none;
+  margin-top: 0.1rem;
+  color: var(--tenue);
+}
+
+.tramo-de-tomas__tomas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.toma-de-la-lista {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.toma-de-la-lista:hover {
+  background: var(--fondo-suave);
+}
+
+.toma-de-la-lista:focus-visible {
+  outline-offset: -3px;
+}
+
+.toma-de-la-lista[aria-current='true'] {
+  box-shadow: inset 0 0 0 2px var(--boton-secundario-borde);
+}
+
+.toma-de-la-lista__fecha {
+  font-weight: 600;
+}
+
+.toma-de-la-lista__cuentas {
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+/* La toma elegida: una sola superficie, con sus bloques separados por una línea. */
+.toma-abierta {
+  min-width: 0;
+  padding: 0.9rem 1.25rem 1.1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.toma-abierta__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.toma-abierta__encabezado h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.toma-abierta__lamina {
+  margin-left: auto;
+}
+
+.toma-abierta__metadatos {
+  margin: 0.3rem 0 0;
+}
+
+/* El título de un bloque de la toma, con lo que lo acompaña en el mismo renglón: una marca, una frase y sus acciones. */
+.toma-abierta__titulo-de-bloque {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.toma-abierta__titulo-de-bloque h3,
+.toma-abierta__titulo-de-bloque .nota {
+  margin: 0;
+}
+
+.toma-abierta__titulo-de-bloque h3 {
+  font-size: 1.1rem;
+}
+
+.toma-abierta__acciones-de-bloque {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.9rem;
+  margin-left: auto;
+}
+
+.resultados-de-la-toma,
+.mediciones-de-la-toma {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--borde);
+}
+
+.resultados-de-la-toma__sin-calculos {
+  margin: 0;
+}
+
+/* Los resultados, por categoría del catálogo, en columnas: hasta tres, y cada categoría entera en la suya. Con más
+   categorías que columnas, las que siguen se acomodan debajo de las más cortas, sin dejar un hueco. */
+.categorias-de-resultados {
+  columns: 17rem 3;
+  column-gap: 1.5rem;
+}
+
+.categoria-de-resultados {
+  break-inside: avoid;
+  margin-bottom: 0.6rem;
+}
+
+.categoria-de-resultados h4,
+.familia-de-la-toma h4,
+.anteriores-sin-efecto h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.15rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.categoria-de-resultados h4 .icono,
+.familia-de-la-toma h4 .icono {
+  color: var(--tenue);
+}
+
+.categoria-de-resultados ul,
+.anteriores-sin-efecto ul,
+.mediciones-de-la-familia {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.anteriores-sin-efecto {
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.9rem 0.3rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.anteriores-sin-efecto .nota {
+  margin: 0 0 0.3rem;
+}
+
+/* Un resultado o una medición: un renglón que se toca entero. El nombre a la izquierda, sus marcas y el valor a la
+   derecha, alineado con los demás. */
+.resultado-de-la-toma,
+.medicion-de-la-toma {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  /* Lo que se toca mide 44 px, también en el escritorio (guía, I.5). */
+  min-height: 2.75rem;
+  padding: 0.25rem 0.15rem;
+  border: 0;
+  border-bottom: 1px solid var(--borde);
+  border-radius: 0;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.resultado-de-la-toma:hover,
+.medicion-de-la-toma:hover {
+  background: var(--fondo-suave);
+}
+
+.resultado-de-la-toma:focus-visible,
+.medicion-de-la-toma:focus-visible {
+  outline-offset: -2px;
+}
+
+/* El nombre y sus marcas van juntos y pueden ocupar dos renglones; el valor queda siempre en su lugar, a la derecha. */
+.resultado-de-la-toma__que,
+.medicion-de-la-toma__que {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.5rem;
+  min-width: 0;
+}
+
+.resultado-de-la-toma__valor,
+.medicion-de-la-toma__valor {
+  flex: none;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.medicion-de-la-toma__valor {
+  font-weight: 600;
+}
+
+.resultado-de-la-toma__unidad,
+.familia-de-la-toma__unidad {
+  color: var(--tenue);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+/* Una medición anulada conserva su valor a la vista, atenuado: dejó de contar. La marca dice por qué. */
+.medicion-de-la-toma[data-anulada] .medicion-de-la-toma__nombre,
+.medicion-de-la-toma[data-anulada] .medicion-de-la-toma__valor {
+  color: var(--tenue);
+}
+
+/* Las familias, en tres columnas: lo corto a la izquierda (masa y estatura, diámetros, lo demás); pliegues y
+   perímetros, cada uno en la suya, en dos subcolumnas si entran. El orden del documento es el del dominio. */
+.familias-de-la-toma {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.75fr);
+  grid-template-areas:
+    'masa pliegues perimetros'
+    'diametros pliegues perimetros'
+    'otras pliegues perimetros'
+    '. pliegues perimetros';
+  grid-template-rows: auto auto auto 1fr;
+  align-items: start;
+  gap: 0.9rem 1.6rem;
+}
+
+.familia-de-la-toma {
+  min-width: 0;
+}
+
+.familia-de-la-toma[data-familia='MASA_Y_ESTATURA'] {
+  grid-area: masa;
+}
+
+.familia-de-la-toma[data-familia='DIAMETROS'] {
+  grid-area: diametros;
+}
+
+.familia-de-la-toma[data-familia='OTRAS'] {
+  grid-area: otras;
+}
+
+.familia-de-la-toma[data-familia='PLIEGUES'] {
+  grid-area: pliegues;
+}
+
+.familia-de-la-toma[data-familia='PERIMETROS'] {
+  grid-area: perimetros;
+}
+
+.familia-de-la-toma[data-familia='PLIEGUES'] .mediciones-de-la-familia,
+.familia-de-la-toma[data-familia='PERIMETROS'] .mediciones-de-la-familia {
+  columns: 8.25rem 2;
+  column-gap: 1.4rem;
+}
+
+.mediciones-de-la-familia > li {
+  break-inside: avoid;
+}
+
+/* ─── Una medición o un resultado, en el panel ───────── */
+.medicion-abierta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.medicion-abierta > .aviso,
+.medicion-abierta .nota,
+.medicion-abierta p {
+  margin: 0;
+}
+
+.medicion-abierta__titular {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+}
+
+.medicion-abierta__valor {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.medicion-abierta__marcas {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.medicion-abierta__datos {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.25rem 1.25rem;
+  margin: 0;
+}
+
+.medicion-abierta__datos > div {
+  display: contents;
+}
+
+.medicion-abierta__datos dt {
+  color: var(--tenue);
+}
+
+.medicion-abierta__datos dd {
+  margin: 0;
+}
+
+.medicion-abierta__bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--borde);
+}
+
+.medicion-abierta__bloque h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* La historia: cuándo, a la izquierda; qué quedó registrado, a la derecha. De lo más nuevo a lo más viejo. */
+.historia-de-medicion {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.historia-de-medicion__evento {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 0.2rem 1rem;
+  padding: 0.5rem 0;
+}
+
+.historia-de-medicion__evento + .historia-de-medicion__evento {
+  border-top: 1px solid var(--borde);
+}
+
+.historia-de-medicion__cuando {
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+.historia-de-medicion__titulo {
+  font-weight: 600;
+}
+
+.historia-de-medicion__que {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+/* Lo que cambió en los resultados: el de ahora, destacado; el de antes, al lado y atenuado. */
+.cambios-de-resultados,
+.entradas-del-calculo {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cambios-de-resultados li,
+.entradas-del-calculo li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.9rem;
+  padding: 0.3rem 0;
+}
+
+.cambios-de-resultados li + li,
+.entradas-del-calculo li + li {
+  border-top: 1px solid var(--borde);
+}
+
+.cambios-de-resultados__nombre,
+.entradas-del-calculo__nombre {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.cambios-de-resultados__valores,
+.entradas-del-calculo__valor {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.cambios-de-resultados__antes {
+  margin-left: 0.5rem;
+  color: var(--tenue);
+}
+
+.entradas-del-calculo__valor {
+  font-weight: 600;
+}
+
+.entradas-del-calculo__de-donde {
+  flex-basis: 100%;
+}
+
+/* Las acciones y sus formularios van al pie del panel, separados de lo que se lee. */
+.medicion-abierta__pie {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--borde);
+}
+
+.medicion-abierta__pie .acciones {
+  margin: 0;
+}
+
+.nuevo-calculo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* El camino de vuelta a la sección desde una pantalla que se abre adentro de ella (la carga de una toma). */
+.vuelta-a-la-seccion {
+  margin: 0 0 0.6rem;
+}
+
+.vuelta-a-la-seccion a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* A 1280 px la toma queda más angosta: lo corto pasa arriba, en un renglón, y pliegues y perímetros se reparten el ancho. */
+@media (max-width: 85rem) {
+  .familias-de-la-toma {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-areas:
+      'masa masa diametros diametros otras otras'
+      'pliegues pliegues pliegues perimetros perimetros perimetros';
+    grid-template-rows: auto auto;
+  }
+}
+
+/* En una ventana que no deja lugar para la lista al costado, la lista pasa arriba, como un selector, y las familias van
+   una debajo de la otra, cada una con sus dos subcolumnas. */
+@media (max-width: 75rem) {
+  .tomas-del-area__cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tomas-del-area__lista {
+    display: none;
+  }
+
+  .tomas-del-area__selector {
+    display: block;
+    max-width: 36rem;
+  }
+
+  .familias-de-la-toma {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: none;
+    grid-template-rows: none;
+  }
+
+  .familias-de-la-toma .familia-de-la-toma {
+    grid-area: auto;
+  }
+
+  .familia-de-la-toma .mediciones-de-la-familia {
+    columns: 14rem 2;
+    column-gap: 1.6rem;
+  }
+}
+
+@media (max-width: 40rem) {
+  .toma-abierta {
+    padding: 0.8rem 0.85rem 1rem;
+  }
+
+  .toma-abierta__lamina,
+  .toma-abierta__acciones-de-bloque,
+  .tomas-del-area__preparar {
+    margin-left: 0;
+  }
+
+  .historia-de-medicion__evento {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

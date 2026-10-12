@@ -106,7 +106,7 @@ const aLosCampos = (enSuCampo: Map<string, MedicionConFila>): Record<string, Esc
   Object.fromEntries([...enSuCampo].map(([clave, m]) => [clave, { valor: m.valor, unidad: m.unidad.trim() }]));
 
 export function VistaDePreparacion() {
-  const { token, asesoradoId, sesionPerdida, irA } = useAntropometria();
+  const { token, asesoradoId, sesionPerdida, irA, avisarEnTomas } = useAntropometria();
   const [r, setR] = useState<Resultado<{ borrador: Borrador | null; especificaciones: Especificacion[] }> | null>(null);
   const [aviso, setAviso] = useState<AvisoDeLaToma | null>(null);
 
@@ -141,9 +141,11 @@ export function VistaDePreparacion() {
           aviso={aviso}
           onAviso={setAviso}
           onCambio={cargar}
-          onRegistrada={() => {
-            setAviso({ tipo: 'exito', texto: COPY_ANTROPOMETRIA.registroHecho });
-            irA('evaluaciones');
+          onRegistrada={(evaluationId) => {
+            // El aviso se dice en «Tomas», adonde se vuelve con la toma recién registrada abierta: dicho acá, esta vista se
+            // desmontaba antes de que llegara a verse.
+            avisarEnTomas(COPY_ANTROPOMETRIA.registroHecho);
+            irA('evaluaciones', evaluationId);
           }}
         />
       ) : null}
@@ -164,7 +166,7 @@ function Preparacion({
   aviso: AvisoDeLaToma | null;
   onAviso: (a: AvisoDeLaToma | null) => void;
   onCambio: () => Promise<void>;
-  onRegistrada: () => void;
+  onRegistrada: (evaluationId: string) => void;
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useAntropometria();
   const intento = useClaveDeIntento();
@@ -358,7 +360,7 @@ function Preparacion({
     setConfirmando(false);
     if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return avisar({ tipo: 'error', texto: mensajeDeFallo(res) });
-    onRegistrada();
+    onRegistrada(res.datos.data.evaluationId);
   }
 
   /**
@@ -416,7 +418,7 @@ function Preparacion({
 
       <section className="seccion" aria-labelledby="titulo-preparacion">
         <h2 id="titulo-preparacion">{borrador ? COPY_ANTROPOMETRIA.borradorEnCurso : COPY_ANTROPOMETRIA.nuevaEvaluacion}</h2>
-        <Ayuda titulo="Qué es una evaluación en preparación">
+        <Ayuda titulo="Qué es una toma en preparación">
           <p>{COPY_ANTROPOMETRIA.borradorNoEsHistoria}</p>
         </Ayuda>
 
