@@ -874,3 +874,178 @@ la falla, el diálogo no dice No tenés plantillas» (con la lista vacía de ver
 **Dónde está.** `EVIDENCIA/ESCRITORIO-AREAS/parte-5/`: `ahora/` (51 capturas), `antes/` (12),
 `plan-de-dos-dias-antes-y-ahora.png`, `plan-de-un-dia-antes-y-ahora.png`, `resumen-de-la-pasada.txt` y `resultados/`
 (los resultados de cada recorrido, las pruebas y los veredictos de las roturas).
+
+## Parte 6 · Entrenamiento · Plan activo (2026-10-12)
+
+«Plan», de Entrenamiento, pasó de una página con la versión en preparación, el plan activo y el historial uno debajo del
+otro —todos los bloques, las sesiones y los ejercicios, abiertos— a la lectura de la maqueta 24: **el plan activo de a
+una sesión, con los ejercicios plegados, la tabla de objetivos por serie con lo general al lado y el historial al
+costado; y, cuando hay una versión en preparación, un selector para mirar una u otra.** No se quitó ninguna función:
+«Crear nueva versión a partir de esta», «Crear plan», «Guardar como plantilla» y «Empezar desde una plantilla» hacen lo
+mismo que antes, y `vista=plan` abre lo mismo desde la ficha, desde un pendiente y desde una revisión aplicada. La
+versión en preparación sigue en el editor de siempre: su recomposición es la parte 8. No cambian la API, la base ni la
+APK: los textos que la APK comparte no se tocaron. Sobre la base propia (`be_test_escritorio`, regenerada antes de cada
+pasada) y la compilación estática del código de esta parte (`883297d`).
+
+**Lo que los dos planes comparten ahora vive en un solo lugar.** El renglón de la versión, el selector, el historial y
+sus palabras son los mismos en Nutrición y en Entrenamiento: una pieza (`advisees/versiones-del-plan.tsx`) y unas reglas
+(`versiones-de-plan.ts`, en el dominio). «Plan», de Nutrición, pasó a usar esa pieza: su recorrido (`planes`) volvió a
+pasar entero en la pasada de esta parte.
+
+**Lo que la maqueta no dibuja y se conservó,** dicho en la definición (F-72, F-74): el microciclo, que va en un renglón
+propio solo cuando el bloque los usa; la lista para cinco o más sesiones; los parámetros del profesional, la referencia
+del % RM y la imagen del ejercicio, en «Lo general».
+
+**Medido en la página real.** El asesorado A tiene un plan de un bloque y dos sesiones, y una versión en preparación.
+Para mirar lo que A no tiene se armó, por la API y en las cuentas descartables, un plan de dos bloques —uno con dos
+microciclos—, con un ejercicio de objetivos distintos por serie (la carga, el RIR y el descanso), una serie sin descanso
+recomendado, la nota de una serie y un ejercicio sin criterio de intensidad (`datos/generar.mjs
+descartable-plan-de-entrenamiento`). El «antes» es la pantalla como quedó al cerrar la parte 5, con ese mismo plan,
+medida antes de tocar nada (después se cambió un solo texto del plan: el propósito de un bloque, que usaba una palabra
+de la lista).
+
+| A 900 px de alto | Antes | Ahora |
+|---|---|---|
+| El plan de dos bloques, a 1440 px | 4.222 px: los dos bloques, con sus sesiones y sus ejercicios, uno debajo del otro | 994 px: entran el encabezado, lo que se elige, el primer ejercicio abierto (termina a los 803 px) y el historial; el último ejercicio plegado termina a los 930 |
+| Lo mismo, a 1280 y a 1024 px | 4.222 px | 1.020 px y 1.217, con el historial debajo |
+| La sesión que tiene el ejercicio con objetivos distintos por serie, a 1440 px | — (antes iba dentro de la página de 4.222 px) | 1.040 px (1.092 a 1280 y 1.264 a 1024) |
+| La misma sesión, con sus tres ejercicios abiertos, a 1440 px | — (antes no se podían plegar) | 1.601 px (1.653 a 1280 y 1.825 a 1024) |
+| El bloque que usa microciclos, a 1440 px | — | 900 px: entra en la ventana |
+| El plan de A, que tiene una versión en preparación, a 1440 px | 22.699 px: el editor de la versión en preparación y, debajo, el plan activo y el historial | Arriba, el selector: se ve una versión o la otra. La activa, 993 px (998 a 1280 y 1.222 a 1024); el editor, que no cambió, 20.241 px |
+| El detalle de la activación del plan, en la ficha | La página se rompía entera (`antes/la-ficha-se-rompia.txt`) | La pieza, en su columna de 480 px |
+
+**Las lecturas.** Para ver el plan se leen tres cosas, una vez cada una: la lista de versiones (entera, no su primera
+página), la versión vigente con sus objetivos por serie y el objetivo vigente. Las plantillas ya no se leen al entrar:
+se leen al abrir su diálogo. Elegir un bloque, un microciclo o una sesión, abrir o plegar ejercicios y pasar de una
+versión a la otra no le pide nada a BE. La imagen de un ejercicio se pide recién al abrirlo.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · es lo que ve el asesorado», con el número que le toca por su orden de activación. Para verlo se leen tres cosas, una vez cada una; las plantillas no se leen al entrar (F-71) | `recorrido.mjs entrenamientos`: corre solo, sobre las cuentas descartables recién generadas con su plan de dos bloques, y no toca los datos de A, B ni C. Lo esperado se calcula a mano con lo que devuelve la API (`esperadoDelPlanDeEntrenamiento`): no se usa el módulo que arma la pantalla | Pasa: «Versión 2 · activada el 12 oct · es lo que ve el asesorado»; 1 lectura de la lista, 1 de la versión con sus objetivos por serie, 1 del objetivo y ninguna otra de Entrenamiento | Verificado automáticamente |
+| Se mira una sesión por vez. Con dos bloques, un control con el nombre de cada uno y, al lado, cuántas sesiones tiene el elegido y su propósito. El primer bloque no usa microciclos, y no hay renglón de microciclo. Con dos sesiones, un control, elegida la primera, y «Sin día asignado: tu asesorado elige cuál hace.». Las indicaciones de la sesión se leen antes de sus ejercicios (F-72) | Lo mismo | Pasa: «Fuerza: progresión» (elegido) y «Descarga»; «2 sesiones · Propósito: Más carga, menos repeticiones»; «A · Tren inferior» (elegida) y «B · Tren superior» | Verificado automáticamente |
+| Los ejercicios van plegados, cada uno en un renglón con lo que piden sus series, calculado a mano con los objetivos que da la API. Al entrar está abierto el primero: dice cuántas series tiene y con qué criterio, y muestra «Lo que recibe tu asesorado», serie por serie, y «Lo general del ejercicio». La sesión dice cuántos ejercicios y cuántas series tiene (F-73) | Lo mismo, ejercicio por ejercicio | Pasa: «3 ejercicios · 10 series»; «Sentadilla · 4 series · criterio de intensidad: RIR», abierto, con sus cuatro filas; «Peso muerto · 3 × 5 rep. · 85 kg · RIR 2 · descanso 03:00» | Verificado automáticamente |
+| El historial va al costado de los ejercicios, a la altura del primero: las versiones activadas, de la más nueva a la más vieja, con su número, su día y su hora, y cuál es la vigente; al pie, la huella de la instantánea. A 1440 × 900 entran el encabezado, lo que se elige, el primer ejercicio abierto entero y el historial (F-76) | Lo mismo: mide dónde empieza y dónde termina cada caja | Pasa: «Versión 2 · activada el 12 oct, 20:28 · vigente» y «Versión 1 · … · anterior, conservada»; el historial y el primer ejercicio empiezan a la misma altura; el primer ejercicio termina a los 803 px | Verificado automáticamente |
+| Cuánto mide «Plan» al entrar, a 1440 × 900 (F-80) | Lo mismo: lo mide y lo informa, sin compararlo con un tope | 994 px: el último ejercicio, plegado, termina a los 930 px. No entra entero en 900 | Medido |
+| En un ejercicio con objetivos distintos por serie, cada serie muestra el suyo, el que resolvió la API: la carga, las repeticiones, el RIR y el descanso recomendado. Una serie sin descanso recomendado dice «Sin objetivo», no un cero ni un hueco. La nota de una serie se lee en su fila. Los valores heredados ya no llevan « · de la prescripción». «Lo general del ejercicio» dice la intensidad, cómo se cuenta la carga, qué cuentan las repeticiones y las notas (F-74) | Lo mismo, serie por serie | Pasa: «Press de banca»: 62,5 kg, 6–8 rep., RIR 2 y 02:30 en las dos primeras; RIR 1 en la tercera; y en la cuarta, 60 kg, RIR 1, «Sin objetivo» en el descanso y la nota «Si se pierde la técnica, cortar la serie.» | Verificado automáticamente |
+| Plegado, un ejercicio con todas las series iguales se dice entero; uno sin criterio de intensidad lo dice; y el que tiene objetivos distintos no se resume con su primera serie ni con un rango: dice qué cambia «por serie». Abierto, dice cuántas series son y con qué criterio (F-73) | Lo mismo: los tres textos están escritos a mano en el recorrido | Pasa: «Press de banca · 4 series · 6–8 rep. · carga, RIR y descanso por serie»; «Remo con barra · 4 × 8–10 rep. · 47,5 kg · RIR 2 · descanso 02:00»; «Dominadas · 4 × 6 rep. · sin criterio de intensidad · descanso 02:00» | Verificado automáticamente |
+| Lo elegido vive en la dirección, por su número de orden. Elegir la segunda sesión escribe «sesion»; abrir otro ejercicio, «ejercicios» con los dos; «Abrir todos los ejercicios» pasa a «Plegar todos», que escribe «ninguno». Elegir otro bloque escribe «bloque» y quita la sesión y los ejercicios, que eran del anterior; ese bloque usa microciclos, y aparece su renglón, con el propósito del elegido; elegir el segundo escribe «micro». Volver al primer bloque limpia la dirección. Nada de eso le pide algo a BE (F-75) | Lo mismo | Pasa: `sesion=2`; `ejercicios=1.3`, `1.2.3` y `ninguno`; `bloque=2`, con «Semana 1» y «Semana 2» y la sesión «Cuerpo completo»; `micro=2`; al volver, nada; 0 pedidos | Verificado automáticamente |
+| «Actualizar» vuelve a leer las tres cosas y conserva lo elegido (el segundo bloque, su segundo microciclo y todos los ejercicios plegados). Una dirección con valores que el plan no tiene no rompe ni deja la pantalla vacía (F-75) | Lo mismo | Pasa: «Descarga · Semana 2», con todo plegado, antes y después; 1 lectura de cada cosa; con valores que no existen, «Fuerza: progresión · A · Tren inferior», con los ejercicios plegados | Verificado automáticamente |
+| Con los tres ejercicios de la sesión abiertos, en toda la sección no hay una palabra de la lista de Entrenamiento ni un porcentaje que no sea «% RM». En cada ejercicio, «Lo general» va al lado de la tabla de series, a su misma altura (F-80) | Lo mismo, con el detector del dominio; la misma consulta encuentra el contenido | Pasa: 1.930 caracteres sin una palabra de la lista; la tabla termina a los 702 px del borde izquierdo y «Lo general» empieza a los 730 | Verificado automáticamente |
+| «Plan» tiene su ayuda en el marco del área: se abre por el título, explica cada cosa que la pantalla escribe, sin palabras de la lista; Escape la cierra y el foco vuelve al botón (F-14) | Lo mismo, con axe | Pasa: «Cómo se lee el Plan», 12 renglones | Verificado automáticamente |
+| axe no encuentra faltas en «Plan» con todos los ejercicios abiertos, en los dos temas (F-80) | Lo mismo | Pasa | Verificado automáticamente |
+| El historial sigue al costado a 1280 px y pasa debajo de los ejercicios a 1024. «Lo general» sigue al lado de la tabla mientras entra, y pasa debajo cuando no (a 390 px). A 1280, 1024, 768 y 390 px la página no desborda de costado, y ningún renglón empieza con el separador « · » ni deja un número lejos de su unidad (F-80) | Lo mismo: mira dónde quedó cada letra en la pantalla | Pasa: con la sesión del ejercicio de objetivos distintos, 1.092 px de alto a 1280, con el historial al costado; 1.264 a 1024, con el historial debajo; 1.522 a 768 | Verificado automáticamente |
+| Sin plan y sin objetivo, la sección lo dice y ofrece «Ir a Resumen», y ninguna acción para crear. Sin plan y con objetivo, «Crear plan», primero, y «Empezar desde una plantilla». Con plan y sin objetivo vigente, el plan se ve y, en lugar de «Crear nueva versión», explica que primero hay que definir el objetivo. Si la lista de versiones no se puede leer, dice la falla con «Reintentar», no que no hay plan (F-78) | Lo mismo, con respuestas simuladas en el navegador: el escenario no tiene esos estados | Pasa: «Ir a Resumen»; «Crear plan» y «Empezar desde una plantilla»; con plan y sin objetivo, solo «Guardar como plantilla» | Verificado automáticamente, sobre respuestas simuladas |
+| Con seis sesiones para elegir, no hay seis botones: una lista, que dice cuál se mira y cuántas hay, y elegida la que pide la dirección; a 1024 px la página no desborda. Un bloque sin sesiones lo dice, y no muestra una lista vacía ni un ejercicio (F-72) | Lo mismo, con una respuesta simulada | Pasa: una lista de 6 y «4 de 6»; «Acá no hay sesiones.», y al lado del bloque, «sin sesiones» | Verificado automáticamente, sobre una respuesta simulada |
+| Con el criterio % RM, «Lo general» dice la intensidad con su referencia, y los parámetros del profesional con su unidad (un número, con coma); la tabla no tiene columna de RIR, y la cabecera del ejercicio dice el criterio (F-74) | Lo mismo, con una respuesta simulada | Pasa: «4 series · criterio de intensidad: % RM»; «Intensidad: 72,5 % RM (1RM estimado en la última evaluación)»; «Tempo: 3-1-1»; «Pausa abajo: 1,5 s» | Verificado automáticamente, sobre una respuesta simulada |
+| Un ejercicio con imagen la muestra en «Lo general», dibujada, con su texto alternativo y dentro de la tarjeta. Su acceso se pide una sola vez, y recién con el ejercicio abierto: plegado, no hay imagen ni pedido (F-74) | Lo mismo, con una imagen armada por el recorrido y las dos respuestas simuladas que la pantalla pide para mostrarla; el acceso se entrega solo si el pedido lleva la sesión de la página | Pasa: dibujada, 80 × 96 px; 1 pedido de acceso con el ejercicio abierto y 0 con el ejercicio plegado | Verificado automáticamente, sobre respuestas simuladas |
+| «Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una plantilla» abre el diálogo común, que recién entonces lee las plantillas de entrenamiento, una vez: está la que se guardó, con sus sesiones contadas a mano y «Sin cargas»; ninguna viene elegida y crear el borrador está apagado. Si esa lectura falla, el diálogo dice la falla con «Reintentar», no «No tenés plantillas activas» (F-77) | `entrenamientos`, que escribe de verdad; la falla, con un 503 simulado | Pasa: 1 escritura; 1 lectura al abrir; «4 sesiones · Sin cargas»; 0 elegidas; con la falla, «No pudimos leer tus plantillas» | Verificado automáticamente |
+| «Crear nueva versión a partir de esta» hace una sola escritura y aparece el selector de versión, con «En preparación» elegida, «El asesorado no la ve.» y la activa como «2 · activa». Con cambios sin guardar, pasar a la activa muestra el plan activo (con «Guardar como plantilla» como única acción y la explicación de por qué no se crea otra) y deja el editor fuera de la vista; volver lo muestra con lo escrito intacto. Ir y volver no le pide nada a BE (F-79) | Lo mismo: escribe en el nombre del bloque, va a la activa, vuelve y lee el campo | Pasa: 1 escritura; «Fuerza: progresión» → «Fuerza: progresión (ajuste)», antes y después; 0 pedidos | Verificado automáticamente |
+| Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer. Guardar y activar la versión en preparación la convierte en la vigente: el selector desaparece, el plan dice «Versión 3 · … · es lo que ve el asesorado», su bloque lleva el nombre que se escribió, el historial lista las tres y la dirección queda limpia (traía la segunda sesión). El plan tiene objetivos distintos por serie, y se activa porque el titular ya usó una app que los muestra (F-79) | Lo mismo: guarda y activa por la pantalla; lo que quedó se lee de la API | Pasa: «Tenés cambios sin guardar…»; «Versión 3 · activada el 12 oct · es lo que ve el asesorado»; «Fuerza: progresión (ajuste)»; la 3, vigente; la 2 y la 1, conservadas | Verificado automáticamente |
+| Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se cierra, la pantalla lo avisa y queda una versión en preparación que la API reconoce como salida de esa plantilla. El selector vuelve, con «3 · activa» (F-77) | Lo mismo | Pasa | Verificado automáticamente |
+| A tiene una versión en preparación: al entrar a «Plan» se ve el selector, con «En preparación» elegida, y el editor; el plan activo no está a la vista. Al elegir «N · activa» se ve el plan activo, con su versión y una fecha de otro mes sin el año, un solo bloque dicho por su nombre y los ejercicios de la API (F-79) | `recorrido.mjs funcional` (`plan-entrenamiento`), con los datos de A; solo lee | Pasa: «En preparación» (elegida) y «2 · activa»; «Versión 2 · activada el 7 sept · es lo que ve el asesorado»; «Bloque Fuerza progresión», sin control | Verificado automáticamente |
+| En la ficha, el detalle de la activación de un plan de entrenamiento muestra la misma pieza en su columna, **y la página sigue en pie.** Dice la versión, el bloque y las sesiones; los ejercicios son los de la API, con el primero abierto; cada ejercicio ocupa el ancho de la columna y nada se sale, salvo la tabla, que se desplaza dentro de su caja; los títulos bajan un nivel; elegir la otra sesión no toca la dirección de la ficha (F-81) | Lo mismo: mide cada elemento contra la caja del detalle | Pasa: columna de 480 px; el ejercicio ocupa 438; 0 elementos afuera; al elegir «B · Tren superior», sus ejercicios | Verificado automáticamente |
+| En la ficha, un ejercicio con imagen la muestra, dibujada, con su texto alternativo y dentro de la columna: el acceso que la pieza le pedía al contexto de la pestaña ahora se lo da la ficha, con la sesión de la página (F-81) | Lo mismo, con la imagen y las respuestas simuladas | Pasa: dibujada, 80 px de ancho; 1 pedido de acceso | Verificado automáticamente, sobre respuestas simuladas |
+| Las reglas: lo que se mira del plan según la dirección, cuántas sesiones tiene un bloque, la cuenta de la sesión, la cabecera y el renglón de un ejercicio, la tabla de series, lo general y los textos; y las que comparten los dos planes (el número de una versión, el historial, lo elegido y lo abierto por su número de orden) | `packages/domain/src/lectura-del-plan-de-entrenamiento.test.ts` y `plan-de-nutricion.test.ts`, en la batería | 13 de 13 y 12 de 12 | Verificado automáticamente |
+| Ningún texto escrito en las pantallas de Entrenamiento usa un término prohibido | `scripts/copy-pantallas.test.cjs`, que recorre la carpeta `training` entera: los archivos nuevos entran solos | Pasa | Verificado automáticamente |
+| «Plan», de Nutrición, sigue igual después de pasar a la pieza común de las versiones | `recorrido.mjs planes` y `plan`, en la pasada de esta parte | Pasa: 33 de 33 y los 4 de `plan` | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de esta parte | `recorrido.mjs`: capturas 60 de 60, funcional 324 de 324 (los 320 de antes y los 4 de `plan-entrenamiento`), descartable 22 de 22, mediciones 18 de 18, solicitudes 32 de 32, planes 33 de 33, entrenamientos 22 de 22 y estimación 7 de 7. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 80 de 80, funcional 86 de 86 y revocación 6 de 6. Pasada del 2026-10-12, de 19:41 a 20:33, sobre el código de `883297d`, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10). `parte-6/resumen-de-la-pasada.txt` | Verificado automáticamente |
+| Toda la batería de la CI | La CI de GitHub sobre el commit de código | En verde la corrida 38322861573, sobre `883297d`: el legajo; la batería completa (typecheck; dominio, 717, con las 13 nuevas; guiones, 347; y las pruebas de la API); la integración; y la imagen de la API | Verificado automáticamente |
+| La pantalla, a 1440, 1280 y 1024 px en los dos temas (el plan de A, por la activa; el de dos bloques al entrar, en la sesión del ejercicio con objetivos distintos y con sus tres ejercicios abiertos; el bloque con microciclos; la ayuda; el selector con una versión en preparación; y la pieza en la ficha), a 1920 px, y a 768 y 390 px | `ver.mjs`, sobre el asesorado A y sobre las cuentas descartables recién generadas; y `recorrido.mjs entrenamientos` y `plan-entrenamiento`, para los estados simulados y los diálogos | 42 capturas de ahora (`parte-6/ahora/`: 36 de `ver.mjs` y 6 del recorrido; 3 son sobre respuestas simuladas, y lo dicen en su nombre) y 12 de antes (`parte-6/antes/`). `parte-6/plan-de-dos-bloques-antes-y-ahora.png`. De la versión en preparación va solo la parte de arriba, donde está el selector: el editor no cambió | Observado en capturas |
+
+Las comprobaciones negativas van con una positiva de la misma consulta: «no hay una palabra de la lista ni un porcentaje
+que no sea % RM» (los nombres de los ejercicios y «Lo que recibe tu asesorado» están), «entrar no lee las plantillas»
+(abrir el diálogo las lee una vez), «ninguna plantilla viene elegida» (al elegir una, el botón se enciende), «el
+ejercicio con objetivos distintos no se resume con su primera serie» (el que tiene todas iguales sí dice su carga),
+«sin microciclos no hay renglón de microciclo» (el bloque que los usa lo tiene), «plegado, la imagen no se pide»
+(abierto, se pide una vez) y «con una versión en preparación no se ofrece crear otra» (sin ella, se ofrece).
+
+**La prueba de la prueba.**
+- **Las reglas del dominio, rotas de a una** en una copia (el módulo verdadero no se toca): 48 roturas, sobre las reglas
+  de Entrenamiento · Plan y sobre las que comparten los dos planes. La primera corrida notó 46. Las dos que quedaron
+  mostraron pruebas que faltaban —que la versión activa diga su número en el selector, y que un bloque sin microciclos
+  no invente uno—; con ellas, 48 de 48 (`resultados/calculo-roto-de-a-una-regla.txt`).
+- **La pantalla, rota a propósito y compilada así,** en seis tandas: 25 roturas, las 25 notadas por la comprobación
+  que se esperaba, y ninguna comprobación falló sin que se la esperara (`resultados/compilacion-rota-tanda-*.txt`). La
+  R, 12 roturas sobre `entrenamientos`; la S, 5 más sobre `entrenamientos`, para las comprobaciones que en la R caían
+  de rebote o no tenían rotura (entre ellas, que la imagen de un ejercicio se pida aunque esté plegado); la P, una
+  sola, que devuelve « · de la prescripción» a cada valor: hace fallar a la vez las cuatro comprobaciones que
+  comparan una fila de serie, y por eso va aparte; la D, 3 en las reglas del dominio, que muestran que lo esperado por
+  el recorrido no sale del módulo que arma la pantalla; la B, 2 sobre `plan-entrenamiento`: **devolver el defecto de
+  la ficha** —la pieza vuelve a pedir el contexto de la pestaña— y abrir «Plan» por la activa cuando hay una versión
+  en preparación; y la C, 2 más: la pieza aplastada en media columna y la ficha pasándole a la pieza un acceso sin la
+  sesión, con lo que la imagen no se puede leer. Antes de las tandas, los dos recorridos de control pasaron 22 de 22 y
+  4 de 4.
+- **En la primera vuelta, dos veredictos no salieron limpios, y la falla estaba en las pruebas.** En la S, la rotura
+  que hace calificar al historial hizo fallar además la comprobación del % RM, que también busca palabras de la lista
+  en toda la sección: no estaba declarado. Se declaró, y el veredicto se volvió a leer sobre el mismo registro. En la
+  B, con la ficha rota el recorrido se cortaba en lugar de marcar la falla y seguir: el paso de la imagen hacía clic
+  en una fila que ya no estaba. Se corrigió el recorrido y la tanda se corrió de nuevo.
+- **Dos comprobaciones miraban menos de lo que decían,** y se reforzaron antes de las tandas: «no resume con la primera
+  serie» comparaba el texto esperado consigo mismo, y ahora lee el renglón plegado en la pantalla; y la de la ficha no
+  notaba la pieza aplastada, porque nada se salía de la columna: ahora mide el ancho del ejercicio.
+- **La primera corrida del recorrido dio 20 de 21.** Lo que falló era la pantalla: en «Lo general», una nota con
+  números se cortaba entre el número y su palabra («3» arriba y «segundos» abajo). Se corrigió.
+
+**Lo que mostraron las capturas, antes de la pasada larga.** Se miraron todas antes de lanzarla. Las de `ver.mjs` son de
+la compilación anterior a los dos últimos retoques (el ejemplo de la ayuda y la tabla apilada), que no cambian la
+pantalla de escritorio; las tres que sí cambian —la ayuda, en los dos temas, y la de 390 px— se volvieron a tomar.
+- En la ficha, la pieza quedaba aplastada en media columna: la grilla de dos columnas —ejercicios e historial— se
+  aplicaba aunque no hubiera historial. Se corrigió, y la comprobación de la ficha ahora mide el ancho del ejercicio.
+- Dentro de la tarjeta de un ejercicio, la tabla de series dejaba una franja a cada lado: las tapas del desplazamiento
+  llevaban el color del fondo de la página, no el de la tarjeta. Se corrigió.
+- Con indicaciones en la sesión, el historial ya no empezaba a la altura del primer ejercicio. Las indicaciones pasaron
+  arriba, con lo que se elige.
+- Un bloque sin sesiones decía «0 sesiones»: un hueco dicho como un cero. Ahora dice «sin sesiones».
+- En la ayuda, el ejemplo del renglón se cortaba entre «47,5» y «kg». Ahora cada parte baja entera.
+- A 390 px, la tabla de series se apila y los datos quedaban sin decir qué eran («02:30», «Sin objetivo»). Ahora cada
+  dato lleva su rótulo, y la serie dice «Serie 1» (B10-10 §9). No es un ancho para el que se componga: solo no se rompe.
+- Los datos de prueba usaban una palabra de la lista en el propósito de un bloque. Se cambiaron los datos.
+
+**Hallazgos fuera de lo dibujado.**
+- **Abrir en la ficha el detalle de «Plan de entrenamiento activado» rompía la página entera** (severidad alta, pero no
+  está en lo publicado: viene de `cc17ba2`, WP-DASHBOARD-COMPRENSION, que es parte de esta cadena de ramas). La pieza del
+  plan pedía el contexto de la pestaña Entrenamiento para leer la imagen de un ejercicio, y en la ficha ese contexto no
+  existe. Ningún recorrido abría ese detalle: el de la línea de tiempo abre la activación de un plan de Nutrición.
+  Corregido (F-81): la pieza recibe el acceso de quien la usa. Se revisó además que ninguna otra pieza que la ficha
+  comparte con las pestañas pida el contexto de una: no hay otra.
+- **La nota de una serie no se veía en el website** (severidad media: el profesional no veía algo que su asesorado sí
+  lee en la APK). Corregido (F-74).
+- **«Empezar desde una plantilla» presentaba una lectura fallida como «No tenés plantillas activas»** (media: una falla
+  dicha como ausencia). Es el mismo defecto que la parte 5 corrigió en Nutrición. Corregido (F-77).
+- **Crear desde la activa y crear desde una plantilla compartían la clave de intento** (baja: solo después de un
+  resultado incierto). Corregido (F-77).
+- **El número de versión se calculaba con la primera página de la lista** (baja: no hay planes con tantas versiones).
+  Corregido (F-71).
+
+**Límites, dichos.**
+- **La versión en preparación es el editor de antes,** dentro de la sección nueva: con el plan de A mide más de veinte
+  pantallas. El selector lo saca de arriba del plan activo; ordenarlo es la parte 8.
+- **El plan no entra entero en 900 px de alto.** A 1440 px, con un ejercicio de cuatro series abierto, la página mide
+  unos 990 px: entran el encabezado, lo que se elige, el ejercicio abierto y el historial, y el último renglón plegado
+  queda cortado. Es lo que comprueba el recorrido (F-76), y no más que eso.
+- **A 1440 px, el renglón de la versión ocupa dos líneas** cuando están las tres acciones, como en Nutrición. A 1280 y a
+  1024 las acciones bajan y la frase va entera; con una ventana de 1920 px entra todo en un renglón
+  (`ahora/plan-de-dos-bloques-sesion-b-1920-claro.png`).
+- **La imagen de un ejercicio se miró con respuestas simuladas.** El escenario no tiene ejercicios con imagen: el
+  recorrido arma una y simula las dos respuestas que la pantalla pide para mostrarla (el acceso y el contenido). El
+  acceso simulado se entrega solo si el pedido lleva la sesión de la página. Falta sumar al escenario un ejercicio
+  propio con su imagen, subida por el flujo real (definición, §6).
+- **Los demás estados que el escenario no tiene también se miraron con respuestas simuladas en el navegador** (sin plan,
+  sin objetivo, la lista de versiones que no se puede leer, seis sesiones, un bloque sin sesiones, el criterio % RM con
+  su referencia y los parámetros del profesional, y las plantillas que no se pueden leer): la API y la base no se
+  tocan, y lo que se comprueba es qué hace la pantalla con esa respuesta.
+- **Con cinco o más sesiones se elige en una lista, y en Nutrición los días tipo —siete como mucho— siguen como
+  botones.** Es lo que escribe el criterio para cada pantalla; son dos formas de elegir en dos pantallas hermanas.
+- **Una versión anterior no se puede abrir desde el historial:** no está dibujado y la pantalla de antes tampoco lo
+  hacía. Se lee en la ficha, en la etapa que rigió.
+- **El guion de WP-ENTRENAMIENTO-SERIES** (`recorrido-web.mjs`) leía el plan activo con todas las sesiones y todos los
+  ejercicios abiertos, por una clase de la tabla que el plan activo ya no usa, y contaba cinco imágenes a la vez: no
+  corre contra la pantalla de hoy. No se adaptó ni se corrió: usa su propio juego de datos y no está en la pasada. Lo
+  que protegía del plan activo —que cada serie muestre el objetivo que resolvió la API— lo comprueba el recorrido
+  nuevo, serie por serie; las imágenes, que ese guion miraba de verdad, acá se miran simuladas.
+- **Sin teléfono ni lector de pantalla reales:** el teclado, el foco y los nombres accesibles se comprobaron con el
+  navegador y con axe.
+
+**Dónde está.** `EVIDENCIA/ESCRITORIO-AREAS/parte-6/`: `ahora/` (42 capturas), `antes/` (12 y
+`la-ficha-se-rompia.txt`), `plan-de-dos-bloques-antes-y-ahora.png`, `resumen-de-la-pasada.txt` y `resultados/` (los
+resultados de cada recorrido, las pruebas y los veredictos de las roturas).

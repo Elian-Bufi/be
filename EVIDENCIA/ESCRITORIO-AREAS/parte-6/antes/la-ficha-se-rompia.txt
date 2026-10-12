@@ -1,0 +1,12 @@
+2026-10-12 · sobre la compilación de 601ff01 (antes de la parte 6), con el asesorado A.
+Ruta: la ficha, Línea de tiempo, 90 días, vista «Hitos», y un clic en «Plan de entrenamiento activado · versión 2».
+
+  node ver.mjs <carpeta> 1440 "ficha-plan-de-entrenamiento=pro/advisees?id={a}&vista=linea&p=90#clic:Hitos|Plan de entrenamiento activado"
+
+Salida:
+  errores de la página: Error: useEntrenamiento fuera de la pestaña Entrenamiento
+  TimeoutError: Waiting for selector `.menu-de-cuenta__boton` failed   (la página entera dejó de dibujarse: ya no está ni la barra)
+
+Causa: el detalle de una etapa de entrenamiento usa `PlanSoloLectura` (training/plan.tsx), cuya `SesionSoloLectura` pide
+el contexto de la pestaña Entrenamiento (`useEntrenamiento()`) para leer la imagen del ejercicio. En la ficha ese contexto
+no existe. Ningún recorrido abría ese detalle: E-74 abre la activación de un plan de Nutrición.

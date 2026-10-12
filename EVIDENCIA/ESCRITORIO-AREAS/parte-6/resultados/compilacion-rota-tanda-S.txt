@@ -1,0 +1,31 @@
+NOTADA    elegir otro bloque conserva la sesión y los ejercicios del anterior — F-75 (la dirección)
+NOTADA    el historial califica: «Cumplimiento del plan: 80%» — F-80 (las palabras)
+NOTADA    activar no limpia la dirección: la versión nueva se abre en la sesión que se miraba — F-79 (activar)
+NOTADA    el ícono de cada ejercicio es una imagen sin texto alternativo — F-80 (axe)
+NOTADA    la imagen de un ejercicio se pide aunque esté plegado — F-74 (la imagen)
+tanda S (entrenamientos): 5 de 5 roturas notadas · 6 comprobaciones fallaron y 15 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-75 · Lo elegido vive en la dirección de la página, por su … — sesion=2 · ejercicios=1.3 → 1.2.3 → ninguno · bloque=2 («Semana 1 | Semana 2», sesión «Cuerpo completo») · micro=2 · al volver: {"id":"84ad926b-fe6b-4ca5-9571-d
+  F-80 · Con los tres ejercicios de la sesión abiertos, en tod… — cumplimiento, %
+  F-80 · axe no encuentra faltas en «Plan», de Entrenamiento, … — claro: image-alt · azul noche: image-alt
+  F-74 · (Respuesta simulada.) Con el criterio % RM, «Lo gener… — 4 series · criterio de intensidad: % RM · Serie, Carga sugerida, Rep., Descanso recomendado · Intensidad: 72,5 % RM (1RM estimado en la última evaluación) · Tem
+  F-74 · (Respuestas simuladas: el escenario no tiene ejercici… — abierto: dibujada, 80 × 96 px, «Una barra con dos discos de cada lado, de frente (imagen sintética)» · 2 pedido de acceso · plegado: 1 pedidos
+  F-79 · Con cambios sin guardar, «Actualizar» pregunta antes … — «Tenés cambios sin guardar «Actualizar» vuelve a leer todo lo…» · «Versión 3 · activada el 12 oct · es lo que ve el asesorado» · bloque: «Fuerza: progresión (aj
+pasaron:
+  F-71 · El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · 
+  F-72 · Se mira una sesión por vez. Con dos bloques, un control con el nombre de cada uno y, al lado, cuántas s
+  F-73 · Los ejercicios van plegados, cada uno en un renglón con lo que piden sus series («3 × 5 rep. · 85 kg · 
+  F-76 · El historial va al costado de los ejercicios, a la altura del primero: las versiones activadas, de la m
+  F-74 · En un ejercicio con objetivos distintos por serie, cada serie muestra el suyo, el que resolvió la API: 
+  F-73 · Plegado, un ejercicio con todas las series iguales se dice entero («4 × 8–10 rep. · 47,5 kg · RIR 2 · d
+  F-75 · «Actualizar» vuelve a leer las tres cosas y conserva lo elegido (el segundo bloque, su segundo microcic
+  F-14 · «Plan», de Entrenamiento, tiene su ayuda en el marco del área: se abre por el título, explica cada cosa
+  F-80 · El historial sigue al costado a 1280 px y pasa debajo de los ejercicios a 1024. «Lo general» sigue al l
+  F-78 · (Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece «Ir a Resumen», y ninguna 
+  F-72 · (Respuesta simulada.) Con seis sesiones para elegir, no hay seis botones: una lista, que dice cuál se m
+  F-77 · «Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una
+  F-79 · «Crear nueva versión a partir de esta» hace una sola escritura y aparece el selector de versión, con «E
+  F-77 · Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se c
+  — · «Plan», de Entrenamiento, no produjo errores de página
+última línea: 16/22 comprobaciones bien; fallan: F-75, F-80, F-80, F-74, F-74, F-79
