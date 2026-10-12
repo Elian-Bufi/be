@@ -51,6 +51,11 @@ interface ContextoDelMarco {
 }
 
 const Contexto = createContext<ContextoDelMarco | null>(null);
+/**
+ * La referencia de la persona, la que el marco muestra al lado del título. Va en un contexto aparte: el de arriba no
+ * cambia cuando llega el nombre, y quien depende de él (`NoDisponibleEnElArea`) no vuelve a preguntar el acceso por eso.
+ */
+const ContextoDeLaPersona = createContext<string | null>(null);
 
 /**
  * Avisa al marco que hay algo escrito sin guardar, con el nombre de lo que es («el plan en preparación»). Mientras lo
@@ -64,6 +69,24 @@ export function useCambiosSinGuardar(hay: boolean, que: string): void {
     marco.anotarCambios(clave, que);
     return () => marco.anotarCambios(clave, null);
   }, [marco, hay, que, clave]);
+}
+
+/**
+ * De quién es el área («Asesorado · d21da6»), para decirlo donde el marco queda tapado: un cajón que se abre encima.
+ * `null` mientras el marco no la leyó, o fuera de un área.
+ */
+export function usePersonaDelArea(): string | null {
+  return useContext(ContextoDeLaPersona);
+}
+
+/**
+ * Para una escritura que respondió «no disponible» y no retira la sección entera (Información es de tres áreas, y el
+ * pedido va a una sola): el marco vuelve a preguntar el acceso, como con cualquier «no disponible» (F-09). Fuera de un
+ * área no hace nada.
+ */
+export function useAvisarSinAcceso(): () => void {
+  const marco = useContext(Contexto);
+  return useCallback(() => marco?.avisarSinAcceso(), [marco]);
 }
 
 /**
@@ -290,11 +313,13 @@ export function MarcoDelArea<C extends string>({
       <div className="ficha__cuerpo">
         <div className={ancho ? 'seccion-del-area seccion-del-area--ancha' : 'seccion-del-area'} key={version}>
           <Contexto.Provider value={contexto}>
-            {!token ? <p className="nota">Redirigiendo a Iniciar sesión…</p> : null}
-            {token && yo.tipo === 'cargando' ? <Cargando /> : null}
-            {token && yo.tipo === 'error' ? <ErrorConReintento onReintentar={cargarYo} /> : null}
-            {token && yo.tipo === 'sin-espacio' ? <SinEspacioProfesional /> : null}
-            {listo ? retirado ? <NoDisponibleEnElArea /> : children : null}
+            <ContextoDeLaPersona.Provider value={nombre}>
+              {!token ? <p className="nota">Redirigiendo a Iniciar sesión…</p> : null}
+              {token && yo.tipo === 'cargando' ? <Cargando /> : null}
+              {token && yo.tipo === 'error' ? <ErrorConReintento onReintentar={cargarYo} /> : null}
+              {token && yo.tipo === 'sin-espacio' ? <SinEspacioProfesional /> : null}
+              {listo ? retirado ? <NoDisponibleEnElArea /> : children : null}
+            </ContextoDeLaPersona.Provider>
           </Contexto.Provider>
         </div>
       </div>

@@ -14,29 +14,30 @@
  * (`volver=entrenamiento`), el camino de vuelta lleva a Entrenamiento y lo dice.
  *
  * Parte 4: **«Pedir información» dejó de ser una sección.** El marco tiene una sola, «Solicitudes» (`solicitudes.tsx`),
- * y el pedido se abre desde su botón. `vista=pedir` sigue abriéndolo: la usan el marco de la ficha, «La información
- * disponible», Entrenamiento («Solicitar contexto») y la propia página. Lo que «Solicitudes» elige —la vista y la
- * solicitud abierta— vive en la dirección (`ver=`, `solicitud=`), y «Actualizar» lo conserva.
+ * y el pedido es un cajón que se abre sobre ella (`pedir.tsx`). `vista=pedir` sigue abriéndolo: la usan el marco de la
+ * ficha, Entrenamiento («Solicitar contexto») y el botón de la sección. Cerrarlo deja `vista=solicitudes` con lo demás de
+ * la dirección como estaba: la persona queda en Información, y el marco le ofrece la vuelta a donde vino. Lo que
+ * «Solicitudes» elige —la vista y la solicitud abierta— también vive en la dirección (`ver=`, `solicitud=`), y
+ * «Actualizar» lo conserva.
  */
 import { COPY_FORMULARIOS } from '@be/domain';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
-import { Icono } from '../../../../components/icono';
 import { type Resultado } from '../../../../lib/api';
 import { useEspacioProfesional } from '../../espacio-profesional';
 import { EstadoDeLecturaDelArea, MarcoDelArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
 import { AyudaDeSolicitudes } from './ayuda-de-solicitudes';
-import { VistaDePedido } from './pedir';
+import { PedidoDeInformacion } from './pedir';
 import { VistaDeSolicitudes } from './solicitudes';
 
 /** La sección que se ve en el marco: una sola. */
 export const SECCIONES = [{ clave: 'solicitudes', texto: COPY_FORMULARIOS.solicitudes, icono: 'informacion' }] as const;
 
-/** Los valores de `vista` que la página admite: la sección y el pedido, que se abre desde ella. */
+/** Los valores de `vista` que la página admite: la sección y el pedido, que se abre sobre ella. */
 export const VISTAS = ['solicitudes', 'pedir'] as const;
 export type Vista = (typeof VISTAS)[number];
 
@@ -44,13 +45,12 @@ export interface ContextoDeFormularios {
   readonly token: string;
   readonly asesoradoId: string;
   readonly sesionPerdida: (r: Resultado<unknown>) => boolean;
-  readonly irA: (vista: Vista) => void;
   /**
-   * Un éxito que sobrevive al cambio de vista (DL-113): lo muestra la pestaña, fijo abajo. Un aviso de la vista que lo
-   * pidió se iba con ella: «Enviar solicitud» pasa enseguida a «Solicitudes».
+   * Un éxito que sobrevive al cierre del cajón (DL-113): lo muestra la pestaña, fijo abajo. Un aviso adentro de un
+   * diálogo que se cierra no lo lee nadie.
    */
   readonly avisar: (texto: string) => void;
-  /** Lo que dice la dirección de la página: la vista y la solicitud abierta viven ahí, y «Actualizar» las conserva. */
+  /** Lo que dice la dirección de la página: la vista, la solicitud abierta y el pedido viven ahí, y «Actualizar» los conserva. */
   readonly parametros: { get(clave: string): string | null };
   /** Cambia parámetros de la dirección sin salir de la sección (`null` saca uno). */
   readonly ir: (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => void;
@@ -80,8 +80,6 @@ export function Formularios() {
   const retorno = useRetornoALaFicha(id);
   // Desde Entrenamiento se llega con `volver=entrenamiento`, que no es una dirección de la ficha: la vuelta es a Entrenamiento.
   const vuelta = parametros.get('volver') === 'entrenamiento' ? { href: `/pro/advisees/training?id=${encodeURIComponent(id)}&vista=resumen`, texto: 'Volver a Entrenamiento' } : null;
-  const hrefDe = useCallback((v: Vista) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`, retorno.valor), [ruta, id, retorno.valor]);
-  const irA = useCallback((v: Vista) => router.replace(hrefDe(v)), [router, hrefDe]);
   const enLaDireccion = parametros.toString();
   const ir = useCallback(
     (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => {
@@ -92,7 +90,9 @@ export function Formularios() {
     [router, ruta, enLaDireccion],
   );
   const [exito, setExito] = useState<string | null>(null);
-  const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, irA, avisar: setExito, parametros, ir } : null), [token, id, sesionPerdida, irA, parametros, ir]);
+  // Sube con cada solicitud enviada: «Solicitudes» se monta de nuevo y vuelve a leer la lista, que ya tiene una más.
+  const [tanda, setTanda] = useState(0);
+  const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, avisar: setExito, parametros, ir } : null), [token, id, sesionPerdida, parametros, ir]);
 
   return (
     <MarcoDelArea
@@ -106,9 +106,9 @@ export function Formularios() {
       vistas={SECCIONES}
       // El pedido es de «Solicitudes»: es la sección que queda marcada mientras se arma.
       vista="solicitudes"
-      href={() => hrefDe('solicitudes')}
-      ancho={vista === 'solicitudes'}
-      ayuda={vista === 'solicitudes' ? <AyudaDeSolicitudes /> : null}
+      href={() => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=solicitudes`, retorno.valor)}
+      ancho
+      ayuda={<AyudaDeSolicitudes />}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>
@@ -123,18 +123,18 @@ export function Formularios() {
               ) : null}
             </AvisoFlotante>
           ) : null}
-          {vista === 'solicitudes' ? <VistaDeSolicitudes /> : null}
-          {vista === 'pedir' ? (
-            <>
-              <p className="vuelta-a-la-seccion">
-                <Link href={hrefDe('solicitudes')}>
-                  <Icono nombre="izquierda" tamano={18} />
-                  {COPY_FORMULARIOS.solicitudes}
-                </Link>
-              </p>
-              <VistaDePedido />
-            </>
-          ) : null}
+          <VistaDeSolicitudes key={tanda} />
+          {/* El cajón está siempre montado: cerrarlo no descarta un pedido a medio armar. */}
+          <PedidoDeInformacion
+            abierto={vista === 'pedir'}
+            onCerrar={() => ir({ vista: 'solicitudes' })}
+            onReabrir={() => ir({ vista: 'pedir' })}
+            // La nueva es la primera de la lista: se vuelve a «Todas» para que se vea, sin ninguna abierta.
+            alEnviar={() => {
+              setTanda((n) => n + 1);
+              ir({ vista: 'solicitudes', ver: null, solicitud: null });
+            }}
+          />
         </Contexto.Provider>
       ) : null}
     </MarcoDelArea>

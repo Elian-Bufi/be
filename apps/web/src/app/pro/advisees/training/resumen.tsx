@@ -29,6 +29,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso, Campo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
+import { tomarAvisoPara } from '../../../../lib/aviso-al-llegar';
 import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import {
@@ -60,6 +61,12 @@ export function VistaDeResumen() {
   const [r, setR] = useState<Resultado<Datos> | null>(null);
   const [formulario, setFormulario] = useState<'evaluacion' | 'objetivo' | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  // Lo que alguien dejó dicho para esta página antes de volver a ella: «Solicitud enviada.», cuando el pedido de
+  // contexto salió de acá (CA-FOR-06). Se toma una vez.
+  useEffect(() => {
+    const alLlegar = tomarAvisoPara('/pro/advisees/training');
+    if (alLlegar) setAviso(alLlegar);
+  }, []);
 
   const cargar = useCallback(async () => {
     setR(null);

@@ -7935,3 +7935,449 @@ button.comida-del-dia__fila > .icono:last-child {
     margin-bottom: 0.35rem;
   }
 }
+
+/* ═══ El cajón (`components/cajon.tsx`; WP-ESCRITORIO-AREAS, parte 4; maqueta 27) ════════════════════════════════════
+   Un formulario que se abre al costado, sobre la vista, que sigue a la vista por detrás. La cabecera y el pie quedan
+   fijos y el cuerpo se desplaza adentro: lo que hay que leer antes de enviar está siempre junto al botón. Hasta 64 rem
+   de ventana ocupa todo el ancho. El velo y la sombra son los de todo diálogo (`.dialogo`). */
+.cajon {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0 0 0 auto;
+  padding: 0;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+}
+
+/* Solo abierto: un `display` puesto sin esa condición mostraría también el diálogo cerrado. */
+.cajon[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 64.0625rem) {
+  .cajon {
+    width: 50rem;
+  }
+}
+
+.cajon__cabecera {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.6rem 0.35rem;
+}
+
+.cajon__sobretitulo {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+.cajon__cabecera h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+/* El título recibe el foco al abrirse el cajón, para el lector de pantalla: no es un control. */
+.cajon__cabecera h2:focus {
+  outline: none;
+}
+
+.cajon__cerrar {
+  flex: none;
+  min-height: 2.75rem;
+  text-decoration: none;
+}
+
+.cajon__cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.3rem 1.6rem 1.25rem;
+}
+
+.cajon__pie {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  padding: 0.8rem 1.6rem 0.95rem;
+  border-top: 1px solid var(--borde);
+}
+
+/* ─── «Pedir información»: los tres pasos ───────── */
+.pedido {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.pedido p,
+.pedido .aviso {
+  margin: 0;
+}
+
+.pedido__aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: var(--tenue);
+  font-size: 0.95rem;
+  /* Si ocupa dos renglones, que el segundo no sea una palabra sola. */
+  text-wrap: pretty;
+}
+
+.pedido__aviso .icono {
+  flex: none;
+  margin-top: 0.12rem;
+}
+
+.pedido__antes-de-enviar {
+  flex: 1 1 16rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.paso-del-pedido {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.paso-del-pedido__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.75rem;
+}
+
+.paso-del-pedido__cabecera h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* El número del paso: un círculo, con el color del texto. */
+.paso-del-pedido__numero {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+/* Paso 1 · una opción por formulario. La elegida se reconoce por su botón de opción, además del fondo, y es la única
+   que muestra su descripción. */
+.formularios-del-pedido {
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+
+.formulario-del-pedido + .formulario-del-pedido {
+  border-top: 1px solid var(--borde);
+}
+
+.formulario-del-pedido:first-child {
+  border-radius: 11px 11px 0 0;
+}
+
+.formulario-del-pedido:last-child {
+  border-radius: 0 0 11px 11px;
+}
+
+.formulario-del-pedido[data-elegido] {
+  background: var(--fondo-suave);
+}
+
+.formulario-del-pedido label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.875rem;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+
+.formulario-del-pedido input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+}
+
+.formulario-del-pedido__nombre {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+
+.formulario-del-pedido__cuenta {
+  flex: none;
+  color: var(--tenue);
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+/* Alineada con el nombre: el margen del renglón, el botón de opción y su separación. */
+.formulario-del-pedido__descripcion {
+  padding: 0 0.9rem 0.65rem 2.9rem;
+  color: var(--tenue);
+  font-size: 0.93rem;
+  line-height: 1.4;
+}
+
+/* Paso 2 · una fila por pregunta: la casilla que la pide, la pregunta (con lo que va a leer la persona debajo), con qué
+   se responde y si es requerida. Cada fila mide 44 px o más. */
+.preguntas-del-pedido {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.preguntas-del-pedido thead th {
+  padding: 0.25rem 0.75rem 0.3rem 0;
+  border-bottom: 1.5px solid var(--borde-control);
+  color: var(--tenue);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.preguntas-del-pedido tbody th,
+.preguntas-del-pedido tbody td {
+  height: 2.75rem;
+  padding: 0;
+  border-bottom: 1px solid var(--borde);
+  font-weight: 400;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.preguntas-del-pedido__casilla {
+  width: 2.25rem;
+}
+
+.preguntas-del-pedido input[type='checkbox'] {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  vertical-align: middle;
+}
+
+/* El texto de la pregunta es la etiqueta de su casilla, y ocupa toda la celda: tocar la pregunta la marca. */
+.preguntas-del-pedido tbody th label {
+  display: block;
+  padding: 0.6rem 0.75rem 0.6rem 0;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.preguntas-del-pedido tbody tr:not([data-pedida]) th label {
+  color: var(--tenue);
+}
+
+/* La aclaración que la persona lee debajo de la pregunta: se abre para todas a la vez, con el botón de arriba de la tabla. */
+.preguntas-del-pedido__ayuda {
+  display: block;
+  margin-top: -0.45rem;
+  padding: 0 0.75rem 0.5rem 0;
+  color: var(--tenue);
+  font-size: 0.88rem;
+  line-height: 1.3;
+}
+
+.preguntas-del-pedido__aclaraciones .boton--enlace {
+  font-size: inherit;
+}
+
+/* Angosta, y con el texto en dos renglones si hace falta («Número · días por semana»): el ancho es de la pregunta. */
+.preguntas-del-pedido tbody .preguntas-del-pedido__responde {
+  width: 9.5rem;
+  padding-right: 0.75rem;
+  color: var(--tenue);
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.preguntas-del-pedido thead th:last-child,
+.preguntas-del-pedido tbody .preguntas-del-pedido__requerida {
+  width: 5.5rem;
+  padding-right: 0;
+  text-align: center;
+}
+
+/* Una casilla sola en su celda: lo que se toca mide 44 px aunque la casilla sea chica. */
+.casilla-de-celda {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.casilla-de-celda:has(input:disabled) {
+  cursor: not-allowed;
+}
+
+.casilla-de-celda__texto {
+  display: none;
+}
+
+.preguntas-del-pedido__seccion th {
+  height: auto;
+  padding: 0.7rem 0 0.3rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* Paso 3 · los dos campos, uno al lado del otro. Cada parte de un campo (el rótulo, su ayuda, el control y lo que falta)
+   va en su renglón de la grilla: los dos controles quedan a la misma altura aunque una ayuda ocupe dos renglones. */
+.pedido__dos-campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 15.6rem;
+  grid-template-rows: repeat(4, auto);
+  column-gap: 0.9rem;
+}
+
+.pedido__dos-campos > .campo {
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  row-gap: 0.3rem;
+  margin: 0;
+}
+
+.pedido__dos-campos > .campo > label {
+  grid-row: 1;
+}
+
+.pedido__dos-campos > .campo > .campo__ayuda {
+  grid-row: 2;
+}
+
+.pedido__dos-campos > .campo > input,
+.pedido__dos-campos > .campo > select,
+.pedido__dos-campos > .campo > .campo-fijo {
+  grid-row: 3;
+  width: 100%;
+}
+
+.pedido__dos-campos > .campo > .campo__error {
+  grid-row: 4;
+}
+
+/* Un valor que la pantalla fija y no deja cambiar: se lee como un campo, con su candado. */
+.campo-fijo {
+  position: relative;
+  display: block;
+}
+
+.campo .campo-fijo input {
+  width: 100%;
+  padding-right: 2.6rem;
+  background: var(--fondo-suave);
+}
+
+.campo-fijo .icono {
+  position: absolute;
+  top: 50%;
+  right: 0.8rem;
+  color: var(--tenue);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Cuando el cajón ocupa todo el ancho, «Responde con» tiene lugar para ir en un renglón. */
+@media (max-width: 64rem) {
+  .preguntas-del-pedido tbody .preguntas-del-pedido__responde {
+    width: auto;
+    white-space: nowrap;
+  }
+}
+
+/* En una ventana angosta, una pregunta por bloque: la casilla a la izquierda y, a su lado, la pregunta, con qué se
+   responde y si es requerida, cada cosa con su nombre. */
+@media (max-width: 40rem) {
+  .cajon__cabecera,
+  .cajon__cuerpo,
+  .cajon__pie {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .preguntas-del-pedido,
+  .preguntas-del-pedido tbody {
+    display: block;
+  }
+
+  .preguntas-del-pedido thead {
+    display: none;
+  }
+
+  .preguntas-del-pedido tbody tr {
+    display: grid;
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .preguntas-del-pedido tbody th,
+  .preguntas-del-pedido tbody td {
+    display: block;
+    height: auto;
+    border-bottom: 0;
+  }
+
+  .preguntas-del-pedido__casilla {
+    padding-top: 0.6rem;
+  }
+
+  .preguntas-del-pedido tbody .preguntas-del-pedido__responde,
+  .preguntas-del-pedido tbody .preguntas-del-pedido__requerida {
+    grid-column: 2;
+    width: auto;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .preguntas-del-pedido__responde::before {
+    content: attr(data-etiqueta) ': ';
+  }
+
+  .casilla-de-celda {
+    justify-content: flex-start;
+  }
+
+  .casilla-de-celda__texto {
+    display: inline;
+  }
+
+  .preguntas-del-pedido__seccion {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pedido__dos-campos {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    row-gap: 0.9rem;
+  }
+
+  .pedido__dos-campos > .campo {
+    display: flex;
+    grid-row: auto;
+  }
+}

@@ -1073,7 +1073,13 @@ async function recorridoNutricion(page, v, carpeta) {
   // «Solicitar contexto» está en el marco de la ficha, a la vista en las tres vistas (WP-ESCRITORIO-AMABLE, parte 1).
   await clic(page, '.marco-de-la-ficha a', 'Solicitar contexto');
   await page.waitForFunction(() => location.pathname === '/pro/advisees/forms', { timeout: 20_000 });
+  // «Pedir información» es un cajón que se abre sobre las solicitudes (WP-ESCRITORIO-AREAS, parte 4) y retiene el foco:
+  // para volver a la ficha, primero se cierra. Cerrarlo no envía nada.
+  await page.waitForSelector('dialog.cajon[open]', { timeout: 20_000 });
   await quieto(page, v);
+  const tituloDelPedido = await texto(page, 'dialog.cajon[open] .cajon__cabecera h2');
+  await clic(page, 'dialog.cajon[open] button', 'Cerrar');
+  await page.waitForFunction(() => !document.querySelector('dialog.cajon[open]'), { timeout: 10_000 });
   // El camino de vuelta está siempre en el marco del área (WP-ESCRITORIO-AREAS, parte 0): lo que dice que hay un retorno
   // a donde estaba la persona es «donde estabas», que el marco escribe solo con un `volver` válido.
   const retornoDelPedido = await texto(page, '.retorno-a-la-ficha a');
@@ -1081,7 +1087,12 @@ async function recorridoNutricion(page, v, carpeta) {
   await page.waitForFunction(() => location.pathname === '/pro/advisees', { timeout: 20_000 });
   await quieto(page, v);
   const despues = (await leerApi(v, `/advisees/${estado.aseId}/form-requests?limit=50`)).data.length;
-  comprobar('R3', '«Solicitar contexto» abre el flujo de formularios con su retorno; salir sin enviar no crea ninguna solicitud', retornoDelPedido === 'Volver a la ficha, donde estabas' && antes === despues && escrituras(v, desde).length === 0, `«${retornoDelPedido}» · ${antes} → ${despues} solicitudes · ${escrituras(v, desde).join(' · ') || 'sin escrituras'}`);
+  comprobar(
+    'R3',
+    '«Solicitar contexto» abre «Pedir información» sobre las solicitudes de la persona, con su retorno a la ficha; cerrarlo y volver sin enviar no crea ninguna solicitud',
+    tituloDelPedido === 'Pedir información' && retornoDelPedido === 'Volver a la ficha, donde estabas' && antes === despues && escrituras(v, desde).length === 0,
+    `«${tituloDelPedido}» · «${retornoDelPedido}» · ${antes} → ${despues} solicitudes · ${escrituras(v, desde).join(' · ') || 'sin escrituras'}`,
+  );
 }
 
 /**

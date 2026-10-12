@@ -7739,6 +7739,79 @@ const solicitudesEnPantalla = (page) =>
     };
   });
 
+/** El cajón de «Pedir información», si está abierto: sus tres pasos, lo elegido, lo que falta, el pie y dónde está el foco. */
+const pedidoEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const d = document.querySelector('dialog.cajon[open]');
+    if (!d) return null;
+    const caja = (e) => {
+      const r = e.getBoundingClientRect();
+      return { izquierda: Math.round(r.left), derecha: Math.round(r.right), arriba: Math.round(r.top), abajo: Math.round(r.bottom), ancho: Math.round(r.width), alto: Math.round(r.height) };
+    };
+    const pie = d.querySelector('.cajon__pie');
+    const cuerpo = d.querySelector('.cajon__cuerpo');
+    const fija = d.querySelector('[data-area="fija"]');
+    const aElegir = d.querySelector('[data-area="a-elegir"]');
+    const foco = document.activeElement;
+    const enlace = d.querySelector('[data-desde-entrenamiento] a');
+    return {
+      titulo: t(d.querySelector('.cajon__cabecera h2')),
+      persona: t(d.querySelector('.cajon__sobretitulo')),
+      conElFoco: d.contains(foco),
+      focoEnElTitulo: foco === d.querySelector('.cajon__cabecera h2'),
+      // Dónde está el foco, dicho por lo que es: un formulario, una pregunta, el aviso de un rechazo, el área o el para qué.
+      foco:
+        foco?.closest('[data-formulario]')?.dataset.formulario ??
+        foco?.closest('tr[data-pregunta]')?.dataset.pregunta ??
+        (foco?.closest('.aviso') ? 'aviso' : foco?.closest('[data-area]') ? 'area' : foco?.closest('.pedido__dos-campos') ? 'para-que' : null),
+      caja: caja(d),
+      ventana: { ancho: innerWidth, alto: innerHeight },
+      pie: { caja: caja(pie), boton: t(pie.querySelector('button')), apagado: pie.querySelector('button').disabled, nota: t(pie.querySelector('.pedido__antes-de-enviar')) },
+      cuerpo: { alto: cuerpo.clientHeight, contenido: cuerpo.scrollHeight },
+      avisos: [...d.querySelectorAll('.pedido__aviso')].map(t),
+      desdeEntrenamiento: enlace ? { texto: t(enlace), href: enlace.getAttribute('href') } : null,
+      rechazo: t(d.querySelector('.aviso--error')),
+      // El número del paso y su nombre son dos piezas del mismo título: se leen con un espacio en el medio.
+      pasos: [...d.querySelectorAll('.paso-del-pedido')].map((p) => ({ clave: p.dataset.paso, titulo: (t(p.querySelector('h3')) ?? '').replace(/^(\d+)\s*/, '$1 '), nota: t(p.querySelector('.paso-del-pedido__cabecera .nota')) })),
+      formularios: [...d.querySelectorAll('.formulario-del-pedido')].map((f) => ({
+        clave: f.dataset.formulario,
+        nombre: t(f.querySelector('.formulario-del-pedido__nombre')),
+        cuenta: t(f.querySelector('.formulario-del-pedido__cuenta')),
+        elegido: f.querySelector('input').checked,
+        descripcion: t(f.querySelector('.formulario-del-pedido__descripcion')),
+        alto: Math.round(f.querySelector('label').getBoundingClientRect().height),
+      })),
+      // Lo que el paso 2 dice fuera de su tabla: que todavía no hay formulario elegido, o la nota de las requeridas.
+      notasDeLasPreguntas: [...d.querySelectorAll('[data-paso="preguntas"] > .nota')].map(t),
+      cuenta: t(d.querySelector('[data-elegidas]')),
+      columnas: [...d.querySelectorAll('.preguntas-del-pedido thead th')].map(t),
+      preguntas: [...d.querySelectorAll('.preguntas-del-pedido tr[data-pregunta]')].map((tr) => {
+        const pedir = tr.querySelector('.preguntas-del-pedido__casilla input');
+        const requerida = tr.querySelector('.preguntas-del-pedido__requerida input');
+        return {
+          codigo: tr.dataset.pregunta,
+          pedida: pedir.checked,
+          pregunta: t(tr.querySelector('th label')),
+          ayuda: t(tr.querySelector('.preguntas-del-pedido__ayuda')),
+          respondeCon: t(tr.querySelector('.preguntas-del-pedido__responde')),
+          requerida: requerida.checked,
+          requeridaApagada: requerida.disabled,
+          nombreDeRequerida: requerida.getAttribute('aria-label'),
+          alto: Math.round(tr.getBoundingClientRect().height),
+        };
+      }),
+      paraQue: d.querySelector('.pedido__dos-campos > .campo:first-child input')?.value ?? null,
+      area: fija
+        ? { fija: true, valor: fija.querySelector('input').value, soloLectura: fija.querySelector('input').readOnly, ayuda: t(fija.querySelector('.campo__ayuda')), opciones: [] }
+        : aElegir
+          ? { fija: false, valor: aElegir.querySelector('select').value, soloLectura: false, ayuda: t(aElegir.querySelector('.campo__ayuda')), opciones: [...aElegir.querySelector('select').options].map((o) => o.text) }
+          : null,
+      faltas: [...d.querySelectorAll('.campo__error')].map((e) => (t(e) ?? '').replace(/^⚠\s*/, '')),
+      texto: t(d),
+    };
+  });
+
 /**
  * Lo que «Solicitudes» tiene que decir, escrito a mano con lo que devuelve la API (la lista, el detalle de cada solicitud
  * y la versión de su formulario): no se usa el módulo del dominio que arma la pantalla (`solicitudes-de-informacion.ts`).
@@ -7838,10 +7911,10 @@ function esperadoDeSolicitudes({ lista, detalleDe, formularioDe }) {
 }
 
 /**
- * Información · Solicitudes (maqueta 26; C-70 a C-74; F-05 y F-44 a F-51), sobre las cuentas descartables con sus tres
+ * Información · Solicitudes y el pedido (maquetas 26 y 27; C-70 a C-74; F-05 y F-44 a F-57), sobre las cuentas descartables con sus tres
  * solicitudes (`datos/generar.mjs descartable-solicitudes`): una respondida, una respondida y corregida por la persona, y
- * una sin responder. Lo esperado se calcula a mano con lo que devuelve la API. **Escribe al final** (envía una solicitud
- * por la pantalla): por eso no va dentro de `funcional`. Corre solo (`node recorrido.mjs solicitudes`), con esas cuentas
+ * una sin responder. Lo esperado se calcula a mano con lo que devuelve la API. **Escribe al final** (envía dos solicitudes
+ * por la pantalla, una de ellas llegando desde Entrenamiento): por eso no va dentro de `funcional`. Corre solo (`node recorrido.mjs solicitudes`), con esas cuentas
  * recién generadas, y no toca los datos de A, B ni C. Tres comprobaciones miran fallas simuladas por el recorrido, y lo dicen.
  */
 async function solicitudesDeInformacion() {
@@ -8188,98 +8261,395 @@ async function solicitudesDeInformacion() {
       `al costado: ${faltas.map((f) => f.id).join(', ') || 'sin faltas'} · la ayuda: ${faltasDeLaAyuda.map((f) => f.id).join(', ') || 'sin faltas'} · 1280: ${a1280.faltas.map((f) => f.id).join(', ') || 'sin faltas'} · 1024: ${a1024.faltas.map((f) => f.id).join(', ') || 'sin faltas'}`,
     );
 
-    // ── El pedido: se abre desde «Solicitudes», y las preguntas vienen todas marcadas (F-05) ─────────────────────────
+    // ── El pedido (maqueta 27): un cajón que se abre sobre «Solicitudes» ───────────────────────────────────────────
+    const CAJON = 'dialog.cajon[open]';
+    const EN = {
+      formulario: (clave) => `${CAJON} .formulario-del-pedido[data-formulario="${clave}"] input`,
+      pedir: (codigo) => `${CAJON} tr[data-pregunta="${codigo}"] .preguntas-del-pedido__casilla input`,
+      requerida: (codigo) => `${CAJON} tr[data-pregunta="${codigo}"] .preguntas-del-pedido__requerida input`,
+      paraQue: `${CAJON} .pedido__dos-campos > .campo:first-child input`,
+      area: `${CAJON} [data-area="a-elegir"] select`,
+      enviar: `${CAJON} [data-enviar]`,
+    };
+    const ENVIO = `/advisees/${A}/form-requests`;
+    const escriturasDesde = (desde) => v.urls.slice(desde).filter((u) => /^(POST|PUT|PATCH|DELETE) /.test(u));
+    const cajonCerrado = () => page.waitForFunction((s) => !document.querySelector(s), { timeout: 10_000 }, CAJON).catch(() => {});
+    const abrirElPedido = async () => {
+      const marca = await clic(page, '.solicitudes-del-area__pedir button', 'Pedir información');
+      await page.waitForSelector(CAJON, { timeout: 15_000 }).catch(() => {});
+      await quieto(page, v);
+      return marca;
+    };
+    const elegirFormulario = async (clave) => {
+      await page.click(EN.formulario(clave)).catch(() => {});
+      await quieto(page, v);
+      await page.waitForSelector(`${CAJON} .preguntas-del-pedido`, { timeout: 15_000 }).catch(() => {});
+      return pedidoEnPantalla(page);
+    };
+    // Lo esperado, a mano con lo que devuelve la API: el catálogo y la versión de dos formularios.
+    const catalogo = (await leerApi(v, '/form-templates?limit=50')).data;
+    const habitos = catalogo.find((f) => f.key === 'FRM-HABITOS');
+    const deEntrenamiento = catalogo.find((f) => f.key === 'FRM-ENTRENAMIENTO');
+    const versionDe = async (f) => (await leerApi(v, `/form-templates/${f.templateId}/versions/${f.latestVersionId}`)).data;
+    const versionDeHabitos = await versionDe(habitos);
+    const versionDeEntrenamiento = await versionDe(deEntrenamiento);
+    const camposDe = (version) => version.sections.flatMap((s) => s.fields);
+    const codigos = camposDe(versionDeHabitos).map((c) => c.fieldCode);
+    const codigosDeEntrenamiento = camposDe(versionDeEntrenamiento).map((c) => c.fieldCode);
+    const respondeCon = (c) => (c.dataType === 'BOOLEAN' ? 'Sí o no' : c.dataType === 'NUMBER' ? (c.unit ? `Número · ${c.unit}` : 'Número') : 'Texto');
+    const cuantas = (n) => (n === 1 ? '1 pregunta' : `${n} preguntas`);
+    const sinBarra = (direccion) => (direccion ?? '').replace('/?', '?');
+    const PARA_QUE = 'Ajustar el plan a tu descanso';
+
+    // Abrir: qué se lee, dónde queda el foco y qué viene elegido.
+    await salir();
     await entrar(BASE);
-    await clic(page, '.solicitudes-del-area__pedir button', 'Pedir información');
-    await page.waitForSelector('#titulo-catalogo', { timeout: 30_000 }).catch(() => {});
-    await quieto(page, v);
-    const marcoDelPedido = await marcoEnPantalla(page);
-    const vueltaDelPedido = await page.evaluate(() => {
-      const a = document.querySelector('.vuelta-a-la-seccion a');
-      return a ? { texto: a.innerText.replace(/\s+/g, ' ').trim(), href: a.getAttribute('href') } : null;
-    });
-    const vistaDelPedido = parametros(page).get('vista');
-    // Se elige «Hábitos y contexto»: no tiene área propia, y tiene tres preguntas.
-    const formularios = (await leerApi(v, '/form-templates?limit=50')).data;
-    const habitos = formularios.find((f) => f.key === 'FRM-HABITOS');
-    const versionDeHabitos = (await leerApi(v, `/form-templates/${habitos.templateId}/versions/${habitos.latestVersionId}`)).data;
-    const codigos = versionDeHabitos.sections.flatMap((s) => s.fields.map((c) => c.fieldCode));
-    await page.evaluate((nombre) => [...document.querySelectorAll('.historial > li')].find((li) => li.innerText.includes(nombre))?.querySelector('button')?.click(), habitos.name);
-    await page.waitForSelector('#titulo-armar', { timeout: 20_000 }).catch(() => {});
-    await quieto(page, v);
-    const casillas = () =>
-      page.evaluate(() => ({
-        pedidas: [...document.querySelectorAll('input[id^="pedir-"]')].map((i) => [i.id.replace('pedir-', ''), i.checked]),
-        requeridas: [...document.querySelectorAll('input[id^="requerido-"]')].map((i) => [i.id.replace('requerido-', ''), i.checked]),
-        cuenta: document.querySelector('[data-elegidas]')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
-        texto: document.querySelector('.seccion-del-area')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
-      }));
-    const alElegirFormulario = await casillas();
-    await page.click(`#pedir-${codigos[0]}`).catch(() => {});
+    const antesDelPedido = await solicitudesEnPantalla(page);
+    const alAbrirElPedido = v.urls.length;
+    const botonDelPedido = await abrirElPedido();
+    const recienAbierto = await pedidoEnPantalla(page);
+    const marcoConElPedido = await marcoEnPantalla(page);
+    const detrasDelPedido = await solicitudesEnPantalla(page);
+    const vistaConElPedido = parametros(page).get('vista');
+    const leidoAlAbrir = { catalogo: lecturasDesde(alAbrirElPedido, '/form-templates').filter((u) => !u.includes('/versions/')).length, versiones: lecturasDesde(alAbrirElPedido, '/versions/').length, lista: lecturasDesde(alAbrirElPedido, `${ENVIO}?`).length };
+    comprobar(
+      'C-70',
+      '«Pedir información» abre un cajón sobre «Solicitudes», que sigue detrás con su lista y sin volver a leerla: la dirección dice `vista=pedir`, el marco sigue marcando «Solicitudes» y el cajón dice de quién es con las palabras del marco. El foco va a su título. Tiene los tres pasos a la vista, ningún formulario elegido, y al abrirse lee el catálogo una vez y ninguna versión',
+      vistaConElPedido === 'pedir' &&
+        recienAbierto?.titulo === 'Pedir información' &&
+        !!marcoConElPedido?.persona &&
+        recienAbierto.persona === marcoConElPedido.persona &&
+        recienAbierto.focoEnElTitulo &&
+        igual(marcoConElPedido.pestanas.map((p) => [p.texto, p.actual]), [['Solicitudes', 'page']]) &&
+        detrasDelPedido.filas.length === lista.length &&
+        detrasDelPedido.alto === antesDelPedido.alto &&
+        igual(recienAbierto.pasos.map((p) => p.titulo), ['1 Qué formulario', '2 Qué preguntas', '3 Para qué y en qué área']) &&
+        catalogo.length >= 3 &&
+        igual(recienAbierto.formularios.map((f) => [f.clave, f.nombre, f.cuenta, f.elegido, f.descripcion]), catalogo.map((f) => [f.key, f.name, cuantas(f.fieldCount), false, null])) &&
+        recienAbierto.preguntas.length === 0 &&
+        igual(recienAbierto.notasDeLasPreguntas, ['Al elegir un formulario vas a ver acá sus preguntas.']) &&
+        leidoAlAbrir.catalogo === 1 &&
+        leidoAlAbrir.versiones === 0 &&
+        leidoAlAbrir.lista === 0,
+      `vista=${vistaConElPedido} · «${recienAbierto?.persona}» (el marco: «${marcoConElPedido?.persona}») · foco ${recienAbierto?.focoEnElTitulo ? 'en el título' : 'en otro lado'} · ${recienAbierto?.pasos.map((p) => p.titulo).join(' | ')} · ${recienAbierto?.formularios.map((f) => `${f.nombre} (${f.cuenta})${f.elegido ? '*' : ''}`).join(', ')} · lecturas: ${leidoAlAbrir.catalogo} del catálogo, ${leidoAlAbrir.versiones} de versiones, ${leidoAlAbrir.lista} de la lista`,
+    );
+
+    // Elegir un formulario: sus preguntas vienen todas marcadas, ninguna requerida (F-05).
+    const alElegirFormulario = await elegirFormulario('FRM-HABITOS');
+    const versionesLeidas = lecturasDesde(alAbrirElPedido, '/versions/').length;
+    await page.click(EN.pedir(codigos[0])).catch(() => {});
     await pausa(200);
-    const conUnaMenos = await casillas();
+    const conUnaMenos = await pedidoEnPantalla(page);
+    // La «Requerida» de una pregunta sin pedir está apagada: tocarla no la marca. La de una pedida, sí.
+    await page.click(EN.requerida(codigos[0])).catch(() => {});
+    await page.click(EN.requerida(codigos[1])).catch(() => {});
+    await pausa(200);
+    const conUnaRequerida = await pedidoEnPantalla(page);
     comprobar(
       'C-73',
-      '«Pedir información» abre el pedido (`vista=pedir`, que no cambió), con «Solicitudes» marcada en el marco y un enlace para volver. Al elegir un formulario vienen todas sus preguntas marcadas y ninguna como requerida; la cuenta dice cuántas se van a pedir y sigue a las casillas al desmarcar una (decisión de Dirección del 2026-10-12)',
-      vistaDelPedido === 'pedir' &&
-        igual(marcoDelPedido?.pestanas.map((p) => [p.texto, p.actual]), [['Solicitudes', 'page']]) &&
-        vueltaDelPedido?.texto === 'Solicitudes' &&
-        /vista=solicitudes/.test(vueltaDelPedido.href ?? '') &&
+      'Elegir un formulario lee su versión una vez, y muestra su descripción (la de los otros, no). Vienen todas sus preguntas marcadas y ninguna como requerida (decisión de Dirección del 2026-10-12); la cuenta dice cuántas se van a pedir y sigue a las casillas. «Responde con» es el tipo y la unidad de la API. La «Requerida» de una pregunta sin pedir está apagada y no se puede marcar; la de una pedida, sí. Cada fila y cada formulario miden 44 px o más',
+      versionesLeidas === 1 &&
         codigos.length >= 3 &&
-        igual(alElegirFormulario.pedidas, codigos.map((c) => [c, true])) &&
-        alElegirFormulario.requeridas.every(([, marcada]) => !marcada) &&
-        alElegirFormulario.requeridas.length === codigos.length &&
-        (alElegirFormulario.cuenta ?? '').startsWith(`${codigos.length} de ${codigos.length} elegidas.`) &&
-        (conUnaMenos.cuenta ?? '').startsWith(`${codigos.length - 1} de ${codigos.length} elegidas.`) &&
-        igual(conUnaMenos.pedidas[0], [codigos[0], false]),
-      `vista=${vistaDelPedido} · marcada: ${marcoDelPedido?.pestanas.find((p) => p.actual === 'page')?.texto} · al elegir: ${alElegirFormulario.pedidas.filter(([, m]) => m).length} de ${codigos.length} marcadas, ${alElegirFormulario.requeridas.filter(([, m]) => m).length} requeridas · «${alElegirFormulario.cuenta}» · al desmarcar una: «${conUnaMenos.cuenta}»`,
+        igual(alElegirFormulario?.formularios.map((f) => [f.clave, f.elegido, f.descripcion]), catalogo.map((f) => [f.key, f.key === 'FRM-HABITOS', f.key === 'FRM-HABITOS' ? f.purpose : null])) &&
+        igual(alElegirFormulario.columnas, ['Pedir', 'Pregunta', 'Responde con', 'Requerida']) &&
+        igual(alElegirFormulario.preguntas.map((p) => [p.codigo, p.pedida, p.requerida, p.requeridaApagada]), codigos.map((c) => [c, true, false, false])) &&
+        igual(alElegirFormulario.preguntas.map((p) => [p.pregunta, p.respondeCon, p.nombreDeRequerida]), camposDe(versionDeHabitos).map((c) => [c.label, respondeCon(c), `Requerida: ${c.label}`])) &&
+        new Set(camposDe(versionDeHabitos).map(respondeCon)).size >= 3 &&
+        alElegirFormulario.cuenta === `${codigos.length} de ${codigos.length} elegidas.` &&
+        /Vienen todas elegidas: desmarcá las que no necesites\./.test(alElegirFormulario.pasos[1]?.nota ?? '') &&
+        conUnaMenos?.cuenta === `${codigos.length - 1} de ${codigos.length} elegidas.` &&
+        igual(conUnaMenos.preguntas.map((p) => [p.pedida, p.requeridaApagada]), codigos.map((_, i) => [i !== 0, i === 0])) &&
+        igual(conUnaRequerida?.preguntas.map((p) => p.requerida), codigos.map((_, i) => i === 1)) &&
+        alElegirFormulario.preguntas.every((p) => p.alto >= 44) &&
+        alElegirFormulario.formularios.every((f) => f.alto >= 44),
+      `versiones leídas: ${versionesLeidas} · al elegir: ${alElegirFormulario?.preguntas.filter((p) => p.pedida).length} de ${codigos.length} marcadas, ${alElegirFormulario?.preguntas.filter((p) => p.requerida).length} requeridas · «${alElegirFormulario?.cuenta}» · ${alElegirFormulario?.preguntas.map((p) => p.respondeCon).join(', ')} · al desmarcar una: «${conUnaMenos?.cuenta}» · tras tocar las dos «Requerida»: ${conUnaRequerida?.preguntas.map((p) => (p.requerida ? 'sí' : 'no')).join(', ')} · filas de ${Math.min(...(alElegirFormulario?.preguntas.map((p) => p.alto) ?? [0]))} px o más`,
     );
     comprobar(
       'C-74',
-      'La nota de las requeridas dice lo que pasa —si la persona responde, las requeridas no pueden quedar vacías; la solicitud entera sí puede quedar sin responder—, y el pedido no usa «Alcance», «plantilla» ni «campo»: dice «área», «formulario» y «pregunta»',
-      /Si responde, las requeridas no pueden quedar vacías\. La solicitud entera sí puede quedar sin responder\./.test(alElegirFormulario.texto) &&
-        !/igual puede quedar sin responder/.test(alElegirFormulario.texto) &&
-        !/\b(Alcance|plantilla|campos?)\b/i.test(alElegirFormulario.texto) &&
+      'La nota de las requeridas dice lo que pasa —si la persona responde, las requeridas no pueden quedar vacías; la solicitud entera sí puede quedar sin responder—. Junto al botón, siempre a la vista, lo que hay que saber antes de enviar: que la va a ver en su teléfono (no que «le llega» un aviso, que BE no manda) y que no se puede cancelar ni editar. El cajón no usa «Alcance», «plantilla» ni «campo», ni ningún término prohibido de formularios',
+      igual(alElegirFormulario?.notasDeLasPreguntas, ['Si responde, las requeridas no pueden quedar vacías. La solicitud entera sí puede quedar sin responder.']) &&
+        alElegirFormulario.pie.nota === 'La va a ver en su teléfono, en «Información». No se puede cancelar ni editar después de enviarla.' &&
+        alElegirFormulario.pie.boton === 'Enviar solicitud' &&
+        alElegirFormulario.pie.caja.abajo <= alElegirFormulario.ventana.alto &&
+        !/Le llega/.test(alElegirFormulario.texto) &&
+        !/\b(Alcance|plantillas?|campos?)\b/i.test(alElegirFormulario.texto) &&
         /Área/.test(alElegirFormulario.texto) &&
-        prohibidas(alElegirFormulario.texto).length === 0,
-      `${/(Alcance|plantilla|campos?)/i.exec(alElegirFormulario.texto)?.[0] ?? 'sin palabras de antes'} · prohibidos: ${prohibidas(alElegirFormulario.texto).join(', ') || 'ninguno'}`,
+        prohibidas(alElegirFormulario.texto).length === 0 &&
+        prohibidas('Es obligatorio responder').length > 0,
+      `«${alElegirFormulario?.pie.nota}» · el pie termina a ${alElegirFormulario?.pie.caja.abajo} px de ${alElegirFormulario?.ventana.alto} · ${/(Alcance|plantillas?|campos?)/i.exec(alElegirFormulario?.texto ?? '')?.[0] ?? 'sin palabras de antes'} · prohibidos: ${prohibidas(alElegirFormulario?.texto).join(', ') || 'ninguno'}`,
     );
 
-    // ── Enviar (escribe): sale lo elegido, y la lista lo muestra ───────────────────────────────────────────────────
-    const PROPOSITO = 'Ajustar el plan a tu descanso';
-    await page.click(`#requerido-${codigos[1]}`).catch(() => {});
-    await page.type('#proposito', PROPOSITO);
-    await page.select('#alcance', 'NUTRICION');
+    // Cerrar no escribe ni pierde lo armado; «Actualizar» pregunta antes de descartarlo; «atrás» también cierra.
+    await page.type(EN.paraQue, PARA_QUE);
+    const antesDeCerrar = await pedidoEnPantalla(page);
+    await page.keyboard.press('Escape');
+    await cajonCerrado();
+    await pausa(300);
+    const pedidoTrasEscape = { abierto: !!(await page.$(CAJON)), vista: parametros(page).get('vista'), focoEnElBoton: await page.evaluate((m) => document.activeElement?.getAttribute('data-recorrido') === m, botonDelPedido) };
+    const alPreguntar = v.urls.length;
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+    await page.waitForSelector('dialog[open]', { timeout: 10_000 }).catch(() => {});
+    const preguntaAlActualizar = await page.evaluate(() => document.querySelector('dialog[open]')?.innerText.replace(/\s+/g, ' ').trim() ?? null);
+    await clic(page, 'dialog[open] button', 'Seguir editando').catch(() => null);
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    const leidoAlPreguntar = lecturasDesde(alPreguntar, '/').length;
+    await abrirElPedido();
+    const reabierto = await pedidoEnPantalla(page);
+    await page.evaluate(() => history.back());
+    await cajonCerrado();
+    await pausa(300);
+    const trasAtras = { abierto: !!(await page.$(CAJON)), vista: parametros(page).get('vista') };
+    const loArmado = (p) => (p ? { formulario: p.formularios.find((f) => f.elegido)?.clave ?? null, preguntas: p.preguntas.map((x) => [x.codigo, x.pedida, x.requerida]), cuenta: p.cuenta, paraQue: p.paraQue } : null);
+    comprobar(
+      'F-52',
+      'Escape cierra el cajón: la dirección vuelve a `vista=solicitudes`, el foco vuelve al botón que lo abrió y no sale ninguna escritura. Lo armado no se pierde por cerrar: al abrirlo de nuevo está como estaba (el formulario, la pregunta desmarcada, la requerida y el para qué). Con eso sin enviar, «Actualizar» pregunta antes de descartarlo, nombrándolo, y no lee nada. «Atrás», en el navegador, también lo cierra',
+      !pedidoTrasEscape.abierto &&
+        pedidoTrasEscape.vista === 'solicitudes' &&
+        pedidoTrasEscape.focoEnElBoton &&
+        escriturasDesde(alAbrirElPedido).length === 0 &&
+        antesDeCerrar?.paraQue === PARA_QUE &&
+        igual(loArmado(reabierto), loArmado(antesDeCerrar)) &&
+        reabierto.preguntas.some((x) => !x.pedida) &&
+        reabierto.preguntas.some((x) => x.requerida) &&
+        /el pedido de información/.test(preguntaAlActualizar ?? '') &&
+        leidoAlPreguntar === 0 &&
+        !trasAtras.abierto &&
+        trasAtras.vista === 'solicitudes',
+      `tras Escape: ${pedidoTrasEscape.abierto ? 'abierto' : 'cerrado'}, vista=${pedidoTrasEscape.vista}, foco ${pedidoTrasEscape.focoEnElBoton ? 'en el botón' : 'en otro lado'} · escrituras: ${escriturasDesde(alAbrirElPedido).length} · al reabrir: «${reabierto?.cuenta}», «${reabierto?.paraQue}» · «Actualizar»: «${(preguntaAlActualizar ?? '').slice(0, 120)}», ${leidoAlPreguntar} lecturas · tras «atrás»: ${trasAtras.abierto ? 'abierto' : 'cerrado'}, vista=${trasAtras.vista}`,
+    );
+
+    // Lo que falta para enviar se dice en su lugar, y no sale nada.
+    await salir();
+    await entrar(BASE);
+    await abrirElPedido();
+    const alFaltar = v.urls.length;
+    await page.click(EN.enviar).catch(() => {});
+    await pausa(300);
+    const sinNada = await pedidoEnPantalla(page);
+    const conHabitos = await elegirFormulario('FRM-HABITOS');
+    for (const c of codigos) await page.click(EN.pedir(c)).catch(() => {});
+    await page.click(EN.enviar).catch(() => {});
+    await pausa(300);
+    const sinPreguntas = await pedidoEnPantalla(page);
+    await page.click(EN.pedir(codigos[0])).catch(() => {});
+    await page.type(EN.paraQue, PARA_QUE);
+    await pausa(200);
+    const completando = await pedidoEnPantalla(page);
+    comprobar(
+      'F-53',
+      'Con algo sin completar, «Enviar solicitud» no envía nada y dice en su lugar qué falta, con el foco en lo primero que falta: sin nada elegido, el formulario y el para qué; con un formulario sin área propia y todas sus preguntas desmarcadas, alguna pregunta, el para qué y el área. Cada cosa deja de decirse cuando se completa',
+      igual(sinNada?.faltas, ['Elegí un formulario.', 'Escribí para qué lo necesitás.']) &&
+        sinNada.foco === catalogo[0].key &&
+        sinNada.rechazo === null &&
+        igual(sinPreguntas?.faltas, ['Elegí al menos una pregunta para pedir.', 'Escribí para qué lo necesitás.', 'Elegí en qué área lo pedís.']) &&
+        sinPreguntas.cuenta === `0 de ${codigos.length} elegidas.` &&
+        sinPreguntas.foco === codigos[0] &&
+        igual(completando?.faltas, ['Elegí en qué área lo pedís.']) &&
+        escriturasDesde(alFaltar).length === 0 &&
+        !!(await page.$(CAJON)),
+      `sin nada: ${sinNada?.faltas.join(' | ')} (foco en ${sinNada?.foco}) · sin preguntas: ${sinPreguntas?.faltas.join(' | ')} (foco en ${sinPreguntas?.foco}, «${sinPreguntas?.cuenta}») · completando: ${completando?.faltas.join(' | ')} · escrituras: ${escriturasDesde(alFaltar).length}`,
+    );
+
+    // El área: fija si el formulario tiene una propia; a elegir, sin ninguna elegida, si no.
+    const conElDeEntrenamiento = await elegirFormulario('FRM-ENTRENAMIENTO');
+    const aclaraciones = camposDe(versionDeEntrenamiento).map((c) => c.helpText);
+    await clic(page, `${CAJON} .preguntas-del-pedido__aclaraciones button`, 'Ver la aclaración de cada pregunta').catch(() => null);
+    await pausa(200);
+    const conAclaraciones = await pedidoEnPantalla(page);
+    informar(
+      'F-56',
+      'El pedido, a 1440 × 900, con el formulario más largo del catálogo (seis preguntas) elegido: antes era una página de 1.835 px (medida antes de recomponer); ahora, un cajón que no desplaza la página',
+      `el contenido del cajón mide ${conElDeEntrenamiento?.cuerpo.contenido} px, en ${conElDeEntrenamiento?.cuerpo.alto} a la vista; con las aclaraciones abiertas, ${conAclaraciones?.cuerpo.contenido}`,
+    );
+    comprobar(
+      'F-54',
+      'El área de la solicitud: con un formulario sin área propia (la API lo entrega sin área) hay que elegirla, se ofrecen las tres y no viene ninguna; con uno de un área sola (Entrenamiento) queda fija, en un campo que no se edita, y lo dice. Elegirlo a mano trae todas sus preguntas marcadas y ninguna requerida. La aclaración que la persona lee debajo de cada pregunta está a un clic, y es la de la API',
+      versionDeHabitos.domain === null &&
+        versionDeEntrenamiento.domain === 'ENTRENAMIENTO' &&
+        conHabitos?.area?.fija === false &&
+        conHabitos.area.valor === '' &&
+        igual(conHabitos.area.opciones, ['Elegí un área', 'Nutrición', 'Entrenamiento', 'Antropometría']) &&
+        conElDeEntrenamiento?.area?.fija === true &&
+        conElDeEntrenamiento.area.valor === 'Entrenamiento' &&
+        conElDeEntrenamiento.area.soloLectura &&
+        conElDeEntrenamiento.area.ayuda === 'Este formulario es solo de Entrenamiento.' &&
+        igual(conElDeEntrenamiento.preguntas.map((p) => [p.codigo, p.pedida, p.requerida]), codigosDeEntrenamiento.map((c) => [c, true, false])) &&
+        conElDeEntrenamiento.cuenta === `${codigosDeEntrenamiento.length} de ${codigosDeEntrenamiento.length} elegidas.` &&
+        conElDeEntrenamiento.desdeEntrenamiento === null &&
+        !conElDeEntrenamiento.faltas.includes('Elegí en qué área lo pedís.') &&
+        conElDeEntrenamiento.preguntas.every((p) => p.ayuda === null) &&
+        aclaraciones.some((a) => a) &&
+        igual(conAclaraciones?.preguntas.map((p) => p.ayuda), aclaraciones),
+      `Hábitos: ${conHabitos?.area?.fija ? 'fija' : `a elegir (${conHabitos?.area?.opciones.join(', ')}), elegida «${conHabitos?.area?.valor}»`} · Entrenamiento: ${conElDeEntrenamiento?.area?.fija ? `fija en «${conElDeEntrenamiento.area.valor}», «${conElDeEntrenamiento.area.ayuda}»` : 'a elegir'} · «${conElDeEntrenamiento?.cuenta}», ${conElDeEntrenamiento?.preguntas.filter((p) => p.requerida).length} requeridas · aclaraciones a la vista: ${conElDeEntrenamiento?.preguntas.filter((p) => p.ayuda).length} y, al pedirlas, ${conAclaraciones?.preguntas.filter((p) => p.ayuda).length}`,
+    );
+
+    // Los rechazos se dicen adentro del cajón, con el foco, y lo elegido sigue (respuestas simuladas en el navegador).
+    await elegirFormulario('FRM-HABITOS');
+    await page.select(EN.area, 'NUTRICION').catch(() => {});
+    await pausa(200);
+    const antesDeLosRechazos = await pedidoEnPantalla(page);
+    const rechazar = async (regla) => {
+      const desde = v.urls.length;
+      v.reglas.push(regla);
+      await page.click(EN.enviar).catch(() => {});
+      await page.waitForSelector(`${CAJON} .aviso--error`, { timeout: 20_000 }).catch(() => {});
+      await quieto(page, v);
+      v.reglas.splice(v.reglas.indexOf(regla), 1);
+      return { p: await pedidoEnPantalla(page), alResumen: lecturasDesde(desde, `/advisees/${A}/dashboard`).length };
+    };
+    const elEnvio = (u) => u.endsWith(ENVIO);
+    const noPertinente = await rechazar({ coincide: elEnvio, accion: 'responder', status: 422, codigo: 'FORM_REQUEST_NOT_ALLOWED' });
+    await cupo(v, 60);
+    const noDisponible = await rechazar({ coincide: elEnvio, accion: 'responder', status: 404, codigo: 'RESOURCE_NOT_FOUND' });
+    await cupo(v, 60);
+    const sinRed = await rechazar({ coincide: elEnvio, accion: 'cortar' });
+    // Cambiar algo después de un resultado incierto es otro intento: el botón deja de decir «Reintentar».
+    await page.type(EN.paraQue, '.');
+    await pausa(200);
+    const trasCambiar = await pedidoEnPantalla(page);
+    const despuesDeLosRechazos = (await leerApi(v, `${ENVIO}?limit=50`)).data.length;
+    comprobar(
+      'F-55',
+      'Un rechazo al enviar (simulado) se dice adentro del cajón, con el foco en el aviso, y lo elegido sigue como estaba. Si alguna pregunta no es pertinente para el área, lo dice con esas palabras; si la respuesta es «no disponible», dice el texto neutral del profesional y el marco vuelve a preguntar el acceso; sin conexión, dice que no se pudo confirmar y el botón pasa a «Reintentar», hasta que se cambia algo. Ninguna solicitud se creó',
+      noPertinente.p?.rechazo === 'Alguna de las preguntas pedidas no es pertinente para esta área. Revisá las preguntas o el área.' &&
+        noPertinente.p.foco === 'aviso' &&
+        noPertinente.alResumen === 0 &&
+        igual(loArmado(noPertinente.p), loArmado(antesDeLosRechazos)) &&
+        noPertinente.p.area?.valor === 'NUTRICION' &&
+        noDisponible.p?.rechazo === 'No encontramos un recurso disponible para esta acción.' &&
+        noDisponible.p.foco === 'aviso' &&
+        noDisponible.alResumen === 1 &&
+        sinRed.p?.rechazo === 'No pudimos confirmar el resultado. Reintentá.' &&
+        sinRed.p.pie.boton === 'Reintentar' &&
+        noPertinente.p.pie.boton === 'Enviar solicitud' &&
+        trasCambiar?.pie.boton === 'Enviar solicitud' &&
+        despuesDeLosRechazos === lista.length,
+      `422: «${noPertinente.p?.rechazo}» (foco en ${noPertinente.p?.foco}) · 404: «${noDisponible.p?.rechazo}», ${noDisponible.alResumen} pregunta al resumen · sin conexión: «${sinRed.p?.rechazo}», botón «${sinRed.p?.pie.boton}» y, al cambiar algo, «${trasCambiar?.pie.boton}» · solicitudes en la API: ${despuesDeLosRechazos} (había ${lista.length})`,
+    );
+
+    // Los anchos: 800 px al costado; a 1024, todo el ancho. El pie, siempre adentro de la ventana.
+    const conElCajonEn = async (ancho) => {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(400);
+      return { p: await pedidoEnPantalla(page), desborda: !(await sinDesborde(page)), faltas: await axe(page) };
+    };
+    const c1440 = await conElCajonEn(1440);
+    const c1280 = await conElCajonEn(1280);
+    const c1024 = await conElCajonEn(1024);
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(300);
+    informar('F-56', 'El cajón, a 1440 × 900, con un formulario de tres preguntas elegido y un rechazo a la vista', `mide ${c1440.p?.caja.ancho} × ${c1440.p?.caja.alto} px; su contenido, ${c1440.p?.cuerpo.contenido} px en ${c1440.p?.cuerpo.alto} a la vista`);
+    comprobar(
+      'F-56',
+      'A 1440 y a 1280 px el cajón mide 800 px, pegado al borde derecho y de arriba a abajo de la ventana, y la página sigue a la vista a su izquierda; a 1024 px ocupa todo el ancho. En los tres el pie, con «Enviar solicitud», queda adentro de la ventana, nada desborda de costado y axe no encuentra faltas con un formulario elegido y un rechazo a la vista',
+      [c1440, c1280].every((x) => x.p?.caja.ancho === 800 && x.p.caja.derecha === x.p.ventana.ancho && x.p.caja.arriba === 0 && x.p.caja.alto === 900) &&
+        c1024.p?.caja.ancho === 1024 &&
+        c1024.p.caja.izquierda === 0 &&
+        [c1440, c1280, c1024].every((x) => x.p.pie.caja.abajo <= 900 && x.p.pie.caja.arriba >= 0 && !x.desborda && x.faltas.length === 0),
+      [c1440, c1280, c1024].map((x) => `${x.p?.ventana.ancho}: cajón de ${x.p?.caja.ancho} px, queda ${x.p ? x.p.caja.izquierda : '?'} de la página a la vista, el pie termina a ${x.p?.pie.caja.abajo} · axe: ${x.faltas.map((f) => f.id).join(', ') || 'sin faltas'}${x.desborda ? ' · DESBORDA' : ''}`).join(' — '),
+    );
+
+    // ── Enviar (escribe): sale lo elegido, el cajón se cierra y la lista lo muestra ────────────────────────────────
+    await page.click(EN.pedir(codigos[0])).catch(() => {});
+    await page.click(EN.requerida(codigos[1])).catch(() => {});
+    await pausa(200);
+    const antesDeEnviar = await pedidoEnPantalla(page);
     const alEnviar = v.urls.length;
-    await clic(page, '.seccion-del-area .acciones button', 'Enviar solicitud');
+    await page.click(EN.enviar).catch(() => {});
     await page.waitForFunction(() => (document.querySelector('.aviso-flotante__texto')?.innerText.trim() ?? '') !== '', { timeout: 30_000 }).catch(() => {});
     const avisoDelEnvio = await page.evaluate(() => document.querySelector('.aviso-flotante__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? null);
+    await cajonCerrado();
     await page.waitForSelector('button.solicitud-de-la-lista', { timeout: 30_000 }).catch(() => {});
     await quieto(page, v);
     const despues = await leerTodo();
     const trasEnviar = await solicitudesEnPantalla(page);
+    const cajonTrasEnviar = !!(await page.$(CAJON));
     const nuevas = despues.lista.filter((s) => !lista.some((x) => x.formRequestId === s.formRequestId));
     const laNueva = nuevas[0] ?? null;
-    const envios = v.urls.slice(alEnviar).filter((u) => u.startsWith('POST ') && u.includes(`/advisees/${A}/form-requests`)).length;
+    const envios = v.urls.slice(alEnviar).filter((u) => u.startsWith('POST ') && u.endsWith(ENVIO)).length;
+    await abrirElPedido();
+    const pedidoNuevo = await pedidoEnPantalla(page);
+    await page.keyboard.press('Escape');
+    await cajonCerrado();
     comprobar(
       'F-05',
-      'Al enviar sale un solo pedido, con lo que quedó elegido: las preguntas marcadas (no la que se desmarcó), la requerida, el propósito y el área. La página vuelve a «Solicitudes» y lo dice; la lista tiene una más, primera y sin responder, y las cantidades de las vistas suben',
+      'Al enviar sale un solo pedido, con lo que quedó elegido: las preguntas marcadas (no la que se desmarcó), en el orden del formulario, la requerida, el para qué y el área. El cajón se cierra, la página queda en «Solicitudes» y lo dice; la lista se vuelve a leer y tiene una más, primera y sin responder, y las cantidades de las vistas suben. El pedido siguiente empieza de cero',
       envios === 1 &&
         nuevas.length === 1 &&
-        igual([...laNueva.requestedFieldCodes].sort(), codigos.slice(1).sort()) &&
+        igual(antesDeEnviar?.preguntas.map((p) => [p.pedida, p.requerida]), codigos.map((_, i) => [i !== 0, i === 1])) &&
+        igual(laNueva.requestedFieldCodes, codigos.slice(1)) &&
         igual(laNueva.requiredFieldCodes, [codigos[1]]) &&
-        laNueva.purpose === PROPOSITO &&
+        laNueva.purpose === `${PARA_QUE}.` &&
         laNueva.scope === 'NUTRICION' &&
         laNueva.status === 'PENDING' &&
         avisoDelEnvio === 'Solicitud enviada.' &&
+        !cajonTrasEnviar &&
         parametros(page).get('vista') === 'solicitudes' &&
         trasEnviar.filas[0]?.id === laNueva.formRequestId &&
         igual(trasEnviar.filas.map(({ elegida, ...f }) => f), despues.E.solicitudes.map((x) => x.fila)) &&
         trasEnviar.vistas.find((x) => x.clave === 'TODAS')?.texto === `Todas ${lista.length + 1} solicitudes` &&
-        trasEnviar.vistas.find((x) => x.clave === 'SIN_RESPONDER')?.texto === `Sin responder ${sinResponder.length + 1} solicitudes`,
+        trasEnviar.vistas.find((x) => x.clave === 'SIN_RESPONDER')?.texto === `Sin responder ${sinResponder.length + 1} solicitudes` &&
+        pedidoNuevo?.formularios.every((f) => !f.elegido) &&
+        pedidoNuevo.paraQue === '' &&
+        pedidoNuevo.preguntas.length === 0,
       laNueva
-        ? `pedidos: ${envios} · pedidas: ${laNueva.requestedFieldCodes.join(', ')} · requeridas: ${laNueva.requiredFieldCodes.join(', ')} · ${laNueva.scope} · «${avisoDelEnvio}» · ${trasEnviar.vistas.map((x) => x.texto).join(' · ')}`
+        ? `pedidos: ${envios} · pedidas: ${laNueva.requestedFieldCodes.join(', ')} · requeridas: ${laNueva.requiredFieldCodes.join(', ')} · ${laNueva.scope} · «${laNueva.purpose}» · «${avisoDelEnvio}» · ${trasEnviar.vistas.map((x) => x.texto).join(' · ')} · el pedido siguiente: ${pedidoNuevo?.formularios.filter((f) => f.elegido).length} formularios elegidos`
         : `la API tiene ${nuevas.length} solicitudes nuevas · pedidos: ${envios} · «${avisoDelEnvio}»`,
+    );
+
+    // ── Desde Entrenamiento (DL-100): la precarga ratificada, y al enviar se vuelve a Entrenamiento (escribe) ──────
+    // La precarga, escrita a mano: las seis preguntas del formulario de Entrenamiento y, requeridas, las cinco primeras.
+    const PRECARGA = ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
+    await salir();
+    await entrar(`${AREA_DE_LA_PAGINA}&vista=pedir&plantilla=FRM-ENTRENAMIENTO&volver=entrenamiento`);
+    await page.waitForSelector(`${CAJON} .preguntas-del-pedido`, { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const desdeEntrenamiento = await pedidoEnPantalla(page);
+    // Cerrar deja a la persona en «Solicitudes», con la vuelta a Entrenamiento en el marco; al reabrir, sigue la precarga.
+    await page.keyboard.press('Escape');
+    await cajonCerrado();
+    await pausa(300);
+    const marcoTrasCerrar = await marcoEnPantalla(page);
+    const direccionTrasCerrar = { vista: parametros(page).get('vista'), volver: parametros(page).get('volver') };
+    await abrirElPedido();
+    const reabiertoDesdeEntrenamiento = await pedidoEnPantalla(page);
+    const alEnviarElContexto = v.urls.length;
+    await page.click(EN.enviar).catch(() => {});
+    await page.waitForFunction(() => location.pathname === '/pro/advisees/training', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const llegada = sinBarra(await page.evaluate(() => location.pathname + location.search));
+    // La página de Información se abandona al enviar: que la solicitud salió lo dice Entrenamiento, al llegar.
+    await page.waitForFunction(() => (document.querySelector('.aviso-flotante__texto')?.innerText.trim() ?? '') !== '', { timeout: 20_000 }).catch(() => {});
+    const avisoAlLlegar = await page.evaluate(() => document.querySelector('.aviso-flotante__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? null);
+    const conElContexto = await leerTodo();
+    const elContexto = conElContexto.lista.find((s) => !despues.lista.some((x) => x.formRequestId === s.formRequestId)) ?? null;
+    const enviosDelContexto = v.urls.slice(alEnviarElContexto).filter((u) => u.startsWith('POST ') && u.endsWith(ENVIO)).length;
+    comprobar(
+      'F-57',
+      'Llegando desde Entrenamiento, el cajón se abre con la precarga ratificada (DL-100): el formulario de Entrenamiento, sus seis preguntas pedidas y cinco requeridas, el para qué y el área fija; lo dice, con un enlace para volver, y no dice «Vienen todas elegidas». Cerrarlo deja a la persona en «Solicitudes», con «Volver a Entrenamiento» en el marco, y al reabrirlo la precarga sigue. Al enviar sale un solo pedido con eso y se vuelve a Entrenamiento, que al llegar dice «Solicitud enviada.»',
+      desdeEntrenamiento?.formularios.find((f) => f.elegido)?.clave === 'FRM-ENTRENAMIENTO' &&
+        igual(desdeEntrenamiento.preguntas.map((p) => [p.codigo, p.pedida, p.requerida]), PRECARGA.map((c, i) => [c, true, i < 5])) &&
+        desdeEntrenamiento.cuenta === '6 de 6 elegidas.' &&
+        !/Vienen todas elegidas/.test(desdeEntrenamiento.texto) &&
+        desdeEntrenamiento.paraQue === 'Planificar tu entrenamiento' &&
+        desdeEntrenamiento.area?.fija === true &&
+        desdeEntrenamiento.area.valor === 'Entrenamiento' &&
+        desdeEntrenamiento.avisos.some((a) => a.startsWith('Viniste desde Entrenamiento: el formulario, las preguntas y el área ya están elegidos. Podés cambiarlos antes de enviar.')) &&
+        desdeEntrenamiento.desdeEntrenamiento?.texto === 'Volver a Entrenamiento' &&
+        sinBarra(desdeEntrenamiento.desdeEntrenamiento.href).startsWith(`/pro/advisees/training?id=${A}`) &&
+        direccionTrasCerrar.vista === 'solicitudes' &&
+        direccionTrasCerrar.volver === 'entrenamiento' &&
+        marcoTrasCerrar?.volver?.texto === 'Volver a Entrenamiento' &&
+        igual(loArmado(reabiertoDesdeEntrenamiento), loArmado(desdeEntrenamiento)) &&
+        enviosDelContexto === 1 &&
+        llegada.startsWith(`/pro/advisees/training?id=${A}`) &&
+        avisoAlLlegar === 'Solicitud enviada.' &&
+        !!elContexto &&
+        igual(elContexto.requestedFieldCodes, PRECARGA) &&
+        igual(elContexto.requiredFieldCodes, PRECARGA.slice(0, 5)) &&
+        elContexto.scope === 'ENTRENAMIENTO' &&
+        elContexto.purpose === 'Planificar tu entrenamiento',
+      `${desdeEntrenamiento?.formularios.find((f) => f.elegido)?.nombre}: ${desdeEntrenamiento?.preguntas.filter((p) => p.pedida).length} pedidas, ${desdeEntrenamiento?.preguntas.filter((p) => p.requerida).length} requeridas · «${desdeEntrenamiento?.paraQue}» · área ${desdeEntrenamiento?.area?.fija ? 'fija' : 'a elegir'} · tras cerrar: vista=${direccionTrasCerrar.vista}, «${marcoTrasCerrar?.volver?.texto}» · pedidos: ${enviosDelContexto} · llegó a ${llegada.slice(0, 60)}, que dice «${avisoAlLlegar}» · en la API: ${elContexto ? `${elContexto.requestedFieldCodes.length} pedidas, ${elContexto.requiredFieldCodes.length} requeridas, ${elContexto.scope}` : 'ninguna nueva'}`,
     );
     comprobar('—', '«Solicitudes» y el pedido no produjeron errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
   } finally {

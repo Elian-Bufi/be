@@ -66,7 +66,7 @@ const hora = (iso: string): string => horaDelDia(new Date(iso));
 const mismoDia = (a: string, b: string): boolean => dia(a) === dia(b);
 
 export function VistaDeSolicitudes() {
-  const { token, asesoradoId, sesionPerdida, irA, parametros, ir } = useFormularios();
+  const { token, asesoradoId, sesionPerdida, parametros, ir } = useFormularios();
   const id = useId();
   const [lista, setLista] = useState<Resultado<Lista> | null>(null);
   const [respuestas, setRespuestas] = useState<ReadonlyMap<string, Respuesta>>(() => new Map());
@@ -197,8 +197,10 @@ export function VistaDeSolicitudes() {
       onReintentarElFormulario={() => void leerFormulario(abierta)}
     />
   ) : null;
+  // El pedido es un cajón que se abre sobre esta sección (`vista=pedir`): «atrás», en el navegador, lo cierra.
+  const pedidoAbierto = parametros.get('vista') === 'pedir';
   const pedir = (
-    <button type="button" className="boton boton--primario" onClick={() => irA('pedir')}>
+    <button type="button" className="boton boton--primario" onClick={() => ir({ vista: 'pedir' }, { agregarAlHistorial: true })}>
       <Icono nombre="solicitar" tamano={18} />
       {F.pedirInformacion}
     </button>
@@ -303,8 +305,9 @@ export function VistaDeSolicitudes() {
                 </Aviso>
               ) : null}
 
-              {/* En una ventana angosta el detalle no entra al costado: se abre encima, en un panel que retiene el foco. */}
-              <Panel abierto={abierta !== null && !alCostado} titulo={abierta?.templateName ?? ''} onCerrar={() => ir({ solicitud: null })}>
+              {/* En una ventana angosta el detalle no entra al costado: se abre encima, en un panel que retiene el foco.
+                  Con el pedido abierto espera: dos diálogos encima a la vez no se pueden recorrer. */}
+              <Panel abierto={abierta !== null && !alCostado && !pedidoAbierto} titulo={abierta?.templateName ?? ''} onCerrar={() => ir({ solicitud: null })}>
                 {abierta && !alCostado ? (
                   <>
                     <p className="detalle-de-solicitud__estado">

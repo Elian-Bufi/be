@@ -231,6 +231,18 @@ test('rige una corrección que no es la última de la cadena: lo que vino despu�
   assert.deepEqual(d.historia.map((v) => v.rige), [false, true, false]);
 });
 
+test('«antes», con dos correcciones: es el último valor distinto del que rige, aunque haya que saltear una versión que dice lo mismo', () => {
+  const original = { answers: [respuestaDe('condiciones_declaradas', 'Asma.'), respuestaDe('dolor_o_lesiones', 'Rodilla.')] };
+  const primera = { ...CORRECCION, rectificationId: 'rec-1', previousRectificationId: null, answers: [respuestaDe('condiciones_declaradas', 'Asma moderada.'), respuestaDe('dolor_o_lesiones', 'Hombro.')] };
+  const segunda = { ...CORRECCION, rectificationId: 'rec-2', previousRectificationId: 'rec-1', answers: [respuestaDe('condiciones_declaradas', 'Asma leve.'), respuestaDe('dolor_o_lesiones', 'Hombro.')], version: 'v3', recordedAt: '2026-09-26T10:00:00.000Z' };
+  const d = loDeclarado(solicitud(), respuesta({ original, rectifications: [primera, segunda], effectiveView: { kind: 'RECTIFIED', rectificationId: 'rec-2' }, version: 'v3' }), SALUD);
+  // Cambió dos veces: «antes» es lo que decía la primera corrección, no la original.
+  assert.deepEqual([d.filas[0]!.valor, d.filas[0]!.antes], ['Asma leve.', { tipo: 'VALOR', texto: 'Asma moderada.' }]);
+  // Cambió una sola vez, en la primera corrección: la versión inmediata anterior dice lo mismo que la que rige, y
+  // «antes» es lo que decía la original.
+  assert.deepEqual([d.filas[1]!.valor, d.filas[1]!.corregida, d.filas[1]!.antes], ['Hombro.', true, { tipo: 'VALOR', texto: 'Rodilla.' }]);
+});
+
 test('la cadena que no se puede resolver: ninguna versión rige y ninguna fila tiene valor; la historia queda completa', () => {
   const d = loDeclarado(solicitud(), respuesta({ rectifications: [CORRECCION], effectiveView: { kind: 'NOT_RESOLVABLE' }, version: 'v2' }), SALUD);
   assert.equal(d.estado, 'SIN_RESOLVER');
@@ -256,6 +268,9 @@ test('sin el formulario (no se pudo leer): las filas no llevan el texto de la pr
   const d = loDeclarado(solicitud(), respuesta(), null);
   assert.deepEqual(d.filas.map((f) => [f.codigo, f.pregunta, f.valor]), [['condiciones_declaradas', null, 'Asma leve, desde hace años.'], ['dolor_o_lesiones', null, null]]);
   assert.equal(d.historia[0]!.respuestas[0]!.pregunta, null);
+  // Tampoco en una solicitud sin responder, ni cuando la cadena no se puede resolver: son filas sin valor, y sin código.
+  assert.deepEqual(loDeclarado(solicitud({ status: 'PENDING' }), null, null).filas.map((f) => f.pregunta), [null, null]);
+  assert.deepEqual(loDeclarado(solicitud(), respuesta({ rectifications: [CORRECCION], effectiveView: { kind: 'NOT_RESOLVABLE' }, version: 'v2' }), null).filas.map((f) => f.pregunta), [null, null]);
 });
 
 test('una pregunta pedida que el formulario no trae va al final, sin texto; una respuesta a algo no pedido no suma a las respondidas', () => {
@@ -288,4 +303,10 @@ test('«Respondió N de las M preguntas» es una cuenta, nunca una proporción; 
   assert.equal(COPY_SOLICITUDES.respondioDe(1, 1), 'Respondió la pregunta.');
   assert.equal(COPY_SOLICITUDES.preguntas(1), '1 pregunta');
   assert.equal(COPY_SOLICITUDES.preguntas(6), '6 preguntas');
+});
+
+test('los textos del pedido que llevan un dato: cuántas preguntas quedaron elegidas, de cuántas, y de qué área es el formulario', () => {
+  assert.equal(COPY_SOLICITUDES.elegidas(2, 3), '2 de 3 elegidas.');
+  assert.equal(COPY_SOLICITUDES.elegidas(0, 6), '0 de 6 elegidas.');
+  assert.equal(COPY_SOLICITUDES.soloDeEstaArea('Entrenamiento'), 'Este formulario es solo de Entrenamiento.');
 });

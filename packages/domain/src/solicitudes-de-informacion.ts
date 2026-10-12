@@ -228,10 +228,33 @@ export const COPY_SOLICITUDES = {
   detalleNoDisponible: 'Esta solicitud ya no está disponible. La lista sigue completa.',
   detalleNoCargo: 'No pudimos leer esta solicitud.',
   leyendoLaRespuesta: 'Leyendo la respuesta…',
-  // El pedido.
+  // El pedido: un cajón con tres pasos a la vista.
+  paso: { formulario: 'Qué formulario', preguntas: 'Qué preguntas', paraQue: 'Para qué y en qué área' },
   /** Lo que marcar «Requerida» quiere decir, y lo que no: la solicitud entera puede quedar sin responder. */
   siRespondeLasRequeridas: 'Si responde, las requeridas no pueden quedar vacías.',
   /** Al elegir un formulario vienen todas sus preguntas marcadas (decisión de Dirección del 2026-10-12, F-05). */
   elegidas: (elegidas: number, total: number): string => `${numero(elegidas)} de ${numero(total)} elegidas.`,
   vienenTodasElegidas: 'Vienen todas elegidas: desmarcá las que no necesites.',
+  preguntasAlElegir: 'Al elegir un formulario vas a ver acá sus preguntas.',
+  leyendoLasPreguntas: 'Leyendo las preguntas…',
+  /** Las columnas de la tabla de preguntas. La primera no tiene título a la vista: es la casilla que la pide. */
+  pedir: 'Pedir',
+  respondeCon: 'Responde con',
+  /** Lo que la persona lee debajo de una pregunta al responderla. Queda a un clic: la tabla entra en la ventana. */
+  verAclaraciones: 'Ver la aclaración de cada pregunta',
+  ocultarAclaraciones: 'Ocultar las aclaraciones',
+  aclaracionesDeLasPreguntas: 'Es lo que la persona lee debajo de la pregunta al responderla.',
+  soloDeEstaArea: (area: string): string => `Este formulario es solo de ${area}.`,
+  areaAElegir: 'Este formulario no es de un área sola: elegí en cuál lo pedís.',
+  areaSegunElFormulario: 'Si el formulario es de un área sola, queda fijada.',
+  elegiUnArea: 'Elegí un área',
+  // Lo que falta para enviar, dicho en su lugar.
+  faltaElFormulario: 'Elegí un formulario.',
+  faltaElParaQue: 'Escribí para qué lo necesitás.',
+  faltaElArea: 'Elegí en qué área lo pedís.',
+  // Junto al botón, antes de un acto que no se deshace. BE no manda un aviso al teléfono: la persona la ve al abrir
+  // «Información» en la aplicación.
+  laVaAVer: 'La va a ver en su teléfono, en «Información».',
+  noSeCancelaNiSeEdita: 'No se puede cancelar ni editar después de enviarla.',
+  enviando: 'Enviando…',
 } as const;
