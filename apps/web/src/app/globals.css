@@ -7255,12 +7255,6 @@ button.comida-del-dia__fila > .icono:last-child {
   margin-left: auto;
 }
 
-/* En los resultados la nota cede lugar: con «Ver N anteriores» y «Calcular con un método» al lado, el título y sus
-   acciones siguen en un renglón a 1440 px, como en la maqueta. */
-.resultados-de-la-toma .toma-abierta__titulo-de-bloque .nota {
-  flex: 1 1 12rem;
-}
-
 .resultados-de-la-toma,
 .mediciones-de-la-toma {
   margin-top: 0.9rem;

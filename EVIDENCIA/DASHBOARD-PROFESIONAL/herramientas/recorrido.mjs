@@ -7542,7 +7542,12 @@ async function medicionesDeUnaToma() {
       page.evaluate(() => {
         const medio = (e) => (e ? Math.round(e.getBoundingClientRect().top + e.getBoundingClientRect().height / 2) : null);
         const acciones = document.querySelector('.resultados-de-la-toma .toma-abierta__acciones-de-bloque');
-        return { titulo: medio(document.querySelector('#titulo-resultados')), acciones: medio(acciones), texto: acciones?.innerText.replace(/\s+/g, ' ').trim() ?? '' };
+        // La nota del título («Cada uno, con su método…»): en cuántos renglones quedó su texto.
+        const nota = document.querySelector('.resultados-de-la-toma .toma-abierta__titulo-de-bloque .nota');
+        const rango = document.createRange();
+        if (nota) rango.selectNodeContents(nota);
+        const renglonesDeLaNota = nota ? new Set([...rango.getClientRects()].map((r) => Math.round(r.top))).size : 0;
+        return { titulo: medio(document.querySelector('#titulo-resultados')), acciones: medio(acciones), texto: acciones?.innerText.replace(/\s+/g, ' ').trim() ?? '', renglonesDeLaNota };
       });
     // Los anteriores quedaron abiertos más arriba: se pliegan, para medir el encabezado con «Ver N anteriores» escrito.
     if (await page.evaluate(() => document.querySelector('article.toma-abierta button[aria-controls="anteriores-sin-efecto"]')?.getAttribute('aria-expanded') === 'true')) {
@@ -7567,9 +7572,12 @@ async function medicionesDeUnaToma() {
     );
     comprobar(
       'F-41',
-      'A 1440 px, con «Ver N anteriores, sin efecto» a la vista, el título de los resultados y sus dos acciones siguen en un renglón, como en la maqueta 22',
-      /^Ver \d+ anteriores, sin efecto Calcular con un método$/.test(encabezados[1440].texto) && encabezados[1440].titulo !== null && Math.abs(encabezados[1440].titulo - encabezados[1440].acciones) <= 6,
-      `«${encabezados[1440].texto}» · el título, a los ${encabezados[1440].titulo} px; las acciones, a los ${encabezados[1440].acciones} · a 1280, a los ${encabezados[1280].titulo} y ${encabezados[1280].acciones}`,
+      'A 1440 px, con «Ver N anteriores, sin efecto» a la vista, el título de los resultados, su nota y sus dos acciones siguen en un renglón, como en la maqueta 22: las acciones no bajan, y la nota no se parte para dejarles lugar',
+      /^Ver \d+ anteriores, sin efecto Calcular con un método$/.test(encabezados[1440].texto) &&
+        encabezados[1440].titulo !== null &&
+        Math.abs(encabezados[1440].titulo - encabezados[1440].acciones) <= 6 &&
+        encabezados[1440].renglonesDeLaNota === 1,
+      `«${encabezados[1440].texto}» · el título, a los ${encabezados[1440].titulo} px; las acciones, a los ${encabezados[1440].acciones}; la nota, en ${encabezados[1440].renglonesDeLaNota} renglón · a 1280, a los ${encabezados[1280].titulo} y ${encabezados[1280].acciones}`,
     );
 
     // ── Registrar una toma por la pantalla: se vuelve a «Tomas» con esa toma abierta y el aviso a la vista ─────────────
