@@ -24,6 +24,7 @@ import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../m
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
 import { AyudaDeRegistros } from './ayuda-de-registros';
+import { AyudaDelPlan } from './ayuda-del-plan';
 import { VistaDePlan } from './plan';
 import { VistaDeRegistros } from './registros';
 import { VistaDeResumen } from './resumen';
@@ -114,9 +115,9 @@ export function Nutricion() {
       href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, retorno.valor)}
       retirado={retirado}
       onActualizar={volverALeer}
-      // Registros ya está recompuesta: usa todo el ancho y tiene su ayuda. Las demás conservan el suyo hasta su parte.
-      ancho={vista === 'registros'}
-      ayuda={vista === 'registros' ? <AyudaDeRegistros /> : null}
+      // Plan y Registros ya están recompuestas: usan todo el ancho y tienen su ayuda. Las demás conservan el suyo hasta su parte.
+      ancho={vista === 'registros' || vista === 'plan'}
+      ayuda={vista === 'registros' ? <AyudaDeRegistros /> : vista === 'plan' ? <AyudaDelPlan /> : null}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>

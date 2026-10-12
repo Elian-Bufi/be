@@ -33,6 +33,10 @@
 //              Entrenamiento y tres solicitudes de información (una respondida, una respondida y corregida por la
 //              persona, y una sin responder), en dos áreas. Las usa `recorrido.mjs solicitudes`. Va después de
 //              descartable-datos; ocupa Entrenamiento, así que no va antes de `recorrido.mjs descartable`.
+//   descartable-plan  (WP-ESCRITORIO-AREAS, parte 5) por la API, sobre esas mismas cuentas: una evaluación, un objetivo,
+//              una receta propia y un plan de Nutrición con dos versiones activadas (la segunda, vigente), dos días
+//              tipo, comidas con una, dos y tres opciones y una opción de receta. Lo usa `recorrido.mjs planes`, que crea
+//              el borrador por la pantalla. Va después de descartable-datos.
 //
 // Uso: node datos/generar.mjs <fase> [origen de la API]   (BE_E2E_DATABASE_URL para otra base local)
 import { REPO, enTrabajo } from '../rutas.mjs';
@@ -867,6 +871,78 @@ async function descartableSolicitudes() {
   console.log('solicitudes de información listas: «Antecedentes para entrenamiento» (respondida), «Antecedentes de salud declarados» (respondida y corregida) y «Hábitos y contexto» (sin responder)');
 }
 
+/**
+ * WP-ESCRITORIO-AREAS, parte 5 · un plan de Nutrición para ver «Plan» como la maqueta 16, en las cuentas descartables y
+ * todo por la API: dos días tipo; comidas con una, dos y tres opciones; una opción que nace de una receta propia; y un
+ * ítem con su nota. Queda
+ * con dos versiones activadas (la segunda es la vigente) y sin borrador: el recorrido que la usa
+ * (`recorrido.mjs planes`) crea el borrador por la pantalla. Las dos se activan hoy: la activación por la API no admite
+ * otra fecha.
+ */
+async function descartablePlan() {
+  const e = leerEstado();
+  const d = e.descartable;
+  if (!d?.datos) throw new Error('primero: descartable-cuentas y descartable-datos');
+  const pro = await sesion(d.proCorreo);
+  const evaluacion = (await pedir('POST', `/advisees/${d.aseId}/nutrition/evaluations`, { token: pro, cuerpo: cuerpoDeEvaluacionNutricional(new Date(Date.now() - 2 * 3600_000)) })).data.evaluationId;
+  const objetivo = (await pedir('POST', `/advisees/${d.aseId}/nutrition/objectives`, { token: pro, cuerpo: cuerpoDeObjetivoNutricional(evaluacion, new Date(Date.now() - 3600_000), 2250) })).data;
+
+  // Una receta propia, de dos porciones: la opción del plan lleva los ingredientes de una.
+  const catalogo = await en((tx) => catalogoNutricional(tx, d.proId, Object.values(ALIMENTOS).map((a) => a.id)));
+  const unidadDe = (clave) => (ALIMENTOS[clave].ml ? 'ml' : 'g');
+  const ingrediente = (clave, cantidad, estado) => ({ catalogItemId: ALIMENTOS[clave].id, catalogItemVersionId: catalogo.get(ALIMENTOS[clave].id).versionId, quantity: { value: cantidad, unit: unidadDe(clave) }, preparationState: estado });
+  const receta = (
+    await pedir('POST', '/nutrition/recipes', {
+      token: pro,
+      cuerpo: {
+        name: 'Guiso de lentejas',
+        description: 'Receta sintética de demostración.',
+        servings: 2,
+        ingredients: [ingrediente('lentejas', 400, 'COOKED'), ingrediente('zanahoria', 200, 'COOKED'), ingrediente('aceite', 20, 'RAW')],
+        steps: ['Rehogar la zanahoria en el aceite.', 'Sumar las lentejas y cocinar diez minutos.'],
+      },
+    })
+  ).data;
+
+  const it = (clave, cantidad, estado, nota) => ({ catalogItemId: ALIMENTOS[clave].id, quantity: { value: cantidad, unit: unidadDe(clave) }, preparationState: estado, ...(nota ? { note: nota } : {}) });
+  const opcion = (label, items) => ({ label, items });
+  const comida = (label, options) => ({ label, prescriptionMode: 'DISH_OPTIONS', options });
+  /** La estructura del plan. `arroz` es lo único que cambia entre la primera versión y la segunda. */
+  const estructura = (arroz) => ({
+    dayTypes: [
+      {
+        label: 'Día de entrenamiento',
+        meals: [
+          comida('Desayuno', [opcion('Avena con leche', [it('avena', 50, 'RAW'), it('leche', 200, 'RAW')]), opcion('Tostadas con queso', [it('panIntegral', 60, 'AS_PURCHASED'), it('queso', 30, 'AS_PURCHASED')])]),
+          comida('Almuerzo', [
+            opcion('Arroz con pollo y brócoli', [it('arroz', arroz, 'COOKED'), it('pollo', 120, 'COOKED'), it('brocoli', 100, 'COOKED'), it('aceite', 10, 'RAW', 'En crudo, al servir.')]),
+            { label: 'Guiso de lentejas', items: [], recipeVersionId: receta.recipeVersionId },
+            opcion('Salmón con papa', [it('salmon', 150, 'COOKED'), it('papa', 200, 'COOKED')]),
+          ]),
+          comida('Merienda', [opcion('Yogur con manzana', [it('yogur', 200, 'RAW'), it('manzana', 150, 'RAW')])]),
+          comida('Cena', [opcion('Salmón con papa', [it('salmon', 150, 'COOKED'), it('papa', 150, 'COOKED'), it('aceite', 5, 'RAW')]), opcion('Lentejas con zanahoria', [it('lentejas', 200, 'COOKED'), it('zanahoria', 100, 'COOKED')])]),
+        ],
+      },
+      {
+        label: 'Día de descanso',
+        meals: [
+          comida('Desayuno', [opcion('Tostadas con queso', [it('panIntegral', 60, 'AS_PURCHASED'), it('queso', 30, 'AS_PURCHASED')])]),
+          comida('Almuerzo', [opcion('Lentejas con zanahoria', [it('lentejas', 200, 'COOKED'), it('zanahoria', 100, 'COOKED'), it('aceite', 5, 'RAW')]), opcion('Arroz con pollo y brócoli', [it('arroz', 100, 'COOKED'), it('pollo', 120, 'COOKED'), it('brocoli', 150, 'COOKED')])]),
+          comida('Cena', [opcion('Salmón con papa', [it('salmon', 150, 'COOKED'), it('papa', 100, 'COOKED')])]),
+        ],
+      },
+    ],
+  });
+  const activar = async (plan) => (await pedir('POST', `/nutrition/plans/${plan.planId}/activate`, { token: pro, cuerpo: { expectedVersion: plan.version } })).data;
+  const primera = (await pedir('POST', `/advisees/${d.aseId}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo.versionId, initialStructure: estructura(180) } })).data;
+  await activar(primera);
+  const segunda = (await pedir('POST', `/advisees/${d.aseId}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo.versionId, basedOnPlanId: primera.planId } })).data;
+  const editada = (await pedir('PATCH', `/nutrition/plans/${segunda.planId}`, { token: pro, cuerpo: { expectedVersion: segunda.version, changes: estructura(150) } })).data;
+  await activar(editada);
+  guardarEstado({ descartable: { ...d, planDeNutricion: { evaluacionId: evaluacion, objetivoId: objetivo.versionId, recetaId: receta.recipeId, v1: primera.planId, v2: segunda.planId } } });
+  console.log('plan de Nutrición listo: dos versiones activadas (la segunda, vigente), dos días tipo, hasta tres opciones por comida y una opción de receta («Guiso de lentejas»)');
+}
+
 // ─── WP-DASHBOARD-COMPRENSION: escenarios D y E ────────────────────────────────────────────────────────────────────
 
 async function comprension() {
@@ -934,9 +1010,10 @@ const FASES = {
   'descartable-datos': descartableDatos,
   'descartable-toma-completa': descartableTomaCompleta,
   'descartable-solicitudes': descartableSolicitudes,
+  'descartable-plan': descartablePlan,
 };
 if (!FASES[fase]) {
-  console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar|volumen|comprension|comprension-e|verificar-comprension|descartable-cuentas|descartable-datos|descartable-toma-completa|descartable-solicitudes [origen de la API]');
+  console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar|volumen|comprension|comprension-e|verificar-comprension|descartable-cuentas|descartable-datos|descartable-toma-completa|descartable-solicitudes|descartable-plan [origen de la API]');
   process.exit(2);
 }
 try {

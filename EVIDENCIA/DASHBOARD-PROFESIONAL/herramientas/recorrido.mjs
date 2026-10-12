@@ -1,7 +1,7 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio|areas|registros|sesiones|estimacion]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio|areas|registros|sesiones|tomas|plan|mediciones|solicitudes|planes|estimacion]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
@@ -39,6 +39,14 @@
 //   solo, con `solicitudes`, sobre las cuentas descartables con sus tres solicitudes (`datos/generar.mjs
 //   descartable-solicitudes`). Lo esperado sale de la lista, del detalle de cada solicitud y de la versión de su
 //   formulario, calculado a mano (`esperadoDeSolicitudes`). Al final ESCRIBE: envía una solicitud por la pantalla.
+// - Nutrición · Plan con el asesorado A (un solo día tipo; solo lee) y la misma pieza dentro de la ficha se comprueban
+//   en `planDeNutricionDeA`, en la sesión de `fichaRecompuesta`; solo, con `plan`.
+// - Nutrición · Plan (WP-ESCRITORIO-AREAS, parte 5) se comprueba en `planesDeNutricion`: corre solo, con `planes`, sobre
+//   las cuentas descartables con su plan de dos días tipo (`datos/generar.mjs descartable-plan`). Lo esperado sale de la
+//   lista de versiones, de la versión vigente y del objetivo, calculado a mano (`esperadoDelPlan`). Los estados que el
+//   escenario no tiene (sin plan, sin objetivo, un objetivo más nuevo, siete días tipo) se miran con respuestas
+//   simuladas en el navegador. ESCRIBE: guarda una plantilla, crea una versión, la edita, la activa y crea otra desde la
+//   plantilla, todo por la pantalla.
 // - La estimación del profesional sobre una comida diferente (`estimacionDeUnaComida`) ESCRIBE en el escenario: no va
 //   dentro de `funcional`. Corre sola, con `estimacion`, y última en la pasada completa.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
@@ -5396,7 +5404,7 @@ async function registrosDeNutricion(page, v) {
   const focoTrasLaAyuda = await page.evaluate(() => document.activeElement?.classList.contains('como-se-lee__boton') ?? false);
   comprobar(
     'F-14',
-    'Registros tiene su ayuda en el marco del área («Cómo se lee esta vista»): se abre por el título, explica cada marca y dice qué trae cada una de las cinco vistas; Escape la cierra y el foco vuelve al botón. Las otras secciones de Nutrición todavía no tienen la suya, y no muestran el botón',
+    'Registros tiene su ayuda en el marco del área («Cómo se lee esta vista»): se abre por el título, explica cada marca y dice qué trae cada una de las cinco vistas; Escape la cierra y el foco vuelve al botón. Resumen y Revisiones todavía no tienen la suya, y no muestran el botón',
     ayuda.titulo === 'Cómo se leen los Registros' && ayuda.renglones >= 10 && igual(ayuda.vistas, ORDEN) && ayuda.foco && focoTrasLaAyuda && faltasDeLaAyuda.length === 0,
     `«${ayuda.titulo}» · ${ayuda.renglones} renglones · ${ayuda.vistas.length} vistas · axe: ${faltasDeLaAyuda.length === 0 ? 'sin faltas' : faltasDeLaAyuda.map((f) => f.id).join(', ')}`,
   );
@@ -8678,7 +8686,1016 @@ async function solicitudesDeInformacion() {
   }
 }
 
-async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true, registros = true, sesiones = true, tomas = true, estimacion = false } = {}) {
+// ─── Nutrición · Plan (WP-ESCRITORIO-AREAS, parte 5) ───────────────────────────────────────────────────────────
+
+/** Lo que «Plan», de Nutrición, tiene a la vista: la versión que se mira, el plan activo, el editor y los avisos. */
+const planEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const aLaVista = (e) => !!e && e.getClientRects().length > 0;
+    const caja = (e) => {
+      if (!e) return null;
+      const r = e.getBoundingClientRect();
+      return { x: Math.round(r.left), y: Math.round(r.top + window.scrollY), ancho: Math.round(r.width), alto: Math.round(r.height) };
+    };
+    const segmentos = (f) => [...f.querySelectorAll('.segmento')].map((s) => ({ texto: t(s), valor: s.querySelector('input').value, elegido: s.querySelector('input').checked, caja: caja(s) }));
+    const raiz = document.querySelector('.plan');
+    const selector = raiz?.querySelector('[data-selector-de-version]') ?? null;
+    const activo = raiz?.querySelector('.plan__activo') ?? null;
+    const dia = activo?.querySelector('[data-dia-tipo]') ?? null;
+    const titulo = raiz?.querySelector('#titulo-borrador') ?? null;
+    return {
+      esta: !!raiz,
+      version: raiz?.dataset.version ?? null,
+      selector: selector ? { rotulo: t(selector.querySelector('legend')), opciones: segmentos(selector), nota: t(raiz.querySelector('.plan__selector .nota')) } : null,
+      editor: { esta: !!titulo, aLaVista: aLaVista(titulo), estado: t(raiz?.querySelector('.plan__preparacion p[aria-live="polite"]') ?? null) },
+      activo: activo
+        ? {
+            titulo: t(activo.querySelector('h2')),
+            soloLectura: t(activo.querySelector('.plan__encabezado .etiqueta-de-dato')),
+            frase: t(activo.querySelector('.plan__version')),
+            acciones: [...activo.querySelectorAll('.plan__acciones button')].map((b) => t(b)),
+            yaHay: t(activo.querySelector('.plan__ya-hay')),
+            aviso: t(activo.querySelector(':scope > .aviso')),
+            dia: dia ? { clase: dia.dataset.diaTipo, texto: t(dia), rotulo: t(dia.querySelector('legend, .dia-tipo-del-plan__rotulo')), opciones: dia.dataset.diaTipo === 'varios' ? segmentos(dia) : null, caja: caja(dia) } : null,
+            objetivo: {
+              estado: activo.querySelector('.plan__objetivo')?.dataset.objetivo ?? null,
+              titulo: t(activo.querySelector('.plan__objetivo-titulo')),
+              valores: [...activo.querySelectorAll('.plan__objetivo .tira-del-objetivo > div')].map((d) => t(d)),
+              nota: t(activo.querySelector('.plan__objetivo-nota')),
+              falla: t(activo.querySelector('.plan__objetivo-falla')),
+            },
+            cuenta: t(activo.querySelector('.comidas-del-plan__barra .nota')),
+            todas: t(activo.querySelector('[data-todas-las-comidas]')),
+            comidas: [...activo.querySelectorAll('.comida-del-plan')].map((c) => ({
+              orden: Number(c.dataset.comida),
+              abierta: c.hasAttribute('data-abierta'),
+              expandida: c.querySelector('.comida-del-plan__boton').getAttribute('aria-expanded'),
+              nombre: t(c.querySelector('.comida-del-plan__nombre')),
+              cuenta: t(c.querySelector('.comida-del-plan__cuenta')),
+              nombres: t(c.querySelector('.comida-del-plan__opciones')),
+              caja: caja(c),
+              opciones: [...c.querySelectorAll('.opcion-del-plan')].map((o) => ({
+                orden: Number(o.dataset.opcion),
+                titulo: t(o.querySelector('.opcion-del-plan__titulo')),
+                receta: t(o.querySelector('.opcion-del-plan__receta')),
+                items: [...o.querySelectorAll('.items-del-plan li')].map((li) => ({ nombre: t(li.querySelector('.items-del-plan__nombre')), indicado: t(li.querySelector('.items-del-plan__indicado')), nota: t(li.querySelector('.items-del-plan__nota')) })),
+                sinItems: t(o.querySelector(':scope > .nota:not(.opcion-del-plan__receta)')),
+                caja: caja(o),
+              })),
+            })),
+            historial: {
+              titulo: t(activo.querySelector('.historial-del-plan h3')),
+              versiones: [...activo.querySelectorAll('.historial-del-plan__lista li')].map((li) => ({ numero: Number(li.dataset.version), vigente: li.hasAttribute('data-vigente'), texto: t(li) })),
+              huella: t(activo.querySelector('.historial-del-plan__huella')),
+              caja: caja(activo.querySelector('.historial-del-plan')),
+            },
+          }
+        : null,
+      vacio: raiz?.querySelector('.estado-vacio') ? { texto: t(raiz.querySelector('.estado-vacio')), botones: [...raiz.querySelectorAll('.estado-vacio button')].map((b) => t(b)) } : null,
+      falla: t(document.querySelector('.seccion-del-area .estado-de-grafico--error')),
+      avisos: [...document.querySelectorAll('.aviso-flotante__texto')].map(t),
+      errores: [...(raiz?.querySelectorAll(':scope > .aviso--error') ?? [])].map(t),
+      botones: [...document.querySelectorAll('main button')].filter(aLaVista).map((b) => t(b)),
+      main: t(document.querySelector('main')),
+    };
+  });
+
+/** El diálogo de «Empezar desde una plantilla», si está abierto. */
+const plantillasEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const d = [...document.querySelectorAll('dialog[open]')].find((x) => x.querySelector('h2')?.innerText.trim() === 'Empezar desde una plantilla');
+    if (!d) return null;
+    const confirmar = [...d.querySelectorAll('.acciones button')].at(-1);
+    return {
+      titulo: t(d.querySelector('h2')),
+      cargando: !!d.querySelector('.cargando'),
+      falla: t(d.querySelector('.estado-de-grafico--error')),
+      reintentar: !!d.querySelector('.estado-de-grafico--error button'),
+      plantillas: [...d.querySelectorAll('.plantilla-para-empezar')].map((p) => ({ nombre: t(p.querySelector('.plantilla-para-empezar__nombre')), detalle: t(p.querySelector('.plantilla-para-empezar__detalle')), elegida: p.querySelector('input').checked })),
+      error: t(d.querySelector('.aviso--error')),
+      confirmar: { texto: t(confirmar), apagado: confirmar.disabled },
+      texto: t(d),
+    };
+  });
+
+/**
+ * Lo que «Plan» tiene que decir de una versión activada, escrito a mano con lo que devuelve la API (la lista de versiones
+ * y la versión que se lee): no se usa el módulo del dominio que arma la pantalla (`plan-de-nutricion.ts`). Las
+ * cantidades del escenario son menores que mil: el número no lleva punto de miles.
+ */
+function esperadoDelPlan({ lista, activa }) {
+  const UNIDAD = { g: 'g', ml: 'ml', unit: 'unidad' };
+  const ESTADO = { RAW: 'crudo', COOKED: 'cocido', AS_PURCHASED: 'tal como se adquiere' };
+  const numero = (n) => String(n).replace('.', ',');
+  const activadas = lista.filter((x) => x.activatedAt).sort((a, b) => a.activatedAt.localeCompare(b.activatedAt));
+  const numeroDe = new Map(activadas.map((x, i) => [x.planId, i + 1]));
+  const dias = [...activa.dayTypes]
+    .sort((a, b) => a.order - b.order)
+    .map((d) => ({
+      orden: d.order,
+      nombre: d.label,
+      comidas: [...d.meals]
+        .sort((a, b) => a.order - b.order)
+        .map((m) => {
+          const opciones = [...m.options].sort((a, b) => a.order - b.order);
+          return {
+            orden: m.order,
+            nombre: m.label,
+            cuenta: opciones.length === 0 ? 'Sin opciones' : opciones.length === 1 ? '1 opción' : `${opciones.length} opciones · se elige una`,
+            nombres: opciones.map((o) => o.label).join(' · '),
+            opciones: opciones.map((o) => ({
+              orden: o.order,
+              titulo: opciones.length > 1 ? `Opción ${o.order}: ${o.label}` : o.label,
+              receta: o.recipe ? `Receta «${o.recipe.name}», versión ${o.recipe.versionNumber} · La opción lleva los ingredientes de una porción de la receta.` : null,
+              items: o.items.map((i) => ({
+                nombre: i.name,
+                indicado: [i.quantity ? `${numero(i.quantity.value)} ${UNIDAD[i.quantity.unit]}` : 'sin cantidad indicada', ...(i.preparationState ? [ESTADO[i.preparationState]] : [])].join(' · '),
+                nota: i.note ? `Nota: ${i.note}` : null,
+              })),
+            })),
+          };
+        }),
+    }));
+  return { numeroDe, activadas, dias, numero: numeroDe.get(activa.planId) };
+}
+
+async function planesDeNutricion() {
+  const d = estado.descartable;
+  if (!d?.planDeNutricion) throw new Error('faltan las cuentas descartables con su plan de Nutrición: datos/generar.mjs descartable-cuentas, descartable-datos y descartable-plan');
+  const { navegador, page, v } = await abrir();
+  try {
+    const A = d.aseId;
+    const BASE = `/pro/advisees/nutrition?id=${A}&vista=plan`;
+    const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const lecturasDesde = (desde, fragmento) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+    const escriturasDesde = (desde, fragmento) => v.urls.slice(desde).filter((u) => /^(POST|PATCH|PUT|DELETE) /.test(u) && u.includes(fragmento));
+    const LISTO = '.plan, .seccion-del-area .estado-de-grafico--error, .seccion-del-area > .aviso';
+    const entrar = async (ruta) => {
+      await cupo(v, 60);
+      const desde = v.urls.length;
+      await ir(page, ruta);
+      await page.waitForSelector(LISTO, { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      return desde;
+    };
+    const salir = async () => {
+      await cupo(v, 60);
+      await ir(page, `/pro/advisees?id=${A}`);
+      await page.waitForFunction(() => !document.querySelector('.plan') && !document.querySelector('header.marco-del-area'), { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+    };
+    /** Entra con respuestas armadas por el recorrido (dichas como tales) y las retira al terminar de leer la pantalla. */
+    const conSimulacion = async (reglas, ruta, leer = planEnPantalla) => {
+      await salir();
+      v.reglas.push(...reglas);
+      try {
+        await entrar(ruta);
+        return await leer(page);
+      } finally {
+        v.reglas.length = 0;
+      }
+    };
+    const leerTodo = async () => {
+      const lista = [];
+      let cursor = null;
+      do {
+        const r = await leerApi(v, `/advisees/${A}/nutrition/plans?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+        lista.push(...r.data);
+        cursor = r.page.hasMore ? r.page.nextCursor : null;
+      } while (cursor);
+      const efectiva = lista.find((x) => x.isEffective) ?? null;
+      const activa = efectiva ? (await leerApi(v, `/nutrition/plans/${efectiva.planId}`)).data : null;
+      const objetivo = (await leerApi(v, `/advisees/${A}/nutrition/objectives/effective`)).data.objective;
+      return { lista, activa, objetivo, E: activa ? esperadoDelPlan({ lista, activa }) : null };
+    };
+    /** La fecha como la escribe el navegador de la página (su zona y sus abreviaturas): «12 oct» y «14:33». */
+    const enLaPagina = (iso) =>
+      page.evaluate((x) => {
+        const f = new Date(x);
+        const delAnio = f.getFullYear() === new Date().getFullYear();
+        return {
+          dia: delAnio ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(f) : new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(f),
+          hora: new Intl.DateTimeFormat('es-AR', { timeStyle: 'short', hourCycle: 'h23' }).format(f),
+        };
+      }, iso);
+    const historialEsperado = async (E) => {
+      const filas = [];
+      for (const x of [...E.activadas].reverse()) {
+        const f = await enLaPagina(x.activatedAt);
+        filas.push({ numero: E.numeroDe.get(x.planId), vigente: x.isEffective, texto: `Versión ${E.numeroDe.get(x.planId)} · activada el ${f.dia}, ${f.hora} · ${x.isEffective ? 'vigente' : 'anterior, conservada'}` });
+      }
+      return filas;
+    };
+    const tiraEsperada = (o) => {
+      const gramos = (m) => `${String(m.value).replace('.', ',')} g`;
+      return [`${new Intl.NumberFormat('es-AR').format(o.estimatedEnergyRequirement.value)} kcal`, gramos(o.macronutrientDistribution.carbohydrate), gramos(o.macronutrientDistribution.fat), gramos(o.macronutrientDistribution.protein)];
+    };
+    const ROTULOS = ['Calorías', 'Carbohidratos', 'Grasas', 'Proteínas'];
+    const tiraBien = (valores, o) => valores.length === 4 && valores.every((x, i) => x.startsWith(ROTULOS[i]) && x.endsWith(tiraEsperada(o)[i]));
+    /** Las comidas de la pantalla contra las del día esperado: nombre, cuenta, cuál está abierta y, abierta, sus opciones. */
+    const comidasBien = (enPantalla, dia, abiertas) =>
+      enPantalla.length === dia.comidas.length &&
+      enPantalla.every((c, i) => {
+        const e = dia.comidas[i];
+        const abierta = abiertas.includes(e.orden);
+        return (
+          c.orden === e.orden &&
+          c.nombre === e.nombre &&
+          c.cuenta === e.cuenta &&
+          c.abierta === abierta &&
+          c.expandida === String(abierta) &&
+          (abierta ? c.nombres === null && igual(c.opciones.map((o) => ({ orden: o.orden, titulo: o.titulo, receta: o.receta, items: o.items })), e.opciones) : c.nombres === e.nombres && c.opciones.length === 0)
+        );
+      });
+    const prohibidas = (texto) => dominio.terminosProhibidosEn(texto ?? '');
+    /** Cada texto del plan que puede ocupar más de un renglón: ahí se mira dónde quedó el separador y dónde cada número. */
+    const TEXTOS_DEL_PLAN = '.plan__version, .comida-del-plan__textos, .opcion-del-plan__titulo, .opcion-del-plan__receta, .items-del-plan li, .historial-del-plan__lista li, .plan__objetivo .tira-del-objetivo > div';
+    /** Un aviso flotante se va solo a los pocos segundos: se lo espera apenas se hace la acción, antes de mirar lo demás. */
+    const esperarAviso = (empieza) =>
+      page
+        .waitForFunction((t) => [...document.querySelectorAll('.aviso-flotante__texto')].some((e) => e.innerText.trim().startsWith(t)), { timeout: 40_000 }, empieza)
+        .then(() => true)
+        .catch(() => false);
+    const P = (page) => parametros(page);
+
+    await iniciarSesion(page, v, d.proCorreo, `/pro/advisees?id=${A}`);
+    await quieto(page, v);
+
+    // ── Al entrar: qué se lee, y qué dice de la versión ──────────────────────────────────────────────────────────
+    const desde = await entrar(BASE);
+    const inicial = await planEnPantalla(page);
+    const alLeer = v.urls.length;
+    const { lista, activa, objetivo, E } = await leerTodo();
+    const lecturas = lecturasDesde(desde, '/nutrition/');
+    const deLaLista = v.urls.slice(desde, alLeer).filter((u) => u.startsWith('GET ') && /\/nutrition\/plans\?/.test(u)).length;
+    const delPlan = v.urls.slice(desde, alLeer).filter((u) => u.startsWith('GET ') && u.includes(`/nutrition/plans/${activa.planId}`)).length;
+    const delObjetivo = v.urls.slice(desde, alLeer).filter((u) => u.startsWith('GET ') && u.includes('/nutrition/objectives/effective')).length;
+    const otrasDeNutricion = v.urls.slice(desde, alLeer).filter((u) => u.startsWith('GET ') && u.includes('/nutrition/') && !/\/nutrition\/plans\?/.test(u) && !u.includes(`/nutrition/plans/${activa.planId}`) && !u.includes('/nutrition/objectives/effective'));
+    const fechaDeLaActiva = await enLaPagina(activa.activatedAt);
+    const fraseEsperada = `Versión ${E.numero} · activada el ${fechaDeLaActiva.dia} · es lo que ve el asesorado`;
+    comprobar(
+      'F-62',
+      'El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · es lo que ve el asesorado», con el número que le toca por su orden de activación (calculado a mano con la lista de la API). Para verlo se leen tres cosas, una vez cada una: la lista de versiones, la versión vigente y el objetivo vigente',
+      inicial.esta &&
+        inicial.version === 'activa' &&
+        inicial.selector === null &&
+        !inicial.editor.esta &&
+        inicial.activo?.titulo === 'Plan activo' &&
+        inicial.activo.soloLectura === 'Solo lectura' &&
+        inicial.activo.frase === fraseEsperada &&
+        E.numero === 2 &&
+        deLaLista === 1 &&
+        delPlan === 1 &&
+        delObjetivo === 1 &&
+        otrasDeNutricion.length === 0,
+      `«${inicial.activo?.titulo}» · «${inicial.activo?.soloLectura}» · «${inicial.activo?.frase}» · lecturas: lista ${deLaLista}, versión ${delPlan}, objetivo ${delObjetivo}, otras de Nutrición ${otrasDeNutricion.length} (${lecturas.length} en total)`,
+    );
+    const dia1 = E.dias[0];
+    const dia2 = E.dias[1];
+    comprobar(
+      'F-58',
+      'Con más de un día tipo, el plan se lee de a uno: un control con el nombre de cada día, en el orden del plan, y elegido el primero. A la vista están solo las comidas de ese día',
+      E.dias.length === 2 &&
+        inicial.activo?.dia?.clase === 'varios' &&
+        inicial.activo.dia.rotulo === 'Día tipo' &&
+        igual(inicial.activo.dia.opciones.map((o) => [o.texto, o.elegido]), E.dias.map((x, i) => [x.nombre, i === 0])) &&
+        igual(inicial.activo.comidas.map((c) => c.nombre), dia1.comidas.map((c) => c.nombre)) &&
+        inicial.activo.cuenta === `${dia1.comidas.length} comidas`,
+      `${inicial.activo?.dia?.opciones?.map((o) => `${o.texto}${o.elegido ? ' (elegido)' : ''}`).join(' | ')} · ${inicial.activo?.cuenta}: ${inicial.activo?.comidas.map((c) => c.nombre).join(', ')}`,
+    );
+    comprobar(
+      'F-59',
+      'Las comidas van plegadas, cada una en un renglón con su cantidad de opciones («N opciones · se elige una»; con una sola, «1 opción») y, plegada, los nombres de sus opciones. Al entrar está abierta la primera, con sus opciones y los ítems que devuelve la API',
+      comidasBien(inicial.activo?.comidas ?? [], dia1, [dia1.comidas[0].orden]) && inicial.activo.todas === 'Abrir todas las comidas' && dia1.comidas.some((c) => c.cuenta === '1 opción') && dia1.comidas.some((c) => c.cuenta === '3 opciones · se elige una'),
+      (inicial.activo?.comidas ?? []).map((c) => `${c.nombre}: ${c.cuenta}${c.abierta ? ` (abierta, ${c.opciones.length} opciones)` : ` — ${c.nombres}`}`).join(' · '),
+    );
+    comprobar(
+      'F-63',
+      'El objetivo del día está a la vista, al lado del día tipo: las calorías y los tres macros del objetivo que cita la versión, en el orden de la APK. Son los de la API',
+      inicial.activo?.objetivo.estado === 'listo' && inicial.activo.objetivo.titulo === 'Objetivo del día' && activa.objectiveVersionId === objetivo.versionId && tiraBien(inicial.activo.objetivo.valores, objetivo) && inicial.activo.objetivo.nota === null,
+      `${(inicial.activo?.objetivo.valores ?? []).join(' · ')} (la API: ${tiraEsperada(objetivo).join(' · ')})`,
+    );
+    const historial = await historialEsperado(E);
+    const primeraComida = inicial.activo?.comidas[0]?.caja;
+    const ultimaComida = inicial.activo?.comidas.at(-1)?.caja;
+    comprobar(
+      'F-64',
+      'El historial va al costado de las comidas, a la altura de la primera: las versiones activadas, de la más nueva a la más vieja, cada una con su número, su día y su hora, y cuál es la vigente; al pie, la huella de la instantánea que se lee (sus primeros 16 caracteres)',
+      inicial.activo?.historial.titulo === 'Historial' &&
+        igual(inicial.activo.historial.versiones, historial) &&
+        historial.length === 2 &&
+        inicial.activo.historial.huella === `Huella de la instantánea: ${activa.snapshotDigest.slice(0, 16)}…` &&
+        !!primeraComida &&
+        inicial.activo.historial.caja.x >= primeraComida.x + primeraComida.ancho &&
+        Math.abs(inicial.activo.historial.caja.y - primeraComida.y) <= 2,
+      `${inicial.activo?.historial.versiones.map((x) => x.texto).join(' | ')} · «${inicial.activo?.historial.huella}» · el historial empieza a los ${inicial.activo?.historial.caja?.y} px y la primera comida a los ${primeraComida?.y}`,
+    );
+    informar('F-70', 'El alto de «Plan» al entrar, a 1440 × 900, con el plan de dos días tipo', `${await page.evaluate(() => document.documentElement.scrollHeight)} px · la última comida termina a los ${ultimaComida ? ultimaComida.y + ultimaComida.alto : '—'} px`);
+    comprobar(
+      'F-70',
+      'A 1440 × 900 el plan entra en la primera pantalla: el día tipo, el objetivo, las cuatro comidas (una abierta) y el historial, sin desplazarse',
+      !!ultimaComida && ultimaComida.y + ultimaComida.alto <= 900 && inicial.activo.historial.caja.y + inicial.activo.historial.caja.alto <= 900 && (await sinDesborde(page)),
+      `la última comida termina a los ${ultimaComida ? ultimaComida.y + ultimaComida.alto : '—'} px; el historial, a los ${inicial.activo ? inicial.activo.historial.caja.y + inicial.activo.historial.caja.alto : '—'}`,
+    );
+    comprobar(
+      'F-67',
+      'Sin una versión en preparación, y con un objetivo vigente, el plan activo ofrece tres acciones: «Guardar como plantilla», «Empezar desde una plantilla» y, la principal, «Crear nueva versión a partir de esta». Entrar no lee las plantillas',
+      igual(inicial.activo?.acciones, ['Guardar como plantilla', 'Empezar desde una plantilla', 'Crear nueva versión a partir de esta']) && inicial.activo.yaHay === null && lecturasDesde(desde, '/plan-templates').length === 0,
+      `${(inicial.activo?.acciones ?? []).join(' | ')} · lecturas de plantillas al entrar: ${lecturasDesde(desde, '/plan-templates').length}`,
+    );
+
+    // ── Elegir: el día tipo y las comidas abiertas viven en la dirección ─────────────────────────────────────────
+    const tocarDia = async (nombre) => {
+      await clic(page, '.plan__activo [data-dia-tipo] .segmento', nombre);
+      await quieto(page, v, { silencio: 300 });
+    };
+    const tocarComida = async (nombre) => {
+      await clic(page, '.comida-del-plan__boton', nombre);
+      await quieto(page, v, { silencio: 300 });
+    };
+    const antesDeElegir = v.urls.length;
+    await tocarDia(dia2.nombre);
+    const enDescanso = await planEnPantalla(page);
+    const direccionDescanso = Object.fromEntries(P(page));
+    await tocarComida(dia2.comidas[1].nombre);
+    const dosAbiertas = await planEnPantalla(page);
+    const direccionDos = Object.fromEntries(P(page));
+    await clic(page, '[data-todas-las-comidas]', 'Abrir todas las comidas');
+    await quieto(page, v, { silencio: 300 });
+    const todasAbiertas = await planEnPantalla(page);
+    const direccionTodas = Object.fromEntries(P(page));
+    await clic(page, '[data-todas-las-comidas]', 'Plegar todas');
+    await quieto(page, v, { silencio: 300 });
+    const todasPlegadas = await planEnPantalla(page);
+    const direccionNinguna = Object.fromEntries(P(page));
+    await tocarDia(dia1.nombre);
+    const deVuelta = await planEnPantalla(page);
+    const direccionDeVuelta = Object.fromEntries(P(page));
+    const pedidosAlElegir = v.urls.slice(antesDeElegir).filter((u) => !u.startsWith('OPTIONS '));
+    const ordenesDe = (dia) => dia.comidas.map((c) => c.orden);
+    comprobar(
+      'F-66',
+      'Lo elegido vive en la dirección de la página, por su número de orden. Elegir el segundo día tipo escribe «dia» y deja abierta su primera comida; abrir otra comida escribe «comidas» con las dos; «Abrir todas las comidas» las abre y pasa a decir «Plegar todas», que escribe «ninguna»; volver al primer día limpia la dirección. Nada de eso le pide algo a BE',
+      direccionDescanso.dia === String(dia2.orden) &&
+        direccionDescanso.comidas === undefined &&
+        comidasBien(enDescanso.activo?.comidas ?? [], dia2, [dia2.comidas[0].orden]) &&
+        enDescanso.activo.dia.opciones.find((o) => o.elegido)?.texto === dia2.nombre &&
+        direccionDos.comidas === `${dia2.comidas[0].orden}.${dia2.comidas[1].orden}` &&
+        comidasBien(dosAbiertas.activo?.comidas ?? [], dia2, [dia2.comidas[0].orden, dia2.comidas[1].orden]) &&
+        direccionTodas.comidas === ordenesDe(dia2).join('.') &&
+        comidasBien(todasAbiertas.activo?.comidas ?? [], dia2, ordenesDe(dia2)) &&
+        todasAbiertas.activo.todas === 'Plegar todas' &&
+        direccionNinguna.comidas === 'ninguna' &&
+        comidasBien(todasPlegadas.activo?.comidas ?? [], dia2, []) &&
+        todasPlegadas.activo.todas === 'Abrir todas las comidas' &&
+        direccionDeVuelta.dia === undefined &&
+        direccionDeVuelta.comidas === undefined &&
+        comidasBien(deVuelta.activo?.comidas ?? [], dia1, [dia1.comidas[0].orden]) &&
+        pedidosAlElegir.length === 0,
+      `dia=${direccionDescanso.dia} · comidas=${direccionDos.comidas} → ${direccionTodas.comidas} → ${direccionNinguna.comidas} → ${direccionDeVuelta.comidas ?? '(nada)'} · pedidos a BE mientras tanto: ${pedidosAlElegir.length}`,
+    );
+
+    // «Actualizar» vuelve a leer y no pierde lo elegido.
+    await entrar(`${BASE}&dia=${dia2.orden}&comidas=${dia2.comidas[1].orden}`);
+    const antesDeActualizar = await planEnPantalla(page);
+    const horaAntes = await texto(page, 'header.marco-del-area .ficha__consulta .nota');
+    const desdeActualizar = v.urls.length;
+    await pausa(1100);
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
+    await page.waitForSelector('.plan', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const trasActualizar = await planEnPantalla(page);
+    const releidas = { lista: lecturasDesde(desdeActualizar, '/nutrition/plans?').length, version: lecturasDesde(desdeActualizar, `/nutrition/plans/${activa.planId}`).length, objetivo: lecturasDesde(desdeActualizar, '/nutrition/objectives/effective').length };
+    comprobar(
+      'F-66',
+      '«Actualizar» vuelve a leer las tres cosas y conserva lo elegido: el mismo día tipo y la misma comida abierta, que no es la primera',
+      comidasBien(antesDeActualizar.activo?.comidas ?? [], dia2, [dia2.comidas[1].orden]) &&
+        comidasBien(trasActualizar.activo?.comidas ?? [], dia2, [dia2.comidas[1].orden]) &&
+        trasActualizar.activo.dia.opciones.find((o) => o.elegido)?.texto === dia2.nombre &&
+        releidas.lista === 1 &&
+        releidas.version === 1 &&
+        releidas.objetivo === 1 &&
+        P(page).get('dia') === String(dia2.orden) &&
+        P(page).get('comidas') === String(dia2.comidas[1].orden),
+      `antes: ${antesDeActualizar.activo?.comidas.filter((c) => c.abierta).map((c) => c.nombre).join(', ')} · después: ${trasActualizar.activo?.comidas.filter((c) => c.abierta).map((c) => c.nombre).join(', ')} de «${trasActualizar.activo?.dia.opciones.find((o) => o.elegido)?.texto}» · releídas: ${JSON.stringify(releidas)} · ${horaAntes}`,
+    );
+    await salir();
+    await entrar(`${BASE}&dia=9&comidas=7.cena&version=otra`);
+    const conBasura = await planEnPantalla(page);
+    comprobar(
+      'F-66',
+      'Una dirección con valores que el plan no tiene (un día 9, una comida 7, una versión desconocida) no rompe ni muestra un día vacío: se ve el plan activo, en su primer día tipo, con todas las comidas plegadas',
+      conBasura.version === 'activa' && conBasura.activo?.dia?.opciones?.find((o) => o.elegido)?.texto === dia1.nombre && comidasBien(conBasura.activo.comidas, dia1, []) && v.errores.length === 0,
+      `«${conBasura.activo?.dia?.opciones?.find((o) => o.elegido)?.texto}» · ${conBasura.activo?.comidas.filter((c) => c.abierta).length} comidas abiertas`,
+    );
+
+    // ── Todas las comidas abiertas: las opciones lado a lado, la receta y la nota ────────────────────────────────
+    await salir();
+    await entrar(`${BASE}&comidas=${ordenesDe(dia1).join('.')}`);
+    const abierto = await planEnPantalla(page);
+    const almuerzo = abierto.activo?.comidas.find((c) => c.opciones.length === 3);
+    const merienda = abierto.activo?.comidas.find((c) => c.cuenta === '1 opción');
+    const deReceta = abierto.activo?.comidas.flatMap((c) => c.opciones).find((o) => o.receta);
+    const conNota = abierto.activo?.comidas.flatMap((c) => c.opciones).flatMap((o) => o.items).find((i) => i.nota);
+    const recetaDeLaApi = activa.dayTypes.flatMap((x) => x.meals).flatMap((m) => m.options).find((o) => o.recipe);
+    comprobar(
+      'F-60',
+      'Con todas las comidas abiertas, cada una muestra todas sus opciones a la vez, con los ítems que devuelve la API: el alimento a la izquierda y lo indicado a la derecha («150 g · cocido»). Las tres opciones del almuerzo están lado a lado, a la misma altura, y ninguna queda detrás de un «ver la opción 3». Con una sola opción, el título no lleva número',
+      comidasBien(abierto.activo?.comidas ?? [], dia1, ordenesDe(dia1)) &&
+        !!almuerzo &&
+        new Set(almuerzo.opciones.map((o) => o.caja.y)).size === 1 &&
+        new Set(almuerzo.opciones.map((o) => o.caja.x)).size === 3 &&
+        almuerzo.opciones.every((o) => /^Opción [123]: /.test(o.titulo)) &&
+        !!merienda &&
+        !/^Opción/.test(merienda.opciones[0].titulo) &&
+        !/Ver la opción/i.test(abierto.main) &&
+        abierto.activo.todas === 'Plegar todas',
+      `${almuerzo?.nombre}: ${almuerzo?.opciones.map((o) => `${o.titulo} (x ${o.caja.x}, y ${o.caja.y}; ${o.items.length} ítems)`).join(' | ')} · ${merienda?.nombre}: «${merienda?.opciones[0].titulo}»`,
+    );
+    comprobar(
+      'F-61',
+      'Una opción que nació de una receta lo dice con las palabras de BE («Receta «…», versión N» y que lleva los ingredientes de una porción), y sus ítems son los de la API. La nota de un ítem se lee debajo, como la lee el asesorado',
+      !!recetaDeLaApi &&
+        deReceta?.receta === `Receta «${recetaDeLaApi.recipe.name}», versión ${recetaDeLaApi.recipe.versionNumber} · La opción lleva los ingredientes de una porción de la receta.` &&
+        deReceta.items.length === recetaDeLaApi.items.length &&
+        deReceta.items.length > 0 &&
+        conNota?.nota === 'Nota: En crudo, al servir.',
+      `«${deReceta?.receta}» · ${deReceta?.items.map((i) => `${i.nombre} ${i.indicado}`).join('; ')} · «${conNota?.nombre}»: «${conNota?.nota}»`,
+    );
+    const palabras = prohibidas(abierto.main);
+    comprobar(
+      'F-70',
+      'En toda la sección, con todas las comidas abiertas, no hay un porcentaje ni una palabra de la lista de Nutrición; la misma consulta encuentra el contenido (los nombres de las comidas y «se elige una»)',
+      palabras.length === 0 && dia1.comidas.every((c) => abierto.main.includes(c.nombre)) && abierto.main.includes('se elige una'),
+      palabras.length === 0 ? `sin palabras prohibidas en ${abierto.main.length} caracteres` : palabras.join(', '),
+    );
+    const cortes = await cortesMalPuestos(page, TEXTOS_DEL_PLAN);
+
+    // ── La ayuda de la vista ─────────────────────────────────────────────────────────────────────────────────────
+    await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+    await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+    const ayuda = await page.evaluate(() => {
+      const x = document.querySelector('dialog.como-se-lee[open]');
+      if (!x) return { titulo: null, renglones: 0, foco: false, texto: '' };
+      return { titulo: x.querySelector('h2').innerText.trim(), renglones: x.querySelectorAll('.como-se-lee__lista > li').length, foco: document.activeElement === x.querySelector('h2'), texto: x.innerText };
+    });
+    const faltasDeLaAyuda = await axe(page);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+    const focoTrasLaAyuda = await page.evaluate(() => document.activeElement?.classList.contains('como-se-lee__boton') ?? false);
+    comprobar(
+      'F-14',
+      '«Plan» tiene su ayuda en el marco del área («Cómo se lee esta vista»): se abre por el título, explica cada cosa que la pantalla escribe, sin palabras de la lista de Nutrición; Escape la cierra y el foco vuelve al botón',
+      ayuda.titulo === 'Cómo se lee el Plan' && ayuda.renglones >= 10 && ayuda.foco && focoTrasLaAyuda && faltasDeLaAyuda.length === 0 && prohibidas(ayuda.texto).length === 0,
+      `«${ayuda.titulo}» · ${ayuda.renglones} renglones · axe: ${faltasDeLaAyuda.length === 0 ? 'sin faltas' : faltasDeLaAyuda.map((f) => f.id).join(', ')}${prohibidas(ayuda.texto).length ? ` · ${prohibidas(ayuda.texto).join(', ')}` : ''}`,
+    );
+
+    // ── Accesibilidad y composición ──────────────────────────────────────────────────────────────────────────────
+    const faltasClaro = await axe(page);
+    await ponerTema(page, 'azul-noche');
+    const faltasNoche = await axe(page);
+    await ponerTema(page, 'claro');
+    comprobar('F-70', 'axe no encuentra faltas en «Plan» con todas las comidas abiertas, en los dos temas', faltasClaro.length === 0 && faltasNoche.length === 0, `claro: ${faltasClaro.map((f) => f.id).join(', ') || 'sin faltas'} · azul noche: ${faltasNoche.map((f) => f.id).join(', ') || 'sin faltas'}`);
+    const anchos = [];
+    for (const ancho of [1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await salir();
+      await entrar(`${BASE}&comidas=${dia1.comidas[1].orden}`);
+      const p = await planEnPantalla(page);
+      const ultima = p.activo?.comidas.at(-1)?.caja;
+      const abiertaAhi = p.activo?.comidas.find((c) => c.abierta);
+      anchos.push({
+        ancho,
+        desborda: !(await sinDesborde(page)),
+        alCostado: !!ultima && p.activo.historial.caja.x >= ultima.x + ultima.ancho,
+        debajo: !!ultima && p.activo.historial.caja.y >= ultima.y + ultima.alto,
+        porFila: abiertaAhi ? new Set(abiertaAhi.opciones.map((o) => o.caja.x)).size : 0,
+        cortes: await cortesMalPuestos(page, TEXTOS_DEL_PLAN),
+        opcionMasAngosta: abiertaAhi ? Math.min(...abiertaAhi.opciones.map((o) => o.caja.ancho)) : 0,
+        alto: await page.evaluate(() => document.documentElement.scrollHeight),
+      });
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    const en = (ancho) => anchos.find((x) => x.ancho === ancho);
+    const todosLosCortes = [...cortes.cortes.map((c) => `1440: ${c}`), ...anchos.flatMap((x) => x.cortes.cortes.map((c) => `${x.ancho}: ${c}`))];
+    const enVariosRenglones = cortes.enVariosRenglones + anchos.reduce((n, x) => n + x.cortes.enVariosRenglones, 0);
+    comprobar(
+      'F-70',
+      'A 1440 px con todas las comidas abiertas, y a 1280, 1024, 768 y 390 con una, ningún renglón del plan empieza con el separador « · » ni deja un número separado de su unidad; la medida tuvo textos de más de un renglón que mirar',
+      todosLosCortes.length === 0 && cortes.textos > 20 && enVariosRenglones > 0,
+      todosLosCortes.length === 0 ? `${cortes.textos} textos a 1440 px · ${enVariosRenglones} en más de un renglón, sumando los cinco anchos` : todosLosCortes.slice(0, 4).join(' | '),
+    );
+    comprobar(
+      'F-70',
+      'El historial sigue al costado a 1280 px y pasa debajo de las comidas a 1024; las opciones se acomodan al ancho de su caja (a 390 px, una por fila) y ninguna queda más angosta de lo que se lee. A 1280, 1024, 768 y 390 px la página no desborda de costado',
+      anchos.every((x) => !x.desborda && x.opcionMasAngosta >= 250) && en(1280).alCostado && !en(1280).debajo && en(1024).debajo && !en(1024).alCostado && en(390).porFila === 1 && en(1280).porFila >= 2,
+      anchos.map((x) => `${x.ancho}: ${x.alto} px de alto, historial ${x.alCostado ? 'al costado' : x.debajo ? 'debajo' : '¿?'}, ${x.porFila} opciones por fila (la más angosta, ${x.opcionMasAngosta} px)${x.desborda ? ' · DESBORDA' : ''}`).join(' · '),
+    );
+
+    // ── Estados que el escenario no tiene, con respuestas simuladas en el navegador ──────────────────────────────
+    // La API y la base no se tocan: lo que se mira es qué hace la pantalla con cada respuesta.
+    const SIN_PLANES = { coincide: (u) => /\/nutrition\/plans\?/.test(u), accion: 'entregar', cuerpo: { data: [], page: { limit: 50, nextCursor: null, hasMore: false } } };
+    const SIN_OBJETIVO = { coincide: (u) => u.includes('/nutrition/objectives/effective'), accion: 'entregar', cuerpo: { data: { objective: null } } };
+    const sinNada = await conSimulacion([SIN_PLANES, SIN_OBJETIVO], BASE);
+    await captura(page, v, 'plan-sin-plan-ni-objetivo-simulado-1440-claro');
+    const sinPlan = await conSimulacion([SIN_PLANES], BASE);
+    await captura(page, v, 'plan-sin-plan-simulado-1440-claro');
+    comprobar(
+      'F-68',
+      '(Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece el paso que falta: «Ir a Resumen», y ninguna acción para crear un plan. Sin plan y con objetivo, ofrece «Crear nuevo plan», primero, y «Empezar desde una plantilla». En ningún caso muestra un historial vacío ni un día sin comidas',
+      sinNada.activo === null &&
+        (sinNada.vacio?.texto ?? '').startsWith('Todavía no hay un plan activo.') &&
+        sinNada.vacio.texto.includes('Para planificar, primero definí el objetivo') &&
+        igual(sinNada.vacio.botones, ['Ir a Resumen']) &&
+        sinPlan.activo === null &&
+        (sinPlan.vacio?.texto ?? '').startsWith('Todavía no hay un plan activo.') &&
+        igual(sinPlan.vacio.botones, ['Crear nuevo plan', 'Empezar desde una plantilla']) &&
+        !/Historial/.test(sinPlan.main) &&
+        !/Historial/.test(sinNada.main),
+      `sin objetivo: «${sinNada.vacio?.texto?.slice(0, 110)}» [${sinNada.vacio?.botones.join(' | ')}] · con objetivo: [${sinPlan.vacio?.botones.join(' | ')}]`,
+    );
+    const otroObjetivo = { ...objetivo, versionId: '00000000-0000-4000-8000-0000000000aa', predecessorVersionId: objetivo.versionId, estimatedEnergyRequirement: { value: 2600, unit: 'kcal/day' } };
+    const conOtroObjetivo = await conSimulacion([{ coincide: (u) => u.includes('/nutrition/objectives/effective'), accion: 'entregar', cuerpo: { data: { objective: otroObjetivo } } }], BASE);
+    await captura(page, v, 'plan-con-un-objetivo-mas-nuevo-simulado-1440-claro');
+    const sinVigente = await conSimulacion([SIN_OBJETIVO], BASE);
+    await captura(page, v, 'plan-sin-objetivo-vigente-simulado-1440-claro');
+    comprobar(
+      'F-63',
+      '(Respuestas simuladas.) Si hoy rige un objetivo más nuevo que el de la versión que se lee, la tira muestra el de la versión (2.250 kcal, no las 2.600 del más nuevo) y lo dice. Si hoy no hay objetivo vigente, también muestra el de la versión, lo dice, y en lugar de «Crear nueva versión» explica que primero hay que definir el objetivo',
+      conOtroObjetivo.activo?.objetivo.estado === 'listo' &&
+        tiraBien(conOtroObjetivo.activo.objetivo.valores, objetivo) &&
+        conOtroObjetivo.activo.objetivo.nota === 'Es el objetivo con el que se armó esta versión. Hoy rige uno más nuevo.' &&
+        conOtroObjetivo.activo.acciones.includes('Crear nueva versión a partir de esta') &&
+        sinVigente.activo?.objetivo.estado === 'listo' &&
+        tiraBien(sinVigente.activo.objetivo.valores, objetivo) &&
+        sinVigente.activo.objetivo.nota === 'Es el objetivo con el que se armó esta versión. Hoy no hay un objetivo vigente.' &&
+        igual(sinVigente.activo.acciones, ['Guardar como plantilla']) &&
+        (sinVigente.activo.aviso ?? '').startsWith('Para planificar, primero definí el objetivo'),
+      `más nuevo: ${conOtroObjetivo.activo?.objetivo.valores[0]} · «${conOtroObjetivo.activo?.objetivo.nota}» · sin vigente: «${sinVigente.activo?.objetivo.nota}» [${sinVigente.activo?.acciones.join(' | ')}]`,
+    );
+    // La lectura de los objetivos falla: el plan se ve igual, y la tira dice que no se pudo leer.
+    await salir();
+    const FALLA_DE_OBJETIVOS = { coincide: (u) => /\/nutrition\/objectives(\?|$)/.test(u), status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+    v.reglas.push({ coincide: (u) => u.includes('/nutrition/objectives/effective'), accion: 'entregar', cuerpo: { data: { objective: otroObjetivo } } }, FALLA_DE_OBJETIVOS);
+    await entrar(BASE);
+    const conFallaDeObjetivo = await planEnPantalla(page);
+    await captura(page, v, 'plan-falla-del-objetivo-simulada-1440-claro');
+    v.reglas.splice(v.reglas.indexOf(FALLA_DE_OBJETIVOS), 1);
+    await clic(page, '.plan__objetivo-falla button', 'Reintentar').catch(() => null);
+    await quieto(page, v);
+    const trasReintentar = await planEnPantalla(page);
+    v.reglas.length = 0;
+    comprobar(
+      'F-63',
+      '(Falla simulada.) Si el objetivo de la versión no se puede leer, el plan se ve entero y la tira lo dice, sin ningún número, con «Reintentar»; al reintentar, aparece',
+      conFallaDeObjetivo.activo?.objetivo.estado === 'falla' &&
+        conFallaDeObjetivo.activo.objetivo.valores.length === 0 &&
+        (conFallaDeObjetivo.activo.objetivo.falla ?? '').startsWith('No pudimos leer el objetivo de esta versión.') &&
+        !/\d/.test(conFallaDeObjetivo.activo.objetivo.falla) &&
+        conFallaDeObjetivo.activo.comidas.length === dia1.comidas.length &&
+        trasReintentar.activo?.objetivo.estado === 'listo' &&
+        tiraBien(trasReintentar.activo.objetivo.valores, objetivo),
+      `«${conFallaDeObjetivo.activo?.objetivo.falla}» con ${conFallaDeObjetivo.activo?.comidas.length} comidas a la vista · al reintentar: ${trasReintentar.activo?.objetivo.valores[0]}`,
+    );
+    const conFalla = await conSimulacion([{ coincide: (u) => /\/nutrition\/plans\?/.test(u), status: 503, codigo: 'SERVICE_UNAVAILABLE' }], BASE);
+    comprobar(
+      'F-68',
+      '(Falla simulada.) Si la lista de versiones no se puede leer, la sección dice la falla con su motivo y «Reintentar»: no dice «Todavía no hay un plan activo», que sería presentar una falla como una ausencia',
+      !conFalla.esta && !!conFalla.falla && /Reintentar/.test(conFalla.falla) && !/Todavía no hay un plan activo/.test(conFalla.main),
+      `«${(conFalla.falla ?? '').slice(0, 140)}»`,
+    );
+    // Siete días tipo de nombre largo: los segmentos bajan de renglón, no se salen.
+    const sieteDias = { ...activa, dayTypes: Array.from({ length: 7 }, (_, i) => ({ ...activa.dayTypes[0], dayTypeId: `00000000-0000-4000-8000-00000000000${i + 1}`, order: i + 1, label: `Día de entrenamiento de fuerza número ${i + 1}, con merienda` })) };
+    await page.setViewport({ width: 1024, height: 900 });
+    const conSiete = await conSimulacion([{ coincide: (u) => u.includes(`/nutrition/plans/${activa.planId}`), accion: 'entregar', cuerpo: { data: sieteDias } }], `${BASE}&dia=6`);
+    const sieteDesborda = !(await sinDesborde(page));
+    await captura(page, v, 'plan-siete-dias-tipo-simulado-1024-claro');
+    await page.setViewport({ width: 1440, height: 900 });
+    const cajasDeLosSiete = conSiete.activo?.dia?.opciones ?? [];
+    comprobar(
+      'F-58',
+      '(Respuesta simulada.) Con siete días tipo de nombre largo, a 1024 px, los siete segmentos están enteros dentro de la pantalla, en más de un renglón, y la página no desborda; el elegido es el que pide la dirección (el sexto)',
+      cajasDeLosSiete.length === 7 && cajasDeLosSiete.every((c) => c.caja.x >= 0 && c.caja.x + c.caja.ancho <= 1024) && new Set(cajasDeLosSiete.map((c) => c.caja.y)).size > 1 && !sieteDesborda && cajasDeLosSiete.findIndex((c) => c.elegido) === 5,
+      `${cajasDeLosSiete.length} segmentos en ${new Set(cajasDeLosSiete.map((c) => c.caja.y)).size} renglones; el más ancho termina a los ${Math.max(0, ...cajasDeLosSiete.map((c) => c.caja.x + c.caja.ancho))} px${sieteDesborda ? ' · DESBORDA' : ''}`,
+    );
+    const unSoloDia = { ...activa, dayTypes: [activa.dayTypes[0]] };
+    const conUnDia = await conSimulacion([{ coincide: (u) => u.includes(`/nutrition/plans/${activa.planId}`), accion: 'entregar', cuerpo: { data: unSoloDia } }], BASE);
+    comprobar(
+      'F-58',
+      '(Respuesta simulada.) Con un solo día tipo no hay nada que elegir: la pantalla dice su nombre, sin control',
+      conUnDia.activo?.dia?.clase === 'unico' && conUnDia.activo.dia.texto === `Día tipo ${activa.dayTypes[0].label}` && conUnDia.activo.dia.opciones === null,
+      `«${conUnDia.activo?.dia?.texto}»`,
+    );
+
+    // ── Las plantillas ───────────────────────────────────────────────────────────────────────────────────────────
+    await salir();
+    await entrar(BASE);
+    const NOMBRE_DE_LA_PLANTILLA = `Plan del recorrido ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+    const antesDeGuardar = v.urls.length;
+    await clic(page, '[data-guardar-plantilla]', 'Guardar como plantilla');
+    await page.waitForSelector('dialog[open] input', { timeout: 10_000 });
+    await page.type('dialog[open] input', NOMBRE_DE_LA_PLANTILLA);
+    await clic(page, 'dialog[open] .acciones button', 'Guardar la plantilla');
+    const avisoDeGuardada = await esperarAviso('Plantilla guardada.');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const guardadas = escriturasDesde(antesDeGuardar, '/nutrition/plan-templates').length;
+    const abrirPlantillas = async () => {
+      await clic(page, '[data-empezar-desde-plantilla]', 'Empezar desde una plantilla');
+      await page.waitForFunction(() => [...document.querySelectorAll('dialog[open] h2')].some((h) => h.innerText.trim() === 'Empezar desde una plantilla'), { timeout: 10_000 }).catch(() => {});
+      await quieto(page, v);
+      return plantillasEnPantalla(page);
+    };
+    const cerrarPlantillas = async () => {
+      await clic(page, 'dialog[open] .acciones button', 'Cancelar').catch(() => null);
+      await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    };
+    const antesDeAbrir = v.urls.length;
+    const lasPlantillas = await abrirPlantillas();
+    const leidasAlAbrir = lecturasDesde(antesDeAbrir, '/nutrition/plan-templates').length;
+    await captura(page, v, 'plan-empezar-desde-una-plantilla-1440-claro');
+    await cerrarPlantillas();
+    const laGuardada = lasPlantillas?.plantillas.find((p) => p.nombre === NOMBRE_DE_LA_PLANTILLA);
+    const comidasDelPlan = activa.dayTypes.reduce((n, x) => n + x.meals.length, 0);
+    comprobar(
+      'F-67',
+      '«Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una plantilla» abre un diálogo que recién entonces lee las plantillas, una vez: está la que se acaba de guardar, con sus comidas contadas a mano y «Sin cantidades»; ninguna viene elegida, y crear el borrador está apagado hasta elegir',
+      guardadas === 1 &&
+        avisoDeGuardada &&
+        leidasAlAbrir === 1 &&
+        lasPlantillas?.falla === null &&
+        !!laGuardada &&
+        laGuardada.detalle === `${comidasDelPlan} comidas · Sin cantidades` &&
+        lasPlantillas.plantillas.every((p) => !p.elegida) &&
+        lasPlantillas.confirmar.texto === 'Crear el borrador desde esta plantilla' &&
+        lasPlantillas.confirmar.apagado,
+      `escrituras: ${guardadas} · aviso de guardada: ${avisoDeGuardada ? 'sí' : 'no'} · lecturas al abrir: ${leidasAlAbrir} · «${laGuardada?.nombre}»: ${laGuardada?.detalle} · elegidas: ${lasPlantillas?.plantillas.filter((p) => p.elegida).length} · «${lasPlantillas?.confirmar.texto}» ${lasPlantillas?.confirmar.apagado ? 'apagado' : 'encendido'}`,
+    );
+    // La lectura de las plantillas falla, y después devuelve una lista vacía (las dos, simuladas).
+    const FALLA_DE_PLANTILLAS = { coincide: (u) => u.includes('/nutrition/plan-templates'), status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+    v.reglas.push(FALLA_DE_PLANTILLAS);
+    const conFallaDePlantillas = await abrirPlantillas();
+    await captura(page, v, 'plan-plantillas-que-no-se-leen-simulado-1440-claro');
+    v.reglas.length = 0;
+    await clic(page, 'dialog[open] .estado-de-grafico--error button', 'Reintentar').catch(() => null);
+    await quieto(page, v);
+    const trasReintentarPlantillas = await plantillasEnPantalla(page);
+    await cerrarPlantillas();
+    v.reglas.push({ coincide: (u) => u.includes('/nutrition/plan-templates'), accion: 'entregar', cuerpo: { data: [], page: { limit: 50, nextCursor: null, hasMore: false } } });
+    const sinPlantillas = await abrirPlantillas();
+    v.reglas.length = 0;
+    await cerrarPlantillas();
+    comprobar(
+      'F-67',
+      '(Respuestas simuladas.) Si las plantillas no se pueden leer, el diálogo dice la falla con su motivo y «Reintentar», y no «No tenés plantillas activas»; al reintentar, la lista aparece. Con la lista vacía de verdad, dice que no hay plantillas activas y dónde se arman',
+      !!conFallaDePlantillas?.falla &&
+        conFallaDePlantillas.falla.startsWith('No pudimos leer tus plantillas') &&
+        conFallaDePlantillas.reintentar &&
+        !/No tenés plantillas/.test(conFallaDePlantillas.texto) &&
+        conFallaDePlantillas.plantillas.length === 0 &&
+        trasReintentarPlantillas?.plantillas.some((p) => p.nombre === NOMBRE_DE_LA_PLANTILLA) &&
+        sinPlantillas?.falla === null &&
+        /No tenés plantillas activas para aplicar\./.test(sinPlantillas.texto) &&
+        /Guardar como plantilla/.test(sinPlantillas.texto),
+      `con la falla: «${(conFallaDePlantillas?.falla ?? '').slice(0, 110)}» · al reintentar: ${trasReintentarPlantillas?.plantillas.length} plantillas · vacía: «${(sinPlantillas?.texto ?? '').slice(28, 150)}»`,
+    );
+    // Crear el borrador desde la plantilla falla (simulado): el motivo se dice dentro del diálogo, que sigue abierto.
+    await abrirPlantillas();
+    await clic(page, 'dialog[open] .plantilla-para-empezar', NOMBRE_DE_LA_PLANTILLA);
+    const elegidaUna = await plantillasEnPantalla(page);
+    const FALLA_AL_CREAR = { coincide: (u) => u.endsWith('/nutrition/plans'), status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+    v.reglas.push(FALLA_AL_CREAR);
+    await clic(page, 'dialog[open] .acciones button', 'Crear el borrador desde esta plantilla');
+    await page.waitForSelector('dialog[open] .aviso--error', { timeout: 15_000 }).catch(() => {});
+    await quieto(page, v);
+    const conFallaAlCrear = await plantillasEnPantalla(page);
+    await captura(page, v, 'plan-falla-al-crear-desde-la-plantilla-simulada-1440-claro');
+    v.reglas.length = 0;
+    await cerrarPlantillas();
+    const trasCancelar = await planEnPantalla(page);
+    comprobar(
+      'F-67',
+      '(Falla simulada.) Elegida una plantilla, crear el borrador se enciende. Si esa escritura falla, el motivo se dice dentro del diálogo, que sigue abierto con la plantilla elegida; al cancelar, el plan activo sigue como estaba, sin selector de versión',
+      elegidaUna?.plantillas.filter((p) => p.elegida).length === 1 &&
+        !elegidaUna.confirmar.apagado &&
+        !!conFallaAlCrear?.error &&
+        conFallaAlCrear.plantillas.find((p) => p.elegida)?.nombre === NOMBRE_DE_LA_PLANTILLA &&
+        trasCancelar.selector === null &&
+        trasCancelar.version === 'activa',
+      `«${conFallaAlCrear?.error}» · elegida: ${conFallaAlCrear?.plantillas.find((p) => p.elegida)?.nombre}`,
+    );
+
+    // ── Crear una versión nueva: aparece el selector ─────────────────────────────────────────────────────────────
+    const antesDeCrear = v.urls.length;
+    await clic(page, '[data-crear-version]', 'Crear nueva versión a partir de esta');
+    const avisoDeCreada = await esperarAviso('Borrador creado');
+    await page.waitForSelector('[data-selector-de-version]', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const conBorrador = await planEnPantalla(page);
+    const creadas = escriturasDesde(antesDeCrear, '/nutrition/plans').length;
+    const trasCrear = await leerTodo();
+    const elBorrador = trasCrear.lista.find((x) => x.state === 'DRAFT');
+    comprobar(
+      'F-65',
+      '«Crear nueva versión a partir de esta» hace una sola escritura y deja una versión en preparación. Arriba aparece el selector de versión, con «En preparación» elegida y, al lado, «El asesorado no la ve.»; la activa figura con su número («2 · activa»). Se ve el editor y no el plan activo, y ya no se ofrece crear otra versión',
+      creadas === 1 &&
+        !!elBorrador &&
+        elBorrador.predecessorPlanId === activa.planId &&
+        avisoDeCreada &&
+        conBorrador.version === 'preparacion' &&
+        conBorrador.selector?.rotulo === 'Versión' &&
+        igual(conBorrador.selector.opciones.map((o) => [o.texto, o.elegido]), [['En preparación', true], ['2 · activa', false]]) &&
+        conBorrador.selector.nota === 'El asesorado no la ve.' &&
+        conBorrador.editor.aLaVista &&
+        conBorrador.activo === null &&
+        !conBorrador.botones.some((b) => /Crear nueva versión|Crear nuevo plan|Empezar desde una plantilla/.test(b)) &&
+        P(page).get('version') === null,
+      `escrituras: ${creadas} · aviso «Borrador creado»: ${avisoDeCreada ? 'sí' : 'no'} · ${conBorrador.selector?.opciones.map((o) => `${o.texto}${o.elegido ? ' (elegida)' : ''}`).join(' | ')} · «${conBorrador.selector?.nota}»`,
+    );
+
+    // ── Pasar a la activa y volver no pierde lo escrito ──────────────────────────────────────────────────────────
+    const AJUSTE = ' (ajuste)';
+    const nombreAntes = await page.$eval('#comida-0-0', (e) => e.value);
+    await page.focus('#comida-0-0');
+    await page.keyboard.press('End');
+    await page.type('#comida-0-0', AJUSTE);
+    const conCambios = await planEnPantalla(page);
+    const antesDePasar = v.urls.length;
+    const tocarVersion = async (cual) => {
+      await clic(page, '[data-selector-de-version] .segmento', cual);
+      await quieto(page, v, { silencio: 300 });
+    };
+    await tocarVersion('2 · activa');
+    const enLaActiva = await planEnPantalla(page);
+    const direccionEnLaActiva = P(page).get('version');
+    await captura(page, v, 'plan-la-activa-con-una-en-preparacion-1440-claro');
+    await tocarDia(dia2.nombre);
+    const diaEnLaActiva = P(page).get('dia');
+    await tocarVersion('En preparación');
+    const diaAlVolver = P(page).get('dia');
+    const deVueltaAlBorrador = await planEnPantalla(page);
+    const nombreDespues = await page.$eval('#comida-0-0', (e) => e.value);
+    const pedidosAlPasar = v.urls.slice(antesDePasar).filter((u) => !u.startsWith('OPTIONS '));
+    comprobar(
+      'F-65',
+      'Con cambios sin guardar en la versión en preparación, pasar a «2 · activa» muestra el plan activo (con «Guardar como plantilla» como única acción y la explicación de por qué no se crea otra versión) y deja el editor fuera de la vista; volver a «En preparación» lo muestra con lo escrito intacto y «Cambios sin guardar». Ir y volver no le pide nada a BE, y la versión elegida queda en la dirección',
+      conCambios.editor.estado === 'Cambios sin guardar' &&
+        enLaActiva.version === 'activa' &&
+        direccionEnLaActiva === 'activa' &&
+        enLaActiva.activo?.titulo === 'Plan activo' &&
+        enLaActiva.activo.frase === fraseEsperada &&
+        igual(enLaActiva.activo.acciones, ['Guardar como plantilla']) &&
+        enLaActiva.activo.yaHay === 'Ya hay una versión en preparación: se sigue sobre esa.' &&
+        enLaActiva.editor.esta &&
+        !enLaActiva.editor.aLaVista &&
+        igual(enLaActiva.selector.opciones.map((o) => o.elegido), [false, true]) &&
+        deVueltaAlBorrador.version === 'preparacion' &&
+        deVueltaAlBorrador.editor.aLaVista &&
+        deVueltaAlBorrador.editor.estado === 'Cambios sin guardar' &&
+        nombreDespues === `${nombreAntes}${AJUSTE}` &&
+        P(page).get('version') === null &&
+        diaEnLaActiva === String(dia2.orden) &&
+        diaAlVolver === String(dia2.orden) &&
+        pedidosAlPasar.length === 0,
+      `«${nombreAntes}» → «${nombreDespues}» · en la activa: [${enLaActiva.activo?.acciones.join(' | ')}] «${enLaActiva.activo?.yaHay}» · editor a la vista: ${enLaActiva.editor.aLaVista ? 'sí' : 'no'} · pedidos: ${pedidosAlPasar.length}`,
+    );
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
+    await page.waitForSelector('dialog[open]', { timeout: 10_000 }).catch(() => {});
+    const pregunta = await page.evaluate(() => document.querySelector('dialog[open]')?.innerText.replace(/\s+/g, ' ').trim() ?? '');
+    await page.screenshot({ path: fileURLToPath(new URL('plan-actualizar-con-cambios-sin-guardar-1440-claro.png', DIR)) });
+    await clic(page, 'dialog[open] button', 'Seguir editando').catch(() => null);
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    await quieto(page, v);
+    const sigueEscrito = await page.$eval('#comida-0-0', (e) => e.value).catch(() => null);
+    comprobar(
+      'F-65',
+      'Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer y dice qué se perdería («el plan en preparación»); «Seguir editando» deja todo como estaba',
+      /Tenés cambios sin guardar/.test(pregunta) && /el plan en preparación/.test(pregunta) && sigueEscrito === `${nombreAntes}${AJUSTE}`,
+      `«${pregunta.slice(0, 170)}»`,
+    );
+
+    // ── Guardar y activar: la versión nueva pasa a ser la que se lee ─────────────────────────────────────────────
+    // Si no quedó nada por guardar (lo escrito se perdió en el camino), no hay botón que tocar: activar sigue igual.
+    const hayQueGuardar = await page.evaluate(() => [...document.querySelectorAll('.plan__preparacion .acciones button')].some((b) => b.textContent.trim() === 'Guardar cambios' && !b.disabled));
+    if (hayQueGuardar) await clic(page, '.plan__preparacion .acciones button', 'Guardar cambios');
+    await page.waitForFunction(() => document.querySelector('.plan__preparacion p[aria-live="polite"]')?.innerText.trim() === 'Guardado', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const antesDeActivar = v.urls.length;
+    await clic(page, '.plan__preparacion .acciones button', 'Activar plan');
+    await page.waitForSelector('dialog[open]', { timeout: 10_000 });
+    await clic(page, 'dialog[open] .acciones button', 'Activar esta versión');
+    const avisoDeActivada = await esperarAviso('Versión activada.');
+    await page.waitForFunction(() => !document.querySelector('[data-selector-de-version]') && !!document.querySelector('.plan__activo'), { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v);
+    const activada = await planEnPantalla(page);
+    await captura(page, v, 'plan-version-3-recien-activada-1440-claro');
+    const trasActivar = await leerTodo();
+    const historialNuevo = await historialEsperado(trasActivar.E);
+    const fechaDeLaNueva = await enLaPagina(trasActivar.activa.activatedAt);
+    comprobar(
+      'F-65',
+      'Activar la versión en preparación la convierte en la vigente: el selector desaparece, el plan activo dice «Versión 3 · … · es lo que ve el asesorado», su primera comida lleva el nombre que se escribió, el historial lista las tres (la 3, vigente; la 2 y la 1, conservadas) y la dirección queda limpia (traía el segundo día tipo: la versión nueva se abre por el primero). Vuelve a ofrecerse crear una versión',
+      trasActivar.activa.planId === elBorrador.planId &&
+        trasActivar.E.numero === 3 &&
+        avisoDeActivada &&
+        activada.selector === null &&
+        !activada.editor.esta &&
+        activada.version === 'activa' &&
+        activada.activo?.frase === `Versión 3 · activada el ${fechaDeLaNueva.dia} · es lo que ve el asesorado` &&
+        activada.activo.comidas[0].nombre === `${nombreAntes}${AJUSTE}` &&
+        activada.activo.dia.opciones.find((o) => o.elegido)?.texto === dia1.nombre &&
+        hayQueGuardar &&
+        igual(activada.activo.historial.versiones, historialNuevo) &&
+        historialNuevo.length === 3 &&
+        igual(historialNuevo.map((x) => x.vigente), [true, false, false]) &&
+        activada.activo.historial.huella === `Huella de la instantánea: ${trasActivar.activa.snapshotDigest.slice(0, 16)}…` &&
+        activada.activo.acciones.includes('Crear nueva versión a partir de esta') &&
+        ['version', 'dia', 'comidas'].every((k) => P(page).get(k) === null) &&
+        escriturasDesde(antesDeActivar, `/nutrition/plans/${elBorrador.planId}/activate`).length === 1,
+      `«${activada.activo?.frase}» · primera comida: «${activada.activo?.comidas[0]?.nombre}» · ${activada.activo?.historial.versiones.map((x) => x.texto).join(' | ')}`,
+    );
+
+    // ── Empezar desde una plantilla, de verdad ───────────────────────────────────────────────────────────────────
+    await abrirPlantillas();
+    await clic(page, 'dialog[open] .plantilla-para-empezar', NOMBRE_DE_LA_PLANTILLA);
+    const antesDeAplicar = v.urls.length;
+    await clic(page, 'dialog[open] .acciones button', 'Crear el borrador desde esta plantilla');
+    const avisoDeAplicada = await esperarAviso('Borrador creado desde la plantilla.');
+    await page.waitForSelector('[data-selector-de-version]', { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v);
+    const desdePlantilla = await planEnPantalla(page);
+    const trasAplicar = await leerTodo();
+    const enLaLista = trasAplicar.lista.find((x) => x.state === 'DRAFT');
+    // De qué plantilla salió lo dice la lectura de la versión, no la lista.
+    const elDeLaPlantilla = enLaLista ? (await leerApi(v, `/nutrition/plans/${enLaLista.planId}`)).data : null;
+    comprobar(
+      'F-67',
+      'Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se cierra, la pantalla lo avisa, y queda una versión en preparación que la API reconoce como salida de esa plantilla. El selector vuelve, con la activa como «3 · activa»',
+      escriturasDesde(antesDeAplicar, '/nutrition/plans').length === 1 &&
+        !!elDeLaPlantilla &&
+        !!elDeLaPlantilla.templateOrigin &&
+        avisoDeAplicada &&
+        (await page.evaluate(() => !document.querySelector('dialog[open]'))) &&
+        desdePlantilla.version === 'preparacion' &&
+        igual(desdePlantilla.selector?.opciones.map((o) => [o.texto, o.elegido]), [['En preparación', true], ['3 · activa', false]]) &&
+        desdePlantilla.editor.aLaVista,
+      `escrituras: ${escriturasDesde(antesDeAplicar, '/nutrition/plans').length} · aviso: ${avisoDeAplicada ? 'sí' : 'no'} · ${desdePlantilla.selector?.opciones.map((o) => o.texto).join(' | ')} · origen en la API: ${elDeLaPlantilla?.templateOrigin ? 'una plantilla' : 'ninguno'}`,
+    );
+    comprobar('—', '«Plan», de Nutrición, no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+  } finally {
+    await navegador.close();
+  }
+}
+
+/**
+ * «Plan», de Nutrición, con el asesorado A (WP-ESCRITORIO-AREAS, parte 5): su plan tiene un solo día tipo y dos
+ * versiones activadas en otros meses. Solo lee. La misma pieza se mira además dentro de la ficha, en el detalle de la
+ * activación, que es una columna angosta. Lo que escribe y lo que A no tiene va en `planesDeNutricion`.
+ */
+async function planDeNutricionDeA(page, v) {
+  const A = estado.aseId;
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const enLaPagina = (iso) =>
+    page.evaluate((x) => {
+      const f = new Date(x);
+      const delAnio = f.getFullYear() === new Date().getFullYear();
+      return {
+        dia: delAnio ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(f) : new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(f),
+        hora: new Intl.DateTimeFormat('es-AR', { timeStyle: 'short', hourCycle: 'h23' }).format(f),
+      };
+    }, iso);
+  await cupo(v, 60);
+  const desde = v.urls.length;
+  await ir(page, `/pro/advisees/nutrition?id=${A}&vista=plan`);
+  await page.waitForSelector('.plan, .seccion-del-area .estado-de-grafico--error', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const p = await planEnPantalla(page);
+  const deNutricion = v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes('/nutrition/')).length;
+  const lista = (await leerApi(v, `/advisees/${A}/nutrition/plans?limit=50`)).data;
+  const efectiva = lista.find((x) => x.isEffective);
+  const activa = (await leerApi(v, `/nutrition/plans/${efectiva.planId}`)).data;
+  const objetivo = (await leerApi(v, `/advisees/${A}/nutrition/objectives/effective`)).data.objective;
+  const E = esperadoDelPlan({ lista, activa });
+  const dia = E.dias[0];
+  const fechaDeLaActiva = await enLaPagina(activa.activatedAt);
+  const comidasComoLaApi = (enPantalla, abierta) =>
+    enPantalla.length === dia.comidas.length &&
+    enPantalla.every((c, i) => {
+      const e = dia.comidas[i];
+      const estaAbierta = e.orden === abierta;
+      return c.nombre === e.nombre && c.cuenta === e.cuenta && c.abierta === estaAbierta && (estaAbierta ? igual(c.opciones.map((o) => ({ orden: o.orden, titulo: o.titulo, receta: o.receta, items: o.items })), e.opciones) : c.nombres === e.nombres);
+    });
+  comprobar(
+    'F-58',
+    'El plan de A tiene un solo día tipo: no hay nada que elegir, y la pantalla dice su nombre, sin control. Sus comidas son las de la API, con la primera abierta; sin una versión en preparación no hay selector de versión ni editor',
+    E.dias.length === 1 && p.activo?.dia?.clase === 'unico' && p.activo.dia.texto === `Día tipo ${dia.nombre}` && comidasComoLaApi(p.activo.comidas, dia.comidas[0].orden) && p.selector === null && !p.editor.esta && !lista.some((x) => x.state === 'DRAFT'),
+    `«${p.activo?.dia?.texto}» · ${p.activo?.comidas.map((c) => `${c.nombre}: ${c.cuenta}`).join(' · ')}`,
+  );
+  const historial = [];
+  for (const x of [...E.activadas].reverse()) {
+    const f = await enLaPagina(x.activatedAt);
+    historial.push({ numero: E.numeroDe.get(x.planId), vigente: x.isEffective, texto: `Versión ${E.numeroDe.get(x.planId)} · activada el ${f.dia}, ${f.hora} · ${x.isEffective ? 'vigente' : 'anterior, conservada'}` });
+  }
+  const gramos = (m) => `${String(m.value).replace('.', ',')} g`;
+  const tira = [`${new Intl.NumberFormat('es-AR').format(objetivo.estimatedEnergyRequirement.value)} kcal`, gramos(objetivo.macronutrientDistribution.carbohydrate), gramos(objetivo.macronutrientDistribution.fat), gramos(objetivo.macronutrientDistribution.protein)];
+  const palabras = dominio.terminosProhibidosEn(p.main ?? '');
+  comprobar(
+    'F-62',
+    'El plan de A dice su versión con la fecha de otro mes, sin el año porque es el año en curso («Versión 2 · activada el 7 sept · es lo que ve el asesorado»); el historial, las dos versiones con su día y su hora; la tira, el objetivo de la API. Se leyeron tres cosas de Nutrición, y la sección no tiene palabras de la lista',
+    p.activo?.frase === `Versión ${E.numero} · activada el ${fechaDeLaActiva.dia} · es lo que ve el asesorado` &&
+      !/\d{4}/.test(p.activo.frase) &&
+      igual(p.activo.historial.versiones, historial) &&
+      historial.length >= 2 &&
+      p.activo.historial.huella === `Huella de la instantánea: ${activa.snapshotDigest.slice(0, 16)}…` &&
+      activa.objectiveVersionId === objetivo.versionId &&
+      p.activo.objetivo.valores.length === 4 &&
+      p.activo.objetivo.valores.every((x, i) => x.endsWith(tira[i])) &&
+      deNutricion === 3 &&
+      palabras.length === 0,
+    `«${p.activo?.frase}» · ${p.activo?.historial.versiones.map((x) => x.texto).join(' | ')} · ${p.activo?.objetivo.valores.map((x) => x.split(' ').slice(-2).join(' ')).join(' · ')} · lecturas de Nutrición: ${deNutricion}${palabras.length ? ` · ${palabras.join(', ')}` : ''}`,
+  );
+
+  // ── La misma pieza, en la ficha: el detalle de la activación, en la línea de tiempo ──────────────────────────
+  await cupo(v, 60);
+  await ir(page, `/pro/advisees?id=${A}&vista=linea&p=90`);
+  await page.waitForSelector('.vista-de-la-linea[data-vista="HITOS"]', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  await page.click('.vista-de-la-linea[data-vista="HITOS"]').catch(() => {});
+  await quieto(page, v);
+  const fila = `.entrada[data-id="nplan:${activa.planId}"] .entrada__fila`;
+  const estaLaActivacion = (await page.$(fila)) !== null;
+  if (!estaLaActivacion) {
+    informar('F-69', 'La planificación de una etapa, en la ficha', 'el período de 90 días no tiene la activación del plan vigente de A');
+  } else {
+    await page.click(fila);
+    await page.waitForSelector('.detalle-del-hecho .version-del-plan .comida-del-plan', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const leer = () =>
+      page.evaluate(() => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const d = document.querySelector('.detalle-del-hecho');
+        const pieza = d?.querySelector('.version-del-plan') ?? null;
+        if (!pieza) return null;
+        const caja = d.getBoundingClientRect();
+        return {
+          renglon: t(pieza.querySelector(':scope > p')),
+          dia: t(pieza.querySelector('[data-dia-tipo]')),
+          comidas: [...pieza.querySelectorAll('.comida-del-plan')].map((c) => ({
+            nombre: t(c.querySelector('.comida-del-plan__nombre')),
+            cuenta: t(c.querySelector('.comida-del-plan__cuenta')),
+            abierta: c.hasAttribute('data-abierta'),
+            titulo: c.querySelector('.comida-del-plan__titulo').tagName,
+            opciones: [...c.querySelectorAll('.opcion-del-plan')].map((o) => ({ x: Math.round(o.getBoundingClientRect().left), titulo: o.querySelector('.opcion-del-plan__titulo').tagName, items: o.querySelectorAll('.items-del-plan li').length })),
+          })),
+          // Nada de la pieza se sale de la columna del detalle.
+          seSale: [...pieza.querySelectorAll('*')].filter((e) => e.getClientRects().length > 0 && (e.getBoundingClientRect().right > caja.right + 1 || e.getBoundingClientRect().left < caja.left - 1)).length,
+          ancho: Math.round(caja.width),
+          enlace: t(d.querySelector('.enlace-al-area a')),
+        };
+      });
+    const enLaFicha = await leer();
+    const direccionAntes = page.url();
+    const cerrada = enLaFicha?.comidas.findIndex((c) => !c.abierta) ?? -1;
+    if (cerrada >= 0) {
+      await page.evaluate((i) => document.querySelectorAll('.detalle-del-hecho .comida-del-plan__boton')[i].click(), cerrada);
+      await pausa(300);
+    }
+    const trasAbrir = await leer();
+    const abierta = enLaFicha?.comidas.find((c) => c.abierta);
+    comprobar(
+      'F-69',
+      'En la ficha, el detalle de la activación muestra la misma pieza en su columna angosta: el renglón de la versión, el día tipo, las comidas de la API con la primera abierta y sus opciones una debajo de la otra; nada se sale de la columna ni la página desborda. Los títulos bajan un nivel (el detalle ya tiene el suyo). Abrir otra comida no toca la dirección de la ficha',
+      !!enLaFicha &&
+        new RegExp(`^Solo lectura Versión ${E.numero} · activada el`).test(enLaFicha.renglon ?? '') &&
+        enLaFicha.dia === `Día tipo ${dia.nombre}` &&
+        igual(enLaFicha.comidas.map((c) => [c.nombre, c.cuenta]), dia.comidas.map((c) => [c.nombre, c.cuenta])) &&
+        igual(enLaFicha.comidas.map((c) => c.abierta), dia.comidas.map((_, i) => i === 0)) &&
+        !!abierta &&
+        abierta.opciones.length === dia.comidas[0].opciones.length &&
+        new Set(abierta.opciones.map((o) => o.x)).size === 1 &&
+        enLaFicha.comidas.every((c) => c.titulo === 'H4') &&
+        abierta.opciones.every((o) => o.titulo === 'H5') &&
+        enLaFicha.seSale === 0 &&
+        (await sinDesborde(page)) &&
+        cerrada >= 0 &&
+        trasAbrir.comidas[cerrada].abierta &&
+        trasAbrir.comidas[0].abierta &&
+        page.url() === direccionAntes &&
+        enLaFicha.enlace === 'Ver en Nutrición · Plan',
+      `columna de ${enLaFicha?.ancho} px · «${enLaFicha?.renglon}» · «${enLaFicha?.dia}» · ${enLaFicha?.comidas.map((c) => `${c.nombre}${c.abierta ? ' (abierta)' : ''}`).join(', ')} · ${abierta?.opciones.length} opciones en ${new Set(abierta?.opciones.map((o) => o.x)).size} columna · se salen ${enLaFicha?.seSale} · después: ${trasAbrir?.comidas.filter((c) => c.abierta).length} abiertas`,
+    );
+    await page.click('.detalle-del-hecho__cabecera button').catch(() => {});
+  }
+  await clic(page, '.vista-de-la-linea[data-vista="TODO"]', 'Todo').catch(() => null);
+  await quieto(page, v);
+  comprobar('—', '«Plan», de Nutrición (asesorado A), y su pieza en la ficha no produjeron errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true, registros = true, sesiones = true, tomas = true, plan = true, estimacion = false } = {}) {
   const { navegador, page, v } = await abrir();
   // Los guiones que pide la página, desde antes de entrar: para saber con qué se cargó la ficha.
   const guiones = [];
@@ -8721,6 +9738,10 @@ async function fichaRecompuesta({ resumen = true, linea = true, analizar = true,
     if (tomas) {
       empezarDeCero();
       await tomasDeAntropometria(page, v);
+    }
+    if (plan) {
+      empezarDeCero();
+      await planDeNutricionDeA(page, v);
     }
     // Escribe en el escenario: solo cuando se lo pide (`estimacion`), nunca dentro de `funcional`.
     if (estimacion) {
@@ -9319,17 +10340,19 @@ try {
   if (modo === 'capturas' || modo === 'todo') await capturas();
   if (modo === 'descartable') await descartable();
   if (modo === 'menu') await encabezadoYMenu();
-  if (modo === 'analizar') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, espacio: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'resumen') await fichaRecompuesta({ tomas: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'linea') await fichaRecompuesta({ tomas: false, resumen: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'espacio') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, areas: false, registros: false, sesiones: false });
-  if (modo === 'areas') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, espacio: false, registros: false, sesiones: false });
-  if (modo === 'registros') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, sesiones: false });
-  if (modo === 'sesiones') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false });
-  if (modo === 'tomas') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'analizar') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'resumen') await fichaRecompuesta({ plan: false, tomas: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'linea') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'espacio') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, analizar: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'areas') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, registros: false, sesiones: false });
+  if (modo === 'registros') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, sesiones: false });
+  if (modo === 'sesiones') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false });
+  if (modo === 'tomas') await fichaRecompuesta({ plan: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'plan') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
   if (modo === 'mediciones') await medicionesDeUnaToma();
   if (modo === 'solicitudes') await solicitudesDeInformacion();
-  if (modo === 'estimacion') await fichaRecompuesta({ tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false, estimacion: true });
+  if (modo === 'planes') await planesDeNutricion();
+  if (modo === 'estimacion') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false, estimacion: true });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {

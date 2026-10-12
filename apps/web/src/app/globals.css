@@ -8390,3 +8390,433 @@ button.comida-del-dia__fila > .icono:last-child {
     grid-row: auto;
   }
 }
+
+/* ═══ Nutrición · Plan (WP-ESCRITORIO-AREAS, parte 5; maqueta 16) ═══════════════════════════════════════════════════
+   El plan activo se lee de a un día tipo, con las comidas plegadas y las opciones lado a lado. La misma pieza
+   (`estructura-del-plan.tsx`) va en la sección «Plan» y en el detalle de una etapa de la ficha, que es una columna
+   angosta: lo de adentro se acomoda al ancho de su caja, no al de la ventana. */
+.plan,
+.plan__activo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+/* El título, lo que la versión es en una frase y, a la derecha, lo que se puede hacer con ella. Lo que no entra, baja. */
+.plan__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.85rem;
+}
+
+.plan__encabezado h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.plan__version {
+  flex: 1 1 16rem;
+  min-width: 0;
+  margin: 0;
+  color: var(--tenue);
+}
+
+.plan__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.plan__ya-hay {
+  margin: 0;
+}
+
+/* Donde todavía no hay un plan, el aviso no se estira de lado a lado: es una frase y su acción. */
+.plan > .estado-vacio {
+  max-width: 46rem;
+}
+
+/* Qué versión se mira, y lo que hay que saber de la que está en preparación. */
+.plan__selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+}
+
+.plan__selector .nota {
+  margin: 0;
+}
+
+/* La versión en preparación sigue en el editor de siempre, con el ancho para el que se hizo, hasta su parte. */
+.plan__preparacion {
+  max-width: 72rem;
+}
+
+/* El día tipo a la izquierda; a la derecha, el objetivo del día de esa versión. */
+.plan__dia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+}
+
+.dia-tipo-del-plan {
+  margin: 0;
+}
+
+.dia-tipo-del-plan__rotulo {
+  margin-right: 0.35rem;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.plan__objetivo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 1.15rem;
+  min-width: 0;
+}
+
+.plan__objetivo-titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: center;
+  margin: 0;
+  color: var(--tenue);
+  font-weight: 600;
+}
+
+/* En el plan, los cuatro números van en un renglón (en la tarjeta del Resumen, de a dos). */
+.plan__objetivo .tira-del-objetivo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.25rem;
+}
+
+.plan__objetivo .tira-del-objetivo dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.plan__objetivo .tira-del-objetivo dd {
+  margin: 0;
+}
+
+.plan__objetivo .tira-del-objetivo > div {
+  align-items: center;
+}
+
+.plan__objetivo .cargando,
+.plan__objetivo-falla,
+.plan__objetivo-nota {
+  margin: 0;
+}
+
+.plan__objetivo-nota {
+  text-align: right;
+}
+
+/* Las comidas y, al costado, el historial. En una ventana angosta el historial va debajo. */
+.plan__cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem 1.5rem;
+}
+
+@media (min-width: 75rem) {
+  .plan__cuerpo {
+    grid-template-columns: minmax(0, 1fr) clamp(17rem, 24vw, 21.25rem);
+  }
+
+  /* El historial arranca a la altura de la primera comida: baja lo que ocupa el renglón de «N comidas». */
+  .plan__cuerpo > .historial-del-plan {
+    margin-top: 2.35rem;
+  }
+}
+
+/* Los segmentos con nombres que escribe la persona (hasta siete días tipo): bajan de renglón antes que salirse. Cada
+   uno se separa del anterior y del de arriba con una raya que el borde del grupo recorta en las orillas. */
+.segmentos--que-bajan {
+  max-width: 100%;
+}
+
+.segmentos--que-bajan .segmentos__fila {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.segmentos--que-bajan .segmento {
+  flex: 1 1 auto;
+  justify-content: center;
+  min-width: 0;
+  padding-block: 0.3rem;
+  border-left: 0;
+  box-shadow:
+    -1.5px 0 0 var(--borde-control),
+    0 -1.5px 0 var(--borde-control);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+/* ─── Las comidas de un día tipo ───────── */
+.comidas-del-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.comidas-del-plan__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  min-height: 1.75rem;
+}
+
+.comidas-del-plan__barra .nota {
+  margin: 0;
+}
+
+/* Una comida: una tarjeta cuyo renglón de arriba la abre y la pliega. */
+.comida-del-plan {
+  min-width: 0;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.comida-del-plan__titulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.comida-del-plan__boton {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 52px;
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 13px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.comida-del-plan__boton:hover {
+  background: var(--fondo-suave);
+}
+
+.comida-del-plan__boton:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+.comida-del-plan__textos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.8rem;
+  min-width: 0;
+}
+
+.comida-del-plan__nombre {
+  font-size: 1.1rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.comida-del-plan__cuenta,
+.comida-del-plan__opciones {
+  color: var(--tenue);
+}
+
+/* Los nombres de las opciones de una comida plegada: lo que entra en el renglón, y lo demás baja. */
+.comida-del-plan__opciones {
+  flex: 1 1 14rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.comida-del-plan__cuerpo {
+  padding: 0.2rem 1rem 1rem;
+}
+
+/* Las opciones, lado a lado mientras entren con un ancho que se lea; si no, una debajo de la otra. Con una sola o con
+   dos no se estiran a todo el ancho: un nombre a la izquierda y su cantidad muy lejos a la derecha no se leen juntos. */
+.opciones-del-plan {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18.5rem), 1fr));
+  gap: 0.75rem;
+}
+
+.opcion-del-plan {
+  min-width: 0;
+  max-width: 40rem;
+  padding: 0.8rem 1rem 0.85rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.opcion-del-plan__titulo {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.opcion-del-plan__receta {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0 0 0.45rem;
+}
+
+.opcion-del-plan__receta .icono {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+/* Un ítem: el alimento a la izquierda y lo indicado a la derecha; su nota, debajo, de lado a lado. */
+.items-del-plan {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.items-del-plan li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0 0.9rem;
+  padding: 0.2rem 0;
+}
+
+.items-del-plan__nombre {
+  overflow-wrap: anywhere;
+}
+
+.items-del-plan__indicado {
+  max-width: 15rem;
+  color: var(--tenue);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.items-del-plan__nota {
+  grid-column: 1 / -1;
+  color: var(--tenue);
+  overflow-wrap: anywhere;
+}
+
+/* ─── El historial de versiones ───────── */
+.historial-del-plan {
+  min-width: 0;
+  padding: 0.9rem 1.1rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.historial-del-plan h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.historial-del-plan__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.historial-del-plan__lista li {
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.historial-del-plan__huella {
+  margin: 0.7rem 0 0;
+}
+
+/* La huella no se parte por la mitad: si no entra al lado de su rótulo, baja entera. */
+.historial-del-plan__huella .huella {
+  white-space: nowrap;
+  word-break: normal;
+}
+
+/* La planificación de una etapa, en el detalle de la ficha: lo mismo, en su columna. */
+.version-del-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.version-del-plan > p {
+  margin: 0;
+}
+
+/* ─── «Empezar desde una plantilla»: la lista del diálogo ───────── */
+.plantillas-para-empezar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-inline-size: 0;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.plantilla-para-empezar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0 0.6rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.plantilla-para-empezar:has(input:checked) {
+  border-color: var(--texto);
+  background: var(--fondo-suave);
+}
+
+.plantilla-para-empezar:has(input:focus-visible) {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.plantilla-para-empezar__nombre {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.plantilla-para-empezar__detalle {
+  grid-column: 2;
+  margin: 0;
+}

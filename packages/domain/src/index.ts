@@ -93,4 +93,5 @@ export * from './registros-de-nutricion';
 export * from './registros-de-entrenamiento';
 export * from './tomas-de-antropometria';
 export * from './solicitudes-de-informacion';
+export * from './plan-de-nutricion';
 export * from './iconos';
