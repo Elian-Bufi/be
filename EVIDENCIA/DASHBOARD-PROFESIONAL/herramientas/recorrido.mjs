@@ -4256,7 +4256,10 @@ async function espacioProfesional(page, v) {
  */
 // ─── El marco de las pestañas de área (WP-ESCRITORIO-AREAS, parte 0) ─────────────────────────────────────────────
 
-/** Lo que dice el marco de una pestaña de área, y dónde está cada renglón. */
+/**
+ * Lo que dice el marco de una pestaña de área, y dónde está cada renglón. Solo lo que está a la vista: el texto de un
+ * elemento oculto se lee igual, y una pantalla que escondiera el camino de vuelta pasaría por buena.
+ */
 const marcoEnPantalla = (page) =>
   page.evaluate(() => {
     const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
@@ -4267,16 +4270,17 @@ const marcoEnPantalla = (page) =>
     };
     const marco = document.querySelector('header.marco-del-area');
     if (!marco) return null;
-    const vuelta = marco.querySelector('.retorno-a-la-ficha a');
+    const aLaVista = (e) => (e && e.getClientRects().length > 0 ? e : null);
+    const vuelta = aLaVista(marco.querySelector('.retorno-a-la-ficha a'));
     return {
       titulos: [...document.querySelectorAll('h1')].map(t),
       volver: vuelta ? { texto: t(vuelta), href: vuelta.getAttribute('href'), caja: caja(vuelta) } : null,
-      persona: t(marco.querySelector('.marco-del-area__persona')),
-      acceso: t(marco.querySelector('.ficha__acceso')),
-      hora: t(marco.querySelector('.ficha__consulta .nota')),
-      actualizar: !!marco.querySelector('.ficha__consulta button'),
+      persona: t(aLaVista(marco.querySelector('.marco-del-area__persona'))),
+      acceso: t(aLaVista(marco.querySelector('.ficha__acceso'))),
+      hora: t(aLaVista(marco.querySelector('.ficha__consulta .nota'))),
+      actualizar: !!aLaVista(marco.querySelector('.ficha__consulta button')),
       etiqueta: marco.querySelector('nav.pestanas')?.getAttribute('aria-label') ?? null,
-      pestanas: [...marco.querySelectorAll('nav.pestanas a')].map((a) => ({ texto: t(a), href: a.getAttribute('href'), actual: a.getAttribute('aria-current'), icono: !!a.querySelector('svg') })),
+      pestanas: [...marco.querySelectorAll('nav.pestanas a')].filter(aLaVista).map((a) => ({ texto: t(a), href: a.getAttribute('href'), actual: a.getAttribute('aria-current'), icono: !!a.querySelector('svg') })),
       migas: document.querySelectorAll('nav.migas').length,
       caja: caja(marco),
       renglones: [...marco.querySelectorAll('.marco-de-la-ficha__persona, .marco-de-la-ficha__estado, .marco-de-la-ficha__vistas')].map(caja),
@@ -4509,21 +4513,35 @@ async function marcoDeLasAreas(page, v) {
   await page.waitForSelector('#revision-interpretacion', { timeout: 30_000 });
   await page.type('#revision-interpretacion', ESCRITO);
   const alPreguntar = await actualizar();
-  await page.waitForSelector('dialog.dialogo[open]', { timeout: 10_000 });
-  const pregunta = await texto(page, 'dialog.dialogo[open]');
-  await pausa(600);
-  const leyoAlPreguntar = lecturas(alPreguntar).length;
-  await clic(page, 'dialog.dialogo[open] button', 'Seguir editando');
-  await page.waitForFunction(() => !document.querySelector('dialog.dialogo[open]'), { timeout: 10_000 });
-  const sigueEscrito = await page.$eval('#revision-interpretacion', (e) => e.value);
-  await actualizar();
-  await page.waitForSelector('dialog.dialogo[open]', { timeout: 10_000 });
-  const alDescartar = v.urls.length;
-  await clic(page, 'dialog.dialogo[open] button', 'Actualizar y descartar');
-  await quieto(page, v);
-  await page.waitForSelector('#revision-interpretacion', { timeout: 30_000 });
-  const trasDescartar = await page.$eval('#revision-interpretacion', (e) => e.value);
-  const leyoAlDescartar = lecturas(alDescartar).length;
+  const aparecio = () => page.waitForSelector('dialog.dialogo[open]', { timeout: 10_000 }).then(
+    () => true,
+    () => false,
+  );
+  const pregunto = await aparecio();
+  let pregunta = '(no preguntó)';
+  let leyoAlPreguntar = -1;
+  let sigueEscrito = null;
+  let trasDescartar = null;
+  let leyoAlDescartar = 0;
+  if (pregunto) {
+    pregunta = await texto(page, 'dialog.dialogo[open]');
+    await pausa(600);
+    leyoAlPreguntar = lecturas(alPreguntar).length;
+    await clic(page, 'dialog.dialogo[open] button', 'Seguir editando');
+    await page.waitForFunction(() => !document.querySelector('dialog.dialogo[open]'), { timeout: 10_000 });
+    sigueEscrito = await page.$eval('#revision-interpretacion', (e) => e.value);
+    await actualizar();
+    if (await aparecio()) {
+      const alDescartar = v.urls.length;
+      await clic(page, 'dialog.dialogo[open] button', 'Actualizar y descartar');
+      await quieto(page, v);
+      await page.waitForSelector('#revision-interpretacion', { timeout: 30_000 });
+      trasDescartar = await page.$eval('#revision-interpretacion', (e) => e.value);
+      leyoAlDescartar = lecturas(alDescartar).length;
+    }
+  } else {
+    await quieto(page, v);
+  }
   comprobar(
     'F-08',
     'Con algo escrito sin guardar, «Actualizar» pregunta antes: dice qué se pierde y no lee nada; «Seguir editando» deja lo escrito como estaba; «Actualizar y descartar» vuelve a leer la sección',
@@ -4542,7 +4560,8 @@ async function marcoDeLasAreas(page, v) {
   const preguntoPorLaFalla = lecturas(alFallar).filter((u) => u.includes('/dashboard')).length;
   v.reglas.splice(v.reglas.indexOf(falla), 1);
   await cupo(v, 60);
-  await clic(page, '.seccion-del-area .estado-de-grafico--error button', 'Reintentar');
+  const seReintento = !!(await page.$('.seccion-del-area .estado-de-grafico--error button'));
+  if (seReintento) await clic(page, '.seccion-del-area .estado-de-grafico--error button', 'Reintentar');
   await quieto(page, v);
   const trasReintentar = await marcoEnPantalla(page);
   comprobar(
@@ -4553,6 +4572,7 @@ async function marcoDeLasAreas(page, v) {
       /Reintentar/.test(bloque) &&
       conFalla.acceso === accesoEsperado('NUTRICION') &&
       preguntoPorLaFalla === 0 &&
+      seReintento &&
       !(await page.$('.seccion-del-area .estado-de-grafico--error')) &&
       trasReintentar.primerTitulo !== null,
     `«${bloque}» · el marco: ${conFalla.acceso} · lecturas del resumen del asesorado: ${preguntoPorLaFalla} · tras reintentar: «${trasReintentar.primerTitulo}»`,
@@ -4615,9 +4635,10 @@ async function marcoDeLasAreas(page, v) {
   await quieto(page, v);
   const sinSaberQuienEs = await marcoEnPantalla(page);
   v.reglas.splice(v.reglas.indexOf(sinCuenta), 1);
-  await clic(page, '.seccion-del-area button', 'Reintentar');
+  if (/Reintentar/.test(sinSaberQuienEs.cuerpo ?? '')) await clic(page, '.seccion-del-area button', 'Reintentar');
+  else await ir(page, `/pro/advisees/training?id=${A}`).then(() => ir(page, `/pro/advisees/anthropometry?id=${A}`));
   await quieto(page, v);
-  await page.waitForSelector(HORA, { timeout: 30_000 });
+  await page.waitForSelector(HORA, { timeout: 30_000 }).catch(() => {});
   const repuestoElMarco = await marcoEnPantalla(page);
   comprobar(
     'F-01',
@@ -4626,7 +4647,7 @@ async function marcoDeLasAreas(page, v) {
       sinSaberQuienEs.volver?.texto === 'Volver a la ficha' &&
       sinSaberQuienEs.pestanas.length === 0 &&
       sinSaberQuienEs.acceso === null &&
-      /Reintentar/.test(sinSaberQuienEs.cuerpo) &&
+      /Reintentar/.test(sinSaberQuienEs.cuerpo ?? '') &&
       repuestoElMarco.pestanas.length === 4 &&
       repuestoElMarco.acceso === accesoEsperado('ANTROPOMETRIA'),
     `con la falla: ${sinSaberQuienEs.titulos.join(' | ')} · ${sinSaberQuienEs.volver?.texto} · ${sinSaberQuienEs.pestanas.length} secciones · «${sinSaberQuienEs.cuerpo.slice(0, 60)}» — después: ${repuestoElMarco.pestanas.length} secciones · ${repuestoElMarco.acceso}`,

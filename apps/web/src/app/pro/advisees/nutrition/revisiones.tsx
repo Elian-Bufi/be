@@ -16,6 +16,7 @@ import {
   type EvaluacionNutricional,
   type Revision,
 } from '@be/domain';
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
@@ -79,7 +80,8 @@ export function VistaDeRevisiones() {
               <p>{aviso.texto}</p>
               {aviso.volver ? (
                 <p>
-                  <a href={aviso.volver}>Volver a la ficha, donde estabas</a>
+                  {/* Un `Link`, no un ancla suelta: recargar la página cortaría la sesión, que vive en memoria (DL-012). */}
+                  <Link href={aviso.volver}>Volver a la ficha, donde estabas</Link>
                 </p>
               ) : null}
               {aviso.alPlan ? (

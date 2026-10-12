@@ -18,6 +18,7 @@
  * al Resumen de la ficha.
  */
 import { COPY_FORMULARIOS, type RespuestaDeFormulario, type SolicitudDeFormulario } from '@be/domain';
+import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
@@ -95,7 +96,8 @@ export function Formularios() {
               <p>{exito}</p>
               {retorno.href && !vuelta ? (
                 <p>
-                  <a href={retorno.href}>Volver a la ficha, donde estabas</a>
+                  {/* Un `Link`, no un ancla suelta: recargar la página cortaría la sesión, que vive en memoria (DL-012). */}
+                  <Link href={retorno.href}>Volver a la ficha, donde estabas</Link>
                 </p>
               ) : null}
             </AvisoFlotante>
