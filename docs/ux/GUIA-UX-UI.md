@@ -549,6 +549,33 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
     se hace desde ahí, no en una lista aparte.
   - **Un período largo se muestra de a catorce días;** «Ver días anteriores» no le pide nada a la API. El período de
     entrada (siete días) se muestra entero.
+- **Los registros de Entrenamiento, por sesión** (`training/ejecuciones.tsx`; las reglas, en
+  `registros-de-entrenamiento.ts` del dominio): el mismo patrón, con **la sesión como unidad.** No todos los días hay
+  una sesión, y el plan no fija qué días se entrena.
+  - **Una fila por sesión, de la más nueva a la más vieja:** el día, la sesión con su condición, cuántas series se
+    registraron («7 de 10 registradas») y cómo quedaron frente a lo indicado («3 series sin registrar · 1 serie con
+    diferencias», «Dentro de lo indicado»). Una sesión registrada como no realizada, o resumida, no se cuenta serie por
+    serie: dice por qué no tiene series, nunca «0 de 12».
+  - **El detalle es una tabla con cada serie una sola vez:** lo indicado, lo registrado y cómo quedó, agrupadas por
+    ejercicio. La serie con una diferencia va en negrita y, además, su texto dice cuál es: la negrita sola no alcanza.
+  - **Qué es una diferencia:** las repeticiones o el RIR por encima o por debajo de lo indicado. **La carga se dice
+    aparte, en un renglón propio y sin negrita, y no cuenta:** la sugerida es un complemento, no una obligación. Un dato
+    que no se registró tampoco es una diferencia: se dice («RIR: sin dato»).
+  - **Dos cosas distintas, con dos nombres:** «Con diferencias» sale de comparar las series; «Con desvío o no
+    realizada» es lo que la persona declaró al registrar. No se usa «Distinto de lo indicado», que en la línea de tiempo
+    de la ficha ya nombra otra cosa.
+  - **Con una sesión abierta, la lista y el detalle se reparten la ventana por mitades:** la tabla necesita más ancho
+    que el detalle de una comida. A 1280 px las dos mitades quedan angostas: en la tabla, lo que no entra en un renglón
+    baja de a una parte entera («77,5 kg · 6 rep. ·» y, abajo, «RIR 1»); en la fila, el número no se separa de lo que
+    cuenta ni el separador queda al principio de un renglón; y la marca de la condición parte su texto adentro de su
+    columna, sin pisar la de al lado.
+  - **Lo que antes estaba todo abierto queda a un clic,** en el lugar: los descansos y la duración de cada serie, la
+    sesión en el plan de ese día, el gráfico por serie y el registro original con sus correcciones. No se ofrece abrir
+    lo que no hay (una sesión sin tiempos marcados lo dice en su renglón).
+  - **Lo indicado es otra lectura, y puede fallar:** las sesiones se ven igual, cada una dice «No se pudo leer lo
+    indicado» y la vista que depende de eso queda sin número.
+  - **Un período largo se muestra de a quince sesiones.** La evolución de un ejercicio no se repite acá: está en
+    Analizar, y hay un enlace que lleva.
 
 ### II.7 Estados del website profesional
 
@@ -595,7 +622,7 @@ crear otro, se usa uno de estos.
 | `.panel` | Un formulario que se abre en el lugar: una sola superficie | Lo que falta elegir de una pregunta |
 | `.acciones--fijas` | Las acciones de un formulario largo, fijas al pie, con el estado de lo guardado | La preparación de una toma: «Todavía no se guardó.» + «Guardar» |
 | `.boton--compacto` | Una acción de fila: el mismo alto táctil (44 px), menos relleno | «Actualizar» en el encabezado de la ficha |
-| `.desplazable-x` | Una tabla ancha que se desplaza de costado dentro de su caja, nunca la página. Las sombras de los bordes aparecen solo si hay más, con el color de la superficie de abajo (`.seccion`, `.panel`) | La tabla de etapas; las comidas del contraste |
+| `.desplazable-x` | Una tabla ancha que se desplaza de costado dentro de su caja, nunca la página. Las sombras de los bordes aparecen solo si hay más, y las tapas que las esconden llevan el color de la superficie donde está (`.seccion`, `.panel`, el detalle al costado, un diálogo): con otro color queda una franja a cada lado | La tabla de etapas; las comidas del contraste; las series de una sesión |
 | `MarcoDelArea` | El marco de una pestaña de área: el camino de vuelta, de quién es, el acceso actual, «Actualizar» con la hora, las secciones con su ícono y la ayuda | «← Volver a la ficha, donde estabas · Nutrición · Asesorado · 5db647» |
 | `useCambiosSinGuardar` | Avisarle al marco que hay algo escrito sin guardar, con su nombre: «Actualizar» pregunta antes de perderlo | «el plan en preparación», «la revisión» |
 | `EstadoDeLecturaDelArea` · `NoDisponibleEnElArea` | El resultado de leer una sección: cargando, el «no disponible» neutral o la falla con su motivo y «Reintentar» | «No pudimos cargar esta vista · Hubo muchas consultas seguidas…» |
@@ -607,6 +634,11 @@ crear otro, se usa uno de estos.
 | `.dia-de-registros` · `.comida-del-dia` | El día de un área en un renglón que se abre, y cada comida del plan en una fila con sus columnas | «11 oct · domingo · 2 de 4 comidas registradas · 1 comida diferente» |
 | `componerLosRegistros` · `resumenDeUnDia` · `contarLasVistas` (dominio) | Los días, las filas, las cantidades de las vistas y el renglón del día de Nutrición · Registros, desde sus dos lecturas | «Sin registro»; «3 de 4 comidas registradas» |
 | `opcionDeUnaComida` · `modoDeUnaComida` · `frenteALoIndicadoDeUnaComida` (dominio) | Lo que la línea de tiempo dice de una comida. Una sola regla para la ficha y para Registros | «Tostadas con queso» · «Porciones del plan» · «Sin diferencia: son las porciones del plan» |
+| `periodo-de-un-area.ts` (`periodoPedidoEnUnArea`, `periodoALaVista`, `cambiosDePeriodo`) | El período de los registros de un área, en la dirección: los atajos que la lectura admite (7, 30 y 90 días) y el tope de 92 | Registros de Nutrición y de Entrenamiento |
+| `.sesion-registrada` · `.tabla-de-series` | Una sesión en una fila que se abre entera, y la tabla de sus series, agrupadas por ejercicio | «12 oct · A · Tren inferior · 7 de 10 registradas» |
+| `.parte-de-dato` (`EnPartes`, en `training/ejecuciones.tsx`) | Un dato hecho de partes cortas separadas por « · », en una tabla: si no entra en un renglón, baja una parte entera, con el separador al final del renglón de arriba | «77,5 kg · 6 rep. ·» y, abajo, «RIR 1»: nunca «RIR» arriba y «1» abajo |
+| `FraseEnPartes` (en `training/ejecuciones.tsx`) | Lo mismo para frases largas, en una fila: el texto corre como cualquier otro, pero no se parte entre el número y lo que cuenta, ni antes del separador (espacios que no se parten) | «3 series sin registrar ·» y, abajo, «1 serie con diferencias»: nunca «… · 1» arriba y «serie» abajo |
+| `componerLasSesiones` · `relacionDeUnaSerie` · `contarLasVistasDeSesiones` (dominio) | Las filas de Entrenamiento · Registros, cómo quedó cada serie frente a lo indicado y las cantidades de las vistas | «Dentro de lo indicado» · «RIR: por debajo» · «Carga: por encima de la sugerida» |
 | `OrigenDelDato` | De dónde sale un punto de Analizar, en el lugar de la lectura: el valor, qué es y sus fuentes, con lo que aporta cada comida | «795 kcal»: Almuerzo, 311 kcal; Cena, 484 kcal |
 | `useDetalleAlCostado` (`al-costado.ts`) | Si la ventana tiene lugar para un detalle al costado (desde 1200 px) | La línea de tiempo y Analizar |
 | `ParametrosDelEjercicio` | Los datos de una pregunta, para elegirlos en el lugar; uno sin otra opción va escrito | «Ejercicio: Peso muerto · Serie: 1 · Unidad: kg» |
@@ -1152,6 +1184,12 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | La comida diferente y la estimación del profesional | En su comida y, otra vez, en una lista «Fuera del plan» al pie del día, donde se agregaba la estimación. | Una sola vez, en su comida; la estimación, desde el detalle del registro (II.6). | Sustituida | Áreas, 1 |
 | Lo que una sección de área elige (el período, la vista, lo abierto) | En la memoria de la sección: «Actualizar» lo perdía. | En la dirección, en cada sección que se recompone (II.3). | Corregida | Áreas, 1 |
 | «Cómo se lee» en una sección de área | Plegado dentro de la sección. | En el marco del área, como en la ficha (II.3). | Sustituida | Áreas, 1 |
+| Entrenamiento · Registros | Una tarjeta por sesión, de la más vieja a la más nueva; «Ver detalle» desplegaba debajo una tabla de seis columnas, un gráfico, lo planificado y el registro original. Con una sesión abierta, 3.996 px a 1440 px de ancho. | Una fila por sesión, de la más nueva a la más vieja; vistas con nombre y cantidad; y el detalle al costado, una tabla con cada serie una sola vez. Con una sesión abierta y 90 días, 1.612 px (II.6). | Sustituida | Áreas, 2 |
+| Qué cuenta como una diferencia en una serie | Se listaban las tres relaciones (repeticiones, RIR y carga), sin decir cuántas series quedaban fuera. | Las repeticiones y el RIR; la carga se dice aparte y no cuenta (II.6). | Nueva | Áreas, 2 |
+| La evolución de un ejercicio | En la ficha (Analizar) y, otra vez, en Entrenamiento · Registros, con filtros propios. | En Analizar; desde Registros, un enlace (II.6). | Sustituida | Áreas, 2 |
+| Una versión del plan que no se puede leer, en Registros | Se descartaba en silencio: la tabla comparaba con lo general de la prescripción. | Las sesiones lo dicen, hay un bloque con «Reintentar» y «Con diferencias» queda sin número (II.6). | Corregida | Áreas, 2 |
+| La tabla de adentro de un detalle, en un área | Una franja a cada lado de la tabla (oscura en Azul noche): las tapas de lo que se desplaza tomaban el color del fondo de la página. | Llevan el color del detalle o del diálogo donde está la tabla, en Nutrición y en Entrenamiento (II.8). | Corregida | Áreas, 2 |
+| Un dato que no entra en un renglón, en una tabla o en una fila angosta | Se partía en cualquier lado: «RIR» arriba y su número abajo; «… · 1» arriba y «serie con diferencias» abajo. | En la tabla baja una parte entera; en la fila, el número no se separa de lo que cuenta. El separador queda al final del renglón de arriba (II.8). | Corregida | Áreas, 2 |
 
 ---
 

@@ -239,3 +239,149 @@ un botón), «no muestra el botón de ayuda» en Resumen (lo muestra en Registro
 heredada del registro que dice «la comida prescripta» («…no reemplaza la comida prescripta»). Es la palabra del legajo;
 «indicado» es la que validó Dirección en las maquetas (C-53). No se tocó: es un texto del dominio que también muestra
 la ficha.
+
+## Parte 2 · Entrenamiento · Registros (2026-10-12)
+
+La sección Registros de Entrenamiento pasó de una tarjeta por sesión —con «Ver detalle», que desplegaba debajo una
+tabla de seis columnas, un gráfico, lo planificado y el registro original— a la lectura de la maqueta 25: **una fila
+por sesión, y el detalle al costado, con cada serie una sola vez.** No se quitó ninguna función: los descansos y la
+duración de cada serie, la sesión tal como estaba en el plan de ese día, el gráfico por serie y el registro original
+con sus correcciones siguen en el detalle, cada uno a un clic. La evolución de un ejercicio, que estaba repetida en un
+bloque «Planificado y registrado», queda en Analizar, con un enlace que lleva. `vista=ejecuciones` sigue abriendo la
+sección; se suman los parámetros `p`, `desde` y `hasta`, `ver`, `version`, `ejercicio` y `sesion`. Sobre la base
+propia (`be_test_escritorio`, regenerada antes de cada pasada) y la compilación estática del código de esta parte:
+`9c823ac` (la pantalla), `01fb07b` (la franja de la tabla, que también era de Nutrición), `83f0b63`, `afc7d59` y
+`e565a00` (tres ajustes a 1280 px que mostraron las capturas).
+
+**Medido en la página real** (asesorado A; el «antes», sobre la compilación de la parte 1, con datos recién generados):
+
+| Ancho de la ventana | Antes, al entrar | Antes, con una sesión abierta | Ahora, al entrar | Ahora, con una sesión abierta |
+|---|---|---|---|---|
+| 1440 px | 1.185 px | 3.996 px: 4,4 pantallas de 900 | Entra en una pantalla | 1.343 px: 1,5 pantallas |
+| 1280 px | 1.185 px | 3.996 px | Entra en una pantalla | 1.344 px |
+| 1024 px | 1.185 px | 4.218 px | Entra en una pantalla | Entra en una pantalla: el detalle se abre encima, en un panel |
+
+Es el período de entrada, de siete días, con dos sesiones. Con 90 días hay 25 sesiones: se muestran quince y un botón
+trae las demás; la página mide 1.584 px a 1440 y, con una sesión abierta, 1.612 (2.043 a 1280; 1.668 a 1024). El
+detalle queda fijo al costado mientras se baja por la lista, y tiene su propio desplazamiento. **Las alturas «con una
+sesión abierta» son con el detalle desplegado entero** (la herramienta agranda la ventana para capturarlo): una sesión
+de diez series no entra en una pantalla de 900 px.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Al entrar, Registros lee el contexto de revisión, sin período (lo propone la API), y una vez el plan de cada versión que aparece en el período; el control dice el período (F-24) | `recorrido.mjs funcional`, comprobaciones de Registros de Entrenamiento (solas, con `recorrido.mjs sesiones`). Lo esperado se calcula a mano con lo que devuelven esas lecturas: no se usa el módulo que arma la pantalla | Pasa: una lectura del contexto y una por versión; «Período: 6 oct – 12 oct 2026 · 7 días · incluye hoy» | Verificado automáticamente |
+| Cada sesión registrada es una fila, de la más nueva a la más vieja: la sesión con su condición (la del registro que rige), cuántas series se registraron y cómo quedaron frente a lo indicado; los nombres de las columnas, una vez; la fila entera es un botón (C-68) | Lo mismo, fila por fila, con 90 días | Pasa en las 25 sesiones | Verificado automáticamente |
+| Un período largo se muestra de a quince sesiones; «Ver sesiones anteriores» trae las demás sin pedirle nada a la API (F-31) | Lo mismo | Pasa: 15 al entrar, 25 después, 0 pedidos | Verificado automáticamente |
+| Una sesión registrada como no realizada no se cuenta serie por serie: dice por qué no tiene series, y ninguna fila dice «0 de»; una serie sin registrar se cuenta aparte y no es una diferencia (F-25) | Lo mismo | Pasa: una no realizada («Sin series: la sesión se registró así») y cuatro con series sin registrar. **Resumidas, ninguna:** el escenario no tiene; su regla tiene pruebas en el dominio | Verificado automáticamente |
+| Las cuatro vistas, en su orden, cada una con la cantidad de sesiones que trae; «Con diferencias» cuenta las que tienen alguna serie con las repeticiones o el RIR fuera de lo indicado, y la carga no cuenta (F-26) | Lo mismo, contando a mano | Pasa: 25, 24, 2 y 4 | Verificado automáticamente |
+| Elegir una vista no le pide nada a la API, queda en la dirección y deja a la vista las sesiones que cuenta; volver a tocarla deja «Todas las sesiones» (F-26) | Lo mismo, con «Con series sin registrar» | Pasa: 4 filas, 0 pedidos | Verificado automáticamente |
+| Tocar una sesión abre su detalle al costado, sin tapar la lista: el título recibe el foco; la tabla tiene cada serie una sola vez, por ejercicio, con «N de M series registradas» y cómo quedó cada una; la serie con una diferencia va en negrita y además lo dice; Escape lo cierra y el foco vuelve a la fila (C-66) | Lo mismo, serie por serie, calculado a mano | Pasa: 3 ejercicios y 10 series; «Rep.: por debajo · RIR: por debajo», con «Carga: por encima de la sugerida» aparte | Verificado automáticamente |
+| El detalle dice cuándo ocurrió, cuándo se registró y frente a qué versión del plan, por su número; lee una vez los tiempos de esa sesión y no vuelve a leer el plan; sin tiempos marcados, lo dice y no ofrece abrir descansos que no hay (F-27) | Lo mismo; el número de la versión, a mano, por el orden de activación | Pasa: «…frente al plan versión 2, el de ese día» | Verificado automáticamente |
+| Con tiempos marcados, el detalle dice los tres tiempos de la sesión, cada uno con su certeza, y «Descansos y duración de cada serie» abre el descanso de cada serie frente al recomendado, su duración y el tiempo de cada ejercicio; un descanso que quedó abierto dice «Incompleto», y una serie sin descanso marcado lo dice con palabras (F-27) | Lo mismo, **con una respuesta armada por el recorrido:** el escenario no tiene ninguna sesión con tiempos | Pasa: «54:20 · medido», «03:10 · medido», «51:10 · estimado»; «01:45 registrado · 01:30 recomendado · +00:15»; «Incompleto · 01:30 recomendado»; «Sin descanso marcado» | Verificado automáticamente, sobre una respuesta simulada |
+| La evolución de un ejercicio ya no está en la sección: no hay un bloque «Planificado y registrado» ni un gráfico al entrar, y sí un enlace a Analizar, de la aplicación, con la pregunta del ejercicio y el período que se está mirando (C-67, F-32) | Lo mismo | Pasa | Verificado automáticamente |
+| Nada de lo que se veía se quitó: «Ver la sesión en el plan», «Registro original» y «Ver en un gráfico» se abren en el lugar (F-32) | Lo mismo | Pasa: los tres ejercicios indicados ese día, el registro con su condición y el gráfico por serie | Verificado automáticamente |
+| Los días del período sin ninguna sesión se dicen con su cantidad y como falta de dato; «Ver los días» los lista (F-25) | Lo mismo, con el número que da la API | Pasa: «65 días del período sin sesión registrada. Sin registro no quiere decir que no haya entrenado: no hay dato.» | Verificado automáticamente |
+| El período, la vista y el filtro por versión viven en la dirección: con una versión elegida se ven solo sus sesiones y las cantidades son las de esa versión; «Actualizar» conserva todo (F-28) | Lo mismo, eligiendo la versión en «Más filtros» | Pasa: 11 de 25 sesiones | Verificado automáticamente |
+| La sesión abierta vive en la dirección: se abre al entrar con ella, y «Actualizar» la deja abierta al costado sin pasar por el panel de encima ni por un instante (F-28) | Lo mismo, con un vigía puesto antes de tocar «Actualizar» | Pasa: 0 veces | Verificado automáticamente |
+| Si el plan de una versión no se puede leer, las sesiones siguen a la vista con lo registrado; un bloque lo dice, con «Reintentar»; cada sesión dice «No se pudo leer lo indicado» y ninguna «Dentro de lo indicado»; «Con diferencias» queda sin número, no con un cero; «Reintentar» trae lo que faltaba (F-29) | Lo mismo, con un 503 simulado en el navegador | Pasa: «No pudimos leer lo indicado de algunas sesiones» | Verificado automáticamente, sobre una respuesta simulada |
+| A 1440 × 900, con una sesión abierta, las vistas y los nombres de las columnas entran en la primera pantalla, y la lista y el detalle se reparten la ventana por mitades (F-30) | Lo mismo, midiendo en la página | Pasa: 678 px cada mitad; los nombres de las columnas terminan a los 365 px | Verificado automáticamente |
+| A 1024 px el detalle se abre encima, en un panel que retiene el foco, con la misma tabla; la página no desborda de costado (C-66) | Lo mismo | Pasa | Verificado automáticamente |
+| La tabla de las series no lleva una franja a los costados, ni al costado ni en el panel de encima (C-66). Lo mismo, la tabla de ingredientes de un registro de Nutrición (C-53) | Lo mismo: el color de la superficie y el de las «tapas» de la tabla, resueltos por el navegador. Una comprobación en `sesiones` y otra en `registros` | Pasa. **Antes del arreglo fallaron las dos:** la superficie, rgb(5, 34, 56); las tapas, rgb(1, 19, 37) | Verificado automáticamente |
+| A 1280 px, con una sesión abierta, ningún dato de una fila se sale de su columna: la marca «Realizada con desvío» parte su texto adentro (F-30) | Lo mismo, con la vista que trae esa sesión | Pasa. **Antes del arreglo falló:** «fuera de su columna: Realizada con desvío» | Verificado automáticamente |
+| A 1280 px, en la tabla, lo que no entra en un renglón baja de a una parte entera: ninguna parte («RIR 1», «6 rep.») queda partida (F-30) | Lo mismo, midiendo el alto de cada parte; y otra vez con la regla quitada en el navegador, para saber que la medida ve algo | Pasa: ninguna de 44. Sin la regla, 7 partidas | Verificado automáticamente |
+| En la fila, una frase de dos partes no deja el número separado de lo que cuenta ni el separador al principio de un renglón (F-30) | Lo mismo, sobre el texto de la página sin normalizar los espacios | Pasa: «1⍽serie con diferencias⍽· un ejercicio no se compara» (⍽: el espacio que no se parte) | Verificado automáticamente |
+| Registros de Entrenamiento tiene su ayuda en el marco, con cada cosa y las cuatro vistas; Resumen, que no tiene ayuda, no muestra el botón (F-14) | Lo mismo | Pasa: 14 renglones | Verificado automáticamente |
+| axe no encuentra faltas en la lista, con una sesión al costado ni con la ayuda abierta | Lo mismo | Pasa | Verificado automáticamente |
+| Las reglas del cálculo: cómo se dice una serie, cómo queda frente a su objetivo, la fila de cada clase de sesión, las cuatro vistas y sus cantidades, y qué pasa si lo indicado no se pudo leer | `packages/domain/src/registros-de-entrenamiento.test.ts`, en la batería | 14 de 14 | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de esta parte | `recorrido.mjs`: capturas 60 de 60, funcional 292 de 292 (las 265 de antes, 26 de `sesiones` y una más en `registros`), descartable 22 de 22 y estimación 7 de 7. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 80 de 80, funcional 86 de 86 y revocación 6 de 6. Pasada del 2026-10-12, de 05:47 a 06:20, sobre `e565a00`, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10). `parte-2/resumen-de-la-pasada.txt` | Verificado automáticamente |
+| Toda la batería de la CI | La CI de GitHub sobre los commits de código | En verde las cuatro corridas que terminaron: 38219625693 sobre `9c823ac`, 38221887033 sobre `01fb07b`, 38223944761 sobre `afc7d59` y 38225243086 sobre `e565a00`. La de `83f0b63` se canceló sola al llegar el commit siguiente, y no cuenta. En la última: el legajo; la batería completa (typecheck; dominio, 650, con las 14 nuevas; guiones, 346; y las pruebas de la API); la integración; y la imagen de la API | Verificado automáticamente |
+| La pantalla, a 1440 px en sus estados (la semana, 90 días, las vistas, «Más filtros», una sesión abierta, una no realizada, una corregida, la sesión en el plan, la ayuda, la falla de la lectura de lo indicado y la llegada desde la ficha) y a 1280 y 1024 px, en los dos temas | `ver.mjs`, sobre datos recién generados | 44 capturas de ahora (`parte-2/ahora/`), las 12 de antes (`parte-2/antes/`) y `parte-2/sesiones-antes-y-ahora.png`. La captura de la falla es sobre una respuesta simulada | Observado en una captura real |
+| Los tiempos de una sesión, en pantalla | La comprobación de los tiempos guarda una captura | `parte-2/sesion-con-tiempos-simulados-1440-azul-noche.png`: **es una respuesta armada**, y el nombre lo dice | Observado en una captura, sobre una respuesta simulada |
+
+**El guion de antes, y lo que protegía (E-06 del primer paquete).** `recorrido-web-ejecuciones.mjs`, de
+WP-ENTRENAMIENTO-SERIES, miraba esta pantalla buscando sus tarjetas con «Ver detalle» y la tabla de seis columnas,
+después de que la APK registrara dos sesiones. Ya no corre contra la pantalla de hoy: queda como constancia de la
+corrida de su paquete, y lo dice en su cabecera.
+
+| Lo que protegía | Dónde se mira ahora |
+|---|---|
+| De cada serie, lo indicado ese día y lo registrado | La tabla del detalle (C-66), serie por serie, calculada a mano con lo que da la API |
+| El descanso de cada serie frente al recomendado, y la duración de cada serie cronometrada | La comprobación de los tiempos (F-27), **sobre una respuesta armada:** un descanso medido y una serie cronometrada |
+| Los tres tiempos de la sesión, cada uno con su certeza (medido o estimado) | Lo mismo |
+| El descanso que quedó abierto cuando la app se cerró: «Incompleto» | Lo mismo. No se miraba: se sumó al escribir esta acta |
+| Que los valores sean los que la APK registró de verdad, con su reloj | **No se mira acá:** el escenario de este recorrido no tiene sesiones con tiempos. El cálculo de los tiempos tiene sus pruebas en el dominio y en la API, y no cambió |
+
+Las comprobaciones negativas van con una positiva de la misma consulta: «ninguna fila dice 0 de» (las demás dicen
+«N de M»), «no muestra el botón de ayuda» en Resumen (lo muestra en Registros), «el panel de encima no se abre» a 1440
+(se abre a 1024), «Con diferencias sin número» con la falla (lo lleva sin ella) y «no ofrece abrir descansos» sin
+tiempos (los abre con la respuesta armada).
+
+**La prueba de la prueba.**
+
+- **El cálculo, roto de a una regla** (`resultados/calculo-roto-de-a-una-regla.txt`): 45 roturas del módulo del dominio,
+  cada una contra sus pruebas. **La primera vez se notaron 41 de 43.** Las dos que no mostraron dos huecos: con una
+  corrección vigente nadie miraba que se contara la corrección y no el registro original, y una sesión sin nada que
+  comparar podía decir «Dentro de lo indicado». Se sumaron esas pruebas y dos roturas más: 45 de 45.
+- **La pantalla, rota y compilada así, en dos tandas.** Primera (`compilacion-rota-tanda-A.txt`): 19 roturas del
+  website, cada una con una comprobación que solo ella puede hacer fallar. **Se notaron 18.** La que no —el botón que
+  cierra el detalle, sin nombre— quedó tapada por otra rotura de la misma tanda: «Actualizar» cerraba la sesión, y axe
+  miró una página sin el detalle. Fue a la segunda tanda. Segunda (`compilacion-rota-tanda-B.txt`): esa y dos del
+  cálculo, aplicadas sobre la fuente del dominio. **El primer intento no compiló:** TypeScript rechazó una de las
+  roturas porque podía probar que la comparación era imposible; se reescribió. Se notaron las 3 —una no realizada
+  contada serie por serie hizo fallar cinco comprobaciones; la carga contada como diferencia, dos— y ninguna otra
+  falló. Que el recorrido note una rotura del cálculo muestra que lo que espera no sale del módulo que arma la pantalla.
+- **Las cuatro comprobaciones que se sumaron después de mirar las capturas** (la franja, la marca a 1280 px, las partes
+  de la tabla y las frases de la fila) no pasaron por una tanda: cada una se corrió primero sobre la compilación que
+  tenía el defecto, y falló; después, sobre la corregida. La de las partes mide además con la regla quitada en el
+  navegador. La de las frases mira cómo está armado el texto, no dónde cortó el renglón: es más débil que las otras.
+- En total, 22 roturas de la pantalla y 45 del cálculo.
+
+**Lo que encontraron las comprobaciones y las capturas, y qué se hizo.**
+
+- **La primera corrida dio 19 de 20, y la pantalla estaba bien:** la comprobación esperaba que «Descansos y duración»
+  se ofreciera siempre, y una sesión sin tiempos no lo ofrece. Ahora lo que espera sale de lo que dice la API.
+- **Una comprobación que no probaba nada:** la del filtro por versión comparaba dos listas vacías (el filtro, más una
+  vista sin sesiones). Ahora mira el filtro solo, fila por fila.
+- **Una franja a cada lado de la tabla del detalle.** La mostró la primera captura de los tiempos, en Azul noche: una
+  banda oscura en los bordes de la tabla. Lo que se desplaza de costado lleva dos «tapas» del color de la superficie
+  donde está; en un área, fuera del marco de la ficha, tomaban el del fondo de la página. **Estaba también en Nutrición
+  · Registros, desde la parte 1,** donde las capturas en el tema claro casi no la muestran. Se corrigió con una regla, y
+  cada recorrido tiene su comprobación.
+- **La marca «Realizada con desvío» se salía de su columna a 1280 px,** hacia la de las series. En el escenario no
+  llegaba a pisar un dato; con dos renglones en las series, sí. La mostró una captura que no estaba en la lista de
+  evidencia: se sumó.
+- **«RIR» en un renglón y su número en el de abajo,** en cada serie de la tabla, a 1280 px. Ahora baja una parte
+  entera. El primer arreglo aplicaba lo mismo a la fila de la lista y **la empeoró** (cuatro renglones donde había
+  tres, porque ahí las partes son frases que no entran en su columna): lo mostró la captura siguiente. En la fila
+  quedó otra regla, más liviana.
+- **Una captura con el nombre equivocado:** la de los tiempos se llamaba «claro» y es de Azul noche. Se renombró.
+- **El primer intento de compilar la pantalla falló** (faltaba exportar el módulo nuevo del dominio).
+
+**Lo que esta parte no comprueba:**
+
+- El uso real: falta que Dirección mire las sesiones de un asesorado, abra una y diga si la tabla le alcanza.
+- **Los tiempos de una sesión, con datos de verdad.** El escenario no tiene sesiones con tiempos: la pantalla se miró
+  con una respuesta armada (arriba). La cadena completa, de la APK al website, la miraba el guion de antes sobre la
+  pantalla de antes.
+- Una sesión resumida: el escenario no tiene ninguna en 90 días. Su regla tiene pruebas en el dominio.
+- El detalle de una sesión con otro ejercicio en lugar del indicado: su fila se comprueba («un ejercicio no se
+  compara») y está en una captura, pero el recorrido no abre su tabla.
+- **Si la vista «Con diferencias» sirve con datos reales.** En el escenario trae 24 de 25 sesiones: casi todas tienen
+  alguna serie con el RIR por debajo o por encima de lo indicado. Es como está armado el escenario, pero muestra que
+  una diferencia de un punto de RIR alcanza para entrar en la vista.
+- 1280 px, como comodidad: la lista queda en 598 px y cada fila ocupa tres renglones. Se lee; no es cómoda.
+- La lista de versiones del plan se lee de a 20 (un defecto de antes, de la pestaña Plan): con más de 20 versiones, el
+  detalle nombraría la versión por su fecha. Se corrige con la parte 6.
+- «Registro original», plegado al pie del detalle, es la pieza de antes, que comparte la ficha: una repetición sin
+  registrar se muestra ahí con una raya.
+- 768 y 390 px: por debajo de 960 px cada fila apila sus datos; sin comprobaciones ni capturas propias.
+- Lector de pantalla con una persona: pendiente. Se verificaron axe, el rótulo de cada dato de la fila, el foco al
+  abrir y al cerrar una sesión, y Escape.
+
+**Para decidir, sin urgencia.**
+
+1. **El nombre de la segunda vista.** La maqueta dice «Distinto de lo indicado»; quedó «Con diferencias», porque en la
+   línea de tiempo de la ficha ese nombre ya quiere decir otra cosa para una sesión (F-26).
+2. **Si una diferencia de RIR tiene que contar** igual que una de repeticiones, a la luz del 24 de 25 de arriba.
+3. **El gráfico por serie** («Ver en un gráfico», en el detalle): la tabla dice lo mismo. No se borró; si Dirección
+   confirma que la tabla lo reemplaza, se retira en otro cambio (F-32).
