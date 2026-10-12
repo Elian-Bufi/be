@@ -1,0 +1,82 @@
+NOTADA    el cajón se titula «Solicitudes» — R3 (Solicitar contexto)
+tanda U (funcional): 1 de 1 roturas notadas · 1 comprobaciones fallaron y 75 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  R3 · «Solicitar contexto» abre «Pedir información» sobre las… — «Solicitudes» · «Volver a la ficha, donde estabas» · 0 → 0 solicitudes · sin escrituras
+pasaron:
+  CP-01 · El Resumen presenta la persona y, por área, el objetivo y la síntesis, antes que los indicadores; no h
+  CP-01 · A 1440 × 900, el primer hecho de la síntesis (en la tarjeta de la primera área) se ve sin desplazarse 
+  CP-02 · Cada hecho dice su área y alcance y el hecho, y el renglón abre cómo profundizarlo; de dónde sale cada
+  CP-02 · La síntesis se muestra entera: lo plegado dice cuántos hechos guarda y, abierto, están todos (los que 
+  CP-02 · Ningún hecho califica a la persona — 8 hechos leídos
+  CP-03 · Cada área tiene su propio corte: la última revisión de Nutrición y la de Entrenamiento, en fechas dist
+  CP-05 · Nutrición: lo que ocurrió después, lo cargado después y lo corregido después se cuentan aparte, como l
+  CP-05 · Entrenamiento: lo que ocurrió después, lo cargado después y lo corregido después se cuentan aparte, co
+  CP-03 · Abrir la ficha y la síntesis no registra nada: los cortes siguen iguales y la página no escribió — sin
+  R1 · La observación abre la línea de tiempo filtrada a lo nuevo desde la revisión de Nutrición, con un aviso q
+  R1 · «Ver todo el período elegido» quita el corte y deja los demás filtros — /pro/advisees?id=0850f278-f83b-45
+  CP-07 · La pregunta del ejercicio pide el ejercicio: no elige el primero por la persona — Datos para responder
+  CP-07 · La pregunta arma la vista real: carga, repeticiones y RIR de la serie del ejercicio elegido, que se le
+  C-21 · Con la pregunta del ejercicio no hay «Ver como», «Agrupar por» ni etiquetas de métricas (no hay nada pa
+  C-21 · La lectura dice la sesión una sola vez, arriba, y cada métrica dice su objetivo sin repetir el valor de
+  C-21 · Cambiar de ejercicio en el lugar trae su respuesta sin pasar por el formulario, con la serie y la unida
+  CP-21 · El origen del punto se abre al costado, en el lugar de la lectura y con los tres gráficos a la vista (
+  CP-21 · Del origen a la pestaña del área y de vuelta: la ficha vuelve con la misma pregunta, ejercicio, serie,
+  CP-04 · Sin revisión previa, la síntesis habla del período seleccionado y lo dice (en la línea del alcance y e
+  CP-08 · Con una sola área autorizada, la ficha no muestra nada de las otras: ni tarjetas, ni hechos, ni conteo
+  CP-08 · La pregunta de información, con acceso parcial, dice solo lo de Nutrición — La información disponible 
+  R3 · «Distintas de lo indicado» deja solo las comidas con una diferencia comprobada (las mismas que cuenta la 
+  R3 · Con cantidades informadas a mano: una igual a la opción dice «Igual a lo indicado» (el modo no es una dif
+  CP-09 · Sin confirmar sigue sin confirmar y una comida diferente queda fuera de lo indicado: ninguna se presen
+  CP-09 · El detalle de una comida sin confirmar dice lo indicado por la opción y no da cantidades consumidas — 
+  CP-24 · El detalle de una comida que ya no se puede leer dice «no está disponible con tu acceso actual», sin v
+  R3 · La evidencia de la revisión de Nutrición se abre sin nada marcado y agrupada por día: una casilla por día
+  R3 · La evidencia ocupa menos de la mitad que una casilla por registro — 1707 de 4154 px
+  R3 · Marcar un día marca, una por una, sus comidas, y el resumen lo dice como marcado — Marcaste 2 de 67: 2 co
+  R3 · Desmarcar una comida del día la saca de lo marcado y deja el día en estado mixto — Marcaste 1 de 67: 1 co
+  R3 · «Lo que marcaste» lista lo marcado y «Quitar» lo saca — 1 listadas · Todavía no marcaste nada.
+  R3 · Abrir, marcar y cancelar la revisión no escribe nada — sin escrituras
+  CP-14 · Las etapas salen de las activaciones reales: A termina el día anterior al corte, y lo dice con la vers
+  C-12 · Cada etapa es una tarjeta con su letra y su versión; con dos etapas en el área no se ofrece un selector
+  CP-18 · Calorías por etapa: la media de los días con valor (en la tabla) y la cobertura en días de la etapa (e
+  CP-18 · El hueco de cuatro días de la etapa A queda en la cobertura como días sin registros: no sale del denom
+  C-12 · La cobertura se dice una vez por etapa: las celdas de Calorías y de Proteínas no la repiten, y la de Re
+  R4 · Con la pregunta de etapas, «Comparar otros dos períodos» es una opción plegada, justo debajo de la respue
+  C-12 · Debajo de la tabla hay un gráfico chico por métrica, con sus puntos, las dos etapas marcadas con su let
+  C-12 · Las dos tarjetas y la tabla entran en la primera pantalla (1440 × 900): la respuesta se lee sin desplaz
+  C-12 · La medición de la primera pantalla detecta una respuesta que no entra: con las tarjetas más altas, da q
+  R4 · Sin repetir: sin el resumen en texto a la vista, sin la lista de etapas que repetía las tarjetas, y cada 
+  R4 · La letra no se achicó: la cobertura de cada etapa tiene el tamaño del texto (no menos de 0,95 rem) — 16 p
+  R4 · «Comparar otros dos períodos» se abre con un toque y tiene sus cuatro fechas — 4 campos de fecha
+  CP-18 · Dos totales de duraciones distintas no se restan, y se dice por qué — Registros Total 159 registros 48
+  R4 · «Abrir estos gráficos en grande» trae, en el lugar de los chicos, los gráficos de las métricas de la preg
+  CP-17 · Agrupar por semana y acercar el gráfico no cambian la tabla A/B (resume las observaciones originales) 
+  C-12 · «Volver a los gráficos chicos» los devuelve y cierra los grandes; la tabla no cambió — chicos: 3 · gran
+  CP-26 · La vista guardada lleva la pregunta y sus parámetros como identificadores, sin resultados — {"id":"com
+  CP-26 · Reabierta en el mismo asesorado, vuelve la comparación de las mismas etapas — /pro/advisees?id=0850f27
+  CP-26 · Abierta en otro asesorado, las etapas del primero no aplican: se dice y se piden de nuevo, sin sustitu
+  CP-18 · Con huecos, «Comparar dos períodos» dice los días del rango, cuántos tienen valor y cuántos no tienen 
+  CP-11 · En el gráfico, el peso tiene puntos medidos y reportados y el IMC calculados, cada clase con su forma,
+  CP-12 · Al elegir el punto reportado, la lectura dice «Reportado por la persona, no medido» y el punto conserv
+  CP-12 · La prueba de la prueba: con el aro oculto, la comprobación del punto elegido falla — sin el aro: {"hay
+  CP-13 · El IMC se dice calculado (un índice, no una estimación), con su método, en la lectura y en la tabla — 
+  CP-11 · El CSV dice la misma clase y el método: «Calculado: un índice…» con el nombre del método — BE-analisis
+  CP-25 · La búsqueda de alimentos viaja en el cuerpo de un POST; ninguna URL lleva el texto — 1 búsqueda(s) por
+  CP-25 · El registro de la API no tiene el texto buscado — 18487990 caracteres revisados
+  CP-22 · La respuesta lenta del asesorado anterior llega después de cambiar de persona y no se muestra: solo lo
+  CP-06 · Si falla la lectura de lo nuevo, la tarjeta de cada área con revisión dice «No pudimos completar esta 
+  R6 · Con la nutrición sin responder, el peso se dibuja y las partes que faltan lo dicen con su reintento, sin 
+  R6 · Reintentar, con la API de nuevo disponible, trae los tres gráficos
+  R6 · Un conflicto al guardar los indicadores se explica, la elección hecha sigue marcada y se vuelve a leer la
+  CP-28 · Con el teclado se alcanzan los hechos de las tarjetas, la acción de cada área y las preguntas del Resu
+  CP-28 · Con el zoom al 200 % (720 px de CSS), el Resumen no desborda de costado
+  CP-28 · En el árbol de accesibilidad del Resumen, los encabezados están (una por área, los indicadores y las p
+  CP-29 · El Resumen con la API en uso, dentro del presupuesto del paquete anterior (2,5 s) — 626 ms
+  CP-09 · El contraste de entrenamiento muestra cada sesión con lo que indicaba la versión que ejecutó — Evoluci
+  CP-19 · «Preparar la revisión» abre el formulario con el período desde la última revisión, dicho como preparad
+  CP-19 · La evidencia de la revisión de Entrenamiento se abre sin nada marcado — Todavía no marcaste nada. · 0 
+  CP-20 · La revisión envía una referencia por registro marcado: el día marcado como grupo viaja como sus sesion
+  CP-20 · Registrar la revisión hace una sola escritura y avisa, con la vuelta a la ficha en el mismo aviso — 1 
+  CP-20 · La ficha ya dice la revisión nueva (hoy, sin aplicar) y lo nuevo de Entrenamiento se cuenta desde ella
+  CP-25 · Ningún pedido a la API llevó texto de búsqueda en la URL durante el recorrido — 960 pedidos
+última línea: 85 de 86 bien; con observaciones: R3 «Solicitar contexto» abre «Pedir información» sobre las solicitudes de la persona, con su retorno a la ficha; cerrarlo y volver sin enviar no crea ninguna solicitud

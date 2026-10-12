@@ -630,7 +630,7 @@ crear otro, se usa uno de estos.
 | `EstadoDeLecturaDelArea` · `NoDisponibleEnElArea` | El resultado de leer una sección: cargando, el «no disponible» neutral o la falla con su motivo y «Reintentar» | «No pudimos cargar esta vista · Hubo muchas consultas seguidas…» |
 | `AccesoPorArea` (`acceso-por-area.tsx`) | El acceso actual por área, igual en la ficha y en el marco de un área | «Nutrición: Activo · acceso contextual» |
 | `PanelDeRegistro` | Un registro encima de la vista, en un panel que retiene el foco, con su propia lectura | La planificación de una etapa; el origen de un dato o el detalle de un hecho, en una ventana angosta |
-| `Panel` (`components/panel.tsx`) | Lo mismo, para cualquier contenido: el diálogo, su título y «Cerrar». `PanelDeRegistro` lo usa | El registro de una comida de Nutrición · Registros, en una ventana angosta; una medición o un resultado de Antropometría · Tomas, en cualquier ancho |
+| `Panel` (`components/panel.tsx`) | Lo mismo, para cualquier contenido: el diálogo, su título y «Cerrar». `PanelDeRegistro` lo usa | El registro de una comida de Nutrición · Registros o una solicitud de Información, en una ventana angosta; una medición o un resultado de Antropometría · Tomas, en cualquier ancho |
 | `ControlDePeriodo` (`advisees/control-de-periodo.tsx`) | El período en un solo control. Recibe el período, los atajos y el tope: no lee ni escribe la dirección por su cuenta | La ficha (hasta 366 días) y Nutrición · Registros (hasta 92) |
 | `AyudaDeVista` · `RenglonDeAyuda` (`components/ayuda-de-vista.tsx`) | «Cómo se lee esta vista»: el botón y su diálogo, con una muestra y una explicación por renglón | La de la ficha; la de Nutrición · Registros, en el marco del área |
 | `.dia-de-registros` · `.comida-del-dia` | El día de un área en un renglón que se abre, y cada comida del plan en una fila con sus columnas | «11 oct · domingo · 2 de 4 comidas registradas · 1 comida diferente» |
@@ -647,7 +647,7 @@ crear otro, se usa uno de estos.
 | `Marca` (`anthropometry/marca.tsx`) | La clase de un dato o su excepción, con su ícono y su palabra: el ícono solo no alcanza | «Medido», «Corregida», «Anulada» |
 | `tramosDeProtocolo` · `medicionesPorFamilia` · `historiaDeLaMedicion` · `loQueCambio` (dominio) | Las reglas de Antropometría · Tomas: los tramos de la lista, las filas con el valor que rige, la historia por la cadena de correcciones y lo que cambió en los resultados | «30 mediciones · 1 corregida · 1 anulada» |
 | `OrigenDelDato` | De dónde sale un punto de Analizar, en el lugar de la lectura: el valor, qué es y sus fuentes, con lo que aporta cada comida | «795 kcal»: Almuerzo, 311 kcal; Cena, 484 kcal |
-| `useDetalleAlCostado` (`al-costado.ts`) | Si la ventana tiene lugar para un detalle al costado (desde 1200 px) | La línea de tiempo y Analizar |
+| `useDetalleAlCostado` (`al-costado.ts`) | Si la ventana tiene lugar para un detalle al costado (desde 1200 px) | La línea de tiempo y Analizar; los Registros de Nutrición y de Entrenamiento; las Solicitudes de Información |
 | `ParametrosDelEjercicio` | Los datos de una pregunta, para elegirlos en el lugar; uno sin otra opción va escrito | «Ejercicio: Peso muerto · Serie: 1 · Unidad: kg» |
 | `ListaDePreguntas` · `ElegirParametros` · `PreguntaActiva` | Entrar por preguntas, pedir lo que falta y decir la pregunta en curso | «¿Cómo viene progresando este ejercicio?» |
 | `ComparacionDeEtapas` · `EtapasDelPeriodo` | Comparar dos etapas del plan y ofrecerlas desde el gráfico | «v2 y v3» con su tabla |
@@ -661,7 +661,7 @@ crear otro, se usa uno de estos.
 | `BloqueDeEstado` | Un estado dicho en el lugar de lo que falta: ícono, qué pasó, por qué y qué se puede hacer | «No pudimos completar esta parte» + «Reintentar» |
 | `.tarjeta-de-pregunta` | Una pregunta como botón entero, con lo que muestra | Las preguntas principales de Analizar |
 | `.aviso-de-filtro` | Un filtro que viene de otra vista, explicado y con su salida | «Lo nuevo desde la revisión…» + «Ver todo el período elegido» |
-| `BotonDeVista` · `.vista-de-la-linea` | Una vista con nombre: un filtro con el nombre de lo que se busca y la cantidad que trae. La elegida va llena. La usan la línea de tiempo y «Pendientes» | «Hitos 19», «Revisiones 3» |
+| `BotonDeVista` · `.vista-de-la-linea` | Una vista con nombre: un filtro con el nombre de lo que se busca y la cantidad que trae. La elegida va llena. La usan la línea de tiempo, «Pendientes», los Registros de Nutrición y de Entrenamiento y las Solicitudes de Información | «Hitos 19», «Revisiones 3», «Sin responder 1» |
 | `.entrada` | Un hecho en un renglón que se abre entero: ícono o hora, nombre, lo que lo distingue, sus rasgos y la flecha | «Almuerzo · Arroz con pollo y brócoli · Rectificado» |
 | `.grupo-de-hechos` | Lo de todos los días, junto en un renglón que dice cuánto hay y lo que tiene de distinto; se abre en el lugar | «Comidas · 4 registradas · 1 anulada» |
 | `.detalle-del-hecho` | El detalle de lo elegido, al costado de su lista, sin taparla; acompaña el desplazamiento | El de un hecho de la línea de tiempo |
@@ -671,6 +671,14 @@ crear otro, se usa uno de estos.
 | `todasLasPaginas` (dominio) · `useListaCompleta` | Una lista leída entera, para contarla o buscar en ella: dice si quedó incompleta y, si falló, por qué | Los pendientes de la cartera; los vínculos de la ficha |
 | `motivoDeFalla` · `razonDeFalla` · `ICONO_DE_FALLA` (`lib/fallas.ts`) | Por qué falló una lectura, con sus palabras y su ícono, en todo el website profesional | «Hubo muchas consultas seguidas. Esperá un minuto y reintentá.» |
 | `.dialogo--formulario` | Un formulario corto en un diálogo: el foco en el primer campo, «Volver» y la acción | «Solicitar vínculo» |
+| `Cajon` (`components/cajon.tsx`) | Un formulario más largo, que se abre al costado, sobre la vista, que sigue a la vista por detrás. La cabecera (de quién es, el título y «Cerrar») y el pie quedan fijos; el cuerpo se desplaza adentro. Lo que hay que saber antes de un acto que no se deshace va en el pie, junto al botón. El foco va al título; no se cierra durante un envío. 800 px; hasta 64 rem de ventana, todo el ancho. Dibuja su contenido solo mientras está abierto: lo que tiene que sobrevivir al cierre vive en quien lo abre | «Pedir información», sobre «Solicitudes» |
+| `.paso-del-pedido` · `.formularios-del-pedido` · `.preguntas-del-pedido` | Los pasos de un pedido, a la vista a la vez: una opción por formulario (su descripción, solo en el elegido); una fila por pregunta, con la casilla que la pide, con qué se responde y si es requerida; y el para qué, con el área | «2 Qué preguntas · 6 de 6 elegidas.» |
+| `.campo-fijo` | Un valor que la pantalla fija y no deja cambiar: se lee como un campo, con su candado y su motivo | «Área: Entrenamiento» + «Este formulario es solo de Entrenamiento.» |
+| `.casilla-de-celda` | Una casilla sola en su celda: lo que se toca mide 44 px aunque la casilla sea chica | «Requerida», en la tabla de preguntas |
+| `.lista-de-solicitudes` · `.solicitud-abierta` · `.lo-declarado` | Información · Solicitudes: la lista, y lo que la persona declaró por pregunta pedida, con la respuesta que rige, «Corregida» y lo que había antes | «Dolor o lesiones actuales — Molestia en el hombro derecho… · Corregida · Antes: sin responder.» |
+| `loDeclarado` · `contarLasVistasDeSolicitudes` · `valorDeclarado` · `respondeCon` (dominio) | Las reglas de Información · Solicitudes: la respuesta que rige por la relación que da la API, «antes», la historia de las versiones, las cantidades de las vistas, y el valor con su unidad | «7,5 h»; «Respondió 1 de las 2 preguntas.» |
+| `usePersonaDelArea` · `useAvisarSinAcceso` (`marco-del-area.tsx`) | De quién es el área, para decirlo donde el marco queda tapado; y avisarle al marco que una escritura respondió «no disponible» sin retirar la sección | El cajón del pedido |
+| `dejarAvisoPara` · `tomarAvisoPara` (`lib/aviso-al-llegar.ts`) | Un aviso para la página a la que se va: lo deja quien navega y lo toma, una vez, la página de destino. Vive en memoria, no en la dirección | «Solicitud enviada.», al volver a Entrenamiento |
 
 **Reglas que salieron de este trabajo:**
 - **La fecha que importa nombra al registro.** La fecha de ocurrencia es lo principal. La de registro es un metadato:
@@ -682,6 +690,12 @@ crear otro, se usa uno de estos.
 - **No se pliega lo que hace falta para decidir** (I.2): requisitos de un cálculo, población en que se validó,
   advertencias, alcance, corte, cobertura y motivos. Se pliega la explicación larga.
 - **La barra fija de guardado no tapa un error.** El campo enfocado y su mensaje quedan por encima de la barra.
+- **Un botón de enviar no espera apagado sin decir por qué.** Lo que falta se dice al tocarlo, cada cosa en su lugar, y
+  el foco va a lo primero que falta. Apagado queda solo mientras algo se está leyendo o enviando.
+- **Cerrar un formulario abierto encima no descarta lo escrito.** Queda como estaba mientras dure la visita; lo que lo
+  descartaría («Actualizar») pregunta antes.
+- **Lo que una acción deja dicho, lo dice la página donde la persona queda.** Si al enviar se vuelve a otra página, el
+  aviso viaja con ella: un aviso de la página que se abandona no lo lee nadie.
 
 ### II.9 Pestaña Antropometría (no se extiende al resto del website)
 
@@ -1250,6 +1264,12 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | Qué pasa con los resultados al corregir o anular una medición | No se decía. | El panel de la medición lo dice, por la relación entre cálculos: el valor de ahora y el de antes; al anular, los que quedaron sin efecto, sin un cero en su lugar (II.9). | Nueva | Áreas, 3 |
 | «Evaluación», en Antropometría | El nombre de una toma en la carga, en los avisos, en la evolución y en el pendiente del Espacio profesional. | «Toma», en todos; las direcciones no cambian. | Sustituida | Áreas, 3 |
 | El aviso «Toma registrada» | Se decía en la carga, que se desmontaba al volver: podía no verse. | Se dice en «Tomas», adonde se vuelve (II.9). | Corregida | Áreas, 3 |
+| Información · Solicitudes | Dos secciones. Cada solicitud, un renglón con «Ver detalle»; el detalle, debajo, con cada versión de la respuesta entera y «Declarado por la persona» en cada dato. | Una sección. La lista, con tres vistas con nombre y cantidad; el detalle al costado, con lo que declaró por pregunta pedida y la respuesta que rige; cada versión, en la historia, a un clic (II.8). | Sustituida | Áreas, 4 |
+| Una pregunta pedida que la persona no respondió | No aparecía: había que notar que faltaba. | Una fila que dice «Sin responder». | Corregida | Áreas, 4 |
+| «Pedir información» | Otra página, con su pestaña. Ninguna pregunta marcada; el botón, apagado hasta escribir el propósito. | Un cajón sobre «Solicitudes», con los tres pasos a la vista y lo que hay que saber antes de enviar junto al botón. Las preguntas vienen todas marcadas (DL-131); lo que falta se dice en su lugar; cerrar no descarta lo armado (II.8). | Sustituida | Áreas, 4 |
+| El área de un pedido de información | «Entrenamiento», elegida de entrada para todo formulario. | Fija, con su candado, si el formulario es de un área sola; si no, hay que elegirla. | Corregida | Áreas, 4 |
+| «Plantilla», «campo» y «Alcance», en lo que lee el profesional en Información | En los títulos, las notas y los rechazos. | «Formulario», «pregunta» y «área». | Sustituida | Áreas, 4 |
+| El éxito de un pedido hecho desde Entrenamiento | No se veía: se guardaba en la página que se abandonaba. | Lo dice Entrenamiento, al llegar (II.8). | Corregida | Áreas, 4 |
 
 ---
 

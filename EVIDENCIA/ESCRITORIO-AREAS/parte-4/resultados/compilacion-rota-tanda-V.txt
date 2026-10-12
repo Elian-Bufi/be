@@ -1,0 +1,26 @@
+NOTADA    «Solicitudes» vuelve al ancho de las secciones sin recomponer — F-10 (el ancho de la sección)
+tanda V (areas): 1 de 1 roturas notadas · 1 comprobaciones fallaron y 19 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-10 · La sección arranca en la misma vertical que el marco.… — Nutrición: marco desde 32, sección de 32 a 1184 · Entrenamiento: marco desde 32, sección de 32 a 1184 · Antropometría: marco desde 32, sección de 32 a 1408 · In
+pasaron:
+  F-01 · Nutrición: el marco dice el área (el único título de la página), de quién es, su acceso actual con las 
+  F-01 · Entrenamiento: el marco dice el área (el único título de la página), de quién es, su acceso actual con 
+  F-01 · Antropometría: el marco dice el área (el único título de la página), de quién es, su acceso actual con 
+  F-01 · Información: el marco dice el área (el único título de la página), de quién es, su acceso actual con la
+  F-07 · Sin haber llegado desde la ficha (como desde un pendiente), el camino de vuelta de las cuatro áreas dic
+  F-06 · El marco tiene tres renglones y mide lo mismo en las cuatro áreas y en la ficha: al pasar de la ficha a
+  C-65 · «vista=ejecuciones» sigue abriendo los registros de Entrenamiento, que se leen «Registros» (y no el Res
+  F-07 · Llegando desde la ficha, el camino de vuelta dice «Volver a la ficha, donde estabas», las cuatro seccio
+  F-07 · Llegando a «Pedir información» desde Entrenamiento, el camino de vuelta dice «Volver a Entrenamiento» y
+  F-08 · «Actualizar» vuelve a pedir todo lo que la sección leyó al entrar (las mismas lecturas, una vez cada un
+  F-08 · Con algo escrito sin guardar, «Actualizar» pregunta antes: dice qué se pierde y no lee nada; «Seguir ed
+  C-43 · Si la sección no se puede leer por una falla (un 503 simulado en el navegador), lo dice en su lugar con
+  F-09 · Si las lecturas de la sección responden «no disponible» (simulado), la sección dice el texto neutral de
+  F-09 · Si además el resumen dice que Nutrición ya no se puede leer (simulado), el marco de Nutrición dice «Acc
+  F-09 · Cuando las lecturas vuelven a responder, «Actualizar» trae la sección y el marco vuelve a decir el acce
+  F-01 · Si no se puede leer la cuenta (un 503 simulado), la página conserva el título del área y el camino de v
+  F-01 · Con el teclado, después del título se llega a «Actualizar» y después a las cuatro secciones, en su orde
+  F-06 · A 1280 y a 1024 px el marco de Antropometría y el de Información (los de textos más largos) conservan s
+  — · El marco de las áreas no produjo errores de página ni respuestas con error fuera de las simuladas
+última línea: 20/21 comprobaciones bien; fallan: F-10

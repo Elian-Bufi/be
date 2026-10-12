@@ -554,3 +554,175 @@ resultado en lugar del que quedó sin efecto» (está entre los anteriores).
    recompuestas.
 4. **Los mensajes de rechazo de la API** que dicen «evaluación»: cambiarlos toca el servidor, sus pruebas y un
    despliegue.
+
+## Parte 4 · Información · Solicitudes y el pedido (2026-10-12)
+
+La pestaña Información pasó de dos secciones —una lista de solicitudes con «Ver detalle» en cada renglón, que abría
+debajo todas las versiones de la respuesta, y una página aparte para pedir— a la lectura de las maquetas 26 y 27: **una
+lista con tres vistas con nombre; el detalle al costado, con lo que la persona declaró por pregunta pedida y la
+respuesta que rige; la historia de la respuesta, con cada versión a un clic; y «Pedir información» en un cajón que se
+abre sobre la lista,** con sus tres pasos a la vista y lo que hay que saber antes de enviar junto al botón. No se quitó
+ninguna función: `vista=solicitudes` y `vista=pedir` abren lo mismo que antes, desde la ficha, desde Entrenamiento
+(«Solicitar contexto») y desde un pendiente. No cambian la API, la base ni la APK: los textos que la APK comparte no se
+tocaron. Sobre la base propia (`be_test_escritorio`, regenerada antes de cada pasada) y la compilación estática del
+código de esta parte: `1a876db` (Solicitudes), `07285ac` (el cajón) y `11dfd32` («Requerida», al lado de su pregunta, después de la
+prueba de la prueba y de las capturas).
+
+**Se aplicó la decisión F-05** (Dirección, 2026-10-12): al elegir un formulario vienen todas sus preguntas marcadas y
+ninguna como requerida. Está registrada en `docs/DEUDA_LEGAJO.md`, DL-131, con lo que dice el legajo y con su costo. No
+viene ningún formulario elegido: la primera decisión es del profesional.
+
+**Medido en la página real,** con las tres solicitudes de las cuentas descartables, recién cargadas por la API: una
+respondida, una respondida y corregida por la persona (cambió una respuesta y agregó otra, con su motivo) y una sin
+responder, en dos áreas. El «antes» es la pantalla como quedó al cerrar la parte 3, con los mismos datos, medida antes de
+tocar nada.
+
+| A 900 px de alto | Antes | Ahora |
+|---|---|---|
+| La solicitud respondida y corregida, abierta, a 1440 px | 1.327 px: el detalle, debajo de su renglón | 1.105 px: la lista en 520 px y el detalle, al costado, en 836 |
+| Lo mismo, a 1280 px | 1.327 px | 1.207 px |
+| Lo mismo, a 1024 px | 1.327 px | 900 px: el detalle se abre encima, en un panel |
+| La solicitud respondida de seis preguntas, abierta, a 1440 px | No se midió: la captura que iba a mostrarla abrió otra solicitud | 1.236 px (1.271 antes de un ajuste que mostraron las capturas) |
+| «Pedir información» con el formulario de seis preguntas elegido, a 1440 px | 1.835 px, en otra página | Un cajón de 800 × 900 px sobre la lista, que no desplaza la página. Su contenido mide 902 px, en 755 a la vista: el resto se desplaza adentro, con el botón siempre a la vista |
+| Lo mismo, a 1024 px | 1.858 px | El cajón ocupa todo el ancho |
+
+La lista sola, sin nada abierto, medía 900 px y mide 900: entra en la ventana en las dos. **El cajón no entra entero en
+900 px con el formulario más largo del catálogo:** con seis preguntas, el paso 3 queda debajo del borde y hay que
+desplazar adentro del cajón. Con los de tres preguntas entra.
+
+**Las lecturas.** Al entrar, «Solicitudes» lee una vez la lista y una vez la respuesta de cada solicitud respondida (dos
+de dos); ninguna de las que están sin responder, y ningún formulario. Abrir una solicitud respondida no lee su respuesta
+de nuevo: lee una vez su formulario, y una sola vez por versión. Abrir el cajón lee el catálogo una vez; elegir un
+formulario, su versión. La pantalla de antes hacía dos lecturas cada vez que se abría un detalle, también si era el
+mismo (leído en su código; no se contó en pantalla).
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Al entrar se lee la lista entera una vez y, una vez, la respuesta de cada solicitud respondida: ninguna dos veces, ninguna de las sin responder, y ningún formulario (F-44) | `recorrido.mjs solicitudes`: corre solo, sobre las cuentas descartables recién generadas, y no toca los datos de A, B ni C. Lo esperado se calcula a mano con lo que devuelve la API: no se usa el módulo que arma la pantalla | Pasa: 1 lectura de la lista; 1 y 1 de las dos respondidas; 0 de la sin responder; 0 formularios | Verificado automáticamente |
+| La lista tiene todas las solicitudes, en el orden de la API (la más nueva primero); cada renglón dice el formulario, su estado, cuándo se pidió, en qué área, cuántas preguntas tiene, si la persona corrigió su respuesta, y para qué (C-72) | Lo mismo, renglón por renglón | Pasa: tres solicitudes, en dos áreas; una dice «corrigió su respuesta» | Verificado automáticamente |
+| «Pedir información» es un botón de «Solicitudes», no una sección: el marco tiene una sola; ningún renglón lleva un botón «Ver detalle» (C-70) | Lo mismo; la misma consulta encuentra el botón de pedir | Pasa | Verificado automáticamente |
+| Las tres vistas, en su orden, cada una con la cantidad que trae, contada a mano; «Sin responder» y «Respondidas» suman «Todas». Elegir una no le pide nada a la API, queda en la dirección, y volver a tocarla deja «Todas» (F-45) | Lo mismo | Pasa: «Todas 3 · Sin responder 1 · Respondidas 2»; 0 pedidos al elegir | Verificado automáticamente |
+| Una solicitud respondida se abre al costado, sin tapar la lista, con el foco en su título. Dice cuándo se pidió y en qué área, para qué, y cuándo respondió y corrigió la persona. «Declarado por la persona» se dice una vez. De cada pregunta pedida, la respuesta que rige —la de la corrección que señala la API—, con «Corregida» y lo que había antes, también si antes estaba sin responder; «Requerida», junto a su pregunta (C-71, F-46) | Lo mismo: la respuesta que rige, «Corregida» y «Antes» se calculan a mano, por la cadena de correcciones que entrega la API | Pasa: «Asma leve. Uso inhalador antes de entrenar. · Corregida · Antes: «Asma leve, desde hace años.»» y «Molestia en el hombro derecho… · Corregida · Antes: sin responder.» | Verificado automáticamente |
+| Abrir una solicitud respondida no vuelve a leerla: lee una vez la versión de su formulario (F-44) | Lo mismo | Pasa: 0 lecturas de la solicitud y 1 del formulario | Verificado automáticamente |
+| La historia va de lo más nuevo a lo más viejo: la corrección, «Vigente», con el motivo que escribió la persona; y la original, que se conserva, con cuántas de las preguntas respondió (una cuenta, nunca una proporción). «Ver lo que respondió» abre, en el lugar, lo que dijo en esa versión (C-71, F-49) | Lo mismo | Pasa: «Corrección · Vigente · Motivo que escribió: «Me olvidé de aclarar que uso inhalador antes de entrenar.» · Respondió las 2 preguntas.» y «Respuesta original · Respondió 1 de las 2 preguntas.» | Verificado automáticamente |
+| Una respondida sin correcciones: rige la original, ninguna fila dice «Corregida» ni «Antes», y un número lleva la unidad de su pregunta (F-46) | Lo mismo | Pasa: «3 días por semana» y «45 min» (la respuesta guardada no trae unidad) | Verificado automáticamente |
+| En el detalle, «Requerida» sigue a la última palabra de su pregunta: si entra al lado, no ocupa un renglón propio (F-51) | Lo mismo: mide en qué renglón termina cada pregunta y dónde quedó su etiqueta | Pasa: las 5 preguntas requeridas, todas de dos renglones, con la etiqueta al lado. **Antes del arreglo falló:** las 5 con la etiqueta abajo, aunque entraba | Verificado automáticamente |
+| Una solicitud sin responder se abre igual, sin leer nada más que su formulario: dice las preguntas pedidas y «Todavía sin responder. No responder también es una opción.». No tiene tabla, historia ni «Declarado por la persona», ni ningún porcentaje (F-47) | Lo mismo; la misma consulta encuentra la tabla y la etiqueta en una respondida | Pasa | Verificado automáticamente |
+| Escape cierra el detalle y el foco vuelve al renglón. La solicitud abierta vive en la dirección: se abre al entrar con ella, y «Actualizar» vuelve a leer la lista y la deja abierta (F-48) | Lo mismo | Pasa: una lectura de la lista | Verificado automáticamente |
+| En ningún estado de «Solicitudes» el texto afirma una medición ni un diagnóstico, ni usa un porcentaje ni un término prohibido de formularios; la negación está: «No es una medición ni un diagnóstico.» (F-49) | Lo mismo, con el detector del dominio, que sí encuentra la palabra en una frase que la afirma | Pasa | Verificado automáticamente |
+| Si la lista no se puede leer, la sección dice la falla con «Reintentar» y nunca «Todavía no le pediste información». Si no se pueden leer la respuesta o las preguntas del formulario, el detalle lo dice —no dice «sin responder», ni muestra el código de una pregunta— y cada «Reintentar» trae lo suyo (F-50) | Lo mismo, con tres 503 simulados en el navegador | Pasa | Verificado automáticamente, sobre respuestas simuladas |
+| «Solicitudes» tiene su ayuda en el marco del área: los estados, «Declarado por la persona», «Requerida» y la respuesta que rige (F-14) | Lo mismo | Pasa: «Cómo se leen las Solicitudes», 8 renglones | Verificado automáticamente |
+| A 1280 px el detalle sigue al costado. A 1024 px se abre encima, en un panel que retiene el foco, con las mismas filas y la respuesta debajo de su pregunta; Escape lo cierra. Nada desborda de costado, ni un renglón deja un número separado de su palabra (F-51) | Lo mismo | Pasa | Verificado automáticamente |
+| axe no encuentra faltas con una solicitud abierta al costado (1440 y 1280 px), en el panel de encima (1024 px) ni con la ayuda abierta (F-48) | Lo mismo | Pasa | Verificado automáticamente |
+| «Pedir información» abre un cajón sobre «Solicitudes», que sigue detrás con su lista y sin volver a leerla: la dirección dice `vista=pedir`, el marco sigue marcando «Solicitudes» y el cajón dice de quién es, con las palabras del marco. El foco va a su título. Tiene los tres pasos, ningún formulario elegido, y al abrirse lee el catálogo una vez y ninguna versión (C-70, F-52) | Lo mismo; el catálogo esperado sale de la API | Pasa: «1 Qué formulario», «2 Qué preguntas», «3 Para qué y en qué área»; tres formularios, con 6, 3 y 3 preguntas | Verificado automáticamente |
+| Elegir un formulario lee su versión una vez y muestra su descripción (la de los otros, no). Vienen todas sus preguntas marcadas y ninguna requerida; la cuenta sigue a las casillas. «Responde con» es el tipo y la unidad de la API. La «Requerida» de una pregunta sin pedir está apagada y no se puede marcar; la de una pedida, sí. Cada fila y cada formulario miden 44 px o más (C-73, F-05) | Lo mismo | Pasa: «3 de 3 elegidas.»; «Número · h», «Texto» y «Sí o no»; al desmarcar una, «2 de 3 elegidas.» | Verificado automáticamente |
+| La nota de las requeridas dice lo que pasa; junto al botón, siempre adentro de la ventana, lo que hay que saber antes de enviar: que la va a ver en su teléfono (no que «le llega» un aviso) y que no se puede cancelar ni editar. El cajón no dice «Alcance», «plantilla» ni «campo», ni ningún término prohibido (C-74, F-56) | Lo mismo | Pasa: «La va a ver en su teléfono, en «Información». No se puede cancelar ni editar después de enviarla.» | Verificado automáticamente |
+| Escape cierra el cajón: la dirección vuelve a `vista=solicitudes`, el foco vuelve al botón que lo abrió y no sale ninguna escritura. Lo armado no se pierde por cerrar: al abrirlo de nuevo está como estaba. Con eso sin enviar, «Actualizar» pregunta antes de descartarlo, nombrándolo, y no lee nada. «Atrás» también lo cierra (F-52) | Lo mismo: un formulario elegido, una pregunta desmarcada, otra requerida y el para qué escrito | Pasa: al reabrir, «2 de 3 elegidas.» y el para qué; «Tenés cambios sin guardar… en el pedido de información» | Verificado automáticamente |
+| Con algo sin completar, «Enviar solicitud» no envía nada y dice en su lugar qué falta, con el foco en lo primero que falta; cada cosa deja de decirse cuando se completa (F-53) | Lo mismo: sin nada elegido; y con un formulario sin área propia y todas sus preguntas desmarcadas | Pasa: «Elegí un formulario.» y «Escribí para qué lo necesitás.»; después, «Elegí al menos una pregunta para pedir.», el para qué y «Elegí en qué área lo pedís.» | Verificado automáticamente |
+| El área: con un formulario sin área propia hay que elegirla, se ofrecen las tres y no viene ninguna; con uno de un área sola queda fija, en un campo que no se edita, y lo dice. La aclaración que la persona lee debajo de cada pregunta está a un clic, y es la de la API (F-54) | Lo mismo: qué formulario tiene área propia lo dice la API | Pasa: «Este formulario es solo de Entrenamiento.»; 0 aclaraciones a la vista y, al pedirlas, las 5 que ese formulario tiene | Verificado automáticamente |
+| Un rechazo al enviar se dice adentro del cajón, con el foco en el aviso, y lo elegido sigue como estaba. Si una pregunta no es pertinente para el área, lo dice con esas palabras; si la respuesta es «no disponible», dice el texto neutral del profesional y el marco vuelve a preguntar el acceso; sin conexión, dice que no se pudo confirmar y el botón pasa a «Reintentar», hasta que se cambia algo. Ninguna solicitud se creó (F-55) | Lo mismo, con tres respuestas simuladas en el navegador (422, 404 y el pedido cortado) | Pasa: «Alguna de las preguntas pedidas no es pertinente para esta área. Revisá las preguntas o el área.»; «No encontramos un recurso disponible para esta acción.», con una pregunta al resumen; «No pudimos confirmar el resultado. Reintentá.» | Verificado automáticamente, sobre respuestas simuladas |
+| A 1440 y a 1280 px el cajón mide 800 px, pegado al borde derecho y de arriba a abajo, y la página sigue a la vista a su izquierda; a 1024 px ocupa todo el ancho. En los tres el pie queda adentro de la ventana, nada desborda de costado y axe no encuentra faltas con un formulario elegido y un rechazo a la vista (F-56) | Lo mismo | Pasa: quedan 640 y 480 px de la página a la vista | Verificado automáticamente |
+| **Lo que escribe.** Al enviar sale un solo pedido, con lo que quedó elegido: las preguntas marcadas (no la que se desmarcó), en el orden del formulario, la requerida, el para qué y el área. El cajón se cierra, la página queda en «Solicitudes» y lo dice; la lista se vuelve a leer y tiene una más, primera y sin responder, y las cantidades de las vistas suben. El pedido siguiente empieza de cero (F-05) | Lo mismo: lo que guardó la API se lee después de enviar | Pasa: un pedido; dos preguntas, una requerida, Nutrición; «Solicitud enviada.»; «Todas 4 · Sin responder 2» | Verificado automáticamente |
+| Llegando desde Entrenamiento, el cajón se abre con la precarga ratificada (DL-100): seis preguntas, cinco requeridas, el para qué y el área fija; lo dice, y no dice «Vienen todas elegidas». Cerrarlo deja a la persona en «Solicitudes», con «Volver a Entrenamiento» en el marco, y al reabrirlo la precarga sigue. Al enviar sale un solo pedido con eso y se vuelve a Entrenamiento, que al llegar dice «Solicitud enviada.» (F-57) | Lo mismo: la precarga está escrita a mano en el recorrido | Pasa | Verificado automáticamente |
+| «Solicitar contexto», en el marco de la ficha, abre «Pedir información» sobre las solicitudes de la persona, con su retorno a la ficha; cerrarlo y volver sin enviar no crea ninguna solicitud | `recorrido-comprension.mjs funcional`, comprobación R3, adaptada: antes hacía clic en el retorno con la página del pedido a la vista; ahora cierra primero el cajón, que retiene el foco. Lo que protege no cambió | Pasa | Verificado automáticamente |
+| Las reglas: las vistas, el valor con su unidad, con qué se responde una pregunta, la respuesta que rige por pregunta pedida, «Corregida» y «Antes», la historia, la cadena sin resolver y los textos | `packages/domain/src/solicitudes-de-informacion.test.ts`, en la batería | 18 de 18 | Verificado automáticamente |
+| Ningún texto escrito en las pantallas de Información usa un término prohibido de formularios | `scripts/copy-pantallas.test.cjs`, con un bloque nuevo para la carpeta `forms` | Pasa | Verificado automáticamente |
+| Quien inicia sesión desde Información vuelve a Información; un pedido a medio armar no se retoma (se vuelve a las solicitudes) | `scripts/retorno-seguro.test.mjs` | Pasa | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de esta parte | `recorrido.mjs`: capturas 60 de 60, funcional 316 de 316, descartable 22 de 22, mediciones 18 de 18, solicitudes 32 de 32 y estimación 7 de 7. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 80 de 80, funcional 86 de 86 y revocación 6 de 6. Pasada del 2026-10-12, de 13:08 a 13:49, sobre el código de `11dfd32`, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10). `parte-4/resumen-de-la-pasada.txt`. Una pasada anterior, empezada sobre `07285ac`, se cortó a los dos minutos para corregir lo que mostraron las capturas | Verificado automáticamente |
+| Toda la batería de la CI | La CI de GitHub sobre los commits de código | En verde las tres corridas: 38260666114 sobre `1a876db`, 38268292846 sobre `07285ac` y 38280316620 sobre `11dfd32`. En cada una: el legajo; la batería completa (typecheck; dominio, 692 en las dos últimas, con las 18 nuevas; guiones, 347; y las pruebas de la API); la integración; y la imagen de la API | Verificado automáticamente |
+| La pantalla, a 1440 px en sus estados (la lista; una solicitud corregida, una respondida y una sin responder; la historia abierta; una vista; la ayuda; dos fallas; y el cajón vacío, con un formulario de tres preguntas, con el de seis, con las aclaraciones, con lo que falta y llegando desde Entrenamiento) y a 1280 y 1024 px, en los dos temas | `ver.mjs`, sobre las cuentas descartables recién generadas | 51 capturas de ahora (`parte-4/ahora/`: 46 a 1440, 1280 y 1024 px, en los dos temas, y 5 a 768 y 390 px, en Claro) y 22 de antes (`parte-4/antes/`). `parte-4/solicitudes-antes-y-ahora.png` y `parte-4/pedido-antes-y-ahora.png`. Las dos capturas de fallas son sobre respuestas simuladas | Observado en una captura real |
+
+Las comprobaciones negativas van con una positiva de la misma consulta: «ningún renglón lleva un botón Ver detalle» (el
+botón «Pedir información» está), «una sin responder no tiene tabla ni Declarado por la persona» (una respondida los
+tiene), «al abrirse el cajón no lee ninguna versión» (al elegir un formulario lee una), «un rechazo por pertinencia no le
+pregunta nada al resumen» (el «no disponible» le pregunta una vez), «el cajón no dice Le llega» (dice «La va a ver»), y
+«con las aclaraciones cerradas no hay ninguna a la vista» (al pedirlas están las cinco que ese formulario tiene).
+
+**La prueba de la prueba.**
+
+- **Las reglas, rotas de a una** (`resultados/calculo-roto-de-a-una-regla.txt`): 41 roturas del módulo del dominio, cada
+  una contra sus pruebas. **La primera corrida notó 36: cinco mostraron pruebas que faltaban.** Dos eran de «Antes» con
+  dos correcciones (tomar el valor más viejo en vez del último distinto, o mirar solo la versión inmediata anterior):
+  ninguna prueba tenía una pregunta que cambiara dos veces, ni una que cambiara en la primera corrección y quedara igual
+  en la segunda. Una, el código de una pregunta en una fila sin valor, cuando el formulario no se pudo leer. Y dos,
+  textos que llevan un dato («2 de 3 elegidas.» con los números cruzados; «Este formulario es solo de…» sin el área).
+  Se sumaron dos pruebas y se reforzó una: con 18 pruebas se notan las 41.
+- **La pantalla, rota y compilada así, en seis tandas** (`resultados/compilacion-rota-tanda-S.txt`, `-T`, `-D`, `-U`, `-V`
+  y `-W`). Contra `solicitudes`: 22 roturas del website, 7 más sobre comprobaciones que protegen más de una cosa, y 6 de
+  las reglas del dominio, en su fuente. Contra `recorrido-comprension.mjs funcional`, una (el cajón con otro título: la
+  nota R3). Contra `areas`, una («Solicitudes» con el ancho de antes: la nota F-10, que esta parte puso al día). **Se
+  notaron 36 de 37, cada una por su comprobación, y ninguna otra falló sin que se la esperara.**
+- **La que no se notó mostró una rotura mal elegida, no un hueco.** Era «al abrirse el cajón, el foco no va al título»,
+  hecha sacando la línea que se lo pide. El foco quedó igual en el título: el navegador lo lleva solo a lo primero que
+  lo admite, y es el título. Lo que la comprobación protege es dónde queda el foco, no esa línea. Se rehízo —el título
+  deja de admitir el foco, y entonces cae en «Cerrar»— y se corrió sola (tanda W): se nota. La línea se conserva, con su
+  motivo escrito: que el foco quede en el título no tiene que depender de cómo lo resuelva cada navegador.
+- Que el recorrido note una rotura de las reglas del dominio muestra que lo que espera no sale del módulo que arma la
+  pantalla.
+- **Las comprobaciones de «Solicitudes» y del cajón pasaron todas en su primera corrida completa:** ninguna se había
+  visto fallar. Por eso cada una tiene su rotura. La que se sumó después de mirar las capturas («Requerida», al lado
+  de su pregunta) se corrió primero sobre la compilación que tenía el defecto, y falló por lo que tenía que fallar: las
+  cinco etiquetas abajo, aunque entraban al lado.
+
+**Lo que encontraron las comprobaciones y las capturas, y qué se hizo.**
+
+- **El primer recorrido con el cajón no pasó de la entrada.** El cajón está siempre en la página, cerrado, para que lo
+  armado no se pierda; y cerrado dejaba adentro el «Cargando…» de un catálogo que no se lee hasta abrirlo. No se veía,
+  pero estaba: la espera del recorrido («nada cargando») no terminaba. Ahora el cajón dibuja su contenido solo mientras
+  está abierto, y lo armado vive en quien lo abre.
+- **Las aclaraciones de las preguntas empujaban el paso 3 fuera de la ventana.** El plan las ponía siempre a la vista,
+  debajo de cada pregunta; con el formulario de seis preguntas la tabla medía el doble. Lo mostró la primera captura.
+  Quedaron a un clic, para todas a la vez, y «Responde con» pasó a una columna más angosta: las preguntas entran en un
+  renglón.
+- **Cada pregunta requerida ocupaba un renglón de más.** En el detalle, «Requerida» bajaba sola a un renglón propio
+  cuando la pregunta ocupaba dos, aunque entrara al lado de su última palabra: la solicitud de seis preguntas medía
+  1.271 px. Lo mostraron las capturas de la evidencia, con la pasada completa recién empezada: se cortó, se corrigió y
+  se corrió todo de nuevo sobre la compilación final. Ahora la etiqueta sigue al texto.
+- **Una captura de «antes» mal rotulada.** La que iba a mostrar la solicitud respondida de seis preguntas tocó el primer
+  «Ver detalle», que era el de la solicitud sin responder, y quedó igual a esa. No está en la evidencia: de esa
+  solicitud no hay un «antes» medido.
+- **Un cambio del marco, visto antes de compilar.** El cajón necesita decir de quién es el pedido, que el marco tapa.
+  Pasar ese dato por el mismo contexto que el marco usa para avisar un «no disponible» hacía que, al llegar el nombre, el
+  marco preguntara el acceso dos veces: es lo que cuida la nota F-09 del recorrido de las áreas. Va por un contexto
+  aparte.
+- **La comprobación del ancho de las secciones** (F-10, de la parte 0) falló al recomponer «Solicitudes»: esperaba una
+  sola sección de entrada a todo el ancho, «Tomas». Se puso al día, nombrando las dos; su rotura se notó.
+- **R3,** la comprobación de «Solicitar contexto», se adaptó en el mismo commit que el cajón.
+- **Dos defectos de antes, que quedaban a la vista al reescribir:** el éxito de un pedido hecho desde Entrenamiento no se
+  veía (se guardaba en la página que se abandonaba), y quien iniciaba sesión desde Información volvía a Cuenta. Los dos
+  tienen su comprobación.
+- **Un nombre repetido** en el recorrido lo frenó antes de correr: lo mostró la revisión de sintaxis.
+
+**Lo que esta parte no comprueba:**
+
+- El uso real: falta que Dirección abra una solicitud corregida, arme un pedido y diga si el cajón le alcanza.
+- **La cadena de correcciones que no se puede resolver, en pantalla.** La API no la produce con datos válidos: está
+  probada en el dominio (ninguna versión rige, y se dice), no en una captura.
+- **Dos correcciones de una misma respuesta, un «Sí» o un «No» respondido, y un formulario con más de una sección:** no
+  están en los datos (la única pregunta de «Sí o no» está en la solicitud sin responder; los tres formularios tienen una
+  sección). Sus reglas tienen pruebas en el dominio; en pantalla no se vieron.
+- **Más de veinte solicitudes respondidas,** o una lista que llegue incompleta («Al menos N»): el escenario tiene tres.
+- **Los rechazos de verdad.** Los tres se miraron con respuestas simuladas en el navegador. Con la configuración de hoy
+  la API no rechaza ningún pedido por pertinencia (las cuatro categorías de datos se pueden pedir en las tres áreas:
+  `MATRIZ_DE_PERTINENCIA`), y las cuentas descartables tienen acceso a las tres áreas: no hay cómo provocar un «no
+  disponible» sin retirarlo.
+- El aviso «Solicitud enviada.» con «Volver a la ficha, donde estabas», cuando se llegó desde la ficha: el recorrido
+  entra sin retorno. El enlace es el de siempre (no cambió).
+- **El foco al abrir:** en el cajón va al título; en los paneles de la ficha y de las áreas va a «Cerrar». Son dos
+  reglas.
+- 768 y 390 px: sin comprobaciones propias. Se miraron en capturas: a 768 px el cajón ocupa todo el ancho, con su tabla;
+  a 390 px, una pregunta por bloque, con «Responde con» y «Requerida» escritos, y el botón siempre a la vista; el
+  detalle de una solicitud se abre como un diálogo y se lee.
+- Lector de pantalla con una persona: pendiente. Se verificaron axe, el nombre de cada casilla («Requerida: {pregunta}»),
+  el foco al abrir y al cerrar, Escape, y el foco en lo primero que falta.
+
+**Para decidir, sin urgencia.**
+
+1. **La descripción de dos formularios trae una cita interna** («…(CAND-10-TRN-A)», «…(08:201-204)»). Es parte del dato
+   del catálogo, y la pantalla no lo recorta: sacarla pide una versión nueva de esos formularios.
+2. **«Solicitar contexto» (en la ficha y en Entrenamiento) y «Pedir información» (en el área)** son la misma acción con
+   dos nombres. Unificarlos toca el marco de la ficha y un texto de Entrenamiento.
+3. **El foco al abrir un panel:** al título, como el cajón, o a «Cerrar», como los paneles de hoy.
+4. **Si la nota «Vienen todas elegidas: desmarcá las que no necesites» alcanza** para que no se pida de más (DL-131). Se
+   ve con el uso.
+5. **Que la lista de la API diga si una respuesta fue corregida:** ahorra una lectura por solicitud respondida al entrar.
