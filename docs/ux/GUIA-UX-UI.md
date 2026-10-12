@@ -679,6 +679,11 @@ crear otro, se usa uno de estos.
 | `loDeclarado` · `contarLasVistasDeSolicitudes` · `valorDeclarado` · `respondeCon` (dominio) | Las reglas de Información · Solicitudes: la respuesta que rige por la relación que da la API, «antes», la historia de las versiones, las cantidades de las vistas, y el valor con su unidad | «7,5 h»; «Respondió 1 de las 2 preguntas.» |
 | `usePersonaDelArea` · `useAvisarSinAcceso` (`marco-del-area.tsx`) | De quién es el área, para decirlo donde el marco queda tapado; y avisarle al marco que una escritura respondió «no disponible» sin retirar la sección | El cajón del pedido |
 | `dejarAvisoPara` · `tomarAvisoPara` (`lib/aviso-al-llegar.ts`) | Un aviso para la página a la que se va: lo deja quien navega y lo toma, una vez, la página de destino. Vive en memoria, no en la dirección | «Solicitud enviada.», al volver a Entrenamiento |
+| `SelectorDeDiaTipo` · `ComidasDelPlan` (`nutrition/estructura-del-plan.tsx`) | El plan de comidas, en solo lectura: el día tipo que se mira (un control; con uno solo, su nombre) y sus comidas plegadas, cada una en un renglón con su cantidad de opciones y sus nombres; abierta, sus opciones lado a lado, todas a la vista. Va en Nutrición · Plan y en el detalle de una etapa de la ficha: se acomoda al ancho de su caja, no al de la ventana | «Almuerzo · 3 opciones · se elige una · Arroz con pollo y brócoli · Guiso de lentejas · Salmón con papa» |
+| `.segmentos--que-bajan` | Un control segmentado cuyos nombres escribe la persona: baja de renglón antes que salirse o recortarse | Los días tipo de un plan (hasta siete) |
+| `.historial-del-plan` | Las versiones activadas de un plan, de la más nueva a la más vieja, con su número, su día y su hora, y cuál rige; al pie, la huella de la instantánea que se lee. Al costado; con la ventana angosta, debajo | «Versión 2 · activada el 7 sept, 09:30 · vigente» |
+| `DialogoEmpezarDesdePlantilla` (`advisees/empezar-desde-plantilla.tsx`) | Elegir una plantilla propia para empezar una versión, en un diálogo: lee las plantillas al abrirse, dice una lectura que falla con su motivo (nunca «no tenés»), no trae ninguna elegida y dice adentro una falla al crear. Cada área le dice cómo se leen sus plantillas | «Plan base · 7 comidas · Sin cantidades» |
+| `numerosDeVersionDePlan` · `historialDeVersiones` · `diaTipoElegido` · `comidasAbiertas` · `pedidoDeComidas` · `opcionesEnPalabras` · `indicadoDelItem` (dominio) | Las reglas de Nutrición · Plan: el número de una versión por su orden de activación, la vigente según la API, el día tipo y las comidas abiertas que pide la dirección, cuántas opciones tiene una comida y lo indicado de un ítem | «3 opciones · se elige una»; «sin cantidad indicada» |
 
 **Reglas que salieron de este trabajo:**
 - **La fecha que importa nombra al registro.** La fecha de ocurrencia es lo principal. La de registro es un metadato:
@@ -696,6 +701,14 @@ crear otro, se usa uno de estos.
   descartaría («Actualizar») pregunta antes.
 - **Lo que una acción deja dicho, lo dice la página donde la persona queda.** Si al enviar se vuelve a otra página, el
   aviso viaja con ella: un aviso de la página que se abandona no lo lee nadie.
+- **Plegar no esconde.** Un renglón plegado dice cuánto tiene adentro y, si entra, cómo se llama cada cosa: el conjunto se
+  lee sin abrir nada.
+- **Lo que se elige entre varias se muestra con el mismo peso.** Las opciones de una comida van todas a la vista: una
+  opción detrás de un enlace es una opción de segunda.
+- **Un selector que cambia de vista no desmonta un formulario con cambios.** Lo deja montado y fuera de la vista: al
+  volver, lo escrito sigue ahí.
+- **Un nombre que escribe la persona puede ser largo, y pueden ser varios.** Un control armado con nombres propios baja
+  de renglón; no los recorta.
 
 ### II.9 Pestaña Antropometría (no se extiende al resto del website)
 
@@ -1270,6 +1283,12 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | El área de un pedido de información | «Entrenamiento», elegida de entrada para todo formulario. | Fija, con su candado, si el formulario es de un área sola; si no, hay que elegirla. | Corregida | Áreas, 4 |
 | «Plantilla», «campo» y «Alcance», en lo que lee el profesional en Información | En los títulos, las notas y los rechazos. | «Formulario», «pregunta» y «área». | Sustituida | Áreas, 4 |
 | El éxito de un pedido hecho desde Entrenamiento | No se veía: se guardaba en la página que se abandonaba. | Lo dice Entrenamiento, al llegar (II.8). | Corregida | Áreas, 4 |
+| Nutrición · Plan | La versión en preparación, el plan activo y el historial, uno debajo del otro; todos los días tipo y todas las comidas, abiertos. | Un selector de versión (la que está en preparación, sin número, y la activa); el plan activo de a un día tipo, con las comidas plegadas, las opciones lado a lado, el objetivo del día de esa versión a la vista y el historial al costado (II.8). | Sustituida | Áreas, 5 |
+| La planificación de una etapa, en la ficha | Todos los días tipo y todas las comidas, abiertos, en la columna del detalle. | La misma pieza que en Nutrición · Plan, en su columna: un día tipo, las comidas plegadas y las opciones una debajo de la otra. | Sustituida | Áreas, 5 |
+| «Empezar desde una plantilla» | Un desplegable siempre a la vista, que se leía al entrar; si esa lectura fallaba, decía «No tenés plantillas activas». | Un botón que abre un diálogo: lee al abrirse, dice la falla con su motivo y no trae nada elegido (II.8). | Corregida | Áreas, 5 |
+| La nota de un ítem del plan | El website no la mostraba. | Se lee debajo del ítem, como la lee el asesorado en la APK. | Corregida | Áreas, 5 |
+| El número de una versión del plan de comidas | Lo calculaba la pantalla, con la primera página de la lista de versiones. | Lo calcula el dominio, con todas las versiones. La regla no cambia: es el orden de activación. | Corregida | Áreas, 5 |
+| El control segmentado | Recortaba el nombre que no entraba. | Cuando los nombres los escribe la persona, baja de renglón (`.segmentos--que-bajan`, II.8). | Ampliada | Áreas, 5 |
 
 ---
 

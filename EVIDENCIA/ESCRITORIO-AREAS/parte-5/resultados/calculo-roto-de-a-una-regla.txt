@@ -1,0 +1,37 @@
+control (sin mutar): 12 pasan, 0 fallan
+DETECTADA numero-por-orden-de-llegada · el número de versión es el orden en que llega la lista, no el de activación · fallan 1: «el número de una versión es su orden de activación, llegue l»
+DETECTADA numero-al-reves · la más nueva es la versión 1 · fallan 2: «el número de una versión es su orden de activación, llegue l» «el historial va de la versión más nueva a la más vieja, sin »
+DETECTADA numero-desde-cero · la primera versión activada es la 0 · fallan 2: «el número de una versión es su orden de activación, llegue l» «el historial va de la versión más nueva a la más vieja, sin »
+DETECTADA el-borrador-tiene-numero · un borrador también recibe número · fallan 2: «el número de una versión es su orden de activación, llegue l» «el historial va de la versión más nueva a la más vieja, sin »
+DETECTADA historial-con-el-borrador · el historial lista también el borrador · fallan 1: «el historial va de la versión más nueva a la más vieja, sin »
+DETECTADA historial-de-vieja-a-nueva · el historial va de la más vieja a la más nueva · fallan 1: «el historial va de la versión más nueva a la más vieja, sin »
+DETECTADA vigente-la-mas-nueva · la vigente se deduce de la fecha: es la de número más alto · fallan 1: «el historial va de la versión más nueva a la más vieja, sin »
+DETECTADA vigentes-todas · todas las versiones figuran como vigentes · fallan 1: «el historial va de la versión más nueva a la más vieja, sin »
+DETECTADA dia-siempre-el-primero · el día tipo que pide la dirección se ignora · fallan 1: «el día tipo que se muestra: el que pide la dirección por su »
+DETECTADA dia-desconocido-es-nada · un día que la versión no tiene deja la pantalla sin día · fallan 1: «el día tipo que se muestra: el que pide la dirección por su »
+DETECTADA dia-el-que-llego-primero · sin pedido se muestra el día que llegó primero, no el de menor orden · fallan 1: «el día tipo que se muestra: el que pide la dirección por su »
+DETECTADA dia-por-posicion · el día se pide por su posición en la lista, no por su número de orden · fallan 1: «el día tipo que se muestra: el que pide la dirección por su »
+DETECTADA una-opcion-se-elige-una · con una sola opción también se dice «se elige una» · fallan 1: «las opciones de una comida: con una sola no se dice «se elig»
+DETECTADA opciones-sin-se-elige · con varias opciones no se dice que se elige una · fallan 1: «las opciones de una comida: con una sola no se dice «se elig»
+DETECTADA cero-opciones-es-un-cero · una comida sin opciones dice «0 opciones · se elige una» · fallan 1: «las opciones de una comida: con una sola no se dice «se elig»
+DETECTADA titulo-siempre-con-numero · una opción única también lleva «Opción 1:» · fallan 1: «el título de una opción lleva su número solo si la comida ti»
+DETECTADA titulo-nunca-con-numero · las opciones de una comida con varias no llevan número · fallan 1: «el título de una opción lleva su número solo si la comida ti»
+DETECTADA sin-cantidad-es-vacio · un ítem sin cantidad no dice nada · fallan 1: «un ítem sin cantidad es un hueco: se dice, no se muestra vac»
+DETECTADA sin-cantidad-es-cero · un ítem sin cantidad dice «0 g» · fallan 1: «un ítem sin cantidad es un hueco: se dice, no se muestra vac»
+DETECTADA cantidad-sin-unidad · la cantidad pierde su unidad · fallan 1: «lo indicado de un ítem: la cantidad con su unidad y el estad»
+DETECTADA cantidad-con-punto · la cantidad se escribe con punto decimal · fallan 1: «lo indicado de un ítem: la cantidad con su unidad y el estad»
+DETECTADA estado-se-pierde · el estado de preparación no se dice · fallan 2: «lo indicado de un ítem: la cantidad con su unidad y el estad» «un ítem sin cantidad es un hueco: se dice, no se muestra vac»
+DETECTADA estado-con-mayuscula · el estado va con mayúscula en medio del renglón · fallan 2: «lo indicado de un ítem: la cantidad con su unidad y el estad» «un ítem sin cantidad es un hueco: se dice, no se muestra vac»
+DETECTADA abierta-ninguna-al-entrar · sin pedido no hay ninguna comida abierta · fallan 2: «sin pedido está abierta la primera comida, y solo esa; un dí» «ida y vuelta: lo que se escribe en la dirección abre las mis»
+DETECTADA abiertas-todas-al-entrar · sin pedido están todas las comidas abiertas · fallan 2: «sin pedido está abierta la primera comida, y solo esa; un dí» «ida y vuelta: lo que se escribe en la dirección abre las mis»
+DETECTADA abierta-la-que-llego-primero · sin pedido se abre la comida que llegó primero, no la de menor orden · fallan 3: «sin pedido está abierta la primera comida, y solo esa; un dí» «lo que se escribe en la dirección: nada si es lo que se ve s» «ida y vuelta: lo que se escribe en la dirección abre las mis»
+DETECTADA abiertas-por-parecido · «12» abre la comida 1 y la 2 · fallan 1: «las comidas abiertas se piden por su número de orden; «ningu»
+DETECTADA abiertas-lo-que-pidan · una comida que el día no tiene queda abierta igual · fallan 1: «las comidas abiertas se piden por su número de orden; «ningu»
+DETECTADA plegadas-no-se-escribe · con todas plegadas no se escribe nada: al volver se abre la primera · fallan 2: «lo que se escribe en la dirección: nada si es lo que se ve s» «ida y vuelta: lo que se escribe en la dirección abre las mis»
+DETECTADA una-sola-nunca-se-escribe · con una sola abierta no se escribe cuál, aunque no sea la primera · fallan 2: «lo que se escribe en la dirección: nada si es lo que se ve s» «ida y vuelta: lo que se escribe en la dirección abre las mis»
+DETECTADA la-primera-siempre-se-escribe · lo que se ve sin pedir nada igual ensucia la dirección · fallan 1: «lo que se escribe en la dirección: nada si es lo que se ve s»
+DETECTADA pedido-con-coma · las comidas abiertas se escriben con coma, que la lectura no entiende · fallan 2: «lo que se escribe en la dirección: nada si es lo que se ve s» «ida y vuelta: lo que se escribe en la dirección abre las mis»
+DETECTADA pedido-con-lo-que-no-esta · se escribe en la dirección una comida que el día no tiene · fallan 1: «lo que se escribe en la dirección: nada si es lo que se ve s»
+DETECTADA version-activada-sin-numero · «Versión N · activada el…» pierde el número · fallan 1: «los textos del plan: ninguno usa un término prohibido de Nut»
+DETECTADA texto-con-palabra-prohibida · un texto del plan califica («el plan cumple») · fallan 1: «los textos del plan: ninguno usa un término prohibido de Nut»
+35 de 35 detectadas

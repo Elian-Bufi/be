@@ -1,0 +1,118 @@
+{
+  "modo": "mediciones",
+  "inicio": "2026-10-12T20:06:03.032Z",
+  "fin": "2026-10-12T20:06:32.027Z",
+  "hoy": "2026-10-12",
+  "total": 18,
+  "fallas": 0,
+  "resultados": [
+    {
+      "pro": "F-36",
+      "descripcion": "La toma del perfil completo abre sola (es la más reciente) y se lee como la maqueta 22: las 30 mediciones en sus cinco familias, en el orden del catálogo, con la unidad en el título de la familia donde todas la comparten; y sus resultados calculados, por categoría",
+      "ok": true,
+      "detalle": "Masa y estatura (2) · Pliegues cutáneos · mm (11) · Perímetros · cm (13) · Diámetros · cm (3) · Otras mediciones del protocolo (1) · Índices (3) · Sumas de pliegues (2) · Grasa corporal (3) · «30 mediciones»"
+    },
+    {
+      "pro": "F-37",
+      "descripcion": "Corregir pide el valor y el motivo: sin los dos el botón está apagado (con los dos, la misma consulta lo encuentra encendido). Un valor que no se entiende como número se marca en su campo y no sale ningún pedido",
+      "ok": true,
+      "detalle": "sin nada: apagado · con valor y motivo: encendido · «84,5,1»: marcado en el campo · pedidos: 0"
+    },
+    {
+      "pro": "F-37",
+      "descripcion": "Si la corrección no se puede guardar (un 503 simulado), el panel lo dice adentro, sigue abierto con el formulario y lo escrito, y la medición no cambió",
+      "ok": true,
+      "detalle": "«El servicio no está disponible en este momento. Probá de nuevo más tarde.» · lo escrito: 84 | Valor tipeado mal: era 84 · el valor: 48 cm"
+    },
+    {
+      "pro": "F-37",
+      "descripcion": "Al corregir sale un solo pedido, con el valor, el motivo y la unidad de la medición. El panel sigue abierto y lo dice: el valor que rige es el corregido, con la marca «Corregida», y la historia tiene la corrección (con su motivo, «La corregiste vos» y marcada como el valor vigente) y el valor original, que se conserva",
+      "ok": true,
+      "detalle": "pedidos: 1 · «Corrección registrada. El valor original se conserva.» · 84 cm · Corrección: 84 cm Valor vigente — Por qué se corrigió: «Valor tipeado mal: era 84». La corregiste vos. | Valor original: 48 cm — Se conserva: una corrección no lo borra."
+    },
+    {
+      "pro": "F-38",
+      "descripcion": "«Lo que cambió con la corrección» lista los resultados que la API volvió a calcular porque usaban la cintura, cada uno con el valor de ahora y el de antes (el de la corrida que reemplaza, según la API): no uno más ni uno menos, y ningún resultado que no la usa",
+      "ok": true,
+      "detalle": "Índice cintura/cadera: 0,81 antes 0,46 · Índice cintura/talla: 0,50 antes 0,29 · Masa grasa relativa (RFM), mujeres: 36,0 % antes 6,0 % — a la vista: [{\"clase\":\"recalculados\",\"filas\":[{\"nombre\":\"Índice cintura/cadera\",\"valores\":\"0,81 antes 0,46\"},{\"nombre\":\"Índice cintura/talla\",\"valores\":\"0,50 antes 0,29\"},{\"nombre\":\"Masa grasa relativa (RFM), muj"
+    },
+    {
+      "pro": "F-39",
+      "descripcion": "Cerrado el panel, la toma ya dice lo nuevo sin volver a entrar: la fila de la cintura muestra 84 con «Corregida», la lista dice «1 corregida», los resultados que usaban la cintura muestran su valor nuevo, y los anteriores quedan a un clic («Ver N anteriores, sin efecto»), cada uno con «Sin efecto»",
+      "ok": true,
+      "detalle": "la fila: {\"id\":\"e0aaf223-3e09-4746-90ea-bda26749b424\",\"nombre\":\"Cintura\",\"valor\":\"84\",\"marcas\":[\"Corregida\"],\"anulada\":false,\"rotulo\":\"Perímetro de cintura: 84 · «Ver 3 anteriores, sin efecto»"
+    },
+    {
+      "pro": "F-39",
+      "descripcion": "Los cálculos que quedaron sin efecto se abren a pedido, en el lugar: son los que la API da por reemplazados, cada uno con su método y el valor que tenía",
+      "ok": true,
+      "detalle": "Masa grasa relativa (RFM), mujeres 6,0 % · Índice cintura/talla 0,29 · Índice cintura/cadera 0,46"
+    },
+    {
+      "pro": "F-37",
+      "descripcion": "Anular dice antes del botón que no borra nada y que no se reactiva, pide el motivo (sin él, el botón está apagado) y su botón no es el principal. Al anular sale un solo pedido; el panel sigue abierto y dice «Anulada», conserva el valor, cuenta la anulación con su motivo («La anulaste vos») y ya no ofrece ninguna acción",
+      "ok": true,
+      "detalle": "antes: «Anular no borra nada: la medición y su historia se conservan…» · pedidos: 1 · «Medición anulada. Su historia se conserva.» · Medido, Anulada · Por qué se anuló: «El calibre estaba mal apoyado». La anulaste vos. · acciones: 0"
+    },
+    {
+      "pro": "F-38",
+      "descripcion": "Los resultados que usaban la medición anulada quedan sin efecto y sin un cálculo que los reemplace: el panel los nombra con el valor que tenían y dice que no se reemplazan por cero; en la toma dejan de estar entre los vigentes (no aparece un cero ni un resultado vacío) y pasan a los anteriores. La fila queda con «Anulada» y su valor, y la lista dice «1 anulada»",
+      "ok": true,
+      "detalle": "Suma de 6 pliegues (ISAK): antes 134,0 mm · «Lo que pasó con los resultados Un resultado que usaba esta medición quedó sin efecto y no se volvió a calcular. No se pudo recalcular: falta» · vigentes: 7"
+    },
+    {
+      "pro": "F-39",
+      "descripcion": "«Calcular con un método» muestra la ficha del método elegido con lo que pide; al calcular sale un solo pedido y el panel pasa a mostrar el resultado nuevo, con su método, su valor con la precisión declarada y sus entradas. Cerrado el panel, el resultado está en su categoría, sin haber vuelto a entrar",
+      "ok": true,
+      "detalle": "«Masa libre de grasa (Durnin y Womersley), mujeres» · pedidos: 1 · Masa libre de grasa (Durnin y Womersley), mujeres 51,7 kg · 6 entradas"
+    },
+    {
+      "pro": "F-39",
+      "descripcion": "«Dejar como referencia» explica antes del botón que no cambia el cálculo ni borra los otros; al confirmarlo sale un solo pedido, el panel lo dice, el resultado queda marcado «Referencia» en el panel y en la toma, y ya no ofrece dejarlo otra vez. Es el único marcado: BE no marca ninguno por su cuenta",
+      "ok": true,
+      "detalle": "«Jackson, Pollock y Ward, 7 pliegues, mujeres · Siri» · pedidos: 1 · «Referencia registrada. Los demás cálculos se conservan.» · con «Referencia» en la toma: Jackson, Pollock y Ward, 7 pliegues, mujeres · Siri"
+    },
+    {
+      "pro": "F-37",
+      "descripcion": "axe no encuentra faltas en la toma completa, ni en el panel de una medición corregida con lo que cambió",
+      "ok": true,
+      "detalle": "la toma: sin faltas · el panel: sin faltas"
+    },
+    {
+      "pro": "F-41",
+      "descripcion": "A 1440, 1280 y 1024 px, ningún renglón deja un número separado de la palabra que cuenta («1» arriba y «anulada» abajo; «7» y «pliegues») ni el separador al principio: en las cuentas de la lista, en el renglón de la toma y en los nombres de los métodos. La medida mira dónde quedó cada letra, y hay textos que ocupan más de un renglón",
+      "ok": true,
+      "detalle": "1440: 13 textos, 5 en más de un renglón — 1280: 13 textos, 8 en más de un renglón — 1024: 9 textos, 7 en más de un renglón"
+    },
+    {
+      "pro": "F-41",
+      "descripcion": "A 1440 px, con «Ver N anteriores, sin efecto» a la vista, el título de los resultados, su nota y sus dos acciones siguen en un renglón, como en la maqueta 22: las acciones no bajan, y la nota no se parte para dejarles lugar",
+      "ok": true,
+      "detalle": "«Ver 4 anteriores, sin efecto Calcular con un método» · el título, a los 445 px; las acciones, a los 445; la nota, en 1 renglón · a 1280, a los 436 y 476"
+    },
+    {
+      "pro": "F-35",
+      "descripcion": "Con una toma guardada y sin registrar, «Tomas» lo dice: el botón pasa de «Preparar una toma» a «Seguir con la toma en preparación» y cuenta sus mediciones; la toma en preparación no está entre las registradas, y el botón lleva a la carga, que la retoma con lo guardado",
+      "ok": true,
+      "detalle": "botón: «Seguir con la toma en preparación» · «Hay una toma en preparación, con 1 medición.» · «4 registradas.» · al retomar: «Toma en preparación», peso 61,4"
+    },
+    {
+      "pro": "F-35",
+      "descripcion": "Registrar una toma desde la carga vuelve a «Tomas» con esa toma abierta (no la más reciente: es de ocho días antes que la completa), puesta en la dirección y marcada en la lista, que la tiene en su lugar y cuenta una más; el botón vuelve a decir «Preparar una toma». Salieron un solo pedido para crear la toma en preparación y uno solo para registrarla",
+      "ok": true,
+      "detalle": "«Toma del 2 oct 2026, 09:15» (la más reciente es «Toma del 10 oct 2026, 08:40») · 1 medición · «5 registradas.» · en la dirección: esa toma · pedidos: 1 para crearla y 1 para registrarla"
+    },
+    {
+      "pro": "F-35",
+      "descripcion": "Al volver de registrar, «Tomas» dice «Toma registrada. Ya forma parte de la evolución.» en un aviso que se ve entero dentro de la ventana (antes se decía en la carga, que se desmontaba al volver, y podía no verse)",
+      "ok": true,
+      "detalle": "«Toma registrada. Ya forma parte de la evolución.» · dentro de la ventana"
+    },
+    {
+      "pro": "—",
+      "descripcion": "Corregir, anular, calcular, dejar una referencia y registrar una toma no produjeron errores de página",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

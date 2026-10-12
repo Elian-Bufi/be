@@ -726,3 +726,151 @@ pregunta nada al resumen» (el «no disponible» le pregunta una vez), «el caj�
 4. **Si la nota «Vienen todas elegidas: desmarcá las que no necesites» alcanza** para que no se pida de más (DL-131). Se
    ve con el uso.
 5. **Que la lista de la API diga si una respuesta fue corregida:** ahorra una lectura por solicitud respondida al entrar.
+
+## Parte 5 · Nutrición · Plan activo (2026-10-12)
+
+«Plan», de Nutrición, pasó de una página con la versión en preparación, el plan activo y el historial uno debajo del
+otro —todos los días tipo y todas las comidas, abiertos— a la lectura de la maqueta 16: **el plan activo de a un día
+tipo, con las comidas plegadas, las opciones lado a lado, el objetivo del día de esa versión a la vista y el historial
+al costado; y, cuando hay una versión en preparación, un selector para mirar una u otra.** No se quitó ninguna función:
+«Crear nueva versión a partir de esta», «Crear nuevo plan», «Guardar como plantilla» y «Empezar desde una plantilla»
+hacen lo mismo que antes, y `vista=plan` abre lo mismo desde la ficha, desde un pendiente y desde una revisión aplicada.
+La versión en preparación sigue en el editor de siempre: su recomposición es la parte 7. No cambian la API, la base ni
+la APK: los textos que la APK comparte no se tocaron. Sobre la base propia (`be_test_escritorio`, regenerada antes de
+cada pasada) y la compilación estática del código de esta parte (`601ff01`).
+
+**Lo que la maqueta dibuja y no entró,** dicho en la definición (§6): la estimación de cada opción y «lo que cubren las
+opciones», que la lectura del plan del profesional no trae (C-36), y los rangos de macros por día tipo y por comida, que
+son un dato que BE no tiene. La pantalla no deja su lugar ni los anuncia. «Ver la opción 3» tampoco está: sin la
+estimación al lado, las opciones entran todas (F-60).
+
+**Medido en la página real.** El asesorado A tiene un plan de un solo día tipo, con cuatro comidas. Para mirar lo que A
+no tiene se armó, por la API y en las cuentas descartables, un plan de dos días tipo con comidas de una, dos y tres
+opciones, una opción que nació de una receta y un ítem con su nota (`datos/generar.mjs descartable-plan`). El «antes»
+es la pantalla como quedó al cerrar la parte 4, con esos mismos datos, medida antes de tocar nada.
+
+| A 900 px de alto | Antes | Ahora |
+|---|---|---|
+| El plan de A (un día tipo), a 1440 px | 2.248 px | 900 px: entra en la ventana |
+| Lo mismo, a 1280 y a 1024 px | 2.248 px | 900 px y 1.067 |
+| El plan de dos días tipo, a 1440 px | 3.621 px: los dos días, uno debajo del otro | 900 px: entra en la ventana (la última comida termina a los 765 px) |
+| Lo mismo, a 1280 y a 1024 px | 3.621 px | 900 px y 1.085, con el historial debajo |
+| El mismo plan, con las cuatro comidas del día abiertas, a 1440 px | — (antes no se podían plegar) | 1.505 px (1.636 a 1280 y 1.762 a 1024) |
+| Con una versión en preparación, a 1440 px | El editor y, debajo, el plan activo y el historial (no se midió antes de tocar: el plan de dos días tipo no tenía una versión en preparación) | Arriba, el selector; se ve una versión o la otra. El editor, que no cambió, mide 9.045 px con ese plan; la activa, 900 |
+
+**Las lecturas.** Para ver el plan se leen tres cosas, una vez cada una: la lista de versiones (entera, no su primera
+página), la versión vigente y el objetivo vigente. Las plantillas ya no se leen al entrar: se leen al abrir su diálogo.
+Si la versión cita un objetivo que no es el vigente, se lee además la lista de objetivos. Elegir un día tipo, abrir o
+plegar comidas y pasar de una versión a la otra no le pide nada a BE.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · es lo que ve el asesorado», con el número que le toca por su orden de activación. Para verlo se leen tres cosas, una vez cada una (F-62) | `recorrido.mjs planes`: corre solo, sobre las cuentas descartables recién generadas con su plan de dos días tipo, y no toca los datos de A, B ni C. Lo esperado se calcula a mano con lo que devuelve la API (`esperadoDelPlan`): no se usa el módulo que arma la pantalla | Pasa: «Versión 2 · activada el 12 oct · es lo que ve el asesorado»; 1 lectura de la lista, 1 de la versión, 1 del objetivo y ninguna otra de Nutrición | Verificado automáticamente |
+| Con más de un día tipo, el plan se lee de a uno: un control con el nombre de cada día, en el orden del plan, y elegido el primero. A la vista, solo las comidas de ese día (F-58) | Lo mismo | Pasa: «Día de entrenamiento» (elegido) y «Día de descanso»; «4 comidas» | Verificado automáticamente |
+| Las comidas van plegadas, cada una en un renglón con su cantidad de opciones y, plegada, los nombres de sus opciones; abierta la primera, con los ítems de la API. Con una sola opción dice «1 opción», sin «se elige una» (F-59) | Lo mismo, comida por comida | Pasa: «Almuerzo · 3 opciones · se elige una · Arroz con pollo y brócoli · Guiso de lentejas · Salmón con papa»; «Merienda · 1 opción» | Verificado automáticamente |
+| El objetivo del día de la versión está a la vista, al lado del día tipo: calorías, carbohidratos, grasas y proteínas, en ese orden. Son los de la API (F-63) | Lo mismo | Pasa: 2.250 kcal · 220 g · 65 g · 130 g | Verificado automáticamente |
+| El historial va al costado de las comidas, a la altura de la primera: las versiones activadas, de la más nueva a la más vieja, con su número, su día y su hora, y cuál es la vigente; al pie, la huella de la instantánea (F-64) | Lo mismo: mide dónde empieza cada caja | Pasa: «Versión 2 · activada el 12 oct, 17:09 · vigente» y «Versión 1 · … · anterior, conservada»; el historial y la primera comida empiezan a la misma altura | Verificado automáticamente |
+| A 1440 × 900 el plan entra en la primera pantalla: el día tipo, el objetivo, las cuatro comidas (una abierta) y el historial (F-70) | Lo mismo | Pasa: la última comida termina a los 765 px y el historial, a los 614 | Verificado automáticamente |
+| Sin una versión en preparación, y con objetivo vigente, las acciones son tres, en su orden: «Guardar como plantilla», «Empezar desde una plantilla» y «Crear nueva versión a partir de esta». Entrar no lee las plantillas (F-67) | Lo mismo | Pasa: 0 lecturas de plantillas al entrar | Verificado automáticamente |
+| Lo elegido vive en la dirección: elegir el segundo día tipo escribe «dia» y deja abierta su primera comida; abrir otra escribe «comidas»; «Abrir todas las comidas» pasa a «Plegar todas», que escribe «ninguna»; volver al primer día limpia la dirección. Nada de eso le pide algo a BE (F-66) | Lo mismo | Pasa: `dia=2`; `comidas=1.2`, `1.2.3`, `ninguna` y, al volver, nada; 0 pedidos | Verificado automáticamente |
+| «Actualizar» vuelve a leer las tres cosas y conserva el día tipo y la comida abierta, que no es la primera (F-66) | Lo mismo | Pasa: «Almuerzo», de «Día de descanso», antes y después; 1 lectura de cada cosa | Verificado automáticamente |
+| Una dirección con valores que el plan no tiene (un día 9, una comida 7, una versión desconocida) no rompe ni muestra un día vacío (F-66) | Lo mismo | Pasa: el plan activo, en su primer día tipo, con las comidas plegadas | Verificado automáticamente |
+| Con todas las comidas abiertas, cada una muestra todas sus opciones, con los ítems de la API. Las tres del almuerzo están lado a lado, a la misma altura, y ninguna queda detrás de un «ver la opción 3». Con una sola opción, el título no lleva número (F-60) | Lo mismo: mide dónde quedó cada opción | Pasa: tres opciones en tres columnas, a la misma altura; «Yogur con manzana», sin «Opción 1:» | Verificado automáticamente |
+| Una opción que nació de una receta lo dice con las palabras de BE, y sus ítems son los de la API. La nota de un ítem se lee debajo (F-61) | Lo mismo | Pasa: «Receta «Guiso de lentejas», versión 1 · La opción lleva los ingredientes de una porción de la receta.»; «Aceite de oliva · 10 g · crudo · Nota: En crudo, al servir.» | Verificado automáticamente |
+| En toda la sección, con todo abierto, no hay un porcentaje ni una palabra de la lista de Nutrición (F-70) | Lo mismo, con el detector del dominio; la misma consulta encuentra los nombres de las comidas y «se elige una» | Pasa | Verificado automáticamente |
+| «Plan» tiene su ayuda en el marco del área: se abre por el título, Escape la cierra y el foco vuelve al botón; no usa palabras de la lista (F-14) | Lo mismo, con axe | Pasa: «Cómo se lee el Plan», 11 renglones | Verificado automáticamente |
+| axe no encuentra faltas en «Plan» con todas las comidas abiertas, en los dos temas (F-70) | Lo mismo | Pasa | Verificado automáticamente |
+| A 1440 px con todo abierto, y a 1280, 1024, 768 y 390 con una comida abierta, ningún renglón empieza con el separador « · » ni deja un número lejos de su unidad (F-70) | Lo mismo: mira dónde quedó cada letra en la pantalla | Pasa: 40 textos a 1440 px; 56 ocupan más de un renglón, sumando los cinco anchos | Verificado automáticamente |
+| El historial sigue al costado a 1280 px y pasa debajo de las comidas a 1024; las opciones se acomodan al ancho de su caja (a 390 px, una por fila) y ninguna queda más angosta de 250 px. En los cuatro anchos la página no desborda (F-70) | Lo mismo | Pasa: con el almuerzo abierto, 1.147 px de alto a 1280 (dos opciones por fila), 1.272 a 1024 (tres), y una por fila a 390 | Verificado automáticamente |
+| Sin plan y sin objetivo, la sección lo dice y ofrece «Ir a Resumen», y ninguna acción para crear. Sin plan y con objetivo, «Crear nuevo plan», primero, y «Empezar desde una plantilla». No se dibuja un historial vacío (F-68) | Lo mismo, con respuestas simuladas en el navegador: el escenario no tiene esos estados | Pasa | Verificado automáticamente, sobre respuestas simuladas |
+| Si hoy rige un objetivo más nuevo que el de la versión, la tira muestra el de la versión y lo dice. Si hoy no hay objetivo vigente, también, y en lugar de «Crear nueva versión» explica que primero hay que definir el objetivo (F-63) | Lo mismo, con respuestas simuladas | Pasa: 2.250 kcal (no las 2.600 del objetivo simulado) y «Es el objetivo con el que se armó esta versión. Hoy rige uno más nuevo.» | Verificado automáticamente, sobre respuestas simuladas |
+| Si el objetivo de la versión no se puede leer, el plan se ve entero y la tira lo dice, sin ningún número, con «Reintentar»; al reintentar, aparece (F-63) | Lo mismo, con un 503 simulado | Pasa: «No pudimos leer el objetivo de esta versión.», con las cuatro comidas a la vista | Verificado automáticamente, sobre una falla simulada |
+| Si la lista de versiones no se puede leer, la sección dice la falla con su motivo y «Reintentar»; no dice «Todavía no hay un plan activo» (F-68) | Lo mismo, con un 503 simulado | Pasa | Verificado automáticamente, sobre una falla simulada |
+| Con siete días tipo de nombre largo, a 1024 px, los siete segmentos están enteros dentro de la pantalla, en más de un renglón, y el elegido es el que pide la dirección (F-58) | Lo mismo, con una respuesta simulada | Pasa: 7 segmentos en 4 renglones; ninguno pasa de los 993 px | Verificado automáticamente, sobre una respuesta simulada |
+| Con un solo día tipo no hay nada que elegir: la pantalla dice su nombre, sin control (F-58) | Dos veces: con una respuesta simulada, en `planes`; y de verdad, con el plan del asesorado A, en `recorrido.mjs funcional` (`plan`) | Pasa: «Día tipo Día de entrenamiento» y «Día tipo Día habitual» | Verificado automáticamente |
+| «Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una plantilla» abre un diálogo que recién entonces lee las plantillas, una vez: está la que se guardó, con sus comidas contadas a mano; ninguna viene elegida, y crear el borrador está apagado hasta elegir (F-67) | `planes`, que escribe de verdad | Pasa: 1 escritura; 1 lectura al abrir; «7 comidas · Sin cantidades»; 0 elegidas | Verificado automáticamente |
+| Si las plantillas no se pueden leer, el diálogo dice la falla con su motivo y «Reintentar», y no «No tenés plantillas activas»; al reintentar, la lista aparece. Con la lista vacía de verdad, dice que no hay y dónde se arman (F-67) | Lo mismo, con un 503 y una lista vacía simulados | Pasa: «No pudimos leer tus plantillas · BE no está disponible en este momento. Reintentá en unos minutos.» | Verificado automáticamente, sobre respuestas simuladas |
+| Elegida una plantilla, crear el borrador se enciende. Si esa escritura falla, el motivo se dice dentro del diálogo, que sigue abierto con la plantilla elegida (F-67) | Lo mismo, con un 503 simulado sobre la escritura | Pasa: «El servicio no está disponible en este momento. Probá de nuevo más tarde.» | Verificado automáticamente, sobre una falla simulada |
+| «Crear nueva versión a partir de esta» hace una sola escritura. Aparece el selector de versión, con «En preparación» elegida y «El asesorado no la ve.»; la activa figura como «2 · activa». Se ve el editor, y ya no se ofrece crear otra versión (F-65) | `planes`, que escribe de verdad; la API confirma que la versión nueva sucede a la activa | Pasa: 1 escritura; «Borrador creado» | Verificado automáticamente |
+| Con cambios sin guardar, pasar a «2 · activa» muestra el plan activo y deja el editor fuera de la vista; volver a «En preparación» lo muestra con lo escrito intacto. Ir y volver no le pide nada a BE, y la versión y el día tipo elegidos quedan en la dirección (F-65) | Lo mismo: escribe en el nombre de una comida, va, elige otro día tipo, vuelve y lee el campo | Pasa: «Desayuno» → «Desayuno (ajuste)», antes y después; 0 pedidos; en la activa, «Ya hay una versión en preparación: se sigue sobre esa.» | Verificado automáticamente |
+| Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer y dice qué se perdería; «Seguir editando» deja todo como estaba (F-65) | Lo mismo | Pasa: «Tenés cambios sin guardar… en el plan en preparación.» | Verificado automáticamente |
+| Activar la versión en preparación la convierte en la vigente: el selector desaparece, el plan dice «Versión 3 · … · es lo que ve el asesorado», su primera comida lleva el nombre que se escribió, el historial lista las tres y la dirección queda limpia (traía el segundo día tipo) (F-65) | Lo mismo: guarda y activa por la pantalla; lo que quedó se lee de la API | Pasa: «Desayuno (ajuste)»; la 3, vigente; la 2 y la 1, conservadas; 1 escritura de activación | Verificado automáticamente |
+| Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se cierra, la pantalla lo avisa y queda una versión en preparación que la API reconoce como salida de esa plantilla. El selector vuelve, con «3 · activa» (F-67) | Lo mismo | Pasa | Verificado automáticamente |
+| El plan de A dice su versión con una fecha de otro mes y sin el año; el historial, sus dos versiones con día y hora; la tira, el objetivo de la API (F-62) | `recorrido.mjs funcional` (`plan`), con los datos de A; solo lee | Pasa: «Versión 2 · activada el 7 sept · es lo que ve el asesorado»; «activada el 7 sept, 09:30» y «el 21 jul, 09:00» | Verificado automáticamente |
+| En la ficha, el detalle de la activación muestra la misma pieza en su columna: el día tipo, las comidas de la API con la primera abierta y sus opciones una debajo de la otra; nada se sale de la columna; los títulos bajan un nivel; abrir otra comida no toca la dirección de la ficha (F-69) | Lo mismo: mide cada elemento contra la caja del detalle | Pasa: columna de 480 px; 2 opciones en una columna; 0 elementos afuera | Verificado automáticamente |
+| El detalle de un plan activado sigue abriendo con «Versión N · activada el» y «Ver en Nutrición · Plan» (E-74) | `recorrido.mjs funcional` (`linea`), que no se tocó | Pasa | Verificado automáticamente |
+| Las reglas: el número de una versión, el historial y la vigente, el día tipo que pide la dirección, las comidas abiertas y lo que se escribe en la dirección, cuántas opciones tiene una comida, el título de una opción, lo indicado de un ítem y los textos | `packages/domain/src/plan-de-nutricion.test.ts`, en la batería | 12 de 12 | Verificado automáticamente |
+| Ningún texto escrito en las pantallas de Nutrición usa un término prohibido | `scripts/copy-pantallas.test.cjs`, que recorre la carpeta `nutrition` entera: los archivos nuevos entran solos | Pasa | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de esta parte | `recorrido.mjs`: capturas 60 de 60, funcional 320 de 320 (los 316 de antes y los 4 de `plan`), descartable 22 de 22, mediciones 18 de 18, solicitudes 32 de 32, planes 33 de 33 y estimación 7 de 7. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 80 de 80, funcional 86 de 86 y revocación 6 de 6. Pasada del 2026-10-12, de 16:27 a 17:16, sobre el código de `601ff01`, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10). `parte-5/resumen-de-la-pasada.txt` | Verificado automáticamente |
+| Toda la batería de la CI | La CI de GitHub sobre el commit de código | En verde la corrida 38303338236, sobre `601ff01`: el legajo; la batería completa (typecheck; dominio, 704, con las 12 nuevas; guiones, 347; y las pruebas de la API); la integración; y la imagen de la API | Verificado automáticamente |
+| La pantalla, a 1440, 1280 y 1024 px en los dos temas (el plan de A; el de dos días tipo al entrar, con una comida abierta y con todas; el segundo día tipo; la ayuda; «Guardar como plantilla»; el selector con una versión en preparación; y la pieza en la ficha), a 1920 px, y a 768 y 390 px | `ver.mjs`, sobre el asesorado A y sobre las cuentas descartables recién generadas; y `recorrido.mjs planes`, para los estados simulados y los diálogos | 51 capturas de ahora (`parte-5/ahora/`: 39 de `ver.mjs` y 12 del recorrido; ocho son sobre respuestas simuladas, y lo dicen en su nombre) y 12 de antes (`parte-5/antes/`). `parte-5/plan-de-dos-dias-antes-y-ahora.png` y `parte-5/plan-de-un-dia-antes-y-ahora.png`. De la versión en preparación va solo la parte de arriba, donde está el selector: el editor no cambió | Observado en capturas |
+
+Las comprobaciones negativas van con una positiva de la misma consulta: «no hay un porcentaje ni una palabra de la
+lista» (los nombres de las comidas y «se elige una» están), «entrar no lee las plantillas» (abrir el diálogo las lee una
+vez), «ninguna plantilla viene elegida» (al elegir una, el botón se enciende), «sin plan no se dibuja un historial» (con
+plan está, con sus versiones), «con una versión en preparación no se ofrece crear otra» (sin ella, se ofrece), y «con
+la falla, el diálogo no dice No tenés plantillas» (con la lista vacía de verdad, lo dice).
+
+**La prueba de la prueba.**
+- **Las reglas del dominio, rotas de a una** en una copia (el módulo verdadero no se toca): 35 roturas. La primera corrida
+  notó 34. La que quedó mostró una prueba que faltaba —que no se escriba en la dirección una comida que el día no
+  tiene—; con ella, 35 de 35 (`resultados/calculo-roto-de-a-una-regla.txt`).
+- **La pantalla, rota a propósito y compilada así,** en cuatro tandas: 34 roturas, las 34 notadas por la comprobación
+  que se esperaba, y ninguna comprobación falló sin que se la esperara (`resultados/compilacion-rota-tanda-*.txt`). La
+  P, 20 roturas sobre `planes`; la Q, 8 más sobre `planes`, para las comprobaciones que en la P caían de rebote o no
+  tenían rotura; la D, 3 en las reglas del dominio, que muestran que lo esperado por el recorrido no sale del módulo que
+  arma la pantalla; y la A, 3 sobre `plan`, la parte de solo lectura. Antes de las tandas, el recorrido de control pasó
+  33 de 33.
+- **Dos comprobaciones no tienen una rotura propia:** «Actualizar conserva lo elegido» y «Actualizar pregunta con cambios
+  sin guardar». Las dos fallaron de rebote en la tanda P, con la rotura de otra: eso muestra que pueden fallar, no que
+  noten lo suyo.
+- **La primera corrida del recorrido dio 32 de 33.** La que falló era la comprobación, no la pantalla: buscaba de qué
+  plantilla salió la versión nueva en la lista de versiones, y la API lo dice en la lectura de la versión. Se corrigió
+  la comprobación.
+
+**Lo que mostraron las capturas, antes de la pasada larga.** Se miraron todas antes de lanzarla.
+- La tira del objetivo dejaba 40 px entre cada rótulo y su número, y el ícono pegado al rótulo: en la tarjeta del
+  Resumen la acomoda su caja, y acá no tenía quién. Se corrigió.
+- El historial empezaba a la altura del renglón «4 comidas», no de la primera comida. Se alineó.
+- A 1024 px, en una opción de receta, el separador « · » quedaba al principio del segundo renglón. Ahora va pegado a lo
+  que tiene antes; la comprobación de los cortes (F-70) lo mira a cinco anchos.
+- A 1280 px la huella de la instantánea se partía por la mitad. Ahora baja entera.
+- Donde todavía no hay un plan, el aviso se estiraba de lado a lado para una sola frase, y la acción principal iba
+  segunda. Ahora mide lo que mide su texto y «Crear nuevo plan» va primero.
+- «Guardar como plantilla» iba con el borde azul de una acción secundaria con acento: pasó a ser una acción quieta, como
+  en el dibujo.
+
+**Hallazgos fuera de lo dibujado.**
+- **La nota de un ítem no se veía en el website** (severidad media: el profesional no veía algo que su asesorado sí lee
+  en la APK). Corregido en esta parte (F-60).
+- **«Empezar desde una plantilla» presentaba una lectura fallida como «No tenés plantillas activas»** (media: una falla
+  dicha como ausencia). Corregido (F-67).
+- **Crear desde la activa y crear desde una plantilla compartían la clave de intento** (baja: solo después de un
+  resultado incierto). Corregido (F-67).
+- **El número de versión se calculaba con la primera página de la lista** (baja: no hay planes con tantas versiones).
+  Corregido (F-62).
+- **«Guardar como plantilla» responde distinto con una opción de receta según dónde se toque** (baja). No se cambió:
+  es una decisión. DL-132, con tres opciones y una recomendación.
+- **«2 unidad», sin plural,** en una cantidad que se mide en unidades (baja; está igual en la APK). No se cambió: §6 de
+  la definición.
+
+**Límites, dichos.**
+- **La versión en preparación es el editor de antes,** dentro de la sección nueva: mide unas diez pantallas con el plan
+  de dos días tipo. El selector lo saca de debajo del plan activo; ordenarlo es la parte 7.
+- **A 1440 px, el renglón de la versión ocupa dos líneas** («Versión 2 · activada el 12 oct ·» y «es lo que ve el
+  asesorado»): las tres acciones entran en el mismo renglón que el título y le dejan ese lugar. A 1280 y a 1024 las
+  acciones bajan y la frase va entera. Con una ventana de 1920 px entra todo en un renglón (`ahora/plan-dos-dias-1920-claro.png`).
+- **Los estados que el escenario no tiene se miraron con respuestas simuladas en el navegador** (sin plan, sin objetivo,
+  un objetivo más nuevo, las tres fallas, siete días tipo, un solo día tipo en las cuentas descartables): la API y la
+  base no se tocan, y lo que se comprueba es qué hace la pantalla con esa respuesta. El día tipo único se comprobó
+  además de verdad, con el plan de A.
+- **Una versión anterior no se puede abrir desde el historial:** no está dibujado y la pantalla de antes tampoco lo
+  hacía. Se lee en la ficha, en la etapa que rigió.
+- **El guion de WP-NUTRICION-RECETAS** (`recorrido-web.mjs`) contaba las recetas del plan activo con todo abierto: se le
+  sumó el paso de abrir todas las comidas. No se corrió: usa su propio juego de datos y no está en la pasada.
+- **Sin teléfono ni lector de pantalla reales:** el teclado, el foco y los nombres accesibles se comprobaron con el
+  navegador y con axe.
+
+**Dónde está.** `EVIDENCIA/ESCRITORIO-AREAS/parte-5/`: `ahora/` (51 capturas), `antes/` (12),
+`plan-de-dos-dias-antes-y-ahora.png`, `plan-de-un-dia-antes-y-ahora.png`, `resumen-de-la-pasada.txt` y `resultados/`
+(los resultados de cada recorrido, las pruebas y los veredictos de las roturas).
