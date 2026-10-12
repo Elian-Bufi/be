@@ -32,9 +32,9 @@
 //   lista de versiones, calculado a mano.
 // - Antropometría · Tomas (WP-ESCRITORIO-AREAS, parte 3) se comprueba en `tomasDeAntropometria`, en esa misma sesión;
 //   solo, con `tomas`. Lo esperado sale de la lista entera, del detalle de cada toma, de los cálculos y de los métodos,
-//   calculado a mano (`esperadoDeTomas`). Lo que ESCRIBE —corregir, anular, calcular y dejar una referencia— va en
-//   `medicionesDeUnaToma`: corre solo, con `mediciones`, sobre las cuentas descartables con la toma del perfil completo
-//   (`datos/generar.mjs descartable-toma-completa`), y no toca los datos de A, B ni C.
+//   calculado a mano (`esperadoDeTomas`). Lo que ESCRIBE —corregir, anular, calcular, dejar una referencia y registrar
+//   una toma desde la carga— va en `medicionesDeUnaToma`: corre solo, con `mediciones`, sobre las cuentas descartables
+//   con la toma del perfil completo (`datos/generar.mjs descartable-toma-completa`), y no toca los datos de A, B ni C.
 // - La estimación del profesional sobre una comida diferente (`estimacionDeUnaComida`) ESCRIBE en el escenario: no va
 //   dentro de `funcional`. Corre sola, con `estimacion`, y última en la pasada completa.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
@@ -6449,8 +6449,13 @@ const tomasEnPantalla = (page) =>
             anteriores: t(toma.querySelector('button[aria-controls="anteriores-sin-efecto"]')),
             sinEfecto: [...toma.querySelectorAll('.anteriores-sin-efecto button.resultado-de-la-toma')].map((b) => ({ id: b.dataset.resultado, nombre: t(b.querySelector('.resultado-de-la-toma__nombre')), valor: t(b.querySelector('.resultado-de-la-toma__valor')) })),
             fallaDeResultados: t(toma.querySelector('.resultados-de-la-toma .aviso--error')),
+            // Una toma de pocas mediciones pone sus familias una al lado de la otra; las demás, cada una en su lugar.
+            pocas: toma.querySelector('.familias-de-la-toma')?.classList.contains('familias-de-la-toma--pocas') ?? null,
             familias: [...toma.querySelectorAll('.familia-de-la-toma')].map((f) => ({
               familia: f.dataset.familia,
+              izquierda: Math.round(f.getBoundingClientRect().left),
+              derecha: Math.round(f.getBoundingClientRect().right),
+              arriba: Math.round(f.getBoundingClientRect().top),
               titulo: t(f.querySelector('h4')),
               filas: [...f.querySelectorAll('button.medicion-de-la-toma')].map((b) => ({ id: b.dataset.medicion, nombre: t(b.querySelector('.medicion-de-la-toma__nombre')), valor: t(b.querySelector('.medicion-de-la-toma__valor')), marcas: [...b.querySelectorAll('.etiqueta-de-dato')].map(t), anulada: b.dataset.anulada === 'si', rotulo: b.getAttribute('aria-label') })),
             })),
@@ -6485,6 +6490,48 @@ const tomasEnPantalla = (page) =>
       alto: document.documentElement.scrollHeight,
     };
   });
+
+/**
+ * Los cortes de renglón mal puestos en los textos que encuentra el selector (solo los que están a la vista): un número
+ * arriba y la palabra que cuenta abajo («1» / «anulada»), o el separador « · » al principio de un renglón. Mira dónde
+ * quedó cada letra en la pantalla, no cómo está armado el texto: sirve igual con espacios que no se parten, con partes
+ * que bajan enteras o sin nada de eso. Devuelve los cortes y cuántos textos ocupan más de un renglón (si ninguno lo
+ * hace, la medida no tuvo nada que mirar).
+ */
+const cortesMalPuestos = (page, selector) =>
+  page.evaluate((s) => {
+    const cortes = [];
+    let textos = 0;
+    let enVariosRenglones = 0;
+    for (const el of document.querySelectorAll(s)) {
+      if (el.getClientRects().length === 0) continue;
+      const nodos = [];
+      let total = 0;
+      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        nodos.push({ n, desde: total });
+        total += n.data.length;
+      }
+      const texto = nodos.map((x) => x.n.data).join('');
+      if (texto.trim() === '') continue;
+      textos += 1;
+      const arriba = (i) => {
+        const x = [...nodos].reverse().find((y) => y.desde <= i);
+        const r = document.createRange();
+        r.setStart(x.n, i - x.desde);
+        r.setEnd(x.n, i - x.desde + 1);
+        return Math.round(r.getBoundingClientRect().top);
+      };
+      const letras = [...texto].map((c, i) => (/\s/.test(c) ? null : arriba(i))).filter((y) => y !== null);
+      if (Math.max(...letras) - Math.min(...letras) > 3) enVariosRenglones += 1;
+      const cerca = (i) => texto.replace(/\s/g, ' ').slice(Math.max(0, i - 14), i + 16).trim();
+      // Un número y, después de un espacio, la palabra que cuenta: los dos en el mismo renglón.
+      for (const m of texto.matchAll(/\d\s(?=\p{L})/gu)) if (Math.abs(arriba(m.index) - arriba(m.index + 2)) > 3) cortes.push(`«${cerca(m.index)}»: el número, separado de su palabra`);
+      // El separador, en el renglón de lo que viene antes.
+      for (const m of texto.matchAll(/\S\s·/gu)) if (Math.abs(arriba(m.index) - arriba(m.index + 2)) > 3) cortes.push(`«${cerca(m.index)}»: el separador, al principio de un renglón`);
+    }
+    return { cortes, textos, enVariosRenglones };
+  }, selector);
 
 /** El orden del catálogo «Perfil antropométrico completo», escrito a mano: así van las mediciones dentro de su familia. */
 const CATALOGO_DE_MEDICIONES = [
@@ -6809,6 +6856,24 @@ async function tomasDeAntropometria(page, v) {
       ? `${rica.familias.map((f) => `${f.titulo} (${f.filas.length})`).join(' · ')} · ${rica.familias.flatMap((f) => f.filas).find((x) => x.anulada)?.rotulo}`
       : `a la vista: ${JSON.stringify(familiasALaVista).slice(0, 300)} — a mano: ${JSON.stringify(rica?.familias ?? null).slice(0, 300)}`,
   );
+  // Una toma de pocas mediciones (la que abrió sola) no reserva el lugar de las familias que no tiene.
+  const separaciones = (familias) => familias.slice(1).map((f, i) => f.izquierda - familias[i].derecha);
+  const familiasAlEntrar = inicial.toma?.familias ?? [];
+  if (primera.mediciones.length <= 6 && familiasAlEntrar.length >= 2) {
+    comprobar(
+      'F-36',
+      'Una toma de hasta seis mediciones muestra sus familias una al lado de la otra, en un renglón, sin dejar vacío el lugar de las que no tiene: entre dos familias seguidas queda solo la separación de la grilla. Una toma más cargada conserva el lugar fijo de cada familia',
+      inicial.toma.pocas === true &&
+        familiasAlEntrar.every((f) => f.arriba === familiasAlEntrar[0].arriba) &&
+        separaciones(familiasAlEntrar).every((d) => d >= 0 && d <= 40) &&
+        !!rica &&
+        rica.mediciones.length > 6 &&
+        conLaRica.toma?.pocas === false,
+      `${primera.mediciones.length} mediciones: ${familiasAlEntrar.map((f) => f.titulo).join(' | ')} · separación: ${separaciones(familiasAlEntrar).join(', ')} px · la de ${rica?.mediciones.length ?? '—'} mediciones: ${conLaRica.toma?.pocas === false ? 'cada familia en su lugar' : 'como si fueran pocas'}`,
+    );
+  } else {
+    informar('F-36', 'Las familias de una toma de pocas mediciones', `la toma que abre sola tiene ${primera.mediciones.length} mediciones en ${familiasAlEntrar.length} familias: no se pudo mirar`);
+  }
 
   // ── Una medición se abre en el panel; corregir y anular están ahí, no en la fila ─────────────────────────────────
   const comun = rica ? rica.mediciones.find((m) => m.condition === 'EFFECTIVE' && m.corrections.length === 0) : null;
@@ -6855,6 +6920,20 @@ async function tomasDeAntropometria(page, v) {
       conLaAnulada.panel.bloques.some((b) => b.titulo === 'Lo que pasó con los resultados'),
     anulada ? `${conLaAnulada.panel?.marcas.join(', ')} · ${conLaAnulada.panel?.valor} · ${conLaAnulada.panel?.historia.map((h) => `${h.titulo}: ${h.nota}`).join(' | ').slice(0, 200)} · acciones: ${conLaAnulada.panel?.acciones.length}` : 'el escenario no tiene una medición anulada',
   );
+  // En el escenario principal la anulación se cargó sin cálculos que usaran la medición: el bloque lo dice con las
+  // palabras de una anulación. Los resultados que quedan sin efecto al anular de verdad se comprueban en `mediciones`.
+  const usabanLaAnulada = anulada ? corridas.filter((c) => c.evaluationId === rica.id && c.inputProvenance.some((i) => i.sourceRef === anulada.measurementId)) : [];
+  const bloqueDeLaAnulada = conLaAnulada.panel?.bloques.find((b) => b.titulo === 'Lo que pasó con los resultados') ?? null;
+  if (anulada && usabanLaAnulada.length === 0) {
+    comprobar(
+      'F-38',
+      'Si ningún resultado calculado de la toma usaba la medición anulada, «Lo que pasó con los resultados» lo dice con las palabras de una anulación: no habla de una corrección que no hubo, ni lista ningún resultado',
+      !!bloqueDeLaAnulada && /Ningún resultado calculado de esta toma quedó sin efecto por esta anulación\./.test(bloqueDeLaAnulada.texto) && !/correcci[oó]n/i.test(bloqueDeLaAnulada.texto) && igual(conLaAnulada.panel.cambios, []),
+      `«${bloqueDeLaAnulada?.texto ?? 'sin el bloque'}»`,
+    );
+  } else {
+    informar('F-38', 'Lo que pasó con los resultados de la medición anulada, en el escenario principal', anulada ? `${usabanLaAnulada.length} corridas de esa toma usaban la medición: «${(bloqueDeLaAnulada?.texto ?? '').slice(0, 160)}»` : 'sin medición anulada: no se pudo mirar');
+  }
 
   // ── Una medición corregida: rige la corrección, y el original se conserva en la historia ───────────────────────────
   const tomaCorregida = E.tomas.find((x) => x.mediciones.some((m) => m.condition === 'EFFECTIVE' && m.corrections.length > 0)) ?? null;
@@ -6868,6 +6947,8 @@ async function tomasDeAntropometria(page, v) {
     await cerrarPanel();
   }
   const filaCorregida = tomaCorregida?.familias.flatMap((f) => f.filas).find((x) => x.id === corregida?.measurementId) ?? null;
+  // La fila, leída de la pantalla: la toma de la medición corregida no es la que miró la comprobación de las familias.
+  const filaCorregidaALaVista = conLaCorregida.toma?.familias.flatMap((f) => f.filas).find((x) => x.id === corregida?.measurementId) ?? null;
   const usanLaCorregida = corregida ? corridas.filter((c) => c.evaluationId === tomaCorregida.id && c.inputProvenance.some((i) => i.sourceRef === corregida.measurementId)) : [];
   const bloqueDelCambio = conLaCorregida.panel?.bloques.find((b) => b.titulo === 'Lo que cambió con la corrección') ?? null;
   comprobar(
@@ -6876,13 +6957,16 @@ async function tomasDeAntropometria(page, v) {
     !!corregida &&
       corregida.effectiveMagnitude.value !== corregida.magnitude.value &&
       filaCorregida?.marcas.includes('Corregida') &&
+      igual(filaCorregidaALaVista, filaCorregida) &&
       conLaCorregida.panel?.valor === `${E.num(corregida.effectiveMagnitude.value)} ${corregida.effectiveMagnitude.unit}` &&
       conLaCorregida.panel.marcas.includes('Corregida') &&
       igual(conLaCorregida.panel.historia, E.historiaDe(corregida)) &&
       conLaCorregida.panel.historia.filter((h) => h.rige).length === 1 &&
       conLaCorregida.panel.historia[0].tipo === 'CORRECCION' &&
       conLaCorregida.panel.historia.at(-1).titulo === `Valor original: ${E.num(corregida.magnitude.value)} ${corregida.magnitude.unit}`,
-    corregida ? `${conLaCorregida.panel?.valor} (se tomó ${E.num(corregida.magnitude.value)}) · ${conLaCorregida.panel?.historia.map((h) => `${h.titulo} — ${h.nota}`).join(' | ').slice(0, 260)}` : 'el escenario no tiene una medición corregida y vigente',
+    corregida
+      ? `la fila: ${filaCorregidaALaVista?.nombre} ${filaCorregidaALaVista?.valor} ${filaCorregidaALaVista?.marcas.join(', ')} · el panel: ${conLaCorregida.panel?.valor} (se tomó ${E.num(corregida.magnitude.value)}) · ${conLaCorregida.panel?.historia.map((h) => `${h.titulo} — ${h.nota}`).join(' | ').slice(0, 220)}`
+      : 'el escenario no tiene una medición corregida y vigente',
   );
   // En el escenario principal la corrección se cargó sin cálculos que la usen: el panel lo dice, sin inventar un cambio.
   // Lo que cambia de verdad en los resultados al corregir se comprueba escribiendo, en `mediciones`.
@@ -7129,7 +7213,8 @@ async function tomasDeAntropometria(page, v) {
 /**
  * Corregir una medición, anular otra, calcular con un método y dejar un resultado como referencia, por la pantalla
  * (C-62; F-37 a F-39), sobre la toma del perfil completo de las cuentas descartables (`datos/generar.mjs
- * descartable-toma-completa`): 30 mediciones y 8 resultados calculados por la API, con la cintura mal tipeada.
+ * descartable-toma-completa`): 30 mediciones y 8 resultados calculados por la API, con la cintura mal tipeada. Al final,
+ * registrar una toma desde la carga, para ver que se vuelve a «Tomas» con esa toma abierta y el aviso a la vista (F-35).
  * **Escribe:** por eso no va dentro de `funcional`. Corre sola (`node recorrido.mjs mediciones`), con esas cuentas recién
  * generadas, y no toca los datos de A, B ni C. Lo esperado sale de lo que devuelve la API antes y después de cada
  * escritura; lo que tiene que decir la pantalla, de `esperadoDeTomas`, escrito a mano. Una de las comprobaciones mira
@@ -7450,7 +7535,126 @@ async function medicionesDeUnaToma() {
     );
     const faltas = await axe(page);
     comprobar('F-37', 'axe no encuentra faltas en la toma completa, ni en el panel de una medición corregida con lo que cambió', faltas.length === 0 && faltasConElCambio.length === 0, `la toma: ${faltas.map((f) => f.id).join(', ') || 'sin faltas'} · el panel: ${faltasConElCambio.map((f) => f.id).join(', ') || 'sin faltas'}`);
-    comprobar('—', 'Corregir, anular, calcular y dejar una referencia no produjeron errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+
+    // ── Con la toma completa ya corregida y anulada: cómo corta cada renglón, en los tres anchos ──────────────────────
+    const TEXTOS_CON_NUMEROS = '.toma-de-la-lista__cuentas, .toma-abierta__metadatos, .resultado-de-la-toma__nombre';
+    const enUnRenglon = () =>
+      page.evaluate(() => {
+        const medio = (e) => (e ? Math.round(e.getBoundingClientRect().top + e.getBoundingClientRect().height / 2) : null);
+        const acciones = document.querySelector('.resultados-de-la-toma .toma-abierta__acciones-de-bloque');
+        return { titulo: medio(document.querySelector('#titulo-resultados')), acciones: medio(acciones), texto: acciones?.innerText.replace(/\s+/g, ' ').trim() ?? '' };
+      });
+    // Los anteriores quedaron abiertos más arriba: se pliegan, para medir el encabezado con «Ver N anteriores» escrito.
+    if (await page.evaluate(() => document.querySelector('article.toma-abierta button[aria-controls="anteriores-sin-efecto"]')?.getAttribute('aria-expanded') === 'true')) {
+      await clic(page, 'article.toma-abierta button[aria-controls="anteriores-sin-efecto"]', 'Ocultar').catch(() => null);
+      await pausa(250);
+    }
+    const cortes = {};
+    const encabezados = {};
+    for (const ancho of [1440, 1280, 1024]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(300);
+      cortes[ancho] = await cortesMalPuestos(page, TEXTOS_CON_NUMEROS);
+      encabezados[ancho] = await enUnRenglon();
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(200);
+    comprobar(
+      'F-41',
+      'A 1440, 1280 y 1024 px, ningún renglón deja un número separado de la palabra que cuenta («1» arriba y «anulada» abajo; «7» y «pliegues») ni el separador al principio: en las cuentas de la lista, en el renglón de la toma y en los nombres de los métodos. La medida mira dónde quedó cada letra, y hay textos que ocupan más de un renglón',
+      [1440, 1280, 1024].every((a) => cortes[a].cortes.length === 0 && cortes[a].textos >= 8) && cortes[1440].enVariosRenglones >= 1 && cortes[1280].enVariosRenglones >= 2,
+      [1440, 1280, 1024].map((a) => `${a}: ${cortes[a].textos} textos, ${cortes[a].enVariosRenglones} en más de un renglón${cortes[a].cortes.length > 0 ? ` · ${cortes[a].cortes.slice(0, 2).join(' · ')}` : ''}`).join(' — '),
+    );
+    comprobar(
+      'F-41',
+      'A 1440 px, con «Ver N anteriores, sin efecto» a la vista, el título de los resultados y sus dos acciones siguen en un renglón, como en la maqueta 22',
+      /^Ver \d+ anteriores, sin efecto Calcular con un método$/.test(encabezados[1440].texto) && encabezados[1440].titulo !== null && Math.abs(encabezados[1440].titulo - encabezados[1440].acciones) <= 6,
+      `«${encabezados[1440].texto}» · el título, a los ${encabezados[1440].titulo} px; las acciones, a los ${encabezados[1440].acciones} · a 1280, a los ${encabezados[1280].titulo} y ${encabezados[1280].acciones}`,
+    );
+
+    // ── Registrar una toma por la pantalla: se vuelve a «Tomas» con esa toma abierta y el aviso a la vista ─────────────
+    // La toma nueva es de ocho días antes que la completa: no es la más reciente, así que «abre la recién registrada» no
+    // se confunde con «abre la más nueva».
+    const antesDeRegistrar = await leerTodo();
+    await clic(page, '.tomas-del-area__preparar button', 'Preparar una toma');
+    await page.waitForSelector('#titulo-preparacion', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const perfil = await page.evaluate(() => [...document.querySelectorAll('#ant-protocolo option')].find((o) => o.textContent.includes('Perfil antropométrico completo'))?.value ?? null);
+    if (perfil) await page.select('#ant-protocolo', perfil);
+    await fijarFecha(page, '#ant-momento', `${diaMenos(T.fecha, 8)}T09:15`);
+    await escribir('#ant-valor-peso', '61,4');
+    const alGuardar = v.urls.length;
+    await clic(page, '.acciones--fijas button', 'Guardar');
+    await page.waitForFunction(() => document.querySelector('#titulo-preparacion')?.innerText.trim() === 'Toma en preparación', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    // Con la toma guardada y sin registrar, «Tomas» lo dice, y el botón la retoma.
+    await clic(page, '.vuelta-a-la-seccion a', 'Tomas');
+    await page.waitForSelector('article.toma-abierta', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const conLaTomaEmpezada = await tomasEnPantalla(page);
+    // Con el texto que tenga el botón: si no dijera lo que tiene que decir, la comprobación falla y el camino sigue.
+    await clic(page, '.tomas-del-area__preparar button', conLaTomaEmpezada.preparar ?? 'Preparar una toma').catch(() => null);
+    await page.waitForSelector('#titulo-preparacion', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const alRetomar = await page.evaluate(() => ({ titulo: document.querySelector('#titulo-preparacion')?.innerText.trim() ?? null, peso: document.querySelector('#ant-valor-peso')?.value ?? null }));
+    comprobar(
+      'F-35',
+      'Con una toma guardada y sin registrar, «Tomas» lo dice: el botón pasa de «Preparar una toma» a «Seguir con la toma en preparación» y cuenta sus mediciones; la toma en preparación no está entre las registradas, y el botón lleva a la carga, que la retoma con lo guardado',
+      conLaTomaEmpezada.preparar === 'Seguir con la toma en preparación' &&
+        conLaTomaEmpezada.enPreparacion === 'Hay una toma en preparación, con 1 medición.' &&
+        conLaTomaEmpezada.cuenta === `${antesDeRegistrar.E.tomas.length} registradas.` &&
+        (conLaTomaEmpezada.tramos ?? []).flatMap((x) => x.tomas).length === antesDeRegistrar.E.tomas.length &&
+        alRetomar.titulo === 'Toma en preparación' &&
+        /^61[.,]4$/.test(alRetomar.peso ?? ''),
+      `botón: «${conLaTomaEmpezada.preparar}» · «${conLaTomaEmpezada.enPreparacion}» · «${conLaTomaEmpezada.cuenta}» · al retomar: «${alRetomar.titulo}», peso ${alRetomar.peso}`,
+    );
+    await clic(page, '.acciones--fijas button', 'Registrar toma');
+    await page.waitForSelector('dialog.dialogo[open]', { timeout: 10_000 }).catch(() => {});
+    await clic(page, 'dialog.dialogo[open] .acciones button', 'Registrar esta toma');
+    // El aviso dura unos segundos: se lee apenas aparece, antes de esperar a que la lista termine de cargar.
+    await page.waitForFunction(() => (document.querySelector('.aviso-flotante__texto')?.innerText.trim() ?? '') !== '', { timeout: 30_000 }).catch(() => {});
+    const avisoAlVolver = await page.evaluate(() => {
+      const a = document.querySelector('.tomas-del-area .aviso-flotante');
+      if (!a) return null;
+      const r = a.getBoundingClientRect();
+      return { texto: a.querySelector('.aviso-flotante__texto').innerText.replace(/\s+/g, ' ').trim(), aLaVista: r.width > 0 && r.top >= 0 && r.bottom <= innerHeight };
+    });
+    await page.waitForSelector('article.toma-abierta', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const registrada = await leerTodo();
+    const trasRegistrar = await tomasEnPantalla(page);
+    const nuevas = registrada.E.tomas.filter((x) => !antesDeRegistrar.E.tomas.some((y) => y.id === x.id));
+    const tomaNueva = nuevas[0] ?? null;
+    const enLista = (tramos) => (tramos ?? []).map((x) => ({ protocolo: x.protocolo, tomas: x.tomas.map((y) => ({ id: y.id, fecha: y.fecha, cuentas: y.cuentas })) }));
+    comprobar(
+      'F-35',
+      'Registrar una toma desde la carga vuelve a «Tomas» con esa toma abierta (no la más reciente: es de ocho días antes que la completa), puesta en la dirección y marcada en la lista, que la tiene en su lugar y cuenta una más; el botón vuelve a decir «Preparar una toma». Salieron un solo pedido para crear la toma en preparación y uno solo para registrarla',
+      nuevas.length === 1 &&
+        registrada.E.tomas[0].id !== tomaNueva.id &&
+        registrada.E.tomas.length === antesDeRegistrar.E.tomas.length + 1 &&
+        parametros(page).get('vista') === 'evaluaciones' &&
+        parametros(page).get('evaluacion') === tomaNueva.id &&
+        trasRegistrar.toma?.id === tomaNueva.id &&
+        trasRegistrar.toma.titulo === tomaNueva.titulo &&
+        tomaNueva.cuentas === '1 medición' &&
+        igual(trasRegistrar.toma.familias.map((f) => ({ familia: f.familia, titulo: f.titulo, filas: f.filas })), tomaNueva.familias) &&
+        igual(enLista(trasRegistrar.tramos), enLista(registrada.E.tramos)) &&
+        igual((trasRegistrar.tramos ?? []).flatMap((x) => x.tomas).filter((x) => x.elegida).map((x) => x.id), [tomaNueva.id]) &&
+        trasRegistrar.cuenta === `${registrada.E.tomas.length} registradas.` &&
+        trasRegistrar.preparar === 'Preparar una toma' &&
+        escrituras(`/advisees/${A}/anthropometry/evaluation-drafts`, alGuardar).length === 1 &&
+        escrituras('/register', alGuardar).length === 1,
+      tomaNueva
+        ? `«${trasRegistrar.toma?.titulo}» (la más reciente es «${registrada.E.tomas[0].titulo}») · ${tomaNueva.cuentas} · «${trasRegistrar.cuenta}» · en la dirección: ${parametros(page).get('evaluacion') === tomaNueva.id ? 'esa toma' : 'otra cosa'} · pedidos: ${escrituras(`/advisees/${A}/anthropometry/evaluation-drafts`, alGuardar).length} para crearla y ${escrituras('/register', alGuardar).length} para registrarla`
+        : `la API tiene ${nuevas.length} tomas nuevas`,
+    );
+    comprobar(
+      'F-35',
+      'Al volver de registrar, «Tomas» dice «Toma registrada. Ya forma parte de la evolución.» en un aviso que se ve entero dentro de la ventana (antes se decía en la carga, que se desmontaba al volver, y podía no verse)',
+      avisoAlVolver?.texto === 'Toma registrada. Ya forma parte de la evolución.' && avisoAlVolver.aLaVista,
+      avisoAlVolver ? `«${avisoAlVolver.texto}» · ${avisoAlVolver.aLaVista ? 'dentro de la ventana' : 'fuera de la ventana'}` : 'sin aviso',
+    );
+    comprobar('—', 'Corregir, anular, calcular, dejar una referencia y registrar una toma no produjeron errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
   } finally {
     await navegador.close();
   }

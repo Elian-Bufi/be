@@ -38,6 +38,7 @@ import {
 } from '@be/domain';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
+import { conNumerosPegados, EnPartes } from '../../../../components/en-partes';
 import { EstadoVacio } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
@@ -53,6 +54,11 @@ import { DetalleDeMedicion } from './medicion';
 const TOMAS_CON_DETALLE = 20;
 /** Cuántos detalles se piden a la vez: cada uno es una lectura protegida, y cuenta para el cupo del profesional. */
 const DETALLES_A_LA_VEZ = 3;
+/**
+ * Hasta cuántas mediciones una toma se muestra con sus familias una al lado de la otra. Con más, cada familia tiene su
+ * lugar fijo (lo corto, los pliegues y los perímetros), que es como se lee un perfil completo.
+ */
+const POCAS_MEDICIONES = 6;
 
 type Lista = {
   readonly tomas: readonly ResumenDeEvaluacionApi[];
@@ -212,7 +218,10 @@ export function VistaDeEvaluaciones() {
                         <li key={t.evaluationId}>
                           <button type="button" className="toma-de-la-lista" data-toma={t.evaluationId} aria-current={t.evaluationId === abiertaId ? 'true' : undefined} onClick={() => irA('evaluaciones', t.evaluationId)}>
                             <span className="toma-de-la-lista__fecha">{momentoDeLaToma(t.occurredAt)}</span>
-                            <span className="toma-de-la-lista__cuentas">{cuentasDe(t)}</span>
+                            {/* Si las cuentas no entran en un renglón, baja una entera: «1» no queda arriba y «anulada» abajo. */}
+                            <span className="toma-de-la-lista__cuentas">
+                              <EnPartes texto={cuentasDe(t)} />
+                            </span>
                           </button>
                         </li>
                       ))}
@@ -333,6 +342,7 @@ function TomaAbierta({
   const [hecho, setHecho] = useState<string | null>(null);
   const resumen = useMemo(() => resumenDeLaToma(toma.measurements), [toma.measurements]);
   const familias = useMemo(() => medicionesPorFamilia(toma.measurements), [toma.measurements]);
+  const pocas = toma.measurements.length <= POCAS_MEDICIONES;
   const corridas = calculos.tipo === 'listo' ? calculos.corridas : null;
 
   const cerrar = () => {
@@ -368,7 +378,7 @@ function TomaAbierta({
           {C.verLamina}
         </button>
       </div>
-      <p className="metadatos toma-abierta__metadatos">{metadatos.join(' · ')}</p>
+      <p className="metadatos toma-abierta__metadatos">{conNumerosPegados(metadatos.join(' · '))}</p>
 
       <ResultadosDeLaToma toma={toma} calculos={calculos} onReintentar={onReintentarLosCalculos} onAbrir={(id) => setPanel({ tipo: 'resultado', id })} onCalcular={() => setPanel({ tipo: 'calcular' })} />
 
@@ -377,7 +387,8 @@ function TomaAbierta({
           <h3 id="titulo-mediciones">{C.mediciones}</h3>
           <p className="nota">{C.elegiUnaMedicion}</p>
         </div>
-        <div className="familias-de-la-toma">
+        {/* Una toma de pocas mediciones no reserva el lugar de las familias que no tiene: van una al lado de la otra. */}
+        <div className={pocas ? 'familias-de-la-toma familias-de-la-toma--pocas' : 'familias-de-la-toma'}>
           {familias.map((f) => (
             <section key={f.familia} className="familia-de-la-toma" data-familia={f.familia} aria-labelledby={`familia-${f.familia}`}>
               <h4 id={`familia-${f.familia}`}>

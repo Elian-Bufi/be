@@ -45,7 +45,7 @@ export function AyudaDeTomas() {
           <strong>Referencia.</strong> {C.explicacionDeReferencia}
         </Renglon>
         <Renglon muestra={<Icono nombre="reloj" tamano={20} />}>
-          <strong>Anteriores, sin efecto.</strong> {C.explicacionDeCalculoNoVigente} Están a un clic, al lado del título de los resultados.
+          <strong>Anteriores, sin efecto.</strong> {C.explicacionDeAnterioresSinEfecto} Están a un clic, al lado del título de los resultados.
         </Renglon>
         <Renglon muestra={<Icono nombre="derecha" tamano={20} />}>
           <strong>Cada medición y cada resultado abren su detalle</strong> en un panel: la historia de la medición, lo que cambió en los resultados cuando se corrigió, y corregir o anular; de un resultado, con qué se

@@ -315,6 +315,10 @@ export const COPY_ANTROPOMETRIA = {
       ? 'Otro resultado que usa esta medición se volvió a calcular, y no se puede decir con qué valor había entrado.'
       : `Otros ${numero(n)} resultados que usan esta medición se volvieron a calcular, y no se puede decir con qué valor habían entrado.`,
   ningunResultadoCambio: 'Ningún resultado calculado de esta toma cambió por esta corrección.',
+  ningunResultadoQuedoSinEfecto: 'Ningún resultado calculado de esta toma quedó sin efecto por esta anulación.',
+  /** Lo mismo que `explicacionDeCalculoNoVigente`, dicho de varios: encabeza la lista de los anteriores. */
+  explicacionDeAnterioresSinEfecto:
+    'Dejaron de tener efecto: alguna de sus entradas se anuló, o los reemplazó un cálculo posterior. Se conservan porque son parte de la historia.',
   corregirConservaLaUnidad: 'Corregir pide el valor y el motivo, y conserva la unidad.',
   detalleDelResultado: 'Resultado calculado',
   calculadoEl: 'Calculado el',

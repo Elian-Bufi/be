@@ -7255,6 +7255,12 @@ button.comida-del-dia__fila > .icono:last-child {
   margin-left: auto;
 }
 
+/* En los resultados la nota cede lugar: con «Ver N anteriores» y «Calcular con un método» al lado, el título y sus
+   acciones siguen en un renglón a 1440 px, como en la maqueta. */
+.resultados-de-la-toma .toma-abierta__titulo-de-bloque .nota {
+  flex: 1 1 12rem;
+}
+
 .resultados-de-la-toma,
 .mediciones-de-la-toma {
   margin-top: 0.9rem;
@@ -7428,6 +7434,22 @@ button.comida-del-dia__fila > .icono:last-child {
 
 .mediciones-de-la-familia > li {
   break-inside: avoid;
+}
+
+/* Una toma de pocas mediciones no reserva el lugar de las familias que no tiene: van una al lado de la otra, cada una
+   con su ancho. Con dos clases, para ganarles a las reglas de los anchos angostos. */
+.familias-de-la-toma.familias-de-la-toma--pocas {
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 17rem));
+  grid-template-areas: none;
+  grid-template-rows: none;
+}
+
+.familias-de-la-toma--pocas .familia-de-la-toma[data-familia] {
+  grid-area: auto;
+}
+
+.familias-de-la-toma--pocas .familia-de-la-toma[data-familia] .mediciones-de-la-familia {
+  columns: auto;
 }
 
 /* ─── Una medición o un resultado, en el panel ───────── */

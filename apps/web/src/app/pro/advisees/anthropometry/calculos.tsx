@@ -41,6 +41,7 @@ import {
 } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
+import { conNumerosPegados } from '../../../../components/en-partes';
 import { Cargando } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
@@ -130,7 +131,7 @@ export function ResultadosDeLaToma({
             </button>
           ) : null}
           {calculos.tipo === 'listo' ? (
-            <button type="button" className="boton boton--secundario" onClick={onCalcular} disabled={calculos.metodos.length === 0}>
+            <button type="button" className="boton boton--secundario boton--compacto" onClick={onCalcular} disabled={calculos.metodos.length === 0}>
               <Icono nombre="mas" tamano={18} />
               {C.nuevoCalculo}
             </button>
@@ -173,7 +174,8 @@ export function ResultadosDeLaToma({
                           onClick={() => onAbrir(r.corridaId)}
                         >
                           <span className="resultado-de-la-toma__que">
-                            <span className="resultado-de-la-toma__nombre">{r.metodo}</span>
+                            {/* El nombre de un método puede traer un número («7 pliegues»): no se separa de su palabra. */}
+                            <span className="resultado-de-la-toma__nombre">{conNumerosPegados(r.metodo)}</span>
                             {corrida.referenceForPurpose ? <span className="etiqueta-de-dato">{C.referenciaAdoptada}</span> : null}
                           </span>
                           <Valor corrida={corrida} />
@@ -188,13 +190,13 @@ export function ResultadosDeLaToma({
           {verAnteriores ? (
             <div className="anteriores-sin-efecto" id="anteriores-sin-efecto">
               <h4>{C.anterioresSinEfecto}</h4>
-              <p className="nota">{C.explicacionDeCalculoNoVigente}</p>
+              <p className="nota">{C.explicacionDeAnterioresSinEfecto}</p>
               <ul>
                 {anteriores.map((c) => (
                   <li key={c.calculationRunId}>
                     <button type="button" className="resultado-de-la-toma" data-resultado={c.calculationRunId} aria-label={`${c.methodName}: ${nombreDeMetrica(c.result.metric)}, ${valorDelResultado(c)} · ${C.calculoNoVigente}`} onClick={() => onAbrir(c.calculationRunId)}>
                       <span className="resultado-de-la-toma__que">
-                        <span className="resultado-de-la-toma__nombre">{c.methodName}</span>
+                        <span className="resultado-de-la-toma__nombre">{conNumerosPegados(c.methodName)}</span>
                         <span className="etiqueta-de-dato">{C.calculoNoVigente}</span>
                       </span>
                       <Valor corrida={c} />
@@ -244,7 +246,7 @@ export function DetalleDeResultado({ corrida, hecho, onHecho }: { corrida: Corri
 
   return (
     <div className="medicion-abierta resultado-abierto" data-resultado={corrida.calculationRunId}>
-      <p className="nota medicion-abierta__de-donde">{corrida.methodName}</p>
+      <p className="nota medicion-abierta__de-donde">{conNumerosPegados(corrida.methodName)}</p>
       {hecho ? (
         <Aviso tipo="exito">
           <p>{hecho}</p>
@@ -277,7 +279,7 @@ export function DetalleDeResultado({ corrida, hecho, onHecho }: { corrida: Corri
       <section className="medicion-abierta__bloque" aria-labelledby="titulo-entradas">
         <h3 id="titulo-entradas">{C.entradasDelCalculo}</h3>
         <p className="nota">
-          {C.versionDelMetodo} {corrida.methodVersion} · {C.reglaAplicada}: {corrida.ruleId} · {C.precisionDeclarada}: {C.decimales(corrida.precision.decimals)}
+          {conNumerosPegados(`${C.versionDelMetodo} ${corrida.methodVersion} · ${C.reglaAplicada}: ${corrida.ruleId} · ${C.precisionDeclarada}: ${C.decimales(corrida.precision.decimals)}`)}
         </p>
         <ul className="entradas-del-calculo">
           {corrida.inputProvenance.map((i) => (

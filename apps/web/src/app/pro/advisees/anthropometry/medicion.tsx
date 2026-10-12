@@ -32,6 +32,7 @@ import {
   type Medicion,
 } from '@be/domain';
 import { useMemo, useState } from 'react';
+import { conNumerosPegados } from '../../../../components/en-partes';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
@@ -185,7 +186,7 @@ export function DetalleDeMedicion({
               <ul className="cambios-de-resultados" data-cambios="recalculados">
                 {cambio.recalculados.map((r) => (
                   <li key={r.corridaId}>
-                    <span className="cambios-de-resultados__nombre">{r.metodo}</span>
+                    <span className="cambios-de-resultados__nombre">{conNumerosPegados(r.metodo)}</span>
                     <span className="cambios-de-resultados__valores">
                       <strong>{r.ahora}</strong>{' '}
                       <span className="cambios-de-resultados__antes">
@@ -205,7 +206,7 @@ export function DetalleDeMedicion({
               <ul className="cambios-de-resultados" data-cambios="sin-recalcular">
                 {cambio.sinRecalcular.map((r) => (
                   <li key={r.corridaId}>
-                    <span className="cambios-de-resultados__nombre">{r.metodo}</span>
+                    <span className="cambios-de-resultados__nombre">{conNumerosPegados(r.metodo)}</span>
                     <span className="cambios-de-resultados__valores">
                       <span className="cambios-de-resultados__antes">
                         {C.antesDelCambio} {r.antes}
@@ -217,7 +218,7 @@ export function DetalleDeMedicion({
             </>
           ) : null}
           {cambio && cambio.sinAtribuir > 0 ? <p className="nota">{C.cambioSinAtribuir(cambio.sinAtribuir)}</p> : null}
-          {cambio && cambio.recalculados.length === 0 && cambio.sinRecalcular.length === 0 && cambio.sinAtribuir === 0 ? <p className="nota">{C.ningunResultadoCambio}</p> : null}
+          {cambio && cambio.recalculados.length === 0 && cambio.sinRecalcular.length === 0 && cambio.sinAtribuir === 0 ? <p className="nota">{anulada ? C.ningunResultadoQuedoSinEfecto : C.ningunResultadoCambio}</p> : null}
         </section>
       ) : null}
 

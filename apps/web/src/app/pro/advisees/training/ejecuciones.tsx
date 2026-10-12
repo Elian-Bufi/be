@@ -54,7 +54,8 @@ import {
 } from '@be/domain';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { EnPartes, FraseEnPartes } from '../../../../components/en-partes';
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { Panel } from '../../../../components/panel';
@@ -416,44 +417,6 @@ function Dato({ rotulo, className, children }: { rotulo: string; className?: str
       <span className="visualmente-oculto">{rotulo}: </span>
       {children}
     </span>
-  );
-}
-
-/**
- * Una frase hecha de partes separadas por « · » («3 series sin registrar · 1 serie con diferencias»), en la fila de una
- * sesión. Las partes son largas y en una lista angosta no entran en un renglón: el texto corre como cualquier otro, pero
- * el número no se separa de lo que cuenta («1» arriba y «serie con diferencias» abajo) y el separador queda al final del
- * renglón de arriba, nunca al principio del de abajo. Son espacios que no se parten: el texto que se lee es el mismo.
- */
-function FraseEnPartes({ texto }: { texto: string }) {
-  return (
-    <>
-      {texto
-        .split(' · ')
-        .map((parte) => parte.replace(/^(\d+) /, '$1 '))
-        .join(' · ')}
-    </>
-  );
-}
-
-/**
- * Un dato hecho de partes cortas separadas por « · » («77,5 kg · 6 rep. · RIR 1»), en la tabla del detalle. Si no entra
- * en un renglón, baja una parte entera, con el separador al final del renglón de arriba: no queda «RIR» en un renglón y
- * su número en el otro. Una parte más ancha que su columna se parte adentro, como cualquier texto. El texto que se lee
- * es el mismo.
- */
-function EnPartes({ texto }: { texto: string }) {
-  const partes = texto.split(' · ');
-  if (partes.length === 1) return <>{texto}</>;
-  return (
-    <>
-      {partes.map((parte, i) => (
-        <Fragment key={i}>
-          <span className="parte-de-dato">{i < partes.length - 1 ? `${parte} ·` : parte}</span>
-          {i < partes.length - 1 ? ' ' : null}
-        </Fragment>
-      ))}
-    </>
   );
 }
 
