@@ -7720,6 +7720,18 @@ const solicitudesEnPantalla = (page) =>
             // En una ventana angosta la respuesta va debajo de su pregunta.
             respuestaDebajo: [...abierta.querySelectorAll('.lo-declarado__fila')].every((f) => f.querySelector('dd').getBoundingClientRect().top >= f.querySelector('dt').getBoundingClientRect().bottom - 1),
             pedidas: [...abierta.querySelectorAll('.preguntas-pedidas li')].map(t),
+            // Dónde quedó «Requerida» respecto del final de su pregunta: en ese mismo renglón o abajo, y si entraba al lado.
+            requeridas: [...abierta.querySelectorAll('.lo-declarado__fila dt, .preguntas-pedidas li')].flatMap((el) => {
+              const etiqueta = el.querySelector('.etiqueta-de-dato');
+              const pregunta = el.firstChild;
+              if (!etiqueta || pregunta?.nodeType !== Node.TEXT_NODE) return [];
+              const rango = document.createRange();
+              rango.selectNodeContents(pregunta);
+              const renglones = [...rango.getClientRects()];
+              const ultimo = renglones[renglones.length - 1];
+              const e = etiqueta.getBoundingClientRect();
+              return [{ renglones: renglones.length, alLado: e.top < ultimo.bottom && e.bottom > ultimo.top, entraba: ultimo.right + e.width + 8 <= el.getBoundingClientRect().right }];
+            }),
             sinResponder: t(abierta.querySelector('.solicitud-abierta__sin-responder')),
             historia: [...abierta.querySelectorAll('.historia-de-respuesta > li')].map((li) => ({
               tipo: li.dataset.version,
@@ -8103,6 +8115,15 @@ async function solicitudesDeInformacion() {
         conNumeros.filas.some((f) => /^\d+(,\d+)? \S+/.test(f.respuesta)) &&
         igual(conLaDeNumeros.detalle.historia.map((h) => [h.tipo, h.rige, h.titulo]), [['ORIGINAL', true, 'Respuesta original Vigente']]),
       conNumeros ? conNumeros.filas.map((f) => f.respuesta).join(' | ').slice(0, 240) : 'el escenario no tiene una respondida sin correcciones',
+    );
+    // La solicitud de seis preguntas es la más larga del escenario: cinco son requeridas, y varias ocupan dos renglones.
+    const etiquetas = conLaDeNumeros.detalle?.requeridas ?? [];
+    informar('F-51', '«Solicitudes», con la solicitud de seis preguntas abierta, a 1440 × 900', `${conLaDeNumeros.alto} px`);
+    comprobar(
+      'F-51',
+      'En el detalle, «Requerida» sigue a la última palabra de su pregunta: si entra al lado, no ocupa un renglón propio (con preguntas de dos renglones, cada fila medía un renglón más)',
+      etiquetas.length >= 3 && etiquetas.some((x) => x.renglones >= 2 && x.entraba) && etiquetas.every((x) => !x.entraba || x.alLado),
+      `${etiquetas.length} preguntas requeridas, ${etiquetas.filter((x) => x.renglones >= 2).length} de dos renglones o más: ${etiquetas.filter((x) => x.alLado).length} con la etiqueta al lado del final de la pregunta, ${etiquetas.filter((x) => x.entraba && !x.alLado).length} con la etiqueta abajo aunque entraba y ${etiquetas.filter((x) => !x.entraba).length} donde no entraba`,
     );
 
     // ── Una sin responder: se dice, sin tabla, sin historia y sin procedencia (no hay nada declarado) ────────────────

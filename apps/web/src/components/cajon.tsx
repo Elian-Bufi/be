@@ -45,6 +45,8 @@ export function Cajon({
     if (!d) return;
     if (abierto && !d.open) {
       d.showModal();
+      // El navegador ya lleva el foco a lo primero que lo admite, que es el título (por eso lleva `tabIndex`). Se pide
+      // igual: que al abrirse el foco esté ahí no tiene que depender de cómo lo resuelva cada navegador.
       tituloRef.current?.focus({ preventScroll: true });
     }
     if (!abierto && d.open) d.close();

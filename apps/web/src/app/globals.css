@@ -7856,9 +7856,18 @@ button.comida-del-dia__fila > .icono:last-child {
   border-top: 1px solid var(--borde);
 }
 
+/* La pregunta corre como texto, y «Requerida» sigue a su última palabra: no baja a un renglón propio si entra al lado. */
 .lo-declarado__fila dt,
-.lo-declarado__fila dd,
 .preguntas-pedidas li {
+  margin: 0;
+}
+
+.lo-declarado__fila dt .etiqueta-de-dato,
+.preguntas-pedidas li .etiqueta-de-dato {
+  margin-left: 0.25rem;
+}
+
+.lo-declarado__fila dd {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

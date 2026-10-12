@@ -359,13 +359,27 @@ function DetalleDeSolicitud({
   );
   const leyendoElFormulario = !formulario || formulario.tipo === 'cargando';
   const pregunta = (texto: string | null): ReactNode => texto ?? (leyendoElFormulario ? '…' : C.preguntaSinLeer);
+  /**
+   * Una pregunta pedida: su texto y, si se marcó así, «Requerida», que sigue a la última palabra. No ocupa un renglón
+   * propio si entra al lado: con preguntas de dos renglones, cada fila medía uno más.
+   */
+  const preguntaPedida = (f: { readonly pregunta: string | null; readonly requerida: boolean }): ReactNode => (
+    <>
+      {pregunta(f.pregunta)}
+      {f.requerida ? (
+        <>
+          {' '}
+          <span className="etiqueta-de-dato">{C.requerida}</span>
+        </>
+      ) : null}
+    </>
+  );
   /** Las preguntas pedidas, cuando no hay una respuesta que rija para mostrar al lado. */
   const soloPreguntas = declarado ? (
     <ul className="preguntas-pedidas">
       {declarado.filas.map((f) => (
         <li key={f.codigo} data-pregunta={f.codigo}>
-          {pregunta(f.pregunta)}
-          {f.requerida ? <span className="etiqueta-de-dato">{C.requerida}</span> : null}
+          {preguntaPedida(f)}
         </li>
       ))}
     </ul>
@@ -465,10 +479,7 @@ function DetalleDeSolicitud({
               <dl className="lo-declarado">
                 {declarado.filas.map((f) => (
                   <div key={f.codigo} className="lo-declarado__fila" data-pregunta={f.codigo}>
-                    <dt>
-                      {pregunta(f.pregunta)}
-                      {f.requerida ? <span className="etiqueta-de-dato">{C.requerida}</span> : null}
-                    </dt>
+                    <dt>{preguntaPedida(f)}</dt>
                     <dd>
                       {/* Una pregunta sin responder es un hueco: se dice, no se muestra vacía. */}
                       {f.valor !== null ? <span className="lo-declarado__valor">{f.valor}</span> : <span className="lo-declarado__sin-responder">{C.sinResponder}</span>}
