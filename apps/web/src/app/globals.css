@@ -1072,6 +1072,14 @@ details summary {
   }
 }
 
+/* El detalle al costado y un diálogo son superficies por sí mismos, estén en la ficha o en un área: adentro, las tapas
+   llevan su color. Van antes que la sección y el panel, que son superficies de adentro y ganan si los contienen. */
+.detalle-del-hecho .desplazable-x,
+.dialogo .desplazable-x {
+  --tapa-izquierda: var(--superficie);
+  --tapa-derecha: var(--superficie);
+}
+
 /* Dentro de una sección o de un panel, las tapas llevan el color de esa superficie: con el del fondo de la página se
    veían dos franjas oscuras a los lados de cada tabla, aunque no hubiera nada que desplazar. */
 .seccion .desplazable-x {

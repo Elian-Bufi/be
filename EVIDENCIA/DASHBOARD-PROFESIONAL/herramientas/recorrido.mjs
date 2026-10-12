@@ -4753,6 +4753,34 @@ const registrosEnPantalla = (page) =>
   });
 
 /**
+ * Lo que se desplaza de costado (`.desplazable-x`) dentro de una superficie —el detalle al costado, el panel de encima—
+ * lleva dos «tapas» que esconden la sombra cuando no hay nada que desplazar. Tienen que tener el color de esa
+ * superficie: con otro, a cada lado de la tabla queda una franja. Devuelve el color de la superficie y el de sus tapas,
+ * resueltos por el navegador (la tapa es una variable: se la prueba como fondo de un elemento que no queda en la página).
+ */
+const tapasDeLaSuperficie = (page, superficie) =>
+  page.evaluate((s) => {
+    const e = [...document.querySelectorAll(s)].find((x) => x.getClientRects().length > 0);
+    if (!e) return { fondo: null, tapas: [] };
+    const color = (valor) => {
+      const prueba = document.createElement('span');
+      prueba.style.backgroundColor = valor;
+      e.append(prueba);
+      const c = getComputedStyle(prueba).backgroundColor;
+      prueba.remove();
+      return c;
+    };
+    return {
+      fondo: getComputedStyle(e).backgroundColor,
+      tapas: [...e.querySelectorAll('.desplazable-x')].flatMap((x) => ['--tapa-izquierda', '--tapa-derecha'].map((p) => color(getComputedStyle(x).getPropertyValue(p).trim()))),
+    };
+  }, superficie);
+
+/** Las tapas de una superficie están bien si hay alguna y todas tienen su color. */
+const tapasBien = (t) => t.fondo !== null && t.tapas.length > 0 && t.tapas.every((c) => c === t.fondo);
+const tapasEnPalabras = (t) => `la superficie: ${t.fondo ?? 'no está'} · sus tapas: ${[...new Set(t.tapas)].join(', ') || 'no hay'}`;
+
+/**
  * Nutrición · Registros por día (maqueta 20; C-49, C-50, C-51 y C-53; F-15 a F-22). Lo esperado se calcula a mano con lo
  * que devuelven las dos lecturas de la API (el contexto de revisión y las comidas de la línea de tiempo del mismo
  * período): no se usa el módulo del dominio que arma la pantalla. Va dentro de `funcional`; solo, con
@@ -5257,6 +5285,13 @@ async function registrosDeNutricion(page, v) {
       '«Actualizar» con un registro abierto lo deja abierto al costado, con el registro en la dirección; la sección, que se vuelve a montar, no pasa por el panel de encima ni por un instante (a 1024 px el panel sí se abre: lo mira su comprobación)',
       trasActualizarElRegistro.panel === 0 && !!informada.titulo && trasActualizarElRegistro.titulo === informada.titulo && parametros(page).get('registro') === informadaE.opcion,
       `veces que el panel de encima estuvo abierto: ${trasActualizarElRegistro.panel} · al costado: «${trasActualizarElRegistro.titulo}»`,
+    );
+    const tapasDelRegistro = await tapasDeLaSuperficie(page, 'aside.detalle-del-hecho');
+    comprobar(
+      'C-53',
+      'La tabla de ingredientes del detalle no lleva una franja a los costados: las «tapas» de lo que se desplaza tienen el color del detalle donde está, no el del fondo de la página',
+      tapasBien(tapasDelRegistro),
+      tapasEnPalabras(tapasDelRegistro),
     );
   } else {
     informar('C-53', 'El registro de una comida con cantidades informadas', 'el escenario no tiene ninguna en los últimos 90 días: no se pudo mirar');
@@ -5879,6 +5914,8 @@ async function sesionesDeEntrenamiento(page, v) {
         resto: t(abierto),
       };
     });
+    // La única captura de los tiempos en pantalla: sale de esta respuesta armada, y se llama así para que no se confunda.
+    await captura(page, v, 'sesion-con-tiempos-simulados-1440-azul-noche');
     v.reglas.splice(v.reglas.indexOf(conTiempos), 1);
     const primera = tiemposEnPantalla.series[0] ?? [];
     const segunda = tiemposEnPantalla.series[1] ?? [];
@@ -5999,6 +6036,7 @@ async function sesionesDeEntrenamiento(page, v) {
     medida.columnas !== null && medida.columnas <= 900 && medida.listaAncho >= 600 && (medida.detalleAncho ?? 0) >= 500,
     `la lista: ${medida.listaAncho} px · el detalle: ${medida.detalleAncho} px`,
   );
+  const tapasAlCostado = await tapasDeLaSuperficie(page, 'aside.detalle-de-sesion');
   const faltasConDetalle = await axe(page);
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !document.querySelector('aside.detalle-de-sesion'), { timeout: 10_000 }).catch(() => {});
@@ -6032,6 +6070,7 @@ async function sesionesDeEntrenamiento(page, v) {
   await quieto(page, v);
   const angosto = await sesionesEnPantalla(page);
   const desborda = !(await sinDesborde(page));
+  const tapasDelPanel = await tapasDeLaSuperficie(page, 'dialog.dialogo--panel[open]');
   if (angosto.panel) await clic(page, 'dialog.dialogo--panel[open] button', 'Cerrar').catch(() => null);
   await pausa(200);
   await page.setViewport({ width: 1440, height: 900 });
@@ -6040,6 +6079,12 @@ async function sesionesDeEntrenamiento(page, v) {
     'A 1024 px el detalle de la sesión se abre encima, en un panel que retiene el foco, con la misma tabla; la página no desborda de costado',
     angosto.detalle === null && (angosto.panel?.texto ?? '').includes(nombreDeLaElegida ?? '···') && (angosto.panel?.tabla.length ?? 0) === (elegida?.tabla.length ?? -1) && !desborda,
     `panel: «${(angosto.panel?.texto ?? '').slice(0, 60)}» · ejercicios en la tabla: ${angosto.panel?.tabla.length ?? 0} · al costado: ${angosto.detalle ? 'sí' : 'no'}${desborda ? ' · DESBORDA' : ''}`,
+  );
+  comprobar(
+    'C-66',
+    'La tabla de las series no lleva una franja a los costados, ni al costado ni en el panel de encima: las «tapas» de lo que se desplaza tienen el color de la superficie donde está, no el del fondo de la página',
+    tapasBien(tapasAlCostado) && tapasBien(tapasDelPanel),
+    `al costado — ${tapasEnPalabras(tapasAlCostado)} · en el panel — ${tapasEnPalabras(tapasDelPanel)}`,
   );
   comprobar('—', 'Registros de Entrenamiento no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
 }
