@@ -420,9 +420,27 @@ function Dato({ rotulo, className, children }: { rotulo: string; className?: str
 }
 
 /**
- * Un dato hecho de partes separadas por « · » («77,5 kg · 6 rep. · RIR 1»). Si no entra en un renglón, baja una parte
- * entera, con el separador al final del renglón de arriba: no queda «RIR» en un renglón y su número en el otro. Una
- * parte más ancha que su columna se parte adentro, como cualquier texto. El texto que se lee es el mismo.
+ * Una frase hecha de partes separadas por « · » («3 series sin registrar · 1 serie con diferencias»), en la fila de una
+ * sesión. Las partes son largas y en una lista angosta no entran en un renglón: el texto corre como cualquier otro, pero
+ * el número no se separa de lo que cuenta («1» arriba y «serie con diferencias» abajo) y el separador queda al final del
+ * renglón de arriba, nunca al principio del de abajo. Son espacios que no se parten: el texto que se lee es el mismo.
+ */
+function FraseEnPartes({ texto }: { texto: string }) {
+  return (
+    <>
+      {texto
+        .split(' · ')
+        .map((parte) => parte.replace(/^(\d+) /, '$1 '))
+        .join(' · ')}
+    </>
+  );
+}
+
+/**
+ * Un dato hecho de partes cortas separadas por « · » («77,5 kg · 6 rep. · RIR 1»), en la tabla del detalle. Si no entra
+ * en un renglón, baja una parte entera, con el separador al final del renglón de arriba: no queda «RIR» en un renglón y
+ * su número en el otro. Una parte más ancha que su columna se parte adentro, como cualquier texto. El texto que se lee
+ * es el mismo.
  */
 function EnPartes({ texto }: { texto: string }) {
   const partes = texto.split(' · ');
@@ -472,10 +490,10 @@ function Fila({ fila, hoy, elegida, onAbrir }: { fila: FilaDeSesion; hoy: string
           {fila.fuente.tipo === 'correccion' ? <Corregida /> : null}
         </Dato>
         <Dato rotulo="Series" className="sesion-registrada__series">
-          <EnPartes texto={fila.series} />
+          <FraseEnPartes texto={fila.series} />
         </Dato>
         <Dato rotulo="Frente a lo indicado" className="sesion-registrada__frente">
-          <EnPartes texto={fila.frente} />
+          <FraseEnPartes texto={fila.frente} />
         </Dato>
         <Icono nombre="derecha" tamano={18} />
       </button>

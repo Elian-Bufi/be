@@ -6128,6 +6128,8 @@ async function sesionesDeEntrenamiento(page, v) {
         alCostado: !!document.querySelector('aside.detalle-de-sesion'),
         conLaRegla,
         sinLaRegla,
+        // Las frases de dos partes de la lista, tal como están en la página (sin normalizar los espacios).
+        frases: [...document.querySelectorAll('.sesion-registrada__frente')].map((c) => c.lastChild?.textContent ?? '').filter((x) => x.includes('·')),
       };
     });
     await page.setViewport({ width: 1440, height: 900 });
@@ -6142,6 +6144,16 @@ async function sesionesDeEntrenamiento(page, v) {
       'A 1280 px, en la tabla del detalle, lo que no entra en un renglón baja de a una parte entera: ninguna parte de un dato («RIR 1», «6 rep.») queda partida entre dos renglones',
       angosta.conLaRegla.partes > 0 && angosta.conLaRegla.partidas.length === 0,
       `${angosta.conLaRegla.partes} partes · partidas: ${angosta.conLaRegla.partidas.join(' | ') || 'ninguna'} · sin la regla (quitada en el navegador, para probar la medida): ${angosta.sinLaRegla.partidas.length} partidas${angosta.sinLaRegla.partidas.length > 0 ? `, la primera «${angosta.sinLaRegla.partidas[0]}»` : ''}`,
+    );
+    // En la lista las partes son frases y corren como cualquier texto; lo que no se parte es el espacio entre el número
+    // y lo que cuenta, y el que va antes del separador (U+00A0). Con espacios comunes quedaba «… · 1» y, abajo, «serie».
+    const NBSP = ' ';
+    const fraseBien = (x) => x.split(`${NBSP}· `).length >= 2 && !x.includes(' · ') && x.split(`${NBSP}· `).every((parte) => !/^\d+ /.test(parte));
+    comprobar(
+      'F-30',
+      'En la fila de una sesión, una frase de dos partes («1 serie con diferencias · un ejercicio no se compara») no deja el número separado de lo que cuenta ni el separador al principio de un renglón: esos dos espacios no se parten, y el texto que se lee no cambia',
+      angosta.frases.length > 0 && angosta.frases.every(fraseBien),
+      `${angosta.frases.length} frases de dos partes · la primera: «${(angosta.frases[0] ?? '').replaceAll(NBSP, '⍽')}» (⍽ es el espacio que no se parte)`,
     );
   } else {
     informar('F-30', 'Una sesión «Realizada con desvío», a 1280 px', 'el escenario no tiene ninguna en los últimos 90 días: no se pudo mirar');
