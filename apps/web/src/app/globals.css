@@ -6553,6 +6553,13 @@ button.comida-del-dia__fila > .icono:last-child {
   flex-basis: 100%;
 }
 
+/* Con el detalle abierto en una ventana de 1280 px, la columna mide menos que «Realizada con desvío»: la marca parte su
+   texto adentro de la columna, en vez de salirse y pisar la de las series. */
+.sesion-registrada__sesion .etiqueta-de-dato {
+  max-width: 100%;
+  white-space: normal;
+}
+
 .sesion-registrada__tenue {
   color: var(--tenue);
 }

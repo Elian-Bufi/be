@@ -5890,7 +5890,11 @@ async function sesionesDeEntrenamiento(page, v) {
           session: { elapsed: { ms: 3_260_000, quality: 'MEASURED' }, pauses: { ms: 190_000, quality: 'MEASURED' }, withoutPauses: { ms: 3_070_000, quality: 'ESTIMATED' } },
           exercises: [{ prescriptionId: p1.prescriptionId, duration: { ms: 905_000, quality: 'MEASURED' } }],
           unassigned: { ms: 65_000, quality: 'MEASURED' },
-          rests: [{ restId: 'descanso-del-recorrido-1', prescriptionId: p1.prescriptionId, setIndex: 1, startedAt: instante(60), finishedAt: instante(165), duration: { ms: 105_000, quality: 'MEASURED' }, recommendedSeconds: 90, differenceMs: 15_000 }],
+          // El primer descanso, medido. El segundo quedó abierto (la app se cerró en el medio): no tiene fin ni duración.
+          rests: [
+            { restId: 'descanso-del-recorrido-1', prescriptionId: p1.prescriptionId, setIndex: 1, startedAt: instante(60), finishedAt: instante(165), duration: { ms: 105_000, quality: 'MEASURED' }, recommendedSeconds: 90, differenceMs: 15_000 },
+            { restId: 'descanso-del-recorrido-2', prescriptionId: p1.prescriptionId, setIndex: 2, startedAt: instante(230), finishedAt: null, duration: { ms: null, quality: 'INCOMPLETE' }, recommendedSeconds: 90, differenceMs: null },
+          ],
           timedSets: [{ timingId: 'serie-del-recorrido-1', prescriptionId: p1.prescriptionId, setIndex: 1, startedAt: instante(10), finishedAt: instante(50), duration: { ms: 40_000, quality: 'MEASURED' } }],
         },
       },
@@ -5919,18 +5923,20 @@ async function sesionesDeEntrenamiento(page, v) {
     v.reglas.splice(v.reglas.indexOf(conTiempos), 1);
     const primera = tiemposEnPantalla.series[0] ?? [];
     const segunda = tiemposEnPantalla.series[1] ?? [];
+    const tercera = tiemposEnPantalla.series[2] ?? [];
     comprobar(
       'F-27',
-      'Con tiempos marcados (una respuesta armada por el recorrido: el escenario no tiene ninguna sesión con tiempos), el detalle dice los tres tiempos de la sesión, cada uno con su certeza, y «Descansos y duración de cada serie» abre en el lugar el descanso de cada serie frente al recomendado, su duración y el tiempo de cada ejercicio; una serie sin descanso marcado lo dice con palabras',
+      'Con tiempos marcados (una respuesta armada por el recorrido: el escenario no tiene ninguna sesión con tiempos), el detalle dice los tres tiempos de la sesión, cada uno con su certeza, y «Descansos y duración de cada serie» abre en el lugar el descanso de cada serie frente al recomendado, su duración y el tiempo de cada ejercicio; un descanso que quedó abierto dice «Incompleto» (no se completa con otra hora) y una serie sin descanso marcado lo dice con palabras',
       /Tiempo transcurrido 54:20 · medido/.test(tiemposEnPantalla.renglon ?? '') &&
         /Pausas 03:10 · medido/.test(tiemposEnPantalla.renglon ?? '') &&
         /Sin pausas 51:10 · estimado/.test(tiemposEnPantalla.renglon ?? '') &&
         (tiemposEnPantalla.ejercicio ?? '').includes('15:05 · medido') &&
         igual(primera, ['1', '01:45 registrado · 01:30 recomendado · +00:15', 'Duración medida 00:40']) &&
-        segunda[1] === 'Sin descanso marcado' &&
+        segunda[1] === 'Incompleto · 01:30 recomendado' &&
+        tercera[1] === 'Sin descanso marcado' &&
         /Sin ejercicio asignado: 01:05 · medido/.test(tiemposEnPantalla.resto ?? '') &&
         !tiemposEnPantalla.series.flat().includes('—'),
-      `«${(tiemposEnPantalla.renglon ?? '').slice(0, 110)}» · la serie 1: ${primera.join(' | ') || 'sin tabla'} · la serie 2: ${segunda.join(' | ')} · ${(tiemposEnPantalla.ejercicio ?? '').slice(0, 60)}`,
+      `«${(tiemposEnPantalla.renglon ?? '').slice(0, 110)}» · la serie 1: ${primera.join(' | ') || 'sin tabla'} · la serie 2: ${segunda.join(' | ')} · la serie 3: ${tercera.join(' | ')} · ${(tiemposEnPantalla.ejercicio ?? '').slice(0, 60)}`,
     );
 
     // ── Lo que quedó a un clic se abre: la sesión en el plan, el gráfico por serie y el registro original ─────────
@@ -6086,6 +6092,38 @@ async function sesionesDeEntrenamiento(page, v) {
     tapasBien(tapasAlCostado) && tapasBien(tapasDelPanel),
     `al costado — ${tapasEnPalabras(tapasAlCostado)} · en el panel — ${tapasEnPalabras(tapasDelPanel)}`,
   );
+
+  // ── A 1280 px, con una sesión abierta, la lista queda angosta: ningún dato se sale de su columna ──────────────
+  // La marca más ancha de una fila es «Realizada con desvío»: se abre esa sesión, en la vista que la trae.
+  const conDesvioE = E90.sesiones.find((s) => s.condicion === CONDICION.COMPLETED_WITH_DEVIATION) ?? null;
+  if (conDesvioE) {
+    await page.setViewport({ width: 1280, height: 900 });
+    await entrar(`${BASE}&p=90&ver=con-desvio&sesion=${conDesvioE.id}`);
+    await page.waitForSelector('aside.detalle-de-sesion', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const angosta = await page.evaluate(() => {
+      const t = (e) => e.innerText.replace(/\s+/g, ' ').trim();
+      const celdas = [...document.querySelectorAll('.sesion-registrada__fila > span')];
+      // Un dato está fuera de su columna si su borde derecho pasa el de la celda que lo contiene.
+      const fuera = celdas.flatMap((c) => [...c.children].filter((x) => x.getBoundingClientRect().right > c.getBoundingClientRect().right + 1).map(t));
+      return {
+        celdas: celdas.length,
+        fuera,
+        marcas: [...document.querySelectorAll('.sesion-registrada__fila .etiqueta-de-dato')].map(t),
+        lista: Math.round(document.querySelector('.sesiones__filas')?.getBoundingClientRect().width ?? 0),
+        alCostado: !!document.querySelector('aside.detalle-de-sesion'),
+      };
+    });
+    await page.setViewport({ width: 1440, height: 900 });
+    comprobar(
+      'F-30',
+      'A 1280 px, con una sesión abierta al costado, la lista queda angosta y ningún dato se sale de su columna: la marca «Realizada con desvío» parte su texto adentro, sin pisar la columna de las series',
+      angosta.alCostado && angosta.marcas.includes(CONDICION.COMPLETED_WITH_DEVIATION) && angosta.fuera.length === 0,
+      `la lista: ${angosta.lista} px · ${angosta.celdas} datos · marcas: ${angosta.marcas.join(', ') || 'ninguna'} · fuera de su columna: ${angosta.fuera.join(' | ') || 'ninguno'}`,
+    );
+  } else {
+    informar('F-30', 'Una sesión «Realizada con desvío», a 1280 px', 'el escenario no tiene ninguna en los últimos 90 días: no se pudo mirar');
+  }
   comprobar('—', 'Registros de Entrenamiento no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
 }
 
