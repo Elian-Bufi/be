@@ -64,20 +64,17 @@ import { api, type Resultado } from '../../../../lib/api';
 import { ICONO_DE_FALLA, motivoDeFalla, razonDeFalla, type MotivoDeFalla } from '../../../../lib/fallas';
 import { diaDelAnioEnCurso, fecha, nombreDelDiaDeLaSemana } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
-import { ControlDePeriodo, type PeriodoDelControl } from '../control-de-periodo';
+import { ControlDePeriodo } from '../control-de-periodo';
 import { useCambiosSinGuardar } from '../marco-del-area';
+import { ATAJOS_DE_UN_AREA, cambiosDePeriodo, MAXIMO_DE_DIAS_DE_UN_AREA, periodoALaVista, periodoPedidoEnUnArea, type PeriodoDeUnArea } from '../periodo-de-un-area';
 import { useDetalleAlCostado } from '../seguimiento/al-costado';
-import { diasEntre, hoyEn, PRESETS_DE_PERIODO, restarDias } from '../seguimiento/estado';
+import { hoyEn } from '../seguimiento/estado';
 import { ICONO_DEL_RASGO } from '../seguimiento/hecho-en-un-renglon';
 import { DetalleDeRegistroDeComida } from './detalle-de-registro';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 
 type Contexto = ContextoDeRevisionResponse['data'];
 
-/** Lo mismo que admite el contexto de una revisión (API-NUT-17): hasta 92 días, contando los dos extremos. */
-const MAXIMO_DE_DIAS = 92;
-const ATAJOS = PRESETS_DE_PERIODO.filter((p): p is (typeof PRESETS_DE_PERIODO)[number] & { dias: 7 | 30 | 90 } => p.dias <= MAXIMO_DE_DIAS);
-type DiasDeAtajo = (typeof ATAJOS)[number]['dias'];
 /** Cuántos días se muestran de una vez; «Ver días anteriores» suma otros tantos. La lectura trae el período entero. */
 const DIAS_DE_UNA_VEZ = 14;
 /** De a cuántos registros se lee la línea de tiempo, y hasta cuántas páginas (92 días de cuatro comidas entran). */
@@ -88,20 +85,6 @@ const PAGINAS = 10;
 const VISTA_DEL_PARAMETRO: Readonly<Record<string, ClaveDeVistaDeRegistros>> = { distintas: 'DISTINTAS', 'sin-confirmar': 'SIN_CONFIRMAR', 'comida-diferente': 'COMIDA_DIFERENTE', 'sin-registro': 'SIN_REGISTRO' };
 const PARAMETRO_DE_LA_VISTA = Object.fromEntries(Object.entries(VISTA_DEL_PARAMETRO).map(([k, v]) => [v, k])) as Partial<Record<ClaveDeVistaDeRegistros, string>>;
 
-const FECHA = /^\d{4}-\d{2}-\d{2}$/;
-
-/**
- * El período pedido en la dirección: un atajo (`p=7|30|90`) o un rango propio (`desde` y `hasta`, hasta 92 días). Sin
- * ninguno, `null`: la API propone el suyo (los últimos siete días) y la pantalla dice cuál es.
- */
-function periodoPedido(parametros: { get(clave: string): string | null }, hoy: string): PeriodoDelControl<DiasDeAtajo> | null {
-  const desde = parametros.get('desde');
-  const hasta = parametros.get('hasta');
-  if (desde && hasta && FECHA.test(desde) && FECHA.test(hasta) && desde <= hasta && diasEntre(desde, hasta) <= MAXIMO_DE_DIAS) return { preset: null, desde, hasta };
-  const atajo = ATAJOS.find((a) => String(a.dias) === parametros.get('p'));
-  return atajo ? { preset: atajo.dias, desde: restarDias(hoy, atajo.dias - 1), hasta: hoy } : null;
-}
-
 type Linea = { readonly tipo: 'cargando' } | { readonly tipo: 'error'; readonly motivo: MotivoDeFalla } | { readonly tipo: 'listo'; readonly entradas: readonly EntradaDeLineaDeTiempo[]; readonly completa: boolean };
 
 export function VistaDeRegistros() {
@@ -109,7 +92,7 @@ export function VistaDeRegistros() {
   const hoy = hoyEn();
   const claveDelPeriodo = `${parametros.get('p') ?? ''}|${parametros.get('desde') ?? ''}|${parametros.get('hasta') ?? ''}`;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const pedido = useMemo(() => periodoPedido(parametros, hoy), [claveDelPeriodo, hoy]);
+  const pedido = useMemo(() => periodoPedidoEnUnArea(parametros, hoy), [claveDelPeriodo, hoy]);
   const [r, setR] = useState<Resultado<{ data: Contexto }> | null>(null);
   const [linea, setLinea] = useState<Linea>({ tipo: 'cargando' });
   const generacion = useRef(0);
@@ -157,9 +140,8 @@ export function VistaDeRegistros() {
     void leerLaLinea(contexto.period, generacion.current);
   };
   // El control dice el período que se está viendo: el pedido, o el que propuso la API.
-  const periodo: PeriodoDelControl<DiasDeAtajo> | null = pedido ?? (contexto ? { preset: atajoDe(contexto.period.start, contexto.period.end, hoy), desde: contexto.period.start, hasta: contexto.period.end } : null);
-  const elegirPeriodo = (p: PeriodoDelControl<DiasDeAtajo>) =>
-    ir({ p: p.preset ? String(p.preset) : null, desde: p.preset ? null : p.desde, hasta: p.preset ? null : p.hasta, registro: null }, { agregarAlHistorial: true });
+  const periodo = periodoALaVista(pedido, contexto?.period ?? null, hoy);
+  const elegirPeriodo = (p: PeriodoDeUnArea) => ir({ ...cambiosDePeriodo(p), registro: null }, { agregarAlHistorial: true });
 
   return (
     <section className="registros" aria-labelledby="titulo-registros">
@@ -169,19 +151,13 @@ export function VistaDeRegistros() {
           Lo indicado y lo registrado, día por día. Lo que no se registró dice «{COPY_NUTRICION.sinRegistro}»: no se interpreta.
         </p>
         {/* El período queda fuera del estado de lectura: si no se puede leer, sigue ahí para cambiarlo (B10-10:376). */}
-        {periodo ? <ControlDePeriodo periodo={periodo} atajos={ATAJOS} maximoDeDias={MAXIMO_DE_DIAS} onElegir={elegirPeriodo} /> : null}
+        {periodo ? <ControlDePeriodo periodo={periodo} atajos={ATAJOS_DE_UN_AREA} maximoDeDias={MAXIMO_DE_DIAS_DE_UN_AREA} onElegir={elegirPeriodo} /> : null}
       </div>
       <EstadoDeLectura r={r} onReintentar={() => void cargar()}>
         {contexto ? linea.tipo === 'cargando' ? <Cargando /> : <Contraste contexto={contexto} linea={linea} hoy={hoy} onReintentarLaLinea={reintentarLaLinea} onCambio={() => void cargar(true)} /> : null}
       </EstadoDeLectura>
     </section>
   );
-}
-
-/** El atajo que coincide con un período, si termina hoy y dura lo que dura un atajo: para marcarlo en el control. */
-function atajoDe(desde: string, hasta: string, hoy: string): DiasDeAtajo | null {
-  if (hasta !== hoy) return null;
-  return ATAJOS.find((a) => a.dias === diasEntre(desde, hasta))?.dias ?? null;
 }
 
 const UNIDAD: readonly [string, string] = ['comida', 'comidas'];

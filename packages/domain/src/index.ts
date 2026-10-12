@@ -90,4 +90,5 @@ export * from './preguntas-profesionales';
 export * from './sintesis-del-resumen';
 export * from './contraste-de-comida';
 export * from './registros-de-nutricion';
+export * from './registros-de-entrenamiento';
 export * from './iconos';

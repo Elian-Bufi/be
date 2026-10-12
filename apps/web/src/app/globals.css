@@ -6453,6 +6453,304 @@ button.comida-del-dia__fila > .icono:last-child {
   }
 }
 
+/* ─── Entrenamiento · Registros (WP-ESCRITORIO-AREAS, parte 2; maqueta 25) ───────── */
+/* Una fila por sesión, de la más nueva a la más vieja, y el detalle al costado: una tabla con cada serie una sola vez.
+   Comparte con Registros de Nutrición el encabezado, las vistas y los nombres de las columnas (`.registros*`). */
+.sesiones__mas-filtros {
+  margin-left: auto;
+}
+
+.sesiones__filtros {
+  align-items: flex-start;
+  margin: 0;
+}
+
+/* Las columnas de una sesión: el día, la sesión con su condición, las series y cómo quedaron. La de las series no baja
+   de lo que ocupa «12 de 12 registradas» en un renglón, también con el detalle abierto al costado. */
+.sesiones__lista {
+  --columnas-de-una-sesion: 5.5rem minmax(0, 1.25fr) minmax(9.25rem, 0.9fr) minmax(0, 1.5fr) 1.15rem;
+}
+
+.sesiones__columnas {
+  grid-template-columns: var(--columnas-de-una-sesion);
+  padding: 0 0.9rem 0.25rem;
+}
+
+/* Las sesiones van juntas en una tarjeta, separadas por una línea: son una lista, no tarjetas sueltas. */
+.sesiones__filas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.sesion-registrada + .sesion-registrada {
+  border-top: 1px solid var(--borde);
+}
+
+.sesion-registrada__fila {
+  display: grid;
+  grid-template-columns: var(--columnas-de-una-sesion);
+  align-items: center;
+  gap: 0.15rem 0.9rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.45rem 0.9rem;
+  border: 0;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sesion-registrada__fila:hover {
+  background: var(--fondo-suave);
+}
+
+.sesion-registrada__fila:focus-visible {
+  outline-offset: -3px;
+}
+
+.sesion-registrada__fila[aria-current='true'] {
+  box-shadow: inset 0 0 0 2px var(--boton-secundario-borde);
+  border-radius: 12px;
+}
+
+.sesion-registrada__fila > .icono:last-child {
+  color: var(--tenue);
+}
+
+.sesion-registrada__dia,
+.sesion-registrada__sesion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.sesion-registrada__sesion {
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 0.2rem 0.6rem;
+}
+
+/* El nombre de la sesión ocupa su renglón; la condición y «Corregida» van debajo, una al lado de la otra. */
+.sesion-registrada__sesion > strong {
+  flex-basis: 100%;
+}
+
+.sesion-registrada__tenue {
+  color: var(--tenue);
+}
+
+.sesiones__sin-sesion {
+  margin: 0;
+}
+
+.sesiones__sin-sesion p {
+  margin: 0;
+}
+
+.sesiones__sin-sesion p + p {
+  margin-top: 0.3rem;
+}
+
+.sesiones__a-analizar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+/* El detalle de una sesión es una tabla de cuatro columnas: pide más ancho que el de un registro de comida. Con el
+   detalle abierto, la lista y el detalle se reparten la ventana por mitades. */
+.sesiones__cuerpo[data-con-detalle] {
+  grid-template-columns: minmax(0, 1fr) minmax(32rem, 1fr);
+}
+
+.detalle-de-sesion__cuando {
+  margin: 0.2rem 0 0.6rem;
+}
+
+.detalle-de-sesion .estado-de-grafico {
+  margin: 0.6rem 0;
+}
+
+.tabla-de-series {
+  width: 100%;
+  margin: 0.4rem 0 0;
+  border-collapse: collapse;
+  font-size: 0.97rem;
+}
+
+.tabla-de-series th,
+.tabla-de-series td {
+  padding: 0.28rem 0.6rem 0.28rem 0;
+  border-bottom: 1px solid var(--borde);
+  vertical-align: top;
+  text-align: left;
+  font-weight: 400;
+}
+
+.tabla-de-series thead th {
+  color: var(--tenue);
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-bottom-width: 2px;
+}
+
+.tabla-de-series tbody th[scope='row'] {
+  width: 2.75rem;
+  color: var(--tenue);
+}
+
+/* La tabla de cada serie frente a lo indicado: columnas de ancho fijo, para que lo indicado y lo registrado queden uno
+   debajo del otro y se lean en un renglón cuando entran. Lo que no entra, baja. */
+.tabla-de-series--frente-a-lo-indicado {
+  table-layout: fixed;
+}
+
+.tabla-de-series--frente-a-lo-indicado thead th:nth-child(1) {
+  width: 2.75rem;
+}
+
+/* Lo indicado y lo registrado ocupan lo que pide «87,5 kg · 6 rep. · RIR 1»; lo demás es para cómo quedó la serie. */
+.tabla-de-series--frente-a-lo-indicado thead th:nth-child(2),
+.tabla-de-series--frente-a-lo-indicado thead th:nth-child(3) {
+  width: 28%;
+}
+
+/* El renglón de un ejercicio: su nombre y cuántas series se registraron. */
+.tabla-de-series__ejercicio th {
+  padding-top: 0.6rem;
+  border-bottom-color: var(--borde-fuerte, var(--borde));
+}
+
+.tabla-de-series__ejercicio strong {
+  font-weight: 700;
+}
+
+.tabla-de-series__cuenta {
+  color: var(--tenue);
+}
+
+.tabla-de-series__aviso,
+.tabla-de-series__nota {
+  display: block;
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+/* La serie con una diferencia va en negrita. No alcanza sola: su última celda dice cuál es la diferencia. */
+.tabla-de-series tr[data-con-diferencia] > th,
+.tabla-de-series tr[data-con-diferencia] > td {
+  font-weight: 700;
+}
+
+.tabla-de-series tr[data-con-diferencia] .tabla-de-series__nota {
+  font-weight: 400;
+}
+
+.detalle-de-sesion__tiempos {
+  margin-top: 0.85rem;
+}
+
+.detalle-de-sesion__tiempos > p {
+  margin: 0 0 0.2rem;
+}
+
+/* Los tres tiempos de la sesión, uno al lado del otro; lo que no entra, baja. */
+.datos-de-tiempo--en-un-renglon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1.25rem;
+  margin: 0;
+}
+
+.datos-de-tiempo--en-un-renglon > div {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.datos-de-tiempo--en-un-renglon dt {
+  color: var(--tenue);
+  font-weight: 400;
+}
+
+/* Lo demás de la sesión, a un clic: cada cosa se abre en su lugar. */
+.detalle-de-sesion__mas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.85rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.detalle-de-sesion__mas summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.5rem;
+  color: var(--enlace);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.detalle-de-sesion__mas summary::-webkit-details-marker {
+  display: none;
+}
+
+.detalle-de-sesion__mas summary::after {
+  content: '▸';
+  margin-left: 0.1rem;
+}
+
+.detalle-de-sesion__mas details[open] > summary::after {
+  content: '▾';
+}
+
+.detalle-de-sesion__mas details[open] {
+  padding-bottom: 0.6rem;
+}
+
+.detalle-de-sesion__mas h4 {
+  margin: 0.7rem 0 0.2rem;
+}
+
+/* En una ventana angosta las cuatro columnas no entran: cada dato de la sesión va en su renglón, con su rótulo dicho
+   para el lector de pantalla. */
+@media (max-width: 60rem) {
+  .sesion-registrada__fila {
+    grid-template-columns: minmax(0, 1fr) 1.15rem;
+  }
+
+  .sesion-registrada__fila > :not(.icono) {
+    grid-column: 1;
+  }
+
+  .sesion-registrada__fila > .icono:last-child {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .sesion-registrada__dia {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .sesiones__mas-filtros {
+    margin-left: 0;
+  }
+}
+
 /* ─── El Espacio profesional (WP-ESCRITORIO-AMABLE, parte 5) ─────────────────────── */
 /* Primero lo que hay que hacer y, al lado, a quién abrir: dos tarjetas. Usa el ancho de la ficha (hasta 100 rem); el
    formulario y la lista de solicitudes, que antes ocupaban dos tarjetas más, se abren cuando hacen falta. */

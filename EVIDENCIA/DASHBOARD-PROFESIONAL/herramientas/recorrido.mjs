@@ -1,7 +1,7 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio|areas|registros|estimacion]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio|areas|registros|sesiones|estimacion]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
@@ -27,6 +27,9 @@
 //   de poder leerse se mira ahí con respuestas simuladas en el navegador, y con una revocación real en `descartable`.
 // - Nutrición · Registros por día (WP-ESCRITORIO-AREAS, parte 1) se comprueba en `registrosDeNutricion`, en esa misma
 //   sesión; solo, con `registros`. Lo esperado sale de las dos lecturas de la API, calculado a mano.
+// - Entrenamiento · Registros por sesión (WP-ESCRITORIO-AREAS, parte 2) se comprueba en `sesionesDeEntrenamiento`, en
+//   esa misma sesión; solo, con `sesiones`. Lo esperado sale del contexto de revisión, del plan de cada versión y de la
+//   lista de versiones, calculado a mano.
 // - La estimación del profesional sobre una comida diferente (`estimacionDeUnaComida`) ESCRIBE en el escenario: no va
 //   dentro de `funcional`. Corre sola, con `estimacion`, y última en la pasada completa.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
@@ -5381,6 +5384,666 @@ async function registrosDeNutricion(page, v) {
   comprobar('—', 'Registros de Nutrición no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
 }
 
+// ─── Entrenamiento · Registros (WP-ESCRITORIO-AREAS, parte 2) ──────────────────────────────────────────────────
+
+/** Lo que muestra Entrenamiento · Registros: las vistas, las filas que están a la vista y el detalle. */
+const sesionesEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const aLaVista = (e) => (e && e.getClientRects().length > 0 ? e : null);
+    const tabla = (d) =>
+      [...(d?.querySelectorAll('table.tabla-de-series tbody[data-ejercicio]') ?? [])].map((tb) => ({
+        ejercicio: t(tb.querySelector('.tabla-de-series__ejercicio strong')),
+        cabecera: t(tb.querySelector('.tabla-de-series__ejercicio')),
+        series: [...tb.querySelectorAll('tr:not(.tabla-de-series__ejercicio)')].map((tr) => ({
+          celdas: [...tr.children].map(t),
+          conDiferencia: tr.dataset.conDiferencia === 'si',
+          estado: tr.dataset.estado,
+          peso: Number(getComputedStyle(tr.children[3]).fontWeight),
+        })),
+      }));
+    const detalle = aLaVista(document.querySelector('aside.detalle-de-sesion'));
+    const panel = aLaVista(document.querySelector('dialog.dialogo--panel[open]'));
+    return {
+      titulo: t(document.querySelector('#titulo-sesiones')),
+      periodo: t(aLaVista(document.querySelector('.sesiones .periodo-del-seguimiento__boton'))),
+      vistas: [...document.querySelectorAll('.sesiones .vista-de-la-linea')].filter(aLaVista).map((b) => ({
+        vista: b.dataset.vista,
+        cuenta: b.querySelector('.vista-de-la-linea__cuenta')?.firstChild?.textContent?.trim() ?? null,
+        dice: t(b.querySelector('.vista-de-la-linea__cuenta')),
+        elegida: b.getAttribute('aria-pressed'),
+        nombre: [...b.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).join(''),
+      })),
+      cuenta: t(aLaVista(document.querySelector('.sesiones .registros__cuenta'))),
+      columnas: [...document.querySelectorAll('.sesiones__columnas span')].map((s) => s.textContent.trim()),
+      filas: [...document.querySelectorAll('.sesion-registrada')].filter(aLaVista).map((li) => {
+        const f = li.querySelector('.sesion-registrada__fila');
+        return {
+          id: f?.dataset.sesion ?? null,
+          clase: li.dataset.clase,
+          dia: t(li.querySelector('.sesion-registrada__dia')),
+          sesion: t(li.querySelector('.sesion-registrada__sesion')),
+          series: t(li.querySelector('.sesion-registrada__series')),
+          frente: t(li.querySelector('.sesion-registrada__frente')),
+          esBoton: f?.tagName === 'BUTTON',
+          elegida: f?.getAttribute('aria-current') === 'true',
+        };
+      }),
+      detalle: detalle
+        ? { titulo: t(detalle.querySelector('h3')), texto: t(detalle), cuando: t(detalle.querySelector('.detalle-de-sesion__cuando')), conElFoco: document.activeElement === detalle.querySelector('h3'), tabla: tabla(detalle), tiempos: t(detalle.querySelector('.detalle-de-sesion__tiempos')), mas: [...detalle.querySelectorAll('.detalle-de-sesion__mas summary')].map(t) }
+        : null,
+      panel: panel ? { texto: t(panel), tabla: tabla(panel) } : null,
+      masSesiones: t(aLaVista(document.querySelector('.sesiones .linea__mas'))),
+      vacio: t(aLaVista(document.querySelector('.sesiones .estado-vacio'))),
+      falla: t(aLaVista(document.querySelector('.sesiones > .estado-de-grafico--error, .sesiones .estado-de-grafico--error'))),
+      sinSesion: t(aLaVista(document.querySelector('.sesiones__sin-sesion'))),
+      aAnalizar: aLaVista(document.querySelector('.sesiones__a-analizar a'))?.getAttribute('href') ?? null,
+      titulos: [...document.querySelectorAll('.sesiones h2, .sesiones h3')].filter(aLaVista).map(t),
+      alto: document.documentElement.scrollHeight,
+    };
+  });
+
+/**
+ * Entrenamiento · Registros por sesión (maqueta 25; C-66, C-67 y C-68; F-24 en adelante). Lo esperado se calcula a mano
+ * con lo que devuelve la API: el contexto de revisión (las sesiones registradas), el plan de cada versión del período
+ * (lo indicado de cada serie) y la lista de versiones (su número). Va dentro de `funcional`; solo, con
+ * `node recorrido.mjs sesiones`.
+ */
+async function sesionesDeEntrenamiento(page, v) {
+  const A = estado.aseId;
+  const BASE = `/pro/advisees/training?id=${A}&vista=ejecuciones`;
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const num = (n) => new Intl.NumberFormat('es-AR').format(n);
+  const pedidos = (fragmento, desde) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+  const LISTA = '.sesiones .sesion-registrada, .sesiones .estado-vacio';
+  const entrar = async (ruta) => {
+    await cupo(v, 60);
+    const desde = v.urls.length;
+    await ir(page, ruta);
+    await page.waitForSelector('#titulo-sesiones', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    await page.waitForSelector(LISTA, { timeout: 30_000 }).catch(() => {});
+    await page.evaluate(() => window.scrollTo(0, 0));
+    return desde;
+  };
+  /** Pide las sesiones anteriores hasta que estén todas a la vista (la lista se muestra de a quince). */
+  const verTodas = async () => {
+    while (await page.$('.sesiones .linea__mas button')) {
+      await clic(page, '.sesiones .linea__mas button', 'Ver sesiones anteriores').catch(() => null);
+      await pausa(150);
+    }
+  };
+  const salir = async () => {
+    await cupo(v, 60);
+    await ir(page, `/pro/advisees/training?id=${A}&vista=resumen`);
+    await page.waitForFunction(() => !document.querySelector('#titulo-sesiones'), { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+  };
+  const leerLosPlanes = async (ctx) => {
+    const planes = new Map();
+    for (const planId of [...new Set(ctx.registeredExecutions.map((x) => x.planId))]) planes.set(planId, (await leerApi(v, `/training/plans/${planId}/detail`)).data);
+    return planes;
+  };
+
+  // ── Lo esperado, a mano ─────────────────────────────────────────────────────────────────────────────────────
+  const CONDICION = { COMPLETED: 'Realizada', COMPLETED_WITH_DEVIATION: 'Realizada con desvío', NOT_COMPLETED: 'No realizada' };
+  const relReps = (o, r) => (!o ? 'SIN_OBJETIVO' : r === null ? 'SIN_DATO' : r < ('min' in o ? o.min : o.value) ? 'DEBAJO' : r > ('max' in o ? o.max : o.value) ? 'ENCIMA' : 'DENTRO');
+  const relRir = (o, r) => (o === null ? 'SIN_OBJETIVO' : r === null ? 'SIN_DATO' : r < o ? 'DEBAJO' : r > o ? 'ENCIMA' : 'IGUAL');
+  const relCarga = (o, r) => (o === null ? 'SIN_OBJETIVO' : r === null ? 'SIN_DATO' : o.unit !== r.unit ? 'OTRA_UNIDAD' : r.value < o.value ? 'DEBAJO' : r.value > o.value ? 'ENCIMA' : 'IGUAL');
+  const PALABRA = { DEBAJO: 'por debajo', ENCIMA: 'por encima', SIN_DATO: 'sin dato', OTRA_UNIDAD: 'otra unidad: no se compara' };
+  const cuantasSeries = (n) => `${n} ${n === 1 ? 'serie' : 'series'}`;
+  const mayuscula = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  /** Cómo quedó una serie registrada frente a su objetivo, con las palabras que tiene que decir la tabla. */
+  const frenteDeLaSerie = (planificada, objetivo, s) => {
+    const reps = relReps(planificada.repetitions, s.completedRepetitions);
+    const rir = relRir(objetivo?.rir ?? null, s.rir);
+    const carga = relCarga(objetivo?.suggestedLoad ?? null, s.load);
+    const partes = [];
+    if (reps !== 'SIN_OBJETIVO' && reps !== 'DENTRO') partes.push(`Rep.: ${PALABRA[reps]}`);
+    if (rir !== 'SIN_OBJETIVO' && rir !== 'IGUAL') partes.push(`RIR: ${PALABRA[rir]}`);
+    // Lo de la carga va aparte, en un renglón propio de la misma celda: se dice, y no cuenta como diferencia.
+    const deLaCarga = carga === 'DEBAJO' || carga === 'ENCIMA' ? `Carga: ${PALABRA[carga]} de la sugerida` : carga !== 'SIN_OBJETIVO' && carga !== 'IGUAL' ? `Carga: ${PALABRA[carga]}` : null;
+    const sinObjetivo = reps === 'SIN_OBJETIVO' && rir === 'SIN_OBJETIVO' && carga === 'SIN_OBJETIVO';
+    const principal = sinObjetivo ? 'Sin objetivo: no se compara' : reps === 'SIN_OBJETIVO' && rir === 'SIN_OBJETIVO' ? 'Sin objetivo de repeticiones ni de RIR' : partes.length === 0 ? 'Dentro de lo indicado' : partes.join(' · ');
+    return {
+      conDiferencia: ['DEBAJO', 'ENCIMA'].includes(reps) || ['DEBAJO', 'ENCIMA'].includes(rir),
+      conDato: reps === 'SIN_DATO' || rir === 'SIN_DATO',
+      comparada: !sinObjetivo,
+      texto: [principal, deLaCarga].filter(Boolean).join(' '),
+    };
+  };
+  /** Las sesiones del período, de la más nueva a la más vieja, con lo que tiene que decir cada fila y su tabla. */
+  const esperado = (ctx, planes) => {
+    const ejercicioDe = new Map();
+    for (const x of ctx.registeredExecutions) for (const p of x.plannedSession.prescriptions) ejercicioDe.set(p.exerciseVersionId, p.exerciseId);
+    const sesiones = ctx.registeredExecutions.map((x) => {
+      const vista = x.effectiveView;
+      const rige = vista.kind === 'CORRECTED' ? (x.corrections.find((c) => c.correctionId === vista.correctionId)?.correction ?? x.original) : vista.kind === 'ORIGINAL' ? x.original : null;
+      const plan = planes.get(x.planId) ?? null;
+      const delPlan = plan ? plan.blocks.flatMap((b) => [...b.sessions, ...b.microcycles.flatMap((m) => m.sessions)]).flatMap((s) => s.prescriptions) : null;
+      const base = { id: x.executionId, planId: x.planId, fecha: x.date, ocurrio: x.occurredAt, sesion: x.plannedSession.label, condicion: rige ? CONDICION[rige.sessionCondition] : null, corregida: vista.kind === 'CORRECTED', conDesvio: !!rige && rige.sessionCondition !== 'COMPLETED', seLeyo: !!plan, sinRegistrar: 0, conDiferencias: 0, tabla: [] };
+      if (!rige) return { ...base, clase: 'SIN_REGISTRO_VIGENTE', series: 'El registro vigente no se puede determinar', frente: 'No se compara' };
+      if (rige.sessionCondition === 'NOT_COMPLETED') return { ...base, clase: 'NO_REALIZADA', series: 'Sin series: la sesión se registró así', frente: 'No hay series que comparar' };
+      const porSerie = rige.granularity === 'SET';
+      let planificadas = 0, registradas = 0, deMas = 0, sinRegistrar = 0, conDiferencias = 0, conDato = 0, comparadas = 0, otros = 0;
+      const tabla = [];
+      for (const p of [...x.plannedSession.prescriptions].sort((a, b) => a.order - b.order)) {
+        const e = rige.exercises.find((y) => y.prescriptionId === p.prescriptionId) ?? null;
+        const objetivos = delPlan ? (delPlan.find((y) => y.prescriptionId === p.prescriptionId)?.sets ?? []) : null;
+        const mismo = !e || e.performedExerciseVersionId === p.exerciseVersionId || ejercicioDe.get(e.performedExerciseVersionId) === p.exerciseId;
+        const numeros = [...new Set([...p.sets.map((s) => s.setIndex), ...(e?.sets ?? []).map((s) => s.setIndex)])].sort((a, b) => a - b);
+        const filas = [];
+        let delOtro = 0;
+        for (const n of numeros) {
+          const planificada = p.sets.find((s) => s.setIndex === n) ?? null;
+          const s = e?.sets?.find((y) => y.setIndex === n) ?? null;
+          if (planificada) planificadas += 1;
+          if (!s) {
+            const resumida = !!e && !e.sets;
+            if (planificada && !resumida) sinRegistrar += 1;
+            filas.push({ numero: n, frente: resumida ? 'No se compara serie por serie' : 'Sin registro: no se compara', conDiferencia: false, reps: null });
+            continue;
+          }
+          if (!planificada) {
+            deMas += 1;
+            filas.push({ numero: n, frente: 'Adicional: no se compara', conDiferencia: false, reps: s.completedRepetitions });
+            continue;
+          }
+          registradas += 1;
+          if (!mismo) {
+            delOtro += 1;
+            filas.push({ numero: n, frente: null, conDiferencia: false, reps: s.completedRepetitions });
+            continue;
+          }
+          if (!plan) {
+            filas.push({ numero: n, frente: 'No se pudo leer lo indicado', conDiferencia: false, reps: s.completedRepetitions });
+            continue;
+          }
+          const r = frenteDeLaSerie(planificada, objetivos.find((y) => y.setIndex === n)?.target ?? null, s);
+          if (r.conDiferencia) conDiferencias += 1;
+          if (r.conDato) conDato += 1;
+          if (r.comparada) comparadas += 1;
+          filas.push({ numero: n, frente: r.texto, conDiferencia: r.conDiferencia, reps: s.completedRepetitions });
+        }
+        if (delOtro > 0) otros += 1;
+        tabla.push({ ejercicio: e?.performedExerciseName ?? p.exerciseName, registradas: filas.filter((f, i) => p.sets.some((s) => s.setIndex === f.numero) && e?.sets?.some((s) => s.setIndex === f.numero)).length, planificadas: p.sets.length, filas });
+      }
+      if (!porSerie) return { ...base, clase: 'RESUMIDA', series: 'Registro resumido: sin series', frente: 'No se compara serie por serie', tabla };
+      const partes = [];
+      if (sinRegistrar > 0) partes.push(`${cuantasSeries(sinRegistrar)} sin registrar`);
+      if (!plan) partes.push('no se pudo leer lo indicado');
+      else {
+        if (conDiferencias > 0) partes.push(`${cuantasSeries(conDiferencias)} con diferencias`);
+        if (conDato > 0) partes.push(`${cuantasSeries(conDato)} con un dato sin registrar`);
+      }
+      if (otros > 0) partes.push(otros === 1 ? 'un ejercicio no se compara' : `${otros} ejercicios no se comparan`);
+      return {
+        ...base,
+        clase: 'POR_SERIE',
+        sinRegistrar,
+        conDiferencias: plan ? conDiferencias : null,
+        series: `${registradas} de ${planificadas} ${planificadas === 1 ? 'registrada' : 'registradas'}${deMas > 0 ? ` · ${deMas} ${deMas === 1 ? 'adicional' : 'adicionales'}` : ''}`,
+        frente: partes.length > 0 ? mayuscula(partes.join(' · ')) : comparadas > 0 ? 'Dentro de lo indicado' : 'Sin objetivos que comparar',
+        tabla,
+      };
+    });
+    sesiones.sort((a, b) => (a.ocurrio < b.ocurrio ? 1 : a.ocurrio > b.ocurrio ? -1 : 0));
+    const sinLeer = sesiones.some((s) => s.clase === 'POR_SERIE' && !s.seLeyo);
+    const cuentas = {
+      TODAS: sesiones.length,
+      CON_DIFERENCIAS: sinLeer ? null : sesiones.filter((s) => (s.conDiferencias ?? 0) > 0).length,
+      CON_DESVIO_O_NO_REALIZADA: sesiones.filter((s) => s.conDesvio).length,
+      SIN_REGISTRAR: sesiones.filter((s) => s.sinRegistrar > 0).length,
+    };
+    return { sesiones, cuentas };
+  };
+  /** Lo que tiene que decir «Sesión y condición»: el nombre, la condición y, si rige una corrección, «Corregida». */
+  const sesionYCondicion = (s) => `Sesión y condición: ${[s.sesion, s.condicion, s.corregida ? 'Corregida' : null].filter(Boolean).join(' ')}`;
+  const filaBien = (vista, espera) =>
+    vista.id === espera.id && vista.clase === espera.clase && vista.sesion === sesionYCondicion(espera) && vista.series === `Series: ${espera.series}` && vista.frente === `Frente a lo indicado: ${espera.frente}` && vista.esBoton;
+  const ORDEN = ['TODAS', 'CON_DIFERENCIAS', 'CON_DESVIO_O_NO_REALIZADA', 'SIN_REGISTRAR'];
+  const cuentasBien = (vistas, cuentas) => igual(vistas.map((x) => x.vista), ORDEN) && vistas.every((x) => (cuentas[x.vista] === null ? x.cuenta === null : x.cuenta === num(cuentas[x.vista])));
+  const numerosDeVersion = (lista) => new Map(lista.filter((p) => p.activatedAt).sort((a, b) => (a.activatedAt < b.activatedAt ? -1 : 1)).map((p, i) => [p.planId, i + 1]));
+
+  // ── La entrada: el período que propone la API y sus lecturas ─────────────────────────────────────────────────
+  const alEntrar = await entrar(BASE);
+  const ctx = (await leerApi(v, `/advisees/${A}/training/review-context`)).data;
+  const planes = await leerLosPlanes(ctx);
+  const E = esperado(ctx, planes);
+  const inicial = await sesionesEnPantalla(page);
+  const dias = Math.round((Date.parse(`${ctx.period.end}T12:00:00Z`) - Date.parse(`${ctx.period.start}T12:00:00Z`)) / 86_400_000) + 1;
+  comprobar(
+    'F-24',
+    'Al entrar, Registros de Entrenamiento lee el contexto de revisión, sin período (lo propone la API), y una vez el plan de cada versión que aparece en el período; el control dice el período que propuso la API',
+    pedidos('/training/review-context', alEntrar).length === 1 &&
+      !/periodStart/.test(pedidos('/training/review-context', alEntrar)[0]) &&
+      [...planes.keys()].every((planId) => pedidos(`/training/plans/${planId}/detail`, alEntrar).length === 1) &&
+      (inicial.periodo ?? '').includes(`${dias} días`),
+    `contexto: ${pedidos('/training/review-context', alEntrar).length} · versiones del período: ${planes.size} · lecturas de planes: ${pedidos('/detail', alEntrar).length} · ${inicial.periodo} · la API: ${ctx.period.start} a ${ctx.period.end}`,
+  );
+
+  // Con el período de entrada puede haber muy pocas sesiones: lo demás se mira con 90 días, que tiene de todas las clases.
+  const alPedir90 = await entrar(`${BASE}&p=90`);
+  const ctx90 = (await leerApi(v, `/advisees/${A}/training/review-context?periodStart=${diaMenos(hoy, 89)}&periodEnd=${hoy}`)).data;
+  const planes90 = await leerLosPlanes(ctx90);
+  const E90 = esperado(ctx90, planes90);
+  const deEntrada = await sesionesEnPantalla(page);
+  const masSesiones = deEntrada.masSesiones;
+  const alVerMas = v.urls.length;
+  await verTodas();
+  const pedidosAlVerMas = v.urls.slice(alVerMas).filter((u) => u.startsWith('GET ')).length;
+  const noventa = await sesionesEnPantalla(page);
+  const distintas = noventa.filas.map((f, i) => (E90.sesiones[i] && filaBien(f, E90.sesiones[i]) ? null : i)).filter((i) => i !== null);
+  comprobar(
+    'C-68',
+    'Cada sesión registrada es una fila, de la más nueva a la más vieja: la sesión con su condición (la del registro que rige), cuántas series se registraron y cómo quedaron frente a lo indicado, calculado a mano; los nombres de las columnas están una vez; la fila entera es un botón',
+    noventa.titulo === 'Sesiones registradas' &&
+      pedidos('/training/review-context', alPedir90).some((u) => u.includes(`periodStart=${diaMenos(hoy, 89)}`) && u.includes(`periodEnd=${hoy}`)) &&
+      igual(noventa.columnas, ['Día', 'Sesión y condición', 'Series', 'Frente a lo indicado']) &&
+      noventa.filas.length === E90.sesiones.length &&
+      E90.sesiones.length > 0 &&
+      distintas.length === 0,
+    distintas.length === 0
+      ? `${noventa.filas.length} sesiones en 90 días, las ${E90.sesiones.length} esperadas · la primera: ${noventa.filas[0]?.dia} · ${noventa.filas[0]?.sesion}`
+      : `${distintas.length} filas distintas; la primera: ${JSON.stringify(noventa.filas[distintas[0]])} — a mano: ${JSON.stringify({ ...E90.sesiones[distintas[0]], tabla: undefined })}`,
+  );
+  comprobar(
+    'F-31',
+    'Un período largo no se muestra entero de una vez: quince sesiones, las más nuevas, y «Ver sesiones anteriores» trae las demás sin pedirle nada a la API',
+    E90.sesiones.length > 15 && deEntrada.filas.length === 15 && /Se ven 15 de/.test(masSesiones ?? '') && pedidosAlVerMas === 0 && noventa.filas.length === E90.sesiones.length,
+    `${deEntrada.filas.length} al entrar, ${noventa.filas.length} después · «${masSesiones}» · pedidos a la API: ${pedidosAlVerMas}`,
+  );
+  const porClase = (c) => E90.sesiones.filter((s) => s.clase === c);
+  const sinContar = [...porClase('NO_REALIZADA'), ...porClase('RESUMIDA')];
+  comprobar(
+    'F-25',
+    'Una sesión registrada como no realizada, o resumida, no se cuenta serie por serie: dice por qué no tiene series y ninguna fila dice «0 de»; una serie sin registrar se cuenta aparte y no es una diferencia',
+    sinContar.length > 0 &&
+      sinContar.every((s) => { const f = noventa.filas.find((x) => x.id === s.id); return !!f && !/\d+ de \d+/.test(f.series) && f.series === `Series: ${s.series}`; }) &&
+      !noventa.filas.some((f) => /\b0 de\b/.test(f.series)) &&
+      E90.sesiones.some((s) => s.sinRegistrar > 0),
+    `no realizadas: ${porClase('NO_REALIZADA').length} · resumidas: ${porClase('RESUMIDA').length} · con series sin registrar: ${E90.cuentas.SIN_REGISTRAR} · «${noventa.filas.find((x) => x.id === sinContar[0]?.id)?.series}»`,
+  );
+
+  // ── Las vistas con nombre y su cantidad ─────────────────────────────────────────────────────────────────────
+  comprobar(
+    'F-26',
+    'Las cuatro vistas están en su orden, cada una con la cantidad de sesiones que trae, contada a mano; «Con diferencias» cuenta las sesiones con alguna serie cuyas repeticiones o cuyo RIR quedaron fuera de lo indicado (la carga no cuenta); al entrar está elegida «Todas las sesiones»',
+    cuentasBien(noventa.vistas, E90.cuentas) &&
+      igual(noventa.vistas.map((x) => x.nombre), ['Todas las sesiones', 'Con diferencias', 'Con desvío o no realizada', 'Con series sin registrar']) &&
+      noventa.vistas.every((x) => x.elegida === (x.vista === 'TODAS' ? 'true' : 'false')) &&
+      noventa.vistas[0].dice === `${num(E90.cuentas.TODAS)} ${E90.cuentas.TODAS === 1 ? 'sesión' : 'sesiones'}`,
+    `${noventa.vistas.map((x) => `${x.nombre} ${x.cuenta}`).join(' · ')} — a mano: ${ORDEN.map((k) => E90.cuentas[k]).join(', ')}`,
+  );
+  const alElegir = v.urls.length;
+  await page.click('.sesiones .vista-de-la-linea[data-vista="SIN_REGISTRAR"]').catch(() => {});
+  await page.waitForFunction(() => new URL(location.href).searchParams.get('ver') === 'sin-registrar', { timeout: 10_000 }).catch(() => {});
+  await pausa(300);
+  await verTodas();
+  const conDiferencias = await sesionesEnPantalla(page);
+  await page.click('.sesiones .vista-de-la-linea[data-vista="SIN_REGISTRAR"]').catch(() => {});
+  await page.waitForFunction(() => !new URL(location.href).searchParams.has('ver'), { timeout: 10_000 }).catch(() => {});
+  await pausa(300);
+  const deVuelta = await sesionesEnPantalla(page);
+  const idsConDiferencias = E90.sesiones.filter((s) => s.sinRegistrar > 0).map((s) => s.id);
+  comprobar(
+    'F-26',
+    'Elegir «Con series sin registrar» no le pide nada a la API, queda en la dirección (`ver=sin-registrar`) y deja a la vista las sesiones que cuenta y ninguna otra; volver a tocarla deja «Todas las sesiones»',
+    v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length === 0 &&
+      idsConDiferencias.length > 0 &&
+      idsConDiferencias.length < E90.sesiones.length &&
+      igual(conDiferencias.filas.map((f) => f.id), idsConDiferencias) &&
+      conDiferencias.vistas.find((x) => x.vista === 'SIN_REGISTRAR')?.elegida === 'true' &&
+      (conDiferencias.cuenta ?? '').startsWith(`${num(idsConDiferencias.length)} de ${num(E90.cuentas.TODAS)} sesiones`) &&
+      deVuelta.vistas.find((x) => x.vista === 'TODAS')?.elegida === 'true' &&
+      deVuelta.filas.length === Math.min(15, E90.sesiones.length),
+    `${conDiferencias.filas.length} filas (a mano: ${idsConDiferencias.length} de ${E90.sesiones.length}) · «${conDiferencias.cuenta}» · pedidos a la API: ${v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length}`,
+  );
+
+  // ── El detalle: una tabla con cada serie una sola vez ────────────────────────────────────────────────────────
+  const elegida = E90.sesiones.find((s) => s.clase === 'POR_SERIE' && (s.conDiferencias ?? 0) > 0) ?? E90.sesiones.find((s) => s.clase === 'POR_SERIE');
+  const versiones = numerosDeVersion((await leerApi(v, `/advisees/${A}/training/plans`)).data);
+  await cupo(v, 60);
+  const alAbrir = v.urls.length;
+  await page.click(`.sesion-registrada__fila[data-sesion="${elegida?.id}"]`).catch(() => {});
+  await page.waitForSelector('aside.detalle-de-sesion table.tabla-de-series', { timeout: 20_000 }).catch(() => {});
+  await quieto(page, v);
+  const conDetalle = await sesionesEnPantalla(page);
+  const tabla = conDetalle.detalle?.tabla ?? [];
+  const ejecucionElegida = elegida ? (ctx90.registeredExecutions.find((x) => x.executionId === elegida.id) ?? null) : null;
+  const tiemposReales = elegida ? (await leerApi(v, `/training/executions/${elegida.id}/timing`)).data : null;
+  const aUnClic = [
+    ...(tiemposReales?.state === 'NOT_STARTED' ? [] : ['Descansos y duración de cada serie']),
+    'Ver la sesión en el plan',
+    'Ver en un gráfico',
+    (ejecucionElegida?.corrections.length ?? 0) > 0 ? 'Registro original y correcciones' : 'Registro original',
+  ];
+  const tablaBien =
+    !!elegida &&
+    tabla.length === elegida.tabla.length &&
+    elegida.tabla.every((e, i) => {
+      const t = tabla[i];
+      return (
+        t.ejercicio === e.ejercicio &&
+        t.cabecera.includes(`${e.registradas} de ${e.planificadas} ${e.planificadas === 1 ? 'serie registrada' : 'series registradas'}`) &&
+        t.series.length === e.filas.length &&
+        e.filas.every((f, j) => {
+          const s = t.series[j];
+          return s.celdas[0] === String(f.numero) && (f.frente === null || s.celdas[3] === f.frente) && s.conDiferencia === f.conDiferencia && (f.conDiferencia ? s.peso >= 600 : s.peso < 600) && (f.reps === null || s.celdas[2].includes(`${f.reps} rep.`));
+        })
+      );
+    });
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('aside.detalle-de-sesion'), { timeout: 10_000 }).catch(() => {});
+  await pausa(150);
+  const focoAlCerrar = await page.evaluate(() => document.activeElement?.getAttribute('data-sesion') ?? null);
+  const nombreDeLaElegida = elegida ? (/^sesi[oó]n\b/i.test(elegida.sesion) ? elegida.sesion : `Sesión ${elegida.sesion}`) : null;
+  comprobar(
+    'C-66',
+    'Tocar una sesión abre su detalle al costado, sin tapar la lista: el título recibe el foco; la tabla tiene cada serie una sola vez, por ejercicio, con «N de M series registradas» y, de cada serie, cómo quedó frente a lo indicado (calculado a mano); la serie con una diferencia va en negrita y además lo dice; Escape lo cierra y el foco vuelve a la fila',
+    !!elegida &&
+      conDetalle.detalle?.titulo === nombreDeLaElegida &&
+      conDetalle.detalle.conElFoco &&
+      tablaBien &&
+      tabla.flatMap((t) => t.series).length === elegida.tabla.flatMap((e) => e.filas).length &&
+      conDetalle.filas.length === Math.min(15, E90.sesiones.length) &&
+      conDetalle.filas.some((f) => f.elegida && f.id === elegida.id) &&
+      conDetalle.panel === null &&
+      parametros(page).get('sesion') === null &&
+      focoAlCerrar === elegida.id,
+    `«${conDetalle.detalle?.titulo}» · ${tabla.length} ejercicios, ${tabla.flatMap((t) => t.series).length} series (a mano: ${elegida?.tabla.flatMap((e) => e.filas).length}) · con diferencia: ${tabla.flatMap((t) => t.series).filter((s) => s.conDiferencia).map((s) => s.celdas[3]).join(' | ') || 'ninguna'} · foco en el título: ${conDetalle.detalle?.conElFoco} · al cerrar, en la fila: ${focoAlCerrar === elegida?.id}`,
+  );
+  comprobar(
+    'F-27',
+    'El detalle dice cuándo ocurrió, cuándo se registró y frente a qué versión del plan (su número de orden de activación, calculado a mano); lee una vez los tiempos de esa sesión y no vuelve a leer el plan; lo demás de la sesión está a un clic (sin tiempos marcados, lo dice y no ofrece abrir descansos que no hay)',
+    !!elegida &&
+      (conDetalle.detalle?.cuando ?? '').includes(`frente al plan versión ${versiones.get(elegida.planId)}, el de ese día`) &&
+      /^Ocurrió el /.test(conDetalle.detalle?.cuando ?? '') &&
+      pedidos(`/training/executions/${elegida.id}/timing`, alAbrir).length === 1 &&
+      pedidos('/detail', alAbrir).length === 0 &&
+      igual(conDetalle.detalle?.mas, aUnClic) &&
+      /Tiempos de la sesión/.test(conDetalle.detalle?.tiempos ?? '') &&
+      (tiemposReales?.state !== 'NOT_STARTED' || /no tiene tiempos marcados/.test(conDetalle.detalle?.tiempos ?? '')),
+    `«${conDetalle.detalle?.cuando}» · versión a mano: ${versiones.get(elegida?.planId)} · lecturas de tiempos: ${pedidos('/timing', alAbrir).length} · a un clic: ${(conDetalle.detalle?.mas ?? []).join(' | ')} · ${(conDetalle.detalle?.tiempos ?? '').slice(0, 90)}`,
+  );
+
+  // ── La evolución de un ejercicio queda en Analizar; los días sin sesión ──────────────────────────────────────
+  comprobar(
+    'C-67',
+    'La evolución de un ejercicio ya no está en la sección: no hay un bloque «Planificado y registrado» ni un gráfico al entrar, y sí un enlace a Analizar, de la aplicación, con la pregunta del ejercicio y el período que se está mirando',
+    !noventa.titulos.some((t) => /Planificado y registrado|Evolución de un ejercicio/.test(t)) &&
+      igual(noventa.titulos, ['Sesiones registradas']) &&
+      (noventa.aAnalizar ?? '').startsWith(`/pro/advisees?id=${A}&vista=analizar&pregunta=progreso-de-un-ejercicio`) &&
+      (noventa.aAnalizar ?? '').endsWith('&p=90'),
+    `títulos de la sección: ${noventa.titulos.join(' | ')} · enlace: ${noventa.aAnalizar}`,
+  );
+  const sinSesion = ctx90.missingData.length;
+  await clic(page, '.sesiones__sin-sesion button', 'Ver los días').catch(() => null);
+  await pausa(200);
+  const conLosDias = await texto(page, '.sesiones__sin-sesion');
+  comprobar(
+    'F-25',
+    'Los días del período sin ninguna sesión registrada se dicen con su cantidad (la que da la API) y como falta de dato, no como sesiones que faltaron; «Ver los días» los lista',
+    sinSesion > 0 &&
+      (noventa.sinSesion ?? '').startsWith(`${num(sinSesion)} días del período sin sesión registrada.`) &&
+      /no hay dato/.test(noventa.sinSesion ?? '') &&
+      conLosDias.split(' · ').length >= sinSesion,
+    `«${(noventa.sinSesion ?? '').slice(0, 120)}» · la API: ${sinSesion} días`,
+  );
+
+  // ── «Más filtros», «Actualizar» y lo que vive en la dirección ────────────────────────────────────────────────
+  const versionConSesiones = [...new Set(E90.sesiones.map((s) => s.planId))].find((planId) => E90.sesiones.some((s) => s.planId !== planId)) ?? null;
+  if (versionConSesiones) {
+    const deLaVersion = E90.sesiones.filter((s) => s.planId === versionConSesiones);
+    const cuentasDeLaVersion = {
+      TODAS: deLaVersion.length,
+      CON_DIFERENCIAS: deLaVersion.filter((s) => (s.conDiferencias ?? 0) > 0).length,
+      CON_DESVIO_O_NO_REALIZADA: deLaVersion.filter((s) => s.conDesvio).length,
+      SIN_REGISTRAR: deLaVersion.filter((s) => s.sinRegistrar > 0).length,
+    };
+    await entrar(`${BASE}&p=90&version=${versionConSesiones}`);
+    await verTodas();
+    const filtrada = await sesionesEnPantalla(page);
+    // Para «Actualizar», una vista que en esa versión traiga alguna sesión y no todas: si no, no se sabría si se conservó.
+    const PARAMETRO = { CON_DIFERENCIAS: 'con-diferencias', CON_DESVIO_O_NO_REALIZADA: 'con-desvio', SIN_REGISTRAR: 'sin-registrar' };
+    const conVista = Object.keys(PARAMETRO).find((k) => cuentasDeLaVersion[k] > 0 && cuentasDeLaVersion[k] < deLaVersion.length) ?? Object.keys(PARAMETRO).find((k) => cuentasDeLaVersion[k] > 0) ?? 'CON_DIFERENCIAS';
+    const enLaVista = (s) => (conVista === 'CON_DIFERENCIAS' ? (s.conDiferencias ?? 0) > 0 : conVista === 'SIN_REGISTRAR' ? s.sinRegistrar > 0 : s.conDesvio);
+    const esperadas = deLaVersion.filter(enLaVista).map((s) => s.id);
+    await entrar(`${BASE}&p=90&version=${versionConSesiones}&ver=${PARAMETRO[conVista]}`);
+    await cupo(v, 60);
+    const alActualizar = v.urls.length;
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+    await quieto(page, v);
+    await page.waitForSelector(LISTA, { timeout: 30_000 }).catch(() => {});
+    await verTodas();
+    const trasActualizar = await sesionesEnPantalla(page);
+    comprobar(
+      'F-28',
+      'El período, la vista y el filtro por versión del plan viven en la dirección: con una versión elegida se ven solo sus sesiones, las cantidades de las cuatro vistas son las de esa versión (a mano) y la pantalla dice que hay un filtro puesto; «Actualizar» vuelve a leer y conserva el período, la versión y la vista',
+      deLaVersion.length > 0 &&
+        deLaVersion.length < E90.sesiones.length &&
+        igual(filtrada.filas.map((f) => f.id), deLaVersion.map((s) => s.id)) &&
+        cuentasBien(filtrada.vistas, cuentasDeLaVersion) &&
+        /con un filtro de «Más filtros»/.test(filtrada.cuenta ?? '') &&
+        esperadas.length > 0 &&
+        pedidos('/training/review-context', alActualizar).length === 1 &&
+        parametros(page).get('p') === '90' &&
+        parametros(page).get('version') === versionConSesiones &&
+        parametros(page).get('ver') === PARAMETRO[conVista] &&
+        igual(trasActualizar.filas.map((f) => f.id), esperadas),
+      `de esa versión: ${filtrada.filas.length} sesiones (a mano: ${deLaVersion.length} de ${E90.sesiones.length}) · ${filtrada.vistas.map((x) => `${x.nombre} ${x.cuenta}`).join(' · ')} — a mano: ${ORDEN.map((k) => cuentasDeLaVersion[k]).join(', ')} · «${filtrada.cuenta}» · tras «Actualizar», con «${PARAMETRO[conVista]}»: ${trasActualizar.filas.length} (a mano: ${esperadas.length})`,
+    );
+  } else {
+    informar('F-28', 'El filtro por versión del plan', 'las sesiones de los últimos 90 días son todas de una misma versión: no se pudo mirar');
+  }
+
+  // ── Los tiempos de una sesión, con una respuesta armada por el recorrido ─────────────────────────────────────
+  // El escenario no tiene ninguna sesión con tiempos marcados. Se entrega, para esta sesión, una respuesta que cumple el
+  // contrato de API-TIE-03: lo que se mira es la pantalla, no el cálculo de los tiempos (que tiene sus pruebas).
+  if (ejecucionElegida) {
+    const p1 = ejecucionElegida.plannedSession.prescriptions[0];
+    const instante = (segundos) => new Date(Date.parse(ejecucionElegida.occurredAt) + segundos * 1000).toISOString();
+    const conTiempos = {
+      coincide: (u) => u.includes(`/training/executions/${elegida.id}/timing`),
+      accion: 'entregar',
+      cuerpo: {
+        data: {
+          ...tiemposReales,
+          state: 'FINISHED',
+          startedAt: instante(0),
+          finishedAt: instante(3260),
+          session: { elapsed: { ms: 3_260_000, quality: 'MEASURED' }, pauses: { ms: 190_000, quality: 'MEASURED' }, withoutPauses: { ms: 3_070_000, quality: 'ESTIMATED' } },
+          exercises: [{ prescriptionId: p1.prescriptionId, duration: { ms: 905_000, quality: 'MEASURED' } }],
+          unassigned: { ms: 65_000, quality: 'MEASURED' },
+          rests: [{ restId: 'descanso-del-recorrido-1', prescriptionId: p1.prescriptionId, setIndex: 1, startedAt: instante(60), finishedAt: instante(165), duration: { ms: 105_000, quality: 'MEASURED' }, recommendedSeconds: 90, differenceMs: 15_000 }],
+          timedSets: [{ timingId: 'serie-del-recorrido-1', prescriptionId: p1.prescriptionId, setIndex: 1, startedAt: instante(10), finishedAt: instante(50), duration: { ms: 40_000, quality: 'MEASURED' } }],
+        },
+      },
+    };
+    await salir();
+    v.reglas.push(conTiempos);
+    await entrar(`${BASE}&p=90&sesion=${elegida.id}`);
+    await page.waitForSelector('aside.detalle-de-sesion .datos-de-tiempo', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    await clic(page, 'aside.detalle-de-sesion .detalle-de-sesion__mas summary', 'Descansos y duración de cada serie').catch(() => null);
+    await pausa(300);
+    const tiemposEnPantalla = await page.evaluate(() => {
+      const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+      const d = document.querySelector('aside.detalle-de-sesion');
+      const abierto = [...(d?.querySelectorAll('.detalle-de-sesion__mas details[open]') ?? [])].find((x) => /Descansos y duración/.test(x.querySelector('summary')?.innerText ?? ''));
+      const cuerpo = abierto?.querySelector('tbody');
+      return {
+        renglon: t(d?.querySelector('.detalle-de-sesion__tiempos')),
+        ejercicio: t(cuerpo?.querySelector('.tabla-de-series__ejercicio')),
+        series: [...(cuerpo?.querySelectorAll('tr:not(.tabla-de-series__ejercicio)') ?? [])].map((tr) => [...tr.children].map(t)),
+        resto: t(abierto),
+      };
+    });
+    v.reglas.splice(v.reglas.indexOf(conTiempos), 1);
+    const primera = tiemposEnPantalla.series[0] ?? [];
+    const segunda = tiemposEnPantalla.series[1] ?? [];
+    comprobar(
+      'F-27',
+      'Con tiempos marcados (una respuesta armada por el recorrido: el escenario no tiene ninguna sesión con tiempos), el detalle dice los tres tiempos de la sesión, cada uno con su certeza, y «Descansos y duración de cada serie» abre en el lugar el descanso de cada serie frente al recomendado, su duración y el tiempo de cada ejercicio; una serie sin descanso marcado lo dice con palabras',
+      /Tiempo transcurrido 54:20 · medido/.test(tiemposEnPantalla.renglon ?? '') &&
+        /Pausas 03:10 · medido/.test(tiemposEnPantalla.renglon ?? '') &&
+        /Sin pausas 51:10 · estimado/.test(tiemposEnPantalla.renglon ?? '') &&
+        (tiemposEnPantalla.ejercicio ?? '').includes('15:05 · medido') &&
+        igual(primera, ['1', '01:45 registrado · 01:30 recomendado · +00:15', 'Duración medida 00:40']) &&
+        segunda[1] === 'Sin descanso marcado' &&
+        /Sin ejercicio asignado: 01:05 · medido/.test(tiemposEnPantalla.resto ?? '') &&
+        !tiemposEnPantalla.series.flat().includes('—'),
+      `«${(tiemposEnPantalla.renglon ?? '').slice(0, 110)}» · la serie 1: ${primera.join(' | ') || 'sin tabla'} · la serie 2: ${segunda.join(' | ')} · ${(tiemposEnPantalla.ejercicio ?? '').slice(0, 60)}`,
+    );
+
+    // ── Lo que quedó a un clic se abre: la sesión en el plan, el gráfico por serie y el registro original ─────────
+    await entrar(`${BASE}&p=90&sesion=${elegida.id}`);
+    await page.waitForSelector('aside.detalle-de-sesion table.tabla-de-series', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const abrirEnElLugar = async (titulo) => {
+      await clic(page, 'aside.detalle-de-sesion .detalle-de-sesion__mas summary', titulo).catch(() => null);
+      await pausa(400);
+      return page.evaluate((x) => {
+        const d = [...document.querySelectorAll('aside.detalle-de-sesion .detalle-de-sesion__mas details[open]')].find((y) => (y.querySelector('summary')?.innerText ?? '').includes(x));
+        return d ? { texto: d.innerText.replace(/\s+/g, ' ').trim(), graficos: d.querySelectorAll('svg.recharts-surface, table').length } : null;
+      }, titulo);
+    };
+    const enElPlan = await abrirEnElLugar('Ver la sesión en el plan');
+    const elOriginal = await abrirEnElLugar('Registro original');
+    await clic(page, 'aside.detalle-de-sesion .detalle-de-sesion__mas summary', 'Ver en un gráfico').catch(() => null);
+    await page.waitForSelector('aside.detalle-de-sesion .detalle-de-sesion__mas details[open] svg.recharts-surface', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const elGrafico = await page.evaluate(() => document.querySelectorAll('aside.detalle-de-sesion .detalle-de-sesion__mas details[open] svg.recharts-surface').length);
+    comprobar(
+      'F-32',
+      'Nada de lo que se veía se quitó, está a un clic y se abre en el lugar: «Ver la sesión en el plan» muestra cada ejercicio indicado ese día; «Registro original», lo que registró la persona, con su condición; y «Ver en un gráfico», el gráfico por serie',
+      !!enElPlan &&
+        ejecucionElegida.plannedSession.prescriptions.every((p) => enElPlan.texto.includes(p.exerciseName)) &&
+        !!elOriginal &&
+        /Registrado el /.test(elOriginal.texto) &&
+        elOriginal.texto.includes(CONDICION[ejecucionElegida.original.sessionCondition]) &&
+        elGrafico >= 1,
+      `en el plan: ${ejecucionElegida.plannedSession.prescriptions.map((p) => p.exerciseName).join(', ')} · el original: «${(elOriginal?.texto ?? '').slice(0, 90)}» · gráficos: ${elGrafico}`,
+    );
+  }
+
+  // ── Si no se puede leer lo indicado, las sesiones se ven igual y lo dicen ────────────────────────────────────
+  const sinPlanes = { coincide: (u) => /\/training\/plans\/[^/]+\/detail/.test(u), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+  await salir();
+  v.reglas.push(sinPlanes);
+  await entrar(`${BASE}&p=90`);
+  await verTodas();
+  const conFalla = await sesionesEnPantalla(page);
+  v.reglas.splice(v.reglas.indexOf(sinPlanes), 1);
+  const ESinPlanes = esperado(ctx90, new Map());
+  await cupo(v, 60);
+  if (conFalla.falla) await clic(page, '.sesiones .estado-de-grafico--error button', 'Reintentar').catch(() => null);
+  await quieto(page, v);
+  await page.waitForFunction(() => !document.querySelector('.sesiones .estado-de-grafico--error'), { timeout: 30_000 }).catch(() => {});
+  const repuesto = await sesionesEnPantalla(page);
+  comprobar(
+    'F-29',
+    'Si el plan de una versión no se puede leer (un 503 simulado), las sesiones siguen a la vista con lo registrado; un bloque lo dice, con «Reintentar»; cada sesión registrada serie por serie dice «No se pudo leer lo indicado» y ninguna dice «Dentro de lo indicado»; «Con diferencias» no lleva número (no un cero) y las otras vistas sí. «Reintentar» trae lo que faltaba',
+    /No pudimos leer lo indicado/.test(conFalla.falla ?? '') &&
+      conFalla.filas.length === ESinPlanes.sesiones.length &&
+      conFalla.filas.every((f, i) => filaBien(f, ESinPlanes.sesiones[i])) &&
+      ESinPlanes.sesiones.some((s) => /no se pudo leer lo indicado/i.test(s.frente)) &&
+      !conFalla.filas.some((f) => /Dentro de lo indicado/.test(f.frente)) &&
+      cuentasBien(conFalla.vistas, ESinPlanes.cuentas) &&
+      ESinPlanes.cuentas.CON_DIFERENCIAS === null &&
+      repuesto.falla === null &&
+      cuentasBien(repuesto.vistas, E90.cuentas),
+    `«${(conFalla.falla ?? '').slice(0, 110)}» · ${conFalla.vistas.map((x) => `${x.nombre} ${x.cuenta ?? 'sin número'}`).join(' · ')} · después: ${repuesto.vistas.map((x) => x.cuenta).join(', ')}`,
+  );
+
+  // ── «Actualizar» con una sesión abierta, la ayuda, la primera pantalla y axe ──────────────────────────────────
+  await entrar(`${BASE}&p=90&sesion=${elegida?.id}`);
+  await page.waitForSelector('aside.detalle-de-sesion table.tabla-de-series', { timeout: 20_000 }).catch(() => {});
+  await quieto(page, v);
+  await page.evaluate(() => {
+    window.__panelDeEncima = 0;
+    window.__vigiaDelPanel?.disconnect();
+    window.__vigiaDelPanel = new MutationObserver(() => {
+      if (document.querySelector('dialog.dialogo--panel[open]')) window.__panelDeEncima += 1;
+    });
+    window.__vigiaDelPanel.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
+  });
+  await cupo(v, 60);
+  await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+  await quieto(page, v);
+  await page.waitForSelector('aside.detalle-de-sesion table.tabla-de-series', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const panelDeEncima = await page.evaluate(() => {
+    window.__vigiaDelPanel?.disconnect();
+    return window.__panelDeEncima ?? -1;
+  });
+  const trasActualizarLaSesion = await sesionesEnPantalla(page);
+  const medida = await page.evaluate(() => {
+    const abajo = (s) => {
+      const e = [...document.querySelectorAll(s)].pop();
+      return e ? Math.round(e.getBoundingClientRect().bottom + scrollY) : null;
+    };
+    const d = document.querySelector('aside.detalle-de-sesion');
+    return { alto: document.documentElement.scrollHeight, vistas: abajo('.sesiones .registros__vistas'), columnas: abajo('.sesiones__columnas'), lista: abajo('.sesiones__filas'), detalleAncho: d ? Math.round(d.getBoundingClientRect().width) : null, listaAncho: Math.round(document.querySelector('.sesiones__filas')?.getBoundingClientRect().width ?? 0) };
+  });
+  comprobar(
+    'F-28',
+    'La sesión abierta vive en la dirección: se abre al entrar con ella, y «Actualizar» la deja abierta al costado sin pasar por el panel de encima ni por un instante',
+    trasActualizarLaSesion.detalle?.titulo === nombreDeLaElegida && parametros(page).get('sesion') === elegida?.id && panelDeEncima === 0 && trasActualizarLaSesion.panel === null,
+    `«${trasActualizarLaSesion.detalle?.titulo}» · veces que el panel de encima estuvo abierto: ${panelDeEncima}`,
+  );
+  informar('F-30', 'Registros de Entrenamiento con 90 días y una sesión abierta, a 1440 × 900', `${medida.alto} px · las vistas terminan a los ${medida.vistas} px, los nombres de las columnas a los ${medida.columnas} y la lista de ${trasActualizarLaSesion.filas.length} sesiones (de ${E90.sesiones.length}), a los ${medida.lista} · la lista mide ${medida.listaAncho} px de ancho y el detalle, ${medida.detalleAncho}`);
+  comprobar(
+    'F-30',
+    'A 1440 × 900, con una sesión abierta, las vistas y los nombres de las columnas entran en la primera pantalla, y la lista conserva al menos 600 px de ancho al lado del detalle: no se aprieta hasta partir cada dato en varios renglones',
+    medida.columnas !== null && medida.columnas <= 900 && medida.listaAncho >= 600 && (medida.detalleAncho ?? 0) >= 500,
+    `la lista: ${medida.listaAncho} px · el detalle: ${medida.detalleAncho} px`,
+  );
+  const faltasConDetalle = await axe(page);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('aside.detalle-de-sesion'), { timeout: 10_000 }).catch(() => {});
+  const faltas = await axe(page);
+  await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+  await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+  const ayuda = await page.evaluate(() => {
+    const d = document.querySelector('dialog.como-se-lee[open]');
+    if (!d) return { titulo: null, renglones: 0, vistas: [], foco: false };
+    return { titulo: d.querySelector('h2').innerText.trim(), renglones: d.querySelectorAll('.como-se-lee__lista > li').length, vistas: [...d.querySelectorAll('.como-se-lee__fuentes [data-vista]')].map((x) => x.dataset.vista), foco: document.activeElement === d.querySelector('h2') };
+  });
+  const faltasDeLaAyuda = await axe(page);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+  comprobar(
+    'F-14',
+    'Registros de Entrenamiento tiene su ayuda en el marco del área: se abre por el título, explica cada cosa y dice qué trae cada una de las cuatro vistas; Entrenamiento · Resumen, que no tiene ayuda, no muestra el botón',
+    ayuda.titulo === 'Cómo se leen los Registros' && ayuda.renglones >= 10 && igual(ayuda.vistas, ORDEN) && ayuda.foco && faltasDeLaAyuda.length === 0,
+    `«${ayuda.titulo}» · ${ayuda.renglones} renglones · ${ayuda.vistas.length} vistas · axe: ${faltasDeLaAyuda.length === 0 ? 'sin faltas' : faltasDeLaAyuda.map((f) => f.id).join(', ')}`,
+  );
+  comprobar('F-27', 'axe no encuentra faltas en Registros de Entrenamiento, ni con el detalle de una sesión al costado', faltas.length === 0 && faltasConDetalle.length === 0, `sin detalle: ${faltas.map((f) => f.id).join(', ') || 'sin faltas'} · con detalle: ${faltasConDetalle.map((f) => f.id).join(', ') || 'sin faltas'}`);
+  await salir();
+  const sinAyuda = await page.evaluate(() => document.querySelectorAll('header.marco-del-area .como-se-lee__boton').length);
+  comprobar('F-14', 'En Entrenamiento · Resumen el marco no muestra el botón de la ayuda (la misma consulta lo encuentra en Registros)', sinAyuda === 0, `${sinAyuda} botones`);
+
+  // ── A 1024 px el detalle se abre encima ─────────────────────────────────────────────────────────────────────
+  await page.setViewport({ width: 1024, height: 900 });
+  await entrar(`${BASE}&p=90`);
+  await page.click(`.sesion-registrada__fila[data-sesion="${elegida?.id}"]`).catch(() => {});
+  await page.waitForSelector('dialog.dialogo--panel[open] table.tabla-de-series', { timeout: 20_000 }).catch(() => {});
+  await quieto(page, v);
+  const angosto = await sesionesEnPantalla(page);
+  const desborda = !(await sinDesborde(page));
+  if (angosto.panel) await clic(page, 'dialog.dialogo--panel[open] button', 'Cerrar').catch(() => null);
+  await pausa(200);
+  await page.setViewport({ width: 1440, height: 900 });
+  comprobar(
+    'C-66',
+    'A 1024 px el detalle de la sesión se abre encima, en un panel que retiene el foco, con la misma tabla; la página no desborda de costado',
+    angosto.detalle === null && (angosto.panel?.texto ?? '').includes(nombreDeLaElegida ?? '···') && (angosto.panel?.tabla.length ?? 0) === (elegida?.tabla.length ?? -1) && !desborda,
+    `panel: «${(angosto.panel?.texto ?? '').slice(0, 60)}» · ejercicios en la tabla: ${angosto.panel?.tabla.length ?? 0} · al costado: ${angosto.detalle ? 'sí' : 'no'}${desborda ? ' · DESBORDA' : ''}`,
+  );
+  comprobar('—', 'Registros de Entrenamiento no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
 // ─── Nutrición · Registros: la estimación del profesional (WP-ESCRITORIO-AREAS, parte 1) ──────────────────────────
 
 /**
@@ -5625,7 +6288,7 @@ async function estimacionDeUnaComida(page, v) {
   comprobar('—', 'La estimación de una comida no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
 }
 
-async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true, registros = true, estimacion = false } = {}) {
+async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true, registros = true, sesiones = true, estimacion = false } = {}) {
   const { navegador, page, v } = await abrir();
   // Los guiones que pide la página, desde antes de entrar: para saber con qué se cargó la ficha.
   const guiones = [];
@@ -5660,6 +6323,10 @@ async function fichaRecompuesta({ resumen = true, linea = true, analizar = true,
     if (registros) {
       empezarDeCero();
       await registrosDeNutricion(page, v);
+    }
+    if (sesiones) {
+      empezarDeCero();
+      await sesionesDeEntrenamiento(page, v);
     }
     // Escribe en el escenario: solo cuando se lo pide (`estimacion`), nunca dentro de `funcional`.
     if (estimacion) {
@@ -6258,13 +6925,14 @@ try {
   if (modo === 'capturas' || modo === 'todo') await capturas();
   if (modo === 'descartable') await descartable();
   if (modo === 'menu') await encabezadoYMenu();
-  if (modo === 'analizar') await fichaRecompuesta({ resumen: false, linea: false, espacio: false, areas: false, registros: false });
-  if (modo === 'resumen') await fichaRecompuesta({ linea: false, analizar: false, espacio: false, areas: false, registros: false });
-  if (modo === 'linea') await fichaRecompuesta({ resumen: false, analizar: false, espacio: false, areas: false, registros: false });
-  if (modo === 'espacio') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, areas: false, registros: false });
-  if (modo === 'areas') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, registros: false });
-  if (modo === 'registros') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false });
-  if (modo === 'estimacion') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, estimacion: true });
+  if (modo === 'analizar') await fichaRecompuesta({ resumen: false, linea: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'resumen') await fichaRecompuesta({ linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'linea') await fichaRecompuesta({ resumen: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'espacio') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'areas') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, registros: false, sesiones: false });
+  if (modo === 'registros') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false, sesiones: false });
+  if (modo === 'sesiones') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false });
+  if (modo === 'estimacion') await fichaRecompuesta({ resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false, estimacion: true });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {

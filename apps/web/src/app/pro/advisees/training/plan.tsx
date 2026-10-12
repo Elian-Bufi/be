@@ -35,8 +35,11 @@ import { DialogoGuardarPlantilla, InicioDesdePlantilla } from './plantillas';
 import { filasDeLaRespuesta, TablaDeObjetivos } from './objetivos-por-serie';
 import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 
-/** Número de versión para la persona: el orden de activación. El `version` del 09 es un token de concurrencia. */
-function numerosDeVersion(versiones: readonly ResumenDeVersionDePlanDeEntrenamiento[]): Map<string, number> {
+/**
+ * Número de versión para la persona: el orden de activación. El `version` del 09 es un token de concurrencia. Lo usa
+ * también Registros, para decir frente a qué versión se registró una sesión.
+ */
+export function numerosDeVersion(versiones: readonly ResumenDeVersionDePlanDeEntrenamiento[]): Map<string, number> {
   const activadas = versiones.filter((v) => v.activatedAt).sort((a, b) => (a.activatedAt as string).localeCompare(b.activatedAt as string));
   return new Map(activadas.map((v, i) => [v.planId, i + 1]));
 }
