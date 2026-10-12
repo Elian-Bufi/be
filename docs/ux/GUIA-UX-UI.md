@@ -91,7 +91,9 @@ Cuando una regla de acá choca con el legajo, gana el legajo y se anota en `docs
   `scripts/copy-pantallas.test.cjs` recorre el texto de las pantallas y falla si aparece alguna. La síntesis del
   Resumen tiene su propia lista (`PALABRAS_QUE_CALIFICAN`), con su prueba.
 - **Números:**
-  - siempre con su unidad;
+  - siempre con su unidad. En una lista de valores que comparten la unidad, se dice una vez, en el título de la
+    columna o del grupo («Pliegues cutáneos · mm»): no se omite, se dice una vez. El nombre accesible de cada valor la
+    lleva igual (II.9);
   - con la precisión que declara el método, sin redondeo silencioso (REG-06-158);
   - con el separador decimal y de miles del español (`numero`, `cantidad`).
 
@@ -105,7 +107,7 @@ Cuando una regla de acá choca con el legajo, gana el legajo y se anota en `docs
 | Información de contexto | Junto a lo que explica, plegada si es larga. | `Aviso tipo="info"` / `Ayuda` |
 
 No se usa `<dialog open>` en el flujo de la página: en el teléfono aparece arriba de todo, lejos del botón que lo
-abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
+abrió. Pasó con «Registrar evaluación» (hoy, «Registrar toma») en la prueba del 2026-10-01.
 
 ### I.4 Estados
 
@@ -509,7 +511,7 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   - **El encabezado** dice el título, «Hoy» (la fecha con que la API clasificó las revisiones, con su día de la semana
     y su año) y «Solicitar vínculo».
   - **«Pendientes»** tiene vistas con nombre, como la línea de tiempo: «Todo», «Revisiones», «Planes», «Formularios» y
-    «Evaluaciones», cada una con la cantidad que trae. La cartera se lee entera al entrar y se cuenta en el navegador:
+    «Tomas», cada una con la cantidad que trae. La cartera se lee entera al entrar y se cuenta en el navegador:
     elegir una vista no le pide nada a la API. Una vista en cero se muestra con su cero. «Más filtros» guarda la
     combinación libre: un área, un tipo exacto y el período.
   - **Cada pendiente es una fila:** la persona, el área, lo pendiente con la frase de BE y, debajo, el último registro
@@ -615,7 +617,7 @@ crear otro, se usa uno de estos.
 | `Pestanas` | Las secciones de un asesorado, en una línea. La elegida, a la vista | `<Pestanas etiqueta="Secciones de Nutrición" vistas={VISTAS} actual={vista} href={(c) => …} />` |
 | `Ayuda` | Una explicación larga, plegada. Es un enlace con su marca ▸, no una caja | «Cómo se arma esta lista», «Con qué se calculó» |
 | `AvisoFlotante` | El éxito de una acción, abajo. Con `seQueda` si trae una acción | «Revisión registrada» + «Volver a la ficha, donde estabas» |
-| `EstadoVacio` | Lo que todavía no hay, con su paso siguiente | «Todavía no hay evaluaciones registradas» → «Preparar una toma» |
+| `EstadoVacio` | Lo que todavía no hay, con su paso siguiente | «Todavía no hay tomas registradas» → «Preparar una toma» |
 | `.metadatos` | Lo que vale para todo un bloque, dicho una vez junto al título | «Del 13 jul al 10 oct · describen lo registrado, sin calificar» |
 | `.subseccion` | Un bloque dentro de una sección: un separador, no otra tarjeta | Cada área en la pregunta de información |
 | `.encabezado-de-bloque` | El título de un bloque con su acción principal al lado | «Indicadores» + «Elegir indicadores» |
@@ -628,7 +630,7 @@ crear otro, se usa uno de estos.
 | `EstadoDeLecturaDelArea` · `NoDisponibleEnElArea` | El resultado de leer una sección: cargando, el «no disponible» neutral o la falla con su motivo y «Reintentar» | «No pudimos cargar esta vista · Hubo muchas consultas seguidas…» |
 | `AccesoPorArea` (`acceso-por-area.tsx`) | El acceso actual por área, igual en la ficha y en el marco de un área | «Nutrición: Activo · acceso contextual» |
 | `PanelDeRegistro` | Un registro encima de la vista, en un panel que retiene el foco, con su propia lectura | La planificación de una etapa; el origen de un dato o el detalle de un hecho, en una ventana angosta |
-| `Panel` (`components/panel.tsx`) | Lo mismo, para cualquier contenido: el diálogo, su título y «Cerrar». `PanelDeRegistro` lo usa | El registro de una comida de Nutrición · Registros, en una ventana angosta |
+| `Panel` (`components/panel.tsx`) | Lo mismo, para cualquier contenido: el diálogo, su título y «Cerrar». `PanelDeRegistro` lo usa | El registro de una comida de Nutrición · Registros, en una ventana angosta; una medición o un resultado de Antropometría · Tomas, en cualquier ancho |
 | `ControlDePeriodo` (`advisees/control-de-periodo.tsx`) | El período en un solo control. Recibe el período, los atajos y el tope: no lee ni escribe la dirección por su cuenta | La ficha (hasta 366 días) y Nutrición · Registros (hasta 92) |
 | `AyudaDeVista` · `RenglonDeAyuda` (`components/ayuda-de-vista.tsx`) | «Cómo se lee esta vista»: el botón y su diálogo, con una muestra y una explicación por renglón | La de la ficha; la de Nutrición · Registros, en el marco del área |
 | `.dia-de-registros` · `.comida-del-dia` | El día de un área en un renglón que se abre, y cada comida del plan en una fila con sus columnas | «11 oct · domingo · 2 de 4 comidas registradas · 1 comida diferente» |
@@ -636,9 +638,14 @@ crear otro, se usa uno de estos.
 | `opcionDeUnaComida` · `modoDeUnaComida` · `frenteALoIndicadoDeUnaComida` (dominio) | Lo que la línea de tiempo dice de una comida. Una sola regla para la ficha y para Registros | «Tostadas con queso» · «Porciones del plan» · «Sin diferencia: son las porciones del plan» |
 | `periodo-de-un-area.ts` (`periodoPedidoEnUnArea`, `periodoALaVista`, `cambiosDePeriodo`) | El período de los registros de un área, en la dirección: los atajos que la lectura admite (7, 30 y 90 días) y el tope de 92 | Registros de Nutrición y de Entrenamiento |
 | `.sesion-registrada` · `.tabla-de-series` | Una sesión en una fila que se abre entera, y la tabla de sus series, agrupadas por ejercicio | «12 oct · A · Tren inferior · 7 de 10 registradas» |
-| `.parte-de-dato` (`EnPartes`, en `training/ejecuciones.tsx`) | Un dato hecho de partes cortas separadas por « · », en una tabla: si no entra en un renglón, baja una parte entera, con el separador al final del renglón de arriba | «77,5 kg · 6 rep. ·» y, abajo, «RIR 1»: nunca «RIR» arriba y «1» abajo |
-| `FraseEnPartes` (en `training/ejecuciones.tsx`) | Lo mismo para frases largas, en una fila: el texto corre como cualquier otro, pero no se parte entre el número y lo que cuenta, ni antes del separador (espacios que no se parten) | «3 series sin registrar ·» y, abajo, «1 serie con diferencias»: nunca «… · 1» arriba y «serie» abajo |
+| `.parte-de-dato` (`EnPartes`, en `components/en-partes.tsx`) | Un dato hecho de partes cortas separadas por « · », en una tabla o en una lista angosta: si no entra en un renglón, baja una parte entera, con el separador al final del renglón de arriba | «77,5 kg · 6 rep. ·» y, abajo, «RIR 1»: nunca «RIR» arriba y «1» abajo. «30 mediciones · 1 corregida ·» y, abajo, «1 anulada» |
+| `FraseEnPartes` (en `components/en-partes.tsx`) | Lo mismo para frases largas, en una fila: el texto corre como cualquier otro, pero no se parte entre el número y lo que cuenta, ni antes del separador (espacios que no se parten) | «3 series sin registrar ·» y, abajo, «1 serie con diferencias»: nunca «… · 1» arriba y «serie» abajo |
+| `conNumerosPegados` (en `components/en-partes.tsx`) | Lo mismo para un nombre o un renglón que trae un número adentro y no arma BE (el nombre de un método del catálogo): el número no se separa de su palabra, ni el separador baja solo | «Jackson, Pollock y Ward, 7 pliegues, mujeres · Siri»: nunca «7» arriba y «pliegues» abajo |
 | `componerLasSesiones` · `relacionDeUnaSerie` · `contarLasVistasDeSesiones` (dominio) | Las filas de Entrenamiento · Registros, cómo quedó cada serie frente a lo indicado y las cantidades de las vistas | «Dentro de lo indicado» · «RIR: por debajo» · «Carga: por encima de la sugerida» |
+| `.tomas-del-area` · `.toma-de-la-lista` · `.medicion-de-la-toma` | Antropometría · Tomas: la lista en tramos de protocolo, y una medición en una fila que se abre entera, con su nombre corto, lo que se sale de lo común y el valor que rige (II.9) | «Cintura · Corregida · 84» debajo de «Perímetros · cm» |
+| `.medicion-abierta` · `.historia-de-medicion` · `.cambios-de-resultados` | El contenido del panel de una medición o de un resultado: el valor grande con sus marcas, la historia de lo más nuevo a lo más viejo y lo que cambió, con el valor de ahora y el de antes | «Índice cintura/cadera 0,81 · antes 0,46» |
+| `Marca` (`anthropometry/marca.tsx`) | La clase de un dato o su excepción, con su ícono y su palabra: el ícono solo no alcanza | «Medido», «Corregida», «Anulada» |
+| `tramosDeProtocolo` · `medicionesPorFamilia` · `historiaDeLaMedicion` · `loQueCambio` (dominio) | Las reglas de Antropometría · Tomas: los tramos de la lista, las filas con el valor que rige, la historia por la cadena de correcciones y lo que cambió en los resultados | «30 mediciones · 1 corregida · 1 anulada» |
 | `OrigenDelDato` | De dónde sale un punto de Analizar, en el lugar de la lectura: el valor, qué es y sus fuentes, con lo que aporta cada comida | «795 kcal»: Almuerzo, 311 kcal; Cena, 484 kcal |
 | `useDetalleAlCostado` (`al-costado.ts`) | Si la ventana tiene lugar para un detalle al costado (desde 1200 px) | La línea de tiempo y Analizar |
 | `ParametrosDelEjercicio` | Los datos de una pregunta, para elegirlos en el lugar; uno sin otra opción va escrito | «Ejercicio: Peso muerto · Serie: 1 · Unidad: kg» |
@@ -679,15 +686,61 @@ crear otro, se usa uno de estos.
 ### II.9 Pestaña Antropometría (no se extiende al resto del website)
 
 Estas reglas son de la pestaña Antropometría del profesional y de su lámina. No valen para el dashboard ni para las
-otras pestañas.
-- **Lo principal, primero.** En la lámina, el orden es: qué se muestra (la toma y la hoja); enseguida, la imagen con
-  «Descargar imagen»; después, los ajustes de cómo se ve; al final, la explicación. En el teléfono, la imagen entra en la
-  primera pantalla; el orden del documento es el del teléfono, y el foco lo sigue.
-- **Desde 1100 px (`69rem`), columnas con sentido:** las tomas, la lista a la izquierda (fija) y la abierta a la
-  derecha; la lámina, lo que se elige a la izquierda y la imagen a la derecha, fija mientras se ajusta.
-- **Piezas propias:** `.tomas` (elegir entre registros por su fecha de ocurrencia; el elegido, marcado por forma) y
-  `.mediciones` / `.medicion__fila` (filas compactas por familia, con el valor alineado y las acciones en la fila).
-- **En la toma, los cálculos van antes que las mediciones.**
+otras pestañas. La pestaña tiene tres secciones: Tomas, Evolución y Lámina.
+
+**Tomas** (`anthropometry/evaluaciones.tsx`, `medicion.tsx` y `calculos.tsx`; las reglas, en
+`tomas-de-antropometria.ts` del dominio; WP-ESCRITORIO-AREAS, parte 3):
+- **La lista, al costado, en tramos seguidos del mismo protocolo.** Cada toma se nombra por cuándo se tomó (la fecha de
+  ocurrencia, con su hora) y dice sus cuentas: mediciones, corregidas y anuladas. No se reordena para agrupar: una toma
+  con otro protocolo en el medio parte el tramo, y así se ve cuándo cambió. La elegida va marcada por forma (un borde),
+  no solo por color, y vive en la dirección. La lista se lee una vez por visita: cambiar de toma no le pide nada a la
+  API.
+- **Lo que vale para toda la toma se dice una vez, arriba:** cuándo se tomó, la clase del dato si todas las mediciones
+  la comparten, y en un renglón el protocolo, las cuentas, cuándo se registró y quién.
+- **En la toma, los cálculos van antes que las mediciones.** Los resultados vigentes, por categoría del catálogo y, en
+  cada una, por método: cada uno con el nombre de su método y los decimales que el método declara. Los que quedaron sin
+  efecto, a pedido. El orden es el neutral del dominio, el mismo de la lámina: nunca por «mejor».
+- **Las mediciones, por familia, y en cada fila solo lo que se sale de lo común:** el nombre corto («Cintura», debajo
+  de «Perímetros»), el valor que rige y, si corresponde, «Corregida», «Anulada» o «Sin valor vigente». **La unidad se
+  dice una vez, en el título de la familia, si todas sus mediciones la comparten,** como en el encabezado de una
+  columna (I.2); si no, en cada fila. El lector de pantalla oye siempre el nombre completo y el valor con su unidad:
+  con los nombres cortos hay dos «Antebrazo» y dos «Pantorrilla».
+- **La fila entera abre la medición, en un panel** que retiene el foco: el valor que rige, su historia de lo más nuevo
+  a lo más viejo (el original se conserva), lo que cambió en los resultados y, al pie, corregir y anular. No hay
+  acciones en la fila. Lo que se acaba de hacer se dice adentro del panel, que sigue abierto: un aviso de la página
+  quedaría detrás.
+- **Anular no se presenta como borrar:** lo que hay que saber —que no borra nada y que no se reactiva— va arriba del
+  botón, que no es rojo ni el principal. Una medición anulada conserva su valor a la vista y no ofrece ninguna acción.
+- **«Lo que cambió con la corrección» sale de una relación entre cálculos,** no de una coincidencia de fechas: el
+  resultado vigente que reemplaza a otro, con el valor de ahora y el de antes. Al anular, los resultados que usaban la
+  medición quedan sin efecto y sin reemplazo: se nombran con el valor que tenían, y no se pone un cero. Lo que no se
+  puede atribuir no se atribuye, y se dice.
+- **Un resultado y «Calcular con un método» se abren en el mismo panel.** Una falla al leer los cálculos se dice en su
+  bloque, con «Reintentar»: la toma y sus mediciones siguen a la vista, y no es «todavía no hay cálculos».
+- **La carga de una toma no es una sección:** se abre desde «Tomas» («Preparar una toma» o, si ya hay una empezada,
+  «Seguir con la toma en preparación»), con «Tomas» marcada y un enlace para volver. Al registrar se vuelve a «Tomas»
+  con esa toma abierta, y el aviso se dice ahí.
+- **Una toma de pocas mediciones (hasta seis) no reserva el lugar de las familias que no tiene:** van una al lado de la
+  otra. Con más, cada familia tiene su lugar fijo —lo corto, los pliegues y los perímetros—, que es como se lee un
+  perfil completo.
+- **Ningún renglón separa un número de la palabra que cuenta** («1» arriba y «anulada» abajo; «7» y «pliegues»), ni
+  deja el separador al principio: las cuentas de la lista bajan de a una entera, y los nombres de los métodos y el
+  renglón de la toma llevan espacios que no se parten (II.8).
+- **Anchos:** por encima de 1200 px (`75rem`), la lista a la izquierda y la toma a la derecha; hasta 1360 px (`85rem`)
+  lo corto (masa y estatura, diámetros) pasa arriba y pliegues y perímetros se reparten el ancho; hasta 1200 px la
+  lista pasa arriba, como un selector con las mismas tomas y sus cuentas: se muestra uno u otro, nunca los dos. Las
+  filas miden 44 px (I.5): una toma de treinta mediciones no entra en una pantalla.
+- **Piezas propias:** `.tomas-del-area` (la lista y la toma abierta), `.tramo-de-tomas` y `.toma-de-la-lista`;
+  `.medicion-de-la-toma` y `.resultado-de-la-toma` (una fila que abre su detalle); `.medicion-abierta` (el contenido
+  del panel, de una medición o de un resultado), `.historia-de-medicion` y `.cambios-de-resultados`; y `Marca` (la
+  clase de un dato o su excepción, con su ícono).
+
+**Lámina:**
+- **Lo principal, primero.** El orden es: qué se muestra (la toma y la hoja); enseguida, la imagen con «Descargar
+  imagen»; después, los ajustes de cómo se ve; al final, la explicación. En el teléfono, la imagen entra en la primera
+  pantalla; el orden del documento es el del teléfono, y el foco lo sigue.
+- **Desde 1100 px (`69rem`), dos columnas:** lo que se elige a la izquierda y la imagen a la derecha, fija mientras se
+  ajusta.
 - **El documento descargable y su vista previa son cosas distintas.** La imagen que se descarga (2160 × 3840) lleva
   todos los datos con sus unidades. En el teléfono, «Ver en tamaño real» la muestra a 1080 px dentro de un visor que se
   recorre con el dedo, y «Ver entera» la devuelve. El botón dice su estado (`aria-pressed`).
@@ -1190,6 +1243,13 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | Una versión del plan que no se puede leer, en Registros | Se descartaba en silencio: la tabla comparaba con lo general de la prescripción. | Las sesiones lo dicen, hay un bloque con «Reintentar» y «Con diferencias» queda sin número (II.6). | Corregida | Áreas, 2 |
 | La tabla de adentro de un detalle, en un área | Una franja a cada lado de la tabla (oscura en Azul noche): las tapas de lo que se desplaza tomaban el color del fondo de la página. | Llevan el color del detalle o del diálogo donde está la tabla, en Nutrición y en Entrenamiento (II.8). | Corregida | Áreas, 2 |
 | Un dato que no entra en un renglón, en una tabla o en una fila angosta | Se partía en cualquier lado: «RIR» arriba y su número abajo; «… · 1» arriba y «serie con diferencias» abajo. | En la tabla baja una parte entera; en la fila, el número no se separa de lo que cuenta. El separador queda al final del renglón de arriba (II.8). | Corregida | Áreas, 2 |
+| Antropometría · Tomas | Cuatro secciones. De la toma abierta, cada medición con «Medido · Vigente» y dos botones («Corregir» y «Anular»); cada clic en otra toma volvía a leer la lista, el detalle, los métodos y los cálculos. | Tres secciones. La lista, en tramos del mismo protocolo; lo que vale para toda la toma, una vez; cada medición, una fila que abre su panel, con la historia y los dos actos. Cambiar de toma no vuelve a leer nada (II.9). | Sustituida | Áreas, 3 |
+| «En preparación» | Una sección de Antropometría. | La carga se abre desde «Tomas», que dice si ya hay una toma empezada; al registrar se vuelve a «Tomas» con esa toma abierta (II.9). | Sustituida | Áreas, 3 |
+| La unidad de un valor | En cada valor, siempre. | En una lista de valores que la comparten, una vez, en el título del grupo; el nombre accesible de cada valor la lleva igual (I.2). | Aclarada | Áreas, 3 |
+| Los resultados calculados de una toma | Una lista con todas las corridas, vigentes y sin efecto, en el orden de la API, cada una con sus desplegables. | Los vigentes, por categoría y por método; los que quedaron sin efecto, a pedido; el detalle de cada uno, en el panel (II.9). | Sustituida | Áreas, 3 |
+| Qué pasa con los resultados al corregir o anular una medición | No se decía. | El panel de la medición lo dice, por la relación entre cálculos: el valor de ahora y el de antes; al anular, los que quedaron sin efecto, sin un cero en su lugar (II.9). | Nueva | Áreas, 3 |
+| «Evaluación», en Antropometría | El nombre de una toma en la carga, en los avisos, en la evolución y en el pendiente del Espacio profesional. | «Toma», en todos; las direcciones no cambian. | Sustituida | Áreas, 3 |
+| El aviso «Toma registrada» | Se decía en la carga, que se desmontaba al volver: podía no verse. | Se dice en «Tomas», adonde se vuelve (II.9). | Corregida | Áreas, 3 |
 
 ---
 

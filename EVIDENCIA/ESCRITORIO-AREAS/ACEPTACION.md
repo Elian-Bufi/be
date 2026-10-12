@@ -385,3 +385,172 @@ tiempos (los abre con la respuesta armada).
 2. **Si una diferencia de RIR tiene que contar** igual que una de repeticiones, a la luz del 24 de 25 de arriba.
 3. **El gráfico por serie** («Ver en un gráfico», en el detalle): la tabla dice lo mismo. No se borró; si Dirección
    confirma que la tabla lo reemplaza, se retira en otro cambio (F-32).
+
+## Parte 3 · Antropometría · Tomas y una medición (2026-10-12)
+
+La sección «Tomas» pasó de una lista de tomas y, de la abierta, una fila por medición con «Medido · Vigente» y dos
+botones («Corregir» y «Anular»), más una lista con todas las corridas de cálculo —cada una con su desplegable y su
+«Dejar como referencia»—, a la lectura de las maquetas 22 y 29: **la lista en tramos del mismo protocolo; lo que vale
+para toda la toma, dicho una vez; los resultados vigentes, por categoría; las mediciones, por familia y con solo lo que
+se sale de lo común; y cada medición, en un panel,** con su historia, lo que cambió en los resultados y los dos actos.
+«En preparación» dejó de ser una sección: la carga de una toma se abre desde «Tomas». No se quitó ninguna función:
+corregir, anular, calcular con un método, dejar un resultado como referencia, ver los cálculos sin efecto y la lámina
+siguen, cada uno a un clic. `vista=evaluaciones`, `vista=preparacion` y `evaluacion=` abren lo mismo que antes. Sobre
+la base propia (`be_test_escritorio`, regenerada antes de cada pasada) y la compilación estática del código de esta
+parte: `a7ba80c` (la pantalla), `969fd56` (las palabras del Espacio profesional), `5b7ba8c` (las reglas de estilo de la
+pantalla de antes, que salieron) y `defe9e1` (lo que mostraron la prueba de la prueba y las capturas).
+
+**Medido en la página real,** con la toma del perfil completo (30 mediciones y 8 resultados calculados, en las cuentas
+descartables, recién cargada por la API). El «antes» es la pantalla como quedó al cerrar la parte 2 (`d4b262b`), puesta
+sobre el código de hoy y compilada así, con los mismos datos: los textos son los de hoy («toma»), la disposición es la
+de antes.
+
+| Ancho de la ventana | Antes | Antes, con «Calcular con un método» abierto | Ahora | Ahora, después de corregir, anular, calcular y dejar una referencia |
+|---|---|---|---|---|
+| 1440 px | 4.283 px: 4,8 pantallas de 900 | 5.098 px | 1.162 px: 1,3 pantallas | 1.260 px |
+| 1280 px | 4.283 px | No se midió | 1.311 px | 1.402 px |
+| 1024 px | 4.463 px | No se midió | 1.813 px | 1.904 px |
+
+Con el asesorado A (ocho tomas; la que abre sola tiene dos mediciones) la página medía 1.154 px a 1440 y a 1280, y
+1.240 a 1024; ahora mide 1.018, 1.018 y 900: ahí manda el largo de la lista de tomas. La carga de una toma, que era una
+sección, medía 2.996 px y mide 3.034 (sumó el enlace para volver a «Tomas»): no cambió en esta parte, es la 9. **Una
+toma completa no entra en una pantalla:** cada fila mide 44 px, que es lo que mide todo lo que se toca (guía, I.5); la
+maqueta las dibuja más bajas (su dibujo mide 960 px).
+
+**Las lecturas.** Al entrar, «Tomas» lee una vez la lista, una vez la toma en preparación, una vez el detalle de cada
+toma (ocho, en el asesorado A), una vez los métodos y una vez los cálculos. Cambiar de toma no lee nada. La pantalla de
+antes volvía a pedir la lista, el detalle, los métodos y los cálculos en cada clic sobre otra toma (leído en su código;
+no se contó en pantalla).
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Al entrar se lee la lista entera una vez, la toma en preparación una vez y una vez el detalle de cada toma (hasta veinte): ninguno dos veces. Los métodos y los cálculos, una vez (F-33) | `recorrido.mjs funcional`, comprobaciones de «Tomas» (solas, con `recorrido.mjs tomas`). Lo esperado se calcula a mano con lo que devuelve la API: no se usa el módulo que arma la pantalla | Pasa: 1, 1, 8 detalles de 8 tomas, 1 y 1 | Verificado automáticamente |
+| La lista tiene todas las tomas registradas, de la más nueva a la más vieja, en tramos seguidos del mismo protocolo (una toma con otro protocolo en el medio parte el tramo); cada una dice su día y hora y sus cuentas: mediciones, corregidas y anuladas (C-64) | Lo mismo, con las cuentas hechas a mano sobre el detalle de cada toma | Pasa: 8 tomas en 3 tramos: «Perfil antropométrico completo» (5), «Protocolo de laboratorio (demostración)» (1) y «Perfil antropométrico completo» (2) | Verificado automáticamente |
+| El título dice «Tomas», cuántas hay registradas y que una toma registrada no se edita; el botón dice «Preparar una toma» si no hay ninguna empezada (C-58) | Lo mismo | Pasa: «8 registradas.» | Verificado automáticamente |
+| Sin una toma en la dirección abre la más reciente, marcada en la lista; su encabezado dice cuándo se tomó, la clase del dato si todas las mediciones la comparten y, en un renglón, el protocolo, las cuentas, cuándo se registró y quién (F-36) | Lo mismo | Pasa: «Toma del 11 oct 2026, 08:00» · «Medido» | Verificado automáticamente |
+| Elegir otra toma la pone en la dirección, la marca en la lista y la muestra sin pedirle nada a la API ni pasar por «Cargando…» (F-33) | Lo mismo, con un vigía puesto antes del clic | Pasa: 0 pedidos y 0 veces «Cargando…» | Verificado automáticamente |
+| Las mediciones van por familia, en el orden del dominio y, adentro, en el del catálogo; cada fila dice el nombre corto, el valor que rige y solo lo que se sale de lo común; la unidad, una vez en el título de la familia si todas la comparten. El lector de pantalla oye el nombre completo y el valor con su unidad (F-36, C-61) | Lo mismo, fila por fila, con el orden del catálogo escrito a mano | Pasa: «Masa y estatura» (1), «Pliegues cutáneos · mm» (7) y «Perímetros · cm» (2); «Pliegue bicipital: 6 mm · Anulada» | Verificado automáticamente |
+| Una toma de hasta seis mediciones muestra sus familias una al lado de la otra, sin dejar vacío el lugar de las que no tiene; una más cargada conserva el lugar fijo de cada familia (F-36) | Lo mismo, midiendo la separación en la página | Pasa: 26 px entre «Masa y estatura» y «Perímetros». **Antes del arreglo falló:** 351 px | Verificado automáticamente |
+| Entre las mediciones no hay ningún botón «Corregir» ni «Anular»: la fila entera abre la medición en un panel que retiene el foco, sin pedirle nada a la API, con su valor que rige, sus marcas, el protocolo, cuándo se tomó, su historia y los dos actos. Escape lo cierra y el foco vuelve a la fila (C-62) | Lo mismo | Pasa: «Peso · 80,2 kg · Medido, Vigente»; «Corregir medición» y «Anular esta medición» | Verificado automáticamente |
+| Una medición anulada se abre igual: dice «Anulada» y no «Vigente», conserva su valor, su historia empieza por la anulación con el motivo y quién la hizo, dice que no se reactiva y no ofrece ninguna acción (F-37) | Lo mismo; la misma consulta encuentra las acciones en una medición vigente | Pasa: «6 mm»; «Por qué se anuló: «Sitio mal marcado». La anulaste vos.» | Verificado automáticamente |
+| Si ningún resultado de la toma usaba la medición anulada, «Lo que pasó con los resultados» lo dice con las palabras de una anulación (F-38) | Lo mismo | Pasa: «Ningún resultado calculado de esta toma quedó sin efecto por esta anulación.» **Antes del arreglo falló:** decía «…cambió por esta corrección» | Verificado automáticamente |
+| Una medición corregida muestra en la fila y en el panel el valor que rige, no el que se tomó primero, con «Corregida»; su historia va de lo más nuevo a lo más viejo: la corrección, con su motivo y quién la hizo, marcada como el valor vigente, y el original, que se conserva (F-37) | Lo mismo; la fila y el panel, leídos de la pantalla | Pasa: la fila, «Cintura 90,5 Corregida»; el panel, «90,5 cm» (se tomó 95) | Verificado automáticamente |
+| Si ningún resultado de la toma usa la medición corregida, «Lo que cambió con la corrección» lo dice, sin listar nada ni un «antes» (F-38) | Lo mismo. En el asesorado A la corrección se cargó en la base, sin cálculos que la usen | Pasa: «Ningún resultado calculado de esta toma cambió por esta corrección.» | Verificado automáticamente |
+| Los resultados vigentes van por categoría del catálogo y, adentro, por método, cada uno con los decimales que su método declara; «Ver N anteriores, sin efecto» está solo si hay alguno; una toma sin cálculos lo dice y no muestra ninguna categoría (F-39, C-63) | Lo mismo, con el orden y los decimales calculados a mano | Pasa: «Índice de masa corporal (IMC) 25,1 kg/m²»; «Todavía no hay cálculos para esta toma.» | Verificado automáticamente |
+| Un resultado se abre en el panel: su método, su valor, «Calculado», con qué se calculó (la versión, la regla, la precisión y una línea por entrada) y, si corresponde, «Dejar como referencia». «Calcular con un método» se abre en el mismo panel, con todos los métodos del catálogo; «Cancelar» lo cierra sin escribir nada (F-39) | Lo mismo | Pasa: 2 entradas; 22 métodos | Verificado automáticamente |
+| «En preparación» dejó de ser una sección: el marco tiene tres. El botón de «Tomas» abre la carga (`vista=preparacion`), con «Tomas» marcada y un enlace de la aplicación para volver (F-35, C-59) | Lo mismo | Pasa: «Tomas», «Evolución» y «Lámina»; la carga, «Nueva toma» | Verificado automáticamente |
+| La toma elegida vive en la dirección: se abre al entrar con ella, y «Actualizar» vuelve a leer la lista y la deja abierta (F-33) | Lo mismo | Pasa: una lectura de la lista | Verificado automáticamente |
+| Una toma pedida por la dirección que no está disponible lo dice con el texto neutral, sin tapar la lista, que sigue completa; «Volver a la lista de tomas» saca el parámetro y abre la más reciente (F-33) | Lo mismo, con un identificador que no existe | Pasa: «La toma solicitada no está disponible. La lista de tomas sigue completa.» | Verificado automáticamente |
+| Si la lista no se puede leer, la sección dice la falla con «Reintentar» y nunca «Todavía no hay tomas registradas». Si lo que no se puede leer son los cálculos, la toma y sus mediciones siguen a la vista, el bloque de resultados dice que no pudo leerlos (no «todavía no hay cálculos») y «Reintentar» los trae (F-39) | Lo mismo, con dos 503 simulados en el navegador | Pasa: «No pudimos leer los resultados calculados de esta toma.» | Verificado automáticamente, sobre respuestas simuladas |
+| «Tomas» tiene su ayuda en el marco del área; Evolución, que no tiene, no muestra el botón (F-14, F-43) | Lo mismo | Pasa: «Cómo se leen las Tomas», 11 renglones | Verificado automáticamente |
+| axe no encuentra faltas en «Tomas», ni con una medición abierta en el panel, ni con la ayuda abierta | Lo mismo | Pasa | Verificado automáticamente |
+| A 1280 px la lista sigue al costado de la toma; a 1024 px pasa arriba, como un selector con las mismas tomas, sus cuentas y sus tramos, y elegir ahí abre la toma y la pone en la dirección. En ningún ancho la página desborda de costado (F-41) | Lo mismo | Pasa: 8 opciones de 8 | Verificado automáticamente |
+| **Lo que escribe,** sobre la toma del perfil completo de las cuentas descartables. La toma abre sola y se lee como la maqueta 22: las 30 mediciones en sus cinco familias, y sus resultados por categoría (F-36) | `recorrido.mjs mediciones`: corre solo, con esas cuentas recién generadas, y no toca los datos de A, B ni C. Lo esperado sale de lo que devuelve la API antes y después de cada escritura | Pasa: 2, 11, 13, 3 y 1 mediciones; «30 mediciones» | Verificado automáticamente |
+| Corregir pide el valor y el motivo: sin los dos, el botón está apagado; un valor que no se entiende como número se marca en su campo y no sale ningún pedido (F-37) | Lo mismo, con «84,5,1» | Pasa | Verificado automáticamente |
+| Si la corrección no se puede guardar, el panel lo dice adentro, sigue abierto con el formulario y lo escrito, y la medición no cambió (F-37) | Lo mismo, con un 503 simulado en el navegador | Pasa | Verificado automáticamente, sobre una respuesta simulada |
+| Al corregir sale un solo pedido, con el valor, el motivo y la unidad de la medición. El panel sigue abierto y lo dice: rige el valor corregido, con «Corregida», y la historia tiene la corrección («La corregiste vos», marcada como el valor vigente) y el original, que se conserva (F-37) | Lo mismo: la cintura, de 48 a 84 cm, por la pantalla | Pasa: «Corrección registrada. El valor original se conserva.» | Verificado automáticamente |
+| «Lo que cambió con la corrección» lista los resultados que la API volvió a calcular porque usaban la cintura, cada uno con el valor de ahora y el de antes: ni uno más ni uno menos, y ninguno que no la usa (F-38) | Lo mismo: los pares salen, a mano, de la corrida vigente y la que reemplaza, según la API | Pasa: «Índice cintura/cadera 0,81 antes 0,46», «Índice cintura/talla 0,50 antes 0,29» y «Masa grasa relativa (RFM), mujeres 36,0 % antes 6,0 %» | Verificado automáticamente |
+| Cerrado el panel, la toma ya dice lo nuevo sin volver a entrar: la fila de la cintura, 84 con «Corregida»; la lista, «1 corregida»; los resultados, con su valor nuevo; y los anteriores, a un clic (F-39) | Lo mismo | Pasa: «Ver 3 anteriores, sin efecto» | Verificado automáticamente |
+| Los cálculos que quedaron sin efecto se abren a pedido, en el lugar: los que la API da por reemplazados, cada uno con su método y el valor que tenía (F-39) | Lo mismo | Pasa: los tres | Verificado automáticamente |
+| Anular dice antes del botón que no borra nada y que no se reactiva, pide el motivo y su botón no es el principal. Al anular sale un solo pedido; el panel sigue abierto, dice «Anulada», conserva el valor, cuenta la anulación con su motivo y ya no ofrece ninguna acción (F-37) | Lo mismo: el pliegue de la pantorrilla, por la pantalla | Pasa: «Medición anulada. Su historia se conserva.» | Verificado automáticamente |
+| Los resultados que usaban la medición anulada quedan sin efecto y sin un cálculo que los reemplace: el panel los nombra con el valor que tenían y dice que no se reemplazan por cero; en la toma dejan de estar entre los vigentes, sin un cero ni un resultado vacío en su lugar (F-38) | Lo mismo | Pasa: «Suma de 6 pliegues (ISAK): antes 134,0 mm» | Verificado automáticamente |
+| «Calcular con un método» muestra la ficha del método elegido; al calcular sale un solo pedido y el panel pasa a mostrar el resultado nuevo, que queda en su categoría sin volver a entrar (F-39) | Lo mismo, con un método que la toma cubre y todavía no tenía | Pasa: «Masa libre de grasa (Durnin y Womersley), mujeres» | Verificado automáticamente |
+| «Dejar como referencia» explica antes del botón que no cambia el cálculo ni borra los otros; sale un solo pedido, el resultado queda marcado «Referencia» en el panel y en la toma, y es el único marcado: BE no marca ninguno por su cuenta (F-39) | Lo mismo | Pasa: «Jackson, Pollock y Ward, 7 pliegues, mujeres · Siri» | Verificado automáticamente |
+| A 1440, 1280 y 1024 px, ningún renglón deja un número separado de la palabra que cuenta ni el separador al principio: en las cuentas de la lista, en el renglón de la toma y en los nombres de los métodos (F-41) | Lo mismo: mide dónde quedó cada letra en la pantalla, no cómo está armado el texto; exige que haya textos de más de un renglón | Pasa: 13, 13 y 9 textos; 5, 8 y 7 en más de un renglón. **Antes del arreglo falló:** «1 corregida · 1 / anulada», a 1440 y a 1280 | Verificado automáticamente |
+| A 1440 px, con «Ver N anteriores, sin efecto» a la vista, el título de los resultados, su nota y sus dos acciones siguen en un renglón: las acciones no bajan, y la nota no se parte para dejarles lugar (F-41) | Lo mismo, midiendo la altura del título y de las acciones, y en cuántos renglones quedó la nota | Pasa: los dos, a los 445 px, y la nota en un renglón (a 1280 px, donde no entran, las acciones bajan: 436 y 476) | Verificado automáticamente |
+| Con una toma guardada y sin registrar, «Tomas» lo dice: el botón pasa a «Seguir con la toma en preparación» y cuenta sus mediciones; no está entre las registradas, y el botón lleva a la carga, que la retoma con lo guardado (F-35) | Lo mismo: una toma de una medición, cargada por la pantalla | Pasa: «Hay una toma en preparación, con 1 medición.»; «4 registradas.» | Verificado automáticamente |
+| Registrar una toma desde la carga vuelve a «Tomas» con esa toma abierta —no la más reciente—, puesta en la dirección y marcada en la lista, que la tiene en su lugar y cuenta una más. Sale un solo pedido para crearla y uno solo para registrarla (F-35) | Lo mismo: la toma nueva es de ocho días antes que la completa | Pasa: «Toma del 2 oct 2026, 09:15»; «5 registradas.» | Verificado automáticamente |
+| Al volver de registrar, «Tomas» dice «Toma registrada. Ya forma parte de la evolución.» en un aviso que se ve entero dentro de la ventana (F-35) | Lo mismo: el aviso se lee apenas aparece | Pasa | Verificado automáticamente |
+| axe no encuentra faltas en la toma completa, ni en el panel de una medición corregida con lo que cambió | Lo mismo | Pasa | Verificado automáticamente |
+| Las reglas: el orden y los tramos de la lista, las cuentas, las mediciones por familia, el nombre corto, las marcas, la historia de una medición por su cadena de correcciones y lo que cambió con una corrección | `packages/domain/src/tomas-de-antropometria.test.ts`, en la batería | 24 de 24 | Verificado automáticamente |
+| El titular de una medición muestra el valor vigente, no el original; la pantalla no elige ningún valor | `scripts/copy-pantallas.test.cjs`, adaptada a las pantallas nuevas | Pasa | Verificado automáticamente |
+| Ningún texto de Antropometría usa una palabra prohibida, tampoco los que dependen de una cantidad | `dominio-wp05.test.ts` (T13), que ahora llama a cada texto con 0, 1 y 3 | Pasa | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de esta parte | `recorrido.mjs`: capturas 60 de 60, funcional 316 de 316 (las 292 de antes y las 24 de `tomas`), descartable 22 de 22, mediciones 18 de 18 y estimación 7 de 7. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 80 de 80, funcional 86 de 86 y revocación 6 de 6. Pasada del 2026-10-12, de 08:57 a 09:35, sobre `defe9e1`, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10). `parte-3/resumen-de-la-pasada.txt`. **Después de la pasada salió una regla de estilo** (`591b1b4`; está contado en la prueba de la prueba): sobre esa compilación se corrieron de nuevo `tomas` (24 de 24) y `mediciones` (18 de 18), no la pasada entera | Verificado automáticamente |
+| Toda la batería de la CI | La CI de GitHub sobre los commits de código | En verde las cuatro corridas: 38235248561 sobre `a7ba80c`, 38236853710 sobre `5b7ba8c` (que trae `969fd56`), 38246004713 sobre `defe9e1` y 38253400716 sobre `591b1b4`. En cada una: el legajo; la batería completa (typecheck; dominio, 674, con las 24 nuevas; guiones, 346; y las pruebas de la API); la integración; y la imagen de la API | Verificado automáticamente |
+| La pantalla, a 1440 px en sus estados (la lista, otra toma, una medición, una anulada, una corregida, un resultado, la ayuda, las dos fallas, una toma que no está y la carga) y a 1280 y 1024 px, en los dos temas; y la toma completa, recién cargada y después de escribir (los anteriores, la medición corregida y la anulada, la referencia, «Calcular», y los formularios de corregir y de anular) | `ver.mjs`, sobre datos recién generados | 62 capturas de ahora (`parte-3/ahora/`) y 32 de antes (`parte-3/antes/`). `parte-3/tomas-antes-y-ahora.png`: la toma completa, recién cargada, en las dos pantallas. Las dos capturas de fallas son sobre respuestas simuladas | Observado en una captura real |
+
+Las comprobaciones negativas van con una positiva de la misma consulta: «entre las mediciones no hay botones» (el
+panel tiene los dos actos), «una anulada no ofrece ninguna acción» (una vigente las ofrece), «Evolución no muestra el
+botón de ayuda» («Tomas» lo muestra), «a 1024 px la lista no está» (está el selector, y a 1280 está la lista), «el
+botón dice Preparar una toma» sin ninguna empezada (dice «Seguir con la toma en preparación» cuando hay una) y «ningún
+resultado en lugar del que quedó sin efecto» (está entre los anteriores).
+
+**La prueba de la prueba.**
+
+- **Las reglas, rotas de a una** (`resultados/calculo-roto-de-a-una-regla.txt`): 50 roturas del módulo del dominio, cada
+  una contra sus 24 pruebas. Se notaron las 50. Antes de la primera corrida se reordenó un caso de prueba: como estaba
+  escrito, los datos ya venían ordenados, y romper el orden de «lo que cambió» no se habría notado.
+- **Al armar las roturas de la pantalla aparecieron dos huecos, antes de correr nada.** Uno: la comprobación de la
+  medición corregida decía «en la fila y en el panel» y miraba solo el panel; la toma de esa medición no es la que
+  recorre la comprobación de las familias, así que la fila corregida no la leía nadie. Se sumó la lectura de la fila. La
+  rotura que lo muestra —en el dominio, la fila toma el valor original— dio «la fila: Cintura 95 Corregida · el panel:
+  90,5 cm». Dos: ningún recorrido registraba una toma por la pantalla, y esta parte cambió qué pasa al registrar
+  (adónde se vuelve, y dónde se dice el aviso). Se sumaron sus comprobaciones al recorrido que escribe.
+- **La pantalla, rota y compilada así, en tres tandas.** **Primera corrida,** sobre la pantalla de `a7ba80c` y `5b7ba8c`, con las comprobaciones ya reforzadas (`resultados/primera-corrida/`): 19 roturas del website contra `tomas`, 4 de las reglas del dominio contra `tomas`, y 14 contra `mediciones` (12 del website y 2 del dominio). Se notaron las 37, cada una por su comprobación, y ninguna otra falló. **Segunda corrida,** sobre `defe9e1`, después de los ajustes que mostraron las capturas y con las roturas de las comprobaciones nuevas (`resultados/compilacion-rota-tanda-A.txt`, `-B` y `-M`): 20 de 20, 4 de 4 y **16 de 17.** La que no se notó —«Calcular con un método» con su ancho de antes— mostró que sobraba una regla. Para que el título de los resultados entrara en un renglón se habían hecho dos cosas: angostar ese botón y dejar que la nota cediera lugar. Con la segunda sola, el título y las acciones seguían en un renglón (la nota se partía en dos), y la comprobación miraba solo el título y las acciones. Se quitó la regla que sobraba, la comprobación mira ahora también la nota, y la rotura se repitió sola sobre `591b1b4` (`compilacion-rota-tanda-N.txt`): se nota, porque las acciones bajan a un segundo renglón (el título, a los 436 px; las acciones, a los 476). Que el recorrido note una rotura de las reglas del dominio muestra que lo que espera no sale del módulo que arma la pantalla. En total, 41 roturas de la pantalla y 50 de las reglas.
+- **Las comprobaciones que se sumaron después de mirar las capturas** se corrieron primero sobre la compilación que
+  tenía el defecto, y fallaron por lo que tenían que fallar: el texto de la anulación («…cambió por esta corrección»),
+  las familias de una toma de pocas mediciones (351 px) y los cortes de renglón («1 corregida · 1 / anulada»). **La del
+  encabezado de los resultados falló la primera vez por otra cosa:** medía con los anteriores abiertos, donde el enlace
+  dice «Ocultar los anteriores», y esperaba «Ver N anteriores». Se corrigió la comprobación (los pliega antes de
+  medir). Su rotura es la que la tercera tanda no notó (arriba). **La de «Seguir con la toma en preparación»** no tuvo
+  un defecto que mostrar: su rotura, en la tercera tanda, se notó.
+
+**Lo que encontraron las comprobaciones y las capturas, y qué se hizo.**
+
+- **Un texto que hablaba de una corrección que no hubo.** Una medición anulada, sin resultados que la usaran, decía «Ningún
+  resultado calculado de esta toma cambió por esta corrección». Se vio al repasar los textos del panel mientras se
+  armaban las roturas, y estaba a la vista en el detalle de una falla de la tercera tanda. Tiene su texto: «…quedó sin
+  efecto por esta anulación».
+- **«1» arriba y «anulada» abajo,** en las cuentas de la toma abierta, en la lista; y «7» y «pliegues», en el nombre de
+  un método, a 1280 px. Es el defecto que la parte 2 corrigió en Entrenamiento, y la regla ya estaba en la guía (II.8).
+  Las piezas que la aplican pasaron a un lugar común y se usan acá.
+- **El título de los resultados, en dos renglones** a 1440 px cuando está «Ver N anteriores, sin efecto»: no entraba
+  por unos pocos píxeles. En la maqueta entra en uno. «Calcular con un método» lleva ahora menos relleno, con el mismo
+  alto.
+- **Un hueco de 351 px** entre «Masa y estatura» y «Perímetros» en la toma que abre sola, que tiene dos mediciones: cada
+  familia tiene su lugar fijo, pensado para un perfil completo, y el del medio quedaba vacío.
+- **«Este cálculo dejó de tener efecto…», arriba de una lista de cuatro.** El texto era el del detalle de un cálculo.
+  La lista y la ayuda tienen el suyo, en plural.
+- **Cuatro comprobaciones de antes contaban cuatro secciones en Antropometría,** y una esperaba que su primera sección
+  conservara el ancho viejo: se pusieron al día en el commit de la pantalla.
+- **El primer intento de compilar la pantalla falló** (un ícono pedido en un tamaño que no existe), y **la primera
+  corrida del generador de la toma completa, también** (un campo del pedido tenía otro nombre).
+- **`scripts/auditoria-accesibilidad.mjs` no se tocó.** Busca las pestañas viejas de Antropometría, pero está fuera de
+  la CI y vieja en varias líneas desde antes (WP-ESCRITORIO-AMABLE, «actualizarla o retirarla»): cambiarle una sola
+  línea la haría parecer al día sin estarlo.
+
+**Lo que esta parte no comprueba:**
+
+- El uso real: falta que Dirección abra una toma, corrija una medición y diga si el panel le alcanza.
+- **«Lo que cambió», cuando se corrigieron dos entradas del mismo resultado.** Si después de esta corrección se corrigió
+  otra medición que usa el mismo cálculo, el resultado vigente y el anterior usaron esta con el mismo valor, y el cambio
+  ya no se muestra en su panel (sigue entre los anteriores, sin efecto). Está escrito en F-38; no hay un caso en los
+  datos.
+- En el asesorado A, la corrección y la anulación están cargadas en la base, sin cálculos que las usen: ahí los dos
+  bloques dicen que ningún resultado cambió. El cambio de verdad se comprueba en las cuentas descartables, escribiendo.
+- **Más de veinte tomas.** El protocolo y las correcciones se leen de las veinte más recientes, y la lista lo dice; el
+  escenario tiene ocho. Tampoco una lista que llegue incompleta («Al menos N registradas»).
+- Una toma con mediciones de dos clases («Medido» y «Reportado»), una medición sin valor vigente (la cadena de
+  correcciones sin resolver) y una medición con dos correcciones: no están en los datos. Sus reglas tienen pruebas en el
+  dominio.
+- **El orden de los resultados dentro de una categoría** es por nombre de método («Índice cintura/cadera» antes que
+  «Índice de masa corporal»); la maqueta dibuja el IMC primero.
+- El foco al abrir el panel va a «Cerrar», como en los otros paneles de la ficha, no al título.
+- La carga de una toma: no cambió en esta parte (solo sus textos y el enlace para volver). Es la parte 9.
+- Evolución y Lámina: recibieron las palabras nuevas («toma»), sin otro cambio. Las miran sus pruebas de textos y el
+  recorrido del marco; no tienen capturas nuevas.
+- Los mensajes de rechazo de la API, que siguen diciendo «evaluación» (F-40).
+- 768 y 390 px: sin comprobaciones ni capturas propias.
+- Lector de pantalla con una persona: pendiente. Se verificaron axe, el nombre completo de cada fila, el foco al abrir
+  y al cerrar el panel, y Escape.
+
+**Para decidir, sin urgencia.**
+
+1. **El alto de las filas.** Con 44 px, una toma completa mide 1.162 px a 1440; la maqueta la dibuja en 960, con filas
+   más bajas. Bajarlas es hacer más chico lo que se toca.
+2. **El orden de los resultados** dentro de cada categoría: por nombre de método, como hoy (el orden neutral del
+   dominio, el mismo de la lámina), o con el IMC primero, como la maqueta.
+3. **`scripts/auditoria-accesibilidad.mjs`:** actualizarla entera o retirarla. Hoy no corre contra ninguna de las áreas
+   recompuestas.
+4. **Los mensajes de rechazo de la API** que dicen «evaluación»: cambiarlos toca el servidor, sus pruebas y un
+   despliegue.

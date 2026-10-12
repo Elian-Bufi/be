@@ -1,0 +1,288 @@
+{
+  "ancho": 1440,
+  "tema": "azul-noche",
+  "informe": [
+    {
+      "nombre": "resumen",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "resumen-todas",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "linea-novedades",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "analizar-preguntas",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "pregunta-ejercicio-falta",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "pregunta-ejercicio",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "pregunta-cambio-nutricion",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "pregunta-etapas-nutricion",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "pregunta-etapas-nutricion-a-mano",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "pregunta-etapas-entrenamiento-falta",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "pregunta-contraste-nutricion",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "pregunta-contraste-nutricion-distintas",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "pregunta-contraste-entrenamiento-falta",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "pregunta-informacion",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "pregunta-alimentacion-falta",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "analizar-imc-punto",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "preparar-revision-nutricion",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "preparar-revision-nutricion-marcada",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "nutricion-volver-a-la-ficha",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    },
+    {
+      "nombre": "resumen-escenario-e",
+      "desborde": false,
+      "axe": [],
+      "dobles": [],
+      "errores": [],
+      "malas": []
+    }
+  ],
+  "resultados": [
+    {
+      "clave": "MIRAR",
+      "descripcion": "resumen: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "resumen-todas: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "linea-novedades: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "analizar-preguntas: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "pregunta-ejercicio-falta: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "pregunta-ejercicio: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "pregunta-cambio-nutricion: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "pregunta-etapas-nutricion: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "pregunta-etapas-nutricion-a-mano: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "pregunta-etapas-entrenamiento-falta: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "pregunta-contraste-nutricion: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "pregunta-contraste-nutricion-distintas: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "pregunta-contraste-entrenamiento-falta: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "pregunta-informacion: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "pregunta-alimentacion-falta: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "analizar-imc-punto: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "preparar-revision-nutricion: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "preparar-revision-nutricion-marcada: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "nutricion-volver-a-la-ficha: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    },
+    {
+      "clave": "MIRAR",
+      "descripcion": "resumen-escenario-e: sin desborde, sin violaciones de axe, sin doble desplazamiento y sin errores",
+      "ok": true,
+      "detalle": "{\"axe\":[],\"dobles\":[],\"errores\":[],\"malas\":[]}"
+    }
+  ]
+}

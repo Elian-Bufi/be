@@ -1,0 +1,24 @@
+NOTADA    «Calcular con un método» vuelve a su ancho de antes: el encabezado de los resultados se parte en dos renglones — F-41 (el encabezado de los resultados)
+tanda N (mediciones): 1 de 1 roturas notadas · 1 comprobaciones fallaron y 17 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-41 · A 1440 px, con «Ver N anteriores, sin efecto» a la vi… — «Ver 4 anteriores, sin efecto Calcular con un método» · el título, a los 436 px; las acciones, a los 476; la nota, en 1 renglón · a 1280, a los 436 y 476
+pasaron:
+  F-36 · La toma del perfil completo abre sola (es la más reciente) y se lee como la maqueta 22: las 30 medicion
+  F-37 · Corregir pide el valor y el motivo: sin los dos el botón está apagado (con los dos, la misma consulta l
+  F-37 · Si la corrección no se puede guardar (un 503 simulado), el panel lo dice adentro, sigue abierto con el 
+  F-37 · Al corregir sale un solo pedido, con el valor, el motivo y la unidad de la medición. El panel sigue abi
+  F-38 · «Lo que cambió con la corrección» lista los resultados que la API volvió a calcular porque usaban la ci
+  F-39 · Cerrado el panel, la toma ya dice lo nuevo sin volver a entrar: la fila de la cintura muestra 84 con «C
+  F-39 · Los cálculos que quedaron sin efecto se abren a pedido, en el lugar: son los que la API da por reemplaz
+  F-37 · Anular dice antes del botón que no borra nada y que no se reactiva, pide el motivo (sin él, el botón es
+  F-38 · Los resultados que usaban la medición anulada quedan sin efecto y sin un cálculo que los reemplace: el 
+  F-39 · «Calcular con un método» muestra la ficha del método elegido con lo que pide; al calcular sale un solo 
+  F-39 · «Dejar como referencia» explica antes del botón que no cambia el cálculo ni borra los otros; al confirm
+  F-37 · axe no encuentra faltas en la toma completa, ni en el panel de una medición corregida con lo que cambió
+  F-41 · A 1440, 1280 y 1024 px, ningún renglón deja un número separado de la palabra que cuenta («1» arriba y «
+  F-35 · Con una toma guardada y sin registrar, «Tomas» lo dice: el botón pasa de «Preparar una toma» a «Seguir 
+  F-35 · Registrar una toma desde la carga vuelve a «Tomas» con esa toma abierta (no la más reciente: es de ocho
+  F-35 · Al volver de registrar, «Tomas» dice «Toma registrada. Ya forma parte de la evolución.» en un aviso que
+  — · Corregir, anular, calcular, dejar una referencia y registrar una toma no produjeron errores de página
+última línea: 17/18 comprobaciones bien; fallan: F-41
