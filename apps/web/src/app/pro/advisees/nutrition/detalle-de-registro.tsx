@@ -20,6 +20,7 @@ import {
   UNIDAD_DE_NUTRIENTE,
   cantidad,
   contrasteDeLaComida,
+  diferenciaDeLaFilaEnPalabras,
   nutrienteParaMostrar,
   type Nutrientes,
   type RegistroDeComida,
@@ -153,7 +154,8 @@ function ContrasteConLaOpcion({ registro }: { registro: RegistroDeComida }) {
               <th scope="row">{f.nombre}</th>
               <td>{f.indicado}</td>
               <td>{f.registrado}</td>
-              <td>{f.diferencia ?? (f.estado === 'OTRA_UNIDAD' ? 'otra unidad: no se resta' : f.estado === 'IGUAL' ? 'igual' : '—')}</td>
+              {/* Siempre con palabras: una raya sola se puede leer como «falta el dato» (C-51). */}
+              <td>{diferenciaDeLaFilaEnPalabras(f)}</td>
             </tr>
           ))}
         </tbody>

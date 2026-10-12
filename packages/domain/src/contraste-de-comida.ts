@@ -58,6 +58,30 @@ export function contrasteDeLaComida(r: Pick<RegistroDeComida, 'kind' | 'option' 
   return { tipo: 'CON_LA_OPCION', opcion: r.option.label, cantidades: estado, filas };
 }
 
+/**
+ * La celda «Diferencia» de una fila, siempre con palabras: la resta o, si no hay una, por qué. Una raya sola se puede
+ * leer como «falta el dato» (WP-ESCRITORIO-AREAS, parte 1; C-51). Con las porciones del plan confirmadas no hay
+ * diferencia que comprobar; sin confirmar, no se puede comprobar; lo demás no se resta.
+ */
+export function diferenciaDeLaFilaEnPalabras(f: FilaDeContraste): string {
+  if (f.diferencia) return f.diferencia;
+  switch (f.estado) {
+    case 'IGUAL':
+      return 'igual';
+    case 'PORCIONES_DEL_PLAN':
+      return 'sin diferencia';
+    case 'SIN_CONFIRMAR':
+      return 'no se puede comprobar';
+    case 'OTRA_UNIDAD':
+      return 'otra unidad: no se resta';
+    case 'NO_LO_COMIO':
+    case 'SIN_CANTIDAD':
+    case 'SIN_INDICACION':
+    case 'DISTINTO':
+      return 'no se resta';
+  }
+}
+
 /** La fila en una línea: «Arroz: indicado 120 g · registrado 100 g (−20 g)». */
 export function filaEnPalabras(f: FilaDeContraste): string {
   return `${f.nombre}: indicado ${f.indicado} · registrado ${f.registrado}${f.diferencia ? ` (${f.diferencia})` : ''}${f.estado === 'OTRA_UNIDAD' ? ' (otra unidad: no se resta)' : ''}`;

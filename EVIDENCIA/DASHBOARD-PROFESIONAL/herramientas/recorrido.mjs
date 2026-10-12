@@ -4733,7 +4733,14 @@ const registrosEnPantalla = (page) =>
           };
         }),
       })),
-      detalle: detalle ? { titulo: t(detalle.querySelector('h3')), texto: t(detalle), conElFoco: document.activeElement === detalle.querySelector('h3') } : null,
+      detalle: detalle
+        ? {
+            titulo: t(detalle.querySelector('h3')),
+            texto: t(detalle),
+            conElFoco: document.activeElement === detalle.querySelector('h3'),
+            celdas: [...detalle.querySelectorAll('table tbody tr')].map((tr) => [...tr.children].map(t)),
+          }
+        : null,
       panel: t(aLaVista(document.querySelector('dialog.dialogo--panel[open]'))),
       vacio: t(aLaVista(document.querySelector('.registros .estado-vacio'))),
       falla: t(aLaVista(document.querySelector('.registros .estado-de-grafico--error'))),
@@ -4880,6 +4887,30 @@ async function registrosDeNutricion(page, v) {
     espera.restas.every((r) => vista.diferencia.includes(r)) &&
     vista.registro === espera.registro &&
     vista.esBoton === (espera.registro !== null);
+  /**
+   * La celda «Diferencia» de cada ingrediente de un registro, a mano: con palabras, nunca una raya. De una resta se
+   * mira el signo (el número lleva el formato de la pantalla).
+   */
+  const diferenciaAMano = (registro) =>
+    (registro.option?.items ?? []).map((item) => {
+      const estadoDeLasCantidades = registro.consumption?.status ?? 'UNCONFIRMED';
+      if (estadoDeLasCantidades === 'UNCONFIRMED') return 'no se puede comprobar';
+      if (estadoDeLasCantidades === 'PLAN_PORTIONS') return 'sin diferencia';
+      const informado = (registro.consumption?.items ?? []).find((i) => i.itemId === item.itemId);
+      if (!informado || informado.notEaten || !informado.quantity || !item.quantity) return 'no se resta';
+      if (informado.quantity.unit !== item.quantity.unit) return 'otra unidad: no se resta';
+      const resta = Math.round((informado.quantity.value - item.quantity.value) * 100) / 100;
+      return resta === 0 ? 'igual' : resta > 0 ? '+' : '−';
+    });
+  const celdasBien = (celdas, registro) => {
+    const espera = diferenciaAMano(registro);
+    return (
+      espera.length > 0 &&
+      celdas.length === espera.length &&
+      espera.every((e, i) => (e === '+' || e === '−' ? (celdas[i][3] ?? '').startsWith(e) : celdas[i][3] === e)) &&
+      !celdas.flat().includes('—')
+    );
+  };
 
   // ── La entrada: el período que propone la API, las dos lecturas y los días ────────────────────────────────────
   const alEntrar = await entrar(BASE);
@@ -5006,17 +5037,18 @@ async function registrosDeNutricion(page, v) {
   const focoAlCerrar = await page.evaluate(() => document.activeElement?.getAttribute('data-registro') ?? null);
   comprobar(
     'F-18',
-    'Tocar una fila abre su registro al costado, sin tapar la lista: el título dice la comida y la opción y recibe el foco, el registro se lee una vez por su propia operación y dice la opción que da la API, y queda en la dirección; Escape lo cierra y el foco vuelve a la fila',
+    'Tocar una fila abre su registro al costado, sin tapar la lista: el título dice la comida y la opción y recibe el foco, el registro se lee una vez por su propia operación y dice la opción que da la API; en su tabla, la diferencia de cada ingrediente va con palabras, sin rayas; queda en la dirección; Escape lo cierra y el foco vuelve a la fila',
     pedidos(`/nutrition/meal-records/${registrada.registro}`, alAbrir).length === 1 &&
       conDetalle.detalle?.titulo === `${registrada.comida} · ${opcionDelDetalle}` &&
       conDetalle.detalle.conElFoco &&
       conDetalle.detalle.texto.includes(leido.option.label) &&
+      celdasBien(conDetalle.detalle.celdas, leido) &&
       conDetalle.dias.length === E.dias.length &&
       conDetalle.dias.flatMap((d) => d.filas).some((f) => f.elegida && f.registro === registrada.registro) &&
       conDetalle.panel === null &&
       focoAlCerrar === registrada.registro &&
       !parametros(page).has('registro'),
-    `«${conDetalle.detalle?.titulo}» · foco en el título: ${conDetalle.detalle?.conElFoco} · lecturas del registro: ${pedidos(`/nutrition/meal-records/${registrada.registro}`, alAbrir).length} · la API: ${leido.option?.label} · al cerrar, el foco en la fila: ${focoAlCerrar === registrada.registro}`,
+    `«${conDetalle.detalle?.titulo}» · foco en el título: ${conDetalle.detalle?.conElFoco} · lecturas del registro: ${pedidos(`/nutrition/meal-records/${registrada.registro}`, alAbrir).length} · la API: ${leido.option?.label} · diferencias: ${(conDetalle.detalle?.celdas ?? []).map((c) => c[3]).join(' | ') || 'sin tabla'} (a mano: ${diferenciaAMano(leido).join(' | ')}) · al cerrar, el foco en la fila: ${focoAlCerrar === registrada.registro}`,
   );
 
   // ── «Actualizar» conserva lo elegido; el período de 30 días ──────────────────────────────────────────────────
@@ -5149,6 +5181,26 @@ async function registrosDeNutricion(page, v) {
       !todos90.dias.some((d) => /\b0 de\b/.test(`${d.principal} ${d.notas.join(' ')}`)),
     `${entradas90.length} registros en ${paginas90} páginas (a mano: ${Math.ceil(entradas90.length / 50)}) · ${noventa.vistas.map((x) => `${x.nombre} ${x.cuenta}`).join(' · ')} — a mano: ${ORDEN.map((k) => E90.cuentas[k]).join(', ')} · ${todos90.dias.length} días, ${sinNingunRegistro} sin ningún registro`,
   );
+  // Los días que no aportan comidas del plan: lo dicen con su frase, y la pantalla dice cuántos son.
+  const sinComidas = ctx90.descriptiveContrast.days.filter((d) => d.meals.length === 0);
+  const sinPlan90 = sinComidas.filter((d) => !d.planId);
+  const sinDiaTipo90 = sinComidas.filter((d) => d.planId);
+  const cuantos = (n) => (n === 1 ? 'un día' : `${n} días`);
+  if (sinComidas.length > 0) {
+    const enPantalla90 = (d) => todos90.dias.find((x) => x.fecha === d.date) ?? null;
+    comprobar(
+      'F-16',
+      'Un día sin plan vigente, o de un plan con más de un día tipo y sin registros que digan cuál era, lo dice con su frase y no se abre (no tiene comidas del plan que mostrar); la pantalla dice cuántos días son, y sus comidas no entran en ninguna cantidad',
+      sinPlan90.every((d) => enPantalla90(d)?.principal === 'Ese día no había un plan vigente.') &&
+        sinDiaTipo90.every((d) => /más de un día tipo/.test(enPantalla90(d)?.principal ?? '')) &&
+        sinComidas.every((d) => enPantalla90(d)?.seAbre === d.outsidePrescription.length > 0) &&
+        (sinPlan90.length === 0 || (noventa.cuenta ?? '').includes(`${cuantos(sinPlan90.length)} sin plan vigente`)) &&
+        (sinDiaTipo90.length === 0 || (noventa.cuenta ?? '').includes(`${cuantos(sinDiaTipo90.length)} sin día tipo determinado`)),
+      `sin plan vigente: ${sinPlan90.length} · sin día tipo determinado: ${sinDiaTipo90.length} · «${noventa.cuenta}»`,
+    );
+  } else {
+    informar('F-16', 'Un día sin plan vigente o sin día tipo determinado', 'el escenario no tiene ninguno en los últimos 90 días: no se pudo mirar');
+  }
 
   // ── El registro de una comida con cantidades informadas, abierto por su dirección (C-53) ──────────────────────
   const informadaE = E90.filas.find((f) => f.opcion && f.entrada?.quality.includes('QUANTITIES_REPORTED')) ?? null;
@@ -5162,18 +5214,20 @@ async function registrosDeNutricion(page, v) {
         titulo: d?.querySelector('h3')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
         texto: d?.innerText.replace(/\s+/g, ' ').trim() ?? '',
         columnas: [...(d?.querySelectorAll('table thead th') ?? [])].map((th) => th.innerText.trim()),
+        celdas: [...(d?.querySelectorAll('table tbody tr') ?? [])].map((tr) => [...tr.children].map((c) => c.innerText.replace(/\s+/g, ' ').trim())),
       };
     });
     const leidaInformada = (await leerApi(v, `/nutrition/meal-records/${informadaE.opcion}`)).data;
     comprobar(
       'C-53',
-      'El registro de una comida con cantidades informadas se abre por su dirección (aunque su día esté plegado o más abajo) y usa las palabras de BE: «Informó lo que comió de cada ingrediente», y la tabla de ingredientes con las columnas «Indicado», «Registrado» y «Diferencia»; dice la opción que da la API',
+      'El registro de una comida con cantidades informadas se abre por su dirección (aunque su día esté plegado o más abajo) y usa las palabras de BE: «Informó lo que comió de cada ingrediente», y la tabla de ingredientes con las columnas «Indicado», «Registrado» y «Diferencia», con la diferencia de cada ingrediente dicha con la resta o con palabras, sin rayas; dice la opción que da la API',
       parametros(page).get('registro') === informadaE.opcion &&
         (informada.titulo ?? '').startsWith(`${informadaE.comida} · `) &&
         informada.texto.includes('Informó lo que comió de cada ingrediente') &&
         igual(informada.columnas, ['Ingrediente', 'Indicado', 'Registrado', 'Diferencia']) &&
-        informada.texto.includes(leidaInformada.option.label),
-      `«${informada.titulo}» · columnas: ${informada.columnas.join(', ') || 'sin tabla'} · la API: ${leidaInformada.option?.label}`,
+        informada.texto.includes(leidaInformada.option.label) &&
+        celdasBien(informada.celdas, leidaInformada),
+      `«${informada.titulo}» · columnas: ${informada.columnas.join(', ') || 'sin tabla'} · la API: ${leidaInformada.option?.label} · diferencias: ${informada.celdas.map((c) => c[3]).join(' | ') || 'sin tabla'}`,
     );
     // «Actualizar» con el registro abierto: la sección se monta de nuevo con el registro ya en la dirección. Un vigía
     // anota si el panel de encima llega a abrirse, aunque sea por un instante.
