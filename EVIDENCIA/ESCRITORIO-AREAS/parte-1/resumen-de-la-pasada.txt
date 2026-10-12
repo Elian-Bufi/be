@@ -1,0 +1,11 @@
+inicio: 2026-10-12 03:31 · commit ea85eb9 + cambios sin commit: 4
+datos: verificación: 26 de 26 comprobaciones coinciden verificación de comprensión: 10 de 10 
+r-capturas: salida 0 · 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+rc-mirar: salida 0 · 20 OK · 0 datos · 0 fallas · 20 de 20 bien
+rc-capturas: salida 0 · 80 OK · 0 datos · 0 fallas · 80 de 80 bien
+r-funcional: salida 0 · 255 OK · 10 datos · 0 fallas · 265/265 comprobaciones bien
+rc-funcional: salida 0 · 76 OK · 10 datos · 0 fallas · 86 de 86 bien
+rc-revocacion: salida 0 · 6 OK · 0 datos · 0 fallas · 6 de 6 bien
+r-descartable: salida 0 · 22 OK · 0 datos · 0 fallas · 22/22 comprobaciones bien
+r-estimacion: salida 0 · 7 OK · 0 datos · 0 fallas · 7/7 comprobaciones bien
+fin: 2026-10-12 04:07

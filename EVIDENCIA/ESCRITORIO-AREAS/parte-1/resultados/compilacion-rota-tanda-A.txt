@@ -1,0 +1,51 @@
+roto: al entrar, Registros le impone un período a la API en vez de dejar que lo proponga (lo tienen que notar: F-15 (las dos lecturas))
+roto: la tercera columna cambia de nombre (lo tienen que notar: C-49 (el día es la unidad))
+roto: todos los días arrancan abiertos (lo tienen que notar: C-49 (cuáles arrancan abiertos))
+roto: la cantidad de cada vista dice «registros» y no «comidas» (lo tienen que notar: F-16 (las cinco vistas y su cantidad))
+roto: la fila muestra la opción con su número («1 · Tostadas con queso») (lo tienen que notar: C-53 (cada fila))
+roto: una fila sin diferencia agrega una raya después de lo que dice (lo tienen que notar: C-51 (las porciones del plan))
+roto: con una vista elegida se ven los días enteros, no solo las filas que la vista cuenta (lo tienen que notar: F-16 (elegir una vista))
+roto: al abrir un registro al costado, el foco no va a su título (lo tienen que notar: F-18 (el registro al costado))
+roto: «Actualizar» pierde el período y la vista elegidos (lo tienen que notar: F-17 (el período en la dirección))
+roto: un período largo se muestra entero de una vez (lo tienen que notar: F-19 (de a catorce días))
+roto: la línea de tiempo se lee hasta dos páginas y se deja ahí (lo tienen que notar: F-19 (noventa días))
+roto: una vista sin comidas dice que el período está vacío (lo tienen que notar: F-16 (una vista en cero))
+roto: una falla de la línea de tiempo se toma como «no hay registros»: una falla pasa por ausencia de datos (lo tienen que notar: F-15 (falla la línea de tiempo))
+roto: las vistas empujan la lista 480 px hacia abajo (lo tienen que notar: F-20 (la primera pantalla))
+roto: la ayuda no dice qué trae la primera vista (lo tienen que notar: F-14 (la ayuda))
+roto: el botón de la ayuda de Registros aparece en todas las secciones de Nutrición (lo tienen que notar: F-14 (sin ayuda en Resumen))
+roto: el botón que cierra el detalle queda sin nombre (solo el ícono) (lo tienen que notar: F-18 (axe))
+roto: en una ventana angosta el registro no se abre (lo tienen que notar: F-18 (a 1024 px))
+── compila la versión rota · 02:09:57
+compilado: web estática (apps/web/out)
+── recorrido · 02:13:37
+── veredicto · 02:15:11 · salida del recorrido: 0
+NOTADA    al entrar, Registros le impone un período a la API en vez de dejar que lo proponga — F-15 (las dos lecturas)
+NOTADA    la tercera columna cambia de nombre — C-49 (el día es la unidad)
+NOTADA    todos los días arrancan abiertos — C-49 (cuáles arrancan abiertos)
+NOTADA    la cantidad de cada vista dice «registros» y no «comidas» — F-16 (las cinco vistas y su cantidad)
+NOTADA    la fila muestra la opción con su número («1 · Tostadas con queso») — C-53 (cada fila)
+NOTADA    una fila sin diferencia agrega una raya después de lo que dice — C-51 (las porciones del plan)
+NOTADA    con una vista elegida se ven los días enteros, no solo las filas que la vista cuenta — F-16 (elegir una vista)
+NOTADA    al abrir un registro al costado, el foco no va a su título — F-18 (el registro al costado)
+NOTADA    «Actualizar» pierde el período y la vista elegidos — F-17 (el período en la dirección)
+NOTADA    un período largo se muestra entero de una vez — F-19 (de a catorce días)
+NOTADA    la línea de tiempo se lee hasta dos páginas y se deja ahí — F-19 (noventa días)
+NOTADA    una vista sin comidas dice que el período está vacío — F-16 (una vista en cero)
+NOTADA    una falla de la línea de tiempo se toma como «no hay registros»: una falla pasa por ausencia de datos — F-15 (falla la línea de tiempo)
+NOTADA    las vistas empujan la lista 480 px hacia abajo — F-20 (la primera pantalla)
+NOTADA    la ayuda no dice qué trae la primera vista — F-14 (la ayuda)
+NOTADA    el botón de la ayuda de Registros aparece en todas las secciones de Nutrición — F-14 (sin ayuda en Resumen)
+NOTADA    el botón que cierra el detalle queda sin nombre (solo el ícono) — F-18 (axe)
+NOTADA    en una ventana angosta el registro no se abre — F-18 (a 1024 px)
+tanda A: 18 de 18 roturas notadas · 18 comprobaciones fallaron y 2 pasaron
+fallaron sin que se las esperara: ninguna
+pasaron:
+  C-50 · Una comida diferente se lee en la comida donde se registró, con los dos hechos («Sin opción del plan re
+  — · Registros de Nutrición no produjo errores de página
+última línea: 3/21 comprobaciones bien; fallan: F-15, C-49, C-49, F-16, C-53, C-51, F-16, F-18, F-17, F-19, F-19, F-16, F-15, F-20, F-14, F-14, F-18, F-18
+FIN DE LA TANDA A · 02:15:17
+restaurado: app/globals.css
+restaurado: app/pro/advisees/nutrition/ayuda-de-registros.tsx
+restaurado: app/pro/advisees/nutrition/nutricion.tsx
+restaurado: app/pro/advisees/nutrition/registros.tsx

@@ -301,6 +301,11 @@ Información).
     quién retiró el acceso ni por qué.
   - **Una sección que todavía no se recompuso conserva su ancho** (72 rem), alineada con el marco; una recompuesta usa
     todo el ancho.
+  - **Lo que una sección elige vive en la dirección:** el período, la vista y lo que está abierto. Como «Actualizar»
+    vuelve a montar la sección, lo que quede en su memoria se pierde: una sección recompuesta lo lleva a la dirección
+    (`ir`, del contexto del área), y «Actualizar» y volver atrás lo conservan. Al cambiar de sección no se lleva.
+  - **La ayuda de la vista** («Cómo se lee esta vista») va en el renglón de las secciones, a la derecha, solo en las
+    secciones que la tienen (`AyudaDeVista`).
 - **La dirección dice dónde se está:** se navega con el router (`ir`, `irA`), no cambiando un estado escondido. La URL
   guarda la vista, el período, los filtros, las métricas, la pregunta y la fecha elegida, **solo como identificadores,
   enumerados y fechas**. El texto que escribe la persona (una búsqueda) y los borradores no van en la URL. Atrás vuelve
@@ -522,6 +527,28 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
     mientras se envía; al enviarse se cierra y la página dice qué pasó. Un aviso que queda adentro de un diálogo
     cerrado no lo lee nadie.
   - **`/pro` no lleva parámetros:** la vista elegida, los filtros y la búsqueda son de la visita.
+- **Los registros de un área, por día** (`nutrition/registros.tsx`; las reglas, en `registros-de-nutricion.ts` del
+  dominio; WP-ESCRITORIO-AREAS): es la línea de tiempo llevada al registro completo de un área. **El día es la unidad**
+  y, adentro, **cada comida del plan es una fila.**
+  - **El día en un renglón:** «3 de 4 comidas registradas · 1 sin registro». Cuenta las comidas del plan con una opción
+    registrada. Un día sin ningún registro dice «Sin registro», nunca «0 de 4»; el de hoy dice «hoy, día en curso».
+    Arrancan abiertos los que tienen una comida diferente o algo distinto de lo indicado; los demás se abren a pedido.
+    Plegar no esconde: el renglón dice lo que el día tiene.
+  - **La fila:** la comida, lo registrado, cómo se informaron las cantidades y la diferencia observada, con las
+    palabras del dominio. Los nombres de las columnas van una vez, arriba; para el lector de pantalla, cada dato lleva
+    su rótulo. La fila entera abre el registro; una fila sin registro no es un botón.
+  - **Una resta que da cero no es una diferencia:** no se muestra ni abre el día. Con las porciones del plan
+    confirmadas no se dice «igual»: BE no comparó nada.
+  - **Las vistas con nombre cuentan comidas, no registros.** Cada fila está en un solo estado (registrada, con una
+    comida diferente, sin registro), y los tres suman «Todas las comidas». Una vista que depende de una lectura que
+    falló no lleva número: un cero sería decir que no hay ninguna.
+  - **Dos lecturas, y una puede fallar.** Si falla la que dice la opción y el modo de cada registro, los días y sus
+    comidas se ven igual, y un bloque dice qué falta y por qué, con «Reintentar».
+  - **El registro, al costado** desde 1200 px; más angosto, encima. El foco va a su título, y Escape o «Cerrar» lo
+    devuelven a la fila. Lo que se le agrega a un registro (la estimación del profesional sobre una comida diferente)
+    se hace desde ahí, no en una lista aparte.
+  - **Un período largo se muestra de a catorce días;** «Ver días anteriores» no le pide nada a la API. El período de
+    entrada (siete días) se muestra entero.
 
 ### II.7 Estados del website profesional
 
@@ -574,6 +601,12 @@ crear otro, se usa uno de estos.
 | `EstadoDeLecturaDelArea` · `NoDisponibleEnElArea` | El resultado de leer una sección: cargando, el «no disponible» neutral o la falla con su motivo y «Reintentar» | «No pudimos cargar esta vista · Hubo muchas consultas seguidas…» |
 | `AccesoPorArea` (`acceso-por-area.tsx`) | El acceso actual por área, igual en la ficha y en el marco de un área | «Nutrición: Activo · acceso contextual» |
 | `PanelDeRegistro` | Un registro encima de la vista, en un panel que retiene el foco, con su propia lectura | La planificación de una etapa; el origen de un dato o el detalle de un hecho, en una ventana angosta |
+| `Panel` (`components/panel.tsx`) | Lo mismo, para cualquier contenido: el diálogo, su título y «Cerrar». `PanelDeRegistro` lo usa | El registro de una comida de Nutrición · Registros, en una ventana angosta |
+| `ControlDePeriodo` (`advisees/control-de-periodo.tsx`) | El período en un solo control. Recibe el período, los atajos y el tope: no lee ni escribe la dirección por su cuenta | La ficha (hasta 366 días) y Nutrición · Registros (hasta 92) |
+| `AyudaDeVista` · `RenglonDeAyuda` (`components/ayuda-de-vista.tsx`) | «Cómo se lee esta vista»: el botón y su diálogo, con una muestra y una explicación por renglón | La de la ficha; la de Nutrición · Registros, en el marco del área |
+| `.dia-de-registros` · `.comida-del-dia` | El día de un área en un renglón que se abre, y cada comida del plan en una fila con sus columnas | «11 oct · domingo · 2 de 4 comidas registradas · 1 comida diferente» |
+| `componerLosRegistros` · `resumenDeUnDia` · `contarLasVistas` (dominio) | Los días, las filas, las cantidades de las vistas y el renglón del día de Nutrición · Registros, desde sus dos lecturas | «Sin registro»; «3 de 4 comidas registradas» |
+| `opcionDeUnaComida` · `modoDeUnaComida` · `frenteALoIndicadoDeUnaComida` (dominio) | Lo que la línea de tiempo dice de una comida. Una sola regla para la ficha y para Registros | «Tostadas con queso» · «Porciones del plan» · «Sin diferencia: son las porciones del plan» |
 | `OrigenDelDato` | De dónde sale un punto de Analizar, en el lugar de la lectura: el valor, qué es y sus fuentes, con lo que aporta cada comida | «795 kcal»: Almuerzo, 311 kcal; Cena, 484 kcal |
 | `useDetalleAlCostado` (`al-costado.ts`) | Si la ventana tiene lugar para un detalle al costado (desde 1200 px) | La línea de tiempo y Analizar |
 | `ParametrosDelEjercicio` | Los datos de una pregunta, para elegirlos en el lugar; uno sin otra opción va escrito | «Ejercicio: Peso muerto · Serie: 1 · Unidad: kg» |
@@ -1114,6 +1147,11 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | El encabezado de una pestaña de área | Una miga, el título y las secciones; el enlace de vuelta, solo si se había llegado desde la ficha. | El marco del área: el de la ficha, con el camino de vuelta siempre, de quién es, el acceso actual y «Actualizar» (II.3). | Sustituida | Áreas, 0 |
 | «Evaluaciones» y «Ejecuciones» | Los nombres de dos secciones. | «Tomas» y «Registros»; las direcciones no cambian. | Sustituida | Áreas, 0 |
 | La falla de la lectura de una sección de área | «No pudimos cargar esta vista. Reintentar». | El bloque de estado, con el motivo y «Reintentar» (II.3). | Sustituida | Áreas, 0 |
+| Nutrición · Registros | Una tabla por día, todas a la vista; el registro, desplegado debajo de su fila; «Desde», «Hasta» y «Ver período». 3.985 px a 1440 px de ancho. | El día como unidad, vistas con nombre y cantidad, el registro al costado y el período en un control. 1.073 px (II.6). | Sustituida | Áreas, 1 |
+| Una comida registrada sin diferencias | Una raya. | «Sin diferencia: son las porciones del plan»; con cantidades informadas, lo que comprobó BE (II.6). | Sustituida | Áreas, 1 |
+| La comida diferente y la estimación del profesional | En su comida y, otra vez, en una lista «Fuera del plan» al pie del día, donde se agregaba la estimación. | Una sola vez, en su comida; la estimación, desde el detalle del registro (II.6). | Sustituida | Áreas, 1 |
+| Lo que una sección de área elige (el período, la vista, lo abierto) | En la memoria de la sección: «Actualizar» lo perdía. | En la dirección, en cada sección que se recompone (II.3). | Corregida | Áreas, 1 |
+| «Cómo se lee» en una sección de área | Plegado dentro de la sección. | En el marco del área, como en la ficha (II.3). | Sustituida | Áreas, 1 |
 
 ---
 

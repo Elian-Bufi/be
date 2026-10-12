@@ -1,0 +1,58 @@
+roto: la comida diferente no dice que falta la opción del plan (uno de los dos hechos) (lo tienen que notar: C-50 (la comida diferente); C-53 (cada fila))
+roto: el cálculo cuenta la comida diferente en «N de M comidas registradas» (lo tienen que notar: C-49 (el día es la unidad); F-15 (falla la línea de tiempo); F-19 (de a catorce días); F-19 (noventa días))
+roto: el cálculo deja pasar las restas que dan cero (lo tienen que notar: C-51 (las porciones del plan); C-49 (cuáles arrancan abiertos))
+roto: en el registro, la columna de lo indicado dice «Prescripto» (lo tienen que notar: C-53 (el registro con cantidades informadas))
+roto: el control de período ofrece «1 año», que la lectura no admite (lo tienen que notar: F-17 (el control de período))
+roto: al montarse, la sección supone que el detalle no entra al costado: lo abre encima por un instante (lo tienen que notar: F-18 («Actualizar» con un registro abierto))
+roto: (lo mismo: lo que esa versión necesita importar) (lo tienen que notar: F-18 («Actualizar» con un registro abierto))
+roto: el detalle de una comida diferente no dice «Fuera del plan» (lo tienen que notar: C-50 (el registro de la comida diferente))
+roto: el error de la descripción no se marca en su campo (lo tienen que notar: F-18 (lo que no sale))
+roto: la estimación a medio escribir no se le avisa al marco: «Actualizar» no pregunta (lo tienen que notar: F-08 (pregunta antes))
+roto: si guardar falla, el formulario se cierra (lo tienen que notar: F-18 (falla al guardar))
+roto: la estimación se guarda sin la cantidad (lo tienen que notar: C-50 (guarda por la API))
+── compila la versión rota · 02:43:41
+compilado: web estática (apps/web/out)
+── recorrido · 02:47:26
+── recorrido de la estimación · 02:49:13
+── veredicto · 02:50:27 · salida del recorrido: 0
+NOTADA    la comida diferente no dice que falta la opción del plan (uno de los dos hechos) — C-50 (la comida diferente); C-53 (cada fila)
+NO NOTADA el cálculo cuenta la comida diferente en «N de M comidas registradas» — C-49 (el día es la unidad); F-15 (falla la línea de tiempo); F-19 (de a catorce días); F-19 (noventa días) · no falló: C-49 (el día es la unidad); F-15 (falla la línea de tiempo); F-19 (de a catorce días); F-19 (noventa días)
+NO NOTADA el cálculo deja pasar las restas que dan cero — C-51 (las porciones del plan); C-49 (cuáles arrancan abiertos) · no falló: C-51 (las porciones del plan); C-49 (cuáles arrancan abiertos)
+NOTADA    en el registro, la columna de lo indicado dice «Prescripto» — C-53 (el registro con cantidades informadas)
+NOTADA    el control de período ofrece «1 año», que la lectura no admite — F-17 (el control de período)
+NOTADA    al montarse, la sección supone que el detalle no entra al costado: lo abre encima por un instante — F-18 («Actualizar» con un registro abierto)
+NOTADA    (lo mismo: lo que esa versión necesita importar) — F-18 («Actualizar» con un registro abierto)
+NOTADA    el detalle de una comida diferente no dice «Fuera del plan» — C-50 (el registro de la comida diferente)
+NOTADA    el error de la descripción no se marca en su campo — F-18 (lo que no sale)
+NOTADA    la estimación a medio escribir no se le avisa al marco: «Actualizar» no pregunta — F-08 (pregunta antes)
+NOTADA    si guardar falla, el formulario se cierra — F-18 (falla al guardar)
+NOTADA    la estimación se guarda sin la cantidad — C-50 (guarda por la API)
+tanda B: 10 de 12 roturas notadas · 10 comprobaciones fallaron y 20 pasaron
+fallaron sin que se las esperara: ninguna
+pasaron:
+  F-15 · Al entrar, Registros hace dos lecturas: el contexto de revisión, sin período (lo propone la API), y las
+  C-49 · El día es la unidad: están todos los días del período, del más nuevo al más viejo, cada uno dicho en un
+  C-49 · Arrancan abiertos los días con una comida diferente o con algo distinto de lo indicado, y solo esos; lo
+  F-16 · Las cinco vistas están en su orden, cada una con la cantidad de comidas que trae (contada a mano sobre 
+  C-51 · Con las porciones del plan confirmadas la fila dice «Sin diferencia: son las porciones del plan», y nad
+  F-16 · Elegir «Sin registro» no le pide nada a la API, queda en la dirección (`ver=sin-registro`) y deja a la 
+  F-18 · Tocar una fila abre su registro al costado, sin tapar la lista: el título dice la comida y la opción y 
+  F-17 · El período elegido va en la dirección (`p=30`): las dos lecturas piden esos 30 días, el control lo dice
+  F-19 · Con 30 días se muestran catorce y «Ver días anteriores» trae otros catorce sin pedirle nada a la API; c
+  F-19 · Con 90 días, la línea de tiempo se lee entera, de a 50 registros (tantas páginas como hagan falta), y l
+  F-16 · Una vista sin ninguna comida se muestra con su cero y, al elegirla, dice que ninguna coincide y cuántas
+  F-15 · Si la línea de tiempo no se puede leer (un 503 simulado), los días y sus comidas siguen a la vista con 
+  F-20 · A 1440 × 900, con el período de entrada, entran sin desplazarse las vistas, los nombres de las columnas
+  F-14 · Registros tiene su ayuda en el marco del área («Cómo se lee esta vista»): se abre por el título, explic
+  F-14 · En Nutrición · Resumen, que todavía no tiene ayuda, el marco no muestra el botón (la misma consulta lo 
+  F-18 · axe no encuentra faltas en Registros con todos los días abiertos, ni con el detalle de un registro al c
+  F-18 · A 1024 px el registro se abre encima, en un panel que retiene el foco, con el mismo título; la página n
+  — · Registros de Nutrición no produjo errores de página
+  F-08 · Con la estimación guardada no queda nada sin guardar: «Actualizar» no pregunta, vuelve a leer y el regi
+  — · La estimación de una comida no produjo errores de página
+última línea: 2/7 comprobaciones bien; fallan: C-50, F-18, F-08, F-18, C-50
+FIN DE LA TANDA B · 02:50:32
+restaurado: app/pro/advisees/nutrition/detalle-de-registro.tsx
+restaurado: app/pro/advisees/nutrition/registros.tsx
+restaurado: app/pro/advisees/seguimiento/al-costado.ts
+restaurado: dominio:registros-de-nutricion

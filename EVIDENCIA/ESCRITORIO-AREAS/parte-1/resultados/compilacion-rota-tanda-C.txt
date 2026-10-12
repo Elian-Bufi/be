@@ -1,0 +1,33 @@
+roto: el cálculo cuenta la comida diferente en «N de M comidas registradas» (lo tienen que notar: C-49 (el día es la unidad); F-15 (falla la línea de tiempo); F-19 (de a catorce días); F-19 (noventa días))
+roto: el cálculo deja pasar las restas que dan cero (lo tienen que notar: C-51 (las porciones del plan); C-49 (cuáles arrancan abiertos))
+── compila la versión rota · 02:52:16
+compilado: web estática (apps/web/out)
+── recorrido · 02:58:03
+── veredicto · 02:59:38 · salida del recorrido: 0
+NOTADA    el cálculo cuenta la comida diferente en «N de M comidas registradas» — C-49 (el día es la unidad); F-15 (falla la línea de tiempo); F-19 (de a catorce días); F-19 (noventa días)
+NOTADA    el cálculo deja pasar las restas que dan cero — C-51 (las porciones del plan); C-49 (cuáles arrancan abiertos)
+tanda C: 2 de 2 roturas notadas · 6 comprobaciones fallaron y 17 pasaron
+fallaron sin que se las esperara: ninguna
+no llegaron a correr: C-50 (el registro de la comida diferente); F-18 (lo que no sale); F-08 (pregunta antes); F-18 (falla al guardar); C-50 (guarda por la API); F-08 (ya no pregunta)
+pasaron:
+  F-15 · Al entrar, Registros hace dos lecturas: el contexto de revisión, sin período (lo propone la API), y las
+  F-16 · Las cinco vistas están en su orden, cada una con la cantidad de comidas que trae (contada a mano sobre 
+  C-53 · Cada comida del plan es una fila, en el orden del plan: lo registrado (la opción, «Sin registro», o los
+  C-50 · Una comida diferente se lee en la comida donde se registró, con los dos hechos («Sin opción del plan re
+  F-16 · Elegir «Sin registro» no le pide nada a la API, queda en la dirección (`ver=sin-registro`) y deja a la 
+  F-18 · Tocar una fila abre su registro al costado, sin tapar la lista: el título dice la comida y la opción y 
+  F-17 · El período elegido va en la dirección (`p=30`): las dos lecturas piden esos 30 días, el control lo dice
+  F-17 · El control de período ofrece los atajos que la lectura admite (7, 30 y 90 días; no «1 año»). Elegir «30
+  C-53 · El registro de una comida con cantidades informadas se abre por su dirección (aunque su día esté plegad
+  F-18 · «Actualizar» con un registro abierto lo deja abierto al costado, con el registro en la dirección; la se
+  F-16 · Una vista sin ninguna comida se muestra con su cero y, al elegirla, dice que ninguna coincide y cuántas
+  F-20 · A 1440 × 900, con el período de entrada, entran sin desplazarse las vistas, los nombres de las columnas
+  F-14 · Registros tiene su ayuda en el marco del área («Cómo se lee esta vista»): se abre por el título, explic
+  F-14 · En Nutrición · Resumen, que todavía no tiene ayuda, el marco no muestra el botón (la misma consulta lo 
+  F-18 · axe no encuentra faltas en Registros con todos los días abiertos, ni con el detalle de un registro al c
+  F-18 · A 1024 px el registro se abre encima, en un panel que retiene el foco, con el mismo título; la página n
+  — · Registros de Nutrición no produjo errores de página
+última línea: 18/24 comprobaciones bien; fallan: C-49, C-49, C-51, F-19, F-19, F-15
+FIN DE LA TANDA C · 02:59:42
+restaurado: dominio:registros-de-nutricion
+el dominio, compilado de nuevo desde su fuente restaurada

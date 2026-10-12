@@ -105,3 +105,137 @@ otras: en cada tanda, cada rotura tiene al menos una comprobación que solo ella
 - 768 y 390 px: el marco usa las reglas del de la ficha (lo que no entra, baja); sin comprobaciones propias.
 - Lector de pantalla con una persona: pendiente, como en los paquetes anteriores. Se verificaron axe, el título único,
   el nombre de la navegación de secciones y el orden del teclado.
+
+## Parte 1 · Nutrición · Registros (2026-10-12)
+
+La sección Registros de Nutrición pasó de una tabla por día, todas a la vista, a la lectura de la maqueta 20: **el día
+es la unidad.** No se quitó ninguna función: la estimación del profesional sobre una comida diferente se agrega ahora
+desde el detalle de ese registro, y la lista «Fuera del plan» que había al pie de cada día desapareció porque la comida
+diferente ya se lee en la comida donde se registró. `vista=registros` sigue abriendo la sección; se suman cuatro
+parámetros que antes no existían (`p`, `desde` y `hasta`, `ver` y `registro`). Sobre la base propia
+(`be_test_escritorio`, regenerada antes de cada pasada) y la compilación estática del código de esta parte
+(`4c92c65`, la pantalla; y `ea85eb9`, la tabla del registro sin rayas y dos comprobaciones más).
+
+**Medido en la página real** (asesorado A, el período de entrada, de siete días; el «antes», sobre la compilación de
+`7aec95d`, con datos recién generados):
+
+| Ancho de la ventana | Antes | Ahora |
+|---|---|---|
+| 1440 px | 3.985 px de alto: 4,4 pantallas de 900 | 1.073 px: 1,2 pantallas |
+| 1280 px | 3.985 px | 1.073 px |
+| 1024 px | 4.034 px | 1.198 px |
+
+A 1440 × 900, en la primera pantalla entran las vistas, los nombres de las columnas y, entero, el día abierto (el que
+tiene algo distinto). **La semana completa no entra:** el último día termina a los 1.009 px. Con 30 días, 1.502 px (se
+ven 14 días y un botón trae los anteriores); con 90, 1.536 px.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Al entrar, Registros hace dos lecturas: el contexto de revisión, sin período (lo propone la API), y las comidas de la línea de tiempo de ese mismo período; el control dice el período (F-15) | `recorrido.mjs funcional`, comprobaciones de Registros (solas, con `recorrido.mjs registros`). Lo esperado se calcula a mano con lo que devuelven esas dos lecturas: no se usa el módulo que arma la pantalla | Pasa: una lectura de cada una; «Período: 6 oct – 12 oct 2026 · 7 días · incluye hoy» | Verificado automáticamente |
+| Están todos los días, del más nuevo al más viejo, cada uno en un renglón con su cuenta («N de M comidas registradas», o «Sin registro»); los nombres de las columnas, una vez (C-49) | Lo mismo | Pasa en los 7 días | Verificado automáticamente |
+| Arrancan abiertos los días con una comida diferente o con algo distinto de lo indicado, y solo esos (F-20) | Lo mismo | Pasa: uno de siete | Verificado automáticamente |
+| Las cinco vistas, en su orden, cada una con la cantidad de comidas que trae; registradas, con comida diferente y sin registro suman «Todas las comidas» (F-16) | Lo mismo, contando a mano sobre las dos respuestas | Pasa: 28, 0, 0, 1 y 4 (23 registradas + 1 con comida diferente + 4 sin registro) | Verificado automáticamente |
+| Cada comida del plan es una fila, en el orden del plan, con lo registrado, cómo se informaron las cantidades y la diferencia observada, con las palabras del dominio; una fila sin registro no abre nada (C-53) | Lo mismo, fila por fila, con el rótulo que oye el lector de pantalla | Pasa: 28 filas | Verificado automáticamente |
+| Una comida diferente se lee en la comida donde se registró, con los dos hechos, y no cuenta como registrada (C-50) | Lo mismo | Pasa: «Cena · Sin opción del plan registrada · Comida diferente: «Milanesa con ensalada en un cumpleaños», Un plato» | Verificado automáticamente |
+| Con las porciones del plan confirmadas la fila dice «Sin diferencia: son las porciones del plan» y nada más: ni una raya, ni las restas en cero que manda la API (C-51, F-21) | Lo mismo | Pasa: 23 filas; la API manda 57 restas en cero en el período, y ninguna se muestra | Verificado automáticamente |
+| En el registro, la tabla de ingredientes dice la diferencia de cada uno con la resta o con palabras («sin diferencia», «igual», «no se resta»), sin rayas (C-51) | Lo mismo, en dos registros: uno con las porciones del plan y uno con cantidades informadas; lo esperado, a mano, con el registro que da la API | Pasa. Antes del arreglo falló: «— | —» | Verificado automáticamente |
+| Elegir una vista no le pide nada a la API, queda en la dirección y deja a la vista las filas que cuenta; volver a tocarla deja «Todas» (F-16) | Lo mismo, con «Sin registro» | Pasa: 4 filas, 0 pedidos | Verificado automáticamente |
+| Una vista en cero se muestra con su cero y, elegida, dice que ninguna comida coincide y cuántas hay (F-16) | Lo mismo | Pasa | Verificado automáticamente |
+| Un día sin plan vigente lo dice con su frase y no se abre; la pantalla dice cuántos días son, y no entran en ninguna cantidad (F-16) | Lo mismo, con 90 días | Pasa: 6 días sin plan vigente. Un día sin día tipo determinado: el escenario no tiene; sus reglas tienen pruebas en el dominio | Verificado automáticamente |
+| Tocar una fila abre su registro al costado, sin tapar la lista: el título recibe el foco, el registro se lee una vez y queda en la dirección; Escape lo cierra y el foco vuelve a la fila (F-18) | Lo mismo | Pasa | Verificado automáticamente |
+| El registro de una comida con cantidades informadas dice «Informó lo que comió de cada ingrediente», con las columnas «Indicado», «Registrado» y «Diferencia» (C-53) | Lo mismo, abriéndolo por su dirección, con 90 días | Pasa: «Cena · Salmón con papa» | Verificado automáticamente |
+| «Actualizar» con un registro abierto lo deja abierto al costado, sin pasar por el panel de encima ni por un instante (F-17, F-18) | Lo mismo, con un vigía puesto antes de tocar «Actualizar» | Pasa: 0 veces. Antes del arreglo falló: 2 veces (ver abajo) | Verificado automáticamente |
+| A 1024 px el registro se abre encima, en un panel que retiene el foco; la página no desborda de costado (F-18) | Lo mismo | Pasa | Verificado automáticamente |
+| El período elegido va en la dirección: las dos lecturas piden esos días y las cantidades son las de ese período; «Actualizar» conserva el período y la vista (F-17) | Lo mismo, con `p=30` | Pasa: 120 comidas en 30 días | Verificado automáticamente |
+| El control de período ofrece 7, 30 y 90 días (no «1 año»); un rango propio de 100 días no sale y dice el tope; uno de 11 días queda en la dirección con sus dos fechas (F-17) | Lo mismo, usando el control | Pasa: «El período puede tener hasta 92 días.» | Verificado automáticamente |
+| Con 30 días se muestran catorce y «Ver días anteriores» trae otros catorce sin pedirle nada a la API (F-19) | Lo mismo | Pasa | Verificado automáticamente |
+| Con 90 días, la línea de tiempo se lee entera, de a 50; los días enteros sin registros dicen «Sin registro» y ninguno dice «0 de» (F-15, F-16) | Lo mismo | Pasa: 285 registros en 6 páginas; 338 comidas, 3 distintas, 3 sin confirmar, 4 con comida diferente y 55 sin registro | Verificado automáticamente |
+| Si la línea de tiempo no se puede leer, los días y sus comidas siguen a la vista; un bloque dice el motivo, con «Reintentar»; las dos vistas que dependen de ella no llevan número; «Reintentar» trae lo que faltaba (F-15) | Lo mismo, con un 503 simulado en el navegador | Pasa: «No pudimos traer la opción ni las cantidades de cada registro» | Verificado automáticamente, sobre una respuesta simulada |
+| En la primera pantalla, a 1440 × 900, entran las vistas, los nombres de las columnas y el día abierto, entero (F-20) | Lo mismo, midiendo en la página | Pasa: el día abierto termina a los 744 px | Verificado automáticamente |
+| Registros tiene su ayuda en el marco, con cada marca y las cinco vistas; las otras secciones de Nutrición, que no tienen ayuda, no muestran el botón (F-14, F-23) | Lo mismo | Pasa | Verificado automáticamente |
+| axe no encuentra faltas con todos los días abiertos, con un registro al costado ni con la ayuda abierta | Lo mismo | Pasa | Verificado automáticamente |
+| **La estimación del profesional, desde el registro de una comida diferente:** el registro se abre por su dirección y ofrece «Agregar estimación»; sin describir nada, o con una cantidad que no es un número, no sale y marca el campo; con algo escrito, «Actualizar» pregunta antes; si guardar falla, lo dice y no se pierde lo escrito; al guardar, la API recibe un solo pedido y la estimación queda en la historia, con la descripción original intacta; después, «Actualizar» ya no pregunta (C-50, F-08, F-18) | `recorrido.mjs estimacion`: **escribe de verdad** en el escenario, por eso corre solo y último. Lo esperado sale de lo que devuelve la API antes y después de guardar | Pasa, 7 de 7: «Milanesa de carne al horno con ensalada · 250 g (Profesional, 12 oct 2026…)». La falla al guardar es un 503 simulado | Verificado automáticamente (la falla, sobre una respuesta simulada) |
+| Las reglas del cálculo: las filas y sus estados, las cinco vistas y sus cantidades, el renglón del día, qué días arrancan abiertos, las palabras de una comida | `packages/domain/src/registros-de-nutricion.test.ts`, en la batería | 19 de 19 | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de esta parte | `recorrido.mjs`: capturas 60 de 60, funcional 265 de 265 (las 240 de antes y 25 nuevas: 24 comprobaciones y una medición), descartable 22 de 22 y estimación 7 de 7. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 80 de 80, funcional 86 de 86 y revocación 6 de 6. Pasada del 2026-10-12, de 03:31 a 04:07, sobre `ea85eb9`, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10). `parte-1/resumen-de-la-pasada.txt` | Verificado automáticamente |
+| Toda la batería de la CI | La CI de GitHub sobre los commits de código | En verde las dos corridas (38211001402 sobre `4c92c65` y 38212908176 sobre `ea85eb9`): el legajo, la batería completa (typecheck; dominio, 636, con las 19 nuevas; guiones, 346; API, 81), la integración (669) y la imagen de la API | Verificado automáticamente |
+| La pantalla, a 1440 px en sus estados (la semana, 30 y 90 días, las vistas, un registro abierto, una comida diferente, el formulario de la estimación, la ayuda y la falla de la segunda lectura) y a 1280 y 1024 px, en los dos temas | `ver.mjs`, sobre datos recién generados | 32 capturas de ahora (`parte-1/ahora/`), las 6 de antes (`parte-1/antes/`) y `parte-1/registros-antes-y-ahora.png`. La captura de la falla es sobre una respuesta simulada | Observado en una captura real |
+
+**El guion de antes, y lo que protegía (E-06 del primer paquete).** `recorrido-web-registros.mjs`, de
+WP-NUTRICION-RECETAS, miraba esta pantalla buscando sus botones «Ver registro». Ya no corre contra la pantalla de hoy:
+queda como constancia de la corrida de su paquete, y lo dice en su cabecera.
+
+| Lo que protegía | Dónde se mira ahora |
+|---|---|
+| Cada comida registrada y cada comida diferente abren su registro | Cada fila con registro es un botón que lo abre (C-53 y F-18) |
+| El registro con cantidades informadas dice cómo se registraron y la estimación de lo consumido | La comprobación del registro con cantidades informadas (C-53) |
+| La comida diferente dice «Macros sin calcular» y su cantidad aproximada | La primera comprobación de `estimacion`, y la fila de la comida diferente (C-50) |
+| Una comida diferente sin descripción dice «Sin descripción», sin comillas vacías | **No se mira:** el escenario de este recorrido no tiene ninguna. La fila usa el mismo texto del dominio |
+| El profesional ve las fotos privadas del registro | **No se mira:** el escenario no tiene fotos. La pieza que las muestra no cambió |
+| El website a 390 px (recetas y plan) | No es de esta pantalla: sigue en aquel guion |
+
+Las comprobaciones negativas van con una positiva de la misma consulta: «no abre nada» (una fila con registro, que es
+un botón), «no muestra el botón de ayuda» en Resumen (lo muestra en Registros), «no pregunta» después de guardar
+(pregunta con algo escrito), «el panel de encima no se abre» a 1440 (se abre a 1024).
+
+**La prueba de la prueba.**
+
+- **El cálculo, roto de a una regla** (`resultados/calculo-roto-de-a-una-regla.txt`): 38 roturas del módulo del dominio,
+  cada una contra sus pruebas. **La primera vez se notaron 32.** Las seis que no mostraron seis huecos: las cantidades
+  informadas sin el resultado de la API, la comida diferente cuando la línea de tiempo no llegó, el orden de los rasgos
+  de una fila, el singular («1 de 1 comida registrada») y que «sin confirmar» no abre el día. Se sumaron esas pruebas:
+  38 de 38.
+- **La pantalla, rota y compilada así, en tres tandas.** Primera (`compilacion-rota-tanda-A.txt`): 18 roturas del
+  website, cada una con una comprobación que solo ella puede hacer fallar; fallaron esas 18 y ninguna otra. Segunda
+  (`compilacion-rota-tanda-B.txt`): 9 roturas más del website —las de la estimación y el defecto del panel, puesto de
+  nuevo—; se notaron las 9. **En esa tanda iban además dos roturas del cálculo, que no se notaron porque no llegaron a
+  la compilación:** la herramienta las aplicaba sobre el dominio ya compilado, y compilar el website vuelve a compilar
+  el dominio desde su fuente. Se corrigió la herramienta y fueron en una tercera tanda (`compilacion-rota-tanda-C.txt`),
+  sobre la fuente: se notaron las dos, cada una en su grupo de comprobaciones (seis en total), y ninguna otra falló.
+  Que el recorrido note una rotura del cálculo muestra que lo que espera no sale del módulo que arma la pantalla.
+- En total, 29 roturas de la pantalla y 38 del cálculo, cada una con la comprobación que la detecta.
+
+**Lo que encontraron las comprobaciones y las capturas, y qué se hizo.**
+
+- **La primera captura midió 3.090 px: todos los días abiertos, y cada fila con una lista de «0 g».** El contraste trae
+  una resta por cada ítem comparable también cuando da cero: así llegan las porciones del plan confirmadas. Ahora una
+  resta en cero no es una diferencia (F-21), con su prueba, su comprobación en pantalla y su rotura.
+- **La primera corrida de las comprobaciones dio 10 de 13, y la pantalla estaba bien.** Eran del instrumento: las
+  etiquetas de una fila salen de todos sus registros; en 30 días el escenario no tiene un día entero sin registros (se
+  mira con 90); y una espera estaba puesta en la sección equivocada.
+- **Una raya en la tabla del registro.** La lista ya no tenía rayas, pero la tabla de ingredientes del detalle seguía
+  diciendo «—» en «Diferencia», que es lo que C-51 pedía sacar. La mostró una captura, no una comprobación. Ahora cada
+  celda dice la resta o por qué no hay una, con una función del dominio; la usa también la ficha, que abre el mismo
+  registro.
+- **Dos palabras que BE no dice.** La ayuda y una frase del dominio decían «incumplimiento» y «cumplimiento». Las frenó
+  la prueba de palabras de la batería antes del commit.
+- **Un dato repetido:** la porción que describió la persona figuraba en su registro y otra vez junto a la estimación.
+- **La estimación se había mudado sin ninguna comprobación,** y el guion que la miraba ya no podía correr. Se escribió
+  el modo `estimacion`, que guarda de verdad.
+- **Ese modo encontró un defecto de antes.** Su primera corrida entera decía que «Actualizar» preguntaba después de
+  guardar. No preguntaba: lo que se abría era el panel de encima, por un instante. Al montarse con un detalle ya abierto
+  (por la dirección, o al tocar «Actualizar»), en una ventana ancha, la pantalla suponía que el detalle no entraba al
+  costado hasta preguntarle a la ventana, y lo abría encima antes de pasarlo. Es de una pieza del primer paquete
+  (`useDetalleAlCostado`), que usan también la línea de tiempo y Analizar de la ficha. Ahora lee la ventana desde el
+  primer dibujo. Tiene su comprobación (un vigía: 2 veces antes del arreglo, 0 después) y su rotura. Severidad baja: un
+  parpadeo, sin ningún dato en juego.
+- **Dos huecos de las comprobaciones, vistos al escribir las roturas:** nadie miraba que la línea de tiempo se pidiera
+  con el período elegido, ni nadie usaba el control de período (se entraba por la dirección). Se sumaron las dos.
+- **La primera corrida de `estimacion` dio 3 de 7** por el instrumento: no borraba un campo antes de escribir.
+
+**Lo que esta parte no comprueba:**
+
+- El uso real: falta que Dirección mire una semana de registros, abra uno y agregue una estimación.
+- Las fotos de un registro, una comida diferente sin descripción y un día sin día tipo determinado: el escenario no los
+  tiene (arriba).
+- La estimación con un alimento del catálogo (el buscador de adentro del formulario): no se usa en el recorrido.
+- Un período con más de 500 registros, que es cuando la pantalla avisa que no los leyó todos: el escenario tiene 285
+  en 90 días.
+- Que la semana entre entera en la primera pantalla: no entra (termina a los 1.009 px), y se dice arriba.
+- 768 y 390 px: por debajo de 960 px cada fila apila sus datos; sin comprobaciones ni capturas propias.
+- Lector de pantalla con una persona: pendiente. Se verificaron axe, el rótulo de cada dato de la fila, el foco al abrir
+  y al cerrar un registro, y Escape.
+
+**Para decidir, sin urgencia.** En esta pantalla conviven «lo indicado» (el título, las columnas, la ayuda) y una frase
+heredada del registro que dice «la comida prescripta» («…no reemplaza la comida prescripta»). Es la palabra del legajo;
+«indicado» es la que validó Dirección en las maquetas (C-53). No se tocó: es un texto del dominio que también muestra
+la ficha.
