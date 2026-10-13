@@ -9554,6 +9554,422 @@ async function planesDeNutricion() {
         desdePlantilla.editor.aLaVista,
       `escrituras: ${escriturasDesde(antesDeAplicar, '/nutrition/plans').length} · aviso: ${avisoDeAplicada ? 'sí' : 'no'} · ${desdePlantilla.selector?.opciones.map((o) => o.texto).join(' | ')} · origen en la API: ${elDeLaPlantilla?.templateOrigin ? 'una plantilla' : 'ninguno'}`,
     );
+    // ── «Agregar ítem» (WP-ESCRITORIO-AREAS, parte 7, primer tramo; maqueta 21) ──────────────────────────────────
+    // El borrador que salió de la plantilla está abierto en el editor. A la primera opción de su primera comida se le
+    // agregan ítems por las tres vías —el catálogo, un habitual y un alimento creado a mano— y después se guarda.
+    const OPCION = '.plan__preparacion fieldset.nodo--dia fieldset.nodo--comida fieldset.nodo--opcion';
+    const CAJON = 'dialog.cajon[open]';
+    const coma = (n) => String(n).replace('.', ',');
+    const laOpcion = () =>
+      page.evaluate((s) => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const o = document.querySelector(s);
+        if (!o) return null;
+        return {
+          comida: o.closest('fieldset.nodo--comida').querySelector('input[id^="comida-"]')?.value ?? null,
+          nombre: o.querySelector('input[id^="opcion-"]')?.value ?? null,
+          items: [...o.querySelectorAll('li.fila-de-item')].map((li) => ({ nombre: t(li.querySelector('strong')), cantidad: li.querySelector('input[id$="-cantidad"]')?.value ?? null, unidadApagada: li.querySelector('select[id$="-unidad"]')?.disabled ?? null })),
+          buscadorAdentro: !!o.querySelector('.buscador'),
+          focoEnElBoton: document.activeElement === o.querySelector('[data-agregar-item]'),
+          estado: t(document.querySelector('.plan__preparacion p[aria-live="polite"]')),
+        };
+      }, OPCION);
+    const elCajon = () =>
+      page.evaluate((s) => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const d = document.querySelector(s);
+        if (!d) return null;
+        const caja = d.getBoundingClientRect();
+        return {
+          sobretitulo: t(d.querySelector('.cajon__sobretitulo')),
+          titulo: t(d.querySelector('.cajon__cabecera h2')),
+          focoEnElBuscador: document.activeElement === d.querySelector('.agregar-item__buscador input'),
+          izquierda: Math.round(caja.left),
+          ancho: Math.round(caja.width),
+          cuenta: t(d.querySelector('[data-cuenta-del-catalogo]')),
+          agregado: t(d.querySelector('[data-agregado]')),
+          habituales: [...d.querySelectorAll('[data-habituales] .agregar-item__fichas button')].map((b) => b.getAttribute('aria-label')),
+          sinHabituales: t(d.querySelector('[data-habituales] > .nota')),
+          fallaDeHabituales: t(d.querySelector('[data-habituales] .aviso--error')),
+          estado: d.querySelector('[data-resultados]')?.dataset.resultados ?? null,
+          delCatalogo: t(d.querySelector('.agregar-item__resultados .agregar-item__titulo .nota')),
+          columnas: [...d.querySelectorAll('.alimentos-del-catalogo thead th')].map(t),
+          filas: [...d.querySelectorAll('.alimentos-del-catalogo tbody tr')].map((tr) => ({
+            id: tr.dataset.alimento,
+            nombre: t(tr.querySelector('.alimentos-del-catalogo__nombre')),
+            detalle: t(tr.querySelector('.alimentos-del-catalogo__detalle')),
+            valores: [...tr.querySelectorAll('td.alimentos-del-catalogo__numero')].map(t),
+            habitual: tr.querySelector('.alimentos-del-catalogo__habitual')?.getAttribute('aria-pressed') ?? null,
+            nombreDeLaChinche: tr.querySelector('.alimentos-del-catalogo__habitual')?.getAttribute('aria-label') ?? null,
+            elegir: tr.querySelector('.alimentos-del-catalogo__acciones button:last-child')?.getAttribute('aria-label') ?? null,
+          })),
+          sinResultados: t(d.querySelector('[data-sin-resultados]')),
+          falla: t(d.querySelector('.agregar-item__resultados .aviso--error')),
+          pie: [...d.querySelectorAll('.cajon__pie button')].map(t),
+          antes: t(d.querySelector('.agregar-item__antes')),
+          volver: t(d.querySelector('.agregar-item__volver')),
+          // Cada error lleva delante un símbolo de aviso, que no se lee en voz alta: se compara el texto.
+          errores: [...d.querySelectorAll('.campo__error')].map((e) => t(e).replace('⚠', '').trim()),
+          campos: [...d.querySelectorAll('.agregar-item__otro label')].map(t),
+          texto: t(d),
+        };
+      }, CAJON);
+    const buscarEnLaApi = async (q) => {
+      const r = await fetch(`${API}/api/v1/nutrition/catalog-items/search`, { method: 'POST', headers: { Authorization: v.token, 'X-BE-Surface': 'WEB', Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ q, limit: 20 }) });
+      if (!r.ok) throw new Error(`búsqueda en el catálogo: ${r.status}`);
+      v.marcas.push(Date.now());
+      return r.json();
+    };
+    /** Si el cajón no está abierto (o quedó en «Crear manualmente»), lo deja abierto en la búsqueda: el recorrido sigue. */
+    const asegurarElCajon = async () => {
+      if ((await page.$(CAJON)) === null) {
+        await clic(page, `${OPCION} [data-agregar-item]`, 'Agregar ítem').catch(() => null);
+        await page.waitForSelector(`${CAJON} .agregar-item__buscador input`, { timeout: 15_000 }).catch(() => {});
+      }
+      if ((await page.$(`${CAJON} .agregar-item__buscador input`)) === null) {
+        await page.evaluate((s) => document.querySelector(`${s} .agregar-item__volver`)?.click(), CAJON);
+        await page.waitForSelector(`${CAJON} .agregar-item__buscador input`, { timeout: 10_000 }).catch(() => {});
+      }
+    };
+    const buscarEnElCajon = async (q) => {
+      await cupo(v, 60);
+      await asegurarElCajon();
+      const campo = await page.$(`${CAJON} .agregar-item__buscador input`);
+      if (campo === null) return;
+      // Lo que hubiera escrito se reemplaza: se selecciona entero antes de escribir (el triple clic no alcanza).
+      await campo.evaluate((i) => {
+        i.focus();
+        i.select();
+      });
+      await page.keyboard.press('Backspace');
+      await page.keyboard.type(q);
+      await page.keyboard.press('Enter');
+      await pausa(200);
+      await page.waitForFunction((s) => ['lista', 'falla'].includes(document.querySelector(`${s} [data-resultados]`)?.dataset.resultados), { timeout: 20_000 }, CAJON).catch(() => {});
+      await quieto(page, v, { silencio: 300 });
+    };
+    const tocarEnElCajon = async (selector) => {
+      await cupo(v, 60);
+      await page.evaluate((s) => document.querySelector(s)?.click(), `${CAJON} ${selector}`);
+      await quieto(page, v, { silencio: 300 });
+    };
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const antesDeAbrirDelCajon = await laOpcion();
+    const pedidosAntesDeAbrir = v.urls.length;
+    await clic(page, `${OPCION} [data-agregar-item]`, 'Agregar ítem');
+    await page.waitForSelector(`${CAJON} .agregar-item__buscador input`, { timeout: 15_000 }).catch(() => {});
+    await pausa(300);
+    const abiertoDelCajon = await elCajon();
+    comprobar(
+      'F-82',
+      '«Agregar ítem» abre el buscador del catálogo en un cajón al costado, no dentro de la opción: dice de qué comida y de qué opción es, el foco está en el campo de búsqueda y abrirlo no le pide nada a BE. El cajón no ocupa toda la ventana: el editor sigue detrás. Antes de buscar no hay resultados ni un «no encontramos»; en el pie, lo que hay que saber antes de elegir y las otras dos vías',
+      !!abiertoDelCajon &&
+        !!antesDeAbrirDelCajon &&
+        antesDeAbrirDelCajon.buscadorAdentro === false &&
+        abiertoDelCajon.sobretitulo === `${antesDeAbrirDelCajon.comida} · opción 1: ${antesDeAbrirDelCajon.nombre}` &&
+        abiertoDelCajon.titulo === 'Agregar ítem' &&
+        abiertoDelCajon.focoEnElBuscador &&
+        abiertoDelCajon.izquierda >= 400 &&
+        abiertoDelCajon.ancho <= 820 &&
+        abiertoDelCajon.estado === 'sin-buscar' &&
+        abiertoDelCajon.filas.length === 0 &&
+        abiertoDelCajon.sinResultados === null &&
+        abiertoDelCajon.agregado === '' &&
+        igual(abiertoDelCajon.pie, ['Crear manualmente', 'Importar desde Open Food Facts']) &&
+        /sin cantidad/.test(abiertoDelCajon.antes ?? '') &&
+        v.urls.slice(pedidosAntesDeAbrir).filter((u) => !u.startsWith('OPTIONS ')).length === 0,
+      `«${abiertoDelCajon?.sobretitulo}» · «${abiertoDelCajon?.titulo}» · foco en el buscador: ${abiertoDelCajon?.focoEnElBuscador ? 'sí' : 'no'} · el cajón empieza a los ${abiertoDelCajon?.izquierda} px y mide ${abiertoDelCajon?.ancho} · pedidos al abrir: ${v.urls.slice(pedidosAntesDeAbrir).filter((u) => !u.startsWith('OPTIONS ')).length}`,
+    );
+    await captura(page, v, 'agregar-item-abierto-1440-claro', { tope: 900 });
+
+    // Buscar: los alimentos son los de la API, con sus cuatro valores, calculados a mano.
+    const BUSCADO = 'arroz';
+    const enElCatalogo = await buscarEnLaApi(BUSCADO);
+    const antesDeBuscar = v.urls.length;
+    await buscarEnElCajon(BUSCADO);
+    const conResultados = await elCajon();
+    const busquedas = v.urls.slice(antesDeBuscar).filter((u) => u.startsWith('POST ') && u.includes('/nutrition/catalog-items'));
+    const esperados = enElCatalogo.data.map((e) => ({
+      id: e.catalogItemId,
+      nombre: e.name,
+      valores: [`${coma(e.composition.energyKcal)} kcal`, `${coma(e.composition.carbohydrateG)} g`, `${coma(e.composition.fatG)} g`, `${coma(e.composition.proteinG)} g`],
+      cada: e.composition.referenceAmount === '100ml' ? 'cada 100 ml' : 'cada 100 g',
+      importado: !!e.externalSource,
+    }));
+    comprobar(
+      'F-83',
+      'Buscar es una sola lectura, con el texto en el cuerpo del pedido y no en la dirección. Los resultados van en una tabla: el alimento y, en este orden, calorías, carbohidratos, grasas y proteínas; son los que da la API para esa búsqueda, con sus valores escritos con coma. Cada uno dice si es cada 100 g o cada 100 ml, y de dónde se importó si vino de afuera. La cuenta («N en el catálogo») se dice porque la búsqueda trajo todo. El foco sigue en el campo',
+      enElCatalogo.data.length >= 2 &&
+        !enElCatalogo.page.hasMore &&
+        igual(busquedas, [`POST ${API}/api/v1/nutrition/catalog-items/search`]) &&
+        !v.urls.slice(antesDeBuscar).some((u) => u.toLowerCase().includes(BUSCADO)) &&
+        conResultados?.estado === 'lista' &&
+        igual(conResultados.columnas.slice(0, 5), ['Alimento', 'Calorías', 'Carbohidratos', 'Grasas', 'Proteínas']) &&
+        igual(conResultados.filas.map((f) => [f.id, f.nombre, f.valores]), esperados.map((e) => [e.id, e.nombre, e.valores])) &&
+        conResultados.filas.every((f, i) => (esperados[i].importado ? f.detalle.startsWith(`${esperados[i].cada} · Importado de `) : f.detalle === esperados[i].cada)) &&
+        conResultados.filas.every((f) => f.elegir === `Elegir ${f.nombre}` && f.habitual === 'false' && f.nombreDeLaChinche === `Marcar como habitual: ${f.nombre}`) &&
+        conResultados.cuenta === `${esperados.length} en el catálogo` &&
+        conResultados.delCatalogo === `${esperados.length} alimentos con «${BUSCADO}»` &&
+        conResultados.focoEnElBuscador,
+      `${busquedas.length} pedido · ${conResultados?.filas.map((f) => `${f.nombre}: ${f.valores.join(' · ')}`).join(' | ')} · «${conResultados?.cuenta}»`,
+    );
+
+    // Elegir no cierra el cajón: suma el ítem, sin cantidad, y lo dice.
+    const primero = esperados[0];
+    const segundo = esperados[1];
+    const antesDeElegirDelCajon = v.urls.length;
+    await tocarEnElCajon(`tr[data-alimento="${primero.id}"] .alimentos-del-catalogo__acciones button:last-child`);
+    const trasElegir = await elCajon();
+    await tocarEnElCajon(`tr[data-alimento="${segundo.id}"] .alimentos-del-catalogo__acciones button:last-child`);
+    const trasElSegundo = await elCajon();
+    const pedidosAlElegirDelCajon = v.urls.slice(antesDeElegirDelCajon).filter((u) => !u.startsWith('OPTIONS ')).length;
+    await captura(page, v, 'agregar-item-con-resultados-y-dos-agregados-1440-claro', { tope: 900 });
+    await tocarEnElCajon('.cajon__cerrar');
+    await page.waitForFunction((s) => !document.querySelector(s), { timeout: 10_000 }, CAJON).catch(() => {});
+    await pausa(300);
+    const trasCerrar = await laOpcion();
+    const nuevos = trasCerrar ? trasCerrar.items.slice(antesDeAbrirDelCajon.items.length) : [];
+    comprobar(
+      'F-84',
+      'Elegir un alimento lo suma a la opción y no cierra el cajón: lo anuncia («Agregado: …») y deja seguir; con el segundo dice cuántos van. Elegir no le pide nada a BE. Al cerrar, el foco vuelve a «Agregar ítem», la opción tiene los dos ítems nuevos al final, sin cantidad y con la unidad apagada, y el editor dice que hay cambios sin guardar',
+      !!trasElegir &&
+        trasElegir.agregado === `Agregado: ${primero.nombre}. Podés sumar otro o cerrar.` &&
+        trasElegir.estado === 'lista' &&
+        trasElegir.filas.length === esperados.length &&
+        trasElSegundo?.agregado === `Agregado: ${segundo.nombre} (van 2). Podés sumar otro o cerrar.` &&
+        pedidosAlElegirDelCajon === 0 &&
+        !!trasCerrar &&
+        (await page.evaluate((s) => !document.querySelector(s), CAJON)) &&
+        trasCerrar.focoEnElBoton &&
+        igual(nuevos, [primero, segundo].map((e) => ({ nombre: e.nombre, cantidad: '', unidadApagada: true }))) &&
+        trasCerrar.estado === 'Cambios sin guardar',
+      `«${trasElegir?.agregado}» · «${trasElSegundo?.agregado}» · pedidos al elegir: ${pedidosAlElegirDelCajon} · la opción: ${trasCerrar?.items.map((i) => i.nombre).join(', ')} · «${trasCerrar?.estado}» · foco en «Agregar ítem»: ${trasCerrar?.focoEnElBoton ? 'sí' : 'no'}`,
+    );
+
+    // Los habituales: se marcan con la chinche, quedan arriba y se agregan con un clic.
+    await clic(page, `${OPCION} [data-agregar-item]`, 'Agregar ítem');
+    await page.waitForSelector(`${CAJON} .agregar-item__buscador input`, { timeout: 15_000 }).catch(() => {});
+    const alReabrir = await elCajon();
+    await buscarEnElCajon(BUSCADO);
+    const antesDeMarcar = v.urls.length;
+    await tocarEnElCajon(`tr[data-alimento="${segundo.id}"] .alimentos-del-catalogo__habitual`);
+    const marcado = await elCajon();
+    const escriturasAlMarcar = escriturasDesde(antesDeMarcar, `/nutrition/favorite-items/${segundo.id}`).length;
+    const habitualesEnLaApi = (await leerApi(v, '/nutrition/favorite-items')).data.map((e) => e.catalogItemId);
+    await tocarEnElCajon('[data-habituales] .agregar-item__fichas button');
+    const trasElHabitual = await elCajon();
+    await tocarEnElCajon(`tr[data-alimento="${segundo.id}"] .alimentos-del-catalogo__habitual`);
+    const desmarcado = await elCajon();
+    const habitualesAlFinal = (await leerApi(v, '/nutrition/favorite-items')).data.map((e) => e.catalogItemId);
+    comprobar(
+      'F-85',
+      'Cada vez que se abre, el cajón empieza con el buscador vacío. La chinche de un resultado lo marca como habitual con una sola escritura: queda apretada, cambia su nombre a «Quitar de habituales» y el alimento aparece arriba, en «Alimentos habituales», como una ficha que lo agrega con un clic. Volver a tocarla lo quita, y la ficha se va. Antes de marcar ninguno, el bloque dice cómo se marcan',
+      alReabrir?.estado === 'sin-buscar' &&
+        alReabrir.filas.length === 0 &&
+        alReabrir.agregado === '' &&
+        alReabrir.habituales.length === 0 &&
+        /Marcar como habitual/.test(alReabrir.sinHabituales ?? '') &&
+        escriturasAlMarcar === 1 &&
+        marcado?.filas.find((f) => f.id === segundo.id)?.habitual === 'true' &&
+        marcado.filas.find((f) => f.id === segundo.id)?.nombreDeLaChinche === `Quitar de habituales: ${segundo.nombre}` &&
+        marcado.filas.filter((f) => f.habitual === 'true').length === 1 &&
+        igual(marcado.habituales, [`Agregar ${segundo.nombre}`]) &&
+        igual(habitualesEnLaApi, [segundo.id]) &&
+        trasElHabitual?.agregado === `Agregado: ${segundo.nombre}. Podés sumar otro o cerrar.` &&
+        desmarcado?.filas.find((f) => f.id === segundo.id)?.habitual === 'false' &&
+        desmarcado.habituales.length === 0 &&
+        habitualesAlFinal.length === 0,
+      `al reabrir: ${alReabrir?.estado}, ${alReabrir?.habituales.length} habituales · escrituras al marcar: ${escriturasAlMarcar} · habituales: ${marcado?.habituales.join(', ')} · «${trasElHabitual?.agregado}» · al quitar: ${desmarcado?.habituales.length} en pantalla, ${habitualesAlFinal.length} en la API`,
+    );
+
+    // Una búsqueda sin resultados no es una búsqueda que falló.
+    await buscarEnElCajon('zzzzqqq');
+    const sinNadaDelCajon = await elCajon();
+    v.reglas.push({ coincide: (u) => u.includes('/nutrition/catalog-items/search'), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' });
+    let conFallaDelCajon = null;
+    try {
+      await buscarEnElCajon(BUSCADO);
+      conFallaDelCajon = await elCajon();
+    } finally {
+      v.reglas.length = 0;
+    }
+    await tocarEnElCajon('.agregar-item__resultados .aviso--error button');
+    await page.waitForFunction((s) => document.querySelector(`${s} [data-resultados]`)?.dataset.resultados === 'lista', { timeout: 20_000 }, CAJON).catch(() => {});
+    const trasReintentarDelCajon = await elCajon();
+    comprobar(
+      'F-86',
+      'Una búsqueda que no encuentra nada lo dice y ofrece las otras dos vías; no muestra una tabla vacía ni una cuenta. Una búsqueda que falla (503 simulado) dice la falla con su motivo y «Reintentar», y no «No encontramos alimentos con ese nombre»; al reintentar, los resultados aparecen',
+      sinNadaDelCajon?.estado === 'lista' &&
+        sinNadaDelCajon.filas.length === 0 &&
+        /^No encontramos alimentos con ese nombre\./.test(sinNadaDelCajon.sinResultados ?? '') &&
+        sinNadaDelCajon.cuenta === null &&
+        conFallaDelCajon?.estado === 'falla' &&
+        /^No pudimos buscar en el catálogo\./.test(conFallaDelCajon.falla ?? '') &&
+        /Reintentar/.test(conFallaDelCajon.falla ?? '') &&
+        conFallaDelCajon.sinResultados === null &&
+        conFallaDelCajon.filas.length === 0 &&
+        trasReintentarDelCajon?.estado === 'lista' &&
+        trasReintentarDelCajon.filas.length === esperados.length,
+      `sin resultados: «${sinNadaDelCajon?.sinResultados}» · con la falla: «${(conFallaDelCajon?.falla ?? '').slice(0, 110)}» · al reintentar: ${trasReintentarDelCajon?.filas.length} alimentos`,
+    );
+
+    // «Crear manualmente»: adentro del cajón, con cada campo que falta dicho en su lugar.
+    const NOMBRE_DEL_NUEVO = `Alimento del recorrido ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+    await buscarEnElCajon(BUSCADO);
+    await tocarEnElCajon('.cajon__pie button');
+    await page.waitForSelector(`${CAJON} .agregar-item__otro`, { timeout: 10_000 }).catch(() => {});
+    const manual = await elCajon();
+    const antesDeCrearDelCajon = v.urls.length;
+    await tocarEnElCajon('.agregar-item__otro button[type="submit"]');
+    const conFaltantes = await elCajon();
+    const escriturasConFaltantes = escriturasDesde(antesDeCrearDelCajon, '/nutrition/catalog-items').length;
+    const escribirEn = async (sufijo, valor) => {
+      await page.type(`${CAJON} .agregar-item__otro input[id$="${sufijo}"]`, valor).catch(() => {});
+    };
+    await escribirEn('-nombre', NOMBRE_DEL_NUEVO);
+    await escribirEn('-kcal', '120');
+    await escribirEn('-c', '22,5');
+    await escribirEn('-g', '1,5');
+    await escribirEn('-p', '4');
+    await tocarEnElCajon('.agregar-item__otro button[type="submit"]');
+    await page.waitForSelector(`${CAJON} .agregar-item__buscador input`, { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const trasCrearDelCajon = await elCajon();
+    const creaciones = escriturasDesde(antesDeCrearDelCajon, '/nutrition/catalog-items').filter((u) => !u.includes('/search'));
+    const elNuevo = (await buscarEnLaApi(NOMBRE_DEL_NUEVO)).data.find((e) => e.name === NOMBRE_DEL_NUEVO) ?? null;
+    comprobar(
+      'F-87',
+      '«Crear manualmente» se abre dentro del cajón, en el lugar de los resultados, con «Volver a la búsqueda» y sin las acciones del pie; pide el nombre y, en el orden de BE, calorías, carbohidratos, grasas y proteínas. Enviarlo vacío no escribe nada y dice en cada campo qué falta. Con los cinco datos hace una sola escritura, suma el alimento a la opción, vuelve a la búsqueda con el foco en el campo y lo anuncia. El alimento queda en el catálogo con los valores que se escribieron',
+      !!manual &&
+        manual.volver === 'Volver a la búsqueda' &&
+        manual.pie.length === 0 &&
+        igual(manual.campos, ['Nombre', 'Calorías (kcal)', 'Carbohidratos (g)', 'Grasas (g)', 'Proteínas (g)']) &&
+        escriturasConFaltantes === 0 &&
+        conFaltantes?.errores.length === 5 &&
+        conFaltantes.errores[0] === 'Falta el nombre del alimento.' &&
+        conFaltantes.errores.slice(1).every((e) => e === 'Falta el valor cada 100 g.') &&
+        creaciones.length === 1 &&
+        trasCrearDelCajon?.agregado === `Agregado: ${NOMBRE_DEL_NUEVO} (van 2). Podés sumar otro o cerrar.` &&
+        trasCrearDelCajon.focoEnElBuscador &&
+        igual(trasCrearDelCajon.pie, ['Crear manualmente', 'Importar desde Open Food Facts']) &&
+        !!elNuevo &&
+        igual([elNuevo.composition.energyKcal, elNuevo.composition.carbohydrateG, elNuevo.composition.fatG, elNuevo.composition.proteinG], [120, 22.5, 1.5, 4]),
+      `campos: ${manual?.campos.join(', ')} · vacío: ${conFaltantes?.errores.length} campos marcados, ${escriturasConFaltantes} escrituras · al crear: ${creaciones.length} escritura, «${trasCrearDelCajon?.agregado}» · en el catálogo: ${elNuevo ? `${elNuevo.composition.energyKcal} kcal, ${elNuevo.composition.carbohydrateG} g, ${elNuevo.composition.fatG} g, ${elNuevo.composition.proteinG} g` : 'no está'}`,
+    );
+
+    // Las palabras, la accesibilidad y los anchos, con el cajón abierto y una búsqueda hecha.
+    await asegurarElCajon();
+    await buscarEnElCajon(BUSCADO);
+    const paraLeer = await elCajon();
+    const faltasDelCajon = await axe(page);
+    await ponerTema(page, 'azul-noche');
+    const faltasDelCajonDeNoche = await axe(page);
+    await ponerTema(page, 'claro');
+    const enAnchos = [];
+    for (const ancho of [1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(400);
+      const c = await page.evaluate((s) => {
+        const d = document.querySelector(s);
+        if (!d || !d.querySelector('.cajon__pie')) return { cajon: 0, util: 0, izquierda: -1, afuera: 1, pieALaVista: false };
+        const caja = d.getBoundingClientRect();
+        // La tabla se desplaza dentro de su caja: lo de adentro no cuenta como «se sale».
+        const afuera = [...d.querySelectorAll('*')].filter((e) => !e.closest('.desplazable-x table') && e.getClientRects().length > 0 && (e.getBoundingClientRect().right > caja.right + 1 || e.getBoundingClientRect().left < caja.left - 1));
+        return { cajon: Math.round(caja.width), util: document.documentElement.clientWidth, izquierda: Math.round(caja.left), afuera: afuera.length, pieALaVista: d.querySelector('.cajon__pie').getBoundingClientRect().bottom <= window.innerHeight + 1 };
+      }, CAJON);
+      enAnchos.push({ ancho, ...c, desborda: !(await sinDesborde(page)) });
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(300);
+    comprobar(
+      'F-88',
+      'Con una búsqueda hecha, en el cajón no hay un porcentaje ni una palabra de la lista de Nutrición; la misma consulta encuentra los nombres de los alimentos. axe no encuentra faltas con el cajón abierto, en los dos temas. A 1280 px el cajón sigue al costado; a 1024, 768 y 390 ocupa todo el ancho. En los cuatro, nada se sale del cajón, su pie queda a la vista y la página no desborda',
+      !!paraLeer &&
+        dominio.terminosProhibidosEn(paraLeer.texto).length === 0 &&
+        esperados.every((e) => paraLeer.texto.includes(e.nombre)) &&
+        faltasDelCajon.length === 0 &&
+        faltasDelCajonDeNoche.length === 0 &&
+        enAnchos.find((x) => x.ancho === 1280).izquierda > 0 &&
+        enAnchos.find((x) => x.ancho === 1280).cajon < 1280 &&
+        enAnchos.filter((x) => x.ancho <= 1024).every((x) => x.izquierda === 0 && x.cajon >= x.util - 1) &&
+        enAnchos.every((x) => x.afuera === 0 && x.pieALaVista && !x.desborda),
+      `palabras: ${dominio.terminosProhibidosEn(paraLeer?.texto ?? '').join(', ') || 'ninguna'} · axe: ${[...faltasDelCajon, ...faltasDelCajonDeNoche].map((f) => f.id).join(', ') || 'sin faltas'} · ${enAnchos.map((x) => `${x.ancho}: el cajón mide ${x.cajon} y empieza en ${x.izquierda}${x.afuera ? `, ${x.afuera} AFUERA` : ''}${x.desborda ? ', DESBORDA' : ''}${x.pieALaVista ? '' : ', el pie NO SE VE'}`).join(' · ')}`,
+    );
+
+    // Guardar: lo que se agregó queda en la API, en esa opción, sin cantidad.
+    await tocarEnElCajon('.cajon__cerrar');
+    await page.waitForFunction((s) => !document.querySelector(s), { timeout: 10_000 }, CAJON).catch(() => {});
+    const antesDeGuardarItems = v.urls.length;
+    const paraGuardar = await laOpcion();
+    await clic(page, '.plan__preparacion button', 'Guardar cambios');
+    await page.waitForFunction(() => document.querySelector('.plan__preparacion p[aria-live="polite"]')?.innerText.trim() === 'Guardado', { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v);
+    const guardada = await laOpcion();
+    const borradorGuardado = (await leerApi(v, `/nutrition/plans/${enLaLista.planId}`)).data;
+    const opcionEnLaApi = [...borradorGuardado.dayTypes].sort((a, b) => a.order - b.order)[0].meals.slice().sort((a, b) => a.order - b.order)[0].options.slice().sort((a, b) => a.order - b.order)[0];
+    const itemsEnLaApi = [...opcionEnLaApi.items].sort((a, b) => a.order - b.order);
+    const agregados = itemsEnLaApi.slice(antesDeAbrirDelCajon.items.length);
+    comprobar(
+      'F-84',
+      '«Guardar cambios» guarda la opción con lo que se agregó, con una sola escritura: en la API, sus últimos cuatro ítems son los dos elegidos del catálogo, el habitual y el que se creó a mano, en ese orden y sin cantidad. Guardar no activa: el selector sigue con «En preparación»',
+      paraGuardar?.items.length === antesDeAbrirDelCajon.items.length + 4 &&
+        escriturasDesde(antesDeGuardarItems, `/nutrition/plans/${enLaLista.planId}`).length === 1 &&
+        guardada?.estado === 'Guardado' &&
+        igual(agregados.map((i) => i.catalogItemId), [primero.id, segundo.id, segundo.id, elNuevo?.catalogItemId]) &&
+        agregados.every((i) => i.quantity === null && i.preparationState === null) &&
+        borradorGuardado.state === 'DRAFT' &&
+        (await planEnPantalla(page)).version === 'preparacion',
+      `en la pantalla: ${paraGuardar?.items.map((i) => i.nombre).join(', ')} · en la API: ${itemsEnLaApi.length} ítems, ${agregados.filter((i) => i.quantity === null).length} sin cantidad · estado: ${borradorGuardado.state}`,
+    );
+
+    // Lo que el escenario no tiene, con respuestas simuladas: los habituales que no se pueden leer y una búsqueda con más
+    // coincidencias que las veinte que se piden. Los habituales se leen al abrir el editor: hay que volver a entrar.
+    await salir();
+    v.reglas.push({ coincide: (u) => u.includes('/nutrition/favorite-items'), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' });
+    let conHabitualesCaidos = null;
+    try {
+      await entrar(BASE);
+      await asegurarElCajon();
+      await pausa(300);
+      conHabitualesCaidos = await elCajon();
+    } finally {
+      v.reglas.length = 0;
+    }
+    await captura(page, v, 'agregar-item-habituales-que-no-se-leen-simulado-1440-claro', { tope: 900 });
+    await tocarEnElCajon('[data-habituales] .aviso--error button');
+    await page.waitForFunction((s) => !!document.querySelector(`${s} [data-habituales] > .nota`), { timeout: 20_000 }, CAJON).catch(() => {});
+    const habitualesReleidos = await elCajon();
+    comprobar(
+      'F-85',
+      '(Respuesta simulada.) Si los alimentos habituales no se pueden leer, el cajón lo dice, con su motivo y «Reintentar», y no «Todavía no marcaste alimentos habituales»; el buscador queda a la vista. Al reintentar, el bloque vuelve a decir cómo se marcan',
+      /^No pudimos leer tus alimentos habituales\./.test(conHabitualesCaidos?.fallaDeHabituales ?? '') &&
+        /Reintentar/.test(conHabitualesCaidos.fallaDeHabituales) &&
+        conHabitualesCaidos.sinHabituales === null &&
+        conHabitualesCaidos.habituales.length === 0 &&
+        conHabitualesCaidos.estado === 'sin-buscar' &&
+        habitualesReleidos?.fallaDeHabituales === null &&
+        /Marcar como habitual/.test(habitualesReleidos.sinHabituales ?? ''),
+      `con la falla: «${(conHabitualesCaidos?.fallaDeHabituales ?? '').slice(0, 120)}» · al reintentar: «${(habitualesReleidos?.sinHabituales ?? '').slice(0, 60)}»`,
+    );
+    const veinte = Array.from({ length: 20 }, (_, i) => ({ ...enElCatalogo.data[0], catalogItemId: `alimento-simulado-${i + 1}`, name: `Alimento simulado ${i + 1}` }));
+    v.reglas.push({ coincide: (u) => u.includes('/nutrition/catalog-items/search'), accion: 'entregar', cuerpo: { data: veinte, page: { limit: 20, nextCursor: 'cursor-simulado', hasMore: true } } });
+    let conMas = null;
+    try {
+      await buscarEnElCajon('alimento');
+      conMas = await elCajon();
+    } finally {
+      v.reglas.length = 0;
+    }
+    comprobar(
+      'F-83',
+      '(Respuesta simulada.) Con más coincidencias que las veinte que se piden, el cajón no dice una cuenta: la API no informa el total. Dice «Los primeros 20» y que hay más, para acotar la búsqueda',
+      conMas?.estado === 'lista' && conMas.filas.length === 20 && conMas.cuenta === null && conMas.delCatalogo === 'Los primeros 20 con «alimento»' && /Hay más alimentos que coinciden/.test(conMas.texto),
+      `${conMas?.filas.length} filas · cuenta: ${conMas?.cuenta ?? 'no se dice'} · «${conMas?.delCatalogo}»`,
+    );
+    await tocarEnElCajon('.cajon__cerrar');
+    await page.waitForFunction((s) => !document.querySelector(s), { timeout: 10_000 }, CAJON).catch(() => {});
+
     comprobar('—', '«Plan», de Nutrición, no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
   } finally {
     await navegador.close();

@@ -10,6 +10,9 @@
 //   Para mirar una falla, `#falla:fragmento`: mientras se captura esa ruta, los pedidos a la API cuya dirección contiene
 //   el fragmento reciben un 503 simulado en el navegador (la API y la base no se tocan). Ejemplo: `#falla:metric=PROTEIN`.
 //   Para mirar una búsqueda, `#buscar:texto`: antes de los clics, lo escribe en el buscador de la vista y lo envía.
+//   Para escribir en lo que quedó con el foco después de los clics (el buscador de un cajón que se acaba de abrir),
+//   `#escribir:texto`: lo escribe y lo envía con Enter. Y `#luego:Texto|Otro` toca eso después de escribir.
+//   Con un cajón abierto (`dialog.cajon`), la captura es la de la ventana, sin estirarla: el cajón mide lo que la ventana.
 //   Para mirar una pantalla con datos que el escenario no tiene, `#entrega:fragmento=archivo.json`: los pedidos a la API
 //   que contienen el fragmento reciben, en el navegador, el contenido de ese archivo de BE_TRABAJO (la API y la base no
 //   se tocan; la pantalla lo valida con el contrato, como a una respuesta real). Ejemplo, después de correr
@@ -58,7 +61,7 @@ const rutas = pedidos.map((p) => {
     process.exit(2);
   }
   // Después de la ruta van, en cualquier orden, `#clic:Texto|Otro`, `#falla:fragmento de una dirección de la API`,
-  // `#buscar:texto` y `#entrega:fragmento=archivo.json`.
+  // `#buscar:texto`, `#escribir:texto`, `#luego:Texto|Otro` y `#entrega:fragmento=archivo.json`.
   const [destino, ...extras] = ruta.split('#');
   const de = (prefijo) => extras.find((x) => x.startsWith(prefijo))?.slice(prefijo.length) ?? '';
   const entrega = de('entrega:');
@@ -72,7 +75,7 @@ const rutas = pedidos.map((p) => {
     }
     simulada = { fragmento: entrega.slice(0, igual), cuerpo: fs.readFileSync(archivo, 'utf8') };
   }
-  return [p.slice(0, corte), destino.startsWith('/') ? destino : `/${destino}`, de('clic:').split('|').filter(Boolean), de('falla:'), de('buscar:'), simulada];
+  return [p.slice(0, corte), destino.startsWith('/') ? destino : `/${destino}`, de('clic:').split('|').filter(Boolean), de('falla:'), de('buscar:'), simulada, de('escribir:'), de('luego:').split('|').filter(Boolean)];
 });
 fs.mkdirSync(salida, { recursive: true });
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -138,7 +141,7 @@ try {
   await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }).catch(() => {}), page.keyboard.press('Enter')]);
   await page.waitForFunction(() => location.pathname.startsWith('/pro/advisees'), { timeout: 240_000 });
   await page.waitForFunction(() => typeof window.next?.router?.push === 'function', { timeout: 240_000 });
-  for (const [nombre, ruta, clics, falla, buscado, simulada] of rutas) {
+  for (const [nombre, ruta, clics, falla, buscado, simulada, escrito, luego] of rutas) {
     await page.setViewport({ width: ANCHO, height: ALTO, deviceScaleFactor: 1 });
     // Un diálogo que quedó abierto de la ruta anterior (una ayuda) se cierra antes de ir a la siguiente.
     await page.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
@@ -169,7 +172,7 @@ try {
         await asentar();
       } else console.log(`${nombre}: no encontré un buscador para escribir «${buscado}»`);
     }
-    for (const texto of clics) {
+    const tocar = async (texto) => {
       // Lo que se va a tocar puede tardar en aparecer (la vista se arma después de leer los datos).
       // «A la vista» no es «tiene caja»: lo que está adentro de un plegable cerrado tiene caja y no se ve
       // (`checkVisibility` lo sabe). Si hay uno con ese texto exacto, es ese; si no, el primero que lo contiene.
@@ -182,17 +185,30 @@ try {
       const tocado = await page.evaluate(`(() => { const el = (${elegir})(${JSON.stringify(TOCABLES)}, ${JSON.stringify(texto)}); el?.click(); return !!el; })()`);
       if (!tocado) console.log(`${nombre}: no encontré «${texto}» para tocar`);
       await asentar();
+    };
+    for (const texto of clics) await tocar(texto);
+    if (escrito) {
+      // `#escribir:texto`: en lo que quedó con el foco (el buscador del cajón recién abierto), y lo envía con Enter.
+      await page.keyboard.type(escrito);
+      await page.keyboard.press('Enter');
+      await asentar();
     }
+    for (const texto of luego) await tocar(texto);
     for (const tema of ['claro', 'azul-noche']) {
       await ponerTema(tema);
       // La ventana se estira al alto de la página: con `fullPage`, los gráficos se quedan sin dibujo.
-      const alto = await page.evaluate(() => Math.max(document.documentElement.scrollHeight, document.body.scrollHeight));
+      // Un cajón abierto ocupa la ventana, no la página: se captura la ventana como está, y se dice cuánto mide lo de adentro.
+      const cajon = await page.evaluate(() => {
+        const d = document.querySelector('dialog.cajon[open]');
+        return d ? Math.round(d.querySelector('.cajon__cuerpo')?.scrollHeight ?? 0) : null;
+      });
+      const alto = cajon !== null ? ALTO : await page.evaluate(() => Math.max(document.documentElement.scrollHeight, document.body.scrollHeight));
       await page.setViewport({ width: ANCHO, height: Math.min(Math.max(alto, ALTO), 16000), deviceScaleFactor: 1 });
       await esperar(700);
       await page.screenshot({ path: path.join(salida, `${nombre}-${ANCHO}-${tema}.png`) });
       await page.setViewport({ width: ANCHO, height: ALTO, deviceScaleFactor: 1 });
       await esperar(250);
-      if (tema === 'claro') console.log(`${nombre}: ${alto} px de alto (${(alto / ALTO).toFixed(1)} pantallas de ${ALTO})`);
+      if (tema === 'claro') console.log(cajon !== null ? `${nombre}: un cajón abierto, con ${cajon} px de contenido (la ventana mide ${ALTO})` : `${nombre}: ${alto} px de alto (${(alto / ALTO).toFixed(1)} pantallas de ${ALTO})`);
     }
     fallaSimulada = '';
     respuestaSimulada = null;

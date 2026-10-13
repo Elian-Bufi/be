@@ -7,6 +7,7 @@
  * - **Tres zonas.** La cabecera (de quién es, el título y «Cerrar») y el pie quedan fijos; el cuerpo se desplaza adentro.
  *   Lo que hay que leer antes de un acto que no se deshace va en el pie, junto al botón, y está siempre a la vista.
  * - **Al abrirse, el foco va al título:** con el teclado, lo primero que se puede accionar no es «Cerrar» por accidente.
+ *   Quien lo abre puede pedir otro lugar (`focoInicial`): un buscador se abre para escribir («Agregar ítem», parte 7).
  * - **Escape y «Cerrar» lo cierran, salvo mientras está `ocupado`:** un envío en curso no se corta, porque su resultado
  *   tiene que poder leerse. Si el navegador lo cierra igual (un segundo Escape seguido no se puede frenar), avisa con
  *   `onCerrar` para que quien lo abrió no quede creyéndolo abierto.
@@ -14,7 +15,7 @@
  * Lo que tiene adentro lo decide quien lo abre: el cajón es solo el marco, y dibuja su contenido solo mientras está
  * abierto. Si ese contenido tiene que sobrevivir al cierre (un pedido a medio armar), su estado va en quien lo abre.
  */
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
 import { Icono } from './icono';
 
 export function Cajon({
@@ -22,6 +23,7 @@ export function Cajon({
   titulo,
   sobretitulo = null,
   ocupado = false,
+  focoInicial,
   onCerrar,
   pie = null,
   children,
@@ -32,6 +34,8 @@ export function Cajon({
   sobretitulo?: string | null;
   /** Hay un envío en curso: no se cierra hasta que termine. */
   ocupado?: boolean;
+  /** Dónde va el foco al abrirse, si no es el título: algo de adentro del cajón. */
+  focoInicial?: RefObject<HTMLElement | null>;
   onCerrar: () => void;
   /** Lo que queda fijo abajo: la acción y lo que hay que saber antes de hacerla. */
   pie?: ReactNode;
@@ -47,9 +51,11 @@ export function Cajon({
       d.showModal();
       // El navegador ya lleva el foco a lo primero que lo admite, que es el título (por eso lleva `tabIndex`). Se pide
       // igual: que al abrirse el foco esté ahí no tiene que depender de cómo lo resuelva cada navegador.
-      tituloRef.current?.focus({ preventScroll: true });
+      (focoInicial?.current ?? tituloRef.current)?.focus({ preventScroll: true });
     }
     if (!abierto && d.open) d.close();
+    // `focoInicial` es una referencia: no cambia entre un dibujo y otro.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto]);
   return (
     <dialog

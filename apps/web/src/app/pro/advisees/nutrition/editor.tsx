@@ -32,20 +32,21 @@ import {
   type VersionDePlan,
 } from '@be/domain';
 import Link from 'next/link';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
+import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { numeroEnCampo } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
-import { ImportacionDeOpenFoodFacts, procedenciaDeElemento } from './importacion';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { NoDisponible, useNutricion } from './nutricion';
 import { DialogoGuardarPlantillaNutricional, NotaDeOrigenNutricional } from './plantillas';
 import { COPY_HABITUALES, COPY_PLANTILLAS } from '@be/domain';
-import { BloqueDeHabituales, BotonHabitual, DialogoGuardarComidaHabitual, InsertarComidaHabitual, useAlimentosHabituales, useComidasHabituales, type AlimentosHabituales } from './habituales';
+import { AgregarItem } from './agregar-item';
+import { DialogoGuardarComidaHabitual, InsertarComidaHabitual, useAlimentosHabituales, useComidasHabituales } from './habituales';
 
 type Estructura = EstructuraDePlanEntrada['dayTypes'];
 type Item = Estructura[number]['meals'][number]['options'][number]['items'][number];
@@ -137,8 +138,10 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   // «Guardar como habitual» sobre una comida del borrador (DL-109): la posición de la comida elegida, o nada.
   const [guardarHabitual, setGuardarHabitual] = useState<{ i: number; j: number } | null>(null);
   const comidasHabituales = useComidasHabituales(token);
-  // Los alimentos habituales se cargan una vez para todos los buscadores del borrador.
+  // Los alimentos habituales se cargan una vez para todo el borrador.
   const alimentosHabituales = useAlimentosHabituales(token);
+  // «Agregar ítem» (maqueta 21): la opción a la que se le suma, o nada si el cajón está cerrado.
+  const [agregando, setAgregando] = useState<{ readonly i: number; readonly j: number; readonly k: number } | null>(null);
   const [activando, setActivando] = useState(false);
   const [falloDeActivacion, setFalloDeActivacion] = useState<string | null>(null);
   const [objetivoVigente, setObjetivoVigente] = useState<string | null>(null);
@@ -237,6 +240,14 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   if (error === 'error') return <ErrorConReintento onReintentar={cargar} />;
   if (!version) return <Cargando />;
 
+  // «Almuerzo · opción 1: Pollo, arroz y verduras»: el cajón tapa la opción, y lo dice arriba.
+  const comidaDondeSeAgrega = agregando ? estructura[agregando.i]?.meals[agregando.j] : undefined;
+  const opcionDondeSeAgrega = agregando ? comidaDondeSeAgrega?.options[agregando.k] : undefined;
+  const dondeSeAgrega =
+    agregando && comidaDondeSeAgrega && opcionDondeSeAgrega
+      ? `${comidaDondeSeAgrega.label.trim() || `Comida ${agregando.j + 1}`} · opción ${agregando.k + 1}${opcionDondeSeAgrega.label.trim() ? `: ${opcionDondeSeAgrega.label.trim()}` : ''}`
+      : null;
+
   return (
     <section className="seccion" aria-labelledby="titulo-borrador">
       <h2 id="titulo-borrador">
@@ -282,14 +293,10 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
                         />
                       ))}
                     </ul>
-                    <BuscadorDeCatalogo
-                      id={`buscar-${i}-${j}-${k}`}
-                      habituales={alimentosHabituales}
-                      onElegir={(el) => {
-                        setNombres((n) => ({ ...n, [el.catalogItemId]: el.name }));
-                        cambiar((x) => (x[i]!.meals[j]!.options[k]!.items.push({ catalogItemId: el.catalogItemId, quantity: null, preparationState: null, note: null }), x));
-                      }}
-                    />
+                    <button type="button" className="boton boton--secundario" data-agregar-item onClick={() => setAgregando({ i, j, k })}>
+                      <Icono nombre="mas" tamano={18} />
+                      Agregar ítem
+                    </button>
                     </>
                     )}
                     <button type="button" className="boton boton--enlace" onClick={() => cambiar((x) => (x[i]!.meals[j]!.options.splice(k, 1), x))}>
@@ -441,6 +448,20 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
         }}
       />
 
+      <AgregarItem
+        abierto={agregando !== null}
+        deDonde={dondeSeAgrega}
+        habituales={alimentosHabituales}
+        onElegir={(el) => {
+          if (!agregando) return;
+          const { i, j, k } = agregando;
+          setNombres((n) => ({ ...n, [el.catalogItemId]: el.name }));
+          // El ítem nace sin cantidad ni estado: se completan en la opción (REG-06-122).
+          cambiar((x) => (x[i]!.meals[j]!.options[k]!.items.push({ catalogItemId: el.catalogItemId, quantity: null, preparationState: null, note: null }), x));
+        }}
+        onCerrar={() => setAgregando(null)}
+      />
+
       <DialogoDeConfirmacion
         abierto={confirmar}
         titulo={COPY_NUTRICION.activarPlan}
@@ -525,170 +546,6 @@ function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: string; ite
         Quitar {nombre}
       </button>
     </li>
-  );
-}
-
-/**
- * «Agregar ítem → buscar catálogo BE», «Crear manualmente» o «Importar desde proveedor» (B05:535-552; B10-05 §18). La
- * importación es una opción más, nunca la búsqueda principal obligatoria (WP-08).
- */
-function BuscadorDeCatalogo({ id, habituales, onElegir }: { id: string; habituales: AlimentosHabituales; onElegir: (e: ElementoDeCatalogo) => void }) {
-  const { token, sesionPerdida, accesoRetirado } = useNutricion();
-  const [abierto, setAbierto] = useState(false);
-  const [busqueda, setBusqueda] = useState('');
-  const [resultados, setResultados] = useState<ElementoDeCatalogo[] | null>(null);
-  const [manual, setManual] = useState(false);
-  const [importar, setImportar] = useState(false);
-  const intento = useClaveDeIntento();
-  const [nuevo, setNuevo] = useState({ nombre: '', kcal: '', p: '', c: '', g: '' });
-  const [errores, setErrores] = useState<Record<string, string>>({});
-  const [fallo, setFallo] = useState<string | null>(null);
-
-  async function buscar(e: FormEvent) {
-    e.preventDefault();
-    const r = await api.buscarEnCatalogo(token, busqueda.trim());
-    if (sesionPerdida(r)) return;
-    setResultados(r.ok ? r.datos.data : []);
-  }
-
-  async function crear() {
-    // Los mismos requisitos de siempre, ahora señalados en el campo que falta (B10-10:164-165).
-    const problemas: Record<string, string> = {};
-    if (!nuevo.nombre.trim()) problemas['nombre'] = 'Falta el nombre del alimento.';
-    const valores: Record<string, number> = {};
-    for (const [clave, texto] of [
-      ['kcal', nuevo.kcal],
-      ['p', nuevo.p],
-      ['c', nuevo.c],
-      ['g', nuevo.g],
-    ] as const) {
-      const n = leerNumero(texto);
-      if (n === null) problemas[clave] = texto.trim() === '' ? 'Falta el valor cada 100 g.' : motivoDeNumeroIlegible(texto);
-      else if (n < 0) problemas[clave] = 'El valor no puede ser menor que cero.';
-      else valores[clave] = n;
-    }
-    setErrores(problemas);
-    if (Object.keys(problemas).length > 0) return setFallo(null);
-    const r = await api.crearElementoDeCatalogo(
-      token,
-      {
-        name: nuevo.nombre.trim(),
-        itemType: 'FOOD',
-        composition: { referenceAmount: '100g', energyKcal: valores['kcal']!, proteinG: valores['p']!, carbohydrateG: valores['c']!, fatG: valores['g']! },
-      },
-      intento.actual(),
-    );
-    intento.registrar(r);
-    if (sesionPerdida(r) || accesoRetirado(r)) return;
-    if (!r.ok) return setFallo(mensajeDeFallo(r));
-    onElegir(r.datos.data);
-    setManual(false);
-    setAbierto(false);
-  }
-
-  if (!abierto) {
-    return (
-      <button type="button" className="boton boton--secundario" onClick={() => setAbierto(true)}>
-        Agregar ítem
-      </button>
-    );
-  }
-  return (
-    <div className="buscador">
-      <form onSubmit={buscar} className="fila-de-dato">
-        <Campo id={`${id}-texto`} etiqueta="Buscar en el catálogo BE" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
-        <button type="submit" className="boton boton--secundario">
-          Buscar
-        </button>
-      </form>
-      <p className="nota">{COPY_NUTRICION.catalogoSintetico}</p>
-      <BloqueDeHabituales
-        habituales={habituales.habituales}
-        fallo={habituales.fallo}
-        onElegir={(el) => {
-          onElegir(el);
-          setAbierto(false);
-          setResultados(null);
-          setBusqueda('');
-        }}
-      />
-      {resultados ? (
-        resultados.length === 0 ? (
-          <p>No encontramos alimentos con ese nombre.</p>
-        ) : (
-          <ul className="lista">
-            {resultados.map((el) => (
-              <li key={el.catalogItemId} className="lista__item">
-                <span>
-                  {el.name} · {formatearCantidad(el.composition.energyKcal, 'kcal')} cada {el.composition.referenceAmount === '100ml' ? '100 ml' : '100 g'}
-                  {procedenciaDeElemento(el) ? <span className="nota"> · {procedenciaDeElemento(el)}</span> : null}
-                </span>
-                <BotonHabitual elemento={el} marcado={habituales.esHabitual(el.catalogItemId)} onAlternar={(e) => void habituales.alternar(e)} />
-                <button
-                  type="button"
-                  className="boton boton--enlace"
-                  onClick={() => {
-                    onElegir(el);
-                    setAbierto(false);
-                    setResultados(null);
-                    setBusqueda('');
-                  }}
-                >
-                  Elegir {el.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )
-      ) : null}
-      {manual ? (
-        <fieldset className="grupo">
-          <legend>{COPY_NUTRICION.crearManualmente}</legend>
-          <Campo id={`${id}-nombre`} etiqueta="Nombre" value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} error={errores['nombre'] ?? null} />
-          <div className="fila-de-dato">
-            <Campo id={`${id}-kcal`} etiqueta="kcal cada 100 g" inputMode="decimal" value={nuevo.kcal} onChange={(e) => setNuevo({ ...nuevo, kcal: e.target.value })} error={errores['kcal'] ?? null} />
-            <Campo id={`${id}-p`} etiqueta="Proteínas (g)" inputMode="decimal" value={nuevo.p} onChange={(e) => setNuevo({ ...nuevo, p: e.target.value })} error={errores['p'] ?? null} />
-            <Campo id={`${id}-c`} etiqueta="Carbohidratos (g)" inputMode="decimal" value={nuevo.c} onChange={(e) => setNuevo({ ...nuevo, c: e.target.value })} error={errores['c'] ?? null} />
-            <Campo id={`${id}-g`} etiqueta="Grasas (g)" inputMode="decimal" value={nuevo.g} onChange={(e) => setNuevo({ ...nuevo, g: e.target.value })} error={errores['g'] ?? null} />
-          </div>
-          {fallo ? (
-            <Aviso tipo="error">
-              <p>{fallo}</p>
-            </Aviso>
-          ) : null}
-          <div className="acciones">
-            <button type="button" className="boton boton--primario" onClick={() => void crear()}>
-              Crear y agregar
-            </button>
-          </div>
-        </fieldset>
-      ) : (
-        <button type="button" className="boton boton--enlace" onClick={() => setManual(true)}>
-          {COPY_NUTRICION.crearManualmente}
-        </button>
-      )}
-      {importar ? (
-        <ImportacionDeOpenFoodFacts
-          id={`${id}-importar`}
-          onIncorporado={(el) => {
-            onElegir(el);
-            setImportar(false);
-            setAbierto(false);
-          }}
-          onCargarManualmente={() => {
-            setImportar(false);
-            setManual(true);
-          }}
-        />
-      ) : (
-        <button type="button" className="boton boton--enlace" onClick={() => setImportar(true)}>
-          {COPY_INTEGRACIONES.importarDesdeOpenFoodFacts}
-        </button>
-      )}
-      <button type="button" className="boton boton--enlace" onClick={() => setAbierto(false)}>
-        Cerrar búsqueda
-      </button>
-    </div>
   );
 }
 

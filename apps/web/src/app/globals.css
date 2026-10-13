@@ -8968,3 +8968,194 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
   overflow-wrap: anywhere;
 }
+
+/* ─── «Agregar ítem»: el buscador del catálogo, en el cajón ───────── */
+/* Una sola columna que se achica con el cajón: sin el mínimo en cero, la fila del buscador ensanchaba todo. */
+.agregar-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+/* El campo de búsqueda: la lupa adentro; la cuenta y el botón, al lado, o debajo si no entran. */
+.agregar-item__buscador {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.agregar-item__campo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.agregar-item__campo > .icono {
+  position: absolute;
+  left: 0.8rem;
+  color: var(--tenue);
+  pointer-events: none;
+}
+
+.agregar-item__buscador input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.3rem 0.9rem 0.3rem 2.6rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.agregar-item__buscador input::placeholder {
+  color: var(--tenue);
+  opacity: 1;
+}
+
+.agregar-item__cuenta {
+  flex: none;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.agregar-item__enviar {
+  flex: none;
+}
+
+/* Lo que se acaba de sumar. Sin texto no ocupa lugar. */
+.agregar-item__agregado {
+  margin: 0;
+  font-weight: 600;
+}
+
+.agregar-item__agregado:empty {
+  display: none;
+}
+
+.agregar-item__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.6rem;
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.agregar-item__titulo .icono {
+  align-self: center;
+}
+
+.agregar-item__titulo .nota {
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Los alimentos habituales: una ficha por alimento, que baja de renglón. */
+.agregar-item__fichas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agregar-item__fichas .boton {
+  border-radius: 999px;
+}
+
+/* La tabla de resultados: los números, alineados entre sí; las acciones, al final de la fila. */
+.alimentos-del-catalogo {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.alimentos-del-catalogo th[scope='row'] {
+  font-weight: 400;
+}
+
+.alimentos-del-catalogo__nombre {
+  display: block;
+  font-weight: 600;
+}
+
+.alimentos-del-catalogo__detalle {
+  display: block;
+  margin: 0;
+}
+
+.alimentos-del-catalogo .alimentos-del-catalogo__numero {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.alimentos-del-catalogo__acciones {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.alimentos-del-catalogo__acciones .boton + .boton {
+  margin-left: 0.4rem;
+}
+
+/* La chinche de «habitual»: marcada va llena. El estado lo dice además `aria-pressed`, y el nombre del botón cambia. */
+.alimentos-del-catalogo__habitual {
+  min-width: 44px;
+  padding: 0.3rem;
+  justify-content: center;
+}
+
+.alimentos-del-catalogo__habitual[aria-pressed='true'] {
+  background: var(--texto);
+  color: var(--superficie);
+  border-color: var(--texto);
+}
+
+@media (max-width: 40rem) {
+  .alimentos-del-catalogo .alimentos-del-catalogo__numero,
+  .alimentos-del-catalogo__acciones {
+    text-align: left;
+  }
+}
+
+/* En el pie del cajón: lo que hay que saber va arriba, a todo el ancho; las dos acciones, debajo. */
+.agregar-item__antes {
+  flex: 1 1 100%;
+  margin: 0;
+}
+
+/* «Crear manualmente» e «Importar», en el lugar de los resultados. */
+.agregar-item__otro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.agregar-item__otro .agregar-item__titulo {
+  margin: 0;
+}
+
+/* Los cuatro valores de un alimento nuevo, en una fila; en una pantalla angosta, de a dos. */
+.agregar-item__valores {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 40rem) {
+  .agregar-item__valores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.agregar-item__volver {
+  justify-self: start;
+  min-height: 2.75rem;
+  text-decoration: none;
+}
